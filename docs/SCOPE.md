@@ -55,8 +55,25 @@ Status: scoping draft, 2026-10-03. This document synthesises the research in [`d
 - Migrate from Lightroom Classic: read `.lrcat` (SQLite) read-only, covering folders, keywords, ratings, collections and develop settings.
 - A headless engine and CLI for batch rendering and automated preset testing.
 
+**Product principles from user research.** These come from Reddit, 660 threads (2023–26), in [12](research/12-user-feedback-and-design-implications.md).
+1. **Performance is a feature.**
+   - Lightroom's number-one complaint is lag and crashes (about 160 mentions), with Windows much worse than Mac.
+   - We publish performance budgets (slider-to-preview latency, import, export, mask count, catalog size) and enforce them in a benchmark CI, on Windows first.
+2. **Data safety.**
+   - Catalog corruption and lost edits are the number-three complaint.
+   - XMP sidecars are the source of truth, and the catalog is a rebuildable index.
+   - Recipes are versioned, so old edits never render differently after an update.
+   - Automatic catalog backups.
+3. **No rug-pull charter:**
+   - no subscription, account, activation, telemetry by default, credits or paywalled AI
+   - no training on user images
+   - no removing features
+   - Lightroom 6's activation shutdown and the 2025 price rise are the trust events users cite.
+4. **Lightroom vocabulary and layout, not darktable's module pipeline.** We test with real Lightroom switchers before each release.
+5. **No overclaiming.** We publish preset-fidelity numbers, never "100% compatible".
+
 **Non-goals (at least for v1)**
-- Cloud sync, mobile apps (Android possibly later), web gallery/Book/Slideshow modules, Adobe-style generative AI (cloud models), Lightroom plug-in (Lua SDK) compatibility.
+- Cloud sync and mobile apps (Android possibly later). Instead we **interoperate**: document sidecar and folder-sync recipes, and accept DNG-embedded mobile presets. Web gallery/Book/Slideshow modules, Adobe-style generative AI (cloud models), Lightroom plug-in (Lua SDK) compatibility.
 - Pixel-exact equality with Lightroom.
 - Using the name "Lightroom" or Adobe trademarks in the product name, logo or marketing. Descriptive compatibility claims such as "imports Lightroom® presets" are fine with a trademark notice.
 
@@ -201,6 +218,14 @@ The tag-level detail (full `crs:` table, file formats, Amount, Looks, masks) is 
 - **Amount.** It is a lerp from current settings to the preset (curves and LUTs blend toward identity). Adobe's docs confirm two separate Amount sliders: the Preset Amount (ACR 14.4+, June 2022), and the profile Amount, which applies only to Adaptive, Artistic, B&W, Modern and Vintage profiles. The scaling math for either is not documented ([camera-raw.md](adobe-docs/camera-raw.md)), so measure it with the harness.
 - **Profiles.** `CameraProfile` and `Look` resolve through a profile registry: the user's Adobe profiles if installed, else our fitted base profiles. Decoding `Look` `RGBTable`/`Table_` LUTs is a research task; no complete public decoder is known.
 - **Masks.** Geometric and range masks are native. AI masks are regenerated with our own segmenters, never stored as pixels. `RetouchAreas` from presets are ignored.
+- **Preset experience** (from user research, [12 §4, §6](research/12-user-feedback-and-design-implications.md)):
+  - Inputs: `.xmp`, `.lrtemplate`, and DNG "mobile presets" with embedded settings. All three are implemented in `flb-presets`.
+  - Apply-time include/exclude per setting group, e.g. "keep my white balance and exposure".
+  - Layered presets, and applying a preset through a mask.
+  - A preset browser with hover preview, search and favourites.
+  - The fidelity report shows the assumed Adobe profile and a readable list of slider changes.
+  - An **opt-in** adaptation assist, off by default, that normalises exposure and WB before applying. It addresses the top preset complaint: "looks nothing like the ad on my photos".
+  - `.cube` LUT import comes later.
 
 **Calibration harness ([05 §18](research/05-processing-algorithms.md)):**
 - **Inputs:** synthetic linear DNGs (ramps, edge patterns, hue wheels), ColorChecker shots and a CC0 raw corpus (e.g. raw.pixls.us).
@@ -223,7 +248,8 @@ Durations are rough person-month (pm) estimates for experienced engineers.
   - fp16 vs fp32 intermediates
   - `ort` + SAM2-tiny on CoreML/DirectML/CPU
   - lrcat read on 3 catalog versions
-- Collect a preset corpus and run a tag census to prioritise by frequency (private; not committed).
+- Collect a preset corpus and run a tag census to prioritise by frequency (private; not committed). The tool exists: `flb preset census`.
+- Write the performance budgets (they become spike exit criteria), an ADR on data-safety invariants, the no-rug-pull and governance charter, and a usability-test plan with Lightroom switchers.
 - Exit: decisions recorded in `docs/decisions/` (ADRs).
 
 ### Phase 1: Engine + CLI + harness (about 5 pm). *The differentiator.*
@@ -235,6 +261,7 @@ Durations are rough person-month (pm) estimates for experienced engineers.
 - Preset importer (XMP + lrtemplate), tag registry, fidelity report, Amount.
 - `flb render --preset x.xmp in.raw out.tif`.
 - Calibration harness and first fitted tables; fidelity dashboard in CI.
+- Performance-benchmark CI. A camera-support process: per-camera fitted fallback profiles and a sample-submission pipeline. Users complain about Adobe's delays supporting new cameras.
 - Exit: on the corpus, the median ΔE00 vs Lightroom for the top 20 most-used tags is under target (proposal: < 2).
 
 ### Phase 2: Develop app MVP (about 7 pm)
@@ -246,6 +273,12 @@ Durations are rough person-month (pm) estimates for experienced engineers.
 - Export JPEG/TIFF/PNG (+AVIF/JXL), sRGB/P3/AdobeRGB/ProPhoto, resize, output sharpening, metadata, naming templates.
 - Colour-managed display (ICC display profile).
 - Packaging: Flatpak/AppImage, MSI/MSIX (SignPath; x64 + ARM64), notarised universal DMG. CI release builds on all three OSes.
+- From user research:
+  - a **culling mode** on embedded previews (pick/reject, colour labels)
+  - copy/paste and auto-sync of settings with groups; auto-tone
+  - a GPU background export queue with post-export hooks and "edit in external app"
+  - **metadata-only `.lrcat` import** (folders, keywords, ratings, labels, collections), brought forward from Phase 3 because it's the main thing holding people in Lightroom
+- Exit: target performance budgets are met, and a usability test with Lightroom switchers passes.
 
 ### Phase 3: v1 "Lightroom-class" (about 12–18 pm)
 - **Masks:** linear, radial, brush, colour/luminance range; add/subtract/intersect; the local-adjustment slider set; preset masks.
@@ -253,10 +286,12 @@ Durations are rough person-month (pm) estimates for experienced engineers.
 - **Catalog:** SQLite catalog (WAL, FTS5), import copy/move/add, keywords (hierarchy, synonyms), collections and smart collections, stacks, virtual copies, preview pyramid / smart-preview equivalent.
 - **Migration:** `.lrcat` import (read-only), covering folders, keywords, collections, ratings and develop settings through the preset importer.
 - Calibration panel, Point Color, B&W mixer, soft proofing.
-- AI subject/sky masks (SAM2/BiRefNet via `ort`; on-demand model download).
+- AI subject/sky masks (SAM2/BiRefNet via `ort`; on-demand model download). Polygon lasso, mask reordering, luminosity masks.
+- **AI denoise** (SCUNet/NAFNet-class), brought forward from Phase 4. It's the AI feature users say sold them on Lightroom.
+- Resumable import; mapping of Lightroom smart collections.
 
 ### Phase 4: Later
-- More AI: people parts, objects, depth range, Lens Blur (Depth Anything V2-S), AI denoise (SCUNet/NAFNet-class), content-aware remove (LaMa), Super Resolution.
+- More AI: people parts, objects, depth range, Lens Blur (Depth Anything V2-S), content-aware remove (LaMa), Super Resolution.
 - HDR/panorama merge, HDR editing and HDR export (gain maps), tethering (libgphoto2), print, map/GPS, face recognition, plugin API (Lua → WASM), adaptive presets.
 - Possibly an Android app over the same engine (see [08](research/08-cross-platform-and-mobile.md)).
 
@@ -314,6 +349,18 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 | Legal (EULA, preset licences, trademarks, patents) | Medium | Clean-room process, no Adobe assets shipped, counsel review before 1.0 |
 | Contributor pool for Rust + GPU + colour science | Medium | Clear crate boundaries, documented kernels, "good first kernels" |
 | AI model licences and hardware variance | Medium | Permissive manifest + CI gate; CPU-quantised fallbacks |
+| UX rejected like darktable's ("powerful but hostile") | Medium–High | Lightroom vocabulary and layout; usability tests with switchers each phase |
+| "Presets don't look like the seller's ad on my photos" | High | Fidelity report, include/exclude groups, opt-in adaptation assist, honest messaging |
+| Reputation and bus factor (solo or "vibe-coded" perception) | Medium | Public governance, CI and tests, a contributor AI-use policy, more than one maintainer early |
+
+---
+
+### Personas to test against
+- **High-volume event/sports pro:** speed, culling, batch, AI denoise.
+- **Adobe-escapee hobbyist:** familiarity, price, presets.
+- **Preset-invested stylist:** fidelity, Amount, layering.
+- **Large-catalog archivist:** 250k+ photos, data safety, migration.
+- **Linux/FOSS enthusiast:** first-class Linux, no account, no telemetry.
 
 ---
 
@@ -354,6 +401,7 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 | [research/09-market-commercial-alternatives.md](research/09-market-commercial-alternatives.md) | Commercial and freemium competitors, their Lightroom migration and preset support, reviews, market gap |
 | [research/10-reading-list.md](research/10-reading-list.md) | Books and free resources, prioritised |
 | [research/11-architecture-lessons-from-large-oss.md](research/11-architecture-lessons-from-large-oss.md) | How VLC, FFmpeg, Blender, OBS, GEGL, darktable, mpv and Rust projects are structured; Rust verdict; recommended workspace |
+| [research/12-user-feedback-and-design-implications.md](research/12-user-feedback-and-design-implications.md) | What users love and hate about Lightroom, competitors and presets (Reddit, 660 threads); design implications; anti-goals |
 | [adobe-docs/](adobe-docs/) | Source-only digests of 236 official Adobe help pages (Classic, cloud, Camera Raw) |
 
 ### How this research was produced

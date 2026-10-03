@@ -277,6 +277,27 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 - **UI shell:** replaceable, behind a typed, pixel-free command protocol. The desktop default is Tauri 2 with a native wgpu child surface for the viewport; Qt 6 is the fallback. The decision depends on the Phase 0 spike.
 - **Platforms:** Windows (x64 and ARM64; DX12/Vulkan), macOS (Apple Silicon and Intel; Metal; EDR), Linux (Wayland and X11; Vulkan) are all first-class. Per-OS details are in [08 §1](research/08-cross-platform-and-mobile.md).
 - **Testing:** golden images, preset fidelity suite, parser fuzzers.
+- **Adopted from the architecture study** ([11](research/11-architecture-lessons-from-large-oss.md), lessons from VLC, FFmpeg, Blender, OBS, GEGL, darktable, mpv, Zed, Rerun, Ruffle and Bevy):
+  - **Language: Rust** for the engine, catalog, CLI and tooling. C/C++ only through existing libraries behind traits.
+  - **Product shape like FFmpeg and libmpv:** the product is the library; the CLI and the GUI are clients of it.
+  - **Workspace split:**
+    - `flb-recipe` (versioned settings model; the existing `flb-presets` feeds it)
+    - `flb-buffer` (tiled image buffers)
+    - `flb-graph` (planner, ROI, hash cache)
+    - `flb-nodes` (operation definitions)
+    - `flb-cpu` (reference kernels)
+    - `flb-gpu` (the only crate that touches wgpu)
+    - `flb-io`, `flb-color`, `flb-catalog`, `flb-protocol` (UI↔engine commands), `flb-testkit` (golden images, sweep generator)
+    - `flb-cli`, then the app
+  - **VLC-style capability and priority registry:** raw decoders (rawler → LibRaw → platform), colour, AI and GPU/CPU implementations are selected by probe and priority, never hard-wired.
+  - **GPU boundary:** a narrow `Backend` trait whose unit is "run node X on tile T". The CPU and wgpu backends both implement it and are checked for equivalence in CI (FFmpeg's `checkasm` idea).
+  - **Security:**
+    - Raw files are untrusted input: LibRaw has about 60 CVEs, and a DNG parsing bug was exploited on iOS in 2025.
+    - Prefer the pure-Rust decoder (rawler) and run LibRaw as a fallback in a sandboxed helper process.
+    - Every parser (TIFF/DNG, MakerNotes, XMP, ICC, DCP, lrtemplate, catalog import) gets a fuzz target from Phase 1.
+  - **Plugins:** compile-time only until after v1. Then data plugins (presets, LUTs, profiles), then Lua, then WASM components. Never a dynamic Rust ABI.
+  - **Hygiene:** `Cargo.lock` committed; `rust-toolchain.toml` pinned to stable; `cargo-deny` for licences and advisories; a small vendored `contrib/` for the few C libraries.
+  - **Funding reality:** the NLnet Commons Fund round closed on 1 June 2026, and the Sovereign Tech Fund excludes end-user apps. The realistic model is donations plus a fiscal host (Open Collective / OSC) first. VLC's model (non-profit brand plus an affiliated consultancy) is an option later.
 
 ---
 
@@ -330,6 +351,9 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 | [research/08-cross-platform-and-mobile.md](research/08-cross-platform-and-mobile.md) | Per-OS desktop parity, mobile constraints, UI options for mobile, licensing and app stores, sync, "do this now" checklist |
 | [sources-to-collect.md](sources-to-collect.md) | Prioritised list of blocked/login-only sources + ready-to-paste Cowork prompt |
 | [lightroom-trial-plan.md](lightroom-trial-plan.md) | How to use the one-month Lightroom subscription to capture all ground-truth renders |
+| [research/09-market-commercial-alternatives.md](research/09-market-commercial-alternatives.md) | Commercial and freemium competitors, their Lightroom migration and preset support, reviews, market gap |
+| [research/10-reading-list.md](research/10-reading-list.md) | Books and free resources, prioritised |
+| [research/11-architecture-lessons-from-large-oss.md](research/11-architecture-lessons-from-large-oss.md) | How VLC, FFmpeg, Blender, OBS, GEGL, darktable, mpv and Rust projects are structured; Rust verdict; recommended workspace |
 | [adobe-docs/](adobe-docs/) | Source-only digests of 236 official Adobe help pages (Classic, cloud, Camera Raw) |
 
 ### How this research was produced

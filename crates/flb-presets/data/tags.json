@@ -1,0 +1,2083 @@
+{
+ "_comment": "Camera Raw settings (crs:) tag registry. 'status' is our implementation state, not Adobe's. min/max/default are best-known values from docs/research/02 and Adobe help; most are UNVERIFIED until the Lightroom calibration month (docs/lightroom-trial-plan.md).",
+ "prefix_rules": [
+  {
+   "prefix": "Table_",
+   "group": "profile",
+   "kind": "text",
+   "status": "planned"
+  }
+ ],
+ "tags": [
+  {
+   "name": "Name",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "Group",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "Cluster",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "ShortName",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "SortName",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "Description",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "Copyright",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "ContactInfo",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "UUID",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "PresetType",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "CameraModelRestriction",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "SupportsAmount",
+   "group": "metadata",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "SupportsAmount2",
+   "group": "metadata",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "SupportsColor",
+   "group": "metadata",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "SupportsMonochrome",
+   "group": "metadata",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "SupportsHighDynamicRange",
+   "group": "metadata",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "SupportsNormalDynamicRange",
+   "group": "metadata",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "SupportsSceneReferred",
+   "group": "metadata",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "SupportsOutputReferred",
+   "group": "metadata",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "HasSettings",
+   "group": "metadata",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "RequiresRGBTables",
+   "group": "metadata",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "Version",
+   "group": "process",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "CompatibleVersion",
+   "group": "process",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "ProcessVersion",
+   "group": "process",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "CameraProfile",
+   "group": "profile",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "CameraProfileDigest",
+   "group": "profile",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "Look",
+   "group": "profile",
+   "kind": "struct",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "RGBTable",
+   "group": "profile",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "LookTable",
+   "group": "profile",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "WhiteBalance",
+   "group": "white_balance",
+   "kind": "enum",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "Temperature",
+   "group": "white_balance",
+   "kind": "number",
+   "min": 2000,
+   "max": 50000,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "Tint",
+   "group": "white_balance",
+   "kind": "number",
+   "min": -150,
+   "max": 150,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "IncrementalTemperature",
+   "group": "white_balance",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "IncrementalTint",
+   "group": "white_balance",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Exposure2012",
+   "group": "tone",
+   "kind": "number",
+   "min": -5,
+   "max": 5,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Contrast2012",
+   "group": "tone",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Highlights2012",
+   "group": "tone",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Shadows2012",
+   "group": "tone",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Whites2012",
+   "group": "tone",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Blacks2012",
+   "group": "tone",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "AutoTone",
+   "group": "tone",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": false,
+   "status": "image-specific"
+  },
+  {
+   "name": "Exposure",
+   "group": "tone_legacy",
+   "kind": "number",
+   "min": -4,
+   "max": 4,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Brightness",
+   "group": "tone_legacy",
+   "kind": "number",
+   "min": -150,
+   "max": 150,
+   "default": 50,
+   "status": "planned"
+  },
+  {
+   "name": "Contrast",
+   "group": "tone_legacy",
+   "kind": "number",
+   "min": -50,
+   "max": 100,
+   "default": 25,
+   "status": "planned"
+  },
+  {
+   "name": "Shadows",
+   "group": "tone_legacy",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 5,
+   "status": "planned"
+  },
+  {
+   "name": "HighlightRecovery",
+   "group": "tone_legacy",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "FillLight",
+   "group": "tone_legacy",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Clarity",
+   "group": "tone_legacy",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Texture",
+   "group": "presence",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Clarity2012",
+   "group": "presence",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Dehaze",
+   "group": "presence",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Vibrance",
+   "group": "presence",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Saturation",
+   "group": "presence",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ToneCurveName2012",
+   "group": "tone_curve",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "ToneCurveName",
+   "group": "tone_curve",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "ToneCurvePV2012",
+   "group": "tone_curve",
+   "kind": "curve",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "ToneCurvePV2012Red",
+   "group": "tone_curve",
+   "kind": "curve",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "ToneCurvePV2012Green",
+   "group": "tone_curve",
+   "kind": "curve",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "ToneCurvePV2012Blue",
+   "group": "tone_curve",
+   "kind": "curve",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "ToneCurve",
+   "group": "tone_curve",
+   "kind": "curve",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "ParametricShadows",
+   "group": "tone_curve",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ParametricDarks",
+   "group": "tone_curve",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ParametricLights",
+   "group": "tone_curve",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ParametricHighlights",
+   "group": "tone_curve",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ParametricShadowSplit",
+   "group": "tone_curve",
+   "kind": "number",
+   "min": 10,
+   "max": 70,
+   "default": 25,
+   "status": "planned"
+  },
+  {
+   "name": "ParametricMidtoneSplit",
+   "group": "tone_curve",
+   "kind": "number",
+   "min": 20,
+   "max": 80,
+   "default": 50,
+   "status": "planned"
+  },
+  {
+   "name": "ParametricHighlightSplit",
+   "group": "tone_curve",
+   "kind": "number",
+   "min": 30,
+   "max": 90,
+   "default": 75,
+   "status": "planned"
+  },
+  {
+   "name": "HueAdjustmentRed",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SaturationAdjustmentRed",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "LuminanceAdjustmentRed",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "GrayMixerRed",
+   "group": "bw_mixer",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "HueAdjustmentOrange",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SaturationAdjustmentOrange",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "LuminanceAdjustmentOrange",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "GrayMixerOrange",
+   "group": "bw_mixer",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "HueAdjustmentYellow",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SaturationAdjustmentYellow",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "LuminanceAdjustmentYellow",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "GrayMixerYellow",
+   "group": "bw_mixer",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "HueAdjustmentGreen",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SaturationAdjustmentGreen",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "LuminanceAdjustmentGreen",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "GrayMixerGreen",
+   "group": "bw_mixer",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "HueAdjustmentAqua",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SaturationAdjustmentAqua",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "LuminanceAdjustmentAqua",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "GrayMixerAqua",
+   "group": "bw_mixer",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "HueAdjustmentBlue",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SaturationAdjustmentBlue",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "LuminanceAdjustmentBlue",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "GrayMixerBlue",
+   "group": "bw_mixer",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "HueAdjustmentPurple",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SaturationAdjustmentPurple",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "LuminanceAdjustmentPurple",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "GrayMixerPurple",
+   "group": "bw_mixer",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "HueAdjustmentMagenta",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SaturationAdjustmentMagenta",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "LuminanceAdjustmentMagenta",
+   "group": "hsl",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "GrayMixerMagenta",
+   "group": "bw_mixer",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ConvertToGrayscale",
+   "group": "bw_mixer",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": false,
+   "status": "planned"
+  },
+  {
+   "name": "AutoGrayscaleMix",
+   "group": "bw_mixer",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": false,
+   "status": "image-specific"
+  },
+  {
+   "name": "PointColors",
+   "group": "point_color",
+   "kind": "seq",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeShadowHue",
+   "group": "color_grading",
+   "kind": "number",
+   "min": 0,
+   "max": 359,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeShadowSat",
+   "group": "color_grading",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeMidtoneHue",
+   "group": "color_grading",
+   "kind": "number",
+   "min": 0,
+   "max": 359,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeMidtoneSat",
+   "group": "color_grading",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeHighlightHue",
+   "group": "color_grading",
+   "kind": "number",
+   "min": 0,
+   "max": 359,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeHighlightSat",
+   "group": "color_grading",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeGlobalHue",
+   "group": "color_grading",
+   "kind": "number",
+   "min": 0,
+   "max": 359,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeGlobalSat",
+   "group": "color_grading",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeShadowLum",
+   "group": "color_grading",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeHighlightLum",
+   "group": "color_grading",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeMidtoneLum",
+   "group": "color_grading",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeGlobalLum",
+   "group": "color_grading",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorGradeBlending",
+   "group": "color_grading",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "status": "planned"
+  },
+  {
+   "name": "SplitToningShadowHue",
+   "group": "split_toning",
+   "kind": "number",
+   "min": 0,
+   "max": 359,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SplitToningHighlightHue",
+   "group": "split_toning",
+   "kind": "number",
+   "min": 0,
+   "max": 359,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SplitToningShadowSaturation",
+   "group": "split_toning",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SplitToningHighlightSaturation",
+   "group": "split_toning",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "SplitToningBalance",
+   "group": "split_toning",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "Sharpness",
+   "group": "detail",
+   "kind": "number",
+   "min": 0,
+   "max": 150,
+   "default": 40,
+   "status": "planned"
+  },
+  {
+   "name": "SharpenRadius",
+   "group": "detail",
+   "kind": "number",
+   "min": 0.5,
+   "max": 3.0,
+   "default": 1.0,
+   "status": "planned"
+  },
+  {
+   "name": "SharpenDetail",
+   "group": "detail",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 25,
+   "status": "planned"
+  },
+  {
+   "name": "SharpenEdgeMasking",
+   "group": "detail",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "LuminanceSmoothing",
+   "group": "detail",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "LuminanceNoiseReductionDetail",
+   "group": "detail",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "status": "planned"
+  },
+  {
+   "name": "LuminanceNoiseReductionContrast",
+   "group": "detail",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "ColorNoiseReduction",
+   "group": "detail",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 25,
+   "status": "planned"
+  },
+  {
+   "name": "ColorNoiseReductionDetail",
+   "group": "detail",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "status": "planned"
+  },
+  {
+   "name": "ColorNoiseReductionSmoothness",
+   "group": "detail",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "status": "planned"
+  },
+  {
+   "name": "LensProfileEnable",
+   "group": "lens",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": false,
+   "status": "planned"
+  },
+  {
+   "name": "AutoLateralCA",
+   "group": "lens",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": false,
+   "status": "planned"
+  },
+  {
+   "name": "LensProfileSetup",
+   "group": "lens",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "LensProfileName",
+   "group": "lens",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "LensProfileFilename",
+   "group": "lens",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "LensProfileDigest",
+   "group": "lens",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "LensProfileDistortionScale",
+   "group": "lens",
+   "kind": "number",
+   "min": 0,
+   "max": 200,
+   "default": 100,
+   "status": "planned"
+  },
+  {
+   "name": "LensProfileVignettingScale",
+   "group": "lens",
+   "kind": "number",
+   "min": 0,
+   "max": 200,
+   "default": 100,
+   "status": "planned"
+  },
+  {
+   "name": "LensProfileChromaticAberrationScale",
+   "group": "lens",
+   "kind": "number",
+   "min": 0,
+   "max": 200,
+   "default": 100,
+   "status": "planned"
+  },
+  {
+   "name": "LensManualDistortionAmount",
+   "group": "lens",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "VignetteAmount",
+   "group": "lens",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "VignetteMidpoint",
+   "group": "lens",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "status": "planned"
+  },
+  {
+   "name": "DefringePurpleAmount",
+   "group": "lens",
+   "kind": "number",
+   "min": 0,
+   "max": 20,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "DefringeGreenAmount",
+   "group": "lens",
+   "kind": "number",
+   "min": 0,
+   "max": 20,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "DefringePurpleHueLo",
+   "group": "lens",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "DefringeGreenHueLo",
+   "group": "lens",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "DefringePurpleHueHi",
+   "group": "lens",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "DefringeGreenHueHi",
+   "group": "lens",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "PerspectiveUpright",
+   "group": "transform",
+   "kind": "enum",
+   "min": 0,
+   "max": 5,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "PerspectiveVertical",
+   "group": "transform",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "PerspectiveHorizontal",
+   "group": "transform",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "PerspectiveAspect",
+   "group": "transform",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "PerspectiveX",
+   "group": "transform",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "PerspectiveY",
+   "group": "transform",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "PerspectiveRotate",
+   "group": "transform",
+   "kind": "number",
+   "min": -10,
+   "max": 10,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "PerspectiveScale",
+   "group": "transform",
+   "kind": "number",
+   "min": 50,
+   "max": 150,
+   "default": 100,
+   "status": "planned"
+  },
+  {
+   "name": "UprightVersion",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightCenterMode",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightCenterNormX",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightCenterNormY",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightFocalMode",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightFocalLength35mm",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightPreview",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightTransformCount",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightFourSegmentsCount",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightDependentDigest",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightGuidedDependentDigest",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightTransform_0",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightTransform_1",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightTransform_2",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightTransform_3",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightTransform_4",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "UprightTransform_5",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "PostCropVignetteAmount",
+   "group": "effects",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "PostCropVignetteMidpoint",
+   "group": "effects",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "status": "planned"
+  },
+  {
+   "name": "PostCropVignetteFeather",
+   "group": "effects",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "status": "planned"
+  },
+  {
+   "name": "PostCropVignetteRoundness",
+   "group": "effects",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "PostCropVignetteHighlightContrast",
+   "group": "effects",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "PostCropVignetteStyle",
+   "group": "effects",
+   "kind": "enum",
+   "min": 1,
+   "max": 3,
+   "default": 1,
+   "status": "planned"
+  },
+  {
+   "name": "GrainAmount",
+   "group": "effects",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "GrainSize",
+   "group": "effects",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 25,
+   "status": "planned"
+  },
+  {
+   "name": "GrainFrequency",
+   "group": "effects",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "status": "planned"
+  },
+  {
+   "name": "GrainSeed",
+   "group": "effects",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "ShadowTint",
+   "group": "calibration",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "RedHue",
+   "group": "calibration",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "RedSaturation",
+   "group": "calibration",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "GreenHue",
+   "group": "calibration",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "GreenSaturation",
+   "group": "calibration",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "BlueHue",
+   "group": "calibration",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "BlueSaturation",
+   "group": "calibration",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "planned"
+  },
+  {
+   "name": "HasCrop",
+   "group": "crop",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "CropConstrainToWarp",
+   "group": "crop",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "CropConstrainToUnitSquare",
+   "group": "crop",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "CropTop",
+   "group": "crop",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "CropLeft",
+   "group": "crop",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "CropBottom",
+   "group": "crop",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "CropRight",
+   "group": "crop",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "CropAngle",
+   "group": "crop",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "CropWidth",
+   "group": "crop",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "CropHeight",
+   "group": "crop",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "CropUnits",
+   "group": "crop",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "Orientation",
+   "group": "crop",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "MaskGroupBasedCorrections",
+   "group": "local",
+   "kind": "seq",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "GradientBasedCorrections",
+   "group": "local",
+   "kind": "seq",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "CircularGradientBasedCorrections",
+   "group": "local",
+   "kind": "seq",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "PaintBasedCorrections",
+   "group": "local",
+   "kind": "seq",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "RetouchAreas",
+   "group": "retouch",
+   "kind": "seq",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "ignored-in-presets"
+  },
+  {
+   "name": "RetouchInfo",
+   "group": "retouch",
+   "kind": "seq",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "ignored-in-presets"
+  },
+  {
+   "name": "RedEyeInfo",
+   "group": "retouch",
+   "kind": "seq",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "ignored-in-presets"
+  },
+  {
+   "name": "EnhanceDenoiseAlreadyApplied",
+   "group": "enhance",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "EnhanceDenoiseVersion",
+   "group": "enhance",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "EnhanceDenoiseLumaAmount",
+   "group": "enhance",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "EnhanceDetailsAlreadyApplied",
+   "group": "enhance",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "EnhanceDetailsVersion",
+   "group": "enhance",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "EnhanceSuperResolutionAlreadyApplied",
+   "group": "enhance",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "EnhanceSuperResolutionVersion",
+   "group": "enhance",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "EnhanceSuperResolutionScale",
+   "group": "enhance",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "LensBlur",
+   "group": "lens_blur",
+   "kind": "struct",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "HDREditMode",
+   "group": "hdr",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "HDRMaxValue",
+   "group": "hdr",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "SDRBrightness",
+   "group": "hdr",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "SDRContrast",
+   "group": "hdr",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "SDRClarity",
+   "group": "hdr",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "SDRHighlights",
+   "group": "hdr",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "SDRShadows",
+   "group": "hdr",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "SDRWhites",
+   "group": "hdr",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "SDRBlend",
+   "group": "hdr",
+   "kind": "number",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "unsupported"
+  },
+  {
+   "name": "OverrideLookVignette",
+   "group": "profile",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "planned"
+  },
+  {
+   "name": "AlreadyApplied",
+   "group": "process",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
+   "name": "RawFileName",
+   "group": "metadata",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  }
+ ]
+}

@@ -15,7 +15,7 @@ A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linu
 | Crate | What it does |
 |---|---|
 | `crates/flb-presets` | Reads Lightroom/Camera Raw `.xmp` presets, XMP sidecars, legacy `.lrtemplate` presets, and XMP embedded in DNG/JPEG "presets" into a lossless settings model. Includes a tag registry (`data/tags.json`), per-preset inspection/fidelity reports, and provisional Amount scaling. |
-| `crates/flb-testkit` | Calibration tooling: generates the Lightroom slider-sweep kit (raw copies + XMP sidecars + manifest). |
+| `crates/flb-testkit` | Calibration tooling: synthetic DNG targets (ramp, hue grid, edges, ColorChecker) and the Lightroom slider-sweep kit (raw copies + XMP sidecars, or DNGs with embedded settings, + manifest). |
 | `crates/flb-cli` | The `flb` command-line tool. |
 
 ```sh
@@ -23,6 +23,7 @@ cargo test
 cargo run -p flb-cli -- preset inspect path/to/preset.xmp
 cargo run -p flb-cli -- preset census ~/my-presets      # which settings your preset collection actually uses
 cargo run -p flb-cli -- sweep plan                      # the Lightroom calibration sweeps
+cargo run -p flb-cli -- testimage colorchecker cc.dng   # a synthetic linear DNG target
 ```
 
 Nothing renders images yet; the processing engine is the next milestone (see SCOPE §8, Phase 1).

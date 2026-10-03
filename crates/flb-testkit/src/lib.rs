@@ -9,7 +9,11 @@
 //!
 //! Lightroom reads `.xmp` sidecars only for proprietary raw formats. DNG, TIFF
 //! and JPEG files carry their settings inside the file, so those inputs are
-//! rejected here; synthetic DNGs will get embedded settings from the DNG writer.
+//! rejected as sidecar inputs; synthetic DNG targets ([`patterns`], written by
+//! [`dng`]) carry their settings embedded instead.
+
+pub mod dng;
+pub mod patterns;
 
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
@@ -24,6 +28,8 @@ pub enum Error {
         "{0}: Lightroom ignores sidecars for DNG/TIFF/JPEG files; use proprietary raws (CR2, CR3, NEF, ARW, RAF, ORF, RW2, ...)"
     )]
     UnsupportedInput(PathBuf),
+    #[error("unknown synthetic pattern {0:?} (known: ramp, hue, edges, colorchecker)")]
+    UnknownPattern(String),
     #[error("{0}: {1}")]
     Io(PathBuf, std::io::Error),
 }
@@ -236,75 +242,121 @@ fn link_or_copy(src: &Path, dst: &Path) -> std::io::Result<()> {
     std::fs::hard_link(src, dst).or_else(|_| std::fs::copy(src, dst).map(|_| ()))
 }
 
-/// Write a sweep kit for `images` into `out`. Each step is a hard link (or copy)
-/// of the raw plus a sidecar; `manifest.csv` lists every file with its settings.
-/// Every input also gets one unmodified baseline step (`__baseline`).
-pub fn generate(images: &[PathBuf], plan: &[Sweep], out: &Path) -> Result<KitSummary, Error> {
+/// What a kit is built from.
+#[derive(Debug, Clone)]
+pub enum Input {
+    /// A proprietary camera raw: each step is a hard link (or copy) plus an XMP sidecar.
+    Raw(PathBuf),
+    /// A synthetic target from [`patterns`]: each step is a DNG with the settings embedded.
+    Synthetic(String),
+}
+
+fn steps<'a>(stem: &str, plan: &'a [Sweep]) -> Vec<Step<'a>> {
+    let mut steps: Vec<Step<'a>> = vec![(
+        format!("{stem}__baseline"),
+        "baseline",
+        "",
+        None,
+        baseline(),
+    )];
+    for sweep in plan {
+        for &v in &sweep.values {
+            let mut settings = baseline();
+            for (k, extra) in &sweep.extra {
+                settings.insert(k.clone(), extra.clone());
+            }
+            settings.insert(sweep.tag.clone(), Value::Number(v));
+            let name = format!("{stem}__{}_{}", sweep.tag, value_label(v));
+            steps.push((name, sweep.group, &sweep.tag, Some(v), settings));
+        }
+    }
+    steps
+}
+
+fn manifest_extra(settings: &BTreeMap<String, Value>, tag: &str) -> String {
+    let base = baseline();
+    settings
+        .iter()
+        .filter(|(k, _)| k.as_str() != tag && !base.contains_key(k.as_str()))
+        .map(|(k, v)| {
+            let text = v.as_f64().map_or_else(
+                || v.as_str().unwrap_or("").to_string(),
+                |n| format_number(n, false),
+            );
+            format!("{k}={text}")
+        })
+        .collect::<Vec<_>>()
+        .join(";")
+}
+
+/// Write a sweep kit into `out`, plus `manifest.csv` listing every file with its
+/// settings. Every input also gets one baseline step (`__baseline`).
+pub fn generate(inputs: &[Input], plan: &[Sweep], out: &Path) -> Result<KitSummary, Error> {
     std::fs::create_dir_all(out).map_err(|e| Error::Io(out.to_path_buf(), e))?;
-    for image in images {
-        let ext = image
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("")
-            .to_ascii_lowercase();
-        if SIDECAR_IGNORED.contains(&ext.as_str()) {
-            return Err(Error::UnsupportedInput(image.clone()));
+    for input in inputs {
+        match input {
+            Input::Raw(image) => {
+                let ext = image
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap_or("")
+                    .to_ascii_lowercase();
+                if SIDECAR_IGNORED.contains(&ext.as_str()) {
+                    return Err(Error::UnsupportedInput(image.clone()));
+                }
+            }
+            Input::Synthetic(name) => {
+                if !patterns::NAMES.contains(&name.as_str()) {
+                    return Err(Error::UnknownPattern(name.clone()));
+                }
+            }
         }
     }
     let mut manifest = String::from("file,source,group,tag,value,extra\n");
     let mut files = 0;
-    for image in images {
-        let stem = image
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("image");
-        let ext = image.extension().and_then(|e| e.to_str()).unwrap_or("raw");
-        let mut steps: Vec<Step<'_>> = Vec::new();
-        steps.push((
-            format!("{stem}__baseline"),
-            "baseline",
-            "",
-            None,
-            baseline(),
-        ));
-        for sweep in plan {
-            for &v in &sweep.values {
-                let mut settings = baseline();
-                for (k, extra) in &sweep.extra {
-                    settings.insert(k.clone(), extra.clone());
+    for input in inputs {
+        match input {
+            Input::Raw(image) => {
+                let stem = image
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("image");
+                let ext = image.extension().and_then(|e| e.to_str()).unwrap_or("raw");
+                for (name, group, tag, value, settings) in steps(stem, plan) {
+                    let raw = out.join(format!("{name}.{ext}"));
+                    link_or_copy(image, &raw).map_err(|e| Error::Io(raw.clone(), e))?;
+                    let sidecar = out.join(format!("{name}.xmp"));
+                    std::fs::write(&sidecar, write_packet(&settings, is_signed_tag))
+                        .map_err(|e| Error::Io(sidecar.clone(), e))?;
+                    let value = value.map_or_else(String::new, |v| format_number(v, false));
+                    let extra = manifest_extra(&settings, tag);
+                    let _ = writeln!(
+                        manifest,
+                        "{name}.{ext},{},{group},{tag},{value},{extra}",
+                        image.display()
+                    );
+                    files += 1;
                 }
-                settings.insert(sweep.tag.clone(), Value::Number(v));
-                let name = format!("{stem}__{}_{}", sweep.tag, value_label(v));
-                steps.push((name, sweep.group, &sweep.tag, Some(v), settings));
             }
-        }
-        for (name, group, tag, value, settings) in steps {
-            let raw = out.join(format!("{name}.{ext}"));
-            link_or_copy(image, &raw).map_err(|e| Error::Io(raw.clone(), e))?;
-            let sidecar = out.join(format!("{name}.xmp"));
-            std::fs::write(&sidecar, write_packet(&settings, is_signed_tag))
-                .map_err(|e| Error::Io(sidecar.clone(), e))?;
-            let extra: Vec<String> = settings
-                .iter()
-                .filter(|(k, _)| k.as_str() != tag && !baseline().contains_key(k.as_str()))
-                .map(|(k, v)| {
-                    format!(
-                        "{k}={}",
-                        v.as_f64().map_or_else(
-                            || v.as_str().unwrap_or("").to_string(),
-                            |n| format_number(n, false)
-                        )
-                    )
-                })
-                .collect();
-            let _ = writeln!(
-                manifest,
-                "{name}.{ext},{},{group},{tag},{},{}",
-                image.display(),
-                value.map_or_else(String::new, |v| format_number(v, false)),
-                extra.join(";")
-            );
-            files += 1;
+            Input::Synthetic(pattern) => {
+                let image = patterns::generate(pattern).expect("validated above");
+                for (name, group, tag, value, settings) in steps(pattern, plan) {
+                    let path = out.join(format!("{name}.dng"));
+                    let xmp = write_packet(&settings, is_signed_tag);
+                    let opts = dng::DngOptions {
+                        xmp: Some(&xmp),
+                        ..Default::default()
+                    };
+                    dng::write(&path, &image, &opts).map_err(|e| Error::Io(path.clone(), e))?;
+                    let value = value.map_or_else(String::new, |v| format_number(v, false));
+                    let extra = manifest_extra(&settings, tag);
+                    let _ = writeln!(
+                        manifest,
+                        "{name}.dng,synthetic:{pattern},{group},{tag},{value},{extra}"
+                    );
+                    files += 1;
+                }
+            }
         }
     }
     let manifest_path = out.join("manifest.csv");
@@ -348,7 +400,7 @@ mod tests {
         std::fs::write(&raw, b"not really a raw").unwrap();
         let plan = vec![Sweep::new("tone", "Exposure2012", &[-0.5, 1.0])];
         let out = dir.join("kit");
-        let summary = generate(std::slice::from_ref(&raw), &plan, &out).unwrap();
+        let summary = generate(&[Input::Raw(raw.clone())], &plan, &out).unwrap();
         assert_eq!(summary.files, 3); // baseline + 2 steps
         let sidecar = Preset::from_path(&out.join("ramp__Exposure2012_m0.5.xmp")).unwrap();
         assert_eq!(sidecar.get("Exposure2012").unwrap().as_f64(), Some(-0.5));
@@ -359,8 +411,18 @@ mod tests {
         let dng = dir.join("x.dng");
         std::fs::write(&dng, b"").unwrap();
         assert!(matches!(
-            generate(&[dng], &plan, &out),
+            generate(&[Input::Raw(dng)], &plan, &out),
             Err(Error::UnsupportedInput(_))
+        ));
+
+        // Synthetic targets embed the settings in the DNG.
+        let summary = generate(&[Input::Synthetic("colorchecker".into())], &plan, &out).unwrap();
+        assert_eq!(summary.files, 3);
+        let embedded = Preset::from_path(&out.join("colorchecker__Exposure2012_p1.dng")).unwrap();
+        assert_eq!(embedded.get("Exposure2012").unwrap().as_f64(), Some(1.0));
+        assert!(matches!(
+            generate(&[Input::Synthetic("nope".into())], &plan, &out),
+            Err(Error::UnknownPattern(_))
         ));
         std::fs::remove_dir_all(&dir).unwrap();
     }

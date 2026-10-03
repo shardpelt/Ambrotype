@@ -16,9 +16,11 @@ USAGE:
     flb preset dump <FILE>                  Print the parsed settings as JSON
     flb preset census <PATH>... [--json]    Count tag usage across a preset collection (dirs are scanned recursively)
     flb sweep plan [--groups G,..]          List the Lightroom calibration sweeps
-    flb sweep generate --out <DIR> [--groups G,..] <RAW>...
-                                            Write a sweep kit (raw copies + XMP sidecars + manifest.csv)
-                                            for importing into Lightroom (docs/lightroom-trial-plan.md)
+    flb sweep generate --out <DIR> [--groups G,..] [--synthetic P,..] [<RAW>...]
+                                            Write a sweep kit for importing into Lightroom
+                                            (docs/lightroom-trial-plan.md): raw copies + XMP sidecars,
+                                            and/or synthetic DNG targets with embedded settings
+    flb testimage <PATTERN> <OUT.dng>       Write one synthetic target (ramp, hue, edges, colorchecker)
 
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
 XMP packet (e.g. .dng presets for Lightroom mobile).";
@@ -32,7 +34,7 @@ fn main() -> ExitCode {
     while let Some(arg) = iter.next() {
         match arg.as_str() {
             "--json" => json = true,
-            "--out" | "--groups" => match iter.next() {
+            "--out" | "--groups" | "--synthetic" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -56,10 +58,16 @@ fn main() -> ExitCode {
         ["preset", "dump", file] => dump(file),
         ["preset", "census", paths @ ..] if !paths.is_empty() => census(paths, json),
         ["sweep", "plan"] => sweep_plan(groups.as_deref()),
-        ["sweep", "generate", raws @ ..] if !raws.is_empty() => match options.get("--out") {
-            Some(out) => sweep_generate(raws, Path::new(out), groups.as_deref()),
+        ["sweep", "generate", raws @ ..] => match options.get("--out") {
+            Some(out) => sweep_generate(
+                raws,
+                options.get("--synthetic").copied(),
+                Path::new(out),
+                groups.as_deref(),
+            ),
             None => Err("sweep generate needs --out <DIR>".into()),
         },
+        ["testimage", pattern, out] => testimage(pattern, Path::new(out)),
         _ => {
             eprintln!("{USAGE}");
             return ExitCode::from(2);
@@ -306,18 +314,50 @@ fn sweep_plan(groups: Option<&[&str]>) -> Result<(), String> {
     Ok(())
 }
 
-fn sweep_generate(raws: &[&str], out: &Path, groups: Option<&[&str]>) -> Result<(), String> {
+fn sweep_generate(
+    raws: &[&str],
+    synthetic: Option<&str>,
+    out: &Path,
+    groups: Option<&[&str]>,
+) -> Result<(), String> {
     let plan = selected_plan(groups)?;
-    let images: Vec<PathBuf> = raws.iter().map(PathBuf::from).collect();
-    let summary = flb_testkit::generate(&images, &plan, out).map_err(|e| e.to_string())?;
-    println!(
-        "wrote {} raw+sidecar pairs to {}",
-        summary.files,
-        out.display()
-    );
+    let mut inputs: Vec<flb_testkit::Input> = raws
+        .iter()
+        .map(|r| flb_testkit::Input::Raw(PathBuf::from(r)))
+        .collect();
+    if let Some(patterns) = synthetic {
+        inputs.extend(
+            patterns
+                .split(',')
+                .map(|p| flb_testkit::Input::Synthetic(p.trim().to_string())),
+        );
+    }
+    if inputs.is_empty() {
+        return Err("give raw files and/or --synthetic <patterns>".into());
+    }
+    let summary = flb_testkit::generate(&inputs, &plan, out).map_err(|e| e.to_string())?;
+    println!("wrote {} files to {}", summary.files, out.display());
     println!("manifest: {}", summary.manifest.display());
     println!(
         "next: import the folder into Lightroom Classic (Add, with 'read metadata'), then batch-export"
+    );
+    Ok(())
+}
+
+fn testimage(pattern: &str, out: &Path) -> Result<(), String> {
+    let image = flb_testkit::patterns::generate(pattern).ok_or_else(|| {
+        format!(
+            "unknown pattern {pattern:?}; known: {}",
+            flb_testkit::patterns::NAMES.join(", ")
+        )
+    })?;
+    flb_testkit::dng::write(out, &image, &Default::default())
+        .map_err(|e| format!("{}: {e}", out.display()))?;
+    println!(
+        "wrote {}x{} {pattern} target to {}",
+        image.width,
+        image.height,
+        out.display()
     );
     Ok(())
 }

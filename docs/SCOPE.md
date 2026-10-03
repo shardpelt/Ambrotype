@@ -46,7 +46,8 @@ Status: scoping draft, 2026-10-03. This document synthesises the research in [`d
 ## 2. Vision, goals, non-goals
 
 **Goals**
-- Free, open-source, offline-first, cross-platform desktop app (Windows, macOS, Linux).
+- Free, open-source, offline-first, cross-platform desktop app. **Windows, macOS and Linux are all first-class from the first release**, including Windows on ARM64, Apple Silicon, and Linux on both Wayland and X11.
+- **Mobile-ready architecture.** iOS and Android apps are a likely future product, not a v1 deliverable. Every Phase 0–2 decision must keep them possible: licence, engine dependencies, GPU memory budget, UI protocol. See §6, §9 and [08](research/08-cross-platform-and-mobile.md).
 - Non-destructive raw development with a Lightroom-like workflow and vocabulary, so Lightroom users feel at home.
 - **Import and apply Lightroom/ACR presets** (`.xmp` and legacy `.lrtemplate`), including the Amount slider, with a per-preset **fidelity report** (exact / approximated / ignored per tag).
 - Read and write Lightroom-compatible XMP sidecars (`crs:` namespace) so edits round-trip where possible.
@@ -54,7 +55,7 @@ Status: scoping draft, 2026-10-03. This document synthesises the research in [`d
 - A headless engine and CLI for batch rendering and automated preset testing.
 
 **Non-goals (at least for v1)**
-- Cloud sync, mobile apps, web gallery/Book/Slideshow modules, Adobe-style generative AI (cloud models), Lightroom plug-in (Lua SDK) compatibility.
+- Cloud sync (beyond folder/sidecar-based sync), shipping mobile apps in v1, web gallery/Book/Slideshow modules, Adobe-style generative AI (cloud models), Lightroom plug-in (Lua SDK) compatibility.
 - Pixel-exact equality with Lightroom.
 - Using the name "Lightroom" or Adobe trademarks in the product name, logo or marketing. Descriptive compatibility claims such as "imports Lightroom® presets" are fine with a trademark notice.
 

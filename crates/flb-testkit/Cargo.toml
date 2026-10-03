@@ -1,0 +1,11 @@
+[package]
+name = "flb-testkit"
+version = "0.1.0"
+description = "Test and calibration tooling: Lightroom slider-sweep kit generation"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+flb-presets = { path = "../flb-presets" }
+thiserror.workspace = true

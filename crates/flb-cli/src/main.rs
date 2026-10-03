@@ -15,22 +15,51 @@ USAGE:
     flb preset inspect <FILE>... [--json]   Show what a preset contains and how it maps to our support
     flb preset dump <FILE>                  Print the parsed settings as JSON
     flb preset census <PATH>... [--json]    Count tag usage across a preset collection (dirs are scanned recursively)
+    flb sweep plan [--groups G,..]          List the Lightroom calibration sweeps
+    flb sweep generate --out <DIR> [--groups G,..] <RAW>...
+                                            Write a sweep kit (raw copies + XMP sidecars + manifest.csv)
+                                            for importing into Lightroom (docs/lightroom-trial-plan.md)
 
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
 XMP packet (e.g. .dng presets for Lightroom mobile).";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let json = args.iter().any(|a| a == "--json");
-    let positional: Vec<&str> = args
-        .iter()
-        .filter(|a| !a.starts_with("--"))
-        .map(String::as_str)
-        .collect();
+    let mut json = false;
+    let mut options: BTreeMap<&str, &str> = BTreeMap::new();
+    let mut positional: Vec<&str> = Vec::new();
+    let mut iter = args.iter();
+    while let Some(arg) = iter.next() {
+        match arg.as_str() {
+            "--json" => json = true,
+            "--out" | "--groups" => match iter.next() {
+                Some(value) => {
+                    options.insert(arg.as_str(), value.as_str());
+                }
+                None => {
+                    eprintln!("error: {arg} needs a value\n\n{USAGE}");
+                    return ExitCode::from(2);
+                }
+            },
+            other if other.starts_with("--") => {
+                eprintln!("error: unknown option {other}\n\n{USAGE}");
+                return ExitCode::from(2);
+            }
+            other => positional.push(other),
+        }
+    }
+    let groups = options
+        .get("--groups")
+        .map(|g| g.split(',').map(str::trim).collect::<Vec<_>>());
     let result = match positional.as_slice() {
         ["preset", "inspect", files @ ..] if !files.is_empty() => inspect(files, json),
         ["preset", "dump", file] => dump(file),
         ["preset", "census", paths @ ..] if !paths.is_empty() => census(paths, json),
+        ["sweep", "plan"] => sweep_plan(groups.as_deref()),
+        ["sweep", "generate", raws @ ..] if !raws.is_empty() => match options.get("--out") {
+            Some(out) => sweep_generate(raws, Path::new(out), groups.as_deref()),
+            None => Err("sweep generate needs --out <DIR>".into()),
+        },
         _ => {
             eprintln!("{USAGE}");
             return ExitCode::from(2);
@@ -218,5 +247,77 @@ fn census(paths: &[&str], json: bool) -> Result<(), String> {
     for f in &failures {
         eprintln!("failed: {f}");
     }
+    Ok(())
+}
+
+fn selected_plan(groups: Option<&[&str]>) -> Result<Vec<flb_testkit::Sweep>, String> {
+    let plan = flb_testkit::default_plan();
+    let Some(groups) = groups else {
+        return Ok(plan);
+    };
+    let known: Vec<&str> = plan.iter().map(|s| s.group).collect();
+    if let Some(bad) = groups.iter().find(|g| !known.contains(g)) {
+        let mut known = known;
+        known.dedup();
+        return Err(format!(
+            "unknown sweep group {bad:?}; known: {}",
+            known.join(", ")
+        ));
+    }
+    Ok(plan
+        .into_iter()
+        .filter(|s| groups.contains(&s.group))
+        .collect())
+}
+
+fn sweep_plan(groups: Option<&[&str]>) -> Result<(), String> {
+    let plan = selected_plan(groups)?;
+    let mut steps = 0;
+    for sweep in &plan {
+        let values: Vec<String> = sweep.values.iter().map(|v| format!("{v}")).collect();
+        let extra: Vec<String> = sweep
+            .extra
+            .iter()
+            .map(|(k, v)| {
+                format!(
+                    "{k}={}",
+                    v.as_f64()
+                        .map_or_else(|| v.as_str().unwrap_or("").to_string(), |n| n.to_string())
+                )
+            })
+            .collect();
+        println!(
+            "{:<14} {:<28} [{}]{}",
+            sweep.group,
+            sweep.tag,
+            values.join(", "),
+            if extra.is_empty() {
+                String::new()
+            } else {
+                format!("  with {}", extra.join(", "))
+            }
+        );
+        steps += sweep.values.len();
+    }
+    println!(
+        "\n{} sweeps, {steps} steps per input image (+1 baseline)",
+        plan.len()
+    );
+    Ok(())
+}
+
+fn sweep_generate(raws: &[&str], out: &Path, groups: Option<&[&str]>) -> Result<(), String> {
+    let plan = selected_plan(groups)?;
+    let images: Vec<PathBuf> = raws.iter().map(PathBuf::from).collect();
+    let summary = flb_testkit::generate(&images, &plan, out).map_err(|e| e.to_string())?;
+    println!(
+        "wrote {} raw+sidecar pairs to {}",
+        summary.files,
+        out.display()
+    );
+    println!("manifest: {}", summary.manifest.display());
+    println!(
+        "next: import the folder into Lightroom Classic (Add, with 'read metadata'), then batch-export"
+    );
     Ok(())
 }

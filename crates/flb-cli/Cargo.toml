@@ -12,4 +12,5 @@ path = "src/main.rs"
 
 [dependencies]
 flb-presets = { path = "../flb-presets" }
+flb-testkit = { path = "../flb-testkit" }
 serde_json.workspace = true

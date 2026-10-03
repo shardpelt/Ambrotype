@@ -11,6 +11,7 @@ pub mod registry;
 pub mod report;
 pub mod value;
 pub mod xmp;
+pub mod xmp_writer;
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -129,6 +130,11 @@ impl Preset {
         Err(Error::NotText)
     }
 
+    /// Serialise the settings as an XMP packet (usable as a sidecar or preset).
+    pub fn to_xmp(&self) -> String {
+        xmp_writer::write_packet(&self.settings, is_signed_tag)
+    }
+
     pub fn get(&self, name: &str) -> Option<&Value> {
         self.settings.get(name)
     }
@@ -157,6 +163,14 @@ impl Preset {
             .and_then(Value::as_bool)
             .unwrap_or(false)
     }
+}
+
+/// Whether a tag's range includes negative values (Camera Raw writes `+` on those).
+pub fn is_signed_tag(name: &str) -> bool {
+    registry::Registry::builtin()
+        .lookup(name)
+        .and_then(|i| i.min)
+        .is_some_and(|min| min < 0.0)
 }
 
 /// Locate an XMP packet inside binary data (e.g. a DNG "preset" file sold for

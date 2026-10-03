@@ -319,32 +319,24 @@ Each IOP implements:
 
 ## 6. Lightroom Import (src/develop/lightroom.c: 1,631 LOC)
 
-### Supported XMP Tags (Mapping to Darktable IOPs)
-| Lightroom `crs:` Tag | Darktable Module | Notes |
-|---|---|---|
-| `Exposure2012` | exposure | Exposure slider |
-| `Contrast2012` | — | Absorbed into tone curve |
-| `Highlights2012` | highlights | Highlight recovery |
-| `Shadows2012` | exposure (range) | Shadow lift |
-| `Whites2012` | exposure | White point |
-| `Blacks2012` | exposure | Black point |
-| `Clarity2012` | bilat | Local contrast |
-| `Vibrance` | vibrance | Saturation boost |
-| `Saturation` | (colorbalancergb) | Global saturation |
-| `SplitToningShadowSaturation` | splittoning | Split tone |
-| `Temperature` | temperature | White balance Kelvin |
-| `Tint` | temperature | Green/magenta shift |
-| `SaturationAdjustmentRed/Orange/Yellow/Green/Aqua/Blue/Purple/Magenta` | colorzones | HSL per-hue |
-| `LuminanceSaturationHueSaturation[Hue/Sat/Lum]` | colorzones | HSL sliders |
-| `GradationCurve` | tonecurve | Tone curve |
-| `ToneCurve` | tonecurve | Point-based curve |
-| `CameraProfile` | colorin | Camera calibration |
-| `CropLeft/Right/Top/Bottom`, `Straighten` | crop/ashift | Crop & rotation |
-| `VignetteAmount` | vignette | Vignetting amount |
-| `VignetteMidpoint` | vignette | Vignette falloff |
-| `Defringe` | defringe | Chromatic aberration |
+### Supported XMP Tags (verified against source by lead reviewer)
 
-**Not Imported:** Local adjustments (pins), Parametric masks, Graduated filters, Book settings
+> The table the survey agent originally wrote here was hallucinated. It listed Temperature, Vibrance, Highlights2012 and others, but none of those appear in `lightroom.c`. The list below was extracted with `grep` from the quoted tag names in `src/develop/lightroom.c`.
+
+| Lightroom tags | darktable target |
+|---|---|
+| `Exposure2012`, `Blacks2012` | exposure |
+| `Clarity2012` | bilat (local contrast) |
+| `ToneCurvePV2012`, `ToneCurveName2012`, `Parametric{Shadows,Darks,Lights,Highlights}`, `Parametric{Shadow,Midtone,Highlight}Split` | tonecurve |
+| `{Hue,Saturation,Luminance}Adjustment{Red..Magenta}` (24 tags) | colorzones |
+| `SplitToning{Shadow,Highlight}{Hue,Saturation}`, `SplitToningBalance` | splittoning |
+| `PostCropVignette{Amount,Midpoint,Feather,Roundness,Style}` | vignette |
+| `GrainAmount`, `GrainFrequency` | grain |
+| `HasCrop`, `Crop{Left,Right,Top,Bottom,Angle}`, `Orientation` | crop / flip |
+| `RetouchInfo` | spots |
+| `Rating`, `Label`, GPS, `ImageWidth/Length` | image metadata |
+
+**Not imported:** White balance (`Temperature`/`Tint`), `Contrast2012`, `Highlights2012`, `Shadows2012`, `Whites2012`, Texture, Dehaze, Vibrance, Saturation, ColorGrade*, sharpening/NR, lens/transform, calibration, profiles/`Look`, and all masks/local corrections. darktable imports only sidecar XMPs when it opens an image; it does not import standalone develop presets.
 
 ### File Format
 - **Input:** Lightroom catalog XML export or XMP sidecars (`.xmp`)

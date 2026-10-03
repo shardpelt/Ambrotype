@@ -377,6 +377,14 @@ Actively maintained; mature for production use.
 
 ### E.3 Recommended License for Flightbroom
 
+> **Editorial correction (lead reviewer).** Parts of the analysis below are wrong; read them with these corrections:
+> - Apache-2.0 → GPLv3 compatibility is **one-way**. An Apache-2.0 project **cannot** copy or port code from darktable, RawTherapee, ART or Ansel (all GPLv3). It can only reimplement their algorithms from papers or descriptions.
+> - exiv2 is **GPL-2.0-or-later**. Distributing a binary that links it makes the combined work GPL, whether linking is static or dynamic.
+> - lensfun's library is LGPL-3.0, not MIT. Its database is CC-BY-SA 3.0. GEGL/babl are LGPL-3.0, and OpenImageIO is Apache-2.0.
+> - Combining GPLv3 code with RapidRAW's AGPL-3.0 code is allowed (GPLv3 §13), but the combined work is then **AGPL-3.0**, not GPLv3.
+> - Being able to port darktable, RawTherapee and ART code is the project's biggest shortcut. That pushes the decision towards **GPL-3.0-or-later**; see `docs/SCOPE.md` §Licensing for the final recommendation.
+
+
 #### Option 1: **Apache-2.0** (Recommended)
 
 **Rationale**:

@@ -1,0 +1,9 @@
+[package]
+name = "flb-color"
+version = "0.1.0"
+description = "Colour science for Flightbroom: white balance (temperature/tint), colour spaces"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]

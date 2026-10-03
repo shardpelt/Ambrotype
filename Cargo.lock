@@ -12,6 +12,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "flb-color"
+version = "0.1.0"
+
+[[package]]
 name = "flb-presets"
 version = "0.1.0"
 dependencies = [

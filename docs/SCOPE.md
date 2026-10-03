@@ -32,12 +32,11 @@ Status: scoping draft, 2026-10-03. This document synthesises the research in [`d
    - This puts the riskiest, most differentiating work first.
    - It keeps the UI-framework decision reversible.
    - The engine is useful on its own: batch rendering, a library other apps can embed.
-5. **Licence recommendation: a split licence.** This was revised once a future mobile version became a goal.
-   - The **engine core and mobile shells are MPL-2.0**.
-   - Code **ported from darktable, RawTherapee and ART, plus exiv2 and lensfun, lives in desktop-only crates under GPL-3.0-or-later**.
-   - A GPL-only engine could never ship on Apple's App Store: VLC needed about 2.5 years and about 230 contributors' consent to relicense.
-   - The split keeps the GPL porting shortcut for desktop and keeps iOS possible.
-   - It's the owner's call; see §6 and [08 §5](research/08-cross-platform-and-mobile.md).
+5. **Licence recommendation: GPL-3.0-or-later.** Mobile is out of scope, so we can use the simplest strong option.
+   - It lets us port proven algorithms directly from darktable, RawTherapee and ART (all GPLv3) and use exiv2.
+   - That saves person-years.
+   - A later Android app is fine under the GPL (Google Play and F-Droid accept it). Only an iOS App Store app would be blocked.
+   - See §6 for what the licence actually requires.
 6. **Order of magnitude (rough estimate, not measured):**
    - Engine + CLI with PV2012 global controls and a fidelity report: about 6 person-months.
    - Usable develop-only desktop app: about 12–15 person-months cumulative.
@@ -49,7 +48,7 @@ Status: scoping draft, 2026-10-03. This document synthesises the research in [`d
 
 **Goals**
 - Free, open-source, offline-first, cross-platform desktop app. **Windows, macOS and Linux are all first-class from the first release**, including Windows on ARM64, Apple Silicon, and Linux on both Wayland and X11.
-- **Mobile-ready architecture.** iOS and Android apps are a likely future product, not a v1 deliverable. Every Phase 0–2 decision must keep them possible: licence, engine dependencies, GPU memory budget, UI protocol. See §6, §9 and [08](research/08-cross-platform-and-mobile.md).
+- **Mobile is out of scope** (owner decision, 2026-10-03). An Android app may come later; it is compatible with the GPL and with the headless-engine architecture. We keep the engine free of UI dependencies, which costs nothing, but we take on no mobile-specific constraints. [08](research/08-cross-platform-and-mobile.md) stays as reference for a future Android effort.
 - Non-destructive raw development with a Lightroom-like workflow and vocabulary, so Lightroom users feel at home.
 - **Import and apply Lightroom/ACR presets** (`.xmp` and legacy `.lrtemplate`), including the Amount slider, with a per-preset **fidelity report** (exact / approximated / ignored per tag).
 - Read and write Lightroom-compatible XMP sidecars (`crs:` namespace) so edits round-trip where possible.
@@ -57,7 +56,7 @@ Status: scoping draft, 2026-10-03. This document synthesises the research in [`d
 - A headless engine and CLI for batch rendering and automated preset testing.
 
 **Non-goals (at least for v1)**
-- Cloud sync (beyond folder/sidecar-based sync), shipping mobile apps in v1, web gallery/Book/Slideshow modules, Adobe-style generative AI (cloud models), Lightroom plug-in (Lua SDK) compatibility.
+- Cloud sync, mobile apps (Android possibly later), web gallery/Book/Slideshow modules, Adobe-style generative AI (cloud models), Lightroom plug-in (Lua SDK) compatibility.
 - Pixel-exact equality with Lightroom.
 - Using the name "Lightroom" or Adobe trademarks in the product name, logo or marketing. Descriptive compatibility claims such as "imports Lightroom® presets" are fine with a trademark notice.
 
@@ -131,41 +130,43 @@ Full detail lives in [01-lightroom-feature-inventory](research/01-lightroom-feat
   - build our own shell (Tauri 2 + native wgpu viewport, or Qt 6)
   - fork RapidRAW's UI and swap in our engine behind its adjustments model
 - Two inputs settle the gate: the viewport spike result and a conversation with RapidRAW's maintainer.
-- An MPL-2.0 engine can be used inside an AGPL fork (MPL-2.0 §3.3 allows combination with GPL-family code), so no work is wasted either way.
-- **Mobile:** RapidRAW's Android build is Tauri mobile with JPEG frame transport and arm64 only, a prototype-grade approach. Our plan is native SwiftUI and Jetpack Compose shells over the same Rust engine through UniFFI ([08 §3](research/08-cross-platform-and-mobile.md)).
+- A GPL-3.0-or-later engine can be combined into an AGPL fork (GPLv3 §13 allows it), so no work is wasted either way.
 
 ---
 
 ## 6. Licensing (decision needed)
 
-The research agents disagreed, and the mobile goal changed the answer. See the editorial notes in [04 §E](research/04-oss-ecosystem.md) and the full analysis in [08 §5](research/08-cross-platform-and-mobile.md).
+**Recommendation: GPL-3.0-or-later.** The earlier split-licence idea (MPL core + GPL modules) existed only to keep an iOS App Store app possible. With mobile dropped it adds complexity for nothing. The full analysis, should iOS ever come back, is in [08 §5](research/08-cross-platform-and-mobile.md).
 
-**The constraints**
-- **Permissive licences (Apache-2.0/MIT/MPL)** forbid porting darktable/RawTherapee/ART code (GPLv3): only clean reimplementation is allowed. They also exclude exiv2 (GPL-2+).
-- **GPL on Apple's App Store:**
-  - Apple's store terms are widely held (the FSF's position, VLC's 2011 removal) to conflict with the GPL.
-  - An "App Store exception" needs **every** copyright holder to agree, which rules it out for ported third-party code.
-  - LGPL static linking on iOS has similar problems.
-  - Google Play and F-Droid accept GPL.
-  - EU alternative marketplaces exist, but they reach only part of the market.
-- **AGPL-3.0** buys nothing for a desktop app, beyond making RapidRAW code directly usable.
+**What the GPL requires, in practice**
+- **Using, modifying and running it yourself: no obligations at all.** Private and internal changes never have to be published.
+- **No duty to "contribute back".** No open-source licence forces anyone to send patches upstream to us, and nothing forces us to send ours to darktable.
+- **The obligation is triggered by distribution.** Anyone who gives or sells the program to others, modified or not, must:
+  - license the whole program under the GPL
+  - provide the complete corresponding source code
+  - keep the copyright and licence notices
+  - not add restrictions, such as DRM or a no-redistribution clause
+- **That applies to us too, when we ship code ported from darktable or RawTherapee:**
+  - keep their copyright headers
+  - credit them
+  - ship our source (we will anyway)
+- **Selling is allowed.** Someone can sell builds of Flightbroom, but they must hand over the source and can't stop buyers from sharing it. No one can make a closed-source fork.
+- **"-or-later"** lets users pick a future GPL version too. It's the common default, and it keeps compatibility options open.
+- **Patents:** GPLv3 includes a patent licence from each contributor to all users.
+- **Contributors:** we use a DCO sign-off (a "Signed-off-by" line). That records that each contributor has the right to submit their code, without a CLA.
+- **Relicensing:** while we're the only authors, changing licence later is trivial. Once outside contributors and ported GPL code are in, it's practically impossible. **Decide before accepting outside code or porting GPL code.**
 
-**Recommendation: split licence (option E in [08 §5.6–5.7](research/08-cross-platform-and-mobile.md))**
-- **MPL-2.0 for the engine core**, which covers:
-  - recipe and pipeline, colour, preset importer, catalog
-  - mobile shells
-  - our own clean-room kernels
-- MPL-2.0 is file-level copyleft: it is App Store-compatible, yet changes to our files stay open.
-- **GPL-3.0-or-later for desktop-only "gpl-pack" crates**, which hold:
-  - ported darktable/RT/ART algorithms (e.g. AMaZE demosaic, profiled denoise, `ashift` Upright)
-  - exiv2 and lensfun bindings
-- The desktop app, as distributed, is a GPL-3.0 combined work. The mobile apps use only the MPL core.
-- Raw decoding in the core uses **LibRaw under its CDDL-1.0 option** (verified: LibRaw is dual LGPL-2.1/CDDL-1.0). It can also use platform decoders on mobile.
-- Contributions are accepted under a **DCO**, without a CLA. A **CI check** fails if any core crate depends on a gpl-pack crate.
-- **The cost:** anything we want on mobile must be clean-room or permissively licensed. Ports give desktop a head start, and the core gets its own implementation later where needed.
-- **Alternatives:**
-  - Pure GPL-3.0 maximises desktop speed, but rules out the iOS App Store for good.
-  - A pure MPL/Apache licence is simplest, but loses the porting shortcut entirely.
+**Compared with the alternatives**
+- **Permissive (MIT/Apache/MPL):**
+  - anyone could make a closed fork
+  - we couldn't port darktable/RawTherapee/ART code
+  - exiv2 would be excluded
+- **AGPL-3.0** adds a network-use clause. That only matters for server software, so for a desktop app it buys nothing, beyond making RapidRAW's code usable.
+- **The trade-off we accept with GPL:** an iOS App Store version is effectively impossible later. Apple's store terms conflict with the GPL, and relicensing ported code isn't possible.
+
+**Dependencies are all compatible with GPL-3.0-or-later:**
+- LibRaw (LGPL-2.1/CDDL), lcms2 (MIT), lensfun (LGPL-3), exiv2 (GPL-2+)
+- wgpu (MIT/Apache), rawler (LGPL-2.1), ONNX Runtime (MIT)
 
 - **Data licences:**
   - The lensfun DB is CC-BY-SA: ship it as a separate data package.
@@ -217,7 +218,6 @@ Durations are rough person-month (pm) estimates for experienced engineers.
 
 ### Phase 0: Decisions and spikes (about 1.5 pm)
 - Licence, name check, contribution model (DCO).
-- Cargo workspace split into MPL core and GPL `gpl-pack` crates, with a CI dependency gate. CI cross-compiles the core for `aarch64-apple-ios` and `aarch64-linux-android` from day one (check-only).
 - Spikes:
   - wgpu 100 MP tiled pipeline + viewport in Tauri-native-surface vs Qt RHI on all 3 OSes
   - fp16 vs fp32 intermediates
@@ -258,7 +258,7 @@ Durations are rough person-month (pm) estimates for experienced engineers.
 ### Phase 4: Later
 - More AI: people parts, objects, depth range, Lens Blur (Depth Anything V2-S), AI denoise (SCUNet/NAFNet-class), content-aware remove (LaMa), Super Resolution.
 - HDR/panorama merge, HDR editing and HDR export (gain maps), tethering (libgphoto2), print, map/GPS, face recognition, plugin API (Lua → WASM), adaptive presets.
-- **Mobile apps** (iOS + Android): preset apply with Amount, core panels, basic masks, export, and folder/sidecar sync with desktop. The scope comes from Lightroom mobile's feature set ([08 §7](research/08-cross-platform-and-mobile.md)).
+- Possibly an Android app over the same engine (see [08](research/08-cross-platform-and-mobile.md)).
 
 ---
 
@@ -275,13 +275,7 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 - **Catalog service:** SQLite with a single writer, XMP sidecars as interchange, and an on-disk preview pyramid.
 - **AI service:** behind a trait, using ONNX Runtime (`ort`) with CoreML/DirectML/CUDA/CPU providers and a permissive-only model manifest.
 - **UI shell:** replaceable, behind a typed, pixel-free command protocol. The desktop default is Tauri 2 with a native wgpu child surface for the viewport; Qt 6 is the fallback. The decision depends on the Phase 0 spike.
-- **Platforms:**
-  - Windows (x64 and ARM64; DX12/Vulkan), macOS (Apple Silicon and Intel; Metal; EDR), Linux (Wayland and X11; Vulkan) are all first-class.
-  - Future iOS and Android use **native SwiftUI and Compose shells over the same engine via UniFFI**.
-  - The engine core must have **no desktop-only dependencies**.
-  - It must stay within a `MOBILE_FLOOR` set of GPU limits (tiled processing, no oversized textures or buffers).
-  - The full "do this now" checklist is in [08 §8](research/08-cross-platform-and-mobile.md).
-- **Desktop↔mobile sync without our own cloud:** XMP sidecars plus a user-chosen synced folder (iCloud Drive, Dropbox, Syncthing). Smart-preview-style proxies make editing on mobile practical ([08 §6](research/08-cross-platform-and-mobile.md)).
+- **Platforms:** Windows (x64 and ARM64; DX12/Vulkan), macOS (Apple Silicon and Intel; Metal; EDR), Linux (Wayland and X11; Vulkan) are all first-class. Per-OS details are in [08 §1](research/08-cross-platform-and-mobile.md).
 - **Testing:** golden images, preset fidelity suite, parser fuzzers.
 
 ---
@@ -299,8 +293,6 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 | Legal (EULA, preset licences, trademarks, patents) | Medium | Clean-room process, no Adobe assets shipped, counsel review before 1.0 |
 | Contributor pool for Rust + GPU + colour science | Medium | Clear crate boundaries, documented kernels, "good first kernels" |
 | AI model licences and hardware variance | Medium | Permissive manifest + CI gate; CPU-quantised fallbacks |
-| GPL code leaking into the core blocks iOS later | High (irreversible) | MPL/GPL crate split from day one; CI dependency gate; DCO records provenance |
-| Mobile GPU memory, thermal limits, Android fragmentation | Medium | `MOBILE_FLOOR` limits test in CI; tiling; proxies for editing |
 
 ---
 
@@ -315,8 +307,7 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 
 ## 12. Open decisions for the project owner
 
-1. Licence: split MPL-2.0 core + GPL-3.0 desktop modules (recommended), vs pure GPL-3.0 (no iOS App Store, ever) vs pure permissive (§6). **Decide before the first outside contribution;** relicensing later is practically impossible.
-1b. Is a store-distributed iOS app a hard requirement, or would Android plus EU alternative stores be enough? A pure-GPL project could only ship the latter.
+1. Licence: GPL-3.0-or-later (recommended) vs permissive (§6). **Decide before accepting outside contributions or porting GPL code.**
 2. Approach: new engine first with the UI decided at the Phase 2 gate (recommended), vs fork RapidRAW now (§5).
 3. Fidelity target that defines "compatible" (proposal: median ΔE00 < 2, p95 < 5 over the corpus for the top-20 tags).
 4. Who holds a licensed Lightroom Classic install to run the calibration sweeps, and where reference renders are stored (private; only CC0 inputs are committed).
@@ -337,6 +328,8 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 | [research/06-tech-stack-options.md](research/06-tech-stack-options.md) | Language, GPU, UI, catalog, AI runtime, plugins, packaging, reference architecture, spikes |
 | [research/07-rapidraw-survey.md](research/07-rapidraw-survey.md) | RapidRAW pipeline, preset converter mapping, gaps, fork/contribute analysis |
 | [research/08-cross-platform-and-mobile.md](research/08-cross-platform-and-mobile.md) | Per-OS desktop parity, mobile constraints, UI options for mobile, licensing and app stores, sync, "do this now" checklist |
+| [sources-to-collect.md](sources-to-collect.md) | Prioritised list of blocked/login-only sources + ready-to-paste Cowork prompt |
+| [lightroom-trial-plan.md](lightroom-trial-plan.md) | How to use the one-month Lightroom subscription to capture all ground-truth renders |
 | [adobe-docs/](adobe-docs/) | Source-only digests of 236 official Adobe help pages (Classic, cloud, Camera Raw) |
 
 ### How this research was produced

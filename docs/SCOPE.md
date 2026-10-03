@@ -167,13 +167,13 @@ The tag-level detail (full `crs:` table, file formats, Amount, Looks, masks) is 
 | Near-exact (ΔE00 < 1) | Temp/Tint, Exposure, point curves (+RGB), DCP application (with user's DCP), crop/rotate, vignette, gradient/radial mask geometry | Implement from the DNG spec/SDK behaviour: Robertson isotherms, natural cubic spline, ProPhoto-linear working space, documented render order |
 | Close (ΔE00 1–3) | Contrast, Whites/Blacks, parametric curve, Vibrance/Saturation, HSL, Color Grading, Calibration, Clarity, Dehaze, sharpening, grain | Our own parametric models, fitted to Lightroom single-slider sweeps |
 | Approximate | Highlights/Shadows on HDR scenes, Texture, NR, Upright auto, AI masks, Lens Blur, AI Denoise | Best open algorithm (local Laplacian / guided filter / SAM2 / Depth Anything), tuned visually + harness |
-| Not reproducible | Adobe creative/"Adobe Color" profiles without the user's own copy; Generative Remove | Fallback base profile + warning; LaMa inpainting as substitute |
+| Not reproducible | Adobe creative/"Adobe Color" profiles without the user's own copy; **Adaptive profiles** (image-adaptive AI, intensity 0–200) and adaptive/AI presets; Generative Remove | Fallback base profile + warning; our own auto-tone as a stand-in; LaMa inpainting as substitute |
 
 **Importer design (summary of [02 §7](research/02-preset-and-profile-formats.md)):**
 - **Parsing.** A real namespace-aware XMP/RDF parser plus a Lua-table subset parser for `.lrtemplate`.
 - **Canonical model.** It mirrors `crs:` names 1:1, is sparse (present ≠ default), keeps unknown tags losslessly, and dispatches per process version.
 - **Tag registry.** A JSON registry records status, range, default and scale per tag.
-- **Amount.** It is a lerp from current settings to the preset (curves and LUTs blend toward identity). The exact Adobe Amount math is unverified: measure it with the harness.
+- **Amount.** It is a lerp from current settings to the preset (curves and LUTs blend toward identity). Adobe's docs confirm two separate Amount sliders: the Preset Amount (ACR 14.4+, June 2022), and the profile Amount, which applies only to Adaptive, Artistic, B&W, Modern and Vintage profiles. The scaling math for either is not documented ([camera-raw.md](adobe-docs/camera-raw.md)), so measure it with the harness.
 - **Profiles.** `CameraProfile` and `Look` resolve through a profile registry: the user's Adobe profiles if installed, else our fitted base profiles. Decoding `Look` `RGBTable`/`Table_` LUTs is a research task; no complete public decoder is known.
 - **Masks.** Geometric and range masks are native. AI masks are regenerated with our own segmenters, never stored as pixels. `RetouchAreas` from presets are ignored.
 

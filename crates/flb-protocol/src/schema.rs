@@ -73,7 +73,7 @@ pub fn command_schema() -> Value {
             variant("cmd", "reset_group", "Remove every setting of one registry group.", json!({
                 "group": groups
             }), &["group"]),
-            variant("cmd", "apply_preset", "Apply a preset file (.xmp, .lrtemplate, or a file with embedded XMP). Preset metadata (name, UUID, ...) is never copied.", json!({
+            variant("cmd", "apply_preset", "Apply a preset file (.xmp, .lrtemplate, or a file with embedded XMP). Preset metadata (name, UUID, ...) is never copied. Values are validated like set_param: numbers are clamped (and the clamping reported), values of the wrong kind are skipped with a note.", json!({
                 "path": { "type": "string", "minLength": 1 },
                 "amount": { "type": "number", "minimum": 0, "maximum": 200, "default": 100, "description": "Preset strength in percent." },
                 "include_groups": { "type": "array", "items": groups, "description": "Only apply settings of these groups." },

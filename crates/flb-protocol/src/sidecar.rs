@@ -27,11 +27,17 @@ struct Foreign {
     elements: Vec<String>,
 }
 
+/// Escape an attribute value. Newlines, carriage returns and tabs become
+/// character references, because XML attribute-value normalisation turns raw
+/// ones into spaces (XML 1.0 section 3.3.3).
 fn escape_attr(s: &str) -> String {
     s.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('"', "&quot;")
+        .replace('\n', "&#xA;")
+        .replace('\r', "&#xD;")
+        .replace('\t', "&#x9;")
 }
 
 fn xml_err(e: impl std::fmt::Display) -> Error {
@@ -271,6 +277,18 @@ mod tests {
             flb_presets::xmp::parse_crs(&out).unwrap()["Vibrance"].as_f64(),
             Some(10.0)
         );
+    }
+
+    #[test]
+    fn whitespace_in_foreign_attributes_survives() {
+        let src = r#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" photoshop:Instructions="line1&#xA;line2&#xD;&#x9;end" crs:Exposure2012="+0.30"/></rdf:RDF></x:xmpmeta>"#;
+        let mut settings = BTreeMap::new();
+        settings.insert("Exposure2012".to_string(), Value::Number(0.5));
+        let out = merge(src, &settings).unwrap();
+        assert!(!out.contains("line1\nline2"), "{out}");
+        assert!(out.contains("line1&#xA;line2&#xD;&#x9;end"), "{out}");
+        let again = collect_foreign(&out).unwrap();
+        assert_eq!(again.attributes[0].1, "line1\nline2\r\tend");
     }
 
     #[test]

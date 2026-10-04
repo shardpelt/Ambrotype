@@ -77,6 +77,10 @@ pub fn json_number(json: &serde_json::Value) -> Option<f64> {
 }
 
 fn clamp(name: &str, v: f64, info: &TagInfo, clamps: &mut Vec<Clamp>) -> f64 {
+    debug_assert!(
+        v.is_finite(),
+        "{name}: callers must reject non-finite values"
+    );
     let lo = info.min.unwrap_or(f64::NEG_INFINITY);
     let hi = info.max.unwrap_or(f64::INFINITY);
     let applied = v.clamp(lo, hi);
@@ -294,19 +298,26 @@ pub fn value_from_saved(name: &str, json: &serde_json::Value) -> Result<Value, E
 
 /// Store registry-typed scalars in typed form: numeric text becomes
 /// [`Value::Number`], `"True"`/`"False"` become [`Value::Bool`]. The XMP writer
-/// formats them back the way Camera Raw does.
+/// formats them back the way Camera Raw does. Text that parses only to a
+/// non-finite number (`"NaN"`, `"inf"`) stays text, so it can never poison
+/// diffs or the JSON form (which has no NaN).
 pub fn normalise(name: &str, value: Value) -> Value {
     let Some(info) = flb_presets::registry::Registry::builtin().lookup(name) else {
         return value;
     };
     match (&value, info.kind.as_str()) {
-        (Value::Text(_), "number") => value.as_f64().map_or(value, Value::Number),
+        (Value::Text(_), "number") => finite(&value).map_or(value, Value::Number),
         (Value::Text(_), "enum") if info.min.is_some() => {
-            value.as_f64().map_or(value, Value::Number)
+            finite(&value).map_or(value, Value::Number)
         }
         (Value::Text(_) | Value::Number(_), "bool") => value.as_bool().map_or(value, Value::Bool),
         _ => value,
     }
+}
+
+/// The value as a finite number, if it is one (`"NaN"` and `"inf"` are not).
+pub fn finite(value: &Value) -> Option<f64> {
+    value.as_f64().filter(|n| n.is_finite())
 }
 
 /// Equality that ignores float noise.

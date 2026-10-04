@@ -24,7 +24,7 @@ These come from [docs/design/ai-control.md](../design/ai-control.md). An assista
 Practical consequences:
 - `flb edit` is a transaction: if any command in the list fails, **nothing** is written. Fix the command and rerun the whole list.
 - When unsure, write to a new file with `--out` instead of overwriting the sidecar.
-- `flb edit` keeps everything in the sidecar that is not a Camera Raw setting (rating, labels, keywords, EXIF copies, history) and writes atomically.
+- `flb edit` keeps everything in the sidecar that is not a Camera Raw setting (rating, labels, keywords, EXIF copies, history) and writes atomically. With `--out` to another `.xmp`, that metadata is copied from the source sidecar (an existing file at the `--out` path is replaced, not merged).
 
 ## The loop: inspect, edit, render, iterate
 
@@ -88,7 +88,8 @@ Apply a preset (`.xmp`, `.lrtemplate`, or a DNG/JPEG with embedded settings) as 
 [{"cmd": "apply_preset", "path": "presets/Warm Matte.xmp", "amount": 60, "exclude_groups": ["white_balance", "crop"]}]
 ```
 
-- `amount` is a percentage, 0-200 (default 100). Numeric settings move linearly from the current value (or default) towards the preset's value, and are clamped to their range. Non-numeric settings (curves, profiles, masks) are taken from the preset whenever amount > 0. Adobe does not document its Amount maths; this is our current model.
+- `amount` is a percentage, 0-200 (default 100). Numeric settings move linearly from the current value (or default) towards the preset's value, and are clamped to their range; the clamping is reported, as for `set_param`. Temperature and Tint have no fixed default, so when the photo has no value for them they are copied **unscaled** (the result carries a note). Non-numeric settings (curves, profiles, masks) are taken from the preset whenever amount > 0. Adobe does not document its Amount maths; this is our current model.
+- Preset values are validated like `set_param` values: out-of-range numbers are clamped (and reported), and values of the wrong kind (text on a slider, an unknown white balance, an enum out of range) are skipped with a note; the rest of the preset still applies.
 - `include_groups` / `exclude_groups` take group names from the reference (`tone`, `hsl`, `color_grading`, `white_balance`, ...).
 - The preset's own metadata (name, UUID, group, `SupportsAmount`, writer version) is never copied into the photo.
 
@@ -122,7 +123,7 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 Validation:
 - **Unknown names are rejected** with suggestions: `"Temp"` gives `unknown setting "Temp" (did you mean Temperature, IncrementalTemperature?)`. Some short names *are* valid legacy PV2010 tags (`Exposure`, `Contrast`, `Shadows`, `Clarity`). Using them works, but the result carries a note pointing to the current tag.
 - **Wrong kinds are rejected** (e.g. a string for a slider).
-- **Side effects match Lightroom.** Setting `Temperature` or `Tint` while white balance is As Shot/Auto also sets `WhiteBalance` to `"Custom"`, in the same undo step; otherwise the new temperature would be ignored.
+- **Side effects match Lightroom.** Setting `Temperature` or `Tint` while white balance is As Shot/Auto also sets `WhiteBalance` to `"Custom"`, in the same undo step; otherwise the new temperature would be ignored. Lightroom keeps the as-shot value of the other slider, but that value lives in the raw file, so **set both**, Temperature first: `Tint` alone under As Shot/Auto is rejected (a custom white balance without a temperature is not rendered), and `Temperature` alone gets a note because the tint becomes 0 instead of the as-shot tint. `flb render` prints the as-shot pair (`as shot: 5150 K, tint +4`).
 - Use the current-process tags (`Exposure2012`, `Contrast2012`, `Highlights2012`, `Shadows2012`, `Whites2012`, `Blacks2012`, `Clarity2012`), not the legacy ones.
 
 ## Queries
@@ -146,9 +147,9 @@ These are **starting points**. Apply them with `--dry-run`, render, look, and ad
 
 | Intent | Settings |
 |---|---|
-| **Warmer** | Temperature +300 to +800 K above the current value. If the photo is As Shot, read the as-shot value from `flb render` and `set_param` the sum. Optional: Tint +3 to +6. Warm the highlights only with ColorGradeHighlightHue 40-50, ColorGradeHighlightSat 10-20. |
-| **Cooler** | Temperature -300 to -800 K below the current value. Cool shadows only: ColorGradeShadowHue 200-220, ColorGradeShadowSat 10-20. |
-| **Green or magenta cast** | Green cast: Tint +5 to +15. Magenta cast: Tint -5 to -15. Cast only in the shadows: ShadowTint *(planned)*. |
+| **Warmer** | Temperature +300 to +800 K above the current value. If the photo is As Shot, read the as-shot pair from `flb render` and `set_param` Temperature to the sum, then Tint to the as-shot tint. Optional: Tint +3 to +6 on top. Warm the highlights only with ColorGradeHighlightHue 40-50, ColorGradeHighlightSat 10-20. |
+| **Cooler** | Temperature -300 to -800 K below the current value (As Shot: as for Warmer, set Temperature then the as-shot Tint). Cool shadows only: ColorGradeShadowHue 200-220, ColorGradeShadowSat 10-20. |
+| **Green or magenta cast** | Green cast: Tint +5 to +15. Magenta cast: Tint -5 to -15. If the photo is As Shot, first `set_param` Temperature to the as-shot temperature from `flb render`, then Tint to the as-shot tint plus the correction. Cast only in the shadows: ShadowTint *(planned)*. |
 | **Brighter** | Exposure2012 +0.3 to +1.0. If the sky or highlights then clip: Highlights2012 -20 to -50, Whites2012 -5 to -15. |
 | **Darker, moodier** | Exposure2012 -0.3 to -0.7, Highlights2012 -20 to -40, Blacks2012 -5 to -15, Vibrance -5 to -15. Optional vignette: PostCropVignetteAmount -15 to -30 *(planned)*. |
 | **More contrast without crushing blacks** | Contrast2012 +15 to +30, Blacks2012 +5 to +15 (lifts the black point), Shadows2012 +10 to +20, Highlights2012 -10 to -25. Or a gentle S point curve: ToneCurvePV2012 `[[0,0],[64,56],[192,200],[255,255]]`. Midtone punch: Clarity2012 +10 to +20 *(planned)*. |

@@ -51,7 +51,18 @@ pub fn run(req: &EditRequest) -> Result<EditReport, Error> {
     let written = if req.dry_run || !needs_write {
         None
     } else {
-        state.save(dest)?;
+        // Writing an XMP sidecar to another .xmp: the photo's own non-crs
+        // metadata (rating, keywords, history) must come along, rather than
+        // being dropped (new file) or taken from an unrelated existing file.
+        let base = if !created && dest != req.sidecar && is_xmp(dest) && is_xmp(req.sidecar) {
+            Some(
+                std::fs::read_to_string(req.sidecar)
+                    .map_err(|e| Error::Io(format!("{}: {e}", req.sidecar.display())))?,
+            )
+        } else {
+            None
+        };
+        state.save_merged(dest, base.as_deref())?;
         Some(dest.to_path_buf())
     };
     Ok(EditReport {
@@ -61,6 +72,12 @@ pub fn run(req: &EditRequest) -> Result<EditReport, Error> {
         written,
         dry_run: req.dry_run,
     })
+}
+
+fn is_xmp(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("xmp"))
 }
 
 impl EditReport {

@@ -17,7 +17,8 @@
 //! scales to a circle, and Roundness −100 raises `p` towards a rounded
 //! rectangle that follows the frame. Midpoint places the centre of the
 //! transition (lower reaches further into the image), Feather sets its width
-//! (smoothstep; Feather 0 is a hard edge, antialiased over about a pixel). When
+//! (smoothstep; Feather 0 is a hard edge, antialiased over about a pixel, and
+//! kept just inside the frame corner at every Midpoint so it always shows). When
 //! a low Midpoint and a wide Feather start the transition before the centre,
 //! the profile is mirrored about the centre (`S(d) + S(−d)`) and renormalised,
 //! so the mask is exactly 0 and flat there rather than a cone. Everything is in
@@ -44,24 +45,29 @@
 //! 24 MP / 6000 × 4000 reference and scaled with the image's linear size) and
 //! `coarse` at a multiple of it. Roughness mixes them as `fine − (1 − r)·coarse`:
 //! Roughness 0 is a band-pass (regular grains of one size), 100 keeps the
-//! coarse octave (clumpy, uneven grain). The field is scaled to unit deviation
-//! by its exact expected variance (measured once from the impulse response of
-//! the same blurs), then applied as a monochrome luminance ratio
-//! `exp(a·n − a²/2)` (mean-preserving, never negative), with `a` weighted by
+//! coarse octave (clumpy, uneven grain). Strength is resolution independent
+//! too: the field has unit deviation at the reference size, and at any other
+//! size the deviation of the reference field box-averaged to that size, so a
+//! small render (or preview) shows what the full render scaled down shows.
+//! Both are exact expected variances, computed from the blur kernels (the
+//! 2-D kernel's autocorrelation is a sum of separable terms). The field `n`
+//! of variance `V` is applied as a monochrome luminance ratio
+//! `exp(a·n − a²·V/2)` (mean-preserving, never negative), with `a` weighted by
 //! `4·L·(1 − L)` on CIE lightness so grain is strongest in the midtones and
 //! fades towards black and white. Colours do not shift.
 //!
 //! The field is computed tile by tile with a margin of procedural noise around
 //! each tile, so it never touches a frame-sized plane: memory stays small, the
 //! image is read and written once, and there are no clamped-edge streaks
-//! along the frame borders. Each pixel's grain depends only on `(x, y, seed)`
-//! and the settings, not on the tiling.
+//! along the frame borders. The blurs are tile-local separable passes over
+//! whole rows (no edge clamping or transposes, buffers reused per thread).
+//! Each pixel's grain depends only on `(x, y, seed)` and the settings, bit for
+//! bit, not on the tiling.
 
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::buffer::{Image, luminance_weights};
-use crate::filters::gaussian_blur;
 
 /// `PostCropVignetteAmount` -100..100, `...Midpoint` 0..100 (50), `...Roundness` -100..100 (0),
 /// `...Feather` 0..100 (50), `...HighlightContrast` 0..100 (0), `...Style` 1 = Highlight
@@ -118,7 +124,8 @@ impl Default for Grain {
 pub struct EffectsStrengths {
     /// Centre of the vignette transition at Midpoint 0.
     pub vignette_midpoint_min: f64,
-    /// Centre of the vignette transition at Midpoint 100.
+    /// Centre of the vignette transition at Midpoint 100. Kept inside the frame
+    /// (at most 1.5 px short of the corner), so a hard edge always shows.
     pub vignette_midpoint_max: f64,
     /// Full width of the transition at Feather 100 (Feather scales it linearly;
     /// Feather 0 is a hard edge about one pixel wide).
@@ -163,7 +170,7 @@ impl Default for EffectsStrengths {
     fn default() -> Self {
         EffectsStrengths {
             vignette_midpoint_min: 0.3,
-            vignette_midpoint_max: 1.0,
+            vignette_midpoint_max: 0.9,
             vignette_feather_width: 1.0,
             vignette_rect_exponent: 8.0,
             vignette_dark_stops: 2.5,
@@ -234,16 +241,20 @@ impl VignetteMask {
         let col = (0..w).map(|x| term(x, w, ax)).collect();
         let row = (0..h).map(|y| term(y, h, ay)).collect();
 
+        // One pixel along the diagonal, in units of `d`.
+        let px = 1.0 / (0.5 * (wf * wf + hf * hf).sqrt());
         // The transition centre stays strictly outside the centre of the frame
-        // (also for fitted constants), so the mirrored profile below stays monotonic.
+        // (also for fitted constants), so the mirrored profile below stays monotonic,
+        // and 1.5 px inside the corner, so the hard edge of Feather 0 (half a pixel
+        // either side) never falls outside the frame and Feather only softens it.
         let mid = (k.vignette_midpoint_min
             + (k.vignette_midpoint_max - k.vignette_midpoint_min)
                 * (v.midpoint / 100.0).clamp(0.0, 1.0))
+        .min(1.0 - 1.5 * px)
         .max(0.01);
         // Half-width of the transition; at least half a pixel (along the diagonal).
-        let half_diag_px = 0.5 * (wf * wf + hf * hf).sqrt();
         let half = (0.5 * k.vignette_feather_width.max(0.0) * (v.feather / 100.0).clamp(0.0, 1.0))
-            .max(0.5 / half_diag_px);
+            .max(0.5 * px);
         let inner = (mid - half) as f32;
         let outer = (mid + half) as f32;
         // S(d) + S(−d) is even and, because the transition centre is > 0, rises
@@ -325,7 +336,12 @@ impl VignetteOp {
                 VignetteStyle::ColorPriority => k.vignette_color_priority_protect,
                 _ => k.vignette_highlight_priority_protect,
             };
-            let hc = (v.highlights / 100.0).clamp(0.0, 1.0);
+            // `clamp` passes NaN through; a malformed slider value means 0.
+            let hc = if v.highlights.is_nan() {
+                0.0
+            } else {
+                (v.highlights / 100.0).clamp(0.0, 1.0)
+            };
             let h = base + (k.vignette_highlight_contrast_protect - base) * hc;
             (amount * k.vignette_dark_stops, h)
         } else {
@@ -334,7 +350,11 @@ impl VignetteOp {
         VignetteOp {
             style,
             stops: stops as f32,
-            protect: protect.clamp(0.0, 1.0) as f32,
+            protect: if protect.is_nan() {
+                0.0
+            } else {
+                protect.clamp(0.0, 1.0) as f32
+            },
             opacity: (amount.abs() * k.vignette_paint_opacity).clamp(0.0, 1.0) as f32,
             target: if amount < 0.0 { 0.0 } else { 1.0 },
             gamma: k.vignette_paint_gamma.max(0.1) as f32,
@@ -394,7 +414,13 @@ fn signed_pow(v: f32, e: f32) -> f32 {
 
 /// Exposure gain `g` with highlight protection `h` in 0..1:
 /// `v·g / (1 + (g − 1)·h·v)` on 0..1 (slope `g` at black; white pinned for `h = 1`),
-/// continued linearly outside 0..1. Identity for `g = 1`; monotonic.
+/// continued linearly outside 0..1. Identity for `g = 1`; monotonic and continuous.
+///
+/// Above 1 the continuation uses the curve's slope at 1 (`g / den²`), limited
+/// to at most 1 when darkening and at least 1 when lightening: with strong
+/// protection that slope is `1/g`, which would push a channel above 1 the
+/// wrong way (a darkening vignette brightening it). Below 0 it is the plain
+/// gain `g`, so out-of-gamut negatives scale like everything else.
 #[inline]
 fn protected_exposure(v: f32, g: f32, h: f32) -> f32 {
     let c = v.clamp(0.0, 1.0);
@@ -404,7 +430,13 @@ fn protected_exposure(v: f32, g: f32, h: f32) -> f32 {
     if v < 0.0 {
         out + v * g
     } else if v > 1.0 {
-        out + (v - 1.0) * g / (den * den)
+        let slope = g / (den * den);
+        let slope = if g < 1.0 {
+            slope.min(1.0)
+        } else {
+            slope.max(1.0)
+        };
+        out + (v - 1.0) * slope
     } else {
         out
     }
@@ -460,94 +492,189 @@ fn hash_noise(x: i64, y: i64, seed_key: u64) -> f32 {
     (2 * k + 1 - (1 << 24)) as f32 * (1.0 / (1u32 << 24) as f32)
 }
 
-/// Grain blur sigma in pixels: GrainSize mapped at the 24 MP reference, scaled
-/// by the image's linear size relative to it.
-fn grain_sigma_px(size: f64, w: usize, h: usize, k: &EffectsStrengths) -> f32 {
+/// Grain blur sigma in pixels at the 24 MP reference for a GrainSize.
+fn grain_sigma_ref(size: f64, k: &EffectsStrengths) -> f32 {
     let t = (size / 100.0).clamp(0.0, 1.0);
     let sigma_ref = k.grain_sigma_min_px
         + (k.grain_sigma_max_px - k.grain_sigma_min_px) * t.powf(k.grain_size_exponent);
-    let scale = ((w * h) as f64 / REFERENCE_PIXELS).sqrt();
-    (sigma_ref.max(0.0) * scale) as f32
+    sigma_ref.max(0.0) as f32
 }
 
-/// An upper bound on the reach, in pixels, of [`gaussian_blur`] at `sigma`: its
-/// exact kernel has radius `ceil(3σ)`; its three box passes (σ > 3) have radii
-/// of at most `(w_l + 1)/2` with the smaller box width `w_l <= 2σ + 1`, so they
-/// reach at most `3σ + 3`.
-fn blur_support(sigma: f32) -> usize {
-    if sigma < 0.3 {
-        0
-    } else {
-        (3.0 * sigma).ceil() as usize + 3
+/// The image's linear size relative to the 24 MP reference.
+fn grain_scale(w: usize, h: usize) -> f32 {
+    ((w * h) as f64 / REFERENCE_PIXELS).sqrt() as f32
+}
+
+/// Grain blur sigma in pixels: GrainSize mapped at the 24 MP reference, scaled
+/// by the image's linear size relative to it.
+#[cfg(test)]
+fn grain_sigma_px(size: f64, w: usize, h: usize, k: &EffectsStrengths) -> f32 {
+    grain_sigma_ref(size, k) * grain_scale(w, h)
+}
+
+/// Safety bound on a grain blur sigma in pixels (Size 100 at 24 MP is a 10 px
+/// coarse octave), so extreme fitted constants or render sizes cannot ask for
+/// a huge kernel.
+const GRAIN_SIGMA_LIMIT_PX: f32 = 64.0;
+
+/// Normalised Gaussian kernel of radius `ceil(3σ)`, as its centre tap followed
+/// by one side (`k[t]` is the weight at offset ±t). `[1]` for σ = 0.
+fn gaussian_half_kernel(sigma: f32) -> Vec<f32> {
+    let sigma = sigma.clamp(0.0, GRAIN_SIGMA_LIMIT_PX) as f64;
+    let r = (3.0 * sigma).ceil() as usize;
+    if r == 0 {
+        return vec![1.0];
     }
+    let w: Vec<f64> = (0..=r)
+        .map(|t| (-((t * t) as f64) / (2.0 * sigma * sigma)).exp())
+        .collect();
+    let sum = w[0] + 2.0 * w[1..].iter().sum::<f64>();
+    w.iter().map(|&v| (v / sum) as f32).collect()
+}
+
+/// `S = Σ_d A(d)·T(d)` for two half kernels `x`, `y`: `A` is their cross-correlation
+/// and `T` the autocorrelation of a box `l` pixels wide normalised to sum 1,
+/// `T(d) ∝ max(l − |d|, 0)` (exact box averaging for integer `l`, a delta for `l <= 1`).
+fn box_correlation(x: &[f32], y: &[f32], l: f64) -> f64 {
+    let full =
+        |h: &[f32]| -> Vec<f64> { h.iter().rev().chain(&h[1..]).map(|&v| v as f64).collect() };
+    let (fx, fy) = (full(x), full(y));
+    let (rx, ry) = (x.len() as isize - 1, y.len() as isize - 1);
+    // Σ_{d ∈ Z} max(l − |d|, 0) = l + 2·(n·l − n(n + 1)/2), n = number of d >= 1 below l.
+    let n = (l.ceil() - 1.0).max(0.0);
+    let norm = l + 2.0 * (n * l - n * (n + 1.0) / 2.0);
+    let mut s = 0.0;
+    for d in -(rx + ry)..=(rx + ry) {
+        let t = (l - d.unsigned_abs() as f64).max(0.0);
+        if t == 0.0 {
+            continue;
+        }
+        // A(d) = Σ_i x(i)·y(i + d), offsets from the kernel centres.
+        let a: f64 = (-rx..=rx)
+            .filter(|i| (i + d).abs() <= ry)
+            .map(|i| fx[(i + rx) as usize] * fy[(i + d + ry) as usize])
+            .sum();
+        s += a * t;
+    }
+    s / norm
+}
+
+/// Variance (per unit white-noise variance) of the field `F⊗F − c·G⊗G` averaged
+/// over `l × l` boxes; `l <= 1` is the per-pixel variance `Σ kernel²`. The
+/// 2-D kernel's autocorrelation is a sum of separable terms, so this is
+/// `S_ff² − 2c·S_fg² + c²·S_gg²` with the 1-D sums of [`box_correlation`].
+fn box_variance(fine: &[f32], coarse: &[f32], c: f64, l: f64) -> f64 {
+    let sff = box_correlation(fine, fine, l);
+    if c == 0.0 {
+        return sff * sff;
+    }
+    let sfg = box_correlation(fine, coarse, l);
+    let sgg = box_correlation(coarse, coarse, l);
+    (sff * sff - 2.0 * c * sfg * sfg + c * c * sgg * sgg).max(0.0)
 }
 
 /// Smallest tile edge of the grain field; tiles grow with the margin so the
 /// procedural border stays a modest fraction of the work.
 const GRAIN_TILE_MIN: usize = 256;
 
-/// The grain field `n(x, y)`: zero-mean, unit expected deviation, a function of
-/// `(x, y, seed)` and the settings only. Computed in tiles (see the module docs).
+/// The grain field `n(x, y)`: zero-mean, a function of `(x, y, seed)` and the
+/// settings only. Computed in tiles (see the module docs).
 struct GrainField {
-    /// Fine blur sigma (pixels) and the coarse octave's.
-    sigma: f32,
-    coarse_sigma: f32,
+    /// Fine and coarse Gaussian half kernels (pixels at this render size).
+    fine: Vec<f32>,
+    coarse: Vec<f32>,
     /// Weight of the coarse octave subtracted from the fine one (`1 − roughness`).
     coarse_weight: f32,
-    /// Procedural noise border around each tile, at least the blurs' reach.
+    /// Procedural noise border around each tile: the blurs' reach.
     margin: usize,
-    /// `1 / sqrt(expected variance)` of the unnormalised field (0 when it is identically 0).
+    /// Scale from the filtered noise to the normalised field (0 when it is identically 0).
     inv_std: f32,
+    /// Expected variance of the normalised field: 1 at the reference size, and
+    /// what the reference field box-averaged to this size has elsewhere.
+    variance: f32,
     seed_key: u64,
 }
 
 impl GrainField {
-    fn new(sigma: f32, roughness: f32, seed: u64, k: &EffectsStrengths) -> GrainField {
-        let sigma = if sigma.is_finite() {
-            sigma.max(0.0)
+    /// `sigma_ref`: fine sigma in pixels at the 24 MP reference; `scale`: this
+    /// render's linear size relative to the reference.
+    fn new(
+        sigma_ref: f32,
+        scale: f32,
+        roughness: f32,
+        seed: u64,
+        k: &EffectsStrengths,
+    ) -> GrainField {
+        let sigma_ref = if sigma_ref.is_finite() {
+            sigma_ref.max(0.0)
         } else {
             0.0
         };
-        // The coarse octave is at least a pixel wide so the band-pass (Roughness 0)
-        // never collapses to nothing on small images.
-        let coarse_sigma = (sigma * k.grain_octave_ratio.max(1.0) as f32).max(1.0);
+        let scale = if scale.is_finite() && scale > 0.0 {
+            scale
+        } else {
+            1.0
+        };
+        let ratio = k.grain_octave_ratio.max(1.0) as f32;
         let r = if roughness.is_nan() {
             0.5
         } else {
             roughness.clamp(0.0, 1.0)
         };
         let coarse_weight = 1.0 - r;
-        let reach = if coarse_weight != 0.0 {
-            sigma.max(coarse_sigma)
-        } else {
-            sigma
+        let c = coarse_weight as f64;
+        // The coarse octave is at least a pixel wide so the band-pass (Roughness 0)
+        // never collapses to nothing on small images.
+        let kernels = |sigma: f32| {
+            let sigma = sigma.min(GRAIN_SIGMA_LIMIT_PX);
+            (
+                gaussian_half_kernel(sigma),
+                gaussian_half_kernel((sigma * ratio).max(1.0)),
+            )
         };
-        let mut field = GrainField {
-            sigma,
-            coarse_sigma,
+        let (fine, coarse) = kernels(sigma_ref * scale);
+        let margin = if coarse_weight != 0.0 {
+            fine.len().max(coarse.len())
+        } else {
+            fine.len()
+        } - 1;
+        // Strength is defined at the reference size, so a render at another size
+        // matches the reference render box-averaged to that size. Below the
+        // reference the target is the reference field's variance averaged over
+        // `1/scale`-pixel boxes; above it, the field is set so that averaging it
+        // over `scale`-pixel boxes gives the reference's unit variance.
+        let per_pixel = box_variance(&fine, &coarse, c, 1.0);
+        let target = if scale < 1.0 {
+            let (f_ref, c_ref) = kernels(sigma_ref);
+            let unit = box_variance(&f_ref, &c_ref, c, 1.0);
+            if unit > 1e-20 {
+                box_variance(&f_ref, &c_ref, c, 1.0 / scale as f64) / unit
+            } else {
+                0.0
+            }
+        } else {
+            let averaged = box_variance(&fine, &coarse, c, scale as f64);
+            if averaged > 1e-20 {
+                per_pixel / averaged
+            } else {
+                0.0
+            }
+        };
+        let raw = WHITE_VARIANCE * per_pixel;
+        let (inv_std, variance) = if raw > 1e-20 && target.is_finite() && target > 0.0 {
+            ((target / raw).sqrt() as f32, target as f32)
+        } else {
+            (0.0, 0.0)
+        };
+        GrainField {
+            fine,
+            coarse,
             coarse_weight,
-            margin: blur_support(reach),
-            inv_std: 1.0,
+            margin,
+            inv_std,
+            variance,
             seed_key: mix64(seed ^ 0x6772_6169_6E5F_7631), // "grain_v1"
-        };
-        // Expected variance = white variance · Σ kernel², with the kernel read off
-        // the impulse response of the very same blurs (box approximations
-        // included). The ring of zeros beyond the reach keeps edge clamping out.
-        let n = 2 * field.margin + 3;
-        let mut impulse = vec![0.0f32; n * n];
-        impulse[(n / 2) * n + n / 2] = 1.0;
-        let sum_sq: f64 = field
-            .filter(&impulse, n, n)
-            .iter()
-            .map(|&v| (v as f64) * (v as f64))
-            .sum();
-        let var = WHITE_VARIANCE * sum_sq;
-        field.inv_std = if var > 1e-20 {
-            (1.0 / var.sqrt()) as f32
-        } else {
-            0.0
-        };
-        field
+        }
     }
 
     /// Tile edge for this field's margin.
@@ -555,38 +682,104 @@ impl GrainField {
         GRAIN_TILE_MIN.max(6 * self.margin)
     }
 
-    /// The unnormalised field filter, `blur(σ) − c·blur(σ_coarse)`, on one plane.
-    fn filter(&self, plane: &[f32], w: usize, h: usize) -> Vec<f32> {
-        let mut out = gaussian_blur(plane, w, h, self.sigma);
-        if self.coarse_weight != 0.0 {
-            let coarse = gaussian_blur(plane, w, h, self.coarse_sigma);
-            let c = self.coarse_weight;
-            out.iter_mut().zip(&coarse).for_each(|(f, &q)| *f -= c * q);
-        }
-        out
-    }
-
-    /// Normalised field over `[x0, x0 + tw) × [y0, y0 + th)`, row-major. The
-    /// noise around the tile is generated too, so the blurs never clamp and
-    /// adjacent tiles join seamlessly.
-    fn tile(&self, x0: usize, y0: usize, tw: usize, th: usize) -> Vec<f32> {
+    /// Normalised field over `[x0, x0 + tw) × [y0, y0 + th)`, row-major, into
+    /// `out`. The noise around the tile is generated too, so the blurs never
+    /// clamp, and every value is summed in the same order whatever the tiling,
+    /// so adjacent tiles join bit-identically.
+    fn tile_into(
+        &self,
+        (x0, y0, tw, th): (usize, usize, usize, usize),
+        scratch: &mut GrainScratch,
+        out: &mut Vec<f32>,
+    ) {
         let m = self.margin;
         let (pw, ph) = (tw + 2 * m, th + 2 * m);
-        let mut white = vec![0.0f32; pw * ph];
-        for (j, row) in white.chunks_exact_mut(pw).enumerate() {
+        let GrainScratch {
+            white,
+            fine,
+            coarse,
+        } = scratch;
+        white.clear();
+        let x_start = x0 as i64 - m as i64;
+        for j in 0..ph {
             let y = (y0 + j) as i64 - m as i64;
-            let x_start = x0 as i64 - m as i64;
-            for (i, v) in row.iter_mut().enumerate() {
-                *v = hash_noise(x_start + i as i64, y, self.seed_key);
+            white.extend((0..pw as i64).map(|i| hash_noise(x_start + i, y, self.seed_key)));
+        }
+        let white: &[f32] = white;
+        // Horizontal passes: every padded row, the tile's columns only.
+        let with_coarse = self.coarse_weight != 0.0;
+        let horizontal = |kernel: &[f32], dst: &mut Vec<f32>| {
+            dst.resize(ph * tw, 0.0);
+            for (src, d) in white.chunks_exact(pw).zip(dst.chunks_exact_mut(tw)) {
+                blur_taps(d, kernel, 1.0, false, |t| {
+                    &src[(m as isize + t) as usize..][..tw]
+                });
+            }
+        };
+        horizontal(&self.fine, fine);
+        if with_coarse {
+            horizontal(&self.coarse, coarse);
+        }
+        let (fine, coarse): (&[f32], &[f32]) = (fine, coarse);
+        // Vertical passes, adding whole rows: `inv_std·(fine − c·coarse)`.
+        out.resize(tw * th, 0.0);
+        let coarse_scale = -self.coarse_weight * self.inv_std;
+        for (j, d) in out.chunks_exact_mut(tw).enumerate() {
+            let row = move |t: isize| ((j + m) as isize + t) as usize * tw;
+            blur_taps(d, &self.fine, self.inv_std, false, move |t| {
+                &fine[row(t)..][..tw]
+            });
+            if with_coarse {
+                blur_taps(d, &self.coarse, coarse_scale, true, move |t| {
+                    &coarse[row(t)..][..tw]
+                });
             }
         }
-        let field = self.filter(&white, pw, ph);
-        let mut out = Vec::with_capacity(tw * th);
-        for j in 0..th {
-            let src = &field[(j + m) * pw + m..][..tw];
-            out.extend(src.iter().map(|&v| v * self.inv_std));
-        }
+    }
+
+    /// [`GrainField::tile_into`] with fresh buffers.
+    #[cfg(test)]
+    fn tile(&self, x0: usize, y0: usize, tw: usize, th: usize) -> Vec<f32> {
+        let mut out = Vec::new();
+        self.tile_into((x0, y0, tw, th), &mut GrainScratch::default(), &mut out);
         out
+    }
+}
+
+/// Per-thread buffers of [`GrainField::tile_into`], reused from tile to tile.
+#[derive(Default)]
+struct GrainScratch {
+    white: Vec<f32>,
+    fine: Vec<f32>,
+    coarse: Vec<f32>,
+}
+
+/// One separable blur pass over a row: `dst = scale·Σ_t k[|t|]·src(t)` for
+/// `t` in `−r..=r` (`+=` when `add`), mirrored taps summed first. `src(t)` is
+/// the input shifted by `t` (pixels or rows), at least `dst.len()` long. Plain
+/// slice loops, so the compiler vectorises them.
+#[inline]
+fn blur_taps<'a>(
+    dst: &mut [f32],
+    k: &[f32],
+    scale: f32,
+    add: bool,
+    src: impl Fn(isize) -> &'a [f32],
+) {
+    let n = dst.len();
+    let k0 = k[0] * scale;
+    let centre = &src(0)[..n];
+    if add {
+        dst.iter_mut().zip(centre).for_each(|(d, &v)| *d += k0 * v);
+    } else {
+        dst.iter_mut().zip(centre).for_each(|(d, &v)| *d = k0 * v);
+    }
+    for (t, &kt) in k.iter().enumerate().skip(1) {
+        let kt = kt * scale;
+        let (lo, hi) = (&src(-(t as isize))[..n], &src(t as isize)[..n]);
+        dst.iter_mut()
+            .zip(lo.iter().zip(hi))
+            .for_each(|(d, (&a, &b))| *d += kt * (a + b));
     }
 }
 
@@ -602,29 +795,59 @@ fn lightness(y: f32) -> f32 {
     }
 }
 
+/// Midtone weight `(4·L·(1 − L))^power` on CIE lightness, for luminance in 0..1.
+fn grain_tone_weight(y: f32, power: f32) -> f32 {
+    let l = lightness(y.clamp(0.0, 1.0));
+    let weight = (4.0 * l * (1.0 - l)).clamp(0.0, 1.0);
+    if power == 1.0 {
+        weight
+    } else {
+        weight.powf(power)
+    }
+}
+
+/// Entries of the tone-weight table over luminance 0..1 (linearly interpolated;
+/// the weight is smooth there, so the error is far below a visible level).
+const GRAIN_WEIGHT_LUT: usize = 4096;
+
 /// Per-pixel grain application: a monochrome, midtone-weighted luminance ratio.
 struct GrainOp {
-    /// Log deviation at full weight.
+    /// Log deviation at full weight for a unit-variance field.
     strength: f32,
-    tone_power: f32,
+    /// Expected variance of the field (see [`GrainField`]).
+    variance: f32,
+    /// [`grain_tone_weight`] at `i / GRAIN_WEIGHT_LUT`, `i = 0..=GRAIN_WEIGHT_LUT`, plus a
+    /// repeated last entry so interpolation at 1 stays in bounds.
+    weight: Vec<f32>,
     lum: [f32; 3],
 }
 
 impl GrainOp {
+    fn new(strength: f32, variance: f32, tone_power: f32) -> GrainOp {
+        let mut weight: Vec<f32> = (0..=GRAIN_WEIGHT_LUT)
+            .map(|i| grain_tone_weight(i as f32 / GRAIN_WEIGHT_LUT as f32, tone_power))
+            .collect();
+        weight.push(weight[GRAIN_WEIGHT_LUT]);
+        GrainOp {
+            strength,
+            variance,
+            weight,
+            lum: luminance_weights(),
+        }
+    }
+
     #[inline]
     fn apply(&self, px: &mut [f32], n: f32) {
         let y = self.lum[0] * px[0] + self.lum[1] * px[1] + self.lum[2] * px[2];
         if y.is_nan() || y <= 0.0 {
             return;
         }
-        let l = lightness(y.min(1.0));
-        let mut weight = (4.0 * l * (1.0 - l)).clamp(0.0, 1.0);
-        if self.tone_power != 1.0 {
-            weight = weight.powf(self.tone_power);
-        }
+        let t = y.min(1.0) * GRAIN_WEIGHT_LUT as f32;
+        let i = t as usize;
+        let weight = self.weight[i] + (self.weight[i + 1] - self.weight[i]) * (t - i as f32);
         let a = self.strength * weight;
-        // Log-normal ratio: E[ratio] = 1 for unit-variance Gaussian n, never negative.
-        let ratio = (a * n - 0.5 * a * a).exp();
+        // Log-normal ratio: E[ratio] = 1 for Gaussian n of variance V, never negative.
+        let ratio = (a * n - 0.5 * a * a * self.variance).exp();
         px.iter_mut().for_each(|v| *v *= ratio);
     }
 }
@@ -636,13 +859,18 @@ pub fn apply_grain(img: &mut Image, p: &Grain, k: &EffectsStrengths) {
     if amount == 0.0 || amount.is_nan() || w == 0 || h == 0 {
         return;
     }
-    let sigma = grain_sigma_px(p.size, w, h, k);
-    let field = GrainField::new(sigma, (p.roughness / 100.0) as f32, p.seed, k);
-    let op = GrainOp {
-        strength: (amount * k.grain_strength.max(0.0)) as f32,
-        tone_power: k.grain_tone_power.max(0.0) as f32,
-        lum: luminance_weights(),
-    };
+    let field = GrainField::new(
+        grain_sigma_ref(p.size, k),
+        grain_scale(w, h),
+        (p.roughness / 100.0) as f32,
+        p.seed,
+        k,
+    );
+    let op = GrainOp::new(
+        (amount * k.grain_strength.max(0.0)) as f32,
+        field.variance,
+        k.grain_tone_power.max(0.0) as f32,
+    );
     if field.inv_std == 0.0 || op.strength == 0.0 {
         return;
     }
@@ -655,9 +883,11 @@ pub fn apply_grain(img: &mut Image, p: &Grain, k: &EffectsStrengths) {
         .for_each(|(band_index, band)| {
             let y0 = band_index * tile;
             let th = band.len() / (3 * w);
+            let mut scratch = GrainScratch::default();
+            let mut n = Vec::new();
             for x0 in (0..w).step_by(tile) {
                 let tw = tile.min(w - x0);
-                let n = field.tile(x0, y0, tw, th);
+                field.tile_into((x0, y0, tw, th), &mut scratch, &mut n);
                 for (j, n_row) in n.chunks_exact(tw).enumerate() {
                     let row = &mut band[(j * w + x0) * 3..][..tw * 3];
                     for (px, &nv) in row.chunks_exact_mut(3).zip(n_row) {
@@ -671,6 +901,7 @@ pub fn apply_grain(img: &mut Image, p: &Grain, k: &EffectsStrengths) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::filters::gaussian_blur;
 
     fn k() -> EffectsStrengths {
         EffectsStrengths::default()
@@ -711,7 +942,7 @@ mod tests {
 
     /// The normalised grain field over `[0, w) × [0, h)` at an explicit sigma.
     fn grain_field(w: usize, h: usize, sigma: f32, r: f32, seed: u64) -> Vec<f32> {
-        GrainField::new(sigma, r, seed, &k()).tile(0, 0, w, h)
+        GrainField::new(sigma, 1.0, r, seed, &k()).tile(0, 0, w, h)
     }
 
     fn grained(img: &Image, g: &Grain) -> Image {
@@ -1134,6 +1365,96 @@ mod tests {
         assert!((protected_exposure(0.5, 0.25, 0.0) - 0.125).abs() < 1e-7);
     }
 
+    #[test]
+    fn priority_styles_move_values_above_one_the_right_way() {
+        // Channels above 1 reach this stage (no clipping before effects): a darkening
+        // vignette must never raise them and a lightening one never lower them.
+        for &h in &[0.0f32, 0.3, 0.7, 1.0] {
+            for &(g, darken) in &[(0.177f32, true), (0.5, true), (2.0, false), (4.0, false)] {
+                for i in -50..=300 {
+                    let v = i as f32 / 100.0;
+                    let y = protected_exposure(v, g, h);
+                    if v >= 0.0 && darken {
+                        assert!(y <= v + 1e-6, "g {g} h {h}: {v} -> {y}");
+                    } else if v >= 0.0 {
+                        assert!(y >= v - 1e-6, "g {g} h {h}: {v} -> {y}");
+                    } else {
+                        // Negative (out-of-gamut) values scale like a gain.
+                        assert!((y - v * g).abs() < 1e-6, "g {g} h {h}: {v} -> {y}");
+                    }
+                }
+            }
+        }
+        let img = Image::from_fn(40, 30, |_, _| [1.2, 0.3, 0.1]);
+        for style in [1, 2] {
+            for (amount, darker) in [(-100.0, true), (100.0, false)] {
+                let out = vignetted(
+                    &img,
+                    &Vignette {
+                        style,
+                        feather: 0.0,
+                        highlights: 100.0,
+                        ..vig(amount)
+                    },
+                );
+                let p = out.get(0, 0);
+                if darker {
+                    assert!(
+                        p[0] <= 1.2 && p[1] <= 0.3 && p[2] <= 0.1,
+                        "style {style}: {p:?}"
+                    );
+                } else {
+                    assert!(
+                        p[0] >= 1.2 && p[1] >= 0.3 && p[2] >= 0.1,
+                        "style {style}: {p:?}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn nan_highlight_contrast_stays_finite() {
+        let img = flat(30, 20, 0.6);
+        for style in [1, 2] {
+            let out = vignetted(
+                &img,
+                &Vignette {
+                    style,
+                    highlights: f64::NAN,
+                    ..vig(-80.0)
+                },
+            );
+            assert!(all_finite(&out), "style {style}");
+            assert!(out.get(0, 0)[0] < 0.6);
+        }
+    }
+
+    #[test]
+    fn hard_edge_stays_inside_the_frame_at_every_midpoint() {
+        // Amount -100 always darkens the corner, whatever Midpoint, Feather and
+        // Roundness: Feather only softens the edge, it never switches it on.
+        for (w, h) in [(600, 400), (6000, 4000), (31, 17)] {
+            for midpoint in [0.0, 50.0, 100.0] {
+                for feather in [0.0, 1.0, 10.0, 100.0] {
+                    for roundness in [-100.0, 0.0, 100.0] {
+                        let v = Vignette {
+                            midpoint,
+                            feather,
+                            roundness,
+                            ..vig(-100.0)
+                        };
+                        let m = VignetteMask::new(w, h, &v, &k()).at(0, 0);
+                        assert!(m > 0.5, "{w}x{h} {v:?}: corner mask {m}");
+                        if feather == 0.0 {
+                            assert!(m > 0.99, "{w}x{h} {v:?}: corner mask {m}");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // -------------------------------------------------------------- grain
 
     #[test]
@@ -1275,9 +1596,14 @@ mod tests {
     #[test]
     fn grain_tiles_join_seamlessly() {
         // The field depends only on (x, y, seed): any tiling gives the same values.
-        // Bit-identical on the exact-kernel path; running sums (box path) differ by rounding.
-        for (sigma, r, tol) in [(1.0, 0.5, 0.0), (0.0, 0.0, 0.0), (3.5, 0.0, 1e-4)] {
-            let field = GrainField::new(sigma, r, 9, &k());
+        // Every value is summed in the same order, so the tiles are bit-identical.
+        for (sigma, scale, r) in [
+            (1.0, 1.0, 0.5),
+            (0.0, 1.0, 0.0),
+            (3.5, 1.0, 0.0),
+            (2.0, 0.3, 1.0),
+        ] {
+            let field = GrainField::new(sigma, scale, r, 9, &k());
             let (w, h) = (90, 70);
             let whole = field.tile(5, 11, w, h);
             let (sx, sy) = (37, 23);
@@ -1286,7 +1612,7 @@ mod tests {
                 for j in 0..th {
                     for i in 0..tw {
                         let (a, b) = (part[j * tw + i], whole[(y0 + j) * w + x0 + i]);
-                        assert!((a - b).abs() <= tol, "sigma {sigma} ({i},{j}): {a} {b}");
+                        assert_eq!(a, b, "sigma {sigma} ({i},{j})");
                     }
                 }
             }
@@ -1308,26 +1634,98 @@ mod tests {
     }
 
     #[test]
-    fn blur_support_bounds_the_filter_reach() {
-        for sigma in [0.2f32, 0.3, 0.7, 1.5, 2.9, 3.0, 3.1, 5.5, 9.0, 17.3] {
-            let m = blur_support(sigma);
-            let n = 2 * m + 9;
-            let mut impulse = vec![0.0f32; n * n];
-            impulse[(n / 2) * n + n / 2] = 1.0;
-            let out = gaussian_blur(&impulse, n, n, sigma);
-            for y in 0..n {
-                for x in 0..n {
-                    let reach = (x as isize - (n / 2) as isize)
-                        .abs()
-                        .max((y as isize - (n / 2) as isize).abs());
-                    // Zero up to the rounding residue of the box passes' running sums.
-                    if reach as usize > m {
-                        let v = out[y * n + x];
-                        assert!(v.abs() < 1e-6, "sigma {sigma} at ({x},{y}): {v}");
-                    }
+    fn grain_blur_matches_the_reference_gaussian() {
+        // The tile-local blur is the same Gaussian as `filters::gaussian_blur`
+        // (exact-kernel path) away from the clamped frame edges.
+        for (sigma, r) in [(0.8f32, 0.0f32), (1.2, 0.5), (2.5, 1.0)] {
+            let field = GrainField::new(sigma, 1.0, r, 21, &k());
+            let (w, h, m) = (60usize, 50usize, field.margin);
+            let (pw, ph) = (w + 2 * m, h + 2 * m);
+            let white: Vec<f32> = (0..pw * ph)
+                .map(|i| {
+                    hash_noise(
+                        (i % pw) as i64 - m as i64,
+                        (i / pw) as i64 - m as i64,
+                        field.seed_key,
+                    )
+                })
+                .collect();
+            let fine = gaussian_blur(&white, pw, ph, sigma);
+            let coarse = gaussian_blur(&white, pw, ph, (sigma * 2.5).max(1.0));
+            let tile = field.tile(0, 0, w, h);
+            for y in 0..h {
+                for x in 0..w {
+                    let i = (y + m) * pw + x + m;
+                    let expected = (fine[i] - (1.0 - r) * coarse[i]) * field.inv_std;
+                    let got = tile[y * w + x];
+                    assert!(
+                        (got - expected).abs() < 1e-4,
+                        "sigma {sigma} ({x},{y}): {got} {expected}"
+                    );
                 }
             }
         }
+    }
+
+    /// Box average of a `w × h` plane over `f × f` blocks.
+    fn box_down(v: &[f32], w: usize, h: usize, f: usize) -> Vec<f32> {
+        let (dw, dh) = (w / f, h / f);
+        let mut out = vec![0.0f32; dw * dh];
+        for y in 0..dh * f {
+            for x in 0..dw * f {
+                out[(y / f) * dw + x / f] += v[y * w + x] / (f * f) as f32;
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn grain_strength_is_resolution_independent() {
+        // A render at a reduced size has the grain of the reference render box-averaged
+        // to that size (what a viewer sees when the full render is scaled down), and a
+        // render above the reference averages down to the reference's unit deviation.
+        let k = k();
+        for size in [0.0, 25.0, 100.0] {
+            let sigma_ref = grain_sigma_ref(size, &k);
+            for r in [0.0f32, 0.5, 1.0] {
+                let reference = GrainField::new(sigma_ref, 1.0, r, 5, &k).tile(0, 0, 1024, 1024);
+                assert!((std(&reference) - 1.0).abs() < 0.05, "size {size} r {r}");
+                for f in [2usize, 4] {
+                    let averaged = std(&box_down(&reference, 1024, 1024, f));
+                    let field = GrainField::new(sigma_ref, 1.0 / f as f32, r, 6, &k);
+                    let n = 1024 / f;
+                    let direct = std(&field.tile(0, 0, n, n));
+                    assert!(
+                        (direct / averaged - 1.0).abs() < 0.1,
+                        "size {size} r {r} 1/{f}: direct {direct} vs averaged reference {averaged}"
+                    );
+                    // The field's own variance is the one the grain op is told about.
+                    assert!((direct / (field.variance as f64).sqrt() - 1.0).abs() < 0.06);
+                }
+                let big = GrainField::new(sigma_ref, 2.0, r, 7, &k).tile(0, 0, 1024, 1024);
+                let down = std(&box_down(&big, 1024, 1024, 2));
+                assert!((down - 1.0).abs() < 0.1, "size {size} r {r} x2: {down}");
+            }
+        }
+        // Through the public path, with grain coarse enough (10 px at the reference)
+        // that the larger test render still resolves it: the small render matches
+        // the larger one averaged down to the same size.
+        let coarse = EffectsStrengths {
+            grain_sigma_min_px: 10.0,
+            ..k
+        };
+        let g = Grain {
+            size: 0.0,
+            ..grain(100.0)
+        };
+        let render = |w, h| {
+            let mut img = flat(w, h, 0.18);
+            apply_grain(&mut img, &g, &coarse);
+            img.luminance()
+        };
+        let (large, small) = (render(1200, 800), render(300, 200));
+        let (a, b) = (std(&box_down(&large, 1200, 800, 4)), std(&small));
+        assert!((b / a - 1.0).abs() < 0.15, "{a} {b}");
     }
 
     #[test]
@@ -1352,6 +1750,7 @@ mod tests {
     #[test]
     fn grain_size_scales_with_resolution() {
         let k = k();
+        assert_eq!(grain_scale(6000, 4000), 1.0);
         let at_ref = grain_sigma_px(25.0, 6000, 4000, &k);
         let at_half = grain_sigma_px(25.0, 3000, 2000, &k);
         assert!((at_ref / at_half - 2.0).abs() < 1e-5);

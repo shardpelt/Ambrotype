@@ -113,6 +113,29 @@ Full detail lives in [01-lightroom-feature-inventory](research/01-lightroom-feat
 - HDR / panorama merge
 - HDR editing and output
 
+### Features competitors have that Lightroom lacks, and which ones to adopt
+
+From [09](research/09-market-commercial-alternatives.md), [12](research/12-user-feedback-and-design-implications.md) and the darktable/RawTherapee surveys. ✅ = adopt; the phase is given in brackets.
+
+| Feature | Who has it, and the praise | Decision |
+|---|---|---|
+| Ultra-fast culling from embedded previews (2–3 min for 4,000 images vs 45+ min in LR) | Photo Mechanic, FastRawViewer | ✅ [2] culling mode |
+| Folder-live browsing, no import step | DxO, Exposure, darktable | ✅ [2] (catalog optional, [3]) |
+| Best-in-class fast raw denoise (DeepPRIME) | DxO | ✅ [3] AI denoise (brought forward) |
+| Luminosity masks and a precise colour-range editor | Capture One, darktable | ✅ [3] |
+| Tone equaliser: zone-based dodge/burn that preserves local contrast | darktable | ✅ [3], also a candidate engine for Highlights/Shadows |
+| Scene-referred tone mappers with better highlight roll-off (filmic/sigmoid/AgX) | darktable | ✅ [2] as an optional "native" rendering mode next to "Lightroom-match" |
+| Capture sharpening (deconvolution) and a choice of demosaic | RawTherapee/ART, darktable | ✅ [2–3] ported under the GPL |
+| Film negative conversion (the Negative Lab Pro plugin for LR is much loved) | darktable `negadoctor`, RapidRAW | ✅ [3] |
+| One view with multi-select editing, no Library/Develop mode switching | Capture One | ✅ [2] UX principle |
+| Tethered shooting (industry standard) | Capture One | ✅ [4] (libgphoto2) |
+| Lens-softness correction from measured lens data | DxO | Later (needs data we don't have) |
+| AI "learn my style" from past edits | Imagen, Aftershoot (paid, per photo) | ✅ [3/4] via `flb match` and AI control ([design/ai-control](design/ai-control.md)) |
+| Focus stacking, HDR and pano merge | ON1, Lightroom (no focus stacking) | Later [4] |
+| Full layers and compositing | ON1, Capture One | Not planned: masks and mask groups cover editing; compositing is a Photoshop/GIMP job |
+| Sky replacement and generative relight | Luminar | Not planned (users call the results "fake") |
+| A real perpetual licence and Linux support | none fully | ✅ by design: GPL, free, three OSes |
+
 ---
 
 ## 4. Landscape and what we learn from each
@@ -194,7 +217,14 @@ Full detail lives in [01-lightroom-feature-inventory](research/01-lightroom-feat
   - Adobe presets
   - anything from decompiling Lightroom
 - **Users' purchased presets:** we read them locally and never redistribute or convert them for sharing. Some seller licences forbid conversion; reading them for application in the user's own editor is the defensible interoperability use. This needs counsel before 1.0.
-- **Trademark:** don't use "Lightroom" in the product name. "Flightbroom" is an evident pun. Run a quick trademark check before a public launch.
+- **Trademark:** don't use "Lightroom" in the product name.
+  - A quick check on 2026-10-04 found no product, GitHub repository or obvious trademark named "Flightbroom" (web search, GitHub search). The .com/.org/.app/.dev domains didn't resolve, so they're probably unregistered.
+  - **Remaining risk:** the name is an evident play on "Lightroom", and Adobe enforces its marks. Parody names have still drawn complaints when the products compete in the same market.
+  - **Mitigations:**
+    - never use Adobe's logos, colours or the word "Lightroom" in branding
+    - use "Lightroom" only descriptively ("imports Lightroom® presets"), with the trademark notice
+    - consider a USPTO/EUIPO search, or a short consult, before a big launch
+  - Have a fallback name ready.
 
 ---
 
@@ -261,6 +291,7 @@ Durations are rough person-month (pm) estimates for experienced engineers.
 - Preset importer (XMP + lrtemplate), tag registry, fidelity report, Amount.
 - `flb render --preset x.xmp in.raw out.tif`.
 - Calibration harness and first fitted tables; fidelity dashboard in CI.
+- `flb-protocol` develop-command set; `--json` across the CLI; a generated AI-readable settings reference (`docs/ai/`, built from the tag registry).
 - Performance-benchmark CI. A camera-support process: per-camera fitted fallback profiles and a sample-submission pipeline. Users complain about Adobe's delays supporting new cameras.
 - Exit: on the corpus, the median ΔE00 vs Lightroom for the top 20 most-used tags is under target (proposal: < 2).
 
@@ -278,6 +309,8 @@ Durations are rough person-month (pm) estimates for experienced engineers.
   - copy/paste and auto-sync of settings with groups; auto-tone
   - a GPU background export queue with post-export hooks and "edit in external app"
   - **metadata-only `.lrcat` import** (folders, keywords, ratings, labels, collections), brought forward from Phase 3 because it's the main thing holding people in Lightroom
+- `flb mcp` server (bring-your-own-AI via MCP clients) and `flb match` v1 (look matching from sample images).
+- "Native" scene-referred rendering mode next to "Lightroom-match"; capture sharpening.
 - Exit: target performance budgets are met, and a usability test with Lightroom switchers passes.
 
 ### Phase 3: v1 "Lightroom-class" (about 12–18 pm)
@@ -289,6 +322,8 @@ Durations are rough person-month (pm) estimates for experienced engineers.
 - AI subject/sky masks (SAM2/BiRefNet via `ort`; on-demand model download). Polygon lasso, mask reordering, luminosity masks.
 - **AI denoise** (SCUNet/NAFNet-class), brought forward from Phase 4. It's the AI feature users say sold them on Lightroom.
 - Resumable import; mapping of Lightroom smart collections.
+- In-app AI assistant panel (BYO API key or local model) with a vision refinement loop; tone equaliser; film negative conversion; luminosity masks.
+- SIMD and assembly optimisation of measured CPU hot spots (performance ladder, §9).
 
 ### Phase 4: Later
 - More AI: people parts, objects, depth range, Lens Blur (Depth Anything V2-S), content-aware remove (LaMa), Super Resolution.
@@ -312,6 +347,17 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 - **UI shell:** replaceable, behind a typed, pixel-free command protocol. The desktop default is Tauri 2 with a native wgpu child surface for the viewport; Qt 6 is the fallback. The decision depends on the Phase 0 spike.
 - **Platforms:** Windows (x64 and ARM64; DX12/Vulkan), macOS (Apple Silicon and Intel; Metal; EDR), Linux (Wayland and X11; Vulkan) are all first-class. Per-OS details are in [08 §1](research/08-cross-platform-and-mobile.md).
 - **Testing:** golden images, preset fidelity suite, parser fuzzers.
+- **Performance ladder** (VLC/dav1d style, but measured; [11 §3.1](research/11-architecture-lessons-from-large-oss.md)). Every rung needs a benchmark showing the gain plus an equivalence test against the scalar reference (FFmpeg's `checkasm` pattern).
+  1. **Algorithms and the GPU first.** Interactive pixel work runs in WGSL compute shaders, where assembly doesn't apply.
+  2. **Portable Rust SIMD** (`std::simd` / `core::arch` intrinsics) with runtime CPU-feature dispatch: SSE4.2/AVX2/AVX-512, NEON.
+  3. **Hand-written assembly, dav1d-style,** for proven CPU hot spots on the paths that run without a GPU or in the background:
+     - raw unpacking and lossless-JPEG/CR3 decompression
+     - demosaic
+     - colour-matrix and LUT application
+     - thumbnail/preview resampling
+     - JPEG encode: libjpeg-turbo already has assembly
+     - rav1d shows Rust can wrap dav1d's assembly within about 6% of C. Assembly lives in `.S` files per ISA, behind the same dispatch as rung 2.
+- **AI control surface** ([design/ai-control](design/ai-control.md)). The GUI, CLI, MCP server and an optional in-app assistant all drive the engine through `flb-protocol`, so any AI can use the real controls (undoable, previewed, local-first). "Make this look like these samples" is a deterministic look-matching solver (`flb match`) that outputs editable slider values, with an optional vision-model refinement loop.
 - **Adopted from the architecture study** ([11](research/11-architecture-lessons-from-large-oss.md), lessons from VLC, FFmpeg, Blender, OBS, GEGL, darktable, mpv, Zed, Rerun, Ruffle and Bevy):
   - **Language: Rust** for the engine, catalog, CLI and tooling. C/C++ only through existing libraries behind traits.
   - **Product shape like FFmpeg and libmpv:** the product is the library; the CLI and the GUI are clients of it.
@@ -380,7 +426,7 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 3. Fidelity target that defines "compatible" (proposal: median ΔE00 < 2, p95 < 5 over the corpus for the top-20 tags).
 4. Who holds a licensed Lightroom Classic install to run the calibration sweeps, and where reference renders are stored (private; only CC0 inputs are committed).
 5. Whether to reach out to RapidRAW's maintainer about a shared, Adobe-compatible engine crate.
-6. Product name / trademark check.
+6. Product name: no conflicts found in the quick check; the residual risk is Adobe objecting to the pun (§6). Decide whether to keep it, and register the domain.
 
 ---
 

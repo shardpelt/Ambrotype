@@ -15,6 +15,13 @@ A month of Lightroom Classic is our only chance to gather **ground truth**: refe
 | Preset corpus | Your purchased presets plus free ones, kept in a private folder and never committed | You |
 | Run sheet | A checklist and folder layout so every export is labelled with LR version, process version and settings | To write |
 
+## Storage setup (owner's hardware: 2 TB drive + 2 × 960 GB Kingston A400 SSDs over USB)
+- Keep Lightroom's **catalog and Camera Raw cache on the fastest internal drive** (the 2 TB).
+- Use **A400 #1 for inputs** (the sweep kit) and **A400 #2 for exports**, so reads and writes don't contend.
+- The A400 is a DRAM-less SATA SSD. Over USB 3 it reads at about 400 MB/s, but sustained writes slow sharply once its cache fills (tens to about 100 MB/s). That's fine for exports, but expect long batches to slow down. Use USB 3 ports, not USB 2.
+- Format the drives exFAT if they'll move between Windows, macOS and Linux; otherwise NTFS on Windows.
+- Budget: about 30–60 GB of renders with the storage guidance below, so space is not a concern. Keep a copy of the final archive on two drives.
+
 ## Plan type
 - Pick the **monthly, no-commitment** plan. Adobe's "annual, billed monthly" plan charges a fee if you cancel early. Check the current terms when you subscribe.
 - Adobe's 7-day free trial can be used first for a quick check that the kit imports correctly.

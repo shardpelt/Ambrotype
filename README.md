@@ -8,7 +8,9 @@ A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linu
 - [docs/SCOPE.md](docs/SCOPE.md): the project scope, strategy, roadmap, risks and open decisions. Start here.
 - [docs/research/](docs/research/): research on Lightroom's features, preset and profile formats, darktable, RawTherapee and the OSS ecosystem, processing algorithms, tech stack, RapidRAW, cross-platform concerns, the commercial market, and a reading list.
 - [docs/adobe-docs/](docs/adobe-docs/): source-only digests of Adobe's official Lightroom and Camera Raw help.
+- [docs/desktop-setup.md](docs/desktop-setup.md): build and run it on your machine.
 - [docs/lightroom-trial-plan.md](docs/lightroom-trial-plan.md) and [docs/sources-to-collect.md](docs/sources-to-collect.md): what to gather next.
+- [docs/design/ai-control.md](docs/design/ai-control.md): bring-your-own-AI control and look matching.
 
 ## Code (Rust workspace)
 

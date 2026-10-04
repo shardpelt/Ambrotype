@@ -23,13 +23,20 @@
 //!   filter of `Lt` at a medium radius (~10 px at 24 MP), so strong edges stay in
 //!   the base. Large band values are soft-limited, so the control targets
 //!   low-amplitude detail. Positive Texture adds `gain · band`, negative removes
-//!   up to all of it (smoothing that keeps large edges and fine grain).
+//!   a fraction of the (soft-limited) band (smoothing that keeps large edges
+//!   and fine grain): up to all of low-amplitude detail, at most
+//!   `texture_smooth · texture_band_limit` of a large band value.
 //!
-//! The summed change is soft-limited to the headroom left below white and above
-//! black (no clipping, no crushed blacks), then applied to RGB as a luminance
-//! ratio, which preserves hue and saturation. Spatial scales are resolution
-//! independent: they refer to a 24 MP (6000 × 4000) frame and scale with the
-//! image diagonal, so a preview and the full-size export look the same.
+//! The changes of the controls set to positive values are summed and
+//! soft-limited together ([`LocalStrengths::combined_limit`]), so stacking
+//! Clarity and Texture does not double the rim next to a moderate edge. The
+//! total change is soft-limited to the headroom left below white and above
+//! black (and, when brightening, below white in the brightest RGB channel), so
+//! nothing clips or crushes, then applied to RGB as a luminance ratio, which
+//! preserves hue and saturation. Spatial scales are resolution independent:
+//! they refer to a 24 MP (6000 × 4000) frame and scale with the image diagonal
+//! (box windows use fractional radii, so the effective scale is continuous), so
+//! a preview and the full-size export look the same.
 //!
 //! Interface contract (do not change without updating pipeline.rs):
 //! - runs on the display-linear ProPhoto image, after the base look and the
@@ -37,6 +44,8 @@
 //! - `texture` and `clarity` are Camera Raw slider values in -100..100;
 //! - must be a no-op when both are 0, must not shift global brightness or hue,
 //!   and must keep values finite (clamping to 0..1 is the caller's job).
+//!   Non-finite input pixels pass through unchanged and do not affect their
+//!   neighbours.
 
 use std::borrow::Cow;
 
@@ -44,7 +53,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::buffer::{Image, luminance_weights};
-use crate::filters::{box_blur, gaussian_blur};
+use crate::filters::gaussian_blur;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct LocalContrast {
@@ -76,7 +85,10 @@ pub struct LocalStrengths {
     pub clarity_fine_sigma_px: f32,
     /// Detail gain at Clarity +100: `L += gain · w · detail`.
     pub clarity_gain: f32,
-    /// Fraction of the way from the image to the base at Clarity -100 (capped at 1).
+    /// Fraction of the way from the image to the base at Clarity -100 (capped
+    /// at 1), for detail well below `clarity_detail_limit`. Larger detail goes
+    /// through the same soft limit, so at most `clarity_soften ·
+    /// clarity_detail_limit` is removed.
     pub clarity_soften: f32,
     /// Soft amplitude limit of the detail (encoded L): `detail → c · sat(detail / c)`
     /// with `sat(x) = x / sqrt(1 + x²)`.
@@ -96,13 +108,22 @@ pub struct LocalStrengths {
     pub texture_edge_eps: f32,
     /// Band gain at Texture +100: `L += gain · band`.
     pub texture_gain: f32,
-    /// Fraction of the band removed at Texture -100 (capped at 1).
+    /// Fraction of the band removed at Texture -100 (capped at 1), for band
+    /// values well below `texture_band_limit`; at most `texture_smooth ·
+    /// texture_band_limit` of a larger band value is removed.
     pub texture_smooth: f32,
     /// Soft amplitude limit of the band (encoded L): `band → c · sat(band / c)`,
     /// so Texture acts on low-amplitude detail rather than strong edges. 0 = off.
     pub texture_band_limit: f32,
     /// Midtone weight exponent for Texture (milder than Clarity's).
     pub texture_midtone_power: f32,
+    /// Limit of the summed change of the controls set to positive values
+    /// (encoded L): `delta → delta / (1 + (delta / c)⁴)^¼`, which saturates at
+    /// `±c` with a sharper knee than the per-control limits. Each control's own limit
+    /// bounds its rim next to a moderate edge (one whose contrast is below the
+    /// edge thresholds); this keeps the two rims from adding up when Clarity
+    /// and Texture are both raised. Linear for small changes. 0 = off.
+    pub combined_limit: f32,
 }
 
 impl Default for LocalStrengths {
@@ -126,6 +147,7 @@ pub const DEFAULT_STRENGTHS: LocalStrengths = LocalStrengths {
     texture_smooth: 0.85,
     texture_band_limit: 0.08,
     texture_midtone_power: 0.3,
+    combined_limit: 0.05,
 };
 
 /// Diagonal of the 24 MP (6000 × 4000) reference frame.
@@ -135,6 +157,19 @@ const REFERENCE_DIAGONAL: f32 = 7211.1025;
 /// (hue preserving) to a neutral offset, so near-black noise is not amplified
 /// into strong colour.
 const RATIO_KNEE_Y: f32 = 1e-3;
+
+/// Encoded luminance is clamped to ±this before filtering (and NaN replaced
+/// by 0), so one non-finite or absurd pixel cannot poison the running sums of
+/// the box filters across its row and column. Pixels at or beyond the bound
+/// (encoded 4 ≈ 25× white) pass through unchanged.
+const LEVEL_BOUND: f32 = 4.0;
+
+/// Smallest box half-width (pixels): the window never drops below two pixels,
+/// even on tiny thumbnails.
+const MIN_BOX_RADIUS: f32 = 0.5;
+
+/// Rows per parallel block in the vertical box pass.
+const BOX_ROW_BLOCK: usize = 64;
 
 /// The guided filters run on copies subsampled so that their box radius is
 /// about this many low-resolution pixels (He & Sun's fast guided filter). More
@@ -171,7 +206,7 @@ pub fn apply_scaled(img: &mut Image, p: &LocalContrast, k: &LocalStrengths, scal
     let l: Vec<f32> = img
         .rgb
         .par_chunks(3)
-        .map(|c| srgb_encode(lw[0] * c[0] + lw[1] * c[1] + lw[2] * c[2]))
+        .map(|c| filter_level(lw[0] * c[0] + lw[1] * c[1] + lw[2] * c[2]))
         .collect();
 
     // Pre-blurred luminance for each control (shared when the scales agree).
@@ -187,7 +222,7 @@ pub fn apply_scaled(img: &mut Image, p: &LocalContrast, k: &LocalStrengths, scal
             src,
             w,
             h,
-            (k.clarity_radius_frac * REFERENCE_DIAGONAL * scale).max(1.0),
+            scaled_radius(k.clarity_radius_frac * REFERENCE_DIAGONAL, scale),
             k.clarity_edge_eps,
             CLARITY_LOW_RES_RADIUS,
         ),
@@ -203,7 +238,7 @@ pub fn apply_scaled(img: &mut Image, p: &LocalContrast, k: &LocalStrengths, scal
                 src,
                 w,
                 h,
-                (k.texture_medium_radius_px * scale).max(1.0),
+                scaled_radius(k.texture_medium_radius_px, scale),
                 k.texture_edge_eps,
                 TEXTURE_LOW_RES_RADIUS,
             ),
@@ -218,28 +253,78 @@ pub fn apply_scaled(img: &mut Image, p: &LocalContrast, k: &LocalStrengths, scal
         .map(|i| srgb_decode(i as f32 / (DECODE_LUT_SIZE - 1) as f32))
         .collect();
     // One fused pass per row: evaluate the bases, sum the changes, apply to RGB.
+    // Controls set to positive values (detail boosts) are summed and limited
+    // together; negative ones (removal towards the base) cannot overshoot.
     img.rgb.par_chunks_mut(3 * w).enumerate().for_each_init(
-        || (vec![0.0f32; w], vec![0.0f32; w]),
-        |(delta, base_row), (y, row)| {
+        || (vec![0.0f32; w], vec![0.0f32; w], vec![0.0f32; w]),
+        |(boost, remove, base_row), (y, row)| {
             let span = y * w..(y + 1) * w;
-            delta.fill(0.0);
+            boost.fill(0.0);
+            remove.fill(0.0);
             for band in &bands {
-                band.add_row(y, base_row, delta);
+                let acc = if band.amount > 0.0 {
+                    &mut *boost
+                } else {
+                    &mut *remove
+                };
+                band.add_row(y, base_row, acc);
             }
-            for ((px, &lv), &d) in row.chunks_exact_mut(3).zip(&l[span]).zip(delta.iter()) {
-                if d == 0.0 {
+            let deltas = boost.iter().zip(remove.iter());
+            for ((px, &lv), (&dp, &dn)) in row.chunks_exact_mut(3).zip(&l[span]).zip(deltas) {
+                let d = hard_knee_limit(dp, k.combined_limit) + dn;
+                if d == 0.0 || lv.abs() >= LEVEL_BOUND || !px.iter().all(|c| c.is_finite()) {
                     continue;
                 }
-                let target = lv + headroom_limit(lv, d);
-                let y_new = if (0.0..=1.0).contains(&target) {
-                    lookup(&decode_lut, target)
-                } else {
-                    srgb_decode(target)
-                };
+                let mut y_new = decode_level(&decode_lut, lv + headroom_limit(lv, d));
+                if d > 0.0 {
+                    y_new = y_new.min(channel_cap(px, lw, d, &decode_lut));
+                }
                 apply_luminance(px, lw, y_new);
             }
         },
     );
+}
+
+/// Encoded luminance for filtering: finite and within ±[`LEVEL_BOUND`].
+fn filter_level(y: f32) -> f32 {
+    let v = srgb_encode(y);
+    if v.is_nan() {
+        0.0
+    } else {
+        v.clamp(-LEVEL_BOUND, LEVEL_BOUND)
+    }
+}
+
+/// Box half-width at `scale` for a half-width of `r_ref` pixels at the 24 MP
+/// reference. The whole window (`2r + 1` pixels) scales with the image, so
+/// small radii on previews keep the same extent relative to the picture.
+fn scaled_radius(r_ref: f32, scale: f32) -> f32 {
+    ((r_ref + 0.5) * scale - 0.5).max(MIN_BOX_RADIUS)
+}
+
+/// sRGB decode of an encoded level, by table on 0..1.
+fn decode_level(lut: &[f32], v: f32) -> f32 {
+    if (0.0..=1.0).contains(&v) {
+        lookup(lut, v)
+    } else {
+        srgb_decode(v)
+    }
+}
+
+/// Largest luminance a brightening by `d` (encoded) may reach without pushing
+/// the brightest channel past white: the luminance ratio scales every channel,
+/// so a saturated colour with a mid-grey luminance would otherwise clip in
+/// one channel (and the caller's clamp would shift its hue). The brightest
+/// channel gets the same headroom limit as luminance, in its own encoded
+/// level. Neutral pixels (and the near-black offset range) are not limited.
+fn channel_cap(px: &[f32], lw: [f32; 3], d: f32, lut: &[f32]) -> f32 {
+    let y = lw[0] * px[0] + lw[1] * px[1] + lw[2] * px[2];
+    let m = px[0].max(px[1]).max(px[2]);
+    if y < RATIO_KNEE_Y || m <= y {
+        return f32::INFINITY;
+    }
+    let mc = srgb_encode(m);
+    y * (decode_level(lut, mc + headroom_limit(mc, d)) / m)
 }
 
 /// One control's contribution: `amount · w(base) · limit(src - base)`.
@@ -304,6 +389,19 @@ fn soft_limit(v: f32, c: f32) -> f32 {
     if c > 0.0 { c * sat(v / c) } else { v }
 }
 
+/// `c · v / (c⁴ + v⁴)^¼`: like [`soft_limit`] (saturating at `±c`) but with a
+/// sharper knee, so changes up to about half of `c` pass almost unchanged
+/// (−1.5% at `c / 2`). `c <= 0` = no limit.
+fn hard_knee_limit(v: f32, c: f32) -> f32 {
+    if c > 0.0 {
+        let x = v / c;
+        let x2 = x * x;
+        v / (1.0 + x2 * x2).sqrt().sqrt()
+    } else {
+        v
+    }
+}
+
 /// Soft-limit a change `d` of encoded luminance `l` to the room left before
 /// white (for brightening) or black (for darkening): `room · sat(d / room)`.
 /// Slope 1 for small changes, never crossing 0 or 1.
@@ -360,7 +458,8 @@ fn prefilter(plane: &[f32], w: usize, h: usize, sigma: f32) -> Cow<'_, [f32]> {
 }
 
 /// Edge-preserving base of a plane: the guided filter with the plane as its
-/// own guide, box radius `radius` (pixels) and regularisation `eps`, stored as
+/// own guide, fractional box radius `radius` (pixels; the window spans
+/// `2 · radius + 1` of them) and regularisation `eps`, stored as
 /// its linear coefficients (`base = A · src + B`). Radii above
 /// `low_res_radius` use the fast guided filter (He & Sun, 2015): `A` and `B` are
 /// found on a box-subsampled copy and bilinearly upsampled when a row is
@@ -383,16 +482,18 @@ impl GuidedBase {
         let s = ((radius / low_res_radius.max(1.0)).round() as usize)
             .clamp(1, GUIDED_MAX_SUBSAMPLE)
             .min(w.min(h).max(1));
-        let r = ((radius / s as f32).round() as usize).max(1);
+        // The same window extent in low-resolution pixels (fractional, so the
+        // filter scale varies continuously with `radius`).
+        let r = (((2.0 * radius + 1.0) / s as f32 - 1.0) / 2.0).max(MIN_BOX_RADIUS);
         let (wl, hl) = (w.div_ceil(s), h.div_ceil(s));
         let low = if s == 1 {
             Cow::Borrowed(src)
         } else {
             Cow::Owned(downsample(src, w, h, s))
         };
-        let mean = box_blur(&low, wl, hl, r);
+        let mean = frac_box_blur(&low, wl, hl, r);
         let squares: Vec<f32> = low.par_iter().map(|v| v * v).collect();
-        let corr = box_blur(&squares, wl, hl, r);
+        let corr = frac_box_blur(&squares, wl, hl, r);
         drop(squares);
         let (a, b): (Vec<f32>, Vec<f32>) = mean
             .par_iter()
@@ -404,8 +505,8 @@ impl GuidedBase {
             })
             .unzip();
         drop((mean, corr));
-        let a = box_blur(&a, wl, hl, r);
-        let b = box_blur(&b, wl, hl, r);
+        let a = frac_box_blur(&a, wl, hl, r);
+        let b = frac_box_blur(&b, wl, hl, r);
         let xs = (0..w).map(|x| Self::coord(x, s, wl)).collect();
         GuidedBase {
             a,
@@ -460,6 +561,62 @@ fn guided_base(
     out
 }
 
+/// Separable box blur with a fractional radius `r`: a window of `2r + 1`
+/// pixels whose two end taps are weighted by the fractional part of `r`,
+/// clamped edges. Equals `filters::box_blur` at integer radii and varies
+/// continuously in between. Running sums, so the cost does not grow with `r`.
+fn frac_box_blur(plane: &[f32], w: usize, h: usize, r: f32) -> Vec<f32> {
+    debug_assert_eq!(plane.len(), w * h);
+    if r <= 0.0 || plane.is_empty() {
+        return plane.to_vec();
+    }
+    let n = r.floor() as isize;
+    let f = r - n as f32;
+    let norm = 1.0 / (2.0 * r + 1.0);
+    let mut horiz = vec![0.0f32; plane.len()];
+    horiz
+        .par_chunks_mut(w)
+        .zip(plane.par_chunks(w))
+        .for_each(|(dst, src)| {
+            let len = src.len() as isize;
+            let at = |i: isize| src[i.clamp(0, len - 1) as usize];
+            let mut sum: f32 = (-n..=n).map(at).sum();
+            for (i, d) in dst.iter_mut().enumerate() {
+                let i = i as isize;
+                *d = (sum + f * (at(i - n - 1) + at(i + n + 1))) * norm;
+                sum += at(i + n + 1) - at(i - n);
+            }
+        });
+    // Vertical pass on whole rows: blocks of output rows in parallel, each
+    // with its own running column sums (contiguous, vectorisable).
+    let rows = |j: isize| {
+        let j = j.clamp(0, h as isize - 1) as usize;
+        &horiz[j * w..(j + 1) * w]
+    };
+    let mut out = vec![0.0f32; plane.len()];
+    out.par_chunks_mut(w * BOX_ROW_BLOCK)
+        .enumerate()
+        .for_each(|(block, chunk)| {
+            let y0 = (block * BOX_ROW_BLOCK) as isize;
+            let mut sum = vec![0.0f32; w];
+            for j in y0 - n..=y0 + n {
+                sum.iter_mut().zip(rows(j)).for_each(|(s, &v)| *s += v);
+            }
+            for (dy, o) in chunk.chunks_exact_mut(w).enumerate() {
+                let y = y0 + dy as isize;
+                let (above, below) = (rows(y - n - 1), rows(y + n + 1));
+                for (((o, &s), &a), &b) in o.iter_mut().zip(&sum).zip(above).zip(below) {
+                    *o = (s + f * (a + b)) * norm;
+                }
+                let leaving = rows(y - n);
+                for ((s, &add), &sub) in sum.iter_mut().zip(below).zip(leaving) {
+                    *s += add - sub;
+                }
+            }
+        });
+    out
+}
+
 /// Box-average `s × s` blocks (partial blocks at the right and bottom edges
 /// average the pixels they have).
 fn downsample(src: &[f32], w: usize, h: usize, s: usize) -> Vec<f32> {
@@ -507,6 +664,14 @@ mod tests {
     fn std_dev(v: &[f32]) -> f32 {
         let m = v.iter().sum::<f32>() / v.len() as f32;
         (v.iter().map(|x| (x - m) * (x - m)).sum::<f32>() / v.len() as f32).sqrt()
+    }
+
+    /// Clarity's box half-width (pixels) when `apply` runs on a `w × h` image.
+    fn clarity_radius(w: usize, h: usize) -> f32 {
+        scaled_radius(
+            K.clarity_radius_frac * REFERENCE_DIAGONAL,
+            reference_scale(w, h),
+        )
     }
 
     fn rms_change(a: &Image, b: &Image) -> f32 {
@@ -562,7 +727,7 @@ mod tests {
     fn clarity_changes_large_scale_local_contrast() {
         // End to end through `apply`: the radius follows the image size.
         let (w, h) = (600, 64);
-        let radius = K.clarity_radius_frac * (w as f32).hypot(h as f32);
+        let radius = clarity_radius(w, h);
         let period = 4.5 * radius;
         let tau = std::f32::consts::TAU;
         let wave = |x: usize, _: usize| 0.5 + 0.08 * (tau * x as f32 / period).sin();
@@ -601,7 +766,7 @@ mod tests {
     fn clarity_favours_midtones() {
         // The same small undulation around mid-grey and in deep shadow.
         let (w, h) = (400, 32);
-        let radius = K.clarity_radius_frac * (w as f32).hypot(h as f32);
+        let radius = clarity_radius(w, h);
         let tau = std::f32::consts::TAU;
         let at = |level: f32| {
             let original = grey(w, h, |x, _| {
@@ -673,23 +838,42 @@ mod tests {
             .fold(0.0, f32::max)
     }
 
-    /// Halo bound: next to a hard 0.2 → 0.8 edge (encoded), +100 Clarity and/or
-    /// Texture may overshoot by at most 0.05 encoded (~13 levels in 8-bit). A
-    /// Gaussian band-pass at the Texture scale and gain overshoots more than twice that.
+    /// Halo bound: next to a hard edge of any contrast (encoded), +100 Clarity
+    /// and/or Texture may overshoot by at most 0.05 encoded (~13 levels in
+    /// 8-bit). A Gaussian band-pass at the Texture scale and gain overshoots
+    /// more than twice that next to a 0.2 → 0.8 edge. Not bounded relative to
+    /// the step: an edge below the edge thresholds is local contrast, and
+    /// steepening it is what Clarity is for.
     const HALO_LIMIT: f32 = 0.05;
 
     #[test]
     fn halos_at_hard_edges_stay_bounded() {
-        let (w, h) = (512, 24);
-        let original = grey(w, h, |x, _| if x < w / 2 { 0.2 } else { 0.8 });
-        for scale in [reference_scale(w, h), 0.3, 1.0] {
-            for p in [lc(100.0, 0.0), lc(0.0, 100.0), lc(100.0, 100.0)] {
-                let mut out = original.clone();
-                apply_scaled(&mut out, &p, &K, scale);
-                let o = overshoot(&out, 0.2, 0.8);
-                assert!(o < HALO_LIMIT, "{p:?} scale {scale}: overshoot {o}");
+        let (w, h) = (1200, 24);
+        // Moderate edges (below the guided filters' edge thresholds) are where
+        // both controls build their largest rims, and where the two add up.
+        for (lo, hi) in [
+            (0.45, 0.55),
+            (0.4, 0.6),
+            (0.3, 0.5),
+            (0.35, 0.65),
+            (0.2, 0.8),
+            (0.1, 0.9),
+        ] {
+            let original = grey(w, h, |x, _| if x < w / 2 { lo } else { hi });
+            for scale in [reference_scale(w, h), 0.3, 0.5, 1.0] {
+                for p in [lc(100.0, 0.0), lc(0.0, 100.0), lc(100.0, 100.0)] {
+                    let mut out = original.clone();
+                    apply_scaled(&mut out, &p, &K, scale);
+                    let o = overshoot(&out, lo, hi);
+                    assert!(
+                        o < HALO_LIMIT,
+                        "{lo}->{hi} {p:?} scale {scale}: overshoot {o}"
+                    );
+                }
             }
         }
+        let (w, h) = (512, 24);
+        let original = grey(w, h, |x, _| if x < w / 2 { 0.2 } else { 0.8 });
         // For reference: a plain (non edge-aware) unsharp mask of the Texture band.
         let l = encoded(&original);
         let fine = gaussian_blur(&l, w, h, K.texture_fine_sigma_px);
@@ -905,6 +1089,184 @@ mod tests {
             assert!(mean_err < 0.003, "r {radius}: mean abs error {mean_err}");
             assert!(max_err < 0.05, "r {radius}: max abs error {max_err}");
         }
+    }
+
+    /// RMS change (encoded L) away from the image border.
+    fn interior_rms_change(a: &Image, b: &Image, margin: usize) -> f32 {
+        let (la, lb) = (encoded(a), encoded(b));
+        let (w, h) = (a.width, a.height);
+        let mut sum = 0.0f64;
+        let mut n = 0usize;
+        for y in margin..h - margin {
+            for x in margin..w - margin {
+                let d = f64::from(la[y * w + x] - lb[y * w + x]);
+                sum += d * d;
+                n += 1;
+            }
+        }
+        (sum / n as f64).sqrt() as f32
+    }
+
+    #[test]
+    fn texture_strength_is_continuous_in_scale() {
+        // The same picture (a grating with a 60 px period at the reference)
+        // rendered at preview scales, including ones whose box radius is not
+        // a whole number of pixels: Texture must act about equally strongly.
+        let tau = std::f32::consts::TAU;
+        let effect = |scale: f32| {
+            let period = 60.0 * scale;
+            let n = (6.0 * period).max(64.0) as usize;
+            let original = grey(n, n, |x, y| {
+                let (u, v) = (x as f32 / period, y as f32 / period);
+                0.45 + 0.04 * (tau * u).sin() * (tau * v).cos()
+            });
+            let mut out = original.clone();
+            apply_scaled(&mut out, &lc(100.0, 0.0), &K, scale);
+            interior_rms_change(&original, &out, n / 6)
+        };
+        let reference = effect(1.0);
+        for scale in [0.75, 0.6, 0.5, 0.35, 0.3, 0.25, 0.2, 0.15] {
+            let e = effect(scale);
+            assert!(
+                (e / reference - 1.0).abs() < 0.1,
+                "scale {scale}: {e} vs {reference} at full size"
+            );
+        }
+    }
+
+    #[test]
+    fn preview_matches_downsampled_export() {
+        // Texture on a full-size render, box-downsampled by `f`, against
+        // Texture on the box-downsampled original at 1/f of the scale.
+        let (w, h) = (960, 640);
+        let tau = std::f32::consts::TAU;
+        let original = grey(w, h, |x, y| {
+            let (xf, yf) = (x as f32, y as f32);
+            0.45 + 0.03 * (tau * xf / 47.0).sin() * (tau * yf / 61.0).cos()
+                + 0.02 * (tau * (xf + yf) / 83.0).sin()
+        });
+        let shrink = |img: &Image, f: usize| {
+            let (wl, hl) = (img.width / f, img.height / f);
+            Image::from_fn(wl, hl, |x, y| {
+                let mut acc = [0.0f32; 3];
+                for dy in 0..f {
+                    for dx in 0..f {
+                        let i = ((y * f + dy) * img.width + x * f + dx) * 3;
+                        for (a, &v) in acc.iter_mut().zip(&img.rgb[i..i + 3]) {
+                            *a += v;
+                        }
+                    }
+                }
+                acc.map(|v| v / (f * f) as f32)
+            })
+        };
+        let mut full = original.clone();
+        apply_scaled(&mut full, &lc(100.0, 0.0), &K, 1.0);
+        for f in [2usize, 3, 4, 5, 6, 7, 8] {
+            let small = shrink(&original, f);
+            let export = shrink(&full, f);
+            let mut preview = small.clone();
+            apply_scaled(&mut preview, &lc(100.0, 0.0), &K, 1.0 / f as f32);
+            let margin = 60 / f;
+            let (e, p) = (
+                interior_rms_change(&small, &export, margin),
+                interior_rms_change(&small, &preview, margin),
+            );
+            assert!(
+                (p / e - 1.0).abs() < 0.1,
+                "1/{f}: preview {p} vs export {e}"
+            );
+        }
+    }
+
+    #[test]
+    fn saturated_colours_keep_their_hue_after_clamping() {
+        // A saturated ProPhoto blue: mid-grey luminance (full Clarity weight)
+        // with one channel near white. Brightening must not push that channel
+        // past 1, where the caller's clamp would change the channel ratios.
+        let original = Image::from_fn(200, 200, |x, y| {
+            let f = 1.0 + 0.15 * ((x as f32 / 6.0).sin() * (y as f32 / 9.0).cos());
+            [0.1 * f, 0.1 * f, 0.85 * f]
+        });
+        let mut out = original.clone();
+        apply_scaled(&mut out, &lc(100.0, 100.0), &K, 0.3);
+        assert!(
+            rms_change(&original, &out) > 0.003,
+            "the edit did something"
+        );
+        for (a, b) in original.rgb.chunks(3).zip(out.rgb.chunks(3)) {
+            assert!(b[2] <= 1.0, "{a:?} -> {b:?}");
+            let (ra, rb) = (a[2] / a[0], b[2].clamp(0.0, 1.0) / b[0].clamp(0.0, 1.0));
+            assert!((ra - rb).abs() < 1e-4 * ra, "{a:?} -> {b:?}");
+        }
+    }
+
+    #[test]
+    fn non_finite_pixels_stay_local() {
+        let (w, h) = (600, 400);
+        let base = Image::from_fn(w, h, |x, y| {
+            [0.2 + 0.1 * ((x as f32 / 7.0).sin() * (y as f32 / 5.0).cos()); 3]
+        });
+        let bad_px = 200 * w + 300;
+        let far = |k: usize| (k % w).abs_diff(300) > 60 || (k / w).abs_diff(200) > 60;
+        for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY, 1e30] {
+            for p in [lc(50.0, 0.0), lc(0.0, 50.0), lc(-80.0, 70.0)] {
+                let mut clean = base.clone();
+                apply(&mut clean, &p, &K);
+                let mut img = base.clone();
+                img.rgb[bad_px * 3] = bad;
+                let before = img.rgb[bad_px * 3..bad_px * 3 + 3].to_vec();
+                apply(&mut img, &p, &K);
+                let pixels = img.rgb.chunks(3).zip(clean.rgb.chunks(3)).enumerate();
+                for (k, (px, reference)) in pixels {
+                    if k == bad_px {
+                        // The bad pixel itself passes through unchanged.
+                        let same = px
+                            .iter()
+                            .zip(&before)
+                            .all(|(a, b)| a == b || (a.is_nan() && b.is_nan()));
+                        assert!(same, "{bad} {p:?}: {px:?}");
+                        continue;
+                    }
+                    assert!(px.iter().all(|v| v.is_finite()), "{bad} {p:?} at {k}");
+                    if far(k) {
+                        // Far from it the result is as without it.
+                        let d = (px[1] - reference[1]).abs();
+                        assert!(d < 1e-4, "{bad} {p:?} at {k}: {d}");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn fractional_box_blur_is_continuous() {
+        let (w, h) = (53, 37);
+        let p: Vec<f32> = (0..w * h)
+            .map(|i| ((i % w) as f32 * 0.37 + (i / w) as f32 * 0.11).sin())
+            .collect();
+        let max_diff = |a: &[f32], b: &[f32]| {
+            a.iter()
+                .zip(b)
+                .map(|(x, y)| (x - y).abs())
+                .fold(0.0, f32::max)
+        };
+        // Whole radii: the same as the shared box blur.
+        for r in [1usize, 2, 5, 40] {
+            let err = max_diff(
+                &frac_box_blur(&p, w, h, r as f32),
+                &crate::filters::box_blur(&p, w, h, r),
+            );
+            assert!(err < 1e-5, "r {r}: {err}");
+        }
+        // Fractional radii vary continuously, and a constant stays constant.
+        let err = max_diff(
+            &frac_box_blur(&p, w, h, 2.999),
+            &crate::filters::box_blur(&p, w, h, 3),
+        );
+        assert!(err < 1e-3, "r -> 3: {err}");
+        let flat = frac_box_blur(&vec![0.7; w * h], w, h, 2.4);
+        assert!(flat.iter().all(|v| (v - 0.7).abs() < 1e-6));
     }
 
     #[test]

@@ -2,8 +2,10 @@
 //!
 //! Order (subset of the Camera Raw model, docs/research/05 §1):
 //! camera RGB → white balance + camera matrix → XYZ → Bradford to D50 →
-//! linear ProPhoto → Exposure (2^EV) → point curves (RGB, then R/G/B) on
-//! encoded values → output.
+//! linear ProPhoto → Exposure (2^EV) → base look → Basic tone controls
+//! (luminance, hue-preserving) → colour (Vibrance, Saturation, HSL, Color
+//! Grading in OkLab) → parametric + point curves (per channel, encoded) → output.
+//! The exact order Camera Raw uses is still to be confirmed by sweeps.
 //!
 //! Only a few settings render so far; [`DevelopSettings::from_settings`]
 //! reports everything else as not rendered yet.
@@ -15,8 +17,10 @@ use flb_color::temperature::{temp_tint_to_xy, xy_to_temp_tint};
 use flb_presets::{Value, curve_points};
 use rayon::prelude::*;
 
+use crate::color::{self, ColorControls, ColorOp, Wheel};
 use crate::curve::Spline;
 use crate::raw::{CameraImage, neutral_for_xy, xy_for_neutral};
+use crate::tone::{self, ParametricCurve, ToneControls};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WhiteBalance {
@@ -55,6 +59,9 @@ pub struct DevelopSettings {
     pub base_look: BaseLook,
     pub white_balance: WhiteBalance,
     pub exposure_ev: f64,
+    pub tone: ToneControls,
+    pub color: ColorControls,
+    pub parametric: ParametricCurve,
     pub curve_rgb: Option<Spline>,
     pub curve_channels: [Option<Spline>; 3],
 }
@@ -65,6 +72,9 @@ impl Default for DevelopSettings {
             base_look: BaseLook::Default,
             white_balance: WhiteBalance::AsShot,
             exposure_ev: 0.0,
+            tone: ToneControls::default(),
+            color: ColorControls::default(),
+            parametric: ParametricCurve::default(),
             curve_rgb: None,
             curve_channels: [None, None, None],
         }
@@ -77,11 +87,65 @@ pub const RENDERED_TAGS: &[&str] = &[
     "Temperature",
     "Tint",
     "Exposure2012",
+    "Contrast2012",
+    "Highlights2012",
+    "Shadows2012",
+    "Whites2012",
+    "Blacks2012",
+    "Vibrance",
+    "Saturation",
+    "ParametricShadows",
+    "ParametricDarks",
+    "ParametricLights",
+    "ParametricHighlights",
+    "ParametricShadowSplit",
+    "ParametricMidtoneSplit",
+    "ParametricHighlightSplit",
+    "ColorGradeShadowHue",
+    "ColorGradeShadowSat",
+    "ColorGradeShadowLum",
+    "ColorGradeMidtoneHue",
+    "ColorGradeMidtoneSat",
+    "ColorGradeMidtoneLum",
+    "ColorGradeHighlightHue",
+    "ColorGradeHighlightSat",
+    "ColorGradeHighlightLum",
+    "ColorGradeGlobalHue",
+    "ColorGradeGlobalSat",
+    "ColorGradeGlobalLum",
+    "ColorGradeBlending",
+    "SplitToningShadowHue",
+    "SplitToningShadowSaturation",
+    "SplitToningHighlightHue",
+    "SplitToningHighlightSaturation",
+    "SplitToningBalance",
     "ToneCurvePV2012",
     "ToneCurvePV2012Red",
     "ToneCurvePV2012Green",
     "ToneCurvePV2012Blue",
 ];
+
+/// Whether `tag` is rendered by this pipeline version (fixed list plus the 24 HSL tags).
+pub fn is_rendered(tag: &str) -> bool {
+    RENDERED_TAGS.contains(&tag)
+        || color::BANDS.iter().any(|band| {
+            ["Hue", "Saturation", "Luminance"]
+                .iter()
+                .any(|kind| tag == format!("{kind}Adjustment{band}"))
+        })
+}
+
+fn num(settings: &BTreeMap<String, Value>, key: &str) -> Option<f64> {
+    settings.get(key).and_then(Value::as_f64)
+}
+
+fn wheel(settings: &BTreeMap<String, Value>, region: &str) -> Wheel {
+    Wheel {
+        hue: num(settings, &format!("ColorGrade{region}Hue")).unwrap_or(0.0),
+        sat: num(settings, &format!("ColorGrade{region}Sat")).unwrap_or(0.0),
+        lum: num(settings, &format!("ColorGrade{region}Lum")).unwrap_or(0.0),
+    }
+}
 
 fn spline_of(settings: &BTreeMap<String, Value>, key: &str) -> Option<Spline> {
     let points = curve_points(settings.get(key)?)?;
@@ -104,9 +168,56 @@ impl DevelopSettings {
                 s.white_balance = WhiteBalance::Custom { temperature, tint };
             }
         }
-        if let Some(ev) = settings.get("Exposure2012").and_then(Value::as_f64) {
+        if let Some(ev) = num(settings, "Exposure2012") {
             s.exposure_ev = ev;
         }
+        s.tone = ToneControls {
+            contrast: num(settings, "Contrast2012").unwrap_or(0.0),
+            highlights: num(settings, "Highlights2012").unwrap_or(0.0),
+            shadows: num(settings, "Shadows2012").unwrap_or(0.0),
+            whites: num(settings, "Whites2012").unwrap_or(0.0),
+            blacks: num(settings, "Blacks2012").unwrap_or(0.0),
+        };
+        let pd = ParametricCurve::default();
+        s.parametric = ParametricCurve {
+            shadows: num(settings, "ParametricShadows").unwrap_or(0.0),
+            darks: num(settings, "ParametricDarks").unwrap_or(0.0),
+            lights: num(settings, "ParametricLights").unwrap_or(0.0),
+            highlights: num(settings, "ParametricHighlights").unwrap_or(0.0),
+            shadow_split: num(settings, "ParametricShadowSplit").unwrap_or(pd.shadow_split),
+            midtone_split: num(settings, "ParametricMidtoneSplit").unwrap_or(pd.midtone_split),
+            highlight_split: num(settings, "ParametricHighlightSplit")
+                .unwrap_or(pd.highlight_split),
+        };
+        let mut c = ColorControls {
+            vibrance: num(settings, "Vibrance").unwrap_or(0.0),
+            saturation: num(settings, "Saturation").unwrap_or(0.0),
+            ..Default::default()
+        };
+        for (i, band) in color::BANDS.iter().enumerate() {
+            for (j, kind) in ["Hue", "Saturation", "Luminance"].iter().enumerate() {
+                c.hsl[i][j] = num(settings, &format!("{kind}Adjustment{band}")).unwrap_or(0.0);
+            }
+        }
+        let g = &mut c.grading;
+        g.shadows = wheel(settings, "Shadow");
+        g.midtones = wheel(settings, "Midtone");
+        g.highlights = wheel(settings, "Highlight");
+        g.global = wheel(settings, "Global");
+        g.blending = num(settings, "ColorGradeBlending").unwrap_or(50.0);
+        // Camera Raw reuses SplitToningBalance as the Color Grading balance.
+        g.balance = num(settings, "SplitToningBalance").unwrap_or(0.0);
+        // Legacy split toning (pre-Color-Grading presets): map onto the shadow/highlight wheels.
+        let has_grade = settings
+            .keys()
+            .any(|k| k.starts_with("ColorGrade") && k != "ColorGradeBlending");
+        if !has_grade {
+            g.shadows.hue = num(settings, "SplitToningShadowHue").unwrap_or(0.0);
+            g.shadows.sat = num(settings, "SplitToningShadowSaturation").unwrap_or(0.0);
+            g.highlights.hue = num(settings, "SplitToningHighlightHue").unwrap_or(0.0);
+            g.highlights.sat = num(settings, "SplitToningHighlightSaturation").unwrap_or(0.0);
+        }
+        s.color = c;
         s.curve_rgb = spline_of(settings, "ToneCurvePV2012");
         s.curve_channels = [
             spline_of(settings, "ToneCurvePV2012Red"),
@@ -116,7 +227,7 @@ impl DevelopSettings {
         let registry = flb_presets::registry::Registry::builtin();
         let not_rendered = settings
             .keys()
-            .filter(|k| !RENDERED_TAGS.contains(&k.as_str()))
+            .filter(|k| !is_rendered(k))
             .filter(|k| {
                 // Metadata tags are not "missing features".
                 !matches!(
@@ -200,7 +311,15 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         .iter()
         .map(|c| c.as_ref().map(|c| c.lut(LUT)))
         .collect();
-    let has_curves = rgb_lut.is_some() || channel_luts.iter().any(Option::is_some);
+    let parametric_lut = (!s.parametric.is_neutral())
+        .then(|| tone::parametric_lut(&s.parametric, &tone::DEFAULT_STRENGTHS, LUT));
+    let has_curves =
+        parametric_lut.is_some() || rgb_lut.is_some() || channel_luts.iter().any(Option::is_some);
+    let tone_lut =
+        (!s.tone.is_neutral()).then(|| tone::tone_lut(&s.tone, &tone::DEFAULT_STRENGTHS, LUT));
+    let color_op =
+        (!s.color.is_neutral()).then(|| ColorOp::new(&s.color, color::DEFAULT_STRENGTHS));
+    let lum_weights = PROPHOTO_TO_XYZ_D50[1].map(|v| v as f32);
     let base = s.base_look;
     let lookup = |lut: &[f32], v: f32| {
         let pos = v.clamp(0.0, 1.0) * (LUT - 1) as f32;
@@ -217,10 +336,25 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
             for (row, slot) in m.iter().zip(p.iter_mut()) {
                 *slot = base.apply((row[0] * c[0] + row[1] * c[1] + row[2] * c[2]) * gain);
             }
+            if let Some(lut) = &tone_lut {
+                // Hue-preserving: scale RGB by the luminance curve's ratio.
+                let y = lum_weights[0] * p[0] + lum_weights[1] * p[1] + lum_weights[2] * p[2];
+                if y > 1e-6 {
+                    let target = srgb_decode(lookup(lut, srgb_encode(y.min(1.0))));
+                    let scale = target / y.min(1.0);
+                    p = p.map(|v| v * scale);
+                }
+            }
+            if let Some(op) = &color_op {
+                p = op.apply(p);
+            }
             if has_curves {
                 // Curves act on encoded values (sRGB transfer for now; to be calibrated, see docs/research/05 §8).
                 for (ch, v) in p.iter_mut().enumerate() {
                     let mut e = srgb_encode(v.clamp(0.0, 1.0));
+                    if let Some(lut) = &parametric_lut {
+                        e = lookup(lut, e);
+                    }
                     if let Some(lut) = &rgb_lut {
                         e = lookup(lut, e);
                     }
@@ -271,6 +405,65 @@ mod tests {
         }
         assert_eq!(BaseLook::Default.apply(0.0), 0.0);
         assert_eq!(BaseLook::Linear.apply(0.3), 0.3);
+    }
+
+    fn map(pairs: &[(&str, &str)]) -> BTreeMap<String, Value> {
+        pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), Value::Text(v.to_string())))
+            .collect()
+    }
+
+    #[test]
+    fn parses_tone_colour_and_grading() {
+        let m = map(&[
+            ("Contrast2012", "+40"),
+            ("Highlights2012", "-60"),
+            ("Vibrance", "+30"),
+            ("SaturationAdjustmentGreen", "-40"),
+            ("HueAdjustmentRed", "+15"),
+            ("ColorGradeShadowHue", "200"),
+            ("ColorGradeShadowSat", "25"),
+            ("ColorGradeBlending", "70"),
+            ("SplitToningBalance", "-20"),
+            ("ParametricLights", "+10"),
+        ]);
+        let (s, missing) = DevelopSettings::from_settings(&m);
+        assert!(missing.is_empty(), "{missing:?}");
+        assert_eq!(s.tone.contrast, 40.0);
+        assert_eq!(s.tone.highlights, -60.0);
+        assert_eq!(s.color.vibrance, 30.0);
+        assert_eq!(s.color.hsl[3][1], -40.0); // Green saturation
+        assert_eq!(s.color.hsl[0][0], 15.0); // Red hue
+        assert_eq!(s.color.grading.shadows.hue, 200.0);
+        assert_eq!(s.color.grading.blending, 70.0);
+        assert_eq!(s.color.grading.balance, -20.0);
+        assert_eq!(s.parametric.lights, 10.0);
+    }
+
+    #[test]
+    fn legacy_split_toning_maps_to_grading_wheels() {
+        let m = map(&[
+            ("SplitToningShadowHue", "210"),
+            ("SplitToningShadowSaturation", "18"),
+            ("SplitToningHighlightHue", "45"),
+            ("SplitToningHighlightSaturation", "12"),
+        ]);
+        let (s, _) = DevelopSettings::from_settings(&m);
+        assert_eq!(
+            s.color.grading.shadows,
+            Wheel {
+                hue: 210.0,
+                sat: 18.0,
+                lum: 0.0
+            }
+        );
+        assert_eq!(s.color.grading.highlights.sat, 12.0);
+        // When Color Grading tags are present they win over split toning.
+        let mut m2 = m.clone();
+        m2.insert("ColorGradeShadowSat".into(), Value::Text("5".into()));
+        let (s2, _) = DevelopSettings::from_settings(&m2);
+        assert_eq!(s2.color.grading.shadows.sat, 5.0);
     }
 
     #[test]

@@ -1,5 +1,5 @@
 {
- "_comment": "Camera Raw settings (crs:) tag registry. 'status' is our implementation state, not Adobe's. min/max/default are best-known values from docs/research/02 and Adobe help; most are UNVERIFIED until the Lightroom calibration month (docs/lightroom-trial-plan.md).",
+ "_comment": "Camera Raw settings (crs:) tag registry. 'status' is our implementation state, not Adobe's ('approx' = rendered by flb-engine with a model not yet fitted to Lightroom). min/max/default are best-known values from docs/research/02 and Adobe help; most are UNVERIFIED until the Lightroom calibration month (docs/lightroom-trial-plan.md).",
  "prefix_rules": [
   {
    "prefix": "Table_",
@@ -277,7 +277,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "image-specific"
+   "status": "approx"
   },
   {
    "name": "Temperature",
@@ -286,7 +286,7 @@
    "min": 2000,
    "max": 50000,
    "default": null,
-   "status": "image-specific"
+   "status": "approx"
   },
   {
    "name": "Tint",
@@ -295,7 +295,7 @@
    "min": -150,
    "max": 150,
    "default": null,
-   "status": "image-specific"
+   "status": "approx"
   },
   {
    "name": "IncrementalTemperature",
@@ -322,7 +322,7 @@
    "min": -5,
    "max": 5,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Contrast2012",
@@ -331,7 +331,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Highlights2012",
@@ -340,7 +340,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Shadows2012",
@@ -349,7 +349,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Whites2012",
@@ -358,7 +358,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Blacks2012",
@@ -367,7 +367,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "AutoTone",
@@ -475,7 +475,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Saturation",
@@ -484,7 +484,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ToneCurveName2012",
@@ -511,7 +511,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ToneCurvePV2012Red",
@@ -520,7 +520,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ToneCurvePV2012Green",
@@ -529,7 +529,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ToneCurvePV2012Blue",
@@ -538,7 +538,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ToneCurve",
@@ -556,7 +556,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ParametricDarks",
@@ -565,7 +565,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ParametricLights",
@@ -574,7 +574,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ParametricHighlights",
@@ -583,7 +583,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ParametricShadowSplit",
@@ -592,7 +592,7 @@
    "min": 10,
    "max": 70,
    "default": 25,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ParametricMidtoneSplit",
@@ -601,7 +601,7 @@
    "min": 20,
    "max": 80,
    "default": 50,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ParametricHighlightSplit",
@@ -610,7 +610,7 @@
    "min": 30,
    "max": 90,
    "default": 75,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentRed",
@@ -619,7 +619,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SaturationAdjustmentRed",
@@ -628,7 +628,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LuminanceAdjustmentRed",
@@ -637,7 +637,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrayMixerRed",
@@ -655,7 +655,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SaturationAdjustmentOrange",
@@ -664,7 +664,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LuminanceAdjustmentOrange",
@@ -673,7 +673,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrayMixerOrange",
@@ -691,7 +691,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SaturationAdjustmentYellow",
@@ -700,7 +700,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LuminanceAdjustmentYellow",
@@ -709,7 +709,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrayMixerYellow",
@@ -727,7 +727,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SaturationAdjustmentGreen",
@@ -736,7 +736,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LuminanceAdjustmentGreen",
@@ -745,7 +745,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrayMixerGreen",
@@ -763,7 +763,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SaturationAdjustmentAqua",
@@ -772,7 +772,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LuminanceAdjustmentAqua",
@@ -781,7 +781,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrayMixerAqua",
@@ -799,7 +799,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SaturationAdjustmentBlue",
@@ -808,7 +808,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LuminanceAdjustmentBlue",
@@ -817,7 +817,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrayMixerBlue",
@@ -835,7 +835,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SaturationAdjustmentPurple",
@@ -844,7 +844,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LuminanceAdjustmentPurple",
@@ -853,7 +853,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrayMixerPurple",
@@ -871,7 +871,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SaturationAdjustmentMagenta",
@@ -880,7 +880,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LuminanceAdjustmentMagenta",
@@ -889,7 +889,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrayMixerMagenta",
@@ -934,7 +934,7 @@
    "min": 0,
    "max": 359,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeShadowSat",
@@ -943,7 +943,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeMidtoneHue",
@@ -952,7 +952,7 @@
    "min": 0,
    "max": 359,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeMidtoneSat",
@@ -961,7 +961,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeHighlightHue",
@@ -970,7 +970,7 @@
    "min": 0,
    "max": 359,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeHighlightSat",
@@ -979,7 +979,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeGlobalHue",
@@ -988,7 +988,7 @@
    "min": 0,
    "max": 359,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeGlobalSat",
@@ -997,7 +997,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeShadowLum",
@@ -1006,7 +1006,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeHighlightLum",
@@ -1015,7 +1015,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeMidtoneLum",
@@ -1024,7 +1024,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeGlobalLum",
@@ -1033,7 +1033,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorGradeBlending",
@@ -1042,7 +1042,7 @@
    "min": 0,
    "max": 100,
    "default": 50,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SplitToningShadowHue",
@@ -1051,7 +1051,7 @@
    "min": 0,
    "max": 359,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SplitToningHighlightHue",
@@ -1060,7 +1060,7 @@
    "min": 0,
    "max": 359,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SplitToningShadowSaturation",
@@ -1069,7 +1069,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SplitToningHighlightSaturation",
@@ -1078,7 +1078,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SplitToningBalance",
@@ -1087,7 +1087,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Sharpness",

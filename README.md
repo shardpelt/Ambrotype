@@ -2,7 +2,7 @@
 
 A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linux that can apply the Lightroom presets you already bought, faithfully.
 
-**Status:** early. The scoping is done. Working so far: the preset reader, the Lightroom calibration kit, and a first raw renderer (white balance, camera colour, Exposure, point curves).
+**Status:** early. The scoping is done. Working so far: the preset reader, the Lightroom calibration kit, and a first raw renderer (white balance, camera colour, Exposure, the Basic tone and colour sliders, HSL, Color Grading, parametric and point curves).
 
 ## Docs
 - [docs/SCOPE.md](docs/SCOPE.md): the project scope, strategy, roadmap, risks and open decisions. Start here.
@@ -17,7 +17,7 @@ A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linu
 | Crate | What it does |
 |---|---|
 | `crates/flb-presets` | Reads Lightroom/Camera Raw `.xmp` presets, XMP sidecars, legacy `.lrtemplate` presets, and XMP embedded in DNG/JPEG "presets" into a lossless settings model. Includes a tag registry (`data/tags.json`), per-preset inspection/fidelity reports, and provisional Amount scaling. |
-| `crates/flb-engine` | Processing engine v0: raw decode (rawler), white balance (as shot or Temperature/Tint), camera matrix → linear ProPhoto, Exposure, point curves (natural cubic spline), placeholder base look, sRGB PNG/JPEG/TIFF output. Closed-loop tested against synthetic DNGs. |
+| `crates/flb-engine` | Processing engine v0: raw decode (rawler), white balance (as shot or Temperature/Tint), camera matrix → linear ProPhoto, Exposure, Contrast/Highlights/Shadows/Whites/Blacks (global v1 model), Vibrance/Saturation, 8-band HSL, Color Grading (incl. legacy Split Toning), parametric and point curves, placeholder base look, sRGB PNG/JPEG/TIFF output. Closed-loop tested against synthetic DNGs. |
 | `crates/flb-color` | Colour science: Lightroom-style Temperature/Tint ↔ CIE xy (Robertson's method). |
 | `crates/flb-testkit` | Calibration tooling: synthetic DNG targets (ramp, hue grid, edges, ColorChecker) and the Lightroom slider-sweep kit (raw copies + XMP sidecars, or DNGs with embedded settings, + manifest). |
 | `crates/flb-cli` | The `flb` command-line tool. |
@@ -31,6 +31,6 @@ cargo run -p flb-cli -- testimage colorchecker cc.dng   # a synthetic linear DNG
 cargo run --release -p flb-cli -- render photo.nef out.jpg --preset look.xmp --amount 70
 ```
 
-Rendering covers only white balance, Exposure and point curves so far; `flb render` lists which preset settings it doesn't render yet. Next: Contrast, Highlights/Shadows/Whites/Blacks, HSL, Color Grading and Vibrance/Saturation (SCOPE §8, Phase 1).
+The tone and colour sliders use first-version models, with strength constants to be fitted against Lightroom renders. `flb render` lists which preset settings it doesn't render yet. Next: Texture/Clarity/Dehaze, sharpening/NR, vignette and grain, and the command protocol for AI control (SCOPE §8, Phase 1).
 
 *Licence: not yet chosen (see SCOPE §6; GPL-3.0-or-later is recommended). Lightroom is a trademark of Adobe Inc. This project is not affiliated with Adobe.*

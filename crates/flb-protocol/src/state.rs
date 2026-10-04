@@ -172,16 +172,28 @@ impl DevelopState {
     /// file already exists, its non-Camera-Raw metadata (rating, keywords, ...)
     /// is preserved. Writes atomically (temporary file, then rename).
     pub fn save(&self, path: &Path) -> Result<(), Error> {
+        self.save_merged(path, None)
+    }
+
+    /// Like [`save`](Self::save), but for `.xmp` the non-Camera-Raw metadata
+    /// comes from `base` (the XMP text of the sidecar the state was loaded
+    /// from) instead of from whatever already exists at `path`. Use it when
+    /// writing an edit to a different file, so the photo's own rating,
+    /// keywords and history travel with it. `None` behaves like `save`.
+    pub fn save_merged(&self, path: &Path, base: Option<&str>) -> Result<(), Error> {
         let text = if has_extension(path, "json") {
             let mut s = serde_json::to_string_pretty(&self.to_json())
                 .map_err(|e| Error::Json(e.to_string()))?;
             s.push('\n');
             s
         } else if has_extension(path, "xmp") {
-            match std::fs::read_to_string(path) {
-                Ok(existing) => sidecar::merge(&existing, &self.settings)?,
-                Err(e) if e.kind() == std::io::ErrorKind::NotFound => self.to_xmp(),
-                Err(e) => return Err(Error::Io(format!("{}: {e}", path.display()))),
+            match base {
+                Some(base) => sidecar::merge(base, &self.settings)?,
+                None => match std::fs::read_to_string(path) {
+                    Ok(existing) => sidecar::merge(&existing, &self.settings)?,
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => self.to_xmp(),
+                    Err(e) => return Err(Error::Io(format!("{}: {e}", path.display()))),
+                },
             }
         } else {
             return Err(Error::Io(format!(
@@ -294,7 +306,7 @@ impl DevelopState {
                 let info = known(name)?;
                 let v = convert::value_from_command(&info, value, clamped)?;
                 next.insert(name.clone(), v);
-                after_set(name, next, notes);
+                after_set(name, next, notes)?;
             }
             Command::AdjustParam { name, delta } => {
                 let info = known(name)?;
@@ -311,15 +323,23 @@ impl DevelopState {
                         reason: "delta must be a finite number".into(),
                     });
                 }
-                let base = match self.settings.get(name).and_then(Value::as_f64) {
+                // A non-numeric or non-finite stored value ("NaN") counts as unset.
+                let base = match self.settings.get(name).and_then(convert::finite) {
                     Some(v) => v,
                     None => Registry::builtin()
                         .numeric_default(name)
                         .ok_or_else(|| Error::NoBase { name: name.clone() })?,
                 };
-                let v = convert::clamp_number(&info, base + delta, clamped);
+                let sum = base + delta;
+                if !sum.is_finite() {
+                    return Err(Error::InvalidValue {
+                        name: name.clone(),
+                        reason: format!("{base} + {delta} is not a finite number"),
+                    });
+                }
+                let v = convert::clamp_number(&info, sum, clamped);
                 next.insert(name.clone(), Value::Number(v));
-                after_set(name, next, notes);
+                after_set(name, next, notes)?;
             }
             Command::ResetParam { name } => {
                 if !self.settings.contains_key(name) {
@@ -355,6 +375,7 @@ impl DevelopState {
                 }
                 let mut filtered = BTreeMap::new();
                 let mut unknown = Vec::new();
+                let mut rejected = Vec::new();
                 for (name, value) in &preset.settings {
                     let group = group_of(name);
                     let keep = match group.as_deref() {
@@ -370,11 +391,22 @@ impl DevelopState {
                     let excluded = exclude_groups.as_ref().is_some_and(|ex| {
                         group.as_deref().is_some_and(|g| ex.iter().any(|e| e == g))
                     });
-                    if keep && included && !excluded {
-                        if group.is_none() {
+                    if !(keep && included && !excluded) {
+                        continue;
+                    }
+                    let value = convert::normalise(name, value.clone());
+                    match Registry::builtin().lookup(name) {
+                        None => {
                             unknown.push(name.clone());
+                            filtered.insert(name.clone(), value);
                         }
-                        filtered.insert(name.clone(), convert::normalise(name, value.clone()));
+                        // Same kind checks and range clamping as set_param.
+                        Some(info) => match preset_value(&info, value, clamped) {
+                            Ok(v) => {
+                                filtered.insert(name.clone(), v);
+                            }
+                            Err(e) => rejected.push(e.to_string()),
+                        },
                     }
                 }
                 if !unknown.is_empty() {
@@ -384,28 +416,22 @@ impl DevelopState {
                         unknown.join(", ")
                     ));
                 }
-                let applied = flb_presets::amount::apply(
-                    next,
-                    &filtered,
-                    amount / 100.0,
-                    Registry::builtin(),
-                );
-                *next = applied
-                    .into_iter()
-                    .map(|(k, v)| {
-                        let mut v = convert::normalise(&k, v);
-                        // Interpolation leaves float noise (1.0 + (0.2 - 1.0) * 1.0
-                        // != 0.2); snap to the preset's own value when that is meant.
-                        if let (Value::Number(n), Some(target)) =
-                            (&v, filtered.get(&k).and_then(Value::as_f64))
-                        {
-                            if (n - target).abs() < 1e-9 {
-                                v = Value::Number(target);
-                            }
-                        }
-                        (k, v)
-                    })
-                    .collect();
+                let unscaled =
+                    apply_amount(next, &filtered, amount / 100.0, clamped, &mut rejected);
+                if !rejected.is_empty() {
+                    notes.push(format!(
+                        "skipped {} invalid preset value(s): {}",
+                        rejected.len(),
+                        rejected.join("; ")
+                    ));
+                }
+                if !unscaled.is_empty() {
+                    notes.push(format!(
+                        "copied {} unscaled at {amount}%: no current value or fixed default to \
+                         scale from (white balance depends on the image)",
+                        unscaled.join(", ")
+                    ));
+                }
             }
             Command::Undo | Command::Redo => unreachable!("handled by execute"),
         }
@@ -574,15 +600,114 @@ fn set_or_remove(map: &mut BTreeMap<String, Value>, name: &str, value: Option<Va
     }
 }
 
+/// Validate a (normalised) preset value for a registry tag the way set_param
+/// validates a command value: scalars (numbers, switches, enums) go through
+/// [`convert::value_from_command`], so wrong kinds and out-of-set enum values
+/// are refused and numbers are clamped to the range (and reported). Curves,
+/// sequences, structs and text are taken as they are, as before.
+fn preset_value(info: &TagInfo, value: Value, clamped: &mut Vec<Clamp>) -> Result<Value, Error> {
+    if !matches!(info.kind.as_str(), "number" | "bool" | "enum") {
+        return Ok(value);
+    }
+    // A non-finite number serialises as null and is refused like any wrong kind.
+    let json = serde_json::to_value(&value).unwrap_or_default();
+    convert::value_from_command(info, &json, clamped)
+}
+
+/// Apply validated preset values on top of `next` at `fraction` (1.0 = 100%).
+///
+/// Numeric settings move linearly from the current value (or the registry
+/// default) towards the preset's value, may extrapolate past it above 100%,
+/// and are clamped to their range with the clamping reported. Numeric settings
+/// with neither a current value nor a fixed default (Temperature, Tint) are
+/// copied unscaled; their names are returned. Everything else is copied from
+/// the preset whenever `fraction > 0`.
+fn apply_amount(
+    next: &mut BTreeMap<String, Value>,
+    preset: &BTreeMap<String, Value>,
+    fraction: f64,
+    clamped: &mut Vec<Clamp>,
+    rejected: &mut Vec<String>,
+) -> Vec<String> {
+    let mut unscaled = Vec::new();
+    if fraction <= 0.0 {
+        return unscaled;
+    }
+    let registry = Registry::builtin();
+    for (name, target) in preset {
+        let info = registry.lookup(name).filter(|i| i.kind == "number");
+        let (Some(info), Some(to)) = (info, convert::finite(target)) else {
+            next.insert(name.clone(), target.clone());
+            continue;
+        };
+        let from = next
+            .get(name)
+            .and_then(convert::finite)
+            .or_else(|| registry.numeric_default(name));
+        let Some(from) = from else {
+            if fraction != 1.0 {
+                unscaled.push(name.clone());
+            }
+            next.insert(name.clone(), target.clone());
+            continue;
+        };
+        let raw = from + (to - from) * fraction;
+        if !raw.is_finite() {
+            rejected.push(format!("{name}: scaling to {fraction}x overflows"));
+            continue;
+        }
+        let mut v = convert::clamp_number(&info, raw, clamped);
+        // Interpolation leaves float noise (1.0 + (0.2 - 1.0) * 1.0 != 0.2);
+        // snap to the preset's own value when that is meant.
+        if (v - to).abs() < 1e-9 {
+            v = to;
+        }
+        next.insert(name.clone(), Value::Number(v));
+    }
+    unscaled
+}
+
 /// Side effects Lightroom applies when a slider moves, plus guidance notes.
-fn after_set(name: &str, next: &mut BTreeMap<String, Value>, notes: &mut Vec<String>) {
+///
+/// Moving Temperature or Tint under As Shot/Auto switches WhiteBalance to
+/// Custom. Lightroom keeps the as-shot value of the other slider, but that
+/// value lives in the raw file, not in the settings, so this layer cannot fill
+/// it in: a Custom white balance without Temperature is not rendered at all,
+/// and one without Tint renders with tint 0. Tint alone is therefore refused,
+/// and Temperature alone carries a warning.
+fn after_set(
+    name: &str,
+    next: &mut BTreeMap<String, Value>,
+    notes: &mut Vec<String>,
+) -> Result<(), Error> {
     if matches!(name, "Temperature" | "Tint") {
         let mode = next.get("WhiteBalance").and_then(Value::as_str);
         if matches!(mode, None | Some("As Shot") | Some("Auto")) {
+            let has = |n: &str| next.get(n).and_then(convert::finite).is_some();
+            let (has_temperature, has_tint) = (has("Temperature"), has("Tint"));
+            if !has_temperature {
+                return Err(Error::InvalidValue {
+                    name: name.to_string(),
+                    reason: format!(
+                        "white balance is {}, so Tint needs a Temperature to switch to Custom; \
+                         set Temperature first (in the same batch, before Tint), e.g. the as-shot \
+                         temperature that `flb render` prints",
+                        mode.unwrap_or("As Shot")
+                    ),
+                });
+            }
             next.insert("WhiteBalance".into(), Value::Text("Custom".into()));
             notes.push(format!(
                 "WhiteBalance set to \"Custom\" so that {name} takes effect (as Lightroom does when the slider moves)"
             ));
+            if !has_tint {
+                notes.push(
+                    "Tint is not set, so the custom white balance uses tint 0 instead of the \
+                     as-shot tint; set Tint too (`flb render` prints the as-shot values, e.g. \
+                     `as shot: 5150 K, tint +4`)"
+                        .into(),
+                );
+            }
         }
     }
     if group_of(name).as_deref() == Some("tone_legacy") {
@@ -599,6 +724,7 @@ fn after_set(name: &str, next: &mut BTreeMap<String, Value>, notes: &mut Vec<Str
             "{name} is a legacy PV2010/PV2003 control; current process versions use {modern}"
         ));
     }
+    Ok(())
 }
 
 fn diff_maps(before: &BTreeMap<String, Value>, after: &BTreeMap<String, Value>) -> Vec<Change> {

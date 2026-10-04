@@ -520,3 +520,196 @@ fn edit_workflow_writes_sidecar_and_keeps_foreign_metadata() {
     assert_eq!(answers[0]["value"], json!(0.9));
     assert!(answers[1]["params"].as_array().unwrap().len() > 5);
 }
+
+// ---- regression tests for review findings ---------------------------------
+
+fn xmp_with(attrs: &str) -> String {
+    format!(
+        r#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" {attrs}/></rdf:RDF></x:xmpmeta>"#
+    )
+}
+
+#[test]
+fn tint_alone_under_as_shot_is_rejected_and_temperature_alone_warns() {
+    // Tint without Temperature would be ignored by the renderer.
+    let mut s = DevelopState::new();
+    let err = s.execute(&set("Tint", json!(20))).unwrap_err();
+    assert!(err.to_string().contains("Temperature"), "{err}");
+    assert!(s.settings().is_empty());
+    let mut s = DevelopState::new();
+    s.execute(&set("WhiteBalance", json!("Auto"))).unwrap();
+    assert!(s.execute(&set("Tint", json!(20))).is_err());
+
+    // Temperature alone switches to Custom but warns that Tint is now 0.
+    let mut s = DevelopState::new();
+    let o = s.execute(&set("Temperature", json!(5000))).unwrap();
+    assert!(
+        o.notes
+            .iter()
+            .any(|n| n.contains("Tint") && n.contains("as-shot")),
+        "{o:?}"
+    );
+    // Then Tint is fine. In a batch, Temperature has to come first.
+    s.execute(&set("Tint", json!(10))).unwrap();
+    let mut s = DevelopState::new();
+    let err = s
+        .execute_all(&[set("Tint", json!(10)), set("Temperature", json!(5000))])
+        .unwrap_err();
+    assert!(err.to_string().contains("command 0"), "{err}");
+    let mut s = DevelopState::new();
+    s.execute_all(&[set("Temperature", json!(5000)), set("Tint", json!(10))])
+        .unwrap();
+    assert_eq!(s.get("WhiteBalance"), Some(&Value::Text("Custom".into())));
+}
+
+#[test]
+fn edit_out_to_another_xmp_keeps_the_source_metadata() {
+    let dir = temp_dir("edit-out");
+    let sidecar = dir.join("IMG.xmp");
+    std::fs::write(
+        &sidecar,
+        xmp_with(r#"xmp:Rating="5" crs:Exposure2012="+0.30""#),
+    )
+    .unwrap();
+    let cmds = r#"{"cmd":"set_param","name":"Exposure2012","value":0.5}"#;
+
+    // A new file.
+    let alt = dir.join("alt.xmp");
+    edit::run(&EditRequest {
+        sidecar: &sidecar,
+        commands: cmds,
+        out: Some(&alt),
+        dry_run: false,
+    })
+    .unwrap();
+    let written = std::fs::read_to_string(&alt).unwrap();
+    assert!(written.contains(r#"xmp:Rating="5""#), "{written}");
+    assert!(written.contains(r#"crs:Exposure2012="+0.5""#), "{written}");
+
+    // An existing, unrelated file: the source's metadata wins, not the target's.
+    let other = dir.join("other.xmp");
+    std::fs::write(&other, xmp_with(r#"xmp:Rating="1" crs:Vibrance="+9""#)).unwrap();
+    edit::run(&EditRequest {
+        sidecar: &sidecar,
+        commands: cmds,
+        out: Some(&other),
+        dry_run: false,
+    })
+    .unwrap();
+    let written = std::fs::read_to_string(&other).unwrap();
+    assert!(written.contains(r#"xmp:Rating="5""#), "{written}");
+    assert!(!written.contains(r#"xmp:Rating="1""#), "{written}");
+    assert!(!written.contains("Vibrance"), "{written}");
+}
+
+#[test]
+fn non_finite_numbers_never_enter_the_state() {
+    let mut s = DevelopState::from_xmp_str(&xmp_with(r#"crs:Exposure2012="NaN""#)).unwrap();
+    assert!(
+        !matches!(s.get("Exposure2012"), Some(Value::Number(n)) if !n.is_finite()),
+        "{:?}",
+        s.get("Exposure2012")
+    );
+    let o = s.execute(&set("Vibrance", json!(5))).unwrap();
+    let names: Vec<&str> = o.diff.iter().map(|c| c.name.as_str()).collect();
+    assert_eq!(names, ["Vibrance"]);
+    let o = s
+        .execute(&Command::AdjustParam {
+            name: "Exposure2012".into(),
+            delta: 0.5,
+        })
+        .unwrap();
+    assert!(o.clamped.is_empty(), "{o:?}");
+    assert_eq!(s.get("Exposure2012"), Some(&Value::Number(0.5)));
+    let back = DevelopState::from_json_str(&s.to_json().to_string()).unwrap();
+    assert_eq!(back.settings(), s.settings());
+
+    // Overflow on an unbounded tag is refused.
+    let mut s = DevelopState::new();
+    s.execute(&set("CropAngle", json!(1.7e308))).unwrap();
+    let err = s
+        .execute(&Command::AdjustParam {
+            name: "CropAngle".into(),
+            delta: 1.7e308,
+        })
+        .unwrap_err();
+    assert!(err.to_string().contains("CropAngle"), "{err}");
+    assert_eq!(num(&s, "CropAngle"), Some(1.7e308));
+
+    // A preset carrying NaN does not poison the state either.
+    let dir = temp_dir("nan-preset");
+    let preset = dir.join("nan.xmp");
+    std::fs::write(
+        &preset,
+        xmp_with(r#"crs:Exposure2012="NaN" crs:Vibrance="+10""#),
+    )
+    .unwrap();
+    let mut s = DevelopState::new();
+    let apply = Command::ApplyPreset {
+        path: preset.to_string_lossy().into_owned(),
+        amount: 50.0,
+        include_groups: None,
+        exclude_groups: None,
+    };
+    s.execute(&apply).unwrap();
+    assert!(s.get("Exposure2012").is_none(), "{:?}", s.settings());
+    assert_eq!(num(&s, "Vibrance"), Some(5.0));
+    let o = s.execute(&apply).unwrap();
+    assert!(o.diff.iter().all(|c| c.name != "Exposure2012"), "{o:?}");
+    DevelopState::from_json_str(&s.to_json().to_string()).unwrap();
+}
+
+#[test]
+fn apply_preset_validates_values_and_reports_clamping() {
+    let dir = temp_dir("preset-validate");
+    let preset = dir.join("wild.xmp");
+    std::fs::write(
+        &preset,
+        xmp_with(
+            r#"crs:Vibrance="+80" crs:Exposure2012="+9" crs:Contrast2012="abc" crs:WhiteBalance="Candle" crs:PostCropVignetteStyle="7" crs:Clarity2012="+10""#,
+        ),
+    )
+    .unwrap();
+    let mut s = DevelopState::new();
+    let o = s
+        .execute(&Command::ApplyPreset {
+            path: preset.to_string_lossy().into_owned(),
+            amount: 200.0,
+            include_groups: None,
+            exclude_groups: None,
+        })
+        .unwrap();
+    assert_eq!(num(&s, "Exposure2012"), Some(5.0));
+    assert_eq!(num(&s, "Vibrance"), Some(100.0));
+    assert_eq!(num(&s, "Clarity2012"), Some(20.0));
+    assert!(o.clamped.iter().any(|c| c.name == "Vibrance"), "{o:?}");
+    assert!(o.clamped.iter().any(|c| c.name == "Exposure2012"), "{o:?}");
+    for bad in ["Contrast2012", "WhiteBalance", "PostCropVignetteStyle"] {
+        assert!(s.get(bad).is_none(), "{bad}: {:?}", s.get(bad));
+        assert!(o.notes.iter().any(|n| n.contains(bad)), "{bad}: {o:?}");
+    }
+
+    // Numeric settings with no base (Temperature) are copied unscaled: say so.
+    let wb = dir.join("wb.xmp");
+    std::fs::write(
+        &wb,
+        xmp_with(r#"crs:WhiteBalance="Custom" crs:Temperature="3000" crs:Tint="+5""#),
+    )
+    .unwrap();
+    let mut s = DevelopState::new();
+    let o = s
+        .execute(&Command::ApplyPreset {
+            path: wb.to_string_lossy().into_owned(),
+            amount: 10.0,
+            include_groups: None,
+            exclude_groups: None,
+        })
+        .unwrap();
+    assert_eq!(num(&s, "Temperature"), Some(3000.0));
+    assert!(
+        o.notes
+            .iter()
+            .any(|n| n.contains("Temperature") && n.contains("unscaled")),
+        "{o:?}"
+    );
+}

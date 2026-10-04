@@ -10,7 +10,8 @@
 //! Lightroom sweeps instead of us guessing.
 
 /// Strength constants, at slider = ±100. Fitted later; these are starting guesses.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct ToneStrengths {
     /// Contrast S-curve: mid-tone slope change at ±100 (slope 1 ± this).
     pub contrast: f64,
@@ -22,6 +23,12 @@ pub struct ToneStrengths {
     pub blacks: f64,
     /// Peak height of a parametric-curve region bump.
     pub parametric: f64,
+}
+
+impl Default for ToneStrengths {
+    fn default() -> Self {
+        DEFAULT_STRENGTHS
+    }
 }
 
 pub const DEFAULT_STRENGTHS: ToneStrengths = ToneStrengths {

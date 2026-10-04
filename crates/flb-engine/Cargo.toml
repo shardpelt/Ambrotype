@@ -12,6 +12,8 @@ flb-presets = { path = "../flb-presets" }
 rawler = "0.8"
 image = { version = "0.25", default-features = false, features = ["png", "tiff", "jpeg"] }
 rayon = "1"
+serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]

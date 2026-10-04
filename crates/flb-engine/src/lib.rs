@@ -7,8 +7,15 @@
 //! docs/SCOPE.md §9 replaces this incrementally; this crate fixes the colour
 //! maths and gives the calibration harness something to compare against.
 
+pub mod buffer;
+pub mod calibration;
 pub mod color;
 pub mod curve;
+pub mod dehaze;
+pub mod detail;
+pub mod effects;
+pub mod filters;
+pub mod local;
 pub mod output;
 pub mod pipeline;
 pub mod raw;

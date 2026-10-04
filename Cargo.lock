@@ -283,6 +283,8 @@ dependencies = [
  "image",
  "rawler",
  "rayon",
+ "serde",
+ "serde_json",
  "thiserror",
 ]
 

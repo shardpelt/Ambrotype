@@ -1,11 +1,19 @@
 //! Develop pipeline v0.
 //!
 //! Order (subset of the Camera Raw model, docs/research/05 §1):
-//! camera RGB → white balance + camera matrix → XYZ → Bradford to D50 →
-//! linear ProPhoto → Exposure (2^EV) → base look → Basic tone controls
-//! (luminance, hue-preserving) → colour (Vibrance, Saturation, HSL, Color
-//! Grading in OkLab) → parametric + point curves (per channel, encoded) → output.
-//! The exact order Camera Raw uses is still to be confirmed by sweeps.
+//! 1. camera RGB → white balance + camera matrix → XYZ → Bradford to D50 →
+//!    linear ProPhoto → Exposure (2^EV)                      [scene-linear]
+//! 2. Dehaze                                                 [scene-linear]
+//! 3. base look → Basic tone controls (luminance, hue-preserving) [display-linear]
+//! 4. Texture / Clarity (local contrast)
+//! 5. colour (Vibrance, Saturation, HSL, Color Grading in OkLab) →
+//!    parametric + point curves (per channel, encoded)
+//! 6. noise reduction → sharpening
+//! 7. post-crop vignette → grain → output
+//!
+//! The exact order Camera Raw uses is still to be confirmed by sweeps. Each
+//! stage is a pass over one shared [`Image`] buffer, so spatial operations can
+//! sit between the per-pixel ones.
 //!
 //! Only a few settings render so far; [`DevelopSettings::from_settings`]
 //! reports everything else as not rendered yet.
@@ -17,10 +25,17 @@ use flb_color::temperature::{temp_tint_to_xy, xy_to_temp_tint};
 use flb_presets::{Value, curve_points};
 use rayon::prelude::*;
 
+pub use crate::buffer::Image as ProPhotoImage;
+use crate::buffer::{Image, luminance_weights};
+use crate::calibration::Calibration;
 use crate::color::{self, ColorControls, ColorOp, Wheel};
 use crate::curve::Spline;
+use crate::detail::{NoiseReduction, Sharpening};
+use crate::effects::{Grain, Vignette};
+use crate::local::LocalContrast;
 use crate::raw::{CameraImage, neutral_for_xy, xy_for_neutral};
 use crate::tone::{self, ParametricCurve, ToneControls};
+use crate::{dehaze, detail, effects, local};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WhiteBalance {
@@ -64,6 +79,14 @@ pub struct DevelopSettings {
     pub parametric: ParametricCurve,
     pub curve_rgb: Option<Spline>,
     pub curve_channels: [Option<Spline>; 3],
+    pub dehaze: f64,
+    pub local: LocalContrast,
+    pub noise_reduction: NoiseReduction,
+    pub sharpening: Sharpening,
+    pub vignette: Vignette,
+    pub grain: Grain,
+    /// Model constants; [`Calibration::default`] until fitted against Lightroom.
+    pub calibration: Calibration,
 }
 
 impl Default for DevelopSettings {
@@ -77,6 +100,13 @@ impl Default for DevelopSettings {
             parametric: ParametricCurve::default(),
             curve_rgb: None,
             curve_channels: [None, None, None],
+            dehaze: 0.0,
+            local: LocalContrast::default(),
+            noise_reduction: NoiseReduction::default(),
+            sharpening: Sharpening::default(),
+            vignette: Vignette::default(),
+            grain: Grain::default(),
+            calibration: Calibration::default(),
         }
     }
 }
@@ -218,6 +248,47 @@ impl DevelopSettings {
             g.highlights.sat = num(settings, "SplitToningHighlightSaturation").unwrap_or(0.0);
         }
         s.color = c;
+        s.dehaze = num(settings, "Dehaze").unwrap_or(0.0);
+        s.local = LocalContrast {
+            texture: num(settings, "Texture").unwrap_or(0.0),
+            clarity: num(settings, "Clarity2012").unwrap_or(0.0),
+        };
+        let nd = NoiseReduction::default();
+        s.noise_reduction = NoiseReduction {
+            luminance: num(settings, "LuminanceSmoothing").unwrap_or(nd.luminance),
+            luminance_detail: num(settings, "LuminanceNoiseReductionDetail")
+                .unwrap_or(nd.luminance_detail),
+            luminance_contrast: num(settings, "LuminanceNoiseReductionContrast")
+                .unwrap_or(nd.luminance_contrast),
+            color: num(settings, "ColorNoiseReduction").unwrap_or(nd.color),
+            color_detail: num(settings, "ColorNoiseReductionDetail").unwrap_or(nd.color_detail),
+            color_smoothness: num(settings, "ColorNoiseReductionSmoothness")
+                .unwrap_or(nd.color_smoothness),
+        };
+        let sd = Sharpening::default();
+        s.sharpening = Sharpening {
+            amount: num(settings, "Sharpness").unwrap_or(sd.amount),
+            radius: num(settings, "SharpenRadius").unwrap_or(sd.radius),
+            detail: num(settings, "SharpenDetail").unwrap_or(sd.detail),
+            masking: num(settings, "SharpenEdgeMasking").unwrap_or(sd.masking),
+        };
+        let vd = Vignette::default();
+        s.vignette = Vignette {
+            amount: num(settings, "PostCropVignetteAmount").unwrap_or(vd.amount),
+            midpoint: num(settings, "PostCropVignetteMidpoint").unwrap_or(vd.midpoint),
+            roundness: num(settings, "PostCropVignetteRoundness").unwrap_or(vd.roundness),
+            feather: num(settings, "PostCropVignetteFeather").unwrap_or(vd.feather),
+            highlights: num(settings, "PostCropVignetteHighlightContrast").unwrap_or(vd.highlights),
+            style: num(settings, "PostCropVignetteStyle")
+                .map_or(vd.style, |v| v.clamp(1.0, 3.0) as u8),
+        };
+        let gd = Grain::default();
+        s.grain = Grain {
+            amount: num(settings, "GrainAmount").unwrap_or(gd.amount),
+            size: num(settings, "GrainSize").unwrap_or(gd.size),
+            roughness: num(settings, "GrainFrequency").unwrap_or(gd.roughness),
+            seed: num(settings, "GrainSeed").map_or(gd.seed, |v| v as u64),
+        };
         s.curve_rgb = spline_of(settings, "ToneCurvePV2012");
         s.curve_channels = [
             spline_of(settings, "ToneCurvePV2012Red"),
@@ -248,13 +319,6 @@ impl DevelopSettings {
             .collect();
         (s, not_rendered)
     }
-}
-
-/// Linear ProPhoto (D50) image produced by the pipeline.
-pub struct ProPhotoImage {
-    pub width: usize,
-    pub height: usize,
-    pub rgb: Vec<f32>,
 }
 
 /// Camera RGB → linear ProPhoto matrix for a given white (camera-space neutral).
@@ -294,7 +358,19 @@ fn srgb_decode(v: f32) -> f32 {
     }
 }
 
+const LUT: usize = 4096;
+
+fn lookup(lut: &[f32], v: f32) -> f32 {
+    let pos = v.clamp(0.0, 1.0) * (LUT - 1) as f32;
+    let i = (pos as usize).min(LUT - 2);
+    let f = pos - i as f32;
+    lut[i] * (1.0 - f) + lut[i + 1] * f
+}
+
 pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
+    let cal = &s.calibration;
+
+    // 1. Camera RGB → scene-linear ProPhoto with white balance and Exposure.
     let neutral = match s.white_balance {
         WhiteBalance::AsShot => img.as_shot_neutral,
         WhiteBalance::Custom { temperature, tint } => {
@@ -304,47 +380,63 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     };
     let m = camera_to_prophoto(&img.xyz_to_cam, neutral).map(|row| row.map(|v| v as f32));
     let gain = 2f32.powf(s.exposure_ev as f32);
-    const LUT: usize = 4096;
+    let mut out = Image {
+        width: img.width,
+        height: img.height,
+        rgb: vec![0.0f32; img.rgb.len()],
+    };
+    out.rgb
+        .par_chunks_mut(3)
+        .zip(img.rgb.par_chunks(3))
+        .for_each(|(o, c)| {
+            for (row, slot) in m.iter().zip(o.iter_mut()) {
+                *slot = (row[0] * c[0] + row[1] * c[1] + row[2] * c[2]) * gain;
+            }
+        });
+
+    // 2. Dehaze (scene-linear).
+    if s.dehaze != 0.0 {
+        dehaze::apply(&mut out, s.dehaze, &cal.dehaze);
+    }
+
+    // 3. Base look and Basic tone controls → display-linear.
+    let tone_lut = (!s.tone.is_neutral()).then(|| tone::tone_lut(&s.tone, &cal.tone, LUT));
+    let lum_weights = luminance_weights();
+    let base = s.base_look;
+    out.map_pixels(|c| {
+        let mut p = c.map(|v| base.apply(v));
+        if let Some(lut) = &tone_lut {
+            // Hue-preserving: scale RGB by the luminance curve's ratio.
+            let y = lum_weights[0] * p[0] + lum_weights[1] * p[1] + lum_weights[2] * p[2];
+            if y > 1e-6 {
+                let target = srgb_decode(lookup(lut, srgb_encode(y.min(1.0))));
+                let scale = target / y.min(1.0);
+                p = p.map(|v| v * scale);
+            }
+        }
+        p
+    });
+
+    // 4. Texture / Clarity.
+    if !s.local.is_neutral() {
+        local::apply(&mut out, &s.local, &cal.local);
+    }
+
+    // 5. Colour, then parametric and point curves.
     let rgb_lut = s.curve_rgb.as_ref().map(|c| c.lut(LUT));
     let channel_luts: Vec<Option<Vec<f32>>> = s
         .curve_channels
         .iter()
         .map(|c| c.as_ref().map(|c| c.lut(LUT)))
         .collect();
-    let parametric_lut = (!s.parametric.is_neutral())
-        .then(|| tone::parametric_lut(&s.parametric, &tone::DEFAULT_STRENGTHS, LUT));
+    let parametric_lut =
+        (!s.parametric.is_neutral()).then(|| tone::parametric_lut(&s.parametric, &cal.tone, LUT));
     let has_curves =
         parametric_lut.is_some() || rgb_lut.is_some() || channel_luts.iter().any(Option::is_some);
-    let tone_lut =
-        (!s.tone.is_neutral()).then(|| tone::tone_lut(&s.tone, &tone::DEFAULT_STRENGTHS, LUT));
-    let color_op =
-        (!s.color.is_neutral()).then(|| ColorOp::new(&s.color, color::DEFAULT_STRENGTHS));
-    let lum_weights = PROPHOTO_TO_XYZ_D50[1].map(|v| v as f32);
-    let base = s.base_look;
-    let lookup = |lut: &[f32], v: f32| {
-        let pos = v.clamp(0.0, 1.0) * (LUT - 1) as f32;
-        let i = (pos as usize).min(LUT - 2);
-        let f = pos - i as f32;
-        lut[i] * (1.0 - f) + lut[i + 1] * f
-    };
-
-    let mut out = vec![0.0f32; img.rgb.len()];
-    out.par_chunks_mut(3)
-        .zip(img.rgb.par_chunks(3))
-        .for_each(|(o, c)| {
-            let mut p = [0.0f32; 3];
-            for (row, slot) in m.iter().zip(p.iter_mut()) {
-                *slot = base.apply((row[0] * c[0] + row[1] * c[1] + row[2] * c[2]) * gain);
-            }
-            if let Some(lut) = &tone_lut {
-                // Hue-preserving: scale RGB by the luminance curve's ratio.
-                let y = lum_weights[0] * p[0] + lum_weights[1] * p[1] + lum_weights[2] * p[2];
-                if y > 1e-6 {
-                    let target = srgb_decode(lookup(lut, srgb_encode(y.min(1.0))));
-                    let scale = target / y.min(1.0);
-                    p = p.map(|v| v * scale);
-                }
-            }
+    let color_op = (!s.color.is_neutral()).then(|| ColorOp::new(&s.color, cal.color));
+    if color_op.is_some() || has_curves {
+        out.map_pixels(|c| {
+            let mut p = c;
             if let Some(op) = &color_op {
                 p = op.apply(p);
             }
@@ -364,13 +456,22 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
                     *v = srgb_decode(e);
                 }
             }
-            o.copy_from_slice(&p);
+            p
         });
-    ProPhotoImage {
-        width: img.width,
-        height: img.height,
-        rgb: out,
     }
+
+    // 6. Detail: noise reduction, then sharpening.
+    detail::apply_noise_reduction(&mut out, &s.noise_reduction, &cal.detail);
+    detail::apply_sharpening(&mut out, &s.sharpening, &cal.detail);
+
+    // 7. Effects: post-crop vignette, then grain.
+    if s.vignette.amount != 0.0 {
+        effects::apply_vignette(&mut out, &s.vignette, &cal.effects);
+    }
+    if s.grain.amount != 0.0 {
+        effects::apply_grain(&mut out, &s.grain, &cal.effects);
+    }
+    out
 }
 
 #[cfg(test)]

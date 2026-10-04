@@ -14,7 +14,8 @@ use std::f32::consts::TAU;
 use flb_color::matrix::{Mat3, PROPHOTO_TO_XYZ_D50, invert3, mul3, xyz_d50_to_srgb};
 
 /// Strength constants at slider = ±100. Starting guesses, to be fitted.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct ColorStrengths {
     /// HSL hue shift at ±100, in OkLCh degrees.
     pub hsl_hue_deg: f32,
@@ -26,6 +27,12 @@ pub struct ColorStrengths {
     pub grade_tint: f32,
     /// Color-grading luminance shift at ±100, in OkLab L units.
     pub grade_lum: f32,
+}
+
+impl Default for ColorStrengths {
+    fn default() -> Self {
+        DEFAULT_STRENGTHS
+    }
 }
 
 pub const DEFAULT_STRENGTHS: ColorStrengths = ColorStrengths {

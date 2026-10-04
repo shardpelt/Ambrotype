@@ -20,8 +20,10 @@ USAGE:
                                             Write a sweep kit for importing into Lightroom
                                             (docs/lightroom-trial-plan.md): raw copies + XMP sidecars,
                                             and/or synthetic DNG targets with embedded settings
+    flb calibration defaults                Print the default model constants as calibration JSON
     flb testimage <PATTERN> <OUT.dng>       Write one synthetic target (ramp, hue, edges, colorchecker)
     flb render <RAW> <OUT.png|.jpg|.tif> [--preset P] [--amount A] [--look default|linear]
+                                            [--calibration fitted.json]
                                             Develop a raw (engine v0: white balance, Exposure, point
                                             curves) and report which preset settings were not rendered
 
@@ -37,17 +39,16 @@ fn main() -> ExitCode {
     while let Some(arg) = iter.next() {
         match arg.as_str() {
             "--json" => json = true,
-            "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look" => {
-                match iter.next() {
-                    Some(value) => {
-                        options.insert(arg.as_str(), value.as_str());
-                    }
-                    None => {
-                        eprintln!("error: {arg} needs a value\n\n{USAGE}");
-                        return ExitCode::from(2);
-                    }
+            "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look"
+            | "--calibration" => match iter.next() {
+                Some(value) => {
+                    options.insert(arg.as_str(), value.as_str());
                 }
-            }
+                None => {
+                    eprintln!("error: {arg} needs a value\n\n{USAGE}");
+                    return ExitCode::from(2);
+                }
+            },
             other if other.starts_with("--") => {
                 eprintln!("error: unknown option {other}\n\n{USAGE}");
                 return ExitCode::from(2);
@@ -73,12 +74,20 @@ fn main() -> ExitCode {
             None => Err("sweep generate needs --out <DIR>".into()),
         },
         ["testimage", pattern, out] => testimage(pattern, Path::new(out)),
+        ["calibration", "defaults"] => {
+            println!(
+                "{}",
+                flb_engine::calibration::Calibration::default().to_json()
+            );
+            Ok(())
+        }
         ["render", input, out] => render(
             Path::new(input),
             Path::new(out),
             options.get("--preset").copied(),
             options.get("--amount").copied(),
             options.get("--look").copied(),
+            options.get("--calibration").copied(),
         ),
         _ => {
             eprintln!("{USAGE}");
@@ -380,6 +389,7 @@ fn render(
     preset: Option<&str>,
     amount: Option<&str>,
     look: Option<&str>,
+    calibration: Option<&str>,
 ) -> Result<(), String> {
     use flb_engine::{output, pipeline, raw};
     let start = std::time::Instant::now();
@@ -415,6 +425,10 @@ fn render(
         "linear" => pipeline::BaseLook::Linear,
         other => return Err(format!("unknown --look {other:?} (default, linear)")),
     };
+    if let Some(path) = calibration {
+        develop.calibration =
+            flb_engine::calibration::Calibration::from_json_file(Path::new(path))?;
+    }
     let developed = pipeline::render(&img, &develop);
     output::write_srgb(&developed, out).map_err(|e| e.to_string())?;
     println!(

@@ -265,6 +265,7 @@ version = "0.1.0"
 dependencies = [
  "flb-engine",
  "flb-presets",
+ "flb-protocol",
  "flb-testkit",
  "serde_json",
 ]
@@ -292,6 +293,17 @@ dependencies = [
 name = "flb-presets"
 version = "0.1.0"
 dependencies = [
+ "quick-xml",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "flb-protocol"
+version = "0.1.0"
+dependencies = [
+ "flb-presets",
  "quick-xml",
  "serde",
  "serde_json",

@@ -1,0 +1,155 @@
+//! Wire types: commands change the develop state, queries read it.
+//!
+//! Both are JSON objects tagged by a `cmd` / `query` field, e.g.
+//! `{"cmd": "set_param", "name": "Exposure2012", "value": 0.5}`.
+
+use serde::{Deserialize, Serialize};
+
+fn default_amount() -> f64 {
+    100.0
+}
+
+fn is_default_amount(a: &f64) -> bool {
+    *a == 100.0
+}
+
+/// A state-changing, undoable edit.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "cmd", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Command {
+    /// Set a setting to an absolute value (numbers are clamped to the range).
+    SetParam {
+        name: String,
+        value: serde_json::Value,
+    },
+    /// Add `delta` to a numeric setting (from its current value, or its default).
+    AdjustParam { name: String, delta: f64 },
+    /// Remove a setting so it falls back to its default.
+    ResetParam { name: String },
+    /// Remove every setting of a registry group (e.g. `"hsl"`).
+    ResetGroup { group: String },
+    /// Apply a preset file at `amount` percent (0-200, default 100),
+    /// optionally limited to or excluding some registry groups.
+    ApplyPreset {
+        path: String,
+        #[serde(default = "default_amount", skip_serializing_if = "is_default_amount")]
+        amount: f64,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        include_groups: Option<Vec<String>>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        exclude_groups: Option<Vec<String>>,
+    },
+    /// Revert the most recent command.
+    Undo,
+    /// Re-apply the most recently undone command.
+    Redo,
+}
+
+impl Command {
+    /// Short label used in history and diffs, e.g. `set_param Exposure2012`.
+    pub fn label(&self) -> String {
+        match self {
+            Command::SetParam { name, .. } => format!("set_param {name}"),
+            Command::AdjustParam { name, delta } => format!("adjust_param {name} {delta:+}"),
+            Command::ResetParam { name } => format!("reset_param {name}"),
+            Command::ResetGroup { group } => format!("reset_group {group}"),
+            Command::ApplyPreset { path, amount, .. } => {
+                format!("apply_preset {path} at {amount}%")
+            }
+            Command::Undo => "undo".into(),
+            Command::Redo => "redo".into(),
+        }
+    }
+}
+
+/// A read-only request.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "query", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Query {
+    /// Current value, default and range of one setting.
+    GetParam { name: String },
+    /// Settings with their current values. Without `group`: only the settings
+    /// present in the state. With `group`: every setting of that group.
+    /// `only_set` overrides either default.
+    ListParams {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        group: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        only_set: Option<bool>,
+    },
+    /// Full documentation of one setting, plus its current value.
+    Describe { name: String },
+    /// All registry groups with labels, descriptions and counts.
+    ListGroups,
+}
+
+/// Parse one command or a JSON array of commands.
+pub fn parse_commands(text: &str) -> Result<Vec<Command>, crate::Error> {
+    parse_list(text, "command")
+}
+
+/// Parse one query or a JSON array of queries.
+pub fn parse_queries(text: &str) -> Result<Vec<Query>, crate::Error> {
+    parse_list(text, "query")
+}
+
+fn parse_list<T: serde::de::DeserializeOwned>(
+    text: &str,
+    what: &str,
+) -> Result<Vec<T>, crate::Error> {
+    let json: serde_json::Value =
+        serde_json::from_str(text).map_err(|e| crate::Error::Json(format!("invalid JSON: {e}")))?;
+    let items = match json {
+        serde_json::Value::Array(items) => items,
+        single => vec![single],
+    };
+    items
+        .into_iter()
+        .enumerate()
+        .map(|(i, item)| {
+            serde_json::from_value(item).map_err(|e| crate::Error::Json(format!("{what} {i}: {e}")))
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn wire_format() {
+        let cmds = parse_commands(
+            r#"[{"cmd":"set_param","name":"Exposure2012","value":0.5},
+                {"cmd":"apply_preset","path":"p.xmp","exclude_groups":["tone"]},
+                {"cmd":"undo"}]"#,
+        )
+        .unwrap();
+        assert_eq!(
+            cmds[1],
+            Command::ApplyPreset {
+                path: "p.xmp".into(),
+                amount: 100.0,
+                include_groups: None,
+                exclude_groups: Some(vec!["tone".into()]),
+            }
+        );
+        assert_eq!(
+            serde_json::to_value(&cmds[2]).unwrap(),
+            json!({"cmd": "undo"})
+        );
+        let single = parse_commands(r#"{"cmd":"reset_group","group":"hsl"}"#).unwrap();
+        assert_eq!(single.len(), 1);
+        let err = parse_commands(r#"[{"cmd":"set_param","name":"X"}]"#).unwrap_err();
+        assert!(err.to_string().contains("command 0"), "{err}");
+        assert!(parse_commands(r#"{"cmd":"set_param","name":"X","value":1,"typo":2}"#).is_err());
+        let q = parse_queries(r#"{"query":"list_params","group":"hsl"}"#).unwrap();
+        assert_eq!(
+            q[0],
+            Query::ListParams {
+                group: Some("hsl".into()),
+                only_set: None
+            }
+        );
+    }
+}

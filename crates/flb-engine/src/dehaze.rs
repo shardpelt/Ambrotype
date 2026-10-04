@@ -20,22 +20,34 @@
 //!    result does not depend on resolution). `A` is the mean colour of the
 //!    brightest [`DehazeStrengths::airlight_fraction`] dark-channel pixels,
 //!    partly neutralised (a strongly coloured `A` would shift every hue) and
-//!    floored so black frames stay finite.
+//!    floored so black frames stay finite. The search runs on a copy whose
+//!    channels are capped at a high quantile
+//!    ([`DehazeStrengths::airlight_cap_quantile`]): scene-linear data is
+//!    unbounded, and a small sun, lamp or sunlit wall must not pass for haze.
 //! 3. **Haze map.** `d = patch-min(min_c(I_c / A_c))` in 0..1, refined with a
 //!    guided filter steered by encoded luminance. Its linear coefficients are
 //!    upsampled bilinearly and applied to the full-resolution guide (He & Sun's
 //!    fast guided filter), so the map follows full-resolution edges and leaves
 //!    no low-resolution halos.
-//! 4. **Positive amounts** recover `J = A + (I − A) / t` with
-//!    `t = max(1 − ω·amount·d, t0)`. Instead of clipping negatives, `t` is
-//!    raised per pixel just enough for the darkest channel to keep a fraction
-//!    ([`DehazeStrengths::shadow_keep`]) of its value: one `t` for all three
-//!    channels, so hues stay consistent where shadows get crushed.
+//! 4. **Positive amounts** recover `J = A' + (I − A') / t` with
+//!    `t = max(1 − ω·amount·d, t0)` and `A' = A·(1 + headroom)`
+//!    ([`DehazeStrengths::airlight_headroom`]), so the haziest areas (sky, at
+//!    `A`) darken and deepen rather than keep their level. Only the part of
+//!    each channel below `A'` is stretched; anything brighter passes unchanged,
+//!    so highlights are never multiplied by `1 / t`. Instead of clipping
+//!    negatives, `t` is raised per pixel just enough for the darkest channel to
+//!    keep a fraction ([`DehazeStrengths::shadow_keep`]) of its value: one `t`
+//!    for all three channels, so hues stay consistent where shadows get crushed.
 //! 5. **Negative amounts** blend towards a fog colour derived from `A`:
 //!    `J = I·t' + A_fog·(1 − t')`, `t' = 1 − |amount|·fog·(uniform + depth·d)`,
 //!    a mostly uniform, nearly neutral veil that is a little denser where the
 //!    image is already hazy (far away).
 //! 6. A mild exposure compensation undoes part of the change in mean lightness.
+//!    When removing haze it is weighted per pixel by `1 − d`, so it lifts the
+//!    clearer areas without undoing the darkening of the haziest ones.
+//!
+//! Non-finite input values are treated as 0 so one bad pixel cannot poison the
+//! frame-wide statistics.
 //!
 //! The model is scale-equivariant (doubling the input doubles the output) as
 //! long as the airlight is above its floor, so Exposure and Dehaze commute.
@@ -58,6 +70,10 @@ pub struct DehazeStrengths {
     pub patch_radius: f64,
     /// Fraction of the brightest dark-channel pixels averaged into the airlight.
     pub airlight_fraction: f64,
+    /// Per-channel quantile (0..1) of the estimate that caps every pixel before
+    /// the airlight search, so a bright object smaller than `1 − quantile` of
+    /// the frame (sun, lamp, sunlit wall, specular) cannot pass for haze.
+    pub airlight_cap_quantile: f64,
     /// Share of the measured airlight colour kept (0 = neutral grey of the same
     /// luminance, 1 = as measured).
     pub airlight_saturation: f64,
@@ -65,6 +81,10 @@ pub struct DehazeStrengths {
     pub airlight_min: f64,
     /// He's ω at +100: fraction of the estimated haze removed.
     pub omega: f64,
+    /// Haze removal treats the airlight as this much brighter than measured
+    /// (0.1 = 10 %). The haziest areas (sky), which sit at the measured airlight,
+    /// then darken and deepen with positive amounts instead of keeping their level.
+    pub airlight_headroom: f64,
     /// Guided-filter radius for the haze map, as a fraction of the short side.
     pub refine_radius: f64,
     /// Guided-filter regularisation (guide = sqrt(luminance / airlight luminance)).
@@ -87,6 +107,8 @@ pub struct DehazeStrengths {
     /// reads as a colour cast.
     pub fog_saturation: f64,
     /// Fraction of the change in mean lightness that is undone (0 = none, 1 = all).
+    /// Removing haze lifts each pixel by the factor raised to `1 − d` (haze map
+    /// `d`), so the haziest areas keep their darkening; adding fog applies it uniformly.
     pub exposure_compensation: f64,
 }
 
@@ -100,9 +122,11 @@ pub const DEFAULT_STRENGTHS: DehazeStrengths = DehazeStrengths {
     estimate_long_side: 1536.0,
     patch_radius: 0.01,
     airlight_fraction: 0.001,
+    airlight_cap_quantile: 0.99,
     airlight_saturation: 0.5,
     airlight_min: 0.01,
     omega: 0.9,
+    airlight_headroom: 0.1,
     refine_radius: 0.04,
     refine_eps: 1e-3,
     min_transmission: 0.3,
@@ -122,9 +146,17 @@ pub fn apply(img: &mut Image, amount: f64, k: &DehazeStrengths) {
         return;
     }
     let amount = (amount / 100.0).clamp(-1.0, 1.0) as f32;
+    // Garbage pixels (NaN, ±inf) would poison the frame-wide statistics: treat them as black.
+    img.rgb.par_iter_mut().for_each(|v| {
+        if !v.is_finite() {
+            *v = 0.0;
+        }
+    });
     let est = Estimate::new(img, k);
     let op = Recovery::new(amount, &est, k);
     let comp = est.compensation(&op, k);
+    let log_comp = comp.ln();
+    let removing = op.omega > 0.0;
     let (w, sw, sh) = (img.width, est.sw, est.sh);
     let lum = luminance_weights();
 
@@ -149,9 +181,13 @@ pub fn apply(img: &mut Image, amount: f64, k: &DehazeStrengths) {
                 let g = guide_value(p, lum, est.inv_airlight_y);
                 let d = (bilerp(a0, a1) * g + bilerp(b0, b1)).clamp(0.0, 1.0);
                 let out = op.apply(p, d);
+                let gain = if removing {
+                    (log_comp * (1.0 - d)).exp()
+                } else {
+                    comp
+                };
                 for (o, v) in px.iter_mut().zip(out) {
-                    // max(0) also maps a NaN from garbage input to 0.
-                    *o = (v * comp).max(0.0);
+                    *o = (v * gain).max(0.0);
                 }
             }
         });
@@ -184,13 +220,15 @@ impl Estimate {
         let refine = ((k.refine_radius * short).round() as usize).max(1);
         let lum = luminance_weights();
 
-        // Airlight: mean colour of the brightest dark-channel pixels.
-        let dark: Vec<f32> = small
+        // Airlight: mean colour of the brightest dark-channel pixels, searched
+        // on a copy whose channels are capped at a high quantile.
+        let capped = cap_channels(&small, k.airlight_cap_quantile);
+        let dark: Vec<f32> = capped
             .par_chunks_exact(3)
             .map(|p| p[0].min(p[1]).min(p[2]))
             .collect();
         let dark = min_filter(&dark, sw, sh, patch);
-        let airlight = airlight(&small, &dark, k);
+        let airlight = airlight(&capped, &dark, k);
         let airlight_y = dot(lum, airlight);
         let inv_airlight_y = 1.0 / airlight_y;
         let inv_airlight = airlight.map(|v| 1.0 / v);
@@ -265,6 +303,7 @@ struct Recovery {
     omega: f32,
     min_transmission: f32,
     shadow_keep: f32,
+    /// Airlight for haze removal (the measured one plus `airlight_headroom`).
     airlight: [f32; 3],
     inv_airlight: [f32; 3],
     /// Negative: fog·|amount| (veil opacity). Zero when removing haze.
@@ -276,6 +315,8 @@ struct Recovery {
 impl Recovery {
     fn new(amount: f32, est: &Estimate, k: &DehazeStrengths) -> Recovery {
         let removing = amount > 0.0;
+        let headroom = 1.0 + (k.airlight_headroom as f32).clamp(0.0, 1.0);
+        let removal_airlight = est.airlight.map(|v| v * headroom);
         Recovery {
             omega: if removing {
                 (k.omega as f32 * amount).clamp(0.0, 1.0)
@@ -284,8 +325,8 @@ impl Recovery {
             },
             min_transmission: (k.min_transmission as f32).clamp(0.01, 1.0),
             shadow_keep: (k.shadow_keep as f32).clamp(0.0, 0.99),
-            airlight: est.airlight,
-            inv_airlight: est.airlight.map(|v| 1.0 / v),
+            airlight: removal_airlight,
+            inv_airlight: removal_airlight.map(|v| 1.0 / v),
             fog: if removing {
                 0.0
             } else {
@@ -313,7 +354,13 @@ impl Recovery {
             t = t.max((1.0 - m) / (1.0 - self.shadow_keep * m));
         }
         let inv_t = 1.0 / t.min(1.0);
-        [0, 1, 2].map(|c| self.airlight[c] + (p[c] - self.airlight[c]) * inv_t)
+        // Only the part of each channel below the airlight is stretched; what
+        // lies above it (highlights brighter than the haze) passes unchanged.
+        [0, 1, 2].map(|c| {
+            let a = self.airlight[c];
+            let below = p[c].min(a) - a;
+            a + below * inv_t + (p[c] - a).max(0.0)
+        })
     }
 }
 
@@ -370,6 +417,30 @@ fn airlight(small: &[f32], dark: &[f32], k: &DehazeStrengths) -> [f32; 3] {
     // Neutralise towards the grey of equal luminance (ProPhoto Y of (1,1,1) is 1),
     // keeping every channel well away from zero so I / A stays bounded.
     mean.map(|v| (y + (v - y) * sat).max(0.1 * y))
+}
+
+/// Copy of the interleaved RGB `small` with every channel clipped at its own
+/// `quantile` over the frame (scale-equivariant). A bright object covering
+/// less than `1 − quantile` of the frame then looks like the frame's typical
+/// bright colour (in a landscape, the sky) instead of standing out.
+fn cap_channels(small: &[f32], quantile: f64) -> Vec<f32> {
+    let n = small.len() / 3;
+    if n == 0 || quantile >= 1.0 {
+        return small.to_vec();
+    }
+    let rank = ((quantile.max(0.0) * (n - 1) as f64).round() as usize).min(n - 1);
+    let cap: [f32; 3] = [0, 1, 2].map(|c| {
+        let mut v: Vec<f32> = small.iter().skip(c).step_by(3).copied().collect();
+        let (_, &mut q, _) = v.select_nth_unstable_by(rank, |a, b| a.total_cmp(b));
+        q
+    });
+    let mut out = small.to_vec();
+    out.par_chunks_exact_mut(3).for_each(|p| {
+        for c in 0..3 {
+            p[c] = p[c].min(cap[c]);
+        }
+    });
+    out
 }
 
 /// Box-average downscale by an integer factor (partial blocks at the right and
@@ -889,6 +960,16 @@ mod tests {
                 Image::from_fn(1, 41, |_, y| [0.6, y as f32 / 41.0, 0.2]),
             ),
             (
+                "inf pixel",
+                Image::from_fn(16, 16, |x, y| {
+                    if (x, y) == (5, 7) {
+                        [f32::INFINITY, 0.3, f32::NAN]
+                    } else {
+                        [0.4, 0.5, 0.6]
+                    }
+                }),
+            ),
+            (
                 "negative input",
                 Image::from_fn(16, 16, |x, y| {
                     [x as f32 * 0.05 - 0.2, 0.3, y as f32 * 0.04 - 0.1]
@@ -902,15 +983,162 @@ mod tests {
                 assert_valid(&out, &format!("{name} at {amount}"));
             }
         }
-        // Black stays black when removing haze; white stays white.
+        // Black stays black when removing haze. A uniform white frame is all
+        // haze: it stays uniform and neutral and darkens moderately.
         let black = dehazed(&Image::new(20, 20), 100.0);
         assert!(black.rgb.iter().all(|&v| v == 0.0));
         let white = dehazed(&Image::from_fn(20, 20, |_, _| [1.0; 3]), 100.0);
+        let v0 = white.rgb[0];
         assert!(
-            white.rgb.iter().all(|&v| (v - 1.0).abs() < 1e-4),
+            white.rgb.iter().all(|&v| (v - v0).abs() < 1e-6) && v0 > 0.6 && v0 < 1.0,
             "{:?}",
             &white.rgb[..3]
         );
+    }
+
+    #[test]
+    fn positive_amount_darkens_the_sky() {
+        // The pure-haze sky band is the haziest region: removing haze darkens
+        // it, more so as the amount grows, and never brightens anything there.
+        let img = hazy(180, 120);
+        let lum = luminance_weights();
+        let sky = |i: &Image| dot(lum, i.get(90, 5));
+        let mut last = sky(&img);
+        for amount in [25.0, 50.0, 100.0] {
+            let y = sky(&dehazed(&img, amount));
+            assert!(
+                y < last,
+                "sky luminance at +{amount}: {y} (previous {last})"
+            );
+            last = y;
+        }
+        let out = dehazed(&img, 100.0);
+        for y in 0..img.height / 6 {
+            for x in 0..img.width {
+                let (a, b) = (img.get(x, y), out.get(x, y));
+                assert!(
+                    dot(lum, b) <= dot(lum, a) * 1.001,
+                    "({x},{y}): {a:?} → {b:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn highlights_brighter_than_the_airlight_are_not_boosted() {
+        // Small speculars and a "sun" far above the haze level: haze removal
+        // must not multiply them.
+        let mut img = hazy(180, 120);
+        let mut spots = Vec::new();
+        for (x0, y0) in [(30, 60), (100, 80), (150, 40)] {
+            for y in y0..y0 + 4 {
+                for x in x0..x0 + 4 {
+                    img.set(x, y, [5.0; 3]);
+                    spots.push((x, y));
+                }
+            }
+        }
+        for y in 8..14 {
+            for x in 60..66 {
+                img.set(x, y, [20.0, 19.0, 17.0]);
+                spots.push((x, y));
+            }
+        }
+        // Haze removal alone leaves them as they are; the exposure compensation
+        // may then lift them like their surroundings, no more.
+        let no_comp = DehazeStrengths {
+            exposure_compensation: 0.0,
+            ..DehazeStrengths::default()
+        };
+        for amount in [30.0, 60.0, 100.0] {
+            for (k, bound) in [(no_comp, 1.0), (DehazeStrengths::default(), 1.3)] {
+                let mut out = img.clone();
+                apply(&mut out, amount, &k);
+                assert_valid(&out, "speculars");
+                for &(x, y) in &spots {
+                    let (a, b) = (img.get(x, y), out.get(x, y));
+                    for c in 0..3 {
+                        assert!(
+                            b[c] <= a[c] * bound + 1e-5,
+                            "+{amount} ({x},{y}): {a:?} → {b:?}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn bright_object_does_not_take_over_the_airlight() {
+        // A neutral highlight 1.5–8× brighter than the haze (a sunlit wall, a
+        // lamp, a clipped sun) is not haze: the result elsewhere stays close to
+        // the result without it.
+        let (w, h) = (300, 200);
+        let clean = hazy(w, h);
+        let reference = dehazed(&clean, 100.0);
+        let lum = luminance_weights();
+        let (bx, by, size) = (200usize, 120usize, 15usize);
+        let outside = |x: usize, y: usize| {
+            !(bx.saturating_sub(10)..bx + size + 10).contains(&x)
+                || !(by.saturating_sub(10)..by + size + 10).contains(&y)
+        };
+        for level in [1.5f32, 2.0, 8.0] {
+            let mut img = clean.clone();
+            for y in by..by + size {
+                for x in bx..bx + size {
+                    img.set(x, y, [level; 3]);
+                }
+            }
+            let out = dehazed(&img, 100.0);
+            let mut diff = 0.0f32;
+            let mut n = 0;
+            for y in 0..h {
+                for x in 0..w {
+                    if outside(x, y) {
+                        diff += distance(out.get(x, y), reference.get(x, y));
+                        n += 1;
+                    }
+                }
+            }
+            let diff = diff / n as f32;
+            assert!(
+                diff < 0.03,
+                "block at {level}: mean change elsewhere {diff}"
+            );
+            let (sky_ref, sky) = (dot(lum, reference.get(50, 12)), dot(lum, out.get(50, 12)));
+            assert!(
+                sky > 0.9 * sky_ref,
+                "block at {level}: sky {sky} vs {sky_ref} without it"
+            );
+        }
+    }
+
+    #[test]
+    fn non_finite_input_pixels_stay_local() {
+        // One garbage pixel (inf or NaN) must not disable anything frame-wide
+        // or leak non-finite values.
+        let img = hazy(300, 200);
+        for amount in [60.0, -60.0] {
+            let reference = dehazed(&img, amount);
+            for bad in [f32::INFINITY, f32::NAN, f32::NEG_INFINITY] {
+                let mut garbage = img.clone();
+                garbage.set(150, 100, [bad; 3]);
+                let out = dehazed(&garbage, amount);
+                assert_valid(&out, &format!("{bad} at {amount}"));
+                let mut worst = 0.0f32;
+                for y in 0..200usize {
+                    for x in 0..300usize {
+                        if x.abs_diff(150) > 20 || y.abs_diff(100) > 20 {
+                            worst = worst.max(distance(out.get(x, y), reference.get(x, y)));
+                        }
+                    }
+                }
+                assert!(
+                    worst < 1e-3,
+                    "{bad} at {amount}: far pixels moved by {worst}"
+                );
+            }
+        }
     }
 
     #[test]

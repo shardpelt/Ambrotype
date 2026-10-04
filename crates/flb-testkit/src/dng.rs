@@ -16,59 +16,7 @@
 
 use std::io::Write;
 
-/// Linear ProPhoto (ROMM) RGB → XYZ (D50).
-pub const PROPHOTO_TO_XYZ_D50: [[f64; 3]; 3] = [
-    [0.797_674_9, 0.135_191_7, 0.031_353_4],
-    [0.288_040_2, 0.711_874_1, 0.000_085_7],
-    [0.0, 0.0, 0.825_210_0],
-];
-
-/// Linear sRGB → XYZ, Bradford-adapted from D65 to D50.
-pub const SRGB_TO_XYZ_D50: [[f64; 3]; 3] = [
-    [0.436_074_7, 0.385_064_9, 0.143_080_4],
-    [0.222_504_5, 0.716_878_6, 0.060_616_9],
-    [0.013_932_2, 0.097_104_5, 0.714_173_3],
-];
-
-pub fn invert3(m: &[[f64; 3]; 3]) -> [[f64; 3]; 3] {
-    let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
-        - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
-        + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
-    assert!(det.abs() > 1e-12, "singular matrix");
-    let inv =
-        |r1: usize, c1: usize, r2: usize, c2: usize| m[r1][c1] * m[r2][c2] - m[r1][c2] * m[r2][c1];
-    [
-        [
-            inv(1, 1, 2, 2) / det,
-            -inv(0, 1, 2, 2) / det,
-            inv(0, 1, 1, 2) / det,
-        ],
-        [
-            -inv(1, 0, 2, 2) / det,
-            inv(0, 0, 2, 2) / det,
-            -inv(0, 0, 1, 2) / det,
-        ],
-        [
-            inv(1, 0, 2, 1) / det,
-            -inv(0, 0, 2, 1) / det,
-            inv(0, 0, 1, 1) / det,
-        ],
-    ]
-}
-
-pub fn mul3(a: &[[f64; 3]; 3], b: &[[f64; 3]; 3]) -> [[f64; 3]; 3] {
-    let mut out = [[0.0; 3]; 3];
-    for (i, row) in out.iter_mut().enumerate() {
-        for (j, cell) in row.iter_mut().enumerate() {
-            *cell = (0..3).map(|k| a[i][k] * b[k][j]).sum();
-        }
-    }
-    out
-}
-
-pub fn apply3(m: &[[f64; 3]; 3], v: [f64; 3]) -> [f64; 3] {
-    [0, 1, 2].map(|i| m[i][0] * v[0] + m[i][1] * v[1] + m[i][2] * v[2])
-}
+pub use flb_color::matrix::{PROPHOTO_TO_XYZ_D50, SRGB_TO_XYZ_D50, apply3, invert3, mul3};
 
 /// A linear-light image in camera space (= linear ProPhoto), values nominally 0..1.
 pub struct LinearImage {

@@ -8,4 +8,5 @@ publish.workspace = true
 
 [dependencies]
 flb-presets = { path = "../flb-presets" }
+flb-color = { path = "../flb-color" }
 thiserror.workspace = true

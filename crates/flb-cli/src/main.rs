@@ -21,6 +21,9 @@ USAGE:
                                             (docs/lightroom-trial-plan.md): raw copies + XMP sidecars,
                                             and/or synthetic DNG targets with embedded settings
     flb testimage <PATTERN> <OUT.dng>       Write one synthetic target (ramp, hue, edges, colorchecker)
+    flb render <RAW> <OUT.png|.jpg|.tif> [--preset P] [--amount A] [--look default|linear]
+                                            Develop a raw (engine v0: white balance, Exposure, point
+                                            curves) and report which preset settings were not rendered
 
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
 XMP packet (e.g. .dng presets for Lightroom mobile).";
@@ -34,15 +37,17 @@ fn main() -> ExitCode {
     while let Some(arg) = iter.next() {
         match arg.as_str() {
             "--json" => json = true,
-            "--out" | "--groups" | "--synthetic" => match iter.next() {
-                Some(value) => {
-                    options.insert(arg.as_str(), value.as_str());
+            "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look" => {
+                match iter.next() {
+                    Some(value) => {
+                        options.insert(arg.as_str(), value.as_str());
+                    }
+                    None => {
+                        eprintln!("error: {arg} needs a value\n\n{USAGE}");
+                        return ExitCode::from(2);
+                    }
                 }
-                None => {
-                    eprintln!("error: {arg} needs a value\n\n{USAGE}");
-                    return ExitCode::from(2);
-                }
-            },
+            }
             other if other.starts_with("--") => {
                 eprintln!("error: unknown option {other}\n\n{USAGE}");
                 return ExitCode::from(2);
@@ -68,6 +73,13 @@ fn main() -> ExitCode {
             None => Err("sweep generate needs --out <DIR>".into()),
         },
         ["testimage", pattern, out] => testimage(pattern, Path::new(out)),
+        ["render", input, out] => render(
+            Path::new(input),
+            Path::new(out),
+            options.get("--preset").copied(),
+            options.get("--amount").copied(),
+            options.get("--look").copied(),
+        ),
         _ => {
             eprintln!("{USAGE}");
             return ExitCode::from(2);
@@ -359,5 +371,63 @@ fn testimage(pattern: &str, out: &Path) -> Result<(), String> {
         image.height,
         out.display()
     );
+    Ok(())
+}
+
+fn render(
+    input: &Path,
+    out: &Path,
+    preset: Option<&str>,
+    amount: Option<&str>,
+    look: Option<&str>,
+) -> Result<(), String> {
+    use flb_engine::{output, pipeline, raw};
+    let start = std::time::Instant::now();
+    let img = raw::load(input).map_err(|e| format!("{}: {e}", input.display()))?;
+    let (t, tint) = pipeline::as_shot_temp_tint(&img);
+    println!(
+        "{} {} | {}x{} | as shot: {:.0} K, tint {:+.0}",
+        img.make, img.model, img.width, img.height, t, tint
+    );
+    let mut settings = std::collections::BTreeMap::new();
+    if let Some(preset) = preset {
+        let preset = load(Path::new(preset))?;
+        let amount = match amount {
+            Some(a) => {
+                a.trim_end_matches('%')
+                    .parse::<f64>()
+                    .map_err(|_| format!("bad --amount {a:?}"))?
+                    / 100.0
+            }
+            None => 1.0,
+        };
+        settings =
+            flb_presets::amount::apply(&settings, &preset.settings, amount, Registry::builtin());
+        println!(
+            "preset: {} at {:.0}%",
+            preset.name().unwrap_or("(unnamed)"),
+            amount * 100.0
+        );
+    }
+    let (mut develop, not_rendered) = pipeline::DevelopSettings::from_settings(&settings);
+    develop.base_look = match look.unwrap_or("default") {
+        "default" => pipeline::BaseLook::Default,
+        "linear" => pipeline::BaseLook::Linear,
+        other => return Err(format!("unknown --look {other:?} (default, linear)")),
+    };
+    let developed = pipeline::render(&img, &develop);
+    output::write_srgb(&developed, out).map_err(|e| e.to_string())?;
+    println!(
+        "wrote {} in {:.2}s",
+        out.display(),
+        start.elapsed().as_secs_f64()
+    );
+    if !not_rendered.is_empty() {
+        println!(
+            "not rendered yet ({}): {}",
+            not_rendered.len(),
+            not_rendered.join(", ")
+        );
+    }
     Ok(())
 }

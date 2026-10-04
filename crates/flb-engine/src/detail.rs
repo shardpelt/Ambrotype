@@ -39,7 +39,13 @@
 //! band of encoded luminance a low percentile of the tile powers. Flat tiles
 //! show pure noise and textured tiles read higher, so the percentile tracks the
 //! noise and not the texture; clipped tiles are skipped. A small floor keeps the
-//! sliders effective on very clean images.
+//! sliders effective on very clean images. The colour residual sees all colour
+//! structure finer than the filter, so when no tile is flat (colour texture
+//! filling the frame) its estimate is capped by a multiple of one that is
+//! blind to stripes, edges and gradients in any of four directions (the least
+//! of the Haar diagonal and the two diagonal differences of 2×2 blocks, at
+//! full and at low resolution). Fine random colour texture with no flat
+//! area left anywhere cannot be told from colour noise and is treated as noise.
 //!
 //! **Luminance noise reduction** (`LuminanceSmoothing`, `...Detail`, `...Contrast`):
 //! 1. Self-guided filters on `L` at two scales (fine radius growing with the
@@ -53,12 +59,12 @@
 //!
 //! **Colour noise reduction** (`ColorNoiseReduction`, `...Detail`, `...Smoothness`):
 //! 1. Chroma = encoded R, G, B minus encoded luminance (three opponent channels).
-//! 2. A box-downscaled copy (factor chosen so the filter radius is a few
-//!    low-resolution pixels) is smoothed with a guided filter steered by encoded
-//!    luminance; the radius grows with strength and Smoothness (Smoothness
-//!    removes the larger, low-frequency blotches). Its linear coefficients are
-//!    upsampled and applied to the full-resolution luminance (He & Sun's fast
-//!    guided filter), so smoothed chroma follows full-resolution luminance edges.
+//! 2. A box-downscaled copy (fixed factor 4) is smoothed with a guided filter
+//!    steered by encoded luminance; the radius grows with strength and
+//!    Smoothness (Smoothness removes the larger, low-frequency blotches). Its
+//!    linear coefficients are upsampled and applied to the full-resolution
+//!    luminance (He & Sun's fast guided filter), so smoothed chroma follows
+//!    full-resolution luminance edges.
 //! 3. *Detail* decides per pixel how much of the full-resolution residual `r`
 //!    (original minus smoothed chroma) survives: a garrote
 //!    `r·max(0, 1 − (τ/e)^p)`, where `e` is the RMS residual of the pixel's 8
@@ -73,11 +79,16 @@
 //!
 //! All radii are in pixels, not scaled with the image size: noise and
 //! sharpening act at the sensor's pixel scale, as Lightroom's do at 100%.
+//! None is rounded to whole pixels (box windows take fractional edge taps, the
+//! sharpening min/max window interpolates between two sizes), so every output
+//! changes continuously with its sliders. Non-finite pixels are left as they
+//! are and cannot spread: they enter the filters as a bounded stand-in
+//! (sharpening, luminance NR) or not at all (colour NR).
 //! Camera Raw's defaults (Sharpness 40, Color 25) run on every render, so the
 //! default path is kept to a few streaming full-resolution passes with no
 //! full-size blur: ≈1.0 s per 24 MP frame on 4 cores from cold (0.25 s
-//! sharpening, 0.6 s colour NR), see `timing_24mp_defaults`; Luminance NR
-//! (off by default) adds ≈2 s.
+//! sharpening, 0.65 s colour NR), see `timing_24mp_defaults`; Luminance NR
+//! (off by default) adds ≈1.4 s.
 //! Every constant lives in [`DetailStrengths`] for the calibration harness to
 //! fit against Lightroom sweeps (docs/lightroom-trial-plan.md).
 
@@ -203,6 +214,16 @@ pub struct DetailStrengths {
     /// Colour NR: residual noise sigma (encoded chroma) added to the measured
     /// one, so a perfectly clean image still gets a non-zero Detail threshold.
     pub color_noise_floor: f64,
+    /// Colour NR: ceiling on the measured residual noise sigma, in multiples of
+    /// a second chroma noise estimate that is blind to texture running along
+    /// the horizontal, vertical or diagonal directions (the least of three
+    /// 2×2-block detail signals, at full resolution and on the downscaled
+    /// chroma, which sees noise correlated over a few pixels). The residual
+    /// holds colour texture too, so in a frame with no flat tiles its
+    /// percentile reads texture; the ceiling keeps such texture. On real raws
+    /// the second estimate reads ≈ 0.9–1.5× the residual one, so 2 leaves
+    /// their noise estimate alone.
+    pub color_noise_ceiling: f64,
     /// Colour NR: smoothing radius (full-resolution pixels) at slider 0 ...
     pub color_radius: f64,
     /// ... plus this many pixels at Color 100 ...
@@ -230,10 +251,14 @@ pub struct DetailStrengths {
     pub color_garrote_power: f64,
     /// Colour NR Detail: relative rise of that threshold at Color 100.
     pub color_threshold_per_strength: f64,
-    /// Colour NR: target guided-filter radius on the downscaled chroma (sets the
-    /// downscale factor: full radius / this, rounded down).
+    /// Colour NR: unused, kept so that older calibration files still load. It
+    /// used to pick the downscale factor from the radius, which made the output
+    /// jump where the factor changed; the factor is now `color_max_downscale`.
     pub color_low_res_radius: f64,
-    /// Colour NR: largest downscale factor.
+    /// Colour NR: downscale factor of the guided filter's low-resolution pass
+    /// (rounded, 1..64, at most the image's smaller side). Fixed, so the output
+    /// changes continuously with the sliders; the low-resolution radius is the
+    /// full-resolution one divided by it (fractional box windows).
     pub color_max_downscale: f64,
 }
 
@@ -270,6 +295,7 @@ pub const DEFAULT_STRENGTHS: DetailStrengths = DetailStrengths {
     luminance_contrast_restore: 1.0,
 
     color_noise_floor: 0.002,
+    color_noise_ceiling: 2.0,
     color_radius: 1.0,
     color_radius_per_strength: 16.0,
     color_radius_per_smoothness: 8.0,
@@ -291,6 +317,21 @@ const MIN_SCALE_Y: f32 = 1e-6;
 /// Encoded luminance is centred on this value inside the guided filters, which
 /// keeps their running sums small and their variances accurate in `f32`.
 const CENTRE: f32 = 0.5;
+
+/// Linear luminance is clamped to ±this before it is encoded (and so are the
+/// channels averaged by the colour-NR downscale): an extreme highlight then
+/// acts like a bright point instead of swamping the running sums of the box
+/// filters. Non-finite pixels are left as they are and skipped by the filters.
+const MAX_LINEAR: f32 = 1e3;
+
+/// Upper bounds on pixel quantities derived from [`DetailStrengths`], so a
+/// runaway calibration value can neither exhaust memory nor stall a render.
+const MAX_SHARPEN_SIGMA: f64 = 10.0;
+const MAX_HALO_WINDOW: f64 = 16.0;
+const MAX_BLUR_SIGMA: f64 = 32.0;
+const MAX_LUMINANCE_RADIUS: f64 = 64.0;
+const MAX_COLOR_RADIUS: f64 = 256.0;
+const MAX_DOWNSCALE: f64 = 64.0;
 
 /// Noise reduction: luminance first (it cleans the guide), then colour.
 pub fn apply_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrengths) {
@@ -323,27 +364,37 @@ pub fn apply_sharpening(img: &mut Image, p: &Sharpening, k: &DetailStrengths) {
 
     // 1. Encoded luminance; the unsharp-mask blur is computed row by row below.
     let l = encoded_luminance(img, 0.0);
-    let kernel = gaussian_kernel((radius * k.sharpen_sigma_per_radius.max(0.0)) as f32);
+    let sigma = (radius * k.sharpen_sigma_per_radius.max(0.0)).min(MAX_SHARPEN_SIGMA);
+    let kernel = gaussian_kernel(sigma as f32);
 
     // 2. Edge mask (Masking > 0 only).
     let mask = (masking > 0.0).then(|| edge_mask(&l, w, h, masking, k));
 
-    // 3. Sharpen with overshoot limited to the local min/max plus a margin.
+    // 3. Sharpen with overshoot limited to the local min/max plus a margin. The
+    //    window radius is fractional: the bounds are interpolated between the
+    //    windows of radius `win` and `win + 1`, so they change continuously
+    //    with the Radius slider.
     let margin = halo_margin(detail, k);
-    let win = ((radius * k.halo_window_per_radius.max(0.0)).round() as usize).max(1);
+    let win_r = (radius * k.halo_window_per_radius.max(0.0)).clamp(1.0, MAX_HALO_WINDOW);
+    let win = win_r.floor() as usize;
+    let win_frac = (win_r - win as f64) as f32;
     img.rgb.par_chunks_mut(w * 3).enumerate().for_each_init(
         || SharpenRows::new(w, kernel.len() / 2),
         |s, (y, row)| {
             convolve_row(&l, w, h, y, &kernel, &mut s.tmp, &mut s.pad, &mut s.blur);
-            // Vertical min/max over the window's rows; horizontal per pixel below.
+            // Vertical min/max over the window's rows (and over one more row
+            // either side for the outer window); horizontal per pixel below.
             let (y0, y1) = (y.saturating_sub(win), (y + win).min(h - 1));
             s.vmin.copy_from_slice(&l[y0 * w..(y0 + 1) * w]);
             s.vmax.copy_from_slice(&s.vmin);
             for yy in y0 + 1..=y1 {
-                let src = &l[yy * w..(yy + 1) * w];
-                for ((lo, hi), &v) in s.vmin.iter_mut().zip(s.vmax.iter_mut()).zip(src) {
-                    *lo = lo.min(v);
-                    *hi = hi.max(v);
+                min_max_row(&mut s.vmin, &mut s.vmax, &l[yy * w..(yy + 1) * w]);
+            }
+            if win_frac > 0.0 {
+                s.omin.copy_from_slice(&s.vmin);
+                s.omax.copy_from_slice(&s.vmax);
+                for yy in [y.saturating_sub(win + 1), (y + win + 1).min(h - 1)] {
+                    min_max_row(&mut s.omin, &mut s.omax, &l[yy * w..(yy + 1) * w]);
                 }
             }
             let lrow = &l[y * w..(y + 1) * w];
@@ -355,13 +406,23 @@ pub fn apply_sharpening(img: &mut Image, p: &Sharpening, k: &DetailStrengths) {
                 if v == lv {
                     continue;
                 }
-                let (x0, x1) = (x.saturating_sub(win), (x + win).min(w - 1));
-                let lo = s.vmin[x0..=x1].iter().fold(f32::INFINITY, |a, &b| a.min(b));
-                let hi = s.vmax[x0..=x1]
-                    .iter()
-                    .fold(f32::NEG_INFINITY, |a, &b| a.max(b));
-                let v = soft_limit(v, lo, hi, margin);
                 let y_old = dot(lw, px);
+                if !y_old.is_finite() {
+                    continue;
+                }
+                let span = |r: usize| x.saturating_sub(r)..=(x + r).min(w - 1);
+                let fold_min = |v: &[f32]| v.iter().fold(f32::INFINITY, |a, &b| a.min(b));
+                let fold_max = |v: &[f32]| v.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b));
+                let (mut lo, mut hi) = (fold_min(&s.vmin[span(win)]), fold_max(&s.vmax[span(win)]));
+                if win_frac > 0.0 {
+                    let (olo, ohi) = (
+                        fold_min(&s.omin[span(win + 1)]),
+                        fold_max(&s.omax[span(win + 1)]),
+                    );
+                    lo += (olo - lo) * win_frac;
+                    hi += (ohi - hi) * win_frac;
+                }
+                let v = soft_limit(v, lo, hi, margin);
                 // Change in linear luminance through the same transfer both ways,
                 // so tiny changes stay tiny (no round-trip error).
                 let y_new = (y_old + t.decode(v) - t.decode(lv)).max(y_old.min(0.0));
@@ -378,6 +439,8 @@ struct SharpenRows {
     blur: Vec<f32>,
     vmin: Vec<f32>,
     vmax: Vec<f32>,
+    omin: Vec<f32>,
+    omax: Vec<f32>,
 }
 
 impl SharpenRows {
@@ -388,7 +451,18 @@ impl SharpenRows {
             blur: vec![0.0; w],
             vmin: vec![0.0; w],
             vmax: vec![0.0; w],
+            omin: vec![0.0; w],
+            omax: vec![0.0; w],
         }
+    }
+}
+
+/// Fold one row into running per-column minima and maxima.
+#[inline]
+fn min_max_row(lo: &mut [f32], hi: &mut [f32], src: &[f32]) {
+    for ((lo, hi), &v) in lo.iter_mut().zip(hi.iter_mut()).zip(src) {
+        *lo = lo.min(v);
+        *hi = hi.max(v);
     }
 }
 
@@ -466,7 +540,7 @@ fn soft_limit(v: f32, lo: f32, hi: f32, margin: f32) -> f32 {
 /// Sharpening mask from encoded luminance: smoothstep of the gradient magnitude
 /// of a lightly blurred copy around a threshold set by Masking (0..1), softened.
 fn edge_mask(l: &[f32], w: usize, h: usize, masking: f64, k: &DetailStrengths) -> Vec<f32> {
-    let blurred = gaussian_blur(l, w, h, k.mask_blur_sigma.max(0.0) as f32);
+    let blurred = gaussian_blur(l, w, h, k.mask_blur_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32);
     let threshold =
         (k.mask_threshold_at_100.max(0.0) * masking.powf(k.mask_threshold_gamma.max(0.01))) as f32;
     let soft = k.mask_softness.clamp(0.0, 1.0) as f32;
@@ -482,7 +556,12 @@ fn edge_mask(l: &[f32], w: usize, h: usize, masking: f64, k: &DetailStrengths) -
             *o = smoothstep(e0, e1, (gx * gx + gy * gy).sqrt());
         }
     });
-    gaussian_blur(&raw, w, h, k.mask_smooth_sigma.max(0.0) as f32)
+    gaussian_blur(
+        &raw,
+        w,
+        h,
+        k.mask_smooth_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32,
+    )
 }
 
 fn luminance_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrengths) {
@@ -508,14 +587,15 @@ fn luminance_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStre
     if !(eps.max() > 0.0 && eps.max().is_finite()) {
         return;
     }
-    let r_fine = (k.luminance_radius + k.luminance_radius_per_strength * s)
-        .round()
-        .max(1.0);
-    let r_coarse = (r_fine * k.luminance_coarse_radius.max(0.0)).round() as usize;
+    // Fractional radii (box windows with partial edge taps), so the result
+    // changes continuously with the slider.
+    let r_fine = (k.luminance_radius + k.luminance_radius_per_strength.max(0.0) * s)
+        .clamp(1.0, MAX_LUMINANCE_RADIUS);
+    let r_coarse = (r_fine * k.luminance_coarse_radius.max(0.0)).min(MAX_LUMINANCE_RADIUS);
     let coarse_eps = k.luminance_coarse_eps.max(0.0) as f32;
-    let mut smooth = self_guided(&l, w, h, r_fine as usize, &eps, 1.0);
-    if r_coarse > 0 && coarse_eps > 0.0 {
-        smooth = self_guided(&smooth, w, h, r_coarse, &eps, coarse_eps);
+    let mut smooth = self_guided(&l, w, h, r_fine as f32, &eps, 1.0);
+    if r_coarse > 0.0 && coarse_eps > 0.0 {
+        smooth = self_guided(&smooth, w, h, r_coarse as f32, &eps, coarse_eps);
     }
 
     // 2. Detail: share of the removed signal returned per pixel, from its local
@@ -550,7 +630,12 @@ fn luminance_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStre
                 .collect(),
             None => removed.clone(),
         };
-        gaussian_blur(&rest, w, h, k.luminance_contrast_sigma.max(0.0) as f32)
+        gaussian_blur(
+            &rest,
+            w,
+            h,
+            k.luminance_contrast_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32,
+        )
     });
 
     img.rgb
@@ -578,6 +663,9 @@ fn luminance_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStre
                     continue;
                 }
                 let y_old = dot(lw, px);
+                if !y_old.is_finite() {
+                    continue;
+                }
                 let y_new =
                     (y_old + t.decode(v + CENTRE) - t.decode(lv + CENTRE)).max(y_old.min(0.0));
                 set_luminance(px, y_old, y_new, max_ratio);
@@ -589,10 +677,10 @@ fn luminance_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStre
 /// variance below `eps_scale · eps(window mean)` is flattened. Variance is
 /// clamped at zero so `f32` rounding in the running sums can never make the
 /// coefficient leave 0..1.
-fn self_guided(src: &[f32], w: usize, h: usize, r: usize, eps: &Lut, eps_scale: f32) -> Vec<f32> {
-    let mean = box_blur(src, w, h, r);
+fn self_guided(src: &[f32], w: usize, h: usize, r: f32, eps: &Lut, eps_scale: f32) -> Vec<f32> {
+    let mean = box_blur_frac(src, w, h, r);
     let sq: Vec<f32> = src.par_iter().map(|v| v * v).collect();
-    let corr = box_blur(&sq, w, h, r);
+    let corr = box_blur_frac(&sq, w, h, r);
     drop(sq);
     let (a, b): (Vec<f32>, Vec<f32>) = mean
         .par_iter()
@@ -605,9 +693,9 @@ fn self_guided(src: &[f32], w: usize, h: usize, r: usize, eps: &Lut, eps_scale: 
         })
         .unzip();
     drop((mean, corr));
-    let mean_a = box_blur(&a, w, h, r);
+    let mean_a = box_blur_frac(&a, w, h, r);
     drop(a);
-    let mean_b = box_blur(&b, w, h, r);
+    let mean_b = box_blur_frac(&b, w, h, r);
     src.par_iter()
         .zip(&mean_a)
         .zip(&mean_b)
@@ -627,16 +715,18 @@ fn color_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrength
     let t = transfer();
     let lw = luminance_weights();
 
-    // Scale: full-resolution radius → downscale factor and low-resolution radius.
+    // Scale: a fixed downscale factor and the full-resolution radius divided by
+    // it (fractional), so the output changes continuously with the sliders.
     let radius = (k.color_radius
-        + k.color_radius_per_strength * s
-        + k.color_radius_per_smoothness * smoothness)
-        .max(1.0);
-    let max_factor = k.color_max_downscale.max(1.0).min(w.min(h) as f64);
-    let factor = (radius / k.color_low_res_radius.max(0.5))
-        .floor()
-        .clamp(1.0, max_factor.max(1.0)) as usize;
-    let r_low = ((radius / factor as f64).round() as usize).max(1);
+        + k.color_radius_per_strength.max(0.0) * s
+        + k.color_radius_per_smoothness.max(0.0) * smoothness)
+        .clamp(1.0, MAX_COLOR_RADIUS);
+    let factor = k
+        .color_max_downscale
+        .round()
+        .clamp(1.0, MAX_DOWNSCALE)
+        .min(w.min(h) as f64) as usize;
+    let r_low = (radius / factor as f64) as f32;
 
     // 1. Low resolution: centred encoded luminance (the guide) and chroma.
     let (small, sw, sh) = downscale(img, factor);
@@ -657,6 +747,13 @@ fn color_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrength
     let guide = plane(0);
     let chroma = [plane(1), plane(2), plane(3)];
     drop(planes);
+    let detail_factor = color_detail_factor(detail, s, k);
+    // Haar tiles of the low-resolution chroma (for the noise ceiling, below).
+    let low_tiles = detail_factor.map(|_| {
+        let tile = ((NOISE_TILE / factor) & !1).max(2);
+        let srcs = [&chroma[0][..], &chroma[1][..], &chroma[2][..]];
+        haar_tiles(&guide, CENTRE, &srcs, sw, sh, tile, true)
+    });
 
     // 2. Guided-filter coefficients for the three chroma channels.
     let eps = k.color_guide_eps.max(1e-9) as f32;
@@ -667,11 +764,21 @@ fn color_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrength
 
     // 3. Detail: residual energy per pixel, and the garrote threshold per
     //    luminance from its noise level.
-    let detail_test: Option<(Vec<f32>, Lut)> = color_detail_factor(detail, s, k).map(|f| {
-        let (energy, tiles) = residual_energy(img, &grids);
-        let noise = NoiseProfile::from_tiles(&tiles, k.noise_percentile);
+    let detail_test: Option<(Vec<f32>, Lut)> = detail_factor.map(|f| {
+        let (energy, tiles, fine_tiles) = residual_energy(img, &grids);
+        let q = k.noise_percentile;
+        let noise = NoiseProfile::from_tiles(&tiles, q);
+        // Ceiling from the directional chroma detail at full and low resolution
+        // (white noise of σ reads σ/factor on the downscaled chroma).
+        let fine = NoiseProfile::from_tiles(&fine_tiles, q);
+        let coarse = NoiseProfile::from_tiles(low_tiles.as_deref().unwrap_or(&[]), q);
+        let ceiling = k.color_noise_ceiling.max(0.0) as f32;
         let floor = k.color_noise_floor.max(0.0) as f32;
-        (energy, Lut::from_fn(|v| f * (noise.at(v) + floor)))
+        let tau = Lut::from_fn(|v| {
+            let cap = ceiling * fine.at(v).max(factor as f32 * coarse.at(v));
+            f * (noise.at(v).min(cap) + floor)
+        });
+        (energy, tau)
     });
     let garrote = Garrote::new(k.color_garrote_power);
 
@@ -851,7 +958,8 @@ fn chroma_residual(
 ) -> Option<ChromaResidual> {
     let t = transfer();
     let y = dot(luminance_weights(), px);
-    if y.is_nan() || y <= MIN_SCALE_Y {
+    // Too dark to rescale, or not finite (left untouched).
+    if !(y > MIN_SCALE_Y && y.is_finite() && px.iter().all(|v| v.is_finite())) {
         return None;
     }
     let le = t.encode(y);
@@ -863,53 +971,127 @@ fn chroma_residual(
 }
 
 /// The colour-NR residual energy `|r|²` (summed over channels) per pixel (0
-/// where the pixel is too dark to scale), and its tile statistics.
-fn residual_energy(img: &Image, grids: &CoefGrids) -> (Vec<f32>, Vec<TileStat>) {
+/// where the pixel is too dark to scale or not finite), its tile statistics,
+/// and from the same pass the tile statistics of the directional detail of
+/// the chroma (the least of the three [`haar_powers`], summed over channels).
+fn residual_energy(img: &Image, grids: &CoefGrids) -> (Vec<f32>, Vec<TileStat>, Vec<TileStat>) {
     let (w, h) = (img.width, img.height);
+    let t = transfer();
+    let lw = luminance_weights();
     let mut energy = vec![0.0f32; w * h];
-    let tiles = energy
+    let (tiles, fine): (Vec<Vec<TileStat>>, Vec<Vec<TileStat>>) = energy
         .par_chunks_mut(NOISE_TILE * w)
         .enumerate()
-        .flat_map_iter(|(ty, band)| {
+        .map(|(ty, band)| {
             let mut rows = vec![0.0f32; 6 * grids.sw];
             let mut acc = vec![TileAcc::default(); w.div_ceil(NOISE_TILE)];
+            let mut haar = vec![TileAcc::default(); w.div_ceil(NOISE_TILE)];
+            // Encoded luminance and chroma of the previous and current rows.
+            let (mut prev, mut cur) = (vec![[0.0f32; 4]; w], vec![[0.0f32; 4]; w]);
             for (dy, out) in band.chunks_exact_mut(w).enumerate() {
                 let y = ty * NOISE_TILE + dy;
                 grids.interpolate_rows(y, &mut rows);
                 let row = &img.rgb[y * w * 3..(y + 1) * w * 3];
-                for (x, (o, px)) in out.iter_mut().zip(row.chunks_exact(3)).enumerate() {
+                for (x, ((o, px), lc)) in out
+                    .iter_mut()
+                    .zip(row.chunks_exact(3))
+                    .zip(cur.iter_mut())
+                    .enumerate()
+                {
                     if let Some(c) = chroma_residual(px, grids, &rows, x) {
                         *o = c.r[0] * c.r[0] + c.r[1] * c.r[1] + c.r[2] * c.r[2];
-                        acc[x / NOISE_TILE].add(*o, c.le, c.le, c.le);
+                        acc[x / NOISE_TILE].add([*o; 3], c.le, c.le, c.le);
+                        *lc = [c.le, c.e[0] - c.le, c.e[1] - c.le, c.e[2] - c.le];
+                    } else {
+                        *lc = [t.encode(bounded(dot(lw, px))), 0.0, 0.0, 0.0];
                     }
                 }
+                if dy % 2 == 1 {
+                    for (cx, (p0, p1)) in prev.chunks_exact(2).zip(cur.chunks_exact(2)).enumerate()
+                    {
+                        let block = |i: usize| [p0[0][i], p0[1][i], p1[0][i], p1[1][i]];
+                        let power = (1..4).fold([0.0; 3], |p, i| add3(p, haar_powers(block(i))));
+                        add_haar_block(&mut haar[2 * cx / NOISE_TILE], block(0), 0.0, power);
+                    }
+                }
+                std::mem::swap(&mut prev, &mut cur);
             }
-            acc.into_iter().filter_map(TileAcc::finish)
+            let finish = |a: Vec<TileAcc>| a.into_iter().filter_map(TileAcc::finish).collect();
+            (finish(acc), finish(haar))
         })
-        .collect();
-    (energy, tiles)
+        .unzip();
+    (energy, tiles.concat(), fine.concat())
 }
 
-/// Tile statistics of the Haar diagonal detail `(a − b − c + d)/2` of 2×2
-/// blocks of the centred encoded luminance (variance σ² for white noise of σ,
-/// and blind to horizontal and vertical edges and to gradients).
+/// Tile statistics of the Haar diagonal detail of the centred encoded
+/// luminance (see [`haar_tiles`]).
 fn luminance_tiles(l: &[f32], w: usize, h: usize) -> Vec<TileStat> {
+    haar_tiles(l, CENTRE, &[l], w, h, NOISE_TILE, false)
+}
+
+/// Powers of three detail signals of a 2×2 block `[a, b; c, d]`, each of
+/// variance σ² for white noise of σ: the Haar diagonal `(a − b − c + d)/2`
+/// (blind to horizontal and vertical structure and to gradients), and the
+/// differences `(b − c)/√2` and `(a − d)/√2` along the two diagonals (blind to
+/// structure along them). The smallest tile sum of the three reads noise but
+/// not texture that runs along one of the four directions (stripes, weaves).
+#[inline]
+fn haar_powers(v: [f32; 4]) -> [f32; 3] {
+    let hv = 0.5 * (v[0] - v[1] - v[2] + v[3]);
+    let (d1, d2) = (v[1] - v[2], v[0] - v[3]);
+    [hv * hv, 0.5 * d1 * d1, 0.5 * d2 * d2]
+}
+
+#[inline]
+fn add3(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+    [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
+}
+
+/// Add one 2×2 block with encoded luminance `lum` (minus `offset`) and noise
+/// power `power` to a tile.
+#[inline]
+fn add_haar_block(acc: &mut TileAcc, lum: [f32; 4], offset: f32, power: [f32; 3]) {
+    let lo = lum[0].min(lum[1]).min(lum[2].min(lum[3])) + offset;
+    let hi = lum[0].max(lum[1]).max(lum[2].max(lum[3])) + offset;
+    let mean = 0.25 * (lum[0] + lum[1] + lum[2] + lum[3]) + offset;
+    acc.add(power, mean, lo, hi);
+}
+
+/// Statistics over `tile`×`tile`-pixel tiles of the detail of 2×2 blocks,
+/// its power summed over the `srcs` planes; banded and clipped by `lum`
+/// (encoded luminance minus `offset`). The detail is the Haar diagonal, or
+/// with `directional` the least of the three [`haar_powers`].
+fn haar_tiles(
+    lum: &[f32],
+    offset: f32,
+    srcs: &[&[f32]],
+    w: usize,
+    h: usize,
+    tile: usize,
+    directional: bool,
+) -> Vec<TileStat> {
     let (cw, ch) = (w / 2, h / 2);
-    let t = NOISE_TILE / 2;
+    let t = (tile / 2).max(1);
     (0..ch.div_ceil(t))
         .into_par_iter()
         .flat_map_iter(|ty| {
             let mut acc = vec![TileAcc::default(); cw.div_ceil(t)];
             for cy in ty * t..((ty + 1) * t).min(ch) {
-                let r0 = &l[2 * cy * w..][..w];
-                let r1 = &l[(2 * cy + 1) * w..][..w];
+                let (i0, i1) = (2 * cy * w, (2 * cy + 1) * w);
+                let block = |p: &[f32], cx: usize| {
+                    [
+                        p[i0 + 2 * cx],
+                        p[i0 + 2 * cx + 1],
+                        p[i1 + 2 * cx],
+                        p[i1 + 2 * cx + 1],
+                    ]
+                };
                 for cx in 0..cw {
-                    let (a, b) = (r0[2 * cx], r0[2 * cx + 1]);
-                    let (c, d) = (r1[2 * cx], r1[2 * cx + 1]);
-                    let hh = 0.5 * (a - b - c + d);
-                    let lo = a.min(b).min(c.min(d)) + CENTRE;
-                    let hi = a.max(b).max(c.max(d)) + CENTRE;
-                    acc[cx / t].add(hh * hh, 0.25 * (a + b + c + d) + CENTRE, lo, hi);
+                    let power = srcs
+                        .iter()
+                        .fold([0.0; 3], |a, p| add3(a, haar_powers(block(p, cx))));
+                    let power = if directional { power } else { [power[0]; 3] };
+                    add_haar_block(&mut acc[cx / t], block(lum, cx), offset, power);
                 }
             }
             acc.into_iter().filter_map(TileAcc::finish)
@@ -937,9 +1119,11 @@ struct TileStat {
     power: f32,
 }
 
+/// Tile accumulator; `power` holds up to three noise signals (identical when
+/// there is one), of which the least is taken.
 #[derive(Debug, Clone, Copy)]
 struct TileAcc {
-    power: f32,
+    power: [f32; 3],
     lum: f32,
     lo: f32,
     hi: f32,
@@ -949,7 +1133,7 @@ struct TileAcc {
 impl Default for TileAcc {
     fn default() -> Self {
         TileAcc {
-            power: 0.0,
+            power: [0.0; 3],
             lum: 0.0,
             lo: f32::INFINITY,
             hi: f32::NEG_INFINITY,
@@ -960,8 +1144,8 @@ impl Default for TileAcc {
 
 impl TileAcc {
     #[inline]
-    fn add(&mut self, power: f32, lum: f32, lo: f32, hi: f32) {
-        self.power += power;
+    fn add(&mut self, power: [f32; 3], lum: f32, lo: f32, hi: f32) {
+        self.power = add3(self.power, power);
         self.lum += lum;
         self.lo = self.lo.min(lo);
         self.hi = self.hi.max(hi);
@@ -972,7 +1156,7 @@ impl TileAcc {
         let n = self.n as f32;
         let stat = TileStat {
             lum: self.lum / n,
-            power: self.power / n,
+            power: self.power[0].min(self.power[1]).min(self.power[2]) / n,
         };
         (self.n >= MIN_TILE_SAMPLES
             && self.lo >= CLIP_LO
@@ -1050,22 +1234,22 @@ fn guided_coefficients(
     srcs: &[Vec<f32>],
     w: usize,
     h: usize,
-    r: usize,
+    r: f32,
     eps: f32,
     max_slope: f32,
 ) -> Vec<(Vec<f32>, Vec<f32>)> {
-    let mean_i = box_blur(guide, w, h, r);
+    let mean_i = box_blur_frac(guide, w, h, r);
     let ii: Vec<f32> = guide.par_iter().map(|v| v * v).collect();
-    let var_i: Vec<f32> = box_blur(&ii, w, h, r)
+    let var_i: Vec<f32> = box_blur_frac(&ii, w, h, r)
         .par_iter()
         .zip(&mean_i)
         .map(|(c, m)| (c - m * m).max(0.0))
         .collect();
     srcs.iter()
         .map(|src| {
-            let mean_p = box_blur(src, w, h, r);
+            let mean_p = box_blur_frac(src, w, h, r);
             let ip: Vec<f32> = guide.par_iter().zip(src).map(|(a, b)| a * b).collect();
-            let corr_ip = box_blur(&ip, w, h, r);
+            let corr_ip = box_blur_frac(&ip, w, h, r);
             let (a, b): (Vec<f32>, Vec<f32>) = (0..w * h)
                 .into_par_iter()
                 .map(|i| {
@@ -1074,36 +1258,104 @@ fn guided_coefficients(
                     (a, mean_p[i] - a * mean_i[i])
                 })
                 .unzip();
-            (box_blur(&a, w, h, r), box_blur(&b, w, h, r))
+            (box_blur_frac(&a, w, h, r), box_blur_frac(&b, w, h, r))
         })
         .collect()
 }
 
+/// Separable box blur of radius `r` (pixels, fractional): the window holds
+/// the `2⌊r⌋ + 1` nearest samples at full weight and the next one on each side
+/// at weight `r − ⌊r⌋`, so the result changes continuously with `r`. Edges
+/// clamped, running sums (cost independent of `r`); the vertical pass runs on
+/// bands of rows, so no transposes are needed.
+fn box_blur_frac(plane: &[f32], w: usize, h: usize, r: f32) -> Vec<f32> {
+    debug_assert_eq!(plane.len(), w * h);
+    // Radii beyond the larger side (runaway calibration values only) are capped there.
+    let r = if r.is_nan() {
+        0.0
+    } else {
+        r.min(w.max(h) as f32)
+    };
+    if r <= 0.0 || plane.is_empty() {
+        return plane.to_vec();
+    }
+    let ri = r.floor() as usize;
+    let f = r - ri as f32;
+    let norm = ((2 * ri + 1) as f32 + 2.0 * f).recip();
+    let mut horiz = vec![0.0f32; plane.len()];
+    horiz
+        .par_chunks_mut(w)
+        .zip(plane.par_chunks(w))
+        .for_each(|(dst, src)| {
+            let n = src.len() as isize;
+            let at = |i: isize| src[i.clamp(0, n - 1) as usize];
+            let (ri, rn) = (ri as isize, ri as isize + 1);
+            let mut sum: f32 = (-ri..=ri).map(at).sum();
+            for (i, d) in dst.iter_mut().enumerate() {
+                let i = i as isize;
+                *d = (sum + f * (at(i - rn) + at(i + rn))) * norm;
+                sum += at(i + rn) - at(i - ri);
+            }
+        });
+    let band = (4 * ri).max(64);
+    let mut out = vec![0.0f32; plane.len()];
+    out.par_chunks_mut(band * w)
+        .enumerate()
+        .for_each(|(b, dst)| {
+            let row = |y: isize| {
+                let y = y.clamp(0, h as isize - 1) as usize;
+                &horiz[y * w..(y + 1) * w]
+            };
+            let (ri, rn) = (ri as isize, ri as isize + 1);
+            let y0 = (b * band) as isize;
+            let mut sum = vec![0.0f32; w];
+            for j in -ri..=ri {
+                sum.iter_mut().zip(row(y0 + j)).for_each(|(s, &v)| *s += v);
+            }
+            for (dy, d) in dst.chunks_exact_mut(w).enumerate() {
+                let y = y0 + dy as isize;
+                let (above, below) = (row(y - rn), row(y + rn));
+                for (((d, &s), &a), &b) in d.iter_mut().zip(&sum).zip(above).zip(below) {
+                    *d = (s + f * (a + b)) * norm;
+                }
+                let (enter, leave) = (row(y + rn), row(y - ri));
+                for ((s, &e), &l) in sum.iter_mut().zip(enter).zip(leave) {
+                    *s += e - l;
+                }
+            }
+        });
+    out
+}
+
 /// Box-average downscale by an integer factor (partial blocks at the right and
-/// bottom edges average what they cover).
+/// bottom edges average what they cover). Non-finite pixels are left out and
+/// channels clamped to ±[`MAX_LINEAR`], so one bad pixel cannot poison the
+/// guided filter's running sums.
 fn downscale(img: &Image, f: usize) -> (Vec<f32>, usize, usize) {
     let (w, h) = (img.width, img.height);
-    if f <= 1 {
-        return (img.rgb.clone(), w, h);
-    }
     let (sw, sh) = (w.div_ceil(f), h.div_ceil(f));
     let mut out = vec![0.0f32; sw * sh * 3];
     out.par_chunks_mut(sw * 3).enumerate().for_each(|(j, row)| {
         let (y0, y1) = (j * f, ((j + 1) * f).min(h));
+        let mut count = vec![0u32; sw];
         for y in y0..y1 {
             let src = &img.rgb[y * w * 3..(y + 1) * w * 3];
-            for (i, acc) in row.chunks_exact_mut(3).enumerate() {
+            for (i, (acc, n)) in row.chunks_exact_mut(3).zip(&mut count).enumerate() {
                 let (x0, x1) = (i * f, ((i + 1) * f).min(w));
                 for p in src[x0 * 3..x1 * 3].chunks_exact(3) {
-                    acc[0] += p[0];
-                    acc[1] += p[1];
-                    acc[2] += p[2];
+                    if p.iter().all(|v| v.is_finite()) {
+                        for (a, &v) in acc.iter_mut().zip(p) {
+                            *a += v.clamp(-MAX_LINEAR, MAX_LINEAR);
+                        }
+                        *n += 1;
+                    }
                 }
             }
         }
-        for (i, acc) in row.chunks_exact_mut(3).enumerate() {
-            let cover = ((y1 - y0) * (((i + 1) * f).min(w) - i * f)) as f32;
-            acc.iter_mut().for_each(|v| *v /= cover);
+        for (acc, &n) in row.chunks_exact_mut(3).zip(&count) {
+            if n > 0 {
+                acc.iter_mut().for_each(|v| *v /= n as f32);
+            }
         }
     });
     (out, sw, sh)
@@ -1143,8 +1395,18 @@ fn encoded_luminance(img: &Image, offset: f32) -> Vec<f32> {
     let lw = luminance_weights();
     img.rgb
         .par_chunks_exact(3)
-        .map(|p| t.encode(dot(lw, p)) - offset)
+        .map(|p| t.encode(bounded(dot(lw, p))) - offset)
         .collect()
+}
+
+/// Linear luminance made safe to filter: clamped to ±[`MAX_LINEAR`], NaN to 0.
+#[inline]
+fn bounded(y: f32) -> f32 {
+    if y.is_nan() {
+        0.0
+    } else {
+        y.clamp(-MAX_LINEAR, MAX_LINEAR)
+    }
 }
 
 /// Slider value clamped to its range; non-finite values fall back to `default`.
@@ -2143,6 +2405,287 @@ mod tests {
             std_in(&out, w / 2 + 8..w - 8),
         );
         assert!(b < 0.5 * a, "noise {a} → {b}");
+    }
+
+    #[test]
+    fn fractional_box_blur_matches_integer_box_and_brute_force() {
+        let (w, h) = (37, 29);
+        let plane: Vec<f32> = (0..w * h).map(|i| 0.5 + 0.2 * gauss(i, 81)).collect();
+        for r in [1usize, 2, 5, 30] {
+            let (want, got) = (
+                box_blur(&plane, w, h, r),
+                box_blur_frac(&plane, w, h, r as f32),
+            );
+            assert!(
+                want.iter().zip(&got).all(|(a, b)| (a - b).abs() < 1e-5),
+                "r {r}"
+            );
+        }
+        for r in [0.3f32, 1.4, 2.75] {
+            let got = box_blur_frac(&plane, w, h, r);
+            let ri = r.floor() as isize;
+            let weight = |d: isize| match d.abs() {
+                d if d <= ri => 1.0,
+                d if d == ri + 1 => r - ri as f32,
+                _ => 0.0,
+            };
+            let at = |x: isize, y: isize| {
+                plane[y.clamp(0, h as isize - 1) as usize * w + x.clamp(0, w as isize - 1) as usize]
+            };
+            for y in 0..h as isize {
+                for x in 0..w as isize {
+                    let (mut acc, mut norm) = (0.0, 0.0);
+                    for dy in -ri - 1..=ri + 1 {
+                        for dx in -ri - 1..=ri + 1 {
+                            let wt = weight(dx) * weight(dy);
+                            acc += wt * at(x + dx, y + dy);
+                            norm += wt;
+                        }
+                    }
+                    let d = (got[y as usize * w + x as usize] - acc / norm).abs();
+                    assert!(d < 1e-5, "r {r} ({x},{y}): {d}");
+                }
+            }
+        }
+    }
+
+    type Tint<'a> = dyn Fn(usize, usize) -> f32 + Sync + 'a;
+
+    /// Isoluminant colour texture `tint(x, y)` (in units of `amp`) over the
+    /// whole frame (no flat region for the noise estimate to fall back on),
+    /// with per-channel encoded noise.
+    fn full_frame_colour_texture(
+        w: usize,
+        h: usize,
+        tint: &Tint<'_>,
+        amp: f32,
+        sigma: f32,
+    ) -> Image {
+        let lw = luminance_weights();
+        Image::from_fn(w, h, |x, y| {
+            let i = y * w + x;
+            let tint = tint(x, y);
+            let e = [0.5 + tint * amp, 0.5, 0.5 - tint * amp];
+            let mut p = e.map(srgb_decode);
+            p[1] += (srgb_decode(0.5) - dot(lw, &p)) / lw[1];
+            let n = [gauss(i, 62), gauss(i, 63), gauss(i, 64)];
+            [0, 1, 2].map(|c| srgb_decode(srgb_encode(p[c]) + sigma * n[c]))
+        })
+    }
+
+    #[test]
+    fn colour_nr_keeps_clean_colour_texture_that_fills_the_frame() {
+        let (w, h) = (128, 96);
+        let (xs, ys) = (8..w - 8, 8..h - 8);
+        let stripe = |v: usize| if (v / 3) % 2 == 0 { 1.0 } else { -1.0 };
+        let patterns: [(&str, &Tint<'_>); 5] = [
+            ("vertical", &|x, _| stripe(x)),
+            ("horizontal", &|_, y| stripe(y)),
+            ("diagonal", &|x, y| stripe(x + y)),
+            ("anti-diagonal", &|x, y| stripe(x + 2 * h - y)),
+            ("plaid", &|x, y| 0.5 * (stripe(x) + stripe(y / 2 + 1))),
+        ];
+        for (name, tint) in patterns {
+            for sigma in [0.0, 0.002] {
+                let img = full_frame_colour_texture(w, h, tint, 0.03, sigma);
+                let out = denoise(&img, NoiseReduction::default());
+                let (before, after) = (
+                    chroma_noise(&img, xs.clone(), ys.clone()),
+                    chroma_noise(&out, xs.clone(), ys.clone()),
+                );
+                assert!(
+                    after > 0.7 * before,
+                    "{name}, sigma {sigma}: {before} → {after}"
+                );
+            }
+        }
+        // Real colour noise over the whole frame still goes.
+        let noisy = full_frame_colour_texture(w, h, &|_, _| 0.0, 0.0, 0.03);
+        let out = denoise(&noisy, NoiseReduction::default());
+        let (before, after) = (
+            chroma_noise(&noisy, xs.clone(), ys.clone()),
+            chroma_noise(&out, xs, ys),
+        );
+        assert!(after < before / 3.0, "noise {before} → {after}");
+    }
+
+    /// Largest per-pixel change of encoded luminance or chroma between two images.
+    fn max_change(a: &Image, b: &Image) -> f32 {
+        a.rgb
+            .chunks(3)
+            .zip(b.rgb.chunks(3))
+            .map(|(p, q)| {
+                let (lp, lq) = (enc(lum([p[0], p[1], p[2]])), enc(lum([q[0], q[1], q[2]])));
+                (0..3)
+                    .map(|c| ((enc(p[c]) - lp) - (enc(q[c]) - lq)).abs())
+                    .fold((lp - lq).abs(), f32::max)
+            })
+            .fold(0.0, f32::max)
+    }
+
+    /// Steps of 0.1 across `at` change the output by no more than a small
+    /// multiple of the steps on either side (no jump at `at`).
+    fn assert_continuous(what: &str, at: f64, f: &dyn Fn(f64) -> Image) {
+        let v = [at - 0.15, at - 0.05, at + 0.05, at + 0.15].map(f);
+        let d = [0, 1, 2].map(|i| max_change(&v[i], &v[i + 1]));
+        assert!(
+            d[1] <= 3.0 * d[0].max(d[2]) + 2e-4,
+            "{what} jumps at {at}: steps {d:?}"
+        );
+    }
+
+    #[test]
+    fn outputs_change_continuously_with_the_sliders() {
+        let chroma = chroma_noise_and_colour_edge(160, 64, 0.03);
+        for at in [6.25, 18.75, 31.25] {
+            assert_continuous("Color", at, &|v| {
+                denoise(
+                    &chroma,
+                    NoiseReduction {
+                        color: v,
+                        ..NoiseReduction::default()
+                    },
+                )
+            });
+        }
+        assert_continuous("Smoothness", 62.5, &|v| {
+            denoise(
+                &chroma,
+                NoiseReduction {
+                    color_smoothness: v,
+                    ..NoiseReduction::default()
+                },
+            )
+        });
+        let luma = noisy_patch_and_step(96, 64, 0.03);
+        for at in [16.67, 50.0, 83.33] {
+            assert_continuous("Luminance", at, &|v| {
+                denoise(
+                    &luma,
+                    NoiseReduction {
+                        luminance: v,
+                        ..nr_off()
+                    },
+                )
+            });
+        }
+        let step = blurred_step(64, 8, 0.05, 0.4, 1.0);
+        for at in [1.5, 2.5] {
+            // Radius steps of 0.01 (the slider's range is 0.5..3).
+            assert_continuous("Radius", 100.0 * at, &|v| {
+                sharpen(
+                    &step,
+                    Sharpening {
+                        amount: 150.0,
+                        radius: v / 100.0,
+                        detail: 0.0,
+                        masking: 0.0,
+                    },
+                )
+            });
+        }
+    }
+
+    #[test]
+    fn a_non_finite_pixel_does_not_spread() {
+        let (w, h) = (128, 128);
+        let img = Image::from_fn(w, h, |x, y| {
+            let i = y * w + x;
+            let n = [gauss(i, 71), gauss(i, 72), gauss(i, 73)];
+            [0, 1, 2].map(|c| srgb_decode(0.45 + 0.03 * n[c]))
+        });
+        let clean = denoise(&img, NoiseReduction::default());
+        let (xs, ys) = (64..120, 64..120);
+        let want = chroma_noise(&clean, xs.clone(), ys.clone());
+        assert!(want < 0.2 * chroma_noise(&img, xs.clone(), ys.clone()));
+        for bad in [f32::INFINITY, f32::NAN, f32::NEG_INFINITY] {
+            let mut dirty = img.clone();
+            dirty.set(10, 10, [bad; 3]);
+            dirty.set(110, 20, [0.2, bad, 0.2]);
+            let out = denoise(&dirty, NoiseReduction::default());
+            let got = chroma_noise(&out, xs.clone(), ys.clone());
+            assert!(got < 1.5 * want, "{bad}: chroma {want} → {got}");
+            // Pixels away from the bad ones are NR'd as usual.
+            for y in 30..70 {
+                for x in 30..70 {
+                    let (a, b) = (out.get(x, y), clean.get(x, y));
+                    assert!(
+                        (0..3).all(|c| (a[c] - b[c]).abs() < 0.02),
+                        "{bad} ({x},{y}): {a:?} vs {b:?}"
+                    );
+                }
+            }
+            // Sharpening: neighbours of a bad pixel are not blacked out, and
+            // pixels outside the kernel are exactly as without it.
+            let flat = Image::from_fn(32, 32, |_, _| grey(0.2));
+            let mut dirty = flat.clone();
+            dirty.set(16, 16, [bad; 3]);
+            let out = sharpen(&dirty, Sharpening::default());
+            let want = sharpen(&flat, Sharpening::default());
+            for y in 0..32 {
+                for x in 0..32 {
+                    if (x, y) == (16, 16) {
+                        continue;
+                    }
+                    let p = out.get(x, y);
+                    assert!(
+                        p.iter().all(|v| (v - 0.2).abs() < 0.05),
+                        "{bad} ({x},{y}): {p:?}"
+                    );
+                    if x.abs_diff(16) > 4 || y.abs_diff(16) > 4 {
+                        assert_eq!(p, want.get(x, y), "{bad} ({x},{y})");
+                    }
+                }
+            }
+            // Luminance NR likewise.
+            let out = denoise(
+                &dirty,
+                NoiseReduction {
+                    luminance: 50.0,
+                    luminance_contrast: 50.0,
+                    ..NoiseReduction::default()
+                },
+            );
+            for (i, p) in out.rgb.chunks(3).enumerate() {
+                if i != 16 * 32 + 16 {
+                    assert!(p.iter().all(|v| (v - 0.2).abs() < 0.05), "{bad} {i}: {p:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn huge_calibration_constants_neither_panic_nor_hang() {
+        let img = textured(8, 8);
+        let strong_nr = NoiseReduction {
+            luminance: 100.0,
+            luminance_contrast: 100.0,
+            color: 100.0,
+            color_smoothness: 100.0,
+            ..NoiseReduction::default()
+        };
+        let strong_sharp = Sharpening {
+            amount: 150.0,
+            radius: 3.0,
+            detail: 50.0,
+            masking: 50.0,
+        };
+        for json in [
+            r#"{"sharpen_sigma_per_radius": 1e300}"#,
+            r#"{"halo_window_per_radius": 1e300}"#,
+            r#"{"mask_blur_sigma": 1e300, "mask_smooth_sigma": 1e300}"#,
+            r#"{"color_radius": 1e13}"#,
+            r#"{"color_radius_per_strength": 1e300, "color_radius_per_smoothness": 1e300}"#,
+            r#"{"color_max_downscale": 1e300, "color_low_res_radius": 1e-300}"#,
+            r#"{"luminance_radius": 1e13, "luminance_coarse_radius": 1e300}"#,
+            r#"{"luminance_contrast_sigma": 1e300}"#,
+        ] {
+            let k: DetailStrengths = serde_json::from_str(json).unwrap();
+            let mut out = img.clone();
+            apply_noise_reduction(&mut out, &strong_nr, &k);
+            apply_sharpening(&mut out, &strong_sharp, &k);
+            assert_finite(&out, json);
+        }
     }
 
     /// Timing on a 24 MP frame (run with `--release -- --ignored --nocapture`):

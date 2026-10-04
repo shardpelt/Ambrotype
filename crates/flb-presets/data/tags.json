@@ -448,7 +448,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Clarity2012",
@@ -457,7 +457,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Dehaze",
@@ -466,7 +466,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Vibrance",
@@ -1096,7 +1096,7 @@
    "min": 0,
    "max": 150,
    "default": 40,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SharpenRadius",
@@ -1105,7 +1105,7 @@
    "min": 0.5,
    "max": 3.0,
    "default": 1.0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SharpenDetail",
@@ -1114,7 +1114,7 @@
    "min": 0,
    "max": 100,
    "default": 25,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "SharpenEdgeMasking",
@@ -1123,7 +1123,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LuminanceSmoothing",
@@ -1132,7 +1132,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LuminanceNoiseReductionDetail",
@@ -1141,7 +1141,7 @@
    "min": 0,
    "max": 100,
    "default": 50,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LuminanceNoiseReductionContrast",
@@ -1150,7 +1150,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorNoiseReduction",
@@ -1159,7 +1159,7 @@
    "min": 0,
    "max": 100,
    "default": 25,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorNoiseReductionDetail",
@@ -1168,7 +1168,7 @@
    "min": 0,
    "max": 100,
    "default": 50,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ColorNoiseReductionSmoothness",
@@ -1177,7 +1177,7 @@
    "min": 0,
    "max": 100,
    "default": 50,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LensProfileEnable",
@@ -1573,7 +1573,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PostCropVignetteMidpoint",
@@ -1582,7 +1582,7 @@
    "min": 0,
    "max": 100,
    "default": 50,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PostCropVignetteFeather",
@@ -1591,7 +1591,7 @@
    "min": 0,
    "max": 100,
    "default": 50,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PostCropVignetteRoundness",
@@ -1600,7 +1600,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PostCropVignetteHighlightContrast",
@@ -1609,7 +1609,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PostCropVignetteStyle",
@@ -1618,7 +1618,7 @@
    "min": 1,
    "max": 3,
    "default": 1,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrainAmount",
@@ -1627,7 +1627,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrainSize",
@@ -1636,7 +1636,7 @@
    "min": 0,
    "max": 100,
    "default": 25,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrainFrequency",
@@ -1645,7 +1645,7 @@
    "min": 0,
    "max": 100,
    "default": 50,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GrainSeed",
@@ -1654,7 +1654,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "image-specific"
+   "status": "approx"
   },
   {
    "name": "ShadowTint",

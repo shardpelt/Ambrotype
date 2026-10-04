@@ -152,9 +152,9 @@ Texture, Clarity, Dehaze, Vibrance and Saturation.
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `Texture` | Texture | number | -100 to 100 | 0 | planned | Smooths (negative) or accentuates (positive) textured detail without changing colour or tonality. |
-| `Clarity2012` | Clarity | number | -100 to 100 | 0 | planned | Local contrast, like a large-radius unsharp mask that acts mostly on midtones. Positive values add depth and punch; too much draws light or dark rims (halos) along strong edges. Negative values soften local contrast. |
-| `Dehaze` | Dehaze | number | -100 to 100 | 0 | planned | Positive removes haze; negative adds haze for a softer, misty look. |
+| `Texture` | Texture | number | -100 to 100 | 0 | rendered (approx.) | Smooths (negative) or accentuates (positive) textured detail without changing colour or tonality. |
+| `Clarity2012` | Clarity | number | -100 to 100 | 0 | rendered (approx.) | Local contrast, like a large-radius unsharp mask that acts mostly on midtones. Positive values add depth and punch; too much draws light or dark rims (halos) along strong edges. Negative values soften local contrast. |
+| `Dehaze` | Dehaze | number | -100 to 100 | 0 | rendered (approx.) | Positive removes haze; negative adds haze for a softer, misty look. |
 | `Vibrance` | Vibrance | number | -100 to 100 | 0 | rendered (approx.) | Raises the saturation of lower-saturated colours with less effect on already saturated ones, minimising clipping and keeping skin tones from becoming oversaturated. |
 | `Saturation` | Saturation | number | -100 to 100 | 0 | rendered (approx.) | Saturation of all colours equally: -100 is monochrome, +100 doubles the saturation. |
 
@@ -287,16 +287,16 @@ Sharpening (Amount, Radius, Detail, Masking) and manual noise reduction (luminan
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `Sharpness` | Sharpening: Amount | number | 0 to 150 | 40 | planned | Edge definition: increases contrast between pixels that differ from their neighbours. 0 turns sharpening off. Part of the camera default applied at import. |
-| `SharpenRadius` | Sharpening: Radius | number | 0.5 to 3 | 1 | planned | *Units: px.* Size of the details that sharpening is applied to: lower for very fine detail; too large looks unnatural. |
-| `SharpenDetail` | Sharpening: Detail | number | 0 to 100 | 25 | planned | Which detail gets sharpened. At low values only clear edges are sharpened; at high values fine texture (skin, fabric, foliage) is sharpened too. |
-| `SharpenEdgeMasking` | Sharpening: Masking | number | 0 to 100 | 0 | planned | Edge mask: 0 sharpens everything equally; 100 restricts sharpening mostly to the areas near the strongest edges. |
-| `LuminanceSmoothing` | Noise reduction: Luminance | number | 0 to 100 | 0 | planned | Reduces luminance (brightness) noise. 0 = off. |
-| `LuminanceNoiseReductionDetail` | Noise reduction: Detail | number | 0 to 100 | 50 | planned | Luminance noise threshold. Higher preserves more detail but may leave more noise; lower gives cleaner results but may remove some detail. |
-| `LuminanceNoiseReductionContrast` | Noise reduction: Contrast | number | 0 to 100 | 0 | planned | Higher preserves contrast but may produce noisy blotches or mottling; lower gives smoother results with less contrast. |
-| `ColorNoiseReduction` | Color noise reduction | number | 0 to 100 | 25 | planned | Reduces colour noise (coloured speckles). 0 = off. |
-| `ColorNoiseReductionDetail` | Color noise reduction: Detail | number | 0 to 100 | 50 | planned | Colour noise threshold. Higher protects thin, detailed colour edges but may leave colour speckling; lower removes speckles but may cause colour bleeding. |
-| `ColorNoiseReductionSmoothness` | Color noise reduction: Smoothness | number | 0 to 100 | 50 | planned | Smoothness sub-slider of colour noise reduction. Adobe's help names it without describing it further. |
+| `Sharpness` | Sharpening: Amount | number | 0 to 150 | 40 | rendered (approx.) | Edge definition: increases contrast between pixels that differ from their neighbours. 0 turns sharpening off. Part of the camera default applied at import. |
+| `SharpenRadius` | Sharpening: Radius | number | 0.5 to 3 | 1 | rendered (approx.) | *Units: px.* Size of the details that sharpening is applied to: lower for very fine detail; too large looks unnatural. |
+| `SharpenDetail` | Sharpening: Detail | number | 0 to 100 | 25 | rendered (approx.) | Which detail gets sharpened. At low values only clear edges are sharpened; at high values fine texture (skin, fabric, foliage) is sharpened too. |
+| `SharpenEdgeMasking` | Sharpening: Masking | number | 0 to 100 | 0 | rendered (approx.) | Edge mask: 0 sharpens everything equally; 100 restricts sharpening mostly to the areas near the strongest edges. |
+| `LuminanceSmoothing` | Noise reduction: Luminance | number | 0 to 100 | 0 | rendered (approx.) | Reduces luminance (brightness) noise. 0 = off. |
+| `LuminanceNoiseReductionDetail` | Noise reduction: Detail | number | 0 to 100 | 50 | rendered (approx.) | Luminance noise threshold. Higher preserves more detail but may leave more noise; lower gives cleaner results but may remove some detail. |
+| `LuminanceNoiseReductionContrast` | Noise reduction: Contrast | number | 0 to 100 | 0 | rendered (approx.) | Higher preserves contrast but may produce noisy blotches or mottling; lower gives smoother results with less contrast. |
+| `ColorNoiseReduction` | Color noise reduction | number | 0 to 100 | 25 | rendered (approx.) | Reduces colour noise (coloured speckles). 0 = off. |
+| `ColorNoiseReductionDetail` | Color noise reduction: Detail | number | 0 to 100 | 50 | rendered (approx.) | Colour noise threshold. Higher protects thin, detailed colour edges but may leave colour speckling; lower removes speckles but may cause colour bleeding. |
+| `ColorNoiseReductionSmoothness` | Color noise reduction: Smoothness | number | 0 to 100 | 50 | rendered (approx.) | Smoothness sub-slider of colour noise reduction. Adobe's help names it without describing it further. |
 
 <a id="lens"></a>
 
@@ -367,16 +367,16 @@ Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) an
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `PostCropVignetteAmount` | Vignette: Amount | number | -100 to 100 | 0 | planned | Creative vignette relative to the crop: negative darkens the corners, positive lightens them. 0 = off. |
-| `PostCropVignetteMidpoint` | Vignette: Midpoint | number | 0 to 100 | 50 | planned | Lower values apply the Amount to a larger area away from the corners; higher values keep it closer to the corners. |
-| `PostCropVignetteFeather` | Vignette: Feather | number | 0 to 100 | 50 | planned | Softness of the vignette edge: lower values soften less (harder edge). |
-| `PostCropVignetteRoundness` | Vignette: Roundness | number | -100 to 100 | 0 | planned | Positive makes the vignette more circular, negative more oval. |
-| `PostCropVignetteHighlightContrast` | Vignette: Highlights | number | 0 to 100 | 0 | planned | How much highlight contrast is preserved when Amount is negative (Highlight Priority and Color Priority styles only); suits photos with small highlights such as candles and lamps. |
-| `PostCropVignetteStyle` | Vignette: Style | enum | 1 to 3 | 1 | planned | Highlight Priority (protects highlight contrast, may shift colours in darkened areas), Color Priority (preserves hues, may lose detail in bright highlights) or Paint Overlay (blends with black or white; can look flat). Stored as a number; the 1 = Highlight Priority, 2 = Color Priority, 3 = Paint Overlay encoding is Camera Raw's XMP convention, not stated in Adobe's help. |
-| `GrainAmount` | Grain: Amount | number | 0 to 100 | 0 | planned | Strength of simulated film grain. 0 = off. |
-| `GrainSize` | Grain: Size | number | 0 to 100 | 25 | planned | Grain particle size. At 25 or more Adobe adds blue to work better with noise reduction, and such sizes can cause some image blurring. |
-| `GrainFrequency` | Grain: Roughness | number | 0 to 100 | 50 | planned | Grain regularity: lower is more uniform, higher more uneven. Together with Size it sets the grain's character. |
-| `GrainSeed` | Grain seed | number | any number |  | image-specific | Random seed of the grain pattern, specific to one image. |
+| `PostCropVignetteAmount` | Vignette: Amount | number | -100 to 100 | 0 | rendered (approx.) | Creative vignette relative to the crop: negative darkens the corners, positive lightens them. 0 = off. |
+| `PostCropVignetteMidpoint` | Vignette: Midpoint | number | 0 to 100 | 50 | rendered (approx.) | Lower values apply the Amount to a larger area away from the corners; higher values keep it closer to the corners. |
+| `PostCropVignetteFeather` | Vignette: Feather | number | 0 to 100 | 50 | rendered (approx.) | Softness of the vignette edge: lower values soften less (harder edge). |
+| `PostCropVignetteRoundness` | Vignette: Roundness | number | -100 to 100 | 0 | rendered (approx.) | Positive makes the vignette more circular, negative more oval. |
+| `PostCropVignetteHighlightContrast` | Vignette: Highlights | number | 0 to 100 | 0 | rendered (approx.) | How much highlight contrast is preserved when Amount is negative (Highlight Priority and Color Priority styles only); suits photos with small highlights such as candles and lamps. |
+| `PostCropVignetteStyle` | Vignette: Style | enum | 1 to 3 | 1 | rendered (approx.) | Highlight Priority (protects highlight contrast, may shift colours in darkened areas), Color Priority (preserves hues, may lose detail in bright highlights) or Paint Overlay (blends with black or white; can look flat). Stored as a number; the 1 = Highlight Priority, 2 = Color Priority, 3 = Paint Overlay encoding is Camera Raw's XMP convention, not stated in Adobe's help. |
+| `GrainAmount` | Grain: Amount | number | 0 to 100 | 0 | rendered (approx.) | Strength of simulated film grain. 0 = off. |
+| `GrainSize` | Grain: Size | number | 0 to 100 | 25 | rendered (approx.) | Grain particle size. At 25 or more Adobe adds blue to work better with noise reduction, and such sizes can cause some image blurring. |
+| `GrainFrequency` | Grain: Roughness | number | 0 to 100 | 50 | rendered (approx.) | Grain regularity: lower is more uniform, higher more uneven. Together with Size it sets the grain's character. |
+| `GrainSeed` | Grain seed | number | any number |  | rendered (approx.) | Random seed of the grain pattern, specific to one image. |
 
 <a id="calibration"></a>
 

@@ -149,6 +149,29 @@ pub const RENDERED_TAGS: &[&str] = &[
     "SplitToningHighlightHue",
     "SplitToningHighlightSaturation",
     "SplitToningBalance",
+    "Dehaze",
+    "Texture",
+    "Clarity2012",
+    "Sharpness",
+    "SharpenRadius",
+    "SharpenDetail",
+    "SharpenEdgeMasking",
+    "LuminanceSmoothing",
+    "LuminanceNoiseReductionDetail",
+    "LuminanceNoiseReductionContrast",
+    "ColorNoiseReduction",
+    "ColorNoiseReductionDetail",
+    "ColorNoiseReductionSmoothness",
+    "PostCropVignetteAmount",
+    "PostCropVignetteMidpoint",
+    "PostCropVignetteRoundness",
+    "PostCropVignetteFeather",
+    "PostCropVignetteHighlightContrast",
+    "PostCropVignetteStyle",
+    "GrainAmount",
+    "GrainSize",
+    "GrainFrequency",
+    "GrainSeed",
     "ToneCurvePV2012",
     "ToneCurvePV2012Red",
     "ToneCurvePV2012Green",
@@ -574,7 +597,7 @@ mod tests {
         map.insert("Temperature".to_string(), Value::Text("5500".into()));
         map.insert("Tint".to_string(), Value::Text("+10".into()));
         map.insert("Exposure2012".to_string(), Value::Text("+0.5".into()));
-        map.insert("Clarity2012".to_string(), Value::Text("+20".into()));
+        map.insert("LensProfileEnable".to_string(), Value::Text("1".into()));
         map.insert("Name".to_string(), Value::Text("x".into()));
         let (s, missing) = DevelopSettings::from_settings(&map);
         assert_eq!(
@@ -585,6 +608,6 @@ mod tests {
             }
         );
         assert_eq!(s.exposure_ev, 0.5);
-        assert_eq!(missing, vec!["Clarity2012".to_string()]);
+        assert_eq!(missing, vec!["LensProfileEnable".to_string()]);
     }
 }

@@ -26,21 +26,32 @@ USAGE:
                                             [--calibration fitted.json]
                                             Develop a raw (engine v0: white balance, Exposure, point
                                             curves) and report which preset settings were not rendered
+    flb edit <SIDECAR.xmp> --commands <CMDS.json|-> [--out <NEW.xmp|.json>] [--dry-run] [--json]
+                                            Apply protocol commands (set_param, adjust_param, reset_param,
+                                            reset_group, apply_preset, undo, redo) as one transaction,
+                                            print the diff and write the sidecar (other XMP metadata kept)
+    flb query <SIDECAR.xmp> --queries <QUERIES.json|->
+                                            Answer protocol queries (get_param, list_params, describe,
+                                            list_groups) as JSON
+    flb protocol schema [command|query]     Print the JSON Schema of commands and queries
+    flb settings reference [--json]         Print the settings reference (docs/ai/settings-reference.md)
 
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
-XMP packet (e.g. .dng presets for Lightroom mobile).";
+XMP packet (e.g. .dng presets for Lightroom mobile). AI and script guide: docs/ai/README.md.";
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut json = false;
+    let mut dry_run = false;
     let mut options: BTreeMap<&str, &str> = BTreeMap::new();
     let mut positional: Vec<&str> = Vec::new();
     let mut iter = args.iter();
     while let Some(arg) = iter.next() {
         match arg.as_str() {
             "--json" => json = true,
+            "--dry-run" => dry_run = true,
             "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look"
-            | "--calibration" => match iter.next() {
+            | "--calibration" | "--commands" | "--queries" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -89,6 +100,31 @@ fn main() -> ExitCode {
             options.get("--look").copied(),
             options.get("--calibration").copied(),
         ),
+        ["edit", sidecar] => match options.get("--commands") {
+            Some(commands) => edit(
+                Path::new(sidecar),
+                commands,
+                options.get("--out").map(Path::new),
+                dry_run,
+                json,
+            ),
+            None => Err("edit needs --commands <file.json> (or - for stdin)".into()),
+        },
+        ["query", state] => match options.get("--queries") {
+            Some(queries) => query(Path::new(state), queries),
+            None => Err("query needs --queries <file.json> (or - for stdin)".into()),
+        },
+        ["protocol", "schema"] => print_json(&flb_protocol::schema::protocol_schema()),
+        ["protocol", "schema", "command"] => print_json(&flb_protocol::schema::command_schema()),
+        ["protocol", "schema", "query"] => print_json(&flb_protocol::schema::query_schema()),
+        ["settings", "reference"] => {
+            if json {
+                print_json(&flb_protocol::reference::json())
+            } else {
+                print!("{}", flb_protocol::reference::markdown());
+                Ok(())
+            }
+        }
         _ => {
             eprintln!("{USAGE}");
             return ExitCode::from(2);
@@ -101,6 +137,66 @@ fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+fn print_json(value: &serde_json::Value) -> Result<(), String> {
+    println!(
+        "{}",
+        serde_json::to_string_pretty(value).map_err(|e| e.to_string())?
+    );
+    Ok(())
+}
+
+/// Read a JSON argument file, or stdin for `-`.
+fn read_input(path: &str) -> Result<String, String> {
+    if path == "-" {
+        let mut text = String::new();
+        std::io::Read::read_to_string(&mut std::io::stdin(), &mut text)
+            .map_err(|e| format!("stdin: {e}"))?;
+        Ok(text)
+    } else {
+        std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))
+    }
+}
+
+/// `flb edit`: returns what to print, so it can be tested without a process.
+fn edit_output(
+    sidecar: &Path,
+    commands: &str,
+    out: Option<&Path>,
+    dry_run: bool,
+    json: bool,
+) -> Result<String, String> {
+    let report = flb_protocol::edit::run(&flb_protocol::edit::EditRequest {
+        sidecar,
+        commands,
+        out,
+        dry_run,
+    })
+    .map_err(|e| e.to_string())?;
+    if json {
+        serde_json::to_string_pretty(&report.to_json()).map_err(|e| e.to_string())
+    } else {
+        Ok(report.to_text().trim_end().to_string())
+    }
+}
+
+fn edit(
+    sidecar: &Path,
+    commands: &str,
+    out: Option<&Path>,
+    dry_run: bool,
+    json: bool,
+) -> Result<(), String> {
+    let commands = read_input(commands)?;
+    println!("{}", edit_output(sidecar, &commands, out, dry_run, json)?);
+    Ok(())
+}
+
+fn query(state: &Path, queries: &str) -> Result<(), String> {
+    let queries = read_input(queries)?;
+    let answers = flb_protocol::edit::run_queries(state, &queries).map_err(|e| e.to_string())?;
+    print_json(&answers)
 }
 
 fn load(path: &Path) -> Result<Preset, String> {
@@ -444,4 +540,56 @@ fn render(
         );
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn edit_command_end_to_end() {
+        let dir = std::env::temp_dir().join(format!("flb-cli-edit-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let sidecar = dir.join("photo.xmp");
+        std::fs::write(
+            &sidecar,
+            r#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" xmp:Rating="5" crs:Exposure2012="+0.30"/></rdf:RDF></x:xmpmeta>"#,
+        )
+        .unwrap();
+        let cmds = r#"[{"cmd":"adjust_param","name":"Exposure2012","delta":0.2},
+                       {"cmd":"set_param","name":"Vibrance","value":150}]"#;
+        let text = edit_output(&sidecar, cmds, None, false, false).unwrap();
+        assert!(text.contains("Exposure2012: +0.3 -> +0.5"), "{text}");
+        assert!(text.contains("clamped: Vibrance = 150"), "{text}");
+        let written = std::fs::read_to_string(&sidecar).unwrap();
+        assert!(written.contains(r#"crs:Exposure2012="+0.5""#), "{written}");
+        assert!(written.contains(r#"xmp:Rating="5""#), "{written}");
+
+        let json = edit_output(
+            &sidecar,
+            r#"{"cmd":"reset_param","name":"Vibrance"}"#,
+            None,
+            true,
+            true,
+        )
+        .unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert_eq!(v["dry_run"], serde_json::json!(true));
+        assert_eq!(
+            v["results"][0]["diff"][0]["before"],
+            serde_json::json!(100.0)
+        );
+
+        let err = edit_output(
+            &sidecar,
+            r#"{"cmd":"set_param","name":"Exposur","value":1}"#,
+            None,
+            false,
+            false,
+        )
+        .unwrap_err();
+        assert!(err.contains("did you mean Exposure2012"), "{err}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

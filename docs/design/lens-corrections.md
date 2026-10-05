@@ -1,6 +1,6 @@
 # Lens Corrections
 
-Status: v1 implemented (`crates/flb-lens`, `crates/flb-engine/src/lens.rs`). Every constant is a first guess, to be fitted against Lightroom with the `lens` sweeps (docs/lightroom-trial-plan.md).
+Status: v1 implemented (`crates/amb-lens`, `crates/amb-engine/src/lens.rs`). Every constant is a first guess, to be fitted against Lightroom with the `lens` sweeps (docs/lightroom-trial-plan.md).
 
 ## What Lightroom's panel does, and what we render
 
@@ -33,17 +33,17 @@ Scaling:
 
 ## Profile data: where it comes from (and the legal line)
 
-Resolution order (`flb_lens::resolve`):
+Resolution order (`amb_lens::resolve`):
 
 1. **The user's Adobe LCP files, matched by `LensProfileFilename`.** Lightroom and Camera Raw installs keep them in `…/Adobe/CameraRaw/LensProfiles/1.0`.
    - We read them in place, the same way RawTherapee does.
    - We never copy, bundle or upload them: they are Adobe content.
    - When present, this is the most faithful option, because it is Lightroom's own profile.
 2. **LCP auto-match** by lens and camera names.
-3. **lensfun database** (CC BY-SA 3.0), from a system install, `FLB_LENSFUN_DB`, or `--lens-db DIR`.
+3. **lensfun database** (CC BY-SA 3.0), from a system install, `AMB_LENSFUN_DB`, or `--lens-db DIR`.
    - Lensfun calibrations are independent of Adobe's, so results differ a little from Lightroom: their distortion fits and vignetting measurements are not the same.
    - Shipping the database in our installers later is fine. It is data under its own licence: keep the attribution and the CC BY-SA terms for the data files.
-4. Nothing: profile corrections are skipped, and `flb render` says so.
+4. Nothing: profile corrections are skipped, and `amb render` says so.
 
 The models:
 - **lensfun**: Hugin `poly3`/`poly5`/`ptlens` distortion, with r = 1 at half the short side of the calibration sensor. lensfun's centre normalisation is kept. TCA `linear`/`poly3`; vignetting `pa`, with r = 1 at the half diagonal. Calibrations made on another sensor size are rescaled by crop factor.
@@ -55,12 +55,12 @@ Interpolation:
 
 ## Using it
 
-- `flb lens info photo.nef` shows the lens metadata and which profile it gets, with the interpolated models.
-- `flb lens match --camera-make … --lens-model … --focal …` does the same without a file.
-- `flb render` resolves the profile whenever the settings enable profile corrections or Remove CA, and prints it.
-- Sources: `--lens-db DIR` / `FLB_LENSFUN_DB` for the lensfun database (e.g. a checkout of lensfun's `data/db`, or `lensfun-update-data`); `--lcp-dir DIR` / `FLB_LCP_DIRS` for LCP folders. Adobe's default folders are searched automatically.
+- `amb lens info photo.nef` shows the lens metadata and which profile it gets, with the interpolated models.
+- `amb lens match --camera-make … --lens-model … --focal …` does the same without a file.
+- `amb render` resolves the profile whenever the settings enable profile corrections or Remove CA, and prints it.
+- Sources: `--lens-db DIR` / `AMB_LENSFUN_DB` for the lensfun database (e.g. a checkout of lensfun's `data/db`, or `lensfun-update-data`); `--lcp-dir DIR` / `AMB_LCP_DIRS` for LCP folders. Adobe's default folders are searched automatically.
 
-Matching (`flb-lens`):
+Matching (`amb-lens`):
 - Lens names are compared by word overlap, after splitting glued EXIF spellings (`EF24-70mm`, `XF35mmF1.4`).
 - The focal-length words must agree.
 - Small penalties apply for a different aperture, a different lens maker or an incompatible mount.
@@ -84,7 +84,7 @@ Checked on real raws with the lensfun database:
   - Micro Four Thirds, Fujifilm X, Sony E and many compacts store correction data in maker notes. Lightroom applies it automatically ("Built-in Lens Profile Applied").
   - DNGs carry it as `WarpRectilinear` / `FixVignetteRadial` opcodes.
   - Reading these covers lenses that no database has.
-- `flb lens fetch`: download the lensfun database into the user data folder.
+- `amb lens fetch`: download the lensfun database into the user data folder.
 - Upright and Transform: the same resampling pass, with a homography in front.
 - Fisheye profiles and projection changes.
 - GPU resampling: the warp is about 1.5 s for 24 MP on 4 CPU cores.

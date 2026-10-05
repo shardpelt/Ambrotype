@@ -1,0 +1,39 @@
+-- Synthetic test preset written for Ambrotype (not a commercial preset).
+s = {
+	id = "3E6E5A06-A5C3-4F9E-8F5E-0A2B7C0F1D11",
+	internalName = "Warm Matte",
+	title = ZSTR "$$$/Ambrotype/Test/WarmMatte=Warm Matte",
+	type = "Develop",
+	value = {
+		settings = {
+			ProcessVersion = "11.0",
+			WhiteBalance = "As Shot",
+			Exposure2012 = 0.35,
+			Contrast2012 = -12,
+			Highlights2012 = -40,
+			Blacks2012 = 18,
+			Vibrance = 10,
+			ToneCurveName2012 = "Custom",
+			ToneCurvePV2012 = {
+				0, 18,
+				64, 70,
+				192, 200,
+				255, 245,
+			},
+			SplitToningShadowHue = 210,
+			SplitToningShadowSaturation = 18,
+			ConvertToGrayscale = false,
+			GradientBasedCorrections = {
+				{
+					CorrectionAmount = 1,
+					LocalExposure2012 = -0.5,
+					CorrectionMasks = {
+						{ What = "Mask/Gradient", ZeroX = 0.5, ZeroY = 0, FullX = 0.5, FullY = 0.4 },
+					},
+				},
+			},
+		},
+		uuid = "3E6E5A06-A5C3-4F9E-8F5E-0A2B7C0F1D11",
+	},
+	version = 0,
+}

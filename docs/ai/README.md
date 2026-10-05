@@ -1,43 +1,43 @@
-# Driving Flightbroom from an AI or a script
+# Driving Ambrotype from an AI or a script
 
-Flightbroom edits photos the way Lightroom does: as a non-destructive recipe of Camera Raw settings (`crs:` tags such as `Exposure2012` or `ColorGradeShadowHue`) stored in an XMP sidecar next to the raw file. Features Lightroom lacks (e.g. film negative conversion) use our own `flb:` tags (e.g. `flb:NegativeConvert`, `flb:FilmStock`), which work with the same commands. An AI assistant edits a photo by changing those settings through the **same validated, undoable commands** a human's slider moves produce. It never paints pixels.
+Ambrotype edits photos the way Lightroom does: as a non-destructive recipe of Camera Raw settings (`crs:` tags such as `Exposure2012` or `ColorGradeShadowHue`) stored in an XMP sidecar next to the raw file. Features Lightroom lacks (e.g. film negative conversion) use our own `amb:` tags (e.g. `amb:NegativeConvert`, `amb:FilmStock`), which work with the same commands. An AI assistant edits a photo by changing those settings through the **same validated, undoable commands** a human's slider moves produce. It never paints pixels.
 
-This guide covers what works **today, through the `flb` command-line tool**. An MCP server (`flb mcp`) and an in-app assistant panel are planned; they will expose the same commands (see [the design doc](../design/ai-control.md)).
+This guide covers what works **today, through the `amb` command-line tool**. An MCP server (`amb mcp`) and an in-app assistant panel are planned; they will expose the same commands (see [the design doc](../design/ai-control.md)).
 
 Related files:
-- [settings-reference.md](settings-reference.md): every setting, with its range, default, Flightbroom render status and a description. It is generated from the code (`flb settings reference`, or `--json` for machine use).
-- `flb protocol schema`: JSON Schema of the commands and queries below.
+- [settings-reference.md](settings-reference.md): every setting, with its range, default, Ambrotype render status and a description. It is generated from the code (`amb settings reference`, or `--json` for machine use).
+- `amb protocol schema`: JSON Schema of the commands and queries below.
 - [/llms.txt](../../llms.txt): index for language models.
 
 ## Safety rules (read first)
 
-These come from [docs/design/ai-control.md](../design/ai-control.md). An assistant driving Flightbroom must follow them.
+These come from [docs/design/ai-control.md](../design/ai-control.md). An assistant driving Ambrotype must follow them.
 
 1. **Optional.** Never assume the user wants AI help; only act when asked.
-2. **Only the user's controls.** Change settings with `flb edit` commands. Never modify image pixels, never write raw files, never edit sidecars by hand.
-3. **Preview, then apply.** Run `flb edit ... --dry-run` first and show the user the diff ("8 settings changed: ..."). Write only after they accept. Render a preview (`flb render`) when the change is visual.
+2. **Only the user's controls.** Change settings with `amb edit` commands. Never modify image pixels, never write raw files, never edit sidecars by hand.
+3. **Preview, then apply.** Run `amb edit ... --dry-run` first and show the user the diff ("8 settings changed: ..."). Write only after they accept. Render a preview (`amb render`) when the change is visual.
 4. **Ask before anything big or irreversible:** batch edits over many photos, overwriting files you did not create, deleting or moving files, and **sending any image to a cloud model**. Images stay on the machine unless the user picks a cloud model and confirms.
 5. **Stay within a step and cost budget** per request, and tell the user what it is.
-6. **Keep a visible log.** Show the commands you ran and their arguments (the JSON you passed to `flb edit` is the log).
+6. **Keep a visible log.** Show the commands you ran and their arguments (the JSON you passed to `amb edit` is the log).
 7. **No AI in correctness paths.** Rendering, preset import and catalog integrity never depend on a model; your job is to orchestrate and explain.
 
 Practical consequences:
-- `flb edit` is a transaction: if any command in the list fails, **nothing** is written. Fix the command and rerun the whole list.
+- `amb edit` is a transaction: if any command in the list fails, **nothing** is written. Fix the command and rerun the whole list.
 - When unsure, write to a new file with `--out` instead of overwriting the sidecar.
-- `flb edit` keeps everything in the sidecar that is not a Camera Raw setting (rating, labels, keywords, EXIF copies, history) and writes atomically. With `--out` to another `.xmp`, that metadata is copied from the source sidecar (an existing file at the `--out` path is replaced, not merged).
+- `amb edit` keeps everything in the sidecar that is not a Camera Raw setting (rating, labels, keywords, EXIF copies, history) and writes atomically. With `--out` to another `.xmp`, that metadata is copied from the source sidecar (an existing file at the `--out` path is replaced, not merged).
 
 ## The loop: inspect, edit, render, iterate
 
 ### 1. Inspect
 
 ```sh
-flb preset inspect IMG_0001.xmp            # human-readable summary, grouped
-flb preset inspect IMG_0001.xmp --json     # same, as JSON (tag, group, value, render status)
-flb preset dump IMG_0001.xmp               # the parsed settings as JSON
-flb query IMG_0001.xmp --queries q.json    # protocol queries (below), JSON answers
+amb preset inspect IMG_0001.xmp            # human-readable summary, grouped
+amb preset inspect IMG_0001.xmp --json     # same, as JSON (tag, group, value, render status)
+amb preset dump IMG_0001.xmp               # the parsed settings as JSON
+amb query IMG_0001.xmp --queries q.json    # protocol queries (below), JSON answers
 ```
 
-A setting that is **absent** from the sidecar means "untouched": its default applies (Exposure 0, Contrast 0, ...). White balance is special: with no `WhiteBalance` tag (or `"As Shot"`) the camera's recorded white balance is used, and that value lives in the raw, not the sidecar. `flb render` prints it (`as shot: 5150 K, tint +4`).
+A setting that is **absent** from the sidecar means "untouched": its default applies (Exposure 0, Contrast 0, ...). White balance is special: with no `WhiteBalance` tag (or `"As Shot"`) the camera's recorded white balance is used, and that value lives in the raw, not the sidecar. `amb render` prints it (`as shot: 5150 K, tint +4`).
 
 ### 2. Edit
 
@@ -52,10 +52,10 @@ Write the commands to a file (or pass `-` and pipe them on stdin):
 ```
 
 ```sh
-flb edit IMG_0001.xmp --commands cmds.json --dry-run     # show the diff, write nothing
-flb edit IMG_0001.xmp --commands cmds.json               # apply and write the sidecar
-flb edit IMG_0001.xmp --commands cmds.json --out alt.xmp # write elsewhere
-flb edit IMG_0001.xmp --commands cmds.json --json        # machine-readable diff
+amb edit IMG_0001.xmp --commands cmds.json --dry-run     # show the diff, write nothing
+amb edit IMG_0001.xmp --commands cmds.json               # apply and write the sidecar
+amb edit IMG_0001.xmp --commands cmds.json --out alt.xmp # write elsewhere
+amb edit IMG_0001.xmp --commands cmds.json --json        # machine-readable diff
 ```
 
 Text output:
@@ -70,12 +70,12 @@ set_param ToneCurvePV2012
 wrote IMG_0001.xmp (3 change(s))
 ```
 
-If the sidecar does not exist yet, `flb edit` starts from an empty one and creates it. It writes only `.xmp` or `.json` files and refuses anything else (it will never write into a DNG or JPEG).
+If the sidecar does not exist yet, `amb edit` starts from an empty one and creates it. It writes only `.xmp` or `.json` files and refuses anything else (it will never write into a DNG or JPEG).
 
 ### 3. Render a preview
 
 ```sh
-flb render IMG_0001.CR3 /tmp/preview.jpg --preset IMG_0001.xmp
+amb render IMG_0001.CR3 /tmp/preview.jpg --preset IMG_0001.xmp
 ```
 
 `render` reads the settings from `--preset` (sidecars work too), prints the as-shot white balance and timing, and lists the settings present that the engine **does not render yet**. Those are still saved and Lightroom will honour them, but the preview will not show them. The **Status** column of the [settings reference](settings-reference.md) shows what renders. If you can look at images, compare the preview with the user's intent or reference photos and iterate. Keep the step budget in mind.
@@ -93,16 +93,16 @@ Apply a preset (`.xmp`, `.lrtemplate`, or a DNG/JPEG with embedded settings) as 
 - `include_groups` / `exclude_groups` take group names from the reference (`tone`, `hsl`, `color_grading`, `white_balance`, ...).
 - The preset's own metadata (name, UUID, group, `SupportsAmount`, writer version) is never copied into the photo.
 
-For a quick look without editing anything: `flb render IMG.CR3 out.jpg --preset look.xmp --amount 50`. To see what a preset contains: `flb preset inspect look.xmp`.
+For a quick look without editing anything: `amb render IMG.CR3 out.jpg --preset look.xmp --amount 50`. To see what a preset contains: `amb preset inspect look.xmp`.
 
 ### Undo across calls
 
-`{"cmd": "undo"}` and `{"cmd": "redo"}` work within one `flb edit` call. An XMP sidecar does not store history. To keep undo history across calls, use a JSON working file and export XMP when done:
+`{"cmd": "undo"}` and `{"cmd": "redo"}` work within one `amb edit` call. An XMP sidecar does not store history. To keep undo history across calls, use a JSON working file and export XMP when done:
 
 ```sh
-flb edit work.json --commands step1.json                    # history kept in work.json
-echo '[{"cmd":"undo"}]' | flb edit work.json --commands -   # undo step1's last command
-echo '[]' | flb edit work.json --commands - --out IMG_0001.xmp
+amb edit work.json --commands step1.json                    # history kept in work.json
+echo '[{"cmd":"undo"}]' | amb edit work.json --commands -   # undo step1's last command
+echo '[]' | amb edit work.json --commands - --out IMG_0001.xmp
 ```
 
 Every diff also reports the `before` values, so you can always revert by setting them back.
@@ -123,12 +123,12 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 Validation:
 - **Unknown names are rejected** with suggestions: `"Temp"` gives `unknown setting "Temp" (did you mean Temperature, IncrementalTemperature?)`. Some short names *are* valid legacy PV2010 tags (`Exposure`, `Contrast`, `Shadows`, `Clarity`). Using them works, but the result carries a note pointing to the current tag.
 - **Wrong kinds are rejected** (e.g. a string for a slider).
-- **Side effects match Lightroom.** Setting `Temperature` or `Tint` while white balance is As Shot/Auto also sets `WhiteBalance` to `"Custom"`, in the same undo step; otherwise the new temperature would be ignored. Lightroom keeps the as-shot value of the other slider, but that value lives in the raw file, so **set both**, Temperature first: `Tint` alone under As Shot/Auto is rejected (a custom white balance without a temperature is not rendered), and `Temperature` alone gets a note because the tint becomes 0 instead of the as-shot tint. `flb render` prints the as-shot pair (`as shot: 5150 K, tint +4`).
+- **Side effects match Lightroom.** Setting `Temperature` or `Tint` while white balance is As Shot/Auto also sets `WhiteBalance` to `"Custom"`, in the same undo step; otherwise the new temperature would be ignored. Lightroom keeps the as-shot value of the other slider, but that value lives in the raw file, so **set both**, Temperature first: `Tint` alone under As Shot/Auto is rejected (a custom white balance without a temperature is not rendered), and `Temperature` alone gets a note because the tint becomes 0 instead of the as-shot tint. `amb render` prints the as-shot pair (`as shot: 5150 K, tint +4`).
 - Use the current-process tags (`Exposure2012`, `Contrast2012`, `Highlights2012`, `Shadows2012`, `Whites2012`, `Blacks2012`, `Clarity2012`), not the legacy ones.
 
 ## Queries
 
-`flb query <sidecar> --queries <file|->` takes one query or an array, tagged by `query`:
+`amb query <sidecar> --queries <file|->` takes one query or an array, tagged by `query`:
 
 | Query | Fields | Returns |
 |---|---|---|
@@ -143,13 +143,13 @@ Validation:
 
 ## Intent to settings cheat sheet
 
-These are **starting points**. Apply them with `--dry-run`, render, look, and adjust. Use smaller values for subtle requests and larger ones for "much more". Values are Camera Raw slider units; check ranges in the [reference](settings-reference.md). Settings marked *(planned)* are saved and Lightroom honours them, but Flightbroom's preview may not render them yet (see the Status column).
+These are **starting points**. Apply them with `--dry-run`, render, look, and adjust. Use smaller values for subtle requests and larger ones for "much more". Values are Camera Raw slider units; check ranges in the [reference](settings-reference.md). Settings marked *(planned)* are saved and Lightroom honours them, but Ambrotype's preview may not render them yet (see the Status column).
 
 | Intent | Settings |
 |---|---|
-| **Warmer** | Temperature +300 to +800 K above the current value. If the photo is As Shot, read the as-shot pair from `flb render` and `set_param` Temperature to the sum, then Tint to the as-shot tint. Optional: Tint +3 to +6 on top. Warm the highlights only with ColorGradeHighlightHue 40-50, ColorGradeHighlightSat 10-20. |
+| **Warmer** | Temperature +300 to +800 K above the current value. If the photo is As Shot, read the as-shot pair from `amb render` and `set_param` Temperature to the sum, then Tint to the as-shot tint. Optional: Tint +3 to +6 on top. Warm the highlights only with ColorGradeHighlightHue 40-50, ColorGradeHighlightSat 10-20. |
 | **Cooler** | Temperature -300 to -800 K below the current value (As Shot: as for Warmer, set Temperature then the as-shot Tint). Cool shadows only: ColorGradeShadowHue 200-220, ColorGradeShadowSat 10-20. |
-| **Green or magenta cast** | Green cast: Tint +5 to +15. Magenta cast: Tint -5 to -15. If the photo is As Shot, first `set_param` Temperature to the as-shot temperature from `flb render`, then Tint to the as-shot tint plus the correction. Cast only in the shadows: ShadowTint *(planned)*. |
+| **Green or magenta cast** | Green cast: Tint +5 to +15. Magenta cast: Tint -5 to -15. If the photo is As Shot, first `set_param` Temperature to the as-shot temperature from `amb render`, then Tint to the as-shot tint plus the correction. Cast only in the shadows: ShadowTint *(planned)*. |
 | **Brighter** | Exposure2012 +0.3 to +1.0. If the sky or highlights then clip: Highlights2012 -20 to -50, Whites2012 -5 to -15. |
 | **Darker, moodier** | Exposure2012 -0.3 to -0.7, Highlights2012 -20 to -40, Blacks2012 -5 to -15, Vibrance -5 to -15. Optional vignette: PostCropVignetteAmount -15 to -30. |
 | **More contrast without crushing blacks** | Contrast2012 +15 to +30, Blacks2012 +5 to +15 (lifts the black point), Shadows2012 +10 to +20, Highlights2012 -10 to -25. Or a gentle S point curve: ToneCurvePV2012 `[[0,0],[64,56],[192,200],[255,255]]`. Midtone punch: Clarity2012 +10 to +20. |
@@ -188,6 +188,6 @@ User: *"Make it moodier, teal and orange, but keep the faces natural."*
 ]
 ```
 
-1. Run it with `flb edit IMG.xmp --commands moody.json --dry-run`. Show the user the 12 changes and why (orange saturation pulled back slightly so the warm highlights do not over-saturate skin).
-2. After they accept, run it without `--dry-run`, then `flb render IMG.CR3 /tmp/preview.jpg --preset IMG.xmp`.
+1. Run it with `amb edit IMG.xmp --commands moody.json --dry-run`. Show the user the 12 changes and why (orange saturation pulled back slightly so the warm highlights do not over-saturate skin).
+2. After they accept, run it without `--dry-run`, then `amb render IMG.CR3 /tmp/preview.jpg --preset IMG.xmp`.
 3. Iterate with small `adjust_param` steps. Stop at the step budget and summarise what you changed.

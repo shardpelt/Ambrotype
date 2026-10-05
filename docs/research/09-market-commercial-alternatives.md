@@ -140,7 +140,7 @@ Status: researched 2026-10-03 via WebSearch/WebFetch. Reddit deliberately exclud
 | **Aftershoot** | Subscription from about $20/mo for retouching; flat-rate | Win, macOS | Works with Lightroom Classic and Capture One via XMP | Culling plus editing "profiles" plus retouch; wedding/school volume |
 | **Evoto** | Credit-based: edit free, one credit per export; about $6.99-9.99/mo entry | Win, macOS, mobile | Standalone; not an LR plug-in | Portrait retouching |
 
-- **Why it matters for Flightbroom.** Imagen and Aftershoot are **parasitic on Lightroom's catalog and XMP**: they write develop settings into LR's format. They prove that the LR XMP/`crs:` schema is the de facto interchange format for professional AI culling and editing. A competitor that reads and writes it becomes a drop-in host for these tools. Sources are mostly vendor blogs `[vendor]`: https://aftershoot.com/blog/ai-editing-software-for-photographers/ ; https://phaito.com/blog/comparing-ai-tools-phaito-imagen-aftershoot-luminar-evoto ; https://www.capterra.com/p/10015499/Evoto-AI/ . Independent review depth is thin; platform and "reads XMP" details `[unverified]`.
+- **Why it matters for Ambrotype.** Imagen and Aftershoot are **parasitic on Lightroom's catalog and XMP**: they write develop settings into LR's format. They prove that the LR XMP/`crs:` schema is the de facto interchange format for professional AI culling and editing. A competitor that reads and writes it becomes a drop-in host for these tools. Sources are mostly vendor blogs `[vendor]`: https://aftershoot.com/blog/ai-editing-software-for-photographers/ ; https://phaito.com/blog/comparing-ai-tools-phaito-imagen-aftershoot-luminar-evoto ; https://www.capterra.com/p/10015499/Evoto-AI/ . Independent review depth is thin; platform and "reads XMP" details `[unverified]`.
 - **Complaints (generic to AI tools).** Per-image pricing anxiety (Imagen), cloud-upload privacy concerns (Pixieset pointedly advertises local processing), and AI culling that "complements, not replaces" human judgement.
 
 ---
@@ -219,14 +219,14 @@ Legend: Y = supported and documented; P = partial or basic edits only; N = none 
 
 **What users expect:** (1) drop an `.xmp` pack in and see the same look, including per-camera profile behaviour; (2) keep star ratings, colour labels, keywords, collections, and fold-in of edits; (3) not have previously edited images shift colour; (4) run the whole thing from a single "Import from Lightroom" wizard that reports what could not be mapped.
 
-### (d) The market gap Flightbroom can own
+### (d) The market gap Ambrotype can own
 
 1. **Faithful preset compatibility is unsolved.** Nobody, free or paid, imports Lightroom presets natively and renders them faithfully. The best answer is a $46 third-party converter for one product with known WB drift. This is the stated differentiator and the market confirms it is open.
-2. **Faithfulness is the missing metric.** Competitors say "basic edits transfer". Flightbroom could publish a conformance suite (golden renders per setting) and a per-setting mapping report, turning faithfulness into something measurable.
+2. **Faithfulness is the missing metric.** Competitors say "basic edits transfer". Ambrotype could publish a conformance suite (golden renders per setting) and a per-setting mapping report, turning faithfulness into something measurable.
 3. **Free, cross-platform, and a real catalog.** The free options either lack a catalog (Affinity, Exposure, DxO's folder-only), are feature-limited (Resolve's Photo page: weak organisation and export), or are mobile-only. The only free tool with a serious library and migration story is not yet there.
 4. **Linux.** No commercial desktop contender besides Resolve (unverified for Photo) targets Linux. Mobile-plus-desktop parity is also thin: Capture One gates mobile, VSCO has no RAW, Photomator is stalling.
 5. **Trust and ownership.** Commercial users are being squeezed by repeated price rises (Capture One, Adobe, VSCO One), AI paywalls (Affinity/Canva) and "perpetual" licences that lapse (Skylum). An open-source tool with open formats speaks to this directly.
-6. **XMP/DAM interchange for AI tools.** Imagen/Aftershoot use LR XMP. Reading and writing `crs:` XMP makes Flightbroom a possible host for them.
+6. **XMP/DAM interchange for AI tools.** Imagen/Aftershoot use LR XMP. Reading and writing `crs:` XMP makes Ambrotype a possible host for them.
 
 ### (e) Design lessons
 

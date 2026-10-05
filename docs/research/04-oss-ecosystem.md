@@ -1,7 +1,7 @@
 # Open-Source Raw Processing Ecosystem Survey
 
 **Date:** 2026-10-03  
-**Purpose:** Comprehensive analysis of open-source raw processing tools, libraries, and licensing to inform Flightbroom architecture decisions.
+**Purpose:** Comprehensive analysis of open-source raw processing tools, libraries, and licensing to inform Ambrotype architecture decisions.
 
 ---
 
@@ -173,7 +173,7 @@ Actively maintained; mature for production use.
 | **vkdt** | MIT (developer assumed) | C + GLSL/Vulkan | Node graph DAG; all GPU | Vulkan | Real-time Vulkan-accelerated darkroom workflow; experimental |
 | **OpenCV** | Apache-2.0 | C++ | Algorithmic library (not framework) | GPU (CUDA/OpenCL) | Computer vision focus; less suited for photography |
 
-**Recommendation for Flightbroom**:
+**Recommendation for Ambrotype**:
 - **GEGL/babl** for declarative, node-based architecture (matches darktable/ART model)
 - **Halide** for custom optimization of critical kernels (photography-grade image quality)
 - **vkdt** (experimental): Vulkan GPU acceleration; reference for node-graph design
@@ -317,7 +317,7 @@ Actively maintained; mature for production use.
 
 **Maturity**: Beta → production-grade; rapidly maturing
 
-**Design Lessons for Flightbroom**:
+**Design Lessons for Ambrotype**:
 - Modern Rust stack is viable for performance-critical applications
 - Tauri provides lightweight, cross-platform deployment
 - WGPU enables GPU acceleration without OS-specific code (Vulkan/Metal/DX12 abstraction)
@@ -375,7 +375,7 @@ Actively maintained; mature for production use.
    - Upstream (LGPL) libraries remain under LGPL; downstream code can be proprietary
    - BUT: Static linking typically triggers GPL terms
 
-### E.3 Recommended License for Flightbroom
+### E.3 Recommended License for Ambrotype
 
 > **Editorial correction (lead reviewer).** Parts of the analysis below are wrong; read them with these corrections:
 > - Apache-2.0 → GPLv3 compatibility is **one-way**. An Apache-2.0 project **cannot** copy or port code from darktable, RawTherapee, ART or Ansel (all GPLv3). It can only reimplement their algorithms from papers or descriptions.
@@ -416,7 +416,7 @@ Actively maintained; mature for production use.
 - ✗ Restricts derivatives to GPLv3 (limits commercial adoption)
 - ✗ Apache-2.0 projects cannot use your code without re-licensing (one-way)
 
-**Use case**: If Flightbroom is community project with no commercial intent.
+**Use case**: If Ambrotype is community project with no commercial intent.
 
 #### Option 3: **AGPL-3.0** (Not Recommended)
 
@@ -427,7 +427,7 @@ Actively maintained; mature for production use.
   - Deters corporate contributions
   - Network clause adds complexity (when does derivative use trigger sharing?)
 
-**Use case**: Only if Flightbroom explicitly opposes proprietary derivatives.
+**Use case**: Only if Ambrotype explicitly opposes proprietary derivatives.
 
 ### E.4 Final Recommendation
 
@@ -440,7 +440,7 @@ Actively maintained; mature for production use.
 4. **Modern practice**: Clear, explicit patent language (valuable if facing patent litigation)
 5. **Ecosystem fit**: RawTherapee/darktable will not block Apache-2.0 projects; users can mix both
 
-**Exception**: If Flightbroom is positioned as "purely community, never commercial," GPLv3 is defensible.
+**Exception**: If Ambrotype is positioned as "purely community, never commercial," GPLv3 is defensible.
 
 ---
 

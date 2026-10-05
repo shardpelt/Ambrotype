@@ -1,0 +1,21 @@
+[package]
+name = "amb-engine"
+version = "0.1.0"
+description = "Ambrotype processing engine (v0: raw decode, white balance, camera matrix, exposure, point curves, sRGB output)"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+amb-color = { path = "../amb-color" }
+amb-lens = { path = "../amb-lens" }
+amb-presets = { path = "../amb-presets" }
+rawler = "0.8"
+image = { version = "0.25", default-features = false, features = ["png", "tiff", "jpeg"] }
+rayon = "1"
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+amb-testkit = { path = "../amb-testkit" }

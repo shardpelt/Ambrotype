@@ -72,6 +72,111 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
+name = "amb-cli"
+version = "0.1.0"
+dependencies = [
+ "amb-color",
+ "amb-engine",
+ "amb-export",
+ "amb-lens",
+ "amb-presets",
+ "amb-protocol",
+ "amb-testkit",
+ "serde_json",
+]
+
+[[package]]
+name = "amb-color"
+version = "0.1.0"
+
+[[package]]
+name = "amb-engine"
+version = "0.1.0"
+dependencies = [
+ "amb-color",
+ "amb-lens",
+ "amb-presets",
+ "amb-testkit",
+ "image",
+ "rawler",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "amb-export"
+version = "0.1.0"
+dependencies = [
+ "amb-color",
+ "amb-engine",
+ "image",
+ "jpeg-encoder",
+ "rayon",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "amb-gui"
+version = "0.1.0"
+dependencies = [
+ "amb-color",
+ "amb-engine",
+ "amb-export",
+ "amb-lens",
+ "amb-presets",
+ "amb-protocol",
+ "amb-testkit",
+ "jpeg-encoder",
+ "rayon",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+]
+
+[[package]]
+name = "amb-lens"
+version = "0.1.0"
+dependencies = [
+ "quick-xml 0.37.5",
+ "serde",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "amb-presets"
+version = "0.1.0"
+dependencies = [
+ "quick-xml 0.37.5",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "amb-protocol"
+version = "0.1.0"
+dependencies = [
+ "amb-presets",
+ "quick-xml 0.37.5",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+]
+
+[[package]]
+name = "amb-testkit"
+version = "0.1.0"
+dependencies = [
+ "amb-color",
+ "amb-presets",
+ "thiserror 2.0.21",
+]
+
+[[package]]
 name = "android_system_properties"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1008,111 +1113,6 @@ dependencies = [
  "crc32fast",
  "miniz_oxide 0.9.1",
  "zlib-rs",
-]
-
-[[package]]
-name = "flb-cli"
-version = "0.1.0"
-dependencies = [
- "flb-color",
- "flb-engine",
- "flb-export",
- "flb-lens",
- "flb-presets",
- "flb-protocol",
- "flb-testkit",
- "serde_json",
-]
-
-[[package]]
-name = "flb-color"
-version = "0.1.0"
-
-[[package]]
-name = "flb-engine"
-version = "0.1.0"
-dependencies = [
- "flb-color",
- "flb-lens",
- "flb-presets",
- "flb-testkit",
- "image",
- "rawler",
- "rayon",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "flb-export"
-version = "0.1.0"
-dependencies = [
- "flb-color",
- "flb-engine",
- "image",
- "jpeg-encoder",
- "rayon",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "flb-gui"
-version = "0.1.0"
-dependencies = [
- "flb-color",
- "flb-engine",
- "flb-export",
- "flb-lens",
- "flb-presets",
- "flb-protocol",
- "flb-testkit",
- "jpeg-encoder",
- "rayon",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
-]
-
-[[package]]
-name = "flb-lens"
-version = "0.1.0"
-dependencies = [
- "quick-xml 0.37.5",
- "serde",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "flb-presets"
-version = "0.1.0"
-dependencies = [
- "quick-xml 0.37.5",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "flb-protocol"
-version = "0.1.0"
-dependencies = [
- "flb-presets",
- "quick-xml 0.37.5",
- "serde",
- "serde_json",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "flb-testkit"
-version = "0.1.0"
-dependencies = [
- "flb-color",
- "flb-presets",
- "thiserror 2.0.21",
 ]
 
 [[package]]

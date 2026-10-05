@@ -8,9 +8,9 @@ A month of Lightroom Classic is our only chance to gather **ground truth**: refe
 
 | Item | What it is | Status |
 |---|---|---|
-| Synthetic test DNGs | Linear DNGs: a grey ramp (14 stops), edge/frequency patterns, a hue × saturation grid and an approximate ColorChecker. The camera space is defined as linear ProPhoto, and a linear tone curve is embedded | **Built**: `flb testimage`, `flb sweep generate --synthetic ramp,hue,edges,colorchecker`. They decode correctly with LibRaw. Still to do: check them with Adobe's `dng_validate` and do a 7-day-trial import test |
+| Synthetic test DNGs | Linear DNGs: a grey ramp (14 stops), edge/frequency patterns, a hue × saturation grid and an approximate ColorChecker. The camera space is defined as linear ProPhoto, and a linear tone curve is embedded | **Built**: `amb testimage`, `amb sweep generate --synthetic ramp,hue,edges,colorchecker`. They decode correctly with LibRaw. Still to do: check them with Adobe's `dng_validate` and do a 7-day-trial import test |
 | CC0 real raws | About 40–100 raws from raw.pixls.us and similar: skin, sky, foliage, night, backlit, several camera brands | To collect |
-| Sweep sidecars | One `.xmp` sidecar per test file and slider value. Lightroom reads them on import, but only for proprietary raws (CR2/NEF/ARW...). For DNGs the settings are embedded in the file instead | **Built**: `flb sweep generate --out <dir> <raws>`, with the plan shown by `flb sweep plan` |
+| Sweep sidecars | One `.xmp` sidecar per test file and slider value. Lightroom reads them on import, but only for proprietary raws (CR2/NEF/ARW...). For DNGs the settings are embedded in the file instead | **Built**: `amb sweep generate --out <dir> <raws>`, with the plan shown by `amb sweep plan` |
 | Interaction sidecars | Known coupled pairs: Highlights × Whites, Shadows × Blacks, Contrast × Exposure, Vibrance × Saturation, Texture × Clarity | To build (add to the sweep plan) |
 | Preset corpus | Your purchased presets plus free ones, kept in a private folder and never committed | You |
 | Run sheet | A checklist and folder layout so every export is labelled with LR version, process version and settings | To write |
@@ -36,7 +36,7 @@ A month of Lightroom Classic is our only chance to gather **ground truth**: refe
 
 **Weeks 1–2: slider sweeps (the core harness data)**
 
-The kit is generated with `flb sweep generate --out <kit-dir> [--groups tone,presence,...] <raws>` (see `flb sweep plan`). The full plan is 74 sweeps and about 680 exports per input image.
+The kit is generated with `amb sweep generate --out <kit-dir> [--groups tone,presence,...] <raws>` (see `amb sweep plan`). The full plan is 74 sweeps and about 680 exports per input image.
 
 **Storage budget.** A full-resolution 16-bit TIFF of a 24 MP image is about 150 MB, so the full plan on 10 raws would be about 1 TB. To keep it manageable:
 - Export **global** controls at 2048 px on the long edge: tone, white balance, HSL, colour grading, calibration and vignette.
@@ -47,7 +47,7 @@ The kit is generated with `flb sweep generate --out <kit-dir> [--groups tone,pre
 5. Import the synthetic DNGs with their sweep sidecars. Batch-export everything; the volume is about 40 controls × 11 values × the targets.
 6. Run the same sweeps on 10 real raws.
 7. Run the interaction pairs.
-8. **Foreign XMP tags:** put a sidecar with `flb:` settings (e.g. from `flb negative analyze`) next to a raw. Import it, change a slider, run Metadata → Save Metadata to File, and check whether the `flb:` attributes survive.
+8. **Foreign XMP tags:** put a sidecar with `amb:` settings (e.g. from `amb negative analyze`) next to a raw. Import it, change a slider, run Metadata → Save Metadata to File, and check whether the `amb:` attributes survive.
 9. **Preset Amount:** apply 5–10 presets at Amount 0/25/50/75/100/150/200 and export. This measures Adobe's undocumented Amount maths.
 
 **Week 3: profiles, presets, local tools**

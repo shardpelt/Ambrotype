@@ -12,23 +12,23 @@ Status: proposal, 2026-10-04. The owner's idea: an assistant window inside the a
 
 ```
  GUI ─┐
- CLI ─┼──►  flb-protocol (typed commands + queries)  ──►  engine / catalog
+ CLI ─┼──►  amb-protocol (typed commands + queries)  ──►  engine / catalog
  MCP ─┤        set_param · apply_preset · add_mask · render_preview
  Chat ┘        image_stats · match_look · export · list_presets · ...
 ```
 
-- **`flb-protocol`** is the single command API the GUI itself uses. It is already planned in SCOPE §9. If the GUI can do something, a script or an AI can too, with the same validation, undo and history.
+- **`amb-protocol`** is the single command API the GUI itself uses. It is already planned in SCOPE §9. If the GUI can do something, a script or an AI can too, with the same validation, undo and history.
 - **Surfaces that expose it:**
-  1. **CLI:** `flb` with `--json` output. It has started: `flb preset inspect --json`, `flb preset dump`.
-  2. **MCP server:** `flb mcp` exposes tools and resources over the Model Context Protocol. This is how "use my existing AI subscription" works in practice. The user's own AI app (Claude Desktop, Claude Code, or any MCP-capable client) connects to Flightbroom and drives it, billed to the user's existing plan. We never handle their credentials.
-  3. **In-app assistant panel:** a chat or terminal-style window inside Flightbroom. It works with a user-supplied **API key** (Anthropic, OpenAI, Google, ...) or a **local model** (Ollama / llama.cpp). Keys are stored in the OS keychain.
+  1. **CLI:** `amb` with `--json` output. It has started: `amb preset inspect --json`, `amb preset dump`.
+  2. **MCP server:** `amb mcp` exposes tools and resources over the Model Context Protocol. This is how "use my existing AI subscription" works in practice. The user's own AI app (Claude Desktop, Claude Code, or any MCP-capable client) connects to Ambrotype and drives it, billed to the user's existing plan. We never handle their credentials.
+  3. **In-app assistant panel:** a chat or terminal-style window inside Ambrotype. It works with a user-supplied **API key** (Anthropic, OpenAI, Google, ...) or a **local model** (Ollama / llama.cpp). Keys are stored in the OS keychain.
   - Note: consumer chat subscriptions generally cannot be plugged into third-party apps directly. The supported routes are MCP (their AI app drives ours) and API keys. We say so plainly in the UI.
 - **AI-readable documentation:** a generated `docs/ai/` guide and an `llms.txt` covering:
-  - every control's name, meaning, range and default (generated from the tag registry `flb-presets/data/tags.json`, so it never drifts from the code)
+  - every control's name, meaning, range and default (generated from the tag registry `amb-presets/data/tags.json`, so it never drifts from the code)
   - the tools, with examples
   - photographic intent ↔ slider mappings ("warmer and more filmic" → Temperature +, Tint slightly +, a lifted black point in the tone curve, lower Saturation and higher Vibrance)
 
-## "Make it look like these samples": `flb match`
+## "Make it look like these samples": `amb match`
 
 Prior art shows demand. Imagen and Aftershoot sell AI "personal profiles" that learn a photographer's style from past Lightroom edits ([research/09](../research/09-market-commercial-alternatives.md)).
 
@@ -55,12 +55,12 @@ Later we can also learn a style from the user's own edit history (Imagen-style),
 
 ## Roadmap placement
 - **Phase 1:**
-  - `flb-protocol` command set for develop parameters
+  - `amb-protocol` command set for develop parameters
   - `--json` everywhere in the CLI
   - the generated settings reference (`docs/ai/`)
 - **Phase 2:**
-  - `flb mcp` server (develop, preset, render-preview and export tools)
-  - `flb match` v1 (global tone/colour statistics → parameters)
+  - `amb mcp` server (develop, preset, render-preview and export tools)
+  - `amb match` v1 (global tone/colour statistics → parameters)
 - **Phase 3:**
   - the in-app assistant panel (BYO API key / local model)
   - a vision refinement loop

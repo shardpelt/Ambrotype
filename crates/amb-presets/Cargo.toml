@@ -1,0 +1,13 @@
+[package]
+name = "amb-presets"
+version = "0.1.0"
+description = "Parse Lightroom / Camera Raw presets (.xmp, .lrtemplate) and XMP sidecars into a lossless settings model"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+quick-xml.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true

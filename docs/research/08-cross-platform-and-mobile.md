@@ -167,21 +167,21 @@ eframe: Android supported, **no iOS in its native platform list**; AccessKit ada
 ### 3.8 Recommended architecture
 
 ```
-                 +--------------------- flb-engine crates (pure Rust, MPL-2.0) ----------------------+
-                 | flb-core  flb-color  flb-gpu(wgpu)  flb-cpu  flb-presets  flb-catalog  flb-sync   |
-                 | flb-io (ByteSource, decode)   flb-ai (InferenceBackend)   flb-viewport             |
+                 +--------------------- amb-engine crates (pure Rust, MPL-2.0) ----------------------+
+                 | amb-core  amb-color  amb-gpu(wgpu)  amb-cpu  amb-presets  amb-catalog  amb-sync   |
+                 | amb-io (ByteSource, decode)   amb-ai (InferenceBackend)   amb-viewport             |
                  +-----------------------------------+------------------------------------------------+
                                                      |  one typed, pixel-free command/query protocol
                        +-----------------------------+-------------------------------+
                        |                             |                               |
-              flb-shell-tauri (desktop)       flb-ffi (UniFFI + C ABI)           flb-cli (JSON)
+              amb-shell-tauri (desktop)       amb-ffi (UniFFI + C ABI)           amb-cli (JSON)
               Tauri 2 + native wgpu           staticlib/cdylib                   headless, CI
               child surface; Qt fallback              |
                                           +-----------+-----------+
                                     SwiftUI + CAMetalLayer   Compose + SurfaceView
                                     PhotoKit/Files platform  SAF/MediaStore platform
-                                    crate (flb-platform-ios) crate (flb-platform-android)
-   optional desktop-only:  flb-gpl-pack (GPL-3.0-or-later: ported demosaic/NR/Upright, exiv2, lensfun C)
+                                    crate (amb-platform-ios) crate (amb-platform-android)
+   optional desktop-only:  amb-gpl-pack (GPL-3.0-or-later: ported demosaic/NR/Upright, exiv2, lensfun C)
 ```
 
 - **Desktop velocity is unchanged:** Tauri/Qt shells are thin clients of the protocol, exactly as already planned ([SCOPE §9](../SCOPE.md)).
@@ -262,18 +262,18 @@ SCOPE's licence choice exists to (a) port darktable/RawTherapee/ART code (all GP
 | **B. GPL + App Store exception** (Nextcloud/Signal pattern, GPLv3 §7 additional permission) | Yes, **but ported files cannot carry the exception**; an iOS binary must exclude them | Yes for own code; excluded deps (exiv2, lensfun, ports) must still go | Low if the exception is in the licence **from the first commit** (inbound = outbound); a CLA is unnecessary for this | Medium | Useful as an add-on for the *GPL shells*; does not fix the ported-code problem |
 | **C. Dual-licensed core** (GPL + commercial/store licence from an owning entity) | Yes for GPL half only; ports cannot be relicensed | Yes via the commercial grant, for own code only | **Needs a CLA/assignment**, an owning legal entity, and open-core trust | Low once the CLA exists | Wrong for a "free forever" community project unless a foundation holds the rights |
 | **D. Apache-2.0/MPL-2.0 everything, clean-room only** | **No** (clean-room from papers); no exiv2 | Yes | None | Low | Safest for mobile; **slows desktop v1** (SCOPE calls ports the largest schedule lever) |
-| **E. Split: MPL-2.0 core + GPL-3.0-or-later desktop packs (recommended)** | Yes, in `flb-gpl-pack` crates (desktop only) | Yes (core is MPL; excludes the pack) | Low; DCO; contributors choose which licence zone they touch | Low (boundary exists from day one) | **Recommended** |
+| **E. Split: MPL-2.0 core + GPL-3.0-or-later desktop packs (recommended)** | Yes, in `amb-gpl-pack` crates (desktop only) | Yes (core is MPL; excludes the pack) | Low; DCO; contributors choose which licence zone they touch | Low (boundary exists from day one) | **Recommended** |
 
 ### 5.7 Recommendation and reasoning
 
 **Adopt Option E, decided before the first external contribution.**
 
 - **MPL-2.0 for all engine crates and the mobile shells.** Reasons: it is what VLC used to get back on the iOS store and what Firefox iOS ships `[background]`; file-level copyleft keeps improvements open (unlike Apache/MIT, it blocks a closed fork of our engine, which matches "free forever"); MPL-2.0 §3.3 is GPL-compatible, so the desktop build can combine MPL core + GPL packs into a GPL-3.0-or-later whole; it permits Apache/MIT deps (wgpu, ort, rusqlite) and LibRaw-under-CDDL.
-- **GPL-3.0-or-later for `flb-gpl-pack-*`** (ported demosaic/denoise/Upright/lens code, exiv2/lensfun C bindings, any code taken from darktable/RT/ART) and optionally for the desktop shells. SPDX header on every file; `cargo-deny` and a CI check forbid `flb-core*` crates from depending on `flb-gpl-*`.
+- **GPL-3.0-or-later for `amb-gpl-pack-*`** (ported demosaic/denoise/Upright/lens code, exiv2/lensfun C bindings, any code taken from darktable/RT/ART) and optionally for the desktop shells. SPDX header on every file; `cargo-deny` and a CI check forbid `amb-core*` crates from depending on `amb-gpl-*`.
 - **The seam is a set of traits with permissive baseline implementations in core** (demosaic, denoise, lens model, metadata). Desktop gets the better GPL implementations as drop-in packs; an iOS/Android build uses the baselines. Baselines can start trivial (bilinear/VNG demosaic, simple luminance NR, lens polynomials from published formulas) and be upgraded by clean-room work before mobile ships `[estimate: 2-4 person-months for clean-room RCD/VNG + basic NR + lens model, unverified]`; this does **not** block desktop v1.
 - **Clean-room protocol** for core algorithms: implement from papers/spec, authors who have not read the GPL source for that module, reviewer sign-off recorded in the PR. Algorithms are not copyrightable but implementations are; patents are separate (`[background]`).
 - **DCO, not a CLA.** With an MPL core, no relicensing right is needed for the store. If we later want a store *exception* on GPL shell code (Option B) it can be in the licence text from the start. A CLA is only worth its friction if a foundation wants dual-licensing revenue (Option C), which we do not.
-- **If the owner prefers Option A anyway:** record explicitly that iOS = EU/JP alt-distribution only (or a purge later), keep the `flb-gpl-*` crate boundary regardless (it is free), and still avoid GPL-only deps in core.
+- **If the owner prefers Option A anyway:** record explicitly that iOS = EU/JP alt-distribution only (or a purge later), keep the `amb-gpl-*` crate boundary regardless (it is free), and still avoid GPL-only deps in core.
 - **Dependency licence map** (enforced by `cargo-deny`): core allows MIT, Apache-2.0, BSD-2/3, MPL-2.0, Unicode, CDDL-1.0 (LibRaw only), zlib, CC0; denies GPL/AGPL/LGPL; packs allow GPL-3.0-or-later and LGPL.
 - Residual counsel items (**before 1.0 and before any iOS submission**): CC-BY-SA lensfun DB vs store DRM; Apple's current EULA text; CDDL-1.0 venue clause in LibRaw `[unverified]`; trademark/name; whether Apple will accept an app whose "source of truth" is open source under MPL with a closed-source distribution wrapper (it is routine `[background]`).
 
@@ -285,7 +285,7 @@ SCOPE's licence choice exists to (a) port darktable/RawTherapee/ART code (all GP
 
 | Tier | Mechanism | Ships in |
 |---|---|---|
-| T0 | **XMP sidecars** (`crs:` for Lightroom interop, plus our `flb:` namespace with `flb:rev`, `flb:device`, `flb:original-hash`, `flb:recipe` JSON) beside originals (SCOPE Phase 2) | Phase 2 |
+| T0 | **XMP sidecars** (`crs:` for Lightroom interop, plus our `amb:` namespace with `amb:rev`, `amb:device`, `amb:original-hash`, `amb:recipe` JSON) beside originals (SCOPE Phase 2) | Phase 2 |
 | T1 | **User-chosen folder** carries sidecars, proxies and the op-log (iCloud Drive, Dropbox, Syncthing, Nextcloud/WebDAV mount) | Phase 3 |
 | T2 | **Smart-preview proxies** (§6.4) so phones edit without originals | Phase 3-4 |
 | T3 | **Catalog-level merge** via per-device append-only op-log (§6.3) | Phase 4+ |
@@ -295,13 +295,13 @@ SCOPE's licence choice exists to (a) port darktable/RawTherapee/ART code (all GP
 - **Syncthing**: official Android app **discontinued Dec 2024**, community `Syncthing-Fork` continues; iOS only via third-party Möbius Sync `[verified (secondary): https://www.ghacks.net/2024/10/21/syncthing-for-android-is-being-discontinued-but-theres-an-alternative-app-you-can-switch-to/, https://en.wikipedia.org/wiki/Syncthing]`. Good for desktop<->desktop and Android, weak on iOS background sync `[background]`.
 - **iCloud Drive**: native on iOS/macOS, Windows via iCloud for Windows, **none on Linux**; "optimise storage" leaves files dataless until read (coordinated access required) `[background]`.
 - **Dropbox**: all platforms; iOS File Provider; smart-sync placeholders `[background]`.
-- Hazards: placeholders, clock skew and unreliable mtime, tools that rewrite files non-atomically, case-insensitive collisions, conflict-copy names ("file (conflicted copy).xmp"). Mitigations: write temp + atomic rename, content hash in `flb:original-hash`, treat unknown `*conflict*` siblings as input to merge, never trust mtime alone.
+- Hazards: placeholders, clock skew and unreliable mtime, tools that rewrite files non-atomically, case-insensitive collisions, conflict-copy names ("file (conflicted copy).xmp"). Mitigations: write temp + atomic rename, content hash in `amb:original-hash`, treat unknown `*conflict*` siblings as input to merge, never trust mtime alone.
 - **Never put the live SQLite catalog (or its `-wal`/`-shm`) in a synced folder**; the catalog stays device-local and is rebuilt from sidecars + op-log `[background]`.
 
 ### 6.3 Catalog merge: avoid a general CRDT library in v1
 
 - Identity: **content hash of the original** (blake3, as RapidRAW uses `[code]`), not path.
-- **One append-only file per device** (`<device-id>.jsonl` in a `flightbroom.sync/` folder): each writer touches only its own file, so dumb folder sync cannot conflict; readers merge all files. Ops carry a **hybrid logical clock**; fields merge as **LWW registers** (rating, flag, label, recipe revision), keywords/collections as **OR-sets**, history/snapshots as append-only lists keyed by (device, seq). Concurrent recipe edits: keep the later, store the other as a named snapshot ("edited on <device>") rather than silently dropping it.
+- **One append-only file per device** (`<device-id>.jsonl` in a `ambrotype.sync/` folder): each writer touches only its own file, so dumb folder sync cannot conflict; readers merge all files. Ops carry a **hybrid logical clock**; fields merge as **LWW registers** (rating, flag, label, recipe revision), keywords/collections as **OR-sets**, history/snapshots as append-only lists keyed by (device, seq). Concurrent recipe edits: keep the later, store the other as a named snapshot ("edited on <device>") rather than silently dropping it.
 - Libraries exist if we outgrow this: Automerge 3.0 (Rust core, May 2025), Loro 1.x (Rust, movable tree) `[verified (secondary): https://github.com/automerge/automerge, https://www.pkgpulse.com/guides/yjs-vs-automerge-vs-loro-crdt-libraries-2026]`. **cr-sqlite's last push was Oct 2024; maintenance uncertain** `[verified (secondary): https://github.com/vlcn-io/cr-sqlite]` -> avoid.
 
 ### 6.4 Smart-preview-style proxy
@@ -335,7 +335,7 @@ Reference: Lightroom mobile Loupe panels are Actions, Presets, Crop, Edit (Light
 | Export | JPEG/HEIC (and JXL), sRGB/Display P3, resize, share sheet, save to Photos/MediaStore | **Foreground** GPU/CPU export on iPhone; resumable service on Android |
 | Sync | Sidecar + proxy + op-log (§6) | |
 
-**Desktop-only (Phase 3+ and beyond mobile v1):** smart collections/stacks/keyword hierarchy/faces, `.lrcat` import, tethering, HDR/pano merge, soft proofing, print, batch/watch-folder export presets, plugin/scripting API, calibration panel, Upright and heavy lens workflow, large AI (inpaint, denoise, super-resolution), `flb-gpl-pack` quality modules, multi-monitor/colour-critical display management, in-camera capture (Lightroom mobile has it; we do not).
+**Desktop-only (Phase 3+ and beyond mobile v1):** smart collections/stacks/keyword hierarchy/faces, `.lrcat` import, tethering, HDR/pano merge, soft proofing, print, batch/watch-folder export presets, plugin/scripting API, calibration panel, Upright and heavy lens workflow, large AI (inpaint, denoise, super-resolution), `amb-gpl-pack` quality modules, multi-monitor/colour-critical display management, in-camera capture (Lightroom mobile has it; we do not).
 
 ---
 
@@ -343,10 +343,10 @@ Reference: Lightroom mobile Loupe panels are Actions, Presets, Crop, Edit (Light
 
 ### 8.1 Workspace and features (Phase 0)
 
-- [ ] **Engine crates depend on no UI/OS crates.** `cargo-deny` `bans` for `tauri*`, `gtk*`, `winit`, `webkit2gtk`, `objc*`, `windows*`, `jni`, `ndk*` in `flb-core/color/gpu/cpu/presets/catalog/sync/io/ai/viewport`. OS code lives only in `flb-platform-{win,mac,linux,ios,android}` and shell crates. No `cfg(target_os)` inside engine crates.
+- [ ] **Engine crates depend on no UI/OS crates.** `cargo-deny` `bans` for `tauri*`, `gtk*`, `winit`, `webkit2gtk`, `objc*`, `windows*`, `jni`, `ndk*` in `amb-core/color/gpu/cpu/presets/catalog/sync/io/ai/viewport`. OS code lives only in `amb-platform-{win,mac,linux,ios,android}` and shell crates. No `cfg(target_os)` inside engine crates.
 - [ ] **Feature flags**: `gpu`, `cpu-simd`, `ai` (ort), `mmap`, `desktop-fs-watch`, `heif`, `jxl`, plus the licence-zone features `gpl-pack`, `exiv2`, `lensfun-c`, `libraw`, `rawler`. `default = ["cpu-simd"]`. A `mobile` profile = `gpu + cpu-simd + ai`.
 - [ ] **Licence zones in the repo layout** (§5.7): `crates/core/*` (MPL-2.0), `crates/gpl-pack/*` (GPL-3.0-or-later), SPDX headers, DCO bot, CI check that core never depends on `gpl-pack`.
-- [ ] **FFI crate from day one**: `flb-ffi` with `crate-type = ["staticlib","cdylib","rlib"]` (as RapidRAW's lib `[code]`), exposing the protocol via UniFFI records/enums. It can be empty at first; its job is to keep the protocol serialisable and coarse-grained. Keep `panic = unwind` for UniFFI's panic catching `[unverified]`.
+- [ ] **FFI crate from day one**: `amb-ffi` with `crate-type = ["staticlib","cdylib","rlib"]` (as RapidRAW's lib `[code]`), exposing the protocol via UniFFI records/enums. It can be empty at first; its job is to keep the protocol serialisable and coarse-grained. Keep `panic = unwind` for UniFFI's panic catching `[unverified]`.
 
 ### 8.2 CI (Phase 0, check-only; Phase 1 add tests)
 
@@ -377,7 +377,7 @@ Reference: Lightroom mobile Loupe panels are Actions, Presets, Crop, Edit (Light
 - [ ] `ByteSource` trait (`len`, `read_at`, optional `as_mmap`), `ByteSink` for atomic writes; `SidecarProvider` trait (may say "no sidecar possible here"); permission loss is a normal error value, not a panic.
 - [ ] `LibrarySource` trait: `list(page)`, `stat`, `open`, `changes()` (push where available, otherwise reconcile). Folder watcher is one implementation (`desktop-fs-watch`).
 - [ ] Catalog schema: library roots by id + relative paths; content-hash identity; UTC + HLC timestamps; `device_id`; SQLite `bundled`, WAL, `busy_timeout`; idempotent migrations; **catalog file never inside a synced folder**.
-- [ ] XMP read/write in core with `quick-xml` + `flb:` namespace; metadata behind a `MetadataBackend` trait (exiv2 desktop-only).
+- [ ] XMP read/write in core with `quick-xml` + `amb:` namespace; metadata behind a `MetadataBackend` trait (exiv2 desktop-only).
 - [ ] Preview pyramid and mask caches addressable by content hash + recipe hash, so they can be dropped under memory pressure and rebuilt.
 
 ### 8.6 UI protocol (Phase 2, touch-friendly and pixel-free)

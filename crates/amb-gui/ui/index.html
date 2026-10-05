@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ambrotype</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo" aria-hidden="true"></span>Ambrotype</div>
+    <div class="actions">
+      <button id="btn-open" title="Open a raw photo (Ctrl+O)">Open</button>
+      <button id="btn-save" title="Save the edit to the photo's XMP sidecar (Ctrl+S)" disabled>Save</button>
+      <button id="btn-export" class="primary" title="Export (Ctrl+E)" disabled>Export…</button>
+      <span class="sep"></span>
+      <button id="btn-undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
+      <button id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
+      <span class="sep"></span>
+      <button id="btn-before" title="Show the photo before edits (\)" disabled>Before / After</button>
+    </div>
+    <div class="photo-title" id="photo-title"></div>
+  </header>
+
+  <main class="workspace">
+    <aside class="left">
+      <section class="side-section">
+        <div class="side-head">
+          <h2>Presets</h2>
+          <button id="btn-add-presets" class="small" title="Add a folder of .xmp or .lrtemplate presets">Add folder…</button>
+        </div>
+        <input id="preset-filter" type="search" placeholder="Filter presets" spellcheck="false">
+        <label class="amount">Amount <input id="preset-amount" type="range" min="0" max="200" value="100"><output id="preset-amount-out">100</output></label>
+        <div id="preset-list" class="preset-list"><p class="hint">No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.</p></div>
+      </section>
+      <section class="side-section history">
+        <div class="side-head"><h2>History</h2></div>
+        <ol id="history-list" class="history-list"></ol>
+      </section>
+    </aside>
+
+    <section class="viewer" id="viewer">
+      <div class="empty" id="empty">
+        <p class="empty-title">Open a raw photo to start</p>
+        <p class="hint">Drop a file here, or press Ctrl+O. Lightroom presets and XMP sidecars work as they are.</p>
+        <button id="btn-open-empty" class="primary">Open photo…</button>
+      </div>
+      <img id="preview" alt="" hidden>
+      <div class="badge" id="before-badge" hidden>Before</div>
+      <div class="busy" id="busy" hidden></div>
+    </section>
+
+    <aside class="right">
+      <div class="histogram-wrap">
+        <canvas id="histogram" width="300" height="110"></canvas>
+        <div class="exif" id="exif"></div>
+      </div>
+      <div id="panels" class="panels"></div>
+    </aside>
+  </main>
+
+  <footer class="statusbar">
+    <span id="status">Ready</span>
+    <span id="status-right"></span>
+  </footer>
+
+  <dialog id="export-dialog">
+    <form method="dialog" id="export-form">
+      <h2>Export</h2>
+      <div class="grid">
+        <label>Format
+          <select name="format">
+            <option value="jpeg">JPEG</option>
+            <option value="png">PNG</option>
+            <option value="tiff">TIFF</option>
+            <option value="webp">WebP (lossless)</option>
+            <option value="avif">AVIF</option>
+            <option value="exr">OpenEXR (linear float)</option>
+          </select>
+        </label>
+        <label>Bit depth <select name="bits"></select></label>
+        <label class="q">Quality <span><input name="quality" type="range" min="1" max="100" value="90"><output name="quality_out">90</output></span></label>
+        <label>Colour space
+          <select name="color_space">
+            <option value="srgb">sRGB (web, most screens)</option>
+            <option value="p3">Display P3 (modern screens)</option>
+            <option value="adobergb">Adobe RGB (1998)-compatible (print)</option>
+            <option value="prophoto">ProPhoto RGB (editing)</option>
+            <option value="rec2020">Rec. 2020</option>
+          </select>
+        </label>
+        <label>Resize long edge (px, empty = full size) <input name="long_edge" type="number" min="16" step="1" placeholder="Full size"></label>
+        <label>Output sharpening
+          <select name="sharpen">
+            <option value="">None</option>
+            <option value="screen:standard">Screen</option>
+            <option value="matte:standard">Matte paper</option>
+            <option value="glossy:standard">Glossy paper</option>
+          </select>
+        </label>
+        <label>Metadata
+          <select name="metadata">
+            <option value="no-location">All except location</option>
+            <option value="all">All</option>
+            <option value="copyright">Copyright only</option>
+            <option value="none">None</option>
+          </select>
+        </label>
+        <label class="maxkb">Limit file size (KB, JPEG) <input name="max_kb" type="number" min="10" step="10" placeholder="No limit"></label>
+      </div>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary" id="export-go">Export…</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>

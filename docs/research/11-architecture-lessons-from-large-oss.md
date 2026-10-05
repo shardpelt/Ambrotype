@@ -30,7 +30,7 @@ Status: research draft, 2026-10-03. Companion to [06](06-tech-stack-options.md) 
 3. **VLC as a model.** Copy its *structure and governance*: libvlc-style small embedding API, static-capable module table, contribs for dependencies, per-platform apps in their own repos, non-profit + no ads + no CLA, a for-profit consultancy paying developers, and the licence lesson (relicensing took years, so decide the split now). Do not copy its *language* choice: VLC's tree now carries an opt-in, experimental Rust module layer (nightly toolchain, default off) while the core stays C + asm; VideoLAN's own AV1 decoder dav1d is C + 250k lines of asm, and the safe-Rust port rav1d is within about 6% of it while reusing that asm (§1.1, §1.2).
 4. **Do we write in Rust?** **Yes**, for the engine, catalog, CLI, protocol and tooling. Reasons: raw/DNG/TIFF/MakerNote parsers are the attack surface (LibRaw has 60 CVE IDs incl. 2026 overflows in DNG and X3F decoding; Apple's DNG decoder CVE-2025-43300 was exploited in the wild), wgpu is Rust-native, and Cargo makes the headless-library-plus-CLI structure cheap. Performance parity is demonstrated; SIMD on stable needs a crate (`std::simd` is still nightly). Conditions and the places where C++ is better (Qt glue, Halide kernels, OCIO/OIIO, forks of RawTherapee code) are in §3.10.
 5. **Funding.** The NLnet NGI Zero Commons Fund is **closed** (final call 1 June 2026); NLnet's open calls (Restack, CodeSupply) have a **3 Nov 2026** deadline and a doubtful fit for a RAW editor; the Sovereign Tech Fund explicitly does not fund user-facing applications. Fiscal host first, project-specific small grants second, library-first positioning for the big funders (§2.13, §4.9).
-6. **What to change in our plan:** 15 items in §4.10; the five that matter most are (a) split `flb-core` into recipe / buffer / graph / nodes / cpu, (b) add a VLC-style capability+priority registry, (c) define the GPU boundary as a node-on-tile `Backend` trait, (d) sandbox LibRaw and fuzz every parser from Phase 1, (e) add a governance/funding section with the corrected grant facts and fix the stale licence line in SCOPE §12.1.
+6. **What to change in our plan:** 15 items in §4.10; the five that matter most are (a) split `amb-core` into recipe / buffer / graph / nodes / cpu, (b) add a VLC-style capability+priority registry, (c) define the GPU boundary as a node-on-tile `Backend` trait, (d) sandbox LibRaw and fuzz every parser from Phase 1, (e) add a governance/funding section with the corrected grant facts and fix the stale licence line in SCOPE §12.1.
 
 ---
 
@@ -42,7 +42,7 @@ Status: research draft, 2026-10-03. Companion to [06](06-tech-stack-options.md) 
 - **Capability + score selection.** A module declares what it is with `set_capability("video decoder", 10000)` and what it needs with callbacks (`set_callbacks(Open, Close)`); `dav1d.c` registers as a "video decoder" with score 10000 [repo: vlc/modules/codec/dav1d.c:63]. The core asks for a capability (`module_need`), tries candidates in descending score, and the first `Open` that returns success wins. User-set shortcuts (`add_shortcut`) and config can force one. This is the pattern that makes "GPU path first, software fallback second" a policy in data rather than an `if` ladder. Newer filters use typed callbacks (`set_callback_video_filter(Create)`, e.g. `sepia.c`) [repo: vlc/include/vlc_plugin.h, modules/video_filter/sepia.c].
 - **Static or dynamic, same source.** `src/modules/bank.c` loads plugins from a `vlc_static_modules[]` table (static build, used for iOS and other no-dlopen targets) or from shared objects on disk, with a plugin cache (`plugins.dat`) so startup does not `dlopen` every file to read its metadata [repo: vlc/src/modules/bank.c, cache.c]. Lesson: design the plugin entry point so it can be linked statically; mobile needs it.
 - **ABI is "same version only".** Plugins are built against `include/vlc_*.h` for one VLC version and are not expected to load into another; the cache string embeds the package version [repo: cache.c `CACHE_STRING`]. The stable surface is the separate, small **libvlc** C API (the one apps embed). Two APIs, two stability promises. This is the standard way to avoid freezing internals.
-- **Per-platform UIs over one engine.** Desktop UI is Qt (`modules/gui/qt`, which is itself a module), with legacy macOS Obj-C and skins2 modules also in-tree [repo: vlc/modules/gui]. Mobile and other apps live in separate repos: Android app in Kotlin/Java over libvlc, iOS/tvOS app in Swift over MobileVLCKit/TVVLCKit, libVLCSharp in C# [verified: README in clone; https://www.videolan.org/vlc/releases/3.0.0.html]. VLC 3.0 was the first release synchronised between desktop and mobile ports (secondary: https://geoffreymetais.github.io/features/vlc-30/). This is the structure SCOPE §9 already proposes for Flightbroom.
+- **Per-platform UIs over one engine.** Desktop UI is Qt (`modules/gui/qt`, which is itself a module), with legacy macOS Obj-C and skins2 modules also in-tree [repo: vlc/modules/gui]. Mobile and other apps live in separate repos: Android app in Kotlin/Java over libvlc, iOS/tvOS app in Swift over MobileVLCKit/TVVLCKit, libVLCSharp in C# [verified: README in clone; https://www.videolan.org/vlc/releases/3.0.0.html]. VLC 3.0 was the first release synchronised between desktop and mobile ports (secondary: https://geoffreymetais.github.io/features/vlc-30/). This is the structure SCOPE §9 already proposes for Ambrotype.
 - **Build system.** Autotools is still the release build; Meson is an in-tree "experimental" migration ("should not be used for release builds") that began as GSoC 2018 (about 100 modules ported then) and still coexists with autotools in 2026 [verified: https://videolan.videolan.me/vlc/master/buildsystem.html, https://epir.at/2018/08/13/gsoc-2018/]. Smaller VideoLAN libraries (libbluray, dav1d) already dropped autotools for Meson [verified: https://jbkempf.com/blog/2025/libbluray-1.4.0/ (secondary)]. Lesson: a build-system migration in a big C project takes 8+ years while both systems are maintained; start with the right one.
 - **Contribs = vendored dependency builder.** `contrib/src/` has 145 per-library recipes (`rules.mak` + `SHA512SUMS`): each pins a version and tarball URL and builds with the cross-toolchain, e.g. dav1d 1.5.4 via Meson with tests and tools off [repo: vlc/contrib/src/dav1d/rules.mak]. A `need_pkg` check uses the system copy if present. CI uses the same recipes for Windows, Android and Apple targets. This is why VLC ships the same codec versions everywhere, and why it can cross-compile to 10+ targets without distro packaging.
 - **Release engineering across many targets.** `extras/ci/gitlab-ci.yml` defines jobs for win32, win64, win64-arm (LLVM), UWP, Debian (autotools and Meson), Snap, Raspbian, macOS x86_64 and arm64, iOS arm64/armv7/simulator, tvOS, watchOS, visionOS (`xros`), and Android arm/arm64/x86/x86_64, plus nightlies and docs [repo: vlc/extras/ci/gitlab-ci.yml]. Packaging scripts per platform live in `extras/package/{win32,macosx,snap,...}`. VLC 3.0 (2018) listed Windows XP-10, macOS 10.7-10.13, iOS 7-11, Android 2.3-8.1, Android TV, Xbox One and BSD [verified: https://www.videolan.org/vlc/releases/3.0.0.html]. The README admits "not all platforms receive the same amount of care, due to our limited resources" [repo: README.md].
@@ -96,7 +96,7 @@ Status: research draft, 2026-10-03. Companion to [06](06-tech-stack-options.md) 
 - **OpenCL in GEGL stayed second-class.** There is an `operations/opencl` directory of `.cl` kernels alongside CPU operations, i.e. two implementations per operation with CPU as the truth; GIMP never made GPU processing the default path [repo: gegl/operations/opencl; background]. This is the same dual-backend risk as ours: the second backend is where the maintenance cost and divergence bugs live. It is why the CPU/GPU equivalence test in SCOPE §9 is non-optional.
 - **GIMP 3.0 is the GTK3 cautionary tale.** GIMP 2.10 shipped in 2018, 3.0 development releases began in 2020, and 3.0.0 shipped on 16 March 2025 after seven years, with the GTK3 port as the central effort (removing all custom GTK2 extensions, planning for GTK4, Python 2 to 3) [verified: https://www.gimp.org/news/2025/03/16/gimp-3-0-released/, https://www.phoronix.com/news/GIMP-GTK3-Finished]. GTK4 already exists, so GIMP is a toolkit generation behind on release day. The UI and the engine (GEGL, babl) were separate libraries and kept shipping improvements during the port; the *application* is what stalled. Lesson: the engine must not be blocked by a UI migration, which is the whole point of our replaceable-shell rule, and we should expect to rewrite the shell at least once in the project's life.
 - **Krita is a Qt/C++ app with a tile-based paint device and a node tree.** `KisImage` is the model (a tree of `KisNode`: layers, masks), `KisPaintDevice` is tiled storage that knows its pixel size, the undo system is split (`KisUndoStore` and an adapter) and a "strokes queue" runs painting in worker threads without blocking the UI; colour management through LittleCMS with per-device colour spaces; scripting via embedded Python (PyQt) with a documented Python API, and the Krita 5 to 6 move (Qt5 to Qt6, PyQt5 to PyQt6) breaks Python plugins [secondary: https://deepwiki.com/KDE/krita, https://docs.krita.org/en/untranslatable_pages/strokes_documentation.html, https://krita-artists.org/t/how-does-one-keeps-plugin-supported-for-krita-5-and-6-advice-needed/176705]. Lesson: the toolkit choice leaks into the scripting API; a plugin surface that exposes your UI toolkit has to be re-broken at every toolkit upgrade.
-- **Colour management is a library concern in both.** GIMP delegates to babl (formats, ICC reading) and GEGL (linear-light float processing); Krita attaches a colour space to every paint device and uses LittleCMS; neither mixes colour logic into UI code [repo: babl/babl/babl-icc.c; secondary: deepwiki Krita pages]. Our `flb-color` should be a crate with its own tests and no UI, pipeline or GPU dependency.
+- **Colour management is a library concern in both.** GIMP delegates to babl (formats, ICC reading) and GEGL (linear-light float processing); Krita attaches a colour space to every paint device and uses LittleCMS; neither mixes colour logic into UI code [repo: babl/babl/babl-icc.c; secondary: deepwiki Krita pages]. Our `amb-color` should be a crate with its own tests and no UI, pipeline or GPU dependency.
 - **Scripting differs by project.** GIMP 3.0 moved plug-ins to a GObject-introspection-based API with Python 3, Script-Fu and others; Krita embeds PyQt Python [secondary: https://www.gimp.org/release-notes/gimp-3.0.html, krita docs]. Both pay the toolkit-coupling tax in their scripting API. Prefer scripting that talks to the engine protocol, not to the UI toolkit.
 - **Krita funding.** Stichting Krita Foundation (Netherlands) funds a few full-time developers through the **Krita Development Fund** (monthly subscribers), donations, sales on Steam/Microsoft Store/Epic and Android stores, and KDE e.V. as the project umbrella; the Foundation supports two volunteers financially under Dutch tax law [secondary: https://krita.org/en/posts/2021/join-the-new-development-fund/, https://fund.krita.org/, https://krita.org/en/donations/]. A key point is that **selling the same free binary in app stores** funds development without relicensing; this is relevant to our iOS/Android plan.
 
@@ -165,7 +165,7 @@ Status: research draft, 2026-10-03. Companion to [06](06-tech-stack-options.md) 
 
 - **Microsoft:** about 70% of the CVEs Microsoft assigns each year are memory-safety issues, consistent over at least 12 years (MSRC, BlueHat IL, Feb 2019) [secondary: https://it.slashdot.org/story/19/02/11/2019247/microsoft-70-percent-of-all-security-bugs-are-memory-safety-issues, https://visualstudiomagazine.com/articles/2019/07/18/microsoft-eyes-rust.aspx; MSRC post "We need a safer systems programming language" (2019) not read in full]. Chromium's analysis of critical/high severity bugs since 2015 reached the same "over 70%" (same sources). In 2025 a Microsoft distinguished engineer's LinkedIn post about "eliminating every line of C and C++ by 2030" was later clarified to be a research/recruiting effort, not a Windows plan [secondary: https://www.xda-developers.com/no-microsoft-isnt-actually-eliminating-c-and-c-from-its-software-rust/]. Do not cite it as policy.
 - **Android (Google):** memory-safety vulnerabilities fell from the 70%+ range (2019-2022) to under 20% of Android vulnerabilities in 2025 as new code moved to memory-safe languages; Rust is about 5 million lines in the platform; in Google's estimate, **0.2 memory-safety vulnerabilities per million lines of Rust against about 1,000 per million lines for C/C++, "a more than 1000x reduction"**, based on one near-miss; Rust changes had a **~4x lower rollback rate, ~20% fewer review revisions and ~25% less review time** [verified: https://blog.google/security/rust-in-android-move-fast-fix-things/ (13 Nov 2025)]. Caveat: Android's new code is mostly new components (parsers, drivers, Bluetooth, media) and Google's methodology (young code has fewer bugs; "safe coding" shift) explains part of the effect; treat the 1000x as an upper bound [reasoning ours; Google's own 2024 post argues vulnerability half-life makes new-code safety dominant, not fetched].
-- **Relevance to a RAW editor.** The attack surface of Flightbroom is a file parser: DNG/TIFF/EXIF/MakerNote/JPEG-lossless/XMP/ICC/ONNX. See §3.3 for CVEs in precisely these parsers.
+- **Relevance to a RAW editor.** The attack surface of Ambrotype is a file parser: DNG/TIFF/EXIF/MakerNote/JPEG-lossless/XMP/ICC/ONNX. See §3.3 for CVEs in precisely these parsers.
 
 ---
 
@@ -196,7 +196,7 @@ Each pattern gives: what the case studies do, then **what we take**.
 - **Static is the default, dynamic is the exception.** FFmpeg and Bevy show that a high-performance project can be extensible entirely at compile time. VLC's static table exists because iOS forbids dlopen of arbitrary code [background: Apple's App Store rules; 08 §8.4 says no downloaded executable code]. Rust has no stable ABI (only the C ABI is stable; `abi_stable` and `stabby` exist but add runtime type checking and complexity) [secondary: https://nullderef.com/blog/plugin-abi-stable/, https://github.com/ZettaScaleLabs/stabby], so a dynamic Rust plugin interface is either C ABI or WASM. 
 - **WASM components are now a credible plugin ABI.** WASI 0.3.0 (native async) was released 11 June 2026 and wasmtime 46+ implements it; Zed ships third-party extensions this way today [secondary: https://wasi.dev/releases/wasi-p3, https://zed.dev/blog/zed-decoded-extensions; repo: zed/Cargo.toml]. Costs: code runs roughly 1.1x-3x slower than native (secondary: nullderef link above), GPU access has to be mediated by the host, and wasmtime's JIT is not allowed on iOS [background; Pulley interpreter exists, [unverified]].
 - **Data plugins first.** The cheapest extension points in our domain are not code: recipe JSON, `.cube`/HaldCLUT/3D LUTs, camera profile data, lens-correction DB entries, preset files, Lua scripts (darktable and mpv show how popular Lua is for photographers and power users; 06 §6 already says so).
-- **Take:** (1) compile-time registry with VLC-style capability and priority for all swappable subsystems; (2) public C ABI only for the embeddable surface (libflightbroom), with the OBS struct-size trick and an explicit API version; (3) a `PluginHost` trait so WASM nodes can be added without touching the engine; (4) no dynamic Rust plugins.
+- **Take:** (1) compile-time registry with VLC-style capability and priority for all swappable subsystems; (2) public C ABI only for the embeddable surface (libambrotype), with the OBS struct-size trick and an explicit API version; (3) a `PluginHost` trait so WASM nodes can be added without touching the engine; (4) no dynamic Rust plugins.
 
 ### 2.3 Pipelines and graphs
 
@@ -269,7 +269,7 @@ Each pattern gives: what the case studies do, then **what we take**.
 ### 2.11 API and ABI stability policies
 
 - libvlc stable, plugins version-locked (VLC); mpv semantic client-API version + change log, and explicit advice to treat options as unstable (mpv); OBS major/minor API version + growable structs; Blender LTS freezes API; Krita/Blender break Python plugins at toolkit/major bumps; Bevy breaks every release [§1.1, 1.3-1.8].
-- **Take:** three tiers, written down: (1) **on-disk formats** (recipe, catalog schema, XMP `flb:` namespace, preset import tables) are forever-compatible with explicit versions and migrations (darktable `params_t` lesson); (2) **embedding API** (C ABI + UniFFI + JSON command protocol) follows semver, with a changelog (mpv style); (3) **Rust crate APIs** inside the workspace are internal (unstable) until we choose to publish specific crates (e.g. `flb-color`, `flb-dng`) to crates.io.
+- **Take:** three tiers, written down: (1) **on-disk formats** (recipe, catalog schema, XMP `amb:` namespace, preset import tables) are forever-compatible with explicit versions and migrations (darktable `params_t` lesson); (2) **embedding API** (C ABI + UniFFI + JSON command protocol) follows semver, with a changelog (mpv style); (3) **Rust crate APIs** inside the workspace are internal (unstable) until we choose to publish specific crates (e.g. `amb-color`, `amb-dng`) to crates.io.
 
 ### 2.12 Documentation
 
@@ -294,7 +294,7 @@ Each pattern gives: what the case studies do, then **what we take**.
 - **Fiscal hosts for a young project:** Open Source Collective (10% flat fee; US legal entity [background]), Open Collective Europe (about 6%), Software in the Public Interest (5% of gross), Software Freedom Conservancy (10%, selective), NumFOCUS (scientific computing; not a fit), Linux Foundation Europe (Servo; no fee data) [secondary: https://docs.oscollective.org/welcome-and-introduction-to-osc/fees, search results listing OC Europe 6% and SPI 5%]. The 06 doc already suggests "OpenCollective/SFC" for signing and Apple fees.
 - **Grants as of 3 Oct 2026 (this changes SCOPE's plan, see §4.9):**
   - **NLnet NGI Zero Commons Fund: closed.** "The thirteenth and final call ... closed on June 1st 2026. No more new applications are sought for this fund." [verified: https://nlnet.nl/commonsfund/]. NLnet's open programmes are **Restack** and **CodeSupply**, first deadline **3 November 2026, 12:00 CET**, EUR 5,000-50,000 for first-time applicants, EU-funded (Horizon Europe grant 101299072 and 101298846), requiring a European dimension, open licences, no AI-generated projects, and AI-related projects out of scope for Restack unless they already have over 1 million users [verified: https://nlnet.nl/propose/, https://nlnet.nl/restack/, https://nlnet.nl/codesupply/]. CodeSupply is about software-supply-chain metadata and is not a fit. **Restack's fit for a photo editor is uncertain** (its text is about "operational internet commons" and "alternatives to closed online technologies"); a pitch would need to emphasise open standards and interoperability (DNG/XMP/preset formats, a reusable colour and raw library) rather than "a Lightroom clone" [reasoning ours; [unverified] without asking NLnet].
-  - **Sovereign Tech Fund** (Sovereign Tech Agency): budget of work must exceed EUR 50,000, awards start at EUR 50,000, OSI/FSF licences; it funds "open digital base technologies ... libraries, package managers, protocols ..." and **explicitly does not finance user-facing applications or prototypes**; ~6 months from submission to contract; criteria include prevalence, relevance, vulnerability [verified: https://www.sovereign.tech/programs/fund]. Flightbroom as an app is ineligible; a *separately usable library* (for example a Rust DNG/raw metadata parser or a colour-pipeline library) could become eligible only once other projects depend on it. It also has a **Fellowship** for individual maintainers (2026 round closed 6 April) [secondary: https://www.sovereign.tech/programs/fellowship].
+  - **Sovereign Tech Fund** (Sovereign Tech Agency): budget of work must exceed EUR 50,000, awards start at EUR 50,000, OSI/FSF licences; it funds "open digital base technologies ... libraries, package managers, protocols ..." and **explicitly does not finance user-facing applications or prototypes**; ~6 months from submission to contract; criteria include prevalence, relevance, vulnerability [verified: https://www.sovereign.tech/programs/fund]. Ambrotype as an app is ineligible; a *separately usable library* (for example a Rust DNG/raw metadata parser or a colour-pipeline library) could become eligible only once other projects depend on it. It also has a **Fellowship** for individual maintainers (2026 round closed 6 April) [secondary: https://www.sovereign.tech/programs/fellowship].
   - **Others:** Alpha-Omega and GitHub Secure Open Source Fund (security-focused; USD 12.5M announced March 2026 via OpenSSF and Alpha-Omega; fits a memory-safe-parsers story) [secondary: https://openssf.org/press-release/2026/03/17/linux-foundation-announces-12-5-million-in-grant-funding-from-leading-organizations-to-advance-open-source-security/]; FUTO (funds Immich and runs grant programmes; details of applying not verified) [secondary: https://futo.org/blog/beyond-donations/]; GitHub Sponsors and Open Collective for individuals; Blender-style corporate memberships need adoption first.
   - **Store sales** (Krita model) are legitimate under MPL/GPL desktop licences and relevant to iOS/Android later [§1.5].
 
@@ -320,8 +320,8 @@ Each pattern gives: what the case studies do, then **what we take**.
 ### 3.2 FFI cost to C libraries (LibRaw, lcms2, lensfun, exiv2)
 
 - Rust-to-C calls have no runtime overhead (same ABI; `extern "C"`; no marshalling of POD), and per-call cost is irrelevant at tile granularity. The costs are *build and safety*: `-sys` crates, `bindgen`/`cc` builds per target (the cross-compile pain, §3.4), wrapper-crate quality ("budget to own forks", 06 §1.4), and the fact that **wrapping C does not make the C safe** (see §3.3).
-- Real mitigations, in order: (1) prefer a pure-Rust implementation when one is good enough (**rawler**: LGPL-2.1, about 30K lines, 300+ cameras, from dnglab, supports CR3 and JPEG-XL DNG [secondary: https://crates.io/crates/rawler, https://lib.rs/crates/rawler; search summary]; `image`, `kamadak-exif`, `quick-xml`); (2) keep each C library behind a trait, with a feature flag for the licence zone (08 §8.1); (3) **sandbox the C parser**: process isolation, or compile it to WebAssembly and run it in-process through wasm2c/wasmtime as Firefox does for Graphite, Hunspell, Ogg, Expat and Woff2 via RLBox since Firefox 95 [secondary: https://hacks.mozilla.org/2021/12/webassembly-and-back-again-fine-grained-sandboxing-in-firefox-95/ (via search summary)]. Flightbroom can do the same for LibRaw: it has no GPU or threading needs in the decode step.
-- **Licence wrinkle for the MPL core:** rawler is LGPL-2.1, and 08 §5.5 notes LGPL static linking is a problem on iOS; LibRaw is used under its CDDL option (SCOPE §6). Neither blocks desktop; both must be checked for the mobile shells before we depend on them in `flb-io` core [reasoning ours; legal check needed].
+- Real mitigations, in order: (1) prefer a pure-Rust implementation when one is good enough (**rawler**: LGPL-2.1, about 30K lines, 300+ cameras, from dnglab, supports CR3 and JPEG-XL DNG [secondary: https://crates.io/crates/rawler, https://lib.rs/crates/rawler; search summary]; `image`, `kamadak-exif`, `quick-xml`); (2) keep each C library behind a trait, with a feature flag for the licence zone (08 §8.1); (3) **sandbox the C parser**: process isolation, or compile it to WebAssembly and run it in-process through wasm2c/wasmtime as Firefox does for Graphite, Hunspell, Ogg, Expat and Woff2 via RLBox since Firefox 95 [secondary: https://hacks.mozilla.org/2021/12/webassembly-and-back-again-fine-grained-sandboxing-in-firefox-95/ (via search summary)]. Ambrotype can do the same for LibRaw: it has no GPU or threading needs in the decode step.
+- **Licence wrinkle for the MPL core:** rawler is LGPL-2.1, and 08 §5.5 notes LGPL static linking is a problem on iOS; LibRaw is used under its CDDL option (SCOPE §6). Neither blocks desktop; both must be checked for the mobile shells before we depend on them in `amb-io` core [reasoning ours; legal check needed].
 
 ### 3.3 Memory safety: file parsers are the attack surface
 
@@ -339,7 +339,7 @@ Raw files are untrusted input parsed by large amounts of format-specific C/C++. 
 | Exiv2 generally | repeated heap-buffer-overflow advisories in JP2, CRW, BMFF metadata code (e.g. CVE-2021-31292) | [secondary: https://github.com/Exiv2/exiv2/security/advisories/GHSA-jgm9-5fw5-pw9p] |
 
 - Pattern: integer overflow in an allocation size, or a metadata field that disagrees with a stream header. These are the bug classes Rust's bounds checks and checked arithmetic (in debug and, with `overflow-checks`, release) turn into panics or errors. The real-world Android data says the same at scale: memory-safety bugs fell from 70%+ of Android vulnerabilities (2019-2022) to under 20% in 2025 as new code moved to Rust and other safe languages; Google estimates 0.2 per million lines for Rust versus about 1,000 for C/C++ [verified: https://blog.google/security/rust-in-android-move-fast-fix-things/]; Microsoft's long-standing figure is about 70% of CVEs [secondary, §1.9].
-- **Caveats (do not oversell):** (1) Rust does not remove logic bugs, panics are DoS (a malformed raw crashing the app is still a bug), and OOM from an attacker-chosen size is not prevented; (2) `unsafe` in SIMD and FFI is where memory bugs can return; (3) Android's numbers partly reflect new-code effects; (4) some of the LibRaw CVEs above need non-default settings. Policy that follows: `#![forbid(unsafe_code)]` in every crate except a short allow-list (`flb-sys-*`, `flb-simd`, `flb-gpu-interop`, `flb-ffi`), `overflow-checks = true` in release for parser crates, fuzz targets for every parser, and sandboxing for C decoders (§3.2). A **photo editor opening files from cards, email and the web is a plausible spear-phishing target**; Apple's ImageIO DNG bug is the proof.
+- **Caveats (do not oversell):** (1) Rust does not remove logic bugs, panics are DoS (a malformed raw crashing the app is still a bug), and OOM from an attacker-chosen size is not prevented; (2) `unsafe` in SIMD and FFI is where memory bugs can return; (3) Android's numbers partly reflect new-code effects; (4) some of the LibRaw CVEs above need non-default settings. Policy that follows: `#![forbid(unsafe_code)]` in every crate except a short allow-list (`amb-sys-*`, `amb-simd`, `amb-gpu-interop`, `amb-ffi`), `overflow-checks = true` in release for parser crates, fuzz targets for every parser, and sandboxing for C decoders (§3.2). A **photo editor opening files from cards, email and the web is a plausible spear-phishing target**; Apple's ImageIO DNG bug is the proof.
 - **Verdict:** memory safety is the strongest single argument for Rust here, and it applies exactly at the boundary of this product (parsers), not the kernels.
 
 ### 3.3b Rust-ecosystem state for the crates we named (Oct 2026)
@@ -399,7 +399,7 @@ Raw files are untrusted input parsed by large amounts of format-specific C/C++. 
 
 **Decision: Rust.** Specifically:
 
-1. **Rust** for `flb-core`, `flb-color`, `flb-io`, `flb-gpu`, `flb-cpu`, `flb-presets`, `flb-catalog`, `flb-cli`, `flb-ffi` and the app service layer; WGSL for GPU kernels; stable toolchain pinned in `rust-toolchain.toml` (never nightly in the product; VLC's nightly pin is acceptable only because its Rust is experimental).
+1. **Rust** for `amb-core`, `amb-color`, `amb-io`, `amb-gpu`, `amb-cpu`, `amb-presets`, `amb-catalog`, `amb-cli`, `amb-ffi` and the app service layer; WGSL for GPU kernels; stable toolchain pinned in `rust-toolchain.toml` (never nightly in the product; VLC's nightly pin is acceptable only because its Rust is experimental).
 2. **C/C++/asm only via existing libraries:** LibRaw (optional, sandboxed), lcms2, lensfun, exiv2 (desktop GPL pack), ONNX Runtime; each behind a trait, each with a pure-Rust or platform alternative on the roadmap. No new hand-written C. Asm/intrinsics later, per hot kernel, with a Rust reference and a checkasm-style equivalence test (FFmpeg model) [§1.2].
 3. **Shells in the native language of the platform:** TypeScript (Tauri panels) or QML/C++ (Qt); Swift/SwiftUI; Kotlin/Compose.
 
@@ -427,7 +427,7 @@ Raw files are untrusted input parsed by large amounts of format-specific C/C++. 
 
 ---
 
-## 4. Recommended structure for Flightbroom
+## 4. Recommended structure for Ambrotype
 
 This section is a recommendation layered on the existing plan (SCOPE §5, §6, §9; 06 §8; 08 §8). §4.10 lists every place it differs.
 
@@ -436,7 +436,7 @@ This section is a recommendation layered on the existing plan (SCOPE §5, §6, �
 One Git repository, one Cargo workspace, directories per **layer and licence zone** (Rerun's layering, GEGL's and Zed's licence directories, 08 §8.1's zones).
 
 ```
-flightbroom/
+ambrotype/
   Cargo.toml  Cargo.lock  rust-toolchain.toml  deny.toml  clippy.toml
   LICENSES/ (MPL-2.0, GPL-3.0-or-later, CC-BY-SA data licence)  REUSE.toml  SECURITY.md  CONTRIBUTING.md (DCO)
   docs/            ARCHITECTURE.md  TESTING.md  RELEASES.md  decisions/ (ADRs)  research/  adobe-docs/
@@ -444,14 +444,14 @@ flightbroom/
     core/          MPL-2.0   headless engine; no UI, no OS APIs, no GPL deps
     gpl-pack/      GPL-3.0-or-later   desktop-only ported algorithms and GPL bindings
     sys/           per-library   thin -sys / vendored C (LibRaw CDDL option, lcms2 MIT, ...)
-    platform/      MPL-2.0   flb-platform-{win,mac,linux,ios,android}: display profile, file access
+    platform/      MPL-2.0   amb-platform-{win,mac,linux,ios,android}: display profile, file access
   apps/
-    cli/           MPL-2.0   `flb` binary (the reference front-end)
+    cli/           MPL-2.0   `amb` binary (the reference front-end)
     desktop/       GPL-3.0-or-later (combined work)   Tauri 2 or Qt shell + gpl-pack linked in
-    ios/  android/ MPL-2.0   native shells over flb-ffi (start here as folders; may become repos, VLC-style)
+    ios/  android/ MPL-2.0   native shells over amb-ffi (start here as folders; may become repos, VLC-style)
   contrib/         vendored C sources + SHA-256 + build recipes for the few unavoidable C libs
   data/            lensfun DB (CC-BY-SA, separate package), fitted tables, test charts
-  shaders/         WGSL sources (hot-reload in dev), referenced by flb-gpu
+  shaders/         WGSL sources (hot-reload in dev), referenced by amb-gpu
   fuzz/            cargo-fuzz targets, seed corpora pointers
   xtask/           build/release/test automation in Rust (cargo xtask ...)
   tests/           golden images (CC0 inputs only), recipes, fidelity configs (private refs stay out)
@@ -461,44 +461,44 @@ flightbroom/
 
 | Crate | Zone | Responsibility |
 |---|---|---|
-| `flb-recipe` *(split from flb-core)* | core, MPL | Versioned recipe data model, `crs:` tag registry, parameter **schema** (id, type, range, default, group, mask support), migrations. No pixels, no I/O. Used by catalog, CLI, FFI, UI. |
-| `flb-buffer` *new* | core | Typed tile buffers (pixel format + colour space in the type, babl lesson), ROI/rect math, tile planner inputs. |
-| `flb-graph` *(split from flb-core)* | core | Recipe-to-plan compiler, ROI back-propagation, cache keys, scheduler, cancellation, the `Backend` trait and the **capability registry** (§4.2). |
-| `flb-nodes` *new* | core | Node specs (params, halo, formats, fusable flag) and their registration; one module per node (`exposure`, `curves`, `hsl`, `grading`, ...). |
-| `flb-cpu` | core | CPU backend and **reference kernels** (rayon + SIMD crate); test oracle and headless renderer. |
-| `flb-gpu` | core | wgpu backend, WGSL kernels, tile/limit planner (`MOBILE_FLOOR`), `PresentTarget` trait. Only crate that names `wgpu`. |
-| `flb-color` | core | Working-space maths, camera matrices, DCP apply, WB, curves, ICC via a `ColorEngine` trait (lcms2 adapter in `sys`). |
-| `flb-io` | core | TIFF/DNG/EXIF/XMP/ICC parsing (own, safe, fuzzed), `RawDecoder` trait and registry; adapters for rawler and LibRaw. |
-| `flb-presets` | core | XMP / `.lrtemplate` / DCP importers, fitted tables, fidelity report (SCOPE Phase 1). `flb-lrcat` *(was flb-lrimport)* for catalog import. |
-| `flb-catalog` | core | SQLite catalog, sidecars, preview pyramid, sync. |
-| `flb-ai` | core (feature) | `InferenceBackend` trait, `ort` adapter, model manifest and licence gate. |
-| `flb-protocol` *new* | core | Commands, events, parameter schema DTOs, JSON schema; the only thing shells see; versioned like mpv's client API. |
-| `flb-app` | core | Service layer: jobs, history/undo, settings, Lua host (later), plugin host trait. |
-| `flb-ffi` | core | C ABI (cbindgen) and UniFFI bindings over `flb-protocol` + `flb-app`. Like libvlc. |
-| `flb-testkit` *new* | core, dev-only | Golden-image harness, CPU/GPU equivalence runner, fidelity runner, fuzz helpers. |
-| `flb-gpl-*` | gpl-pack, GPL-3.0+ | `flb-gpl-demosaic` (AMaZE port), `flb-gpl-denoise`, `flb-gpl-upright`, `flb-exiv2`, `flb-lensfun`. Implement core traits; linked only by `apps/desktop`. |
-| `flb-sys-libraw`, `flb-sys-lcms2`, ... | sys | Vendored C with checksums, built via `cc` for every target; LibRaw runs behind the sandbox adapter (§4.6). |
+| `amb-recipe` *(split from amb-core)* | core, MPL | Versioned recipe data model, `crs:` tag registry, parameter **schema** (id, type, range, default, group, mask support), migrations. No pixels, no I/O. Used by catalog, CLI, FFI, UI. |
+| `amb-buffer` *new* | core | Typed tile buffers (pixel format + colour space in the type, babl lesson), ROI/rect math, tile planner inputs. |
+| `amb-graph` *(split from amb-core)* | core | Recipe-to-plan compiler, ROI back-propagation, cache keys, scheduler, cancellation, the `Backend` trait and the **capability registry** (§4.2). |
+| `amb-nodes` *new* | core | Node specs (params, halo, formats, fusable flag) and their registration; one module per node (`exposure`, `curves`, `hsl`, `grading`, ...). |
+| `amb-cpu` | core | CPU backend and **reference kernels** (rayon + SIMD crate); test oracle and headless renderer. |
+| `amb-gpu` | core | wgpu backend, WGSL kernels, tile/limit planner (`MOBILE_FLOOR`), `PresentTarget` trait. Only crate that names `wgpu`. |
+| `amb-color` | core | Working-space maths, camera matrices, DCP apply, WB, curves, ICC via a `ColorEngine` trait (lcms2 adapter in `sys`). |
+| `amb-io` | core | TIFF/DNG/EXIF/XMP/ICC parsing (own, safe, fuzzed), `RawDecoder` trait and registry; adapters for rawler and LibRaw. |
+| `amb-presets` | core | XMP / `.lrtemplate` / DCP importers, fitted tables, fidelity report (SCOPE Phase 1). `amb-lrcat` *(was amb-lrimport)* for catalog import. |
+| `amb-catalog` | core | SQLite catalog, sidecars, preview pyramid, sync. |
+| `amb-ai` | core (feature) | `InferenceBackend` trait, `ort` adapter, model manifest and licence gate. |
+| `amb-protocol` *new* | core | Commands, events, parameter schema DTOs, JSON schema; the only thing shells see; versioned like mpv's client API. |
+| `amb-app` | core | Service layer: jobs, history/undo, settings, Lua host (later), plugin host trait. |
+| `amb-ffi` | core | C ABI (cbindgen) and UniFFI bindings over `amb-protocol` + `amb-app`. Like libvlc. |
+| `amb-testkit` *new* | core, dev-only | Golden-image harness, CPU/GPU equivalence runner, fidelity runner, fuzz helpers. |
+| `amb-gpl-*` | gpl-pack, GPL-3.0+ | `amb-gpl-demosaic` (AMaZE port), `amb-gpl-denoise`, `amb-gpl-upright`, `amb-exiv2`, `amb-lensfun`. Implement core traits; linked only by `apps/desktop`. |
+| `amb-sys-libraw`, `amb-sys-lcms2`, ... | sys | Vendored C with checksums, built via `cc` for every target; LibRaw runs behind the sandbox adapter (§4.6). |
 
-**Rules enforced in CI:** (1) `cargo-deny` bans `tauri*`, `gtk*`, `winit`, `objc*`, `windows*`, `jni`, `ndk*` and any `flb-gpl-*` from `crates/core/*` (08 §8.1; SCOPE §6 gate); (2) SPDX headers per file and a `reuse lint` check; (3) `#![forbid(unsafe_code)]` everywhere except `flb-sys-*`, `flb-ffi`, `flb-gpu` (interop module), `flb-cpu` (SIMD module); (4) `wgpu` only in `flb-gpu`; (5) no `cfg(target_os)` in core crates.
+**Rules enforced in CI:** (1) `cargo-deny` bans `tauri*`, `gtk*`, `winit`, `objc*`, `windows*`, `jni`, `ndk*` and any `amb-gpl-*` from `crates/core/*` (08 §8.1; SCOPE §6 gate); (2) SPDX headers per file and a `reuse lint` check; (3) `#![forbid(unsafe_code)]` everywhere except `amb-sys-*`, `amb-ffi`, `amb-gpu` (interop module), `amb-cpu` (SIMD module); (4) `wgpu` only in `amb-gpu`; (5) no `cfg(target_os)` in core crates.
 
 ### 4.2 Module and plugin strategy
 
-1. **Compile-time registry with VLC-style capability and priority** (the one VLC idea to copy exactly). In `flb-graph`:
+1. **Compile-time registry with VLC-style capability and priority** (the one VLC idea to copy exactly). In `amb-graph`:
    ```rust
    registry.register(Capability::RawDecoder, "rawler", priority = 100, probe = rawler_probe, open = rawler_open);
    registry.register(Capability::RawDecoder, "libraw-sandboxed", 50, libraw_probe, libraw_open);
    registry.register(Capability::NodeImpl { node: "exposure", backend: Gpu }, "wgsl", 100, ...);
    ```
    Queries are `registry.best(cap, &context)` where the context carries file bytes, adapter limits, feature flags, user override; the first candidate whose `probe` accepts wins, falling back down the priority list (VLC's `module_need`). Users and tests can force a choice (`--decoder=libraw`, `--backend=cpu`). Registration is an explicit `register_all()` in the app crate, not linker magic, so mobile and static builds are trivial (VLC's static table lesson).
-2. **Pipeline nodes are compile-time**: one module per node in `flb-nodes`, one CPU and one WGSL implementation, one golden test, one equivalence test, one parameter-schema entry. This is "how to add a node" (darktable IOP guide, GEGL operations, VLC modules: the unit contributors work on).
+2. **Pipeline nodes are compile-time**: one module per node in `amb-nodes`, one CPU and one WGSL implementation, one golden test, one equivalence test, one parameter-schema entry. This is "how to add a node" (darktable IOP guide, GEGL operations, VLC modules: the unit contributors work on).
 3. **Data plugins in v1** (no code): preset files, recipes, `.cube`/Hald LUTs, camera profile data, lens DB entries, fitted tables, styles. Everything importable at runtime from the user's folder.
 4. **Scripting later**: Lua (mlua) on desktop for import/export hooks, batch rules and preset logic (Phase 4, per SCOPE; 06 §6 said "v1" which is too early, see §4.10); the same JSON command protocol exposed on a local socket for external scripts (mpv model), no embedded Python.
-5. **Runtime code plugins later still, WASM only**: a `PluginHost` trait in `flb-app` reserves the seam; when needed, WASM components with a WIT interface for tile-in/tile-out nodes, exporters and model adapters, hosted by wasmtime (Zed precedent, §1.8), desktop-only (JIT, 08 §8.7), the host mediating all GPU access. **No dynamic Rust plugins** (no stable ABI) and **no public C plugin ABI** until there is demand; if one is ever added, use the OBS struct-size growth trick and an explicit `FLB_API_VERSION`.
-6. **Embedding ABI (the "libvlc")**: `flb-ffi` exports a small C header and UniFFI bindings over `flb-protocol`; this is the *only* binary-stable surface (§2.11).
+5. **Runtime code plugins later still, WASM only**: a `PluginHost` trait in `amb-app` reserves the seam; when needed, WASM components with a WIT interface for tile-in/tile-out nodes, exporters and model adapters, hosted by wasmtime (Zed precedent, §1.8), desktop-only (JIT, 08 §8.7), the host mediating all GPU access. **No dynamic Rust plugins** (no stable ABI) and **no public C plugin ABI** until there is demand; if one is ever added, use the OBS struct-size growth trick and an explicit `AMB_API_VERSION`.
+6. **Embedding ABI (the "libvlc")**: `amb-ffi` exports a small C header and UniFFI bindings over `amb-protocol`; this is the *only* binary-stable surface (§2.11).
 
 ### 4.3 Pipeline graph design notes
 
-- **Recipe -> plan -> execution.** A recipe is versioned data (JSON/CBOR; stored in XMP/catalog). `flb-graph` compiles it into a plan: a single main path in darktable-like fixed order (decode -> mosaic -> WB/black -> demosaic -> input colour -> exposure/tone -> HSL/grading -> local adjustments -> lens/geometry -> detail -> output transform; 06 §2.4) with side branches for masks and analysis (histogram, clipping, colour picker). A *restricted DAG*, not a free graph (§2.3).
+- **Recipe -> plan -> execution.** A recipe is versioned data (JSON/CBOR; stored in XMP/catalog). `amb-graph` compiles it into a plan: a single main path in darktable-like fixed order (decode -> mosaic -> WB/black -> demosaic -> input colour -> exposure/tone -> HSL/grading -> local adjustments -> lens/geometry -> detail -> output transform; 06 §2.4) with side branches for masks and analysis (histogram, clipping, colour picker). A *restricted DAG*, not a free graph (§2.3).
 - **Node contract:** `{id, version, params: Hash + typed, input formats, output format, roi_in(roi_out), halo, fusable, backends}`. Node `version` is part of every cache key, and the plan records `engine_version`, so any render is reproducible from (recipe, engine version).
 - **Caching:** key = `hash(node_version, params, input_keys, roi, scale)` (darktable's rule); GPU texture LRU, spill to RAM, then disk for expensive nodes (demosaic, denoise) per 06 §2.4. Content-addressed so previews are droppable under memory pressure (08 §8.5).
 - **Fusion:** point-wise nodes fuse into one generated or hand-written kernel; neighbourhood nodes are separate passes with halos computed by ROI back-propagation.
@@ -506,44 +506,44 @@ flightbroom/
 - **Parameters resolution-independent** (fractions of long edge) so proxy previews match export (08 §8.4).
 - **Formats and colour space in the buffer type** (babl lesson), conversions inserted by the planner as explicit nodes, never implicit.
 - **Cancellation and progressive rendering:** latest-wins, draft pass then refinement (06 §2.4); a `Cancel` token threaded through every node invocation.
-- **Graph introspection from day one:** `flb explain recipe.json` prints the plan, cache keys and per-node timings (GEGL has `gegl-dot`; darktable has pipe debug; use it for contributors and bug reports).
+- **Graph introspection from day one:** `amb explain recipe.json` prints the plan, cache keys and per-node timings (GEGL has `gegl-dot`; darktable has pipe debug; use it for contributors and bug reports).
 
 ### 4.4 Threading and job system
 
 - **Roles:** one *render coordinator* (owns plan and GPU queue); a `rayon` pool for CPU kernels and decode; an I/O pool for file reads and sidecar writes; a *catalog writer* thread (single writer, 06 §4.1); an *inference* thread per execution provider; UI threads never touch engine state.
-- **Message passing, not shared state:** the UI sends commands (`flb-protocol`) and receives events and immutable snapshots, which removes the darktable "GUI_Threading" class of bug by design (§1.6).
-- **Async only at the edges:** tokio (or `smol`) in `flb-app` for watchers, network (model download), and IPC; the engine crates are synchronous with `rayon` and channels, so they build for mobile and WASM-hosted tests without a runtime. [judgement; 06 §8.1 draws tokio and rayon together in the service layer, which this keeps.]
+- **Message passing, not shared state:** the UI sends commands (`amb-protocol`) and receives events and immutable snapshots, which removes the darktable "GUI_Threading" class of bug by design (§1.6).
+- **Async only at the edges:** tokio (or `smol`) in `amb-app` for watchers, network (model download), and IPC; the engine crates are synchronous with `rayon` and channels, so they build for mobile and WASM-hosted tests without a runtime. [judgement; 06 §8.1 draws tokio and rayon together in the service layer, which this keeps.]
 - **Budgets:** `ResourceBudget{gpu_bytes, cpu_bytes, thermal}` is an input to the planner (08 §8.3), not a global.
 - **Lesson from dav1d/rav1d:** if we ever share mutable tile buffers across threads, encapsulate it in one audited type (`DisjointMut`-style) rather than spreading `unsafe` [§1.2].
 
 ### 4.5 The GPU abstraction boundary
 
 ```
- flb-graph  --calls-->  trait Backend {
+ amb-graph  --calls-->  trait Backend {
                            caps() -> BackendCaps            // limits, features, tile sizes, f16?
                            prepare(plan) -> PreparedPlan    // compile pipelines, warm caches
                            run_node(inv: &NodeInvocation, ins: &[TileRef], out: TileMut, cancel) -> Result
                            upload / readback / evict
                         }
- flb-cpu  : impl Backend      (reference; rayon + SIMD)
- flb-gpu  : impl Backend      (wgpu + WGSL; the only crate that names wgpu types)
- future   : flb-gpu-metal / flb-gpu-d3d12 / flb-gpu-vulkan  (native fast paths, if wgpu limits bite)
- flb-gpu::present : trait PresentTarget  (native surface, colour space, HDR headroom); shells implement it
+ amb-cpu  : impl Backend      (reference; rayon + SIMD)
+ amb-gpu  : impl Backend      (wgpu + WGSL; the only crate that names wgpu types)
+ future   : amb-gpu-metal / amb-gpu-d3d12 / amb-gpu-vulkan  (native fast paths, if wgpu limits bite)
+ amb-gpu::present : trait PresentTarget  (native surface, colour space, HDR headroom); shells implement it
 ```
 
 - The unit of abstraction is **a node on a tile** (not a draw call), the lesson from mpv (own thin layer, delegate the rest) and Ruffle's `RenderBackend` trait [§1.7, §1.8].
-- wgpu types never appear in `flb-graph`, `flb-protocol`, FFI or shells. That keeps the "replace wgpu for one backend" option cheap and makes the CPU/GPU equivalence test trivial: same plan, two `Backend`s.
+- wgpu types never appear in `amb-graph`, `amb-protocol`, FFI or shells. That keeps the "replace wgpu for one backend" option cheap and makes the CPU/GPU equivalence test trivial: same plan, two `Backend`s.
 - Shader sources are WGSL files in `shaders/`, hot-reloadable in dev (Rerun), with a small preprocessor for includes and constants; fp16 behind a feature check with an fp32 fallback (08 §8.3: never *require* `SHADER_F16`).
 - Budget for **one wgpu upgrade per quarter** (breaking releases; §3.3b) in a dedicated branch.
 
 ### 4.6 Platform front-end strategy (VLC style)
 
-- `flb-ffi` plays the role of **libvlc**: small, coarse, versioned, with an `AssetRef`/`ByteSource` abstraction instead of paths (08 §8.5) and a pixel-free protocol (08 §8.6). The CLI (`apps/cli`) is the *reference front-end* that exercises every command and is the driver for tests, like `ffmpeg`/`mpv`.
+- `amb-ffi` plays the role of **libvlc**: small, coarse, versioned, with an `AssetRef`/`ByteSource` abstraction instead of paths (08 §8.5) and a pixel-free protocol (08 §8.6). The CLI (`apps/cli`) is the *reference front-end* that exercises every command and is the driver for tests, like `ffmpeg`/`mpv`.
 - **Desktop shell**: Tauri 2 with a native wgpu viewport (default) or Qt 6, decided by the Phase 0 spike (SCOPE §5, 06 §3.5). Expect to **replace** this shell at least once in the project's life (GIMP's GTK port, Krita's Qt5-to-Qt6 move, Lapce's own-toolkit detour all took years); the protocol and the schema-generated panels are what survive.
 - **Mobile**: SwiftUI and Compose over UniFFI (08 §3.7), each implementing `DisplayProfileProvider`, `PresentTarget`, and `AssetRef` providers (PhotoKit, SAF). VLC's mobile apps live in separate repos with their own release cadences; we start them as folders in the monorepo and split only if cadence or contributors demand it.
 - **Conformance**: record and replay protocol scripts (JSON command logs) against every shell and the CLI, comparing exported pixels to goldens; VLC's synchronized 3.0 release across desktop and mobile shows it is possible but costly [§1.1].
 - **Licence consequence** (SCOPE §6): desktop app = GPL-3.0-or-later combined work; mobile shells = MPL core only. No GPL crate may be reachable from `apps/ios` or `apps/android` (CI dependency gate).
-- **Parsers that touch untrusted bytes** run in `flb-io` safe Rust where possible; **LibRaw, if enabled, runs sandboxed**: out-of-process on desktop (a helper binary speaking a tiny length-prefixed protocol over a pipe, killed on timeout, memory-limited), and compiled to WASM with wasmtime/wasm2c where processes are not an option (RLBox precedent, §3.2). The registry's priority puts rawler first and falls back to sandboxed LibRaw on probe failure (needs Phase 0 coverage numbers on a camera sample set).
+- **Parsers that touch untrusted bytes** run in `amb-io` safe Rust where possible; **LibRaw, if enabled, runs sandboxed**: out-of-process on desktop (a helper binary speaking a tiny length-prefixed protocol over a pipe, killed on timeout, memory-limited), and compiled to WASM with wasmtime/wasm2c where processes are not an option (RLBox precedent, §3.2). The registry's priority puts rawler first and falls back to sandboxed LibRaw on probe failure (needs Phase 0 coverage numbers on a camera sample set).
 
 ### 4.7 Build and CI matrix; testing pyramid; release cadence
 
@@ -581,7 +581,7 @@ flightbroom/
 ### 4.8 Governance and funding model
 
 - **Legal home:** a **fiscal host** first, a foundation later if warranted. Candidates (fees from §2.13): Software in the Public Interest (5% of gross), Open Collective Europe (about 6%), Open Source Collective (10%), Software Freedom Conservancy (10%, selective). Because grants (NLnet) have a European dimension and the Apple Developer account, SignPath and trademark must sit with an entity, prefer an **EU fiscal host** (Open Collective Europe) unless the maintainers are US-based [reasoning ours; [unverified] on host acceptance criteria and timelines].
-- **Rules of the road (copy VideoLAN's trust capital):** no ads, no telemetry by default, no CLA, **DCO sign-off** (contributors keep copyright; licence split decided *now* because VLC's relicensing took years: SCOPE §1 says about 2.5 years and about 230 contributors; unverified here), written Code of Conduct, `SECURITY.md` with a disclosure address (essential for a parser-heavy product), trademark policy for "Flightbroom" after the trademark check.
+- **Rules of the road (copy VideoLAN's trust capital):** no ads, no telemetry by default, no CLA, **DCO sign-off** (contributors keep copyright; licence split decided *now* because VLC's relicensing took years: SCOPE §1 says about 2.5 years and about 230 contributors; unverified here), written Code of Conduct, `SECURITY.md` with a disclosure address (essential for a parser-heavy product), trademark policy for "Ambrotype" after the trademark check.
 - **Money model, in priority order:** (1) donations and sponsorship via the host (Open Collective, GitHub Sponsors); (2) **project grants for specific deliverables**, see §4.9; (3) **corporate memberships** on a Blender-style ladder once there are users (do not promise board seats; sell listing and a liaison, not control); (4) **store sales** of the same free binary on Mac App Store, Microsoft Store, Play Store, iOS App Store (Krita model, §1.5; relevant because MPL core + MPL shells are store-compatible); (5) optional later: a for-profit services entity à la Videolabs, with a clear firewall, if full-time maintainers are wanted [§1.1].
 - **Decision rights:** a small steering group of maintainers; ADRs for architectural decisions; the fiscal host holds money and assets only.
 
@@ -589,8 +589,8 @@ flightbroom/
 
 1. **Week 0-2 (decisions):** accept this language verdict as ADR-0001; record the licence zones as ADR-0002; run the name/trademark check (SCOPE §12.6); create the public repo skeleton with `LICENSES/`, DCO bot, `deny.toml`, `rust-toolchain.toml`, CI Fast lane, empty crates with their zone and `forbid(unsafe_code)`.
 2. **Week 1-4 (fiscal host):** apply to Open Collective Europe or SPI (Open Source Collective as fallback); once approved, reserve Apple bundle ids and the Apple Developer account in the host's name (08 §8.7), apply to SignPath Foundation.
-3. **NLnet (go/no-go by mid-October):** the NGI Zero **Commons Fund is closed** (final call 1 June 2026) [verified: https://nlnet.nl/commonsfund/]; current NLnet calls are **Restack** and **CodeSupply**, deadline **3 Nov 2026 12:00 CET**, EUR 5k-50k, EU funded, "AI-related projects out of scope" for Restack unless over 1M users [verified: https://nlnet.nl/propose/, https://nlnet.nl/restack/]. Restack's text is about internet commons and open alternatives; **whether a RAW editor qualifies is uncertain**. Do not pitch "a Lightroom clone". A candidate pitch: *an open, memory-safe, fuzzed library and conformance suite for DNG/XMP/DCP/preset interoperability and a colour pipeline, usable by any open-source photo tool* [proposal, ours]. Ask NLnet (they invite contact before applying [background]) whether it fits before writing the application; a 5-50k grant for 3-6 months of one person's work on `flb-io` + `flb-presets` + the test corpus is the right scale. If Restack does not fit, skip this round rather than force it.
-4. **Sovereign Tech Fund:** **not now.** It does not fund "user-facing applications ... or prototypes", needs budgets above EUR 50,000, and scores prevalence and vulnerability, i.e. libraries other projects already depend on [verified: https://www.sovereign.tech/programs/fund]. Revisit after a library (for example `flb-io`'s DNG/TIFF parser or `flb-color`) has external users; the Fellowship (individual maintainers) is a separate route [secondary: https://www.sovereign.tech/programs/fellowship].
+3. **NLnet (go/no-go by mid-October):** the NGI Zero **Commons Fund is closed** (final call 1 June 2026) [verified: https://nlnet.nl/commonsfund/]; current NLnet calls are **Restack** and **CodeSupply**, deadline **3 Nov 2026 12:00 CET**, EUR 5k-50k, EU funded, "AI-related projects out of scope" for Restack unless over 1M users [verified: https://nlnet.nl/propose/, https://nlnet.nl/restack/]. Restack's text is about internet commons and open alternatives; **whether a RAW editor qualifies is uncertain**. Do not pitch "a Lightroom clone". A candidate pitch: *an open, memory-safe, fuzzed library and conformance suite for DNG/XMP/DCP/preset interoperability and a colour pipeline, usable by any open-source photo tool* [proposal, ours]. Ask NLnet (they invite contact before applying [background]) whether it fits before writing the application; a 5-50k grant for 3-6 months of one person's work on `amb-io` + `amb-presets` + the test corpus is the right scale. If Restack does not fit, skip this round rather than force it.
+4. **Sovereign Tech Fund:** **not now.** It does not fund "user-facing applications ... or prototypes", needs budgets above EUR 50,000, and scores prevalence and vulnerability, i.e. libraries other projects already depend on [verified: https://www.sovereign.tech/programs/fund]. Revisit after a library (for example `amb-io`'s DNG/TIFF parser or `amb-color`) has external users; the Fellowship (individual maintainers) is a separate route [secondary: https://www.sovereign.tech/programs/fellowship].
 5. **Security-funding angle:** Alpha-Omega and the GitHub Secure Open Source Fund (USD 12.5M announced March 2026) favour memory-safety and supply-chain work; a "memory-safe RAW/DNG parsing and fuzzing" story fits better than an app pitch [secondary: https://openssf.org/press-release/2026/03/17/linux-foundation-announces-12-5-million-in-grant-funding-from-leading-organizations-to-advance-open-source-security/; [unverified] eligibility].
 6. **Month 2-3 (technical):** the Phase 0 spikes (06 §8.6) plus three new ones: (a) **registry + Backend trait** with two nodes on CPU and wgpu and the equivalence test (proves §4.2/§4.5); (b) **LibRaw sandbox** prototype and rawler camera-coverage comparison on a raw.pixls.us sample set; (c) **fuzz targets** for a TIFF/DNG IFD walker and an XMP parser, running in CI.
 7. **Budget the first year realistically:** Apple Developer USD 99 per year; fiscal-host fees 5-10% of income; no cost for SignPath Foundation (OSS programme); real GPU CI runners are the main unfunded gap [unverified costs].
@@ -603,9 +603,9 @@ flightbroom/
 
 | # | Where | Change | Why (evidence) |
 |---|---|---|---|
-| 1 | 06 §8.1 crate list, SCOPE §9, Phase 1 | Split `flb-core` into `flb-recipe` (data, schema), `flb-buffer`, `flb-graph` (plan, cache, registry, `Backend`), `flb-nodes`, `flb-cpu`; add `flb-protocol` and `flb-testkit`; move CPU kernels out of `flb-core`. | darktable/GIMP show engine and schema must be usable without the pipeline or UI; 06 puts recipe, graph and CPU kernels in one crate, which forces every consumer (catalog, FFI, CLI) to build the kernels and makes leaf rebuilds slow (§3.6). |
+| 1 | 06 §8.1 crate list, SCOPE §9, Phase 1 | Split `amb-core` into `amb-recipe` (data, schema), `amb-buffer`, `amb-graph` (plan, cache, registry, `Backend`), `amb-nodes`, `amb-cpu`; add `amb-protocol` and `amb-testkit`; move CPU kernels out of `amb-core`. | darktable/GIMP show engine and schema must be usable without the pipeline or UI; 06 puts recipe, graph and CPU kernels in one crate, which forces every consumer (catalog, FFI, CLI) to build the kernels and makes leaf rebuilds slow (§3.6). |
 | 2 | 06 §8, 08 §8.5/8.7 | Add an explicit **capability + priority registry** (VLC `set_capability` + `module_need`) for decoders, node implementations per backend, metadata, colour and AI backends, with user/test overrides. | 06/08 propose traits but no selection policy; VLC proves capability/priority selection scales to 500 modules and static builds (§1.1, §2.2). |
-| 3 | 08 §8.3, 06 §2 | Define the GPU boundary as `Backend::run_node(node, tiles)` with wgpu confined to `flb-gpu`; allow native backends later. | mpv, Ruffle, Blender/OBS experience; keeps wgpu risk (quarterly breakage, adapter variance) contained (§2.5, §3.3b). |
+| 3 | 08 §8.3, 06 §2 | Define the GPU boundary as `Backend::run_node(node, tiles)` with wgpu confined to `amb-gpu`; allow native backends later. | mpv, Ruffle, Blender/OBS experience; keeps wgpu risk (quarterly breakage, adapter variance) contained (§2.5, §3.3b). |
 | 4 | 06 §6 vs SCOPE §8 Phase 4 | Reconcile plugins: **no runtime code plugins before v1**; v1 = data plugins (presets, LUTs, recipes); Lua in Phase 4; WASM (WIT/wasmtime, desktop-only) after; **no dynamic Rust or public C plugin ABI**. | 06 says "Lua v1", SCOPE says Phase 4; Rust has no stable ABI; Zed shows WASM works; OBS shows C ABI is a maintenance tax (§2.2). |
 | 5 | 06 §1.4, 08 §4 | **LibRaw behind a sandbox** (out-of-process on desktop, WASM where not) and `rawler` as registry default only after a coverage test; flag rawler's LGPL-2.1 against the iOS static-linking concern. | LibRaw has 60 CVE IDs and 2026 DNG/X3F overflows; Apple's DNG decoder bug was exploited in the wild (CVE-2025-43300); RLBox precedent (§3.2, §3.3). |
 | 6 | SCOPE §9 (Testing), 06 §8.6 | Make **fuzz targets and OSS-Fuzz onboarding a Phase 1 deliverable**, plus `overflow-checks` and `forbid(unsafe_code)` policy and `SECURITY.md`. | Rust does not stop panics/OOM; parsers are the attack surface; FFmpeg/OSS-Fuzz track record (§2.9). |
@@ -625,7 +625,7 @@ flightbroom/
  FRONT-ENDS (replaceable)                         one protocol, no pixels over it
  +-----------+ +-------------+ +-----------+ +--------------+ +--------------+
  | apps/cli  | | apps/desktop| | apps/ios  | | apps/android | | scripts / MCP|
- | `flb`     | | Tauri or Qt | | SwiftUI   | | Compose      | | local socket |
+ | `amb`     | | Tauri or Qt | | SwiftUI   | | Compose      | | local socket |
  | (reference| | GPL-3.0+    | | MPL-2.0   | | MPL-2.0      | | JSON cmds    |
  |  driver)  | | + gpl-pack  | |           | |              | |              |
  +-----+-----+ +------+------+ +-----+-----+ +------+-------+ +------+-------+
@@ -633,33 +633,33 @@ flightbroom/
        +--------------+------+--------------------+---------------------+
                               v
                   +-------------------------+      libvlc-like: stable, small
-                  | flb-ffi  (C ABI+UniFFI) |      semver + changelog
-                  | flb-protocol (DTOs,     |
+                  | amb-ffi  (C ABI+UniFFI) |      semver + changelog
+                  | amb-protocol (DTOs,     |
                   |   param schema, JSON)   |
                   +------------+------------+
                                v
  crates/core (MPL-2.0)  --------------------------------------------------------
   +-----------+  +----------------------+  +--------------+  +---------------+
-  | flb-app   |  | flb-graph            |  | flb-catalog  |  | flb-ai        |
+  | amb-app   |  | amb-graph            |  | amb-catalog  |  | amb-ai        |
   | jobs,undo |->| plan, ROI, cache keys|  | SQLite, XMP  |  | InferenceBack-|
   | settings, |  | scheduler, Cancel    |  | previews,    |  | end (ort)     |
   | Lua(later)|  | REGISTRY (capability |  | sync         |  +---------------+
   +-----------+  |  + priority, VLC)    |  +--------------+
                  | trait Backend        |
                  +-----+-------+--------+      +----------------------------+
-                       |       |               | flb-recipe  (versioned     |
+                       |       |               | amb-recipe  (versioned     |
          +-------------+       +-----------+   |  data, crs registry,       |
          v                                 v   |  schema, migrations)       |
-  +---------------+                +---------------+  flb-nodes (specs)      |
-  | flb-cpu       |  equivalence   | flb-gpu       |  flb-buffer (types)     |
-  | reference     |<-- tests ----->| wgpu + WGSL   |  flb-color flb-presets  |
-  | rayon + SIMD  |   (CI, lavapipe| (only crate   |  flb-io (RawDecoder reg)|
+  +---------------+                +---------------+  amb-nodes (specs)      |
+  | amb-cpu       |  equivalence   | amb-gpu       |  amb-buffer (types)     |
+  | reference     |<-- tests ----->| wgpu + WGSL   |  amb-color amb-presets  |
+  | rayon + SIMD  |   (CI, lavapipe| (only crate   |  amb-io (RawDecoder reg)|
   +---------------+   MOBILE_FLOOR)| naming wgpu)  +-------------+-----------+
                                    +---------------+             |
                                                    untrusted bytes v
  crates/sys + gpl-pack  ------------------------+----------------------------------
-  | flb-sys-libraw (SANDBOXED: process / WASM)  |  flb-gpl-demosaic/denoise/upright |
-  | flb-sys-lcms2   rawler adapter (LGPL check) |  flb-exiv2  flb-lensfun  (desktop)|
+  | amb-sys-libraw (SANDBOXED: process / WASM)  |  amb-gpl-demosaic/denoise/upright |
+  | amb-sys-lcms2   rawler adapter (LGPL check) |  amb-exiv2  amb-lensfun  (desktop)|
   +----------------------------------------------+-----------------------------------+
  CI gates: licence-zone ban list | forbid(unsafe) allow-list | fuzz per parser | goldens
 ```

@@ -1,4 +1,4 @@
-# 12 - What Reddit says: user feedback and design implications for Flightbroom
+# 12 - What Reddit says: user feedback and design implications for Ambrotype
 
 Status: design input, 2026-10-03. Feeds [SCOPE.md](../SCOPE.md) §2, §7, §8, §10. Complements the commercial survey in [09](09-market-commercial-alternatives.md), especially its sections (b) why users leave and return, (c) migration paths, (d) the market gap and (e) design lessons. Where this document and 09 agree, that is noted. Where Reddit adds something 09 lacked, it is flagged **new**.
 
@@ -176,7 +176,7 @@ Adapt to exposure, WB and camera (about 6 mentions, partly "implied"); show what
 
 ---
 
-## 6. Design implications for Flightbroom (prioritised)
+## 6. Design implications for Ambrotype (prioritised)
 
 Targets below are **proposals**, not measured facts. "Roadmap" refers to SCOPE §8.
 

@@ -1,25 +1,25 @@
 # Film negatives
 
-Status: v1 implemented (`crates/flb-engine/src/negative.rs`). It turns a camera scan of a colour or black-and-white negative into a positive, with an auto mode, built-in film stock looks and full manual control. Everything is settable from presets and sidecars.
+Status: v1 implemented (`crates/amb-engine/src/negative.rs`). It turns a camera scan of a colour or black-and-white negative into a positive, with an auto mode, built-in film stock looks and full manual control. Everything is settable from presets and sidecars.
 
-Lightroom has no negative conversion; photographers buy the Negative Lab Pro plug-in for it. So these settings live in **our own XMP namespace**: `flb:` = `http://ns.flightbroom.org/develop/1.0/`. The URI changes with the product name before the first public release (see legal-and-naming.md). Lightroom ignores the tags. Whether it keeps them when it rewrites a sidecar (Save Metadata) is still to be checked in the Lightroom trial.
+Lightroom has no negative conversion; photographers buy the Negative Lab Pro plug-in for it. So these settings live in **our own XMP namespace**: `amb:` = `http://ns.ambrotype.org/develop/1.0/`. The URI changes with the product name before the first public release (see legal-and-naming.md). Lightroom ignores the tags. Whether it keeps them when it rewrites a sidecar (Save Metadata) is still to be checked in the Lightroom trial.
 
 ## Settings
 
 | Tag | What it does |
 |---|---|
-| `flb:NegativeConvert` | Turn the conversion on. |
-| `flb:NegativeType` | `color` (default) or `bw`. |
-| `flb:NegativeAuto` | **Auto** (default True) estimates film base, levels and midtone for every photo. False uses the stored values below, which keeps a roll consistent; missing values are still estimated. |
-| `flb:FilmStock`, `flb:FilmStockAmount` | The look and its strength (0–100). `flb negative stocks` lists them. |
-| `flb:FilmBaseRed/Green/Blue` | Film base (orange mask) transmittance. |
-| `flb:NegativeDensityLow*/High*` | Per-channel shadow and highlight densities above the base (the levels). |
-| `flb:NegativeMidtone` | Which point of the range becomes 18 % grey. |
-| `flb:NegativeExposure` | Print exposure in EV. |
-| `flb:NegativeContrast` | Paper grade, ±100. |
-| `flb:NegativeCyanRed`, `flb:NegativeMagentaGreen`, `flb:NegativeYellowBlue` | Colour balance, ±100. |
-| `flb:NegativeToe`, `flb:NegativeShoulder` | Shadow and highlight roll-off, ±100. |
-| `flb:NegativeSaturation` | Saturation, ±100. |
+| `amb:NegativeConvert` | Turn the conversion on. |
+| `amb:NegativeType` | `color` (default) or `bw`. |
+| `amb:NegativeAuto` | **Auto** (default True) estimates film base, levels and midtone for every photo. False uses the stored values below, which keeps a roll consistent; missing values are still estimated. |
+| `amb:FilmStock`, `amb:FilmStockAmount` | The look and its strength (0–100). `amb negative stocks` lists them. |
+| `amb:FilmBaseRed/Green/Blue` | Film base (orange mask) transmittance. |
+| `amb:NegativeDensityLow*/High*` | Per-channel shadow and highlight densities above the base (the levels). |
+| `amb:NegativeMidtone` | Which point of the range becomes 18 % grey. |
+| `amb:NegativeExposure` | Print exposure in EV. |
+| `amb:NegativeContrast` | Paper grade, ±100. |
+| `amb:NegativeCyanRed`, `amb:NegativeMagentaGreen`, `amb:NegativeYellowBlue` | Colour balance, ±100. |
+| `amb:NegativeToe`, `amb:NegativeShoulder` | Shadow and highlight roll-off, ±100. |
+| `amb:NegativeSaturation` | Saturation, ±100. |
 
 After the conversion, every regular setting works on the **positive**. Temperature/Tint, Exposure, the tone curve, HSL and colour grading behave normally, which avoids the inverted-slider confusion of converting in Lightroom. White balance reads 5500 K / 0 for the balanced conversion and shifts relative to that.
 
@@ -42,7 +42,7 @@ On camera RGB, after Lens Corrections and before white balance:
    It is blended by the stock amount.
 4. **Back to scene-linear:** the midtone lands on 18 % grey, over a scene range of 2.2 decades × contrast. Toe and shoulder compress the ends.
 
-Based on the published idea of darktable's `negadoctor` (density, Dmin, paper response), written from scratch. All constants are in the `negative` section of `flb calibration defaults`.
+Based on the published idea of darktable's `negadoctor` (density, Dmin, paper response), written from scratch. All constants are in the `negative` section of `amb calibration defaults`.
 
 ## Film stocks
 
@@ -55,14 +55,14 @@ They are described by character and **named generically on purpose**: no manufac
 ## Workflow
 
 ```sh
-flb testimage negative neg.dng                       # a synthetic scanned negative to try it on
-flb render scan.dng out.jpg --preset auto-neg.xmp    # preset with flb:NegativeConvert=True (+ flb:FilmStock)
-flb negative analyze frame01.nef frame02.nef … --out roll.xmp   # the "Auto" button, frozen: roll median
-flb render frame05.nef out.jpg --preset roll.xmp     # same base/levels for the whole roll
-flb negative stocks                                  # list the looks
+amb testimage negative neg.dng                       # a synthetic scanned negative to try it on
+amb render scan.dng out.jpg --preset auto-neg.xmp    # preset with amb:NegativeConvert=True (+ amb:FilmStock)
+amb negative analyze frame01.nef frame02.nef … --out roll.xmp   # the "Auto" button, frozen: roll median
+amb render frame05.nef out.jpg --preset roll.xmp     # same base/levels for the whole roll
+amb negative stocks                                  # list the looks
 ```
 
-- `flb edit` / the AI protocol set any `flb:` setting like a Camera Raw one, with validation and clamping (`set_param flb:FilmStock vivid-100`).
+- `amb edit` / the AI protocol set any `amb:` setting like a Camera Raw one, with validation and clamping (`set_param amb:FilmStock vivid-100`).
 - In a future GUI, the Auto button runs the analysis and stores the values (Auto off), and "Sync roll" applies the roll median.
 
 ## Next

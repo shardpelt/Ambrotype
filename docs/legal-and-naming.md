@@ -2,15 +2,19 @@
 
 Checked on 2026-10-04. This is an engineer's reading of the rules, not legal advice. Before 1.0, or before taking donations at any real scale, have an IP lawyer review it. A one-hour consult is usually enough.
 
-## Status (2026-10-05): name decision pending
+## Status (2026-10-05): renamed to Ambrotype (for now)
 
-- **Shortlist:** **Ambrotype** ("immortal impression"), **Photochrom** (colour given to captured light), **Argentype** (silver, the medium that held light). Fallbacks: Lightfast, Lightstead. Details and the rejected names are in §2.
-- **To do when picking:**
-  1. Search TMview and WIPO (classes 9 and 42).
-  2. Buy the domain (.org and/or .photo).
-  3. Claim the GitHub organisation and crates.io name.
+- **Decision:** the project is renamed from "Flightbroom" to **Ambrotype**: "immortal impression", the 1850s glass photograph. Done in code and docs:
+  - crates `amb-*`, CLI `amb`, desktop app `ambrotype`
+  - XMP namespace `amb:` = `http://ns.ambrotype.org/develop/1.0/`
+  - environment variables `AMB_*`
+- **Still to do:**
+  1. Search TMview and WIPO (classes 9 and 42) for "Ambrotype".
+  2. Register ambrotype.org (also the domain in our XMP namespace URI) and/or ambrotype.photo.
+  3. Claim the GitHub organisation and the crates.io names.
 
-  5. Then rename the repo, crates (`flb-*`), binary (`flb`), XMP namespace and docs in one commit.
+  5. Rename the GitHub repository `shardpelt/flightbroom` (Settings → Repository name; GitHub redirects old links).
+- **Alternatives kept in case a check fails:** Photochrom, Argentype (§2).
 - **Before going public:**
   1. Add LICENSE (GPL-3.0-or-later) and Cargo `license` fields.
   2. Paraphrase the verbatim Adobe quotes in `docs/adobe-docs/`.

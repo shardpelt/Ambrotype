@@ -3,8 +3,8 @@
 The target architecture is in [SCOPE.md §9](SCOPE.md). This page describes what exists today.
 
 **Short version:**
-- Flightbroom is a Rust **library-first** project. The engine, preset reader, lens database and export are libraries.
-- There are two front ends: the `flb` command-line tool and an early desktop editor (`flb-gui`, Tauri 2).
+- Ambrotype is a Rust **library-first** project. The engine, preset reader, lens database and export are libraries.
+- There are two front ends: the `amb` command-line tool and an early desktop editor (`amb-gui`, Tauri 2).
 - The GUI, a future MCP server for AI assistants and the CLI are all meant to be clients of the same libraries, through one command protocol, like FFmpeg/libmpv and their players.
 
 ## Crates
@@ -13,24 +13,24 @@ About 23,000 lines of Rust and about 270 tests (fmt, clippy and tests run in CI 
 
 | Crate | Role | Main parts |
 |---|---|---|
-| `flb-presets` | Read and write settings | XMP (`crs:` Adobe tags plus our `flb:` tags), `.lrtemplate`, XMP embedded in DNG/JPEG; the tag registry (`data/tags.json`); preset Amount scaling |
-| `flb-protocol` | Typed edit commands for GUI/CLI/AI | `set/adjust/reset_param`, `apply_preset`, undo/redo, queries, JSON Schema; sidecar merge that keeps foreign metadata; the AI settings reference |
-| `flb-color` | Colour science | Temperature/Tint ↔ xy, matrices, Bradford adaptation, output colour spaces and generated ICC profiles |
-| `flb-lens` | Lens profiles | lensfun database and Adobe LCP readers, lens matching, interpolation, correction geometry |
-| `flb-engine` | Raw decode and develop | The pipeline below; every model constant is in `Calibration` (JSON, fitted later against Lightroom) |
-| `flb-export` | Files out | JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces, resize, output sharpening, EXIF, JPEG size limit |
-| `flb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
-| `flb-cli` | The `flb` tool | `render`, `preset`, `edit`/`query`, `lens`, `negative`, `sweep`, `settings reference`, … |
-| `flb-gui` | Desktop editor (Tauri 2) | Rust `Session` (open raw, undoable edits via `flb-protocol`, downscaled preview + histogram, sidecar save, export) behind Tauri commands; plain HTML/CSS/JS UI generated from the settings registry |
+| `amb-presets` | Read and write settings | XMP (`crs:` Adobe tags plus our `amb:` tags), `.lrtemplate`, XMP embedded in DNG/JPEG; the tag registry (`data/tags.json`); preset Amount scaling |
+| `amb-protocol` | Typed edit commands for GUI/CLI/AI | `set/adjust/reset_param`, `apply_preset`, undo/redo, queries, JSON Schema; sidecar merge that keeps foreign metadata; the AI settings reference |
+| `amb-color` | Colour science | Temperature/Tint ↔ xy, matrices, Bradford adaptation, output colour spaces and generated ICC profiles |
+| `amb-lens` | Lens profiles | lensfun database and Adobe LCP readers, lens matching, interpolation, correction geometry |
+| `amb-engine` | Raw decode and develop | The pipeline below; every model constant is in `Calibration` (JSON, fitted later against Lightroom) |
+| `amb-export` | Files out | JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces, resize, output sharpening, EXIF, JPEG size limit |
+| `amb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
+| `amb-cli` | The `amb` tool | `render`, `preset`, `edit`/`query`, `lens`, `negative`, `sweep`, `settings reference`, … |
+| `amb-gui` | Desktop editor (Tauri 2) | Rust `Session` (open raw, undoable edits via `amb-protocol`, downscaled preview + histogram, sidecar save, export) behind Tauri commands; plain HTML/CSS/JS UI generated from the settings registry |
 
-## Data flow of `flb render photo.nef out.jpg --preset look.xmp`
+## Data flow of `amb render photo.nef out.jpg --preset look.xmp`
 
 ```
 raw file ──rawler──▶ CameraImage (camera RGB, white = 1, + metadata: lens, EXIF, orientation)
-preset/sidecar ──flb-presets──▶ settings map (crs:/flb: tags) ──▶ DevelopSettings
-                                       │ (lens profile resolved via flb-lens)
+preset/sidecar ──amb-presets──▶ settings map (crs:/amb: tags) ──▶ DevelopSettings
+                                       │ (lens profile resolved via amb-lens)
                                        ▼
-flb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
+amb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
   0  Lens Corrections (vignetting, CA, distortion: one resampling pass)
      → film negative conversion (optional)
   1  white balance + camera matrix → linear ProPhoto → Exposure → Defringe
@@ -41,13 +41,13 @@ flb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
   6  noise reduction → sharpening
   7  post-crop vignette → grain → paint blank lens areas
                                        ▼
-flb-export: orient upright → resize (Lanczos-3, linear) → output colour space
+amb-export: orient upright → resize (Lanczos-3, linear) → output colour space
             → transfer curve → output sharpening → 8/16/32-bit → encoder + ICC + EXIF
 ```
 
 Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core CPU, including decode. Most of that is the CPU pipeline; the GPU backend comes later.
 
-## Export (flb-export)
+## Export (amb-export)
 
 | Format | Bit depths | Colour profile | EXIF | Notes |
 |---|---|---|---|---|
@@ -76,10 +76,10 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
   - Export presets.
   - Gamut mapping, instead of the current hard clip.
 
-## The desktop editor (flb-gui, v1)
+## The desktop editor (amb-gui, v1)
 
-- **Shell:** Tauri 2, with the system webview (WebView2, WKWebView, WebKitGTK). The UI in `crates/flb-gui/ui/` is plain HTML/CSS/JS with no build step or npm.
-- **One code path:** the UI only sends `flb-protocol` commands (`set_param`, `apply_preset`, `undo`, …), so it behaves exactly like the CLI and AI clients. Panels and sliders are generated from the settings registry, so they always match the engine.
+- **Shell:** Tauri 2, with the system webview (WebView2, WKWebView, WebKitGTK). The UI in `crates/amb-gui/ui/` is plain HTML/CSS/JS with no build step or npm.
+- **One code path:** the UI only sends `amb-protocol` commands (`set_param`, `apply_preset`, `undo`, …), so it behaves exactly like the CLI and AI clients. Panels and sliders are generated from the settings registry, so they always match the engine.
 - **Preview:** rendered on the CPU from an area-downscaled copy of the raw, at screen size. Slider drags render with temporary overrides and don't touch history; release commits one undoable step. Requests are latest-wins, and a drag renders at 0.6× size.
 - **Features:**
   - open (dialog, drag-and-drop, command line)
@@ -97,4 +97,4 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
 - GPU backend (wgpu), tiling and caching.
 - Masks and local adjustments, healing, crop/rotate/Upright.
 - Camera profiles (DCP) and Adobe-like base looks: today a placeholder filmic base look is used.
-- MCP server and look matching (`flb match`) for AI control.
+- MCP server and look matching (`amb match`) for AI control.

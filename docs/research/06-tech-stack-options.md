@@ -290,7 +290,7 @@ Licensing hygiene: record licence + source + hash in a `models.toml` manifest; C
 | **WASM** (wasmtime / Extism, WASI components) | Strong sandbox, language-agnostic (Rust/C/AssemblyScript/Go), versioned ABI, safe to run third-party plugins | Young component-model tooling; GPU/shader access must be mediated by host; authoring story harder | **Yes as the long-term "real plugin" API** (e.g., custom filters operating on tiles, exporters, AI-model adapters) |
 | Python (PyO3 embed) | Huge ML/imaging ecosystem, popular with photographers/data folks | Distribution nightmare (interpreter + wheels per OS), GIL, sandboxing hard | No embedded Python; offer a **CLI/JSON-RPC or gRPC local API** so external Python scripts can drive the app/catalog |
 
-Also expose the headless CLI (`flightbroom render`, `flightbroom catalog ...`) as scripting surface, and a stable **recipe (graph) JSON schema** as the primary extensibility contract.
+Also expose the headless CLI (`ambrotype render`, `ambrotype catalog ...`) as scripting surface, and a stable **recipe (graph) JSON schema** as the primary extensibility contract.
 
 ---
 
@@ -326,21 +326,21 @@ Also expose the headless CLI (`flightbroom render`, `flightbroom catalog ...`) a
 +-----------+------------------------+-----------------------+-------------------+
             |                        |                       |
 +-----------v----------+  +----------v-----------+  +--------v------------------+
-|   CATALOG SERVICE    |  |   ENGINE (flb-core)  |  |   AI SERVICE (flb-ai)     |
+|   CATALOG SERVICE    |  |   ENGINE (amb-core)  |  |   AI SERVICE (amb-ai)     |
 | SQLite WAL + FTS5    |  | pure, headless, no UI|  | InferenceBackend trait    |
 | schema/migrations    |  |                      |  | ort: CoreML/DirectML/CUDA |
 | XMP sync (notify)    |  |  +----------------+  |  | model manager (download,  |
 | lrcat importer       |  |  | Recipe (graph  |  |  | hash, licence manifest)   |
 | preview cache index  |  |  | JSON, versioned|  |  | mask cache                |
-| (flb-catalog,        |  |  | crs mapping)   |  |  +--------------------------+
-|  flb-lrimport)       |  |  +-------+--------+  |
+| (amb-catalog,        |  |  | crs mapping)   |  |  +--------------------------+
+|  amb-lrimport)       |  |  +-------+--------+  |
 +-----------+----------+  |          v           |
             |             |  +----------------+  |        +---------------------+
             |             |  | Pipeline graph |  |        |  I/O + COLOUR       |
             |             |  | nodes, ROI,    |<-+--------+  LibRaw/rawler,     |
             |             |  | cache keys,    |  |        |  lcms2, lensfun,    |
-            |             |  | fusion planner |  |        |  XMP/EXIF (flb-io,  |
-            |             |  +---+--------+---+  |        |  flb-color)         |
+            |             |  | fusion planner |  |        |  XMP/EXIF (amb-io,  |
+            |             |  +---+--------+---+  |        |  amb-color)         |
             |             |      |        |      |        +---------------------+
             |             |  +---v---+ +--v-----+|
             |             |  | GPU   | | CPU    ||   <- same node semantics,
@@ -351,13 +351,13 @@ Also expose the headless CLI (`flightbroom render`, `flightbroom catalog ...`) a
             |             +----------------------+
             |
    +--------v------------------------+      +----------------------------------+
-   |  flb-cli (headless)              |      |  Test harness: golden images,    |
+   |  amb-cli (headless)              |      |  Test harness: golden images,    |
    |  render, batch export, preset    |      |  preset fidelity suite, fuzzers  |
    |  tests, catalog tools            |      +----------------------------------+
    +----------------------------------+
 ```
 
-Crate layout (Cargo workspace): `flb-core` (recipe, graph, CPU kernels), `flb-gpu` (wgpu backend + WGSL), `flb-io` (raw/EXIF/XMP), `flb-color`, `flb-catalog`, `flb-lrimport` (lrcat + XMP/preset import), `flb-ai`, `flb-plugin`, `flb-cli`, `flb-app` (service layer), `ui/` (shell).
+Crate layout (Cargo workspace): `amb-core` (recipe, graph, CPU kernels), `amb-gpu` (wgpu backend + WGSL), `amb-io` (raw/EXIF/XMP), `amb-color`, `amb-catalog`, `amb-lrimport` (lrcat + XMP/preset import), `amb-ai`, `amb-plugin`, `amb-cli`, `amb-app` (service layer), `ui/` (shell).
 
 ### 8.2 Why this shape
 

@@ -1,4 +1,4 @@
-# Flightbroom: project scope
+# Ambrotype: project scope
 
 *A free, open-source Lightroom alternative that renders purchased Lightroom presets faithfully.*
 
@@ -126,11 +126,11 @@ From [09](research/09-market-commercial-alternatives.md), [12](research/12-user-
 | Tone equaliser: zone-based dodge/burn that preserves local contrast | darktable | ✅ [3], also a candidate engine for Highlights/Shadows |
 | Scene-referred tone mappers with better highlight roll-off (filmic/sigmoid/AgX) | darktable | ✅ [2] as an optional "native" rendering mode next to "Lightroom-match" |
 | Capture sharpening (deconvolution) and a choice of demosaic | RawTherapee/ART, darktable | ✅ [2–3] ported under the GPL |
-| Film negative conversion (the Negative Lab Pro plugin for LR is much loved) | darktable `negadoctor`, RapidRAW | ✅ [3] done v1: auto/roll analysis, 13 stock looks, `flb:` settings ([design](design/film-negatives.md)) |
+| Film negative conversion (the Negative Lab Pro plugin for LR is much loved) | darktable `negadoctor`, RapidRAW | ✅ [3] done v1: auto/roll analysis, 13 stock looks, `amb:` settings ([design](design/film-negatives.md)) |
 | One view with multi-select editing, no Library/Develop mode switching | Capture One | ✅ [2] UX principle |
 | Tethered shooting (industry standard) | Capture One | ✅ [4] (libgphoto2) |
 | Lens-softness correction from measured lens data | DxO | Later (needs data we don't have) |
-| AI "learn my style" from past edits | Imagen, Aftershoot (paid, per photo) | ✅ [3/4] via `flb match` and AI control ([design/ai-control](design/ai-control.md)) |
+| AI "learn my style" from past edits | Imagen, Aftershoot (paid, per photo) | ✅ [3/4] via `amb match` and AI control ([design/ai-control](design/ai-control.md)) |
 | Focus stacking, HDR and pano merge | ON1, Lightroom (no focus stacking) | Later [4] |
 | Full layers and compositing | ON1, Capture One | Not planned: masks and mask groups cover editing; compositing is a Photoshop/GIMP job |
 | Sky replacement and generative relight | Luminar | Not planned (users call the results "fake") |
@@ -192,7 +192,7 @@ From [09](research/09-market-commercial-alternatives.md), [12](research/12-user-
   - keep their copyright headers
   - credit them
   - ship our source (we will anyway)
-- **Selling is allowed.** Someone can sell builds of Flightbroom, but they must hand over the source and can't stop buyers from sharing it. No one can make a closed-source fork.
+- **Selling is allowed.** Someone can sell builds of Ambrotype, but they must hand over the source and can't stop buyers from sharing it. No one can make a closed-source fork.
 - **"-or-later"** lets users pick a future GPL version too. It's the common default, and it keeps compatibility options open.
 - **Patents:** GPLv3 includes a patent licence from each contributor to all users.
 - **Contributors:** we use a DCO sign-off (a "Signed-off-by" line). That records that each contributor has the right to submit their code, without a CLA.
@@ -220,8 +220,8 @@ From [09](research/09-market-commercial-alternatives.md), [12](research/12-user-
   - anything from decompiling Lightroom
 - **Users' purchased presets:** we read them locally and never redistribute or convert them for sharing. Some seller licences forbid conversion; reading them for application in the user's own editor is the defensible interoperability use. This needs counsel before 1.0.
 - **Trademark:** don't use "Lightroom" in the product name.
-  - A quick check on 2026-10-04 found no product, GitHub repository or obvious trademark named "Flightbroom" (web search, GitHub search). The .com/.org/.app/.dev domains didn't resolve, so they're probably unregistered.
-  - **Remaining risk:** the name is an evident play on "Lightroom", and Adobe enforces its marks. Parody names have still drawn complaints when the products compete in the same market.
+  - The working name was "Flightbroom", an evident play on "Lightroom". On 2026-10-05 the project was renamed **Ambrotype** (for now) to avoid that risk; see [legal-and-naming.md](legal-and-naming.md).
+  - Checks so far for "Ambrotype": no software or app using it found; ambrotype.org and ambrotype.photo looked unregistered. Trademark registers (TMview, WIPO) not yet searched.
   - **Mitigations:**
     - never use Adobe's logos, colours or the word "Lightroom" in branding
     - use "Lightroom" only descriptively ("imports Lightroom® presets"), with the trademark notice
@@ -251,7 +251,7 @@ The tag-level detail (full `crs:` table, file formats, Amount, Looks, masks) is 
 - **Profiles.** `CameraProfile` and `Look` resolve through a profile registry: the user's Adobe profiles if installed, else our fitted base profiles. Decoding `Look` `RGBTable`/`Table_` LUTs is a research task; no complete public decoder is known.
 - **Masks.** Geometric and range masks are native. AI masks are regenerated with our own segmenters, never stored as pixels. `RetouchAreas` from presets are ignored.
 - **Preset experience** (from user research, [12 §4, §6](research/12-user-feedback-and-design-implications.md)):
-  - Inputs: `.xmp`, `.lrtemplate`, and DNG "mobile presets" with embedded settings. All three are implemented in `flb-presets`.
+  - Inputs: `.xmp`, `.lrtemplate`, and DNG "mobile presets" with embedded settings. All three are implemented in `amb-presets`.
   - Apply-time include/exclude per setting group, e.g. "keep my white balance and exposure".
   - Layered presets, and applying a preset through a mask.
   - A preset browser with hover preview, search and favourites.
@@ -280,20 +280,20 @@ Durations are rough person-month (pm) estimates for experienced engineers.
   - fp16 vs fp32 intermediates
   - `ort` + SAM2-tiny on CoreML/DirectML/CPU
   - lrcat read on 3 catalog versions
-- Collect a preset corpus and run a tag census to prioritise by frequency (private; not committed). The tool exists: `flb preset census`.
+- Collect a preset corpus and run a tag census to prioritise by frequency (private; not committed). The tool exists: `amb preset census`.
 - Write the performance budgets (they become spike exit criteria), an ADR on data-safety invariants, the no-rug-pull and governance charter, and a usability-test plan with Lightroom switchers.
 - Exit: decisions recorded in `docs/decisions/` (ADRs).
 
 ### Phase 1: Engine + CLI + harness (about 5 pm). *The differentiator.*
-- Cargo workspace (`flb-core`, `flb-io`, `flb-color`, `flb-gpu`, `flb-presets`, `flb-cli`) per [06 §8](research/06-tech-stack-options.md).
+- Cargo workspace (`amb-core`, `amb-io`, `amb-color`, `amb-gpu`, `amb-presets`, `amb-cli`) per [06 §8](research/06-tech-stack-options.md).
 - Raw decode (rawler or LibRaw), black/white levels, demosaic (port RCD/AMaZE), highlight reconstruction.
 - Camera matrix → ProPhoto-linear; DCP reader and applier (HueSatMap, LookTable, ToneCurve, dual-illuminant interpolation).
 - WB Temp/Tint (Robertson), Exposure, Contrast, Highlights/Shadows/Whites/Blacks (first model), Vibrance/Saturation, HSL, point and parametric curves, Color Grading, vignette, grain, crop.
 - CPU reference kernels first, then WGSL kernels with a CPU/GPU equivalence test in CI.
 - Preset importer (XMP + lrtemplate), tag registry, fidelity report, Amount.
-- `flb render --preset x.xmp in.raw out.tif`.
+- `amb render --preset x.xmp in.raw out.tif`.
 - Calibration harness and first fitted tables; fidelity dashboard in CI.
-- `flb-protocol` develop-command set; `--json` across the CLI; a generated AI-readable settings reference (`docs/ai/`, built from the tag registry).
+- `amb-protocol` develop-command set; `--json` across the CLI; a generated AI-readable settings reference (`docs/ai/`, built from the tag registry).
 - Performance-benchmark CI. A camera-support process: per-camera fitted fallback profiles and a sample-submission pipeline. Users complain about Adobe's delays supporting new cameras.
 - Exit: on the corpus, the median ΔE00 vs Lightroom for the top 20 most-used tags is under target (proposal: < 2).
 
@@ -311,7 +311,7 @@ Durations are rough person-month (pm) estimates for experienced engineers.
   - copy/paste and auto-sync of settings with groups; auto-tone
   - a GPU background export queue with post-export hooks and "edit in external app"
   - **metadata-only `.lrcat` import** (folders, keywords, ratings, labels, collections), brought forward from Phase 3 because it's the main thing holding people in Lightroom
-- `flb mcp` server (bring-your-own-AI via MCP clients) and `flb match` v1 (look matching from sample images).
+- `amb mcp` server (bring-your-own-AI via MCP clients) and `amb match` v1 (look matching from sample images).
 - "Native" scene-referred rendering mode next to "Lightroom-match"; capture sharpening.
 - Exit: target performance budgets are met, and a usability test with Lightroom switchers passes.
 
@@ -359,19 +359,19 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
      - thumbnail/preview resampling
      - JPEG encode: libjpeg-turbo already has assembly
      - rav1d shows Rust can wrap dav1d's assembly within about 6% of C. Assembly lives in `.S` files per ISA, behind the same dispatch as rung 2.
-- **AI control surface** ([design/ai-control](design/ai-control.md)). The GUI, CLI, MCP server and an optional in-app assistant all drive the engine through `flb-protocol`, so any AI can use the real controls (undoable, previewed, local-first). "Make this look like these samples" is a deterministic look-matching solver (`flb match`) that outputs editable slider values, with an optional vision-model refinement loop.
+- **AI control surface** ([design/ai-control](design/ai-control.md)). The GUI, CLI, MCP server and an optional in-app assistant all drive the engine through `amb-protocol`, so any AI can use the real controls (undoable, previewed, local-first). "Make this look like these samples" is a deterministic look-matching solver (`amb match`) that outputs editable slider values, with an optional vision-model refinement loop.
 - **Adopted from the architecture study** ([11](research/11-architecture-lessons-from-large-oss.md), lessons from VLC, FFmpeg, Blender, OBS, GEGL, darktable, mpv, Zed, Rerun, Ruffle and Bevy):
   - **Language: Rust** for the engine, catalog, CLI and tooling. C/C++ only through existing libraries behind traits.
   - **Product shape like FFmpeg and libmpv:** the product is the library; the CLI and the GUI are clients of it.
   - **Workspace split:**
-    - `flb-recipe` (versioned settings model; the existing `flb-presets` feeds it)
-    - `flb-buffer` (tiled image buffers)
-    - `flb-graph` (planner, ROI, hash cache)
-    - `flb-nodes` (operation definitions)
-    - `flb-cpu` (reference kernels)
-    - `flb-gpu` (the only crate that touches wgpu)
-    - `flb-io`, `flb-color`, `flb-catalog`, `flb-protocol` (UI↔engine commands), `flb-testkit` (golden images, sweep generator)
-    - `flb-cli`, then the app
+    - `amb-recipe` (versioned settings model; the existing `amb-presets` feeds it)
+    - `amb-buffer` (tiled image buffers)
+    - `amb-graph` (planner, ROI, hash cache)
+    - `amb-nodes` (operation definitions)
+    - `amb-cpu` (reference kernels)
+    - `amb-gpu` (the only crate that touches wgpu)
+    - `amb-io`, `amb-color`, `amb-catalog`, `amb-protocol` (UI↔engine commands), `amb-testkit` (golden images, sweep generator)
+    - `amb-cli`, then the app
   - **VLC-style capability and priority registry:** raw decoders (rawler → LibRaw → platform), colour, AI and GPU/CPU implementations are selected by probe and priority, never hard-wired.
   - **GPU boundary:** a narrow `Backend` trait whose unit is "run node X on tile T". The CPU and wgpu backends both implement it and are checked for equivalence in CI (FFmpeg's `checkasm` idea).
   - **Security:**
@@ -428,7 +428,7 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 3. Fidelity target that defines "compatible" (proposal: median ΔE00 < 2, p95 < 5 over the corpus for the top-20 tags).
 4. Who holds a licensed Lightroom Classic install to run the calibration sweeps, and where reference renders are stored (private; only CC0 inputs are committed).
 5. Whether to reach out to RapidRAW's maintainer about a shared, Adobe-compatible engine crate.
-6. Product name: renaming away from the "Lightroom" pun is recommended. Shortlist: Ambrotype, Photochrom, Argentype (see [legal-and-naming.md](legal-and-naming.md) for checks, registration and the rename checklist).
+6. Product name: renamed from "Flightbroom" to **Ambrotype** (for now) on 2026-10-05. Still to do: trademark search, domain, handles, GitHub repo rename. Alternatives kept: Photochrom, Argentype (see [legal-and-naming.md](legal-and-naming.md) for checks, registration and the rename checklist).
 
 ---
 

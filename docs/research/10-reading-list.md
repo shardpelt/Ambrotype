@@ -1,4 +1,4 @@
-# Flightbroom Reading List: Building a Lightroom Alternative
+# Ambrotype Reading List: Building a Lightroom Alternative
 
 **Last updated:** 2026-10-03  
 **Purpose:** Research collection for implementing a free, open-source Lightroom/Adobe Camera Raw alternative with faithful colour science and UX.

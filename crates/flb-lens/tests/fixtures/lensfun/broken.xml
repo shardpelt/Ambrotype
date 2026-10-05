@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Deliberately malformed: the loader must skip it and report it. -->
+<lensdatabase version="2">
+    <lens>
+        <maker>Nobody</maker>
+</lensdatabase>

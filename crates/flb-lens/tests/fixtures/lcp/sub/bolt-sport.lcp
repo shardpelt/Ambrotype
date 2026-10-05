@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Made-up test profile in the LCP attribute syntax. Not a real calibration. -->
+<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Test">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about=""
+    xmlns:photoshop="http://ns.adobe.com/photoshop/1.0/"
+    xmlns:stCamera="http://ns.adobe.com/photoshop/1.0/camera-profile">
+   <photoshop:CameraProfiles>
+    <rdf:Seq>
+     <rdf:li rdf:parseType="Resource"
+      stCamera:Author="Flightbroom tests"
+      stCamera:Make="Acme"
+      stCamera:Model="Mini 2"
+      stCamera:CameraRawProfile="False"
+      stCamera:LensPrettyName="Bolt 70-200mm f/4 Sport"
+      stCamera:Lens="70-200mm F4 Sport"
+      stCamera:LensID="77"
+      stCamera:ProfileName="Bolt 70-200mm f/4 Sport &amp; friends"
+      stCamera:SensorFormatFactor="1.5"
+      stCamera:ImageWidth="6000"
+      stCamera:ImageLength="4000"
+      stCamera:FocalLength="70"
+      stCamera:FocusDistance="1000"
+      stCamera:ApertureValue="4">
+      <stCamera:PerspectiveModel
+       stCamera:Version="2"
+       stCamera:FocalLengthX="2.0"
+       stCamera:FocalLengthY="2.1"
+       stCamera:ImageXCenter="0.5"
+       stCamera:ImageYCenter="0.33"
+       stCamera:RadialDistortParam1="0.01"
+       stCamera:RadialDistortParam2="0"
+       stCamera:RadialDistortParam3="0">
+       <stCamera:ChromaticRedGreenModel
+        stCamera:ScaleFactor="1.001"
+        stCamera:RadialDistortParam1="0.002"/>
+       <stCamera:VignetteModel
+        stCamera:VignetteModelParam1="-0.2"
+        stCamera:VignetteModelParam2="0.01"
+        stCamera:VignetteModelParam3="0"/>
+      </stCamera:PerspectiveModel>
+     </rdf:li>
+     <rdf:li>
+      <rdf:Description
+       stCamera:Author="Flightbroom tests"
+       stCamera:Make="Acme"
+       stCamera:Model="Mini 2"
+       stCamera:CameraRawProfile="False"
+       stCamera:LensPrettyName="Bolt 70-200mm f/4 Sport"
+       stCamera:Lens="70-200mm F4 Sport"
+       stCamera:ProfileName="Bolt 70-200mm f/4 Sport &amp; friends"
+       stCamera:SensorFormatFactor="1.5"
+       stCamera:ImageWidth="6000"
+       stCamera:ImageLength="4000"
+       stCamera:FocalLength="135"
+       stCamera:FocusDistance="1000"
+       stCamera:ApertureValue="4">
+       <stCamera:PerspectiveModel>
+        <rdf:Description
+         stCamera:Version="2"
+         stCamera:FocalLengthX="4.0"
+         stCamera:FocalLengthY="4.0"
+         stCamera:ImageXCenter="0.5"
+         stCamera:ImageYCenter="0.33"
+         stCamera:RadialDistortParam1="0.03"
+         stCamera:RadialDistortParam2="-0.002"
+         stCamera:TangentialDistortParam1="0.0004">
+         <stCamera:ChromaticRedGreenModel>
+          <rdf:Description stCamera:ScaleFactor="1.003" stCamera:RadialDistortParam1="0.004"/>
+         </stCamera:ChromaticRedGreenModel>
+         <stCamera:ChromaticBlueGreenModel>
+          <rdf:Description stCamera:ScaleFactor="0.998"/>
+         </stCamera:ChromaticBlueGreenModel>
+         <stCamera:VignetteModel>
+          <rdf:Description stCamera:VignetteModelParam1="-0.4" stCamera:VignetteModelParam2="0.03" stCamera:VignetteModelParam3="0"/>
+         </stCamera:VignetteModel>
+        </rdf:Description>
+       </stCamera:PerspectiveModel>
+      </rdf:Description>
+     </rdf:li>
+     <rdf:li>
+      <rdf:Description
+       stCamera:Make="Acme"
+       stCamera:Model="Mini 2"
+       stCamera:CameraRawProfile="False"
+       stCamera:LensPrettyName="Bolt 70-200mm f/4 Sport"
+       stCamera:Lens="70-200mm F4 Sport"
+       stCamera:SensorFormatFactor="1.5"
+       stCamera:ImageWidth="6000"
+       stCamera:ImageLength="4000"
+       stCamera:FocalLength="200"
+       stCamera:ApertureValue="4">
+       <stCamera:PerspectiveModel>
+        <rdf:Description
+         stCamera:Version="2"
+         stCamera:FocalLengthX="6.0"
+         stCamera:RadialDistortParam1="0.05"/>
+       </stCamera:PerspectiveModel>
+      </rdf:Description>
+     </rdf:li>
+    </rdf:Seq>
+   </photoshop:CameraProfiles>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

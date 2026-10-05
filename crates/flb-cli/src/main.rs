@@ -34,6 +34,12 @@ USAGE:
                                             Answer protocol queries (get_param, list_params, describe,
                                             list_groups) as JSON
     flb protocol schema [command|query]     Print the JSON Schema of commands and queries
+    flb lens match --camera-make X --camera-model Y --lens-model M [--lens-make L] [--focal F]
+                   [--aperture A] [--distance D] [--crop C] [--lens-db DIR] [--lcp-dir DIR]
+                                            Find the lens profile for a shot (Adobe .lcp files you have,
+                                            then the lensfun database; default locations or
+                                            FLB_LCP_DIRS / FLB_LENSFUN_DB) and print the models
+                                            interpolated to its focal length, aperture and distance
     flb settings reference [--json]         Print the settings reference (docs/ai/settings-reference.md)
 
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
@@ -51,7 +57,9 @@ fn main() -> ExitCode {
             "--json" => json = true,
             "--dry-run" => dry_run = true,
             "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look"
-            | "--calibration" | "--commands" | "--queries" => match iter.next() {
+            | "--calibration" | "--commands" | "--queries" | "--camera-make" | "--camera-model"
+            | "--lens-make" | "--lens-model" | "--focal" | "--aperture" | "--distance"
+            | "--crop" | "--lens-db" | "--lcp-dir" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -114,6 +122,7 @@ fn main() -> ExitCode {
             Some(queries) => query(Path::new(state), queries),
             None => Err("query needs --queries <file.json> (or - for stdin)".into()),
         },
+        ["lens", "match"] => lens_match_output(&options).map(|text| println!("{text}")),
         ["protocol", "schema"] => print_json(&flb_protocol::schema::protocol_schema()),
         ["protocol", "schema", "command"] => print_json(&flb_protocol::schema::command_schema()),
         ["protocol", "schema", "query"] => print_json(&flb_protocol::schema::query_schema()),
@@ -542,6 +551,194 @@ fn render(
     Ok(())
 }
 
+/// Parse an optional numeric option.
+fn number_option(options: &BTreeMap<&str, &str>, name: &str) -> Result<Option<f64>, String> {
+    options
+        .get(name)
+        .map(|v| {
+            v.trim()
+                .parse::<f64>()
+                .ok()
+                .filter(|n| n.is_finite() && *n > 0.0)
+                .ok_or_else(|| format!("bad {name} {v:?} (a positive number)"))
+        })
+        .transpose()
+}
+
+/// `flb lens match`: returns what to print, so it can be tested without a process.
+fn lens_match_output(options: &BTreeMap<&str, &str>) -> Result<String, String> {
+    use flb_lens::{LcpLibrary, LensfunDb, ProfileHint, ShotInfo};
+    use std::fmt::Write;
+
+    let required = |name: &str| {
+        options
+            .get(name)
+            .map(|v| v.to_string())
+            .ok_or_else(|| format!("lens match needs {name}"))
+    };
+    let mut shot = ShotInfo {
+        camera_make: required("--camera-make")?,
+        camera_model: required("--camera-model")?,
+        lens_make: options.get("--lens-make").map(|v| v.to_string()),
+        lens_model: Some(required("--lens-model")?),
+        focal_mm: number_option(options, "--focal")?,
+        aperture: number_option(options, "--aperture")?,
+        distance_m: number_option(options, "--distance")?,
+        crop_factor: number_option(options, "--crop")?,
+    };
+    let mut out = String::new();
+
+    let db = match options.get("--lens-db") {
+        Some(dir) => {
+            let path = Path::new(dir);
+            let db = if path.is_file() {
+                LensfunDb::load_files([path])
+            } else {
+                LensfunDb::load_dir(path).map_err(|e| format!("{dir}: {e}"))?
+            };
+            Some(db)
+        }
+        None => LensfunDb::load_default(),
+    };
+    match &db {
+        Some(db) => {
+            let dirs: Vec<String> = db
+                .files
+                .iter()
+                .filter_map(|f| f.parent().map(|p| p.display().to_string()))
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .collect();
+            let _ = writeln!(
+                out,
+                "lensfun: {} files ({} failed), {} cameras, {} lenses from {}",
+                db.files.len(),
+                db.failed.len(),
+                db.cameras.len(),
+                db.lenses.len(),
+                if dirs.is_empty() {
+                    "-".into()
+                } else {
+                    dirs.join(", ")
+                }
+            );
+            for (_, err) in &db.failed {
+                let _ = writeln!(out, "  ! {err}");
+            }
+        }
+        None => {
+            let _ = writeln!(
+                out,
+                "lensfun: no database found (install lensfun, set FLB_LENSFUN_DB or pass --lens-db)"
+            );
+        }
+    }
+    let lcp = match options.get("--lcp-dir") {
+        Some(dir) => LcpLibrary::scan([Path::new(dir)]),
+        None => LcpLibrary::scan_default(),
+    };
+    let _ = writeln!(out, "LCP: {} profile files", lcp.files.len());
+
+    let mut crop_note = "given";
+    if shot.crop_factor.is_none() {
+        shot.crop_factor = db
+            .as_ref()
+            .and_then(|db| db.camera_crop(&shot.camera_make, &shot.camera_model));
+        crop_note = if shot.crop_factor.is_some() {
+            "lensfun camera database"
+        } else {
+            "unknown"
+        };
+    }
+    let opt = |v: Option<f64>, unit: &str| v.map_or("-".to_string(), |v| format!("{v}{unit}"));
+    let _ = writeln!(
+        out,
+        "\nshot: {} {} | lens: {} {} | focal {} | f/{} | distance {} | crop {} ({crop_note})",
+        shot.camera_make,
+        shot.camera_model,
+        shot.lens_make.as_deref().unwrap_or("-"),
+        shot.lens_model.as_deref().unwrap_or("-"),
+        opt(shot.focal_mm, " mm"),
+        opt(shot.aperture, ""),
+        opt(shot.distance_m, " m"),
+        opt(shot.crop_factor, ""),
+    );
+
+    let _ = writeln!(out, "\ncandidates:");
+    match lcp.find(&shot) {
+        Some(m) => {
+            let _ = writeln!(
+                out,
+                "  LCP      {} (score {:.3}) {}",
+                m.file.lens_name().unwrap_or("-"),
+                m.score,
+                m.file.path.display()
+            );
+        }
+        None => {
+            let _ = writeln!(out, "  LCP      no match");
+        }
+    }
+    match db.as_ref().and_then(|db| db.find_lens(&shot)) {
+        Some(m) => {
+            let _ = writeln!(
+                out,
+                "  lensfun  {} (score {:.3}, calibration crop {}) {}",
+                m.lens.model(),
+                m.score,
+                m.calibration.crop_factor,
+                m.calibration.file.display()
+            );
+        }
+        None => {
+            let _ = writeln!(out, "  lensfun  no match");
+        }
+    }
+
+    let Some(c) = flb_lens::resolve(&shot, &ProfileHint::default(), Some(&lcp), db.as_ref()) else {
+        let _ = write!(out, "\nprofile: none");
+        return Ok(out);
+    };
+    let _ = writeln!(out, "\nprofile: {:?} | {}", c.source, c.description);
+    let _ = writeln!(out, "  file: {}", c.file.as_deref().unwrap_or("-"));
+    let line = |name: &str, model: Option<String>, why: &str| match model {
+        Some(m) => format!("  {name:<11} {m}"),
+        None => format!("  {name:<11} none{why}"),
+    };
+    let _ = writeln!(
+        out,
+        "{}",
+        line(
+            "distortion",
+            c.distortion.map(|(d, f)| format!("{d}\n              {f}")),
+            ""
+        )
+    );
+    let _ = writeln!(
+        out,
+        "{}",
+        line(
+            "tca",
+            c.tca.map(|(t, f)| format!("{t}\n              {f}")),
+            ""
+        )
+    );
+    let _ = write!(
+        out,
+        "{}",
+        line(
+            "vignetting",
+            c.vignetting.map(|(v, f)| format!("{v}\n              {f}")),
+            if shot.aperture.is_none() {
+                " (needs --aperture)"
+            } else {
+                ""
+            }
+        )
+    );
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -591,5 +788,66 @@ mod tests {
         .unwrap_err();
         assert!(err.contains("did you mean Exposure2012"), "{err}");
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn lens_match_command() {
+        let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("../flb-lens/tests/fixtures");
+        let lens_db = fixtures.join("lensfun").display().to_string();
+        let lcp_dir = fixtures.join("lcp").display().to_string();
+        let empty_dir = fixtures.join("lensfun").display().to_string();
+        let mut options: BTreeMap<&str, &str> = BTreeMap::from([
+            ("--camera-make", "Acme"),
+            ("--camera-model", "Mini 2"),
+            ("--lens-make", "Acme"),
+            ("--lens-model", "Zoomar 24-70mm F2.8 Pro | A"),
+            ("--focal", "47"),
+            ("--aperture", "4"),
+            ("--lens-db", lens_db.as_str()),
+            ("--lcp-dir", lcp_dir.as_str()),
+        ]);
+        let text = lens_match_output(&options).unwrap();
+        assert!(
+            text.contains("crop 1.5 (lensfun camera database)"),
+            "{text}"
+        );
+        assert!(
+            text.contains("profile: Lcp | LCP: Adobe (Acme Zoomar"),
+            "{text}"
+        );
+        assert!(
+            text.contains(
+                "lensfun  Acme Zoomar 24-70mm f/2.8 Pro | A (score 1.000, calibration crop 1.5)"
+            ),
+            "{text}"
+        );
+        assert!(text.contains("distortion  acm k=["), "{text}");
+
+        // Without LCP profiles the lensfun calibration for the APS-C body is used.
+        options.insert("--lcp-dir", empty_dir.as_str());
+        let text = lens_match_output(&options).unwrap();
+        assert!(text.contains("profile: Lensfun | lensfun: Acme Zoomar 24-70mm f/2.8 Pro | A (calibrated at crop 1.5)"), "{text}");
+        // 47 mm is halfway between a poly3 (24 mm) and a ptlens (70 mm) calibration.
+        assert!(
+            text.contains("distortion  ptlens a=0.001 b=0.002 c=0.003"),
+            "{text}"
+        );
+        assert!(
+            text.contains("tca         linear kr=1.002 kb=0.9985"),
+            "{text}"
+        );
+
+        options.insert("--focal", "wide");
+        assert!(
+            lens_match_output(&options)
+                .unwrap_err()
+                .contains("bad --focal")
+        );
+        options.remove("--lens-model");
+        assert!(
+            lens_match_output(&options)
+                .unwrap_err()
+                .contains("--lens-model")
+        );
     }
 }

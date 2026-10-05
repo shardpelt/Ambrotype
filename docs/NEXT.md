@@ -28,8 +28,10 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
 3. **Local Highlights/Shadows** (edge-aware), then **masks** (linear/radial/brush/range).
 4. **Camera profiles** (read the user's DCPs in place, fitted base looks) once trial data exists.
 5. **Calibration panel, B&W mixer, Point Color.**
-6. **Auto and Randomize buttons, Tutorial mode** ([design/future-ideas.md](design/future-ideas.md)).
-7. **GPU preview path,** and installers per OS (`cargo tauri build`, in CI).
+6. **Feedback button** (pre-filled GitHub issue, opt-in usage report): small and high value, so do it early, ideally with the first builds testers get.
+7. **Token-efficient AI layer:** core card, `amb do` compact syntax, `--brief` output, `amb stats`, then the MCP server.
+8. **Auto and Randomize buttons, Tutorial mode** ([design/future-ideas.md](design/future-ideas.md)).
+9. **GPU preview path,** and installers per OS (`cargo tauri build`, in CI).
 
 ## Working notes
 

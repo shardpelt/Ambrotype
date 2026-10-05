@@ -41,3 +41,67 @@ A guided, interactive way to learn editing inside the app. Free, unlike most cou
 - **Lightroom switchers:** a lesson that maps Lightroom panels and shortcuts to ours, and shows how to load their presets and sidecars.
 - **Optional AI coach (bring-your-own-AI):** explains why a preset looks the way it does, or suggests the next step. It can only use the same commands a user can, so every suggestion is visible and undoable.
 - Lessons are data files (steps, target conditions, text), so the community can write and translate them.
+
+## Feedback button and usage insights
+
+Decide what to refine and build next from real use, not guesses. It must stay **privacy-first and opt-in**: nothing leaves the computer without the user seeing it and clicking send. That is part of the no-rug-pull promise in SCOPE.
+
+- **Feedback button** (GUI toolbar and `amb feedback` in the CLI):
+  - Pick a kind:
+    - Bug
+    - Idea
+    - **Looks different from Lightroom**: the most valuable kind for us
+    - Slow
+  - Add a short text. Optionally attach context, all shown before sending:
+    - app version and OS
+    - camera and lens model
+    - the current settings (XMP)
+    - the not-rendered list
+    - preview timing
+  - The photo is attached only if the user ticks it.
+- **Delivery without running a server:**
+  - The default opens a pre-filled **GitHub issue** in the browser (title, labels, body). It's public, free, needs no account system, and is easy to triage and vote on with 👍.
+  - Alternatives: a pre-filled email; later, a small self-hosted endpoint if volume needs it.
+- **Usage insights (opt-in, local first):**
+  - The app keeps a small local counter file:
+    - which panels and sliders are used
+    - which preset settings were **not rendered** (most important: it shows exactly what bought presets need)
+    - preview and export times
+    - crashes
+  - "Share usage report" shows the file and sends it as an issue attachment.
+  - No identifiers, no file names, no photos.
+- **Closing the loop:** a `feedback` label set and a monthly "top requests" triage that updates GAPS.md. Release notes link back to the issues they close.
+
+## Token-efficient AI docs and API
+
+So AI assistants can drive Ambrotype cheaply and reliably: fewer tokens per task, fewer mistakes, fewer retries.
+
+**Writing the docs in Chinese, pure math or binary would not help.** Today's model tokenizers are trained mostly on English and code.
+- Chinese text usually costs about as many tokens as the same meaning in terse English, often more.
+- Binary or machine code costs far more tokens per idea, and models misread it.
+- Math notation is compact only for formulas.
+- The real cost is mistakes: a cryptic doc causes wrong calls and retries, which cost more than the words saved.
+
+What does save tokens:
+
+1. **Tiered docs.** Load only what's needed. Current sizes (estimated at 4 characters per token):
+   - `llms.txt`: about 400 tokens
+   - `docs/ai/README.md`: about 4,000
+   - `docs/ai/settings-reference.md`: about 15,000
+
+   Plan:
+   - a ≤ 300-token **core card**: the command grammar plus the 30 most used settings, with ranges in one line each
+   - per-group reference files fetched on demand (`amb ref tone`)
+   - the full reference only for search
+2. **Terse, regular formats.**
+   - One line per setting: `Exposure2012 -5..5 =0 EV`.
+   - Short, stable names. No prose where a table or line does the job.
+   - The same wording everywhere, so prompt caching works: a stable prefix is cached and then billed at a fraction of the price.
+3. **Measure, don't guess.** Count tokens with the provider's token-count API in CI, and fail if the core card grows past its budget.
+
+**Token-efficient API (yes, a good idea):**
+- **Compact command syntax.** For example `amb do photo.nef "Exposure2012=+0.5 Contrast2012+=10 reset:hsl"`: one short string instead of a JSON array. Short aliases are optional (`exp`, `con`, `hl`, `sh`), defined once in the core card.
+- **Batch and diff-only output.** Many edits per call. `--brief` replies with only what changed (`Exposure2012 0→0.5`) plus warnings, not the whole state.
+- **Numbers instead of pictures.** An image costs roughly a thousand tokens or more. `amb stats photo.nef --brief` can return a few hundred tokens: histogram percentiles, clipping %, mean colour, white-balance estimate. Check a picture only when needed, at small size.
+- **MCP server.** Assistants call typed tools directly, with no parsing of help text, and the tool list is cached. Same commands as `amb-protocol`.
+- **Look matching does the heavy lifting.** `amb match photo.nef ref1.jpg ref2.jpg` solves the sliders in code. The AI then reviews a short diff instead of iterating by trial and error.

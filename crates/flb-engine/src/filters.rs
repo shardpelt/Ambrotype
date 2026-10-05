@@ -6,7 +6,7 @@
 use rayon::prelude::*;
 
 /// Transpose a `w × h` plane into `h × w`.
-fn transpose(src: &[f32], w: usize, h: usize) -> Vec<f32> {
+pub(crate) fn transpose(src: &[f32], w: usize, h: usize) -> Vec<f32> {
     let mut out = vec![0.0f32; src.len()];
     const B: usize = 32;
     out.par_chunks_mut(h * B)

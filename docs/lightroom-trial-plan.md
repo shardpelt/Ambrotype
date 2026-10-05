@@ -36,11 +36,12 @@ A month of Lightroom Classic is our only chance to gather **ground truth**: refe
 
 **Weeks 1–2: slider sweeps (the core harness data)**
 
-The kit is generated with `flb sweep generate --out <kit-dir> [--groups tone,presence,...] <raws>` (see `flb sweep plan`). The full plan is 66 sweeps and about 630 exports per input image.
+The kit is generated with `flb sweep generate --out <kit-dir> [--groups tone,presence,...] <raws>` (see `flb sweep plan`). The full plan is 74 sweeps and about 680 exports per input image.
 
 **Storage budget.** A full-resolution 16-bit TIFF of a 24 MP image is about 150 MB, so the full plan on 10 raws would be about 1 TB. To keep it manageable:
 - Export **global** controls at 2048 px on the long edge: tone, white balance, HSL, colour grading, calibration and vignette.
 - Export **spatial** controls at full resolution but on a 1024 px crop set in the baseline: Texture, Clarity, Dehaze, sharpening, NR and grain.
+- Export **lens** sweeps (group `lens`) at full resolution and **uncropped**: distortion, the blank areas and Constrain Crop need the whole frame. Run the profile sweeps (`LensProfileDistortionScale`, `LensProfileVignettingScale`) only on raws whose lens Lightroom recognises. Note which profile it picked (Lens Corrections → Profile), and whether "Remove Chromatic Aberration" alone changes a high-contrast edge shot (answers whether profile CA data is used).
 - That brings the total to about 30–60 GB.
 
 5. Import the synthetic DNGs with their sweep sidecars. Batch-export everything; the volume is about 40 controls × 11 values × the targets.

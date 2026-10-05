@@ -23,6 +23,7 @@ use rayon::prelude::*;
 
 use crate::buffer::Image;
 use crate::color::OkLab;
+use crate::filters::transpose;
 
 /// Strength and shape constants, fitted later against Lightroom sweeps.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -349,8 +350,13 @@ pub fn apply_camera(
                     blank_row[x] = true;
                 }
                 let pos = channel_positions(gx, gy);
-                for (c, (sx, sy)) in pos.iter().enumerate() {
-                    row[x * 3 + c] = sample_bicubic(&src, width, height, c, *sx, *sy);
+                if pos[0] == pos[1] && pos[2] == pos[1] {
+                    let v = sample_bicubic_rgb(&src, width, height, gx, gy);
+                    row[x * 3..x * 3 + 3].copy_from_slice(&v);
+                } else {
+                    for (c, (sx, sy)) in pos.iter().enumerate() {
+                        row[x * 3 + c] = sample_bicubic(&src, width, height, c, *sx, *sy);
+                    }
                 }
             }
         });
@@ -431,6 +437,35 @@ fn sample_bicubic(rgb: &[f32], w: usize, h: usize, c: usize, x: f64, y: f64) -> 
             racc += wxi * row[xx * 3 + c];
         }
         acc += wyj * racc;
+    }
+    acc
+}
+
+/// Catmull-Rom sample of all three channels at (x, y).
+fn sample_bicubic_rgb(rgb: &[f32], w: usize, h: usize, x: f64, y: f64) -> [f32; 3] {
+    let x = x.clamp(0.0, (w - 1) as f64);
+    let y = y.clamp(0.0, (h - 1) as f64);
+    let (x0, y0) = (x.floor() as isize, y.floor() as isize);
+    let (wx, wy) = (
+        catmull_rom((x - x0 as f64) as f32),
+        catmull_rom((y - y0 as f64) as f32),
+    );
+    let xs: [usize; 4] =
+        std::array::from_fn(|i| (x0 + i as isize - 1).clamp(0, w as isize - 1) as usize);
+    let mut acc = [0.0f32; 3];
+    for (j, wyj) in wy.iter().enumerate() {
+        let yy = (y0 + j as isize - 1).clamp(0, h as isize - 1) as usize;
+        let row = &rgb[yy * w * 3..(yy + 1) * w * 3];
+        let mut racc = [0.0f32; 3];
+        for (xx, wxi) in xs.iter().zip(wx) {
+            let p = &row[xx * 3..xx * 3 + 3];
+            racc[0] += wxi * p[0];
+            racc[1] += wxi * p[1];
+            racc[2] += wxi * p[2];
+        }
+        for c in 0..3 {
+            acc[c] += wyj * racc[c];
+        }
     }
     acc
 }
@@ -619,12 +654,12 @@ pub fn apply_defringe(img: &mut Image, d: &Defringe, k: &LensStrengths) {
     }
     let (w, h) = (img.width, img.height);
     let oklab = OkLab::new();
-    let lab: Vec<[f32; 3]> = img
+    let positive = |p: &[f32]| [p[0].max(0.0), p[1].max(0.0), p[2].max(0.0)];
+    let lightness: Vec<f32> = img
         .rgb
         .par_chunks(3)
-        .map(|p| oklab.from_working([p[0].max(0.0), p[1].max(0.0), p[2].max(0.0)]))
+        .map(|p| oklab.from_working(positive(p))[0])
         .collect();
-    let lightness: Vec<f32> = lab.iter().map(|l| l[0]).collect();
     let resolution = ((w * h) as f64 / 24e6).sqrt();
     let amount = d.purple_amount.max(d.green_amount);
     let radius = ((1.0 + amount * k.defringe_radius) * resolution)
@@ -664,15 +699,15 @@ pub fn apply_defringe(img: &mut Image, d: &Defringe, k: &LensStrengths) {
     let (clo, chi) = (k.defringe_contrast_lo, k.defringe_contrast_hi);
     img.rgb
         .par_chunks_mut(3)
-        .zip(lab.par_iter())
         .zip(contrast.par_iter())
-        .for_each(|((p, l), c)| {
-            let chroma = f64::from(l[1].hypot(l[2]));
-            if chroma < 0.01 {
-                return;
-            }
+        .for_each(|(p, c)| {
             let edge = smoothstep(clo, chi, f64::from(*c));
             if edge <= 0.0 {
+                return;
+            }
+            let l = oklab.from_working(positive(p));
+            let chroma = f64::from(l[1].hypot(l[2]));
+            if chroma < 0.01 {
                 return;
             }
             let hue = f64::from(l[2].atan2(l[1])).to_degrees().rem_euclid(360.0);
@@ -689,39 +724,28 @@ pub fn apply_defringe(img: &mut Image, d: &Defringe, k: &LensStrengths) {
 
 /// max − min of `plane` over a (2r+1)² window, separable.
 fn local_range(plane: &[f32], w: usize, h: usize, r: usize) -> Vec<f32> {
-    let pass = |src: &[f32], width: usize, height: usize, take_max: bool| -> Vec<f32> {
-        let mut out = vec![0.0f32; src.len()];
-        out.par_chunks_mut(width)
-            .zip(src.par_chunks(width))
-            .for_each(|(o, s)| {
-                for (x, ov) in o.iter_mut().enumerate() {
+    // One pass along rows of length `width`, producing (max, min) planes.
+    let pass = |max_src: &[f32], min_src: &[f32], width: usize| -> (Vec<f32>, Vec<f32>) {
+        let mut max_out = vec![0.0f32; max_src.len()];
+        let mut min_out = vec![0.0f32; min_src.len()];
+        max_out
+            .par_chunks_mut(width)
+            .zip(min_out.par_chunks_mut(width))
+            .zip(max_src.par_chunks(width).zip(min_src.par_chunks(width)))
+            .for_each(|((mo, mi), (ms, ns))| {
+                for x in 0..width {
                     let lo = x.saturating_sub(r);
                     let hi = (x + r).min(width - 1);
-                    let window = &s[lo..=hi];
-                    *ov = if take_max {
-                        window.iter().copied().fold(f32::MIN, f32::max)
-                    } else {
-                        window.iter().copied().fold(f32::MAX, f32::min)
-                    };
+                    mo[x] = ms[lo..=hi].iter().copied().fold(f32::MIN, f32::max);
+                    mi[x] = ns[lo..=hi].iter().copied().fold(f32::MAX, f32::min);
                 }
             });
-        let _ = height;
-        out
+        (max_out, min_out)
     };
-    let transpose = |src: &[f32], width: usize, height: usize| -> Vec<f32> {
-        let mut t = vec![0.0f32; src.len()];
-        for y in 0..height {
-            for x in 0..width {
-                t[x * height + y] = src[y * width + x];
-            }
-        }
-        t
-    };
-    let max_h = pass(plane, w, h, true);
-    let min_h = pass(plane, w, h, false);
-    let max_v = transpose(&pass(&transpose(&max_h, w, h), h, w, true), h, w);
-    let min_v = transpose(&pass(&transpose(&min_h, w, h), h, w, false), h, w);
-    max_v.iter().zip(&min_v).map(|(a, b)| a - b).collect()
+    let (max_h, min_h) = pass(plane, plane, w);
+    let (max_v, min_v) = pass(&transpose(&max_h, w, h), &transpose(&min_h, w, h), h);
+    let range: Vec<f32> = max_v.par_iter().zip(&min_v).map(|(a, b)| a - b).collect();
+    transpose(&range, h, w)
 }
 
 /// Paint the blank areas left by the geometric corrections.

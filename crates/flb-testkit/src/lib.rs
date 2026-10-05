@@ -185,6 +185,33 @@ pub fn default_plan() -> Vec<Sweep> {
     ));
     plan.extend(signed("effects", &["PostCropVignetteAmount"]));
     plan.extend(unsigned("effects", &["GrainAmount"]));
+    // Lens Corrections. The profile sweeps need a real raw whose lens Lightroom
+    // has a profile for; the manual ones work on any input.
+    plan.extend(signed(
+        "lens",
+        &["LensManualDistortionAmount", "VignetteAmount"],
+    ));
+    plan.push(
+        Sweep::new("lens", "VignetteMidpoint", &[0.0, 25.0, 75.0, 100.0])
+            .with("VignetteAmount", Value::Number(100.0)),
+    );
+    plan.push(
+        Sweep::new(
+            "lens",
+            "LensManualDistortionAmount",
+            &[-100.0, -50.0, 50.0, 100.0],
+        )
+        .with("CropConstrainToWarp", Value::Number(1.0)),
+    );
+    for tag in ["LensProfileDistortionScale", "LensProfileVignettingScale"] {
+        plan.push(
+            Sweep::new("lens", tag, &[0.0, 50.0, 100.0, 150.0, 200.0])
+                .with("LensProfileEnable", Value::Number(1.0)),
+        );
+    }
+    for tag in ["DefringePurpleAmount", "DefringeGreenAmount"] {
+        plan.push(Sweep::new("lens", tag, &[2.0, 5.0, 10.0, 20.0]));
+    }
     plan
 }
 

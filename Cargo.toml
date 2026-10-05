@@ -1,0 +1,15 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.85"
+publish = false
+# Licence intentionally not set yet: pending the owner's decision (docs/SCOPE.md §6).
+
+[workspace.dependencies]
+quick-xml = "0.37"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"

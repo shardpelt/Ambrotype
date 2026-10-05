@@ -1,0 +1,16 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Synthetic test preset written for Ambrotype (not a commercial preset). -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4"
+    crs:Exposure2012="+0.20" crs:Contrast2012="+35" crs:Highlights2012="-60" crs:Shadows2012="+45"
+    crs:Whites2012="+15" crs:Blacks2012="-20" crs:Vibrance="+25" crs:Saturation="-5"
+    crs:HueAdjustmentGreen="+30" crs:SaturationAdjustmentGreen="-35" crs:SaturationAdjustmentBlue="+15"
+    crs:LuminanceAdjustmentOrange="+10" crs:LuminanceAdjustmentBlue="-15"
+    crs:ColorGradeShadowHue="195" crs:ColorGradeShadowSat="30"
+    crs:ColorGradeHighlightHue="35" crs:ColorGradeHighlightSat="25"
+    crs:ColorGradeBlending="60" crs:SplitToningBalance="0">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Punchy Teal &amp; Orange</rdf:li></rdf:Alt></crs:Name>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

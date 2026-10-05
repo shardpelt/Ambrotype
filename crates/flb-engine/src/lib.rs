@@ -15,6 +15,7 @@ pub mod dehaze;
 pub mod detail;
 pub mod effects;
 pub mod filters;
+pub mod lens;
 pub mod local;
 pub mod output;
 pub mod pipeline;

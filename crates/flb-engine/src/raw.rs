@@ -23,6 +23,8 @@ pub struct CameraImage {
     pub as_shot_neutral: [f64; 3],
     pub make: String,
     pub model: String,
+    /// Lens and exposure metadata for lens-profile matching.
+    pub shot: flb_lens::ShotInfo,
 }
 
 fn color_matrix(raw: &rawler::RawImage) -> Result<Mat3, Error> {
@@ -94,6 +96,8 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         neutral_for_xy(&xyz_to_cam, 0.3127, 0.3290)
     };
 
+    let shot = shot_info(path, &raw);
+
     Ok(CameraImage {
         width,
         height,
@@ -102,7 +106,47 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         as_shot_neutral,
         make: raw.clean_make.clone(),
         model: raw.clean_model.clone(),
+        shot,
     })
+}
+
+/// Lens metadata from the raw file (best effort: missing fields stay `None`).
+fn shot_info(path: &Path, raw: &rawler::RawImage) -> flb_lens::ShotInfo {
+    let mut shot = flb_lens::ShotInfo {
+        camera_make: raw.clean_make.clone(),
+        camera_model: raw.clean_model.clone(),
+        ..Default::default()
+    };
+    let metadata = rawler::rawsource::RawSource::new(path)
+        .ok()
+        .and_then(|src| {
+            let decoder = rawler::get_decoder(&src).ok()?;
+            decoder
+                .raw_metadata(&src, &rawler::decoders::RawDecodeParams::default())
+                .ok()
+        });
+    let Some(md) = metadata else {
+        return shot;
+    };
+    let ratio = |r: Option<rawler::formats::tiff::Rational>| {
+        r.filter(|r| r.d != 0)
+            .map(|r| f64::from(r.n) / f64::from(r.d))
+            .filter(|v| v.is_finite() && *v > 0.0)
+    };
+    shot.focal_mm = ratio(md.exif.focal_length);
+    shot.aperture = ratio(md.exif.fnumber);
+    shot.distance_m = ratio(md.exif.subject_distance);
+    match &md.lens {
+        Some(lens) => {
+            shot.lens_make = Some(lens.lens_make.clone());
+            shot.lens_model = Some(lens.lens_model.clone());
+        }
+        None => {
+            shot.lens_make = md.exif.lens_make.clone().filter(|s| !s.trim().is_empty());
+            shot.lens_model = md.exif.lens_model.clone().filter(|s| !s.trim().is_empty());
+        }
+    }
+    shot
 }
 
 /// Camera RGB of a white with chromaticity (x, y), green normalised to 1.

@@ -8,6 +8,7 @@ publish.workspace = true
 
 [dependencies]
 flb-color = { path = "../flb-color" }
+flb-lens = { path = "../flb-lens" }
 flb-presets = { path = "../flb-presets" }
 rawler = "0.8"
 image = { version = "0.25", default-features = false, features = ["png", "tiff", "jpeg"] }

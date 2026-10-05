@@ -10,6 +10,7 @@ use crate::color::ColorStrengths;
 use crate::dehaze::DehazeStrengths;
 use crate::detail::DetailStrengths;
 use crate::effects::EffectsStrengths;
+use crate::lens::LensStrengths;
 use crate::local::LocalStrengths;
 use crate::tone::ToneStrengths;
 
@@ -22,6 +23,7 @@ pub struct Calibration {
     pub dehaze: DehazeStrengths,
     pub detail: DetailStrengths,
     pub effects: EffectsStrengths,
+    pub lens: LensStrengths,
 }
 
 impl Calibration {

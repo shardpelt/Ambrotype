@@ -1,8 +1,10 @@
 //! Develop pipeline v0.
 //!
 //! Order (subset of the Camera Raw model, docs/research/05 §1):
+//! 0. Lens Corrections on camera RGB: vignetting, Remove CA, distortion
+//!    (profile + manual), one resampling pass                [sensor-linear]
 //! 1. camera RGB → white balance + camera matrix → XYZ → Bradford to D50 →
-//!    linear ProPhoto → Exposure (2^EV)                      [scene-linear]
+//!    linear ProPhoto → Exposure (2^EV) → Defringe           [scene-linear]
 //! 2. Dehaze                                                 [scene-linear]
 //! 3. base look → Basic tone controls (luminance, hue-preserving) [display-linear]
 //! 4. Texture / Clarity (local contrast)
@@ -32,10 +34,11 @@ use crate::color::{self, ColorControls, ColorOp, Wheel};
 use crate::curve::Spline;
 use crate::detail::{NoiseReduction, Sharpening};
 use crate::effects::{Grain, Vignette};
+use crate::lens::{Defringe, LensCorrections};
 use crate::local::LocalContrast;
 use crate::raw::{CameraImage, neutral_for_xy, xy_for_neutral};
 use crate::tone::{self, ParametricCurve, ToneControls};
-use crate::{dehaze, detail, effects, local};
+use crate::{dehaze, detail, effects, lens, local};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WhiteBalance {
@@ -85,6 +88,7 @@ pub struct DevelopSettings {
     pub sharpening: Sharpening,
     pub vignette: Vignette,
     pub grain: Grain,
+    pub lens: LensCorrections,
     /// Model constants; [`Calibration::default`] until fitted against Lightroom.
     pub calibration: Calibration,
 }
@@ -106,6 +110,7 @@ impl Default for DevelopSettings {
             sharpening: Sharpening::default(),
             vignette: Vignette::default(),
             grain: Grain::default(),
+            lens: LensCorrections::default(),
             calibration: Calibration::default(),
         }
     }
@@ -176,6 +181,25 @@ pub const RENDERED_TAGS: &[&str] = &[
     "ToneCurvePV2012Red",
     "ToneCurvePV2012Green",
     "ToneCurvePV2012Blue",
+    "LensProfileEnable",
+    "LensProfileSetup",
+    "LensProfileName",
+    "LensProfileFilename",
+    "LensProfileDigest",
+    "LensProfileDistortionScale",
+    "LensProfileVignettingScale",
+    "LensProfileChromaticAberrationScale",
+    "AutoLateralCA",
+    "LensManualDistortionAmount",
+    "VignetteAmount",
+    "VignetteMidpoint",
+    "DefringePurpleAmount",
+    "DefringePurpleHueLo",
+    "DefringePurpleHueHi",
+    "DefringeGreenAmount",
+    "DefringeGreenHueLo",
+    "DefringeGreenHueHi",
+    "CropConstrainToWarp",
 ];
 
 /// Whether `tag` is rendered by this pipeline version (fixed list plus the 24 HSL tags).
@@ -312,6 +336,7 @@ impl DevelopSettings {
             roughness: num(settings, "GrainFrequency").unwrap_or(gd.roughness),
             seed: num(settings, "GrainSeed").map_or(gd.seed, |v| v as u64),
         };
+        s.lens = lens_corrections(settings);
         s.curve_rgb = spline_of(settings, "ToneCurvePV2012");
         s.curve_channels = [
             spline_of(settings, "ToneCurvePV2012Red"),
@@ -341,6 +366,47 @@ impl DevelopSettings {
             .cloned()
             .collect();
         (s, not_rendered)
+    }
+}
+
+fn flag(settings: &BTreeMap<String, Value>, key: &str) -> bool {
+    settings.get(key).and_then(Value::as_bool).unwrap_or(false)
+}
+
+fn text(settings: &BTreeMap<String, Value>, key: &str) -> Option<String> {
+    settings
+        .get(key)
+        .and_then(Value::as_str)
+        .map(str::to_string)
+        .filter(|t| !t.is_empty())
+}
+
+fn lens_corrections(settings: &BTreeMap<String, Value>) -> LensCorrections {
+    let ld = LensCorrections::default();
+    let dd = Defringe::default();
+    LensCorrections {
+        profile_enable: flag(settings, "LensProfileEnable"),
+        distortion_scale: num(settings, "LensProfileDistortionScale")
+            .unwrap_or(ld.distortion_scale),
+        vignetting_scale: num(settings, "LensProfileVignettingScale")
+            .unwrap_or(ld.vignetting_scale),
+        ca_scale: num(settings, "LensProfileChromaticAberrationScale").unwrap_or(ld.ca_scale),
+        auto_ca: flag(settings, "AutoLateralCA"),
+        manual_distortion: num(settings, "LensManualDistortionAmount").unwrap_or(0.0),
+        vignette_amount: num(settings, "VignetteAmount").unwrap_or(0.0),
+        vignette_midpoint: num(settings, "VignetteMidpoint").unwrap_or(ld.vignette_midpoint),
+        defringe: Defringe {
+            purple_amount: num(settings, "DefringePurpleAmount").unwrap_or(0.0),
+            purple_hue_lo: num(settings, "DefringePurpleHueLo").unwrap_or(dd.purple_hue_lo),
+            purple_hue_hi: num(settings, "DefringePurpleHueHi").unwrap_or(dd.purple_hue_hi),
+            green_amount: num(settings, "DefringeGreenAmount").unwrap_or(0.0),
+            green_hue_lo: num(settings, "DefringeGreenHueLo").unwrap_or(dd.green_hue_lo),
+            green_hue_hi: num(settings, "DefringeGreenHueHi").unwrap_or(dd.green_hue_hi),
+        },
+        constrain_crop: flag(settings, "CropConstrainToWarp"),
+        profile_name: text(settings, "LensProfileName"),
+        profile_filename: text(settings, "LensProfileFilename"),
+        profile: None,
     }
 }
 
@@ -393,6 +459,19 @@ fn lookup(lut: &[f32], v: f32) -> f32 {
 pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     let cal = &s.calibration;
 
+    // 0. Lens Corrections on camera RGB.
+    let lens_pass = s.lens.needs_camera_pass().then(|| {
+        lens::apply_camera(
+            &img.rgb,
+            img.width,
+            img.height,
+            img.shot.crop_factor,
+            &s.lens,
+            &cal.lens,
+        )
+    });
+    let camera_rgb = lens_pass.as_ref().map_or(&img.rgb, |p| &p.rgb);
+
     // 1. Camera RGB → scene-linear ProPhoto with white balance and Exposure.
     let neutral = match s.white_balance {
         WhiteBalance::AsShot => img.as_shot_neutral,
@@ -410,12 +489,16 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     };
     out.rgb
         .par_chunks_mut(3)
-        .zip(img.rgb.par_chunks(3))
+        .zip(camera_rgb.par_chunks(3))
         .for_each(|(o, c)| {
             for (row, slot) in m.iter().zip(o.iter_mut()) {
                 *slot = (row[0] * c[0] + row[1] * c[1] + row[2] * c[2]) * gain;
             }
         });
+
+    if !s.lens.defringe.is_neutral() {
+        lens::apply_defringe(&mut out, &s.lens.defringe, &cal.lens);
+    }
 
     // 2. Dehaze (scene-linear).
     if s.dehaze != 0.0 {
@@ -493,6 +576,9 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     }
     if s.grain.amount != 0.0 {
         effects::apply_grain(&mut out, &s.grain, &cal.effects);
+    }
+    if let Some(blank) = lens_pass.as_ref().and_then(|p| p.blank.as_deref()) {
+        lens::fill_blank(&mut out, blank, &cal.lens);
     }
     out
 }
@@ -597,7 +683,7 @@ mod tests {
         map.insert("Temperature".to_string(), Value::Text("5500".into()));
         map.insert("Tint".to_string(), Value::Text("+10".into()));
         map.insert("Exposure2012".to_string(), Value::Text("+0.5".into()));
-        map.insert("LensProfileEnable".to_string(), Value::Text("1".into()));
+        map.insert("PerspectiveVertical".to_string(), Value::Text("10".into()));
         map.insert("Name".to_string(), Value::Text("x".into()));
         let (s, missing) = DevelopSettings::from_settings(&map);
         assert_eq!(
@@ -608,6 +694,6 @@ mod tests {
             }
         );
         assert_eq!(s.exposure_ev, 0.5);
-        assert_eq!(missing, vec!["LensProfileEnable".to_string()]);
+        assert_eq!(missing, vec!["PerspectiveVertical".to_string()]);
     }
 }

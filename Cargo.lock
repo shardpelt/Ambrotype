@@ -279,6 +279,7 @@ name = "flb-engine"
 version = "0.1.0"
 dependencies = [
  "flb-color",
+ "flb-lens",
  "flb-presets",
  "flb-testkit",
  "image",

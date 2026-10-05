@@ -306,24 +306,24 @@ Lens profile corrections, chromatic-aberration removal, defringing and lens vign
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `LensProfileEnable` | Enable profile corrections | bool | true / false | false | planned | True applies the lens profile matched from the camera and lens metadata (distortion and vignetting correction). |
-| `AutoLateralCA` | Remove chromatic aberration | bool | true / false | false | planned | True automatically corrects blue-yellow and red-green lateral colour fringes. |
-| `LensProfileSetup` | Lens profile setup | text |  |  | planned | How the lens profile was chosen (e.g. automatic or custom). |
-| `LensProfileName` | Lens profile | text |  |  | planned | Name of the lens profile in use. |
-| `LensProfileFilename` | Lens profile file | text |  |  | planned | File name of the lens profile (.lcp). |
-| `LensProfileDigest` | Lens profile digest | text |  |  | planned | Checksum identifying the exact lens profile. |
-| `LensProfileDistortionScale` | Profile: Distortion | number | 0 to 200 | 100 | planned | *Units: %.* How much of the profile's distortion correction is applied: 100 = 100% of the profile, above 100 corrects more, below 100 less. |
-| `LensProfileVignettingScale` | Profile: Vignetting | number | 0 to 200 | 100 | planned | *Units: %.* How much of the profile's vignetting correction is applied: 100 = 100% of the profile, above 100 corrects more, below 100 less. |
-| `LensProfileChromaticAberrationScale` | Profile: Chromatic aberration | number | 0 to 200 | 100 | planned | *Units: %.* Scale of the profile's chromatic-aberration correction, 100 = as profiled. Not described in Adobe's help. |
-| `LensManualDistortionAmount` | Manual: Distortion | number | -100 to 100 | 0 | planned | Manual distortion correction: positive corrects barrel distortion, negative corrects pincushion distortion. |
-| `VignetteAmount` | Lens vignetting: Amount | number | -100 to 100 | 0 | planned | Manual lens vignetting correction: positive lightens the corners, negative darkens them. See PostCropVignetteAmount for a creative vignette relative to the crop. |
-| `VignetteMidpoint` | Lens vignetting: Midpoint | number | 0 to 100 | 50 | planned | Midpoint of the manual lens vignetting correction. Adobe's help names it without further detail. |
-| `DefringePurpleAmount` | Defringe: Purple amount | number | 0 to 20 | 0 | planned | Strength of purple fringe removal along high-contrast edges (handles longitudinal chromatic aberration). 0 = off. |
-| `DefringeGreenAmount` | Defringe: Green amount | number | 0 to 20 | 0 | planned | Strength of green fringe removal along high-contrast edges. 0 = off. |
-| `DefringePurpleHueLo` | Defringe: Purple hue (low) | number | 0 to 100 |  | planned | Lower end of the hue range treated as purple fringing. The two ends stay at least 10 units apart. |
-| `DefringeGreenHueLo` | Defringe: Green hue (low) | number | 0 to 100 |  | planned | Lower end of the hue range treated as green fringing. The default range is narrow to protect green/yellow subjects such as foliage. |
-| `DefringePurpleHueHi` | Defringe: Purple hue (high) | number | 0 to 100 |  | planned | Upper end of the hue range treated as purple fringing. The two ends stay at least 10 units apart. |
-| `DefringeGreenHueHi` | Defringe: Green hue (high) | number | 0 to 100 |  | planned | Upper end of the hue range treated as green fringing. The default range is narrow to protect green/yellow subjects such as foliage. |
+| `LensProfileEnable` | Enable profile corrections | bool | true / false | false | rendered (approx.) | True applies the lens profile matched from the camera and lens metadata (distortion and vignetting correction). |
+| `AutoLateralCA` | Remove chromatic aberration | bool | true / false | false | rendered (approx.) | True automatically corrects blue-yellow and red-green lateral colour fringes. |
+| `LensProfileSetup` | Lens profile setup | text |  |  | rendered (approx.) | How the lens profile was chosen (e.g. automatic or custom). |
+| `LensProfileName` | Lens profile | text |  |  | rendered (approx.) | Name of the lens profile in use. |
+| `LensProfileFilename` | Lens profile file | text |  |  | rendered (approx.) | File name of the lens profile (.lcp). |
+| `LensProfileDigest` | Lens profile digest | text |  |  | rendered (approx.) | Checksum identifying the exact lens profile. |
+| `LensProfileDistortionScale` | Profile: Distortion | number | 0 to 200 | 100 | rendered (approx.) | *Units: %.* How much of the profile's distortion correction is applied: 100 = 100% of the profile, above 100 corrects more, below 100 less. |
+| `LensProfileVignettingScale` | Profile: Vignetting | number | 0 to 200 | 100 | rendered (approx.) | *Units: %.* How much of the profile's vignetting correction is applied: 100 = 100% of the profile, above 100 corrects more, below 100 less. |
+| `LensProfileChromaticAberrationScale` | Profile: Chromatic aberration | number | 0 to 200 | 100 | rendered (approx.) | *Units: %.* Scale of the profile's chromatic-aberration correction, 100 = as profiled. Not described in Adobe's help. |
+| `LensManualDistortionAmount` | Manual: Distortion | number | -100 to 100 | 0 | rendered (approx.) | Manual distortion correction: positive corrects barrel distortion, negative corrects pincushion distortion. |
+| `VignetteAmount` | Lens vignetting: Amount | number | -100 to 100 | 0 | rendered (approx.) | Manual lens vignetting correction: positive lightens the corners, negative darkens them. See PostCropVignetteAmount for a creative vignette relative to the crop. |
+| `VignetteMidpoint` | Lens vignetting: Midpoint | number | 0 to 100 | 50 | rendered (approx.) | Midpoint of the manual lens vignetting correction. Adobe's help names it without further detail. |
+| `DefringePurpleAmount` | Defringe: Purple amount | number | 0 to 20 | 0 | rendered (approx.) | Strength of purple fringe removal along high-contrast edges (handles longitudinal chromatic aberration). 0 = off. |
+| `DefringeGreenAmount` | Defringe: Green amount | number | 0 to 20 | 0 | rendered (approx.) | Strength of green fringe removal along high-contrast edges. 0 = off. |
+| `DefringePurpleHueLo` | Defringe: Purple hue (low) | number | 0 to 100 | 30 | rendered (approx.) | Lower end of the hue range treated as purple fringing. The two ends stay at least 10 units apart. |
+| `DefringeGreenHueLo` | Defringe: Green hue (low) | number | 0 to 100 | 40 | rendered (approx.) | Lower end of the hue range treated as green fringing. The default range is narrow to protect green/yellow subjects such as foliage. |
+| `DefringePurpleHueHi` | Defringe: Purple hue (high) | number | 0 to 100 | 70 | rendered (approx.) | Upper end of the hue range treated as purple fringing. The two ends stay at least 10 units apart. |
+| `DefringeGreenHueHi` | Defringe: Green hue (high) | number | 0 to 100 | 60 | rendered (approx.) | Upper end of the hue range treated as green fringing. The default range is narrow to protect green/yellow subjects such as foliage. |
 
 <a id="transform"></a>
 

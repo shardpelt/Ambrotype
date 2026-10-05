@@ -1186,7 +1186,7 @@
    "min": null,
    "max": null,
    "default": false,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "AutoLateralCA",
@@ -1195,7 +1195,7 @@
    "min": null,
    "max": null,
    "default": false,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LensProfileSetup",
@@ -1204,7 +1204,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LensProfileName",
@@ -1213,7 +1213,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LensProfileFilename",
@@ -1222,7 +1222,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LensProfileDigest",
@@ -1231,7 +1231,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LensProfileDistortionScale",
@@ -1240,7 +1240,7 @@
    "min": 0,
    "max": 200,
    "default": 100,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LensProfileVignettingScale",
@@ -1249,7 +1249,7 @@
    "min": 0,
    "max": 200,
    "default": 100,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LensProfileChromaticAberrationScale",
@@ -1258,7 +1258,7 @@
    "min": 0,
    "max": 200,
    "default": 100,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "LensManualDistortionAmount",
@@ -1267,7 +1267,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "VignetteAmount",
@@ -1276,7 +1276,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "VignetteMidpoint",
@@ -1285,7 +1285,7 @@
    "min": 0,
    "max": 100,
    "default": 50,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "DefringePurpleAmount",
@@ -1294,7 +1294,7 @@
    "min": 0,
    "max": 20,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "DefringeGreenAmount",
@@ -1303,7 +1303,7 @@
    "min": 0,
    "max": 20,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "DefringePurpleHueLo",
@@ -1311,8 +1311,8 @@
    "kind": "number",
    "min": 0,
    "max": 100,
-   "default": null,
-   "status": "planned"
+   "default": 30,
+   "status": "approx"
   },
   {
    "name": "DefringeGreenHueLo",
@@ -1320,8 +1320,8 @@
    "kind": "number",
    "min": 0,
    "max": 100,
-   "default": null,
-   "status": "planned"
+   "default": 40,
+   "status": "approx"
   },
   {
    "name": "DefringePurpleHueHi",
@@ -1329,8 +1329,8 @@
    "kind": "number",
    "min": 0,
    "max": 100,
-   "default": null,
-   "status": "planned"
+   "default": 70,
+   "status": "approx"
   },
   {
    "name": "DefringeGreenHueHi",
@@ -1338,8 +1338,8 @@
    "kind": "number",
    "min": 0,
    "max": 100,
-   "default": null,
-   "status": "planned"
+   "default": 60,
+   "status": "approx"
   },
   {
    "name": "PerspectiveUpright",

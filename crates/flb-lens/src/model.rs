@@ -331,9 +331,128 @@ impl Vignetting {
     }
 }
 
+// Compact one-line forms for reports and the CLI, e.g. `ptlens a=0.01 b=-0.04 c=0.02`.
+
+/// Up to 7 decimals, trailing zeros trimmed.
+fn num(v: f64) -> String {
+    let s = format!("{v:.7}");
+    let s = s.trim_end_matches('0').trim_end_matches('.');
+    if s == "-0" { "0".into() } else { s.into() }
+}
+
+fn nums(v: &[f64]) -> String {
+    let parts: Vec<String> = v.iter().map(|x| num(*x)).collect();
+    format!("[{}]", parts.join(", "))
+}
+
+impl std::fmt::Display for Frame {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Frame::HuginShortSide {
+                cal_crop,
+                cal_aspect,
+            } => write!(
+                f,
+                "r=1 at half the short side (calibration crop {}, aspect {})",
+                num(cal_crop),
+                num(cal_aspect)
+            ),
+            Frame::HalfDiagonal { cal_crop } => write!(
+                f,
+                "r=1 at half the diagonal (calibration crop {})",
+                num(cal_crop)
+            ),
+            Frame::Acm {
+                cx,
+                cy,
+                fx,
+                fy,
+                cal_crop,
+            } => write!(
+                f,
+                "ACM centre ({}, {}) focal ({}, {}) × longest side (calibration crop {})",
+                num(cx),
+                num(cy),
+                num(fx),
+                num(fy),
+                num(cal_crop)
+            ),
+        }
+    }
+}
+
+impl std::fmt::Display for Distortion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Distortion::Poly3 { k1 } => write!(f, "poly3 k1={}", num(k1)),
+            Distortion::Poly5 { k1, k2 } => write!(f, "poly5 k1={} k2={}", num(k1), num(k2)),
+            Distortion::PtLens { a, b, c } => {
+                write!(f, "ptlens a={} b={} c={}", num(a), num(b), num(c))
+            }
+            Distortion::Acm { k } => write!(f, "acm k={}", nums(&k)),
+        }
+    }
+}
+
+impl std::fmt::Display for Tca {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Tca::Linear { kr, kb } => write!(f, "linear kr={} kb={}", num(kr), num(kb)),
+            Tca::Poly3 {
+                vr,
+                vb,
+                cr,
+                cb,
+                br,
+                bb,
+            } => write!(
+                f,
+                "poly3 vr={} vb={} cr={} cb={} br={} bb={}",
+                num(vr),
+                num(vb),
+                num(cr),
+                num(cb),
+                num(br),
+                num(bb)
+            ),
+            Tca::Acm { red, blue } => write!(f, "acm red={} blue={}", nums(&red), nums(&blue)),
+        }
+    }
+}
+
+impl std::fmt::Display for Vignetting {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (name, k1, k2, k3) = match *self {
+            Vignetting::Pa { k1, k2, k3 } => ("pa", k1, k2, k3),
+            Vignetting::Acm { k1, k2, k3 } => ("acm", k1, k2, k3),
+        };
+        write!(f, "{name} k1={} k2={} k3={}", num(k1), num(k2), num(k3))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn display_is_compact() {
+        let t = Tca::Linear {
+            kr: 1.0019999999999998,
+            kb: 0.9985,
+        };
+        assert_eq!(t.to_string(), "linear kr=1.002 kb=0.9985");
+        assert_eq!(
+            Distortion::Acm {
+                k: [-0.025, 0.0, -0.0, 1.4e-5, 2.0]
+            }
+            .to_string(),
+            "acm k=[-0.025, 0, 0, 0.000014, 2]"
+        );
+        assert_eq!(
+            Frame::HalfDiagonal { cal_crop: 1.0 }.to_string(),
+            "r=1 at half the diagonal (calibration crop 1)"
+        );
+    }
 
     #[test]
     fn zero_coefficients_are_identity() {

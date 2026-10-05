@@ -290,6 +290,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "flb-lens"
+version = "0.1.0"
+dependencies = [
+ "quick-xml",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "flb-presets"
 version = "0.1.0"
 dependencies = [

@@ -26,8 +26,8 @@ USAGE:
     flb render <RAW> <OUT.jpg|.png|.tif|.webp|.avif|.exr> [--preset P] [--amount A]
                                             [--look default|linear] [--calibration fitted.json]
                                             [--lens-db DIR] [--lcp-dir DIR] [export options]
-                                            Develop a raw (engine v0: white balance, Exposure, point
-                                            curves) and report which preset settings were not rendered
+                                            Develop a raw with a preset or sidecar, export it, and report
+                                            which settings are not rendered yet
     flb edit <SIDECAR.xmp> --commands <CMDS.json|-> [--out <NEW.xmp|.json>] [--dry-run] [--json]
                                             Apply protocol commands (set_param, adjust_param, reset_param,
                                             reset_group, apply_preset, undo, redo) as one transaction,

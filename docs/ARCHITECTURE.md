@@ -4,8 +4,7 @@ The target architecture is in [SCOPE.md §9](SCOPE.md). This page describes what
 
 **Short version:**
 - Flightbroom is a Rust **library-first** project. The engine, preset reader, lens database and export are libraries.
-- Today's only front end is the `flb` command-line tool.
-- **There is no GUI yet.**
+- There are two front ends: the `flb` command-line tool and an early desktop editor (`flb-gui`, Tauri 2).
 - The GUI, a future MCP server for AI assistants and the CLI are all meant to be clients of the same libraries, through one command protocol, like FFmpeg/libmpv and their players.
 
 ## Crates
@@ -22,6 +21,7 @@ About 23,000 lines of Rust and about 270 tests (fmt, clippy and tests run in CI 
 | `flb-export` | Files out | JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces, resize, output sharpening, EXIF, JPEG size limit |
 | `flb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
 | `flb-cli` | The `flb` tool | `render`, `preset`, `edit`/`query`, `lens`, `negative`, `sweep`, `settings reference`, … |
+| `flb-gui` | Desktop editor (Tauri 2) | Rust `Session` (open raw, undoable edits via `flb-protocol`, downscaled preview + histogram, sidecar save, export) behind Tauri commands; plain HTML/CSS/JS UI generated from the settings registry |
 
 ## Data flow of `flb render photo.nef out.jpg --preset look.xmp`
 
@@ -76,11 +76,23 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
   - Export presets.
   - Gamut mapping, instead of the current hard clip.
 
+## The desktop editor (flb-gui, v1)
+
+- **Shell:** Tauri 2, with the system webview (WebView2, WKWebView, WebKitGTK). The UI in `crates/flb-gui/ui/` is plain HTML/CSS/JS with no build step or npm.
+- **One code path:** the UI only sends `flb-protocol` commands (`set_param`, `apply_preset`, `undo`, …), so it behaves exactly like the CLI and AI clients. Panels and sliders are generated from the settings registry, so they always match the engine.
+- **Preview:** rendered on the CPU from an area-downscaled copy of the raw, at screen size. Slider drags render with temporary overrides and don't touch history; release commits one undoable step. Requests are latest-wins, and a drag renders at 0.6× size.
+- **Features:**
+  - open (dialog, drag-and-drop, command line)
+  - Basic, Tone Curve (parametric), Color Mixer (HSL tabs), Color Grading, Detail, Lens Corrections, Effects and Film Negative panels
+  - presets list (Lightroom's own folder when present, or added folders) with an Amount slider
+  - history, undo/redo, before/after, histogram
+  - save the XMP sidecar, keeping other metadata
+  - export dialog
+- **Not yet:** see [GAPS.md](GAPS.md) §2.
+
 ## What does not exist yet
 
-- **GUI.**
-  - The plan is Tauri 2 with a native GPU viewport, or Qt 6 as the fallback (SCOPE §9). It will drive the engine through `flb-protocol`, exactly as the CLI and AI do.
-  - The first useful milestone is a single-photo editor: open, sliders, before/after, presets panel, export dialog. It can be built on today's engine (CPU preview at screen size is fast enough).
+- **A full GUI.** Editor v1 exists (see below). Missing: GPU viewport, zoom/1:1, curve editor, colour wheels, crop tool, installers. All remaining gaps are listed in [GAPS.md](GAPS.md).
 - Library and catalog (folders, ratings, keywords, collections, search).
 - GPU backend (wgpu), tiling and caching.
 - Masks and local adjustments, healing, crop/rotate/Upright.

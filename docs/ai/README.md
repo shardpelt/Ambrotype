@@ -151,20 +151,20 @@ These are **starting points**. Apply them with `--dry-run`, render, look, and ad
 | **Cooler** | Temperature -300 to -800 K below the current value (As Shot: as for Warmer, set Temperature then the as-shot Tint). Cool shadows only: ColorGradeShadowHue 200-220, ColorGradeShadowSat 10-20. |
 | **Green or magenta cast** | Green cast: Tint +5 to +15. Magenta cast: Tint -5 to -15. If the photo is As Shot, first `set_param` Temperature to the as-shot temperature from `flb render`, then Tint to the as-shot tint plus the correction. Cast only in the shadows: ShadowTint *(planned)*. |
 | **Brighter** | Exposure2012 +0.3 to +1.0. If the sky or highlights then clip: Highlights2012 -20 to -50, Whites2012 -5 to -15. |
-| **Darker, moodier** | Exposure2012 -0.3 to -0.7, Highlights2012 -20 to -40, Blacks2012 -5 to -15, Vibrance -5 to -15. Optional vignette: PostCropVignetteAmount -15 to -30 *(planned)*. |
-| **More contrast without crushing blacks** | Contrast2012 +15 to +30, Blacks2012 +5 to +15 (lifts the black point), Shadows2012 +10 to +20, Highlights2012 -10 to -25. Or a gentle S point curve: ToneCurvePV2012 `[[0,0],[64,56],[192,200],[255,255]]`. Midtone punch: Clarity2012 +10 to +20 *(planned)*. |
-| **Less contrast, softer** | Contrast2012 -10 to -25, Highlights2012 -10, Shadows2012 +10. Dreamy: Clarity2012 -10 to -30, Texture -10 to -20 *(planned)*. |
-| **Recover a bright sky** | Highlights2012 -40 to -80, Whites2012 -10 to -20, LuminanceAdjustmentBlue -10 to -25, SaturationAdjustmentBlue +5 to +15. Dehaze +10 to +20 *(planned)*. |
+| **Darker, moodier** | Exposure2012 -0.3 to -0.7, Highlights2012 -20 to -40, Blacks2012 -5 to -15, Vibrance -5 to -15. Optional vignette: PostCropVignetteAmount -15 to -30. |
+| **More contrast without crushing blacks** | Contrast2012 +15 to +30, Blacks2012 +5 to +15 (lifts the black point), Shadows2012 +10 to +20, Highlights2012 -10 to -25. Or a gentle S point curve: ToneCurvePV2012 `[[0,0],[64,56],[192,200],[255,255]]`. Midtone punch: Clarity2012 +10 to +20. |
+| **Less contrast, softer** | Contrast2012 -10 to -25, Highlights2012 -10, Shadows2012 +10. Dreamy: Clarity2012 -10 to -30, Texture -10 to -20. |
+| **Recover a bright sky** | Highlights2012 -40 to -80, Whites2012 -10 to -20, LuminanceAdjustmentBlue -10 to -25, SaturationAdjustmentBlue +5 to +15. Dehaze +10 to +20. |
 | **Open up shadows, backlit subject** | Shadows2012 +30 to +60, Blacks2012 +5 to +10, Exposure2012 +0.2 to +0.4, Highlights2012 -20 to -40. |
-| **Matte / faded film** | Lift the black point and dim the white point with the curve: ToneCurvePV2012 `[[0,30],[64,70],[192,195],[255,245]]`. Contrast2012 -10 to -20, Saturation -10 to -20, Vibrance +5. Optional cool-shadow tint: ColorGradeShadowHue 210, ColorGradeShadowSat 8. Grain: GrainAmount 15-25, GrainSize 25-35 *(planned)*. |
+| **Matte / faded film** | Lift the black point and dim the white point with the curve: ToneCurvePV2012 `[[0,30],[64,70],[192,195],[255,245]]`. Contrast2012 -10 to -20, Saturation -10 to -20, Vibrance +5. Optional cool-shadow tint: ColorGradeShadowHue 210, ColorGradeShadowSat 8. Grain: GrainAmount 15-25, GrainSize 25-35. |
 | **Moody teal-orange** | Shadows teal, highlights orange: ColorGradeShadowHue 190-200, ColorGradeShadowSat 20-35, ColorGradeHighlightHue 35-45, ColorGradeHighlightSat 15-25, ColorGradeBlending 50-70. Push greens towards muted teal: HueAdjustmentGreen +20 to +40, SaturationAdjustmentGreen -20 to -40. Deepen blues: SaturationAdjustmentBlue +10 to +20, LuminanceAdjustmentBlue -10 to -20. Mood: Exposure2012 -0.2, Highlights2012 -30, Blacks2012 -10, Saturation -5 to -10, Vibrance +10 to +20. |
-| **Brighter, cleaner skin** | Skin lives mostly in the orange band (and some red): LuminanceAdjustmentOrange +10 to +25, LuminanceAdjustmentRed +5. Too orange: SaturationAdjustmentOrange -5 to -15. Raise colour with Vibrance rather than Saturation: Adobe's Vibrance protects skin tones. Smoother skin: Texture -10 to -25 *(planned)*. |
-| **Punchy landscape** | Vibrance +20 to +35, Highlights2012 -40, Shadows2012 +30, Whites2012 +10, Blacks2012 -10, SaturationAdjustmentBlue +10, LuminanceAdjustmentBlue -10. Clarity2012 +10 to +25 and Dehaze +5 to +15 *(planned)*. |
+| **Brighter, cleaner skin** | Skin lives mostly in the orange band (and some red): LuminanceAdjustmentOrange +10 to +25, LuminanceAdjustmentRed +5. Too orange: SaturationAdjustmentOrange -5 to -15. Raise colour with Vibrance rather than Saturation: Adobe's Vibrance protects skin tones. Smoother skin: Texture -10 to -25. |
+| **Punchy landscape** | Vibrance +20 to +35, Highlights2012 -40, Shadows2012 +30, Whites2012 +10, Blacks2012 -10, SaturationAdjustmentBlue +10, LuminanceAdjustmentBlue -10. Clarity2012 +10 to +25 and Dehaze +5 to +15. |
 | **Muted, desaturated** | Saturation -15 to -30 with Vibrance 0 to +5 (keeps some colour in muted areas), or Vibrance -20 to -40 for a gentler effect. |
 | **Black & white** | ConvertToGrayscale `true` *(planned)*. Darker sky: GrayMixerBlue -20 to -40. Lighter skin: GrayMixerOrange +10 to +20. Then Contrast2012 +15 to +30. |
-| **Vignette** | PostCropVignetteAmount -10 to -30 (darker corners), PostCropVignetteFeather 50-80, PostCropVignetteMidpoint 30-50 *(planned)*. |
-| **Sharper for screen** | Sharpness 40-60, SharpenRadius 1.0, SharpenDetail 25, SharpenEdgeMasking 30-60 (more for portraits, so smooth areas stay smooth) *(planned)*. |
-| **Less noise (high ISO)** | LuminanceSmoothing 20-40, keep ColorNoiseReduction at 25 or raise it to 40 *(planned)*. |
+| **Vignette** | PostCropVignetteAmount -10 to -30 (darker corners), PostCropVignetteFeather 50-80, PostCropVignetteMidpoint 30-50. |
+| **Sharper for screen** | Sharpness 40-60, SharpenRadius 1.0, SharpenDetail 25, SharpenEdgeMasking 30-60 (more for portraits, so smooth areas stay smooth). |
+| **Less noise (high ISO)** | LuminanceSmoothing 20-40, keep ColorNoiseReduction at 25 or raise it to 40. |
 | **Undo a look** | `reset_group` on the groups it touched (`color_grading`, `hsl`, `tone_curve`, ...), or `reset_param` per setting. |
 
 ### Worked example

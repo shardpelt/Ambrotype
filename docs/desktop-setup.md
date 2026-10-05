@@ -21,12 +21,12 @@ flb render photo.NEF out.jpg --preset look.xmp --amount 70
 flb preset inspect look.xmp                        # what a preset contains and what we can't do yet
 flb preset census "D:/Presets"                     # which settings your whole preset collection uses
 ```
-Rendering so far covers only white balance, Exposure and point curves, with a placeholder base look. The command lists what it skipped. If you can, send back the `flb preset census` output for your bought presets. It's only setting names and counts, no preset content, and it tells us what to build first.
+Rendering covers the core Develop panels (white balance, Basic tone and presence, curves, HSL, Color Grading, Detail, Lens Corrections, Effects) plus film negatives, with a placeholder base look; nothing is fitted to Lightroom yet. The command lists what it skipped. If you can, send back the `flb preset census` output for your bought presets. It's only setting names and counts, no preset content, and it tells us what to build first.
 
 ## 3. Prepare the Lightroom kit (before subscribing)
 Put the kit on the first Kingston SSD and the exports on the second one (see [lightroom-trial-plan.md](lightroom-trial-plan.md)).
 ```sh
-flb sweep plan                                                # the 66 sweeps
+flb sweep plan                                                # the 74 sweeps
 flb sweep generate --out E:/kit --synthetic ramp,hue,edges,colorchecker
 flb sweep generate --out E:/kit-raw --groups tone,white_balance,presence  D:/raws/*.NEF
 ```
@@ -39,3 +39,32 @@ flb sweep generate --out E:/kit-raw --groups tone,white_balance,presence  D:/raw
    - The proprietary-raw copies pick up their `.xmp` sidecars.
 3. Note the Lightroom version and the process version it shows.
 4. Report anything that doesn't import before starting the paid month.
+
+## The desktop editor (GUI)
+
+The editor is `crates/flb-gui` (Tauri 2). It is an early version: open a raw, edit with sliders and presets, before/after, undo/redo, save the XMP sidecar, export.
+
+```sh
+cargo run --release -p flb-gui                    # opens an empty window; drop a raw on it or press Ctrl+O
+cargo run --release -p flb-gui -- photo.nef       # opens a photo straight away
+```
+
+- **Windows:** needs the WebView2 runtime (already part of Windows 10/11).
+- **macOS:** works out of the box.
+- **Linux:** install the WebKitGTK development packages first. On Ubuntu/Debian:
+  ```sh
+  sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev librsvg2-dev libxdo-dev
+  ```
+- **Presets:** Lightroom's own preset folder is used automatically when it exists (`%APPDATA%\Adobe\CameraRaw\Settings` on Windows, `~/Library/Application Support/Adobe/CameraRaw/Settings` on macOS), plus `~/.local/share/flightbroom/presets`. "Add folder…" adds any other folder for the session.
+- **Lens profiles** are found as for the CLI (lensfun database, your Adobe `.lcp` files; see docs/design/lens-corrections.md).
+- **Keyboard:**
+
+  | Keys | Action |
+  |---|---|
+  | Ctrl+O | Open |
+  | Ctrl+S | Save sidecar |
+  | Ctrl+E | Export |
+  | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
+  | `\` | Before/after |
+  | Double-click a slider | Reset it |
+

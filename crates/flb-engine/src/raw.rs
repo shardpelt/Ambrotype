@@ -25,6 +25,45 @@ pub struct CameraImage {
     pub model: String,
     /// Lens and exposure metadata for lens-profile matching.
     pub shot: flb_lens::ShotInfo,
+    /// Metadata carried into exports (EXIF), including the orientation.
+    pub metadata: PhotoMetadata,
+}
+
+/// A rational number as stored in EXIF.
+pub type Ratio = (u32, u32);
+
+/// GPS position from the raw's EXIF.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Gps {
+    /// "N"/"S" and degrees, minutes, seconds.
+    pub latitude: (String, [Ratio; 3]),
+    /// "E"/"W" and degrees, minutes, seconds.
+    pub longitude: (String, [Ratio; 3]),
+    /// 0 = above sea level, 1 = below; metres.
+    pub altitude: Option<(u8, Ratio)>,
+}
+
+/// Photo metadata for exports. Values keep their EXIF form.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct PhotoMetadata {
+    pub make: String,
+    pub model: String,
+    pub lens_make: Option<String>,
+    pub lens_model: Option<String>,
+    pub exposure_time: Option<Ratio>,
+    pub fnumber: Option<Ratio>,
+    pub focal_length: Option<Ratio>,
+    pub iso: Option<u32>,
+    pub exposure_bias: Option<(i32, i32)>,
+    /// "YYYY:MM:DD HH:MM:SS"
+    pub date_time_original: Option<String>,
+    pub offset_time_original: Option<String>,
+    pub artist: Option<String>,
+    pub copyright: Option<String>,
+    /// EXIF orientation 1..8 (1 = as stored). Pixels are kept in sensor order;
+    /// exports rotate them.
+    pub orientation: u16,
+    pub gps: Option<Gps>,
 }
 
 fn color_matrix(raw: &rawler::RawImage) -> Result<Mat3, Error> {
@@ -96,11 +135,26 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         neutral_for_xy(&xyz_to_cam, 0.3127, 0.3290)
     };
 
-    let shot = read_shot(path).unwrap_or_else(|_| flb_lens::ShotInfo {
-        camera_make: raw.clean_make.clone(),
-        camera_model: raw.clean_model.clone(),
-        ..Default::default()
+    let (shot, mut metadata) = read_metadata(path).unwrap_or_else(|_| {
+        (
+            flb_lens::ShotInfo {
+                camera_make: raw.clean_make.clone(),
+                camera_model: raw.clean_model.clone(),
+                ..Default::default()
+            },
+            PhotoMetadata {
+                make: raw.clean_make.clone(),
+                model: raw.clean_model.clone(),
+                orientation: orientation_code(raw.orientation),
+                ..Default::default()
+            },
+        )
     });
+
+    // Some formats only carry the orientation in the decoder's own field.
+    if metadata.orientation == 1 {
+        metadata.orientation = orientation_code(raw.orientation);
+    }
 
     Ok(CameraImage {
         width,
@@ -111,23 +165,49 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         make: raw.clean_make.clone(),
         model: raw.clean_model.clone(),
         shot,
+        metadata,
     })
+}
+
+fn orientation_code(o: rawler::decoders::Orientation) -> u16 {
+    use rawler::decoders::Orientation as O;
+    match o {
+        O::Normal | O::Unknown => 1,
+        O::HorizontalFlip => 2,
+        O::Rotate180 => 3,
+        O::VerticalFlip => 4,
+        O::Transpose => 5,
+        O::Rotate90 => 6,
+        O::Transverse => 7,
+        O::Rotate270 => 8,
+    }
 }
 
 /// Camera and lens metadata of a raw file, without decoding the image.
 /// Missing fields stay `None`.
 pub fn read_shot(path: &Path) -> Result<flb_lens::ShotInfo, Error> {
+    read_metadata(path).map(|(shot, _)| shot)
+}
+
+/// Lens-matching info and export metadata of a raw file, without decoding the image.
+pub fn read_metadata(path: &Path) -> Result<(flb_lens::ShotInfo, PhotoMetadata), Error> {
+    use rawler::formats::tiff::Rational;
     let src = rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
     let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
     let md = decoder
         .raw_metadata(&src, &rawler::decoders::RawDecodeParams::default())
         .map_err(|e| Error::Decode(e.to_string()))?;
-    let ratio = |r: Option<rawler::formats::tiff::Rational>| {
+    let ratio = |r: Option<Rational>| {
         r.filter(|r| r.d != 0)
             .map(|r| f64::from(r.n) / f64::from(r.d))
             .filter(|v| v.is_finite() && *v > 0.0)
     };
-    let non_empty = |s: &Option<String>| s.clone().filter(|s| !s.trim().is_empty());
+    let raw_ratio = |r: Option<Rational>| r.filter(|r| r.d != 0).map(|r| (r.n, r.d));
+    let non_empty = |s: &Option<String>| {
+        s.as_ref()
+            .map(|s| s.trim_matches(char::from(0)).trim().to_string())
+            .filter(|s| !s.is_empty())
+    };
     let (lens_make, lens_model) = match &md.lens {
         Some(lens) => (Some(lens.lens_make.clone()), Some(lens.lens_model.clone())),
         None => (
@@ -135,16 +215,49 @@ pub fn read_shot(path: &Path) -> Result<flb_lens::ShotInfo, Error> {
             non_empty(&md.exif.lens_model),
         ),
     };
-    Ok(flb_lens::ShotInfo {
+    let e = &md.exif;
+    let dms = |v: &Option<[Rational; 3]>| v.map(|a| a.map(|r| (r.n, r.d)));
+    let gps = e.gps.as_ref().and_then(|g| {
+        Some(Gps {
+            latitude: (g.gps_latitude_ref.clone()?, dms(&g.gps_latitude)?),
+            longitude: (g.gps_longitude_ref.clone()?, dms(&g.gps_longitude)?),
+            altitude: g
+                .gps_altitude
+                .map(|a| (g.gps_altitude_ref.unwrap_or(0), (a.n, a.d))),
+        })
+    });
+    let metadata = PhotoMetadata {
+        make: md.make.clone(),
+        model: md.model.clone(),
+        lens_make: lens_make.clone(),
+        lens_model: lens_model.clone(),
+        exposure_time: raw_ratio(e.exposure_time),
+        fnumber: raw_ratio(e.fnumber),
+        focal_length: raw_ratio(e.focal_length),
+        iso: e
+            .iso_speed_ratings
+            .map(u32::from)
+            .or(e.iso_speed)
+            .or(e.recommended_exposure_index),
+        exposure_bias: e.exposure_bias.filter(|r| r.d != 0).map(|r| (r.n, r.d)),
+        date_time_original: non_empty(&e.date_time_original),
+        offset_time_original: non_empty(&e.offset_time_original),
+        artist: non_empty(&e.artist),
+        copyright: non_empty(&e.copyright),
+        orientation: e.orientation.filter(|o| (1..=8).contains(o)).unwrap_or(1),
+        gps,
+    };
+    let shot = flb_lens::ShotInfo {
         camera_make: md.make.clone(),
         camera_model: md.model.clone(),
         lens_make,
         lens_model,
-        focal_mm: ratio(md.exif.focal_length),
-        aperture: ratio(md.exif.fnumber),
-        distance_m: ratio(md.exif.subject_distance),
+        focal_mm: ratio(e.focal_length),
+        aperture: ratio(e.fnumber),
+        distance_m: ratio(e.subject_distance),
         crop_factor: None,
-    })
+    };
+    Ok((shot, metadata))
 }
 
 /// Camera RGB of a white with chromaticity (x, y), green normalised to 1.

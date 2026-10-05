@@ -14,6 +14,8 @@ path = "src/main.rs"
 flb-presets = { path = "../flb-presets" }
 flb-testkit = { path = "../flb-testkit" }
 flb-engine = { path = "../flb-engine" }
+flb-export = { path = "../flb-export" }
+flb-color = { path = "../flb-color" }
 flb-lens = { path = "../flb-lens" }
 flb-protocol = { path = "../flb-protocol" }
 serde_json.workspace = true

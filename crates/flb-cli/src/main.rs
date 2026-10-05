@@ -23,8 +23,9 @@ USAGE:
     flb calibration defaults                Print the default model constants as calibration JSON
     flb testimage <PATTERN> <OUT.dng>       Write one synthetic target (ramp, hue, edges, colorchecker,
                                             negative: a scanned colour negative)
-    flb render <RAW> <OUT.png|.jpg|.tif> [--preset P] [--amount A] [--look default|linear]
-                                            [--calibration fitted.json] [--lens-db DIR] [--lcp-dir DIR]
+    flb render <RAW> <OUT.jpg|.png|.tif|.webp|.avif|.exr> [--preset P] [--amount A]
+                                            [--look default|linear] [--calibration fitted.json]
+                                            [--lens-db DIR] [--lcp-dir DIR] [export options]
                                             Develop a raw (engine v0: white balance, Exposure, point
                                             curves) and report which preset settings were not rendered
     flb edit <SIDECAR.xmp> --commands <CMDS.json|-> [--out <NEW.xmp|.json>] [--dry-run] [--json]
@@ -50,6 +51,18 @@ USAGE:
                                             interpolated to its focal length, aperture and distance
     flb settings reference [--json]         Print the settings reference (docs/ai/settings-reference.md)
 
+EXPORT OPTIONS (flb render):
+    --format jpeg|png|tiff|webp|avif|exr    Default: from the file extension
+    --quality 1-100                         JPEG/AVIF quality (default 90)
+    --bits 8|16|32                          PNG 8/16, TIFF 8/16/32 (float); default 8, TIFF 16
+    --color-space srgb|p3|adobergb|prophoto|rec2020   Default srgb; an ICC profile is embedded
+    --long-edge N | --short-edge N | --width N | --height N | --fit WxH | --megapixels M | --percent P
+    --enlarge                               Allow upscaling (default: never enlarge)
+    --sharpen screen|matte|glossy[:low|standard|high]   Output sharpening
+    --metadata all|no-location|copyright|none           EXIF to include (default no-location)
+    --max-size 500k|2M                      JPEG: lower the quality until the file fits
+    --subsampling 444|422|420  --progressive  --avif-speed 1-10
+
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
 XMP packet (e.g. .dng presets for Lightroom mobile). AI and script guide: docs/ai/README.md.";
 
@@ -64,10 +77,16 @@ fn main() -> ExitCode {
         match arg.as_str() {
             "--json" => json = true,
             "--dry-run" => dry_run = true,
+            "--progressive" | "--enlarge" => {
+                options.insert(arg.as_str(), "true");
+            }
             "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look"
             | "--calibration" | "--commands" | "--queries" | "--camera-make" | "--camera-model"
             | "--lens-make" | "--lens-model" | "--focal" | "--aperture" | "--distance"
-            | "--crop" | "--lens-db" | "--lcp-dir" => match iter.next() {
+            | "--crop" | "--lens-db" | "--lcp-dir" | "--format" | "--quality" | "--bits"
+            | "--color-space" | "--subsampling" | "--long-edge" | "--short-edge" | "--width"
+            | "--height" | "--fit" | "--megapixels" | "--percent" | "--sharpen" | "--metadata"
+            | "--max-size" | "--avif-speed" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -514,7 +533,7 @@ fn render(
     calibration: Option<&str>,
     options: &BTreeMap<&str, &str>,
 ) -> Result<(), String> {
-    use flb_engine::{output, pipeline, raw};
+    use flb_engine::{pipeline, raw};
     let start = std::time::Instant::now();
     let mut img = raw::load(input).map_err(|e| format!("{}: {e}", input.display()))?;
     let (t, tint) = pipeline::as_shot_temp_tint(&img);
@@ -580,11 +599,33 @@ fn render(
             None => {}
         }
     }
+    let export = export_settings(out, options)?;
     let developed = pipeline::render(&img, &develop);
-    output::write_srgb(&developed, out).map_err(|e| e.to_string())?;
+    let report = flb_export::export(&developed, &img.metadata, &export, out)
+        .map_err(|e| format!("{}: {e}", out.display()))?;
     println!(
-        "wrote {} in {:.2}s",
+        "wrote {} ({}, {}x{}, {}, {}, {:.1} MB) in {:.2}s",
         out.display(),
+        match report.format {
+            flb_export::Format::Jpeg | flb_export::Format::Avif => format!(
+                "{} q{}",
+                report.format.extension().to_uppercase(),
+                report.quality
+            ),
+            f => f.extension().to_uppercase(),
+        },
+        report.width,
+        report.height,
+        match report.bit_depth {
+            flb_export::BitDepth::Eight => "8-bit",
+            flb_export::BitDepth::Sixteen => "16-bit",
+            flb_export::BitDepth::Float32 => "32-bit float",
+        },
+        report
+            .color_space
+            .profile_name()
+            .trim_end_matches(" (Flightbroom)"),
+        report.bytes as f64 / 1e6,
         start.elapsed().as_secs_f64()
     );
     if !not_rendered.is_empty() {
@@ -739,6 +780,113 @@ fn negative_analyze(raws: &[&str], out: Option<&Path>, json: bool) -> Result<(),
         }
     }
     Ok(())
+}
+
+/// Export settings from the output path and the export options.
+fn export_settings(
+    out: &Path,
+    options: &BTreeMap<&str, &str>,
+) -> Result<flb_export::ExportSettings, String> {
+    use flb_export::{BitDepth, ExportSettings, Format, MetadataPolicy, Resize, Subsampling};
+    let format = match options.get("--format") {
+        Some(f) => Format::from_name(f).ok_or_else(|| format!("unknown --format {f:?}"))?,
+        None => Format::from_path(out).ok_or_else(|| {
+            format!(
+                "{}: unknown output type (use .jpg, .png, .tif, .webp, .avif or .exr, or --format)",
+                out.display()
+            )
+        })?,
+    };
+    let mut s = ExportSettings::new(format);
+    let int = |key: &str| -> Result<Option<u32>, String> {
+        options
+            .get(key)
+            .map(|v| v.parse::<u32>().map_err(|_| format!("bad {key} {v:?}")))
+            .transpose()
+    };
+    let float = |key: &str| -> Result<Option<f64>, String> {
+        options
+            .get(key)
+            .map(|v| v.parse::<f64>().map_err(|_| format!("bad {key} {v:?}")))
+            .transpose()
+    };
+    if let Some(q) = int("--quality")? {
+        s.quality = q.clamp(1, 100) as u8;
+    }
+    if let Some(b) = int("--bits")? {
+        s.bit_depth =
+            Some(BitDepth::from_bits(b).ok_or_else(|| format!("bad --bits {b} (8, 16 or 32)"))?);
+    }
+    if let Some(cs) = options.get("--color-space") {
+        s.color_space = flb_color::space::OutputSpace::from_id(cs).ok_or_else(|| {
+            format!("unknown --color-space {cs:?} (srgb, p3, adobergb, prophoto, rec2020)")
+        })?;
+    }
+    if let Some(ss) = options.get("--subsampling") {
+        s.subsampling = Some(match ss.replace(':', "").as_str() {
+            "444" => Subsampling::S444,
+            "422" => Subsampling::S422,
+            "420" => Subsampling::S420,
+            _ => return Err(format!("bad --subsampling {ss:?} (444, 422, 420)")),
+        });
+    }
+    s.progressive = options.contains_key("--progressive");
+    s.enlarge = options.contains_key("--enlarge");
+    let sizes = [
+        int("--long-edge")?.map(Resize::LongEdge),
+        int("--short-edge")?.map(Resize::ShortEdge),
+        int("--width")?.map(Resize::Width),
+        int("--height")?.map(Resize::Height),
+        float("--megapixels")?.map(Resize::Megapixels),
+        float("--percent")?.map(Resize::Percent),
+        options
+            .get("--fit")
+            .map(|v| {
+                v.split_once(['x', 'X'])
+                    .and_then(|(w, h)| Some(Resize::Fit(w.parse().ok()?, h.parse().ok()?)))
+                    .ok_or_else(|| format!("bad --fit {v:?} (e.g. 2048x2048)"))
+            })
+            .transpose()?,
+    ];
+    let mut chosen = sizes.into_iter().flatten();
+    if let Some(r) = chosen.next() {
+        if chosen.next().is_some() {
+            return Err("use only one of --long-edge, --short-edge, --width, --height, --fit, --megapixels, --percent".into());
+        }
+        s.resize = r;
+    }
+    if let Some(sh) = options.get("--sharpen") {
+        s.sharpen = Some(flb_export::parse_sharpen(sh).ok_or_else(|| {
+            format!("bad --sharpen {sh:?} (screen|matte|glossy[:low|standard|high])")
+        })?);
+    }
+    if let Some(m) = options.get("--metadata") {
+        s.metadata = MetadataPolicy::from_id(m)
+            .ok_or_else(|| format!("bad --metadata {m:?} (all, no-location, copyright, none)"))?;
+    }
+    if let Some(size) = options.get("--max-size") {
+        let lower = size.to_ascii_lowercase();
+        let (num, mult) = if let Some(n) = lower.strip_suffix(['k']) {
+            (n, 1e3)
+        } else if let Some(n) = lower.strip_suffix(['m']) {
+            (n, 1e6)
+        } else {
+            (lower.as_str(), 1.0)
+        };
+        let bytes = num
+            .trim_end_matches('b')
+            .parse::<f64>()
+            .map_err(|_| format!("bad --max-size {size:?} (e.g. 500k, 2M)"))?
+            * mult;
+        if format != Format::Jpeg {
+            return Err("--max-size works with JPEG only".into());
+        }
+        s.max_bytes = Some(bytes as u64);
+    }
+    if let Some(speed) = int("--avif-speed")? {
+        s.avif_speed = speed.clamp(1, 10) as u8;
+    }
+    Ok(s)
 }
 
 /// The lensfun database and the user's LCP files: `--lens-db` / `--lcp-dir`, else

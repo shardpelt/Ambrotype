@@ -428,7 +428,7 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 3. Fidelity target that defines "compatible" (proposal: median ΔE00 < 2, p95 < 5 over the corpus for the top-20 tags).
 4. Who holds a licensed Lightroom Classic install to run the calibration sweeps, and where reference renders are stored (private; only CC0 inputs are committed).
 5. Whether to reach out to RapidRAW's maintainer about a shared, Adobe-compatible engine crate.
-6. Product name: renaming away from the "Lightroom" pun is recommended; see [legal-and-naming.md](legal-and-naming.md) (candidates, checks, registration).
+6. Product name: renaming away from the "Lightroom" pun is recommended. Shortlist: Ambrotype, Photochrom, Argentype (see [legal-and-naming.md](legal-and-naming.md) for checks, registration and the rename checklist).
 
 ---
 

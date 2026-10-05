@@ -2,6 +2,20 @@
 
 Checked on 2026-10-04. This is an engineer's reading of the rules, not legal advice. Before 1.0, or before taking donations at any real scale, have an IP lawyer review it. A one-hour consult is usually enough.
 
+## Status (2026-10-05): name decision pending
+
+- **Shortlist:** **Ambrotype** ("immortal impression"), **Photochrom** (colour given to captured light), **Argentype** (silver, the medium that held light). Fallbacks: Lightfast, Lightstead. Details and the rejected names are in §2.
+- **To do when picking:**
+  1. Search TMview and WIPO (classes 9 and 42).
+  2. Buy the domain (.org and/or .photo).
+  3. Claim the GitHub organisation and crates.io name.
+
+  5. Then rename the repo, crates (`flb-*`), binary (`flb`), XMP namespace and docs in one commit.
+- **Before going public:**
+  1. Add LICENSE (GPL-3.0-or-later) and Cargo `license` fields.
+  2. Paraphrase the verbatim Adobe quotes in `docs/adobe-docs/`.
+  3. Add the trademark notice.
+
 ## 1. Is what we do legal?
 
 | Activity | Position | Why |

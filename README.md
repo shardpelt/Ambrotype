@@ -9,7 +9,8 @@ A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linu
 ## Docs
 - [docs/SCOPE.md](docs/SCOPE.md): the project scope, strategy, roadmap, risks and open decisions. Start here.
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the program is built today (crates, data flow, export, the desktop editor).
-- [docs/GAPS.md](docs/GAPS.md): every known gap, guess and open question, for future refinement, with a top 10.
+- [docs/GAPS.md](docs/GAPS.md): every known gap, guess and open question, for future refinement, with a top 10. Ideas for later (Auto, Randomize, Tutorial mode): [docs/design/future-ideas.md](docs/design/future-ideas.md).
+- [docs/NEXT.md](docs/NEXT.md): where we left off and what to do next.
 - [docs/research/](docs/research/): research on Lightroom's features, preset and profile formats, darktable, RawTherapee and the OSS ecosystem, processing algorithms, tech stack, RapidRAW, cross-platform concerns, the commercial market, and a reading list.
 - [docs/adobe-docs/](docs/adobe-docs/): source-only digests of Adobe's official Lightroom and Camera Raw help.
 - [docs/legal-and-naming.md](docs/legal-and-naming.md): legal position (docs, formats, black-box testing, trademarks) and the product-name shortlist.

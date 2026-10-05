@@ -57,6 +57,21 @@ What makes a name safe: it's distinctive for software (an invented word, or a re
 | Phos, Argent, Lodestar, Vesper, Heliotrope, Daguerre, Platina, Aurum | | Crate names taken, and domains/apps crowded. | | ❌ |
 | Sunprint | Cyanotype "sun prints" | Printer app plus a managed-print company. | | ❌ |
 
+### Names about the job itself (capturing a signal, assigning colour), checked 2026-10-05
+
+| Name | Meaning | Conflicts found | Free domains (RDAP) | Verdict |
+|---|---|---|---|---|
+| **Photochrom** | The 1890s Swiss process that turned black-and-white negatives into colour pictures: colour assigned to captured light, which is what a raw developer does. | Only an unpublished rooted-phone camera app and an unrelated NFT project ("PhotoChromic"). Crate free. | photochrom.org, .app, .photo | **Strong.** Exact meaning, historic, ownable. |
+| Chromara | Coined: chroma + -ara | No exact match, but the "Chroma" prefix is crowded (Razer Chroma, Chroma DB). | .org, .app, .photo | Possible. |
+| Rawsmith, Huewright | Coined: "the one who forges raw files / colours" | None found. | .org, .app, .photo | Free, but they sound like tools, not a lasting brand. |
+| Photosite | The light-sensitive element of a sensor | None found in software. | .photo | Reads like "photo site" (a website). |
+| Chromogen | Colour-forming development (C-41) | **A film-emulation RAW editor named Chromogen exists** (chromogen.app). | | ❌ Direct competitor. |
+| Autochrome | The Lumière colour process; its dyed starch grains were the ancestor of today's Bayer colour mosaic | An iOS filter app and an online editor use it. | | ❌ |
+| Trichrome | Three-channel colour photography | Several apps (Trichromatic, Trichromy). | | ❌ |
+| Opsin | The eye's light-to-signal pigments | SIONYX OPSIN, a digital night-vision camera with an app (class 9). | | ❌ |
+| Colorfast | Colour that doesn't fade | NewBlue ColorFast, a colour-grading plug-in. | | ❌ |
+| Tincture, Ochre, Iridis, Tessera, Vermilion, Sinopia | | Crate names taken, or crowded. | | ❌ |
+
 Trademark databases (TMview, WIPO) weren't reachable from this session; run step 3.1 below for the final pick.
 
 ## 3. Do you need to register it?

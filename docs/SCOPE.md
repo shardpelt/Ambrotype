@@ -146,6 +146,7 @@ From [09](research/09-market-commercial-alternatives.md), [12](research/12-user-
 | **RawTherapee / ART** | GPL-3 | C++, GTK | High-quality algorithms: capture sharpening, CIECAM, wavelets, Locallab, haze removal. `rtengine/dcp.cc` is the best open DCP implementation. No LR import. [04](research/04-oss-ecosystem.md) |
 | **RapidRAW** | **AGPL-3** | Rust, Tauri, React, wgpu | Closest product to our goal. About 37k LOC of Rust and 2.6k of WGSL. Fast GPU pipeline, AI masks/inpaint/denoise via ONNX, Android build. Its colour science is its own: no DCP/ICC, multiplier WB, hand-tuned tone mapper. JSON sidecars, no catalog DB, solo maintainer with heavy churn. Strong **UI/UX reference**, weak base for Adobe fidelity. [07](research/07-rapidraw-survey.md) |
 | Safelight | GPL | (new, Sept 2026) | A new free RAW editor "built like an IDE" (modular panels, Windows/Linux/macOS/browser), announced on discuss.pixls.us. Too new to assess; watch it. It also rules out "Safelight" as our name. |
+| Chromogen | Proprietary (paid, free trial) | Windows/macOS | A film-emulation RAW editor: 13 stocks "measured from real film", grain, halation, push/pull. A direct reference point for our film-negative and film-stock work. |
 | vkdt | BSD-2 | C, Vulkan | GPU node-graph design reference. |
 | digiKam | GPL-2+ | C++, Qt | DAM reference: faces, metadata, huge libraries. |
 | LibRaw / rawler / rawspeed | LGPL / LGPL / LGPL | C++ / Rust / C++ | Raw decoding options. rawler is used by RapidRAW. |

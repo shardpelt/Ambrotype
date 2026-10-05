@@ -4,8 +4,8 @@
 1. Install Rust from <https://rustup.rs>. On Windows, accept the Visual Studio C++ build tools prompt.
 2. Get the code:
    ```sh
-   git clone https://github.com/shardpelt/flightbroom.git
-   cd flightbroom
+   git clone https://github.com/shardpelt/Ambrotype.git
+   cd Ambrotype
    git checkout claude/lightroom-alternative-scope-xlnf0p
    ```
 3. Build and test:

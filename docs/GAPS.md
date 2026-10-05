@@ -20,7 +20,7 @@ Project goal for ranking: faithful Lightroom preset compatibility, free, on Wind
 
 | Item | Tag | Impact | Source |
 |---|---|---|---|
-| Product renamed from "Flightbroom" to "Ambrotype" (for now); trademark search, domains and handles not done; the GitHub repo is still `shardpelt/flightbroom` | Legal | A rename after launch costs users, links and search ranking; it touches repo, crates, `amb` binary, `amb:` XMP namespace URI and docs | [legal-and-naming.md](legal-and-naming.md) (Status, §2); [SCOPE.md](SCOPE.md) §12.6 |
+| Product renamed from "Flightbroom" to "Ambrotype" (for now); trademark search, domains and handles not done; the GitHub repo is renamed to `shardpelt/Ambrotype` | Legal | A rename after launch costs users, links and search ranking; it touches repo, crates, `amb` binary, `amb:` XMP namespace URI and docs | [legal-and-naming.md](legal-and-naming.md) (Status, §2); [SCOPE.md](SCOPE.md) §12.6 |
 | Trademark registers (TMview, WIPO, classes 9 and 42) not searched for the final pick; they were unreachable when the shortlist was made | Legal | An existing mark could force a second rename | [legal-and-naming.md](legal-and-naming.md) §2 (note before §3), §3.1 |
 
 | No `LICENSE` file and no `license` field in any Cargo.toml. GPL-3.0-or-later is recommended but README says "not yet chosen" | Legal | The repo cannot go public. Relicensing is practically impossible once outside code or ported GPL code is in, so decide first | [legal-and-naming.md](legal-and-naming.md) (Before going public); [SCOPE.md](SCOPE.md):199, 426; `README.md` |

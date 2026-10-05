@@ -5,7 +5,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
 ## State
 
 - **Branch:** `claude/lightroom-alternative-scope-xlnf0p`. Everything is committed and pushed; 266 tests are green.
-- **Name:** **Ambrotype** (renamed from Flightbroom). The GitHub repo is still `shardpelt/flightbroom` until the owner renames it.
+- **Name:** **Ambrotype** (renamed from Flightbroom). The GitHub repo is `shardpelt/Ambrotype` (renamed; old links redirect).
 - **Built:**
   - preset/sidecar reader and writer (`crs:` and our `amb:` tags)
   - edit protocol with undo

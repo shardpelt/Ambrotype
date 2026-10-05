@@ -13,7 +13,7 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
   2. Register ambrotype.org (also the domain in our XMP namespace URI) and/or ambrotype.photo.
   3. Claim the GitHub organisation and the crates.io names.
 
-  5. Rename the GitHub repository `shardpelt/flightbroom` (Settings → Repository name; GitHub redirects old links).
+  5. ~~Rename the GitHub repository~~ Done: `shardpelt/Ambrotype` (old links redirect).
 - **Alternatives kept in case a check fails:** Photochrom, Argentype (§2).
 - **Before going public:**
   1. Add LICENSE (GPL-3.0-or-later) and Cargo `license` fields.

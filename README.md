@@ -2,7 +2,7 @@
 
 A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linux that can apply the Lightroom presets you already bought, faithfully.
 
-**Status:** early. The scoping is done. Working so far: the preset reader, the Lightroom calibration kit, a raw renderer covering the core of Lightroom's Develop panels (white balance, camera colour, Basic tone/presence incl. Texture/Clarity/Dehaze, HSL, Color Grading, curves, sharpening, noise reduction, post-crop vignette, grain), and a command protocol so scripts and AI assistants can drive edits.
+**Status:** early. The scoping is done. Working so far: the preset reader, the Lightroom calibration kit, a raw renderer covering the core of Lightroom's Develop panels (white balance, camera colour, Basic tone/presence incl. Texture/Clarity/Dehaze, HSL, Color Grading, curves, sharpening, noise reduction, Lens Corrections, post-crop vignette, grain), and a command protocol so scripts and AI assistants can drive edits.
 
 ## Docs
 - [docs/SCOPE.md](docs/SCOPE.md): the project scope, strategy, roadmap, risks and open decisions. Start here.
@@ -18,7 +18,8 @@ A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linu
 | Crate | What it does |
 |---|---|
 | `crates/flb-presets` | Reads Lightroom/Camera Raw `.xmp` presets, XMP sidecars, legacy `.lrtemplate` presets, and XMP embedded in DNG/JPEG "presets" into a lossless settings model. Includes a tag registry (`data/tags.json`), per-preset inspection/fidelity reports, and provisional Amount scaling. |
-| `crates/flb-engine` | Processing engine v0, a staged pipeline over linear ProPhoto: raw decode (rawler), white balance, Exposure, Dehaze (dark-channel prior), Basic tone (global v1), Texture/Clarity (edge-aware local contrast), Vibrance/Saturation, 8-band HSL, Color Grading, parametric and point curves, noise-adaptive luminance and colour NR, sharpening with Detail and Masking, post-crop vignette (3 styles), resolution-independent grain, and sRGB output. All model constants are fit-ready (`--calibration`). |
+| `crates/flb-engine` | Processing engine v0, a staged pipeline over linear ProPhoto: raw decode (rawler), white balance, Exposure, Dehaze (dark-channel prior), Basic tone (global v1), Texture/Clarity (edge-aware local contrast), Vibrance/Saturation, 8-band HSL, Color Grading, parametric and point curves, noise-adaptive luminance and colour NR, sharpening with Detail and Masking, Lens Corrections (profile distortion/vignetting/CA, auto CA removal, manual distortion and lens vignetting, defringe, constrain crop), post-crop vignette (3 styles), resolution-independent grain, and sRGB output. All model constants are fit-ready (`--calibration`). |
+| `crates/flb-lens` | Lens profiles: reads the lensfun database and the Adobe `.lcp` files you already have (in place, never copied), matches camera + lens from raw metadata, interpolates to the shot's focal length/aperture/distance, and evaluates the correction geometry. |
 | `crates/flb-protocol` | Typed, undoable edit commands and queries validated against the settings registry (`flb edit`, `flb query`, `flb protocol schema`), plus the AI-readable settings reference (`docs/ai/`). |
 | `crates/flb-color` | Colour science: Lightroom-style Temperature/Tint ↔ CIE xy (Robertson's method). |
 | `crates/flb-testkit` | Calibration tooling: synthetic DNG targets (ramp, hue grid, edges, ColorChecker) and the Lightroom slider-sweep kit (raw copies + XMP sidecars, or DNGs with embedded settings, + manifest). |
@@ -31,8 +32,9 @@ cargo run -p flb-cli -- preset census ~/my-presets      # which settings your pr
 cargo run -p flb-cli -- sweep plan                      # the Lightroom calibration sweeps
 cargo run -p flb-cli -- testimage colorchecker cc.dng   # a synthetic linear DNG target
 cargo run --release -p flb-cli -- render photo.nef out.jpg --preset look.xmp --amount 70
+cargo run -p flb-cli -- lens info photo.nef             # which lens profile a raw gets (lensfun / your .lcp files)
 ```
 
-All rendering models are first versions ("ours, not Adobe's"). Their constants are to be fitted against Lightroom renders (`flb calibration defaults` prints them). `flb render` lists which preset settings it doesn't render yet. Next: a lens-correction profile path, a local (edge-aware) Highlights/Shadows, camera profiles (DCP), and the MCP server and look matching for AI control (SCOPE §8).
+All rendering models are first versions ("ours, not Adobe's"). Their constants are to be fitted against Lightroom renders (`flb calibration defaults` prints them). `flb render` lists which preset settings it doesn't render yet. Next: built-in lens profiles from raw files, Upright/Transform, a local (edge-aware) Highlights/Shadows, camera profiles (DCP), and the MCP server and look matching for AI control (SCOPE §8).
 
 *Licence: not yet chosen (see SCOPE §6; GPL-3.0-or-later is recommended). Lightroom is a trademark of Adobe Inc. This project is not affiliated with Adobe.*

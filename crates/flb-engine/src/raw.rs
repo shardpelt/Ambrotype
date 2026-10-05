@@ -96,7 +96,11 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         neutral_for_xy(&xyz_to_cam, 0.3127, 0.3290)
     };
 
-    let shot = shot_info(path, &raw);
+    let shot = read_shot(path).unwrap_or_else(|_| flb_lens::ShotInfo {
+        camera_make: raw.clean_make.clone(),
+        camera_model: raw.clean_model.clone(),
+        ..Default::default()
+    });
 
     Ok(CameraImage {
         width,
@@ -110,43 +114,37 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
     })
 }
 
-/// Lens metadata from the raw file (best effort: missing fields stay `None`).
-fn shot_info(path: &Path, raw: &rawler::RawImage) -> flb_lens::ShotInfo {
-    let mut shot = flb_lens::ShotInfo {
-        camera_make: raw.clean_make.clone(),
-        camera_model: raw.clean_model.clone(),
-        ..Default::default()
-    };
-    let metadata = rawler::rawsource::RawSource::new(path)
-        .ok()
-        .and_then(|src| {
-            let decoder = rawler::get_decoder(&src).ok()?;
-            decoder
-                .raw_metadata(&src, &rawler::decoders::RawDecodeParams::default())
-                .ok()
-        });
-    let Some(md) = metadata else {
-        return shot;
-    };
+/// Camera and lens metadata of a raw file, without decoding the image.
+/// Missing fields stay `None`.
+pub fn read_shot(path: &Path) -> Result<flb_lens::ShotInfo, Error> {
+    let src = rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
+    let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
+    let md = decoder
+        .raw_metadata(&src, &rawler::decoders::RawDecodeParams::default())
+        .map_err(|e| Error::Decode(e.to_string()))?;
     let ratio = |r: Option<rawler::formats::tiff::Rational>| {
         r.filter(|r| r.d != 0)
             .map(|r| f64::from(r.n) / f64::from(r.d))
             .filter(|v| v.is_finite() && *v > 0.0)
     };
-    shot.focal_mm = ratio(md.exif.focal_length);
-    shot.aperture = ratio(md.exif.fnumber);
-    shot.distance_m = ratio(md.exif.subject_distance);
-    match &md.lens {
-        Some(lens) => {
-            shot.lens_make = Some(lens.lens_make.clone());
-            shot.lens_model = Some(lens.lens_model.clone());
-        }
-        None => {
-            shot.lens_make = md.exif.lens_make.clone().filter(|s| !s.trim().is_empty());
-            shot.lens_model = md.exif.lens_model.clone().filter(|s| !s.trim().is_empty());
-        }
-    }
-    shot
+    let non_empty = |s: &Option<String>| s.clone().filter(|s| !s.trim().is_empty());
+    let (lens_make, lens_model) = match &md.lens {
+        Some(lens) => (Some(lens.lens_make.clone()), Some(lens.lens_model.clone())),
+        None => (
+            non_empty(&md.exif.lens_make),
+            non_empty(&md.exif.lens_model),
+        ),
+    };
+    Ok(flb_lens::ShotInfo {
+        camera_make: md.make.clone(),
+        camera_model: md.model.clone(),
+        lens_make,
+        lens_model,
+        focal_mm: ratio(md.exif.focal_length),
+        aperture: ratio(md.exif.fnumber),
+        distance_m: ratio(md.exif.subject_distance),
+        crop_factor: None,
+    })
 }
 
 /// Camera RGB of a white with chromaticity (x, y), green normalised to 1.

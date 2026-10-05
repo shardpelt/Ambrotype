@@ -53,6 +53,24 @@ Interpolation:
 - Distortion and CA: linear in focal length between the two nearest calibrations.
 - Vignetting: across focal length and aperture (in stops), using the calibration at the nearest focus distance.
 
+## Using it
+
+- `flb lens info photo.nef` shows the lens metadata and which profile it gets, with the interpolated models.
+- `flb lens match --camera-make … --lens-model … --focal …` does the same without a file.
+- `flb render` resolves the profile whenever the settings enable profile corrections or Remove CA, and prints it.
+- Sources: `--lens-db DIR` / `FLB_LENSFUN_DB` for the lensfun database (e.g. a checkout of lensfun's `data/db`, or `lensfun-update-data`); `--lcp-dir DIR` / `FLB_LCP_DIRS` for LCP folders. Adobe's default folders are searched automatically.
+
+Matching (`flb-lens`):
+- Lens names are compared by word overlap, after splitting glued EXIF spellings (`EF24-70mm`, `XF35mmF1.4`).
+- The focal-length words must agree.
+- Small penalties apply for a different aperture, a different lens maker or an incompatible mount.
+- With several calibrations, the largest calibration crop factor at or below the camera's is chosen, as lensfun does.
+
+Checked on real raws with the lensfun database:
+- D750 + Tamron SP 35mm f/1.8 → `ptlens`.
+- EOS R10 + Sigma 150-600 C → the crop-1.613 calibration.
+- Both fill the frame and lift the wide-open corner falloff.
+
 ## Open questions for the Lightroom trial
 
 - Does Lightroom fill blank areas with white? Does profile auto-scale also zoom *out* when a profile leaves room (barrel lenses)?

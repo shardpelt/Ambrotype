@@ -23,7 +23,7 @@ USAGE:
     flb calibration defaults                Print the default model constants as calibration JSON
     flb testimage <PATTERN> <OUT.dng>       Write one synthetic target (ramp, hue, edges, colorchecker)
     flb render <RAW> <OUT.png|.jpg|.tif> [--preset P] [--amount A] [--look default|linear]
-                                            [--calibration fitted.json]
+                                            [--calibration fitted.json] [--lens-db DIR] [--lcp-dir DIR]
                                             Develop a raw (engine v0: white balance, Exposure, point
                                             curves) and report which preset settings were not rendered
     flb edit <SIDECAR.xmp> --commands <CMDS.json|-> [--out <NEW.xmp|.json>] [--dry-run] [--json]
@@ -34,6 +34,8 @@ USAGE:
                                             Answer protocol queries (get_param, list_params, describe,
                                             list_groups) as JSON
     flb protocol schema [command|query]     Print the JSON Schema of commands and queries
+    flb lens info <RAW> [--lens-db DIR] [--lcp-dir DIR]
+                                            Show a raw's lens metadata and the profile it gets
     flb lens match --camera-make X --camera-model Y --lens-model M [--lens-make L] [--focal F]
                    [--aperture A] [--distance D] [--crop C] [--lens-db DIR] [--lcp-dir DIR]
                                             Find the lens profile for a shot (Adobe .lcp files you have,
@@ -107,6 +109,7 @@ fn main() -> ExitCode {
             options.get("--amount").copied(),
             options.get("--look").copied(),
             options.get("--calibration").copied(),
+            &options,
         ),
         ["edit", sidecar] => match options.get("--commands") {
             Some(commands) => edit(
@@ -122,6 +125,7 @@ fn main() -> ExitCode {
             Some(queries) => query(Path::new(state), queries),
             None => Err("query needs --queries <file.json> (or - for stdin)".into()),
         },
+        ["lens", "info", raw] => lens_info(Path::new(raw), &options).map(|text| println!("{text}")),
         ["lens", "match"] => lens_match_output(&options).map(|text| println!("{text}")),
         ["protocol", "schema"] => print_json(&flb_protocol::schema::protocol_schema()),
         ["protocol", "schema", "command"] => print_json(&flb_protocol::schema::command_schema()),
@@ -495,10 +499,11 @@ fn render(
     amount: Option<&str>,
     look: Option<&str>,
     calibration: Option<&str>,
+    options: &BTreeMap<&str, &str>,
 ) -> Result<(), String> {
     use flb_engine::{output, pipeline, raw};
     let start = std::time::Instant::now();
-    let img = raw::load(input).map_err(|e| format!("{}: {e}", input.display()))?;
+    let mut img = raw::load(input).map_err(|e| format!("{}: {e}", input.display()))?;
     let (t, tint) = pipeline::as_shot_temp_tint(&img);
     println!(
         "{} {} | {}x{} | as shot: {:.0} K, tint {:+.0}",
@@ -534,6 +539,34 @@ fn render(
         develop.calibration =
             flb_engine::calibration::Calibration::from_json_file(Path::new(path))?;
     }
+    if develop.lens.profile_enable || develop.lens.auto_ca {
+        let (db, lcp) = lens_sources(options)?;
+        if img.shot.crop_factor.is_none() {
+            img.shot.crop_factor = db
+                .as_ref()
+                .and_then(|db| db.camera_crop(&img.shot.camera_make, &img.shot.camera_model));
+        }
+        let hint = flb_lens::ProfileHint {
+            name: develop.lens.profile_name.clone(),
+            filename: develop.lens.profile_filename.clone(),
+        };
+        let lens = img.shot.lens_model.as_deref().unwrap_or("unknown lens");
+        match flb_lens::resolve(&img.shot, &hint, Some(&lcp), db.as_ref()) {
+            Some(c) => {
+                println!("lens profile: {}", c.description);
+                develop.lens.profile = Some(c);
+            }
+            None if develop.lens.profile_enable => println!(
+                "lens profile: none found for {lens} ({}); profile corrections skipped",
+                if db.is_none() && lcp.files.is_empty() {
+                    "no lensfun database or LCP files found, see `flb lens match`"
+                } else {
+                    "not in the lensfun database or your LCP files"
+                }
+            ),
+            None => {}
+        }
+    }
     let developed = pipeline::render(&img, &develop);
     output::write_srgb(&developed, out).map_err(|e| e.to_string())?;
     println!(
@@ -565,9 +598,66 @@ fn number_option(options: &BTreeMap<&str, &str>, name: &str) -> Result<Option<f6
         .transpose()
 }
 
+/// The lensfun database and the user's LCP files: `--lens-db` / `--lcp-dir`, else
+/// the default locations.
+fn lens_sources(
+    options: &BTreeMap<&str, &str>,
+) -> Result<
+    (
+        Option<flb_lens::lensfun::LensfunDb>,
+        flb_lens::lcp::LcpLibrary,
+    ),
+    String,
+> {
+    use flb_lens::{LcpLibrary, LensfunDb};
+    let db = match options.get("--lens-db") {
+        Some(dir) => {
+            let path = Path::new(dir);
+            let db = if path.is_file() {
+                LensfunDb::load_files([path])
+            } else {
+                LensfunDb::load_dir(path).map_err(|e| format!("{dir}: {e}"))?
+            };
+            Some(db)
+        }
+        None => LensfunDb::load_default(),
+    };
+    let lcp = match options.get("--lcp-dir") {
+        Some(dir) => LcpLibrary::scan([Path::new(dir)]),
+        None => LcpLibrary::scan_default(),
+    };
+    Ok((db, lcp))
+}
+
+/// `flb lens info <RAW>`: the raw's lens metadata, then the same report as `flb lens match`.
+fn lens_info(raw: &Path, options: &BTreeMap<&str, &str>) -> Result<String, String> {
+    let shot = flb_engine::raw::read_shot(raw).map_err(|e| format!("{}: {e}", raw.display()))?;
+    let lens_model = shot
+        .lens_model
+        .clone()
+        .ok_or_else(|| format!("{}: no lens model in the metadata", raw.display()))?;
+    let num = |v: Option<f64>| v.map(|v| v.to_string());
+    let owned: Vec<(&str, Option<String>)> = vec![
+        ("--camera-make", Some(shot.camera_make.clone())),
+        ("--camera-model", Some(shot.camera_model.clone())),
+        ("--lens-make", shot.lens_make.clone()),
+        ("--lens-model", Some(lens_model)),
+        ("--focal", num(shot.focal_mm)),
+        ("--aperture", num(shot.aperture)),
+        ("--distance", num(shot.distance_m)),
+    ];
+    let mut merged = options.clone();
+    for (key, value) in &owned {
+        if let Some(v) = value {
+            merged.insert(key, v.as_str());
+        }
+    }
+    lens_match_output(&merged)
+}
+
 /// `flb lens match`: returns what to print, so it can be tested without a process.
 fn lens_match_output(options: &BTreeMap<&str, &str>) -> Result<String, String> {
-    use flb_lens::{LcpLibrary, LensfunDb, ProfileHint, ShotInfo};
+    use flb_lens::{ProfileHint, ShotInfo};
     use std::fmt::Write;
 
     let required = |name: &str| {
@@ -588,18 +678,7 @@ fn lens_match_output(options: &BTreeMap<&str, &str>) -> Result<String, String> {
     };
     let mut out = String::new();
 
-    let db = match options.get("--lens-db") {
-        Some(dir) => {
-            let path = Path::new(dir);
-            let db = if path.is_file() {
-                LensfunDb::load_files([path])
-            } else {
-                LensfunDb::load_dir(path).map_err(|e| format!("{dir}: {e}"))?
-            };
-            Some(db)
-        }
-        None => LensfunDb::load_default(),
-    };
+    let (db, lcp) = lens_sources(options)?;
     match &db {
         Some(db) => {
             let dirs: Vec<String> = db
@@ -633,10 +712,6 @@ fn lens_match_output(options: &BTreeMap<&str, &str>) -> Result<String, String> {
             );
         }
     }
-    let lcp = match options.get("--lcp-dir") {
-        Some(dir) => LcpLibrary::scan([Path::new(dir)]),
-        None => LcpLibrary::scan_default(),
-    };
     let _ = writeln!(out, "LCP: {} profile files", lcp.files.len());
 
     let mut crop_note = "given";

@@ -44,6 +44,21 @@ What makes a name safe: it's distinctive for software (an invented word, or a re
 | Lightkeeper | the lighthouse keeper | Lightkeeper (fintech platform) has software marks. | | ❌ |
 | Camera Lucida | Latin for "light room", and Barthes' classic book on photography | Drawing-aid apps, and Lucida is a registered font brand. | | ❌ Lovely, but risky. |
 
+### Names that don't start with "Light" (checked 2026-10-05)
+
+| Name | Meaning | Conflicts found | Free domains (RDAP) | Verdict |
+|---|---|---|---|---|
+| **Ambrotype** | A positive photograph on glass (1850s). From Greek *ambrotos* "immortal" + *typos* "impression": an image that lasts forever. | No software or app found; one photography studio ("Ambrotype Visuals"). Crate name free. | ambrotype.org, ambrotype.photo | **Top pick.** It means what we want, and it's a real photographic word nobody uses for software. |
+| **Argentype** | Silver + impression; the silver halide that photography captures light in. A variant of Herschel's 1842 "argentotype". | Only historical and art-term uses. Crate free. | argentype.org, .app, .photo | Strong. Solid, unusual and ownable. |
+| Albumen | The albumen print, the dominant 19th-century print process. | None found in software. | albumen.org, albumen.photo | Possible, but it also means egg white. |
+| Cyanotype / Collodion | Historic processes | Used generically as effect names in many filters and plug-ins. | .app, .photo | Weak as marks (descriptive in photo software). |
+| Safelight | The darkroom lamp | **A new free GPL RAW editor named Safelight launched in Sept 2026.** | | ❌ Taken by a direct competitor. |
+| Emulsion | The light-sensitive layer | "Emulsion" is a Mac photo app. | | ❌ |
+| Phos, Argent, Lodestar, Vesper, Heliotrope, Daguerre, Platina, Aurum | | Crate names taken, and domains/apps crowded. | | ❌ |
+| Sunprint | Cyanotype "sun prints" | Printer app plus a managed-print company. | | ❌ |
+
+Trademark databases (TMview, WIPO) weren't reachable from this session; run step 3.1 below for the final pick.
+
 ## 3. Do you need to register it?
 
 

@@ -27,6 +27,57 @@ pub enum Frame {
     },
 }
 
+impl Frame {
+    /// Linear blend (for interpolating LCP frames between focal lengths).
+    /// Returns `None` when the two frames differ in kind.
+    pub fn lerp(&self, other: &Frame, t: f64) -> Option<Frame> {
+        let l = |a: f64, b: f64| a + (b - a) * t;
+        Some(match (*self, *other) {
+            (
+                Frame::HuginShortSide {
+                    cal_crop: c0,
+                    cal_aspect: a0,
+                },
+                Frame::HuginShortSide {
+                    cal_crop: c1,
+                    cal_aspect: a1,
+                },
+            ) => Frame::HuginShortSide {
+                cal_crop: l(c0, c1),
+                cal_aspect: l(a0, a1),
+            },
+            (Frame::HalfDiagonal { cal_crop: c0 }, Frame::HalfDiagonal { cal_crop: c1 }) => {
+                Frame::HalfDiagonal {
+                    cal_crop: l(c0, c1),
+                }
+            }
+            (
+                Frame::Acm {
+                    cx,
+                    cy,
+                    fx,
+                    fy,
+                    cal_crop,
+                },
+                Frame::Acm {
+                    cx: cx1,
+                    cy: cy1,
+                    fx: fx1,
+                    fy: fy1,
+                    cal_crop: c1,
+                },
+            ) => Frame::Acm {
+                cx: l(cx, cx1),
+                cy: l(cy, cy1),
+                fx: l(fx, fx1),
+                fy: l(fy, fy1),
+                cal_crop: l(cal_crop, c1),
+            },
+            _ => return None,
+        })
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Distortion {
     /// rd = ru · (1 − k1 + k1·ru²)

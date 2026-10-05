@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE lensdatabase SYSTEM "lensfun-database.dtd">
+<!-- Made-up test data in the lensfun database format. Not real calibrations. -->
+<lensdatabase version="2">
+
+    <mount>
+        <name>Testmount X</name>
+        <compat>Testmount Classic</compat>
+        <compat>Generic</compat>
+    </mount>
+
+    <camera>
+        <maker>Acme Optical Corporation</maker>
+        <maker lang="en">Acme</maker>
+        <model>Acme FF-1</model>
+        <model lang="en">FF-1</model>
+        <mount>Testmount X</mount>
+        <cropfactor>1</cropfactor>
+    </camera>
+
+    <camera>
+        <maker>Acme Optical Corporation</maker>
+        <maker lang="en">Acme</maker>
+        <model>Acme Mini 2</model>
+        <model lang="en">Mini 2</model>
+        <mount>Testmount X</mount>
+        <cropfactor>1.5</cropfactor>
+    </camera>
+
+    <camera>
+        <maker>Acme Optical Corporation</maker>
+        <model>Acme Pocket P5</model>
+        <mount>acmePocketP5</mount>
+        <cropfactor>4.8</cropfactor>
+    </camera>
+
+    <!-- A zoom calibrated on two sensor sizes: one <lens> block per crop factor. -->
+    <lens>
+        <maker>Acme</maker>
+        <model>Acme Zoomar 24-70mm f/2.8 Pro | A</model>
+        <model lang="en">Zoomar 24-70mm f/2.8 Pro A</model>
+        <mount>Testmount X</mount>
+        <cropfactor>1</cropfactor>
+        <calibration>
+            <!-- Taken with Acme FF-1 -->
+            <distortion model="ptlens" focal="24" a="0.01" b="-0.04" c="0.02"/>
+            <distortion model="ptlens" focal="70" a="0.03" b="-0.02" c="0"/>
+            <distortion model="acm" focal="35" k1="0.5"/>
+            <tca model="poly3" focal="24" vr="1.0002" vb="0.9998" br="0.0001"/>
+            <tca model="poly3" focal="70" vr="1.0004" vb="0.9996"/>
+            <vignetting model="pa" focal="24" aperture="2.8" distance="1" k1="-0.9" k2="0.3" k3="0"/>
+            <vignetting model="pa" focal="24" aperture="2.8" distance="1000" k1="-0.4" k2="0.1" k3="0"/>
+            <vignetting model="pa" focal="24" aperture="5.6" distance="1000" k1="-0.2" k2="0.05" k3="0"/>
+            <vignetting model="pa" focal="70" aperture="2.8" distance="1000" k1="-0.8" k2="0.2" k3="-0.01"/>
+            <vignetting model="pa" focal="70" aperture="5.6" distance="1000" k1="-0.4" k2="0.1" k3="-0.01"/>
+        </calibration>
+    </lens>
+
+    <lens>
+        <maker>Acme</maker>
+        <model>Acme Zoomar 24-70mm f/2.8 Pro | A</model>
+        <mount>Testmount X</mount>
+        <cropfactor>1.5</cropfactor>
+        <calibration>
+            <!-- Taken with Acme Mini 2; the models differ in kind across focals. -->
+            <distortion model="poly3" focal="24" k1="-0.02"/>
+            <distortion model="ptlens" focal="70" a="0.001" b="0.002" c="0.003"/>
+            <tca model="linear" focal="24" kr="1.001"/>
+            <tca model="linear" focal="70" kr="1.003" kb="0.997"/>
+        </calibration>
+    </lens>
+
+    <!-- Newer databases put the calibration sensor on <calibration>. -->
+    <lens>
+        <maker>Bolt</maker>
+        <model>Bolt 50mm f/1.8 Classic</model>
+        <mount>Testmount Classic</mount>
+        <cropfactor>1</cropfactor>
+        <aspect-ratio>3:2</aspect-ratio>
+        <calibration cropfactor="2" aspect-ratio="4:3">
+            <distortion model="poly5" focal="50" k1="-0.05" k2="0.01"/>
+            <distortion model="unknown-model" focal="60" k1="1"/>
+            <vignetting model="pa" focal="50" aperture="1.8" distance="1000" k1="-0.5" k2="0.1" k3="0"/>
+        </calibration>
+    </lens>
+
+    <lens>
+        <maker>Acme</maker>
+        <model>Acme Fisheye 8mm f/3.5</model>
+        <mount>Testmount X</mount>
+        <cropfactor>1</cropfactor>
+        <type>fisheye</type>
+        <calibration>
+            <distortion model="poly3" focal="8" k1="-0.3"/>
+            <tca model="linear" focal="8" kr="1.001" kb="0.999"/>
+            <vignetting model="pa" focal="8" aperture="3.5" distance="1000" k1="-0.6" k2="0.2" k3="0"/>
+            <vignetting model="pa" focal="8" aperture="8" distance="1000" k1="-0.2" k2="0.05" k3="0"/>
+        </calibration>
+    </lens>
+
+    <lens>
+        <maker>Acme Optical Corporation</maker>
+        <model>Acme Pocket P5 &amp; compatibles</model>
+        <mount>acmePocketP5</mount>
+        <cropfactor>4.8</cropfactor>
+        <aspect-ratio>4:3</aspect-ratio>
+        <calibration>
+            <distortion model="poly3" focal="5" k1="-0.01"/>
+        </calibration>
+    </lens>
+
+</lensdatabase>

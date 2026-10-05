@@ -8,10 +8,14 @@
    cd Ambrotype
    git checkout claude/lightroom-alternative-scope-xlnf0p
    ```
+   Already cloned under the old name (`flightbroom`)? GitHub redirects it, but you can point it at the new name:
+   ```sh
+   git remote set-url origin https://github.com/shardpelt/Ambrotype.git
+   ```
 3. Build and test:
    ```sh
    cargo test                      # all unit and integration tests should pass
-   cargo build --release           # the tool is target/release/amb (amb.exe on Windows)
+   cargo build --release           # target/release/amb (CLI) and target/release/ambrotype (editor); .exe on Windows
    ```
 
 ## 2. Try it on your own photos

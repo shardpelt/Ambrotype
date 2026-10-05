@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use flb_presets::Value;
-use flb_presets::xmp::{CRS_NS, RDF_NS};
+use flb_presets::xmp::{CRS_NS, FLB_NS, RDF_NS};
 use quick_xml::NsReader;
 use quick_xml::events::Event;
 use quick_xml::name::ResolveResult;
@@ -102,7 +102,7 @@ fn collect_foreign(original: &str) -> Result<Foreign, Error> {
                             }
                             _ => None,
                         };
-                        if matches!(attr_ns.as_deref(), Some(CRS_NS) | Some(RDF_NS)) {
+                        if matches!(attr_ns.as_deref(), Some(CRS_NS | FLB_NS | RDF_NS)) {
                             continue;
                         }
                         let value = attr.unescape_value().map_err(xml_err)?.into_owned();
@@ -115,7 +115,7 @@ fn collect_foreign(original: &str) -> Result<Foreign, Error> {
                     }
                 } else if in_desc == Some(depth.wrapping_sub(1))
                     && copying.is_none()
-                    && ns.as_deref() != Some(CRS_NS)
+                    && !matches!(ns.as_deref(), Some(CRS_NS | FLB_NS))
                 {
                     // A direct child property of the Description, not ours.
                     if is_empty {
@@ -166,9 +166,9 @@ pub fn merge(original: &str, settings: &BTreeMap<String, Value>) -> Result<Strin
     const OPEN: &str = "<rdf:Description rdf:about=\"\"";
     let open_at = packet.find(OPEN).ok_or_else(|| xml_err("writer output"))? + OPEN.len();
     let mut extra = String::new();
-    let reserved = ["x", "rdf", "crs", "xml"];
+    let reserved = ["x", "rdf", "crs", "flb", "xml"];
     for (prefix, uri) in &foreign.namespaces {
-        if reserved.contains(&prefix.as_str()) || uri == CRS_NS {
+        if reserved.contains(&prefix.as_str()) || uri == CRS_NS || uri == FLB_NS {
             continue;
         }
         let decl = format!("xmlns:{prefix}=");

@@ -21,7 +21,8 @@ USAGE:
                                             (docs/lightroom-trial-plan.md): raw copies + XMP sidecars,
                                             and/or synthetic DNG targets with embedded settings
     flb calibration defaults                Print the default model constants as calibration JSON
-    flb testimage <PATTERN> <OUT.dng>       Write one synthetic target (ramp, hue, edges, colorchecker)
+    flb testimage <PATTERN> <OUT.dng>       Write one synthetic target (ramp, hue, edges, colorchecker,
+                                            negative: a scanned colour negative)
     flb render <RAW> <OUT.png|.jpg|.tif> [--preset P] [--amount A] [--look default|linear]
                                             [--calibration fitted.json] [--lens-db DIR] [--lcp-dir DIR]
                                             Develop a raw (engine v0: white balance, Exposure, point
@@ -34,6 +35,11 @@ USAGE:
                                             Answer protocol queries (get_param, list_params, describe,
                                             list_groups) as JSON
     flb protocol schema [command|query]     Print the JSON Schema of commands and queries
+    flb negative analyze <RAW>... [--out ROLL.xmp] [--json]
+                                            Estimate film base, levels and midtone of scanned negatives
+                                            (the median over all frames, for a consistent roll) and write
+                                            them as a preset with Auto off
+    flb negative stocks [--json]            List the built-in film stock looks
     flb lens info <RAW> [--lens-db DIR] [--lcp-dir DIR]
                                             Show a raw's lens metadata and the profile it gets
     flb lens match --camera-make X --camera-model Y --lens-model M [--lens-make L] [--focal F]
@@ -125,6 +131,13 @@ fn main() -> ExitCode {
             Some(queries) => query(Path::new(state), queries),
             None => Err("query needs --queries <file.json> (or - for stdin)".into()),
         },
+        ["negative", "analyze", raws @ ..] if !raws.is_empty() => {
+            negative_analyze(raws, options.get("--out").map(Path::new), json)
+        }
+        ["negative", "stocks"] => {
+            negative_stocks(json);
+            Ok(())
+        }
         ["lens", "info", raw] => lens_info(Path::new(raw), &options).map(|text| println!("{text}")),
         ["lens", "match"] => lens_match_output(&options).map(|text| println!("{text}")),
         ["protocol", "schema"] => print_json(&flb_protocol::schema::protocol_schema()),
@@ -596,6 +609,136 @@ fn number_option(options: &BTreeMap<&str, &str>, name: &str) -> Result<Option<f6
                 .ok_or_else(|| format!("bad {name} {v:?} (a positive number)"))
         })
         .transpose()
+}
+
+fn negative_stocks(json: bool) {
+    use flb_engine::negative::STOCKS;
+    if json {
+        let list: Vec<serde_json::Value> = STOCKS
+            .iter()
+            .map(|s| {
+                serde_json::json!({
+                    "id": s.id,
+                    "name": s.name,
+                    "black_and_white": s.black_and_white,
+                    "description": s.description,
+                })
+            })
+            .collect();
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&list).expect("serialises")
+        );
+        return;
+    }
+    for s in STOCKS {
+        println!(
+            "{:<22} {:<22} {}{}",
+            s.id,
+            s.name,
+            if s.black_and_white { "[B&W] " } else { "" },
+            s.description
+        );
+    }
+    println!(
+        "\nUse with: flb:NegativeConvert=True, flb:FilmStock=<id> (e.g. in a preset or `flb edit`)."
+    );
+}
+
+/// `flb negative analyze`: per-frame analysis and the roll median, as `flb:` settings.
+fn negative_analyze(raws: &[&str], out: Option<&Path>, json: bool) -> Result<(), String> {
+    use flb_engine::negative::{self, Analysis};
+    let k = flb_engine::negative::DEFAULT_STRENGTHS;
+    let mut frames: Vec<Analysis> = Vec::new();
+    for raw in raws {
+        let img = flb_engine::raw::load(Path::new(raw)).map_err(|e| format!("{raw}: {e}"))?;
+        let a = negative::analyze(&img.rgb, img.width, img.height, &k);
+        if !json {
+            println!(
+                "{raw}: base {:.4} {:.4} {:.4} | shadow density {:.3} {:.3} {:.3} | highlight density {:.3} {:.3} {:.3} | midtone {:.3}",
+                a.base[0],
+                a.base[1],
+                a.base[2],
+                a.density_low[0],
+                a.density_low[1],
+                a.density_low[2],
+                a.density_high[0],
+                a.density_high[1],
+                a.density_high[2],
+                a.midtone
+            );
+        }
+        frames.push(a);
+    }
+    let median = |f: &dyn Fn(&Analysis) -> f64| -> f64 {
+        let mut v: Vec<f64> = frames.iter().map(f).collect();
+        v.sort_by(f64::total_cmp);
+        let n = v.len();
+        if n % 2 == 1 {
+            v[n / 2]
+        } else {
+            0.5 * (v[n / 2 - 1] + v[n / 2])
+        }
+    };
+    let round = |v: f64| (v * 10_000.0).round() / 10_000.0;
+    let mut settings = BTreeMap::new();
+    let mut put = |k: &str, v: flb_presets::Value| {
+        settings.insert(format!("flb:{k}"), v);
+    };
+    put("NegativeConvert", flb_presets::Value::Bool(true));
+    put("NegativeAuto", flb_presets::Value::Bool(false));
+    for (c, name) in ["Red", "Green", "Blue"].iter().enumerate() {
+        put(
+            &format!("FilmBase{name}"),
+            flb_presets::Value::Number(round(median(&|a| a.base[c]))),
+        );
+        put(
+            &format!("NegativeDensityLow{name}"),
+            flb_presets::Value::Number(round(median(&|a| a.density_low[c]))),
+        );
+        put(
+            &format!("NegativeDensityHigh{name}"),
+            flb_presets::Value::Number(round(median(&|a| a.density_high[c]))),
+        );
+    }
+    put(
+        "NegativeMidtone",
+        flb_presets::Value::Number(round(median(&|a| a.midtone))),
+    );
+    if json {
+        let map: serde_json::Map<String, serde_json::Value> = settings
+            .iter()
+            .map(|(k, v)| {
+                let value = match v {
+                    flb_presets::Value::Bool(b) => serde_json::Value::Bool(*b),
+                    other => serde_json::json!(other.as_f64()),
+                };
+                (k.clone(), value)
+            })
+            .collect();
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&map).expect("serialises")
+        );
+    } else if frames.len() > 1 {
+        println!("roll median over {} frames", frames.len());
+    }
+    if let Some(out) = out {
+        settings.insert(
+            "Name".into(),
+            flb_presets::Value::Alt(vec![("x-default".into(), "Negative roll".into())]),
+        );
+        let packet = flb_presets::xmp_writer::write_packet(&settings, flb_presets::is_signed_tag);
+        std::fs::write(out, packet).map_err(|e| format!("{}: {e}", out.display()))?;
+        if !json {
+            println!(
+                "wrote {} (apply with `flb render <RAW> <OUT> --preset {}`; add flb:FilmStock to pick a look)",
+                out.display(),
+                out.display()
+            );
+        }
+    }
+    Ok(())
 }
 
 /// The lensfun database and the user's LCP files: `--lens-db` / `--lcp-dir`, else

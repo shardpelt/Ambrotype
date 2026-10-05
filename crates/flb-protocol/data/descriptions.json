@@ -57,6 +57,10 @@
    "label": "Detail",
    "description": "Sharpening (Amount, Radius, Detail, Masking) and manual noise reduction (luminance and colour). Judge these at 100% zoom or more."
   },
+  "negative": {
+   "label": "Film Negative (Flightbroom)",
+   "description": "Turns a camera scan of a film negative into a positive: removes the orange film base, sets per-channel levels, and applies a film stock look. Our own feature (flb: namespace); Lightroom has no equivalent tags, so Lightroom ignores these."
+  },
   "lens": {
    "label": "Lens Corrections",
    "description": "Lens profile corrections, chromatic-aberration removal, defringing and lens vignetting."
@@ -341,6 +345,29 @@
   "SDRHighlights": {"label": "SDR rendition: Highlights", "description": "SDR rendition setting used when an HDR edit is saved without HDR output."},
   "SDRShadows": {"label": "SDR rendition: Shadows", "description": "SDR rendition setting used when an HDR edit is saved without HDR output."},
   "SDRWhites": {"label": "SDR rendition: Whites", "description": "SDR rendition setting used when an HDR edit is saved without HDR output."},
-  "SDRBlend": {"label": "SDR rendition: Blend", "description": "SDR rendition setting used when an HDR edit is saved without HDR output."}
+  "SDRBlend": {"label": "SDR rendition: Blend", "description": "SDR rendition setting used when an HDR edit is saved without HDR output."},
+  "flb:NegativeConvert": {"label": "Convert negative", "description": "True treats the photo as a scanned film negative and converts it to a positive. Everything else in the edit then works on the positive."},
+  "flb:NegativeType": {"label": "Negative type", "description": "\"color\" for colour negative film (orange base), \"bw\" for black-and-white negatives. A black-and-white film stock also gives a black-and-white result."},
+  "flb:NegativeAuto": {"label": "Auto", "description": "True (the default) estimates the film base, levels and midtone for every photo. False uses the stored FilmBase*/NegativeDensity*/NegativeMidtone values (from `flb negative analyze`), which keeps a whole roll consistent; missing ones are still estimated."},
+  "flb:FilmStock": {"label": "Film stock", "description": "Film stock look applied during the conversion: neutral, warm-portrait-400, pastel-portrait-160, vivid-100, golden-200, everyday-400, cinema-500t, cinema-50d, bw-classic-400, bw-fine-100, bw-high-contrast, bw-red-filter, bw-orthochromatic. Our own looks, named by character; unknown names fall back to neutral."},
+  "flb:FilmStockAmount": {"label": "Film stock amount", "description": "Strength of the film stock look, 0 = neutral conversion, 100 = full look."},
+  "flb:NegativeExposure": {"label": "Print exposure", "description": "Brightness of the conversion in stops (EV), before the regular Exposure slider."},
+  "flb:NegativeContrast": {"label": "Print contrast", "description": "Contrast of the conversion, like a paper grade: positive = harder, negative = softer."},
+  "flb:NegativeCyanRed": {"label": "Cyan ↔ Red", "description": "Colour balance of the conversion: positive adds red, negative adds cyan."},
+  "flb:NegativeMagentaGreen": {"label": "Magenta ↔ Green", "description": "Colour balance of the conversion: positive adds green, negative adds magenta."},
+  "flb:NegativeYellowBlue": {"label": "Yellow ↔ Blue", "description": "Colour balance of the conversion: positive adds blue, negative adds yellow."},
+  "flb:NegativeToe": {"label": "Toe", "description": "Shadow roll-off: positive lifts and softens the deepest shadows, negative makes them harder."},
+  "flb:NegativeShoulder": {"label": "Shoulder", "description": "Highlight roll-off: positive compresses bright highlights (more detail, softer), negative makes them harder."},
+  "flb:NegativeSaturation": {"label": "Film saturation", "description": "Colour saturation of the conversion, on top of the film stock's own."},
+  "flb:NegativeMidtone": {"label": "Midtone", "description": "Which point of the negative's tonal range becomes middle grey (0..1). Set by Auto or `flb negative analyze`."},
+  "flb:FilmBaseRed": {"label": "Film base: red", "description": "Red transmittance of the unexposed film base (orange mask), as a fraction of the camera's white level. Set by Auto or `flb negative analyze`; image- and scan-specific."},
+  "flb:FilmBaseGreen": {"label": "Film base: green", "description": "Green transmittance of the unexposed film base (orange mask), as a fraction of the camera's white level. Set by Auto or `flb negative analyze`; image- and scan-specific."},
+  "flb:FilmBaseBlue": {"label": "Film base: blue", "description": "Blue transmittance of the unexposed film base (orange mask), as a fraction of the camera's white level. Set by Auto or `flb negative analyze`; image- and scan-specific."},
+  "flb:NegativeDensityLowRed": {"label": "Shadow density: red", "description": "Red density above the film base that becomes the deepest shadow (black point of the red layer). Set by Auto or `flb negative analyze`."},
+  "flb:NegativeDensityLowGreen": {"label": "Shadow density: green", "description": "Green density above the film base that becomes the deepest shadow (black point of the green layer). Set by Auto or `flb negative analyze`."},
+  "flb:NegativeDensityLowBlue": {"label": "Shadow density: blue", "description": "Blue density above the film base that becomes the deepest shadow (black point of the blue layer). Set by Auto or `flb negative analyze`."},
+  "flb:NegativeDensityHighRed": {"label": "Highlight density: red", "description": "Red density above the film base that becomes the deepest highlight (white point of the red layer). Set by Auto or `flb negative analyze`."},
+  "flb:NegativeDensityHighGreen": {"label": "Highlight density: green", "description": "Green density above the film base that becomes the deepest highlight (white point of the green layer). Set by Auto or `flb negative analyze`."},
+  "flb:NegativeDensityHighBlue": {"label": "Highlight density: blue", "description": "Blue density above the film base that becomes the deepest highlight (white point of the blue layer). Set by Auto or `flb negative analyze`."}
  }
 }

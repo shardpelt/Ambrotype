@@ -47,18 +47,19 @@ The kit is generated with `flb sweep generate --out <kit-dir> [--groups tone,pre
 5. Import the synthetic DNGs with their sweep sidecars. Batch-export everything; the volume is about 40 controls × 11 values × the targets.
 6. Run the same sweeps on 10 real raws.
 7. Run the interaction pairs.
-8. **Preset Amount:** apply 5–10 presets at Amount 0/25/50/75/100/150/200 and export. This measures Adobe's undocumented Amount maths.
+8. **Foreign XMP tags:** put a sidecar with `flb:` settings (e.g. from `flb negative analyze`) next to a raw. Import it, change a slider, run Metadata → Save Metadata to File, and check whether the `flb:` attributes survive.
+9. **Preset Amount:** apply 5–10 presets at Amount 0/25/50/75/100/150/200 and export. This measures Adobe's undocumented Amount maths.
 
 **Week 3: profiles, presets, local tools**
-9. **Profiles:** render the ColorChecker and real raws with Adobe Color, Adobe Standard, Adobe Neutral, Adobe Landscape, Adobe Portrait, Adobe Vivid, Camera Matching and a few creative profiles at several Amounts. This is how we fit our replacement base profiles without shipping Adobe's files.
-10. **Preset corpus:** render every preset you own over the real-raw set. This becomes the end-to-end regression suite.
-11. **Masks:** linear and radial gradients with known feather values on a flat grey DNG (to measure the falloff curves); luminance and colour range masks on ramps and wheels.
-12. **Effects and detail:** vignette in every style, grain, sharpening (on edge patterns) and noise reduction (on flat ISO-noise frames).
+10. **Profiles:** render the ColorChecker and real raws with Adobe Color, Adobe Standard, Adobe Neutral, Adobe Landscape, Adobe Portrait, Adobe Vivid, Camera Matching and a few creative profiles at several Amounts. This is how we fit our replacement base profiles without shipping Adobe's files.
+11. **Preset corpus:** render every preset you own over the real-raw set. This becomes the end-to-end regression suite.
+12. **Masks:** linear and radial gradients with known feather values on a flat grey DNG (to measure the falloff curves); luminance and colour range masks on ramps and wheels.
+13. **Effects and detail:** vignette in every style, grain, sharpening (on edge patterns) and noise reduction (on flat ISO-noise frames).
 
 **Week 4: lens, transform, catch-up**
-13. Lens profile on/off and CA/defringe on grid shots, for the lenses you own.
-14. Upright modes on architecture shots.
-15. Re-run anything that failed. Verify the archive is complete, then cancel.
+14. Lens profile on/off and CA/defringe on grid shots, for the lenses you own.
+15. Upright modes on architecture shots.
+16. Re-run anything that failed. Verify the archive is complete, then cancel.
 
 ## Storage and legal
 - Keep all renders in a **private** storage location, not in the public repo. They're derived from your licensed use of Lightroom. Only the CC0 inputs and our measured numbers (fitted tables) are committed.

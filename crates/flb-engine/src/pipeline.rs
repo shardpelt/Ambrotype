@@ -3,6 +3,7 @@
 //! Order (subset of the Camera Raw model, docs/research/05 §1):
 //! 0. Lens Corrections on camera RGB: vignetting, Remove CA, distortion
 //!    (profile + manual), one resampling pass                [sensor-linear]
+//!    → film negative conversion (optional, `flb:` settings) [sensor-linear]
 //! 1. camera RGB → white balance + camera matrix → XYZ → Bradford to D50 →
 //!    linear ProPhoto → Exposure (2^EV) → Defringe           [scene-linear]
 //! 2. Dehaze                                                 [scene-linear]
@@ -36,9 +37,10 @@ use crate::detail::{NoiseReduction, Sharpening};
 use crate::effects::{Grain, Vignette};
 use crate::lens::{Defringe, LensCorrections};
 use crate::local::LocalContrast;
+use crate::negative::{Negative, NegativeType};
 use crate::raw::{CameraImage, neutral_for_xy, xy_for_neutral};
 use crate::tone::{self, ParametricCurve, ToneControls};
-use crate::{dehaze, detail, effects, lens, local};
+use crate::{dehaze, detail, effects, lens, local, negative};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WhiteBalance {
@@ -89,6 +91,7 @@ pub struct DevelopSettings {
     pub vignette: Vignette,
     pub grain: Grain,
     pub lens: LensCorrections,
+    pub negative: Negative,
     /// Model constants; [`Calibration::default`] until fitted against Lightroom.
     pub calibration: Calibration,
 }
@@ -111,6 +114,7 @@ impl Default for DevelopSettings {
             vignette: Vignette::default(),
             grain: Grain::default(),
             lens: LensCorrections::default(),
+            negative: Negative::default(),
             calibration: Calibration::default(),
         }
     }
@@ -200,6 +204,29 @@ pub const RENDERED_TAGS: &[&str] = &[
     "DefringeGreenHueLo",
     "DefringeGreenHueHi",
     "CropConstrainToWarp",
+    "flb:NegativeConvert",
+    "flb:NegativeType",
+    "flb:NegativeAuto",
+    "flb:FilmStock",
+    "flb:FilmStockAmount",
+    "flb:FilmBaseRed",
+    "flb:FilmBaseGreen",
+    "flb:FilmBaseBlue",
+    "flb:NegativeDensityLowRed",
+    "flb:NegativeDensityLowGreen",
+    "flb:NegativeDensityLowBlue",
+    "flb:NegativeDensityHighRed",
+    "flb:NegativeDensityHighGreen",
+    "flb:NegativeDensityHighBlue",
+    "flb:NegativeMidtone",
+    "flb:NegativeExposure",
+    "flb:NegativeContrast",
+    "flb:NegativeCyanRed",
+    "flb:NegativeMagentaGreen",
+    "flb:NegativeYellowBlue",
+    "flb:NegativeToe",
+    "flb:NegativeShoulder",
+    "flb:NegativeSaturation",
 ];
 
 /// Whether `tag` is rendered by this pipeline version (fixed list plus the 24 HSL tags).
@@ -337,6 +364,7 @@ impl DevelopSettings {
             seed: num(settings, "GrainSeed").map_or(gd.seed, |v| v as u64),
         };
         s.lens = lens_corrections(settings);
+        s.negative = negative_settings(settings);
         s.curve_rgb = spline_of(settings, "ToneCurvePV2012");
         s.curve_channels = [
             spline_of(settings, "ToneCurvePV2012Red"),
@@ -410,6 +438,52 @@ fn lens_corrections(settings: &BTreeMap<String, Value>) -> LensCorrections {
     }
 }
 
+fn rgb_triple(settings: &BTreeMap<String, Value>, prefix: &str) -> Option<[f64; 3]> {
+    let r = num(settings, &format!("{prefix}Red"))?;
+    let g = num(settings, &format!("{prefix}Green"))?;
+    let b = num(settings, &format!("{prefix}Blue"))?;
+    Some([r, g, b])
+}
+
+fn negative_settings(settings: &BTreeMap<String, Value>) -> Negative {
+    let d = Negative::default();
+    Negative {
+        enabled: flag(settings, "flb:NegativeConvert"),
+        kind: match settings.get("flb:NegativeType").and_then(Value::as_str) {
+            Some(t)
+                if t.eq_ignore_ascii_case("bw") || t.eq_ignore_ascii_case("black-and-white") =>
+            {
+                NegativeType::BlackAndWhite
+            }
+            _ => NegativeType::Color,
+        },
+        auto: settings
+            .get("flb:NegativeAuto")
+            .and_then(Value::as_bool)
+            .unwrap_or(d.auto),
+        stock: text(settings, "flb:FilmStock").unwrap_or(d.stock),
+        stock_amount: num(settings, "flb:FilmStockAmount").unwrap_or(d.stock_amount),
+        base: rgb_triple(settings, "flb:FilmBase"),
+        density_low: rgb_triple(settings, "flb:NegativeDensityLow"),
+        density_high: rgb_triple(settings, "flb:NegativeDensityHigh"),
+        midtone: num(settings, "flb:NegativeMidtone"),
+        exposure: num(settings, "flb:NegativeExposure").unwrap_or(0.0),
+        contrast: num(settings, "flb:NegativeContrast").unwrap_or(0.0),
+        balance: [
+            num(settings, "flb:NegativeCyanRed").unwrap_or(0.0),
+            num(settings, "flb:NegativeMagentaGreen").unwrap_or(0.0),
+            num(settings, "flb:NegativeYellowBlue").unwrap_or(0.0),
+        ],
+        toe: num(settings, "flb:NegativeToe").unwrap_or(0.0),
+        shoulder: num(settings, "flb:NegativeShoulder").unwrap_or(0.0),
+        saturation: num(settings, "flb:NegativeSaturation").unwrap_or(0.0),
+    }
+}
+
+/// White against which Temperature/Tint are read on a converted negative
+/// (the conversion itself already balances the image).
+pub const NEGATIVE_REFERENCE_WB: (f64, f64) = (5500.0, 0.0);
+
 /// Camera RGB → linear ProPhoto matrix for a given white (camera-space neutral).
 /// The neutral maps to ProPhoto (1, 1, 1) (i.e. D50 white).
 pub fn camera_to_prophoto(xyz_to_cam: &Mat3, neutral: [f64; 3]) -> Mat3 {
@@ -470,14 +544,41 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
             &cal.lens,
         )
     });
-    let camera_rgb = lens_pass.as_ref().map_or(&img.rgb, |p| &p.rgb);
+    let mut camera_rgb = lens_pass.as_ref().map_or(&img.rgb, |p| &p.rgb);
+    // 0b. Film negative → positive (on camera RGB, before white balance).
+    let negative_rgb = s.negative.enabled.then(|| {
+        let a = negative::resolve(
+            &s.negative,
+            camera_rgb,
+            img.width,
+            img.height,
+            &cal.negative,
+        );
+        let conversion = negative::Conversion::new(&s.negative, a, &cal.negative);
+        let mut rgb = camera_rgb.clone();
+        negative::apply(&mut rgb, &conversion);
+        rgb
+    });
+    if let Some(rgb) = &negative_rgb {
+        camera_rgb = rgb;
+    }
 
     // 1. Camera RGB → scene-linear ProPhoto with white balance and Exposure.
-    let neutral = match s.white_balance {
-        WhiteBalance::AsShot => img.as_shot_neutral,
-        WhiteBalance::Custom { temperature, tint } => {
+    let neutral = match (s.white_balance.clone(), s.negative.enabled) {
+        (WhiteBalance::AsShot, false) => img.as_shot_neutral,
+        (WhiteBalance::Custom { temperature, tint }, false) => {
             let (x, y) = temp_tint_to_xy(temperature, tint);
             neutral_for_xy(&img.xyz_to_cam, x, y)
+        }
+        // A converted negative is already balanced: equal channels are white,
+        // and Temperature/Tint move relative to the reference white.
+        (WhiteBalance::AsShot, true) => [1.0; 3],
+        (WhiteBalance::Custom { temperature, tint }, true) => {
+            let (x, y) = temp_tint_to_xy(temperature, tint);
+            let (rx, ry) = temp_tint_to_xy(NEGATIVE_REFERENCE_WB.0, NEGATIVE_REFERENCE_WB.1);
+            let n = neutral_for_xy(&img.xyz_to_cam, x, y);
+            let r = neutral_for_xy(&img.xyz_to_cam, rx, ry);
+            [n[0] / r[0], 1.0, n[2] / r[2]]
         }
     };
     let m = camera_to_prophoto(&img.xyz_to_cam, neutral).map(|row| row.map(|v| v as f32));

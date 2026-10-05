@@ -15,6 +15,12 @@ use crate::Error;
 use crate::value::Value;
 
 pub const CRS_NS: &str = "http://ns.adobe.com/camera-raw-settings/1.0/";
+/// Our own develop settings (features Camera Raw has no tag for, e.g. film
+/// negative conversion), written with the `flb:` prefix and keyed `flb:Name`.
+/// The URI changes with the product name before the first public release.
+pub const FLB_NS: &str = "http://ns.flightbroom.org/develop/1.0/";
+/// Key prefix for [`FLB_NS`] properties in a settings map.
+pub const FLB_PREFIX: &str = "flb:";
 pub const RDF_NS: &str = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 const XML_NS: &str = "http://www.w3.org/XML/1998/namespace";
 
@@ -53,6 +59,7 @@ impl Node {
 fn key_for(ns: Option<&str>, local: &str) -> String {
     match ns {
         Some(CRS_NS) => local.to_string(),
+        Some(FLB_NS) => format!("{FLB_PREFIX}{local}"),
         Some(uri) => format!("{{{uri}}}{local}"),
         None => local.to_string(),
     }
@@ -226,8 +233,9 @@ fn collect_descriptions<'a>(node: &'a Node, out: &mut Vec<&'a Node>) {
     }
 }
 
-/// All top-level Camera Raw (`crs:`) properties in an XMP packet, keyed by local name.
-/// Non-Camera-Raw properties (Dublin Core, EXIF, ...) are ignored here.
+/// All top-level Camera Raw (`crs:`) properties in an XMP packet, keyed by local
+/// name, plus our own (`flb:`) properties keyed `flb:Name`. Other namespaces
+/// (Dublin Core, EXIF, ...) are ignored here.
 pub fn parse_crs(input: &str) -> Result<BTreeMap<String, Value>, Error> {
     let root = parse_tree(input)?;
     let mut descriptions = Vec::new();
@@ -237,19 +245,18 @@ pub fn parse_crs(input: &str) -> Result<BTreeMap<String, Value>, Error> {
     }
     let mut settings = BTreeMap::new();
     for desc in descriptions {
-        for attr in desc
-            .attrs
-            .iter()
-            .filter(|a| a.ns.as_deref() == Some(CRS_NS))
-        {
-            settings.insert(attr.local.clone(), Value::Text(attr.value.clone()));
+        let ours = |ns: Option<&str>| matches!(ns, Some(CRS_NS) | Some(FLB_NS));
+        for attr in desc.attrs.iter().filter(|a| ours(a.ns.as_deref())) {
+            settings.insert(
+                key_for(attr.ns.as_deref(), &attr.local),
+                Value::Text(attr.value.clone()),
+            );
         }
-        for child in desc
-            .children
-            .iter()
-            .filter(|c| c.ns.as_deref() == Some(CRS_NS))
-        {
-            settings.insert(child.local.clone(), property_value(child));
+        for child in desc.children.iter().filter(|c| ours(c.ns.as_deref())) {
+            settings.insert(
+                key_for(child.ns.as_deref(), &child.local),
+                property_value(child),
+            );
         }
     }
     Ok(settings)

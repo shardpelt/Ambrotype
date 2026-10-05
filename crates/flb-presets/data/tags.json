@@ -2078,6 +2078,213 @@
    "max": null,
    "default": null,
    "status": "metadata"
+  },
+  {
+   "name": "flb:NegativeConvert",
+   "group": "negative",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": false,
+   "status": "exact"
+  },
+  {
+   "name": "flb:NegativeType",
+   "group": "negative",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": "color",
+   "status": "exact"
+  },
+  {
+   "name": "flb:NegativeAuto",
+   "group": "negative",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "exact"
+  },
+  {
+   "name": "flb:FilmStock",
+   "group": "negative",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": "neutral",
+   "status": "exact"
+  },
+  {
+   "name": "flb:FilmStockAmount",
+   "group": "negative",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 100,
+   "status": "exact"
+  },
+  {
+   "name": "flb:FilmBaseRed",
+   "group": "negative",
+   "kind": "number",
+   "min": 0,
+   "max": 1,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "flb:FilmBaseGreen",
+   "group": "negative",
+   "kind": "number",
+   "min": 0,
+   "max": 1,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "flb:FilmBaseBlue",
+   "group": "negative",
+   "kind": "number",
+   "min": 0,
+   "max": 1,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "flb:NegativeDensityLowRed",
+   "group": "negative",
+   "kind": "number",
+   "min": -1,
+   "max": 5,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "flb:NegativeDensityLowGreen",
+   "group": "negative",
+   "kind": "number",
+   "min": -1,
+   "max": 5,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "flb:NegativeDensityLowBlue",
+   "group": "negative",
+   "kind": "number",
+   "min": -1,
+   "max": 5,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "flb:NegativeDensityHighRed",
+   "group": "negative",
+   "kind": "number",
+   "min": -1,
+   "max": 5,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "flb:NegativeDensityHighGreen",
+   "group": "negative",
+   "kind": "number",
+   "min": -1,
+   "max": 5,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "flb:NegativeDensityHighBlue",
+   "group": "negative",
+   "kind": "number",
+   "min": -1,
+   "max": 5,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "flb:NegativeMidtone",
+   "group": "negative",
+   "kind": "number",
+   "min": 0,
+   "max": 1,
+   "default": null,
+   "status": "image-specific"
+  },
+  {
+   "name": "flb:NegativeExposure",
+   "group": "negative",
+   "kind": "number",
+   "min": -4,
+   "max": 4,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "flb:NegativeContrast",
+   "group": "negative",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "flb:NegativeCyanRed",
+   "group": "negative",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "flb:NegativeMagentaGreen",
+   "group": "negative",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "flb:NegativeYellowBlue",
+   "group": "negative",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "flb:NegativeToe",
+   "group": "negative",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "flb:NegativeShoulder",
+   "group": "negative",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "flb:NegativeSaturation",
+   "group": "negative",
+   "kind": "number",
+   "min": -100,
+   "max": 100,
+   "default": 0,
+   "status": "exact"
   }
  ]
 }

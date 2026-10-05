@@ -2,7 +2,7 @@
 
 A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linux that can apply the Lightroom presets you already bought, faithfully.
 
-**Status:** early. The scoping is done. Working so far: the preset reader, the Lightroom calibration kit, a raw renderer covering the core of Lightroom's Develop panels (white balance, camera colour, Basic tone/presence incl. Texture/Clarity/Dehaze, HSL, Color Grading, curves, sharpening, noise reduction, Lens Corrections, post-crop vignette, grain), and a command protocol so scripts and AI assistants can drive edits.
+**Status:** early. The scoping is done. Working so far: the preset reader, the Lightroom calibration kit, a raw renderer covering the core of Lightroom's Develop panels (white balance, camera colour, Basic tone/presence incl. Texture/Clarity/Dehaze, HSL, Color Grading, curves, sharpening, noise reduction, Lens Corrections, post-crop vignette, grain), film negative conversion with film stock looks, and a command protocol so scripts and AI assistants can drive edits.
 
 ## Docs
 - [docs/SCOPE.md](docs/SCOPE.md): the project scope, strategy, roadmap, risks and open decisions. Start here.
@@ -11,6 +11,7 @@ A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linu
 - [docs/legal-and-naming.md](docs/legal-and-naming.md): legal position (docs, formats, black-box testing, trademarks) and the product-name shortlist.
 - [docs/desktop-setup.md](docs/desktop-setup.md): build and run it on your machine.
 - [docs/lightroom-trial-plan.md](docs/lightroom-trial-plan.md) and [docs/sources-to-collect.md](docs/sources-to-collect.md): what to gather next.
+- [docs/design/lens-corrections.md](docs/design/lens-corrections.md) and [docs/design/film-negatives.md](docs/design/film-negatives.md): Lens Corrections, and film negative conversion with film stock looks.
 - [docs/design/ai-control.md](docs/design/ai-control.md) and [docs/ai/](docs/ai/): bring-your-own-AI control, the AI guide and the generated settings reference ([llms.txt](llms.txt)).
 
 ## Code (Rust workspace)
@@ -33,6 +34,7 @@ cargo run -p flb-cli -- sweep plan                      # the Lightroom calibrat
 cargo run -p flb-cli -- testimage colorchecker cc.dng   # a synthetic linear DNG target
 cargo run --release -p flb-cli -- render photo.nef out.jpg --preset look.xmp --amount 70
 cargo run -p flb-cli -- lens info photo.nef             # which lens profile a raw gets (lensfun / your .lcp files)
+cargo run -p flb-cli -- negative analyze scan*.nef --out roll.xmp   # film negatives: base/levels for a roll (docs/design/film-negatives.md)
 ```
 
 All rendering models are first versions ("ours, not Adobe's"). Their constants are to be fitted against Lightroom renders (`flb calibration defaults` prints them). `flb render` lists which preset settings it doesn't render yet. Next: built-in lens profiles from raw files, Upright/Transform, a local (edge-aware) Highlights/Shadows, camera profiles (DCP), and the MCP server and look matching for AI control (SCOPE §8).

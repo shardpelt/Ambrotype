@@ -126,7 +126,7 @@ From [09](research/09-market-commercial-alternatives.md), [12](research/12-user-
 | Tone equaliser: zone-based dodge/burn that preserves local contrast | darktable | ✅ [3], also a candidate engine for Highlights/Shadows |
 | Scene-referred tone mappers with better highlight roll-off (filmic/sigmoid/AgX) | darktable | ✅ [2] as an optional "native" rendering mode next to "Lightroom-match" |
 | Capture sharpening (deconvolution) and a choice of demosaic | RawTherapee/ART, darktable | ✅ [2–3] ported under the GPL |
-| Film negative conversion (the Negative Lab Pro plugin for LR is much loved) | darktable `negadoctor`, RapidRAW | ✅ [3] |
+| Film negative conversion (the Negative Lab Pro plugin for LR is much loved) | darktable `negadoctor`, RapidRAW | ✅ [3] done v1: auto/roll analysis, 13 stock looks, `flb:` settings ([design](design/film-negatives.md)) |
 | One view with multi-select editing, no Library/Develop mode switching | Capture One | ✅ [2] UX principle |
 | Tethered shooting (industry standard) | Capture One | ✅ [4] (libgphoto2) |
 | Lens-softness correction from measured lens data | DxO | Later (needs data we don't have) |

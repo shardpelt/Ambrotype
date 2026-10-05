@@ -3,7 +3,7 @@
 
 use crate::dng::{LinearImage, PROPHOTO_TO_XYZ_D50, SRGB_TO_XYZ_D50, apply3, invert3, mul3};
 
-pub const NAMES: &[&str] = &["ramp", "hue", "edges", "colorchecker"];
+pub const NAMES: &[&str] = &["ramp", "hue", "edges", "colorchecker", "negative"];
 
 pub fn generate(name: &str) -> Option<LinearImage> {
     Some(match name {
@@ -11,6 +11,7 @@ pub fn generate(name: &str) -> Option<LinearImage> {
         "hue" => hue_grid(),
         "edges" => edges(),
         "colorchecker" => colorchecker(),
+        "negative" => negative(),
         _ => return None,
     })
 }
@@ -204,6 +205,43 @@ pub fn colorchecker() -> LinearImage {
             patch,
             rgb,
         );
+    }
+    img
+}
+
+/// Orange base of the simulated colour negative (scan values, white level 1).
+pub const NEGATIVE_BASE: [f64; 3] = [0.82, 0.46, 0.26];
+
+/// A ColorChecker and a grey ramp as a "camera scan" of a colour negative:
+/// orange film base, densities growing with log exposure (gamma ~0.6, slightly
+/// different per dye layer), and a strip of unexposed rebate along the top and
+/// bottom. Test target for film negative conversion (`flb:NegativeConvert`).
+pub fn negative() -> LinearImage {
+    const GAMMA: [f64; 3] = [0.56, 0.6, 0.64];
+    let scene = colorchecker();
+    let rebate = 64u32;
+    let ramp_h = 96u32;
+    let (w, h) = (scene.width, scene.height + ramp_h + 2 * rebate);
+    let mut img = LinearImage::new(w, h);
+    let expose = |s: [f64; 3]| -> [f64; 3] {
+        std::array::from_fn(|c| {
+            // 0.5 % reflectance sits at the film's base (no density above base).
+            let d = GAMMA[c] * (s[c].max(0.005) / 0.005).log10();
+            NEGATIVE_BASE[c] * 10f64.powf(-d)
+        })
+    };
+    fill(&mut img, 0, 0, w, h, NEGATIVE_BASE);
+    for y in 0..scene.height {
+        for x in 0..w {
+            let p = scene.get(x, y).map(f64::from);
+            img.set(x, y + rebate, expose(p));
+        }
+    }
+    for x in 0..w {
+        let v = 0.01 * 100f64.powf(f64::from(x) / f64::from(w - 1)); // 1 %..100 %
+        for y in 0..ramp_h {
+            img.set(x, scene.height + rebate + y, expose([v; 3]));
+        }
     }
     img
 }

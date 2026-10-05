@@ -38,6 +38,7 @@ How to read the tables:
 | [Enhance (AI)](#enhance) | `enhance` | 8 | Records of AI Denoise, Raw Details and Super Resolution. Not supported by Flightbroom. |
 | [Lens Blur (AI)](#lens-blur) | `lens_blur` | 1 | Depth-map based background blur with bokeh shapes. Not supported by Flightbroom. |
 | [HDR editing](#hdr) | `hdr` | 9 | HDR edit mode and the SDR rendition settings used when an HDR edit is saved without HDR output. Not supported by Flightbroom. |
+| [Film Negative (Flightbroom)](#negative) | `negative` | 23 | Turns a camera scan of a film negative into a positive: removes the orange film base, sets per-channel levels, and applies a film stock look. Our own feature (flb: namespace); Lightroom has no equivalent tags, so Lightroom ignores these. |
 
 <a id="metadata"></a>
 
@@ -484,3 +485,35 @@ HDR edit mode and the SDR rendition settings used when an HDR edit is saved with
 | `SDRShadows` | SDR rendition: Shadows | number | any number |  | unsupported | SDR rendition setting used when an HDR edit is saved without HDR output. |
 | `SDRWhites` | SDR rendition: Whites | number | any number |  | unsupported | SDR rendition setting used when an HDR edit is saved without HDR output. |
 | `SDRBlend` | SDR rendition: Blend | number | any number |  | unsupported | SDR rendition setting used when an HDR edit is saved without HDR output. |
+
+<a id="negative"></a>
+
+## Film Negative (Flightbroom) (`negative`)
+
+Turns a camera scan of a film negative into a positive: removes the orange film base, sets per-channel levels, and applies a film stock look. Our own feature (flb: namespace); Lightroom has no equivalent tags, so Lightroom ignores these.
+
+| Tag | Control | Kind | Range | Default | Status | Description |
+|---|---|---|---|---|---|---|
+| `flb:NegativeConvert` | Convert negative | bool | true / false | false | rendered (exact) | True treats the photo as a scanned film negative and converts it to a positive. Everything else in the edit then works on the positive. |
+| `flb:NegativeType` | Negative type | text |  | color | rendered (exact) | "color" for colour negative film (orange base), "bw" for black-and-white negatives. A black-and-white film stock also gives a black-and-white result. |
+| `flb:NegativeAuto` | Auto | bool | true / false | true | rendered (exact) | True (the default) estimates the film base, levels and midtone for every photo. False uses the stored FilmBase*/NegativeDensity*/NegativeMidtone values (from `flb negative analyze`), which keeps a whole roll consistent; missing ones are still estimated. |
+| `flb:FilmStock` | Film stock | text |  | neutral | rendered (exact) | Film stock look applied during the conversion: neutral, warm-portrait-400, pastel-portrait-160, vivid-100, golden-200, everyday-400, cinema-500t, cinema-50d, bw-classic-400, bw-fine-100, bw-high-contrast, bw-red-filter, bw-orthochromatic. Our own looks, named by character; unknown names fall back to neutral. |
+| `flb:FilmStockAmount` | Film stock amount | number | 0 to 100 | 100 | rendered (exact) | Strength of the film stock look, 0 = neutral conversion, 100 = full look. |
+| `flb:FilmBaseRed` | Film base: red | number | 0 to 1 |  | image-specific | Red transmittance of the unexposed film base (orange mask), as a fraction of the camera's white level. Set by Auto or `flb negative analyze`; image- and scan-specific. |
+| `flb:FilmBaseGreen` | Film base: green | number | 0 to 1 |  | image-specific | Green transmittance of the unexposed film base (orange mask), as a fraction of the camera's white level. Set by Auto or `flb negative analyze`; image- and scan-specific. |
+| `flb:FilmBaseBlue` | Film base: blue | number | 0 to 1 |  | image-specific | Blue transmittance of the unexposed film base (orange mask), as a fraction of the camera's white level. Set by Auto or `flb negative analyze`; image- and scan-specific. |
+| `flb:NegativeDensityLowRed` | Shadow density: red | number | -1 to 5 |  | image-specific | Red density above the film base that becomes the deepest shadow (black point of the red layer). Set by Auto or `flb negative analyze`. |
+| `flb:NegativeDensityLowGreen` | Shadow density: green | number | -1 to 5 |  | image-specific | Green density above the film base that becomes the deepest shadow (black point of the green layer). Set by Auto or `flb negative analyze`. |
+| `flb:NegativeDensityLowBlue` | Shadow density: blue | number | -1 to 5 |  | image-specific | Blue density above the film base that becomes the deepest shadow (black point of the blue layer). Set by Auto or `flb negative analyze`. |
+| `flb:NegativeDensityHighRed` | Highlight density: red | number | -1 to 5 |  | image-specific | Red density above the film base that becomes the deepest highlight (white point of the red layer). Set by Auto or `flb negative analyze`. |
+| `flb:NegativeDensityHighGreen` | Highlight density: green | number | -1 to 5 |  | image-specific | Green density above the film base that becomes the deepest highlight (white point of the green layer). Set by Auto or `flb negative analyze`. |
+| `flb:NegativeDensityHighBlue` | Highlight density: blue | number | -1 to 5 |  | image-specific | Blue density above the film base that becomes the deepest highlight (white point of the blue layer). Set by Auto or `flb negative analyze`. |
+| `flb:NegativeMidtone` | Midtone | number | 0 to 1 |  | image-specific | Which point of the negative's tonal range becomes middle grey (0..1). Set by Auto or `flb negative analyze`. |
+| `flb:NegativeExposure` | Print exposure | number | -4 to 4 | 0 | rendered (exact) | Brightness of the conversion in stops (EV), before the regular Exposure slider. |
+| `flb:NegativeContrast` | Print contrast | number | -100 to 100 | 0 | rendered (exact) | Contrast of the conversion, like a paper grade: positive = harder, negative = softer. |
+| `flb:NegativeCyanRed` | Cyan ↔ Red | number | -100 to 100 | 0 | rendered (exact) | Colour balance of the conversion: positive adds red, negative adds cyan. |
+| `flb:NegativeMagentaGreen` | Magenta ↔ Green | number | -100 to 100 | 0 | rendered (exact) | Colour balance of the conversion: positive adds green, negative adds magenta. |
+| `flb:NegativeYellowBlue` | Yellow ↔ Blue | number | -100 to 100 | 0 | rendered (exact) | Colour balance of the conversion: positive adds blue, negative adds yellow. |
+| `flb:NegativeToe` | Toe | number | -100 to 100 | 0 | rendered (exact) | Shadow roll-off: positive lifts and softens the deepest shadows, negative makes them harder. |
+| `flb:NegativeShoulder` | Shoulder | number | -100 to 100 | 0 | rendered (exact) | Highlight roll-off: positive compresses bright highlights (more detail, softer), negative makes them harder. |
+| `flb:NegativeSaturation` | Film saturation | number | -100 to 100 | 0 | rendered (exact) | Colour saturation of the conversion, on top of the film stock's own. |

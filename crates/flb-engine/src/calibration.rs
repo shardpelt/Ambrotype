@@ -12,6 +12,7 @@ use crate::detail::DetailStrengths;
 use crate::effects::EffectsStrengths;
 use crate::lens::LensStrengths;
 use crate::local::LocalStrengths;
+use crate::negative::NegativeStrengths;
 use crate::tone::ToneStrengths;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -24,6 +25,7 @@ pub struct Calibration {
     pub detail: DetailStrengths,
     pub effects: EffectsStrengths,
     pub lens: LensStrengths,
+    pub negative: NegativeStrengths,
 }
 
 impl Calibration {

@@ -1,6 +1,6 @@
 # Driving Flightbroom from an AI or a script
 
-Flightbroom edits photos the way Lightroom does: as a non-destructive recipe of Camera Raw settings (`crs:` tags such as `Exposure2012` or `ColorGradeShadowHue`) stored in an XMP sidecar next to the raw file. An AI assistant edits a photo by changing those settings through the **same validated, undoable commands** a human's slider moves produce. It never paints pixels.
+Flightbroom edits photos the way Lightroom does: as a non-destructive recipe of Camera Raw settings (`crs:` tags such as `Exposure2012` or `ColorGradeShadowHue`) stored in an XMP sidecar next to the raw file. Features Lightroom lacks (e.g. film negative conversion) use our own `flb:` tags (e.g. `flb:NegativeConvert`, `flb:FilmStock`), which work with the same commands. An AI assistant edits a photo by changing those settings through the **same validated, undoable commands** a human's slider moves produce. It never paints pixels.
 
 This guide covers what works **today, through the `flb` command-line tool**. An MCP server (`flb mcp`) and an in-app assistant panel are planned; they will expose the same commands (see [the design doc](../design/ai-control.md)).
 

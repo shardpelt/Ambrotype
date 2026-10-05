@@ -89,3 +89,51 @@ fn as_shot_white_reads_as_d50() {
     assert!((t - 5003.0).abs() < 20.0, "temperature {t}");
     assert!(tint > 0.0 && tint < 20.0, "tint {tint}");
 }
+
+#[test]
+fn scanned_negative_converts_to_a_neutral_positive() {
+    use std::collections::BTreeMap;
+    let path = write_target("negative");
+    let img = raw::load(&path).expect("decode synthetic negative");
+    let settings: BTreeMap<String, flb_presets::Value> = [(
+        "flb:NegativeConvert".to_string(),
+        flb_presets::Value::Text("True".into()),
+    )]
+    .into_iter()
+    .collect();
+    let (develop, not_rendered) = pipeline::DevelopSettings::from_settings(&settings);
+    assert!(not_rendered.is_empty(), "{not_rendered:?}");
+    assert!(develop.negative.enabled && develop.negative.auto);
+    let developed = pipeline::render(&img, &develop);
+    let srgb = output::to_srgb(&developed);
+    // The target puts a 64 px rebate above the ColorChecker.
+    let at = |i: usize| {
+        let (x, y) = patch_centre(i);
+        let p = ((y + 64) * developed.width + x) * 3;
+        [srgb[p], srgb[p + 1], srgb[p + 2]]
+    };
+    // Grey row (patches 18..23, white → black): neutral and getting darker.
+    let mut last = f32::MAX;
+    for i in 18..24 {
+        let p = at(i);
+        let mean = (p[0] + p[1] + p[2]) / 3.0;
+        let spread =
+            p.iter().cloned().fold(f32::MIN, f32::max) - p.iter().cloned().fold(f32::MAX, f32::min);
+        assert!(spread < 0.04, "patch {i} not neutral: {p:?}");
+        assert!(mean < last, "patch {i} not darker than the previous one");
+        last = mean;
+    }
+    // Colour patches keep their hue: 12 blue, 14 red, 15 yellow (R and G above B).
+    let red = at(14);
+    assert!(
+        red[0] > red[1] + 0.2 && red[0] > red[2] + 0.2,
+        "red {red:?}"
+    );
+    let blue = at(12);
+    assert!(blue[2] > blue[0] + 0.2, "blue {blue:?}");
+    let yellow = at(15);
+    assert!(
+        yellow[0] > yellow[2] + 0.2 && yellow[1] > yellow[2] + 0.2,
+        "yellow {yellow:?}"
+    );
+}

@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 use crate::value::Value;
-use crate::xmp::{CRS_NS, RDF_NS};
+use crate::xmp::{CRS_NS, FLB_NS, FLB_PREFIX, RDF_NS};
 
 fn escape(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
@@ -50,6 +50,7 @@ impl Writer {
     fn qname(&self, key: &str) -> String {
         match key.strip_prefix('{').and_then(|rest| rest.split_once('}')) {
             Some((uri, local)) => format!("{}:{local}", self.prefixes[uri]),
+            None if key.starts_with(FLB_PREFIX) => key.to_string(),
             None => format!("crs:{key}"),
         }
     }
@@ -160,6 +161,9 @@ pub fn write_packet(settings: &BTreeMap<String, Value>, signed: fn(&str) -> bool
     writer.description(&mut body, settings, 2);
     // Put the namespace declarations on the top-level description.
     let mut decls = format!(" rdf:about=\"\"\n    xmlns:crs=\"{CRS_NS}\"");
+    if settings.keys().any(|k| k.starts_with(FLB_PREFIX)) {
+        let _ = write!(decls, "\n    xmlns:flb=\"{FLB_NS}\"");
+    }
     for (uri, prefix) in &writer.prefixes {
         let _ = write!(decls, "\n    xmlns:{prefix}=\"{}\"", escape(uri));
     }
@@ -233,5 +237,30 @@ mod tests {
             .as_struct()
             .unwrap();
         assert_eq!(mask["ZeroX"].as_f64(), Some(0.5));
+    }
+
+    #[test]
+    fn flightbroom_properties_round_trip_in_their_own_namespace() {
+        let mut settings = BTreeMap::new();
+        settings.insert("Exposure2012".to_string(), Value::Number(0.5));
+        settings.insert("flb:NegativeConvert".to_string(), Value::Bool(true));
+        settings.insert(
+            "flb:FilmStock".to_string(),
+            Value::Text("warm-portrait-400".into()),
+        );
+        let packet = write_packet(&settings, never_signed);
+        assert!(packet.contains("xmlns:flb=\"http://ns.flightbroom.org/develop/1.0/\""));
+        assert!(packet.contains("flb:NegativeConvert=\"True\""));
+        assert!(!packet.contains("crs:flb"));
+        let back = parse_crs(&packet).unwrap();
+        assert_eq!(back["flb:NegativeConvert"].as_bool(), Some(true));
+        assert_eq!(back["flb:FilmStock"].as_str(), Some("warm-portrait-400"));
+        assert_eq!(back["Exposure2012"].as_f64(), Some(0.5));
+        // Without flb: settings, no flb namespace is declared.
+        let plain = write_packet(
+            &BTreeMap::from([("Exposure2012".to_string(), Value::Number(0.5))]),
+            never_signed,
+        );
+        assert!(!plain.contains("xmlns:flb"));
     }
 }

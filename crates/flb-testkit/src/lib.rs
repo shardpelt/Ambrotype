@@ -28,7 +28,7 @@ pub enum Error {
         "{0}: Lightroom ignores sidecars for DNG/TIFF/JPEG files; use proprietary raws (CR2, CR3, NEF, ARW, RAF, ORF, RW2, ...)"
     )]
     UnsupportedInput(PathBuf),
-    #[error("unknown synthetic pattern {0:?} (known: ramp, hue, edges, colorchecker)")]
+    #[error("unknown synthetic pattern {0:?} (known: ramp, hue, edges, colorchecker, negative)")]
     UnknownPattern(String),
     #[error("{0}: {1}")]
     Io(PathBuf, std::io::Error),

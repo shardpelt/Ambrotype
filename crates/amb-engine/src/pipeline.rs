@@ -2,7 +2,8 @@
 //!
 //! Order (subset of the Camera Raw model, docs/research/05 §1):
 //! 0. Lens Corrections on camera RGB: vignetting, Remove CA, distortion
-//!    (profile + manual), one resampling pass                [sensor-linear]
+//!    (profile + manual), then crop and straighten, in one resampling pass
+//!    (the image is the crop's size from here on)            [sensor-linear]
 //!    → film negative conversion (optional, `amb:` settings) [sensor-linear]
 //! 1. camera RGB → white balance + camera matrix → XYZ → Bradford to D50 →
 //!    linear ProPhoto → Exposure (2^EV) → Defringe           [scene-linear]
@@ -12,7 +13,7 @@
 //! 5. colour (Vibrance, Saturation, HSL, Color Grading in OkLab) →
 //!    parametric + point curves (per channel, encoded)
 //! 6. noise reduction → sharpening
-//! 7. post-crop vignette → grain → output
+//! 7. post-crop vignette (relative to the crop) → grain → output
 //!
 //! The exact order Camera Raw uses is still to be confirmed by sweeps. Each
 //! stage is a pass over one shared [`Image`] buffer, so spatial operations can
@@ -32,6 +33,7 @@ pub use crate::buffer::Image as ProPhotoImage;
 use crate::buffer::{Image, luminance_weights};
 use crate::calibration::Calibration;
 use crate::color::{self, ColorControls, ColorOp, Wheel};
+use crate::crop::Crop;
 use crate::curve::Spline;
 use crate::detail::{NoiseReduction, Sharpening};
 use crate::effects::{Grain, Vignette};
@@ -91,6 +93,8 @@ pub struct DevelopSettings {
     pub vignette: Vignette,
     pub grain: Grain,
     pub lens: LensCorrections,
+    /// Crop and straighten (after the lens corrections, in stored orientation).
+    pub crop: Crop,
     pub negative: Negative,
     /// Model constants; [`Calibration::default`] until fitted against Lightroom.
     pub calibration: Calibration,
@@ -114,6 +118,7 @@ impl Default for DevelopSettings {
             vignette: Vignette::default(),
             grain: Grain::default(),
             lens: LensCorrections::default(),
+            crop: Crop::default(),
             negative: Negative::default(),
             calibration: Calibration::default(),
         }
@@ -204,6 +209,12 @@ pub const RENDERED_TAGS: &[&str] = &[
     "DefringeGreenHueLo",
     "DefringeGreenHueHi",
     "CropConstrainToWarp",
+    "HasCrop",
+    "CropTop",
+    "CropLeft",
+    "CropBottom",
+    "CropRight",
+    "CropAngle",
     "amb:NegativeConvert",
     "amb:NegativeType",
     "amb:NegativeAuto",
@@ -364,6 +375,7 @@ impl DevelopSettings {
             seed: num(settings, "GrainSeed").map_or(gd.seed, |v| v as u64),
         };
         s.lens = lens_corrections(settings);
+        s.crop = crop_settings(settings);
         s.negative = negative_settings(settings);
         s.curve_rgb = spline_of(settings, "ToneCurvePV2012");
         s.curve_channels = [
@@ -435,6 +447,18 @@ fn lens_corrections(settings: &BTreeMap<String, Value>) -> LensCorrections {
         profile_name: text(settings, "LensProfileName"),
         profile_filename: text(settings, "LensProfileFilename"),
         profile: None,
+    }
+}
+
+fn crop_settings(settings: &BTreeMap<String, Value>) -> Crop {
+    let d = Crop::default();
+    Crop {
+        enabled: flag(settings, "HasCrop"),
+        left: num(settings, "CropLeft").unwrap_or(d.left),
+        top: num(settings, "CropTop").unwrap_or(d.top),
+        right: num(settings, "CropRight").unwrap_or(d.right),
+        bottom: num(settings, "CropBottom").unwrap_or(d.bottom),
+        angle: num(settings, "CropAngle").unwrap_or(d.angle),
     }
 }
 
@@ -533,27 +557,26 @@ fn lookup(lut: &[f32], v: f32) -> f32 {
 pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     let cal = &s.calibration;
 
-    // 0. Lens Corrections on camera RGB.
-    let lens_pass = s.lens.needs_camera_pass().then(|| {
-        lens::apply_camera(
+    // 0. Lens Corrections on camera RGB, then crop and straighten (one resample).
+    let crop = s.crop.geometry(img.width, img.height);
+    let lens_pass = (s.lens.needs_camera_pass() || crop.is_some()).then(|| {
+        lens::apply_camera_cropped(
             &img.rgb,
             img.width,
             img.height,
             img.shot.crop_factor,
             &s.lens,
             &cal.lens,
+            crop.as_ref(),
         )
     });
+    let (width, height) = lens_pass
+        .as_ref()
+        .map_or((img.width, img.height), |p| (p.width, p.height));
     let mut camera_rgb = lens_pass.as_ref().map_or(&img.rgb, |p| &p.rgb);
     // 0b. Film negative → positive (on camera RGB, before white balance).
     let negative_rgb = s.negative.enabled.then(|| {
-        let a = negative::resolve(
-            &s.negative,
-            camera_rgb,
-            img.width,
-            img.height,
-            &cal.negative,
-        );
+        let a = negative::resolve(&s.negative, camera_rgb, width, height, &cal.negative);
         let conversion = negative::Conversion::new(&s.negative, a, &cal.negative);
         let mut rgb = camera_rgb.clone();
         negative::apply(&mut rgb, &conversion);
@@ -584,9 +607,9 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     let m = camera_to_prophoto(&img.xyz_to_cam, neutral).map(|row| row.map(|v| v as f32));
     let gain = 2f32.powf(s.exposure_ev as f32);
     let mut out = Image {
-        width: img.width,
-        height: img.height,
-        rgb: vec![0.0f32; img.rgb.len()],
+        width,
+        height,
+        rgb: vec![0.0f32; camera_rgb.len()],
     };
     out.rgb
         .par_chunks_mut(3)
@@ -775,6 +798,219 @@ mod tests {
         m2.insert("ColorGradeShadowSat".into(), Value::Text("5".into()));
         let (s2, _) = DevelopSettings::from_settings(&m2);
         assert_eq!(s2.color.grading.shadows.sat, 5.0);
+    }
+
+    /// A camera whose RGB is linear ProPhoto (white balance and matrix are
+    /// then the identity), with `f` giving each pixel.
+    fn camera(w: usize, h: usize, f: impl Fn(usize, usize) -> [f32; 3]) -> CameraImage {
+        let mut rgb = Vec::with_capacity(w * h * 3);
+        for y in 0..h {
+            for x in 0..w {
+                rgb.extend_from_slice(&f(x, y));
+            }
+        }
+        CameraImage {
+            width: w,
+            height: h,
+            rgb,
+            xyz_to_cam: invert3(&PROPHOTO_TO_XYZ_D50),
+            as_shot_neutral: [1.0; 3],
+            make: "Test".into(),
+            model: "Synthetic".into(),
+            shot: Default::default(),
+            metadata: Default::default(),
+        }
+    }
+
+    fn linear(settings: &[(&str, &str)]) -> DevelopSettings {
+        let (s, missing) = DevelopSettings::from_settings(&map(settings));
+        assert!(missing.is_empty(), "{missing:?}");
+        // No detail defaults: they treat the image border differently from
+        // the interior, which would blur the comparisons below.
+        let mut s = DevelopSettings {
+            base_look: BaseLook::Linear,
+            ..s
+        };
+        s.sharpening.amount = 0.0;
+        s.noise_reduction.color = 0.0;
+        s
+    }
+
+    fn ramp(x: usize, y: usize) -> [f32; 3] {
+        [
+            0.1 + 0.002 * x as f32,
+            0.2 + 0.003 * y as f32,
+            0.05 + 0.001 * (x + y) as f32,
+        ]
+    }
+
+    #[test]
+    fn crop_tags_parse_and_render() {
+        let m = map(&[
+            ("HasCrop", "True"),
+            ("CropLeft", "0.25"),
+            ("CropTop", "0.1"),
+            ("CropRight", "0.75"),
+            ("CropBottom", "0.6"),
+            ("CropAngle", "0"),
+            ("CropConstrainToWarp", "0"),
+        ]);
+        let (s, missing) = DevelopSettings::from_settings(&m);
+        assert!(missing.is_empty(), "{missing:?}");
+        assert_eq!(
+            s.crop,
+            Crop {
+                enabled: true,
+                left: 0.25,
+                top: 0.1,
+                right: 0.75,
+                bottom: 0.6,
+                angle: 0.0
+            }
+        );
+        // Without HasCrop the edges are kept but nothing is cropped.
+        let (s, _) = DevelopSettings::from_settings(&map(&[("CropLeft", "0.25")]));
+        assert!(!s.crop.enabled);
+        let img = camera(200, 100, ramp);
+        assert_eq!(render(&img, &s).width, 200);
+    }
+
+    #[test]
+    fn crop_renders_the_sub_rectangle() {
+        let img = camera(200, 100, ramp);
+        let full = render(&img, &linear(&[]));
+        assert_eq!((full.width, full.height), (200, 100));
+        let s = linear(&[
+            ("HasCrop", "True"),
+            ("CropLeft", "0.25"),
+            ("CropTop", "0.1"),
+            ("CropRight", "0.75"),
+            ("CropBottom", "0.6"),
+        ]);
+        let out = render(&img, &s);
+        assert_eq!((out.width, out.height), (100, 50));
+        for y in 0..50 {
+            for x in 0..100 {
+                let a = &out.rgb[(y * 100 + x) * 3..][..3];
+                let b = &full.rgb[((y + 10) * 200 + x + 50) * 3..][..3];
+                for c in 0..3 {
+                    assert!((a[c] - b[c]).abs() < 1e-5, "({x},{y}) {a:?} vs {b:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn crop_composes_with_lens_geometry() {
+        let img = camera(240, 160, ramp);
+        let lens = [("LensManualDistortionAmount", "40")];
+        let full = render(&img, &linear(&lens));
+        let mut cropped = lens.to_vec();
+        cropped.extend([
+            ("HasCrop", "True"),
+            ("CropLeft", "0.5"),
+            ("CropTop", "0.25"),
+            ("CropRight", "1"),
+            ("CropBottom", "0.75"),
+        ]);
+        let out = render(&img, &linear(&cropped));
+        assert_eq!((out.width, out.height), (120, 80));
+        // The same lens-corrected pixels, with the same blank fill.
+        for y in 0..80 {
+            for x in 0..120 {
+                let a = &out.rgb[(y * 120 + x) * 3..][..3];
+                let b = &full.rgb[((y + 40) * 240 + x + 120) * 3..][..3];
+                assert_eq!(a, b, "({x},{y})");
+            }
+        }
+    }
+
+    #[test]
+    fn straighten_levels_a_tilted_horizon() {
+        // A horizon tilted by `tilt` degrees: dark above, light below, along
+        // the line through the centre. Straightening by the matching angle
+        // makes it level: every output row is (nearly) uniform.
+        let (w, h) = (300, 200);
+        let tilt: f64 = 6.0;
+        let (sin, cos) = (crate::crop::ANGLE_SIGN * tilt).to_radians().sin_cos();
+        let (cx, cy) = ((w as f64 - 1.0) / 2.0, (h as f64 - 1.0) / 2.0);
+        let img = camera(w, h, |x, y| {
+            // Distance below the horizon line, which runs along (cos, sin).
+            let (dx, dy) = (x as f64 - cx, y as f64 - cy);
+            let d = -dx * sin + dy * cos;
+            let v = (0.5 + 0.4 * (d / 6.0).tanh()) as f32;
+            [v; 3]
+        });
+        let row_spread = |img: &Image| -> f32 {
+            (img.height / 4..img.height * 3 / 4)
+                .map(|y| {
+                    let row: Vec<f32> = (img.width / 8..img.width * 7 / 8)
+                        .map(|x| img.rgb[(y * img.width + x) * 3 + 1])
+                        .collect();
+                    let lo = row.iter().cloned().fold(f32::MAX, f32::min);
+                    let hi = row.iter().cloned().fold(f32::MIN, f32::max);
+                    hi - lo
+                })
+                .fold(0.0, f32::max)
+        };
+        let tilted = render(&img, &linear(&[]));
+        assert!(row_spread(&tilted) > 0.5, "the horizon is tilted");
+        let angle = format!("{tilt}");
+        let s = linear(&[
+            ("HasCrop", "True"),
+            ("CropLeft", "0.2"),
+            ("CropTop", "0.2"),
+            ("CropRight", "0.8"),
+            ("CropBottom", "0.8"),
+            ("CropAngle", angle.as_str()),
+        ]);
+        let level = render(&img, &s);
+        assert!(row_spread(&level) < 0.02, "{}", row_spread(&level));
+        // The opposite angle doubles the tilt instead.
+        let angle = format!("{}", -tilt);
+        let s = linear(&[
+            ("HasCrop", "True"),
+            ("CropLeft", "0.2"),
+            ("CropTop", "0.2"),
+            ("CropRight", "0.8"),
+            ("CropBottom", "0.8"),
+            ("CropAngle", angle.as_str()),
+        ]);
+        assert!(row_spread(&render(&img, &s)) > 0.5);
+    }
+
+    #[test]
+    fn post_crop_vignette_is_centred_on_the_crop() {
+        let img = camera(300, 200, |_, _| [0.5; 3]);
+        // An off-centre crop: the left third of the frame.
+        let s = linear(&[
+            ("HasCrop", "True"),
+            ("CropLeft", "0"),
+            ("CropTop", "0.25"),
+            ("CropRight", "0.4"),
+            ("CropBottom", "0.75"),
+            ("PostCropVignetteAmount", "-80"),
+        ]);
+        let out = render(&img, &s);
+        assert_eq!((out.width, out.height), (120, 100));
+        let at = |x: usize, y: usize| out.rgb[(y * out.width + x) * 3 + 1];
+        let (w, h) = (out.width, out.height);
+        let centre = at(w / 2, h / 2);
+        assert!(
+            (centre - 0.5).abs() < 1e-3,
+            "crop centre untouched: {centre}"
+        );
+        // All four corners of the crop are darkened alike.
+        let corners = [at(0, 0), at(w - 1, 0), at(0, h - 1), at(w - 1, h - 1)];
+        for c in corners {
+            assert!(c < 0.4, "{corners:?}");
+            assert!((c - corners[0]).abs() < 1e-3, "{corners:?}");
+        }
+        // Left/right symmetric about the crop's centre, not the frame's.
+        for x in 0..w / 2 {
+            let (l, r) = (at(x, h / 2), at(w - 1 - x, h / 2));
+            assert!((l - r).abs() < 1e-3, "x={x}: {l} vs {r}");
+        }
     }
 
     #[test]

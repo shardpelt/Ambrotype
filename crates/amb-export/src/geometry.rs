@@ -222,6 +222,57 @@ mod tests {
         assert_eq!(orient(&orient(&img, 6), 8).rgb, img.rgb);
     }
 
+    /// Camera Raw stores the crop in the stored (sensor) orientation and the
+    /// engine crops there; export orients afterwards. A crop of the stored
+    /// left half of an orientation-6 photo (rotated 90° clockwise for display)
+    /// is the upright photo's top half.
+    #[test]
+    fn crop_in_stored_orientation_then_orient() {
+        use amb_engine::crop::Crop;
+        use amb_engine::pipeline::{BaseLook, DevelopSettings, render};
+        let (w, h) = (60, 40);
+        let rgb = (0..w * h)
+            .flat_map(|i| {
+                let (x, y) = ((i % w) as f32, (i / w) as f32);
+                [0.1 + 0.01 * x, 0.1 + 0.01 * y, 0.3]
+            })
+            .collect();
+        let img = amb_engine::raw::CameraImage {
+            width: w,
+            height: h,
+            rgb,
+            xyz_to_cam: amb_color::matrix::invert3(&amb_color::matrix::PROPHOTO_TO_XYZ_D50),
+            as_shot_neutral: [1.0; 3],
+            make: "Test".into(),
+            model: "Synthetic".into(),
+            shot: Default::default(),
+            metadata: Default::default(),
+        };
+        let mut s = DevelopSettings {
+            base_look: BaseLook::Linear,
+            ..Default::default()
+        };
+        s.sharpening.amount = 0.0;
+        s.noise_reduction.color = 0.0;
+        let full = orient(&render(&img, &s), 6);
+        s.crop = Crop {
+            enabled: true,
+            right: 0.5,
+            ..Default::default()
+        };
+        let cropped = orient(&render(&img, &s), 6);
+        assert_eq!((full.width, full.height), (40, 60));
+        assert_eq!((cropped.width, cropped.height), (40, 30));
+        for y in 0..30 {
+            for x in 0..40 {
+                let (a, b) = (cropped.get(x, y), full.get(x, y));
+                for c in 0..3 {
+                    assert!((a[c] - b[c]).abs() < 1e-5, "({x},{y}) {a:?} vs {b:?}");
+                }
+            }
+        }
+    }
+
     #[test]
     fn resize_targets() {
         assert_eq!(

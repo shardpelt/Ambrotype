@@ -403,14 +403,14 @@ Crop rectangle, angle and orientation. Specific to one image; presets should rar
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `HasCrop` | Has crop | bool | true / false |  | image-specific | True when the crop rectangle below is active. |
+| `HasCrop` | Has crop | bool | true / false |  | image-specific | True when the crop (CropLeft/Top/Right/Bottom and CropAngle) is applied. When false the whole photo is shown; the crop values are kept but ignored. |
 | `CropConstrainToWarp` | Constrain crop | bool | true / false |  | image-specific | Trim the crop automatically to remove blank or distorted edges after lens and transform corrections. |
 | `CropConstrainToUnitSquare` | Constrain to image | bool | true / false |  | image-specific | Keep the crop inside the image bounds. |
-| `CropTop` | Crop top | number | any number |  | image-specific | Top edge of the crop as a fraction of the image height (0 = top). |
-| `CropLeft` | Crop left | number | any number |  | image-specific | Left edge of the crop as a fraction of the image width (0 = left). |
-| `CropBottom` | Crop bottom | number | any number |  | image-specific | Bottom edge of the crop as a fraction of the image height (1 = bottom). |
-| `CropRight` | Crop right | number | any number |  | image-specific | Right edge of the crop as a fraction of the image width (1 = right). |
-| `CropAngle` | Crop angle | number | any number |  | image-specific | *Units: degrees.* Straighten angle of the crop. |
+| `CropTop` | Crop top | number | 0 to 1 | 0 | image-specific | Vertical position of the crop's top-left corner, as a fraction of the photo height (0 = top). Measured on the lens-corrected photo in its stored orientation, before the camera's rotation (EXIF orientation) is applied. |
+| `CropLeft` | Crop left | number | 0 to 1 | 0 | image-specific | Horizontal position of the crop's top-left corner, as a fraction of the photo width (0 = left). Measured on the lens-corrected photo in its stored orientation, before the camera's rotation (EXIF orientation) is applied. |
+| `CropBottom` | Crop bottom | number | 0 to 1 | 1 | image-specific | Vertical position of the crop's bottom-right corner, as a fraction of the photo height (1 = bottom). Same frame as CropTop. |
+| `CropRight` | Crop right | number | 0 to 1 | 1 | image-specific | Horizontal position of the crop's bottom-right corner, as a fraction of the photo width (1 = right). Same frame as CropLeft. |
+| `CropAngle` | Crop angle | number | -45 to 45 | 0 | image-specific | *Units: degrees.* Straighten: turns the crop rectangle over the photo, so the result comes out rotated by this angle (Ambrotype reads positive as counter-clockwise, following darktable's Lightroom importer; not yet verified against Lightroom). The crop corners stay two opposite corners of the turned rectangle, and the output size is that rectangle's size. |
 | `CropWidth` | Crop width | number | any number |  | image-specific | Requested output width for an aspect-constrained crop. |
 | `CropHeight` | Crop height | number | any number |  | image-specific | Requested output height for an aspect-constrained crop. |
 | `CropUnits` | Crop units | number | any number |  | image-specific | Units of CropWidth/CropHeight. |

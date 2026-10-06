@@ -43,6 +43,30 @@ pub struct Session {
     base_xmp: Option<String>,
     /// Resolved lens profile, keyed by (profile filename hint, auto CA or profile on).
     lens_cache: Option<(Option<String>, Option<amb_lens::Correction>)>,
+    /// Full-resolution upright sRGB render for the 100% view, keyed by the
+    /// committed settings it was rendered with.
+    full_cache: Option<FullRender>,
+}
+
+struct FullRender {
+    key: String,
+    width: usize,
+    height: usize,
+    srgb: Vec<u8>,
+}
+
+/// A 1:1 crop of the full-resolution render, for the 100% view.
+#[derive(Debug, Clone)]
+pub struct Region {
+    pub jpeg: Vec<u8>,
+    /// Top-left of the crop in the upright full-size image.
+    pub x: usize,
+    pub y: usize,
+    pub width: usize,
+    pub height: usize,
+    pub full_width: usize,
+    pub full_height: usize,
+    pub millis: u128,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -153,6 +177,7 @@ impl Session {
             sidecar,
             base_xmp,
             lens_cache: None,
+            full_cache: None,
         })
     }
 
@@ -266,6 +291,7 @@ impl Session {
         max_edge: usize,
         overrides: &BTreeMap<String, Value>,
         before: bool,
+        clipping: bool,
         lens: &LensSources,
     ) -> Preview {
         let start = Instant::now();
@@ -273,53 +299,174 @@ impl Session {
         if self.preview_src.as_ref().map(|(e, _)| *e as usize) != Some(max_edge) {
             self.preview_src = Some((max_edge as u32, downscale(&self.full, max_edge)));
         }
-        let mut settings = if before {
-            BTreeMap::new()
-        } else {
-            self.state.settings().clone()
-        };
-        if !before {
-            for (k, v) in overrides {
-                settings.insert(k.clone(), v.clone());
-            }
-            // A Temperature/Tint drag implies a custom white balance.
-            if overrides.contains_key("Temperature") || overrides.contains_key("Tint") {
-                settings.insert("WhiteBalance".into(), Value::Text("Custom".into()));
-            }
-        }
+        let settings = self.effective_settings(overrides, before);
         let develop = self.develop(&settings, lens);
         let lens_profile = develop.lens.profile.as_ref().map(|c| c.description.clone());
         let src = &self.preview_src.as_ref().expect("set above").1;
         let developed = pipeline::render(src, &develop);
         let upright = amb_export::geometry::orient(&developed, self.full.metadata.orientation);
-        let srgb = amb_engine::output::to_srgb(&upright);
-        let bytes: Vec<u8> = srgb
-            .par_iter()
-            .map(|v| (v * 255.0).round().clamp(0.0, 255.0) as u8)
-            .collect();
+        let mut bytes = to_srgb8(&upright);
         let mut histogram = [vec![0u32; 256], vec![0u32; 256], vec![0u32; 256]];
         for p in bytes.chunks(3) {
             for c in 0..3 {
                 histogram[c][p[c] as usize] += 1;
             }
         }
-        let mut jpeg = Vec::new();
-        let mut enc = jpeg_encoder::Encoder::new(&mut jpeg, 88);
-        enc.set_sampling_factor(jpeg_encoder::SamplingFactor::R_4_2_0);
-        let _ = enc.encode(
-            &bytes,
-            upright.width as u16,
-            upright.height as u16,
-            jpeg_encoder::ColorType::Rgb,
-        );
+        if clipping {
+            mark_clipping(&mut bytes);
+        }
         Preview {
-            jpeg,
+            jpeg: encode_jpeg(&bytes, upright.width, upright.height, 88),
             width: upright.width,
             height: upright.height,
             histogram,
             millis: start.elapsed().as_millis(),
             lens_profile,
         }
+    }
+
+    /// The settings to render: the state (or nothing, for "before") plus
+    /// uncommitted slider overrides.
+    fn effective_settings(
+        &self,
+        overrides: &BTreeMap<String, Value>,
+        before: bool,
+    ) -> BTreeMap<String, Value> {
+        if before {
+            return BTreeMap::new();
+        }
+        let mut settings = self.state.settings().clone();
+        for (k, v) in overrides {
+            settings.insert(k.clone(), v.clone());
+        }
+        // A Temperature/Tint drag implies a custom white balance.
+        if overrides.contains_key("Temperature") || overrides.contains_key("Tint") {
+            settings.insert("WhiteBalance".into(), Value::Text("Custom".into()));
+        }
+        settings
+    }
+
+    /// A 1:1 crop of the full-resolution render around (cx, cy) (fractions of
+    /// the upright image), at most `max_w × max_h` pixels. The full render is
+    /// cached until the committed settings change.
+    pub fn region(
+        &mut self,
+        cx: f64,
+        cy: f64,
+        max_w: usize,
+        max_h: usize,
+        before: bool,
+        clipping: bool,
+        lens: &LensSources,
+    ) -> Region {
+        let start = Instant::now();
+        let settings = self.effective_settings(&BTreeMap::new(), before);
+        let key = serde_json::to_string(&settings).unwrap_or_default();
+        if self.full_cache.as_ref().map(|c| &c.key) != Some(&key) {
+            let develop = self.develop(&settings, lens);
+            let developed = pipeline::render(&self.full, &develop);
+            let upright = amb_export::geometry::orient(&developed, self.full.metadata.orientation);
+            self.full_cache = Some(FullRender {
+                key,
+                width: upright.width,
+                height: upright.height,
+                srgb: to_srgb8(&upright),
+            });
+        }
+        let full = self.full_cache.as_ref().expect("set above");
+        let w = max_w.clamp(16, full.width);
+        let h = max_h.clamp(16, full.height);
+        let x = ((cx * full.width as f64) as isize - w as isize / 2)
+            .clamp(0, (full.width - w) as isize) as usize;
+        let y = ((cy * full.height as f64) as isize - h as isize / 2)
+            .clamp(0, (full.height - h) as isize) as usize;
+        let mut crop = Vec::with_capacity(w * h * 3);
+        for row in y..y + h {
+            let start = (row * full.width + x) * 3;
+            crop.extend_from_slice(&full.srgb[start..start + w * 3]);
+        }
+        if clipping {
+            mark_clipping(&mut crop);
+        }
+        Region {
+            jpeg: encode_jpeg(&crop, w, h, 92),
+            x,
+            y,
+            width: w,
+            height: h,
+            full_width: full.width,
+            full_height: full.height,
+            millis: start.elapsed().as_millis(),
+        }
+    }
+
+    /// White balance that makes the clicked spot neutral: (u, v) are
+    /// fractions of the upright, uncropped photo. Returns (Temperature, Tint).
+    pub fn pick_white(&self, u: f64, v: f64) -> Option<(f64, f64)> {
+        let img = &self.full;
+        let o = img.metadata.orientation;
+        let (ow, oh) = amb_export::geometry::oriented_size(img.width, img.height, o);
+        let ux = ((u.clamp(0.0, 1.0) * (ow - 1) as f64).round()) as usize;
+        let uy = ((v.clamp(0.0, 1.0) * (oh - 1) as f64).round()) as usize;
+        let (sx, sy) = amb_export::geometry::stored_position(o, img.width, img.height, ux, uy);
+        // Average a small patch to beat noise.
+        let r = (img.width.max(img.height) / 600).max(2);
+        let mut acc = [0.0f64; 3];
+        let mut n = 0.0;
+        for y in sy.saturating_sub(r)..(sy + r + 1).min(img.height) {
+            for x in sx.saturating_sub(r)..(sx + r + 1).min(img.width) {
+                let i = (y * img.width + x) * 3;
+                for c in 0..3 {
+                    acc[c] += f64::from(img.rgb[i + c]);
+                }
+                n += 1.0;
+            }
+        }
+        let mean = acc.map(|a| a / n);
+        // Clipped or black spots can't define a white.
+        if mean[1] <= 1e-4 || mean.iter().any(|c| *c >= 0.98 || *c <= 0.0) {
+            return None;
+        }
+        let neutral = [mean[0] / mean[1], 1.0, mean[2] / mean[1]];
+        let (x, y) = raw::xy_for_neutral(&img.xyz_to_cam, neutral);
+        let tt = amb_color::xy_to_temp_tint(x, y);
+        (tt.temperature.is_finite() && tt.tint.is_finite())
+            .then_some((tt.temperature.round(), tt.tint.round()))
+    }
+
+    /// Context for a feedback report: app, system, photo and the edit.
+    pub fn feedback_context(&self, include_settings: bool) -> String {
+        let info = self.info();
+        let state = self.state_info();
+        let mut out = format!(
+            "- Ambrotype {} on {} ({})\n- Camera: {}\n- Lens: {}\n- Size: {} x {}\n",
+            env!("CARGO_PKG_VERSION"),
+            std::env::consts::OS,
+            std::env::consts::ARCH,
+            info.camera,
+            info.lens.as_deref().unwrap_or("unknown"),
+            info.width,
+            info.height
+        );
+        if !state.not_rendered.is_empty() {
+            out.push_str(&format!(
+                "- Not rendered yet: {}\n",
+                state.not_rendered.join(", ")
+            ));
+        }
+        if include_settings {
+            let settings: Vec<String> = self
+                .state
+                .settings()
+                .iter()
+                .map(|(k, v)| {
+                    let text = serde_json::to_string(v).unwrap_or_default();
+                    format!("{k}={}", text.trim_matches('"'))
+                })
+                .collect();
+            out.push_str(&format!("- Settings: {}\n", settings.join("; ")));
+        }
+        out
     }
 
     /// Write the develop settings to the photo's XMP sidecar (keeping the
@@ -345,6 +492,32 @@ impl Session {
         amb_export::export(&developed, &self.full.metadata, settings, out)
             .map_err(|e| format!("{}: {e}", out.display()))
     }
+}
+
+fn to_srgb8(img: &amb_engine::buffer::Image) -> Vec<u8> {
+    amb_engine::output::to_srgb(img)
+        .par_iter()
+        .map(|v| (v * 255.0).round().clamp(0.0, 255.0) as u8)
+        .collect()
+}
+
+/// Lightroom-style clipping warning: clipped highlights red, crushed shadows blue.
+fn mark_clipping(bytes: &mut [u8]) {
+    bytes.par_chunks_mut(3).for_each(|p| {
+        if p.iter().any(|c| *c >= 254) {
+            p.copy_from_slice(&[255, 40, 40]);
+        } else if p.iter().all(|c| *c <= 1) {
+            p.copy_from_slice(&[40, 110, 255]);
+        }
+    });
+}
+
+fn encode_jpeg(bytes: &[u8], w: usize, h: usize, quality: u8) -> Vec<u8> {
+    let mut jpeg = Vec::new();
+    let mut enc = jpeg_encoder::Encoder::new(&mut jpeg, quality);
+    enc.set_sampling_factor(jpeg_encoder::SamplingFactor::R_4_2_0);
+    let _ = enc.encode(bytes, w as u16, h as u16, jpeg_encoder::ColorType::Rgb);
+    jpeg
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -440,7 +613,7 @@ mod tests {
         assert_eq!((info.width, info.height), (1368, 920));
         assert!(!info.sidecar_loaded);
 
-        let base = s.preview(512, &BTreeMap::new(), false, &lens);
+        let base = s.preview(512, &BTreeMap::new(), false, false, &lens);
         // Integer area averaging: the long edge is at most 512 (here 1368 / 3).
         assert_eq!(base.width, 456);
         assert_eq!(
@@ -451,7 +624,7 @@ mod tests {
 
         // A drag override brightens without touching history.
         let over = BTreeMap::from([("Exposure2012".to_string(), Value::Number(1.0))]);
-        let bright = s.preview(512, &over, false, &lens);
+        let bright = s.preview(512, &over, false, false, &lens);
         let mean = |p: &Preview| {
             p.histogram[1]
                 .iter()
@@ -476,7 +649,7 @@ mod tests {
         s.execute(&[Command::Redo]).unwrap();
 
         // "Before" ignores the edits.
-        let before = s.preview(512, &BTreeMap::new(), true, &lens);
+        let before = s.preview(512, &BTreeMap::new(), true, false, &lens);
         assert!((mean(&before) - mean(&base)).abs() < 0.5);
 
         let saved = s.save_sidecar().unwrap();
@@ -491,6 +664,32 @@ mod tests {
         settings.resize = amb_export::Resize::LongEdge(800);
         let report = s.export(&out, &settings, &lens).unwrap();
         assert_eq!(report.width, 800);
+    }
+
+    #[test]
+    fn region_pick_white_and_clipping() {
+        let path = synthetic("colorchecker");
+        let lens = LensSources::default();
+        let mut s = Session::open(&path).unwrap();
+        let r = s.region(0.5, 0.5, 300, 200, false, false, &lens);
+        assert_eq!((r.width, r.height), (300, 200));
+        assert_eq!((r.full_width, r.full_height), (1368, 920));
+        assert_eq!((r.x, r.y), (684 - 150, 460 - 100));
+        // A corner request is clamped inside the image.
+        let c = s.region(0.0, 1.0, 300, 200, false, true, &lens);
+        assert_eq!((c.x, c.y), (0, 920 - 200));
+        // Picking the light grey patch (row 4, second patch) gives D50 (5000 K-ish), tint ~0:
+        // the synthetic target is neutral in ProPhoto D50.
+        let (patch, gap) = (200.0, 24.0);
+        let u = (gap + (patch + gap) + patch / 2.0) / 1368.0;
+        let v = (gap + 3.0 * (patch + gap) + patch / 2.0) / 920.0;
+        let (t, tint) = s.pick_white(u, v).expect("grey patch");
+        assert!(
+            (4800.0..5300.0).contains(&t) && tint.abs() < 8.0,
+            "{t} {tint}"
+        );
+        let ctx = s.feedback_context(true);
+        assert!(ctx.contains("Camera:") && ctx.contains("Settings:"));
     }
 
     #[test]

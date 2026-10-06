@@ -17,8 +17,10 @@ use amb_presets::Value;
 use amb_protocol::Command;
 use serde::{Deserialize, Serialize};
 use session::{LensSources, PresetEntry, Session};
+use tauri::Manager;
 use tauri::ipc::Response;
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_opener::OpenerExt;
 
 #[derive(Default)]
 struct AppState {
@@ -27,6 +29,40 @@ struct AppState {
     preset_dirs: Arc<Mutex<Vec<PathBuf>>>,
     /// A photo given on the command line, handed to the UI once it asks.
     initial_path: Mutex<Option<String>>,
+    /// Where `Config` is saved (the app's config folder), once known.
+    config_path: Mutex<Option<PathBuf>>,
+}
+
+/// Settings kept between runs.
+#[derive(Default, Serialize, Deserialize)]
+struct Config {
+    #[serde(default)]
+    preset_dirs: Vec<PathBuf>,
+}
+
+fn save_config(state: &AppState) {
+    let Ok(path) = state.config_path.lock() else {
+        return;
+    };
+    let Some(path) = path.as_ref() else {
+        return;
+    };
+    let dirs = state
+        .preset_dirs
+        .lock()
+        .map(|d| d.clone())
+        .unwrap_or_default();
+    // Lightroom's own folders are found automatically; store only added ones.
+    let defaults = session::default_preset_dirs();
+    let config = Config {
+        preset_dirs: dirs.into_iter().filter(|d| !defaults.contains(d)).collect(),
+    };
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    if let Ok(text) = serde_json::to_string_pretty(&config) {
+        let _ = std::fs::write(path, text);
+    }
 }
 
 type Res<T> = Result<T, String>;
@@ -136,6 +172,7 @@ async fn preview(
     max_edge: usize,
     overrides: BTreeMap<String, serde_json::Value>,
     before: bool,
+    clipping: bool,
     state: tauri::State<'_, AppState>,
 ) -> Res<Response> {
     let slot = state.session.clone();
@@ -148,7 +185,7 @@ async fn preview(
         let mut guard = slot.lock().map_err(|e| e.to_string())?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
-        let p = s.preview(max_edge, &overrides, before, lens);
+        let p = s.preview(max_edge, &overrides, before, clipping, lens);
         let meta = serde_json::to_vec(&PreviewMeta {
             width: p.width,
             height: p.height,
@@ -165,6 +202,156 @@ async fn preview(
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+#[derive(Serialize)]
+struct RegionMeta {
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+    full_width: usize,
+    full_height: usize,
+    millis: u128,
+}
+
+/// 1:1 crop for the 100% view, framed like `preview`: `[u32 LE len][JSON][JPEG]`.
+#[tauri::command]
+async fn region(
+    cx: f64,
+    cy: f64,
+    width: usize,
+    height: usize,
+    before: bool,
+    clipping: bool,
+    state: tauri::State<'_, AppState>,
+) -> Res<Response> {
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let r = s.region(cx, cy, width, height, before, clipping, lens);
+        let meta = serde_json::to_vec(&RegionMeta {
+            x: r.x,
+            y: r.y,
+            width: r.width,
+            height: r.height,
+            full_width: r.full_width,
+            full_height: r.full_height,
+            millis: r.millis,
+        })
+        .map_err(|e| e.to_string())?;
+        let mut out = Vec::with_capacity(4 + meta.len() + r.jpeg.len());
+        out.extend_from_slice(&(meta.len() as u32).to_le_bytes());
+        out.extend_from_slice(&meta);
+        out.extend_from_slice(&r.jpeg);
+        Ok(Response::new(out))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// White balance from a clicked neutral spot: sets WB to Custom with the
+/// picked Temperature/Tint (one undoable step).
+#[tauri::command]
+fn pick_white(u: f64, v: f64, state: tauri::State<'_, AppState>) -> Res<Executed> {
+    let mut guard = state.session.lock().map_err(|e| e.to_string())?;
+    let s = guard.as_mut().ok_or("no photo open")?;
+    let (t, tint) = s
+        .pick_white(u, v)
+        .ok_or("pick a neutral grey or white area that is not clipped")?;
+    s.execute(&[
+        Command::SetParam {
+            name: "WhiteBalance".into(),
+            value: serde_json::json!("Custom"),
+        },
+        Command::SetParam {
+            name: "Temperature".into(),
+            value: serde_json::json!(t),
+        },
+        Command::SetParam {
+            name: "Tint".into(),
+            value: serde_json::json!(tint),
+        },
+    ])?;
+    Ok(Executed {
+        state: s.state_info(),
+        notes: vec![format!("White balance set to {t:.0} K, tint {tint:+.0}")],
+    })
+}
+
+/// Where feedback goes: a pre-filled GitHub issue (nothing is sent until the
+/// user submits it there).
+const FEEDBACK_URL: &str = "https://github.com/shardpelt/Ambrotype/issues/new";
+
+fn percent_encode(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() * 3);
+    for b in s.bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(b as char)
+            }
+            _ => out.push_str(&format!("%{b:02X}")),
+        }
+    }
+    out
+}
+
+/// The feedback text that would be sent (shown to the user before opening).
+#[tauri::command]
+fn feedback_body(
+    kind: String,
+    text: String,
+    include_context: bool,
+    state: tauri::State<'_, AppState>,
+) -> String {
+    let mut body = format!("**Kind:** {kind}\n\n{}\n", text.trim());
+    if include_context {
+        body.push_str("\n**Context** (added by Ambrotype; no photo is attached)\n");
+        match state.session.lock().ok().as_ref().and_then(|g| g.as_ref()) {
+            Some(s) => body.push_str(&s.feedback_context(true)),
+            None => body.push_str(&format!(
+                "- Ambrotype {} on {} ({}), no photo open\n",
+                env!("CARGO_PKG_VERSION"),
+                std::env::consts::OS,
+                std::env::consts::ARCH
+            )),
+        }
+    }
+    body
+}
+
+/// Open the pre-filled GitHub issue in the browser.
+#[tauri::command]
+fn open_feedback(app: tauri::AppHandle, kind: String, title: String, body: String) -> Res<()> {
+    // Keep URLs within what browsers and GitHub accept.
+    let mut body = body;
+    if body.len() > 6000 {
+        let mut cut = 6000;
+        while !body.is_char_boundary(cut) {
+            cut -= 1;
+        }
+        body.truncate(cut);
+        body.push_str("\n… (truncated)");
+    }
+    let label = match kind.as_str() {
+        "Bug" => "bug",
+        "Idea" => "enhancement",
+        "Looks different from Lightroom" => "fidelity",
+        "Slow" => "performance",
+        _ => "feedback",
+    };
+    let url = format!(
+        "{FEEDBACK_URL}?labels={}&title={}&body={}",
+        percent_encode(&format!("feedback,{label}")),
+        percent_encode(&format!("[{kind}] {}", title.trim())),
+        percent_encode(&body)
+    );
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -277,10 +464,13 @@ async fn add_preset_folder(
         .blocking_pick_folder()
         .and_then(|p| p.into_path().ok())
     {
-        let mut dirs = state.preset_dirs.lock().map_err(|e| e.to_string())?;
-        if !dirs.contains(&dir) {
-            dirs.push(dir);
+        {
+            let mut dirs = state.preset_dirs.lock().map_err(|e| e.to_string())?;
+            if !dirs.contains(&dir) {
+                dirs.push(dir);
+            }
         }
+        save_config(state.inner());
     }
     presets(state).await
 }
@@ -297,7 +487,30 @@ fn main() {
     *state.initial_path.lock().expect("fresh mutex") = std::env::args().nth(1);
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .manage(state)
+        .setup(|app| {
+            // Load saved settings (added preset folders) from the config folder.
+            if let Ok(dir) = app.path().app_config_dir() {
+                let path = dir.join("settings.json");
+                let config: Config = std::fs::read_to_string(&path)
+                    .ok()
+                    .and_then(|t| serde_json::from_str(&t).ok())
+                    .unwrap_or_default();
+                let state = app.state::<AppState>();
+                if let Ok(mut dirs) = state.preset_dirs.lock() {
+                    for d in config.preset_dirs {
+                        if d.is_dir() && !dirs.contains(&d) {
+                            dirs.push(d);
+                        }
+                    }
+                }
+                if let Ok(mut p) = state.config_path.lock() {
+                    *p = Some(path);
+                }
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             take_initial_path,
             editor_schema,
@@ -305,6 +518,10 @@ fn main() {
             open_photo,
             execute,
             preview,
+            region,
+            pick_white,
+            feedback_body,
+            open_feedback,
             save_sidecar,
             pick_export_path,
             export,

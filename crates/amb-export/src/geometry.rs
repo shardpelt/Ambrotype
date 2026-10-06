@@ -3,24 +3,38 @@
 use amb_engine::buffer::Image;
 use rayon::prelude::*;
 
+/// Size of a `w × h` stored image once shown upright with EXIF `orientation`.
+pub fn oriented_size(w: usize, h: usize, orientation: u16) -> (usize, usize) {
+    if (5..=8).contains(&orientation) {
+        (h, w)
+    } else {
+        (w, h)
+    }
+}
+
+/// Stored-pixel position of upright pixel (x, y) for a `w × h` stored image.
+pub fn stored_position(orientation: u16, w: usize, h: usize, x: usize, y: usize) -> (usize, usize) {
+    match orientation {
+        2 => (w - 1 - x, y),
+        3 => (w - 1 - x, h - 1 - y),
+        4 => (x, h - 1 - y),
+        5 => (y, x),
+        6 => (y, h - 1 - x),
+        7 => (w - 1 - y, h - 1 - x),
+        8 => (w - 1 - y, x),
+        _ => (x, y),
+    }
+}
+
 /// Rotate/flip pixels upright according to an EXIF orientation (1..8).
 pub fn orient(img: &Image, orientation: u16) -> Image {
     let (w, h) = (img.width, img.height);
-    let swap = (5..=8).contains(&orientation);
-    let (ow, oh) = if swap { (h, w) } else { (w, h) };
     if orientation <= 1 || orientation > 8 {
         return img.clone();
     }
+    let (ow, oh) = oriented_size(w, h, orientation);
     Image::from_fn(ow, oh, |x, y| {
-        let (sx, sy) = match orientation {
-            2 => (w - 1 - x, y),
-            3 => (w - 1 - x, h - 1 - y),
-            4 => (x, h - 1 - y),
-            5 => (y, x),
-            6 => (y, h - 1 - x),
-            7 => (w - 1 - y, h - 1 - x),
-            _ => (w - 1 - y, x), // 8
-        };
+        let (sx, sy) = stored_position(orientation, w, h, x, y);
         img.get(sx, sy)
     })
 }

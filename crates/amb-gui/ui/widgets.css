@@ -1,0 +1,73 @@
+/* Styles for the point-curve (curve.js) and colour-grading (wheels.js) widgets.
+   Everything is scoped to .amb-curve / .amb-wheels and uses the app's CSS
+   variables (style.css), with fallbacks so the widgets also work standalone. */
+
+.amb-curve, .amb-wheels {
+  display: flex; flex-direction: column; gap: 6px;
+  color: var(--text, #e6e6e8); font-size: 12px; user-select: none; -webkit-user-select: none;
+}
+
+/* Shared tab strip (channel selector / wheel view selector). */
+.amb-curve .amb-tabs, .amb-wheels .amb-tabs { display: flex; gap: 3px; margin: 2px 0; }
+.amb-curve .amb-tabs button, .amb-wheels .amb-tabs button {
+  flex: 1; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  font: inherit; font-size: 12px; color: var(--muted, #9a9ca3); white-space: nowrap;
+  background: var(--panel-2, #2a2c31); border: 1px solid var(--line, #34363c);
+  border-radius: var(--radius, 6px); padding: 3px 0; cursor: pointer;
+}
+.amb-curve .amb-tabs button:hover, .amb-wheels .amb-tabs button:hover { background: #33363c; color: var(--text, #e6e6e8); }
+.amb-curve .amb-tabs button.active, .amb-wheels .amb-tabs button.active {
+  background: #3a3d44; border-color: #4d5058; color: var(--text, #e6e6e8);
+}
+.amb-curve .amb-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; opacity: .85; }
+/* A channel whose curve is not a straight line gets an accent underline. */
+.amb-curve .amb-tabs button.changed { box-shadow: inset 0 -2px 0 var(--accent, #e8b05c); }
+
+/* ---------------------------------------------------------------- curve */
+
+.amb-curve-plot { width: 100%; aspect-ratio: 1 / 1; position: relative; }
+.amb-curve-plot canvas { display: block; touch-action: none; cursor: crosshair; }
+.amb-curve-plot canvas.dragging { cursor: grabbing; }
+.amb-curve-foot { display: flex; justify-content: space-between; align-items: center; min-height: 18px; gap: 8px; }
+.amb-curve .amb-readout { font-variant-numeric: tabular-nums; color: var(--text, #e6e6e8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.amb-curve .amb-readout.idle { color: var(--faint, #6c6f77); }
+.amb-curve .amb-link {
+  font: inherit; font-size: 11.5px; color: var(--muted, #9a9ca3); background: none; border: 0; padding: 0; cursor: pointer; white-space: nowrap;
+}
+.amb-curve .amb-link:hover:not(:disabled) { color: var(--text, #e6e6e8); text-decoration: underline; }
+.amb-curve .amb-link:disabled { opacity: .35; cursor: default; }
+
+/* ---------------------------------------------------------------- wheels */
+
+.amb-wheels-body { display: grid; gap: 10px 12px; }
+/* 3-way: Midtones on top in the centre, Shadows bottom-left, Highlights bottom-right (Lightroom). */
+.amb-wheels-body[data-view="3way"] { grid-template-columns: 1fr 1fr; }
+.amb-wheels-body[data-view="3way"] .amb-wheel[data-region="Midtone"] { grid-column: 1 / 3; justify-self: center; width: calc(50% - 6px); }
+.amb-wheels-body[data-view="3way"] .amb-wheel[data-region="Shadow"] { grid-row: 2; grid-column: 1; }
+.amb-wheels-body[data-view="3way"] .amb-wheel[data-region="Highlight"] { grid-row: 2; grid-column: 2; }
+.amb-wheels-body[data-view="3way"] .amb-detail { display: none; }
+.amb-wheels-body[data-view="3way"] .amb-wheel-row { grid-template-columns: 1fr 30px; }
+.amb-wheels-body[data-view="3way"] .amb-wheel-row > span { display: none; }
+
+.amb-wheel { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.amb-wheel[hidden] { display: none; }
+.amb-wheel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; white-space: nowrap; }
+.amb-wheel-name { color: var(--muted, #9a9ca3); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; overflow: hidden; text-overflow: ellipsis; }
+.amb-wheel-name.changed { color: var(--accent, #e8b05c); }
+.amb-wheel-val { color: var(--faint, #6c6f77); font-size: 11px; font-variant-numeric: tabular-nums; }
+.amb-wheel-disc { width: 100%; aspect-ratio: 1 / 1; }
+.amb-wheels-body:not([data-view="3way"]) .amb-wheel-disc { width: min(100%, 190px); align-self: center; margin: 4px 0; }
+.amb-wheel-disc canvas { display: block; touch-action: none; cursor: crosshair; border-radius: 50%; }
+.amb-wheel.dragging .amb-wheel-disc canvas { cursor: grabbing; }
+
+.amb-wheel-row { display: grid; grid-template-columns: 72px 1fr 34px; align-items: center; gap: 6px; }
+.amb-wheel-row > span { color: var(--text, #e6e6e8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.amb-wheel-row output { text-align: right; color: var(--muted, #9a9ca3); font-variant-numeric: tabular-nums; }
+
+/* Range sliders: the same look as the app's (style.css), repeated so the widgets stand alone. */
+.amb-wheels input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; margin: 0; }
+.amb-wheels input[type=range]::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: var(--track, #4a4d55); }
+.amb-wheels input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4.5px; border-radius: 50%; background: #d8d9dc; border: 0; }
+.amb-wheels input[type=range]:hover::-webkit-slider-thumb { background: #fff; }
+.amb-wheels input[type=range]::-moz-range-track { height: 3px; border-radius: 2px; background: var(--track, #4a4d55); }
+.amb-wheels input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #d8d9dc; border: 0; }

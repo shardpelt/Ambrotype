@@ -9,6 +9,10 @@ const $ = (id) => document.getElementById(id);
 
 const ui = {
   panels: [],            // editor schema
+  defs: new Map(),       // setting name -> its control definition (from the schema)
+  looks: null,           // layouts and themes (src/looks.rs), with the active ids
+  layout: null,          // the active layout (layout.js renders it)
+  histogram: null,       // the last histogram, redrawn when the theme or layout changes
   controls: new Map(),   // name -> { def, input, number, label, select, check }
   settings: {},          // committed settings (from the Rust state)
   info: null,            // photo info
@@ -169,106 +173,13 @@ function makeRow(def) {
   return row;
 }
 
-function buildPanels() {
-  const root = $("panels");
-  ui.curve?.destroy();
-  ui.wheels?.destroy();
-  ui.curve = ui.wheels = null;
-  root.innerHTML = "";
-  ui.controls.clear();
-  const isGradeWheel = (s) => ["Shadow", "Midtone", "Highlight", "Global"].includes(s.label);
-  for (const panel of ui.panels) {
-    const details = document.createElement("details");
-    details.className = "panel";
-    details.open = ["basic"].includes(panel.id);
-    const summary = document.createElement("summary");
-    const title = document.createElement("span");
-    title.textContent = panel.label;
-    const reset = document.createElement("button");
-    reset.className = "small reset";
-    reset.textContent = "Reset";
-    reset.title = `Reset ${panel.label}`;
-    reset.addEventListener("click", (e) => {
-      e.preventDefault();
-      run(panel.groups.map((g) => ({ cmd: "reset_group", group: g })), `reset ${panel.label}`);
-    });
-    summary.append(title, reset);
-    const body = document.createElement("div");
-    body.className = "panel-body";
-    if (panel.id === "tone_curve") {
-      const host = document.createElement("div");
-      body.append(host);
-      ui.curve = AmbCurve.create(host, {
-        onInput(tag, points) { ui.overrides[tag] = points; requestPreview(true); },
-        onCommit(tag, points) {
-          delete ui.overrides[tag];
-          const channel = tag.replace("ToneCurvePV2012", "").toLowerCase();
-          run([{ cmd: "set_param", name: tag, value: points }], channel ? `tone curve (${channel})` : "tone curve");
-        },
-      });
-    }
-    if (panel.id === "color_grading") {
-      const host = document.createElement("div");
-      body.append(host);
-      ui.wheels = AmbWheels.create(host, {
-        onInput(changes) { Object.assign(ui.overrides, changes); requestPreview(true); },
-        onCommit(changes) {
-          for (const name of Object.keys(changes)) delete ui.overrides[name];
-          run(Object.entries(changes).map(([name, value]) => ({ cmd: "set_param", name, value })), "color grading");
-        },
-      });
-    }
-    // Canvases inside a closed panel have no size; redraw when it opens.
-    details.addEventListener("toggle", () => {
-      if (details.open) { ui.curve?.refresh(); ui.wheels?.refresh(); }
-    });
-    for (const section of panel.sections) {
-      if (panel.id === "color_grading" && isGradeWheel(section)) continue;
-      if (panel.sections.length > 1 || section.layout === "sliders") {
-        const l = document.createElement("div");
-        l.className = "section-label";
-        l.textContent = section.label;
-        body.append(l);
-      }
-      if (section.layout === "hsl") {
-        const tabs = document.createElement("div");
-        tabs.className = "tabs";
-        const holder = document.createElement("div");
-        const rows = {};
-        for (const def of section.controls) {
-          const kind = def.name.match(/^(Hue|Saturation|Luminance)/)[1];
-          const band = def.name.replace(/^(Hue|Saturation|Luminance)Adjustment/, "");
-          const row = makeRow({ ...def, label: band });
-          (rows[kind] ||= []).push(row);
-        }
-        for (const kind of ["Hue", "Saturation", "Luminance"]) {
-          const b = document.createElement("button");
-          b.textContent = kind;
-          b.addEventListener("click", () => {
-            ui.hslTab = kind;
-            for (const [k, rs] of Object.entries(rows)) rs.forEach((r) => (r.hidden = k !== kind));
-            tabs.querySelectorAll("button").forEach((x) => x.classList.toggle("active", x === b));
-          });
-          tabs.append(b);
-          rows[kind].forEach((r) => { r.hidden = kind !== ui.hslTab; holder.append(r); });
-          if (kind === ui.hslTab) b.classList.add("active");
-        }
-        body.append(tabs, holder);
-      } else {
-        for (const def of section.controls) body.append(makeRow(def));
-      }
-    }
-    details.append(summary, body);
-    root.append(details);
-  }
-}
-
 function syncControls() {
   for (const [name, c] of ui.controls) {
     const v = currentValue(name);
     const changed = name in ui.settings;
     if (c.label) c.label.classList.toggle("changed", changed);
-    if (c.check) c.check.checked = asBool(v);
+    if (c.set) c.set(v);
+    else if (c.check) c.check.checked = asBool(v);
     else if (c.select) c.select.value = JSON.stringify(typeof v === "string" && /^\d+$/.test(v) ? Number(v) : v);
     else if (c.input) {
       const n = Number(v);
@@ -387,6 +298,7 @@ async function renderLoop() {
 }
 
 function drawHistogram(h) {
+  ui.histogram = h;
   const c = $("histogram");
   const dpr = window.devicePixelRatio || 1;
   c.width = c.clientWidth * dpr;
@@ -1118,8 +1030,8 @@ function toggleBefore() {
 
 async function init() {
   ui.panels = await invoke("editor_schema");
-  buildPanels();
-  syncControls();
+  for (const p of ui.panels) for (const s of p.sections) for (const def of s.controls) ui.defs.set(def.name, def);
+  await loadLooks();
 
   $("btn-open").addEventListener("click", openDialog);
   $("btn-open-empty").addEventListener("click", openDialog);
@@ -1132,6 +1044,7 @@ async function init() {
   $("btn-wb").addEventListener("click", () => setPicking(!ui.picking));
   $("btn-clip").addEventListener("click", toggleClipping);
   $("btn-feedback").addEventListener("click", feedbackFlow);
+  $("btn-looks").addEventListener("click", () => looksFlow().catch((e) => toast(String(e), true)));
   wireViewer();
   wireCrop();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));

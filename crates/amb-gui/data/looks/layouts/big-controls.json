@@ -1,0 +1,22 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Big controls",
+  "description": "Larger text, sliders and targets: easier on touch screens and tired eyes.",
+  "density": "large",
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "|", "crop", "zoom", "wb", "clip", "|", "looks", "feedback"],
+  "left": { "width": 270, "items": ["presets", "history"] },
+  "right": {
+    "width": 420,
+    "items": [
+      "histogram",
+      { "panel": "basic", "open": true },
+      { "panel": "tone_curve" },
+      { "panel": "color_mixer" },
+      { "panel": "color_grading" },
+      { "panel": "detail" },
+      { "panel": "lens" },
+      { "panel": "effects" },
+      { "panel": "negative" }
+    ]
+  }
+}

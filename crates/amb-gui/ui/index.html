@@ -25,14 +25,15 @@
       <button id="btn-wb" title="White balance picker: click a neutral grey or white spot (W)" disabled>WB picker</button>
       <button id="btn-clip" title="Show clipped highlights (red) and shadows (blue) (J)" disabled>Clipping</button>
       <span class="sep"></span>
+      <button id="btn-looks" title="Layouts and themes: choose, clone, share">Looks</button>
       <button id="btn-feedback" title="Report a bug, an idea, or a photo that looks different from Lightroom">Feedback</button>
     </div>
     <div class="photo-title" id="photo-title"></div>
   </header>
 
-  <main class="workspace">
-    <aside class="left">
-      <section class="side-section">
+  <main class="workspace" id="workspace">
+    <aside class="column left" id="col-left">
+      <section class="side-section presets-block" id="block-presets">
         <div class="side-head">
           <h2>Presets</h2>
           <button id="btn-add-presets" class="small" title="Add a folder of .xmp or .lrtemplate presets">Add folder…</button>
@@ -41,7 +42,7 @@
         <label class="amount">Amount <input id="preset-amount" type="range" min="0" max="200" value="100"><output id="preset-amount-out">100</output></label>
         <div id="preset-list" class="preset-list"><p class="hint">No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.</p></div>
       </section>
-      <section class="side-section history">
+      <section class="side-section history" id="block-history">
         <div class="side-head"><h2>History</h2></div>
         <ol id="history-list" class="history-list"></ol>
       </section>
@@ -59,8 +60,8 @@
       <div class="busy" id="busy" hidden></div>
     </section>
 
-    <aside class="right">
-      <div class="histogram-wrap">
+    <aside class="column right" id="col-right">
+      <div class="histogram-wrap" id="block-histogram">
         <canvas id="histogram" width="300" height="110"></canvas>
         <div class="exif" id="exif"></div>
       </div>
@@ -84,8 +85,9 @@
           <button id="crop-done" class="primary" title="Enter">Done</button>
         </div>
       </section>
-      <div id="panels" class="panels"></div>
     </aside>
+    <!-- Blocks the active layout doesn't place wait here. -->
+    <div id="block-store" hidden></div>
   </main>
 
   <footer class="statusbar">
@@ -204,9 +206,45 @@
   </dialog>
 
   <div id="toast" class="toast" hidden></div>
+  <dialog id="looks-dialog">
+    <form method="dialog" id="looks-form">
+      <h2>Looks</h2>
+      <p class="hint">A look is a layout (what goes where, and which kind of slider each setting uses) plus a theme (colours). Built-in looks 🔒 can't be changed: clone one to make it yours. Looks are small files you can share; your AI assistant can write them too (docs/ai/ui-layouts.md).</p>
+      <div class="looks-grid">
+        <section>
+          <h3>Layout</h3>
+          <div id="looks-layouts" class="looks-list" role="listbox" aria-label="Layouts"></div>
+        </section>
+        <section>
+          <h3>Theme</h3>
+          <div id="looks-themes" class="looks-list" role="listbox" aria-label="Themes"></div>
+        </section>
+      </div>
+      <div class="looks-selected">
+        <label class="looks-name">Name <input type="text" id="looks-name" spellcheck="false"></label>
+        <button type="button" id="looks-clone" title="Make an editable copy">Clone</button>
+        <button type="button" id="looks-share" title="Save it as a file to share">Share…</button>
+        <button type="button" id="looks-delete" title="Delete this look">Delete</button>
+      </div>
+      <p id="looks-about" class="hint"></p>
+      <ul id="looks-problems" class="looks-problems"></ul>
+      <div id="theme-editor" class="theme-editor" hidden></div>
+      <menu>
+        <button type="button" id="looks-import" title="Add a shared layout or theme file">Import…</button>
+        <button type="button" id="looks-folder" title="Show the folder with your own looks">Open folder</button>
+        <button type="button" id="looks-reload" title="Read the folder again (after adding files by hand or by AI)">Reload</button>
+        <span class="grow"></span>
+        <button value="cancel">Cancel</button>
+        <button value="ok" class="primary" autofocus>Done</button>
+      </menu>
+    </form>
+  </dialog>
+
   <script src="curve.js"></script>
   <script src="crop.js"></script>
   <script src="wheels.js"></script>
+  <script src="controls.js"></script>
+  <script src="layout.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

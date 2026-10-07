@@ -1,12 +1,18 @@
 # Customisable UI, themes, the hub and AI-made features
 
-Status: agreed direction (2026-10-07), nothing built yet. Steps 2–4 and 7 of the UI track in [NEXT.md](../NEXT.md).
+Status: §1 layouts, the built-in looks and §2 themes are **built** (2026-10-07): `crates/amb-gui/src/looks.rs`, `ui/layout.js`, `ui/controls.js`, built-ins in `crates/amb-gui/data/looks/`. The format reference for people and AI assistants is [docs/ai/ui-layouts.md](../ai/ui-layouts.md). Editor mode (§3), the hub (§4), plugins (§5) and the AI flows (§6) are next (UI track steps 3, 4 and 7 in [NEXT.md](../NEXT.md)).
+
+![The Studio layout (knobs and bars) with the Light theme](../images/looks-studio-light.png)
+
+![The Left-handed layout with the High contrast theme, crop tool open](../images/looks-left-handed-high-contrast.png)
 
 ## The idea in one line
 
 Everything a user can make and share is a small file: a **layout**, a **theme**, a **preset pack**, a **collage template** ([collage-and-borders.md](collage-and-borders.md)), a **size profile**, a **plugin**. One editor makes them, the user's own AI can write them, and one hub shares them.
 
 ## 1. Layouts (foobar2000-style)
+
+*Built as a slightly simpler v1 than sketched below: two side columns (`left`, `right`) with blocks and panels instead of a free split tree, and per-panel `columns` for knob grids. Tabs and free splits can come with editor mode. The exact format is in [ui-layouts.md](../ai/ui-layouts.md).*
 
 Today `buildPanels()` in `crates/amb-gui/ui/app.js` builds the right-hand panels straight from the settings registry. Instead, the UI is rendered from a **layout file**: a tree that the registry fills in.
 

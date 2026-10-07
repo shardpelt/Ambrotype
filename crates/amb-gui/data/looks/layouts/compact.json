@@ -1,0 +1,24 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Compact",
+  "description": "One narrow column and smaller controls, for laptop screens.",
+  "density": "compact",
+  "toolbar": ["open", "export", "|", "undo", "redo", "|", "before", "crop", "zoom", "wb", "clip", "|", "looks"],
+  "left": { "width": 0, "items": [] },
+  "right": {
+    "width": 290,
+    "items": [
+      "histogram",
+      { "panel": "basic", "open": true },
+      { "panel": "tone_curve" },
+      { "panel": "color_mixer" },
+      { "panel": "color_grading" },
+      { "panel": "detail" },
+      { "panel": "lens" },
+      { "panel": "effects" },
+      { "panel": "negative" },
+      "presets",
+      "history"
+    ]
+  }
+}

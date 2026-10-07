@@ -250,27 +250,30 @@
       g.stroke();
       g.setLineDash([]);
 
+      // The RGB curve is drawn in the theme's text colour, so it shows on light themes too.
+      const colourOf = (c) => (c.tag === TAGS[0] ? cssVar(root, "--text", c.colour) : c.colour);
       // Other channels faintly, so a colour curve is not forgotten.
       for (const ch of CHANNELS) {
         if (ch.tag === active || isIdentity(curves[ch.tag])) continue;
         g.globalAlpha = 0.35;
-        strokeCurve(shown(ch.tag), ch.colour, 1.25);
+        strokeCurve(shown(ch.tag), colourOf(ch), 1.25);
         g.globalAlpha = 1;
       }
 
       const ch = CHANNELS.find((c) => c.tag === active);
       const pts = shown(active);
-      strokeCurve(pts, ch.colour, 2);
+      const colour = colourOf(ch);
+      strokeCurve(pts, colour, 2);
       pts.forEach(([x, y], i) => {
         const [qx, qy] = toPx(x, y);
         const hot = (drag && drag.tag === active && !drag.removing && drag.index === i) ||
           (!drag && hover && hover.index === i);
         g.beginPath();
         g.arc(qx, qy, hot ? 5 : 4, 0, Math.PI * 2);
-        g.fillStyle = hot ? ch.colour : cssVar(root, "--bg-deep", "#111214");
+        g.fillStyle = hot ? colour : cssVar(root, "--bg-deep", "#111214");
         g.fill();
         g.lineWidth = 1.5;
-        g.strokeStyle = ch.colour;
+        g.strokeStyle = colour;
         g.stroke();
       });
     }

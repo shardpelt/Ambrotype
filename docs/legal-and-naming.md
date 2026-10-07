@@ -14,6 +14,17 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
   3. Claim the GitHub organisation and the crates.io names.
 
   5. ~~Rename the GitHub repository~~ Done: `shardpelt/Ambrotype` (old links redirect).
+- **Reserving the name, in order** (checked 2026-10-07 by RDAP lookups: ambrotype.org, .photo, .dev and .io unregistered; .com taken since 2017; .app registered 2026-07-15; crates.io `ambrotype` free; the GitHub org couldn't be checked from the build machine):
+  1. **Search the trademark registers** (TMview, WIPO, USPTO; classes 9 and 42). If someone already has "Ambrotype" for software, stop and pick an alternative before spending money.
+  2. **Domains (same day, about €10–40 a year each):** ambrotype.org first (our XMP namespace and the app id `org.ambrotype.editor` depend on it; Flathub checks you own the domain behind an app id), then ambrotype.photo and ambrotype.dev. Turn on auto-renew and registrar lock.
+  3. **Handles:**
+     - the GitHub organisation `ambrotype` (move the repo there later; GitHub redirects)
+     - crates.io `ambrotype`: publish a real, minimal crate, not an empty placeholder (crates.io removes name-squatting)
+     - Mastodon/Bluesky/X/Instagram/YouTube handles
+     - an email address on the domain
+
+  5. **Use it:** "Ambrotype™" until registered, "Ambrotype®" only after. Keep proof of first use (dated releases, the website).
+  6. **Renewals:** domains yearly; a trademark lasts 10 years and is renewable.
 - **Alternatives kept in case a check fails:** Photochrom, Argentype (§2).
 - **Before going public:**
   1. Add LICENSE (GPL-3.0-or-later) and Cargo `license` fields.

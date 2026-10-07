@@ -88,6 +88,7 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
   - history, undo/redo (a drag of a curve point or colour wheel, or a WB pick, is one step), before/after, histogram
   - 1:1 view with panning (a region of the full-size render), white-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels, crop and straighten tool (aspect lock, size presets)
   - size presets (built-in for social sites and print, plus custom) for the crop aspect and exact-size export
+  - **looks:** the toolbar, side columns and panels come from a layout file and the colours from a theme (`src/looks.rs` validates and stores them; `ui/layout.js` renders; `ui/controls.js` has the knob, bar, number, toggle and segmented controls). Built-ins are in `data/looks/`; the user's own are files in the config folder. Format: [ai/ui-layouts.md](ai/ui-layouts.md)
   - saved preset folders, and a feedback button that opens a pre-filled GitHub issue
   - save the XMP sidecar, keeping other metadata
   - export dialog
@@ -95,7 +96,7 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
 
 ## What does not exist yet
 
-- **A full GUI.** The editor exists (see below). Missing: GPU viewport, customisable layouts, installers. All remaining gaps are listed in [GAPS.md](GAPS.md).
+- **A full GUI.** The editor exists (see below). Missing: GPU viewport, a layout editor mode, installers. All remaining gaps are listed in [GAPS.md](GAPS.md).
 - Library and catalog (folders, ratings, keywords, collections, search).
 - GPU backend (wgpu), tiling and caching.
 - Masks and local adjustments, healing, Upright/Transform (crop and straighten render; see [design/crop.md](design/crop.md)).

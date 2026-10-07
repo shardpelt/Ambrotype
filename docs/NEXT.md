@@ -22,11 +22,12 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - feedback button (pre-filled GitHub issue)
     - crop and straighten tool (R), with aspect lock
     - **size presets** (Instagram, Snapchat, TikTok, X, YouTube, Pinterest, LinkedIn and print sizes, plus custom ones) for the crop and exact-size export (`amb render --exact WxH` too)
+    - **looks:** the UI is drawn from a layout file (toolbar, side columns, panels, and knob/bar/slider/number per setting) and a theme (colour tokens). Built-in looks (Classic, Compact, Big controls, Studio, Left-handed; Dark, Light, High contrast, Neutral grey) can be cloned, renamed, shared and imported in the Looks dialog. AI assistants can write them ([ai/ui-layouts.md](ai/ui-layouts.md), `ambrotype --check-look`)
 
 ## Owner to-dos
 
 - [ ] Set up a **local** Claude Code session on the Mac so it can reach your drives and Lightroom: [desktop-setup.md § Working with an AI agent locally](desktop-setup.md#working-with-an-ai-agent-locally).
-- [ ] Trademark search for "Ambrotype" (TMview, WIPO, classes 9 and 42); register ambrotype.org (it is also our XMP namespace URI). See [legal-and-naming.md](legal-and-naming.md).
+
 - [ ] Try the editor on the Mac: `cargo run --release -p amb-gui -- photo.nef`. Note what feels wrong (or use the Feedback button).
 - [ ] Run `amb preset census <your preset folders>` and share the output (setting names and counts only). It ranks what to build next.
 - [ ] Lightroom trial month: follow [lightroom-trial-plan.md](lightroom-trial-plan.md) (sweep kit: `amb sweep generate`).
@@ -38,8 +39,8 @@ There are two tracks that can run in parallel: the UI track is what users see an
 ### UI and sharing track (agreed 2026-10-07, in this order)
 
 1. ~~Crop tool and size presets~~ (done 2026-10-07). Small follow-ups are in [GAPS.md](GAPS.md).
-2. **Layout files, built-in looks and themes:** the UI is rendered from a shareable layout file. The built-in looks are read-only and can be cloned. Themes are colour tokens. See [design/customization-and-hub.md](design/customization-and-hub.md).
-3. **Editor mode:** drag and drop panels and controls, split and merge, change slider types and colours. The user's AI can write the same files.
+2. ~~Layout files, built-in looks and themes~~ (done 2026-10-07; [design/customization-and-hub.md](design/customization-and-hub.md), [ai/ui-layouts.md](ai/ui-layouts.md)).
+3. **Editor mode (next):** drag and drop panels and controls, split and merge, change slider types and colours, on top of the layout files that exist now. Colours can already be edited in the Looks dialog for your own themes. The user's AI can write the same files.
 4. **Hub:** Omarchy-style. Items are git repos, and one index repo takes submissions as pull requests. The in-app browser covers layouts, themes, presets, collage templates and size profiles.
 5. **Borders:** width, colour, caption; border presets; fit to a size preset; batch.
 6. **Collage maker:** shareable templates, per-photo pan/zoom/rotate and edit, batch mode for big folders. See [design/collage-and-borders.md](design/collage-and-borders.md).

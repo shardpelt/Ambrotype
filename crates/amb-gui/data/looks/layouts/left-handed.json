@@ -1,0 +1,22 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Left-handed",
+  "description": "Classic, mirrored: the Develop panels on the left, presets and history on the right.",
+  "density": "normal",
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "|", "crop", "zoom", "wb", "clip", "|", "looks", "feedback"],
+  "left": {
+    "width": 330,
+    "items": [
+      "histogram",
+      { "panel": "basic", "open": true },
+      { "panel": "tone_curve" },
+      { "panel": "color_mixer" },
+      { "panel": "color_grading" },
+      { "panel": "detail" },
+      { "panel": "lens" },
+      { "panel": "effects" },
+      { "panel": "negative" }
+    ]
+  },
+  "right": { "width": 250, "items": ["presets", "history"] }
+}

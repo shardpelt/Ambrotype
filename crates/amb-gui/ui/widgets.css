@@ -15,9 +15,9 @@
   background: var(--panel-2, #2a2c31); border: 1px solid var(--line, #34363c);
   border-radius: var(--radius, 6px); padding: 3px 0; cursor: pointer;
 }
-.amb-curve .amb-tabs button:hover, .amb-wheels .amb-tabs button:hover { background: #33363c; color: var(--text, #e6e6e8); }
+.amb-curve .amb-tabs button:hover, .amb-wheels .amb-tabs button:hover { background: var(--hover, #33363c); color: var(--text, #e6e6e8); }
 .amb-curve .amb-tabs button.active, .amb-wheels .amb-tabs button.active {
-  background: #3a3d44; border-color: #4d5058; color: var(--text, #e6e6e8);
+  background: var(--tab-active, #3a3d44); border-color: var(--faint, #4d5058); color: var(--text, #e6e6e8);
 }
 .amb-curve .amb-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; opacity: .85; }
 /* A channel whose curve is not a straight line gets an accent underline. */
@@ -67,7 +67,7 @@
 /* Range sliders: the same look as the app's (style.css), repeated so the widgets stand alone. */
 .amb-wheels input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; margin: 0; }
 .amb-wheels input[type=range]::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: var(--track, #4a4d55); }
-.amb-wheels input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4.5px; border-radius: 50%; background: #d8d9dc; border: 0; }
-.amb-wheels input[type=range]:hover::-webkit-slider-thumb { background: #fff; }
+.amb-wheels input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4.5px; border-radius: 50%; background: var(--thumb, #d8d9dc); border: 0; }
+.amb-wheels input[type=range]:hover::-webkit-slider-thumb { background: var(--text, #fff); }
 .amb-wheels input[type=range]::-moz-range-track { height: 3px; border-radius: 2px; background: var(--track, #4a4d55); }
-.amb-wheels input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #d8d9dc; border: 0; }
+.amb-wheels input[type=range]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--thumb, #d8d9dc); border: 0; }

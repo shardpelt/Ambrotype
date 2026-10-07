@@ -6,6 +6,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod looks;
 mod schema;
 mod session;
 mod sizes;
@@ -35,6 +36,8 @@ struct AppState {
     initial_path: Mutex<Option<String>>,
     /// Where `Config` is saved (the app's config folder), once known.
     config_path: Mutex<Option<PathBuf>>,
+    /// The active layout and theme ids, as chosen in the Looks dialog.
+    look: Mutex<(Option<String>, Option<String>)>,
 }
 
 /// Settings kept between runs.
@@ -44,6 +47,11 @@ struct Config {
     preset_dirs: Vec<PathBuf>,
     #[serde(default)]
     size_presets: Vec<SizePreset>,
+    /// The active layout and theme (look ids).
+    #[serde(default)]
+    layout: Option<String>,
+    #[serde(default)]
+    theme: Option<String>,
 }
 
 fn save_config(state: &AppState) {
@@ -67,6 +75,8 @@ fn save_config(state: &AppState) {
             .lock()
             .map(|p| p.clone())
             .unwrap_or_default(),
+        layout: state.look.lock().ok().and_then(|l| l.0.clone()),
+        theme: state.look.lock().ok().and_then(|l| l.1.clone()),
     };
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
@@ -554,7 +564,143 @@ fn delete_size_preset(id: String, state: tauri::State<'_, AppState>) -> Res<Vec<
     size_presets(state)
 }
 
+/// The folder for the user's own looks (next to the settings file).
+fn looks_dir(state: &AppState) -> Option<PathBuf> {
+    let path = state.config_path.lock().ok()?;
+    Some(path.as_ref()?.parent()?.join("looks"))
+}
+
+fn looks_list(state: &AppState) -> Res<looks::Looks> {
+    let (layout, theme) = state.look.lock().map_err(|e| e.to_string())?.clone();
+    Ok(looks::list(
+        looks_dir(state).as_deref(),
+        layout.as_deref(),
+        theme.as_deref(),
+    ))
+}
+
+/// Built-in and user layouts and themes, and which are active.
+#[tauri::command]
+fn looks(state: tauri::State<'_, AppState>) -> Res<looks::Looks> {
+    looks_list(state.inner())
+}
+
+#[derive(Serialize)]
+struct SavedLook {
+    id: String,
+    kind: looks::Kind,
+    looks: looks::Looks,
+}
+
+fn need_looks_dir(state: &AppState) -> Res<PathBuf> {
+    looks_dir(state).ok_or_else(|| "the app's settings folder isn't available".to_string())
+}
+
+/// Save a user look (a clone, a rename, an edited theme). `id` updates an
+/// existing one; without it a new file is made.
+#[tauri::command]
+fn save_look(
+    kind: looks::Kind,
+    id: Option<String>,
+    data: serde_json::Value,
+    state: tauri::State<'_, AppState>,
+) -> Res<SavedLook> {
+    let dir = need_looks_dir(state.inner())?;
+    let id = looks::save(&dir, kind, id.as_deref(), data)?;
+    Ok(SavedLook {
+        id,
+        kind,
+        looks: looks_list(state.inner())?,
+    })
+}
+
+#[tauri::command]
+fn delete_look(
+    kind: looks::Kind,
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<looks::Looks> {
+    looks::delete(&need_looks_dir(state.inner())?, kind, &id)?;
+    looks_list(state.inner())
+}
+
+/// Remember the active layout and theme.
+#[tauri::command]
+fn set_active_look(layout: String, theme: String, state: tauri::State<'_, AppState>) -> Res<()> {
+    *state.look.lock().map_err(|e| e.to_string())? = (Some(layout), Some(theme));
+    save_config(state.inner());
+    Ok(())
+}
+
+/// Import a shared layout or theme file (picked in a dialog).
+#[tauri::command]
+async fn import_look(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Res<Option<SavedLook>> {
+    let dir = need_looks_dir(state.inner())?;
+    let Some(path) = app
+        .dialog()
+        .file()
+        .set_title("Import a layout or theme")
+        .add_filter("Ambrotype looks", &["json"])
+        .blocking_pick_file()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    let (kind, id) = looks::import(&dir, &path)?;
+    Ok(Some(SavedLook {
+        id,
+        kind,
+        looks: looks_list(state.inner())?,
+    }))
+}
+
+/// Save a look as a file to share.
+#[tauri::command]
+async fn export_look(
+    app: tauri::AppHandle,
+    kind: looks::Kind,
+    id: String,
+    name: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<Option<String>> {
+    let text = looks::export_text(looks_dir(state.inner()).as_deref(), kind, &id)?;
+    let Some(path) = app
+        .dialog()
+        .file()
+        .set_title("Share this look")
+        .set_file_name(format!("{name}.json"))
+        .add_filter("Ambrotype looks", &["json"])
+        .blocking_save_file()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    std::fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
+    Ok(Some(path.display().to_string()))
+}
+
+/// Show the folder with the user's looks (where an AI assistant can put new ones).
+#[tauri::command]
+fn open_looks_folder(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Res<String> {
+    let dir = need_looks_dir(state.inner())?;
+    for kind in ["layouts", "themes"] {
+        std::fs::create_dir_all(dir.join(kind)).map_err(|e| e.to_string())?;
+    }
+    app.opener()
+        .open_path(dir.display().to_string(), None::<&str>)
+        .map_err(|e| e.to_string())?;
+    Ok(dir.display().to_string())
+}
+
 fn main() {
+    // `ambrotype --check-look FILE...` validates layout/theme files and exits.
+    let args: Vec<String> = std::env::args().collect();
+    if args.get(1).map(String::as_str) == Some("--check-look") {
+        std::process::exit(if looks::check_files(&args[2..]) { 0 } else { 1 });
+    }
     let state = AppState::default();
     *state.preset_dirs.lock().expect("fresh mutex") = session::default_preset_dirs();
     // Lens profile sources can take a moment (thousands of files): load them in
@@ -587,6 +733,9 @@ fn main() {
                 if let Ok(mut p) = state.size_presets.lock() {
                     *p = config.size_presets;
                 }
+                if let Ok(mut l) = state.look.lock() {
+                    *l = (config.layout, config.theme);
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -614,6 +763,13 @@ fn main() {
             size_presets,
             save_size_preset,
             delete_size_preset,
+            looks,
+            save_look,
+            delete_look,
+            set_active_look,
+            import_look,
+            export_look,
+            open_looks_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Ambrotype");

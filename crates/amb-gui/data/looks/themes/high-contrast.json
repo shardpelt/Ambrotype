@@ -1,0 +1,12 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "High contrast",
+  "scheme": "dark",
+  "tokens": {
+    "bg": "#000000", "bg-deep": "#000000", "viewer": "#000000", "panel": "#0d0d0d", "panel-2": "#1a1a1a",
+    "line": "#8a8a8a", "hover": "#333333", "tab-active": "#3d3d3d",
+    "text": "#ffffff", "muted": "#e0e0e0", "faint": "#bdbdbd",
+    "accent": "#ffd400", "accent-ink": "#000000", "danger": "#ff5a4a",
+    "thumb": "#ffffff", "track": "#9a9a9a", "radius": 4
+  }
+}

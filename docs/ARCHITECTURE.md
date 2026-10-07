@@ -85,16 +85,18 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
   - open (dialog, drag-and-drop, command line)
   - Basic, Tone Curve (parametric), Color Mixer (HSL tabs), Color Grading, Detail, Lens Corrections, Effects and Film Negative panels
   - presets list (Lightroom's own folder when present, or added folders) with an Amount slider
-  - history, undo/redo, before/after, histogram
+  - history, undo/redo (a drag of a curve point or colour wheel, or a WB pick, is one step), before/after, histogram
+  - 1:1 view with panning (a region of the full-size render), white-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels
+  - saved preset folders, and a feedback button that opens a pre-filled GitHub issue
   - save the XMP sidecar, keeping other metadata
   - export dialog
 - **Not yet:** see [GAPS.md](GAPS.md) §2.
 
 ## What does not exist yet
 
-- **A full GUI.** Editor v1 exists (see below). Missing: GPU viewport, zoom/1:1, curve editor, colour wheels, crop tool, installers. All remaining gaps are listed in [GAPS.md](GAPS.md).
+- **A full GUI.** The editor exists (see below). Missing: GPU viewport, crop tool (in progress), customisable layouts, installers. All remaining gaps are listed in [GAPS.md](GAPS.md).
 - Library and catalog (folders, ratings, keywords, collections, search).
 - GPU backend (wgpu), tiling and caching.
-- Masks and local adjustments, healing, crop/rotate/Upright.
+- Masks and local adjustments, healing, Upright/Transform (crop and straighten render; see [design/crop.md](design/crop.md)).
 - Camera profiles (DCP) and Adobe-like base looks: today a placeholder filmic base look is used.
 - MCP server and look matching (`amb match`) for AI control.

@@ -22,6 +22,8 @@ A month of Lightroom Classic is our only chance to gather **ground truth**: refe
 - Format the drives exFAT if they'll move between Windows, macOS and Linux; otherwise NTFS on Windows.
 - Budget: about 30–60 GB of renders with the storage guidance below, so space is not a concern. Keep a copy of the final archive on two drives.
 
+**On the MacBook Air (M1) instead:** Lightroom Classic runs natively on Apple Silicon. Keep the catalog and Camera Raw cache on the internal drive. Put the kit and the exports on the 960 GB SSD, formatted APFS, unless it must also be read on Windows (then exFAT). With only one external drive, reads and writes share it; that's fine, just slower. Keep the Mac plugged in and awake during long exports (`caffeinate -dis`). See [desktop-setup.md](desktop-setup.md#macos-on-apple-silicon-m1-and-later-with-an-external-ssd).
+
 ## Plan type
 - Pick the **monthly, no-commitment** plan. Adobe's "annual, billed monthly" plan charges a fee if you cancel early. Check the current terms when you subscribe.
 - Adobe's 7-day free trial can be used first for a quick check that the kit imports correctly.

@@ -4,7 +4,7 @@ A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linu
 
 ![Ambrotype editor v1](docs/images/gui-v1.png)
 
-**Status:** early. The scoping is done. Working so far: the preset reader, the Lightroom calibration kit, a raw renderer covering the core of Lightroom's Develop panels (white balance, camera colour, Basic tone/presence incl. Texture/Clarity/Dehaze, HSL, Color Grading, curves, sharpening, noise reduction, Lens Corrections, post-crop vignette, grain), film negative conversion with film stock looks, export to JPEG/PNG/TIFF/WebP/AVIF/OpenEXR with colour-managed output, and a command protocol so scripts and AI assistants can drive edits. An early desktop editor (`amb-gui`, Tauri 2) opens a raw, edits it with sliders and presets, and exports; the `amb` command-line tool does everything else (see docs/ARCHITECTURE.md).
+**Status:** early. The scoping is done. Working so far: the preset reader, the Lightroom calibration kit, a raw renderer covering the core of Lightroom's Develop panels (white balance, camera colour, Basic tone/presence incl. Texture/Clarity/Dehaze, HSL, Color Grading, curves, sharpening, noise reduction, Lens Corrections, post-crop vignette, grain), film negative conversion with film stock looks, export to JPEG/PNG/TIFF/WebP/AVIF/OpenEXR with colour-managed output, and a command protocol so scripts and AI assistants can drive edits. An early desktop editor (`amb-gui`, Tauri 2) opens a raw, edits it with sliders, curves, colour wheels and presets, with 1:1 zoom, a white-balance picker and clipping overlay, and exports; the `amb` command-line tool does everything else (see docs/ARCHITECTURE.md).
 
 ## Docs
 - [docs/SCOPE.md](docs/SCOPE.md): the project scope, strategy, roadmap, risks and open decisions. Start here.
@@ -18,6 +18,8 @@ A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linu
 - [docs/lightroom-trial-plan.md](docs/lightroom-trial-plan.md) and [docs/sources-to-collect.md](docs/sources-to-collect.md): what to gather next.
 - [docs/design/lens-corrections.md](docs/design/lens-corrections.md) and [docs/design/film-negatives.md](docs/design/film-negatives.md): Lens Corrections, and film negative conversion with film stock looks.
 - [docs/design/ai-control.md](docs/design/ai-control.md) and [docs/ai/](docs/ai/): bring-your-own-AI control, the AI guide and the generated settings reference ([llms.txt](llms.txt)).
+- [docs/design/customization-and-hub.md](docs/design/customization-and-hub.md) and [docs/design/collage-and-borders.md](docs/design/collage-and-borders.md): shareable layouts, themes, the hub, plugins and AI-made features; borders and the collage maker (planned).
+- [AGENTS.md](AGENTS.md): notes for AI coding agents working on the repo.
 
 ## Code (Rust workspace)
 

@@ -10,6 +10,7 @@
 pub mod buffer;
 pub mod calibration;
 pub mod color;
+pub mod crop;
 pub mod curve;
 pub mod dehaze;
 pub mod detail;

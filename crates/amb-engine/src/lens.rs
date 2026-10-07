@@ -10,8 +10,9 @@
 //! 1. vignetting gains (profile, then manual) on the source pixels;
 //! 2. Remove CA: a radial red/blue shift model, estimated from the image's
 //!    edges (or the profile's model if estimation finds too few edges);
-//! 3. one resampling pass that composes zoom → manual distortion → profile
-//!    distortion → per-channel CA, with Catmull-Rom interpolation.
+//! 3. one resampling pass that composes crop and straighten
+//!    ([`crate::crop`]) → zoom → manual distortion → profile distortion →
+//!    per-channel CA, with Catmull-Rom interpolation.
 //!
 //! Profile corrections scale to fill the frame (Lightroom auto-scales profile
 //! corrections); manual distortion leaves blank areas unless Constrain Crop is
@@ -23,6 +24,7 @@ use rayon::prelude::*;
 
 use crate::buffer::Image;
 use crate::color::OkLab;
+use crate::crop::CropGeometry;
 use crate::filters::transpose;
 
 /// Strength and shape constants, fitted later against Lightroom sweeps.
@@ -173,7 +175,10 @@ impl LensCorrections {
 
 /// Result of the camera-space pass.
 pub struct CameraPass {
-    /// Corrected interleaved camera RGB, same size as the input.
+    /// Output size: the input's, or the crop's.
+    pub width: usize,
+    pub height: usize,
+    /// Corrected interleaved camera RGB, `width × height`.
     pub rgb: Vec<f32>,
     /// Pixels that the corrected image no longer covers (to fill with
     /// [`LensStrengths::blank_fill`] at the end of the pipeline).
@@ -214,6 +219,21 @@ pub fn apply_camera(
     crop_factor: Option<f64>,
     lc: &LensCorrections,
     k: &LensStrengths,
+) -> CameraPass {
+    apply_camera_cropped(rgb, width, height, crop_factor, lc, k, None)
+}
+
+/// [`apply_camera`], then crop and straighten in the same resampling pass:
+/// the output is `crop`'s size, and `crop` maps it into the lens-corrected
+/// frame. Parts of the crop outside that frame are blank.
+pub fn apply_camera_cropped(
+    rgb: &[f32],
+    width: usize,
+    height: usize,
+    crop_factor: Option<f64>,
+    lc: &LensCorrections,
+    k: &LensStrengths,
+    crop: Option<&CropGeometry>,
 ) -> CameraPass {
     let frame = ImageFrame {
         width,
@@ -270,9 +290,15 @@ pub fn apply_camera(
         .as_ref()
         .filter(|g| g.has_distortion() && lc.distortion_scale != 0.0);
     let manual_k = -k.manual_distortion * lc.manual_distortion / 100.0;
-    if profile_distortion.is_none() && manual_k == 0.0 && auto_ca.is_none() && profile_tca.is_none()
+    if profile_distortion.is_none()
+        && manual_k == 0.0
+        && auto_ca.is_none()
+        && profile_tca.is_none()
+        && crop.is_none()
     {
         return CameraPass {
+            width,
+            height,
             rgb: src,
             blank: None,
         };
@@ -338,15 +364,19 @@ pub fn apply_camera(
     };
 
     let (wf, hf) = (width as f64, height as f64);
-    let mut out = vec![0.0f32; src.len()];
-    let mut blank = vec![false; width * height];
-    out.par_chunks_mut(width * 3)
-        .zip(blank.par_chunks_mut(width))
+    let inside = |x: f64, y: f64| x >= -0.5 && x <= wf - 0.5 && y >= -0.5 && y <= hf - 0.5;
+    let (out_w, out_h) = crop.map_or((width, height), |c| (c.width, c.height));
+    let mut out = vec![0.0f32; out_w * out_h * 3];
+    let mut blank = vec![false; out_w * out_h];
+    out.par_chunks_mut(out_w * 3)
+        .zip(blank.par_chunks_mut(out_w))
         .enumerate()
         .for_each(|(y, (row, blank_row))| {
-            for x in 0..width {
-                let (gx, gy) = map_green(x as f64, y as f64);
-                if !(gx >= -0.5 && gx <= wf - 0.5 && gy >= -0.5 && gy <= hf - 0.5) {
+            for x in 0..out_w {
+                // Output pixel → lens-corrected frame (crop) → source (lens).
+                let (fx, fy) = crop.map_or((x as f64, y as f64), |c| c.source(x as f64, y as f64));
+                let (gx, gy) = map_green(fx, fy);
+                if !inside(fx, fy) || !inside(gx, gy) {
                     blank_row[x] = true;
                 }
                 let pos = channel_positions(gx, gy);
@@ -362,6 +392,8 @@ pub fn apply_camera(
         });
     let any_blank = blank.iter().any(|b| *b);
     CameraPass {
+        width: out_w,
+        height: out_h,
         rgb: out,
         blank: any_blank.then_some(blank),
     }
@@ -932,6 +964,56 @@ mod tests {
         };
         let out = apply_camera(&rgb, w, h, None, &constrained, &DEFAULT_STRENGTHS);
         assert!(out.blank.is_none());
+    }
+
+    #[test]
+    fn crop_resamples_the_rotated_rectangle_and_blanks_outside() {
+        use crate::crop::Crop;
+        let (w, h) = (240, 160);
+        let observed = render_scene(w, h, |x, y| (x, y));
+        let lc = LensCorrections::default();
+        // A straightened crop inside the frame: every output pixel is the
+        // scene at its mapped position, and nothing is blank.
+        let inside = Crop {
+            enabled: true,
+            left: 0.2,
+            top: 0.2,
+            right: 0.8,
+            bottom: 0.8,
+            angle: 5.0,
+        };
+        let g = inside.geometry(w, h).expect("a crop");
+        let out = apply_camera_cropped(&observed, w, h, None, &lc, &DEFAULT_STRENGTHS, Some(&g));
+        assert_eq!((out.width, out.height), (g.width, g.height));
+        assert_eq!(out.rgb.len(), g.width * g.height * 3);
+        assert!(out.blank.is_none());
+        let mut worst = 0.0f32;
+        for y in 0..g.height {
+            for x in 0..g.width {
+                let (sx, sy) = g.source(x as f64, y as f64);
+                let v = out.rgb[(y * g.width + x) * 3 + 1];
+                worst = worst.max((v - scene(sx, sy)).abs());
+            }
+        }
+        assert!(worst < 2e-3, "{worst}");
+        // The full-frame corners with an angle: the rotated rectangle pokes
+        // out of the frame, and those parts are blank.
+        let full = Crop {
+            left: 0.0,
+            top: 0.0,
+            right: 1.0,
+            bottom: 1.0,
+            ..inside
+        };
+        let g = full.geometry(w, h).expect("a crop");
+        let out = apply_camera_cropped(&observed, w, h, None, &lc, &DEFAULT_STRENGTHS, Some(&g));
+        let blank = out.blank.expect("blank corners");
+        let (cw, ch) = (g.width, g.height);
+        assert!(
+            blank[cw - 1] && blank[(ch - 1) * cw],
+            "the other two corners"
+        );
+        assert!(!blank[(ch / 2) * cw + cw / 2]);
     }
 
     #[test]

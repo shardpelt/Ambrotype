@@ -646,6 +646,19 @@ mod tests {
         assert!(mean(&bright) > mean(&base) + 10.0);
         assert!(!s.state_info().can_undo);
 
+        // A crop renders a crop-sized preview; the photo info stays uncropped.
+        let crop = BTreeMap::from([
+            ("HasCrop".to_string(), Value::Bool(true)),
+            ("CropLeft".to_string(), Value::Number(0.25)),
+            ("CropRight".to_string(), Value::Number(0.75)),
+            ("CropAngle".to_string(), Value::Number(2.0)),
+        ]);
+        let cropped = s.preview(512, &crop, false, &lens);
+        // About half the width (the turned rectangle is a little wider).
+        assert!(cropped.width < base.width / 2 + 20, "{}", cropped.width);
+        assert!(cropped.height < base.height, "{}", cropped.height);
+        assert_eq!((s.info().width, s.info().height), (1368, 920));
+
         // Committing a command is undoable.
         s.execute(
             &[Command::SetParam {

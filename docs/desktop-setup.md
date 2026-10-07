@@ -60,7 +60,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev librsvg2-dev libxdo-dev
   ```
 - **Presets:** Lightroom's own preset folder is used automatically when it exists (`%APPDATA%\Adobe\CameraRaw\Settings` on Windows, `~/Library/Application Support/Adobe/CameraRaw/Settings` on macOS), plus `~/.local/share/ambrotype/presets`. "Add folder…" adds any other folder for the session.
-- **Looks:** the Looks button picks a layout (Classic, Compact, Big controls, Studio with knobs, Left-handed) and a theme (Dark, Light, High contrast, Neutral grey). Clone one to rename it or edit its colours; Share… and Import… move them between machines. Your AI assistant can write new ones: [ai/ui-layouts.md](ai/ui-layouts.md).
+- **Looks:** the Looks button picks a layout (Classic, Compact, Big controls, Studio with knobs, Left-handed) and a theme (Dark, Light, High contrast, Neutral grey). Clone one to rename it or edit its colours; Share… and Import… move them between machines. **Edit layout** rearranges the screen in place: drag things to move them (onto the Add list to remove them), click one to change it, then Save. Your AI assistant can write new ones: [ai/ui-layouts.md](ai/ui-layouts.md).
 - **Lens profiles** are found as for the CLI (lensfun database, your Adobe `.lcp` files; see docs/design/lens-corrections.md).
 - **Keyboard:**
 

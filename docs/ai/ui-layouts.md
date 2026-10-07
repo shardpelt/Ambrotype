@@ -8,6 +8,14 @@ A look is two small JSON files:
 
 They contain no code and no CSS, so they are safe to share. Built-in looks can't be changed; clone one in the Looks dialog, or write a new file.
 
+**People don't need this file.** **Edit layout** in the toolbar (or in the Looks dialog) does all of it by hand:
+- drag panels, blocks, settings and toolbar buttons to move them
+- click one to change its control type, label, title or columns, or to split or merge panels
+- add what isn't shown from the **Add** list
+- drag a column's edge to resize it
+
+Saving writes the same JSON described below. A built-in layout is saved as your own copy.
+
 ## Where the files go
 
 Your own looks live in the app's settings folder, under `looks/layouts/` and `looks/themes/`. **Looks → Open folder** shows it.
@@ -44,7 +52,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   "based_on": "builtin:studio",              // optional; set by Clone
   "theme": "builtin:dark",                   // optional: switching to this layout also picks this theme
   "density": "normal",                       // "compact" | "normal" | "large"
-  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "crop", "zoom", "wb", "clip", "|", "looks", "feedback"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "crop", "zoom", "wb", "clip", "|", "looks", "edit", "feedback"],
   "left":  { "width": 250, "items": ["presets", "history"] },
   "right": { "width": 340, "items": ["histogram", { "panel": "basic", "open": true }, { "panel": "detail" }] }
 }
@@ -69,7 +77,8 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   | `zoom` | 100% view |
   | `wb` | White-balance picker |
   | `clip` | Clipping overlay |
-  | `looks` | This dialog |
+  | `looks` | The Looks dialog |
+| `edit` | Editor mode (rearrange the layout in place) |
   | `feedback` | Feedback |
 
 - `"|"` is a separator.

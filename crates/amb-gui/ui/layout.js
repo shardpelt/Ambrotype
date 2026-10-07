@@ -8,7 +8,7 @@
 const TOOLBAR_IDS = {
   open: "btn-open", save: "btn-save", export: "btn-export", undo: "btn-undo", redo: "btn-redo",
   before: "btn-before", crop: "btn-crop", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip",
-  looks: "btn-looks", feedback: "btn-feedback",
+  looks: "btn-looks", edit: "btn-edit-layout", feedback: "btn-feedback",
 };
 const BLOCK_IDS = { presets: "block-presets", history: "block-history", histogram: "block-histogram" };
 const WHEEL_SECTIONS = ["Shadow", "Midtone", "Highlight", "Global"];
@@ -66,14 +66,15 @@ function applyLayout(layout) {
     col.replaceChildren();
     const spec = layout[side] ?? {};
     const items = Array.isArray(spec.items) ? spec.items : [];
-    for (const item of items) {
-      if (typeof item === "string") {
-        if (BLOCK_IDS[item]) col.append($(BLOCK_IDS[item]));
-      } else if (item && typeof item === "object") {
-        const panel = buildPanel(item);
-        if (panel) col.append(panel);
-      }
-    }
+    items.forEach((item, i) => {
+      let el = null;
+      if (typeof item === "string") el = BLOCK_IDS[item] ? $(BLOCK_IDS[item]) : null;
+      else if (item && typeof item === "object") el = buildPanel(item);
+      if (!el) return;
+      // Where it is in the layout file, for editor mode (editor.js).
+      el.dataset.item = `${side}:${i}`;
+      col.append(el);
+    });
     const w = Number(spec.width ?? DEFAULT_WIDTH[side]);
     widths[side] = items.length && w > 0 ? w : 0;
     col.hidden = !widths[side];
@@ -90,6 +91,7 @@ function applyLayout(layout) {
     if (hist.parentElement === host) hist.after($("crop-panel"));
     else host.prepend($("crop-panel"));
   }
+  if (ui.edit) decorateEditing();
   syncControls();
   requestAnimationFrame(redrawCanvases);
   // The viewer changed size.
@@ -98,26 +100,32 @@ function applyLayout(layout) {
 
 function buildToolbar(order) {
   const bar = document.querySelector(".topbar .actions");
+  // Each node remembers its place in the layout's toolbar list (for editor mode).
+  const tagged = (el, name, i) => {
+    el.dataset.tool = name;
+    el.dataset.toolIndex = i;
+    return el;
+  };
   const sep = () => Object.assign(document.createElement("span"), { className: "sep" });
   const nodes = [];
   const placed = new Set();
-  for (const name of Array.isArray(order) ? order : Object.keys(TOOLBAR_IDS)) {
+  (Array.isArray(order) ? order : Object.keys(TOOLBAR_IDS)).forEach((name, i) => {
     if (name === "|") {
-      if (nodes.length && !nodes.at(-1).classList.contains("sep")) nodes.push(sep());
+      if (nodes.length && !nodes.at(-1).classList.contains("sep")) nodes.push(tagged(sep(), name, i));
     } else if (TOOLBAR_IDS[name] && !placed.has(name)) {
       placed.add(name);
-      nodes.push($(TOOLBAR_IDS[name]));
+      nodes.push(tagged($(TOOLBAR_IDS[name]), name, i));
     }
-  }
+  });
   // Looks is always there, so a layout can't lock you out of changing it.
   if (!placed.has("looks")) {
-    if (nodes.length && !nodes.at(-1).classList.contains("sep")) nodes.push(sep());
+    if (nodes.length && !nodes.at(-1).classList.contains("sep")) nodes.push(tagged(sep(), "|", -1));
     placed.add("looks");
-    nodes.push($("btn-looks"));
+    nodes.push(tagged($("btn-looks"), "looks", -1));
   }
   while (nodes.at(-1)?.classList.contains("sep")) nodes.pop();
   // Buttons left out stay in the page (hidden), so their shortcuts still work.
-  const hidden = Object.entries(TOOLBAR_IDS).filter(([n]) => !placed.has(n)).map(([, id]) => $(id));
+  const hidden = Object.entries(TOOLBAR_IDS).filter(([n]) => !placed.has(n)).map(([n, id]) => tagged($(id), n, -1));
   for (const b of nodes) b.hidden = false;
   for (const b of hidden) b.hidden = true;
   bar.replaceChildren(...nodes, ...hidden);
@@ -127,19 +135,21 @@ function schemaPanel(id) {
   return ui.panels.find((p) => p.id === id);
 }
 
-// A schema panel (or one of its sections) as entries to render.
+// A schema panel (or one of its sections) as entries to render. `key` names
+// each entry within a built-in panel, for editor mode: s<setting>, l<label>,
+// h<HSL section>, c<composite widget>.
 function panelEntries(p, section, widgets = {}, hide = []) {
   const whole = section == null;
   const out = [];
-  if (whole && p.id === "tone_curve") out.push({ type: "curve" });
-  if (whole && p.id === "color_grading") out.push({ type: "wheels" });
+  if (whole && p.id === "tone_curve") out.push({ type: "curve", key: "cpoint-curve" });
+  if (whole && p.id === "color_grading") out.push({ type: "wheels", key: "ccolor-wheels" });
   for (const s of p.sections) {
     if (whole ? p.id === "color_grading" && WHEEL_SECTIONS.includes(s.label) : s.label !== section) continue;
-    if (p.sections.length > 1 || s.layout === "sliders") out.push({ type: "label", text: s.label });
-    if (s.layout === "hsl") out.push({ type: "hsl", section: s, hide });
+    if (p.sections.length > 1 || s.layout === "sliders") out.push({ type: "label", text: s.label, key: `l${s.label}` });
+    if (s.layout === "hsl") out.push({ type: "hsl", section: s, hide, key: `h${s.label}` });
     else {
       for (const def of s.controls) {
-        if (!hide.includes(def.name)) out.push({ type: "control", def, widget: widgets[def.name] });
+        if (!hide.includes(def.name)) out.push({ type: "control", def, widget: widgets[def.name], key: `s${def.name}` });
       }
     }
   }
@@ -198,22 +208,25 @@ function buildPanel(item) {
   } else {
     title = item.title ?? "Panel";
     entries = [];
-    for (const e of Array.isArray(item.items) ? item.items : []) {
+    // In your own panels an entry's key is its index in `items` (j<n>).
+    (Array.isArray(item.items) ? item.items : []).forEach((e, j) => {
+      const key = `j${j}`;
       if (typeof e.setting === "string") {
-        entries.push({ type: "control", name: e.setting, widget: e.widget, label: e.label });
+        entries.push({ type: "control", name: e.setting, widget: e.widget, label: e.label, key });
       } else if (typeof e.include === "string") {
         const [pid, section] = e.include.split("/");
         const p = schemaPanel(pid);
-        if (p) entries.push(...panelEntries(p, section));
-      } else if (e.widget === "point-curve") entries.push({ type: "curve" });
-      else if (e.widget === "color-wheels") entries.push({ type: "wheels" });
-      else if (typeof e.label === "string") entries.push({ type: "label", text: e.label });
-    }
+        if (p) entries.push(...panelEntries(p, section).map((x) => ({ ...x, key })));
+      } else if (e.widget === "point-curve") entries.push({ type: "curve", key });
+      else if (e.widget === "color-wheels") entries.push({ type: "wheels", key });
+      else if (typeof e.label === "string") entries.push({ type: "label", text: e.label, key });
+    });
   }
 
   const details = document.createElement("details");
   details.className = "panel";
-  details.open = Boolean(item.open);
+  // Everything is open while editing, so all of it can be moved.
+  details.open = Boolean(item.open) || Boolean(ui.edit);
   const summary = document.createElement("summary");
   const name = document.createElement("span");
   name.textContent = title;
@@ -231,7 +244,7 @@ function buildPanel(item) {
   }
 
   const names = []; // what Reset clears in a custom panel
-  for (const e of entries) {
+  const renderEntry = (e) => {
     if (e.type === "label") {
       const l = document.createElement("div");
       l.className = "section-label";
@@ -244,7 +257,7 @@ function buildPanel(item) {
         missing.className = "row placeholder";
         missing.textContent = def ? `${def.label} is shown elsewhere` : `Unknown setting: ${e.name}`;
         body.append(missing);
-        continue;
+        return;
       }
       names.push(def.name);
       body.append(makeControl(def, e.widget, e.label));
@@ -277,6 +290,11 @@ function buildPanel(item) {
         },
       });
     }
+  };
+  for (const e of entries) {
+    const first = body.children.length;
+    renderEntry(e);
+    for (let k = first; k < body.children.length; k++) body.children[k].dataset.unit = e.key ?? "";
   }
   reset.addEventListener("click", (ev) => {
     ev.preventDefault();
@@ -467,6 +485,11 @@ async function looksFlow() {
       if (r) { saved(r); toast(`Imported "${findLook(r.kind, r.id)?.name}"`); }
     },
     "looks-folder": async () => toast(`Your looks: ${await invoke("open_looks_folder")}`),
+    "looks-edit": async () => {
+      // Keep the chosen look, then edit it.
+      dlg.close("ok");
+      setTimeout(startEditing);
+    },
     "looks-reload": async () => {
       ui.looks = await invoke("looks");
       for (const kind of ["layout", "theme"]) {

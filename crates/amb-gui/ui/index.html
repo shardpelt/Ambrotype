@@ -26,6 +26,7 @@
       <button id="btn-clip" title="Show clipped highlights (red) and shadows (blue) (J)" disabled>Clipping</button>
       <span class="sep"></span>
       <button id="btn-looks" title="Layouts and themes: choose, clone, share">Looks</button>
+      <button id="btn-edit-layout" title="Edit this layout: move panels, controls and toolbar buttons">Edit layout</button>
       <button id="btn-feedback" title="Report a bug, an idea, or a photo that looks different from Lightroom">Feedback</button>
     </div>
     <div class="photo-title" id="photo-title"></div>
@@ -206,6 +207,29 @@
   </dialog>
 
   <div id="toast" class="toast" hidden></div>
+  <!-- Editor mode (editor.js) -->
+  <div id="edit-bar" class="edit-bar" hidden>
+    <strong>Editing</strong>
+    <input id="edit-name" type="text" spellcheck="false" title="Save under this name" aria-label="Layout name">
+    <button id="edit-add" type="button" title="Panels, settings and buttons that aren't shown">Add…</button>
+    <button id="edit-undo" type="button" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="edit-redo" type="button" title="Redo (Ctrl+Shift+Z)">Redo</button>
+    <select id="edit-density" title="Size of text and controls" aria-label="Density">
+      <option value="compact">Compact</option><option value="normal">Normal</option><option value="large">Large</option>
+    </select>
+    <select id="edit-theme" title="Theme" aria-label="Theme"></select>
+    <button id="edit-cancel" type="button">Cancel</button>
+    <button id="edit-save" type="button" class="primary">Save</button>
+  </div>
+  <aside id="edit-palette" class="edit-palette" hidden>
+    <div class="side-head"><h2>Add</h2><button id="edit-palette-close" type="button" class="small" title="Close (Esc)">×</button></div>
+    <input id="edit-search" type="search" placeholder="Search settings" spellcheck="false">
+    <p class="hint">Drag into a panel, a column or the toolbar, or click to add. Drop something here to remove it.</p>
+    <div id="edit-palette-list" class="palette-list"></div>
+  </aside>
+  <div id="edit-inspector" class="inspector" hidden></div>
+  <div id="edit-indicator" class="edit-indicator" hidden></div>
+
   <dialog id="looks-dialog">
     <form method="dialog" id="looks-form">
       <h2>Looks</h2>
@@ -233,6 +257,7 @@
         <button type="button" id="looks-import" title="Add a shared layout or theme file">Import…</button>
         <button type="button" id="looks-folder" title="Show the folder with your own looks">Open folder</button>
         <button type="button" id="looks-reload" title="Read the folder again (after adding files by hand or by AI)">Reload</button>
+        <button type="button" id="looks-edit" title="Rearrange the chosen layout in place">Edit layout…</button>
         <span class="grow"></span>
         <button value="cancel">Cancel</button>
         <button value="ok" class="primary" autofocus>Done</button>
@@ -245,6 +270,7 @@
   <script src="wheels.js"></script>
   <script src="controls.js"></script>
   <script src="layout.js"></script>
+  <script src="editor.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

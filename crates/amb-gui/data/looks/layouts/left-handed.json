@@ -3,7 +3,7 @@
   "name": "Left-handed",
   "description": "Classic, mirrored: the Develop panels on the left, presets and history on the right.",
   "density": "normal",
-  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "|", "crop", "zoom", "wb", "clip", "|", "looks", "feedback"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "|", "crop", "zoom", "wb", "clip", "|", "looks", "edit", "feedback"],
   "left": {
     "width": 330,
     "items": [

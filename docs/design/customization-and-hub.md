@@ -1,6 +1,6 @@
 # Customisable UI, themes, the hub and AI-made features
 
-Status: §1 layouts, the built-in looks and §2 themes are **built** (2026-10-07): `crates/amb-gui/src/looks.rs`, `ui/layout.js`, `ui/controls.js`, built-ins in `crates/amb-gui/data/looks/`. The format reference for people and AI assistants is [docs/ai/ui-layouts.md](../ai/ui-layouts.md). Editor mode (§3), the hub (§4), plugins (§5) and the AI flows (§6) are next (UI track steps 3, 4 and 7 in [NEXT.md](../NEXT.md)).
+Status: §1 layouts, the built-in looks and §2 themes are **built** (2026-10-07): `crates/amb-gui/src/looks.rs`, `ui/layout.js`, `ui/controls.js`, built-ins in `crates/amb-gui/data/looks/`. The format reference for people and AI assistants is [docs/ai/ui-layouts.md](../ai/ui-layouts.md). Editor mode (§3) is **built** too (`ui/editor.js`). The hub (§4), plugins (§5) and the AI flows (§6) are next (UI track steps 4 and 7 in [NEXT.md](../NEXT.md)).
 
 ![The Studio layout (knobs and bars) with the Light theme](../images/looks-studio-light.png)
 
@@ -60,6 +60,15 @@ Today `buildPanels()` in `crates/amb-gui/ui/app.js` builds the right-hand panels
 - Layouts reference a theme, but the theme can be switched on its own.
 
 ## 3. Editor mode
+
+![Editor mode: dragging the Exposure slider out of Basic into the left column](../images/editor-mode-drag.png)
+
+*Built (2026-10-07) as described below, with these details:*
+- *Every change edits a draft copy of the layout file and re-renders it, so the screen is exactly what gets saved; undo is a stack of drafts.*
+- *Dropping something on the Add list removes it.*
+- *Built-in panels stay built-in while you only hide settings or change their control type. Reordering their contents, or renaming a setting in them, turns them into your own panel (an `items` list).*
+- *Saving a built-in layout makes your copy ("Classic (mine)").*
+- *Not built yet: tabs and free splits (layouts still have two side columns), and moving things with the keyboard alone.*
 
 A toggle (toolbar button or a key) that makes the current layout editable in place:
 

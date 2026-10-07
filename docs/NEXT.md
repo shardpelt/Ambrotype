@@ -23,6 +23,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - crop and straighten tool (R), with aspect lock
     - **size presets** (Instagram, Snapchat, TikTok, X, YouTube, Pinterest, LinkedIn and print sizes, plus custom ones) for the crop and exact-size export (`amb render --exact WxH` too)
     - **looks:** the UI is drawn from a layout file (toolbar, side columns, panels, and knob/bar/slider/number per setting) and a theme (colour tokens). Built-in looks (Classic, Compact, Big controls, Studio, Left-handed; Dark, Light, High contrast, Neutral grey) can be cloned, renamed, shared and imported in the Looks dialog. AI assistants can write them ([ai/ui-layouts.md](ai/ui-layouts.md), `ambrotype --check-look`)
+    - **editor mode:** Edit layout rearranges the screen in place (drag and drop, control types, split and merge, add and remove, column widths) and saves it as your own layout
 
 ## Owner to-dos
 
@@ -40,8 +41,8 @@ There are two tracks that can run in parallel: the UI track is what users see an
 
 1. ~~Crop tool and size presets~~ (done 2026-10-07). Small follow-ups are in [GAPS.md](GAPS.md).
 2. ~~Layout files, built-in looks and themes~~ (done 2026-10-07; [design/customization-and-hub.md](design/customization-and-hub.md), [ai/ui-layouts.md](ai/ui-layouts.md)).
-3. **Editor mode (next):** drag and drop panels and controls, split and merge, change slider types and colours, on top of the layout files that exist now. Colours can already be edited in the Looks dialog for your own themes. The user's AI can write the same files.
-4. **Hub:** Omarchy-style. Items are git repos, and one index repo takes submissions as pull requests. The in-app browser covers layouts, themes, presets, collage templates and size profiles.
+3. ~~Editor mode~~ (done 2026-10-07): **Edit layout** moves panels, settings and toolbar buttons by drag and drop, changes control types, labels, titles and columns, splits and merges panels, adds from a list of what isn't shown, and resizes columns. Colours are edited in the Looks dialog.
+4. **Hub (next):** Omarchy-style. Items are git repos, and one index repo takes submissions as pull requests. The in-app browser covers layouts, themes, presets, collage templates and size profiles.
 5. **Borders:** width, colour, caption; border presets; fit to a size preset; batch.
 6. **Collage maker:** shareable templates, per-photo pan/zoom/rotate and edit, batch mode for big folders. See [design/collage-and-borders.md](design/collage-and-borders.md).
 7. **Plugins and AI-made features:** WASM-sandboxed plugins with permissions; "make me a…" via the user's own AI; a Share button that opens a hub or Ambrotype pull request.

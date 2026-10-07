@@ -1045,6 +1045,7 @@ async function init() {
   $("btn-clip").addEventListener("click", toggleClipping);
   $("btn-feedback").addEventListener("click", feedbackFlow);
   $("btn-looks").addEventListener("click", () => looksFlow().catch((e) => toast(String(e), true)));
+  wireEditor();
   wireViewer();
   wireCrop();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));

@@ -18,7 +18,7 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
   1. **Search the trademark registers** (TMview, WIPO, USPTO; classes 9 and 42). If someone already has "Ambrotype" for software, stop and pick an alternative before spending money.
   2. **Domains (same day, about €10–40 a year each):** ambrotype.org first (our XMP namespace and the app id `org.ambrotype.editor` depend on it; Flathub checks you own the domain behind an app id), then ambrotype.photo and ambrotype.dev. Turn on auto-renew and registrar lock.
   3. **Handles:**
-     - ~~the GitHub organisation~~ done: `Ambrotypehq` (move the repo there when convenient; GitHub redirects). Once the trademark is registered, GitHub's trademark policy is the way to ask for `ambrotype`
+     - ~~the GitHub organisation~~ done: `Ambrotypehq`, kept as a reserved name; the code stays at `shardpelt/Ambrotype` for now (decided 2026-10-07). Once the trademark is registered, GitHub's trademark policy is the way to ask for `ambrotype`
      - crates.io `ambrotype`: publish a real, minimal crate, not an empty placeholder (crates.io removes name-squatting)
      - Mastodon/Bluesky/X/Instagram/YouTube handles
      - an email address on the domain

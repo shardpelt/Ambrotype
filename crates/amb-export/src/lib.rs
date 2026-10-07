@@ -9,7 +9,8 @@
 //! output-sharpened for screen or paper, carry EXIF metadata (with privacy
 //! choices), and, for JPEG, be limited to a file size.
 //!
-//! Order: orient upright → resize in linear light → convert to the output space
+//! Order: orient upright → (exact sizes of another aspect: centre-crop) →
+//! resize in linear light → convert to the output space
 //! → encode the transfer curve → output sharpening → quantise (8-bit with
 //! dither) → encode with ICC + EXIF.
 
@@ -226,7 +227,11 @@ pub fn export(
             "AVIF export is sRGB only for now (use JPEG, PNG or TIFF for wide gamut)".into(),
         ));
     }
-    let upright = geometry::orient(img, meta.orientation);
+    let mut upright = geometry::orient(img, meta.orientation);
+    // An exact size with another aspect: keep the centre, then scale.
+    if let Some((x, y, w, h)) = s.resize.cover_window(upright.width, upright.height) {
+        upright = geometry::cut(&upright, x, y, w, h);
+    }
     let (ow, oh) = s.resize.target(upright.width, upright.height, s.enlarge);
     let mut out = geometry::resize(&upright, ow, oh);
 
@@ -491,6 +496,31 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn exact_sizes_cover_and_centre_crop() {
+        // 240×160 grey ramp in the top rows: black on the left, white on the right.
+        let img = test_image();
+        let meta = PhotoMetadata::default();
+        let mut s = ExportSettings::new(Format::Png);
+        let path = tmp("exact.png");
+        // Square from 3:2: the middle 160×160 is kept, so the left edge is
+        // no longer black.
+        s.resize = Resize::Exact(100, 100);
+        let r = export(&img, &meta, &s, &path).unwrap();
+        assert_eq!((r.width, r.height), (100, 100));
+        let decoded = image::open(&path).unwrap().to_rgb8();
+        let left = decoded.get_pixel(0, 5)[0];
+        let right = decoded.get_pixel(99, 5)[0];
+        assert!(left > 90 && right < 250, "{left} {right}");
+        // Same aspect: a plain resize (the black edge stays), and exact sizes
+        // enlarge.
+        s.resize = Resize::Exact(480, 320);
+        let r = export(&img, &meta, &s, &path).unwrap();
+        assert_eq!((r.width, r.height), (480, 320));
+        let decoded = image::open(&path).unwrap().to_rgb8();
+        assert!(decoded.get_pixel(0, 5)[0] < 20);
     }
 
     #[test]

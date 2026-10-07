@@ -73,13 +73,14 @@
         <div class="crop-line">
           <button id="crop-swap" class="small" title="Swap portrait and landscape (X)">Swap ⇄</button>
           <button id="crop-sizes" class="small" title="Add your own sizes">Size presets…</button>
+          <button id="crop-draw" class="small" title="Draw a new crop: press at one corner and drag to the other (D)">Draw ⌖</button>
         </div>
         <div class="row">
           <label for="crop-angle" title="Straighten. Double-click to reset.">Angle</label>
           <input id="crop-angle" type="range" min="-45" max="45" step="0.05" value="0">
           <input id="crop-angle-num" class="value" type="text" inputmode="decimal" spellcheck="false">
         </div>
-        <p class="hint">Drag the edges or corners, drag inside to move, drag outside the frame to straighten. Enter applies, Esc cancels.</p>
+        <p class="hint" id="crop-hint"></p>
         <div class="crop-actions">
           <button id="crop-reset" title="Remove the crop and straighten">Reset</button>
           <span class="grow"></span>

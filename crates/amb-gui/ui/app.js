@@ -602,10 +602,10 @@ async function enterCrop() {
   ui.crop.angleSign = st.angle_sign;
   chooseAspect(st.rect, st.enabled);
   setCropMode(true);
-  ui.crop.tool.start({ width: ui.info.width, height: ui.info.height, angleSign: st.angle_sign, rect: st.rect });
+  // No crop yet: start by drawing one, like a screenshot selection.
   ui.crop.tool.setRatio(lockedRatio());
+  ui.crop.tool.start({ width: ui.info.width, height: ui.info.height, angleSign: st.angle_sign, rect: st.rect, draw: !st.enabled });
   syncCropPanel(st.rect);
-  status("Crop: drag the edges or corners, inside to move, outside to straighten. Enter applies, Esc cancels.");
   requestPreview(false);
 }
 
@@ -695,7 +695,16 @@ function wireCrop() {
     // Only the whole-photo preview, once loaded (not a cropped one still showing).
     image: () => (ui.preview.uncropped && img.complete && img.naturalWidth ? img : null),
     onChange: (rect) => syncCropPanel(rect),
+    onDrawMode: (on) => {
+      $("crop-draw").classList.toggle("active", on);
+      const hint = on
+        ? "Press at one corner of the crop and drag to the opposite corner. Or adjust the frame with the controls here."
+        : "Drag the edges or corners, inside to move, outside the frame to straighten. Draw ⌖ (D) starts a new one. Enter applies, Esc cancels.";
+      $("crop-hint").textContent = hint;
+      if (ui.crop.on) status(on ? "Crop: drag from one corner to the other" : "Crop: adjust the frame; Enter applies, Esc cancels");
+    },
   });
+  $("crop-draw").addEventListener("click", () => ui.crop.tool.setDrawMode(!ui.crop.tool.drawMode()));
   img.addEventListener("load", () => { if (ui.crop.on) ui.crop.tool.draw(); });
   $("btn-crop").addEventListener("click", toggleCrop);
   $("crop-done").addEventListener("click", () => exitCrop(true));
@@ -703,7 +712,11 @@ function wireCrop() {
   $("crop-reset").addEventListener("click", resetCrop);
   $("crop-swap").addEventListener("click", swapCrop);
   $("crop-sizes").addEventListener("click", sizesFlow);
-  $("crop-aspect").addEventListener("change", (e) => setCropAspect(e.target.value));
+  $("crop-aspect").addEventListener("change", (e) => {
+    setCropAspect(e.target.value);
+    // Let Enter apply the crop again rather than reopen the list.
+    e.target.blur();
+  });
   const angle = $("crop-angle");
   angle.addEventListener("input", () => ui.crop.tool.setAngle(Number(angle.value)));
   angle.addEventListener("change", () => ui.crop.tool.endAngle());

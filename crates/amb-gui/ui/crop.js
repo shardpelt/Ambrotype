@@ -13,6 +13,11 @@
 // level on screen, like Lightroom. Drag an edge or corner to resize, inside to
 // move, outside to straighten. The rectangle is kept inside the photo: dragging
 // stops at the edges and straightening shrinks it as needed.
+//
+// Draw mode (like a macOS screenshot): the cursor is a cross; press at one
+// corner and drag to the opposite one to draw a new rectangle, at the current
+// angle and aspect lock. It is on when a photo has no crop yet (start({ draw })),
+// or when asked (setDrawMode), and ends once a rectangle is drawn.
 "use strict";
 
 (function () {
@@ -124,6 +129,7 @@
     let ratio = null;      // locked width / height, or null (free)
     let drag = null;
     let angleBase = null;  // the rectangle before a slider straighten
+    let drawing = false;   // draw mode: the next drag draws a new rectangle
 
     // View: the photo turned by −θ about its centre (so the crop is level),
     // fitted to the canvas.
@@ -143,6 +149,13 @@
       const dx = x - W / 2;
       const dy = y - H / 2;
       return [L.vx + L.S * (dx * L.c + dy * L.s), L.vy + L.S * (-dx * L.s + dy * L.c)];
+    }
+
+    // Screen point -> photo pixels (the inverse of toView).
+    function fromView(L, X, Y) {
+      const u = (X - L.vx) / L.S;
+      const v = (Y - L.vy) / L.S;
+      return [W / 2 + u * L.c - v * L.s, H / 2 + u * L.s + v * L.c];
     }
 
     // The crop rectangle on screen (level): x0, y0, x1, y1 in CSS px.
@@ -180,6 +193,8 @@
       }
       g.restore();
 
+      // Draw mode, before the first drag: just the photo, waiting for the cross.
+      if (drawing && !(drag && drag.kind === "draw" && drag.moved)) return;
       const v = viewRect(L);
       g.fillStyle = SHADE;
       g.beginPath();
@@ -223,6 +238,20 @@
       g.moveTo(v.x0, my - len / 2); g.lineTo(v.x0, my + len / 2);
       g.moveTo(v.x1, my - len / 2); g.lineTo(v.x1, my + len / 2);
       g.stroke();
+      // The size next to the pointer while drawing or resizing, like a screenshot.
+      if (drag && drag.kind !== "move" && drag.kind !== "rotate" && drag.pointer) {
+        const text = `${Math.round(rect.width)} × ${Math.round(rect.height)}`;
+        g.font = "12px system-ui, sans-serif";
+        const tw = g.measureText(text).width;
+        const [px, py] = drag.pointer;
+        // Beside the pointer, but never off the canvas (the pointer can be outside).
+        const bx = Math.max(4, Math.min(px + 14, w - tw - 14));
+        const by = Math.max(4, Math.min(py + 18, h - 24));
+        g.fillStyle = "rgba(0,0,0,0.7)";
+        g.fillRect(bx, by, tw + 10, 20);
+        g.fillStyle = "#fff";
+        g.fillText(text, bx + 5, by + 14);
+      }
     }
 
     function hit(X, Y) {
@@ -287,6 +316,28 @@
       const ux = (X - drag.X) / L.S;
       const uy = (Y - drag.Y) / L.S;
       const kind = drag.kind;
+      if (kind === "draw") {
+        // A tiny rectangle at the anchor, grown towards the pointer through its
+        // far corner, so the corner logic (aspect lock, edges) applies as is.
+        const m = drag.m;
+        const [AX, AY] = toView(L, drag.anchor[0], drag.anchor[1]);
+        const sx = X < AX ? -1 : 1;
+        const sy = Y < AY ? -1 : 1;
+        const [c, sn] = axes(s.angle, sign);
+        const hx = (sx * m) / 2;
+        const hy = (sy * m) / 2;
+        const tiny = { cx: drag.anchor[0] + hx * c - hy * sn, cy: drag.anchor[1] + hx * sn + hy * c, width: m, height: m, angle: s.angle };
+        const corner = (sy > 0 ? "s" : "n") + (sx > 0 ? "e" : "w");
+        const dx = (X - AX) / L.S - sx * m;
+        const dy = (Y - AY) / L.S - sy * m;
+        if (ratio) {
+          rect = towards(tiny, resized(tiny, corner, dx, dy, m), W, H, sign);
+        } else {
+          const a = towards(tiny, resized(tiny, corner[1], dx, 0, m), W, H, sign);
+          rect = towards(a, resized(a, corner[0], 0, dy, m), W, H, sign);
+        }
+        return;
+      }
       if (kind === "rotate") {
         const [px, py] = drag.centre;
         let d = Math.atan2(Y - py, X - px) - Math.atan2(drag.Y - py, drag.X - px);
@@ -329,7 +380,17 @@
       const [X, Y] = local(e);
       const L = layout();
       angleBase = null;
-      drag = { kind: hit(X, Y), X, Y, L, start: { ...rect }, centre: toView(L, rect.cx, rect.cy) };
+      if (drawing) {
+        // The anchor is where the press was, kept a little inside the photo so
+        // the first tiny rectangle fits whichever way the drag goes.
+        const m = Math.max(16 / L.S, 0.01 * Math.min(W, H));
+        const [px, py] = fromView(L, X, Y);
+        const inset = 1.5 * m;
+        const anchor = [Math.min(W - inset, Math.max(inset, px)), Math.min(H - inset, Math.max(inset, py))];
+        drag = { kind: "draw", X, Y, L, m, anchor, start: { ...rect }, moved: false, pointer: [X, Y] };
+      } else {
+        drag = { kind: hit(X, Y), X, Y, L, start: { ...rect }, centre: toView(L, rect.cx, rect.cy), pointer: [X, Y] };
+      }
       if (drag.kind === "rotate") canvas.style.cursor = "grabbing";
       canvas.setPointerCapture(e.pointerId);
       draw();
@@ -338,18 +399,35 @@
       if (!rect) return;
       const [X, Y] = local(e);
       if (!drag) {
-        canvas.style.cursor = CURSORS[hit(X, Y)];
+        canvas.style.cursor = drawing ? "crosshair" : CURSORS[hit(X, Y)];
         return;
+      }
+      drag.pointer = [X, Y];
+      if (drag.kind === "draw") {
+        // A click (no real drag) draws nothing.
+        if (!drag.moved && Math.hypot(X - drag.X, Y - drag.Y) < 4) return;
+        drag.moved = true;
       }
       update(X, Y);
       changed(true);
     });
     const end = () => {
       if (!drag) return;
+      const drew = drag.kind === "draw" && drag.moved;
+      const clicked = drag.kind === "draw" && !drag.moved;
       drag = null;
+      if (clicked) return;
+      if (drew) setDrawing(false);
       canvas.style.cursor = "";
       changed(false);
     };
+
+    function setDrawing(on) {
+      drawing = Boolean(on);
+      canvas.style.cursor = drawing ? "crosshair" : "";
+      if (opts.onDrawMode) opts.onDrawMode(drawing);
+      draw();
+    }
     canvas.addEventListener("pointerup", end);
     canvas.addEventListener("pointercancel", end);
 
@@ -365,9 +443,12 @@
         rect = { ...o.rect };
         drag = null;
         angleBase = null;
-        draw();
+        setDrawing(Boolean(o.draw));
       },
-      stop() { rect = null; drag = null; draw(); },
+      stop() { rect = null; drag = null; drawing = false; draw(); },
+      /** Draw mode: the next drag draws a new rectangle (a cross cursor). */
+      setDrawMode(on) { if (rect) setDrawing(on); },
+      drawMode() { return drawing; },
       /** The current rectangle. */
       rect() { return rect ? { ...rect } : null; },
       setRect(r) { rect = { ...r }; angleBase = null; changed(false); },

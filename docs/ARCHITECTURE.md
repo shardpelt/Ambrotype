@@ -86,7 +86,7 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
   - Basic, Tone Curve (parametric), Color Mixer (HSL tabs), Color Grading, Detail, Lens Corrections, Effects and Film Negative panels
   - presets list (Lightroom's own folder when present, or added folders) with an Amount slider
   - history, undo/redo (a drag of a curve point or colour wheel, or a WB pick, is one step), before/after, histogram
-  - 1:1 view with panning (a region of the full-size render), white-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels, crop and straighten tool (aspect lock, size presets)
+  - 1:1 view with panning (a region of the full-size render), white-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels, crop and straighten tool (draw a crop corner to corner like a screenshot, then adjust; aspect lock, size presets)
   - size presets (built-in for social sites and print, plus custom) for the crop aspect and exact-size export
   - **looks:** the toolbar, side columns and panels come from a layout file and the colours from a theme (`src/looks.rs` validates and stores them; `ui/layout.js` renders; `ui/controls.js` has the knob, bar, number, toggle and segmented controls; `ui/editor.js` is editor mode, which edits a draft of the layout and re-renders it)
   - **hub:** `src/hub.rs` reads a hub's `index.json` (https, or file:// for testing), checks each look file against its sha256, validates it and saves it as one of the user's looks; it also builds the GitHub link for submitting a look. `ui/hub.js` is the Browse dialog, with previews drawn from the looks' own data. The hub repo template is `hub/`

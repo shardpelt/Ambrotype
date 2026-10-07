@@ -244,8 +244,17 @@ impl Session {
         }
     }
 
-    pub fn execute(&mut self, cmds: &[Command]) -> Result<Vec<Outcome>, String> {
-        self.state.execute_all(cmds).map_err(|e| e.to_string())
+    /// Run commands; with a `group` label they become one undo step.
+    pub fn execute(
+        &mut self,
+        cmds: &[Command],
+        group: Option<&str>,
+    ) -> Result<Vec<Outcome>, String> {
+        match group {
+            Some(label) => self.state.execute_grouped(label, cmds),
+            None => self.state.execute_all(cmds),
+        }
+        .map_err(|e| e.to_string())
     }
 
     /// Develop settings for `settings`, with the lens profile resolved (cached).
@@ -349,6 +358,7 @@ impl Session {
     /// A 1:1 crop of the full-resolution render around (cx, cy) (fractions of
     /// the upright image), at most `max_w × max_h` pixels. The full render is
     /// cached until the committed settings change.
+    #[allow(clippy::too_many_arguments)]
     pub fn region(
         &mut self,
         cx: f64,
@@ -416,8 +426,8 @@ impl Session {
         for y in sy.saturating_sub(r)..(sy + r + 1).min(img.height) {
             for x in sx.saturating_sub(r)..(sx + r + 1).min(img.width) {
                 let i = (y * img.width + x) * 3;
-                for c in 0..3 {
-                    acc[c] += f64::from(img.rgb[i + c]);
+                for (a, v) in acc.iter_mut().zip(&img.rgb[i..i + 3]) {
+                    *a += f64::from(*v);
                 }
                 n += 1.0;
             }
@@ -637,16 +647,19 @@ mod tests {
         assert!(!s.state_info().can_undo);
 
         // Committing a command is undoable.
-        s.execute(&[Command::SetParam {
-            name: "Exposure2012".into(),
-            value: serde_json::json!(1.0),
-        }])
+        s.execute(
+            &[Command::SetParam {
+                name: "Exposure2012".into(),
+                value: serde_json::json!(1.0),
+            }],
+            None,
+        )
         .unwrap();
         let info = s.state_info();
         assert!(info.can_undo && info.settings["Exposure2012"] == serde_json::json!(1.0));
-        s.execute(&[Command::Undo]).unwrap();
+        s.execute(&[Command::Undo], None).unwrap();
         assert!(s.state.settings().is_empty());
-        s.execute(&[Command::Redo]).unwrap();
+        s.execute(&[Command::Redo], None).unwrap();
 
         // "Before" ignores the edits.
         let before = s.preview(512, &BTreeMap::new(), true, false, &lens);
@@ -678,14 +691,14 @@ mod tests {
         // A corner request is clamped inside the image.
         let c = s.region(0.0, 1.0, 300, 200, false, true, &lens);
         assert_eq!((c.x, c.y), (0, 920 - 200));
-        // Picking the light grey patch (row 4, second patch) gives D50 (5000 K-ish), tint ~0:
-        // the synthetic target is neutral in ProPhoto D50.
+        // Picking the light grey patch (row 4, second patch) gives D50: ~5000 K, and a tint
+        // near +10 because D50 sits above the Planckian locus (Lightroom shows the same).
         let (patch, gap) = (200.0, 24.0);
         let u = (gap + (patch + gap) + patch / 2.0) / 1368.0;
         let v = (gap + 3.0 * (patch + gap) + patch / 2.0) / 920.0;
         let (t, tint) = s.pick_white(u, v).expect("grey patch");
         assert!(
-            (4800.0..5300.0).contains(&t) && tint.abs() < 8.0,
+            (4800.0..5300.0).contains(&t) && (5.0..15.0).contains(&tint),
             "{t} {tint}"
         );
         let ctx = s.feedback_context(true);

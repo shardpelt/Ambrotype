@@ -713,3 +713,33 @@ fn apply_preset_validates_values_and_reports_clamping() {
         "{o:?}"
     );
 }
+
+#[test]
+fn grouped_commands_are_one_undo_step() {
+    let mut st = DevelopState::new();
+    st.execute_grouped(
+        "white balance picker",
+        &[
+            Command::SetParam {
+                name: "WhiteBalance".into(),
+                value: json!("Custom"),
+            },
+            Command::SetParam {
+                name: "Temperature".into(),
+                value: json!(5600),
+            },
+            Command::SetParam {
+                name: "Tint".into(),
+                value: json!(-12),
+            },
+        ],
+    )
+    .unwrap();
+    assert_eq!(st.undo_stack().len(), 1);
+    assert_eq!(st.undo_stack()[0].label, "white balance picker");
+    st.execute(&Command::Undo).unwrap();
+    assert!(st.settings().is_empty());
+    st.execute(&Command::Redo).unwrap();
+    assert_eq!(st.settings().len(), 3);
+    assert!(st.execute_grouped("x", &[Command::Undo]).is_err());
+}

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ambrotype</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="widgets.css">
 </head>
 <body>
   <header class="topbar">
@@ -18,6 +19,12 @@
       <button id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
       <span class="sep"></span>
       <button id="btn-before" title="Show the photo before edits (\)" disabled>Before / After</button>
+      <span class="sep"></span>
+      <button id="btn-zoom" title="Fit / 100% (Z, or click the photo). Drag to pan at 100%." disabled>100%</button>
+      <button id="btn-wb" title="White balance picker: click a neutral grey or white spot (W)" disabled>WB picker</button>
+      <button id="btn-clip" title="Show clipped highlights (red) and shadows (blue) (J)" disabled>Clipping</button>
+      <span class="sep"></span>
+      <button id="btn-feedback" title="Report a bug, an idea, or a photo that looks different from Lightroom">Feedback</button>
     </div>
     <div class="photo-title" id="photo-title"></div>
   </header>
@@ -115,7 +122,36 @@
     </form>
   </dialog>
 
+  <dialog id="feedback-dialog">
+    <form method="dialog" id="feedback-form">
+      <h2>Send feedback</h2>
+      <p class="hint">This opens a pre-filled issue on GitHub in your browser. Nothing is sent until you submit it there; you can edit everything first.</p>
+      <div class="grid">
+        <label>Kind
+          <select name="kind">
+            <option>Looks different from Lightroom</option>
+            <option>Bug</option>
+            <option>Idea</option>
+            <option>Slow</option>
+          </select>
+        </label>
+        <label>Title <input name="title" type="text" placeholder="One line" spellcheck="true"></label>
+      </div>
+      <label class="wide">What happened, or what would you like?
+        <textarea name="text" rows="5" placeholder="For &quot;looks different&quot;: which settings or preset, and how it differs."></textarea>
+      </label>
+      <label class="check"><input type="checkbox" name="context" checked> Include app, system, camera, lens and the current settings (never the photo)</label>
+      <label class="wide">Will be sent <textarea name="preview" rows="6" readonly></textarea></label>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Open on GitHub…</button>
+      </menu>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast" hidden></div>
+  <script src="curve.js"></script>
+  <script src="wheels.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

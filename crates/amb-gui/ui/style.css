@@ -117,3 +117,13 @@ dialog .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
 dialog label { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 12px; }
 dialog label.q span { display: grid; grid-template-columns: 1fr 32px; align-items: center; gap: 6px; }
 dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; margin: 18px 0 0; }
+
+/* 100% view, pickers */
+.viewer.actual { place-items: start; }
+.viewer.actual img { max-width: none; max-height: none; box-shadow: none; position: absolute; left: 0; top: 0; cursor: grab; }
+.viewer.actual img.panning { cursor: grabbing; }
+.viewer.picking img { cursor: crosshair; }
+dialog label.wide { margin-top: 12px; }
+dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-top: 10px; color: var(--text); }
+dialog textarea { background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); font: inherit; padding: 6px 8px; resize: vertical; }
+dialog input[type=text] { background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 8px; }

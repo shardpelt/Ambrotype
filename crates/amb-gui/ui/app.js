@@ -17,6 +17,11 @@ const ui = {
   hslTab: "Hue",
   preview: { inFlight: false, dirty: false, draft: false, url: null },
   presets: [],
+  zoom: { on: false, cx: 0.5, cy: 0.5, meta: null, pan: null },
+  picking: false,
+  clipping: false,
+  curve: null,
+  wheels: null,
 };
 
 // ---------------------------------------------------------------- helpers
@@ -160,8 +165,12 @@ function makeRow(def) {
 
 function buildPanels() {
   const root = $("panels");
+  ui.curve?.destroy();
+  ui.wheels?.destroy();
+  ui.curve = ui.wheels = null;
   root.innerHTML = "";
   ui.controls.clear();
+  const isGradeWheel = (s) => ["Shadow", "Midtone", "Highlight", "Global"].includes(s.label);
   for (const panel of ui.panels) {
     const details = document.createElement("details");
     details.className = "panel";
@@ -175,12 +184,40 @@ function buildPanels() {
     reset.title = `Reset ${panel.label}`;
     reset.addEventListener("click", (e) => {
       e.preventDefault();
-      run(panel.groups.map((g) => ({ cmd: "reset_group", group: g })));
+      run(panel.groups.map((g) => ({ cmd: "reset_group", group: g })), `reset ${panel.label}`);
     });
     summary.append(title, reset);
     const body = document.createElement("div");
     body.className = "panel-body";
+    if (panel.id === "tone_curve") {
+      const host = document.createElement("div");
+      body.append(host);
+      ui.curve = AmbCurve.create(host, {
+        onInput(tag, points) { ui.overrides[tag] = points; requestPreview(true); },
+        onCommit(tag, points) {
+          delete ui.overrides[tag];
+          const channel = tag.replace("ToneCurvePV2012", "").toLowerCase();
+          run([{ cmd: "set_param", name: tag, value: points }], channel ? `tone curve (${channel})` : "tone curve");
+        },
+      });
+    }
+    if (panel.id === "color_grading") {
+      const host = document.createElement("div");
+      body.append(host);
+      ui.wheels = AmbWheels.create(host, {
+        onInput(changes) { Object.assign(ui.overrides, changes); requestPreview(true); },
+        onCommit(changes) {
+          for (const name of Object.keys(changes)) delete ui.overrides[name];
+          run(Object.entries(changes).map(([name, value]) => ({ cmd: "set_param", name, value })), "color grading");
+        },
+      });
+    }
+    // Canvases inside a closed panel have no size; redraw when it opens.
+    details.addEventListener("toggle", () => {
+      if (details.open) { ui.curve?.refresh(); ui.wheels?.refresh(); }
+    });
     for (const section of panel.sections) {
+      if (panel.id === "color_grading" && isGradeWheel(section)) continue;
       if (panel.sections.length > 1 || section.layout === "sliders") {
         const l = document.createElement("div");
         l.className = "section-label";
@@ -242,6 +279,8 @@ function syncControls() {
     li.textContent = label.replace(/^set_param /, "").replace(/^apply_preset .*[\\/]/, "preset ");
     hist.append(li);
   }
+  if (ui.curve) for (const tag of AmbCurve.TAGS) ui.curve.set(tag, currentValue(tag));
+  if (ui.wheels) ui.wheels.set(Object.fromEntries(AmbWheels.TAGS.map((t) => [t, currentValue(t)])));
   const nr = ui.state?.not_rendered ?? [];
   $("status-right").textContent = nr.length ? `Not rendered yet: ${nr.length} setting(s)` : "";
   $("status-right").title = nr.join(", ");
@@ -256,10 +295,11 @@ function setState(state) {
   syncControls();
 }
 
-async function run(commands) {
+// Run protocol commands; several commands with a `group` label are one undo step.
+async function run(commands, group = null) {
   if (!ui.info) return;
   try {
-    const r = await invoke("execute", { commands });
+    const r = await invoke("execute", { commands, group });
     setState(r.state);
     if (r.notes.length) toast(r.notes.join(" · "));
     requestPreview(false);
@@ -298,22 +338,31 @@ async function renderLoop() {
     ui.preview.dirty = false;
     const draft = ui.preview.draft;
     try {
+      if (ui.zoom.on) {
+        // At 100% only committed changes render (a full-size render per drag step is too slow).
+        if (!draft) await renderRegion();
+        continue;
+      }
       const buf = await invoke("preview", {
         maxEdge: previewSize(draft),
         overrides: ui.before ? {} : { ...ui.overrides },
         before: ui.before,
+        clipping: ui.clipping,
       });
-      const bytes = new Uint8Array(buf);
-      const len = new DataView(bytes.buffer, bytes.byteOffset, 4).getUint32(0, true);
-      const meta = JSON.parse(new TextDecoder().decode(bytes.subarray(4, 4 + len)));
-      const blob = new Blob([bytes.subarray(4 + len)], { type: "image/jpeg" });
-      const url = URL.createObjectURL(blob);
+      const { meta, jpeg } = splitFramed(buf);
+      // A draft is smaller than the viewer; keep the image at its settled size
+      // so the photo doesn't shrink while dragging.
       const img = $("preview");
-      img.src = url;
-      img.hidden = false;
-      if (ui.preview.url) URL.revokeObjectURL(ui.preview.url);
-      ui.preview.url = url;
+      if (draft && !img.hidden && !img.style.width) {
+        const r = img.getBoundingClientRect();
+        img.style.width = `${r.width}px`;
+        img.style.height = `${r.height}px`;
+      } else if (!draft) {
+        img.style.width = img.style.height = "";
+      }
+      showJpeg(jpeg);
       drawHistogram(meta.histogram);
+      ui.curve?.setHistogram(meta.histogram);
       status(`${meta.width}×${meta.height} preview in ${meta.millis} ms` +
         (meta.lens_profile ? `  ·  Lens: ${meta.lens_profile}` : ""));
     } catch (e) {
@@ -345,6 +394,179 @@ function drawHistogram(h) {
   g.globalCompositeOperation = "source-over";
 }
 
+// ---------------------------------------------------------------- 100% view, pickers
+
+function splitFramed(buf) {
+  const bytes = new Uint8Array(buf);
+  const len = new DataView(bytes.buffer, bytes.byteOffset, 4).getUint32(0, true);
+  const meta = JSON.parse(new TextDecoder().decode(bytes.subarray(4, 4 + len)));
+  return { meta, jpeg: bytes.subarray(4 + len) };
+}
+
+function showJpeg(jpeg) {
+  const url = URL.createObjectURL(new Blob([jpeg], { type: "image/jpeg" }));
+  const img = $("preview");
+  img.src = url;
+  img.hidden = false;
+  if (ui.preview.url) URL.revokeObjectURL(ui.preview.url);
+  ui.preview.url = url;
+}
+
+// 1:1 crop of the full-size render around (cx, cy); 1.5× the viewport so a
+// short pan doesn't show empty space before the next crop arrives.
+async function renderRegion() {
+  const v = $("viewer");
+  const dpr = window.devicePixelRatio || 1;
+  status("Rendering 100%…");
+  const { meta, jpeg } = splitFramed(await invoke("region", {
+    cx: ui.zoom.cx, cy: ui.zoom.cy,
+    width: Math.round(v.clientWidth * dpr * 1.5),
+    height: Math.round(v.clientHeight * dpr * 1.5),
+    before: ui.before,
+    clipping: ui.clipping,
+  }));
+  ui.zoom.meta = meta;
+  showJpeg(jpeg);
+  $("viewer").classList.add("actual");
+  placeRegion();
+  status(`100%: ${meta.full_width}×${meta.full_height} in ${meta.millis} ms` +
+    (Object.keys(ui.overrides).length ? " (slider changes show at 100% when released)" : ""));
+}
+
+// Position the 1:1 crop so (cx, cy) sits in the viewport centre.
+function placeRegion(dx = 0, dy = 0) {
+  const m = ui.zoom.meta;
+  if (!m) return;
+  const v = $("viewer");
+  const dpr = window.devicePixelRatio || 1;
+  const img = $("preview");
+  img.style.width = `${m.width / dpr}px`;
+  img.style.height = `${m.height / dpr}px`;
+  const centreX = (ui.zoom.cx * m.full_width - m.x) / dpr;
+  const centreY = (ui.zoom.cy * m.full_height - m.y) / dpr;
+  img.style.left = `${v.clientWidth / 2 - centreX + dx}px`;
+  img.style.top = `${v.clientHeight / 2 - centreY + dy}px`;
+}
+
+function setZoom(on, u = 0.5, v = 0.5) {
+  ui.zoom.on = on;
+  ui.zoom.cx = u;
+  ui.zoom.cy = v;
+  ui.zoom.meta = null;
+  const img = $("preview");
+  // The "actual" layout is applied once the 1:1 crop arrives (renderRegion).
+  if (!on) $("viewer").classList.remove("actual");
+  $("btn-zoom").classList.toggle("active", on);
+  if (!on) for (const k of ["width", "height", "left", "top"]) img.style[k] = "";
+  requestPreview(false);
+}
+
+// Where a click lands, as fractions (u, v) of the upright photo.
+function photoPoint(e) {
+  const img = $("preview");
+  const r = img.getBoundingClientRect();
+  const fx = (e.clientX - r.left) / r.width;
+  const fy = (e.clientY - r.top) / r.height;
+  if (ui.zoom.on && ui.zoom.meta) {
+    const m = ui.zoom.meta;
+    return [(m.x + fx * m.width) / m.full_width, (m.y + fy * m.height) / m.full_height];
+  }
+  return [fx, fy];
+}
+
+async function pickWhite(u, v) {
+  setPicking(false);
+  try {
+    const r = await invoke("pick_white", { u, v });
+    setState(r.state);
+    toast(r.notes.join(" "));
+    requestPreview(false);
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
+function setPicking(on) {
+  ui.picking = on && Boolean(ui.info);
+  $("viewer").classList.toggle("picking", ui.picking);
+  $("btn-wb").classList.toggle("active", ui.picking);
+  if (ui.picking) status("Click a neutral grey or white spot (Esc to cancel)");
+}
+
+function toggleClipping() {
+  if (!ui.info) return;
+  ui.clipping = !ui.clipping;
+  $("btn-clip").classList.toggle("active", ui.clipping);
+  requestPreview(false);
+}
+
+function wireViewer() {
+  const img = $("preview");
+  let drag = null;
+  img.addEventListener("mousedown", (e) => {
+    if (e.button !== 0 || !ui.info) return;
+    e.preventDefault();
+    drag = { x: e.clientX, y: e.clientY, moved: false };
+  });
+  window.addEventListener("mousemove", (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+    if (ui.zoom.on && drag.moved) {
+      img.classList.add("panning");
+      placeRegion(dx, dy);
+    }
+  });
+  window.addEventListener("mouseup", (e) => {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    img.classList.remove("panning");
+    if (ui.zoom.on && d.moved && ui.zoom.meta) {
+      // Move the centre by the drag distance (in full-size pixels) and fetch a new crop.
+      const dpr = window.devicePixelRatio || 1;
+      const m = ui.zoom.meta;
+      ui.zoom.cx = Math.min(1, Math.max(0, ui.zoom.cx - ((e.clientX - d.x) * dpr) / m.full_width));
+      ui.zoom.cy = Math.min(1, Math.max(0, ui.zoom.cy - ((e.clientY - d.y) * dpr) / m.full_height));
+      requestPreview(false);
+      return;
+    }
+    if (d.moved) return;
+    const [u, v] = photoPoint(e);
+    if (ui.picking) pickWhite(u, v);
+    else setZoom(!ui.zoom.on, u, v);
+  });
+}
+
+// ---------------------------------------------------------------- feedback
+
+async function feedbackFlow() {
+  const dlg = $("feedback-dialog");
+  const f = $("feedback-form");
+  const refresh = async () => {
+    f.preview.value = await invoke("feedback_body", {
+      kind: f.kind.value, text: f.text.value, includeContext: f.context.checked,
+    });
+  };
+  f.oninput = refresh;
+  f.onchange = refresh;
+  await refresh();
+  dlg.showModal();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice !== "ok") return;
+  try {
+    await invoke("open_feedback", {
+      kind: f.kind.value,
+      title: f.title.value || f.kind.value,
+      body: f.preview.value,
+    });
+    toast("Opened GitHub in your browser. Thank you!");
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
 // ---------------------------------------------------------------- photo, presets, export
 
 async function openPath(path) {
@@ -357,7 +579,8 @@ async function openPath(path) {
     $("photo-title").textContent = `${r.info.name}  —  ${r.info.camera}${r.info.lens ? "  ·  " + r.info.lens : ""}`;
     $("exif").textContent = [r.info.exposure, `${r.info.width} × ${r.info.height}`,
       r.info.sidecar_loaded ? "edits loaded from sidecar" : ""].filter(Boolean).join("  ·  ");
-    for (const id of ["btn-save", "btn-export", "btn-before"]) $(id).disabled = false;
+    for (const id of ["btn-save", "btn-export", "btn-before", "btn-zoom", "btn-wb", "btn-clip"]) $(id).disabled = false;
+    if (ui.zoom.on) setZoom(false);
     setState(r.state);
     requestPreview(false);
   } catch (e) {
@@ -494,6 +717,11 @@ async function init() {
   $("btn-undo").addEventListener("click", () => run([{ cmd: "undo" }]));
   $("btn-redo").addEventListener("click", () => run([{ cmd: "redo" }]));
   $("btn-before").addEventListener("click", toggleBefore);
+  $("btn-zoom").addEventListener("click", () => setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy));
+  $("btn-wb").addEventListener("click", () => setPicking(!ui.picking));
+  $("btn-clip").addEventListener("click", toggleClipping);
+  $("btn-feedback").addEventListener("click", feedbackFlow);
+  wireViewer();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   $("preset-filter").addEventListener("input", renderPresets);
   $("preset-amount").addEventListener("input", (e) => ($("preset-amount-out").textContent = e.target.value));
@@ -502,7 +730,7 @@ async function init() {
   f.quality.addEventListener("input", () => (f.quality_out.value = f.quality.value));
 
   document.addEventListener("keydown", (e) => {
-    if (e.target.matches("input[type=number], input[type=search], input.value")) return;
+    if (e.target.matches("input[type=number], input[type=search], input[type=text], textarea, input.value")) return;
     const mod = e.ctrlKey || e.metaKey;
     const k = e.key.toLowerCase();
     if (mod && k === "z" && !e.shiftKey) { e.preventDefault(); run([{ cmd: "undo" }]); }
@@ -511,6 +739,11 @@ async function init() {
     else if (mod && k === "e") { e.preventDefault(); exportFlow(); }
     else if (mod && k === "o") { e.preventDefault(); openDialog(); }
     else if (e.key === "\\") { e.preventDefault(); toggleBefore(); }
+    else if (mod) return;
+    else if (k === "z" && ui.info) { e.preventDefault(); setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy); }
+    else if (k === "w") { e.preventDefault(); setPicking(!ui.picking); }
+    else if (k === "j") { e.preventDefault(); toggleClipping(); }
+    else if (e.key === "Escape") setPicking(false);
   });
 
   let resizeTimer;

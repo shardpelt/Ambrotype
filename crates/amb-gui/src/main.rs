@@ -77,6 +77,20 @@ fn to_value(v: &serde_json::Value) -> Option<Value> {
         serde_json::Value::Bool(b) => Value::Bool(*b),
         serde_json::Value::Number(n) => Value::Number(n.as_f64()?),
         serde_json::Value::String(s) => Value::Text(s.clone()),
+        // Curves: [[x, y], ...] → the XMP list form `curve_points()` reads.
+        serde_json::Value::Array(items) => Value::Seq(
+            items
+                .iter()
+                .map(|i| match i {
+                    serde_json::Value::Array(p) if p.len() == 2 => Some(Value::Text(format!(
+                        "{}, {}",
+                        p[0].as_f64()?,
+                        p[1].as_f64()?
+                    ))),
+                    other => to_value(other),
+                })
+                .collect::<Option<Vec<_>>>()?,
+        ),
         _ => return None,
     })
 }
@@ -138,10 +152,14 @@ struct Executed {
 }
 
 #[tauri::command]
-fn execute(commands: Vec<Command>, state: tauri::State<'_, AppState>) -> Res<Executed> {
+fn execute(
+    commands: Vec<Command>,
+    group: Option<String>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Executed> {
     let mut guard = state.session.lock().map_err(|e| e.to_string())?;
     let s = guard.as_mut().ok_or("no photo open")?;
-    let outcomes = s.execute(&commands)?;
+    let outcomes = s.execute(&commands, group.as_deref())?;
     let notes = outcomes
         .iter()
         .flat_map(|o| {
@@ -262,20 +280,23 @@ fn pick_white(u: f64, v: f64, state: tauri::State<'_, AppState>) -> Res<Executed
     let (t, tint) = s
         .pick_white(u, v)
         .ok_or("pick a neutral grey or white area that is not clipped")?;
-    s.execute(&[
-        Command::SetParam {
-            name: "WhiteBalance".into(),
-            value: serde_json::json!("Custom"),
-        },
-        Command::SetParam {
-            name: "Temperature".into(),
-            value: serde_json::json!(t),
-        },
-        Command::SetParam {
-            name: "Tint".into(),
-            value: serde_json::json!(tint),
-        },
-    ])?;
+    s.execute(
+        &[
+            Command::SetParam {
+                name: "WhiteBalance".into(),
+                value: serde_json::json!("Custom"),
+            },
+            Command::SetParam {
+                name: "Temperature".into(),
+                value: serde_json::json!(t),
+            },
+            Command::SetParam {
+                name: "Tint".into(),
+                value: serde_json::json!(tint),
+            },
+        ],
+        Some("white balance picker"),
+    )?;
     Ok(Executed {
         state: s.state_info(),
         notes: vec![format!("White balance set to {t:.0} K, tint {tint:+.0}")],

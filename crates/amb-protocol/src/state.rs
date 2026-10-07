@@ -294,6 +294,52 @@ impl DevelopState {
         Ok(outcomes)
     }
 
+    /// Like [`execute_all`](Self::execute_all), but the commands become a
+    /// single undo step labelled `label` (e.g. a colour-wheel drag that sets
+    /// hue and saturation, or a white-balance pick). Undo/redo commands are
+    /// not allowed inside a group.
+    pub fn execute_grouped(
+        &mut self,
+        label: &str,
+        cmds: &[Command],
+    ) -> Result<Vec<Outcome>, Error> {
+        if cmds
+            .iter()
+            .any(|c| matches!(c, Command::Undo | Command::Redo))
+        {
+            return Err(Error::InvalidValue {
+                name: label.to_string(),
+                reason: "undo/redo cannot be part of a grouped edit".into(),
+            });
+        }
+        let depth = self.undo.len();
+        let outcomes = self.execute_all(cmds)?;
+        if self.undo.len() > depth + 1 {
+            // Merge the new steps: first "before" and last "after" per setting.
+            let steps: Vec<HistoryEntry> = self.undo.drain(depth..).collect();
+            let mut changes: Vec<Change> = Vec::new();
+            for step in steps {
+                for c in step.changes {
+                    match changes.iter_mut().find(|e| e.name == c.name) {
+                        Some(existing) => existing.after = c.after,
+                        None => changes.push(c),
+                    }
+                }
+            }
+            changes.retain(|c| c.before != c.after);
+            changes.sort_by(|a, b| a.name.cmp(&b.name));
+            if !changes.is_empty() {
+                self.undo.push(HistoryEntry {
+                    label: label.to_string(),
+                    changes,
+                });
+            }
+        } else if let Some(last) = self.undo.get_mut(depth) {
+            last.label = label.to_string();
+        }
+        Ok(outcomes)
+    }
+
     fn plan(
         &self,
         cmd: &Command,

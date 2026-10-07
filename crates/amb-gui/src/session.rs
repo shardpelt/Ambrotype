@@ -13,7 +13,7 @@ use amb_lens::lensfun::LensfunDb;
 use amb_presets::Value;
 use amb_protocol::{Command, DevelopState, Outcome};
 use rayon::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// Lens profile sources, loaded once per app run.
 #[derive(Default)]
@@ -93,6 +93,38 @@ pub struct StateInfo {
     /// Settings present but not rendered by this engine version.
     pub not_rendered: Vec<String>,
 }
+
+/// The crop as the crop tool works with it: a rectangle on the upright,
+/// uncropped photo, in its full-size pixels (`amb_export::geometry::UprightCrop`).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct CropRect {
+    pub cx: f64,
+    pub cy: f64,
+    pub width: f64,
+    pub height: f64,
+    /// Straighten, degrees as seen on screen (`CropAngle`, negated for
+    /// mirrored orientations).
+    pub angle: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CropState {
+    /// `HasCrop`; when off, `rect` is the whole photo.
+    pub enabled: bool,
+    pub rect: CropRect,
+    /// `amb_engine::crop::ANGLE_SIGN`: the rectangle's x axis runs at
+    /// `angle_sign × angle` degrees over the photo (y down).
+    pub angle_sign: f64,
+}
+
+/// Crop tags written by the crop tool (and cleared by its reset).
+const CROP_TAGS: [&str; 5] = [
+    "CropLeft",
+    "CropTop",
+    "CropRight",
+    "CropBottom",
+    "CropAngle",
+];
 
 #[derive(Debug, Clone)]
 pub struct Preview {
@@ -257,6 +289,78 @@ impl Session {
         .map_err(|e| e.to_string())
     }
 
+    /// The committed crop, upright on the uncropped photo.
+    pub fn crop_state(&self) -> CropState {
+        let (develop, _) = DevelopSettings::from_settings(self.state.settings());
+        let r = amb_export::geometry::upright_crop(
+            &develop.crop,
+            self.full.width,
+            self.full.height,
+            self.full.metadata.orientation,
+        );
+        CropState {
+            enabled: develop.crop.enabled,
+            rect: CropRect {
+                cx: r.cx,
+                cy: r.cy,
+                width: r.width,
+                height: r.height,
+                angle: r.angle,
+            },
+            angle_sign: amb_engine::crop::ANGLE_SIGN,
+        }
+    }
+
+    /// The commands that set the crop to `rect` (the crop tool's Done). The
+    /// whole photo with no angle turns the crop off.
+    pub fn crop_commands(&self, rect: &CropRect) -> Vec<Command> {
+        let (w, h) = (self.full.width, self.full.height);
+        let o = self.full.metadata.orientation;
+        let (ow, oh) = amb_export::geometry::oriented_size(w, h, o);
+        let (ow, oh) = (ow as f64, oh as f64);
+        let set = |name: &str, value: serde_json::Value| Command::SetParam {
+            name: name.into(),
+            value,
+        };
+        let near = |a: f64, b: f64| (a - b).abs() < 0.5;
+        if near(rect.cx, ow / 2.0)
+            && near(rect.cy, oh / 2.0)
+            && near(rect.width, ow)
+            && near(rect.height, oh)
+            && rect.angle.abs() < 0.005
+        {
+            let mut cmds = vec![set("HasCrop", false.into())];
+            cmds.extend(
+                CROP_TAGS
+                    .iter()
+                    .map(|t| Command::ResetParam { name: (*t).into() }),
+            );
+            return cmds;
+        }
+        let crop = amb_export::geometry::stored_crop(
+            &amb_export::geometry::UprightCrop {
+                cx: rect.cx,
+                cy: rect.cy,
+                width: rect.width,
+                height: rect.height,
+                angle: rect.angle,
+            },
+            w,
+            h,
+            o,
+        );
+        // Six decimals like Lightroom; tiny overshoots from rounding stay in range.
+        let frac = |v: f64| ((v * 1e6).round() / 1e6).clamp(0.0, 1.0);
+        vec![
+            set("HasCrop", true.into()),
+            set("CropLeft", frac(crop.left).into()),
+            set("CropTop", frac(crop.top).into()),
+            set("CropRight", frac(crop.right).into()),
+            set("CropBottom", frac(crop.bottom).into()),
+            set("CropAngle", ((crop.angle * 1e4).round() / 1e4).into()),
+        ]
+    }
+
     /// Develop settings for `settings`, with the lens profile resolved (cached).
     fn develop(
         &mut self,
@@ -304,12 +408,20 @@ impl Session {
         lens: &LensSources,
     ) -> Preview {
         let start = Instant::now();
+        let settings = self.effective_settings(overrides, before);
+        let develop = self.develop(&settings, lens);
+        // `max_edge` is for what is shown: a crop needs a larger source to
+        // come out at that size.
+        let long = self.full.width.max(self.full.height);
+        let crop_long = develop
+            .crop
+            .geometry(self.full.width, self.full.height)
+            .map_or(long, |g| g.width.max(g.height).max(1));
+        let max_edge = (max_edge as f64 * long as f64 / crop_long as f64).round() as usize;
         let max_edge = max_edge.clamp(256, 4096);
         if self.preview_src.as_ref().map(|(e, _)| *e as usize) != Some(max_edge) {
             self.preview_src = Some((max_edge as u32, downscale(&self.full, max_edge)));
         }
-        let settings = self.effective_settings(overrides, before);
-        let develop = self.develop(&settings, lens);
         let lens_profile = develop.lens.profile.as_ref().map(|c| c.description.clone());
         let src = &self.preview_src.as_ref().expect("set above").1;
         let developed = pipeline::render(src, &develop);
@@ -654,9 +766,10 @@ mod tests {
             ("CropAngle".to_string(), Value::Number(2.0)),
         ]);
         let cropped = s.preview(512, &crop, false, false, &lens);
-        // About half the width (the turned rectangle is a little wider).
-        assert!(cropped.width < base.width / 2 + 20, "{}", cropped.width);
-        assert!(cropped.height < base.height, "{}", cropped.height);
+        // About half the photo's width, rendered from a larger source so the
+        // crop still fills about `max_edge` (integer downscale: 1368 / 2).
+        assert!((300..=512).contains(&cropped.width), "{}", cropped.width);
+        assert!(cropped.height > cropped.width, "{}", cropped.height);
         assert_eq!((s.info().width, s.info().height), (1368, 920));
 
         // Committing a command is undoable.
@@ -716,6 +829,62 @@ mod tests {
         );
         let ctx = s.feedback_context(true);
         assert!(ctx.contains("Camera:") && ctx.contains("Settings:"));
+    }
+
+    #[test]
+    fn crop_tool_round_trips_through_one_undo_step() {
+        let path = synthetic("colorchecker");
+        let lens = LensSources::default();
+        let mut s = Session::open(&path).unwrap();
+        let none = s.crop_state();
+        assert!(!none.enabled);
+        assert_eq!(
+            none.rect,
+            CropRect {
+                cx: 684.0,
+                cy: 460.0,
+                width: 1368.0,
+                height: 920.0,
+                angle: 0.0
+            }
+        );
+        let rect = CropRect {
+            cx: 700.0,
+            cy: 450.0,
+            width: 800.0,
+            height: 500.0,
+            angle: 4.5,
+        };
+        let cmds = s.crop_commands(&rect);
+        assert_eq!(cmds.len(), 6);
+        s.execute(&cmds, Some("crop")).unwrap();
+        let info = s.state_info();
+        assert_eq!(info.history, vec!["crop".to_string()]);
+        let back = s.crop_state();
+        assert!(back.enabled);
+        for (a, b) in [
+            (back.rect.cx, rect.cx),
+            (back.rect.cy, rect.cy),
+            (back.rect.width, rect.width),
+            (back.rect.height, rect.height),
+            (back.rect.angle, rect.angle),
+        ] {
+            assert!((a - b).abs() < 0.01, "{back:?} vs {rect:?}");
+        }
+        // The preview renders the crop's size; with `HasCrop` overridden off
+        // (the crop tool's view) it shows the whole photo.
+        let p = s.preview(1368, &BTreeMap::new(), false, false, &lens);
+        assert_eq!((p.width, p.height), (800, 500));
+        let off = BTreeMap::from([("HasCrop".to_string(), Value::Bool(false))]);
+        let whole = s.preview(1368, &off, false, false, &lens);
+        assert_eq!((whole.width, whole.height), (1368, 920));
+        // The whole photo with no angle (the tool's Reset) turns the crop off.
+        let reset = s.crop_commands(&none.rect);
+        s.execute(&reset, Some("reset crop")).unwrap();
+        assert!(!s.crop_state().enabled);
+        assert!(!s.state.settings().contains_key("CropLeft"));
+        s.execute(&[Command::Undo], None).unwrap();
+        assert!(s.crop_state().enabled);
     }
 
     #[test]

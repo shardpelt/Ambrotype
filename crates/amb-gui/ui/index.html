@@ -20,6 +20,7 @@
       <span class="sep"></span>
       <button id="btn-before" title="Show the photo before edits (\)" disabled>Before / After</button>
       <span class="sep"></span>
+      <button id="btn-crop" title="Crop and straighten (R)" disabled>Crop</button>
       <button id="btn-zoom" title="Fit / 100% (Z, or click the photo). Drag to pan at 100%." disabled>100%</button>
       <button id="btn-wb" title="White balance picker: click a neutral grey or white spot (W)" disabled>WB picker</button>
       <button id="btn-clip" title="Show clipped highlights (red) and shadows (blue) (J)" disabled>Clipping</button>
@@ -53,6 +54,7 @@
         <button id="btn-open-empty" class="primary">Open photo…</button>
       </div>
       <img id="preview" alt="" hidden>
+      <canvas id="crop-canvas" class="crop-canvas" hidden></canvas>
       <div class="badge" id="before-badge" hidden>Before</div>
       <div class="busy" id="busy" hidden></div>
     </section>
@@ -62,6 +64,26 @@
         <canvas id="histogram" width="300" height="110"></canvas>
         <div class="exif" id="exif"></div>
       </div>
+      <section id="crop-panel" class="crop-panel" hidden>
+        <div class="side-head"><h2>Crop &amp; straighten</h2><span id="crop-size" class="hint"></span></div>
+        <div class="row"><label for="crop-aspect">Aspect</label><select id="crop-aspect"></select></div>
+        <div class="crop-line">
+          <button id="crop-swap" class="small" title="Swap portrait and landscape (X)">Swap ⇄</button>
+          <button id="crop-sizes" class="small" title="Add your own sizes">Size presets…</button>
+        </div>
+        <div class="row">
+          <label for="crop-angle" title="Straighten. Double-click to reset.">Angle</label>
+          <input id="crop-angle" type="range" min="-45" max="45" step="0.05" value="0">
+          <input id="crop-angle-num" class="value" type="text" inputmode="decimal" spellcheck="false">
+        </div>
+        <p class="hint">Drag the edges or corners, drag inside to move, drag outside the frame to straighten. Enter applies, Esc cancels.</p>
+        <div class="crop-actions">
+          <button id="crop-reset" title="Remove the crop and straighten">Reset</button>
+          <span class="grow"></span>
+          <button id="crop-cancel" title="Esc">Cancel</button>
+          <button id="crop-done" class="primary" title="Enter">Done</button>
+        </div>
+      </section>
       <div id="panels" class="panels"></div>
     </aside>
   </main>
@@ -96,6 +118,18 @@
             <option value="rec2020">Rec. 2020</option>
           </select>
         </label>
+        <label>Size preset
+          <select name="size_preset"></select>
+        </label>
+        <label>Exact size (px, cropped to fit)
+          <span class="exact">
+            <input name="exact_w" type="number" min="1" max="65535" step="1" placeholder="Width">
+            <span>×</span>
+            <input name="exact_h" type="number" min="1" max="65535" step="1" placeholder="Height">
+            <button type="button" id="export-swap" class="small" title="Swap width and height">⇄</button>
+          </span>
+        </label>
+        <p id="export-size-note" class="hint wide-note"></p>
         <label>Resize long edge (px, empty = full size) <input name="long_edge" type="number" min="16" step="1" placeholder="Full size"></label>
         <label>Output sharpening
           <select name="sharpen">
@@ -149,8 +183,29 @@
     </form>
   </dialog>
 
+  <dialog id="sizes-dialog">
+    <form method="dialog" id="sizes-form">
+      <h2>Size presets</h2>
+      <p class="hint">Sizes for the crop tool (aspect) and export (exact pixels). Built-in sizes follow each site's current recommendation and cannot be changed here; clone one to adjust it.</p>
+      <div id="sizes-list" class="sizes-list"></div>
+      <div class="grid sizes-edit">
+        <label>Name <input name="name" type="text" placeholder="e.g. Blog header" spellcheck="false"></label>
+        <label>Group <input name="group" type="text" placeholder="Custom" spellcheck="false"></label>
+        <label>Width (px) <input name="width" type="number" min="1" max="65535" step="1"></label>
+        <label>Height (px) <input name="height" type="number" min="1" max="65535" step="1"></label>
+      </div>
+      <menu>
+        <span id="sizes-editing" class="hint grow"></span>
+        <button type="button" id="sizes-new">New</button>
+        <button value="save" id="sizes-save" class="primary">Save size</button>
+        <button value="close" formnovalidate>Close</button>
+      </menu>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast" hidden></div>
   <script src="curve.js"></script>
+  <script src="crop.js"></script>
   <script src="wheels.js"></script>
   <script src="app.js"></script>
 </body>

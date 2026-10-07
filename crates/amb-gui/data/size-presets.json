@@ -1,0 +1,85 @@
+{
+  "note": "Built-in size presets for the crop tool (aspect) and export (exact pixel size). Sites change their recommended sizes often: these were current in 2026. Edit this file to update them (one entry per size, width and height in pixels, grouped by site); it is compiled into the app. Users add their own sizes in the app instead.",
+  "groups": [
+    {
+      "group": "Instagram",
+      "presets": [
+        { "name": "Portrait 4:5", "width": 1080, "height": 1350 },
+        { "name": "Portrait 3:4 (profile grid)", "width": 1080, "height": 1440 },
+        { "name": "Square", "width": 1080, "height": 1080 },
+        { "name": "Landscape", "width": 1080, "height": 566 },
+        { "name": "Story / Reel", "width": 1080, "height": 1920 }
+      ]
+    },
+    {
+      "group": "Facebook",
+      "presets": [
+        { "name": "Link / landscape post", "width": 1200, "height": 630 },
+        { "name": "Square post", "width": 1080, "height": 1080 },
+        { "name": "Portrait post", "width": 1080, "height": 1350 },
+        { "name": "Story", "width": 1080, "height": 1920 },
+        { "name": "Cover photo", "width": 851, "height": 315 }
+      ]
+    },
+    {
+      "group": "X (Twitter)",
+      "presets": [
+        { "name": "Landscape post 16:9", "width": 1600, "height": 900 },
+        { "name": "Portrait post", "width": 1080, "height": 1350 },
+        { "name": "Header", "width": 1500, "height": 500 }
+      ]
+    },
+    {
+      "group": "TikTok",
+      "presets": [
+        { "name": "Photo / video", "width": 1080, "height": 1920 }
+      ]
+    },
+    {
+      "group": "Snapchat",
+      "presets": [
+        { "name": "Story / Spotlight", "width": 1080, "height": 1920 }
+      ]
+    },
+    {
+      "group": "YouTube",
+      "presets": [
+        { "name": "Thumbnail", "width": 1280, "height": 720 },
+        { "name": "Channel banner", "width": 2560, "height": 1440 }
+      ]
+    },
+    {
+      "group": "Pinterest",
+      "presets": [
+        { "name": "Standard pin 2:3", "width": 1000, "height": 1500 },
+        { "name": "Square pin", "width": 1000, "height": 1000 }
+      ]
+    },
+    {
+      "group": "LinkedIn",
+      "presets": [
+        { "name": "Landscape post", "width": 1200, "height": 627 },
+        { "name": "Square post", "width": 1080, "height": 1080 },
+        { "name": "Cover / banner", "width": 1584, "height": 396 }
+      ]
+    },
+    {
+      "group": "Print (300 ppi)",
+      "presets": [
+        { "name": "4 × 6 in", "width": 1200, "height": 1800 },
+        { "name": "5 × 7 in", "width": 1500, "height": 2100 },
+        { "name": "8 × 10 in", "width": 2400, "height": 3000 },
+        { "name": "11 × 14 in", "width": 3300, "height": 4200 },
+        { "name": "A4", "width": 2480, "height": 3508 },
+        { "name": "A3", "width": 3508, "height": 4961 }
+      ]
+    },
+    {
+      "group": "Screen",
+      "presets": [
+        { "name": "Full HD", "width": 1920, "height": 1080 },
+        { "name": "4K UHD", "width": 3840, "height": 2160 }
+      ]
+    }
+  ]
+}

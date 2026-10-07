@@ -8,6 +8,7 @@
 
 mod schema;
 mod session;
+mod sizes;
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -16,7 +17,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 use amb_presets::Value;
 use amb_protocol::Command;
 use serde::{Deserialize, Serialize};
-use session::{LensSources, PresetEntry, Session};
+use session::{CropRect, CropState, LensSources, PresetEntry, Session};
+use sizes::SizePreset;
 use tauri::Manager;
 use tauri::ipc::Response;
 use tauri_plugin_dialog::DialogExt;
@@ -27,6 +29,8 @@ struct AppState {
     session: Arc<Mutex<Option<Session>>>,
     lens: Arc<OnceLock<LensSources>>,
     preset_dirs: Arc<Mutex<Vec<PathBuf>>>,
+    /// The user's own size presets (the built-ins are added when listing).
+    size_presets: Mutex<Vec<SizePreset>>,
     /// A photo given on the command line, handed to the UI once it asks.
     initial_path: Mutex<Option<String>>,
     /// Where `Config` is saved (the app's config folder), once known.
@@ -38,6 +42,8 @@ struct AppState {
 struct Config {
     #[serde(default)]
     preset_dirs: Vec<PathBuf>,
+    #[serde(default)]
+    size_presets: Vec<SizePreset>,
 }
 
 fn save_config(state: &AppState) {
@@ -56,6 +62,11 @@ fn save_config(state: &AppState) {
     let defaults = session::default_preset_dirs();
     let config = Config {
         preset_dirs: dirs.into_iter().filter(|d| !defaults.contains(d)).collect(),
+        size_presets: state
+            .size_presets
+            .lock()
+            .map(|p| p.clone())
+            .unwrap_or_default(),
     };
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
@@ -173,6 +184,21 @@ fn execute(
         state: s.state_info(),
         notes,
     })
+}
+
+/// The committed crop, upright on the uncropped photo (the crop tool's start).
+#[tauri::command]
+fn crop_state(state: tauri::State<'_, AppState>) -> Res<CropState> {
+    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    Ok(guard.as_ref().ok_or("no photo open")?.crop_state())
+}
+
+/// The protocol commands that set the crop to `rect`; the UI runs them as one
+/// undo step.
+#[tauri::command]
+fn crop_commands(rect: CropRect, state: tauri::State<'_, AppState>) -> Res<Vec<Command>> {
+    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    Ok(guard.as_ref().ok_or("no photo open")?.crop_commands(&rect))
 }
 
 #[derive(Serialize)]
@@ -388,6 +414,8 @@ struct ExportOptions {
     bits: Option<u32>,
     color_space: String,
     long_edge: Option<u32>,
+    /// Exact output size (a size preset); wins over `long_edge`.
+    exact: Option<(u32, u32)>,
     sharpen: Option<String>,
     metadata: String,
     max_kb: Option<u64>,
@@ -436,7 +464,9 @@ async fn export(
         s.bit_depth = options.bits.and_then(BitDepth::from_bits);
         s.color_space = amb_color::space::OutputSpace::from_id(&options.color_space)
             .ok_or(format!("unknown colour space {}", options.color_space))?;
-        if let Some(edge) = options.long_edge.filter(|e| *e > 0) {
+        if let Some((w, h)) = options.exact.filter(|(w, h)| *w > 0 && *h > 0) {
+            s.resize = Resize::Exact(w, h);
+        } else if let Some(edge) = options.long_edge.filter(|e| *e > 0) {
             s.resize = Resize::LongEdge(edge);
         }
         s.sharpen = options
@@ -496,6 +526,34 @@ async fn add_preset_folder(
     presets(state).await
 }
 
+/// Built-in size presets followed by the user's.
+#[tauri::command]
+fn size_presets(state: tauri::State<'_, AppState>) -> Res<Vec<SizePreset>> {
+    let custom = state.size_presets.lock().map_err(|e| e.to_string())?;
+    Ok(sizes::all(&custom))
+}
+
+/// Add a user size preset (or a clone of a built-in), or update one.
+#[tauri::command]
+fn save_size_preset(preset: SizePreset, state: tauri::State<'_, AppState>) -> Res<Vec<SizePreset>> {
+    {
+        let mut custom = state.size_presets.lock().map_err(|e| e.to_string())?;
+        sizes::upsert(&mut custom, &preset)?;
+    }
+    save_config(state.inner());
+    size_presets(state)
+}
+
+#[tauri::command]
+fn delete_size_preset(id: String, state: tauri::State<'_, AppState>) -> Res<Vec<SizePreset>> {
+    {
+        let mut custom = state.size_presets.lock().map_err(|e| e.to_string())?;
+        sizes::remove(&mut custom, &id)?;
+    }
+    save_config(state.inner());
+    size_presets(state)
+}
+
 fn main() {
     let state = AppState::default();
     *state.preset_dirs.lock().expect("fresh mutex") = session::default_preset_dirs();
@@ -526,6 +584,9 @@ fn main() {
                         }
                     }
                 }
+                if let Ok(mut p) = state.size_presets.lock() {
+                    *p = config.size_presets;
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -548,6 +609,11 @@ fn main() {
             export,
             presets,
             add_preset_folder,
+            crop_state,
+            crop_commands,
+            size_presets,
+            save_size_preset,
+            delete_size_preset,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Ambrotype");

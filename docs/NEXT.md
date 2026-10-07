@@ -24,11 +24,13 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **size presets** (Instagram, Snapchat, TikTok, X, YouTube, Pinterest, LinkedIn and print sizes, plus custom ones) for the crop and exact-size export (`amb render --exact WxH` too)
     - **looks:** the UI is drawn from a layout file (toolbar, side columns, panels, and knob/bar/slider/number per setting) and a theme (colour tokens). Built-in looks (Classic, Compact, Big controls, Studio, Left-handed; Dark, Light, High contrast, Neutral grey) can be cloned, renamed, shared and imported in the Looks dialog. AI assistants can write them ([ai/ui-layouts.md](ai/ui-layouts.md), `ambrotype --check-look`)
     - **settings and shortcuts:** the ⚙ button lists every keyboard shortcut on a keyboard map and lets you change them (clashes are caught; only changes are stored)
+    - **hub:** Looks → Browse hub… installs shared layouts and themes (checked against the index's sha256 and validated); Submit to hub… opens GitHub with your look filled in as a pull request
     - **editor mode:** Edit layout rearranges the screen in place (drag and drop, control types, split and merge, add and remove, column widths) and saves it as your own layout
 
 ## Owner to-dos
 
 - [ ] Set up a **local** Claude Code session on the Mac so it can reach your drives and Lightroom: [desktop-setup.md § Working with an AI agent locally](desktop-setup.md#working-with-an-ai-agent-locally).
+- [ ] Create the hub repo `shardpelt/ambrotype-hub` from the `hub/` folder in this repo (copy its contents to the new repo's root and push; Actions on). The app's **Browse hub…** reads `https://raw.githubusercontent.com/shardpelt/ambrotype-hub/main/index.json`. Until then it says the hub can't be reached.
 
 - [ ] Try the editor on the Mac: `cargo run --release -p amb-gui -- photo.nef`. Note what feels wrong (or use the Feedback button).
 - [ ] Run `amb preset census <your preset folders>` and share the output (setting names and counts only). It ranks what to build next.
@@ -43,8 +45,8 @@ There are two tracks that can run in parallel: the UI track is what users see an
 1. ~~Crop tool and size presets~~ (done 2026-10-07). Small follow-ups are in [GAPS.md](GAPS.md).
 2. ~~Layout files, built-in looks and themes~~ (done 2026-10-07; [design/customization-and-hub.md](design/customization-and-hub.md), [ai/ui-layouts.md](ai/ui-layouts.md)).
 3. ~~Editor mode~~ (done 2026-10-07): **Edit layout** moves panels, settings and toolbar buttons by drag and drop, changes control types, labels, titles and columns, splits and merges panels, adds from a list of what isn't shown, and resizes columns. Colours are edited in the Looks dialog.
-4. **Hub (next):** Omarchy-style. Items are git repos, and one index repo takes submissions as pull requests. The in-app browser covers layouts, themes, presets, collage templates and size profiles.
-5. **Borders:** width, colour, caption; border presets; fit to a size preset; batch.
+4. ~~Hub~~ (done 2026-10-07, for layouts and themes; needs the hub repo, see Owner to-dos): Omarchy-style. Items are git repos, and one index repo takes submissions as pull requests. The in-app browser covers layouts, themes, presets, collage templates and size profiles.
+5. **Borders (next):** width, colour, caption; border presets; fit to a size preset; batch.
 6. **Collage maker:** shareable templates, per-photo pan/zoom/rotate and edit, batch mode for big folders. See [design/collage-and-borders.md](design/collage-and-borders.md).
 7. **Plugins and AI-made features:** WASM-sandboxed plugins with permissions; "make me a…" via the user's own AI; a Share button that opens a hub or Ambrotype pull request.
 

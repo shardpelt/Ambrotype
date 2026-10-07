@@ -399,6 +399,7 @@ async function looksFlow() {
     $("looks-clone").disabled = !look?.usable;
     $("looks-share").disabled = !look?.usable;
     $("looks-delete").disabled = !look || look.builtin;
+    $("looks-submit").disabled = !look || look.builtin || !look.usable;
     $("looks-delete").textContent = armedDelete === look?.id ? "Really delete?" : "Delete";
     const about = [];
     if (look?.data?.description) about.push(look.data.description);
@@ -488,6 +489,20 @@ async function looksFlow() {
       if (r) { saved(r); toast(`Imported "${findLook(r.kind, r.id)?.name}"`); }
     },
     "looks-folder": async () => toast(`Your looks: ${await invoke("open_looks_folder")}`),
+    "looks-hub": async () => {
+      await hubFlow();
+      // Something may have been installed (or switched to with "Use now").
+      ui.looks = await invoke("looks");
+      sel.layout = ui.looks.active_layout;
+      sel.theme = ui.looks.active_theme;
+      view = { kind: view.kind, id: sel[view.kind] };
+      render();
+    },
+    "looks-submit": async () => {
+      const look = viewed();
+      await invoke("hub_submit", { kind: view.kind, id: look.id });
+      toast("GitHub is open with your look filled in: press Propose changes, then Create pull request.");
+    },
     "looks-edit": async () => {
       // Keep the chosen look, then edit it.
       dlg.close("ok");

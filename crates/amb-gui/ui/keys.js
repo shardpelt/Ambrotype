@@ -282,6 +282,15 @@ async function settingsFlow() {
   };
   const onFilter = () => renderList();
   const openFolder = () => invoke("open_settings_folder").catch((e) => toast(String(e), true));
+  const setHub = async (url) => {
+    try {
+      $("settings-hub").value = await invoke("set_hub_url", { url });
+    } catch (e) {
+      toast(String(e), true);
+    }
+  };
+  const onHub = () => setHub($("settings-hub").value);
+  const hubDefault = () => setHub(null);
   const openLooks = () => { dlg.close(); setTimeout(() => looksFlow().catch((e) => toast(String(e), true))); };
 
   window.addEventListener("keydown", onKey, true);
@@ -291,6 +300,9 @@ async function settingsFlow() {
   $("keys-filter").addEventListener("input", onFilter);
   $("settings-folder").addEventListener("click", openFolder);
   $("settings-looks").addEventListener("click", openLooks);
+  $("settings-hub").addEventListener("change", onHub);
+  $("settings-hub-default").addEventListener("click", hubDefault);
+  invoke("hub_url").then((u) => ($("settings-hub").value = u)).catch(() => {});
 
   try {
     const info = await invoke("settings_info");
@@ -311,4 +323,6 @@ async function settingsFlow() {
   $("keys-filter").removeEventListener("input", onFilter);
   $("settings-folder").removeEventListener("click", openFolder);
   $("settings-looks").removeEventListener("click", openLooks);
+  $("settings-hub").removeEventListener("change", onHub);
+  $("settings-hub-default").removeEventListener("click", hubDefault);
 }

@@ -6,6 +6,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod hub;
 mod keys;
 mod looks;
 mod schema;
@@ -40,6 +41,7 @@ struct AppState {
     /// The active layout and theme ids, as chosen in the Looks dialog.
     look: Mutex<(Option<String>, Option<String>)>,
     keybindings: Mutex<keys::Bindings>,
+    hub_url: Mutex<Option<String>>,
 }
 
 /// Settings kept between runs.
@@ -57,6 +59,9 @@ struct Config {
     /// Keyboard shortcuts the user changed (action id -> keys).
     #[serde(default)]
     keybindings: keys::Bindings,
+    /// Another hub than the default (an index.json address).
+    #[serde(default)]
+    hub_url: Option<String>,
 }
 
 fn save_config(state: &AppState) {
@@ -87,6 +92,7 @@ fn save_config(state: &AppState) {
             .lock()
             .map(|k| k.clone())
             .unwrap_or_default(),
+        hub_url: state.hub_url.lock().ok().and_then(|h| h.clone()),
     };
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
@@ -750,6 +756,89 @@ fn open_settings_folder(app: tauri::AppHandle, state: tauri::State<'_, AppState>
         .map_err(|e| e.to_string())
 }
 
+fn hub_index(state: &AppState) -> String {
+    state
+        .hub_url
+        .lock()
+        .ok()
+        .and_then(|h| h.clone())
+        .unwrap_or_else(|| hub::DEFAULT_INDEX.to_string())
+}
+
+/// The hub's address (the default unless changed in Settings).
+#[tauri::command]
+fn hub_url(state: tauri::State<'_, AppState>) -> String {
+    hub_index(state.inner())
+}
+
+/// Use another hub; `None` goes back to the default.
+#[tauri::command]
+fn set_hub_url(url: Option<String>, state: tauri::State<'_, AppState>) -> Res<String> {
+    let url = url
+        .map(|u| u.trim().to_string())
+        .filter(|u| !u.is_empty() && u != hub::DEFAULT_INDEX);
+    if let Some(u) = &url {
+        if !(u.starts_with("https://") || u.starts_with("file://")) || !u.ends_with(".json") {
+            return Err("a hub address is an https:// link to its index.json".into());
+        }
+    }
+    *state.hub_url.lock().map_err(|e| e.to_string())? = url;
+    save_config(state.inner());
+    Ok(hub_index(state.inner()))
+}
+
+#[derive(Serialize)]
+struct HubList {
+    url: String,
+    entries: Vec<hub::HubEntry>,
+}
+
+/// Everything in the hub, with previews and what's installed already.
+#[tauri::command]
+async fn hub_browse(state: tauri::State<'_, AppState>) -> Res<HubList> {
+    let url = hub_index(state.inner());
+    let dir = looks_dir(state.inner());
+    let u = url.clone();
+    let entries = tauri::async_runtime::spawn_blocking(move || hub::browse(&u, dir.as_deref()))
+        .await
+        .map_err(|e| e.to_string())??;
+    Ok(HubList { url, entries })
+}
+
+/// Install (or update) a look from the hub.
+#[tauri::command]
+async fn hub_install(id: String, state: tauri::State<'_, AppState>) -> Res<SavedLook> {
+    let url = hub_index(state.inner());
+    let dir = need_looks_dir(state.inner())?;
+    let (kind, id) = tauri::async_runtime::spawn_blocking(move || hub::install(&dir, &url, &id))
+        .await
+        .map_err(|e| e.to_string())??;
+    Ok(SavedLook {
+        id,
+        kind,
+        looks: looks_list(state.inner())?,
+    })
+}
+
+/// Open GitHub with this look filled in as a new file for the hub (a pull request).
+#[tauri::command]
+fn hub_submit(
+    app: tauri::AppHandle,
+    kind: looks::Kind,
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<String> {
+    let look = looks::all(looks_dir(state.inner()).as_deref(), kind)
+        .into_iter()
+        .find(|l| l.id == id && l.usable)
+        .ok_or_else(|| format!("unknown look {id}"))?;
+    let url = hub::submit_url(&hub_index(state.inner()), kind, &look.data)?;
+    app.opener()
+        .open_url(url.clone(), None::<&str>)
+        .map_err(|e| e.to_string())?;
+    Ok(url)
+}
+
 fn main() {
     // `ambrotype --check-look FILE...` validates layout/theme files and exits.
     let args: Vec<String> = std::env::args().collect();
@@ -794,6 +883,9 @@ fn main() {
                 if let Ok(mut k) = state.keybindings.lock() {
                     *k = keys::validate(&config.keybindings).unwrap_or_default();
                 }
+                if let Ok(mut h) = state.hub_url.lock() {
+                    *h = config.hub_url;
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -832,6 +924,11 @@ fn main() {
             set_keybindings,
             settings_info,
             open_settings_folder,
+            hub_url,
+            set_hub_url,
+            hub_browse,
+            hub_install,
+            hub_submit,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Ambrotype");

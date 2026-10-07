@@ -1,6 +1,6 @@
 # Customisable UI, themes, the hub and AI-made features
 
-Status: §1 layouts, the built-in looks and §2 themes are **built** (2026-10-07): `crates/amb-gui/src/looks.rs`, `ui/layout.js`, `ui/controls.js`, built-ins in `crates/amb-gui/data/looks/`. The format reference for people and AI assistants is [docs/ai/ui-layouts.md](../ai/ui-layouts.md). Editor mode (§3) is **built** too (`ui/editor.js`). The hub (§4), plugins (§5) and the AI flows (§6) are next (UI track steps 4 and 7 in [NEXT.md](../NEXT.md)).
+Status: §1 layouts, the built-in looks and §2 themes are **built** (2026-10-07): `crates/amb-gui/src/looks.rs`, `ui/layout.js`, `ui/controls.js`, built-ins in `crates/amb-gui/data/looks/`. The format reference for people and AI assistants is [docs/ai/ui-layouts.md](../ai/ui-layouts.md). Editor mode (§3) and the hub (§4) are **built** too (`ui/editor.js`; `src/hub.rs`, `ui/hub.js`, and the hub repo template in [`hub/`](../../hub/README.md)). Plugins (§5) and the AI flows (§6) are next (UI track step 7 in [NEXT.md](../NEXT.md)).
 
 ![The Studio layout (knobs and bars) with the Light theme](../images/looks-studio-light.png)
 
@@ -81,6 +81,15 @@ A toggle (toolbar button or a key) that makes the current layout editable in pla
 - Every change is undoable within the editor; **Done** saves the file and **Cancel** reverts.
 
 ## 4. The hub (Omarchy-style)
+
+![Browse hub: shared layouts and themes, with previews drawn from their data](../images/hub-browse.png)
+
+*Built (2026-10-07) for layouts and themes, slightly simpler than sketched below:*
+- *One hub repo holds the look files themselves (`looks/layouts/`, `looks/themes/`), not links to other repos. `tools/build_index.py` writes `index.json` with each file's sha256; CI checks it is current.*
+- *In the app, **Looks → Browse hub…** lists the looks with previews drawn from their own data (theme colours, layout columns; no screenshots, nothing loaded from other sites into the page). Install checks the checksum and validates the look before saving it as one of yours, with a `source` record, so the hub shows "Installed" and "Update" later.*
+- ***Submit to hub…** opens GitHub's new-file page in the hub repo with the look filled in. Committing it there makes the pull request (GitHub forks for people without access). No GitHub login is needed inside Ambrotype.*
+- *The default hub is `shardpelt/ambrotype-hub` (create it from [`hub/`](../../hub/README.md)); **Settings → General** points the app at another one, including a `file://` hub for testing.*
+- *Still to come: presets, size profiles and collage templates in the hub; plugins (§5) once they exist.*
 
 [Omarchy](https://learn.omacom.io/2/the-omarchy-manual/90/extra-themes) shows that sharing doesn't need a server:
 

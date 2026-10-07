@@ -239,10 +239,14 @@ impl Checker {
             Some(n) if !n.trim().is_empty() => {}
             _ => self.error("\"name\" must be a non-empty string"),
         }
-        for key in ["description", "author", "based_on"] {
+        for key in ["description", "author", "based_on", "license"] {
             if obj.get(key).is_some_and(|v| !v.is_string() && !v.is_null()) {
                 self.error(format!("\"{key}\" must be a string"));
             }
+        }
+        // Where an installed look came from (the hub fills this in).
+        if obj.get("source").is_some_and(|v| !v.is_object()) {
+            self.error("\"source\" must be an object");
         }
     }
 
@@ -508,6 +512,8 @@ pub fn check_layout(v: &Value) -> Vec<Problem> {
             "description",
             "author",
             "based_on",
+            "license",
+            "source",
             "theme",
             "density",
             "toolbar",
@@ -581,6 +587,8 @@ pub fn check_theme(v: &Value) -> Vec<Problem> {
             "description",
             "author",
             "based_on",
+            "license",
+            "source",
             "scheme",
             "tokens",
         ],

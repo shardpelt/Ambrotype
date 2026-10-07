@@ -177,4 +177,4 @@ A widget of the wrong type (for example `toggle` on Exposure) is an error. An un
 ## Sharing
 
 - **Share…** in the Looks dialog saves the file anywhere, ready to send; **Import…** adds one.
-- A hub for browsing and submitting looks is planned (Omarchy-style: each look is a git repo, and an index repo takes pull requests). See the design doc.
+- **Browse hub…** in the Looks dialog installs looks other people shared, and **Submit to hub…** offers one of yours as a pull request to the hub repo. How the hub repo works: [hub/README.md](../../hub/README.md).

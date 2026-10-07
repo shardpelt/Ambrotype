@@ -20,6 +20,7 @@ A free, open-source alternative to Adobe Lightroom® for Windows, macOS and Linu
 - [docs/design/ai-control.md](docs/design/ai-control.md) and [docs/ai/](docs/ai/): bring-your-own-AI control, the AI guide and the generated settings reference ([llms.txt](llms.txt)).
 - [docs/design/customization-and-hub.md](docs/design/customization-and-hub.md) and [docs/design/collage-and-borders.md](docs/design/collage-and-borders.md): shareable layouts, themes, the hub, plugins and AI-made features; borders and the collage maker (planned).
 - [AGENTS.md](AGENTS.md): notes for AI coding agents working on the repo.
+- [hub/](hub/README.md): the template for the looks hub repo (shared layouts and themes, submitted as pull requests).
 
 ## Code (Rust workspace)
 

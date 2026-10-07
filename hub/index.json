@@ -1,0 +1,35 @@
+{
+  "format": "ambrotype-hub/1",
+  "items": [
+    {
+      "id": "layout-knob-desk",
+      "kind": "layout",
+      "name": "Knob desk",
+      "author": "Ambrotype",
+      "description": "Everything in one right column: white balance and tone as a grid of knobs, presence as bars, then the usual panels.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/knob-desk.json",
+      "sha256": "f8d05c32ff367a0aa4ca4c28fa9cbde1ebf401c0b0a5b6c43799a7fb813f73d3"
+    },
+    {
+      "id": "theme-paper",
+      "kind": "theme",
+      "name": "Paper",
+      "author": "Ambrotype",
+      "description": "A soft off-white theme with ink-blue accents and square corners.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/paper.json",
+      "sha256": "a545583027d86a240a8f2bc3c48ada707fa98f136a95d23df01c9b8bd3b31b89"
+    },
+    {
+      "id": "theme-warm-dark",
+      "kind": "theme",
+      "name": "Warm dark",
+      "author": "Ambrotype",
+      "description": "Dark, with warm browns and an amber accent.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/warm-dark.json",
+      "sha256": "f5fdb5d52e05313b3aacaad18b09e792d78391ddd63be5a5d74e93c5c9b058a0"
+    }
+  ]
+}

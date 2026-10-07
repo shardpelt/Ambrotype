@@ -653,7 +653,7 @@ mod tests {
             ("CropRight".to_string(), Value::Number(0.75)),
             ("CropAngle".to_string(), Value::Number(2.0)),
         ]);
-        let cropped = s.preview(512, &crop, false, &lens);
+        let cropped = s.preview(512, &crop, false, false, &lens);
         // About half the width (the turned rectangle is a little wider).
         assert!(cropped.width < base.width / 2 + 20, "{}", cropped.width);
         assert!(cropped.height < base.height, "{}", cropped.height);

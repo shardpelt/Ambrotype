@@ -19,7 +19,7 @@ const COMPOSITE_TITLES = { "point-curve": "Point curve", "color-wheels": "Colour
 const BLOCK_TITLES = { presets: "Presets", history: "History", histogram: "Histogram" };
 const TOOL_TITLES = {
   open: "Open", save: "Save", export: "Export", undo: "Undo", redo: "Redo", before: "Before / After",
-  crop: "Crop", zoom: "100%", wb: "WB picker", clip: "Clipping", looks: "Looks", edit: "Edit layout",
+  crop: "Crop", zoom: "100%", wb: "WB picker", clip: "Clipping", looks: "Looks", edit: "Edit layout", settings: "Settings",
   feedback: "Feedback", "|": "Separator",
 };
 

@@ -13,6 +13,7 @@ const ui = {
   looks: null,           // layouts and themes (src/looks.rs), with the active ids
   layout: null,          // the active layout (layout.js renders it)
   histogram: null,       // the last histogram, redrawn when the theme or layout changes
+  keybindings: {},       // shortcuts the user changed (keys.js has the defaults)
   controls: new Map(),   // name -> { def, input, number, label, select, check }
   settings: {},          // committed settings (from the Rust state)
   info: null,            // photo info
@@ -1032,6 +1033,7 @@ async function init() {
   ui.panels = await invoke("editor_schema");
   for (const p of ui.panels) for (const s of p.sections) for (const def of s.controls) ui.defs.set(def.name, def);
   await loadLooks();
+  await loadKeybindings();
 
   $("btn-open").addEventListener("click", openDialog);
   $("btn-open-empty").addEventListener("click", openDialog);
@@ -1046,6 +1048,7 @@ async function init() {
   $("btn-feedback").addEventListener("click", feedbackFlow);
   $("btn-looks").addEventListener("click", () => looksFlow().catch((e) => toast(String(e), true)));
   wireEditor();
+  $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));
   wireViewer();
   wireCrop();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
@@ -1071,32 +1074,8 @@ async function init() {
     updateExportSize();
   });
 
-  document.addEventListener("keydown", (e) => {
-    if (e.target.matches("input[type=number], input[type=search], input[type=text], textarea, input.value")) return;
-    // Keys belong to an open dialog.
-    if (document.querySelector("dialog[open]")) return;
-    const mod = e.ctrlKey || e.metaKey;
-    const k = e.key.toLowerCase();
-    if (mod && k === "z" && !e.shiftKey) { e.preventDefault(); run([{ cmd: "undo" }]); }
-    else if (mod && ((k === "z" && e.shiftKey) || k === "y")) { e.preventDefault(); run([{ cmd: "redo" }]); }
-    else if (mod && k === "s") { e.preventDefault(); save(); }
-    else if (mod && k === "e") { e.preventDefault(); exportFlow(); }
-    else if (mod && k === "o") { e.preventDefault(); openDialog(); }
-    else if (e.key === "\\") { e.preventDefault(); toggleBefore(); }
-    else if (mod) return;
-    else if (k === "r" && ui.info) { e.preventDefault(); toggleCrop(); }
-    else if (ui.crop.on) {
-      // Crop tool keys; no 100% view or picker while it is open.
-      if (k === "x") { e.preventDefault(); swapCrop(); }
-      else if (e.key === "Enter" && !e.target.matches("button, select")) { e.preventDefault(); exitCrop(true); }
-      else if (e.key === "Escape") { e.preventDefault(); exitCrop(false); }
-      else if (k === "j") { e.preventDefault(); toggleClipping(); }
-    }
-    else if (k === "z" && ui.info) { e.preventDefault(); setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy); }
-    else if (k === "w") { e.preventDefault(); setPicking(!ui.picking); }
-    else if (k === "j") { e.preventDefault(); toggleClipping(); }
-    else if (e.key === "Escape") setPicking(false);
-  });
+  // Keyboard shortcuts come from one table (keys.js), which the user can change in Settings.
+  document.addEventListener("keydown", dispatchKey);
 
   let resizeTimer;
   window.addEventListener("resize", () => {

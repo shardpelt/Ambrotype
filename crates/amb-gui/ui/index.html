@@ -27,6 +27,7 @@
       <span class="sep"></span>
       <button id="btn-looks" title="Layouts and themes: choose, clone, share">Looks</button>
       <button id="btn-edit-layout" title="Edit this layout: move panels, controls and toolbar buttons">Edit layout</button>
+      <button id="btn-settings" class="icon" aria-label="Settings">⚙</button>
       <button id="btn-feedback" title="Report a bug, an idea, or a photo that looks different from Lightroom">Feedback</button>
     </div>
     <div class="photo-title" id="photo-title"></div>
@@ -207,6 +208,36 @@
   </dialog>
 
   <div id="toast" class="toast" hidden></div>
+  <dialog id="settings-dialog">
+    <form method="dialog">
+      <h2>Settings</h2>
+      <div class="tabs settings-tabs">
+        <button type="button" data-tab="keys" class="active">Keyboard shortcuts</button>
+        <button type="button" data-tab="general">General</button>
+      </div>
+      <section id="settings-keys">
+        <div id="keyboard-map" class="keyboard-map" aria-label="Keyboard map"></div>
+        <p class="hint kb-legend"><span class="kb-swatch bare"></span> a key on its own <span class="kb-swatch with-mod"></span> with Ctrl/⌘, Alt or Shift. Click a key to see what it does.</p>
+        <input id="keys-filter" type="search" placeholder="Search actions or keys" spellcheck="false">
+        <div id="keys-list" class="keys-list"></div>
+        <p id="keys-message" class="keys-message" role="status"></p>
+      </section>
+      <section id="settings-general" hidden>
+        <p id="settings-version"></p>
+        <p class="hint">Your settings, layouts and themes are kept in:<br><code id="settings-path"></code></p>
+        <div class="crop-line">
+          <button type="button" id="settings-folder">Open the settings folder</button>
+          <button type="button" id="settings-looks">Layouts and themes…</button>
+        </div>
+      </section>
+      <menu>
+        <button type="button" id="keys-reset-all" title="Put every shortcut back to its default">Reset all shortcuts</button>
+        <span class="grow"></span>
+        <button value="close" class="primary">Done</button>
+      </menu>
+    </form>
+  </dialog>
+
   <!-- Editor mode (editor.js) -->
   <div id="edit-bar" class="edit-bar" hidden>
     <strong>Editing</strong>
@@ -271,6 +302,7 @@
   <script src="controls.js"></script>
   <script src="layout.js"></script>
   <script src="editor.js"></script>
+  <script src="keys.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

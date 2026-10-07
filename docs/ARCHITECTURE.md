@@ -88,7 +88,8 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
   - history, undo/redo (a drag of a curve point or colour wheel, or a WB pick, is one step), before/after, histogram
   - 1:1 view with panning (a region of the full-size render), white-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels, crop and straighten tool (aspect lock, size presets)
   - size presets (built-in for social sites and print, plus custom) for the crop aspect and exact-size export
-  - **looks:** the toolbar, side columns and panels come from a layout file and the colours from a theme (`src/looks.rs` validates and stores them; `ui/layout.js` renders; `ui/controls.js` has the knob, bar, number, toggle and segmented controls; `ui/editor.js` is editor mode, which edits a draft of the layout and re-renders it). Built-ins are in `data/looks/`; the user's own are files in the config folder. Format: [ai/ui-layouts.md](ai/ui-layouts.md)
+  - **looks:** the toolbar, side columns and panels come from a layout file and the colours from a theme (`src/looks.rs` validates and stores them; `ui/layout.js` renders; `ui/controls.js` has the knob, bar, number, toggle and segmented controls; `ui/editor.js` is editor mode, which edits a draft of the layout and re-renders it)
+  - **settings and keyboard shortcuts:** `ui/keys.js` has one table of actions with default keys; it runs the shortcuts, writes the toolbar tooltips and drives the Settings dialog (keyboard map, rebinding, clash checks). Only the user's changes are stored (`src/keys.rs`, in the settings file). Built-ins are in `data/looks/`; the user's own are files in the config folder. Format: [ai/ui-layouts.md](ai/ui-layouts.md)
   - saved preset folders, and a feedback button that opens a pre-filled GitHub issue
   - save the XMP sidecar, keeping other metadata
   - export dialog

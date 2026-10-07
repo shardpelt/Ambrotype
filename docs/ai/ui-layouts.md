@@ -52,7 +52,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   "based_on": "builtin:studio",              // optional; set by Clone
   "theme": "builtin:dark",                   // optional: switching to this layout also picks this theme
   "density": "normal",                       // "compact" | "normal" | "large"
-  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "crop", "zoom", "wb", "clip", "|", "looks", "edit", "feedback"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "crop", "zoom", "wb", "clip", "|", "looks", "edit", "settings", "feedback"],
   "left":  { "width": 250, "items": ["presets", "history"] },
   "right": { "width": 340, "items": ["histogram", { "panel": "basic", "open": true }, { "panel": "detail" }] }
 }
@@ -79,6 +79,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   | `clip` | Clipping overlay |
   | `looks` | The Looks dialog |
 | `edit` | Editor mode (rearrange the layout in place) |
+| `settings` | Settings, including the keyboard shortcuts |
   | `feedback` | Feedback |
 
 - `"|"` is a separator.

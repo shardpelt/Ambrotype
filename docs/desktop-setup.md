@@ -62,20 +62,26 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 - **Presets:** Lightroom's own preset folder is used automatically when it exists (`%APPDATA%\Adobe\CameraRaw\Settings` on Windows, `~/Library/Application Support/Adobe/CameraRaw/Settings` on macOS), plus `~/.local/share/ambrotype/presets`. "Add folder…" adds any other folder for the session.
 - **Looks:** the Looks button picks a layout (Classic, Compact, Big controls, Studio with knobs, Left-handed) and a theme (Dark, Light, High contrast, Neutral grey). Clone one to rename it or edit its colours; Share… and Import… move them between machines. **Edit layout** rearranges the screen in place: drag things to move them (onto the Add list to remove them), click one to change it, then Save. Your AI assistant can write new ones: [ai/ui-layouts.md](ai/ui-layouts.md).
 - **Lens profiles** are found as for the CLI (lensfun database, your Adobe `.lcp` files; see docs/design/lens-corrections.md).
-- **Keyboard:**
+- **Keyboard:** every shortcut can be changed in **Settings** (the ⚙ button, or Ctrl+,). It shows them on a keyboard map and as a list, catches clashes, and keeps only your changes, so new defaults still arrive.
+
+  ![Settings: keyboard shortcuts](images/settings-shortcuts.png)
+
+  The defaults:
 
   | Keys | Action |
   |---|---|
   | Ctrl+O | Open |
   | Ctrl+S | Save sidecar |
   | Ctrl+E | Export |
-  | Ctrl+Z / Ctrl+Shift+Z | Undo / redo |
+  | Ctrl+Z / Ctrl+Shift+Z or Ctrl+Y | Undo / redo |
   | `\` | Before/after |
   | Z, or click the photo | 100% view at that point; drag to pan |
   | W | White-balance picker: click something neutral grey or white |
   | J | Clipping overlay (red: clipped highlights, blue: crushed shadows) |
   | R | Crop and straighten (Enter applies, Esc cancels, X swaps the aspect) |
   | Esc | Leave the picker or crop tool |
+  | Ctrl+L / Ctrl+Shift+L | Looks / Edit layout |
+  | Ctrl+, | Settings and shortcuts |
   | Double-click a slider | Reset it |
   | Ctrl is Cmd on macOS | |
 

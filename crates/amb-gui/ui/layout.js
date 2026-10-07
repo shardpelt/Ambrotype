@@ -8,7 +8,7 @@
 const TOOLBAR_IDS = {
   open: "btn-open", save: "btn-save", export: "btn-export", undo: "btn-undo", redo: "btn-redo",
   before: "btn-before", crop: "btn-crop", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip",
-  looks: "btn-looks", edit: "btn-edit-layout", feedback: "btn-feedback",
+  looks: "btn-looks", edit: "btn-edit-layout", settings: "btn-settings", feedback: "btn-feedback",
 };
 const BLOCK_IDS = { presets: "block-presets", history: "block-history", histogram: "block-histogram" };
 const WHEEL_SECTIONS = ["Shadow", "Midtone", "Highlight", "Global"];
@@ -126,6 +126,9 @@ function buildToolbar(order) {
   while (nodes.at(-1)?.classList.contains("sep")) nodes.pop();
   // Buttons left out stay in the page (hidden), so their shortcuts still work.
   const hidden = Object.entries(TOOLBAR_IDS).filter(([n]) => !placed.has(n)).map(([n, id]) => tagged($(id), n, -1));
+  // A button this list doesn't know stays in the page too (hidden), never dropped.
+  const known = new Set(Object.values(TOOLBAR_IDS));
+  hidden.push(...[...bar.querySelectorAll(":scope > button")].filter((b) => !known.has(b.id)));
   for (const b of nodes) b.hidden = false;
   for (const b of hidden) b.hidden = true;
   bar.replaceChildren(...nodes, ...hidden);

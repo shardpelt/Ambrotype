@@ -133,6 +133,6 @@ The user's own AI assistant (bring your own; see [ai-control.md](ai-control.md))
 ## Open questions
 
 - Should a layout be able to hide a setting that a preset changes? Probably yes, but show a "hidden settings changed" badge.
-- Keyboard shortcuts as part of a layout, or their own shareable file? (Lightroom users ask for remapping.)
+- ~~Keyboard shortcuts as part of a layout?~~ Decided: they live in Settings (the ⚙ button, built 2026-10-07), separate from layouts, and only changes are stored. Sharing a shortcut set through the hub can come later as its own small file.
 - Licence for hub items: require a licence in the manifest, and default to CC0 for data items.
 - Moderation and takedown process for the index.

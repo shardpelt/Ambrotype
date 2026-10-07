@@ -6,6 +6,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod keys;
 mod looks;
 mod schema;
 mod session;
@@ -38,6 +39,7 @@ struct AppState {
     config_path: Mutex<Option<PathBuf>>,
     /// The active layout and theme ids, as chosen in the Looks dialog.
     look: Mutex<(Option<String>, Option<String>)>,
+    keybindings: Mutex<keys::Bindings>,
 }
 
 /// Settings kept between runs.
@@ -52,6 +54,9 @@ struct Config {
     layout: Option<String>,
     #[serde(default)]
     theme: Option<String>,
+    /// Keyboard shortcuts the user changed (action id -> keys).
+    #[serde(default)]
+    keybindings: keys::Bindings,
 }
 
 fn save_config(state: &AppState) {
@@ -77,6 +82,11 @@ fn save_config(state: &AppState) {
             .unwrap_or_default(),
         layout: state.look.lock().ok().and_then(|l| l.0.clone()),
         theme: state.look.lock().ok().and_then(|l| l.1.clone()),
+        keybindings: state
+            .keybindings
+            .lock()
+            .map(|k| k.clone())
+            .unwrap_or_default(),
     };
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
@@ -695,6 +705,51 @@ fn open_looks_folder(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -
     Ok(dir.display().to_string())
 }
 
+/// The keyboard shortcuts the user changed (the UI knows the defaults).
+#[tauri::command]
+fn keybindings(state: tauri::State<'_, AppState>) -> Res<keys::Bindings> {
+    Ok(state.keybindings.lock().map_err(|e| e.to_string())?.clone())
+}
+
+#[tauri::command]
+fn set_keybindings(bindings: keys::Bindings, state: tauri::State<'_, AppState>) -> Res<()> {
+    let clean = keys::validate(&bindings)?;
+    *state.keybindings.lock().map_err(|e| e.to_string())? = clean;
+    save_config(state.inner());
+    Ok(())
+}
+
+#[derive(Serialize)]
+struct SettingsInfo {
+    version: &'static str,
+    folder: Option<String>,
+}
+
+/// For the Settings dialog: the app version and where its settings live.
+#[tauri::command]
+fn settings_info(state: tauri::State<'_, AppState>) -> SettingsInfo {
+    let folder = state
+        .config_path
+        .lock()
+        .ok()
+        .and_then(|p| Some(p.as_ref()?.parent()?.display().to_string()));
+    SettingsInfo {
+        version: env!("CARGO_PKG_VERSION"),
+        folder,
+    }
+}
+
+#[tauri::command]
+fn open_settings_folder(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Res<()> {
+    let folder = settings_info(state)
+        .folder
+        .ok_or("the settings folder isn't available")?;
+    std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
+    app.opener()
+        .open_path(folder, None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
 fn main() {
     // `ambrotype --check-look FILE...` validates layout/theme files and exits.
     let args: Vec<String> = std::env::args().collect();
@@ -736,6 +791,9 @@ fn main() {
                 if let Ok(mut l) = state.look.lock() {
                     *l = (config.layout, config.theme);
                 }
+                if let Ok(mut k) = state.keybindings.lock() {
+                    *k = keys::validate(&config.keybindings).unwrap_or_default();
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -770,6 +828,10 @@ fn main() {
             import_look,
             export_look,
             open_looks_folder,
+            keybindings,
+            set_keybindings,
+            settings_info,
+            open_settings_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Ambrotype");

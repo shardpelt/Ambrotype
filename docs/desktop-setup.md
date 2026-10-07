@@ -73,7 +73,8 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | Z, or click the photo | 100% view at that point; drag to pan |
   | W | White-balance picker: click something neutral grey or white |
   | J | Clipping overlay (red: clipped highlights, blue: crushed shadows) |
-  | Esc | Leave the picker |
+  | R | Crop and straighten (Enter applies, Esc cancels, X swaps the aspect) |
+  | Esc | Leave the picker or crop tool |
   | Double-click a slider | Reset it |
   | Ctrl is Cmd on macOS | |
 

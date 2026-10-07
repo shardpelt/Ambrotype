@@ -20,7 +20,8 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - colour-grading wheels
     - saved preset folders
     - feedback button (pre-filled GitHub issue)
-- **In progress:** the crop/straighten tool in the editor, and **size presets** (Instagram, Snapchat, TikTok, X, YouTube, Pinterest, LinkedIn and print sizes, plus custom ones), used both for the crop's aspect lock and for exact-size export.
+    - crop and straighten tool (R), with aspect lock
+    - **size presets** (Instagram, Snapchat, TikTok, X, YouTube, Pinterest, LinkedIn and print sizes, plus custom ones) for the crop and exact-size export (`amb render --exact WxH` too)
 
 ## Owner to-dos
 
@@ -36,7 +37,7 @@ There are two tracks that can run in parallel: the UI track is what users see an
 
 ### UI and sharing track (agreed 2026-10-07, in this order)
 
-1. **Crop tool and size presets** in the editor and export dialog (in progress).
+1. ~~Crop tool and size presets~~ (done 2026-10-07). Small follow-ups are in [GAPS.md](GAPS.md).
 2. **Layout files, built-in looks and themes:** the UI is rendered from a shareable layout file. The built-in looks are read-only and can be cloned. Themes are colour tokens. See [design/customization-and-hub.md](design/customization-and-hub.md).
 3. **Editor mode:** drag and drop panels and controls, split and merge, change slider types and colours. The user's AI can write the same files.
 4. **Hub:** Omarchy-style. Items are git repos, and one index repo takes submissions as pull requests. The in-app browser covers layouts, themes, presets, collage templates and size profiles.

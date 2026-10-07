@@ -57,7 +57,8 @@ EXPORT OPTIONS (amb render):
     --bits 8|16|32                          PNG 8/16, TIFF 8/16/32 (float); default 8, TIFF 16
     --color-space srgb|p3|adobergb|prophoto|rec2020   Default srgb; an ICC profile is embedded
     --long-edge N | --short-edge N | --width N | --height N | --fit WxH | --megapixels M | --percent P
-    --enlarge                               Allow upscaling (default: never enlarge)
+    --exact WxH                             Exactly W×H (e.g. 1080x1350): centre-cropped if the aspect differs
+    --enlarge                              Allow upscaling (default: never enlarge)
     --sharpen screen|matte|glossy[:low|standard|high]   Output sharpening
     --metadata all|no-location|copyright|none           EXIF to include (default no-location)
     --max-size 500k|2M                      JPEG: lower the quality until the file fits
@@ -85,8 +86,8 @@ fn main() -> ExitCode {
             | "--lens-make" | "--lens-model" | "--focal" | "--aperture" | "--distance"
             | "--crop" | "--lens-db" | "--lcp-dir" | "--format" | "--quality" | "--bits"
             | "--color-space" | "--subsampling" | "--long-edge" | "--short-edge" | "--width"
-            | "--height" | "--fit" | "--megapixels" | "--percent" | "--sharpen" | "--metadata"
-            | "--max-size" | "--avif-speed" => match iter.next() {
+            | "--height" | "--fit" | "--exact" | "--megapixels" | "--percent" | "--sharpen"
+            | "--metadata" | "--max-size" | "--avif-speed" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -847,11 +848,20 @@ fn export_settings(
                     .ok_or_else(|| format!("bad --fit {v:?} (e.g. 2048x2048)"))
             })
             .transpose()?,
+        options
+            .get("--exact")
+            .map(|v| {
+                v.split_once(['x', 'X'])
+                    .and_then(|(w, h)| Some(Resize::Exact(w.parse().ok()?, h.parse().ok()?)))
+                    .filter(|r| !matches!(r, Resize::Exact(0, _) | Resize::Exact(_, 0)))
+                    .ok_or_else(|| format!("bad --exact {v:?} (e.g. 1080x1350)"))
+            })
+            .transpose()?,
     ];
     let mut chosen = sizes.into_iter().flatten();
     if let Some(r) = chosen.next() {
         if chosen.next().is_some() {
-            return Err("use only one of --long-edge, --short-edge, --width, --height, --fit, --megapixels, --percent".into());
+            return Err("use only one of --long-edge, --short-edge, --width, --height, --fit, --exact, --megapixels, --percent".into());
         }
         s.resize = r;
     }

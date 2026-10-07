@@ -15,13 +15,19 @@ const ui = {
   overrides: {},         // values being dragged, not yet committed
   before: false,
   hslTab: "Hue",
-  preview: { inFlight: false, dirty: false, draft: false, url: null },
+  // `uncropped`: the shown preview is the whole photo (what the crop tool draws on).
+  preview: { inFlight: false, dirty: false, draft: false, url: null, uncropped: false },
   presets: [],
   zoom: { on: false, cx: 0.5, cy: 0.5, meta: null, pan: null },
   picking: false,
   clipping: false,
   curve: null,
   wheels: null,
+  // Crop tool: `start` is the committed rectangle when the tool opened;
+  // `aspect` the lock ("free", "original", "4:5", "size:<id>"), `swapped` its X.
+  crop: { on: false, tool: null, start: null, enabled: false, aspect: "original", swapped: false, angleSign: 1 },
+  sizes: [],             // size presets (built-in, then the user's)
+  exportCropAspect: 1,
 };
 
 // ---------------------------------------------------------------- helpers
@@ -289,10 +295,12 @@ function syncControls() {
 // ---------------------------------------------------------------- state & commands
 
 function setState(state) {
+  const crop = cropKey(ui.settings);
   ui.state = state;
   ui.settings = state.settings ?? {};
   ui.overrides = {};
   syncControls();
+  if (ui.crop.on && cropKey(ui.settings) !== crop) reloadCrop();
 }
 
 // Run protocol commands; several commands with a `group` label are one undo step.
@@ -337,15 +345,19 @@ async function renderLoop() {
   while (ui.preview.dirty) {
     ui.preview.dirty = false;
     const draft = ui.preview.draft;
+    const uncropped = ui.crop.on || ui.before;
     try {
       if (ui.zoom.on) {
         // At 100% only committed changes render (a full-size render per drag step is too slow).
         if (!draft) await renderRegion();
         continue;
       }
+      const overrides = ui.before ? {} : { ...ui.overrides };
+      // The crop tool draws its rectangle on the whole photo.
+      if (ui.crop.on) overrides.HasCrop = false;
       const buf = await invoke("preview", {
         maxEdge: previewSize(draft),
-        overrides: ui.before ? {} : { ...ui.overrides },
+        overrides,
         before: ui.before,
         clipping: ui.clipping,
       });
@@ -361,6 +373,7 @@ async function renderLoop() {
         img.style.width = img.style.height = "";
       }
       showJpeg(jpeg);
+      ui.preview.uncropped = uncropped;
       drawHistogram(meta.histogram);
       ui.curve?.setHistogram(meta.histogram);
       status(`${meta.width}×${meta.height} preview in ${meta.millis} ms` +
@@ -407,7 +420,7 @@ function showJpeg(jpeg) {
   const url = URL.createObjectURL(new Blob([jpeg], { type: "image/jpeg" }));
   const img = $("preview");
   img.src = url;
-  img.hidden = false;
+  img.hidden = ui.crop.on;
   if (ui.preview.url) URL.revokeObjectURL(ui.preview.url);
   ui.preview.url = url;
 }
@@ -539,6 +552,348 @@ function wireViewer() {
   });
 }
 
+// ---------------------------------------------------------------- crop & straighten
+
+const CROP_TAGS = ["HasCrop", "CropLeft", "CropTop", "CropRight", "CropBottom", "CropAngle"];
+const ASPECTS = ["1:1", "4:5", "2:3", "3:4", "16:9", "9:16"];
+
+function cropKey(settings) {
+  return JSON.stringify(CROP_TAGS.map((t) => settings[t] ?? null));
+}
+
+// "3:2" for 1.5; "1.91:1" when no small whole-number ratio is close.
+function ratioText(a) {
+  for (let n = 1; n <= 16; n++) {
+    const m = Math.round(a * n);
+    if (m > 0 && Math.abs(m / n - a) / a < 0.004) return `${m}:${n}`;
+  }
+  return `${a.toFixed(2)}:1`;
+}
+
+// Width / height of an aspect choice before the swap, or null (free).
+function aspectRatio(value) {
+  if (value === "original") return ui.info ? ui.info.width / ui.info.height : null;
+  if (value.startsWith("size:")) {
+    const p = ui.sizes.find((x) => x.id === value.slice(5));
+    return p ? p.width / p.height : null;
+  }
+  const m = value.match(/^(\d+):(\d+)$/);
+  return m ? Number(m[1]) / Number(m[2]) : null;
+}
+
+function lockedRatio() {
+  const r = aspectRatio(ui.crop.aspect);
+  return r && ui.crop.swapped ? 1 / r : r;
+}
+
+// Keep the aspect lock when the rectangle has it (either way round);
+// otherwise Original for an uncropped photo, else Free.
+function chooseAspect(rect, enabled) {
+  const r = rect.width / rect.height;
+  const close = (a, b) => Math.abs(Math.log(a / b)) < 0.005;
+  for (const value of [ui.crop.aspect, "original"]) {
+    const base = aspectRatio(value);
+    if (!base) continue;
+    if (close(base, r) || close(1 / base, r)) {
+      ui.crop.aspect = value;
+      ui.crop.swapped = !close(base, r);
+      return;
+    }
+  }
+  ui.crop.aspect = enabled ? "free" : "original";
+  ui.crop.swapped = false;
+}
+
+function fillSizeSelects() {
+  const groups = new Map();
+  for (const p of ui.sizes) {
+    if (!groups.has(p.group)) groups.set(p.group, []);
+    groups.get(p.group).push(p);
+  }
+  const option = (parent, value, text) => {
+    const o = document.createElement("option");
+    o.value = value;
+    o.textContent = text;
+    parent.append(o);
+  };
+  const addSizes = (sel) => {
+    for (const [group, items] of groups) {
+      const og = document.createElement("optgroup");
+      og.label = group;
+      for (const p of items) option(og, `size:${p.id}`, `${p.name} (${p.width} × ${p.height})`);
+      sel.append(og);
+    }
+  };
+  const crop = $("crop-aspect");
+  crop.innerHTML = "";
+  option(crop, "original", "Original");
+  option(crop, "free", "Free");
+  const ratios = document.createElement("optgroup");
+  ratios.label = "Ratios";
+  for (const r of ASPECTS) option(ratios, r, r.replace(":", " : "));
+  crop.append(ratios);
+  addSizes(crop);
+  if (!aspectRatio(ui.crop.aspect) && ui.crop.aspect !== "free") ui.crop.aspect = "original";
+  crop.value = ui.crop.aspect;
+
+  const sel = $("export-form").size_preset;
+  const keep = sel.value;
+  sel.innerHTML = "";
+  option(sel, "", "None");
+  option(sel, "custom", "Custom size");
+  addSizes(sel);
+  sel.value = [...sel.options].some((o) => o.value === keep) ? keep : "";
+}
+
+async function loadSizes() {
+  try {
+    ui.sizes = await invoke("size_presets");
+  } catch (e) {
+    toast(String(e), true);
+  }
+  fillSizeSelects();
+}
+
+function syncCropPanel(rect) {
+  if (!rect) return;
+  const a = rect.angle;
+  $("crop-angle").value = a;
+  $("crop-angle-num").value = (a > 0 ? "+" : "") + a.toFixed(2);
+  $("crop-size").textContent = `${Math.round(rect.width)} × ${Math.round(rect.height)} px  ·  ${ratioText(rect.width / rect.height)}`;
+  $("crop-aspect").value = ui.crop.aspect;
+}
+
+function setCropMode(on) {
+  ui.crop.on = on;
+  $("crop-canvas").hidden = !on;
+  $("crop-panel").hidden = !on;
+  $("preview").hidden = on || !ui.preview.url;
+  $("btn-crop").classList.toggle("active", on);
+  // No 100% view or white-balance picking on the uncropped view.
+  for (const id of ["btn-zoom", "btn-wb"]) $(id).disabled = on || !ui.info;
+}
+
+async function enterCrop() {
+  if (!ui.info || ui.crop.on) return;
+  if (ui.zoom.on) setZoom(false);
+  setPicking(false);
+  let st;
+  try {
+    st = await invoke("crop_state");
+  } catch (e) {
+    toast(String(e), true);
+    return;
+  }
+  ui.crop.start = st.rect;
+  ui.crop.enabled = st.enabled;
+  ui.crop.angleSign = st.angle_sign;
+  chooseAspect(st.rect, st.enabled);
+  setCropMode(true);
+  ui.crop.tool.start({ width: ui.info.width, height: ui.info.height, angleSign: st.angle_sign, rect: st.rect });
+  ui.crop.tool.setRatio(lockedRatio());
+  syncCropPanel(st.rect);
+  status("Crop: drag the edges or corners, inside to move, outside to straighten. Enter applies, Esc cancels.");
+  requestPreview(false);
+}
+
+// The committed crop changed while the tool is open (undo, redo, reset).
+async function reloadCrop() {
+  try {
+    const st = await invoke("crop_state");
+    if (!ui.crop.on) return;
+    ui.crop.start = st.rect;
+    ui.crop.enabled = st.enabled;
+    chooseAspect(st.rect, st.enabled);
+    ui.crop.tool.setRatio(lockedRatio());
+    ui.crop.tool.setRect(st.rect);
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
+function cropChanged(rect) {
+  const s = ui.crop.start;
+  if (!s || !rect) return false;
+  return ["cx", "cy", "width", "height"].some((k) => Math.abs(rect[k] - s[k]) > 0.25) ||
+    Math.abs(rect.angle - s.angle) > 0.005;
+}
+
+// Leave the crop tool; with `commit`, its rectangle becomes one undo step.
+async function exitCrop(commit) {
+  if (!ui.crop.on) return;
+  const rect = ui.crop.tool.rect();
+  setCropMode(false);
+  ui.crop.tool.stop();
+  status("Ready");
+  if (commit && cropChanged(rect)) {
+    try {
+      const commands = await invoke("crop_commands", { rect });
+      await run(commands, "crop");
+      return;
+    } catch (e) {
+      toast(String(e), true);
+    }
+  }
+  requestPreview(false);
+}
+
+function toggleCrop() {
+  if (ui.crop.on) exitCrop(true);
+  else enterCrop();
+}
+
+// Reset: no crop, no straighten (one undo step when there was a crop).
+async function resetCrop() {
+  if (!ui.crop.on) return;
+  const full = { cx: ui.info.width / 2, cy: ui.info.height / 2, width: ui.info.width, height: ui.info.height, angle: 0 };
+  ui.crop.aspect = "original";
+  ui.crop.swapped = false;
+  ui.crop.tool.setRatio(lockedRatio());
+  ui.crop.tool.setRect(full);
+  if (ui.crop.enabled) {
+    try {
+      // reloadCrop (via setState) then picks up the cleared crop.
+      await run(await invoke("crop_commands", { rect: full }), "reset crop");
+    } catch (e) {
+      toast(String(e), true);
+    }
+  } else {
+    ui.crop.start = full;
+  }
+}
+
+function setCropAspect(value) {
+  ui.crop.aspect = value;
+  ui.crop.swapped = false;
+  ui.crop.tool.setRatio(lockedRatio());
+  ui.crop.tool.fitRatio();
+}
+
+function swapCrop() {
+  if (!ui.crop.on) return;
+  if (aspectRatio(ui.crop.aspect)) ui.crop.swapped = !ui.crop.swapped;
+  ui.crop.tool.swap();
+  ui.crop.tool.setRatio(lockedRatio());
+}
+
+function wireCrop() {
+  const img = $("preview");
+  ui.crop.tool = AmbCrop.create($("crop-canvas"), {
+    // Only the whole-photo preview, once loaded (not a cropped one still showing).
+    image: () => (ui.preview.uncropped && img.complete && img.naturalWidth ? img : null),
+    onChange: (rect) => syncCropPanel(rect),
+  });
+  img.addEventListener("load", () => { if (ui.crop.on) ui.crop.tool.draw(); });
+  $("btn-crop").addEventListener("click", toggleCrop);
+  $("crop-done").addEventListener("click", () => exitCrop(true));
+  $("crop-cancel").addEventListener("click", () => exitCrop(false));
+  $("crop-reset").addEventListener("click", resetCrop);
+  $("crop-swap").addEventListener("click", swapCrop);
+  $("crop-sizes").addEventListener("click", sizesFlow);
+  $("crop-aspect").addEventListener("change", (e) => setCropAspect(e.target.value));
+  const angle = $("crop-angle");
+  angle.addEventListener("input", () => ui.crop.tool.setAngle(Number(angle.value)));
+  angle.addEventListener("change", () => ui.crop.tool.endAngle());
+  const straight = () => { ui.crop.tool.setAngle(0); ui.crop.tool.endAngle(); };
+  angle.addEventListener("dblclick", straight);
+  angle.previousElementSibling.addEventListener("dblclick", straight);
+  $("crop-angle-num").addEventListener("change", (e) => {
+    const v = Number(e.target.value);
+    if (Number.isFinite(v)) { ui.crop.tool.setAngle(v); ui.crop.tool.endAngle(); }
+  });
+}
+
+// ---------------------------------------------------------------- size presets
+
+async function sizesFlow() {
+  const dlg = $("sizes-dialog");
+  const f = $("sizes-form");
+  let editing = "";  // id of the user preset being edited; "" adds a new one
+  const fill = (p, id) => {
+    editing = id;
+    f.name.value = p ? (id ? p.name : `${p.name} (copy)`) : "";
+    f.group.value = p ? p.group : "";
+    f.width.value = p ? p.width : "";
+    f.height.value = p ? p.height : "";
+    $("sizes-editing").textContent = id ? `Editing "${p.name}"` : p ? `New size from "${p.name}"` : "New size";
+  };
+  const list = () => {
+    const root = $("sizes-list");
+    root.innerHTML = "";
+    let group = null;
+    for (const p of ui.sizes) {
+      if (p.group !== group) {
+        group = p.group;
+        const h = document.createElement("div");
+        h.className = "size-group";
+        h.textContent = group + (p.builtin ? "" : " (yours)");
+        root.append(h);
+      }
+      const row = document.createElement("div");
+      row.className = "size-row";
+      const name = document.createElement("span");
+      name.textContent = p.name;
+      const dims = document.createElement("span");
+      dims.className = "dims";
+      dims.textContent = `${p.width} × ${p.height}`;
+      const buttons = document.createElement("span");
+      buttons.className = "buttons";
+      const button = (text, title, action) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "small";
+        b.textContent = text;
+        b.title = title;
+        b.addEventListener("click", action);
+        buttons.append(b);
+      };
+      button("Clone", "Start a new size from this one", () => fill(p, ""));
+      if (!p.builtin) {
+        button("Edit", "Change this size", () => fill(p, p.id));
+        button("Delete", "Delete this size", async () => {
+          try {
+            ui.sizes = await invoke("delete_size_preset", { id: p.id });
+            if (editing === p.id) fill(null, "");
+            fillSizeSelects();
+            list();
+          } catch (e) {
+            toast(String(e), true);
+          }
+        });
+      }
+      row.append(name, dims, buttons);
+      root.append(row);
+    }
+  };
+  const save = async () => {
+    const preset = {
+      id: editing,
+      name: f.name.value,
+      group: f.group.value,
+      width: Number(f.width.value) || 0,
+      height: Number(f.height.value) || 0,
+    };
+    try {
+      ui.sizes = await invoke("save_size_preset", { preset });
+      fillSizeSelects();
+      list();
+      toast(`Saved size "${preset.name.trim()}"`);
+      fill(null, "");
+    } catch (e) {
+      toast(String(e), true);
+    }
+  };
+  f.onsubmit = (e) => {
+    if (e.submitter?.value === "close") return;
+    e.preventDefault();
+    save();
+  };
+  $("sizes-new").onclick = () => fill(null, "");
+  list();
+  fill(null, "");
+  dlg.showModal();
+}
+
 // ---------------------------------------------------------------- feedback
 
 async function feedbackFlow() {
@@ -574,12 +929,16 @@ async function openPath(path) {
   $("busy").hidden = false;
   try {
     const r = await invoke("open_photo", { path });
+    if (ui.crop.on) {
+      setCropMode(false);
+      ui.crop.tool.stop();
+    }
     ui.info = r.info;
     $("empty").hidden = true;
     $("photo-title").textContent = `${r.info.name}  —  ${r.info.camera}${r.info.lens ? "  ·  " + r.info.lens : ""}`;
     $("exif").textContent = [r.info.exposure, `${r.info.width} × ${r.info.height}`,
       r.info.sidecar_loaded ? "edits loaded from sidecar" : ""].filter(Boolean).join("  ·  ");
-    for (const id of ["btn-save", "btn-export", "btn-before", "btn-zoom", "btn-wb", "btn-clip"]) $(id).disabled = false;
+    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-zoom", "btn-wb", "btn-clip"]) $(id).disabled = false;
     if (ui.zoom.on) setZoom(false);
     setState(r.state);
     requestPreview(false);
@@ -651,10 +1010,60 @@ function updateExportForm() {
   if (format === "avif") f.color_space.value = "srgb";
 }
 
+// Exact size: say what will be trimmed when its aspect differs from the crop.
+function updateExportSize() {
+  const f = $("export-form");
+  const w = Number(f.exact_w.value);
+  const h = Number(f.exact_h.value);
+  const exact = w > 0 && h > 0;
+  f.long_edge.disabled = exact;
+  const note = $("export-size-note");
+  note.classList.remove("warn");
+  if (!exact) {
+    note.textContent = f.exact_w.value || f.exact_h.value ? "Give both a width and a height for an exact size." : "";
+    return;
+  }
+  const a = ui.exportCropAspect;
+  const t = w / h;
+  if (Math.abs(Math.log(a / t)) > 0.005) {
+    note.classList.add("warn");
+    note.textContent = `Exactly ${w} × ${h} px. The ${ui.crop.enabled ? "crop" : "photo"} is ${ratioText(a)} ` +
+      `and this size is ${ratioText(t)}, so the ${a > t ? "left and right" : "top and bottom"} edges are trimmed (centred). ` +
+      "To choose what is kept, crop with this size preset first.";
+  } else {
+    note.textContent = `Exactly ${w} × ${h} px; the crop already has this shape.`;
+  }
+}
+
+function pickExportSize() {
+  const f = $("export-form");
+  const v = f.size_preset.value;
+  if (v.startsWith("size:")) {
+    const p = ui.sizes.find((x) => x.id === v.slice(5));
+    if (p) {
+      f.exact_w.value = p.width;
+      f.exact_h.value = p.height;
+    }
+  } else if (v === "") {
+    f.exact_w.value = f.exact_h.value = "";
+  }
+  updateExportSize();
+}
+
 async function exportFlow() {
   if (!ui.info) return;
+  // Export what the crop tool shows.
+  if (ui.crop.on) await exitCrop(true);
   const dlg = $("export-dialog");
   updateExportForm();
+  try {
+    const st = await invoke("crop_state");
+    ui.crop.enabled = st.enabled;
+    ui.exportCropAspect = st.rect.width / st.rect.height;
+  } catch {
+    ui.exportCropAspect = ui.info.width / ui.info.height;
+  }
+  updateExportSize();
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   if (choice !== "ok") return;
@@ -667,7 +1076,9 @@ async function exportFlow() {
     quality: Number(f.quality.value),
     bits: Number(f.bits.value),
     color_space: f.color_space.value,
-    long_edge: f.long_edge.value ? Number(f.long_edge.value) : null,
+    long_edge: f.long_edge.value && f.long_edge.disabled === false ? Number(f.long_edge.value) : null,
+    exact: Number(f.exact_w.value) > 0 && Number(f.exact_h.value) > 0
+      ? [Number(f.exact_w.value), Number(f.exact_h.value)] : null,
     sharpen: f.sharpen.value || null,
     metadata: f.metadata.value,
     max_kb: f.max_kb.value ? Number(f.max_kb.value) : null,
@@ -722,15 +1133,34 @@ async function init() {
   $("btn-clip").addEventListener("click", toggleClipping);
   $("btn-feedback").addEventListener("click", feedbackFlow);
   wireViewer();
+  wireCrop();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   $("preset-filter").addEventListener("input", renderPresets);
   $("preset-amount").addEventListener("input", (e) => ($("preset-amount-out").textContent = e.target.value));
   const f = $("export-form");
   f.format.addEventListener("change", updateExportForm);
   f.quality.addEventListener("input", () => (f.quality_out.value = f.quality.value));
+  f.size_preset.addEventListener("change", pickExportSize);
+  for (const input of [f.exact_w, f.exact_h]) {
+    input.addEventListener("input", () => {
+      // Typed sizes are a custom size unless they still match the preset.
+      const p = ui.sizes.find((x) => `size:${x.id}` === f.size_preset.value);
+      if (!p || p.width !== Number(f.exact_w.value) || p.height !== Number(f.exact_h.value)) {
+        f.size_preset.value = f.exact_w.value || f.exact_h.value ? "custom" : "";
+      }
+      updateExportSize();
+    });
+  }
+  $("export-swap").addEventListener("click", () => {
+    [f.exact_w.value, f.exact_h.value] = [f.exact_h.value, f.exact_w.value];
+    f.size_preset.value = f.exact_w.value || f.exact_h.value ? "custom" : "";
+    updateExportSize();
+  });
 
   document.addEventListener("keydown", (e) => {
     if (e.target.matches("input[type=number], input[type=search], input[type=text], textarea, input.value")) return;
+    // Keys belong to an open dialog.
+    if (document.querySelector("dialog[open]")) return;
     const mod = e.ctrlKey || e.metaKey;
     const k = e.key.toLowerCase();
     if (mod && k === "z" && !e.shiftKey) { e.preventDefault(); run([{ cmd: "undo" }]); }
@@ -740,6 +1170,14 @@ async function init() {
     else if (mod && k === "o") { e.preventDefault(); openDialog(); }
     else if (e.key === "\\") { e.preventDefault(); toggleBefore(); }
     else if (mod) return;
+    else if (k === "r" && ui.info) { e.preventDefault(); toggleCrop(); }
+    else if (ui.crop.on) {
+      // Crop tool keys; no 100% view or picker while it is open.
+      if (k === "x") { e.preventDefault(); swapCrop(); }
+      else if (e.key === "Enter" && !e.target.matches("button, select")) { e.preventDefault(); exitCrop(true); }
+      else if (e.key === "Escape") { e.preventDefault(); exitCrop(false); }
+      else if (k === "j") { e.preventDefault(); toggleClipping(); }
+    }
     else if (k === "z" && ui.info) { e.preventDefault(); setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy); }
     else if (k === "w") { e.preventDefault(); setPicking(!ui.picking); }
     else if (k === "j") { e.preventDefault(); toggleClipping(); }
@@ -761,6 +1199,7 @@ async function init() {
     if (paths.length) openPath(paths[0]);
   });
   loadPresets();
+  await loadSizes();
   // A photo given on the command line.
   const initial = await invoke("take_initial_path");
   if (initial) openPath(initial);

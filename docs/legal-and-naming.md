@@ -11,14 +11,14 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
 - **Still to do:**
   1. Search TMview and WIPO (classes 9 and 42) for "Ambrotype".
   2. Register ambrotype.org (also the domain in our XMP namespace URI) and/or ambrotype.photo.
-  3. Claim the GitHub organisation and the crates.io names.
+  3. ~~Claim the GitHub organisation~~ Done: `Ambrotypehq` (`ambrotype` is a user account from about 2016, and `ambrotype-app` was taken too). Claim the crates.io names.
 
   5. ~~Rename the GitHub repository~~ Done: `shardpelt/Ambrotype` (old links redirect).
-- **Reserving the name, in order** (checked 2026-10-07 by RDAP lookups: ambrotype.org, .photo, .dev and .io unregistered; .com taken since 2017; .app registered 2026-07-15; crates.io `ambrotype` free; the GitHub org couldn't be checked from the build machine):
+- **Reserving the name, in order** (checked 2026-10-07 by RDAP lookups: ambrotype.org, .photo, .dev and .io unregistered; .com taken since 2017; .app registered 2026-07-15; crates.io `ambrotype` free; the GitHub name `ambrotype` is an existing user account, so the organisation is `Ambrotypehq`):
   1. **Search the trademark registers** (TMview, WIPO, USPTO; classes 9 and 42). If someone already has "Ambrotype" for software, stop and pick an alternative before spending money.
   2. **Domains (same day, about €10–40 a year each):** ambrotype.org first (our XMP namespace and the app id `org.ambrotype.editor` depend on it; Flathub checks you own the domain behind an app id), then ambrotype.photo and ambrotype.dev. Turn on auto-renew and registrar lock.
   3. **Handles:**
-     - the GitHub organisation `ambrotype` (move the repo there later; GitHub redirects)
+     - ~~the GitHub organisation~~ done: `Ambrotypehq` (move the repo there when convenient; GitHub redirects). Once the trademark is registered, GitHub's trademark policy is the way to ask for `ambrotype`
      - crates.io `ambrotype`: publish a real, minimal crate, not an empty placeholder (crates.io removes name-squatting)
      - Mastodon/Bluesky/X/Instagram/YouTube handles
      - an email address on the domain

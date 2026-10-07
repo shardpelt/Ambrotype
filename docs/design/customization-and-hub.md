@@ -88,7 +88,7 @@ A toggle (toolbar button or a key) that makes the current layout editable in pla
 - *One hub repo holds the look files themselves (`looks/layouts/`, `looks/themes/`), not links to other repos. `tools/build_index.py` writes `index.json` with each file's sha256; CI checks it is current.*
 - *In the app, **Looks → Browse hub…** lists the looks with previews drawn from their own data (theme colours, layout columns; no screenshots, nothing loaded from other sites into the page). Install checks the checksum and validates the look before saving it as one of yours, with a `source` record, so the hub shows "Installed" and "Update" later.*
 - ***Submit to hub…** opens GitHub's new-file page in the hub repo with the look filled in. Committing it there makes the pull request (GitHub forks for people without access). No GitHub login is needed inside Ambrotype.*
-- *The default hub is `shardpelt/ambrotype-hub` (create it from [`hub/`](../../hub/README.md)); **Settings → General** points the app at another one, including a `file://` hub for testing.*
+- *The default hub is `Ambrotypehq/ambrotype-hub` (create it from [`hub/`](../../hub/README.md)); **Settings → General** points the app at another one, including a `file://` hub for testing.*
 - *Still to come: presets, size profiles and collage templates in the hub; plugins (§5) once they exist.*
 
 [Omarchy](https://learn.omacom.io/2/the-omarchy-manual/90/extra-themes) shows that sharing doesn't need a server:
@@ -103,7 +103,7 @@ We do the same, with a little more structure:
   - `kind`: layout, theme, presets, collage, size-profiles or plugin
   - `name`, `version`, `author`, licence, screenshots
   - for plugins, the permissions it asks for
-- **One index repo** (`shardpelt/ambrotype-hub`) holds `index.json`: each entry points at a repo, a tag and a content hash.
+- **One index repo** (`Ambrotypehq/ambrotype-hub`) holds `index.json`: each entry points at a repo, a tag and a content hash.
 - **Submitting** means opening a pull request to the index that adds your entry. CI validates the manifest and schema and renders screenshots; a maintainer merges it.
 - **Browsing in the app** reads `index.json`, shows cards per kind with screenshots and search, and installs the pinned tag. Before applying, it checks the hash against the index entry.
 - **Installing by URL** works too (paste a git URL), for items that aren't in the index.

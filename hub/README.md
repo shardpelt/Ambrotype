@@ -26,4 +26,4 @@ If you skip step 4, a maintainer can run it before merging.
 
 - CI (`.github/workflows/check.yml`) fails when a file isn't valid JSON, is in the wrong folder, or `index.json` is out of date.
 - Before merging, run `ambrotype --check-look` on new files, and try them in the app.
-- The app reads `index.json` from `https://raw.githubusercontent.com/<owner>/<repo>/main/index.json`. Ambrotype's default points at `shardpelt/ambrotype-hub`. Anyone can point their app at another hub in **Settings → General**.
+- The app reads `index.json` from `https://raw.githubusercontent.com/<owner>/<repo>/main/index.json`. Ambrotype's default points at `Ambrotypehq/ambrotype-hub`. Anyone can point their app at another hub in **Settings → General**.

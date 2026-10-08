@@ -18,7 +18,7 @@ const EDIT_ZONES = ".column, .topbar .actions";
 const COMPOSITE_TITLES = { "point-curve": "Point curve", "color-wheels": "Colour wheels" };
 const BLOCK_TITLES = { presets: "Presets", info: "Rating & keywords", history: "History", histogram: "Histogram" };
 const TOOL_TITLES = {
-  open: "Open", save: "Save", export: "Export", collage: "Collage", undo: "Undo", redo: "Redo", before: "Before / After",
+  open: "Open", library: "Library", save: "Save", export: "Export", collage: "Collage", undo: "Undo", redo: "Redo", before: "Before / After",
   crop: "Crop", zoom: "100%", wb: "WB picker", clip: "Clipping", plugins: "Plugins", looks: "Looks", edit: "Edit layout", settings: "Settings",
   feedback: "Feedback", "|": "Separator",
 };

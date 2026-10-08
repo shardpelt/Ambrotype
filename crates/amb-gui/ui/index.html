@@ -12,6 +12,7 @@
     <div class="brand"><span class="logo" aria-hidden="true"></span>Ambrotype</div>
     <div class="actions">
       <button id="btn-open" title="Open a raw photo (Ctrl+O)">Open</button>
+      <button id="btn-library" title="Library: all the photos in the folder, to rate, label, tag and export many at once">Library</button>
       <button id="btn-save" title="Save the edit to the photo's XMP sidecar (Ctrl+S)" disabled>Save</button>
       <button id="btn-export" class="primary" title="Export (Ctrl+E)" disabled>Export…</button>
       <button id="btn-collage" title="Collage maker: several photos on one canvas">Collage</button>
@@ -48,17 +49,18 @@
         <div id="preset-list" class="preset-list"><p class="hint">No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.</p></div>
       </section>
       <section class="side-section info-block" id="block-info">
-        <div class="side-head"><h2>Rating &amp; keywords</h2></div>
+        <div class="side-head"><h2>Rating, label &amp; keywords</h2></div>
         <div id="rating" class="rating" role="radiogroup" aria-label="Rating">
           <button type="button" data-stars="1" role="radio" title="1 star (1)">★</button><button type="button" data-stars="2" role="radio" title="2 stars (2)">★</button><button type="button" data-stars="3" role="radio" title="3 stars (3)">★</button><button type="button" data-stars="4" role="radio" title="4 stars (4)">★</button><button type="button" data-stars="5" role="radio" title="5 stars (5)">★</button>
           <button type="button" id="rating-clear" class="rating-clear" title="No rating (0)">×</button>
+          <span id="label-swatches" class="label-swatches" aria-label="Colour label"></span>
         </div>
         <div id="tag-field" class="tag-field">
           <span id="tag-chips" class="tag-chips"></span>
           <input id="tag-input" type="text" list="tag-suggest" placeholder="Add keywords…" spellcheck="false" aria-label="Add keywords">
           <datalist id="tag-suggest"></datalist>
         </div>
-        <p class="hint">Saved to the photo's .xmp straight away, where Lightroom reads them, and put in exports. Keys 1–5 rate, 0 clears.</p>
+        <p class="hint">Saved to the photo's .xmp straight away, where Lightroom reads them, and put in exports. Keys 1–5 rate, 0 clears, 6–9 set a colour label.</p>
       </section>
       <section class="side-section history" id="block-history">
         <div class="side-head"><h2>History</h2></div>
@@ -117,6 +119,84 @@
     <!-- Blocks the active layout doesn't place wait here. -->
     <div id="block-store" hidden></div>
   </main>
+
+  <!-- The library grid (library.js); replaces the workspace while shown. -->
+  <section id="library" class="library" hidden aria-label="Library">
+    <div class="library-bar">
+      <button type="button" id="lib-choose" class="small" title="Show another folder">Folder…</button>
+      <span id="library-folder" class="library-folder"></span>
+      <button type="button" id="lib-reload" class="small" title="Read the folder again">↻</button>
+      <span id="library-count" class="hint"></span>
+      <span class="grow"></span>
+      <input id="lib-search" type="search" placeholder="Name or keyword" spellcheck="false" aria-label="Search">
+      <select id="lib-filter-rating" aria-label="Rating filter" title="Rating">
+        <option value="0">Any rating</option><option value="unrated">Unrated</option>
+        <option value="1">★ and up</option><option value="2">★★ and up</option><option value="3">★★★ and up</option>
+        <option value="4">★★★★ and up</option><option value="5">★★★★★</option>
+      </select>
+      <select id="lib-filter-label" aria-label="Label filter" title="Colour label">
+        <option value="all">Any label</option><option value="none">No label</option>
+        <option>Red</option><option>Yellow</option><option>Green</option><option>Blue</option><option>Purple</option>
+      </select>
+      <select id="lib-filter-edited" aria-label="Edit filter" title="Edited or not">
+        <option value="all">Edited or not</option><option value="edited">Edited</option><option value="unedited">Not edited</option>
+      </select>
+      <select id="lib-sort" aria-label="Sort" title="Sort by">
+        <option value="name">By name</option><option value="captured">By capture time</option>
+        <option value="rating">By rating</option><option value="edited">Edited first</option>
+      </select>
+      <label class="inline-check" title="Reverse the order"><input id="lib-reverse" type="checkbox"><span>⇅</span></label>
+      <input id="lib-size" type="range" min="100" max="320" value="160" title="Thumbnail size" aria-label="Thumbnail size">
+    </div>
+    <div class="library-body">
+      <div id="library-grid" class="library-grid" tabindex="-1"></div>
+      <div id="library-empty" class="library-empty" hidden>
+        <p class="empty-title">Choose a folder of raw photos</p>
+        <p class="hint">Or open a photo: the library shows its folder.</p>
+        <button type="button" id="lib-choose-empty" class="primary">Choose folder…</button>
+      </div>
+      <aside id="library-panel" class="library-panel">
+        <h2 id="lib-sel-count">Nothing selected</h2>
+        <p class="hint">Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.</p>
+        <h3>Rating</h3>
+        <div id="lib-rating" class="rating">
+          <button type="button" data-stars="1" title="1 star (1)">★</button><button type="button" data-stars="2" title="2 stars (2)">★</button><button type="button" data-stars="3" title="3 stars (3)">★</button><button type="button" data-stars="4" title="4 stars (4)">★</button><button type="button" data-stars="5" title="5 stars (5)">★</button>
+          <button type="button" id="lib-rating-clear" class="rating-clear" title="No rating (0)" data-needs="any">×</button>
+        </div>
+        <h3>Colour label</h3>
+        <div class="label-row"><span id="lib-labels" class="label-swatches"></span>
+          <button type="button" id="lib-label-clear" class="small" data-needs="any" title="No label">None</button></div>
+        <h3>Keywords</h3>
+        <div id="lib-keywords" class="lib-keywords"></div>
+        <input id="lib-tag-input" type="text" list="lib-tag-suggest" placeholder="Add to the selection…" spellcheck="false" aria-label="Add keywords to the selection">
+        <datalist id="lib-tag-suggest"></datalist>
+        <h3>Edits</h3>
+        <div class="col-line">
+          <button type="button" id="lib-copy" class="small" data-needs="one" title="Copy this photo's develop settings (Ctrl+Shift+C)">Copy settings</button>
+          <button type="button" id="lib-paste" class="small" data-needs="paste" title="Give the selected photos the copied settings (Ctrl+Shift+V)">Paste settings…</button>
+        </div>
+        <p id="lib-copied" class="hint"></p>
+        <h3>Use</h3>
+        <div class="col-line">
+          <button type="button" id="lib-open" class="small" data-needs="any" title="Open in the editor (Enter, or double-click)">Open in editor</button>
+          <button type="button" id="lib-export" class="small primary" data-needs="any" title="Export the selection with the same choices, one file each (Ctrl+E)">Export…</button>
+          <button type="button" id="lib-collage" class="small" data-needs="any" title="Start a collage with the selected photos">Make a collage</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <dialog id="paste-dialog">
+    <form method="dialog">
+      <h2>Paste settings</h2>
+      <p id="paste-what" class="hint"></p>
+      <div id="paste-groups" class="paste-groups"></div>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Paste</button>
+      </menu>
+    </form>
+  </dialog>
 
   <footer class="statusbar">
     <span id="status">Ready</span>
@@ -605,6 +685,7 @@
   <script src="info.js"></script>
   <script src="filmstrip.js"></script>
   <script src="collage.js"></script>
+  <script src="library.js"></script>
   <script src="plugins.js"></script>
   <script src="picker.js"></script>
   <script src="app.js"></script>

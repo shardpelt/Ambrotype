@@ -52,7 +52,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   "based_on": "builtin:studio",              // optional; set by Clone
   "theme": "builtin:dark",                   // optional: switching to this layout also picks this theme
   "density": "normal",                       // "compact" | "normal" | "large"
-  "toolbar": ["open", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "zoom", "wb", "clip", "|", "plugins", "|", "looks", "edit", "settings", "feedback"],
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "zoom", "wb", "clip", "|", "plugins", "|", "looks", "edit", "settings", "feedback"],
   "left":  { "width": 250, "items": ["presets", "history"] },
   "right": { "width": 340, "items": ["histogram", { "panel": "basic", "open": true }, { "panel": "detail" }] }
 }
@@ -73,6 +73,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   | Name | Button |
   |---|---|
   | `open` | Open |
+  | `library` | The library grid |
   | `save` | Save sidecar |
   | `export` | Export |
   | `collage` | The collage maker |

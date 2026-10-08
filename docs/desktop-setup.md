@@ -72,6 +72,10 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 
   ![Plugins](images/plugins.png)
 
+- **Library:** the Library button (or G) shows the photo's folder as a grid. Sort, filter and search it; click, Shift-click and Ctrl/⌘-click to select many; then press 1–5 to rate them, 6–9 for a colour label, or add keywords in the panel. **Copy settings** on one photo and **Paste settings** onto others to give a whole series the same edit, **Export…** the selection with the usual export choices, or **Make a collage** with it. Everything is saved to the photos' `.xmp` files, where Lightroom reads it. Enter or a double-click opens a photo.
+
+  ![Library](images/library.png)
+
 - **Collage:** the Collage button (or C) opens the collage maker. Pick a layout, drag photos from the tray into the cells, then drag to move a photo in its cell, scroll to zoom, R to rotate. **Edit photo** opens a photo in the editor and **← Back to collage** returns. Set the size, background, gap, outer border and rounded corners on the right; split or remove cells, or press **Arrange freely** to move, resize, turn and overlap the photos by hand. **Save** keeps the whole collage in a `.ambcollage` file to reopen and edit later (Export can save one next to each image), and **Export pages…** puts a whole folder into pages of the layout.
 
   ![Collage maker](images/collage.png)
@@ -104,7 +108,10 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | F | Show or hide the filmstrip |
   | Ctrl+Shift+P | Plugins |
   | C | Collage maker (in it: R turns the selected photo, Delete empties the cell, Ctrl+S / Ctrl+O save and open the collage, arrow keys nudge and `[` `]` restack free frames, Esc closes) |
-  | 1–5, 0 | Rate the photo (0 clears) |
+  | 1–5, 0 | Rate the photo, or the selection in the library (0 clears) |
+  | 6, 7, 8, 9 | Red, yellow, green, blue label (the same key again removes it) |
+  | G | Library grid / editor |
+  | Ctrl+Shift+C / Ctrl+Shift+V | In the library: copy one photo's settings / paste them onto the selection |
   | K | Jump to the keyword field (Enter or a comma adds a keyword) |
   | Ctrl+L / Ctrl+Shift+L | Looks / Edit layout |
   | Ctrl+, | Settings and shortcuts |

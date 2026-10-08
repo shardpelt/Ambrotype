@@ -4,7 +4,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
 
 ## State
 
-- **Branch:** `claude/lightroom-alternative-scope-xlnf0p`. Everything is committed and pushed; about 340 tests are green.
+- **Branch:** `claude/lightroom-alternative-scope-xlnf0p`. Everything is committed and pushed; about 350 tests are green.
 - **Name:** **Ambrotype**. The GitHub repo is `shardpelt/Ambrotype` (renamed from flightbroom; old links redirect).
 - **Built:**
   - preset/sidecar reader and writer (`crs:` and our `amb:` tags)
@@ -25,7 +25,8 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **looks:** the UI is drawn from a layout file (toolbar, side columns, panels, and knob/bar/slider/number per setting) and a theme (colour tokens). Built-in looks (Classic, Compact, Big controls, Studio, Left-handed; Dark, Light, High contrast, Neutral grey) can be cloned, renamed, shared and imported in the Looks dialog. AI assistants can write them ([ai/ui-layouts.md](ai/ui-layouts.md), `ambrotype --check-look`)
     - **settings and shortcuts:** the ⚙ button lists every keyboard shortcut on a keyboard map and lets you change them (clashes are caught; only changes are stored)
     - **filmstrip:** the other photos in the folder under the photo; ← → or a click opens them, saving edits first
-    - **rating and keywords:** stars (keys 1–5) and a keyword field, saved to the sidecar at once and embedded in exports
+    - **rating, colour labels and keywords:** stars (keys 1–5), labels (6–9) and a keyword field, saved to the sidecar at once and embedded in exports
+    - **library** (G): a folder as a grid; sort, filter and search; select many to rate, label and keyword at once; copy one photo's edit and paste it onto others (by setting group); export the selection; start a collage with it ([design/library.md](design/library.md))
     - **hub:** Looks → Browse hub… installs shared layouts and themes (checked against the index's sha256 and validated); Submit to hub… opens GitHub with your look filled in as a pull request
     - **editor mode:** Edit layout rearranges the screen in place (drag and drop, control types, split and merge, add and remove, column widths) and saves it as your own layout
     - **borders** on export, with presets and colour swatches
@@ -55,7 +56,7 @@ There are two tracks that can run in parallel: the UI track is what users see an
 6. ~~Collage maker~~ (done 2026-10-08): shareable layouts (size, background, gap, outer border, rounded corners, cells you can split and remove), per-photo move/zoom/rotate and "Edit photo" in the editor, batch pages for big folders (optionally only rated photos). Follow-ups (resizing cells by their edges, saving a collage to reopen, per-cell edits) are in [design/collage-and-borders.md](design/collage-and-borders.md).
 7. ~~Plugins and AI-made features~~ (done 2026-10-08): WASM-sandboxed "action" plugins with permissions, "Make one with AI…" instructions for the user's own assistant, Share as pull request to the hub. Next for plugins: pipeline effects and plugin panels, batch runs, the hub listing plugins in the app ([GAPS.md](GAPS.md)).
 
-The agreed UI track is done. What to pick next is open: candidates are the follow-ups above, the fidelity track below, and a library view (rate and tag many photos at once).
+The agreed UI track is done, and the library view after it (2026-10-08; [design/library.md](design/library.md)). What to pick next is open: candidates are the follow-ups above and the fidelity track below.
 
 ### Fidelity and engine track
 

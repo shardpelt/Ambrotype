@@ -641,6 +641,7 @@ mod tests {
             s.tags = exif::Tags {
                 rating: Some(5),
                 keywords: vec!["noordzee".into()],
+                label: None,
             };
             let path = tmp(name);
             export(&img, &meta, &s, &path).unwrap();

@@ -131,6 +131,8 @@ fn write_ifd(out: &mut Vec<u8>, entries: &mut [Entry], offset: usize) {
 pub struct Tags {
     pub rating: Option<u8>,
     pub keywords: Vec<String>,
+    /// Colour label ("Red", ...): XMP only (`xmp:Label`), as Lightroom exports it.
+    pub label: Option<String>,
 }
 
 /// The EXIF TIFF block for an export (orientation is always 1: exports are
@@ -334,6 +336,7 @@ mod tests {
         let tags = Tags {
             rating: Some(4),
             keywords: vec!["sea".into(), "zon".into()],
+            label: None,
         };
         let t = build_with_tags(&meta(), MetadataPolicy::AllExceptLocation, &tags).unwrap();
         let ifd0 = read_ifd(&t, 8);

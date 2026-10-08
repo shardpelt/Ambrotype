@@ -11,6 +11,7 @@ mod collages;
 mod folder;
 mod hub;
 mod keys;
+mod library;
 mod looks;
 mod plugins;
 mod schema;
@@ -581,6 +582,7 @@ async fn export(
                 s.tags = amb_export::exif::Tags {
                     rating: info.rating,
                     keywords: info.keywords,
+                    label: info.label,
                 };
             }
         }
@@ -1225,18 +1227,27 @@ async fn folder_photos(path: String) -> Res<Vec<folder::FolderPhoto>> {
 
 /// A small JPEG of a raw for the filmstrip (cached in the app's cache folder).
 #[tauri::command]
-async fn thumbnail(path: String, edge: Option<u32>, app: tauri::AppHandle) -> Res<Response> {
+async fn thumbnail(
+    path: String,
+    edge: Option<u32>,
+    edited: Option<bool>,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Res<Response> {
     let cache = app
         .path()
         .app_cache_dir()
         .ok()
         .map(|d| d.join("thumbnails"));
+    let lens = state.lens.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        folder::thumbnail(
-            Path::new(&path),
-            edge.unwrap_or(folder::THUMB_EDGE),
-            cache.as_deref(),
-        )
+        let edge = edge.unwrap_or(folder::THUMB_EDGE);
+        if edited == Some(true) {
+            let lens = lens.get().unwrap_or_else(|| empty_lens());
+            folder::edited_thumbnail(Path::new(&path), edge, cache.as_deref(), lens)
+        } else {
+            folder::thumbnail(Path::new(&path), edge, cache.as_deref())
+        }
         .map(Response::new)
     })
     .await
@@ -1571,6 +1582,182 @@ async fn share_plugin(
     Ok(url)
 }
 
+// ---------------------------------------------------------------- library
+
+/// The raws in a folder, with ratings, labels, keywords and capture times.
+#[tauri::command]
+async fn library_list(dir: String) -> Res<Vec<library::LibraryPhoto>> {
+    tauri::async_runtime::spawn_blocking(move || library::list(Path::new(&dir)))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Pick a folder for the library.
+#[tauri::command]
+async fn library_pick_folder(app: tauri::AppHandle) -> Option<String> {
+    app.dialog()
+        .file()
+        .set_title("Show a folder in the library")
+        .blocking_pick_folder()
+        .and_then(|p| p.into_path().ok())
+        .map(|p| p.display().to_string())
+}
+
+#[derive(Serialize)]
+struct InfoUpdate {
+    path: String,
+    info: amb_protocol::sidecar::PhotoInfo,
+}
+
+/// Rate, label or keyword many photos: each sidecar is written at once (the
+/// open photo's through its session, so the editor stays in step).
+#[tauri::command]
+async fn library_set_info(
+    paths: Vec<String>,
+    change: library::InfoChange,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<InfoUpdate>> {
+    let slot = state.session.clone();
+    let updates = tauri::async_runtime::spawn_blocking(move || -> Res<Vec<InfoUpdate>> {
+        let mut out = Vec::new();
+        for path in paths {
+            let info = {
+                let mut guard = slot.lock().map_err(|e| e.to_string())?;
+                match guard.as_mut().filter(|s| s.path == Path::new(&path)) {
+                    Some(s) => {
+                        let new = change.apply(&s.info);
+                        s.set_info(&new)?
+                    }
+                    None => library::change_info(Path::new(&path), &change)?,
+                }
+            };
+            out.push(InfoUpdate { path, info });
+        }
+        Ok(out)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    {
+        let mut recent = state.recent_keywords.lock().map_err(|e| e.to_string())?;
+        for k in updates.iter().flat_map(|u| u.info.keywords.iter()).rev() {
+            recent.retain(|r| !r.eq_ignore_ascii_case(k));
+            recent.insert(0, k.clone());
+        }
+        recent.truncate(200);
+    }
+    save_config(state.inner());
+    Ok(updates)
+}
+
+/// The setting groups "Paste settings" offers.
+#[tauri::command]
+fn paste_groups() -> Vec<library::Group> {
+    library::paste_groups()
+}
+
+#[derive(Serialize)]
+struct Pasted {
+    pasted: usize,
+    errors: Vec<String>,
+    /// The open photo's new state, when it was one of the targets.
+    state: Option<session::StateInfo>,
+}
+
+/// Give `targets` the settings of `source` in `groups` (Lightroom's Sync).
+/// The open photo gets them as one undo step; the others in their sidecars.
+#[tauri::command]
+async fn paste_settings(
+    source: String,
+    targets: Vec<String>,
+    groups: Vec<String>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Pasted> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        // The source's edit as it is now (the open photo's unsaved edits too).
+        save_open_edits(&slot)?;
+        let source_xmp = session::sidecar_path(Path::new(&source));
+        let cmds = library::paste_commands(&source_xmp, &groups);
+        let mut out = Pasted {
+            pasted: 0,
+            errors: Vec::new(),
+            state: None,
+        };
+        for target in targets.iter().filter(|t| **t != source) {
+            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            let result = match guard.as_mut().filter(|s| s.path == Path::new(target)) {
+                Some(s) => s
+                    .execute(&cmds, Some("paste settings"))
+                    .map(|_| out.state = Some(s.state_info())),
+                None => library::paste_to_file(Path::new(target), &cmds),
+            };
+            match result {
+                Ok(()) => out.pasted += 1,
+                Err(e) => out.errors.push(e),
+            }
+        }
+        Ok(out)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[derive(Clone, Serialize)]
+struct LibraryProgress {
+    done: usize,
+    total: usize,
+    name: String,
+}
+
+/// Export many photos with the same export choices, each with its own edit,
+/// rating and keywords, into a folder the user picks. One failure doesn't
+/// stop the rest.
+#[tauri::command]
+async fn export_photos(
+    app: tauri::AppHandle,
+    paths: Vec<String>,
+    options: ExportOptions,
+    state: tauri::State<'_, AppState>,
+) -> Res<Option<library::ExportedMany>> {
+    use tauri::Emitter;
+    let Some(dir) = app
+        .dialog()
+        .file()
+        .set_title("Export the selected photos to…")
+        .blocking_pick_folder()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        save_open_edits(&slot)?;
+        let settings = export_settings(&options)?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let out = library::export_many(
+            &paths,
+            &dir,
+            &settings,
+            options.include_tags,
+            lens,
+            &mut |done, total, name| {
+                let _ = app.emit(
+                    "library-progress",
+                    LibraryProgress {
+                        done,
+                        total,
+                        name: name.to_string(),
+                    },
+                );
+            },
+        );
+        Ok(Some(out))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 fn main() {
     // `ambrotype --check-look FILE...` validates layout/theme files and exits.
     let args: Vec<String> = std::env::args().collect();
@@ -1692,6 +1879,12 @@ fn main() {
             open_collage_project,
             pick_photos,
             pick_photo_folder,
+            library_list,
+            library_pick_folder,
+            library_set_info,
+            paste_groups,
+            paste_settings,
+            export_photos,
             plugins_list,
             install_plugin,
             remove_plugin,

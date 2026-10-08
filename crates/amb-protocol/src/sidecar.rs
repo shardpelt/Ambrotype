@@ -6,8 +6,9 @@
 //! alone would silently drop them. [`merge`] writes the new `crs:` settings and
 //! carries every other property of the original over verbatim.
 //!
-//! The photo's rating and keywords ([`PhotoInfo`]) are the exception: they
-//! live in Lightroom's own places (`xmp:Rating`, `dc:subject`, and
+//! The photo's rating, colour label and keywords ([`PhotoInfo`]) are the
+//! exception: they live in Lightroom's own places (`xmp:Rating`, `xmp:Label`,
+//! `dc:subject`, and
 //! `lr:hierarchicalSubject` for keyword paths) and [`merge_with_info`] can
 //! replace them, so Lightroom and other apps read what Ambrotype writes.
 
@@ -26,13 +27,17 @@ const XMP_NS: &str = "http://ns.adobe.com/xap/1.0/";
 const DC_NS: &str = "http://purl.org/dc/elements/1.1/";
 const LR_NS: &str = "http://ns.adobe.com/lightroom/1.0/";
 
-/// A photo's rating and keywords, as stored in its sidecar.
+/// A photo's rating, colour label and keywords, as stored in its sidecar.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct PhotoInfo {
     /// 1..=5 stars; `None` (or 0 in Lightroom's terms) is unrated.
     pub rating: Option<u8>,
     /// In the order given; duplicates (ignoring case) are dropped when writing.
     pub keywords: Vec<String>,
+    /// Colour label as Lightroom and Bridge write it: "Red", "Yellow",
+    /// "Green", "Blue" or "Purple" (any text is kept).
+    #[serde(default)]
+    pub label: Option<String>,
 }
 
 impl PhotoInfo {
@@ -48,17 +53,24 @@ impl PhotoInfo {
         PhotoInfo {
             rating: self.rating.filter(|r| (1..=5).contains(r)),
             keywords,
+            label: self
+                .label
+                .as_deref()
+                .map(str::trim)
+                .filter(|l| !l.is_empty())
+                .map(str::to_string),
         }
     }
 }
 
-/// The rating and keywords in an XMP packet (empty when there are none).
+/// The rating, label and keywords in an XMP packet (empty when there are none).
 pub fn read_info(xmp: &str) -> PhotoInfo {
     let mut info = PhotoInfo::default();
     let text = xmp.trim_start_matches('\u{feff}');
     let mut reader = NsReader::from_str(text);
     let mut in_subject = false;
     let mut in_rating = false;
+    let mut in_label = false;
     let mut in_li = false;
     loop {
         match reader.read_resolved_event() {
@@ -70,6 +82,8 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                     in_subject = true;
                 } else if is(XMP_NS) && local == b"Rating" {
                     in_rating = true;
+                } else if is(XMP_NS) && local == b"Label" {
+                    in_label = true;
                 } else if in_subject && is(RDF_NS) && local == b"li" {
                     in_li = true;
                 }
@@ -77,6 +91,9 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                     let (ans, alocal) = reader.resolve_attribute(a.key);
                     let bound =
                         matches!(ans, ResolveResult::Bound(n) if n.as_ref() == XMP_NS.as_bytes());
+                    if bound && alocal.as_ref() == b"Label" {
+                        info.label = a.unescape_value().ok().map(|v| v.to_string());
+                    }
                     if bound && alocal.as_ref() == b"Rating" {
                         let v = a
                             .unescape_value()
@@ -95,6 +112,8 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                 let v = t.unescape().map(|v| v.to_string()).unwrap_or_default();
                 if in_li {
                     info.keywords.push(v);
+                } else if in_label {
+                    info.label = Some(v);
                 } else if in_rating {
                     info.rating = v
                         .trim()
@@ -111,6 +130,8 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                     in_subject = false;
                 } else if is(XMP_NS) && local.as_ref() == b"Rating" {
                     in_rating = false;
+                } else if is(XMP_NS) && local.as_ref() == b"Label" {
+                    in_label = false;
                 } else if is(RDF_NS) && local.as_ref() == b"li" {
                     in_li = false;
                 }
@@ -119,8 +140,18 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
             _ => {}
         }
     }
-    info.rating = info.rating.filter(|r| (1..=5).contains(r));
-    info
+    info.cleaned_keeping_keywords()
+}
+
+impl PhotoInfo {
+    /// Rating in range and a non-empty label, keywords as read.
+    fn cleaned_keeping_keywords(mut self) -> PhotoInfo {
+        let keywords = std::mem::take(&mut self.keywords);
+        PhotoInfo {
+            keywords,
+            ..self.cleaned()
+        }
+    }
 }
 
 fn escape_text(s: &str) -> String {
@@ -191,14 +222,14 @@ fn apply_info(foreign: &mut Foreign, info: &PhotoInfo) {
     let ns = foreign.namespaces.clone();
     foreign
         .attributes
-        .retain(|(name, _)| resolve(name, &ns) != (Some(XMP_NS), "Rating"));
+        .retain(|(name, _)| !matches!(resolve(name, &ns), (Some(XMP_NS), "Rating" | "Label")));
     let kept: std::collections::HashSet<String> =
         info.keywords.iter().map(|k| k.to_lowercase()).collect();
     let mut elements = Vec::new();
     for e in std::mem::take(&mut foreign.elements) {
         let (uri, local) = element_ns(&e, &ns);
         match (uri.as_deref(), local.as_str()) {
-            (Some(XMP_NS), "Rating") | (Some(DC_NS), "subject") => {}
+            (Some(XMP_NS), "Rating" | "Label") | (Some(DC_NS), "subject") => {}
             (Some(LR_NS), "hierarchicalSubject") => {
                 // Keep the keyword paths whose last part is still a keyword.
                 let paths: Vec<String> = list_items(&e)
@@ -244,6 +275,12 @@ fn apply_info(foreign: &mut Foreign, info: &PhotoInfo) {
         foreign
             .attributes
             .push((format!("{p}:Rating"), r.to_string()));
+    }
+    if let Some(label) = &info.label {
+        let p = prefix_for(foreign, XMP_NS, "xmp");
+        foreign
+            .attributes
+            .push((format!("{p}:Label"), label.clone()));
     }
     if !info.keywords.is_empty() {
         let p = prefix_for(foreign, DC_NS, "dc");
@@ -520,11 +557,13 @@ mod tests {
         let info = read_info(SIDECAR);
         assert_eq!(info.rating, Some(4));
         assert_eq!(info.keywords, ["sunset", "beach"]);
+        assert_eq!(info.label.as_deref(), Some("Red & Blue"));
 
-        // New rating and keywords; everything else (label, develop settings) stays.
+        // New rating and keywords, same label; everything else (develop settings) stays.
         let new = PhotoInfo {
             rating: Some(2),
             keywords: vec!["sunset".into(), " family ".into(), "Sunset".into()],
+            label: info.label.clone(),
         };
         let out = with_info(Some(SIDECAR), &new).unwrap();
         let back = read_info(&out);
@@ -541,9 +580,31 @@ mod tests {
         let both = PhotoInfo {
             rating: Some(5),
             keywords: vec!["a & b".into()],
+            label: Some("Green".into()),
         };
         let fresh = with_info(None, &both).unwrap();
         assert_eq!(read_info(&fresh), both);
+        assert!(fresh.contains(r#"xmp:Label="Green""#), "{fresh}");
+        // A new label replaces the old one; an empty one removes it.
+        let blue = with_info(
+            Some(&fresh),
+            &PhotoInfo {
+                label: Some("Blue".into()),
+                ..both.clone()
+            },
+        )
+        .unwrap();
+        assert_eq!(read_info(&blue).label.as_deref(), Some("Blue"));
+        assert_eq!(blue.matches("Label").count(), 1, "{blue}");
+        let none = with_info(
+            Some(&blue),
+            &PhotoInfo {
+                label: Some("  ".into()),
+                ..both
+            },
+        )
+        .unwrap();
+        assert_eq!(read_info(&none).label, None);
     }
 
     #[test]
@@ -556,6 +617,7 @@ mod tests {
         let info = PhotoInfo {
             rating: Some(4),
             keywords: vec!["sunset".into()],
+            label: None,
         };
         let out = with_info(Some(&lr), &info).unwrap();
         assert!(

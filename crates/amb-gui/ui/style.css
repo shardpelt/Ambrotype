@@ -578,3 +578,53 @@ dialog .col-angle-row { flex-direction: row; align-items: center; justify-conten
 #col-free { align-self: flex-start; }
 .collage-top .sep { height: 22px; }
 dialog .inline-check { flex-direction: row; align-items: flex-start; gap: 6px; color: var(--text); }
+
+/* Colour labels (info block, filmstrip, library) */
+.label-swatches { display: inline-flex; gap: 4px; margin-left: 10px; }
+.label-swatches button { width: 14px; height: 14px; padding: 0; border-radius: 3px; border: 1px solid rgba(0,0,0,.35); opacity: .55; }
+.label-swatches button:hover:not(:disabled) { opacity: 1; filter: none; }
+.label-swatches button.on { opacity: 1; box-shadow: 0 0 0 2px var(--panel), 0 0 0 3.5px var(--text); }
+.film-label { width: 8px; height: 8px; border-radius: 2px; box-shadow: 0 0 0 1px #000; }
+.film-label[hidden] { display: none; }
+
+/* Library (library.js) */
+body.library-mode #workspace { display: none; }
+.library { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
+.library[hidden] { display: none; }
+.library-bar { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--bg-deep); }
+.library-bar > * { flex: none; }
+.library-folder { flex: 0 1 auto; min-width: 40px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
+.library-bar select, .library-bar input[type=search] { padding: 3px 4px; font-size: 12px; }
+.library-bar input[type=search] { width: 130px; }
+.library-bar input[type=range] { width: 90px; }
+.library-bar .grow { flex: 1 1 0; }
+.library-body { position: relative; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 270px; min-height: 0; }
+.library-grid { --thumb: 160px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--thumb), 1fr)); gap: 10px; align-content: start; padding: 12px; overflow-y: auto; outline: none; user-select: none; -webkit-user-select: none; }
+.lib-cell { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 6px 6px 4px; border-radius: var(--radius); border: 1px solid transparent; background: var(--panel); cursor: default; }
+.lib-cell:hover { background: var(--hover); }
+.lib-cell.selected { background: var(--tab-active); border-color: var(--accent); }
+.lib-cell.focus { box-shadow: 0 0 0 1px var(--text) inset; }
+.lib-cell.labelled { border-bottom: 4px solid var(--label); }
+.lib-cell.open .lib-name::before { content: "● "; color: var(--accent); }
+.lib-frame { aspect-ratio: 1; display: grid; place-items: center; background: var(--bg-deep); border-radius: 3px; overflow: hidden; }
+.lib-frame img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; }
+.lib-cell.no-thumb .lib-frame { background: repeating-linear-gradient(45deg, rgba(127,127,127,.2) 0 6px, transparent 6px 12px); }
+.lib-meta { display: flex; align-items: center; gap: 6px; min-height: 14px; }
+.lib-stars { color: var(--accent); font-size: 12px; letter-spacing: -1px; }
+.lib-edited { margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.lib-edited[hidden] { display: none; }
+.lib-name { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.library-empty { position: absolute; inset: 0 270px 0 0; display: grid; place-content: center; justify-items: center; gap: 8px; text-align: center; }
+.library-empty[hidden] { display: none; }
+.library-panel { border-left: 1px solid var(--line); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; background: var(--panel); }
+.library-panel h2 { margin-bottom: 2px; }
+.library-panel h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 8px 0 0; font-weight: 600; }
+.library-panel .hint { margin: 0; }
+.library-panel .rating button.mixed { color: var(--faint); }
+.library-panel .label-swatches { margin-left: 0; }
+.library-panel .label-swatches button { width: 20px; height: 20px; }
+.label-row { display: flex; align-items: center; gap: 10px; }
+.lib-keywords { display: flex; flex-wrap: wrap; gap: 4px; }
+.lib-keywords .tag-chip.partial { opacity: .65; border-style: dashed; }
+#lib-tag-input { background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 8px; }
+.paste-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin: 10px 0; }

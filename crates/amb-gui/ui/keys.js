@@ -8,9 +8,14 @@
 
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
 
-// `when`: "any", "main" (crop tool closed) or "crop" (crop tool open). Actions
+// `when`: "any", "main" (crop tool closed), "crop" (crop tool open) or
+// "library" (the library grid shown). Actions
 // with overlapping contexts can't share a key. `photo`: needs an open photo.
 // `button`: the toolbar button whose tooltip shows the keys.
+// Colour labels, written to the sidecar as Lightroom does (`xmp:Label`).
+const LABELS = ["Red", "Yellow", "Green", "Blue", "Purple"];
+const LABEL_COLOURS = { Red: "#e5484d", Yellow: "#f1c40f", Green: "#46a758", Blue: "#3e7bfa", Purple: "#8e4ec6" };
+
 const KEY_ACTIONS = [
   { id: "open", group: "File", label: "Open a photo", keys: ["Ctrl+O"], when: "any", button: "btn-open", run: () => openDialog() },
   { id: "save", group: "File", label: "Save the edit to the sidecar", keys: ["Ctrl+S"], when: "any", button: "btn-save", run: () => save() },
@@ -28,9 +33,18 @@ const KEY_ACTIONS = [
   { id: "crop-swap", group: "Crop tool", label: "Swap portrait and landscape", keys: ["X"], when: "crop", run: () => swapCrop() },
   { id: "crop-apply", group: "Crop tool", label: "Apply the crop", keys: ["Enter"], when: "crop", run: (e) => (e.target.matches("button, select") ? false : exitCrop(true)) },
   { id: "crop-cancel", group: "Crop tool", label: "Cancel the crop", keys: ["Escape"], when: "crop", run: () => exitCrop(false) },
-  ...[1, 2, 3, 4, 5].map((n) => ({ id: `rate-${n}`, group: "Rating", label: `Rate ${"★".repeat(n)}`, keys: [String(n)], when: "any", photo: true, run: () => setRating(n) })),
-  { id: "rate-0", group: "Rating", label: "Clear the rating", keys: ["0"], when: "any", photo: true, run: () => setRating(0) },
-  { id: "keywords", group: "Rating", label: "Add keywords (jump to the keyword field)", keys: ["K"], when: "any", photo: true, run: () => $("tag-input").focus() },
+  // Rating, labels and keywords: the open photo, or in the library the selected photos.
+  ...[1, 2, 3, 4, 5].map((n) => ({ id: `rate-${n}`, group: "Rating", label: `Rate ${"★".repeat(n)}`, keys: [String(n)], when: "any", run: () => rateKey(n) })),
+  { id: "rate-0", group: "Rating", label: "Clear the rating", keys: ["0"], when: "any", run: () => rateKey(0) },
+  ...LABELS.slice(0, 4).map((l, i) => ({ id: `label-${l.toLowerCase()}`, group: "Rating", label: `${l} label (again to remove)`, keys: [String(6 + i)], when: "any", run: () => labelKey(l) })),
+  { id: "keywords", group: "Rating", label: "Add keywords (jump to the keyword field)", keys: ["K"], when: "any", run: () => keywordsKey() },
+  { id: "library", group: "Library", label: "Library grid / editor", hint: "All the photos in the folder, to rate, label, tag and export many at once.", keys: ["G"], when: "any", button: "btn-library", run: () => toggleLibrary() },
+  { id: "lib-open", group: "Library", label: "Open the photo in the editor", keys: ["Enter"], when: "library", run: (e) => (e.target.matches("button, select") ? false : libraryOpenFocused()) },
+  { id: "lib-all", group: "Library", label: "Select all shown", keys: ["Ctrl+A"], when: "library", run: () => librarySelectAll() },
+  { id: "lib-none", group: "Library", label: "Select none", keys: ["Ctrl+D"], when: "library", run: () => librarySelectNone() },
+  { id: "lib-copy", group: "Library", label: "Copy the selected photo's settings", keys: ["Ctrl+Shift+C"], when: "library", run: () => libraryCopySettings() },
+  { id: "lib-paste", group: "Library", label: "Paste settings onto the selection", keys: ["Ctrl+Shift+V"], when: "library", run: () => libraryPasteSettings() },
+  { id: "lib-leave", group: "Library", label: "Back to the editor", keys: ["Escape"], when: "library", run: () => toggleLibrary(false) },
   { id: "prev-photo", group: "Photos", label: "Previous photo in the folder", keys: ["ArrowLeft"], when: "main", photo: true, run: (e) => (onControl(e) ? false : stepPhoto(-1)) },
   { id: "next-photo", group: "Photos", label: "Next photo in the folder", keys: ["ArrowRight"], when: "main", photo: true, run: (e) => (onControl(e) ? false : stepPhoto(1)) },
   { id: "filmstrip", group: "Photos", label: "Show or hide the filmstrip", keys: ["F"], when: "any", run: () => toggleFilmstrip() },
@@ -81,7 +95,7 @@ function dispatchKey(e) {
   if (document.querySelector("dialog[open]")) return;
   const combo = comboOf(e);
   if (!combo) return;
-  const ctx = ui.crop.on ? "crop" : "main";
+  const ctx = libraryOn() ? "library" : ui.crop.on ? "crop" : "main";
   for (const a of KEY_ACTIONS) {
     if (!keysFor(a).includes(combo)) continue;
     if (a.when !== "any" && a.when !== ctx) continue;
@@ -194,6 +208,7 @@ async function settingsFlow() {
       name.className = "key-action";
       name.textContent = a.label;
       if (a.when === "crop") name.title = "Only while the crop tool is open";
+      if (a.when === "library") name.title = "Only in the library";
       const caps = document.createElement("span");
       caps.className = "key-caps";
       for (const k of keys) {

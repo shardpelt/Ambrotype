@@ -59,9 +59,9 @@ const BUILTIN_THEMES: [(&str, &str); 4] = [
 
 /// Toolbar buttons a layout can place; "|" is a separator. "looks" is always
 /// shown (added at the end if a layout leaves it out), so there's a way back.
-pub const TOOLBAR: [&str; 16] = [
-    "open", "save", "export", "collage", "undo", "redo", "before", "crop", "zoom", "wb", "clip",
-    "plugins", "looks", "edit", "settings", "feedback",
+pub const TOOLBAR: [&str; 17] = [
+    "open", "library", "save", "export", "collage", "undo", "redo", "before", "crop", "zoom", "wb",
+    "clip", "plugins", "looks", "edit", "settings", "feedback",
 ];
 /// Column items that aren't panels.
 pub const BLOCKS: [&str; 4] = ["presets", "info", "history", "histogram"];

@@ -1,10 +1,11 @@
-// Rating and keywords for the open photo. They're written to the photo's XMP
-// sidecar as soon as they change (xmp:Rating and dc:subject, where Lightroom
-// keeps them; src/session.rs `set_info`), and embedded in exports.
-// Keys 1–5 rate, 0 clears (keys.js); the keyword field takes Enter or commas.
+// Rating, colour label and keywords for the open photo. They're written to
+// the photo's XMP sidecar as soon as they change (xmp:Rating, xmp:Label and
+// dc:subject, where Lightroom keeps them; src/session.rs `set_info`), and
+// embedded in exports. Keys 1–5 rate, 0 clears, 6–9 label (keys.js); the
+// keyword field takes Enter or commas.
 "use strict";
 
-const infoState = { info: { rating: null, keywords: [] }, recent: [], busy: Promise.resolve() };
+const infoState = { info: { rating: null, keywords: [], label: null }, recent: [], busy: Promise.resolve() };
 
 function renderInfo() {
   const block = $("block-info");
@@ -18,6 +19,10 @@ function renderInfo() {
     b.disabled = !on;
   }
   $("rating-clear").disabled = !on || !rating;
+  for (const b of $("label-swatches").querySelectorAll("button")) {
+    b.classList.toggle("on", b.dataset.label === infoState.info.label);
+    b.disabled = !on;
+  }
   const chips = $("tag-chips");
   chips.replaceChildren(...infoState.info.keywords.map((k) => {
     const chip = Object.assign(document.createElement("span"), { className: "tag-chip", textContent: k });
@@ -68,6 +73,15 @@ function setRating(n) {
   status(rating ? `Rated ${"★".repeat(rating)}` : "Rating cleared");
 }
 
+// The same label again removes it.
+function setLabel(label) {
+  if (!ui.info) return;
+  const next = infoState.info.label === label ? null : label;
+  saveInfo({ ...infoState.info, label: next });
+  stripUpdateCurrent({ label: next });
+  status(next ? `${next} label` : "Label removed");
+}
+
 function setKeywords(keywords) {
   if (!ui.info) return;
   const seen = new Set();
@@ -90,6 +104,13 @@ function wireInfo() {
     b.addEventListener("click", () => setRating((infoState.info.rating ?? 0) === n ? 0 : n));
   }
   $("rating-clear").addEventListener("click", () => setRating(0));
+  for (const l of LABELS) {
+    const b = Object.assign(document.createElement("button"), { type: "button", title: `${l} label (${LABELS.indexOf(l) < 4 ? 6 + LABELS.indexOf(l) : "no key"})` });
+    b.dataset.label = l;
+    b.style.background = LABEL_COLOURS[l];
+    b.addEventListener("click", () => setLabel(l));
+    $("label-swatches").append(b);
+  }
   const input = $("tag-input");
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === "," || e.key === "Tab") {

@@ -21,6 +21,9 @@ pub struct FolderPhoto {
     pub path: String,
     pub name: String,
     pub rating: Option<u8>,
+    /// Colour label ("Red", ...), from the sidecar.
+    pub label: Option<String>,
+    pub keywords: Vec<String>,
     /// The sidecar has develop settings.
     pub edited: bool,
 }
@@ -124,6 +127,8 @@ pub fn describe(paths: Vec<PathBuf>) -> Vec<FolderPhoto> {
                     .to_string(),
                 path: p.display().to_string(),
                 rating: info.rating,
+                label: info.label,
+                keywords: info.keywords,
                 edited,
             }
         })
@@ -199,6 +204,47 @@ pub fn thumbnail(path: &Path, edge: u32, cache: Option<&Path>) -> Result<Vec<u8>
     Ok(jpeg)
 }
 
+/// A JPEG of `path` with its sidecar's edits (crop included), cached in
+/// `cache` until the raw or the sidecar changes. Slower the first time: the
+/// raw is decoded.
+pub fn edited_thumbnail(
+    path: &Path,
+    edge: u32,
+    cache: Option<&Path>,
+    lens: &crate::LensSources,
+) -> Result<Vec<u8>, String> {
+    let edge = edge.clamp(64, 2048);
+    let sidecar = crate::session::sidecar_path(path);
+    let stamp = std::fs::metadata(&sidecar).ok().and_then(|m| {
+        Some((
+            m.len(),
+            m.modified()
+                .ok()?
+                .duration_since(std::time::UNIX_EPOCH)
+                .ok()?
+                .as_nanos(),
+        ))
+    });
+    let key = cache
+        .zip(cache_key(path, edge))
+        .zip(stamp)
+        .map(|((dir, k), (len, t))| dir.join(format!("e-{k}-{len}-{t}.jpg")));
+    if let Some(bytes) = key.as_ref().and_then(|k| std::fs::read(k).ok()) {
+        return Ok(bytes);
+    }
+    let mut s = crate::session::Session::open(path)?;
+    let jpeg = s
+        .preview(edge as usize, &Default::default(), false, false, lens)
+        .jpeg;
+    if let Some(k) = key {
+        if let Some(dir) = k.parent() {
+            let _ = std::fs::create_dir_all(dir);
+        }
+        let _ = std::fs::write(&k, &jpeg);
+    }
+    Ok(jpeg)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -246,6 +292,7 @@ mod tests {
                 &amb_protocol::sidecar::PhotoInfo {
                     rating: Some(3),
                     keywords: vec![],
+                    label: None,
                 },
             )
             .unwrap(),

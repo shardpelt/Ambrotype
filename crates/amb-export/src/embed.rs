@@ -23,15 +23,20 @@ fn escape(s: &str) -> String {
         .replace('"', "&quot;")
 }
 
-/// An XMP packet with the rating and keywords, or `None` when there are none.
+/// An XMP packet with the rating, label and keywords, or `None` when there are none.
 pub fn xmp_packet(tags: &Tags) -> Option<String> {
     let rating = tags.rating.filter(|r| (1..=5).contains(r));
+    let label = tags
+        .label
+        .as_deref()
+        .map(str::trim)
+        .filter(|l| !l.is_empty());
     let keywords: Vec<&String> = tags
         .keywords
         .iter()
         .filter(|k| !k.trim().is_empty())
         .collect();
-    if rating.is_none() && keywords.is_empty() {
+    if rating.is_none() && label.is_none() && keywords.is_empty() {
         return None;
     }
     let mut out = String::from(
@@ -45,6 +50,9 @@ pub fn xmp_packet(tags: &Tags) -> Option<String> {
     );
     if let Some(r) = rating {
         out.push_str(&format!("\n    xmp:Rating=\"{r}\""));
+    }
+    if let Some(l) = label {
+        out.push_str(&format!("\n    xmp:Label=\"{}\"", escape(l)));
     }
     if keywords.is_empty() {
         out.push_str("/>\n");
@@ -263,6 +271,7 @@ mod tests {
         Tags {
             rating: Some(4),
             keywords: vec!["zee".into(), "Strand & duin".into()],
+            label: Some("Green".into()),
         }
     }
 
@@ -272,6 +281,7 @@ mod tests {
         assert!(
             p.contains(r#"xmp:Rating="4""#) && p.contains("<rdf:li>Strand &amp; duin</rdf:li>")
         );
+        assert!(p.contains(r#"xmp:Label="Green""#), "{p}");
         assert!(xmp_packet(&Tags::default()).is_none());
         let iptc = iptc_app13(&["x".repeat(100)]).unwrap();
         assert!(iptc.starts_with(b"Photoshop 3.0\0"));

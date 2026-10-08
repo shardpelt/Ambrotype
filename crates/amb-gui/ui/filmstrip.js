@@ -1,8 +1,9 @@
 // The filmstrip: the other raws in the open photo's folder, under the photo.
 // Click one, or use ← →, to open it; edits to the photo you leave are saved
 // to its sidecar first (src/main.rs `open_photo`). Thumbnails are the
-// previews cameras embed (src/folder.rs); the open photo's own cell shows its
-// current edit instead.
+// previews cameras embed (src/folder.rs), then, for photos with edits, a render
+// of the edit (cached until the sidecar changes); the open photo's own cell
+// shows its current edit.
 "use strict";
 
 const strip = {
@@ -11,6 +12,7 @@ const strip = {
   cells: new Map(),    // path -> cell element
   edited: new Map(),   // path -> data URL of its last edited preview (this session)
   queue: [],
+  editedQueue: [],     // edited photos whose render replaces the camera preview
   loading: 0,
   observer: null,
   hidden: false,
@@ -47,6 +49,7 @@ function renderStrip() {
   const list = $("filmstrip-list");
   strip.observer?.disconnect();
   strip.queue = [];
+  strip.editedQueue = [];
   strip.cells.clear();
   list.replaceChildren();
   strip.observer = new IntersectionObserver((entries) => {
@@ -69,7 +72,9 @@ function renderStrip() {
     meta.className = "film-meta";
     const stars = Object.assign(document.createElement("span"), { className: "film-stars", textContent: starText(p.rating) });
     const dot = Object.assign(document.createElement("span"), { className: "film-edited", title: "Has edits", hidden: !p.edited });
-    meta.append(stars, dot);
+    const label = Object.assign(document.createElement("span"), { className: "film-label", hidden: !p.label, title: p.label ? `${p.label} label` : "" });
+    if (p.label) label.style.background = LABEL_COLOURS[p.label] ?? "var(--muted)";
+    meta.append(stars, label, dot);
     const name = Object.assign(document.createElement("span"), { className: "film-name", textContent: p.name });
     cell.append(img, meta, name);
     cell.addEventListener("click", async () => {
@@ -105,8 +110,25 @@ function pumpThumbs() {
         const img = cell.querySelector("img");
         if (strip.edited.has(path)) return;
         img.src = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
+        if (strip.photos.find((p) => p.path === path)?.edited) strip.editedQueue.push(path);
       })
       .catch(() => cell.classList.add("no-thumb"))
+      .finally(() => {
+        strip.loading--;
+        pumpThumbs();
+      });
+  }
+  // Renders of edits (slower: the raw is decoded) one at a time, after the previews.
+  if (!strip.queue.length && strip.loading === 0 && strip.editedQueue.length) {
+    const path = strip.editedQueue.shift();
+    const cell = strip.cells.get(path);
+    if (!cell || strip.edited.has(path) || path === ui.info?.path) return pumpThumbs();
+    strip.loading++;
+    invoke("thumbnail", { path, edited: true })
+      .then((buf) => {
+        if (!strip.edited.has(path)) cell.querySelector("img").src = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
+      })
+      .catch(() => {})
       .finally(() => {
         strip.loading--;
         pumpThumbs();
@@ -141,19 +163,30 @@ function stripShowPreview(img) {
   cell.querySelector("img").src = url;
 }
 
-// Keep the strip's rating and "edited" marks in step with the open photo.
-function stripUpdateCurrent({ rating, edited } = {}) {
-  const p = strip.photos.find((x) => x.path === ui.info?.path);
+// Keep the strip's rating, label and "edited" marks in step with the open photo.
+function stripUpdateCurrent(changes = {}) {
+  if (ui.info) stripUpdate(ui.info.path, changes);
+}
+
+function stripUpdate(path, { rating, label, edited, keywords } = {}) {
+  const p = strip.photos.find((x) => x.path === path);
   const cell = p && strip.cells.get(p.path);
   if (!cell) return;
   if (rating !== undefined) {
     p.rating = rating;
     cell.querySelector(".film-stars").textContent = starText(rating);
   }
+  if (label !== undefined) {
+    p.label = label;
+    const mark = cell.querySelector(".film-label");
+    mark.hidden = !label;
+    mark.style.background = label ? LABEL_COLOURS[label] ?? "var(--muted)" : "";
+  }
   if (edited !== undefined) {
     p.edited = edited;
     cell.querySelector(".film-edited").hidden = !edited;
   }
+  if (keywords !== undefined) p.keywords = keywords;
 }
 
 // Files that wouldn't open are skipped (and marked) when stepping.

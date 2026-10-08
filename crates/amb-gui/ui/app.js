@@ -1003,20 +1003,31 @@ function pickExportSize() {
   updateExportSize();
 }
 
-async function exportFlow() {
-  if (!ui.info) return;
+// `batch`: many photos from the library ({ paths, aspect, run(options) }),
+// each exported with its own edit; otherwise the open photo.
+async function exportFlow(batch = null) {
+  if (!batch && libraryOn()) return libraryExport();
+  if (!batch && !ui.info) return;
   // Export what the crop tool shows.
   if (ui.crop.on) await exitCrop(true);
   const dlg = $("export-dialog");
   updateExportForm();
-  try {
-    const st = await invoke("crop_state");
-    ui.crop.enabled = st.enabled;
-    ui.exportCropAspect = st.rect.width / st.rect.height;
-    ui.exportCropSize = [st.rect.width, st.rect.height];
-  } catch {
-    ui.exportCropAspect = ui.info.width / ui.info.height;
-    ui.exportCropSize = [ui.info.width, ui.info.height];
+  dlg.querySelector("h2").textContent = batch ? `Export ${batch.paths.length} photo${batch.paths.length === 1 ? "" : "s"}` : "Export";
+  $("export-go").textContent = batch ? "Choose a folder…" : "Export…";
+  if (batch) {
+    ui.crop.enabled = false;
+    ui.exportCropAspect = batch.aspect;
+    ui.exportCropSize = [Math.round(3000 * Math.min(1, batch.aspect)), Math.round(3000 / Math.max(1, batch.aspect))];
+  } else {
+    try {
+      const st = await invoke("crop_state");
+      ui.crop.enabled = st.enabled;
+      ui.exportCropAspect = st.rect.width / st.rect.height;
+      ui.exportCropSize = [st.rect.width, st.rect.height];
+    } catch {
+      ui.exportCropAspect = ui.info.width / ui.info.height;
+      ui.exportCropSize = [ui.info.width, ui.info.height];
+    }
   }
   if (!ui.borders) await loadBorders();
   fillBorderSelect();
@@ -1025,9 +1036,6 @@ async function exportFlow() {
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   if (choice !== "ok") return;
   const f = $("export-form");
-  const base = ui.info.name.replace(/\.[^.]+$/, "");
-  const path = await invoke("pick_export_path", { suggested: base, format: f.format.value });
-  if (!path) return;
   const options = {
     format: f.format.value,
     quality: Number(f.quality.value),
@@ -1041,6 +1049,10 @@ async function exportFlow() {
     max_kb: f.max_kb.value ? Number(f.max_kb.value) : null,
     border: borderOn() ? readBorder() : null,
   };
+  if (batch) return batch.run(options);
+  const base = ui.info.name.replace(/\.[^.]+$/, "");
+  const path = await invoke("pick_export_path", { suggested: base, format: f.format.value });
+  if (!path) return;
   status(`Exporting ${path}…`);
   $("busy").hidden = false;
   try {
@@ -1081,6 +1093,7 @@ async function init() {
   await loadKeybindings();
 
   $("btn-open").addEventListener("click", openDialog);
+  $("btn-library").addEventListener("click", () => toggleLibrary());
   $("btn-open-empty").addEventListener("click", openDialog);
   $("btn-save").addEventListener("click", save);
   $("btn-export").addEventListener("click", exportFlow);

@@ -3,7 +3,7 @@
   "name": "Classic",
   "description": "Presets and history on the left, the Develop panels on the right.",
   "density": "normal",
-  "toolbar": ["open", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "zoom", "wb", "clip", "|", "plugins", "|", "looks", "edit", "settings", "feedback"],
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "zoom", "wb", "clip", "|", "plugins", "|", "looks", "edit", "settings", "feedback"],
   "left": { "width": 250, "items": ["presets", "info", "history"] },
   "right": {
     "width": 330,

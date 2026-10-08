@@ -9,7 +9,7 @@
       "description": "Everything in one right column: white balance and tone as a grid of knobs, presence as bars, then the usual panels.",
       "license": "CC0-1.0",
       "path": "looks/layouts/knob-desk.json",
-      "sha256": "f8d05c32ff367a0aa4ca4c28fa9cbde1ebf401c0b0a5b6c43799a7fb813f73d3"
+      "sha256": "9b903c2e9d5033dc8564b3b5ff760e101a6b09bcf806dd04eb6f4d7b829faca4"
     },
     {
       "id": "theme-paper",

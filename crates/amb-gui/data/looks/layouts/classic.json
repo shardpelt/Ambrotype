@@ -4,7 +4,7 @@
   "description": "Presets and history on the left, the Develop panels on the right.",
   "density": "normal",
   "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "|", "crop", "zoom", "wb", "clip", "|", "looks", "edit", "settings", "feedback"],
-  "left": { "width": 250, "items": ["presets", "history"] },
+  "left": { "width": 250, "items": ["presets", "info", "history"] },
   "right": {
     "width": 330,
     "items": [

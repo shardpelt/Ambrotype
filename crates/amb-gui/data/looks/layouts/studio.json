@@ -4,7 +4,7 @@
   "description": "A mixing-desk feel: knobs for light, bars for presence and detail.",
   "density": "normal",
   "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "|", "crop", "zoom", "wb", "clip", "|", "looks", "edit", "settings", "feedback"],
-  "left": { "width": 240, "items": ["presets", "history"] },
+  "left": { "width": 240, "items": ["presets", "info", "history"] },
   "right": {
     "width": 360,
     "items": [

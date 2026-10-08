@@ -93,7 +93,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
 - `items`: a list, shown top to bottom.
 
 A column with width 0 or no items is hidden. Each item is one of:
-- The strings `presets`, `histogram` or `history`: the presets list (with the Amount slider), the histogram with the photo's camera info, or the edit history. Each appears at most once; leave one out to hide it.
+- The strings `presets`, `info`, `histogram` or `history`: the presets list (with the Amount slider), the rating stars and keyword field, the histogram with the photo's camera info, or the edit history. Each appears at most once; leave one out to hide it.
 - **A built-in panel:** `{ "panel": "<id>", "title"?, "open"?, "widgets"?, "hide"? }`
   - `open`: true to start expanded.
   - `widgets`: maps setting names to a control type, e.g. `{ "Exposure2012": "knob" }`.

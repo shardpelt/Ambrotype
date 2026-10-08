@@ -124,9 +124,27 @@ fn write_ifd(out: &mut Vec<u8>, entries: &mut [Entry], offset: usize) {
     out.extend_from_slice(&values);
 }
 
+/// The photo's rating and keywords, written with the full metadata policies:
+/// EXIF Rating / RatingPercent and XPKeywords (read by Windows and many
+/// photo apps; Lightroom reads them from the XMP sidecar instead).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct Tags {
+    pub rating: Option<u8>,
+    pub keywords: Vec<String>,
+}
+
 /// The EXIF TIFF block for an export (orientation is always 1: exports are
 /// rotated upright). `None` when the policy writes no metadata.
 pub fn build(meta: &PhotoMetadata, policy: MetadataPolicy) -> Option<Vec<u8>> {
+    build_with_tags(meta, policy, &Tags::default())
+}
+
+/// [`build`], with the photo's rating and keywords.
+pub fn build_with_tags(
+    meta: &PhotoMetadata,
+    policy: MetadataPolicy,
+    tags: &Tags,
+) -> Option<Vec<u8>> {
     if policy == MetadataPolicy::None {
         return None;
     }
@@ -144,6 +162,25 @@ pub fn build(meta: &PhotoMetadata, policy: MetadataPolicy) -> Option<Vec<u8>> {
     let mut exif = Vec::new();
     let mut gps = Vec::new();
     if full {
+        if let Some(r) = tags.rating.filter(|r| (1..=5).contains(r)) {
+            ifd0.push(short(0x4746, u16::from(r)));
+            ifd0.push(short(0x4749, [1, 25, 50, 75, 99][usize::from(r) - 1]));
+        }
+        if !tags.keywords.is_empty() {
+            // XPKeywords: UTF-16LE, ";"-separated, NUL-terminated, as BYTEs.
+            let text = tags.keywords.join(";");
+            let data: Vec<u8> = text
+                .encode_utf16()
+                .chain([0])
+                .flat_map(u16::to_le_bytes)
+                .collect();
+            ifd0.push(Entry {
+                tag: 0x9C9E,
+                kind: BYTE,
+                count: data.len() as u32,
+                data,
+            });
+        }
         if !meta.make.is_empty() {
             ifd0.push(ascii(0x010F, &meta.make));
         }
@@ -290,6 +327,31 @@ mod tests {
 
     fn find(ifd: &[(u16, u16, u32, Vec<u8>)], tag: u16) -> Option<Vec<u8>> {
         ifd.iter().find(|e| e.0 == tag).map(|e| e.3.clone())
+    }
+
+    #[test]
+    fn rating_and_keywords() {
+        let tags = Tags {
+            rating: Some(4),
+            keywords: vec!["sea".into(), "zon".into()],
+        };
+        let t = build_with_tags(&meta(), MetadataPolicy::AllExceptLocation, &tags).unwrap();
+        let ifd0 = read_ifd(&t, 8);
+        assert!(ifd0.windows(2).all(|w| w[0].0 < w[1].0), "tags sorted");
+        assert_eq!(find(&ifd0, 0x4746).unwrap(), 4u16.to_le_bytes());
+        assert_eq!(find(&ifd0, 0x4749).unwrap(), 75u16.to_le_bytes());
+        let kw = find(&ifd0, 0x9C9E).unwrap();
+        let units: Vec<u16> = kw
+            .chunks(2)
+            .map(|c| u16::from_le_bytes([c[0], c[1]]))
+            .collect();
+        assert_eq!(
+            String::from_utf16(&units[..units.len() - 1]).unwrap(),
+            "sea;zon"
+        );
+        // "Copyright only" leaves them out.
+        let t = build_with_tags(&meta(), MetadataPolicy::CopyrightOnly, &tags).unwrap();
+        assert!(find(&read_ifd(&t, 8), 0x4746).is_none());
     }
 
     #[test]

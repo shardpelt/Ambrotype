@@ -10,7 +10,7 @@ const TOOLBAR_IDS = {
   before: "btn-before", crop: "btn-crop", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip",
   looks: "btn-looks", edit: "btn-edit-layout", settings: "btn-settings", feedback: "btn-feedback",
 };
-const BLOCK_IDS = { presets: "block-presets", history: "block-history", histogram: "block-histogram" };
+const BLOCK_IDS = { presets: "block-presets", info: "block-info", history: "block-history", histogram: "block-histogram" };
 const WHEEL_SECTIONS = ["Shadow", "Midtone", "Highlight", "Global"];
 const DEFAULT_WIDTH = { left: 250, right: 330 };
 
@@ -18,7 +18,7 @@ const DEFAULT_WIDTH = { left: 250, right: 330 };
 function fallbackLayout() {
   return {
     name: "Classic",
-    left: { width: 250, items: ["presets", "history"] },
+    left: { width: 250, items: ["presets", "info", "history"] },
     right: { width: 330, items: ["histogram", ...ui.panels.map((p) => ({ panel: p.id, open: p.id === "basic" }))] },
   };
 }

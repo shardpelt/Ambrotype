@@ -46,6 +46,8 @@ pub struct Session {
     /// Full-resolution upright sRGB render for the 100% view, keyed by the
     /// committed settings it was rendered with.
     full_cache: Option<FullRender>,
+    /// Rating and keywords, as in the sidecar (they are saved as they change).
+    pub info: amb_protocol::sidecar::PhotoInfo,
 }
 
 struct FullRender {
@@ -206,6 +208,10 @@ impl Session {
             full,
             preview_src: None,
             state,
+            info: base_xmp
+                .as_deref()
+                .map(amb_protocol::sidecar::read_info)
+                .unwrap_or_default(),
             sidecar,
             base_xmp,
             lens_cache: None,
@@ -601,6 +607,22 @@ impl Session {
         Ok(self.sidecar.display().to_string())
     }
 
+    /// Set the rating and keywords and write them to the sidecar at once.
+    /// Only those change on disk: the develop settings in the file stay as
+    /// they were (unsaved edits are saved with Save, as before).
+    pub fn set_info(
+        &mut self,
+        info: &amb_protocol::sidecar::PhotoInfo,
+    ) -> Result<amb_protocol::sidecar::PhotoInfo, String> {
+        use amb_protocol::sidecar;
+        let on_disk = std::fs::read_to_string(&self.sidecar).ok();
+        let text = sidecar::with_info(on_disk.as_deref(), info).map_err(|e| e.to_string())?;
+        sidecar::write_atomic(&self.sidecar, &text).map_err(|e| e.to_string())?;
+        self.info = sidecar::read_info(&text);
+        self.base_xmp = Some(text);
+        Ok(self.info.clone())
+    }
+
     /// Full-resolution render and export.
     pub fn export(
         &mut self,
@@ -889,6 +911,36 @@ mod tests {
         assert!(!s.state.settings().contains_key("CropLeft"));
         s.execute(&[Command::Undo], None).unwrap();
         assert!(s.crop_state().enabled);
+    }
+
+    #[test]
+    fn rating_and_keywords_are_written_at_once_without_unsaved_edits() {
+        use amb_protocol::sidecar::PhotoInfo;
+        let path = synthetic("ramp");
+        let mut s = Session::open(&path).unwrap();
+        assert_eq!(s.info, PhotoInfo::default());
+        // An unsaved edit...
+        s.execute(
+            &[Command::SetParam {
+                name: "Exposure2012".into(),
+                value: serde_json::json!(1.0),
+            }],
+            None,
+        )
+        .unwrap();
+        // ...is not written by rating the photo.
+        let info = PhotoInfo {
+            rating: Some(3),
+            keywords: vec!["test".into()],
+        };
+        assert_eq!(s.set_info(&info).unwrap(), info);
+        let on_disk = std::fs::read_to_string(&s.sidecar).unwrap();
+        assert!(!on_disk.contains("Exposure2012"), "{on_disk}");
+        // Saving the edit keeps the rating; reopening reads both.
+        s.save_sidecar().unwrap();
+        let again = Session::open(&path).unwrap();
+        assert_eq!(again.info, info);
+        assert_eq!(again.state.settings().len(), 1);
     }
 
     #[test]

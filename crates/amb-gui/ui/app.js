@@ -868,6 +868,7 @@ async function openPath(path) {
     if (ui.zoom.on) setZoom(false);
     setState(r.state);
     requestPreview(false);
+    loadInfo();
   } catch (e) {
     toast(String(e), true);
     status("Ready");
@@ -1071,6 +1072,7 @@ async function init() {
   $("btn-looks").addEventListener("click", () => looksFlow().catch((e) => toast(String(e), true)));
   wireEditor();
   wireBorders();
+  wireInfo();
   $("export-form").long_edge.addEventListener("input", drawBorderPreview);
   $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));
   wireViewer();

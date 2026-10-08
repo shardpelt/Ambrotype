@@ -60,6 +60,10 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev librsvg2-dev libxdo-dev
   ```
 - **Presets:** Lightroom's own preset folder is used automatically when it exists (`%APPDATA%\Adobe\CameraRaw\Settings` on Windows, `~/Library/Application Support/Adobe/CameraRaw/Settings` on macOS), plus `~/.local/share/ambrotype/presets`. "Add folder…" adds any other folder for the session.
+- **Rating and keywords:** the stars and the keyword field (left column) are saved to the photo's `.xmp` straight away, in the fields Lightroom reads (`xmp:Rating`, `dc:subject`), and go into exported files (EXIF Rating and XPKeywords). Keys 1–5 rate, 0 clears.
+
+  ![Rating and keywords](images/rating-keywords.png)
+
 - **Crop:** with no crop yet, the crop tool starts with a cross cursor: press at one corner and drag to the other, like a screenshot selection. Then adjust it with the handles.
 
   ![Drawing a crop corner to corner](images/crop-draw.png)
@@ -84,6 +88,8 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | J | Clipping overlay (red: clipped highlights, blue: crushed shadows) |
   | R | Crop and straighten. With no crop yet, the cursor is a cross: press at one corner and drag to the other. D draws a new one, X swaps the aspect, Enter applies, Esc cancels |
   | Esc | Leave the picker or crop tool |
+  | 1–5, 0 | Rate the photo (0 clears) |
+  | K | Jump to the keyword field (Enter or a comma adds a keyword) |
   | Ctrl+L / Ctrl+Shift+L | Looks / Edit layout |
   | Ctrl+, | Settings and shortcuts |
   | Double-click a slider | Reset it |

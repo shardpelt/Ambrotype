@@ -64,7 +64,7 @@ pub const TOOLBAR: [&str; 14] = [
     "edit", "settings", "feedback",
 ];
 /// Column items that aren't panels.
-pub const BLOCKS: [&str; 3] = ["presets", "history", "histogram"];
+pub const BLOCKS: [&str; 4] = ["presets", "info", "history", "histogram"];
 /// Widgets that edit several settings at once; each can appear once.
 pub const COMPOSITES: [&str; 2] = ["point-curve", "color-wheels"];
 pub const DENSITIES: [&str; 3] = ["compact", "normal", "large"];
@@ -926,7 +926,7 @@ mod tests {
         let wheel_tags = 12;
         assert_eq!(c.controls.len() + wheel_tags, catalog().kinds.len());
         assert_eq!(c.composites.len(), 2);
-        assert_eq!(c.blocks.len(), 3);
+        assert_eq!(c.blocks.len(), 4);
     }
 
     #[test]

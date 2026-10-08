@@ -44,6 +44,19 @@
         <label class="amount">Amount <input id="preset-amount" type="range" min="0" max="200" value="100"><output id="preset-amount-out">100</output></label>
         <div id="preset-list" class="preset-list"><p class="hint">No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.</p></div>
       </section>
+      <section class="side-section info-block" id="block-info">
+        <div class="side-head"><h2>Rating &amp; keywords</h2></div>
+        <div id="rating" class="rating" role="radiogroup" aria-label="Rating">
+          <button type="button" data-stars="1" role="radio" title="1 star (1)">★</button><button type="button" data-stars="2" role="radio" title="2 stars (2)">★</button><button type="button" data-stars="3" role="radio" title="3 stars (3)">★</button><button type="button" data-stars="4" role="radio" title="4 stars (4)">★</button><button type="button" data-stars="5" role="radio" title="5 stars (5)">★</button>
+          <button type="button" id="rating-clear" class="rating-clear" title="No rating (0)">×</button>
+        </div>
+        <div id="tag-field" class="tag-field">
+          <span id="tag-chips" class="tag-chips"></span>
+          <input id="tag-input" type="text" list="tag-suggest" placeholder="Add keywords…" spellcheck="false" aria-label="Add keywords">
+          <datalist id="tag-suggest"></datalist>
+        </div>
+        <p class="hint">Saved to the photo's .xmp straight away, where Lightroom reads them, and put in exports. Keys 1–5 rate, 0 clears.</p>
+      </section>
       <section class="side-section history" id="block-history">
         <div class="side-head"><h2>History</h2></div>
         <ol id="history-list" class="history-list"></ol>
@@ -360,6 +373,7 @@
   <script src="keys.js"></script>
   <script src="hub.js"></script>
   <script src="borders.js"></script>
+  <script src="info.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

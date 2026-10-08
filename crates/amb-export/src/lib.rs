@@ -159,6 +159,8 @@ pub struct ExportSettings {
     pub avif_speed: u8,
     /// A frame around the photo ([`border`]).
     pub border: Option<border::Border>,
+    /// The photo's rating and keywords, embedded with the full metadata policies.
+    pub tags: exif::Tags,
 }
 
 impl ExportSettings {
@@ -177,6 +179,7 @@ impl ExportSettings {
             max_bytes: None,
             avif_speed: 6,
             border: None,
+            tags: exif::Tags::default(),
         }
     }
 }
@@ -320,7 +323,7 @@ pub fn export(
     }
 
     let icc = s.color_space.icc_profile();
-    let exif = exif::build(meta, s.metadata);
+    let exif = exif::build_with_tags(meta, s.metadata, &s.tags);
     let (w, h) = (out.width as u32, out.height as u32);
     let mut quality = s.quality.clamp(1, 100);
     let bytes = match (s.format, depth) {

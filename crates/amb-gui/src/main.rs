@@ -44,6 +44,7 @@ struct AppState {
     keybindings: Mutex<keys::Bindings>,
     hub_url: Mutex<Option<String>>,
     border_presets: Mutex<Vec<borders::BorderPreset>>,
+    recent_keywords: Mutex<Vec<String>>,
 }
 
 /// Settings kept between runs.
@@ -67,6 +68,9 @@ struct Config {
     /// The user's border presets (the built-ins are added when listing).
     #[serde(default)]
     border_presets: Vec<borders::BorderPreset>,
+    /// Keywords used lately, newest first (for suggestions).
+    #[serde(default)]
+    recent_keywords: Vec<String>,
 }
 
 fn save_config(state: &AppState) {
@@ -102,6 +106,11 @@ fn save_config(state: &AppState) {
             .border_presets
             .lock()
             .map(|b| b.clone())
+            .unwrap_or_default(),
+        recent_keywords: state
+            .recent_keywords
+            .lock()
+            .map(|k| k.clone())
             .unwrap_or_default(),
     };
     if let Some(dir) = path.parent() {
@@ -458,6 +467,13 @@ struct ExportOptions {
     /// A frame around the photo.
     #[serde(default)]
     border: Option<amb_export::border::Border>,
+    /// Put the photo's rating and keywords in the file's metadata.
+    #[serde(default = "yes")]
+    include_tags: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 #[derive(Serialize)]
@@ -517,6 +533,18 @@ async fn export(
         if let Some(b) = options.border {
             b.validate()?;
             s.border = Some(b);
+        }
+        if options.include_tags {
+            if let Some(info) = slot
+                .lock()
+                .ok()
+                .and_then(|g| g.as_ref().map(|s| s.info.clone()))
+            {
+                s.tags = amb_export::exif::Tags {
+                    rating: info.rating,
+                    keywords: info.keywords,
+                };
+            }
         }
         s.max_bytes = options
             .max_kb
@@ -773,6 +801,58 @@ fn open_settings_folder(app: tauri::AppHandle, state: tauri::State<'_, AppState>
         .map_err(|e| e.to_string())
 }
 
+#[derive(Serialize)]
+struct InfoState {
+    info: amb_protocol::sidecar::PhotoInfo,
+    /// Keywords used lately, for suggestions.
+    recent: Vec<String>,
+}
+
+fn info_state(state: &AppState) -> Res<InfoState> {
+    let info = state
+        .session
+        .lock()
+        .map_err(|e| e.to_string())?
+        .as_ref()
+        .map(|s| s.info.clone())
+        .unwrap_or_default();
+    let recent = state
+        .recent_keywords
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone();
+    Ok(InfoState { info, recent })
+}
+
+/// The open photo's rating and keywords.
+#[tauri::command]
+fn photo_info(state: tauri::State<'_, AppState>) -> Res<InfoState> {
+    info_state(state.inner())
+}
+
+/// Set the open photo's rating and keywords; they're written to its sidecar at once.
+#[tauri::command]
+fn set_photo_info(
+    info: amb_protocol::sidecar::PhotoInfo,
+    state: tauri::State<'_, AppState>,
+) -> Res<InfoState> {
+    let saved = {
+        let mut guard = state.session.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo is open")?;
+        s.set_info(&info)?
+    };
+    {
+        let mut recent = state.recent_keywords.lock().map_err(|e| e.to_string())?;
+        for k in saved.keywords.iter().rev() {
+            recent.retain(|r| !r.eq_ignore_ascii_case(k));
+            recent.insert(0, k.clone());
+        }
+        recent.truncate(200);
+    }
+    save_config(state.inner());
+    info_state(state.inner())
+}
+
 /// Built-in border presets followed by the user's.
 #[tauri::command]
 fn border_presets(state: tauri::State<'_, AppState>) -> Res<Vec<borders::BorderPreset>> {
@@ -940,6 +1020,9 @@ fn main() {
                 if let Ok(mut b) = state.border_presets.lock() {
                     *b = config.border_presets;
                 }
+                if let Ok(mut k) = state.recent_keywords.lock() {
+                    *k = config.recent_keywords;
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -986,6 +1069,8 @@ fn main() {
             border_presets,
             save_border_preset,
             delete_border_preset,
+            photo_info,
+            set_photo_info,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Ambrotype");

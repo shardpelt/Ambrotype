@@ -37,6 +37,16 @@ How it works:
 - **Export** renders every photo from its raw at the size its cell needs, composites in linear light and exports through `amb-export`. JPEG, PNG, TIFF, WebP or AVIF, in sRGB, Display P3 or Adobe RGB.
 - **Batch** puts every tray photo (or only those with enough stars) into pages of the layout: `<layout name>-001.jpg`, `-002`, …. Landscape photos go to wide cells and portrait photos to tall cells where the layout has both; a short last page is filled in order.
 - **Sharing:** Save layout keeps it in your list; Share… saves it as a small file (no photos); Import… adds one.
+- **Arrange freely** (built 2026-10-08) turns the layout into frames placed by hand, like layers in GIMP:
+  - drag a frame to move it, its corners to resize it (Shift keeps the shape), and the round handle to turn it to any angle (Shift: 15° steps); or type the angle
+  - frames may overlap: **To front** / **To back** (`]` / `[`) stack them; arrow keys nudge (Shift: 10 px)
+  - **Move frames / Move photos inside** chooses what a drag moves (Alt swaps it for one drag); inside a frame, scroll zooms and R turns the photo a quarter, as in a grid
+  - drop a photo on empty canvas for a new frame there, shaped like the photo; **Add frame** adds an empty one
+  - rounded corners apply to every frame, turned ones too; frames can hang over the edge and are cut off there, as in the export
+  - **Back to a grid layout** returns to the grid it came from (or a fresh grid if frames were added)
+- **Collage files** (built 2026-10-08): **Save** / **Save as…** (Ctrl+S, Ctrl+Shift+S) write the whole collage to a `.ambcollage` file: the layout, the photo in each cell and how it sits, the tray and the export choices. **Open…** (Ctrl+O), dropping the file on the window, or `ambrotype summer.ambcollage` reopens it to edit and export again. Export has "Also save the collage file next to it" (on by default), so every exported image has its re-editable collage beside it. Photos are referred to, not copied: by full path and by a path relative to the file, so a folder holding both can be moved; missing photos are named when it opens.
+
+![Arranged freely: overlapping frames with rounded corners, one turned 14.8°, with its handles](../images/collage-free.png)
 
 ### Layout format (the shareable part)
 
@@ -49,14 +59,16 @@ How it works:
 
 - `gap`, `margin` (the outer border) and `radius` are percentages of the canvas's short edge, so a layout looks the same at any size.
 - A cell is `[x, y, width, height]` as fractions of the area inside the margin. Gaps are taken off the edges cells share, so neighbours stay `gap` apart. Up to 64 cells.
+- **Free layouts** (`"free": true`) place cells on the whole canvas instead (no margin or gaps). Cells may overlap (later ones on top) and stick out of the canvas, and a fifth number turns one: `[x, y, width, height, degrees clockwise]`. They are saved and shared like any layout.
 - **No photos:** layouts never contain photos, so they are small, private and shareable.
 - **Built-ins:** two side by side or stacked, three columns or rows, grids 2 × 2 and 3 × 3, hero on top with two or three below, hero left with two right, big and three small, a mosaic of five, a film strip of four.
 
 ### Still to come
 
-- Drag cell edges to resize neighbours together, merge cells, snap to thirds; round or polygon cells.
-- Saving the collage itself (layout + photos + placements) to reopen and re-export later. Today it stays in place until the app closes.
-- A per-cell edit separate from the photo's own (virtual copies), free rotation and flipping, per-cell borders and shadows.
+- In grids: drag cell edges to resize neighbours together, merge cells, snap to thirds. Round or polygon cells. Snapping and guides when arranging freely.
+- Undo inside the collage maker (today: Back to a grid layout, or reopen the saved file).
+- A per-cell edit separate from the photo's own (virtual copies), flipping, per-cell borders and shadows.
+- The collage stored inside exported images (so a JPEG reopens as its collage); today the `.ambcollage` file sits next to it.
 - Batch: ordering by capture time, a page grid to swap photos between pages before exporting, running in the background, and shapes that follow a photo's crop (batch uses the camera preview's shape).
 - The hub for collage layouts, and `amb collage render` in the CLI.
 

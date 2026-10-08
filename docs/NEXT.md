@@ -21,7 +21,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - saved preset folders
     - feedback button (pre-filled GitHub issue)
     - crop and straighten tool (R), with aspect lock
-    - **size presets** (Instagram, Snapchat, TikTok, X, YouTube, Pinterest, LinkedIn and print sizes, plus custom ones) for the crop and exact-size export (`amb render --exact WxH` too)
+    - **size presets** (Instagram, Snapchat, TikTok, X, Reddit, YouTube, Pinterest, LinkedIn and print sizes, plus custom ones) for the crop and exact-size export (`amb render --exact WxH` too)
     - **looks:** the UI is drawn from a layout file (toolbar, side columns, panels, and knob/bar/slider/number per setting) and a theme (colour tokens). Built-in looks (Classic, Compact, Big controls, Studio, Left-handed; Dark, Light, High contrast, Neutral grey) can be cloned, renamed, shared and imported in the Looks dialog. AI assistants can write them ([ai/ui-layouts.md](ai/ui-layouts.md), `ambrotype --check-look`)
     - **settings and shortcuts:** the ⚙ button lists every keyboard shortcut on a keyboard map and lets you change them (clashes are caught; only changes are stored)
     - **filmstrip:** the other photos in the folder under the photo; ← → or a click opens them, saving edits first
@@ -30,7 +30,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **editor mode:** Edit layout rearranges the screen in place (drag and drop, control types, split and merge, add and remove, column widths) and saves it as your own layout
     - **borders** on export, with presets and colour swatches
     - **plugins** (Ctrl+Shift+P): sandboxed WebAssembly plugins that make edits (one undo step), with permission prompts, install from a folder, Share as pull request, and "Make one with AI…" instructions for the user's own assistant. Built in: Auto tone and Random look. CLI: `amb plugin new/build/check/run` ([ai/plugins.md](ai/plugins.md))
-    - **collage maker** (C): layouts with gap, outer border, corners and background; drag photos into cells, then move, zoom, rotate, or edit them in the editor; save and share layouts; batch a whole folder into pages ([design/collage-and-borders.md](design/collage-and-borders.md))
+    - **collage maker** (C): layouts with gap, outer border, corners and background; drag photos into cells, then move, zoom, rotate, or edit them in the editor; **arrange freely** (move, resize, turn and overlap frames by hand); save the collage as a `.ambcollage` file to reopen and edit; save and share layouts; batch a whole folder into pages ([design/collage-and-borders.md](design/collage-and-borders.md))
 
 ## Owner to-dos
 

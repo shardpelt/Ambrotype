@@ -72,7 +72,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 
   ![Plugins](images/plugins.png)
 
-- **Collage:** the Collage button (or C) opens the collage maker. Pick a layout, drag photos from the tray into the cells, then drag to move a photo in its cell, scroll to zoom, R to rotate. **Edit photo** opens a photo in the editor and **← Back to collage** returns. Set the size, background, gap, outer border and corners on the right; split or remove cells to change the shape, then Save layout or Share… it. **Export pages…** puts a whole folder into pages of the layout.
+- **Collage:** the Collage button (or C) opens the collage maker. Pick a layout, drag photos from the tray into the cells, then drag to move a photo in its cell, scroll to zoom, R to rotate. **Edit photo** opens a photo in the editor and **← Back to collage** returns. Set the size, background, gap, outer border and rounded corners on the right; split or remove cells, or press **Arrange freely** to move, resize, turn and overlap the photos by hand. **Save** keeps the whole collage in a `.ambcollage` file to reopen and edit later (Export can save one next to each image), and **Export pages…** puts a whole folder into pages of the layout.
 
   ![Collage maker](images/collage.png)
 
@@ -103,7 +103,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | ← → | Previous / next photo in the folder (edits are saved first) |
   | F | Show or hide the filmstrip |
   | Ctrl+Shift+P | Plugins |
-  | C | Collage maker (in it: R rotates the selected photo, Delete empties the cell, Esc closes) |
+  | C | Collage maker (in it: R turns the selected photo, Delete empties the cell, Ctrl+S / Ctrl+O save and open the collage, arrow keys nudge and `[` `]` restack free frames, Esc closes) |
   | 1–5, 0 | Rate the photo (0 clears) |
   | K | Jump to the keyword field (Enter or a comma adds a keyword) |
   | Ctrl+L / Ctrl+Shift+L | Looks / Edit layout |

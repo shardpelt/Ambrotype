@@ -977,6 +977,74 @@ async fn share_collage_template(
     Ok(Some(path.display().to_string()))
 }
 
+/// Save the collage as a project file (to reopen and edit later). Without a
+/// path, asks where.
+#[tauri::command]
+async fn save_collage_project(
+    app: tauri::AppHandle,
+    project: collages::ProjectIn,
+    path: Option<String>,
+    suggested: String,
+) -> Res<Option<String>> {
+    let path = match path {
+        Some(p) => PathBuf::from(p),
+        None => {
+            let Some(p) = app
+                .dialog()
+                .file()
+                .set_title("Save the collage")
+                .set_file_name(format!("{suggested}.{}", collages::PROJECT_EXTENSION))
+                .add_filter("Ambrotype collage", &[collages::PROJECT_EXTENSION])
+                .blocking_save_file()
+                .and_then(|p| p.into_path().ok())
+            else {
+                return Ok(None);
+            };
+            p
+        }
+    };
+    let path = if path
+        .extension()
+        .is_some_and(|e| e == collages::PROJECT_EXTENSION)
+    {
+        path
+    } else {
+        path.with_extension(collages::PROJECT_EXTENSION)
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        collages::save_project(&path, &project).map(|()| Some(path.display().to_string()))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Open a collage project file (given, or picked in a dialog).
+#[tauri::command]
+async fn open_collage_project(
+    app: tauri::AppHandle,
+    path: Option<String>,
+) -> Res<Option<collages::OpenedProject>> {
+    let path = match path {
+        Some(p) => PathBuf::from(p),
+        None => {
+            let Some(p) = app
+                .dialog()
+                .file()
+                .set_title("Open a collage")
+                .add_filter("Ambrotype collage", &[collages::PROJECT_EXTENSION])
+                .blocking_pick_file()
+                .and_then(|p| p.into_path().ok())
+            else {
+                return Ok(None);
+            };
+            p
+        }
+    };
+    tauri::async_runtime::spawn_blocking(move || collages::open_project(&path).map(Some))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
 /// Read a shared collage template file (picked in a dialog).
 #[tauri::command]
 async fn import_collage_template(
@@ -1620,6 +1688,8 @@ fn main() {
             export_collage,
             export_collage_batch,
             edited_thumbnail,
+            save_collage_project,
+            open_collage_project,
             pick_photos,
             pick_photo_folder,
             plugins_list,

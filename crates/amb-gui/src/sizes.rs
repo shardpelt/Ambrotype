@@ -154,6 +154,7 @@ mod tests {
         assert_eq!((ig.width, ig.height), (1080, 1350));
         for site in [
             "Facebook",
+            "Reddit",
             "TikTok",
             "Snapchat",
             "YouTube",

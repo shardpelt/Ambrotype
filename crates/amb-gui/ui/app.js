@@ -894,6 +894,11 @@ async function openPath(path) {
   }
 }
 
+// A photo, or a saved collage (.ambcollage).
+function openAny(path) {
+  return /\.ambcollage$/i.test(path) ? openCollageFile(path) : openPath(path);
+}
+
 async function openDialog() {
   const path = await invoke("pick_photo");
   if (path) openPath(path);
@@ -1137,13 +1142,13 @@ async function init() {
   tauri.event.listen("tauri://drag-drop", (e) => {
     $("viewer").classList.remove("dragover");
     const paths = e.payload?.paths ?? [];
-    if (paths.length) openPath(paths[0]);
+    if (paths.length) openAny(paths[0]);
   });
   loadPresets();
   await loadSizes();
   // A photo given on the command line.
   const initial = await invoke("take_initial_path");
-  if (initial) openPath(initial);
+  if (initial) openAny(initial);
 }
 
 init().catch((e) => toast(String(e), true));

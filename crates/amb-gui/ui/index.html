@@ -314,6 +314,10 @@
       <span id="col-title" class="hint"></span>
       <span class="grow"></span>
       <span id="col-progress" class="hint" role="status"></span>
+      <button type="button" id="col-open" title="Open a saved collage (Ctrl+O)">Open…</button>
+      <button type="button" id="col-save-doc" title="Save the collage to reopen and edit later: layout, photos and how they sit (Ctrl+S)">Save</button>
+      <button type="button" id="col-save-as" title="Save the collage as a new file (Ctrl+Shift+S)">Save as…</button>
+      <span class="sep"></span>
       <button type="button" id="col-export" class="primary" title="Save this collage as one image">Export…</button>
       <button type="button" id="col-close" title="Back to the editor (Esc). The collage stays as it is.">Close</button>
     </div>
@@ -332,8 +336,12 @@
         </div>
       </aside>
       <section class="collage-stage-wrap" id="col-stage-wrap">
+        <div id="col-drag-mode" class="tabs col-drag-mode" hidden title="What a drag on a photo moves (hold Alt for the other)">
+          <button type="button" data-mode="frame">Move frames</button>
+          <button type="button" data-mode="photo">Move photos inside</button>
+        </div>
         <div id="col-stage" class="col-stage"></div>
-        <p class="hint col-help">Drag photos from below into the cells. In a cell: drag to move the photo, scroll to zoom, double-click to fit again.</p>
+        <p class="hint col-help" id="col-help"></p>
       </section>
       <aside class="collage-side right">
         <h3>Canvas</h3>
@@ -359,6 +367,7 @@
         <label class="col-range">Outer border <span><input id="col-margin" type="range" min="0" max="15" step="0.25"><output id="col-margin-out"></output></span></label>
         <label class="col-range">Rounded corners <span><input id="col-radius" type="range" min="0" max="20" step="0.25"><output id="col-radius-out"></output></span></label>
         <p class="hint">Gap, border and corners are % of the short edge, so they look the same at any size.</p>
+        <button type="button" id="col-free">Arrange freely</button>
 
         <h3>Cell</h3>
         <p id="col-cell-hint" class="hint">Click a cell to change it.</p>
@@ -367,6 +376,16 @@
           <button type="button" class="small" id="col-fit" title="Fit the photo to the cell again">Fit</button>
           <button type="button" class="small" id="col-edit" title="Open this photo in the editor; Back to collage returns here">Edit photo</button>
           <button type="button" class="small" id="col-clear" title="Take the photo out (Delete)">Empty</button>
+        </div>
+        <div id="col-arrange" class="col-arrange" hidden>
+          <label class="col-angle-row">Angle <span><input id="col-angle" type="number" min="-180" max="180" step="0.5" aria-label="Frame angle in degrees">°
+            <button type="button" class="small" id="col-straight" title="Straighten the frame">0°</button></span></label>
+          <div class="col-line">
+            <button type="button" class="small" id="col-front" title="Bring to front (])">To front</button>
+            <button type="button" class="small" id="col-back" title="Send to back ([)">To back</button>
+            <button type="button" class="small" id="col-add-frame" title="An empty frame on top, in the middle">Add frame</button>
+          </div>
+          <p class="hint">Arrow keys nudge the frame (Shift: 10 px).</p>
         </div>
         <div class="col-line">
           <button type="button" class="small" id="col-split-v" title="Split this cell into left and right">Split ◫</button>
@@ -385,6 +404,7 @@
           </select>
         </label>
         <label class="col-range" id="col-quality-row">Quality <span><input id="col-quality" type="range" min="1" max="100" value="90"><output id="col-quality-out">90</output></span></label>
+        <label class="inline-check"><input id="col-with-project" type="checkbox" checked><span>Also save the collage file next to it, to reopen and edit later</span></label>
         <label>Colour space
           <select id="col-space">
             <option value="srgb">sRGB (web, most screens)</option>

@@ -1,5 +1,5 @@
 {
-  "note": "Built-in size presets for the crop tool (aspect) and export (exact pixel size). The app lists the first group (Common) open and the others as collapsible groups, in this order; the crop tool skips Common because it has its own ratio list. Sites change their recommended sizes often: these were current in 2026. Facebook lists only the sizes that differ from Instagram's. Edit this file to update them; it is compiled into the app. Users add their own sizes in the app instead.",
+  "note": "Built-in size presets for the crop tool (aspect) and export (exact pixel size). The app lists the first group (Common) open and the others as collapsible groups, in this order; the crop tool skips Common because it has its own ratio list. Sites change their recommended sizes often: these were current in 2026. Facebook lists only the sizes that differ from Instagram's; X and Reddit keep their full lists, since people look for them by site. Reddit has no official size for ordinary posts: these are its ad recommendations, with 4:5 for the mobile feed. Edit this file to update them; it is compiled into the app. Users add their own sizes in the app instead.",
   "groups": [
     {
       "group": "Common",
@@ -103,6 +103,26 @@
           "name": "Header",
           "width": 1500,
           "height": 500
+        }
+      ]
+    },
+    {
+      "group": "Reddit",
+      "presets": [
+        {
+          "name": "Portrait 4:5 (mobile feed)",
+          "width": 1080,
+          "height": 1350
+        },
+        {
+          "name": "Square",
+          "width": 1080,
+          "height": 1080
+        },
+        {
+          "name": "Landscape 4:3 (every device)",
+          "width": 1440,
+          "height": 1080
         }
       ]
     },

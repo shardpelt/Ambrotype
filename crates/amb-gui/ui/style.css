@@ -554,3 +554,27 @@ dialog .plugin-param.check { display: flex; flex-direction: row; gap: 8px; }
 .plugin-log pre { max-height: 120px; overflow: auto; font-size: 11px; background: var(--bg-deep); padding: 6px; border-radius: var(--radius); margin: 4px 0 0; white-space: pre-wrap; }
 #plugin-ai textarea { width: 100%; box-sizing: border-box; }
 #ai-prompt { font-family: ui-monospace, monospace; font-size: 11.5px; flex: 1; }
+
+/* Collage: free arrangement */
+.col-drag-mode { margin: 0 0 22px; flex: none; }
+.col-drag-mode[hidden] { display: none; }
+.col-drag-mode button { flex: none; padding: 3px 12px; }
+.col-clip { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
+.col-stage.free .col-cell { cursor: move; }
+.col-stage.free.photo-mode .col-cell { cursor: grab; }
+.col-handles { position: absolute; pointer-events: none; z-index: 3; outline: 1px solid var(--accent); }
+.col-handle, .col-rot { position: absolute; width: 12px; height: 12px; margin: -6px; background: #fff; border: 1.5px solid var(--accent); border-radius: 2px; pointer-events: auto; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+.col-handle.nw { left: 0; top: 0; cursor: nwse-resize; }
+.col-handle.ne { left: 100%; top: 0; cursor: nesw-resize; }
+.col-handle.sw { left: 0; top: 100%; cursor: nesw-resize; }
+.col-handle.se { left: 100%; top: 100%; cursor: nwse-resize; }
+.col-rot { left: 50%; top: -26px; border-radius: 50%; cursor: grab; }
+.col-rot::after { content: ""; position: absolute; left: 50%; top: 10px; width: 1px; height: 14px; background: var(--accent); }
+.col-arrange { display: flex; flex-direction: column; gap: 6px; }
+.col-arrange[hidden] { display: none; }
+dialog .col-angle-row { flex-direction: row; align-items: center; justify-content: space-between; }
+.col-angle-row span { display: flex; align-items: center; gap: 4px; }
+#col-angle { width: 64px; flex: none; }
+#col-free { align-self: flex-start; }
+.collage-top .sep { height: 22px; }
+dialog .inline-check { flex-direction: row; align-items: flex-start; gap: 6px; color: var(--text); }

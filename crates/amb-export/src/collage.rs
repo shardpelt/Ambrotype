@@ -16,6 +16,11 @@
 //! A cell is `[x, y, width, height]` within the area inside the margin; gaps
 //! are taken off the edges cells share, so cells that meet stay `gap` apart.
 //!
+//! A *free* template (`"free": true`) is arranged by hand, like layers: cells
+//! are fractions of the whole canvas (no margin or gaps), may overlap (later
+//! cells on top) and stick out of the canvas, and may be turned to any angle,
+//! written as a fifth number: `[x, y, width, height, degrees clockwise]`.
+//!
 //! Photos fill their cell ("cover"): at zoom 1 the whole cell is covered and
 //! nothing is distorted; zoom > 1 crops in further, and pan moves the window
 //! (kept inside the photo). Rendering works in the export's working space
@@ -46,7 +51,67 @@ pub struct Template {
     pub margin: f64,
     #[serde(default)]
     pub radius: f64,
-    pub cells: Vec<[f64; 4]>,
+    /// Cells placed by hand: see the module notes.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub free: bool,
+    pub cells: Vec<Cell>,
+}
+
+fn is_false(b: &bool) -> bool {
+    !*b
+}
+
+/// A cell: a rectangle as fractions, and (free templates only) an angle in
+/// degrees, clockwise about its centre. Written `[x, y, w, h]`, or
+/// `[x, y, w, h, angle]` when turned.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct Cell {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+    pub angle: f64,
+}
+
+impl From<[f64; 4]> for Cell {
+    fn from([x, y, w, h]: [f64; 4]) -> Cell {
+        Cell {
+            x,
+            y,
+            w,
+            h,
+            angle: 0.0,
+        }
+    }
+}
+
+impl Serialize for Cell {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut v = vec![self.x, self.y, self.w, self.h];
+        if self.angle != 0.0 {
+            v.push(self.angle);
+        }
+        v.serialize(s)
+    }
+}
+
+impl<'de> Deserialize<'de> for Cell {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Cell, D::Error> {
+        let v = Vec::<f64>::deserialize(d)?;
+        match v[..] {
+            [x, y, w, h] => Ok(Cell {
+                x,
+                y,
+                w,
+                h,
+                angle: 0.0,
+            }),
+            [x, y, w, h, angle] => Ok(Cell { x, y, w, h, angle }),
+            _ => Err(serde::de::Error::custom(
+                "a cell is [x, y, width, height] or [x, y, width, height, angle]",
+            )),
+        }
+    }
 }
 
 fn default_format() -> String {
@@ -92,13 +157,15 @@ impl Default for Placement {
     }
 }
 
-/// A cell's pixel rectangle on the canvas.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// A cell's pixel rectangle on the canvas (before turning: the angle is
+/// about its centre; free cells can start left of or above the canvas).
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CellRect {
-    pub x: usize,
-    pub y: usize,
+    pub x: i64,
+    pub y: i64,
     pub w: usize,
     pub h: usize,
+    pub angle: f64,
 }
 
 impl Template {
@@ -138,17 +205,44 @@ impl Template {
         if self.cells.is_empty() || self.cells.len() > MAX_CELLS {
             return Err(format!("a template needs 1 to {MAX_CELLS} cells"));
         }
-        for (i, [x, y, w, h]) in self.cells.iter().enumerate() {
-            let ok = [*x, *y, *w, *h].iter().all(|v| v.is_finite())
-                && *x >= -1e-9
-                && *y >= -1e-9
-                && *w > 0.01
-                && *h > 0.01
-                && x + w <= 1.0 + 1e-6
-                && y + h <= 1.0 + 1e-6;
+        for (i, c) in self.cells.iter().enumerate() {
+            let Cell { x, y, w, h, angle } = *c;
+            let finite = [x, y, w, h, angle].iter().all(|v| v.is_finite());
+            let ok = if self.free {
+                // At least part of it on the canvas, and not huge or tiny.
+                finite
+                    && w > 0.01
+                    && h > 0.01
+                    && w <= 3.0
+                    && h <= 3.0
+                    && x < 1.0
+                    && y < 1.0
+                    && x + w > 0.0
+                    && y + h > 0.0
+                    && (-360.0..=360.0).contains(&angle)
+            } else {
+                finite
+                    && x >= -1e-9
+                    && y >= -1e-9
+                    && w > 0.01
+                    && h > 0.01
+                    && x + w <= 1.0 + 1e-6
+                    && y + h <= 1.0 + 1e-6
+            };
             if !ok {
                 return Err(format!(
-                    "cell {} must lie within 0..1 and not be tiny",
+                    "cell {} must lie within 0..1 and not be tiny{}",
+                    i + 1,
+                    if self.free {
+                        " (a free cell: partly on the canvas, turned at most 360°)"
+                    } else {
+                        ""
+                    }
+                ));
+            }
+            if !self.free && angle != 0.0 {
+                return Err(format!(
+                    "cell {} is turned: that needs \"free\": true",
                     i + 1
                 ));
             }
@@ -160,8 +254,30 @@ impl Template {
         f64::from(self.width.min(self.height))
     }
 
-    /// Each cell's pixels on the canvas, gaps and margin taken off.
+    /// Each cell's pixels on the canvas, gaps and margin taken off (free
+    /// templates: just the fractions of the canvas).
     pub fn cell_rects(&self) -> Vec<CellRect> {
+        if self.free {
+            let (cw, ch) = (f64::from(self.width), f64::from(self.height));
+            return self
+                .cells
+                .iter()
+                .map(|c| {
+                    let (x0, y0) = ((c.x * cw).round() as i64, (c.y * ch).round() as i64);
+                    let (x1, y1) = (
+                        ((c.x + c.w) * cw).round() as i64,
+                        ((c.y + c.h) * ch).round() as i64,
+                    );
+                    CellRect {
+                        x: x0,
+                        y: y0,
+                        w: (x1 - x0).max(1) as usize,
+                        h: (y1 - y0).max(1) as usize,
+                        angle: c.angle,
+                    }
+                })
+                .collect();
+        }
         let short = self.short();
         let margin = self.margin / 100.0 * short;
         let half_gap = self.gap / 100.0 * short / 2.0;
@@ -172,19 +288,20 @@ impl Template {
         let edge = |v: f64| v <= 1e-6 || v >= 1.0 - 1e-6;
         self.cells
             .iter()
-            .map(|[x, y, w, h]| {
+            .map(|&Cell { x, y, w, h, .. }| {
                 // Inner edges lose half a gap; edges on the margin keep their place.
-                let x0 = margin + x * iw + if edge(*x) { 0.0 } else { half_gap };
-                let y0 = margin + y * ih + if edge(*y) { 0.0 } else { half_gap };
+                let x0 = margin + x * iw + if edge(x) { 0.0 } else { half_gap };
+                let y0 = margin + y * ih + if edge(y) { 0.0 } else { half_gap };
                 let x1 = margin + (x + w) * iw - if edge(x + w) { 0.0 } else { half_gap };
                 let y1 = margin + (y + h) * ih - if edge(y + h) { 0.0 } else { half_gap };
-                let (x0, y0) = (x0.round().max(0.0) as usize, y0.round().max(0.0) as usize);
-                let (x1, y1) = (x1.round() as usize, y1.round() as usize);
+                let (x0, y0) = (x0.round().max(0.0) as i64, y0.round().max(0.0) as i64);
+                let (x1, y1) = (x1.round() as i64, y1.round() as i64);
                 CellRect {
                     x: x0,
                     y: y0,
-                    w: x1.saturating_sub(x0).max(1),
-                    h: y1.saturating_sub(y0).max(1),
+                    w: (x1 - x0).max(1) as usize,
+                    h: (y1 - y0).max(1) as usize,
+                    angle: 0.0,
                 }
             })
             .collect()
@@ -286,38 +403,71 @@ impl Canvas {
             ((y - y0 as f64) * sy).round() as usize,
         );
         let radius = self.template.radius_px().min(r.w.min(r.h) as f64 / 2.0) as f32;
-        let bg = background(&self.template);
-        for j in 0..r.h {
-            for k in 0..r.w {
-                let (sx, sy) = (
-                    (ox + k).min(scaled.width - 1),
-                    (oy + j).min(scaled.height - 1),
-                );
-                let px = scaled.get(sx, sy);
-                let cover = corner_cover(k, j, r.w, r.h, radius);
-                let v = if cover >= 1.0 {
-                    px
-                } else {
-                    [0, 1, 2].map(|c| px[c] * cover + bg[c] * (1.0 - cover))
-                };
-                let at = ((r.y + j) * self.image.width + r.x + k) * 3;
-                if r.x + k < self.image.width && r.y + j < self.image.height {
-                    self.image.rgb[at..at + 3].copy_from_slice(&v);
+        // The cell, `scaled` from (ox, oy), turned about its centre and laid
+        // over what is already there with soft edges.
+        let (w, h) = (r.w as f32, r.h as f32);
+        let (cx, cy) = (r.x as f32 + w / 2.0, r.y as f32 + h / 2.0);
+        let (sin, cos) = (r.angle as f32).to_radians().sin_cos();
+        // The turned cell's bounding box on the canvas.
+        let ext_x = (w * cos.abs() + h * sin.abs()) / 2.0 + 1.0;
+        let ext_y = (w * sin.abs() + h * cos.abs()) / 2.0 + 1.0;
+        let (iw, ih) = (self.image.width as i64, self.image.height as i64);
+        let bx0 = ((cx - ext_x).floor() as i64).clamp(0, iw);
+        let bx1 = ((cx + ext_x).ceil() as i64).clamp(0, iw);
+        let by0 = ((cy - ext_y).floor() as i64).clamp(0, ih);
+        let by1 = ((cy + ext_y).ceil() as i64).clamp(0, ih);
+        for py in by0..by1 {
+            for px in bx0..bx1 {
+                // Canvas pixel centre into the cell's own coordinates.
+                let (dx, dy) = (px as f32 + 0.5 - cx, py as f32 + 0.5 - cy);
+                let u = dx * cos + dy * sin + w / 2.0;
+                let v = -dx * sin + dy * cos + h / 2.0;
+                let edge = (u.min(w - u).min(v).min(h - v) + 0.5).clamp(0.0, 1.0);
+                let cover = edge.min(corner_cover(u, v, w, h, radius));
+                if cover <= 0.0 {
+                    continue;
+                }
+                let photo_px = sample(&scaled, ox as f32 + u - 0.5, oy as f32 + v - 0.5);
+                let at = (py as usize * self.image.width + px as usize) * 3;
+                let under = &mut self.image.rgb[at..at + 3];
+                for c in 0..3 {
+                    under[c] = photo_px[c] * cover + under[c] * (1.0 - cover);
                 }
             }
         }
     }
 }
 
-/// How much of pixel (x, y) of a `w × h` cell is inside its rounded corners.
-fn corner_cover(x: usize, y: usize, w: usize, h: usize, r: f32) -> f32 {
+/// Bilinear sample of `img` at (x, y) in pixel units (pixel centres at
+/// whole numbers), clamped at the edges.
+fn sample(img: &Image, x: f32, y: f32) -> [f32; 3] {
+    let (maxx, maxy) = ((img.width - 1) as f32, (img.height - 1) as f32);
+    let (x, y) = (x.clamp(0.0, maxx), y.clamp(0.0, maxy));
+    let (x0, y0) = (x.floor() as usize, y.floor() as usize);
+    let (x1, y1) = ((x0 + 1).min(img.width - 1), (y0 + 1).min(img.height - 1));
+    let (fx, fy) = (x - x0 as f32, y - y0 as f32);
+    let (a, b, c, d) = (
+        img.get(x0, y0),
+        img.get(x1, y0),
+        img.get(x0, y1),
+        img.get(x1, y1),
+    );
+    [0, 1, 2].map(|i| {
+        let top = a[i] + (b[i] - a[i]) * fx;
+        let bottom = c[i] + (d[i] - c[i]) * fx;
+        top + (bottom - top) * fy
+    })
+}
+
+/// How much of the point (x, y) of a `w × h` cell is inside its rounded
+/// corners (a pixel's worth of soft edge).
+fn corner_cover(x: f32, y: f32, w: f32, h: f32, r: f32) -> f32 {
     if r <= 0.0 {
         return 1.0;
     }
-    let (fx, fy) = (x as f32 + 0.5, y as f32 + 0.5);
-    let cx = fx.clamp(r, w as f32 - r);
-    let cy = fy.clamp(r, h as f32 - r);
-    let d = ((fx - cx).powi(2) + (fy - cy).powi(2)).sqrt();
+    let cx = x.clamp(r, w - r);
+    let cy = y.clamp(r, h - r);
+    let d = ((x - cx).powi(2) + (y - cy).powi(2)).sqrt();
     (r - d + 0.5).clamp(0.0, 1.0)
 }
 
@@ -366,7 +516,8 @@ mod tests {
             gap: 2.0,
             margin: 4.0,
             radius: 0.0,
-            cells: vec![[0.0, 0.0, 0.5, 1.0], [0.5, 0.0, 0.5, 1.0]],
+            cells: vec![[0.0, 0.0, 0.5, 1.0].into(), [0.5, 0.0, 0.5, 1.0].into()],
+            free: false,
         }
     }
 
@@ -380,14 +531,15 @@ mod tests {
                 x: 20,
                 y: 20,
                 w: 475,
-                h: 460
+                h: 460,
+                angle: 0.0
             }
         );
-        assert_eq!(r[1].x - (r[0].x + r[0].w), 10);
-        assert_eq!(r[1].x + r[1].w, 980);
+        assert_eq!(r[1].x - (r[0].x + r[0].w as i64), 10);
+        assert_eq!(r[1].x + r[1].w as i64, 980);
         assert!(two_up().validate().is_ok());
         let mut bad = two_up();
-        bad.cells.push([0.9, 0.0, 0.5, 1.0]);
+        bad.cells.push([0.9, 0.0, 0.5, 1.0].into());
         assert!(bad.validate().is_err());
     }
 
@@ -429,11 +581,52 @@ mod tests {
     #[test]
     fn pages_match_shapes() {
         let mut t = two_up();
-        t.cells = vec![[0.0, 0.0, 1.0, 0.3], [0.0, 0.3, 1.0, 0.7]]; // wide, then tall-ish
+        t.cells = vec![[0.0, 0.0, 1.0, 0.3].into(), [0.0, 0.3, 1.0, 0.7].into()]; // wide, then tall-ish
         // Photo 0 is portrait, 1 landscape: the landscape one goes to the wide cell.
         let p = pages(&t, &[0.67, 1.5, 1.5]);
         assert_eq!(p.len(), 2);
         assert_eq!(p[0], vec![Some(1), Some(0)]);
         assert_eq!(p[1], vec![Some(2), None]);
+    }
+    #[test]
+    fn free_cells_turn_overlap_and_round_trip() {
+        let text = r##"{ "format": "ambrotype-collage/1", "width": 200, "height": 100, "background": "#000000",
+            "free": true, "cells": [ [0, 0, 1, 1], [0.25, 0.25, 0.5, 0.5, 90] ] }"##;
+        let t = Template::from_json(text).unwrap();
+        assert_eq!(t.cells[1].angle, 90.0);
+        // Turned cells keep their fifth number; plain ones stay four numbers.
+        let json = serde_json::to_value(&t).unwrap();
+        assert_eq!(json["cells"][0].as_array().unwrap().len(), 4);
+        assert_eq!(json["cells"][1][4], 90.0);
+        assert_eq!(json["free"], true);
+        let r = t.cell_rects();
+        assert_eq!(
+            (r[1].x, r[1].y, r[1].w, r[1].h, r[1].angle),
+            (50, 25, 100, 50, 90.0)
+        );
+
+        // A red photo under a green one turned a quarter: the green one is
+        // 50 wide and 100 tall on the canvas, centred.
+        let mut canvas = Canvas::new(&t);
+        let red = Image::from_fn(40, 20, |_, _| [1.0, 0.0, 0.0]);
+        let green = Image::from_fn(40, 20, |_, _| [0.0, 1.0, 0.0]);
+        canvas.place(0, &red, &Placement::default());
+        canvas.place(1, &green, &Placement::default());
+        let is = |x: usize, y: usize, want: [f32; 3]| {
+            let got = canvas.image.get(x, y);
+            (0..3).all(|c| (got[c] - want[c]).abs() < 1e-3)
+        };
+        assert!(
+            is(100, 5, [0.0, 1.0, 0.0]),
+            "the turned cell reaches the top"
+        );
+        assert!(is(60, 50, [1.0, 0.0, 0.0]), "but is only 50 px wide");
+        assert!(is(100, 50, [0.0, 1.0, 0.0]));
+
+        // A grid template can't turn cells; a free cell must touch the canvas.
+        let grid = text.replace("\"free\": true,", "");
+        assert!(Template::from_json(&grid).is_err());
+        let off = text.replace("[0, 0, 1, 1]", "[1.5, 0, 0.5, 0.5]");
+        assert!(Template::from_json(&off).is_err());
     }
 }

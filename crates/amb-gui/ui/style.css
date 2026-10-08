@@ -452,3 +452,61 @@ dialog input[type=color] { width: 34px; height: 24px; padding: 0; border: 1px so
 .density-large .film-cell { width: 140px; height: 104px; }
 .film-cell.broken { opacity: .45; }
 .film-cell.broken::after { content: "can't open"; position: absolute; inset: auto 0 2px; text-align: center; color: var(--danger); font-size: 10px; }
+
+/* Collage maker (collage.js): a full-window dialog */
+dialog.collage-dialog { width: calc(100vw - 24px); height: calc(100vh - 24px); max-width: none; max-height: none; padding: 0; overflow: hidden; }
+dialog.collage-dialog[open] { display: grid; grid-template-rows: auto 1fr 150px; }
+.collage-top { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+.collage-top h2 { margin: 0; }
+.collage-body { display: grid; grid-template-columns: 200px minmax(0, 1fr) 250px; grid-template-rows: minmax(0, 1fr); min-height: 0; }
+.collage-side { overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; border-right: 1px solid var(--line); }
+.collage-side.right { border-right: 0; border-left: 1px solid var(--line); }
+.collage-side h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 8px 0 0; font-weight: 600; }
+.collage-side .side-head h3 { margin: 0; }
+.collage-side .hint { margin: 0; }
+.collage-side input[type=number] { min-width: 0; width: 0; flex: 1; }
+.col-range span { display: grid; grid-template-columns: 1fr 44px; align-items: center; gap: 6px; }
+.col-range output { text-align: right; font-variant-numeric: tabular-nums; color: var(--text); }
+.col-wh { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+.col-line { display: flex; flex-wrap: wrap; gap: 4px; }
+.collage-side.left { overflow: hidden; }
+.col-templates { display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; overflow-y: auto; }
+.col-template { display: flex; align-items: center; gap: 8px; text-align: left; padding: 4px 6px; background: transparent; border-color: transparent; }
+.col-template svg { flex: none; background: var(--bg-deep); border-radius: 2px; }
+.col-template svg rect { fill: var(--faint); }
+.col-template.on { background: var(--tab-active); border-color: var(--faint); }
+.col-template.on svg rect { fill: var(--accent); }
+.col-template.own span::after { content: " ·  yours"; color: var(--faint); font-size: 11px; }
+.col-save { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--line); }
+.collage-stage-wrap { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--viewer); min-width: 0; min-height: 0; overflow: hidden; }
+.col-stage { position: relative; box-shadow: 0 4px 30px rgba(0,0,0,.45); flex: none; }
+.col-help { margin: 0; }
+.col-cell { position: absolute; overflow: hidden; cursor: grab; touch-action: none; background: rgba(127,127,127,.18); }
+.col-cell:active { cursor: grabbing; }
+/* The ring sits over the photo (an outline would be painted under it). */
+.col-cell.selected::after, .col-cell.drop::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; border: 2px solid var(--accent); }
+.col-cell.drop::after { border: 3px dashed var(--accent); }
+.col-cell.loading { background: rgba(127,127,127,.3); }
+.col-cell.broken { background: repeating-linear-gradient(45deg, rgba(229,103,90,.25) 0 8px, transparent 8px 16px); }
+.col-photo { position: absolute; pointer-events: none; }
+.col-photo img { position: absolute; max-width: none; transform-origin: center; user-select: none; }
+.col-empty { position: absolute; inset: 0; display: grid; place-items: center; font-size: 26px; color: rgba(127,127,127,.8); pointer-events: none; }
+.col-grip { position: absolute; top: 4px; left: 4px; padding: 0 4px; border-radius: 4px; background: rgba(0,0,0,.55); color: #fff; font-size: 13px; cursor: move; opacity: 0; }
+.col-cell:hover .col-grip, .col-cell.selected .col-grip { opacity: 1; }
+.col-ghost { position: fixed; z-index: 10; pointer-events: none; width: 90px; padding: 2px; background: var(--panel-2); border: 1px solid var(--accent); border-radius: 4px; font-size: 11px; opacity: .9; }
+.col-ghost img { display: block; width: 100%; }
+.collage-tray { display: flex; flex-direction: column; min-height: 0; border-top: 1px solid var(--line); background: var(--bg-deep); }
+.tray-head { display: flex; align-items: center; gap: 8px; padding: 4px 12px; }
+.col-tray { display: flex; gap: 6px; overflow-x: auto; padding: 0 12px 8px; flex: 1; align-items: stretch; }
+.tray-item { position: relative; flex: none; width: 110px; display: flex; flex-direction: column; gap: 2px; padding: 3px; border: 1px solid transparent; border-radius: var(--radius); cursor: grab; touch-action: none; user-select: none; }
+.tray-item:hover { border-color: var(--line); background: var(--hover); }
+.tray-item img { width: 100%; height: 76px; object-fit: contain; background: rgba(127,127,127,.12); pointer-events: none; }
+.tray-item.no-thumb img { background: repeating-linear-gradient(45deg, rgba(127,127,127,.2) 0 6px, transparent 6px 12px); }
+.tray-name { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tray-stars { position: absolute; left: 6px; top: 6px; font-size: 10px; color: #f5c84b; text-shadow: 0 0 3px #000; }
+.tray-used { display: none; position: absolute; right: 6px; top: 62px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--bg-deep); }
+.tray-item.used .tray-used { display: block; }
+.tray-item.used img { opacity: .55; }
+.tray-remove { position: absolute; right: 4px; top: 4px; width: 18px; height: 18px; padding: 0; line-height: 16px; border-radius: 50%; font-size: 12px; opacity: 0; }
+.tray-item:hover .tray-remove { opacity: 1; }
+.back-collage { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); z-index: 5; box-shadow: 0 4px 16px rgba(0,0,0,.4); }

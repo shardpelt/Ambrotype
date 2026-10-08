@@ -185,17 +185,46 @@ async fn pick_photo(app: tauri::AppHandle) -> Option<String> {
     app.dialog()
         .file()
         .set_title("Open a raw photo")
-        .add_filter(
-            "Raw photos",
-            &[
-                "dng", "nef", "nrw", "cr2", "cr3", "crw", "arw", "srf", "sr2", "raf", "orf", "rw2",
-                "pef", "srw", "3fr", "iiq", "erf", "mef", "mos", "kdc", "dcr",
-            ],
-        )
+        .add_filter("Raw photos", &folder::RAW_EXTENSIONS)
         .add_filter("All files", &["*"])
         .blocking_pick_file()
         .and_then(|p| p.into_path().ok())
         .map(|p| p.display().to_string())
+}
+
+/// Pick several raws (for the collage maker).
+#[tauri::command]
+async fn pick_photos(app: tauri::AppHandle) -> Res<Vec<folder::FolderPhoto>> {
+    let paths: Vec<PathBuf> = app
+        .dialog()
+        .file()
+        .set_title("Add photos")
+        .add_filter("Raw photos", &folder::RAW_EXTENSIONS)
+        .blocking_pick_files()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|p| p.into_path().ok())
+        .collect();
+    tauri::async_runtime::spawn_blocking(move || folder::describe(paths))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Pick a folder and list its raws (for the collage maker).
+#[tauri::command]
+async fn pick_photo_folder(app: tauri::AppHandle) -> Res<Option<Vec<folder::FolderPhoto>>> {
+    let Some(dir) = app
+        .dialog()
+        .file()
+        .set_title("Add a folder of photos")
+        .blocking_pick_folder()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    tauri::async_runtime::spawn_blocking(move || folder::list_dir(&dir).map(Some))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -959,6 +988,47 @@ async fn import_collage_template(
         .map_err(|e| format!("{}: {e}", path.display()))
 }
 
+/// Collages read each photo's edits from its sidecar: write the open photo's
+/// unsaved edits there first.
+fn save_open_edits(slot: &Mutex<Option<Session>>) -> Res<()> {
+    let mut guard = slot.lock().map_err(|e| e.to_string())?;
+    if let Some(s) = guard.as_mut().filter(|s| s.has_unsaved_edits()) {
+        s.save_sidecar()?;
+    }
+    Ok(())
+}
+
+/// A JPEG of a photo with its edits (crop included), for the collage canvas:
+/// the open photo's current edits, or another photo's sidecar.
+#[tauri::command]
+async fn edited_thumbnail(
+    path: String,
+    edge: Option<u32>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Response> {
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let edge = edge.unwrap_or(1024).clamp(64, 2048) as usize;
+        let none = Default::default();
+        {
+            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            if let Some(s) = guard.as_mut().filter(|s| s.path == Path::new(&path)) {
+                return Ok(Response::new(
+                    s.preview(edge, &none, false, false, lens).jpeg,
+                ));
+            }
+        }
+        let mut s = Session::open(Path::new(&path))?;
+        Ok(Response::new(
+            s.preview(edge, &none, false, false, lens).jpeg,
+        ))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[derive(Clone, Serialize)]
 struct CollageProgress {
     page: usize,
@@ -979,7 +1049,9 @@ async fn export_collage(
 ) -> Res<Exported> {
     use tauri::Emitter;
     let lens = state.lens.clone();
+    let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
+        save_open_edits(&slot)?;
         let s = export_settings(&options)?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         let mut progress = |done, total| {
@@ -1033,49 +1105,32 @@ async fn export_collage_batch(
         return Ok(None);
     };
     let lens = state.lens.clone();
+    let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
+        save_open_edits(&slot)?;
         template.validate()?;
         let s = export_settings(&options)?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
-        let aspects: Vec<f64> = photos
-            .iter()
-            .map(|p| if p.aspect > 0.0 { p.aspect } else { 1.5 })
-            .collect();
-        let pages = amb_export::collage::pages(&template, &aspects);
-        let stem: String = template
-            .name
-            .chars()
-            .map(|c| if c.is_alphanumeric() { c } else { '-' })
-            .collect();
-        let stem = if stem.trim_matches('-').is_empty() {
-            "collage".to_string()
-        } else {
-            stem
-        };
-        let mut written = Vec::new();
-        for (i, page) in pages.iter().enumerate() {
-            let cells: Vec<collages::CellPhoto> = page
-                .iter()
-                .map(|slot| collages::CellPhoto {
-                    path: slot.map(|n| photos[n].path.clone()),
-                    placement: Default::default(),
-                })
-                .collect();
-            let out = dir.join(format!("{stem}-{:03}.{}", i + 1, s.format.extension()));
-            let mut progress = |done, total| {
+        let photos: Vec<(String, f64)> = photos.into_iter().map(|p| (p.path, p.aspect)).collect();
+        let written = collages::render_batch(
+            &template,
+            &photos,
+            &dir,
+            &s,
+            lens,
+            &mut |page, pages, done, total| {
                 let _ = app.emit(
                     "collage-progress",
                     CollageProgress {
-                        page: i + 1,
-                        pages: pages.len(),
+                        page,
+                        pages,
                         done,
                         total,
                     },
                 );
-            };
-            collages::render(&template, &cells, &out, &s, lens, &mut progress)?;
-            written.push(out.display().to_string());
-        }
+            },
+        )?;
+        let written: Vec<String> = written.iter().map(|p| p.display().to_string()).collect();
         Ok(Some(written))
     })
     .await
@@ -1340,6 +1395,9 @@ fn main() {
             import_collage_template,
             export_collage,
             export_collage_batch,
+            edited_thumbnail,
+            pick_photos,
+            pick_photo_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Ambrotype");

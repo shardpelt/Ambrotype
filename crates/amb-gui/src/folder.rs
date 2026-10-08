@@ -77,6 +77,11 @@ pub fn list(photo: &Path) -> Result<Vec<FolderPhoto>, String> {
         .parent()
         .filter(|d| !d.as_os_str().is_empty())
         .unwrap_or(Path::new("."));
+    list_dir(dir)
+}
+
+/// The raws in `dir`, in name order.
+pub fn list_dir(dir: &Path) -> Result<Vec<FolderPhoto>, String> {
     let entries = std::fs::read_dir(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     let mut paths: Vec<PathBuf> = entries
         .flatten()
@@ -94,7 +99,12 @@ pub fn list(photo: &Path) -> Result<Vec<FolderPhoto>, String> {
             &b.file_name().unwrap_or_default().to_string_lossy(),
         )
     });
-    Ok(paths
+    Ok(describe(paths))
+}
+
+/// Name, rating and "edited" for each of `paths` (kept in the given order).
+pub fn describe(paths: Vec<PathBuf>) -> Vec<FolderPhoto> {
+    paths
         .into_iter()
         .map(|p| {
             let sidecar = std::fs::read_to_string(crate::session::sidecar_path(&p)).ok();
@@ -117,7 +127,7 @@ pub fn list(photo: &Path) -> Result<Vec<FolderPhoto>, String> {
                 edited,
             }
         })
-        .collect())
+        .collect()
 }
 
 fn cache_key(path: &Path, edge: u32) -> Option<String> {

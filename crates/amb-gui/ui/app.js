@@ -1086,6 +1086,7 @@ async function init() {
   $("btn-wb").addEventListener("click", () => setPicking(!ui.picking));
   $("btn-clip").addEventListener("click", toggleClipping);
   $("btn-feedback").addEventListener("click", feedbackFlow);
+  $("btn-collage").addEventListener("click", collageFlow);
   $("btn-looks").addEventListener("click", () => looksFlow().catch((e) => toast(String(e), true)));
   wireEditor();
   wireBorders();

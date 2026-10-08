@@ -14,6 +14,7 @@
       <button id="btn-open" title="Open a raw photo (Ctrl+O)">Open</button>
       <button id="btn-save" title="Save the edit to the photo's XMP sidecar (Ctrl+S)" disabled>Save</button>
       <button id="btn-export" class="primary" title="Export (Ctrl+E)" disabled>Export…</button>
+      <button id="btn-collage" title="Collage maker: several photos on one canvas">Collage</button>
       <span class="sep"></span>
       <button id="btn-undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
       <button id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
@@ -304,6 +305,123 @@
     </form>
   </dialog>
 
+  <!-- Collage maker (collage.js) -->
+  <dialog id="collage-dialog" class="collage-dialog">
+    <div class="collage-top">
+      <h2>Collage</h2>
+      <span id="col-title" class="hint"></span>
+      <span class="grow"></span>
+      <span id="col-progress" class="hint" role="status"></span>
+      <button type="button" id="col-export" class="primary" title="Save this collage as one image">Export…</button>
+      <button type="button" id="col-close" title="Back to the editor (Esc). The collage stays as it is.">Close</button>
+    </div>
+    <div class="collage-body">
+      <aside class="collage-side left">
+        <div class="side-head"><h3>Layouts</h3>
+          <button type="button" id="col-import" class="small" title="Add a layout someone shared">Import…</button></div>
+        <div id="col-templates" class="col-templates"></div>
+        <div class="col-save">
+          <input id="col-name" type="text" spellcheck="false" placeholder="Layout name" aria-label="Layout name">
+          <div class="col-line">
+            <button type="button" id="col-save" class="small" title="Keep this shape, size, gaps and background as your own layout">Save layout</button>
+            <button type="button" id="col-share" class="small" title="Save the layout as a file to send (photos aren't included)">Share…</button>
+            <button type="button" id="col-delete" class="small" disabled>Delete</button>
+          </div>
+        </div>
+      </aside>
+      <section class="collage-stage-wrap" id="col-stage-wrap">
+        <div id="col-stage" class="col-stage"></div>
+        <p class="hint col-help">Drag photos from below into the cells. In a cell: drag to move the photo, scroll to zoom, double-click to fit again.</p>
+      </section>
+      <aside class="collage-side right">
+        <h3>Canvas</h3>
+        <label>Size <select id="col-size"></select></label>
+        <span class="col-wh">
+          <input id="col-w" type="number" min="16" max="20000" step="1" aria-label="Width">
+          <span>×</span>
+          <input id="col-h" type="number" min="16" max="20000" step="1" aria-label="Height">
+          <button type="button" id="col-swap" class="small" title="Swap width and height">⇄</button>
+        </span>
+        <label>Background
+          <span class="pair swatches" id="col-swatches">
+            <button type="button" data-color="#ffffff" title="White" style="background:#ffffff"></button>
+            <button type="button" data-color="#f7f5f0" title="Cream" style="background:#f7f5f0"></button>
+            <button type="button" data-color="#c8c8c8" title="Light grey" style="background:#c8c8c8"></button>
+            <button type="button" data-color="#808080" title="Grey" style="background:#808080"></button>
+            <button type="button" data-color="#333333" title="Dark grey" style="background:#333333"></button>
+            <button type="button" data-color="#000000" title="Black" style="background:#000000"></button>
+            <input id="col-bg" type="color" value="#ffffff" title="Any colour">
+          </span>
+        </label>
+        <label class="col-range">Gap between photos <span><input id="col-gap" type="range" min="0" max="10" step="0.25"><output id="col-gap-out"></output></span></label>
+        <label class="col-range">Outer border <span><input id="col-margin" type="range" min="0" max="15" step="0.25"><output id="col-margin-out"></output></span></label>
+        <label class="col-range">Rounded corners <span><input id="col-radius" type="range" min="0" max="20" step="0.25"><output id="col-radius-out"></output></span></label>
+        <p class="hint">Gap, border and corners are % of the short edge, so they look the same at any size.</p>
+
+        <h3>Cell</h3>
+        <p id="col-cell-hint" class="hint">Click a cell to change it.</p>
+        <div class="col-line" id="col-cell-tools">
+          <button type="button" class="small" id="col-rotate" title="Turn the photo a quarter (R)">Rotate ⟳</button>
+          <button type="button" class="small" id="col-fit" title="Fit the photo to the cell again">Fit</button>
+          <button type="button" class="small" id="col-edit" title="Open this photo in the editor; Back to collage returns here">Edit photo</button>
+          <button type="button" class="small" id="col-clear" title="Take the photo out (Delete)">Empty</button>
+        </div>
+        <div class="col-line">
+          <button type="button" class="small" id="col-split-v" title="Split this cell into left and right">Split ◫</button>
+          <button type="button" class="small" id="col-split-h" title="Split this cell into top and bottom">Split ⊟</button>
+          <button type="button" class="small" id="col-remove" title="Remove this cell from the layout">Remove cell</button>
+        </div>
+
+        <h3>Export</h3>
+        <label>Format
+          <select id="col-format">
+            <option value="jpeg">JPEG</option>
+            <option value="png">PNG</option>
+            <option value="tiff">TIFF</option>
+            <option value="webp">WebP (lossless)</option>
+            <option value="avif">AVIF</option>
+          </select>
+        </label>
+        <label class="col-range" id="col-quality-row">Quality <span><input id="col-quality" type="range" min="1" max="100" value="90"><output id="col-quality-out">90</output></span></label>
+        <label>Colour space
+          <select id="col-space">
+            <option value="srgb">sRGB (web, most screens)</option>
+            <option value="p3">Display P3</option>
+            <option value="adobergb">Adobe RGB (1998)-compatible</option>
+          </select>
+        </label>
+
+        <h3>Batch</h3>
+        <p class="hint">Put every photo in the tray into pages of this layout, matched to the cells' shapes: one file per page.</p>
+        <label>Photos
+          <select id="col-batch-filter">
+            <option value="0">All in the tray</option>
+            <option value="1">★ and up</option>
+            <option value="2">★★ and up</option>
+            <option value="3">★★★ and up</option>
+            <option value="4">★★★★ and up</option>
+            <option value="5">★★★★★</option>
+          </select>
+        </label>
+        <p id="col-batch-note" class="hint"></p>
+        <button type="button" id="col-batch" title="Choose a folder; pages are named after the layout">Export pages…</button>
+      </aside>
+    </div>
+    <section class="collage-tray">
+      <div class="tray-head">
+        <strong>Photos</strong>
+        <span id="col-tray-count" class="hint"></span>
+        <span class="grow"></span>
+        <button type="button" id="col-fill" class="small" title="Put tray photos into the empty cells, in order">Fill empty cells</button>
+        <button type="button" id="col-add" class="small">Add photos…</button>
+        <button type="button" id="col-add-folder" class="small">Add folder…</button>
+        <button type="button" id="col-tray-clear" class="small" title="Empty the tray (cells keep their photos)">Clear</button>
+      </div>
+      <div id="col-tray" class="col-tray"></div>
+    </section>
+  </dialog>
+  <button id="btn-back-collage" class="back-collage primary" hidden title="Back to the collage, with this photo's edits">← Back to collage</button>
+
   <dialog id="hub-dialog">
     <form method="dialog">
       <h2>Hub: shared looks</h2>
@@ -393,6 +511,7 @@
   <script src="borders.js"></script>
   <script src="info.js"></script>
   <script src="filmstrip.js"></script>
+  <script src="collage.js"></script>
   <script src="picker.js"></script>
   <script src="app.js"></script>
 </body>

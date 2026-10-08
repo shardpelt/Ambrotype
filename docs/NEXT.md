@@ -1,10 +1,10 @@
-# Where we left off (2026-10-07)
+# Where we left off (2026-10-08)
 
 A short "start here" for the next work session. Details are in [ARCHITECTURE.md](ARCHITECTURE.md) (what exists) and [GAPS.md](GAPS.md) (everything missing). New to the repo, or an AI agent? Read [AGENTS.md](../AGENTS.md) first.
 
 ## State
 
-- **Branch:** `claude/lightroom-alternative-scope-xlnf0p`. Everything is committed and pushed; about 280 tests are green.
+- **Branch:** `claude/lightroom-alternative-scope-xlnf0p`. Everything is committed and pushed; about 320 tests are green.
 - **Name:** **Ambrotype**. The GitHub repo is `shardpelt/Ambrotype` (renamed from flightbroom; old links redirect).
 - **Built:**
   - preset/sidecar reader and writer (`crs:` and our `amb:` tags)
@@ -28,6 +28,8 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **rating and keywords:** stars (keys 1–5) and a keyword field, saved to the sidecar at once and embedded in exports
     - **hub:** Looks → Browse hub… installs shared layouts and themes (checked against the index's sha256 and validated); Submit to hub… opens GitHub with your look filled in as a pull request
     - **editor mode:** Edit layout rearranges the screen in place (drag and drop, control types, split and merge, add and remove, column widths) and saves it as your own layout
+    - **borders** on export, with presets and colour swatches
+    - **collage maker** (C): layouts with gap, outer border, corners and background; drag photos into cells, then move, zoom, rotate, or edit them in the editor; save and share layouts; batch a whole folder into pages ([design/collage-and-borders.md](design/collage-and-borders.md))
 
 ## Owner to-dos
 
@@ -49,7 +51,7 @@ There are two tracks that can run in parallel: the UI track is what users see an
 3. ~~Editor mode~~ (done 2026-10-07): **Edit layout** moves panels, settings and toolbar buttons by drag and drop, changes control types, labels, titles and columns, splits and merges panels, adds from a list of what isn't shown, and resizes columns. Colours are edited in the Looks dialog.
 4. ~~Hub~~ (done 2026-10-07, for layouts and themes; needs the hub repo, see Owner to-dos): Omarchy-style. Items are git repos, and one index repo takes submissions as pull requests. The in-app browser covers layouts, themes, presets, collage templates and size profiles.
 5. ~~Borders~~ (done 2026-10-08): border presets in the export dialog and `amb render --border`, batch with `amb render A B ... --out-dir`. Was: width, colour, caption; border presets; fit to a size preset; batch.
-6. **Collage maker:** shareable templates, per-photo pan/zoom/rotate and edit, batch mode for big folders. See [design/collage-and-borders.md](design/collage-and-borders.md).
+6. ~~Collage maker~~ (done 2026-10-08): shareable layouts (size, background, gap, outer border, rounded corners, cells you can split and remove), per-photo move/zoom/rotate and "Edit photo" in the editor, batch pages for big folders (optionally only rated photos). Follow-ups (resizing cells by their edges, saving a collage to reopen, per-cell edits) are in [design/collage-and-borders.md](design/collage-and-borders.md).
 7. **Plugins and AI-made features:** WASM-sandboxed plugins with permissions; "make me a…" via the user's own AI; a Share button that opens a hub or Ambrotype pull request.
 
 ### Fidelity and engine track

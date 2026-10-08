@@ -140,6 +140,58 @@ pub fn render(
         .map_err(|e| format!("{}: {e}", out.display()))
 }
 
+/// Many photos as pages of one layout: `dir/<layout name>-001.<ext>`, ...
+/// Photos are matched to cells by shape (`photos` are path and width/height
+/// of the upright photo), each placed with the default fit.
+/// `progress(page, pages, done, total)` is called after each photo.
+pub fn render_batch(
+    template: &Template,
+    photos: &[(String, f64)],
+    dir: &Path,
+    settings: &amb_export::ExportSettings,
+    lens: &crate::LensSources,
+    progress: &mut dyn FnMut(usize, usize, usize, usize),
+) -> Result<Vec<std::path::PathBuf>, String> {
+    template.validate()?;
+    let aspects: Vec<f64> = photos
+        .iter()
+        .map(|(_, a)| if a.is_finite() && *a > 0.0 { *a } else { 1.5 })
+        .collect();
+    let pages = amb_export::collage::pages(template, &aspects);
+    let stem: String = template
+        .name
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .collect();
+    let stem = stem.trim_matches('-');
+    let stem = if stem.is_empty() { "collage" } else { stem };
+    let mut written = Vec::new();
+    for (i, page) in pages.iter().enumerate() {
+        let cells: Vec<CellPhoto> = page
+            .iter()
+            .map(|slot| CellPhoto {
+                path: slot.map(|n| photos[n].0.clone()),
+                placement: Placement::default(),
+            })
+            .collect();
+        let out = dir.join(format!(
+            "{stem}-{:03}.{}",
+            i + 1,
+            settings.format.extension()
+        ));
+        render(
+            template,
+            &cells,
+            &out,
+            settings,
+            lens,
+            &mut |done, total| progress(i + 1, pages.len(), done, total),
+        )?;
+        written.push(out);
+    }
+    Ok(written)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -211,6 +263,27 @@ mod tests {
             [255, 255, 255],
             "the empty cell shows the background"
         );
+
+        // Three photos in a two-cell layout: two pages, the second half empty.
+        t.name = "Side by side".into();
+        let photos: Vec<(String, f64)> =
+            (0..3).map(|_| (photo.display().to_string(), 1.5)).collect();
+        let mut seen = Vec::new();
+        let pages = render_batch(
+            &t,
+            &photos,
+            &dir,
+            &amb_export::ExportSettings::new(amb_export::Format::Png),
+            &crate::LensSources::default(),
+            &mut |p, n, d, total| seen.push((p, n, d, total)),
+        )
+        .unwrap();
+        let names: Vec<_> = pages
+            .iter()
+            .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
+            .collect();
+        assert_eq!(names, ["Side-by-side-001.png", "Side-by-side-002.png"]);
+        assert_eq!(seen, [(1, 2, 1, 2), (1, 2, 2, 2), (2, 2, 1, 1)]);
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

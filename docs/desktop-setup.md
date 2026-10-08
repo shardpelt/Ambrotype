@@ -68,6 +68,10 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 
   ![Rating and keywords](images/rating-keywords.png)
 
+- **Collage:** the Collage button (or C) opens the collage maker. Pick a layout, drag photos from the tray into the cells, then drag to move a photo in its cell, scroll to zoom, R to rotate. **Edit photo** opens a photo in the editor and **← Back to collage** returns. Set the size, background, gap, outer border and corners on the right; split or remove cells to change the shape, then Save layout or Share… it. **Export pages…** puts a whole folder into pages of the layout.
+
+  ![Collage maker](images/collage.png)
+
 - **Crop:** with no crop yet, the crop tool starts with a cross cursor: press at one corner and drag to the other, like a screenshot selection. Then adjust it with the handles.
 
   ![Drawing a crop corner to corner](images/crop-draw.png)
@@ -94,6 +98,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | Esc | Leave the picker or crop tool |
   | ← → | Previous / next photo in the folder (edits are saved first) |
   | F | Show or hide the filmstrip |
+  | C | Collage maker (in it: R rotates the selected photo, Delete empties the cell, Esc closes) |
   | 1–5, 0 | Rate the photo (0 clears) |
   | K | Jump to the keyword field (Enter or a comma adds a keyword) |
   | Ctrl+L / Ctrl+Shift+L | Looks / Edit layout |

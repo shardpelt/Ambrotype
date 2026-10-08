@@ -30,7 +30,7 @@ const lib = {
 const libraryOn = () => lib.on;
 const libPhoto = (path) => lib.photos.find((p) => p.path === path);
 const selectedPhotos = () => lib.shown.filter((p) => lib.selected.has(p.path));
-const VIEWER_BUTTONS = ["btn-before", "btn-crop", "btn-zoom", "btn-wb", "btn-clip"];
+const VIEWER_BUTTONS = ["btn-before", "btn-crop", "btn-masks", "btn-zoom", "btn-wb", "btn-clip"];
 
 // ---------------------------------------------------------------- show, load
 
@@ -38,6 +38,7 @@ async function toggleLibrary(on = !lib.on) {
   wireLibrary();
   if (on === lib.on) return;
   if (on && ui.crop.on) await exitCrop(true);
+  if (on) exitMasks();
   lib.on = on;
   $("workspace").hidden = on;
   $("library").hidden = !on;

@@ -8,6 +8,7 @@
 
 pub mod amount;
 pub mod lrtemplate;
+pub mod masks;
 pub mod registry;
 pub mod report;
 pub mod value;

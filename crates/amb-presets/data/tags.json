@@ -1834,7 +1834,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GradientBasedCorrections",
@@ -1843,7 +1843,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "CircularGradientBasedCorrections",
@@ -1852,7 +1852,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PaintBasedCorrections",
@@ -1861,7 +1861,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "RetouchAreas",

@@ -49,7 +49,7 @@ cargo run -p amb-cli -- lens info photo.nef             # which lens profile a r
 cargo run -p amb-cli -- negative analyze scan*.nef --out roll.xmp   # film negatives: base/levels for a roll (docs/design/film-negatives.md)
 ```
 
-All rendering models are first versions ("ours, not Adobe's"). Their constants are to be fitted against Lightroom renders (`amb calibration defaults` prints them). `amb render` lists which preset settings it doesn't render yet. Next: built-in lens profiles from raw files, Upright/Transform, masks, camera profiles (DCP), and the MCP server and look matching for AI control (SCOPE §8).
+All rendering models are first versions ("ours, not Adobe's"). Their constants are to be fitted against Lightroom renders (`amb calibration defaults` prints them). `amb render` lists which preset settings it doesn't render yet. Masks (linear, radial, brush, luminance and colour range) work in Lightroom's own format ([design/masks.md](docs/design/masks.md)). Next: built-in lens profiles from raw files, Upright/Transform, spot removal, camera profiles (DCP), and the MCP server and look matching for AI control (SCOPE §8).
 
 ## Licence
 

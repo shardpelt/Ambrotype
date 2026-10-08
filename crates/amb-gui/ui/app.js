@@ -181,6 +181,23 @@ function makeRow(def) {
   return row;
 }
 
+// History entries in words: "set_param Exposure2012" → "Exposure2012",
+// "add_mask linear to mask 0" → "Mask 1: add linear".
+function historyLabel(label) {
+  const n = (i) => `Mask ${Number(i) + 1}`;
+  return label
+    .replace(/^set_param /, "")
+    .replace(/^apply_preset .*[\\/]/, "preset ")
+    .replace(/^add_mask (\w+) to mask (\d+)$/, (_, k, m) => `${n(m)}: add ${k}`)
+    .replace(/^add_mask (\w+)$/, (_, k) => `New ${k} mask`)
+    .replace(/^set_mask (\d+) part (\d+)$/, (_, m, p) => `${n(m)}: edit part ${Number(p) + 1}`)
+    .replace(/^set_mask (\d+)$/, (_, m) => n(m))
+    .replace(/^paint_mask new$/, "New brush mask")
+    .replace(/^(paint|erase)_mask (\d+)$/, (_, v, m) => `${n(m)}: ${v === "paint" ? "brush" : "erase"}`)
+    .replace(/^remove_mask (\d+) part (\d+)$/, (_, m, p) => `${n(m)}: remove part ${Number(p) + 1}`)
+    .replace(/^remove_mask (\d+)$/, (_, m) => `Delete ${n(m).toLowerCase()}`);
+}
+
 function syncControls() {
   for (const [name, c] of ui.controls) {
     const v = currentValue(name);
@@ -201,7 +218,7 @@ function syncControls() {
   hist.innerHTML = "";
   for (const label of ui.state?.history ?? []) {
     const li = document.createElement("li");
-    li.textContent = label.replace(/^set_param /, "").replace(/^apply_preset .*[\\/]/, "preset ");
+    li.textContent = historyLabel(label);
     hist.append(li);
   }
   if (ui.curve) for (const tag of AmbCurve.TAGS) ui.curve.set(tag, currentValue(tag));
@@ -221,6 +238,7 @@ function setState(state) {
   stripUpdateCurrent({ edited: Object.keys(ui.settings).length > 0 });
   syncControls();
   if (ui.crop.on && cropKey(ui.settings) !== crop) reloadCrop();
+  masksStateChanged();
 }
 
 // Run protocol commands; several commands with a `group` label are one undo step.
@@ -273,6 +291,7 @@ async function renderLoop() {
         continue;
       }
       const overrides = ui.before ? {} : { ...ui.overrides };
+      const maskOverlay = ui.before ? null : maskOverlayIndex();
       // The crop tool draws its rectangle on the whole photo.
       if (ui.crop.on) overrides.HasCrop = false;
       const buf = await invoke("preview", {
@@ -280,6 +299,7 @@ async function renderLoop() {
         overrides,
         before: ui.before,
         clipping: ui.clipping,
+        maskOverlay,
       });
       const { meta, jpeg } = splitFramed(buf);
       // A draft is smaller than the viewer; keep the image at its settled size
@@ -294,6 +314,7 @@ async function renderLoop() {
       }
       showJpeg(jpeg);
       ui.preview.uncropped = uncropped;
+      ui.preview.overlay = maskOverlay != null;
       drawHistogram(meta.histogram);
       ui.curve?.setHistogram(meta.histogram);
       status(`${meta.width}×${meta.height} preview in ${meta.millis} ms` +
@@ -604,6 +625,7 @@ function setCropMode(on) {
 
 async function enterCrop() {
   if (!ui.info || ui.crop.on) return;
+  exitMasks();
   if (ui.zoom.on) setZoom(false);
   setPicking(false);
   let st;
@@ -723,6 +745,7 @@ function wireCrop() {
   $("crop-draw").addEventListener("click", () => ui.crop.tool.setDrawMode(!ui.crop.tool.drawMode()));
   img.addEventListener("load", () => { if (ui.crop.on) ui.crop.tool.draw(); });
   $("btn-crop").addEventListener("click", toggleCrop);
+  $("btn-masks").addEventListener("click", toggleMasks);
   $("crop-done").addEventListener("click", () => exitCrop(true));
   $("crop-cancel").addEventListener("click", () => exitCrop(false));
   $("crop-reset").addEventListener("click", resetCrop);
@@ -875,6 +898,7 @@ async function openPath(path) {
       setCropMode(false);
       ui.crop.tool.stop();
     }
+    masksPhotoChanged();
     const wasRendered = !!ui.info?.rendered;
     ui.info = r.info;
     // Raw and JPEG have different white balance sliders.
@@ -883,7 +907,7 @@ async function openPath(path) {
     $("photo-title").textContent = `${r.info.name}  —  ${r.info.camera}${r.info.lens ? "  ·  " + r.info.lens : ""}`;
     $("exif").textContent = [r.info.exposure, `${r.info.width} × ${r.info.height}`,
       r.info.sidecar_loaded ? "edits loaded from sidecar" : ""].filter(Boolean).join("  ·  ");
-    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-zoom", "btn-wb", "btn-clip", "btn-save-preset"]) $(id).disabled = false;
+    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-zoom", "btn-wb", "btn-clip", "btn-save-preset"]) $(id).disabled = false;
     if (ui.zoom.on) setZoom(false);
     setState(r.state);
     if (r.saved_previous) toast(`Saved your edits to ${r.saved_previous.replace(/^.*[\\/]/, "")}`);
@@ -1143,6 +1167,7 @@ async function init() {
   $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));
   wireViewer();
   wireCrop();
+  wireMasks();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   // Enter in a dialog's text box means its main button, not the first one (Cancel).

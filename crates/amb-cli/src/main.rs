@@ -38,11 +38,12 @@ USAGE:
                                             same preset and export options; one failure doesn't stop the rest
     amb edit <SIDECAR.xmp> --commands <CMDS.json|-> [--out <NEW.xmp|.json>] [--dry-run] [--json]
                                             Apply protocol commands (set_param, adjust_param, reset_param,
-                                            reset_group, apply_preset, undo, redo) as one transaction,
+                                            reset_group, apply_preset, add_mask, set_mask, paint_mask,
+                                            remove_mask, undo, redo) as one transaction,
                                             print the diff and write the sidecar (other XMP metadata kept)
     amb query <SIDECAR.xmp> --queries <QUERIES.json|->
                                             Answer protocol queries (get_param, list_params, describe,
-                                            list_groups) as JSON
+                                            list_groups, list_masks) as JSON
     amb protocol schema [command|query]     Print the JSON Schema of commands and queries
     amb negative analyze <RAW>... [--out ROLL.xmp] [--json]
                                             Estimate film base, levels and midtone of scanned negatives
@@ -579,8 +580,19 @@ fn render(
         let (t, tint) = pipeline::as_shot_temp_tint(&img);
         format!("as shot: {t:.0} K, tint {tint:+.0}")
     };
+    // Masks and the crop use the stored orientation, so say when it isn't upright.
+    let turned = match img.metadata.orientation {
+        2 => " | stored mirrored",
+        3 => " | stored upside down",
+        4 => " | stored mirrored upside down",
+        5 => " | stored turned and mirrored",
+        6 => " | stored turned left (shown turned 90° clockwise)",
+        7 => " | stored turned and mirrored",
+        8 => " | stored turned right (shown turned 90° counter-clockwise)",
+        _ => "",
+    };
     println!(
-        "{} {} | {}x{} | {wb}",
+        "{} {} | {}x{} | {wb}{turned}",
         img.make, img.model, img.width, img.height
     );
     let mut settings = std::collections::BTreeMap::new();

@@ -13,6 +13,7 @@ use crate::detail::DetailStrengths;
 use crate::effects::EffectsStrengths;
 use crate::lens::LensStrengths;
 use crate::local::LocalStrengths;
+use crate::mask::MaskStrengths;
 use crate::negative::NegativeStrengths;
 use crate::tone::ToneStrengths;
 
@@ -27,6 +28,7 @@ pub struct Calibration {
     pub effects: EffectsStrengths,
     pub lens: LensStrengths,
     pub negative: NegativeStrengths,
+    pub masks: MaskStrengths,
 }
 
 impl Calibration {

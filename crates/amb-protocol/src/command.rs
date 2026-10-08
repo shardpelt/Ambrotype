@@ -14,6 +14,18 @@ fn is_default_amount(a: &f64) -> bool {
     *a == 100.0
 }
 
+fn default_brush_size() -> f64 {
+    0.05
+}
+
+fn default_feather() -> f64 {
+    50.0
+}
+
+fn is_false(b: &bool) -> bool {
+    !*b
+}
+
 /// A state-changing, undoable edit.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "cmd", rename_all = "snake_case", deny_unknown_fields)]
@@ -40,6 +52,54 @@ pub enum Command {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         exclude_groups: Option<Vec<String>>,
     },
+    /// Add a mask of `kind` (linear, radial, luminance, color) with optional
+    /// part `values`; with `mask`, add it as a new part of that mask, joined
+    /// by `mode` (add, subtract, intersect).
+    AddMask {
+        kind: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        mask: Option<usize>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        mode: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        values: Option<serde_json::Map<String, serde_json::Value>>,
+    },
+    /// Change a mask's local sliders (UI units), `name`, `active` or `amount`;
+    /// or, with `part`, that part's geometry, `mode`, `invert`, `active`.
+    SetMask {
+        mask: usize,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        part: Option<usize>,
+        values: serde_json::Map<String, serde_json::Value>,
+    },
+    /// Paint (or erase) a brush stroke through `points` (image fractions).
+    /// Without `part` a new brush part is made, in a new mask without `mask`.
+    PaintMask {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        mask: Option<usize>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        part: Option<usize>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        mode: Option<String>,
+        points: Vec<[f64; 2]>,
+        /// Radius as a fraction of the image's longer side.
+        #[serde(default = "default_brush_size")]
+        size: f64,
+        #[serde(default = "default_feather")]
+        feather: f64,
+        #[serde(default = "default_amount")]
+        flow: f64,
+        #[serde(default = "default_amount")]
+        density: f64,
+        #[serde(default, skip_serializing_if = "is_false")]
+        erase: bool,
+    },
+    /// Remove a mask, or one of its parts.
+    RemoveMask {
+        mask: usize,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        part: Option<usize>,
+    },
     /// Revert the most recent command.
     Undo,
     /// Re-apply the most recently undone command.
@@ -57,6 +117,25 @@ impl Command {
             Command::ApplyPreset { path, amount, .. } => {
                 format!("apply_preset {path} at {amount}%")
             }
+            Command::AddMask { kind, mask, .. } => match mask {
+                Some(m) => format!("add_mask {kind} to mask {m}"),
+                None => format!("add_mask {kind}"),
+            },
+            Command::SetMask { mask, part, .. } => match part {
+                Some(p) => format!("set_mask {mask} part {p}"),
+                None => format!("set_mask {mask}"),
+            },
+            Command::PaintMask { mask, erase, .. } => {
+                let verb = if *erase { "erase_mask" } else { "paint_mask" };
+                match mask {
+                    Some(m) => format!("{verb} {m}"),
+                    None => format!("{verb} new"),
+                }
+            }
+            Command::RemoveMask { mask, part } => match part {
+                Some(p) => format!("remove_mask {mask} part {p}"),
+                None => format!("remove_mask {mask}"),
+            },
             Command::Undo => "undo".into(),
             Command::Redo => "redo".into(),
         }
@@ -82,6 +161,8 @@ pub enum Query {
     Describe { name: String },
     /// All registry groups with labels, descriptions and counts.
     ListGroups,
+    /// Every mask with its sliders (UI units) and parts.
+    ListMasks,
 }
 
 /// Parse one command or a JSON array of commands.

@@ -8,7 +8,7 @@
 
 const TOOLBAR_IDS = {
   open: "btn-open", library: "btn-library", save: "btn-save", export: "btn-export", collage: "btn-collage", undo: "btn-undo", redo: "btn-redo",
-  before: "btn-before", crop: "btn-crop", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip",
+  before: "btn-before", crop: "btn-crop", masks: "btn-masks", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip",
   plugins: "btn-plugins", looks: "btn-looks", edit: "btn-edit-layout", settings: "btn-settings", feedback: "btn-feedback",
 };
 const BLOCK_IDS = { presets: "block-presets", info: "block-info", history: "block-history", histogram: "block-histogram" };
@@ -42,6 +42,7 @@ function redrawCanvases() {
   ui.curve?.refresh();
   ui.wheels?.refresh();
   ui.crop.tool?.draw?.();
+  if (typeof drawMasks === "function") drawMasks();
 }
 
 // ---------------------------------------------------------------- layout
@@ -58,6 +59,7 @@ function applyLayout(layout) {
   const store = $("block-store");
   for (const id of Object.values(BLOCK_IDS)) store.append($(id));
   store.append($("crop-panel"));
+  store.append($("mask-panel"));
   ui.curve?.destroy();
   ui.wheels?.destroy();
   ui.curve = ui.wheels = null;
@@ -92,6 +94,7 @@ function applyLayout(layout) {
     const hist = $("block-histogram");
     if (hist.parentElement === host) hist.after($("crop-panel"));
     else host.prepend($("crop-panel"));
+    $("crop-panel").after($("mask-panel"));
   }
   if (ui.edit) decorateEditing();
   syncControls();

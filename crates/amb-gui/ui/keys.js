@@ -28,12 +28,21 @@ const KEY_ACTIONS = [
   { id: "zoom", group: "View", label: "Fit / 100% view", hint: "Or click the photo; drag to pan at 100%.", keys: ["Z"], when: "main", photo: true, button: "btn-zoom", run: () => setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy) },
   { id: "clipping", group: "View", label: "Clipping overlay", hint: "Red: clipped highlights, blue: crushed shadows.", keys: ["J"], when: "any", button: "btn-clip", run: () => toggleClipping() },
   { id: "crop", group: "Tools", label: "Crop and straighten", keys: ["R"], when: "any", photo: true, button: "btn-crop", run: () => toggleCrop() },
+  { id: "masks", group: "Tools", label: "Masks", hint: "Gradients, brush and range masks with their own sliders.", keys: ["M"], when: "any", photo: true, button: "btn-masks", run: () => toggleMasks() },
   { id: "wb", group: "Tools", label: "White-balance picker", hint: "Then click something neutral grey or white.", keys: ["W"], when: "main", button: "btn-wb", run: () => setPicking(!ui.picking) },
   { id: "leave", group: "Tools", label: "Leave the picker", keys: ["Escape"], when: "main", run: () => setPicking(false) },
   { id: "crop-draw", group: "Crop tool", label: "Draw a new crop (corner to corner)", keys: ["D"], when: "crop", run: () => ui.crop.tool.setDrawMode(!ui.crop.tool.drawMode()) },
   { id: "crop-swap", group: "Crop tool", label: "Swap portrait and landscape", keys: ["X"], when: "crop", run: () => swapCrop() },
   { id: "crop-apply", group: "Crop tool", label: "Apply the crop", keys: ["Enter"], when: "crop", run: (e) => (e.target.matches("button, select") ? false : exitCrop(true)) },
   { id: "crop-cancel", group: "Crop tool", label: "Cancel the crop", keys: ["Escape"], when: "crop", run: () => exitCrop(false) },
+  { id: "mask-linear", group: "Masks", label: "New linear gradient", keys: ["L"], when: "masks", run: () => startTool("linear", true) },
+  { id: "mask-radial", group: "Masks", label: "New radial gradient", keys: ["Shift+R"], when: "masks", run: () => startTool("radial", true) },
+  { id: "mask-brush", group: "Masks", label: "New brush mask", hint: "Hold Alt to erase.", keys: ["B"], when: "masks", run: () => startTool("brush", true) },
+  { id: "mask-overlay", group: "Masks", label: "Show or hide the mask overlay", keys: ["O"], when: "masks", run: () => toggleMaskOverlay() },
+  { id: "mask-smaller", group: "Masks", label: "Smaller brush", keys: ["["], when: "masks", run: () => brushSize(-1) },
+  { id: "mask-bigger", group: "Masks", label: "Bigger brush", keys: ["]"], when: "masks", run: () => brushSize(1) },
+  { id: "mask-delete", group: "Masks", label: "Delete the selected part (or mask)", keys: ["Delete", "Backspace"], when: "masks", run: (e) => (onControl(e) ? false : deleteMaskPart()) },
+  { id: "mask-leave", group: "Masks", label: "Stop drawing, then leave the masks", keys: ["Escape"], when: "masks", run: () => maskEscape() },
   // Rating, labels and keywords: the open photo, or in the library the selected photos.
   ...[1, 2, 3, 4, 5].map((n) => ({ id: `rate-${n}`, group: "Rating", label: `Rate ${"★".repeat(n)}`, keys: [String(n)], when: "any", run: () => rateKey(n) })),
   { id: "rate-0", group: "Rating", label: "Clear the rating", keys: ["0"], when: "any", run: () => rateKey(0) },
@@ -96,7 +105,7 @@ function dispatchKey(e) {
   if (document.querySelector("dialog[open]")) return;
   const combo = comboOf(e);
   if (!combo) return;
-  const ctx = libraryOn() ? "library" : ui.crop.on ? "crop" : "main";
+  const ctx = libraryOn() ? "library" : ui.crop.on ? "crop" : mk.on ? "masks" : "main";
   for (const a of KEY_ACTIONS) {
     if (!keysFor(a).includes(combo)) continue;
     if (a.when !== "any" && a.when !== ctx) continue;
@@ -209,6 +218,7 @@ async function settingsFlow() {
       name.className = "key-action";
       name.textContent = a.label;
       if (a.when === "crop") name.title = "Only while the crop tool is open";
+      if (a.when === "masks") name.title = "Only while the masks are open";
       if (a.when === "library") name.title = "Only in the library";
       const caps = document.createElement("span");
       caps.className = "key-caps";

@@ -11,7 +11,7 @@ use serde::Serialize;
 use crate::catalog::Catalog;
 use crate::command::{Command, Query};
 use crate::convert::{self, Clamp};
-use crate::{Error, sidecar};
+use crate::{Error, masks, sidecar};
 
 /// One setting's change. `None` means "not set" (the default applies).
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -463,6 +463,10 @@ impl DevelopState {
                         unknown.join(", ")
                     ));
                 }
+                // Masks join the photo's own, as in Lightroom.
+                if let Some(incoming) = filtered.remove(amb_presets::masks::MASK_TAG) {
+                    masks::merge(next, &incoming, amount / 100.0);
+                }
                 let unscaled =
                     apply_amount(next, &filtered, amount / 100.0, clamped, &mut rejected);
                 if !rejected.is_empty() {
@@ -480,6 +484,37 @@ impl DevelopState {
                     ));
                 }
             }
+            Command::AddMask {
+                kind,
+                mask,
+                mode,
+                values,
+            } => masks::add(next, kind, *mask, mode.as_deref(), values.as_ref(), clamped)?,
+            Command::SetMask { mask, part, values } => {
+                masks::set(next, *mask, *part, values, clamped)?;
+            }
+            Command::PaintMask {
+                mask,
+                part,
+                mode,
+                points,
+                size,
+                feather,
+                flow,
+                density,
+                erase,
+            } => {
+                let stroke = masks::Stroke {
+                    points,
+                    size: *size,
+                    feather: *feather,
+                    flow: *flow,
+                    density: *density,
+                    erase: *erase,
+                };
+                masks::paint(next, *mask, *part, mode.as_deref(), &stroke, clamped)?;
+            }
+            Command::RemoveMask { mask, part } => masks::remove(next, *mask, *part)?,
             Command::Undo | Command::Redo => unreachable!("handled by execute"),
         }
         Ok(())
@@ -532,6 +567,7 @@ impl DevelopState {
                     .collect();
                 serde_json::json!({ "group": group, "only_set": only_set, "params": params })
             }
+            Query::ListMasks => masks::describe(&self.settings),
             Query::ListGroups => {
                 let groups: Vec<serde_json::Value> = catalog
                     .groups()

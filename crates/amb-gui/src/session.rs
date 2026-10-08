@@ -101,6 +101,23 @@ pub struct StateInfo {
     pub history: Vec<String>,
     /// Settings present but not rendered by this engine version.
     pub not_rendered: Vec<String>,
+    /// The masks as `list_masks` describes them.
+    pub masks: serde_json::Value,
+}
+
+/// How the mask tool maps the shown photo to mask coordinates: a point at
+/// fractions (u, v) of the upright, cropped preview is at
+/// `(m[0]·u + m[1]·v + m[2], m[3]·u + m[4]·v + m[5])` as fractions of the
+/// uncropped photo in stored orientation (the frame masks use).
+#[derive(Debug, Clone, Serialize)]
+pub struct MaskFrame {
+    pub matrix: [f64; 6],
+    /// Uncropped photo, stored orientation, full-size pixels.
+    pub frame_width: usize,
+    pub frame_height: usize,
+    /// The shown (upright, cropped) photo in full-size pixels.
+    pub view_width: usize,
+    pub view_height: usize,
 }
 
 /// The crop as the crop tool works with it: a rectangle on the upright,
@@ -306,6 +323,44 @@ impl Session {
                 .map(|h| h.label.clone())
                 .collect(),
             not_rendered,
+            masks: amb_protocol::masks::describe(self.state.settings()),
+        }
+    }
+
+    /// The mask tool's coordinate map for the committed crop.
+    pub fn mask_frame(&self) -> MaskFrame {
+        let (develop, _) = DevelopSettings::from_settings(self.state.settings());
+        let (w, h) = (self.full.width, self.full.height);
+        let o = self.full.metadata.orientation;
+        let g = develop.crop.geometry(w, h);
+        let (cw, ch) = g.as_ref().map_or((w, h), |g| (g.width, g.height));
+        let to_frame = |u: f64, v: f64| -> (f64, f64) {
+            let (s, t) = amb_export::geometry::stored_fraction(o, u, v);
+            match &g {
+                Some(g) => {
+                    let (fx, fy) = g.source(s * cw as f64 - 0.5, t * ch as f64 - 0.5);
+                    ((fx + 0.5) / w as f64, (fy + 0.5) / h as f64)
+                }
+                None => (s, t),
+            }
+        };
+        let o0 = to_frame(0.0, 0.0);
+        let ou = to_frame(1.0, 0.0);
+        let ov = to_frame(0.0, 1.0);
+        let (vw, vh) = amb_export::geometry::oriented_size(cw, ch, o);
+        MaskFrame {
+            matrix: [
+                ou.0 - o0.0,
+                ov.0 - o0.0,
+                o0.0,
+                ou.1 - o0.1,
+                ov.1 - o0.1,
+                o0.1,
+            ],
+            frame_width: w,
+            frame_height: h,
+            view_width: vw,
+            view_height: vh,
         }
     }
 
@@ -440,9 +495,24 @@ impl Session {
         clipping: bool,
         lens: &LensSources,
     ) -> Preview {
+        self.preview_masked(max_edge, overrides, before, clipping, lens, None)
+    }
+
+    /// [`preview`](Self::preview), with mask `overlay` (its position in
+    /// `MaskGroupBasedCorrections`) tinted red as the mask tool shows it.
+    pub fn preview_masked(
+        &mut self,
+        max_edge: usize,
+        overrides: &BTreeMap<String, Value>,
+        before: bool,
+        clipping: bool,
+        lens: &LensSources,
+        overlay: Option<usize>,
+    ) -> Preview {
         let start = Instant::now();
         let settings = self.effective_settings(overrides, before);
-        let develop = self.develop(&settings, lens);
+        let mut develop = self.develop(&settings, lens);
+        develop.masks.overlay = overlay;
         // `max_edge` is for what is shown: a crop needs a larger source to
         // come out at that size.
         let long = self.full.width.max(self.full.height);

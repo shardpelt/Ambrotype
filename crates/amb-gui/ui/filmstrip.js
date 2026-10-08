@@ -228,6 +228,6 @@ function wireFilmstrip() {
   $("filmstrip-prev").addEventListener("click", () => stepPhoto(-1));
   $("filmstrip-next").addEventListener("click", () => stepPhoto(1));
   $("preview").addEventListener("load", () => {
-    if (!ui.preview.draft && !ui.preview.uncropped && !ui.before && !ui.zoom.on && !ui.clipping) stripShowPreview($("preview"));
+    if (!ui.preview.draft && !ui.preview.uncropped && !ui.before && !ui.zoom.on && !ui.clipping && !ui.preview.overlay) stripShowPreview($("preview"));
   });
 }

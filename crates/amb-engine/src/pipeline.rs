@@ -16,6 +16,9 @@
 //! 6. noise reduction → sharpening
 //! 7. post-crop vignette (relative to the crop) → grain → output
 //!
+//! Masks ([`crate::mask`]) are drawn once after step 1, and each local slider
+//! acts through them right after its global counterpart.
+//!
 //! The exact order Camera Raw uses is still to be confirmed by sweeps. Each
 //! stage is a pass over one shared [`Image`] buffer, so spatial operations can
 //! sit between the per-pixel ones.
@@ -40,10 +43,11 @@ use crate::detail::{NoiseReduction, Sharpening};
 use crate::effects::{Grain, Vignette};
 use crate::lens::{Defringe, LensCorrections};
 use crate::local::LocalContrast;
+use crate::mask::Masks;
 use crate::negative::{Negative, NegativeType};
 use crate::raw::{CameraImage, neutral_for_xy, xy_for_neutral};
 use crate::tone::{self, ParametricCurve, ToneControls};
-use crate::{dehaze, detail, effects, lens, local, local_tone, negative};
+use crate::{dehaze, detail, effects, lens, local, local_tone, mask, negative};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WhiteBalance {
@@ -130,6 +134,8 @@ pub struct DevelopSettings {
     /// Crop and straighten (after the lens corrections, in stored orientation).
     pub crop: Crop,
     pub negative: Negative,
+    /// Masks and their local adjustments.
+    pub masks: Masks,
     /// Model constants; [`Calibration::default`] until fitted against Lightroom.
     pub calibration: Calibration,
 }
@@ -156,6 +162,7 @@ impl Default for DevelopSettings {
             lens: LensCorrections::default(),
             crop: Crop::default(),
             negative: Negative::default(),
+            masks: Masks::default(),
             calibration: Calibration::default(),
         }
     }
@@ -254,6 +261,14 @@ pub const RENDERED_TAGS: &[&str] = &[
     "CropBottom",
     "CropRight",
     "CropAngle",
+    "MaskGroupBasedCorrections",
+    "EnableMaskGroupBasedCorrections",
+    "GradientBasedCorrections",
+    "EnableGradientBasedCorrections",
+    "CircularGradientBasedCorrections",
+    "EnableCircularGradientBasedCorrections",
+    "PaintBasedCorrections",
+    "EnablePaintBasedCorrections",
     "amb:NegativeConvert",
     "amb:NegativeType",
     "amb:NegativeAuto",
@@ -440,8 +455,10 @@ impl DevelopSettings {
             spline_of(settings, "ToneCurvePV2012Green"),
             spline_of(settings, "ToneCurvePV2012Blue"),
         ];
+        let (masks, mask_notes) = Masks::from_settings(settings);
+        s.masks = masks;
         let registry = amb_presets::registry::Registry::builtin();
-        let not_rendered = settings
+        let mut not_rendered: Vec<String> = settings
             .keys()
             .filter(|k| !is_rendered(k))
             .filter(|k| {
@@ -462,6 +479,7 @@ impl DevelopSettings {
             })
             .cloned()
             .collect();
+        not_rendered.extend(mask_notes);
         (s, not_rendered)
     }
 }
@@ -799,9 +817,32 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         lens::apply_defringe(&mut out, &s.lens.defringe, &cal.lens);
     }
 
+    // Masks, drawn on the photo as it is now; then the local light sliders.
+    let base = if img.rendered {
+        BaseLook::Linear
+    } else {
+        s.base_look
+    };
+    let masks = (!s.masks.is_empty()).then(|| {
+        mask::draw(
+            &s.masks,
+            &out,
+            (img.width, img.height),
+            crop.as_ref(),
+            |y| srgb_encode(base.apply(y)),
+            &cal.masks,
+        )
+    });
+    if let Some(m) = &masks {
+        m.apply_light(&mut out, &cal.masks);
+    }
+
     // 2. Dehaze (scene-linear).
     if s.dehaze != 0.0 {
         dehaze::apply(&mut out, s.dehaze, &cal.dehaze);
+    }
+    if let Some(m) = &masks {
+        m.apply_dehaze(&mut out, cal);
     }
 
     // 3. Base look, local Highlights/Shadows, then the global tone controls → display-linear.
@@ -812,12 +853,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     };
     let tone_lut = (!global.is_neutral()).then(|| tone::tone_lut(&global, &cal.tone, LUT));
     let lum_weights = luminance_weights();
-    // A rendered image already has its tone curve.
-    let base = if img.rendered {
-        BaseLook::Linear
-    } else {
-        s.base_look
-    };
+    // A rendered image already has its tone curve (`base` is linear then).
     out.map_pixels(|c| c.map(|v| base.apply(v)));
     local_tone::apply(&mut out, &s.tone, &cal.tone);
     out.map_pixels(|c| {
@@ -833,10 +869,17 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         }
         p
     });
+    if let Some(m) = &masks {
+        m.apply_tone(&mut out, cal, LUT);
+    }
 
     // 4. Texture / Clarity.
     if !s.local.is_neutral() {
         local::apply(&mut out, &s.local, &cal.local);
+    }
+    if let Some(m) = &masks {
+        m.apply_local_contrast(&mut out, cal);
+        m.apply_color(&mut out, &cal.masks);
     }
 
     // 5. Colour, then parametric and point curves.
@@ -889,6 +932,9 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     }
     detail::apply_noise_reduction(&mut out, &nr, &cal.detail);
     detail::apply_sharpening(&mut out, &sharpening, &cal.detail);
+    if let Some(m) = &masks {
+        m.apply_detail(&mut out, cal);
+    }
 
     // 7. Effects: post-crop vignette, then grain.
     if s.vignette.amount != 0.0 {
@@ -896,6 +942,9 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     }
     if s.grain.amount != 0.0 {
         effects::apply_grain(&mut out, &s.grain, &cal.effects);
+    }
+    if let Some(m) = &masks {
+        m.apply_overlay(&mut out);
     }
     if let Some(blank) = lens_pass.as_ref().and_then(|p| p.blank.as_deref()) {
         lens::fill_blank(&mut out, blank, &cal.lens);
@@ -1138,6 +1187,56 @@ mod tests {
         s.sharpening.amount = 0.0;
         s.noise_reduction.color = 0.0;
         s
+    }
+
+    #[test]
+    fn local_adjustments_render_through_their_masks() {
+        // The top of the frame (rows < 10 of 40) gets local Exposure +1 EV,
+        // Saturation −100 and Clarity; the bottom stays as the global edit.
+        let xmp = r#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+          <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/">
+          <crs:MaskGroupBasedCorrections><rdf:Seq><rdf:li><rdf:Description
+            crs:What="Correction" crs:CorrectionAmount="1" crs:CorrectionActive="true"
+            crs:LocalExposure2012="0.25" crs:LocalSaturation="-1" crs:LocalClarity2012="0.5">
+            <crs:CorrectionMasks><rdf:Seq>
+              <rdf:li crs:What="Mask/Gradient" crs:MaskBlendMode="0" crs:MaskValue="1"
+                crs:ZeroX="0.5" crs:ZeroY="0.3" crs:FullX="0.5" crs:FullY="0.25"/>
+            </rdf:Seq></crs:CorrectionMasks>
+          </rdf:Description></rdf:li></rdf:Seq></crs:MaskGroupBasedCorrections>
+          </rdf:Description></rdf:RDF></x:xmpmeta>"#;
+        let settings = amb_presets::xmp::parse_crs(xmp).unwrap();
+        let (s, missing) = DevelopSettings::from_settings(&settings);
+        assert!(missing.is_empty(), "{missing:?}");
+        let s = DevelopSettings {
+            base_look: BaseLook::Linear,
+            sharpening: Sharpening {
+                amount: 0.0,
+                ..s.sharpening
+            },
+            noise_reduction: NoiseReduction {
+                color: 0.0,
+                ..s.noise_reduction
+            },
+            ..s
+        };
+        let img = camera(20, 40, |_, _| [0.10, 0.05, 0.02]);
+        let out = render(&img, &s);
+        let plain = render(&img, &linear(&[]));
+        let (top, bottom) = (out.get(10, 2), out.get(10, 37));
+        assert_eq!(bottom, plain.get(10, 37), "outside the mask is untouched");
+        let y = |p: [f32; 3]| p.iter().sum::<f32>();
+        assert!(y(top) > 1.6 * y(plain.get(10, 2)), "brighter: {top:?}");
+        let spread = |p: [f32; 3]| {
+            p.iter().fold(0f32, |a, &v| a.max(v)) - p.iter().fold(1f32, |a, &v| a.min(v))
+        };
+        assert!(spread(top) < 0.02 * y(top), "grey: {top:?}");
+
+        // The overlay tints the mask red and leaves the rest alone.
+        let mut shown = s.clone();
+        shown.masks.overlay = Some(0);
+        let o = render(&img, &shown);
+        assert!(o.get(10, 2)[0] > 3.0 * o.get(10, 2)[2]);
+        assert_eq!(o.get(10, 37), out.get(10, 37));
     }
 
     fn ramp(x: usize, y: usize) -> [f32; 3] {

@@ -424,10 +424,10 @@ Masks (AI, brush, linear and radial gradients, range masks) with their local adj
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `MaskGroupBasedCorrections` | Masks | seq |  |  | planned | Current masking: a list of masks, each with its components (AI, brush, gradient, range) and local adjustment values. |
-| `GradientBasedCorrections` | Linear gradients (legacy) | seq |  |  | planned | Graduated filter adjustments from before the Masking tool. |
-| `CircularGradientBasedCorrections` | Radial gradients (legacy) | seq |  |  | planned | Radial filter adjustments from before the Masking tool. |
-| `PaintBasedCorrections` | Brush adjustments (legacy) | seq |  |  | planned | Adjustment brush strokes from before the Masking tool. |
+| `MaskGroupBasedCorrections` | Masks | seq |  |  | rendered (approx.) | Current masking: a list of masks, each with its components (AI, brush, gradient, range) and local adjustment values. |
+| `GradientBasedCorrections` | Linear gradients (legacy) | seq |  |  | rendered (approx.) | Graduated filter adjustments from before the Masking tool. |
+| `CircularGradientBasedCorrections` | Radial gradients (legacy) | seq |  |  | rendered (approx.) | Radial filter adjustments from before the Masking tool. |
+| `PaintBasedCorrections` | Brush adjustments (legacy) | seq |  |  | rendered (approx.) | Adjustment brush strokes from before the Masking tool. |
 
 <a id="retouch"></a>
 

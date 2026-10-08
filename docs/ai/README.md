@@ -121,6 +121,10 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 | `reset_param` | `name` | Removes the setting so the default applies. |
 | `reset_group` | `group` | Removes every setting of a group, e.g. `"hsl"`. |
 | `apply_preset` | `path`, `amount`?, `include_groups`?, `exclude_groups`? | See above. |
+| `add_mask` | `kind`, `mask`?, `mode`?, `values`? | A linear, radial, luminance or color mask; with `mask`, a new part of that mask (`mode` add, subtract, intersect). See [Masks](#masks). |
+| `set_mask` | `mask`, `part`?, `values` | A mask's local sliders, `name`, `active`, `amount`; with `part`, that part's geometry, `mode`, `invert`. |
+| `paint_mask` | `points`, `mask`?, `part`?, `mode`?, `size`?, `feather`?, `flow`?, `density`?, `erase`? | A brush stroke; without `part`, a new brush part (a new mask without `mask`). |
+| `remove_mask` | `mask`, `part`? | A mask, or one part. |
 | `undo`, `redo` | | One step = one command. |
 
 Validation:
@@ -139,10 +143,33 @@ Validation:
 | `describe` | `name` | the above plus description, units, render status |
 | `list_params` | `group`?, `only_set`? | without `group`: the settings present; with `group`: every setting of the group |
 | `list_groups` | | all groups with labels, descriptions, tag counts and how many are set |
+| `list_masks` | | every mask: name, amount, active, local sliders (UI units), parts with kind, mode, invert and geometry |
 
 ```json
 [{"query": "get_param", "name": "Temperature"}, {"query": "list_params", "group": "color_grading"}]
 ```
+
+## Masks
+
+Masks are Lightroom's own (`MaskGroupBasedCorrections`), so they open in Lightroom. Positions are **fractions of the uncropped photo in its stored (sensor) orientation**: (0, 0) is the top-left of the raw as the camera stored it, before rotation. `amb render` says when a photo is stored turned or mirrored (`stored turned left (shown turned 90° clockwise)`); then convert positions, or check the result on a render. Masks and parts are numbered from 0, as `list_masks` shows them.
+
+```json
+[
+  {"cmd": "add_mask", "kind": "linear", "values": {"FullX": 0.5, "FullY": 0.0, "ZeroX": 0.5, "ZeroY": 0.45}},
+  {"cmd": "set_mask", "mask": 0, "values": {"name": "Sky", "Exposure": -0.7, "Highlights": -40, "Temp": -10}},
+  {"cmd": "add_mask", "kind": "luminance", "mask": 0, "mode": "intersect", "values": {"LumRange": [0.4, 0.55, 1, 1]}},
+  {"cmd": "add_mask", "kind": "radial", "values": {"Top": 0.3, "Left": 0.35, "Bottom": 0.8, "Right": 0.65, "Feather": 70}},
+  {"cmd": "set_mask", "mask": 1, "values": {"Exposure": 0.3, "Clarity": 15}}
+]
+```
+
+- **Linear:** no effect at `ZeroX/ZeroY`, full at `FullX/FullY` (above: full at the top, fading out at 45% down).
+- **Radial:** the ellipse's box (`Top`, `Left`, `Bottom`, `Right`), `Angle` in degrees, `Feather` 0-100; the effect is inside unless `"invert": true`.
+- **Luminance:** `LumRange` [none below, full from, full to, none above], 0-1 brightness.
+- **Color:** `ColorSamples` [[x, y], ...] positions of colours to select, `ColorAmount` (refine) 0-100.
+- **Brush:** `{"cmd": "paint_mask", "points": [[0.2, 0.8], [0.4, 0.82]], "size": 0.04}` paints a new brush mask (`size` is the radius as a fraction of the longer side); add `"mask": 0, "part": 2` to paint more into a brush part, `"erase": true` to erase.
+- **Sliders** (`set_mask` without `part`) are in UI units, by label or tag: Exposure (EV, -4..4), Contrast, Highlights, Shadows, Whites, Blacks, Temp, Tint, Texture, Clarity, Dehaze, Saturation, Sharpness, Noise (-100..100); "Color hue" (0-360) and "Color amount" (0-100) tint; `amount` 0-100 scales them all.
+- AI masks (subject, sky, people) from Lightroom are kept and reported as not rendered; they can't be made here yet.
 
 ## Intent to settings cheat sheet
 

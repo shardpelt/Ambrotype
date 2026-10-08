@@ -13,6 +13,7 @@
 
 ## Design and background
 
+- [Masks design](docs/design/masks.md): Lightroom's mask tags, how masks are drawn and rendered, the mask commands.
 - [AI-control design](docs/design/ai-control.md): why and how AI drives the app (protocol, MCP plan, look matching, safety rules).
 - [Project scope](docs/SCOPE.md): goals, architecture, roadmap.
 - [Adobe help digests](docs/adobe-docs/README.md): source-only summaries of what each Lightroom / Camera Raw control does.

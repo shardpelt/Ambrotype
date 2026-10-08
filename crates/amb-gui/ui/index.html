@@ -24,6 +24,7 @@
       <button id="btn-before" title="Show the photo before edits (\)" disabled>Before / After</button>
       <span class="sep"></span>
       <button id="btn-crop" title="Crop and straighten (R)" disabled>Crop</button>
+      <button id="btn-masks" title="Masks (M)" disabled>Masks</button>
       <button id="btn-zoom" title="Fit / 100% (Z, or click the photo). Drag to pan at 100%." disabled>100%</button>
       <button id="btn-wb" title="White balance picker: click a neutral grey or white spot (W)" disabled>WB picker</button>
       <button id="btn-clip" title="Show clipped highlights (red) and shadows (blue) (J)" disabled>Clipping</button>
@@ -80,6 +81,7 @@
       </div>
       <img id="preview" alt="" hidden>
       <canvas id="crop-canvas" class="crop-canvas" hidden></canvas>
+      <canvas id="mask-canvas" class="crop-canvas mask-canvas" hidden></canvas>
       <div class="badge" id="before-badge" hidden>Before</div>
       <div class="busy" id="busy" hidden></div>
     </section>
@@ -98,6 +100,23 @@
         <canvas id="histogram" width="300" height="110"></canvas>
         <div class="exif" id="exif"></div>
       </div>
+      <section id="mask-panel" class="crop-panel mask-panel" hidden>
+        <div class="side-head"><h2>Masks</h2>
+          <label class="inline-check" title="Show the selected mask in red (O)"><input id="mask-overlay" type="checkbox" checked><span>Overlay</span></label>
+        </div>
+        <div class="crop-line mask-new" id="mask-new"></div>
+        <div class="mask-list" id="mask-list"></div>
+        <div id="mask-tool" class="mask-tool"></div>
+        <div id="mask-detail" class="mask-detail" hidden>
+          <div class="section-label">Parts</div>
+          <div class="mask-parts" id="mask-parts"></div>
+          <div class="crop-line mask-add" id="mask-add"></div>
+          <div id="mask-part-settings" class="mask-part-settings"></div>
+          <div id="mask-sliders" class="mask-sliders"></div>
+        </div>
+        <p class="hint" id="mask-hint"></p>
+        <div class="crop-actions"><span class="grow"></span><button id="mask-done" class="primary" title="M or Esc">Done</button></div>
+      </section>
       <section id="crop-panel" class="crop-panel" hidden>
         <div class="side-head"><h2>Crop &amp; straighten</h2><span id="crop-size" class="hint"></span></div>
         <div class="row"><label for="crop-aspect">Aspect</label><select id="crop-aspect"></select></div>
@@ -713,6 +732,7 @@
 
   <script src="curve.js"></script>
   <script src="crop.js"></script>
+  <script src="masks.js"></script>
   <script src="wheels.js"></script>
   <script src="controls.js"></script>
   <script src="layout.js"></script>

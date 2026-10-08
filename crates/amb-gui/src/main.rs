@@ -312,6 +312,41 @@ fn crop_state(state: tauri::State<'_, AppState>) -> Res<CropState> {
     Ok(guard.as_ref().ok_or("no photo open")?.crop_state())
 }
 
+/// The mask tool's map from the shown photo to mask coordinates.
+#[tauri::command]
+fn mask_frame(state: tauri::State<'_, AppState>) -> Res<session::MaskFrame> {
+    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    Ok(guard.as_ref().ok_or("no photo open")?.mask_frame())
+}
+
+#[derive(Serialize)]
+struct MaskSlider {
+    tag: &'static str,
+    label: &'static str,
+    min: f64,
+    max: f64,
+    step: f64,
+    section: &'static str,
+    rendered: bool,
+}
+
+/// The masks' local sliders, in panel order (UI units).
+#[tauri::command]
+fn mask_sliders() -> Vec<MaskSlider> {
+    amb_presets::masks::LOCAL_SLIDERS
+        .iter()
+        .map(|s| MaskSlider {
+            tag: s.tag,
+            label: s.label,
+            min: s.min,
+            max: s.max,
+            step: s.step,
+            section: s.section,
+            rendered: s.rendered,
+        })
+        .collect()
+}
+
 /// The protocol commands that set the crop to `rect`; the UI runs them as one
 /// undo step.
 #[tauri::command]
@@ -336,6 +371,7 @@ async fn preview(
     overrides: BTreeMap<String, serde_json::Value>,
     before: bool,
     clipping: bool,
+    mask_overlay: Option<usize>,
     state: tauri::State<'_, AppState>,
 ) -> Res<Response> {
     let slot = state.session.clone();
@@ -348,7 +384,7 @@ async fn preview(
         let mut guard = slot.lock().map_err(|e| e.to_string())?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
-        let p = s.preview(max_edge, &overrides, before, clipping, lens);
+        let p = s.preview_masked(max_edge, &overrides, before, clipping, lens, mask_overlay);
         let meta = serde_json::to_vec(&PreviewMeta {
             width: p.width,
             height: p.height,
@@ -1968,6 +2004,8 @@ fn main() {
             add_preset_folder,
             crop_state,
             crop_commands,
+            mask_frame,
+            mask_sliders,
             size_presets,
             save_size_preset,
             delete_size_preset,

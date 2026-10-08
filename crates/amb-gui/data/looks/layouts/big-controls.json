@@ -3,7 +3,7 @@
   "name": "Big controls",
   "description": "Larger text, sliders and targets: easier on touch screens and tired eyes.",
   "density": "large",
-  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "zoom", "wb", "clip", "|", "plugins", "|", "looks", "edit", "settings", "feedback"],
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "zoom", "wb", "clip", "|", "plugins", "|", "looks", "edit", "settings", "feedback"],
   "left": { "width": 270, "items": ["presets", "info", "history"] },
   "right": {
     "width": 420,

@@ -15,6 +15,7 @@
 //! dither) → encode with ICC + EXIF.
 
 pub mod border;
+pub mod collage;
 pub mod embed;
 pub mod exif;
 pub mod geometry;

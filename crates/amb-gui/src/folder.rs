@@ -120,7 +120,7 @@ pub fn list(photo: &Path) -> Result<Vec<FolderPhoto>, String> {
         .collect())
 }
 
-fn cache_key(path: &Path) -> Option<String> {
+fn cache_key(path: &Path, edge: u32) -> Option<String> {
     use sha2::{Digest, Sha256};
     let meta = std::fs::metadata(path).ok()?;
     let modified = meta
@@ -131,7 +131,7 @@ fn cache_key(path: &Path) -> Option<String> {
         .as_nanos();
     let mut h = Sha256::new();
     h.update(format!(
-        "v1|{}|{}|{modified}|{THUMB_EDGE}",
+        "v1|{}|{}|{modified}|{edge}",
         path.display(),
         meta.len()
     ));
@@ -158,19 +158,20 @@ fn encode_jpeg(rgb: &[u8], w: u32, h: u32) -> Result<Vec<u8>, String> {
 
 /// A JPEG thumbnail of `path`: the embedded preview (cached in `cache`), or
 /// when a file has none, a small render of the raw (slower).
-pub fn thumbnail(path: &Path, cache: Option<&Path>) -> Result<Vec<u8>, String> {
+pub fn thumbnail(path: &Path, edge: u32, cache: Option<&Path>) -> Result<Vec<u8>, String> {
+    let edge = edge.clamp(64, 2048);
     let key = cache
-        .zip(cache_key(path))
+        .zip(cache_key(path, edge))
         .map(|(dir, k)| dir.join(format!("{k}.jpg")));
     if let Some(bytes) = key.as_ref().and_then(|k| std::fs::read(k).ok()) {
         return Ok(bytes);
     }
-    let jpeg = match amb_engine::raw::embedded_thumbnail(path, THUMB_EDGE) {
+    let jpeg = match amb_engine::raw::embedded_thumbnail(path, edge) {
         Ok(Some(img)) => encode_jpeg(img.as_raw(), img.width(), img.height())?,
         _ => {
             let mut s = crate::session::Session::open(path)?;
             let p = s.preview(
-                THUMB_EDGE as usize,
+                edge as usize,
                 &Default::default(),
                 false,
                 false,
@@ -246,10 +247,13 @@ mod tests {
         assert_eq!((list[0].rating, list[0].edited), (Some(3), false));
         // Our synthetic DNGs carry no preview: the render fallback, then the cache.
         let cache = dir.join("cache");
-        let first = thumbnail(&dir.join("a.dng"), Some(&cache)).unwrap();
+        let first = thumbnail(&dir.join("a.dng"), THUMB_EDGE, Some(&cache)).unwrap();
         assert_eq!(&first[..2], [0xFF, 0xD8]);
         assert_eq!(std::fs::read_dir(&cache).unwrap().count(), 1);
-        assert_eq!(thumbnail(&dir.join("a.dng"), Some(&cache)).unwrap(), first);
+        assert_eq!(
+            thumbnail(&dir.join("a.dng"), THUMB_EDGE, Some(&cache)).unwrap(),
+            first
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

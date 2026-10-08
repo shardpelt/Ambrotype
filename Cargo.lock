@@ -130,6 +130,7 @@ dependencies = [
  "amb-presets",
  "amb-protocol",
  "amb-testkit",
+ "image",
  "jpeg-encoder",
  "rayon",
  "serde",

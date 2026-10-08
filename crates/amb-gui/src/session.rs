@@ -633,6 +633,15 @@ impl Session {
         Ok(self.info.clone())
     }
 
+    /// The photo developed with its current settings, full size and upright
+    /// (working space), e.g. for a collage cell.
+    pub fn render_upright(&mut self, lens: &LensSources) -> amb_engine::buffer::Image {
+        let current = self.state.settings().clone();
+        let develop = self.develop(&current, lens);
+        let developed = pipeline::render(&self.full, &develop);
+        amb_export::geometry::orient(&developed, self.full.metadata.orientation)
+    }
+
     /// Full-resolution render and export.
     pub fn export(
         &mut self,

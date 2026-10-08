@@ -7,6 +7,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod borders;
+mod collages;
 mod folder;
 mod hub;
 mod keys;
@@ -46,6 +47,7 @@ struct AppState {
     hub_url: Mutex<Option<String>>,
     border_presets: Mutex<Vec<borders::BorderPreset>>,
     recent_keywords: Mutex<Vec<String>>,
+    collage_templates: Mutex<Vec<collages::TemplateEntry>>,
 }
 
 /// Settings kept between runs.
@@ -72,6 +74,9 @@ struct Config {
     /// Keywords used lately, newest first (for suggestions).
     #[serde(default)]
     recent_keywords: Vec<String>,
+    /// The user's collage templates (the built-ins are added when listing).
+    #[serde(default)]
+    collage_templates: Vec<collages::TemplateEntry>,
 }
 
 fn save_config(state: &AppState) {
@@ -112,6 +117,11 @@ fn save_config(state: &AppState) {
             .recent_keywords
             .lock()
             .map(|k| k.clone())
+            .unwrap_or_default(),
+        collage_templates: state
+            .collage_templates
+            .lock()
+            .map(|t| t.clone())
             .unwrap_or_default(),
     };
     if let Some(dir) = path.parent() {
@@ -522,7 +532,39 @@ async fn export(
     let slot = state.session.clone();
     let lens = state.lens.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        use amb_export::{BitDepth, ExportSettings, Format, MetadataPolicy, Resize};
+        let mut s = export_settings(&options)?;
+        if options.include_tags {
+            if let Some(info) = slot
+                .lock()
+                .ok()
+                .and_then(|g| g.as_ref().map(|s| s.info.clone()))
+            {
+                s.tags = amb_export::exif::Tags {
+                    rating: info.rating,
+                    keywords: info.keywords,
+                };
+            }
+        }
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let session = guard.as_mut().ok_or("no photo open")?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let r = session.export(Path::new(&path), &s, lens)?;
+        Ok(Exported {
+            path,
+            width: r.width,
+            height: r.height,
+            bytes: r.bytes,
+            quality: r.quality,
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// The export dialog's choices as export settings (without the photo's tags).
+fn export_settings(options: &ExportOptions) -> Res<amb_export::ExportSettings> {
+    use amb_export::{BitDepth, ExportSettings, Format, MetadataPolicy, Resize};
+    {
         let format = Format::from_name(&options.format)
             .ok_or(format!("unknown format {}", options.format))?;
         let mut s = ExportSettings::new(format);
@@ -541,40 +583,16 @@ async fn export(
             .and_then(amb_export::parse_sharpen);
         s.metadata =
             MetadataPolicy::from_id(&options.metadata).unwrap_or(MetadataPolicy::AllExceptLocation);
-        if let Some(b) = options.border {
+        if let Some(b) = &options.border {
             b.validate()?;
-            s.border = Some(b);
-        }
-        if options.include_tags {
-            if let Some(info) = slot
-                .lock()
-                .ok()
-                .and_then(|g| g.as_ref().map(|s| s.info.clone()))
-            {
-                s.tags = amb_export::exif::Tags {
-                    rating: info.rating,
-                    keywords: info.keywords,
-                };
-            }
+            s.border = Some(b.clone());
         }
         s.max_bytes = options
             .max_kb
             .filter(|k| *k > 0 && format == Format::Jpeg)
             .map(|k| k * 1000);
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
-        let session = guard.as_mut().ok_or("no photo open")?;
-        let lens = lens.get().unwrap_or_else(|| empty_lens());
-        let r = session.export(Path::new(&path), &s, lens)?;
-        Ok(Exported {
-            path,
-            width: r.width,
-            height: r.height,
-            bytes: r.bytes,
-            quality: r.quality,
-        })
-    })
-    .await
-    .map_err(|e| e.to_string())?
+        Ok(s)
+    }
 }
 
 #[tauri::command]
@@ -864,6 +882,206 @@ fn set_photo_info(
     info_state(state.inner())
 }
 
+/// Built-in collage templates followed by the user's.
+#[tauri::command]
+fn collage_templates(state: tauri::State<'_, AppState>) -> Res<Vec<collages::TemplateEntry>> {
+    let custom = state.collage_templates.lock().map_err(|e| e.to_string())?;
+    Ok(collages::all(&custom))
+}
+
+#[tauri::command]
+fn save_collage_template(
+    template: collages::TemplateEntry,
+    state: tauri::State<'_, AppState>,
+) -> Res<(Vec<collages::TemplateEntry>, String)> {
+    let id = {
+        let mut custom = state.collage_templates.lock().map_err(|e| e.to_string())?;
+        collages::upsert(&mut custom, &template)?
+    };
+    save_config(state.inner());
+    Ok((collage_templates(state)?, id))
+}
+
+#[tauri::command]
+fn delete_collage_template(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<collages::TemplateEntry>> {
+    {
+        let mut custom = state.collage_templates.lock().map_err(|e| e.to_string())?;
+        collages::remove(&mut custom, &id)?;
+    }
+    save_config(state.inner());
+    collage_templates(state)
+}
+
+/// Save a collage template as a file to share.
+#[tauri::command]
+async fn share_collage_template(
+    app: tauri::AppHandle,
+    template: amb_export::collage::Template,
+) -> Res<Option<String>> {
+    template.validate()?;
+    let Some(path) = app
+        .dialog()
+        .file()
+        .set_title("Share this collage layout")
+        .set_file_name(format!("{}.json", template.name))
+        .add_filter("Collage layouts", &["json"])
+        .blocking_save_file()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    let text = serde_json::to_string_pretty(&template).map_err(|e| e.to_string())? + "\n";
+    std::fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
+    Ok(Some(path.display().to_string()))
+}
+
+/// Read a shared collage template file (picked in a dialog).
+#[tauri::command]
+async fn import_collage_template(
+    app: tauri::AppHandle,
+) -> Res<Option<amb_export::collage::Template>> {
+    let Some(path) = app
+        .dialog()
+        .file()
+        .set_title("Open a collage layout")
+        .add_filter("Collage layouts", &["json"])
+        .blocking_pick_file()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    let text = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+    amb_export::collage::Template::from_json(&text)
+        .map(Some)
+        .map_err(|e| format!("{}: {e}", path.display()))
+}
+
+#[derive(Clone, Serialize)]
+struct CollageProgress {
+    page: usize,
+    pages: usize,
+    done: usize,
+    total: usize,
+}
+
+/// Render one collage (each photo with its own edits) and save it.
+#[tauri::command]
+async fn export_collage(
+    app: tauri::AppHandle,
+    template: amb_export::collage::Template,
+    cells: Vec<collages::CellPhoto>,
+    path: String,
+    options: ExportOptions,
+    state: tauri::State<'_, AppState>,
+) -> Res<Exported> {
+    use tauri::Emitter;
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let s = export_settings(&options)?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let mut progress = |done, total| {
+            let _ = app.emit(
+                "collage-progress",
+                CollageProgress {
+                    page: 1,
+                    pages: 1,
+                    done,
+                    total,
+                },
+            );
+        };
+        let r = collages::render(&template, &cells, Path::new(&path), &s, lens, &mut progress)?;
+        Ok(Exported {
+            path,
+            width: r.width,
+            height: r.height,
+            bytes: r.bytes,
+            quality: r.quality,
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[derive(Deserialize)]
+struct BatchPhoto {
+    path: String,
+    /// Width / height of the upright photo (from its thumbnail).
+    aspect: f64,
+}
+
+/// Many photos into pages of the same layout: DIR/<name>-001.<ext>, ...
+#[tauri::command]
+async fn export_collage_batch(
+    app: tauri::AppHandle,
+    template: amb_export::collage::Template,
+    photos: Vec<BatchPhoto>,
+    options: ExportOptions,
+    state: tauri::State<'_, AppState>,
+) -> Res<Option<Vec<String>>> {
+    use tauri::Emitter;
+    let Some(dir) = app
+        .dialog()
+        .file()
+        .set_title("Folder for the collage pages")
+        .blocking_pick_folder()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        template.validate()?;
+        let s = export_settings(&options)?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let aspects: Vec<f64> = photos
+            .iter()
+            .map(|p| if p.aspect > 0.0 { p.aspect } else { 1.5 })
+            .collect();
+        let pages = amb_export::collage::pages(&template, &aspects);
+        let stem: String = template
+            .name
+            .chars()
+            .map(|c| if c.is_alphanumeric() { c } else { '-' })
+            .collect();
+        let stem = if stem.trim_matches('-').is_empty() {
+            "collage".to_string()
+        } else {
+            stem
+        };
+        let mut written = Vec::new();
+        for (i, page) in pages.iter().enumerate() {
+            let cells: Vec<collages::CellPhoto> = page
+                .iter()
+                .map(|slot| collages::CellPhoto {
+                    path: slot.map(|n| photos[n].path.clone()),
+                    placement: Default::default(),
+                })
+                .collect();
+            let out = dir.join(format!("{stem}-{:03}.{}", i + 1, s.format.extension()));
+            let mut progress = |done, total| {
+                let _ = app.emit(
+                    "collage-progress",
+                    CollageProgress {
+                        page: i + 1,
+                        pages: pages.len(),
+                        done,
+                        total,
+                    },
+                );
+            };
+            collages::render(&template, &cells, &out, &s, lens, &mut progress)?;
+            written.push(out.display().to_string());
+        }
+        Ok(Some(written))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// The raws in the open photo's folder, for the filmstrip.
 #[tauri::command]
 async fn folder_photos(path: String) -> Res<Vec<folder::FolderPhoto>> {
@@ -874,14 +1092,19 @@ async fn folder_photos(path: String) -> Res<Vec<folder::FolderPhoto>> {
 
 /// A small JPEG of a raw for the filmstrip (cached in the app's cache folder).
 #[tauri::command]
-async fn thumbnail(path: String, app: tauri::AppHandle) -> Res<Response> {
+async fn thumbnail(path: String, edge: Option<u32>, app: tauri::AppHandle) -> Res<Response> {
     let cache = app
         .path()
         .app_cache_dir()
         .ok()
         .map(|d| d.join("thumbnails"));
     tauri::async_runtime::spawn_blocking(move || {
-        folder::thumbnail(Path::new(&path), cache.as_deref()).map(Response::new)
+        folder::thumbnail(
+            Path::new(&path),
+            edge.unwrap_or(folder::THUMB_EDGE),
+            cache.as_deref(),
+        )
+        .map(Response::new)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -1057,6 +1280,9 @@ fn main() {
                 if let Ok(mut k) = state.recent_keywords.lock() {
                     *k = config.recent_keywords;
                 }
+                if let Ok(mut t) = state.collage_templates.lock() {
+                    *t = config.collage_templates;
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -1107,6 +1333,13 @@ fn main() {
             set_photo_info,
             folder_photos,
             thumbnail,
+            collage_templates,
+            save_collage_template,
+            delete_collage_template,
+            share_collage_template,
+            import_collage_template,
+            export_collage,
+            export_collage_batch,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Ambrotype");

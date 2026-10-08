@@ -6,6 +6,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod borders;
 mod hub;
 mod keys;
 mod looks;
@@ -42,6 +43,7 @@ struct AppState {
     look: Mutex<(Option<String>, Option<String>)>,
     keybindings: Mutex<keys::Bindings>,
     hub_url: Mutex<Option<String>>,
+    border_presets: Mutex<Vec<borders::BorderPreset>>,
 }
 
 /// Settings kept between runs.
@@ -62,6 +64,9 @@ struct Config {
     /// Another hub than the default (an index.json address).
     #[serde(default)]
     hub_url: Option<String>,
+    /// The user's border presets (the built-ins are added when listing).
+    #[serde(default)]
+    border_presets: Vec<borders::BorderPreset>,
 }
 
 fn save_config(state: &AppState) {
@@ -93,6 +98,11 @@ fn save_config(state: &AppState) {
             .map(|k| k.clone())
             .unwrap_or_default(),
         hub_url: state.hub_url.lock().ok().and_then(|h| h.clone()),
+        border_presets: state
+            .border_presets
+            .lock()
+            .map(|b| b.clone())
+            .unwrap_or_default(),
     };
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
@@ -445,6 +455,9 @@ struct ExportOptions {
     sharpen: Option<String>,
     metadata: String,
     max_kb: Option<u64>,
+    /// A frame around the photo.
+    #[serde(default)]
+    border: Option<amb_export::border::Border>,
 }
 
 #[derive(Serialize)]
@@ -501,6 +514,10 @@ async fn export(
             .and_then(amb_export::parse_sharpen);
         s.metadata =
             MetadataPolicy::from_id(&options.metadata).unwrap_or(MetadataPolicy::AllExceptLocation);
+        if let Some(b) = options.border {
+            b.validate()?;
+            s.border = Some(b);
+        }
         s.max_bytes = options
             .max_kb
             .filter(|k| *k > 0 && format == Format::Jpeg)
@@ -756,6 +773,40 @@ fn open_settings_folder(app: tauri::AppHandle, state: tauri::State<'_, AppState>
         .map_err(|e| e.to_string())
 }
 
+/// Built-in border presets followed by the user's.
+#[tauri::command]
+fn border_presets(state: tauri::State<'_, AppState>) -> Res<Vec<borders::BorderPreset>> {
+    let custom = state.border_presets.lock().map_err(|e| e.to_string())?;
+    Ok(borders::all(&custom))
+}
+
+/// Add or update a border preset of the user's; returns the list and the saved id.
+#[tauri::command]
+fn save_border_preset(
+    preset: borders::BorderPreset,
+    state: tauri::State<'_, AppState>,
+) -> Res<(Vec<borders::BorderPreset>, String)> {
+    let id = {
+        let mut custom = state.border_presets.lock().map_err(|e| e.to_string())?;
+        borders::upsert(&mut custom, &preset)?
+    };
+    save_config(state.inner());
+    Ok((border_presets(state)?, id))
+}
+
+#[tauri::command]
+fn delete_border_preset(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<borders::BorderPreset>> {
+    {
+        let mut custom = state.border_presets.lock().map_err(|e| e.to_string())?;
+        borders::remove(&mut custom, &id)?;
+    }
+    save_config(state.inner());
+    border_presets(state)
+}
+
 fn hub_index(state: &AppState) -> String {
     state
         .hub_url
@@ -886,6 +937,9 @@ fn main() {
                 if let Ok(mut h) = state.hub_url.lock() {
                     *h = config.hub_url;
                 }
+                if let Ok(mut b) = state.border_presets.lock() {
+                    *b = config.border_presets;
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -929,6 +983,9 @@ fn main() {
             hub_browse,
             hub_install,
             hub_submit,
+            border_presets,
+            save_border_preset,
+            delete_border_preset,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Ambrotype");

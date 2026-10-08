@@ -154,6 +154,34 @@
         </label>
         <label class="maxkb">Limit file size (KB, JPEG) <input name="max_kb" type="number" min="10" step="10" placeholder="No limit"></label>
       </div>
+      <div class="border-section">
+        <div class="border-fields">
+          <label>Border <select name="border_preset"></select></label>
+          <div id="border-edit" class="border-edit" hidden>
+            <label>Width
+              <span class="pair"><input name="b_width" type="number" min="0" step="0.5">
+                <select name="b_unit" title="Percent of the short edge, or pixels"><option value="percent">%</option><option value="px">px</option></select></span>
+            </label>
+            <label>Bottom <input name="b_bottom" type="number" min="0" step="0.5" placeholder="Same as width"></label>
+            <label>Colour
+              <span class="pair"><input name="b_color" type="color" value="#ffffff">
+                <span class="inline-check"><input name="b_auto" type="checkbox" id="b-auto"><span>from the photo</span></span></span>
+            </label>
+            <label>Keyline around the photo
+              <span class="pair"><input name="b_key" type="number" min="0" step="0.05" placeholder="None"><input name="b_key_color" type="color" value="#000000"></span>
+            </label>
+            <label>Rounded corners (%) <input name="b_radius" type="number" min="0" max="50" step="0.5"></label>
+            <span class="inline-check fit"><input name="b_fit" type="checkbox"><span>Whole photo inside the frame (with an exact size, instead of cropping to fill)</span></span>
+            <span class="pair save"><input name="b_name" type="text" placeholder="Preset name" spellcheck="false">
+              <button type="button" id="border-save" class="small">Save preset</button>
+              <button type="button" id="border-delete" class="small" disabled>Delete</button></span>
+          </div>
+        </div>
+        <div class="border-preview-wrap">
+          <canvas id="border-preview" class="border-preview" hidden></canvas>
+          <span id="border-size" class="hint"></span>
+        </div>
+      </div>
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary" id="export-go">Export…</button>
@@ -331,6 +359,7 @@
   <script src="editor.js"></script>
   <script src="keys.js"></script>
   <script src="hub.js"></script>
+  <script src="borders.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

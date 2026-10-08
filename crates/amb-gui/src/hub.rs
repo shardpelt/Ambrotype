@@ -17,7 +17,8 @@ use std::collections::{HashMap, HashSet};
 use std::io::Read;
 use std::path::Path;
 
-pub const DEFAULT_INDEX: &str = "https://raw.githubusercontent.com/Ambrotypehq/hub/main/index.json";
+pub const DEFAULT_INDEX: &str =
+    "https://raw.githubusercontent.com/Ambrotypehq/ambrotype-hub/main/index.json";
 pub const INDEX_FORMAT: &str = "ambrotype-hub/1";
 const MAX_INDEX_BYTES: u64 = 2 << 20;
 const MAX_ITEM_BYTES: u64 = 256 << 10;
@@ -407,7 +408,7 @@ mod tests {
             "source": { "hub": "x", "id": "y", "sha256": "z" }
         });
         let url = submit_url(DEFAULT_INDEX, Kind::Theme, &data).unwrap();
-        assert!(url.starts_with("https://github.com/Ambrotypehq/hub/new/main?filename=looks%2Fthemes%2Fmy-warm-look.json&value="));
+        assert!(url.starts_with("https://github.com/Ambrotypehq/ambrotype-hub/new/main?filename=looks%2Fthemes%2Fmy-warm-look.json&value="));
         assert!(
             !url.contains("source"),
             "the install record isn't submitted"

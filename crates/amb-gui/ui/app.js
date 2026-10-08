@@ -938,6 +938,8 @@ function updateExportForm() {
 
 // Exact size: say what will be trimmed when its aspect differs from the crop.
 function updateExportSize() {
+  // The border preview follows the size.
+  queueMicrotask(drawBorderPreview);
   const f = $("export-form");
   const w = Number(f.exact_w.value);
   const h = Number(f.exact_h.value);
@@ -951,7 +953,9 @@ function updateExportSize() {
   }
   const a = ui.exportCropAspect;
   const t = w / h;
-  if (Math.abs(Math.log(a / t)) > 0.005) {
+  if (borderOn() && f.b_fit.checked) {
+    note.textContent = `Exactly ${w} × ${h} px, with the whole ${ui.crop.enabled ? "crop" : "photo"} inside the frame.`;
+  } else if (Math.abs(Math.log(a / t)) > 0.005) {
     note.classList.add("warn");
     note.textContent = `Exactly ${w} × ${h} px. The ${ui.crop.enabled ? "crop" : "photo"} is ${ratioText(a)} ` +
       `and this size is ${ratioText(t)}, so the ${a > t ? "left and right" : "top and bottom"} edges are trimmed (centred). ` +
@@ -986,9 +990,13 @@ async function exportFlow() {
     const st = await invoke("crop_state");
     ui.crop.enabled = st.enabled;
     ui.exportCropAspect = st.rect.width / st.rect.height;
+    ui.exportCropSize = [st.rect.width, st.rect.height];
   } catch {
     ui.exportCropAspect = ui.info.width / ui.info.height;
+    ui.exportCropSize = [ui.info.width, ui.info.height];
   }
+  if (!ui.borders) await loadBorders();
+  fillBorderSelect();
   updateExportSize();
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
@@ -1008,6 +1016,7 @@ async function exportFlow() {
     sharpen: f.sharpen.value || null,
     metadata: f.metadata.value,
     max_kb: f.max_kb.value ? Number(f.max_kb.value) : null,
+    border: borderOn() ? readBorder() : null,
   };
   status(`Exporting ${path}…`);
   $("busy").hidden = false;
@@ -1061,6 +1070,8 @@ async function init() {
   $("btn-feedback").addEventListener("click", feedbackFlow);
   $("btn-looks").addEventListener("click", () => looksFlow().catch((e) => toast(String(e), true)));
   wireEditor();
+  wireBorders();
+  $("export-form").long_edge.addEventListener("input", drawBorderPreview);
   $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));
   wireViewer();
   wireCrop();

@@ -12,4 +12,6 @@ amb-engine = { path = "../amb-engine" }
 image = { version = "0.25.10", default-features = false, features = ["png", "tiff", "webp", "avif", "exr", "rayon"] }
 jpeg-encoder = "0.6"
 rayon = "1"
+serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true

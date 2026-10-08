@@ -4,6 +4,10 @@ Status: agreed direction (2026-10-07), nothing built yet. Steps 5–6 of the UI 
 
 ## Borders
 
+*Built (2026-10-08): `crates/amb-export/src/border.rs` (layout, colours, compositing), border presets in the export dialog (`ui/borders.js`, built-ins in `crates/amb-gui/data/border-presets.json`, yours in the settings file), `amb render --border 5%,#fff` or `--border preset.json`, and batches with `amb render A.nef B.nef … --out-dir DIR`. Captions and EXIF lines aren't built yet.*
+
+![Export with a border: Instagram 4:5, the whole photo inside a Polaroid-style frame](../images/export-border.png)
+
 A border is an export option, saved and shared as a **border preset**.
 
 - **Settings:**

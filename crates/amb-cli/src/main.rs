@@ -28,6 +28,9 @@ USAGE:
                                             [--lens-db DIR] [--lcp-dir DIR] [export options]
                                             Develop a raw with a preset or sidecar, export it, and report
                                             which settings are not rendered yet
+    amb render <RAW>... --out-dir DIR [--format jpeg|...] [same options]
+                                            The same for many raws (e.g. a folder: photos/*.NEF), with the
+                                            same preset and export options; one failure doesn't stop the rest
     amb edit <SIDECAR.xmp> --commands <CMDS.json|-> [--out <NEW.xmp|.json>] [--dry-run] [--json]
                                             Apply protocol commands (set_param, adjust_param, reset_param,
                                             reset_group, apply_preset, undo, redo) as one transaction,
@@ -63,6 +66,9 @@ EXPORT OPTIONS (amb render):
     --metadata all|no-location|copyright|none           EXIF to include (default no-location)
     --max-size 500k|2M                      JPEG: lower the quality until the file fits
     --subsampling 444|422|420  --progressive  --avif-speed 1-10
+    --border 5%|40px[,#ffffff|auto] | border.json   A frame around the photo; a .json preset can add
+                                            a deeper bottom, a keyline, rounded corners, and fit (with
+                                            --exact: the whole photo inside the frame, not cropped)
 
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
 XMP packet (e.g. .dng presets for Lightroom mobile). AI and script guide: docs/ai/README.md.";
@@ -87,15 +93,17 @@ fn main() -> ExitCode {
             | "--crop" | "--lens-db" | "--lcp-dir" | "--format" | "--quality" | "--bits"
             | "--color-space" | "--subsampling" | "--long-edge" | "--short-edge" | "--width"
             | "--height" | "--fit" | "--exact" | "--megapixels" | "--percent" | "--sharpen"
-            | "--metadata" | "--max-size" | "--avif-speed" => match iter.next() {
-                Some(value) => {
-                    options.insert(arg.as_str(), value.as_str());
+            | "--metadata" | "--max-size" | "--avif-speed" | "--border" | "--out-dir" => {
+                match iter.next() {
+                    Some(value) => {
+                        options.insert(arg.as_str(), value.as_str());
+                    }
+                    None => {
+                        eprintln!("error: {arg} needs a value\n\n{USAGE}");
+                        return ExitCode::from(2);
+                    }
                 }
-                None => {
-                    eprintln!("error: {arg} needs a value\n\n{USAGE}");
-                    return ExitCode::from(2);
-                }
-            },
+            }
             other if other.starts_with("--") => {
                 eprintln!("error: unknown option {other}\n\n{USAGE}");
                 return ExitCode::from(2);
@@ -127,6 +135,9 @@ fn main() -> ExitCode {
                 amb_engine::calibration::Calibration::default().to_json()
             );
             Ok(())
+        }
+        ["render", inputs @ ..] if !inputs.is_empty() && options.contains_key("--out-dir") => {
+            render_many(inputs, Path::new(options["--out-dir"]), &options)
         }
         ["render", input, out] => render(
             Path::new(input),
@@ -784,6 +795,51 @@ fn negative_analyze(raws: &[&str], out: Option<&Path>, json: bool) -> Result<(),
 }
 
 /// Export settings from the output path and the export options.
+/// `amb render A.nef B.nef ... --out-dir DIR`: each raw to DIR/<name>.<ext>.
+fn render_many(inputs: &[&str], dir: &Path, options: &BTreeMap<&str, &str>) -> Result<(), String> {
+    let ext = match options.get("--format") {
+        Some(f) => amb_export::Format::from_name(f)
+            .ok_or_else(|| format!("unknown --format {f:?}"))?
+            .extension(),
+        None => "jpg",
+    };
+    std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    let mut failed = Vec::new();
+    for (i, input) in inputs.iter().enumerate() {
+        let input = Path::new(input);
+        let stem = input
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("photo");
+        let out = dir.join(format!("{stem}.{ext}"));
+        print!("[{}/{}] ", i + 1, inputs.len());
+        let result = render(
+            input,
+            &out,
+            options.get("--preset").copied(),
+            options.get("--amount").copied(),
+            options.get("--look").copied(),
+            options.get("--calibration").copied(),
+            options,
+        );
+        // One bad file doesn't stop the batch.
+        if let Err(e) = result {
+            println!("failed: {e}");
+            failed.push(input.display().to_string());
+        }
+    }
+    if failed.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "{} of {} failed: {}",
+            failed.len(),
+            inputs.len(),
+            failed.join(", ")
+        ))
+    }
+}
+
 fn export_settings(
     out: &Path,
     options: &BTreeMap<&str, &str>,
@@ -895,6 +951,14 @@ fn export_settings(
     }
     if let Some(speed) = int("--avif-speed")? {
         s.avif_speed = speed.clamp(1, 10) as u8;
+    }
+    if let Some(b) = options.get("--border") {
+        s.border = Some(if b.ends_with(".json") {
+            let text = std::fs::read_to_string(b).map_err(|e| format!("{b}: {e}"))?;
+            amb_export::border::Border::from_json(&text).map_err(|e| format!("{b}: {e}"))?
+        } else {
+            amb_export::border::Border::from_spec(b)?
+        });
     }
     Ok(s)
 }

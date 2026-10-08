@@ -51,6 +51,7 @@ function applyLayout(layout) {
   document.body.classList.remove("density-compact", "density-normal", "density-large");
   document.body.classList.add(`density-${density}`);
   buildToolbar(layout.toolbar);
+  if (typeof applyStripVisibility === "function") applyStripVisibility();
 
   // Take everything out, then place what the layout asks for.
   const store = $("block-store");

@@ -517,11 +517,15 @@ pub fn check_layout(v: &Value) -> Vec<Problem> {
             "theme",
             "density",
             "toolbar",
+            "filmstrip",
             "left",
             "right",
         ],
         "layout",
     );
+    if obj.get("filmstrip").is_some_and(|f| !f.is_boolean()) {
+        c.error("\"filmstrip\" must be true or false");
+    }
     if obj.get("theme").is_some_and(|t| !t.is_string()) {
         c.error("\"theme\" must be a theme id such as \"builtin:dark\"");
     }

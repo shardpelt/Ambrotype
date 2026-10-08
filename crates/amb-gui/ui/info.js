@@ -64,6 +64,7 @@ function setRating(n) {
   if (!ui.info) return;
   const rating = n >= 1 && n <= 5 ? n : null;
   saveInfo({ ...infoState.info, rating });
+  stripUpdateCurrent({ rating });
   status(rating ? `Rated ${"★".repeat(rating)}` : "Rating cleared");
 }
 

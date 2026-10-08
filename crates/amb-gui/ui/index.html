@@ -75,6 +75,15 @@
       <div class="busy" id="busy" hidden></div>
     </section>
 
+    <section class="filmstrip" id="filmstrip" hidden aria-label="Photos in this folder">
+      <div class="filmstrip-head">
+        <button type="button" id="filmstrip-prev" class="small" title="Previous photo (←)">‹</button>
+        <span id="filmstrip-pos" class="hint"></span>
+        <button type="button" id="filmstrip-next" class="small" title="Next photo (→)">›</button>
+        <span id="filmstrip-count" class="hint"></span>
+      </div>
+      <div id="filmstrip-list" class="filmstrip-list"></div>
+    </section>
     <aside class="column right" id="col-right">
       <div class="histogram-wrap" id="block-histogram">
         <canvas id="histogram" width="300" height="110"></canvas>
@@ -383,6 +392,7 @@
   <script src="hub.js"></script>
   <script src="borders.js"></script>
   <script src="info.js"></script>
+  <script src="filmstrip.js"></script>
   <script src="picker.js"></script>
   <script src="app.js"></script>
 </body>

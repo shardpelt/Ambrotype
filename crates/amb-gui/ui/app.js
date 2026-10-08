@@ -160,6 +160,9 @@ function makeRow(def) {
       requestPreview(true);
     });
     input.addEventListener("change", () => commit(def.name, fromSlider(def, input.value)));
+    // After a mouse drag the slider lets go of the keyboard, so ← → move between
+    // photos again (Tab still reaches it for arrow-key changes).
+    input.addEventListener("pointerup", () => input.blur());
     number.addEventListener("change", () => {
       const v = Number(number.value);
       if (!Number.isNaN(v)) commit(def.name, v);
@@ -211,6 +214,7 @@ function setState(state) {
   ui.state = state;
   ui.settings = state.settings ?? {};
   ui.overrides = {};
+  stripUpdateCurrent({ edited: Object.keys(ui.settings).length > 0 });
   syncControls();
   if (ui.crop.on && cropKey(ui.settings) !== crop) reloadCrop();
 }
@@ -351,6 +355,11 @@ async function renderRegion() {
     before: ui.before,
     clipping: ui.clipping,
   }));
+  // 100% was switched off (or another photo opened) while this rendered.
+  if (!ui.zoom.on) {
+    requestPreview(false);
+    return;
+  }
   ui.zoom.meta = meta;
   showJpeg(jpeg);
   $("viewer").classList.add("actual");
@@ -870,11 +879,16 @@ async function openPath(path) {
     for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-zoom", "btn-wb", "btn-clip"]) $(id).disabled = false;
     if (ui.zoom.on) setZoom(false);
     setState(r.state);
+    if (r.saved_previous) toast(`Saved your edits to ${r.saved_previous.replace(/^.*[\\/]/, "")}`);
+    applyStripVisibility();
+    loadFolder(r.info.path);
     requestPreview(false);
     loadInfo();
+    return true;
   } catch (e) {
     toast(String(e), true);
     status("Ready");
+    return false;
   } finally {
     $("busy").hidden = true;
   }
@@ -1078,6 +1092,7 @@ async function init() {
   AmbPicker.enhance($("crop-aspect"), { open: ["Common ratios"] });
   AmbPicker.enhance($("export-form").size_preset, { open: ["Common"] });
   wireInfo();
+  wireFilmstrip();
   $("export-form").long_edge.addEventListener("input", drawBorderPreview);
   $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));
   wireViewer();

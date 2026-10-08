@@ -13,3 +13,15 @@ quick-xml = "0.37"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
+
+# Decoding raws and embedded JPEG previews is very slow unoptimised; optimise
+# just those libraries in debug builds so the editor stays usable while
+# developing (a 24 MP preview: about 9 s unoptimised, 0.15 s optimised).
+[profile.dev.package.rawler]
+opt-level = 3
+[profile.dev.package.zune-jpeg]
+opt-level = 3
+[profile.dev.package.zune-core]
+opt-level = 3
+[profile.dev.package.image]
+opt-level = 3

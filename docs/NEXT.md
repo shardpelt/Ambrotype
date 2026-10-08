@@ -24,6 +24,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **size presets** (Instagram, Snapchat, TikTok, X, YouTube, Pinterest, LinkedIn and print sizes, plus custom ones) for the crop and exact-size export (`amb render --exact WxH` too)
     - **looks:** the UI is drawn from a layout file (toolbar, side columns, panels, and knob/bar/slider/number per setting) and a theme (colour tokens). Built-in looks (Classic, Compact, Big controls, Studio, Left-handed; Dark, Light, High contrast, Neutral grey) can be cloned, renamed, shared and imported in the Looks dialog. AI assistants can write them ([ai/ui-layouts.md](ai/ui-layouts.md), `ambrotype --check-look`)
     - **settings and shortcuts:** the ⚙ button lists every keyboard shortcut on a keyboard map and lets you change them (clashes are caught; only changes are stored)
+    - **filmstrip:** the other photos in the folder under the photo; ← → or a click opens them, saving edits first
     - **rating and keywords:** stars (keys 1–5) and a keyword field, saved to the sidecar at once and embedded in exports
     - **hub:** Looks → Browse hub… installs shared layouts and themes (checked against the index's sha256 and validated); Submit to hub… opens GitHub with your look filled in as a pull request
     - **editor mode:** Edit layout rearranges the screen in place (drag and drop, control types, split and merge, add and remove, column widths) and saves it as your own layout

@@ -7,6 +7,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod borders;
+mod folder;
 mod hub;
 mod keys;
 mod looks;
@@ -155,6 +156,8 @@ fn to_value(v: &serde_json::Value) -> Option<Value> {
 struct Opened {
     info: session::PhotoInfo,
     state: session::StateInfo,
+    /// The sidecar the previous photo's unsaved edits were saved to, if any.
+    saved_previous: Option<String>,
 }
 
 #[tauri::command]
@@ -190,11 +193,19 @@ async fn open_photo(path: String, state: tauri::State<'_, AppState>) -> Res<Open
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let s = Session::open(Path::new(&path))?;
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        // Moving to another photo keeps the edits: save them first, like
+        // Lightroom writing its sidecars as you go.
+        let saved_previous = match guard.as_mut() {
+            Some(prev) if prev.has_unsaved_edits() => Some(prev.save_sidecar()?),
+            _ => None,
+        };
         let opened = Opened {
             info: s.info(),
             state: s.state_info(),
+            saved_previous,
         };
-        *slot.lock().map_err(|e| e.to_string())? = Some(s);
+        *guard = Some(s);
         Ok(opened)
     })
     .await
@@ -853,6 +864,29 @@ fn set_photo_info(
     info_state(state.inner())
 }
 
+/// The raws in the open photo's folder, for the filmstrip.
+#[tauri::command]
+async fn folder_photos(path: String) -> Res<Vec<folder::FolderPhoto>> {
+    tauri::async_runtime::spawn_blocking(move || folder::list(Path::new(&path)))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// A small JPEG of a raw for the filmstrip (cached in the app's cache folder).
+#[tauri::command]
+async fn thumbnail(path: String, app: tauri::AppHandle) -> Res<Response> {
+    let cache = app
+        .path()
+        .app_cache_dir()
+        .ok()
+        .map(|d| d.join("thumbnails"));
+    tauri::async_runtime::spawn_blocking(move || {
+        folder::thumbnail(Path::new(&path), cache.as_deref()).map(Response::new)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Built-in border presets followed by the user's.
 #[tauri::command]
 fn border_presets(state: tauri::State<'_, AppState>) -> Res<Vec<borders::BorderPreset>> {
@@ -1071,6 +1105,8 @@ fn main() {
             delete_border_preset,
             photo_info,
             set_photo_info,
+            folder_photos,
+            thumbnail,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Ambrotype");

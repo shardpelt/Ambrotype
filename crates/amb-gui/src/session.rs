@@ -48,6 +48,8 @@ pub struct Session {
     full_cache: Option<FullRender>,
     /// Rating and keywords, as in the sidecar (they are saved as they change).
     pub info: amb_protocol::sidecar::PhotoInfo,
+    /// The develop settings as last loaded or saved (for "unsaved edits").
+    saved: BTreeMap<String, Value>,
 }
 
 struct FullRender {
@@ -203,7 +205,9 @@ impl Session {
             ),
             Err(_) => (DevelopState::new(), None),
         };
+        let saved = state.settings().clone();
         Ok(Session {
+            saved,
             path: path.to_path_buf(),
             full,
             preview_src: None,
@@ -604,7 +608,13 @@ impl Session {
             .save_merged(&self.sidecar, self.base_xmp.as_deref())
             .map_err(|e| e.to_string())?;
         self.base_xmp = std::fs::read_to_string(&self.sidecar).ok();
+        self.saved = self.state.settings().clone();
         Ok(self.sidecar.display().to_string())
+    }
+
+    /// The develop settings differ from what's in the sidecar.
+    pub fn has_unsaved_edits(&self) -> bool {
+        self.state.settings() != &self.saved
     }
 
     /// Set the rating and keywords and write them to the sidecar at once.
@@ -937,7 +947,9 @@ mod tests {
         let on_disk = std::fs::read_to_string(&s.sidecar).unwrap();
         assert!(!on_disk.contains("Exposure2012"), "{on_disk}");
         // Saving the edit keeps the rating; reopening reads both.
+        assert!(s.has_unsaved_edits());
         s.save_sidecar().unwrap();
+        assert!(!s.has_unsaved_edits());
         let again = Session::open(&path).unwrap();
         assert_eq!(again.info, info);
         assert_eq!(again.state.settings().len(), 1);

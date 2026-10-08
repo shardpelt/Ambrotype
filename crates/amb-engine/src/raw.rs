@@ -287,3 +287,68 @@ impl CfaExt for rawler::RawImage {
         }
     }
 }
+
+/// A small thumbnail from the preview the camera embedded in the raw (no raw
+/// decoding, so it's quick), upright and at most `max_edge` pixels on its long
+/// side. `None` when the file has no usable preview. It shows the camera's
+/// own JPEG rendering, not the edit.
+pub fn embedded_thumbnail(path: &Path, max_edge: u32) -> Result<Option<image::RgbImage>, Error> {
+    let src = rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
+    let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
+    let params = rawler::decoders::RawDecodeParams::default();
+    // The larger preview first (sharper when scaled down), then the small thumbnail.
+    let found = match decoder.preview_image(&src, &params) {
+        Ok(Some(img)) => Some(img),
+        _ => decoder.thumbnail_image(&src, &params).ok().flatten(),
+    };
+    let Some(img) = found.filter(|i| i.width() >= 32 && i.height() >= 32) else {
+        return Ok(None);
+    };
+    let orientation = read_metadata(path).map(|(_, m)| m.orientation).unwrap_or(1);
+    let small = img.thumbnail(max_edge.max(16), max_edge.max(16)).to_rgb8();
+    use image::imageops::{flip_horizontal, flip_vertical, rotate90, rotate180, rotate270};
+    Ok(Some(match orientation {
+        2 => flip_horizontal(&small),
+        3 => rotate180(&small),
+        4 => flip_vertical(&small),
+        5 => rotate90(&flip_horizontal(&small)),
+        6 => rotate90(&small),
+        7 => rotate270(&flip_horizontal(&small)),
+        8 => rotate270(&small),
+        _ => small,
+    }))
+}
+
+#[cfg(test)]
+mod thumbnail_tests {
+    /// Runs on real files when given: AMB_TEST_RAWS=a.nef:b.cr3 (none are in the repo).
+    #[test]
+    fn embedded_thumbnails_of_real_raws() {
+        let Ok(list) = std::env::var("AMB_TEST_RAWS") else {
+            return;
+        };
+        for path in list.split(':') {
+            let start = std::time::Instant::now();
+            let t = super::embedded_thumbnail(std::path::Path::new(path), 256).unwrap();
+            let t = t.unwrap_or_else(|| panic!("{path}: no embedded preview"));
+            assert!(
+                t.width().max(t.height()) <= 256 && t.width().min(t.height()) > 64,
+                "{path}"
+            );
+            if let Ok(dir) = std::env::var("AMB_TEST_OUT") {
+                let name = std::path::Path::new(path)
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string();
+                t.save(format!("{dir}/{name}.thumb.png")).unwrap();
+            }
+            eprintln!(
+                "{path}: {}x{} in {:?}",
+                t.width(),
+                t.height(),
+                start.elapsed()
+            );
+        }
+    }
+}

@@ -53,14 +53,14 @@ input[type=search], input[type=number], select {
 .photo-title { margin-left: auto; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; min-width: 0; }
 
 /* Workspace */
-.workspace { display: grid; grid-template-columns: 250px minmax(0, 1fr) 330px; min-height: 0; }
+.workspace { display: grid; grid-template-columns: 250px minmax(0, 1fr) 330px; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
 .column { background: var(--panel); min-height: 0; min-width: 0; overflow-y: auto; display: flex; flex-direction: column; }
 .column[hidden] { display: none; }
 .column > * { flex: none; }
 /* Fixed tracks, so a hidden column doesn't shift the others. */
-.left { border-right: 1px solid var(--line); grid-column: 1; }
-.viewer { grid-column: 2; }
-.right { border-left: 1px solid var(--line); grid-column: 3; }
+.left { border-right: 1px solid var(--line); grid-column: 1; grid-row: 1 / 3; }
+.viewer { grid-column: 2; grid-row: 1; }
+.right { border-left: 1px solid var(--line); grid-column: 3; grid-row: 1 / 3; }
 .side-section { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; min-height: 0; }
 /* Presets fill the spare height of their column (and scroll inside it). */
 .column > .presets-block { flex: 1 0 220px; }
@@ -428,3 +428,27 @@ dialog input[type=color] { width: 34px; height: 24px; padding: 0; border: 1px so
 .swatches button { width: 18px; height: 18px; flex: none; padding: 0; border-radius: 50%; border: 1px solid var(--line); }
 .swatches button.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
 .swatches button.auto { width: auto; border-radius: 9px; padding: 0 5px; font-size: 11px; background: linear-gradient(90deg, #c84, #48a); color: #fff; }
+
+/* ---------------------------------------------------------------- filmstrip (filmstrip.js) */
+.filmstrip { grid-column: 2; grid-row: 2; min-width: 0; background: var(--panel); border-top: 1px solid var(--line); display: flex; flex-direction: column; }
+.filmstrip[hidden] { display: none; }
+.filmstrip-head { display: flex; align-items: center; gap: 6px; padding: 3px 8px 0; }
+.filmstrip-head .hint { font-size: 11px; }
+#filmstrip-count { margin-left: auto; }
+.filmstrip-list { display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden; padding: 4px 8px 8px; scroll-behavior: smooth; }
+.film-cell { flex: none; position: relative; width: 112px; height: 84px; padding: 0; border: 2px solid transparent; border-radius: 5px; background: var(--bg-deep); overflow: hidden; display: block; }
+.film-cell:hover:not(:disabled) { background: var(--bg-deep); border-color: var(--faint); }
+.film-cell.current { border-color: var(--accent); }
+.film-cell img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.film-cell img:not([src]) { visibility: hidden; }
+.film-cell.no-thumb::before { content: "no preview"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--faint); font-size: 11px; }
+.film-meta { position: absolute; left: 3px; bottom: 2px; right: 3px; display: flex; align-items: center; gap: 4px; pointer-events: none; }
+.film-stars { color: var(--accent); font-size: 10px; letter-spacing: -1px; text-shadow: 0 0 3px #000; }
+.film-edited { margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 1px #000; }
+.film-edited[hidden] { display: none; }
+.film-name { position: absolute; left: 0; right: 0; top: 0; padding: 1px 4px; font-size: 10px; color: #fff; background: linear-gradient(rgba(0,0,0,.6), transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0; transition: opacity .12s; pointer-events: none; }
+.film-cell:hover .film-name, .film-cell.current .film-name { opacity: 1; }
+.density-compact .film-cell { width: 92px; height: 68px; }
+.density-large .film-cell { width: 140px; height: 104px; }
+.film-cell.broken { opacity: .45; }
+.film-cell.broken::after { content: "can't open"; position: absolute; inset: auto 0 2px; text-align: center; color: var(--danger); font-size: 10px; }

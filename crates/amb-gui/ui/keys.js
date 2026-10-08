@@ -30,12 +30,17 @@ const KEY_ACTIONS = [
   ...[1, 2, 3, 4, 5].map((n) => ({ id: `rate-${n}`, group: "Rating", label: `Rate ${"★".repeat(n)}`, keys: [String(n)], when: "any", photo: true, run: () => setRating(n) })),
   { id: "rate-0", group: "Rating", label: "Clear the rating", keys: ["0"], when: "any", photo: true, run: () => setRating(0) },
   { id: "keywords", group: "Rating", label: "Add keywords (jump to the keyword field)", keys: ["K"], when: "any", photo: true, run: () => $("tag-input").focus() },
+  { id: "prev-photo", group: "Photos", label: "Previous photo in the folder", keys: ["ArrowLeft"], when: "main", photo: true, run: (e) => (onControl(e) ? false : stepPhoto(-1)) },
+  { id: "next-photo", group: "Photos", label: "Next photo in the folder", keys: ["ArrowRight"], when: "main", photo: true, run: (e) => (onControl(e) ? false : stepPhoto(1)) },
+  { id: "filmstrip", group: "Photos", label: "Show or hide the filmstrip", keys: ["F"], when: "any", run: () => toggleFilmstrip() },
   { id: "looks", group: "Window", label: "Looks: layouts and themes", keys: ["Ctrl+L"], when: "any", button: "btn-looks", run: () => looksFlow() },
   { id: "edit-layout", group: "Window", label: "Edit layout", hint: "Move panels, controls and toolbar buttons.", keys: ["Ctrl+Shift+L"], when: "any", button: "btn-edit-layout", run: () => startEditing() },
   { id: "settings", group: "Window", label: "Settings and keyboard shortcuts", keys: ["Ctrl+,"], when: "any", button: "btn-settings", run: () => settingsFlow() },
   { id: "feedback", group: "Window", label: "Send feedback", hint: "A bug, an idea, or a photo that looks different from Lightroom.", keys: [], when: "any", button: "btn-feedback", run: () => feedbackFlow() },
 ];
 
+// Arrow keys belong to a focused slider, list or knob.
+const onControl = (e) => e.target.matches("input, select, textarea, [tabindex], .bar, svg");
 const keysFor = (a) => ui.keybindings?.[a.id] ?? a.keys;
 const contextsOverlap = (a, b) => a.when === "any" || b.when === "any" || a.when === b.when;
 

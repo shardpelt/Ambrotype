@@ -58,6 +58,10 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
 }
 ```
 
+### Filmstrip
+
+`filmstrip`: `true` (the default) shows the other photos of the folder under the photo; `false` hides it. F shows or hides it for the session.
+
 ### Density
 
 `density` sets the size of text and controls: `compact` for small laptop screens, `normal` (the default), or `large` for touch screens or easier reading.

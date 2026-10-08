@@ -105,7 +105,7 @@ All of these are "Model v1 (ours, not Adobe's)": every constant is a starting gu
 
 | Item | Tag | Impact | Source |
 |---|---|---|---|
-| Highlights and Shadows are global tone-curve deformations; Lightroom's PV2012 versions are local and edge-aware. A local version is "later" | Approx | Called the single biggest fidelity risk: nearly every preset sets them | `crates/amb-engine/src/tone.rs`:4-10; [SCOPE.md](SCOPE.md):393; [research/05](research/05-processing-algorithms.md) §4 |
+| Highlights and Shadows are local and edge-aware since 2026-10-08 (a guided-filter base with the region curve on top; detail kept, no halos at strong edges), but their strength, curve shape and radius are our guesses, not fitted to Lightroom | Approx | Nearly every preset sets them | `crates/amb-engine/src/local_tone.rs`, `tone.rs` (`region_lut`); [SCOPE.md](SCOPE.md):393; [research/05](research/05-processing-algorithms.md) §4 |
 | Contrast, Whites, Blacks and parametric-curve strengths and shapes are guesses (`ToneStrengths`) | Approx | Tone of every render | `crates/amb-engine/src/tone.rs`:12-13 |
 | Whether PV2012 Whites/Blacks are purely global is unknown | Question | Decides if they need a local model too | [research/05](research/05-processing-algorithms.md) §20 |
 | Exposure: Adobe's soft highlight roll-off for positive Exposure is only inferred; ours is a plain gain after the placeholder base look | Question | Highlight handling in bright scenes | [research/05](research/05-processing-algorithms.md) §3 |
@@ -291,7 +291,7 @@ Chosen by impact on the main goal: faithful Lightroom preset compatibility, free
 
 1. **Run the Lightroom measurement month and fit the `Calibration` constants.** Every one of the 116 rendered Camera Raw tags is "approx"; nothing has been fitted, so no fidelity claim can be made. Finish the prerequisites first (interaction sidecars, run sheet, CC0 raws, `dng_validate` check).
 2. **Replace the placeholder base look and add camera profiles.** Every preset renders through the profile, and the placeholder ACES-fit curve is not Adobe's; read the user's own DCPs in place, fit substitute profiles, and decode `Look` LUTs.
-3. **Local, edge-aware Highlights and Shadows.** Nearly every preset sets them, and ours are global; the docs call this the single biggest fidelity risk.
+3. ~~**Local, edge-aware Highlights and Shadows.**~~ Done 2026-10-08; their strengths still need fitting (item 1).
 4. **Masks and local adjustments (linear, radial, brush, range).** Presets with gradients and brushes currently lose those edits entirely.
 5. **Transform/Upright (numeric `Perspective*` first)**, and verifying the crop against Lightroom. Presets and sidecars that carry perspective render unleveled.
 6. **Finish the single-photo GUI editor.** Zoom/1:1, point curve, colour wheels, WB picker, clipping, the crop tool, layouts/themes and editor mode are done; installers remain, and test the cross-platform promise.

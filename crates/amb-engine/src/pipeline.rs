@@ -42,7 +42,7 @@ use crate::local::LocalContrast;
 use crate::negative::{Negative, NegativeType};
 use crate::raw::{CameraImage, neutral_for_xy, xy_for_neutral};
 use crate::tone::{self, ParametricCurve, ToneControls};
-use crate::{dehaze, detail, effects, lens, local, negative};
+use crate::{dehaze, detail, effects, lens, local, local_tone, negative};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WhiteBalance {
@@ -803,8 +803,13 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         dehaze::apply(&mut out, s.dehaze, &cal.dehaze);
     }
 
-    // 3. Base look and Basic tone controls → display-linear.
-    let tone_lut = (!s.tone.is_neutral()).then(|| tone::tone_lut(&s.tone, &cal.tone, LUT));
+    // 3. Base look, local Highlights/Shadows, then the global tone controls → display-linear.
+    let global = ToneControls {
+        highlights: 0.0,
+        shadows: 0.0,
+        ..s.tone
+    };
+    let tone_lut = (!global.is_neutral()).then(|| tone::tone_lut(&global, &cal.tone, LUT));
     let lum_weights = luminance_weights();
     // A rendered image already has its tone curve.
     let base = if img.rendered {
@@ -812,8 +817,10 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     } else {
         s.base_look
     };
+    out.map_pixels(|c| c.map(|v| base.apply(v)));
+    local_tone::apply(&mut out, &s.tone, &cal.tone);
     out.map_pixels(|c| {
-        let mut p = c.map(|v| base.apply(v));
+        let mut p = c;
         if let Some(lut) = &tone_lut {
             // Hue-preserving: scale RGB by the luminance curve's ratio.
             let y = lum_weights[0] * p[0] + lum_weights[1] * p[1] + lum_weights[2] * p[2];

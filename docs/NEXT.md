@@ -69,7 +69,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 
 1. ~~**Fujifilm raws:** proper X-Trans demosaic, neutral blown highlights~~ (done 2026-10-08).
 2. ~~**JPEG, PNG, TIFF and WebP input**, with a raw and its same-name JPEG shown as one photo (as Lightroom does), and Lightroom's relative white balance for non-raw files~~ (done 2026-10-08).
-3. **Local Highlights and Shadows** (edge-aware tone mapping), the biggest fidelity gap (fidelity track 3).
+3. ~~**Local Highlights and Shadows** (edge-aware tone mapping), the biggest fidelity gap (fidelity track 3)~~ (done 2026-10-08).
 4. **Masks:** linear, radial, brush, luminance and colour range, add/subtract/intersect; read and write Lightroom's mask tags.
 5. **Spot removal:** heal and clone, then red eye.
 6. **Transform and Upright** (fidelity track 2).
@@ -82,7 +82,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 
 1. **Lightroom trial month:** capture the sweeps, then fit the model constants ([lightroom-trial-plan.md](lightroom-trial-plan.md)). Check the crop's angle sign and corner semantics there ([design/crop.md](design/crop.md) open questions).
 2. **Transform/Upright** (numeric `Perspective*` first), composed into the crop/lens resampling pass.
-3. **Local Highlights/Shadows** (edge-aware), then **masks** (linear/radial/brush/range).
+3. ~~**Local Highlights/Shadows** (edge-aware)~~ (done 2026-10-08), then **masks** (linear/radial/brush/range).
 4. **Camera profiles** (read the user's DCPs in place, fitted base looks) once trial data exists.
 5. **Calibration panel, Point Color** (the B&W mixer renders since 2026-10-08; fitting it is part of the trial). Fit the Film recipe looks to the owner's Fujifilm shots ([design/film-look-measurement.md](design/film-look-measurement.md)).
 6. **Token-efficient AI layer:** core card, `amb do` compact syntax, `--brief` output, `amb stats`, then the MCP server (also the base for the AI flows in UI step 7).

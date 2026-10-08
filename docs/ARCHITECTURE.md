@@ -38,7 +38,7 @@ amb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
      → film negative conversion (optional)
   1  clipped channels → neutral, white balance + camera matrix → linear ProPhoto → Exposure → Defringe
   2  Dehaze
-  3  base look → Basic tone (Contrast, Highlights, Shadows, Whites, Blacks)
+  3  base look → Highlights/Shadows (local: guided-filter base) → Contrast, Whites, Blacks (global curve)
   4  Texture / Clarity
   5  Vibrance, Saturation, HSL (or the B&W mix), Color Grading → parametric + point curves
   6  noise reduction → sharpening

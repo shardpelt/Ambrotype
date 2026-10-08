@@ -403,3 +403,28 @@ dialog input[type=color] { width: 34px; height: 24px; padding: 0; border: 1px so
 .tag-chip button { background: none; border: 0; padding: 0 4px; color: var(--muted); font-size: 13px; line-height: 1; }
 .tag-chip button:hover:not(:disabled) { background: none; color: var(--danger); }
 .tag-field input { flex: 1; min-width: 80px; background: transparent; border: 0; outline: none; padding: 2px 4px; color: var(--text); font: inherit; }
+
+/* ---------------------------------------------------------------- collapsible picker (picker.js) */
+.picker { position: relative; min-width: 0; }
+.row .picker { grid-column: 2 / 4; }
+.picker-button { width: 100%; min-height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; background: var(--panel-2); padding: 6px 12px; }
+.crop-panel .picker-button { min-height: 30px; padding: 4px 10px; }
+.picker-button::after { content: "▾"; color: var(--muted); font-size: 11px; flex: none; }
+.picker-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker-pop { position: fixed; z-index: 80; overflow-y: auto; padding: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 10px 28px rgba(0,0,0,.45); }
+.picker-pop[hidden] { display: none; }
+.picker-item, .picker-group { display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; background: none; border: 0; border-radius: 4px; padding: 4px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.picker-item:hover:not(:disabled), .picker-group:hover:not(:disabled) { background: var(--hover); }
+.picker-item.selected { background: var(--tab-active); color: var(--accent); }
+.picker-group { color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+.picker-group .caret { width: 10px; color: var(--faint); }
+.picker-group .count { margin-left: auto; color: var(--faint); font-weight: 400; }
+.picker-group-body .picker-item { padding-left: 24px; }
+
+/* Border colour swatches */
+.swatches { flex-wrap: nowrap; gap: 3px !important; }
+.border-edit > label > .swatches { flex: 0 0 66%; }
+.swatches input[type=color] { width: 26px; margin-left: 2px; }
+.swatches button { width: 18px; height: 18px; flex: none; padding: 0; border-radius: 50%; border: 1px solid var(--line); }
+.swatches button.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
+.swatches button.auto { width: auto; border-radius: 9px; padding: 0 5px; font-size: 11px; background: linear-gradient(90deg, #c84, #48a); color: #fff; }

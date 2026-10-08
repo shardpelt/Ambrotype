@@ -171,15 +171,24 @@
         <div class="border-fields">
           <label>Border <select name="border_preset"></select></label>
           <div id="border-edit" class="border-edit" hidden>
+            <label>Colour
+              <span class="pair swatches" id="border-swatches">
+                <button type="button" data-color="#ffffff" title="White" style="background:#ffffff"></button>
+                <button type="button" data-color="#f7f5f0" title="Cream" style="background:#f7f5f0"></button>
+                <button type="button" data-color="#c8c8c8" title="Light grey" style="background:#c8c8c8"></button>
+                <button type="button" data-color="#808080" title="Grey" style="background:#808080"></button>
+                <button type="button" data-color="#333333" title="Dark grey" style="background:#333333"></button>
+                <button type="button" data-color="#000000" title="Black" style="background:#000000"></button>
+                <button type="button" data-color="auto" title="The photo's own average colour" class="auto">auto</button>
+                <input name="b_color" type="color" value="#ffffff" title="Any colour">
+              </span>
+            </label>
+            <input name="b_auto" type="checkbox" hidden>
             <label>Width
               <span class="pair"><input name="b_width" type="number" min="0" step="0.5">
                 <select name="b_unit" title="Percent of the short edge, or pixels"><option value="percent">%</option><option value="px">px</option></select></span>
             </label>
             <label>Bottom <input name="b_bottom" type="number" min="0" step="0.5" placeholder="Same as width"></label>
-            <label>Colour
-              <span class="pair"><input name="b_color" type="color" value="#ffffff">
-                <span class="inline-check"><input name="b_auto" type="checkbox" id="b-auto"><span>from the photo</span></span></span>
-            </label>
             <label>Keyline around the photo
               <span class="pair"><input name="b_key" type="number" min="0" step="0.05" placeholder="None"><input name="b_key_color" type="color" value="#000000"></span>
             </label>
@@ -374,6 +383,7 @@
   <script src="hub.js"></script>
   <script src="borders.js"></script>
   <script src="info.js"></script>
+  <script src="picker.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

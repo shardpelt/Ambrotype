@@ -468,7 +468,7 @@ function wireViewer() {
 // ---------------------------------------------------------------- crop & straighten
 
 const CROP_TAGS = ["HasCrop", "CropLeft", "CropTop", "CropRight", "CropBottom", "CropAngle"];
-const ASPECTS = ["1:1", "4:5", "2:3", "3:4", "16:9", "9:16"];
+const ASPECTS = ["1:1", "3:2", "2:3", "4:5", "4:3", "3:4", "16:9", "9:16"];
 
 function cropKey(settings) {
   return JSON.stringify(CROP_TAGS.map((t) => settings[t] ?? null));
@@ -529,10 +529,12 @@ function fillSizeSelects() {
     o.textContent = text;
     parent.append(o);
   };
-  const addSizes = (sel) => {
+  // Site groups (and yours) after the common ones; the picker shows them collapsed.
+  const addSizes = (sel, skip = []) => {
     for (const [group, items] of groups) {
+      if (skip.includes(group)) continue;
       const og = document.createElement("optgroup");
-      og.label = group;
+      og.label = group || "Yours";
       for (const p of items) option(og, `size:${p.id}`, `${p.name} (${p.width} × ${p.height})`);
       sel.append(og);
     }
@@ -542,10 +544,11 @@ function fillSizeSelects() {
   option(crop, "original", "Original");
   option(crop, "free", "Free");
   const ratios = document.createElement("optgroup");
-  ratios.label = "Ratios";
+  ratios.label = "Common ratios";
   for (const r of ASPECTS) option(ratios, r, r.replace(":", " : "));
   crop.append(ratios);
-  addSizes(crop);
+  // The crop's own ratio list covers the common sizes.
+  addSizes(crop, ["Common"]);
   if (!aspectRatio(ui.crop.aspect) && ui.crop.aspect !== "free") ui.crop.aspect = "original";
   crop.value = ui.crop.aspect;
 
@@ -1072,6 +1075,8 @@ async function init() {
   $("btn-looks").addEventListener("click", () => looksFlow().catch((e) => toast(String(e), true)));
   wireEditor();
   wireBorders();
+  AmbPicker.enhance($("crop-aspect"), { open: ["Common ratios"] });
+  AmbPicker.enhance($("export-form").size_preset, { open: ["Common"] });
   wireInfo();
   $("export-form").long_edge.addEventListener("input", drawBorderPreview);
   $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));

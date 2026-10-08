@@ -54,7 +54,8 @@ function writeBorder(b) {
   f.b_bottom.value = b.bottom ?? "";
   f.b_auto.checked = b.color === "auto";
   f.b_color.value = b.color && b.color !== "auto" ? toHex6(b.color) : "#ffffff";
-  f.b_color.disabled = f.b_auto.checked;
+  f.b_color.disabled = false;
+  markSwatch();
   f.b_key.value = b.keyline?.width ?? "";
   f.b_key_color.value = toHex6(b.keyline?.color ?? "#000000");
   f.b_radius.value = b.radius ?? 0;
@@ -165,8 +166,26 @@ function drawBorderPreview() {
   $("border-size").textContent = `${p.canvas[0]} × ${p.canvas[1]} px`;
 }
 
+// Show which swatch matches the colour.
+function markSwatch() {
+  const f = $("export-form");
+  const current = f.b_auto.checked ? "auto" : f.b_color.value.toLowerCase();
+  for (const b of $("border-swatches").querySelectorAll("button")) b.classList.toggle("on", b.dataset.color === current);
+}
+
 function wireBorders() {
   const f = $("export-form");
+  for (const b of $("border-swatches").querySelectorAll("button")) {
+    b.addEventListener("click", () => {
+      const auto = b.dataset.color === "auto";
+      f.b_auto.checked = auto;
+      if (!auto) f.b_color.value = b.dataset.color;
+      f.b_color.disabled = false;
+      markSwatch();
+      updateExportSize();
+      drawBorderPreview();
+    });
+  }
   f.border_preset.addEventListener("change", () => {
     ui.borderChoice = f.border_preset.value;
     const p = ui.borders.find((b) => b.id === f.border_preset.value);
@@ -177,7 +196,10 @@ function wireBorders() {
   });
   for (const name of ["b_width", "b_unit", "b_bottom", "b_color", "b_auto", "b_key", "b_key_color", "b_radius", "b_fit"]) {
     f[name].addEventListener("input", () => {
-      f.b_color.disabled = f.b_auto.checked;
+      // Picking a colour by hand turns "auto" off.
+      if (name === "b_color") f.b_auto.checked = false;
+      f.b_color.disabled = false;
+      markSwatch();
       updateExportSize();
       drawBorderPreview();
     });

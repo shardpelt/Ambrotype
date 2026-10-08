@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Export geometry: orientation, resizing and output sharpening, and the
 //! conversion between a crop as stored (sensor orientation) and as seen
 //! upright on screen.

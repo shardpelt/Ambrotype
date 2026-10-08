@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Appearance ("looks"): the active layout (toolbar, side columns, panels, the widget each
 // setting uses) and theme (colour tokens), and the Appearance dialog.
 // The file formats are in docs/ai/ui-layouts.md; src/looks.rs validates and

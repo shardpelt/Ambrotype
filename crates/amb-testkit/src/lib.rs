@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Calibration tooling for the Lightroom measurement month
 //! (docs/lightroom-trial-plan.md).
 //!

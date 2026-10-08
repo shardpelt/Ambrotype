@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Dehaze: remove (positive) or add (negative) atmospheric haze.
 //!
 //! Interface contract (pipeline.rs depends on it):

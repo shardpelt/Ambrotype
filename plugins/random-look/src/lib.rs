@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Random look: a new set of tone and colour settings each run, from a style.
 //!
 //! Each run starts from the seed the app passes, so it needs no clock or

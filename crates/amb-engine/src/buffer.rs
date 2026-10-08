@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Working image buffer shared by all pipeline stages.
 
 use amb_color::matrix::PROPHOTO_TO_XYZ_D50;

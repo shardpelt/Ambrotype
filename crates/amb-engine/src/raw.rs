@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Raw decoding into linear camera RGB, via `rawler` (pure Rust).
 //!
 //! rawler handles container parsing, decompression, black/white scaling and

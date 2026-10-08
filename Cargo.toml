@@ -6,7 +6,8 @@ members = ["crates/*", "plugins/auto-tone", "plugins/random-look", "plugins/film
 edition = "2024"
 rust-version = "1.85"
 publish = false
-# Licence intentionally not set yet: pending the owner's decision (docs/SCOPE.md §6).
+license = "GPL-3.0-or-later"
+repository = "https://github.com/shardpelt/Ambrotype"
 
 [workspace.dependencies]
 quick-xml = "0.37"

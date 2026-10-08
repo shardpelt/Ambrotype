@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Lightroom / Camera Raw preset and sidecar reader.
 //!
 //! Parses `.xmp` presets, XMP sidecars and legacy `.lrtemplate` presets into one

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Border presets for export: named borders (`amb_export::border::Border`).
 //! The built-ins are `data/border-presets.json` (read-only); users add their
 //! own, kept in the app's settings file like size presets.

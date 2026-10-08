@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Ambrotype editor UI. Plain JS, no build step: talks to the Rust side via
 // window.__TAURI__.core.invoke. Every edit is a amb-protocol command, so the
 // GUI behaves exactly like the CLI and AI clients.

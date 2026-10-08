@@ -117,6 +117,10 @@ A recipe is a named set of parameter values. A plugin can ship some in its manif
 - **Results:** make it idempotent where that makes sense. Running a tone plugin twice should not keep pushing the photo, because its statistics come from the photo as already edited.
 - **What not to try:** don't work around the sandbox (no file, network or clock code). It wouldn't link: the only import a plugin may have is `amb.log`.
 
+## Licence
+
+The plugin SDK and the project `amb plugin new` makes are MIT OR Apache-2.0, so your plugin can use any licence you like; say which in its `Cargo.toml` (`license = "..."`). Ambrotype itself is GPL-3.0-or-later. Plugins shared through the hub must include their source.
+
 ## Sharing
 
 **Share as pull request…** in the Plugins dialog offers a plugin to the hub (`Ambrotypehq/ambrotype-hub`, folder `plugins/<id>/`). It first lists exactly which files would be sent. Then:

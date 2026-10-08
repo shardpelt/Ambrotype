@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Auto tone: Exposure, Whites and Blacks from the histogram.
 //!
 //! The statistics are of the photo as it is edited now, so a second run

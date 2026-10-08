@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Output: linear ProPhoto → display-referred files.
 
 use std::path::Path;

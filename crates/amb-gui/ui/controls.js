@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Other ways to show one setting, chosen per setting by the layout
 // (layout.js). The default slider row is makeRow() in app.js. Each maker
 // returns { el, entry }; `entry` goes into ui.controls like makeRow's, with

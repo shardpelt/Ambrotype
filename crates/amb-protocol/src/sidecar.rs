@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Writing XMP sidecars without losing what we do not own.
 //!
 //! A Lightroom sidecar also carries rating, label, keywords, EXIF/TIFF copies

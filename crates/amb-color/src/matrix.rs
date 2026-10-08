@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! 3×3 colour matrices and standard colour-space conversions.
 
 pub type Mat3 = [[f64; 3]; 3];

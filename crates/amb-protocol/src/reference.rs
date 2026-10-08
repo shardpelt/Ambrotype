@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The settings reference (`docs/ai/settings-reference.md`), generated from the
 //! tag registry and `data/descriptions.json` so it cannot drift from the code.
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Matches against a real lensfun database. Not run by default (the database
 //! is not part of the repository):
 //! `AMB_LENSFUN_DB=/usr/share/lensfun/version_2 cargo test -p amb-lens -- --ignored`

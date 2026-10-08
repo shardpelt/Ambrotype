@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // The Plugins dialog: run plugins on the open photo, allow their permissions,
 // install and remove them, share one as a pull request, and write
 // instructions for the user's own AI to make a new one. Plugins live in

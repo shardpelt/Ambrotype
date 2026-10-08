@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! One open photo: its decoded raw, the develop state (with undo), previews,
 //! sidecar saving and export. No Tauri types here, so it is unit-testable;
 //! `main.rs` exposes it to the web UI as commands.

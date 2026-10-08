@@ -26,10 +26,18 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
   5. **Use it:** "Ambrotype™" until registered, "Ambrotype®" only after. Keep proof of first use (dated releases, the website).
   6. **Renewals:** domains yearly; a trademark lasts 10 years and is renewable.
 - **Alternatives kept in case a check fails:** Photochrom, Argentype (§2).
+- **Licence (decided 2026-10-08):** GPL-3.0-or-later, copyright "The Ambrotype contributors"; the plugin SDK and the `amb plugin new` template are MIT OR Apache-2.0. Done:
+  - `LICENSE` (the GPL text from gnu.org), `NOTICE` (copyright, exceptions, ported code, library notes, trademarks), SDK `LICENSE-MIT` and `LICENSE-APACHE`
+  - `license` in every Cargo.toml, and an SPDX line at the top of every source file
+  - About tab in the app (copyright, no warranty, the licence and notices readable offline, a link to the source); the CLI's help says the same
+  - every dependency checked: all GPL-compatible (MIT, Apache-2.0, BSD, ISC, Zlib, MPL-2.0, Unicode-3.0, LGPL-2.1 for rawler)
 - **Before going public:**
-  1. Add LICENSE (GPL-3.0-or-later) and Cargo `license` fields. This is no longer optional: `crates/amb-engine/src/xtrans.rs` is ported from darktable (GPL-3.0-or-later), with its credit in the file header.
-  2. Paraphrase the verbatim Adobe quotes in `docs/adobe-docs/`.
-  3. Add the trademark notice.
+  1. Paraphrase the verbatim Adobe quotes in `docs/adobe-docs/`.
+  2. Make the repository public (the GPL promises the source to everyone who gets the app).
+- **Releases** (when installers are built):
+  1. Ship `LICENSE`, `NOTICE` and the licence texts of all bundled libraries with every installer (generate them with `cargo about`; MIT, BSD and Apache require the copyright notices to travel with binaries).
+  2. Each release points to the exact source it was built from (the Git tag).
+  3. Add `cargo deny` to CI so a new dependency with an incompatible licence fails the build.
 
 ## 1. Is what we do legal?
 
@@ -48,10 +56,10 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
 
 
 **Before making the repo public:**
-1. Add the `LICENSE` file (GPL-3.0-or-later) and set `license` in every Cargo.toml.
+1. ~~Add the `LICENSE` file (GPL-3.0-or-later) and set `license` in every Cargo.toml.~~ Done 2026-10-08.
 2. Paraphrase the verbatim quotes in `docs/adobe-docs/`.
-3. Put the trademark notice in the README and the app's About box.
-4. Pick the final name (below) and rename.
+3. ~~Put the trademark notice in the README and the app's About box.~~ Done 2026-10-08.
+4. ~~Pick the final name (below) and rename.~~ Done: Ambrotype.
 
 ## 2. The name
 

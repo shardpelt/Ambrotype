@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Effects panel: post-crop vignette and grain.
 //!
 //! Both run last, on the display-linear ProPhoto image (nominally 0..1):

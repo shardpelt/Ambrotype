@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Ambrotype desktop editor (Tauri 2).
 //!
 //! The web UI in `ui/` (plain HTML/CSS/JS, no build step) calls these
@@ -910,6 +911,27 @@ fn settings_info(state: tauri::State<'_, AppState>) -> SettingsInfo {
         version: env!("CARGO_PKG_VERSION"),
         folder,
     }
+}
+
+/// Where the source code is (the GPL's "corresponding source").
+const SOURCE_URL: &str = "https://github.com/shardpelt/Ambrotype";
+
+/// For Settings → About: the licence and notices, built into the app so
+/// they can be read offline.
+#[tauri::command]
+fn about_text(which: String) -> Res<&'static str> {
+    match which.as_str() {
+        "licence" => Ok(include_str!("../../../LICENSE")),
+        "notice" => Ok(include_str!("../../../NOTICE")),
+        _ => Err(format!("no text {which:?}")),
+    }
+}
+
+#[tauri::command]
+fn open_source_page(app: tauri::AppHandle) -> Res<()> {
+    app.opener()
+        .open_url(SOURCE_URL, None::<&str>)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -1959,6 +1981,8 @@ fn main() {
             keybindings,
             set_keybindings,
             settings_info,
+            about_text,
+            open_source_page,
             open_settings_folder,
             hub_url,
             set_hub_url,

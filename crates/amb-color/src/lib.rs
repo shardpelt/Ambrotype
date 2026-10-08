@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Colour science building blocks for the Ambrotype engine.
 
 pub mod icc;

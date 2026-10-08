@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Looks: shareable UI layouts and themes (docs/design/customization-and-hub.md,
 //! format reference in docs/ai/ui-layouts.md).
 //!

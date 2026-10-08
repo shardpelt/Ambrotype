@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Keyboard shortcuts: one table of actions with their default keys, the
 // user's changes (kept in the app's settings by src/keys.rs; only changes are
 // stored, so new defaults still arrive), the key dispatcher, and the Settings
@@ -297,6 +298,7 @@ async function settingsFlow() {
     tabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
     $("settings-keys").hidden = name !== "keys";
     $("settings-general").hidden = name !== "general";
+    $("settings-about").hidden = name !== "about";
   };
   const onTab = (e) => showTab(e.currentTarget.dataset.tab);
   const resetAll = () => {
@@ -318,6 +320,19 @@ async function settingsFlow() {
   const onHub = () => setHub($("settings-hub").value);
   const hubDefault = () => setHub(null);
   const openLooks = () => { dlg.close(); setTimeout(() => looksFlow().catch((e) => toast(String(e), true))); };
+  const showText = (which) => async () => {
+    try {
+      const pre = $("about-text");
+      pre.textContent = await invoke("about_text", { which });
+      pre.hidden = false;
+      pre.scrollTop = 0;
+    } catch (e) {
+      toast(String(e), true);
+    }
+  };
+  const onLicence = showText("licence");
+  const onNotice = showText("notice");
+  const onSource = () => invoke("open_source_page").catch((e) => toast(String(e), true));
 
   window.addEventListener("keydown", onKey, true);
   dlg.addEventListener("cancel", onCancel);
@@ -328,11 +343,16 @@ async function settingsFlow() {
   $("settings-looks").addEventListener("click", openLooks);
   $("settings-hub").addEventListener("change", onHub);
   $("settings-hub-default").addEventListener("click", hubDefault);
+  $("about-licence").addEventListener("click", onLicence);
+  $("about-notice").addEventListener("click", onNotice);
+  $("about-source").addEventListener("click", onSource);
+  $("about-text").hidden = true;
   invoke("hub_url").then((u) => ($("settings-hub").value = u)).catch(() => {});
 
   try {
     const info = await invoke("settings_info");
     $("settings-version").textContent = `Ambrotype ${info.version}`;
+    $("about-version").textContent = info.version;
     $("settings-path").textContent = info.folder ?? "";
   } catch { /* the General tab just shows less */ }
   $("keys-filter").value = "";
@@ -351,4 +371,7 @@ async function settingsFlow() {
   $("settings-looks").removeEventListener("click", openLooks);
   $("settings-hub").removeEventListener("change", onHub);
   $("settings-hub-default").removeEventListener("click", hubDefault);
+  $("about-licence").removeEventListener("click", onLicence);
+  $("about-notice").removeEventListener("click", onNotice);
+  $("about-source").removeEventListener("click", onSource);
 }

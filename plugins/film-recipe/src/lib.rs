@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Film recipe: a film look plus the handful of picture settings a camera's
 //! menu offers (grain, colour depth, white balance shift, highlight and
 //! shadow tone, colour, sharpness, noise reduction, clarity), turned into

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Reading the colour space of an image from its embedded ICC profile.
 //!
 //! Only RGB matrix/TRC profiles are read: three colorants and a tone curve

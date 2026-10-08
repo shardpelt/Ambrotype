@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Rating, colour label and keywords for the open photo. They're written to
 // the photo's XMP sidecar as soon as they change (xmp:Rating, xmp:Label and
 // dc:subject, where Lightroom keeps them; src/session.rs `set_info`), and

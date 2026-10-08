@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Colour-grading wheels widget (Lightroom "Color Grading"). Plain JS, no build step.
 //
 //   const wheels = AmbWheels.create(container, { onInput(changes), onCommit(changes) });

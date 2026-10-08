@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Lens Corrections: profile corrections (distortion, vignetting, lateral
 //! chromatic aberration), Remove Chromatic Aberration, manual Distortion and
 //! Lens Vignetting, Defringe, and Constrain Crop.

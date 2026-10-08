@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Crop and straighten: Camera Raw's `HasCrop`, `CropLeft`, `CropTop`,
 //! `CropRight`, `CropBottom` and `CropAngle` (docs/design/crop.md).
 //!

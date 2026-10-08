@@ -27,4 +27,5 @@ cargo test --workspace
 - Models that imitate Lightroom are "ours, not Adobe's": black-box measurement only, never Adobe code or data files (see `docs/legal-and-naming.md`).
 - Match the surrounding code's style and comment density. Keep docs in plain, short sentences, and update `docs/NEXT.md`, `docs/GAPS.md` and `docs/ARCHITECTURE.md` when you change what exists.
 - Commit messages: a `area: summary` first line, then why. Don't put AI model names in commits or code.
+- Licence: the project is GPL-3.0-or-later (the plugin SDK is MIT OR Apache-2.0). New source files start with an SPDX line (`// SPDX-License-Identifier: GPL-3.0-or-later`). Code ported from another project needs a compatible licence and a credit in the file and in `NOTICE`.
 - Large raw files, Lightroom renders and preset collections are never committed.

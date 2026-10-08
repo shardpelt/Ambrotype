@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! What a plugin may learn about a photo: camera facts (`photo-info`) and
 //! statistics of a small render with the current edits (`photo-stats`).
 

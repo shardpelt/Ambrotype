@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Rendered images (JPEG, PNG, TIFF, WebP) as a [`CameraImage`].
 //!
 //! These are already white-balanced and in a display colour space, so the

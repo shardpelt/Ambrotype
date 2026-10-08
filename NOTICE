@@ -1,0 +1,62 @@
+Ambrotype
+Copyright (C) 2026 The Ambrotype contributors
+
+Ambrotype is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See LICENSE.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for details.
+
+Each contributor keeps the copyright in their own contributions; the Git
+history records who wrote what.
+
+
+Exceptions
+----------
+
+The plugin SDK (crates/amb-plugin-sdk) and the project template written by
+`amb plugin new` are licensed under the MIT License or the Apache License,
+Version 2.0, at your option (crates/amb-plugin-sdk/LICENSE-MIT and
+LICENSE-APACHE). Plugins built with them may use any licence.
+
+Looks shared through the hub (layouts and themes) are CC0-1.0 unless the file
+says otherwise.
+
+
+Code from other projects
+------------------------
+
+crates/amb-engine/src/xtrans.rs is ported from darktable
+(src/iop/demosaicing/xtrans.c), Copyright (C) 2010-2026 darktable developers,
+GPL-3.0-or-later, which adapts dcraw 9.20's X-Trans interpolation by Dave
+Coffin and Frank Markesteijn.
+
+
+Libraries
+---------
+
+Ambrotype is built on many open-source Rust libraries, all under licences
+compatible with the GPL (MIT, Apache-2.0, BSD, ISC, Zlib, MPL-2.0,
+Unicode-3.0, LGPL-2.1 and similar). Their licences are listed in each
+library's package. Notable ones:
+
+- rawler (raw decoding): LGPL-2.1.
+- jpeg-encoder: this software is based in part on the work of the
+  Independent JPEG Group.
+- webpki-roots: certificate data under CDLA-Permissive-2.0.
+
+Binary releases include the full licence texts of every library they contain
+(docs/legal-and-naming.md, "Releases").
+
+
+Trademarks
+----------
+
+Lightroom, Camera Raw and Adobe are trademarks of Adobe Inc. Fujifilm, Provia,
+Velvia, Astia, Classic Chrome, Reala Ace, Pro Neg., Classic Neg., Nostalgic
+Neg., Eterna and Acros are trademarks of FUJIFILM Corporation. Other names are
+trademarks of their owners. Ambrotype is not affiliated with or endorsed by
+any of them; their names are used only to describe compatibility.

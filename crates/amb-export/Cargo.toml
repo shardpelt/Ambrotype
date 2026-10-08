@@ -5,6 +5,8 @@ description = "Export developed images: JPEG, PNG, TIFF, WebP, AVIF, OpenEXR; co
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 amb-color = { path = "../amb-color" }

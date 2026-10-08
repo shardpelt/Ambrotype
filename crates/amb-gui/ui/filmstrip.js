@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // The filmstrip: the other photos in the open photo's folder, under the photo.
 // Click one, or use ← →, to open it; edits to the photo you leave are saved
 // to its sidecar first (src/main.rs `open_photo`). Thumbnails are the

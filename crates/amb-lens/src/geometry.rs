@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Evaluating a [`Correction`] on a concrete image.
 //!
 //! Pixel coordinates have pixel centres at integers; the image centre is

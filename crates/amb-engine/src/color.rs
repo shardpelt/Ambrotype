@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Colour controls: Vibrance, Saturation, the 8-band HSL / Color Mixer, and
 //! Color Grading (three wheels + global, Blending, Balance; legacy Split Toning
 //! maps onto it).

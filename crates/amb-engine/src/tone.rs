@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Tone controls: Contrast, Highlights, Shadows, Whites, Blacks, and the
 //! parametric tone curve.
 //!

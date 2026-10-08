@@ -5,6 +5,8 @@ description = "Parse Lightroom / Camera Raw presets (.xmp, .lrtemplate) and XMP 
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 quick-xml.workspace = true

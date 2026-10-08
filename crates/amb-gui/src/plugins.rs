@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Plugins in the editor (docs/design/customization-and-hub.md §5): the
 //! built-in ones, the user's (folders in `<settings>/plugins/`), installing,
 //! removing, permission approvals, and sharing one as a pull request to the

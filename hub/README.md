@@ -27,7 +27,7 @@ If you skip step 4, a maintainer can run it before merging.
 Plugins are small programs that make edits (Ambrotype's **Plugins** button). They run sandboxed: no files, no network, only settings the user can see and undo. How to write one: [plugins.md](https://github.com/shardpelt/Ambrotype/blob/main/docs/ai/plugins.md).
 
 - **Send one in:** in the Plugins dialog, pick your plugin and press **Share as pull request…**. It shows the files first, then sends them with the GitHub CLI (your own login) or opens GitHub's upload page in your browser.
-- **Where they go:** `plugins/<id>/`, with `plugin.json`, the built `plugin.wasm`, and the Rust source (`Cargo.toml`, `src/`). No source, no merge: reviewers read the code and rebuild the module.
+- **Where they go:** `plugins/<id>/`, with `plugin.json`, the built `plugin.wasm`, and the Rust source (`Cargo.toml`, `src/`). No source, no merge: reviewers read the code and rebuild the module. Say the plugin's licence in its `Cargo.toml` (`license = "..."`), any open-source licence works.
 - **Reviewing:** read the source and the permissions it asks for, then `amb plugin build plugins/<id>` (the module should come out the same, or replace it with yours) and `amb plugin check plugins/<id>`.
 - **Installing:** the hub doesn't list plugins in the app yet. Download the plugin's folder and use **Install from folder…** in the Plugins dialog.
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Demosaicing for Fujifilm X-Trans sensors: Frank Markesteijn's algorithm.
 //!
 //! Ported from darktable's `src/iop/demosaicing/xtrans.c`

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Texture and Clarity: local contrast at two scales.
 //!
 //! **Model v1 (ours, not Adobe's).** Camera Raw's Clarity adds "punch" through

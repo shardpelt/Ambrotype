@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! `amb`: Ambrotype command-line tool.
 
 use std::collections::BTreeMap;
@@ -12,6 +13,8 @@ use amb_presets::report::{self, Report};
 
 const USAGE: &str = "\
 amb: Ambrotype command-line tool
+Copyright (C) 2026 The Ambrotype contributors. Free software under the GNU GPL,
+version 3 or later, with ABSOLUTELY NO WARRANTY: https://github.com/shardpelt/Ambrotype
 
 USAGE:
     amb preset inspect <FILE>... [--json]   Show what a preset contains and how it maps to our support

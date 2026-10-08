@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Borders in the export dialog: pick a preset (built-in or yours), adjust it,
 // save it, and see a small preview of the framed photo. The border itself is
 // drawn by the export (amb_export::border); borderPlan() below mirrors its

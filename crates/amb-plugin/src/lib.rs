@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Plugins: small WebAssembly programs that make edits (docs/ai/plugins.md).
 //!
 //! A plugin is a folder with a manifest (`plugin.json`) and a WebAssembly

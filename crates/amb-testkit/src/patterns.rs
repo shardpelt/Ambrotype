@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Synthetic calibration targets, generated in linear ProPhoto (the synthetic
 //! DNG's camera space). See docs/research/05 §18.2 for what each one measures.
 

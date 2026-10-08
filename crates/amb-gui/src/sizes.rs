@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Size presets: named pixel sizes (Instagram portrait 1080×1350, A4 at
 //! 300 ppi, ...). The crop tool locks its aspect to one; export renders
 //! exactly that size. The built-in list is `data/size-presets.json`

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The library: a folder of raws as a grid, to sort, filter, rate, label and
 //! keyword many photos at once, paste one photo's edit onto others, and
 //! export a selection.

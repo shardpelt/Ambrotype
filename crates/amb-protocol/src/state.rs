@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Develop state: a sparse Camera Raw settings map with undo/redo history.
 
 use std::collections::{BTreeMap, BTreeSet};

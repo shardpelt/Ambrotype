@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Lens correction models, as resolved for one shot.
 //!
 //! The polynomial models are the published ones used by lensfun/Hugin

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Crop and straighten overlay (Lightroom's Crop tool). Plain JS, no build step.
 //
 //   const tool = AmbCrop.create(canvas, { image: () => img | null, onChange(rect, dragging) });

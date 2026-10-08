@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Lens profile readers, matching, interpolation and resolution, on made-up
 //! fixtures in the real lensfun and LCP formats.
 

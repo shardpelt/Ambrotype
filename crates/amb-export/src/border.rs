@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Borders: a frame around the exported photo (docs/design/collage-and-borders.md).
 //!
 //! A border is part of the export, applied after resizing and output

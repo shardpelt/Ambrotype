@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Ambrotype command protocol.
 //!
 //! The single, typed API for changing develop settings: the GUI, the `amb`

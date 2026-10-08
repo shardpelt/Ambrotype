@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! JSON Schemas (draft 2020-12) for [`Command`](crate::Command) and
 //! [`Query`](crate::Query), hand-written to match their serde form.
 

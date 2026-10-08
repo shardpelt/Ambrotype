@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Interpolating calibration samples to a shot's focal length, aperture and
 //! focus distance. Shared by the lensfun and LCP readers.
 

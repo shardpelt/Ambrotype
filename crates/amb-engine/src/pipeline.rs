@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Develop pipeline v0.
 //!
 //! Order (subset of the Camera Raw model, docs/research/05 §1):

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 /* Styles for the point-curve (curve.js) and colour-grading (wheels.js) widgets.
    Everything is scoped to .amb-curve / .amb-wheels and uses the app's CSS
    variables (style.css), with fallbacks so the widgets also work standalone. */

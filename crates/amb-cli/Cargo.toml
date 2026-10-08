@@ -5,6 +5,8 @@ description = "Ambrotype command-line tool"
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = "amb"

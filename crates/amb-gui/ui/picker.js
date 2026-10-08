@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // A drop-down with collapsible groups, layered over a native <select>: the
 // select stays in the page (hidden) and keeps the value, so code that reads or
 // sets `select.value` or listens for "change" keeps working. Used for the

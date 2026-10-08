@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! `amb plugin`: make, build, check and run plugins (docs/ai/plugins.md).
 
 use std::path::{Path, PathBuf};
@@ -62,6 +63,8 @@ pub fn new(dir: &Path, name: Option<&str>) -> Result<(), String> {
 name = "{id}"
 version = "0.1.0"
 edition = "2024"
+# Your plugin, your licence: the SDK and this template are MIT OR Apache-2.0.
+# license = "MIT OR Apache-2.0"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -121,6 +124,7 @@ name = "amb-plugin-sdk"
 version = "0.1.0"
 edition = "2024"
 description = "A copy of Ambrotype's plugin SDK (crates/amb-plugin-sdk)"
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The photos next to the open one (the filmstrip): the raws and rendered
 //! images (JPEG, PNG, TIFF, WebP) in its folder, in name order, with their
 //! rating and whether they have edits, and small thumbnails from the

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Editor mode: change the active layout in place.
 //
 // Drag panels, blocks, settings and toolbar buttons to move them (drop on the

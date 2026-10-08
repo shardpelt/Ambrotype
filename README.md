@@ -49,6 +49,12 @@ cargo run -p amb-cli -- lens info photo.nef             # which lens profile a r
 cargo run -p amb-cli -- negative analyze scan*.nef --out roll.xmp   # film negatives: base/levels for a roll (docs/design/film-negatives.md)
 ```
 
-All rendering models are first versions ("ours, not Adobe's"). Their constants are to be fitted against Lightroom renders (`amb calibration defaults` prints them). `amb render` lists which preset settings it doesn't render yet. Next: built-in lens profiles from raw files, Upright/Transform, a local (edge-aware) Highlights/Shadows, camera profiles (DCP), and the MCP server and look matching for AI control (SCOPE §8).
+All rendering models are first versions ("ours, not Adobe's"). Their constants are to be fitted against Lightroom renders (`amb calibration defaults` prints them). `amb render` lists which preset settings it doesn't render yet. Next: built-in lens profiles from raw files, Upright/Transform, masks, camera profiles (DCP), and the MCP server and look matching for AI control (SCOPE §8).
 
-*Licence: not yet chosen (see SCOPE §6; GPL-3.0-or-later is recommended, and the X-Trans demosaic, ported from [darktable](https://www.darktable.org/), is GPL-3.0-or-later code). Lightroom is a trademark of Adobe Inc. This project is not affiliated with Adobe.*
+## Licence
+
+Copyright © 2026 The Ambrotype contributors. Ambrotype is free software under the [GNU General Public License, version 3 or later](LICENSE): you may use, share and change it, and anything you distribute that is based on it must be under the same licence, with its source. It comes with no warranty.
+
+The plugin SDK (`crates/amb-plugin-sdk`) and the `amb plugin new` template are MIT or Apache-2.0, so plugins can use any licence. Credits for code from other projects (the X-Trans demosaic comes from [darktable](https://www.darktable.org/)) and library notices are in [NOTICE](NOTICE). How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+*Lightroom and Camera Raw are trademarks of Adobe Inc.; Fujifilm's film simulation names are trademarks of FUJIFILM Corporation. This project is not affiliated with or endorsed by either.*

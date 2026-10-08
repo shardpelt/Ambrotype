@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Collages: several photos on one canvas (docs/design/collage-and-borders.md).
 //!
 //! A *template* is the shareable part: the canvas size, background, gaps,

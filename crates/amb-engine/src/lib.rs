@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Ambrotype processing engine, v0.
 //!
 //! A first end-to-end path: decode a raw ([`raw`]), develop it in linear

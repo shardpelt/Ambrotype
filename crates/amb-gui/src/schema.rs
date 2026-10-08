@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The editor's panel layout: Lightroom-like panels and sections, with each
 //! control's range, default, label and help text taken from the settings
 //! registry and descriptions (so the UI never drifts from the engine).

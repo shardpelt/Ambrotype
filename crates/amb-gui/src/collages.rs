@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Collage templates for the editor: the built-ins (`data/collage-templates.json`,
 //! read-only) and the user's own (kept in the settings file), plus rendering a
 //! collage: each photo developed with its own edits, placed, then exported.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Natural cubic spline through tone-curve control points.
 //!
 //! Camera Raw's point curves are natural cubic splines: C2-continuous with zero

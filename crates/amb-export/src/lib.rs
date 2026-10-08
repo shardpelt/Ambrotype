@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Export: developed image (linear ProPhoto) → a file people can use.
 //!
 //! Formats: JPEG, PNG, TIFF, WebP (lossless), AVIF and OpenEXR, all with pure

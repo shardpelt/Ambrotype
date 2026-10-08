@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Serialise Camera Raw settings back to an XMP packet (sidecar or preset).
 //!
 //! Simple values are written as attributes on `rdf:Description`, as Lightroom

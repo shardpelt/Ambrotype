@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -375,6 +376,7 @@
       <div class="tabs settings-tabs">
         <button type="button" data-tab="keys" class="active">Keyboard shortcuts</button>
         <button type="button" data-tab="general">General</button>
+        <button type="button" data-tab="about">About</button>
       </div>
       <section id="settings-keys">
         <div id="keyboard-map" class="keyboard-map" aria-label="Keyboard map"></div>
@@ -396,6 +398,17 @@
           <button type="button" id="settings-folder">Open the settings folder</button>
           <button type="button" id="settings-looks">Layouts and themes…</button>
         </div>
+      </section>
+      <section id="settings-about" hidden>
+        <p><strong>Ambrotype</strong> <span id="about-version"></span><br>Copyright © 2026 The Ambrotype contributors</p>
+        <p class="hint">Ambrotype is free software: you can share and change it under the terms of the GNU General Public License, version 3 or (at your option) any later version. It comes with ABSOLUTELY NO WARRANTY. The plugin SDK is MIT or Apache-2.0, so plugins may use any licence.</p>
+        <p class="hint">Lightroom, Camera Raw and Adobe are trademarks of Adobe Inc.; Fujifilm's film simulation names are trademarks of FUJIFILM Corporation. Ambrotype is not affiliated with or endorsed by either.</p>
+        <div class="crop-line">
+          <button type="button" id="about-licence">Licence</button>
+          <button type="button" id="about-notice">Credits and notices</button>
+          <button type="button" id="about-source">Source code</button>
+        </div>
+        <pre id="about-text" class="about-text" hidden></pre>
       </section>
       <menu>
         <button type="button" id="keys-reset-all" title="Put every shortcut back to its default">Reset all shortcuts</button>

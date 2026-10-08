@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! A small EXIF writer: IFD0, the Exif IFD and the GPS IFD as a little-endian
 //! TIFF structure (what JPEG APP1, PNG eXIf, WebP and AVIF carry).
 

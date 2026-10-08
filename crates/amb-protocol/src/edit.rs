@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The `amb edit` / `amb query` workflows, kept here so they are testable
 //! without spawning the binary.
 

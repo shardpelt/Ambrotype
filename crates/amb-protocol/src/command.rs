@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Wire types: commands change the develop state, queries read it.
 //!
 //! Both are JSON objects tagged by a `cmd` / `query` field, e.g.

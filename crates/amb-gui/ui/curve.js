@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Point-curve editor widget (Lightroom "Point Curve"). Plain JS, no build step.
 //
 //   const curve = AmbCurve.create(container, { onInput(tag, points), onCommit(tag, points) });

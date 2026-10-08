@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The photo's rating and keywords inside exported files, as XMP: the
 //! standard place that Lightroom, Bridge, Capture One, Apple Photos, digiKam,
 //! darktable and most websites read them from (EXIF Rating/XPKeywords, in

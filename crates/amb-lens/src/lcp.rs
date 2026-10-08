@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Adobe Lens Correction Profiles (`.lcp`), read in place from the user's
 //! Camera Raw / Lightroom install. We never copy or ship them.
 //!

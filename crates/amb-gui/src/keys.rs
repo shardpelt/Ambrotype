@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Keyboard shortcuts the user changed. The actions and their default keys
 //! live in the UI (`ui/keys.js`); only the changes are kept here, in the
 //! app's settings file, so new actions and new defaults still arrive.

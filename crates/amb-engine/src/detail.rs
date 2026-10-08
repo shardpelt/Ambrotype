@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Detail panel: sharpening and noise reduction.
 //!
 //! Interface contract (pipeline.rs depends on it):

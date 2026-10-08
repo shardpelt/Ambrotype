@@ -5,6 +5,8 @@ description = "Ambrotype plugin host: manifests, the WebAssembly sandbox and run
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 amb-plugin-sdk = { path = "../amb-plugin-sdk" }

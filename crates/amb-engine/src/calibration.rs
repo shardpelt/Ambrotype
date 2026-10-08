@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Calibration: every tunable model constant in one serialisable place, so the
 //! Lightroom calibration harness can fit them and ship them as data
 //! (`amb render --calibration fitted.json`) instead of code changes.

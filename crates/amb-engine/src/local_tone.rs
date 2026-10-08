@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Highlights and Shadows as local, edge-aware operators.
 //!
 //! **Model v2 (ours, not Adobe's).** Lightroom's PV2012 Highlights and Shadows

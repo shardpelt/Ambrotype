@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! XMP (RDF/XML) reader for Camera Raw settings.
 //!
 //! Handles both serialisations Adobe writes: simple values as attributes on

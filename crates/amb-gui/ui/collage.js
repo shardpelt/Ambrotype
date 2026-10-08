@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // The collage maker: several photos on one canvas. A layout (template) is the
 // shareable part: canvas size, background, gap, outer border, rounded corners
 // and the cells. Photos come from the tray (the open photo's folder, or added

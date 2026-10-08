@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The hub: browse and install shared looks (layouts and themes), and
 //! submit your own (docs/design/customization-and-hub.md §4; the hub repo
 //! template is `hub/` in this repo).

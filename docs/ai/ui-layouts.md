@@ -122,6 +122,7 @@ The crop panel isn't placed by layouts. It appears at the top of the column with
 | `basic` | `White Balance`, `Tone`, `Presence` | |
 | `tone_curve` | `Parametric` | the point-curve editor |
 | `color_mixer` | `HSL` | Hue / Saturation / Luminance tabs |
+| `black_white` | `Treatment`, `Mix` | the black & white switch and the eight mix sliders |
 | `color_grading` | `Shadow`, `Midtone`, `Highlight`, `Global`, `Mix` | the colour wheels (instead of the Shadow…Global sliders) |
 | `detail` | `Sharpening`, `Noise Reduction` | |
 | `lens` | `Profile`, `Manual`, `Defringe` | |

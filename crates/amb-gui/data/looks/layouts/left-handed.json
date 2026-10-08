@@ -11,6 +11,7 @@
       { "panel": "basic", "open": true },
       { "panel": "tone_curve" },
       { "panel": "color_mixer" },
+      { "panel": "black_white" },
       { "panel": "color_grading" },
       { "panel": "detail" },
       { "panel": "lens" },

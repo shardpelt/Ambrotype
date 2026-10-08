@@ -192,6 +192,25 @@ pub fn panels() -> Vec<Panel> {
             }],
         },
         Panel {
+            id: "black_white",
+            label: "Black & White",
+            groups: vec!["bw_mixer"],
+            sections: vec![
+                section(
+                    "Treatment",
+                    &[("ConvertToGrayscale", Some("Black & white"))],
+                ),
+                Section {
+                    label: "Mix".into(),
+                    layout: "sliders",
+                    controls: BANDS
+                        .iter()
+                        .map(|b| control(&format!("GrayMixer{b}"), Some(b)))
+                        .collect(),
+                },
+            ],
+        },
+        Panel {
             id: "color_grading",
             label: "Color Grading",
             groups: vec!["color_grading", "split_toning"],

@@ -138,6 +138,7 @@ pub const RENDERED_TAGS: &[&str] = &[
     "Blacks2012",
     "Vibrance",
     "Saturation",
+    "ConvertToGrayscale",
     "ParametricShadows",
     "ParametricDarks",
     "ParametricLights",
@@ -240,13 +241,15 @@ pub const RENDERED_TAGS: &[&str] = &[
     "amb:NegativeSaturation",
 ];
 
-/// Whether `tag` is rendered by this pipeline version (fixed list plus the 24 HSL tags).
+/// Whether `tag` is rendered by this pipeline version (fixed list plus the
+/// 24 HSL tags and the 8 black & white mix tags).
 pub fn is_rendered(tag: &str) -> bool {
     RENDERED_TAGS.contains(&tag)
         || color::BANDS.iter().any(|band| {
             ["Hue", "Saturation", "Luminance"]
                 .iter()
                 .any(|kind| tag == format!("{kind}Adjustment{band}"))
+                || tag == format!("GrayMixer{band}")
         })
 }
 
@@ -313,7 +316,12 @@ impl DevelopSettings {
             for (j, kind) in ["Hue", "Saturation", "Luminance"].iter().enumerate() {
                 c.hsl[i][j] = num(settings, &format!("{kind}Adjustment{band}")).unwrap_or(0.0);
             }
+            c.gray_mix[i] = num(settings, &format!("GrayMixer{band}")).unwrap_or(0.0);
         }
+        c.grayscale = settings
+            .get("ConvertToGrayscale")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
         let g = &mut c.grading;
         g.shadows = wheel(settings, "Shadow");
         g.midtones = wheel(settings, "Midtone");

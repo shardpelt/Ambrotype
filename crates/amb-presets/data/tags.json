@@ -646,7 +646,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentOrange",
@@ -682,7 +682,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentYellow",
@@ -718,7 +718,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentGreen",
@@ -754,7 +754,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentAqua",
@@ -790,7 +790,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentBlue",
@@ -826,7 +826,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentPurple",
@@ -862,7 +862,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentMagenta",
@@ -898,7 +898,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ConvertToGrayscale",
@@ -907,7 +907,7 @@
    "min": null,
    "max": null,
    "default": false,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "AutoGrayscaleMix",

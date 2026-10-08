@@ -44,6 +44,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
 - [ ] Try the editor on the Mac: `cargo run --release -p amb-gui -- photo.nef`. Note what feels wrong (or use the Feedback button).
 - [ ] Run `amb preset census <your preset folders>` and share the output (setting names and counts only). It ranks what to build next.
 - [ ] Lightroom trial month: follow [lightroom-trial-plan.md](lightroom-trial-plan.md) (sweep kit: `amb sweep generate`).
+- [ ] Fujifilm shoot (later): raws plus in-camera re-renders with every film simulation, so the Film recipe looks can be fitted. What to shoot: [design/film-look-measurement.md](design/film-look-measurement.md).
 
 ## Next steps
 
@@ -67,7 +68,7 @@ The agreed UI track is done, and the library view after it (2026-10-08; [design/
 2. **Transform/Upright** (numeric `Perspective*` first), composed into the crop/lens resampling pass.
 3. **Local Highlights/Shadows** (edge-aware), then **masks** (linear/radial/brush/range).
 4. **Camera profiles** (read the user's DCPs in place, fitted base looks) once trial data exists.
-5. **Calibration panel, Point Color** (the B&W mixer renders since 2026-10-08; fitting it is part of the trial). Fit the Film recipe looks to sample images.
+5. **Calibration panel, Point Color** (the B&W mixer renders since 2026-10-08; fitting it is part of the trial). Fit the Film recipe looks to the owner's Fujifilm shots ([design/film-look-measurement.md](design/film-look-measurement.md)).
 6. **Token-efficient AI layer:** core card, `amb do` compact syntax, `--brief` output, `amb stats`, then the MCP server (also the base for the AI flows in UI step 7).
 7. **Auto and Randomize buttons, Tutorial mode** ([design/future-ideas.md](design/future-ideas.md)).
 8. **Performance:** measure release-build preview and 1:1 times on the Mac; a tiled 1:1 render instead of a full-size render (a debug build took about 33 s); then the GPU preview path.

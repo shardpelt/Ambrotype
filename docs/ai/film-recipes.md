@@ -6,7 +6,7 @@ People share "film recipes" for their cameras online. You can type one in here a
 
 ## Our looks are ours
 
-The 17 looks are our own, built from the tone curve, HSL, colour grading and the B&W mix. They are not copies of any camera maker's processing, and they are not measured against one. They are starting points: they go in the same direction as the camera style named in the table, not to the same place. Fitting them better is future work ([GAPS.md](../GAPS.md)).
+The 17 looks are our own, built from the tone curve, HSL, colour grading and the B&W mix. They are not copies of any camera maker's processing, and they are not measured against one. They are starting points: they go in the same direction as the camera style named in the table, not to the same place. Measuring them against a Fujifilm camera's own JPEGs is planned: [design/film-look-measurement.md](../design/film-look-measurement.md).
 
 Camera makers' names are used here only to say which of our looks to pick. They never appear in the app.
 

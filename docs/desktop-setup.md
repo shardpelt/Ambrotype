@@ -85,7 +85,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 
   ![Drawing a crop corner to corner](images/crop-draw.png)
 
-- **Looks:** the Looks button picks a layout (Classic, Compact, Big controls, Studio with knobs, Left-handed) and a theme (Dark, Light, High contrast, Neutral grey). Clone one to rename it or edit its colours; Share… and Import… move them between machines, and **Browse hub…** installs looks other people shared. **Edit layout** rearranges the screen in place: drag things to move them (onto the Add list to remove them), click one to change it, then Save. Your AI assistant can write new ones: [ai/ui-layouts.md](ai/ui-layouts.md).
+- **Appearance:** the Appearance button picks a layout (Classic, Compact, Big controls, Studio with knobs, Left-handed) and a theme (Dark, Light, High contrast, Neutral grey). Clone one to rename it or edit its colours; Share… and Import… move them between machines, and **Browse hub…** installs looks other people shared. **Edit layout** rearranges the screen in place: drag things to move them (onto the Add list to remove them), click one to change it, then Save. Your AI assistant can write new ones: [ai/ui-layouts.md](ai/ui-layouts.md).
 - **Lens profiles** are found as for the CLI (lensfun database, your Adobe `.lcp` files; see docs/design/lens-corrections.md).
 - **Keyboard:** every shortcut can be changed in **Settings** (the ⚙ button, or Ctrl+,). It shows them on a keyboard map and as a list, catches clashes, and keeps only your changes, so new defaults still arrive.
 
@@ -114,7 +114,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | G | Library grid / editor |
   | Ctrl+Shift+C / Ctrl+Shift+V | In the library: copy one photo's settings / paste them onto the selection |
   | K | Jump to the keyword field (Enter or a comma adds a keyword) |
-  | Ctrl+L / Ctrl+Shift+L | Looks / Edit layout |
+  | Ctrl+L / Ctrl+Shift+L | Appearance / Edit layout |
   | Ctrl+, | Settings and shortcuts |
   | Double-click a slider | Reset it |
   | Ctrl is Cmd on macOS | |

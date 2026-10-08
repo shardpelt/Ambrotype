@@ -142,7 +142,7 @@ pub fn read_index(url: &str) -> Result<Vec<HubItem>, String> {
         ));
     }
     if index.items.len() > MAX_ITEMS {
-        return Err(format!("{url}: more than {MAX_ITEMS} looks"));
+        return Err(format!("{url}: more than {MAX_ITEMS} items"));
     }
     let mut seen = HashSet::new();
     let mut out = Vec::new();
@@ -305,7 +305,7 @@ pub fn submit_url(index_url: &str, kind: Kind, data: &Value) -> Result<String, S
     );
     if url.len() > MAX_SUBMIT_URL {
         return Err(
-            "this look is too big to send through the browser link; use Share… to save it, then add the file to the hub repo on GitHub".into(),
+            "this file is too big to send through the browser link; use Share… to save it, then add the file to the hub repo on GitHub".into(),
         );
     }
     Ok(url)

@@ -19,7 +19,7 @@ const COMPOSITE_TITLES = { "point-curve": "Point curve", "color-wheels": "Colour
 const BLOCK_TITLES = { presets: "Presets", info: "Rating & keywords", history: "History", histogram: "Histogram" };
 const TOOL_TITLES = {
   open: "Open", library: "Library", save: "Save", export: "Export", collage: "Collage", undo: "Undo", redo: "Redo", before: "Before / After",
-  crop: "Crop", zoom: "100%", wb: "WB picker", clip: "Clipping", plugins: "Plugins", looks: "Looks", edit: "Edit layout", settings: "Settings",
+  crop: "Crop", zoom: "100%", wb: "WB picker", clip: "Clipping", plugins: "Plugins", looks: "Appearance", edit: "Edit layout", settings: "Settings",
   feedback: "Feedback", "|": "Separator",
 };
 
@@ -588,7 +588,7 @@ function performDrop(what, drop) {
 
 function removeThing(what) {
   if (what.kind === "tool") {
-    if (what.name === "looks") return toast("Looks always stays, so you can get back to your layouts");
+    if (what.name === "looks") return toast("Appearance always stays, so you can get back to your layouts");
     if (what.index < 0) return;
     edit((d) => { toolbarList(d).splice(what.index, 1); });
   } else if (what.kind === "item") {

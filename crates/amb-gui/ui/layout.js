@@ -1,5 +1,5 @@
-// Looks: the active layout (toolbar, side columns, panels, the widget each
-// setting uses) and theme (colour tokens), and the Looks dialog.
+// Appearance ("looks"): the active layout (toolbar, side columns, panels, the widget each
+// setting uses) and theme (colour tokens), and the Appearance dialog.
 // The file formats are in docs/ai/ui-layouts.md; src/looks.rs validates and
 // stores them. Panels still take their settings, ranges and labels from the
 // editor schema, so a layout only decides where and how they are shown.
@@ -118,7 +118,7 @@ function buildToolbar(order) {
       nodes.push(tagged($(TOOLBAR_IDS[name]), name, i));
     }
   });
-  // Looks is always there, so a layout can't lock you out of changing it.
+  // Appearance is always there, so a layout can't lock you out of changing it.
   if (!placed.has("looks")) {
     if (nodes.length && !nodes.at(-1).classList.contains("sep")) nodes.push(tagged(sep(), "|", -1));
     placed.add("looks");
@@ -338,7 +338,7 @@ async function loadLooks() {
   applyActiveLooks();
 }
 
-// ---------------------------------------------------------------- Looks dialog
+// ---------------------------------------------------------------- Appearance dialog
 
 async function looksFlow() {
   const dlg = $("looks-dialog");
@@ -406,7 +406,7 @@ async function looksFlow() {
     if (look?.data?.description) about.push(look.data.description);
     const base = look?.based_on && findLook(view.kind, look.based_on);
     if (look?.based_on) about.push(`Based on ${base?.name ?? look.based_on}.`);
-    if (look && !look.builtin) about.push(`Your ${view.kind}: a file in the looks folder.`);
+    if (look && !look.builtin) about.push(`Your ${view.kind}: a file in your own folder (Open folder).`);
     $("looks-about").textContent = about.join(" ");
     $("looks-problems").replaceChildren(...(look?.problems ?? []).map((p) => {
       const li = document.createElement("li");
@@ -502,7 +502,7 @@ async function looksFlow() {
     "looks-submit": async () => {
       const look = viewed();
       await invoke("hub_submit", { kind: view.kind, id: look.id });
-      toast("GitHub is open with your look filled in: press Propose changes, then Create pull request.");
+      toast(`GitHub is open with your ${view.kind} filled in: press Propose changes, then Create pull request.`);
     },
     "looks-edit": async () => {
       // Keep the chosen look, then edit it.

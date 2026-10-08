@@ -821,7 +821,7 @@ async fn import_look(
         .dialog()
         .file()
         .set_title("Import a layout or theme")
-        .add_filter("Ambrotype looks", &["json"])
+        .add_filter("Ambrotype layouts and themes", &["json"])
         .blocking_pick_file()
         .and_then(|p| p.into_path().ok())
     else {
@@ -848,9 +848,9 @@ async fn export_look(
     let Some(path) = app
         .dialog()
         .file()
-        .set_title("Share this look")
+        .set_title("Share this layout or theme")
         .set_file_name(format!("{name}.json"))
-        .add_filter("Ambrotype looks", &["json"])
+        .add_filter("Ambrotype layouts and themes", &["json"])
         .blocking_save_file()
         .and_then(|p| p.into_path().ok())
     else {
@@ -1410,7 +1410,7 @@ fn hub_submit(
     let look = looks::all(looks_dir(state.inner()).as_deref(), kind)
         .into_iter()
         .find(|l| l.id == id && l.usable)
-        .ok_or_else(|| format!("unknown look {id}"))?;
+        .ok_or_else(|| format!("unknown layout or theme {id}"))?;
     let url = hub::submit_url(&hub_index(state.inner()), kind, &look.data)?;
     app.opener()
         .open_url(url.clone(), None::<&str>)

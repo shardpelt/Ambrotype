@@ -86,7 +86,7 @@ A toggle (toolbar button or a key) that makes the current layout editable in pla
 
 *Built (2026-10-07) for layouts and themes, slightly simpler than sketched below:*
 - *One hub repo holds the look files themselves (`looks/layouts/`, `looks/themes/`), not links to other repos. `tools/build_index.py` writes `index.json` with each file's sha256; CI checks it is current.*
-- *In the app, **Looks → Browse hub…** lists the looks with previews drawn from their own data (theme colours, layout columns; no screenshots, nothing loaded from other sites into the page). Install checks the checksum and validates the look before saving it as one of yours, with a `source` record, so the hub shows "Installed" and "Update" later.*
+- *In the app, **Appearance → Browse hub…** lists the looks with previews drawn from their own data (theme colours, layout columns; no screenshots, nothing loaded from other sites into the page). Install checks the checksum and validates the look before saving it as one of yours, with a `source` record, so the hub shows "Installed" and "Update" later.*
 - ***Submit to hub…** opens GitHub's new-file page in the hub repo with the look filled in. Committing it there makes the pull request (GitHub forks for people without access). No GitHub login is needed inside Ambrotype.*
 - *The default hub is `Ambrotypehq/ambrotype-hub` (create it from [`hub/`](../../hub/README.md)); **Settings → General** points the app at another one, including a `file://` hub for testing.*
 - *Still to come: presets, size profiles and collage templates in the hub; plugins (§5) once they exist.*

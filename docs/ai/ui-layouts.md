@@ -6,9 +6,9 @@ A look is two small JSON files:
 - a **layout**: what goes where, and which kind of control each setting uses
 - a **theme**: colours
 
-They contain no code and no CSS, so they are safe to share. Built-in looks can't be changed; clone one in the Looks dialog, or write a new file.
+They contain no code and no CSS, so they are safe to share. Built-in looks can't be changed; clone one in the Appearance dialog, or write a new file.
 
-**People don't need this file.** **Edit layout** in the toolbar (or in the Looks dialog) does all of it by hand:
+**People don't need this file.** **Edit layout** in the toolbar (or in the Appearance dialog) does all of it by hand:
 - drag panels, blocks, settings and toolbar buttons to move them
 - click one to change its control type, label, title or columns, or to split or merge panels
 - add what isn't shown from the **Add** list
@@ -18,7 +18,7 @@ Saving writes the same JSON described below. A built-in layout is saved as your 
 
 ## Where the files go
 
-Your own looks live in the app's settings folder, under `looks/layouts/` and `looks/themes/`. **Looks → Open folder** shows it.
+Your own looks live in the app's settings folder, under `looks/layouts/` and `looks/themes/`. **Appearance → Open folder** shows it.
 
 | OS | Folder |
 |---|---|
@@ -27,7 +27,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
 | Linux | `~/.config/org.ambrotype.editor/looks/` |
 
 - **File name:** the file name (without `.json`) becomes the look's id, `user:<name>`. Use lower case and dashes.
-- **New files:** after adding a file, press **Reload** in the Looks dialog, or use **Import…** for a file kept somewhere else.
+- **New files:** after adding a file, press **Reload** in the Appearance dialog, or use **Import…** for a file kept somewhere else.
 - **Check a file before using it.** This prints every problem and exits with status 1 if there are errors:
   ```sh
   ambrotype --check-look my-layout.json my-theme.json
@@ -84,7 +84,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   | `wb` | White-balance picker |
   | `clip` | Clipping overlay |
   | `plugins` | The Plugins dialog |
-  | `looks` | The Looks dialog |
+  | `looks` | The Appearance dialog (layouts and themes) |
   | `edit` | Editor mode (rearrange the layout in place) |
   | `settings` | Settings, including the keyboard shortcuts |
   | `feedback` | Feedback |
@@ -184,5 +184,5 @@ A widget of the wrong type (for example `toggle` on Exposure) is an error. An un
 
 ## Sharing
 
-- **Share…** in the Looks dialog saves the file anywhere, ready to send; **Import…** adds one.
-- **Browse hub…** in the Looks dialog installs looks other people shared, and **Submit to hub…** offers one of yours as a pull request to the hub repo. How the hub repo works: [hub/README.md](../../hub/README.md).
+- **Share…** in the Appearance dialog saves the file anywhere, ready to send; **Import…** adds one.
+- **Browse hub…** in the Appearance dialog installs looks other people shared, and **Submit to hub…** offers one of yours as a pull request to the hub repo. How the hub repo works: [hub/README.md](../../hub/README.md).

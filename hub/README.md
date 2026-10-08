@@ -1,12 +1,12 @@
 # Ambrotype hub
 
-Shared looks for [Ambrotype](https://github.com/shardpelt/Ambrotype): editor layouts and colour themes, and plugins. Ambrotype's **Looks → Browse hub…** lists the looks here and installs them with one click.
+Shared layouts, themes and plugins for [Ambrotype](https://github.com/shardpelt/Ambrotype). Layouts and colour themes are called "looks" here (they live in `looks/`). Ambrotype's **Appearance → Browse hub…** lists the looks here and installs them with one click.
 
 Like [Omarchy](https://learn.omacom.io/2/the-omarchy-manual/90/extra-themes)'s themes, there is no server: the hub is this repo. Each look is one small JSON file, and `index.json` lists them with a checksum. Looks contain no code, so they're safe to install. The app checks each file's checksum and validates it before saving it.
 
 ## Add your look
 
-**From the app (easiest):** in **Looks**, pick your own layout or theme and press **Submit to hub…**. GitHub opens with the file already filled in. Press "Propose changes" and then "Create pull request". If you don't have write access, GitHub makes the fork for you.
+**From the app (easiest):** in **Appearance**, pick your own layout or theme and press **Submit to hub…**. GitHub opens with the file already filled in. Press "Propose changes" and then "Create pull request". If you don't have write access, GitHub makes the fork for you.
 
 **By hand:**
 1. Fork this repo.

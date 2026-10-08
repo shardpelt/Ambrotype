@@ -160,7 +160,7 @@ async function hubFlow() {
     .then((r) => {
       list = r;
       $("hub-address").textContent = r.url;
-      status(r.entries.length ? `${r.entries.length} looks.` : "The hub is empty so far.");
+      status(r.entries.length ? `${r.entries.length} layouts and themes.` : "The hub is empty so far.");
       render();
     })
     .catch(async (err) => {

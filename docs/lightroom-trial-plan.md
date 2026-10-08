@@ -63,6 +63,15 @@ The kit is generated with `amb sweep generate --out <kit-dir> [--groups tone,pre
 15. Upright modes on architecture shots.
 16. Re-run anything that failed. Verify the archive is complete, then cancel.
 
+## Automating the measurements (options, not decided)
+
+Setting hundreds of slider values by hand is the slowest part of the month. Two ways to script it, both black-box (Lightroom renders our inputs; no Adobe code or files enter the repo):
+
+1. **A Lightroom Classic plug-in** written by us with the Classic SDK (Lua, `LrDevelopController`). It can set any develop or local slider, create and edit masks, read slider ranges (`getRange`), step through photos, and export. It runs on the owner's trial, offline, with their own files. The SDK documentation is copyrighted ("for informational use"): read it for names and calls, copy none of it.
+2. **The cloud Lightroom API** (`lr.adobe.io`, published OpenAPI spec). Upload a raw once, put our sweep sidecar on it as its develop settings (`PUT …/xmp/develop`), ask for a rendition or export (2560 px, 2048/4096 or full size, JPEG), download, put the next sidecar, repeat. It needs an Adobe developer API key (partner access may need Adobe's approval), a signed-in user with a subscription or trial, and uploads the test raws to Adobe (fine for synthetic targets and CC0 raws). Output is 8-bit JPEG from the cloud engine, whose version may differ from Classic's. Check Adobe's developer terms before relying on it.
+
+Either way the inputs are the sidecars `amb sweep generate` already writes, and the mask questions in [design/masks.md](design/masks.md) become scripted sweeps on a flat grey DNG.
+
 ## Storage and legal
 - Keep all renders in a **private** storage location, not in the public repo. They're derived from your licensed use of Lightroom. Only the CC0 inputs and our measured numbers (fitted tables) are committed.
 - **Black-box measurement only.** That means no decompiling, and no copying Adobe profile or lens files into the project. See [research/05 §18.5](research/05-processing-algorithms.md).

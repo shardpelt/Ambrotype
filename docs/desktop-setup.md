@@ -60,7 +60,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev librsvg2-dev libxdo-dev
   ```
 - **Presets:** Lightroom's own preset folder is used automatically when it exists (`%APPDATA%\Adobe\CameraRaw\Settings` on Windows, `~/Library/Application Support/Adobe/CameraRaw/Settings` on macOS), plus `~/.local/share/ambrotype/presets`. "Add folder…" adds any other folder for the session.
-- **Rating and keywords:** the stars and the keyword field (left column) are saved to the photo's `.xmp` straight away, in the fields Lightroom reads (`xmp:Rating`, `dc:subject`), and go into exported files (EXIF Rating and XPKeywords). Keys 1–5 rate, 0 clears.
+- **Rating and keywords:** the stars and the keyword field (left column) are saved to the photo's `.xmp` straight away, in the fields Lightroom reads (`xmp:Rating`, `dc:subject`), and go into exported files: as XMP (read by Lightroom, Bridge, Apple Photos, digiKam and most websites), IPTC keywords in JPEGs, and EXIF Rating/XPKeywords for Windows. AVIF exports get the EXIF part only, for now. Keys 1–5 rate, 0 clears.
 
   ![Rating and keywords](images/rating-keywords.png)
 

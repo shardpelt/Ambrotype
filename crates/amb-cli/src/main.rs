@@ -66,6 +66,8 @@ EXPORT OPTIONS (amb render):
     --metadata all|no-location|copyright|none           EXIF to include (default no-location)
     --max-size 500k|2M                      JPEG: lower the quality until the file fits
     --subsampling 444|422|420  --progressive  --avif-speed 1-10
+    --rating 1-5  --keywords \"beach, sunset\"   Put a rating and keywords in the file (XMP, IPTC in JPEG,
+                                            EXIF), with the all / no-location metadata policies
     --border 5%|40px[,#ffffff|auto] | border.json   A frame around the photo; a .json preset can add
                                             a deeper bottom, a keyline, rounded corners, and fit (with
                                             --exact: the whole photo inside the frame, not cropped)
@@ -93,17 +95,16 @@ fn main() -> ExitCode {
             | "--crop" | "--lens-db" | "--lcp-dir" | "--format" | "--quality" | "--bits"
             | "--color-space" | "--subsampling" | "--long-edge" | "--short-edge" | "--width"
             | "--height" | "--fit" | "--exact" | "--megapixels" | "--percent" | "--sharpen"
-            | "--metadata" | "--max-size" | "--avif-speed" | "--border" | "--out-dir" => {
-                match iter.next() {
-                    Some(value) => {
-                        options.insert(arg.as_str(), value.as_str());
-                    }
-                    None => {
-                        eprintln!("error: {arg} needs a value\n\n{USAGE}");
-                        return ExitCode::from(2);
-                    }
+            | "--metadata" | "--max-size" | "--avif-speed" | "--border" | "--out-dir"
+            | "--rating" | "--keywords" => match iter.next() {
+                Some(value) => {
+                    options.insert(arg.as_str(), value.as_str());
                 }
-            }
+                None => {
+                    eprintln!("error: {arg} needs a value\n\n{USAGE}");
+                    return ExitCode::from(2);
+                }
+            },
             other if other.starts_with("--") => {
                 eprintln!("error: unknown option {other}\n\n{USAGE}");
                 return ExitCode::from(2);
@@ -951,6 +952,22 @@ fn export_settings(
     }
     if let Some(speed) = int("--avif-speed")? {
         s.avif_speed = speed.clamp(1, 10) as u8;
+    }
+    if let Some(r) = options.get("--rating") {
+        let r: u8 = r
+            .parse()
+            .ok()
+            .filter(|r| (1..=5).contains(r))
+            .ok_or_else(|| format!("bad --rating {r:?} (1 to 5)"))?;
+        s.tags.rating = Some(r);
+    }
+    if let Some(k) = options.get("--keywords") {
+        s.tags.keywords = k
+            .split(',')
+            .map(str::trim)
+            .filter(|k| !k.is_empty())
+            .map(String::from)
+            .collect();
     }
     if let Some(b) = options.get("--border") {
         s.border = Some(if b.ends_with(".json") {

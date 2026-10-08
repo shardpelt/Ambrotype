@@ -15,6 +15,7 @@
 //! dither) → encode with ICC + EXIF.
 
 pub mod border;
+pub mod embed;
 pub mod exif;
 pub mod geometry;
 
@@ -398,6 +399,15 @@ pub fn export(
             encode_image(format, &data, w, h, ExtendedColorType::Rgb8, &icc, exif)?
         }
     };
+    // Rating and keywords as XMP (and IPTC in JPEGs), with the full metadata policies.
+    let bytes = if matches!(
+        s.metadata,
+        MetadataPolicy::All | MetadataPolicy::AllExceptLocation
+    ) {
+        embed::embed(s.format, bytes, &s.tags)
+    } else {
+        bytes
+    };
     std::fs::write(path, &bytes).map_err(|source| Error::Io {
         path: path.to_path_buf(),
         source,
@@ -614,6 +624,47 @@ mod tests {
         let decoded = image::open(&path).unwrap().to_rgb8();
         assert_eq!(decoded.get_pixel(200, 60).0, [0, 0, 0]);
         assert!(decoded.get_pixel(395, 250).0 == [0, 0, 0]);
+    }
+
+    #[test]
+    fn rating_and_keywords_are_embedded_and_files_still_open() {
+        let img = test_image();
+        let meta = PhotoMetadata::default();
+        for (format, name) in [
+            (Format::Jpeg, "tags.jpg"),
+            (Format::Png, "tags.png"),
+            (Format::Tiff, "tags.tif"),
+            (Format::Webp, "tags.webp"),
+        ] {
+            let mut s = ExportSettings::new(format);
+            s.tags = exif::Tags {
+                rating: Some(5),
+                keywords: vec!["noordzee".into()],
+            };
+            let path = tmp(name);
+            export(&img, &meta, &s, &path).unwrap();
+            let bytes = std::fs::read(&path).unwrap();
+            let text = String::from_utf8_lossy(&bytes);
+            assert!(
+                text.contains(r#"xmp:Rating="5""#) && text.contains("<rdf:li>noordzee</rdf:li>"),
+                "{name}"
+            );
+            let decoded = image::open(&path).unwrap_or_else(|e| panic!("{name}: {e}"));
+            assert_eq!((decoded.width(), decoded.height()), (240, 160), "{name}");
+            if format == Format::Jpeg {
+                assert!(
+                    bytes.windows(14).any(|w| w == b"Photoshop 3.0\0"),
+                    "IPTC block"
+                );
+            }
+            // "Copyright only" leaves them out.
+            s.metadata = MetadataPolicy::CopyrightOnly;
+            export(&img, &meta, &s, &path).unwrap();
+            assert!(
+                !String::from_utf8_lossy(&std::fs::read(&path).unwrap()).contains("noordzee"),
+                "{name}"
+            );
+        }
     }
 
     #[test]

@@ -27,7 +27,7 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
   6. **Renewals:** domains yearly; a trademark lasts 10 years and is renewable.
 - **Alternatives kept in case a check fails:** Photochrom, Argentype (§2).
 - **Before going public:**
-  1. Add LICENSE (GPL-3.0-or-later) and Cargo `license` fields.
+  1. Add LICENSE (GPL-3.0-or-later) and Cargo `license` fields. This is no longer optional: `crates/amb-engine/src/xtrans.rs` is ported from darktable (GPL-3.0-or-later), with its credit in the file header.
   2. Paraphrase the verbatim Adobe quotes in `docs/adobe-docs/`.
   3. Add the trademark notice.
 

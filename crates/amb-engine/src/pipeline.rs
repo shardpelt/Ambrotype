@@ -530,6 +530,71 @@ pub fn camera_to_prophoto(xyz_to_cam: &Mat3, neutral: [f64; 3]) -> Mat3 {
     m.map(|row| row.map(|v| v * k))
 }
 
+/// Clipped highlights: where a channel reached its clip level its real value
+/// is unknown, and white balance would scale the clipped channels unequally
+/// (white turns pink or cyan). Clipped channels are raised towards the
+/// brightest white-balanced channel, so blown areas go neutral and keep
+/// their brightness for the tone curve to roll off. A channel also counts as
+/// clipped next to where it clips: demosaicing mixes the clipped values into
+/// the edge, which would otherwise leave a coloured fringe.
+struct Unclip {
+    clip: [f32; 3],
+    /// White-balance gains (1 / neutral).
+    gains: [f32; 3],
+}
+
+impl Unclip {
+    fn new(clip: [f32; 3], neutral: [f64; 3]) -> Self {
+        Self {
+            clip,
+            gains: neutral.map(|n| if n > 1e-9 { (1.0 / n) as f32 } else { 1.0 }),
+        }
+    }
+
+    /// How clipped each channel is: 0 below 90% of its clip level, 1 from 98%.
+    fn weights(&self, c: &[f32]) -> [f32; 3] {
+        std::array::from_fn(|i| {
+            let k = self.clip[i];
+            if !k.is_finite() {
+                return 0.0;
+            }
+            let t = ((c[i] - 0.9 * k) / (0.08 * k)).clamp(0.0, 1.0);
+            t * t * (3.0 - 2.0 * t)
+        })
+    }
+
+    /// The weights of row `y`, each the most clipped within a small square
+    /// around the pixel (2 px on large images, 1 px on previews).
+    fn row_weights(&self, rgb: &[f32], w: usize, h: usize, y: usize, out: &mut Vec<[f32; 3]>) {
+        let r = if w.max(h) >= 2500 { 2 } else { 1 };
+        out.clear();
+        out.resize(w, [0.0; 3]);
+        for sy in y.saturating_sub(r)..(y + r + 1).min(h) {
+            let row = &rgb[sy * w * 3..(sy + 1) * w * 3];
+            for (x, p) in row.chunks(3).enumerate() {
+                let k = self.weights(p);
+                if k == [0.0; 3] {
+                    continue;
+                }
+                for slot in &mut out[x.saturating_sub(r)..(x + r + 1).min(w)] {
+                    for i in 0..3 {
+                        slot[i] = slot[i].max(k[i]);
+                    }
+                }
+            }
+        }
+    }
+
+    fn apply(&self, c: [f32; 3], w: [f32; 3]) -> [f32; 3] {
+        if w == [0.0; 3] {
+            return c;
+        }
+        let balanced: [f32; 3] = std::array::from_fn(|i| c[i] * self.gains[i]);
+        let top = balanced[0].max(balanced[1]).max(balanced[2]);
+        std::array::from_fn(|i| (balanced[i] + w[i] * (top - balanced[i])) / self.gains[i])
+    }
+}
+
 /// Temperature/Tint that Lightroom would show for this image's as-shot white.
 pub fn as_shot_temp_tint(img: &CameraImage) -> (f64, f64) {
     let (x, y) = xy_for_neutral(&img.xyz_to_cam, img.as_shot_neutral);
@@ -614,17 +679,29 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     };
     let m = camera_to_prophoto(&img.xyz_to_cam, neutral).map(|row| row.map(|v| v as f32));
     let gain = 2f32.powf(s.exposure_ev as f32);
+    let clipped = (!s.negative.enabled && img.clip.iter().any(|c| c.is_finite()))
+        .then(|| Unclip::new(img.clip, neutral));
     let mut out = Image {
         width,
         height,
         rgb: vec![0.0f32; camera_rgb.len()],
     };
     out.rgb
-        .par_chunks_mut(3)
-        .zip(camera_rgb.par_chunks(3))
-        .for_each(|(o, c)| {
-            for (row, slot) in m.iter().zip(o.iter_mut()) {
-                *slot = (row[0] * c[0] + row[1] * c[1] + row[2] * c[2]) * gain;
+        .par_chunks_mut(width * 3)
+        .enumerate()
+        .for_each_init(Vec::new, |weights, (y, orow)| {
+            let crow = &camera_rgb[y * width * 3..(y + 1) * width * 3];
+            if let Some(u) = &clipped {
+                u.row_weights(camera_rgb, width, height, y, weights);
+            }
+            for (x, (o, c)) in orow.chunks_mut(3).zip(crow.chunks(3)).enumerate() {
+                let c = match &clipped {
+                    Some(u) => u.apply([c[0], c[1], c[2]], weights[x]),
+                    None => [c[0], c[1], c[2]],
+                };
+                for (row, slot) in m.iter().zip(o.iter_mut()) {
+                    *slot = (row[0] * c[0] + row[1] * c[1] + row[2] * c[2]) * gain;
+                }
             }
         });
 
@@ -718,6 +795,61 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn clipped_highlights_go_neutral() {
+        let neutral = [0.5, 1.0, 0.6];
+        let u = Unclip::new([1.0, 0.98, 0.95], neutral);
+        let apply = |c: [f32; 3]| u.apply(c, u.weights(&c));
+        // Every channel clipped: the result is the neutral, at the brightest
+        // white-balanced level (here red: 1 / 0.5 = 2).
+        let c = apply([1.0, 0.98, 0.95]);
+        for (v, n) in c.iter().zip(neutral) {
+            assert!((v / n as f32 - 2.0).abs() < 1e-5, "{c:?}");
+        }
+        // Only green clipped: it rises to match the brightest channel.
+        let c = apply([0.7, 0.98, 0.3]);
+        assert_eq!((c[0], c[2]), (0.7, 0.3));
+        assert!((c[1] - 1.4).abs() < 1e-5, "{c:?}");
+        // Nothing near clipping: untouched.
+        assert_eq!(apply([0.5, 0.8, 0.4]), [0.5, 0.8, 0.4]);
+
+        // Next to a clipped pixel, the edge pixel counts as clipped too.
+        let rgb = [
+            [0.6, 0.9, 0.5],
+            [1.0, 0.98, 0.95],
+            [0.2, 0.3, 0.2],
+            [0.2, 0.3, 0.2],
+        ]
+        .concat();
+        let mut w = Vec::new();
+        u.row_weights(&rgb, 4, 1, 0, &mut w);
+        assert_eq!(w[0], [1.0; 3]);
+        assert_eq!(w[3], [0.0; 3]);
+    }
+
+    #[test]
+    fn clip_levels_find_the_pile_up() {
+        // A smooth ramp in every channel, plus a blown area where red and
+        // green pile up at 1.0 and blue a little lower.
+        let mut rgb = Vec::new();
+        for i in 0..20_000 {
+            let v = i as f32 / 20_000.0 * 0.9;
+            rgb.extend_from_slice(&[v, v, v]);
+        }
+        for _ in 0..2_000 {
+            rgb.extend_from_slice(&[1.0, 1.0, 0.95]);
+        }
+        let k = crate::raw::clip_levels(&rgb);
+        assert!(
+            (k[0] - 1.0).abs() < 0.01 && (k[1] - 1.0).abs() < 0.01,
+            "{k:?}"
+        );
+        assert!((k[2] - 0.95).abs() < 0.01, "{k:?}");
+        // No pile-up: no clip.
+        let ramp: Vec<f32> = rgb[..60_000].to_vec();
+        assert_eq!(crate::raw::clip_levels(&ramp), [f32::INFINITY; 3]);
+    }
 
     #[test]
     fn neutral_maps_to_prophoto_white() {
@@ -823,6 +955,7 @@ mod tests {
             rgb,
             xyz_to_cam: invert3(&PROPHOTO_TO_XYZ_D50),
             as_shot_neutral: [1.0; 3],
+            clip: [f32::INFINITY; 3],
             make: "Test".into(),
             model: "Synthetic".into(),
             shot: Default::default(),

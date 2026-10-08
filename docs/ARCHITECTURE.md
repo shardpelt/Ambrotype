@@ -26,14 +26,15 @@ About 23,000 lines of Rust and about 270 tests (fmt, clippy and tests run in CI 
 ## Data flow of `amb render photo.nef out.jpg --preset look.xmp`
 
 ```
-raw file ──rawler──▶ CameraImage (camera RGB, white = 1, + metadata: lens, EXIF, orientation)
+raw file ──rawler──▶ CameraImage (camera RGB, white = 1, per-channel clip levels, + metadata: lens, EXIF, orientation)
+         (X-Trans: rawler decodes, our Markesteijn port in amb-engine/src/xtrans.rs demosaics)
 preset/sidecar ──amb-presets──▶ settings map (crs:/amb: tags) ──▶ DevelopSettings
                                        │ (lens profile resolved via amb-lens)
                                        ▼
 amb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
   0  Lens Corrections (vignetting, CA, distortion: one resampling pass)
      → film negative conversion (optional)
-  1  white balance + camera matrix → linear ProPhoto → Exposure → Defringe
+  1  clipped channels → neutral, white balance + camera matrix → linear ProPhoto → Exposure → Defringe
   2  Dehaze
   3  base look → Basic tone (Contrast, Highlights, Shadows, Whites, Blacks)
   4  Texture / Clarity

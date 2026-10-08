@@ -177,6 +177,7 @@ fn clone_camera(img: &CameraImage, rgb: Vec<f32>, width: usize, height: usize) -
         rgb,
         xyz_to_cam: img.xyz_to_cam,
         as_shot_neutral: img.as_shot_neutral,
+        clip: img.clip,
         make: img.make.clone(),
         model: img.model.clone(),
         shot: img.shot.clone(),

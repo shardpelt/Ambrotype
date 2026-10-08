@@ -51,4 +51,4 @@ cargo run -p amb-cli -- negative analyze scan*.nef --out roll.xmp   # film negat
 
 All rendering models are first versions ("ours, not Adobe's"). Their constants are to be fitted against Lightroom renders (`amb calibration defaults` prints them). `amb render` lists which preset settings it doesn't render yet. Next: built-in lens profiles from raw files, Upright/Transform, a local (edge-aware) Highlights/Shadows, camera profiles (DCP), and the MCP server and look matching for AI control (SCOPE §8).
 
-*Licence: not yet chosen (see SCOPE §6; GPL-3.0-or-later is recommended). Lightroom is a trademark of Adobe Inc. This project is not affiliated with Adobe.*
+*Licence: not yet chosen (see SCOPE §6; GPL-3.0-or-later is recommended, and the X-Trans demosaic, ported from [darktable](https://www.darktable.org/), is GPL-3.0-or-later code). Lightroom is a trademark of Adobe Inc. This project is not affiliated with Adobe.*

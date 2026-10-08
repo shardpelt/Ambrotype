@@ -23,6 +23,7 @@ pub mod output;
 pub mod pipeline;
 pub mod raw;
 pub mod tone;
+pub mod xtrans;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

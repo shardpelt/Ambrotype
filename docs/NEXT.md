@@ -10,6 +10,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
   - preset/sidecar reader and writer (`crs:` and our `amb:` tags)
   - edit protocol with undo, including grouped commands that become one undo step
   - raw engine: core Develop panels, Lens Corrections, film negatives, **crop and straighten** ([design/crop.md](design/crop.md))
+  - **Fujifilm raws:** RAF files (compressed too) open with a proper X-Trans demosaic (Markesteijn, ported from darktable); blown highlights stay neutral instead of turning pink
   - export: JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces with ICC
   - CLI `amb`
   - desktop editor (`amb-gui`, Tauri 2) with:

@@ -25,7 +25,7 @@
 use std::collections::BTreeMap;
 
 use amb_color::matrix::{D50_XYZ, Mat3, PROPHOTO_TO_XYZ_D50, apply3, bradford, invert3, mul3};
-use amb_color::temperature::{temp_tint_to_xy, xy_to_temp_tint};
+use amb_color::temperature::{TempTint, temp_tint_to_xy, xy_to_temp_tint};
 use amb_presets::{Value, curve_points};
 use rayon::prelude::*;
 
@@ -48,6 +48,35 @@ use crate::{dehaze, detail, effects, lens, local, negative};
 pub enum WhiteBalance {
     AsShot,
     Custom { temperature: f64, tint: f64 },
+}
+
+/// Which raw-default detail settings an edit leaves unset.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct UnsetDetail {
+    pub sharpness: bool,
+    pub color_noise: bool,
+}
+
+impl Default for UnsetDetail {
+    fn default() -> Self {
+        Self {
+            sharpness: true,
+            color_noise: true,
+        }
+    }
+}
+
+/// Settings whose default differs for rendered images (Lightroom sharpens
+/// and denoises raws by default, but not JPEGs).
+pub const RENDERED_DEFAULTS: &[(&str, f64)] = &[("Sharpness", 0.0), ("ColorNoiseReduction", 0.0)];
+
+/// Relative white balance of rendered images (JPEG and the like):
+/// Lightroom's `IncrementalTemperature` and `IncrementalTint`, -100..100.
+/// Raws ignore it, and rendered images ignore Kelvin.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct IncrementalWhiteBalance {
+    pub temperature: f64,
+    pub tint: f64,
 }
 
 /// The base rendering applied before user tone edits.
@@ -80,6 +109,10 @@ impl BaseLook {
 pub struct DevelopSettings {
     pub base_look: BaseLook,
     pub white_balance: WhiteBalance,
+    pub incremental_wb: IncrementalWhiteBalance,
+    /// Settings left at Camera Raw's raw defaults because the edit doesn't
+    /// set them; rendered images default them to 0 instead ([`RENDERED_DEFAULTS`]).
+    pub unset_detail: UnsetDetail,
     pub exposure_ev: f64,
     pub tone: ToneControls,
     pub color: ColorControls,
@@ -105,6 +138,8 @@ impl Default for DevelopSettings {
         DevelopSettings {
             base_look: BaseLook::Default,
             white_balance: WhiteBalance::AsShot,
+            incremental_wb: IncrementalWhiteBalance::default(),
+            unset_detail: UnsetDetail::default(),
             exposure_ev: 0.0,
             tone: ToneControls::default(),
             color: ColorControls::default(),
@@ -130,6 +165,8 @@ pub const RENDERED_TAGS: &[&str] = &[
     "WhiteBalance",
     "Temperature",
     "Tint",
+    "IncrementalTemperature",
+    "IncrementalTint",
     "Exposure2012",
     "Contrast2012",
     "Highlights2012",
@@ -286,6 +323,13 @@ impl DevelopSettings {
                 s.white_balance = WhiteBalance::Custom { temperature, tint };
             }
         }
+        // As Lightroom: the relative sliders count only under a custom white balance.
+        if wb_mode != "As Shot" {
+            s.incremental_wb = IncrementalWhiteBalance {
+                temperature: num(settings, "IncrementalTemperature").unwrap_or(0.0),
+                tint: num(settings, "IncrementalTint").unwrap_or(0.0),
+            };
+        }
         if let Some(ev) = num(settings, "Exposure2012") {
             s.exposure_ev = ev;
         }
@@ -357,6 +401,10 @@ impl DevelopSettings {
             color_detail: num(settings, "ColorNoiseReductionDetail").unwrap_or(nd.color_detail),
             color_smoothness: num(settings, "ColorNoiseReductionSmoothness")
                 .unwrap_or(nd.color_smoothness),
+        };
+        s.unset_detail = UnsetDetail {
+            sharpness: !settings.contains_key("Sharpness"),
+            color_noise: !settings.contains_key("ColorNoiseReduction"),
         };
         let sd = Sharpening::default();
         s.sharpening = Sharpening {
@@ -595,6 +643,44 @@ impl Unclip {
     }
 }
 
+/// Relative white balance: mireds per step of `IncrementalTemperature`, and
+/// Tint units per step of `IncrementalTint`. Adobe doesn't document its
+/// scale; these are ours, unfitted.
+const INCREMENTAL_MIRED_PER_STEP: f64 = 1.0;
+const INCREMENTAL_TINT_PER_STEP: f64 = 1.0;
+
+/// Temperature and Tint of a rendered image's own white (equal RGB).
+fn rendered_white(img: &CameraImage) -> TempTint {
+    let (x, y) = xy_for_neutral(&img.xyz_to_cam, [1.0; 3]);
+    xy_to_temp_tint(x, y)
+}
+
+/// Camera-space white for relative white balance: the image's own white,
+/// moved in mireds (+ warmer) and tint (+ magenta), as Kelvin and Tint do on raws.
+pub fn incremental_neutral(img: &CameraImage, wb: IncrementalWhiteBalance) -> [f64; 3] {
+    if wb == IncrementalWhiteBalance::default() {
+        return [1.0; 3];
+    }
+    let base = rendered_white(img);
+    let mired = (1e6 / base.temperature - INCREMENTAL_MIRED_PER_STEP * wb.temperature).max(20.0);
+    let (x, y) = temp_tint_to_xy(1e6 / mired, base.tint + INCREMENTAL_TINT_PER_STEP * wb.tint);
+    let (bx, by) = temp_tint_to_xy(base.temperature, base.tint);
+    let n = neutral_for_xy(&img.xyz_to_cam, x, y);
+    let r = neutral_for_xy(&img.xyz_to_cam, bx, by);
+    [n[0] / r[0], 1.0, n[2] / r[2]]
+}
+
+/// The relative white balance that makes the white (x, y) neutral on a
+/// rendered image: the inverse of [`incremental_neutral`].
+pub fn incremental_for_xy(img: &CameraImage, x: f64, y: f64) -> IncrementalWhiteBalance {
+    let base = rendered_white(img);
+    let t = xy_to_temp_tint(x, y);
+    IncrementalWhiteBalance {
+        temperature: (1e6 / base.temperature - 1e6 / t.temperature) / INCREMENTAL_MIRED_PER_STEP,
+        tint: (t.tint - base.tint) / INCREMENTAL_TINT_PER_STEP,
+    }
+}
+
 /// Temperature/Tint that Lightroom would show for this image's as-shot white.
 pub fn as_shot_temp_tint(img: &CameraImage) -> (f64, f64) {
     let (x, y) = xy_for_neutral(&img.xyz_to_cam, img.as_shot_neutral);
@@ -661,6 +747,9 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
 
     // 1. Camera RGB → scene-linear ProPhoto with white balance and Exposure.
     let neutral = match (s.white_balance.clone(), s.negative.enabled) {
+        // Rendered images are balanced already: white is equal RGB, moved by
+        // the relative sliders.
+        _ if img.rendered => incremental_neutral(img, s.incremental_wb),
         (WhiteBalance::AsShot, false) => img.as_shot_neutral,
         (WhiteBalance::Custom { temperature, tint }, false) => {
             let (x, y) = temp_tint_to_xy(temperature, tint);
@@ -717,7 +806,12 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     // 3. Base look and Basic tone controls → display-linear.
     let tone_lut = (!s.tone.is_neutral()).then(|| tone::tone_lut(&s.tone, &cal.tone, LUT));
     let lum_weights = luminance_weights();
-    let base = s.base_look;
+    // A rendered image already has its tone curve.
+    let base = if img.rendered {
+        BaseLook::Linear
+    } else {
+        s.base_look
+    };
     out.map_pixels(|c| {
         let mut p = c.map(|v| base.apply(v));
         if let Some(lut) = &tone_lut {
@@ -776,8 +870,17 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     }
 
     // 6. Detail: noise reduction, then sharpening.
-    detail::apply_noise_reduction(&mut out, &s.noise_reduction, &cal.detail);
-    detail::apply_sharpening(&mut out, &s.sharpening, &cal.detail);
+    let (mut nr, mut sharpening) = (s.noise_reduction, s.sharpening);
+    if img.rendered {
+        if s.unset_detail.color_noise {
+            nr.color = 0.0;
+        }
+        if s.unset_detail.sharpness {
+            sharpening.amount = 0.0;
+        }
+    }
+    detail::apply_noise_reduction(&mut out, &nr, &cal.detail);
+    detail::apply_sharpening(&mut out, &sharpening, &cal.detail);
 
     // 7. Effects: post-crop vignette, then grain.
     if s.vignette.amount != 0.0 {
@@ -795,6 +898,57 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn relative_white_balance_on_rendered_images() {
+        let mut img = camera(1, 1, |_, _| [0.5, 0.5, 0.5]);
+        img.xyz_to_cam = invert3(&amb_color::matrix::SRGB_TO_XYZ_D50);
+        img.rendered = true;
+        let none = IncrementalWhiteBalance::default();
+        assert_eq!(incremental_neutral(&img, none), [1.0; 3]);
+        // + is warmer: the white is assumed bluer, so blue's neutral rises.
+        let warm = incremental_neutral(
+            &img,
+            IncrementalWhiteBalance {
+                temperature: 40.0,
+                tint: 0.0,
+            },
+        );
+        assert!(warm[2] > 1.05 && warm[0] < 0.97, "{warm:?}");
+        // + tint is magenta: green is assumed stronger in the light.
+        let magenta = incremental_neutral(
+            &img,
+            IncrementalWhiteBalance {
+                temperature: 0.0,
+                tint: 30.0,
+            },
+        );
+        assert!(magenta[0] < 1.0 && magenta[2] < 1.0, "{magenta:?}");
+        // The picker's inverse gives back the same setting.
+        let wb = IncrementalWhiteBalance {
+            temperature: -25.0,
+            tint: 12.0,
+        };
+        let (x, y) = xy_for_neutral(&img.xyz_to_cam, incremental_neutral(&img, wb));
+        let back = incremental_for_xy(&img, x, y);
+        assert!(
+            (back.temperature - wb.temperature).abs() < 0.5 && (back.tint - wb.tint).abs() < 0.5,
+            "{back:?}"
+        );
+        // A rendered image ignores Kelvin and gets no base tone curve.
+        let mut s = DevelopSettings {
+            white_balance: WhiteBalance::Custom {
+                temperature: 3000.0,
+                tint: 0.0,
+            },
+            ..Default::default()
+        };
+        let out = render(&img, &s);
+        s.white_balance = WhiteBalance::AsShot;
+        assert_eq!(out.rgb, render(&img, &s).rgb);
+        let v = crate::output::to_srgb(&out);
+        assert!((v[0] - 0.7354).abs() < 0.01, "{v:?}");
+    }
 
     #[test]
     fn clipped_highlights_go_neutral() {
@@ -956,6 +1110,7 @@ mod tests {
             xyz_to_cam: invert3(&PROPHOTO_TO_XYZ_D50),
             as_shot_neutral: [1.0; 3],
             clip: [f32::INFINITY; 3],
+            rendered: false,
             make: "Test".into(),
             model: "Synthetic".into(),
             shot: Default::default(),

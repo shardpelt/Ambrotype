@@ -25,6 +25,9 @@ pub struct CameraImage {
     pub as_shot_neutral: [f64; 3],
     /// Level at which each channel clips ([`clip_levels`]); infinity when it doesn't.
     pub clip: [f32; 3],
+    /// A rendered image (JPEG, PNG, TIFF, WebP) rather than a raw: already
+    /// white-balanced and toned ([`crate::raster`]).
+    pub rendered: bool,
     pub make: String,
     pub model: String,
     /// Lens and exposure metadata for lens-profile matching.
@@ -94,7 +97,12 @@ fn color_matrix(raw: &rawler::RawImage) -> Result<Mat3, Error> {
     Ok(m)
 }
 
+/// Open a photo: a raw file, or a rendered image by its extension
+/// ([`crate::raster`]).
 pub fn load(path: &Path) -> Result<CameraImage, Error> {
+    if crate::raster::is_raster(path) {
+        return crate::raster::load(path);
+    }
     let raw = rawler::decode_file(path).map_err(|e| Error::Decode(e.to_string()))?;
     if raw.cpp == 1 && raw.cfa_is_four_color() {
         return Err(Error::Unsupported(
@@ -160,6 +168,7 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         height,
         rgb,
         clip,
+        rendered: false,
         xyz_to_cam,
         as_shot_neutral,
         make: raw.clean_make.clone(),
@@ -301,6 +310,9 @@ pub fn read_shot(path: &Path) -> Result<amb_lens::ShotInfo, Error> {
 /// Lens-matching info and export metadata of a raw file, without decoding the image.
 pub fn read_metadata(path: &Path) -> Result<(amb_lens::ShotInfo, PhotoMetadata), Error> {
     use rawler::formats::tiff::Rational;
+    if crate::raster::is_raster(path) {
+        return crate::raster::read_metadata(path);
+    }
     let src = rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
     let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
     let md = decoder
@@ -402,6 +414,10 @@ impl CfaExt for rawler::RawImage {
 /// side. `None` when the file has no usable preview. It shows the camera's
 /// own JPEG rendering, not the edit.
 pub fn embedded_thumbnail(path: &Path, max_edge: u32) -> Result<Option<image::RgbImage>, Error> {
+    // A rendered image has no separate preview: callers render it instead.
+    if crate::raster::is_raster(path) {
+        return Ok(None);
+    }
     let src = rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
     let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
     let params = rawler::decoders::RawDecodeParams::default();

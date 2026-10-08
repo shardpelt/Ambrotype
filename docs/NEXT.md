@@ -10,6 +10,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
   - preset/sidecar reader and writer (`crs:` and our `amb:` tags)
   - edit protocol with undo, including grouped commands that become one undo step
   - raw engine: core Develop panels, Lens Corrections, film negatives, **crop and straighten** ([design/crop.md](design/crop.md))
+  - **JPEG, PNG, TIFF and WebP:** they open like raws (colour from their ICC profile), with Lightroom's relative Temp/Tint; a JPEG next to its raw is hidden, and edits go to `photo.jpg.xmp`
   - **Fujifilm raws:** RAF files (compressed too) open with a proper X-Trans demosaic (Markesteijn, ported from darktable); blown highlights stay neutral instead of turning pink
   - export: JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces with ICC
   - CLI `amb`
@@ -67,7 +68,7 @@ The agreed UI track is done, and the library view after it (2026-10-08; [design/
 Another open-source Lightroom alternative, [LightCraft](https://github.com/storytold/lightcraft) (MIT/Apache, egui, its own catalogue), appeared with much more breadth. We keep our own direction (faithful Lightroom presets and sidecar round trip, customising and sharing, plugins) and build towards what it has, in this order:
 
 1. ~~**Fujifilm raws:** proper X-Trans demosaic, neutral blown highlights~~ (done 2026-10-08).
-2. **JPEG, PNG, TIFF and WebP input**, with a raw and its same-name JPEG shown as one photo (as Lightroom does), and Lightroom's relative white balance for non-raw files.
+2. ~~**JPEG, PNG, TIFF and WebP input**, with a raw and its same-name JPEG shown as one photo (as Lightroom does), and Lightroom's relative white balance for non-raw files~~ (done 2026-10-08).
 3. **Local Highlights and Shadows** (edge-aware tone mapping), the biggest fidelity gap (fidelity track 3).
 4. **Masks:** linear, radial, brush, luminance and colour range, add/subtract/intersect; read and write Lightroom's mask tags.
 5. **Spot removal:** heal and clone, then red eye.

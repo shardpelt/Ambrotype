@@ -570,10 +570,15 @@ fn render(
     use amb_engine::{pipeline, raw};
     let start = std::time::Instant::now();
     let mut img = raw::load(input).map_err(|e| format!("{}: {e}", input.display()))?;
-    let (t, tint) = pipeline::as_shot_temp_tint(&img);
+    let wb = if img.rendered {
+        "rendered image: relative white balance (IncrementalTemperature/Tint)".to_string()
+    } else {
+        let (t, tint) = pipeline::as_shot_temp_tint(&img);
+        format!("as shot: {t:.0} K, tint {tint:+.0}")
+    };
     println!(
-        "{} {} | {}x{} | as shot: {:.0} K, tint {:+.0}",
-        img.make, img.model, img.width, img.height, t, tint
+        "{} {} | {}x{} | {wb}",
+        img.make, img.model, img.width, img.height
     );
     let mut settings = std::collections::BTreeMap::new();
     if let Some(preset) = preset {

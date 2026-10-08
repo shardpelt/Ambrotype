@@ -73,6 +73,7 @@ function currentValue(name) {
   if (name in ui.overrides) return ui.overrides[name];
   if (name in ui.settings) return ui.settings[name];
   const def = ui.controls.get(name)?.def;
+  if (ui.info?.defaults && name in ui.info.defaults) return ui.info.defaults[name];
   if (name === "Temperature") return ui.info ? Math.round(ui.info.as_shot_temperature) : 5500;
   if (name === "Tint") return ui.info ? Math.round(ui.info.as_shot_tint) : 0;
   if (name === "WhiteBalance") return "As Shot";
@@ -89,6 +90,8 @@ const TRACKS = {
   Temperature: "linear-gradient(90deg,#4f7bd1,#d9d2b8,#e3b23c)",
   Tint: "linear-gradient(90deg,#4caf50,#d9d2c8,#c548b6)",
 };
+TRACKS.IncrementalTemperature = TRACKS.Temperature;
+TRACKS.IncrementalTint = TRACKS.Tint;
 const BAND_COLOURS = {
   Red: "#e04848", Orange: "#ec8a32", Yellow: "#e6d33a", Green: "#4fbf4f",
   Aqua: "#3fc6c6", Blue: "#4170e0", Purple: "#8c55d9", Magenta: "#d64fb5",
@@ -871,7 +874,10 @@ async function openPath(path) {
       setCropMode(false);
       ui.crop.tool.stop();
     }
+    const wasRendered = !!ui.info?.rendered;
     ui.info = r.info;
+    // Raw and JPEG have different white balance sliders.
+    if (wasRendered !== !!r.info.rendered && ui.layout) applyLayout(ui.layout);
     $("empty").hidden = true;
     $("photo-title").textContent = `${r.info.name}  —  ${r.info.camera}${r.info.lens ? "  ·  " + r.info.lens : ""}`;
     $("exif").textContent = [r.info.exposure, `${r.info.width} × ${r.info.height}`,

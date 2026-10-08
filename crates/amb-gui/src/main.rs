@@ -207,22 +207,22 @@ fn editor_schema() -> Vec<schema::Panel> {
 async fn pick_photo(app: tauri::AppHandle) -> Option<String> {
     app.dialog()
         .file()
-        .set_title("Open a raw photo")
-        .add_filter("Raw photos", &folder::RAW_EXTENSIONS)
+        .set_title("Open a photo")
+        .add_filter("Photos", &folder::photo_extensions())
         .add_filter("All files", &["*"])
         .blocking_pick_file()
         .and_then(|p| p.into_path().ok())
         .map(|p| p.display().to_string())
 }
 
-/// Pick several raws (for the collage maker).
+/// Pick several photos (for the collage maker).
 #[tauri::command]
 async fn pick_photos(app: tauri::AppHandle) -> Res<Vec<folder::FolderPhoto>> {
     let paths: Vec<PathBuf> = app
         .dialog()
         .file()
         .set_title("Add photos")
-        .add_filter("Raw photos", &folder::RAW_EXTENSIONS)
+        .add_filter("Photos", &folder::photo_extensions())
         .blocking_pick_files()
         .unwrap_or_default()
         .into_iter()
@@ -421,7 +421,7 @@ async fn region(
 fn pick_white(u: f64, v: f64, state: tauri::State<'_, AppState>) -> Res<Executed> {
     let mut guard = state.session.lock().map_err(|e| e.to_string())?;
     let s = guard.as_mut().ok_or("no photo open")?;
-    let (t, tint) = s
+    let [(temp_name, t), (tint_name, tint)] = s
         .pick_white(u, v)
         .ok_or("pick a neutral grey or white area that is not clipped")?;
     s.execute(
@@ -431,19 +431,24 @@ fn pick_white(u: f64, v: f64, state: tauri::State<'_, AppState>) -> Res<Executed
                 value: serde_json::json!("Custom"),
             },
             Command::SetParam {
-                name: "Temperature".into(),
+                name: temp_name.into(),
                 value: serde_json::json!(t),
             },
             Command::SetParam {
-                name: "Tint".into(),
+                name: tint_name.into(),
                 value: serde_json::json!(tint),
             },
         ],
         Some("white balance picker"),
     )?;
+    let note = if temp_name == "Temperature" {
+        format!("White balance set to {t:.0} K, tint {tint:+.0}")
+    } else {
+        format!("White balance set to temp {t:+.0}, tint {tint:+.0}")
+    };
     Ok(Executed {
         state: s.state_info(),
-        notes: vec![format!("White balance set to {t:.0} K, tint {tint:+.0}")],
+        notes: vec![note],
     })
 }
 

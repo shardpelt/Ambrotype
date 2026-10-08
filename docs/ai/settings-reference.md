@@ -110,8 +110,8 @@ White balance preset, Temp and Tint. Raw files use a Kelvin Temp scale; JPEG/TIF
 | `WhiteBalance` | White balance preset | enum |  |  | rendered (approx.) | "As Shot" (the camera's setting), "Auto" (computed from the image), or for raw/DNG "Daylight", "Cloudy", "Shade", "Tungsten", "Fluorescent", "Flash"; "Custom" when Temp/Tint were set by hand. Temperature and Tint only take effect when this is not "As Shot" (Ambrotype's edit commands switch it to "Custom" when you set Temp or Tint). |
 | `Temperature` | Temp | number | 2000 to 50000 |  | rendered (approx.) | *Units: K.* Colour temperature in Kelvin for raw files: lower values make the photo cooler (bluer), higher values warmer (more yellow). Example: 3200 K suits tungsten light. Adobe documents 2000-50000 K (newer versions go down to 1500 K). No default: As Shot depends on the camera's recorded white balance. |
 | `Tint` | Tint | number | -150 to 150 |  | rendered (approx.) | Green/magenta balance: negative adds green, positive adds magenta. 0 = neutral relative to the white balance preset. |
-| `IncrementalTemperature` | Temp (non-raw) | number | -100 to 100 | 0 | planned | Temp for JPEG/TIFF/PSD files, on an approximate -100..100 scale instead of Kelvin: negative cooler, positive warmer. |
-| `IncrementalTint` | Tint (non-raw) | number | -100 to 100 | 0 | planned | Tint for JPEG/TIFF/PSD files on a -100..100 scale: negative greener, positive more magenta. |
+| `IncrementalTemperature` | Temp (non-raw) | number | -100 to 100 | 0 | rendered (approx.) | Temp for JPEG/TIFF/PSD files, on an approximate -100..100 scale instead of Kelvin: negative cooler, positive warmer. |
+| `IncrementalTint` | Tint (non-raw) | number | -100 to 100 | 0 | rendered (approx.) | Tint for JPEG/TIFF/PSD files on a -100..100 scale: negative greener, positive more magenta. |
 
 <a id="tone"></a>
 

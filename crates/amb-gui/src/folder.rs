@@ -1,7 +1,8 @@
-//! The photos next to the open one (the filmstrip): the raws in its folder,
-//! in name order, with their rating and whether they have edits, and small
-//! thumbnails from the previews cameras embed in raws (quick: no raw
-//! decoding). Thumbnails are cached on disk by path, size and modified time.
+//! The photos next to the open one (the filmstrip): the raws and rendered
+//! images (JPEG, PNG, TIFF, WebP) in its folder, in name order, with their
+//! rating and whether they have edits, and small thumbnails from the
+//! previews cameras embed in raws (quick: no raw decoding). Thumbnails are
+//! cached on disk by path, size and modified time.
 
 use serde::Serialize;
 use std::cmp::Ordering;
@@ -32,6 +33,31 @@ pub fn is_raw(path: &Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
         .is_some_and(|e| RAW_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
+}
+
+/// Every extension the editor opens: raws, then rendered images.
+pub fn photo_extensions() -> Vec<&'static str> {
+    RAW_EXTENSIONS
+        .iter()
+        .chain(amb_engine::raster::EXTENSIONS)
+        .copied()
+        .collect()
+}
+
+pub fn is_photo(path: &Path) -> bool {
+    is_raw(path) || amb_engine::raster::is_raster(path)
+}
+
+/// A JPEG shot together with a raw of the same name: like Lightroom, the
+/// pair is one photo, the raw.
+fn is_raw_companion(path: &Path, raw_stems: &std::collections::HashSet<String>) -> bool {
+    let jpeg = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| matches!(e.to_ascii_lowercase().as_str(), "jpg" | "jpeg"));
+    jpeg && path
+        .file_stem()
+        .is_some_and(|s| raw_stems.contains(&s.to_string_lossy().to_lowercase()))
 }
 
 /// Compare names the way people expect: "IMG_2" before "IMG_10".
@@ -83,18 +109,28 @@ pub fn list(photo: &Path) -> Result<Vec<FolderPhoto>, String> {
     list_dir(dir)
 }
 
-/// The raws in `dir`, in name order.
+/// The photos in `dir`, in name order; a JPEG with a raw of the same name
+/// is left out (the raw stands for both).
 pub fn list_dir(dir: &Path) -> Result<Vec<FolderPhoto>, String> {
     let entries = std::fs::read_dir(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
-    let mut paths: Vec<PathBuf> = entries
+    let found: Vec<PathBuf> = entries
         .flatten()
         .map(|e| e.path())
-        .filter(|p| p.is_file() && is_raw(p))
+        .filter(|p| p.is_file() && is_photo(p))
         .filter(|p| {
             !p.file_name()
                 .and_then(|n| n.to_str())
                 .is_some_and(|n| n.starts_with('.'))
         })
+        .collect();
+    let raw_stems: std::collections::HashSet<String> = found
+        .iter()
+        .filter(|p| is_raw(p))
+        .filter_map(|p| p.file_stem().map(|s| s.to_string_lossy().to_lowercase()))
+        .collect();
+    let mut paths: Vec<PathBuf> = found
+        .into_iter()
+        .filter(|p| !is_raw_companion(p, &raw_stems))
         .collect();
     paths.sort_by(|a, b| {
         natural(
@@ -310,6 +346,45 @@ mod tests {
         assert_eq!(
             thumbnail(&dir.join("a.dng"), THUMB_EDGE, Some(&cache)).unwrap(),
             first
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_jpeg_next_to_its_raw_is_one_photo() {
+        let dir = std::env::temp_dir().join(format!("amb-pairs-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        amb_testkit::dng::write(
+            &dir.join("DSCF0001.dng"),
+            &amb_testkit::patterns::generate("ramp").unwrap(),
+            &Default::default(),
+        )
+        .unwrap();
+        let jpeg = image::RgbImage::from_pixel(8, 8, image::Rgb([120, 130, 140]));
+        for name in ["DSCF0001.JPG", "phone.jpg", "scan.png"] {
+            jpeg.save_with_format(dir.join(name), image::ImageFormat::Png)
+                .unwrap();
+        }
+        let names: Vec<_> = list_dir(&dir)
+            .unwrap()
+            .into_iter()
+            .map(|p| p.name)
+            .collect();
+        assert_eq!(names, ["DSCF0001.dng", "phone.jpg", "scan.png"]);
+        // Each keeps its own sidecar.
+        assert_eq!(
+            crate::session::sidecar_path(&dir.join("phone.jpg")),
+            dir.join("phone.jpg.xmp")
+        );
+        assert_eq!(
+            crate::session::sidecar_path(&dir.join("DSCF0001.dng")),
+            dir.join("DSCF0001.xmp")
+        );
+        // A lone JPEG opens and renders a thumbnail.
+        assert_eq!(
+            &thumbnail(&dir.join("phone.jpg"), 64, None).unwrap()[..2],
+            [0xFF, 0xD8]
         );
         let _ = std::fs::remove_dir_all(&dir);
     }

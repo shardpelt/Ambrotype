@@ -1050,7 +1050,7 @@ async function addPhotos(folder) {
   try {
     const photos = await invoke(folder ? "pick_photo_folder" : "pick_photos");
     if (photos?.length) setTray(photos, true);
-    else if (photos) toast("No raw photos there.", true);
+    else if (photos) toast("No photos there.", true);
   } catch (e) {
     toast(String(e), true);
   }

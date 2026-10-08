@@ -46,7 +46,7 @@ amb sweep generate --out E:/kit-raw --groups tone,white_balance,presence  D:/raw
 
 ## The desktop editor (GUI)
 
-The editor is `crates/amb-gui` (Tauri 2). It is an early version: open a raw, edit with sliders and presets, before/after, undo/redo, save the XMP sidecar, export.
+The editor is `crates/amb-gui` (Tauri 2). It is an early version: open a raw (or a JPEG, PNG, TIFF or WebP), edit with sliders and presets, before/after, undo/redo, save the XMP sidecar, export.
 
 ```sh
 cargo run --release -p amb-gui                    # opens an empty window; drop a raw on it or press Ctrl+O
@@ -61,7 +61,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   ```
 - **Presets:** Lightroom's own preset folder is used automatically when it exists (`%APPDATA%\Adobe\CameraRaw\Settings` on Windows, `~/Library/Application Support/Adobe/CameraRaw/Settings` on macOS), plus `~/.local/share/ambrotype/presets`. "Add folder…" adds any other folder for the session. **Save…** keeps the photo's edit as your own one-click preset (without the crop, masks, retouching and geometry); it is listed under "Yours" and stored as a Lightroom-style `.xmp` in the app's settings folder (`presets/`), so Lightroom can import it too.
 - **Black & White:** the Black & White panel turns the photo monochrome and sets how bright each colour becomes in grey (darker blue skies, lighter skin). Color Grading still applies on top, for sepia and other tints.
-- **Filmstrip:** the other raws in the photo's folder are shown under it, in name order, with their stars and a dot for photos with edits. Click one or use ← → to open it; your edits to the photo you leave are saved to its sidecar first. Thumbnails come from the preview the camera embedded (quick), and are cached; the open photo's thumbnail shows its edit. Files that can't be opened are marked and skipped.
+- **Filmstrip:** the other photos in the photo's folder (a JPEG shot together with a raw of the same name is shown once, as the raw) are shown under it, in name order, with their stars and a dot for photos with edits. Click one or use ← → to open it; your edits to the photo you leave are saved to its sidecar first. Thumbnails come from the preview the camera embedded (quick), and are cached; the open photo's thumbnail shows its edit. Files that can't be opened are marked and skipped.
 
   ![Filmstrip](images/filmstrip.png)
 

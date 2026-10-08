@@ -28,6 +28,8 @@ About 23,000 lines of Rust and about 270 tests (fmt, clippy and tests run in CI 
 ```
 raw file ──rawler──▶ CameraImage (camera RGB, white = 1, per-channel clip levels, + metadata: lens, EXIF, orientation)
          (X-Trans: rawler decodes, our Markesteijn port in amb-engine/src/xtrans.rs demosaics)
+JPEG/PNG/TIFF/WebP ──raster.rs──▶ CameraImage too: the image's RGB made linear by its ICC profile
+         (sRGB if none), `rendered` set: relative white balance, no base tone curve, no default sharpening
 preset/sidecar ──amb-presets──▶ settings map (crs:/amb: tags) ──▶ DevelopSettings
                                        │ (lens profile resolved via amb-lens)
                                        ▼

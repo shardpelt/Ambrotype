@@ -20,6 +20,10 @@ pub struct Control {
     pub description: String,
     /// For choices: (stored value, label).
     pub options: Vec<(serde_json::Value, String)>,
+    /// The setting this control drives instead on a rendered image (JPEG
+    /// and the like): Temp and Tint become Lightroom's relative sliders.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rendered: Option<Box<Control>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -101,6 +105,11 @@ fn control(name: &str, label_override: Option<&str>) -> Control {
         units: text.and_then(|t| t.units.clone()),
         description: text.map(|t| t.description.clone()).unwrap_or_default(),
         options,
+        rendered: match name {
+            "Temperature" => Some(Box::new(control("IncrementalTemperature", label_override))),
+            "Tint" => Some(Box::new(control("IncrementalTint", label_override))),
+            _ => None,
+        },
     }
 }
 

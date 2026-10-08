@@ -11,7 +11,7 @@
   <header class="topbar">
     <div class="brand"><span class="logo" aria-hidden="true"></span>Ambrotype</div>
     <div class="actions">
-      <button id="btn-open" title="Open a raw photo (Ctrl+O)">Open</button>
+      <button id="btn-open" title="Open a photo: raw, JPEG, PNG, TIFF or WebP (Ctrl+O)">Open</button>
       <button id="btn-library" title="Library: all the photos in the folder, to rate, label, tag and export many at once">Library</button>
       <button id="btn-save" title="Save the edit to the photo's XMP sidecar (Ctrl+S)" disabled>Save</button>
       <button id="btn-export" class="primary" title="Export (Ctrl+E)" disabled>Export…</button>
@@ -73,7 +73,7 @@
 
     <section class="viewer" id="viewer">
       <div class="empty" id="empty">
-        <p class="empty-title">Open a raw photo to start</p>
+        <p class="empty-title">Open a photo to start</p>
         <p class="hint">Drop a file here, or press Ctrl+O. Lightroom presets and XMP sidecars work as they are.</p>
         <button id="btn-open-empty" class="primary">Open photo…</button>
       </div>
@@ -154,7 +154,7 @@
     <div class="library-body">
       <div id="library-grid" class="library-grid" tabindex="-1"></div>
       <div id="library-empty" class="library-empty" hidden>
-        <p class="empty-title">Choose a folder of raw photos</p>
+        <p class="empty-title">Choose a folder of photos</p>
         <p class="hint">Or open a photo: the library shows its folder.</p>
         <button type="button" id="lib-choose-empty" class="primary">Choose folder…</button>
       </div>

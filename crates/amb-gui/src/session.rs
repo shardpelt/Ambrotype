@@ -86,6 +86,10 @@ pub struct PhotoInfo {
     pub exposure: String,
     pub as_shot_temperature: f64,
     pub as_shot_tint: f64,
+    /// A rendered image (JPEG, PNG, TIFF, WebP), not a raw.
+    pub rendered: bool,
+    /// Settings whose default differs from the registry's for this photo.
+    pub defaults: BTreeMap<String, f64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -178,6 +182,7 @@ fn clone_camera(img: &CameraImage, rgb: Vec<f32>, width: usize, height: usize) -
         xyz_to_cam: img.xyz_to_cam,
         as_shot_neutral: img.as_shot_neutral,
         clip: img.clip,
+        rendered: img.rendered,
         make: img.make.clone(),
         model: img.model.clone(),
         shot: img.shot.clone(),
@@ -185,9 +190,9 @@ fn clone_camera(img: &CameraImage, rgb: Vec<f32>, width: usize, height: usize) -
     }
 }
 
-/// Lightroom's sidecar convention: `photo.nef` → `photo.xmp`.
+/// Where a photo's edits are kept ([`amb_engine::sidecar_path`]).
 pub fn sidecar_path(photo: &Path) -> PathBuf {
-    photo.with_extension("xmp")
+    amb_engine::sidecar_path(photo)
 }
 
 fn ratio_text(r: Option<(u32, u32)>, f: impl Fn(f64) -> String) -> Option<String> {
@@ -199,12 +204,19 @@ impl Session {
     pub fn open(path: &Path) -> Result<Session, String> {
         let full = raw::load(path).map_err(|e| format!("{}: {e}", path.display()))?;
         let sidecar = sidecar_path(path);
-        let (state, base_xmp) = match std::fs::read_to_string(&sidecar) {
-            Ok(text) => (
+        // No sidecar yet: a JPEG or TIFF may carry Lightroom's edits inside.
+        let text = std::fs::read_to_string(&sidecar).ok().or_else(|| {
+            full.rendered
+                .then(|| std::fs::read(path).ok())
+                .flatten()
+                .and_then(|b| amb_presets::find_embedded_xmp(&b).map(str::to_string))
+        });
+        let (state, base_xmp) = match text {
+            Some(text) => (
                 DevelopState::from_xmp_str(&text).map_err(|e| e.to_string())?,
                 Some(text),
             ),
-            Err(_) => (DevelopState::new(), None),
+            None => (DevelopState::new(), None),
         };
         let saved = state.settings().clone();
         Ok(Session {
@@ -268,6 +280,15 @@ impl Session {
             exposure,
             as_shot_temperature: t,
             as_shot_tint: tint,
+            rendered: self.full.rendered,
+            defaults: if self.full.rendered {
+                amb_engine::pipeline::RENDERED_DEFAULTS
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), *v))
+                    .collect()
+            } else {
+                BTreeMap::new()
+            },
         }
     }
 
@@ -472,7 +493,15 @@ impl Session {
             settings.insert(k.clone(), v.clone());
         }
         // A Temperature/Tint drag implies a custom white balance.
-        if overrides.contains_key("Temperature") || overrides.contains_key("Tint") {
+        if [
+            "Temperature",
+            "Tint",
+            "IncrementalTemperature",
+            "IncrementalTint",
+        ]
+        .iter()
+        .any(|k| overrides.contains_key(*k))
+        {
             settings.insert("WhiteBalance".into(), Value::Text("Custom".into()));
         }
         settings
@@ -535,7 +564,9 @@ impl Session {
 
     /// White balance that makes the clicked spot neutral: (u, v) are
     /// fractions of the upright, uncropped photo. Returns (Temperature, Tint).
-    pub fn pick_white(&self, u: f64, v: f64) -> Option<(f64, f64)> {
+    /// The white balance settings that make the spot at (`u`, `v`) neutral:
+    /// Temperature and Tint on a raw, their relative versions on a rendered image.
+    pub fn pick_white(&self, u: f64, v: f64) -> Option<[(&'static str, f64); 2]> {
         let img = &self.full;
         let o = img.metadata.orientation;
         let (ow, oh) = amb_export::geometry::oriented_size(img.width, img.height, o);
@@ -562,9 +593,21 @@ impl Session {
         }
         let neutral = [mean[0] / mean[1], 1.0, mean[2] / mean[1]];
         let (x, y) = raw::xy_for_neutral(&img.xyz_to_cam, neutral);
+        if img.rendered {
+            let wb = amb_engine::pipeline::incremental_for_xy(img, x, y);
+            return (wb.temperature.is_finite() && wb.tint.is_finite()).then_some([
+                (
+                    "IncrementalTemperature",
+                    wb.temperature.round().clamp(-100.0, 100.0),
+                ),
+                ("IncrementalTint", wb.tint.round().clamp(-100.0, 100.0)),
+            ]);
+        }
         let tt = amb_color::xy_to_temp_tint(x, y);
-        (tt.temperature.is_finite() && tt.tint.is_finite())
-            .then_some((tt.temperature.round(), tt.tint.round()))
+        (tt.temperature.is_finite() && tt.tint.is_finite()).then_some([
+            ("Temperature", tt.temperature.round()),
+            ("Tint", tt.tint.round()),
+        ])
     }
 
     /// Context for a feedback report: app, system, photo and the edit.
@@ -968,7 +1011,9 @@ mod tests {
         let (patch, gap) = (200.0, 24.0);
         let u = (gap + (patch + gap) + patch / 2.0) / 1368.0;
         let v = (gap + 3.0 * (patch + gap) + patch / 2.0) / 920.0;
-        let (t, tint) = s.pick_white(u, v).expect("grey patch");
+        let [("Temperature", t), ("Tint", tint)] = s.pick_white(u, v).expect("grey patch") else {
+            panic!("a raw picks Kelvin");
+        };
         assert!(
             (4800.0..5300.0).contains(&t) && (5.0..15.0).contains(&tint),
             "{t} {tint}"

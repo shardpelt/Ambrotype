@@ -726,6 +726,16 @@ fn after_set(
     next: &mut BTreeMap<String, Value>,
     notes: &mut Vec<String>,
 ) -> Result<(), Error> {
+    // Relative white balance (rendered images) has a neutral 0, so moving
+    // either slider simply switches to Custom.
+    if matches!(name, "IncrementalTemperature" | "IncrementalTint")
+        && matches!(
+            next.get("WhiteBalance").and_then(Value::as_str),
+            None | Some("As Shot") | Some("Auto")
+        )
+    {
+        next.insert("WhiteBalance".into(), Value::Text("Custom".into()));
+    }
     if matches!(name, "Temperature" | "Tint") {
         let mode = next.get("WhiteBalance").and_then(Value::as_str);
         if matches!(mode, None | Some("As Shot") | Some("Auto")) {

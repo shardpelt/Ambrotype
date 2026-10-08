@@ -57,6 +57,7 @@ pub fn stats(img: &CameraImage, settings: &BTreeMap<String, amb_presets::Value>)
         xyz_to_cam: img.xyz_to_cam,
         as_shot_neutral: img.as_shot_neutral,
         clip: img.clip,
+        rendered: img.rendered,
         make: img.make.clone(),
         model: img.model.clone(),
         shot: img.shot.clone(),

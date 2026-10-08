@@ -296,7 +296,7 @@ pub fn run(
     let sidecar = if is_sidecar {
         target.to_path_buf()
     } else {
-        target.with_extension("xmp")
+        amb_engine::sidecar_path(target)
     };
     let state = if sidecar.exists() {
         amb_protocol::DevelopState::load(&sidecar)

@@ -11,7 +11,8 @@ amb-color = { path = "../amb-color" }
 amb-lens = { path = "../amb-lens" }
 amb-presets = { path = "../amb-presets" }
 rawler = "0.8"
-image = { version = "0.25", default-features = false, features = ["png", "tiff", "jpeg"] }
+image = { version = "0.25", default-features = false, features = ["png", "tiff", "jpeg", "webp"] }
+exif = { package = "kamadak-exif", version = "0.6" }
 rayon = "1"
 serde.workspace = true
 serde_json.workspace = true

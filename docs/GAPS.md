@@ -79,7 +79,7 @@ Project goal for ranking: faithful Lightroom preset compatibility, free, on Wind
 
 | Item | Tag | Impact | Source |
 |---|---|---|---|
-| Only raw files load (via `rawler`); no JPEG/TIFF/PNG input. Lightroom also edits those, with a relative -100..+100 Temp scale | Missing | Preset use on non-raw files is impossible | `crates/amb-engine/src/raw.rs`:94; [research/05](research/05-processing-algorithms.md) §2 |
+| JPEG, PNG, TIFF and WebP open (2026-10-08), but not HEIC, AVIF or PSD. Only matrix/TRC ICC profiles are read (LUT-based ones fall back to sRGB). Their edits go to `photo.jpg.xmp`; Lightroom keeps JPEG edits inside the file, which we read but don't write. A JPEG next to a same-name raw is always hidden (Lightroom has a setting to show both). Thumbnails of rendered images are full decodes (cached), not embedded previews | Partial | Lightroom edits non-raw files too | `crates/amb-engine/src/raster.rs`; `crates/amb-color/src/icc.rs`; `crates/amb-gui/src/folder.rs` |
 | 4-colour CFA sensors are rejected ("not supported yet") | Limit | Those cameras cannot be rendered | `crates/amb-engine/src/raw.rs`:95-99, 118-122 |
 | Cameras without a colour matrix in rawler are rejected | Limit | Unsupported cameras give an error, not a render | `crates/amb-engine/src/raw.rs`:69-85 |
 | Black/white scaling and the Bayer demosaic (PPG) are rawler's; X-Trans uses our port of darktable's Markesteijn 1-pass (the 3-pass variant, with fewer false colours on thin lines, isn't ported). No choice of demosaic (AMaZE/RCD). Clipped highlights are only made neutral (clipped channels raised to the brightest one), not reconstructed from neighbouring detail. No capture sharpening or deconvolution | Missing | Roadmap lists RCD/AMaZE, highlight reconstruction and capture sharpening for Phase 1-2 | `crates/amb-engine/src/raw.rs`, `xtrans.rs`, `pipeline.rs` (`Unclip`); [SCOPE.md](SCOPE.md):128, 290, 315 |
@@ -91,7 +91,7 @@ Project goal for ranking: faithful Lightroom preset compatibility, free, on Wind
 | Camera Raw "Calibration" panel: Shadow Tint and Red/Green/Blue Hue and Saturation (7 tags, all planned, none rendered) | Missing | Common in teal-and-orange style presets | `crates/amb-presets/data/tags.json` (group `calibration`); [research/05](research/05-processing-algorithms.md) §11 |
 | Black and white mixer renders (`ConvertToGrayscale` and 8 `GrayMixer*`, 2026-10-08), but its strength per band is a guess (unfitted), there is no Auto mix (`AutoGrayscaleMix`), and B&W camera profiles don't exist | Approx | B&W presets look roughly right, not exactly | `crates/amb-engine/src/color.rs`; `crates/amb-presets/data/tags.json` (group `bw_mixer`) |
 | Point Color (`PointColors`, planned); its encoding (9 floats per entry) is from memory | Missing | Newer presets use it | `crates/amb-presets/data/tags.json`; [research/02](research/02-preset-and-profile-formats.md):159 |
-| White balance: `IncrementalTemperature` and `IncrementalTint` are planned; their conversion from slider units is unknown | Missing | Relative-WB presets are ignored | `crates/amb-presets/data/tags.json`; [research/02](research/02-preset-and-profile-formats.md):119 |
+| White balance: `IncrementalTemperature` and `IncrementalTint` render on non-raw images with our own scale (1 mired and 1 Tint unit per step, unfitted); Adobe's conversion is unknown | Approx | Relative-WB edits look roughly right, not exactly | `crates/amb-engine/src/pipeline.rs` (`incremental_neutral`); [research/02](research/02-preset-and-profile-formats.md):119 |
 | Temp/Tint uses the table-based Robertson method (1667 K and up); Adobe's newer extended range below 2000 K and the interpolation details are unmeasured | Question | Low-Kelvin readouts may differ from Lightroom | `crates/amb-color/src/temperature.rs`:12-17; [research/05](research/05-processing-algorithms.md) §2 |
 | A Custom white balance without Temperature in the settings is not rendered; without Tint it renders with tint 0 (the as-shot value lives in the raw file). Tint alone is refused | Limit | Editing Tint alone on an as-shot photo needs a workaround | `crates/amb-protocol/src/state.rs`:671-678 |
 | Curves are applied on sRGB-encoded values "for now"; Adobe's curve domain is unknown (ProPhoto with sRGB TRC vs gamma 1.8) | Question | Every point-curve preset depends on it | `crates/amb-engine/src/pipeline.rs`:651; [research/05](research/05-processing-algorithms.md) §8, §20 |
@@ -195,8 +195,8 @@ Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the plann
 
 | Status | Tags | Notes |
 |---|---|---|
-| approx | 114 | rendered with an unfitted model: tone, presence, tone curve (11), HSL (24), color grading (13), split toning (5), detail (10), effects (10), lens (18), white balance (3), B&W mixer (9) |
-| planned | 38 | tone_legacy 7 of 7; calibration 7 of 7; local (masks) 4 of 4; point_color 1 of 1; profile 6 of 6 (`CameraProfile`, `CameraProfileDigest`, `Look`, `RGBTable`, `LookTable`, `OverrideLookVignette`); transform 8 (`Perspective*`); tone_curve 3 (`ToneCurve`, `ToneCurveName`, `ToneCurveName2012`); white_balance 2 (`IncrementalTemperature`, `IncrementalTint`) |
+| approx | 116 | rendered with an unfitted model: tone, presence, tone curve (11), HSL (24), color grading (13), split toning (5), detail (10), effects (10), lens (18), white balance (5), B&W mixer (9) |
+| planned | 36 | tone_legacy 7 of 7; calibration 7 of 7; local (masks) 4 of 4; point_color 1 of 1; profile 6 of 6 (`CameraProfile`, `CameraProfileDigest`, `Look`, `RGBTable`, `LookTable`, `OverrideLookVignette`); transform 8 (`Perspective*`); tone_curve 3 (`ToneCurve`, `ToneCurveName`, `ToneCurveName2012`) |
 | unsupported | 18 | enhance 8; hdr 9; lens_blur 1 |
 | image-specific | 41 | crop 12; transform 17; negative 10; bw_mixer 1; tone 1 (not expected in presets; also not rendered, because there is no crop) |
 | exact | 13 | our own `amb:` negative settings only |
@@ -289,7 +289,7 @@ Items that can only be settled with a Lightroom subscription. They are batched i
 
 Chosen by impact on the main goal: faithful Lightroom preset compatibility, free, cross-platform.
 
-1. **Run the Lightroom measurement month and fit the `Calibration` constants.** Every one of the 114 rendered Camera Raw tags is "approx"; nothing has been fitted, so no fidelity claim can be made. Finish the prerequisites first (interaction sidecars, run sheet, CC0 raws, `dng_validate` check).
+1. **Run the Lightroom measurement month and fit the `Calibration` constants.** Every one of the 116 rendered Camera Raw tags is "approx"; nothing has been fitted, so no fidelity claim can be made. Finish the prerequisites first (interaction sidecars, run sheet, CC0 raws, `dng_validate` check).
 2. **Replace the placeholder base look and add camera profiles.** Every preset renders through the profile, and the placeholder ACES-fit curve is not Adobe's; read the user's own DCPs in place, fit substitute profiles, and decode `Look` LUTs.
 3. **Local, edge-aware Highlights and Shadows.** Nearly every preset sets them, and ours are global; the docs call this the single biggest fidelity risk.
 4. **Masks and local adjustments (linear, radial, brush, range).** Presets with gradients and brushes currently lose those edits entirely.

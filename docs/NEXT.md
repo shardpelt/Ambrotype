@@ -60,7 +60,22 @@ There are two tracks that can run in parallel: the UI track is what users see an
 6. ~~Collage maker~~ (done 2026-10-08): shareable layouts (size, background, gap, outer border, rounded corners, cells you can split and remove), per-photo move/zoom/rotate and "Edit photo" in the editor, batch pages for big folders (optionally only rated photos). Follow-ups (resizing cells by their edges, saving a collage to reopen, per-cell edits) are in [design/collage-and-borders.md](design/collage-and-borders.md).
 7. ~~Plugins and AI-made features~~ (done 2026-10-08): WASM-sandboxed "action" plugins with permissions, "Make one with AI…" instructions for the user's own assistant, Share as pull request to the hub. Next for plugins: pipeline effects and plugin panels, batch runs, the hub listing plugins in the app ([GAPS.md](GAPS.md)).
 
-The agreed UI track is done, and the library view after it (2026-10-08; [design/library.md](design/library.md)). What to pick next is open: candidates are the follow-ups above and the fidelity track below.
+The agreed UI track is done, and the library view after it (2026-10-08; [design/library.md](design/library.md)). Next is the parity track below.
+
+### Parity track (agreed 2026-10-08)
+
+Another open-source Lightroom alternative, [LightCraft](https://github.com/storytold/lightcraft) (MIT/Apache, egui, its own catalogue), appeared with much more breadth. We keep our own direction (faithful Lightroom presets and sidecar round trip, customising and sharing, plugins) and build towards what it has, in this order:
+
+1. ~~**Fujifilm raws:** proper X-Trans demosaic, neutral blown highlights~~ (done 2026-10-08).
+2. **JPEG, PNG, TIFF and WebP input**, with a raw and its same-name JPEG shown as one photo (as Lightroom does), and Lightroom's relative white balance for non-raw files.
+3. **Local Highlights and Shadows** (edge-aware tone mapping), the biggest fidelity gap (fidelity track 3).
+4. **Masks:** linear, radial, brush, luminance and colour range, add/subtract/intersect; read and write Lightroom's mask tags.
+5. **Spot removal:** heal and clone, then red eye.
+6. **Transform and Upright** (fidelity track 2).
+7. **Library:** pick/reject flags, compare and survey views, virtual copies, collections; import with copy and rename.
+8. **Profiles, Calibration panel and Point Color** (fidelity track 4–5).
+9. **MCP server** for AI agents (fidelity track 6).
+10. **Speed and reach:** GPU preview, installers per OS (fidelity track 8–9), then HDR and panorama merge.
 
 ### Fidelity and engine track
 

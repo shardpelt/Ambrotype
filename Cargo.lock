@@ -179,6 +179,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "amb-plugin-film-recipe"
+version = "1.0.0"
+dependencies = [
+ "amb-plugin-sdk",
+ "serde_json",
+]
+
+[[package]]
 name = "amb-plugin-random-look"
 version = "1.0.0"
 dependencies = [

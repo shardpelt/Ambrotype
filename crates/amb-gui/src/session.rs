@@ -710,6 +710,86 @@ pub struct PresetEntry {
     pub path: String,
 }
 
+/// Settings groups a saved preset leaves out: they belong to one photo.
+const PHOTO_SPECIFIC_GROUPS: [&str; 6] = [
+    "crop",
+    "local",
+    "retouch",
+    "transform",
+    "metadata",
+    "lens_blur",
+];
+
+/// Save `settings` as a Lightroom-style XMP preset `dir/<group>/<name>.xmp`
+/// (crop, masks, retouching and geometry left out). Returns its path.
+pub fn save_preset(
+    dir: &Path,
+    name: &str,
+    group: &str,
+    settings: &BTreeMap<String, Value>,
+) -> Result<PathBuf, String> {
+    let name = name.trim();
+    let group = if group.trim().is_empty() {
+        "Yours"
+    } else {
+        group.trim()
+    };
+    if name.is_empty() {
+        return Err("give the preset a name".into());
+    }
+    let safe = |s: &str| -> String {
+        s.chars()
+            .map(|c| {
+                if c.is_alphanumeric() || " -_".contains(c) {
+                    c
+                } else {
+                    '-'
+                }
+            })
+            .collect::<String>()
+            .trim()
+            .to_string()
+    };
+    let catalog = amb_protocol::catalog::Catalog::builtin();
+    let mut out: BTreeMap<String, Value> = settings
+        .iter()
+        .filter(|(k, _)| {
+            catalog
+                .lookup(k)
+                .is_none_or(|t| !PHOTO_SPECIFIC_GROUPS.contains(&t.group.as_str()))
+        })
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+    if out.is_empty() {
+        return Err("this photo has no edits to save".into());
+    }
+    let uuid: String = {
+        use sha2::{Digest, Sha256};
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        Sha256::digest(format!("{group}/{name}/{stamp}"))
+            .iter()
+            .take(16)
+            .map(|b| format!("{b:02X}"))
+            .collect()
+    };
+    let alt = |s: &str| Value::Alt(vec![("x-default".into(), s.to_string())]);
+    out.insert("PresetType".into(), Value::Text("Normal".into()));
+    out.insert("Name".into(), alt(name));
+    out.insert("Group".into(), alt(group));
+    out.insert("UUID".into(), Value::Text(uuid));
+    out.insert("HasSettings".into(), Value::Text("True".into()));
+    out.insert("SupportsAmount".into(), Value::Text("True".into()));
+    let folder = dir.join(safe(group));
+    std::fs::create_dir_all(&folder).map_err(|e| format!("{}: {e}", folder.display()))?;
+    let path = folder.join(format!("{}.xmp", safe(name)));
+    let text = amb_presets::xmp_writer::write_packet(&out, amb_presets::is_signed_tag);
+    amb_protocol::sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())?;
+    Ok(path)
+}
+
 /// Lightroom/Camera Raw's own preset folders, when present (read in place).
 pub fn default_preset_dirs() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
@@ -999,5 +1079,36 @@ mod tests {
         assert_eq!(found.len(), 1);
         assert_eq!(found[0].name, "sunny");
         assert_eq!(found[0].group, "Warm");
+    }
+
+    #[test]
+    fn saves_a_preset_without_the_crop() {
+        let dir = std::env::temp_dir().join(format!("amb-save-preset-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let mut settings = BTreeMap::new();
+        settings.insert("Exposure2012".to_string(), Value::Text("+0.50".into()));
+        settings.insert("GrainAmount".to_string(), Value::Text("25".into()));
+        settings.insert("CropTop".to_string(), Value::Text("0.1".into()));
+        settings.insert("HasCrop".to_string(), Value::Text("True".into()));
+        let path = save_preset(&dir, "Faded street", "", &settings).unwrap();
+        assert!(
+            path.ends_with("Yours/Faded street.xmp"),
+            "{}",
+            path.display()
+        );
+        let preset = amb_presets::Preset::from_path(&path).unwrap();
+        assert_eq!(preset.name(), Some("Faded street"));
+        assert!(preset.settings.contains_key("GrainAmount"));
+        assert!(
+            !preset.settings.contains_key("CropTop") && !preset.settings.contains_key("HasCrop")
+        );
+        // It shows up in the presets list, in its group.
+        let found = scan_presets(std::slice::from_ref(&dir));
+        assert_eq!(
+            (found[0].name.as_str(), found[0].group.as_str()),
+            ("Faded street", "Yours")
+        );
+        assert!(save_preset(&dir, " ", "", &settings).is_err());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

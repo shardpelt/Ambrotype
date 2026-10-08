@@ -51,7 +51,11 @@ struct AppState {
     recent_keywords: Mutex<Vec<String>>,
     collage_templates: Mutex<Vec<collages::TemplateEntry>>,
     plugin_approvals: Mutex<plugins::Approvals>,
+    plugin_recipes: Mutex<PluginRecipes>,
 }
+
+/// Recipes the user saved, per plugin id.
+type PluginRecipes = std::collections::BTreeMap<String, Vec<amb_plugin::Recipe>>;
 
 /// Settings kept between runs.
 #[derive(Default, Serialize, Deserialize)]
@@ -83,6 +87,9 @@ struct Config {
     /// Plugins whose permissions the user allowed: id -> the fingerprint allowed.
     #[serde(default)]
     plugin_approvals: plugins::Approvals,
+    /// Plugin recipes the user saved (plugin id -> recipes).
+    #[serde(default)]
+    plugin_recipes: PluginRecipes,
 }
 
 fn save_config(state: &AppState) {
@@ -133,6 +140,11 @@ fn save_config(state: &AppState) {
             .plugin_approvals
             .lock()
             .map(|a| a.clone())
+            .unwrap_or_default(),
+        plugin_recipes: state
+            .plugin_recipes
+            .lock()
+            .map(|r| r.clone())
             .unwrap_or_default(),
     };
     if let Some(dir) = path.parent() {
@@ -638,10 +650,45 @@ fn export_settings(options: &ExportOptions) -> Res<amb_export::ExportSettings> {
 
 #[tauri::command]
 async fn presets(state: tauri::State<'_, AppState>) -> Res<Vec<PresetEntry>> {
-    let dirs = state.preset_dirs.lock().map_err(|e| e.to_string())?.clone();
+    let mut dirs = state.preset_dirs.lock().map_err(|e| e.to_string())?.clone();
+    // Presets saved in the app ("Save as preset…").
+    if let Some(own) = own_presets_dir(state.inner()).filter(|d| d.is_dir() && !dirs.contains(d)) {
+        dirs.push(own);
+    }
     tauri::async_runtime::spawn_blocking(move || session::scan_presets(&dirs))
         .await
         .map_err(|e| e.to_string())
+}
+
+fn own_presets_dir(state: &AppState) -> Option<PathBuf> {
+    let path = state.config_path.lock().ok()?;
+    Some(path.as_ref()?.parent()?.join("presets"))
+}
+
+/// Save the open photo's edit as a preset (crop, masks and geometry left
+/// out) in the app's presets folder; returns the presets list.
+#[tauri::command]
+async fn save_preset(
+    name: String,
+    group: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<PresetEntry>> {
+    let dir = own_presets_dir(state.inner()).ok_or("the settings folder isn't available")?;
+    let settings = {
+        let guard = state.session.lock().map_err(|e| e.to_string())?;
+        guard
+            .as_ref()
+            .ok_or("open a photo first")?
+            .state
+            .settings()
+            .clone()
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        session::save_preset(&dir, &name, &group, &settings)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    presets(state).await
 }
 
 #[tauri::command]
@@ -1517,6 +1564,56 @@ async fn run_plugin(
     .map_err(|e| e.to_string())?
 }
 
+/// The recipes the user saved, per plugin.
+#[tauri::command]
+fn plugin_recipes(state: tauri::State<'_, AppState>) -> Res<PluginRecipes> {
+    Ok(state
+        .plugin_recipes
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone())
+}
+
+/// Save (or replace, by name) a recipe for a plugin: its parameter values.
+#[tauri::command]
+fn save_plugin_recipe(
+    id: String,
+    name: String,
+    params: serde_json::Map<String, serde_json::Value>,
+    state: tauri::State<'_, AppState>,
+) -> Res<PluginRecipes> {
+    let plugin = plugins::find(plugins_dir(state.inner()).as_deref(), &id)?;
+    let name = name.trim().to_string();
+    if name.is_empty() {
+        return Err("give the recipe a name".into());
+    }
+    let params = plugin.manifest.resolve_params(&params)?;
+    {
+        let mut all = state.plugin_recipes.lock().map_err(|e| e.to_string())?;
+        let list = all.entry(id).or_default();
+        list.retain(|r| !r.name.eq_ignore_ascii_case(&name));
+        list.push(amb_plugin::Recipe { name, params });
+    }
+    save_config(state.inner());
+    plugin_recipes(state)
+}
+
+#[tauri::command]
+fn delete_plugin_recipe(
+    id: String,
+    name: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<PluginRecipes> {
+    {
+        let mut all = state.plugin_recipes.lock().map_err(|e| e.to_string())?;
+        if let Some(list) = all.get_mut(&id) {
+            list.retain(|r| r.name != name);
+        }
+    }
+    save_config(state.inner());
+    plugin_recipes(state)
+}
+
 /// Show the plugins folder (or one plugin's folder) in the file manager.
 #[tauri::command]
 fn open_plugins_folder(
@@ -1817,6 +1914,9 @@ fn main() {
                 if let Ok(mut a) = state.plugin_approvals.lock() {
                     *a = config.plugin_approvals;
                 }
+                if let Ok(mut r) = state.plugin_recipes.lock() {
+                    *r = config.plugin_recipes;
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -1886,6 +1986,10 @@ fn main() {
             paste_settings,
             export_photos,
             plugins_list,
+            plugin_recipes,
+            save_plugin_recipe,
+            delete_plugin_recipe,
+            save_preset,
             install_plugin,
             remove_plugin,
             approve_plugin,

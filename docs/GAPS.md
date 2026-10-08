@@ -89,7 +89,7 @@ Project goal for ranking: faithful Lightroom preset compatibility, free, on Wind
 | Reading the user's own installed Adobe profiles in place (like the LCP reader) not built | Missing | Most faithful option when the user has them | [SCOPE.md](SCOPE.md):26, 251, 392 |
 | Adaptive profiles (image-adaptive AI, intensity 0-200) and adaptive presets are "not reproducible"; fallback is a base profile plus a warning | Limit | Presets using them will differ | [SCOPE.md](SCOPE.md):244, 332 |
 | Camera Raw "Calibration" panel: Shadow Tint and Red/Green/Blue Hue and Saturation (7 tags, all planned, none rendered) | Missing | Common in teal-and-orange style presets | `crates/amb-presets/data/tags.json` (group `calibration`); [research/05](research/05-processing-algorithms.md) §11 |
-| Black and white mixer: `ConvertToGrayscale` and 8 `GrayMixer*` tags (9, all planned) | Missing | B&W presets render in colour | `crates/amb-presets/data/tags.json` (group `bw_mixer`) |
+| Black and white mixer renders (`ConvertToGrayscale` and 8 `GrayMixer*`, 2026-10-08), but its strength per band is a guess (unfitted), there is no Auto mix (`AutoGrayscaleMix`), and B&W camera profiles don't exist | Approx | B&W presets look roughly right, not exactly | `crates/amb-engine/src/color.rs`; `crates/amb-presets/data/tags.json` (group `bw_mixer`) |
 | Point Color (`PointColors`, planned); its encoding (9 floats per entry) is from memory | Missing | Newer presets use it | `crates/amb-presets/data/tags.json`; [research/02](research/02-preset-and-profile-formats.md):159 |
 | White balance: `IncrementalTemperature` and `IncrementalTint` are planned; their conversion from slider units is unknown | Missing | Relative-WB presets are ignored | `crates/amb-presets/data/tags.json`; [research/02](research/02-preset-and-profile-formats.md):119 |
 | Temp/Tint uses the table-based Robertson method (1667 K and up); Adobe's newer extended range below 2000 K and the interpolation details are unmeasured | Question | Low-Kelvin readouts may differ from Lightroom | `crates/amb-color/src/temperature.rs`:12-17; [research/05](research/05-processing-algorithms.md) §2 |
@@ -189,14 +189,14 @@ All of these are "Model v1 (ours, not Adobe's)": every constant is a starting gu
 | No crs: tag has status "exact": all 105 rendered Camera Raw tags are "approx". The 13 "exact" tags are our own `amb:` negative settings | Approx | No Camera Raw setting is yet fitted to Lightroom | `crates/amb-presets/data/tags.json` |
 | Preset corpus (purchased and free presets, private, never committed) not assembled for end-to-end regression | Missing | No whole-preset fidelity score is possible | [lightroom-trial-plan.md](lightroom-trial-plan.md):15, 55 |
 
-### Tag registry status (253 tags, 2026-10-05)
+### Tag registry status (253 tags, 2026-10-08)
 
 Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the planned and unsupported tags as "not rendered yet" when a preset sets them.
 
 | Status | Tags | Notes |
 |---|---|---|
-| approx | 105 | rendered with an unfitted model: tone, presence, tone curve (11), HSL (24), color grading (13), split toning (5), detail (10), effects (10), lens (18), white balance (3) |
-| planned | 47 | tone_legacy 7 of 7; calibration 7 of 7; local (masks) 4 of 4; point_color 1 of 1; profile 6 of 6 (`CameraProfile`, `CameraProfileDigest`, `Look`, `RGBTable`, `LookTable`, `OverrideLookVignette`); bw_mixer 9 of 10; transform 8 (`Perspective*`); tone_curve 3 (`ToneCurve`, `ToneCurveName`, `ToneCurveName2012`); white_balance 2 (`IncrementalTemperature`, `IncrementalTint`) |
+| approx | 114 | rendered with an unfitted model: tone, presence, tone curve (11), HSL (24), color grading (13), split toning (5), detail (10), effects (10), lens (18), white balance (3), B&W mixer (9) |
+| planned | 38 | tone_legacy 7 of 7; calibration 7 of 7; local (masks) 4 of 4; point_color 1 of 1; profile 6 of 6 (`CameraProfile`, `CameraProfileDigest`, `Look`, `RGBTable`, `LookTable`, `OverrideLookVignette`); transform 8 (`Perspective*`); tone_curve 3 (`ToneCurve`, `ToneCurveName`, `ToneCurveName2012`); white_balance 2 (`IncrementalTemperature`, `IncrementalTint`) |
 | unsupported | 18 | enhance 8; hdr 9; lens_blur 1 |
 | image-specific | 41 | crop 12; transform 17; negative 10; bw_mixer 1; tone 1 (not expected in presets; also not rendered, because there is no crop) |
 | exact | 13 | our own `amb:` negative settings only |
@@ -282,20 +282,20 @@ Items that can only be settled with a Lightroom subscription. They are batched i
 | No installers or release builds: Flatpak/AppImage, MSI/MSIX (SignPath; x64 and ARM64), notarised universal DMG. CI only runs fmt, clippy and tests | Missing | Nobody outside the repo can install it | [SCOPE.md](SCOPE.md):308; `.github/workflows/ci.yml` |
 | Windows, macOS, Linux (Wayland and X11), Windows on ARM64 and Apple Silicon must all be first-class, but today only the CLI is built and tested on four CI runners | Limit | No GUI viewport, GPU or display-profile behaviour has been tried per OS | [ARCHITECTURE.md](ARCHITECTURE.md):13; [SCOPE.md](SCOPE.md):50, 350 |
 | Wayland colour management is a staging protocol (v3); display-profile handling on Linux is unproven | Question | Colour-managed display on Linux | [research/08](research/08-cross-platform-and-mobile.md):27 |
-| Plugins exist as sandboxed WebAssembly "action" plugins that return edit commands (settings in, commands out). Not yet: plugins that add pixel effects to the pipeline or their own panels and dialogs, batch runs over many photos, plugins in the hub's in-app browser (they're shared as pull requests to `plugins/` and installed from a folder), or a CI build that rebuilds hub plugins from source. Lightroom Lua SDK plug-ins are a non-goal | Partial | Third-party extension | [ai/plugins.md](ai/plugins.md); [design/customization-and-hub.md](design/customization-and-hub.md) §5 |
+| Plugins exist as sandboxed WebAssembly "action" plugins that return edit commands (settings in, commands out). Not yet: plugins that add pixel effects to the pipeline or their own panels and dialogs, batch runs over many photos, plugins in the hub's in-app browser (they're shared as pull requests to `plugins/` and installed from a folder), or a CI build that rebuilds hub plugins from source. Recipes are per plugin only (not shared through the hub). The Film recipe looks are our own first guesses, not fitted to anything; fitting them to sample images is open ([ai/film-recipes.md](ai/film-recipes.md)). Saved presets have no rename or delete in the app yet (use the presets folder). Lightroom Lua SDK plug-ins are a non-goal | Partial | Third-party extension | [ai/plugins.md](ai/plugins.md); [design/customization-and-hub.md](design/customization-and-hub.md) §5 |
 | Mobile is out of scope (an Android app may follow); an iOS App Store version is effectively impossible under the GPL | Limit | Deliberate scope choice | [SCOPE.md](SCOPE.md):51, 207 |
 
 ## Top 10 to close next
 
 Chosen by impact on the main goal: faithful Lightroom preset compatibility, free, cross-platform.
 
-1. **Run the Lightroom measurement month and fit the `Calibration` constants.** Every one of the 105 rendered Camera Raw tags is "approx"; nothing has been fitted, so no fidelity claim can be made. Finish the prerequisites first (interaction sidecars, run sheet, CC0 raws, `dng_validate` check).
+1. **Run the Lightroom measurement month and fit the `Calibration` constants.** Every one of the 114 rendered Camera Raw tags is "approx"; nothing has been fitted, so no fidelity claim can be made. Finish the prerequisites first (interaction sidecars, run sheet, CC0 raws, `dng_validate` check).
 2. **Replace the placeholder base look and add camera profiles.** Every preset renders through the profile, and the placeholder ACES-fit curve is not Adobe's; read the user's own DCPs in place, fit substitute profiles, and decode `Look` LUTs.
 3. **Local, edge-aware Highlights and Shadows.** Nearly every preset sets them, and ours are global; the docs call this the single biggest fidelity risk.
 4. **Masks and local adjustments (linear, radial, brush, range).** Presets with gradients and brushes currently lose those edits entirely.
 5. **Transform/Upright (numeric `Perspective*` first)**, and verifying the crop against Lightroom. Presets and sidecars that carry perspective render unleveled.
 6. **Finish the single-photo GUI editor.** Zoom/1:1, point curve, colour wheels, WB picker, clipping, the crop tool, layouts/themes and editor mode are done; installers remain, and test the cross-platform promise.
 7. **Fix the preset path: measure Amount, honour `Enable*` toggles, handle PV2003/PV2010 tags.** These decide whether purchased presets apply correctly; run `amb preset census` on real collections to rank what else matters.
-8. **Calibration panel, B&W mixer and Point Color (17 planned tags).** Frequent in colour-grading and monochrome presets, and cheap compared with masks.
+8. **Calibration panel and Point Color (8 planned tags; the B&W mixer is done).** Frequent in colour-grading and monochrome presets, and cheap compared with masks.
 9. **Clear the pre-public checklist: add `LICENSE`, paraphrase `docs/adobe-docs/`, pick the name.** The repo cannot go public, and a rename gets harder after launch.
 10. **A GPU backend with tiling and caching for an interactive preview path.** A full render is 3.5-4 s on 4 cores; the GUI needs interactive latency, which is Lightroom's top complaint.

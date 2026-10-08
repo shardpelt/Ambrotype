@@ -59,7 +59,8 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   ```sh
   sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev librsvg2-dev libxdo-dev
   ```
-- **Presets:** Lightroom's own preset folder is used automatically when it exists (`%APPDATA%\Adobe\CameraRaw\Settings` on Windows, `~/Library/Application Support/Adobe/CameraRaw/Settings` on macOS), plus `~/.local/share/ambrotype/presets`. "Add folder…" adds any other folder for the session.
+- **Presets:** Lightroom's own preset folder is used automatically when it exists (`%APPDATA%\Adobe\CameraRaw\Settings` on Windows, `~/Library/Application Support/Adobe/CameraRaw/Settings` on macOS), plus `~/.local/share/ambrotype/presets`. "Add folder…" adds any other folder for the session. **Save…** keeps the photo's edit as your own one-click preset (without the crop, masks, retouching and geometry); it is listed under "Yours" and stored as a Lightroom-style `.xmp` in the app's settings folder (`presets/`), so Lightroom can import it too.
+- **Black & White:** the Black & White panel turns the photo monochrome and sets how bright each colour becomes in grey (darker blue skies, lighter skin). Color Grading still applies on top, for sepia and other tints.
 - **Filmstrip:** the other raws in the photo's folder are shown under it, in name order, with their stars and a dot for photos with edits. Click one or use ← → to open it; your edits to the photo you leave are saved to its sidecar first. Thumbnails come from the preview the camera embedded (quick), and are cached; the open photo's thumbnail shows its edit. Files that can't be opened are marked and skipped.
 
   ![Filmstrip](images/filmstrip.png)
@@ -68,7 +69,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 
   ![Rating and keywords](images/rating-keywords.png)
 
-- **Plugins:** the Plugins button (or Ctrl+Shift+P) runs small tools that make edits for you, such as **Auto tone** and **Random look**. Each run is one step in History, so Undo takes it back. A plugin that wants to see the photo's histogram or camera facts asks first. **Install from folder…** adds one, **Share as pull request…** offers yours to the hub, and **Make one with AI…** writes instructions for your own AI assistant to build a new one. Writing plugins: [ai/plugins.md](ai/plugins.md).
+- **Plugins:** the Plugins button (or Ctrl+Shift+P) runs small tools that make edits for you: **Auto tone**, **Random look** and **Film recipe**, a camera-style picture menu (film look, grain, white balance shift, highlight and shadow tone, and more) for typing in film recipes you find online ([ai/film-recipes.md](ai/film-recipes.md)). Each run is one step in History, so Undo takes it back. A plugin that wants to see the photo's histogram or camera facts asks first. Parameter sets can be saved as **recipes**, and **Save as preset…** keeps a plugin's result as a preset. **Install from folder…** adds one, **Share as pull request…** offers yours to the hub, and **Make one with AI…** writes instructions for your own AI assistant to build a new one. Writing plugins: [ai/plugins.md](ai/plugins.md).
 
   ![Plugins](images/plugins.png)
 

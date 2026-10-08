@@ -21,7 +21,7 @@ mod manifest;
 pub mod photo;
 
 pub use amb_plugin_sdk::{API, Stats};
-pub use manifest::{FORMAT, Manifest, Param, ParamKind, Permission};
+pub use manifest::{FORMAT, Manifest, Param, ParamKind, Permission, Recipe};
 
 use amb_protocol::Command;
 use serde_json::{Map, Value};

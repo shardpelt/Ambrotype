@@ -32,6 +32,8 @@ pub fn info(img: &CameraImage) -> Value {
         "shutter": ratio(m.exposure_time),
         "aperture": ratio(m.fnumber),
         "focal_length": ratio(m.focal_length),
+        "as_shot_temperature": pipeline::as_shot_temp_tint(img).0.round(),
+        "as_shot_tint": pipeline::as_shot_temp_tint(img).1.round(),
     })
 }
 

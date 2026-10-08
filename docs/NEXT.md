@@ -30,13 +30,15 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **hub:** Looks → Browse hub… installs shared layouts and themes (checked against the index's sha256 and validated); Submit to hub… opens GitHub with your look filled in as a pull request
     - **editor mode:** Edit layout rearranges the screen in place (drag and drop, control types, split and merge, add and remove, column widths) and saves it as your own layout
     - **borders** on export, with presets and colour swatches
-    - **plugins** (Ctrl+Shift+P): sandboxed WebAssembly plugins that make edits (one undo step), with permission prompts, install from a folder, Share as pull request, and "Make one with AI…" instructions for the user's own assistant. Built in: Auto tone and Random look. CLI: `amb plugin new/build/check/run` ([ai/plugins.md](ai/plugins.md))
+    - **plugins** (Ctrl+Shift+P): sandboxed WebAssembly plugins that make edits (one undo step), with permission prompts, install from a folder, Share as pull request, and "Make one with AI…" instructions for the user's own assistant. Built in: Auto tone, Random look and **Film recipe** (a camera-style picture menu for typing in film recipes, with ready-made ones; [ai/film-recipes.md](ai/film-recipes.md)). Parameter sets can be saved as **recipes**. CLI: `amb plugin new/build/check/run` ([ai/plugins.md](ai/plugins.md))
+    - **save as preset:** Presets → Save… (or Save as preset… in the Plugins dialog) keeps the photo's edit, without the crop and other photo-specific settings, as a one-click preset under "Yours"
+    - **Black & White panel:** monochrome with a mix per colour; Color Grading tints it
     - **collage maker** (C): layouts with gap, outer border, corners and background; drag photos into cells, then move, zoom, rotate, or edit them in the editor; **arrange freely** (move, resize, turn and overlap frames by hand); save the collage as a `.ambcollage` file to reopen and edit; save and share layouts; batch a whole folder into pages ([design/collage-and-borders.md](design/collage-and-borders.md))
 
 ## Owner to-dos
 
 - [ ] Set up a **local** Claude Code session on the Mac so it can reach your drives and Lightroom: [desktop-setup.md § Working with an AI agent locally](desktop-setup.md#working-with-an-ai-agent-locally).
-- [ ] Fill the hub repo `Ambrotypehq/ambrotype-hub` (created, empty) with the `hub/` folder of this repo: copy its contents to the repo's root and push; keep it public with Actions on. Shared plugins arrive there as pull requests to `plugins/<id>/`. (Or install the Claude GitHub App on the Ambrotypehq organisation so an agent can push it.) The app's **Browse hub…** reads `https://raw.githubusercontent.com/Ambrotypehq/ambrotype-hub/main/index.json`. Until then it says the hub can't be reached.
+- [ ] Fill the hub repo `Ambrotypehq/ambrotype-hub` (created, empty) with the `hub/` folder of this repo. A Claude session with access to that repo can do it: paste it [handoff-hub.md](handoff-hub.md). By hand: copy its contents to the repo's root and push; keep it public with Actions on. Shared plugins arrive there as pull requests to `plugins/<id>/`. (Or install the Claude GitHub App on the Ambrotypehq organisation so an agent can push it.) The app's **Browse hub…** reads `https://raw.githubusercontent.com/Ambrotypehq/ambrotype-hub/main/index.json`. Until then it says the hub can't be reached.
 
 - [ ] Try the editor on the Mac: `cargo run --release -p amb-gui -- photo.nef`. Note what feels wrong (or use the Feedback button).
 - [ ] Run `amb preset census <your preset folders>` and share the output (setting names and counts only). It ranks what to build next.
@@ -64,7 +66,7 @@ The agreed UI track is done, and the library view after it (2026-10-08; [design/
 2. **Transform/Upright** (numeric `Perspective*` first), composed into the crop/lens resampling pass.
 3. **Local Highlights/Shadows** (edge-aware), then **masks** (linear/radial/brush/range).
 4. **Camera profiles** (read the user's DCPs in place, fitted base looks) once trial data exists.
-5. **Calibration panel, B&W mixer, Point Color.**
+5. **Calibration panel, Point Color** (the B&W mixer renders since 2026-10-08; fitting it is part of the trial). Fit the Film recipe looks to sample images.
 6. **Token-efficient AI layer:** core card, `amb do` compact syntax, `--brief` output, `amb stats`, then the MCP server (also the base for the AI flows in UI step 7).
 7. **Auto and Randomize buttons, Tutorial mode** ([design/future-ideas.md](design/future-ideas.md)).
 8. **Performance:** measure release-build preview and 1:1 times on the Mac; a tiled 1:1 render instead of a full-size render (a debug build took about 33 s); then the GPU preview path.

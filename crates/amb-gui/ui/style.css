@@ -530,7 +530,7 @@ dialog.plugins-dialog { width: 780px; max-width: calc(100vw - 32px); }
 .plugin-item.on { background: var(--tab-active); border-color: var(--faint); }
 .plugin-item.broken span:first-child { color: var(--danger); }
 .plugin-tag { font-size: 11px; color: var(--faint); white-space: nowrap; }
-.plugin-detail { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-width: 0; padding-right: 4px; }
+.plugin-detail { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-width: 0; padding-right: 14px; }
 .plugin-detail[hidden] { display: none; }
 .plugin-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .plugin-head strong { font-size: 15px; }
@@ -628,3 +628,11 @@ body.library-mode #workspace { display: none; }
 .lib-keywords .tag-chip.partial { opacity: .65; border-style: dashed; }
 #lib-tag-input { background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 8px; }
 .paste-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin: 10px 0; }
+
+/* Plugin recipes, preset saving */
+.plugin-recipes { display: flex; flex-direction: column; gap: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
+.plugin-recipes[hidden] { display: none; }
+dialog .plugin-recipes label { flex-direction: row; align-items: center; gap: 8px; color: var(--text); }
+.plugin-recipes select { flex: 1; }
+.side-actions { display: inline-flex; gap: 4px; }
+.label-swatches.info-labels { margin: 2px 0 2px 2px; }

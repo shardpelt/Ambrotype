@@ -1,0 +1,312 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "film-recipe",
+  "name": "Film recipe",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "A film look plus the picture settings of a camera menu: grain, colour depth, white balance shift, dynamic range, highlight and shadow tone, colour, sharpness, noise reduction and clarity. Type in a recipe as you'd set it on a camera, or start from one below; save yours as a recipe, or the result as a preset.",
+  "permissions": [
+    "photo-info"
+  ],
+  "params": [
+    {
+      "name": "look",
+      "label": "Film look",
+      "type": "choice",
+      "options": [
+        "Standard",
+        "Vivid Slide",
+        "Soft Slide",
+        "Muted Chrome",
+        "Real Colour",
+        "Studio Negative",
+        "Studio Negative Soft",
+        "Street Negative",
+        "Amber Negative",
+        "Cine Flat",
+        "Bleach Bypass",
+        "Mono",
+        "Mono Yellow",
+        "Mono Red",
+        "Mono Green",
+        "Fine Mono",
+        "Sepia"
+      ],
+      "default": "Standard",
+      "description": "The base look: colour slides, negatives, cinema, or monochrome."
+    },
+    {
+      "name": "grain",
+      "label": "Grain",
+      "type": "choice",
+      "options": [
+        "Off",
+        "Weak",
+        "Strong"
+      ],
+      "default": "Off"
+    },
+    {
+      "name": "grain_size",
+      "label": "Grain size",
+      "type": "choice",
+      "options": [
+        "Small",
+        "Large"
+      ],
+      "default": "Small"
+    },
+    {
+      "name": "colour_depth",
+      "label": "Colour depth",
+      "type": "choice",
+      "options": [
+        "Off",
+        "Weak",
+        "Strong"
+      ],
+      "default": "Off",
+      "description": "Deeper, richer saturated colours."
+    },
+    {
+      "name": "blue_depth",
+      "label": "Blue depth",
+      "type": "choice",
+      "options": [
+        "Off",
+        "Weak",
+        "Strong"
+      ],
+      "default": "Off",
+      "description": "Deeper blues and skies."
+    },
+    {
+      "name": "white_balance",
+      "label": "White balance",
+      "type": "choice",
+      "options": [
+        "As shot",
+        "Daylight",
+        "Cloudy",
+        "Shade",
+        "Tungsten",
+        "Fluorescent",
+        "Kelvin"
+      ],
+      "default": "As shot"
+    },
+    {
+      "name": "kelvin",
+      "label": "Kelvin",
+      "type": "number",
+      "min": 2500,
+      "max": 10000,
+      "default": 5500,
+      "step": 50,
+      "description": "Used with White balance: Kelvin."
+    },
+    {
+      "name": "wb_red",
+      "label": "WB shift: red",
+      "type": "number",
+      "min": -9,
+      "max": 9,
+      "default": 0,
+      "step": 1,
+      "description": "+ toward red, − toward cyan."
+    },
+    {
+      "name": "wb_blue",
+      "label": "WB shift: blue",
+      "type": "number",
+      "min": -9,
+      "max": 9,
+      "default": 0,
+      "step": 1,
+      "description": "+ toward blue, − toward yellow."
+    },
+    {
+      "name": "dynamic_range",
+      "label": "Dynamic range",
+      "type": "choice",
+      "options": [
+        "DR100",
+        "DR200",
+        "DR400"
+      ],
+      "default": "DR100",
+      "description": "Higher keeps more highlight detail."
+    },
+    {
+      "name": "highlight",
+      "label": "Highlight tone",
+      "type": "number",
+      "min": -2,
+      "max": 4,
+      "default": 0,
+      "step": 0.5,
+      "description": "+ brighter, harder highlights; − softer."
+    },
+    {
+      "name": "shadow",
+      "label": "Shadow tone",
+      "type": "number",
+      "min": -2,
+      "max": 4,
+      "default": 0,
+      "step": 0.5,
+      "description": "+ deeper, harder shadows; − lifted."
+    },
+    {
+      "name": "colour",
+      "label": "Colour",
+      "type": "number",
+      "min": -4,
+      "max": 4,
+      "default": 0,
+      "step": 1,
+      "description": "Saturation (not for monochrome looks)."
+    },
+    {
+      "name": "sharpness",
+      "label": "Sharpness",
+      "type": "number",
+      "min": -4,
+      "max": 4,
+      "default": 0,
+      "step": 1
+    },
+    {
+      "name": "noise_reduction",
+      "label": "Noise reduction",
+      "type": "number",
+      "min": -4,
+      "max": 4,
+      "default": 0,
+      "step": 1
+    },
+    {
+      "name": "clarity",
+      "label": "Clarity",
+      "type": "number",
+      "min": -5,
+      "max": 5,
+      "default": 0,
+      "step": 1
+    },
+    {
+      "name": "tone_warm",
+      "label": "Mono toning: warm / cool",
+      "type": "number",
+      "min": -9,
+      "max": 9,
+      "default": 0,
+      "step": 1,
+      "description": "Monochrome looks: + warm, − cool."
+    },
+    {
+      "name": "tone_magenta",
+      "label": "Mono toning: magenta / green",
+      "type": "number",
+      "min": -9,
+      "max": 9,
+      "default": 0,
+      "step": 1,
+      "description": "Monochrome looks: + magenta, − green."
+    }
+  ],
+  "recipes": [
+    {
+      "name": "Everyday colour",
+      "params": {}
+    },
+    {
+      "name": "Faded street",
+      "params": {
+        "look": "Muted Chrome",
+        "grain": "Weak",
+        "colour_depth": "Strong",
+        "highlight": -1,
+        "shadow": 1,
+        "colour": -2,
+        "sharpness": -1,
+        "clarity": -2,
+        "noise_reduction": -4
+      }
+    },
+    {
+      "name": "Warm afternoon",
+      "params": {
+        "look": "Amber Negative",
+        "white_balance": "Daylight",
+        "wb_red": 2,
+        "wb_blue": -3,
+        "grain": "Weak",
+        "highlight": -1,
+        "shadow": -0.5,
+        "colour": 1,
+        "noise_reduction": -4
+      }
+    },
+    {
+      "name": "Moody film",
+      "params": {
+        "look": "Street Negative",
+        "dynamic_range": "DR400",
+        "grain": "Strong",
+        "blue_depth": "Weak",
+        "highlight": -1,
+        "shadow": 2,
+        "colour": -2,
+        "noise_reduction": -4
+      }
+    },
+    {
+      "name": "Cinema night",
+      "params": {
+        "look": "Cine Flat",
+        "grain": "Weak",
+        "grain_size": "Large",
+        "colour": 0,
+        "sharpness": -2,
+        "clarity": -3,
+        "wb_blue": 2,
+        "wb_red": -1
+      }
+    },
+    {
+      "name": "Soft portrait",
+      "params": {
+        "look": "Soft Slide",
+        "highlight": -1,
+        "shadow": -1,
+        "colour": -1,
+        "sharpness": -1,
+        "clarity": -1
+      }
+    },
+    {
+      "name": "Gritty mono",
+      "params": {
+        "look": "Mono Red",
+        "grain": "Strong",
+        "grain_size": "Large",
+        "highlight": 1,
+        "shadow": 2,
+        "sharpness": 1,
+        "clarity": 2
+      }
+    },
+    {
+      "name": "Old print",
+      "params": {
+        "look": "Sepia",
+        "grain": "Weak",
+        "highlight": -1,
+        "shadow": 0.5,
+        "tone_warm": 2
+      }
+    }
+  ],
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/film-recipe"
+}

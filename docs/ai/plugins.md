@@ -54,7 +54,7 @@ amb_plugin_sdk::export_plugin!(run);
 - **`Input`:**
   - `number(name)`, `flag(name)`, `choice(name)`: the plugin's parameters (defaults filled in, numbers clamped to their range).
   - `setting(name)`: a numeric develop setting, or `None` when it is at its default. `settings` holds them all.
-  - `photo`: `Some` with `photo-info`: camera, lens, width, height, iso, shutter (s), aperture, focal_length (mm).
+  - `photo`: `Some` with `photo-info`: camera, lens, width, height, iso, shutter (s), aperture, focal_length (mm), and the as-shot white balance (`as_shot_temperature` in K, `as_shot_tint`).
   - `stats`: `Some` with `photo-stats`. It has `red`, `green`, `blue` and `luma` histograms (256 bins of sRGB 8-bit), `mean` (0–1), `percentile(f)` (the luma level below which a fraction `f` of pixels lie), and `share_above(level)`. They describe a ~512 px render with the current edits.
   - `rng()`: a random generator seeded per run; `seed` is the raw number. The same seed gives the same result.
 - **`Output`:**
@@ -86,11 +86,28 @@ amb_plugin_sdk::export_plugin!(run);
 }
 ```
 
-- **`id`:** lower case, digits and dashes; it is also the folder name. It can't be the id of a built-in plugin (`auto-tone`, `random-look`).
+- **`id`:** lower case, digits and dashes; it is also the folder name. It can't be the id of a built-in plugin (`auto-tone`, `random-look`, `film-recipe`).
 - **`permissions`:** `photo-info` and/or `photo-stats`, or none. The user is asked once, and asked again whenever the module or its permissions change. Ask only for what the plugin uses.
 - **`params`:** up to 32. The dialog draws a slider, a drop-down or a checkbox for each; `amb plugin run --params a=1,b=Strong` sets them on the command line. `label` is shown; an optional `description` becomes a tooltip.
 - **`wasm`:** the module file, default `plugin.wasm`. `source`: where the code lives, optional.
 - **`kind`:** only `"action"` (a plugin you run that makes edits) for now.
+- **`recipes`:** optional ready-made parameter sets, shown in the dialog's Recipe list (see below).
+
+## Recipes
+
+A recipe is a named set of parameter values. A plugin can ship some in its manifest:
+
+```json
+"recipes": [
+  { "name": "Gentle", "params": { "amount": 25, "style": "Soft" } },
+  { "name": "Bold", "params": { "amount": 90, "style": "Strong" } }
+]
+```
+
+- Each recipe is checked like the parameters: an unknown name, a wrong type or an unknown choice fails `amb plugin check`; numbers are clamped to their range. Parameters a recipe leaves out keep their defaults.
+- Users save their own with **Save recipe** in the dialog. Those are kept in the app's settings, per plugin, not in the plugin's folder.
+- Changing a parameter after picking a ready-made recipe makes it "custom", so the ready-made one is never overwritten.
+- **Save as preset…** next to Run keeps the photo's edit, as it is after the run, as a one-click preset (the crop, masks, retouching and geometry are left out). Use it for plugins whose result is a look, so it can be applied with an Amount slider later.
 
 ## Rules for AI assistants
 
@@ -122,5 +139,6 @@ The input JSON has `api` (1), `params`, `settings`, `seed`, and with permission 
 
 - [`plugins/auto-tone`](../../plugins/auto-tone): Exposure, Whites and Blacks from the histogram (`photo-stats`).
 - [`plugins/random-look`](../../plugins/random-look): a new look from a style each run (the seed; no permissions).
+- [`plugins/film-recipe`](../../plugins/film-recipe): a camera-style picture menu (film look, grain, white balance shift, tone and more) with ready-made recipes (`photo-info`, for the as-shot white balance). Guide: [film-recipes.md](film-recipes.md).
 
-Both are built into the app. After changing one, rebuild its module with `amb plugin build plugins/<id>` and commit `plugin.wasm` with the source.
+All three are built into the app. After changing one, rebuild its module with `amb plugin build plugins/<id>` and commit `plugin.wasm` with the source.

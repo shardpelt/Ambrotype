@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-const BUILTIN: [(&str, &str, &[u8]); 2] = [
+const BUILTIN: [(&str, &str, &[u8]); 3] = [
     (
         include_str!("../../../plugins/auto-tone/plugin.json"),
         "auto-tone",
@@ -22,6 +22,11 @@ const BUILTIN: [(&str, &str, &[u8]); 2] = [
         include_str!("../../../plugins/random-look/plugin.json"),
         "random-look",
         include_bytes!("../../../plugins/random-look/plugin.wasm"),
+    ),
+    (
+        include_str!("../../../plugins/film-recipe/plugin.json"),
+        "film-recipe",
+        include_bytes!("../../../plugins/film-recipe/plugin.wasm"),
     ),
 ];
 
@@ -566,7 +571,7 @@ mod tests {
     #[test]
     fn builtins_load() {
         let list = list(None, &Approvals::new());
-        assert_eq!(list.len(), 2);
+        assert_eq!(list.len(), 3);
         for e in &list {
             assert!(e.error.is_none(), "{:?}", e.error);
         }
@@ -589,8 +594,8 @@ mod tests {
             "build output isn't copied"
         );
         let all = list(Some(&dir), &Approvals::new());
-        assert_eq!(all.len(), 3);
-        assert!(all[2].error.is_none());
+        assert_eq!(all.len(), 4);
+        assert!(all[3].error.is_none());
         assert!(find(Some(&dir), "my-look").is_ok());
         assert!(find(Some(&dir), "../etc").is_err());
 

@@ -876,7 +876,7 @@ async function openPath(path) {
     $("photo-title").textContent = `${r.info.name}  —  ${r.info.camera}${r.info.lens ? "  ·  " + r.info.lens : ""}`;
     $("exif").textContent = [r.info.exposure, `${r.info.width} × ${r.info.height}`,
       r.info.sidecar_loaded ? "edits loaded from sidecar" : ""].filter(Boolean).join("  ·  ");
-    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-zoom", "btn-wb", "btn-clip"]) $(id).disabled = false;
+    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-zoom", "btn-wb", "btn-clip", "btn-save-preset"]) $(id).disabled = false;
     if (ui.zoom.on) setZoom(false);
     setState(r.state);
     if (r.saved_previous) toast(`Saved your edits to ${r.saved_previous.replace(/^.*[\\/]/, "")}`);
@@ -935,6 +935,25 @@ function renderPresets() {
       d.append(b);
     }
     list.append(d);
+  }
+}
+
+// The open photo's edit as a one-click preset (src/session.rs `save_preset`).
+async function savePresetFlow(name = "") {
+  if (!ui.info) return toast("Open a photo first.", true);
+  const dlg = $("save-preset-dialog");
+  const f = dlg.querySelector("form");
+  f.preset_name.value = name;
+  dlg.showModal();
+  f.preset_name.focus();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice !== "ok") return;
+  try {
+    ui.presets = await invoke("save_preset", { name: f.preset_name.value, group: f.preset_group.value });
+    renderPresets();
+    toast(`Saved the preset “${f.preset_name.value.trim()}” (in ${f.preset_group.value.trim() || "Yours"})`);
+  } catch (e) {
+    toast(String(e), true);
   }
 }
 
@@ -1118,6 +1137,16 @@ async function init() {
   wireViewer();
   wireCrop();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
+  $("btn-save-preset").addEventListener("click", () => savePresetFlow());
+  // Enter in a dialog's text box means its main button, not the first one (Cancel).
+  for (const form of document.querySelectorAll('dialog form[method="dialog"]')) {
+    form.addEventListener("keydown", (e) => {
+      const ok = form.querySelector("button.primary");
+      if (e.key !== "Enter" || !ok || e.target.tagName !== "INPUT" || ["checkbox", "radio"].includes(e.target.type)) return;
+      e.preventDefault();
+      form.requestSubmit(ok);
+    });
+  }
   $("preset-filter").addEventListener("input", renderPresets);
   $("preset-amount").addEventListener("input", (e) => ($("preset-amount-out").textContent = e.target.value));
   const f = $("export-form");

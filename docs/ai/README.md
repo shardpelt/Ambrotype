@@ -9,6 +9,7 @@ Related files:
 - `amb protocol schema`: JSON Schema of the commands and queries below.
 - [ui-layouts.md](ui-layouts.md): making editor layouts and themes ("looks") for the user, e.g. "knobs instead of sliders, a warm theme".
 - [plugins.md](plugins.md): making a plugin for the user ("a button that warms skin tones"): sandboxed WebAssembly that returns these same commands.
+- [film-recipes.md](film-recipes.md): turning a camera film recipe the user found online into settings with the Film recipe plugin.
 - [/llms.txt](../../llms.txt): index for language models.
 
 ## Safety rules (read first)

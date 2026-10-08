@@ -42,7 +42,10 @@
       <section class="side-section presets-block" id="block-presets">
         <div class="side-head">
           <h2>Presets</h2>
-          <button id="btn-add-presets" class="small" title="Add a folder of .xmp or .lrtemplate presets">Add folder…</button>
+          <span class="side-actions">
+            <button id="btn-save-preset" class="small" title="Save the photo's edit as a one-click preset (not the crop)" disabled>Save…</button>
+            <button id="btn-add-presets" class="small" title="Add a folder of .xmp or .lrtemplate presets">Add folder…</button>
+          </span>
         </div>
         <input id="preset-filter" type="search" placeholder="Filter presets" spellcheck="false">
         <label class="amount">Amount <input id="preset-amount" type="range" min="0" max="200" value="100"><output id="preset-amount-out">100</output></label>
@@ -53,8 +56,8 @@
         <div id="rating" class="rating" role="radiogroup" aria-label="Rating">
           <button type="button" data-stars="1" role="radio" title="1 star (1)">★</button><button type="button" data-stars="2" role="radio" title="2 stars (2)">★</button><button type="button" data-stars="3" role="radio" title="3 stars (3)">★</button><button type="button" data-stars="4" role="radio" title="4 stars (4)">★</button><button type="button" data-stars="5" role="radio" title="5 stars (5)">★</button>
           <button type="button" id="rating-clear" class="rating-clear" title="No rating (0)">×</button>
-          <span id="label-swatches" class="label-swatches" aria-label="Colour label"></span>
         </div>
+        <span id="label-swatches" class="label-swatches info-labels" aria-label="Colour label"></span>
         <div id="tag-field" class="tag-field">
           <span id="tag-chips" class="tag-chips"></span>
           <input id="tag-input" type="text" list="tag-suggest" placeholder="Add keywords…" spellcheck="false" aria-label="Add keywords">
@@ -185,6 +188,21 @@
       </aside>
     </div>
   </section>
+
+  <dialog id="save-preset-dialog">
+    <form method="dialog">
+      <h2>Save as preset</h2>
+      <p class="hint">The photo's edit as it is now, as a one-click preset with an Amount slider. The crop, masks, retouching and geometry belong to this photo and are left out. It's a Lightroom-style .xmp file, so Lightroom can import it too.</p>
+      <div class="grid">
+        <label>Name <input name="preset_name" type="text" spellcheck="false" required></label>
+        <label>Group <input name="preset_group" type="text" spellcheck="false" placeholder="Yours"></label>
+      </div>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Save preset</button>
+      </menu>
+    </form>
+  </dialog>
 
   <dialog id="paste-dialog">
     <form method="dialog">
@@ -539,10 +557,17 @@
           <p id="plugin-desc" class="plugin-desc"></p>
           <p id="plugin-perms" class="hint"></p>
           <p id="plugin-error" class="plugin-error" hidden></p>
+          <div id="plugin-recipes" class="plugin-recipes">
+            <label>Recipe <select id="plugin-recipe"></select></label>
+            <span class="pair"><input id="plugin-recipe-name" type="text" placeholder="Name for these settings" spellcheck="false" aria-label="Recipe name">
+              <button type="button" id="plugin-recipe-save" class="small" title="Keep these settings as a recipe of yours">Save recipe</button>
+              <button type="button" id="plugin-recipe-delete" class="small" title="Delete this recipe of yours">Delete</button></span>
+          </div>
           <div id="plugin-params" class="plugin-params"></div>
           <div class="plugin-run">
             <button type="button" id="plugin-run" class="primary">Run</button>
             <button type="button" id="plugin-defaults" class="small" title="Put the settings above back to the plugin's defaults">Defaults</button>
+            <button type="button" id="plugin-as-preset" class="small" title="Save the photo's edit as it is now as a one-click preset">Save as preset…</button>
             <span id="plugin-result" class="hint" role="status"></span>
           </div>
           <div id="plugin-approve" class="plugin-approve" hidden>

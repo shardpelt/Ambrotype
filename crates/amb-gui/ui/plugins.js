@@ -9,6 +9,8 @@ const pluginUi = {
   list: [],               // PluginEntry from src/plugins.rs
   selected: null,         // plugin id
   params: new Map(),      // id -> { name: value } chosen this session
+  recipes: {},            // id -> the user's saved recipes [{ name, params }]
+  recipe: new Map(),      // id -> the recipe picked ("b:<name>" built in, "u:<name>" yours)
   wired: false,
 };
 
@@ -16,6 +18,7 @@ const pluginById = (id) => pluginUi.list.find((p) => p.id === id);
 
 async function loadPlugins() {
   pluginUi.list = await invoke("plugins_list");
+  pluginUi.recipes = await invoke("plugin_recipes").catch(() => ({}));
   if (!pluginById(pluginUi.selected)) pluginUi.selected = pluginUi.list[0]?.id ?? null;
 }
 
@@ -71,6 +74,7 @@ function renderPluginParams(p) {
       range.addEventListener("input", () => {
         chosen[def.name] = Number(range.value);
         out.textContent = range.value;
+        detachRecipe(p);
       });
       range.addEventListener("dblclick", () => {
         delete chosen[def.name];
@@ -84,15 +88,29 @@ function renderPluginParams(p) {
       const sel = document.createElement("select");
       for (const o of def.options) sel.append(Object.assign(document.createElement("option"), { value: o, textContent: o }));
       sel.value = values[def.name];
-      sel.addEventListener("change", () => (chosen[def.name] = sel.value));
+      sel.addEventListener("change", () => {
+        chosen[def.name] = sel.value;
+        detachRecipe(p);
+      });
       row.append(sel);
     } else {
       row.classList.add("check");
       const box2 = Object.assign(document.createElement("input"), { type: "checkbox", checked: Boolean(values[def.name]) });
-      box2.addEventListener("change", () => (chosen[def.name] = box2.checked));
+      box2.addEventListener("change", () => {
+        chosen[def.name] = box2.checked;
+        detachRecipe(p);
+      });
       row.prepend(box2);
     }
     box.append(row);
+  }
+}
+
+// Settings changed by hand are no longer the picked recipe (a ready-made one).
+function detachRecipe(p) {
+  if ((pluginUi.recipe.get(p.id) ?? "").startsWith("b:")) {
+    pluginUi.recipe.set(p.id, "");
+    $("plugin-recipe").value = "";
   }
 }
 
@@ -109,13 +127,78 @@ function renderPluginDetail() {
     : "Asks for no permissions: it sees only the photo's settings.";
   $("plugin-error").hidden = !p.error;
   $("plugin-error").textContent = p.error ?? "";
+  renderRecipes(p);
   renderPluginParams(p);
   $("plugin-run").disabled = Boolean(p.error) || !ui.info;
+  $("plugin-as-preset").disabled = !ui.info;
   $("plugin-run").title = ui.info ? "Run it on the open photo (Undo takes it back)" : "Open a photo first";
   $("plugin-defaults").hidden = !(m?.params?.length);
   $("plugin-own").hidden = p.builtin;
   $("plugin-share").disabled = Boolean(p.error);
   $("plugin-approve").hidden = true;
+}
+
+// Recipes: ready-made (from the manifest) and yours (saved in the settings).
+function renderRecipes(p) {
+  const sel = $("plugin-recipe");
+  const builtIn = p.manifest?.recipes ?? [];
+  const yours = pluginUi.recipes[p.id] ?? [];
+  sel.replaceChildren(Object.assign(document.createElement("option"), { value: "", textContent: "— the settings below —" }));
+  for (const [label, list, tag] of [["Ready-made", builtIn, "b"], ["Yours", yours, "u"]]) {
+    if (!list.length) continue;
+    const og = Object.assign(document.createElement("optgroup"), { label });
+    for (const r of list) og.append(Object.assign(document.createElement("option"), { value: `${tag}:${r.name}`, textContent: r.name }));
+    sel.append(og);
+  }
+  sel.value = pluginUi.recipe.get(p.id) ?? "";
+  const picked = sel.value;
+  $("plugin-recipe-delete").disabled = !picked.startsWith("u:");
+  if (picked.startsWith("u:") && document.activeElement !== $("plugin-recipe-name")) $("plugin-recipe-name").value = picked.slice(2);
+  $("plugin-recipes").hidden = !p.manifest || !(p.manifest.params ?? []).length;
+}
+
+function pickRecipe() {
+  const p = pluginById(pluginUi.selected);
+  const v = $("plugin-recipe").value;
+  pluginUi.recipe.set(p.id, v);
+  if (v) {
+    const list = v.startsWith("b:") ? p.manifest.recipes : pluginUi.recipes[p.id] ?? [];
+    const r = list.find((x) => x.name === v.slice(2));
+    if (r) pluginUi.params.set(p.id, { ...r.params });
+    $("plugin-recipe-name").value = v.startsWith("u:") ? v.slice(2) : "";
+  }
+  renderPluginDetail();
+}
+
+async function saveRecipe() {
+  const p = pluginById(pluginUi.selected);
+  const name = $("plugin-recipe-name").value.trim();
+  if (!name) {
+    $("plugin-recipe-name").focus();
+    return toast("Give the recipe a name first.", true);
+  }
+  try {
+    pluginUi.recipes = await invoke("save_plugin_recipe", { id: p.id, name, params: paramValues(p) });
+    pluginUi.recipe.set(p.id, `u:${name}`);
+    renderPluginDetail();
+    toast(`Saved the recipe “${name}”`);
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
+async function deleteRecipe() {
+  const p = pluginById(pluginUi.selected);
+  const v = pluginUi.recipe.get(p.id) ?? "";
+  if (!v.startsWith("u:")) return;
+  try {
+    pluginUi.recipes = await invoke("delete_plugin_recipe", { id: p.id, name: v.slice(2) });
+    pluginUi.recipe.set(p.id, "");
+    $("plugin-recipe-name").value = "";
+    renderPluginDetail();
+  } catch (e) {
+    toast(String(e), true);
+  }
 }
 
 function renderPlugins() {
@@ -153,6 +236,7 @@ async function runSelectedPlugin() {
       $("plugin-approve-name").textContent = p.manifest.name;
       $("plugin-approve-list").replaceChildren(...p.permissions.map((t) => Object.assign(document.createElement("li"), { textContent: t })));
       $("plugin-approve").hidden = false;
+      $("plugin-approve").scrollIntoView({ block: "nearest" });
     } else {
       $("plugin-result").textContent = String(e);
     }
@@ -261,7 +345,15 @@ function wirePlugins() {
   $("plugin-run").addEventListener("click", runSelectedPlugin);
   $("plugin-defaults").addEventListener("click", () => {
     pluginUi.params.delete(pluginUi.selected);
+    pluginUi.recipe.set(pluginUi.selected, "");
     renderPluginDetail();
+  });
+  $("plugin-recipe").addEventListener("change", pickRecipe);
+  $("plugin-recipe-save").addEventListener("click", saveRecipe);
+  $("plugin-recipe-delete").addEventListener("click", deleteRecipe);
+  $("plugin-as-preset").addEventListener("click", () => {
+    const v = pluginUi.recipe.get(pluginUi.selected) ?? "";
+    savePresetFlow(v ? v.slice(2) : $("plugin-recipe-name").value.trim());
   });
   $("plugin-allow").addEventListener("click", allowSelectedPlugin);
   $("plugin-deny").addEventListener("click", () => ($("plugin-approve").hidden = true));

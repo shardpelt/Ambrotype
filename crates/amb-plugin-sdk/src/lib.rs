@@ -73,6 +73,12 @@ pub struct Photo {
     /// Millimetres.
     #[serde(default)]
     pub focal_length: Option<f64>,
+    /// The camera's white balance as Temperature (K) and Tint, the values
+    /// "As Shot" stands for.
+    #[serde(default)]
+    pub as_shot_temperature: Option<f64>,
+    #[serde(default)]
+    pub as_shot_tint: Option<f64>,
 }
 
 /// Histograms (256 bins, sRGB 8-bit) and the mean colour of a small render

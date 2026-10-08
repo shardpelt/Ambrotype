@@ -42,6 +42,17 @@ pub struct Manifest {
     /// Where the source lives (a URL), shown to the user.
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub source: String,
+    /// Ready-made sets of parameter values to start from.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub recipes: Vec<Recipe>,
+}
+
+/// A named set of parameter values (left-out parameters keep their default).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Recipe {
+    pub name: String,
+    #[serde(default)]
+    pub params: Map<String, Value>,
 }
 
 fn action() -> String {
@@ -74,7 +85,9 @@ impl Permission {
     /// How the app explains it when asking.
     pub fn describe(self) -> &'static str {
         match self {
-            Permission::PhotoInfo => "See the camera, lens, size and exposure of the photo",
+            Permission::PhotoInfo => {
+                "See the camera, lens, size, exposure and white balance of the photo"
+            }
             Permission::PhotoStats => "See the photo's histogram and average colour",
         }
     }
@@ -204,6 +217,13 @@ impl Manifest {
                 }
                 ParamKind::Bool { .. } => {}
             }
+        }
+        for r in &self.recipes {
+            if r.name.trim().is_empty() {
+                return Err("every recipe needs a name".into());
+            }
+            self.resolve_params(&r.params)
+                .map_err(|e| format!("recipe {:?}: {e}", r.name))?;
         }
         Ok(())
     }

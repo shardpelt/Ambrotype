@@ -247,7 +247,7 @@ pub fn install(dir: &Path, index_url: &str, id: &str) -> Result<(Kind, String), 
 }
 
 /// Where a look goes in a GitHub-hosted hub: (owner/repo, branch, folder of the index).
-fn github_repo(index_url: &str) -> Option<(String, String, String)> {
+pub(crate) fn github_repo(index_url: &str) -> Option<(String, String, String)> {
     let rest = index_url.strip_prefix("https://raw.githubusercontent.com/")?;
     let mut parts = rest.split('/');
     let owner = parts.next()?;

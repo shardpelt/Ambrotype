@@ -26,6 +26,8 @@
       <button id="btn-wb" title="White balance picker: click a neutral grey or white spot (W)" disabled>WB picker</button>
       <button id="btn-clip" title="Show clipped highlights (red) and shadows (blue) (J)" disabled>Clipping</button>
       <span class="sep"></span>
+      <button id="btn-plugins" title="Plugins: extra tools that make edits for you">Plugins</button>
+      <span class="sep"></span>
       <button id="btn-looks" title="Layouts and themes: choose, clone, share">Looks</button>
       <button id="btn-edit-layout" title="Edit this layout: move panels, controls and toolbar buttons">Edit layout</button>
       <button id="btn-settings" class="icon" aria-label="Settings">⚙</button>
@@ -422,6 +424,77 @@
   </dialog>
   <button id="btn-back-collage" class="back-collage primary" hidden title="Back to the collage, with this photo's edits">← Back to collage</button>
 
+  <!-- Plugins (plugins.js) -->
+  <dialog id="plugins-dialog" class="plugins-dialog">
+    <form method="dialog">
+      <h2>Plugins</h2>
+      <p class="hint">Small tools that make edits for you. They run in a sandbox: no files, no network, only settings you can see and undo.</p>
+      <div class="plugins-body">
+        <div id="plugins-list" class="plugins-list" role="listbox" aria-label="Plugins"></div>
+        <section id="plugin-detail" class="plugin-detail">
+          <div class="plugin-head">
+            <strong id="plugin-name"></strong>
+            <span id="plugin-meta" class="hint"></span>
+          </div>
+          <p id="plugin-desc" class="plugin-desc"></p>
+          <p id="plugin-perms" class="hint"></p>
+          <p id="plugin-error" class="plugin-error" hidden></p>
+          <div id="plugin-params" class="plugin-params"></div>
+          <div class="plugin-run">
+            <button type="button" id="plugin-run" class="primary">Run</button>
+            <button type="button" id="plugin-defaults" class="small" title="Put the settings above back to the plugin's defaults">Defaults</button>
+            <span id="plugin-result" class="hint" role="status"></span>
+          </div>
+          <div id="plugin-approve" class="plugin-approve" hidden>
+            <p><strong id="plugin-approve-name"></strong> asks to:</p>
+            <ul id="plugin-approve-list"></ul>
+            <p class="hint">It still can't read your files or use the network: it can only change settings, and Undo takes them back. You're asked again if the plugin changes.</p>
+            <div class="plugin-run">
+              <button type="button" id="plugin-allow" class="primary">Allow and run</button>
+              <button type="button" id="plugin-deny">Not now</button>
+            </div>
+          </div>
+          <details id="plugin-log" class="plugin-log" hidden><summary>Log</summary><pre></pre></details>
+          <div id="plugin-own" class="plugin-own" hidden>
+            <button type="button" id="plugin-folder" class="small">Show folder</button>
+            <button type="button" id="plugin-share" class="small" title="Offer it to the hub as a pull request, so others can install it">Share as pull request…</button>
+            <button type="button" id="plugin-remove" class="small">Remove</button>
+          </div>
+          <div id="plugin-share-panel" class="plugin-panel" hidden>
+            <h3>Share as a pull request</h3>
+            <p id="share-what" class="hint"></p>
+            <ul id="share-files" class="share-files"></ul>
+            <p id="share-warn" class="plugin-error" hidden></p>
+            <p id="share-how" class="hint"></p>
+            <div class="plugin-run">
+              <button type="button" id="share-gh" class="primary" hidden>Send pull request</button>
+              <button type="button" id="share-browser">Open GitHub in the browser</button>
+              <button type="button" id="share-cancel">Cancel</button>
+            </div>
+          </div>
+        </section>
+        <section id="plugin-ai" class="plugin-detail" hidden>
+          <h3>Make a plugin with your AI</h3>
+          <p class="hint">Describe what it should do. This writes instructions for your own AI assistant (for example Claude Code on this computer): paste them there, and press Reload here when it's done.</p>
+          <textarea id="ai-request" rows="3" placeholder="e.g. a button that makes skin tones a little warmer and lifts the shadows"></textarea>
+          <textarea id="ai-prompt" rows="12" readonly></textarea>
+          <div class="plugin-run">
+            <button type="button" id="ai-copy" class="primary">Copy instructions</button>
+            <button type="button" id="ai-back">Back</button>
+          </div>
+        </section>
+      </div>
+      <menu>
+        <button type="button" id="plugins-install" title="Add a plugin from a folder with plugin.json and plugin.wasm">Install from folder…</button>
+        <button type="button" id="plugins-open">Open plugins folder</button>
+        <button type="button" id="plugins-reload">Reload</button>
+        <button type="button" id="plugins-ai">Make one with AI…</button>
+        <span class="grow"></span>
+        <button value="close" class="primary">Done</button>
+      </menu>
+    </form>
+  </dialog>
+
   <dialog id="hub-dialog">
     <form method="dialog">
       <h2>Hub: shared looks</h2>
@@ -512,6 +585,7 @@
   <script src="info.js"></script>
   <script src="filmstrip.js"></script>
   <script src="collage.js"></script>
+  <script src="plugins.js"></script>
   <script src="picker.js"></script>
   <script src="app.js"></script>
 </body>

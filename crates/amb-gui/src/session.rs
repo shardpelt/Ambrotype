@@ -642,6 +642,26 @@ impl Session {
         amb_export::geometry::orient(&developed, self.full.metadata.orientation)
     }
 
+    /// What a plugin with these permissions may see of this photo.
+    pub fn plugin_context(
+        &self,
+        permissions: &[amb_plugin::Permission],
+        seed: u64,
+    ) -> amb_plugin::Context {
+        use amb_plugin::Permission;
+        let settings = self.state.settings();
+        amb_plugin::Context {
+            settings: amb_plugin::Context::settings_json(settings),
+            photo: permissions
+                .contains(&Permission::PhotoInfo)
+                .then(|| amb_plugin::photo::info(&self.full)),
+            stats: permissions
+                .contains(&Permission::PhotoStats)
+                .then(|| amb_plugin::photo::stats(&self.full, settings)),
+            seed,
+        }
+    }
+
     /// Full-resolution render and export.
     pub fn export(
         &mut self,

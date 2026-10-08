@@ -111,12 +111,25 @@ We do the same, with a little more structure:
 
 ## 5. Plugins
 
+*Built (2026-10-08): "action" plugins, sandboxed WebAssembly that turns settings (and, with permission, camera facts and photo statistics) into edit commands.*
+- *The host is `crates/amb-plugin`: the manifest, the `wasmi` sandbox with an instruction budget and a memory cap, and only `amb.log` as an import. Plugins are written with `crates/amb-plugin-sdk`. Auto tone and Random look are built in, from `plugins/`.*
+- *The editor has the Plugins dialog (`ui/plugins.js`, `src/plugins.rs`): run with generated parameter controls, a permission prompt per plugin fingerprint, install from a folder, remove, and Share as pull request.*
+- *The CLI has `amb plugin new/build/check/run`. Guide: [ai/plugins.md](../ai/plugins.md).*
+- *Changed from the plan: `wasmi` (a pure-Rust interpreter, small and fast to start) instead of `wasmtime`. There is no UI API yet; the dialog draws each plugin's parameters from its manifest.*
+
+![The Plugins dialog after a Random look run: parameters from the manifest, the result, and the changed sliders](../images/plugins.png)
+
 - **Data items** (layouts, themes, presets, collage templates, size profiles) contain no code, so they are safe to install from the hub.
 - **Code plugins** need a sandbox before they can be shared:
   - **Preferred:** run plugins as WebAssembly (`wasmtime`), with an API that is the `amb-protocol` commands plus a small UI API (add a panel, a button, a dialog).
   - **No ambient file or network access.** The manifest asks for permissions (for example "read the open photo's pixels" or "network: api.example.com") and the user approves them once.
   - **UI parts** run in a sandboxed iframe that talks to the app only by messages.
 - This replaces the earlier "plugin API (Lua → WASM)" line in [SCOPE.md](../SCOPE.md) §8.
+- *Still to come:*
+  - *plugins that add pixel effects to the pipeline, or their own panels and dialogs (the sandboxed-iframe UI above)*
+  - *batch runs over many photos*
+  - *the network permission (none of today's plugins need it)*
+  - *the hub listing plugins in the app, with CI rebuilding each module from its source*
 
 ## 6. AI-made features ("make me a…")
 
@@ -125,6 +138,11 @@ The user's own AI assistant (bring your own; see [ai-control.md](ai-control.md))
 1. **Data:** "give me a compact layout with only Basic and HSL, knobs instead of sliders, a warm theme". The AI writes a layout and theme file against the published schema, and the app loads it. No code runs, so this is safe by construction.
 2. **Plugins:** "add a button that exports the selection at Instagram sizes with a white border". The AI writes a sandboxed plugin, and the user approves its permissions like any other plugin.
 3. **Core changes:** "add a split-toning panel". The AI edits the Ambrotype source in the user's clone, builds, and runs the tests.
+
+*Built (2026-10-08) for levels 1–2:*
+- *Plugins → **Make one with AI…** writes instructions for the user's own assistant (no keys in the app): the request, the guide to read, where to create the plugin (`amb plugin new` in the plugins folder), how to test and build it. The user pastes them into their AI and presses Reload.*
+- ***Share as pull request…** lists the files, then sends them through the user's GitHub CLI (fork, one commit, pull request) or opens GitHub's upload page in the browser.*
+- *Level 3 (core changes) follows [AGENTS.md](../../AGENTS.md) in the user's clone; there is no in-app flow for it.*
 
 **Sharing:**
 

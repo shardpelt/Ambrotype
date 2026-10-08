@@ -1,6 +1,6 @@
 # Ambrotype hub
 
-Shared looks for [Ambrotype](https://github.com/shardpelt/Ambrotype): editor layouts and colour themes. Ambrotype's **Looks → Browse hub…** lists everything here and installs it with one click.
+Shared looks for [Ambrotype](https://github.com/shardpelt/Ambrotype): editor layouts and colour themes, and plugins. Ambrotype's **Looks → Browse hub…** lists the looks here and installs them with one click.
 
 Like [Omarchy](https://learn.omacom.io/2/the-omarchy-manual/90/extra-themes)'s themes, there is no server: the hub is this repo. Each look is one small JSON file, and `index.json` lists them with a checksum. Looks contain no code, so they're safe to install. The app checks each file's checksum and validates it before saving it.
 
@@ -22,8 +22,17 @@ If you skip step 4, a maintainer can run it before merging.
 - Looks are shared under CC0 (public domain) unless the file says otherwise in `"license"`.
 - Nothing that copies another product's branding or name.
 
+## Plugins
+
+Plugins are small programs that make edits (Ambrotype's **Plugins** button). They run sandboxed: no files, no network, only settings the user can see and undo. How to write one: [plugins.md](https://github.com/shardpelt/Ambrotype/blob/main/docs/ai/plugins.md).
+
+- **Send one in:** in the Plugins dialog, pick your plugin and press **Share as pull request…**. It shows the files first, then sends them with the GitHub CLI (your own login) or opens GitHub's upload page in your browser.
+- **Where they go:** `plugins/<id>/`, with `plugin.json`, the built `plugin.wasm`, and the Rust source (`Cargo.toml`, `src/`). No source, no merge: reviewers read the code and rebuild the module.
+- **Reviewing:** read the source and the permissions it asks for, then `amb plugin build plugins/<id>` (the module should come out the same, or replace it with yours) and `amb plugin check plugins/<id>`.
+- **Installing:** the hub doesn't list plugins in the app yet. Download the plugin's folder and use **Install from folder…** in the Plugins dialog.
+
 ## For maintainers
 
-- CI (`.github/workflows/check.yml`) fails when a file isn't valid JSON, is in the wrong folder, or `index.json` is out of date.
+- CI (`.github/workflows/check.yml`) fails when a file isn't valid JSON, is in the wrong folder, or `index.json` is out of date, and when a plugin folder lacks its manifest, module or source.
 - Before merging, run `ambrotype --check-look` on new files, and try them in the app.
 - The app reads `index.json` from `https://raw.githubusercontent.com/<owner>/<repo>/main/index.json`. Ambrotype's default points at `Ambrotypehq/ambrotype-hub`. Anyone can point their app at another hub in **Settings → General**.

@@ -49,6 +49,17 @@ input[type=search], input[type=number], select {
 .logo { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle, #faf0dc 0 22%, var(--bg-deep) 23% 38%, #f0d6a0 39% 52%, var(--bg-deep) 53% 66%, var(--accent) 67%); }
 .actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .actions button { white-space: nowrap; }
+/* Narrower windows (a 13" laptop): tighter buttons, then the toolbar scrolls
+   sideways rather than running off the edge. */
+@media (max-width: 1560px) {
+  .topbar { gap: 10px; }
+  .actions { gap: 4px; flex-shrink: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .actions::-webkit-scrollbar { display: none; }
+  .actions button { padding: 5px 8px; }
+  .actions .sep { margin: 0 2px; }
+  /* The photo's name gives way first. */
+  .photo-title { flex: 1 1 0; max-width: none; }
+}
 .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
 .photo-title { margin-left: auto; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; min-width: 0; }
 
@@ -510,3 +521,36 @@ dialog.collage-dialog[open] { display: grid; grid-template-rows: auto 1fr 150px;
 .tray-remove { position: absolute; right: 4px; top: 4px; width: 18px; height: 18px; padding: 0; line-height: 16px; border-radius: 50%; font-size: 12px; opacity: 0; }
 .tray-item:hover .tray-remove { opacity: 1; }
 .back-collage { position: fixed; top: 52px; left: 50%; transform: translateX(-50%); z-index: 5; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+
+/* Plugins dialog (plugins.js) */
+dialog.plugins-dialog { width: 780px; max-width: calc(100vw - 32px); }
+.plugins-body { display: grid; grid-template-columns: 210px 1fr; gap: 14px; height: 440px; margin-top: 10px; }
+.plugins-list { display: flex; flex-direction: column; gap: 2px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-deep); padding: 4px; }
+.plugin-item { display: flex; justify-content: space-between; align-items: center; gap: 6px; text-align: left; background: transparent; border-color: transparent; padding: 6px 8px; }
+.plugin-item.on { background: var(--tab-active); border-color: var(--faint); }
+.plugin-item.broken span:first-child { color: var(--danger); }
+.plugin-tag { font-size: 11px; color: var(--faint); white-space: nowrap; }
+.plugin-detail { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-width: 0; padding-right: 4px; }
+.plugin-detail[hidden] { display: none; }
+.plugin-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.plugin-head strong { font-size: 15px; }
+.plugin-desc { margin: 0; line-height: 1.45; }
+.plugin-detail .hint { margin: 0; }
+.plugin-error { margin: 0; color: var(--danger); }
+.plugin-params { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.plugin-params:empty { display: none; }
+dialog .plugin-param { display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 8px; color: var(--text); }
+dialog .plugin-param.check { display: flex; flex-direction: row; gap: 8px; }
+.plugin-range { display: grid; grid-template-columns: 1fr 44px; align-items: center; gap: 6px; }
+.plugin-range output { text-align: right; font-variant-numeric: tabular-nums; }
+.plugin-run { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.plugin-approve, .plugin-panel { border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--bg-deep); }
+.plugin-approve[hidden], .plugin-panel[hidden], .plugin-own[hidden], .plugin-log[hidden] { display: none; }
+.plugin-approve p, .plugin-approve ul, .plugin-panel p { margin: 0; }
+.plugin-approve ul, .share-files { padding-left: 18px; margin: 0; }
+.plugin-panel h3, .plugin-detail h3 { margin: 0; font-size: 13px; }
+.share-files { font-family: ui-monospace, monospace; font-size: 12px; max-height: 120px; overflow-y: auto; }
+.plugin-own { display: flex; gap: 6px; margin-top: auto; padding-top: 8px; }
+.plugin-log pre { max-height: 120px; overflow: auto; font-size: 11px; background: var(--bg-deep); padding: 6px; border-radius: var(--radius); margin: 4px 0 0; white-space: pre-wrap; }
+#plugin-ai textarea { width: 100%; box-sizing: border-box; }
+#ai-prompt { font-family: ui-monospace, monospace; font-size: 11.5px; flex: 1; }

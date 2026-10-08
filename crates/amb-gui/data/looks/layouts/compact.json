@@ -3,7 +3,7 @@
   "name": "Compact",
   "description": "One narrow column and smaller controls, for laptop screens.",
   "density": "compact",
-  "toolbar": ["open", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "zoom", "wb", "clip", "|", "looks", "edit", "settings"],
+  "toolbar": ["open", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "zoom", "wb", "clip", "|", "plugins", "|", "looks", "edit", "settings"],
   "left": { "width": 0, "items": [] },
   "right": {
     "width": 290,

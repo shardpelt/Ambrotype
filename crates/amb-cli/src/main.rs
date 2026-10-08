@@ -4,6 +4,8 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+mod plugin;
+
 use amb_presets::Preset;
 use amb_presets::registry::Registry;
 use amb_presets::report::{self, Report};
@@ -53,6 +55,14 @@ USAGE:
                                             AMB_LCP_DIRS / AMB_LENSFUN_DB) and print the models
                                             interpolated to its focal length, aperture and distance
     amb settings reference [--json]         Print the settings reference (docs/ai/settings-reference.md)
+    amb plugin new <DIR> [--name \"My plugin\"]
+                                            Start a plugin project (Rust, built to WebAssembly;
+                                            docs/ai/plugins.md)
+    amb plugin build <DIR>                  Build it (needs: rustup target add wasm32-unknown-unknown),
+                                            then check it
+    amb plugin check <DIR>                  Validate plugin.json and the module, and run it on a sample
+    amb plugin run <DIR> <PHOTO|SIDECAR.xmp> [--params a=1,b=Film] [--dry-run] [--json]
+                                            Run a plugin on a photo's edit and write its sidecar
 
 EXPORT OPTIONS (amb render):
     --format jpeg|png|tiff|webp|avif|exr    Default: from the file extension
@@ -96,7 +106,7 @@ fn main() -> ExitCode {
             | "--color-space" | "--subsampling" | "--long-edge" | "--short-edge" | "--width"
             | "--height" | "--fit" | "--exact" | "--megapixels" | "--percent" | "--sharpen"
             | "--metadata" | "--max-size" | "--avif-speed" | "--border" | "--out-dir"
-            | "--rating" | "--keywords" => match iter.next() {
+            | "--rating" | "--keywords" | "--name" | "--params" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -175,6 +185,17 @@ fn main() -> ExitCode {
         ["protocol", "schema"] => print_json(&amb_protocol::schema::protocol_schema()),
         ["protocol", "schema", "command"] => print_json(&amb_protocol::schema::command_schema()),
         ["protocol", "schema", "query"] => print_json(&amb_protocol::schema::query_schema()),
+        ["plugin", "new", dir] => plugin::new(Path::new(dir), options.get("--name").copied()),
+        ["plugin", "build", dir] => plugin::build(Path::new(dir)),
+        ["plugin", "check", dir] => plugin::check(Path::new(dir)),
+        ["plugin", "run", dir, target] => plugin::run(
+            Path::new(dir),
+            Path::new(target),
+            options.get("--params").copied(),
+            dry_run,
+            json,
+        )
+        .map(|text| println!("{text}")),
         ["settings", "reference"] => {
             if json {
                 print_json(&amb_protocol::reference::json())

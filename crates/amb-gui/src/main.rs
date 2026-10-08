@@ -12,6 +12,7 @@ mod folder;
 mod hub;
 mod keys;
 mod looks;
+mod plugins;
 mod schema;
 mod session;
 mod sizes;
@@ -48,6 +49,7 @@ struct AppState {
     border_presets: Mutex<Vec<borders::BorderPreset>>,
     recent_keywords: Mutex<Vec<String>>,
     collage_templates: Mutex<Vec<collages::TemplateEntry>>,
+    plugin_approvals: Mutex<plugins::Approvals>,
 }
 
 /// Settings kept between runs.
@@ -77,6 +79,9 @@ struct Config {
     /// The user's collage templates (the built-ins are added when listing).
     #[serde(default)]
     collage_templates: Vec<collages::TemplateEntry>,
+    /// Plugins whose permissions the user allowed: id -> the fingerprint allowed.
+    #[serde(default)]
+    plugin_approvals: plugins::Approvals,
 }
 
 fn save_config(state: &AppState) {
@@ -122,6 +127,11 @@ fn save_config(state: &AppState) {
             .collage_templates
             .lock()
             .map(|t| t.clone())
+            .unwrap_or_default(),
+        plugin_approvals: state
+            .plugin_approvals
+            .lock()
+            .map(|a| a.clone())
             .unwrap_or_default(),
     };
     if let Some(dir) = path.parent() {
@@ -1282,6 +1292,217 @@ fn hub_submit(
     Ok(url)
 }
 
+// ---------------------------------------------------------------- plugins
+
+fn plugins_dir(state: &AppState) -> Option<PathBuf> {
+    let path = state.config_path.lock().ok()?;
+    Some(path.as_ref()?.parent()?.join("plugins"))
+}
+
+fn plugins_state(state: &AppState) -> Res<Vec<plugins::PluginEntry>> {
+    let approvals = state
+        .plugin_approvals
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone();
+    Ok(plugins::list(plugins_dir(state).as_deref(), &approvals))
+}
+
+/// Built-in plugins, then the user's, with whether each is allowed to run.
+#[tauri::command]
+fn plugins_list(state: tauri::State<'_, AppState>) -> Res<Vec<plugins::PluginEntry>> {
+    plugins_state(state.inner())
+}
+
+/// Install a plugin from a folder the user picks (it is checked first).
+#[tauri::command]
+async fn install_plugin(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Res<Option<(Vec<plugins::PluginEntry>, String)>> {
+    let dir = plugins_dir(state.inner()).ok_or("the plugins folder isn't available")?;
+    let Some(src) = app
+        .dialog()
+        .file()
+        .set_title("Install a plugin: pick its folder (with plugin.json)")
+        .blocking_pick_folder()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    let id = tauri::async_runtime::spawn_blocking(move || plugins::install(&dir, &src))
+        .await
+        .map_err(|e| e.to_string())??;
+    Ok(Some((plugins_state(state.inner())?, id)))
+}
+
+#[tauri::command]
+fn remove_plugin(id: String, state: tauri::State<'_, AppState>) -> Res<Vec<plugins::PluginEntry>> {
+    let dir = plugins_dir(state.inner()).ok_or("the plugins folder isn't available")?;
+    plugins::remove(&dir, &id)?;
+    if let Ok(mut a) = state.plugin_approvals.lock() {
+        a.remove(&id);
+    }
+    save_config(state.inner());
+    plugins_state(state.inner())
+}
+
+/// Allow a plugin's permissions (for this exact plugin: a changed one asks again).
+#[tauri::command]
+fn approve_plugin(
+    id: String,
+    fingerprint: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<plugins::PluginEntry>> {
+    let plugin = plugins::find(plugins_dir(state.inner()).as_deref(), &id)?;
+    if plugin.fingerprint() != fingerprint {
+        return Err("the plugin changed since it was shown; look again before allowing it".into());
+    }
+    state
+        .plugin_approvals
+        .lock()
+        .map_err(|e| e.to_string())?
+        .insert(id, fingerprint);
+    save_config(state.inner());
+    plugins_state(state.inner())
+}
+
+#[derive(Serialize)]
+struct PluginRun {
+    state: session::StateInfo,
+    notes: Vec<String>,
+    message: Option<String>,
+    log: Vec<String>,
+    edits: usize,
+}
+
+/// Run a plugin on the open photo: its edits become one undo step.
+#[tauri::command]
+async fn run_plugin(
+    id: String,
+    params: serde_json::Map<String, serde_json::Value>,
+    state: tauri::State<'_, AppState>,
+) -> Res<PluginRun> {
+    let plugin = plugins::find(plugins_dir(state.inner()).as_deref(), &id)?;
+    let allowed = plugin.manifest.permissions.is_empty()
+        || state
+            .plugin_approvals
+            .lock()
+            .map_err(|e| e.to_string())?
+            .get(&id)
+            == Some(&plugin.fingerprint());
+    if !allowed {
+        return Err("needs-approval".into());
+    }
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let seed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(1);
+        let ctx = {
+            let guard = slot.lock().map_err(|e| e.to_string())?;
+            guard
+                .as_ref()
+                .ok_or("open a photo first")?
+                .plugin_context(&plugin.manifest.permissions, seed)
+        };
+        let out = plugin.run(&ctx, &params)?;
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let outcomes = if out.commands.is_empty() {
+            Vec::new()
+        } else {
+            s.execute(
+                &out.commands,
+                Some(&format!("plugin {}", plugin.manifest.name)),
+            )?
+        };
+        Ok(PluginRun {
+            state: s.state_info(),
+            notes: outcomes
+                .iter()
+                .flat_map(|o| {
+                    o.notes
+                        .iter()
+                        .cloned()
+                        .chain(o.clamped.iter().map(|c| c.to_string()))
+                })
+                .collect(),
+            message: out.message,
+            log: out.log,
+            edits: out.commands.len(),
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Show the plugins folder (or one plugin's folder) in the file manager.
+#[tauri::command]
+fn open_plugins_folder(
+    id: Option<String>,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Res<()> {
+    let dir = plugins_dir(state.inner()).ok_or("the plugins folder isn't available")?;
+    let dir = match id {
+        Some(id) if plugins::builtin(&id).is_none() => dir.join(id),
+        _ => dir,
+    };
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    app.opener()
+        .open_path(dir.display().to_string(), None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
+/// What sharing a plugin would send, to show before sending.
+#[tauri::command]
+async fn plugin_share_plan(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<plugins::SharePlan> {
+    let dir = plugins_dir(state.inner()).ok_or("the plugins folder isn't available")?;
+    let index = hub_index(state.inner());
+    tauri::async_runtime::spawn_blocking(move || plugins::share_plan(&dir, &id, &index))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Share a plugin as a pull request to the hub, with the GitHub CLI (gh), or
+/// in the browser (GitHub's upload page, with the plugin folder shown).
+/// Returns the pull request or upload page address.
+#[tauri::command]
+async fn share_plugin(
+    id: String,
+    browser: bool,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Res<String> {
+    let dir = plugins_dir(state.inner()).ok_or("the plugins folder isn't available")?;
+    let index = hub_index(state.inner());
+    let folder = dir.join(&id);
+    let url = tauri::async_runtime::spawn_blocking(move || {
+        let plan = plugins::share_plan(&dir, &id, &index)?;
+        if browser {
+            Ok(plan.upload_url)
+        } else {
+            plugins::share(&plan)
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    if browser {
+        let _ = app
+            .opener()
+            .open_path(folder.display().to_string(), None::<&str>);
+    }
+    app.opener()
+        .open_url(url.clone(), None::<&str>)
+        .map_err(|e| e.to_string())?;
+    Ok(url)
+}
+
 fn main() {
     // `ambrotype --check-look FILE...` validates layout/theme files and exits.
     let args: Vec<String> = std::env::args().collect();
@@ -1337,6 +1558,9 @@ fn main() {
                 }
                 if let Ok(mut t) = state.collage_templates.lock() {
                     *t = config.collage_templates;
+                }
+                if let Ok(mut a) = state.plugin_approvals.lock() {
+                    *a = config.plugin_approvals;
                 }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
@@ -1398,6 +1622,14 @@ fn main() {
             edited_thumbnail,
             pick_photos,
             pick_photo_folder,
+            plugins_list,
+            install_plugin,
+            remove_plugin,
+            approve_plugin,
+            run_plugin,
+            open_plugins_folder,
+            plugin_share_plan,
+            share_plugin,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Ambrotype");

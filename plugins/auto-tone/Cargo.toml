@@ -1,0 +1,13 @@
+[package]
+name = "amb-plugin-auto-tone"
+version = "1.0.0"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+amb-plugin-sdk = { path = "../../crates/amb-plugin-sdk" }
+serde_json.workspace = true

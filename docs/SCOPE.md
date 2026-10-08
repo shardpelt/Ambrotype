@@ -380,7 +380,7 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
     - Raw files are untrusted input: LibRaw has about 60 CVEs, and a DNG parsing bug was exploited on iOS in 2025.
     - Prefer the pure-Rust decoder (rawler) and run LibRaw as a fallback in a sandboxed helper process.
     - Every parser (TIFF/DNG, MakerNotes, XMP, ICC, DCP, lrtemplate, catalog import) gets a fuzz target from Phase 1.
-  - **Plugins:** compile-time only until after v1. Then data plugins (presets, LUTs, profiles), then Lua, then WASM components. Never a dynamic Rust ABI.
+  - **Plugins:** sandboxed WebAssembly "action" plugins exist (2026-10-08; [ai/plugins.md](ai/plugins.md)): settings in, edit commands out, no files or network. Data plugins (presets, LUTs, profiles) and pipeline effects come later. Never a dynamic Rust ABI.
   - **Hygiene:** `Cargo.lock` committed; `rust-toolchain.toml` pinned to stable; `cargo-deny` for licences and advisories; a small vendored `contrib/` for the few C libraries.
   - **Funding reality:** the NLnet Commons Fund round closed on 1 June 2026, and the Sovereign Tech Fund excludes end-user apps. The realistic model is donations plus a fiscal host (Open Collective / OSC) first. VLC's model (non-profit brand plus an affiliated consultancy) is an option later.
 

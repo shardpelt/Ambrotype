@@ -8,6 +8,7 @@ Related files:
 - [settings-reference.md](settings-reference.md): every setting, with its range, default, Ambrotype render status and a description. It is generated from the code (`amb settings reference`, or `--json` for machine use).
 - `amb protocol schema`: JSON Schema of the commands and queries below.
 - [ui-layouts.md](ui-layouts.md): making editor layouts and themes ("looks") for the user, e.g. "knobs instead of sliders, a warm theme".
+- [plugins.md](plugins.md): making a plugin for the user ("a button that warms skin tones"): sandboxed WebAssembly that returns these same commands.
 - [/llms.txt](../../llms.txt): index for language models.
 
 ## Safety rules (read first)

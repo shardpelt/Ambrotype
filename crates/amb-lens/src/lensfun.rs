@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The lensfun database: cameras, lenses and their calibration data.
 //!
 //! We read the user's installed database (or a directory they point us at);

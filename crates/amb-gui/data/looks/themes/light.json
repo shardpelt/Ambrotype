@@ -1,0 +1,12 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Light",
+  "scheme": "light",
+  "tokens": {
+    "bg": "#eceef1", "bg-deep": "#e2e5e9", "viewer": "#d4d7dc", "panel": "#f7f8fa", "panel-2": "#ffffff",
+    "line": "#c9cdd3", "hover": "#eef0f3", "tab-active": "#dde1e7",
+    "text": "#1d1f23", "muted": "#5d626b", "faint": "#8a9099",
+    "accent": "#b8741a", "accent-ink": "#ffffff", "danger": "#c4402f",
+    "thumb": "#4a4f57", "track": "#b7bcc4", "radius": 6
+  }
+}

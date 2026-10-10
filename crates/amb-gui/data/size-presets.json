@@ -1,0 +1,235 @@
+{
+  "note": "Built-in size presets for the crop tool (aspect) and export (exact pixel size). The app lists the first group (Common) open and the others as collapsible groups, in this order; the crop tool skips Common because it has its own ratio list. Sites change their recommended sizes often: these were current in 2026. Facebook lists only the sizes that differ from Instagram's; X and Reddit keep their full lists, since people look for them by site. Reddit has no official size for ordinary posts: these are its ad recommendations, with 4:5 for the mobile feed. Edit this file to update them; it is compiled into the app. Users add their own sizes in the app instead.",
+  "groups": [
+    {
+      "group": "Common",
+      "presets": [
+        {
+          "name": "Square 1:1",
+          "width": 2048,
+          "height": 2048
+        },
+        {
+          "name": "Landscape 3:2",
+          "width": 3000,
+          "height": 2000
+        },
+        {
+          "name": "Portrait 2:3",
+          "width": 2000,
+          "height": 3000
+        },
+        {
+          "name": "Portrait 4:5",
+          "width": 1600,
+          "height": 2000
+        },
+        {
+          "name": "Widescreen 16:9 (Full HD)",
+          "width": 1920,
+          "height": 1080
+        },
+        {
+          "name": "Vertical 9:16",
+          "width": 1080,
+          "height": 1920
+        },
+        {
+          "name": "4K UHD 16:9",
+          "width": 3840,
+          "height": 2160
+        }
+      ]
+    },
+    {
+      "group": "Instagram",
+      "presets": [
+        {
+          "name": "Portrait 4:5",
+          "width": 1080,
+          "height": 1350
+        },
+        {
+          "name": "Portrait 3:4 (profile grid)",
+          "width": 1080,
+          "height": 1440
+        },
+        {
+          "name": "Square",
+          "width": 1080,
+          "height": 1080
+        },
+        {
+          "name": "Landscape",
+          "width": 1080,
+          "height": 566
+        },
+        {
+          "name": "Story / Reel",
+          "width": 1080,
+          "height": 1920
+        }
+      ]
+    },
+    {
+      "group": "Facebook",
+      "presets": [
+        {
+          "name": "Link / landscape post",
+          "width": 1200,
+          "height": 630
+        },
+        {
+          "name": "Cover photo",
+          "width": 851,
+          "height": 315
+        }
+      ]
+    },
+    {
+      "group": "X (Twitter)",
+      "presets": [
+        {
+          "name": "Landscape post 16:9",
+          "width": 1600,
+          "height": 900
+        },
+        {
+          "name": "Portrait post",
+          "width": 1080,
+          "height": 1350
+        },
+        {
+          "name": "Header",
+          "width": 1500,
+          "height": 500
+        }
+      ]
+    },
+    {
+      "group": "Reddit",
+      "presets": [
+        {
+          "name": "Portrait 4:5 (mobile feed)",
+          "width": 1080,
+          "height": 1350
+        },
+        {
+          "name": "Square",
+          "width": 1080,
+          "height": 1080
+        },
+        {
+          "name": "Landscape 4:3 (every device)",
+          "width": 1440,
+          "height": 1080
+        }
+      ]
+    },
+    {
+      "group": "TikTok",
+      "presets": [
+        {
+          "name": "Photo / video",
+          "width": 1080,
+          "height": 1920
+        }
+      ]
+    },
+    {
+      "group": "Snapchat",
+      "presets": [
+        {
+          "name": "Story / Spotlight",
+          "width": 1080,
+          "height": 1920
+        }
+      ]
+    },
+    {
+      "group": "YouTube",
+      "presets": [
+        {
+          "name": "Thumbnail",
+          "width": 1280,
+          "height": 720
+        },
+        {
+          "name": "Channel banner",
+          "width": 2560,
+          "height": 1440
+        }
+      ]
+    },
+    {
+      "group": "Pinterest",
+      "presets": [
+        {
+          "name": "Standard pin 2:3",
+          "width": 1000,
+          "height": 1500
+        },
+        {
+          "name": "Square pin",
+          "width": 1000,
+          "height": 1000
+        }
+      ]
+    },
+    {
+      "group": "LinkedIn",
+      "presets": [
+        {
+          "name": "Landscape post",
+          "width": 1200,
+          "height": 627
+        },
+        {
+          "name": "Square post",
+          "width": 1080,
+          "height": 1080
+        },
+        {
+          "name": "Cover / banner",
+          "width": 1584,
+          "height": 396
+        }
+      ]
+    },
+    {
+      "group": "Print (300 ppi)",
+      "presets": [
+        {
+          "name": "4 × 6 in",
+          "width": 1200,
+          "height": 1800
+        },
+        {
+          "name": "5 × 7 in",
+          "width": 1500,
+          "height": 2100
+        },
+        {
+          "name": "8 × 10 in",
+          "width": 2400,
+          "height": 3000
+        },
+        {
+          "name": "11 × 14 in",
+          "width": 3300,
+          "height": 4200
+        },
+        {
+          "name": "A4",
+          "width": 2480,
+          "height": 3508
+        },
+        {
+          "name": "A3",
+          "width": 3508,
+          "height": 4961
+        }
+      ]
+    }
+  ]
+}

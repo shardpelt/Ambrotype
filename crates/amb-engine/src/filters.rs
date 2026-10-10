@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Shared single-channel image filters: box blur, Gaussian blur and the guided
 //! filter. All take a row-major plane of `w * h` values and clamp at the edges.
 //! Cost is independent of the radius (running sums), so large radii (Clarity,

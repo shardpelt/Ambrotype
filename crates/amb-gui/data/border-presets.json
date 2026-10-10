@@ -1,0 +1,73 @@
+{
+  "note": "Built-in border presets (read-only in the app; users can clone them). Widths are a percentage of the short edge unless \"unit\" is \"px\". See crates/amb-export/src/border.rs.",
+  "presets": [
+    {
+      "name": "Thin white",
+      "width": 2,
+      "color": "#ffffff"
+    },
+    {
+      "name": "Thin black",
+      "width": 2,
+      "color": "#000000"
+    },
+    {
+      "name": "Thin grey",
+      "width": 2,
+      "color": "#808080"
+    },
+    {
+      "name": "Medium white",
+      "width": 5,
+      "color": "#ffffff"
+    },
+    {
+      "name": "Medium black",
+      "width": 5,
+      "color": "#000000"
+    },
+    {
+      "name": "White frame, whole photo (for Instagram sizes)",
+      "width": 4,
+      "color": "#ffffff",
+      "fit": true
+    },
+    {
+      "name": "Black frame, whole photo",
+      "width": 4,
+      "color": "#000000",
+      "fit": true
+    },
+    {
+      "name": "Gallery white",
+      "width": 6,
+      "color": "#ffffff",
+      "keyline": {
+        "width": 0.15,
+        "color": "#222222"
+      }
+    },
+    {
+      "name": "Photo's own colour",
+      "width": 5,
+      "color": "auto"
+    },
+    {
+      "name": "Rounded, dark",
+      "width": 3,
+      "color": "#111111",
+      "radius": 3
+    },
+    {
+      "name": "Polaroid",
+      "width": 5,
+      "bottom": 18,
+      "color": "#f7f5f0",
+      "keyline": {
+        "width": 0.2,
+        "color": "#d8d4cc"
+      },
+      "radius": 1.5
+    }
+  ]
+}

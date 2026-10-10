@@ -1,15 +1,45 @@
 [workspace]
 resolver = "3"
-members = ["crates/*"]
+members = ["crates/*", "plugins/auto-tone", "plugins/random-look", "plugins/film-recipe"]
 
 [workspace.package]
 edition = "2024"
 rust-version = "1.85"
 publish = false
-# Licence intentionally not set yet: pending the owner's decision (docs/SCOPE.md §6).
+license = "GPL-3.0-or-later"
+repository = "https://github.com/shardpelt/Ambrotype"
 
 [workspace.dependencies]
 quick-xml = "0.37"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
+
+# Plugins for Ambrotype (WebAssembly): small and fast to load.
+# `amb plugin build` builds with it.
+[profile.plugin]
+inherits = "release"
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
+
+# Decoding raws and embedded JPEG previews is very slow unoptimised; optimise
+# just those libraries in debug builds so the editor stays usable while
+# developing (a 24 MP preview: about 9 s unoptimised, 0.15 s optimised).
+[profile.dev.package.rawler]
+opt-level = 3
+[profile.dev.package.zune-jpeg]
+opt-level = 3
+[profile.dev.package.zune-core]
+opt-level = 3
+[profile.dev.package.image]
+opt-level = 3
+# The plugin interpreter: a plugin's run is a few hundred million steps.
+[profile.dev.package.wasmi]
+opt-level = 3
+[profile.dev.package.wasmi_core]
+opt-level = 3
+[profile.dev.package.wasmi_ir]
+opt-level = 3

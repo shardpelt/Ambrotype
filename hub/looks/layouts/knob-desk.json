@@ -1,0 +1,52 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Knob desk",
+  "description": "Everything in one right column: white balance and tone as a grid of knobs, presence as bars, then the usual panels.",
+  "author": "Ambrotype",
+  "density": "compact",
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "crop", "zoom", "wb", "clip", "|", "looks", "edit", "settings"],
+  "left": { "width": 0, "items": [] },
+  "right": {
+    "width": 340,
+    "items": [
+      "histogram",
+      {
+        "title": "Light",
+        "open": true,
+        "columns": 4,
+        "items": [
+          { "setting": "WhiteBalance", "widget": "segmented", "label": "WB" },
+          { "setting": "Temperature", "widget": "knob", "label": "Temp" },
+          { "setting": "Tint", "widget": "knob" },
+          { "setting": "Exposure2012", "widget": "knob", "label": "Expo" },
+          { "setting": "Contrast2012", "widget": "knob", "label": "Contr" },
+          { "setting": "Highlights2012", "widget": "knob", "label": "Highs" },
+          { "setting": "Shadows2012", "widget": "knob", "label": "Shads" },
+          { "setting": "Whites2012", "widget": "knob" },
+          { "setting": "Blacks2012", "widget": "knob" }
+        ]
+      },
+      {
+        "title": "Presence",
+        "open": true,
+        "items": [
+          { "setting": "Texture", "widget": "bar" },
+          { "setting": "Clarity2012", "widget": "bar" },
+          { "setting": "Dehaze", "widget": "bar" },
+          { "setting": "Vibrance", "widget": "bar" },
+          { "setting": "Saturation", "widget": "bar" }
+        ]
+      },
+      { "panel": "tone_curve" },
+      { "panel": "color_mixer" },
+      { "panel": "color_grading" },
+      { "panel": "detail" },
+      { "panel": "lens" },
+      { "panel": "effects" },
+      { "panel": "negative" },
+      "presets",
+      "info",
+      "history"
+    ]
+  }
+}

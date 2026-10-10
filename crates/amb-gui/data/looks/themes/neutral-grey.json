@@ -1,0 +1,13 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Neutral grey",
+  "description": "No tinted colours anywhere and a mid-grey viewer, for judging colour.",
+  "scheme": "dark",
+  "tokens": {
+    "bg": "#3a3a3a", "bg-deep": "#2e2e2e", "viewer": "#6b6b6b", "panel": "#333333", "panel-2": "#404040",
+    "line": "#4d4d4d", "hover": "#4a4a4a", "tab-active": "#555555",
+    "text": "#e8e8e8", "muted": "#ababab", "faint": "#7d7d7d",
+    "accent": "#d6d6d6", "accent-ink": "#222222", "danger": "#d9d9d9",
+    "thumb": "#e0e0e0", "track": "#6a6a6a", "radius": 6
+  }
+}

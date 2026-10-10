@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -626,15 +627,15 @@ fn non_finite_numbers_never_enter_the_state() {
 
     // Overflow on an unbounded tag is refused.
     let mut s = DevelopState::new();
-    s.execute(&set("CropAngle", json!(1.7e308))).unwrap();
+    s.execute(&set("CropWidth", json!(1.7e308))).unwrap();
     let err = s
         .execute(&Command::AdjustParam {
-            name: "CropAngle".into(),
+            name: "CropWidth".into(),
             delta: 1.7e308,
         })
         .unwrap_err();
-    assert!(err.to_string().contains("CropAngle"), "{err}");
-    assert_eq!(num(&s, "CropAngle"), Some(1.7e308));
+    assert!(err.to_string().contains("CropWidth"), "{err}");
+    assert_eq!(num(&s, "CropWidth"), Some(1.7e308));
 
     // A preset carrying NaN does not poison the state either.
     let dir = temp_dir("nan-preset");
@@ -712,4 +713,34 @@ fn apply_preset_validates_values_and_reports_clamping() {
             .any(|n| n.contains("Temperature") && n.contains("unscaled")),
         "{o:?}"
     );
+}
+
+#[test]
+fn grouped_commands_are_one_undo_step() {
+    let mut st = DevelopState::new();
+    st.execute_grouped(
+        "white balance picker",
+        &[
+            Command::SetParam {
+                name: "WhiteBalance".into(),
+                value: json!("Custom"),
+            },
+            Command::SetParam {
+                name: "Temperature".into(),
+                value: json!(5600),
+            },
+            Command::SetParam {
+                name: "Tint".into(),
+                value: json!(-12),
+            },
+        ],
+    )
+    .unwrap();
+    assert_eq!(st.undo_stack().len(), 1);
+    assert_eq!(st.undo_stack()[0].label, "white balance picker");
+    st.execute(&Command::Undo).unwrap();
+    assert!(st.settings().is_empty());
+    st.execute(&Command::Redo).unwrap();
+    assert_eq!(st.settings().len(), 3);
+    assert!(st.execute_grouped("x", &[Command::Undo]).is_err());
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Lightroom / Camera Raw preset and sidecar reader.
 //!
 //! Parses `.xmp` presets, XMP sidecars and legacy `.lrtemplate` presets into one
@@ -7,8 +8,10 @@
 
 pub mod amount;
 pub mod lrtemplate;
+pub mod masks;
 pub mod registry;
 pub mod report;
+pub mod retouch;
 pub mod value;
 pub mod xmp;
 pub mod xmp_writer;

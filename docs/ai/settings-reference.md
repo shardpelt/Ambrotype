@@ -92,7 +92,7 @@ The colour and tone foundation (Adobe Color, Adobe Monochrome, Camera Matching, 
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `CameraProfile` | Profile | text |  |  | planned | Name of the camera profile, e.g. "Adobe Color" (the default for raw photos), "Adobe Monochrome", "Adobe Landscape", "Adobe Portrait", "Adobe Neutral", "Adobe Vivid", or a Camera Matching profile. Applying a profile does not change slider values. |
+| `CameraProfile` | Profile | text |  |  | rendered (approx.) | Name of the camera profile, e.g. "Adobe Color" (Lightroom's default for raw photos), "Adobe Standard", "Camera Standard", or one you made. Ambrotype renders DNG Camera Profiles (.dcp) found on this computer for the photo's camera (Camera Raw's profile folders, AMB_DCP_DIRS); other names keep Ambrotype's default look and are reported. Applying a profile does not change slider values. |
 | `CameraProfileDigest` | Profile digest | text |  |  | planned | Checksum identifying the exact camera profile. |
 | `Look` | Look (creative profile) | struct |  |  | planned | Creative profile (Artistic, B&W, Modern, Vintage, ...) stored as a structure with its name, parameters and Amount. |
 | `RGBTable` | RGB table | text |  |  | planned | Reference to an embedded RGB lookup table used by a profile or look. |
@@ -110,8 +110,8 @@ White balance preset, Temp and Tint. Raw files use a Kelvin Temp scale; JPEG/TIF
 | `WhiteBalance` | White balance preset | enum |  |  | rendered (approx.) | "As Shot" (the camera's setting), "Auto" (computed from the image), or for raw/DNG "Daylight", "Cloudy", "Shade", "Tungsten", "Fluorescent", "Flash"; "Custom" when Temp/Tint were set by hand. Temperature and Tint only take effect when this is not "As Shot" (Ambrotype's edit commands switch it to "Custom" when you set Temp or Tint). |
 | `Temperature` | Temp | number | 2000 to 50000 |  | rendered (approx.) | *Units: K.* Colour temperature in Kelvin for raw files: lower values make the photo cooler (bluer), higher values warmer (more yellow). Example: 3200 K suits tungsten light. Adobe documents 2000-50000 K (newer versions go down to 1500 K). No default: As Shot depends on the camera's recorded white balance. |
 | `Tint` | Tint | number | -150 to 150 |  | rendered (approx.) | Green/magenta balance: negative adds green, positive adds magenta. 0 = neutral relative to the white balance preset. |
-| `IncrementalTemperature` | Temp (non-raw) | number | -100 to 100 | 0 | planned | Temp for JPEG/TIFF/PSD files, on an approximate -100..100 scale instead of Kelvin: negative cooler, positive warmer. |
-| `IncrementalTint` | Tint (non-raw) | number | -100 to 100 | 0 | planned | Tint for JPEG/TIFF/PSD files on a -100..100 scale: negative greener, positive more magenta. |
+| `IncrementalTemperature` | Temp (non-raw) | number | -100 to 100 | 0 | rendered (approx.) | Temp for JPEG/TIFF/PSD files, on an approximate -100..100 scale instead of Kelvin: negative cooler, positive warmer. |
+| `IncrementalTint` | Tint (non-raw) | number | -100 to 100 | 0 | rendered (approx.) | Tint for JPEG/TIFF/PSD files on a -100..100 scale: negative greener, positive more magenta. |
 
 <a id="tone"></a>
 
@@ -223,15 +223,15 @@ Black & white treatment and the B&W Mix: how light or dark each colour band beco
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `GrayMixerRed` | B&W Mix: Red | number | -100 to 100 | 0 | planned | In a black & white conversion, how light or dark red areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
-| `GrayMixerOrange` | B&W Mix: Orange | number | -100 to 100 | 0 | planned | In a black & white conversion, how light or dark orange areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
-| `GrayMixerYellow` | B&W Mix: Yellow | number | -100 to 100 | 0 | planned | In a black & white conversion, how light or dark yellow areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
-| `GrayMixerGreen` | B&W Mix: Green | number | -100 to 100 | 0 | planned | In a black & white conversion, how light or dark green areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
-| `GrayMixerAqua` | B&W Mix: Aqua | number | -100 to 100 | 0 | planned | In a black & white conversion, how light or dark aqua areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
-| `GrayMixerBlue` | B&W Mix: Blue | number | -100 to 100 | 0 | planned | In a black & white conversion, how light or dark blue areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
-| `GrayMixerPurple` | B&W Mix: Purple | number | -100 to 100 | 0 | planned | In a black & white conversion, how light or dark purple areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
-| `GrayMixerMagenta` | B&W Mix: Magenta | number | -100 to 100 | 0 | planned | In a black & white conversion, how light or dark magenta areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
-| `ConvertToGrayscale` | Treatment: Black & White | bool | true / false | false | planned | True converts the photo to black & white (the B&W Mix sliders then set each colour's grey tone); False keeps colour. |
+| `GrayMixerRed` | B&W Mix: Red | number | -100 to 100 | 0 | rendered (approx.) | In a black & white conversion, how light or dark red areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
+| `GrayMixerOrange` | B&W Mix: Orange | number | -100 to 100 | 0 | rendered (approx.) | In a black & white conversion, how light or dark orange areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
+| `GrayMixerYellow` | B&W Mix: Yellow | number | -100 to 100 | 0 | rendered (approx.) | In a black & white conversion, how light or dark yellow areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
+| `GrayMixerGreen` | B&W Mix: Green | number | -100 to 100 | 0 | rendered (approx.) | In a black & white conversion, how light or dark green areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
+| `GrayMixerAqua` | B&W Mix: Aqua | number | -100 to 100 | 0 | rendered (approx.) | In a black & white conversion, how light or dark aqua areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
+| `GrayMixerBlue` | B&W Mix: Blue | number | -100 to 100 | 0 | rendered (approx.) | In a black & white conversion, how light or dark blue areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
+| `GrayMixerPurple` | B&W Mix: Purple | number | -100 to 100 | 0 | rendered (approx.) | In a black & white conversion, how light or dark purple areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
+| `GrayMixerMagenta` | B&W Mix: Magenta | number | -100 to 100 | 0 | rendered (approx.) | In a black & white conversion, how light or dark magenta areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
+| `ConvertToGrayscale` | Treatment: Black & White | bool | true / false | false | rendered (approx.) | True converts the photo to black & white (the B&W Mix sliders then set each colour's grey tone); False keeps colour. |
 | `AutoGrayscaleMix` | Auto B&W mix | bool | true / false | false | image-specific | True when the B&W Mix was set by Auto, which maximises the distribution of grey tones for that image. |
 
 <a id="point-color"></a>
@@ -334,14 +334,14 @@ Upright perspective correction and manual perspective sliders.
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `PerspectiveUpright` | Upright mode | enum | 0 to 5 | 0 | planned | Automatic perspective correction mode. Adobe's help lists Auto (balanced corrections), Level, Vertical (level and vertical), Full (level, vertical and horizontal) and Guided, plus off; the numeric encoding is not documented there. Apply lens profile corrections first. |
-| `PerspectiveVertical` | Transform: Vertical | number | -100 to 100 | 0 | planned | Manual vertical perspective correction. |
-| `PerspectiveHorizontal` | Transform: Horizontal | number | -100 to 100 | 0 | planned | Manual horizontal perspective correction. |
-| `PerspectiveAspect` | Transform: Aspect | number | -100 to 100 | 0 | planned | Manual Aspect slider of the Transform panel. Adobe's help names it without further detail. |
-| `PerspectiveX` | Transform: Offset X | number | -100 to 100 | 0 | planned | Moves the transformed image horizontally. |
-| `PerspectiveY` | Transform: Offset Y | number | -100 to 100 | 0 | planned | Moves the transformed image vertically. |
-| `PerspectiveRotate` | Transform: Rotate | number | -10 to 10 | 0 | planned | *Units: degrees.* Rotation around the centre of the original, uncropped photo. |
-| `PerspectiveScale` | Transform: Scale | number | 50 to 150 | 100 | planned | *Units: %.* Scales the transformed image up or down; 100 = unchanged. |
+| `PerspectiveUpright` | Upright mode | enum | 0 to 5 | 0 | rendered (approx.) | Automatic perspective correction: 0 Off, 1 Auto (balanced, not all the way), 2 Level (rotation only), 3 Vertical (level and vertical perspective), 4 Full (level, vertical and horizontal perspective), 5 Guided (from drawn guides; not rendered yet). The correction is found from the photo's own straight lines, after the lens corrections, and the Transform sliders apply on top of it. |
+| `PerspectiveVertical` | Transform: Vertical | number | -100 to 100 | 0 | rendered (approx.) | Vertical perspective correction: negative widens the top, which straightens verticals that lean together in a photo taken looking up; positive widens the bottom. |
+| `PerspectiveHorizontal` | Transform: Horizontal | number | -100 to 100 | 0 | rendered (approx.) | Horizontal perspective correction: positive makes the right side taller, negative the left side. |
+| `PerspectiveAspect` | Transform: Aspect | number | -100 to 100 | 0 | rendered (approx.) | Stretches the photo: positive vertically, negative horizontally. Use it after a strong perspective correction to restore proportions. |
+| `PerspectiveX` | Transform: Offset X | number | -100 to 100 | 0 | rendered (approx.) | Moves the transformed image horizontally. |
+| `PerspectiveY` | Transform: Offset Y | number | -100 to 100 | 0 | rendered (approx.) | Moves the transformed image vertically. |
+| `PerspectiveRotate` | Transform: Rotate | number | -10 to 10 | 0 | rendered (approx.) | *Units: degrees.* Rotation around the centre of the original, uncropped photo. |
+| `PerspectiveScale` | Transform: Scale | number | 50 to 150 | 100 | rendered (approx.) | *Units: %.* Scales the transformed image up or down; 100 = unchanged. |
 | `UprightVersion` | Upright version | text |  |  | image-specific | Version of the Upright analysis. Computed per image. |
 | `UprightCenterMode` | Upright centre mode | text |  |  | image-specific | Upright analysis data, computed per image. |
 | `UprightCenterNormX` | Upright centre X | text |  |  | image-specific | Upright analysis data, computed per image. |
@@ -387,13 +387,13 @@ Shadows tint and the red, green and blue primary hue/saturation adjustments to t
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `ShadowTint` | Calibration: Shadows | number | -100 to 100 | 0 | planned | Corrects a green or magenta tint in the shadow areas of the photo. |
-| `RedHue` | Calibration: Red primary hue | number | -100 to 100 | 0 | planned | Shifts the hue of the camera's red primary; negative is roughly counterclockwise on the colour wheel. Adjust hue first, then saturation. |
-| `RedSaturation` | Calibration: Red primary saturation | number | -100 to 100 | 0 | planned | Saturation of the red primary; negative desaturates. |
-| `GreenHue` | Calibration: Green primary hue | number | -100 to 100 | 0 | planned | Shifts the hue of the camera's green primary; negative is roughly counterclockwise on the colour wheel. Adjust hue first, then saturation. |
-| `GreenSaturation` | Calibration: Green primary saturation | number | -100 to 100 | 0 | planned | Saturation of the green primary; negative desaturates. |
-| `BlueHue` | Calibration: Blue primary hue | number | -100 to 100 | 0 | planned | Shifts the hue of the camera's blue primary; negative is roughly counterclockwise on the colour wheel. Adjust hue first, then saturation. |
-| `BlueSaturation` | Calibration: Blue primary saturation | number | -100 to 100 | 0 | planned | Saturation of the blue primary; negative desaturates. |
+| `ShadowTint` | Calibration: Shadows | number | -100 to 100 | 0 | rendered (approx.) | Corrects a green or magenta tint in the shadows: positive adds magenta, negative green. Midtones and highlights are left alone. |
+| `RedHue` | Calibration: Red primary hue | number | -100 to 100 | 0 | rendered (approx.) | Shifts the hue of the red primary: positive toward yellow, negative toward magenta. Every colour with red in it moves with it; white stays white. Adjust hue first, then saturation. |
+| `RedSaturation` | Calibration: Red primary saturation | number | -100 to 100 | 0 | rendered (approx.) | Saturation of the red primary; negative desaturates. |
+| `GreenHue` | Calibration: Green primary hue | number | -100 to 100 | 0 | rendered (approx.) | Shifts the hue of the green primary: positive toward cyan, negative toward yellow. Every colour with green in it moves with it; white stays white. Adjust hue first, then saturation. |
+| `GreenSaturation` | Calibration: Green primary saturation | number | -100 to 100 | 0 | rendered (approx.) | Saturation of the green primary; negative desaturates. |
+| `BlueHue` | Calibration: Blue primary hue | number | -100 to 100 | 0 | rendered (approx.) | Shifts the hue of the blue primary: positive toward magenta, negative toward cyan. Every colour with blue in it moves with it; white stays white. Adjust hue first, then saturation. |
+| `BlueSaturation` | Calibration: Blue primary saturation | number | -100 to 100 | 0 | rendered (approx.) | Saturation of the blue primary; negative desaturates. |
 
 <a id="crop"></a>
 
@@ -403,14 +403,14 @@ Crop rectangle, angle and orientation. Specific to one image; presets should rar
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `HasCrop` | Has crop | bool | true / false |  | image-specific | True when the crop rectangle below is active. |
+| `HasCrop` | Has crop | bool | true / false |  | image-specific | True when the crop (CropLeft/Top/Right/Bottom and CropAngle) is applied. When false the whole photo is shown; the crop values are kept but ignored. |
 | `CropConstrainToWarp` | Constrain crop | bool | true / false |  | image-specific | Trim the crop automatically to remove blank or distorted edges after lens and transform corrections. |
 | `CropConstrainToUnitSquare` | Constrain to image | bool | true / false |  | image-specific | Keep the crop inside the image bounds. |
-| `CropTop` | Crop top | number | any number |  | image-specific | Top edge of the crop as a fraction of the image height (0 = top). |
-| `CropLeft` | Crop left | number | any number |  | image-specific | Left edge of the crop as a fraction of the image width (0 = left). |
-| `CropBottom` | Crop bottom | number | any number |  | image-specific | Bottom edge of the crop as a fraction of the image height (1 = bottom). |
-| `CropRight` | Crop right | number | any number |  | image-specific | Right edge of the crop as a fraction of the image width (1 = right). |
-| `CropAngle` | Crop angle | number | any number |  | image-specific | *Units: degrees.* Straighten angle of the crop. |
+| `CropTop` | Crop top | number | 0 to 1 | 0 | image-specific | Vertical position of the crop's top-left corner, as a fraction of the photo height (0 = top). Measured on the lens-corrected photo in its stored orientation, before the camera's rotation (EXIF orientation) is applied. |
+| `CropLeft` | Crop left | number | 0 to 1 | 0 | image-specific | Horizontal position of the crop's top-left corner, as a fraction of the photo width (0 = left). Measured on the lens-corrected photo in its stored orientation, before the camera's rotation (EXIF orientation) is applied. |
+| `CropBottom` | Crop bottom | number | 0 to 1 | 1 | image-specific | Vertical position of the crop's bottom-right corner, as a fraction of the photo height (1 = bottom). Same frame as CropTop. |
+| `CropRight` | Crop right | number | 0 to 1 | 1 | image-specific | Horizontal position of the crop's bottom-right corner, as a fraction of the photo width (1 = right). Same frame as CropLeft. |
+| `CropAngle` | Crop angle | number | -45 to 45 | 0 | image-specific | *Units: degrees.* Straighten: turns the crop rectangle over the photo, so the result comes out rotated by this angle (Ambrotype reads positive as counter-clockwise, following darktable's Lightroom importer; not yet verified against Lightroom). The crop corners stay two opposite corners of the turned rectangle, and the output size is that rectangle's size. |
 | `CropWidth` | Crop width | number | any number |  | image-specific | Requested output width for an aspect-constrained crop. |
 | `CropHeight` | Crop height | number | any number |  | image-specific | Requested output height for an aspect-constrained crop. |
 | `CropUnits` | Crop units | number | any number |  | image-specific | Units of CropWidth/CropHeight. |
@@ -424,10 +424,10 @@ Masks (AI, brush, linear and radial gradients, range masks) with their local adj
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `MaskGroupBasedCorrections` | Masks | seq |  |  | planned | Current masking: a list of masks, each with its components (AI, brush, gradient, range) and local adjustment values. |
-| `GradientBasedCorrections` | Linear gradients (legacy) | seq |  |  | planned | Graduated filter adjustments from before the Masking tool. |
-| `CircularGradientBasedCorrections` | Radial gradients (legacy) | seq |  |  | planned | Radial filter adjustments from before the Masking tool. |
-| `PaintBasedCorrections` | Brush adjustments (legacy) | seq |  |  | planned | Adjustment brush strokes from before the Masking tool. |
+| `MaskGroupBasedCorrections` | Masks | seq |  |  | rendered (approx.) | Current masking: a list of masks, each with its components (AI, brush, gradient, range) and local adjustment values. |
+| `GradientBasedCorrections` | Linear gradients (legacy) | seq |  |  | rendered (approx.) | Graduated filter adjustments from before the Masking tool. |
+| `CircularGradientBasedCorrections` | Radial gradients (legacy) | seq |  |  | rendered (approx.) | Radial filter adjustments from before the Masking tool. |
+| `PaintBasedCorrections` | Brush adjustments (legacy) | seq |  |  | rendered (approx.) | Adjustment brush strokes from before the Masking tool. |
 
 <a id="retouch"></a>
 

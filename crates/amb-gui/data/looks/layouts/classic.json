@@ -1,0 +1,25 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Classic",
+  "description": "Presets and history on the left, the Develop panels on the right.",
+  "density": "normal",
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "|", "plugins", "|", "looks", "edit", "settings", "feedback"],
+  "left": { "width": 250, "items": ["presets", "info", "history"] },
+  "right": {
+    "width": 330,
+    "items": [
+      "histogram",
+      { "panel": "basic", "open": true },
+      { "panel": "tone_curve" },
+      { "panel": "color_mixer" },
+      { "panel": "black_white" },
+      { "panel": "color_grading" },
+      { "panel": "detail" },
+      { "panel": "lens" },
+      { "panel": "transform" },
+      { "panel": "effects" },
+      { "panel": "calibration" },
+      { "panel": "negative" }
+    ]
+  }
+}

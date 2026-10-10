@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Reader for legacy Lightroom `.lrtemplate` presets.
 //!
 //! These files are a Lua table literal assigned to a global (`s = { ... }`).

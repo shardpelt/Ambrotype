@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Develop state: a sparse Camera Raw settings map with undo/redo history.
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -10,7 +11,7 @@ use serde::Serialize;
 use crate::catalog::Catalog;
 use crate::command::{Command, Query};
 use crate::convert::{self, Clamp};
-use crate::{Error, sidecar};
+use crate::{Error, masks, sidecar, spots};
 
 /// One setting's change. `None` means "not set" (the default applies).
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -294,6 +295,52 @@ impl DevelopState {
         Ok(outcomes)
     }
 
+    /// Like [`execute_all`](Self::execute_all), but the commands become a
+    /// single undo step labelled `label` (e.g. a colour-wheel drag that sets
+    /// hue and saturation, or a white-balance pick). Undo/redo commands are
+    /// not allowed inside a group.
+    pub fn execute_grouped(
+        &mut self,
+        label: &str,
+        cmds: &[Command],
+    ) -> Result<Vec<Outcome>, Error> {
+        if cmds
+            .iter()
+            .any(|c| matches!(c, Command::Undo | Command::Redo))
+        {
+            return Err(Error::InvalidValue {
+                name: label.to_string(),
+                reason: "undo/redo cannot be part of a grouped edit".into(),
+            });
+        }
+        let depth = self.undo.len();
+        let outcomes = self.execute_all(cmds)?;
+        if self.undo.len() > depth + 1 {
+            // Merge the new steps: first "before" and last "after" per setting.
+            let steps: Vec<HistoryEntry> = self.undo.drain(depth..).collect();
+            let mut changes: Vec<Change> = Vec::new();
+            for step in steps {
+                for c in step.changes {
+                    match changes.iter_mut().find(|e| e.name == c.name) {
+                        Some(existing) => existing.after = c.after,
+                        None => changes.push(c),
+                    }
+                }
+            }
+            changes.retain(|c| c.before != c.after);
+            changes.sort_by(|a, b| a.name.cmp(&b.name));
+            if !changes.is_empty() {
+                self.undo.push(HistoryEntry {
+                    label: label.to_string(),
+                    changes,
+                });
+            }
+        } else if let Some(last) = self.undo.get_mut(depth) {
+            last.label = label.to_string();
+        }
+        Ok(outcomes)
+    }
+
     fn plan(
         &self,
         cmd: &Command,
@@ -416,6 +463,10 @@ impl DevelopState {
                         unknown.join(", ")
                     ));
                 }
+                // Masks join the photo's own, as in Lightroom.
+                if let Some(incoming) = filtered.remove(amb_presets::masks::MASK_TAG) {
+                    masks::merge(next, &incoming, amount / 100.0);
+                }
                 let unscaled =
                     apply_amount(next, &filtered, amount / 100.0, clamped, &mut rejected);
                 if !rejected.is_empty() {
@@ -433,6 +484,59 @@ impl DevelopState {
                     ));
                 }
             }
+            Command::AddMask {
+                kind,
+                mask,
+                mode,
+                values,
+            } => masks::add(next, kind, *mask, mode.as_deref(), values.as_ref(), clamped)?,
+            Command::SetMask { mask, part, values } => {
+                masks::set(next, *mask, *part, values, clamped)?;
+            }
+            Command::PaintMask {
+                mask,
+                part,
+                mode,
+                points,
+                size,
+                feather,
+                flow,
+                density,
+                erase,
+            } => {
+                let stroke = masks::Stroke {
+                    points,
+                    size: *size,
+                    feather: *feather,
+                    flow: *flow,
+                    density: *density,
+                    erase: *erase,
+                };
+                masks::paint(next, *mask, *part, mode.as_deref(), &stroke, clamped)?;
+            }
+            Command::RemoveMask { mask, part } => masks::remove(next, *mask, *part)?,
+            Command::AddSpot {
+                at,
+                radius,
+                kind,
+                source,
+                source_auto,
+                feather,
+                opacity,
+            } => {
+                let spot = spots::NewSpot {
+                    kind: kind.as_deref(),
+                    at: *at,
+                    radius: *radius,
+                    source: *source,
+                    source_auto: *source_auto,
+                    feather: *feather,
+                    opacity: *opacity,
+                };
+                spots::add(next, &spot, clamped)?;
+            }
+            Command::SetSpot { spot, values } => spots::set(next, *spot, values, clamped)?,
+            Command::RemoveSpot { spot } => spots::remove(next, *spot)?,
             Command::Undo | Command::Redo => unreachable!("handled by execute"),
         }
         Ok(())
@@ -485,6 +589,8 @@ impl DevelopState {
                     .collect();
                 serde_json::json!({ "group": group, "only_set": only_set, "params": params })
             }
+            Query::ListMasks => masks::describe(&self.settings),
+            Query::ListSpots => spots::describe(&self.settings),
             Query::ListGroups => {
                 let groups: Vec<serde_json::Value> = catalog
                     .groups()
@@ -680,6 +786,16 @@ fn after_set(
     next: &mut BTreeMap<String, Value>,
     notes: &mut Vec<String>,
 ) -> Result<(), Error> {
+    // Relative white balance (rendered images) has a neutral 0, so moving
+    // either slider simply switches to Custom.
+    if matches!(name, "IncrementalTemperature" | "IncrementalTint")
+        && matches!(
+            next.get("WhiteBalance").and_then(Value::as_str),
+            None | Some("As Shot") | Some("Auto")
+        )
+    {
+        next.insert("WhiteBalance".into(), Value::Text("Custom".into()));
+    }
     if matches!(name, "Temperature" | "Tint") {
         let mode = next.get("WhiteBalance").and_then(Value::as_str);
         if matches!(mode, None | Some("As Shot") | Some("Auto")) {

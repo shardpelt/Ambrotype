@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Minimal DNG writer for synthetic calibration targets.
 //!
 //! Writes a single-IFD, uncompressed, 16-bit `LinearRaw` DNG (3 samples per

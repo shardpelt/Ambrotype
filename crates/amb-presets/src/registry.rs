@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Registry of known Camera Raw setting tags: grouping, value kind, best-known
 //! range/default, and our implementation status. Stored as data
 //! (`data/tags.json`) so it can be corrected without code changes.

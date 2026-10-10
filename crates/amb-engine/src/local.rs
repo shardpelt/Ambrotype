@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Texture and Clarity: local contrast at two scales.
 //!
 //! **Model v1 (ours, not Adobe's).** Camera Raw's Clarity adds "punch" through
@@ -151,7 +152,7 @@ pub const DEFAULT_STRENGTHS: LocalStrengths = LocalStrengths {
 };
 
 /// Diagonal of the 24 MP (6000 × 4000) reference frame.
-const REFERENCE_DIAGONAL: f32 = 7211.1025;
+pub(crate) const REFERENCE_DIAGONAL: f32 = 7211.1025;
 
 /// Below this display-linear luminance the change fades from an RGB ratio
 /// (hue preserving) to a neutral offset, so near-black noise is not amplified
@@ -162,7 +163,7 @@ const RATIO_KNEE_Y: f32 = 1e-3;
 /// by 0), so one non-finite or absurd pixel cannot poison the running sums of
 /// the box filters across its row and column. Pixels at or beyond the bound
 /// (encoded 4 ≈ 25× white) pass through unchanged.
-const LEVEL_BOUND: f32 = 4.0;
+pub(crate) const LEVEL_BOUND: f32 = 4.0;
 
 /// Smallest box half-width (pixels): the window never drops below two pixels,
 /// even on tiny thumbnails.
@@ -174,14 +175,14 @@ const BOX_ROW_BLOCK: usize = 64;
 /// The guided filters run on copies subsampled so that their box radius is
 /// about this many low-resolution pixels (He & Sun's fast guided filter). More
 /// = closer to the exact filter (less rim at hard edges), slower.
-const CLARITY_LOW_RES_RADIUS: f32 = 10.0;
+pub(crate) const CLARITY_LOW_RES_RADIUS: f32 = 10.0;
 const TEXTURE_LOW_RES_RADIUS: f32 = 5.0;
 /// Upper bound on that subsampling factor.
 const GUIDED_MAX_SUBSAMPLE: usize = 8;
 
 const WEIGHT_LUT_SIZE: usize = 1025;
 /// sRGB decode table on 0..1 (linear interpolation error < 1e-8).
-const DECODE_LUT_SIZE: usize = 8193;
+pub(crate) const DECODE_LUT_SIZE: usize = 8193;
 
 /// Image-size scale relative to the 24 MP reference (by diagonal).
 pub fn reference_scale(width: usize, height: usize) -> f32 {
@@ -286,7 +287,7 @@ pub fn apply_scaled(img: &mut Image, p: &LocalContrast, k: &LocalStrengths, scal
 }
 
 /// Encoded luminance for filtering: finite and within ±[`LEVEL_BOUND`].
-fn filter_level(y: f32) -> f32 {
+pub(crate) fn filter_level(y: f32) -> f32 {
     let v = srgb_encode(y);
     if v.is_nan() {
         0.0
@@ -298,12 +299,12 @@ fn filter_level(y: f32) -> f32 {
 /// Box half-width at `scale` for a half-width of `r_ref` pixels at the 24 MP
 /// reference. The whole window (`2r + 1` pixels) scales with the image, so
 /// small radii on previews keep the same extent relative to the picture.
-fn scaled_radius(r_ref: f32, scale: f32) -> f32 {
+pub(crate) fn scaled_radius(r_ref: f32, scale: f32) -> f32 {
     ((r_ref + 0.5) * scale - 0.5).max(MIN_BOX_RADIUS)
 }
 
 /// sRGB decode of an encoded level, by table on 0..1.
-fn decode_level(lut: &[f32], v: f32) -> f32 {
+pub(crate) fn decode_level(lut: &[f32], v: f32) -> f32 {
     if (0.0..=1.0).contains(&v) {
         lookup(lut, v)
     } else {
@@ -317,7 +318,7 @@ fn decode_level(lut: &[f32], v: f32) -> f32 {
 /// one channel (and the caller's clamp would shift its hue). The brightest
 /// channel gets the same headroom limit as luminance, in its own encoded
 /// level. Neutral pixels (and the near-black offset range) are not limited.
-fn channel_cap(px: &[f32], lw: [f32; 3], d: f32, lut: &[f32]) -> f32 {
+pub(crate) fn channel_cap(px: &[f32], lw: [f32; 3], d: f32, lut: &[f32]) -> f32 {
     let y = lw[0] * px[0] + lw[1] * px[1] + lw[2] * px[2];
     let m = px[0].max(px[1]).max(px[2]);
     if y < RATIO_KNEE_Y || m <= y {
@@ -351,7 +352,7 @@ impl Band<'_> {
 /// Scale a working-space pixel to luminance `y_new`: by the RGB ratio (hue and
 /// saturation preserving) above [`RATIO_KNEE_Y`], blending to a neutral offset
 /// towards black. Both give luminance exactly `y_new`.
-fn apply_luminance(px: &mut [f32], lw: [f32; 3], y_new: f32) {
+pub(crate) fn apply_luminance(px: &mut [f32], lw: [f32; 3], y_new: f32) {
     let y = lw[0] * px[0] + lw[1] * px[1] + lw[2] * px[2];
     if y >= RATIO_KNEE_Y {
         let ratio = y_new / y;
@@ -405,7 +406,7 @@ fn hard_knee_limit(v: f32, c: f32) -> f32 {
 /// Soft-limit a change `d` of encoded luminance `l` to the room left before
 /// white (for brightening) or black (for darkening): `room · sat(d / room)`.
 /// Slope 1 for small changes, never crossing 0 or 1.
-fn headroom_limit(l: f32, d: f32) -> f32 {
+pub(crate) fn headroom_limit(l: f32, d: f32) -> f32 {
     let room = if d > 0.0 { 1.0 - l } else { l };
     if room <= 0.0 {
         0.0
@@ -414,7 +415,7 @@ fn headroom_limit(l: f32, d: f32) -> f32 {
     }
 }
 
-fn srgb_encode(v: f32) -> f32 {
+pub(crate) fn srgb_encode(v: f32) -> f32 {
     if v <= 0.003_130_8 {
         v * 12.92
     } else {
@@ -422,7 +423,7 @@ fn srgb_encode(v: f32) -> f32 {
     }
 }
 
-fn srgb_decode(v: f32) -> f32 {
+pub(crate) fn srgb_decode(v: f32) -> f32 {
     if v <= 0.040_45 {
         v / 12.92
     } else {
@@ -441,7 +442,7 @@ fn midtone_weight_lut(power: f32) -> Vec<f32> {
         .collect()
 }
 
-fn lookup(lut: &[f32], v: f32) -> f32 {
+pub(crate) fn lookup(lut: &[f32], v: f32) -> f32 {
     let pos = v.clamp(0.0, 1.0) * (lut.len() - 1) as f32;
     let i = (pos as usize).min(lut.len() - 2);
     let f = pos - i as f32;
@@ -465,7 +466,7 @@ fn prefilter(plane: &[f32], w: usize, h: usize, sigma: f32) -> Cow<'_, [f32]> {
 /// found on a box-subsampled copy and bilinearly upsampled when a row is
 /// evaluated, so edges stay as sharp as the input while cost and memory drop
 /// with the square of the subsampling and no full-size base plane is stored.
-struct GuidedBase {
+pub(crate) struct GuidedBase {
     a: Vec<f32>,
     b: Vec<f32>,
     /// Subsampling factor and low-resolution size.
@@ -477,7 +478,14 @@ struct GuidedBase {
 }
 
 impl GuidedBase {
-    fn new(src: &[f32], w: usize, h: usize, radius: f32, eps: f32, low_res_radius: f32) -> Self {
+    pub(crate) fn new(
+        src: &[f32],
+        w: usize,
+        h: usize,
+        radius: f32,
+        eps: f32,
+        low_res_radius: f32,
+    ) -> Self {
         let eps = eps.max(1e-8);
         let s = ((radius / low_res_radius.max(1.0)).round() as usize)
             .clamp(1, GUIDED_MAX_SUBSAMPLE)
@@ -527,7 +535,7 @@ impl GuidedBase {
     }
 
     /// Base values of full-res row `y`, whose input values are `src_row`.
-    fn row(&self, y: usize, src_row: &[f32], out: &mut [f32]) {
+    pub(crate) fn row(&self, y: usize, src_row: &[f32], out: &mut [f32]) {
         let wl = self.wl;
         let (y0, y1, ty) = Self::coord(y, self.s, self.hl);
         let (a0, a1) = (&self.a[y0 * wl..][..wl], &self.a[y1 * wl..][..wl]);

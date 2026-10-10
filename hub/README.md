@@ -1,0 +1,38 @@
+# Ambrotype hub
+
+Shared layouts, themes and plugins for [Ambrotype](https://github.com/shardpelt/Ambrotype). Layouts and colour themes are called "looks" here (they live in `looks/`). Ambrotype's **Appearance → Browse hub…** lists the looks here and installs them with one click.
+
+Like [Omarchy](https://learn.omacom.io/2/the-omarchy-manual/90/extra-themes)'s themes, there is no server: the hub is this repo. Each look is one small JSON file, and `index.json` lists them with a checksum. Looks contain no code, so they're safe to install. The app checks each file's checksum and validates it before saving it.
+
+## Add your look
+
+**From the app (easiest):** in **Appearance**, pick your own layout or theme and press **Submit to hub…**. GitHub opens with the file already filled in. Press "Propose changes" and then "Create pull request". If you don't have write access, GitHub makes the fork for you.
+
+**By hand:**
+1. Fork this repo.
+2. Add your file as `looks/layouts/<name>.json` or `looks/themes/<name>.json`. Use lower case and dashes, e.g. `warm-dark.json`. The format is described in [ui-layouts.md](https://github.com/shardpelt/Ambrotype/blob/main/docs/ai/ui-layouts.md).
+3. Check it with `ambrotype --check-look looks/themes/warm-dark.json`.
+4. Run `python3 tools/build_index.py` to update `index.json`.
+5. Open a pull request.
+
+If you skip step 4, a maintainer can run it before merging.
+
+**Rules:**
+- One look per file, with a clear `name` and a one-line `description`. Add `"author"` to be credited.
+- Looks are shared under CC0 (public domain) unless the file says otherwise in `"license"`.
+- Nothing that copies another product's branding or name.
+
+## Plugins
+
+Plugins are small programs that make edits (Ambrotype's **Plugins** button). They run sandboxed: no files, no network, only settings the user can see and undo. How to write one: [plugins.md](https://github.com/shardpelt/Ambrotype/blob/main/docs/ai/plugins.md).
+
+- **Send one in:** in the Plugins dialog, pick your plugin and press **Share as pull request…**. It shows the files first, then sends them with the GitHub CLI (your own login) or opens GitHub's upload page in your browser.
+- **Where they go:** `plugins/<id>/`, with `plugin.json`, the built `plugin.wasm`, and the Rust source (`Cargo.toml`, `src/`). No source, no merge: reviewers read the code and rebuild the module. Say the plugin's licence in its `Cargo.toml` (`license = "..."`), any open-source licence works.
+- **Reviewing:** read the source and the permissions it asks for, then `amb plugin build plugins/<id>` (the module should come out the same, or replace it with yours) and `amb plugin check plugins/<id>`.
+- **Installing:** the hub doesn't list plugins in the app yet. Download the plugin's folder and use **Install from folder…** in the Plugins dialog.
+
+## For maintainers
+
+- CI (`.github/workflows/check.yml`) fails when a file isn't valid JSON, is in the wrong folder, or `index.json` is out of date, and when a plugin folder lacks its manifest, module or source.
+- Before merging, run `ambrotype --check-look` on new files, and try them in the app.
+- The app reads `index.json` from `https://raw.githubusercontent.com/<owner>/<repo>/main/index.json`. Ambrotype's default points at `Ambrotypehq/ambrotype-hub`. Anyone can point their app at another hub in **Settings → General**.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The editor's panel layout: Lightroom-like panels and sections, with each
 //! control's range, default, label and help text taken from the settings
 //! registry and descriptions (so the UI never drifts from the engine).
@@ -20,6 +21,10 @@ pub struct Control {
     pub description: String,
     /// For choices: (stored value, label).
     pub options: Vec<(serde_json::Value, String)>,
+    /// The setting this control drives instead on a rendered image (JPEG
+    /// and the like): Temp and Tint become Lightroom's relative sliders.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub rendered: Option<Box<Control>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -55,6 +60,15 @@ fn choice_options(name: &str) -> Vec<(serde_json::Value, String)> {
             (json!(2), "Color Priority".into()),
             (json!(3), "Paint Overlay".into()),
         ],
+        // Filled per photo by the UI with the profiles found for its camera.
+        "CameraProfile" => vec![(json!(""), "Default (Ambrotype)".into())],
+        "PerspectiveUpright" => vec![
+            (json!(0), "Off".into()),
+            (json!(1), "Auto".into()),
+            (json!(2), "Level".into()),
+            (json!(3), "Vertical".into()),
+            (json!(4), "Full".into()),
+        ],
         "amb:NegativeType" => vec![
             (json!("color"), "Colour".into()),
             (json!("bw"), "Black & white".into()),
@@ -86,7 +100,11 @@ fn control(name: &str, label_override: Option<&str>) -> Control {
         (Some(a), Some(b)) => b - a,
         _ => 100.0,
     };
-    let step = if span <= 10.0 { 0.01 } else { 1.0 };
+    let step = match name {
+        "PerspectiveRotate" => 0.1,
+        _ if span <= 10.0 => 0.01,
+        _ => 1.0,
+    };
     Control {
         name: name.to_string(),
         label: label_override
@@ -101,6 +119,11 @@ fn control(name: &str, label_override: Option<&str>) -> Control {
         units: text.and_then(|t| t.units.clone()),
         description: text.map(|t| t.description.clone()).unwrap_or_default(),
         options,
+        rendered: match name {
+            "Temperature" => Some(Box::new(control("IncrementalTemperature", label_override))),
+            "Tint" => Some(Box::new(control("IncrementalTint", label_override))),
+            _ => None,
+        },
     }
 }
 
@@ -139,6 +162,7 @@ pub fn panels() -> Vec<Panel> {
             label: "Basic",
             groups: vec!["white_balance", "tone", "presence"],
             sections: vec![
+                section("Profile", &[("CameraProfile", Some("Profile"))]),
                 section(
                     "White Balance",
                     &[
@@ -190,6 +214,25 @@ pub fn panels() -> Vec<Panel> {
                 layout: "hsl",
                 controls: hsl_names.iter().map(|n| control(n, None)).collect(),
             }],
+        },
+        Panel {
+            id: "black_white",
+            label: "Black & White",
+            groups: vec!["bw_mixer"],
+            sections: vec![
+                section(
+                    "Treatment",
+                    &[("ConvertToGrayscale", Some("Black & white"))],
+                ),
+                Section {
+                    label: "Mix".into(),
+                    layout: "sliders",
+                    controls: BANDS
+                        .iter()
+                        .map(|b| control(&format!("GrayMixer{b}"), Some(b)))
+                        .collect(),
+                },
+            ],
         },
         Panel {
             id: "color_grading",
@@ -273,6 +316,26 @@ pub fn panels() -> Vec<Panel> {
             ],
         },
         Panel {
+            id: "transform",
+            label: "Transform",
+            groups: vec!["transform"],
+            sections: vec![
+                section("Upright", &[("PerspectiveUpright", Some("Upright"))]),
+                section(
+                    "Transform",
+                    &[
+                        ("PerspectiveVertical", Some("Vertical")),
+                        ("PerspectiveHorizontal", Some("Horizontal")),
+                        ("PerspectiveRotate", Some("Rotate")),
+                        ("PerspectiveAspect", Some("Aspect")),
+                        ("PerspectiveScale", Some("Scale")),
+                        ("PerspectiveX", Some("Offset X")),
+                        ("PerspectiveY", Some("Offset Y")),
+                    ],
+                ),
+            ],
+        },
+        Panel {
             id: "effects",
             label: "Effects",
             groups: vec!["effects"],
@@ -294,6 +357,35 @@ pub fn panels() -> Vec<Panel> {
                         ("GrainAmount", Some("Amount")),
                         ("GrainSize", Some("Size")),
                         ("GrainFrequency", Some("Roughness")),
+                    ],
+                ),
+            ],
+        },
+        Panel {
+            id: "calibration",
+            label: "Calibration",
+            groups: vec!["calibration"],
+            sections: vec![
+                section("Shadows", &[("ShadowTint", Some("Tint"))]),
+                section(
+                    "Red Primary",
+                    &[
+                        ("RedHue", Some("Hue")),
+                        ("RedSaturation", Some("Saturation")),
+                    ],
+                ),
+                section(
+                    "Green Primary",
+                    &[
+                        ("GreenHue", Some("Hue")),
+                        ("GreenSaturation", Some("Saturation")),
+                    ],
+                ),
+                section(
+                    "Blue Primary",
+                    &[
+                        ("BlueHue", Some("Hue")),
+                        ("BlueSaturation", Some("Saturation")),
                     ],
                 ),
             ],
@@ -362,7 +454,7 @@ mod tests {
     fn layout_serialises() {
         let json = serde_json::to_value(panels()).unwrap();
         assert!(json.as_array().unwrap().len() >= 8);
-        let basic = &json[0]["sections"][1]["controls"][0];
+        let basic = &json[0]["sections"][2]["controls"][0];
         assert_eq!(basic["name"], "Exposure2012");
         assert_eq!(basic["step"], 0.01);
     }

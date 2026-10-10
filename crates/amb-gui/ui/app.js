@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Ambrotype editor UI. Plain JS, no build step: talks to the Rust side via
 // window.__TAURI__.core.invoke. Every edit is a amb-protocol command, so the
 // GUI behaves exactly like the CLI and AI clients.
@@ -9,14 +10,30 @@ const $ = (id) => document.getElementById(id);
 
 const ui = {
   panels: [],            // editor schema
+  defs: new Map(),       // setting name -> its control definition (from the schema)
+  looks: null,           // layouts and themes (src/looks.rs), with the active ids
+  layout: null,          // the active layout (layout.js renders it)
+  histogram: null,       // the last histogram, redrawn when the theme or layout changes
+  keybindings: {},       // shortcuts the user changed (keys.js has the defaults)
   controls: new Map(),   // name -> { def, input, number, label, select, check }
   settings: {},          // committed settings (from the Rust state)
   info: null,            // photo info
   overrides: {},         // values being dragged, not yet committed
   before: false,
   hslTab: "Hue",
-  preview: { inFlight: false, dirty: false, draft: false, url: null },
+  // `uncropped`: the shown preview is the whole photo (what the crop tool draws on).
+  preview: { inFlight: false, dirty: false, draft: false, url: null, uncropped: false },
   presets: [],
+  zoom: { on: false, cx: 0.5, cy: 0.5, meta: null, pan: null },
+  picking: false,
+  clipping: false,
+  curve: null,
+  wheels: null,
+  // Crop tool: `start` is the committed rectangle when the tool opened;
+  // `aspect` the lock ("free", "original", "4:5", "size:<id>"), `swapped` its X.
+  crop: { on: false, tool: null, start: null, enabled: false, aspect: "original", swapped: false, angleSign: 1 },
+  sizes: [],             // size presets (built-in, then the user's)
+  exportCropAspect: 1,
 };
 
 // ---------------------------------------------------------------- helpers
@@ -56,7 +73,9 @@ function fromSlider(def, s) {
 function currentValue(name) {
   if (name in ui.overrides) return ui.overrides[name];
   if (name in ui.settings) return ui.settings[name];
+  if (name === "CameraProfile") return "";
   const def = ui.controls.get(name)?.def;
+  if (ui.info?.defaults && name in ui.info.defaults) return ui.info.defaults[name];
   if (name === "Temperature") return ui.info ? Math.round(ui.info.as_shot_temperature) : 5500;
   if (name === "Tint") return ui.info ? Math.round(ui.info.as_shot_tint) : 0;
   if (name === "WhiteBalance") return "As Shot";
@@ -73,6 +92,8 @@ const TRACKS = {
   Temperature: "linear-gradient(90deg,#4f7bd1,#d9d2b8,#e3b23c)",
   Tint: "linear-gradient(90deg,#4caf50,#d9d2c8,#c548b6)",
 };
+TRACKS.IncrementalTemperature = TRACKS.Temperature;
+TRACKS.IncrementalTint = TRACKS.Tint;
 const BAND_COLOURS = {
   Red: "#e04848", Orange: "#ec8a32", Yellow: "#e6d33a", Green: "#4fbf4f",
   Aqua: "#3fc6c6", Blue: "#4170e0", Purple: "#8c55d9", Magenta: "#d64fb5",
@@ -144,6 +165,9 @@ function makeRow(def) {
       requestPreview(true);
     });
     input.addEventListener("change", () => commit(def.name, fromSlider(def, input.value)));
+    // After a mouse drag the slider lets go of the keyboard, so ← → move between
+    // photos again (Tab still reaches it for arrow-key changes).
+    input.addEventListener("pointerup", () => input.blur());
     number.addEventListener("change", () => {
       const v = Number(number.value);
       if (!Number.isNaN(v)) commit(def.name, v);
@@ -158,66 +182,24 @@ function makeRow(def) {
   return row;
 }
 
-function buildPanels() {
-  const root = $("panels");
-  root.innerHTML = "";
-  ui.controls.clear();
-  for (const panel of ui.panels) {
-    const details = document.createElement("details");
-    details.className = "panel";
-    details.open = ["basic"].includes(panel.id);
-    const summary = document.createElement("summary");
-    const title = document.createElement("span");
-    title.textContent = panel.label;
-    const reset = document.createElement("button");
-    reset.className = "small reset";
-    reset.textContent = "Reset";
-    reset.title = `Reset ${panel.label}`;
-    reset.addEventListener("click", (e) => {
-      e.preventDefault();
-      run(panel.groups.map((g) => ({ cmd: "reset_group", group: g })));
-    });
-    summary.append(title, reset);
-    const body = document.createElement("div");
-    body.className = "panel-body";
-    for (const section of panel.sections) {
-      if (panel.sections.length > 1 || section.layout === "sliders") {
-        const l = document.createElement("div");
-        l.className = "section-label";
-        l.textContent = section.label;
-        body.append(l);
-      }
-      if (section.layout === "hsl") {
-        const tabs = document.createElement("div");
-        tabs.className = "tabs";
-        const holder = document.createElement("div");
-        const rows = {};
-        for (const def of section.controls) {
-          const kind = def.name.match(/^(Hue|Saturation|Luminance)/)[1];
-          const band = def.name.replace(/^(Hue|Saturation|Luminance)Adjustment/, "");
-          const row = makeRow({ ...def, label: band });
-          (rows[kind] ||= []).push(row);
-        }
-        for (const kind of ["Hue", "Saturation", "Luminance"]) {
-          const b = document.createElement("button");
-          b.textContent = kind;
-          b.addEventListener("click", () => {
-            ui.hslTab = kind;
-            for (const [k, rs] of Object.entries(rows)) rs.forEach((r) => (r.hidden = k !== kind));
-            tabs.querySelectorAll("button").forEach((x) => x.classList.toggle("active", x === b));
-          });
-          tabs.append(b);
-          rows[kind].forEach((r) => { r.hidden = kind !== ui.hslTab; holder.append(r); });
-          if (kind === ui.hslTab) b.classList.add("active");
-        }
-        body.append(tabs, holder);
-      } else {
-        for (const def of section.controls) body.append(makeRow(def));
-      }
-    }
-    details.append(summary, body);
-    root.append(details);
-  }
+// History entries in words: "set_param Exposure2012" → "Exposure2012",
+// "add_mask linear to mask 0" → "Mask 1: add linear".
+function historyLabel(label) {
+  const n = (i) => `Mask ${Number(i) + 1}`;
+  return label
+    .replace(/^set_param /, "")
+    .replace(/^apply_preset .*[\\/]/, "preset ")
+    .replace(/^add_mask (\w+) to mask (\d+)$/, (_, k, m) => `${n(m)}: add ${k}`)
+    .replace(/^add_mask (\w+)$/, (_, k) => `New ${k} mask`)
+    .replace(/^set_mask (\d+) part (\d+)$/, (_, m, p) => `${n(m)}: edit part ${Number(p) + 1}`)
+    .replace(/^set_mask (\d+)$/, (_, m) => n(m))
+    .replace(/^paint_mask new$/, "New brush mask")
+    .replace(/^(paint|erase)_mask (\d+)$/, (_, v, m) => `${n(m)}: ${v === "paint" ? "brush" : "erase"}`)
+    .replace(/^remove_mask (\d+) part (\d+)$/, (_, m, p) => `${n(m)}: remove part ${Number(p) + 1}`)
+    .replace(/^remove_mask (\d+)$/, (_, m) => `Delete ${n(m).toLowerCase()}`)
+    .replace(/^add_spot (\w+)$/, (_, k) => `${k === "clone" ? "Clone" : "Heal"} spot`)
+    .replace(/^set_spot (\d+)$/, (_, s) => `Spot ${Number(s) + 1}`)
+    .replace(/^remove_spot (\d+)$/, (_, s) => `Delete spot ${Number(s) + 1}`);
 }
 
 function syncControls() {
@@ -225,8 +207,12 @@ function syncControls() {
     const v = currentValue(name);
     const changed = name in ui.settings;
     if (c.label) c.label.classList.toggle("changed", changed);
-    if (c.check) c.check.checked = asBool(v);
-    else if (c.select) c.select.value = JSON.stringify(typeof v === "string" && /^\d+$/.test(v) ? Number(v) : v);
+    if (c.set) c.set(v);
+    else if (c.check) c.check.checked = asBool(v);
+    else if (c.select && name === "CameraProfile") {
+      fillProfileOptions(c.select, v);
+      c.select.value = JSON.stringify(v ?? "");
+    } else if (c.select) c.select.value = JSON.stringify(typeof v === "string" && /^\d+$/.test(v) ? Number(v) : v);
     else if (c.input) {
       const n = Number(v);
       c.input.value = toSlider(c.def, n);
@@ -239,9 +225,11 @@ function syncControls() {
   hist.innerHTML = "";
   for (const label of ui.state?.history ?? []) {
     const li = document.createElement("li");
-    li.textContent = label.replace(/^set_param /, "").replace(/^apply_preset .*[\\/]/, "preset ");
+    li.textContent = historyLabel(label);
     hist.append(li);
   }
+  if (ui.curve) for (const tag of AmbCurve.TAGS) ui.curve.set(tag, currentValue(tag));
+  if (ui.wheels) ui.wheels.set(Object.fromEntries(AmbWheels.TAGS.map((t) => [t, currentValue(t)])));
   const nr = ui.state?.not_rendered ?? [];
   $("status-right").textContent = nr.length ? `Not rendered yet: ${nr.length} setting(s)` : "";
   $("status-right").title = nr.join(", ");
@@ -250,16 +238,22 @@ function syncControls() {
 // ---------------------------------------------------------------- state & commands
 
 function setState(state) {
+  const crop = cropKey(ui.settings);
   ui.state = state;
   ui.settings = state.settings ?? {};
   ui.overrides = {};
+  stripUpdateCurrent({ edited: Object.keys(ui.settings).length > 0 });
   syncControls();
+  if (ui.crop.on && cropKey(ui.settings) !== crop) reloadCrop();
+  masksStateChanged();
+  spotsStateChanged();
 }
 
-async function run(commands) {
+// Run protocol commands; several commands with a `group` label are one undo step.
+async function run(commands, group = null) {
   if (!ui.info) return;
   try {
-    const r = await invoke("execute", { commands });
+    const r = await invoke("execute", { commands, group });
     setState(r.state);
     if (r.notes.length) toast(r.notes.join(" · "));
     requestPreview(false);
@@ -272,7 +266,41 @@ async function run(commands) {
 
 function commit(name, value) {
   delete ui.overrides[name];
+  // The default profile is no profile at all.
+  if (name === "CameraProfile" && value === "") return run([{ cmd: "reset_param", name }]);
   run([{ cmd: "set_param", name, value }]);
+}
+
+// The Profile menu: our default look, then the camera profiles (.dcp) found
+// on this computer for the photo's camera, and the edit's own if it's
+// missing here.
+async function refreshProfiles(tries = 30) {
+  let found = [];
+  if (ui.info) {
+    try {
+      found = await invoke("camera_profiles");
+    } catch {
+      found = [];
+    }
+  }
+  // The profile folders are read in the background at start-up.
+  if (found === null) {
+    if (tries > 0) setTimeout(() => refreshProfiles(tries - 1), 1000);
+    found = [];
+  }
+  ui.profiles = found;
+  syncControls();
+}
+
+function fillProfileOptions(select, current) {
+  const names = [...(ui.profiles ?? [])];
+  const options = [["", "Default (Ambrotype)"], ...names.map((n) => [n, n])];
+  if (current && !names.some((n) => n.toLowerCase() === String(current).toLowerCase())) options.push([current, `${current} (not found)`]);
+  const want = options.map(([v, t]) => `${v}\u0000${t}`).join("\n");
+  if (select.dataset.options !== want) {
+    select.replaceChildren(...options.map(([v, t]) => Object.assign(document.createElement("option"), { value: JSON.stringify(v), textContent: t })));
+    select.dataset.options = want;
+  }
 }
 
 // ---------------------------------------------------------------- preview
@@ -297,23 +325,40 @@ async function renderLoop() {
   while (ui.preview.dirty) {
     ui.preview.dirty = false;
     const draft = ui.preview.draft;
+    const uncropped = ui.crop.on || ui.before;
     try {
+      if (ui.zoom.on) {
+        // At 100% only committed changes render (a full-size render per drag step is too slow).
+        if (!draft) await renderRegion();
+        continue;
+      }
+      const overrides = ui.before ? {} : { ...ui.overrides };
+      const maskOverlay = ui.before ? null : maskOverlayIndex();
+      // The crop tool draws its rectangle on the whole photo.
+      if (ui.crop.on) overrides.HasCrop = false;
       const buf = await invoke("preview", {
         maxEdge: previewSize(draft),
-        overrides: ui.before ? {} : { ...ui.overrides },
+        overrides,
         before: ui.before,
+        clipping: ui.clipping,
+        maskOverlay,
       });
-      const bytes = new Uint8Array(buf);
-      const len = new DataView(bytes.buffer, bytes.byteOffset, 4).getUint32(0, true);
-      const meta = JSON.parse(new TextDecoder().decode(bytes.subarray(4, 4 + len)));
-      const blob = new Blob([bytes.subarray(4 + len)], { type: "image/jpeg" });
-      const url = URL.createObjectURL(blob);
+      const { meta, jpeg } = splitFramed(buf);
+      // A draft is smaller than the viewer; keep the image at its settled size
+      // so the photo doesn't shrink while dragging.
       const img = $("preview");
-      img.src = url;
-      img.hidden = false;
-      if (ui.preview.url) URL.revokeObjectURL(ui.preview.url);
-      ui.preview.url = url;
+      if (draft && !img.hidden && !img.style.width) {
+        const r = img.getBoundingClientRect();
+        img.style.width = `${r.width}px`;
+        img.style.height = `${r.height}px`;
+      } else if (!draft) {
+        img.style.width = img.style.height = "";
+      }
+      showJpeg(jpeg);
+      ui.preview.uncropped = uncropped;
+      ui.preview.overlay = maskOverlay != null;
       drawHistogram(meta.histogram);
+      ui.curve?.setHistogram(meta.histogram);
       status(`${meta.width}×${meta.height} preview in ${meta.millis} ms` +
         (meta.lens_profile ? `  ·  Lens: ${meta.lens_profile}` : ""));
     } catch (e) {
@@ -325,6 +370,7 @@ async function renderLoop() {
 }
 
 function drawHistogram(h) {
+  ui.histogram = h;
   const c = $("histogram");
   const dpr = window.devicePixelRatio || 1;
   c.width = c.clientWidth * dpr;
@@ -345,6 +391,546 @@ function drawHistogram(h) {
   g.globalCompositeOperation = "source-over";
 }
 
+// ---------------------------------------------------------------- 100% view, pickers
+
+function splitFramed(buf) {
+  const bytes = new Uint8Array(buf);
+  const len = new DataView(bytes.buffer, bytes.byteOffset, 4).getUint32(0, true);
+  const meta = JSON.parse(new TextDecoder().decode(bytes.subarray(4, 4 + len)));
+  return { meta, jpeg: bytes.subarray(4 + len) };
+}
+
+function showJpeg(jpeg) {
+  const url = URL.createObjectURL(new Blob([jpeg], { type: "image/jpeg" }));
+  const img = $("preview");
+  img.src = url;
+  img.hidden = ui.crop.on;
+  if (ui.preview.url) URL.revokeObjectURL(ui.preview.url);
+  ui.preview.url = url;
+}
+
+// 1:1 crop of the full-size render around (cx, cy); 1.5× the viewport so a
+// short pan doesn't show empty space before the next crop arrives.
+async function renderRegion() {
+  const v = $("viewer");
+  const dpr = window.devicePixelRatio || 1;
+  status("Rendering 100%…");
+  const { meta, jpeg } = splitFramed(await invoke("region", {
+    cx: ui.zoom.cx, cy: ui.zoom.cy,
+    width: Math.round(v.clientWidth * dpr * 1.5),
+    height: Math.round(v.clientHeight * dpr * 1.5),
+    before: ui.before,
+    clipping: ui.clipping,
+  }));
+  // 100% was switched off (or another photo opened) while this rendered.
+  if (!ui.zoom.on) {
+    requestPreview(false);
+    return;
+  }
+  ui.zoom.meta = meta;
+  showJpeg(jpeg);
+  $("viewer").classList.add("actual");
+  placeRegion();
+  status(`100%: ${meta.full_width}×${meta.full_height} in ${meta.millis} ms` +
+    (Object.keys(ui.overrides).length ? " (slider changes show at 100% when released)" : ""));
+}
+
+// Position the 1:1 crop so (cx, cy) sits in the viewport centre.
+function placeRegion(dx = 0, dy = 0) {
+  const m = ui.zoom.meta;
+  if (!m) return;
+  const v = $("viewer");
+  const dpr = window.devicePixelRatio || 1;
+  const img = $("preview");
+  img.style.width = `${m.width / dpr}px`;
+  img.style.height = `${m.height / dpr}px`;
+  const centreX = (ui.zoom.cx * m.full_width - m.x) / dpr;
+  const centreY = (ui.zoom.cy * m.full_height - m.y) / dpr;
+  img.style.left = `${v.clientWidth / 2 - centreX + dx}px`;
+  img.style.top = `${v.clientHeight / 2 - centreY + dy}px`;
+}
+
+function setZoom(on, u = 0.5, v = 0.5) {
+  ui.zoom.on = on;
+  ui.zoom.cx = u;
+  ui.zoom.cy = v;
+  ui.zoom.meta = null;
+  const img = $("preview");
+  // The "actual" layout is applied once the 1:1 crop arrives (renderRegion).
+  if (!on) $("viewer").classList.remove("actual");
+  $("btn-zoom").classList.toggle("active", on);
+  if (!on) for (const k of ["width", "height", "left", "top"]) img.style[k] = "";
+  requestPreview(false);
+}
+
+// Where a click lands, as fractions (u, v) of the upright photo.
+function photoPoint(e) {
+  const img = $("preview");
+  const r = img.getBoundingClientRect();
+  const fx = (e.clientX - r.left) / r.width;
+  const fy = (e.clientY - r.top) / r.height;
+  if (ui.zoom.on && ui.zoom.meta) {
+    const m = ui.zoom.meta;
+    return [(m.x + fx * m.width) / m.full_width, (m.y + fy * m.height) / m.full_height];
+  }
+  return [fx, fy];
+}
+
+async function pickWhite(u, v) {
+  setPicking(false);
+  try {
+    const r = await invoke("pick_white", { u, v });
+    setState(r.state);
+    toast(r.notes.join(" "));
+    requestPreview(false);
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
+function setPicking(on) {
+  ui.picking = on && Boolean(ui.info);
+  $("viewer").classList.toggle("picking", ui.picking);
+  $("btn-wb").classList.toggle("active", ui.picking);
+  if (ui.picking) status("Click a neutral grey or white spot (Esc to cancel)");
+}
+
+function toggleClipping() {
+  if (!ui.info) return;
+  ui.clipping = !ui.clipping;
+  $("btn-clip").classList.toggle("active", ui.clipping);
+  requestPreview(false);
+}
+
+function wireViewer() {
+  const img = $("preview");
+  let drag = null;
+  img.addEventListener("mousedown", (e) => {
+    if (e.button !== 0 || !ui.info) return;
+    e.preventDefault();
+    drag = { x: e.clientX, y: e.clientY, moved: false };
+  });
+  window.addEventListener("mousemove", (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+    if (ui.zoom.on && drag.moved) {
+      img.classList.add("panning");
+      placeRegion(dx, dy);
+    }
+  });
+  window.addEventListener("mouseup", (e) => {
+    if (!drag) return;
+    const d = drag;
+    drag = null;
+    img.classList.remove("panning");
+    if (ui.zoom.on && d.moved && ui.zoom.meta) {
+      // Move the centre by the drag distance (in full-size pixels) and fetch a new crop.
+      const dpr = window.devicePixelRatio || 1;
+      const m = ui.zoom.meta;
+      ui.zoom.cx = Math.min(1, Math.max(0, ui.zoom.cx - ((e.clientX - d.x) * dpr) / m.full_width));
+      ui.zoom.cy = Math.min(1, Math.max(0, ui.zoom.cy - ((e.clientY - d.y) * dpr) / m.full_height));
+      requestPreview(false);
+      return;
+    }
+    if (d.moved) return;
+    const [u, v] = photoPoint(e);
+    if (ui.picking) pickWhite(u, v);
+    else setZoom(!ui.zoom.on, u, v);
+  });
+}
+
+// ---------------------------------------------------------------- crop & straighten
+
+const CROP_TAGS = ["HasCrop", "CropLeft", "CropTop", "CropRight", "CropBottom", "CropAngle"];
+const ASPECTS = ["1:1", "3:2", "2:3", "4:5", "4:3", "3:4", "16:9", "9:16"];
+
+function cropKey(settings) {
+  return JSON.stringify(CROP_TAGS.map((t) => settings[t] ?? null));
+}
+
+// "3:2" for 1.5; "1.91:1" when no small whole-number ratio is close.
+function ratioText(a) {
+  for (let n = 1; n <= 16; n++) {
+    const m = Math.round(a * n);
+    if (m > 0 && Math.abs(m / n - a) / a < 0.004) return `${m}:${n}`;
+  }
+  return `${a.toFixed(2)}:1`;
+}
+
+// Width / height of an aspect choice before the swap, or null (free).
+function aspectRatio(value) {
+  if (value === "original") return ui.info ? ui.info.width / ui.info.height : null;
+  if (value.startsWith("size:")) {
+    const p = ui.sizes.find((x) => x.id === value.slice(5));
+    return p ? p.width / p.height : null;
+  }
+  const m = value.match(/^(\d+):(\d+)$/);
+  return m ? Number(m[1]) / Number(m[2]) : null;
+}
+
+function lockedRatio() {
+  const r = aspectRatio(ui.crop.aspect);
+  return r && ui.crop.swapped ? 1 / r : r;
+}
+
+// Keep the aspect lock when the rectangle has it (either way round);
+// otherwise Original for an uncropped photo, else Free.
+function chooseAspect(rect, enabled) {
+  const r = rect.width / rect.height;
+  const close = (a, b) => Math.abs(Math.log(a / b)) < 0.005;
+  for (const value of [ui.crop.aspect, "original"]) {
+    const base = aspectRatio(value);
+    if (!base) continue;
+    if (close(base, r) || close(1 / base, r)) {
+      ui.crop.aspect = value;
+      ui.crop.swapped = !close(base, r);
+      return;
+    }
+  }
+  ui.crop.aspect = enabled ? "free" : "original";
+  ui.crop.swapped = false;
+}
+
+function fillSizeSelects() {
+  const groups = new Map();
+  for (const p of ui.sizes) {
+    if (!groups.has(p.group)) groups.set(p.group, []);
+    groups.get(p.group).push(p);
+  }
+  const option = (parent, value, text) => {
+    const o = document.createElement("option");
+    o.value = value;
+    o.textContent = text;
+    parent.append(o);
+  };
+  // Site groups (and yours) after the common ones; the picker shows them collapsed.
+  const addSizes = (sel, skip = []) => {
+    for (const [group, items] of groups) {
+      if (skip.includes(group)) continue;
+      const og = document.createElement("optgroup");
+      og.label = group || "Yours";
+      for (const p of items) option(og, `size:${p.id}`, `${p.name} (${p.width} × ${p.height})`);
+      sel.append(og);
+    }
+  };
+  const crop = $("crop-aspect");
+  crop.innerHTML = "";
+  option(crop, "original", "Original");
+  option(crop, "free", "Free");
+  const ratios = document.createElement("optgroup");
+  ratios.label = "Common ratios";
+  for (const r of ASPECTS) option(ratios, r, r.replace(":", " : "));
+  crop.append(ratios);
+  // The crop's own ratio list covers the common sizes.
+  addSizes(crop, ["Common"]);
+  if (!aspectRatio(ui.crop.aspect) && ui.crop.aspect !== "free") ui.crop.aspect = "original";
+  crop.value = ui.crop.aspect;
+
+  const sel = $("export-form").size_preset;
+  const keep = sel.value;
+  sel.innerHTML = "";
+  option(sel, "", "None");
+  option(sel, "custom", "Custom size");
+  addSizes(sel);
+  sel.value = [...sel.options].some((o) => o.value === keep) ? keep : "";
+}
+
+async function loadSizes() {
+  try {
+    ui.sizes = await invoke("size_presets");
+  } catch (e) {
+    toast(String(e), true);
+  }
+  fillSizeSelects();
+}
+
+function syncCropPanel(rect) {
+  if (!rect) return;
+  const a = rect.angle;
+  $("crop-angle").value = a;
+  $("crop-angle-num").value = (a > 0 ? "+" : "") + a.toFixed(2);
+  $("crop-size").textContent = `${Math.round(rect.width)} × ${Math.round(rect.height)} px  ·  ${ratioText(rect.width / rect.height)}`;
+  $("crop-aspect").value = ui.crop.aspect;
+}
+
+function setCropMode(on) {
+  ui.crop.on = on;
+  $("crop-canvas").hidden = !on;
+  $("crop-panel").hidden = !on;
+  $("preview").hidden = on || !ui.preview.url;
+  $("btn-crop").classList.toggle("active", on);
+  // No 100% view or white-balance picking on the uncropped view.
+  for (const id of ["btn-zoom", "btn-wb"]) $(id).disabled = on || !ui.info;
+}
+
+async function enterCrop() {
+  if (!ui.info || ui.crop.on) return;
+  exitMasks();
+  exitSpots();
+  if (ui.zoom.on) setZoom(false);
+  setPicking(false);
+  let st;
+  try {
+    st = await invoke("crop_state");
+  } catch (e) {
+    toast(String(e), true);
+    return;
+  }
+  ui.crop.start = st.rect;
+  ui.crop.enabled = st.enabled;
+  ui.crop.angleSign = st.angle_sign;
+  chooseAspect(st.rect, st.enabled);
+  setCropMode(true);
+  // No crop yet: start by drawing one, like a screenshot selection.
+  ui.crop.tool.setRatio(lockedRatio());
+  ui.crop.tool.start({ width: ui.info.width, height: ui.info.height, angleSign: st.angle_sign, rect: st.rect, draw: !st.enabled });
+  syncCropPanel(st.rect);
+  requestPreview(false);
+}
+
+// The committed crop changed while the tool is open (undo, redo, reset).
+async function reloadCrop() {
+  try {
+    const st = await invoke("crop_state");
+    if (!ui.crop.on) return;
+    ui.crop.start = st.rect;
+    ui.crop.enabled = st.enabled;
+    chooseAspect(st.rect, st.enabled);
+    ui.crop.tool.setRatio(lockedRatio());
+    ui.crop.tool.setRect(st.rect);
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
+function cropChanged(rect) {
+  const s = ui.crop.start;
+  if (!s || !rect) return false;
+  return ["cx", "cy", "width", "height"].some((k) => Math.abs(rect[k] - s[k]) > 0.25) ||
+    Math.abs(rect.angle - s.angle) > 0.005;
+}
+
+// Leave the crop tool; with `commit`, its rectangle becomes one undo step.
+async function exitCrop(commit) {
+  if (!ui.crop.on) return;
+  const rect = ui.crop.tool.rect();
+  setCropMode(false);
+  ui.crop.tool.stop();
+  status("Ready");
+  if (commit && cropChanged(rect)) {
+    try {
+      const commands = await invoke("crop_commands", { rect });
+      await run(commands, "crop");
+      return;
+    } catch (e) {
+      toast(String(e), true);
+    }
+  }
+  requestPreview(false);
+}
+
+function toggleCrop() {
+  if (ui.crop.on) exitCrop(true);
+  else enterCrop();
+}
+
+// Reset: no crop, no straighten (one undo step when there was a crop).
+async function resetCrop() {
+  if (!ui.crop.on) return;
+  const full = { cx: ui.info.width / 2, cy: ui.info.height / 2, width: ui.info.width, height: ui.info.height, angle: 0 };
+  ui.crop.aspect = "original";
+  ui.crop.swapped = false;
+  ui.crop.tool.setRatio(lockedRatio());
+  ui.crop.tool.setRect(full);
+  if (ui.crop.enabled) {
+    try {
+      // reloadCrop (via setState) then picks up the cleared crop.
+      await run(await invoke("crop_commands", { rect: full }), "reset crop");
+    } catch (e) {
+      toast(String(e), true);
+    }
+  } else {
+    ui.crop.start = full;
+  }
+}
+
+function setCropAspect(value) {
+  ui.crop.aspect = value;
+  ui.crop.swapped = false;
+  ui.crop.tool.setRatio(lockedRatio());
+  ui.crop.tool.fitRatio();
+}
+
+function swapCrop() {
+  if (!ui.crop.on) return;
+  if (aspectRatio(ui.crop.aspect)) ui.crop.swapped = !ui.crop.swapped;
+  ui.crop.tool.swap();
+  ui.crop.tool.setRatio(lockedRatio());
+}
+
+function wireCrop() {
+  const img = $("preview");
+  ui.crop.tool = AmbCrop.create($("crop-canvas"), {
+    // Only the whole-photo preview, once loaded (not a cropped one still showing).
+    image: () => (ui.preview.uncropped && img.complete && img.naturalWidth ? img : null),
+    onChange: (rect) => syncCropPanel(rect),
+    onDrawMode: (on) => {
+      $("crop-draw").classList.toggle("active", on);
+      const hint = on
+        ? "Press at one corner of the crop and drag to the opposite corner. Or adjust the frame with the controls here."
+        : "Drag the edges or corners, inside to move, outside the frame to straighten. Draw ⌖ (D) starts a new one. Enter applies, Esc cancels.";
+      $("crop-hint").textContent = hint;
+      if (ui.crop.on) status(on ? "Crop: drag from one corner to the other" : "Crop: adjust the frame; Enter applies, Esc cancels");
+    },
+  });
+  $("crop-draw").addEventListener("click", () => ui.crop.tool.setDrawMode(!ui.crop.tool.drawMode()));
+  img.addEventListener("load", () => { if (ui.crop.on) ui.crop.tool.draw(); });
+  $("btn-crop").addEventListener("click", toggleCrop);
+  $("btn-masks").addEventListener("click", toggleMasks);
+  $("btn-spots").addEventListener("click", toggleSpots);
+  $("crop-done").addEventListener("click", () => exitCrop(true));
+  $("crop-cancel").addEventListener("click", () => exitCrop(false));
+  $("crop-reset").addEventListener("click", resetCrop);
+  $("crop-swap").addEventListener("click", swapCrop);
+  $("crop-sizes").addEventListener("click", sizesFlow);
+  $("crop-aspect").addEventListener("change", (e) => {
+    setCropAspect(e.target.value);
+    // Let Enter apply the crop again rather than reopen the list.
+    e.target.blur();
+  });
+  const angle = $("crop-angle");
+  angle.addEventListener("input", () => ui.crop.tool.setAngle(Number(angle.value)));
+  angle.addEventListener("change", () => ui.crop.tool.endAngle());
+  const straight = () => { ui.crop.tool.setAngle(0); ui.crop.tool.endAngle(); };
+  angle.addEventListener("dblclick", straight);
+  angle.previousElementSibling.addEventListener("dblclick", straight);
+  $("crop-angle-num").addEventListener("change", (e) => {
+    const v = Number(e.target.value);
+    if (Number.isFinite(v)) { ui.crop.tool.setAngle(v); ui.crop.tool.endAngle(); }
+  });
+}
+
+// ---------------------------------------------------------------- size presets
+
+async function sizesFlow() {
+  const dlg = $("sizes-dialog");
+  const f = $("sizes-form");
+  let editing = "";  // id of the user preset being edited; "" adds a new one
+  const fill = (p, id) => {
+    editing = id;
+    f.name.value = p ? (id ? p.name : `${p.name} (copy)`) : "";
+    f.group.value = p ? p.group : "";
+    f.width.value = p ? p.width : "";
+    f.height.value = p ? p.height : "";
+    $("sizes-editing").textContent = id ? `Editing "${p.name}"` : p ? `New size from "${p.name}"` : "New size";
+  };
+  const list = () => {
+    const root = $("sizes-list");
+    root.innerHTML = "";
+    let group = null;
+    for (const p of ui.sizes) {
+      if (p.group !== group) {
+        group = p.group;
+        const h = document.createElement("div");
+        h.className = "size-group";
+        h.textContent = group + (p.builtin ? "" : " (yours)");
+        root.append(h);
+      }
+      const row = document.createElement("div");
+      row.className = "size-row";
+      const name = document.createElement("span");
+      name.textContent = p.name;
+      const dims = document.createElement("span");
+      dims.className = "dims";
+      dims.textContent = `${p.width} × ${p.height}`;
+      const buttons = document.createElement("span");
+      buttons.className = "buttons";
+      const button = (text, title, action) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "small";
+        b.textContent = text;
+        b.title = title;
+        b.addEventListener("click", action);
+        buttons.append(b);
+      };
+      button("Clone", "Start a new size from this one", () => fill(p, ""));
+      if (!p.builtin) {
+        button("Edit", "Change this size", () => fill(p, p.id));
+        button("Delete", "Delete this size", async () => {
+          try {
+            ui.sizes = await invoke("delete_size_preset", { id: p.id });
+            if (editing === p.id) fill(null, "");
+            fillSizeSelects();
+            list();
+          } catch (e) {
+            toast(String(e), true);
+          }
+        });
+      }
+      row.append(name, dims, buttons);
+      root.append(row);
+    }
+  };
+  const save = async () => {
+    const preset = {
+      id: editing,
+      name: f.name.value,
+      group: f.group.value,
+      width: Number(f.width.value) || 0,
+      height: Number(f.height.value) || 0,
+    };
+    try {
+      ui.sizes = await invoke("save_size_preset", { preset });
+      fillSizeSelects();
+      list();
+      toast(`Saved size "${preset.name.trim()}"`);
+      fill(null, "");
+    } catch (e) {
+      toast(String(e), true);
+    }
+  };
+  f.onsubmit = (e) => {
+    if (e.submitter?.value === "close") return;
+    e.preventDefault();
+    save();
+  };
+  $("sizes-new").onclick = () => fill(null, "");
+  list();
+  fill(null, "");
+  dlg.showModal();
+}
+
+// ---------------------------------------------------------------- feedback
+
+async function feedbackFlow() {
+  const dlg = $("feedback-dialog");
+  const f = $("feedback-form");
+  const refresh = async () => {
+    f.preview.value = await invoke("feedback_body", {
+      kind: f.kind.value, text: f.text.value, includeContext: f.context.checked,
+    });
+  };
+  f.oninput = refresh;
+  f.onchange = refresh;
+  await refresh();
+  dlg.showModal();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice !== "ok") return;
+  try {
+    await invoke("open_feedback", {
+      kind: f.kind.value,
+      title: f.title.value || f.kind.value,
+      body: f.preview.value,
+    });
+    toast("Opened GitHub in your browser. Thank you!");
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
 // ---------------------------------------------------------------- photo, presets, export
 
 async function openPath(path) {
@@ -352,20 +938,42 @@ async function openPath(path) {
   $("busy").hidden = false;
   try {
     const r = await invoke("open_photo", { path });
+    if (ui.crop.on) {
+      setCropMode(false);
+      ui.crop.tool.stop();
+    }
+    masksPhotoChanged();
+    spotsPhotoChanged();
+    const wasRendered = !!ui.info?.rendered;
     ui.info = r.info;
+    refreshProfiles();
+    // Raw and JPEG have different white balance sliders.
+    if (wasRendered !== !!r.info.rendered && ui.layout) applyLayout(ui.layout);
     $("empty").hidden = true;
     $("photo-title").textContent = `${r.info.name}  —  ${r.info.camera}${r.info.lens ? "  ·  " + r.info.lens : ""}`;
     $("exif").textContent = [r.info.exposure, `${r.info.width} × ${r.info.height}`,
       r.info.sidecar_loaded ? "edits loaded from sidecar" : ""].filter(Boolean).join("  ·  ");
-    for (const id of ["btn-save", "btn-export", "btn-before"]) $(id).disabled = false;
+    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-save-preset"]) $(id).disabled = false;
+    if (ui.zoom.on) setZoom(false);
     setState(r.state);
+    if (r.saved_previous) toast(`Saved your edits to ${r.saved_previous.replace(/^.*[\\/]/, "")}`);
+    applyStripVisibility();
+    loadFolder(r.info.path);
     requestPreview(false);
+    loadInfo();
+    return true;
   } catch (e) {
     toast(String(e), true);
     status("Ready");
+    return false;
   } finally {
     $("busy").hidden = true;
   }
+}
+
+// A photo, or a saved collage (.ambcollage).
+function openAny(path) {
+  return /\.ambcollage$/i.test(path) ? openCollageFile(path) : openPath(path);
 }
 
 async function openDialog() {
@@ -407,6 +1015,25 @@ function renderPresets() {
   }
 }
 
+// The open photo's edit as a one-click preset (src/session.rs `save_preset`).
+async function savePresetFlow(name = "") {
+  if (!ui.info) return toast("Open a photo first.", true);
+  const dlg = $("save-preset-dialog");
+  const f = dlg.querySelector("form");
+  f.preset_name.value = name;
+  dlg.showModal();
+  f.preset_name.focus();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice !== "ok") return;
+  try {
+    ui.presets = await invoke("save_preset", { name: f.preset_name.value, group: f.preset_group.value });
+    renderPresets();
+    toast(`Saved the preset “${f.preset_name.value.trim()}” (in ${f.preset_group.value.trim() || "Yours"})`);
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
 async function loadPresets(add = false) {
   try {
     ui.presets = await invoke(add ? "add_preset_folder" : "presets");
@@ -428,27 +1055,100 @@ function updateExportForm() {
   if (format === "avif") f.color_space.value = "srgb";
 }
 
-async function exportFlow() {
-  if (!ui.info) return;
+// Exact size: say what will be trimmed when its aspect differs from the crop.
+function updateExportSize() {
+  // The border preview follows the size.
+  queueMicrotask(drawBorderPreview);
+  const f = $("export-form");
+  const w = Number(f.exact_w.value);
+  const h = Number(f.exact_h.value);
+  const exact = w > 0 && h > 0;
+  f.long_edge.disabled = exact;
+  const note = $("export-size-note");
+  note.classList.remove("warn");
+  if (!exact) {
+    note.textContent = f.exact_w.value || f.exact_h.value ? "Give both a width and a height for an exact size." : "";
+    return;
+  }
+  const a = ui.exportCropAspect;
+  const t = w / h;
+  if (borderOn() && f.b_fit.checked) {
+    note.textContent = `Exactly ${w} × ${h} px, with the whole ${ui.crop.enabled ? "crop" : "photo"} inside the frame.`;
+  } else if (Math.abs(Math.log(a / t)) > 0.005) {
+    note.classList.add("warn");
+    note.textContent = `Exactly ${w} × ${h} px. The ${ui.crop.enabled ? "crop" : "photo"} is ${ratioText(a)} ` +
+      `and this size is ${ratioText(t)}, so the ${a > t ? "left and right" : "top and bottom"} edges are trimmed (centred). ` +
+      "To choose what is kept, crop with this size preset first.";
+  } else {
+    note.textContent = `Exactly ${w} × ${h} px; the crop already has this shape.`;
+  }
+}
+
+function pickExportSize() {
+  const f = $("export-form");
+  const v = f.size_preset.value;
+  if (v.startsWith("size:")) {
+    const p = ui.sizes.find((x) => x.id === v.slice(5));
+    if (p) {
+      f.exact_w.value = p.width;
+      f.exact_h.value = p.height;
+    }
+  } else if (v === "") {
+    f.exact_w.value = f.exact_h.value = "";
+  }
+  updateExportSize();
+}
+
+// `batch`: many photos from the library ({ paths, aspect, run(options) }),
+// each exported with its own edit; otherwise the open photo.
+async function exportFlow(batch = null) {
+  if (!batch && libraryOn()) return libraryExport();
+  if (!batch && !ui.info) return;
+  // Export what the crop tool shows.
+  if (ui.crop.on) await exitCrop(true);
   const dlg = $("export-dialog");
   updateExportForm();
+  dlg.querySelector("h2").textContent = batch ? `Export ${batch.paths.length} photo${batch.paths.length === 1 ? "" : "s"}` : "Export";
+  $("export-go").textContent = batch ? "Choose a folder…" : "Export…";
+  if (batch) {
+    ui.crop.enabled = false;
+    ui.exportCropAspect = batch.aspect;
+    ui.exportCropSize = [Math.round(3000 * Math.min(1, batch.aspect)), Math.round(3000 / Math.max(1, batch.aspect))];
+  } else {
+    try {
+      const st = await invoke("crop_state");
+      ui.crop.enabled = st.enabled;
+      ui.exportCropAspect = st.rect.width / st.rect.height;
+      ui.exportCropSize = [st.rect.width, st.rect.height];
+    } catch {
+      ui.exportCropAspect = ui.info.width / ui.info.height;
+      ui.exportCropSize = [ui.info.width, ui.info.height];
+    }
+  }
+  if (!ui.borders) await loadBorders();
+  fillBorderSelect();
+  updateExportSize();
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   if (choice !== "ok") return;
   const f = $("export-form");
-  const base = ui.info.name.replace(/\.[^.]+$/, "");
-  const path = await invoke("pick_export_path", { suggested: base, format: f.format.value });
-  if (!path) return;
   const options = {
     format: f.format.value,
     quality: Number(f.quality.value),
     bits: Number(f.bits.value),
     color_space: f.color_space.value,
-    long_edge: f.long_edge.value ? Number(f.long_edge.value) : null,
+    long_edge: f.long_edge.value && f.long_edge.disabled === false ? Number(f.long_edge.value) : null,
+    exact: Number(f.exact_w.value) > 0 && Number(f.exact_h.value) > 0
+      ? [Number(f.exact_w.value), Number(f.exact_h.value)] : null,
     sharpen: f.sharpen.value || null,
     metadata: f.metadata.value,
     max_kb: f.max_kb.value ? Number(f.max_kb.value) : null,
+    border: borderOn() ? readBorder() : null,
   };
+  if (batch) return batch.run(options);
+  const base = ui.info.name.replace(/\.[^.]+$/, "");
+  const path = await invoke("pick_export_path", { suggested: base, format: f.format.value });
+  if (!path) return;
   status(`Exporting ${path}…`);
   $("busy").hidden = false;
   try {
@@ -484,34 +1184,72 @@ function toggleBefore() {
 
 async function init() {
   ui.panels = await invoke("editor_schema");
-  buildPanels();
-  syncControls();
+  for (const p of ui.panels) for (const s of p.sections) for (const def of s.controls) ui.defs.set(def.name, def);
+  await loadLooks();
+  await loadKeybindings();
 
   $("btn-open").addEventListener("click", openDialog);
+  $("btn-library").addEventListener("click", () => toggleLibrary());
   $("btn-open-empty").addEventListener("click", openDialog);
   $("btn-save").addEventListener("click", save);
   $("btn-export").addEventListener("click", exportFlow);
   $("btn-undo").addEventListener("click", () => run([{ cmd: "undo" }]));
   $("btn-redo").addEventListener("click", () => run([{ cmd: "redo" }]));
   $("btn-before").addEventListener("click", toggleBefore);
+  $("btn-zoom").addEventListener("click", () => setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy));
+  $("btn-wb").addEventListener("click", () => setPicking(!ui.picking));
+  $("btn-clip").addEventListener("click", toggleClipping);
+  $("btn-feedback").addEventListener("click", feedbackFlow);
+  $("btn-collage").addEventListener("click", collageFlow);
+  $("btn-plugins").addEventListener("click", () => pluginsFlow().catch((e) => toast(String(e), true)));
+  $("btn-looks").addEventListener("click", () => looksFlow().catch((e) => toast(String(e), true)));
+  wireEditor();
+  wireBorders();
+  AmbPicker.enhance($("crop-aspect"), { open: ["Common ratios"] });
+  AmbPicker.enhance($("export-form").size_preset, { open: ["Common"] });
+  wireInfo();
+  wireFilmstrip();
+  $("export-form").long_edge.addEventListener("input", drawBorderPreview);
+  $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));
+  wireViewer();
+  wireCrop();
+  wireMasks();
+  wireSpots();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
+  $("btn-save-preset").addEventListener("click", () => savePresetFlow());
+  // Enter in a dialog's text box means its main button, not the first one (Cancel).
+  for (const form of document.querySelectorAll('dialog form[method="dialog"]')) {
+    form.addEventListener("keydown", (e) => {
+      const ok = form.querySelector("button.primary");
+      if (e.key !== "Enter" || !ok || e.target.tagName !== "INPUT" || ["checkbox", "radio"].includes(e.target.type)) return;
+      e.preventDefault();
+      form.requestSubmit(ok);
+    });
+  }
   $("preset-filter").addEventListener("input", renderPresets);
   $("preset-amount").addEventListener("input", (e) => ($("preset-amount-out").textContent = e.target.value));
   const f = $("export-form");
   f.format.addEventListener("change", updateExportForm);
   f.quality.addEventListener("input", () => (f.quality_out.value = f.quality.value));
-
-  document.addEventListener("keydown", (e) => {
-    if (e.target.matches("input[type=number], input[type=search], input.value")) return;
-    const mod = e.ctrlKey || e.metaKey;
-    const k = e.key.toLowerCase();
-    if (mod && k === "z" && !e.shiftKey) { e.preventDefault(); run([{ cmd: "undo" }]); }
-    else if (mod && ((k === "z" && e.shiftKey) || k === "y")) { e.preventDefault(); run([{ cmd: "redo" }]); }
-    else if (mod && k === "s") { e.preventDefault(); save(); }
-    else if (mod && k === "e") { e.preventDefault(); exportFlow(); }
-    else if (mod && k === "o") { e.preventDefault(); openDialog(); }
-    else if (e.key === "\\") { e.preventDefault(); toggleBefore(); }
+  f.size_preset.addEventListener("change", pickExportSize);
+  for (const input of [f.exact_w, f.exact_h]) {
+    input.addEventListener("input", () => {
+      // Typed sizes are a custom size unless they still match the preset.
+      const p = ui.sizes.find((x) => `size:${x.id}` === f.size_preset.value);
+      if (!p || p.width !== Number(f.exact_w.value) || p.height !== Number(f.exact_h.value)) {
+        f.size_preset.value = f.exact_w.value || f.exact_h.value ? "custom" : "";
+      }
+      updateExportSize();
+    });
+  }
+  $("export-swap").addEventListener("click", () => {
+    [f.exact_w.value, f.exact_h.value] = [f.exact_h.value, f.exact_w.value];
+    f.size_preset.value = f.exact_w.value || f.exact_h.value ? "custom" : "";
+    updateExportSize();
   });
+
+  // Keyboard shortcuts come from one table (keys.js), which the user can change in Settings.
+  document.addEventListener("keydown", dispatchKey);
 
   let resizeTimer;
   window.addEventListener("resize", () => {
@@ -525,12 +1263,13 @@ async function init() {
   tauri.event.listen("tauri://drag-drop", (e) => {
     $("viewer").classList.remove("dragover");
     const paths = e.payload?.paths ?? [];
-    if (paths.length) openPath(paths[0]);
+    if (paths.length) openAny(paths[0]);
   });
   loadPresets();
+  await loadSizes();
   // A photo given on the command line.
   const initial = await invoke("take_initial_path");
-  if (initial) openPath(initial);
+  if (initial) openAny(initial);
 }
 
 init().catch((e) => toast(String(e), true));

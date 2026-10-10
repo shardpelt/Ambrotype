@@ -2,11 +2,14 @@
 
 Ambrotype edits photos the way Lightroom does: as a non-destructive recipe of Camera Raw settings (`crs:` tags such as `Exposure2012` or `ColorGradeShadowHue`) stored in an XMP sidecar next to the raw file. Features Lightroom lacks (e.g. film negative conversion) use our own `amb:` tags (e.g. `amb:NegativeConvert`, `amb:FilmStock`), which work with the same commands. An AI assistant edits a photo by changing those settings through the **same validated, undoable commands** a human's slider moves produce. It never paints pixels.
 
-This guide covers what works **today, through the `amb` command-line tool**. An MCP server (`amb mcp`) and an in-app assistant panel are planned; they will expose the same commands (see [the design doc](../design/ai-control.md)).
+This guide covers what works **today, through the `amb` command-line tool**. The same commands are available to your own AI app through the MCP server, `amb mcp` ([mcp.md](mcp.md)). An in-app assistant panel is planned (see [the design doc](../design/ai-control.md)).
 
 Related files:
 - [settings-reference.md](settings-reference.md): every setting, with its range, default, Ambrotype render status and a description. It is generated from the code (`amb settings reference`, or `--json` for machine use).
 - `amb protocol schema`: JSON Schema of the commands and queries below.
+- [ui-layouts.md](ui-layouts.md): making editor layouts and themes ("looks") for the user, e.g. "knobs instead of sliders, a warm theme".
+- [plugins.md](plugins.md): making a plugin for the user ("a button that warms skin tones"): sandboxed WebAssembly that returns these same commands.
+- [film-recipes.md](film-recipes.md): turning a camera film recipe the user found online into settings with the Film recipe plugin.
 - [/llms.txt](../../llms.txt): index for language models.
 
 ## Safety rules (read first)
@@ -118,6 +121,13 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 | `reset_param` | `name` | Removes the setting so the default applies. |
 | `reset_group` | `group` | Removes every setting of a group, e.g. `"hsl"`. |
 | `apply_preset` | `path`, `amount`?, `include_groups`?, `exclude_groups`? | See above. |
+| `add_mask` | `kind`, `mask`?, `mode`?, `values`? | A linear, radial, luminance or color mask; with `mask`, a new part of that mask (`mode` add, subtract, intersect). See [Masks](#masks). |
+| `set_mask` | `mask`, `part`?, `values` | A mask's local sliders, `name`, `active`, `amount`; with `part`, that part's geometry, `mode`, `invert`. |
+| `paint_mask` | `points`, `mask`?, `part`?, `mode`?, `size`?, `feather`?, `flow`?, `density`?, `erase`? | A brush stroke; without `part`, a new brush part (a new mask without `mask`). |
+| `remove_mask` | `mask`, `part`? | A mask, or one part. |
+| `add_spot` | `at`, `radius`?, `kind`?, `source`?, `feather`?, `opacity`? | A round heal (default) or clone spot; see [Spot removal](#spot-removal). |
+| `set_spot` | `spot`, `values` | `at`, `radius`, `source` (null to search again), `kind`, `feather`, `opacity`, `active`. |
+| `remove_spot` | `spot` | |
 | `undo`, `redo` | | One step = one command. |
 
 Validation:
@@ -136,10 +146,51 @@ Validation:
 | `describe` | `name` | the above plus description, units, render status |
 | `list_params` | `group`?, `only_set`? | without `group`: the settings present; with `group`: every setting of the group |
 | `list_groups` | | all groups with labels, descriptions, tag counts and how many are set |
+| `list_masks` | | every mask: name, amount, active, local sliders (UI units), parts with kind, mode, invert and geometry |
+| `list_spots` | | every spot: kind, position, radius, source, feather, opacity |
 
 ```json
 [{"query": "get_param", "name": "Temperature"}, {"query": "list_params", "group": "color_grading"}]
 ```
+
+## Masks
+
+Masks are Lightroom's own (`MaskGroupBasedCorrections`), so they open in Lightroom. Positions are **fractions of the uncropped photo in its stored (sensor) orientation**: (0, 0) is the top-left of the raw as the camera stored it, before rotation. `amb render` says when a photo is stored turned or mirrored (`stored turned left (shown turned 90° clockwise)`); then convert positions, or check the result on a render. Masks and parts are numbered from 0, as `list_masks` shows them.
+
+```json
+[
+  {"cmd": "add_mask", "kind": "linear", "values": {"FullX": 0.5, "FullY": 0.0, "ZeroX": 0.5, "ZeroY": 0.45}},
+  {"cmd": "set_mask", "mask": 0, "values": {"name": "Sky", "Exposure": -0.7, "Highlights": -40, "Temp": -10}},
+  {"cmd": "add_mask", "kind": "luminance", "mask": 0, "mode": "intersect", "values": {"LumRange": [0.4, 0.55, 1, 1]}},
+  {"cmd": "add_mask", "kind": "radial", "values": {"Top": 0.3, "Left": 0.35, "Bottom": 0.8, "Right": 0.65, "Feather": 70}},
+  {"cmd": "set_mask", "mask": 1, "values": {"Exposure": 0.3, "Clarity": 15}}
+]
+```
+
+- **Linear:** no effect at `ZeroX/ZeroY`, full at `FullX/FullY` (above: full at the top, fading out at 45% down).
+- **Radial:** the ellipse's box (`Top`, `Left`, `Bottom`, `Right`), `Angle` in degrees, `Feather` 0-100; the effect is inside unless `"invert": true`.
+- **Luminance:** `LumRange` [none below, full from, full to, none above], 0-1 brightness.
+- **Color:** `ColorSamples` [[x, y], ...] positions of colours to select, `ColorAmount` (refine) 0-100.
+- **Brush:** `{"cmd": "paint_mask", "points": [[0.2, 0.8], [0.4, 0.82]], "size": 0.04}` paints a new brush mask (`size` is the radius as a fraction of the photo's width); add `"mask": 0, "part": 2` to paint more into a brush part, `"erase": true` to erase.
+- **Sliders** (`set_mask` without `part`) are in UI units, by label or tag: Exposure (EV, -4..4), Contrast, Highlights, Shadows, Whites, Blacks, Temp, Tint, Texture, Clarity, Dehaze, Saturation, Sharpness, Noise (-100..100); "Color hue" (0-360) and "Color amount" (0-100) tint; `amount` 0-100 scales them all.
+- AI masks (subject, sky, people) from Lightroom are kept and reported as not rendered; they can't be made here yet.
+
+## Spot removal
+
+Spots are Lightroom's own `RetouchAreas`. Positions are fractions of the uncropped photo in stored orientation, like masks; `radius` is a fraction of the photo's width (0.01 is 1% of it).
+
+```json
+[
+  {"cmd": "add_spot", "at": [0.31, 0.12], "radius": 0.012},
+  {"cmd": "add_spot", "at": [0.62, 0.48], "radius": 0.02, "kind": "clone", "source": [0.66, 0.48]}
+]
+```
+
+A heal copies from the source and matches the surroundings; a clone copies as is. Without `source` the engine picks a donor nearby each time it renders; render and look, and give an explicit `source` if it picked badly. Spots Lightroom filled with content-aware or generative fill are healed from a nearby area here, and reported.
+
+## Importing photos
+
+`amb import SOURCE DEST` copies photos from a card or folder into dated folders (`--into "{yyyy}/{yyyy}-{mm}-{dd}"`, the default), optionally renamed (`--rename "{yyyy}{mm}{dd}_{seq}"`), with `--keywords "a, b"` for all. A raw's JPEG and sidecar move with it; photos already there are skipped. Run it with `--dry-run` first and show the user the plan; `--json` gives the plan or the report as JSON.
 
 ## Intent to settings cheat sheet
 

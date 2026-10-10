@@ -1,0 +1,15 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "auto-tone",
+  "name": "Auto tone",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "Sets Exposure, Whites and Blacks from the photo's histogram: the midtones move toward the middle and the tones reach from black to white, without clipping the highlights. A dark, low-key photo stays fairly dark.",
+  "permissions": ["photo-stats"],
+  "params": [
+    { "name": "strength", "label": "Strength", "type": "number", "min": 0, "max": 100, "default": 100, "step": 1 },
+    { "name": "brightness", "label": "Brightness", "type": "choice", "options": ["Darker", "Natural", "Brighter"], "default": "Natural" },
+    { "name": "range", "label": "Set Whites and Blacks too", "type": "bool", "default": true }
+  ],
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/auto-tone"
+}

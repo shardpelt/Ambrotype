@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Lens profiles for Lens Corrections.
 //!
 //! Profile data comes from two places, neither shipped by us:

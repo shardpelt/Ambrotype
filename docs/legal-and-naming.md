@@ -11,14 +11,33 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
 - **Still to do:**
   1. Search TMview and WIPO (classes 9 and 42) for "Ambrotype".
   2. Register ambrotype.org (also the domain in our XMP namespace URI) and/or ambrotype.photo.
-  3. Claim the GitHub organisation and the crates.io names.
+  3. ~~Claim the GitHub organisation~~ Done: `Ambrotypehq` (`ambrotype` is a user account from about 2016, and `ambrotype-app` was taken too). Claim the crates.io names.
 
-  5. Rename the GitHub repository `shardpelt/flightbroom` (Settings → Repository name; GitHub redirects old links).
+  5. ~~Rename the GitHub repository~~ Done: `shardpelt/Ambrotype` (old links redirect).
+- **Reserving the name, in order** (checked 2026-10-07 by RDAP lookups: ambrotype.org, .photo, .dev and .io unregistered; .com taken since 2017; .app registered 2026-07-15; crates.io `ambrotype` free; the GitHub name `ambrotype` is an existing user account, so the organisation is `Ambrotypehq`):
+  1. **Search the trademark registers** (TMview, WIPO, USPTO; classes 9 and 42). If someone already has "Ambrotype" for software, stop and pick an alternative before spending money.
+  2. **Domains (same day, about €10–40 a year each):** ambrotype.org first (our XMP namespace and the app id `org.ambrotype.editor` depend on it; Flathub checks you own the domain behind an app id), then ambrotype.photo and ambrotype.dev. Turn on auto-renew and registrar lock.
+  3. **Handles:**
+     - ~~the GitHub organisation~~ done: `Ambrotypehq`, kept as a reserved name; the code stays at `shardpelt/Ambrotype` for now (decided 2026-10-07). Once the trademark is registered, GitHub's trademark policy is the way to ask for `ambrotype`
+     - crates.io `ambrotype`: publish a real, minimal crate, not an empty placeholder (crates.io removes name-squatting)
+     - Mastodon/Bluesky/X/Instagram/YouTube handles
+     - an email address on the domain
+
+  5. **Use it:** "Ambrotype™" until registered, "Ambrotype®" only after. Keep proof of first use (dated releases, the website).
+  6. **Renewals:** domains yearly; a trademark lasts 10 years and is renewable.
 - **Alternatives kept in case a check fails:** Photochrom, Argentype (§2).
+- **Licence (decided 2026-10-08):** GPL-3.0-or-later, copyright "The Ambrotype contributors"; the plugin SDK and the `amb plugin new` template are MIT OR Apache-2.0. Done:
+  - `LICENSE` (the GPL text from gnu.org), `NOTICE` (copyright, exceptions, ported code, library notes, trademarks), SDK `LICENSE-MIT` and `LICENSE-APACHE`
+  - `license` in every Cargo.toml, and an SPDX line at the top of every source file
+  - About tab in the app (copyright, no warranty, the licence and notices readable offline, a link to the source); the CLI's help says the same
+  - every dependency checked: all GPL-compatible (MIT, Apache-2.0, BSD, ISC, Zlib, MPL-2.0, Unicode-3.0, LGPL-2.1 for rawler)
 - **Before going public:**
-  1. Add LICENSE (GPL-3.0-or-later) and Cargo `license` fields.
-  2. Paraphrase the verbatim Adobe quotes in `docs/adobe-docs/`.
-  3. Add the trademark notice.
+  1. Paraphrase the verbatim Adobe quotes in `docs/adobe-docs/`.
+  2. Make the repository public (the GPL promises the source to everyone who gets the app).
+- **Releases** (when installers are built):
+  1. Ship `LICENSE`, `NOTICE` and the licence texts of all bundled libraries with every installer (generate them with `cargo about`; MIT, BSD and Apache require the copyright notices to travel with binaries).
+  2. Each release points to the exact source it was built from (the Git tag).
+  3. Add `cargo deny` to CI so a new dependency with an incompatible licence fails the build.
 
 ## 1. Is what we do legal?
 
@@ -37,10 +56,10 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
 
 
 **Before making the repo public:**
-1. Add the `LICENSE` file (GPL-3.0-or-later) and set `license` in every Cargo.toml.
+1. ~~Add the `LICENSE` file (GPL-3.0-or-later) and set `license` in every Cargo.toml.~~ Done 2026-10-08.
 2. Paraphrase the verbatim quotes in `docs/adobe-docs/`.
-3. Put the trademark notice in the README and the app's About box.
-4. Pick the final name (below) and rename.
+3. ~~Put the trademark notice in the README and the app's About box.~~ Done 2026-10-08.
+4. ~~Pick the final name (below) and rename.~~ Done: Ambrotype.
 
 ## 2. The name
 

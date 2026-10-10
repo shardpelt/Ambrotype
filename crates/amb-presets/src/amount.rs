@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Preset "Amount" (intensity) scaling.
 //!
 //! Adobe does not document how the Amount slider scales a preset. Until it is

@@ -1,0 +1,14 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Paper",
+  "description": "A soft off-white theme with ink-blue accents and square corners.",
+  "author": "Ambrotype",
+  "scheme": "light",
+  "tokens": {
+    "bg": "#f3f0e8", "bg-deep": "#e9e5da", "viewer": "#dcd8cd", "panel": "#faf8f2", "panel-2": "#ffffff",
+    "line": "#d3cec1", "hover": "#efebe2", "tab-active": "#e3ded2",
+    "text": "#23262d", "muted": "#5b606b", "faint": "#8c909a",
+    "accent": "#2f5ea8", "accent-ink": "#ffffff", "danger": "#b8432f",
+    "thumb": "#3b4150", "track": "#c4beb0", "radius": 2
+  }
+}

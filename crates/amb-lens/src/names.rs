@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Fuzzy lens-name matching, in the spirit of lensfun's `lfFuzzyStrCmp`.
 //!
 //! Names are normalised into tokens (lowercase, `f/2.8` → `f2.8`, punctuation

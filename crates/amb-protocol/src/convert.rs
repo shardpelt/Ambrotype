@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Conversions between JSON and [`Value`], validated against the registry.
 
 use std::collections::BTreeMap;

@@ -1,0 +1,12 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Dark",
+  "scheme": "dark",
+  "tokens": {
+    "bg": "#1b1c1f", "bg-deep": "#111214", "viewer": "#111214", "panel": "#232428", "panel-2": "#2a2c31",
+    "line": "#34363c", "hover": "#33363c", "tab-active": "#3a3d44",
+    "text": "#e6e6e8", "muted": "#9a9ca3", "faint": "#6c6f77",
+    "accent": "#e8b05c", "accent-ink": "#1b1c1f", "danger": "#e5675a",
+    "thumb": "#d8d9dc", "track": "#4a4d55", "radius": 6
+  }
+}

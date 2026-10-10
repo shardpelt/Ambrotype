@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Per-preset fidelity/inspection report: which settings a preset carries, how
 //! each maps onto our implementation status, and warnings about content that
 //! cannot be reproduced as-is (profiles, AI masks, legacy process versions, ...).

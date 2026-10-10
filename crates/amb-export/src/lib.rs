@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Export: developed image (linear ProPhoto) → a file people can use.
 //!
 //! Formats: JPEG, PNG, TIFF, WebP (lossless), AVIF and OpenEXR, all with pure
@@ -9,10 +10,14 @@
 //! output-sharpened for screen or paper, carry EXIF metadata (with privacy
 //! choices), and, for JPEG, be limited to a file size.
 //!
-//! Order: orient upright → resize in linear light → convert to the output space
+//! Order: orient upright → (exact sizes of another aspect: centre-crop) →
+//! resize in linear light → convert to the output space
 //! → encode the transfer curve → output sharpening → quantise (8-bit with
 //! dither) → encode with ICC + EXIF.
 
+pub mod border;
+pub mod collage;
+pub mod embed;
 pub mod exif;
 pub mod geometry;
 
@@ -155,6 +160,10 @@ pub struct ExportSettings {
     pub max_bytes: Option<u64>,
     /// AVIF encoder speed 1 (slow, small) ..= 10 (fast).
     pub avif_speed: u8,
+    /// A frame around the photo ([`border`]).
+    pub border: Option<border::Border>,
+    /// The photo's rating and keywords, embedded with the full metadata policies.
+    pub tags: exif::Tags,
 }
 
 impl ExportSettings {
@@ -172,6 +181,8 @@ impl ExportSettings {
             metadata: MetadataPolicy::AllExceptLocation,
             max_bytes: None,
             avif_speed: 6,
+            border: None,
+            tags: exif::Tags::default(),
         }
     }
 }
@@ -200,7 +211,46 @@ fn dither(i: usize) -> f32 {
     (a + b) * 0.5 - 0.5
 }
 
-/// Develop-to-file: orient, resize, convert, sharpen and encode.
+/// A border colour in the photo's output values: an sRGB hex colour converted
+/// to the output space (so #ffffff is white in every space), or for "auto"
+/// the photo's average.
+fn frame_colour(
+    text: &str,
+    photo: &Image,
+    space: OutputSpace,
+    linear_out: bool,
+    float: bool,
+) -> [f32; 3] {
+    match border::parse_color(text) {
+        Some(border::Fill::Srgb(rgb)) => {
+            let srgb = OutputSpace::Srgb;
+            let lin = rgb.map(|v| srgb.transfer().decode(v));
+            let to_pro = amb_color::matrix::invert3(&srgb.from_prophoto());
+            let out_m = amb_color::matrix::mul3(&space.from_prophoto(), &to_pro);
+            [0, 1, 2].map(|i| {
+                let v = out_m[i][0] * lin[0] + out_m[i][1] * lin[1] + out_m[i][2] * lin[2];
+                let v = if float { v } else { v.clamp(0.0, 1.0) };
+                (if linear_out {
+                    v
+                } else {
+                    space.transfer().encode(v)
+                }) as f32
+            })
+        }
+        _ => {
+            let n = (photo.rgb.len() / 3).max(1) as f64;
+            let mut sum = [0.0f64; 3];
+            for p in photo.rgb.chunks_exact(3) {
+                for (s, v) in sum.iter_mut().zip(p) {
+                    *s += f64::from(*v);
+                }
+            }
+            sum.map(|s| (s / n) as f32)
+        }
+    }
+}
+
+/// Develop-to-file: orient, resize, convert, sharpen, frame and encode.
 pub fn export(
     img: &Image,
     meta: &PhotoMetadata,
@@ -226,9 +276,27 @@ pub fn export(
             "AVIF export is sRGB only for now (use JPEG, PNG or TIFF for wide gamut)".into(),
         ));
     }
-    let upright = geometry::orient(img, meta.orientation);
-    let (ow, oh) = s.resize.target(upright.width, upright.height, s.enlarge);
-    let mut out = geometry::resize(&upright, ow, oh);
+    let mut upright = geometry::orient(img, meta.orientation);
+    let plan = s
+        .border
+        .as_ref()
+        .map(|b| border::plan(b, s.resize, s.enlarge, upright.width, upright.height));
+    let mut out = match &plan {
+        Some(p) => {
+            if let Some((x, y, w, h)) = p.crop {
+                upright = geometry::cut(&upright, x, y, w, h);
+            }
+            geometry::resize(&upright, p.photo.0, p.photo.1)
+        }
+        None => {
+            // An exact size with another aspect: keep the centre, then scale.
+            if let Some((x, y, w, h)) = s.resize.cover_window(upright.width, upright.height) {
+                upright = geometry::cut(&upright, x, y, w, h);
+            }
+            let (ow, oh) = s.resize.target(upright.width, upright.height, s.enlarge);
+            geometry::resize(&upright, ow, oh)
+        }
+    };
 
     // Working ProPhoto → output space; encoded unless EXR (linear).
     let m = s.color_space.from_prophoto().map(|r| r.map(|v| v as f32));
@@ -250,9 +318,15 @@ pub fn export(
     if let Some((media, amount)) = s.sharpen {
         geometry::output_sharpen(&mut out, media, amount);
     }
+    // The frame goes on last, so its edge isn't sharpened.
+    if let (Some(b), Some(p)) = (&s.border, &plan) {
+        let colour = |text: &str| frame_colour(text, &out, s.color_space, linear_out, float);
+        let line = b.keyline.as_ref().map_or([0.0; 3], |k| colour(&k.color));
+        out = border::compose(&out, p, colour(&b.color), line);
+    }
 
     let icc = s.color_space.icc_profile();
-    let exif = exif::build(meta, s.metadata);
+    let exif = exif::build_with_tags(meta, s.metadata, &s.tags);
     let (w, h) = (out.width as u32, out.height as u32);
     let mut quality = s.quality.clamp(1, 100);
     let bytes = match (s.format, depth) {
@@ -326,6 +400,15 @@ pub fn export(
             let data = to_u8(&out.rgb);
             encode_image(format, &data, w, h, ExtendedColorType::Rgb8, &icc, exif)?
         }
+    };
+    // Rating and keywords as XMP (and IPTC in JPEGs), with the full metadata policies.
+    let bytes = if matches!(
+        s.metadata,
+        MetadataPolicy::All | MetadataPolicy::AllExceptLocation
+    ) {
+        embed::embed(s.format, bytes, &s.tags)
+    } else {
+        bytes
     };
     std::fs::write(path, &bytes).map_err(|source| Error::Io {
         path: path.to_path_buf(),
@@ -490,6 +573,100 @@ mod tests {
                     "{format:?}"
                 );
             }
+        }
+    }
+
+    #[test]
+    fn exact_sizes_cover_and_centre_crop() {
+        // 240×160 grey ramp in the top rows: black on the left, white on the right.
+        let img = test_image();
+        let meta = PhotoMetadata::default();
+        let mut s = ExportSettings::new(Format::Png);
+        let path = tmp("exact.png");
+        // Square from 3:2: the middle 160×160 is kept, so the left edge is
+        // no longer black.
+        s.resize = Resize::Exact(100, 100);
+        let r = export(&img, &meta, &s, &path).unwrap();
+        assert_eq!((r.width, r.height), (100, 100));
+        let decoded = image::open(&path).unwrap().to_rgb8();
+        let left = decoded.get_pixel(0, 5)[0];
+        let right = decoded.get_pixel(99, 5)[0];
+        assert!(left > 90 && right < 250, "{left} {right}");
+        // Same aspect: a plain resize (the black edge stays), and exact sizes
+        // enlarge.
+        s.resize = Resize::Exact(480, 320);
+        let r = export(&img, &meta, &s, &path).unwrap();
+        assert_eq!((r.width, r.height), (480, 320));
+        let decoded = image::open(&path).unwrap().to_rgb8();
+        assert!(decoded.get_pixel(0, 5)[0] < 20);
+    }
+
+    #[test]
+    fn borders_frame_the_photo_and_keep_exact_sizes() {
+        let img = test_image(); // 240×160
+        let meta = PhotoMetadata::default();
+        let path = tmp("border.png");
+        // Free size: 10% of the 160 px short edge = 16 px all round, in white even in Adobe RGB.
+        let mut s = ExportSettings::new(Format::Png);
+        s.color_space = OutputSpace::AdobeRgbCompatible;
+        s.border = Some(border::Border::simple(10.0, "#ffffff"));
+        let r = export(&img, &meta, &s, &path).unwrap();
+        assert_eq!((r.width, r.height), (272, 192));
+        let decoded = image::open(&path).unwrap().to_rgb8();
+        assert_eq!(decoded.get_pixel(3, 3).0, [255, 255, 255]);
+        // An exact portrait size with fit: still exactly that size, the whole
+        // landscape photo inside, the frame colour above and below it.
+        let mut fit = border::Border::simple(5.0, "#000000");
+        fit.fit = true;
+        let mut s = ExportSettings::new(Format::Png);
+        s.resize = Resize::Exact(400, 500);
+        s.border = Some(fit);
+        let r = export(&img, &meta, &s, &path).unwrap();
+        assert_eq!((r.width, r.height), (400, 500));
+        let decoded = image::open(&path).unwrap().to_rgb8();
+        assert_eq!(decoded.get_pixel(200, 60).0, [0, 0, 0]);
+        assert!(decoded.get_pixel(395, 250).0 == [0, 0, 0]);
+    }
+
+    #[test]
+    fn rating_and_keywords_are_embedded_and_files_still_open() {
+        let img = test_image();
+        let meta = PhotoMetadata::default();
+        for (format, name) in [
+            (Format::Jpeg, "tags.jpg"),
+            (Format::Png, "tags.png"),
+            (Format::Tiff, "tags.tif"),
+            (Format::Webp, "tags.webp"),
+        ] {
+            let mut s = ExportSettings::new(format);
+            s.tags = exif::Tags {
+                rating: Some(5),
+                keywords: vec!["noordzee".into()],
+                label: None,
+            };
+            let path = tmp(name);
+            export(&img, &meta, &s, &path).unwrap();
+            let bytes = std::fs::read(&path).unwrap();
+            let text = String::from_utf8_lossy(&bytes);
+            assert!(
+                text.contains(r#"xmp:Rating="5""#) && text.contains("<rdf:li>noordzee</rdf:li>"),
+                "{name}"
+            );
+            let decoded = image::open(&path).unwrap_or_else(|e| panic!("{name}: {e}"));
+            assert_eq!((decoded.width(), decoded.height()), (240, 160), "{name}");
+            if format == Format::Jpeg {
+                assert!(
+                    bytes.windows(14).any(|w| w == b"Photoshop 3.0\0"),
+                    "IPTC block"
+                );
+            }
+            // "Copyright only" leaves them out.
+            s.metadata = MetadataPolicy::CopyrightOnly;
+            export(&img, &meta, &s, &path).unwrap();
+            assert!(
+                !String::from_utf8_lossy(&std::fs::read(&path).unwrap()).contains("noordzee"),
+                "{name}"
+            );
         }
     }
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! JSON Schemas (draft 2020-12) for [`Command`](crate::Command) and
 //! [`Query`](crate::Query), hand-written to match their serde form.
 
@@ -48,6 +49,41 @@ fn variant(
     })
 }
 
+fn mask_index() -> Value {
+    json!({ "type": "integer", "minimum": 0, "description": "Mask position from 0, as list_masks shows it." })
+}
+
+fn part_index() -> Value {
+    json!({ "type": "integer", "minimum": 0, "description": "Part position within the mask, from 0." })
+}
+
+fn mode_prop() -> Value {
+    json!({ "type": "string", "enum": ["add", "subtract", "intersect"], "description": "How the part joins the mask built so far (default add)." })
+}
+
+fn part_values() -> Value {
+    json!({
+        "type": "object",
+        "description": "Part settings. Linear: ZeroX, ZeroY (no effect), FullX, FullY (full effect). Radial: Top, Left, Bottom, Right (the ellipse's box), Angle (degrees), Feather (0-100). Luminance: LumRange [none below, full from, full to, none above], 0-1. Color: ColorSamples [[x, y], ...], ColorAmount (refine, 0-100). Any part: invert, active, name.",
+        "properties": {
+            "ZeroX": { "type": "number" }, "ZeroY": { "type": "number" },
+            "FullX": { "type": "number" }, "FullY": { "type": "number" },
+            "Top": { "type": "number" }, "Left": { "type": "number" },
+            "Bottom": { "type": "number" }, "Right": { "type": "number" },
+            "Angle": { "type": "number", "minimum": -180, "maximum": 180 },
+            "Feather": { "type": "number", "minimum": 0, "maximum": 100 },
+            "LumRange": { "type": ["array", "string"] },
+            "ColorSamples": { "type": "array", "items": { "type": "array", "items": { "type": "number" } } },
+            "ColorAmount": { "type": "number", "minimum": 0, "maximum": 100 },
+            "mode": { "type": "string", "enum": ["add", "subtract", "intersect"] },
+            "invert": { "type": "boolean" },
+            "active": { "type": "boolean" },
+            "name": { "type": "string" }
+        },
+        "additionalProperties": false
+    })
+}
+
 /// Schema for one command object.
 pub fn command_schema() -> Value {
     let groups = group_enum();
@@ -79,6 +115,48 @@ pub fn command_schema() -> Value {
                 "include_groups": { "type": "array", "items": groups, "description": "Only apply settings of these groups." },
                 "exclude_groups": { "type": "array", "items": groups, "description": "Never apply settings of these groups." }
             }), &["path"]),
+            variant("cmd", "add_mask", "Add a mask: a linear or radial gradient, or a luminance or colour range. With `mask`, add it as a new part of that mask instead, joined by `mode`. Masks are stored in Lightroom's MaskGroupBasedCorrections. Positions are fractions of the uncropped photo in its stored (sensor) orientation.", json!({
+                "kind": { "type": "string", "enum": ["linear", "radial", "luminance", "color"] },
+                "mask": mask_index(),
+                "mode": mode_prop(),
+                "values": part_values()
+            }), &["kind"]),
+            variant("cmd", "set_mask", "Change a mask. Without `part`: its local sliders in UI units (\"LocalExposure2012\" or \"Exposure\": EV -4..4; the others -100..100), \"name\", \"active\", \"amount\" (0-100). With `part`: that part's geometry and its mode, invert, active, name.", json!({
+                "mask": mask_index(),
+                "part": part_index(),
+                "values": { "type": "object", "description": "Keys to change. Mask: name, active, amount, Local* sliders (see list_masks). Part: see add_mask values." }
+            }), &["mask", "values"]),
+            variant("cmd", "paint_mask", "Paint a brush stroke through `points`. Without `part`, start a new brush part (in a new mask without `mask`); with `part`, add to that brush part; `erase` removes paint from it.", json!({
+                "mask": mask_index(),
+                "part": part_index(),
+                "mode": mode_prop(),
+                "points": { "type": "array", "items": { "type": "array", "items": { "type": "number" } }, "description": "[[x, y], ...] fractions of the uncropped photo; gaps are filled with dabs." },
+                "size": { "type": "number", "minimum": 0.001, "maximum": 0.5, "default": 0.05, "description": "Brush radius as a fraction of the photo's width (stored orientation)." },
+                "feather": { "type": "number", "minimum": 0, "maximum": 100, "default": 50 },
+                "flow": { "type": "number", "minimum": 1, "maximum": 100, "default": 100 },
+                "density": { "type": "number", "minimum": 1, "maximum": 100, "default": 100 },
+                "erase": { "type": "boolean", "default": false }
+            }), &["points"]),
+            variant("cmd", "remove_mask", "Remove a mask, or one of its parts (removing the last part removes the mask).", json!({
+                "mask": mask_index(),
+                "part": part_index()
+            }), &["mask"]),
+            variant("cmd", "add_spot", "Add a round spot that heals (matches the surroundings) or clones (copies as is) a donor area onto it. Stored in Lightroom's RetouchAreas.", json!({
+                "at": { "type": "array", "items": { "type": "number" }, "description": "[x, y] centre, fractions of the uncropped photo in stored orientation." },
+                "radius": { "type": "number", "minimum": 0.001, "maximum": 0.5, "default": 0.02, "description": "Fraction of the photo's width." },
+                "kind": { "type": "string", "enum": ["heal", "clone"], "default": "heal" },
+                "source": { "type": "array", "items": { "type": "number" }, "description": "[x, y] donor centre; searched for when absent." },
+                "source_auto": { "type": "boolean", "default": false, "description": "The source came from a search (Lightroom's auto)." },
+                "feather": { "type": "number", "minimum": 0, "maximum": 100, "default": 50 },
+                "opacity": { "type": "number", "minimum": 1, "maximum": 100, "default": 100 }
+            }), &["at"]),
+            variant("cmd", "set_spot", "Change a spot: at, radius, source (null to search again), kind, feather, opacity, active.", json!({
+                "spot": { "type": "integer", "minimum": 0, "description": "Spot position from 0, as list_spots shows it." },
+                "values": { "type": "object" }
+            }), &["spot", "values"]),
+            variant("cmd", "remove_spot", "Remove a spot.", json!({
+                "spot": { "type": "integer", "minimum": 0 }
+            }), &["spot"]),
             variant("cmd", "undo", "Revert the most recent command.", json!({}), &[]),
             variant("cmd", "redo", "Re-apply the most recently undone command.", json!({}), &[]),
         ]
@@ -104,6 +182,8 @@ pub fn query_schema() -> Value {
                 "name": name_prop()
             }), &["name"]),
             variant("query", "list_groups", "All setting groups with labels, descriptions and counts.", json!({}), &[]),
+            variant("query", "list_spots", "Every spot: kind, position, radius, source, feather, opacity.", json!({}), &[]),
+            variant("query", "list_masks", "Every mask with its name, amount, local sliders (UI units) and parts (kind, mode, invert, geometry).", json!({}), &[]),
         ]
     })
 }
@@ -150,6 +230,7 @@ mod tests {
             "array" => v.is_array(),
             "string" => v.is_string(),
             "number" => v.is_number(),
+            "integer" => v.is_u64() || v.is_i64(),
             "boolean" => v.is_boolean(),
             "null" => v.is_null(),
             other => panic!("unsupported type {other}"),
@@ -308,6 +389,51 @@ mod tests {
                 include_groups: None,
                 exclude_groups: None,
             },
+            Command::AddMask {
+                kind: "radial".into(),
+                mask: Some(0),
+                mode: Some("subtract".into()),
+                values: json!({"Top": 0.1, "Feather": 30, "invert": true})
+                    .as_object()
+                    .cloned(),
+            },
+            Command::SetMask {
+                mask: 0,
+                part: None,
+                values: json!({"LocalExposure2012": -0.5})
+                    .as_object()
+                    .cloned()
+                    .unwrap(),
+            },
+            Command::PaintMask {
+                mask: None,
+                part: None,
+                mode: None,
+                points: vec![[0.1, 0.2], [0.3, 0.2]],
+                size: 0.05,
+                feather: 50.0,
+                flow: 100.0,
+                density: 100.0,
+                erase: false,
+            },
+            Command::RemoveMask {
+                mask: 1,
+                part: Some(0),
+            },
+            Command::AddSpot {
+                at: [0.3, 0.4],
+                radius: 0.02,
+                kind: Some("clone".into()),
+                source: Some([0.5, 0.4]),
+                source_auto: false,
+                feather: 50.0,
+                opacity: 100.0,
+            },
+            Command::SetSpot {
+                spot: 0,
+                values: json!({"radius": 0.03}).as_object().cloned().unwrap(),
+            },
+            Command::RemoveSpot { spot: 0 },
             Command::Undo,
             Command::Redo,
         ]
@@ -337,6 +463,8 @@ mod tests {
                 name: "Dehaze".into(),
             },
             Query::ListGroups,
+            Query::ListMasks,
+            Query::ListSpots,
         ];
         for q in queries {
             let v = serde_json::to_value(&q).unwrap();
@@ -372,8 +500,8 @@ mod tests {
         assert!(!validate(&doc, &doc, &json!({"query": "nope"})));
         assert_eq!(
             doc["$defs"]["Command"]["oneOf"].as_array().unwrap().len(),
-            7
+            14
         );
-        assert_eq!(doc["$defs"]["Query"]["oneOf"].as_array().unwrap().len(), 4);
+        assert_eq!(doc["$defs"]["Query"]["oneOf"].as_array().unwrap().len(), 6);
     }
 }

@@ -232,7 +232,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "CameraProfileDigest",
@@ -304,7 +304,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "IncrementalTint",
@@ -313,7 +313,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Exposure2012",
@@ -646,7 +646,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentOrange",
@@ -682,7 +682,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentYellow",
@@ -718,7 +718,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentGreen",
@@ -754,7 +754,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentAqua",
@@ -790,7 +790,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentBlue",
@@ -826,7 +826,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentPurple",
@@ -862,7 +862,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HueAdjustmentMagenta",
@@ -898,7 +898,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "ConvertToGrayscale",
@@ -907,7 +907,7 @@
    "min": null,
    "max": null,
    "default": false,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "AutoGrayscaleMix",
@@ -1348,7 +1348,7 @@
    "min": 0,
    "max": 5,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveVertical",
@@ -1357,7 +1357,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveHorizontal",
@@ -1366,7 +1366,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveAspect",
@@ -1375,7 +1375,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveX",
@@ -1384,7 +1384,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveY",
@@ -1393,7 +1393,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveRotate",
@@ -1402,7 +1402,7 @@
    "min": -10,
    "max": 10,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveScale",
@@ -1411,7 +1411,7 @@
    "min": 50,
    "max": 150,
    "default": 100,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "UprightVersion",
@@ -1663,7 +1663,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "RedHue",
@@ -1672,7 +1672,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "RedSaturation",
@@ -1681,7 +1681,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GreenHue",
@@ -1690,7 +1690,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GreenSaturation",
@@ -1699,7 +1699,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "BlueHue",
@@ -1708,7 +1708,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "BlueSaturation",
@@ -1717,7 +1717,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HasCrop",
@@ -1750,45 +1750,45 @@
    "name": "CropTop",
    "group": "crop",
    "kind": "number",
-   "min": null,
-   "max": null,
-   "default": null,
+   "min": 0,
+   "max": 1,
+   "default": 0,
    "status": "image-specific"
   },
   {
    "name": "CropLeft",
    "group": "crop",
    "kind": "number",
-   "min": null,
-   "max": null,
-   "default": null,
+   "min": 0,
+   "max": 1,
+   "default": 0,
    "status": "image-specific"
   },
   {
    "name": "CropBottom",
    "group": "crop",
    "kind": "number",
-   "min": null,
-   "max": null,
-   "default": null,
+   "min": 0,
+   "max": 1,
+   "default": 1,
    "status": "image-specific"
   },
   {
    "name": "CropRight",
    "group": "crop",
    "kind": "number",
-   "min": null,
-   "max": null,
-   "default": null,
+   "min": 0,
+   "max": 1,
+   "default": 1,
    "status": "image-specific"
   },
   {
    "name": "CropAngle",
    "group": "crop",
    "kind": "number",
-   "min": null,
-   "max": null,
-   "default": null,
+   "min": -45,
+   "max": 45,
+   "default": 0,
    "status": "image-specific"
   },
   {
@@ -1834,7 +1834,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "GradientBasedCorrections",
@@ -1843,7 +1843,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "CircularGradientBasedCorrections",
@@ -1852,7 +1852,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PaintBasedCorrections",
@@ -1861,7 +1861,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "RetouchAreas",

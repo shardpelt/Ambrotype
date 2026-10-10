@@ -1,13 +1,15 @@
-//! Global tone controls: Contrast, Highlights, Shadows, Whites, Blacks, and
-//! the parametric tone curve.
+// SPDX-License-Identifier: GPL-3.0-or-later
+//! Tone controls: Contrast, Highlights, Shadows, Whites, Blacks, and the
+//! parametric tone curve.
 //!
-//! **Model v1 (ours, not Adobe's).** Lightroom's PV2012 Highlights/Shadows are
-//! image-adaptive local operators (docs/research/05 §4). This first version is
-//! global: every control is a smooth, bounded deformation of a luminance tone
-//! curve on perceptually encoded values (sRGB transfer, 0..1). A local
-//! (edge-aware) version comes later, and all strength constants live in
-//! [`ToneStrengths`] so the calibration harness can fit them against
-//! Lightroom sweeps instead of us guessing.
+//! **Model v2 (ours, not Adobe's).** Every control is a smooth, bounded
+//! deformation of a luminance tone curve on perceptually encoded values (sRGB
+//! transfer, 0..1). Contrast, Whites and Blacks act globally ([`tone_lut`]).
+//! Highlights and Shadows are local, like Lightroom's PV2012 versions
+//! (docs/research/05 §4): their curve ([`region_lut`]) is evaluated on an
+//! edge-aware smooth base of the photo ([`crate::local_tone`]). All strength
+//! constants live in [`ToneStrengths`] so the calibration harness can fit them
+//! against Lightroom sweeps instead of us guessing.
 
 /// Strength constants, at slider = ±100. Fitted later; these are starting guesses.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -23,6 +25,12 @@ pub struct ToneStrengths {
     pub blacks: f64,
     /// Peak height of a parametric-curve region bump.
     pub parametric: f64,
+    /// Highlights/Shadows: radius of the edge-aware base, as a fraction of the
+    /// image diagonal (larger = moves bigger areas as a whole).
+    pub local_radius_frac: f64,
+    /// Highlights/Shadows: how strong an edge must be (encoded luminance,
+    /// squared) for the base to stop at it. Smaller = sharper, fewer halos.
+    pub local_edge_eps: f64,
 }
 
 impl Default for ToneStrengths {
@@ -33,11 +41,13 @@ impl Default for ToneStrengths {
 
 pub const DEFAULT_STRENGTHS: ToneStrengths = ToneStrengths {
     contrast: 0.6,
-    shadows: 0.12,
-    highlights: 0.12,
+    shadows: 0.25,
+    highlights: 0.25,
     whites: 0.2,
     blacks: 0.15,
     parametric: 0.12,
+    local_radius_frac: 0.012,
+    local_edge_eps: 0.01,
 };
 
 /// Basic-panel tone sliders, each in -100..100.
@@ -93,6 +103,11 @@ fn gaussian(x: f64, centre: f64, width: f64) -> f64 {
     (-d * d).exp()
 }
 
+fn smoothstep(t: f64) -> f64 {
+    let t = t.clamp(0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
+}
+
 /// Smooth bump that is 1 in the middle of [lo, hi] and fades to 0 just outside it.
 fn region_bump(x: f64, lo: f64, hi: f64) -> f64 {
     let centre = 0.5 * (lo + hi);
@@ -109,7 +124,8 @@ fn monotone(lut: &mut [f32]) {
     }
 }
 
-/// Encoded-luminance → encoded-luminance table for the Basic tone sliders.
+/// Encoded-luminance → encoded-luminance table for the global tone sliders:
+/// Contrast, Whites and Blacks (Highlights and Shadows are [`region_lut`]).
 pub fn tone_lut(c: &ToneControls, k: &ToneStrengths, size: usize) -> Vec<f32> {
     let mut lut: Vec<f32> = (0..size)
         .map(|i| {
@@ -119,11 +135,27 @@ pub fn tone_lut(c: &ToneControls, k: &ToneStrengths, size: usize) -> Vec<f32> {
             let a = k.contrast * c.contrast / 100.0;
             let tau = 2.0 * std::f64::consts::PI;
             let mut y = x + a * (tau * (x - 0.5)).sin() / tau;
-            // Region controls as smooth bumps on the result.
-            y += k.shadows * c.shadows / 100.0 * gaussian(y, 0.25, 0.17) * (1.0 - y);
-            y += k.highlights * c.highlights / 100.0 * gaussian(y, 0.75, 0.17) * y;
             y += k.blacks * c.blacks / 100.0 * (1.0 - y).powi(4);
             y += k.whites * c.whites / 100.0 * y.powi(4);
+            y as f32
+        })
+        .collect();
+    monotone(&mut lut);
+    lut
+}
+
+/// Encoded → encoded table for Highlights and Shadows: smooth bumps centred
+/// in the darks and the brights. Applied to the local base of a photo, not
+/// to single pixels ([`crate::local_tone`]).
+pub fn region_lut(c: &ToneControls, k: &ToneStrengths, size: usize) -> Vec<f32> {
+    let mut lut: Vec<f32> = (0..size)
+        .map(|i| {
+            let x = i as f64 / (size - 1) as f64;
+            // Pure black and white stay put (Blacks and Whites move those).
+            let ends = smoothstep(x / 0.04) * smoothstep((1.0 - x) / 0.04);
+            let y = x + ends
+                * (k.shadows * c.shadows / 100.0 * gaussian(x, 0.25, 0.17) * (1.0 - x)
+                    + k.highlights * c.highlights / 100.0 * gaussian(x, 0.75, 0.17) * x);
             y as f32
         })
         .collect();
@@ -182,9 +214,13 @@ mod tests {
                 whites: v,
                 blacks: v,
             };
-            let lut = tone_lut(&c, &DEFAULT_STRENGTHS, N);
-            assert!(lut.windows(2).all(|w| w[1] >= w[0]));
-            assert!(lut.iter().all(|x| (0.0..=1.0).contains(x)));
+            for lut in [
+                tone_lut(&c, &DEFAULT_STRENGTHS, N),
+                region_lut(&c, &DEFAULT_STRENGTHS, N),
+            ] {
+                assert!(lut.windows(2).all(|w| w[1] >= w[0]));
+                assert!(lut.iter().all(|x| (0.0..=1.0).contains(x)));
+            }
         }
     }
 
@@ -205,7 +241,7 @@ mod tests {
         );
         assert!((at(&contrast, 0.5) - 0.5).abs() < 1e-3, "pivot at mid-grey");
 
-        let shadows = tone_lut(
+        let shadows = region_lut(
             &ToneControls {
                 shadows: 100.0,
                 ..Default::default()
@@ -218,7 +254,7 @@ mod tests {
             "shadows lifts darks most"
         );
 
-        let highlights = tone_lut(
+        let highlights = region_lut(
             &ToneControls {
                 highlights: -100.0,
                 ..Default::default()

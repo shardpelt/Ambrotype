@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Colour controls: Vibrance, Saturation, the 8-band HSL / Color Mixer, and
 //! Color Grading (three wheels + global, Blending, Balance; legacy Split Toning
 //! maps onto it).
@@ -96,11 +97,17 @@ pub struct ColorControls {
     /// Per band: (hue, saturation, luminance), each -100..100.
     pub hsl: [[f64; 3]; 8],
     pub grading: Grading,
+    /// Black & white: the photo becomes grey, each band's grey tone set by
+    /// `gray_mix` (-100..100, darker..lighter), before colour grading (so
+    /// grading can tone it, e.g. sepia). The HSL sliders don't apply then.
+    pub grayscale: bool,
+    pub gray_mix: [f64; 8],
 }
 
 impl ColorControls {
     pub fn is_neutral(&self) -> bool {
-        self.vibrance == 0.0
+        !self.grayscale
+            && self.vibrance == 0.0
             && self.saturation == 0.0
             && self.hsl.iter().all(|b| b.iter().all(|v| *v == 0.0))
             && self.grading.is_neutral()
@@ -199,8 +206,10 @@ pub struct ColorOp {
     k: ColorStrengths,
     vibrance: f32,
     saturation: f32,
-    /// Band centres (OkLCh hue, radians, ascending) with their (hue, sat, lum) amounts.
-    bands: Vec<(f32, [f32; 3])>,
+    /// Band centres (OkLCh hue, radians, ascending) with their (hue, sat,
+    /// lum, black & white mix) amounts.
+    bands: Vec<(f32, [f32; 4])>,
+    grayscale: bool,
     orange_index: usize,
     grade_dirs: [[f32; 2]; 4],
     grade_amounts: [[f32; 2]; 4],
@@ -215,12 +224,12 @@ fn wheel_dir(hue_deg: f64) -> [f32; 2] {
 
 impl ColorOp {
     pub fn new(c: &ColorControls, k: ColorStrengths) -> Self {
-        let mut bands: Vec<(f32, [f32; 3])> = BAND_HSV_HUES
+        let mut bands: Vec<(f32, [f32; 4])> = BAND_HSV_HUES
             .iter()
-            .zip(c.hsl.iter())
-            .map(|(deg, amounts)| {
-                let h = OkLab::hue_of_hsv(*deg).rem_euclid(TAU);
-                (h, amounts.map(|v| v as f32 / 100.0))
+            .zip(c.hsl.iter().zip(c.gray_mix))
+            .map(|(deg, ([h, s, l], mix))| {
+                let hue = OkLab::hue_of_hsv(*deg).rem_euclid(TAU);
+                (hue, [*h, *s, *l, mix].map(|v| v as f32 / 100.0))
             })
             .collect();
         let orange_hue = bands[1].0;
@@ -234,6 +243,7 @@ impl ColorOp {
             vibrance: c.vibrance as f32 / 100.0,
             saturation: c.saturation as f32 / 100.0,
             bands,
+            grayscale: c.grayscale,
             orange_index,
             grade_dirs: wheels.map(|w| wheel_dir(w.hue)),
             grade_amounts: wheels.map(|w| [w.sat as f32 / 100.0, w.lum as f32 / 100.0]),
@@ -269,11 +279,18 @@ impl ColorOp {
         let mut hue = b.atan2(a);
 
         let weights = self.band_weights(hue);
+        if self.grayscale {
+            // Each colour's grey tone from the mix; neutrals stay as they are.
+            let mix: f32 = weights.iter().map(|(i, w)| w * self.bands[*i].1[3]).sum();
+            let colourfulness = smoothstep(0.0, 0.08, chroma);
+            l *= (1.0 + mix * self.k.hsl_lum * 1.5 * colourfulness).max(0.0);
+            return self.grade(l, 0.0, 0.0);
+        }
         let mut dh = 0.0;
         let mut sat_gain = 1.0;
         let mut lum_gain = 0.0;
         for (i, w) in weights {
-            let [bh, bs, bl] = self.bands[i].1;
+            let [bh, bs, bl, _] = self.bands[i].1;
             dh += w * bh;
             sat_gain += w * bs;
             lum_gain += w * bl;
@@ -296,9 +313,11 @@ impl ColorOp {
         }
         chroma *= (1.0 + self.saturation).max(0.0);
 
-        let mut a = chroma * hue.cos();
-        let mut b = chroma * hue.sin();
+        self.grade(l, chroma * hue.cos(), chroma * hue.sin())
+    }
 
+    /// Color grading, then back to the working space.
+    fn grade(&self, mut l: f32, mut a: f32, mut b: f32) -> [f32; 3] {
         // Color grading: tonal regions from OkLab lightness.
         let t = smoothstep(self.pivot - self.width, self.pivot + self.width, l);
         let region = [(1.0 - t) * (1.0 - t), 2.0 * t * (1.0 - t), t * t, 1.0];
@@ -418,5 +437,43 @@ mod tests {
         // The tint points towards blue-ish (negative b in OkLab for hue 220).
         let [_, _, b] = op.lab.from_working(op.apply(dark));
         assert!(b < 0.0);
+    }
+
+    #[test]
+    fn black_and_white_mix_and_toning() {
+        let mono = |red_mix: f64| {
+            let mut c = ColorControls {
+                grayscale: true,
+                ..Default::default()
+            };
+            c.gray_mix[0] = red_mix;
+            ColorOp::new(&c, DEFAULT_STRENGTHS)
+        };
+        let plain = mono(0.0);
+        assert!(chroma(&plain, plain.apply(RED)) < 1e-4, "grey");
+        assert!(
+            !ColorControls {
+                grayscale: true,
+                ..Default::default()
+            }
+            .is_neutral()
+        );
+        // Red mix lightens or darkens reds' grey; a neutral stays as it was.
+        let l = |op: &ColorOp, rgb| op.lab.from_working(op.apply(rgb))[0];
+        assert!(l(&mono(80.0), RED) > l(&plain, RED) + 0.02);
+        assert!(l(&mono(-80.0), RED) < l(&plain, RED) - 0.02);
+        assert!((l(&mono(80.0), GREY) - l(&plain, GREY)).abs() < 1e-4);
+        // Grading still tones the grey (sepia).
+        let mut c = ColorControls {
+            grayscale: true,
+            ..Default::default()
+        };
+        c.grading.global = Wheel {
+            hue: 35.0,
+            sat: 30.0,
+            lum: 0.0,
+        };
+        let op = ColorOp::new(&c, DEFAULT_STRENGTHS);
+        assert!(chroma(&op, op.apply(GREY)) > 0.005);
     }
 }

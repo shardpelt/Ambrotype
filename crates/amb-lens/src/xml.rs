@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! A minimal owned XML tree, enough for the lensfun database and LCP files.
 //!
 //! Namespace prefixes are stripped from element and attribute names (both

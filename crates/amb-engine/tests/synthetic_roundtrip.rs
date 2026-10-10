@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Closed loop: synthetic DNG (amb-testkit) → rawler → our pipeline → sRGB.
 //! The ColorChecker target is built from sRGB values, so a neutral develop must
 //! reproduce them; Exposure +1 must double linear values.

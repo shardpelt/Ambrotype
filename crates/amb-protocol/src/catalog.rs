@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! The documented setting catalog: every registry tag in registry order, its
 //! group, and the photographer-oriented description from
 //! `data/descriptions.json`. Validation itself goes through

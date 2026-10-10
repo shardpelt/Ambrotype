@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Format-neutral value tree shared by the XMP and `.lrtemplate` parsers.
 //!
 //! Values are kept close to their source representation so that nothing is lost:

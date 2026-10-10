@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Correlated colour temperature and tint ↔ CIE xy chromaticity.
 //!
 //! Lightroom/Camera Raw express white balance as Temperature (K) and Tint, with

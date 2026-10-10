@@ -59,7 +59,7 @@ Later we can also learn a style from the user's own edit history (Imagen-style),
   - `--json` everywhere in the CLI
   - the generated settings reference (`docs/ai/`)
 - **Phase 2:**
-  - `amb mcp` server (develop, preset, render-preview and export tools)
+  - ~~`amb mcp` server (develop, preset, render-preview and export tools)~~ (done 2026-10-10; [ai/mcp.md](../ai/mcp.md))
   - `amb match` v1 (global tone/colour statistics → parameters)
 - **Phase 3:**
   - the in-app assistant panel (BYO API key / local model)

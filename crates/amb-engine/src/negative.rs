@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Film negative → positive conversion, with film stock looks.
 //!
 //! Camera Raw has no such feature (photographers use the Negative Lab Pro

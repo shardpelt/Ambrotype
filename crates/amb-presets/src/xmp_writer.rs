@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Serialise Camera Raw settings back to an XMP packet (sidecar or preset).
 //!
 //! Simple values are written as attributes on `rdf:Description`, as Lightroom
@@ -152,6 +153,20 @@ fn collect_namespaces(map: &BTreeMap<String, Value>, out: &mut BTreeMap<String, 
 
 /// Write `settings` as a complete XMP packet. `signed` reports whether a tag's
 /// positive values should carry an explicit `+` (cosmetic; parsers accept both).
+/// Whether any key, at any depth, is in our namespace.
+fn uses_amb(map: &BTreeMap<String, Value>) -> bool {
+    map.iter()
+        .any(|(k, v)| k.starts_with(AMB_PREFIX) || value_uses_amb(v))
+}
+
+fn value_uses_amb(v: &Value) -> bool {
+    match v {
+        Value::Struct(m) => uses_amb(m),
+        Value::Seq(items) => items.iter().any(value_uses_amb),
+        _ => false,
+    }
+}
+
 pub fn write_packet(settings: &BTreeMap<String, Value>, signed: fn(&str) -> bool) -> String {
     let mut prefixes = BTreeMap::new();
     collect_namespaces(settings, &mut prefixes);
@@ -161,7 +176,7 @@ pub fn write_packet(settings: &BTreeMap<String, Value>, signed: fn(&str) -> bool
     writer.description(&mut body, settings, 2);
     // Put the namespace declarations on the top-level description.
     let mut decls = format!(" rdf:about=\"\"\n    xmlns:crs=\"{CRS_NS}\"");
-    if settings.keys().any(|k| k.starts_with(AMB_PREFIX)) {
+    if uses_amb(settings) {
         let _ = write!(decls, "\n    xmlns:amb=\"{AMB_NS}\"");
     }
     for (uri, prefix) in &writer.prefixes {

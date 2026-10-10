@@ -1,0 +1,110 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ambrotype widgets demo</title>
+  <!-- Standalone test page for curve.js and wheels.js: open it in any browser, no Tauri needed. -->
+  <link rel="stylesheet" href="widgets.css">
+  <style>
+    :root {
+      --bg: #1b1c1f; --bg-deep: #111214; --panel: #232428; --panel-2: #2a2c31; --line: #34363c;
+      --text: #e6e6e8; --muted: #9a9ca3; --faint: #6c6f77; --accent: #e8b05c; --radius: 6px;
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif; font-size: 13px;
+      color: var(--text); background: var(--bg); color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; display: grid; grid-template-columns: 330px 1fr; min-height: 100vh; background: var(--bg); }
+    aside { background: var(--panel); border-right: 1px solid var(--line); }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; font-weight: 600; }
+    .panel-body { padding: 2px 12px 14px; border-bottom: 1px solid var(--line); }
+    main { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+    h1 { font-size: 14px; margin: 0; }
+    .hint { color: var(--faint); font-size: 12px; margin: 0; }
+    .buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+    button.demo {
+      font: inherit; font-size: 12px; color: var(--text); background: var(--panel-2); border: 1px solid var(--line);
+      border-radius: var(--radius); padding: 3px 10px; cursor: pointer;
+    }
+    pre { margin: 0; flex: 1; min-height: 300px; background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 8px 10px; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); overflow: auto; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <aside>
+    <div class="panel-head">Tone Curve</div>
+    <div class="panel-body" id="curve-host"></div>
+    <div class="panel-head">Color Grading</div>
+    <div class="panel-body" id="wheels-host"></div>
+  </aside>
+  <main>
+    <h1>Ambrotype widgets demo</h1>
+    <p class="hint">Curve: click to add a point, drag, double-click to remove, drag an inner point out to remove.
+      Wheels: drag (Shift = saturation only), double-click to reset. Commits are echoed back through set(), like the app's state round trip.</p>
+    <div class="buttons">
+      <button class="demo" id="load-curve">Load S-curve + red curve</button>
+      <button class="demo" id="load-xmp">Load XMP-style strings</button>
+      <button class="demo" id="reset-curves">Reset all curves</button>
+      <button class="demo" id="load-grade">Load teal/orange grade</button>
+      <button class="demo" id="reset-grade">Reset grade</button>
+      <button class="demo" id="clear-log">Clear log</button>
+    </div>
+    <pre id="log"></pre>
+  </main>
+
+  <script src="curve.js"></script>
+  <script src="wheels.js"></script>
+  <script>
+    "use strict";
+    // A fake app: committed settings, a log of callbacks, and set() after every commit.
+    const state = {};
+    const events = [];
+    const logEl = document.getElementById("log");
+    function log(kind, payload) {
+      events.push({ kind, payload });
+      const line = `${kind.padEnd(14)} ${JSON.stringify(payload)}`;
+      logEl.textContent = (line + "\n" + logEl.textContent).split("\n").slice(0, 200).join("\n");
+    }
+
+    const curve = AmbCurve.create(document.getElementById("curve-host"), {
+      onInput: (tag, points) => log("curve.input", { tag, points }),
+      onCommit: (tag, points) => {
+        log("curve.commit", { tag, points });
+        state[tag] = points;
+        curve.set(tag, state[tag]);
+      },
+    });
+    const wheels = AmbWheels.create(document.getElementById("wheels-host"), {
+      onInput: (changes) => log("wheels.input", changes),
+      onCommit: (changes) => {
+        log("wheels.commit", changes);
+        Object.assign(state, changes);
+        wheels.set(state);
+      },
+    });
+
+    // A plausible histogram: a broad bump per channel, shifted a little.
+    const bump = (mu, sd) => Array.from({ length: 256 }, (_, i) =>
+      Math.round(1000 * Math.exp(-((i - mu) ** 2) / (2 * sd * sd)) + 200 * Math.exp(-((i - 30) ** 2) / 200)));
+    curve.setHistogram([bump(140, 45), bump(120, 50), bump(100, 40)]);
+
+    const $ = (id) => document.getElementById(id);
+    $("load-curve").onclick = () => {
+      curve.set("ToneCurvePV2012", [[0, 0], [64, 52], [192, 205], [255, 255]]);
+      curve.set("ToneCurvePV2012Red", [[0, 10], [128, 140], [255, 250]]);
+    };
+    $("load-xmp").onclick = () => curve.set("ToneCurvePV2012", ["0, 20", "128, 128", "255, 235"]);
+    $("reset-curves").onclick = () => AmbCurve.TAGS.forEach((t) => curve.reset(t));
+    $("load-grade").onclick = () => wheels.set({
+      ColorGradeShadowHue: 200, ColorGradeShadowSat: 35, ColorGradeShadowLum: -10,
+      ColorGradeHighlightHue: 40, ColorGradeHighlightSat: 30, ColorGradeHighlightLum: "+5",
+      ColorGradeMidtoneHue: 25, ColorGradeMidtoneSat: 10,
+    });
+    $("reset-grade").onclick = () => wheels.set({});
+    $("clear-log").onclick = () => { logEl.textContent = ""; events.length = 0; };
+
+    window.ambDemo = { curve, wheels, events, state };
+  </script>
+</body>
+</html>

@@ -1,39 +1,77 @@
 <!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ambrotype</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="widgets.css">
 </head>
 <body>
   <header class="topbar">
     <div class="brand"><span class="logo" aria-hidden="true"></span>Ambrotype</div>
     <div class="actions">
-      <button id="btn-open" title="Open a raw photo (Ctrl+O)">Open</button>
+      <button id="btn-open" title="Open a photo: raw, JPEG, PNG, TIFF or WebP (Ctrl+O)">Open</button>
+      <button id="btn-library" title="Library: all the photos in the folder, to rate, label, tag and export many at once">Library</button>
       <button id="btn-save" title="Save the edit to the photo's XMP sidecar (Ctrl+S)" disabled>Save</button>
       <button id="btn-export" class="primary" title="Export (Ctrl+E)" disabled>Export…</button>
+      <button id="btn-collage" title="Collage maker: several photos on one canvas">Collage</button>
       <span class="sep"></span>
       <button id="btn-undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
       <button id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
       <span class="sep"></span>
       <button id="btn-before" title="Show the photo before edits (\)" disabled>Before / After</button>
+      <span class="sep"></span>
+      <button id="btn-crop" title="Crop and straighten (R)" disabled>Crop</button>
+      <button id="btn-masks" title="Masks (M)" disabled>Masks</button>
+      <button id="btn-spots" title="Spot removal (Q)" disabled>Spots</button>
+      <button id="btn-zoom" title="Fit / 100% (Z, or click the photo). Drag to pan at 100%." disabled>100%</button>
+      <button id="btn-wb" title="White balance picker: click a neutral grey or white spot (W)" disabled>WB picker</button>
+      <button id="btn-clip" title="Show clipped highlights (red) and shadows (blue) (J)" disabled>Clipping</button>
+      <span class="sep"></span>
+      <button id="btn-plugins" title="Plugins: extra tools that make edits for you">Plugins</button>
+      <span class="sep"></span>
+      <button id="btn-looks" title="Appearance: layouts and themes. Choose, clone, share">Appearance</button>
+      <button id="btn-edit-layout" title="Edit this layout: move panels, controls and toolbar buttons">Edit layout</button>
+      <button id="btn-settings" class="icon" aria-label="Settings">⚙</button>
+      <button id="btn-feedback" title="Report a bug, an idea, or a photo that looks different from Lightroom">Feedback</button>
     </div>
     <div class="photo-title" id="photo-title"></div>
   </header>
 
-  <main class="workspace">
-    <aside class="left">
-      <section class="side-section">
+  <main class="workspace" id="workspace">
+    <aside class="column left" id="col-left">
+      <section class="side-section presets-block" id="block-presets">
         <div class="side-head">
           <h2>Presets</h2>
-          <button id="btn-add-presets" class="small" title="Add a folder of .xmp or .lrtemplate presets">Add folder…</button>
+          <span class="side-actions">
+            <button id="btn-save-preset" class="small" title="Save the photo's edit as a one-click preset (not the crop)" disabled>Save…</button>
+            <button id="btn-add-presets" class="small" title="Add a folder of .xmp or .lrtemplate presets">Add folder…</button>
+          </span>
         </div>
         <input id="preset-filter" type="search" placeholder="Filter presets" spellcheck="false">
         <label class="amount">Amount <input id="preset-amount" type="range" min="0" max="200" value="100"><output id="preset-amount-out">100</output></label>
         <div id="preset-list" class="preset-list"><p class="hint">No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.</p></div>
       </section>
-      <section class="side-section history">
+      <section class="side-section info-block" id="block-info">
+        <div class="side-head"><h2>Rating, label &amp; keywords</h2></div>
+        <div id="rating" class="rating" role="radiogroup" aria-label="Rating">
+          <button type="button" data-stars="1" role="radio" title="1 star (1)">★</button><button type="button" data-stars="2" role="radio" title="2 stars (2)">★</button><button type="button" data-stars="3" role="radio" title="3 stars (3)">★</button><button type="button" data-stars="4" role="radio" title="4 stars (4)">★</button><button type="button" data-stars="5" role="radio" title="5 stars (5)">★</button>
+          <button type="button" id="rating-clear" class="rating-clear" title="No rating (0)">×</button>
+        </div>
+        <div class="flag-row"><span id="label-swatches" class="label-swatches info-labels" aria-label="Colour label"></span>
+          <span id="flag-buttons" class="flag-buttons" aria-label="Flag">
+            <button type="button" data-flag="pick" class="pick" title="Pick (P)">⚑</button><button type="button" data-flag="reject" class="reject" title="Reject (X)">✕</button><button type="button" data-flag="" title="No flag (U)">–</button>
+          </span></div>
+        <div id="tag-field" class="tag-field">
+          <span id="tag-chips" class="tag-chips"></span>
+          <input id="tag-input" type="text" list="tag-suggest" placeholder="Add keywords…" spellcheck="false" aria-label="Add keywords">
+          <datalist id="tag-suggest"></datalist>
+        </div>
+        <p class="hint">Saved to the photo's .xmp straight away, where Lightroom reads them, and put in exports. Keys 1–5 rate, 0 clears, 6–9 set a colour label, P picks, X rejects, U unflags.</p>
+      </section>
+      <section class="side-section history" id="block-history">
         <div class="side-head"><h2>History</h2></div>
         <ol id="history-list" class="history-list"></ol>
       </section>
@@ -41,23 +79,275 @@
 
     <section class="viewer" id="viewer">
       <div class="empty" id="empty">
-        <p class="empty-title">Open a raw photo to start</p>
+        <p class="empty-title">Open a photo to start</p>
         <p class="hint">Drop a file here, or press Ctrl+O. Lightroom presets and XMP sidecars work as they are.</p>
         <button id="btn-open-empty" class="primary">Open photo…</button>
       </div>
       <img id="preview" alt="" hidden>
+      <canvas id="crop-canvas" class="crop-canvas" hidden></canvas>
+      <canvas id="mask-canvas" class="crop-canvas mask-canvas" hidden></canvas>
+      <canvas id="spot-canvas" class="crop-canvas spot-canvas" hidden></canvas>
       <div class="badge" id="before-badge" hidden>Before</div>
       <div class="busy" id="busy" hidden></div>
     </section>
 
-    <aside class="right">
-      <div class="histogram-wrap">
+    <section class="filmstrip" id="filmstrip" hidden aria-label="Photos in this folder">
+      <div class="filmstrip-head">
+        <button type="button" id="filmstrip-prev" class="small" title="Previous photo (←)">‹</button>
+        <span id="filmstrip-pos" class="hint"></span>
+        <button type="button" id="filmstrip-next" class="small" title="Next photo (→)">›</button>
+        <span id="filmstrip-count" class="hint"></span>
+      </div>
+      <div id="filmstrip-list" class="filmstrip-list"></div>
+    </section>
+    <aside class="column right" id="col-right">
+      <div class="histogram-wrap" id="block-histogram">
         <canvas id="histogram" width="300" height="110"></canvas>
         <div class="exif" id="exif"></div>
       </div>
-      <div id="panels" class="panels"></div>
+      <section id="mask-panel" class="crop-panel mask-panel" hidden>
+        <div class="side-head"><h2>Masks</h2>
+          <label class="inline-check" title="Show the selected mask in red (O)"><input id="mask-overlay" type="checkbox" checked><span>Overlay</span></label>
+        </div>
+        <div class="crop-line mask-new" id="mask-new"></div>
+        <div class="mask-list" id="mask-list"></div>
+        <div id="mask-tool" class="mask-tool"></div>
+        <div id="mask-detail" class="mask-detail" hidden>
+          <div class="section-label">Parts</div>
+          <div class="mask-parts" id="mask-parts"></div>
+          <div class="crop-line mask-add" id="mask-add"></div>
+          <div id="mask-part-settings" class="mask-part-settings"></div>
+          <div id="mask-sliders" class="mask-sliders"></div>
+        </div>
+        <p class="hint" id="mask-hint"></p>
+        <div class="crop-actions"><span class="grow"></span><button id="mask-done" class="primary" title="M or Esc">Done</button></div>
+      </section>
+      <section id="spot-panel" class="crop-panel spot-panel" hidden>
+        <div class="side-head"><h2>Spot removal</h2><span id="spot-count" class="hint"></span></div>
+        <div class="crop-line segmented" id="spot-kind">
+          <button type="button" class="small" data-kind="heal" title="Copy from the source, then match the surroundings">Heal</button>
+          <button type="button" class="small" data-kind="clone" title="Copy from the source as it is">Clone</button>
+        </div>
+        <div class="row"><label for="spot-size" title="Radius, % of the photo's width ([ and ], or the wheel)">Size</label>
+          <input id="spot-size" type="range" min="0.2" max="10" step="0.1" value="1.5">
+          <input id="spot-size-num" class="value" type="text" inputmode="decimal" spellcheck="false"></div>
+        <div class="row"><label for="spot-feather">Feather</label>
+          <input id="spot-feather" type="range" min="0" max="100" step="1" value="50">
+          <input id="spot-feather-num" class="value" type="text" inputmode="decimal" spellcheck="false"></div>
+        <div class="row"><label for="spot-opacity">Opacity</label>
+          <input id="spot-opacity" type="range" min="1" max="100" step="1" value="100">
+          <input id="spot-opacity-num" class="value" type="text" inputmode="decimal" spellcheck="false"></div>
+        <p class="hint" id="spot-hint"></p>
+        <div class="crop-actions">
+          <button type="button" id="spot-delete" title="Delete">Delete spot</button>
+          <button type="button" id="spot-clear">Remove all</button>
+          <span class="grow"></span>
+          <button type="button" id="spot-done" class="primary" title="Q or Esc">Done</button>
+        </div>
+      </section>
+      <section id="crop-panel" class="crop-panel" hidden>
+        <div class="side-head"><h2>Crop &amp; straighten</h2><span id="crop-size" class="hint"></span></div>
+        <div class="row"><label for="crop-aspect">Aspect</label><select id="crop-aspect"></select></div>
+        <div class="crop-line">
+          <button id="crop-swap" class="small" title="Swap portrait and landscape (X)">Swap ⇄</button>
+          <button id="crop-sizes" class="small" title="Add your own sizes">Size presets…</button>
+          <button id="crop-draw" class="small" title="Draw a new crop: press at one corner and drag to the other (D)">Draw ⌖</button>
+        </div>
+        <div class="row">
+          <label for="crop-angle" title="Straighten. Double-click to reset.">Angle</label>
+          <input id="crop-angle" type="range" min="-45" max="45" step="0.05" value="0">
+          <input id="crop-angle-num" class="value" type="text" inputmode="decimal" spellcheck="false">
+        </div>
+        <p class="hint" id="crop-hint"></p>
+        <div class="crop-actions">
+          <button id="crop-reset" title="Remove the crop and straighten">Reset</button>
+          <span class="grow"></span>
+          <button id="crop-cancel" title="Esc">Cancel</button>
+          <button id="crop-done" class="primary" title="Enter">Done</button>
+        </div>
+      </section>
     </aside>
+    <!-- Blocks the active layout doesn't place wait here. -->
+    <div id="block-store" hidden></div>
   </main>
+
+  <!-- The library grid (library.js); replaces the workspace while shown. -->
+  <section id="library" class="library" hidden aria-label="Library">
+    <div class="library-bar">
+      <button type="button" id="lib-choose" class="small" title="Show another folder">Folder…</button>
+      <select id="lib-source" aria-label="Show" title="Show a folder or a collection"><option value="">Folder</option></select>
+      <span id="library-folder" class="library-folder"></span>
+      <button type="button" id="lib-reload" class="small" title="Read the folder again">↻</button>
+      <button type="button" id="lib-import" class="small" title="Copy photos from a card or folder (Ctrl+Shift+I)">Import…</button>
+      <span id="library-count" class="hint"></span>
+      <span id="lib-views" class="lib-views" role="group" aria-label="View">
+        <button type="button" data-view="grid" class="on" title="Grid (G)">Grid</button><button type="button" data-view="loupe" title="Loupe (E)">Loupe</button><button type="button" data-view="compare" title="Compare (C)">Compare</button><button type="button" data-view="survey" title="Survey (N)">Survey</button>
+      </span>
+      <span class="grow"></span>
+      <input id="lib-search" type="search" placeholder="Name or keyword" spellcheck="false" aria-label="Search">
+      <select id="lib-filter-rating" aria-label="Rating filter" title="Rating">
+        <option value="0">Any rating</option><option value="unrated">Unrated</option>
+        <option value="1">★ and up</option><option value="2">★★ and up</option><option value="3">★★★ and up</option>
+        <option value="4">★★★★ and up</option><option value="5">★★★★★</option>
+      </select>
+      <select id="lib-filter-label" aria-label="Label filter" title="Colour label">
+        <option value="all">Any label</option><option value="none">No label</option>
+        <option>Red</option><option>Yellow</option><option>Green</option><option>Blue</option><option>Purple</option>
+      </select>
+      <select id="lib-filter-flag" aria-label="Flag filter" title="Pick or reject flag">
+        <option value="all">Any flag</option><option value="pick">Picks</option><option value="reject">Rejected</option>
+        <option value="unflagged">Unflagged</option><option value="kept">Not rejected</option>
+      </select>
+      <select id="lib-filter-edited" aria-label="Edit filter" title="Edited or not">
+        <option value="all">Edited or not</option><option value="edited">Edited</option><option value="unedited">Not edited</option>
+      </select>
+      <select id="lib-sort" aria-label="Sort" title="Sort by">
+        <option value="name">By name</option><option value="captured">By capture time</option>
+        <option value="rating">By rating</option><option value="edited">Edited first</option>
+      </select>
+      <label class="inline-check" title="Reverse the order"><input id="lib-reverse" type="checkbox"><span>⇅</span></label>
+      <input id="lib-size" type="range" min="100" max="320" value="160" title="Thumbnail size" aria-label="Thumbnail size">
+    </div>
+    <div class="library-body">
+      <div id="library-grid" class="library-grid" tabindex="-1"></div>
+      <div id="library-view" class="library-view" tabindex="-1" hidden></div>
+      <div id="library-empty" class="library-empty" hidden>
+        <p class="empty-title">Choose a folder of photos</p>
+        <p class="hint">Or open a photo: the library shows its folder.</p>
+        <button type="button" id="lib-choose-empty" class="primary">Choose folder…</button>
+      </div>
+      <aside id="library-panel" class="library-panel">
+        <h2 id="lib-sel-count">Nothing selected</h2>
+        <p id="lib-hint" class="hint">Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.</p>
+        <h3>Rating</h3>
+        <div id="lib-rating" class="rating">
+          <button type="button" data-stars="1" title="1 star (1)">★</button><button type="button" data-stars="2" title="2 stars (2)">★</button><button type="button" data-stars="3" title="3 stars (3)">★</button><button type="button" data-stars="4" title="4 stars (4)">★</button><button type="button" data-stars="5" title="5 stars (5)">★</button>
+          <button type="button" id="lib-rating-clear" class="rating-clear" title="No rating (0)" data-needs="any">×</button>
+        </div>
+        <h3>Flag</h3>
+        <div id="lib-flags" class="flag-buttons">
+          <button type="button" data-flag="pick" class="pick" data-needs="any" title="Pick (P)">⚑ Pick</button><button type="button" data-flag="reject" class="reject" data-needs="any" title="Reject (X)">✕ Reject</button><button type="button" data-flag="" data-needs="any" title="No flag (U)">None</button>
+        </div>
+        <h3>Colour label</h3>
+        <div class="label-row"><span id="lib-labels" class="label-swatches"></span>
+          <button type="button" id="lib-label-clear" class="small" data-needs="any" title="No label">None</button></div>
+        <h3>Keywords</h3>
+        <div id="lib-keywords" class="lib-keywords"></div>
+        <input id="lib-tag-input" type="text" list="lib-tag-suggest" placeholder="Add to the selection…" spellcheck="false" aria-label="Add keywords to the selection">
+        <datalist id="lib-tag-suggest"></datalist>
+        <h3>Collections</h3>
+        <div class="col-line">
+          <select id="lib-add-to" aria-label="Collection to add to"></select>
+          <button type="button" id="lib-add" class="small" data-needs="any" title="Add the selection to the collection (B adds to the last one used)">Add</button>
+        </div>
+        <button type="button" id="lib-remove-from" class="small" data-needs="any" hidden>Remove from this collection</button>
+        <div class="col-line">
+          <button type="button" id="lib-coll-rename" class="small" hidden>Rename collection…</button>
+          <button type="button" id="lib-coll-delete" class="small" hidden>Delete collection…</button>
+        </div>
+        <h3>Edits</h3>
+        <div class="col-line">
+          <button type="button" id="lib-copy" class="small" data-needs="one" title="Copy this photo's develop settings (Ctrl+Shift+C)">Copy settings</button>
+          <button type="button" id="lib-paste" class="small" data-needs="paste" title="Give the selected photos the copied settings (Ctrl+Shift+V)">Paste settings…</button>
+        </div>
+        <p id="lib-copied" class="hint"></p>
+        <div class="col-line">
+          <button type="button" id="lib-vcopy" class="small" data-needs="one" title="A second edit of this photo, as its own sidecar (Ctrl+')">Make a virtual copy</button>
+          <button type="button" id="lib-vcopy-delete" class="small" data-needs="any" hidden title="Delete the selected virtual copies (their photo stays)">Delete copy</button>
+        </div>
+        <h3>Use</h3>
+        <div class="col-line">
+          <button type="button" id="lib-open" class="small" data-needs="any" title="Open in the editor (Enter, or double-click)">Open in editor</button>
+          <button type="button" id="lib-export" class="small primary" data-needs="any" title="Export the selection with the same choices, one file each (Ctrl+E)">Export…</button>
+          <button type="button" id="lib-collage" class="small" data-needs="any" title="Start a collage with the selected photos">Make a collage</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <dialog id="save-preset-dialog">
+    <form method="dialog">
+      <h2>Save as preset</h2>
+      <p class="hint">The photo's edit as it is now, as a one-click preset with an Amount slider. The crop, masks, retouching and geometry belong to this photo and are left out. It's a Lightroom-style .xmp file, so Lightroom can import it too.</p>
+      <div class="grid">
+        <label>Name <input name="preset_name" type="text" spellcheck="false" required></label>
+        <label>Group <input name="preset_group" type="text" spellcheck="false" placeholder="Yours"></label>
+      </div>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Save preset</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="paste-dialog">
+    <form method="dialog">
+      <h2>Paste settings</h2>
+      <p id="paste-what" class="hint"></p>
+      <div id="paste-groups" class="paste-groups"></div>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Paste</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- A name, for collections (collections.js). -->
+  <dialog id="name-dialog">
+    <form method="dialog">
+      <h2 id="name-title"></h2>
+      <p id="name-hint" class="hint"></p>
+      <label>Name <input name="value" type="text" spellcheck="false" required maxlength="100"></label>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">OK</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Import: copy and rename from a card or folder (import.js). -->
+  <dialog id="import-dialog">
+    <form method="dialog" id="import-form">
+      <h2>Import photos</h2>
+      <div class="grid">
+        <label>From (a card or folder)
+          <span class="folder-row"><input name="source" type="text" readonly placeholder="Choose…"><button type="button" class="small" data-pick="source">Choose…</button></span>
+        </label>
+        <label>Into
+          <span class="folder-row"><input name="dest" type="text" readonly placeholder="Choose…"><button type="button" class="small" data-pick="dest">Choose…</button></span>
+        </label>
+        <label>Folders
+          <select name="folder_choice">
+            <option value="{yyyy}/{yyyy}-{mm}-{dd}">By date: 2026 / 2026-10-10</option>
+            <option value="{yyyy}/{yyyy}-{mm}">By month: 2026 / 2026-10</option>
+            <option value="{yyyy}-{mm}-{dd}">One folder per day: 2026-10-10</option>
+            <option value="">Straight into the folder</option>
+            <option value="custom">Your own…</option>
+          </select>
+          <input name="folder" type="text" spellcheck="false" hidden>
+        </label>
+        <label>File names
+          <select name="name_choice">
+            <option value="{name}">Keep the camera's names</option>
+            <option value="{yyyy}{mm}{dd}_{seq}">Date and number: 20261010_0001</option>
+            <option value="{yyyy}{mm}{dd}_{name}">Date and camera name: 20261010_DSC_1234</option>
+            <option value="custom">Your own…</option>
+          </select>
+          <input name="name" type="text" spellcheck="false" hidden>
+        </label>
+        <label>First number <input name="first_number" type="number" min="0" max="999999" step="1" value="1"></label>
+        <label>Keywords for all <input name="keywords" type="text" spellcheck="false" placeholder="e.g. wedding, Anna &amp; Tom"></label>
+      </div>
+      <label class="check"><input name="subfolders" type="checkbox" checked> Include subfolders (a card's DCIM folders)</label>
+      <p id="import-tokens" class="hint"></p>
+      <div id="import-summary" class="import-summary hint">Choose where the photos are and where they go.</div>
+      <ul id="import-list" class="import-list"></ul>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" id="import-go" class="primary" disabled>Import</button>
+      </menu>
+    </form>
+  </dialog>
 
   <footer class="statusbar">
     <span id="status">Ready</span>
@@ -89,6 +379,18 @@
             <option value="rec2020">Rec. 2020</option>
           </select>
         </label>
+        <label>Size preset
+          <select name="size_preset"></select>
+        </label>
+        <label>Exact size (px, cropped to fit)
+          <span class="exact">
+            <input name="exact_w" type="number" min="1" max="65535" step="1" placeholder="Width">
+            <span>×</span>
+            <input name="exact_h" type="number" min="1" max="65535" step="1" placeholder="Height">
+            <button type="button" id="export-swap" class="small" title="Swap width and height">⇄</button>
+          </span>
+        </label>
+        <p id="export-size-note" class="hint wide-note"></p>
         <label>Resize long edge (px, empty = full size) <input name="long_edge" type="number" min="16" step="1" placeholder="Full size"></label>
         <label>Output sharpening
           <select name="sharpen">
@@ -108,6 +410,43 @@
         </label>
         <label class="maxkb">Limit file size (KB, JPEG) <input name="max_kb" type="number" min="10" step="10" placeholder="No limit"></label>
       </div>
+      <div class="border-section">
+        <div class="border-fields">
+          <label>Border <select name="border_preset"></select></label>
+          <div id="border-edit" class="border-edit" hidden>
+            <label>Colour
+              <span class="pair swatches" id="border-swatches">
+                <button type="button" data-color="#ffffff" title="White" style="background:#ffffff"></button>
+                <button type="button" data-color="#f7f5f0" title="Cream" style="background:#f7f5f0"></button>
+                <button type="button" data-color="#c8c8c8" title="Light grey" style="background:#c8c8c8"></button>
+                <button type="button" data-color="#808080" title="Grey" style="background:#808080"></button>
+                <button type="button" data-color="#333333" title="Dark grey" style="background:#333333"></button>
+                <button type="button" data-color="#000000" title="Black" style="background:#000000"></button>
+                <button type="button" data-color="auto" title="The photo's own average colour" class="auto">auto</button>
+                <input name="b_color" type="color" value="#ffffff" title="Any colour">
+              </span>
+            </label>
+            <input name="b_auto" type="checkbox" hidden>
+            <label>Width
+              <span class="pair"><input name="b_width" type="number" min="0" step="0.5">
+                <select name="b_unit" title="Percent of the short edge, or pixels"><option value="percent">%</option><option value="px">px</option></select></span>
+            </label>
+            <label>Bottom <input name="b_bottom" type="number" min="0" step="0.5" placeholder="Same as width"></label>
+            <label>Keyline around the photo
+              <span class="pair"><input name="b_key" type="number" min="0" step="0.05" placeholder="None"><input name="b_key_color" type="color" value="#000000"></span>
+            </label>
+            <label>Rounded corners (%) <input name="b_radius" type="number" min="0" max="50" step="0.5"></label>
+            <span class="inline-check fit"><input name="b_fit" type="checkbox"><span>Whole photo inside the frame (with an exact size, instead of cropping to fill)</span></span>
+            <span class="pair save"><input name="b_name" type="text" placeholder="Preset name" spellcheck="false">
+              <button type="button" id="border-save" class="small">Save preset</button>
+              <button type="button" id="border-delete" class="small" disabled>Delete</button></span>
+          </div>
+        </div>
+        <div class="border-preview-wrap">
+          <canvas id="border-preview" class="border-preview" hidden></canvas>
+          <span id="border-size" class="hint"></span>
+        </div>
+      </div>
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary" id="export-go">Export…</button>
@@ -115,7 +454,415 @@
     </form>
   </dialog>
 
+  <dialog id="feedback-dialog">
+    <form method="dialog" id="feedback-form">
+      <h2>Send feedback</h2>
+      <p class="hint">This opens a pre-filled issue on GitHub in your browser. Nothing is sent until you submit it there; you can edit everything first.</p>
+      <div class="grid">
+        <label>Kind
+          <select name="kind">
+            <option>Looks different from Lightroom</option>
+            <option>Bug</option>
+            <option>Idea</option>
+            <option>Slow</option>
+          </select>
+        </label>
+        <label>Title <input name="title" type="text" placeholder="One line" spellcheck="true"></label>
+      </div>
+      <label class="wide">What happened, or what would you like?
+        <textarea name="text" rows="5" placeholder="For &quot;looks different&quot;: which settings or preset, and how it differs."></textarea>
+      </label>
+      <label class="check"><input type="checkbox" name="context" checked> Include app, system, camera, lens and the current settings (never the photo)</label>
+      <label class="wide">Will be sent <textarea name="preview" rows="6" readonly></textarea></label>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Open on GitHub…</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="sizes-dialog">
+    <form method="dialog" id="sizes-form">
+      <h2>Size presets</h2>
+      <p class="hint">Sizes for the crop tool (aspect) and export (exact pixels). Built-in sizes follow each site's current recommendation and cannot be changed here; clone one to adjust it.</p>
+      <div id="sizes-list" class="sizes-list"></div>
+      <div class="grid sizes-edit">
+        <label>Name <input name="name" type="text" placeholder="e.g. Blog header" spellcheck="false"></label>
+        <label>Group <input name="group" type="text" placeholder="Custom" spellcheck="false"></label>
+        <label>Width (px) <input name="width" type="number" min="1" max="65535" step="1"></label>
+        <label>Height (px) <input name="height" type="number" min="1" max="65535" step="1"></label>
+      </div>
+      <menu>
+        <span id="sizes-editing" class="hint grow"></span>
+        <button type="button" id="sizes-new">New</button>
+        <button value="save" id="sizes-save" class="primary">Save size</button>
+        <button value="close" formnovalidate>Close</button>
+      </menu>
+    </form>
+  </dialog>
+
   <div id="toast" class="toast" hidden></div>
+  <dialog id="settings-dialog">
+    <form method="dialog">
+      <h2>Settings</h2>
+      <div class="tabs settings-tabs">
+        <button type="button" data-tab="keys" class="active">Keyboard shortcuts</button>
+        <button type="button" data-tab="general">General</button>
+        <button type="button" data-tab="about">About</button>
+      </div>
+      <section id="settings-keys">
+        <div id="keyboard-map" class="keyboard-map" aria-label="Keyboard map"></div>
+        <p class="hint kb-legend"><span class="kb-swatch bare"></span> a key on its own <span class="kb-swatch with-mod"></span> with Ctrl/⌘, Alt or Shift. Click a key to see what it does.</p>
+        <input id="keys-filter" type="search" placeholder="Search actions or keys" spellcheck="false">
+        <div id="keys-list" class="keys-list"></div>
+        <p id="keys-message" class="keys-message" role="status"></p>
+      </section>
+      <section id="settings-general" hidden>
+        <p id="settings-version"></p>
+        <p class="hint">Your settings, layouts and themes are kept in:<br><code id="settings-path"></code></p>
+        <label class="hub-url">Hub address (where Browse hub… looks)
+          <input id="settings-hub" type="text" spellcheck="false">
+        </label>
+        <div class="crop-line">
+          <button type="button" id="settings-hub-default">Use the default hub</button>
+        </div>
+        <div class="crop-line">
+          <button type="button" id="settings-folder">Open the settings folder</button>
+          <button type="button" id="settings-looks">Layouts and themes…</button>
+        </div>
+      </section>
+      <section id="settings-about" hidden>
+        <p><strong>Ambrotype</strong> <span id="about-version"></span><br>Copyright © 2026 The Ambrotype contributors</p>
+        <p class="hint">Ambrotype is free software: you can share and change it under the terms of the GNU General Public License, version 3 or (at your option) any later version. It comes with ABSOLUTELY NO WARRANTY. The plugin SDK is MIT or Apache-2.0, so plugins may use any licence.</p>
+        <p class="hint">Lightroom, Camera Raw and Adobe are trademarks of Adobe Inc.; Fujifilm's film simulation names are trademarks of FUJIFILM Corporation. Ambrotype is not affiliated with or endorsed by either.</p>
+        <div class="crop-line">
+          <button type="button" id="about-licence">Licence</button>
+          <button type="button" id="about-notice">Credits and notices</button>
+          <button type="button" id="about-source">Source code</button>
+        </div>
+        <pre id="about-text" class="about-text" hidden></pre>
+      </section>
+      <menu>
+        <button type="button" id="keys-reset-all" title="Put every shortcut back to its default">Reset all shortcuts</button>
+        <span class="grow"></span>
+        <button value="close" class="primary">Done</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Collage maker (collage.js) -->
+  <dialog id="collage-dialog" class="collage-dialog">
+    <div class="collage-top">
+      <h2>Collage</h2>
+      <span id="col-title" class="hint"></span>
+      <span class="grow"></span>
+      <span id="col-progress" class="hint" role="status"></span>
+      <button type="button" id="col-open" title="Open a saved collage (Ctrl+O)">Open…</button>
+      <button type="button" id="col-save-doc" title="Save the collage to reopen and edit later: layout, photos and how they sit (Ctrl+S)">Save</button>
+      <button type="button" id="col-save-as" title="Save the collage as a new file (Ctrl+Shift+S)">Save as…</button>
+      <span class="sep"></span>
+      <button type="button" id="col-export" class="primary" title="Save this collage as one image">Export…</button>
+      <button type="button" id="col-close" title="Back to the editor (Esc). The collage stays as it is.">Close</button>
+    </div>
+    <div class="collage-body">
+      <aside class="collage-side left">
+        <div class="side-head"><h3>Layouts</h3>
+          <button type="button" id="col-import" class="small" title="Add a layout someone shared">Import…</button></div>
+        <div id="col-templates" class="col-templates"></div>
+        <div class="col-save">
+          <input id="col-name" type="text" spellcheck="false" placeholder="Layout name" aria-label="Layout name">
+          <div class="col-line">
+            <button type="button" id="col-save" class="small" title="Keep this shape, size, gaps and background as your own layout">Save layout</button>
+            <button type="button" id="col-share" class="small" title="Save the layout as a file to send (photos aren't included)">Share…</button>
+            <button type="button" id="col-delete" class="small" disabled>Delete</button>
+          </div>
+        </div>
+      </aside>
+      <section class="collage-stage-wrap" id="col-stage-wrap">
+        <div id="col-drag-mode" class="tabs col-drag-mode" hidden title="What a drag on a photo moves (hold Alt for the other)">
+          <button type="button" data-mode="frame">Move frames</button>
+          <button type="button" data-mode="photo">Move photos inside</button>
+        </div>
+        <div id="col-stage" class="col-stage"></div>
+        <p class="hint col-help" id="col-help"></p>
+      </section>
+      <aside class="collage-side right">
+        <h3>Canvas</h3>
+        <label>Size <select id="col-size"></select></label>
+        <span class="col-wh">
+          <input id="col-w" type="number" min="16" max="20000" step="1" aria-label="Width">
+          <span>×</span>
+          <input id="col-h" type="number" min="16" max="20000" step="1" aria-label="Height">
+          <button type="button" id="col-swap" class="small" title="Swap width and height">⇄</button>
+        </span>
+        <label>Background
+          <span class="pair swatches" id="col-swatches">
+            <button type="button" data-color="#ffffff" title="White" style="background:#ffffff"></button>
+            <button type="button" data-color="#f7f5f0" title="Cream" style="background:#f7f5f0"></button>
+            <button type="button" data-color="#c8c8c8" title="Light grey" style="background:#c8c8c8"></button>
+            <button type="button" data-color="#808080" title="Grey" style="background:#808080"></button>
+            <button type="button" data-color="#333333" title="Dark grey" style="background:#333333"></button>
+            <button type="button" data-color="#000000" title="Black" style="background:#000000"></button>
+            <input id="col-bg" type="color" value="#ffffff" title="Any colour">
+          </span>
+        </label>
+        <label class="col-range">Gap between photos <span><input id="col-gap" type="range" min="0" max="10" step="0.25"><output id="col-gap-out"></output></span></label>
+        <label class="col-range">Outer border <span><input id="col-margin" type="range" min="0" max="15" step="0.25"><output id="col-margin-out"></output></span></label>
+        <label class="col-range">Rounded corners <span><input id="col-radius" type="range" min="0" max="20" step="0.25"><output id="col-radius-out"></output></span></label>
+        <p class="hint">Gap, border and corners are % of the short edge, so they look the same at any size.</p>
+        <button type="button" id="col-free">Arrange freely</button>
+
+        <h3>Cell</h3>
+        <p id="col-cell-hint" class="hint">Click a cell to change it.</p>
+        <div class="col-line" id="col-cell-tools">
+          <button type="button" class="small" id="col-rotate" title="Turn the photo a quarter (R)">Rotate ⟳</button>
+          <button type="button" class="small" id="col-fit" title="Fit the photo to the cell again">Fit</button>
+          <button type="button" class="small" id="col-edit" title="Open this photo in the editor; Back to collage returns here">Edit photo</button>
+          <button type="button" class="small" id="col-clear" title="Take the photo out (Delete)">Empty</button>
+        </div>
+        <div id="col-arrange" class="col-arrange" hidden>
+          <label class="col-angle-row">Angle <span><input id="col-angle" type="number" min="-180" max="180" step="0.5" aria-label="Frame angle in degrees">°
+            <button type="button" class="small" id="col-straight" title="Straighten the frame">0°</button></span></label>
+          <div class="col-line">
+            <button type="button" class="small" id="col-front" title="Bring to front (])">To front</button>
+            <button type="button" class="small" id="col-back" title="Send to back ([)">To back</button>
+            <button type="button" class="small" id="col-add-frame" title="An empty frame on top, in the middle">Add frame</button>
+          </div>
+          <p class="hint">Arrow keys nudge the frame (Shift: 10 px).</p>
+        </div>
+        <div class="col-line">
+          <button type="button" class="small" id="col-split-v" title="Split this cell into left and right">Split ◫</button>
+          <button type="button" class="small" id="col-split-h" title="Split this cell into top and bottom">Split ⊟</button>
+          <button type="button" class="small" id="col-remove" title="Remove this cell from the layout">Remove cell</button>
+        </div>
+
+        <h3>Export</h3>
+        <label>Format
+          <select id="col-format">
+            <option value="jpeg">JPEG</option>
+            <option value="png">PNG</option>
+            <option value="tiff">TIFF</option>
+            <option value="webp">WebP (lossless)</option>
+            <option value="avif">AVIF</option>
+          </select>
+        </label>
+        <label class="col-range" id="col-quality-row">Quality <span><input id="col-quality" type="range" min="1" max="100" value="90"><output id="col-quality-out">90</output></span></label>
+        <label class="inline-check"><input id="col-with-project" type="checkbox" checked><span>Also save the collage file next to it, to reopen and edit later</span></label>
+        <label>Colour space
+          <select id="col-space">
+            <option value="srgb">sRGB (web, most screens)</option>
+            <option value="p3">Display P3</option>
+            <option value="adobergb">Adobe RGB (1998)-compatible</option>
+          </select>
+        </label>
+
+        <h3>Batch</h3>
+        <p class="hint">Put every photo in the tray into pages of this layout, matched to the cells' shapes: one file per page.</p>
+        <label>Photos
+          <select id="col-batch-filter">
+            <option value="0">All in the tray</option>
+            <option value="1">★ and up</option>
+            <option value="2">★★ and up</option>
+            <option value="3">★★★ and up</option>
+            <option value="4">★★★★ and up</option>
+            <option value="5">★★★★★</option>
+          </select>
+        </label>
+        <p id="col-batch-note" class="hint"></p>
+        <button type="button" id="col-batch" title="Choose a folder; pages are named after the layout">Export pages…</button>
+      </aside>
+    </div>
+    <section class="collage-tray">
+      <div class="tray-head">
+        <strong>Photos</strong>
+        <span id="col-tray-count" class="hint"></span>
+        <span class="grow"></span>
+        <button type="button" id="col-fill" class="small" title="Put tray photos into the empty cells, in order">Fill empty cells</button>
+        <button type="button" id="col-add" class="small">Add photos…</button>
+        <button type="button" id="col-add-folder" class="small">Add folder…</button>
+        <button type="button" id="col-tray-clear" class="small" title="Empty the tray (cells keep their photos)">Clear</button>
+      </div>
+      <div id="col-tray" class="col-tray"></div>
+    </section>
+  </dialog>
+  <button id="btn-back-collage" class="back-collage primary" hidden title="Back to the collage, with this photo's edits">← Back to collage</button>
+
+  <!-- Plugins (plugins.js) -->
+  <dialog id="plugins-dialog" class="plugins-dialog">
+    <form method="dialog">
+      <h2>Plugins</h2>
+      <p class="hint">Small tools that make edits for you. They run in a sandbox: no files, no network, only settings you can see and undo.</p>
+      <div class="plugins-body">
+        <div id="plugins-list" class="plugins-list" role="listbox" aria-label="Plugins"></div>
+        <section id="plugin-detail" class="plugin-detail">
+          <div class="plugin-head">
+            <strong id="plugin-name"></strong>
+            <span id="plugin-meta" class="hint"></span>
+          </div>
+          <p id="plugin-desc" class="plugin-desc"></p>
+          <p id="plugin-perms" class="hint"></p>
+          <p id="plugin-error" class="plugin-error" hidden></p>
+          <div id="plugin-recipes" class="plugin-recipes">
+            <label>Recipe <select id="plugin-recipe"></select></label>
+            <span class="pair"><input id="plugin-recipe-name" type="text" placeholder="Name for these settings" spellcheck="false" aria-label="Recipe name">
+              <button type="button" id="plugin-recipe-save" class="small" title="Keep these settings as a recipe of yours">Save recipe</button>
+              <button type="button" id="plugin-recipe-delete" class="small" title="Delete this recipe of yours">Delete</button></span>
+          </div>
+          <div id="plugin-params" class="plugin-params"></div>
+          <div class="plugin-run">
+            <button type="button" id="plugin-run" class="primary">Run</button>
+            <button type="button" id="plugin-defaults" class="small" title="Put the settings above back to the plugin's defaults">Defaults</button>
+            <button type="button" id="plugin-as-preset" class="small" title="Save the photo's edit as it is now as a one-click preset">Save as preset…</button>
+            <span id="plugin-result" class="hint" role="status"></span>
+          </div>
+          <div id="plugin-approve" class="plugin-approve" hidden>
+            <p><strong id="plugin-approve-name"></strong> asks to:</p>
+            <ul id="plugin-approve-list"></ul>
+            <p class="hint">It still can't read your files or use the network: it can only change settings, and Undo takes them back. You're asked again if the plugin changes.</p>
+            <div class="plugin-run">
+              <button type="button" id="plugin-allow" class="primary">Allow and run</button>
+              <button type="button" id="plugin-deny">Not now</button>
+            </div>
+          </div>
+          <details id="plugin-log" class="plugin-log" hidden><summary>Log</summary><pre></pre></details>
+          <div id="plugin-own" class="plugin-own" hidden>
+            <button type="button" id="plugin-folder" class="small">Show folder</button>
+            <button type="button" id="plugin-share" class="small" title="Offer it to the hub as a pull request, so others can install it">Share as pull request…</button>
+            <button type="button" id="plugin-remove" class="small">Remove</button>
+          </div>
+          <div id="plugin-share-panel" class="plugin-panel" hidden>
+            <h3>Share as a pull request</h3>
+            <p id="share-what" class="hint"></p>
+            <ul id="share-files" class="share-files"></ul>
+            <p id="share-warn" class="plugin-error" hidden></p>
+            <p id="share-how" class="hint"></p>
+            <div class="plugin-run">
+              <button type="button" id="share-gh" class="primary" hidden>Send pull request</button>
+              <button type="button" id="share-browser">Open GitHub in the browser</button>
+              <button type="button" id="share-cancel">Cancel</button>
+            </div>
+          </div>
+        </section>
+        <section id="plugin-ai" class="plugin-detail" hidden>
+          <h3>Make a plugin with your AI</h3>
+          <p class="hint">Describe what it should do. This writes instructions for your own AI assistant (for example Claude Code on this computer): paste them there, and press Reload here when it's done.</p>
+          <textarea id="ai-request" rows="3" placeholder="e.g. a button that makes skin tones a little warmer and lifts the shadows"></textarea>
+          <textarea id="ai-prompt" rows="12" readonly></textarea>
+          <div class="plugin-run">
+            <button type="button" id="ai-copy" class="primary">Copy instructions</button>
+            <button type="button" id="ai-back">Back</button>
+          </div>
+        </section>
+      </div>
+      <menu>
+        <button type="button" id="plugins-install" title="Add a plugin from a folder with plugin.json and plugin.wasm">Install from folder…</button>
+        <button type="button" id="plugins-open">Open plugins folder</button>
+        <button type="button" id="plugins-reload">Reload</button>
+        <button type="button" id="plugins-ai">Make one with AI…</button>
+        <span class="grow"></span>
+        <button value="close" class="primary">Done</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="hub-dialog">
+    <form method="dialog">
+      <h2>Hub: shared layouts and themes</h2>
+      <p class="hint">Layouts and themes other people made. They're small data files, checked before they're installed. From <span id="hub-address"></span></p>
+      <div class="hub-bar">
+        <div class="tabs hub-tabs">
+          <button type="button" data-kind="all" class="active">All</button>
+          <button type="button" data-kind="layout">Layouts</button>
+          <button type="button" data-kind="theme">Themes</button>
+        </div>
+        <input id="hub-search" type="search" placeholder="Search the hub" spellcheck="false">
+      </div>
+      <div id="hub-grid" class="hub-grid"></div>
+      <p id="hub-status" class="hub-status" role="status"></p>
+      <menu><span class="grow"></span><button value="close" class="primary">Done</button></menu>
+    </form>
+  </dialog>
+
+  <!-- Editor mode (editor.js) -->
+  <div id="edit-bar" class="edit-bar" hidden>
+    <strong>Editing</strong>
+    <input id="edit-name" type="text" spellcheck="false" title="Save under this name" aria-label="Layout name">
+    <button id="edit-add" type="button" title="Panels, settings and buttons that aren't shown">Add…</button>
+    <button id="edit-undo" type="button" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="edit-redo" type="button" title="Redo (Ctrl+Shift+Z)">Redo</button>
+    <select id="edit-density" title="Size of text and controls" aria-label="Density">
+      <option value="compact">Compact</option><option value="normal">Normal</option><option value="large">Large</option>
+    </select>
+    <select id="edit-theme" title="Theme" aria-label="Theme"></select>
+    <button id="edit-cancel" type="button">Cancel</button>
+    <button id="edit-save" type="button" class="primary">Save</button>
+  </div>
+  <aside id="edit-palette" class="edit-palette" hidden>
+    <div class="side-head"><h2>Add</h2><button id="edit-palette-close" type="button" class="small" title="Close (Esc)">×</button></div>
+    <input id="edit-search" type="search" placeholder="Search settings" spellcheck="false">
+    <p class="hint">Drag into a panel, a column or the toolbar, or click to add. Drop something here to remove it.</p>
+    <div id="edit-palette-list" class="palette-list"></div>
+  </aside>
+  <div id="edit-inspector" class="inspector" hidden></div>
+  <div id="edit-indicator" class="edit-indicator" hidden></div>
+
+  <dialog id="looks-dialog">
+    <form method="dialog" id="looks-form">
+      <h2>Appearance</h2>
+      <p class="hint">The editor's appearance is a layout (what goes where, and which kind of slider each setting uses) plus a theme (colours). Built-in ones 🔒 can't be changed: clone one to make it yours. Layouts and themes are small files you can share; your AI assistant can write them too (docs/ai/ui-layouts.md).</p>
+      <div class="looks-grid">
+        <section>
+          <h3>Layout</h3>
+          <div id="looks-layouts" class="looks-list" role="listbox" aria-label="Layouts"></div>
+        </section>
+        <section>
+          <h3>Theme</h3>
+          <div id="looks-themes" class="looks-list" role="listbox" aria-label="Themes"></div>
+        </section>
+      </div>
+      <div class="looks-selected">
+        <label class="looks-name">Name <input type="text" id="looks-name" spellcheck="false"></label>
+        <button type="button" id="looks-clone" title="Make an editable copy">Clone</button>
+        <button type="button" id="looks-share" title="Save it as a file to share">Share…</button>
+        <button type="button" id="looks-delete" title="Delete this layout or theme">Delete</button>
+        <button type="button" id="looks-submit" title="Share it in the hub: opens GitHub with your file filled in, as a pull request">Submit to hub…</button>
+      </div>
+      <p id="looks-about" class="hint"></p>
+      <ul id="looks-problems" class="looks-problems"></ul>
+      <div id="theme-editor" class="theme-editor" hidden></div>
+      <menu>
+        <button type="button" id="looks-hub" title="Browse layouts and themes other people made">Browse hub…</button>
+        <button type="button" id="looks-import" title="Add a shared layout or theme file">Import…</button>
+        <button type="button" id="looks-folder" title="Show the folder with your own layouts and themes">Open folder</button>
+        <button type="button" id="looks-reload" title="Read the folder again (after adding files by hand or by AI)">Reload</button>
+        <button type="button" id="looks-edit" title="Rearrange the chosen layout in place">Edit layout…</button>
+        <span class="grow"></span>
+        <button value="cancel">Cancel</button>
+        <button value="ok" class="primary" autofocus>Done</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="curve.js"></script>
+  <script src="crop.js"></script>
+  <script src="masks.js"></script>
+  <script src="spots.js"></script>
+  <script src="wheels.js"></script>
+  <script src="controls.js"></script>
+  <script src="layout.js"></script>
+  <script src="editor.js"></script>
+  <script src="keys.js"></script>
+  <script src="hub.js"></script>
+  <script src="borders.js"></script>
+  <script src="info.js"></script>
+  <script src="filmstrip.js"></script>
+  <script src="collage.js"></script>
+  <script src="library.js"></script>
+  <script src="cull.js"></script>
+  <script src="import.js"></script>
+  <script src="collections.js"></script>
+  <script src="plugins.js"></script>
+  <script src="picker.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

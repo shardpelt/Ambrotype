@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Calibration: every tunable model constant in one serialisable place, so the
 //! Lightroom calibration harness can fit them and ship them as data
 //! (`amb render --calibration fitted.json`) instead of code changes.
@@ -12,8 +13,12 @@ use crate::detail::DetailStrengths;
 use crate::effects::EffectsStrengths;
 use crate::lens::LensStrengths;
 use crate::local::LocalStrengths;
+use crate::mask::MaskStrengths;
 use crate::negative::NegativeStrengths;
+use crate::primaries::PrimariesStrengths;
 use crate::tone::ToneStrengths;
+use crate::transform::TransformStrengths;
+use crate::upright::UprightStrengths;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -26,6 +31,11 @@ pub struct Calibration {
     pub effects: EffectsStrengths,
     pub lens: LensStrengths,
     pub negative: NegativeStrengths,
+    pub masks: MaskStrengths,
+    pub transform: TransformStrengths,
+    pub upright: UprightStrengths,
+    /// The Calibration panel (camera primaries, shadow tint).
+    pub primaries: PrimariesStrengths,
 }
 
 impl Calibration {

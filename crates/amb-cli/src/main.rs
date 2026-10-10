@@ -1,8 +1,12 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! `amb`: Ambrotype command-line tool.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
+
+mod mcp;
+mod plugin;
 
 use amb_presets::Preset;
 use amb_presets::registry::Registry;
@@ -10,6 +14,8 @@ use amb_presets::report::{self, Report};
 
 const USAGE: &str = "\
 amb: Ambrotype command-line tool
+Copyright (C) 2026 The Ambrotype contributors. Free software under the GNU GPL,
+version 3 or later, with ABSOLUTELY NO WARRANTY: https://github.com/shardpelt/Ambrotype
 
 USAGE:
     amb preset inspect <FILE>... [--json]   Show what a preset contains and how it maps to our support
@@ -28,13 +34,18 @@ USAGE:
                                             [--lens-db DIR] [--lcp-dir DIR] [export options]
                                             Develop a raw with a preset or sidecar, export it, and report
                                             which settings are not rendered yet
+    amb render <RAW>... --out-dir DIR [--format jpeg|...] [same options]
+                                            The same for many raws (e.g. a folder: photos/*.NEF), with the
+                                            same preset and export options; one failure doesn't stop the rest
     amb edit <SIDECAR.xmp> --commands <CMDS.json|-> [--out <NEW.xmp|.json>] [--dry-run] [--json]
                                             Apply protocol commands (set_param, adjust_param, reset_param,
-                                            reset_group, apply_preset, undo, redo) as one transaction,
+                                            reset_group, apply_preset, add_mask, set_mask, paint_mask,
+                                            remove_mask, add_spot, set_spot, remove_spot, undo, redo)
+                                            as one transaction,
                                             print the diff and write the sidecar (other XMP metadata kept)
     amb query <SIDECAR.xmp> --queries <QUERIES.json|->
                                             Answer protocol queries (get_param, list_params, describe,
-                                            list_groups) as JSON
+                                            list_groups, list_masks, list_spots) as JSON
     amb protocol schema [command|query]     Print the JSON Schema of commands and queries
     amb negative analyze <RAW>... [--out ROLL.xmp] [--json]
                                             Estimate film base, levels and midtone of scanned negatives
@@ -49,7 +60,27 @@ USAGE:
                                             then the lensfun database; default locations or
                                             AMB_LCP_DIRS / AMB_LENSFUN_DB) and print the models
                                             interpolated to its focal length, aperture and distance
+    amb import <SOURCE> <DEST> [--into \"{yyyy}/{yyyy}-{mm}-{dd}\"] [--rename \"{name}\"] [--start 1]
+               [--keywords \"a, b\"] [--no-subfolders] [--dry-run] [--json]
+                                            Copy photos from a card or folder into DEST, sorted into
+                                            folders and renamed from templates ({name} {yyyy} {yy} {mm}
+                                            {dd} {hh} {min} {ss} {seq} {camera}); a raw's JPEG and .xmp
+                                            keep its new name; photos already there are skipped
+    amb mcp                                 Serve the Model Context Protocol over stdio, so your own AI app
+                                            (Claude Desktop, Claude Code, ...) can edit, preview and export
+                                            photos with Ambrotype's commands (docs/ai/mcp.md)
+    amb profile list <RAW> [--dcp-dir DIR]  List the camera profiles (.dcp) on this computer for a raw's
+                                            camera (Camera Raw's profile folders, AMB_DCP_DIRS, --dcp-dir);
+                                            a preset's or sidecar's CameraProfile picks one by name
     amb settings reference [--json]         Print the settings reference (docs/ai/settings-reference.md)
+    amb plugin new <DIR> [--name \"My plugin\"]
+                                            Start a plugin project (Rust, built to WebAssembly;
+                                            docs/ai/plugins.md)
+    amb plugin build <DIR>                  Build it (needs: rustup target add wasm32-unknown-unknown),
+                                            then check it
+    amb plugin check <DIR>                  Validate plugin.json and the module, and run it on a sample
+    amb plugin run <DIR> <PHOTO|SIDECAR.xmp> [--params a=1,b=Film] [--dry-run] [--json]
+                                            Run a plugin on a photo's edit and write its sidecar
 
 EXPORT OPTIONS (amb render):
     --format jpeg|png|tiff|webp|avif|exr    Default: from the file extension
@@ -57,14 +88,122 @@ EXPORT OPTIONS (amb render):
     --bits 8|16|32                          PNG 8/16, TIFF 8/16/32 (float); default 8, TIFF 16
     --color-space srgb|p3|adobergb|prophoto|rec2020   Default srgb; an ICC profile is embedded
     --long-edge N | --short-edge N | --width N | --height N | --fit WxH | --megapixels M | --percent P
-    --enlarge                               Allow upscaling (default: never enlarge)
+    --exact WxH                             Exactly W×H (e.g. 1080x1350): centre-cropped if the aspect differs
+    --enlarge                              Allow upscaling (default: never enlarge)
     --sharpen screen|matte|glossy[:low|standard|high]   Output sharpening
     --metadata all|no-location|copyright|none           EXIF to include (default no-location)
     --max-size 500k|2M                      JPEG: lower the quality until the file fits
     --subsampling 444|422|420  --progressive  --avif-speed 1-10
+    --rating 1-5  --keywords \"beach, sunset\"   Put a rating and keywords in the file (XMP, IPTC in JPEG,
+                                            EXIF), with the all / no-location metadata policies
+    --border 5%|40px[,#ffffff|auto] | border.json   A frame around the photo; a .json preset can add
+                                            a deeper bottom, a keyline, rounded corners, and fit (with
+                                            --exact: the whole photo inside the frame, not cropped)
 
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
 XMP packet (e.g. .dng presets for Lightroom mobile). AI and script guide: docs/ai/README.md.";
+
+/// Camera profiles: `--dcp-dir`, or `AMB_DCP_DIRS` and Camera Raw's folders.
+fn profile_library(options: &BTreeMap<&str, &str>) -> amb_engine::profile::ProfileLibrary {
+    use amb_engine::profile::ProfileLibrary;
+    match options.get("--dcp-dir") {
+        Some(dir) => ProfileLibrary::scan(&[PathBuf::from(dir)]),
+        None => ProfileLibrary::load_default(),
+    }
+}
+
+/// `amb profile list`: the profiles for a raw's camera.
+fn profile_list(raw: &Path, options: &BTreeMap<&str, &str>) -> Result<(), String> {
+    let source = amb_engine::source_path(raw);
+    let (_, meta) = amb_engine::raw::read_metadata(&source)
+        .map_err(|e| format!("{}: {e}", source.display()))?;
+    let lib = profile_library(options);
+    let found = lib.for_camera(&meta.make, &meta.model);
+    println!(
+        "{} {}: {} profile(s) among {} .dcp file(s)",
+        meta.make,
+        meta.model,
+        found.len(),
+        lib.files.len()
+    );
+    for f in found {
+        println!("  {}  ({})", f.name, f.path.display());
+    }
+    Ok(())
+}
+
+/// `amb import`: plan, print, then copy (unless `dry_run`).
+fn import(
+    source: &Path,
+    dest: &Path,
+    options: &BTreeMap<&str, &str>,
+    dry_run: bool,
+    json: bool,
+) -> Result<(), String> {
+    use amb_library::import::{self, ImportOptions};
+    let d = ImportOptions::default();
+    let opts = ImportOptions {
+        folder: options.get("--into").map_or(d.folder, |s| s.to_string()),
+        name: options.get("--rename").map_or(d.name, |s| s.to_string()),
+        first_number: match options.get("--start") {
+            Some(n) => n
+                .parse()
+                .map_err(|_| format!("bad --start {n:?} (a whole number)"))?,
+            None => d.first_number,
+        },
+        subfolders: !options.contains_key("--no-subfolders"),
+        keywords: options
+            .get("--keywords")
+            .map(|k| k.split(',').map(|s| s.trim().to_string()).collect())
+            .unwrap_or_default(),
+    };
+    let plan = import::plan(source, dest, &opts)?;
+    if json && dry_run {
+        return print_json(&serde_json::to_value(&plan).map_err(|e| e.to_string())?);
+    }
+    let new = plan.iter().filter(|p| p.skip.is_none()).count();
+    if !json {
+        for p in &plan {
+            let (src, dst) = &p.files[0];
+            let extra = p.files.len() - 1;
+            let with = if extra > 0 {
+                format!(" (+{extra})")
+            } else {
+                String::new()
+            };
+            match &p.skip {
+                Some(why) => println!("skip  {}: {why}", src.display()),
+                None => println!("copy  {}{with} -> {}", src.display(), dst.display()),
+            }
+        }
+        println!(
+            "{new} to import, {} already there{}",
+            plan.len() - new,
+            if dry_run {
+                " (dry run: nothing copied)"
+            } else {
+                ""
+            }
+        );
+    }
+    if dry_run {
+        return Ok(());
+    }
+    let report = import::run(&plan, &opts, &mut |_, _, _| {});
+    if json {
+        print_json(&serde_json::to_value(&report).map_err(|e| e.to_string())?)?;
+    } else {
+        println!("imported {}, skipped {}", report.imported, report.skipped);
+        for e in &report.errors {
+            eprintln!("error: {e}");
+        }
+    }
+    if report.errors.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("{} problem(s), see above", report.errors.len()))
+    }
+}
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -77,7 +216,7 @@ fn main() -> ExitCode {
         match arg.as_str() {
             "--json" => json = true,
             "--dry-run" => dry_run = true,
-            "--progressive" | "--enlarge" => {
+            "--progressive" | "--enlarge" | "--no-subfolders" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look"
@@ -85,8 +224,10 @@ fn main() -> ExitCode {
             | "--lens-make" | "--lens-model" | "--focal" | "--aperture" | "--distance"
             | "--crop" | "--lens-db" | "--lcp-dir" | "--format" | "--quality" | "--bits"
             | "--color-space" | "--subsampling" | "--long-edge" | "--short-edge" | "--width"
-            | "--height" | "--fit" | "--megapixels" | "--percent" | "--sharpen" | "--metadata"
-            | "--max-size" | "--avif-speed" => match iter.next() {
+            | "--height" | "--fit" | "--exact" | "--megapixels" | "--percent" | "--sharpen"
+            | "--metadata" | "--max-size" | "--avif-speed" | "--border" | "--out-dir"
+            | "--rating" | "--keywords" | "--name" | "--params" | "--into" | "--rename"
+            | "--start" | "--dcp-dir" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -120,12 +261,20 @@ fn main() -> ExitCode {
             None => Err("sweep generate needs --out <DIR>".into()),
         },
         ["testimage", pattern, out] => testimage(pattern, Path::new(out)),
+        ["profile", "list", raw] => profile_list(Path::new(raw), &options),
+        ["mcp"] => mcp::serve(),
+        ["import", source, dest] => {
+            import(Path::new(source), Path::new(dest), &options, dry_run, json)
+        }
         ["calibration", "defaults"] => {
             println!(
                 "{}",
                 amb_engine::calibration::Calibration::default().to_json()
             );
             Ok(())
+        }
+        ["render", inputs @ ..] if !inputs.is_empty() && options.contains_key("--out-dir") => {
+            render_many(inputs, Path::new(options["--out-dir"]), &options)
         }
         ["render", input, out] => render(
             Path::new(input),
@@ -162,6 +311,17 @@ fn main() -> ExitCode {
         ["protocol", "schema"] => print_json(&amb_protocol::schema::protocol_schema()),
         ["protocol", "schema", "command"] => print_json(&amb_protocol::schema::command_schema()),
         ["protocol", "schema", "query"] => print_json(&amb_protocol::schema::query_schema()),
+        ["plugin", "new", dir] => plugin::new(Path::new(dir), options.get("--name").copied()),
+        ["plugin", "build", dir] => plugin::build(Path::new(dir)),
+        ["plugin", "check", dir] => plugin::check(Path::new(dir)),
+        ["plugin", "run", dir, target] => plugin::run(
+            Path::new(dir),
+            Path::new(target),
+            options.get("--params").copied(),
+            dry_run,
+            json,
+        )
+        .map(|text| println!("{text}")),
         ["settings", "reference"] => {
             if json {
                 print_json(&amb_protocol::reference::json())
@@ -535,11 +695,29 @@ fn render(
 ) -> Result<(), String> {
     use amb_engine::{pipeline, raw};
     let start = std::time::Instant::now();
-    let mut img = raw::load(input).map_err(|e| format!("{}: {e}", input.display()))?;
-    let (t, tint) = pipeline::as_shot_temp_tint(&img);
+    // A virtual copy (IMG.copy-2.xmp) renders its photo.
+    let source = amb_engine::source_path(input);
+    let mut img = raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
+    let wb = if img.rendered {
+        "rendered image: relative white balance (IncrementalTemperature/Tint)".to_string()
+    } else {
+        let (t, tint) = pipeline::as_shot_temp_tint(&img);
+        format!("as shot: {t:.0} K, tint {tint:+.0}")
+    };
+    // Masks and the crop use the stored orientation, so say when it isn't upright.
+    let turned = match img.metadata.orientation {
+        2 => " | stored mirrored",
+        3 => " | stored upside down",
+        4 => " | stored mirrored upside down",
+        5 => " | stored turned and mirrored",
+        6 => " | stored turned left (shown turned 90° clockwise)",
+        7 => " | stored turned and mirrored",
+        8 => " | stored turned right (shown turned 90° counter-clockwise)",
+        _ => "",
+    };
     println!(
-        "{} {} | {}x{} | as shot: {:.0} K, tint {:+.0}",
-        img.make, img.model, img.width, img.height, t, tint
+        "{} {} | {}x{} | {wb}{turned}",
+        img.make, img.model, img.width, img.height
     );
     let mut settings = std::collections::BTreeMap::new();
     if let Some(preset) = preset {
@@ -597,6 +775,17 @@ fn render(
                 }
             ),
             None => {}
+        }
+    }
+    if let Some(name) = develop.profile_name.clone() {
+        if !img.rendered {
+            let lib = profile_library(options);
+            develop.camera_profile = lib.find(&img.make, &img.model, &name);
+        }
+        match (&develop.camera_profile, develop.profile_note()) {
+            (Some(p), _) => println!("camera profile: {} ({})", p.name, p.camera),
+            (None, Some(note)) => println!("camera profile: {note}"),
+            _ => {}
         }
     }
     let export = export_settings(out, options)?;
@@ -783,6 +972,51 @@ fn negative_analyze(raws: &[&str], out: Option<&Path>, json: bool) -> Result<(),
 }
 
 /// Export settings from the output path and the export options.
+/// `amb render A.nef B.nef ... --out-dir DIR`: each raw to DIR/<name>.<ext>.
+fn render_many(inputs: &[&str], dir: &Path, options: &BTreeMap<&str, &str>) -> Result<(), String> {
+    let ext = match options.get("--format") {
+        Some(f) => amb_export::Format::from_name(f)
+            .ok_or_else(|| format!("unknown --format {f:?}"))?
+            .extension(),
+        None => "jpg",
+    };
+    std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    let mut failed = Vec::new();
+    for (i, input) in inputs.iter().enumerate() {
+        let input = Path::new(input);
+        let stem = input
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("photo");
+        let out = dir.join(format!("{stem}.{ext}"));
+        print!("[{}/{}] ", i + 1, inputs.len());
+        let result = render(
+            input,
+            &out,
+            options.get("--preset").copied(),
+            options.get("--amount").copied(),
+            options.get("--look").copied(),
+            options.get("--calibration").copied(),
+            options,
+        );
+        // One bad file doesn't stop the batch.
+        if let Err(e) = result {
+            println!("failed: {e}");
+            failed.push(input.display().to_string());
+        }
+    }
+    if failed.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "{} of {} failed: {}",
+            failed.len(),
+            inputs.len(),
+            failed.join(", ")
+        ))
+    }
+}
+
 fn export_settings(
     out: &Path,
     options: &BTreeMap<&str, &str>,
@@ -847,11 +1081,20 @@ fn export_settings(
                     .ok_or_else(|| format!("bad --fit {v:?} (e.g. 2048x2048)"))
             })
             .transpose()?,
+        options
+            .get("--exact")
+            .map(|v| {
+                v.split_once(['x', 'X'])
+                    .and_then(|(w, h)| Some(Resize::Exact(w.parse().ok()?, h.parse().ok()?)))
+                    .filter(|r| !matches!(r, Resize::Exact(0, _) | Resize::Exact(_, 0)))
+                    .ok_or_else(|| format!("bad --exact {v:?} (e.g. 1080x1350)"))
+            })
+            .transpose()?,
     ];
     let mut chosen = sizes.into_iter().flatten();
     if let Some(r) = chosen.next() {
         if chosen.next().is_some() {
-            return Err("use only one of --long-edge, --short-edge, --width, --height, --fit, --megapixels, --percent".into());
+            return Err("use only one of --long-edge, --short-edge, --width, --height, --fit, --exact, --megapixels, --percent".into());
         }
         s.resize = r;
     }
@@ -885,6 +1128,30 @@ fn export_settings(
     }
     if let Some(speed) = int("--avif-speed")? {
         s.avif_speed = speed.clamp(1, 10) as u8;
+    }
+    if let Some(r) = options.get("--rating") {
+        let r: u8 = r
+            .parse()
+            .ok()
+            .filter(|r| (1..=5).contains(r))
+            .ok_or_else(|| format!("bad --rating {r:?} (1 to 5)"))?;
+        s.tags.rating = Some(r);
+    }
+    if let Some(k) = options.get("--keywords") {
+        s.tags.keywords = k
+            .split(',')
+            .map(str::trim)
+            .filter(|k| !k.is_empty())
+            .map(String::from)
+            .collect();
+    }
+    if let Some(b) = options.get("--border") {
+        s.border = Some(if b.ends_with(".json") {
+            let text = std::fs::read_to_string(b).map_err(|e| format!("{b}: {e}"))?;
+            amb_export::border::Border::from_json(&text).map_err(|e| format!("{b}: {e}"))?
+        } else {
+            amb_export::border::Border::from_spec(b)?
+        });
     }
     Ok(s)
 }

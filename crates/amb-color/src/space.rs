@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 //! Output colour spaces: primaries, white point, transfer function, the
 //! conversion from our working space (linear ProPhoto, D50), and a matching
 //! ICC profile.

@@ -313,6 +313,7 @@ Durations are rough person-month (pm) estimates for experienced engineers.
   - **metadata-only `.lrcat` import** (folders, keywords, ratings, labels, collections), brought forward from Phase 3 because it's the main thing holding people in Lightroom
 - `amb mcp` server (bring-your-own-AI via MCP clients) and `amb match` v1 (look matching from sample images).
 - "Native" scene-referred rendering mode next to "Lightroom-match"; capture sharpening.
+- **Customisation and sharing (agreed 2026-10-07):** the UI is rendered from shareable layout files, with read-only built-in looks you can clone; themes; an editor mode (drag and drop, split/merge, slider types); size presets for social sites and print, used for cropping and exact-size export; border presets. See [design/customization-and-hub.md](design/customization-and-hub.md) and [design/collage-and-borders.md](design/collage-and-borders.md).
 - Exit: target performance budgets are met, and a usability test with Lightroom switchers passes.
 
 ### Phase 3: v1 "Lightroom-class" (about 12–18 pm)
@@ -326,10 +327,11 @@ Durations are rough person-month (pm) estimates for experienced engineers.
 - Resumable import; mapping of Lightroom smart collections.
 - In-app AI assistant panel (BYO API key or local model) with a vision refinement loop; tone equaliser; film negative conversion; luminosity masks.
 - SIMD and assembly optimisation of measured CPU hot spots (performance ladder, §9).
+- **Hub** (Omarchy-style: items are git repos, one index repo takes pull requests) for layouts, themes, presets, collage templates and size profiles; **collage maker** with batch mode.
 
 ### Phase 4: Later
 - More AI: people parts, objects, depth range, Lens Blur (Depth Anything V2-S), content-aware remove (LaMa), Super Resolution.
-- HDR/panorama merge, HDR editing and HDR export (gain maps), tethering (libgphoto2), print, map/GPS, face recognition, plugin API (Lua → WASM), adaptive presets.
+- HDR/panorama merge, HDR editing and HDR export (gain maps), tethering (libgphoto2), print, map/GPS, face recognition, sandboxed plugin API (WASM, with a permission manifest; replaces the earlier Lua idea), AI-made layouts, plugins and core changes with a "Share as pull request" flow ([design/customization-and-hub.md](design/customization-and-hub.md)), adaptive presets.
 - Possibly an Android app over the same engine (see [08](research/08-cross-platform-and-mobile.md)).
 
 ---
@@ -378,7 +380,7 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
     - Raw files are untrusted input: LibRaw has about 60 CVEs, and a DNG parsing bug was exploited on iOS in 2025.
     - Prefer the pure-Rust decoder (rawler) and run LibRaw as a fallback in a sandboxed helper process.
     - Every parser (TIFF/DNG, MakerNotes, XMP, ICC, DCP, lrtemplate, catalog import) gets a fuzz target from Phase 1.
-  - **Plugins:** compile-time only until after v1. Then data plugins (presets, LUTs, profiles), then Lua, then WASM components. Never a dynamic Rust ABI.
+  - **Plugins:** sandboxed WebAssembly "action" plugins exist (2026-10-08; [ai/plugins.md](ai/plugins.md)): settings in, edit commands out, no files or network. Data plugins (presets, LUTs, profiles) and pipeline effects come later. Never a dynamic Rust ABI.
   - **Hygiene:** `Cargo.lock` committed; `rust-toolchain.toml` pinned to stable; `cargo-deny` for licences and advisories; a small vendored `contrib/` for the few C libraries.
   - **Funding reality:** the NLnet Commons Fund round closed on 1 June 2026, and the Sovereign Tech Fund excludes end-user apps. The realistic model is donations plus a fiscal host (Open Collective / OSC) first. VLC's model (non-profit brand plus an affiliated consultancy) is an option later.
 

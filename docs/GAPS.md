@@ -87,9 +87,9 @@ Project goal for ranking: faithful Lightroom preset compatibility, free, on Wind
 | Fitted per-camera replacement of Adobe Color / Standard / Neutral / Landscape / Portrait / Vivid / Camera Matching profiles not done (planned from Lightroom renders, week 3) | Missing | We cannot ship Adobe's DCPs, so a substitute is the only way to match "Adobe Color" looks | [lightroom-trial-plan.md](lightroom-trial-plan.md):54; [SCOPE.md](SCOPE.md):28, 392 |
 | Reading the user's own installed Adobe profiles in place (like the LCP reader) not built | Missing | Most faithful option when the user has them | [SCOPE.md](SCOPE.md):26, 251, 392 |
 | Adaptive profiles (image-adaptive AI, intensity 0-200) and adaptive presets are "not reproducible"; fallback is a base profile plus a warning | Limit | Presets using them will differ | [SCOPE.md](SCOPE.md):244, 332 |
-| Camera Raw "Calibration" panel: Shadow Tint and Red/Green/Blue Hue and Saturation (7 tags, all planned, none rendered) | Missing | Common in teal-and-orange style presets | `crates/amb-presets/data/tags.json` (group `calibration`); [research/05](research/05-processing-algorithms.md) §11 |
+| Camera Raw "Calibration" panel: Shadow Tint and Red/Green/Blue Hue and Saturation render with our own model (primaries turned about the grey axis in linear ProPhoto), unfitted; the space Camera Raw works in is unknown | Approx | Teal-and-orange style presets look roughly right, not exactly | [design/calibration.md](design/calibration.md); `crates/amb-engine/src/primaries.rs` |
 | Black and white mixer renders (`ConvertToGrayscale` and 8 `GrayMixer*`, 2026-10-08), but its strength per band is a guess (unfitted), there is no Auto mix (`AutoGrayscaleMix`), and B&W camera profiles don't exist | Approx | B&W presets look roughly right, not exactly | `crates/amb-engine/src/color.rs`; `crates/amb-presets/data/tags.json` (group `bw_mixer`) |
-| Point Color (`PointColors`, planned); its encoding (9 floats per entry) is from memory | Missing | Newer presets use it | `crates/amb-presets/data/tags.json`; [research/02](research/02-preset-and-profile-formats.md):159 |
+| Point Color (`PointColors`, planned) waits for a Lightroom sample: its encoding (9 floats per entry?) is from memory, and a guess could break Lightroom's files | Missing | Newer presets use it | `crates/amb-presets/data/tags.json`; [research/02](research/02-preset-and-profile-formats.md):159 |
 | White balance: `IncrementalTemperature` and `IncrementalTint` render on non-raw images with our own scale (1 mired and 1 Tint unit per step, unfitted); Adobe's conversion is unknown | Approx | Relative-WB edits look roughly right, not exactly | `crates/amb-engine/src/pipeline.rs` (`incremental_neutral`); [research/02](research/02-preset-and-profile-formats.md):119 |
 | Temp/Tint uses the table-based Robertson method (1667 K and up); Adobe's newer extended range below 2000 K and the interpolation details are unmeasured | Question | Low-Kelvin readouts may differ from Lightroom | `crates/amb-color/src/temperature.rs`:12-17; [research/05](research/05-processing-algorithms.md) §2 |
 | A Custom white balance without Temperature in the settings is not rendered; without Tint it renders with tint 0 (the as-shot value lives in the raw file). Tint alone is refused | Limit | Editing Tint alone on an as-shot photo needs a workaround | `crates/amb-protocol/src/state.rs`:671-678 |
@@ -198,8 +198,8 @@ Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the plann
 
 | Status | Tags | Notes |
 |---|---|---|
-| approx | 128 | rendered with an unfitted model: tone, presence, tone curve (11), HSL (24), color grading (13), split toning (5), detail (10), effects (10), lens (18), white balance (5), B&W mixer (9), local (masks) 4, transform 8 |
-| planned | 24 | tone_legacy 7 of 7; calibration 7 of 7; point_color 1 of 1; profile 6 of 6 (`CameraProfile`, `CameraProfileDigest`, `Look`, `RGBTable`, `LookTable`, `OverrideLookVignette`); tone_curve 3 (`ToneCurve`, `ToneCurveName`, `ToneCurveName2012`) |
+| approx | 135 | rendered with an unfitted model: tone, presence, tone curve (11), HSL (24), color grading (13), split toning (5), detail (10), effects (10), lens (18), white balance (5), B&W mixer (9), local (masks) 4, transform 8, calibration 7 |
+| planned | 17 | tone_legacy 7 of 7; point_color 1 of 1; profile 6 of 6 (`CameraProfile`, `CameraProfileDigest`, `Look`, `RGBTable`, `LookTable`, `OverrideLookVignette`); tone_curve 3 (`ToneCurve`, `ToneCurveName`, `ToneCurveName2012`) |
 | unsupported | 18 | enhance 8; hdr 9; lens_blur 1 |
 | image-specific | 41 | crop 12; transform 17; negative 10; bw_mixer 1; tone 1 (not expected in presets; also not rendered, because there is no crop) |
 | exact | 13 | our own `amb:` negative settings only |
@@ -299,6 +299,6 @@ Chosen by impact on the main goal: faithful Lightroom preset compatibility, free
 5. ~~**Transform and Upright**~~ (done 2026-10-10). Left: Guided Upright, and verifying the crop, Transform and Upright against Lightroom.
 6. **Finish the single-photo GUI editor.** Zoom/1:1, point curve, colour wheels, WB picker, clipping, the crop tool, layouts/themes and editor mode are done; installers remain, and test the cross-platform promise.
 7. **Fix the preset path: measure Amount, honour `Enable*` toggles, handle PV2003/PV2010 tags.** These decide whether purchased presets apply correctly; run `amb preset census` on real collections to rank what else matters.
-8. **Calibration panel and Point Color (8 planned tags; the B&W mixer is done).** Frequent in colour-grading and monochrome presets, and cheap compared with masks.
+8. ~~**Calibration panel**~~ (done 2026-10-10, unfitted). Left: **Point Color**, which waits for a Lightroom sample of `PointColors`.
 9. **Clear the pre-public checklist: add `LICENSE`, paraphrase `docs/adobe-docs/`, pick the name.** The repo cannot go public, and a rename gets harder after launch.
 10. **A GPU backend with tiling and caching for an interactive preview path.** A full render is 3.5-4 s on 4 cores; the GUI needs interactive latency, which is Lightroom's top complaint.

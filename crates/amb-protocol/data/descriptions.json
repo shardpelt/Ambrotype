@@ -296,12 +296,12 @@
   "GrainFrequency": {"label": "Grain: Roughness", "description": "Grain regularity: lower is more uniform, higher more uneven. Together with Size it sets the grain's character."},
   "GrainSeed": {"label": "Grain seed", "description": "Random seed of the grain pattern, specific to one image."},
 
-  "ShadowTint": {"label": "Calibration: Shadows", "description": "Corrects a green or magenta tint in the shadow areas of the photo."},
-  "RedHue": {"label": "Calibration: Red primary hue", "description": "Shifts the hue of the camera's red primary; negative is roughly counterclockwise on the colour wheel. Adjust hue first, then saturation."},
+  "ShadowTint": {"label": "Calibration: Shadows", "description": "Corrects a green or magenta tint in the shadows: positive adds magenta, negative green. Midtones and highlights are left alone."},
+  "RedHue": {"label": "Calibration: Red primary hue", "description": "Shifts the hue of the red primary: positive toward yellow, negative toward magenta. Every colour with red in it moves with it; white stays white. Adjust hue first, then saturation."},
   "RedSaturation": {"label": "Calibration: Red primary saturation", "description": "Saturation of the red primary; negative desaturates."},
-  "GreenHue": {"label": "Calibration: Green primary hue", "description": "Shifts the hue of the camera's green primary; negative is roughly counterclockwise on the colour wheel. Adjust hue first, then saturation."},
+  "GreenHue": {"label": "Calibration: Green primary hue", "description": "Shifts the hue of the green primary: positive toward cyan, negative toward yellow. Every colour with green in it moves with it; white stays white. Adjust hue first, then saturation."},
   "GreenSaturation": {"label": "Calibration: Green primary saturation", "description": "Saturation of the green primary; negative desaturates."},
-  "BlueHue": {"label": "Calibration: Blue primary hue", "description": "Shifts the hue of the camera's blue primary; negative is roughly counterclockwise on the colour wheel. Adjust hue first, then saturation."},
+  "BlueHue": {"label": "Calibration: Blue primary hue", "description": "Shifts the hue of the blue primary: positive toward magenta, negative toward cyan. Every colour with blue in it moves with it; white stays white. Adjust hue first, then saturation."},
   "BlueSaturation": {"label": "Calibration: Blue primary saturation", "description": "Saturation of the blue primary; negative desaturates."},
 
   "HasCrop": {"label": "Has crop", "description": "True when the crop (CropLeft/Top/Right/Bottom and CropAngle) is applied. When false the whole photo is shown; the crop values are kept but ignored."},

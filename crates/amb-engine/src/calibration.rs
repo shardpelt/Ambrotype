@@ -15,6 +15,7 @@ use crate::lens::LensStrengths;
 use crate::local::LocalStrengths;
 use crate::mask::MaskStrengths;
 use crate::negative::NegativeStrengths;
+use crate::primaries::PrimariesStrengths;
 use crate::tone::ToneStrengths;
 use crate::transform::TransformStrengths;
 use crate::upright::UprightStrengths;
@@ -33,6 +34,8 @@ pub struct Calibration {
     pub masks: MaskStrengths,
     pub transform: TransformStrengths,
     pub upright: UprightStrengths,
+    /// The Calibration panel (camera primaries, shadow tint).
+    pub primaries: PrimariesStrengths,
 }
 
 impl Calibration {

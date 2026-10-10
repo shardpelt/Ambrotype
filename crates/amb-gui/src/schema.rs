@@ -359,6 +359,35 @@ pub fn panels() -> Vec<Panel> {
             ],
         },
         Panel {
+            id: "calibration",
+            label: "Calibration",
+            groups: vec!["calibration"],
+            sections: vec![
+                section("Shadows", &[("ShadowTint", Some("Tint"))]),
+                section(
+                    "Red Primary",
+                    &[
+                        ("RedHue", Some("Hue")),
+                        ("RedSaturation", Some("Saturation")),
+                    ],
+                ),
+                section(
+                    "Green Primary",
+                    &[
+                        ("GreenHue", Some("Hue")),
+                        ("GreenSaturation", Some("Saturation")),
+                    ],
+                ),
+                section(
+                    "Blue Primary",
+                    &[
+                        ("BlueHue", Some("Hue")),
+                        ("BlueSaturation", Some("Saturation")),
+                    ],
+                ),
+            ],
+        },
+        Panel {
             id: "negative",
             label: "Film Negative",
             groups: vec!["negative"],

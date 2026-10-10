@@ -130,6 +130,7 @@ The crop panel isn't placed by layouts. It appears at the top of the column with
 | `lens` | `Profile`, `Manual`, `Defringe` | |
 | `transform` | `Upright`, `Transform` | |
 | `effects` | `Post-Crop Vignetting`, `Grain` | |
+| `calibration` | `Shadows`, `Red Primary`, `Green Primary`, `Blue Primary` | |
 | `negative` | `Conversion`, `Print` | |
 
 - Including a whole panel brings its composite widget (the curve or the wheels).

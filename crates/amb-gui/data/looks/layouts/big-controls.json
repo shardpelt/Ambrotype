@@ -18,6 +18,7 @@
       { "panel": "lens" },
       { "panel": "transform" },
       { "panel": "effects" },
+      { "panel": "calibration" },
       { "panel": "negative" }
     ]
   }

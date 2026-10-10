@@ -387,13 +387,13 @@ Shadows tint and the red, green and blue primary hue/saturation adjustments to t
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `ShadowTint` | Calibration: Shadows | number | -100 to 100 | 0 | planned | Corrects a green or magenta tint in the shadow areas of the photo. |
-| `RedHue` | Calibration: Red primary hue | number | -100 to 100 | 0 | planned | Shifts the hue of the camera's red primary; negative is roughly counterclockwise on the colour wheel. Adjust hue first, then saturation. |
-| `RedSaturation` | Calibration: Red primary saturation | number | -100 to 100 | 0 | planned | Saturation of the red primary; negative desaturates. |
-| `GreenHue` | Calibration: Green primary hue | number | -100 to 100 | 0 | planned | Shifts the hue of the camera's green primary; negative is roughly counterclockwise on the colour wheel. Adjust hue first, then saturation. |
-| `GreenSaturation` | Calibration: Green primary saturation | number | -100 to 100 | 0 | planned | Saturation of the green primary; negative desaturates. |
-| `BlueHue` | Calibration: Blue primary hue | number | -100 to 100 | 0 | planned | Shifts the hue of the camera's blue primary; negative is roughly counterclockwise on the colour wheel. Adjust hue first, then saturation. |
-| `BlueSaturation` | Calibration: Blue primary saturation | number | -100 to 100 | 0 | planned | Saturation of the blue primary; negative desaturates. |
+| `ShadowTint` | Calibration: Shadows | number | -100 to 100 | 0 | rendered (approx.) | Corrects a green or magenta tint in the shadows: positive adds magenta, negative green. Midtones and highlights are left alone. |
+| `RedHue` | Calibration: Red primary hue | number | -100 to 100 | 0 | rendered (approx.) | Shifts the hue of the red primary: positive toward yellow, negative toward magenta. Every colour with red in it moves with it; white stays white. Adjust hue first, then saturation. |
+| `RedSaturation` | Calibration: Red primary saturation | number | -100 to 100 | 0 | rendered (approx.) | Saturation of the red primary; negative desaturates. |
+| `GreenHue` | Calibration: Green primary hue | number | -100 to 100 | 0 | rendered (approx.) | Shifts the hue of the green primary: positive toward cyan, negative toward yellow. Every colour with green in it moves with it; white stays white. Adjust hue first, then saturation. |
+| `GreenSaturation` | Calibration: Green primary saturation | number | -100 to 100 | 0 | rendered (approx.) | Saturation of the green primary; negative desaturates. |
+| `BlueHue` | Calibration: Blue primary hue | number | -100 to 100 | 0 | rendered (approx.) | Shifts the hue of the blue primary: positive toward magenta, negative toward cyan. Every colour with blue in it moves with it; white stays white. Adjust hue first, then saturation. |
+| `BlueSaturation` | Calibration: Blue primary saturation | number | -100 to 100 | 0 | rendered (approx.) | Saturation of the blue primary; negative desaturates. |
 
 <a id="crop"></a>
 

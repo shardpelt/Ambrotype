@@ -46,11 +46,14 @@ use crate::lens::{Defringe, LensCorrections};
 use crate::local::LocalContrast;
 use crate::mask::Masks;
 use crate::negative::{Negative, NegativeType};
+use crate::primaries::CameraCalibration;
 use crate::raw::{CameraImage, neutral_for_xy, xy_for_neutral};
 use crate::retouch::Spots;
 use crate::tone::{self, ParametricCurve, ToneControls};
 use crate::transform::{Transform, UprightMode};
-use crate::{dehaze, detail, effects, lens, local, local_tone, mask, negative, retouch, upright};
+use crate::{
+    dehaze, detail, effects, lens, local, local_tone, mask, negative, primaries, retouch, upright,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WhiteBalance {
@@ -136,6 +139,8 @@ pub struct DevelopSettings {
     pub lens: LensCorrections,
     /// The Transform sliders (after the lens corrections, before the crop).
     pub transform: Transform,
+    /// The Calibration panel.
+    pub camera_calibration: CameraCalibration,
     /// Crop and straighten (after the lens corrections, in stored orientation).
     pub crop: Crop,
     pub negative: Negative,
@@ -168,6 +173,7 @@ impl Default for DevelopSettings {
             grain: Grain::default(),
             lens: LensCorrections::default(),
             transform: Transform::default(),
+            camera_calibration: CameraCalibration::default(),
             crop: Crop::default(),
             negative: Negative::default(),
             masks: Masks::default(),
@@ -273,6 +279,14 @@ pub const RENDERED_TAGS: &[&str] = &[
     "PerspectiveY",
     "PerspectiveUpright",
     "EnableTransform",
+    "ShadowTint",
+    "RedHue",
+    "RedSaturation",
+    "GreenHue",
+    "GreenSaturation",
+    "BlueHue",
+    "BlueSaturation",
+    "EnableCalibration",
     "HasCrop",
     "CropTop",
     "CropLeft",
@@ -469,6 +483,7 @@ impl DevelopSettings {
         };
         s.lens = lens_corrections(settings);
         s.transform = transform_settings(settings);
+        s.camera_calibration = calibration_settings(settings);
         s.crop = crop_settings(settings);
         s.negative = negative_settings(settings);
         s.curve_rgb = spline_of(settings, "ToneCurvePV2012");
@@ -574,6 +589,22 @@ fn transform_settings(settings: &BTreeMap<String, Value>) -> Transform {
         offset_y: num(settings, "PerspectiveY").unwrap_or(d.offset_y),
         upright_mode: num(settings, "PerspectiveUpright").map_or(d.upright_mode, UprightMode::of),
         upright: None,
+    }
+}
+
+fn calibration_settings(settings: &BTreeMap<String, Value>) -> CameraCalibration {
+    if settings.get("EnableCalibration").and_then(Value::as_bool) == Some(false) {
+        return CameraCalibration::default();
+    }
+    let n = |k: &str| num(settings, k).unwrap_or(0.0);
+    CameraCalibration {
+        shadow_tint: n("ShadowTint"),
+        hue: [n("RedHue"), n("GreenHue"), n("BlueHue")],
+        saturation: [
+            n("RedSaturation"),
+            n("GreenSaturation"),
+            n("BlueSaturation"),
+        ],
     }
 }
 
@@ -850,7 +881,13 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
             [n[0] / r[0], 1.0, n[2] / r[2]]
         }
     };
-    let m = camera_to_prophoto(&img.xyz_to_cam, neutral).map(|row| row.map(|v| v as f32));
+    // The Calibration panel's primaries fold into the camera matrix.
+    let mut m = camera_to_prophoto(&img.xyz_to_cam, neutral);
+    if let Some(p) = s.camera_calibration.matrix(&cal.primaries) {
+        m = mul3(&p, &m);
+    }
+    let m = m.map(|row| row.map(|v| v as f32));
+    let shadow_tint = s.camera_calibration.shadow_tint(&cal.primaries);
     let gain = 2f32.powf(s.exposure_ev as f32);
     let clipped = (!s.negative.enabled && img.clip.iter().any(|c| c.is_finite()))
         .then(|| Unclip::new(img.clip, neutral));
@@ -874,6 +911,9 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
                 };
                 for (row, slot) in m.iter().zip(o.iter_mut()) {
                     *slot = (row[0] * c[0] + row[1] * c[1] + row[2] * c[2]) * gain;
+                }
+                if let Some((stops, end)) = shadow_tint {
+                    primaries::tint_shadows(o, stops, end);
                 }
             }
         });

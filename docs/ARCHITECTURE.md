@@ -38,7 +38,8 @@ amb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
   0  Lens Corrections (vignetting, CA, distortion), Upright + Transform, crop: one resampling pass
      (Upright found from the photo's lines on a ≤1024 px lens-corrected copy, upright.rs)
      → film negative conversion (optional)
-  1  clipped channels → neutral, white balance + camera matrix → linear ProPhoto → Exposure → Defringe
+  1  clipped channels → neutral, white balance + camera matrix (× Calibration primaries) → linear ProPhoto
+     → Exposure → Calibration shadow tint → Defringe
      → spot removal (heal and clone, retouch.rs) → masks drawn (alpha per mask, mask.rs)
      → local Exposure, Temp, Tint
   2  Dehaze (then local Dehaze)
@@ -91,7 +92,7 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
 - **Preview:** rendered on the CPU from an area-downscaled copy of the raw, at screen size. Slider drags render with temporary overrides and don't touch history; release commits one undoable step. Requests are latest-wins, and a drag renders at 0.6× size.
 - **Features:**
   - open (dialog, drag-and-drop, command line)
-  - Basic, Tone Curve (parametric), Color Mixer (HSL tabs), Black & White, Color Grading, Detail, Lens Corrections, Transform, Effects and Film Negative panels
+  - Basic, Tone Curve (parametric), Color Mixer (HSL tabs), Black & White, Color Grading, Detail, Lens Corrections, Transform, Effects, Calibration and Film Negative panels
   - presets list (Lightroom's own folder when present, or added folders) with an Amount slider
   - history, undo/redo (a drag of a curve point or colour wheel, or a WB pick, is one step), before/after, histogram
   - 1:1 view with panning (a region of the full-size render), white-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels, crop and straighten tool (draw a crop corner to corner like a screenshot, then adjust; aspect lock, size presets), mask tool (`ui/masks.js`: linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map; [design/masks.md](design/masks.md)), spot removal (`ui/spots.js`: heal and clone spots with a suggested donor, `spot_source`; [design/spot-removal.md](design/spot-removal.md))

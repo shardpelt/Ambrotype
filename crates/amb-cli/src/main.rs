@@ -657,7 +657,9 @@ fn render(
 ) -> Result<(), String> {
     use amb_engine::{pipeline, raw};
     let start = std::time::Instant::now();
-    let mut img = raw::load(input).map_err(|e| format!("{}: {e}", input.display()))?;
+    // A virtual copy (IMG.copy-2.xmp) renders its photo.
+    let source = amb_engine::source_path(input);
+    let mut img = raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
     let wb = if img.rendered {
         "rendered image: relative white balance (IncrementalTemperature/Tint)".to_string()
     } else {

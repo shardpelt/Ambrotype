@@ -43,7 +43,8 @@ fn with_times(photos: Vec<FolderPhoto>) -> Vec<LibraryPhoto> {
     photos
         .into_par_iter()
         .map(|photo| {
-            let captured = amb_engine::raw::read_metadata(Path::new(&photo.path))
+            let source = amb_engine::source_path(Path::new(&photo.path));
+            let captured = amb_engine::raw::read_metadata(&source)
                 .ok()
                 .and_then(|(_, m)| m.date_time_original)
                 .map(|d| {
@@ -123,6 +124,32 @@ pub fn change_info(photo: &Path, change: &InfoChange) -> Result<PhotoInfo, Strin
     let text = sidecar::with_info(on_disk.as_deref(), &info).map_err(|e| e.to_string())?;
     sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())?;
     Ok(sidecar::read_info(&text))
+}
+
+/// Make a virtual copy of `photo` with `settings` (its edit as it is now)
+/// and its keywords, but not its rating, label or flag, as in Lightroom.
+/// Returns the copy's path (its sidecar).
+pub fn create_virtual_copy(
+    photo: &Path,
+    settings: &std::collections::BTreeMap<String, amb_presets::Value>,
+    keywords: Vec<String>,
+) -> Result<PathBuf, String> {
+    let copy = amb_engine::new_virtual_copy_path(photo);
+    let info = PhotoInfo {
+        keywords,
+        ..PhotoInfo::default()
+    };
+    let text = sidecar::merge_with_info("", settings, Some(&info)).map_err(|e| e.to_string())?;
+    sidecar::write_atomic(&copy, &text).map_err(|e| e.to_string())?;
+    Ok(copy)
+}
+
+/// Delete a virtual copy (its sidecar); never a photo or its own sidecar.
+pub fn delete_virtual_copy(copy: &Path) -> Result<(), String> {
+    if amb_engine::virtual_copy_of(copy).is_none() {
+        return Err(format!("{} is not a virtual copy", copy.display()));
+    }
+    std::fs::remove_file(copy).map_err(|e| format!("{}: {e}", copy.display()))
 }
 
 /// The groups of settings "Paste settings" offers (not metadata).
@@ -332,6 +359,42 @@ mod tests {
             Some(sidecar::Flag::Reject)
         );
         assert_eq!(change_info(&b, &flag("")).unwrap().flag, None);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn virtual_copies_are_listed_after_their_photo() {
+        let dir = temp("copies");
+        let (a, b) = (dng(&dir, "a.dng"), dng(&dir, "b.dng"));
+        change_info(
+            &a,
+            &InfoChange {
+                rating: Some(5),
+                add_keywords: vec!["sea".into()],
+                ..InfoChange::default()
+            },
+        )
+        .unwrap();
+        let mut settings = std::collections::BTreeMap::new();
+        settings.insert("Exposure2012".to_string(), amb_presets::Value::Number(1.0));
+        let copy = create_virtual_copy(&a, &settings, vec!["sea".into()]).unwrap();
+        assert!(copy.ends_with("a.copy-2.xmp"));
+        let listed = list(&dir).unwrap();
+        let names: Vec<&str> = listed.iter().map(|p| p.photo.name.as_str()).collect();
+        assert_eq!(names, ["a.dng", "a.dng · Copy 2", "b.dng"]);
+        let c = &listed[1].photo;
+        assert_eq!((c.copy, c.rating, c.edited), (Some(2), None, true));
+        assert_eq!(c.keywords, ["sea"]);
+        // It opens as its photo with its own edit.
+        let s = crate::session::Session::open(&copy).unwrap();
+        assert_eq!(
+            s.state.settings().get("Exposure2012"),
+            Some(&amb_presets::Value::Number(1.0))
+        );
+        assert!(delete_virtual_copy(&b).is_err());
+        delete_virtual_copy(&copy).unwrap();
+        assert_eq!(list(&dir).unwrap().len(), 2);
+        assert!(a.is_file());
         let _ = std::fs::remove_dir_all(&dir);
     }
 

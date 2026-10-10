@@ -116,6 +116,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | E, C, N | In the library: loupe, compare, survey |
   | Ctrl+Shift+I | Import photos from a card or folder |
   | B | Add the selection (or the open photo) to the last collection used |
+  | Ctrl+' | Make a virtual copy (a second edit of the photo) |
   | Ctrl+Shift+C / Ctrl+Shift+V | In the library: copy one photo's settings / paste them onto the selection |
   | K | Jump to the keyword field (Enter or a comma adds a keyword) |
   | Ctrl+L / Ctrl+Shift+L | Appearance / Edit layout |

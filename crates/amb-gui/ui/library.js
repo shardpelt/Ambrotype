@@ -366,6 +366,7 @@ function renderPanel() {
   $("lib-tag-suggest").replaceChildren(...infoState.recent.slice(0, 60).map((k) => Object.assign(document.createElement("option"), { value: k })));
   $("lib-copied").textContent = lib.copied ? `Copied from ${fileName(lib.copied)}` : "";
   $("lib-export").textContent = n > 1 ? `Export ${n} photos…` : "Export…";
+  $("lib-vcopy-delete").hidden = !(n && sel.every((p) => p.copy));
   $("lib-paste").textContent = n ? `Paste settings to ${sel.filter((p) => p.path !== lib.copied).length}…` : "Paste settings…";
 }
 
@@ -453,6 +454,63 @@ function libraryCopySettings() {
   lib.copied = sel[0].path;
   toast(`Copied the settings of ${sel[0].name}`);
   renderPanel();
+}
+
+// A virtual copy of one photo: a second edit, kept as its own sidecar.
+async function makeVirtualCopy(path) {
+  try {
+    const copy = await invoke("create_virtual_copy", { path });
+    status(`Made a virtual copy of ${fileName(path)}`);
+    return copy;
+  } catch (e) {
+    toast(String(e), true);
+    return null;
+  }
+}
+
+// Ctrl+': in the library, of the selected photo; in the editor, of the open
+// photo, which then opens.
+async function virtualCopyKey() {
+  if (lib.on) {
+    const sel = libraryTargets();
+    if (sel.length !== 1) return toast("Select the one photo to make a virtual copy of.", true);
+    const copy = await makeVirtualCopy(sel[0].path);
+    if (!copy) return;
+    if (lib.collection) await addToCollection([copy], lib.collection);
+    else await loadLibrary(lib.dir);
+    select(copy, "only");
+    lib.cells.get(copy)?.scrollIntoView({ block: "nearest" });
+    return;
+  }
+  if (!ui.info) return false;
+  const copy = await makeVirtualCopy(ui.info.path);
+  if (copy) await openPath(copy);
+}
+
+async function libraryDeleteCopies() {
+  const copies = libraryTargets().filter((p) => p.copy);
+  if (!copies.length) return;
+  const what = copies.length === 1 ? copies[0].name : `${copies.length} virtual copies`;
+  if (!confirm(`Delete ${what}? Only the copy's edit goes; the photo stays.`)) return;
+  // The editor can't keep a deleted copy open: switch to its photo first.
+  const open = copies.find((p) => p.path === ui.info?.path);
+  if (open) {
+    const master = lib.photos.find((p) => !p.copy && open.name.startsWith(`${p.name} ·`));
+    if (master) await openPath(master.path);
+  }
+  let failed = 0;
+  for (const p of copies) {
+    try {
+      await invoke("delete_virtual_copy", { path: p.path });
+    } catch (e) {
+      failed++;
+      toast(String(e), true);
+    }
+  }
+  status(`Deleted ${copies.length - failed} virtual cop${copies.length - failed === 1 ? "y" : "ies"}`);
+  lib.selected.clear();
+  if (lib.collection) await showCollection(lib.collection);
+  else await loadLibrary(lib.dir);
 }
 
 async function libraryPasteSettings() {
@@ -614,6 +672,8 @@ function wireLibrary() {
   $("lib-open").addEventListener("click", libraryOpenFocused);
   $("lib-copy").addEventListener("click", libraryCopySettings);
   $("lib-paste").addEventListener("click", libraryPasteSettings);
+  $("lib-vcopy").addEventListener("click", virtualCopyKey);
+  $("lib-vcopy-delete").addEventListener("click", libraryDeleteCopies);
   $("lib-export").addEventListener("click", libraryExport);
   $("lib-collage").addEventListener("click", libraryCollage);
   grid.style.setProperty("--thumb", `${$("lib-size").value}px`);

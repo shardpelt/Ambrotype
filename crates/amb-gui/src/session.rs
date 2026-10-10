@@ -233,7 +233,9 @@ fn ratio_text(r: Option<(u32, u32)>, f: impl Fn(f64) -> String) -> Option<String
 
 impl Session {
     pub fn open(path: &Path) -> Result<Session, String> {
-        let full = raw::load(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        // A virtual copy is a sidecar; its photo is next to it.
+        let source = amb_engine::source_path(path);
+        let full = raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
         let sidecar = sidecar_path(path);
         // No sidecar yet: a JPEG or TIFF may carry Lightroom's edits inside.
         let text = std::fs::read_to_string(&sidecar).ok().or_else(|| {
@@ -289,11 +291,7 @@ impl Session {
         .join("  ·  ");
         let swap = (5..=8).contains(&m.orientation);
         PhotoInfo {
-            name: self
-                .path
-                .file_name()
-                .map(|n| n.to_string_lossy().into_owned())
-                .unwrap_or_default(),
+            name: crate::folder::display_name(&self.path),
             path: self.path.display().to_string(),
             sidecar: self.sidecar.display().to_string(),
             sidecar_loaded: self.base_xmp.is_some(),

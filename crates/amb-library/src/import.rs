@@ -238,15 +238,45 @@ struct Group {
     others: Vec<PathBuf>,
 }
 
-/// Group files by folder and name: the raw (or else the first photo) leads.
+/// A file's photo name and the rest of its name: `IMG_1` and `.CR2` for
+/// `IMG_1.CR2`, `.xmp` for its sidecar, `.copy-2.xmp` for a virtual copy,
+/// `.jpg.xmp` for a JPEG's sidecar `IMG_1.jpg.xmp`.
+fn split_name(f: &Path) -> (String, String) {
+    let name = f
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .into_owned();
+    let mut base = match name.len().checked_sub(4) {
+        Some(i) if name.is_char_boundary(i) && name[i..].eq_ignore_ascii_case(".xmp") => {
+            name[..i].to_string()
+        }
+        _ => {
+            let stem = f.file_stem().unwrap_or_default().to_string_lossy();
+            return (stem.to_string(), name[stem.len()..].to_string());
+        }
+    };
+    if let Some((b, n)) = base.rsplit_once(".copy-") {
+        if !n.is_empty() && n.chars().all(|c| c.is_ascii_digit()) {
+            base = b.to_string();
+        }
+    }
+    if amb_engine::raster::is_raster(Path::new(&base)) {
+        if let Some((b, _)) = base.rsplit_once('.') {
+            base = b.to_string();
+        }
+    }
+    let rest = name[base.len()..].to_string();
+    (base, rest)
+}
+
+/// Group files by folder and photo name: the raw (or else the first photo)
+/// leads; JPEGs, sidecars and virtual copies follow it.
 fn group(files: Vec<PathBuf>) -> Vec<Group> {
     let mut by_stem: BTreeMap<(PathBuf, String), Vec<PathBuf>> = BTreeMap::new();
     for f in files {
         let dir = f.parent().map(Path::to_path_buf).unwrap_or_default();
-        let stem = f
-            .file_stem()
-            .map(|s| s.to_string_lossy().to_lowercase())
-            .unwrap_or_default();
+        let stem = split_name(&f).0.to_lowercase();
         by_stem.entry((dir, stem)).or_default().push(f);
     }
     by_stem
@@ -367,13 +397,7 @@ pub fn plan(source: &Path, dest: &Path, options: &ImportOptions) -> Result<Vec<P
         let stem = clean(&expand(&options.name, &name, &when, seq, &camera));
         let stem = if stem.is_empty() { name.clone() } else { stem };
         let sources: Vec<&PathBuf> = std::iter::once(&g.main).chain(&g.others).collect();
-        let target = |stem: &str, src: &Path| {
-            let ext = src
-                .extension()
-                .map(|e| format!(".{}", e.to_string_lossy()))
-                .unwrap_or_default();
-            dir.join(format!("{stem}{ext}"))
-        };
+        let target = |stem: &str, src: &Path| dir.join(format!("{stem}{}", split_name(src).1));
         // Already there, under any name?
         let by_size = sizes
             .entry(dir.clone())
@@ -458,7 +482,7 @@ fn copy_file(from: &Path, to: &Path) -> Result<(), String> {
 
 /// Add `keywords` to the sidecar of `photo` (making one if needed).
 fn add_keywords(photo: &Path, keywords: &[String]) -> Result<(), String> {
-    let path = photo.with_extension("xmp");
+    let path = amb_engine::sidecar_path(photo);
     let on_disk = std::fs::read_to_string(&path).ok();
     let mut info = on_disk
         .as_deref()
@@ -578,7 +602,13 @@ mod tests {
             &card.join("IMG_0002.xmp"),
             br#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmp:Rating="3"/></rdf:RDF></x:xmpmeta>"#,
         );
+        write(&card.join("IMG_0002.copy-2.xmp"), b"a virtual copy");
         write(&card.join("IMG_0001.CR2"), b"raw one");
+        write(&card.join("phone.jpg"), b"phone photo");
+        write(
+            &card.join("phone.jpg.xmp"),
+            br#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:xmp="http://ns.adobe.com/xap/1.0/" xmp:Rating="2"/></rdf:RDF></x:xmpmeta>"#,
+        );
         write(&card.join("notes.txt"), b"not a photo");
         write(&card.join(".hidden.CR2"), b"hidden");
         // Same name already in the library, different photo: renamed.
@@ -590,7 +620,15 @@ mod tests {
         write(&lib.join("shoot/IMG_0001.CR2"), b"raw one");
         write(&lib.join("shoot/IMG_0002.CR2"), b"another photo");
         let plan = plan(&root.join("card"), &lib, &options).unwrap();
-        assert_eq!(plan.len(), 2, "{plan:#?}");
+        assert_eq!(plan.len(), 3, "{plan:#?}");
+        let phone = plan
+            .iter()
+            .find(|p| p.files[0].0.ends_with("phone.jpg"))
+            .unwrap();
+        assert!(
+            phone.files[1].1.ends_with("shoot/phone.jpg.xmp"),
+            "{phone:#?}"
+        );
         let one = plan
             .iter()
             .find(|p| p.files[0].0.ends_with("IMG_0001.CR2"))
@@ -606,7 +644,11 @@ mod tests {
             .iter()
             .map(|(_, d)| d.file_name().unwrap().to_string_lossy().into_owned())
             .collect();
-        assert_eq!(dests.len(), 3);
+        assert_eq!(dests.len(), 4);
+        assert!(
+            dests.contains(&"IMG_0002-2.copy-2.xmp".to_string()),
+            "{dests:?}"
+        );
         assert!(
             dests.iter().all(|d| d.starts_with("IMG_0002-2.")),
             "{dests:?}"
@@ -620,7 +662,7 @@ mod tests {
             },
             &mut |_, _, _| {},
         );
-        assert_eq!((report.imported, report.skipped), (1, 1), "{report:?}");
+        assert_eq!((report.imported, report.skipped), (2, 1), "{report:?}");
         assert!(report.errors.is_empty(), "{:?}", report.errors);
         let shoot = lib.join("shoot");
         assert_eq!(
@@ -628,6 +670,13 @@ mod tests {
             b"jpeg two"
         );
         let xmp = std::fs::read_to_string(shoot.join("IMG_0002-2.xmp")).unwrap();
+        let phone =
+            sidecar::read_info(&std::fs::read_to_string(shoot.join("phone.jpg.xmp")).unwrap());
+        assert_eq!(
+            (phone.keywords, phone.rating),
+            (vec!["trip".to_string()], Some(2))
+        );
+        assert!(!shoot.join("phone.xmp").exists());
         let info = sidecar::read_info(&xmp);
         assert_eq!(
             (info.keywords, info.rating),

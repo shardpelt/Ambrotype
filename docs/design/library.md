@@ -25,6 +25,7 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
   - **Survey** (N): the selected photos tiled as large as they fit (or the next twelve when one is selected). Click one to make it active; × takes it out of the survey and the selection.
   - In compare and survey, rating, label and flag keys and the panel act on the active photo, framed in the accent colour, as in Lightroom. Enter or a double-click opens it in the editor; G or Esc goes back to the grid.
   - Large previews are the camera's embedded preview at 1024 or 2048 pixels, then the edit's render for edited photos (both cached).
+- **Virtual copies** (Ctrl+', or Make a virtual copy in the panel): a second edit of the same photo, listed right after it as "IMG_0001.nef · Copy 2" (below).
 - **Copy and paste an edit** (Lightroom's Sync): Copy settings on one photo (Ctrl+Shift+C), select others, Paste settings (Ctrl+Shift+V).
   - you choose the setting groups; crop, transform, masks and retouching are off by default
   - a ticked group becomes exactly the source's: settings the source doesn't have go back to their defaults
@@ -65,6 +66,17 @@ Named lists of photos from any folders, like Lightroom's collections. With no ca
 - A photo moved or deleted outside Ambrotype is reported when the collection opens, and stays listed until removed.
 
 Code: `crates/amb-library/src/collections.rs`, `ui/collections.js`.
+
+## Virtual copies
+
+A virtual copy is a second edit of a photo: black and white beside colour, a square crop beside the full frame. Lightroom keeps them in its catalogue; ours are sidecars.
+
+- `IMG_0001.nef`'s copies are `IMG_0001.copy-2.xmp`, `IMG_0001.copy-3.xmp`, … next to it (`photo.jpg.copy-2.xmp` for a JPEG). Lightroom reads only `IMG_0001.xmp`, so it doesn't see them.
+- A copy starts with the photo's edit as it is (unsaved changes included) and its keywords, but no rating, label or flag, as in Lightroom. From then on it has its own edit, rating, label, flag and keywords.
+- In the app a copy is its sidecar's path: the library, filmstrip, editor, collections and export treat it as a photo of its own. `amb_engine::virtual_copy_of` finds the photo it belongs to (a copy file without its photo is ignored), and `source_path` gives the file to decode.
+- Delete copy (in the panel, when only copies are selected) removes the copy's sidecar, never the photo.
+- Import brings copies along under the photo's new name (`20261010_0001.copy-2.xmp`).
+- `amb render IMG_0001.copy-2.xmp out.jpg --preset IMG_0001.copy-2.xmp` renders a copy.
 
 ## Flags
 

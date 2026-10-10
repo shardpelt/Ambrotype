@@ -67,7 +67,7 @@ Project goal for ranking: faithful Lightroom preset compatibility, free, on Wind
 | Item | Tag | Impact | Source |
 |---|---|---|---|
 | No library or catalog: folders, ratings, keywords, collections, search | Missing | No DAM at all; scope-explosion risk is rated High, so v1 is develop-first | [ARCHITECTURE.md](ARCHITECTURE.md):84; [SCOPE.md](SCOPE.md):394 |
-| SQLite catalog (WAL, FTS5), import copy/move/add, keyword hierarchy and synonyms, collections, smart collections, stacks, virtual copies, preview pyramid | Missing | Phase 3 scope | [SCOPE.md](SCOPE.md):321, 326 |
+| SQLite catalog (WAL, FTS5), import by move or add, keyword hierarchy and synonyms, smart collections, stacks, preview pyramid. Import by copy, collections and virtual copies exist without a catalogue (files in folders; [design/library.md](design/library.md)) | Missing | Phase 3 scope | [SCOPE.md](SCOPE.md):321, 326 |
 | `.lrcat` migration (read-only: folders, keywords, ratings, labels, collections, develop settings). Modern catalog layout is unverified; the known facts are from LR 2/4/6 | Missing | The main thing holding people in Lightroom | [SCOPE.md](SCOPE.md):313, 322; [research/06](research/06-tech-stack-options.md):425 |
 | Data-safety principles have no implementation yet: XMP sidecars as source of truth, rebuildable catalog, versioned recipes, automatic catalog backups | Missing | Catalog corruption is the number-three Lightroom complaint | [SCOPE.md](SCOPE.md):62-66 |
 | Folder-live browsing with no import step | Missing | A competitor strength we chose to adopt | [SCOPE.md](SCOPE.md):122 |

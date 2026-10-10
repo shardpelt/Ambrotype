@@ -61,6 +61,7 @@ const KEY_ACTIONS = [
   { id: "flag-none", group: "Rating", label: "Remove the flag", keys: ["U"], when: FLAG_CONTEXTS, run: () => flagKey("") },
   { id: "library", group: "Library", label: "Library grid / editor", hint: "All the photos in the folder, to rate, label, tag and export many at once.", keys: ["G"], when: "any", button: "btn-library", run: () => cullLeave() || toggleLibrary() },
   { id: "import", group: "Library", label: "Import photos from a card or folder", hint: "Copied into dated folders, renamed if you like.", keys: ["Ctrl+Shift+I"], when: "any", run: () => importFlow() },
+  { id: "virtual-copy", group: "Library", label: "Make a virtual copy", hint: "A second edit of the photo, kept as its own sidecar.", keys: ["Ctrl+'"], when: ["main", "library"], run: () => virtualCopyKey() },
   { id: "quick-collection", group: "Library", label: "Add to the last collection used", hint: "The selection, or the open photo.", keys: ["B"], when: ["main", "library"], run: () => quickCollectionKey() },
   { id: "lib-loupe", group: "Library", label: "Loupe: one photo large", hint: "← → step through the photos.", keys: ["E"], when: "library", run: () => setLibraryView("loupe") },
   { id: "lib-compare", group: "Library", label: "Compare two photos", hint: "← → change the candidate, ↓ swaps, ↑ makes it the select.", keys: ["C"], when: "library", run: () => setLibraryView("compare") },

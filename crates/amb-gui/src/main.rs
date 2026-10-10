@@ -1951,6 +1951,58 @@ async fn export_photos(
     .map_err(|e| e.to_string())?
 }
 
+/// Make a virtual copy of a photo with its edit as it is now (the open
+/// photo's unsaved edit included). Returns the copy's path.
+#[tauri::command]
+async fn create_virtual_copy(path: String, state: tauri::State<'_, AppState>) -> Res<String> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let photo = PathBuf::from(&path);
+        let open = {
+            let guard = slot.lock().map_err(|e| e.to_string())?;
+            guard
+                .as_ref()
+                .filter(|s| s.path == photo)
+                .map(|s| (s.state.settings().clone(), s.info.keywords.clone()))
+        };
+        let (settings, keywords) = match open {
+            Some(found) => found,
+            None => {
+                let text = std::fs::read_to_string(session::sidecar_path(&photo)).ok();
+                let settings = text
+                    .as_deref()
+                    .and_then(|t| amb_presets::xmp::parse_crs(t).ok())
+                    .unwrap_or_default();
+                let keywords = text
+                    .as_deref()
+                    .map(amb_protocol::sidecar::read_info)
+                    .unwrap_or_default()
+                    .keywords;
+                (settings, keywords)
+            }
+        };
+        library::create_virtual_copy(&photo, &settings, keywords).map(|p| p.display().to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Delete a virtual copy (not while it's open in the editor).
+#[tauri::command]
+fn delete_virtual_copy(path: String, state: tauri::State<'_, AppState>) -> Res<()> {
+    let copy = PathBuf::from(&path);
+    let open = state
+        .session
+        .lock()
+        .map_err(|e| e.to_string())?
+        .as_ref()
+        .is_some_and(|s| s.path == copy);
+    if open {
+        return Err("this copy is open in the editor; open another photo first".into());
+    }
+    library::delete_virtual_copy(&copy)
+}
+
 /// Where collections are kept: the app's config folder.
 fn collections_dir(app: &tauri::AppHandle) -> Res<PathBuf> {
     app.path()
@@ -2274,6 +2326,8 @@ fn main() {
             library_pick_folder,
             import_defaults,
             collections_list,
+            create_virtual_copy,
+            delete_virtual_copy,
             collection_photos,
             collection_add,
             collection_remove,

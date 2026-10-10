@@ -22,6 +22,8 @@ pub struct FolderPhoto {
     /// Colour label ("Red", ...), from the sidecar.
     pub label: Option<String>,
     pub keywords: Vec<String>,
+    /// A virtual copy's number (its `path` is its sidecar).
+    pub copy: Option<u32>,
     /// "pick" or "reject", from the sidecar.
     pub flag: Option<amb_protocol::sidecar::Flag>,
     /// The sidecar has develop settings.
@@ -137,7 +139,49 @@ pub fn list_dir(dir: &Path) -> Result<Vec<FolderPhoto>, String> {
             &b.file_name().unwrap_or_default().to_string_lossy(),
         )
     });
-    Ok(describe(paths))
+    // Virtual copies right after their photo, in number order.
+    let mut copies = copies_in(dir, &paths);
+    copies.sort_by_key(|(_, _, n)| *n);
+    let mut ordered = Vec::with_capacity(paths.len() + copies.len());
+    for p in paths {
+        let mine: Vec<PathBuf> = copies
+            .iter()
+            .filter(|(_, photo, _)| *photo == p)
+            .map(|(c, _, _)| c.clone())
+            .collect();
+        ordered.push(p);
+        ordered.extend(mine);
+    }
+    Ok(describe(ordered))
+}
+
+/// A photo's name as shown: its file name, and "Copy N" for a virtual copy.
+pub fn display_name(path: &Path) -> String {
+    let file = |p: &Path| {
+        p.file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned()
+    };
+    match amb_engine::virtual_copy_of(path) {
+        Some((photo, n)) => format!("{} · Copy {n}", file(&photo)),
+        None => file(path),
+    }
+}
+
+/// The virtual copies in `dir` of the photos `photos` (sidecars named
+/// `<photo>.copy-N.xmp`), each with the photo it belongs to.
+fn copies_in(dir: &Path, photos: &[PathBuf]) -> Vec<(PathBuf, PathBuf, u32)> {
+    std::fs::read_dir(dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|e| e.path())
+        .filter_map(|p| {
+            let (photo, n) = amb_engine::virtual_copy_of(&p)?;
+            photos.contains(&photo).then_some((p, photo, n))
+        })
+        .collect()
 }
 
 /// Name, rating and "edited" for each of `paths` (kept in the given order).
@@ -155,11 +199,8 @@ pub fn describe(paths: Vec<PathBuf>) -> Vec<FolderPhoto> {
                 .and_then(|t| amb_presets::xmp::parse_crs(t).ok())
                 .is_some_and(|s| !s.is_empty());
             FolderPhoto {
-                name: p
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-                    .to_string(),
+                name: display_name(&p),
+                copy: amb_engine::virtual_copy_of(&p).map(|(_, n)| n),
                 path: p.display().to_string(),
                 rating: info.rating,
                 label: info.label,
@@ -210,6 +251,8 @@ fn encode_jpeg(rgb: &[u8], w: u32, h: u32) -> Result<Vec<u8>, String> {
 /// A JPEG thumbnail of `path`: the embedded preview (cached in `cache`), or
 /// when a file has none, a small render of the raw (slower).
 pub fn thumbnail(path: &Path, edge: u32, cache: Option<&Path>) -> Result<Vec<u8>, String> {
+    // A virtual copy shows its photo's camera preview.
+    let path = &amb_engine::source_path(path);
     let edge = edge.clamp(64, 2048);
     let key = cache
         .zip(cache_key(path, edge))

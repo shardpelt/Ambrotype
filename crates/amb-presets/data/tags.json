@@ -1357,7 +1357,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveHorizontal",
@@ -1366,7 +1366,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveAspect",
@@ -1375,7 +1375,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveX",
@@ -1384,7 +1384,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveY",
@@ -1393,7 +1393,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveRotate",
@@ -1402,7 +1402,7 @@
    "min": -10,
    "max": 10,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "PerspectiveScale",
@@ -1411,7 +1411,7 @@
    "min": 50,
    "max": 150,
    "default": 100,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "UprightVersion",

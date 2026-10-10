@@ -335,13 +335,13 @@ Upright perspective correction and manual perspective sliders.
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
 | `PerspectiveUpright` | Upright mode | enum | 0 to 5 | 0 | planned | Automatic perspective correction mode. Adobe's help lists Auto (balanced corrections), Level, Vertical (level and vertical), Full (level, vertical and horizontal) and Guided, plus off; the numeric encoding is not documented there. Apply lens profile corrections first. |
-| `PerspectiveVertical` | Transform: Vertical | number | -100 to 100 | 0 | planned | Manual vertical perspective correction. |
-| `PerspectiveHorizontal` | Transform: Horizontal | number | -100 to 100 | 0 | planned | Manual horizontal perspective correction. |
-| `PerspectiveAspect` | Transform: Aspect | number | -100 to 100 | 0 | planned | Manual Aspect slider of the Transform panel. Adobe's help names it without further detail. |
-| `PerspectiveX` | Transform: Offset X | number | -100 to 100 | 0 | planned | Moves the transformed image horizontally. |
-| `PerspectiveY` | Transform: Offset Y | number | -100 to 100 | 0 | planned | Moves the transformed image vertically. |
-| `PerspectiveRotate` | Transform: Rotate | number | -10 to 10 | 0 | planned | *Units: degrees.* Rotation around the centre of the original, uncropped photo. |
-| `PerspectiveScale` | Transform: Scale | number | 50 to 150 | 100 | planned | *Units: %.* Scales the transformed image up or down; 100 = unchanged. |
+| `PerspectiveVertical` | Transform: Vertical | number | -100 to 100 | 0 | rendered (approx.) | Vertical perspective correction: negative widens the top, which straightens verticals that lean together in a photo taken looking up; positive widens the bottom. |
+| `PerspectiveHorizontal` | Transform: Horizontal | number | -100 to 100 | 0 | rendered (approx.) | Horizontal perspective correction: positive makes the right side taller, negative the left side. |
+| `PerspectiveAspect` | Transform: Aspect | number | -100 to 100 | 0 | rendered (approx.) | Stretches the photo: positive vertically, negative horizontally. Use it after a strong perspective correction to restore proportions. |
+| `PerspectiveX` | Transform: Offset X | number | -100 to 100 | 0 | rendered (approx.) | Moves the transformed image horizontally. |
+| `PerspectiveY` | Transform: Offset Y | number | -100 to 100 | 0 | rendered (approx.) | Moves the transformed image vertically. |
+| `PerspectiveRotate` | Transform: Rotate | number | -10 to 10 | 0 | rendered (approx.) | *Units: degrees.* Rotation around the centre of the original, uncropped photo. |
+| `PerspectiveScale` | Transform: Scale | number | 50 to 150 | 100 | rendered (approx.) | *Units: %.* Scales the transformed image up or down; 100 = unchanged. |
 | `UprightVersion` | Upright version | text |  |  | image-specific | Version of the Upright analysis. Computed per image. |
 | `UprightCenterMode` | Upright centre mode | text |  |  | image-specific | Upright analysis data, computed per image. |
 | `UprightCenterNormX` | Upright centre X | text |  |  | image-specific | Upright analysis data, computed per image. |

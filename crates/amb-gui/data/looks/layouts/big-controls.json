@@ -16,6 +16,7 @@
       { "panel": "color_grading" },
       { "panel": "detail" },
       { "panel": "lens" },
+      { "panel": "transform" },
       { "panel": "effects" },
       { "panel": "negative" }
     ]

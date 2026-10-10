@@ -260,10 +260,10 @@
   "DefringeGreenHueHi": {"label": "Defringe: Green hue (high)", "description": "Upper end of the hue range treated as green fringing. The default range is narrow to protect green/yellow subjects such as foliage."},
 
   "PerspectiveUpright": {"label": "Upright mode", "description": "Automatic perspective correction mode. Adobe's help lists Auto (balanced corrections), Level, Vertical (level and vertical), Full (level, vertical and horizontal) and Guided, plus off; the numeric encoding is not documented there. Apply lens profile corrections first."},
-  "PerspectiveVertical": {"label": "Transform: Vertical", "description": "Manual vertical perspective correction."},
-  "PerspectiveHorizontal": {"label": "Transform: Horizontal", "description": "Manual horizontal perspective correction."},
+  "PerspectiveVertical": {"label": "Transform: Vertical", "description": "Vertical perspective correction: negative widens the top, which straightens verticals that lean together in a photo taken looking up; positive widens the bottom."},
+  "PerspectiveHorizontal": {"label": "Transform: Horizontal", "description": "Horizontal perspective correction: positive makes the right side taller, negative the left side."},
   "PerspectiveRotate": {"label": "Transform: Rotate", "units": "degrees", "description": "Rotation around the centre of the original, uncropped photo."},
-  "PerspectiveAspect": {"label": "Transform: Aspect", "description": "Manual Aspect slider of the Transform panel. Adobe's help names it without further detail."},
+  "PerspectiveAspect": {"label": "Transform: Aspect", "description": "Stretches the photo: positive vertically, negative horizontally. Use it after a strong perspective correction to restore proportions."},
   "PerspectiveScale": {"label": "Transform: Scale", "units": "%", "description": "Scales the transformed image up or down; 100 = unchanged."},
   "PerspectiveX": {"label": "Transform: Offset X", "description": "Moves the transformed image horizontally."},
   "PerspectiveY": {"label": "Transform: Offset Y", "description": "Moves the transformed image vertically."},

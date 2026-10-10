@@ -128,6 +128,7 @@ The crop panel isn't placed by layouts. It appears at the top of the column with
 | `color_grading` | `Shadow`, `Midtone`, `Highlight`, `Global`, `Mix` | the colour wheels (instead of the Shadow…Global sliders) |
 | `detail` | `Sharpening`, `Noise Reduction` | |
 | `lens` | `Profile`, `Manual`, `Defringe` | |
+| `transform` | `Transform` | |
 | `effects` | `Post-Crop Vignetting`, `Grain` | |
 | `negative` | `Conversion`, `Print` | |
 

@@ -15,7 +15,7 @@ Status: v1 implemented (`crates/amb-lens`, `crates/amb-engine/src/lens.rs`). Eve
 | Defringe: Purple/Green Amount (0–20) and Hue ranges (0–100) | `DefringePurple*`, `DefringeGreen*` | At high-contrast edges (OkLab lightness range in a window that widens with Amount), pull chroma towards grey for hues inside the range. |
 | Constrain Crop | `CropConstrainToWarp` | Scale up until no blank area is left. |
 
-Not yet: Upright and the Transform sliders (`Perspective*`), fisheye profiles, local Defringe in masks, and built-in profiles embedded in raw files (see Next).
+Not yet: Upright (the Transform sliders are in [transform.md](transform.md)), fisheye profiles, local Defringe in masks, and built-in profiles embedded in raw files (see Next).
 
 ## Order in the pipeline
 
@@ -85,6 +85,6 @@ Checked on real raws with the lensfun database:
   - DNGs carry it as `WarpRectilinear` / `FixVignetteRadial` opcodes.
   - Reading these covers lenses that no database has.
 - `amb lens fetch`: download the lensfun database into the user data folder.
-- Upright and Transform: the same resampling pass, with a homography in front.
+- Transform: done, a homography in the same resampling pass ([transform.md](transform.md)). Upright would feed it.
 - Fisheye profiles and projection changes.
 - GPU resampling: the warp is about 1.5 s for 24 MP on 4 CPU cores.

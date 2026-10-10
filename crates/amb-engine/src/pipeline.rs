@@ -49,6 +49,7 @@ use crate::negative::{Negative, NegativeType};
 use crate::raw::{CameraImage, neutral_for_xy, xy_for_neutral};
 use crate::retouch::Spots;
 use crate::tone::{self, ParametricCurve, ToneControls};
+use crate::transform::Transform;
 use crate::{dehaze, detail, effects, lens, local, local_tone, mask, negative, retouch};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -133,6 +134,8 @@ pub struct DevelopSettings {
     pub vignette: Vignette,
     pub grain: Grain,
     pub lens: LensCorrections,
+    /// The Transform sliders (after the lens corrections, before the crop).
+    pub transform: Transform,
     /// Crop and straighten (after the lens corrections, in stored orientation).
     pub crop: Crop,
     pub negative: Negative,
@@ -164,6 +167,7 @@ impl Default for DevelopSettings {
             vignette: Vignette::default(),
             grain: Grain::default(),
             lens: LensCorrections::default(),
+            transform: Transform::default(),
             crop: Crop::default(),
             negative: Negative::default(),
             masks: Masks::default(),
@@ -260,6 +264,14 @@ pub const RENDERED_TAGS: &[&str] = &[
     "DefringeGreenHueLo",
     "DefringeGreenHueHi",
     "CropConstrainToWarp",
+    "PerspectiveVertical",
+    "PerspectiveHorizontal",
+    "PerspectiveRotate",
+    "PerspectiveAspect",
+    "PerspectiveScale",
+    "PerspectiveX",
+    "PerspectiveY",
+    "EnableTransform",
     "HasCrop",
     "CropTop",
     "CropLeft",
@@ -455,6 +467,7 @@ impl DevelopSettings {
             seed: num(settings, "GrainSeed").map_or(gd.seed, |v| v as u64),
         };
         s.lens = lens_corrections(settings);
+        s.transform = transform_settings(settings);
         s.crop = crop_settings(settings);
         s.negative = negative_settings(settings);
         s.curve_rgb = spline_of(settings, "ToneCurvePV2012");
@@ -491,6 +504,23 @@ impl DevelopSettings {
             .collect();
         not_rendered.extend(mask_notes);
         not_rendered.extend(spot_notes);
+        let upright = num(settings, "PerspectiveUpright").unwrap_or(0.0);
+        if upright != 0.0 && settings.get("EnableTransform").and_then(Value::as_bool) != Some(false)
+        {
+            let mode = match upright as i64 {
+                1 => "Auto",
+                2 => "Level",
+                3 => "Vertical",
+                4 => "Full",
+                5 => "Guided",
+                _ => "an unknown mode",
+            };
+            not_rendered.retain(|k| k != "PerspectiveUpright");
+            not_rendered.push(format!(
+                "PerspectiveUpright (Upright {mode}: Lightroom's own correction is not \
+                 rendered yet, only the Transform sliders)"
+            ));
+        }
         (s, not_rendered)
     }
 }
@@ -533,6 +563,22 @@ fn lens_corrections(settings: &BTreeMap<String, Value>) -> LensCorrections {
         profile_name: text(settings, "LensProfileName"),
         profile_filename: text(settings, "LensProfileFilename"),
         profile: None,
+    }
+}
+
+fn transform_settings(settings: &BTreeMap<String, Value>) -> Transform {
+    let d = Transform::default();
+    if settings.get("EnableTransform").and_then(Value::as_bool) == Some(false) {
+        return d;
+    }
+    Transform {
+        vertical: num(settings, "PerspectiveVertical").unwrap_or(d.vertical),
+        horizontal: num(settings, "PerspectiveHorizontal").unwrap_or(d.horizontal),
+        rotate: num(settings, "PerspectiveRotate").unwrap_or(d.rotate),
+        aspect: num(settings, "PerspectiveAspect").unwrap_or(d.aspect),
+        scale: num(settings, "PerspectiveScale").unwrap_or(d.scale),
+        offset_x: num(settings, "PerspectiveX").unwrap_or(d.offset_x),
+        offset_y: num(settings, "PerspectiveY").unwrap_or(d.offset_y),
     }
 }
 
@@ -746,9 +792,13 @@ fn lookup(lut: &[f32], v: f32) -> f32 {
 pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     let cal = &s.calibration;
 
-    // 0. Lens Corrections on camera RGB, then crop and straighten (one resample).
+    // 0. Lens Corrections on camera RGB, then Transform, crop and straighten
+    // (one resample).
     let crop = s.crop.geometry(img.width, img.height);
-    let lens_pass = (s.lens.needs_camera_pass() || crop.is_some()).then(|| {
+    let warp = s
+        .transform
+        .sampling_map(img.width, img.height, &cal.transform);
+    let lens_pass = (s.lens.needs_camera_pass() || crop.is_some() || warp.is_some()).then(|| {
         lens::apply_camera_cropped(
             &img.rgb,
             img.width,
@@ -757,6 +807,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
             &s.lens,
             &cal.lens,
             crop.as_ref(),
+            warp.as_ref(),
         )
     });
     let (width, height) = lens_pass
@@ -1317,6 +1368,46 @@ mod tests {
     }
 
     #[test]
+    fn transform_warps_before_the_crop_and_constrain_crop_fills() {
+        // A dark photo: blank areas (filled light) stand out.
+        let img = camera(240, 160, |_, _| [0.02; 3]);
+        let bright =
+            |out: &ProPhotoImage, x: usize, y: usize| out.rgb[(y * out.width + x) * 3] > 0.5;
+        let out = render(&img, &linear(&[("PerspectiveScale", "50")]));
+        assert_eq!((out.width, out.height), (240, 160));
+        assert!(bright(&out, 2, 2) && !bright(&out, 120, 80));
+        // Negative Vertical widens the top: blank wedges at the bottom corners.
+        let keystone = [("PerspectiveVertical", "-60")];
+        let out = render(&img, &linear(&keystone));
+        assert!(bright(&out, 1, 158) && !bright(&out, 1, 1));
+        let mut constrained = keystone.to_vec();
+        constrained.push(("CropConstrainToWarp", "True"));
+        let out = render(&img, &linear(&constrained));
+        assert!(out.rgb.iter().all(|v| *v < 0.5));
+        // A crop is cut from the transformed photo.
+        let mut cropped = keystone.to_vec();
+        cropped.extend([
+            ("HasCrop", "True"),
+            ("CropLeft", "0"),
+            ("CropTop", "0.5"),
+            ("CropRight", "0.5"),
+            ("CropBottom", "1"),
+        ]);
+        let out = render(&img, &linear(&cropped));
+        assert_eq!((out.width, out.height), (120, 80));
+        assert!(bright(&out, 1, 78));
+        // Transform off: nothing happens, Upright is reported as not rendered.
+        let (s, missing) = DevelopSettings::from_settings(&map(&[
+            ("PerspectiveVertical", "-60"),
+            ("EnableTransform", "False"),
+        ]));
+        assert!(s.transform.is_identity() && missing.is_empty());
+        let (_, missing) = DevelopSettings::from_settings(&map(&[("PerspectiveUpright", "3")]));
+        assert_eq!(missing.len(), 1);
+        assert!(missing[0].contains("Upright Vertical"), "{missing:?}");
+    }
+
+    #[test]
     fn crop_composes_with_lens_geometry() {
         let img = camera(240, 160, ramp);
         let lens = [("LensManualDistortionAmount", "40")];
@@ -1436,7 +1527,7 @@ mod tests {
         map.insert("Temperature".to_string(), Value::Text("5500".into()));
         map.insert("Tint".to_string(), Value::Text("+10".into()));
         map.insert("Exposure2012".to_string(), Value::Text("+0.5".into()));
-        map.insert("PerspectiveVertical".to_string(), Value::Text("10".into()));
+        map.insert("HighlightRecovery".to_string(), Value::Text("10".into()));
         map.insert("Name".to_string(), Value::Text("x".into()));
         let (s, missing) = DevelopSettings::from_settings(&map);
         assert_eq!(
@@ -1447,6 +1538,6 @@ mod tests {
             }
         );
         assert_eq!(s.exposure_ev, 0.5);
-        assert_eq!(missing, vec!["PerspectiveVertical".to_string()]);
+        assert_eq!(missing, vec!["HighlightRecovery".to_string()]);
     }
 }

@@ -33,7 +33,7 @@ Here sx and sy stretch the crop by less than half a pixel, so a whole number of 
 
 ## Pipeline placement
 
-- One resampling pass, Catmull-Rom: output pixel → crop map → lens-corrected frame → fill zoom → manual distortion → profile distortion → per-channel CA → source.
+- One resampling pass, Catmull-Rom: output pixel → crop map → Transform ([transform.md](transform.md)) → lens-corrected frame → fill zoom → manual distortion → profile distortion → per-channel CA → source.
 - A crop with lens corrections is interpolated once.
 - A crop on its own runs the same pass with an identity lens map. A crop aligned to whole pixels then copies pixels exactly.
 - Export (`amb-export`) and the GUI preview orient the image after `render`. The crop is defined in stored orientation, so this order is correct (`crop_in_stored_orientation_then_orient` test).
@@ -52,5 +52,5 @@ Here sx and sy stretch the crop by less than half a pixel, so a whole number of 
 1. **Angle sign.** We take darktable's word that a positive `CropAngle` turns the photo counter-clockwise. To check: straighten a photo in Lightroom by +5° and read the sidecar. If Lightroom disagrees, flip `crop::ANGLE_SIGN`.
 2. **Corner semantics.** Are the stored values the rotated rectangle's corners (darktable's and our reading)? Or are they an axis-aligned box that is then turned about the image centre? The two agree for a centred crop with no angle, and differ for off-centre straightened crops.
 3. **Which frame?** We assume coordinates relative to the lens-corrected frame, after profile auto-scale and our Constrain Crop zoom. In Lightroom, Constrain Crop *moves the crop rectangle*. So a sidecar with `CropConstrainToWarp` probably already stores a constrained rectangle in the unzoomed frame, and applying our zoom as well would crop too tight. Measure, then decide whether to skip the zoom when `HasCrop` is set.
-4. **Upright / Transform.** When implemented, they come before the crop, as they do in Lightroom: the crop is drawn on the transformed image. The crop map would then compose after the homography in the same pass. Whether the corners are relative to the transformed image's scaled frame (Transform `Scale`, auto-scale) is unknown.
+4. **Transform.** It comes before the crop, as in Lightroom: the crop is drawn on the transformed image, and the crop map composes after the homography in the same pass ([transform.md](transform.md)). Whether the corners are relative to the transformed image's scaled frame (Transform `Scale`, Constrain Crop) is unknown.
 5. **Rounding of the output size,** and whether Lightroom uses `CropWidth`/`CropHeight` to set the exported pixel size for fixed-size crops.

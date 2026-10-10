@@ -40,4 +40,4 @@ Spots run in order on the scene-linear image at the end of the first pipeline st
 2. Whether `RetouchInfo`'s radius is in widths.
 3. Which fields Lightroom needs to read our areas: we write `SpotType`, `SourceState`, `Method`, `SourceX`, `OffsetY`, `Feather`, `Opacity` and the ellipse; not `Seed` or the patch-match fields.
 4. Whether spots, like brushes, are placed before the lens corrections.
-5. Red eye (`RedEyeInfo`) and pet eye.
+5. Red eye (`RedEyeInfo`) and pet eye: the format is unknown; the trial keeps a sample ([lightroom-trial-plan.md](../lightroom-trial-plan.md) item 12).

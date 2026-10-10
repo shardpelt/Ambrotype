@@ -91,7 +91,11 @@ fn control(name: &str, label_override: Option<&str>) -> Control {
         (Some(a), Some(b)) => b - a,
         _ => 100.0,
     };
-    let step = if span <= 10.0 { 0.01 } else { 1.0 };
+    let step = match name {
+        "PerspectiveRotate" => 0.1,
+        _ if span <= 10.0 => 0.01,
+        _ => 1.0,
+    };
     Control {
         name: name.to_string(),
         label: label_override
@@ -300,6 +304,23 @@ pub fn panels() -> Vec<Panel> {
                     ],
                 ),
             ],
+        },
+        Panel {
+            id: "transform",
+            label: "Transform",
+            groups: vec!["transform"],
+            sections: vec![section(
+                "Transform",
+                &[
+                    ("PerspectiveVertical", Some("Vertical")),
+                    ("PerspectiveHorizontal", Some("Horizontal")),
+                    ("PerspectiveRotate", Some("Rotate")),
+                    ("PerspectiveAspect", Some("Aspect")),
+                    ("PerspectiveScale", Some("Scale")),
+                    ("PerspectiveX", Some("Offset X")),
+                    ("PerspectiveY", Some("Offset Y")),
+                ],
+            )],
         },
         Panel {
             id: "effects",

@@ -12,8 +12,9 @@
 //! 2. Remove CA: a radial red/blue shift model, estimated from the image's
 //!    edges (or the profile's model if estimation finds too few edges);
 //! 3. one resampling pass that composes crop and straighten
-//!    ([`crate::crop`]) → zoom → manual distortion → profile distortion →
-//!    per-channel CA, with Catmull-Rom interpolation.
+//!    ([`crate::crop`]) → Transform ([`crate::transform`]) → zoom → manual
+//!    distortion → profile distortion → per-channel CA, with Catmull-Rom
+//!    interpolation.
 //!
 //! Profile corrections scale to fill the frame (Lightroom auto-scales profile
 //! corrections); manual distortion leaves blank areas unless Constrain Crop is
@@ -27,6 +28,7 @@ use crate::buffer::Image;
 use crate::color::OkLab;
 use crate::crop::CropGeometry;
 use crate::filters::transpose;
+use crate::transform::Homography;
 
 /// Strength and shape constants, fitted later against Lightroom sweeps.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -221,12 +223,16 @@ pub fn apply_camera(
     lc: &LensCorrections,
     k: &LensStrengths,
 ) -> CameraPass {
-    apply_camera_cropped(rgb, width, height, crop_factor, lc, k, None)
+    apply_camera_cropped(rgb, width, height, crop_factor, lc, k, None, None)
 }
 
-/// [`apply_camera`], then crop and straighten in the same resampling pass:
-/// the output is `crop`'s size, and `crop` maps it into the lens-corrected
-/// frame. Parts of the crop outside that frame are blank.
+/// [`apply_camera`], then Transform, crop and straighten in the same
+/// resampling pass. `warp` maps the transformed frame into the lens-corrected
+/// one ([`crate::transform::Transform::sampling_map`]); the output is
+/// `crop`'s size, and `crop` maps it into the transformed frame. Parts
+/// outside the source are blank. With Constrain Crop, the transformed frame
+/// is zoomed until no blank areas remain.
+#[allow(clippy::too_many_arguments)]
 pub fn apply_camera_cropped(
     rgb: &[f32],
     width: usize,
@@ -235,6 +241,7 @@ pub fn apply_camera_cropped(
     lc: &LensCorrections,
     k: &LensStrengths,
     crop: Option<&CropGeometry>,
+    warp: Option<&Homography>,
 ) -> CameraPass {
     let frame = ImageFrame {
         width,
@@ -296,6 +303,7 @@ pub fn apply_camera_cropped(
         && auto_ca.is_none()
         && profile_tca.is_none()
         && crop.is_none()
+        && warp.is_none()
     {
         return CameraPass {
             width,
@@ -337,10 +345,27 @@ pub fn apply_camera_cropped(
     } else {
         1.0
     };
-    let map_green = |x: f64, y: f64| {
+    let lens_map = |x: f64, y: f64| {
         let (zx, zy) = zoomed(zoom, x, y);
         let (mx, my) = manual(zx, zy);
         prof(mx, my)
+    };
+    // Transform, before the lens maps; Constrain Crop zooms the transformed
+    // frame to fill.
+    let warp_zoom = match warp {
+        Some(h) if lc.constrain_crop => fill_zoom(width, height, |x, y| {
+            let (tx, ty) = h.apply(x, y);
+            lens_map(tx, ty)
+        }),
+        _ => 1.0,
+    };
+    let map_green = |x: f64, y: f64| match warp {
+        Some(h) => {
+            let (zx, zy) = zoomed(warp_zoom, x, y);
+            let (tx, ty) = h.apply(zx, zy);
+            lens_map(tx, ty)
+        }
+        None => lens_map(x, y),
     };
     let channel_positions = |gx: f64, gy: f64| -> [(f64, f64); 3] {
         if let Some([red, blue]) = &auto_ca {
@@ -379,6 +404,10 @@ pub fn apply_camera_cropped(
                 let (gx, gy) = map_green(fx, fy);
                 if !inside(fx, fy) || !inside(gx, gy) {
                     blank_row[x] = true;
+                }
+                if !(gx.is_finite() && gy.is_finite()) {
+                    // Beyond the transformed photo's horizon.
+                    continue;
                 }
                 let pos = channel_positions(gx, gy);
                 if pos[0] == pos[1] && pos[2] == pos[1] {
@@ -984,7 +1013,16 @@ mod tests {
             angle: 5.0,
         };
         let g = inside.geometry(w, h).expect("a crop");
-        let out = apply_camera_cropped(&observed, w, h, None, &lc, &DEFAULT_STRENGTHS, Some(&g));
+        let out = apply_camera_cropped(
+            &observed,
+            w,
+            h,
+            None,
+            &lc,
+            &DEFAULT_STRENGTHS,
+            Some(&g),
+            None,
+        );
         assert_eq!((out.width, out.height), (g.width, g.height));
         assert_eq!(out.rgb.len(), g.width * g.height * 3);
         assert!(out.blank.is_none());
@@ -1007,7 +1045,16 @@ mod tests {
             ..inside
         };
         let g = full.geometry(w, h).expect("a crop");
-        let out = apply_camera_cropped(&observed, w, h, None, &lc, &DEFAULT_STRENGTHS, Some(&g));
+        let out = apply_camera_cropped(
+            &observed,
+            w,
+            h,
+            None,
+            &lc,
+            &DEFAULT_STRENGTHS,
+            Some(&g),
+            None,
+        );
         let blank = out.blank.expect("blank corners");
         let (cw, ch) = (g.width, g.height);
         assert!(

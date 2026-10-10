@@ -29,6 +29,7 @@ pub mod raster;
 pub mod raw;
 pub mod retouch;
 pub mod tone;
+pub mod transform;
 pub mod xtrans;
 
 /// Where a photo's edits are kept. A raw follows Lightroom: `photo.nef` →

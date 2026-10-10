@@ -55,12 +55,12 @@ The kit is generated with `amb sweep generate --out <kit-dir> [--groups tone,pre
 **Week 3: profiles, presets, local tools**
 10. **Profiles:** render the ColorChecker and real raws with Adobe Color, Adobe Standard, Adobe Neutral, Adobe Landscape, Adobe Portrait, Adobe Vivid, Camera Matching and a few creative profiles at several Amounts. This is how we fit our replacement base profiles without shipping Adobe's files.
 11. **Preset corpus:** render every preset you own over the real-raw set. This becomes the end-to-end regression suite.
-12. **Masks:** linear and radial gradients with known feather values on a flat grey DNG (to measure the falloff curves); luminance and colour range masks on ramps and wheels; each local slider at +50 next to its global one; a radial turned +30° and a short brush stroke with an erased part, saved to the sidecar, to settle the angle sign and how erasing is stored ([design/masks.md](design/masks.md) open questions).
+12. **Masks:** linear and radial gradients with known feather values on a flat grey DNG (to measure the falloff curves); luminance and colour range masks on ramps and wheels; each local slider at +50 next to its global one; a radial turned +30° and a short brush stroke with an erased part, saved to the sidecar, to settle the angle sign and how erasing is stored ([design/masks.md](design/masks.md) open questions). Also fix one red eye and one pet eye and keep the sidecar: it shows how `RedEyeInfo` is stored, which red eye needs before we build it.
 13. **Effects and detail:** vignette in every style, grain, sharpening (on edge patterns) and noise reduction (on flat ISO-noise frames).
 
 **Week 4: lens, transform, catch-up**
 14. Lens profile on/off and CA/defringe on grid shots, for the lenses you own.
-15. Upright modes on architecture shots.
+15. Upright modes on architecture shots, saving each sidecar (do `UprightTransform_0..5` hold the solved transforms?). Each Transform slider at −100, −50, +50 and +100 on a grid chart, to settle its sign and strength ([design/transform.md](design/transform.md) open questions).
 16. Re-run anything that failed. Verify the archive is complete, then cancel.
 
 ## Automating the measurements (options, not decided)

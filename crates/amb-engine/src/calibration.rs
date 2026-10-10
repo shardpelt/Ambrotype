@@ -16,6 +16,7 @@ use crate::local::LocalStrengths;
 use crate::mask::MaskStrengths;
 use crate::negative::NegativeStrengths;
 use crate::tone::ToneStrengths;
+use crate::transform::TransformStrengths;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -29,6 +30,7 @@ pub struct Calibration {
     pub lens: LensStrengths,
     pub negative: NegativeStrengths,
     pub masks: MaskStrengths,
+    pub transform: TransformStrengths,
 }
 
 impl Calibration {

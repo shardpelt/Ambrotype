@@ -32,6 +32,7 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 - **Export the selection** with the export dialog's choices (sizes, borders, sharpening, metadata), one file each into a folder, each with its own edit, rating, label and keywords.
 - **Make a collage** with the selection in the collage maker's tray.
 - **Import** (Import… in the bar, or Ctrl+Shift+I anywhere): copy photos from a card or folder into the library (below).
+- **Collections:** the menu next to Folder… shows a collection instead of the folder. The panel adds the selection to a collection (or a new one); B adds the selection, or the open photo in the editor, to the last collection used, like Lightroom's quick collection. Viewing a collection, the panel can remove photos from it (the files stay), rename it or delete it.
 
 The rating, label, flag and keyword keys work in the editor too, on the open photo. Its rating block has the label swatches and the flag buttons.
 
@@ -51,6 +52,20 @@ Lightroom's Import "Copy", without a catalogue. The dialog (and `amb import SOUR
 
 Code: `crates/amb-library/src/import.rs` (plan and run), `amb import` in `crates/amb-cli`, `ui/import.js`.
 
+## Collections
+
+Named lists of photos from any folders, like Lightroom's collections. With no catalogue, each is a small JSON file in the app's config folder (`collections/`):
+
+```json
+{ "format": "ambrotype-collection/1", "name": "Portfolio", "photos": ["/photos/2026/a.nef"] }
+```
+
+- Photos are kept by full path, in the order they were added; the grid can sort them like a folder.
+- Edits, ratings and flags stay in each photo's own sidecar, so they are the same in the folder and every collection.
+- A photo moved or deleted outside Ambrotype is reported when the collection opens, and stays listed until removed.
+
+Code: `crates/amb-library/src/collections.rs`, `ui/collections.js`.
+
 ## Flags
 
 Lightroom keeps pick and reject flags in its catalogue, not in sidecars, so there is no standard place for them. Ours:
@@ -69,7 +84,8 @@ Lightroom keeps pick and reject flags in its catalogue, not in sidecars, so ther
 
 ## Not yet
 
-- Subfolders, several folders at once, collections, stacks. An import into dated folders shows only the first folder afterwards.
+- Subfolders, several folders at once, smart collections (by rule), collection sets, stacks. An import into dated folders shows only the first folder afterwards.
+- Collections don't follow photos moved outside Ambrotype.
 - Import: moving instead of copying, a second backup copy, ejecting the card, a develop preset on import, picking single photos to import.
 - Zooming in the loupe and compare views (open the photo in the editor for 100%).
 - A metadata panel (EXIF, caption, copyright) and editing keyword hierarchies.

@@ -3,4 +3,5 @@
 //! sidecars, shared by the `amb` tool and the editor. Nothing here keeps a
 //! catalogue: the files are the library.
 
+pub mod collections;
 pub mod import;

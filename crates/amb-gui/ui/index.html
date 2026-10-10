@@ -175,6 +175,7 @@
   <section id="library" class="library" hidden aria-label="Library">
     <div class="library-bar">
       <button type="button" id="lib-choose" class="small" title="Show another folder">Folder…</button>
+      <select id="lib-source" aria-label="Show" title="Show a folder or a collection"><option value="">Folder</option></select>
       <span id="library-folder" class="library-folder"></span>
       <button type="button" id="lib-reload" class="small" title="Read the folder again">↻</button>
       <button type="button" id="lib-import" class="small" title="Copy photos from a card or folder (Ctrl+Shift+I)">Import…</button>
@@ -234,6 +235,16 @@
         <div id="lib-keywords" class="lib-keywords"></div>
         <input id="lib-tag-input" type="text" list="lib-tag-suggest" placeholder="Add to the selection…" spellcheck="false" aria-label="Add keywords to the selection">
         <datalist id="lib-tag-suggest"></datalist>
+        <h3>Collections</h3>
+        <div class="col-line">
+          <select id="lib-add-to" aria-label="Collection to add to"></select>
+          <button type="button" id="lib-add" class="small" data-needs="any" title="Add the selection to the collection (B adds to the last one used)">Add</button>
+        </div>
+        <button type="button" id="lib-remove-from" class="small" data-needs="any" hidden>Remove from this collection</button>
+        <div class="col-line">
+          <button type="button" id="lib-coll-rename" class="small" hidden>Rename collection…</button>
+          <button type="button" id="lib-coll-delete" class="small" hidden>Delete collection…</button>
+        </div>
         <h3>Edits</h3>
         <div class="col-line">
           <button type="button" id="lib-copy" class="small" data-needs="one" title="Copy this photo's develop settings (Ctrl+Shift+C)">Copy settings</button>
@@ -273,6 +284,19 @@
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary">Paste</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- A name, for collections (collections.js). -->
+  <dialog id="name-dialog">
+    <form method="dialog">
+      <h2 id="name-title"></h2>
+      <p id="name-hint" class="hint"></p>
+      <label>Name <input name="value" type="text" spellcheck="false" required maxlength="100"></label>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">OK</button>
       </menu>
     </form>
   </dialog>
@@ -832,6 +856,7 @@
   <script src="library.js"></script>
   <script src="cull.js"></script>
   <script src="import.js"></script>
+  <script src="collections.js"></script>
   <script src="plugins.js"></script>
   <script src="picker.js"></script>
   <script src="app.js"></script>

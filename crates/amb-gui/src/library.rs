@@ -25,8 +25,22 @@ pub struct LibraryPhoto {
 /// The raws in `dir`, in name order, with their capture times (read from the
 /// raw headers in parallel; no image is decoded).
 pub fn list(dir: &Path) -> Result<Vec<LibraryPhoto>, String> {
-    let photos = folder::list_dir(dir)?;
-    Ok(photos
+    Ok(with_times(folder::list_dir(dir)?))
+}
+
+/// The photos of a collection, in its order, and the paths no longer there.
+pub fn list_paths(paths: &[PathBuf]) -> (Vec<LibraryPhoto>, Vec<String>) {
+    let (here, gone): (Vec<PathBuf>, Vec<PathBuf>) =
+        paths.iter().cloned().partition(|p| p.is_file());
+    (
+        with_times(folder::describe(here)),
+        gone.iter().map(|p| p.display().to_string()).collect(),
+    )
+}
+
+/// Capture times from the raw headers, read in parallel.
+fn with_times(photos: Vec<FolderPhoto>) -> Vec<LibraryPhoto> {
+    photos
         .into_par_iter()
         .map(|photo| {
             let captured = amb_engine::raw::read_metadata(Path::new(&photo.path))
@@ -41,7 +55,7 @@ pub fn list(dir: &Path) -> Result<Vec<LibraryPhoto>, String> {
                 });
             LibraryPhoto { photo, captured }
         })
-        .collect())
+        .collect()
 }
 
 /// A change to many photos' rating, label and keywords. Fields left out

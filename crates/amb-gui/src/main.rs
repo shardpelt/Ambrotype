@@ -1951,6 +1951,87 @@ async fn export_photos(
     .map_err(|e| e.to_string())?
 }
 
+/// Where collections are kept: the app's config folder.
+fn collections_dir(app: &tauri::AppHandle) -> Res<PathBuf> {
+    app.path()
+        .app_config_dir()
+        .map(|d| d.join("collections"))
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn collections_list(app: tauri::AppHandle) -> Res<Vec<amb_library::collections::Summary>> {
+    Ok(amb_library::collections::list(&collections_dir(&app)?))
+}
+
+#[derive(Serialize)]
+struct CollectionView {
+    name: String,
+    photos: Vec<library::LibraryPhoto>,
+    /// Photos moved or deleted since they were added.
+    missing: Vec<String>,
+}
+
+/// A collection's photos for the library.
+#[tauri::command]
+async fn collection_photos(app: tauri::AppHandle, name: String) -> Res<CollectionView> {
+    let dir = collections_dir(&app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let (_, c) = amb_library::collections::find(&dir, &name)
+            .ok_or_else(|| format!("no collection {name:?}"))?;
+        let (photos, missing) = library::list_paths(&c.photos);
+        Ok(CollectionView {
+            name: c.name,
+            photos,
+            missing,
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+fn summary(c: amb_library::collections::Collection) -> amb_library::collections::Summary {
+    amb_library::collections::Summary {
+        count: c.photos.len(),
+        name: c.name,
+    }
+}
+
+/// Add photos to a collection (made if it doesn't exist).
+#[tauri::command]
+fn collection_add(
+    app: tauri::AppHandle,
+    name: String,
+    paths: Vec<String>,
+) -> Res<amb_library::collections::Summary> {
+    let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
+    amb_library::collections::add(&collections_dir(&app)?, &name, &paths).map(summary)
+}
+
+#[tauri::command]
+fn collection_remove(
+    app: tauri::AppHandle,
+    name: String,
+    paths: Vec<String>,
+) -> Res<amb_library::collections::Summary> {
+    let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
+    amb_library::collections::remove(&collections_dir(&app)?, &name, &paths).map(summary)
+}
+
+#[tauri::command]
+fn collection_rename(
+    app: tauri::AppHandle,
+    from: String,
+    to: String,
+) -> Res<amb_library::collections::Summary> {
+    amb_library::collections::rename(&collections_dir(&app)?, &from, &to).map(summary)
+}
+
+#[tauri::command]
+fn collection_delete(app: tauri::AppHandle, name: String) -> Res<()> {
+    amb_library::collections::delete(&collections_dir(&app)?, &name)
+}
+
 #[derive(Serialize)]
 struct ImportDefaults {
     dest: Option<String>,
@@ -2192,6 +2273,12 @@ fn main() {
             library_list,
             library_pick_folder,
             import_defaults,
+            collections_list,
+            collection_photos,
+            collection_add,
+            collection_remove,
+            collection_rename,
+            collection_delete,
             pick_folder,
             import_plan,
             import_run,

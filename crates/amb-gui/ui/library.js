@@ -22,6 +22,7 @@ const lib = {
   editedQueue: [],
   loading: 0,
   observer: null,
+  collection: null,    // the collection shown instead of the folder, by name
   copied: null,        // the photo "Copy settings" took its edit from
   groups: null,        // setting groups for Paste settings
   wired: false,
@@ -52,7 +53,7 @@ async function toggleLibrary(on = !lib.on) {
   $("btn-export").disabled = !on && !ui.info;
   if (on) {
     const dir = ui.info ? dirOf(ui.info.path) : lib.dir;
-    if (dir && (dir !== lib.dir || !lib.photos.length)) await loadLibrary(dir);
+    if (!lib.collection && dir && (dir !== lib.dir || !lib.photos.length)) await loadLibrary(dir);
     else renderLibrary();
     // The open photo may have been edited since: its mark and thumbnail.
     const open = ui.info && libPhoto(ui.info.path);
@@ -75,6 +76,7 @@ async function toggleLibrary(on = !lib.on) {
 
 async function loadLibrary(dir) {
   lib.dir = dir;
+  lib.collection = null;
   $("library-folder").textContent = dir ?? "";
   $("library-count").textContent = "Reading the folder…";
   try {
@@ -86,6 +88,7 @@ async function loadLibrary(dir) {
   const keep = new Set(lib.photos.map((p) => p.path));
   lib.selected = new Set([...lib.selected].filter((p) => keep.has(p)));
   renderLibrary();
+  if (typeof renderCollectionControls === "function") renderCollectionControls();
 }
 
 async function chooseLibraryFolder() {
@@ -131,7 +134,7 @@ function renderLibrary() {
   lib.editedQueue = [];
   lib.cells.clear();
   grid.replaceChildren();
-  $("library-empty").hidden = Boolean(lib.dir);
+  $("library-empty").hidden = Boolean(lib.dir || lib.collection);
   lib.observer = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
@@ -581,7 +584,7 @@ function wireLibrary() {
   });
   $("lib-choose").addEventListener("click", chooseLibraryFolder);
   $("lib-choose-empty").addEventListener("click", chooseLibraryFolder);
-  $("lib-reload").addEventListener("click", () => lib.dir && loadLibrary(lib.dir));
+  $("lib-reload").addEventListener("click", () => (lib.collection ? showCollection(lib.collection) : lib.dir && loadLibrary(lib.dir)));
   $("lib-import").addEventListener("click", () => importFlow());
   for (const b of $("lib-rating").querySelectorAll("button[data-stars]")) {
     b.addEventListener("click", () => libraryChange({ rating: Number(b.dataset.stars) }));
@@ -615,4 +618,5 @@ function wireLibrary() {
   $("lib-collage").addEventListener("click", libraryCollage);
   grid.style.setProperty("--thumb", `${$("lib-size").value}px`);
   wireCull();
+  wireCollections();
 }

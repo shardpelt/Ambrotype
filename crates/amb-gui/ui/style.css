@@ -677,6 +677,9 @@ body.library-mode #workspace { display: none; }
 .label-row { display: flex; align-items: center; gap: 10px; }
 .lib-keywords { display: flex; flex-wrap: wrap; gap: 4px; }
 .lib-keywords .tag-chip.partial { opacity: .65; border-style: dashed; }
+#lib-add-to { flex: 1; min-width: 0; }
+#lib-source { max-width: 180px; }
+#lib-remove-from[hidden], #lib-coll-rename[hidden], #lib-coll-delete[hidden] { display: none; }
 #lib-tag-input { background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 8px; }
 .paste-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; margin: 10px 0; }
 

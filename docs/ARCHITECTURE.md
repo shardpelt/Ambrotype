@@ -55,7 +55,9 @@ amb-export: orient upright → resize (Lanczos-3, linear) → output colour spac
             → transfer curve → output sharpening → 8/16/32-bit → encoder + ICC + EXIF
 ```
 
-Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core CPU, including decode. Most of that is the CPU pipeline; the GPU backend comes later.
+`AMB_TIMING=1` prints each render stage's time to stderr (e.g. `render 3495 ms: dehaze 363, highlights/shadows 393, …`).
+
+Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core CPU, plus about 2.5 s to decode it and write a full-size JPEG. Most of that is the CPU pipeline; the GPU backend comes later.
 
 ## Export (amb-export)
 

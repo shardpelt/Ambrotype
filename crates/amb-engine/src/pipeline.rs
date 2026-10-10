@@ -862,8 +862,55 @@ fn lookup(lut: &[f32], v: f32) -> f32 {
     lut[i] * (1.0 - f) + lut[i + 1] * f
 }
 
+/// Stage times for `AMB_TIMING=1`, printed to stderr when a render ends.
+struct Stages {
+    on: bool,
+    start: std::time::Instant,
+    last: std::time::Instant,
+    marks: Vec<(&'static str, f64)>,
+}
+
+impl Stages {
+    fn new() -> Stages {
+        static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+        let on = *ON.get_or_init(|| std::env::var_os("AMB_TIMING").is_some_and(|v| v != "0"));
+        let now = std::time::Instant::now();
+        Stages {
+            on,
+            start: now,
+            last: now,
+            marks: Vec::new(),
+        }
+    }
+
+    fn mark(&mut self, stage: &'static str) {
+        if self.on {
+            let now = std::time::Instant::now();
+            self.marks
+                .push((stage, (now - self.last).as_secs_f64() * 1000.0));
+            self.last = now;
+        }
+    }
+}
+
+impl Drop for Stages {
+    fn drop(&mut self) {
+        if self.on {
+            let total = self.start.elapsed().as_secs_f64() * 1000.0;
+            let parts: Vec<String> = self
+                .marks
+                .iter()
+                .filter(|(_, ms)| *ms >= 0.5)
+                .map(|(n, ms)| format!("{n} {ms:.0}"))
+                .collect();
+            eprintln!("render {total:.0} ms: {}", parts.join(", "));
+        }
+    }
+}
+
 pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     let cal = &s.calibration;
+    let mut stages = Stages::new();
 
     // 0. Lens Corrections on camera RGB, then Transform, crop and straighten
     // (one resample).
@@ -891,6 +938,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
             warp.as_ref(),
         )
     });
+    stages.mark("upright+lens+crop");
     let (width, height) = lens_pass
         .as_ref()
         .map_or((img.width, img.height), |p| (p.width, p.height));
@@ -1000,8 +1048,10 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
             }
         });
 
+    stages.mark("negative+matrix");
     if !s.lens.defringe.is_neutral() {
         lens::apply_defringe(&mut out, &s.lens.defringe, &cal.lens);
+        stages.mark("defringe");
     }
 
     // Spot removal, then masks drawn on the photo as it is now, then the
@@ -1030,6 +1080,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     if let Some(m) = &masks {
         m.apply_light(&mut out, &cal.masks);
     }
+    stages.mark("spots+masks");
 
     // 2. Dehaze (scene-linear).
     if s.dehaze != 0.0 {
@@ -1038,6 +1089,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     if let Some(m) = &masks {
         m.apply_dehaze(&mut out, cal);
     }
+    stages.mark("dehaze");
 
     // 3. Base look, local Highlights/Shadows, then the global tone controls → display-linear.
     let global = ToneControls {
@@ -1049,7 +1101,9 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     let lum_weights = luminance_weights();
     // A rendered image already has its tone curve (`base` is linear then).
     out.map_pixels(|c| base.apply_rgb(c));
+    stages.mark("base look");
     local_tone::apply(&mut out, &s.tone, &cal.tone);
+    stages.mark("highlights/shadows");
     out.map_pixels(|c| {
         let mut p = c;
         if let Some(lut) = &tone_lut {
@@ -1066,6 +1120,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     if let Some(m) = &masks {
         m.apply_tone(&mut out, cal, LUT);
     }
+    stages.mark("tone");
 
     // 4. Texture / Clarity.
     if !s.local.is_neutral() {
@@ -1075,6 +1130,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         m.apply_local_contrast(&mut out, cal);
         m.apply_color(&mut out, &cal.masks);
     }
+    stages.mark("texture/clarity");
 
     // 5. Colour, then parametric and point curves.
     let rgb_lut = s.curve_rgb.as_ref().map(|c| c.lut(LUT));
@@ -1114,6 +1170,8 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         });
     }
 
+    stages.mark("colour+curves");
+
     // 6. Detail: noise reduction, then sharpening.
     let (mut nr, mut sharpening) = (s.noise_reduction, s.sharpening);
     if img.rendered {
@@ -1125,10 +1183,12 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         }
     }
     detail::apply_noise_reduction(&mut out, &nr, &cal.detail);
+    stages.mark("noise reduction");
     detail::apply_sharpening(&mut out, &sharpening, &cal.detail);
     if let Some(m) = &masks {
         m.apply_detail(&mut out, cal);
     }
+    stages.mark("sharpening");
 
     // 7. Effects: post-crop vignette, then grain.
     if s.vignette.amount != 0.0 {
@@ -1143,6 +1203,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     if let Some(blank) = lens_pass.as_ref().and_then(|p| p.blank.as_deref()) {
         lens::fill_blank(&mut out, blank, &cal.lens);
     }
+    stages.mark("effects");
     out
 }
 

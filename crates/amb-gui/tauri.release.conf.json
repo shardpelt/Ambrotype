@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
+    "externalBin": [
+      "binaries/amb"
+    ],
+    "category": "Photography",
+    "shortDescription": "Free, open-source raw photo editor that reads Lightroom presets and sidecars",
+    "longDescription": "Ambrotype edits raw photos with Lightroom-style panels, reads and writes Lightroom's own XMP settings, presets and sidecars, and comes with the amb command-line tool and an MCP server for your own AI app.",
+    "publisher": "The Ambrotype contributors",
+    "copyright": "Copyright (C) 2026 The Ambrotype contributors",
+    "license": "GPL-3.0-or-later",
+    "licenseFile": "../../LICENSE",
+    "homepage": "https://github.com/shardpelt/Ambrotype",
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    }
+  }
+}

@@ -1,0 +1,4 @@
+# The `amb` CLI, copied here by the release workflow as amb-<target triple>[.exe]
+# so installers ship it next to the editor (tauri.release.conf.json).
+*
+!.gitignore

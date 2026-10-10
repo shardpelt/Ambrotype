@@ -1,5 +1,9 @@
 # Running Ambrotype on your desktop
 
+## 0. Installers
+
+When a release is published, its page on GitHub has installers: `.msi` or `-setup.exe` for Windows, `.dmg` for macOS, `.deb`, `.rpm` or `.AppImage` for Linux. They include the `amb` command-line tool. Until signing is set up, macOS and Windows warn that the app is from an unknown developer (macOS: right-click → Open). How releases are made: [releasing.md](releasing.md).
+
 ## 1. Install and build (Windows, macOS or Linux)
 1. Install Rust from <https://rustup.rs>. On Windows, accept the Visual Studio C++ build tools prompt. On macOS, run `xcode-select --install` first.
 2. Get the code:

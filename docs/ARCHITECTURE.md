@@ -34,7 +34,8 @@ preset/sidecar ──amb-presets──▶ settings map (crs:/amb: tags) ──�
                                        │ (lens profile resolved via amb-lens)
                                        ▼
 amb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
-  0  Lens Corrections (vignetting, CA, distortion), Transform, crop: one resampling pass
+  0  Lens Corrections (vignetting, CA, distortion), Upright + Transform, crop: one resampling pass
+     (Upright found from the photo's lines on a ≤1024 px lens-corrected copy, upright.rs)
      → film negative conversion (optional)
   1  clipped channels → neutral, white balance + camera matrix → linear ProPhoto → Exposure → Defringe
      → spot removal (heal and clone, retouch.rs) → masks drawn (alpha per mask, mask.rs)
@@ -115,6 +116,6 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
 - **A full GUI.** The editor exists (see below). Missing: GPU viewport, installers. All remaining gaps are listed in [GAPS.md](GAPS.md).
 - Library and catalog (folders, ratings, keywords, collections, search).
 - GPU backend (wgpu), tiling and caching.
-- Red eye, Upright (the Transform sliders, crop and straighten render; see [design/transform.md](design/transform.md)), AI masks.
+- Red eye, Guided Upright ([design/transform.md](design/transform.md)), AI masks.
 - Camera profiles (DCP) and Adobe-like base looks: today a placeholder filmic base look is used.
 - MCP server and look matching (`amb match`) for AI control.

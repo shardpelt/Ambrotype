@@ -334,7 +334,7 @@ Upright perspective correction and manual perspective sliders.
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `PerspectiveUpright` | Upright mode | enum | 0 to 5 | 0 | planned | Automatic perspective correction mode. Adobe's help lists Auto (balanced corrections), Level, Vertical (level and vertical), Full (level, vertical and horizontal) and Guided, plus off; the numeric encoding is not documented there. Apply lens profile corrections first. |
+| `PerspectiveUpright` | Upright mode | enum | 0 to 5 | 0 | rendered (approx.) | Automatic perspective correction: 0 Off, 1 Auto (balanced, not all the way), 2 Level (rotation only), 3 Vertical (level and vertical perspective), 4 Full (level, vertical and horizontal perspective), 5 Guided (from drawn guides; not rendered yet). The correction is found from the photo's own straight lines, after the lens corrections, and the Transform sliders apply on top of it. |
 | `PerspectiveVertical` | Transform: Vertical | number | -100 to 100 | 0 | rendered (approx.) | Vertical perspective correction: negative widens the top, which straightens verticals that lean together in a photo taken looking up; positive widens the bottom. |
 | `PerspectiveHorizontal` | Transform: Horizontal | number | -100 to 100 | 0 | rendered (approx.) | Horizontal perspective correction: positive makes the right side taller, negative the left side. |
 | `PerspectiveAspect` | Transform: Aspect | number | -100 to 100 | 0 | rendered (approx.) | Stretches the photo: positive vertically, negative horizontally. Use it after a strong perspective correction to restore proportions. |

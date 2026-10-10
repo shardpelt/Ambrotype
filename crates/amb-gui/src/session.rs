@@ -44,6 +44,9 @@ pub struct Session {
     base_xmp: Option<String>,
     /// Resolved lens profile, keyed by (profile filename hint, auto CA or profile on).
     lens_cache: Option<(Option<String>, Option<amb_lens::Correction>)>,
+    /// The Upright correction found for this photo, keyed by the mode and the
+    /// lens geometry it was found through (found once, not per preview).
+    upright_cache: Option<(String, Option<amb_engine::transform::Keystone>)>,
     /// Full-resolution upright sRGB render for the 100% view, keyed by the
     /// committed settings it was rendered with.
     full_cache: Option<FullRender>,
@@ -166,6 +169,14 @@ pub struct Preview {
     pub lens_profile: Option<String>,
 }
 
+/// What an Upright mode does when the photo has too few lines.
+const NO_UPRIGHT: amb_engine::transform::Keystone = amb_engine::transform::Keystone {
+    alpha: 0.0,
+    beta: 0.0,
+    theta: 0.0,
+    focal: 1.0,
+};
+
 /// Area-average downscale of camera RGB so the long edge is at most `max_edge`.
 pub fn downscale(img: &CameraImage, max_edge: usize) -> CameraImage {
     let long = img.width.max(img.height);
@@ -252,6 +263,7 @@ impl Session {
             sidecar,
             base_xmp,
             lens_cache: None,
+            upright_cache: None,
             full_cache: None,
         })
     }
@@ -499,6 +511,37 @@ impl Session {
                 }
             };
             develop.lens.profile = profile;
+        }
+        let mode = develop.transform.upright_mode;
+        if mode.is_solved() {
+            let l = &develop.lens;
+            let key = format!(
+                "{mode:?} {:?} {} {} {} {} {}",
+                l.profile_filename,
+                l.profile_enable && l.profile.is_some(),
+                l.distortion_scale,
+                l.manual_distortion,
+                l.constrain_crop,
+                l.auto_ca,
+            );
+            let found = match self.upright_cache.as_ref().filter(|(k, _)| *k == key) {
+                Some((_, u)) => *u,
+                None => {
+                    let cal = &develop.calibration;
+                    let u = amb_engine::upright::analyse(
+                        &self.full,
+                        &develop.lens,
+                        &cal.lens,
+                        mode,
+                        &cal.upright,
+                    );
+                    self.upright_cache = Some((key, u));
+                    u
+                }
+            };
+            // `None` (too few lines) stays uncorrected rather than being
+            // searched again on the preview.
+            develop.transform.upright = Some(found.unwrap_or(NO_UPRIGHT));
         }
         develop
     }

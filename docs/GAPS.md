@@ -148,8 +148,8 @@ All of these are "Model v1 (ours, not Adobe's)": every constant is a starting gu
 
 | Item | Tag | Impact | Source |
 |---|---|---|---|
-| No Upright. The manual Transform sliders render (our own homography model, unfitted; [design/transform.md](design/transform.md)), but `PerspectiveUpright` and the 17 `Upright*` analysis tags don't. Crop and straighten render (`HasCrop`, `Crop*`, `CropAngle`), but their angle sign, corner semantics and interaction with Constrain Crop are unverified against Lightroom ([design/crop.md](design/crop.md)) | Missing | Sidecars with Upright render unleveled; crops may differ for off-centre straightened crops | [design/transform.md](design/transform.md); `crates/amb-presets/data/tags.json` (groups `crop`, `transform`) |
-| Upright needs either the solved transforms from `UprightTransform_0..5` (format unknown) or our own line-based solver (like darktable's `ashift`). It would feed the same homography | Missing | Architecture photos | [design/transform.md](design/transform.md); [research/05](research/05-processing-algorithms.md) §15 |
+| Upright Guided is not rendered (its guides aren't read or drawn). The Transform sliders and Upright Auto, Level, Vertical and Full render with our own models, unfitted ([design/transform.md](design/transform.md)); Lightroom's own Upright analysis tags (`Upright*`) are not read. Crop and straighten render (`HasCrop`, `Crop*`, `CropAngle`), but their angle sign, corner semantics and interaction with Constrain Crop are unverified against Lightroom ([design/crop.md](design/crop.md)) | Missing | Upright results differ from Lightroom's; crops may differ for off-centre straightened crops | [design/transform.md](design/transform.md); `crates/amb-presets/data/tags.json` (groups `crop`, `transform`) |
+| Upright is found again from the photo's lines rather than read from `UprightTransform_0..5` (format unknown), so a Lightroom sidecar's Upright can differ from Lightroom's | Limit | Architecture photos | [design/transform.md](design/transform.md); [research/05](research/05-processing-algorithms.md) §15 |
 | Transform slider signs and strengths, Projection (added in 18.3) and the parameter-to-homography mapping are "not stated in docs"; ours are guesses in `TransformStrengths` | Question | Needs Lightroom measurement | [adobe-docs/camera-raw.md](adobe-docs/camera-raw.md); [adobe-docs/classic-develop.md](adobe-docs/classic-develop.md); [research/05](research/05-processing-algorithms.md) §15 |
 | Built-in lens profiles in raw files are not read: maker notes (Micro Four Thirds, Fujifilm X, Sony E, many compacts) and DNG `WarpRectilinear`/`FixVignetteRadial` opcodes. The `Embedded` source exists but is "not read yet" | Missing | Lightroom applies these automatically; lenses with no database entry stay uncorrected | [design/lens-corrections.md](design/lens-corrections.md):83-86; `crates/amb-lens/src/model.rs`:131 |
 | Fisheye profiles and projection changes unsupported | Missing | Fisheye lenses cannot be corrected | [design/lens-corrections.md](design/lens-corrections.md):18, 89 |
@@ -199,8 +199,8 @@ Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the plann
 
 | Status | Tags | Notes |
 |---|---|---|
-| approx | 127 | rendered with an unfitted model: tone, presence, tone curve (11), HSL (24), color grading (13), split toning (5), detail (10), effects (10), lens (18), white balance (5), B&W mixer (9), local (masks) 4, transform 7 |
-| planned | 25 | tone_legacy 7 of 7; calibration 7 of 7; point_color 1 of 1; profile 6 of 6 (`CameraProfile`, `CameraProfileDigest`, `Look`, `RGBTable`, `LookTable`, `OverrideLookVignette`); transform 1 (`PerspectiveUpright`); tone_curve 3 (`ToneCurve`, `ToneCurveName`, `ToneCurveName2012`) |
+| approx | 128 | rendered with an unfitted model: tone, presence, tone curve (11), HSL (24), color grading (13), split toning (5), detail (10), effects (10), lens (18), white balance (5), B&W mixer (9), local (masks) 4, transform 8 |
+| planned | 24 | tone_legacy 7 of 7; calibration 7 of 7; point_color 1 of 1; profile 6 of 6 (`CameraProfile`, `CameraProfileDigest`, `Look`, `RGBTable`, `LookTable`, `OverrideLookVignette`); tone_curve 3 (`ToneCurve`, `ToneCurveName`, `ToneCurveName2012`) |
 | unsupported | 18 | enhance 8; hdr 9; lens_blur 1 |
 | image-specific | 41 | crop 12; transform 17; negative 10; bw_mixer 1; tone 1 (not expected in presets; also not rendered, because there is no crop) |
 | exact | 13 | our own `amb:` negative settings only |
@@ -297,7 +297,7 @@ Chosen by impact on the main goal: faithful Lightroom preset compatibility, free
 2. **Replace the placeholder base look and add camera profiles.** Every preset renders through the profile, and the placeholder ACES-fit curve is not Adobe's; read the user's own DCPs in place, fit substitute profiles, and decode `Look` LUTs.
 3. ~~**Local, edge-aware Highlights and Shadows.**~~ Done 2026-10-08; their strengths still need fitting (item 1).
 4. ~~**Masks and local adjustments (linear, radial, brush, range).**~~ Done 2026-10-08; their fall-offs and strengths still need fitting (item 1).
-5. **Upright**, and verifying the crop and Transform against Lightroom. The Transform sliders render since 2026-10-10; sidecars with Upright still render unleveled.
+5. ~~**Transform and Upright**~~ (done 2026-10-10). Left: Guided Upright, and verifying the crop, Transform and Upright against Lightroom.
 6. **Finish the single-photo GUI editor.** Zoom/1:1, point curve, colour wheels, WB picker, clipping, the crop tool, layouts/themes and editor mode are done; installers remain, and test the cross-platform promise.
 7. **Fix the preset path: measure Amount, honour `Enable*` toggles, handle PV2003/PV2010 tags.** These decide whether purchased presets apply correctly; run `amb preset census` on real collections to rank what else matters.
 8. **Calibration panel and Point Color (8 planned tags; the B&W mixer is done).** Frequent in colour-grading and monochrome presets, and cheap compared with masks.

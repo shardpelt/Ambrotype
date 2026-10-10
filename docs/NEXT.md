@@ -72,7 +72,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 3. ~~**Local Highlights and Shadows** (edge-aware tone mapping), the biggest fidelity gap (fidelity track 3)~~ (done 2026-10-08).
 4. ~~**Masks:** linear, radial, brush, luminance and colour range, add/subtract/intersect; read and write Lightroom's mask tags~~ (done 2026-10-08; [design/masks.md](design/masks.md)). Next for masks: fitting in the trial month, AI masks (subject, sky) with our own segmenters, reordering and duplicating.
 5. ~~**Spot removal:** heal and clone~~ (done 2026-10-10; [design/spot-removal.md](design/spot-removal.md)). Red eye waits for a Lightroom sidecar: the `RedEyeInfo` format isn't documented anywhere we can read, and a guess could break Lightroom's files.
-6. **Transform and Upright** (fidelity track 2). ~~The manual Transform sliders~~ (done 2026-10-10; [design/transform.md](design/transform.md)); Upright next.
+6. ~~**Transform and Upright**~~ (done 2026-10-10: the sliders, and Upright Auto, Level, Vertical and Full from the photo's lines; [design/transform.md](design/transform.md)). Next for it: Guided Upright, fitting in the trial.
 7. **Library:** pick/reject flags, compare and survey views, virtual copies, collections; import with copy and rename.
 8. **Profiles, Calibration panel and Point Color** (fidelity track 4–5).
 9. **MCP server** for AI agents (fidelity track 6).
@@ -81,7 +81,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 ### Fidelity and engine track
 
 1. **Lightroom trial month:** capture the sweeps, then fit the model constants ([lightroom-trial-plan.md](lightroom-trial-plan.md)). Check the crop's angle sign and corner semantics there ([design/crop.md](design/crop.md) open questions).
-2. **Transform/Upright:** ~~the numeric `Perspective*` sliders, composed into the crop/lens resampling pass~~ (done 2026-10-10); Upright next, and their signs and strengths in the trial.
+2. ~~**Transform/Upright**~~ (done 2026-10-10); their signs, strengths and Upright's results to be checked in the trial.
 3. ~~**Local Highlights/Shadows** (edge-aware)~~ (done 2026-10-08), then ~~**masks** (linear/radial/brush/range)~~ (done 2026-10-08).
 4. **Camera profiles** (read the user's DCPs in place, fitted base looks) once trial data exists.
 5. **Calibration panel, Point Color** (the B&W mixer renders since 2026-10-08; fitting it is part of the trial). Fit the Film recipe looks to the owner's Fujifilm shots ([design/film-look-measurement.md](design/film-look-measurement.md)).

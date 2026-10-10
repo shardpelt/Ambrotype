@@ -60,6 +60,13 @@ fn choice_options(name: &str) -> Vec<(serde_json::Value, String)> {
             (json!(2), "Color Priority".into()),
             (json!(3), "Paint Overlay".into()),
         ],
+        "PerspectiveUpright" => vec![
+            (json!(0), "Off".into()),
+            (json!(1), "Auto".into()),
+            (json!(2), "Level".into()),
+            (json!(3), "Vertical".into()),
+            (json!(4), "Full".into()),
+        ],
         "amb:NegativeType" => vec![
             (json!("color"), "Colour".into()),
             (json!("bw"), "Black & white".into()),
@@ -309,18 +316,21 @@ pub fn panels() -> Vec<Panel> {
             id: "transform",
             label: "Transform",
             groups: vec!["transform"],
-            sections: vec![section(
-                "Transform",
-                &[
-                    ("PerspectiveVertical", Some("Vertical")),
-                    ("PerspectiveHorizontal", Some("Horizontal")),
-                    ("PerspectiveRotate", Some("Rotate")),
-                    ("PerspectiveAspect", Some("Aspect")),
-                    ("PerspectiveScale", Some("Scale")),
-                    ("PerspectiveX", Some("Offset X")),
-                    ("PerspectiveY", Some("Offset Y")),
-                ],
-            )],
+            sections: vec![
+                section("Upright", &[("PerspectiveUpright", Some("Upright"))]),
+                section(
+                    "Transform",
+                    &[
+                        ("PerspectiveVertical", Some("Vertical")),
+                        ("PerspectiveHorizontal", Some("Horizontal")),
+                        ("PerspectiveRotate", Some("Rotate")),
+                        ("PerspectiveAspect", Some("Aspect")),
+                        ("PerspectiveScale", Some("Scale")),
+                        ("PerspectiveX", Some("Offset X")),
+                        ("PerspectiveY", Some("Offset Y")),
+                    ],
+                ),
+            ],
         },
         Panel {
             id: "effects",

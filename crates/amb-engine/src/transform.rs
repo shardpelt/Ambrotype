@@ -16,6 +16,8 @@
 //! 4. Scale scales it about the centre;
 //! 5. X and Y move it.
 //!
+//! An Upright correction ([`crate::upright`]) comes first, as a [`Keystone`].
+//!
 //! The renderer needs the inverse: for each output position, where to sample
 //! the lens-corrected frame. [`crate::lens::apply_camera_cropped`] composes
 //! it into its single resampling pass: output pixel → crop → transformed
@@ -80,6 +82,130 @@ pub struct Transform {
     /// right and down.
     pub offset_x: f64,
     pub offset_y: f64,
+    /// `PerspectiveUpright`.
+    pub upright_mode: UprightMode,
+    /// The Upright correction found for this photo ([`crate::upright`]),
+    /// applied before the sliders. Filled in at render time.
+    pub upright: Option<Keystone>,
+}
+
+/// Lightroom's Upright modes (`PerspectiveUpright` 0..5).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum UprightMode {
+    #[default]
+    Off,
+    /// Balanced: level and perspective, not all the way.
+    Auto,
+    /// Level only (a rotation).
+    Level,
+    /// Level and vertical perspective.
+    Vertical,
+    /// Level, vertical and horizontal perspective.
+    Full,
+    /// From lines the user draws (not read yet).
+    Guided,
+}
+
+impl UprightMode {
+    pub fn of(v: f64) -> UprightMode {
+        match v.round() as i64 {
+            1 => UprightMode::Auto,
+            2 => UprightMode::Level,
+            3 => UprightMode::Vertical,
+            4 => UprightMode::Full,
+            5 => UprightMode::Guided,
+            _ => UprightMode::Off,
+        }
+    }
+
+    pub fn name(self) -> &'static str {
+        match self {
+            UprightMode::Off => "Off",
+            UprightMode::Auto => "Auto",
+            UprightMode::Level => "Level",
+            UprightMode::Vertical => "Vertical",
+            UprightMode::Full => "Full",
+            UprightMode::Guided => "Guided",
+        }
+    }
+
+    /// Whether we find this mode's correction from the photo's lines.
+    pub fn is_solved(self) -> bool {
+        matches!(
+            self,
+            UprightMode::Auto | UprightMode::Level | UprightMode::Vertical | UprightMode::Full
+        )
+    }
+}
+
+/// A perspective correction as camera angles: tilt `alpha` about the
+/// frame's x axis, `beta` about its y axis, then roll `theta`
+/// (counter-clockwise on screen), radians, for a pinhole camera of focal
+/// length `focal` half diagonals.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Keystone {
+    pub alpha: f64,
+    pub beta: f64,
+    pub theta: f64,
+    pub focal: f64,
+}
+
+impl Keystone {
+    /// The correction in normalised coordinates (centre 0, half diagonal 1,
+    /// y down), with the centre kept in place at its local size.
+    pub fn matrix(&self) -> Option<Homography> {
+        Some(rotation(self.theta).mul(&tilt(self.alpha, self.beta, self.focal)?))
+    }
+}
+
+/// Turn a pinhole camera of focal length `f` (half diagonals) by `alpha`
+/// about the x axis and `beta` about the y axis: H = K·R·K⁻¹ in normalised
+/// coordinates, then the centre moved back to its place at its old local
+/// size.
+pub fn tilt(alpha: f64, beta: f64, f: f64) -> Option<Homography> {
+    if alpha == 0.0 && beta == 0.0 {
+        return Some(Homography::IDENTITY);
+    }
+    let (sa, ca) = alpha.sin_cos();
+    let (sb, cb) = beta.sin_cos();
+    let rx = Homography([[1.0, 0.0, 0.0], [0.0, ca, -sa], [0.0, sa, ca]]);
+    let ry = Homography([[cb, 0.0, sb], [0.0, 1.0, 0.0], [-sb, 0.0, cb]]);
+    let kk = Homography([[f, 0.0, 0.0], [0.0, f, 0.0], [0.0, 0.0, 1.0]]);
+    let ki = Homography([[1.0 / f, 0.0, 0.0], [0.0, 1.0 / f, 0.0], [0.0, 0.0, 1.0]]);
+    let p = kk.mul(&ry.mul(&rx)).mul(&ki);
+    let (qx, qy) = p.apply(0.0, 0.0);
+    let e = 1e-4;
+    let (ax, ay) = p.apply(e, 0.0);
+    let (bx, by) = p.apply(0.0, e);
+    let det = ((ax - qx) * (by - qy) - (ay - qy) * (bx - qx)) / (e * e);
+    if !(det.is_finite() && det > 1e-6) {
+        return None;
+    }
+    let s = 1.0 / det.sqrt();
+    let back = Homography([[s, 0.0, -s * qx], [0.0, s, -s * qy], [0.0, 0.0, 1.0]]);
+    Some(back.mul(&p))
+}
+
+/// A turn by `theta` about the origin, counter-clockwise on screen (y down).
+pub fn rotation(theta: f64) -> Homography {
+    let (st, ct) = theta.sin_cos();
+    Homography([[ct, st, 0.0], [-st, ct, 0.0], [0.0, 0.0, 1.0]])
+}
+
+/// Normalised coordinates of a `width`×`height` frame: centre 0, half
+/// diagonal 1, y down. Returns (pixels → normalised, normalised → pixels).
+pub fn normalising(width: usize, height: usize) -> (Homography, Homography) {
+    let (w, h) = (width as f64, height as f64);
+    let d = 0.5 * w.hypot(h);
+    let (cx, cy) = ((w - 1.0) / 2.0, (h - 1.0) / 2.0);
+    (
+        Homography([
+            [1.0 / d, 0.0, -cx / d],
+            [0.0, 1.0 / d, -cy / d],
+            [0.0, 0.0, 1.0],
+        ]),
+        Homography([[d, 0.0, cx], [0.0, d, cy], [0.0, 0.0, 1.0]]),
+    )
 }
 
 impl Default for Transform {
@@ -92,13 +218,25 @@ impl Default for Transform {
             scale: 100.0,
             offset_x: 0.0,
             offset_y: 0.0,
+            upright_mode: UprightMode::Off,
+            upright: None,
         }
     }
 }
 
 impl Transform {
+    /// Whether the sliders are at their defaults and no Upright correction
+    /// is set.
     pub fn is_identity(&self) -> bool {
-        *self == Transform::default()
+        let no_upright = self
+            .upright
+            .is_none_or(|u| u.alpha == 0.0 && u.beta == 0.0 && u.theta == 0.0);
+        no_upright
+            && Transform {
+                upright_mode: UprightMode::Off,
+                upright: None,
+                ..*self
+            } == Transform::default()
     }
 
     /// The output → lens-corrected frame map for a `width`×`height` frame,
@@ -137,15 +275,14 @@ impl Transform {
             return None;
         }
         let (w, h) = (width as f64, height as f64);
-        // Normalised coordinates: centre at 0, the half diagonal = 1, y down.
         let d = 0.5 * w.hypot(h);
-        let (cx, cy) = ((w - 1.0) / 2.0, (h - 1.0) / 2.0);
-        let to_norm = Homography([
-            [1.0 / d, 0.0, -cx / d],
-            [0.0, 1.0 / d, -cy / d],
-            [0.0, 0.0, 1.0],
-        ]);
-        let to_px = Homography([[d, 0.0, cx], [0.0, d, cy], [0.0, 0.0, 1.0]]);
+        let (to_norm, to_px) = normalising(width, height);
+
+        // 0. Upright, before the sliders.
+        let upright = match &self.upright {
+            Some(u) => u.matrix()?,
+            None => Homography::IDENTITY,
+        };
 
         // 1. Keystone: turn a pinhole camera of focal length f (in half
         // diagonals) by α about the x axis and β about the y axis.
@@ -156,33 +293,10 @@ impl Transform {
             .to_radians();
         let beta = (k.horizontal_sign * self.horizontal.clamp(-100.0, 100.0) / 100.0 * k.max_tilt)
             .to_radians();
-        let mut m = Homography::IDENTITY;
-        if alpha != 0.0 || beta != 0.0 {
-            let (sa, ca) = alpha.sin_cos();
-            let (sb, cb) = beta.sin_cos();
-            let rx = Homography([[1.0, 0.0, 0.0], [0.0, ca, -sa], [0.0, sa, ca]]);
-            let ry = Homography([[cb, 0.0, sb], [0.0, 1.0, 0.0], [-sb, 0.0, cb]]);
-            let kk = Homography([[f, 0.0, 0.0], [0.0, f, 0.0], [0.0, 0.0, 1.0]]);
-            let ki = Homography([[1.0 / f, 0.0, 0.0], [0.0, 1.0 / f, 0.0], [0.0, 0.0, 1.0]]);
-            let p = kk.mul(&ry.mul(&rx)).mul(&ki);
-            // Put the centre back, at its old local size.
-            let (qx, qy) = p.apply(0.0, 0.0);
-            let e = 1e-4;
-            let (ax, ay) = p.apply(e, 0.0);
-            let (bx, by) = p.apply(0.0, e);
-            let det = ((ax - qx) * (by - qy) - (ay - qy) * (bx - qx)) / (e * e);
-            if !(det.is_finite() && det > 1e-6) {
-                return None;
-            }
-            let s = 1.0 / det.sqrt();
-            let back = Homography([[s, 0.0, -s * qx], [0.0, s, -s * qy], [0.0, 0.0, 1.0]]);
-            m = back.mul(&p);
-        }
+        let m = tilt(alpha, beta, f)?;
 
         // 2. Rotate: counter-clockwise on screen (y down) for a positive θ.
-        let theta = (k.rotate_sign * self.rotate.clamp(-10.0, 10.0)).to_radians();
-        let (st, ct) = theta.sin_cos();
-        let rot = Homography([[ct, st, 0.0], [-st, ct, 0.0], [0.0, 0.0, 1.0]]);
+        let rot = rotation((k.rotate_sign * self.rotate.clamp(-10.0, 10.0)).to_radians());
 
         // 3. Aspect, keeping the area; 4. Scale.
         let g = k
@@ -199,7 +313,7 @@ impl Transform {
             k.offset_y_sign * self.offset_y.clamp(-100.0, 100.0) / 100.0 * k.max_offset * h / d;
         let shift = Homography([[1.0, 0.0, ox], [0.0, 1.0, oy], [0.0, 0.0, 1.0]]);
 
-        let norm = shift.mul(&stretch).mul(&rot).mul(&m);
+        let norm = shift.mul(&stretch).mul(&rot).mul(&m).mul(&upright);
         Some(to_px.mul(&norm).mul(&to_norm))
     }
 }

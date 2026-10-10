@@ -49,8 +49,8 @@ use crate::negative::{Negative, NegativeType};
 use crate::raw::{CameraImage, neutral_for_xy, xy_for_neutral};
 use crate::retouch::Spots;
 use crate::tone::{self, ParametricCurve, ToneControls};
-use crate::transform::Transform;
-use crate::{dehaze, detail, effects, lens, local, local_tone, mask, negative, retouch};
+use crate::transform::{Transform, UprightMode};
+use crate::{dehaze, detail, effects, lens, local, local_tone, mask, negative, retouch, upright};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WhiteBalance {
@@ -271,6 +271,7 @@ pub const RENDERED_TAGS: &[&str] = &[
     "PerspectiveScale",
     "PerspectiveX",
     "PerspectiveY",
+    "PerspectiveUpright",
     "EnableTransform",
     "HasCrop",
     "CropTop",
@@ -504,22 +505,14 @@ impl DevelopSettings {
             .collect();
         not_rendered.extend(mask_notes);
         not_rendered.extend(spot_notes);
-        let upright = num(settings, "PerspectiveUpright").unwrap_or(0.0);
-        if upright != 0.0 && settings.get("EnableTransform").and_then(Value::as_bool) != Some(false)
-        {
-            let mode = match upright as i64 {
-                1 => "Auto",
-                2 => "Level",
-                3 => "Vertical",
-                4 => "Full",
-                5 => "Guided",
-                _ => "an unknown mode",
-            };
-            not_rendered.retain(|k| k != "PerspectiveUpright");
-            not_rendered.push(format!(
-                "PerspectiveUpright (Upright {mode}: Lightroom's own correction is not \
-                 rendered yet, only the Transform sliders)"
-            ));
+        match s.transform.upright_mode {
+            UprightMode::Off => {}
+            UprightMode::Guided => not_rendered.push(
+                "PerspectiveUpright (Upright Guided: the guides aren't read yet, so it is left off)"
+                    .to_string(),
+            ),
+            // Lightroom's own Upright analysis: we find the lines again.
+            _ => not_rendered.retain(|k| !k.starts_with("Upright")),
         }
         (s, not_rendered)
     }
@@ -579,6 +572,8 @@ fn transform_settings(settings: &BTreeMap<String, Value>) -> Transform {
         scale: num(settings, "PerspectiveScale").unwrap_or(d.scale),
         offset_x: num(settings, "PerspectiveX").unwrap_or(d.offset_x),
         offset_y: num(settings, "PerspectiveY").unwrap_or(d.offset_y),
+        upright_mode: num(settings, "PerspectiveUpright").map_or(d.upright_mode, UprightMode::of),
+        upright: None,
     }
 }
 
@@ -795,9 +790,17 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     // 0. Lens Corrections on camera RGB, then Transform, crop and straighten
     // (one resample).
     let crop = s.crop.geometry(img.width, img.height);
-    let warp = s
-        .transform
-        .sampling_map(img.width, img.height, &cal.transform);
+    let mut transform = s.transform;
+    if transform.upright.is_none() && transform.upright_mode.is_solved() {
+        transform.upright = upright::analyse(
+            img,
+            &s.lens,
+            &cal.lens,
+            transform.upright_mode,
+            &cal.upright,
+        );
+    }
+    let warp = transform.sampling_map(img.width, img.height, &cal.transform);
     let lens_pass = (s.lens.needs_camera_pass() || crop.is_some() || warp.is_some()).then(|| {
         lens::apply_camera_cropped(
             &img.rgb,
@@ -1402,9 +1405,17 @@ mod tests {
             ("EnableTransform", "False"),
         ]));
         assert!(s.transform.is_identity() && missing.is_empty());
-        let (_, missing) = DevelopSettings::from_settings(&map(&[("PerspectiveUpright", "3")]));
+        // Upright: Lightroom's analysis tags are not reported (we solve
+        // again); Guided is.
+        let (s, missing) = DevelopSettings::from_settings(&map(&[
+            ("PerspectiveUpright", "3"),
+            ("UprightTransform_3", "0.5,0.5"),
+        ]));
+        assert_eq!(s.transform.upright_mode, UprightMode::Vertical);
+        assert!(missing.is_empty(), "{missing:?}");
+        let (_, missing) = DevelopSettings::from_settings(&map(&[("PerspectiveUpright", "5")]));
         assert_eq!(missing.len(), 1);
-        assert!(missing[0].contains("Upright Vertical"), "{missing:?}");
+        assert!(missing[0].contains("Upright Guided"), "{missing:?}");
     }
 
     #[test]

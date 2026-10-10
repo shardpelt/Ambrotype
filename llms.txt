@@ -13,7 +13,7 @@
 
 ## Design and background
 
-- [Transform design](docs/design/transform.md): the Transform sliders, our homography model, where it sits in the pipeline.
+- [Transform design](docs/design/transform.md): the Transform sliders and Upright, our models, where they sit in the pipeline.
 - [Spot removal design](docs/design/spot-removal.md): Lightroom's retouch tags, heal and clone, the donor search, the spot commands.
 - [Masks design](docs/design/masks.md): Lightroom's mask tags, how masks are drawn and rendered, the mask commands.
 - [AI-control design](docs/design/ai-control.md): why and how AI drives the app (protocol, MCP plan, look matching, safety rules).

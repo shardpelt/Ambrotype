@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+mod mcp;
 mod plugin;
 
 use amb_presets::Preset;
@@ -65,6 +66,9 @@ USAGE:
                                             folders and renamed from templates ({name} {yyyy} {yy} {mm}
                                             {dd} {hh} {min} {ss} {seq} {camera}); a raw's JPEG and .xmp
                                             keep its new name; photos already there are skipped
+    amb mcp                                 Serve the Model Context Protocol over stdio, so your own AI app
+                                            (Claude Desktop, Claude Code, ...) can edit, preview and export
+                                            photos with Ambrotype's commands (docs/ai/mcp.md)
     amb profile list <RAW> [--dcp-dir DIR]  List the camera profiles (.dcp) on this computer for a raw's
                                             camera (Camera Raw's profile folders, AMB_DCP_DIRS, --dcp-dir);
                                             a preset's or sidecar's CameraProfile picks one by name
@@ -258,6 +262,7 @@ fn main() -> ExitCode {
         },
         ["testimage", pattern, out] => testimage(pattern, Path::new(out)),
         ["profile", "list", raw] => profile_list(Path::new(raw), &options),
+        ["mcp"] => mcp::serve(),
         ["import", source, dest] => {
             import(Path::new(source), Path::new(dest), &options, dry_run, json)
         }

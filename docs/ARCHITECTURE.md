@@ -5,7 +5,7 @@ The target architecture is in [SCOPE.md §9](SCOPE.md). This page describes what
 **Short version:**
 - Ambrotype is a Rust **library-first** project. The engine, preset reader, lens database and export are libraries.
 - There are two front ends: the `amb` command-line tool and an early desktop editor (`amb-gui`, Tauri 2).
-- The GUI, a future MCP server for AI assistants and the CLI are all meant to be clients of the same libraries, through one command protocol, like FFmpeg/libmpv and their players.
+- The GUI, the MCP server for AI assistants (`amb mcp`) and the CLI are all clients of the same libraries, through one command protocol, like FFmpeg/libmpv and their players.
 
 ## Crates
 
@@ -21,7 +21,7 @@ About 23,000 lines of Rust and about 270 tests (fmt, clippy and tests run in CI 
 | `amb-export` | Files out | JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces, resize, output sharpening, EXIF, JPEG size limit |
 | `amb-library` | Library operations | Import: copy from a card or folder into dated folders, renamed from templates, with companions and duplicate checks (`amb import`, the editor's Import dialog); collections as small JSON files |
 | `amb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
-| `amb-cli` | The `amb` tool | `render`, `import`, `preset`, `edit`/`query`, `lens`, `negative`, `sweep`, `settings reference`, … |
+| `amb-cli` | The `amb` tool | `render`, `import`, `mcp` (the MCP server, `src/mcp.rs`), `preset`, `edit`/`query`, `lens`, `negative`, `sweep`, `settings reference`, … |
 | `amb-gui` | Desktop editor (Tauri 2) | Rust `Session` (open raw, undoable edits via `amb-protocol`, downscaled preview + histogram, sidecar save, export) behind Tauri commands; plain HTML/CSS/JS UI generated from the settings registry |
 
 ## Data flow of `amb render photo.nef out.jpg --preset look.xmp`
@@ -121,4 +121,4 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
 - GPU backend (wgpu), tiling and caching.
 - Red eye, Guided Upright ([design/transform.md](design/transform.md)), AI masks.
 - Camera profiles (DCP) and Adobe-like base looks: today a placeholder filmic base look is used.
-- MCP server and look matching (`amb match`) for AI control.
+- Look matching (`amb match`) for AI control (the MCP server exists: `amb mcp`, [ai/mcp.md](ai/mcp.md)).

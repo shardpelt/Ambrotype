@@ -75,7 +75,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 6. ~~**Transform and Upright**~~ (done 2026-10-10: the sliders, and Upright Auto, Level, Vertical and Full from the photo's lines; [design/transform.md](design/transform.md)). Next for it: Guided Upright, fitting in the trial.
 7. ~~**Library:** pick/reject flags, loupe, compare and survey views, import with copy and rename, collections, virtual copies~~ (done 2026-10-10; [design/library.md](design/library.md)). Next for it: subfolders and several folders at once, smart collections, stacks, a metadata panel.
 8. **Profiles, Calibration panel and Point Color** (fidelity track 4–5). ~~Calibration panel~~ (done 2026-10-10; [design/calibration.md](design/calibration.md)). Point Color waits for a Lightroom sample of `PointColors` (the trial keeps one). ~~Reading the user's own camera profiles (`.dcp`) in place~~ (done 2026-10-10; [design/camera-profiles.md](design/camera-profiles.md)). Next for profiles: Adobe Raw `.xmp` profiles, and fitted base looks of our own from the trial.
-9. **MCP server** for AI agents (fidelity track 6).
+9. ~~**MCP server** for AI agents~~ (done 2026-10-10: `amb mcp`, [ai/mcp.md](ai/mcp.md)). Next for AI: look matching (`amb match`), then the in-app assistant panel.
 10. **Speed and reach:** GPU preview, installers per OS (fidelity track 8–9), then HDR and panorama merge.
 
 ### Fidelity and engine track
@@ -85,7 +85,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 3. ~~**Local Highlights/Shadows** (edge-aware)~~ (done 2026-10-08), then ~~**masks** (linear/radial/brush/range)~~ (done 2026-10-08).
 4. **Camera profiles:** ~~read the user's DCPs in place~~ (done 2026-10-10); fitted base looks once trial data exists.
 5. ~~**Calibration panel**~~ (done 2026-10-10), **Point Color** (the B&W mixer renders since 2026-10-08; fitting both is part of the trial). Fit the Film recipe looks to the owner's Fujifilm shots ([design/film-look-measurement.md](design/film-look-measurement.md)).
-6. **Token-efficient AI layer:** core card, `amb do` compact syntax, `--brief` output, `amb stats`, then the MCP server (also the base for the AI flows in UI step 7).
+6. **Token-efficient AI layer:** core card, `amb do` compact syntax, `--brief` output, `amb stats`; ~~the MCP server~~ (done 2026-10-10).
 7. **Auto and Randomize buttons, Tutorial mode** ([design/future-ideas.md](design/future-ideas.md)).
 8. **Performance:** measure release-build preview and 1:1 times on the Mac; a tiled 1:1 render instead of a full-size render (a debug build took about 33 s); then the GPU preview path.
 9. **Installers** per OS (`cargo tauri build`, in CI; notarised DMG for macOS).

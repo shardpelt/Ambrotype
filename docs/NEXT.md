@@ -44,6 +44,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
 
 - [ ] Try the editor on the Mac: `cargo run --release -p amb-gui -- photo.nef`. Note what feels wrong (or use the Feedback button).
 - [ ] Run `amb preset census <your preset folders>` and share the output (setting names and counts only). It ranks what to build next.
+- [ ] Digest the big source files (DNG spec, DNG SDK, XMP spec, Lightroom Classic SDK, release notes) on your own machine with [handoff-sources.md](handoff-sources.md), then tell the cloud session they're pushed.
 - [ ] Lightroom trial month: follow [lightroom-trial-plan.md](lightroom-trial-plan.md) (sweep kit: `amb sweep generate`).
 - [ ] Fujifilm shoot (later): raws plus in-camera re-renders with every film simulation, so the Film recipe looks can be fitted. What to shoot: [design/film-look-measurement.md](design/film-look-measurement.md).
 

@@ -52,7 +52,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   "based_on": "builtin:studio",              // optional; set by Clone
   "theme": "builtin:dark",                   // optional: switching to this layout also picks this theme
   "density": "normal",                       // "compact" | "normal" | "large"
-  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "zoom", "wb", "clip", "|", "plugins", "|", "looks", "edit", "settings", "feedback"],
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "|", "plugins", "|", "looks", "edit", "settings", "feedback"],
   "left":  { "width": 250, "items": ["presets", "history"] },
   "right": { "width": 340, "items": ["histogram", { "panel": "basic", "open": true }, { "panel": "detail" }] }
 }
@@ -81,6 +81,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   | `before` | Before/After |
   | `crop` | Crop tool |
   | `masks` | Mask tool |
+  | `spots` | Spot removal (heal and clone) |
   | `zoom` | 100% view |
   | `wb` | White-balance picker |
   | `clip` | Clipping overlay |

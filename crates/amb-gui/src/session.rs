@@ -103,6 +103,8 @@ pub struct StateInfo {
     pub not_rendered: Vec<String>,
     /// The masks as `list_masks` describes them.
     pub masks: serde_json::Value,
+    /// The spots as `list_spots` describes them.
+    pub spots: serde_json::Value,
 }
 
 /// How the mask tool maps the shown photo to mask coordinates: a point at
@@ -324,6 +326,7 @@ impl Session {
                 .collect(),
             not_rendered,
             masks: amb_protocol::masks::describe(self.state.settings()),
+            spots: amb_protocol::spots::describe(self.state.settings()),
         }
     }
 
@@ -362,6 +365,22 @@ impl Session {
             view_width: vw,
             view_height: vh,
         }
+    }
+
+    /// A donor for a new spot at `(x, y)` with `radius` (fractions; the radius
+    /// of the width): the engine's search on a small render of the photo.
+    pub fn spot_source(&self, x: f64, y: f64, radius: f64) -> (f64, f64) {
+        let (develop, _) = DevelopSettings::from_settings(self.state.settings());
+        let src = downscale(&self.full, 1024);
+        let out = pipeline::render(&src, &develop);
+        let crop = develop.crop.geometry(src.width, src.height);
+        amb_engine::retouch::find_source(
+            &out,
+            (src.width, src.height),
+            crop.as_ref(),
+            (x, y),
+            radius,
+        )
     }
 
     /// Run commands; with a `group` label they become one undo step.

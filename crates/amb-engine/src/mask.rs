@@ -379,9 +379,9 @@ fn read_shape(kind: &MaskKind, entries: &[&BTreeMap<String, Value>]) -> Shape {
 
 /// Output pixel ↔ uncropped frame pixel (pixel centres at integers).
 #[derive(Debug, Clone, Copy)]
-struct Frame {
-    width: f64,
-    height: f64,
+pub(crate) struct Frame {
+    pub(crate) width: f64,
+    pub(crate) height: f64,
     /// frame = o + x·ex + y·ey
     o: (f64, f64),
     ex: (f64, f64),
@@ -389,7 +389,7 @@ struct Frame {
 }
 
 impl Frame {
-    fn new(frame: (usize, usize), crop: Option<&CropGeometry>) -> Frame {
+    pub(crate) fn new(frame: (usize, usize), crop: Option<&CropGeometry>) -> Frame {
         let (o, ex, ey) = match crop {
             Some(g) => {
                 let o = g.source(0.0, 0.0);
@@ -410,7 +410,7 @@ impl Frame {
 
     /// Frame pixel coordinates (centres at integers) of output pixel (x, y).
     #[inline]
-    fn source(&self, x: f64, y: f64) -> (f64, f64) {
+    pub(crate) fn source(&self, x: f64, y: f64) -> (f64, f64) {
         (
             self.o.0 + x * self.ex.0 + y * self.ey.0,
             self.o.1 + x * self.ex.1 + y * self.ey.1,
@@ -418,7 +418,7 @@ impl Frame {
     }
 
     /// Output pixel of a frame position.
-    fn target(&self, fx: f64, fy: f64) -> (f64, f64) {
+    pub(crate) fn target(&self, fx: f64, fy: f64) -> (f64, f64) {
         let det = self.ex.0 * self.ey.1 - self.ey.0 * self.ex.1;
         let (dx, dy) = (fx - self.o.0, fy - self.o.1);
         (
@@ -428,17 +428,17 @@ impl Frame {
     }
 
     /// Image fraction → frame pixel coordinates.
-    fn pixel(&self, u: f64, v: f64) -> (f64, f64) {
+    pub(crate) fn pixel(&self, u: f64, v: f64) -> (f64, f64) {
         (u * self.width - 0.5, v * self.height - 0.5)
     }
 
     /// Output pixels per frame pixel (crops never scale much).
-    fn scale(&self) -> f64 {
+    pub(crate) fn scale(&self) -> f64 {
         1.0 / self.ex.0.hypot(self.ex.1).max(1e-9)
     }
 }
 
-fn smoothstep(e0: f64, e1: f64, x: f64) -> f64 {
+pub(crate) fn smoothstep(e0: f64, e1: f64, x: f64) -> f64 {
     if e1 <= e0 {
         return if x < e0 { 0.0 } else { 1.0 };
     }

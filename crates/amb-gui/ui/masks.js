@@ -93,17 +93,17 @@ const fmt6 = (v) => String(Math.round(v * 1e6) / 1e6);
 
 // ---------------------------------------------------------------- geometry
 
-function viewRect() {
+// These helpers serve the spot tool too (spots.js), with its own frame and canvas.
+function viewRect(canvas = "mask-canvas") {
   const img = $("preview");
   const r = img.getBoundingClientRect();
-  const c = $("mask-canvas").getBoundingClientRect();
+  const c = $(canvas).getBoundingClientRect();
   return { left: r.left - c.left, top: r.top - c.top, width: r.width, height: r.height };
 }
 
 // Canvas CSS px → frame fractions.
-function toFrame(px, py) {
-  const f = mk.frame;
-  const r = viewRect();
+function toFrame(px, py, f = mk.frame, canvas = "mask-canvas") {
+  const r = viewRect(canvas);
   const u = (px - r.left) / r.width;
   const v = (py - r.top) / r.height;
   const m = f.matrix;
@@ -111,20 +111,20 @@ function toFrame(px, py) {
 }
 
 // Frame fractions → canvas CSS px.
-function toCanvas(x, y) {
-  const m = mk.frame.matrix;
+function toCanvas(x, y, f = mk.frame, canvas = "mask-canvas") {
+  const m = f.matrix;
   const det = m[0] * m[4] - m[1] * m[3];
   const dx = x - m[2];
   const dy = y - m[5];
   const u = (m[4] * dx - m[1] * dy) / det;
   const v = (m[0] * dy - m[3] * dx) / det;
-  const r = viewRect();
+  const r = viewRect(canvas);
   return [r.left + u * r.width, r.top + v * r.height];
 }
 
 // Screen px per full-size frame pixel.
-function pxScale() {
-  return viewRect().width / mk.frame.view_width;
+function pxScale(f = mk.frame, canvas = "mask-canvas") {
+  return viewRect(canvas).width / f.view_width;
 }
 
 // Brush sizes are fractions of the frame's width, as Lightroom's.
@@ -879,6 +879,7 @@ async function loadMaskFrame() {
 async function enterMasks() {
   if (!ui.info || mk.on) return;
   if (ui.crop.on) await exitCrop(true);
+  exitSpots();
   if (ui.zoom.on) setZoom(false);
   setPicking(false);
   if (!mk.sliders.length) {

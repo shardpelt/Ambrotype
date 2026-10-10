@@ -27,6 +27,7 @@ pub mod output;
 pub mod pipeline;
 pub mod raster;
 pub mod raw;
+pub mod retouch;
 pub mod tone;
 pub mod xtrans;
 

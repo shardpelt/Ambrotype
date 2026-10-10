@@ -312,6 +312,27 @@ fn crop_state(state: tauri::State<'_, AppState>) -> Res<CropState> {
     Ok(guard.as_ref().ok_or("no photo open")?.crop_state())
 }
 
+/// A donor for a new spot (the spot tool shows it, and the user can move it).
+#[tauri::command]
+async fn spot_source(
+    x: f64,
+    y: f64,
+    radius: f64,
+    state: tauri::State<'_, AppState>,
+) -> Res<[f64; 2]> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let guard = slot.lock().map_err(|e| e.to_string())?;
+        let (sx, sy) = guard
+            .as_ref()
+            .ok_or("no photo open")?
+            .spot_source(x, y, radius);
+        Ok([sx, sy])
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// The mask tool's map from the shown photo to mask coordinates.
 #[tauri::command]
 fn mask_frame(state: tauri::State<'_, AppState>) -> Res<session::MaskFrame> {
@@ -2006,6 +2027,7 @@ fn main() {
             crop_commands,
             mask_frame,
             mask_sliders,
+            spot_source,
             size_presets,
             save_size_preset,
             delete_size_preset,

@@ -125,6 +125,9 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 | `set_mask` | `mask`, `part`?, `values` | A mask's local sliders, `name`, `active`, `amount`; with `part`, that part's geometry, `mode`, `invert`. |
 | `paint_mask` | `points`, `mask`?, `part`?, `mode`?, `size`?, `feather`?, `flow`?, `density`?, `erase`? | A brush stroke; without `part`, a new brush part (a new mask without `mask`). |
 | `remove_mask` | `mask`, `part`? | A mask, or one part. |
+| `add_spot` | `at`, `radius`?, `kind`?, `source`?, `feather`?, `opacity`? | A round heal (default) or clone spot; see [Spot removal](#spot-removal). |
+| `set_spot` | `spot`, `values` | `at`, `radius`, `source` (null to search again), `kind`, `feather`, `opacity`, `active`. |
+| `remove_spot` | `spot` | |
 | `undo`, `redo` | | One step = one command. |
 
 Validation:
@@ -144,6 +147,7 @@ Validation:
 | `list_params` | `group`?, `only_set`? | without `group`: the settings present; with `group`: every setting of the group |
 | `list_groups` | | all groups with labels, descriptions, tag counts and how many are set |
 | `list_masks` | | every mask: name, amount, active, local sliders (UI units), parts with kind, mode, invert and geometry |
+| `list_spots` | | every spot: kind, position, radius, source, feather, opacity |
 
 ```json
 [{"query": "get_param", "name": "Temperature"}, {"query": "list_params", "group": "color_grading"}]
@@ -170,6 +174,19 @@ Masks are Lightroom's own (`MaskGroupBasedCorrections`), so they open in Lightro
 - **Brush:** `{"cmd": "paint_mask", "points": [[0.2, 0.8], [0.4, 0.82]], "size": 0.04}` paints a new brush mask (`size` is the radius as a fraction of the photo's width); add `"mask": 0, "part": 2` to paint more into a brush part, `"erase": true` to erase.
 - **Sliders** (`set_mask` without `part`) are in UI units, by label or tag: Exposure (EV, -4..4), Contrast, Highlights, Shadows, Whites, Blacks, Temp, Tint, Texture, Clarity, Dehaze, Saturation, Sharpness, Noise (-100..100); "Color hue" (0-360) and "Color amount" (0-100) tint; `amount` 0-100 scales them all.
 - AI masks (subject, sky, people) from Lightroom are kept and reported as not rendered; they can't be made here yet.
+
+## Spot removal
+
+Spots are Lightroom's own `RetouchAreas`. Positions are fractions of the uncropped photo in stored orientation, like masks; `radius` is a fraction of the photo's width (0.01 is 1% of it).
+
+```json
+[
+  {"cmd": "add_spot", "at": [0.31, 0.12], "radius": 0.012},
+  {"cmd": "add_spot", "at": [0.62, 0.48], "radius": 0.02, "kind": "clone", "source": [0.66, 0.48]}
+]
+```
+
+A heal copies from the source and matches the surroundings; a clone copies as is. Without `source` the engine picks a donor nearby each time it renders; render and look, and give an explicit `source` if it picked badly. Spots Lightroom filled with content-aware or generative fill are healed from a nearby area here, and reported.
 
 ## Intent to settings cheat sheet
 

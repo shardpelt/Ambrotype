@@ -29,6 +29,7 @@ const KEY_ACTIONS = [
   { id: "clipping", group: "View", label: "Clipping overlay", hint: "Red: clipped highlights, blue: crushed shadows.", keys: ["J"], when: "any", button: "btn-clip", run: () => toggleClipping() },
   { id: "crop", group: "Tools", label: "Crop and straighten", keys: ["R"], when: "any", photo: true, button: "btn-crop", run: () => toggleCrop() },
   { id: "masks", group: "Tools", label: "Masks", hint: "Gradients, brush and range masks with their own sliders.", keys: ["M"], when: "any", photo: true, button: "btn-masks", run: () => toggleMasks() },
+  { id: "spots", group: "Tools", label: "Spot removal", hint: "Heal or clone blemishes and distractions.", keys: ["Q"], when: "any", photo: true, button: "btn-spots", run: () => toggleSpots() },
   { id: "wb", group: "Tools", label: "White-balance picker", hint: "Then click something neutral grey or white.", keys: ["W"], when: "main", button: "btn-wb", run: () => setPicking(!ui.picking) },
   { id: "leave", group: "Tools", label: "Leave the picker", keys: ["Escape"], when: "main", run: () => setPicking(false) },
   { id: "crop-draw", group: "Crop tool", label: "Draw a new crop (corner to corner)", keys: ["D"], when: "crop", run: () => ui.crop.tool.setDrawMode(!ui.crop.tool.drawMode()) },
@@ -42,6 +43,10 @@ const KEY_ACTIONS = [
   { id: "mask-smaller", group: "Masks", label: "Smaller brush", keys: ["["], when: "masks", run: () => brushSize(-1) },
   { id: "mask-bigger", group: "Masks", label: "Bigger brush", keys: ["]"], when: "masks", run: () => brushSize(1) },
   { id: "mask-delete", group: "Masks", label: "Delete the selected part (or mask)", keys: ["Delete", "Backspace"], when: "masks", run: (e) => (onControl(e) ? false : deleteMaskPart()) },
+  { id: "spot-smaller", group: "Spot removal", label: "Smaller spot", keys: ["["], when: "spots", run: () => spotSize(-1) },
+  { id: "spot-bigger", group: "Spot removal", label: "Bigger spot", keys: ["]"], when: "spots", run: () => spotSize(1) },
+  { id: "spot-delete", group: "Spot removal", label: "Delete the selected spot", keys: ["Delete", "Backspace"], when: "spots", run: (e) => (onControl(e) ? false : deleteSpot()) },
+  { id: "spot-leave", group: "Spot removal", label: "Leave spot removal", keys: ["Escape"], when: "spots", run: () => exitSpots() },
   { id: "mask-leave", group: "Masks", label: "Stop drawing, then leave the masks", keys: ["Escape"], when: "masks", run: () => maskEscape() },
   // Rating, labels and keywords: the open photo, or in the library the selected photos.
   ...[1, 2, 3, 4, 5].map((n) => ({ id: `rate-${n}`, group: "Rating", label: `Rate ${"★".repeat(n)}`, keys: [String(n)], when: "any", run: () => rateKey(n) })),
@@ -105,7 +110,7 @@ function dispatchKey(e) {
   if (document.querySelector("dialog[open]")) return;
   const combo = comboOf(e);
   if (!combo) return;
-  const ctx = libraryOn() ? "library" : ui.crop.on ? "crop" : mk.on ? "masks" : "main";
+  const ctx = libraryOn() ? "library" : ui.crop.on ? "crop" : mk.on ? "masks" : sp.on ? "spots" : "main";
   for (const a of KEY_ACTIONS) {
     if (!keysFor(a).includes(combo)) continue;
     if (a.when !== "any" && a.when !== ctx) continue;
@@ -219,6 +224,7 @@ async function settingsFlow() {
       name.textContent = a.label;
       if (a.when === "crop") name.title = "Only while the crop tool is open";
       if (a.when === "masks") name.title = "Only while the masks are open";
+      if (a.when === "spots") name.title = "Only while spot removal is open";
       if (a.when === "library") name.title = "Only in the library";
       const caps = document.createElement("span");
       caps.className = "key-caps";

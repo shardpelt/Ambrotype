@@ -126,7 +126,9 @@ All of these are "Model v1 (ours, not Adobe's)": every constant is a starting gu
 | Not rendered inside masks: Moire, Defringe, `LocalHue`, `LocalGrain`, local curves, `LocalPointColors`; depth ranges | Missing | Kept in the file and reported | `crates/amb-presets/src/masks.rs` (`UNRENDERED_FIELDS`) |
 | Mask editing not built: reordering masks and parts, duplicating, polygon lasso, mask presets, auto-mask (edge-aware brush), the old per-tool tags (render only) | Missing | Lightroom has them | [design/masks.md](design/masks.md); [SCOPE.md](SCOPE.md):320, 324 |
 | AI masks (subject, sky, background, people, objects, landscape) are never stored as pixels by Adobe, so presets carrying them must be regenerated with our own segmenters (SAM2/BiRefNet via `ort`); today they select nothing and are reported | Missing | Boundary fidelity will always be approximate | `crates/amb-engine/src/mask.rs`; [SCOPE.md](SCOPE.md):244, 324 |
-| No heal/clone/spot removal; `RetouchAreas` in presets are ignored by design (image-specific) | Missing | Retouch is part of the Lightroom develop surface | [ARCHITECTURE.md](ARCHITECTURE.md):86; `crates/amb-presets/src/report.rs`:173-178 |
+| Spot removal renders and edits since 2026-10-10: round heal and clone spots in Lightroom's `RetouchAreas`; brushed spots and the old `RetouchInfo` render. The heal is ours (a log-space plane fit from the surroundings), not Lightroom's | Approx | Healed spots look clean but not identical to Lightroom's | [design/spot-removal.md](design/spot-removal.md) |
+| Lightroom's content-aware and generative fills (`heal_patchmatch`, Firefly) don't store their pixels: we heal them from a searched donor (reported). Donors outside the crop are clamped to its edge | Approx | Large removals differ from Lightroom's | [design/spot-removal.md](design/spot-removal.md) |
+| Not built: red eye and pet eye (`RedEyeInfo`), brushed spots in the editor (they render, but can't be drawn or moved), a "visualise spots" view, our own content-aware fill | Missing | Lightroom has them | [design/spot-removal.md](design/spot-removal.md) |
 | Phase 4 retouch and AI: content-aware remove (LaMa), Lens Blur (Depth Anything V2-S), Super Resolution, people parts, depth-range masks | Missing | `LensBlur` and Enhance tags are marked unsupported | [SCOPE.md](SCOPE.md):331; `crates/amb-presets/data/tags.json` |
 | Permissive-only AI model manifest with a CI gate not built. RMBG-1.4/2.0 and Depth Anything Base+ are non-commercial and must not be bundled | Legal | A wrong model would taint the GPL distribution | [SCOPE.md](SCOPE.md):156, 215 |
 
@@ -203,7 +205,7 @@ Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the plann
 | image-specific | 41 | crop 12; transform 17; negative 10; bw_mixer 1; tone 1 (not expected in presets; also not rendered, because there is no crop) |
 | exact | 13 | our own `amb:` negative settings only |
 | metadata | 26 | preset descriptors and process version |
-| ignored-in-presets | 3 | `RetouchAreas`, `RetouchInfo`, `RedEyeInfo`, by design |
+| ignored-in-presets | 3 | `RetouchAreas`, `RetouchInfo`, `RedEyeInfo`, by design (the first two render as spots) |
 
 ## 11. Export
 

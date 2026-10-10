@@ -195,7 +195,10 @@ function historyLabel(label) {
     .replace(/^paint_mask new$/, "New brush mask")
     .replace(/^(paint|erase)_mask (\d+)$/, (_, v, m) => `${n(m)}: ${v === "paint" ? "brush" : "erase"}`)
     .replace(/^remove_mask (\d+) part (\d+)$/, (_, m, p) => `${n(m)}: remove part ${Number(p) + 1}`)
-    .replace(/^remove_mask (\d+)$/, (_, m) => `Delete ${n(m).toLowerCase()}`);
+    .replace(/^remove_mask (\d+)$/, (_, m) => `Delete ${n(m).toLowerCase()}`)
+    .replace(/^add_spot (\w+)$/, (_, k) => `${k === "clone" ? "Clone" : "Heal"} spot`)
+    .replace(/^set_spot (\d+)$/, (_, s) => `Spot ${Number(s) + 1}`)
+    .replace(/^remove_spot (\d+)$/, (_, s) => `Delete spot ${Number(s) + 1}`);
 }
 
 function syncControls() {
@@ -239,6 +242,7 @@ function setState(state) {
   syncControls();
   if (ui.crop.on && cropKey(ui.settings) !== crop) reloadCrop();
   masksStateChanged();
+  spotsStateChanged();
 }
 
 // Run protocol commands; several commands with a `group` label are one undo step.
@@ -626,6 +630,7 @@ function setCropMode(on) {
 async function enterCrop() {
   if (!ui.info || ui.crop.on) return;
   exitMasks();
+  exitSpots();
   if (ui.zoom.on) setZoom(false);
   setPicking(false);
   let st;
@@ -746,6 +751,7 @@ function wireCrop() {
   img.addEventListener("load", () => { if (ui.crop.on) ui.crop.tool.draw(); });
   $("btn-crop").addEventListener("click", toggleCrop);
   $("btn-masks").addEventListener("click", toggleMasks);
+  $("btn-spots").addEventListener("click", toggleSpots);
   $("crop-done").addEventListener("click", () => exitCrop(true));
   $("crop-cancel").addEventListener("click", () => exitCrop(false));
   $("crop-reset").addEventListener("click", resetCrop);
@@ -899,6 +905,7 @@ async function openPath(path) {
       ui.crop.tool.stop();
     }
     masksPhotoChanged();
+    spotsPhotoChanged();
     const wasRendered = !!ui.info?.rendered;
     ui.info = r.info;
     // Raw and JPEG have different white balance sliders.
@@ -907,7 +914,7 @@ async function openPath(path) {
     $("photo-title").textContent = `${r.info.name}  —  ${r.info.camera}${r.info.lens ? "  ·  " + r.info.lens : ""}`;
     $("exif").textContent = [r.info.exposure, `${r.info.width} × ${r.info.height}`,
       r.info.sidecar_loaded ? "edits loaded from sidecar" : ""].filter(Boolean).join("  ·  ");
-    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-zoom", "btn-wb", "btn-clip", "btn-save-preset"]) $(id).disabled = false;
+    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-save-preset"]) $(id).disabled = false;
     if (ui.zoom.on) setZoom(false);
     setState(r.state);
     if (r.saved_previous) toast(`Saved your edits to ${r.saved_previous.replace(/^.*[\\/]/, "")}`);
@@ -1168,6 +1175,7 @@ async function init() {
   wireViewer();
   wireCrop();
   wireMasks();
+  wireSpots();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   // Enter in a dialog's text box means its main button, not the first one (Cancel).

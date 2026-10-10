@@ -8,7 +8,7 @@
 
 const TOOLBAR_IDS = {
   open: "btn-open", library: "btn-library", save: "btn-save", export: "btn-export", collage: "btn-collage", undo: "btn-undo", redo: "btn-redo",
-  before: "btn-before", crop: "btn-crop", masks: "btn-masks", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip",
+  before: "btn-before", crop: "btn-crop", masks: "btn-masks", spots: "btn-spots", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip",
   plugins: "btn-plugins", looks: "btn-looks", edit: "btn-edit-layout", settings: "btn-settings", feedback: "btn-feedback",
 };
 const BLOCK_IDS = { presets: "block-presets", info: "block-info", history: "block-history", histogram: "block-histogram" };
@@ -43,6 +43,7 @@ function redrawCanvases() {
   ui.wheels?.refresh();
   ui.crop.tool?.draw?.();
   if (typeof drawMasks === "function") drawMasks();
+  if (typeof drawSpots === "function") drawSpots();
 }
 
 // ---------------------------------------------------------------- layout
@@ -60,6 +61,7 @@ function applyLayout(layout) {
   for (const id of Object.values(BLOCK_IDS)) store.append($(id));
   store.append($("crop-panel"));
   store.append($("mask-panel"));
+  store.append($("spot-panel"));
   ui.curve?.destroy();
   ui.wheels?.destroy();
   ui.curve = ui.wheels = null;
@@ -95,6 +97,7 @@ function applyLayout(layout) {
     if (hist.parentElement === host) hist.after($("crop-panel"));
     else host.prepend($("crop-panel"));
     $("crop-panel").after($("mask-panel"));
+    $("mask-panel").after($("spot-panel"));
   }
   if (ui.edit) decorateEditing();
   syncControls();

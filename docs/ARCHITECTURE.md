@@ -13,8 +13,8 @@ About 23,000 lines of Rust and about 270 tests (fmt, clippy and tests run in CI 
 
 | Crate | Role | Main parts |
 |---|---|---|
-| `amb-presets` | Read and write settings | XMP (`crs:` Adobe tags plus our `amb:` tags), `.lrtemplate`, XMP embedded in DNG/JPEG; the tag registry (`data/tags.json`); preset Amount scaling; the mask model (`masks.rs`: Lightroom's correction tags, slider units, parts) |
-| `amb-protocol` | Typed edit commands for GUI/CLI/AI | `set/adjust/reset_param`, `apply_preset`, mask commands (`add/set/paint/remove_mask`, `list_masks`), undo/redo, queries, JSON Schema; sidecar merge that keeps foreign metadata; the AI settings reference |
+| `amb-presets` | Read and write settings | XMP (`crs:` Adobe tags plus our `amb:` tags), `.lrtemplate`, XMP embedded in DNG/JPEG; the tag registry (`data/tags.json`); preset Amount scaling; the mask model (`masks.rs`: Lightroom's correction tags, slider units, parts) and spots (`retouch.rs`) |
+| `amb-protocol` | Typed edit commands for GUI/CLI/AI | `set/adjust/reset_param`, `apply_preset`, mask commands (`add/set/paint/remove_mask`, `list_masks`), spot commands (`add/set/remove_spot`, `list_spots`), undo/redo, queries, JSON Schema; sidecar merge that keeps foreign metadata; the AI settings reference |
 | `amb-color` | Colour science | Temperature/Tint ↔ xy, matrices, Bradford adaptation, output colour spaces and generated ICC profiles |
 | `amb-lens` | Lens profiles | lensfun database and Adobe LCP readers, lens matching, interpolation, correction geometry |
 | `amb-engine` | Raw decode and develop | The pipeline below; every model constant is in `Calibration` (JSON, fitted later against Lightroom) |
@@ -37,7 +37,8 @@ amb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
   0  Lens Corrections (vignetting, CA, distortion: one resampling pass)
      → film negative conversion (optional)
   1  clipped channels → neutral, white balance + camera matrix → linear ProPhoto → Exposure → Defringe
-     → masks drawn (alpha per mask, mask.rs) → local Exposure, Temp, Tint
+     → spot removal (heal and clone, retouch.rs) → masks drawn (alpha per mask, mask.rs)
+     → local Exposure, Temp, Tint
   2  Dehaze (then local Dehaze)
   3  base look → Highlights/Shadows (local: guided-filter base) → Contrast, Whites, Blacks (global curve)
      → local tone sliders
@@ -91,7 +92,7 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
   - Basic, Tone Curve (parametric), Color Mixer (HSL tabs), Black & White, Color Grading, Detail, Lens Corrections, Effects and Film Negative panels
   - presets list (Lightroom's own folder when present, or added folders) with an Amount slider
   - history, undo/redo (a drag of a curve point or colour wheel, or a WB pick, is one step), before/after, histogram
-  - 1:1 view with panning (a region of the full-size render), white-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels, crop and straighten tool (draw a crop corner to corner like a screenshot, then adjust; aspect lock, size presets), mask tool (`ui/masks.js`: linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map; [design/masks.md](design/masks.md))
+  - 1:1 view with panning (a region of the full-size render), white-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels, crop and straighten tool (draw a crop corner to corner like a screenshot, then adjust; aspect lock, size presets), mask tool (`ui/masks.js`: linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map; [design/masks.md](design/masks.md)), spot removal (`ui/spots.js`: heal and clone spots with a suggested donor, `spot_source`; [design/spot-removal.md](design/spot-removal.md))
   - size presets (built-in for social sites and print, plus custom) for the crop aspect and exact-size export
   - **looks:** the toolbar, side columns and panels come from a layout file and the colours from a theme (`src/looks.rs` validates and stores them; `ui/layout.js` renders; `ui/controls.js` has the knob, bar, number, toggle and segmented controls; `ui/editor.js` is editor mode, which edits a draft of the layout and re-renders it)
   - **hub:** `src/hub.rs` reads a hub's `index.json` (https, or file:// for testing), checks each look file against its sha256, validates it and saves it as one of the user's looks; it also builds the GitHub link for submitting a look. `ui/hub.js` is the Browse dialog, with previews drawn from the looks' own data. The hub repo template is `hub/`
@@ -114,6 +115,6 @@ Speed today: a 24 MP raw with a typical preset takes about 3.5–4 s on a 4-core
 - **A full GUI.** The editor exists (see below). Missing: GPU viewport, installers. All remaining gaps are listed in [GAPS.md](GAPS.md).
 - Library and catalog (folders, ratings, keywords, collections, search).
 - GPU backend (wgpu), tiling and caching.
-- Healing and spot removal, Upright/Transform (crop and straighten render; see [design/crop.md](design/crop.md)), AI masks.
+- Red eye, Upright/Transform (crop and straighten render; see [design/crop.md](design/crop.md)), AI masks.
 - Camera profiles (DCP) and Adobe-like base looks: today a placeholder filmic base look is used.
 - MCP server and look matching (`amb match`) for AI control.

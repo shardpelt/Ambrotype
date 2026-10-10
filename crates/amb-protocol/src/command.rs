@@ -26,6 +26,10 @@ fn is_false(b: &bool) -> bool {
     !*b
 }
 
+fn default_spot_radius() -> f64 {
+    0.02
+}
+
 /// A state-changing, undoable edit.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "cmd", rename_all = "snake_case", deny_unknown_fields)]
@@ -94,6 +98,33 @@ pub enum Command {
         #[serde(default, skip_serializing_if = "is_false")]
         erase: bool,
     },
+    /// Add a round spot at `at` (image fractions): `kind` heal (default) or
+    /// clone, `radius` a fraction of the width, `source` the donor centre
+    /// (searched for when absent), `feather` and `opacity` 0-100.
+    AddSpot {
+        at: [f64; 2],
+        #[serde(default = "default_spot_radius")]
+        radius: f64,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        kind: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        source: Option<[f64; 2]>,
+        /// The source was picked by a search (Lightroom's "auto").
+        #[serde(default, skip_serializing_if = "is_false")]
+        source_auto: bool,
+        #[serde(default = "default_feather")]
+        feather: f64,
+        #[serde(default = "default_amount")]
+        opacity: f64,
+    },
+    /// Change a spot: `at`, `radius`, `source` (null to search), `kind`,
+    /// `feather`, `opacity`, `active`.
+    SetSpot {
+        spot: usize,
+        values: serde_json::Map<String, serde_json::Value>,
+    },
+    /// Remove a spot.
+    RemoveSpot { spot: usize },
     /// Remove a mask, or one of its parts.
     RemoveMask {
         mask: usize,
@@ -136,6 +167,11 @@ impl Command {
                 Some(p) => format!("remove_mask {mask} part {p}"),
                 None => format!("remove_mask {mask}"),
             },
+            Command::AddSpot { kind, .. } => {
+                format!("add_spot {}", kind.as_deref().unwrap_or("heal"))
+            }
+            Command::SetSpot { spot, .. } => format!("set_spot {spot}"),
+            Command::RemoveSpot { spot } => format!("remove_spot {spot}"),
             Command::Undo => "undo".into(),
             Command::Redo => "redo".into(),
         }
@@ -163,6 +199,8 @@ pub enum Query {
     ListGroups,
     /// Every mask with its sliders (UI units) and parts.
     ListMasks,
+    /// Every spot (heal and clone) with its position, size and source.
+    ListSpots,
 }
 
 /// Parse one command or a JSON array of commands.

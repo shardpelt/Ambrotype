@@ -16,8 +16,9 @@
 //! 6. noise reduction → sharpening
 //! 7. post-crop vignette (relative to the crop) → grain → output
 //!
-//! Masks ([`crate::mask`]) are drawn once after step 1, and each local slider
-//! acts through them right after its global counterpart.
+//! Spot removal ([`crate::retouch`]) runs at the end of step 1. Masks
+//! ([`crate::mask`]) are drawn then, and each local slider acts through them
+//! right after its global counterpart.
 //!
 //! The exact order Camera Raw uses is still to be confirmed by sweeps. Each
 //! stage is a pass over one shared [`Image`] buffer, so spatial operations can
@@ -46,8 +47,9 @@ use crate::local::LocalContrast;
 use crate::mask::Masks;
 use crate::negative::{Negative, NegativeType};
 use crate::raw::{CameraImage, neutral_for_xy, xy_for_neutral};
+use crate::retouch::Spots;
 use crate::tone::{self, ParametricCurve, ToneControls};
-use crate::{dehaze, detail, effects, lens, local, local_tone, mask, negative};
+use crate::{dehaze, detail, effects, lens, local, local_tone, mask, negative, retouch};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum WhiteBalance {
@@ -136,6 +138,8 @@ pub struct DevelopSettings {
     pub negative: Negative,
     /// Masks and their local adjustments.
     pub masks: Masks,
+    /// Spot removal (heal and clone).
+    pub spots: Spots,
     /// Model constants; [`Calibration::default`] until fitted against Lightroom.
     pub calibration: Calibration,
 }
@@ -163,6 +167,7 @@ impl Default for DevelopSettings {
             crop: Crop::default(),
             negative: Negative::default(),
             masks: Masks::default(),
+            spots: Spots::default(),
             calibration: Calibration::default(),
         }
     }
@@ -262,6 +267,9 @@ pub const RENDERED_TAGS: &[&str] = &[
     "CropRight",
     "CropAngle",
     "MaskGroupBasedCorrections",
+    "RetouchAreas",
+    "RetouchInfo",
+    "EnableRetouch",
     "EnableMaskGroupBasedCorrections",
     "GradientBasedCorrections",
     "EnableGradientBasedCorrections",
@@ -457,6 +465,8 @@ impl DevelopSettings {
         ];
         let (masks, mask_notes) = Masks::from_settings(settings);
         s.masks = masks;
+        let (spots, spot_notes) = Spots::from_settings(settings);
+        s.spots = spots;
         let registry = amb_presets::registry::Registry::builtin();
         let mut not_rendered: Vec<String> = settings
             .keys()
@@ -480,6 +490,7 @@ impl DevelopSettings {
             .cloned()
             .collect();
         not_rendered.extend(mask_notes);
+        not_rendered.extend(spot_notes);
         (s, not_rendered)
     }
 }
@@ -817,7 +828,9 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         lens::apply_defringe(&mut out, &s.lens.defringe, &cal.lens);
     }
 
-    // Masks, drawn on the photo as it is now; then the local light sliders.
+    // Spot removal, then masks drawn on the photo as it is now, then the
+    // local light sliders.
+    retouch::apply(&mut out, &s.spots, (img.width, img.height), crop.as_ref());
     let base = if img.rendered {
         BaseLook::Linear
     } else {

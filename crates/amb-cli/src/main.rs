@@ -39,11 +39,12 @@ USAGE:
     amb edit <SIDECAR.xmp> --commands <CMDS.json|-> [--out <NEW.xmp|.json>] [--dry-run] [--json]
                                             Apply protocol commands (set_param, adjust_param, reset_param,
                                             reset_group, apply_preset, add_mask, set_mask, paint_mask,
-                                            remove_mask, undo, redo) as one transaction,
+                                            remove_mask, add_spot, set_spot, remove_spot, undo, redo)
+                                            as one transaction,
                                             print the diff and write the sidecar (other XMP metadata kept)
     amb query <SIDECAR.xmp> --queries <QUERIES.json|->
                                             Answer protocol queries (get_param, list_params, describe,
-                                            list_groups, list_masks) as JSON
+                                            list_groups, list_masks, list_spots) as JSON
     amb protocol schema [command|query]     Print the JSON Schema of commands and queries
     amb negative analyze <RAW>... [--out ROLL.xmp] [--json]
                                             Estimate film base, levels and midtone of scanned negatives

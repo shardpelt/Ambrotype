@@ -10,10 +10,11 @@
 //!   sidecars and JSON.
 //! - [`Command`]: undoable edits (`set_param`, `adjust_param`, `reset_param`,
 //!   `reset_group`, `apply_preset`, the [`masks`] commands `add_mask`,
-//!   `set_mask`, `paint_mask`, `remove_mask`, and `undo`, `redo`), validated
+//!   `set_mask`, `paint_mask`, `remove_mask`, the [`spots`] commands
+//!   `add_spot`, `set_spot`, `remove_spot`, and `undo`, `redo`), validated
 //!   against the tag registry. Each returns an [`Outcome`] with a diff.
 //! - [`Query`]: read-only requests (`get_param`, `list_params`, `describe`,
-//!   `list_groups`, `list_masks`).
+//!   `list_groups`, `list_masks`, `list_spots`).
 //! - [`schema`]: JSON Schemas for both; [`reference`]: the generated settings
 //!   reference; [`catalog`]: tag descriptions and name suggestions.
 
@@ -25,6 +26,7 @@ pub mod masks;
 pub mod reference;
 pub mod schema;
 pub mod sidecar;
+pub mod spots;
 pub mod state;
 
 pub use command::{Command, Query, parse_commands, parse_queries};

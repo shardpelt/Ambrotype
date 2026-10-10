@@ -25,6 +25,7 @@
       <span class="sep"></span>
       <button id="btn-crop" title="Crop and straighten (R)" disabled>Crop</button>
       <button id="btn-masks" title="Masks (M)" disabled>Masks</button>
+      <button id="btn-spots" title="Spot removal (Q)" disabled>Spots</button>
       <button id="btn-zoom" title="Fit / 100% (Z, or click the photo). Drag to pan at 100%." disabled>100%</button>
       <button id="btn-wb" title="White balance picker: click a neutral grey or white spot (W)" disabled>WB picker</button>
       <button id="btn-clip" title="Show clipped highlights (red) and shadows (blue) (J)" disabled>Clipping</button>
@@ -82,6 +83,7 @@
       <img id="preview" alt="" hidden>
       <canvas id="crop-canvas" class="crop-canvas" hidden></canvas>
       <canvas id="mask-canvas" class="crop-canvas mask-canvas" hidden></canvas>
+      <canvas id="spot-canvas" class="crop-canvas spot-canvas" hidden></canvas>
       <div class="badge" id="before-badge" hidden>Before</div>
       <div class="busy" id="busy" hidden></div>
     </section>
@@ -116,6 +118,29 @@
         </div>
         <p class="hint" id="mask-hint"></p>
         <div class="crop-actions"><span class="grow"></span><button id="mask-done" class="primary" title="M or Esc">Done</button></div>
+      </section>
+      <section id="spot-panel" class="crop-panel spot-panel" hidden>
+        <div class="side-head"><h2>Spot removal</h2><span id="spot-count" class="hint"></span></div>
+        <div class="crop-line segmented" id="spot-kind">
+          <button type="button" class="small" data-kind="heal" title="Copy from the source, then match the surroundings">Heal</button>
+          <button type="button" class="small" data-kind="clone" title="Copy from the source as it is">Clone</button>
+        </div>
+        <div class="row"><label for="spot-size" title="Radius, % of the photo's width ([ and ], or the wheel)">Size</label>
+          <input id="spot-size" type="range" min="0.2" max="10" step="0.1" value="1.5">
+          <input id="spot-size-num" class="value" type="text" inputmode="decimal" spellcheck="false"></div>
+        <div class="row"><label for="spot-feather">Feather</label>
+          <input id="spot-feather" type="range" min="0" max="100" step="1" value="50">
+          <input id="spot-feather-num" class="value" type="text" inputmode="decimal" spellcheck="false"></div>
+        <div class="row"><label for="spot-opacity">Opacity</label>
+          <input id="spot-opacity" type="range" min="1" max="100" step="1" value="100">
+          <input id="spot-opacity-num" class="value" type="text" inputmode="decimal" spellcheck="false"></div>
+        <p class="hint" id="spot-hint"></p>
+        <div class="crop-actions">
+          <button type="button" id="spot-delete" title="Delete">Delete spot</button>
+          <button type="button" id="spot-clear">Remove all</button>
+          <span class="grow"></span>
+          <button type="button" id="spot-done" class="primary" title="Q or Esc">Done</button>
+        </div>
       </section>
       <section id="crop-panel" class="crop-panel" hidden>
         <div class="side-head"><h2>Crop &amp; straighten</h2><span id="crop-size" class="hint"></span></div>
@@ -733,6 +758,7 @@
   <script src="curve.js"></script>
   <script src="crop.js"></script>
   <script src="masks.js"></script>
+  <script src="spots.js"></script>
   <script src="wheels.js"></script>
   <script src="controls.js"></script>
   <script src="layout.js"></script>

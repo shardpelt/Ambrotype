@@ -11,7 +11,7 @@ use serde::Serialize;
 use crate::catalog::Catalog;
 use crate::command::{Command, Query};
 use crate::convert::{self, Clamp};
-use crate::{Error, masks, sidecar};
+use crate::{Error, masks, sidecar, spots};
 
 /// One setting's change. `None` means "not set" (the default applies).
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -515,6 +515,28 @@ impl DevelopState {
                 masks::paint(next, *mask, *part, mode.as_deref(), &stroke, clamped)?;
             }
             Command::RemoveMask { mask, part } => masks::remove(next, *mask, *part)?,
+            Command::AddSpot {
+                at,
+                radius,
+                kind,
+                source,
+                source_auto,
+                feather,
+                opacity,
+            } => {
+                let spot = spots::NewSpot {
+                    kind: kind.as_deref(),
+                    at: *at,
+                    radius: *radius,
+                    source: *source,
+                    source_auto: *source_auto,
+                    feather: *feather,
+                    opacity: *opacity,
+                };
+                spots::add(next, &spot, clamped)?;
+            }
+            Command::SetSpot { spot, values } => spots::set(next, *spot, values, clamped)?,
+            Command::RemoveSpot { spot } => spots::remove(next, *spot)?,
             Command::Undo | Command::Redo => unreachable!("handled by execute"),
         }
         Ok(())
@@ -568,6 +590,7 @@ impl DevelopState {
                 serde_json::json!({ "group": group, "only_set": only_set, "params": params })
             }
             Query::ListMasks => masks::describe(&self.settings),
+            Query::ListSpots => spots::describe(&self.settings),
             Query::ListGroups => {
                 let groups: Vec<serde_json::Value> = catalog
                     .groups()

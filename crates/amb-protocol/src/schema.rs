@@ -141,6 +141,22 @@ pub fn command_schema() -> Value {
                 "mask": mask_index(),
                 "part": part_index()
             }), &["mask"]),
+            variant("cmd", "add_spot", "Add a round spot that heals (matches the surroundings) or clones (copies as is) a donor area onto it. Stored in Lightroom's RetouchAreas.", json!({
+                "at": { "type": "array", "items": { "type": "number" }, "description": "[x, y] centre, fractions of the uncropped photo in stored orientation." },
+                "radius": { "type": "number", "minimum": 0.001, "maximum": 0.5, "default": 0.02, "description": "Fraction of the photo's width." },
+                "kind": { "type": "string", "enum": ["heal", "clone"], "default": "heal" },
+                "source": { "type": "array", "items": { "type": "number" }, "description": "[x, y] donor centre; searched for when absent." },
+                "source_auto": { "type": "boolean", "default": false, "description": "The source came from a search (Lightroom's auto)." },
+                "feather": { "type": "number", "minimum": 0, "maximum": 100, "default": 50 },
+                "opacity": { "type": "number", "minimum": 1, "maximum": 100, "default": 100 }
+            }), &["at"]),
+            variant("cmd", "set_spot", "Change a spot: at, radius, source (null to search again), kind, feather, opacity, active.", json!({
+                "spot": { "type": "integer", "minimum": 0, "description": "Spot position from 0, as list_spots shows it." },
+                "values": { "type": "object" }
+            }), &["spot", "values"]),
+            variant("cmd", "remove_spot", "Remove a spot.", json!({
+                "spot": { "type": "integer", "minimum": 0 }
+            }), &["spot"]),
             variant("cmd", "undo", "Revert the most recent command.", json!({}), &[]),
             variant("cmd", "redo", "Re-apply the most recently undone command.", json!({}), &[]),
         ]
@@ -166,6 +182,7 @@ pub fn query_schema() -> Value {
                 "name": name_prop()
             }), &["name"]),
             variant("query", "list_groups", "All setting groups with labels, descriptions and counts.", json!({}), &[]),
+            variant("query", "list_spots", "Every spot: kind, position, radius, source, feather, opacity.", json!({}), &[]),
             variant("query", "list_masks", "Every mask with its name, amount, local sliders (UI units) and parts (kind, mode, invert, geometry).", json!({}), &[]),
         ]
     })
@@ -403,6 +420,20 @@ mod tests {
                 mask: 1,
                 part: Some(0),
             },
+            Command::AddSpot {
+                at: [0.3, 0.4],
+                radius: 0.02,
+                kind: Some("clone".into()),
+                source: Some([0.5, 0.4]),
+                source_auto: false,
+                feather: 50.0,
+                opacity: 100.0,
+            },
+            Command::SetSpot {
+                spot: 0,
+                values: json!({"radius": 0.03}).as_object().cloned().unwrap(),
+            },
+            Command::RemoveSpot { spot: 0 },
             Command::Undo,
             Command::Redo,
         ]
@@ -433,6 +464,7 @@ mod tests {
             },
             Query::ListGroups,
             Query::ListMasks,
+            Query::ListSpots,
         ];
         for q in queries {
             let v = serde_json::to_value(&q).unwrap();
@@ -468,8 +500,8 @@ mod tests {
         assert!(!validate(&doc, &doc, &json!({"query": "nope"})));
         assert_eq!(
             doc["$defs"]["Command"]["oneOf"].as_array().unwrap().len(),
-            11
+            14
         );
-        assert_eq!(doc["$defs"]["Query"]["oneOf"].as_array().unwrap().len(), 5);
+        assert_eq!(doc["$defs"]["Query"]["oneOf"].as_array().unwrap().len(), 6);
     }
 }

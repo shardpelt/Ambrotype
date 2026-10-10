@@ -188,6 +188,10 @@ Spots are Lightroom's own `RetouchAreas`. Positions are fractions of the uncropp
 
 A heal copies from the source and matches the surroundings; a clone copies as is. Without `source` the engine picks a donor nearby each time it renders; render and look, and give an explicit `source` if it picked badly. Spots Lightroom filled with content-aware or generative fill are healed from a nearby area here, and reported.
 
+## Importing photos
+
+`amb import SOURCE DEST` copies photos from a card or folder into dated folders (`--into "{yyyy}/{yyyy}-{mm}-{dd}"`, the default), optionally renamed (`--rename "{yyyy}{mm}{dd}_{seq}"`), with `--keywords "a, b"` for all. A raw's JPEG and sidecar move with it; photos already there are skipped. Run it with `--dry-run` first and show the user the plan; `--json` gives the plan or the report as JSON.
+
 ## Intent to settings cheat sheet
 
 These are **starting points**. Apply them with `--dry-run`, render, look, and adjust. Use smaller values for subtle requests and larger ones for "much more". Values are Camera Raw slider units; check ranges in the [reference](settings-reference.md). Settings marked *(planned)* are saved and Lightroom honours them, but Ambrotype's preview may not render them yet (see the Status column).

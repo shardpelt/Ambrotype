@@ -9,11 +9,7 @@ use serde::Serialize;
 use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
 
-/// Raw file extensions the editor opens (lower case).
-pub const RAW_EXTENSIONS: [&str; 21] = [
-    "dng", "nef", "nrw", "cr2", "cr3", "crw", "arw", "srf", "sr2", "raf", "orf", "rw2", "pef",
-    "srw", "3fr", "iiq", "erf", "mef", "mos", "kdc", "dcr",
-];
+pub use amb_engine::raw::RAW_EXTENSIONS;
 
 /// The long edge of filmstrip thumbnails, in pixels (sharp at 2× on a ~110 px strip).
 pub const THUMB_EDGE: u32 = 256;

@@ -177,6 +177,7 @@
       <button type="button" id="lib-choose" class="small" title="Show another folder">Folder…</button>
       <span id="library-folder" class="library-folder"></span>
       <button type="button" id="lib-reload" class="small" title="Read the folder again">↻</button>
+      <button type="button" id="lib-import" class="small" title="Copy photos from a card or folder (Ctrl+Shift+I)">Import…</button>
       <span id="library-count" class="hint"></span>
       <span id="lib-views" class="lib-views" role="group" aria-label="View">
         <button type="button" data-view="grid" class="on" title="Grid (G)">Grid</button><button type="button" data-view="loupe" title="Loupe (E)">Loupe</button><button type="button" data-view="compare" title="Compare (C)">Compare</button><button type="button" data-view="survey" title="Survey (N)">Survey</button>
@@ -272,6 +273,50 @@
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary">Paste</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Import: copy and rename from a card or folder (import.js). -->
+  <dialog id="import-dialog">
+    <form method="dialog" id="import-form">
+      <h2>Import photos</h2>
+      <div class="grid">
+        <label>From (a card or folder)
+          <span class="folder-row"><input name="source" type="text" readonly placeholder="Choose…"><button type="button" class="small" data-pick="source">Choose…</button></span>
+        </label>
+        <label>Into
+          <span class="folder-row"><input name="dest" type="text" readonly placeholder="Choose…"><button type="button" class="small" data-pick="dest">Choose…</button></span>
+        </label>
+        <label>Folders
+          <select name="folder_choice">
+            <option value="{yyyy}/{yyyy}-{mm}-{dd}">By date: 2026 / 2026-10-10</option>
+            <option value="{yyyy}/{yyyy}-{mm}">By month: 2026 / 2026-10</option>
+            <option value="{yyyy}-{mm}-{dd}">One folder per day: 2026-10-10</option>
+            <option value="">Straight into the folder</option>
+            <option value="custom">Your own…</option>
+          </select>
+          <input name="folder" type="text" spellcheck="false" hidden>
+        </label>
+        <label>File names
+          <select name="name_choice">
+            <option value="{name}">Keep the camera's names</option>
+            <option value="{yyyy}{mm}{dd}_{seq}">Date and number: 20261010_0001</option>
+            <option value="{yyyy}{mm}{dd}_{name}">Date and camera name: 20261010_DSC_1234</option>
+            <option value="custom">Your own…</option>
+          </select>
+          <input name="name" type="text" spellcheck="false" hidden>
+        </label>
+        <label>First number <input name="first_number" type="number" min="0" max="999999" step="1" value="1"></label>
+        <label>Keywords for all <input name="keywords" type="text" spellcheck="false" placeholder="e.g. wedding, Anna &amp; Tom"></label>
+      </div>
+      <label class="check"><input name="subfolders" type="checkbox" checked> Include subfolders (a card's DCIM folders)</label>
+      <p id="import-tokens" class="hint"></p>
+      <div id="import-summary" class="import-summary hint">Choose where the photos are and where they go.</div>
+      <ul id="import-list" class="import-list"></ul>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" id="import-go" class="primary" disabled>Import</button>
       </menu>
     </form>
   </dialog>
@@ -786,6 +831,7 @@
   <script src="collage.js"></script>
   <script src="library.js"></script>
   <script src="cull.js"></script>
+  <script src="import.js"></script>
   <script src="plugins.js"></script>
   <script src="picker.js"></script>
   <script src="app.js"></script>

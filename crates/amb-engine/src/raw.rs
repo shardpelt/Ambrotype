@@ -52,6 +52,19 @@ pub struct Gps {
 }
 
 /// Photo metadata for exports. Values keep their EXIF form.
+/// Raw file extensions we open (lower case).
+pub const RAW_EXTENSIONS: [&str; 21] = [
+    "dng", "nef", "nrw", "cr2", "cr3", "crw", "arw", "srf", "sr2", "raf", "orf", "rw2", "pef",
+    "srw", "3fr", "iiq", "erf", "mef", "mos", "kdc", "dcr",
+];
+
+/// Whether `path` has a raw file extension.
+pub fn is_raw_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| RAW_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
+}
+
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct PhotoMetadata {
     pub make: String,

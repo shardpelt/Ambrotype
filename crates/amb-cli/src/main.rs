@@ -59,6 +59,12 @@ USAGE:
                                             then the lensfun database; default locations or
                                             AMB_LCP_DIRS / AMB_LENSFUN_DB) and print the models
                                             interpolated to its focal length, aperture and distance
+    amb import <SOURCE> <DEST> [--into \"{yyyy}/{yyyy}-{mm}-{dd}\"] [--rename \"{name}\"] [--start 1]
+               [--keywords \"a, b\"] [--no-subfolders] [--dry-run] [--json]
+                                            Copy photos from a card or folder into DEST, sorted into
+                                            folders and renamed from templates ({name} {yyyy} {yy} {mm}
+                                            {dd} {hh} {min} {ss} {seq} {camera}); a raw's JPEG and .xmp
+                                            keep its new name; photos already there are skipped
     amb settings reference [--json]         Print the settings reference (docs/ai/settings-reference.md)
     amb plugin new <DIR> [--name \"My plugin\"]
                                             Start a plugin project (Rust, built to WebAssembly;
@@ -90,6 +96,79 @@ EXPORT OPTIONS (amb render):
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
 XMP packet (e.g. .dng presets for Lightroom mobile). AI and script guide: docs/ai/README.md.";
 
+/// `amb import`: plan, print, then copy (unless `dry_run`).
+fn import(
+    source: &Path,
+    dest: &Path,
+    options: &BTreeMap<&str, &str>,
+    dry_run: bool,
+    json: bool,
+) -> Result<(), String> {
+    use amb_library::import::{self, ImportOptions};
+    let d = ImportOptions::default();
+    let opts = ImportOptions {
+        folder: options.get("--into").map_or(d.folder, |s| s.to_string()),
+        name: options.get("--rename").map_or(d.name, |s| s.to_string()),
+        first_number: match options.get("--start") {
+            Some(n) => n
+                .parse()
+                .map_err(|_| format!("bad --start {n:?} (a whole number)"))?,
+            None => d.first_number,
+        },
+        subfolders: !options.contains_key("--no-subfolders"),
+        keywords: options
+            .get("--keywords")
+            .map(|k| k.split(',').map(|s| s.trim().to_string()).collect())
+            .unwrap_or_default(),
+    };
+    let plan = import::plan(source, dest, &opts)?;
+    if json && dry_run {
+        return print_json(&serde_json::to_value(&plan).map_err(|e| e.to_string())?);
+    }
+    let new = plan.iter().filter(|p| p.skip.is_none()).count();
+    if !json {
+        for p in &plan {
+            let (src, dst) = &p.files[0];
+            let extra = p.files.len() - 1;
+            let with = if extra > 0 {
+                format!(" (+{extra})")
+            } else {
+                String::new()
+            };
+            match &p.skip {
+                Some(why) => println!("skip  {}: {why}", src.display()),
+                None => println!("copy  {}{with} -> {}", src.display(), dst.display()),
+            }
+        }
+        println!(
+            "{new} to import, {} already there{}",
+            plan.len() - new,
+            if dry_run {
+                " (dry run: nothing copied)"
+            } else {
+                ""
+            }
+        );
+    }
+    if dry_run {
+        return Ok(());
+    }
+    let report = import::run(&plan, &opts, &mut |_, _, _| {});
+    if json {
+        print_json(&serde_json::to_value(&report).map_err(|e| e.to_string())?)?;
+    } else {
+        println!("imported {}, skipped {}", report.imported, report.skipped);
+        for e in &report.errors {
+            eprintln!("error: {e}");
+        }
+    }
+    if report.errors.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("{} problem(s), see above", report.errors.len()))
+    }
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut json = false;
@@ -101,7 +180,7 @@ fn main() -> ExitCode {
         match arg.as_str() {
             "--json" => json = true,
             "--dry-run" => dry_run = true,
-            "--progressive" | "--enlarge" => {
+            "--progressive" | "--enlarge" | "--no-subfolders" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look"
@@ -111,7 +190,8 @@ fn main() -> ExitCode {
             | "--color-space" | "--subsampling" | "--long-edge" | "--short-edge" | "--width"
             | "--height" | "--fit" | "--exact" | "--megapixels" | "--percent" | "--sharpen"
             | "--metadata" | "--max-size" | "--avif-speed" | "--border" | "--out-dir"
-            | "--rating" | "--keywords" | "--name" | "--params" => match iter.next() {
+            | "--rating" | "--keywords" | "--name" | "--params" | "--into" | "--rename"
+            | "--start" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -145,6 +225,9 @@ fn main() -> ExitCode {
             None => Err("sweep generate needs --out <DIR>".into()),
         },
         ["testimage", pattern, out] => testimage(pattern, Path::new(out)),
+        ["import", source, dest] => {
+            import(Path::new(source), Path::new(dest), &options, dry_run, json)
+        }
         ["calibration", "defaults"] => {
             println!(
                 "{}",

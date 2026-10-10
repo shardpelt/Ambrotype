@@ -582,6 +582,7 @@ function wireLibrary() {
   $("lib-choose").addEventListener("click", chooseLibraryFolder);
   $("lib-choose-empty").addEventListener("click", chooseLibraryFolder);
   $("lib-reload").addEventListener("click", () => lib.dir && loadLibrary(lib.dir));
+  $("lib-import").addEventListener("click", () => importFlow());
   for (const b of $("lib-rating").querySelectorAll("button[data-stars]")) {
     b.addEventListener("click", () => libraryChange({ rating: Number(b.dataset.stars) }));
   }

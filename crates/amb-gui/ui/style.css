@@ -601,6 +601,20 @@ dialog .inline-check { flex-direction: row; align-items: flex-start; gap: 6px; c
 .flag-buttons button.on { background: var(--tab-active); border-color: var(--accent); color: var(--text); }
 .flag-buttons button.reject.on { color: #e5484d; }
 
+/* Import dialog (import.js) */
+#import-dialog { width: 680px; max-width: calc(100vw - 32px); }
+.folder-row { display: flex; gap: 6px; }
+.folder-row input { flex: 1; min-width: 0; }
+#import-dialog input[hidden] { display: none; }
+.import-summary { margin-top: 12px; }
+.import-list { list-style: none; margin: 6px 0 0; padding: 0; max-height: 220px; overflow-y: auto; font-size: 12px; border: 1px solid var(--line); border-radius: var(--radius); }
+.import-list:empty { display: none; }
+.import-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.4fr); gap: 8px; padding: 3px 8px; border-bottom: 1px solid var(--line); }
+.import-list li:last-child { border-bottom: none; }
+.import-list li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.import-list li.skip { color: var(--faint); }
+.import-list .arrow { color: var(--muted); }
+
 /* Library (library.js) */
 body.library-mode #workspace { display: none; }
 .library { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }

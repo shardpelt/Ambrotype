@@ -31,8 +31,25 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
   - it runs as protocol commands: the open photo gets one undo step, the others their sidecars
 - **Export the selection** with the export dialog's choices (sizes, borders, sharpening, metadata), one file each into a folder, each with its own edit, rating, label and keywords.
 - **Make a collage** with the selection in the collage maker's tray.
+- **Import** (Import… in the bar, or Ctrl+Shift+I anywhere): copy photos from a card or folder into the library (below).
 
 The rating, label, flag and keyword keys work in the editor too, on the open photo. Its rating block has the label swatches and the flag buttons.
+
+## Import
+
+Lightroom's Import "Copy", without a catalogue. The dialog (and `amb import SOURCE DEST`) shows what will happen before anything is copied.
+
+- **From and into:** a card or folder (with its subfolders, such as `DCIM/100CANON`), and a destination folder, remembered for next time.
+- **Folders:** by date (`2026/2026-10-10`), by month, one folder per day, straight into the destination, or your own template.
+- **Names:** keep the camera's, date and number (`20261010_0001`), date and camera name, or your own template. Tokens: `{name}` `{yyyy}` `{yy}` `{mm}` `{dd}` `{hh}` `{min}` `{ss}` `{seq}` `{camera}`; a `/` in a folder template makes a subfolder.
+- **Dates** come from EXIF; a file without one uses its modified time (UTC). `{seq}` counts in capture order from the first number.
+- **Companions:** a raw's same-name JPEG and `.xmp` sidecar get its new name, so they stay a pair and keep their edits.
+- **Keywords for all** go into each imported photo's sidecar.
+- **Nothing is overwritten.** A photo whose exact bytes are already in its destination folder, under any name, is skipped as imported, so the same card can be imported again for its new photos. Another file with the same name makes the new one `name-2`.
+- **Safe copies:** each file is copied to a hidden temporary name, checked for size, then renamed, and keeps its modified time.
+- After the import the library shows the first folder that got photos.
+
+Code: `crates/amb-library/src/import.rs` (plan and run), `amb import` in `crates/amb-cli`, `ui/import.js`.
 
 ## Flags
 
@@ -52,7 +69,8 @@ Lightroom keeps pick and reject flags in its catalogue, not in sidecars, so ther
 
 ## Not yet
 
-- Subfolders, several folders at once, collections, stacks.
+- Subfolders, several folders at once, collections, stacks. An import into dated folders shows only the first folder afterwards.
+- Import: moving instead of copying, a second backup copy, ejecting the card, a develop preset on import, picking single photos to import.
 - Zooming in the loupe and compare views (open the photo in the editor for 100%).
 - A metadata panel (EXIF, caption, copyright) and editing keyword hierarchies.
 - Undo for library changes. Ratings, labels and keywords are written straight away; pasted edits can be undone per photo in the editor.

@@ -60,6 +60,7 @@ const KEY_ACTIONS = [
   { id: "flag-reject", group: "Rating", label: "Flag as rejected", keys: ["X"], when: FLAG_CONTEXTS, run: () => flagKey("reject") },
   { id: "flag-none", group: "Rating", label: "Remove the flag", keys: ["U"], when: FLAG_CONTEXTS, run: () => flagKey("") },
   { id: "library", group: "Library", label: "Library grid / editor", hint: "All the photos in the folder, to rate, label, tag and export many at once.", keys: ["G"], when: "any", button: "btn-library", run: () => cullLeave() || toggleLibrary() },
+  { id: "import", group: "Library", label: "Import photos from a card or folder", hint: "Copied into dated folders, renamed if you like.", keys: ["Ctrl+Shift+I"], when: "any", run: () => importFlow() },
   { id: "lib-loupe", group: "Library", label: "Loupe: one photo large", hint: "← → step through the photos.", keys: ["E"], when: "library", run: () => setLibraryView("loupe") },
   { id: "lib-compare", group: "Library", label: "Compare two photos", hint: "← → change the candidate, ↓ swaps, ↑ makes it the select.", keys: ["C"], when: "library", run: () => setLibraryView("compare") },
   { id: "lib-survey", group: "Library", label: "Survey the selection", hint: "Click to make a photo active; × takes it out.", keys: ["N"], when: "library", run: () => setLibraryView("survey") },

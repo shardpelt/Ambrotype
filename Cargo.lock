@@ -79,6 +79,7 @@ dependencies = [
  "amb-engine",
  "amb-export",
  "amb-lens",
+ "amb-library",
  "amb-plugin",
  "amb-presets",
  "amb-protocol",
@@ -129,6 +130,7 @@ dependencies = [
  "amb-engine",
  "amb-export",
  "amb-lens",
+ "amb-library",
  "amb-plugin",
  "amb-presets",
  "amb-protocol",
@@ -153,6 +155,16 @@ dependencies = [
  "quick-xml 0.37.5",
  "serde",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "amb-library"
+version = "0.1.0"
+dependencies = [
+ "amb-engine",
+ "amb-protocol",
+ "rayon",
+ "serde",
 ]
 
 [[package]]

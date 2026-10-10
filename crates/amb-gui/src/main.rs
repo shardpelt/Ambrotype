@@ -53,6 +53,14 @@ struct AppState {
     collage_templates: Mutex<Vec<collages::TemplateEntry>>,
     plugin_approvals: Mutex<plugins::Approvals>,
     plugin_recipes: Mutex<PluginRecipes>,
+    import_choice: Mutex<Option<ImportChoice>>,
+}
+
+/// The import dialog's last destination and choices.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ImportChoice {
+    dest: String,
+    options: amb_library::import::ImportOptions,
 }
 
 /// Recipes the user saved, per plugin id.
@@ -91,6 +99,9 @@ struct Config {
     /// Plugin recipes the user saved (plugin id -> recipes).
     #[serde(default)]
     plugin_recipes: PluginRecipes,
+    /// The import dialog's last destination and choices.
+    #[serde(default)]
+    import: Option<ImportChoice>,
 }
 
 fn save_config(state: &AppState) {
@@ -147,6 +158,7 @@ fn save_config(state: &AppState) {
             .lock()
             .map(|r| r.clone())
             .unwrap_or_default(),
+        import: state.import_choice.lock().ok().and_then(|c| c.clone()),
     };
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
@@ -1939,6 +1951,112 @@ async fn export_photos(
     .map_err(|e| e.to_string())?
 }
 
+#[derive(Serialize)]
+struct ImportDefaults {
+    dest: Option<String>,
+    options: amb_library::import::ImportOptions,
+    /// Template tokens and what they stand for.
+    tokens: Vec<(String, String)>,
+}
+
+/// The import dialog's starting choices: the last ones used.
+#[tauri::command]
+fn import_defaults(state: tauri::State<'_, AppState>) -> ImportDefaults {
+    let last = state.import_choice.lock().ok().and_then(|c| c.clone());
+    ImportDefaults {
+        dest: last.as_ref().map(|c| c.dest.clone()),
+        options: last.map(|c| c.options).unwrap_or_default(),
+        tokens: amb_library::import::TOKENS
+            .iter()
+            .map(|(t, d)| (t.to_string(), d.to_string()))
+            .collect(),
+    }
+}
+
+/// Pick a folder (import source or destination).
+#[tauri::command]
+async fn pick_folder(app: tauri::AppHandle, title: String) -> Option<String> {
+    app.dialog()
+        .file()
+        .set_title(&title)
+        .blocking_pick_folder()
+        .and_then(|p| p.into_path().ok())
+        .map(|p| p.display().to_string())
+}
+
+#[derive(Serialize)]
+struct ImportRow {
+    source: String,
+    dest: String,
+    /// Companion files (JPEG, sidecar) that go with it.
+    extra: usize,
+    captured: String,
+    skip: Option<String>,
+}
+
+/// What an import would do, nothing copied.
+#[tauri::command]
+async fn import_plan(
+    source: String,
+    dest: String,
+    options: amb_library::import::ImportOptions,
+) -> Res<Vec<ImportRow>> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let plan = amb_library::import::plan(Path::new(&source), Path::new(&dest), &options)?;
+        Ok(plan
+            .into_iter()
+            .map(|p| ImportRow {
+                source: p.files[0].0.display().to_string(),
+                dest: p.files[0].1.display().to_string(),
+                extra: p.files.len() - 1,
+                captured: p.captured,
+                skip: p.skip,
+            })
+            .collect())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Import: plan again (the card may have changed) and copy, with
+/// "import-progress" events. The choices are remembered.
+#[tauri::command]
+async fn import_run(
+    app: tauri::AppHandle,
+    source: String,
+    dest: String,
+    options: amb_library::import::ImportOptions,
+    state: tauri::State<'_, AppState>,
+) -> Res<amb_library::import::Report> {
+    use tauri::Emitter;
+    if let Ok(mut c) = state.import_choice.lock() {
+        *c = Some(ImportChoice {
+            dest: dest.clone(),
+            options: options.clone(),
+        });
+    }
+    save_config(&state);
+    tauri::async_runtime::spawn_blocking(move || {
+        let plan = amb_library::import::plan(Path::new(&source), Path::new(&dest), &options)?;
+        Ok(amb_library::import::run(
+            &plan,
+            &options,
+            &mut |done, total, name| {
+                let _ = app.emit(
+                    "import-progress",
+                    LibraryProgress {
+                        done,
+                        total,
+                        name: name.to_string(),
+                    },
+                );
+            },
+        ))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 fn main() {
     // `ambrotype --check-look FILE...` validates layout/theme files and exits.
     let args: Vec<String> = std::env::args().collect();
@@ -2000,6 +2118,9 @@ fn main() {
                 }
                 if let Ok(mut r) = state.plugin_recipes.lock() {
                     *r = config.plugin_recipes;
+                }
+                if let Ok(mut c) = state.import_choice.lock() {
+                    *c = config.import;
                 }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
@@ -2070,6 +2191,10 @@ fn main() {
             pick_photo_folder,
             library_list,
             library_pick_folder,
+            import_defaults,
+            pick_folder,
+            import_plan,
+            import_run,
             library_set_info,
             paste_groups,
             paste_settings,

@@ -614,6 +614,29 @@ body.library-mode #workspace { display: none; }
 .library-bar .grow { flex: 1 1 0; }
 .library-body { position: relative; flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 270px; min-height: 0; }
 .library-grid { --thumb: 160px; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--thumb), 1fr)); gap: 10px; align-content: start; padding: 12px; overflow-y: auto; outline: none; user-select: none; -webkit-user-select: none; }
+.library-grid[hidden] { display: none; }
+.lib-views { display: inline-flex; }
+.lib-views button { padding: 2px 8px; font-size: 12px; border-radius: 0; }
+.lib-views button:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.lib-views button:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+.lib-views button.on { background: var(--tab-active); border-color: var(--accent); }
+/* Loupe, compare and survey (cull.js) */
+.library-view { display: grid; gap: 10px; padding: 12px; min-height: 0; min-width: 0; overflow: hidden; outline: none; }
+.library-view[hidden] { display: none; }
+.library-view.loupe { grid-template-columns: minmax(0, 1fr); }
+.library-view.compare { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.library-view.survey { grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); grid-template-rows: repeat(var(--rows, 1), minmax(0, 1fr)); }
+.cull-tile { margin: 0; display: flex; flex-direction: column; min-height: 0; min-width: 0; padding: 4px; border: 2px solid transparent; border-radius: var(--radius); background: var(--panel); }
+.cull-tile.active { border-color: var(--accent); }
+.library-view.loupe .cull-tile { border-color: transparent; background: none; }
+.cull-frame { position: relative; flex: 1; min-height: 0; }
+.cull-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.cull-frame img:not([src]) { visibility: hidden; }
+.cull-tile.rejected .cull-frame img { opacity: .35; }
+.cull-caption { display: flex; align-items: center; gap: 6px; height: 22px; font-size: 12px; }
+.cull-name { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cull-tile.active .cull-name { color: var(--text); }
+.cull-remove { margin-left: auto; padding: 0 7px; line-height: 1.3; }
 .lib-cell { position: relative; display: flex; flex-direction: column; gap: 3px; padding: 6px 6px 4px; border-radius: var(--radius); border: 1px solid transparent; background: var(--panel); cursor: default; }
 .lib-cell:hover { background: var(--hover); }
 .lib-cell.selected { background: var(--tab-active); border-color: var(--accent); }

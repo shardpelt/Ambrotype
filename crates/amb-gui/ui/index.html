@@ -178,6 +178,9 @@
       <span id="library-folder" class="library-folder"></span>
       <button type="button" id="lib-reload" class="small" title="Read the folder again">↻</button>
       <span id="library-count" class="hint"></span>
+      <span id="lib-views" class="lib-views" role="group" aria-label="View">
+        <button type="button" data-view="grid" class="on" title="Grid (G)">Grid</button><button type="button" data-view="loupe" title="Loupe (E)">Loupe</button><button type="button" data-view="compare" title="Compare (C)">Compare</button><button type="button" data-view="survey" title="Survey (N)">Survey</button>
+      </span>
       <span class="grow"></span>
       <input id="lib-search" type="search" placeholder="Name or keyword" spellcheck="false" aria-label="Search">
       <select id="lib-filter-rating" aria-label="Rating filter" title="Rating">
@@ -205,6 +208,7 @@
     </div>
     <div class="library-body">
       <div id="library-grid" class="library-grid" tabindex="-1"></div>
+      <div id="library-view" class="library-view" tabindex="-1" hidden></div>
       <div id="library-empty" class="library-empty" hidden>
         <p class="empty-title">Choose a folder of photos</p>
         <p class="hint">Or open a photo: the library shows its folder.</p>
@@ -212,7 +216,7 @@
       </div>
       <aside id="library-panel" class="library-panel">
         <h2 id="lib-sel-count">Nothing selected</h2>
-        <p class="hint">Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.</p>
+        <p id="lib-hint" class="hint">Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.</p>
         <h3>Rating</h3>
         <div id="lib-rating" class="rating">
           <button type="button" data-stars="1" title="1 star (1)">★</button><button type="button" data-stars="2" title="2 stars (2)">★</button><button type="button" data-stars="3" title="3 stars (3)">★</button><button type="button" data-stars="4" title="4 stars (4)">★</button><button type="button" data-stars="5" title="5 stars (5)">★</button>
@@ -781,6 +785,7 @@
   <script src="filmstrip.js"></script>
   <script src="collage.js"></script>
   <script src="library.js"></script>
+  <script src="cull.js"></script>
   <script src="plugins.js"></script>
   <script src="picker.js"></script>
   <script src="app.js"></script>

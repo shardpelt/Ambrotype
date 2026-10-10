@@ -42,6 +42,7 @@ async function toggleLibrary(on = !lib.on) {
     exitMasks();
     exitSpots();
   }
+  if (!on) setLibraryView("grid");
   lib.on = on;
   $("workspace").hidden = on;
   $("library").hidden = !on;
@@ -314,9 +315,15 @@ function moveFocus(key, extend) {
 // ---------------------------------------------------------------- the panel: rate, label, keywords
 
 function renderPanel() {
-  const sel = selectedPhotos();
+  // In compare and survey the panel is about the active photo.
+  const sel = libraryTargets();
   const n = sel.length;
-  $("lib-sel-count").textContent = n ? `${n} photo${n === 1 ? "" : "s"} selected` : "Nothing selected";
+  const active = cullOn() && cull.view !== "loupe";
+  $("lib-sel-count").textContent = active ? (sel[0] ? `${sel[0].name} (active)` : "No active photo")
+    : n ? `${n} photo${n === 1 ? "" : "s"} selected` : "Nothing selected";
+  $("lib-hint").textContent = active
+    ? "Changes go to the active photo (the framed one). Click a photo to make it active; G or Esc goes back to the grid."
+    : "Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.";
   for (const el of $("library-panel").querySelectorAll("[data-needs]")) {
     const need = el.dataset.needs;
     el.disabled = need === "one" ? n !== 1 : need === "paste" ? !lib.copied || !sel.some((p) => p.path !== lib.copied) : n === 0;
@@ -361,7 +368,7 @@ function renderPanel() {
 
 // Rate, label or keyword the whole selection.
 async function libraryChange(change) {
-  const paths = selectedPhotos().map((p) => p.path);
+  const paths = libraryTargets().map((p) => p.path);
   if (!paths.length) return;
   try {
     const updates = await invoke("library_set_info", { paths, change });
@@ -370,6 +377,7 @@ async function libraryChange(change) {
       if (!p) continue;
       Object.assign(p, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag });
       updateCell(p);
+      updateCullTile(u.path);
       stripUpdate(u.path, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag ?? null });
     }
     if (ui.info && paths.includes(ui.info.path)) loadInfo();
@@ -400,7 +408,7 @@ function rateKey(n) {
 
 function labelKey(label) {
   if (lib.on) {
-    const sel = selectedPhotos();
+    const sel = libraryTargets();
     if (!sel.length) return false;
     return libraryChange({ label: sel.every((p) => p.label === label) ? "" : label });
   }
@@ -408,7 +416,7 @@ function labelKey(label) {
 }
 
 function flagKey(flag) {
-  if (lib.on) return selectedPhotos().length ? libraryChange({ flag }) : false;
+  if (lib.on) return libraryTargets().length ? libraryChange({ flag }) : false;
   return ui.info ? setFlag(flag) : false;
 }
 
@@ -433,7 +441,7 @@ async function libraryOpen(path) {
 }
 
 function libraryOpenFocused() {
-  return libraryOpen(lib.focus ?? selectedPhotos()[0]?.path);
+  return libraryOpen((cullOn() && cull.active) || lib.focus || selectedPhotos()[0]?.path);
 }
 
 function libraryCopySettings() {
@@ -551,7 +559,8 @@ function wireLibrary() {
     if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key) && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
       e.stopPropagation();
-      moveFocus(e.key, e.shiftKey);
+      if (cullOn()) cullArrow(e.key);
+      else moveFocus(e.key, e.shiftKey);
     }
   }, true);
   for (const b of $("lib-flags").querySelectorAll("button")) b.addEventListener("click", () => libraryChange({ flag: b.dataset.flag }));
@@ -604,4 +613,5 @@ function wireLibrary() {
   $("lib-export").addEventListener("click", libraryExport);
   $("lib-collage").addEventListener("click", libraryCollage);
   grid.style.setProperty("--thumb", `${$("lib-size").value}px`);
+  wireCull();
 }

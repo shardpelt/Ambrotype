@@ -112,7 +112,8 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | 1–5, 0 | Rate the photo, or the selection in the library (0 clears) |
   | 6, 7, 8, 9 | Red, yellow, green, blue label (the same key again removes it) |
   | P, X, U | Flag as a pick, flag as rejected, remove the flag (not in the crop tool, where X swaps the aspect) |
-  | G | Library grid / editor |
+  | G | Library grid / editor (from loupe, compare or survey: back to the grid) |
+  | E, C, N | In the library: loupe, compare, survey |
   | Ctrl+Shift+C / Ctrl+Shift+V | In the library: copy one photo's settings / paste them onto the selection |
   | K | Jump to the keyword field (Enter or a comma adds a keyword) |
   | Ctrl+L / Ctrl+Shift+L | Appearance / Edit layout |

@@ -19,6 +19,12 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
   - the panel shows what the selection shares: keywords on every photo (× removes from all) and on some of them (+ adds to the rest)
   - P flags a pick, X a reject, U removes the flag (Lightroom's keys); rejected photos are dimmed
   - written to each photo's `.xmp` at once: `xmp:Rating`, `xmp:Label`, `dc:subject`, and the flag (below)
+- **Look closer** (Lightroom's culling views, buttons in the bar):
+  - **Loupe** (E): one photo large; ← → step through the shown photos.
+  - **Compare** (C): the select on the left, a candidate on the right (the first two selected, or the photo after the select). ← → change the candidate, ↓ swaps the two, ↑ makes the candidate the select and brings the next photo in.
+  - **Survey** (N): the selected photos tiled as large as they fit (or the next twelve when one is selected). Click one to make it active; × takes it out of the survey and the selection.
+  - In compare and survey, rating, label and flag keys and the panel act on the active photo, framed in the accent colour, as in Lightroom. Enter or a double-click opens it in the editor; G or Esc goes back to the grid.
+  - Large previews are the camera's embedded preview at 1024 or 2048 pixels, then the edit's render for edited photos (both cached).
 - **Copy and paste an edit** (Lightroom's Sync): Copy settings on one photo (Ctrl+Shift+C), select others, Paste settings (Ctrl+Shift+V).
   - you choose the setting groups; crop, transform, masks and retouching are off by default
   - a ticked group becomes exactly the source's: settings the source doesn't have go back to their defaults
@@ -41,12 +47,13 @@ Lightroom keeps pick and reject flags in its catalogue, not in sidecars, so ther
 
 - `crates/amb-gui/src/library.rs`: listing, batch info changes, paste commands, batch export.
 - `crates/amb-gui/ui/library.js`: the grid, selection, panel and keys.
+- `crates/amb-gui/ui/cull.js`: loupe, compare and survey.
 - Labels and flags in `amb_protocol::sidecar::PhotoInfo` (`xmp:Label`, `amblib:Flag`); labels are exported as XMP (`amb_export::exif::Tags::label`), flags are not.
 
 ## Not yet
 
 - Subfolders, several folders at once, collections, stacks.
-- A compare view and a full-screen loupe in the library.
+- Zooming in the loupe and compare views (open the photo in the editor for 100%).
 - A metadata panel (EXIF, caption, copyright) and editing keyword hierarchies.
 - Undo for library changes. Ratings, labels and keywords are written straight away; pasted edits can be undone per photo in the editor.
 - Background work: big pastes and exports run while you wait, with progress in the status bar.

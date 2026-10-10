@@ -16,11 +16,13 @@ use amb_protocol::{Command, DevelopState, Outcome};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-/// Lens profile sources, loaded once per app run.
+/// Lens and camera profile sources, loaded once per app run.
 #[derive(Default)]
 pub struct LensSources {
     pub db: Option<LensfunDb>,
     pub lcp: Option<LcpLibrary>,
+    /// The user's camera profiles (`.dcp`), read in place.
+    pub dcp: amb_engine::profile::ProfileLibrary,
 }
 
 impl LensSources {
@@ -29,6 +31,7 @@ impl LensSources {
         LensSources {
             db: LensfunDb::load_default(),
             lcp: (!lcp.files.is_empty()).then_some(lcp),
+            dcp: amb_engine::profile::ProfileLibrary::load_default(),
         }
     }
 }
@@ -47,6 +50,8 @@ pub struct Session {
     /// The Upright correction found for this photo, keyed by the mode and the
     /// lens geometry it was found through (found once, not per preview).
     upright_cache: Option<(String, Option<amb_engine::transform::Keystone>)>,
+    /// Why the edit's camera profile isn't used, from the last render.
+    profile_note: Option<String>,
     /// Full-resolution upright sRGB render for the 100% view, keyed by the
     /// committed settings it was rendered with.
     full_cache: Option<FullRender>,
@@ -266,6 +271,7 @@ impl Session {
             base_xmp,
             lens_cache: None,
             upright_cache: None,
+            profile_note: None,
             full_cache: None,
         })
     }
@@ -322,8 +328,18 @@ impl Session {
         }
     }
 
+    /// The camera profiles on this computer for this photo's camera (none
+    /// for rendered images).
+    pub fn camera_profiles(&self, lens: &LensSources) -> Vec<amb_engine::profile::Found> {
+        if self.full.rendered {
+            return Vec::new();
+        }
+        lens.dcp.for_camera(&self.full.make, &self.full.model)
+    }
+
     pub fn state_info(&self) -> StateInfo {
-        let (_, not_rendered) = DevelopSettings::from_settings(self.state.settings());
+        let (_, mut not_rendered) = DevelopSettings::from_settings(self.state.settings());
+        not_rendered.extend(self.profile_note.clone());
         StateInfo {
             settings: self.state.to_json()["settings"].clone(),
             can_undo: self.state.can_undo(),
@@ -510,6 +526,12 @@ impl Session {
             };
             develop.lens.profile = profile;
         }
+        if let Some(name) = develop.profile_name.clone() {
+            develop.camera_profile = (!self.full.rendered)
+                .then(|| lens.dcp.find(&self.full.make, &self.full.model, &name))
+                .flatten();
+        }
+        self.profile_note = develop.profile_note();
         let mode = develop.transform.upright_mode;
         if mode.is_solved() {
             let l = &develop.lens;

@@ -26,6 +26,7 @@ pub mod negative;
 pub mod output;
 pub mod pipeline;
 pub mod primaries;
+pub mod profile;
 pub mod raster;
 pub mod raw;
 pub mod retouch;

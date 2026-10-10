@@ -65,6 +65,9 @@ USAGE:
                                             folders and renamed from templates ({name} {yyyy} {yy} {mm}
                                             {dd} {hh} {min} {ss} {seq} {camera}); a raw's JPEG and .xmp
                                             keep its new name; photos already there are skipped
+    amb profile list <RAW> [--dcp-dir DIR]  List the camera profiles (.dcp) on this computer for a raw's
+                                            camera (Camera Raw's profile folders, AMB_DCP_DIRS, --dcp-dir);
+                                            a preset's or sidecar's CameraProfile picks one by name
     amb settings reference [--json]         Print the settings reference (docs/ai/settings-reference.md)
     amb plugin new <DIR> [--name \"My plugin\"]
                                             Start a plugin project (Rust, built to WebAssembly;
@@ -95,6 +98,35 @@ EXPORT OPTIONS (amb render):
 
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
 XMP packet (e.g. .dng presets for Lightroom mobile). AI and script guide: docs/ai/README.md.";
+
+/// Camera profiles: `--dcp-dir`, or `AMB_DCP_DIRS` and Camera Raw's folders.
+fn profile_library(options: &BTreeMap<&str, &str>) -> amb_engine::profile::ProfileLibrary {
+    use amb_engine::profile::ProfileLibrary;
+    match options.get("--dcp-dir") {
+        Some(dir) => ProfileLibrary::scan(&[PathBuf::from(dir)]),
+        None => ProfileLibrary::load_default(),
+    }
+}
+
+/// `amb profile list`: the profiles for a raw's camera.
+fn profile_list(raw: &Path, options: &BTreeMap<&str, &str>) -> Result<(), String> {
+    let source = amb_engine::source_path(raw);
+    let (_, meta) = amb_engine::raw::read_metadata(&source)
+        .map_err(|e| format!("{}: {e}", source.display()))?;
+    let lib = profile_library(options);
+    let found = lib.for_camera(&meta.make, &meta.model);
+    println!(
+        "{} {}: {} profile(s) among {} .dcp file(s)",
+        meta.make,
+        meta.model,
+        found.len(),
+        lib.files.len()
+    );
+    for f in found {
+        println!("  {}  ({})", f.name, f.path.display());
+    }
+    Ok(())
+}
 
 /// `amb import`: plan, print, then copy (unless `dry_run`).
 fn import(
@@ -191,7 +223,7 @@ fn main() -> ExitCode {
             | "--height" | "--fit" | "--exact" | "--megapixels" | "--percent" | "--sharpen"
             | "--metadata" | "--max-size" | "--avif-speed" | "--border" | "--out-dir"
             | "--rating" | "--keywords" | "--name" | "--params" | "--into" | "--rename"
-            | "--start" => match iter.next() {
+            | "--start" | "--dcp-dir" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -225,6 +257,7 @@ fn main() -> ExitCode {
             None => Err("sweep generate needs --out <DIR>".into()),
         },
         ["testimage", pattern, out] => testimage(pattern, Path::new(out)),
+        ["profile", "list", raw] => profile_list(Path::new(raw), &options),
         ["import", source, dest] => {
             import(Path::new(source), Path::new(dest), &options, dry_run, json)
         }
@@ -737,6 +770,17 @@ fn render(
                 }
             ),
             None => {}
+        }
+    }
+    if let Some(name) = develop.profile_name.clone() {
+        if !img.rendered {
+            let lib = profile_library(options);
+            develop.camera_profile = lib.find(&img.make, &img.model, &name);
+        }
+        match (&develop.camera_profile, develop.profile_note()) {
+            (Some(p), _) => println!("camera profile: {} ({})", p.name, p.camera),
+            (None, Some(note)) => println!("camera profile: {note}"),
+            _ => {}
         }
     }
     let export = export_settings(out, options)?;

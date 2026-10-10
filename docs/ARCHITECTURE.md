@@ -39,11 +39,12 @@ amb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
      (Upright found from the photo's lines on a ≤1024 px lens-corrected copy, upright.rs)
      → film negative conversion (optional)
   1  clipped channels → neutral, white balance + camera matrix (× Calibration primaries) → linear ProPhoto
+     (a camera profile, profile.rs: its matrices, hue/sat map, exposure offset, look table)
      → Exposure → Calibration shadow tint → Defringe
      → spot removal (heal and clone, retouch.rs) → masks drawn (alpha per mask, mask.rs)
      → local Exposure, Temp, Tint
   2  Dehaze (then local Dehaze)
-  3  base look → Highlights/Shadows (local: guided-filter base) → Contrast, Whites, Blacks (global curve)
+  3  base look (or the camera profile's tone curve) → Highlights/Shadows (local: guided-filter base) → Contrast, Whites, Blacks (global curve)
      → local tone sliders
   4  Texture / Clarity (then local Texture, Clarity, Saturation, Color)
   5  Vibrance, Saturation, HSL (or the B&W mix), Color Grading → parametric + point curves

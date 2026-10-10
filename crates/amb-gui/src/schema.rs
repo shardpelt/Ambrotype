@@ -60,6 +60,8 @@ fn choice_options(name: &str) -> Vec<(serde_json::Value, String)> {
             (json!(2), "Color Priority".into()),
             (json!(3), "Paint Overlay".into()),
         ],
+        // Filled per photo by the UI with the profiles found for its camera.
+        "CameraProfile" => vec![(json!(""), "Default (Ambrotype)".into())],
         "PerspectiveUpright" => vec![
             (json!(0), "Off".into()),
             (json!(1), "Auto".into()),
@@ -160,6 +162,7 @@ pub fn panels() -> Vec<Panel> {
             label: "Basic",
             groups: vec!["white_balance", "tone", "presence"],
             sections: vec![
+                section("Profile", &[("CameraProfile", Some("Profile"))]),
                 section(
                     "White Balance",
                     &[
@@ -451,7 +454,7 @@ mod tests {
     fn layout_serialises() {
         let json = serde_json::to_value(panels()).unwrap();
         assert!(json.as_array().unwrap().len() >= 8);
-        let basic = &json[0]["sections"][1]["controls"][0];
+        let basic = &json[0]["sections"][2]["controls"][0];
         assert_eq!(basic["name"], "Exposure2012");
         assert_eq!(basic["step"], 0.01);
     }

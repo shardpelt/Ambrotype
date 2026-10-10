@@ -1951,6 +1951,27 @@ async fn export_photos(
     .map_err(|e| e.to_string())?
 }
 
+/// The camera profiles found for the open photo's camera; `None` while the
+/// profile folders are still being read.
+#[tauri::command]
+fn camera_profiles(state: tauri::State<'_, AppState>) -> Res<Option<Vec<String>>> {
+    let Some(lens) = state.lens.get() else {
+        return Ok(None);
+    };
+    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    Ok(Some(
+        guard
+            .as_ref()
+            .map(|s| {
+                s.camera_profiles(lens)
+                    .into_iter()
+                    .map(|f| f.name)
+                    .collect()
+            })
+            .unwrap_or_default(),
+    ))
+}
+
 /// Make a virtual copy of a photo with its edit as it is now (the open
 /// photo's unsaved edit included). Returns the copy's path.
 #[tauri::command]
@@ -2327,6 +2348,7 @@ fn main() {
             import_defaults,
             collections_list,
             create_virtual_copy,
+            camera_profiles,
             delete_virtual_copy,
             collection_photos,
             collection_add,

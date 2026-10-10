@@ -117,6 +117,8 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | Ctrl+Shift+I | Import photos from a card or folder |
   | B | Add the selection (or the open photo) to the last collection used |
   | Ctrl+' | Make a virtual copy (a second edit of the photo) |
+
+- **Camera profiles:** the Profile menu (Basic panel) lists the `.dcp` profiles found for the photo's camera, in Camera Raw's profile folders and folders named in `AMB_DCP_DIRS`. Profiles you made with a ColorChecker work too.
   | Ctrl+Shift+C / Ctrl+Shift+V | In the library: copy one photo's settings / paste them onto the selection |
   | K | Jump to the keyword field (Enter or a comma adds a keyword) |
   | Ctrl+L / Ctrl+Shift+L | Appearance / Edit layout |

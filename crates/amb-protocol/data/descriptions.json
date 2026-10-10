@@ -154,7 +154,7 @@
   "ProcessVersion": {"label": "Process version", "description": "Camera Raw process version as a version string (e.g. \"15.4\"). It decides which tone controls apply; Adobe's help does not list the numeric identifiers."},
   "AlreadyApplied": {"label": "Already applied", "description": "Marks settings that were already baked into the pixels (e.g. a rendered file)."},
 
-  "CameraProfile": {"label": "Profile", "description": "Name of the camera profile, e.g. \"Adobe Color\" (the default for raw photos), \"Adobe Monochrome\", \"Adobe Landscape\", \"Adobe Portrait\", \"Adobe Neutral\", \"Adobe Vivid\", or a Camera Matching profile. Applying a profile does not change slider values."},
+  "CameraProfile": {"label": "Profile", "description": "Name of the camera profile, e.g. \"Adobe Color\" (Lightroom's default for raw photos), \"Adobe Standard\", \"Camera Standard\", or one you made. Ambrotype renders DNG Camera Profiles (.dcp) found on this computer for the photo's camera (Camera Raw's profile folders, AMB_DCP_DIRS); other names keep Ambrotype's default look and are reported. Applying a profile does not change slider values."},
   "CameraProfileDigest": {"label": "Profile digest", "description": "Checksum identifying the exact camera profile."},
   "Look": {"label": "Look (creative profile)", "description": "Creative profile (Artistic, B&W, Modern, Vintage, ...) stored as a structure with its name, parameters and Amount."},
   "RGBTable": {"label": "RGB table", "description": "Reference to an embedded RGB lookup table used by a profile or look."},

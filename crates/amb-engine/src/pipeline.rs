@@ -116,6 +116,29 @@ impl BaseLook {
     }
 }
 
+/// The base look in use: ours, or a camera profile's tone curve.
+enum Base<'a> {
+    Look(BaseLook),
+    Curve(&'a crate::profile::ToneCurve),
+}
+
+impl Base<'_> {
+    fn apply(&self, x: f32) -> f32 {
+        match self {
+            Base::Look(l) => l.apply(x),
+            Base::Curve(c) => c.eval(x),
+        }
+    }
+
+    fn apply_rgb(&self, c: [f32; 3]) -> [f32; 3] {
+        match self {
+            Base::Look(l) => c.map(|v| l.apply(v)),
+            // The DNG way: hue-preserving.
+            Base::Curve(curve) => curve.apply_rgb(c),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct DevelopSettings {
     pub base_look: BaseLook,
@@ -141,6 +164,12 @@ pub struct DevelopSettings {
     pub transform: Transform,
     /// The Calibration panel.
     pub camera_calibration: CameraCalibration,
+    /// `CameraProfile`, as named in the settings.
+    pub profile_name: Option<String>,
+    /// The camera profile resolved for this photo by the caller
+    /// ([`crate::profile::ProfileLibrary`]); `None` uses our own colour and
+    /// base look.
+    pub camera_profile: Option<std::sync::Arc<crate::profile::Dcp>>,
     /// Crop and straighten (after the lens corrections, in stored orientation).
     pub crop: Crop,
     pub negative: Negative,
@@ -174,6 +203,8 @@ impl Default for DevelopSettings {
             lens: LensCorrections::default(),
             transform: Transform::default(),
             camera_calibration: CameraCalibration::default(),
+            profile_name: None,
+            camera_profile: None,
             crop: Crop::default(),
             negative: Negative::default(),
             masks: Masks::default(),
@@ -287,6 +318,8 @@ pub const RENDERED_TAGS: &[&str] = &[
     "BlueHue",
     "BlueSaturation",
     "EnableCalibration",
+    "CameraProfile",
+    "CameraProfileDigest",
     "HasCrop",
     "CropTop",
     "CropLeft",
@@ -484,6 +517,7 @@ impl DevelopSettings {
         s.lens = lens_corrections(settings);
         s.transform = transform_settings(settings);
         s.camera_calibration = calibration_settings(settings);
+        s.profile_name = text(settings, "CameraProfile");
         s.crop = crop_settings(settings);
         s.negative = negative_settings(settings);
         s.curve_rgb = spline_of(settings, "ToneCurvePV2012");
@@ -589,6 +623,19 @@ fn transform_settings(settings: &BTreeMap<String, Value>) -> Transform {
         offset_y: num(settings, "PerspectiveY").unwrap_or(d.offset_y),
         upright_mode: num(settings, "PerspectiveUpright").map_or(d.upright_mode, UprightMode::of),
         upright: None,
+    }
+}
+
+impl DevelopSettings {
+    /// What to tell the user when `CameraProfile` names a profile that
+    /// wasn't found for this photo (the caller resolves profiles).
+    pub fn profile_note(&self) -> Option<String> {
+        let name = self.profile_name.as_deref()?;
+        (self.camera_profile.is_none()).then(|| {
+            format!(
+                "CameraProfile (\"{name}\" is not among the camera profiles on this computer; our default look is used)"
+            )
+        })
     }
 }
 
@@ -861,6 +908,12 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     }
 
     // 1. Camera RGB → scene-linear ProPhoto with white balance and Exposure.
+    // A camera profile brings its own matrices, tables and tone curve (not
+    // for rendered images or converted negatives).
+    let profile = s
+        .camera_profile
+        .as_deref()
+        .filter(|_| !img.rendered && !s.negative.enabled);
     let neutral = match (s.white_balance.clone(), s.negative.enabled) {
         // Rendered images are balanced already: white is equal RGB, moved by
         // the relative sliders.
@@ -868,7 +921,10 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         (WhiteBalance::AsShot, false) => img.as_shot_neutral,
         (WhiteBalance::Custom { temperature, tint }, false) => {
             let (x, y) = temp_tint_to_xy(temperature, tint);
-            neutral_for_xy(&img.xyz_to_cam, x, y)
+            match &profile {
+                Some(p) => p.neutral_for_xy(x, y),
+                None => neutral_for_xy(&img.xyz_to_cam, x, y),
+            }
         }
         // A converted negative is already balanced: equal channels are white,
         // and Temperature/Tint move relative to the reference white.
@@ -882,13 +938,19 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         }
     };
     // The Calibration panel's primaries fold into the camera matrix.
-    let mut m = camera_to_prophoto(&img.xyz_to_cam, neutral);
+    let mut m = match profile {
+        Some(p) => p.camera_to_prophoto(neutral),
+        None => camera_to_prophoto(&img.xyz_to_cam, neutral),
+    };
     if let Some(p) = s.camera_calibration.matrix(&cal.primaries) {
         m = mul3(&p, &m);
     }
     let m = m.map(|row| row.map(|v| v as f32));
     let shadow_tint = s.camera_calibration.shadow_tint(&cal.primaries);
     let gain = 2f32.powf(s.exposure_ev as f32);
+    let hue_sat_map = profile.and_then(|p| p.hue_sat_map.as_ref());
+    let look_table = profile.and_then(|p| p.look_table.as_ref());
+    let profile_gain = profile.map_or(1.0, |p| 2f32.powf(p.exposure_offset as f32));
     let clipped = (!s.negative.enabled && img.clip.iter().any(|c| c.is_finite()))
         .then(|| Unclip::new(img.clip, neutral));
     let mut out = Image {
@@ -909,8 +971,28 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
                     Some(u) => u.apply([c[0], c[1], c[2]], weights[x]),
                     None => [c[0], c[1], c[2]],
                 };
-                for (row, slot) in m.iter().zip(o.iter_mut()) {
-                    *slot = (row[0] * c[0] + row[1] * c[1] + row[2] * c[2]) * gain;
+                if profile.is_some() {
+                    // The profile's map, its exposure offset and look table,
+                    // then Exposure.
+                    for (row, slot) in m.iter().zip(o.iter_mut()) {
+                        *slot = row[0] * c[0] + row[1] * c[1] + row[2] * c[2];
+                    }
+                    if let Some(t) = hue_sat_map {
+                        t.apply(o);
+                    }
+                    for v in o.iter_mut() {
+                        *v *= profile_gain;
+                    }
+                    if let Some(t) = look_table {
+                        t.apply(o);
+                    }
+                    for v in o.iter_mut() {
+                        *v *= gain;
+                    }
+                } else {
+                    for (row, slot) in m.iter().zip(o.iter_mut()) {
+                        *slot = (row[0] * c[0] + row[1] * c[1] + row[2] * c[2]) * gain;
+                    }
                 }
                 if let Some((stops, end)) = shadow_tint {
                     primaries::tint_shadows(o, stops, end);
@@ -925,10 +1007,15 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     // Spot removal, then masks drawn on the photo as it is now, then the
     // local light sliders.
     retouch::apply(&mut out, &s.spots, (img.width, img.height), crop.as_ref());
-    let base = if img.rendered {
-        BaseLook::Linear
-    } else {
-        s.base_look
+    let base = match (
+        img.rendered,
+        s.base_look,
+        profile.and_then(|p| p.tone_curve.as_ref()),
+    ) {
+        (true, _, _) => Base::Look(BaseLook::Linear),
+        // A profile's tone curve stands in for our default base look.
+        (false, BaseLook::Default, Some(curve)) => Base::Curve(curve),
+        (false, look, _) => Base::Look(look),
     };
     let masks = (!s.masks.is_empty()).then(|| {
         mask::draw(
@@ -961,7 +1048,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     let tone_lut = (!global.is_neutral()).then(|| tone::tone_lut(&global, &cal.tone, LUT));
     let lum_weights = luminance_weights();
     // A rendered image already has its tone curve (`base` is linear then).
-    out.map_pixels(|c| c.map(|v| base.apply(v)));
+    out.map_pixels(|c| base.apply_rgb(c));
     local_tone::apply(&mut out, &s.tone, &cal.tone);
     out.map_pixels(|c| {
         let mut p = c;
@@ -1167,6 +1254,33 @@ mod tests {
         // No pile-up: no clip.
         let ramp: Vec<f32> = rgb[..60_000].to_vec();
         assert_eq!(crate::raw::clip_levels(&ramp), [f32::INFINITY; 3]);
+    }
+
+    #[test]
+    fn camera_profile_colours_and_tone_curve() {
+        use crate::profile::{Dcp, tests::sample};
+        // The profile's curve lifts scene 0.18 to display 0.5 and stands in
+        // for our base look; a grey stays grey.
+        let dcp = Dcp::parse(&sample(vec![(
+            50940,
+            11,
+            vec![0.0, 0.0, 0.18, 0.5, 1.0, 1.0],
+            None,
+        )]))
+        .unwrap();
+        let img = camera(8, 8, |_, _| [0.18; 3]);
+        let mut s = linear(&[("CameraProfile", "Test Standard")]);
+        s.base_look = BaseLook::Default;
+        assert!(s.profile_note().unwrap().contains("Test Standard"));
+        s.camera_profile = Some(std::sync::Arc::new(dcp));
+        assert!(s.profile_note().is_none());
+        let out = render(&img, &s);
+        let p = &out.rgb[..3];
+        assert!(p.iter().all(|v| (v - 0.5).abs() < 0.01), "{p:?}");
+        // Without it, our base look (scene 0.18 → about 0.27).
+        s.camera_profile = None;
+        let ours = render(&img, &s).rgb[0];
+        assert!((ours - 0.5).abs() > 0.1, "{ours}");
     }
 
     #[test]

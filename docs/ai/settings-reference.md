@@ -92,7 +92,7 @@ The colour and tone foundation (Adobe Color, Adobe Monochrome, Camera Matching, 
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `CameraProfile` | Profile | text |  |  | planned | Name of the camera profile, e.g. "Adobe Color" (the default for raw photos), "Adobe Monochrome", "Adobe Landscape", "Adobe Portrait", "Adobe Neutral", "Adobe Vivid", or a Camera Matching profile. Applying a profile does not change slider values. |
+| `CameraProfile` | Profile | text |  |  | rendered (approx.) | Name of the camera profile, e.g. "Adobe Color" (Lightroom's default for raw photos), "Adobe Standard", "Camera Standard", or one you made. Ambrotype renders DNG Camera Profiles (.dcp) found on this computer for the photo's camera (Camera Raw's profile folders, AMB_DCP_DIRS); other names keep Ambrotype's default look and are reported. Applying a profile does not change slider values. |
 | `CameraProfileDigest` | Profile digest | text |  |  | planned | Checksum identifying the exact camera profile. |
 | `Look` | Look (creative profile) | struct |  |  | planned | Creative profile (Artistic, B&W, Modern, Vintage, ...) stored as a structure with its name, parameters and Amount. |
 | `RGBTable` | RGB table | text |  |  | planned | Reference to an embedded RGB lookup table used by a profile or look. |

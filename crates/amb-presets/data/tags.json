@@ -232,7 +232,7 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "CameraProfileDigest",

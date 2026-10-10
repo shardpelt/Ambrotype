@@ -121,7 +121,7 @@ The crop panel isn't placed by layouts. It appears at the top of the column with
 
 | Panel id | Sections (for `include: "id/Section"`) | Comes with |
 |---|---|---|
-| `basic` | `White Balance`, `Tone`, `Presence` | |
+| `basic` | `Profile`, `White Balance`, `Tone`, `Presence` | |
 | `tone_curve` | `Parametric` | the point-curve editor |
 | `color_mixer` | `HSL` | Hue / Saturation / Luminance tabs |
 | `black_white` | `Treatment`, `Mix` | the black & white switch and the eight mix sliders |

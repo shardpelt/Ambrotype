@@ -73,6 +73,7 @@ function fromSlider(def, s) {
 function currentValue(name) {
   if (name in ui.overrides) return ui.overrides[name];
   if (name in ui.settings) return ui.settings[name];
+  if (name === "CameraProfile") return "";
   const def = ui.controls.get(name)?.def;
   if (ui.info?.defaults && name in ui.info.defaults) return ui.info.defaults[name];
   if (name === "Temperature") return ui.info ? Math.round(ui.info.as_shot_temperature) : 5500;
@@ -208,7 +209,10 @@ function syncControls() {
     if (c.label) c.label.classList.toggle("changed", changed);
     if (c.set) c.set(v);
     else if (c.check) c.check.checked = asBool(v);
-    else if (c.select) c.select.value = JSON.stringify(typeof v === "string" && /^\d+$/.test(v) ? Number(v) : v);
+    else if (c.select && name === "CameraProfile") {
+      fillProfileOptions(c.select, v);
+      c.select.value = JSON.stringify(v ?? "");
+    } else if (c.select) c.select.value = JSON.stringify(typeof v === "string" && /^\d+$/.test(v) ? Number(v) : v);
     else if (c.input) {
       const n = Number(v);
       c.input.value = toSlider(c.def, n);
@@ -262,7 +266,41 @@ async function run(commands, group = null) {
 
 function commit(name, value) {
   delete ui.overrides[name];
+  // The default profile is no profile at all.
+  if (name === "CameraProfile" && value === "") return run([{ cmd: "reset_param", name }]);
   run([{ cmd: "set_param", name, value }]);
+}
+
+// The Profile menu: our default look, then the camera profiles (.dcp) found
+// on this computer for the photo's camera, and the edit's own if it's
+// missing here.
+async function refreshProfiles(tries = 30) {
+  let found = [];
+  if (ui.info) {
+    try {
+      found = await invoke("camera_profiles");
+    } catch {
+      found = [];
+    }
+  }
+  // The profile folders are read in the background at start-up.
+  if (found === null) {
+    if (tries > 0) setTimeout(() => refreshProfiles(tries - 1), 1000);
+    found = [];
+  }
+  ui.profiles = found;
+  syncControls();
+}
+
+function fillProfileOptions(select, current) {
+  const names = [...(ui.profiles ?? [])];
+  const options = [["", "Default (Ambrotype)"], ...names.map((n) => [n, n])];
+  if (current && !names.some((n) => n.toLowerCase() === String(current).toLowerCase())) options.push([current, `${current} (not found)`]);
+  const want = options.map(([v, t]) => `${v}\u0000${t}`).join("\n");
+  if (select.dataset.options !== want) {
+    select.replaceChildren(...options.map(([v, t]) => Object.assign(document.createElement("option"), { value: JSON.stringify(v), textContent: t })));
+    select.dataset.options = want;
+  }
 }
 
 // ---------------------------------------------------------------- preview
@@ -908,6 +946,7 @@ async function openPath(path) {
     spotsPhotoChanged();
     const wasRendered = !!ui.info?.rendered;
     ui.info = r.info;
+    refreshProfiles();
     // Raw and JPEG have different white balance sliders.
     if (wasRendered !== !!r.info.rendered && ui.layout) applyLayout(ui.layout);
     $("empty").hidden = true;

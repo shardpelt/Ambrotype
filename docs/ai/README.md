@@ -167,7 +167,7 @@ Masks are Lightroom's own (`MaskGroupBasedCorrections`), so they open in Lightro
 - **Radial:** the ellipse's box (`Top`, `Left`, `Bottom`, `Right`), `Angle` in degrees, `Feather` 0-100; the effect is inside unless `"invert": true`.
 - **Luminance:** `LumRange` [none below, full from, full to, none above], 0-1 brightness.
 - **Color:** `ColorSamples` [[x, y], ...] positions of colours to select, `ColorAmount` (refine) 0-100.
-- **Brush:** `{"cmd": "paint_mask", "points": [[0.2, 0.8], [0.4, 0.82]], "size": 0.04}` paints a new brush mask (`size` is the radius as a fraction of the longer side); add `"mask": 0, "part": 2` to paint more into a brush part, `"erase": true` to erase.
+- **Brush:** `{"cmd": "paint_mask", "points": [[0.2, 0.8], [0.4, 0.82]], "size": 0.04}` paints a new brush mask (`size` is the radius as a fraction of the photo's width); add `"mask": 0, "part": 2` to paint more into a brush part, `"erase": true` to erase.
 - **Sliders** (`set_mask` without `part`) are in UI units, by label or tag: Exposure (EV, -4..4), Contrast, Highlights, Shadows, Whites, Blacks, Temp, Tint, Texture, Clarity, Dehaze, Saturation, Sharpness, Noise (-100..100); "Color hue" (0-360) and "Color amount" (0-100) tint; `amount` 0-100 scales them all.
 - AI masks (subject, sky, people) from Lightroom are kept and reported as not rendered; they can't be made here yet.
 

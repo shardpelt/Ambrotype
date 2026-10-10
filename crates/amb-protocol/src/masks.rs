@@ -598,7 +598,16 @@ pub fn set(
                         }
                     }
                 }
-                set_brush_combination(&mut comps[range.clone()], comb, None);
+                let aggregate = masks::text(first, "What").as_deref() == Some("Mask/Aggregate");
+                if aggregate {
+                    // The aggregate carries the combination; strokes keep theirs.
+                    let Some(Value::Struct(agg)) = comps.get_mut(range.start) else {
+                        unreachable!()
+                    };
+                    set_combination(agg, comb);
+                } else {
+                    set_brush_combination(&mut comps[range.clone()], comb, None);
+                }
                 for s in &mut comps[range] {
                     let Value::Struct(m) = s else { continue };
                     if let Some(v) = values.get("active") {
@@ -623,7 +632,7 @@ pub fn set(
 /// One stroke for `paint_mask`.
 pub struct Stroke<'a> {
     pub points: &'a [[f64; 2]],
-    /// Brush radius as a fraction of the image's longer side.
+    /// Brush radius as a fraction of the image's width.
     pub size: f64,
     /// 0-100.
     pub feather: f64,
@@ -668,8 +677,10 @@ pub fn paint(
             "a new mask's first part adds; give `mask` to subtract or intersect",
         ));
     }
-    // Dabs about a quarter of the size apart, so strokes come out smooth.
-    let step = size * 0.25;
+    // Dabs 0.2 × the radius apart, as Lightroom spaces them. The radius is in
+    // frame widths and points are per-axis fractions, so stepping both axes by
+    // 0.2 × size is never coarser than that.
+    let step = size * 0.2;
     let mut dabs: Vec<(f64, f64)> = Vec::new();
     for p in stroke.points {
         let (x, y) = (p[0], p[1]);
@@ -692,6 +703,27 @@ pub fn paint(
             ));
         }
     }
+    let paint_entry = |blend: u8, inverted: bool, sync_id: String, value: f64| -> Fields {
+        let mut e: Fields = BTreeMap::new();
+        e.insert("What".into(), Value::Text("Mask/Paint".into()));
+        e.insert("MaskActive".into(), boolean(true));
+        e.insert("MaskBlendMode".into(), Value::Text(blend.to_string()));
+        e.insert("MaskInverted".into(), boolean(inverted));
+        e.insert("MaskSyncID".into(), Value::Text(sync_id));
+        e.insert("MaskValue".into(), number(value));
+        e.insert("Radius".into(), number(size));
+        e.insert("Flow".into(), number(flow / 100.0));
+        e.insert("CenterWeight".into(), number(1.0 - feather / 100.0));
+        e.insert(
+            "Dabs".into(),
+            Value::Seq(
+                dabs.iter()
+                    .map(|&(x, y)| Value::Text(masks::format_dab(x, y)))
+                    .collect(),
+            ),
+        );
+        e
+    };
 
     let mut list = corrections(next);
     let index = mask.unwrap_or(list.len());
@@ -699,76 +731,77 @@ pub fn paint(
         list.push(Value::Struct(new_correction(index)));
     }
     let c = correction_mut(&mut list, index)?;
-    let (insert_at, sync_id, comb, first_value) = match part {
-        Some(p) => {
-            let range = part_range(c, index, p)?;
-            let comps = masks::components(c);
-            let Some(Value::Struct(first)) = comps.get(range.start) else {
-                return Err(invalid(
-                    format!("mask {index} part {p}"),
-                    "is not a mask component",
-                ));
-            };
-            if MaskKind::of(first) != MaskKind::Brush {
-                return Err(invalid(
-                    format!("mask {index} part {p}"),
-                    format!("is a {}, not a brush", MaskKind::of(first).label()),
-                ));
-            }
-            (
-                range.end,
-                masks::text(first, "MaskSyncID").unwrap_or_default(),
-                Combination::of(first),
-                masks::num(first, "MaskValue").unwrap_or(1.0),
-            )
+    let Some(p) = part else {
+        if stroke.erase {
+            return Err(invalid(
+                "erase",
+                "there is nothing to erase in a new brush part",
+            ));
         }
-        None => {
-            let comb = Combination {
+        // A new brush: one aggregate carrying the combination, its strokes
+        // inside (Lightroom's current layout).
+        let mut agg: Fields = BTreeMap::new();
+        agg.insert("What".into(), Value::Text("Mask/Aggregate".into()));
+        agg.insert("MaskActive".into(), boolean(true));
+        agg.insert("MaskName".into(), Value::Text("Brush".into()));
+        agg.insert("MaskSyncID".into(), Value::Text(masks::new_sync_id()));
+        set_combination(
+            &mut agg,
+            Combination {
                 mode: mode.unwrap_or(Mode::Add),
                 inverted: false,
-            };
-            (
-                masks::components(c).len(),
-                masks::new_sync_id(),
-                comb,
-                if comb.mode == Mode::Add { density } else { 0.0 },
-            )
-        }
+            },
+        );
+        let e = paint_entry(0, false, masks::new_sync_id(), density);
+        agg.insert("Masks".into(), Value::Seq(vec![Value::Struct(e)]));
+        components_mut(c).push(Value::Struct(agg));
+        store(next, list);
+        return Ok(());
     };
-    if part.is_none() && stroke.erase {
+    let range = part_range(c, index, p)?;
+    let at = format!("mask {index} part {p}");
+    let comps = components_mut(c);
+    let Some(Value::Struct(first)) = comps.get_mut(range.start) else {
+        return Err(invalid(&at, "is not a mask component"));
+    };
+    if MaskKind::of(first) != MaskKind::Brush {
         return Err(invalid(
-            "erase",
-            "there is nothing to erase in a new brush part",
+            &at,
+            format!("is a {}, not a brush", MaskKind::of(first).label()),
         ));
     }
-    let (blend, _, inverted) = comb.stored();
-    let first_zero = first_value == 0.0;
-    let value = match (stroke.erase, first_zero) {
-        (false, false) => density,
-        (false, true) => 0.0,
-        (true, false) => 0.0,
-        (true, true) => 1.0,
-    };
-    let mut e: Fields = BTreeMap::new();
-    e.insert("What".into(), Value::Text("Mask/Paint".into()));
-    e.insert("MaskActive".into(), boolean(true));
-    e.insert("MaskName".into(), Value::Text("Brush".into()));
-    e.insert("MaskBlendMode".into(), Value::Text(blend.to_string()));
-    e.insert("MaskInverted".into(), boolean(inverted));
-    e.insert("MaskSyncID".into(), Value::Text(sync_id));
-    e.insert("MaskValue".into(), number(value));
-    e.insert("Radius".into(), number(size));
-    e.insert("Flow".into(), number(flow / 100.0));
-    e.insert("CenterWeight".into(), number(1.0 - feather / 100.0));
-    e.insert(
-        "Dabs".into(),
-        Value::Seq(
-            dabs.into_iter()
-                .map(|(x, y)| Value::Text(masks::format_dab(x, y)))
-                .collect(),
-        ),
-    );
-    components_mut(c).insert(insert_at, Value::Struct(e));
+    if masks::text(first, "What").as_deref() == Some("Mask/Aggregate") {
+        if masks::uses_brush_table(first) {
+            return Err(invalid(
+                &at,
+                "this brush keeps its strokes in Lightroom's .acr file, which can't be edited here yet",
+            ));
+        }
+        // Strokes paint at their density; an erasing one has density 0.
+        let value = if stroke.erase { 0.0 } else { density };
+        let e = paint_entry(0, false, masks::new_sync_id(), value);
+        match first.get_mut("Masks") {
+            Some(Value::Seq(items)) => items.push(Value::Struct(e)),
+            _ => {
+                first.insert("Masks".into(), Value::Seq(vec![Value::Struct(e)]));
+            }
+        }
+    } else {
+        // An older file's brush: strokes straight in CorrectionMasks, each
+        // carrying the part's combination.
+        let sync_id = masks::text(first, "MaskSyncID").unwrap_or_default();
+        let comb = Combination::of(first);
+        let first_zero = masks::num(first, "MaskValue").unwrap_or(1.0) == 0.0;
+        let (blend, _, inverted) = comb.stored();
+        let value = match (stroke.erase, first_zero) {
+            (false, false) => density,
+            (false, true) => 0.0,
+            (true, false) => 0.0,
+            (true, true) => 1.0,
+        };
+        let e = paint_entry(blend, inverted, sync_id, value);
+        comps.insert(range.end, Value::Struct(e));
+    }
     store(next, list);
     Ok(())
 }
@@ -901,6 +934,7 @@ fn describe_part(index: usize, first: &Fields, entries: &[&Fields]) -> serde_jso
         "invert": comb.inverted,
         "active": masks::flag(first, "MaskActive").unwrap_or(true),
         "rendered": kind.rendered(),
+        "entries": entries.len(),
     });
     let g = |k: &str| masks::num(first, k).map_or(serde_json::Value::Null, |v| json!(v));
     match kind {
@@ -931,12 +965,21 @@ fn describe_part(index: usize, first: &Fields, entries: &[&Fields]) -> serde_jso
             }
         }
         MaskKind::Brush => {
-            d["strokes"] = json!(entries.len());
+            let strokes = masks::brush_strokes(entries);
+            d["strokes"] = json!(strokes.len());
+            if masks::uses_brush_table(first) {
+                d["in_acr_file"] = json!(true);
+                d["rendered"] = json!(false);
+            }
             d["dabs"] = json!(
-                entries
+                strokes
                     .iter()
                     .map(|e| match e.get("Dabs") {
-                        Some(Value::Seq(s)) => s.len(),
+                        Some(Value::Seq(s)) => s
+                            .iter()
+                            .filter_map(Value::as_str)
+                            .filter(|t| masks::parse_dab(t).is_some())
+                            .count(),
                         _ => 0,
                     })
                     .sum::<usize>()
@@ -1038,6 +1081,20 @@ mod tests {
         assert_eq!(m["parts"][2]["mode"], "subtract");
         // Dabs fill the gap between the two points.
         assert!(m["parts"][2]["dabs"].as_u64().unwrap() >= 8, "{m}");
+        // Written in Lightroom's current layout: an aggregate holding strokes.
+        let Value::Seq(list) = &s[MASK_TAG] else {
+            panic!()
+        };
+        let Value::Struct(c) = &list[0] else { panic!() };
+        let Value::Struct(brush) = &masks::components(c)[2] else {
+            panic!()
+        };
+        assert_eq!(
+            masks::text(brush, "What").as_deref(),
+            Some("Mask/Aggregate")
+        );
+        assert_eq!(masks::text(brush, "MaskBlendMode").as_deref(), Some("1"));
+        assert_eq!(masks::brush_strokes(&[brush]).len(), 1);
 
         // A second stroke joins the brush part; then erase in it.
         let stroke = |erase| Stroke {

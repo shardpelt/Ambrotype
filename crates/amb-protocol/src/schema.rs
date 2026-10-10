@@ -131,7 +131,7 @@ pub fn command_schema() -> Value {
                 "part": part_index(),
                 "mode": mode_prop(),
                 "points": { "type": "array", "items": { "type": "array", "items": { "type": "number" } }, "description": "[[x, y], ...] fractions of the uncropped photo; gaps are filled with dabs." },
-                "size": { "type": "number", "minimum": 0.001, "maximum": 0.5, "default": 0.05, "description": "Brush radius as a fraction of the photo's longer side." },
+                "size": { "type": "number", "minimum": 0.001, "maximum": 0.5, "default": 0.05, "description": "Brush radius as a fraction of the photo's width (stored orientation)." },
                 "feather": { "type": "number", "minimum": 0, "maximum": 100, "default": 50 },
                 "flow": { "type": "number", "minimum": 1, "maximum": 100, "default": 100 },
                 "density": { "type": "number", "minimum": 1, "maximum": 100, "default": 100 },

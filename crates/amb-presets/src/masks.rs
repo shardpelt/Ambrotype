@@ -15,7 +15,14 @@
 //! - add is `MaskBlendMode` 0 with `MaskValue` 1; subtract is mode 1 with
 //!   `MaskValue` 0; intersect is subtract with `MaskInverted` (A ∩ B = A − ¬B);
 //! - a radial gradient's `Flipped` is always `!MaskInverted`, and a range
-//!   mask's `Invert` always equals `MaskInverted`.
+//!   mask's `Invert` always equals `MaskInverted`;
+//! - a brush is one `Mask/Aggregate` component (it carries the combination)
+//!   whose `Masks` list holds the `Mask/Paint` strokes; older files put the
+//!   strokes straight into `CorrectionMasks`. Newer Lightroom versions may
+//!   keep the strokes in the photo's `.acr` file instead (`MaskBrushTable`);
+//! - a stroke's `Dabs` are tokens `r <radius>`, `f <flow>`, `h <hardness>`
+//!   and `d <x> <y>` (a dab with the current state); the radius is a fraction
+//!   of the frame's width, so a dab is a circle in pixels.
 
 use std::collections::BTreeMap;
 use std::ops::Range;
@@ -164,7 +171,7 @@ impl MaskKind {
         match what.as_str() {
             "Mask/Gradient" => MaskKind::Linear,
             "Mask/CircularGradient" => MaskKind::Radial,
-            "Mask/Paint" => MaskKind::Brush,
+            "Mask/Paint" | "Mask/Aggregate" => MaskKind::Brush,
             "Mask/RangeMask" => match range_mask(entry).and_then(|r| text(r, "Type")).as_deref() {
                 Some("1") => MaskKind::Color,
                 Some("2") => MaskKind::Luminance,
@@ -322,10 +329,10 @@ pub fn components(correction: &BTreeMap<String, Value>) -> &[Value] {
     }
 }
 
-/// Group components into *parts*, the editor's mask components: each brush
-/// stroke is its own `Mask/Paint` entry, so consecutive strokes with the same
-/// `MaskSyncID` (or, in old files, none) form one brush part. Every other
-/// entry is a part on its own.
+/// Group components into *parts*, the editor's mask components. A
+/// `Mask/Aggregate` brush is one part. In older files each brush stroke is its
+/// own `Mask/Paint` entry, so consecutive strokes with the same `MaskSyncID`
+/// (or none) form one part. Every other entry is a part on its own.
 pub fn parts(components: &[Value]) -> Vec<Range<usize>> {
     let mut out: Vec<Range<usize>> = Vec::new();
     let mut last_paint_id: Option<String> = None;
@@ -335,7 +342,7 @@ pub fn parts(components: &[Value]) -> Vec<Range<usize>> {
             last_paint_id = None;
             continue;
         };
-        if MaskKind::of(m) == MaskKind::Brush {
+        if text(m, "What").as_deref() == Some("Mask/Paint") {
             let id = text(m, "MaskSyncID").unwrap_or_default();
             if let (Some(prev), Some(r)) = (&last_paint_id, out.last_mut()) {
                 if *prev == id && r.end == i {
@@ -352,15 +359,68 @@ pub fn parts(components: &[Value]) -> Vec<Range<usize>> {
     out
 }
 
+/// The strokes of a brush part: an aggregate's `Masks`, or (old files) the
+/// part's own `Mask/Paint` entries.
+pub fn brush_strokes<'a>(
+    entries: &[&'a BTreeMap<String, Value>],
+) -> Vec<&'a BTreeMap<String, Value>> {
+    match entries.first() {
+        Some(first) if text(first, "What").as_deref() == Some("Mask/Aggregate") => {
+            match first.get("Masks") {
+                Some(Value::Seq(items)) => items
+                    .iter()
+                    .filter_map(|v| match v {
+                        Value::Struct(m) => Some(m),
+                        _ => None,
+                    })
+                    .collect(),
+                Some(Value::Struct(m)) => vec![m],
+                _ => Vec::new(),
+            }
+        }
+        _ => entries.to_vec(),
+    }
+}
+
+/// Whether a brush keeps its strokes in Lightroom's `.acr` file
+/// (`MaskBrushTable`), which we don't read yet.
+pub fn uses_brush_table(entry: &BTreeMap<String, Value>) -> bool {
+    entry.keys().any(|k| k.starts_with("MaskBrushTable"))
+}
+
+/// One token of a stroke's `Dabs`.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DabToken {
+    /// `r`: the radius from here on (fraction of the frame width).
+    Radius(f64),
+    /// `f`: the flow from here on (0..1).
+    Flow(f64),
+    /// `h`: the hardness from here on (0..1, as `CenterWeight`).
+    Hardness(f64),
+    /// `d`: a dab at (x, y), image fractions.
+    Dab(f64, f64),
+}
+
+pub fn parse_dab_token(s: &str) -> Option<DabToken> {
+    let mut it = s.split_whitespace();
+    let kind = it.next()?;
+    let mut num = || -> Option<f64> { it.next()?.parse().ok().filter(|v: &f64| v.is_finite()) };
+    let t = match kind {
+        "r" => DabToken::Radius(num()?),
+        "f" => DabToken::Flow(num()?),
+        "h" => DabToken::Hardness(num()?),
+        "d" => DabToken::Dab(num()?, num()?),
+        _ => return None,
+    };
+    Some(t)
+}
+
 /// One brush dab, `"d x y"`, in image fractions.
 pub fn parse_dab(s: &str) -> Option<(f64, f64)> {
-    let mut it = s.split_whitespace();
-    if it.next()? != "d" {
-        return None;
+    match parse_dab_token(s)? {
+        DabToken::Dab(x, y) => Some((x, y)),
+        _ => None,
     }
-    let x = it.next()?.parse().ok()?;
-    let y = it.next()?.parse().ok()?;
-    Some((x, y))
 }
 
 pub fn format_dab(x: f64, y: f64) -> String {
@@ -523,11 +583,34 @@ mod tests {
             entry(&[("What", "Mask/Paint")]),
         ];
         assert_eq!(parts(&items), vec![0..1, 1..3, 3..4, 4..5, 5..7]);
+        // An aggregate is one part with its strokes inside.
+        let mut agg = std::collections::BTreeMap::new();
+        agg.insert("What".to_string(), Value::Text("Mask/Aggregate".into()));
+        agg.insert(
+            "Masks".to_string(),
+            Value::Seq(vec![
+                entry(&[("What", "Mask/Paint")]),
+                entry(&[("What", "Mask/Paint")]),
+            ]),
+        );
+        let items = vec![
+            Value::Struct(agg.clone()),
+            entry(&[("What", "Mask/Gradient")]),
+        ];
+        assert_eq!(parts(&items), vec![0..1, 1..2]);
+        assert_eq!(brush_strokes(&[&agg]).len(), 2);
+        assert_eq!(MaskKind::of(&agg), MaskKind::Brush);
     }
 
     #[test]
     fn dabs_and_numbers() {
         assert_eq!(parse_dab("d 0.5 0.25"), Some((0.5, 0.25)));
+        assert_eq!(
+            parse_dab_token("r 0.003489"),
+            Some(DabToken::Radius(0.003489))
+        );
+        assert_eq!(parse_dab_token("h 1"), Some(DabToken::Hardness(1.0)));
+        assert_eq!(parse_dab_token("x 1"), None);
         assert_eq!(parse_dab("m 0.5 0.25"), None);
         assert_eq!(parse_dab(&format_dab(0.1, 0.2)), Some((0.1, 0.2)));
         assert_eq!(number(0.0625), Value::Text("0.0625".into()));

@@ -55,7 +55,7 @@ The kit is generated with `amb sweep generate --out <kit-dir> [--groups tone,pre
 **Week 3: profiles, presets, local tools**
 10. **Profiles:** render the ColorChecker and real raws with Adobe Color, Adobe Standard, Adobe Neutral, Adobe Landscape, Adobe Portrait, Adobe Vivid, Camera Matching and a few creative profiles at several Amounts. This is how we fit our replacement base profiles without shipping Adobe's files.
 11. **Preset corpus:** render every preset you own over the real-raw set. This becomes the end-to-end regression suite.
-12. **Masks:** linear and radial gradients with known feather values on a flat grey DNG (to measure the falloff curves); luminance and colour range masks on ramps and wheels; each local slider at +50 next to its global one; a radial turned +30° and a short brush stroke with an erased part, saved to the sidecar, to settle the angle sign, the brush radius and how erasing is stored ([design/masks.md](design/masks.md) open questions).
+12. **Masks:** linear and radial gradients with known feather values on a flat grey DNG (to measure the falloff curves); luminance and colour range masks on ramps and wheels; each local slider at +50 next to its global one; a radial turned +30° and a short brush stroke with an erased part, saved to the sidecar, to settle the angle sign and how erasing is stored ([design/masks.md](design/masks.md) open questions).
 13. **Effects and detail:** vignette in every style, grain, sharpening (on edge patterns) and noise reduction (on flat ISO-noise frames).
 
 **Week 4: lens, transform, catch-up**

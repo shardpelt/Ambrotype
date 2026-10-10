@@ -68,10 +68,10 @@ function partEntries(corrections, mask, part) {
   const comps = c?.CorrectionMasks ?? [];
   const m = maskList()[mask];
   if (!m) return [];
-  // Parts are listed in order; brush parts span consecutive strokes.
+  // Parts are listed in order; an older file's brush spans several entries.
   let i = 0;
   for (const p of m.parts) {
-    const n = p.kind === "brush" ? p.strokes : 1;
+    const n = p.entries ?? 1;
     if (p.index === part) return comps.slice(i, i + n);
     i += n;
   }
@@ -127,8 +127,9 @@ function pxScale() {
   return viewRect().width / mk.frame.view_width;
 }
 
-function longSide() {
-  return Math.max(mk.frame.frame_width, mk.frame.frame_height);
+// Brush sizes are fractions of the frame's width, as Lightroom's.
+function frameWidth() {
+  return mk.frame.frame_width;
 }
 
 // A frame-pixel offset (dx, dy) from frame point (x, y), as a canvas point.
@@ -254,7 +255,7 @@ function drawMasks() {
   }
 
   // A stroke being painted.
-  const radius = (mk.brush.size / 100) * longSide() * pxScale();
+  const radius = (mk.brush.size / 100) * frameWidth() * pxScale();
   if (mk.stroke) {
     g.fillStyle = mk.brush.erase || mk.stroke.erase ? "rgba(80,140,255,0.35)" : "rgba(230,60,60,0.35)";
     for (const [x, y] of mk.stroke.points) {
@@ -523,7 +524,7 @@ function renderToolOptions() {
   if (mk.tool !== "brush") return;
   const b = mk.brush;
   box.append(
-    sliderRow({ label: "Size", min: 0.5, max: 25, step: 0.5, value: b.size, title: "Radius, % of the photo's longer side ([ and ])", onInput: (v) => { b.size = v; drawMasks(); }, onChange: (v) => { b.size = v; drawMasks(); } }),
+    sliderRow({ label: "Size", min: 0.5, max: 25, step: 0.5, value: b.size, title: "Radius, % of the photo's width ([ and ])", onInput: (v) => { b.size = v; drawMasks(); }, onChange: (v) => { b.size = v; drawMasks(); } }),
     sliderRow({ label: "Feather", min: 0, max: 100, step: 1, value: b.feather, onInput: (v) => { b.feather = v; drawMasks(); }, onChange: (v) => (b.feather = v) }),
     sliderRow({ label: "Flow", min: 1, max: 100, step: 1, value: b.flow, title: "How fast paint builds up", onChange: (v) => (b.flow = v) }),
     sliderRow({ label: "Density", min: 1, max: 100, step: 1, value: b.density, title: "Most strength the brush reaches", onChange: (v) => (b.density = v) }),

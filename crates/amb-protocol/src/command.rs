@@ -82,7 +82,7 @@ pub enum Command {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         mode: Option<String>,
         points: Vec<[f64; 2]>,
-        /// Radius as a fraction of the image's longer side.
+        /// Radius as a fraction of the image's width.
         #[serde(default = "default_brush_size")]
         size: f64,
         #[serde(default = "default_feather")]

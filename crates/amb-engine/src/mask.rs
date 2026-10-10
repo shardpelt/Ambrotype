@@ -22,6 +22,7 @@ use amb_presets::masks::{
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::brush;
 use crate::buffer::{Image, luminance_weights};
 use crate::calibration::Calibration;
 use crate::color::OkLab;
@@ -134,21 +135,6 @@ impl LocalAdjustments {
     }
 }
 
-/// One brush stroke.
-#[derive(Debug, Clone, PartialEq)]
-pub struct Stroke {
-    /// Dab centres, image fractions.
-    pub dabs: Vec<(f64, f64)>,
-    /// Radius as a fraction of the image's longer side.
-    pub radius: f64,
-    pub flow: f64,
-    /// Fraction of the radius at full strength (`CenterWeight`).
-    pub hardness: f64,
-    /// Density reached by painting (`MaskValue`), 0..1.
-    pub density: f64,
-    pub erase: bool,
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape {
     /// No effect at `zero`, full effect at `full` (image fractions).
@@ -166,7 +152,7 @@ pub enum Shape {
         angle: f64,
         feather: f64,
     },
-    Brush(Vec<Stroke>),
+    Brush(Vec<brush::Stroke>),
     /// `LumRange`: none below [0], full from [1] to [2], none above [3].
     Luminance([f64; 4]),
     /// Sampled colours (image fractions) and Refine 0..1.
@@ -268,7 +254,11 @@ fn read_correction(tag: &str, c: &BTreeMap<String, Value>, notes: &mut Vec<Strin
         let kind = MaskKind::of(first);
         let shape = read_shape(&kind, &entries);
         if shape == Shape::Unsupported {
-            notes.push(format!("{tag}: {} mask in \"{name}\"", kind.label()));
+            notes.push(if kind == MaskKind::Brush && masks::uses_brush_table(first) {
+                format!("{tag}: brush in \"{name}\" (its strokes are in Lightroom's .acr file, not read yet)")
+            } else {
+                format!("{tag}: {} mask in \"{name}\"", kind.label())
+            });
         }
         parts.push(Part {
             shape,
@@ -335,31 +325,23 @@ fn read_shape(kind: &MaskKind, entries: &[&BTreeMap<String, Value>]) -> Shape {
             feather: f("Feather", 50.0).clamp(0.0, 100.0),
         },
         MaskKind::Brush => {
-            // Painting raises the part towards its density; a stroke whose
-            // value differs from the first one's in being zero erases.
-            let first_zero = f("MaskValue", 1.0) == 0.0;
+            let strokes = masks::brush_strokes(entries);
+            if strokes.is_empty() {
+                return Shape::Unsupported;
+            }
+            // In an aggregate each stroke's MaskValue is its density, and a
+            // zero one erases. Old files keep the combination on the strokes,
+            // so a stroke whose zero-ness differs from the first one's erases.
+            let aggregate = masks::text(e, "What").as_deref() == Some("Mask/Aggregate");
+            let first_zero = !aggregate && f("MaskValue", 1.0) == 0.0;
             Shape::Brush(
-                entries
+                strokes
                     .iter()
                     .map(|s| {
                         let value = num(s, "MaskValue").unwrap_or(1.0).clamp(0.0, 1.0);
-                        let dabs = match s.get("Dabs") {
-                            Some(Value::Seq(d)) => d
-                                .iter()
-                                .filter_map(Value::as_str)
-                                .filter_map(masks::parse_dab)
-                                .collect(),
-                            _ => Vec::new(),
-                        };
                         let erase = (value == 0.0) != first_zero;
-                        Stroke {
-                            dabs,
-                            radius: num(s, "Radius").unwrap_or(0.05).max(1e-4),
-                            flow: num(s, "Flow").unwrap_or(1.0).clamp(0.0, 1.0),
-                            hardness: num(s, "CenterWeight").unwrap_or(0.0).clamp(0.0, 1.0),
-                            density: if first_zero { 1.0 } else { value },
-                            erase,
-                        }
+                        let density = if erase || first_zero { 1.0 } else { value };
+                        brush::stroke(s, density, erase)
                     })
                     .collect(),
             )
@@ -525,25 +507,12 @@ fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference) -> Vec<f32> {
             });
         }
         Shape::Brush(strokes) => {
-            let mut stroke_plane = vec![0.0f32; w * h];
-            for s in strokes {
-                stroke_plane.iter_mut().for_each(|v| *v = 0.0);
-                let bounds = paint_stroke(&mut stroke_plane, w, h, frame, s);
-                let Some((x0, y0, x1, y1)) = bounds else {
-                    continue;
-                };
-                for y in y0..y1 {
-                    for x in x0..x1 {
-                        let i = y * w + x;
-                        let c = stroke_plane[i];
-                        if s.erase {
-                            plane[i] *= 1.0 - c;
-                        } else {
-                            plane[i] = plane[i].max(s.density as f32 * c);
-                        }
-                    }
-                }
-            }
+            // Dabs are circles in pixels, sized in frame widths.
+            let centre = |u: f64, v: f64| {
+                let (fx, fy) = frame.pixel(u, v);
+                frame.target(fx, fy)
+            };
+            return brush::draw(w, h, strokes, centre, frame.width * frame.scale());
         }
         Shape::Luminance(range) => {
             if let Some(l) = r.luminance {
@@ -573,54 +542,6 @@ fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference) -> Vec<f32> {
         Shape::Unsupported => {}
     }
     plane
-}
-
-/// Paint one stroke's coverage; returns the touched output rectangle.
-fn paint_stroke(
-    plane: &mut [f32],
-    w: usize,
-    h: usize,
-    frame: &Frame,
-    s: &Stroke,
-) -> Option<(usize, usize, usize, usize)> {
-    let long = frame.width.max(frame.height);
-    let r = s.radius * long * frame.scale();
-    if r.is_nan() || r <= 0.0 || s.flow <= 0.0 {
-        return None;
-    }
-    let flow = s.flow as f32;
-    let inner = s.hardness.clamp(0.0, 0.999);
-    let mut bounds: Option<(usize, usize, usize, usize)> = None;
-    for &(u, v) in &s.dabs {
-        let (fx, fy) = frame.pixel(u, v);
-        let (cx, cy) = frame.target(fx, fy);
-        let x0 = (cx - r).floor().max(0.0) as usize;
-        let y0 = (cy - r).floor().max(0.0) as usize;
-        let x1 = ((cx + r).ceil() + 1.0).clamp(0.0, w as f64) as usize;
-        let y1 = ((cy + r).ceil() + 1.0).clamp(0.0, h as f64) as usize;
-        if x0 >= x1 || y0 >= y1 {
-            continue;
-        }
-        bounds = Some(match bounds {
-            Some((a, b, c, d)) => (a.min(x0), b.min(y0), c.max(x1), d.max(y1)),
-            None => (x0, y0, x1, y1),
-        });
-        plane[y0 * w..y1 * w]
-            .par_chunks_mut(w)
-            .enumerate()
-            .for_each(|(j, row)| {
-                let y = (y0 + j) as f64;
-                for (x, c) in row.iter_mut().enumerate().take(x1).skip(x0) {
-                    let d = ((x as f64 - cx).hypot(y - cy)) / r;
-                    if d >= 1.0 {
-                        continue;
-                    }
-                    let a = flow * (1.0 - smoothstep(inner, 1.0, d)) as f32;
-                    *c += (1.0 - *c) * a;
-                }
-            });
-    }
-    bounds
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1116,6 +1037,37 @@ mod tests {
         assert!(a[50 * w + 50] > 0.99, "painted");
         assert!(a[50 * w + 75] < 0.01, "erased");
         assert!(a[10 * w + 50] < 1e-6, "untouched");
+    }
+
+    #[test]
+    fn aggregate_brush_with_a_density_and_the_acr_note() {
+        let stroke = |value: &str| {
+            st(&[
+                ("What", text("Mask/Paint")),
+                ("MaskValue", text(value)),
+                ("Radius", text("0.1")),
+                ("Flow", text("1")),
+                ("CenterWeight", text("1")),
+                ("Dabs", Value::Seq(vec![text("d 0.5 0.5")])),
+            ])
+        };
+        let agg = st(&[
+            ("What", text("Mask/Aggregate")),
+            ("MaskBlendMode", text("0")),
+            ("MaskValue", text("1")),
+            ("Masks", Value::Seq(vec![stroke("0.5")])),
+        ]);
+        let (w, h) = (100, 100);
+        let a = alpha_of(&settings(vec![correction(vec![agg])]), w, h);
+        assert!((a[50 * w + 50] - 0.5).abs() < 0.01, "{}", a[50 * w + 50]);
+        assert_eq!(a[10 * w + 10], 0.0);
+        // Strokes kept in the .acr file can't be drawn yet, and say so.
+        let table = st(&[
+            ("What", text("Mask/Aggregate")),
+            ("MaskBrushTable", text("0123456789abcdef0123456789abcdef")),
+        ]);
+        let (_, notes) = Masks::from_settings(&settings(vec![correction(vec![table])]));
+        assert!(notes[0].contains(".acr"), "{notes:?}");
     }
 
     #[test]

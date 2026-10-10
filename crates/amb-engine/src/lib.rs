@@ -8,6 +8,7 @@
 //! docs/SCOPE.md §9 replaces this incrementally; this crate fixes the colour
 //! maths and gives the calibration harness something to compare against.
 
+pub mod brush;
 pub mod buffer;
 pub mod calibration;
 pub mod color;

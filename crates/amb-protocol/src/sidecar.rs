@@ -12,6 +12,11 @@
 //! `dc:subject`, and
 //! `lr:hierarchicalSubject` for keyword paths) and [`merge_with_info`] can
 //! replace them, so Lightroom and other apps read what Ambrotype writes.
+//!
+//! Pick and reject flags have no standard place (Lightroom keeps them in its
+//! catalogue), so they are ours: `amblib:Flag` in [`LIBRARY_NS`]. A rejected
+//! photo without stars also gets `xmp:Rating="-1"`, the XMP way to say
+//! rejected (Bridge and darktable read it), and that is read as a reject.
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -27,6 +32,33 @@ use crate::Error;
 const XMP_NS: &str = "http://ns.adobe.com/xap/1.0/";
 const DC_NS: &str = "http://purl.org/dc/elements/1.1/";
 const LR_NS: &str = "http://ns.adobe.com/lightroom/1.0/";
+/// Ambrotype's library namespace: photo state that isn't a develop setting.
+pub const LIBRARY_NS: &str = "http://ns.ambrotype.org/library/1.0/";
+
+/// Lightroom's pick and reject flags.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Flag {
+    Pick,
+    Reject,
+}
+
+impl Flag {
+    pub fn name(self) -> &'static str {
+        match self {
+            Flag::Pick => "pick",
+            Flag::Reject => "reject",
+        }
+    }
+
+    pub fn parse(s: &str) -> Option<Flag> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "pick" | "picked" => Some(Flag::Pick),
+            "reject" | "rejected" => Some(Flag::Reject),
+            _ => None,
+        }
+    }
+}
 
 /// A photo's rating, colour label and keywords, as stored in its sidecar.
 #[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -39,6 +71,9 @@ pub struct PhotoInfo {
     /// "Green", "Blue" or "Purple" (any text is kept).
     #[serde(default)]
     pub label: Option<String>,
+    /// Pick or reject.
+    #[serde(default)]
+    pub flag: Option<Flag>,
 }
 
 impl PhotoInfo {
@@ -60,8 +95,15 @@ impl PhotoInfo {
                 .map(str::trim)
                 .filter(|l| !l.is_empty())
                 .map(str::to_string),
+            flag: self.flag,
         }
     }
+}
+
+/// A rating as stored: stars, or -1 for rejected.
+fn parse_rating(v: &str) -> (Option<u8>, bool) {
+    let r = v.trim().parse::<f64>().ok().map(|r| r.round() as i64);
+    (r.and_then(|r| u8::try_from(r).ok()), r == Some(-1))
 }
 
 /// The rating, label and keywords in an XMP packet (empty when there are none).
@@ -72,6 +114,8 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
     let mut in_subject = false;
     let mut in_rating = false;
     let mut in_label = false;
+    let mut in_flag = false;
+    let mut rated_reject = false;
     let mut in_li = false;
     loop {
         match reader.read_resolved_event() {
@@ -85,6 +129,8 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                     in_rating = true;
                 } else if is(XMP_NS) && local == b"Label" {
                     in_label = true;
+                } else if is(LIBRARY_NS) && local == b"Flag" {
+                    in_flag = true;
                 } else if in_subject && is(RDF_NS) && local == b"li" {
                     in_li = true;
                 }
@@ -100,12 +146,11 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                             .unescape_value()
                             .map(|v| v.to_string())
                             .unwrap_or_default();
-                        info.rating = v
-                            .trim()
-                            .parse::<f64>()
-                            .ok()
-                            .map(|r| r.round() as i64)
-                            .and_then(|r| u8::try_from(r).ok());
+                        (info.rating, rated_reject) = parse_rating(&v);
+                    }
+                    let library = matches!(ans, ResolveResult::Bound(n) if n.as_ref() == LIBRARY_NS.as_bytes());
+                    if library && alocal.as_ref() == b"Flag" {
+                        info.flag = a.unescape_value().ok().and_then(|v| Flag::parse(&v));
                     }
                 }
             }
@@ -115,13 +160,10 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                     info.keywords.push(v);
                 } else if in_label {
                     info.label = Some(v);
+                } else if in_flag {
+                    info.flag = Flag::parse(&v);
                 } else if in_rating {
-                    info.rating = v
-                        .trim()
-                        .parse::<f64>()
-                        .ok()
-                        .map(|r| r.round() as i64)
-                        .and_then(|r| u8::try_from(r).ok());
+                    (info.rating, rated_reject) = parse_rating(&v);
                 }
             }
             Ok((ns, Event::End(e))) => {
@@ -133,6 +175,8 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                     in_rating = false;
                 } else if is(XMP_NS) && local.as_ref() == b"Label" {
                     in_label = false;
+                } else if is(LIBRARY_NS) && local.as_ref() == b"Flag" {
+                    in_flag = false;
                 } else if is(RDF_NS) && local.as_ref() == b"li" {
                     in_li = false;
                 }
@@ -140,6 +184,9 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
             Ok((_, Event::Eof)) | Err(_) => break,
             _ => {}
         }
+    }
+    if info.flag.is_none() && rated_reject {
+        info.flag = Some(Flag::Reject);
     }
     info.cleaned_keeping_keywords()
 }
@@ -221,16 +268,21 @@ fn list_items(xml: &str) -> Vec<String> {
 fn apply_info(foreign: &mut Foreign, info: &PhotoInfo) {
     let info = info.cleaned();
     let ns = foreign.namespaces.clone();
-    foreign
-        .attributes
-        .retain(|(name, _)| !matches!(resolve(name, &ns), (Some(XMP_NS), "Rating" | "Label")));
+    foreign.attributes.retain(|(name, _)| {
+        !matches!(
+            resolve(name, &ns),
+            (Some(XMP_NS), "Rating" | "Label") | (Some(LIBRARY_NS), "Flag")
+        )
+    });
     let kept: std::collections::HashSet<String> =
         info.keywords.iter().map(|k| k.to_lowercase()).collect();
     let mut elements = Vec::new();
     for e in std::mem::take(&mut foreign.elements) {
         let (uri, local) = element_ns(&e, &ns);
         match (uri.as_deref(), local.as_str()) {
-            (Some(XMP_NS), "Rating" | "Label") | (Some(DC_NS), "subject") => {}
+            (Some(XMP_NS), "Rating" | "Label")
+            | (Some(DC_NS), "subject")
+            | (Some(LIBRARY_NS), "Flag") => {}
             (Some(LR_NS), "hierarchicalSubject") => {
                 // Keep the keyword paths whose last part is still a keyword.
                 let paths: Vec<String> = list_items(&e)
@@ -276,6 +328,17 @@ fn apply_info(foreign: &mut Foreign, info: &PhotoInfo) {
         foreign
             .attributes
             .push((format!("{p}:Rating"), r.to_string()));
+    } else if info.flag == Some(Flag::Reject) {
+        let p = prefix_for(foreign, XMP_NS, "xmp");
+        foreign
+            .attributes
+            .push((format!("{p}:Rating"), "-1".into()));
+    }
+    if let Some(flag) = info.flag {
+        let p = prefix_for(foreign, LIBRARY_NS, "amblib");
+        foreign
+            .attributes
+            .push((format!("{p}:Flag"), flag.name().into()));
     }
     if let Some(label) = &info.label {
         let p = prefix_for(foreign, XMP_NS, "xmp");
@@ -565,6 +628,7 @@ mod tests {
             rating: Some(2),
             keywords: vec!["sunset".into(), " family ".into(), "Sunset".into()],
             label: info.label.clone(),
+            flag: None,
         };
         let out = with_info(Some(SIDECAR), &new).unwrap();
         let back = read_info(&out);
@@ -582,6 +646,7 @@ mod tests {
             rating: Some(5),
             keywords: vec!["a & b".into()],
             label: Some("Green".into()),
+            flag: None,
         };
         let fresh = with_info(None, &both).unwrap();
         assert_eq!(read_info(&fresh), both);
@@ -609,6 +674,36 @@ mod tests {
     }
 
     #[test]
+    fn flags_round_trip_beside_the_stars() {
+        // Picked, with stars.
+        let picked = PhotoInfo {
+            rating: Some(3),
+            flag: Some(Flag::Pick),
+            ..PhotoInfo::default()
+        };
+        let out = with_info(Some(SIDECAR), &picked).unwrap();
+        assert!(out.contains(r#"amblib:Flag="pick""#), "{out}");
+        assert_eq!(read_info(&out).flag, Some(Flag::Pick));
+        assert_eq!(read_info(&out).rating, Some(3));
+        // Rejected without stars: Bridge's -1 as well.
+        let rejected = PhotoInfo {
+            flag: Some(Flag::Reject),
+            ..PhotoInfo::default()
+        };
+        let out = with_info(Some(&out), &rejected).unwrap();
+        assert!(out.contains(r#"xmp:Rating="-1""#), "{out}");
+        assert_eq!(out.matches("Flag=").count(), 1, "{out}");
+        assert_eq!(read_info(&out), rejected);
+        // Unflagged: both go.
+        let out = with_info(Some(&out), &PhotoInfo::default()).unwrap();
+        assert!(!out.contains("Flag") && !out.contains("Rating"), "{out}");
+        // Another app's -1 reads as rejected.
+        let bridge = SIDECAR.replace(r#"xmp:Rating="4""#, r#"xmp:Rating="-1""#);
+        let info = read_info(&bridge);
+        assert_eq!((info.rating, info.flag), (None, Some(Flag::Reject)));
+    }
+
+    #[test]
     fn keyword_paths_follow_the_keywords() {
         let lr = SIDECAR.replace(
             "<dc:subject>",
@@ -619,6 +714,7 @@ mod tests {
             rating: Some(4),
             keywords: vec!["sunset".into()],
             label: None,
+            flag: None,
         };
         let out = with_info(Some(&lr), &info).unwrap();
         assert!(

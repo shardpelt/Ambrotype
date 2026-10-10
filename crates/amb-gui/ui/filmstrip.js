@@ -75,7 +75,10 @@ function renderStrip() {
     const dot = Object.assign(document.createElement("span"), { className: "film-edited", title: "Has edits", hidden: !p.edited });
     const label = Object.assign(document.createElement("span"), { className: "film-label", hidden: !p.label, title: p.label ? `${p.label} label` : "" });
     if (p.label) label.style.background = LABEL_COLOURS[p.label] ?? "var(--muted)";
-    meta.append(stars, label, dot);
+    const flag = Object.assign(document.createElement("span"), { className: "film-flag" });
+    showFlag(flag, p.flag);
+    cell.classList.toggle("rejected", p.flag === "reject");
+    meta.append(flag, stars, label, dot);
     const name = Object.assign(document.createElement("span"), { className: "film-name", textContent: p.name });
     cell.append(img, meta, name);
     cell.addEventListener("click", async () => {
@@ -169,7 +172,7 @@ function stripUpdateCurrent(changes = {}) {
   if (ui.info) stripUpdate(ui.info.path, changes);
 }
 
-function stripUpdate(path, { rating, label, edited, keywords } = {}) {
+function stripUpdate(path, { rating, label, edited, keywords, flag } = {}) {
   const p = strip.photos.find((x) => x.path === path);
   const cell = p && strip.cells.get(p.path);
   if (!cell) return;
@@ -188,6 +191,11 @@ function stripUpdate(path, { rating, label, edited, keywords } = {}) {
     cell.querySelector(".film-edited").hidden = !edited;
   }
   if (keywords !== undefined) p.keywords = keywords;
+  if (flag !== undefined) {
+    p.flag = flag;
+    showFlag(cell.querySelector(".film-flag"), flag);
+    cell.classList.toggle("rejected", flag === "reject");
+  }
 }
 
 // Files that wouldn't open are skipped (and marked) when stepping.

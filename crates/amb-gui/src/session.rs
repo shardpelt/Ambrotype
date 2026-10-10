@@ -1231,6 +1231,7 @@ mod tests {
             rating: Some(3),
             keywords: vec!["test".into()],
             label: Some("Red".into()),
+            flag: Some(amb_protocol::sidecar::Flag::Pick),
         };
         assert_eq!(s.set_info(&info).unwrap(), info);
         let on_disk = std::fs::read_to_string(&s.sidecar).unwrap();

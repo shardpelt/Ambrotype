@@ -26,6 +26,8 @@ pub struct FolderPhoto {
     /// Colour label ("Red", ...), from the sidecar.
     pub label: Option<String>,
     pub keywords: Vec<String>,
+    /// "pick" or "reject", from the sidecar.
+    pub flag: Option<amb_protocol::sidecar::Flag>,
     /// The sidecar has develop settings.
     pub edited: bool,
 }
@@ -166,6 +168,7 @@ pub fn describe(paths: Vec<PathBuf>) -> Vec<FolderPhoto> {
                 rating: info.rating,
                 label: info.label,
                 keywords: info.keywords,
+                flag: info.flag,
                 edited,
             }
         })
@@ -330,6 +333,7 @@ mod tests {
                     rating: Some(3),
                     keywords: vec![],
                     label: None,
+                    flag: None,
                 },
             )
             .unwrap(),

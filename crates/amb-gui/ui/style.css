@@ -588,6 +588,19 @@ dialog .inline-check { flex-direction: row; align-items: flex-start; gap: 6px; c
 .film-label { width: 8px; height: 8px; border-radius: 2px; box-shadow: 0 0 0 1px #000; }
 .film-label[hidden] { display: none; }
 
+/* Pick and reject flags (info block, filmstrip, library) */
+.lib-flag, .film-flag { font-size: 12px; line-height: 1; }
+.lib-flag:empty, .film-flag:empty { display: none; }
+.lib-flag.pick, .film-flag.pick { color: var(--text); }
+.lib-flag.reject, .film-flag.reject { color: #e5484d; font-weight: 700; }
+.film-flag { text-shadow: 0 0 3px #000; font-size: 11px; }
+.lib-cell.rejected .lib-frame img, .film-cell.rejected img { opacity: .35; }
+.flag-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.flag-buttons { display: inline-flex; gap: 3px; }
+.flag-buttons button { padding: 1px 7px; font-size: 12px; line-height: 1.4; }
+.flag-buttons button.on { background: var(--tab-active); border-color: var(--accent); color: var(--text); }
+.flag-buttons button.reject.on { color: #e5484d; }
+
 /* Library (library.js) */
 body.library-mode #workspace { display: none; }
 .library { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }

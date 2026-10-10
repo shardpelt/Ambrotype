@@ -1,12 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Rating, colour label and keywords for the open photo. They're written to
-// the photo's XMP sidecar as soon as they change (xmp:Rating, xmp:Label and
-// dc:subject, where Lightroom keeps them; src/session.rs `set_info`), and
-// embedded in exports. Keys 1–5 rate, 0 clears, 6–9 label (keys.js); the
-// keyword field takes Enter or commas.
+// Rating, colour label, flag and keywords for the open photo. They're
+// written to the photo's XMP sidecar as soon as they change (xmp:Rating,
+// xmp:Label and dc:subject, where Lightroom keeps them, and our amblib:Flag;
+// src/session.rs `set_info`), and embedded in exports. Keys 1–5 rate, 0
+// clears, 6–9 label, P/X/U flag (keys.js); the keyword field takes Enter or
+// commas.
 "use strict";
 
-const infoState = { info: { rating: null, keywords: [], label: null }, recent: [], busy: Promise.resolve() };
+const infoState = { info: { rating: null, keywords: [], label: null, flag: null }, recent: [], busy: Promise.resolve() };
+
+const FLAG_DONE = { pick: "Flagged as a pick", reject: "Flagged as rejected", "": "Flag removed" };
+
+// A flag mark: a white flag for a pick, a crossed one for a reject.
+function showFlag(el, flag) {
+  el.textContent = flag === "pick" ? "⚑" : flag === "reject" ? "✕" : "";
+  el.className = `${el.className.split(" ")[0]}${flag ? ` ${flag}` : ""}`;
+  el.title = flag === "pick" ? "Pick (P)" : flag === "reject" ? "Rejected (X)" : "";
+}
 
 function renderInfo() {
   const block = $("block-info");
@@ -22,6 +32,10 @@ function renderInfo() {
   $("rating-clear").disabled = !on || !rating;
   for (const b of $("label-swatches").querySelectorAll("button")) {
     b.classList.toggle("on", b.dataset.label === infoState.info.label);
+    b.disabled = !on;
+  }
+  for (const b of $("flag-buttons").querySelectorAll("button")) {
+    b.classList.toggle("on", b.dataset.flag === (infoState.info.flag ?? ""));
     b.disabled = !on;
   }
   const chips = $("tag-chips");
@@ -83,6 +97,14 @@ function setLabel(label) {
   status(next ? `${next} label` : "Label removed");
 }
 
+// "pick", "reject", or "" for none.
+function setFlag(flag) {
+  if (!ui.info) return;
+  saveInfo({ ...infoState.info, flag: flag || null });
+  stripUpdateCurrent({ flag: flag || null });
+  status(FLAG_DONE[flag]);
+}
+
 function setKeywords(keywords) {
   if (!ui.info) return;
   const seen = new Set();
@@ -112,6 +134,7 @@ function wireInfo() {
     b.addEventListener("click", () => setLabel(l));
     $("label-swatches").append(b);
   }
+  for (const b of $("flag-buttons").querySelectorAll("button")) b.addEventListener("click", () => setFlag(b.dataset.flag));
   const input = $("tag-input");
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === "," || e.key === "Tab") {

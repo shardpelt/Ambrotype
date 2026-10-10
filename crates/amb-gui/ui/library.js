@@ -11,7 +11,7 @@
 const lib = {
   on: false,
   dir: null,
-  photos: [],          // [{ path, name, rating, label, keywords, edited, captured }]
+  photos: [],          // [{ path, name, rating, label, keywords, flag, edited, captured }]
   shown: [],           // after filter and sort
   selected: new Set(), // paths
   anchor: null,        // where a Shift-click range starts
@@ -100,12 +100,14 @@ function applyView() {
   const f = {
     rating: $("lib-filter-rating").value,
     label: $("lib-filter-label").value,
+    flag: $("lib-filter-flag").value,
     edited: $("lib-filter-edited").value,
     text: $("lib-search").value.trim().toLowerCase(),
   };
   let shown = lib.photos.filter((p) => {
     if (f.rating === "unrated" ? p.rating : (p.rating ?? 0) < Number(f.rating)) return false;
     if (f.label === "none" ? p.label : f.label !== "all" && p.label !== f.label) return false;
+    if (f.flag === "unflagged" ? p.flag : f.flag === "kept" ? p.flag === "reject" : f.flag !== "all" && p.flag !== f.flag) return false;
     if (f.edited === "edited" && !p.edited) return false;
     if (f.edited === "unedited" && p.edited) return false;
     if (f.text && !(p.name.toLowerCase().includes(f.text) || p.keywords.some((k) => k.toLowerCase().includes(f.text)))) return false;
@@ -146,6 +148,7 @@ function renderLibrary() {
     frame.append(Object.assign(document.createElement("img"), { alt: "", draggable: false }));
     const meta = Object.assign(document.createElement("div"), { className: "lib-meta" });
     meta.append(
+      Object.assign(document.createElement("span"), { className: "lib-flag" }),
       Object.assign(document.createElement("span"), { className: "lib-stars" }),
       Object.assign(document.createElement("span"), { className: "lib-edited", title: "Has edits" }),
     );
@@ -167,6 +170,8 @@ function updateCell(p) {
   if (!cell) return;
   cell.querySelector(".lib-stars").textContent = p.rating ? "★".repeat(p.rating) : "";
   cell.querySelector(".lib-edited").hidden = !p.edited;
+  showFlag(cell.querySelector(".lib-flag"), p.flag);
+  cell.classList.toggle("rejected", p.flag === "reject");
   cell.style.setProperty("--label", p.label ? LABEL_COLOURS[p.label] ?? "var(--muted)" : "transparent");
   cell.classList.toggle("labelled", Boolean(p.label));
   cell.classList.toggle("open", p.path === ui.info?.path);
@@ -325,6 +330,8 @@ function renderPanel() {
   }
   const label = same((p) => p.label ?? null);
   for (const b of $("lib-labels").querySelectorAll("button")) b.classList.toggle("on", label !== undefined && b.dataset.label === label);
+  const flag = same((p) => p.flag ?? "");
+  for (const b of $("lib-flags").querySelectorAll("button")) b.classList.toggle("on", flag !== undefined && b.dataset.flag === flag);
   // Keywords: on all of them (× removes), or on some (+ adds to the rest).
   const counts = new Map();
   for (const p of sel) for (const k of p.keywords) {
@@ -361,13 +368,14 @@ async function libraryChange(change) {
     for (const u of updates) {
       const p = libPhoto(u.path);
       if (!p) continue;
-      Object.assign(p, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords });
+      Object.assign(p, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag });
       updateCell(p);
-      stripUpdate(u.path, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords });
+      stripUpdate(u.path, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag ?? null });
     }
     if (ui.info && paths.includes(ui.info.path)) loadInfo();
     const what = change.rating !== undefined ? (change.rating ? `Rated ${"★".repeat(change.rating)}` : "Rating cleared")
       : change.label !== undefined ? (change.label ? `${change.label} label` : "Label removed")
+      : change.flag !== undefined ? FLAG_DONE[change.flag]
       : "Keywords changed";
     status(`${what}: ${updates.length} photo${updates.length === 1 ? "" : "s"}`);
     applyViewKeepingCells();
@@ -397,6 +405,11 @@ function labelKey(label) {
     return libraryChange({ label: sel.every((p) => p.label === label) ? "" : label });
   }
   return ui.info ? setLabel(label) : false;
+}
+
+function flagKey(flag) {
+  if (lib.on) return selectedPhotos().length ? libraryChange({ flag }) : false;
+  return ui.info ? setFlag(flag) : false;
 }
 
 function keywordsKey() {
@@ -541,7 +554,8 @@ function wireLibrary() {
       moveFocus(e.key, e.shiftKey);
     }
   }, true);
-  for (const id of ["lib-filter-rating", "lib-filter-label", "lib-filter-edited", "lib-sort", "lib-reverse"]) $(id).addEventListener("change", renderLibrary);
+  for (const b of $("lib-flags").querySelectorAll("button")) b.addEventListener("click", () => libraryChange({ flag: b.dataset.flag }));
+  for (const id of ["lib-filter-rating", "lib-filter-label", "lib-filter-flag", "lib-filter-edited", "lib-sort", "lib-reverse"]) $(id).addEventListener("change", renderLibrary);
   let searchTimer;
   $("lib-search").addEventListener("input", () => {
     clearTimeout(searchTimer);

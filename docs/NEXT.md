@@ -73,7 +73,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 4. ~~**Masks:** linear, radial, brush, luminance and colour range, add/subtract/intersect; read and write Lightroom's mask tags~~ (done 2026-10-08; [design/masks.md](design/masks.md)). Next for masks: fitting in the trial month, AI masks (subject, sky) with our own segmenters, reordering and duplicating.
 5. ~~**Spot removal:** heal and clone~~ (done 2026-10-10; [design/spot-removal.md](design/spot-removal.md)). Red eye waits for a Lightroom sidecar: the `RedEyeInfo` format isn't documented anywhere we can read, and a guess could break Lightroom's files.
 6. ~~**Transform and Upright**~~ (done 2026-10-10: the sliders, and Upright Auto, Level, Vertical and Full from the photo's lines; [design/transform.md](design/transform.md)). Next for it: Guided Upright, fitting in the trial.
-7. **Library:** pick/reject flags, compare and survey views, virtual copies, collections; import with copy and rename.
+7. **Library:** ~~pick/reject flags~~ (done 2026-10-10), compare and survey views, virtual copies, collections; import with copy and rename.
 8. **Profiles, Calibration panel and Point Color** (fidelity track 4–5).
 9. **MCP server** for AI agents (fidelity track 6).
 10. **Speed and reach:** GPU preview, installers per OS (fidelity track 8–9), then HDR and panorama merge.

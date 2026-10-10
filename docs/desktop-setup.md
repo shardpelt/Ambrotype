@@ -73,7 +73,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 
   ![Plugins](images/plugins.png)
 
-- **Library:** the Library button (or G) shows the photo's folder as a grid. Sort, filter and search it; click, Shift-click and Ctrl/⌘-click to select many; then press 1–5 to rate them, 6–9 for a colour label, or add keywords in the panel. **Copy settings** on one photo and **Paste settings** onto others to give a whole series the same edit, **Export…** the selection with the usual export choices, or **Make a collage** with it. Everything is saved to the photos' `.xmp` files, where Lightroom reads it. Enter or a double-click opens a photo.
+- **Library:** the Library button (or G) shows the photo's folder as a grid. Sort, filter and search it; click, Shift-click and Ctrl/⌘-click to select many; then press 1–5 to rate them, 6–9 for a colour label, P or X to flag them as picks or rejects, or add keywords in the panel. **Copy settings** on one photo and **Paste settings** onto others to give a whole series the same edit, **Export…** the selection with the usual export choices, or **Make a collage** with it. Everything is saved to the photos' `.xmp` files, where Lightroom reads it. Enter or a double-click opens a photo.
 
   ![Library](images/library.png)
 
@@ -111,6 +111,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | C | Collage maker (in it: R turns the selected photo, Delete empties the cell, Ctrl+S / Ctrl+O save and open the collage, arrow keys nudge and `[` `]` restack free frames, Esc closes) |
   | 1–5, 0 | Rate the photo, or the selection in the library (0 clears) |
   | 6, 7, 8, 9 | Red, yellow, green, blue label (the same key again removes it) |
+  | P, X, U | Flag as a pick, flag as rejected, remove the flag (not in the crop tool, where X swaps the aspect) |
   | G | Library grid / editor |
   | Ctrl+Shift+C / Ctrl+Shift+V | In the library: copy one photo's settings / paste them onto the selection |
   | K | Jump to the keyword field (Enter or a comma adds a keyword) |

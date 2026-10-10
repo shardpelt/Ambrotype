@@ -9,13 +9,16 @@
 
 const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
 
-// `when`: "any", "main" (crop tool closed), "crop" (crop tool open) or
-// "library" (the library grid shown). Actions
-// with overlapping contexts can't share a key. `photo`: needs an open photo.
+// `when`: "any", "main" (crop tool closed), "crop" (crop tool open),
+// "masks", "spots", "library" (the library grid shown), or a list of them.
+// Actions with overlapping contexts can't share a key. `photo`: needs an open photo.
 // `button`: the toolbar button whose tooltip shows the keys.
 // Colour labels, written to the sidecar as Lightroom does (`xmp:Label`).
 const LABELS = ["Red", "Yellow", "Green", "Blue", "Purple"];
 const LABEL_COLOURS = { Red: "#e5484d", Yellow: "#f1c40f", Green: "#46a758", Blue: "#3e7bfa", Purple: "#8e4ec6" };
+
+// Flag keys work everywhere but the crop tool, where X swaps the aspect.
+const FLAG_CONTEXTS = ["main", "masks", "spots", "library"];
 
 const KEY_ACTIONS = [
   { id: "open", group: "File", label: "Open a photo", keys: ["Ctrl+O"], when: "any", button: "btn-open", run: () => openDialog() },
@@ -53,6 +56,9 @@ const KEY_ACTIONS = [
   { id: "rate-0", group: "Rating", label: "Clear the rating", keys: ["0"], when: "any", run: () => rateKey(0) },
   ...LABELS.slice(0, 4).map((l, i) => ({ id: `label-${l.toLowerCase()}`, group: "Rating", label: `${l} label (again to remove)`, keys: [String(6 + i)], when: "any", run: () => labelKey(l) })),
   { id: "keywords", group: "Rating", label: "Add keywords (jump to the keyword field)", keys: ["K"], when: "any", run: () => keywordsKey() },
+  { id: "flag-pick", group: "Rating", label: "Flag as a pick", keys: ["P"], when: FLAG_CONTEXTS, run: () => flagKey("pick") },
+  { id: "flag-reject", group: "Rating", label: "Flag as rejected", keys: ["X"], when: FLAG_CONTEXTS, run: () => flagKey("reject") },
+  { id: "flag-none", group: "Rating", label: "Remove the flag", keys: ["U"], when: FLAG_CONTEXTS, run: () => flagKey("") },
   { id: "library", group: "Library", label: "Library grid / editor", hint: "All the photos in the folder, to rate, label, tag and export many at once.", keys: ["G"], when: "any", button: "btn-library", run: () => toggleLibrary() },
   { id: "lib-open", group: "Library", label: "Open the photo in the editor", keys: ["Enter"], when: "library", run: (e) => (e.target.matches("button, select") ? false : libraryOpenFocused()) },
   { id: "lib-all", group: "Library", label: "Select all shown", keys: ["Ctrl+A"], when: "library", run: () => librarySelectAll() },
@@ -73,7 +79,8 @@ const KEY_ACTIONS = [
 // Arrow keys belong to a focused slider, list or knob.
 const onControl = (e) => e.target.matches("input, select, textarea, [tabindex], .bar, svg");
 const keysFor = (a) => ui.keybindings?.[a.id] ?? a.keys;
-const contextsOverlap = (a, b) => a.when === "any" || b.when === "any" || a.when === b.when;
+const contextsOf = (a) => [a.when].flat();
+const contextsOverlap = (a, b) => a.when === "any" || b.when === "any" || contextsOf(a).some((w) => contextsOf(b).includes(w));
 
 // The key combination of a keydown event, or null for a lone modifier.
 function comboOf(e) {
@@ -113,7 +120,7 @@ function dispatchKey(e) {
   const ctx = libraryOn() ? "library" : ui.crop.on ? "crop" : mk.on ? "masks" : sp.on ? "spots" : "main";
   for (const a of KEY_ACTIONS) {
     if (!keysFor(a).includes(combo)) continue;
-    if (a.when !== "any" && a.when !== ctx) continue;
+    if (a.when !== "any" && !contextsOf(a).includes(ctx)) continue;
     if (a.photo && !ui.info) continue;
     if (a.run(e) === false) continue;
     e.preventDefault();

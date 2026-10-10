@@ -54,6 +54,9 @@ pub struct InfoChange {
     /// A colour label, or "" to clear.
     #[serde(default)]
     pub label: Option<String>,
+    /// "pick", "reject", or "" to clear.
+    #[serde(default)]
+    pub flag: Option<String>,
     #[serde(default)]
     pub add_keywords: Vec<String>,
     #[serde(default)]
@@ -68,6 +71,9 @@ impl InfoChange {
         }
         if let Some(l) = &self.label {
             out.label = Some(l.clone()).filter(|l| !l.trim().is_empty());
+        }
+        if let Some(f) = &self.flag {
+            out.flag = sidecar::Flag::parse(f);
         }
         let remove: Vec<String> = self
             .remove_keywords
@@ -297,6 +303,21 @@ mod tests {
         assert_eq!(listed.len(), 2);
         assert_eq!(listed[1].photo.keywords, ["beach", "family"]);
         assert_eq!(listed[1].photo.label.as_deref(), Some("Green"));
+        // Flags: set, listed, cleared; the stars stay.
+        let flag = |f: &str| InfoChange {
+            flag: Some(f.into()),
+            ..InfoChange::default()
+        };
+        let info = change_info(&b, &flag("reject")).unwrap();
+        assert_eq!(
+            (info.flag, info.rating),
+            (Some(sidecar::Flag::Reject), Some(4))
+        );
+        assert_eq!(
+            list(&dir).unwrap()[1].photo.flag,
+            Some(sidecar::Flag::Reject)
+        );
+        assert_eq!(change_info(&b, &flag("")).unwrap().flag, None);
         let _ = std::fs::remove_dir_all(&dir);
     }
 

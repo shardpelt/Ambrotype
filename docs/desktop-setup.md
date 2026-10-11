@@ -73,6 +73,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 
   ![Rating and keywords](images/rating-keywords.png)
 
+- **History:** the History panel (left column) lists every step since the photo was opened, from Original. Click a step to go back to just after it; the steps after it stay greyed and can be clicked to go forward again, until you make a new edit. Going back is itself undoable. History is kept while the photo is open: the sidecar saves the current settings only, so it starts again at Original when you reopen the photo.
 - **Plugins:** the Plugins button (or Ctrl+Shift+P) runs small tools that make edits for you: **Auto tone**, **Random look** and **Film recipe**, a camera-style picture menu (film look, grain, white balance shift, highlight and shadow tone, and more) for typing in film recipes you find online ([ai/film-recipes.md](ai/film-recipes.md)). Each run is one step in History, so Undo takes it back. A plugin that wants to see the photo's histogram or camera facts asks first. Parameter sets can be saved as **recipes**, and **Save as preset…** keeps a plugin's result as a preset. **Install from folder…** adds one, **Share as pull request…** offers yours to the hub, and **Make one with AI…** writes instructions for your own AI assistant to build a new one. Writing plugins: [ai/plugins.md](ai/plugins.md).
 
   ![Plugins](images/plugins.png)

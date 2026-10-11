@@ -86,7 +86,11 @@ input[type=search], input[type=number], select {
 .preset:hover { background: var(--panel-2); }
 .history { max-height: 30%; }
 .history-list { margin: 0; padding-left: 20px; overflow-y: auto; color: var(--muted); font-size: 12px; }
-.history-list li { padding: 1px 0; }
+.history-list li { padding: 1px 4px; border-radius: 3px; cursor: pointer; }
+.history-list li:hover { background: var(--tab-active); color: var(--text); }
+.history-list li.current { color: var(--text); font-weight: 600; cursor: default; }
+.history-list li.current:hover { background: none; }
+.history-list li.undone { opacity: 0.5; }
 
 /* Viewer */
 .viewer { position: relative; background: var(--viewer); display: grid; place-items: center; min-width: 0; min-height: 0; overflow: hidden; }

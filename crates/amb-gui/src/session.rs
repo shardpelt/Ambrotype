@@ -115,7 +115,10 @@ pub struct StateInfo {
     pub settings: serde_json::Value,
     pub can_undo: bool,
     pub can_redo: bool,
+    /// The steps done, oldest first.
     pub history: Vec<String>,
+    /// The steps undone and not yet replaced by a new edit, next to redo first.
+    pub redo_history: Vec<String>,
     /// Settings present but not rendered by this engine version.
     pub not_rendered: Vec<String>,
     /// The masks as `list_masks` describes them.
@@ -316,6 +319,13 @@ impl Session {
                 .state
                 .undo_stack()
                 .iter()
+                .map(|h| h.label.clone())
+                .collect(),
+            redo_history: self
+                .state
+                .redo_stack()
+                .iter()
+                .rev()
                 .map(|h| h.label.clone())
                 .collect(),
             not_rendered,

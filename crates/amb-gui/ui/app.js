@@ -274,13 +274,14 @@ function makeRow(def) {
   return row;
 }
 
-// History entries in words: "set_param Exposure2012" → "Exposure2012",
-// "add_mask linear to mask 0" → "Mask 1: add linear".
+// History entries in words: "set_param Exposure2012" → "Exposure" (the
+// slider's label), "add_mask linear to mask 0" → "Mask 1: add linear".
 function historyLabel(label) {
   const n = (i) => `Mask ${Number(i) + 1}`;
+  const named = (tag) => ui.defs.get(tag)?.label ?? tag;
   return label
-    .replace(/^set_param /, "")
-    .replace(/^reset_param /, "Reset ")
+    .replace(/^set_param (\S+)$/, (_, t) => named(t))
+    .replace(/^reset_param (\S+)$/, (_, t) => `Reset ${named(t)}`)
     .replace(/^apply_preset .*[\\/]/, "preset ")
     .replace(/^add_mask (\w+) to mask (\d+)$/, (_, k, m) => `${n(m)}: add ${k}`)
     .replace(/^add_mask (\w+)$/, (_, k) => `New ${k} mask`)
@@ -315,18 +316,40 @@ function syncControls() {
   }
   $("btn-undo").disabled = !ui.state?.can_undo;
   $("btn-redo").disabled = !ui.state?.can_redo;
-  const hist = $("history-list");
-  hist.innerHTML = "";
-  for (const label of ui.state?.history ?? []) {
-    const li = document.createElement("li");
-    li.textContent = historyLabel(label);
-    hist.append(li);
-  }
+  renderHistory();
   if (ui.curve) for (const tag of AmbCurve.TAGS) ui.curve.set(tag, currentValue(tag));
   if (ui.wheels) ui.wheels.set(Object.fromEntries(AmbWheels.TAGS.map((t) => [t, currentValue(t)])));
   const nr = ui.state?.not_rendered ?? [];
   $("status-right").textContent = nr.length ? `Not rendered yet: ${nr.length} setting(s)` : "";
   $("status-right").title = nr.join(", ");
+}
+
+// The History panel: Original, the steps done, then the steps undone (greyed)
+// until a new edit replaces them. Clicking one goes back or forward to just
+// after it, as one batch of undos or redos (so it is undoable too).
+function renderHistory() {
+  const hist = $("history-list");
+  hist.innerHTML = "";
+  if (!ui.state) return;
+  const done = ui.state.history ?? [];
+  const undone = ui.state.redo_history ?? [];
+  const steps = ["Original", ...done.map(historyLabel), ...undone.map(historyLabel)];
+  hist.start = 0;
+  steps.forEach((text, i) => {
+    const li = document.createElement("li");
+    li.textContent = text;
+    li.classList.toggle("current", i === done.length);
+    li.classList.toggle("undone", i > done.length);
+    if (i !== done.length) {
+      li.title = i < done.length ? "Go back to this step" : "Go forward to this step";
+      li.addEventListener("click", () => {
+        const n = i - done.length;
+        run(Array.from({ length: Math.abs(n) }, () => ({ cmd: n < 0 ? "undo" : "redo" })));
+      });
+    }
+    hist.append(li);
+  });
+  hist.querySelector(".current")?.scrollIntoView({ block: "nearest" });
 }
 
 // ---------------------------------------------------------------- state & commands

@@ -203,22 +203,23 @@ fn smoothstep(e0: f32, e1: f32, x: f32) -> f32 {
 // ---------------------------------------------------------------- vignette
 
 /// Separable vignette mask: `d^p = col[x] + row[y]`, then a renormalised smoothstep on `d`.
-struct VignetteMask {
-    col: Vec<f32>,
-    row: Vec<f32>,
+#[derive(Debug, Clone, PartialEq)]
+pub struct VignetteMask {
+    pub col: Vec<f32>,
+    pub row: Vec<f32>,
     /// Superellipse exponent (2 takes a `sqrt` fast path).
-    p: f32,
-    inner: f32,
-    outer: f32,
+    pub p: f32,
+    pub inner: f32,
+    pub outer: f32,
     /// The transition starts before the centre (`inner < 0`): add the mirrored
     /// profile `S(−d)` so the mask is even in `d`, hence flat at the centre.
-    mirrored: bool,
+    pub mirrored: bool,
     /// Profile value at the centre (`2·S(0)` when mirrored, else 0) and
     /// `1 / (1 − base)`: the mask is `(profile − base)·norm`.
-    base: f32,
-    norm: f32,
+    pub base: f32,
+    pub norm: f32,
     /// `d^p` at or below which the mask is exactly 0 (negative when nothing can be skipped).
-    q_skip: f32,
+    pub q_skip: f32,
 }
 
 impl VignetteMask {
@@ -305,24 +306,50 @@ impl VignetteMask {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-enum VignetteStyle {
+pub enum VignetteStyle {
     HighlightPriority,
     ColorPriority,
     PaintOverlay,
 }
 
 /// Per-pixel tone operation of the vignette, given the mask value.
-struct VignetteOp {
-    style: VignetteStyle,
+#[derive(Debug, Clone, PartialEq)]
+pub struct VignetteOp {
+    pub style: VignetteStyle,
     /// Signed exposure change at mask 1, in stops (priority styles).
-    stops: f32,
+    pub stops: f32,
     /// Highlight protection `h` in 0..1 (priority styles).
-    protect: f32,
+    pub protect: f32,
     /// Paint Overlay: opacity at mask 1, target (0 black, 1 white) and gamma.
-    opacity: f32,
-    target: f32,
-    gamma: f32,
-    lum: [f32; 3],
+    pub opacity: f32,
+    pub target: f32,
+    pub gamma: f32,
+    pub lum: [f32; 3],
+}
+
+/// The vignette as numbers (for other backends): its mask over the full
+/// frame and its tone operation.
+#[derive(Debug, Clone, PartialEq)]
+pub struct VignettePlan {
+    pub mask: VignetteMask,
+    pub op: VignetteOp,
+}
+
+/// [`apply_vignette_in`]'s numbers for a full frame of `full` pixels, or
+/// `None` when it does nothing.
+pub fn vignette_plan(
+    p: &Vignette,
+    k: &EffectsStrengths,
+    full: (usize, usize),
+) -> Option<VignettePlan> {
+    let amount = (p.amount / 100.0).clamp(-1.0, 1.0);
+    if amount == 0.0 || amount.is_nan() || full.0 == 0 || full.1 == 0 {
+        return None;
+    }
+    Some(VignettePlan {
+        mask: VignetteMask::new(full.0, full.1, p, k),
+        op: VignetteOp::new(p, k, amount),
+    })
 }
 
 impl VignetteOp {
@@ -452,12 +479,13 @@ pub fn apply_vignette(img: &mut Image, p: &Vignette, k: &EffectsStrengths) {
 /// [`apply_vignette`] on a part (`tile`) of the output, placed in the full frame.
 pub fn apply_vignette_in(img: &mut Image, p: &Vignette, k: &EffectsStrengths, tile: &Tile) {
     let (w, h) = (img.width, img.height);
-    let amount = (p.amount / 100.0).clamp(-1.0, 1.0);
-    if amount == 0.0 || amount.is_nan() || w == 0 || h == 0 {
+    if w == 0 || h == 0 {
         return;
     }
-    let mask = VignetteMask::new(tile.full_width, tile.full_height, p, k);
-    let op = VignetteOp::new(p, k, amount);
+    let Some(VignettePlan { mask, op }) = vignette_plan(p, k, (tile.full_width, tile.full_height))
+    else {
+        return;
+    };
     img.rgb
         .par_chunks_mut(w * 3)
         .enumerate()

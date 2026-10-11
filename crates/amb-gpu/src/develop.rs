@@ -50,6 +50,29 @@ struct ToneParams {
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
+struct VignetteParams {
+    w: u32,
+    h: u32,
+    x0: u32,
+    y0: u32,
+    p: f32,
+    inner: f32,
+    outer: f32,
+    mirrored: u32,
+    base: f32,
+    norm: f32,
+    q_skip: f32,
+    style: u32,
+    stops: f32,
+    protect: f32,
+    opacity: f32,
+    target_white: f32,
+    gamma: f32,
+    lum: [f32; 3],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
 struct ColorParams {
     to_lms: [f32; 9],
     from_lms: [f32; 9],
@@ -77,6 +100,7 @@ pub(crate) struct Kernels {
     tone_curve: Kernel,
     curves: Kernel,
     color: Kernel,
+    vignette: Kernel,
 }
 
 impl Kernels {
@@ -85,6 +109,7 @@ impl Kernels {
         let matrix = module("matrix", include_str!("shaders/matrix.wgsl"));
         let tone = module("tone", include_str!("shaders/tone.wgsl"));
         let color = module("color", include_str!("shaders/color.wgsl"));
+        let effects = module("effects", include_str!("shaders/effects.wgsl"));
         // Bindings: camera, image, weights, size, parameters, tables.
         const MATRIX: &[bool] = &[true, false, false, true, true, true];
         // Bindings: image, size, parameters, tables.
@@ -97,6 +122,14 @@ impl Kernels {
             tone_curve: Kernel::new(gpu, "tone_curve", &tone, "tone_curve", IMAGE),
             curves: Kernel::new(gpu, "curves", &tone, "curves", IMAGE),
             color: Kernel::new(gpu, "color", &color, "color", IMAGE),
+            // Bindings: image, columns, rows, parameters.
+            vignette: Kernel::new(
+                gpu,
+                "vignette",
+                &effects,
+                "vignette",
+                &[false, true, true, true],
+            ),
         }
     }
 }
@@ -188,6 +221,37 @@ impl Gpu {
                         plan.height,
                         p,
                     );
+                }
+                Step::Vignette(v) => {
+                    use amb_engine::effects::VignetteStyle;
+                    let (m, op) = (&v.mask, &v.op);
+                    let params = self.storage(&VignetteParams {
+                        w: plan.width as u32,
+                        h: plan.height as u32,
+                        x0: 0,
+                        y0: 0,
+                        p: m.p,
+                        inner: m.inner,
+                        outer: m.outer,
+                        mirrored: m.mirrored as u32,
+                        base: m.base,
+                        norm: m.norm,
+                        q_skip: m.q_skip,
+                        style: match op.style {
+                            VignetteStyle::HighlightPriority => 0,
+                            VignetteStyle::ColorPriority => 1,
+                            VignetteStyle::PaintOverlay => 2,
+                        },
+                        stops: op.stops,
+                        protect: op.protect,
+                        opacity: op.opacity,
+                        target_white: op.target,
+                        gamma: op.gamma,
+                        lum: op.lum,
+                    });
+                    let (col, row) = (self.upload(&m.col), self.upload(&m.row));
+                    k.vignette
+                        .dispatch(self, &mut enc, &[&img, &col, &row, &params], n);
                 }
                 Step::ToneCurve { lut, lum_weights } => {
                     let params = self.storage(&ToneParams {
@@ -582,6 +646,49 @@ pub(crate) mod tests {
         check(
             "sharpening with masking",
             &only(&[("Sharpness", n(70.0)), ("SharpenEdgeMasking", n(45.0))]),
+        );
+    }
+
+    #[test]
+    fn vignette() {
+        same_as_cpu("vignette", &[("PostCropVignetteAmount", n(-60.0))]);
+        same_as_cpu(
+            "vignette, round and soft, highlights kept",
+            &[
+                ("PostCropVignetteAmount", n(-45.0)),
+                ("PostCropVignetteRoundness", n(80.0)),
+                ("PostCropVignetteFeather", n(90.0)),
+                ("PostCropVignetteMidpoint", n(20.0)),
+                ("PostCropVignetteHighlightContrast", n(60.0)),
+            ],
+        );
+        same_as_cpu(
+            "white vignette, rectangular",
+            &[
+                ("PostCropVignetteAmount", n(50.0)),
+                ("PostCropVignetteRoundness", n(-70.0)),
+            ],
+        );
+        same_as_cpu(
+            "color priority",
+            &[
+                ("PostCropVignetteAmount", n(-50.0)),
+                ("PostCropVignetteStyle", n(2.0)),
+            ],
+        );
+        same_as_cpu(
+            "paint overlay",
+            &[
+                ("PostCropVignetteAmount", n(40.0)),
+                ("PostCropVignetteStyle", n(3.0)),
+            ],
+        );
+        same_as_cpu(
+            "paint overlay, dark",
+            &[
+                ("PostCropVignetteAmount", n(-40.0)),
+                ("PostCropVignetteStyle", n(3.0)),
+            ],
         );
     }
 }

@@ -24,7 +24,8 @@ The editor's preview is rendered at the size of the screen: about 2560 pixels wi
 | Parametric and point curves | yes |
 | Noise reduction | not yet (CPU step) |
 | Sharpening (with Masking) | yes |
-| Vignette, grain | not yet (CPU steps) |
+| Post-crop vignette (all three styles) | yes |
+| Grain | not yet (CPU step) |
 
 Highlights/Shadows and Texture/Clarity are built from plane filters that mirror `amb_engine::filters` and `local`: Gaussian blurs (an exact kernel up to sigma 3, three box blurs above), fractional box blurs, block downsampling and the fast guided filter's coefficients. The engine hands over their numbers (`filters::gaussian_plan`, `local::GuidedPlan`, `local::plan`, `local_tone::plan`), computed by the functions its own stages use. Where the CPU keeps running sums along a row, each GPU thread sums its own window, so the two differ only in rounding.
 
@@ -37,4 +38,4 @@ The editor's preview of the same edit was also compared both ways in the editor,
 ## Open questions
 
 - Speed has not been measured on a real GPU yet: this was built on a machine without one. Measure on the Mac (Apple Silicon): the status bar shows each preview's time, and `AMB_GPU=off` gives the CPU's for comparison.
-- Which stages to port next, by time: Dehaze, noise reduction, vignette and grain. Colour noise reduction measures a noise profile over the whole image (tile statistics and percentiles); on the GPU, the tiles would be summed there and the percentiles taken on the CPU.
+- Which stages to port next, by time: Dehaze, noise reduction and grain. Colour noise reduction measures a noise profile over the whole image (tile statistics and percentiles); on the GPU, the tiles would be summed there and the percentiles taken on the CPU.

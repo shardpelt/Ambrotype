@@ -61,6 +61,7 @@ pub enum Step {
     HighlightsShadows(Box<local_tone::TonePlan>),
     /// Texture and Clarity.
     Local(Box<local::LocalPlan>),
+    Sharpen(Box<detail::SharpenPlan>),
     /// The global tone curve on luminance (table of [`LUT`] entries).
     ToneCurve {
         lut: Vec<f32>,
@@ -83,6 +84,7 @@ impl std::fmt::Debug for Step {
             Step::BaseLook(_) => "base look",
             Step::HighlightsShadows(_) => "highlights/shadows",
             Step::Local(_) => "texture/clarity",
+            Step::Sharpen(_) => "sharpening",
             Step::ToneCurve { .. } => "tone curve",
             Step::Color(_) => "colour",
             Step::Curves(_) => "curves",
@@ -219,12 +221,8 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
             Box::new(move |img| detail::apply_noise_reduction(img, &nr, &k.detail)),
         ));
     }
-    if sharpening.amount > 0.0 && sharpening.amount.is_finite() {
-        let k = cal.clone();
-        steps.push(cpu(
-            "sharpening",
-            Box::new(move |img| detail::apply_sharpening(img, &sharpening, &k.detail)),
-        ));
+    if let Some(p) = detail::sharpen_plan(&sharpening, &cal.detail) {
+        steps.push(Step::Sharpen(Box::new(p)));
     }
     // 7. Effects: post-crop vignette, then grain.
     if s.vignette.amount != 0.0 {

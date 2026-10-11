@@ -99,7 +99,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::buffer::{Image, luminance_weights};
-use crate::filters::{box_blur, gaussian_blur, gaussian_reach};
+use crate::filters::{box_blur, gaussian_blur, gaussian_by, gaussian_reach};
 
 /// `Sharpness` 0..150, `SharpenRadius` 0.5..3.0, `SharpenDetail` 0..100, `SharpenEdgeMasking` 0..100.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -399,38 +399,102 @@ pub fn apply_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStre
     }
 }
 
-pub fn apply_sharpening(img: &mut Image, p: &Sharpening, k: &DetailStrengths) {
-    let (w, h) = (img.width, img.height);
-    if w == 0 || h == 0 || !p.amount.is_finite() || p.amount <= 0.0 {
-        return;
+/// Sharpening as numbers (for other backends): the unsharp mask's `gain`
+/// and blur `kernel` on encoded luminance, the halo window (radius `win`,
+/// blended towards `win + 1` by `win_frac`) and `margin`, the luminance
+/// ratio cap, and the edge mask when Masking is on.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SharpenPlan {
+    pub gain: f32,
+    pub kernel: Vec<f32>,
+    pub win: usize,
+    pub win_frac: f32,
+    pub margin: f32,
+    pub max_ratio: f32,
+    pub mask: Option<EdgeMaskPlan>,
+}
+
+/// The sharpening mask: smoothstep from `e0` to `e1` of the gradient
+/// magnitude of the luminance blurred by `blur`, then blurred by `smooth`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EdgeMaskPlan {
+    pub blur: crate::filters::GaussianPlan,
+    pub smooth: crate::filters::GaussianPlan,
+    pub e0: f32,
+    pub e1: f32,
+}
+
+/// [`apply_sharpening`]'s numbers, or `None` when it does nothing.
+pub fn sharpen_plan(p: &Sharpening, k: &DetailStrengths) -> Option<SharpenPlan> {
+    if !p.amount.is_finite() || p.amount <= 0.0 {
+        return None;
     }
     let gain = (p.amount.min(150.0) / 100.0 * k.sharpen_gain.max(0.0)) as f32;
     if !gain.is_finite() || gain <= 0.0 {
-        return;
+        return None;
     }
     let radius = slider(p.radius, 1.0, 0.5, 3.0);
     let detail = slider(p.detail, 25.0, 0.0, 100.0) / 100.0;
     let masking = slider(p.masking, 0.0, 0.0, 100.0) / 100.0;
+    let sigma = (radius * k.sharpen_sigma_per_radius.max(0.0)).min(MAX_SHARPEN_SIGMA);
+    let win_r = (radius * k.halo_window_per_radius.max(0.0)).clamp(1.0, MAX_HALO_WINDOW);
+    let win = win_r.floor() as usize;
+    Some(SharpenPlan {
+        gain,
+        kernel: gaussian_kernel(sigma as f32),
+        win,
+        win_frac: (win_r - win as f64) as f32,
+        margin: halo_margin(detail, k),
+        max_ratio: k.max_luminance_ratio.max(1.0) as f32,
+        mask: (masking > 0.0).then(|| {
+            let threshold = (k.mask_threshold_at_100.max(0.0)
+                * masking.powf(k.mask_threshold_gamma.max(0.01)))
+                as f32;
+            let soft = k.mask_softness.clamp(0.0, 1.0) as f32;
+            EdgeMaskPlan {
+                blur: crate::filters::gaussian_plan(
+                    k.mask_blur_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32
+                ),
+                smooth: crate::filters::gaussian_plan(
+                    k.mask_smooth_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32,
+                ),
+                e0: threshold * (1.0 - soft),
+                e1: threshold * (1.0 + soft),
+            }
+        }),
+    })
+}
+
+pub fn apply_sharpening(img: &mut Image, p: &Sharpening, k: &DetailStrengths) {
+    let (w, h) = (img.width, img.height);
+    if w == 0 || h == 0 {
+        return;
+    }
+    let Some(plan) = sharpen_plan(p, k) else {
+        return;
+    };
+    let SharpenPlan {
+        gain,
+        kernel,
+        win,
+        win_frac,
+        margin,
+        max_ratio,
+        mask,
+    } = plan;
     let t = transfer();
     let lw = luminance_weights();
-    let max_ratio = k.max_luminance_ratio.max(1.0) as f32;
 
     // 1. Encoded luminance; the unsharp-mask blur is computed row by row below.
     let l = encoded_luminance(img, 0.0);
-    let sigma = (radius * k.sharpen_sigma_per_radius.max(0.0)).min(MAX_SHARPEN_SIGMA);
-    let kernel = gaussian_kernel(sigma as f32);
 
     // 2. Edge mask (Masking > 0 only).
-    let mask = (masking > 0.0).then(|| edge_mask(&l, w, h, masking, k));
+    let mask = mask.map(|m| edge_mask(&l, w, h, &m));
 
     // 3. Sharpen with overshoot limited to the local min/max plus a margin. The
     //    window radius is fractional: the bounds are interpolated between the
     //    windows of radius `win` and `win + 1`, so they change continuously
     //    with the Radius slider.
-    let margin = halo_margin(detail, k);
-    let win_r = (radius * k.halo_window_per_radius.max(0.0)).clamp(1.0, MAX_HALO_WINDOW);
-    let win = win_r.floor() as usize;
-    let win_frac = (win_r - win as f64) as f32;
     img.rgb.par_chunks_mut(w * 3).enumerate().for_each_init(
         || SharpenRows::new(w, kernel.len() / 2),
         |s, (y, row)| {
@@ -592,12 +656,9 @@ fn soft_limit(v: f32, lo: f32, hi: f32, margin: f32) -> f32 {
 
 /// Sharpening mask from encoded luminance: smoothstep of the gradient magnitude
 /// of a lightly blurred copy around a threshold set by Masking (0..1), softened.
-fn edge_mask(l: &[f32], w: usize, h: usize, masking: f64, k: &DetailStrengths) -> Vec<f32> {
-    let blurred = gaussian_blur(l, w, h, k.mask_blur_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32);
-    let threshold =
-        (k.mask_threshold_at_100.max(0.0) * masking.powf(k.mask_threshold_gamma.max(0.01))) as f32;
-    let soft = k.mask_softness.clamp(0.0, 1.0) as f32;
-    let (e0, e1) = (threshold * (1.0 - soft), threshold * (1.0 + soft));
+fn edge_mask(l: &[f32], w: usize, h: usize, m: &EdgeMaskPlan) -> Vec<f32> {
+    let blurred = gaussian_by(l, w, h, &m.blur);
+    let (e0, e1) = (m.e0, m.e1);
     let mut raw = vec![0.0f32; w * h];
     raw.par_chunks_mut(w).enumerate().for_each(|(y, out)| {
         let row = &blurred[y * w..(y + 1) * w];
@@ -609,12 +670,7 @@ fn edge_mask(l: &[f32], w: usize, h: usize, masking: f64, k: &DetailStrengths) -
             *o = smoothstep(e0, e1, (gx * gx + gy * gy).sqrt());
         }
     });
-    gaussian_blur(
-        &raw,
-        w,
-        h,
-        k.mask_smooth_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32,
-    )
+    gaussian_by(&raw, w, h, &m.smooth)
 }
 
 fn luminance_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrengths) {

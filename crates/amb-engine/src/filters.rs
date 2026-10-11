@@ -119,11 +119,16 @@ pub fn gaussian_plan(sigma: f32) -> GaussianPlan {
 }
 
 pub fn gaussian_blur(plane: &[f32], w: usize, h: usize, sigma: f32) -> Vec<f32> {
+    gaussian_by(plane, w, h, &gaussian_plan(sigma))
+}
+
+/// [`gaussian_blur`] as `plan` says.
+pub fn gaussian_by(plane: &[f32], w: usize, h: usize, plan: &GaussianPlan) -> Vec<f32> {
     assert_eq!(plane.len(), w * h);
     if plane.is_empty() {
         return plane.to_vec();
     }
-    let k = match gaussian_plan(sigma) {
+    let k = match plan.clone() {
         GaussianPlan::Identity => return plane.to_vec(),
         GaussianPlan::Boxes(radii) => {
             let mut out = plane.to_vec();

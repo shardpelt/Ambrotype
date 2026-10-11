@@ -181,6 +181,14 @@ impl Gpu {
                         p,
                     );
                 }
+                Step::Sharpen(p) => {
+                    crate::local::Planes::new(self, &mut enc).sharpen(
+                        &img,
+                        plan.width,
+                        plan.height,
+                        p,
+                    );
+                }
                 Step::ToneCurve { lut, lum_weights } => {
                     let params = self.storage(&ToneParams {
                         base: 0,
@@ -552,6 +560,28 @@ pub(crate) mod tests {
                 ("Texture", n(30.0)),
             ]),
             (w, h),
+        );
+    }
+
+    #[test]
+    fn sharpening() {
+        let only = |tags: &[(&'static str, Value)]| {
+            let mut t = vec![("ColorNoiseReduction", n(0.0))];
+            t.extend_from_slice(tags);
+            t
+        };
+        check("default sharpening", &only(&[]));
+        check(
+            "sharpening, radius and detail",
+            &only(&[
+                ("Sharpness", n(90.0)),
+                ("SharpenRadius", n(1.7)),
+                ("SharpenDetail", n(70.0)),
+            ]),
+        );
+        check(
+            "sharpening with masking",
+            &only(&[("Sharpness", n(70.0)), ("SharpenEdgeMasking", n(45.0))]),
         );
     }
 }

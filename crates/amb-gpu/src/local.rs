@@ -2,6 +2,7 @@
 //! Highlights/Shadows and Texture/Clarity on the GPU, with the plane filters
 //! they are built from (Gaussian and box blurs, the fast guided filter).
 
+use amb_engine::detail::SharpenPlan;
 use amb_engine::filters::GaussianPlan;
 use amb_engine::local::{GuidedPlan, LEVEL_BOUND, LocalPlan, RATIO_KNEE_Y};
 use amb_engine::local_tone::TonePlan;
@@ -41,7 +42,26 @@ struct LocalParams {
     remove: u32,
 }
 
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable, Default)]
+struct SharpenParams {
+    w: u32,
+    h: u32,
+    gain: f32,
+    win: u32,
+    win_frac: f32,
+    margin: f32,
+    max_ratio: f32,
+    masked: u32,
+    e0: f32,
+    e1: f32,
+    lum: [f32; 3],
+}
+
 pub(crate) struct LocalKernels {
+    sharpen_level: Kernel,
+    edge_mask: Kernel,
+    sharpen_apply: Kernel,
     conv_h: Kernel,
     conv_v: Kernel,
     box_h: Kernel,
@@ -63,9 +83,16 @@ impl LocalKernels {
         const PLANE: &[bool] = &[true, true, false, false, true];
         // Bindings: image, level, p0, p1, p2, acc0, acc1, parameters.
         const LOCAL: &[bool] = &[false, false, true, true, true, false, false, true];
+        let sharpen = format!("{common}\n{}", include_str!("shaders/sharpen.wgsl"));
+        // Bindings: image, level, blur, mask, raw mask, parameters.
+        const SHARPEN: &[bool] = &[false, false, true, true, false, true];
+        let sh = |entry: &str| Kernel::new(gpu, entry, &sharpen, entry, SHARPEN);
         let p = |entry: &str| Kernel::new(gpu, entry, &planes, entry, PLANE);
         let l = |entry: &str| Kernel::new(gpu, entry, &local, entry, LOCAL);
         LocalKernels {
+            sharpen_level: sh("sharpen_level"),
+            edge_mask: sh("edge_mask"),
+            sharpen_apply: sh("sharpen_apply"),
             conv_h: p("conv_h"),
             conv_v: p("conv_v"),
             box_h: p("box_h"),
@@ -370,5 +397,56 @@ impl<'a> Planes<'a> {
             [img, &lvl, &a, &b, &c, &boost, &remove],
             w * h,
         );
+    }
+
+    fn sharpen_kernel(&mut self, kernel: &Kernel, p: SharpenParams, b: [&wgpu::Buffer; 5]) {
+        let params = self.gpu.storage(&p);
+        kernel.dispatch(
+            self.gpu,
+            self.enc,
+            &[b[0], b[1], b[2], b[3], b[4], &params],
+            (p.w * p.h) as usize,
+        );
+    }
+
+    /// Sharpening on `img` (`w × h` RGB).
+    pub(crate) fn sharpen(&mut self, img: &wgpu::Buffer, w: usize, h: usize, plan: &SharpenPlan) {
+        let k = self.k();
+        let mut p = SharpenParams {
+            w: w as u32,
+            h: h as u32,
+            gain: plan.gain,
+            win: plan.win as u32,
+            win_frac: plan.win_frac,
+            margin: plan.margin,
+            max_ratio: plan.max_ratio,
+            lum: amb_engine::buffer::luminance_weights(),
+            ..Default::default()
+        };
+        let lvl = self.gpu.buffer(w * h);
+        let [a, b, c] = self.unused();
+        self.sharpen_kernel(&k.sharpen_level, p, [img, &lvl, &a, &b, &c]);
+        // The unsharp mask's blur, and the edge mask.
+        let blur = self
+            .gaussian(&lvl, w, h, &GaussianPlan::Kernel(plan.kernel.clone()))
+            .expect("a kernel blurs");
+        let mask = match &plan.mask {
+            Some(m) => {
+                p.masked = 1;
+                p.e0 = m.e0;
+                p.e1 = m.e1;
+                let blurred = self.gaussian(&lvl, w, h, &m.blur);
+                let blurred = blurred.as_ref().unwrap_or(&lvl).clone();
+                let raw = self.gpu.buffer(w * h);
+                let [a, b] = self.unused();
+                // `lvl` is unused by this kernel; a scratch buffer stands in
+                // so the blurred level isn't bound twice.
+                self.sharpen_kernel(&k.edge_mask, p, [&a, &b, &blurred, &blur, &raw]);
+                self.gaussian(&raw, w, h, &m.smooth).unwrap_or(raw)
+            }
+            None => self.gpu.buffer(1),
+        };
+        let [a] = self.unused();
+        self.sharpen_kernel(&k.sharpen_apply, p, [img, &lvl, &blur, &mask, &a]);
     }
 }

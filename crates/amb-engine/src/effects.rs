@@ -614,20 +614,22 @@ const GRAIN_TILE_MIN: usize = 256;
 
 /// The grain field `n(x, y)`: zero-mean, a function of `(x, y, seed)` and the
 /// settings only. Computed in tiles (see the module docs).
-struct GrainField {
+#[derive(Debug, Clone, PartialEq)]
+pub struct GrainField {
     /// Fine and coarse Gaussian half kernels (pixels at this render size).
-    fine: Vec<f32>,
-    coarse: Vec<f32>,
+    pub fine: Vec<f32>,
+    pub coarse: Vec<f32>,
     /// Weight of the coarse octave subtracted from the fine one (`1 − roughness`).
-    coarse_weight: f32,
+    pub coarse_weight: f32,
     /// Procedural noise border around each tile: the blurs' reach.
-    margin: usize,
+    pub margin: usize,
     /// Scale from the filtered noise to the normalised field (0 when it is identically 0).
-    inv_std: f32,
+    pub inv_std: f32,
     /// Expected variance of the normalised field: 1 at the reference size, and
     /// what the reference field box-averaged to this size has elsewhere.
-    variance: f32,
-    seed_key: u64,
+    pub variance: f32,
+    /// The white noise's hash key (`hash_noise`).
+    pub seed_key: u64,
 }
 
 impl GrainField {
@@ -846,15 +848,45 @@ fn grain_tone_weight(y: f32, power: f32) -> f32 {
 const GRAIN_WEIGHT_LUT: usize = 4096;
 
 /// Per-pixel grain application: a monochrome, midtone-weighted luminance ratio.
-struct GrainOp {
+#[derive(Debug, Clone, PartialEq)]
+pub struct GrainOp {
     /// Log deviation at full weight for a unit-variance field.
-    strength: f32,
+    pub strength: f32,
     /// Expected variance of the field (see [`GrainField`]).
-    variance: f32,
+    pub variance: f32,
     /// [`grain_tone_weight`] at `i / GRAIN_WEIGHT_LUT`, `i = 0..=GRAIN_WEIGHT_LUT`, plus a
     /// repeated last entry so interpolation at 1 stays in bounds.
-    weight: Vec<f32>,
-    lum: [f32; 3],
+    pub weight: Vec<f32>,
+    pub lum: [f32; 3],
+}
+
+/// Grain as numbers (for other backends): its field and how it is applied.
+#[derive(Debug, Clone, PartialEq)]
+pub struct GrainPlan {
+    pub field: GrainField,
+    pub op: GrainOp,
+}
+
+/// [`apply_grain_in`]'s numbers for a full frame of `full` pixels, or
+/// `None` when it does nothing.
+pub fn grain_plan(p: &Grain, k: &EffectsStrengths, full: (usize, usize)) -> Option<GrainPlan> {
+    let amount = (p.amount / 100.0).clamp(0.0, 1.0);
+    if amount == 0.0 || amount.is_nan() || full.0 == 0 || full.1 == 0 {
+        return None;
+    }
+    let field = GrainField::new(
+        grain_sigma_ref(p.size, k),
+        grain_scale(full.0, full.1),
+        (p.roughness / 100.0) as f32,
+        p.seed,
+        k,
+    );
+    let op = GrainOp::new(
+        (amount * k.grain_strength.max(0.0)) as f32,
+        field.variance,
+        k.grain_tone_power.max(0.0) as f32,
+    );
+    (field.inv_std != 0.0 && op.strength != 0.0).then_some(GrainPlan { field, op })
 }
 
 impl GrainOp {
@@ -897,25 +929,13 @@ pub fn apply_grain(img: &mut Image, p: &Grain, k: &EffectsStrengths) {
 /// full render has there.
 pub fn apply_grain_in(img: &mut Image, p: &Grain, k: &EffectsStrengths, tile: &Tile) {
     let (w, h) = (img.width, img.height);
-    let amount = (p.amount / 100.0).clamp(0.0, 1.0);
-    if amount == 0.0 || amount.is_nan() || w == 0 || h == 0 {
+    if w == 0 || h == 0 {
         return;
     }
-    let field = GrainField::new(
-        grain_sigma_ref(p.size, k),
-        grain_scale(tile.full_width, tile.full_height),
-        (p.roughness / 100.0) as f32,
-        p.seed,
-        k,
-    );
-    let op = GrainOp::new(
-        (amount * k.grain_strength.max(0.0)) as f32,
-        field.variance,
-        k.grain_tone_power.max(0.0) as f32,
-    );
-    if field.inv_std == 0.0 || op.strength == 0.0 {
+    let Some(GrainPlan { field, op }) = grain_plan(p, k, (tile.full_width, tile.full_height))
+    else {
         return;
-    }
+    };
     // Bands of tile rows in parallel; tiles within a band in turn, each applied
     // while its field is still in cache.
     let size = field.tile_size();

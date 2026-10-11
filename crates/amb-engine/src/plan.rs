@@ -76,6 +76,7 @@ pub enum Step {
         factor: usize,
     },
     Vignette(Box<effects::VignettePlan>),
+    Grain(Box<effects::GrainPlan>),
     /// The global tone curve on luminance (table of [`LUT`] entries).
     ToneCurve {
         lut: Vec<f32>,
@@ -102,6 +103,7 @@ impl std::fmt::Debug for Step {
             Step::ColorNr(_) => "colour noise reduction",
             Step::Dehaze { .. } => "dehaze",
             Step::Vignette(_) => "vignette",
+            Step::Grain(_) => "grain",
             Step::ToneCurve { .. } => "tone curve",
             Step::Color(_) => "colour",
             Step::Curves(_) => "curves",
@@ -245,12 +247,10 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     ) {
         steps.push(Step::Vignette(Box::new(p)));
     }
-    if s.grain.amount != 0.0 {
-        let (g, k) = (s.grain, cal.clone());
-        steps.push(cpu(
-            "grain",
-            Box::new(move |img| effects::apply_grain_in(img, &g, &k.effects, &tile)),
-        ));
+    if let Some(p) =
+        effects::grain_plan(&s.grain, &cal.effects, (tile.full_width, tile.full_height))
+    {
+        steps.push(Step::Grain(Box::new(p)));
     }
     Ok(Plan {
         width: stage0.width,

@@ -111,6 +111,24 @@ struct VignetteParams {
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
+struct GrainParams {
+    w: u32,
+    h: u32,
+    margin: u32,
+    fine_len: u32,
+    coarse_len: u32,
+    with_coarse: u32,
+    seed_lo: u32,
+    seed_hi: u32,
+    coarse_weight: f32,
+    inv_std: f32,
+    strength: f32,
+    variance: f32,
+    lum: [f32; 3],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
 struct ColorParams {
     to_lms: [f32; 9],
     from_lms: [f32; 9],
@@ -139,6 +157,9 @@ pub(crate) struct Kernels {
     curves: Kernel,
     color: Kernel,
     vignette: Kernel,
+    grain_white: Kernel,
+    grain_horizontal: Kernel,
+    grain_apply: Kernel,
     sanitise: Kernel,
     dehaze_downscale: Kernel,
     dehaze_apply: Kernel,
@@ -155,6 +176,10 @@ impl Kernels {
         let tone = module("tone", include_str!("shaders/tone.wgsl"));
         let color = module("color", include_str!("shaders/color.wgsl"));
         let effects = module("effects", include_str!("shaders/effects.wgsl"));
+        let grain = module("grain", include_str!("shaders/grain.wgsl"));
+        // Bindings: image, white noise, fine and coarse rows, taps, weights, parameters.
+        const GRAIN: &[bool] = &[false, false, false, false, true, true, true];
+        let g = |entry: &str| Kernel::new(gpu, entry, &grain, entry, GRAIN);
         let dehaze = module("dehaze", include_str!("shaders/dehaze.wgsl"));
         // Bindings: image, small copy, coefficients A and B, parameters.
         const DEHAZE: &[bool] = &[false, false, true, true, true];
@@ -182,6 +207,9 @@ impl Kernels {
                 "vignette",
                 &[false, true, true, true],
             ),
+            grain_white: g("grain_white"),
+            grain_horizontal: g("grain_horizontal"),
+            grain_apply: g("grain_apply"),
             sanitise: Kernel::new(gpu, "sanitise", &dehaze, "sanitise", DEHAZE),
             dehaze_downscale: Kernel::new(gpu, "downscale", &dehaze, "downscale", DEHAZE),
             dehaze_apply: Kernel::new(gpu, "dehaze_apply", &dehaze, "dehaze_apply", DEHAZE),
@@ -364,6 +392,38 @@ impl Gpu {
                     let (col, row) = (self.upload(&m.col), self.upload(&m.row));
                     k.vignette
                         .dispatch(self, &mut enc, &[&img, &col, &row, &params], n);
+                }
+                Step::Grain(gp) => {
+                    let (f, op) = (&gp.field, &gp.op);
+                    let with_coarse = f.coarse_weight != 0.0;
+                    let m = f.margin;
+                    let (w, h) = (plan.width, plan.height);
+                    let params = self.storage(&GrainParams {
+                        w: w as u32,
+                        h: h as u32,
+                        margin: m as u32,
+                        fine_len: f.fine.len() as u32,
+                        coarse_len: f.coarse.len() as u32,
+                        with_coarse: with_coarse as u32,
+                        seed_lo: f.seed_key as u32,
+                        seed_hi: (f.seed_key >> 32) as u32,
+                        coarse_weight: f.coarse_weight,
+                        inv_std: f.inv_std,
+                        strength: op.strength,
+                        variance: op.variance,
+                        lum: op.lum,
+                    });
+                    let taps = self.upload(&[f.fine.as_slice(), &f.coarse].concat());
+                    let weight = self.upload(&op.weight);
+                    let rows = w * (h + 2 * m);
+                    let white = self.buffer((w + 2 * m) * (h + 2 * m));
+                    let fine = self.buffer(rows);
+                    let coarse = self.buffer(if with_coarse { rows } else { 1 });
+                    let b = [&img, &white, &fine, &coarse, &taps, &weight, &params];
+                    k.grain_white
+                        .dispatch(self, &mut enc, &b, (w + 2 * m) * (h + 2 * m));
+                    k.grain_horizontal.dispatch(self, &mut enc, &b, rows);
+                    k.grain_apply.dispatch(self, &mut enc, &b, n);
                 }
                 Step::ToneCurve { lut, lum_weights } => {
                     let params = self.storage(&ToneParams {
@@ -913,6 +973,42 @@ pub(crate) mod tests {
                 ("PostCropVignetteAmount", n(-40.0)),
                 ("PostCropVignetteStyle", n(3.0)),
             ],
+        );
+    }
+
+    #[test]
+    fn grain() {
+        let tags = pixel_stages(&[("GrainAmount", n(60.0))]);
+        let plan = amb_engine::plan::plan(&photo(160, 120), &settings(&tags)).unwrap();
+        assert!(
+            plan.steps
+                .iter()
+                .any(|s| matches!(s, amb_engine::plan::Step::Grain(_))),
+            "{:?}",
+            plan.steps
+        );
+        same_as_cpu("grain", &[("GrainAmount", n(60.0))]);
+        same_as_cpu(
+            "large, smooth grain",
+            &[
+                ("GrainAmount", n(100.0)),
+                ("GrainSize", n(100.0)),
+                ("GrainFrequency", n(0.0)),
+            ],
+        );
+        same_as_cpu(
+            "fine, rough grain, another seed",
+            &[
+                ("GrainAmount", n(40.0)),
+                ("GrainSize", n(0.0)),
+                ("GrainFrequency", n(100.0)),
+                ("GrainSeed", n(12345.0)),
+            ],
+        );
+        check_at(
+            "grain on a larger image",
+            &pixel_stages(&[("GrainAmount", n(80.0)), ("GrainSize", n(60.0))]),
+            (1203, 803),
         );
     }
 

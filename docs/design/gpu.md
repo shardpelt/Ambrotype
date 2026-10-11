@@ -26,7 +26,7 @@ The editor's preview is rendered at the size of the screen: about 2560 pixels wi
 | Luminance noise reduction | not yet (CPU step; off by default) |
 | Sharpening (with Masking) | yes |
 | Post-crop vignette (all three styles) | yes |
-| Grain | not yet (CPU step) |
+| Grain | yes (the same noise as the CPU's, bit for bit: its 64-bit hash is done on pairs of 32-bit integers) |
 
 Highlights/Shadows and Texture/Clarity are built from plane filters that mirror `amb_engine::filters` and `local`: Gaussian blurs (an exact kernel up to sigma 3, three box blurs above), fractional box blurs, block downsampling and the fast guided filter's coefficients. The engine hands over their numbers (`filters::gaussian_plan`, `local::GuidedPlan`, `local::plan`, `local_tone::plan`), computed by the functions its own stages use. Where the CPU keeps running sums along a row, each GPU thread sums its own window, so the two differ only in rounding.
 
@@ -40,4 +40,4 @@ The editor's preview of the same edit was also compared both ways in the editor,
 
 - The colour noise reduction split: the GPU downscales the image by 4, the CPU runs the guided filter on that copy and returns its coefficients, the GPU computes each pixel's chroma residual and the sums of each 16-pixel tile (one thread per tile, adding in the CPU's order), the CPU takes the noise percentiles per luminance band from those sums and returns the garrote's threshold table, and the GPU keeps or removes each residual.
 - Speed has not been measured on a real GPU yet: this was built on a machine without one. Measure on the Mac (Apple Silicon): the status bar shows each preview's time, and `AMB_GPU=off` gives the CPU's for comparison.
-- Which stages to port next: grain, then luminance noise reduction (both off by default). A default raw preview now runs every stage on the GPU apart from three small trips: the dehaze estimate (when Dehaze is set) and colour noise reduction's guided filter and noise measurement, which read back a 1/16 copy and the tile sums. Colour noise reduction measures a noise profile over the whole image (tile statistics and percentiles); on the GPU, the tiles would be summed there and the percentiles taken on the CPU.
+- Which stage to port next: luminance noise reduction (off by default). A default raw preview now runs every stage on the GPU apart from three small trips: the dehaze estimate (when Dehaze is set) and colour noise reduction's guided filter and noise measurement, which read back a 1/16 copy and the tile sums. Colour noise reduction measures a noise profile over the whole image (tile statistics and percentiles); on the GPU, the tiles would be summed there and the percentiles taken on the CPU.

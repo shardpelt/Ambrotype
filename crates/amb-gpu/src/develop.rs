@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Running a [`Plan`] on the GPU: one kernel per stage, in the CPU
-//! pipeline's order, on one image buffer that stays on the GPU until the end.
+//! pipeline's order, on one image buffer that stays on the GPU; a stage
+//! with no kernel yet runs on the CPU in between.
 
 use amb_engine::buffer::Image;
+use amb_engine::color::ColorPlan;
 use amb_engine::pipeline::BaseLook;
-use amb_engine::plan::Plan;
+use amb_engine::plan::{Plan, Step};
 use bytemuck::{Pod, Zeroable};
 
 use crate::device::{Gpu, Kernel};
@@ -102,7 +104,8 @@ fn flat(m: &[[f32; 3]; 3]) -> [f32; 9] {
 }
 
 impl Gpu {
-    /// Develop `plan` on the GPU.
+    /// Develop `plan`: its GPU steps here, its CPU steps (stages with no GPU
+    /// version yet) on the CPU in between, in order.
     pub fn render(&self, plan: &Plan) -> Image {
         let k = self.kernels();
         let pixels = plan.width * plan.height;
@@ -112,102 +115,117 @@ impl Gpu {
             pixels: pixels as u32,
             lut_size: plan.lut_size as u32,
         });
-
-        // All the tables in one buffer; each stage gets its offsets.
-        let mut luts: Vec<f32> = Vec::new();
-        let mut place = |t: &Option<Vec<f32>>| match t {
-            Some(t) => {
-                let at = luts.len() as u32;
-                luts.extend_from_slice(t);
-                at
-            }
-            None => NONE,
-        };
-        let tone_lut = place(&plan.tone_lut);
-        let c = &plan.curves;
-        let curves = [
-            place(&c.parametric),
-            place(&c.rgb),
-            place(&c.channels[0]),
-            place(&c.channels[1]),
-            place(&c.channels[2]),
-        ];
-        if luts.is_empty() {
-            luts.push(0.0);
-        }
-        let luts = self.upload(&luts);
-
-        let camera = self.upload(&plan.camera_rgb);
         let img = self.buffer(pixels * 3);
-        let unclip = plan.unclip;
-        let weights = self.buffer(if unclip.is_some() { pixels * 3 } else { 1 });
-        let (tint, tint_stops, tint_end) = match plan.shadow_tint {
-            Some((s, e)) => (1, s, e),
-            None => (0, 0.0, 1.0),
-        };
-        let matrix = self.storage(&MatrixParams {
-            m: flat(&plan.matrix),
-            gain: plan.gain,
-            unclip: unclip.is_some() as u32,
-            clip: unclip.map_or([0.0; 3], |u| u.clip),
-            gains: unclip.map_or([1.0; 3], |u| u.gains),
-            reach: unclip.map_or(0, |u| u.reach as u32),
-            tint,
-            tint_stops,
-            tint_end,
-        });
-        let tone = self.storage(&ToneParams {
-            base: matches!(plan.base_look, BaseLook::Default) as u32,
-            lum: plan.lum_weights,
-            tone_lut,
-            curves,
-        });
-
-        let mut enc = self.device.create_command_encoder(&Default::default());
         let n = pixels;
-        let matrix_bindings = [&camera, &img, &weights, &size, &matrix, &luts];
-        if unclip.is_some() {
-            k.unclip_weights
-                .dispatch(self, &mut enc, &matrix_bindings, n);
-        }
-        k.matrix.dispatch(self, &mut enc, &matrix_bindings, n);
-        let tone_bindings = [&img, &size, &tone, &luts];
-        if plan.base_look == BaseLook::Default {
-            k.base_look.dispatch(self, &mut enc, &tone_bindings, n);
-        }
-        if plan.tone_lut.is_some() {
-            k.tone_curve.dispatch(self, &mut enc, &tone_bindings, n);
-        }
-        if let Some(cp) = &plan.color {
-            let b = cp.bands;
-            let color = self.storage(&ColorParams {
-                to_lms: flat(&cp.to_lms),
-                from_lms: flat(&cp.from_lms),
-                m2: flat(&cp.m2),
-                m2_inv: flat(&cp.m2_inv),
-                k: [
-                    cp.k.hsl_hue_deg,
-                    cp.k.hsl_lum,
-                    cp.k.vibrance,
-                    cp.k.grade_tint,
-                    cp.k.grade_lum,
-                ],
-                vibrance: cp.vibrance,
-                saturation: cp.saturation,
-                band_hue: b.map(|(h, _)| h),
-                band_amount: std::array::from_fn(|i| b[i / 4].1[i % 4]),
-                grayscale: cp.grayscale as u32,
-                orange_index: cp.orange_index as u32,
-                grade_dirs: std::array::from_fn(|i| cp.grade_dirs[i / 2][i % 2]),
-                grade_amounts: std::array::from_fn(|i| cp.grade_amounts[i / 2][i % 2]),
-                pivot: cp.pivot,
-                width: cp.width,
-            });
-            k.color
-                .dispatch(self, &mut enc, &[&img, &size, &color, &luts], n);
-        }
-        if !plan.curves.is_empty() {
-            k.curves.dispatch(self, &mut enc, &tone_bindings, n);
+        let mut enc = self.device.create_command_encoder(&Default::default());
+        for step in &plan.steps {
+            match step {
+                Step::Matrix {
+                    m,
+                    gain,
+                    unclip,
+                    shadow_tint,
+                } => {
+                    let camera = self.upload(&plan.camera_rgb);
+                    let weights = self.buffer(if unclip.is_some() { pixels * 3 } else { 1 });
+                    let (tint, tint_stops, tint_end) = match shadow_tint {
+                        Some((s, e)) => (1, *s, *e),
+                        None => (0, 0.0, 1.0),
+                    };
+                    let params = self.storage(&MatrixParams {
+                        m: flat(m),
+                        gain: *gain,
+                        unclip: unclip.is_some() as u32,
+                        clip: unclip.map_or([0.0; 3], |u| u.clip),
+                        gains: unclip.map_or([1.0; 3], |u| u.gains),
+                        reach: unclip.map_or(0, |u| u.reach as u32),
+                        tint,
+                        tint_stops,
+                        tint_end,
+                    });
+                    let luts = self.upload(&[0.0]);
+                    let bindings = [&camera, &img, &weights, &size, &params, &luts];
+                    if unclip.is_some() {
+                        k.unclip_weights.dispatch(self, &mut enc, &bindings, n);
+                    }
+                    k.matrix.dispatch(self, &mut enc, &bindings, n);
+                }
+                Step::BaseLook(look) => {
+                    if *look == BaseLook::Default {
+                        let params = self.storage(&ToneParams {
+                            base: 1,
+                            lum: [0.0; 3],
+                            tone_lut: NONE,
+                            curves: [NONE; 5],
+                        });
+                        let luts = self.upload(&[0.0]);
+                        k.base_look
+                            .dispatch(self, &mut enc, &[&img, &size, &params, &luts], n);
+                    }
+                }
+                Step::ToneCurve { lut, lum_weights } => {
+                    let params = self.storage(&ToneParams {
+                        base: 0,
+                        lum: *lum_weights,
+                        tone_lut: 0,
+                        curves: [NONE; 5],
+                    });
+                    let luts = self.upload(lut);
+                    k.tone_curve
+                        .dispatch(self, &mut enc, &[&img, &size, &params, &luts], n);
+                }
+                Step::Color(cp) => {
+                    let params = self.storage(&color_params(cp));
+                    let luts = self.upload(&[0.0]);
+                    k.color
+                        .dispatch(self, &mut enc, &[&img, &size, &params, &luts], n);
+                }
+                Step::Curves(c) => {
+                    // All the tables in one buffer, with their offsets.
+                    let mut luts: Vec<f32> = Vec::new();
+                    let mut place = |t: &Option<Vec<f32>>| match t {
+                        Some(t) => {
+                            let at = luts.len() as u32;
+                            luts.extend_from_slice(t);
+                            at
+                        }
+                        None => NONE,
+                    };
+                    let curves = [
+                        place(&c.parametric),
+                        place(&c.rgb),
+                        place(&c.channels[0]),
+                        place(&c.channels[1]),
+                        place(&c.channels[2]),
+                    ];
+                    let params = self.storage(&ToneParams {
+                        base: 0,
+                        lum: [0.0; 3],
+                        tone_lut: NONE,
+                        curves,
+                    });
+                    let luts = self.upload(&luts);
+                    k.curves
+                        .dispatch(self, &mut enc, &[&img, &size, &params, &luts], n);
+                }
+                Step::Cpu { run, .. } => {
+                    // Finish what's queued, bring the image back, run the
+                    // engine's stage on it and send it up again.
+                    let done = std::mem::replace(
+                        &mut enc,
+                        self.device.create_command_encoder(&Default::default()),
+                    );
+                    self.queue.submit([done.finish()]);
+                    let mut image = Image {
+                        width: plan.width,
+                        height: plan.height,
+                        rgb: self.download(&img, pixels * 3),
+                    };
+                    run(&mut image);
+                    self.queue
+                        .write_buffer(&img, 0, bytemuck::cast_slice(&image.rgb));
+                }
+            }
         }
         self.queue.submit([enc.finish()]);
         Image {
@@ -215,6 +233,33 @@ impl Gpu {
             height: plan.height,
             rgb: self.download(&img, pixels * 3),
         }
+    }
+}
+
+fn color_params(cp: &ColorPlan) -> ColorParams {
+    let b = cp.bands;
+    ColorParams {
+        to_lms: flat(&cp.to_lms),
+        from_lms: flat(&cp.from_lms),
+        m2: flat(&cp.m2),
+        m2_inv: flat(&cp.m2_inv),
+        k: [
+            cp.k.hsl_hue_deg,
+            cp.k.hsl_lum,
+            cp.k.vibrance,
+            cp.k.grade_tint,
+            cp.k.grade_lum,
+        ],
+        vibrance: cp.vibrance,
+        saturation: cp.saturation,
+        band_hue: b.map(|(h, _)| h),
+        band_amount: std::array::from_fn(|i| b[i / 4].1[i % 4]),
+        grayscale: cp.grayscale as u32,
+        orange_index: cp.orange_index as u32,
+        grade_dirs: std::array::from_fn(|i| cp.grade_dirs[i / 2][i % 2]),
+        grade_amounts: std::array::from_fn(|i| cp.grade_amounts[i / 2][i % 2]),
+        pivot: cp.pivot,
+        width: cp.width,
     }
 }
 
@@ -273,9 +318,6 @@ pub(crate) mod tests {
 
     pub(crate) fn settings(tags: &[(&str, Value)]) -> DevelopSettings {
         let mut map: BTreeMap<String, Value> = BTreeMap::new();
-        // No detail stages (they have no GPU version yet).
-        map.insert("Sharpness".into(), Value::Number(0.0));
-        map.insert("ColorNoiseReduction".into(), Value::Number(0.0));
         for (k, v) in tags {
             map.insert(k.to_string(), v.clone());
         }
@@ -295,7 +337,14 @@ pub(crate) mod tests {
         (max, (sum / a.len() as f64) as f32)
     }
 
-    fn same_as_cpu(name: &str, tags: &[(&str, Value)]) {
+    /// The per-pixel stages: noise reduction and sharpening (which raws get
+    /// by default) off.
+    fn same_as_cpu(name: &str, tags: &[(&'static str, Value)]) {
+        check(name, &pixel_stages(tags));
+    }
+
+    /// The GPU render of `tags` against the CPU's.
+    fn check(name: &str, tags: &[(&str, Value)]) {
         let Some(gpu) = gpu() else { return };
         let img = photo(160, 120);
         let s = settings(tags);
@@ -306,6 +355,16 @@ pub(crate) mod tests {
         let (max, mean) = compare(&ours.rgb, &cpu.rgb);
         eprintln!("{name}: max {max:.2e}, mean {mean:.2e}");
         assert!(max < 2e-3 && mean < 1e-4, "{name}: max {max}, mean {mean}");
+    }
+
+    /// The per-pixel stages alone (no detail stages, which raws get by default).
+    fn pixel_stages(tags: &[(&'static str, Value)]) -> Vec<(&'static str, Value)> {
+        let mut t = vec![
+            ("Sharpness", Value::Number(0.0)),
+            ("ColorNoiseReduction", Value::Number(0.0)),
+        ];
+        t.extend_from_slice(tags);
+        t
     }
 
     fn n(v: f64) -> Value {
@@ -377,6 +436,27 @@ pub(crate) mod tests {
                     points(&[0.0, 0.0, 64.0, 50.0, 192.0, 210.0, 255.0, 255.0]),
                 ),
                 ("ToneCurvePV2012Blue", points(&[0.0, 20.0, 255.0, 240.0])),
+            ],
+        );
+    }
+
+    #[test]
+    fn a_full_edit_with_cpu_steps_in_between() {
+        // Defaults (sharpening, colour noise reduction) and every local stage.
+        check(
+            "full edit",
+            &[
+                ("Exposure2012", n(0.4)),
+                ("Dehaze", n(25.0)),
+                ("Highlights2012", n(-50.0)),
+                ("Shadows2012", n(40.0)),
+                ("Contrast2012", n(20.0)),
+                ("Clarity2012", n(30.0)),
+                ("Texture", n(20.0)),
+                ("Vibrance", n(20.0)),
+                ("LuminanceSmoothing", n(30.0)),
+                ("PostCropVignetteAmount", n(-30.0)),
+                ("GrainAmount", n(20.0)),
             ],
         );
     }

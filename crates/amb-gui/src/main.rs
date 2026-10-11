@@ -37,6 +37,8 @@ use tauri_plugin_opener::OpenerExt;
 struct AppState {
     session: Arc<Mutex<Option<Session>>>,
     lens: Arc<OnceLock<LensSources>>,
+    /// The GPU for previews, once set up (`None` inside: there is none).
+    gpu: Arc<OnceLock<Option<amb_gpu::Gpu>>>,
     preset_dirs: Arc<Mutex<Vec<PathBuf>>>,
     /// The user's own size presets (the built-ins are added when listing).
     size_presets: Mutex<Vec<SizePreset>>,
@@ -395,6 +397,9 @@ struct PreviewMeta {
     histogram: [Vec<u32>; 3],
     millis: u128,
     lens_profile: Option<String>,
+    /// The GPU's name, or why this preview was rendered on the CPU.
+    gpu: Option<String>,
+    cpu_reason: Option<String>,
 }
 
 /// Preview JPEG with a JSON header: `[u32 LE header length][header JSON][JPEG]`.
@@ -409,6 +414,7 @@ async fn preview(
 ) -> Res<Response> {
     let slot = state.session.clone();
     let lens = state.lens.clone();
+    let gpu = state.gpu.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let overrides: BTreeMap<String, Value> = overrides
             .iter()
@@ -417,13 +423,24 @@ async fn preview(
         let mut guard = slot.lock().map_err(|e| e.to_string())?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
-        let p = s.preview_masked(max_edge, &overrides, before, clipping, lens, mask_overlay);
+        let gpu = gpu.get().and_then(Option::as_ref);
+        let p = s.preview_masked(
+            max_edge,
+            &overrides,
+            before,
+            clipping,
+            lens,
+            mask_overlay,
+            gpu,
+        );
         let meta = serde_json::to_vec(&PreviewMeta {
             width: p.width,
             height: p.height,
             histogram: p.histogram,
             millis: p.millis,
             lens_profile: p.lens_profile,
+            gpu: p.gpu.as_ref().and_then(|g| g.as_ref().ok().cloned()),
+            cpu_reason: p.gpu.and_then(Result::err),
         })
         .map_err(|e| e.to_string())?;
         let mut out = Vec::with_capacity(4 + meta.len() + p.jpeg.len());
@@ -2300,6 +2317,16 @@ fn main() {
     let lens = state.lens.clone();
     std::thread::spawn(move || {
         let _ = lens.set(LensSources::load_default());
+    });
+    // The GPU too (and its kernels compiled); previews use the CPU until then.
+    let gpu = state.gpu.clone();
+    std::thread::spawn(move || {
+        let found = amb_gpu::Gpu::new(false);
+        if let Some(g) = &found {
+            g.warm_up();
+            eprintln!("previews on the GPU: {}", g.name());
+        }
+        let _ = gpu.set(found);
     });
     *state.initial_path.lock().expect("fresh mutex") = std::env::args().nth(1);
     tauri::Builder::default()

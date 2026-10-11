@@ -13,12 +13,15 @@ pub struct Gpu {
 
 impl Gpu {
     /// The first suitable GPU, or `None`. A software rasteriser (llvmpipe,
-    /// lavapipe, WARP) is taken only when `software` is set: it works, but
-    /// is slower than the CPU pipeline. `AMB_GPU=off` turns the GPU off.
+    /// lavapipe, WARP) is taken only when `software` is set or `AMB_GPU` is
+    /// `software`: it works, but is slower than the CPU pipeline.
+    /// `AMB_GPU=off` turns the GPU off.
     pub fn new(software: bool) -> Option<Gpu> {
-        if std::env::var("AMB_GPU").is_ok_and(|v| v == "off" || v == "0") {
+        let env = std::env::var("AMB_GPU").unwrap_or_default();
+        if env == "off" || env == "0" {
             return None;
         }
+        let software = software || env == "software";
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
@@ -106,6 +109,11 @@ impl Gpu {
     pub(crate) fn kernels(&self) -> &crate::develop::Kernels {
         self.kernels
             .get_or_init(|| crate::develop::Kernels::new(self))
+    }
+
+    /// Compile the kernels now, so the first render doesn't wait for them.
+    pub fn warm_up(&self) {
+        self.kernels();
     }
 
     /// Read a buffer of `len` floats back to the CPU.

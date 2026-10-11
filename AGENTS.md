@@ -5,6 +5,7 @@ Ambrotype is a free, open-source Lightroom alternative in Rust. Start with [docs
 ## Layout
 - `crates/amb-presets`: Lightroom XMP/preset reader and the tag registry (`data/tags.json`).
 - `crates/amb-engine`: the raw pipeline.
+- `crates/amb-gpu`: the pipeline's stages as wgpu compute shaders, for the editor's preview; each checked against its CPU stage ([docs/design/gpu.md](docs/design/gpu.md)).
 - `crates/amb-protocol`: undoable edit commands. **Every edit from the GUI, CLI or an AI goes through these commands.**
 - `crates/amb-export`: file writing.
 - `crates/amb-library`: library operations on folders and sidecars (import, collections).

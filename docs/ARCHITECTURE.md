@@ -18,6 +18,7 @@ About 23,000 lines of Rust and about 270 tests (fmt, clippy and tests run in CI 
 | `amb-color` | Colour science | Temperature/Tint ↔ xy, matrices, Bradford adaptation, output colour spaces and generated ICC profiles |
 | `amb-lens` | Lens profiles | lensfun database and Adobe LCP readers, lens matching, interpolation, correction geometry |
 | `amb-engine` | Raw decode and develop | The pipeline below; every model constant is in `Calibration` (JSON, fitted later against Lightroom) |
+| `amb-gpu` | GPU preview | The develop pipeline's stages as wgpu compute shaders, run from an `amb_engine::plan::Plan`; stages without a kernel run on the CPU in between; equivalence tests against the CPU pipeline ([design/gpu.md](design/gpu.md)) |
 | `amb-export` | Files out | JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces, resize, output sharpening, EXIF, JPEG size limit; floating-point linear DNG for merged photos (`dng.rs`) |
 | `amb-library` | Library operations | Import: copy from a card or folder into dated folders, renamed from templates, with companions and duplicate checks (`amb import`, the editor's Import dialog); collections as small JSON files; HDR merge into a DNG next to the brackets and panorama merge with lens corrections first (`merge.rs`, over `amb_engine::merge` and `amb_engine::pano`; `amb merge hdr` / `amb merge pano`, the library's Merge to HDR… / Merge to Panorama…; [design/hdr-merge.md](design/hdr-merge.md), [design/panorama.md](design/panorama.md)) |
 | `amb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
@@ -57,7 +58,7 @@ amb-export: orient upright → resize (Lanczos-3, linear) → output colour spac
 
 `AMB_TIMING=1` prints each render stage's time to stderr (e.g. `render 3495 ms: dehaze 363, highlights/shadows 393, …`).
 
-Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core CPU, plus about 2.5 s to decode it and write a full-size JPEG. Most of that is the CPU pipeline; the GPU backend comes later.
+Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core CPU, plus about 2.5 s to decode it and write a full-size JPEG. Most of that is the CPU pipeline. The editor's preview can run on the GPU (`amb-gpu`, [design/gpu.md](design/gpu.md)); exports and the 100% view stay on the CPU.
 
 **Region renders** (`pipeline::render_region`, for the editor's 100% view) develop only a rectangle of the output, with a margin as wide as the edit's filters reach (each spatial stage reports its reach: `local::reach`, `detail::noise_reduction_reach` and so on), started on a multiple of 64 pixels so subsampled filters see the same blocks. Every stage works on a `buffer::Tile`: it knows where its buffer sits in the full output, so the vignette, grain, masks and spots are placed and filter radii scaled as in the full render. A spot writing into the region pulls in what it reads (its ring and its donor, `retouch::footprints`). What the full render measures over the whole photo (`pipeline::Globals`: a film negative's levels, the haze estimates, the colours under colour range samples) comes from `measure_globals`, a render of a 1600 px copy (colour samples from small full-size renders around them). The region then matches the same part of the full render to about 1e-6, except: haze and negative levels come from the small copy (a fraction of a percent), and noise reduction measures the noise on the region. A 24 MP 100% view takes about 3 s in a debug build, against about 33 s for the full render it replaces.
 
@@ -120,9 +121,9 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 
 ## What does not exist yet
 
-- **A full GUI.** The editor exists (see below). Missing: GPU viewport, installers. All remaining gaps are listed in [GAPS.md](GAPS.md).
+- **A full GUI.** The editor exists (see below). Missing: a native GPU viewport (previews are developed on the GPU but still sent to the page as JPEGs). All remaining gaps are listed in [GAPS.md](GAPS.md).
 - Library and catalog (folders, ratings, keywords, collections, search).
-- GPU backend (wgpu), and caching per stage (region renders exist for the 100% view).
+- GPU kernels for the local stages (they run as CPU steps in a GPU preview), and caching per stage (region renders exist for the 100% view).
 - Red eye, Guided Upright ([design/transform.md](design/transform.md)), AI masks.
 - Camera profiles (DCP) and Adobe-like base looks: today a placeholder filmic base look is used.
 - Look matching (`amb match`) for AI control (the MCP server exists: `amb mcp`, [ai/mcp.md](ai/mcp.md)).

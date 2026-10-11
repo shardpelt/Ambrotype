@@ -191,6 +191,8 @@ pub struct Preview {
     pub millis: u128,
     /// Lens profile used, if any.
     pub lens_profile: Option<String>,
+    /// The GPU it was developed on, or why not (`None`: no GPU).
+    pub gpu: Option<Result<String, String>>,
 }
 
 /// What an Upright mode does when the photo has too few lines.
@@ -570,11 +572,12 @@ impl Session {
         clipping: bool,
         lens: &LensSources,
     ) -> Preview {
-        self.preview_masked(max_edge, overrides, before, clipping, lens, None)
+        self.preview_masked(max_edge, overrides, before, clipping, lens, None, None)
     }
 
     /// [`preview`](Self::preview), with mask `overlay` (its position in
     /// `MaskGroupBasedCorrections`) tinted red as the mask tool shows it.
+    #[allow(clippy::too_many_arguments)]
     pub fn preview_masked(
         &mut self,
         max_edge: usize,
@@ -583,6 +586,7 @@ impl Session {
         clipping: bool,
         lens: &LensSources,
         overlay: Option<usize>,
+        gpu: Option<&amb_gpu::Gpu>,
     ) -> Preview {
         let start = Instant::now();
         let settings = self.effective_settings(overrides, before);
@@ -602,7 +606,13 @@ impl Session {
         }
         let lens_profile = develop.lens.profile.as_ref().map(|c| c.description.clone());
         let src = &self.preview_src.as_ref().expect("set above").1;
-        let developed = pipeline::render(src, &develop);
+        // On the GPU when there is one and the edit allows it.
+        let plan = gpu.map(|g| (g, amb_engine::plan::plan(src, &develop)));
+        let (developed, gpu) = match plan {
+            Some((g, Ok(plan))) => (g.render(&plan), Some(Ok(g.name()))),
+            Some((_, Err(why))) => (pipeline::render(src, &develop), Some(Err(why))),
+            None => (pipeline::render(src, &develop), None),
+        };
         let upright = amb_export::geometry::orient(&developed, self.full.metadata.orientation);
         let mut bytes = to_srgb8(&upright);
         let mut histogram = [vec![0u32; 256], vec![0u32; 256], vec![0u32; 256]];
@@ -621,6 +631,7 @@ impl Session {
             histogram,
             millis: start.elapsed().as_millis(),
             lens_profile,
+            gpu,
         }
     }
 

@@ -553,7 +553,10 @@ async function renderLoop() {
       drawHistogram(meta.histogram);
       ui.curve?.setHistogram(meta.histogram);
       status(`${meta.width}×${meta.height} preview in ${meta.millis} ms` +
+        (meta.gpu ? " on the GPU" : "") +
         (meta.lens_profile ? `  ·  Lens: ${meta.lens_profile}` : ""));
+      $("status").title = meta.gpu ? `Developed on ${meta.gpu}` :
+        meta.cpu_reason ? `Developed on the CPU: ${meta.cpu_reason}` : "Developed on the CPU (no GPU found)";
     } catch (e) {
       toast(String(e), true);
     }

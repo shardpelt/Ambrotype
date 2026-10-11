@@ -256,7 +256,7 @@ The tag-level detail (full `crs:` table, file formats, Amount, Looks, masks) is 
   - Layered presets, and applying a preset through a mask.
   - A preset browser with hover preview, search and favourites.
   - The fidelity report shows the assumed Adobe profile and a readable list of slider changes.
-  - An **opt-in** adaptation assist, off by default, that normalises exposure and WB before applying. It addresses the top preset complaint: "looks nothing like the ad on my photos".
+  - An **opt-in** adaptation assist, off by default, that normalises exposure and WB before applying. It addresses the top preset complaint: buyers say presets look nothing like the seller's ads on their own photos.
   - `.cube` LUT import comes later.
 
 **Calibration harness ([05 §18](research/05-processing-algorithms.md)):**
@@ -400,7 +400,7 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 | Contributor pool for Rust + GPU + colour science | Medium | Clear crate boundaries, documented kernels, "good first kernels" |
 | AI model licences and hardware variance | Medium | Permissive manifest + CI gate; CPU-quantised fallbacks |
 | UX rejected like darktable's ("powerful but hostile") | Medium–High | Lightroom vocabulary and layout; usability tests with switchers each phase |
-| "Presets don't look like the seller's ad on my photos" | High | Fidelity report, include/exclude groups, opt-in adaptation assist, honest messaging |
+| Buyers report that presets do not look like the seller's ads on their own photos | High | Fidelity report, include/exclude groups, opt-in adaptation assist, honest messaging |
 | Reputation and bus factor (solo or "vibe-coded" perception) | Medium | Public governance, CI and tests, a contributor AI-use policy, more than one maintainer early |
 
 ---

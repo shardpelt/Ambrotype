@@ -121,7 +121,7 @@ Global tone controls for process version 2012 and later: Exposure, Contrast, Hig
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `Exposure2012` | Exposure | number | -5 to 5 | 0 | rendered (approx.) | *Units: stops.* Overall image brightness, in stops: +1.00 is similar to opening the aperture one stop, -1.00 to closing it one stop. |
+| `Exposure2012` | Exposure | number | -5 to 5 | 0 | rendered (approx.) | *Units: stops.* Overall brightness in stops. Each +1.00 doubles the light, roughly one aperture stop more; each -1.00 halves it. |
 | `Contrast2012` | Contrast | number | -100 to 100 | 0 | rendered (approx.) | Mainly affects midtones. Increasing it makes middle-to-dark areas darker and middle-to-light areas lighter; decreasing it flattens the image. |
 | `Highlights2012` | Highlights | number | -100 to 100 | 0 | rendered (approx.) | Adjusts bright areas. Negative darkens highlights and recovers blown-out detail; positive brightens them while minimising clipping. |
 | `Shadows2012` | Shadows | number | -100 to 100 | 0 | rendered (approx.) | Adjusts dark areas. Negative darkens shadows while minimising clipping; positive brightens them and recovers shadow detail. |
@@ -278,7 +278,7 @@ The pre-2020 Split Toning controls. Camera Raw reuses SplitToningBalance as the 
 | `SplitToningHighlightHue` | Split toning: Highlights hue | number | 0 to 359 | 0 | rendered (approx.) | *Units: degrees.* Legacy split-toning highlight hue (0-359). Current Lightroom shows it as the Color Grading highlights wheel. |
 | `SplitToningShadowSaturation` | Split toning: Shadows saturation | number | 0 to 100 | 0 | rendered (approx.) | Legacy split-toning shadow tint strength (0-100). |
 | `SplitToningHighlightSaturation` | Split toning: Highlights saturation | number | 0 to 100 | 0 | rendered (approx.) | Legacy split-toning highlight tint strength (0-100). |
-| `SplitToningBalance` | Grading: Balance | number | -100 to 100 | 0 | rendered (approx.) | Color Grading (and legacy split toning) Balance: positive values increase the influence of the highlight controls, negative values the influence of the shadow controls. |
+| `SplitToningBalance` | Grading: Balance | number | -100 to 100 | 0 | rendered (approx.) | Color Grading (and legacy split toning) Balance. Above zero the highlight colour dominates; below zero the shadow colour does. |
 
 <a id="detail"></a>
 
@@ -289,12 +289,12 @@ Sharpening (Amount, Radius, Detail, Masking) and manual noise reduction (luminan
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
 | `Sharpness` | Sharpening: Amount | number | 0 to 150 | 40 | rendered (approx.) | Edge definition: increases contrast between pixels that differ from their neighbours. 0 turns sharpening off. Part of the camera default applied at import. |
-| `SharpenRadius` | Sharpening: Radius | number | 0.5 to 3 | 1 | rendered (approx.) | *Units: px.* Size of the details that sharpening is applied to: lower for very fine detail; too large looks unnatural. |
+| `SharpenRadius` | Sharpening: Radius | number | 0.5 to 3 | 1 | rendered (approx.) | *Units: px.* How wide the sharpened edges are. Small values suit fine texture; large values start to look artificial. |
 | `SharpenDetail` | Sharpening: Detail | number | 0 to 100 | 25 | rendered (approx.) | Which detail gets sharpened. At low values only clear edges are sharpened; at high values fine texture (skin, fabric, foliage) is sharpened too. |
 | `SharpenEdgeMasking` | Sharpening: Masking | number | 0 to 100 | 0 | rendered (approx.) | Edge mask: 0 sharpens everything equally; 100 restricts sharpening mostly to the areas near the strongest edges. |
 | `LuminanceSmoothing` | Noise reduction: Luminance | number | 0 to 100 | 0 | rendered (approx.) | Reduces luminance (brightness) noise. 0 = off. |
 | `LuminanceNoiseReductionDetail` | Noise reduction: Detail | number | 0 to 100 | 50 | rendered (approx.) | Luminance noise threshold. Higher preserves more detail but may leave more noise; lower gives cleaner results but may remove some detail. |
-| `LuminanceNoiseReductionContrast` | Noise reduction: Contrast | number | 0 to 100 | 0 | rendered (approx.) | Higher preserves contrast but may produce noisy blotches or mottling; lower gives smoother results with less contrast. |
+| `LuminanceNoiseReductionContrast` | Noise reduction: Contrast | number | 0 to 100 | 0 | rendered (approx.) | How much local contrast noise reduction keeps. Raising it keeps more contrast but can leave blotchy noise; lowering it smooths more and flattens contrast. |
 | `ColorNoiseReduction` | Color noise reduction | number | 0 to 100 | 25 | rendered (approx.) | Reduces colour noise (coloured speckles). 0 = off. |
 | `ColorNoiseReductionDetail` | Color noise reduction: Detail | number | 0 to 100 | 50 | rendered (approx.) | Colour noise threshold. Higher protects thin, detailed colour edges but may leave colour speckling; lower removes speckles but may cause colour bleeding. |
 | `ColorNoiseReductionSmoothness` | Color noise reduction: Smoothness | number | 0 to 100 | 50 | rendered (approx.) | Smoothness sub-slider of colour noise reduction. Adobe's help names it without describing it further. |
@@ -369,10 +369,10 @@ Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) an
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
 | `PostCropVignetteAmount` | Vignette: Amount | number | -100 to 100 | 0 | rendered (approx.) | Creative vignette relative to the crop: negative darkens the corners, positive lightens them. 0 = off. |
-| `PostCropVignetteMidpoint` | Vignette: Midpoint | number | 0 to 100 | 50 | rendered (approx.) | Lower values apply the Amount to a larger area away from the corners; higher values keep it closer to the corners. |
+| `PostCropVignetteMidpoint` | Vignette: Midpoint | number | 0 to 100 | 50 | rendered (approx.) | Where the vignette starts. Low values reach far into the frame; high values confine it to the corners. |
 | `PostCropVignetteFeather` | Vignette: Feather | number | 0 to 100 | 50 | rendered (approx.) | Softness of the vignette edge: lower values soften less (harder edge). |
 | `PostCropVignetteRoundness` | Vignette: Roundness | number | -100 to 100 | 0 | rendered (approx.) | Positive makes the vignette more circular, negative more oval. |
-| `PostCropVignetteHighlightContrast` | Vignette: Highlights | number | 0 to 100 | 0 | rendered (approx.) | How much highlight contrast is preserved when Amount is negative (Highlight Priority and Color Priority styles only); suits photos with small highlights such as candles and lamps. |
+| `PostCropVignetteHighlightContrast` | Vignette: Highlights | number | 0 to 100 | 0 | rendered (approx.) | Keeps bright spots bright inside a darkening vignette (negative Amount, Highlight Priority and Color Priority styles only). Useful for small light sources such as lamps. |
 | `PostCropVignetteStyle` | Vignette: Style | enum | 1 to 3 | 1 | rendered (approx.) | Highlight Priority (protects highlight contrast, may shift colours in darkened areas), Color Priority (preserves hues, may lose detail in bright highlights) or Paint Overlay (blends with black or white; can look flat). Stored as a number; the 1 = Highlight Priority, 2 = Color Priority, 3 = Paint Overlay encoding is Camera Raw's XMP convention, not stated in Adobe's help. |
 | `GrainAmount` | Grain: Amount | number | 0 to 100 | 0 | rendered (approx.) | Strength of simulated film grain. 0 = off. |
 | `GrainSize` | Grain: Size | number | 0 to 100 | 25 | rendered (approx.) | Grain particle size. At 25 or more Adobe adds blue to work better with noise reduction, and such sizes can cause some image blurring. |

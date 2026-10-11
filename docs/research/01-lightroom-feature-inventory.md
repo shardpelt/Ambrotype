@@ -38,7 +38,7 @@ A Process Version fixes the rendering algorithms for the tone/detail sliders; ol
 |---|---|---|
 | **PV2003** | LR 1.0 | Original: Exposure, Recovery, Fill Light, Blacks, Brightness, Contrast; Tone Curve parametric; Clarity (original), Vibrance, Saturation; sharpening/NR originals. |
 | **PV2010** | LR 3 | New sharpening and noise reduction (luminance/color NR with detail), post-crop vignetting and grain added. Same tone sliders as 2003. |
-| **PV2012** | LR 4 / ACR 7 (2012) | Rewrote tone controls: Exposure, Contrast, **Highlights, Shadows, Whites, Blacks** replace Recovery/Fill/Brightness; "evolved" old adjustments [A snippet https://helpx.adobe.com/lightroom-classic/desktop/process-and-develop-photos/image-tone-color.html]. New tone-mapping for high-contrast images; local adjustments gain same sliders. Blacks in 2003/2010 "specifies which image values map to black" [A]. Clarity/Texture/Dehaze all built on PV2012. |
+| **PV2012** | LR 4 / ACR 7 (2012) | Rewrote tone controls: Exposure, Contrast, **Highlights, Shadows, Whites, Blacks** replace Recovery/Fill/Brightness; an evolution of the older adjustments [A snippet https://helpx.adobe.com/lightroom-classic/desktop/process-and-develop-photos/image-tone-color.html]. New tone-mapping for high-contrast images; local adjustments gain same sliders. In 2003/2010 Blacks sets which image values become black [A]. Clarity/Texture/Dehaze all built on PV2012. |
 | **PV Version 4 / 5 / 6** | LR CC era | Naming in dropdown is "Version 4/5/6" (Adobe Color profile era); minor processing changes for new profile pipeline, HDR/AI features; PV2012-based sliders unchanged [K — unverified details]. |
 | Current default | | New imports default to latest (Version 6 as of recent builds) [K]. |
 
@@ -57,7 +57,7 @@ OSS implication: implement PV2012-style slider semantics only; ignore PV2003/201
 - Sources: card, folder, camera. Methods: **Copy as DNG**, **Copy**, **Move**, **Add** (in place) [K].
 - Options: file handling (build previews: Minimal/Embedded & Sidecar/Standard/1:1; build Smart Previews; don't import suspected duplicates), apply develop preset, metadata preset (copyright etc.), keywords, destination folder organization (by date format, into one folder, etc.), rename template (tokens: date, sequence, custom text, original filename), backup copy to second location.
 - Auto Import from a watched folder; tethered capture (section 6).
-- Duplicate detection: "Don't import suspected duplicates" by capture time + filename; newer 15.4 adds "auto-detect Duplicates" [A snippet https://community.adobe.com/announcements-673/lightroom-classic-v15-4-is-live-cull-people-shots-faster-auto-detect-duplicates-sync-keywords-everywhere-1627070].
+- Duplicate detection: `Don't import suspected duplicates` by capture time + filename; newer 15.4 adds `auto-detect Duplicates` [A snippet https://community.adobe.com/announcements-673/lightroom-classic-v15-4-is-live-cull-people-shots-faster-auto-detect-duplicates-sync-keywords-everywhere-1627070].
 - DNG conversion: lossless, optional lossy, embedded fast-load data, optionally embed original raw, compatibility level (Camera Raw version), linear (demosaiced) DNG option.
 
 ### 2.3 Organisation
@@ -130,7 +130,7 @@ OSS implication: implement PV2012-style slider semantics only; ignore PV2003/201
 
 ### 3.7 Point Color
 - Eyedropper samples a colour on the image producing a swatch (the "pin"); the panel shows a colour field (hue horizontal, sat vertical) with original/adjusted colour and a luminance bar [S] https://lightroomkillertips.com/get-to-know-point-color-in-lightroom-classic/.
-- Controls: **Hue Shift, Saturation Shift, Luminance Shift** (-100..+100 for each [K]); **Range** slider widening/narrowing the set of similar colours selected; expanded **Hue Range, Saturation Range, Luminance Range** sliders for fine control; "no direct one-to-one relationship between Range and the three range sliders" [A community snippet]. **Visualize Range** greys out unaffected colours [S].
+- Controls: **Hue Shift, Saturation Shift, Luminance Shift** (-100..+100 for each [K]); **Range** slider widening/narrowing the set of similar colours selected; expanded **Hue Range, Saturation Range, Luminance Range** sliders for fine control; Range does not map one-to-one onto the three range sliders [A community snippet]. **Visualize Range** greys out unaffected colours [S].
 - Unlike HSL: user-defined target and falloff; works globally and also inside the Masking panel (local) [S]. Max swatches: up to 8 per image [K — not verified; article did not state].
 
 ### 3.8 Color Grading
@@ -139,7 +139,7 @@ OSS implication: implement PV2012-style slider semantics only; ignore PV2003/201
 - 3-way view and individual wheel view; wheels are applied in the working colour space. Split Toning legacy settings are mapped into Color Grading when converting old photos [K].
 
 ### 3.9 Detail
-- **Sharpening**: Amount 0-150 (default 40 for raw in PV2012? Defaults: 40 on Adobe presets; a secondary source says default applied to raw is 25 [S snippet, older]); Radius 0.5-3.0 px (default 1.0); Detail 0-100 (default 25 [K]); Masking 0-100 (default 0; Alt-drag shows mask - white = sharpened). Detail low = halo-reducing deconvolution-like, high = unsharp-mask-like [K, S snippet "Detail slider gives you control over different-sized details"].
+- **Sharpening**: Amount 0-150 (default 40 for raw in PV2012? Defaults: 40 on Adobe presets; a secondary source says default applied to raw is 25 [S snippet, older]); Radius 0.5-3.0 px (default 1.0); Detail 0-100 (default 25 [K]); Masking 0-100 (default 0; Alt-drag shows mask - white = sharpened). Detail low = halo-reducing deconvolution-like, high = unsharp-mask-like [K, S snippet: Detail lets you steer sharpening toward finer or coarser details].
 - **Noise Reduction (manual)**: Luminance 0-100 (default 0), Detail 0-100 (default 50), Contrast 0-100 (default 0); Color 0-100 (default 25), Detail 0-100 (default 50), Smoothness 0-100 (default 50) [S snippet confirms Color default 25] [K for the rest].
 - **Denoise (AI)** — in Enhance dialog: strength slider 0-100 (default 50), preview with 100% zoom; output new DNG or (newer) stored as enhance data in the catalog/XMP of original raw [S, A] https://helpx.adobe.com/lightroom-classic/help/enhance-details.html ; Denoise became available in Classic 12.3, ACR 15.3, LR 6.3 [S] https://www.dpreview.com/articles/9805565494/adobe-denoise-brings-photoshop-lightroom-nr-into-the-modern-era/. Speed: heavy on CPU/GPU (a 10-image batch took over 2 hours on a laptop with weak GPU) [S dpreview]. Cannot combine Denoise with Raw Details or Super Resolution [S, A].
 - **Raw Details**: improves demosaic detail/colour/edge rendering/fewer artifacts; supports Bayer and Fuji X-Trans raws [A snippet]. 
@@ -165,7 +165,7 @@ OSS implication: implement PV2012-style slider semantics only; ignore PV2003/201
 - Shadows Tint -100..+100 (green/magenta in shadows), Red/Green/Blue Primary Hue and Saturation -100..+100. Changes primaries of the camera matrix — tool for custom camera calibration [K].
 
 ### 3.14 Retouching
-- **Remove tool** (`Q`): Heal, Clone, **Content-Aware Remove** (when "Use Generative AI" is unchecked, samples pixels from elsewhere in the image), **Generative Remove** (Adobe Firefly; processed in cloud; three variants to choose from; removes shadow/object) [A] https://helpx.adobe.com/lightroom-classic/help/remove-tool.html [S] https://petapixel.com/2024/05/21/huge-adobe-lightroom-update-adds-ai-generative-remove-and-lens-blurring/. Brush/Object-aware selection; also "Distraction Removal" with Dust and, in recent versions, Reflection removal (15.6) [A search snippet]. Sliders: Size, Feather, Opacity, Visualize Spots, Heal vs Clone, Sync spot positions across images [K].
+- **Remove tool** (`Q`): Heal, Clone, **Content-Aware Remove** (when `Use Generative AI` is unchecked, samples pixels from elsewhere in the image), **Generative Remove** (Adobe Firefly; processed in cloud; three variants to choose from; removes shadow/object) [A] https://helpx.adobe.com/lightroom-classic/help/remove-tool.html [S] https://petapixel.com/2024/05/21/huge-adobe-lightroom-update-adds-ai-generative-remove-and-lens-blurring/. Brush/Object-aware selection; also `Distraction Removal` with Dust and, in recent versions, Reflection removal (15.6) [A search snippet]. Sliders: Size, Feather, Opacity, Visualize Spots, Heal vs Clone, Sync spot positions across images [K].
 - **Red Eye**: Pupil size, Darken (in LR) and Pet Eye option [K].
 
 ### 3.15 Masking
@@ -188,7 +188,7 @@ Local adjustments in LR 10 (Oct 2021) introduced the Masking panel, which replac
 - Output DNGs maintain raw editing latitude.
 
 ### 3.18 HDR editing & output
-- **HDR mode** in Basic (button "HDR"), for supported HDR photos (merged DNGs, mobile HDR, HEIF); HDR histogram, "Highlight Priority/Headroom" settings; Editing in HDR display uses extended luminance up to ~SDR white × 4 (per display capabilities) [A snippet https://helpx.adobe.com/lightroom-classic/help/hdr-output.html and Greg Benz https://gregbenzphotography.com/hdr-photos/lightroom-adds-hdr-edit-and-export/].
+- **HDR mode** in Basic (button `HDR`), for supported HDR photos (merged DNGs, mobile HDR, HEIF); HDR histogram, `Highlight Priority/Headroom` settings; Editing in HDR display uses extended luminance up to ~SDR white × 4 (per display capabilities) [A snippet https://helpx.adobe.com/lightroom-classic/help/hdr-output.html and Greg Benz https://gregbenzphotography.com/hdr-photos/lightroom-adds-hdr-edit-and-export/].
 - Export: **HDR Output** checkbox with AVIF, JPEG XL, JPEG (Ultra HDR gain-map), TIFF, PSD, PNG supported; AVIF/JPEG XL recommended for web; TIFF/PSD for further compositing [A].
 - Colour space for HDR export: Rec.2020 / P3 with PQ or HLG [K].
 - **Render to DNG** (15.5): save photo as rendered DNG with edits baked in [A snippet].

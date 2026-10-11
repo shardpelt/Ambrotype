@@ -32,7 +32,7 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
   - About tab in the app (copyright, no warranty, the licence and notices readable offline, a link to the source); the CLI's help says the same
   - every dependency checked: all GPL-compatible (MIT, Apache-2.0, BSD, ISC, Zlib, MPL-2.0, Unicode-3.0, LGPL-2.1 for rawler)
 - **Before going public:**
-  1. Paraphrase the verbatim Adobe quotes in `docs/adobe-docs/`.
+  1. ~~Paraphrase the verbatim Adobe quotes in `docs/adobe-docs/`.~~ Done 2026-10-11 (see §1).
   2. Make the repository public (the GPL promises the source to everyone who gets the app).
 - **Releases** (when installers are built):
   1. Ship `LICENSE`, `NOTICE` and the licence texts of all bundled libraries with every installer (generate them with `cargo about`; MIT, BSD and Apache require the copyright notices to travel with binaries).
@@ -44,7 +44,7 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
 | Activity | Position | Why |
 |---|---|---|
 | Reading Adobe's public help pages | ✅ Fine | Reading is never infringement. Writing down what features do, in our own words, is fine too. Ideas, functionality and behaviour are not protected by copyright. |
-| Committing those notes publicly | ⚠️ **Fix before going public** | `docs/adobe-docs/` has about 1,000 verbatim quotes (~12,000 words) from Adobe's help. Short quotes for reference fall under the quotation right (US fair use), but this volume is beyond what's comfortable. Paraphrase the quotes and keep only short ones where the exact wording matters (e.g. menu names). The raw mirrored pages were never committed, which was correct. |
+| Committing those notes publicly | ✅ Fine (fixed 2026-10-11) | The digests in `docs/adobe-docs/` and the research notes are in our own words. A scan on 2026-10-11 compared every text file in the repo with the 230 archived help pages, the specs, the SDK sources and the 907 pages collected on 2026-10-10: no line shares a run of 12 or more words with a source. The only quotes left are short UI labels and menu names, document titles, Adobe's required DNG licence notices and our own text. Ideas, functionality and behaviour are not protected; the raw page text was never committed. Re-run the check before each public release. |
 | Reading and writing `.xmp`, `.lrtemplate` and DNG files | ✅ Fine | Data formats and functionality are not protected by copyright (CJEU *SAS Institute v World Programming*, C‑406/10). XMP is an open ISO standard (ISO 16684). Adobe publishes the DNG spec with a royalty-free patent licence for readers and writers. That licence is lost if you sue Adobe over DNG patents, which we won't. |
 | Using a Lightroom subscription to compare outputs (render, measure, fit our own constants) | ✅ Fine | This is black-box testing: run the program normally and observe its output. Under the EU Software Directive (2009/24/EC art. 5(3)), a lawful user may "observe, study or test the functioning of the program", and art. 8 makes contract terms that forbid this void. Adobe's terms forbid reverse engineering in the decompiling sense, which we never do. |
 | Decompiling or disassembling Lightroom/ACR, or extracting its profiles, LUTs or code | ❌ Never | It breaches Adobe's terms, it isn't needed, and it would taint the code. The project rule stands: no Adobe binaries, profiles (DCP), LCP lens files, presets or code in the repo or the downloads. |
@@ -57,7 +57,7 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
 
 **Before making the repo public:**
 1. ~~Add the `LICENSE` file (GPL-3.0-or-later) and set `license` in every Cargo.toml.~~ Done 2026-10-08.
-2. Paraphrase the verbatim quotes in `docs/adobe-docs/`.
+2. ~~Paraphrase the verbatim quotes in `docs/adobe-docs/`.~~ Done 2026-10-11.
 3. ~~Put the trademark notice in the README and the app's About box.~~ Done 2026-10-08.
 4. ~~Pick the final name (below) and rename.~~ Done: Ambrotype.
 

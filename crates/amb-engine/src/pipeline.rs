@@ -996,9 +996,16 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     let m = m.map(|row| row.map(|v| v as f32));
     let shadow_tint = s.camera_calibration.shadow_tint(&cal.primaries);
     let gain = 2f32.powf(s.exposure_ev as f32);
-    let hue_sat_map = profile.and_then(|p| p.hue_sat_map.as_ref());
+    let hue_sat_map = profile.and_then(|p| p.hue_sat_map(p.white_temperature(neutral)));
     let look_table = profile.and_then(|p| p.look_table.as_ref());
     let profile_gain = profile.map_or(1.0, |p| 2f32.powf(p.exposure_offset as f32));
+    // As in the DNG reference render, a brightening Exposure goes in before
+    // the look table and a darkening one after it (DNG spec, look table).
+    let (gain_before_look, gain_after_look) = if gain >= 1.0 {
+        (profile_gain * gain, 1.0)
+    } else {
+        (profile_gain, gain)
+    };
     let clipped = (!s.negative.enabled && img.clip.iter().any(|c| c.is_finite()))
         .then(|| Unclip::new(img.clip, neutral));
     let mut out = Image {
@@ -1020,22 +1027,22 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
                     None => [c[0], c[1], c[2]],
                 };
                 if profile.is_some() {
-                    // The profile's map, its exposure offset and look table,
-                    // then Exposure.
+                    // The profile's map, its exposure offset, then the look
+                    // table with Exposure on the side given above.
                     for (row, slot) in m.iter().zip(o.iter_mut()) {
                         *slot = row[0] * c[0] + row[1] * c[1] + row[2] * c[2];
                     }
-                    if let Some(t) = hue_sat_map {
+                    if let Some(t) = &hue_sat_map {
                         t.apply(o);
                     }
                     for v in o.iter_mut() {
-                        *v *= profile_gain;
+                        *v *= gain_before_look;
                     }
                     if let Some(t) = look_table {
                         t.apply(o);
                     }
                     for v in o.iter_mut() {
-                        *v *= gain;
+                        *v *= gain_after_look;
                     }
                 } else {
                     for (row, slot) in m.iter().zip(o.iter_mut()) {
@@ -1342,6 +1349,34 @@ mod tests {
         s.camera_profile = None;
         let ours = render(&img, &s).rgb[0];
         assert!((ours - 0.5).abs() > 0.1, "{ours}");
+    }
+
+    #[test]
+    fn brightening_exposure_goes_before_the_look_table() {
+        use crate::profile::{Dcp, tests::sample};
+        // A look table that darkens bright values: value scale 1 at V = 0,
+        // 0.5 at V = 1.
+        let rows = |scale: f64| (0..4).flat_map(move |_| [0.0, 1.0, scale]);
+        let table: Vec<f64> = rows(1.0).chain(rows(0.5)).collect();
+        let dcp = Dcp::parse(&sample(vec![
+            (50981, 4, vec![2.0, 2.0, 2.0], None),
+            (50982, 11, table, None),
+        ]))
+        .unwrap();
+        let img = camera(4, 4, |_, _| [0.1, 0.05, 0.02]);
+        let mut s = linear(&[("CameraProfile", "Test Standard")]);
+        s.camera_profile = Some(std::sync::Arc::new(dcp));
+        let at = |s: &mut DevelopSettings, ev: f64| {
+            s.exposure_ev = ev;
+            render(&img, s).rgb[0]
+        };
+        let base = at(&mut s, 0.0);
+        // +1 EV: the look table sees the brighter value and darkens it more.
+        let up = at(&mut s, 1.0);
+        assert!(up < 2.0 * base * 0.99, "{up} vs {base}");
+        // −1 EV comes after the table: exactly half.
+        let down = at(&mut s, -1.0);
+        assert!((down - 0.5 * base).abs() < 1e-5, "{down} vs {base}");
     }
 
     #[test]

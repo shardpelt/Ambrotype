@@ -11,11 +11,12 @@
 //!   the inverse of the white balance's colour temperature;
 //! - **forward matrices** (white-balanced camera RGB → XYZ D50), used
 //!   instead of inverting the colour matrix when present;
-//! - a **hue/saturation/value map** and a **look table**, applied in linear
-//!   ProPhoto HSV;
+//! - a **hue/saturation/value map** (two are blended by temperature, as
+//!   the DNG SDK does) and a **look table**, applied in linear ProPhoto HSV;
 //! - a **tone curve** (linear in, linear out), which replaces our own base
 //!   look; and a **baseline exposure offset**.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -34,7 +35,9 @@ pub struct Dcp {
     pub camera: String,
     /// (illuminant temperature in kelvin, colour matrix, forward matrix).
     pub illuminants: Vec<(f64, Mat3, Option<Mat3>)>,
-    pub hue_sat_map: Option<HsvTable>,
+    /// `ProfileHueSatMapData1/2`, each with its illuminant's temperature,
+    /// coolest first; see [`Dcp::hue_sat_map`].
+    pub hue_sat_maps: Vec<(f64, HsvTable)>,
     pub look_table: Option<HsvTable>,
     pub tone_curve: Option<ToneCurve>,
     /// `BaselineExposureOffset`, in stops.
@@ -270,10 +273,23 @@ impl Dcp {
             _ => None,
         };
         let first = |t: u16| nums(t).and_then(|v| v.first().copied());
+        let hsm_srgb = first(HUE_SAT_MAP_ENCODING) == Some(1.0);
+        let look_srgb = first(LOOK_TABLE_ENCODING) == Some(1.0);
         let mut illuminants = Vec::new();
-        for (cm, fm, ill) in [
-            (COLOR_MATRIX_1, FORWARD_MATRIX_1, CALIBRATION_ILLUMINANT_1),
-            (COLOR_MATRIX_2, FORWARD_MATRIX_2, CALIBRATION_ILLUMINANT_2),
+        let mut hue_sat_maps = Vec::new();
+        for (cm, fm, ill, map) in [
+            (
+                COLOR_MATRIX_1,
+                FORWARD_MATRIX_1,
+                CALIBRATION_ILLUMINANT_1,
+                HUE_SAT_MAP_DATA_1,
+            ),
+            (
+                COLOR_MATRIX_2,
+                FORWARD_MATRIX_2,
+                CALIBRATION_ILLUMINANT_2,
+                HUE_SAT_MAP_DATA_2,
+            ),
         ] {
             let Some(c) = nums(cm).and_then(mat) else {
                 continue;
@@ -282,25 +298,22 @@ impl Dcp {
                 .and_then(|code| illuminant_temperature(code as u16))
                 .unwrap_or(5003.0);
             illuminants.push((temp, c, nums(fm).and_then(mat)));
+            // Each map belongs to its illuminant.
+            if let Some(t) = nums(HUE_SAT_MAP_DIMS).zip(nums(map)) {
+                hue_sat_maps.extend(table(t.0, t.1, hsm_srgb).map(|t| (temp, t)));
+            }
         }
         if illuminants.is_empty() {
             return Err("the profile has no colour matrix".into());
         }
         illuminants.sort_by(|a, b| a.0.total_cmp(&b.0));
-        // With two maps, mix them like the matrices; we take the one for the
-        // warmer illuminant first and blend at render time.
-        let hsm_srgb = first(HUE_SAT_MAP_ENCODING) == Some(1.0);
-        let look_srgb = first(LOOK_TABLE_ENCODING) == Some(1.0);
-        let maps: Vec<HsvTable> = [HUE_SAT_MAP_DATA_1, HUE_SAT_MAP_DATA_2]
-            .iter()
-            .filter_map(|t| table(nums(HUE_SAT_MAP_DIMS)?, nums(*t)?, hsm_srgb))
-            .collect();
+        hue_sat_maps.sort_by(|a, b| a.0.total_cmp(&b.0));
         let tone_curve = nums(TONE_CURVE).and_then(ToneCurve::from_points);
         Ok(Dcp {
             name: text(PROFILE_NAME).unwrap_or_default(),
             camera: text(UNIQUE_CAMERA_MODEL).unwrap_or_default(),
             illuminants,
-            hue_sat_map: maps.into_iter().next(),
+            hue_sat_maps,
             look_table: nums(LOOK_TABLE_DIMS)
                 .zip(nums(LOOK_TABLE_DATA))
                 .and_then(|(d, v)| table(d, v, look_srgb)),
@@ -342,6 +355,42 @@ impl Dcp {
         (mix(&lo.1, &hi.1), fm)
     }
 
+    /// The hue/saturation map for a white of `temp` kelvin. With two maps,
+    /// they are blended entry by entry with the cooler one's weight 1 at or
+    /// below its temperature, 0 at or above the warmer one's, and linear in
+    /// inverse temperature between, as the DNG SDK does.
+    pub fn hue_sat_map(&self, temp: f64) -> Option<Cow<'_, HsvTable>> {
+        let (lo, hi) = match self.hue_sat_maps.as_slice() {
+            [] => return None,
+            [(_, a), (_, b)] if a.same_shape(b) => (&self.hue_sat_maps[0], &self.hue_sat_maps[1]),
+            [(_, a), ..] => return Some(Cow::Borrowed(a)),
+        };
+        if !(lo.0 > 0.0 && hi.0 > lo.0) {
+            return Some(Cow::Borrowed(&lo.1));
+        }
+        let inv = |t: f64| 1.0 / t.max(1.0);
+        let w = ((inv(temp) - inv(hi.0)) / (inv(lo.0) - inv(hi.0))).clamp(0.0, 1.0) as f32;
+        if w >= 1.0 {
+            return Some(Cow::Borrowed(&lo.1));
+        }
+        if w <= 0.0 {
+            return Some(Cow::Borrowed(&hi.1));
+        }
+        let mut t = lo.1.clone();
+        for (a, b) in t.data.iter_mut().zip(&hi.1.data) {
+            for c in 0..3 {
+                a[c] = w * a[c] + (1.0 - w) * b[c];
+            }
+        }
+        Some(Cow::Owned(t))
+    }
+
+    /// The colour temperature of white balance `neutral`, in kelvin.
+    pub fn white_temperature(&self, neutral: [f64; 3]) -> f64 {
+        let (x, y) = self.xy_for_neutral(neutral);
+        xy_to_temp_tint(x, y).temperature
+    }
+
     /// Camera RGB of a white with chromaticity (x, y), green = 1.
     pub fn neutral_for_xy(&self, x: f64, y: f64) -> [f64; 3] {
         let temp = xy_to_temp_tint(x, y).temperature;
@@ -375,9 +424,7 @@ impl Dcp {
     /// Camera RGB → linear ProPhoto for white balance `neutral`, scaled so
     /// the neutral maps to (1, 1, 1).
     pub fn camera_to_prophoto(&self, neutral: [f64; 3]) -> Mat3 {
-        let (x, y) = self.xy_for_neutral(neutral);
-        let temp = xy_to_temp_tint(x, y).temperature;
-        let (cm, fm) = self.matrices(temp);
+        let (cm, fm) = self.matrices(self.white_temperature(neutral));
         let cam_to_xyz = match fm {
             // White-balanced camera RGB → XYZ D50.
             Some(fm) => mul3(
@@ -413,6 +460,11 @@ fn srgb_encode(v: f32) -> f32 {
 }
 
 impl HsvTable {
+    fn same_shape(&self, other: &HsvTable) -> bool {
+        (self.hues, self.sats, self.vals, self.data.len())
+            == (other.hues, other.sats, other.vals, other.data.len())
+    }
+
     /// Apply to one linear ProPhoto pixel (DNG's HSV: hue 0..6, value = max).
     pub fn apply(&self, rgb: &mut [f32]) {
         let (r, g, b) = (rgb[0], rgb[1], rgb[2]);
@@ -799,7 +851,7 @@ pub(crate) mod tests {
         assert!((d.exposure_offset + 0.25).abs() < 1e-4);
         let t = d.tone_curve.as_ref().unwrap();
         assert!((t.eval(0.5) - 0.7).abs() < 1e-3 && (t.eval(0.25) - 0.35).abs() < 1e-3);
-        let map = d.hue_sat_map.as_ref().unwrap();
+        let map = &d.hue_sat_maps[0].1;
         // Pure red → hue +30° (toward yellow), saturation halved.
         let mut px = [1.0f32, 0.0, 0.0];
         map.apply(&mut px);
@@ -831,6 +883,39 @@ pub(crate) mod tests {
         let m = d.camera_to_prophoto(n);
         let w = apply3(&m, n);
         assert!(w.iter().all(|v| (v - 1.0).abs() < 1e-9), "{w:?}");
+    }
+
+    #[test]
+    fn two_hue_sat_maps_blend_by_inverse_temperature() {
+        // Map 1 (illuminant A, 2856 K) turns hues +20°, map 2 (D65) by −20°.
+        // They are written warm-first to check each stays with its light.
+        let map = |deg: f64| -> Vec<f64> { (0..4).flat_map(|_| [deg, 1.0, 1.0]).collect() };
+        let d = Dcp::parse(&sample(vec![
+            (HUE_SAT_MAP_DIMS, 4, vec![2.0, 2.0, 1.0], None),
+            (HUE_SAT_MAP_DATA_1, 11, map(20.0), None),
+            (HUE_SAT_MAP_DATA_2, 11, map(-20.0), None),
+        ]))
+        .unwrap();
+        let shift = |temp: f64| d.hue_sat_map(temp).unwrap().data[0][0];
+        assert_eq!(shift(2000.0), 20.0);
+        assert_eq!(shift(2856.0), 20.0);
+        assert_eq!(shift(9000.0), -20.0);
+        // Halfway in inverse temperature is halfway between the maps.
+        let mid = 2.0 / (1.0 / 2856.0 + 1.0 / 6504.0);
+        assert!(shift(mid).abs() < 1e-3, "{}", shift(mid));
+        // One map: used for every white.
+        let one = Dcp::parse(&sample(vec![
+            (HUE_SAT_MAP_DIMS, 4, vec![2.0, 2.0, 1.0], None),
+            (HUE_SAT_MAP_DATA_1, 11, map(20.0), None),
+        ]))
+        .unwrap();
+        assert_eq!(one.hue_sat_map(9000.0).unwrap().data[0][0], 20.0);
+        assert!(
+            Dcp::parse(&sample(vec![]))
+                .unwrap()
+                .hue_sat_map(5000.0)
+                .is_none()
+        );
     }
 
     #[test]

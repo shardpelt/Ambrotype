@@ -123,6 +123,7 @@ const AmbControls = (() => {
     });
     svg.addEventListener("dblclick", h.reset);
     label.addEventListener("dblclick", h.reset);
+    holdWhileDragging(svg, def.name);
     keys(svg, def, () => pos, (p) => { pos = p; val = valueAt(def, p); draw(); }, h);
     draw();
     const set = (v) => { val = Number(v); pos = clamp(toSlider(def, val), lo, hi); draw(); };
@@ -177,7 +178,8 @@ const AmbControls = (() => {
         h.commit(val);
       },
     });
-    el.addEventListener("dblclick", h.reset);
+    resetOnDoubleClick(el, () => pos, span, h.reset);
+    holdWhileDragging(el, def.name);
     keys(el, def, () => pos, (p) => { pos = p; val = valueAt(def, p); draw(); }, h);
     draw();
     const set = (v) => { val = Number(v); pos = clamp(toSlider(def, val), lo, hi); draw(); };
@@ -217,6 +219,8 @@ const AmbControls = (() => {
       const v = Number(box.value);
       if (!Number.isNaN(v)) h.commit(clamp(v, def.min, def.max));
     });
+    selectOnFocus(box);
+    holdWhileDragging(label, def.name);
     label.addEventListener("dblclick", h.reset);
     const set = (v) => { val = Number(v); pos = clamp(toSlider(def, val), lo, hi); show(); };
     return { el: row, entry: { def, label, set } };

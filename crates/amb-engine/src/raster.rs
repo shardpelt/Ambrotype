@@ -93,6 +93,62 @@ impl Lut {
     }
 }
 
+/// A quick picture of a rendered image at most `max_edge` pixels on its
+/// long side, for thumbnails: a JPEG is decoded straight at 1/2, 1/4 or 1/8
+/// size (its own DCT scaling), other formats in full and scaled down. Its
+/// colours are shown as stored (no profile conversion) and it isn't turned
+/// upright.
+pub fn quick_image(path: &Path, max_edge: u32) -> Result<image::RgbImage, Error> {
+    let decode = |e: String| Error::Decode(format!("{}: {e}", path.display()));
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(str::to_ascii_lowercase)
+        .unwrap_or_default();
+    let img = if ext == "jpg" || ext == "jpeg" {
+        let file = std::fs::File::open(path).map_err(|e| decode(e.to_string()))?;
+        let mut d = jpeg_decoder::Decoder::new(std::io::BufReader::new(file));
+        d.read_info().map_err(|e| decode(e.to_string()))?;
+        let edge = max_edge.clamp(16, u32::from(u16::MAX)) as u16;
+        let (w, h) = d.scale(edge, edge).map_err(|e| decode(e.to_string()))?;
+        let pixels = d.decode().map_err(|e| decode(e.to_string()))?;
+        let info = d.info().ok_or_else(|| decode("no image".into()))?;
+        let (w, h) = (u32::from(w), u32::from(h));
+        let rgb: Vec<u8> = match info.pixel_format {
+            jpeg_decoder::PixelFormat::RGB24 => pixels,
+            jpeg_decoder::PixelFormat::L8 => pixels.iter().flat_map(|&v| [v, v, v]).collect(),
+            jpeg_decoder::PixelFormat::L16 => pixels
+                .chunks_exact(2)
+                .flat_map(|v| [v[0], v[0], v[0]])
+                .collect(),
+            jpeg_decoder::PixelFormat::CMYK32 => pixels
+                .chunks_exact(4)
+                .flat_map(|p| {
+                    let k = 255 - u16::from(p[3]);
+                    [0, 1, 2].map(|c| ((255 - u16::from(p[c])) * k / 255) as u8)
+                })
+                .collect(),
+        };
+        image::RgbImage::from_raw(w, h, rgb).ok_or_else(|| decode("bad size".into()))?
+    } else {
+        image::ImageReader::open(path)
+            .map_err(|e| decode(e.to_string()))?
+            .with_guessed_format()
+            .map_err(|e| decode(e.to_string()))?
+            .decode()
+            .map_err(|e| decode(e.to_string()))?
+            .to_rgb8()
+    };
+    let (w, h) = (img.width(), img.height());
+    Ok(if w.max(h) > max_edge {
+        let k = f64::from(max_edge) / f64::from(w.max(h));
+        let size = |v: u32| ((f64::from(v) * k).round() as u32).max(1);
+        image::imageops::thumbnail(&img, size(w), size(h))
+    } else {
+        img
+    })
+}
+
 /// The colour space a rendered image declares (sRGB when it has no
 /// readable profile).
 pub fn profile(path: &Path) -> RgbProfile {

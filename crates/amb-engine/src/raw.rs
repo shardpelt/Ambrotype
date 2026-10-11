@@ -474,25 +474,28 @@ impl CfaExt for rawler::RawImage {
 /// A small thumbnail from the preview the camera embedded in the raw (no raw
 /// decoding, so it's quick), upright and at most `max_edge` pixels on its long
 /// side. `None` when the file has no usable preview. It shows the camera's
-/// own JPEG rendering, not the edit.
+/// own JPEG rendering, not the edit. A JPEG, PNG, TIFF or WebP is decoded
+/// small instead ([`crate::raster::quick_image`]).
 pub fn embedded_thumbnail(path: &Path, max_edge: u32) -> Result<Option<image::RgbImage>, Error> {
-    // A rendered image has no separate preview: callers render it instead.
-    if crate::raster::is_raster(path) {
-        return Ok(None);
-    }
-    let src = rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
-    let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
-    let params = rawler::decoders::RawDecodeParams::default();
-    // The larger preview first (sharper when scaled down), then the small thumbnail.
-    let found = match decoder.preview_image(&src, &params) {
-        Ok(Some(img)) => Some(img),
-        _ => decoder.thumbnail_image(&src, &params).ok().flatten(),
-    };
-    let Some(img) = found.filter(|i| i.width() >= 32 && i.height() >= 32) else {
-        return Ok(None);
+    // A rendered image is its own preview, decoded small.
+    let small = if crate::raster::is_raster(path) {
+        crate::raster::quick_image(path, max_edge.max(16))?
+    } else {
+        let src =
+            rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
+        let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
+        let params = rawler::decoders::RawDecodeParams::default();
+        // The larger preview first (sharper when scaled down), then the small thumbnail.
+        let found = match decoder.preview_image(&src, &params) {
+            Ok(Some(img)) => Some(img),
+            _ => decoder.thumbnail_image(&src, &params).ok().flatten(),
+        };
+        let Some(img) = found.filter(|i| i.width() >= 32 && i.height() >= 32) else {
+            return Ok(None);
+        };
+        img.thumbnail(max_edge.max(16), max_edge.max(16)).to_rgb8()
     };
     let orientation = read_metadata(path).map(|(_, m)| m.orientation).unwrap_or(1);
-    let small = img.thumbnail(max_edge.max(16), max_edge.max(16)).to_rgb8();
     use image::imageops::{flip_horizontal, flip_vertical, rotate90, rotate180, rotate270};
     Ok(Some(match orientation {
         2 => flip_horizontal(&small),

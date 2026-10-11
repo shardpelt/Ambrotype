@@ -135,12 +135,16 @@ function renderLibrary() {
   lib.cells.clear();
   grid.replaceChildren();
   $("library-empty").hidden = Boolean(lib.dir || lib.collection);
+  // What just scrolled into view loads first: after a fast scroll the photos
+  // passed on the way wait behind the ones on screen.
   lib.observer = new IntersectionObserver((entries) => {
+    const seen = [];
     for (const e of entries) {
       if (!e.isIntersecting) continue;
       lib.observer.unobserve(e.target);
-      lib.queue.push(e.target.dataset.path);
+      seen.push(e.target.dataset.path);
     }
+    lib.queue = seen.concat(lib.queue);
     pumpLibraryThumbs();
   }, { root: grid, rootMargin: "300px 0px" });
   for (const p of lib.shown) {

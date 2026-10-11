@@ -19,6 +19,7 @@ const ui = {
   settings: {},          // committed settings (from the Rust state)
   info: null,            // photo info
   overrides: {},         // values being dragged, not yet committed
+  active: null,          // the setting whose slider is held (holdWhileDragging)
   before: false,
   hslTab: "Hue",
   // `uncropped`: the shown preview is the whole photo (what the crop tool draws on).
@@ -113,6 +114,50 @@ function trackFor(def) {
   return null;
 }
 
+// Double-click resets a slider only when it was double-clicked where its
+// value already was (Lightroom: double-click the knob). Two quick clicks that
+// move it, to set a value and then nudge it, are not a reset. `position()` is
+// the slider's position; `span` its full range.
+function resetOnDoubleClick(el, position, span, reset) {
+  const downs = [];
+  el.addEventListener("pointerdown", () => {
+    downs.push(position());
+    if (downs.length > 2) downs.shift();
+  }, true);
+  el.addEventListener("dblclick", () => {
+    const before = downs[0];
+    if (before !== undefined && Math.abs(position() - before) <= Math.abs(span) * 0.03) reset();
+    downs.length = 0;
+  });
+}
+
+// While a slider is held, refreshes from finished edits leave it alone
+// (otherwise it would jump back to its old value under the pointer).
+function holdWhileDragging(el, name) {
+  el.addEventListener("pointerdown", () => {
+    ui.active = name;
+    // Released anywhere (the pointer may have left the slider); after the
+    // slider's own change event, which commits the value.
+    const release = () => {
+      window.removeEventListener("pointerup", release, true);
+      window.removeEventListener("pointercancel", release, true);
+      setTimeout(() => { if (ui.active === name) ui.active = null; }, 0);
+    };
+    window.addEventListener("pointerup", release, true);
+    window.addEventListener("pointercancel", release, true);
+  });
+}
+
+// A value box selects its text when clicked into, so typing replaces it.
+function selectOnFocus(box) {
+  let fresh = false;
+  box.addEventListener("focus", () => { box.select(); fresh = true; });
+  box.addEventListener("mouseup", (e) => {
+    if (fresh) e.preventDefault();
+    fresh = false;
+  });
+}
+
 function makeRow(def) {
   const row = document.createElement("div");
   const entry = { def };
@@ -172,9 +217,11 @@ function makeRow(def) {
       const v = Number(number.value);
       if (!Number.isNaN(v)) commit(def.name, v);
     });
+    selectOnFocus(number);
     const reset = () => run([{ cmd: "reset_param", name: def.name }]);
     label.addEventListener("dblclick", reset);
-    input.addEventListener("dblclick", reset);
+    resetOnDoubleClick(input, () => Number(input.value), input.max - input.min, reset);
+    holdWhileDragging(input, def.name);
     row.append(label, input, number);
     Object.assign(entry, { input, number, label });
   }
@@ -188,6 +235,7 @@ function historyLabel(label) {
   const n = (i) => `Mask ${Number(i) + 1}`;
   return label
     .replace(/^set_param /, "")
+    .replace(/^reset_param /, "Reset ")
     .replace(/^apply_preset .*[\\/]/, "preset ")
     .replace(/^add_mask (\w+) to mask (\d+)$/, (_, k, m) => `${n(m)}: add ${k}`)
     .replace(/^add_mask (\w+)$/, (_, k) => `New ${k} mask`)
@@ -204,6 +252,7 @@ function historyLabel(label) {
 
 function syncControls() {
   for (const [name, c] of ui.controls) {
+    if (name === ui.active) continue;
     const v = currentValue(name);
     const changed = name in ui.settings;
     if (c.label) c.label.classList.toggle("changed", changed);
@@ -241,7 +290,8 @@ function setState(state) {
   const crop = cropKey(ui.settings);
   ui.state = state;
   ui.settings = state.settings ?? {};
-  ui.overrides = {};
+  const held = ui.active && ui.active in ui.overrides ? { [ui.active]: ui.overrides[ui.active] } : {};
+  ui.overrides = held;
   stripUpdateCurrent({ edited: Object.keys(ui.settings).length > 0 });
   syncControls();
   if (ui.crop.on && cropKey(ui.settings) !== crop) reloadCrop();

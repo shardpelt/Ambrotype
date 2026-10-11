@@ -329,7 +329,8 @@ function renderPanel() {
     : "Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.";
   for (const el of $("library-panel").querySelectorAll("[data-needs]")) {
     const need = el.dataset.needs;
-    el.disabled = need === "one" ? n !== 1 : need === "paste" ? !lib.copied || !sel.some((p) => p.path !== lib.copied) : n === 0;
+    el.disabled = need === "one" ? n !== 1 : need === "many" ? n < 2
+      : need === "paste" ? !lib.copied || !sel.some((p) => p.path !== lib.copied) : n === 0;
   }
   // What the selection has in common.
   const same = (f) => (n && sel.every((p) => f(p) === f(sel[0])) ? f(sel[0]) : undefined);
@@ -585,6 +586,37 @@ function libraryExport() {
   });
 }
 
+// Photo Merge > HDR: the selected brackets into one DNG, which then opens.
+async function libraryMergeHdr() {
+  const sel = selectedPhotos().filter((p) => !p.copy);
+  if (sel.length < 2) return toast("Select two or more raws of one scene, shot at different exposures.", true);
+  const dlg = $("hdr-dialog");
+  $("hdr-what").textContent = `${sel.length} photos: ${sel.map((p) => p.name).join(", ")}`;
+  dlg.showModal();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice !== "ok") return;
+  status(`Merging ${sel.length} photos to HDR…`);
+  $("busy").hidden = false;
+  try {
+    const r = await invoke("merge_hdr", {
+      paths: sel.map((p) => p.path),
+      align: $("hdr-align").checked,
+      deghost: $("hdr-deghost").value,
+      autoTone: $("hdr-tone").checked,
+    });
+    const stops = r.stops.map((s) => `${s >= 0 ? "+" : ""}${s.toFixed(1)}`).join(", ");
+    status(`Merged into ${fileName(r.output)} (exposures ${stops} EV)`);
+    if (lib.collection) await addToCollection([r.output], lib.collection);
+    else await loadLibrary(lib.dir);
+    await libraryOpen(r.output);
+  } catch (e) {
+    toast(String(e), true);
+    status("HDR merge failed");
+  } finally {
+    $("busy").hidden = true;
+  }
+}
+
 async function libraryCollage() {
   const sel = selectedPhotos();
   if (!sel.length) return;
@@ -676,6 +708,7 @@ function wireLibrary() {
   $("lib-vcopy-delete").addEventListener("click", libraryDeleteCopies);
   $("lib-export").addEventListener("click", libraryExport);
   $("lib-collage").addEventListener("click", libraryCollage);
+  $("lib-hdr").addEventListener("click", libraryMergeHdr);
   grid.style.setProperty("--thumb", `${$("lib-size").value}px`);
   wireCull();
   wireCollections();

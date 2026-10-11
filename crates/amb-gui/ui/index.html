@@ -260,6 +260,7 @@
           <button type="button" id="lib-open" class="small" data-needs="any" title="Open in the editor (Enter, or double-click)">Open in editor</button>
           <button type="button" id="lib-export" class="small primary" data-needs="any" title="Export the selection with the same choices, one file each (Ctrl+E)">Export…</button>
           <button type="button" id="lib-collage" class="small" data-needs="any" title="Start a collage with the selected photos">Make a collage</button>
+          <button type="button" id="lib-hdr" class="small" data-needs="many" title="Merge bracketed raws of one scene into one HDR photo (a DNG next to them)">Merge to HDR…</button>
         </div>
       </aside>
     </div>
@@ -288,6 +289,29 @@
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary">Paste</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Photo Merge > HDR (library.js). -->
+  <dialog id="hdr-dialog">
+    <form method="dialog">
+      <h2>Merge to HDR</h2>
+      <p id="hdr-what" class="hint"></p>
+      <label class="check"><input id="hdr-align" type="checkbox" checked> Auto align (handheld brackets)</label>
+      <label class="check"><input id="hdr-tone" type="checkbox" checked> Auto tone</label>
+      <label>Deghost
+        <select id="hdr-deghost">
+          <option value="off">None</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+        </select>
+      </label>
+      <p class="hint">Deghosting takes moving things (people, leaves, water) from one exposure. The result is a DNG that edits like a raw, here and in Lightroom.</p>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Merge</button>
       </menu>
     </form>
   </dialog>

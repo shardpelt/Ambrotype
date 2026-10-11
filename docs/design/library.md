@@ -32,6 +32,7 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
   - it runs as protocol commands: the open photo gets one undo step, the others their sidecars
 - **Export the selection** with the export dialog's choices (sizes, borders, sharpening, metadata), one file each into a folder, each with its own edit, rating, label and keywords.
 - **Make a collage** with the selection in the collage maker's tray.
+- **Merge to HDR** two or more bracketed raws into one floating-point DNG next to them ([hdr-merge.md](hdr-merge.md)).
 - **Import** (Import… in the bar, or Ctrl+Shift+I anywhere): copy photos from a card or folder into the library (below).
 - **Collections:** the menu next to Folder… shows a collection instead of the folder. The panel adds the selection to a collection (or a new one); B adds the selection, or the open photo in the editor, to the last collection used, like Lightroom's quick collection. Viewing a collection, the panel can remove photos from it (the files stay), rename it or delete it.
 

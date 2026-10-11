@@ -69,7 +69,8 @@ Project goal for ranking: faithful Lightroom preset compatibility, free, on Wind
 | `.lrcat` migration (read-only: folders, keywords, ratings, labels, collections, develop settings). Modern catalog layout is unverified; the known facts are from LR 2/4/6 | Missing | The main thing holding people in Lightroom | [SCOPE.md](SCOPE.md):313, 322; [research/06](research/06-tech-stack-options.md):425 |
 | Data-safety principles have no implementation yet: XMP sidecars as source of truth, rebuildable catalog, versioned recipes, automatic catalog backups | Missing | Catalog corruption is the number-three Lightroom complaint | [SCOPE.md](SCOPE.md):62-66 |
 | Folder-live browsing with no import step | Missing | A competitor strength we chose to adopt | [SCOPE.md](SCOPE.md):122 |
-| Phase 4 items: tethering (libgphoto2), print, map/GPS, face recognition, HDR/panorama merge, focus stacking | Missing | Parity features, deliberately last | [SCOPE.md](SCOPE.md):131, 332 |
+| Phase 4 items: tethering (libgphoto2), print, map/GPS, face recognition, panorama merge, focus stacking | Missing | Parity features, deliberately last | [SCOPE.md](SCOPE.md):131, 332 |
+| HDR merge aligns translation only (no rotation or scale), takes raws only (not JPEG brackets), has no "Create stack" or HDR panorama, and its reference frame, weights and deghost rule are ours; its DNG hasn't been opened in Lightroom yet | Limit | Handheld brackets with a turn won't line up; results may differ from Lightroom's merge | [design/hdr-merge.md](design/hdr-merge.md); `crates/amb-engine/src/merge.rs` |
 | Soft proofing | Missing | Needed for print workflows; also relevant to gamut mapping | [SCOPE.md](SCOPE.md):323 |
 
 ## 4. Raw decoding and colour

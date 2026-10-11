@@ -74,11 +74,20 @@ pub fn virtual_copy_of(path: &std::path::Path) -> Option<(std::path::PathBuf, u3
     if raster::is_raster(&direct) && direct.is_file() {
         return Some((direct, n));
     }
-    raw::RAW_EXTENSIONS
-        .iter()
-        .flat_map(|e| [e.to_string(), e.to_uppercase()])
-        .map(|e| dir.join(format!("{base}.{e}")))
-        .find(|p| p.is_file())
+    // The raw's name as it is on disk: on a case-insensitive disk (macOS,
+    // Windows) `IMG.nef` would also "exist" for `IMG.NEF`, so names are read
+    // from the folder rather than guessed.
+    std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .map(|entry| entry.path())
+        .find(|p| {
+            p.file_stem().and_then(|s| s.to_str()) == Some(base)
+                && p.extension()
+                    .and_then(|e| e.to_str())
+                    .is_some_and(|e| raw::RAW_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
+                && p.is_file()
+        })
         .map(|p| (p, n))
 }
 
@@ -146,6 +155,14 @@ mod copy_tests {
         let jcopy = new_virtual_copy_path(&jpg);
         assert_eq!(jcopy, dir.join("phone.jpg.copy-2.xmp"));
         assert_eq!(virtual_copy_of(&jcopy), Some((jpg, 2)));
+        // The raw's name comes back as it is on disk, whatever its case (on
+        // a case-insensitive disk `IMG_2.NEF` would also match `IMG_2.nef`).
+        let lower = dir.join("IMG_2.nef");
+        std::fs::write(&lower, b"raw").unwrap();
+        assert_eq!(
+            virtual_copy_of(&dir.join("IMG_2.copy-2.xmp")),
+            Some((lower, 2))
+        );
         // Not copies: a plain sidecar, number 1, or no photo next to it.
         assert!(virtual_copy_of(&dir.join("IMG_1.xmp")).is_none());
         assert!(virtual_copy_of(&dir.join("IMG_1.copy-1.xmp")).is_none());

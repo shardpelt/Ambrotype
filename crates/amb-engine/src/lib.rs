@@ -22,6 +22,7 @@ pub mod lens;
 pub mod local;
 pub mod local_tone;
 pub mod mask;
+pub mod merge;
 pub mod negative;
 pub mod output;
 pub mod pipeline;

@@ -7,6 +7,11 @@
 //! preset value, and may extrapolate past it (Amount above 100%). Non-numeric
 //! settings (text, enums, curves, masks) are taken from the preset whenever the
 //! amount is above zero. Swap this out once real measurements exist.
+//!
+//! Some settings are never scaled: Auto, lens corrections and geometry
+//! (Transform, Upright, crop) always apply at the preset's values, even at
+//! Amount 0 (Lightroom Queen on Lightroom Classic 11.4; see
+//! docs/adobe-docs/open-questions.md, Q11).
 
 use std::collections::BTreeMap;
 
@@ -24,11 +29,15 @@ pub fn apply(
     registry: &Registry,
 ) -> BTreeMap<String, Value> {
     let mut out = base.clone();
-    if amount <= 0.0 {
-        return out;
-    }
     for (name, target) in preset {
         let info = registry.lookup(name);
+        if !scalable(name, info.as_ref().map(|i| i.group.as_str())) {
+            out.insert(name.clone(), target.clone());
+            continue;
+        }
+        if amount <= 0.0 {
+            continue;
+        }
         let numeric = info.as_ref().is_some_and(|i| i.kind == "number");
         let scaled = if numeric {
             let from = base
@@ -53,6 +62,12 @@ pub fn apply(
         out.insert(name.clone(), scaled);
     }
     out
+}
+
+/// Whether Amount scales this setting: not Auto, lens corrections or
+/// geometry.
+fn scalable(name: &str, group: Option<&str>) -> bool {
+    !(matches!(group, Some("lens" | "transform" | "crop")) || name.starts_with("Auto"))
 }
 
 #[cfg(test)]
@@ -90,6 +105,31 @@ mod tests {
         assert_eq!(
             apply(&base, &preset, 2.0, reg)["Vibrance"].as_f64(),
             Some(100.0)
+        );
+    }
+
+    #[test]
+    fn auto_lens_and_geometry_are_never_scaled() {
+        let reg = Registry::builtin();
+        let preset = map(&[
+            ("Vibrance", Value::Number(80.0)),
+            ("AutoTone", Value::Text("True".into())),
+            ("LensProfileDistortionScale", Value::Number(50.0)),
+            ("PerspectiveVertical", Value::Number(20.0)),
+            ("CropAngle", Value::Number(3.0)),
+        ]);
+        for amount in [0.0, 0.5, 2.0] {
+            let out = apply(&BTreeMap::new(), &preset, amount, reg);
+            assert_eq!(out["AutoTone"].as_str(), Some("True"));
+            assert_eq!(out["LensProfileDistortionScale"].as_f64(), Some(50.0));
+            assert_eq!(out["PerspectiveVertical"].as_f64(), Some(20.0));
+            assert_eq!(out["CropAngle"].as_f64(), Some(3.0));
+        }
+        // Amount 0 removes only the scalable settings.
+        assert!(!apply(&BTreeMap::new(), &preset, 0.0, reg).contains_key("Vibrance"));
+        assert_eq!(
+            apply(&BTreeMap::new(), &preset, 0.5, reg)["Vibrance"].as_f64(),
+            Some(40.0)
         );
     }
 }

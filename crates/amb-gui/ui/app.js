@@ -264,10 +264,25 @@ async function run(commands, group = null) {
   }
 }
 
+// Picking an Upright mode clears the manual Transform sliders and the crop,
+// as Lightroom does; Alt held keeps the crop.
+const TRANSFORM_SLIDERS = ["PerspectiveVertical", "PerspectiveHorizontal", "PerspectiveRotate",
+  "PerspectiveAspect", "PerspectiveScale", "PerspectiveX", "PerspectiveY"];
+// Read from the click that opens the menu: the native menu takes the focus,
+// so the page may not see Alt being released.
+let altHeld = false;
+for (const type of ["keydown", "keyup", "pointerdown"]) window.addEventListener(type, (e) => { altHeld = e.altKey; }, true);
+
 function commit(name, value) {
   delete ui.overrides[name];
   // The default profile is no profile at all.
   if (name === "CameraProfile" && value === "") return run([{ cmd: "reset_param", name }]);
+  if (name === "PerspectiveUpright" && value !== 0) {
+    const cleared = TRANSFORM_SLIDERS.concat(altHeld ? [] : CROP_TAGS).filter((n) => n in ui.settings);
+    if (cleared.length) {
+      return run([{ cmd: "set_param", name, value }, ...cleared.map((n) => ({ cmd: "reset_param", name: n }))], "Upright");
+    }
+  }
   run([{ cmd: "set_param", name, value }]);
 }
 

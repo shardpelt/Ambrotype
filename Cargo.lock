@@ -114,6 +114,8 @@ version = "0.1.0"
 dependencies = [
  "amb-color",
  "amb-engine",
+ "flate2",
+ "half",
  "image",
  "jpeg-encoder",
  "rayon",
@@ -162,7 +164,9 @@ name = "amb-library"
 version = "0.1.0"
 dependencies = [
  "amb-engine",
+ "amb-export",
  "amb-protocol",
+ "amb-testkit",
  "rayon",
  "serde",
  "serde_json",

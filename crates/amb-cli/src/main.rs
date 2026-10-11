@@ -66,6 +66,11 @@ USAGE:
                                             folders and renamed from templates ({name} {yyyy} {yy} {mm}
                                             {dd} {hh} {min} {ss} {seq} {camera}); a raw's JPEG and .xmp
                                             keep its new name; photos already there are skipped
+    amb merge hdr <RAW>... [--out OUT.dng] [--no-align] [--deghost low|medium|high] [--json]
+                                            Merge bracketed raws of one scene into a floating-point DNG
+                                            (default: <first>-HDR.dng next to them) that opens and edits
+                                            like a raw, here and in Lightroom; Auto Tone it with
+                                            amb plugin run plugins/auto-tone OUT.dng
     amb mcp                                 Serve the Model Context Protocol over stdio, so your own AI app
                                             (Claude Desktop, Claude Code, ...) can edit, preview and export
                                             photos with Ambrotype's commands (docs/ai/mcp.md)
@@ -205,6 +210,51 @@ fn import(
     }
 }
 
+/// `amb merge hdr`: bracketed raws into one floating-point DNG.
+fn merge_hdr(raws: &[&str], options: &BTreeMap<&str, &str>, json: bool) -> Result<(), String> {
+    use amb_library::merge::{self, Deghost, HdrOptions};
+    let deghost = match options.get("--deghost") {
+        Some(d) => Deghost::parse(d)
+            .ok_or_else(|| format!("bad --deghost {d:?} (off, low, medium or high)"))?,
+        None => Deghost::Off,
+    };
+    let opts = HdrOptions {
+        align: !options.contains_key("--no-align"),
+        deghost,
+    };
+    let photos: Vec<PathBuf> = raws.iter().map(PathBuf::from).collect();
+    let report = merge::hdr(&photos, &opts, options.get("--out").map(Path::new))?;
+    if json {
+        return print_json(&serde_json::to_value(&report).map_err(|e| e.to_string())?);
+    }
+    for (i, p) in photos.iter().enumerate() {
+        let (dx, dy) = report.shifts[i];
+        let role = if *p == report.reference {
+            "  (reference)"
+        } else {
+            ""
+        };
+        println!(
+            "{}: {:+.2} EV, shifted {dx}, {dy} px{role}",
+            p.display(),
+            report.stops[i]
+        );
+    }
+    if opts.deghost != Deghost::Off {
+        println!(
+            "deghosting took {:.1}% of the photo from one exposure",
+            report.ghost_share * 100.0
+        );
+    }
+    println!(
+        "wrote {} ({} x {})",
+        report.output.display(),
+        report.width,
+        report.height
+    );
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut json = false;
@@ -216,7 +266,7 @@ fn main() -> ExitCode {
         match arg.as_str() {
             "--json" => json = true,
             "--dry-run" => dry_run = true,
-            "--progressive" | "--enlarge" | "--no-subfolders" => {
+            "--progressive" | "--enlarge" | "--no-subfolders" | "--no-align" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look"
@@ -227,7 +277,7 @@ fn main() -> ExitCode {
             | "--height" | "--fit" | "--exact" | "--megapixels" | "--percent" | "--sharpen"
             | "--metadata" | "--max-size" | "--avif-speed" | "--border" | "--out-dir"
             | "--rating" | "--keywords" | "--name" | "--params" | "--into" | "--rename"
-            | "--start" | "--dcp-dir" => match iter.next() {
+            | "--start" | "--dcp-dir" | "--deghost" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -263,6 +313,7 @@ fn main() -> ExitCode {
         ["testimage", pattern, out] => testimage(pattern, Path::new(out)),
         ["profile", "list", raw] => profile_list(Path::new(raw), &options),
         ["mcp"] => mcp::serve(),
+        ["merge", "hdr", raws @ ..] if raws.len() >= 2 => merge_hdr(raws, &options, json),
         ["import", source, dest] => {
             import(Path::new(source), Path::new(dest), &options, dry_run, json)
         }

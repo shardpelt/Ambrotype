@@ -54,7 +54,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::buffer::{Image, luminance_weights};
-use crate::filters::gaussian_blur;
+use crate::filters::{gaussian_blur, gaussian_reach};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct LocalContrast {
@@ -284,6 +284,34 @@ pub fn apply_scaled(img: &mut Image, p: &LocalContrast, k: &LocalStrengths, scal
             }
         },
     );
+}
+
+/// How far (pixels) Texture and Clarity reach at `scale`: a pixel's result
+/// depends only on the image within this distance.
+pub fn reach(p: &LocalContrast, k: &LocalStrengths, scale: f32) -> usize {
+    let clarity = (p.clarity != 0.0).then(|| {
+        gaussian_reach(k.clarity_fine_sigma_px * scale)
+            + guided_reach(
+                scaled_radius(k.clarity_radius_frac * REFERENCE_DIAGONAL, scale),
+                CLARITY_LOW_RES_RADIUS,
+            )
+    });
+    let texture = (p.texture != 0.0).then(|| {
+        gaussian_reach(k.texture_fine_sigma_px.max(k.clarity_fine_sigma_px) * scale)
+            + guided_reach(
+                scaled_radius(k.texture_medium_radius_px, scale),
+                TEXTURE_LOW_RES_RADIUS,
+            )
+    });
+    clarity.unwrap_or(0).max(texture.unwrap_or(0))
+}
+
+/// How far (pixels) a [`GuidedBase`] of `radius` reaches: two nested box
+/// windows on the subsampled copy, plus the subsampling and the upsampling.
+pub(crate) fn guided_reach(radius: f32, low_res_radius: f32) -> usize {
+    let s = ((radius / low_res_radius.max(1.0)).round() as usize).clamp(1, GUIDED_MAX_SUBSAMPLE);
+    let r = (((2.0 * radius + 1.0) / s as f32 - 1.0) / 2.0).max(MIN_BOX_RADIUS);
+    (2 * (r.ceil() as usize + 1) + 2) * s
 }
 
 /// Encoded luminance for filtering: finite and within ±[`LEVEL_BOUND`].

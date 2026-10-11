@@ -67,6 +67,15 @@ pub fn box_blur(plane: &[f32], w: usize, h: usize, r: usize) -> Vec<f32> {
 
 /// Gaussian blur with standard deviation `sigma` (pixels). Small sigmas use an
 /// exact separable kernel; larger ones three box passes (error < 3%).
+/// How far (pixels) [`gaussian_blur`] at `sigma` reaches.
+pub(crate) fn gaussian_reach(sigma: f32) -> usize {
+    if sigma < 0.3 || !sigma.is_finite() {
+        0
+    } else {
+        (3.0 * sigma).ceil() as usize + 3
+    }
+}
+
 pub fn gaussian_blur(plane: &[f32], w: usize, h: usize, sigma: f32) -> Vec<f32> {
     assert_eq!(plane.len(), w * h);
     if sigma < 0.3 || plane.is_empty() {

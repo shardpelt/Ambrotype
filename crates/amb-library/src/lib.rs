@@ -5,3 +5,4 @@
 
 pub mod collections;
 pub mod import;
+pub mod merge;

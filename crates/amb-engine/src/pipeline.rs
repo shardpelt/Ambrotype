@@ -35,7 +35,7 @@ use amb_presets::{Value, curve_points};
 use rayon::prelude::*;
 
 pub use crate::buffer::Image as ProPhotoImage;
-use crate::buffer::{Image, luminance_weights};
+use crate::buffer::{Image, Rect, Tile, luminance_weights};
 use crate::calibration::Calibration;
 use crate::color::{self, ColorControls, ColorOp, Wheel};
 use crate::crop::Crop;
@@ -760,10 +760,16 @@ impl Unclip {
         })
     }
 
-    /// The weights of row `y`, each the most clipped within a small square
-    /// around the pixel (2 px on large images, 1 px on previews).
-    fn row_weights(&self, rgb: &[f32], w: usize, h: usize, y: usize, out: &mut Vec<[f32; 3]>) {
-        let r = if w.max(h) >= 2500 { 2 } else { 1 };
+    /// The weights of row `y`, each the most clipped within `r` pixels.
+    fn row_weights(
+        &self,
+        rgb: &[f32],
+        w: usize,
+        h: usize,
+        y: usize,
+        r: usize,
+        out: &mut Vec<[f32; 3]>,
+    ) {
         out.clear();
         out.resize(w, [0.0; 3]);
         for sy in y.saturating_sub(r)..(y + r + 1).min(h) {
@@ -908,9 +914,272 @@ impl Drop for Stages {
     }
 }
 
+/// What a render measures over the whole photo: a film negative's levels,
+/// the haze, and the colours colour range masks select. A region render
+/// can't measure these on its part of the photo, so it takes them from a
+/// small render of all of it ([`measure_globals`]).
+#[derive(Debug, Clone, Default)]
+pub struct Globals {
+    negative: Option<negative::Analysis>,
+    dehaze: Option<dehaze::Estimate>,
+    mask_dehaze: Vec<dehaze::Estimate>,
+    colour_targets: Vec<Vec<[f32; 3]>>,
+}
+
+/// How one run of [`develop`] goes.
+#[derive(Default)]
+struct Pass<'a> {
+    /// The rectangle of the output to render; all of it when `None`.
+    window: Option<Rect>,
+    /// The full-size output's size, when this run renders a small copy of
+    /// it (estimates are laid out for the full size).
+    full: Option<(usize, usize)>,
+    /// Measurements to use instead of measuring.
+    given: Option<&'a Globals>,
+    /// Stop once the last measurement is taken.
+    measure_only: bool,
+}
+
 pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
+    develop(img, s, Pass::default()).0
+}
+
+/// Long side of the small copy [`measure_globals`] renders.
+pub const GLOBALS_LONG_SIDE: usize = 1600;
+
+/// Whether a region render of `s` needs [`Globals`]: a film negative, Dehaze
+/// (global or in a mask) or a colour range mask.
+pub fn needs_globals(s: &DevelopSettings) -> bool {
+    s.negative.enabled
+        || s.dehaze != 0.0
+        || s.masks.corrections.iter().any(|c| c.adjust.dehaze != 0.0)
+        || s.masks.has_colour_range()
+}
+
+/// Measure [`Globals`] for region renders of `img` with `s`, on `small`: a
+/// copy of `img` downscaled to about [`GLOBALS_LONG_SIDE`] ([`crate::raw::downscale`]).
+pub fn measure_globals(img: &CameraImage, small: &CameraImage, s: &DevelopSettings) -> Globals {
+    if !needs_globals(s) {
+        return Globals::default();
+    }
+    let s = solve_upright(img, s);
+    let full = output_size(img, &s);
+    let pass = Pass {
+        full: Some(full),
+        measure_only: true,
+        ..Pass::default()
+    };
+    let mut globals = develop(small, &s, pass).1;
+    if s.masks.has_colour_range() {
+        // A colour range selects the colours under its samples. What comes
+        // before the masks is local, so each sample is measured exactly on a
+        // small full-size render around it.
+        let probe_given = Globals {
+            colour_targets: Vec::new(),
+            ..globals.clone()
+        };
+        let crop = s.crop.geometry(img.width, img.height);
+        let points = s
+            .masks
+            .colour_sample_pixels((img.width, img.height), crop.as_ref());
+        for (i, shape) in points.iter().enumerate() {
+            for (j, &(x, y)) in shape.iter().enumerate() {
+                let x = x.round().clamp(0.0, (full.0 - 1) as f64) as usize;
+                let y = y.round().clamp(0.0, (full.1 - 1) as f64) as usize;
+                let (x0, y0) = (x.saturating_sub(2), y.saturating_sub(2));
+                let window = Rect {
+                    x: x0,
+                    y: y0,
+                    width: (x + 3).min(full.0) - x0,
+                    height: (y + 3).min(full.1) - y0,
+                };
+                let pass = Pass {
+                    window: Some(plan(img, &s, window, early_reach(&s, full))),
+                    given: Some(&probe_given),
+                    measure_only: true,
+                    ..Pass::default()
+                };
+                let probe = develop(img, &s, pass).1;
+                let measured = probe.colour_targets.get(i).and_then(|t| t.get(j));
+                if let (Some(slot), Some(t)) = (
+                    globals.colour_targets.get_mut(i).and_then(|t| t.get_mut(j)),
+                    measured,
+                ) {
+                    *slot = *t;
+                }
+            }
+        }
+    }
+    globals
+}
+
+/// Render `window` of the output (in pixels of the full, unoriented render)
+/// as [`render`] would, without rendering the rest: only the window and a
+/// margin as wide as the edit's filters reach go through the pipeline.
+/// `globals` come from [`measure_globals`] (unused when
+/// [`needs_globals`] is false). Noise reduction measures the noise on the
+/// region, and the globals come from a smaller copy, so these can differ
+/// slightly from the full render; everything else matches it.
+pub fn render_region(
+    img: &CameraImage,
+    s: &DevelopSettings,
+    window: Rect,
+    globals: &Globals,
+) -> ProPhotoImage {
+    let s = solve_upright(img, s);
+    let (w, h) = output_size(img, &s);
+    let x = window.x.min(w.saturating_sub(1));
+    let y = window.y.min(h.saturating_sub(1));
+    let window = Rect {
+        x,
+        y,
+        width: window.width.clamp(1, w - x),
+        height: window.height.clamp(1, h - y),
+    };
+    let work = region_plan(img, &s, window);
+    let pass = Pass {
+        window: Some(work),
+        given: Some(globals),
+        ..Pass::default()
+    };
+    let (out, _) = develop(img, &s, pass);
+    let mut rgb = Vec::with_capacity(window.width * window.height * 3);
+    for row in window.y - work.y..window.bottom() - work.y {
+        let start = (row * work.width + window.x - work.x) * 3;
+        rgb.extend_from_slice(&out.rgb[start..start + window.width * 3]);
+    }
+    Image {
+        width: window.width,
+        height: window.height,
+        rgb,
+    }
+}
+
+/// `s` with Upright's correction found on the full-size `img`, so a region
+/// and a small copy use the same one.
+fn solve_upright(img: &CameraImage, s: &DevelopSettings) -> DevelopSettings {
+    let mut s = s.clone();
+    let t = &mut s.transform;
+    if t.upright.is_none() && t.upright_mode.is_solved() {
+        let cal = &s.calibration;
+        t.upright = upright::analyse(img, &s.lens, &cal.lens, t.upright_mode, &cal.upright);
+        if t.upright.is_none() {
+            // Too few lines: leave the photo uncorrected, without searching
+            // again on the small copy.
+            t.upright_mode = UprightMode::Off;
+        }
+    }
+    s
+}
+
+/// The full render's size (the crop's), before orientation.
+pub fn output_size(img: &CameraImage, s: &DevelopSettings) -> (usize, usize) {
+    s.crop
+        .geometry(img.width, img.height)
+        .map_or((img.width, img.height), |c| (c.width, c.height))
+}
+
+/// Region renders start on multiples of this, so the subsampled filters
+/// (box-downscaled copies up to 64×) see the same blocks as the full render.
+const REGION_ALIGN: usize = 64;
+
+/// The rectangle a region render develops for `window`: the window with a
+/// margin as wide as the filters reach, grown to hold whatever spots
+/// writing into it read.
+fn region_plan(img: &CameraImage, s: &DevelopSettings, window: Rect) -> Rect {
+    let full = output_size(img, s);
+    let cal = &s.calibration;
+    let scale = Tile::whole(full.0, full.1).scale();
+    let reach = early_reach(s, full)
+        + 2
+        + local_tone::reach(&s.tone, &cal.tone, scale)
+        + local::reach(&s.local, &cal.local, scale)
+        + detail::noise_reduction_reach(&s.noise_reduction, &cal.detail)
+        + detail::sharpening_reach(&s.sharpening, &cal.detail)
+        + mask::reach(&s.masks, cal, scale);
+    plan(img, s, window, reach)
+}
+
+/// How far the stages before spot removal reach (pixels): the
+/// clipped-highlight window and Defringe.
+fn early_reach(s: &DevelopSettings, full: (usize, usize)) -> usize {
+    let tile = Tile::whole(full.0, full.1);
+    let cal = &s.calibration;
+    3 + if s.lens.defringe.is_neutral() {
+        0
+    } else {
+        lens::defringe_radius(&s.lens.defringe, &cal.lens, &tile) + 2
+    }
+}
+
+/// `window` grown by `reach`, then by whatever spots writing into it read,
+/// clamped to the output and aligned.
+fn plan(img: &CameraImage, s: &DevelopSettings, window: Rect, reach: usize) -> Rect {
+    let (w, h) = output_size(img, s);
+    let early = early_reach(s, (w, h));
+    let grow = |r: [f64; 4], by: f64| -> [f64; 4] { [r[0] - by, r[1] - by, r[2] + by, r[3] + by] };
+    let mut area = grow(
+        [
+            window.x as f64,
+            window.y as f64,
+            window.right() as f64,
+            window.bottom() as f64,
+        ],
+        reach as f64,
+    );
+    let spots = retouch::footprints(
+        &s.spots,
+        (img.width, img.height),
+        s.crop.geometry(img.width, img.height).as_ref(),
+    );
+    // A spot writing into the area reads its surroundings and its donor;
+    // those may hold other spots in turn.
+    for _ in 0..=spots.len() {
+        let mut grown = false;
+        for (writes, reads) in &spots {
+            let hits = writes[0] < area[2]
+                && writes[2] > area[0]
+                && writes[1] < area[3]
+                && writes[3] > area[1];
+            let reads = grow(*reads, early as f64);
+            if hits
+                && (reads[0] < area[0]
+                    || reads[1] < area[1]
+                    || reads[2] > area[2]
+                    || reads[3] > area[3])
+            {
+                area = [
+                    area[0].min(reads[0]),
+                    area[1].min(reads[1]),
+                    area[2].max(reads[2]),
+                    area[3].max(reads[3]),
+                ];
+                grown = true;
+            }
+        }
+        if !grown {
+            break;
+        }
+    }
+    let clamp = |v: f64, max: usize| (v.max(0.0).ceil() as usize).min(max);
+    let x0 = clamp(area[0].floor(), w) / REGION_ALIGN * REGION_ALIGN;
+    let y0 = clamp(area[1].floor(), h) / REGION_ALIGN * REGION_ALIGN;
+    let x1 = clamp(area[2], w).max(x0 + 1);
+    let y1 = clamp(area[3], h).max(y0 + 1);
+    Rect {
+        x: x0,
+        y: y0,
+        width: x1 - x0,
+        height: y1 - y0,
+    }
+}
+
+/// The render: all of the output, or a rectangle of it, or (`measure_only`)
+/// just the measurements of a small copy.
+fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Globals) {
     let cal = &s.calibration;
     let mut stages = Stages::new();
+    let mut globals = Globals::default();
 
     // 0. Lens Corrections on camera RGB, then Transform, crop and straighten
     // (one resample).
@@ -926,18 +1195,34 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         );
     }
     let warp = transform.sampling_map(img.width, img.height, &cal.transform);
-    let lens_pass = (s.lens.needs_camera_pass() || crop.is_some() || warp.is_some()).then(|| {
-        lens::apply_camera_cropped(
-            &img.rgb,
-            img.width,
-            img.height,
-            img.shot.crop_factor,
-            &s.lens,
-            &cal.lens,
-            crop.as_ref(),
-            warp.as_ref(),
-        )
-    });
+    let (out_w, out_h) = crop
+        .as_ref()
+        .map_or((img.width, img.height), |c| (c.width, c.height));
+    let tile = match pass.window {
+        Some(r) => Tile {
+            x: r.x,
+            y: r.y,
+            full_width: out_w,
+            full_height: out_h,
+        },
+        None => Tile::whole(out_w, out_h),
+    };
+    let full = pass.full.unwrap_or((out_w, out_h));
+    let lens_pass =
+        (s.lens.needs_camera_pass() || crop.is_some() || warp.is_some() || pass.window.is_some())
+            .then(|| {
+                lens::apply_camera_window(
+                    &img.rgb,
+                    img.width,
+                    img.height,
+                    img.shot.crop_factor,
+                    &s.lens,
+                    &cal.lens,
+                    crop.as_ref(),
+                    warp.as_ref(),
+                    pass.window,
+                )
+            });
     stages.mark("upright+lens+crop");
     let (width, height) = lens_pass
         .as_ref()
@@ -945,7 +1230,11 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     let mut camera_rgb = lens_pass.as_ref().map_or(&img.rgb, |p| &p.rgb);
     // 0b. Film negative → positive (on camera RGB, before white balance).
     let negative_rgb = s.negative.enabled.then(|| {
-        let a = negative::resolve(&s.negative, camera_rgb, width, height, &cal.negative);
+        let a = match pass.given.and_then(|g| g.negative) {
+            Some(a) => a,
+            None => negative::resolve(&s.negative, camera_rgb, width, height, &cal.negative),
+        };
+        globals.negative = Some(a);
         let conversion = negative::Conversion::new(&s.negative, a, &cal.negative);
         let mut rgb = camera_rgb.clone();
         negative::apply(&mut rgb, &conversion);
@@ -996,11 +1285,20 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     let m = m.map(|row| row.map(|v| v as f32));
     let shadow_tint = s.camera_calibration.shadow_tint(&cal.primaries);
     let gain = 2f32.powf(s.exposure_ev as f32);
-    let hue_sat_map = profile.and_then(|p| p.hue_sat_map.as_ref());
+    let hue_sat_map = profile.and_then(|p| p.hue_sat_map(p.white_temperature(neutral)));
     let look_table = profile.and_then(|p| p.look_table.as_ref());
     let profile_gain = profile.map_or(1.0, |p| 2f32.powf(p.exposure_offset as f32));
+    // As in the DNG reference render, a brightening Exposure goes in before
+    // the look table and a darkening one after it (DNG spec, look table).
+    let (gain_before_look, gain_after_look) = if gain >= 1.0 {
+        (profile_gain * gain, 1.0)
+    } else {
+        (profile_gain, gain)
+    };
     let clipped = (!s.negative.enabled && img.clip.iter().any(|c| c.is_finite()))
         .then(|| Unclip::new(img.clip, neutral));
+    // The window of most-clipped neighbours: wider on large photos.
+    let unclip_reach = if out_w.max(out_h) >= 2500 { 2 } else { 1 };
     let mut out = Image {
         width,
         height,
@@ -1012,7 +1310,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         .for_each_init(Vec::new, |weights, (y, orow)| {
             let crow = &camera_rgb[y * width * 3..(y + 1) * width * 3];
             if let Some(u) = &clipped {
-                u.row_weights(camera_rgb, width, height, y, weights);
+                u.row_weights(camera_rgb, width, height, y, unclip_reach, weights);
             }
             for (x, (o, c)) in orow.chunks_mut(3).zip(crow.chunks(3)).enumerate() {
                 let c = match &clipped {
@@ -1020,22 +1318,22 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
                     None => [c[0], c[1], c[2]],
                 };
                 if profile.is_some() {
-                    // The profile's map, its exposure offset and look table,
-                    // then Exposure.
+                    // The profile's map, its exposure offset, then the look
+                    // table with Exposure on the side given above.
                     for (row, slot) in m.iter().zip(o.iter_mut()) {
                         *slot = row[0] * c[0] + row[1] * c[1] + row[2] * c[2];
                     }
-                    if let Some(t) = hue_sat_map {
+                    if let Some(t) = &hue_sat_map {
                         t.apply(o);
                     }
                     for v in o.iter_mut() {
-                        *v *= profile_gain;
+                        *v *= gain_before_look;
                     }
                     if let Some(t) = look_table {
                         t.apply(o);
                     }
                     for v in o.iter_mut() {
-                        *v *= gain;
+                        *v *= gain_after_look;
                     }
                 } else {
                     for (row, slot) in m.iter().zip(o.iter_mut()) {
@@ -1050,13 +1348,19 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
 
     stages.mark("negative+matrix");
     if !s.lens.defringe.is_neutral() {
-        lens::apply_defringe(&mut out, &s.lens.defringe, &cal.lens);
+        lens::apply_defringe_in(&mut out, &s.lens.defringe, &cal.lens, &tile);
         stages.mark("defringe");
     }
 
     // Spot removal, then masks drawn on the photo as it is now, then the
     // local light sliders.
-    retouch::apply(&mut out, &s.spots, (img.width, img.height), crop.as_ref());
+    retouch::apply_in(
+        &mut out,
+        &s.spots,
+        (img.width, img.height),
+        crop.as_ref(),
+        &tile,
+    );
     let base = match (
         img.rendered,
         s.base_look,
@@ -1068,28 +1372,39 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         (false, look, _) => Base::Look(look),
     };
     let masks = (!s.masks.is_empty()).then(|| {
-        mask::draw(
+        mask::draw_in(
             &s.masks,
             &out,
             (img.width, img.height),
             crop.as_ref(),
             |y| srgb_encode(base.apply(y)),
             &cal.masks,
+            &tile,
+            pass.given.map(|g| g.colour_targets.as_slice()),
         )
     });
+    if let Some(m) = &masks {
+        globals.colour_targets = m.colour_targets.clone();
+    }
     if let Some(m) = &masks {
         m.apply_light(&mut out, &cal.masks);
     }
     stages.mark("spots+masks");
 
     // 2. Dehaze (scene-linear).
-    if s.dehaze != 0.0 {
-        dehaze::apply(&mut out, s.dehaze, &cal.dehaze);
-    }
+    let haze = match pass.given.and_then(|g| g.dehaze.as_ref()) {
+        Some(e) => dehaze::Haze::Given(e),
+        None => dehaze::Haze::Measure { full },
+    };
+    globals.dehaze = dehaze::apply_haze(&mut out, s.dehaze, &cal.dehaze, &tile, haze);
     if let Some(m) = &masks {
-        m.apply_dehaze(&mut out, cal);
+        let given = pass.given.map(|g| g.mask_dehaze.as_slice());
+        globals.mask_dehaze = m.apply_dehaze(&mut out, cal, given, full);
     }
     stages.mark("dehaze");
+    if pass.measure_only {
+        return (out, globals);
+    }
 
     // 3. Base look, local Highlights/Shadows, then the global tone controls → display-linear.
     let global = ToneControls {
@@ -1102,7 +1417,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
     // A rendered image already has its tone curve (`base` is linear then).
     out.map_pixels(|c| base.apply_rgb(c));
     stages.mark("base look");
-    local_tone::apply(&mut out, &s.tone, &cal.tone);
+    local_tone::apply_scaled(&mut out, &s.tone, &cal.tone, tile.scale());
     stages.mark("highlights/shadows");
     out.map_pixels(|c| {
         let mut p = c;
@@ -1124,7 +1439,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
 
     // 4. Texture / Clarity.
     if !s.local.is_neutral() {
-        local::apply(&mut out, &s.local, &cal.local);
+        local::apply_scaled(&mut out, &s.local, &cal.local, tile.scale());
     }
     if let Some(m) = &masks {
         m.apply_local_contrast(&mut out, cal);
@@ -1192,10 +1507,10 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
 
     // 7. Effects: post-crop vignette, then grain.
     if s.vignette.amount != 0.0 {
-        effects::apply_vignette(&mut out, &s.vignette, &cal.effects);
+        effects::apply_vignette_in(&mut out, &s.vignette, &cal.effects, &tile);
     }
     if s.grain.amount != 0.0 {
-        effects::apply_grain(&mut out, &s.grain, &cal.effects);
+        effects::apply_grain_in(&mut out, &s.grain, &cal.effects, &tile);
     }
     if let Some(m) = &masks {
         m.apply_overlay(&mut out);
@@ -1204,7 +1519,7 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
         lens::fill_blank(&mut out, blank, &cal.lens);
     }
     stages.mark("effects");
-    out
+    (out, globals)
 }
 
 #[cfg(test)]
@@ -1289,7 +1604,7 @@ mod tests {
         ]
         .concat();
         let mut w = Vec::new();
-        u.row_weights(&rgb, 4, 1, 0, &mut w);
+        u.row_weights(&rgb, 4, 1, 0, 1, &mut w);
         assert_eq!(w[0], [1.0; 3]);
         assert_eq!(w[3], [0.0; 3]);
     }
@@ -1342,6 +1657,34 @@ mod tests {
         s.camera_profile = None;
         let ours = render(&img, &s).rgb[0];
         assert!((ours - 0.5).abs() > 0.1, "{ours}");
+    }
+
+    #[test]
+    fn brightening_exposure_goes_before_the_look_table() {
+        use crate::profile::{Dcp, tests::sample};
+        // A look table that darkens bright values: value scale 1 at V = 0,
+        // 0.5 at V = 1.
+        let rows = |scale: f64| (0..4).flat_map(move |_| [0.0, 1.0, scale]);
+        let table: Vec<f64> = rows(1.0).chain(rows(0.5)).collect();
+        let dcp = Dcp::parse(&sample(vec![
+            (50981, 4, vec![2.0, 2.0, 2.0], None),
+            (50982, 11, table, None),
+        ]))
+        .unwrap();
+        let img = camera(4, 4, |_, _| [0.1, 0.05, 0.02]);
+        let mut s = linear(&[("CameraProfile", "Test Standard")]);
+        s.camera_profile = Some(std::sync::Arc::new(dcp));
+        let at = |s: &mut DevelopSettings, ev: f64| {
+            s.exposure_ev = ev;
+            render(&img, s).rgb[0]
+        };
+        let base = at(&mut s, 0.0);
+        // +1 EV: the look table sees the brighter value and darkens it more.
+        let up = at(&mut s, 1.0);
+        assert!(up < 2.0 * base * 0.99, "{up} vs {base}");
+        // −1 EV comes after the table: exactly half.
+        let down = at(&mut s, -1.0);
+        assert!((down - 0.5 * base).abs() < 1e-5, "{down} vs {base}");
     }
 
     #[test]
@@ -1455,6 +1798,278 @@ mod tests {
             shot: Default::default(),
             metadata: Default::default(),
         }
+    }
+
+    /// A busy photo: gradients, hard edges, fine texture and a bright patch.
+    fn busy(w: usize, h: usize) -> CameraImage {
+        textured(w, h, 0.05)
+    }
+
+    /// [`busy`] with pixel-level texture of `fine` amplitude.
+    fn textured(w: usize, h: usize, fine: f32) -> CameraImage {
+        let amplitude = fine;
+        camera(w, h, |x, y| {
+            let (fx, fy) = (x as f32 / w as f32, y as f32 / h as f32);
+            let edge = if (x / 37 + y / 23) % 2 == 0 {
+                0.15
+            } else {
+                0.0
+            };
+            let fine = ((x * 7 + y * 13) % 11) as f32 / 11.0 * amplitude;
+            let sun = if (fx - 0.7).hypot(fy - 0.3) < 0.06 {
+                2.0
+            } else {
+                0.0
+            };
+            [
+                0.05 + 0.3 * fx + edge + fine + sun,
+                0.08 + 0.25 * fy + edge * 0.5 + fine + sun,
+                0.12 + 0.2 * (1.0 - fx) + fine + sun,
+            ]
+        })
+    }
+
+    /// Settings from `pairs`, with the default colour noise reduction off
+    /// unless given (it measures the noise on what it renders).
+    fn edit(pairs: &[(&str, &str)], extra: &[(&str, Value)]) -> DevelopSettings {
+        let mut m = map(&[("ColorNoiseReduction", "0")]);
+        m.extend(map(pairs));
+        for (k, v) in extra {
+            m.insert(k.to_string(), v.clone());
+        }
+        let (s, missing) = DevelopSettings::from_settings(&m);
+        assert!(missing.is_empty(), "{missing:?}");
+        s
+    }
+
+    /// Largest channel difference between a region render and the same
+    /// rectangle of the full render, and the mean one.
+    fn region_error(img: &CameraImage, s: &DevelopSettings, window: Rect) -> (f32, f32) {
+        let full = render(img, s);
+        // Globals from a copy a quarter the size (the editor's is about
+        // 1600 px on a side, against 6000 or so).
+        let small = crate::raw::downscale(img, img.width.max(img.height) / 4);
+        let globals = measure_globals(img, &small, s);
+        let part = render_region(img, s, window, &globals);
+        assert_eq!((part.width, part.height), (window.width, window.height));
+        let (mut max, mut sum) = (0.0f32, 0.0f64);
+        for y in 0..window.height {
+            for x in 0..window.width {
+                let (a, b) = (part.get(x, y), full.get(window.x + x, window.y + y));
+                for c in 0..3 {
+                    let d = (a[c] - b[c]).abs();
+                    max = max.max(d);
+                    sum += d as f64;
+                }
+            }
+        }
+        (
+            max,
+            (sum / (window.width * window.height * 3) as f64) as f32,
+        )
+    }
+
+    const WINDOW: Rect = Rect {
+        x: 230,
+        y: 150,
+        width: 180,
+        height: 120,
+    };
+
+    #[test]
+    fn region_matches_the_full_render() {
+        let img = busy(640, 480);
+        let cases: Vec<(&str, DevelopSettings)> = vec![
+            ("plain", edit(&[], &[])),
+            (
+                "geometry",
+                edit(
+                    &[
+                        ("HasCrop", "True"),
+                        ("CropLeft", "0.07"),
+                        ("CropTop", "0.05"),
+                        ("CropRight", "0.95"),
+                        ("CropBottom", "0.93"),
+                        ("CropAngle", "3.5"),
+                        ("PerspectiveVertical", "-20"),
+                        ("PerspectiveRotate", "1.5"),
+                        ("LensManualDistortionAmount", "30"),
+                        ("VignetteAmount", "-40"),
+                    ],
+                    &[],
+                ),
+            ),
+            (
+                "local filters",
+                edit(
+                    &[
+                        ("Texture", "40"),
+                        ("Clarity2012", "-35"),
+                        ("Highlights2012", "-60"),
+                        ("Shadows2012", "70"),
+                        ("Sharpness", "80"),
+                        ("SharpenRadius", "2"),
+                        ("SharpenEdgeMasking", "30"),
+                        ("DefringePurpleAmount", "10"),
+                    ],
+                    &[],
+                ),
+            ),
+            (
+                "effects",
+                edit(
+                    &[
+                        ("PostCropVignetteAmount", "-50"),
+                        ("PostCropVignetteFeather", "40"),
+                        ("GrainAmount", "60"),
+                        ("GrainSize", "40"),
+                        ("HasCrop", "True"),
+                        ("CropLeft", "0.1"),
+                        ("CropTop", "0.1"),
+                        ("CropRight", "0.9"),
+                        ("CropBottom", "0.9"),
+                    ],
+                    &[],
+                ),
+            ),
+        ];
+        for (name, s) in cases {
+            let (max, _) = region_error(&img, &s, WINDOW);
+            assert!(max < 1e-4, "{name}: {max}");
+        }
+    }
+
+    #[test]
+    fn region_matches_with_masks_and_spots() {
+        let img = busy(640, 480);
+        let xmp = r#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+          <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/">
+          <crs:MaskGroupBasedCorrections><rdf:Seq><rdf:li><rdf:Description
+            crs:What="Correction" crs:CorrectionAmount="1" crs:CorrectionActive="true"
+            crs:LocalExposure2012="0.25" crs:LocalClarity2012="0.5" crs:LocalSharpness="-0.6">
+            <crs:CorrectionMasks><rdf:Seq>
+              <rdf:li crs:What="Mask/CircularGradient" crs:MaskBlendMode="0" crs:MaskValue="1"
+                crs:Top="0.2" crs:Left="0.3" crs:Bottom="0.7" crs:Right="0.65" crs:Angle="20"
+                crs:Feather="50" crs:Flipped="true"/>
+            </rdf:Seq></crs:CorrectionMasks>
+          </rdf:Description></rdf:li></rdf:Seq></crs:MaskGroupBasedCorrections>
+          </rdf:Description></rdf:RDF></x:xmpmeta>"#;
+        let mut settings = amb_presets::xmp::parse_crs(xmp).unwrap();
+        let area = |centre, r, source| {
+            Value::Struct(amb_presets::retouch::new_area(
+                amb_presets::retouch::SpotKind::Heal,
+                centre,
+                r,
+                source,
+                source.is_none(),
+                0.3,
+                1.0,
+            ))
+        };
+        settings.insert(
+            "RetouchAreas".into(),
+            Value::Seq(vec![
+                // Inside the window, its donor far outside it.
+                area((0.5, 0.42), 0.02, Some((0.12, 0.85))),
+                // In the margin, with a searched donor.
+                area((0.33, 0.3), 0.015, None),
+                // Far away: no effect on the window.
+                area((0.9, 0.9), 0.02, None),
+            ]),
+        );
+        settings.extend(map(&[("ColorNoiseReduction", "0")]));
+        let (s, missing) = DevelopSettings::from_settings(&settings);
+        assert!(missing.is_empty(), "{missing:?}");
+        let (max, _) = region_error(&img, &s, WINDOW);
+        assert!(max < 1e-4, "{max}");
+    }
+
+    #[test]
+    fn region_with_measured_globals_is_close() {
+        // Dehaze, a film negative, colour range masks and noise reduction
+        // measure the whole photo; a region takes them from a small copy or
+        // measures its part. A full-size photo is measured over blocks of
+        // about 10 pixels, which the small copy's own averaging matches;
+        // this photo is too small for that, so it has no pixel-level texture.
+        let img = textured(640, 480, 0.0);
+        let st = |pairs: &[(&str, Value)]| {
+            Value::Struct(
+                pairs
+                    .iter()
+                    .map(|(k, v)| (k.to_string(), v.clone()))
+                    .collect(),
+            )
+        };
+        let text = |v: &str| Value::Text(v.into());
+        // A colour range sampled outside the window, brightened and dehazed.
+        let colour_mask = st(&[
+            ("What", text("Correction")),
+            ("CorrectionAmount", text("1")),
+            ("CorrectionActive", text("true")),
+            ("LocalExposure2012", text("0.3")),
+            ("LocalDehaze", text("0.4")),
+            (
+                "CorrectionMasks",
+                Value::Seq(vec![st(&[
+                    ("What", text("Mask/RangeMask")),
+                    ("MaskBlendMode", text("0")),
+                    ("MaskValue", text("1")),
+                    (
+                        "CorrectionRangeMask",
+                        st(&[
+                            ("Version", text("3")),
+                            ("Type", text("1")),
+                            ("ColorAmount", text("0.6")),
+                            ("amb:ColorSamples", Value::Seq(vec![text("0.2 0.8")])),
+                        ]),
+                    ),
+                ])]),
+            ),
+        ]);
+        let cases = [
+            ("dehaze", edit(&[("Dehaze", "40")], &[])),
+            (
+                "negative",
+                edit(
+                    &[("amb:NegativeConvert", "True"), ("Exposure2012", "0.5")],
+                    &[],
+                ),
+            ),
+            (
+                "colour range and local dehaze",
+                edit(
+                    &[],
+                    &[("MaskGroupBasedCorrections", Value::Seq(vec![colour_mask]))],
+                ),
+            ),
+            (
+                "noise reduction",
+                edit(
+                    &[("LuminanceSmoothing", "40"), ("ColorNoiseReduction", "50")],
+                    &[],
+                ),
+            ),
+        ];
+        for (name, mut s) in cases {
+            assert!(needs_globals(&s) || name == "noise reduction", "{name}");
+            // As in the editor, the haze is estimated on a grid about the
+            // small copy's size (1536 px against 1600 there).
+            s.calibration.dehaze.estimate_long_side = 150.0;
+            let (max, mean) = region_error(&img, &s, WINDOW);
+            assert!(mean < 3e-3 && max < 0.05, "{name}: max {max}, mean {mean}");
+        }
+    }
+
+    #[test]
+    fn region_plan_holds_the_window_and_aligns() {
+        let img = busy(640, 480);
+        let s = edit(&[("Clarity2012", "50")], &[]);
+        let work = region_plan(&img, &s, WINDOW);
+        assert!(work.contains(&WINDOW), "{work:?}");
+        assert_eq!(work.x % REGION_ALIGN, 0);
+        assert_eq!(work.y % REGION_ALIGN, 0);
+        assert!(work.right() <= 640 && work.bottom() <= 480);
+        assert!(work.width < 640 || work.height < 480, "{work:?}");
     }
 
     fn linear(settings: &[(&str, &str)]) -> DevelopSettings {

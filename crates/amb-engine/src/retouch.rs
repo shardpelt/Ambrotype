@@ -22,7 +22,7 @@ use amb_presets::masks::{self, flag, num};
 use amb_presets::retouch::{self, ENABLE_TAG, LEGACY_TAG, RETOUCH_TAG, SpotKind};
 
 use crate::brush;
-use crate::buffer::{Image, luminance_weights};
+use crate::buffer::{Image, Tile, luminance_weights};
 use crate::crop::CropGeometry;
 use crate::filters::box_blur;
 use crate::mask::{Frame, smoothstep};
@@ -259,9 +259,13 @@ fn log_luma(p: [f32; 3]) -> f32 {
 /// scored on log luminance along two rings, plus how much busier the
 /// candidate's inside is than its own surroundings (a donor holding an object
 /// is; a stretch of the same edge or texture isn't).
-fn search_offset(img: &Image, centre: (f64, f64), radius: f64) -> (f64, f64) {
+fn search_offset(
+    img: &Image,
+    centre: (f64, f64),
+    radius: f64,
+    (x0, y0, x1, y1): (f64, f64, f64, f64),
+) -> (f64, f64) {
     let r = radius.max(1.0);
-    let (w, h) = (img.width as f64, img.height as f64);
     let ring: Vec<(f64, f64)> = (0..32)
         .flat_map(|i| {
             let t = i as f64 / 32.0 * std::f64::consts::TAU;
@@ -286,7 +290,7 @@ fn search_offset(img: &Image, centre: (f64, f64), radius: f64) -> (f64, f64) {
             let (cx, cy) = (centre.0 + off.0, centre.1 + off.1);
             // The donor and its ring must be in the picture.
             let reach = r * 1.6;
-            if cx - reach < 0.0 || cy - reach < 0.0 || cx + reach > w || cy + reach > h {
+            if cx - reach < x0 || cy - reach < y0 || cx + reach > x1 || cy + reach > y1 {
                 continue;
             }
             let around: Vec<f64> = ring
@@ -367,10 +371,31 @@ fn fit_plane(pts: &[(f64, f64, f64)]) -> [f64; 3] {
 /// Apply every spot, in order. `frame` is the uncropped frame's size and
 /// `crop` the output → frame map, as for masks.
 pub fn apply(img: &mut Image, spots: &Spots, frame: (usize, usize), crop: Option<&CropGeometry>) {
+    let tile = Tile::of(img);
+    apply_in(img, spots, frame, crop, &tile);
+}
+
+/// [`apply`] on `img` holding `tile` of the output. Spots whose donors lie
+/// outside it cannot be healed right here, so a region render includes them
+/// ([`footprint`]).
+pub fn apply_in(
+    img: &mut Image,
+    spots: &Spots,
+    frame: (usize, usize),
+    crop: Option<&CropGeometry>,
+    tile: &Tile,
+) {
     if spots.is_empty() || img.pixel_count() == 0 {
         return;
     }
-    let frame = Frame::new(frame, crop);
+    let frame = Frame::new(frame, crop).in_tile(tile);
+    // The whole output, in this buffer's pixels.
+    let bounds = (
+        -(tile.x as f64),
+        -(tile.y as f64),
+        (tile.full_width - tile.x) as f64,
+        (tile.full_height - tile.y) as f64,
+    );
     for spot in &spots.spots {
         let Some(p) = place(spot, &frame, img.width, img.height) else {
             continue;
@@ -381,10 +406,76 @@ pub fn apply(img: &mut Image, spots: &Spots, frame: (usize, usize), crop: Option
                 let (tx, ty) = frame.target(fx, fy);
                 (tx - p.centre.0, ty - p.centre.1)
             }
-            None => search_offset(img, p.centre, p.radius),
+            None => search_offset(img, p.centre, p.radius, bounds),
         };
         heal_one(img, &p, offset, spot.kind == SpotKind::Clone);
     }
+}
+
+/// Where each spot writes, and what it reads to do so (its own box and the
+/// ring around it, and its donor or the area searched for one), in output
+/// pixels as `[x0, y0, x1, y1]`. A region render that a spot writes into must
+/// hold all it reads.
+pub fn footprints(
+    spots: &Spots,
+    frame: (usize, usize),
+    crop: Option<&CropGeometry>,
+) -> Vec<([f64; 4], [f64; 4])> {
+    let frame = Frame::new(frame, crop);
+    let px_per_width = frame.width * frame.scale();
+    let to_output = |u: f64, v: f64| {
+        let (fx, fy) = frame.pixel(u, v);
+        frame.target(fx, fy)
+    };
+    spots
+        .spots
+        .iter()
+        .filter_map(|spot| {
+            let (centre, r) = match &spot.shape {
+                SpotShape::Ellipse { centre, size } => {
+                    let r = size.0.max(size.1) * frame.width * frame.scale();
+                    (to_output(centre.0, centre.1), r)
+                }
+                SpotShape::Brush(strokes) => {
+                    let (mut x0, mut y0) = (f64::INFINITY, f64::INFINITY);
+                    let (mut x1, mut y1) = (f64::NEG_INFINITY, f64::NEG_INFINITY);
+                    for d in strokes.iter().flat_map(|s| &s.dabs) {
+                        let (x, y) = to_output(d.x, d.y);
+                        let r = d.radius * px_per_width + 1.0;
+                        (x0, y0) = (x0.min(x - r), y0.min(y - r));
+                        (x1, y1) = (x1.max(x + r), y1.max(y + r));
+                    }
+                    if x0 > x1 {
+                        return None;
+                    }
+                    (
+                        ((x0 + x1) / 2.0, (y0 + y1) / 2.0),
+                        (x1 - x0).max(y1 - y0) / 2.0,
+                    )
+                }
+            };
+            if !(r > 0.0 && centre.0.is_finite() && centre.1.is_finite()) {
+                return None;
+            }
+            let ring = (r * 0.35).clamp(2.0, 40.0) + 3.0;
+            let around =
+                |(x, y): (f64, f64), reach: f64| [x - reach, y - reach, x + reach, y + reach];
+            let writes = around(centre, r + 2.0);
+            let donor = match spot.source {
+                Some((u, v)) => around(to_output(u, v), r + ring + 2.0),
+                // Candidates up to 4 radii away, with their rings.
+                None => around(centre, 5.6 * r.max(1.0) + 3.0),
+            };
+            let own = around(centre, r + ring);
+            let reads = [
+                own[0].min(donor[0]),
+                own[1].min(donor[1]),
+                own[2].max(donor[2]),
+                own[3].max(donor[3]),
+            ];
+            Some((writes, reads))
+        })
+        .collect()
 }
 
 fn heal_one(img: &mut Image, p: &Placed, offset: (f64, f64), clone: bool) {
@@ -464,7 +555,8 @@ pub fn find_source(
     let (cfx, cfy) = f.pixel(centre.0, centre.1);
     let (cx, cy) = f.target(cfx, cfy);
     let r = radius * f.width * f.scale();
-    let (ox, oy) = search_offset(img, (cx, cy), r);
+    let bounds = (0.0, 0.0, img.width as f64, img.height as f64);
+    let (ox, oy) = search_offset(img, (cx, cy), r, bounds);
     let (sx, sy) = f.source(cx + ox, cy + oy);
     ((sx + 0.5) / f.width, (sy + 0.5) / f.height)
 }

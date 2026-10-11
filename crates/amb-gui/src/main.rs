@@ -2008,6 +2008,40 @@ async fn create_virtual_copy(path: String, state: tauri::State<'_, AppState>) ->
     .map_err(|e| e.to_string())?
 }
 
+/// Photo Merge > HDR: merge the photos into a DNG next to them, and with
+/// `auto_tone` give it the built-in Auto tone (saved to its sidecar).
+#[tauri::command]
+async fn merge_hdr(
+    paths: Vec<String>,
+    align: bool,
+    deghost: String,
+    auto_tone: bool,
+) -> Res<amb_library::merge::HdrReport> {
+    use amb_library::merge::{self, Deghost, HdrOptions};
+    tauri::async_runtime::spawn_blocking(move || {
+        let opts = HdrOptions {
+            align,
+            deghost: Deghost::parse(&deghost).ok_or("unknown deghost level")?,
+        };
+        let photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
+        let report = merge::hdr(&photos, &opts, None)?;
+        if auto_tone {
+            // The user asked for it in the dialog: no separate approval.
+            let plugin = plugins::builtin("auto-tone").ok_or("Auto tone is missing")?;
+            let mut s = Session::open(&report.output)?;
+            let ctx = s.plugin_context(&plugin.manifest.permissions, 1);
+            let out = plugin.run(&ctx, &serde_json::Map::new())?;
+            if !out.commands.is_empty() {
+                s.execute(&out.commands, Some("Auto tone"))?;
+                s.save_sidecar()?;
+            }
+        }
+        Ok(report)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Delete a virtual copy (not while it's open in the editor).
 #[tauri::command]
 fn delete_virtual_copy(path: String, state: tauri::State<'_, AppState>) -> Res<()> {
@@ -2348,6 +2382,7 @@ fn main() {
             import_defaults,
             collections_list,
             create_virtual_copy,
+            merge_hdr,
             camera_profiles,
             delete_virtual_copy,
             collection_photos,

@@ -11,6 +11,7 @@ use std::path::Path;
 use amb_color::matrix::{Mat3, apply3, invert3, xy_to_xyz};
 use rawler::imgop::develop::{Intermediate, ProcessingStep, RawDevelop};
 use rawler::imgop::xyz::Illuminant;
+use rayon::prelude::*;
 
 use crate::Error;
 
@@ -259,6 +260,53 @@ fn develop_xtrans(raw: &rawler::RawImage) -> Result<Option<Developed>, Error> {
         }
     }
     Ok(Some((w, h, rgb)))
+}
+
+/// Area-average downscale of camera RGB so the long edge is at most `max_edge`.
+pub fn downscale(img: &CameraImage, max_edge: usize) -> CameraImage {
+    let long = img.width.max(img.height);
+    let factor = long.div_ceil(max_edge.max(1)).max(1);
+    if factor == 1 {
+        return img.with_pixels(img.rgb.clone(), img.width, img.height);
+    }
+    let (w, h) = (img.width / factor, img.height / factor);
+    let mut rgb = vec![0.0f32; w * h * 3];
+    let n = (factor * factor) as f32;
+    rgb.par_chunks_mut(w * 3).enumerate().for_each(|(y, row)| {
+        for x in 0..w {
+            let mut acc = [0.0f32; 3];
+            for dy in 0..factor {
+                let sy = y * factor + dy;
+                for dx in 0..factor {
+                    let i = (sy * img.width + x * factor + dx) * 3;
+                    acc[0] += img.rgb[i];
+                    acc[1] += img.rgb[i + 1];
+                    acc[2] += img.rgb[i + 2];
+                }
+            }
+            row[x * 3..x * 3 + 3].copy_from_slice(&acc.map(|v| v / n));
+        }
+    });
+    img.with_pixels(rgb, w, h)
+}
+
+impl CameraImage {
+    /// The same photo (colour data and metadata) with other pixels.
+    pub fn with_pixels(&self, rgb: Vec<f32>, width: usize, height: usize) -> CameraImage {
+        CameraImage {
+            width,
+            height,
+            rgb,
+            xyz_to_cam: self.xyz_to_cam,
+            as_shot_neutral: self.as_shot_neutral,
+            clip: self.clip,
+            rendered: self.rendered,
+            make: self.make.clone(),
+            model: self.model.clone(),
+            shot: self.shot.clone(),
+            metadata: self.metadata.clone(),
+        }
+    }
 }
 
 /// Where each channel clips: the level its brightest values pile up at, or

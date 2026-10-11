@@ -479,19 +479,34 @@ fn edit_workflow_writes_sidecar_and_keeps_foreign_metadata() {
     assert_eq!(num(&state, "Exposure2012"), Some(0.9));
     assert_eq!(num(&state, "Shadows2012"), Some(100.0));
     assert_eq!(num(&state, "CropAngle"), Some(1.2));
+    // The history is kept in the sidecar: the three steps, undoable later.
+    let labels: Vec<&str> = state
+        .undo_stack()
+        .iter()
+        .map(|h| h.label.as_str())
+        .collect();
+    assert_eq!(
+        labels,
+        [
+            "set_param Exposure2012",
+            "adjust_param Contrast2012 +15",
+            "set_param Shadows2012"
+        ]
+    );
 
-    // A failing batch writes nothing.
+    // A failing batch writes nothing (one step of its own and the three
+    // stored ones to undo, then nothing).
     let before = std::fs::read_to_string(&sidecar).unwrap();
     let err = edit::run(&EditRequest {
         sidecar: &sidecar,
-        commands: r#"[{"cmd":"set_param","name":"Vibrance","value":5},{"cmd":"undo"},{"cmd":"undo"}]"#,
+        commands: r#"[{"cmd":"set_param","name":"Vibrance","value":5},{"cmd":"undo"},{"cmd":"undo"},{"cmd":"undo"},{"cmd":"undo"},{"cmd":"undo"}]"#,
         out: None,
         dry_run: false,
     })
     .unwrap_err();
     assert!(
         err.to_string()
-            .contains("command 2 (undo): nothing to undo"),
+            .contains("command 5 (undo): nothing to undo"),
         "{err}"
     );
     assert_eq!(std::fs::read_to_string(&sidecar).unwrap(), before);
@@ -743,4 +758,83 @@ fn grouped_commands_are_one_undo_step() {
     st.execute(&Command::Redo).unwrap();
     assert_eq!(st.settings().len(), 3);
     assert!(st.execute_grouped("x", &[Command::Undo]).is_err());
+}
+
+#[test]
+fn sidecar_keeps_history_and_drops_it_when_another_app_edits() {
+    let dir = temp_dir("history");
+    let sidecar = dir.join("IMG_0001.xmp");
+    std::fs::copy(fixture("sidecar.xmp"), &sidecar).unwrap();
+    let mut s = DevelopState::load(&sidecar).unwrap();
+    s.execute(&set("Exposure2012", json!(0.5))).unwrap();
+    s.execute(&set("Contrast2012", json!(20))).unwrap();
+    s.execute_grouped("Look <warm> & \"soft\"", &[set("Vibrance", json!(10))])
+        .unwrap();
+    s.execute(&Command::Undo).unwrap();
+    s.save(&sidecar).unwrap();
+    // Saved twice: one history, the foreign metadata still there.
+    let s = DevelopState::load(&sidecar).unwrap();
+    s.save(&sidecar).unwrap();
+    let text = std::fs::read_to_string(&sidecar).unwrap();
+    assert_eq!(text.matches("History>").count(), 2, "{text}");
+    assert!(text.contains("xmp:Rating=\"4\""), "{text}");
+
+    let back = DevelopState::load(&sidecar).unwrap();
+    assert!(!back.history_trimmed());
+    let labels = |st: &[amb_protocol::state::HistoryEntry]| -> Vec<String> {
+        st.iter().map(|h| h.label.clone()).collect()
+    };
+    assert_eq!(
+        labels(back.undo_stack()),
+        ["set_param Exposure2012", "set_param Contrast2012"]
+    );
+    assert_eq!(labels(back.redo_stack()), ["Look <warm> & \"soft\""]);
+    let mut b = back.clone();
+    b.execute(&Command::Redo).unwrap();
+    assert_eq!(num(&b, "Vibrance"), Some(10.0));
+    b.execute(&Command::Undo).unwrap();
+    b.execute(&Command::Undo).unwrap();
+    b.execute(&Command::Undo).unwrap();
+    assert_eq!(
+        num(&b, "Exposure2012"),
+        Some(0.65),
+        "the sidecar's own value"
+    );
+
+    // Another app changes a setting: the history no longer fits.
+    let edited = text.replace("crs:Exposure2012=\"+0.5\"", "crs:Exposure2012=\"+1.2\"");
+    assert_ne!(edited, text, "{text}");
+    let other = DevelopState::from_xmp_str(&edited).unwrap();
+    assert_eq!(num(&other, "Exposure2012"), Some(1.2));
+    assert!(other.undo_stack().is_empty() && other.redo_stack().is_empty());
+    // A rating changed elsewhere leaves the settings, and the history, alone.
+    let rated = text.replace("xmp:Rating=\"4\"", "xmp:Rating=\"2\"");
+    assert_eq!(
+        DevelopState::from_xmp_str(&rated)
+            .unwrap()
+            .undo_stack()
+            .len(),
+        2
+    );
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn long_history_keeps_the_newest_steps() {
+    let dir = temp_dir("history-long");
+    let sidecar = dir.join("IMG_0002.xmp");
+    let mut s = DevelopState::new();
+    for i in 0..6000 {
+        s.execute(&set("Exposure2012", json!(f64::from(i % 400) / 100.0)))
+            .unwrap();
+    }
+    s.save(&sidecar).unwrap();
+    let size = std::fs::metadata(&sidecar).unwrap().len();
+    assert!(size < 600 * 1024, "{size} bytes");
+    let back = DevelopState::load(&sidecar).unwrap();
+    assert!(back.history_trimmed());
+    let kept = back.undo_stack().len();
+    assert!(kept > 1000 && kept < 6000, "{kept}");
+    assert_eq!(back.undo_stack().last(), s.undo_stack().last());
+    std::fs::remove_dir_all(&dir).ok();
 }

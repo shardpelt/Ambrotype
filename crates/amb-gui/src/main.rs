@@ -2453,6 +2453,16 @@ fn main() {
             plugin_share_plan,
             share_plugin,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running Ambrotype");
+        .build(tauri::generate_context!())
+        .expect("error while starting Ambrotype")
+        .run(|app, event| {
+            // Quitting (closing the window, Cmd+Q) writes the open photo's
+            // unsaved edits, and their history, to its sidecar.
+            if let tauri::RunEvent::ExitRequested { .. } = event {
+                let state = app.state::<AppState>();
+                if let Err(e) = save_open_edits(&state.session) {
+                    eprintln!("could not save the open photo's edits: {e}");
+                }
+            }
+        });
 }

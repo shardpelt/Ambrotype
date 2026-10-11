@@ -17,6 +17,10 @@
 //! catalogue), so they are ours: `amblib:Flag` in [`LIBRARY_NS`]. A rejected
 //! photo without stars also gets `xmp:Rating="-1"`, the XMP way to say
 //! rejected (Bridge and darktable read it), and that is read as a reject.
+//!
+//! The edit history is ours too (Lightroom keeps its own in the catalogue):
+//! `amblib:History`, JSON text written by
+//! [`DevelopState`](crate::DevelopState), read back by [`read_history`].
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -104,6 +108,26 @@ impl PhotoInfo {
 fn parse_rating(v: &str) -> (Option<u8>, bool) {
     let r = v.trim().parse::<f64>().ok().map(|r| r.round() as i64);
     (r.and_then(|r| u8::try_from(r).ok()), r == Some(-1))
+}
+
+/// The stored edit history in an XMP packet (`amblib:History`), if any.
+pub fn read_history(xmp: &str) -> Option<String> {
+    let mut reader = NsReader::from_str(xmp.trim_start_matches('\u{feff}'));
+    let mut inside = false;
+    let mut out = String::new();
+    loop {
+        match reader.read_resolved_event() {
+            Ok((ResolveResult::Bound(n), Event::Start(e)))
+                if n.as_ref() == LIBRARY_NS.as_bytes() && e.local_name().as_ref() == b"History" =>
+            {
+                inside = true;
+            }
+            Ok((_, Event::Text(t))) if inside => out.push_str(&t.unescape().ok()?),
+            Ok((_, Event::End(_))) if inside => return Some(out),
+            Ok((_, Event::Eof)) | Err(_) => return None,
+            _ => {}
+        }
+    }
 }
 
 /// The rating, label and keywords in an XMP packet (empty when there are none).
@@ -311,18 +335,6 @@ fn apply_info(foreign: &mut Foreign, info: &PhotoInfo) {
         }
     }
     foreign.elements = elements;
-    // Our own prefixes for what we write, unless the sidecar already has them.
-    let prefix_for = |foreign: &mut Foreign, uri: &str, want: &str| -> String {
-        if let Some((p, _)) = foreign.namespaces.iter().find(|(_, u)| u.as_str() == uri) {
-            return p.clone();
-        }
-        let mut p = want.to_string();
-        while foreign.namespaces.contains_key(&p) {
-            p.push('x');
-        }
-        foreign.namespaces.insert(p.clone(), uri.to_string());
-        p
-    };
     if let Some(r) = info.rating {
         let p = prefix_for(foreign, XMP_NS, "xmp");
         foreign
@@ -356,6 +368,37 @@ fn apply_info(foreign: &mut Foreign, info: &PhotoInfo) {
         foreign.elements.push(format!(
             "<{p}:subject><rdf:Bag>{items}</rdf:Bag></{p}:subject>"
         ));
+    }
+}
+
+/// Our own prefix for `uri` in what we write, unless the sidecar already has one.
+fn prefix_for(foreign: &mut Foreign, uri: &str, want: &str) -> String {
+    if let Some((p, _)) = foreign.namespaces.iter().find(|(_, u)| u.as_str() == uri) {
+        return p.clone();
+    }
+    let mut p = want.to_string();
+    while foreign.namespaces.contains_key(&p) {
+        p.push('x');
+    }
+    foreign.namespaces.insert(p.clone(), uri.to_string());
+    p
+}
+
+/// Replace the stored edit history with `history` (removed when `None`).
+fn apply_history(foreign: &mut Foreign, history: Option<&str>) {
+    let ns = foreign.namespaces.clone();
+    foreign
+        .attributes
+        .retain(|(name, _)| resolve(name, &ns) != (Some(LIBRARY_NS), "History"));
+    foreign.elements.retain(|e| {
+        let (uri, local) = element_ns(e, &ns);
+        !(uri.as_deref() == Some(LIBRARY_NS) && local == "History")
+    });
+    if let Some(text) = history {
+        let p = prefix_for(foreign, LIBRARY_NS, "amblib");
+        foreign
+            .elements
+            .push(format!("<{p}:History>{}</{p}:History>", escape_text(text)));
     }
 }
 
@@ -506,6 +549,26 @@ pub fn merge_with_info(
     settings: &BTreeMap<String, Value>,
     info: Option<&PhotoInfo>,
 ) -> Result<String, Error> {
+    merge_parts(original, settings, info, None)
+}
+
+/// [`merge`], with `history` (JSON text) as the stored edit history in
+/// place of any there; `None` removes it.
+pub fn merge_with_history(
+    original: &str,
+    settings: &BTreeMap<String, Value>,
+    history: Option<&str>,
+) -> Result<String, Error> {
+    merge_parts(original, settings, None, Some(history))
+}
+
+/// `history`: `None` keeps the stored history as it is.
+fn merge_parts(
+    original: &str,
+    settings: &BTreeMap<String, Value>,
+    info: Option<&PhotoInfo>,
+    history: Option<Option<&str>>,
+) -> Result<String, Error> {
     let mut foreign = if original.trim().is_empty() {
         Foreign::default()
     } else {
@@ -513,6 +576,9 @@ pub fn merge_with_info(
     };
     if let Some(info) = info {
         apply_info(&mut foreign, info);
+    }
+    if let Some(history) = history {
+        apply_history(&mut foreign, history);
     }
     let mut packet = amb_presets::xmp_writer::write_packet(settings, amb_presets::is_signed_tag);
     if foreign.attributes.is_empty() && foreign.elements.is_empty() {

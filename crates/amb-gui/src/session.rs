@@ -119,6 +119,9 @@ pub struct StateInfo {
     pub history: Vec<String>,
     /// The steps undone and not yet replaced by a new edit, next to redo first.
     pub redo_history: Vec<String>,
+    /// The history read from the sidecar starts after older steps that
+    /// weren't kept, not at the photo's original state.
+    pub history_trimmed: bool,
     /// Settings present but not rendered by this engine version.
     pub not_rendered: Vec<String>,
     /// The masks as `list_masks` describes them.
@@ -328,6 +331,7 @@ impl Session {
                 .rev()
                 .map(|h| h.label.clone())
                 .collect(),
+            history_trimmed: self.state.history_trimmed(),
             not_rendered,
             masks: amb_protocol::masks::describe(self.state.settings()),
             spots: amb_protocol::spots::describe(self.state.settings()),

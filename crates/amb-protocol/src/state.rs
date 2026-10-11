@@ -53,6 +53,25 @@ pub struct DevelopState {
     settings: BTreeMap<String, Value>,
     undo: Vec<HistoryEntry>,
     redo: Vec<HistoryEntry>,
+    /// The history read from the sidecar left out older steps (to keep the
+    /// sidecar small): its first step isn't the photo's original state.
+    trimmed: bool,
+}
+
+/// Most of a sidecar the stored history may take; older steps are left out
+/// past it. Brush strokes store the whole mask before and after, so a long
+/// painting session would otherwise grow without bound.
+const HISTORY_BUDGET: usize = 512 * 1024;
+
+/// A fingerprint of settings (FNV-1a over their JSON; stable across runs).
+fn fingerprint(settings: &BTreeMap<String, Value>) -> String {
+    let json = serde_json::to_string(settings).unwrap_or_default();
+    let mut h: u64 = 0xcbf2_9ce4_8422_2325;
+    for b in json.bytes() {
+        h ^= u64::from(b);
+        h = h.wrapping_mul(0x0100_0000_01b3);
+    }
+    format!("{h:016x}")
 }
 
 impl DevelopState {
@@ -98,12 +117,89 @@ impl DevelopState {
         !self.redo.is_empty()
     }
 
+    /// The history doesn't reach back to the photo's original state (older
+    /// steps were left out of the sidecar).
+    pub fn history_trimmed(&self) -> bool {
+        self.trimmed
+    }
+
     // ---- persistence -------------------------------------------------------
 
-    /// Parse an XMP packet (sidecar or preset) into a fresh state.
+    /// Parse an XMP packet (sidecar or preset) into a fresh state, with the
+    /// edit history stored in it when that history ends at these settings
+    /// (if another app changed them since, it no longer fits and is dropped).
     pub fn from_xmp_str(text: &str) -> Result<Self, Error> {
         let preset = Preset::parse_xmp(text).map_err(|e| Error::Load(e.to_string()))?;
-        Ok(Self::from_settings(preset.settings))
+        let mut state = Self::from_settings(preset.settings);
+        if let Some(history) = sidecar::read_history(text) {
+            state.restore_history(&history);
+        }
+        Ok(state)
+    }
+
+    /// Take the stored history if it is ours and ends at the current settings.
+    fn restore_history(&mut self, text: &str) {
+        let Ok(json) = serde_json::from_str::<serde_json::Value>(text) else {
+            return;
+        };
+        let fits = json.get("version").and_then(|v| v.as_u64()) == Some(1)
+            && json.get("settings").and_then(|v| v.as_str()) == Some(&fingerprint(&self.settings));
+        if !fits {
+            return;
+        }
+        let stack = |key: &str| -> Option<Vec<HistoryEntry>> {
+            json.get(key)?
+                .as_array()?
+                .iter()
+                .map(|e| entry_from_json(e).ok())
+                .collect()
+        };
+        if let (Some(undo), Some(redo)) = (stack("undo"), stack("redo")) {
+            self.undo = undo;
+            self.redo = redo;
+            self.trimmed = json.get("trimmed").and_then(|v| v.as_bool()) == Some(true);
+        }
+    }
+
+    /// The history as stored in a sidecar (JSON text), `None` when there is
+    /// none. It carries a fingerprint of the settings as they will read back
+    /// from the sidecar, and keeps the newest steps within [`HISTORY_BUDGET`].
+    fn history_for_sidecar(&self) -> Option<String> {
+        if self.undo.is_empty() && self.redo.is_empty() {
+            return None;
+        }
+        let written = Self::from_settings(
+            Preset::parse_xmp(&self.to_xmp())
+                .map(|p| p.settings)
+                .unwrap_or_default(),
+        );
+        let mut budget = HISTORY_BUDGET;
+        let mut keep = |entries: &[HistoryEntry]| -> Vec<serde_json::Value> {
+            // Newest (last) first, then back in order.
+            let mut kept: Vec<serde_json::Value> = Vec::new();
+            for e in entries.iter().rev() {
+                let json = serde_json::to_value(e).unwrap_or_default();
+                let size = json.to_string().len();
+                if size > budget {
+                    break;
+                }
+                budget -= size;
+                kept.push(json);
+            }
+            kept.reverse();
+            kept
+        };
+        let undo = keep(&self.undo);
+        let redo = keep(&self.redo);
+        let trimmed = self.trimmed || undo.len() < self.undo.len();
+        let json = serde_json::json!({
+            "version": 1,
+            "settings": fingerprint(&written.settings),
+            "trimmed": trimmed,
+            "undo": undo,
+            "redo": redo,
+        });
+        Some(json.to_string())
     }
 
     /// The settings as a standalone XMP packet.
@@ -154,6 +250,7 @@ impl DevelopState {
             settings,
             undo: stack("undo")?,
             redo: stack("redo")?,
+            trimmed: false,
         })
     }
 
@@ -165,11 +262,17 @@ impl DevelopState {
             let text = std::fs::read_to_string(path).map_err(|e| at(e.to_string()))?;
             return Self::from_json_str(&text).map_err(|e| at(e.to_string()));
         }
+        if has_extension(path, "xmp") {
+            // A sidecar: with its stored history.
+            let text = std::fs::read_to_string(path).map_err(|e| at(e.to_string()))?;
+            return Self::from_xmp_str(&text).map_err(|e| at(e.to_string()));
+        }
         let preset = Preset::from_path(path).map_err(|e| at(e.to_string()))?;
         Ok(Self::from_settings(preset.settings))
     }
 
-    /// Save to `.json` (with history) or `.xmp` (settings only). When the XMP
+    /// Save to `.json` or `.xmp`, both with the history (in the XMP as
+    /// `amblib:History`, newest steps first if it is long). When the XMP
     /// file already exists, its non-Camera-Raw metadata (rating, keywords, ...)
     /// is preserved. Writes atomically (temporary file, then rename).
     pub fn save(&self, path: &Path) -> Result<(), Error> {
@@ -188,14 +291,16 @@ impl DevelopState {
             s.push('\n');
             s
         } else if has_extension(path, "xmp") {
-            match base {
-                Some(base) => sidecar::merge(base, &self.settings)?,
+            let history = self.history_for_sidecar();
+            let original = match base {
+                Some(base) => base.to_string(),
                 None => match std::fs::read_to_string(path) {
-                    Ok(existing) => sidecar::merge(&existing, &self.settings)?,
-                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => self.to_xmp(),
+                    Ok(existing) => existing,
+                    Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),
                     Err(e) => return Err(Error::Io(format!("{}: {e}", path.display()))),
                 },
-            }
+            };
+            sidecar::merge_with_history(&original, &self.settings, history.as_deref())?
         } else {
             return Err(Error::Io(format!(
                 "refusing to write {}: develop state is saved only as .xmp or .json",

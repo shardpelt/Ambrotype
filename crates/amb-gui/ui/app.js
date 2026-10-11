@@ -282,6 +282,7 @@ function historyLabel(label) {
   return label
     .replace(/^set_param (\S+)$/, (_, t) => named(t))
     .replace(/^reset_param (\S+)$/, (_, t) => `Reset ${named(t)}`)
+    .replace(/^adjust_param (\S+) (\S+)$/, (_, t, d) => `${named(t)} ${d}`)
     .replace(/^apply_preset .*[\\/]/, "preset ")
     .replace(/^add_mask (\w+) to mask (\d+)$/, (_, k, m) => `${n(m)}: add ${k}`)
     .replace(/^add_mask (\w+)$/, (_, k) => `New ${k} mask`)
@@ -326,14 +327,17 @@ function syncControls() {
 
 // The History panel: Original, the steps done, then the steps undone (greyed)
 // until a new edit replaces them. Clicking one goes back or forward to just
-// after it, as one batch of undos or redos (so it is undoable too).
+// after it, as one batch of undos or redos (so it is undoable too). History
+// is kept in the sidecar; a very long one keeps its newest steps, and then
+// starts at "Earlier edits".
 function renderHistory() {
   const hist = $("history-list");
   hist.innerHTML = "";
   if (!ui.state) return;
   const done = ui.state.history ?? [];
   const undone = ui.state.redo_history ?? [];
-  const steps = ["Original", ...done.map(historyLabel), ...undone.map(historyLabel)];
+  const first = ui.state.history_trimmed ? "Earlier edits" : "Original";
+  const steps = [first, ...done.map(historyLabel), ...undone.map(historyLabel)];
   hist.start = 0;
   steps.forEach((text, i) => {
     const li = document.createElement("li");

@@ -542,7 +542,7 @@ fn sample_bicubic(rgb: &[f32], w: usize, h: usize, c: usize, x: f64, y: f64) -> 
 }
 
 /// Catmull-Rom sample of all three channels at (x, y).
-fn sample_bicubic_rgb(rgb: &[f32], w: usize, h: usize, x: f64, y: f64) -> [f32; 3] {
+pub(crate) fn sample_bicubic_rgb(rgb: &[f32], w: usize, h: usize, x: f64, y: f64) -> [f32; 3] {
     let x = x.clamp(0.0, (w - 1) as f64);
     let y = y.clamp(0.0, (h - 1) as f64);
     let (x0, y0) = (x.floor() as isize, y.floor() as isize);

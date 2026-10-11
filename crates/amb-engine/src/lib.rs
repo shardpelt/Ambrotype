@@ -25,6 +25,7 @@ pub mod mask;
 pub mod merge;
 pub mod negative;
 pub mod output;
+pub mod pano;
 pub mod pipeline;
 pub mod primaries;
 pub mod profile;

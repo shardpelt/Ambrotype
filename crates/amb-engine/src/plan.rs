@@ -62,6 +62,11 @@ pub enum Step {
     /// Texture and Clarity.
     Local(Box<local::LocalPlan>),
     Sharpen(Box<detail::SharpenPlan>),
+    /// Colour noise reduction: the GPU downscales the image and gathers tile
+    /// sums, the CPU runs the low-resolution guided filter
+    /// ([`detail::color_nr_low`]) and measures the noise
+    /// ([`detail::color_nr_tau`]), the GPU applies it.
+    ColorNr(Box<detail::ColorNrPlan>),
     /// Dehaze: the GPU downscales the image by `factor`, the CPU measures
     /// the haze on that copy ([`dehaze::Estimate::from_small`], then
     /// [`dehaze::apply_numbers`]) and the GPU applies it.
@@ -94,6 +99,7 @@ impl std::fmt::Debug for Step {
             Step::HighlightsShadows(_) => "highlights/shadows",
             Step::Local(_) => "texture/clarity",
             Step::Sharpen(_) => "sharpening",
+            Step::ColorNr(_) => "colour noise reduction",
             Step::Dehaze { .. } => "dehaze",
             Step::Vignette(_) => "vignette",
             Step::ToneCurve { .. } => "tone curve",
@@ -217,13 +223,16 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     }
     // 6. Detail: noise reduction, then sharpening.
     let (nr, sharpening) = effective_detail(img, s);
-    if (nr.luminance > 0.0 && nr.luminance.is_finite()) || (nr.color > 0.0 && nr.color.is_finite())
-    {
+    if nr.luminance > 0.0 && nr.luminance.is_finite() {
         let k = cal.clone();
+        let luminance_only = detail::NoiseReduction { color: 0.0, ..nr };
         steps.push(cpu(
-            "noise reduction",
-            Box::new(move |img| detail::apply_noise_reduction(img, &nr, &k.detail)),
+            "luminance noise reduction",
+            Box::new(move |img| detail::apply_noise_reduction(img, &luminance_only, &k.detail)),
         ));
+    }
+    if let Some(p) = detail::color_nr_plan(&nr, &cal.detail, w, h) {
+        steps.push(Step::ColorNr(Box::new(p)));
     }
     if let Some(p) = detail::sharpen_plan(&sharpening, &cal.detail) {
         steps.push(Step::Sharpen(Box::new(p)));

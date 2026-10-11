@@ -812,18 +812,42 @@ fn self_guided(src: &[f32], w: usize, h: usize, r: f32, eps: &Lut, eps_scale: f3
         .collect()
 }
 
-fn color_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrengths) {
-    let (w, h) = (img.width, img.height);
+/// Colour noise reduction as numbers (for other backends too): blended in
+/// by `mix`; the chroma is smoothed by a guided filter on a copy downscaled
+/// by `factor` (box radius `r_low` there); with Detail above 0 a garrote
+/// keeps residuals above `detail_factor` times the measured noise.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ColorNrPlan {
+    pub mix: f32,
+    pub factor: usize,
+    pub r_low: f32,
+    pub eps: f32,
+    pub max_slope: f32,
+    pub detail_factor: Option<f32>,
+    /// The garrote's exponent.
+    pub garrote_power: f64,
+    percentile: f64,
+    ceiling: f32,
+    floor: f32,
+}
+
+/// [`ColorNrPlan`] for a `w × h` image, or `None` when it does nothing.
+pub fn color_nr_plan(
+    p: &NoiseReduction,
+    k: &DetailStrengths,
+    w: usize,
+    h: usize,
+) -> Option<ColorNrPlan> {
+    if !(p.color > 0.0 && p.color.is_finite()) || w == 0 || h == 0 {
+        return None;
+    }
     let s = p.color.min(100.0) / 100.0;
     let detail = slider(p.color_detail, 50.0, 0.0, 100.0) / 100.0;
     let smoothness = slider(p.color_smoothness, 50.0, 0.0, 100.0) / 100.0;
     let mix = (s / k.color_full_strength.max(1e-6)).min(1.0) as f32;
     if !mix.is_finite() || mix <= 0.0 {
-        return;
+        return None;
     }
-    let t = transfer();
-    let lw = luminance_weights();
-
     // Scale: a fixed downscale factor and the full-resolution radius divided by
     // it (fractional), so the output changes continuously with the sliders.
     let radius = (k.color_radius
@@ -835,10 +859,36 @@ fn color_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrength
         .round()
         .clamp(1.0, MAX_DOWNSCALE)
         .min(w.min(h) as f64) as usize;
-    let r_low = (radius / factor as f64) as f32;
+    Some(ColorNrPlan {
+        mix,
+        factor,
+        r_low: (radius / factor as f64) as f32,
+        eps: k.color_guide_eps.max(1e-9) as f32,
+        max_slope: k.color_guide_max_slope.max(0.0) as f32,
+        detail_factor: color_detail_factor(detail, s, k),
+        garrote_power: k.color_garrote_power,
+        percentile: k.noise_percentile,
+        ceiling: k.color_noise_ceiling.max(0.0) as f32,
+        floor: k.color_noise_floor.max(0.0) as f32,
+    })
+}
 
-    // 1. Low resolution: centred encoded luminance (the guide) and chroma.
-    let (small, sw, sh) = downscale(img, factor);
+/// The low-resolution half of colour noise reduction: the chroma's
+/// guided-filter coefficients (per channel `a` then `b`, on the `sw × sh`
+/// grid) and, with Detail, the noise tiles of the low-resolution chroma.
+pub struct ColorNrLow {
+    pub coefs: Vec<(Vec<f32>, Vec<f32>)>,
+    pub sw: usize,
+    pub sh: usize,
+    low_tiles: Option<Vec<TileStat>>,
+}
+
+/// [`ColorNrLow`] from the image downscaled by `plan.factor` (as
+/// `downscale` makes it: non-finite pixels left out, channels clamped).
+pub fn color_nr_low(small: &[f32], sw: usize, sh: usize, plan: &ColorNrPlan) -> ColorNrLow {
+    let t = transfer();
+    let lw = luminance_weights();
+    // Centred encoded luminance (the guide) and chroma.
     let planes: Vec<[f32; 4]> = small
         .par_chunks_exact(3)
         .map(|p| {
@@ -851,45 +901,117 @@ fn color_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrength
             ]
         })
         .collect();
-    drop(small);
     let plane = |c: usize| -> Vec<f32> { planes.par_iter().map(|v| v[c]).collect() };
     let guide = plane(0);
     let chroma = [plane(1), plane(2), plane(3)];
     drop(planes);
-    let detail_factor = color_detail_factor(detail, s, k);
-    // Haar tiles of the low-resolution chroma (for the noise ceiling, below).
-    let low_tiles = detail_factor.map(|_| {
-        let tile = ((NOISE_TILE / factor) & !1).max(2);
+    // Haar tiles of the low-resolution chroma (for the noise ceiling).
+    let low_tiles = plan.detail_factor.map(|_| {
+        let tile = ((NOISE_TILE / plan.factor) & !1).max(2);
         let srcs = [&chroma[0][..], &chroma[1][..], &chroma[2][..]];
         haar_tiles(&guide, CENTRE, &srcs, sw, sh, tile, true)
     });
+    let coefs = guided_coefficients(
+        &guide,
+        &chroma,
+        sw,
+        sh,
+        plan.r_low,
+        plan.eps,
+        plan.max_slope,
+    );
+    ColorNrLow {
+        coefs,
+        sw,
+        sh,
+        low_tiles,
+    }
+}
 
-    // 2. Guided-filter coefficients for the three chroma channels.
-    let eps = k.color_guide_eps.max(1e-9) as f32;
-    let max_slope = k.color_guide_max_slope.max(0.0) as f32;
-    let coefs = guided_coefficients(&guide, &chroma, sw, sh, r_low, eps, max_slope);
-    drop((guide, chroma));
-    let grids = CoefGrids::new(&coefs, w, sw, sh, factor);
+/// Raw sums over one noise tile, as a backend gathers them (see [`TileAcc`]).
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct TileSums {
+    pub power: [f32; 3],
+    pub lum: f32,
+    pub lo: f32,
+    pub hi: f32,
+    pub n: u32,
+}
+
+impl From<TileSums> for TileAcc {
+    fn from(t: TileSums) -> TileAcc {
+        TileAcc {
+            power: t.power,
+            lum: t.lum,
+            lo: t.lo,
+            hi: t.hi,
+            n: t.n,
+        }
+    }
+}
+
+/// The garrote threshold by encoded luminance ([`LUT_STEPS`] + 1 values on
+/// 0..1), from the residual-energy tiles and the directional chroma detail
+/// tiles at full resolution, or `None` without Detail.
+pub fn color_nr_tau(
+    low: &ColorNrLow,
+    energy: &[TileSums],
+    fine: &[TileSums],
+    plan: &ColorNrPlan,
+) -> Option<Vec<f32>> {
+    let finish = |t: &[TileSums]| -> Vec<TileStat> {
+        t.iter()
+            .filter_map(|t| TileAcc::from(*t).finish())
+            .collect()
+    };
+    let tau = tau_lut(low, &finish(energy), &finish(fine), plan)?;
+    Some(tau.0.to_vec())
+}
+
+fn tau_lut(
+    low: &ColorNrLow,
+    tiles: &[TileStat],
+    fine_tiles: &[TileStat],
+    plan: &ColorNrPlan,
+) -> Option<Lut> {
+    let f = plan.detail_factor?;
+    let q = plan.percentile;
+    let noise = NoiseProfile::from_tiles(tiles, q);
+    // Ceiling from the directional chroma detail at full and low resolution
+    // (white noise of σ reads σ/factor on the downscaled chroma).
+    let fine = NoiseProfile::from_tiles(fine_tiles, q);
+    let coarse = NoiseProfile::from_tiles(low.low_tiles.as_deref().unwrap_or(&[]), q);
+    let factor = plan.factor as f32;
+    Some(Lut::from_fn(|v| {
+        let cap = plan.ceiling * fine.at(v).max(factor * coarse.at(v));
+        f * (noise.at(v).min(cap) + plan.floor)
+    }))
+}
+
+fn color_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrengths) {
+    let (w, h) = (img.width, img.height);
+    let Some(plan) = color_nr_plan(p, k, w, h) else {
+        return;
+    };
+    let mix = plan.mix;
+    let factor = plan.factor;
+    let t = transfer();
+    let lw = luminance_weights();
+
+    // 1-2. Low resolution: guide, chroma and their guided-filter coefficients.
+    let (small, sw, sh) = downscale(img, factor);
+    let low = color_nr_low(&small, sw, sh, &plan);
+    drop(small);
+    let grids = CoefGrids::new(&low.coefs, w, sw, sh, factor);
 
     // 3. Detail: residual energy per pixel, and the garrote threshold per
     //    luminance from its noise level.
-    let detail_test: Option<(Vec<f32>, Lut)> = detail_factor.map(|f| {
+    let detail_test: Option<(Vec<f32>, Lut)> = plan.detail_factor.and_then(|_| {
         let (energy, tiles, fine_tiles) = residual_energy(img, &grids);
-        let q = k.noise_percentile;
-        let noise = NoiseProfile::from_tiles(&tiles, q);
-        // Ceiling from the directional chroma detail at full and low resolution
-        // (white noise of σ reads σ/factor on the downscaled chroma).
-        let fine = NoiseProfile::from_tiles(&fine_tiles, q);
-        let coarse = NoiseProfile::from_tiles(low_tiles.as_deref().unwrap_or(&[]), q);
-        let ceiling = k.color_noise_ceiling.max(0.0) as f32;
-        let floor = k.color_noise_floor.max(0.0) as f32;
-        let tau = Lut::from_fn(|v| {
-            let cap = ceiling * fine.at(v).max(factor as f32 * coarse.at(v));
-            f * (noise.at(v).min(cap) + floor)
-        });
-        (energy, tau)
+        let tau = tau_lut(&low, &tiles, &fine_tiles, &plan)?;
+        Some((energy, tau))
     });
-    let garrote = Garrote::new(k.color_garrote_power);
+    let garrote = Garrote::new(plan.garrote_power);
 
     // 4. Full resolution: denoised chroma = smoothed + garrote(residual), blended
     //    in by `mix`; luminance kept.

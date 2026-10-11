@@ -70,6 +70,23 @@ struct DehazeParams {
 }
 
 #[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable, Default)]
+struct CnrParams {
+    w: u32,
+    h: u32,
+    factor: u32,
+    sw: u32,
+    sh: u32,
+    tw: u32,
+    th: u32,
+    mix: f32,
+    detail: u32,
+    garrote: u32,
+    half: f32,
+    lum: [f32; 3],
+}
+
+#[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct VignetteParams {
     w: u32,
@@ -125,6 +142,10 @@ pub(crate) struct Kernels {
     sanitise: Kernel,
     dehaze_downscale: Kernel,
     dehaze_apply: Kernel,
+    cnr_downscale: Kernel,
+    cnr_residual: Kernel,
+    cnr_tiles: Kernel,
+    cnr_apply: Kernel,
 }
 
 impl Kernels {
@@ -137,6 +158,10 @@ impl Kernels {
         let dehaze = module("dehaze", include_str!("shaders/dehaze.wgsl"));
         // Bindings: image, small copy, coefficients A and B, parameters.
         const DEHAZE: &[bool] = &[false, false, true, true, true];
+        let cnr = module("cnr", include_str!("shaders/cnr.wgsl"));
+        // Bindings: image, small copy, coefficients, energy, levels, tiles, tau, parameters.
+        const CNR: &[bool] = &[false, false, true, false, false, false, true, true];
+        let c = |entry: &str| Kernel::new(gpu, entry, &cnr, entry, CNR);
         // Bindings: camera, image, weights, size, parameters, tables.
         const MATRIX: &[bool] = &[true, false, false, true, true, true];
         // Bindings: image, size, parameters, tables.
@@ -160,6 +185,10 @@ impl Kernels {
             sanitise: Kernel::new(gpu, "sanitise", &dehaze, "sanitise", DEHAZE),
             dehaze_downscale: Kernel::new(gpu, "downscale", &dehaze, "downscale", DEHAZE),
             dehaze_apply: Kernel::new(gpu, "dehaze_apply", &dehaze, "dehaze_apply", DEHAZE),
+            cnr_downscale: c("cnr_downscale"),
+            cnr_residual: c("cnr_residual"),
+            cnr_tiles: c("cnr_tiles"),
+            cnr_apply: c("cnr_apply"),
         }
     }
 }
@@ -302,6 +331,9 @@ impl Gpu {
                     k.dehaze_apply
                         .dispatch(self, &mut enc, &[&img, &small, &ca, &cb, &params], n);
                 }
+                Step::ColorNr(cp) => {
+                    self.color_nr(&mut enc, &img, plan.width, plan.height, cp);
+                }
                 Step::Vignette(v) => {
                     use amb_engine::effects::VignetteStyle;
                     let (m, op) = (&v.mask, &v.op);
@@ -403,6 +435,118 @@ impl Gpu {
             height: plan.height,
             rgb: self.download(&img, pixels * 3),
         }
+    }
+}
+
+impl Gpu {
+    /// Finish what `enc` holds and start a new encoder.
+    fn flush(&self, enc: &mut wgpu::CommandEncoder) {
+        let done = std::mem::replace(enc, self.device.create_command_encoder(&Default::default()));
+        self.queue.submit([done.finish()]);
+    }
+
+    /// Colour noise reduction: downscale here, the guided filter's
+    /// coefficients on the CPU, the residual and its tile sums here, the
+    /// noise measured on the CPU, the garrote here.
+    fn color_nr(
+        &self,
+        enc: &mut wgpu::CommandEncoder,
+        img: &wgpu::Buffer,
+        w: usize,
+        h: usize,
+        plan: &amb_engine::detail::ColorNrPlan,
+    ) {
+        use amb_engine::detail::{TileSums, color_nr_low, color_nr_tau};
+        let k = self.kernels();
+        let f = plan.factor;
+        let (sw, sh) = (w.div_ceil(f), h.div_ceil(f));
+        let (tw, th) = (w.div_ceil(16), h.div_ceil(16));
+        // The garrote's exponent, as `Garrote::new` reads it.
+        let power = if plan.garrote_power.is_finite() {
+            plan.garrote_power
+        } else {
+            amb_engine::detail::DEFAULT_STRENGTHS.color_garrote_power
+        }
+        .clamp(0.1, 64.0);
+        let mut p = CnrParams {
+            w: w as u32,
+            h: h as u32,
+            factor: f as u32,
+            sw: sw as u32,
+            sh: sh as u32,
+            tw: tw as u32,
+            th: th as u32,
+            mix: plan.mix,
+            detail: plan.detail_factor.is_some() as u32,
+            garrote: if power == 2.0 {
+                2
+            } else if power == 4.0 {
+                4
+            } else {
+                0
+            },
+            half: (power / 2.0) as f32,
+            lum: amb_engine::buffer::luminance_weights(),
+        };
+        let small = self.buffer(sw * sh * 3);
+        let (energy, lc, tiles) = if plan.detail_factor.is_some() {
+            (
+                self.buffer(w * h),
+                self.buffer(w * h * 5),
+                self.buffer(tw * th * 14),
+            )
+        } else {
+            (self.buffer(1), self.buffer(1), self.buffer(1))
+        };
+        let params = self.storage(&p);
+        let (coefs0, tau0) = (self.buffer(1), self.buffer(2));
+        k.cnr_downscale.dispatch(
+            self,
+            enc,
+            &[img, &small, &coefs0, &energy, &lc, &tiles, &tau0, &params],
+            sw * sh,
+        );
+        self.flush(enc);
+        let low = color_nr_low(&self.download(&small, sw * sh * 3), sw, sh, plan);
+        // Six grids: a for R, G, B, then b for R, G, B.
+        let packed: Vec<f32> = (0..3)
+            .flat_map(|c| low.coefs[c].0.iter().copied())
+            .chain((0..3).flat_map(|c| low.coefs[c].1.iter().copied()))
+            .collect();
+        let coefs = self.upload(&packed);
+        let tau = if plan.detail_factor.is_some() {
+            let b = [img, &small, &coefs, &energy, &lc, &tiles, &tau0, &params];
+            k.cnr_residual.dispatch(self, enc, &b, w * h);
+            k.cnr_tiles.dispatch(self, enc, &b, tw * th);
+            self.flush(enc);
+            let sums = self.download(&tiles, tw * th * 14);
+            let at = |t: &[f32]| TileSums {
+                power: [t[0], t[1], t[2]],
+                lum: t[3],
+                lo: t[4],
+                hi: t[5],
+                n: t[6] as u32,
+            };
+            let energy_tiles: Vec<TileSums> = sums.chunks_exact(14).map(|t| at(&t[..7])).collect();
+            let fine: Vec<TileSums> = sums.chunks_exact(14).map(|t| at(&t[7..])).collect();
+            match color_nr_tau(&low, &energy_tiles, &fine, plan) {
+                Some(t) => self.upload(&t),
+                None => {
+                    // No threshold: no residual is kept.
+                    p.detail = 0;
+                    self.buffer(2)
+                }
+            }
+        } else {
+            self.buffer(2)
+        };
+        let params = self.storage(&p);
+        k.cnr_apply.dispatch(
+            self,
+            enc,
+            &[img, &small, &coefs, &energy, &lc, &tiles, &tau, &params],
+            w * h,
+        );
     }
 }
 
@@ -781,6 +925,36 @@ pub(crate) mod tests {
             "dehaze, downscaled estimate",
             &pixel_stages(&[("Dehaze", n(35.0)), ("Exposure2012", n(0.5))]),
             (1703, 611),
+        );
+    }
+
+    #[test]
+    fn color_noise_reduction() {
+        let only = |tags: &[(&'static str, Value)]| {
+            let mut t = vec![("Sharpness", n(0.0))];
+            t.extend_from_slice(tags);
+            t
+        };
+        check("default colour noise reduction", &only(&[]));
+        check(
+            "strong, smooth, no detail",
+            &only(&[
+                ("ColorNoiseReduction", n(80.0)),
+                ("ColorNoiseReductionDetail", n(0.0)),
+                ("ColorNoiseReductionSmoothness", n(90.0)),
+            ]),
+        );
+        check(
+            "more detail",
+            &only(&[
+                ("ColorNoiseReduction", n(40.0)),
+                ("ColorNoiseReductionDetail", n(85.0)),
+            ]),
+        );
+        check_at(
+            "default colour noise reduction, larger",
+            &only(&[("Exposure2012", n(0.3))]),
+            (1011, 677),
         );
     }
 }

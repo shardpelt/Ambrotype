@@ -4,7 +4,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
 
 ## State
 
-- **Branch:** `claude/lightroom-alternative-scope-xlnf0p`. Everything is committed and pushed; about 350 tests are green.
+- **Branch:** `claude/lightroom-alternative-scope-xlnf0p`. Everything is committed and pushed; about 430 tests are green.
 - **Name:** **Ambrotype**. The GitHub repo is `shardpelt/Ambrotype` (renamed from flightbroom; old links redirect).
 - **Built:**
   - preset/sidecar reader and writer (`crs:` and our `amb:` tags)
@@ -15,7 +15,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
   - export: JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces with ICC
   - CLI `amb`
   - desktop editor (`amb-gui`, Tauri 2) with:
-    - 1:1 zoom and pan
+    - 1:1 zoom and pan (only the shown tiles are rendered, and kept while panning)
     - white-balance picker
     - clipping overlay
     - point-curve editor
@@ -78,7 +78,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 7. ~~**Library:** pick/reject flags, loupe, compare and survey views, import with copy and rename, collections, virtual copies~~ (done 2026-10-10; [design/library.md](design/library.md)). Next for it: subfolders and several folders at once, smart collections, stacks, a metadata panel.
 8. **Profiles, Calibration panel and Point Color** (fidelity track 4–5). ~~Calibration panel~~ (done 2026-10-10; [design/calibration.md](design/calibration.md)). Point Color waits for a Lightroom sample of `PointColors` (the trial keeps one). ~~Reading the user's own camera profiles (`.dcp`) in place~~ (done 2026-10-10; [design/camera-profiles.md](design/camera-profiles.md)). Next for profiles: Adobe Raw `.xmp` profiles, and fitted base looks of our own from the trial.
 9. ~~**MCP server** for AI agents~~ (done 2026-10-10: `amb mcp`, [ai/mcp.md](ai/mcp.md)). Next for AI: look matching (`amb match`), then the in-app assistant panel.
-10. **Speed and reach:** ~~installers per OS~~ (the `Release` workflow, 2026-10-10; [releasing.md](releasing.md); to run on GitHub, then signing), GPU preview (fidelity track 8–9), then HDR and panorama merge.
+10. **Speed and reach:** ~~installers per OS~~ (the `Release` workflow, 2026-10-10; [releasing.md](releasing.md); to run on GitHub, then signing), ~~tiled 100% view~~ (2026-10-11), GPU preview (fidelity track 8–9), then HDR and panorama merge.
 
 ### Fidelity and engine track
 
@@ -89,7 +89,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 5. ~~**Calibration panel**~~ (done 2026-10-10), **Point Color** (the B&W mixer renders since 2026-10-08; fitting both is part of the trial). Fit the Film recipe looks to the owner's Fujifilm shots ([design/film-look-measurement.md](design/film-look-measurement.md)).
 6. **Token-efficient AI layer:** core card, `amb do` compact syntax, `--brief` output, `amb stats`; ~~the MCP server~~ (done 2026-10-10).
 7. **Auto and Randomize buttons, Tutorial mode** ([design/future-ideas.md](design/future-ideas.md)).
-8. **Performance:** measure release-build preview and 1:1 times on the Mac (`AMB_TIMING=1` prints each render stage's time). On 4 Linux cores a 24 MP render of a typical edit takes about 3.5 s: Texture/Clarity 0.75 s, colour 0.7 s, noise reduction 0.65 s, Highlights/Shadows 0.4 s, Dehaze 0.4 s. The editor's screen-size preview (860 × 570) takes about 70 ms. Then a tiled 1:1 render instead of a full-size render, then the GPU preview path.
+8. **Performance:** measure release-build preview and 1:1 times on the Mac (`AMB_TIMING=1` prints each render stage's time). On 4 Linux cores a 24 MP render of a typical edit takes about 3.5 s: Texture/Clarity 0.75 s, colour 0.7 s, noise reduction 0.65 s, Highlights/Shadows 0.4 s, Dehaze 0.4 s. The editor's screen-size preview (860 × 570) takes about 70 ms. ~~Tiled 1:1 render~~ (done 2026-10-11: the 100% view renders only its tiles, `pipeline::render_region`; about 10× faster than the full render it replaced). Next: the GPU preview path.
 9. ~~**Installers** per OS~~ (the `Release` workflow, 2026-10-10). Left: run it on GitHub, Windows signing (SignPath) and Apple signing secrets.
 
 ## Working notes

@@ -52,21 +52,30 @@ pub struct Session {
     upright_cache: Option<(String, Option<amb_engine::transform::Keystone>)>,
     /// Why the edit's camera profile isn't used, from the last render.
     profile_note: Option<String>,
-    /// Full-resolution upright sRGB render for the 100% view, keyed by the
-    /// committed settings it was rendered with.
-    full_cache: Option<FullRender>,
+    /// The 100% view's renders, tile by tile, for the committed settings.
+    region_cache: Option<RegionCache>,
+    /// Small copy of the photo the 100% view measures whole-photo
+    /// statistics on ([`pipeline::measure_globals`]).
+    globals_src: Option<CameraImage>,
     /// Rating and keywords, as in the sidecar (they are saved as they change).
     pub info: amb_protocol::sidecar::PhotoInfo,
     /// The develop settings as last loaded or saved (for "unsaved edits").
     saved: BTreeMap<String, Value>,
 }
 
-struct FullRender {
+/// Full-resolution upright sRGB renders for the 100% view: the parts
+/// rendered so far, in tiles of [`REGION_TILE`] pixels, for one set of
+/// committed settings.
+struct RegionCache {
     key: String,
-    width: usize,
-    height: usize,
     srgb: Vec<u8>,
+    /// Which tiles hold rendered pixels (row-major).
+    done: Vec<bool>,
+    globals: pipeline::Globals,
 }
+
+/// Tile edge of the 100% view's cache, in pixels.
+const REGION_TILE: usize = 256;
 
 /// A 1:1 crop of the full-resolution render, for the 100% view.
 #[derive(Debug, Clone)]
@@ -182,49 +191,7 @@ const NO_UPRIGHT: amb_engine::transform::Keystone = amb_engine::transform::Keyst
     focal: 1.0,
 };
 
-/// Area-average downscale of camera RGB so the long edge is at most `max_edge`.
-pub fn downscale(img: &CameraImage, max_edge: usize) -> CameraImage {
-    let long = img.width.max(img.height);
-    let factor = long.div_ceil(max_edge.max(1)).max(1);
-    if factor == 1 {
-        return clone_camera(img, img.rgb.clone(), img.width, img.height);
-    }
-    let (w, h) = (img.width / factor, img.height / factor);
-    let mut rgb = vec![0.0f32; w * h * 3];
-    let n = (factor * factor) as f32;
-    rgb.par_chunks_mut(w * 3).enumerate().for_each(|(y, row)| {
-        for x in 0..w {
-            let mut acc = [0.0f32; 3];
-            for dy in 0..factor {
-                let sy = y * factor + dy;
-                for dx in 0..factor {
-                    let i = (sy * img.width + x * factor + dx) * 3;
-                    acc[0] += img.rgb[i];
-                    acc[1] += img.rgb[i + 1];
-                    acc[2] += img.rgb[i + 2];
-                }
-            }
-            row[x * 3..x * 3 + 3].copy_from_slice(&acc.map(|v| v / n));
-        }
-    });
-    clone_camera(img, rgb, w, h)
-}
-
-fn clone_camera(img: &CameraImage, rgb: Vec<f32>, width: usize, height: usize) -> CameraImage {
-    CameraImage {
-        width,
-        height,
-        rgb,
-        xyz_to_cam: img.xyz_to_cam,
-        as_shot_neutral: img.as_shot_neutral,
-        clip: img.clip,
-        rendered: img.rendered,
-        make: img.make.clone(),
-        model: img.model.clone(),
-        shot: img.shot.clone(),
-        metadata: img.metadata.clone(),
-    }
-}
+pub use amb_engine::raw::downscale;
 
 /// Where a photo's edits are kept ([`amb_engine::sidecar_path`]).
 pub fn sidecar_path(photo: &Path) -> PathBuf {
@@ -272,7 +239,8 @@ impl Session {
             lens_cache: None,
             upright_cache: None,
             profile_note: None,
-            full_cache: None,
+            region_cache: None,
+            globals_src: None,
         })
     }
 
@@ -661,8 +629,9 @@ impl Session {
     }
 
     /// A 1:1 crop of the full-resolution render around (cx, cy) (fractions of
-    /// the upright image), at most `max_w × max_h` pixels. The full render is
-    /// cached until the committed settings change.
+    /// the upright image), at most `max_w × max_h` pixels. Only the tiles the
+    /// crop needs are rendered ([`pipeline::render_region`]); they are kept
+    /// until the committed settings change, so panning back is instant.
     #[allow(clippy::too_many_arguments)]
     pub fn region(
         &mut self,
@@ -677,28 +646,83 @@ impl Session {
         let start = Instant::now();
         let settings = self.effective_settings(&BTreeMap::new(), before);
         let key = serde_json::to_string(&settings).unwrap_or_default();
-        if self.full_cache.as_ref().map(|c| &c.key) != Some(&key) {
-            let develop = self.develop(&settings, lens);
-            let developed = pipeline::render(&self.full, &develop);
-            let upright = amb_export::geometry::orient(&developed, self.full.metadata.orientation);
-            self.full_cache = Some(FullRender {
+        let develop = self.develop(&settings, lens);
+        let orientation = self.full.metadata.orientation;
+        let (sw, sh) = pipeline::output_size(&self.full, &develop);
+        let (uw, uh) = amb_export::geometry::oriented_size(sw, sh, orientation);
+        if self.region_cache.as_ref().map(|c| &c.key) != Some(&key) {
+            let globals = if pipeline::needs_globals(&develop) {
+                let full = &self.full;
+                let small = self
+                    .globals_src
+                    .get_or_insert_with(|| raw::downscale(full, pipeline::GLOBALS_LONG_SIDE));
+                pipeline::measure_globals(full, small, &develop)
+            } else {
+                pipeline::Globals::default()
+            };
+            let tiles = uw.div_ceil(REGION_TILE) * uh.div_ceil(REGION_TILE);
+            self.region_cache = Some(RegionCache {
                 key,
-                width: upright.width,
-                height: upright.height,
-                srgb: to_srgb8(&upright),
+                srgb: vec![0; uw * uh * 3],
+                done: vec![false; tiles],
+                globals,
             });
         }
-        let full = self.full_cache.as_ref().expect("set above");
-        let w = max_w.clamp(16, full.width);
-        let h = max_h.clamp(16, full.height);
-        let x = ((cx * full.width as f64) as isize - w as isize / 2)
-            .clamp(0, (full.width - w) as isize) as usize;
-        let y = ((cy * full.height as f64) as isize - h as isize / 2)
-            .clamp(0, (full.height - h) as isize) as usize;
+        let cache = self.region_cache.as_mut().expect("set above");
+        let w = max_w.clamp(16, uw);
+        let h = max_h.clamp(16, uh);
+        let x = ((cx * uw as f64) as isize - w as isize / 2).clamp(0, (uw - w) as isize) as usize;
+        let y = ((cy * uh as f64) as isize - h as isize / 2).clamp(0, (uh - h) as isize) as usize;
+
+        // Render the tiles the crop needs that aren't rendered yet, as one
+        // rectangle (the filters' margin is paid once).
+        let tiles_x = uw.div_ceil(REGION_TILE);
+        let (tx0, tx1) = (x / REGION_TILE, (x + w).div_ceil(REGION_TILE));
+        let (ty0, ty1) = (y / REGION_TILE, (y + h).div_ceil(REGION_TILE));
+        let missing: Vec<(usize, usize)> = (ty0..ty1)
+            .flat_map(|ty| (tx0..tx1).map(move |tx| (tx, ty)))
+            .filter(|&(tx, ty)| !cache.done[ty * tiles_x + tx])
+            .collect();
+        if !missing.is_empty() {
+            let (mx0, mx1) = missing.iter().fold((usize::MAX, 0), |(a, b), &(tx, _)| {
+                (a.min(tx), b.max(tx + 1))
+            });
+            let (my0, my1) = missing.iter().fold((usize::MAX, 0), |(a, b), &(_, ty)| {
+                (a.min(ty), b.max(ty + 1))
+            });
+            let (rx, ry) = (mx0 * REGION_TILE, my0 * REGION_TILE);
+            let rw = (mx1 * REGION_TILE).min(uw) - rx;
+            let rh = (my1 * REGION_TILE).min(uh) - ry;
+            // The same rectangle in the stored orientation the engine renders.
+            let corner = |ux: usize, uy: usize| {
+                amb_export::geometry::stored_position(orientation, sw, sh, ux, uy)
+            };
+            let (ax, ay) = corner(rx, ry);
+            let (bx, by) = corner(rx + rw - 1, ry + rh - 1);
+            let stored = amb_engine::buffer::Rect {
+                x: ax.min(bx),
+                y: ay.min(by),
+                width: ax.abs_diff(bx) + 1,
+                height: ay.abs_diff(by) + 1,
+            };
+            let part = pipeline::render_region(&self.full, &develop, stored, &cache.globals);
+            let upright = amb_export::geometry::orient(&part, orientation);
+            let srgb = to_srgb8(&upright);
+            for row in 0..rh {
+                let dst = ((ry + row) * uw + rx) * 3;
+                cache.srgb[dst..dst + rw * 3]
+                    .copy_from_slice(&srgb[row * rw * 3..(row + 1) * rw * 3]);
+            }
+            for ty in my0..my1 {
+                for tx in mx0..mx1 {
+                    cache.done[ty * tiles_x + tx] = true;
+                }
+            }
+        }
         let mut crop = Vec::with_capacity(w * h * 3);
         for row in y..y + h {
-            let start = (row * full.width + x) * 3;
-            crop.extend_from_slice(&full.srgb[start..start + w * 3]);
+            let start = (row * uw + x) * 3;
+            crop.extend_from_slice(&cache.srgb[start..start + w * 3]);
         }
         if clipping {
             mark_clipping(&mut crop);
@@ -709,8 +733,8 @@ impl Session {
             y,
             width: w,
             height: h,
-            full_width: full.width,
-            full_height: full.height,
+            full_width: uw,
+            full_height: uh,
             millis: start.elapsed().as_millis(),
         }
     }
@@ -1173,6 +1197,45 @@ mod tests {
         );
         let ctx = s.feedback_context(true);
         assert!(ctx.contains("Camera:") && ctx.contains("Settings:"));
+    }
+
+    #[test]
+    fn region_tiles_match_the_full_render_in_any_orientation() {
+        let path = synthetic("colorchecker");
+        let lens = LensSources::default();
+        for orientation in [1u16, 6, 3] {
+            let mut s = Session::open(&path).unwrap();
+            s.full.metadata.orientation = orientation;
+            let set = |name: &str, v: f64| Command::SetParam {
+                name: name.into(),
+                value: v.into(),
+            };
+            let edit = [
+                set("Clarity2012", 40.0),
+                set("Shadows2012", 50.0),
+                set("ColorNoiseReduction", 0.0),
+            ];
+            s.execute(&edit, None).unwrap();
+            let settings = s.effective_settings(&BTreeMap::new(), false);
+            let develop = s.develop(&settings, &lens);
+            let full = to_srgb8(&amb_export::geometry::orient(
+                &pipeline::render(&s.full, &develop),
+                orientation,
+            ));
+            // A first crop, then a pan that needs new tiles.
+            for (cx, cy) in [(0.3, 0.4), (0.6, 0.55)] {
+                let r = s.region(cx, cy, 300, 200, false, false, &lens);
+                let cache = s.region_cache.as_ref().unwrap();
+                let worst = (r.y..r.y + r.height)
+                    .flat_map(|y| {
+                        (r.x * 3..(r.x + r.width) * 3).map(move |i| y * r.full_width * 3 + i)
+                    })
+                    .map(|i| cache.srgb[i].abs_diff(full[i]))
+                    .max()
+                    .unwrap();
+                assert!(worst <= 1, "orientation {orientation}: {worst}");
+            }
+        }
     }
 
     #[test]

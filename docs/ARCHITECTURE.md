@@ -59,6 +59,8 @@ amb-export: orient upright → resize (Lanczos-3, linear) → output colour spac
 
 Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core CPU, plus about 2.5 s to decode it and write a full-size JPEG. Most of that is the CPU pipeline; the GPU backend comes later.
 
+**Region renders** (`pipeline::render_region`, for the editor's 100% view) develop only a rectangle of the output, with a margin as wide as the edit's filters reach (each spatial stage reports its reach: `local::reach`, `detail::noise_reduction_reach` and so on), started on a multiple of 64 pixels so subsampled filters see the same blocks. Every stage works on a `buffer::Tile`: it knows where its buffer sits in the full output, so the vignette, grain, masks and spots are placed and filter radii scaled as in the full render. A spot writing into the region pulls in what it reads (its ring and its donor, `retouch::footprints`). What the full render measures over the whole photo (`pipeline::Globals`: a film negative's levels, the haze estimates, the colours under colour range samples) comes from `measure_globals`, a render of a 1600 px copy (colour samples from small full-size renders around them). The region then matches the same part of the full render to about 1e-6, except: haze and negative levels come from the small copy (a fraction of a percent), and noise reduction measures the noise on the region. A 24 MP 100% view takes about 3 s in a debug build, against about 33 s for the full render it replaces.
+
 ## Export (amb-export)
 
 | Format | Bit depths | Colour profile | EXIF | Notes |
@@ -98,7 +100,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - Basic, Tone Curve (parametric), Color Mixer (HSL tabs), Black & White, Color Grading, Detail, Lens Corrections, Transform, Effects, Calibration and Film Negative panels
   - presets list (Lightroom's own folder when present, or added folders) with an Amount slider
   - history, undo/redo (a drag of a curve point or colour wheel, or a WB pick, is one step), before/after, histogram
-  - 1:1 view with panning (a region of the full-size render), white-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels, crop and straighten tool (draw a crop corner to corner like a screenshot, then adjust; aspect lock, size presets), mask tool (`ui/masks.js`: linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map; [design/masks.md](design/masks.md)), spot removal (`ui/spots.js`: heal and clone spots with a suggested donor, `spot_source`; [design/spot-removal.md](design/spot-removal.md))
+  - 1:1 view with panning: only the tiles (256 px) the view needs are rendered (`render_region`), and kept until the committed settings change, so panning back is instant. White-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels, crop and straighten tool (draw a crop corner to corner like a screenshot, then adjust; aspect lock, size presets), mask tool (`ui/masks.js`: linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map; [design/masks.md](design/masks.md)), spot removal (`ui/spots.js`: heal and clone spots with a suggested donor, `spot_source`; [design/spot-removal.md](design/spot-removal.md))
   - size presets (built-in for social sites and print, plus custom) for the crop aspect and exact-size export
   - **looks:** the toolbar, side columns and panels come from a layout file and the colours from a theme (`src/looks.rs` validates and stores them; `ui/layout.js` renders; `ui/controls.js` has the knob, bar, number, toggle and segmented controls; `ui/editor.js` is editor mode, which edits a draft of the layout and re-renders it)
   - **hub:** `src/hub.rs` reads a hub's `index.json` (https, or file:// for testing), checks each look file against its sha256, validates it and saves it as one of the user's looks; it also builds the GitHub link for submitting a look. `ui/hub.js` is the Browse dialog, with previews drawn from the looks' own data. The hub repo template is `hub/`
@@ -120,7 +122,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 
 - **A full GUI.** The editor exists (see below). Missing: GPU viewport, installers. All remaining gaps are listed in [GAPS.md](GAPS.md).
 - Library and catalog (folders, ratings, keywords, collections, search).
-- GPU backend (wgpu), tiling and caching.
+- GPU backend (wgpu), and caching per stage (region renders exist for the 100% view).
 - Red eye, Guided Upright ([design/transform.md](design/transform.md)), AI masks.
 - Camera profiles (DCP) and Adobe-like base looks: today a placeholder filmic base look is used.
 - Look matching (`amb match`) for AI control (the MCP server exists: `amb mcp`, [ai/mcp.md](ai/mcp.md)).

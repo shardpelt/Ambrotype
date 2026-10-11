@@ -123,7 +123,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 
 - **A full GUI.** The editor exists (see below). Missing: a native GPU viewport (previews are developed on the GPU but still sent to the page as JPEGs). All remaining gaps are listed in [GAPS.md](GAPS.md).
 - Library and catalog (folders, ratings, keywords, collections, search).
-- A GPU kernel for luminance noise reduction (it runs as a CPU step in a GPU preview), and caching per stage (region renders exist for the 100% view).
+- GPU previews with masks, spots, defringe or a camera profile (they render on the CPU), and caching per stage (region renders exist for the 100% view).
 - Red eye, Guided Upright ([design/transform.md](design/transform.md)), AI masks.
 - Camera profiles (DCP) and Adobe-like base looks: today a placeholder filmic base look is used.
 - Look matching (`amb match`) for AI control (the MCP server exists: `amb mcp`, [ai/mcp.md](ai/mcp.md)).

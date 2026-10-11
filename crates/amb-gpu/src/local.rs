@@ -155,7 +155,7 @@ impl<'a> Planes<'a> {
 
     /// A box blur of radius `r` (fractional: the end taps weighted by its
     /// fraction), rows then columns; into `out` at `offset`.
-    fn frac_box(
+    pub(crate) fn frac_box(
         &mut self,
         src: &wgpu::Buffer,
         w: usize,
@@ -188,6 +188,16 @@ impl<'a> Planes<'a> {
             None,
             w * h,
         );
+    }
+
+    /// `src` squared into `out`.
+    pub(crate) fn square(&mut self, src: &wgpu::Buffer, w: usize, h: usize, out: &wgpu::Buffer) {
+        let p = PlaneParams {
+            w: w as u32,
+            h: h as u32,
+            ..Default::default()
+        };
+        self.plane(&self.k().square, p, src, None, out, None, w * h);
     }
 
     /// `src` blurred as `plan` says (`None`: unchanged).

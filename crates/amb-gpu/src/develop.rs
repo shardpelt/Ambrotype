@@ -150,6 +150,7 @@ struct ColorParams {
 /// Every stage's compiled kernels.
 pub(crate) struct Kernels {
     pub(crate) local: crate::local::LocalKernels,
+    pub(crate) noise: crate::denoise::NoiseKernels,
     unclip_weights: Kernel,
     matrix: Kernel,
     base_look: Kernel,
@@ -193,6 +194,7 @@ impl Kernels {
         const IMAGE: &[bool] = &[false, true, true, true];
         Kernels {
             local: crate::local::LocalKernels::new(gpu, COMMON),
+            noise: crate::denoise::NoiseKernels::new(gpu, COMMON),
             unclip_weights: Kernel::new(gpu, "unclip_weights", &matrix, "unclip_weights", MATRIX),
             matrix: Kernel::new(gpu, "matrix", &matrix, "matrix", MATRIX),
             base_look: Kernel::new(gpu, "base_look", &tone, "base_look", IMAGE),
@@ -359,6 +361,9 @@ impl Gpu {
                     k.dehaze_apply
                         .dispatch(self, &mut enc, &[&img, &small, &ca, &cb, &params], n);
                 }
+                Step::LuminanceNr(lp) => {
+                    self.luminance_nr(&mut enc, &img, plan.width, plan.height, lp);
+                }
                 Step::ColorNr(cp) => {
                     self.color_nr(&mut enc, &img, plan.width, plan.height, cp);
                 }
@@ -500,7 +505,7 @@ impl Gpu {
 
 impl Gpu {
     /// Finish what `enc` holds and start a new encoder.
-    fn flush(&self, enc: &mut wgpu::CommandEncoder) {
+    pub(crate) fn flush(&self, enc: &mut wgpu::CommandEncoder) {
         let done = std::mem::replace(enc, self.device.create_command_encoder(&Default::default()));
         self.queue.submit([done.finish()]);
     }
@@ -1050,6 +1055,52 @@ pub(crate) mod tests {
         check_at(
             "default colour noise reduction, larger",
             &only(&[("Exposure2012", n(0.3))]),
+            (1011, 677),
+        );
+    }
+
+    #[test]
+    fn luminance_noise_reduction() {
+        let only = |tags: &[(&'static str, Value)]| {
+            let mut t = vec![("Sharpness", n(0.0)), ("ColorNoiseReduction", n(0.0))];
+            t.extend_from_slice(tags);
+            t
+        };
+        // It does change this photo.
+        let img = photo(160, 120);
+        let off = pipeline::render(&img, &settings(&only(&[])));
+        let on = pipeline::render(&img, &settings(&only(&[("LuminanceSmoothing", n(40.0))])));
+        assert!(compare(&on.rgb, &off.rgb).0 > 1e-2);
+        check(
+            "luminance noise reduction",
+            &only(&[("LuminanceSmoothing", n(40.0))]),
+        );
+        check(
+            "strong, no detail",
+            &only(&[
+                ("LuminanceSmoothing", n(90.0)),
+                ("LuminanceNoiseReductionDetail", n(0.0)),
+            ]),
+        );
+        check(
+            "detail and contrast",
+            &only(&[
+                ("LuminanceSmoothing", n(60.0)),
+                ("LuminanceNoiseReductionDetail", n(80.0)),
+                ("LuminanceNoiseReductionContrast", n(70.0)),
+            ]),
+        );
+        check(
+            "contrast, no detail",
+            &only(&[
+                ("LuminanceSmoothing", n(30.0)),
+                ("LuminanceNoiseReductionDetail", n(0.0)),
+                ("LuminanceNoiseReductionContrast", n(100.0)),
+            ]),
+        );
+        check_at(
+            "with colour noise reduction, larger",
+            &[("LuminanceSmoothing", n(50.0)), ("Exposure2012", n(0.3))],
             (1011, 677),
         );
     }

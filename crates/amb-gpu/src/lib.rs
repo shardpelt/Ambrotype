@@ -4,11 +4,11 @@
 //!
 //! Each stage is a WGSL kernel with the same maths as its CPU stage in
 //! `amb-engine`, and a test that runs both on the same pixels and compares
-//! them. A render runs every stage on the GPU or none: when an edit uses a
-//! stage that has no kernel yet, [`Gpu::render`] says so and the caller
-//! renders on the CPU (moving pixels back and forth between stages would
-//! cost more than it saves).
+//! them. [`Gpu::render`] runs an `amb_engine::plan::Plan`; an edit the plan
+//! can't express (masks, spots, defringe, camera profiles) is rendered on
+//! the CPU by the caller.
 
+mod denoise;
 mod develop;
 mod device;
 mod local;

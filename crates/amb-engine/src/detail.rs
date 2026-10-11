@@ -99,7 +99,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::buffer::{Image, luminance_weights};
-use crate::filters::{box_blur, gaussian_blur, gaussian_by, gaussian_reach};
+use crate::filters::{box_blur, gaussian_by, gaussian_reach};
 
 /// `Sharpness` 0..150, `SharpenRadius` 0.5..3.0, `SharpenDetail` 0..100, `SharpenEdgeMasking` 0..100.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -673,28 +673,37 @@ fn edge_mask(l: &[f32], w: usize, h: usize, m: &EdgeMaskPlan) -> Vec<f32> {
     gaussian_by(&raw, w, h, &m.smooth)
 }
 
-fn luminance_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrengths) {
-    let (w, h) = (img.width, img.height);
+/// Luminance noise reduction as numbers (for other backends): self-guided
+/// filters of radius `r_fine` (then `coarse`: radius and eps scale) with eps
+/// from the measured noise ([`luminance_nr_tables`]); Detail returns
+/// `restore` at most of the removed signal where its 3×3 energy clears
+/// `threshold` times the noise; Contrast adds `contrast_gain` times a
+/// `contrast_blur` of what is still removed.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LuminanceNrPlan {
+    pub r_fine: f32,
+    pub coarse: Option<(f32, f32)>,
+    pub restore: f32,
+    pub threshold: f32,
+    pub contrast_gain: f32,
+    pub contrast_blur: crate::filters::GaussianPlan,
+    pub max_ratio: f32,
+    gain: f32,
+    percentile: f64,
+    floor: f32,
+}
+
+/// [`LuminanceNrPlan`], or `None` when it does nothing.
+pub fn luminance_nr_plan(p: &NoiseReduction, k: &DetailStrengths) -> Option<LuminanceNrPlan> {
+    if !(p.luminance > 0.0 && p.luminance.is_finite()) {
+        return None;
+    }
     let s = p.luminance.min(100.0) / 100.0;
     let detail = (slider(p.luminance_detail, 50.0, 0.0, 100.0) / 100.0) as f32;
     let contrast = (slider(p.luminance_contrast, 0.0, 0.0, 100.0) / 100.0) as f32;
     let gain = (s * k.luminance_noise_gain.max(0.0)) as f32;
     if !gain.is_finite() || gain <= 0.0 {
-        return;
-    }
-    let t = transfer();
-    let lw = luminance_weights();
-    let max_ratio = k.max_luminance_ratio.max(1.0) as f32;
-
-    // 1. Noise level per luminance, then two-scale self-guided smoothing of the
-    //    centred encoded luminance with eps set by it.
-    let l = encoded_luminance(img, CENTRE);
-    let noise = NoiseProfile::from_tiles(&luminance_tiles(&l, w, h), k.noise_percentile);
-    let floor = k.luminance_noise_floor.max(0.0) as f32;
-    let sigma_n = Lut::from_fn(|v| noise.at(v) + floor);
-    let eps = Lut::from_fn(|v| (gain * sigma_n.at(v)).powi(2));
-    if !(eps.max() > 0.0 && eps.max().is_finite()) {
-        return;
+        return None;
     }
     // Fractional radii (box windows with partial edge taps), so the result
     // changes continuously with the slider.
@@ -702,16 +711,79 @@ fn luminance_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStre
         .clamp(1.0, MAX_LUMINANCE_RADIUS);
     let r_coarse = (r_fine * k.luminance_coarse_radius.max(0.0)).min(MAX_LUMINANCE_RADIUS);
     let coarse_eps = k.luminance_coarse_eps.max(0.0) as f32;
-    let mut smooth = self_guided(&l, w, h, r_fine as f32, &eps, 1.0);
-    if r_coarse > 0.0 && coarse_eps > 0.0 {
-        smooth = self_guided(&smooth, w, h, r_coarse as f32, &eps, coarse_eps);
+    Some(LuminanceNrPlan {
+        r_fine: r_fine as f32,
+        coarse: (r_coarse > 0.0 && coarse_eps > 0.0).then_some((r_coarse as f32, coarse_eps)),
+        restore: k.luminance_detail_restore.max(0.0) as f32 * detail,
+        threshold: k.luminance_detail_threshold.max(0.0) as f32,
+        contrast_gain: k.luminance_contrast_restore.max(0.0) as f32 * contrast,
+        contrast_blur: crate::filters::gaussian_plan(
+            k.luminance_contrast_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32,
+        ),
+        max_ratio: k.max_luminance_ratio.max(1.0) as f32,
+        gain,
+        percentile: k.noise_percentile,
+        floor: k.luminance_noise_floor.max(0.0) as f32,
+    })
+}
+
+/// Luminance noise reduction's tables by encoded luminance ([`LUT_STEPS`] + 1
+/// values on 0..1): the noise sigma and the guided filters' eps.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LuminanceNrTables {
+    pub sigma: Vec<f32>,
+    pub eps: Vec<f32>,
+}
+
+/// The tables from the noise tiles a backend gathered (the Haar diagonal
+/// detail of the centred encoded luminance over 16×16 tiles, as
+/// `luminance_tiles` does), or `None` when they make it do nothing.
+pub fn luminance_nr_tables(
+    tiles: &[TileSums],
+    plan: &LuminanceNrPlan,
+) -> Option<LuminanceNrTables> {
+    let tiles: Vec<TileStat> = tiles
+        .iter()
+        .filter_map(|t| TileAcc::from(*t).finish())
+        .collect();
+    let (sigma, eps) = luminance_luts(&tiles, plan)?;
+    Some(LuminanceNrTables {
+        sigma: sigma.0.to_vec(),
+        eps: eps.0.to_vec(),
+    })
+}
+
+fn luminance_luts(tiles: &[TileStat], plan: &LuminanceNrPlan) -> Option<(Lut, Lut)> {
+    let noise = NoiseProfile::from_tiles(tiles, plan.percentile);
+    let sigma_n = Lut::from_fn(|v| noise.at(v) + plan.floor);
+    let eps = Lut::from_fn(|v| (plan.gain * sigma_n.at(v)).powi(2));
+    (eps.max() > 0.0 && eps.max().is_finite()).then_some((sigma_n, eps))
+}
+
+fn luminance_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrengths) {
+    let (w, h) = (img.width, img.height);
+    let Some(plan) = luminance_nr_plan(p, k) else {
+        return;
+    };
+    let t = transfer();
+    let lw = luminance_weights();
+    let max_ratio = plan.max_ratio;
+
+    // 1. Noise level per luminance, then two-scale self-guided smoothing of the
+    //    centred encoded luminance with eps set by it.
+    let l = encoded_luminance(img, CENTRE);
+    let Some((sigma_n, eps)) = luminance_luts(&luminance_tiles(&l, w, h), &plan) else {
+        return;
+    };
+    let mut smooth = self_guided(&l, w, h, plan.r_fine, &eps, 1.0);
+    if let Some((r_coarse, coarse_eps)) = plan.coarse {
+        smooth = self_guided(&smooth, w, h, r_coarse, &eps, coarse_eps);
     }
 
     // 2. Detail: share of the removed signal returned per pixel, from its local
     //    energy against the noise level.
     let removed: Vec<f32> = l.par_iter().zip(&smooth).map(|(a, b)| a - b).collect();
-    let restore = k.luminance_detail_restore.max(0.0) as f32 * detail;
-    let threshold = k.luminance_detail_threshold.max(0.0) as f32;
+    let (restore, threshold) = (plan.restore, plan.threshold);
     let kept: Option<Vec<f32>> = (restore > 0.0).then(|| {
         let sq: Vec<f32> = removed.par_iter().map(|v| v * v).collect();
         let mut energy = box_blur(&sq, w, h, 1);
@@ -729,7 +801,7 @@ fn luminance_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStre
     });
 
     // 3. Contrast: low-pass of what is still removed after the Detail step.
-    let contrast_gain = k.luminance_contrast_restore.max(0.0) as f32 * contrast;
+    let contrast_gain = plan.contrast_gain;
     let lowpass: Option<Vec<f32>> = (contrast_gain > 0.0).then(|| {
         let rest: Vec<f32> = match &kept {
             Some(kept) => removed
@@ -739,12 +811,7 @@ fn luminance_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStre
                 .collect(),
             None => removed.clone(),
         };
-        gaussian_blur(
-            &rest,
-            w,
-            h,
-            k.luminance_contrast_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32,
-        )
+        gaussian_by(&rest, w, h, &plan.contrast_blur)
     });
 
     img.rgb
@@ -1773,6 +1840,7 @@ impl Transfer {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::filters::gaussian_blur;
 
     const OFF: Sharpening = Sharpening {
         amount: 0.0,

@@ -5,9 +5,10 @@
 //! same code, so the two backends can only differ in arithmetic.
 //!
 //! Stage 0 (Lens Corrections, Transform, crop, a film negative) runs here on
-//! the CPU: it comes first, so its result is simply the GPU's input. A later
-//! stage without a GPU version yet is a [`Step::Cpu`]: the backend brings the
-//! image back, runs the engine's own code on it and carries on. Masks, spots,
+//! the CPU: it comes first, so its result is simply the GPU's input. Every
+//! later stage has a GPU version; one without would be a [`Step::Cpu`]: the
+//! backend brings the image back, runs the engine's own code on it and
+//! carries on. Masks, spots,
 //! defringe and camera profiles make [`plan`] return a reason instead, and
 //! the caller renders on the CPU.
 
@@ -76,6 +77,10 @@ pub enum Step {
         factor: usize,
     },
     Vignette(Box<effects::VignettePlan>),
+    /// Luminance noise reduction: the GPU gathers the noise tiles of the
+    /// encoded luminance, the CPU turns them into tables
+    /// (`detail::luminance_nr_tables`), and the GPU filters.
+    LuminanceNr(Box<detail::LuminanceNrPlan>),
     Grain(Box<effects::GrainPlan>),
     /// The global tone curve on luminance (table of [`LUT`] entries).
     ToneCurve {
@@ -104,6 +109,7 @@ impl std::fmt::Debug for Step {
             Step::Dehaze { .. } => "dehaze",
             Step::Vignette(_) => "vignette",
             Step::Grain(_) => "grain",
+            Step::LuminanceNr(_) => "luminance noise reduction",
             Step::ToneCurve { .. } => "tone curve",
             Step::Color(_) => "colour",
             Step::Curves(_) => "curves",
@@ -170,8 +176,6 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         }),
         shadow_tint,
     }];
-    let cpu =
-        |name: &'static str, run: Box<dyn Fn(&mut Image) + Send + Sync>| Step::Cpu { name, run };
 
     // 2. Dehaze (scene-linear).
     // The whole output is rendered here, so the haze is measured on it.
@@ -225,13 +229,8 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     }
     // 6. Detail: noise reduction, then sharpening.
     let (nr, sharpening) = effective_detail(img, s);
-    if nr.luminance > 0.0 && nr.luminance.is_finite() {
-        let k = cal.clone();
-        let luminance_only = detail::NoiseReduction { color: 0.0, ..nr };
-        steps.push(cpu(
-            "luminance noise reduction",
-            Box::new(move |img| detail::apply_noise_reduction(img, &luminance_only, &k.detail)),
-        ));
+    if let Some(p) = detail::luminance_nr_plan(&nr, &cal.detail) {
+        steps.push(Step::LuminanceNr(Box::new(p)));
     }
     if let Some(p) = detail::color_nr_plan(&nr, &cal.detail, w, h) {
         steps.push(Step::ColorNr(Box::new(p)));

@@ -17,6 +17,7 @@
 
 pub mod border;
 pub mod collage;
+pub mod dng;
 pub mod embed;
 pub mod exif;
 pub mod geometry;

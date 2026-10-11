@@ -14,7 +14,7 @@ About 23,000 lines of Rust and about 270 tests (fmt, clippy and tests run in CI 
 | Crate | Role | Main parts |
 |---|---|---|
 | `amb-presets` | Read and write settings | XMP (`crs:` Adobe tags plus our `amb:` tags), `.lrtemplate`, XMP embedded in DNG/JPEG; the tag registry (`data/tags.json`); preset Amount scaling; the mask model (`masks.rs`: Lightroom's correction tags, slider units, parts) and spots (`retouch.rs`) |
-| `amb-protocol` | Typed edit commands for GUI/CLI/AI | `set/adjust/reset_param`, `apply_preset`, mask commands (`add/set/paint/remove_mask`, `list_masks`), spot commands (`add/set/remove_spot`, `list_spots`), undo/redo, queries, JSON Schema; sidecar merge that keeps foreign metadata; the AI settings reference |
+| `amb-protocol` | Typed edit commands for GUI/CLI/AI | `set/adjust/reset_param`, `apply_preset`, mask commands (`add/set/paint/remove_mask`, `list_masks`), spot commands (`add/set/remove_spot`, `list_spots`), snapshots (`save/apply/rename/delete_snapshot`, `list_snapshots`), undo/redo, queries, JSON Schema; sidecar merge that keeps foreign metadata, with the edit history and snapshots stored in it (`amblib:History`, `amblib:Snapshots`); the AI settings reference |
 | `amb-color` | Colour science | Temperature/Tint ↔ xy, matrices, Bradford adaptation, output colour spaces and generated ICC profiles |
 | `amb-lens` | Lens profiles | lensfun database and Adobe LCP readers, lens matching, interpolation, correction geometry |
 | `amb-engine` | Raw decode and develop | The pipeline below; every model constant is in `Calibration` (JSON, fitted later against Lightroom) |

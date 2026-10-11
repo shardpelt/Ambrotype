@@ -89,15 +89,17 @@ Lightroom keeps pick and reject flags in its catalogue, not in sidecars, so ther
 - A rejected photo with no stars also gets `xmp:Rating="-1"`, the XMP way to say rejected, which Bridge and darktable read. A sidecar with `-1` from those apps opens as rejected.
 - Rejected photos are not deleted or hidden; filter "Not rejected" leaves them out.
 
-## History
+## History and snapshots
 
-Lightroom keeps each photo's edit history in its catalogue. Ours goes in the sidecar, so it travels with the photo:
+Lightroom keeps each photo's edit history and snapshots in its catalogue. Ours go in the sidecar, so they travel with the photo:
 
 - `amblib:History`: JSON text with the undo and redo steps (`version` 1), each step's label and the settings it changed (before and after).
 - It also carries a fingerprint of the settings the history ends at. If another app (or a hand edit) changes the sidecar's settings later, the history no longer fits and is dropped on opening, so undo never puts back values that no longer match. Changing the rating, label, flag or keywords elsewhere leaves it alone.
 - At most about 512 KB is kept, newest steps first (brush strokes store the whole mask before and after). When older steps are left out, the History panel starts at "Earlier edits" instead of "Original".
 - Anything that edits through `DevelopState` keeps it: the editor, library paste, `amb edit`, plugins and the MCP server. Exports never include it, and virtual copies start their own.
-- Lightroom may drop it when it rewrites the sidecar; then the photo simply opens with no history. To check in the trial month.
+- `amblib:Snapshots`: JSON text with each snapshot's name and full settings (`version` 1). Snapshots don't depend on the current settings, so they are always kept, and they are never trimmed.
+- The protocol commands are `save_snapshot` (also updates one), `apply_snapshot` (one undoable step), `rename_snapshot`, `delete_snapshot` and the `list_snapshots` query. Saving, renaming and deleting aren't edits and add no history step, as in Lightroom.
+- Lightroom may drop both when it rewrites the sidecar; then the photo simply opens with no history or snapshots. To check in the trial month.
 
 ## Code
 

@@ -838,3 +838,78 @@ fn long_history_keeps_the_newest_steps() {
     assert_eq!(back.undo_stack().last(), s.undo_stack().last());
     std::fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn snapshots_save_apply_and_travel_in_the_sidecar() {
+    let dir = temp_dir("snapshots");
+    let sidecar = dir.join("IMG_0003.xmp");
+    std::fs::copy(fixture("sidecar.xmp"), &sidecar).unwrap();
+    let mut s = DevelopState::load(&sidecar).unwrap();
+    let steps = s.undo_stack().len();
+    let snap = |name: &str| Command::SaveSnapshot { name: name.into() };
+    s.execute(&snap("  Before  ")).unwrap();
+    assert_eq!(s.undo_stack().len(), steps, "saving isn't an edit");
+    s.execute(&set("Exposure2012", json!(1.5))).unwrap();
+    s.execute(&set("Vibrance", json!(30))).unwrap();
+    s.execute(&snap("Bright")).unwrap();
+    assert!(s.execute(&snap(" ")).is_err());
+
+    // Applying is one undoable step that makes every setting the snapshot's.
+    let out = s
+        .execute(&Command::ApplySnapshot {
+            name: "Before".into(),
+        })
+        .unwrap();
+    assert_eq!(out.command, "apply_snapshot Before");
+    assert_eq!(num(&s, "Exposure2012"), Some(0.65));
+    assert_eq!(s.get("Vibrance"), None);
+    s.execute(&Command::Undo).unwrap();
+    assert_eq!(num(&s, "Vibrance"), Some(30.0));
+    assert!(
+        s.execute(&Command::ApplySnapshot {
+            name: "Nope".into()
+        })
+        .is_err()
+    );
+
+    // Update, rename, delete.
+    s.execute(&set("Vibrance", json!(40))).unwrap();
+    s.execute(&snap("Bright")).unwrap();
+    let rename = |name: &str, to: &str| Command::RenameSnapshot {
+        name: name.into(),
+        to: to.into(),
+    };
+    assert!(
+        s.execute(&rename("Bright", "Before")).is_err(),
+        "name taken"
+    );
+    s.execute(&rename("Bright", "Vivid")).unwrap();
+    let list = s.query(&Query::ListSnapshots).unwrap();
+    assert_eq!(list["snapshots"][0]["name"], json!("Before"));
+    assert_eq!(list["snapshots"][1]["name"], json!("Vivid"));
+    assert_eq!(list["snapshots"][1]["current"], json!(true));
+    assert_eq!(list["snapshots"][0]["current"], json!(false));
+
+    // Kept in the sidecar, and in the JSON form.
+    s.save(&sidecar).unwrap();
+    let back = DevelopState::load(&sidecar).unwrap();
+    assert_eq!(back.snapshots(), s.snapshots());
+    let vivid = &back.snapshots()[1];
+    assert_eq!(
+        vivid.settings.get("Vibrance").and_then(Value::as_f64),
+        Some(40.0)
+    );
+    let json = DevelopState::from_json_str(&s.to_json().to_string()).unwrap();
+    assert_eq!(json.snapshots(), s.snapshots());
+
+    let mut b = back.clone();
+    b.execute(&Command::DeleteSnapshot {
+        name: "Before".into(),
+    })
+    .unwrap();
+    b.save(&sidecar).unwrap();
+    let text = std::fs::read_to_string(&sidecar).unwrap();
+    assert_eq!(text.matches("Snapshots>").count(), 2, "{text}");
+    assert_eq!(DevelopState::load(&sidecar).unwrap().snapshots().len(), 1);
+    std::fs::remove_dir_all(&dir).ok();
+}

@@ -28,9 +28,9 @@ Other clients: run `amb mcp` as a stdio server. Lens profiles (`AMB_LENSFUN_DB`,
 
 | Tool | What it does |
 |---|---|
-| `describe_photo` | Camera, lens, exposure, capture time, rating, flag, label, keywords, the current edit (settings, masks, spots) and settings that don't render yet. |
-| `edit_photo` | Runs edit commands (`set_param`, `adjust_param`, `apply_preset`, `add_mask`, `add_spot`, `undo`, …) on the photo's sidecar as one step. `dry_run` reports the changes without writing. |
-| `query_photo` | Read-only queries: `get_param`, `list_params`, `describe`, `list_groups`, `list_masks`, `list_spots`. |
+| `describe_photo` | Camera, lens, exposure, capture time, rating, flag, label, keywords, the current edit (settings, masks, spots), its snapshots and settings that don't render yet. |
+| `edit_photo` | Runs edit commands (`set_param`, `adjust_param`, `apply_preset`, `add_mask`, `add_spot`, `save_snapshot`, `undo`, …) on the photo's sidecar as one step. `dry_run` reports the changes without writing. |
+| `query_photo` | Read-only queries: `get_param`, `list_params`, `describe`, `list_groups`, `list_masks`, `list_spots`, `list_snapshots`. |
 | `render_preview` | Renders the photo with its edit (or with a preset instead, at an Amount) and returns a JPEG, 256–2048 pixels, with the as-shot white balance and anything not rendered. |
 | `export_photo` | Writes the edited photo to a file (format from the extension), with size, quality and colour space. Never overwrites unless told to. |
 | `list_photos` | The photos in a folder, with virtual copies, ratings, flags, labels, keywords and whether they're edited. |

@@ -31,7 +31,7 @@ pub mod state;
 
 pub use command::{Command, Query, parse_commands, parse_queries};
 pub use convert::Clamp;
-pub use state::{Change, DevelopState, HistoryEntry, Outcome};
+pub use state::{Change, DevelopState, HistoryEntry, Outcome, Snapshot};
 
 fn did_you_mean(suggestions: &[String]) -> String {
     if suggestions.is_empty() {

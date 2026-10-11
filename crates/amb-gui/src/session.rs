@@ -59,8 +59,10 @@ pub struct Session {
     globals_src: Option<CameraImage>,
     /// Rating and keywords, as in the sidecar (they are saved as they change).
     pub info: amb_protocol::sidecar::PhotoInfo,
-    /// The develop settings as last loaded or saved (for "unsaved edits").
+    /// The develop settings and snapshots as last loaded or saved (for
+    /// "unsaved edits").
     saved: BTreeMap<String, Value>,
+    saved_snapshots: Vec<amb_protocol::Snapshot>,
 }
 
 /// Full-resolution upright sRGB renders for the 100% view: the parts
@@ -122,6 +124,8 @@ pub struct StateInfo {
     /// The history read from the sidecar starts after older steps that
     /// weren't kept, not at the photo's original state.
     pub history_trimmed: bool,
+    /// The snapshots as `list_snapshots` describes them.
+    pub snapshots: serde_json::Value,
     /// Settings present but not rendered by this engine version.
     pub not_rendered: Vec<String>,
     /// The masks as `list_masks` describes them.
@@ -230,8 +234,10 @@ impl Session {
             None => (DevelopState::new(), None),
         };
         let saved = state.settings().clone();
+        let saved_snapshots = state.snapshots().to_vec();
         Ok(Session {
             saved,
+            saved_snapshots,
             path: path.to_path_buf(),
             full,
             preview_src: None,
@@ -332,6 +338,11 @@ impl Session {
                 .map(|h| h.label.clone())
                 .collect(),
             history_trimmed: self.state.history_trimmed(),
+            snapshots: self
+                .state
+                .query(&amb_protocol::Query::ListSnapshots)
+                .map(|q| q["snapshots"].clone())
+                .unwrap_or_default(),
             not_rendered,
             masks: amb_protocol::masks::describe(self.state.settings()),
             spots: amb_protocol::spots::describe(self.state.settings()),
@@ -844,12 +855,13 @@ impl Session {
             .map_err(|e| e.to_string())?;
         self.base_xmp = std::fs::read_to_string(&self.sidecar).ok();
         self.saved = self.state.settings().clone();
+        self.saved_snapshots = self.state.snapshots().to_vec();
         Ok(self.sidecar.display().to_string())
     }
 
-    /// The develop settings differ from what's in the sidecar.
+    /// The develop settings or snapshots differ from what's in the sidecar.
     pub fn has_unsaved_edits(&self) -> bool {
-        self.state.settings() != &self.saved
+        self.state.settings() != &self.saved || self.state.snapshots() != self.saved_snapshots
     }
 
     /// Set the rating and keywords and write them to the sidecar at once.

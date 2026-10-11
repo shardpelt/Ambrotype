@@ -317,12 +317,68 @@ function syncControls() {
   }
   $("btn-undo").disabled = !ui.state?.can_undo;
   $("btn-redo").disabled = !ui.state?.can_redo;
+  renderSnapshots();
   renderHistory();
   if (ui.curve) for (const tag of AmbCurve.TAGS) ui.curve.set(tag, currentValue(tag));
   if (ui.wheels) ui.wheels.set(Object.fromEntries(AmbWheels.TAGS.map((t) => [t, currentValue(t)])));
   const nr = ui.state?.not_rendered ?? [];
   $("status-right").textContent = nr.length ? `Not rendered yet: ${nr.length} setting(s)` : "";
   $("status-right").title = nr.join(", ");
+}
+
+// Snapshots: named copies of the edit, kept in the photo's sidecar. Click
+// one to apply it (one undoable step); hover for update, rename and delete.
+// The one matching the current settings is bold.
+function renderSnapshots() {
+  const list = $("snapshot-list");
+  list.innerHTML = "";
+  $("snapshot-add").disabled = !ui.state;
+  for (const s of ui.state?.snapshots ?? []) {
+    const li = document.createElement("li");
+    li.classList.toggle("current", s.current);
+    const name = document.createElement("span");
+    name.className = "snap-name";
+    name.textContent = s.name;
+    name.title = s.current ? "The edit is this snapshot" : "Apply this snapshot (undoable)";
+    name.addEventListener("click", () => {
+      if (!s.current) run([{ cmd: "apply_snapshot", name: s.name }], `Snapshot: ${s.name}`);
+    });
+    const act = (text, title, fn) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "snap-act";
+      b.textContent = text;
+      b.title = title;
+      b.addEventListener("click", fn);
+      return b;
+    };
+    li.append(
+      name,
+      act("↻", "Update with the current settings", () => run([{ cmd: "save_snapshot", name: s.name }])),
+      act("✎", "Rename", async () => {
+        const to = await askName("Rename snapshot", "", s.name);
+        if (to && to !== s.name) run([{ cmd: "rename_snapshot", name: s.name, to }]);
+      }),
+      act("×", "Delete", () => {
+        if (confirm(`Delete the snapshot “${s.name}”? The photo's edit stays as it is.`)) {
+          run([{ cmd: "delete_snapshot", name: s.name }]);
+        }
+      }),
+    );
+    list.append(li);
+  }
+}
+
+async function addSnapshot() {
+  if (!ui.state) return;
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const name = await askName("New snapshot", "The edit as it is now, under a name, to come back to. Kept in the photo's .xmp.", stamp);
+  if (!name) return;
+  const taken = (ui.state.snapshots ?? []).some((s) => s.name === name);
+  if (taken && !confirm(`Replace the snapshot “${name}” with the edit as it is now?`)) return;
+  run([{ cmd: "save_snapshot", name }]);
 }
 
 // The History panel: Original, the steps done, then the steps undone (greyed)
@@ -1331,6 +1387,7 @@ async function init() {
   $("btn-save").addEventListener("click", save);
   $("btn-export").addEventListener("click", exportFlow);
   $("btn-undo").addEventListener("click", () => run([{ cmd: "undo" }]));
+  $("snapshot-add").addEventListener("click", addSnapshot);
   $("btn-redo").addEventListener("click", () => run([{ cmd: "redo" }]));
   $("btn-before").addEventListener("click", toggleBefore);
   $("btn-zoom").addEventListener("click", () => setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy));

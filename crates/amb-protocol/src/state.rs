@@ -48,11 +48,20 @@ const PRESET_SKIPPED_GROUPS: &[&str] = &["metadata"];
 /// Process-group tags copied from a preset (the rest describe the file's writer).
 const PRESET_PROCESS_TAGS: &[&str] = &["ProcessVersion"];
 
+/// A named copy of the settings, kept with the photo (Lightroom's
+/// Snapshots panel).
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Snapshot {
+    pub name: String,
+    pub settings: BTreeMap<String, Value>,
+}
+
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct DevelopState {
     settings: BTreeMap<String, Value>,
     undo: Vec<HistoryEntry>,
     redo: Vec<HistoryEntry>,
+    snapshots: Vec<Snapshot>,
     /// The history read from the sidecar left out older steps (to keep the
     /// sidecar small): its first step isn't the photo's original state.
     trimmed: bool,
@@ -123,6 +132,105 @@ impl DevelopState {
         self.trimmed
     }
 
+    /// The snapshots, in the order they were made.
+    pub fn snapshots(&self) -> &[Snapshot] {
+        &self.snapshots
+    }
+
+    fn snapshot(&self, name: &str) -> Result<&Snapshot, Error> {
+        self.snapshots
+            .iter()
+            .find(|s| s.name == name)
+            .ok_or_else(|| Error::InvalidValue {
+                name: "snapshot".into(),
+                reason: format!("no snapshot named {name:?}"),
+            })
+    }
+
+    /// Save, rename or delete a snapshot: not an edit, so no history step.
+    fn manage_snapshot(&mut self, cmd: &Command) -> Result<String, Error> {
+        let clean = |name: &str| -> Result<String, Error> {
+            let name = name.trim();
+            if name.is_empty() {
+                return Err(Error::InvalidValue {
+                    name: "snapshot".into(),
+                    reason: "a snapshot needs a name".into(),
+                });
+            }
+            Ok(name.to_string())
+        };
+        Ok(match cmd {
+            Command::SaveSnapshot { name } => {
+                let name = clean(name)?;
+                let settings = self.settings.clone();
+                match self.snapshots.iter_mut().find(|s| s.name == name) {
+                    Some(s) => {
+                        s.settings = settings;
+                        format!("updated snapshot {name:?}")
+                    }
+                    None => {
+                        self.snapshots.push(Snapshot {
+                            name: name.clone(),
+                            settings,
+                        });
+                        format!("saved snapshot {name:?}")
+                    }
+                }
+            }
+            Command::RenameSnapshot { name, to } => {
+                let to = clean(to)?;
+                self.snapshot(name)?;
+                if to != *name && self.snapshots.iter().any(|s| s.name == to) {
+                    return Err(Error::InvalidValue {
+                        name: "snapshot".into(),
+                        reason: format!("there is already a snapshot named {to:?}"),
+                    });
+                }
+                let s = self.snapshots.iter_mut().find(|s| s.name == *name);
+                s.expect("checked above").name = to.clone();
+                format!("renamed snapshot {name:?} to {to:?}")
+            }
+            Command::DeleteSnapshot { name } => {
+                self.snapshot(name)?;
+                self.snapshots.retain(|s| s.name != *name);
+                format!("deleted snapshot {name:?}")
+            }
+            _ => unreachable!("not a snapshot command"),
+        })
+    }
+
+    /// The snapshots as stored in a sidecar (JSON text), `None` when there are none.
+    fn snapshots_for_sidecar(&self) -> Option<String> {
+        (!self.snapshots.is_empty())
+            .then(|| serde_json::json!({ "version": 1, "snapshots": self.snapshots }).to_string())
+    }
+
+    /// Read stored snapshots (a bad one is skipped).
+    fn restore_snapshots(&mut self, json: &serde_json::Value) {
+        let Some(items) = json.get("snapshots").and_then(|v| v.as_array()) else {
+            return;
+        };
+        for item in items {
+            let name = item.get("name").and_then(|n| n.as_str());
+            let settings = item.get("settings").and_then(|s| s.as_object());
+            let (Some(name), Some(settings)) = (name, settings) else {
+                continue;
+            };
+            let settings: Option<BTreeMap<String, Value>> = settings
+                .iter()
+                .map(|(k, v)| convert::value_from_saved(k, v).ok().map(|v| (k.clone(), v)))
+                .collect();
+            if let Some(settings) = settings {
+                if !self.snapshots.iter().any(|s| s.name == name) {
+                    self.snapshots.push(Snapshot {
+                        name: name.to_string(),
+                        settings,
+                    });
+                }
+            }
+        }
+    }
+
     // ---- persistence -------------------------------------------------------
 
     /// Parse an XMP packet (sidecar or preset) into a fresh state, with the
@@ -133,6 +241,11 @@ impl DevelopState {
         let mut state = Self::from_settings(preset.settings);
         if let Some(history) = sidecar::read_history(text) {
             state.restore_history(&history);
+        }
+        if let Some(snapshots) = sidecar::read_snapshots(text) {
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&snapshots) {
+                state.restore_snapshots(&json);
+            }
         }
         Ok(state)
     }
@@ -215,6 +328,7 @@ impl DevelopState {
             "version": 1,
             "settings": self.settings,
             "history": { "undo": self.undo, "redo": self.redo },
+            "snapshots": self.snapshots,
         })
     }
 
@@ -246,12 +360,14 @@ impl DevelopState {
                 .ok_or_else(|| Error::Json(format!("history.{key} must be an array")))?;
             items.iter().map(entry_from_json).collect()
         };
-        Ok(DevelopState {
+        let mut state = DevelopState {
             settings,
             undo: stack("undo")?,
             redo: stack("redo")?,
-            trimmed: false,
-        })
+            ..DevelopState::default()
+        };
+        state.restore_snapshots(&json);
+        Ok(state)
     }
 
     /// Load from a file: `.json` uses the JSON form, anything else is read as
@@ -292,6 +408,7 @@ impl DevelopState {
             s
         } else if has_extension(path, "xmp") {
             let history = self.history_for_sidecar();
+            let snapshots = self.snapshots_for_sidecar();
             let original = match base {
                 Some(base) => base.to_string(),
                 None => match std::fs::read_to_string(path) {
@@ -300,7 +417,11 @@ impl DevelopState {
                     Err(e) => return Err(Error::Io(format!("{}: {e}", path.display()))),
                 },
             };
-            sidecar::merge_with_history(&original, &self.settings, history.as_deref())?
+            let stored = sidecar::Stored {
+                history: history.as_deref(),
+                snapshots: snapshots.as_deref(),
+            };
+            sidecar::merge_with_stored(&original, &self.settings, stored)?
         } else {
             return Err(Error::Io(format!(
                 "refusing to write {}: develop state is saved only as .xmp or .json",
@@ -351,6 +472,17 @@ impl DevelopState {
                 };
                 self.undo.push(entry);
                 Ok(outcome)
+            }
+            Command::SaveSnapshot { .. }
+            | Command::RenameSnapshot { .. }
+            | Command::DeleteSnapshot { .. } => {
+                let note = self.manage_snapshot(cmd)?;
+                Ok(Outcome {
+                    command: cmd.label(),
+                    diff: Vec::new(),
+                    clamped: Vec::new(),
+                    notes: vec![note],
+                })
             }
             _ => {
                 let mut next = self.settings.clone();
@@ -503,6 +635,9 @@ impl DevelopState {
                 known_group(group)?;
                 next.retain(|name, _| group_of(name).as_deref() != Some(group.as_str()));
             }
+            Command::ApplySnapshot { name } => {
+                *next = self.snapshot(name)?.settings.clone();
+            }
             Command::ApplyPreset {
                 path,
                 amount,
@@ -642,7 +777,11 @@ impl DevelopState {
             }
             Command::SetSpot { spot, values } => spots::set(next, *spot, values, clamped)?,
             Command::RemoveSpot { spot } => spots::remove(next, *spot)?,
-            Command::Undo | Command::Redo => unreachable!("handled by execute"),
+            Command::Undo
+            | Command::Redo
+            | Command::SaveSnapshot { .. }
+            | Command::RenameSnapshot { .. }
+            | Command::DeleteSnapshot { .. } => unreachable!("handled by execute"),
         }
         Ok(())
     }
@@ -696,6 +835,20 @@ impl DevelopState {
             }
             Query::ListMasks => masks::describe(&self.settings),
             Query::ListSpots => spots::describe(&self.settings),
+            Query::ListSnapshots => {
+                let list: Vec<serde_json::Value> = self
+                    .snapshots
+                    .iter()
+                    .map(|s| {
+                        serde_json::json!({
+                            "name": s.name,
+                            "settings": s.settings.len(),
+                            "current": s.settings == self.settings,
+                        })
+                    })
+                    .collect();
+                serde_json::json!({ "snapshots": list })
+            }
             Query::ListGroups => {
                 let groups: Vec<serde_json::Value> = catalog
                     .groups()

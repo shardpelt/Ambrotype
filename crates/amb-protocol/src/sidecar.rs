@@ -18,9 +18,10 @@
 //! photo without stars also gets `xmp:Rating="-1"`, the XMP way to say
 //! rejected (Bridge and darktable read it), and that is read as a reject.
 //!
-//! The edit history is ours too (Lightroom keeps its own in the catalogue):
-//! `amblib:History`, JSON text written by
-//! [`DevelopState`](crate::DevelopState), read back by [`read_history`].
+//! The edit history and snapshots are ours too (Lightroom keeps its own in
+//! the catalogue): `amblib:History` and `amblib:Snapshots`, JSON text written
+//! by [`DevelopState`](crate::DevelopState), read back by [`read_history`]
+//! and [`read_snapshots`].
 
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -112,13 +113,24 @@ fn parse_rating(v: &str) -> (Option<u8>, bool) {
 
 /// The stored edit history in an XMP packet (`amblib:History`), if any.
 pub fn read_history(xmp: &str) -> Option<String> {
+    read_library_text(xmp, "History")
+}
+
+/// The stored snapshots in an XMP packet (`amblib:Snapshots`), if any.
+pub fn read_snapshots(xmp: &str) -> Option<String> {
+    read_library_text(xmp, "Snapshots")
+}
+
+/// The text of the `amblib:<local>` element.
+fn read_library_text(xmp: &str, local: &str) -> Option<String> {
     let mut reader = NsReader::from_str(xmp.trim_start_matches('\u{feff}'));
     let mut inside = false;
     let mut out = String::new();
     loop {
         match reader.read_resolved_event() {
             Ok((ResolveResult::Bound(n), Event::Start(e)))
-                if n.as_ref() == LIBRARY_NS.as_bytes() && e.local_name().as_ref() == b"History" =>
+                if n.as_ref() == LIBRARY_NS.as_bytes()
+                    && e.local_name().as_ref() == local.as_bytes() =>
             {
                 inside = true;
             }
@@ -384,22 +396,30 @@ fn prefix_for(foreign: &mut Foreign, uri: &str, want: &str) -> String {
     p
 }
 
-/// Replace the stored edit history with `history` (removed when `None`).
-fn apply_history(foreign: &mut Foreign, history: Option<&str>) {
+/// Replace the `amblib:<local>` element with `text` (removed when `None`).
+fn apply_library_text(foreign: &mut Foreign, local: &str, text: Option<&str>) {
     let ns = foreign.namespaces.clone();
     foreign
         .attributes
-        .retain(|(name, _)| resolve(name, &ns) != (Some(LIBRARY_NS), "History"));
+        .retain(|(name, _)| resolve(name, &ns) != (Some(LIBRARY_NS), local));
     foreign.elements.retain(|e| {
-        let (uri, local) = element_ns(e, &ns);
-        !(uri.as_deref() == Some(LIBRARY_NS) && local == "History")
+        let (uri, l) = element_ns(e, &ns);
+        !(uri.as_deref() == Some(LIBRARY_NS) && l == local)
     });
-    if let Some(text) = history {
+    if let Some(text) = text {
         let p = prefix_for(foreign, LIBRARY_NS, "amblib");
         foreign
             .elements
-            .push(format!("<{p}:History>{}</{p}:History>", escape_text(text)));
+            .push(format!("<{p}:{local}>{}</{p}:{local}>", escape_text(text)));
     }
+}
+
+/// What a develop state keeps in the sidecar besides its settings (JSON
+/// text each; `None` removes it).
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Stored<'a> {
+    pub history: Option<&'a str>,
+    pub snapshots: Option<&'a str>,
 }
 
 #[derive(Default)]
@@ -552,22 +572,22 @@ pub fn merge_with_info(
     merge_parts(original, settings, info, None)
 }
 
-/// [`merge`], with `history` (JSON text) as the stored edit history in
-/// place of any there; `None` removes it.
-pub fn merge_with_history(
+/// [`merge`], with `stored` (edit history and snapshots) in place of what
+/// the sidecar had.
+pub fn merge_with_stored(
     original: &str,
     settings: &BTreeMap<String, Value>,
-    history: Option<&str>,
+    stored: Stored,
 ) -> Result<String, Error> {
-    merge_parts(original, settings, None, Some(history))
+    merge_parts(original, settings, None, Some(stored))
 }
 
-/// `history`: `None` keeps the stored history as it is.
+/// `stored`: `None` keeps the stored history and snapshots as they are.
 fn merge_parts(
     original: &str,
     settings: &BTreeMap<String, Value>,
     info: Option<&PhotoInfo>,
-    history: Option<Option<&str>>,
+    stored: Option<Stored>,
 ) -> Result<String, Error> {
     let mut foreign = if original.trim().is_empty() {
         Foreign::default()
@@ -577,8 +597,9 @@ fn merge_parts(
     if let Some(info) = info {
         apply_info(&mut foreign, info);
     }
-    if let Some(history) = history {
-        apply_history(&mut foreign, history);
+    if let Some(stored) = stored {
+        apply_library_text(&mut foreign, "History", stored.history);
+        apply_library_text(&mut foreign, "Snapshots", stored.snapshots);
     }
     let mut packet = amb_presets::xmp_writer::write_packet(settings, amb_presets::is_signed_tag);
     if foreign.attributes.is_empty() && foreign.elements.is_empty() {

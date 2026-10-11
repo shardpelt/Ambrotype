@@ -128,7 +128,11 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 | `add_spot` | `at`, `radius`?, `kind`?, `source`?, `feather`?, `opacity`? | A round heal (default) or clone spot; see [Spot removal](#spot-removal). |
 | `set_spot` | `spot`, `values` | `at`, `radius`, `source` (null to search again), `kind`, `feather`, `opacity`, `active`. |
 | `remove_spot` | `spot` | |
-| `undo`, `redo` | | One step = one command. |
+| `save_snapshot` | `name` | Keeps the current settings as a named snapshot, stored with the photo (replaces one of that name). Not an edit: no undo step. Save one before trying a different direction. |
+| `apply_snapshot` | `name` | Sets every setting to the snapshot's, as one undoable step. |
+| `rename_snapshot` | `name`, `to` | |
+| `delete_snapshot` | `name` | |
+| `undo`, `redo` | | One step = one command. The history is kept in the sidecar, so `undo` also reaches steps from earlier sessions (unless another app changed the edit since). |
 
 Validation:
 - **Unknown names are rejected** with suggestions: `"Temp"` gives `unknown setting "Temp" (did you mean Temperature, IncrementalTemperature?)`. Some short names *are* valid legacy PV2010 tags (`Exposure`, `Contrast`, `Shadows`, `Clarity`). Using them works, but the result carries a note pointing to the current tag.
@@ -148,6 +152,7 @@ Validation:
 | `list_groups` | | all groups with labels, descriptions, tag counts and how many are set |
 | `list_masks` | | every mask: name, amount, active, local sliders (UI units), parts with kind, mode, invert and geometry |
 | `list_spots` | | every spot: kind, position, radius, source, feather, opacity |
+| `list_snapshots` | | every snapshot: name, number of settings, and whether it matches the current settings |
 
 ```json
 [{"query": "get_param", "name": "Temperature"}, {"query": "list_params", "group": "color_grading"}]

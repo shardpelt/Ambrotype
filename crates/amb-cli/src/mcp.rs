@@ -152,7 +152,7 @@ fn tools() -> Value {
         },
         {
             "name": "edit_photo",
-            "description": "Apply edit commands to a photo's XMP sidecar as one undoable step: set_param, adjust_param, reset_param, reset_group, apply_preset, add_mask, set_mask, paint_mask, remove_mask, add_spot, set_spot, remove_spot, undo, redo. Values outside a setting's range are clamped and reported. Use dry_run first and show the user the diff.",
+            "description": "Apply edit commands to a photo's XMP sidecar as one undoable step: set_param, adjust_param, reset_param, reset_group, apply_preset, add_mask, set_mask, paint_mask, remove_mask, add_spot, set_spot, remove_spot, save_snapshot, apply_snapshot, rename_snapshot, delete_snapshot, undo, redo. Values outside a setting's range are clamped and reported. Use dry_run first and show the user the diff.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -165,7 +165,7 @@ fn tools() -> Value {
         },
         {
             "name": "query_photo",
-            "description": "Read-only questions about a photo's edit: get_param, list_params (optionally by group), describe (a setting's documentation and value), list_groups, list_masks, list_spots.",
+            "description": "Read-only questions about a photo's edit: get_param, list_params (optionally by group), describe (a setting's documentation and value), list_groups, list_masks, list_spots, list_snapshots.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -356,6 +356,7 @@ fn describe(p: &Path) -> Result<Value, String> {
         "edit": q(json!({ "query": "list_params" })),
         "masks": q(json!({ "query": "list_masks" })),
         "spots": q(json!({ "query": "list_spots" })),
+        "snapshots": q(json!({ "query": "list_snapshots" })),
         "not_rendered": not_rendered,
     }))
 }

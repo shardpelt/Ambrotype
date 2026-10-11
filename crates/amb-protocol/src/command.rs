@@ -131,6 +131,17 @@ pub enum Command {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         part: Option<usize>,
     },
+    /// Keep the current settings as a snapshot called `name` (replacing a
+    /// snapshot of that name). Snapshots are kept with the photo; saving,
+    /// renaming or deleting one doesn't change the edit, so it adds no
+    /// history step.
+    SaveSnapshot { name: String },
+    /// Set every setting to the snapshot's (one undoable step).
+    ApplySnapshot { name: String },
+    /// Rename a snapshot.
+    RenameSnapshot { name: String, to: String },
+    /// Delete a snapshot.
+    DeleteSnapshot { name: String },
     /// Revert the most recent command.
     Undo,
     /// Re-apply the most recently undone command.
@@ -172,6 +183,10 @@ impl Command {
             }
             Command::SetSpot { spot, .. } => format!("set_spot {spot}"),
             Command::RemoveSpot { spot } => format!("remove_spot {spot}"),
+            Command::SaveSnapshot { name } => format!("save_snapshot {name}"),
+            Command::ApplySnapshot { name } => format!("apply_snapshot {name}"),
+            Command::RenameSnapshot { name, .. } => format!("rename_snapshot {name}"),
+            Command::DeleteSnapshot { name } => format!("delete_snapshot {name}"),
             Command::Undo => "undo".into(),
             Command::Redo => "redo".into(),
         }
@@ -201,6 +216,9 @@ pub enum Query {
     ListMasks,
     /// Every spot (heal and clone) with its position, size and source.
     ListSpots,
+    /// The snapshots: name, how many settings each has, and whether it
+    /// matches the current settings.
+    ListSnapshots,
 }
 
 /// Parse one command or a JSON array of commands.

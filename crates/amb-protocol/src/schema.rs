@@ -157,10 +157,27 @@ pub fn command_schema() -> Value {
             variant("cmd", "remove_spot", "Remove a spot.", json!({
                 "spot": { "type": "integer", "minimum": 0 }
             }), &["spot"]),
+            variant("cmd", "save_snapshot", "Keep the current settings as a named snapshot, kept with the photo (replaces a snapshot of that name). Not an edit: no history step.", json!({
+                "name": snapshot_name()
+            }), &["name"]),
+            variant("cmd", "apply_snapshot", "Set every setting to a snapshot's (one undoable step).", json!({
+                "name": snapshot_name()
+            }), &["name"]),
+            variant("cmd", "rename_snapshot", "Rename a snapshot.", json!({
+                "name": snapshot_name(),
+                "to": snapshot_name()
+            }), &["name", "to"]),
+            variant("cmd", "delete_snapshot", "Delete a snapshot.", json!({
+                "name": snapshot_name()
+            }), &["name"]),
             variant("cmd", "undo", "Revert the most recent command.", json!({}), &[]),
             variant("cmd", "redo", "Re-apply the most recently undone command.", json!({}), &[]),
         ]
     })
+}
+
+fn snapshot_name() -> Value {
+    json!({ "type": "string", "minLength": 1, "description": "Snapshot name, as list_snapshots shows it." })
 }
 
 /// Schema for one query object.
@@ -183,6 +200,7 @@ pub fn query_schema() -> Value {
             }), &["name"]),
             variant("query", "list_groups", "All setting groups with labels, descriptions and counts.", json!({}), &[]),
             variant("query", "list_spots", "Every spot: kind, position, radius, source, feather, opacity.", json!({}), &[]),
+            variant("query", "list_snapshots", "The snapshots: name, number of settings, and whether each matches the current settings.", json!({}), &[]),
             variant("query", "list_masks", "Every mask with its name, amount, local sliders (UI units) and parts (kind, mode, invert, geometry).", json!({}), &[]),
         ]
     })
@@ -434,6 +452,19 @@ mod tests {
                 values: json!({"radius": 0.03}).as_object().cloned().unwrap(),
             },
             Command::RemoveSpot { spot: 0 },
+            Command::SaveSnapshot {
+                name: "Warm".into(),
+            },
+            Command::ApplySnapshot {
+                name: "Warm".into(),
+            },
+            Command::RenameSnapshot {
+                name: "Warm".into(),
+                to: "Warmer".into(),
+            },
+            Command::DeleteSnapshot {
+                name: "Warmer".into(),
+            },
             Command::Undo,
             Command::Redo,
         ]
@@ -465,6 +496,7 @@ mod tests {
             Query::ListGroups,
             Query::ListMasks,
             Query::ListSpots,
+            Query::ListSnapshots,
         ];
         for q in queries {
             let v = serde_json::to_value(&q).unwrap();
@@ -500,8 +532,8 @@ mod tests {
         assert!(!validate(&doc, &doc, &json!({"query": "nope"})));
         assert_eq!(
             doc["$defs"]["Command"]["oneOf"].as_array().unwrap().len(),
-            14
+            18
         );
-        assert_eq!(doc["$defs"]["Query"]["oneOf"].as_array().unwrap().len(), 6);
+        assert_eq!(doc["$defs"]["Query"]["oneOf"].as_array().unwrap().len(), 7);
     }
 }

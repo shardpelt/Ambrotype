@@ -15,7 +15,7 @@ The editor's preview is rendered at the size of the screen: about 2560 pixels wi
 | Stage | GPU |
 |---|---|
 | Camera matrix, white balance, Exposure, highlight recovery, Calibration shadow tint | yes |
-| Dehaze | not yet (CPU step) |
+| Dehaze | yes (the estimate is measured on the CPU, on a downscaled copy the GPU makes) |
 | Base look | yes |
 | Highlights and Shadows | yes |
 | Tone curve (Contrast, Whites, Blacks, ...) | yes |
@@ -38,4 +38,4 @@ The editor's preview of the same edit was also compared both ways in the editor,
 ## Open questions
 
 - Speed has not been measured on a real GPU yet: this was built on a machine without one. Measure on the Mac (Apple Silicon): the status bar shows each preview's time, and `AMB_GPU=off` gives the CPU's for comparison.
-- Which stages to port next, by time: Dehaze, noise reduction and grain. Colour noise reduction measures a noise profile over the whole image (tile statistics and percentiles); on the GPU, the tiles would be summed there and the percentiles taken on the CPU.
+- Which stages to port next: noise reduction, then grain. Colour noise reduction measures a noise profile over the whole image (tile statistics and percentiles); on the GPU, the tiles would be summed there and the percentiles taken on the CPU.

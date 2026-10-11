@@ -276,15 +276,26 @@ impl Estimate {
     /// itself, or a smaller render of all of it (resampled to the grid the
     /// full-size output would be measured on).
     pub fn measure(img: &Image, k: &DehazeStrengths, full: (usize, usize)) -> Estimate {
-        let long = full.0.max(full.1);
-        let target = k.estimate_long_side.max(16.0) as usize;
-        let factor = long.div_ceil(target).max(1);
+        let factor = estimate_factor(full, k);
         let (small, sw, sh) = if (img.width, img.height) == full {
             downscale(img, factor)
         } else {
             let (sw, sh) = (full.0.div_ceil(factor), full.1.div_ceil(factor));
             (resample(img, sw, sh), sw, sh)
         };
+        Estimate::from_small(small, sw, sh, factor, k)
+    }
+
+    /// The estimate from the `sw × sh` copy (interleaved RGB, non-finite
+    /// values already 0) of an output downscaled by `factor` (block
+    /// averages, as `downscale` makes them).
+    pub fn from_small(
+        small: Vec<f32>,
+        sw: usize,
+        sh: usize,
+        factor: usize,
+        k: &DehazeStrengths,
+    ) -> Estimate {
         let short = sw.min(sh) as f64;
         let patch = ((k.patch_radius * short).round() as usize).max(1);
         let refine = ((k.refine_radius * short).round() as usize).max(1);
@@ -364,6 +375,60 @@ impl Estimate {
         } else {
             1.0
         }
+    }
+}
+
+/// The downscale factor the estimate of an output of size `full` is measured at.
+pub fn estimate_factor(full: (usize, usize), k: &DehazeStrengths) -> usize {
+    let long = full.0.max(full.1);
+    let target = k.estimate_long_side.max(16.0) as usize;
+    long.div_ceil(target).max(1)
+}
+
+/// The per-pixel numbers of [`apply_with`] once the haze is measured (for
+/// other backends): the recovery or fog operator, the exposure
+/// compensation, and the haze map's coefficients on the `sw × sh` grid.
+#[derive(Debug, Clone)]
+pub struct ApplyNumbers {
+    pub omega: f32,
+    pub min_transmission: f32,
+    pub shadow_keep: f32,
+    pub airlight: [f32; 3],
+    pub inv_airlight: [f32; 3],
+    pub fog: f32,
+    pub fog_depth: f32,
+    pub fog_colour: [f32; 3],
+    /// Exposure compensation; per pixel `comp^(1 − d)` when removing haze.
+    pub comp: f32,
+    pub inv_airlight_y: f32,
+    pub factor: usize,
+    pub sw: usize,
+    pub sh: usize,
+    pub coef_a: Vec<f32>,
+    pub coef_b: Vec<f32>,
+}
+
+/// [`ApplyNumbers`] for slider `amount` (−100..100; not 0) and estimate `est`.
+pub fn apply_numbers(amount: f64, est: &Estimate, k: &DehazeStrengths) -> ApplyNumbers {
+    let amount = (amount / 100.0).clamp(-1.0, 1.0) as f32;
+    let op = Recovery::new(amount, est, k);
+    let comp = est.compensation(&op, k);
+    ApplyNumbers {
+        omega: op.omega,
+        min_transmission: op.min_transmission,
+        shadow_keep: op.shadow_keep,
+        airlight: op.airlight,
+        inv_airlight: op.inv_airlight,
+        fog: op.fog,
+        fog_depth: op.fog_depth,
+        fog_colour: op.fog_colour,
+        comp,
+        inv_airlight_y: est.inv_airlight_y,
+        factor: est.factor,
+        sw: est.sw,
+        sh: est.sh,
+        coef_a: est.coef_a.clone(),
+        coef_b: est.coef_b.clone(),
     }
 }
 

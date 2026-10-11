@@ -49,6 +49,27 @@ struct ToneParams {
 }
 
 #[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable, Default)]
+struct DehazeParams {
+    w: u32,
+    h: u32,
+    factor: u32,
+    sw: u32,
+    sh: u32,
+    omega: f32,
+    min_transmission: f32,
+    shadow_keep: f32,
+    airlight: [f32; 3],
+    inv_airlight: [f32; 3],
+    fog: f32,
+    fog_depth: f32,
+    fog_colour: [f32; 3],
+    comp: f32,
+    inv_airlight_y: f32,
+    lum: [f32; 3],
+}
+
+#[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 struct VignetteParams {
     w: u32,
@@ -101,6 +122,9 @@ pub(crate) struct Kernels {
     curves: Kernel,
     color: Kernel,
     vignette: Kernel,
+    sanitise: Kernel,
+    dehaze_downscale: Kernel,
+    dehaze_apply: Kernel,
 }
 
 impl Kernels {
@@ -110,6 +134,9 @@ impl Kernels {
         let tone = module("tone", include_str!("shaders/tone.wgsl"));
         let color = module("color", include_str!("shaders/color.wgsl"));
         let effects = module("effects", include_str!("shaders/effects.wgsl"));
+        let dehaze = module("dehaze", include_str!("shaders/dehaze.wgsl"));
+        // Bindings: image, small copy, coefficients A and B, parameters.
+        const DEHAZE: &[bool] = &[false, false, true, true, true];
         // Bindings: camera, image, weights, size, parameters, tables.
         const MATRIX: &[bool] = &[true, false, false, true, true, true];
         // Bindings: image, size, parameters, tables.
@@ -130,6 +157,9 @@ impl Kernels {
                 "vignette",
                 &[false, true, true, true],
             ),
+            sanitise: Kernel::new(gpu, "sanitise", &dehaze, "sanitise", DEHAZE),
+            dehaze_downscale: Kernel::new(gpu, "downscale", &dehaze, "downscale", DEHAZE),
+            dehaze_apply: Kernel::new(gpu, "dehaze_apply", &dehaze, "dehaze_apply", DEHAZE),
         }
     }
 }
@@ -221,6 +251,56 @@ impl Gpu {
                         plan.height,
                         p,
                     );
+                }
+                Step::Dehaze {
+                    amount,
+                    k: dk,
+                    factor,
+                } => {
+                    // Zero non-finite values and downscale here, measure the
+                    // haze on the small copy on the CPU, apply it here.
+                    let (w, h, f) = (plan.width, plan.height, *factor);
+                    let (sw, sh) = (w.div_ceil(f), h.div_ceil(f));
+                    let mut p = DehazeParams {
+                        w: w as u32,
+                        h: h as u32,
+                        factor: f as u32,
+                        sw: sw as u32,
+                        sh: sh as u32,
+                        lum: amb_engine::buffer::luminance_weights(),
+                        ..Default::default()
+                    };
+                    let params = self.storage(&p);
+                    let small = self.buffer(sw * sh * 3);
+                    let (u1, u2) = (self.buffer(1), self.buffer(1));
+                    let bindings = [&img, &small, &u1, &u2, &params];
+                    k.sanitise.dispatch(self, &mut enc, &bindings, pixels * 3);
+                    if f > 1 {
+                        k.dehaze_downscale
+                            .dispatch(self, &mut enc, &bindings, sw * sh);
+                    }
+                    let done = std::mem::replace(
+                        &mut enc,
+                        self.device.create_command_encoder(&Default::default()),
+                    );
+                    self.queue.submit([done.finish()]);
+                    let copy = self.download(if f > 1 { &small } else { &img }, sw * sh * 3);
+                    let est = amb_engine::dehaze::Estimate::from_small(copy, sw, sh, f, dk);
+                    let a = amb_engine::dehaze::apply_numbers(*amount, &est, dk);
+                    p.omega = a.omega;
+                    p.min_transmission = a.min_transmission;
+                    p.shadow_keep = a.shadow_keep;
+                    p.airlight = a.airlight;
+                    p.inv_airlight = a.inv_airlight;
+                    p.fog = a.fog;
+                    p.fog_depth = a.fog_depth;
+                    p.fog_colour = a.fog_colour;
+                    p.comp = a.comp;
+                    p.inv_airlight_y = a.inv_airlight_y;
+                    let params = self.storage(&p);
+                    let (ca, cb) = (self.upload(&a.coef_a), self.upload(&a.coef_b));
+                    k.dehaze_apply
+                        .dispatch(self, &mut enc, &[&img, &small, &ca, &cb, &params], n);
                 }
                 Step::Vignette(v) => {
                     use amb_engine::effects::VignetteStyle;
@@ -689,6 +769,18 @@ pub(crate) mod tests {
                 ("PostCropVignetteAmount", n(-40.0)),
                 ("PostCropVignetteStyle", n(3.0)),
             ],
+        );
+    }
+
+    #[test]
+    fn dehaze() {
+        same_as_cpu("dehaze", &[("Dehaze", n(45.0))]);
+        same_as_cpu("fog", &[("Dehaze", n(-60.0))]);
+        // Downscaled for the estimate (as previews are).
+        check_at(
+            "dehaze, downscaled estimate",
+            &pixel_stages(&[("Dehaze", n(35.0)), ("Exposure2012", n(0.5))]),
+            (1703, 611),
         );
     }
 }

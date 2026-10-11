@@ -62,6 +62,14 @@ pub enum Step {
     /// Texture and Clarity.
     Local(Box<local::LocalPlan>),
     Sharpen(Box<detail::SharpenPlan>),
+    /// Dehaze: the GPU downscales the image by `factor`, the CPU measures
+    /// the haze on that copy ([`dehaze::Estimate::from_small`], then
+    /// [`dehaze::apply_numbers`]) and the GPU applies it.
+    Dehaze {
+        amount: f64,
+        k: dehaze::DehazeStrengths,
+        factor: usize,
+    },
     Vignette(Box<effects::VignettePlan>),
     /// The global tone curve on luminance (table of [`LUT`] entries).
     ToneCurve {
@@ -86,6 +94,7 @@ impl std::fmt::Debug for Step {
             Step::HighlightsShadows(_) => "highlights/shadows",
             Step::Local(_) => "texture/clarity",
             Step::Sharpen(_) => "sharpening",
+            Step::Dehaze { .. } => "dehaze",
             Step::Vignette(_) => "vignette",
             Step::ToneCurve { .. } => "tone curve",
             Step::Color(_) => "colour",
@@ -157,20 +166,13 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         |name: &'static str, run: Box<dyn Fn(&mut Image) + Send + Sync>| Step::Cpu { name, run };
 
     // 2. Dehaze (scene-linear).
+    // The whole output is rendered here, so the haze is measured on it.
     if s.dehaze != 0.0 && s.dehaze.is_finite() {
-        let (amount, k) = (s.dehaze, cal.clone());
-        steps.push(cpu(
-            "dehaze",
-            Box::new(move |img| {
-                dehaze::apply_haze(
-                    img,
-                    amount,
-                    &k.dehaze,
-                    &tile,
-                    dehaze::Haze::Measure { full },
-                );
-            }),
-        ));
+        steps.push(Step::Dehaze {
+            amount: s.dehaze,
+            k: cal.dehaze,
+            factor: dehaze::estimate_factor(full, &cal.dehaze),
+        });
     }
     // 3. Base look, local Highlights/Shadows, the global tone curve.
     // A rendered image already has its tone curve.

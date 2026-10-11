@@ -734,10 +734,10 @@ pub fn camera_to_prophoto(xyz_to_cam: &Mat3, neutral: [f64; 3]) -> Mat3 {
 /// their brightness for the tone curve to roll off. A channel also counts as
 /// clipped next to where it clips: demosaicing mixes the clipped values into
 /// the edge, which would otherwise leave a coloured fringe.
-struct Unclip {
-    clip: [f32; 3],
+pub(crate) struct Unclip {
+    pub(crate) clip: [f32; 3],
     /// White-balance gains (1 / neutral).
-    gains: [f32; 3],
+    pub(crate) gains: [f32; 3],
 }
 
 impl Unclip {
@@ -859,7 +859,7 @@ fn srgb_decode(v: f32) -> f32 {
     }
 }
 
-const LUT: usize = 4096;
+pub(crate) const LUT: usize = 4096;
 
 fn lookup(lut: &[f32], v: f32) -> f32 {
     let pos = v.clamp(0.0, 1.0) * (LUT - 1) as f32;
@@ -928,7 +928,7 @@ pub struct Globals {
 
 /// How one run of [`develop`] goes.
 #[derive(Default)]
-struct Pass<'a> {
+pub(crate) struct Pass<'a> {
     /// The rectangle of the output to render; all of it when `None`.
     window: Option<Rect>,
     /// The full-size output's size, when this run renders a small copy of
@@ -1176,13 +1176,54 @@ fn plan(img: &CameraImage, s: &DevelopSettings, window: Rect, reach: usize) -> R
 
 /// The render: all of the output, or a rectangle of it, or (`measure_only`)
 /// just the measurements of a small copy.
-fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Globals) {
-    let cal = &s.calibration;
-    let mut stages = Stages::new();
-    let mut globals = Globals::default();
+/// Noise reduction and sharpening as they apply to `img`: a rendered image
+/// gets neither unless the edit sets them (it was processed already).
+pub(crate) fn effective_detail(
+    img: &CameraImage,
+    s: &DevelopSettings,
+) -> (NoiseReduction, Sharpening) {
+    let (mut nr, mut sharpening) = (s.noise_reduction, s.sharpening);
+    if img.rendered {
+        if s.unset_detail.color_noise {
+            nr.color = 0.0;
+        }
+        if s.unset_detail.sharpness {
+            sharpening.amount = 0.0;
+        }
+    }
+    (nr, sharpening)
+}
 
-    // 0. Lens Corrections on camera RGB, then Transform, crop and straighten
-    // (one resample).
+/// Stage 0's result: camera RGB after Lens Corrections, Transform, crop and
+/// straighten (one resample), and a film negative turned positive.
+pub(crate) struct CameraStage {
+    pub crop: Option<crate::crop::CropGeometry>,
+    /// The output's size (the crop's, or the photo's).
+    pub out: (usize, usize),
+    pub tile: Tile,
+    pub full: (usize, usize),
+    /// The size of the rendered part.
+    pub width: usize,
+    pub height: usize,
+    pub lens_pass: Option<lens::CameraPass>,
+    negative_rgb: Option<Vec<f32>>,
+    pub negative: Option<negative::Analysis>,
+}
+
+impl CameraStage {
+    /// The camera RGB the next stages start from.
+    pub fn rgb<'a>(&'a self, img: &'a CameraImage) -> &'a [f32] {
+        match (&self.negative_rgb, &self.lens_pass) {
+            (Some(rgb), _) => rgb,
+            (None, Some(p)) => &p.rgb,
+            (None, None) => &img.rgb,
+        }
+    }
+}
+
+/// Stage 0 for `img` developed with `s`.
+pub(crate) fn camera_stage(img: &CameraImage, s: &DevelopSettings, pass: &Pass) -> CameraStage {
+    let cal = &s.calibration;
     let crop = s.crop.geometry(img.width, img.height);
     let mut transform = s.transform;
     if transform.upright.is_none() && transform.upright_mode.is_solved() {
@@ -1223,28 +1264,61 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
                     pass.window,
                 )
             });
-    stages.mark("upright+lens+crop");
     let (width, height) = lens_pass
         .as_ref()
         .map_or((img.width, img.height), |p| (p.width, p.height));
-    let mut camera_rgb = lens_pass.as_ref().map_or(&img.rgb, |p| &p.rgb);
+    let camera_rgb = lens_pass.as_ref().map_or(&img.rgb, |p| &p.rgb);
     // 0b. Film negative → positive (on camera RGB, before white balance).
+    let mut negative = None;
     let negative_rgb = s.negative.enabled.then(|| {
         let a = match pass.given.and_then(|g| g.negative) {
             Some(a) => a,
             None => negative::resolve(&s.negative, camera_rgb, width, height, &cal.negative),
         };
-        globals.negative = Some(a);
+        negative = Some(a);
         let conversion = negative::Conversion::new(&s.negative, a, &cal.negative);
         let mut rgb = camera_rgb.clone();
         negative::apply(&mut rgb, &conversion);
         rgb
     });
-    if let Some(rgb) = &negative_rgb {
-        camera_rgb = rgb;
-    }
 
-    // 1. Camera RGB → scene-linear ProPhoto with white balance and Exposure.
+    CameraStage {
+        crop,
+        out: (out_w, out_h),
+        tile,
+        full,
+        width,
+        height,
+        lens_pass,
+        negative_rgb,
+        negative,
+    }
+}
+
+/// Stage 1's parameters: camera RGB to scene-linear ProPhoto, with white
+/// balance, the camera matrix (or profile), the Calibration panel and
+/// Exposure, and the recovery of clipped highlights.
+pub(crate) struct CameraToWorking<'a> {
+    pub profile: Option<&'a crate::profile::Dcp>,
+    pub m: [[f32; 3]; 3],
+    pub gain: f32,
+    pub hue_sat_map: Option<std::borrow::Cow<'a, crate::profile::HsvTable>>,
+    pub look_table: Option<&'a crate::profile::HsvTable>,
+    pub gain_before_look: f32,
+    pub gain_after_look: f32,
+    pub shadow_tint: Option<(f32, f32)>,
+    pub clipped: Option<Unclip>,
+    /// The window of most-clipped neighbours: wider on large photos.
+    pub unclip_reach: usize,
+}
+
+/// Stage 1's parameters for `img` developed with `s`, at output size `out`.
+pub(crate) fn camera_to_working<'a>(
+    img: &CameraImage,
+    s: &'a DevelopSettings,
+    out: (usize, usize),
+) -> CameraToWorking<'a> {
+    let cal = &s.calibration;
     // A camera profile brings its own matrices, tables and tone curve (not
     // for rendered images or converted negatives).
     let profile = s
@@ -1297,8 +1371,58 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
     };
     let clipped = (!s.negative.enabled && img.clip.iter().any(|c| c.is_finite()))
         .then(|| Unclip::new(img.clip, neutral));
-    // The window of most-clipped neighbours: wider on large photos.
-    let unclip_reach = if out_w.max(out_h) >= 2500 { 2 } else { 1 };
+    let unclip_reach = if out.0.max(out.1) >= 2500 { 2 } else { 1 };
+    CameraToWorking {
+        profile,
+        m,
+        gain,
+        hue_sat_map,
+        look_table,
+        gain_before_look,
+        gain_after_look,
+        shadow_tint,
+        clipped,
+        unclip_reach,
+    }
+}
+
+fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Globals) {
+    let cal = &s.calibration;
+    let mut stages = Stages::new();
+    let mut globals = Globals::default();
+
+    // 0. Lens Corrections on camera RGB, then Transform, crop and straighten
+    // (one resample), then a film negative turned positive.
+    let stage0 = camera_stage(img, s, &pass);
+    stages.mark("upright+lens+crop");
+    let CameraStage {
+        crop,
+        out: (out_w, out_h),
+        tile,
+        full,
+        width,
+        height,
+        ref lens_pass,
+        negative: negative_analysis,
+        ..
+    } = stage0;
+    if negative_analysis.is_some() {
+        globals.negative = negative_analysis;
+    }
+    let camera_rgb = stage0.rgb(img);
+    // 1. Camera RGB → scene-linear ProPhoto with white balance and Exposure.
+    let CameraToWorking {
+        profile,
+        m,
+        gain,
+        hue_sat_map,
+        look_table,
+        gain_before_look,
+        gain_after_look,
+        shadow_tint,
+        clipped,
+        unclip_reach,
+    } = camera_to_working(img, s, (out_w, out_h));
     let mut out = Image {
         width,
         height,
@@ -1488,15 +1612,7 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
     stages.mark("colour+curves");
 
     // 6. Detail: noise reduction, then sharpening.
-    let (mut nr, mut sharpening) = (s.noise_reduction, s.sharpening);
-    if img.rendered {
-        if s.unset_detail.color_noise {
-            nr.color = 0.0;
-        }
-        if s.unset_detail.sharpness {
-            sharpening.amount = 0.0;
-        }
-    }
+    let (nr, sharpening) = effective_detail(img, s);
     detail::apply_noise_reduction(&mut out, &nr, &cal.detail);
     stages.mark("noise reduction");
     detail::apply_sharpening(&mut out, &sharpening, &cal.detail);

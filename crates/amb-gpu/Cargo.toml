@@ -1,0 +1,18 @@
+[package]
+name = "amb-gpu"
+version = "0.1.0"
+description = "GPU (wgpu) backend for the develop pipeline: the editor's preview, checked against the CPU stages"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+amb-engine = { path = "../amb-engine" }
+bytemuck = { version = "1", features = ["derive"] }
+pollster = "0.4"
+wgpu = { version = "26", default-features = false, features = ["std", "parking_lot", "wgsl", "vulkan", "metal", "dx12", "gles"] }
+
+[dev-dependencies]
+amb-presets = { path = "../amb-presets" }

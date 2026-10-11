@@ -222,7 +222,49 @@ fn wheel_dir(hue_deg: f64) -> [f32; 2] {
     [h.cos(), h.sin()]
 }
 
+/// A [`ColorOp`]'s prepared numbers, for running it elsewhere (the GPU).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ColorPlan {
+    /// Working space to LMS, LMS to working space, LMS' to OkLab and back.
+    pub to_lms: [[f32; 3]; 3],
+    pub from_lms: [[f32; 3]; 3],
+    pub m2: [[f32; 3]; 3],
+    pub m2_inv: [[f32; 3]; 3],
+    pub k: ColorStrengths,
+    pub vibrance: f32,
+    pub saturation: f32,
+    /// Band centres (OkLCh hue, radians, ascending) and their (hue, sat,
+    /// lum, black & white mix) amounts.
+    pub bands: [(f32, [f32; 4]); 8],
+    pub grayscale: bool,
+    pub orange_index: usize,
+    pub grade_dirs: [[f32; 2]; 4],
+    pub grade_amounts: [[f32; 2]; 4],
+    pub pivot: f32,
+    pub width: f32,
+}
+
 impl ColorOp {
+    /// The prepared numbers ([`ColorPlan`]).
+    pub fn plan(&self) -> ColorPlan {
+        ColorPlan {
+            to_lms: self.lab.to_lms,
+            from_lms: self.lab.from_lms,
+            m2: self.lab.m2,
+            m2_inv: self.lab.m2_inv,
+            k: self.k,
+            vibrance: self.vibrance,
+            saturation: self.saturation,
+            bands: std::array::from_fn(|i| self.bands[i]),
+            grayscale: self.grayscale,
+            orange_index: self.orange_index,
+            grade_dirs: self.grade_dirs,
+            grade_amounts: self.grade_amounts,
+            pivot: self.pivot,
+            width: self.width,
+        }
+    }
+
     pub fn new(c: &ColorControls, k: ColorStrengths) -> Self {
         let mut bands: Vec<(f32, [f32; 4])> = BAND_HSV_HUES
             .iter()

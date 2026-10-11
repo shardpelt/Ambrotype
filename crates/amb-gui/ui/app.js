@@ -131,6 +131,50 @@ function resetOnDoubleClick(el, position, span, reset) {
   });
 }
 
+// Dragging a slider: holding Shift (from the start or partway) moves it a
+// tenth as fast, for fine changes. The browser's own drag can't change speed
+// partway, so this drives the drag and fires the same input and change events.
+function fineDrag(input) {
+  input.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    input.setPointerCapture(e.pointerId);
+    const lo = Number(input.min), hi = Number(input.max), span = hi - lo || 1;
+    const r = input.getBoundingClientRect();
+    const thumb = r.height >= 26 ? 18 : 12; // style.css: the knob's width
+    const travel = Math.max(1, r.width - thumb);
+    const start = input.value;
+    let pos = Number(start);
+    const set = (p) => {
+      pos = Math.min(hi, Math.max(lo, p));
+      const before = input.value;
+      input.value = String(pos);
+      if (input.value !== before) input.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    // As in the browser: pressing the knob grabs it, pressing the track jumps
+    // there. With Shift, the value moves on from where it is.
+    const knobX = r.left + thumb / 2 + ((pos - lo) / span) * travel;
+    if (!e.shiftKey && Math.abs(e.clientX - knobX) > thumb / 2 + 2) {
+      set(lo + ((e.clientX - r.left - thumb / 2) / travel) * span);
+    }
+    let x0 = e.clientX, p0 = pos, rate = e.shiftKey ? 0.1 : 1;
+    const onMove = (ev) => {
+      const r1 = ev.shiftKey ? 0.1 : 1;
+      if (r1 !== rate) { x0 = ev.clientX; p0 = pos; rate = r1; }
+      set(p0 + ((ev.clientX - x0) / travel) * span * rate);
+    };
+    const onUp = () => {
+      input.removeEventListener("pointermove", onMove);
+      input.removeEventListener("pointerup", onUp);
+      input.removeEventListener("pointercancel", onUp);
+      if (input.value !== start) input.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    input.addEventListener("pointermove", onMove);
+    input.addEventListener("pointerup", onUp);
+    input.addEventListener("pointercancel", onUp);
+  });
+}
+
 // While a slider is held, refreshes from finished edits leave it alone
 // (otherwise it would jump back to its old value under the pointer).
 function holdWhileDragging(el, name) {
@@ -190,7 +234,7 @@ function makeRow(def) {
     row.className = "row";
     const label = document.createElement("label");
     label.textContent = def.label;
-    label.title = def.description + (def.units ? ` (${def.units})` : "") + "\nDouble-click to reset.";
+    label.title = def.description + (def.units ? ` (${def.units})` : "") + "\nDrag the slider (Shift: fine). Double-click to reset.";
     const input = document.createElement("input");
     input.type = "range";
     if (isLog(def)) { input.min = 0; input.max = 1000; input.step = 1; }
@@ -210,9 +254,6 @@ function makeRow(def) {
       requestPreview(true);
     });
     input.addEventListener("change", () => commit(def.name, fromSlider(def, input.value)));
-    // After a mouse drag the slider lets go of the keyboard, so ← → move between
-    // photos again (Tab still reaches it for arrow-key changes).
-    input.addEventListener("pointerup", () => input.blur());
     number.addEventListener("change", () => {
       const v = Number(number.value);
       if (!Number.isNaN(v)) commit(def.name, v);
@@ -221,6 +262,10 @@ function makeRow(def) {
     const reset = () => run([{ cmd: "reset_param", name: def.name }]);
     label.addEventListener("dblclick", reset);
     resetOnDoubleClick(input, () => Number(input.value), input.max - input.min, reset);
+    // After resetOnDoubleClick, which notes where the value was before a press.
+    // A drag never focuses the slider, so ← → still move between photos (Tab
+    // still reaches it for arrow-key changes).
+    fineDrag(input);
     holdWhileDragging(input, def.name);
     row.append(label, input, number);
     Object.assign(entry, { input, number, label });

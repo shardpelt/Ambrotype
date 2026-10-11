@@ -142,7 +142,7 @@ Each setting is a number, an on/off switch, or a choice; [settings-reference.md]
 
 | Setting type | Widgets |
 |---|---|
-| number | `slider` (label, slider, value box), `knob` (drag up/down; Shift for fine), `bar` (a filled bar with the label inside; drag across), `number` (a value box; drag the label to scrub) |
+| number | `slider` (label, slider, value box; Shift for fine), `knob` (drag up/down; Shift for fine), `bar` (a filled bar with the label inside; drag across), `number` (a value box; drag the label to scrub) |
 | on/off | `checkbox`, `toggle` (a switch) |
 | choice | `select` (a drop-down), `segmented` (a row of buttons) |
 

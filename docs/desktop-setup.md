@@ -127,7 +127,8 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | K | Jump to the keyword field (Enter or a comma adds a keyword) |
   | Ctrl+L / Ctrl+Shift+L | Appearance / Edit layout |
   | Ctrl+, | Settings and shortcuts |
-  | Double-click a slider | Reset it |
+  | Double-click a slider's knob or name | Reset it |
+  | Shift while dragging a slider | Fine adjustment (a tenth as fast) |
   | Ctrl is Cmd on macOS | |
 
 ## macOS on Apple Silicon (M1 and later), with an external SSD

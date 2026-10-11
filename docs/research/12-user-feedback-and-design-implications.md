@@ -20,7 +20,7 @@ Status: design input, 2026-10-03. Feeds [SCOPE.md](../SCOPE.md) §2, §7, §8, �
 **Extraction-quality flags.**
 - `lightroom_3` was contaminated by off-topic phone-camera threads. Its counts are discounted, and only its preset and alternatives lists are used.
 - `alternatives_1` and part of `presets_0` kept only chunk-local comment indices, not post ids. Those are cited as `[alt1 c#NNN]`.
-- Some reports attach one post id to many claims, and some quotes look paraphrased. Quotes below are as reported, at most 25 words, and attributed by post id. They were not re-verified against Reddit.
+- Some reports attach one post id to many claims, and some quotes look paraphrased. Quotes from the reports were replaced by summaries of what the user said, attributed by post id. They were not re-verified against Reddit.
 - `presets_2` marks several wishes as "implied". Those are treated as weak evidence and labelled.
 
 ---
@@ -32,22 +32,22 @@ Mention totals are summed across the six `lightroom_*` reports (with `alternativ
 ### 2.1 Loved (ranked by mentions)
 
 1. **Masking, especially AI masks** (about 92 mentions, 6/6 reports). Subject, sky and background masks are the most-praised feature. Several users call masking the reason they have not left.
-   - "AI background masking has been a godsend, 99% of images get an AI-generated background mask applied" [1rly2pc]
-   - One user says they cannot switch because "Adobe's masking is the best" (`lightroom_2`).
+   - One user says AI background masking is a lifesaver and that almost every image of theirs gets one [1rly2pc]
+   - One user says they cannot switch because they rate Adobe's masking as the best (`lightroom_2`).
 2. **AI tools: denoise first, then remove and generative** (about 78 mentions combined; denoise alone about 46). Denoise is the one AI feature people say sold them on Lightroom. The wedding use case recurs.
-   - "AI denoise is magic" [1mteppe]
-   - "I can shoot indoor/night sports at ISO 20000, denoise it, and it looks like broad daylight" [19f7t8m]
-   - "AI selection [which] fixes all portraits from a 700-photo wedding with one click" [1gd742z]
+   - One user calls AI denoise magic [1mteppe]
+   - A sports shooter says indoor and night frames at ISO 20000 look like daylight after denoise [19f7t8m]
+   - One user says AI selection fixes all the portraits of a 700-photo wedding in one click [1gd742z]
 3. **Colour grading, HSL, curves and tone tools** (about 53). They are praised as a combined toolkit, not as single sliders.
-4. **Mobile editing and cloud sync** (about 49). This is loved by a vocal minority. `lightroom_2` concludes "mobile is secondary" for most desktop users, and sync has almost as many complaints (§2.2).
-   - "20 years of photos instantly on my phone" [alt1 c#2270]
-5. **Workflow ease and speed** (about 47, noisy). Lightroom's learning curve is described as the gentlest in the industry. Culling speed and "arrow through photos, keep/reject, move on" also count.
-   - "Lightroom can be used with no context, no tutorial. It just works" [1vz98el]
+4. **Mobile editing and cloud sync** (about 49). This is loved by a vocal minority. `lightroom_2` concludes that mobile is secondary for most desktop users, and sync has almost as many complaints (§2.2).
+   - One user values having 20 years of photos on their phone at once [alt1 c#2270]
+5. **Workflow ease and speed** (about 47, noisy). Lightroom's learning curve is described as the gentlest in the industry. Culling speed and stepping through photos with arrow keys and keep/reject also count.
+   - One user says Lightroom works with no tutorial or prior context [1vz98el]
 6. **Presets and the preset ecosystem** (about 33). Presets are loved as a fast base edit that users then tune.
-   - "I literally couldn't do my job if I didn't have presets" [1ow831y]
+   - One working photographer says they could not do their job without presets [1ow831y]
 7. **Catalog and DAM: collections, keywords, non-destructive editing** (about 28 mentions). This ranks low by volume but first as a retention reason, because it is why users cannot leave (see §3).
-   - "No other editing software has DAM like LR" [1j5zii5]
-   - "Nothing beats Lightroom's library organization... culling, picking, color labels work seamlessly" [1gd742z]
+   - One user says no other editor has asset management like Lightroom's [1j5zii5]
+   - Another says nothing beats its library organisation, and that culling, picking and colour labels work smoothly [1gd742z]
 
 ### 2.2 Recurring complaints (ranked)
 
@@ -57,27 +57,27 @@ Mention totals are summed across the six `lightroom_*` reports (with `alternativ
    - Lag with more than about 4 masks.
    - AI denoise taking minutes.
    - Export not using the GPU.
-   - "Cold molasses on latest hardware" [1wt9nsw]
-   - "After 4 masks...it completely starts to bug out and becomes outright unusable" [1kbguc3]
-   - "copy/paste settings takes 5+ min per photo" [1rhh2k7]
-   - "I have 250k photos and struggle at 60k; it's crippled" [1rn6wme]
+   - One user calls it extremely slow even on the latest hardware [1wt9nsw]
+   - After about 4 masks, one user says it glitches and becomes unusable [1kbguc3]
+   - One user reports copy/paste of settings taking over 5 minutes per photo [1rhh2k7]
+   - A user with 250k photos says it struggles from about 60k and is crippled [1rn6wme]
 2. **Subscription cost and price increases** (about 99). The 2025 rise from $9.99 to $14.99 a month is cited constantly. Cancellation friction and fees are cited too.
-   - "50% jump overnight" [1mteppe]
-   - "Adobe subscription jumped from $9.99 to $14.99 per month...can't justify higher cost" [1j5zii5]
+   - One user notes a 50% jump overnight [1mteppe]
+   - One user says the move from $9.99 to $14.99 per month is hard to justify [1j5zii5]
 3. **Catalog fragility, corruption and limits** (about 49; corruption and data loss specifically about 18).
-   - "Corrupted beyond repair—lost 10+ years of presets and edits" [1jkngmu]
-   - "Catalog system is a relic from 2007" [1rn6wme]
+   - One user reports a catalog corrupted beyond repair, losing over 10 years of presets and edits [1jkngmu]
+   - One user calls the catalog system a relic from 2007 [1rn6wme]
 4. **Cloud and sync unreliability, privacy** (about 37). Mobile and desktop disagree, there are restart requirements, and users do not trust the cloud.
-   - "Another windows user here - please fix the sync issue with Classic" [1oiileq]
-5. **Forced AI, generative credits, "double dipping"** (about 29).
-   - "Nobody asked for this...they're shoving AI into raw file processing software" [1wt9nsw]
+   - A Windows user asks Adobe to fix a sync issue with Classic [1oiileq]
+5. **Forced AI, generative credits, double dipping** (about 29).
+   - One user objects that nobody asked for AI to be pushed into raw processing software [1wt9nsw]
    - Users also say AI work competes with performance fixes for developer time.
 6. **Perpetual-licence betrayal and lock-in** (about 8 plus echoes in alternatives). The Lightroom 6 activation shutdown is a trust event.
-   - "they bricked Lightroom 6...lost years of work and metadata" [1pfcqlx]
-7. **Classic vs Cloud vs Desktop confusion and feature gaps** (about 17). `lightroom_2` has users saying "every time I try non-Classic I'm wondering why basic Classic features aren't there".
+   - One user says Lightroom 6 was bricked, costing years of work and metadata [1pfcqlx]
+7. **Classic vs Cloud vs Desktop confusion and feature gaps** (about 17). `lightroom_2` has users saying that each time they try a non-Classic version, they wonder why basic Classic features are missing.
 8. **UI churn and workflow-breaking updates** (about 13).
 9. **Mask tool gaps** (about 5, but specific). Users want a polygon lasso and drag-to-reorder masks.
-10. **Camera profile delays** (about 9). Sony A7V support "long overdue" [1smrjth], and "no ETA...extremely irritating" [1woo33c].
+10. **Camera profile delays** (about 9). Sony A7V support is described as long overdue [1smrjth], and one user finds the lack of an ETA extremely irritating [1woo33c].
 11. **Mobile and export limits** (about 12, plus about 16 on a 2026 Android preview bug [1qvqaiq]). Examples are iPad exports at about 2 MP [1uxs003] and no HDR merge on iPad.
 
 ---
@@ -86,21 +86,21 @@ Mention totals are summed across the six `lightroom_*` reports (with `alternativ
 
 | Product | Loved for | Hated for | Why people leave it / return to Lightroom |
 |---|---|---|---|
-| **darktable** | Free; masking ("beyond what anything else offers" [alt1 c#945]); Filmic/Sigmoid/AgX tone mappers; results. Praise count about 100 across reports | UX: "probably in the worst 3 apps I have used of all time" [1vz98el]; module sprawl and deprecated modules; weak DAM; batch edit needs many more clicks than LR's 3-4 [1omx2jh]; calibration needs CLI/XML [1uucnxa]; old edits broke after updates [1axg02l] | Many quit within an hour to two weeks; those who persist (2-12 weeks, YouTube tutorials) rarely return. Returners cite speed and muscle memory: "I hate library management and editing with a passion...I just pay the adobe tax" [1v847s4] |
-| **RawTherapee / ART** | "The mad scientist's raw editor" [1v847s4]; more Lightroom-like than darktable; ART adds CTL scripts and simpler UX | "Very confusing" UI; small community; weak DAM; beginners give up | Seen as a stepping stone; returners cite polish |
-| **RapidRAW** | "Clean, polished, and so simple to use, yet has every feature I could dream of" [1n5j9hk]; masking "comes a lot closer to adobe than others" [1qgs72y]; GPU speed; open source | Cannot import existing LR presets (converter promised) [1n5j9hk]; CPU/RAM use despite "GPU accelerated"; no catalog; solo maintainer | Too new to show a pattern. Interest is high among Linux and Adobe escapees |
-| **Capture One** | Colour (Fuji, Nikon), tethering, fast masking and luminosity masks, one multi-select view with no Library/Develop switch [1gd742z]; perpetual licence | "Perpetual" is now locked to a minor version [1kthg48]; price; laggy in adjust mode even on M2 [1gd742z]; weak AI masks; no history panel; iPad lacks curves and grading [1053ru9]; LR import drops "the bulk of my edits" [alt1 c#745] | Pros leave for performance and price. Transition "painful and longer than expected" [1kthg48]. Edits and presets do not travel, so many stay on LR |
-| **DxO PhotoLab / PureRAW** | Denoise ("Best noise reduction in town" [1in9812]; 10-15 s per 45 MP [1ofj4wm]); lens database; fast on Windows; one-time price | Masking "less precise than Lightroom" (`alternatives_4`); no catalog; lost RNI presets on move [1kthg48]; no ProRaw; upgrades cost | Mostly used beside LR as a denoise step. "still go back to lr6 for some stuff" [1j5zii5] |
-| **ON1 Photo RAW** | Perpetual or subscription; LR-like layout; frequent specials | Slow, random crashes, "feels like a child's toy" [1pfsi92]; export does not always match the editor; LR migration drops edits and presets | Users drift back after months as inconsistencies pile up |
-| **Luminar Neo** | Lifetime licence; fast AI object removal | Results "looked fake" [16zklma]; slower batch; weak DAM; "lifetime" caveats | Deleted after about 3 months in one report |
-| **Affinity (Canva)** | Free since Oct 2025; one-time-price legacy; PSD fidelity | Not a LR replacement: "No database that keeps track of photos" [1pfsi92]; basic RAW [1p8237a]; Canva AI paywall and telemetry fears [1pk7rwg]; Wine on Linux is glitchy [1okcpwy] | Used beside a RAW editor and DAM, not instead of one |
-| **Photo Mechanic / FastRawViewer / Bridge / XnView** | Culling speed: 2-3 min for 4k images vs LR's 45+ [1rn6wme]; "bloody hell it's quick" (`lightroom_2`) | Single-purpose; Photo Mechanic costs about $300 | Complement LR, and show that many users only need a fast culler |
+| **darktable** | Free; masking (one user says it goes beyond anything else on offer [alt1 c#945]); Filmic/Sigmoid/AgX tone mappers; results. Praise count about 100 across reports | UX: one user ranks it among the three worst apps they have used [1vz98el]; module sprawl and deprecated modules; weak DAM; batch edit needs many more clicks than LR's 3-4 [1omx2jh]; calibration needs CLI/XML [1uucnxa]; old edits broke after updates [1axg02l] | Many quit within an hour to two weeks; those who persist (2-12 weeks, YouTube tutorials) rarely return. Returners cite speed and muscle memory: one user who dislikes library management and editing just pays the Adobe tax [1v847s4] |
+| **RawTherapee / ART** | Described as a mad scientist's raw editor [1v847s4]; more Lightroom-like than darktable; ART adds CTL scripts and simpler UX | UI called very confusing; small community; weak DAM; beginners give up | Seen as a stepping stone; returners cite polish |
+| **RapidRAW** | described as clean, polished and simple, with every feature one could want [1n5j9hk]; masking said to come much closer to Adobe's than others [1qgs72y]; GPU speed; open source | Cannot import existing LR presets (converter promised) [1n5j9hk]; CPU/RAM use despite being billed as GPU accelerated; no catalog; solo maintainer | Too new to show a pattern. Interest is high among Linux and Adobe escapees |
+| **Capture One** | Colour (Fuji, Nikon), tethering, fast masking and luminosity masks, one multi-select view with no Library/Develop switch [1gd742z]; perpetual licence | The "perpetual" licence is now locked to a minor version [1kthg48]; price; laggy in adjust mode even on M2 [1gd742z]; weak AI masks; no history panel; iPad lacks curves and grading [1053ru9]; LR import drops most of one user's edits [alt1 c#745] | Pros leave for performance and price. One user found the transition painful and longer than expected [1kthg48]. Edits and presets do not travel, so many stay on LR |
+| **DxO PhotoLab / PureRAW** | Denoise (one user calls it the best noise reduction around [1in9812]; 10-15 s per 45 MP [1ofj4wm]); lens database; fast on Windows; one-time price | Masking judged less precise than Lightroom's (`alternatives_4`); no catalog; lost RNI presets on move [1kthg48]; no ProRaw; upgrades cost | Mostly used beside LR as a denoise step. One user still goes back to Lightroom 6 for some tasks [1j5zii5] |
+| **ON1 Photo RAW** | Perpetual or subscription; LR-like layout; frequent specials | Slow, random crashes, one user says it feels like a toy [1pfsi92]; export does not always match the editor; LR migration drops edits and presets | Users drift back after months as inconsistencies pile up |
+| **Luminar Neo** | Lifetime licence; fast AI object removal | Results looked fake to one user [16zklma]; slower batch; weak DAM; caveats on what "lifetime" covers | Deleted after about 3 months in one report |
+| **Affinity (Canva)** | Free since Oct 2025; one-time-price legacy; PSD fidelity | Not a LR replacement: one user notes it has no database to track photos [1pfsi92]; basic RAW [1p8237a]; Canva AI paywall and telemetry fears [1pk7rwg]; Wine on Linux is glitchy [1okcpwy] | Used beside a RAW editor and DAM, not instead of one |
+| **Photo Mechanic / FastRawViewer / Bridge / XnView** | Culling speed: 2-3 min for 4k images vs LR's 45+ [1rn6wme]; one user is amazed at how quick it is (`lightroom_2`) | Single-purpose; Photo Mechanic costs about $300 | Complement LR, and show that many users only need a fast culler |
 | **Zoner, digiKam, NX Studio, DPP** | Zoner: catalog plus develop, about $59/yr. digiKam: tagging. NX/DPP: maker-accurate colour | Zoner has no AI denoise and is Windows only; digiKam UI is complex; NX/DPP are brand-locked with no library | Niche or used in pairs, not as replacements |
-| **ImageForge Raw** (solo, closed) | Shows demand: claims to auto-detect the user's Adobe profiles [1vti3xk] | Reception: "AI slop," "vibe coded," "bus factor," no legal docs [1vti3xk] | Trust, not features, was the blocker. Linux users: "Not interested until you have a Linux version" [1vti3xk] |
+| **ImageForge Raw** (solo, closed) | Shows demand: claims to auto-detect the user's Adobe profiles [1vti3xk] | Reception: critics called it AI slop and vibe coded, raised the bus factor, and noted missing legal docs [1vti3xk] | Trust, not features, was the blocker. Linux users said they were not interested without a Linux version [1vti3xk] |
 
-**Why people stay or return** (20+ admissions in `alternatives_2`, 11 in `alternatives_1`), in order: muscle memory; catalog and DAM; presets already owned ("I have all my RNI film presets, which is what's keeping me using Lightroom" [1n5j9hk]); AI masking and denoise; colleagues and retouchers expecting LR catalogs; cloud and mobile; the tutorial ecosystem.
+**Why people stay or return** (20+ admissions in `alternatives_2`, 11 in `alternatives_1`), in order: muscle memory; catalog and DAM; presets already owned (one user stays because of their RNI film presets [1n5j9hk]); AI masking and denoise; colleagues and retouchers expecting LR catalogs; cloud and mobile; the tutorial ecosystem.
 
-This matches 09 §(b). Reddit adds that **nearly all successful leavers kept using Lightroom for something**, and that hardly anyone reports a successful catalog-plus-preset migration. Migration came up in "only two mentions" in one chunk and about 8 in another. We read that as no one having a path, not as no one wanting one.
+This matches 09 §(b). Reddit adds that **nearly all successful leavers kept using Lightroom for something**, and that hardly anyone reports a successful catalog-plus-preset migration. Migration came up in only two mentions in one chunk and about 8 in another. We read that as no one having a path, not as no one wanting one.
 
 ---
 
@@ -109,49 +109,49 @@ This matches 09 §(b). Reddit adds that **nearly all successful leavers kept usi
 ### 4.1 How they are used
 
 - **As a base edit, then tuned per photo. This is the dominant pattern.**
-  - "I paste them and tweak every single one. This is the whole point, presets are a good base edit" [1ow831y]
+  - One user pastes a preset and tweaks every photo, treating presets as a base edit [1ow831y]
   - One user cut a 15-20 min edit to 8-9 min; event shooters spend 30-60 s per image [1ow831y].
   - Sports shooters process 4-5,000 images with presets (`presets_3`).
 - **Order of application:** profile or preset first, then local edits and masks [1t8sduk]. Users rely on the Amount slider to dial strength without overwriting manual work [1t8sduk].
-- **Stacking and "preset as mask":** "I have hundreds and they stack on top of each other" [1ow831y]. Some apply full-image masked presets for tone-curve or point-colour changes. Complaint: "traditional preset stacks usually break down the second you layer masks over them" [1t8sduk].
+- **Stacking and "preset as mask":** one user has hundreds of presets and stacks them [1ow831y]. Some apply full-image masked presets for tone-curve or point-colour changes. Complaint: traditional preset stacks usually break once masks are layered over them [1t8sduk].
 - **Import-time and triage presets:** auto-tone on import [1vfidw7]; a preset setting daylight WB, an Adobe profile and a medium curve to judge keepers quickly [1t8sduk]. Users copy and paste settings more often than they apply presets for batches (`lightroom_5`).
-- **Learning tool:** users deconstruct purchased presets to see what moved. "deconstructing a preset can be valuable in learning how hues shift" [1u5saix].
-- **Film emulation is the main purchase.** Alex Ruskman (10+ recommendations [1ecgr72], [1txdajn]), Mastin Labs, RNI, VSCO, Dehancer and Lou&Mark come up most. Some buyers buy **profiles only, not presets** [1t8sduk]. Adobe's built-in presets are called "surprisingly decent" [1vui9bn].
+- **Learning tool:** users deconstruct purchased presets to see what moved. One user says taking a preset apart teaches how hues shift [1u5saix].
+- **Film emulation is the main purchase.** Alex Ruskman (10+ recommendations [1ecgr72], [1txdajn]), Mastin Labs, RNI, VSCO, Dehancer and Lou&Mark come up most. Some buyers buy **profiles only, not presets** [1t8sduk]. Adobe's built-in presets are called surprisingly decent [1vui9bn].
 - **Culture:** buying is contested.
-  - Anti: "Absolute waste of money. YOU are the one supposed to make presets" [1v7r39l]; the "snake oil" view.
-  - Pro: "Every photographer who does high volume...will use presets. But they will use their own presets" [1v7r39l].
+  - Anti: one user calls buying presets a waste because you are the one who should make them [1v7r39l]; the snake-oil view.
+  - Pro: one user says high-volume photographers use presets, but their own [1v7r39l].
   - Implication: our users are mostly **people with an existing collection**, not buyers in a new market.
 
 ### 4.2 Pain points (ranked)
 
 1. **The same preset looks different on different photos, cameras and light** (about 55 mentions; the top complaint).
-   - "Presets almost never work out of the box" [1v7r39l]
-   - "You always have to do heavy adaptations, because the images, lighting, etc are not the same" [1qxlyxl]
+   - One user says presets almost never work out of the box [1v7r39l]
+   - Another says heavy adaptation is always needed because images and lighting differ [1qxlyxl]
    - A R5 Mark II owner could not recover their 5D IV look [1ukcgjx].
-   - Marketing mismatch: "it looks like you put on a piss filter, and now you need to adjust 8 different things" (`presets_0`, score 206).
+   - Marketing mismatch: a highly scored comment says a purchased preset can look like an ugly colour cast that then needs about 8 adjustments (`presets_0`, score 206).
 2. **Colour-profile and camera dependence** (about 21).
-   - Presets are "basically just moving sliders around based on Adobe Color/Standard" (`presets_0`).
-   - "Adobe would make Fuji film emulations based on assumption the RAW file has exact colors of one camera model" [1fj46i9].
-   - New cameras lack profiles, so presets are "bricked" (`lightroom_2`; Sony A7V [1woo33c]).
+   - Presets are described as little more than slider moves on top of Adobe Color or Standard (`presets_0`).
+   - One user says Adobe's Fuji film emulations assume the raw file has the exact colours of one camera model [1fj46i9].
+   - New cameras lack profiles, so presets are described as bricked (`lightroom_2`; Sony A7V [1woo33c]).
 3. **White balance and exposure assumptions** (about 25). Absolute Temp/Tint in a preset is the usual failure.
-4. **Marketing, price and quality variance** (about 33). Presets are "overpriced and overused" [1mzuvgr], and seller brigading is reported.
+4. **Marketing, price and quality variance** (about 33). Presets are called overpriced and overused [1mzuvgr], and seller brigading is reported.
 5. **Portability and lock-in** (about 12).
-   - "Lightroom presets only work in Lightroom" [1b6xcih]
-   - "lost all my not-so-cheap RNI style presets" on moving to DxO [1kthg48]
-   - Conversion tools exist for Capture One. A vendor admits "sliders do not transfer in a similar manner" and "A totally perfect 1:1 recreation is unnecessary...as long as it maintains the overall feel" [17ewec4].
+   - One user notes that Lightroom presets only work in Lightroom [1b6xcih]
+   - One user lost their fairly costly RNI style presets on moving to DxO [1kthg48]
+   - Conversion tools exist for Capture One. A vendor admits that sliders do not map in a similar way, and says an exact 1:1 recreation is unnecessary if the overall feel is kept [17ewec4].
 6. **Loss, sync and version problems** (about 15).
    - Presets lost in catalog corruption [1jkngmu].
    - Classic vs Cloud preset incompatibility.
-   - Updates "break older presets" (`lightroom_0`).
-   - Mobile DNG presets are "not as precise" [1u5saix].
+   - Updates are said to break older presets (`lightroom_0`).
+   - Mobile DNG presets are called less precise [1u5saix].
 7. **Stacking with masks** (about 3, but a structural problem) [1t8sduk].
 8. **Sameness and over-processing** (about 8): teal-and-orange fatigue [1orc1w9].
 9. **Organising hundreds of presets** (`lightroom_0`). No good search or filter.
-10. **Film emulation authenticity.** "old prints have this muddy quality in the shadows that presets dont replicate" [1vlm018].
+10. **Film emulation authenticity.** One user says old prints have a muddy quality in the shadows that presets do not replicate [1vlm018].
 
 ### 4.3 What users wish preset tools did
 
-Adapt to exposure, WB and camera (about 6 mentions, partly "implied"); show what a preset changed; convert across apps well enough to "keep the overall feel"; support `.cube` LUTs ("Lightroom has no LUT support" [1u40tu9]); keep presets safe in sidecars and backups.
+Adapt to exposure, WB and camera (about 6 mentions, partly "implied"); show what a preset changed; convert across apps well enough to keep the overall feel; support `.cube` LUTs (one user notes Lightroom has no LUT support [1u40tu9]); keep presets safe in sidecars and backups.
 
 ---
 
@@ -160,19 +160,19 @@ Adapt to exposure, WB and camera (about 6 mentions, partly "implied"); show what
 - **Native, no-hassle install.**
   - Wine and Proton route is flaky: Affinity under Lutris has black tooltips and a flickering UI [1okcpwy]; its pen tool is broken [1i3w3yx].
   - DaVinci Resolve needs containers [1pk7rwg].
-  - "Doesn't require command-line" and "works immediately without configuration" were stated as expectations (`alternatives_2`).
+  - Users stated they expect no command line and no configuration before it works (`alternatives_2`).
   - Darktable's calibration flow needing CLI and XML is cited as exactly what not to do [1uucnxa].
-- **Colour management on Wayland.** "Real problem...is current lack of proper color management on Wayland" [1mf6kiw]. Serious Linux photographers are not satisfied until display profiles work.
+- **Colour management on Wayland.** One user says the real problem is the current lack of proper colour management on Wayland [1mf6kiw]. Serious Linux photographers are not satisfied until display profiles work.
 - **No account, no telemetry, offline, no cloud.**
-  - "I use Linux so I don't have to deal with dumb AI bullshit that Windows has" (`alternatives_1`, c#2128).
+  - One user runs Linux to avoid the unwanted AI features found on Windows (`alternatives_1`, c#2128).
   - Affinity v3's opt-out telemetry and Canva coupling were treated as betrayal [1pk7rwg], [1okucv1].
-- **Trust signals for new FOSS projects.** ImageForge Raw was attacked as closed-source and "vibe coded" [1vti3xk]. Visible governance, tests and an honest licence matter.
+- **Trust signals for new FOSS projects.** ImageForge Raw was attacked as closed-source and vibe coded [1vti3xk]. Visible governance, tests and an honest licence matter.
 - **Distro stability.** Debian, Ubuntu and Fedora are preferred over rolling releases (`alternatives_1`).
 - **Integration.** digiKam alongside darktable; Lua export to Immich [1rzdmst]. This points to a CLI and hook-friendly export.
 - **Tolerance.**
-  - Users accept a learning curve "if UX is logical" (about 2-12 weeks for darktable) and YouTube tutorials as documentation.
+  - Users accept a learning curve if the UX is logical (about 2-12 weeks for darktable) and YouTube tutorials as documentation.
   - They do not accept crashes, data loss, hidden controls or a missing DAM (`alternatives_2`, `alternatives_4`).
-- **Professionals** often dual-boot: "For creative work, if you need 100% reliability for your job, don't use Linux" [1rk7stv].
+- **Professionals** often dual-boot. One user advises against Linux for creative work that needs 100% reliability [1rk7stv].
 
 ---
 
@@ -207,8 +207,8 @@ Targets below are **proposals**, not measured facts. "Roadmap" refers to SCOPE �
 ### 3. Catalog/DAM versus folder workflow: folder-live first, optional catalog second
 - **Evidence:**
   - DAM is the top retention reason (§3, [1j5zii5], [1gd742z]).
-  - But the catalog is also what is slow, fragile and "a relic" [1rn6wme].
-  - Many users want a folder-live, no-import start: DxO, FastRawViewer, XnView, and "don't want a subscription plan to cull photos" (`lightroom_2`).
+  - But the catalog is also what is slow, fragile and a relic [1rn6wme].
+  - Many users want a folder-live, no-import start: DxO, FastRawViewer, XnView, and users who do not want a subscription just to cull photos (`lightroom_2`).
   - Affinity fails because there is no file management (`alternatives_1`).
   - Capture One's multi-select view with no Library/Develop switch is praised [1gd742z].
 - **Decision:**
@@ -219,16 +219,16 @@ Targets below are **proposals**, not measured facts. "Roadmap" refers to SCOPE �
 - **Roadmap:** matches Phase 2 and Phase 3 as written. Resumable import and smart-collection mapping are **new** in Phase 3.
 
 ### 4. Fast culling as an on-ramp
-- **Evidence:** culling is "a decision point" (`lightroom_2`); Photo Mechanic's 2-3 min versus 45+ min for 4k images [1rn6wme]; free tools like CullPro and FastRawViewer.
+- **Evidence:** culling is described as a decision point (`lightroom_2`); Photo Mechanic's 2-3 min versus 45+ min for 4k images [1rn6wme]; free tools like CullPro and FastRawViewer.
 - **Decision:** a culling mode that opens on the embedded JPEG, with rate/flag/label, compare and survey views, and keyboard-driven keep/reject.
 - **Roadmap:** Phase 2. **New** emphasis. More colour labels were asked for (`lightroom_1`).
 
 ### 5. UX: Lightroom vocabulary and layout, not darktable's pipeline
 - **Evidence:**
   - Darktable's UX is the most-cited reason FOSS fails to convert (§3; 21 mentions of the learning curve in one chunk [1uucnxa]).
-  - "Why can't Darktable just provide an easy mode?" [1uucnxa]
-  - Its UI "does not put basics front and centre" (`alternatives_1`, c#906).
-  - "Lightroom can be used with no context" [1vz98el]
+  - One user asks why darktable cannot offer an easy mode [1uucnxa]
+  - Its UI is said not to put the basics front and centre (`alternatives_1`, c#906).
+  - Lightroom is said to work with no prior context [1vz98el]
   - Switchers leverage existing tutorials.
 - **Decision:**
   - Panels, names and slider order match Lightroom, so existing YouTube tutorials transfer. Basics (histogram, exposure, WB) are prominent.
@@ -254,7 +254,7 @@ Targets below are **proposals**, not measured facts. "Roadmap" refers to SCOPE �
 - **Roadmap:** Phase 1 (profile registry). A camera-support process and SLA is **new**.
 
 ### 8. Masking and AI expectations
-- **Evidence:** masking is the top love (about 92). Wishes: polygon lasso, drag-reorder, luminosity masks, feathering (`lightroom_0`, `lightroom_2`). AI denoise "sold" Lightroom (`lightroom_5`). Forced AI and credits are hated (about 29), while "AI as a faster version of what we already do" is welcomed (`lightroom_2`).
+- **Evidence:** masking is the top love (about 92). Wishes: polygon lasso, drag-reorder, luminosity masks, feathering (`lightroom_0`, `lightroom_2`). AI denoise is what sold users on Lightroom (`lightroom_5`). Forced AI and credits are hated (about 29), while AI as a faster version of existing tasks is welcomed (`lightroom_2`).
 - **Decision:**
   - Phase 3 masking ships with polygon lasso, drag-to-reorder, feather and refine, and luminosity and colour range.
   - AI subject and sky masks run locally with downloadable models.
@@ -265,7 +265,7 @@ Targets below are **proposals**, not measured facts. "Roadmap" refers to SCOPE �
 - **Roadmap:** masks Phase 3 (as SCOPE). AI denoise Phase 3 late (**proposed change**). AI subject and sky Phase 3 (as SCOPE).
 
 ### 9. Export workflow
-- **Evidence:** thin but clear. Exports not GPU-accelerated [1mp7fmn]; ON1 export does not always match the editor (`alternatives_4`); Lua/Immich upload [1rzdmst]; "faster to import into Photoshop, heal there, then export back" [1cx95f5].
+- **Evidence:** thin but clear. Exports not GPU-accelerated [1mp7fmn]; ON1 export does not always match the editor (`alternatives_4`); Lua/Immich upload [1rzdmst]; one user finds it faster to import into Photoshop, heal there and export back [1cx95f5].
 - **Decision:** GPU-accelerated, queued, background and resumable export. What you see is what you export, checked by a preview-vs-export test. Export presets and naming templates. Post-export hooks through the CLI. "Edit in external app" for Photoshop, GIMP, Topaz and PureRAW-style tools.
 - **Roadmap:** Phase 2 export (as SCOPE). Background queue, hooks and edit-in-external are **new** (Phase 2-3).
 
@@ -292,11 +292,11 @@ Targets below are **proposals**, not measured facts. "Roadmap" refers to SCOPE �
 
 ### 12. Migration from Lightroom: metadata first, edits second, presets always
 - **Evidence:**
-  - "What do I do with years of LR edits?" [1nug81j]
-  - "you can migrate the photos but you can't migrate the processing" [1j5zii5]
+  - One user asks what to do with years of Lightroom edits [1nug81j]
+  - Another says photos can migrate but the processing cannot [1j5zii5]
   - Capture One's import drops highlights/shadows, curves, masks and presets [alt1 c#745].
   - Metadata is the trusted part (09 §(c)).
-  - "make sure to write all your metadata to either xmp or embedded" [1j5zii5]
+  - A user advises writing all metadata to XMP or embedding it first [1j5zii5]
 - **Decision:** one wizard:
   - (a) A prepare checklist ("save metadata to files", export presets).
   - (b) Import ratings, labels, keywords, collections and flags first, from the read-only `.lrcat`.

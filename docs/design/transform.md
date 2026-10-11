@@ -16,7 +16,7 @@ Code: `crates/amb-engine/src/transform.rs` (the sliders' model), `crates/amb-eng
 | `PerspectiveX`, `PerspectiveY` | −100..100 | Move the photo right and down. ±100 is half the width or height. |
 | `EnableTransform` | bool | False turns all of the above off. |
 | `CropConstrainToWarp` | bool | Constrain Crop: zooms in until no blank areas remain (shared with the lens corrections). |
-| `PerspectiveUpright` | 0..5 | Upright mode: 0 off, 1 Auto, 2 Level, 3 Vertical, 4 Full, 5 Guided (our reading of the numbers). Guided is not rendered; `amb render` and the editor say so. |
+| `PerspectiveUpright` | 0..5 | Upright mode: 0 off, 1 Auto, 2 Level, 3 Vertical, 4 Full, 5 Guided. The five names are Adobe's (help and Kost); the numbers are our reading, not stated anywhere ([open-questions.md](../adobe-docs/open-questions.md) Q3). Guided is not rendered; `amb render` and the editor say so. |
 | `Upright*` | — | Lightroom's own Upright analysis. Image-specific and not read: we find the correction again. Not reported as missing. |
 
 ## The model (ours, not Adobe's)
@@ -34,6 +34,8 @@ The constants and signs live in `TransformStrengths` (the `transform` section of
 ## Upright (ours, not Adobe's)
 
 Upright finds a correction from the photo's own straight lines. It comes before the sliders, which apply on top of it, as in Lightroom.
+
+As in Lightroom, picking an Upright mode in the editor clears the manual Transform sliders and the crop in the same undo step; holding Alt keeps the crop (Kost, cited in Q3). Adobe's help describes Full as Level, Vertical and Auto together.
 
 1. **Analysis image.** The photo is shrunk by a whole factor to at most 1024 pixels on the long side, then lens-corrected (so straight lines are straight). The editor and export start from the same full-size photo, so they find the same correction. The editor finds it once per mode and lens setting, not per preview.
 2. **Lines.** A small line-segment detector, in the spirit of LSD: a light blur, Sobel gradients on the square root of luminance, then pixels with a strong gradient grow into regions whose edge direction stays within 22.5°. Regions that are long (3% of the long side), thin and well filled become segments.
@@ -66,4 +68,4 @@ Full on a building seen at an angle squares up its receding sides, as Lightroom'
 3. **Order** of Rotate, Aspect and Scale against the keystone, and whether Lightroom keeps the centre fixed.
 4. **Which frame** the crop, masks and spots refer to once a Transform is set.
 5. **Upright.** How close our corrections come to Lightroom's for each mode, and how strong Auto is. Whether `UprightTransform_0..5` hold Lightroom's solved transforms (one per mode?); if they do, a Lightroom sidecar could be rendered exactly, without solving.
-6. **The mode numbers** 0..5 for Off, Auto, Level, Vertical, Full and Guided, and how Guided's lines are stored (`UprightFourSegments_*`).
+6. **The mode numbers** 0..5 for Off, Auto, Level, Vertical, Full and Guided, and how Guided's lines are stored (`UprightFourSegments_*`). The SDK and the collected pages name the modes but give no numbers or storage (Q3).

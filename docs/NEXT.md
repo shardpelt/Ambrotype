@@ -44,7 +44,8 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
 
 - [ ] Try the editor on the Mac: `cargo run --release -p amb-gui -- photo.nef`. Note what feels wrong (or use the Feedback button).
 - [ ] Run `amb preset census <your preset folders>` and share the output (setting names and counts only). It ranks what to build next.
-- [ ] Digest the big source files (DNG spec, DNG SDK, XMP spec, Lightroom Classic SDK, release notes) on your own machine with [handoff-sources.md](handoff-sources.md), then tell the cloud session they're pushed.
+- [x] Digest the big source files on your own machine ([handoff-sources.md](handoff-sources.md)). Done 2026-10-11; the answers are in [adobe-docs/open-questions.md](adobe-docs/open-questions.md) and are now in the code and design docs.
+- [ ] Two facts would let us render creative and Adobe Raw profiles (`Look`, `RGBTable`): the base-85 alphabet the DNG SDK uses for `Table_<md5>` text (the 85 characters, in order, from `dng_big_table.cpp`), and, from one Adobe Raw profile `.xmp` you have installed (for example Adobe Color), the names of the `crs:` properties that hold table fingerprints. Property names and an encoding alphabet are facts; copy no table data. A local session can add both to `docs/adobe-docs/dng-sdk-behaviour.md`.
 - [ ] Lightroom trial month: follow [lightroom-trial-plan.md](lightroom-trial-plan.md) (sweep kit: `amb sweep generate`).
 - [ ] Fujifilm shoot (later): raws plus in-camera re-renders with every film simulation, so the Film recipe looks can be fitted. What to shoot: [design/film-look-measurement.md](design/film-look-measurement.md).
 
@@ -84,7 +85,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 1. **Lightroom trial month:** capture the sweeps, then fit the model constants ([lightroom-trial-plan.md](lightroom-trial-plan.md)). Check the crop's angle sign and corner semantics there ([design/crop.md](design/crop.md) open questions).
 2. ~~**Transform/Upright**~~ (done 2026-10-10); their signs, strengths and Upright's results to be checked in the trial.
 3. ~~**Local Highlights/Shadows** (edge-aware)~~ (done 2026-10-08), then ~~**masks** (linear/radial/brush/range)~~ (done 2026-10-08).
-4. **Camera profiles:** ~~read the user's DCPs in place~~ (done 2026-10-10); fitted base looks once trial data exists.
+4. **Camera profiles:** ~~read the user's DCPs in place~~ (done 2026-10-10; two maps blended and Exposure placed as in the DNG reference render, 2026-10-11); decode `Table_` look and RGB tables once the two facts in the owner to-dos are in; fitted base looks once trial data exists.
 5. ~~**Calibration panel**~~ (done 2026-10-10), **Point Color** (the B&W mixer renders since 2026-10-08; fitting both is part of the trial). Fit the Film recipe looks to the owner's Fujifilm shots ([design/film-look-measurement.md](design/film-look-measurement.md)).
 6. **Token-efficient AI layer:** core card, `amb do` compact syntax, `--brief` output, `amb stats`; ~~the MCP server~~ (done 2026-10-10).
 7. **Auto and Randomize buttons, Tutorial mode** ([design/future-ideas.md](design/future-ideas.md)).

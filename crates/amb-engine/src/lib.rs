@@ -33,6 +33,7 @@ pub mod profile;
 pub mod raster;
 pub mod raw;
 pub mod retouch;
+pub mod stats;
 pub mod tone;
 pub mod transform;
 pub mod upright;

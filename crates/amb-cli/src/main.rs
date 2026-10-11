@@ -37,12 +37,23 @@ USAGE:
     amb render <RAW>... --out-dir DIR [--format jpeg|...] [same options]
                                             The same for many raws (e.g. a folder: photos/*.NEF), with the
                                             same preset and export options; one failure doesn't stop the rest
-    amb edit <SIDECAR.xmp> --commands <CMDS.json|-> [--out <NEW.xmp|.json>] [--dry-run] [--json]
+    amb do <PHOTO|SIDECAR.xmp> \"<EDITS>\" [--dry-run] [--json]
+                                            Edit in the compact syntax as one undoable step and print
+                                            only what changed, e.g. \"exp=+0.5 con+=10 hl=-40 reset:hsl
+                                            preset:film.xmp@50\" (Name=v, Name+=d, Name-=d, reset:X,
+                                            preset:P[@amount], snap:N, load:N, undo, redo; short names
+                                            temp tint exp con hl sh wh bl tex cla deh vib sat sharp nr
+                                            cnr vig grain; docs/ai/core.md)
+    amb edit <SIDECAR.xmp> --commands <CMDS.json|-> [--out <NEW.xmp|.json>] [--dry-run] [--brief] [--json]
                                             Apply protocol commands (set_param, adjust_param, reset_param,
                                             reset_group, apply_preset, add_mask, set_mask, paint_mask,
                                             remove_mask, add_spot, set_spot, remove_spot, undo, redo)
                                             as one transaction,
                                             print the diff and write the sidecar (other XMP metadata kept)
+    amb stats <PHOTO> [--preset P] [--amount A] [--json]
+                                            The photo developed small (with its edit, or a preset) as a
+                                            few numbers instead of a picture: L* percentiles, clipped
+                                            shadows and highlights, midtone colour cast, chroma
     amb query <SIDECAR.xmp> --queries <QUERIES.json|->
                                             Answer protocol queries (get_param, list_params, describe,
                                             list_groups, list_masks, list_spots) as JSON
@@ -83,6 +94,9 @@ USAGE:
     amb profile list <RAW> [--dcp-dir DIR]  List the camera profiles (.dcp) on this computer for a raw's
                                             camera (Camera Raw's profile folders, AMB_DCP_DIRS, --dcp-dir);
                                             a preset's or sidecar's CameraProfile picks one by name
+    amb ref [GROUP]                         The core card for AI clients (docs/ai/core.md: the compact
+                                            syntax and the most used settings), or one group's settings
+                                            one line each
     amb settings reference [--json]         Print the settings reference (docs/ai/settings-reference.md)
     amb plugin new <DIR> [--name \"My plugin\"]
                                             Start a plugin project (Rust, built to WebAssembly;
@@ -327,6 +341,7 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut json = false;
     let mut dry_run = false;
+    let mut brief = false;
     let mut options: BTreeMap<&str, &str> = BTreeMap::new();
     let mut positional: Vec<&str> = Vec::new();
     let mut iter = args.iter();
@@ -334,6 +349,7 @@ fn main() -> ExitCode {
         match arg.as_str() {
             "--json" => json = true,
             "--dry-run" => dry_run = true,
+            "--brief" => brief = true,
             "--progressive" | "--enlarge" | "--no-subfolders" | "--no-align" | "--no-crop"
             | "--no-lens" => {
                 options.insert(arg.as_str(), "true");
@@ -412,10 +428,21 @@ fn main() -> ExitCode {
                 commands,
                 options.get("--out").map(Path::new),
                 dry_run,
-                json,
+                if json {
+                    Output::Json
+                } else if brief {
+                    Output::Brief
+                } else {
+                    Output::Text
+                },
             ),
             None => Err("edit needs --commands <file.json> (or - for stdin)".into()),
         },
+        ["do", target, edits @ ..] if !edits.is_empty() => {
+            do_edits(Path::new(target), &edits.join(" "), dry_run, json)
+                .map(|text| println!("{text}"))
+        }
+        ["stats", photo] => stats(Path::new(photo), &options, json).map(|t| println!("{t}")),
         ["query", state] => match options.get("--queries") {
             Some(queries) => query(Path::new(state), queries),
             None => Err("query needs --queries <file.json> (or - for stdin)".into()),
@@ -443,6 +470,25 @@ fn main() -> ExitCode {
             json,
         )
         .map(|text| println!("{text}")),
+        ["ref"] => {
+            print!("{}", amb_protocol::card::core());
+            Ok(())
+        }
+        ["ref", group] => match amb_protocol::card::group(group) {
+            Some(page) => {
+                print!("{page}");
+                Ok(())
+            }
+            None => Err(format!(
+                "no group {group:?}; groups: {}",
+                amb_protocol::catalog::Catalog::builtin()
+                    .groups()
+                    .iter()
+                    .map(|g| g.name.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )),
+        },
         ["settings", "reference"] => {
             if json {
                 print_json(&amb_protocol::reference::json())
@@ -486,12 +532,32 @@ fn read_input(path: &str) -> Result<String, String> {
 }
 
 /// `amb edit`: returns what to print, so it can be tested without a process.
+/// How an edit's report is printed.
+#[derive(Clone, Copy, PartialEq)]
+enum Output {
+    Text,
+    /// Net changes only, one line each.
+    Brief,
+    Json,
+}
+
+fn report_output(
+    report: &amb_protocol::edit::EditReport,
+    output: Output,
+) -> Result<String, String> {
+    match output {
+        Output::Json => serde_json::to_string_pretty(&report.to_json()).map_err(|e| e.to_string()),
+        Output::Brief => Ok(report.to_brief()),
+        Output::Text => Ok(report.to_text().trim_end().to_string()),
+    }
+}
+
 fn edit_output(
     sidecar: &Path,
     commands: &str,
     out: Option<&Path>,
     dry_run: bool,
-    json: bool,
+    output: Output,
 ) -> Result<String, String> {
     let report = amb_protocol::edit::run(&amb_protocol::edit::EditRequest {
         sidecar,
@@ -500,11 +566,7 @@ fn edit_output(
         dry_run,
     })
     .map_err(|e| e.to_string())?;
-    if json {
-        serde_json::to_string_pretty(&report.to_json()).map_err(|e| e.to_string())
-    } else {
-        Ok(report.to_text().trim_end().to_string())
-    }
+    report_output(&report, output)
 }
 
 fn edit(
@@ -512,11 +574,37 @@ fn edit(
     commands: &str,
     out: Option<&Path>,
     dry_run: bool,
-    json: bool,
+    output: Output,
 ) -> Result<(), String> {
     let commands = read_input(commands)?;
-    println!("{}", edit_output(sidecar, &commands, out, dry_run, json)?);
+    println!("{}", edit_output(sidecar, &commands, out, dry_run, output)?);
     Ok(())
+}
+
+/// The sidecar `amb do` edits: an `.xmp` itself, or the photo's.
+fn edit_target(target: &Path) -> PathBuf {
+    let is_xmp = target
+        .extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("xmp"));
+    if is_xmp {
+        target.to_path_buf()
+    } else {
+        amb_engine::sidecar_path(target)
+    }
+}
+
+/// `amb do`: a compact edit line, with a brief report.
+fn do_edits(target: &Path, edits: &str, dry_run: bool, json: bool) -> Result<String, String> {
+    let sidecar = edit_target(target);
+    let report = amb_protocol::edit::run_compact(&amb_protocol::edit::EditRequest {
+        sidecar: &sidecar,
+        commands: edits,
+        out: None,
+        dry_run,
+    })
+    .map_err(|e| e.to_string())?;
+    report_output(&report, if json { Output::Json } else { Output::Brief })
 }
 
 fn query(state: &Path, queries: &str) -> Result<(), String> {
@@ -840,74 +928,10 @@ fn render(
         "{} {} | {}x{} | {wb}{turned}",
         img.make, img.model, img.width, img.height
     );
-    let mut settings = std::collections::BTreeMap::new();
-    if let Some(preset) = preset {
-        let preset = load(Path::new(preset))?;
-        let amount = match amount {
-            Some(a) => {
-                a.trim_end_matches('%')
-                    .parse::<f64>()
-                    .map_err(|_| format!("bad --amount {a:?}"))?
-                    / 100.0
-            }
-            None => 1.0,
-        };
-        settings =
-            amb_presets::amount::apply(&settings, &preset.settings, amount, Registry::builtin());
-        println!(
-            "preset: {} at {:.0}%",
-            preset.name().unwrap_or("(unnamed)"),
-            amount * 100.0
-        );
-    }
-    let (mut develop, not_rendered) = pipeline::DevelopSettings::from_settings(&settings);
-    develop.base_look = match look.unwrap_or("default") {
-        "default" => pipeline::BaseLook::Default,
-        "linear" => pipeline::BaseLook::Linear,
-        other => return Err(format!("unknown --look {other:?} (default, linear)")),
-    };
-    if let Some(path) = calibration {
-        develop.calibration =
-            amb_engine::calibration::Calibration::from_json_file(Path::new(path))?;
-    }
-    if develop.lens.profile_enable || develop.lens.auto_ca {
-        let (db, lcp) = lens_sources(options)?;
-        if img.shot.crop_factor.is_none() {
-            img.shot.crop_factor = db
-                .as_ref()
-                .and_then(|db| db.camera_crop(&img.shot.camera_make, &img.shot.camera_model));
-        }
-        let hint = amb_lens::ProfileHint {
-            name: develop.lens.profile_name.clone(),
-            filename: develop.lens.profile_filename.clone(),
-        };
-        let lens = img.shot.lens_model.as_deref().unwrap_or("unknown lens");
-        match amb_lens::resolve(&img.shot, &hint, Some(&lcp), db.as_ref()) {
-            Some(c) => {
-                println!("lens profile: {}", c.description);
-                develop.lens.profile = Some(c);
-            }
-            None if develop.lens.profile_enable => println!(
-                "lens profile: none found for {lens} ({}); profile corrections skipped",
-                if db.is_none() && lcp.files.is_empty() {
-                    "no lensfun database or LCP files found, see `amb lens match`"
-                } else {
-                    "not in the lensfun database or your LCP files"
-                }
-            ),
-            None => {}
-        }
-    }
-    if let Some(name) = develop.profile_name.clone() {
-        if !img.rendered {
-            let lib = profile_library(options);
-            develop.camera_profile = lib.find(&img.make, &img.model, &name);
-        }
-        match (&develop.camera_profile, develop.profile_note()) {
-            (Some(p), _) => println!("camera profile: {} ({})", p.name, p.camera),
-            (None, Some(note)) => println!("camera profile: {note}"),
-            _ => {}
-        }
+    let (develop, not_rendered, notes) =
+        develop_settings(&mut img, preset, amount, look, calibration, options)?;
+    for n in notes {
+        println!("{n}");
     }
     let export = export_settings(out, options)?;
     let developed = pipeline::render(&img, &develop);
@@ -946,6 +970,131 @@ fn render(
         );
     }
     Ok(())
+}
+
+/// The develop settings for `img` from a preset or sidecar (at `amount`),
+/// with its lens and camera profiles found; what wasn't rendered, and notes
+/// on what was used.
+#[allow(clippy::type_complexity)]
+fn develop_settings(
+    img: &mut amb_engine::raw::CameraImage,
+    preset: Option<&str>,
+    amount: Option<&str>,
+    look: Option<&str>,
+    calibration: Option<&str>,
+    options: &BTreeMap<&str, &str>,
+) -> Result<
+    (
+        amb_engine::pipeline::DevelopSettings,
+        Vec<String>,
+        Vec<String>,
+    ),
+    String,
+> {
+    use amb_engine::pipeline;
+    let mut notes = Vec::new();
+    let mut settings = std::collections::BTreeMap::new();
+    if let Some(preset) = preset {
+        let preset = load(Path::new(preset))?;
+        let amount = match amount {
+            Some(a) => {
+                a.trim_end_matches('%')
+                    .parse::<f64>()
+                    .map_err(|_| format!("bad --amount {a:?}"))?
+                    / 100.0
+            }
+            None => 1.0,
+        };
+        settings =
+            amb_presets::amount::apply(&settings, &preset.settings, amount, Registry::builtin());
+        notes.push(format!(
+            "preset: {} at {:.0}%",
+            preset.name().unwrap_or("(unnamed)"),
+            amount * 100.0
+        ));
+    }
+    let (mut develop, not_rendered) = pipeline::DevelopSettings::from_settings(&settings);
+    develop.base_look = match look.unwrap_or("default") {
+        "default" => pipeline::BaseLook::Default,
+        "linear" => pipeline::BaseLook::Linear,
+        other => return Err(format!("unknown --look {other:?} (default, linear)")),
+    };
+    if let Some(path) = calibration {
+        develop.calibration =
+            amb_engine::calibration::Calibration::from_json_file(Path::new(path))?;
+    }
+    if develop.lens.profile_enable || develop.lens.auto_ca {
+        let (db, lcp) = lens_sources(options)?;
+        if img.shot.crop_factor.is_none() {
+            img.shot.crop_factor = db
+                .as_ref()
+                .and_then(|db| db.camera_crop(&img.shot.camera_make, &img.shot.camera_model));
+        }
+        let hint = amb_lens::ProfileHint {
+            name: develop.lens.profile_name.clone(),
+            filename: develop.lens.profile_filename.clone(),
+        };
+        let lens = img.shot.lens_model.as_deref().unwrap_or("unknown lens");
+        match amb_lens::resolve(&img.shot, &hint, Some(&lcp), db.as_ref()) {
+            Some(c) => {
+                notes.push(format!("lens profile: {}", c.description));
+                develop.lens.profile = Some(c);
+            }
+            None if develop.lens.profile_enable => notes.push(format!(
+                "lens profile: none found for {lens} ({}); profile corrections skipped",
+                if db.is_none() && lcp.files.is_empty() {
+                    "no lensfun database or LCP files found, see `amb lens match`"
+                } else {
+                    "not in the lensfun database or your LCP files"
+                }
+            )),
+            None => {}
+        }
+    }
+    if let Some(name) = develop.profile_name.clone() {
+        if !img.rendered {
+            let lib = profile_library(options);
+            develop.camera_profile = lib.find(&img.make, &img.model, &name);
+        }
+        match (&develop.camera_profile, develop.profile_note()) {
+            (Some(p), _) => notes.push(format!("camera profile: {} ({})", p.name, p.camera)),
+            (None, Some(note)) => notes.push(format!("camera profile: {note}")),
+            _ => {}
+        }
+    }
+    Ok((develop, not_rendered, notes))
+}
+
+/// `amb stats`: the photo developed small, as numbers.
+fn stats(input: &Path, options: &BTreeMap<&str, &str>, json: bool) -> Result<String, String> {
+    use amb_engine::raw;
+    let source = amb_engine::source_path(input);
+    let img = raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
+    let mut img = raw::downscale(&img, 768);
+    let sidecar = amb_engine::sidecar_path(input);
+    let edit = options
+        .get("--preset")
+        .map(|p| p.to_string())
+        .or_else(|| sidecar.is_file().then(|| sidecar.display().to_string()));
+    let (develop, not_rendered, _) = develop_settings(
+        &mut img,
+        edit.as_deref(),
+        options.get("--amount").copied(),
+        None,
+        None,
+        options,
+    )?;
+    let stats = amb_engine::stats::measure(&amb_engine::pipeline::render(&img, &develop));
+    if json {
+        let mut v = serde_json::to_value(&stats).map_err(|e| e.to_string())?;
+        v["not_rendered"] = serde_json::json!(not_rendered);
+        return serde_json::to_string_pretty(&v).map_err(|e| e.to_string());
+    }
+    let mut text = stats.to_brief();
+    if !not_rendered.is_empty() {
+        text += &format!("\nnot rendered: {}", not_rendered.join(", "));
+    }
+    Ok(text)
 }
 
 /// Parse an optional numeric option.
@@ -1510,7 +1659,7 @@ mod tests {
         .unwrap();
         let cmds = r#"[{"cmd":"adjust_param","name":"Exposure2012","delta":0.2},
                        {"cmd":"set_param","name":"Vibrance","value":150}]"#;
-        let text = edit_output(&sidecar, cmds, None, false, false).unwrap();
+        let text = edit_output(&sidecar, cmds, None, false, Output::Text).unwrap();
         assert!(text.contains("Exposure2012: +0.3 -> +0.5"), "{text}");
         assert!(text.contains("clamped: Vibrance = 150"), "{text}");
         let written = std::fs::read_to_string(&sidecar).unwrap();
@@ -1522,7 +1671,7 @@ mod tests {
             r#"{"cmd":"reset_param","name":"Vibrance"}"#,
             None,
             true,
-            true,
+            Output::Json,
         )
         .unwrap();
         let v: serde_json::Value = serde_json::from_str(&json).unwrap();
@@ -1537,10 +1686,20 @@ mod tests {
             r#"{"cmd":"set_param","name":"Exposur","value":1}"#,
             None,
             false,
-            false,
+            Output::Text,
         )
         .unwrap_err();
         assert!(err.contains("did you mean Exposure2012"), "{err}");
+
+        // `amb do` on the photo finds its sidecar, and reports briefly.
+        let photo = dir.join("photo.nef");
+        let text = do_edits(&photo, "exp+=0.25 vib=10", false, false).unwrap();
+        assert_eq!(
+            text,
+            "Exposure2012 +0.5→+0.75\nVibrance +100→+10\nsaved photo.xmp"
+        );
+        let text = do_edits(&sidecar, "undo", true, false).unwrap();
+        assert!(text.ends_with("dry run, not saved"), "{text}");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

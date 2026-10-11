@@ -5,12 +5,51 @@ Ambrotype edits photos the way Lightroom does: as a non-destructive recipe of Ca
 This guide covers what works **today, through the `amb` command-line tool**. The same commands are available to your own AI app through the MCP server, `amb mcp` ([mcp.md](mcp.md)). An in-app assistant panel is planned (see [the design doc](../design/ai-control.md)).
 
 Related files:
+- [core.md](core.md): the **core card**, a few hundred tokens: the compact edit syntax and the most used settings with their ranges. Read it first. `amb ref` prints it; `amb ref GROUP` prints one group's settings, one line each.
 - [settings-reference.md](settings-reference.md): every setting, with its range, default, Ambrotype render status and a description. It is generated from the code (`amb settings reference`, or `--json` for machine use).
 - `amb protocol schema`: JSON Schema of the commands and queries below.
 - [ui-layouts.md](ui-layouts.md): making editor layouts and themes ("looks") for the user, e.g. "knobs instead of sliders, a warm theme".
 - [plugins.md](plugins.md): making a plugin for the user ("a button that warms skin tones"): sandboxed WebAssembly that returns these same commands.
 - [film-recipes.md](film-recipes.md): turning a camera film recipe the user found online into settings with the Film recipe plugin.
 - [/llms.txt](../../llms.txt): index for language models.
+
+## The short way (fewest tokens)
+
+```sh
+amb ref                                         # the core card
+amb stats IMG_0001.NEF                          # numbers instead of a picture
+amb do IMG_0001.NEF "exp=+0.4 con+=15 hl=-30" --dry-run
+amb do IMG_0001.NEF "exp=+0.4 con+=15 hl=-30"
+```
+
+`amb do` takes the photo (or its `.xmp`) and a compact line. It is one undoable step, like `amb edit`, and prints only the net changes:
+
+```
+Exposure2012 0→+0.4
+Contrast2012 0→+15
+Highlights2012 0→-30
+saved IMG_0001.xmp
+```
+
+| Item | Command |
+|---|---|
+| `Name=v` | `set_param` (a number, `true`/`false`, or text; quote text with spaces: `CameraProfile="Camera Vivid"`) |
+| `Name+=d`, `Name-=d` | `adjust_param` |
+| `reset:Name`, `reset:group` | `reset_param`, `reset_group` |
+| `preset:PATH[@amount]` | `apply_preset` |
+| `snap:NAME`, `load:NAME` | `save_snapshot`, `apply_snapshot` |
+| `undo`, `redo` | `undo`, `redo` |
+
+Names are the `crs:` names in any case, or the short names on the core card (`exp`, `con`, `hl`, `sh`, ...). Masks, spots and point curves need the JSON commands below. `amb edit --brief` gives the same short report for JSON commands.
+
+`amb stats` develops the photo small (with its edit, or `--preset`) and prints a few lines: CIE L* percentiles, the share of clipped shadows and highlights, the midtone colour cast (a* positive is magenta, b* positive is warm) and mean chroma. Use it to check an edit; render a picture only when the numbers can't answer.
+
+```
+684x460
+L* p1 26 p5 27 p25 31 p50 78 p75 89 p95 94 p99 97, mean 65
+clipped: shadows 0.0%, highlights 19.1% (R 19.1 G 0.0 B 0.0)
+midtone cast a* +9.8 b* +10.2 (warm, magenta); chroma 32
+```
 
 ## Safety rules (read first)
 
@@ -100,13 +139,7 @@ For a quick look without editing anything: `amb render IMG.CR3 out.jpg --preset 
 
 ### Undo across calls
 
-`{"cmd": "undo"}` and `{"cmd": "redo"}` work within one `amb edit` call. An XMP sidecar does not store history. To keep undo history across calls, use a JSON working file and export XMP when done:
-
-```sh
-amb edit work.json --commands step1.json                    # history kept in work.json
-echo '[{"cmd":"undo"}]' | amb edit work.json --commands -   # undo step1's last command
-echo '[]' | amb edit work.json --commands - --out IMG_0001.xmp
-```
+The history is kept in the sidecar, so `undo` and `redo` work across calls and sessions (`amb do IMG_0001.NEF undo`), unless another app changed the edit since.
 
 Every diff also reports the `before` values, so you can always revert by setting them back.
 

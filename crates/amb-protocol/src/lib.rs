@@ -17,9 +17,13 @@
 //!   `list_groups`, `list_masks`, `list_spots`).
 //! - [`schema`]: JSON Schemas for both; [`reference`]: the generated settings
 //!   reference; [`catalog`]: tag descriptions and name suggestions.
+//! - [`compact`]: the one-line edit syntax (`exp=+0.5 con+=10`); [`card`]:
+//!   the short references for AI clients (`amb ref`).
 
+pub mod card;
 pub mod catalog;
 pub mod command;
+pub mod compact;
 pub mod convert;
 pub mod edit;
 pub mod masks;
@@ -84,6 +88,9 @@ pub enum Error {
     Io(String),
     #[error("{0}")]
     Json(String),
+    /// A compact edit line that doesn't parse ([`compact`]).
+    #[error("{0}")]
+    Syntax(String),
     #[error("command {index} ({label}): {source}")]
     InCommand {
         index: usize,

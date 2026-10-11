@@ -913,3 +913,32 @@ fn snapshots_save_apply_and_travel_in_the_sidecar() {
     assert_eq!(DevelopState::load(&sidecar).unwrap().snapshots().len(), 1);
     std::fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn compact_edit_with_a_brief_report() {
+    let dir = temp_dir("compact");
+    let sidecar = dir.join("photo.xmp");
+    std::fs::copy(fixture("sidecar.xmp"), &sidecar).unwrap();
+    let req = |commands: &'static str, dry_run| EditRequest {
+        sidecar: &sidecar,
+        commands,
+        out: None,
+        dry_run,
+    };
+    let dry = edit::run_compact(&req("exp=+0.9 con+=10 sh=140", true)).unwrap();
+    assert_eq!(
+        dry.to_brief(),
+        "Exposure2012 +0.65→+0.9\nContrast2012 0→+10\nShadows2012 0→+100\n\
+         ! Shadows2012 = 140 is outside [-100, 100]; clamped to 100\ndry run, not saved"
+    );
+    // Net changes only: a setting changed twice shows once, one changed
+    // back not at all.
+    let report = edit::run_compact(&req("con+=10 con+=5 exp=1 exp=0.65", false)).unwrap();
+    assert_eq!(report.to_brief(), "Contrast2012 0→+15\nsaved photo.xmp");
+    assert_eq!(
+        num(&DevelopState::load(&sidecar).unwrap(), "Contrast2012"),
+        Some(15.0)
+    );
+    let err = edit::run_compact(&req("exp+=lots", false)).unwrap_err();
+    assert!(err.to_string().contains("not a number"), "{err}");
+}

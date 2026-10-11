@@ -74,6 +74,8 @@ Decide what to refine and build next from real use, not guesses. It must stay **
 
 ## Token-efficient AI docs and API
 
+*Built 2026-10-11:* the core card ([ai/core.md](../ai/core.md), `amb ref`, about 345 tokens), `amb ref GROUP`, `amb do` with net-change output, `amb edit --brief` and `amb stats`, also over MCP. Look matching is still to come.
+
 So AI assistants can drive Ambrotype cheaply and reliably: fewer tokens per task, fewer mistakes, fewer retries.
 
 **Writing the docs in Chinese, pure math or binary would not help.** Today's model tokenizers are trained mostly on English and code.

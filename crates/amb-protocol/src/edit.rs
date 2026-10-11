@@ -16,7 +16,8 @@ pub struct EditRequest<'a> {
     /// Sidecar to read. If it does not exist, editing starts from an empty
     /// state and the file is created.
     pub sidecar: &'a Path,
-    /// JSON text: one command object or an array of commands.
+    /// JSON text: one command object or an array of commands ([`run`]), or
+    /// a [`crate::compact`] line ([`run_compact`]).
     pub commands: &'a str,
     /// Where to write (default: the sidecar itself). `.xmp` or `.json`.
     pub out: Option<&'a Path>,
@@ -38,14 +39,22 @@ pub struct EditReport {
 /// Apply the commands as one transaction and write the result. Nothing is
 /// written if any command fails.
 pub fn run(req: &EditRequest) -> Result<EditReport, Error> {
-    let commands = parse_commands(req.commands)?;
+    apply(req, &parse_commands(req.commands)?)
+}
+
+/// [`run`] with the commands as a compact line (`exp=+0.5 con+=10`).
+pub fn run_compact(req: &EditRequest) -> Result<EditReport, Error> {
+    apply(req, &crate::compact::parse(req.commands)?)
+}
+
+fn apply(req: &EditRequest, commands: &[crate::Command]) -> Result<EditReport, Error> {
     let created = !req.sidecar.exists();
     let mut state = if created {
         DevelopState::new()
     } else {
         DevelopState::load(req.sidecar)?
     };
-    let results = state.execute_all(&commands)?;
+    let results = state.execute_all(commands)?;
     let dest = req.out.unwrap_or(req.sidecar);
     let changed = results.iter().any(|o| !o.diff.is_empty());
     let needs_write = changed || created || req.out.is_some_and(|o| o != req.sidecar);
@@ -73,6 +82,15 @@ pub fn run(req: &EditRequest) -> Result<EditReport, Error> {
         written,
         dry_run: req.dry_run,
     })
+}
+
+/// A value for [`EditReport::to_brief`]: an unset number shows its default.
+fn brief(name: &str, v: Option<&amb_presets::Value>) -> String {
+    let default = amb_presets::registry::Registry::builtin().numeric_default(name);
+    match (v, default) {
+        (None, Some(d)) => display(name, Some(&amb_presets::Value::Number(d))),
+        _ => display(name, v),
+    }
 }
 
 fn is_xmp(path: &Path) -> bool {
@@ -128,6 +146,51 @@ impl EditReport {
             }
         }
         out
+    }
+}
+
+impl EditReport {
+    /// The net change per setting over all commands, one line each
+    /// (`Exposure2012 0→+0.5`), then clamps, notes and what was written:
+    /// the fewest words that say what happened.
+    pub fn to_brief(&self) -> String {
+        let mut net: Vec<(
+            &str,
+            Option<&amb_presets::Value>,
+            Option<&amb_presets::Value>,
+        )> = Vec::new();
+        for c in self.results.iter().flat_map(|o| &o.diff) {
+            match net.iter_mut().find(|(n, _, _)| *n == c.name) {
+                Some(entry) => entry.2 = c.after.as_ref(),
+                None => net.push((&c.name, c.before.as_ref(), c.after.as_ref())),
+            }
+        }
+        let mut out = String::new();
+        let mut changed = 0;
+        for (name, before, after) in net {
+            if before != after {
+                changed += 1;
+                let _ = writeln!(out, "{name} {}→{}", brief(name, before), brief(name, after));
+            }
+        }
+        for o in &self.results {
+            for c in &o.clamped {
+                let _ = writeln!(out, "! {c}");
+            }
+            for n in &o.notes {
+                let _ = writeln!(out, "note: {n}");
+            }
+        }
+        if changed == 0 {
+            let _ = writeln!(out, "no change");
+        }
+        if self.dry_run {
+            let _ = writeln!(out, "dry run, not saved");
+        } else if let Some(path) = &self.written {
+            let name = path.file_name().map_or(path.as_os_str(), |n| n);
+            let _ = writeln!(out, "saved {}", name.to_string_lossy());
+        }
+        out.trim_end().to_string()
     }
 }
 

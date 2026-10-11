@@ -21,9 +21,12 @@ const PROTOCOL_VERSIONS: &[&str] = &["2025-06-18", "2025-03-26", "2024-11-05"];
 const INSTRUCTIONS: &str = "Ambrotype is a raw photo editor that reads and writes Lightroom's own \
 settings. Edits are commands on a photo's XMP sidecar, the same ones the editor uses, so they \
 are undoable and open in Lightroom. Rules: run edit_photo with dry_run true first and show the \
-user the changes; render_preview after visual changes and look at the result; never export over \
-an existing file unless the user asks. Read the resource ambrotype://ai-guide (or the \
-settings_reference tool) for setting names, ranges and intent-to-settings recipes.";
+user the changes; check visual changes with photo_stats (numbers, cheap) or render_preview (a \
+picture); never export over an existing file unless the user asks. edit_photo's do takes a \
+compact line (\"exp=+0.5 con+=10 hl=-40\") and replies with the net changes only. Read the \
+resource ambrotype://core-card first (the compact syntax and common settings); \
+ambrotype://ai-guide and the settings_reference tool have the rest, with intent-to-settings \
+recipes.";
 
 const AI_GUIDE: &str = include_str!("../../../docs/ai/README.md");
 
@@ -104,6 +107,8 @@ pub fn handle(msg: &Value) -> Option<Value> {
         "resources/list" => ok(
             id,
             json!({ "resources": [
+                { "uri": "ambrotype://core-card", "name": "Core card", "mimeType": "text/markdown",
+                  "description": "The compact edit syntax and the most used settings with ranges, in a few hundred tokens." },
                 { "uri": "ambrotype://ai-guide", "name": "AI guide", "mimeType": "text/markdown",
                   "description": "How to edit with Ambrotype: the loop, commands, masks, spots, intent-to-settings recipes." },
                 { "uri": "ambrotype://settings-reference", "name": "Settings reference", "mimeType": "text/markdown",
@@ -113,6 +118,7 @@ pub fn handle(msg: &Value) -> Option<Value> {
         "resources/read" => {
             let uri = params.get("uri").and_then(Value::as_str).unwrap_or("");
             let body = match uri {
+                "ambrotype://core-card" => amb_protocol::card::core(),
                 "ambrotype://ai-guide" => AI_GUIDE.to_string(),
                 "ambrotype://settings-reference" => amb_protocol::reference::markdown(),
                 _ => return Some(error(id, -32602, &format!("unknown resource {uri:?}"))),
@@ -152,15 +158,17 @@ fn tools() -> Value {
         },
         {
             "name": "edit_photo",
-            "description": "Apply edit commands to a photo's XMP sidecar as one undoable step: set_param, adjust_param, reset_param, reset_group, apply_preset, add_mask, set_mask, paint_mask, remove_mask, add_spot, set_spot, remove_spot, save_snapshot, apply_snapshot, rename_snapshot, delete_snapshot, undo, redo. Values outside a setting's range are clamped and reported. Use dry_run first and show the user the diff.",
+            "description": "Apply edit commands to a photo's XMP sidecar as one undoable step: set_param, adjust_param, reset_param, reset_group, apply_preset, add_mask, set_mask, paint_mask, remove_mask, add_spot, set_spot, remove_spot, save_snapshot, apply_snapshot, rename_snapshot, delete_snapshot, undo, redo. Values outside a setting's range are clamped and reported. Give either commands (JSON) or do, a compact line such as \"exp=+0.5 con+=10 hl=-40 reset:hsl\" (Name=v, Name+=d, Name-=d, reset:X, preset:PATH[@amount], snap:N, load:N, undo, redo; short names temp tint exp con hl sh wh bl tex cla deh vib sat sharp nr cnr vig grain). With do (or brief) the reply lists only the net changes. Use dry_run first and show the user the diff.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "photo": photo,
                     "commands": { "type": "array", "items": { "type": "object" }, "description": "Commands, e.g. [{\"cmd\":\"set_param\",\"name\":\"Exposure2012\",\"value\":0.5}]. Schema: `amb protocol schema command`." },
+                    "do": { "type": "string", "description": "The edits as one compact line instead of commands, e.g. \"exp=+0.5 con+=10\"." },
                     "dry_run": { "type": "boolean", "description": "Report the changes without writing (default false)." },
+                    "brief": { "type": "boolean", "description": "Reply with the net changes only (default: true with do, false with commands)." },
                 },
-                "required": ["photo", "commands"],
+                "required": ["photo"],
             },
         },
         {
@@ -184,6 +192,19 @@ fn tools() -> Value {
                     "photo": photo,
                     "long_edge": { "type": "integer", "minimum": 256, "maximum": 2048, "description": "Size of the preview's long edge in pixels (default 1024)." },
                     "preset": { "type": "string", "description": "Render with this preset or sidecar file instead of the photo's own edit (nothing is written)." },
+                    "amount": { "type": "number", "minimum": 0, "maximum": 200, "description": "The preset's Amount in percent (default 100)." },
+                },
+                "required": ["photo"],
+            },
+        },
+        {
+            "name": "photo_stats",
+            "description": "The photo developed small (with its edit, or a preset instead) as a few numbers, a cheap check before or instead of render_preview: CIE L* percentiles (p1..p99) and mean, clipped shadows and highlights (% of pixels, per channel), the midtone colour cast (a*, b*: + is magenta, + is warm) and mean chroma.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "photo": photo,
+                    "preset": { "type": "string", "description": "Measure with this preset or sidecar file instead of the photo's own edit (nothing is written)." },
                     "amount": { "type": "number", "minimum": 0, "maximum": 200, "description": "The preset's Amount in percent (default 100)." },
                 },
                 "required": ["photo"],
@@ -255,22 +276,39 @@ fn call(name: &str, args: &Value) -> Result<Vec<Value>, String> {
         "describe_photo" => describe(&photo(args)?).map(|v| vec![json_text(&v)]),
         "edit_photo" => {
             let p = photo(args)?;
-            let commands = args
-                .get("commands")
-                .filter(|c| c.is_array() || c.is_object())
-                .ok_or("commands is required: an array of command objects")?;
+            let line = args.get("do").and_then(Value::as_str);
+            let commands = match line {
+                Some(line) => line.to_string(),
+                None => args
+                    .get("commands")
+                    .filter(|c| c.is_array() || c.is_object())
+                    .ok_or("give commands (an array of command objects) or do (a compact line)")?
+                    .to_string(),
+            };
             let sidecar = amb_engine::sidecar_path(&p);
-            let report = amb_protocol::edit::run(&amb_protocol::edit::EditRequest {
+            let req = amb_protocol::edit::EditRequest {
                 sidecar: &sidecar,
-                commands: &commands.to_string(),
+                commands: &commands,
                 out: None,
                 dry_run: args
                     .get("dry_run")
                     .and_then(Value::as_bool)
                     .unwrap_or(false),
-            })
+            };
+            let report = match line {
+                Some(_) => amb_protocol::edit::run_compact(&req),
+                None => amb_protocol::edit::run(&req),
+            }
             .map_err(|e| e.to_string())?;
-            Ok(vec![text(&report.to_text())])
+            let brief = args
+                .get("brief")
+                .and_then(Value::as_bool)
+                .unwrap_or(line.is_some());
+            Ok(vec![text(&if brief {
+                report.to_brief()
+            } else {
+                report.to_text()
+            })])
         }
         "query_photo" => {
             let p = photo(args)?;
@@ -286,6 +324,7 @@ fn call(name: &str, args: &Value) -> Result<Vec<Value>, String> {
             Ok(vec![json_text(&v)])
         }
         "render_preview" => render_preview(&photo(args)?, args),
+        "photo_stats" => photo_stats(&photo(args)?, args),
         "export_photo" => export(&photo(args)?, args),
         "list_photos" => list_photos(Path::new(arg(args, "folder")?)).map(|v| vec![json_text(&v)]),
         "set_photo_info" => set_info(&photo(args)?, args).map(|v| vec![json_text(&v)]),
@@ -359,6 +398,27 @@ fn describe(p: &Path) -> Result<Value, String> {
         "snapshots": q(json!({ "query": "list_snapshots" })),
         "not_rendered": not_rendered,
     }))
+}
+
+/// Run `amb stats` as a child, so a panic or slow decode stays out of the server.
+fn photo_stats(p: &Path, args: &Value) -> Result<Vec<Value>, String> {
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let mut cmd = std::process::Command::new(exe);
+    cmd.arg("stats").arg(p);
+    if let Some(preset) = args.get("preset").and_then(Value::as_str) {
+        cmd.args(["--preset", preset]);
+    }
+    if let Some(amount) = args.get("amount").and_then(Value::as_f64) {
+        cmd.args(["--amount", &amount.to_string()]);
+    }
+    let out = cmd
+        .output()
+        .map_err(|e| format!("couldn't run amb stats: {e}"))?;
+    if out.status.success() {
+        Ok(vec![text(String::from_utf8_lossy(&out.stdout).trim())])
+    } else {
+        Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
+    }
 }
 
 /// Run `amb render` as a child, so its report stays off our stdout.

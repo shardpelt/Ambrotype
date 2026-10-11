@@ -98,6 +98,11 @@ fn edit_describe_preview_and_export_over_stdio() {
     let done = s.tool("edit_photo", json!({ "photo": p, "commands": cmds }));
     assert!(text(&done).contains("Exposure2012"), "{done}");
     assert!(dir.join("a.xmp").is_file());
+    let quick = s.tool("edit_photo", json!({ "photo": p, "do": "exp+=0.1 con=20" }));
+    assert_eq!(
+        text(&quick),
+        "Exposure2012 +0.7→+0.8\nContrast2012 0→+20\nsaved a.xmp"
+    );
 
     let flagged = s.tool(
         "set_photo_info",
@@ -118,6 +123,13 @@ fn edit_describe_preview_and_export_over_stdio() {
     .unwrap();
     assert_eq!(listed["photos"].as_array().unwrap().len(), 1);
     assert_eq!(listed["photos"][0]["edited"], true);
+
+    // Numbers instead of a picture.
+    let stats = text(&s.tool("photo_stats", json!({ "photo": p })));
+    assert!(
+        stats.contains("L* p1 ") && stats.contains("midtone cast"),
+        "{stats}"
+    );
 
     // A preview comes back as a JPEG image.
     let preview = s.tool("render_preview", json!({ "photo": p, "long_edge": 256 }));

@@ -2026,20 +2026,62 @@ async fn merge_hdr(
         let photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
         let report = merge::hdr(&photos, &opts, None)?;
         if auto_tone {
-            // The user asked for it in the dialog: no separate approval.
-            let plugin = plugins::builtin("auto-tone").ok_or("Auto tone is missing")?;
-            let mut s = Session::open(&report.output)?;
-            let ctx = s.plugin_context(&plugin.manifest.permissions, 1);
-            let out = plugin.run(&ctx, &serde_json::Map::new())?;
-            if !out.commands.is_empty() {
-                s.execute(&out.commands, Some("Auto tone"))?;
-                s.save_sidecar()?;
-            }
+            auto_tone_merged(&report.output)?;
         }
         Ok(report)
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// Photo Merge > Panorama: stitch the photos into a DNG next to them, each
+/// corrected with its lens profile first when `lens_corrections` is on, and
+/// with `auto_tone` give it the built-in Auto tone.
+#[tauri::command]
+async fn merge_pano(
+    paths: Vec<String>,
+    projection: String,
+    auto_crop: bool,
+    lens_corrections: bool,
+    auto_tone: bool,
+    state: tauri::State<'_, AppState>,
+) -> Res<amb_library::merge::PanoReport> {
+    use amb_library::merge::{self, Lenses, PanoOptions, Projection};
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let opts = PanoOptions {
+            projection: Projection::parse(&projection).ok_or("unknown projection")?,
+            auto_crop,
+        };
+        let sources = lens.get().unwrap_or_else(|| empty_lens());
+        let lenses = Lenses {
+            lcp: sources.lcp.as_ref(),
+            db: sources.db.as_ref(),
+            correct: lens_corrections,
+        };
+        let photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
+        let report = merge::pano(&photos, &opts, None, lenses)?;
+        if auto_tone {
+            auto_tone_merged(&report.output)?;
+        }
+        Ok(report)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Give a merged photo the built-in Auto tone, saved to its sidecar (the
+/// user asked for it in the merge dialog: no separate approval).
+fn auto_tone_merged(path: &Path) -> Res<()> {
+    let plugin = plugins::builtin("auto-tone").ok_or("Auto tone is missing")?;
+    let mut s = Session::open(path)?;
+    let ctx = s.plugin_context(&plugin.manifest.permissions, 1);
+    let out = plugin.run(&ctx, &serde_json::Map::new())?;
+    if !out.commands.is_empty() {
+        s.execute(&out.commands, Some("Auto tone"))?;
+        s.save_sidecar()?;
+    }
+    Ok(())
 }
 
 /// Delete a virtual copy (not while it's open in the editor).
@@ -2383,6 +2425,7 @@ fn main() {
             collections_list,
             create_virtual_copy,
             merge_hdr,
+            merge_pano,
             camera_profiles,
             delete_virtual_copy,
             collection_photos,

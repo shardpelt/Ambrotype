@@ -304,6 +304,7 @@ pub fn align(frames: &[CameraImage], focal_hint: Option<f64>) -> Result<Aligned,
         start: &start,
         reference,
         huber: px_tol,
+        focal_hint,
     };
     let (rotations, focal) = problem.solve(focal);
     let rms = problem.rms(&rotations, focal);
@@ -331,7 +332,14 @@ struct Bundle<'a> {
     start: &'a [M3],
     reference: usize,
     huber: f64,
+    focal_hint: Option<f64>,
 }
+
+/// How far (in ln f) the EXIF focal length is trusted: lens breathing,
+/// rounded crop factors and a lens correction's zoom put it off by up to
+/// about this much. Only frames that leave the focal length loose (long
+/// lenses, where frames barely bend) feel it.
+const FOCAL_PRIOR_SIGMA: f64 = 0.1;
 
 impl Bundle<'_> {
     /// Parameters: a rotation vector per frame but the reference, then ln f.
@@ -382,6 +390,9 @@ impl Bundle<'_> {
             };
             out.push(ex * w);
             out.push(ey * w);
+        }
+        if let Some(h) = self.focal_hint {
+            out.push((focal / h).ln() / FOCAL_PRIOR_SIGMA);
         }
         out
     }

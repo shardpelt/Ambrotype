@@ -19,9 +19,9 @@ About 23,000 lines of Rust and about 270 tests (fmt, clippy and tests run in CI 
 | `amb-lens` | Lens profiles | lensfun database and Adobe LCP readers, lens matching, interpolation, correction geometry |
 | `amb-engine` | Raw decode and develop | The pipeline below; every model constant is in `Calibration` (JSON, fitted later against Lightroom) |
 | `amb-export` | Files out | JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces, resize, output sharpening, EXIF, JPEG size limit; floating-point linear DNG for merged photos (`dng.rs`) |
-| `amb-library` | Library operations | Import: copy from a card or folder into dated folders, renamed from templates, with companions and duplicate checks (`amb import`, the editor's Import dialog); collections as small JSON files; HDR merge into a DNG next to the brackets (`merge.rs`, over `amb_engine::merge`; `amb merge hdr`, the library's Merge to HDR…; [design/hdr-merge.md](design/hdr-merge.md)) |
+| `amb-library` | Library operations | Import: copy from a card or folder into dated folders, renamed from templates, with companions and duplicate checks (`amb import`, the editor's Import dialog); collections as small JSON files; HDR merge into a DNG next to the brackets and panorama merge with lens corrections first (`merge.rs`, over `amb_engine::merge` and `amb_engine::pano`; `amb merge hdr` / `amb merge pano`, the library's Merge to HDR… / Merge to Panorama…; [design/hdr-merge.md](design/hdr-merge.md), [design/panorama.md](design/panorama.md)) |
 | `amb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
-| `amb-cli` | The `amb` tool | `render`, `import`, `merge hdr`, `mcp` (the MCP server, `src/mcp.rs`), `preset`, `edit`/`query`, `lens`, `negative`, `sweep`, `settings reference`, … |
+| `amb-cli` | The `amb` tool | `render`, `import`, `merge hdr`, `merge pano`, `mcp` (the MCP server, `src/mcp.rs`), `preset`, `edit`/`query`, `lens`, `negative`, `sweep`, `settings reference`, … |
 | `amb-gui` | Desktop editor (Tauri 2) | Rust `Session` (open raw, undoable edits via `amb-protocol`, downscaled preview + histogram, sidecar save, export) behind Tauri commands; plain HTML/CSS/JS UI generated from the settings registry |
 
 ## Data flow of `amb render photo.nef out.jpg --preset look.xmp`

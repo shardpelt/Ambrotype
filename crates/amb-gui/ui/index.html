@@ -261,6 +261,7 @@
           <button type="button" id="lib-export" class="small primary" data-needs="any" title="Export the selection with the same choices, one file each (Ctrl+E)">Export…</button>
           <button type="button" id="lib-collage" class="small" data-needs="any" title="Start a collage with the selected photos">Make a collage</button>
           <button type="button" id="lib-hdr" class="small" data-needs="many" title="Merge bracketed raws of one scene into one HDR photo (a DNG next to them)">Merge to HDR…</button>
+          <button type="button" id="lib-pano" class="small" data-needs="many" title="Stitch overlapping raws into one panorama (a DNG next to them)">Merge to Panorama…</button>
         </div>
       </aside>
     </div>
@@ -309,6 +310,30 @@
         </select>
       </label>
       <p class="hint">Deghosting takes moving things (people, leaves, water) from one exposure. The result is a DNG that edits like a raw, here and in Lightroom.</p>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Merge</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Photo Merge > Panorama (library.js). -->
+  <dialog id="pano-dialog">
+    <form method="dialog">
+      <h2>Merge to Panorama</h2>
+      <p id="pano-what" class="hint"></p>
+      <label>Projection
+        <select id="pano-projection">
+          <option value="auto">Auto</option>
+          <option value="spherical">Spherical</option>
+          <option value="cylindrical">Cylindrical</option>
+          <option value="perspective">Perspective</option>
+        </select>
+      </label>
+      <label class="check"><input id="pano-crop" type="checkbox" checked> Auto crop</label>
+      <label class="check"><input id="pano-lens" type="checkbox" checked> Lens corrections first</label>
+      <label class="check"><input id="pano-tone" type="checkbox" checked> Auto tone</label>
+      <p class="hint">Auto picks Perspective for up to about 100° (straight lines stay straight), Cylindrical for wide rows and Spherical for the widest or taller ones. Shoot with about a third of each frame shared with the next, turning the camera about the lens. The result is a DNG that edits like a raw, here and in Lightroom.</p>
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary">Merge</button>

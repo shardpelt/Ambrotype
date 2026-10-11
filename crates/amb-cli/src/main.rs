@@ -71,6 +71,12 @@ USAGE:
                                             (default: <first>-HDR.dng next to them) that opens and edits
                                             like a raw, here and in Lightroom; Auto Tone it with
                                             amb plugin run plugins/auto-tone OUT.dng
+    amb merge pano <RAW>... [--out OUT.dng] [--projection auto|spherical|cylindrical|perspective]
+                   [--no-crop] [--no-lens] [--lens-db PATH] [--lcp-dir DIR] [--json]
+                                            Stitch overlapping raws (camera turned about the lens) into
+                                            a panorama DNG (default: <first>-Pano.dng next to them),
+                                            each corrected with its lens profile first; --no-crop keeps
+                                            the uncovered edges (black)
     amb mcp                                 Serve the Model Context Protocol over stdio, so your own AI app
                                             (Claude Desktop, Claude Code, ...) can edit, preview and export
                                             photos with Ambrotype's commands (docs/ai/mcp.md)
@@ -255,6 +261,68 @@ fn merge_hdr(raws: &[&str], options: &BTreeMap<&str, &str>, json: bool) -> Resul
     Ok(())
 }
 
+/// `amb merge pano`: overlapping raws stitched into a panorama DNG.
+fn merge_pano(raws: &[&str], options: &BTreeMap<&str, &str>, json: bool) -> Result<(), String> {
+    use amb_library::merge::{self, Lenses, PanoOptions, Projection};
+    let projection = match options.get("--projection") {
+        Some(p) => Projection::parse(p).ok_or_else(|| {
+            format!("bad --projection {p:?} (auto, spherical, cylindrical or perspective)")
+        })?,
+        None => Projection::Auto,
+    };
+    let opts = PanoOptions {
+        projection,
+        auto_crop: !options.contains_key("--no-crop"),
+    };
+    let (db, lcp) = lens_sources(options)?;
+    let lenses = Lenses {
+        lcp: Some(&lcp),
+        db: db.as_ref(),
+        correct: !options.contains_key("--no-lens"),
+    };
+    let photos: Vec<PathBuf> = raws.iter().map(PathBuf::from).collect();
+    let report = merge::pano(&photos, &opts, options.get("--out").map(Path::new), lenses)?;
+    if json {
+        return print_json(&serde_json::to_value(&report).map_err(|e| e.to_string())?);
+    }
+    for (i, p) in photos.iter().enumerate() {
+        let lens = report.lens_profiles[i]
+            .as_deref()
+            .unwrap_or("no lens profile");
+        let role = if *p == report.reference {
+            "  (reference)"
+        } else {
+            ""
+        };
+        println!(
+            "{}: {lens}, brightness x{:.3}{role}",
+            p.display(),
+            report.gains[i]
+        );
+    }
+    for &(a, b, n) in &report.overlaps {
+        println!(
+            "{} overlaps {}: {n} matched points",
+            photos[a].display(),
+            photos[b].display()
+        );
+    }
+    println!(
+        "{} projection, {:.0}° x {:.0}°, points meet within {:.2} px",
+        report.projection.name(),
+        report.field.0,
+        report.field.1,
+        report.rms
+    );
+    println!(
+        "wrote {} ({} x {})",
+        report.output.display(),
+        report.width,
+        report.height
+    );
+    Ok(())
+}
+
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut json = false;
@@ -266,7 +334,8 @@ fn main() -> ExitCode {
         match arg.as_str() {
             "--json" => json = true,
             "--dry-run" => dry_run = true,
-            "--progressive" | "--enlarge" | "--no-subfolders" | "--no-align" => {
+            "--progressive" | "--enlarge" | "--no-subfolders" | "--no-align" | "--no-crop"
+            | "--no-lens" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look"
@@ -277,7 +346,7 @@ fn main() -> ExitCode {
             | "--height" | "--fit" | "--exact" | "--megapixels" | "--percent" | "--sharpen"
             | "--metadata" | "--max-size" | "--avif-speed" | "--border" | "--out-dir"
             | "--rating" | "--keywords" | "--name" | "--params" | "--into" | "--rename"
-            | "--start" | "--dcp-dir" | "--deghost" => match iter.next() {
+            | "--start" | "--dcp-dir" | "--deghost" | "--projection" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -314,6 +383,7 @@ fn main() -> ExitCode {
         ["profile", "list", raw] => profile_list(Path::new(raw), &options),
         ["mcp"] => mcp::serve(),
         ["merge", "hdr", raws @ ..] if raws.len() >= 2 => merge_hdr(raws, &options, json),
+        ["merge", "pano", raws @ ..] if raws.len() >= 2 => merge_pano(raws, &options, json),
         ["import", source, dest] => {
             import(Path::new(source), Path::new(dest), &options, dry_run, json)
         }

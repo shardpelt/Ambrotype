@@ -36,6 +36,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **save as preset:** Presets → Save… (or Save as preset… in the Plugins dialog) keeps the photo's edit, without the crop and other photo-specific settings, as a one-click preset under "Yours"
     - **Black & White panel:** monochrome with a mix per colour; Color Grading tints it
     - **HDR merge:** select bracketed raws in the library, Merge to HDR… (Auto align, Auto tone, Deghost) writes `<first>-HDR.dng` next to them, a floating-point DNG that edits like a raw ([design/hdr-merge.md](design/hdr-merge.md))
+    - **panorama merge:** select overlapping raws in the library, Merge to Panorama… (projection, Auto crop, lens corrections first, Auto tone) writes `<first>-Pano.dng` next to them; `amb merge pano` from the command line ([design/panorama.md](design/panorama.md))
     - **collage maker** (C): layouts with gap, outer border, corners and background; drag photos into cells, then move, zoom, rotate, or edit them in the editor; **arrange freely** (move, resize, turn and overlap frames by hand); save the collage as a `.ambcollage` file to reopen and edit; save and share layouts; batch a whole folder into pages ([design/collage-and-borders.md](design/collage-and-borders.md))
 
 ## Owner to-dos
@@ -79,7 +80,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 7. ~~**Library:** pick/reject flags, loupe, compare and survey views, import with copy and rename, collections, virtual copies~~ (done 2026-10-10; [design/library.md](design/library.md)). Next for it: subfolders and several folders at once, smart collections, stacks, a metadata panel.
 8. **Profiles, Calibration panel and Point Color** (fidelity track 4–5). ~~Calibration panel~~ (done 2026-10-10; [design/calibration.md](design/calibration.md)). Point Color waits for a Lightroom sample of `PointColors` (the trial keeps one). ~~Reading the user's own camera profiles (`.dcp`) in place~~ (done 2026-10-10; [design/camera-profiles.md](design/camera-profiles.md)). Next for profiles: Adobe Raw `.xmp` profiles, and fitted base looks of our own from the trial.
 9. ~~**MCP server** for AI agents~~ (done 2026-10-10: `amb mcp`, [ai/mcp.md](ai/mcp.md)). Next for AI: look matching (`amb match`), then the in-app assistant panel.
-10. **Speed and reach:** ~~installers per OS~~ (the `Release` workflow, 2026-10-10; [releasing.md](releasing.md); to run on GitHub, then signing), ~~tiled 100% view~~ (2026-10-11), ~~HDR merge~~ (2026-10-11: library Merge to HDR… and `amb merge hdr`, a floating-point DNG; [design/hdr-merge.md](design/hdr-merge.md)), GPU preview (fidelity track 8–9; needs a machine with a GPU to build and test on), then panorama merge.
+10. **Speed and reach:** ~~installers per OS~~ (the `Release` workflow, 2026-10-10; [releasing.md](releasing.md); to run on GitHub, then signing), ~~tiled 100% view~~ (2026-10-11), ~~HDR merge~~ (2026-10-11: library Merge to HDR… and `amb merge hdr`, a floating-point DNG; [design/hdr-merge.md](design/hdr-merge.md)), ~~panorama merge~~ (2026-10-11: library Merge to Panorama… and `amb merge pano`; [design/panorama.md](design/panorama.md)), GPU preview (fidelity track 8–9; needs a machine with a GPU to build and test on).
 
 ### Fidelity and engine track
 

@@ -621,6 +621,41 @@ async function libraryMergeHdr() {
   }
 }
 
+// Photo Merge > Panorama: the selected frames into one DNG, which then opens.
+async function libraryMergePano() {
+  const sel = selectedPhotos().filter((p) => !p.copy);
+  if (sel.length < 2) return toast("Select two or more overlapping raws.", true);
+  const dlg = $("pano-dialog");
+  $("pano-what").textContent = `${sel.length} photos: ${sel.map((p) => p.name).join(", ")}`;
+  dlg.showModal();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice !== "ok") return;
+  status(`Stitching ${sel.length} photos into a panorama…`);
+  $("busy").hidden = false;
+  try {
+    const r = await invoke("merge_pano", {
+      paths: sel.map((p) => p.path),
+      projection: $("pano-projection").value,
+      autoCrop: $("pano-crop").checked,
+      lensCorrections: $("pano-lens").checked,
+      autoTone: $("pano-tone").checked,
+    });
+    const corrected = r.lens_profiles.filter(Boolean).length;
+    const lens = $("pano-lens").checked && corrected < r.lens_profiles.length
+      ? `; no lens profile for ${r.lens_profiles.length - corrected} of them`
+      : "";
+    status(`Stitched into ${fileName(r.output)} (${r.projection}, ${Math.round(r.field[0])}° across${lens})`);
+    if (lib.collection) await addToCollection([r.output], lib.collection);
+    else await loadLibrary(lib.dir);
+    await libraryOpen(r.output);
+  } catch (e) {
+    toast(String(e), true);
+    status("Panorama merge failed");
+  } finally {
+    $("busy").hidden = true;
+  }
+}
+
 async function libraryCollage() {
   const sel = selectedPhotos();
   if (!sel.length) return;
@@ -713,6 +748,7 @@ function wireLibrary() {
   $("lib-export").addEventListener("click", libraryExport);
   $("lib-collage").addEventListener("click", libraryCollage);
   $("lib-hdr").addEventListener("click", libraryMergeHdr);
+  $("lib-pano").addEventListener("click", libraryMergePano);
   grid.style.setProperty("--thumb", `${$("lib-size").value}px`);
   wireCull();
   wireCollections();

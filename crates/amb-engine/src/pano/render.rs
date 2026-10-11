@@ -23,6 +23,7 @@ use crate::lens::sample_bicubic_rgb;
 use crate::raw::{self, CameraImage};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Projection {
     #[default]
     Auto,

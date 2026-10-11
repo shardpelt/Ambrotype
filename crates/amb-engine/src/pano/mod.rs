@@ -33,9 +33,10 @@ pub fn stitch(frames: &[CameraImage], opts: &PanoOptions) -> Result<Panorama, cr
     render(frames, &aligned, opts)
 }
 
-#[cfg(test)]
-pub(crate) mod testing {
-    //! A synthetic scene on a sphere and a camera that photographs it.
+#[doc(hidden)]
+pub mod testing {
+    //! A synthetic scene on a sphere and a camera that photographs it (for
+    //! tests here and in other crates).
     use super::linalg::{self, M3};
     use crate::raw::{CameraImage, PhotoMetadata};
 

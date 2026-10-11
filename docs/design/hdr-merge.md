@@ -32,5 +32,5 @@ Three 24 MP brackets merge in about 9 s in a release build on 4 cores, including
 - Lightroom's reference frame, weights and deghost rule are unknown; ours are a reasonable model. Compare in the trial month: merge the same brackets in both, then check brightness and colour of the merged DNG at default settings.
 - Only translation is aligned, not rotation or scale (Lightroom's Auto Align handles some rotation).
 - Raws only: JPEG brackets aren't merged yet.
-- No "Create stack" (the library has no stacks), no HDR panorama, no panorama merge.
+- No "Create stack" (the library has no stacks), no HDR panorama (panoramas are [panorama.md](panorama.md)).
 - Auto tone is our built-in Auto tone plugin, not Lightroom's Auto.

@@ -166,6 +166,7 @@ version = "0.1.0"
 dependencies = [
  "amb-engine",
  "amb-export",
+ "amb-lens",
  "amb-protocol",
  "amb-testkit",
  "rayon",

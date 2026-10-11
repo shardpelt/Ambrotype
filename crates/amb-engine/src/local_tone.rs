@@ -22,9 +22,9 @@ use rayon::prelude::*;
 
 use crate::buffer::{Image, luminance_weights};
 use crate::local::{
-    CLARITY_LOW_RES_RADIUS, DECODE_LUT_SIZE, GuidedBase, LEVEL_BOUND, REFERENCE_DIAGONAL,
-    apply_luminance, channel_cap, decode_level, filter_level, guided_reach, headroom_limit, lookup,
-    reference_scale, scaled_radius, srgb_decode,
+    CLARITY_LOW_RES_RADIUS, DECODE_LUT_SIZE, GuidedBase, GuidedPlan, LEVEL_BOUND,
+    REFERENCE_DIAGONAL, apply_luminance, channel_cap, decode_level, filter_level, guided_reach,
+    headroom_limit, lookup, reference_scale, scaled_radius, srgb_decode,
 };
 use crate::tone::{self, ToneControls, ToneStrengths};
 
@@ -39,6 +39,47 @@ pub fn reach(c: &ToneControls, k: &ToneStrengths, scale: f32) -> usize {
         scaled_radius(k.local_radius_frac as f32 * REFERENCE_DIAGONAL, scale),
         CLARITY_LOW_RES_RADIUS,
     )
+}
+
+/// Highlights and Shadows as numbers (for other backends): the guided base
+/// of the luminance level, and the change to add at each base level
+/// ([`LUT`] entries on 0..1).
+#[derive(Debug, Clone, PartialEq)]
+pub struct TonePlan {
+    pub guided: GuidedPlan,
+    pub change: Vec<f32>,
+}
+
+/// [`apply_scaled`]'s numbers for a `w × h` image, or `None` when it does nothing.
+pub fn plan(
+    c: &ToneControls,
+    k: &ToneStrengths,
+    scale: f32,
+    w: usize,
+    h: usize,
+) -> Option<TonePlan> {
+    if (c.highlights == 0.0 && c.shadows == 0.0) || w == 0 || h == 0 {
+        return None;
+    }
+    Some(TonePlan {
+        guided: GuidedPlan::new(
+            w,
+            h,
+            scaled_radius(k.local_radius_frac as f32 * REFERENCE_DIAGONAL, scale),
+            k.local_edge_eps as f32,
+            CLARITY_LOW_RES_RADIUS,
+        ),
+        change: change_lut(c, k),
+    })
+}
+
+/// The change at each base level.
+fn change_lut(c: &ToneControls, k: &ToneStrengths) -> Vec<f32> {
+    tone::region_lut(c, k, LUT)
+        .iter()
+        .enumerate()
+        .map(|(i, v)| v - i as f32 / (LUT - 1) as f32)
+        .collect()
 }
 
 /// Apply Highlights and Shadows in place, with spatial scales relative to
@@ -68,12 +109,7 @@ pub fn apply_scaled(img: &mut Image, c: &ToneControls, k: &ToneStrengths, scale:
         k.local_edge_eps as f32,
         CLARITY_LOW_RES_RADIUS,
     );
-    // The change at each base level.
-    let change: Vec<f32> = tone::region_lut(c, k, LUT)
-        .iter()
-        .enumerate()
-        .map(|(i, v)| v - i as f32 / (LUT - 1) as f32)
-        .collect();
+    let change = change_lut(c, k);
     let decode_lut: Vec<f32> = (0..DECODE_LUT_SIZE)
         .map(|i| srgb_decode(i as f32 / (DECODE_LUT_SIZE - 1) as f32))
         .collect();

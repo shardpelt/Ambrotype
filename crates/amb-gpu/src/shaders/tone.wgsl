@@ -20,6 +20,16 @@ struct Tone {
 
 const NONE: u32 = 0xffffffffu;
 
+// Linear interpolation in a table over 0..1 (pipeline.rs `lookup`).
+fn lut_at(lut_offset: u32, v: f32) -> f32 {
+    let n = size.lut_size;
+    let pos = clamp(v, 0.0, 1.0) * f32(n - 1u);
+    let i = min(u32(pos), n - 2u);
+    let f = pos - f32(i);
+    return luts[lut_offset + i] * (1.0 - f) + luts[lut_offset + i + 1u] * f;
+}
+
+
 fn filmic(x0: f32) -> f32 {
     // Narkowicz's fit of the ACES filmic curve (BaseLook::Default).
     let x = max(x0, 0.0);

@@ -17,13 +17,15 @@ The editor's preview is rendered at the size of the screen: about 2560 pixels wi
 | Camera matrix, white balance, Exposure, highlight recovery, Calibration shadow tint | yes |
 | Dehaze | not yet (CPU step) |
 | Base look | yes |
-| Highlights and Shadows | not yet (CPU step) |
+| Highlights and Shadows | yes |
 | Tone curve (Contrast, Whites, Blacks, ...) | yes |
-| Texture and Clarity | not yet (CPU step) |
+| Texture and Clarity | yes |
 | Colour (Vibrance, Saturation, HSL, black and white, Color Grading) | yes |
 | Parametric and point curves | yes |
 | Noise reduction, sharpening | not yet (CPU steps) |
 | Vignette, grain | not yet (CPU steps) |
+
+Highlights/Shadows and Texture/Clarity are built from plane filters that mirror `amb_engine::filters` and `local`: Gaussian blurs (an exact kernel up to sigma 3, three box blurs above), fractional box blurs, block downsampling and the fast guided filter's coefficients. The engine hands over their numbers (`filters::gaussian_plan`, `local::GuidedPlan`, `local::plan`, `local_tone::plan`), computed by the functions its own stages use. Where the CPU keeps running sums along a row, each GPU thread sums its own window, so the two differ only in rounding.
 
 ## Checks
 
@@ -34,4 +36,4 @@ The editor's preview of the same edit was also compared both ways in the editor,
 ## Open questions
 
 - Speed has not been measured on a real GPU yet: this was built on a machine without one. Measure on the Mac (Apple Silicon): the status bar shows each preview's time, and `AMB_GPU=off` gives the CPU's for comparison.
-- Which stages to port next, by time: Dehaze, Texture/Clarity, noise reduction, Highlights/Shadows, sharpening. Colour noise reduction measures a noise profile over the whole image (tile statistics and percentiles); on the GPU, the tiles would be summed there and the percentiles taken on the CPU.
+- Which stages to port next, by time: Dehaze, noise reduction, sharpening, vignette and grain. Colour noise reduction measures a noise profile over the whole image (tile statistics and percentiles); on the GPU, the tiles would be summed there and the percentiles taken on the CPU.

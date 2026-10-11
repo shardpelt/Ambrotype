@@ -57,6 +57,10 @@ pub enum Step {
     },
     /// Scene-linear to display-linear.
     BaseLook(BaseLook),
+    /// Highlights and Shadows on the luminance level's guided base.
+    HighlightsShadows(Box<local_tone::TonePlan>),
+    /// Texture and Clarity.
+    Local(Box<local::LocalPlan>),
     /// The global tone curve on luminance (table of [`LUT`] entries).
     ToneCurve {
         lut: Vec<f32>,
@@ -77,6 +81,8 @@ impl std::fmt::Debug for Step {
         let name = match self {
             Step::Matrix { .. } => "matrix",
             Step::BaseLook(_) => "base look",
+            Step::HighlightsShadows(_) => "highlights/shadows",
+            Step::Local(_) => "texture/clarity",
             Step::ToneCurve { .. } => "tone curve",
             Step::Color(_) => "colour",
             Step::Curves(_) => "curves",
@@ -169,12 +175,9 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     } else {
         s.base_look
     }));
-    if s.tone.highlights != 0.0 || s.tone.shadows != 0.0 {
-        let (tone, k) = (s.tone, cal.clone());
-        steps.push(cpu(
-            "highlights/shadows",
-            Box::new(move |img| local_tone::apply_scaled(img, &tone, &k.tone, tile.scale())),
-        ));
+    let (w, h) = (stage0.width, stage0.height);
+    if let Some(p) = local_tone::plan(&s.tone, &cal.tone, tile.scale(), w, h) {
+        steps.push(Step::HighlightsShadows(Box::new(p)));
     }
     let global = ToneControls {
         highlights: 0.0,
@@ -188,12 +191,8 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         });
     }
     // 4. Texture / Clarity.
-    if !s.local.is_neutral() {
-        let (local, k) = (s.local, cal.clone());
-        steps.push(cpu(
-            "texture/clarity",
-            Box::new(move |img| local::apply_scaled(img, &local, &k.local, tile.scale())),
-        ));
+    if let Some(p) = local::plan(&s.local, &cal.local, tile.scale(), w, h) {
+        steps.push(Step::Local(Box::new(p)));
     }
     // 5. Colour, then the curves.
     if !s.color.is_neutral() {

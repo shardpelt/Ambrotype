@@ -35,12 +35,3 @@ struct Size {
     pixels: u32,
     lut_size: u32,
 }
-
-// Linear interpolation in a table over 0..1 (pipeline.rs `lookup`).
-fn lut_at(lut_offset: u32, v: f32) -> f32 {
-    let n = size.lut_size;
-    let pos = clamp(v, 0.0, 1.0) * f32(n - 1u);
-    let i = min(u32(pos), n - 2u);
-    let f = pos - f32(i);
-    return luts[lut_offset + i] * (1.0 - f) + luts[lut_offset + i + 1u] * f;
-}

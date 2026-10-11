@@ -22,7 +22,7 @@ struct Matrix {
 @group(0) @binding(2) var<storage, read_write> weights: array<f32>;
 @group(0) @binding(3) var<storage, read> size: Size;
 @group(0) @binding(4) var<storage, read> mp: Matrix;
-// Unused here; `lut_at` in common.wgsl refers to it.
+// Unused here (the layout is shared).
 @group(0) @binding(5) var<storage, read> luts: array<f32>;
 
 // How clipped each channel is: 0 below 90% of its clip level, 1 from 98%.

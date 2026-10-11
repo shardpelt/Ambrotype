@@ -76,10 +76,21 @@ pub(crate) fn gaussian_reach(sigma: f32) -> usize {
     }
 }
 
-pub fn gaussian_blur(plane: &[f32], w: usize, h: usize, sigma: f32) -> Vec<f32> {
-    assert_eq!(plane.len(), w * h);
-    if sigma < 0.3 || plane.is_empty() {
-        return plane.to_vec();
+/// How [`gaussian_blur`] blurs at a given sigma (for other backends too).
+#[derive(Debug, Clone, PartialEq)]
+pub enum GaussianPlan {
+    /// No blur (sigma below 0.3).
+    Identity,
+    /// A normalised kernel of odd length `2r + 1`, applied along rows then
+    /// columns, edges clamped.
+    Kernel(Vec<f32>),
+    /// Three box blurs with these integer radii, one after the other.
+    Boxes([usize; 3]),
+}
+
+pub fn gaussian_plan(sigma: f32) -> GaussianPlan {
+    if sigma.is_nan() || sigma < 0.3 {
+        return GaussianPlan::Identity;
     }
     if sigma <= 3.0 {
         let r = (3.0 * sigma).ceil() as isize;
@@ -88,6 +99,43 @@ pub fn gaussian_blur(plane: &[f32], w: usize, h: usize, sigma: f32) -> Vec<f32> 
             .collect();
         let s: f32 = k.iter().sum();
         k.iter_mut().for_each(|v| *v /= s);
+        return GaussianPlan::Kernel(k);
+    }
+    // Three box passes approximating a Gaussian (Kovesi's box sizes).
+    let n = 3.0f32;
+    let w_ideal = (12.0 * sigma * sigma / n + 1.0).sqrt();
+    let mut wl = w_ideal.floor() as i32;
+    if wl % 2 == 0 {
+        wl -= 1;
+    }
+    let wu = wl + 2;
+    let m_ideal = (12.0 * sigma * sigma - n * (wl * wl) as f32 - 4.0 * n * wl as f32 - 3.0 * n)
+        / (-4.0 * wl as f32 - 4.0);
+    let m = m_ideal.round() as i32;
+    GaussianPlan::Boxes(std::array::from_fn(|i| {
+        let size = if (i as i32) < m { wl } else { wu };
+        ((size - 1) / 2).max(0) as usize
+    }))
+}
+
+pub fn gaussian_blur(plane: &[f32], w: usize, h: usize, sigma: f32) -> Vec<f32> {
+    assert_eq!(plane.len(), w * h);
+    if plane.is_empty() {
+        return plane.to_vec();
+    }
+    let k = match gaussian_plan(sigma) {
+        GaussianPlan::Identity => return plane.to_vec(),
+        GaussianPlan::Boxes(radii) => {
+            let mut out = plane.to_vec();
+            for r in radii {
+                out = box_blur(&out, w, h, r);
+            }
+            return out;
+        }
+        GaussianPlan::Kernel(k) => k,
+    };
+    {
+        let r = (k.len() / 2) as isize;
         let conv_rows = |src: &[f32], width: usize| -> Vec<f32> {
             let mut out = vec![0.0f32; src.len()];
             out.par_chunks_mut(width)
@@ -108,25 +156,8 @@ pub fn gaussian_blur(plane: &[f32], w: usize, h: usize, sigma: f32) -> Vec<f32> 
         let horiz = conv_rows(plane, w);
         let t = transpose(&horiz, w, h);
         let vert = conv_rows(&t, h);
-        return transpose(&vert, h, w);
+        transpose(&vert, h, w)
     }
-    // Three box passes approximating a Gaussian (Kovesi's box sizes).
-    let n = 3.0f32;
-    let w_ideal = (12.0 * sigma * sigma / n + 1.0).sqrt();
-    let mut wl = w_ideal.floor() as i32;
-    if wl % 2 == 0 {
-        wl -= 1;
-    }
-    let wu = wl + 2;
-    let m_ideal = (12.0 * sigma * sigma - n * (wl * wl) as f32 - 4.0 * n * wl as f32 - 3.0 * n)
-        / (-4.0 * wl as f32 - 4.0);
-    let m = m_ideal.round() as i32;
-    let mut out = plane.to_vec();
-    for i in 0..3 {
-        let size = if i < m { wl } else { wu };
-        out = box_blur(&out, w, h, ((size - 1) / 2).max(0) as usize);
-    }
-    out
 }
 
 /// Guided filter (He, Sun & Tang, 2010): edge-preserving smoothing of `src`

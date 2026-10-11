@@ -70,6 +70,7 @@ struct ColorParams {
 
 /// Every stage's compiled kernels.
 pub(crate) struct Kernels {
+    pub(crate) local: crate::local::LocalKernels,
     unclip_weights: Kernel,
     matrix: Kernel,
     base_look: Kernel,
@@ -89,6 +90,7 @@ impl Kernels {
         // Bindings: image, size, parameters, tables.
         const IMAGE: &[bool] = &[false, true, true, true];
         Kernels {
+            local: crate::local::LocalKernels::new(gpu, COMMON),
             unclip_weights: Kernel::new(gpu, "unclip_weights", &matrix, "unclip_weights", MATRIX),
             matrix: Kernel::new(gpu, "matrix", &matrix, "matrix", MATRIX),
             base_look: Kernel::new(gpu, "base_look", &tone, "base_look", IMAGE),
@@ -162,6 +164,22 @@ impl Gpu {
                         k.base_look
                             .dispatch(self, &mut enc, &[&img, &size, &params, &luts], n);
                     }
+                }
+                Step::HighlightsShadows(p) => {
+                    crate::local::Planes::new(self, &mut enc).highlights_shadows(
+                        &img,
+                        plan.width,
+                        plan.height,
+                        p,
+                    );
+                }
+                Step::Local(p) => {
+                    crate::local::Planes::new(self, &mut enc).local_contrast(
+                        &img,
+                        plan.width,
+                        plan.height,
+                        p,
+                    );
                 }
                 Step::ToneCurve { lut, lum_weights } => {
                     let params = self.storage(&ToneParams {
@@ -345,8 +363,12 @@ pub(crate) mod tests {
 
     /// The GPU render of `tags` against the CPU's.
     fn check(name: &str, tags: &[(&str, Value)]) {
+        check_at(name, tags, (160, 120));
+    }
+
+    fn check_at(name: &str, tags: &[(&str, Value)], (w, h): (usize, usize)) {
         let Some(gpu) = gpu() else { return };
-        let img = photo(160, 120);
+        let img = photo(w, h);
         let s = settings(tags);
         let plan = amb_engine::plan::plan(&img, &s).unwrap();
         let ours = gpu.render(&plan);
@@ -458,6 +480,78 @@ pub(crate) mod tests {
                 ("PostCropVignetteAmount", n(-30.0)),
                 ("GrainAmount", n(20.0)),
             ],
+        );
+    }
+
+    #[test]
+    fn highlights_shadows_texture_and_clarity() {
+        same_as_cpu(
+            "highlights and shadows",
+            &[("Highlights2012", n(-70.0)), ("Shadows2012", n(60.0))],
+        );
+        same_as_cpu("shadows only", &[("Shadows2012", n(-40.0))]);
+        same_as_cpu("clarity", &[("Clarity2012", n(55.0))]);
+        same_as_cpu("negative clarity", &[("Clarity2012", n(-60.0))]);
+        same_as_cpu(
+            "texture and clarity",
+            &[("Texture", n(45.0)), ("Clarity2012", n(30.0))],
+        );
+        same_as_cpu(
+            "smoothing texture",
+            &[("Texture", n(-50.0)), ("Clarity2012", n(25.0))],
+        );
+    }
+
+    #[test]
+    fn gaussian_blurs_match() {
+        let Some(gpu) = gpu() else { return };
+        let (w, h) = (97, 61);
+        let plane: Vec<f32> = (0..w * h)
+            .map(|i| ((i * 37 % 101) as f32 / 101.0) + if i % w < 40 { 0.3 } else { 0.0 })
+            .collect();
+        for sigma in [0.2f32, 1.4, 2.9, 5.0, 11.0] {
+            let cpu = amb_engine::filters::gaussian_blur(&plane, w, h, sigma);
+            let src = gpu.upload(&plane);
+            let mut enc = gpu.device.create_command_encoder(&Default::default());
+            let out = crate::local::Planes::new(&gpu, &mut enc).gaussian(
+                &src,
+                w,
+                h,
+                &amb_engine::filters::gaussian_plan(sigma),
+            );
+            gpu.queue.submit([enc.finish()]);
+            let ours = gpu.download(out.as_ref().unwrap_or(&src), w * h);
+            let (max, _) = compare(&ours, &cpu);
+            assert!(max < 1e-5, "sigma {sigma}: {max}");
+        }
+    }
+
+    #[test]
+    fn subsampled_guided_filters() {
+        // Large enough that the guided filters work on 2× subsampled copies
+        // (as previews do), with partial blocks at the odd edges.
+        let (w, h) = (1203, 803);
+        let tone = amb_engine::local_tone::plan(
+            &amb_engine::tone::ToneControls {
+                shadows: 50.0,
+                ..Default::default()
+            },
+            &amb_engine::tone::DEFAULT_STRENGTHS,
+            amb_engine::local::reference_scale(w, h),
+            w,
+            h,
+        )
+        .unwrap();
+        assert!(tone.guided.s > 1, "{:?}", tone.guided);
+        check_at(
+            "subsampled",
+            &pixel_stages(&[
+                ("Highlights2012", n(-60.0)),
+                ("Shadows2012", n(50.0)),
+                ("Clarity2012", n(40.0)),
+                ("Texture", n(30.0)),
+            ]),
+            (w, h),
         );
     }
 }

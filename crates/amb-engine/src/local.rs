@@ -157,13 +157,13 @@ pub(crate) const REFERENCE_DIAGONAL: f32 = 7211.1025;
 /// Below this display-linear luminance the change fades from an RGB ratio
 /// (hue preserving) to a neutral offset, so near-black noise is not amplified
 /// into strong colour.
-const RATIO_KNEE_Y: f32 = 1e-3;
+pub const RATIO_KNEE_Y: f32 = 1e-3;
 
 /// Encoded luminance is clamped to ±this before filtering (and NaN replaced
 /// by 0), so one non-finite or absurd pixel cannot poison the running sums of
 /// the box filters across its row and column. Pixels at or beyond the bound
 /// (encoded 4 ≈ 25× white) pass through unchanged.
-pub(crate) const LEVEL_BOUND: f32 = 4.0;
+pub const LEVEL_BOUND: f32 = 4.0;
 
 /// Smallest box half-width (pixels): the window never drops below two pixels,
 /// even on tiny thumbnails.
@@ -505,6 +505,107 @@ pub(crate) struct GuidedBase {
     xs: Vec<(usize, usize, f32)>,
 }
 
+/// The numbers of a [`GuidedBase`] (for other backends too): `A` and `B`
+/// are found on an `s`-times box-subsampled `wl × hl` copy with fractional
+/// box radius `r` and regularisation `eps`, then bilinearly upsampled.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GuidedPlan {
+    pub s: usize,
+    pub r: f32,
+    pub eps: f32,
+    pub wl: usize,
+    pub hl: usize,
+}
+
+impl GuidedPlan {
+    pub(crate) fn new(w: usize, h: usize, radius: f32, eps: f32, low_res_radius: f32) -> Self {
+        let eps = eps.max(1e-8);
+        let s = ((radius / low_res_radius.max(1.0)).round() as usize)
+            .clamp(1, GUIDED_MAX_SUBSAMPLE)
+            .min(w.min(h).max(1));
+        // The same window extent in low-resolution pixels (fractional, so the
+        // filter scale varies continuously with `radius`).
+        let r = (((2.0 * radius + 1.0) / s as f32 - 1.0) / 2.0).max(MIN_BOX_RADIUS);
+        GuidedPlan {
+            s,
+            r,
+            eps,
+            wl: w.div_ceil(s),
+            hl: h.div_ceil(s),
+        }
+    }
+}
+
+/// One Texture or Clarity band as numbers: its source is the luminance
+/// level blurred by `prefilter`; the change is
+/// `amount · weight(base) · soft_limit(src − base, limit)`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct BandPlan {
+    pub prefilter: crate::filters::GaussianPlan,
+    pub guided: GuidedPlan,
+    pub amount: f32,
+    /// Midtone weight by base level, [`WEIGHT_LUT_SIZE`] entries on 0..1.
+    pub weight: Vec<f32>,
+    pub limit: f32,
+}
+
+/// Texture and Clarity as numbers (Clarity's band first): positive bands'
+/// changes are summed and limited together by `combined_limit`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct LocalPlan {
+    pub bands: Vec<BandPlan>,
+    pub combined_limit: f32,
+}
+
+/// [`apply_scaled`]'s numbers for a `w × h` image, or `None` when it does nothing.
+pub fn plan(
+    p: &LocalContrast,
+    k: &LocalStrengths,
+    scale: f32,
+    w: usize,
+    h: usize,
+) -> Option<LocalPlan> {
+    if p.is_neutral() || w == 0 || h == 0 {
+        return None;
+    }
+    let gauss = crate::filters::gaussian_plan;
+    let mut bands = Vec::new();
+    if p.clarity != 0.0 {
+        bands.push(BandPlan {
+            prefilter: gauss(k.clarity_fine_sigma_px * scale),
+            guided: GuidedPlan::new(
+                w,
+                h,
+                scaled_radius(k.clarity_radius_frac * REFERENCE_DIAGONAL, scale),
+                k.clarity_edge_eps,
+                CLARITY_LOW_RES_RADIUS,
+            ),
+            amount: signed_amount(p.clarity, k.clarity_gain, k.clarity_soften),
+            weight: midtone_weight_lut(k.clarity_midtone_power),
+            limit: k.clarity_detail_limit,
+        });
+    }
+    if p.texture != 0.0 {
+        bands.push(BandPlan {
+            prefilter: gauss(k.texture_fine_sigma_px * scale),
+            guided: GuidedPlan::new(
+                w,
+                h,
+                scaled_radius(k.texture_medium_radius_px, scale),
+                k.texture_edge_eps,
+                TEXTURE_LOW_RES_RADIUS,
+            ),
+            amount: signed_amount(p.texture, k.texture_gain, k.texture_smooth),
+            weight: midtone_weight_lut(k.texture_midtone_power),
+            limit: k.texture_band_limit,
+        });
+    }
+    Some(LocalPlan {
+        bands,
+        combined_limit: k.combined_limit,
+    })
+}
+
 impl GuidedBase {
     pub(crate) fn new(
         src: &[f32],
@@ -514,14 +615,7 @@ impl GuidedBase {
         eps: f32,
         low_res_radius: f32,
     ) -> Self {
-        let eps = eps.max(1e-8);
-        let s = ((radius / low_res_radius.max(1.0)).round() as usize)
-            .clamp(1, GUIDED_MAX_SUBSAMPLE)
-            .min(w.min(h).max(1));
-        // The same window extent in low-resolution pixels (fractional, so the
-        // filter scale varies continuously with `radius`).
-        let r = (((2.0 * radius + 1.0) / s as f32 - 1.0) / 2.0).max(MIN_BOX_RADIUS);
-        let (wl, hl) = (w.div_ceil(s), h.div_ceil(s));
+        let GuidedPlan { s, r, eps, wl, hl } = GuidedPlan::new(w, h, radius, eps, low_res_radius);
         let low = if s == 1 {
             Cow::Borrowed(src)
         } else {

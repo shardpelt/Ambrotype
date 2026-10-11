@@ -11,5 +11,6 @@
 
 mod develop;
 mod device;
+mod local;
 
 pub use device::Gpu;

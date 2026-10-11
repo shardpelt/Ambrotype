@@ -21,10 +21,12 @@
 //! on. Defringe runs later, on the working-space image ([`apply_defringe`]).
 //! All guessed constants live in [`LensStrengths`].
 
+use std::borrow::Cow;
+
 use amb_lens::{Correction, Geometry, ImageFrame};
 use rayon::prelude::*;
 
-use crate::buffer::Image;
+use crate::buffer::{Image, Rect, Tile};
 use crate::color::OkLab;
 use crate::crop::CropGeometry;
 use crate::filters::transpose;
@@ -243,13 +245,38 @@ pub fn apply_camera_cropped(
     crop: Option<&CropGeometry>,
     warp: Option<&Homography>,
 ) -> CameraPass {
+    apply_camera_window(rgb, width, height, crop_factor, lc, k, crop, warp, None)
+}
+
+/// [`apply_camera_cropped`] for `window` of the output only (all of it when
+/// `None`): the pass returns that rectangle, sampled exactly as the full
+/// output would be there.
+#[allow(clippy::too_many_arguments)]
+pub fn apply_camera_window(
+    rgb: &[f32],
+    width: usize,
+    height: usize,
+    crop_factor: Option<f64>,
+    lc: &LensCorrections,
+    k: &LensStrengths,
+    crop: Option<&CropGeometry>,
+    warp: Option<&Homography>,
+    window: Option<Rect>,
+) -> CameraPass {
     let frame = ImageFrame {
         width,
         height,
         crop_factor,
     };
     let profile = lc.active_profile().map(|c| Geometry::new(c, &frame));
-    let mut src = rgb.to_vec();
+    let (full_w, full_h) = crop.map_or((width, height), |c| (c.width, c.height));
+    let win = window.unwrap_or(Rect {
+        x: 0,
+        y: 0,
+        width: full_w,
+        height: full_h,
+    });
+    let mut src = Cow::Borrowed(rgb);
 
     // 1. Vignetting gains on the source pixels.
     let profile_vignette = profile
@@ -262,7 +289,8 @@ pub fn apply_camera_cropped(
             + (k.manual_vignette_start_max - k.manual_vignette_start_min)
                 * (lc.vignette_midpoint / 100.0).clamp(0.0, 1.0);
         let manual_stops = k.manual_vignette_stops * lc.vignette_amount / 100.0;
-        src.par_chunks_mut(width * 3)
+        src.to_mut()
+            .par_chunks_mut(width * 3)
             .enumerate()
             .for_each(|(y, row)| {
                 for x in 0..width {
@@ -305,10 +333,19 @@ pub fn apply_camera_cropped(
         && crop.is_none()
         && warp.is_none()
     {
+        let rgb = if win.width == width && win.height == height {
+            src.into_owned()
+        } else {
+            let mut out = Vec::with_capacity(win.width * win.height * 3);
+            for y in win.y..win.bottom() {
+                out.extend_from_slice(&src[(y * width + win.x) * 3..(y * width + win.right()) * 3]);
+            }
+            out
+        };
         return CameraPass {
-            width,
-            height,
-            rgb: src,
+            width: win.width,
+            height: win.height,
+            rgb,
             blank: None,
         };
     }
@@ -391,7 +428,7 @@ pub fn apply_camera_cropped(
 
     let (wf, hf) = (width as f64, height as f64);
     let inside = |x: f64, y: f64| x >= -0.5 && x <= wf - 0.5 && y >= -0.5 && y <= hf - 0.5;
-    let (out_w, out_h) = crop.map_or((width, height), |c| (c.width, c.height));
+    let (out_w, out_h) = (win.width, win.height);
     let mut out = vec![0.0f32; out_w * out_h * 3];
     let mut blank = vec![false; out_w * out_h];
     out.par_chunks_mut(out_w * 3)
@@ -400,7 +437,8 @@ pub fn apply_camera_cropped(
         .for_each(|(y, (row, blank_row))| {
             for x in 0..out_w {
                 // Output pixel → lens-corrected frame (crop) → source (lens).
-                let (fx, fy) = crop.map_or((x as f64, y as f64), |c| c.source(x as f64, y as f64));
+                let (ox, oy) = ((win.x + x) as f64, (win.y + y) as f64);
+                let (fx, fy) = crop.map_or((ox, oy), |c| c.source(ox, oy));
                 let (gx, gy) = map_green(fx, fy);
                 if !inside(fx, fy) || !inside(gx, gy) {
                     blank_row[x] = true;
@@ -708,9 +746,25 @@ fn robust_fit(samples: &[(f64, f64)], max_shift: f64) -> Option<RadialShift> {
     Some(model)
 }
 
+/// Defringe's search radius in pixels on an output of `tile`'s full size.
+pub fn defringe_radius(d: &Defringe, k: &LensStrengths, tile: &Tile) -> usize {
+    let resolution = ((tile.full_width * tile.full_height) as f64 / 24e6).sqrt();
+    let amount = d.purple_amount.max(d.green_amount);
+    ((1.0 + amount * k.defringe_radius) * resolution)
+        .round()
+        .max(1.0) as usize
+}
+
 /// Defringe on the working-space image (scene-linear ProPhoto): desaturate
 /// purple and green fringes next to high-contrast edges.
 pub fn apply_defringe(img: &mut Image, d: &Defringe, k: &LensStrengths) {
+    let tile = Tile::of(img);
+    apply_defringe_in(img, d, k, &tile);
+}
+
+/// [`apply_defringe`] on a part of the output (`tile`), with the search
+/// radius of the full output.
+pub fn apply_defringe_in(img: &mut Image, d: &Defringe, k: &LensStrengths, tile: &Tile) {
     if d.is_neutral() || img.width < 3 || img.height < 3 {
         return;
     }
@@ -722,11 +776,7 @@ pub fn apply_defringe(img: &mut Image, d: &Defringe, k: &LensStrengths) {
         .par_chunks(3)
         .map(|p| oklab.from_working(positive(p))[0])
         .collect();
-    let resolution = ((w * h) as f64 / 24e6).sqrt();
-    let amount = d.purple_amount.max(d.green_amount);
-    let radius = ((1.0 + amount * k.defringe_radius) * resolution)
-        .round()
-        .max(1.0) as usize;
+    let radius = defringe_radius(d, k, tile);
     let contrast = local_range(&lightness, w, h, radius);
 
     let band = |amount: f64, lo: f64, hi: f64, start: f64, span: f64| {

@@ -23,12 +23,23 @@ use rayon::prelude::*;
 use crate::buffer::{Image, luminance_weights};
 use crate::local::{
     CLARITY_LOW_RES_RADIUS, DECODE_LUT_SIZE, GuidedBase, LEVEL_BOUND, REFERENCE_DIAGONAL,
-    apply_luminance, channel_cap, decode_level, filter_level, headroom_limit, lookup,
+    apply_luminance, channel_cap, decode_level, filter_level, guided_reach, headroom_limit, lookup,
     reference_scale, scaled_radius, srgb_decode,
 };
 use crate::tone::{self, ToneControls, ToneStrengths};
 
 const LUT: usize = 1025;
+
+/// How far (pixels) Highlights and Shadows reach at `scale`.
+pub fn reach(c: &ToneControls, k: &ToneStrengths, scale: f32) -> usize {
+    if c.highlights == 0.0 && c.shadows == 0.0 {
+        return 0;
+    }
+    guided_reach(
+        scaled_radius(k.local_radius_frac as f32 * REFERENCE_DIAGONAL, scale),
+        CLARITY_LOW_RES_RADIUS,
+    )
+}
 
 /// Apply Highlights and Shadows in place, with spatial scales relative to
 /// this image's size.

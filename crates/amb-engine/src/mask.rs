@@ -23,13 +23,13 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::brush;
-use crate::buffer::{Image, luminance_weights};
+use crate::buffer::{Image, Tile, luminance_weights};
 use crate::calibration::Calibration;
 use crate::color::OkLab;
 use crate::crop::CropGeometry;
 use crate::detail::{NoiseReduction, Sharpening};
-use crate::filters::gaussian_blur;
-use crate::local::{LocalContrast, reference_scale};
+use crate::filters::{gaussian_blur, gaussian_reach};
+use crate::local::LocalContrast;
 use crate::tone::{self, ToneControls};
 use crate::{dehaze, detail, local};
 
@@ -226,6 +226,44 @@ impl Masks {
         self.corrections.is_empty()
     }
 
+    /// The output pixels colour range masks sample, per colour shape in the
+    /// order [`draw_in`] measures them. `frame` is the uncropped frame's
+    /// size and `crop` the output → frame map.
+    pub fn colour_sample_pixels(
+        &self,
+        frame: (usize, usize),
+        crop: Option<&CropGeometry>,
+    ) -> Vec<Vec<(f64, f64)>> {
+        let frame = Frame::new(frame, crop);
+        let mut out = Vec::new();
+        for c in &self.corrections {
+            let shown = self.overlay.is_some() && self.overlay == c.index;
+            if !shown && c.adjust.is_neutral() {
+                continue;
+            }
+            let shapes = c.parts.iter().map(|p| &p.shape);
+            for shape in shapes.chain(c.range.iter().map(|(s, _)| s)) {
+                if let Shape::Color { samples, .. } = shape {
+                    out.push(
+                        samples
+                            .iter()
+                            .map(|&(u, v)| {
+                                let (fx, fy) = frame.pixel(u, v);
+                                frame.target(fx, fy)
+                            })
+                            .collect(),
+                    );
+                }
+            }
+        }
+        out
+    }
+
+    /// Whether a colour range mask selects colours (sampled over the photo).
+    pub fn has_colour_range(&self) -> bool {
+        self.needs(|s| matches!(s, Shape::Color { .. }))
+    }
+
     fn needs(&self, f: impl Fn(&Shape) -> bool) -> bool {
         self.corrections.iter().any(|c| {
             c.parts.iter().any(|p| f(&p.shape)) || c.range.as_ref().is_some_and(|(s, _)| f(s))
@@ -408,6 +446,19 @@ impl Frame {
         }
     }
 
+    /// The same map for a buffer holding `tile` of the output: its pixel
+    /// (0, 0) is output pixel (`tile.x`, `tile.y`).
+    pub(crate) fn in_tile(self, tile: &Tile) -> Frame {
+        let (tx, ty) = (tile.x as f64, tile.y as f64);
+        Frame {
+            o: (
+                self.o.0 + tx * self.ex.0 + ty * self.ey.0,
+                self.o.1 + tx * self.ex.1 + ty * self.ey.1,
+            ),
+            ..self
+        }
+    }
+
     /// Frame pixel coordinates (centres at integers) of output pixel (x, y).
     #[inline]
     pub(crate) fn source(&self, x: f64, y: f64) -> (f64, f64) {
@@ -457,8 +508,17 @@ struct Reference<'a> {
     strengths: MaskStrengths,
 }
 
+/// The colours colour-range masks select, one list per colour shape in
+/// drawing order: measured on the image, or given (a region render takes
+/// them from the whole photo, since its samples may lie outside the region).
+#[derive(Default)]
+struct Targets<'a> {
+    given: Option<&'a [Vec<[f32; 3]>]>,
+    measured: Vec<Vec<[f32; 3]>>,
+}
+
 /// Draw one shape into a plane of the output's size.
-fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference) -> Vec<f32> {
+fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference, targets: &mut Targets) -> Vec<f32> {
     let (w, h) = (r.width, r.height);
     let mut plane = vec![0.0f32; w * h];
     let per_pixel = |plane: &mut Vec<f32>, f: &(dyn Fn(f64, f64) -> f64 + Sync)| {
@@ -536,7 +596,13 @@ fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference) -> Vec<f32> {
         }
         Shape::Color { samples, amount } => {
             if let Some(lab) = r.lab {
-                draw_color_range(&mut plane, lab, w, h, frame, samples, *amount, &r.strengths);
+                let i = targets.measured.len();
+                let colours = match targets.given.and_then(|g| g.get(i)) {
+                    Some(t) => t.clone(),
+                    None => sample_colours(lab, w, h, frame, samples),
+                };
+                draw_color_range(&mut plane, lab, &colours, *amount, &r.strengths);
+                targets.measured.push(colours);
             }
         }
         Shape::Unsupported => {}
@@ -544,22 +610,18 @@ fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference) -> Vec<f32> {
     plane
 }
 
-#[allow(clippy::too_many_arguments)]
-fn draw_color_range(
-    plane: &mut [f32],
+/// The mean colour around each sample (5×5 pixels).
+fn sample_colours(
     lab: &[[f32; 3]],
     w: usize,
     h: usize,
     frame: &Frame,
     samples: &[(f64, f64)],
-    amount: f64,
-    k: &MaskStrengths,
-) {
+) -> Vec<[f32; 3]> {
     if w == 0 || h == 0 {
-        return;
+        return Vec::new();
     }
-    // The mean colour around each sample (5×5 pixels).
-    let targets: Vec<[f32; 3]> = samples
+    samples
         .iter()
         .map(|&(u, v)| {
             let (fx, fy) = frame.pixel(u, v);
@@ -579,12 +641,22 @@ fn draw_color_range(
             }
             sum.map(|s| s / n)
         })
-        .collect();
+        .collect()
+}
+
+/// A colour range mask selecting `targets`.
+fn draw_color_range(
+    plane: &mut [f32],
+    lab: &[[f32; 3]],
+    targets: &[[f32; 3]],
+    amount: f64,
+    k: &MaskStrengths,
+) {
     let tol =
         (k.color_tolerance_min + (k.color_tolerance_max - k.color_tolerance_min) * amount) as f32;
     plane.par_iter_mut().zip(lab.par_iter()).for_each(|(v, p)| {
         let mut best = 0.0f32;
-        for t in &targets {
+        for t in targets {
             let d = ((0.5 * (p[0] - t[0])).powi(2) + (p[1] - t[1]).powi(2) + (p[2] - t[2]).powi(2))
                 .sqrt();
             let m = 1.0 - smoothstep(0.5 * tol as f64, tol as f64, d as f64) as f32;
@@ -595,10 +667,15 @@ fn draw_color_range(
 }
 
 /// A correction's final alpha plane.
-fn draw_correction(c: &Correction, frame: &Frame, r: &Reference) -> Vec<f32> {
+fn draw_correction(
+    c: &Correction,
+    frame: &Frame,
+    r: &Reference,
+    targets: &mut Targets,
+) -> Vec<f32> {
     let mut alpha = vec![0.0f32; r.width * r.height];
     for part in &c.parts {
-        let mut p = draw_shape(&part.shape, frame, r);
+        let mut p = draw_shape(&part.shape, frame, r, targets);
         let (_, _, inverted) = part.combination.stored();
         if inverted {
             p.par_iter_mut().for_each(|v| *v = 1.0 - *v);
@@ -620,7 +697,7 @@ fn draw_correction(c: &Correction, frame: &Frame, r: &Reference) -> Vec<f32> {
         }
     }
     if let Some((shape, invert)) = &c.range {
-        let p = draw_shape(shape, frame, r);
+        let p = draw_shape(shape, frame, r, targets);
         alpha.par_iter_mut().zip(p.par_iter()).for_each(|(a, &v)| {
             *a *= if *invert { 1.0 - v } else { v };
         });
@@ -634,6 +711,10 @@ fn draw_correction(c: &Correction, frame: &Frame, r: &Reference) -> Vec<f32> {
 pub struct Drawn {
     planes: Vec<(LocalAdjustments, Vec<f32>)>,
     overlay: Option<Vec<f32>>,
+    /// The part of the output the planes cover.
+    tile: Tile,
+    /// The colours the colour range masks selected (see [`draw_in`]).
+    pub colour_targets: Vec<Vec<[f32; 3]>>,
 }
 
 /// Draw every mask for an image at the end of the scene-linear stage.
@@ -648,7 +729,34 @@ pub fn draw(
     encode: impl Fn(f32) -> f32 + Sync,
     strengths: &MaskStrengths,
 ) -> Drawn {
-    let frame = Frame::new(frame, crop);
+    draw_in(
+        masks,
+        img,
+        frame,
+        crop,
+        encode,
+        strengths,
+        &Tile::of(img),
+        None,
+    )
+}
+
+/// [`draw`] for `img` holding `tile` of the output. Colour range masks
+/// select `colour_targets` when given (as measured by a render of the whole
+/// output, [`Drawn::colour_targets`]); otherwise the colours under their
+/// samples here.
+#[allow(clippy::too_many_arguments)]
+pub fn draw_in(
+    masks: &Masks,
+    img: &Image,
+    frame: (usize, usize),
+    crop: Option<&CropGeometry>,
+    encode: impl Fn(f32) -> f32 + Sync,
+    strengths: &MaskStrengths,
+    tile: &Tile,
+    colour_targets: Option<&[Vec<[f32; 3]>]>,
+) -> Drawn {
+    let frame = Frame::new(frame, crop).in_tile(tile);
     let lw = luminance_weights();
     let luminance: Option<Vec<f32>> =
         masks.needs(|s| matches!(s, Shape::Luminance(_))).then(|| {
@@ -678,12 +786,16 @@ pub fn draw(
     };
     let mut planes = Vec::new();
     let mut overlay = None;
+    let mut targets = Targets {
+        given: colour_targets,
+        measured: Vec::new(),
+    };
     for c in &masks.corrections {
         let shown = masks.overlay.is_some() && masks.overlay == c.index;
         if !shown && c.adjust.is_neutral() {
             continue;
         }
-        let alpha = draw_correction(c, &frame, &reference);
+        let alpha = draw_correction(c, &frame, &reference, &mut targets);
         if shown {
             overlay = Some(alpha.clone());
         }
@@ -691,7 +803,53 @@ pub fn draw(
             planes.push((c.adjust, alpha));
         }
     }
-    Drawn { planes, overlay }
+    Drawn {
+        planes,
+        overlay,
+        tile: *tile,
+        colour_targets: targets.measured,
+    }
+}
+
+/// How far (pixels) the masks' local adjustments reach at `scale` (the
+/// shapes themselves are drawn per pixel).
+pub fn reach(masks: &Masks, cal: &Calibration, scale: f32) -> usize {
+    let k = &cal.masks;
+    masks
+        .corrections
+        .iter()
+        .map(|c| {
+            let a = &c.adjust;
+            let contrast = LocalContrast {
+                texture: a.texture,
+                clarity: a.clarity,
+            };
+            let noise = (a.noise > 0.0).then_some(NoiseReduction {
+                luminance: a.noise,
+                luminance_detail: 50.0,
+                luminance_contrast: 0.0,
+                color: 0.0,
+                color_detail: 50.0,
+                color_smoothness: 50.0,
+            });
+            let sharpness = if a.sharpness > 0.0 {
+                let s = Sharpening {
+                    amount: k.sharpness * a.sharpness / 100.0,
+                    radius: 1.0,
+                    detail: 25.0,
+                    masking: 0.0,
+                };
+                detail::sharpening_reach(&s, &cal.detail)
+            } else if a.sharpness < 0.0 {
+                gaussian_reach(((k.soften_sigma * -a.sharpness / 100.0) as f32 * scale).max(0.3))
+            } else {
+                0
+            };
+            local::reach(&contrast, &cal.local, scale)
+                + noise.map_or(0, |n| detail::noise_reduction_reach(&n, &cal.detail))
+                + sharpness
+        })
+        .sum()
 }
 
 /// Blend `alt` into `img` through `alpha`.
@@ -745,12 +903,34 @@ impl Drawn {
         }
     }
 
-    pub fn apply_dehaze(&self, img: &mut Image, cal: &Calibration) {
-        for (a, alpha) in self.each(|a| a.dehaze != 0.0) {
+    /// Local Dehaze. Each mask's haze is measured on the image (a whole
+    /// output; `full` is the full output's size), or taken from `given` (one
+    /// per Dehaze mask, in order, as measured on the whole output). Returns
+    /// the measured estimates.
+    pub fn apply_dehaze(
+        &self,
+        img: &mut Image,
+        cal: &Calibration,
+        given: Option<&[dehaze::Estimate]>,
+        full: (usize, usize),
+    ) -> Vec<dehaze::Estimate> {
+        let mut measured = Vec::new();
+        for (i, (a, alpha)) in self.each(|a| a.dehaze != 0.0).enumerate() {
             let mut alt = img.clone();
-            dehaze::apply(&mut alt, a.dehaze, &cal.dehaze);
+            let haze = match given.and_then(|e| e.get(i)) {
+                Some(e) => dehaze::Haze::Given(e),
+                None => dehaze::Haze::Measure { full },
+            };
+            measured.extend(dehaze::apply_haze(
+                &mut alt,
+                a.dehaze,
+                &cal.dehaze,
+                &self.tile,
+                haze,
+            ));
             blend(img, &alt, alpha);
         }
+        measured
     }
 
     /// Contrast, Highlights, Shadows, Whites, Blacks on display-linear light,
@@ -787,7 +967,7 @@ impl Drawn {
                 texture: a.texture,
                 clarity: a.clarity,
             };
-            local::apply(&mut alt, &p, &cal.local);
+            local::apply_scaled(&mut alt, &p, &cal.local, self.tile.scale());
             blend(img, &alt, alpha);
         }
     }
@@ -845,8 +1025,7 @@ impl Drawn {
                 };
                 detail::apply_sharpening(&mut alt, &s, &cal.detail);
             } else {
-                let sigma = (k.soften_sigma * -a.sharpness / 100.0) as f32
-                    * reference_scale(img.width, img.height);
+                let sigma = (k.soften_sigma * -a.sharpness / 100.0) as f32 * self.tile.scale();
                 let (w, h) = (img.width, img.height);
                 for c in 0..3 {
                     let plane: Vec<f32> = img.rgb.iter().skip(c).step_by(3).copied().collect();
@@ -915,6 +1094,7 @@ mod tests {
             &m.corrections[0],
             &Frame::new((w, h), None),
             &reference(w, h),
+            &mut Targets::default(),
         )
     }
 
@@ -1090,7 +1270,12 @@ mod tests {
         ])])]);
         let (m, _) = Masks::from_settings(&s);
         let r = reference(g.width, g.height);
-        let a = draw_correction(&m.corrections[0], &Frame::new((100, 10), Some(&g)), &r);
+        let a = draw_correction(
+            &m.corrections[0],
+            &Frame::new((100, 10), Some(&g)),
+            &r,
+            &mut Targets::default(),
+        );
         assert!(a.iter().all(|&v| v > 0.99));
     }
 
@@ -1117,7 +1302,12 @@ mod tests {
             height: 1,
             strengths: MaskStrengths::default(),
         };
-        let a = draw_correction(&m.corrections[0], &Frame::new((10, 1), None), &r);
+        let a = draw_correction(
+            &m.corrections[0],
+            &Frame::new((10, 1), None),
+            &r,
+            &mut Targets::default(),
+        );
         assert_eq!(a[0], 0.0);
         assert_eq!(a[9], 1.0);
         assert!(a[4] < 1e-6 && a[6] > 0.99, "{a:?}");
@@ -1134,6 +1324,7 @@ mod tests {
             &m.corrections[0],
             &Frame::new((4, 4), None),
             &reference(4, 4),
+            &mut Targets::default(),
         );
         assert!(a.iter().all(|&v| v == 0.0));
     }

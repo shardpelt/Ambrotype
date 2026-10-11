@@ -14,6 +14,71 @@ pub struct Image {
     pub rgb: Vec<f32>,
 }
 
+/// Where a working buffer sits in the full output. A normal render works on
+/// the whole output; a 1:1 region render on part of it, and every stage that
+/// places something (vignette, grain, masks, spots) or scales with the photo
+/// (filter radii) goes by the full output, so the region matches the same
+/// part of the full render.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Tile {
+    /// The buffer's top-left pixel in the full output.
+    pub x: usize,
+    pub y: usize,
+    /// The full output's size.
+    pub full_width: usize,
+    pub full_height: usize,
+}
+
+impl Tile {
+    /// The whole output of this size.
+    pub fn whole(width: usize, height: usize) -> Tile {
+        Tile {
+            x: 0,
+            y: 0,
+            full_width: width,
+            full_height: height,
+        }
+    }
+
+    /// The whole of `img`.
+    pub fn of(img: &Image) -> Tile {
+        Tile::whole(img.width, img.height)
+    }
+
+    /// The full output's size relative to the 24 MP reference (by diagonal),
+    /// which spatial filters scale with.
+    pub fn scale(&self) -> f32 {
+        crate::local::reference_scale(self.full_width, self.full_height)
+    }
+}
+
+/// A rectangle of pixels.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Rect {
+    pub x: usize,
+    pub y: usize,
+    pub width: usize,
+    pub height: usize,
+}
+
+impl Rect {
+    pub fn right(&self) -> usize {
+        self.x + self.width
+    }
+
+    pub fn bottom(&self) -> usize {
+        self.y + self.height
+    }
+
+    /// Whether `other` lies wholly inside this rectangle.
+    pub fn contains(&self, other: &Rect) -> bool {
+        other.x >= self.x
+            && other.y >= self.y
+            && other.right() <= self.right()
+            && other.bottom() <= self.bottom()
+    }
+}
+
 /// ProPhoto luminance weights (the Y row of ProPhoto → XYZ).
 pub fn luminance_weights() -> [f32; 3] {
     PROPHOTO_TO_XYZ_D50[1].map(|v| v as f32)

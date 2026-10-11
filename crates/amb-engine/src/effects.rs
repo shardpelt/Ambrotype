@@ -68,7 +68,7 @@
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::buffer::{Image, luminance_weights};
+use crate::buffer::{Image, Tile, luminance_weights};
 
 /// `PostCropVignetteAmount` -100..100, `...Midpoint` 0..100 (50), `...Roundness` -100..100 (0),
 /// `...Feather` 0..100 (50), `...HighlightContrast` 0..100 (0), `...Style` 1 = Highlight
@@ -445,19 +445,25 @@ fn protected_exposure(v: f32, g: f32, h: f32) -> f32 {
 
 /// Post-crop vignette (see the module docs for the model). No-op at amount 0.
 pub fn apply_vignette(img: &mut Image, p: &Vignette, k: &EffectsStrengths) {
+    let tile = Tile::of(img);
+    apply_vignette_in(img, p, k, &tile);
+}
+
+/// [`apply_vignette`] on a part (`tile`) of the output, placed in the full frame.
+pub fn apply_vignette_in(img: &mut Image, p: &Vignette, k: &EffectsStrengths, tile: &Tile) {
     let (w, h) = (img.width, img.height);
     let amount = (p.amount / 100.0).clamp(-1.0, 1.0);
     if amount == 0.0 || amount.is_nan() || w == 0 || h == 0 {
         return;
     }
-    let mask = VignetteMask::new(w, h, p, k);
+    let mask = VignetteMask::new(tile.full_width, tile.full_height, p, k);
     let op = VignetteOp::new(p, k, amount);
     img.rgb
         .par_chunks_mut(w * 3)
         .enumerate()
         .for_each(|(y, row)| {
             for (x, px) in row.chunks_exact_mut(3).enumerate() {
-                let m = mask.at(x, y);
+                let m = mask.at(tile.x + x, tile.y + y);
                 if m > 0.0 {
                     let out = op.apply([px[0], px[1], px[2]], m);
                     px.copy_from_slice(&out);
@@ -855,6 +861,13 @@ impl GrainOp {
 
 /// Film-like grain (see the module docs for the model). No-op at amount 0.
 pub fn apply_grain(img: &mut Image, p: &Grain, k: &EffectsStrengths) {
+    let tile = Tile::of(img);
+    apply_grain_in(img, p, k, &tile);
+}
+
+/// [`apply_grain`] on a part (`tile`) of the output: the same grain as the
+/// full render has there.
+pub fn apply_grain_in(img: &mut Image, p: &Grain, k: &EffectsStrengths, tile: &Tile) {
     let (w, h) = (img.width, img.height);
     let amount = (p.amount / 100.0).clamp(0.0, 1.0);
     if amount == 0.0 || amount.is_nan() || w == 0 || h == 0 {
@@ -862,7 +875,7 @@ pub fn apply_grain(img: &mut Image, p: &Grain, k: &EffectsStrengths) {
     }
     let field = GrainField::new(
         grain_sigma_ref(p.size, k),
-        grain_scale(w, h),
+        grain_scale(tile.full_width, tile.full_height),
         (p.roughness / 100.0) as f32,
         p.seed,
         k,
@@ -877,18 +890,18 @@ pub fn apply_grain(img: &mut Image, p: &Grain, k: &EffectsStrengths) {
     }
     // Bands of tile rows in parallel; tiles within a band in turn, each applied
     // while its field is still in cache.
-    let tile = field.tile_size();
+    let size = field.tile_size();
     img.rgb
-        .par_chunks_mut(tile * w * 3)
+        .par_chunks_mut(size * w * 3)
         .enumerate()
         .for_each(|(band_index, band)| {
-            let y0 = band_index * tile;
+            let y0 = band_index * size;
             let th = band.len() / (3 * w);
             let mut scratch = GrainScratch::default();
             let mut n = Vec::new();
-            for x0 in (0..w).step_by(tile) {
-                let tw = tile.min(w - x0);
-                field.tile_into((x0, y0, tw, th), &mut scratch, &mut n);
+            for x0 in (0..w).step_by(size) {
+                let tw = size.min(w - x0);
+                field.tile_into((tile.x + x0, tile.y + y0, tw, th), &mut scratch, &mut n);
                 for (j, n_row) in n.chunks_exact(tw).enumerate() {
                     let row = &mut band[(j * w + x0) * 3..][..tw * 3];
                     for (px, &nv) in row.chunks_exact_mut(3).zip(n_row) {

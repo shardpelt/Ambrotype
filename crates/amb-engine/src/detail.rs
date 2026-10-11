@@ -99,7 +99,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::buffer::{Image, luminance_weights};
-use crate::filters::{box_blur, gaussian_blur};
+use crate::filters::{box_blur, gaussian_blur, gaussian_reach};
 
 /// `Sharpness` 0..150, `SharpenRadius` 0.5..3.0, `SharpenDetail` 0..100, `SharpenEdgeMasking` 0..100.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -333,6 +333,58 @@ const MAX_BLUR_SIGMA: f64 = 32.0;
 const MAX_LUMINANCE_RADIUS: f64 = 64.0;
 const MAX_COLOR_RADIUS: f64 = 256.0;
 const MAX_DOWNSCALE: f64 = 64.0;
+
+/// How far (pixels) noise reduction reaches: a pixel's result depends only on
+/// the image within this distance, apart from the noise level, which is
+/// measured over the whole image.
+pub fn noise_reduction_reach(p: &NoiseReduction, k: &DetailStrengths) -> usize {
+    let mut reach = 0;
+    if p.luminance > 0.0 && p.luminance.is_finite() {
+        let s = p.luminance.min(100.0) / 100.0;
+        let r_fine = (k.luminance_radius + k.luminance_radius_per_strength.max(0.0) * s)
+            .clamp(1.0, MAX_LUMINANCE_RADIUS);
+        let r_coarse = (r_fine * k.luminance_coarse_radius.max(0.0)).min(MAX_LUMINANCE_RADIUS);
+        let guided = |r: f64| 2 * (r.ceil() as usize + 1);
+        reach += guided(r_fine)
+            + guided(r_coarse)
+            + 1
+            + gaussian_reach(k.luminance_contrast_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32);
+    }
+    if p.color > 0.0 && p.color.is_finite() {
+        let s = p.color.min(100.0) / 100.0;
+        let smoothness = slider(p.color_smoothness, 50.0, 0.0, 100.0) / 100.0;
+        let radius = (k.color_radius
+            + k.color_radius_per_strength.max(0.0) * s
+            + k.color_radius_per_smoothness.max(0.0) * smoothness)
+            .clamp(1.0, MAX_COLOR_RADIUS);
+        let factor = k.color_max_downscale.round().clamp(1.0, MAX_DOWNSCALE) as usize;
+        let r_low = radius / factor as f64;
+        reach += (2 * (r_low.ceil() as usize + 1) + 2) * factor + 2;
+    }
+    reach
+}
+
+/// How far (pixels) sharpening reaches.
+pub fn sharpening_reach(p: &Sharpening, k: &DetailStrengths) -> usize {
+    if !p.amount.is_finite() || p.amount <= 0.0 {
+        return 0;
+    }
+    let radius = slider(p.radius, 1.0, 0.5, 3.0);
+    let sigma = (radius * k.sharpen_sigma_per_radius.max(0.0)).min(MAX_SHARPEN_SIGMA);
+    let window = (radius * k.halo_window_per_radius.max(0.0)).clamp(1.0, MAX_HALO_WINDOW);
+    let masking = slider(p.masking, 0.0, 0.0, 100.0) > 0.0;
+    let mask = if masking {
+        gaussian_reach(k.mask_blur_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32)
+            + 1
+            + gaussian_reach(k.mask_smooth_sigma.clamp(0.0, MAX_BLUR_SIGMA) as f32)
+    } else {
+        0
+    };
+    ((3.0 * sigma).ceil() as usize)
+        .max(window.ceil() as usize + 1)
+        .max(mask)
+        + 1
+}
 
 /// Noise reduction: luminance first (it cleans the guide), then colour.
 pub fn apply_noise_reduction(img: &mut Image, p: &NoiseReduction, k: &DetailStrengths) {

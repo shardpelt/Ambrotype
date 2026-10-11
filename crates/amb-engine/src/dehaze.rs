@@ -58,7 +58,7 @@
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::buffer::{Image, luminance_weights};
+use crate::buffer::{Image, Tile, luminance_weights};
 use crate::filters::box_blur;
 
 /// Tunable constants. Fitted later against Lightroom sweeps; these are starting values.
@@ -146,15 +146,73 @@ pub fn apply(img: &mut Image, amount: f64, k: &DehazeStrengths) {
     if amount == 0.0 || !amount.is_finite() || img.width == 0 || img.height == 0 {
         return;
     }
-    let amount = (amount / 100.0).clamp(-1.0, 1.0) as f32;
-    // Garbage pixels (NaN, ±inf) would poison the frame-wide statistics: treat them as black.
+    sanitise(img);
+    let est = Estimate::measure(img, k, (img.width, img.height));
+    apply_with(img, amount, &est, k, &Tile::of(img));
+}
+
+/// Where a dehaze pass gets its haze estimate.
+#[derive(Debug, Clone, Copy)]
+pub enum Haze<'a> {
+    /// Measure it on the image: a whole output (the full-size one, or a
+    /// small render of it whose full size is `full`).
+    Measure { full: (usize, usize) },
+    /// Use one measured on the whole output before (for a region of it).
+    Given(&'a Estimate),
+}
+
+/// Dehaze `img`, which holds `tile` of the output, with the estimate `haze`
+/// says. A measured estimate is returned, laid out for the full output.
+pub fn apply_haze(
+    img: &mut Image,
+    amount: f64,
+    k: &DehazeStrengths,
+    tile: &Tile,
+    haze: Haze,
+) -> Option<Estimate> {
+    if amount == 0.0 || !amount.is_finite() || img.width == 0 || img.height == 0 {
+        return None;
+    }
+    match haze {
+        Haze::Given(est) => {
+            apply_with(img, amount, est, k, tile);
+            None
+        }
+        Haze::Measure { full } => {
+            sanitise(img);
+            let own = (img.width, img.height);
+            let here = Estimate::measure(img, k, own);
+            let kept = if full == own {
+                here.clone()
+            } else {
+                Estimate::measure(img, k, full)
+            };
+            // Measured on this buffer, so laid out on it.
+            apply_with(img, amount, &here, k, &Tile::of(img));
+            Some(kept)
+        }
+    }
+}
+
+/// Garbage pixels (NaN, ±inf) would poison the frame-wide statistics: treat
+/// them as black.
+fn sanitise(img: &mut Image) {
     img.rgb.par_iter_mut().for_each(|v| {
         if !v.is_finite() {
             *v = 0.0;
         }
     });
-    let est = Estimate::new(img, k);
-    let op = Recovery::new(amount, &est, k);
+}
+
+/// Dehaze `img`, a part (`tile`) of an output whose haze was measured as
+/// `est` (over the whole output).
+pub fn apply_with(img: &mut Image, amount: f64, est: &Estimate, k: &DehazeStrengths, tile: &Tile) {
+    if amount == 0.0 || !amount.is_finite() || img.width == 0 || img.height == 0 {
+        return;
+    }
+    let amount = (amount / 100.0).clamp(-1.0, 1.0) as f32;
+    sanitise(img);
+    let op = Recovery::new(amount, est, k);
     let comp = est.compensation(&op, k);
     let log_comp = comp.ln();
     let removing = op.omega > 0.0;
@@ -163,13 +221,14 @@ pub fn apply(img: &mut Image, amount: f64, k: &DehazeStrengths) {
 
     // Bilinear sampling positions of the low-resolution coefficient grid
     // (pixel centres aligned), computed once per column.
-    let columns: Vec<(usize, usize, f32)> =
-        (0..w).map(|x| lerp_position(x, est.factor, sw)).collect();
+    let columns: Vec<(usize, usize, f32)> = (0..w)
+        .map(|x| lerp_position(tile.x + x, est.factor, sw))
+        .collect();
     img.rgb
         .par_chunks_mut(w * 3)
         .enumerate()
         .for_each(|(y, row)| {
-            let (y0, y1, wy) = lerp_position(y, est.factor, sh);
+            let (y0, y1, wy) = lerp_position(tile.y + y, est.factor, sh);
             let (a0, a1) = (&est.coef_a[y0 * sw..][..sw], &est.coef_a[y1 * sw..][..sw]);
             let (b0, b1) = (&est.coef_b[y0 * sw..][..sw], &est.coef_b[y1 * sw..][..sw]);
             for (px, &(x0, x1, wx)) in row.chunks_exact_mut(3).zip(&columns) {
@@ -194,8 +253,10 @@ pub fn apply(img: &mut Image, amount: f64, k: &DehazeStrengths) {
         });
 }
 
-/// Low-resolution statistics: airlight and the haze map's guided-filter coefficients.
-struct Estimate {
+/// Low-resolution statistics: airlight and the haze map's guided-filter
+/// coefficients, over a whole output.
+#[derive(Debug, Clone)]
+pub struct Estimate {
     /// Integer downscale factor and the downscaled size.
     factor: usize,
     sw: usize,
@@ -211,11 +272,19 @@ struct Estimate {
 }
 
 impl Estimate {
-    fn new(img: &Image, k: &DehazeStrengths) -> Estimate {
-        let long = img.width.max(img.height);
+    /// Measure the haze of an output of size `full` on `img`: the output
+    /// itself, or a smaller render of all of it (resampled to the grid the
+    /// full-size output would be measured on).
+    pub fn measure(img: &Image, k: &DehazeStrengths, full: (usize, usize)) -> Estimate {
+        let long = full.0.max(full.1);
         let target = k.estimate_long_side.max(16.0) as usize;
         let factor = long.div_ceil(target).max(1);
-        let (small, sw, sh) = downscale(img, factor);
+        let (small, sw, sh) = if (img.width, img.height) == full {
+            downscale(img, factor)
+        } else {
+            let (sw, sh) = (full.0.div_ceil(factor), full.1.div_ceil(factor));
+            (resample(img, sw, sh), sw, sh)
+        };
         let short = sw.min(sh) as f64;
         let patch = ((k.patch_radius * short).round() as usize).max(1);
         let refine = ((k.refine_radius * short).round() as usize).max(1);
@@ -472,6 +541,59 @@ fn downscale(img: &Image, f: usize) -> (Vec<f32>, usize, usize) {
         }
     });
     (out, sw, sh)
+}
+
+/// `img` area-averaged (or, where it is smaller, bilinearly sampled) to
+/// `sw × sh`, pixel areas aligned.
+fn resample(img: &Image, sw: usize, sh: usize) -> Vec<f32> {
+    let (w, h) = (img.width, img.height);
+    let (fx, fy) = (w as f64 / sw as f64, h as f64 / sh as f64);
+    // Per output cell: the source span [a, b) along one axis, with fractional
+    // ends, or a bilinear position when the cell is under a pixel wide.
+    let spans = |n: usize, f: f64, len: usize| -> Vec<Vec<(usize, f32)>> {
+        (0..n)
+            .map(|i| {
+                if f < 1.0 {
+                    let (lo, hi, t) = lerp_position_f(i, f, len);
+                    return vec![(lo, 1.0 - t), (hi, t)];
+                }
+                let (a, b) = (i as f64 * f, ((i + 1) as f64 * f).min(len as f64));
+                let mut taps = Vec::new();
+                let mut x = a.floor() as usize;
+                while (x as f64) < b && x < len {
+                    let cover = (b.min(x as f64 + 1.0) - a.max(x as f64)).max(0.0);
+                    if cover > 0.0 {
+                        taps.push((x, (cover / (b - a)) as f32));
+                    }
+                    x += 1;
+                }
+                taps
+            })
+            .collect()
+    };
+    let (xs, ys) = (spans(sw, fx, w), spans(sh, fy, h));
+    let mut out = vec![0.0f32; sw * sh * 3];
+    out.par_chunks_mut(sw * 3).enumerate().for_each(|(j, row)| {
+        for &(y, wy) in &ys[j] {
+            let src = &img.rgb[y * w * 3..(y + 1) * w * 3];
+            for (acc, taps) in row.chunks_exact_mut(3).zip(&xs) {
+                for &(x, wx) in taps {
+                    let p = &src[x * 3..x * 3 + 3];
+                    for c in 0..3 {
+                        acc[c] += wy * wx * p[c];
+                    }
+                }
+            }
+        }
+    });
+    out
+}
+
+/// [`lerp_position`] for a fractional step `f` < 1 (upsampling).
+fn lerp_position_f(i: usize, f: f64, n: usize) -> (usize, usize, f32) {
+    let s = ((i as f64 + 0.5) * f - 0.5).clamp(0.0, (n - 1) as f64);
+    let lo = (s.floor() as usize).min(n - 1);
+    (lo, (lo + 1).min(n - 1), (s - lo as f64) as f32)
 }
 
 /// Bilinear source position of full-resolution index `i` in a grid downscaled

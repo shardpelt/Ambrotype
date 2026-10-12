@@ -1662,13 +1662,9 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
         });
 
     stages.mark("negative+matrix");
-    if !s.lens.defringe.is_neutral() {
-        lens::apply_defringe_in(&mut out, &s.lens.defringe, &cal.lens, &tile);
-        stages.mark("defringe");
-    }
 
-    // Spot removal, then masks drawn on the photo as it is now, then the
-    // local light sliders.
+    // Spot removal, then masks drawn on the photo as it is now, Defringe
+    // (global and local), then the local light sliders.
     retouch::apply_in(
         &mut out,
         &s.spots,
@@ -1703,10 +1699,14 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
         globals.colour_targets = m.colour_targets.clone();
         globals.sky_maps = m.sky_maps.clone();
     }
+    match &masks {
+        Some(m) => m.apply_defringe(&mut out, &s.lens.defringe, cal),
+        None => lens::apply_defringe_in(&mut out, &s.lens.defringe, &cal.lens, &tile),
+    }
     if let Some(m) = &masks {
         m.apply_light(&mut out, &cal.masks);
     }
-    stages.mark("spots+masks");
+    stages.mark("spots+masks+defringe");
 
     // 2. Dehaze (scene-linear).
     let haze = match pass.given.and_then(|g| g.dehaze.as_ref()) {

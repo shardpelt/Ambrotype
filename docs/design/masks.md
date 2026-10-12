@@ -53,6 +53,7 @@ Shapes, evaluated per output pixel at its frame position (through the crop's map
 
 | Stage | Sliders | How |
 |---|---|---|
+| after white balance and Exposure (scene-linear) | Defringe | above 0, a Defringe of its own (both colours at `MaskStrengths.defringe` × the slider, the global hue ranges) weighted by alpha; below 0, the global Defringe weakened by alpha × the slider |
 | after white balance and Exposure (scene-linear) | Exposure, Temp, Tint | gain 2^(EV × alpha); Temp/Tint as red/blue and green gains that keep luminance |
 | after global Dehaze | Dehaze | a dehazed copy blended in |
 | after the global tone controls | Contrast, Highlights, Shadows, Whites, Blacks | the tone curve with the local values, as a luminance ratio raised to alpha (hue-preserving) |
@@ -61,7 +62,7 @@ Shapes, evaluated per output pixel at its frame position (through the crop's map
 
 Mask curves (`MainCurve`, `RedCurve`, `GreenCurve`, `BlueCurve`) apply after the global curves, the same way, faded by the mask (`Drawn::apply_curves`); we read them like the global point curve, which is a guess until a Lightroom sample confirms it.
 
-Not rendered yet (kept in the file, reported): Moire, Defringe, `LocalHue`, `LocalGrain`, `LocalPointColors`. Strengths are in `Calibration.masks` (`MaskStrengths`) for fitting.
+Not rendered yet (kept in the file, reported): Moire, `LocalHue`, `LocalGrain`, `LocalPointColors`. Strengths are in `Calibration.masks` (`MaskStrengths`) for fitting.
 
 **Overlay.** The editor's preview can tint one mask red (`DevelopSettings.masks.overlay`, by its position in `MaskGroupBasedCorrections`), after everything else, as Lightroom's overlay does.
 

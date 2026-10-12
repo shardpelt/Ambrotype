@@ -1102,6 +1102,7 @@ pub(crate) mod tests {
                 "detail",
                 &[("LocalSharpness", "0.5"), ("LocalLuminanceNoise", "0.4")],
             ),
+            ("defringe", &[("LocalDefringe", "0.6")]),
         ];
         for (name, adjust) in each {
             check(&format!("mask {name}"), &pixel_stages(&[masks(adjust)]));
@@ -1113,13 +1114,14 @@ pub(crate) mod tests {
             ("Contrast2012", n(15.0)),
             ("Clarity2012", n(10.0)),
             ("Saturation", n(10.0)),
+            ("DefringeGreenAmount", n(8.0)),
             masks(&all),
         ];
         check("masks", &tags);
         // The masks do change the picture.
         let img = photo(160, 120);
         let with = pipeline::render(&img, &settings(&tags));
-        let without = pipeline::render(&img, &settings(&tags[..5]));
+        let without = pipeline::render(&img, &settings(&tags[..6]));
         assert!(compare(&with.rgb, &without.rgb).1 > 1e-3);
     }
 

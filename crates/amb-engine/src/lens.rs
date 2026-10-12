@@ -765,6 +765,18 @@ pub fn apply_defringe(img: &mut Image, d: &Defringe, k: &LensStrengths) {
 /// [`apply_defringe`] on a part of the output (`tile`), with the search
 /// radius of the full output.
 pub fn apply_defringe_in(img: &mut Image, d: &Defringe, k: &LensStrengths, tile: &Tile) {
+    apply_defringe_weighted(img, d, k, tile, None);
+}
+
+/// [`apply_defringe_in`] with its strength scaled per pixel by `weight`
+/// (0..1; masks use it).
+pub fn apply_defringe_weighted(
+    img: &mut Image,
+    d: &Defringe,
+    k: &LensStrengths,
+    tile: &Tile,
+    weight: Option<&[f32]>,
+) {
     if d.is_neutral() || img.width < 3 || img.height < 3 {
         return;
     }
@@ -812,8 +824,10 @@ pub fn apply_defringe_in(img: &mut Image, d: &Defringe, k: &LensStrengths, tile:
     img.rgb
         .par_chunks_mut(3)
         .zip(contrast.par_iter())
-        .for_each(|(p, c)| {
-            let edge = smoothstep(clo, chi, f64::from(*c));
+        .enumerate()
+        .for_each(|(i, (p, c))| {
+            let edge = smoothstep(clo, chi, f64::from(*c))
+                * weight.map_or(1.0, |w| f64::from(w[i].clamp(0.0, 1.0)));
             if edge <= 0.0 {
                 return;
             }

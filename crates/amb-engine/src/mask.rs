@@ -29,6 +29,7 @@ use crate::color::OkLab;
 use crate::crop::CropGeometry;
 use crate::detail::{NoiseReduction, Sharpening};
 use crate::filters::{gaussian_blur, gaussian_reach};
+use crate::lens::{self, Defringe};
 use crate::local::LocalContrast;
 use crate::tone::{self, ToneControls};
 use crate::{dehaze, detail, local};
@@ -50,6 +51,8 @@ pub struct MaskStrengths {
     /// Colour range: OkLab distance accepted at Refine 0 and at Refine 100.
     pub color_tolerance_min: f64,
     pub color_tolerance_max: f64,
+    /// Defringe Purple and Green Amount (0..20) at local Defringe +100.
+    pub defringe: f64,
 }
 
 impl Default for MaskStrengths {
@@ -62,6 +65,7 @@ impl Default for MaskStrengths {
             toning: 0.08,
             color_tolerance_min: 0.02,
             color_tolerance_max: 0.2,
+            defringe: 10.0,
         }
     }
 }
@@ -86,6 +90,7 @@ pub struct LocalAdjustments {
     pub toning_saturation: f64,
     pub sharpness: f64,
     pub noise: f64,
+    pub defringe: f64,
 }
 
 impl LocalAdjustments {
@@ -114,6 +119,7 @@ impl LocalAdjustments {
             toning_saturation: scaled("LocalToningSaturation"),
             sharpness: scaled("LocalSharpness"),
             noise: scaled("LocalLuminanceNoise"),
+            defringe: scaled("LocalDefringe"),
         }
     }
 
@@ -1134,6 +1140,30 @@ impl Drawn {
         }
     }
 
+    /// Global Defringe (`global`) held back where masks have a negative
+    /// local Defringe, then each positive one: a Defringe of its own, with
+    /// the global hue ranges, inside its mask.
+    pub fn apply_defringe(&self, img: &mut Image, global: &Defringe, cal: &Calibration) {
+        let mut protect: Option<Vec<f32>> = None;
+        for (a, alpha) in self.each(|a| a.defringe < 0.0) {
+            let s = (-a.defringe / 100.0).min(1.0) as f32;
+            let w = protect.get_or_insert_with(|| vec![1.0; alpha.len()]);
+            w.iter_mut()
+                .zip(alpha)
+                .for_each(|(w, &m)| *w *= 1.0 - s * m);
+        }
+        lens::apply_defringe_weighted(img, global, &cal.lens, &self.tile, protect.as_deref());
+        for (a, alpha) in self.each(|a| a.defringe > 0.0) {
+            let amount = cal.masks.defringe * a.defringe / 100.0;
+            let d = Defringe {
+                purple_amount: amount,
+                green_amount: amount,
+                ..*global
+            };
+            lens::apply_defringe_weighted(img, &d, &cal.lens, &self.tile, Some(alpha));
+        }
+    }
+
     /// Local Dehaze. Each mask's haze is measured on the image (a whole
     /// output; `full` is the full output's size), or taken from `given` (one
     /// per Dehaze mask, in order, as measured on the whole output). Returns
@@ -1380,6 +1410,55 @@ mod tests {
             ("LocalExposure2012", text("0.25")),
             ("CorrectionMasks", Value::Seq(parts)),
         ])
+    }
+
+    #[test]
+    fn local_defringe_adds_to_and_holds_back_the_global_one() {
+        let (w, h) = (80, 40);
+        let ok = OkLab::new();
+        let hue = 310f32.to_radians();
+        let purple = ok.to_working([0.5, 0.1 * hue.cos(), 0.1 * hue.sin()]);
+        // A dark/bright edge with a 2 px purple fringe, in every row.
+        let mut img = Image::new(w, h);
+        for y in 0..h {
+            for x in 0..w {
+                let v = match x {
+                    0..20 => [0.02; 3],
+                    20..22 => purple,
+                    _ => [0.9; 3],
+                };
+                img.set(x, y, v);
+            }
+        }
+        let chroma = |img: &Image, y: usize| {
+            let l = ok.from_working(img.get(21, y));
+            l[1].hypot(l[2])
+        };
+        // The mask covers the top quarter fully, nothing below the middle.
+        let drawn = |defringe: &str| {
+            let mut c = correction(vec![linear("0.5", "0.25")]);
+            if let Value::Struct(m) = &mut c {
+                m.remove("LocalExposure2012");
+                m.insert("LocalDefringe".into(), text(defringe));
+            }
+            let (m, _) = Masks::from_settings(&settings(vec![c]));
+            draw(&m, &img, (w, h), None, |y| y, &MaskStrengths::default())
+        };
+        let cal = Calibration::default();
+        // +100 with no global Defringe: removed under the mask only.
+        let mut a = img.clone();
+        drawn("1").apply_defringe(&mut a, &Defringe::default(), &cal);
+        assert!(chroma(&a, 2) < 0.03, "top {}", chroma(&a, 2));
+        assert!(chroma(&a, 35) > 0.09, "bottom {}", chroma(&a, 35));
+        // −100 holds back a global Defringe under the mask.
+        let global = Defringe {
+            purple_amount: 10.0,
+            ..Default::default()
+        };
+        let mut b = img.clone();
+        drawn("-1").apply_defringe(&mut b, &global, &cal);
+        assert!(chroma(&b, 2) > 0.09, "top {}", chroma(&b, 2));
+        assert!(chroma(&b, 35) < 0.03, "bottom {}", chroma(&b, 35));
     }
 
     #[test]

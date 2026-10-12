@@ -207,15 +207,8 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         .filter(|_| look == BaseLook::Default)
         .and_then(|p| p.tone_curve.clone())
         .map(std::sync::Arc::new);
-    // Defringe and spot removal, on the scene-linear photo as the CPU does
-    // them, with the engine's own code.
-    if !s.lens.defringe.is_neutral() {
-        let (d, k) = (s.lens.defringe, cal.lens);
-        steps.push(Step::Cpu {
-            name: "defringe",
-            run: Box::new(move |out| crate::lens::apply_defringe_in(out, &d, &k, &tile)),
-        });
-    }
+    // Spot removal, masks and Defringe on the scene-linear photo as the CPU
+    // does them, with the engine's own code.
     if !s.spots.is_empty() {
         let spots = s.spots.clone();
         let frame = (img.width, img.height);
@@ -231,6 +224,7 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
 
     // Masks are drawn once, here, on the photo as it is after spot removal,
     // and applied with the engine's own code wherever the CPU applies them.
+    // Defringe comes next (masks can hold it back or add to it).
     let drawn = Shared::default();
     let any = |f: fn(&LocalAdjustments) -> bool| s.masks.corrections.iter().any(|c| f(&c.adjust));
     if !s.masks.is_empty() {
@@ -238,6 +232,7 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         let frame = (img.width, img.height);
         let crop = s.crop.geometry(img.width, img.height);
         let (d, cal, curve) = (drawn.clone(), cal.clone(), curve.clone());
+        let defringe = s.lens.defringe;
         steps.push(Step::Cpu {
             name: "masks",
             run: Box::new(move |out| {
@@ -247,9 +242,16 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
                 };
                 let encode = |y| local::srgb_encode(base(y));
                 let m = mask::draw(&masks, out, frame, crop.as_ref(), encode, &cal.masks);
+                m.apply_defringe(out, &defringe, &cal);
                 m.apply_light(out, &cal.masks);
                 *d.lock().expect("masks") = Some(m);
             }),
+        });
+    } else if !s.lens.defringe.is_neutral() {
+        let (d, k) = (s.lens.defringe, cal.lens);
+        steps.push(Step::Cpu {
+            name: "defringe",
+            run: Box::new(move |out| crate::lens::apply_defringe_in(out, &d, &k, &tile)),
         });
     }
 

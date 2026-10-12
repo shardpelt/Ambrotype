@@ -15,7 +15,7 @@ Status: v1 implemented (`crates/amb-lens`, `crates/amb-engine/src/lens.rs`). Eve
 | Defringe: Purple/Green Amount (0–20) and Hue ranges (0–100) | `DefringePurple*`, `DefringeGreen*` | At high-contrast edges (OkLab lightness range in a window that widens with Amount), pull chroma towards grey for hues inside the range. |
 | Constrain Crop | `CropConstrainToWarp` | Scale up until no blank area is left. |
 
-Not yet (Transform and Upright are in [transform.md](transform.md)): fisheye profiles, local Defringe in masks, and built-in profiles embedded in raw files (see Next).
+Not yet (Transform and Upright are in [transform.md](transform.md)): fisheye profiles and built-in profiles embedded in raw files (see Next).
 
 
 ## Getting the lensfun database
@@ -30,7 +30,7 @@ On camera RGB, before white balance and the camera matrix, in the sensor's orien
 2. Lateral CA model: auto-estimated, or the profile's.
 3. **One** resampling pass (Catmull-Rom). It composes: fill zoom → manual distortion → profile distortion → per-channel CA offsets for red and blue.
 
-Then, in the working space (scene-linear ProPhoto, after Exposure), Defringe. At the very end, the blank areas are painted `blank_fill` (white, as Lightroom shows them; to verify).
+Then, in the working space (scene-linear ProPhoto, after Exposure, spot removal and drawing the masks), Defringe; masks with a local Defringe add to it or hold it back ([masks.md](masks.md)). At the very end, the blank areas are painted `blank_fill` (white, as Lightroom shows them; to verify).
 
 Scaling:
 - Profile corrections always scale to exactly fill the frame. Adobe's release notes mention profile auto-scaling.

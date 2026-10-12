@@ -132,7 +132,7 @@ pub const LOCAL_SLIDERS: &[LocalSlider] = &[
     slider("LocalSharpness", "Sharpness", "Detail", true),
     slider("LocalLuminanceNoise", "Noise", "Detail", true),
     slider("LocalMoire", "Moire", "Detail", false),
-    slider("LocalDefringe", "Defringe", "Detail", false),
+    slider("LocalDefringe", "Defringe", "Detail", true),
 ];
 
 /// Correction fields that change the image but are not rendered yet (besides

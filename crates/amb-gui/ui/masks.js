@@ -31,6 +31,7 @@ const mk = {
   overlay: true,
   frame: null,          // mask_frame result
   sliders: [],          // mask_sliders result
+  effects: null,        // mask_effects result: { builtin, mine }
   drag: null,
   hover: null,          // canvas point (CSS px) for the brush cursor
   stroke: null,         // points being painted (frame fractions)
@@ -523,9 +524,9 @@ function renderMaskDetail(m) {
       el("span", { class: "hint" }, `${p.strokes} stroke(s)`)));
   }
 
-  // The mask's sliders.
+  // The mask's sliders, and the Effect menu that sets them all at once.
   const sl = $("mask-sliders");
-  sl.replaceChildren();
+  sl.replaceChildren(effectRow(m));
   sl.append(sliderRow({
     label: "Amount", min: 0, max: 100, step: 1, value: m.amount, title: "Scales all of this mask's sliders",
     onInput: (v) => draftCorrection({ CorrectionAmount: fmt6(v / 100) }),
@@ -547,6 +548,61 @@ function renderMaskDetail(m) {
       onChange: (v) => run([{ cmd: "set_mask", mask: m.index, values: { [s.tag]: v } }]),
     }));
   }
+}
+
+// Effect: named slider settings, ours and the user's. Picking one sets every
+// slider (the ones it doesn't name go to 0), as Lightroom's Effect menu does.
+function effectRow(m) {
+  const fx = mk.effects ?? { builtin: [], mine: [] };
+  const select = el("select", { title: "Set this mask's sliders from a saved effect" });
+  select.append(el("option", { value: "" }, "Effect…"));
+  const group = (label, list, prefix) => {
+    if (!list.length) return;
+    const g = el("optgroup", { label });
+    for (const e of list) g.append(el("option", { value: prefix + e.name }, e.name));
+    select.append(g);
+  };
+  group("Ambrotype", fx.builtin, "b:");
+  group("Yours", fx.mine, "u:");
+  // The last one picked stays shown, so it can be deleted.
+  if ([...select.options].some((o) => o.value === mk.effect)) select.value = mk.effect;
+  select.addEventListener("change", () => {
+    const v = select.value;
+    mk.effect = v;
+    const e = (v.startsWith("b:") ? fx.builtin : fx.mine).find((x) => x.name === v.slice(2));
+    if (e) applyEffect(m, e);
+  });
+  const save = el("button", { type: "button", class: "small", title: "Keep this mask's sliders as an effect of your own" }, "Save…");
+  save.addEventListener("click", async () => {
+    const name = await askName("Save as an effect", "This mask's sliders, to use on other masks.");
+    if (!name) return;
+    const values = Object.fromEntries(Object.entries(m.sliders).filter(([, v]) => Number(v) !== 0));
+    try {
+      mk.effects = await invoke("save_mask_effect", { name, values });
+      mk.effect = `u:${name}`;
+      toast(`Saved effect "${name}"`);
+      renderMaskPanel();
+    } catch (err) {
+      toast(String(err), true);
+    }
+  });
+  const mine = select.value.startsWith("u:");
+  const del = el("button", { type: "button", class: "small", title: mine ? "Delete this effect of yours" : "Pick one of your own effects to delete it", disabled: !mine }, "Delete");
+  del.addEventListener("click", async () => {
+    mk.effects = await invoke("delete_mask_effect", { name: select.value.slice(2) }).catch((err) => (toast(String(err), true), mk.effects));
+    mk.effect = "";
+    renderMaskPanel();
+  });
+  return el("div", { class: "crop-line mask-effect" }, select, save, del);
+}
+
+function applyEffect(m, effect) {
+  const values = {};
+  for (const s of mk.sliders) {
+    if (!s.rendered && !(s.tag in effect.values)) continue;
+    values[s.tag] = effect.values[s.tag] ?? 0;
+  }
+  run([{ cmd: "set_mask", mask: m.index, values }], `Effect: ${effect.name}`);
 }
 
 function renderToolOptions() {
@@ -954,6 +1010,7 @@ async function enterMasks() {
       toast(String(e), true);
     }
   }
+  if (!mk.effects) mk.effects = await invoke("mask_effects").catch(() => ({ builtin: [], mine: [] }));
   await loadMaskFrame();
   mk.on = true;
   mk.overlay = $("mask-overlay").checked;

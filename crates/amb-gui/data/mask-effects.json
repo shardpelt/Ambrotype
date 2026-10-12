@@ -1,0 +1,15 @@
+{
+  "note": "Built-in effects for masks: our own starting points, in the Masks panel's units (Exposure in stops, the rest -100..100).",
+  "effects": [
+    { "name": "Dodge (lighten)", "values": { "LocalExposure2012": 0.3 } },
+    { "name": "Burn (darken)", "values": { "LocalExposure2012": -0.3 } },
+    { "name": "Soften skin", "values": { "LocalTexture": -40, "LocalClarity2012": -30 } },
+    { "name": "Teeth whitening", "values": { "LocalExposure2012": 0.3, "LocalSaturation": -50 } },
+    { "name": "Iris enhance", "values": { "LocalExposure2012": 0.25, "LocalClarity2012": 40, "LocalSaturation": 30 } },
+    { "name": "Sharpen detail", "values": { "LocalSharpness": 40, "LocalTexture": 20 } },
+    { "name": "Darken sky", "values": { "LocalExposure2012": -0.5, "LocalHighlights2012": -30, "LocalSaturation": 15, "LocalDehaze": 15 } },
+    { "name": "Clear haze", "values": { "LocalDehaze": 40, "LocalContrast2012": 15 } },
+    { "name": "Warm light", "values": { "LocalTemperature": 25, "LocalExposure2012": 0.15 } },
+    { "name": "Cool shadows", "values": { "LocalTemperature": -20, "LocalShadows2012": -10 } }
+  ]
+}

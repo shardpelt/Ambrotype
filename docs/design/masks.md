@@ -88,6 +88,7 @@ Applying a preset with masks *adds* them to the photo's own (replacing one with 
 - The selected mask lists its parts, each with its mode (add, subtract, intersect), invert and delete; the same buttons add a part to it. Under them: the part's settings (radial Feather and Angle; luminance From, To and Smoothness; colour Refine and samples; brush stroke count) and the mask's Amount and local sliders, grouped like Lightroom's.
 - Dragging a handle (a linear's ends or line, a radial's centre or axis ends) or a slider previews live with an edited copy of the tag as an override; release runs one command, so each change is one undo step with a readable history line ("Mask 2: edit part 1").
 - Duplicate, ↑ and ↓ above the parts copy and move the selected mask; dragging a mask's row onto another moves it there too. Each part's own ↑ and ↓ move it among the parts.
+- **Effect** above the sliders sets them all at once from a named effect (others go to 0), as Lightroom's Effect menu does: ten of our own (Dodge, Burn, Soften skin, Teeth whitening, Iris enhance, Sharpen detail, Darken sky, Clear haze, Warm light, Cool shadows; `crates/amb-gui/data/mask-effects.json`, our own values) and the user's, saved from a mask with Save… (kept in the app's settings).
 - O shows or hides the red overlay of the selected mask (on by default while drawing). Delete removes the selected part, or the mask with its last part. Esc stops drawing, then leaves.
 
 ## Open questions (for the Lightroom trial)

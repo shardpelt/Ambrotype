@@ -60,6 +60,7 @@ struct AppState {
     export_presets: Mutex<Vec<ExportPreset>>,
     /// The presets starred as favourites, by path.
     preset_favourites: Mutex<Vec<String>>,
+    mask_effects: Mutex<Vec<MaskEffect>>,
     /// Watches the folders on screen for photos added, removed or renamed.
     folder_watch: Mutex<Option<notify::RecommendedWatcher>>,
     /// Watches the open photo's sidecar for changes made outside the editor.
@@ -122,7 +123,20 @@ struct Config {
     export_presets: Vec<ExportPreset>,
     #[serde(default)]
     preset_favourites: Vec<String>,
+    /// The user's own mask effects (the built-ins are added when listing).
+    #[serde(default)]
+    mask_effects: Vec<MaskEffect>,
 }
+
+/// A mask's sliders saved by name (the Masks panel's Effect menu), in the
+/// panel's units: Exposure in stops, the rest -100..100.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct MaskEffect {
+    name: String,
+    values: BTreeMap<String, f64>,
+}
+
+const BUILTIN_MASK_EFFECTS: &str = include_str!("../data/mask-effects.json");
 
 fn save_config(state: &AppState) {
     let Ok(path) = state.config_path.lock() else {
@@ -186,6 +200,11 @@ fn save_config(state: &AppState) {
             .unwrap_or_default(),
         export_presets: state
             .export_presets
+            .lock()
+            .map(|p| p.clone())
+            .unwrap_or_default(),
+        mask_effects: state
+            .mask_effects
             .lock()
             .map(|p| p.clone())
             .unwrap_or_default(),
@@ -1272,6 +1291,66 @@ fn set_preset_favourite(path: String, on: bool, state: tauri::State<'_, AppState
     }
     save_config(&state);
     Ok(())
+}
+
+#[derive(Serialize)]
+struct MaskEffects {
+    builtin: Vec<MaskEffect>,
+    mine: Vec<MaskEffect>,
+}
+
+/// The built-in mask effects and the user's.
+#[tauri::command]
+fn mask_effects(state: tauri::State<'_, AppState>) -> Res<MaskEffects> {
+    #[derive(Deserialize)]
+    struct File {
+        effects: Vec<MaskEffect>,
+    }
+    let file: File = serde_json::from_str(BUILTIN_MASK_EFFECTS).map_err(|e| e.to_string())?;
+    Ok(MaskEffects {
+        builtin: file.effects,
+        mine: state
+            .mask_effects
+            .lock()
+            .map_err(|e| e.to_string())?
+            .clone(),
+    })
+}
+
+/// Save (or replace) one of the user's mask effects.
+#[tauri::command]
+fn save_mask_effect(
+    name: String,
+    values: BTreeMap<String, f64>,
+    state: tauri::State<'_, AppState>,
+) -> Res<MaskEffects> {
+    let name = name.trim().to_string();
+    if name.is_empty() {
+        return Err("give the effect a name".into());
+    }
+    let values: BTreeMap<String, f64> = values
+        .into_iter()
+        .filter(|(k, v)| v.is_finite() && amb_presets::masks::local_slider(k).is_some())
+        .collect();
+    {
+        let mut list = state.mask_effects.lock().map_err(|e| e.to_string())?;
+        list.retain(|e| e.name != name);
+        list.push(MaskEffect { name, values });
+        list.sort_by_key(|e| e.name.to_lowercase());
+    }
+    save_config(&state);
+    mask_effects(state)
+}
+
+#[tauri::command]
+fn delete_mask_effect(name: String, state: tauri::State<'_, AppState>) -> Res<MaskEffects> {
+    state
+        .mask_effects
+        .lock()
+        .map_err(|e| e.to_string())?
+        .retain(|e| e.name != name);
+    save_config(&state);
+    mask_effects(state)
 }
 
 /// The user's export presets, by name.
@@ -3579,6 +3658,9 @@ fn main() {
                 if let Ok(mut p) = state.preset_favourites.lock() {
                     *p = config.preset_favourites;
                 }
+                if let Ok(mut p) = state.mask_effects.lock() {
+                    *p = config.mask_effects;
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -3673,6 +3755,9 @@ fn main() {
             upright_guides,
             negative_sync,
             export_presets,
+            mask_effects,
+            save_mask_effect,
+            delete_mask_effect,
             preset_favourites,
             set_preset_favourite,
             save_export_preset,
@@ -3733,6 +3818,25 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+
+    #[test]
+    fn built_in_mask_effects_use_local_sliders_in_range() {
+        let v: serde_json::Value = serde_json::from_str(super::BUILTIN_MASK_EFFECTS).unwrap();
+        let effects = v["effects"].as_array().unwrap();
+        assert!(effects.len() >= 5);
+        for e in effects {
+            let values: std::collections::BTreeMap<String, f64> =
+                serde_json::from_value(e["values"].clone()).unwrap();
+            assert!(!values.is_empty(), "{e}");
+            for (tag, value) in values {
+                let s = amb_presets::masks::local_slider(&tag).unwrap_or_else(|| panic!("{tag}"));
+                assert!(
+                    s.rendered && (s.min..=s.max).contains(&value),
+                    "{tag} {value}"
+                );
+            }
+        }
+    }
     use super::*;
 
     #[test]

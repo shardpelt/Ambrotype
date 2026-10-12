@@ -34,6 +34,10 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **borders** on export, with presets and colour swatches
     - **plugins** (Ctrl+Shift+P): sandboxed WebAssembly plugins that make edits (one undo step), with permission prompts, install from a folder, Share as pull request, and "Make one with AI…" instructions for the user's own assistant. Built in: Auto tone, Random look and **Film recipe** (a camera-style picture menu for typing in film recipes, with ready-made ones; [ai/film-recipes.md](ai/film-recipes.md)). Parameter sets can be saved as **recipes**. CLI: `amb plugin new/build/check/run` ([ai/plugins.md](ai/plugins.md))
     - **save as preset:** Presets → Save… (or Save as preset… in the Plugins dialog) keeps the photo's edit, without the crop and other photo-specific settings, as a one-click preset under "Yours"
+    - **LUTs:** Basic → Profile → LUT applies a `.cube` look (from the LUT folder or any file) with an amount ([design/luts.md](design/luts.md))
+    - **export presets** and Resize by long or short edge, width, height, megapixels or percent; the window opens where it was left
+    - **film negatives:** Freeze keeps a frame's conversion; the library's Sync negative roll gives a roll one conversion
+    - **Guided Upright:** draw guides; the Transform sliders straighten them ([design/transform.md](design/transform.md))
     - **Black & White panel:** monochrome with a mix per colour; Color Grading tints it
     - **HDR merge:** select bracketed raws in the library, Merge to HDR… (Auto align, Auto tone, Deghost) writes `<first>-HDR.dng` next to them, a floating-point DNG that edits like a raw ([design/hdr-merge.md](design/hdr-merge.md))
     - **Learn** (F1): guided lessons from a data file (Editing basics, Coming from Lightroom); the card points at each control and moves on when you've done the step

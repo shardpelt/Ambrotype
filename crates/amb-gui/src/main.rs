@@ -2852,10 +2852,17 @@ async fn collection_photos(app: tauri::AppHandle, name: String) -> Res<Collectio
 }
 
 fn summary(c: amb_library::collections::Collection) -> amb_library::collections::Summary {
-    amb_library::collections::Summary {
-        count: c.photos.len(),
-        name: c.name,
-    }
+    c.into()
+}
+
+/// Put a collection in a collection set ("" for none).
+#[tauri::command]
+fn collection_set(
+    app: tauri::AppHandle,
+    name: String,
+    set: String,
+) -> Res<amb_library::collections::Summary> {
+    amb_library::collections::move_to_set(&collections_dir(&app)?, &name, &set).map(summary)
 }
 
 /// Add photos to a collection (made if it doesn't exist).
@@ -3219,6 +3226,7 @@ fn main() {
             collection_add,
             collection_remove,
             collection_rename,
+            collection_set,
             collection_delete,
             smart_list,
             smart_save,

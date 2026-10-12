@@ -7,6 +7,9 @@
 //! { "format": "ambrotype-collection/1", "name": "Portfolio", "photos": ["/photos/a.nef"] }
 //! ```
 //!
+//! A collection may sit in a set (`"set": "Travel"`), as Lightroom's
+//! collection sets group them; sets are just that name.
+//!
 //! Photos are kept by full path, in the order they were added. A photo
 //! that has been moved or deleted stays listed until it is removed, and
 //! [`Collection::missing`] reports it.
@@ -22,6 +25,9 @@ pub const FORMAT: &str = "ambrotype-collection/1";
 pub struct Collection {
     pub format: String,
     pub name: String,
+    /// The collection set it is in, if any.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set: Option<String>,
     pub photos: Vec<PathBuf>,
 }
 
@@ -29,7 +35,18 @@ pub struct Collection {
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Summary {
     pub name: String,
+    pub set: Option<String>,
     pub count: usize,
+}
+
+impl From<Collection> for Summary {
+    fn from(c: Collection) -> Summary {
+        Summary {
+            count: c.photos.len(),
+            name: c.name,
+            set: c.set,
+        }
+    }
 }
 
 impl Collection {
@@ -37,6 +54,7 @@ impl Collection {
         Collection {
             format: FORMAT.into(),
             name: name.trim().to_string(),
+            set: None,
             photos: Vec::new(),
         }
     }
@@ -103,13 +121,7 @@ pub fn all(dir: &Path) -> Vec<Collection> {
 
 /// The collections in `dir` and how many photos each has.
 pub fn list(dir: &Path) -> Vec<Summary> {
-    all(dir)
-        .into_iter()
-        .map(|c| Summary {
-            name: c.name,
-            count: c.photos.len(),
-        })
-        .collect()
+    all(dir).into_iter().map(Summary::from).collect()
 }
 
 /// The collection called `name` (any case), if there is one.
@@ -192,6 +204,15 @@ pub fn rename(dir: &Path, from: &str, to: &str) -> Result<Collection, String> {
     Ok(c)
 }
 
+/// Put a collection in the set `set` (empty: in no set).
+pub fn move_to_set(dir: &Path, name: &str, set: &str) -> Result<Collection, String> {
+    let (path, mut c) = find(dir, name).ok_or_else(|| format!("no collection {name:?}"))?;
+    let set = set.trim();
+    c.set = (!set.is_empty()).then(|| set.to_string());
+    write(&path, &c)?;
+    Ok(c)
+}
+
 /// Delete a collection (not its photos).
 pub fn delete(dir: &Path, name: &str) -> Result<(), String> {
     let (path, _) = find(dir, name).ok_or_else(|| format!("no collection {name:?}"))?;
@@ -201,6 +222,32 @@ pub fn delete(dir: &Path, name: &str) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sets_group_collections() {
+        let dir = temp("sets");
+        add(&dir, "Rome", &[PathBuf::from("/p/a.nef")]).unwrap();
+        add(&dir, "Notes", &[]).unwrap();
+        let c = move_to_set(&dir, "rome", " Travel ").unwrap();
+        assert_eq!(c.set.as_deref(), Some("Travel"));
+        let l = list(&dir);
+        assert_eq!(l[0].set, None);
+        assert_eq!(
+            (l[1].name.as_str(), l[1].set.as_deref()),
+            ("Rome", Some("Travel"))
+        );
+        // Renaming and adding keep the set; an empty set takes it out.
+        add(&dir, "Rome", &[PathBuf::from("/p/b.nef")]).unwrap();
+        assert_eq!(
+            rename(&dir, "Rome", "Roma").unwrap().set.as_deref(),
+            Some("Travel")
+        );
+        assert_eq!(move_to_set(&dir, "Roma", "").unwrap().set, None);
+        // Files without a set still read.
+        let text = std::fs::read_to_string(find(&dir, "Notes").unwrap().0).unwrap();
+        assert!(!text.contains("\"set\""));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     fn temp(name: &str) -> PathBuf {
         let d = std::env::temp_dir().join(format!("amb-coll-{name}-{}", std::process::id()));
@@ -228,10 +275,12 @@ mod tests {
             [
                 Summary {
                     name: "Best of 2026".into(),
+                    set: None,
                     count: 2
                 },
                 Summary {
                     name: "Best of: 2026".into(),
+                    set: None,
                     count: 1
                 },
             ]

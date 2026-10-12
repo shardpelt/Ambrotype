@@ -39,7 +39,7 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 - **Subfolders:** tick Subfolders in the bar to show the folder's subfolders too; their photos are named with their folder (`2026-07/IMG_1.nef`).
 - **Several folders:** + in the bar shows another folder with the one shown; their photos are named with their folder (`trip/IMG_1.nef`). "N more ×" goes back to the first folder alone, and Folder… starts again. After an import into dated folders, all of them are shown.
 - **Smart collections** (Show → New smart collection…): photos chosen by rules, worked out each time from the sidecars and capture times, in the folders you name and their subfolders. Rules: rating, colour label, flag, keyword, file name, edited, capture date; all or any of them. Each is a small JSON file beside the collections (`amb_library::smart`). Edit rules… and Delete collection… in the panel; ↻ works them out again.
-- **Collections:** the menu next to Folder… shows a collection instead of the folder. The panel adds the selection to a collection (or a new one); B adds the selection, or the open photo in the editor, to the last collection used, like Lightroom's quick collection. Viewing a collection, the panel can remove photos from it (the files stay), rename it or delete it.
+- **Collections:** the menu next to Folder… shows a collection instead of the folder. The panel adds the selection to a collection (or a new one); B adds the selection, or the open photo in the editor, to the last collection used, like Lightroom's quick collection. Viewing a collection, the panel can remove photos from it (the files stay), rename it or delete it. **Collection set…** files it under a set (Lightroom's collection sets), and the menu groups collections by set; the set is a `set` name in the collection's file.
 
 - **Title, caption, creator and copyright** (under the keywords, in the library panel and in the editor): Lightroom's Metadata panel fields, kept in the sidecar as `dc:title`, `dc:description`, `dc:creator` and `dc:rights` and embedded in exports (EXIF ImageDescription, Artist and Copyright, and XMP). A creator and copyright replace the camera's own; "Copyright only" exports keep them. In the library the panel shows what the selection shares, or "(mixed)".
 
@@ -125,7 +125,7 @@ Lightroom keeps stacks in its catalogue. Ours go in the sidecar: `amblib:Stack` 
 
 ## Not yet
 
-- Collection sets. The extra folders aren't remembered after closing the app. A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does). Smart collection rules for camera, lens, ISO and the like.
+- The extra folders aren't remembered after closing the app. Collection sets are one level deep (no sets in sets). A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does). Smart collection rules for camera, lens, ISO and the like.
 - Collections don't follow photos moved outside Ambrotype.
 - Import: moving instead of copying, a second backup copy, ejecting the card, a develop preset on import, picking single photos to import.
 - Zooming in the loupe and compare views (open the photo in the editor for 100%).

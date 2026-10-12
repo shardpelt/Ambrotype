@@ -12,17 +12,20 @@ const NEW_SMART = "\u0000smart";
 const SMART = "smart:";
 
 // Ask for a name in a small dialog; null when cancelled.
-async function askName(title, hint = "", value = "") {
+// `allowEmpty`: an empty answer is "" rather than a cancel.
+async function askName(title, hint = "", value = "", allowEmpty = false) {
   const dlg = $("name-dialog");
   $("name-title").textContent = title;
   $("name-hint").textContent = hint;
   const input = dlg.querySelector("input[name=value]");
   input.value = value;
+  input.required = !allowEmpty;
   dlg.showModal();
   input.select();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   const name = input.value.trim();
-  return choice === "ok" && name ? name : null;
+  if (choice !== "ok") return null;
+  return name || (allowEmpty ? "" : null);
 }
 
 async function loadCollections() {
@@ -42,17 +45,22 @@ function renderCollectionControls() {
   const option = (value, text) => Object.assign(document.createElement("option"), { value, textContent: text });
   const src = $("lib-source");
   const folder = lib.dir ? `Folder: ${fileName(lib.dir.replace(/[\\/]+$/, "")) || lib.dir}` : "Folder";
-  const group = Object.assign(document.createElement("optgroup"), { label: "Collections" });
-  group.append(...coll.list.map((c) => option(c.name, `${c.name} (${c.count})`)));
+  // Collections not in a set first, then one group per collection set.
+  const sets = [...new Set(coll.list.map((c) => c.set ?? ""))].sort((a, b) => (b === "") - (a === "") || a.localeCompare(b));
+  const inSets = sets.map((set) => {
+    const g = Object.assign(document.createElement("optgroup"), { label: set ? `▸ ${set}` : "Collections" });
+    g.append(...coll.list.filter((c) => (c.set ?? "") === set).map((c) => option(c.name, `${c.name} (${c.count})`)));
+    return g;
+  });
   const smart = Object.assign(document.createElement("optgroup"), { label: "Smart collections" });
   smart.append(...coll.smart.map((c) => option(SMART + c.name, `⚙ ${c.name}`)), option(NEW_SMART, "New smart collection…"));
-  src.replaceChildren(option("", folder), ...(coll.list.length ? [group] : []), smart);
+  src.replaceChildren(option("", folder), ...inSets, smart);
   src.value = lib.smart ? SMART + lib.smart : lib.collection ?? "";
   const add = $("lib-add-to");
   add.replaceChildren(...coll.list.map((c) => option(c.name, c.name)), option(NEW_COLLECTION, "New collection…"));
   add.value = coll.target ?? coll.list[0]?.name ?? NEW_COLLECTION;
   const viewing = Boolean(lib.collection) && !lib.smart;
-  for (const id of ["lib-remove-from", "lib-coll-rename"]) $(id).hidden = !viewing;
+  for (const id of ["lib-remove-from", "lib-coll-rename", "lib-coll-set"]) $(id).hidden = !viewing;
   $("lib-coll-delete").hidden = !viewing && !lib.smart;
   $("lib-smart-edit").hidden = !lib.smart;
   $("lib-subfolders").disabled = Boolean(lib.collection || lib.smart);
@@ -146,6 +154,22 @@ async function renameCollection() {
   }
 }
 
+// Lightroom's collection sets: a collection is filed under a set's name.
+async function moveCollectionToSet() {
+  if (!lib.collection) return;
+  const current = coll.list.find((c) => c.name === lib.collection)?.set ?? "";
+  const names = [...new Set(coll.list.map((c) => c.set).filter(Boolean))];
+  const hint = `Sets group collections in the Show menu. ${names.length ? `Sets so far: ${names.join(", ")}. ` : ""}Leave empty to take it out of its set.`;
+  const set = await askName("Collection set", hint, current, true);
+  if (set === null || set === undefined || set === current) return;
+  try {
+    await invoke("collection_set", { name: lib.collection, set });
+    await loadCollections();
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
 async function deleteCollection() {
   if (!lib.collection || !confirm(`Delete the collection “${lib.collection}”? Its photos stay where they are.`)) return;
   try {
@@ -167,6 +191,7 @@ function wireCollections() {
   });
   $("lib-remove-from").addEventListener("click", removeFromCollection);
   $("lib-coll-rename").addEventListener("click", renameCollection);
+  $("lib-coll-set").addEventListener("click", moveCollectionToSet);
   $("lib-coll-delete").addEventListener("click", deleteCollection);
   $("lib-smart-edit").addEventListener("click", () => editSmartCollection(lib.smart));
   $("lib-subfolders").addEventListener("change", () => {

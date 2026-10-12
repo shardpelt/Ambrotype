@@ -70,6 +70,12 @@ function wireAssistant() {
     e.stopPropagation();
   });
   for (const id of ["assistant-url", "assistant-model", "assistant-key"]) $(id).addEventListener("keydown", (e) => e.stopPropagation());
+  // Remembered on this computer; off until the user ticks it.
+  const see = $("assistant-see");
+  try { see.checked = localStorage.getItem("amb.assistant.see") === "1"; } catch { /* off */ }
+  see.addEventListener("change", () => {
+    try { localStorage.setItem("amb.assistant.see", see.checked ? "1" : ""); } catch { /* not kept */ }
+  });
 }
 
 function fillAssistantSettings() {
@@ -134,7 +140,7 @@ async function askAssistant() {
   assistantMessage("user", request);
   assistantStatus("Thinking…");
   try {
-    const r = await invoke("assistant_ask", { history: asst.history, request });
+    const r = await invoke("assistant_ask", { history: asst.history, request, see: $("assistant-see").checked });
     asst.history = r.history;
     asst.tokens.in += r.tokens_in;
     asst.tokens.out += r.tokens_out;

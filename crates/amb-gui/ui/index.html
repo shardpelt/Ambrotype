@@ -433,7 +433,7 @@
       <label>Address <input id="assistant-url" type="text" spellcheck="false"></label>
       <label>Model <input id="assistant-model" type="text" spellcheck="false" placeholder="The model's name, as your provider lists it"></label>
       <label>API key <input id="assistant-key" type="password" spellcheck="false" autocomplete="off"></label>
-      <p class="hint">The key is kept in your system's keychain. The model gets numbers about the photo (brightness, clipping, colour cast) and its settings, never the photo itself. Your AI chat subscription can't be used here; with Claude Desktop or another MCP app, use <code>amb mcp</code> instead.</p>
+      <p class="hint">The key is kept in your system's keychain. The model gets numbers about the photo (brightness, clipping, colour cast) and its settings; it sees the photo itself only while "Show it the photo" is ticked. Your AI chat subscription can't be used here; with Claude Desktop or another MCP app, use <code>amb mcp</code> instead.</p>
       <menu><button id="assistant-save" type="submit" class="primary">Save</button></menu>
     </form>
     <div id="assistant-log" class="assistant-log" aria-live="polite"></div>
@@ -441,6 +441,7 @@
       <textarea id="assistant-input" rows="2" spellcheck="true" placeholder="e.g. warmer and a bit moodier, keep the sky"></textarea>
       <button id="assistant-send" type="submit" class="primary">Send</button>
     </form>
+    <label class="check assistant-see" title="Sends a small JPEG (512 px) of the photo as edited to the model with each request; otherwise it gets only numbers"><input id="assistant-see" type="checkbox"> Show it the photo</label>
     <p id="assistant-status" class="hint"></p>
   </dialog>
 

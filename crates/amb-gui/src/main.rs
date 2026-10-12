@@ -450,6 +450,7 @@ struct AssistantAnswer {
 async fn assistant_ask(
     history: Vec<assistant::Message>,
     request: String,
+    see: Option<bool>,
     state: tauri::State<'_, AppState>,
 ) -> Res<AssistantAnswer> {
     let provider = state.assistant.lock().map_err(|e| e.to_string())?.clone();
@@ -480,11 +481,20 @@ async fn assistant_ask(
             }
         };
         let system = assistant::system_prompt();
+        // The photo as edited now, small, when the user lets the model see it.
+        let mut picture = || {
+            with_photo(&mut |s| {
+                let p = s.preview(512, &BTreeMap::new(), false, false, lens);
+                Ok(plugins::base64(&p.jpeg))
+            })
+        };
         let outcome = assistant::converse(
             |messages| assistant::call(&provider, key.as_deref(), &system, messages),
             history,
             &request,
             || with_photo(&mut |s| Ok(s.assistant_context(lens))),
+            see.unwrap_or(false)
+                .then_some(&mut picture as &mut dyn FnMut() -> Res<String>),
             |items| {
                 let commands = amb_protocol::compact::parse(items).map_err(|e| e.to_string())?;
                 with_photo(&mut |s| {

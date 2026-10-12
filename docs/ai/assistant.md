@@ -14,7 +14,7 @@ Presets → **Ask AI…** (or Ctrl+Shift+A) opens a small chat beside the photo.
 
 - Once per request: how to answer, then the [core card](core.md) without its command-line lines. About 600 tokens.
 - With each request: the photo's name, camera and as-shot white balance, the settings that differ from the defaults, and its numbers as edited now (`amb stats`: L* percentiles, clipping, the midtone cast, chroma).
-- Never the photo itself.
+- The photo itself only while **Show it the photo** is ticked (off at first): a 512 px JPEG of it as edited, with the request and after each checked edit. Only the latest picture is sent, and none stay in the conversation. Pictures cost more tokens and need a model that reads images.
 - The conversation so far (up to 16 messages), and it starts again for each photo.
 
 ## How it answers
@@ -26,6 +26,5 @@ Presets → **Ask AI…** (or Ctrl+Shift+A) opens a small chat beside the photo.
 
 ## Not yet
 
-- A look at the photo (a small preview for vision models, with your consent).
 - Masks, crop and spots from the assistant: the compact syntax covers single settings, presets and snapshots.
 - Streaming answers, and a cost estimate before sending.

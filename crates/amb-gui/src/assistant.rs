@@ -3,8 +3,9 @@
 //!
 //! The model is reached with the user's API key (Anthropic) or through an
 //! OpenAI-compatible server (OpenAI, or a local model such as Ollama or
-//! llama.cpp). It never sees the photo: it gets the core card, the photo's
-//! numbers (`amb_engine::stats`) and its current settings, and answers with
+//! llama.cpp). It gets the core card, the photo's numbers
+//! (`amb_engine::stats`) and its current settings, and a small JPEG of the
+//! photo only when the user ticks "Show it the photo". It answers with
 //! `amb:` lines in the compact edit syntax. Those run as ordinary commands,
 //! so every change is in the history and can be undone. Keys live in the
 //! OS keychain, never in the settings file.
@@ -91,13 +92,46 @@ pub struct Message {
     /// `user` or `assistant`.
     pub role: String,
     pub content: String,
+    /// A JPEG of the photo (base64) shown with this message. Only the
+    /// latest one is sent, and none are kept in the history.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
 }
 
 fn message(role: &str, content: impl Into<String>) -> Message {
     Message {
         role: role.into(),
         content: content.into(),
+        image: None,
     }
+}
+
+/// The messages as the provider takes them, with the latest picture only.
+fn wire_messages(kind: Kind, messages: &[Message]) -> Vec<serde_json::Value> {
+    let last_image = messages.iter().rposition(|m| m.image.is_some());
+    messages
+        .iter()
+        .enumerate()
+        .map(|(i, m)| match (&m.image, Some(i) == last_image) {
+            (Some(data), true) => {
+                let picture = match kind {
+                    Kind::Anthropic => json!({
+                        "type": "image",
+                        "source": {"type": "base64", "media_type": "image/jpeg", "data": data},
+                    }),
+                    Kind::OpenAi => json!({
+                        "type": "image_url",
+                        "image_url": {"url": format!("data:image/jpeg;base64,{data}")},
+                    }),
+                };
+                json!({
+                    "role": m.role,
+                    "content": [picture, {"type": "text", "text": m.content}],
+                })
+            }
+            _ => json!({"role": m.role, "content": m.content}),
+        })
+        .collect()
 }
 
 /// The model's answer and what it cost.
@@ -136,7 +170,7 @@ pub fn call(
                 "model": provider.model.trim(),
                 "max_tokens": MAX_TOKENS,
                 "system": system,
-                "messages": messages,
+                "messages": wire_messages(provider.kind, messages),
             })
         }
         Kind::OpenAi => {
@@ -144,7 +178,7 @@ pub fn call(
                 req = req.set("authorization", &format!("Bearer {key}"));
             }
             let mut all = vec![json!({"role": "system", "content": system})];
-            all.extend(messages.iter().map(|m| json!(m)));
+            all.extend(wire_messages(provider.kind, messages));
             json!({
                 "model": provider.model.trim(),
                 "max_tokens": MAX_TOKENS,
@@ -225,6 +259,7 @@ To edit, write a line `amb: ITEMS`, e.g. `amb: exp=+0.3 hl-=20 sat=-10`. \
 The items of one line are one undo step.\n\
 To see a group's settings, write `ref: GROUP` and stop; the app answers.\n\
 To see the new numbers after an edit, add a line `check`; otherwise the edit ends your turn.\n\
+A picture, when there is one, is the photo as edited now, small.\n\
 At most {MAX_STEPS} replies per request. Keep answers short: say what you changed and why \
 in a sentence or two. Don't change crop, masks or spots unless asked.\n\n{}",
         card.join("\n")
@@ -308,25 +343,32 @@ pub struct Outcome {
 
 /// Add a user message, joining it to a user message already last (the
 /// conversation must alternate).
-fn push_user(history: &mut Vec<Message>, text: String) {
+fn push_user(history: &mut Vec<Message>, text: String, image: Option<String>) {
     match history.last_mut() {
         Some(m) if m.role == "user" => {
             m.content.push_str("\n\n");
             m.content.push_str(&text);
+            if image.is_some() {
+                m.image = image;
+            }
         }
-        _ => history.push(message("user", text)),
+        _ => history.push(Message {
+            image,
+            ..message("user", text)
+        }),
     }
 }
 
 /// Run one request: ask, answer the model's `ref:` and `check` lines and
 /// apply its `amb:` lines, for at most [`MAX_STEPS`] replies. `context` gives
-/// the photo's numbers and settings now; `apply` runs one `amb:` line and
-/// says what changed.
+/// the photo's numbers and settings now, and `picture` (when given) a JPEG of
+/// it; `apply` runs one `amb:` line and says what changed.
 pub fn converse(
     mut ask: impl FnMut(&[Message]) -> Result<Reply, String>,
     history: Vec<Message>,
     request: &str,
     mut context: impl FnMut() -> Result<String, String>,
+    mut picture: Option<&mut dyn FnMut() -> Result<String, String>>,
     mut apply: impl FnMut(&str) -> Result<String, String>,
 ) -> Result<Outcome, String> {
     let skip = history.len().saturating_sub(MAX_HISTORY);
@@ -335,9 +377,14 @@ pub fn converse(
     while history.first().is_some_and(|m| m.role != "user") {
         history.remove(0);
     }
+    let look = |picture: &mut Option<&mut dyn FnMut() -> Result<String, String>>| {
+        picture.as_mut().map(|f| f()).transpose()
+    };
+    let image = look(&mut picture)?;
     push_user(
         &mut history,
         format!("Photo now:\n{}\n\nRequest: {}", context()?, request.trim()),
+        image,
     );
     let mut out = Outcome {
         history: Vec::new(),
@@ -392,12 +439,18 @@ pub fn converse(
                 },
             }
         }
+        let mut image = None;
         if again && edited {
             answer.push(format!("Photo now:\n{}", context()?));
+            image = look(&mut picture)?;
         }
         if !answer.is_empty() {
             // Kept even when the turn ends, so the model knows next time.
-            push_user(&mut history, format!("[app]\n{}", answer.join("\n\n")));
+            push_user(
+                &mut history,
+                format!("[app]\n{}", answer.join("\n\n")),
+                image,
+            );
         }
         if !again {
             break;
@@ -408,6 +461,10 @@ pub fn converse(
                 text: format!("Stopped after {MAX_STEPS} replies."),
             });
         }
+    }
+    // Pictures are big and soon out of date: the history keeps the words.
+    for m in &mut history {
+        m.image = None;
     }
     out.history = history;
     Ok(out)
@@ -511,11 +568,16 @@ mod tests {
             })
         };
         let mut applied = Vec::new();
+        let mut pictures = 0;
         let out = converse(
             ask,
             vec![message("assistant", "stray")],
             "make it brighter",
             || Ok("L* p50 40".into()),
+            Some(&mut || {
+                pictures += 1;
+                Ok(format!("jpeg{pictures}"))
+            }),
             |items| {
                 applied.push(items.to_string());
                 Ok("Exposure2012 0→+0.5".into())
@@ -535,6 +597,18 @@ mod tests {
             ["Brighter.", "Exposure2012 0→+0.5", "Looks right now."]
         );
         assert_eq!(out.history.len(), 6);
+        // A picture with the request and after the checked edit, none kept.
+        assert_eq!(pictures, 2);
+        assert_eq!(seen[0][0].image.as_deref(), Some("jpeg1"));
+        assert_eq!(seen[2][4].image.as_deref(), Some("jpeg2"));
+        let wire = wire_messages(Kind::Anthropic, &seen[2]);
+        assert_eq!(
+            wire[0]["content"],
+            json!(seen[2][0].content),
+            "only the latest picture"
+        );
+        assert_eq!(wire[4]["content"][0]["source"]["data"], "jpeg2");
+        assert!(out.history.iter().all(|m| m.image.is_none()));
     }
 
     #[test]
@@ -551,6 +625,7 @@ mod tests {
             Vec::new(),
             "less colour",
             || Ok(String::new()),
+            None,
             |_| Ok("Saturation 0→-20".into()),
         )
         .unwrap();

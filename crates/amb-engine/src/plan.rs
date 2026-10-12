@@ -8,8 +8,8 @@
 //! the CPU: it comes first, so its result is simply the GPU's input. Every
 //! later stage has a GPU version; one without would be a [`Step::Cpu`]: the
 //! backend brings the image back, runs the engine's own code on it and
-//! carries on (a LUT does that). Masks, spots, defringe and camera
-//! profiles make [`plan`] return a reason instead, and
+//! carries on (spot removal and a LUT do that). Masks, defringe and
+//! camera profiles make [`plan`] return a reason instead, and
 //! the caller renders on the CPU.
 
 use crate::buffer::{Image, luminance_weights};
@@ -143,9 +143,6 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     if !s.masks.is_empty() {
         return cpu_only("masks");
     }
-    if !s.spots.is_empty() {
-        return cpu_only("spot removal");
-    }
     if !s.lens.defringe.is_neutral() {
         return cpu_only("defringe");
     }
@@ -176,6 +173,20 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         }),
         shadow_tint,
     }];
+    // Spot removal, on the scene-linear photo as the CPU does it, with the
+    // engine's own code.
+    if !s.spots.is_empty() {
+        let spots = s.spots.clone();
+        let frame = (img.width, img.height);
+        let crop = s.crop.geometry(img.width, img.height);
+        steps.push(Step::Cpu {
+            name: "spot removal",
+            run: Box::new(move |out| {
+                let tile = crate::buffer::Tile::whole(out.width, out.height);
+                crate::retouch::apply_in(out, &spots, frame, crop.as_ref(), &tile);
+            }),
+        });
+    }
 
     // 2. Dehaze (scene-linear).
     // The whole output is rendered here, so the haze is measured on it.

@@ -939,6 +939,33 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn spot_removal_runs_between_the_gpu_stages() {
+        use amb_presets::retouch::{SpotKind, new_area};
+        let spots = Value::Seq(vec![
+            Value::Struct(new_area(
+                SpotKind::Heal,
+                (0.3, 0.4),
+                0.05,
+                Some((0.6, 0.5)),
+                false,
+                0.5,
+                1.0,
+            )),
+            Value::Struct(new_area(
+                SpotKind::Clone,
+                (0.7, 0.3),
+                0.04,
+                Some((0.2, 0.7)),
+                false,
+                0.3,
+                0.8,
+            )),
+        ]);
+        let tags = pixel_stages(&[("Contrast2012", n(15.0)), ("RetouchAreas", spots)]);
+        check("spots", &tags);
+    }
+
+    #[test]
     fn a_lut_runs_between_the_gpu_stages() {
         // A 2-point cube that warms and lifts the blacks a little.
         let path = std::env::temp_dir().join(format!("amb-gpu-lut-{}.cube", std::process::id()));

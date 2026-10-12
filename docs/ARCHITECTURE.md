@@ -127,7 +127,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 
 - **A full GUI.** The editor exists (see below). Missing: a native GPU viewport (previews are developed on the GPU but still sent to the page as JPEGs). All remaining gaps are listed in [GAPS.md](GAPS.md).
 - Library and catalog (folders, ratings, keywords, collections, search).
-- GPU previews with masks, spots, defringe or a camera profile (they render on the CPU), and caching per stage (region renders exist for the 100% view).
+- GPU previews with masks, defringe or a camera profile (they render on the CPU; spots and LUTs run as CPU steps inside the GPU preview), and caching per stage (region renders exist for the 100% view).
 - Red eye, reading Lightroom's own Guided Upright guides ([design/transform.md](design/transform.md)), AI masks.
 - Camera profiles (DCP) and Adobe-like base looks: today a placeholder filmic base look is used.
 - Masks, crop and spots from the assistant panel ([ai/assistant.md](ai/assistant.md)).

@@ -9,10 +9,11 @@ Each file becomes one item. Its id is the file name, and the app checks the
 file's sha256 against the index before installing it. Validate the looks
 themselves with the Ambrotype app: `ambrotype --check-look looks/*/*.json`.
 
-Plugins (plugins/<id>/) aren't in the index yet. Each needs a plugin.json
-whose id is its folder name, its plugin.wasm, and its Rust source, so a
-reviewer can read the code and rebuild the module: `amb plugin build
-plugins/<id>`, then `amb plugin check plugins/<id>`.
+Plugins (plugins/<id>/) are listed too, as "plugin-<id>": the index holds
+the sha256 of plugin.json and of its module, and the app checks both. Each
+needs a plugin.json whose id is its folder name, its plugin.wasm, and its
+Rust source, so a reviewer can read the code and rebuild the module: `amb
+plugin build plugins/<id>`, then `amb plugin check plugins/<id>`.
 """
 import hashlib
 import json
@@ -54,12 +55,12 @@ def build():
                 "path": rel,
                 "sha256": hashlib.sha256(raw).hexdigest(),
             })
-    problems += check_plugins()
-    return {"format": "ambrotype-hub/1", "items": items}, problems
+    plugin_items, plugin_problems = check_plugins()
+    return {"format": "ambrotype-hub/1", "items": items + plugin_items}, problems + plugin_problems
 
 
 def check_plugins():
-    problems = []
+    items, problems = [], []
     for folder in sorted(p for p in (ROOT / "plugins").glob("*") if p.is_dir()):
         rel = folder.relative_to(ROOT).as_posix()
         try:
@@ -67,15 +68,31 @@ def check_plugins():
         except (OSError, json.JSONDecodeError) as e:
             problems.append(f"{rel}: needs a valid plugin.json ({e})")
             continue
+        wasm = data.get("wasm", "plugin.wasm")
+        found = []
         if data.get("format") != "ambrotype-plugin/1":
-            problems.append(f'{rel}/plugin.json: "format" must be "ambrotype-plugin/1"')
+            found.append(f'{rel}/plugin.json: "format" must be "ambrotype-plugin/1"')
         if data.get("id") != folder.name:
-            problems.append(f'{rel}/plugin.json: "id" must be the folder name, "{folder.name}"')
-        if not (folder / data.get("wasm", "plugin.wasm")).is_file():
-            problems.append(f"{rel}: the built module (plugin.wasm) is missing")
+            found.append(f'{rel}/plugin.json: "id" must be the folder name, "{folder.name}"')
+        if not (folder / wasm).is_file():
+            found.append(f"{rel}: the built module (plugin.wasm) is missing")
         if not any(folder.rglob("*.rs")):
-            problems.append(f"{rel}: the source is missing (reviewers rebuild plugin.wasm from it)")
-    return problems
+            found.append(f"{rel}: the source is missing (reviewers rebuild plugin.wasm from it)")
+        problems += found
+        if found:
+            continue
+        items.append({
+            "id": f"plugin-{folder.name}",
+            "kind": "plugin",
+            "name": data.get("name", folder.name),
+            "author": data.get("author", ""),
+            "description": data.get("description", ""),
+            "license": "see its source",
+            "path": f"{rel}/plugin.json",
+            "sha256": hashlib.sha256((folder / "plugin.json").read_bytes()).hexdigest(),
+            "files": {wasm: hashlib.sha256((folder / wasm).read_bytes()).hexdigest()},
+        })
+    return items, problems
 
 
 def main():
@@ -91,7 +108,7 @@ def main():
             sys.exit(1)
     else:
         target.write_text(text, encoding="utf-8")
-        print(f"index.json: {len(index['items'])} looks")
+        print(f"index.json: {len(index['items'])} items")
     sys.exit(1 if problems else 0)
 
 

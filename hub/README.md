@@ -1,6 +1,6 @@
 # Ambrotype hub
 
-Shared layouts, themes and plugins for [Ambrotype](https://github.com/shardpelt/Ambrotype). Layouts and colour themes are called "looks" here (they live in `looks/`). Ambrotype's **Appearance → Browse hub…** lists the looks here and installs them with one click.
+Shared layouts, themes and plugins for [Ambrotype](https://github.com/shardpelt/Ambrotype). Layouts and colour themes are called "looks" here (they live in `looks/`). Ambrotype's **Appearance → Browse hub…** lists the looks and plugins here and installs them with one click.
 
 Like [Omarchy](https://learn.omacom.io/2/the-omarchy-manual/90/extra-themes)'s themes, there is no server: the hub is this repo. Each look is one small JSON file, and `index.json` lists them with a checksum. Looks contain no code, so they're safe to install. The app checks each file's checksum and validates it before saving it.
 
@@ -29,7 +29,7 @@ Plugins are small programs that make edits (Ambrotype's **Plugins** button). The
 - **Send one in:** in the Plugins dialog, pick your plugin and press **Share as pull request…**. It shows the files first, then sends them with the GitHub CLI (your own login) or opens GitHub's upload page in your browser.
 - **Where they go:** `plugins/<id>/`, with `plugin.json`, the built `plugin.wasm`, and the Rust source (`Cargo.toml`, `src/`). No source, no merge: reviewers read the code and rebuild the module. Say the plugin's licence in its `Cargo.toml` (`license = "..."`), any open-source licence works.
 - **Reviewing:** read the source and the permissions it asks for, then `amb plugin build plugins/<id>` (the module should come out the same, or replace it with yours) and `amb plugin check plugins/<id>`.
-- **Installing:** the hub doesn't list plugins in the app yet. Download the plugin's folder and use **Install from folder…** in the Plugins dialog.
+- **Installing:** **Appearance → Browse hub… → Plugins** lists them, with what each asks to see, and installs one with a click. The app checks the manifest and the module against `index.json` (run `python3 tools/build_index.py` after merging a plugin), and the plugin asks for its permissions the first time it runs.
 
 ## For maintainers
 

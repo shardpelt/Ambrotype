@@ -89,7 +89,7 @@ A toggle (toolbar button or a key) that makes the current layout editable in pla
 - *In the app, **Appearance → Browse hub…** lists the looks with previews drawn from their own data (theme colours, layout columns; no screenshots, nothing loaded from other sites into the page). Install checks the checksum and validates the look before saving it as one of yours, with a `source` record, so the hub shows "Installed" and "Update" later.*
 - ***Submit to hub…** opens GitHub's new-file page in the hub repo with the look filled in. Committing it there makes the pull request (GitHub forks for people without access). No GitHub login is needed inside Ambrotype.*
 - *The default hub is `Ambrotypehq/ambrotype-hub` (create it from [`hub/`](../../hub/README.md)); **Settings → General** points the app at another one, including a `file://` hub for testing.*
-- *Still to come: presets, size profiles and collage templates in the hub; plugins (§5) once they exist.*
+- *Plugins are in the hub too (2026-10-12): Browse hub… in Appearance or in the Plugins dialog lists them with what they ask to see; the index holds the sha256 of each plugin's manifest and module, and installing runs the same checks as Install from folder. Still to come: presets, size profiles and collage templates in the hub.*
 
 [Omarchy](https://learn.omacom.io/2/the-omarchy-manual/90/extra-themes) shows that sharing doesn't need a server:
 
@@ -129,7 +129,7 @@ We do the same, with a little more structure:
   - *plugins that add pixel effects to the pipeline, or their own panels and dialogs (the sandboxed-iframe UI above)*
   - *batch runs over many photos*
   - *the network permission (none of today's plugins need it)*
-  - *the hub listing plugins in the app, with CI rebuilding each module from its source*
+  - *CI rebuilding each hub plugin's module from its source (reviewers do it by hand; the hub has listed plugins in the app since 2026-10-12, each file checked against its sha256)*
 
 ## 6. AI-made features ("make me a…")
 

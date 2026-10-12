@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The hub: browse shared layouts and themes, install them, and use them
-// (src/hub.rs fetches, checks and saves them). Previews are drawn here from
+// The hub: browse shared layouts, themes and plugins, install them, and use
+// them (src/hub.rs fetches, checks and saves them). Previews are drawn here from
 // each look's own data (theme colours, layout columns), so the hub needs no
 // screenshots and nothing is loaded from other sites into the page.
 "use strict";
@@ -72,9 +72,30 @@ function layoutPreview(data) {
   return box;
 }
 
-async function hubFlow() {
+// What a plugin asks for and what it offers, from its manifest.
+const PLUGIN_PERMISSIONS = {
+  "photo-info": "the camera, lens and exposure",
+  "photo-stats": "the photo's histogram",
+};
+function pluginPreview(data) {
+  const box = document.createElement("div");
+  box.className = "hub-preview plugin";
+  const perms = (data?.permissions ?? []).map((p) => PLUGIN_PERMISSIONS[p] ?? p);
+  const sees = Object.assign(document.createElement("span"), {
+    textContent: perms.length ? `Asks to see ${perms.join(" and ")}` : "Sees only the edit's settings",
+  });
+  const params = (data?.params ?? []).map((p) => p.label ?? p.name).filter(Boolean);
+  const offers = Object.assign(document.createElement("span"), {
+    textContent: params.length ? `Options: ${params.slice(0, 4).join(", ")}${params.length > 4 ? ", …" : ""}` : "No options",
+  });
+  const sandbox = Object.assign(document.createElement("b"), { textContent: "Runs sandboxed; its edits are undoable" });
+  box.append(sandbox, sees, offers);
+  return box;
+}
+
+async function hubFlow(initial = "all") {
   const dlg = $("hub-dialog");
-  let kind = "all";
+  let kind = initial;
   let list = null;
   const status = (text, error = false) => {
     $("hub-status").textContent = text;
@@ -91,7 +112,10 @@ async function hubFlow() {
     for (const e of shown) {
       const card = document.createElement("article");
       card.className = "hub-card";
-      if (e.data) card.append(e.kind === "theme" ? themePreview(e.data) : layoutPreview(e.data));
+      if (e.data) {
+        const preview = { theme: themePreview, layout: layoutPreview, plugin: pluginPreview }[e.kind];
+        if (preview) card.append(preview(e.data));
+      }
       const title = document.createElement("h3");
       title.textContent = e.name;
       const kindTag = Object.assign(document.createElement("span"), { className: "hub-kind", textContent: e.kind });
@@ -115,11 +139,16 @@ async function hubFlow() {
             install.disabled = true;
             install.textContent = "Installing…";
             try {
-              const r = await invoke("hub_install", { id: e.id });
-              ui.looks = r.looks;
-              e.installed = r.id;
+              if (e.kind === "plugin") {
+                e.installed = await invoke("hub_install_plugin", { id: e.id });
+                status(`Installed "${e.name}": it's in the Plugins dialog (Ctrl+Shift+P), and asks before it first runs.`);
+              } else {
+                const r = await invoke("hub_install", { id: e.id });
+                ui.looks = r.looks;
+                e.installed = r.id;
+                status(`Installed "${e.name}".`);
+              }
               e.update = false;
-              status(`Installed "${e.name}".`);
             } catch (err) {
               status(String(err), true);
             }
@@ -127,7 +156,7 @@ async function hubFlow() {
           });
         }
         actions.append(install);
-        if (e.installed) {
+        if (e.installed && e.kind !== "plugin") {
           const use = Object.assign(document.createElement("button"), { type: "button", textContent: "Use now" });
           use.addEventListener("click", () => {
             const field = e.kind === "layout" ? "active_layout" : "active_theme";
@@ -151,6 +180,7 @@ async function hubFlow() {
     tabs.forEach((t) => t.classList.toggle("active", t === ev.currentTarget));
     render();
   };
+  tabs.forEach((t) => t.classList.toggle("active", t.dataset.kind === kind));
   tabs.forEach((t) => t.addEventListener("click", onTab));
   $("hub-search").addEventListener("input", render);
   $("hub-search").value = "";
@@ -161,7 +191,10 @@ async function hubFlow() {
     .then((r) => {
       list = r;
       $("hub-address").textContent = r.url;
-      status(r.entries.length ? `${r.entries.length} layouts and themes.` : "The hub is empty so far.");
+      const count = (k) => r.entries.filter((e) => e.kind === k).length;
+      const parts = [[count("layout"), "layout"], [count("theme"), "theme"], [count("plugin"), "plugin"]]
+        .filter(([n]) => n).map(([n, w]) => `${n} ${w}${n === 1 ? "" : "s"}`);
+      status(parts.length ? `${parts.join(", ")}.` : "The hub is empty so far.");
       render();
     })
     .catch(async (err) => {

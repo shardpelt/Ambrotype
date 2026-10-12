@@ -128,7 +128,7 @@ The plugin SDK and the project `amb plugin new` makes are MIT OR Apache-2.0, so 
 - **With the GitHub CLI** installed and logged in (`gh auth login`): it forks the hub, adds the files in one commit, and opens the pull request with your own login.
 - **Without it:** it opens GitHub's upload page for that folder, with your plugin's folder shown next to it. Drag the files in and choose "Propose changes".
 
-Include the source: reviewers read it and rebuild `plugin.wasm` before merging. A change to Ambrotype itself (not a plugin) goes as a normal pull request to the Ambrotype repo, following [AGENTS.md](../../AGENTS.md).
+Include the source: reviewers read it and rebuild `plugin.wasm` before merging. Once merged, the plugin shows up in everyone's **Browse hub…** (in the Plugins dialog, or Appearance), with what it asks to see; the app checks its manifest and module against the hub's `index.json` before installing it. A change to Ambrotype itself (not a plugin) goes as a normal pull request to the Ambrotype repo, following [AGENTS.md](../../AGENTS.md).
 
 ## ABI (for other languages)
 

@@ -2066,11 +2066,25 @@ struct HubList {
 async fn hub_browse(state: tauri::State<'_, AppState>) -> Res<HubList> {
     let url = hub_index(state.inner());
     let dir = looks_dir(state.inner());
+    let plugins = plugins_dir(state.inner());
     let u = url.clone();
-    let entries = tauri::async_runtime::spawn_blocking(move || hub::browse(&u, dir.as_deref()))
-        .await
-        .map_err(|e| e.to_string())??;
+    let entries = tauri::async_runtime::spawn_blocking(move || {
+        hub::browse(&u, dir.as_deref(), plugins.as_deref())
+    })
+    .await
+    .map_err(|e| e.to_string())??;
     Ok(HubList { url, entries })
+}
+
+/// Install (or update) a plugin from the hub; returns its id. It asks for
+/// its permissions when first run, like any plugin.
+#[tauri::command]
+async fn hub_install_plugin(id: String, state: tauri::State<'_, AppState>) -> Res<String> {
+    let url = hub_index(state.inner());
+    let dir = plugins_dir(state.inner()).ok_or("the plugins folder isn't available")?;
+    tauri::async_runtime::spawn_blocking(move || hub::install_plugin(&dir, &url, &id))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 /// Install (or update) a look from the hub.
@@ -3543,6 +3557,7 @@ fn main() {
             set_hub_url,
             hub_browse,
             hub_install,
+            hub_install_plugin,
             hub_submit,
             border_presets,
             save_border_preset,

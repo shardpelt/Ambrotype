@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! The hub: browse and install shared looks (layouts and themes), and
-//! submit your own (docs/design/customization-and-hub.md §4; the hub repo
-//! template is `hub/` in this repo).
+//! The hub: browse and install shared looks (layouts and themes) and
+//! plugins, and submit your own looks (docs/design/customization-and-hub.md
+//! §4; the hub repo template is `hub/` in this repo).
 //!
 //! Like Omarchy's themes there is no server: a hub is a git repo with one
 //! JSON file per look and an `index.json` listing them with their sha256.
-//! Only data is installed, never code. Each file must match its checksum and
-//! pass the same validation as any other look before it is saved as one of
-//! the user's. Submitting opens GitHub's "new file" page with the look filled
-//! in, which becomes a pull request to the hub repo.
+//! Each file must match its checksum and pass the same validation as any
+//! other look before it is saved as one of the user's. The only code is a
+//! plugin's WebAssembly module, which runs in the plugin sandbox and asks
+//! for its permissions on first use, like a plugin installed from a folder.
+//! Submitting opens GitHub's "new file" page with the look filled in, which
+//! becomes a pull request to the hub repo.
 
 use crate::looks::{self, Kind};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::Read;
 use std::path::Path;
 
@@ -23,6 +25,10 @@ pub const DEFAULT_INDEX: &str =
 pub const INDEX_FORMAT: &str = "ambrotype-hub/1";
 const MAX_INDEX_BYTES: u64 = 2 << 20;
 const MAX_ITEM_BYTES: u64 = 256 << 10;
+/// A plugin's module (the share dialog keeps whole plugins under 5 MB).
+const MAX_PLUGIN_FILE_BYTES: u64 = 5 << 20;
+/// Kept in an installed plugin's folder: where it came from.
+const HUB_SOURCE_FILE: &str = ".hub.json";
 const MAX_ITEMS: usize = 500;
 /// GitHub's "new file" link carries the file in the address; longer than this
 /// and browsers or GitHub may cut it off.
@@ -39,9 +45,13 @@ pub struct HubItem {
     pub description: String,
     #[serde(default)]
     pub license: String,
-    /// The file, relative to the index.
+    /// The file, relative to the index (a plugin's `plugin.json`).
     pub path: String,
     pub sha256: String,
+    /// A plugin's other files (its module), relative to `path`'s folder,
+    /// with their sha256.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub files: BTreeMap<String, String>,
 }
 
 #[derive(Deserialize)]
@@ -62,6 +72,11 @@ pub struct HubEntry {
     pub installed: Option<String>,
     /// Installed, but the hub has a newer version.
     pub update: bool,
+}
+
+/// Kinds this version can install: looks, and plugins.
+fn known_kind(name: &str) -> bool {
+    kind_of(name).is_some() || name == "plugin"
 }
 
 fn kind_of(name: &str) -> Option<Kind> {
@@ -155,7 +170,17 @@ pub fn read_index(url: &str) -> Result<Vec<HubItem>, String> {
                 .chars()
                 .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
         let sha_ok = item.sha256.len() == 64 && item.sha256.chars().all(|c| c.is_ascii_hexdigit());
-        if !id_ok || !sha_ok || !seen.insert(item.id.clone()) || kind_of(&item.kind).is_none() {
+        let files_ok = item.files.len() <= 8
+            && item
+                .files
+                .values()
+                .all(|s| s.len() == 64 && s.chars().all(|c| c.is_ascii_hexdigit()));
+        if !id_ok
+            || !sha_ok
+            || !files_ok
+            || !seen.insert(item.id.clone())
+            || !known_kind(&item.kind)
+        {
             continue;
         }
         out.push(item);
@@ -163,14 +188,44 @@ pub fn read_index(url: &str) -> Result<Vec<HubItem>, String> {
     Ok(out)
 }
 
-/// One look's file, checked against the index and validated.
-fn fetch_item(index_url: &str, item: &HubItem) -> Result<Value, String> {
-    let bytes = fetch(&item_url(index_url, &item.path)?, MAX_ITEM_BYTES)?;
-    if sha256_hex(&bytes) != item.sha256.to_ascii_lowercase() {
-        return Err(
-            "the file doesn't match the hub's checksum (changed after it was listed)".into(),
-        );
+/// A file listed in the index, checked against its sha256.
+fn fetch_checked(index_url: &str, path: &str, sha256: &str, max: u64) -> Result<Vec<u8>, String> {
+    let bytes = fetch(&item_url(index_url, path)?, max)?;
+    if sha256_hex(&bytes) != sha256.to_ascii_lowercase() {
+        return Err(format!(
+            "{path} doesn't match the hub's checksum (changed after it was listed)"
+        ));
     }
+    Ok(bytes)
+}
+
+/// A plugin's manifest, checked; its id must be the item's without `plugin-`.
+fn fetch_plugin_manifest(index_url: &str, item: &HubItem) -> Result<Value, String> {
+    let bytes = fetch_checked(index_url, &item.path, &item.sha256, MAX_ITEM_BYTES)?;
+    let text = String::from_utf8(bytes).map_err(|_| "plugin.json isn't text")?;
+    let manifest = amb_plugin::Manifest::from_json(&text)?;
+    if item.id.strip_prefix("plugin-") != Some(manifest.id.as_str()) {
+        return Err(format!(
+            "listed as {} but the plugin's id is {:?}",
+            item.id, manifest.id
+        ));
+    }
+    if !item.files.contains_key(&manifest.wasm) {
+        return Err(format!(
+            "the index doesn't list its module, {}",
+            manifest.wasm
+        ));
+    }
+    serde_json::from_str(&text).map_err(|e| e.to_string())
+}
+
+/// One look's file, checked against the index and validated (for a plugin,
+/// its manifest).
+fn fetch_item(index_url: &str, item: &HubItem) -> Result<Value, String> {
+    if item.kind == "plugin" {
+        return fetch_plugin_manifest(index_url, item);
+    }
+    let bytes = fetch_checked(index_url, &item.path, &item.sha256, MAX_ITEM_BYTES)?;
     let data: Value = serde_json::from_slice(&bytes).map_err(|e| format!("not valid JSON: {e}"))?;
     let kind = kind_of(&item.kind).ok_or("unknown kind")?;
     if Kind::of(&data) != Some(kind) {
@@ -188,6 +243,29 @@ fn fetch_item(index_url: &str, item: &HubItem) -> Result<Value, String> {
         return Err(errors.join("; "));
     }
     Ok(data)
+}
+
+/// The user's plugins that came from this hub: hub id -> (plugin id, sha256).
+fn installed_plugins(dir: Option<&Path>, index_url: &str) -> HashMap<String, (String, String)> {
+    let mut out = HashMap::new();
+    let Some(dir) = dir else { return out };
+    for entry in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+        let Ok(text) = std::fs::read_to_string(entry.path().join(HUB_SOURCE_FILE)) else {
+            continue;
+        };
+        let Ok(source) = serde_json::from_str::<Value>(&text) else {
+            continue;
+        };
+        if source["hub"].as_str() != Some(index_url) {
+            continue;
+        }
+        if let Some(id) = source["id"].as_str() {
+            let sha = source["sha256"].as_str().unwrap_or_default().to_string();
+            let name = entry.file_name().to_string_lossy().into_owned();
+            out.insert(id.to_string(), (name, sha));
+        }
+    }
+    out
 }
 
 /// The user's looks that came from this hub: hub id -> (look id, sha256).
@@ -208,11 +286,17 @@ fn installed(dir: Option<&Path>, index_url: &str) -> HashMap<String, (String, St
     out
 }
 
-/// Everything in the hub, with previews and what's installed already.
-pub fn browse(index_url: &str, dir: Option<&Path>) -> Result<Vec<HubEntry>, String> {
+/// Everything in the hub, with previews and what's installed already
+/// (`dir` holds the user's looks, `plugins` their plugins).
+pub fn browse(
+    index_url: &str,
+    dir: Option<&Path>,
+    plugins: Option<&Path>,
+) -> Result<Vec<HubEntry>, String> {
     use rayon::prelude::*;
     let items = read_index(index_url)?;
-    let mine = installed(dir, index_url);
+    let mut mine = installed(dir, index_url);
+    mine.extend(installed_plugins(plugins, index_url));
     Ok(items
         .into_par_iter()
         .map(|item| {
@@ -230,6 +314,45 @@ pub fn browse(index_url: &str, dir: Option<&Path>) -> Result<Vec<HubEntry>, Stri
             }
         })
         .collect())
+}
+
+/// Install (or update) a plugin from the hub into `dir` (the user's plugins
+/// folder): its manifest and module, each checked against the index, then
+/// the same checks as installing from a folder. Returns the plugin's id.
+pub fn install_plugin(dir: &Path, index_url: &str, id: &str) -> Result<String, String> {
+    let item = read_index(index_url)?
+        .into_iter()
+        .find(|i| i.id == id && i.kind == "plugin")
+        .ok_or_else(|| format!("{id} isn't in the hub any more"))?;
+    let manifest = fetch_plugin_manifest(index_url, &item)?;
+    let folder = item.path.rsplit_once('/').map_or("", |(f, _)| f);
+    let tmp = std::env::temp_dir().join(format!("amb-hub-{}-{}", std::process::id(), item.id));
+    let _ = std::fs::remove_dir_all(&tmp);
+    let staged = (|| -> Result<String, String> {
+        std::fs::create_dir_all(&tmp).map_err(|e| e.to_string())?;
+        let manifest_text = serde_json::to_vec_pretty(&manifest).map_err(|e| e.to_string())?;
+        std::fs::write(tmp.join("plugin.json"), manifest_text).map_err(|e| e.to_string())?;
+        for (name, sha) in &item.files {
+            // One plain file name each, next to the manifest.
+            if name.is_empty() || name.contains(['/', '\\']) || name.starts_with('.') {
+                return Err(format!("bad file name in the index: {name:?}"));
+            }
+            let path = if folder.is_empty() {
+                name.clone()
+            } else {
+                format!("{folder}/{name}")
+            };
+            let bytes = fetch_checked(index_url, &path, sha, MAX_PLUGIN_FILE_BYTES)?;
+            std::fs::write(tmp.join(name), bytes).map_err(|e| e.to_string())?;
+        }
+        let id = crate::plugins::install(dir, &tmp)?;
+        let source = serde_json::json!({ "hub": index_url, "id": item.id, "sha256": item.sha256 });
+        std::fs::write(dir.join(&id).join(HUB_SOURCE_FILE), source.to_string())
+            .map_err(|e| e.to_string())?;
+        Ok(id)
+    })();
+    let _ = std::fs::remove_dir_all(&tmp);
+    staged
 }
 
 /// Install (or update) one look from the hub as one of the user's.
@@ -330,7 +453,7 @@ mod tests {
     /// The hub template in this repo is what people copy: it must be clean and current.
     #[test]
     fn the_hub_template_is_valid() {
-        let entries = browse(&hub_url(), None).unwrap();
+        let entries = browse(&hub_url(), None, None).unwrap();
         assert!(entries.len() >= 3);
         for e in &entries {
             assert!(e.error.is_none(), "{}: {:?}", e.item.id, e.error);
@@ -344,7 +467,7 @@ mod tests {
         let url = hub_url();
         let (kind, id) = install(&dir, &url, "theme-warm-dark").unwrap();
         assert_eq!((kind, id.as_str()), (Kind::Theme, "user:warm-dark"));
-        let entries = browse(&url, Some(&dir)).unwrap();
+        let entries = browse(&url, Some(&dir), None).unwrap();
         let warm = entries
             .iter()
             .find(|e| e.item.id == "theme-warm-dark")
@@ -369,11 +492,48 @@ mod tests {
         std::fs::write(copy.join("index.json"), index).unwrap();
         std::fs::write(copy.join("looks/themes/paper.json"), "{}").unwrap();
         let tampered = format!("file://{}/index.json", copy.display());
-        let entries = browse(&tampered, None).unwrap();
+        let entries = browse(&tampered, None, None).unwrap();
         let paper = entries.iter().find(|e| e.item.id == "theme-paper").unwrap();
         assert!(paper.error.as_deref().unwrap().contains("checksum"));
         let _ = std::fs::remove_dir_all(&dir);
         let _ = std::fs::remove_dir_all(&copy);
+    }
+
+    #[test]
+    fn plugins_install_from_the_hub_checked() {
+        let hub = temp_dir("plugin-hub");
+        let src = format!("{}/../../plugins/random-look", env!("CARGO_MANIFEST_DIR"));
+        let wasm = std::fs::read(format!("{src}/plugin.wasm")).unwrap();
+        let text = std::fs::read_to_string(format!("{src}/plugin.json")).unwrap();
+        let mut manifest: Value = serde_json::from_str(&text).unwrap();
+        manifest["id"] = "dice".into();
+        let manifest = serde_json::to_vec(&manifest).unwrap();
+        std::fs::create_dir_all(hub.join("plugins/dice")).unwrap();
+        std::fs::write(hub.join("plugins/dice/plugin.json"), &manifest).unwrap();
+        std::fs::write(hub.join("plugins/dice/plugin.wasm"), &wasm).unwrap();
+        let index = serde_json::json!({ "format": INDEX_FORMAT, "items": [{
+            "id": "plugin-dice", "kind": "plugin", "name": "Dice",
+            "path": "plugins/dice/plugin.json", "sha256": sha256_hex(&manifest),
+            "files": { "plugin.wasm": sha256_hex(&wasm) },
+        }]});
+        std::fs::write(hub.join("index.json"), index.to_string()).unwrap();
+        let url = format!("file://{}/index.json", hub.display());
+        let mine = temp_dir("plugin-mine");
+        let entries = browse(&url, None, Some(&mine)).unwrap();
+        assert!(entries[0].error.is_none(), "{:?}", entries[0].error);
+        assert_eq!(entries[0].data.as_ref().unwrap()["id"], "dice");
+        assert!(entries[0].installed.is_none());
+        assert_eq!(install_plugin(&mine, &url, "plugin-dice").unwrap(), "dice");
+        assert!(mine.join("dice/plugin.wasm").is_file());
+        let entries = browse(&url, None, Some(&mine)).unwrap();
+        assert_eq!(entries[0].installed.as_deref(), Some("dice"));
+        assert!(!entries[0].update);
+        // A module changed after it was listed is refused.
+        std::fs::write(hub.join("plugins/dice/plugin.wasm"), b"\0asm").unwrap();
+        let err = install_plugin(&mine, &url, "plugin-dice").unwrap_err();
+        assert!(err.contains("checksum"), "{err}");
+        let _ = std::fs::remove_dir_all(&hub);
+        let _ = std::fs::remove_dir_all(&mine);
     }
 
     #[test]

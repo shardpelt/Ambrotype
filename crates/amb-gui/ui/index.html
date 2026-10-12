@@ -1006,6 +1006,7 @@
         </section>
       </div>
       <menu>
+        <button type="button" id="plugins-hub" title="Plugins other people shared, checked before they're installed">Browse hub…</button>
         <button type="button" id="plugins-install" title="Add a plugin from a folder with plugin.json and plugin.wasm">Install from folder…</button>
         <button type="button" id="plugins-open">Open plugins folder</button>
         <button type="button" id="plugins-reload">Reload</button>
@@ -1018,13 +1019,14 @@
 
   <dialog id="hub-dialog">
     <form method="dialog">
-      <h2>Hub: shared layouts and themes</h2>
-      <p class="hint">Layouts and themes other people made. They're small data files, checked before they're installed. From <span id="hub-address"></span></p>
+      <h2>Hub: shared layouts, themes and plugins</h2>
+      <p class="hint">Layouts, themes and plugins other people made, checked before they're installed. Layouts and themes are small data files; plugins run sandboxed and ask before they see anything but the edit. From <span id="hub-address"></span></p>
       <div class="hub-bar">
         <div class="tabs hub-tabs">
           <button type="button" data-kind="all" class="active">All</button>
           <button type="button" data-kind="layout">Layouts</button>
           <button type="button" data-kind="theme">Themes</button>
+          <button type="button" data-kind="plugin">Plugins</button>
         </div>
         <input id="hub-search" type="search" placeholder="Search the hub" spellcheck="false">
       </div>

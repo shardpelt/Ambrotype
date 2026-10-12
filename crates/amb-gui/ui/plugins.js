@@ -399,6 +399,11 @@ function wirePlugins() {
   $("share-browser").addEventListener("click", () => sendShare(true));
   $("share-cancel").addEventListener("click", () => showPluginPanel("detail"));
   $("plugins-install").addEventListener("click", installPlugin);
+  $("plugins-hub").addEventListener("click", async () => {
+    await hubFlow("plugin");
+    await loadPlugins();
+    renderPlugins();
+  });
   $("plugins-open").addEventListener("click", () => invoke("open_plugins_folder", { id: null }).catch((e) => toast(String(e), true)));
   $("plugins-reload").addEventListener("click", async () => {
     await loadPlugins();

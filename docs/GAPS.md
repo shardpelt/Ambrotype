@@ -230,7 +230,7 @@ Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the plann
 | `--json` is not on every CLI command (it exists on preset inspect/census, edit, negative, settings; not on render, lens, sweep, calibration) | Limit | Phase 1 goal was `--json` everywhere | [design/ai-control.md](design/ai-control.md):57-59; `crates/amb-cli/src/main.rs`:13-62 |
 | The assistant panel can't place masks, crop or spots, and doesn't stream its answers. Keys need a system keychain to be kept between runs | Limit | Requests like "brighten the face" can't be done by the assistant | [ai/assistant.md](ai/assistant.md); [design/ai-control.md](design/ai-control.md) |
 | Vision-model refinement loop and match with masks (sky, subject) not built | Missing | Phase 3 | [design/ai-control.md](design/ai-control.md):45, 66-67 |
-| Safety UX not built: pending-diff Accept/Undo, permission prompts, step and cost limits, user-visible log of AI tool calls | Missing | Required by the design's own rules | [design/ai-control.md](design/ai-control.md):49-54 |
+| Assistant safety: each request's edits are one Undo away, steps are capped (5) and tokens shown, the photo is sent only when ticked, and every edit is logged locally (`assistant-log.jsonl`, "Log of its edits"). Not built: a pending diff to Accept before applying, cost limits in money | Limit | Required by the design's own rules | [design/ai-control.md](design/ai-control.md):49-54 |
 | Learn-my-style from edit history, and batch "apply my look to this shoot" | Missing | "Later" | [design/ai-control.md](design/ai-control.md):68 |
 
 ## 13. Performance and GPU

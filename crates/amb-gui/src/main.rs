@@ -498,6 +498,7 @@ async fn assistant_ask(
         .clone();
     let slot = state.session.clone();
     let lens = state.lens.clone();
+    let log = assistant_log_path(&state);
     tauri::async_runtime::spawn_blocking(move || {
         let key = session_key.or_else(|| assistant::load_key(&provider));
         let lens = lens.get().unwrap_or_else(|| empty_lens());
@@ -533,8 +534,26 @@ async fn assistant_ask(
             see.unwrap_or(false)
                 .then_some(&mut picture as &mut dyn FnMut() -> Res<String>),
             |items| {
-                let commands = amb_protocol::compact::parse(items).map_err(|e| e.to_string())?;
-                with_photo(&mut |s| {
+                // Every edit the model asks for is logged, done or not.
+                let logged = |result: &Res<String>| {
+                    log_assistant(
+                        log.as_deref(),
+                        serde_json::json!({
+                            "photo": photo.display().to_string(),
+                            "request": request,
+                            "edits": items,
+                            "result": match result { Ok(r) => r.clone(), Err(e) => format!("error: {e}") },
+                        }),
+                    );
+                };
+                let commands = match amb_protocol::compact::parse(items).map_err(|e| e.to_string()) {
+                    Ok(c) => c,
+                    Err(e) => {
+                        logged(&Err(e.clone()));
+                        return Err(e);
+                    }
+                };
+                let done = with_photo(&mut |s| {
                     let all = s.white_balance_from_as_shot(commands.clone());
                     let mut results = s.execute(&all, Some("Assistant"))?;
                     // The as-shot start was ours: its notes would only confuse.
@@ -549,7 +568,9 @@ async fn assistant_ask(
                         dry_run: false,
                     };
                     Ok(report.to_brief())
-                })
+                });
+                logged(&done);
+                done
             },
         )?;
         let guard = slot.lock().map_err(|e| e.to_string())?;
@@ -561,6 +582,41 @@ async fn assistant_ask(
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// The assistant's log: one JSON line per edit it asked for (the photo,
+/// the request, the edits in the compact syntax, and what happened), in
+/// the app's settings folder, so the user can see what the model did.
+fn assistant_log_path(state: &AppState) -> Option<PathBuf> {
+    let path = state.config_path.lock().ok()?;
+    Some(path.as_ref()?.parent()?.join("assistant-log.jsonl"))
+}
+
+fn log_assistant(path: Option<&Path>, mut entry: serde_json::Value) {
+    let Some(path) = path else { return };
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    entry["time"] = serde_json::json!(now);
+    let line = format!("{entry}\n");
+    use std::io::Write;
+    let _ = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .and_then(|mut f| f.write_all(line.as_bytes()));
+}
+
+/// Show the assistant's log in the file manager's default app.
+#[tauri::command]
+fn open_assistant_log(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Res<()> {
+    let path = assistant_log_path(&state).ok_or("no settings folder")?;
+    if !path.is_file() {
+        return Err("the assistant hasn't made any edits yet".into());
+    }
+    app.opener()
+        .open_path(path.display().to_string(), None::<&str>)
+        .map_err(|e| e.to_string())
 }
 
 /// Pick a folder and list its raws (for the collage maker).
@@ -3451,6 +3507,7 @@ fn main() {
             luts_list,
             pick_watermark_image,
             negative_freeze,
+            open_assistant_log,
             watch_folders,
             lens_db_state,
             fetch_lens_db,
@@ -3515,4 +3572,34 @@ fn main() {
                 }
             }
         });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_assistant_log_gets_one_line_per_edit() {
+        let path =
+            std::env::temp_dir().join(format!("amb-assistant-log-{}.jsonl", std::process::id()));
+        let _ = std::fs::remove_file(&path);
+        log_assistant(
+            Some(&path),
+            serde_json::json!({"edits": "exp=+0.3", "result": "Exposure 0 -> 0.3"}),
+        );
+        log_assistant(
+            Some(&path),
+            serde_json::json!({"edits": "nope", "result": "error: unknown"}),
+        );
+        let text = std::fs::read_to_string(&path).unwrap();
+        let lines: Vec<serde_json::Value> = text
+            .lines()
+            .map(|l| serde_json::from_str(l).unwrap())
+            .collect();
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0]["edits"], "exp=+0.3");
+        assert!(lines[1]["time"].as_u64().unwrap() > 1_700_000_000);
+        log_assistant(None, serde_json::json!({}));
+        let _ = std::fs::remove_file(&path);
+    }
 }

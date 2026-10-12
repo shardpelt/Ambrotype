@@ -28,3 +28,7 @@ Presets → **Ask AI…** (or Ctrl+Shift+A) opens a small chat beside the photo.
 
 - Masks, crop and spots from the assistant: the compact syntax covers single settings, presets and snapshots.
 - Streaming answers, and a cost estimate before sending.
+
+## Log
+
+Every edit the model asks for goes to `assistant-log.jsonl` in the app's settings folder, one JSON line each: the time, the photo, your request, the edits in the compact syntax and what happened (the changes, or the error). **Log of its edits** in the panel opens it. Nothing else is logged, and nothing leaves the computer.

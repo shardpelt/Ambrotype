@@ -43,6 +43,7 @@ function wireAssistant() {
   if (asst.wired) return;
   asst.wired = true;
   $("assistant-close").addEventListener("click", () => $("assistant-dialog").close());
+  $("assistant-log-open").addEventListener("click", () => invoke("open_assistant_log").catch((e) => toast(String(e), true)));
   $("assistant-gear").addEventListener("click", () => {
     fillAssistantSettings();
     $("assistant-settings").hidden = !$("assistant-settings").hidden;

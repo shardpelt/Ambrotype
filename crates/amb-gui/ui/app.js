@@ -1207,12 +1207,46 @@ function renderPresets() {
       b.className = "preset";
       b.textContent = p.name;
       b.title = p.path;
-      b.addEventListener("click", () =>
-        run([{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value) }]));
+      b.addEventListener("click", () => {
+        presetHover(null);
+        run([{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value) }]);
+      });
+      b.addEventListener("mouseenter", () => presetHover(p));
+      b.addEventListener("mouseleave", () => presetHover(null));
       d.append(b);
     }
     list.append(d);
   }
+}
+
+// Hovering a preset shows the photo with it, as Lightroom's Navigator does;
+// nothing is applied until it's clicked.
+let hoverPreset = { timer: 0, shown: false, token: 0 };
+function presetHover(p) {
+  clearTimeout(hoverPreset.timer);
+  const token = ++hoverPreset.token;
+  if (!p) {
+    if (hoverPreset.shown) {
+      hoverPreset.shown = false;
+      ui.overrides = {};
+      requestPreview(false);
+    }
+    return;
+  }
+  if (!ui.info || ui.active || ui.crop.on) return;
+  hoverPreset.timer = setTimeout(async () => {
+    try {
+      const overrides = await invoke("trial_overrides", {
+        commands: [{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value) }],
+      });
+      if (token !== hoverPreset.token) return;
+      ui.overrides = overrides;
+      hoverPreset.shown = true;
+      requestPreview(false);
+    } catch {
+      // A preset that can't be read just isn't previewed.
+    }
+  }, 180);
 }
 
 // The open photo's edit as a one-click preset (src/session.rs `save_preset`).

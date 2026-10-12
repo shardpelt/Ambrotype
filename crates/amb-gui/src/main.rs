@@ -2072,6 +2072,28 @@ async fn run_plugin_many(
     .map_err(|e| e.to_string())?
 }
 
+/// The settings `commands` would change on the open photo, as preview
+/// overrides; nothing is applied (a preset's look while hovering it).
+#[tauri::command]
+fn trial_overrides(
+    commands: Vec<Command>,
+    state: tauri::State<'_, AppState>,
+) -> Res<serde_json::Map<String, serde_json::Value>> {
+    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    let s = guard.as_ref().ok_or("no photo open")?;
+    let mut trial = s.state.clone();
+    trial.execute_all(&commands).map_err(|e| e.to_string())?;
+    let before = s.state.to_json()["settings"].clone();
+    let after = trial.to_json()["settings"].clone();
+    Ok(after
+        .as_object()
+        .into_iter()
+        .flatten()
+        .filter(|(k, v)| before.get(k.as_str()) != Some(*v))
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect())
+}
+
 #[derive(Serialize)]
 struct Variant {
     seed: u64,
@@ -2956,6 +2978,7 @@ fn main() {
             assistant_save,
             assistant_ask,
             run_plugin_many,
+            trial_overrides,
             library_pick_folder,
             import_defaults,
             collections_list,

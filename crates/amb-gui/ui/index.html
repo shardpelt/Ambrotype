@@ -693,6 +693,11 @@
               <span class="pair"><input name="b_key" type="number" min="0" step="0.05" placeholder="None"><input name="b_key_color" type="color" value="#000000"></span>
             </label>
             <label>Rounded corners (%) <input name="b_radius" type="number" min="0" max="50" step="0.5"></label>
+            <label class="caption" title="A line of text in the bottom of the frame">Caption
+              <span class="pair"><input name="b_caption" type="text" spellcheck="false" placeholder="None (e.g. {camera} · {exposure})">
+                <select name="b_caption_align" title="Where the caption sits"><option value="left">Left</option><option value="center" selected>Centre</option><option value="right">Right</option></select></span>
+            </label>
+            <p id="border-caption-tokens" class="hint caption-tokens" hidden></p>
             <span class="inline-check fit"><input name="b_fit" type="checkbox"><span>Whole photo inside the frame (with an exact size, instead of cropping to fill)</span></span>
             <span class="pair save"><input name="b_name" type="text" placeholder="Preset name" spellcheck="false">
               <button type="button" id="border-save" class="small">Save preset</button>

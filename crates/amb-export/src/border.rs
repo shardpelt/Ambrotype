@@ -21,6 +21,13 @@
 //!   is fitted inside the frame and the rest filled with the border colour.
 //!   Without it, the photo is cropped to fill the space inside the frame.
 //!   Either way the file is exactly that size.
+//! - `caption`: a line of text in the bottom band, such as the camera and
+//!   exposure (`{ "text": "{camera} · {exposure}", "size": 30, "align":
+//!   "center", "color": "#333333" }`). `text` takes the tokens in
+//!   [`CAPTION_TOKENS`]; parts left empty (no lens known, say) are dropped
+//!   with their separator. `size` is the text's height as a percentage of
+//!   the bottom band; `color` defaults to dark on a light frame and light on
+//!   a dark one.
 
 use crate::geometry::Resize;
 use serde::{Deserialize, Serialize};
@@ -39,6 +46,150 @@ pub enum Unit {
 pub struct Keyline {
     pub width: f64,
     pub color: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Align {
+    Left,
+    #[default]
+    Center,
+    Right,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Caption {
+    #[serde(default = "default_caption")]
+    pub text: String,
+    #[serde(default = "default_caption_size")]
+    pub size: f64,
+    #[serde(default)]
+    pub align: Align,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+}
+
+pub const DEFAULT_CAPTION: &str = "{camera} · {exposure}";
+
+fn default_caption() -> String {
+    DEFAULT_CAPTION.into()
+}
+
+fn default_caption_size() -> f64 {
+    30.0
+}
+
+impl Caption {
+    pub fn new(text: &str) -> Caption {
+        Caption {
+            text: text.into(),
+            size: default_caption_size(),
+            align: Align::Center,
+            color: None,
+        }
+    }
+}
+
+/// The caption's tokens and what they stand for.
+pub const CAPTION_TOKENS: &[(&str, &str)] = &[
+    ("{camera}", "the camera (make and model)"),
+    ("{lens}", "the lens"),
+    ("{exposure}", "focal length, aperture, shutter and ISO"),
+    ("{focal}", "the focal length, 35 mm"),
+    ("{aperture}", "the aperture, f/1.8"),
+    ("{shutter}", "the shutter speed, 1/250 s"),
+    ("{iso}", "the ISO, ISO 100"),
+    ("{date}", "the capture date, 2026-10-13"),
+    ("{year}", "the capture year"),
+    ("{title}", "the photo's title"),
+    ("{creator}", "the creator"),
+    ("{copyright}", "the copyright"),
+];
+
+/// A caption template filled in from the photo's metadata. Parts that come
+/// out empty are dropped with their " · " or " | " separator.
+pub fn caption_text(
+    template: &str,
+    meta: &amb_engine::raw::PhotoMetadata,
+    tags: &crate::exif::Tags,
+) -> String {
+    let ratio = |r: Option<(u32, u32)>| {
+        r.filter(|r| r.1 != 0)
+            .map(|(n, d)| f64::from(n) / f64::from(d))
+    };
+    let num = |v: f64| {
+        let s = format!("{v:.1}");
+        s.strip_suffix(".0").map(str::to_string).unwrap_or(s)
+    };
+    let focal = ratio(meta.focal_length)
+        .map(|v| format!("{} mm", num(v)))
+        .unwrap_or_default();
+    let aperture = ratio(meta.fnumber)
+        .map(|v| format!("f/{}", num(v)))
+        .unwrap_or_default();
+    let shutter = ratio(meta.exposure_time)
+        .map(|v| {
+            if v < 0.3 {
+                format!("1/{:.0} s", 1.0 / v)
+            } else {
+                format!("{} s", num(v))
+            }
+        })
+        .unwrap_or_default();
+    let iso = meta.iso.map(|i| format!("ISO {i}")).unwrap_or_default();
+    let exposure = [&focal, &aperture, &shutter, &iso]
+        .into_iter()
+        .filter(|s| !s.is_empty())
+        .cloned()
+        .collect::<Vec<_>>()
+        .join(" · ");
+    // "NIKON D750" already names its maker; "X-T4" doesn't.
+    let make = meta.make.trim();
+    let model = meta.model.trim();
+    let first = make.split_whitespace().next().unwrap_or("").to_lowercase();
+    let camera = if model.to_lowercase().starts_with(&first) || make.is_empty() {
+        model.to_string()
+    } else {
+        format!("{make} {model}")
+    };
+    let date = meta
+        .date_time_original
+        .as_deref()
+        .and_then(|d| d.get(..10))
+        .map(|d| d.replace(':', "-"))
+        .unwrap_or_default();
+    let text = |o: &Option<String>| o.as_deref().unwrap_or("").trim().to_string();
+    let creator = tags.creator.clone().or_else(|| meta.artist.clone());
+    let copyright = tags.copyright.clone().or_else(|| meta.copyright.clone());
+    let values = [
+        ("{camera}", camera),
+        ("{lens}", text(&meta.lens_model)),
+        ("{exposure}", exposure),
+        ("{focal}", focal),
+        ("{aperture}", aperture),
+        ("{shutter}", shutter),
+        ("{iso}", iso),
+        ("{year}", date.get(..4).unwrap_or("").to_string()),
+        ("{date}", date),
+        ("{title}", text(&tags.title)),
+        ("{creator}", text(&creator)),
+        ("{copyright}", text(&copyright)),
+    ];
+    let mut out = template.to_string();
+    for (token, value) in &values {
+        out = out.replace(token, value);
+    }
+    for sep in ["·", "|"] {
+        if out.contains(sep) {
+            out = out
+                .split(sep)
+                .map(str::trim)
+                .filter(|p| !p.is_empty())
+                .collect::<Vec<_>>()
+                .join(&format!(" {sep} "));
+        }
+    }
+    out.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -60,6 +211,8 @@ pub struct Border {
     pub radius: f64,
     #[serde(default)]
     pub fit: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub caption: Option<Caption>,
 }
 
 fn default_format() -> String {
@@ -109,6 +262,7 @@ impl Border {
             keyline: None,
             radius: 0.0,
             fit: false,
+            caption: None,
         }
     }
 
@@ -178,6 +332,16 @@ impl Border {
         }
         if !(0.0..=50.0).contains(&self.radius) {
             return Err("radius must be 0 to 50 (percent of the photo's short edge)".into());
+        }
+        if let Some(c) = &self.caption {
+            if !(5.0..=90.0).contains(&c.size) {
+                return Err("caption size must be 5 to 90 (percent of the bottom band)".into());
+            }
+            if let Some(colour) = &c.color
+                && !matches!(parse_color(colour), Some(Fill::Srgb(_)))
+            {
+                return Err(format!("bad caption colour {colour:?}"));
+            }
         }
         Ok(())
     }
@@ -303,6 +467,53 @@ pub fn compose(
     })
 }
 
+/// Set `text` in the bottom band of a composed border (`p` its plan), in
+/// `colour` (output values). Too long a line is made smaller to fit.
+pub fn draw_caption(
+    img: &mut amb_engine::buffer::Image,
+    p: &Plan,
+    caption: &Caption,
+    text: &str,
+    colour: [f32; 3],
+) {
+    let top = p.at.1 + p.photo.1 + p.keyline;
+    let band = p.canvas.1.saturating_sub(top);
+    if band < 6 || text.trim().is_empty() {
+        return;
+    }
+    let mut px = (band as f64 * caption.size / 100.0) as f32;
+    let room = (p.canvas.0 as f32 * 0.92).max(1.0);
+    let (mut cov, mut w, mut h) = crate::watermark::set_text(text, px);
+    if w as f32 > room {
+        px *= room / w as f32;
+        (cov, w, h) = crate::watermark::set_text(text, px);
+    }
+    if w == 0 || h == 0 || h > band {
+        return;
+    }
+    let x0 = match caption.align {
+        Align::Left => p.at.0,
+        Align::Center => p.canvas.0.saturating_sub(w) / 2,
+        Align::Right => (p.at.0 + p.photo.0).saturating_sub(w),
+    }
+    .min(p.canvas.0.saturating_sub(w));
+    let y0 = top + (band - h) / 2;
+    for y in 0..h {
+        for x in 0..w {
+            let a = cov[y * w + x];
+            if a <= 0.0 {
+                continue;
+            }
+            let under = img.get(x0 + x, y0 + y);
+            img.set(
+                x0 + x,
+                y0 + y,
+                [0, 1, 2].map(|i| under[i] + (colour[i] - under[i]) * a),
+            );
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -372,6 +583,72 @@ mod tests {
         );
         let (_, _, cw, chh) = p.crop.unwrap();
         assert!(((cw as f64 / chh as f64) - 994.0 / 1264.0).abs() < 0.002);
+    }
+
+    #[test]
+    fn captions_fill_in_and_sit_in_the_bottom_band() {
+        let mut meta = amb_engine::raw::PhotoMetadata {
+            make: "NIKON CORPORATION".into(),
+            model: "NIKON D750".into(),
+            focal_length: Some((35, 1)),
+            fnumber: Some((18, 10)),
+            exposure_time: Some((1, 250)),
+            iso: Some(100),
+            date_time_original: Some("2026:10:13 09:30:00".into()),
+            ..Default::default()
+        };
+        let tags = crate::exif::Tags::default();
+        assert_eq!(
+            caption_text(DEFAULT_CAPTION, &meta, &tags),
+            "NIKON D750 · 35 mm · f/1.8 · 1/250 s · ISO 100"
+        );
+        // Unknown parts go with their separator.
+        assert_eq!(
+            caption_text("{lens} · {camera} | {year}", &meta, &tags),
+            "NIKON D750 | 2026"
+        );
+        meta.make = "FUJIFILM".into();
+        meta.model = "X-T4".into();
+        assert_eq!(caption_text("{camera}", &meta, &tags), "FUJIFILM X-T4");
+
+        let mut b = Border::simple(4.0, "#fff");
+        b.bottom = Some(16.0);
+        b.caption = Some(Caption::new("{camera}"));
+        let json = b.to_json();
+        assert_eq!(Border::from_json(&json).unwrap(), b);
+        let photo = amb_engine::buffer::Image::from_fn(400, 300, |_, _| [0.5; 3]);
+        let p = plan(&b, Resize::None, false, 400, 300);
+        let mut out = compose(&photo, &p, [1.0; 3], [0.0; 3]);
+        let before = out.clone();
+        draw_caption(
+            &mut out,
+            &p,
+            b.caption.as_ref().unwrap(),
+            "FUJIFILM X-T4",
+            [0.0; 3],
+        );
+        let mut rows = Vec::new();
+        for y in 0..out.height {
+            for x in 0..out.width {
+                if out.get(x, y) != before.get(x, y) {
+                    rows.push(y);
+                    break;
+                }
+            }
+        }
+        let band = p.at.1 + p.photo.1;
+        assert!(!rows.is_empty());
+        assert!(rows.iter().all(|&y| y > band), "{rows:?}");
+        // About a third of the band high, around its middle.
+        let (lo, hi) = (rows[0], *rows.last().unwrap());
+        let h = (out.height - band) as f64;
+        assert!(
+            ((hi - lo) as f64 / h - 0.25).abs() < 0.12,
+            "{lo}..{hi} of {h}"
+        );
+        assert!(((lo + hi) as f64 / 2.0 - (band as f64 + h / 2.0)).abs() < h * 0.15);
+        b.caption.as_mut().unwrap().size = 200.0;
+        assert!(b.validate().is_err());
     }
 
     #[test]

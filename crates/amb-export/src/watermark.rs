@@ -161,7 +161,7 @@ struct Layer {
 }
 
 /// The text set at `px` pixels: coverage, and its size.
-fn set_text(text: &str, px: f32) -> (Vec<f32>, usize, usize) {
+pub(crate) fn set_text(text: &str, px: f32) -> (Vec<f32>, usize, usize) {
     use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
     let font = fontdue::Font::from_bytes(FONT, fontdue::FontSettings::default())
         .expect("the bundled font reads");

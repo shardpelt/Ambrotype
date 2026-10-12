@@ -774,6 +774,24 @@ fn execute(
     })
 }
 
+/// A border caption as the open photo's export would set it, and the tokens.
+#[tauri::command]
+fn caption_preview(
+    template: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<(String, Vec<(String, String)>)> {
+    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    let text = guard
+        .as_ref()
+        .map(|s| s.caption_text(&template))
+        .unwrap_or_default();
+    let tokens = amb_export::border::CAPTION_TOKENS
+        .iter()
+        .map(|(t, d)| (t.to_string(), d.to_string()))
+        .collect();
+    Ok((text, tokens))
+}
+
 /// The committed crop, upright on the uncropped photo (the crop tool's start).
 #[tauri::command]
 fn crop_state(state: tauri::State<'_, AppState>) -> Res<CropState> {
@@ -3780,6 +3798,7 @@ fn main() {
             presets,
             add_preset_folder,
             crop_state,
+            caption_preview,
             crop_commands,
             mask_frame,
             mask_sliders,

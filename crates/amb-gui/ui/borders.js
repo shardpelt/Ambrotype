@@ -44,6 +44,10 @@ function readBorder() {
   };
   if (f.b_bottom.value !== "") b.bottom = num(f.b_bottom);
   if (f.b_key.value !== "" && Number(f.b_key.value) > 0) b.keyline = { width: Number(f.b_key.value), color: f.b_key_color.value };
+  const caption = f.b_caption.value.trim();
+  if (caption) {
+    b.caption = { ...(ui.borderCaptionRest ?? {}), text: caption, align: f.b_caption_align.value };
+  }
   return b;
 }
 
@@ -61,6 +65,33 @@ function writeBorder(b) {
   f.b_key_color.value = toHex6(b.keyline?.color ?? "#000000");
   f.b_radius.value = b.radius ?? 0;
   f.b_fit.checked = Boolean(b.fit);
+  // The caption's size and colour aren't in the fields: kept as they were.
+  const { text = "", align = "center", ...rest } = b.caption ?? {};
+  ui.borderCaptionRest = rest;
+  f.b_caption.value = text;
+  f.b_caption_align.value = align;
+}
+
+// The caption filled in for the open photo (by the export's own code),
+// fetched when the template changes; the preview draws it.
+async function refreshCaption() {
+  const template = $("export-form").b_caption.value.trim();
+  if (!template) {
+    ui.captionPreview = null;
+    $("border-caption-tokens").hidden = true;
+    return;
+  }
+  try {
+    const [text, tokens] = await invoke("caption_preview", { template });
+    ui.captionPreview = { template, text };
+    const hint = $("border-caption-tokens");
+    hint.textContent = `Fills in: ${tokens.map(([t]) => t).join(" ")}`;
+    hint.title = tokens.map(([t, what]) => `${t}: ${what}`).join("\n");
+    hint.hidden = false;
+  } catch {
+    ui.captionPreview = null;
+  }
+  drawBorderPreview();
 }
 
 const borderOn = () => Boolean($("export-form").border_preset.value);
@@ -164,6 +195,30 @@ function drawBorderPreview() {
   g.clip();
   g.drawImage(img, sx * kx, sy * ky, sw * kx, sh * ky, x, y, pw, ph);
   g.restore();
+  // The caption, as border.rs `draw_caption` sets it (near enough).
+  const text = b.caption && ui.captionPreview?.template === b.caption.text ? ui.captionPreview.text : "";
+  const top = y + ph + p.keyline, band = p.canvas[1] - top;
+  if (text && band >= 6) {
+    let size = band * ((b.caption.size ?? 30) / 100) / 0.72;
+    g.font = `bold ${size}px sans-serif`;
+    const room = p.canvas[0] * 0.92, wide = g.measureText(text).width;
+    if (wide > room) {
+      size *= room / wide;
+      g.font = `bold ${size}px sans-serif`;
+    }
+    const light = (() => {
+      const m = /^#?([0-9a-f]{6})$/i.exec(toHex6(frame.startsWith("rgb") ? "#808080" : frame));
+      if (!m) return true;
+      const n = parseInt(m[1], 16);
+      return (0.2126 * (n >> 16) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255 > 0.5;
+    })();
+    g.fillStyle = b.caption.color ?? (light ? "#3a3a3a" : "#e6e6e6");
+    g.textBaseline = "middle";
+    const align = b.caption.align ?? "center";
+    g.textAlign = align;
+    const tx = align === "left" ? x : align === "right" ? x + pw : p.canvas[0] / 2;
+    g.fillText(text, tx, top + band / 2);
+  }
   $("border-size").textContent = `${p.canvas[0]} × ${p.canvas[1]} px`;
 }
 
@@ -191,11 +246,17 @@ function wireBorders() {
     ui.borderChoice = f.border_preset.value;
     const p = ui.borders.find((b) => b.id === f.border_preset.value);
     if (p) writeBorder(p);
+    refreshCaption();
     $("border-delete").disabled = !p || p.builtin;
     updateExportSize();
     drawBorderPreview();
   });
-  for (const name of ["b_width", "b_unit", "b_bottom", "b_color", "b_auto", "b_key", "b_key_color", "b_radius", "b_fit"]) {
+  let captionTimer = null;
+  f.b_caption.addEventListener("input", () => {
+    clearTimeout(captionTimer);
+    captionTimer = setTimeout(refreshCaption, 250);
+  });
+  for (const name of ["b_width", "b_unit", "b_bottom", "b_color", "b_auto", "b_key", "b_key_color", "b_radius", "b_fit", "b_caption_align"]) {
     f[name].addEventListener("input", () => {
       // Picking a colour by hand turns "auto" off.
       if (name === "b_color") f.b_auto.checked = false;

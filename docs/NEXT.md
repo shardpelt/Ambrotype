@@ -13,7 +13,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
   - **JPEG, PNG, TIFF and WebP:** they open like raws (colour from their ICC profile), with Lightroom's relative Temp/Tint; a JPEG next to its raw is hidden, and edits go to `photo.jpg.xmp`
   - **phone and converted DNGs:** their own corrections (lens shading gain maps, distortion, vignetting opcodes) are applied, as Lightroom does
   - **Fujifilm raws:** RAF files (compressed too) open with a proper X-Trans demosaic (Markesteijn, ported from darktable); blown highlights stay neutral instead of turning pink
-  - export: JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces with ICC
+  - export: JPEG/PNG/TIFF/WebP/AVIF/EXR/JPEG XL, colour spaces with ICC (AVIF: sRGB, Display P3 and Rec. 2020 by code), rating, keywords and metadata as XMP in all but EXR
   - CLI `amb`
   - desktop editor (`amb-gui`, Tauri 2) with:
     - 1:1 zoom and pan (only the shown tiles are rendered, and kept while panning)
@@ -32,7 +32,8 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **library** (G): a folder as a grid; sort, filter and search; select many to rate, label and keyword at once; copy one photo's edit and paste it onto others (by setting group); export the selection; start a collage with it ([design/library.md](design/library.md))
     - **hub:** Appearance → Browse hub… installs shared layouts, themes, develop presets, collage templates, size profiles and plugins (checked against the index's sha256 and validated; plugins also from the Plugins dialog); Submit to hub… opens GitHub with your look filled in as a pull request
     - **editor mode:** Edit layout rearranges the screen in place (drag and drop, control types, split and merge, add and remove, column widths) and saves it as your own layout
-    - **borders** on export, with presets and colour swatches
+    - **borders** on export, with presets and colour swatches, and a caption line such as the camera and exposure
+    - **from Lightroom Classic:** the library's From Lightroom… (or `amb lrcat import`) moves a catalogue's edits, ratings, labels, flags, keywords, stacks, virtual copies and collections into sidecars and our collections; the catalogue is only read
     - **plugins** (Ctrl+Shift+P): sandboxed WebAssembly plugins that make edits (one undo step), with permission prompts, install from a folder, Share as pull request, and "Make one with AI…" instructions for the user's own assistant. Built in: Auto tone, Random look and **Film recipe** (a camera-style picture menu for typing in film recipes, with ready-made ones; [ai/film-recipes.md](ai/film-recipes.md)). Parameter sets can be saved as **recipes**. CLI: `amb plugin new/build/check/run` ([ai/plugins.md](ai/plugins.md))
     - **save as preset:** Presets → Save… (or Save as preset… in the Plugins dialog) keeps the photo's edit, without the crop and other photo-specific settings, as a one-click preset under "Yours"
     - **LUTs:** Basic → Profile → LUT applies a `.cube` look (from the LUT folder or any file) with an amount ([design/luts.md](design/luts.md))

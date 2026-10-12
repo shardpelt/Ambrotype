@@ -151,6 +151,10 @@ EXPORT OPTIONS (amb render):
     --border 5%|40px[,#ffffff|auto] | border.json   A frame around the photo; a .json preset can add
                                             a deeper bottom, a keyline, rounded corners, and fit (with
                                             --exact: the whole photo inside the frame, not cropped)
+    --border-caption \"{camera} · {exposure}\"   A line of text in the border's bottom (made three
+                                            times the width deep if not set): {camera} {lens}
+                                            {exposure} {focal} {aperture} {shutter} {iso} {date}
+                                            {year} {title} {creator} {copyright}
     --watermark \"© Name\" | logo.png | watermark.json   Text or a logo (PNG, its transparency kept) on
                                             the photo; --watermark-at bottom-right (top-left, top, top-right,
                                             left, center, right, bottom-left, bottom), --watermark-size 20
@@ -514,6 +518,7 @@ fn main() -> ExitCode {
             | "--max-size"
             | "--avif-speed"
             | "--border"
+            | "--border-caption"
             | "--out-dir"
             | "--watermark"
             | "--watermark-at"
@@ -1831,6 +1836,23 @@ fn export_settings(
         } else {
             amb_export::border::Border::from_spec(b)?
         });
+    }
+    if let Some(c) = options.get("--border-caption") {
+        let b = s
+            .border
+            .as_mut()
+            .ok_or("--border-caption needs a --border with room at the bottom")?;
+        let text = if c.trim().is_empty() {
+            amb_export::border::DEFAULT_CAPTION
+        } else {
+            c
+        };
+        b.caption = Some(amb_export::border::Caption::new(text));
+        // A frame of one width gets a deeper bottom for the caption.
+        if b.bottom.is_none() {
+            b.bottom = Some(b.width * 3.0);
+        }
+        b.validate()?;
     }
     Ok(s)
 }

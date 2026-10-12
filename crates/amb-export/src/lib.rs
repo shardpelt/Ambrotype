@@ -362,7 +362,21 @@ pub fn export(
     if let (Some(b), Some(p)) = (&s.border, &plan) {
         let colour = |text: &str| frame_colour(text, &out, s.color_space, linear_out, float);
         let line = b.keyline.as_ref().map_or([0.0; 3], |k| colour(&k.color));
-        out = border::compose(&out, p, colour(&b.color), line);
+        let frame = colour(&b.color);
+        // A caption: dark on a light frame, light on a dark one, unless chosen.
+        let light = frame[0] * 0.2126 + frame[1] * 0.7152 + frame[2] * 0.0722 > 0.5;
+        let ink = b.caption.as_ref().map(|c| {
+            colour(
+                c.color
+                    .as_deref()
+                    .unwrap_or(if light { "#3a3a3a" } else { "#e6e6e6" }),
+            )
+        });
+        out = border::compose(&out, p, frame, line);
+        if let (Some(c), Some(ink)) = (&b.caption, ink) {
+            let text = border::caption_text(&c.text, meta, &s.tags);
+            border::draw_caption(&mut out, p, c, &text, ink);
+        }
     }
 
     let icc = s.color_space.icc_profile();

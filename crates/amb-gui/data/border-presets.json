@@ -48,6 +48,25 @@
       }
     },
     {
+      "name": "Polaroid, camera details",
+      "width": 4,
+      "bottom": 14,
+      "color": "#f7f5f0",
+      "caption": {
+        "text": "{camera} · {exposure}"
+      }
+    },
+    {
+      "name": "Black, camera details",
+      "width": 3,
+      "bottom": 9,
+      "color": "#111111",
+      "caption": {
+        "text": "{camera} · {lens} · {exposure}",
+        "size": 28
+      }
+    },
+    {
       "name": "Photo's own colour",
       "width": 5,
       "color": "auto"

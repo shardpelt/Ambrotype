@@ -262,6 +262,19 @@ impl Session {
         })
     }
 
+    /// A border caption template filled in for this photo, as the export
+    /// will set it.
+    pub fn caption_text(&self, template: &str) -> String {
+        let i = &self.info;
+        let tags = amb_export::exif::Tags {
+            title: i.title.clone(),
+            creator: i.creator.clone(),
+            copyright: i.copyright.clone(),
+            ..Default::default()
+        };
+        amb_export::border::caption_text(template, &self.full.metadata, &tags)
+    }
+
     pub fn info(&self) -> PhotoInfo {
         let m = &self.full.metadata;
         let (t, tint) = pipeline::as_shot_temp_tint(&self.full);

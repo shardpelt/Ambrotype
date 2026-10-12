@@ -694,6 +694,8 @@ dialog .inline-check { flex-direction: row; align-items: flex-start; gap: 6px; c
 
 /* Import dialog (import.js) */
 #import-dialog, #lrcat-dialog { width: 680px; max-width: calc(100vw - 32px); }
+.border-edit .caption-tokens { margin: 0; font-size: 11px; }
+.border-edit > label.caption > .pair > select { flex: 0 0 auto; }
 #lrcat-moved { margin-top: 10px; }
 #lrcat-moved summary { cursor: pointer; color: var(--muted); }
 #lrcat-moved .grid { margin-top: 8px; }

@@ -729,7 +729,20 @@ impl DevelopState {
                 mask,
                 mode,
                 values,
-            } => masks::add(next, kind, *mask, mode.as_deref(), values.as_ref(), clamped)?,
+                adjust,
+            } => {
+                masks::add(next, kind, *mask, mode.as_deref(), values.as_ref(), clamped)?;
+                if let Some(adjust) = adjust {
+                    let Some(new) = mask.is_none().then(|| masks::count(next) - 1) else {
+                        return Err(Error::InvalidValue {
+                            name: "adjust".into(),
+                            reason: "is for a new mask; change an existing one with set_mask"
+                                .into(),
+                        });
+                    };
+                    masks::set(next, new, None, adjust, clamped)?;
+                }
+            }
             Command::SetMask { mask, part, values } => {
                 masks::set(next, *mask, *part, values, clamped)?;
             }

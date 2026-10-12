@@ -14,6 +14,7 @@
 //! | `Name+=d`, `Name-=d` | `adjust_param` |
 //! | `reset:Name`, `reset:group` | `reset_param`, `reset_group` |
 //! | `preset:PATH[@amount]` | `apply_preset` |
+//! | `sky:Name=v,Name=v` | `add_mask` sky with those sliders (`sky:exp=-0.5,sat=10`) |
 //! | `snap:NAME`, `load:NAME` | `save_snapshot`, `apply_snapshot` |
 //! | `undo`, `redo` | `undo`, `redo` |
 //!
@@ -150,10 +151,35 @@ fn one(item: &str) -> Result<Command, Error> {
                     exclude_groups: None,
                 })
             }
+            // A new mask with its own sliders: `sky:exp=-0.5,sat=10`.
+            "sky" => {
+                let mut adjust = serde_json::Map::new();
+                for pair in arg.split(',') {
+                    let Some((name, v)) = pair.split_once('=') else {
+                        return Err(Error::Syntax(format!(
+                            "{item:?}: expected sky:Name=v,Name=v (a new mask's sliders)"
+                        )));
+                    };
+                    let global = resolve(name);
+                    let key = if global.starts_with("Local") {
+                        global
+                    } else {
+                        format!("Local{global}")
+                    };
+                    adjust.insert(key, serde_json::json!(number(item, v)?));
+                }
+                Ok(Command::AddMask {
+                    kind: key.into(),
+                    mask: None,
+                    mode: None,
+                    values: None,
+                    adjust: Some(adjust),
+                })
+            }
             "snap" => Ok(Command::SaveSnapshot { name: arg.into() }),
             "load" => Ok(Command::ApplySnapshot { name: arg.into() }),
             _ => Err(Error::Syntax(format!(
-                "{item:?}: unknown {key:?}; use reset:, preset:, snap: or load:"
+                "{item:?}: unknown {key:?}; use reset:, preset:, sky:, snap: or load:"
             ))),
         };
     }
@@ -175,7 +201,7 @@ fn one(item: &str) -> Result<Command, Error> {
         });
     }
     Err(Error::Syntax(format!(
-        "{item:?}: expected Name=v, Name+=d, Name-=d, reset:X, preset:PATH[@amount], snap:NAME, load:NAME, undo or redo"
+        "{item:?}: expected Name=v, Name+=d, Name-=d, reset:X, preset:PATH[@amount], sky:Name=v,…, snap:NAME, load:NAME, undo or redo"
     )))
 }
 
@@ -218,6 +244,22 @@ mod tests {
                 {"cmd": "set_param", "name": "CameraProfile", "value": "Camera: Vivid"},
             ])
         );
+    }
+
+    #[test]
+    fn a_sky_item_makes_a_sky_mask_with_its_sliders() {
+        let got = parse("sky:exp=-0.5,sat=10").unwrap();
+        assert_eq!(
+            serde_json::to_value(&got).unwrap(),
+            serde_json::json!([{"cmd": "add_mask", "kind": "sky",
+                "adjust": {"LocalExposure2012": -0.5, "LocalSaturation": 10.0}}])
+        );
+        let mut state = crate::state::DevelopState::new();
+        state.execute_all(&got).unwrap();
+        let d = crate::masks::describe(state.settings());
+        assert_eq!(d["masks"][0]["parts"][0]["kind"], "ai");
+        assert_eq!(d["masks"][0]["sliders"]["LocalExposure2012"], -0.5, "{d}");
+        assert!(parse("sky:exp").is_err());
     }
 
     #[test]

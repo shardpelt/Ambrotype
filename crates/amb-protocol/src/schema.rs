@@ -421,6 +421,7 @@ mod tests {
                 values: json!({"Top": 0.1, "Feather": 30, "invert": true})
                     .as_object()
                     .cloned(),
+                adjust: None,
             },
             Command::SetMask {
                 mask: 0,

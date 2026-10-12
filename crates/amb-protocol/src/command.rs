@@ -67,6 +67,10 @@ pub enum Command {
         mode: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         values: Option<serde_json::Map<String, serde_json::Value>>,
+        /// A new mask's own sliders (as `set_mask` takes them, e.g.
+        /// `{"Exposure": -0.5}`), so it can be made and set in one command.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        adjust: Option<serde_json::Map<String, serde_json::Value>>,
     },
     /// Change a mask's local sliders (UI units), `name`, `active` or `amount`;
     /// or, with `part`, that part's geometry, `mode`, `invert`, `active`.

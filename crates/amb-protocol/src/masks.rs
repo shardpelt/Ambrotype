@@ -564,6 +564,11 @@ pub fn add(
     Ok(())
 }
 
+/// How many masks the edit has.
+pub fn count(settings: &BTreeMap<String, Value>) -> usize {
+    corrections(settings).len()
+}
+
 /// `set_mask`: change a mask's sliders and settings, or one part's.
 pub fn set(
     next: &mut BTreeMap<String, Value>,

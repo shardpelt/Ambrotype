@@ -37,6 +37,7 @@ saved IMG_0001.xmp
 | `Name+=d`, `Name-=d` | `adjust_param` |
 | `reset:Name`, `reset:group` | `reset_param`, `reset_group` |
 | `preset:PATH[@amount]` | `apply_preset` |
+| `sky:Name=v,Name=v` | `add_mask` sky with those sliders, e.g. `sky:exp=-0.5,sat=10` (a new mask each time) |
 | `snap:NAME`, `load:NAME` | `save_snapshot`, `apply_snapshot` |
 | `undo`, `redo` | `undo`, `redo` |
 

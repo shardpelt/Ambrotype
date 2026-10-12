@@ -116,6 +116,11 @@ pub enum Command {
         feather: f64,
         #[serde(default = "default_amount")]
         opacity: f64,
+        /// A brushed spot: the stroke's points (then `at` is ignored and
+        /// `radius` is the brush's); `source` is where the stroke's
+        /// bounding-box centre copies from.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        points: Option<Vec<[f64; 2]>>,
     },
     /// Change a spot: `at`, `radius`, `source` (null to search), `kind`,
     /// `feather`, `opacity`, `active`.
@@ -184,9 +189,11 @@ impl Command {
             },
             Command::DuplicateMask { mask } => format!("duplicate_mask {mask}"),
             Command::MoveMask { mask, to } => format!("move_mask {mask} to {to}"),
-            Command::AddSpot { kind, .. } => {
-                format!("add_spot {}", kind.as_deref().unwrap_or("heal"))
-            }
+            Command::AddSpot { kind, points, .. } => format!(
+                "add_spot {}{}",
+                kind.as_deref().unwrap_or("heal"),
+                if points.is_some() { " (brushed)" } else { "" }
+            ),
             Command::SetSpot { spot, .. } => format!("set_spot {spot}"),
             Command::RemoveSpot { spot } => format!("remove_spot {spot}"),
             Command::SaveSnapshot { name } => format!("save_snapshot {name}"),

@@ -177,7 +177,7 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 | `remove_mask` | `mask`, `part`? | A mask, or one part. |
 | `duplicate_mask` | `mask` | A copy just after it. |
 | `move_mask` | `mask`, `to` | A new position in the list. |
-| `add_spot` | `at`, `radius`?, `kind`?, `source`?, `feather`?, `opacity`? | A round heal (default) or clone spot; see [Spot removal](#spot-removal). |
+| `add_spot` | `at`, `radius`?, `kind`?, `source`?, `feather`?, `opacity`?, `points`? | A round heal (default) or clone spot; with `points` ([x, y] list) a brushed spot along them (`radius` is the brush's, `source` is where the stroke's bounding-box centre copies from); see [Spot removal](#spot-removal). |
 | `set_spot` | `spot`, `values` | `at`, `radius`, `source` (null to search again), `kind`, `feather`, `opacity`, `active`. |
 | `remove_spot` | `spot` | |
 | `save_snapshot` | `name` | Keeps the current settings as a named snapshot, stored with the photo (replaces one of that name). Not an edit: no undo step. Save one before trying a different direction. |

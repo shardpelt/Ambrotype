@@ -95,9 +95,11 @@ pub struct NewSpot<'a> {
     pub feather: f64,
     /// 0-100.
     pub opacity: f64,
+    /// A brushed spot's stroke (`at` is then unused).
+    pub points: Option<&'a [[f64; 2]]>,
 }
 
-/// `add_spot`: a round heal or clone spot.
+/// `add_spot`: a round heal or clone spot, or with `points` a brushed one.
 pub fn add(
     next: &mut BTreeMap<String, Value>,
     s: &NewSpot,
@@ -118,7 +120,7 @@ pub fn add(
     let radius = clamp("radius", s.radius, 0.001, 0.5, clamped);
     let feather = clamp("feather", s.feather, 0.0, 100.0, clamped) / 100.0;
     let opacity = clamp("opacity", s.opacity, 1.0, 100.0, clamped) / 100.0;
-    let area = retouch::new_area(
+    let mut area = retouch::new_area(
         kind,
         (s.at[0], s.at[1]),
         radius,
@@ -127,6 +129,35 @@ pub fn add(
         feather,
         opacity,
     );
+    if let Some(points) = s.points {
+        if points.len() < 2 || points.iter().flatten().any(|v| !v.is_finite()) {
+            return Err(invalid(
+                "points",
+                "a brushed spot needs two or more [x, y] points",
+            ));
+        }
+        // The same stroke format as a brush mask; the spot's own Feather
+        // gives the brush's softness.
+        let dabs = crate::masks::dabs_along(points, radius)?;
+        let mut e: Fields = BTreeMap::new();
+        e.insert("What".into(), Value::Text("Mask/Paint".into()));
+        e.insert("MaskActive".into(), boolean(true));
+        e.insert("MaskBlendMode".into(), Value::Text("0".into()));
+        e.insert("MaskInverted".into(), boolean(false));
+        e.insert("MaskValue".into(), number(1.0));
+        e.insert("Radius".into(), number(radius));
+        e.insert("Flow".into(), number(1.0));
+        e.insert("CenterWeight".into(), number(1.0 - feather));
+        e.insert(
+            "Dabs".into(),
+            Value::Seq(
+                dabs.iter()
+                    .map(|&(x, y)| Value::Text(masks::format_dab(x, y)))
+                    .collect(),
+            ),
+        );
+        area.insert("Masks".into(), Value::Seq(vec![Value::Struct(e)]));
+    }
     let mut list = spots_of(next);
     list.push(Value::Struct(area));
     store(next, list);
@@ -307,7 +338,55 @@ mod tests {
             source_auto: false,
             feather: 50.0,
             opacity: 100.0,
+            points: None,
         }
+    }
+
+    #[test]
+    fn a_brushed_spot_is_a_paint_stroke() {
+        let mut s = BTreeMap::new();
+        let mut clamped = Vec::new();
+        let stroke = [[0.2, 0.3], [0.3, 0.3], [0.3, 0.4]];
+        add(
+            &mut s,
+            &NewSpot {
+                points: Some(&stroke),
+                source: Some([0.5, 0.5]),
+                ..spot([0.0, 0.0])
+            },
+            &mut clamped,
+        )
+        .unwrap();
+        let d = describe(&s);
+        assert_eq!(d["spots"][0]["shape"], "brush");
+        let Value::Seq(areas) = &s[RETOUCH_TAG] else {
+            panic!()
+        };
+        let Value::Struct(a) = &areas[0] else {
+            panic!()
+        };
+        let comps = retouch::shape_components(a);
+        assert_eq!(masks::text(comps[0], "What").as_deref(), Some("Mask/Paint"));
+        // Dabs every 0.2 × the radius along the stroke.
+        let Some(Value::Seq(dabs)) = comps[0].get("Dabs") else {
+            panic!()
+        };
+        assert!(
+            dabs.len() >= 2 * (0.1 / (0.2 * 0.02)) as usize,
+            "{}",
+            dabs.len()
+        );
+        assert!(
+            add(
+                &mut s,
+                &NewSpot {
+                    points: Some(&stroke[..1]),
+                    ..spot([0.0, 0.0])
+                },
+                &mut clamped
+            )
+            .is_err()
+        );
     }
 
     #[test]

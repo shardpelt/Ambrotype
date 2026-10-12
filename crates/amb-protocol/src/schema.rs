@@ -455,6 +455,7 @@ mod tests {
                 source_auto: false,
                 feather: 50.0,
                 opacity: 100.0,
+                points: None,
             },
             Command::SetSpot {
                 spot: 0,

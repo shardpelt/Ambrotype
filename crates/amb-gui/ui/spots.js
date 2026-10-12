@@ -87,6 +87,17 @@ function drawSpots() {
     }
     circle(at, r, colour);
   }
+  // A brushed spot being painted.
+  const path = sp.drag?.add ? sp.drag.path : null;
+  if (path?.length > 1) {
+    g.beginPath();
+    g.moveTo(...path[0]);
+    for (const p of path.slice(1)) g.lineTo(...p);
+    g.lineCap = g.lineJoin = "round";
+    g.lineWidth = 2 * spotRadiusPx(sp.size / 100);
+    g.strokeStyle = "rgba(255,255,255,0.35)";
+    g.stroke();
+  }
   // The next spot's size, under the pointer.
   if (sp.hover && !sp.drag) circle(sp.hover, spotRadiusPx(sp.size / 100), "rgba(255,255,255,0.6)", [2, 3]);
 }
@@ -257,6 +268,34 @@ async function addSpotAt(pt) {
   }
 }
 
+// A brushed spot along `points` (frame fractions): the donor is searched for
+// the stroke's bounding box, and its centre copies from there.
+async function addBrushedSpot(points) {
+  if (sp.busy || points.length < 2) return;
+  sp.busy = true;
+  try {
+    const radius = sp.size / 100;
+    const xs = points.map((p) => p[0]);
+    const ys = points.map((p) => p[1]);
+    const centre = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+    // Half the box's larger side, in widths, plus the brush.
+    const aspect = sp.frame.frame_height / sp.frame.frame_width;
+    const extent = Math.max(Math.max(...xs) - Math.min(...xs), (Math.max(...ys) - Math.min(...ys)) * aspect) / 2 + radius;
+    const source = await invoke("spot_source", { x: centre[0], y: centre[1], radius: extent });
+    const before = spotList().length;
+    await run([{
+      cmd: "add_spot", at: centre, radius, kind: sp.kind, source, source_auto: true,
+      feather: sp.feather, opacity: sp.opacity, points,
+    }]);
+    if (spotList().length > before) sp.selected = spotList()[spotList().length - 1].index;
+    renderSpotPanel();
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    sp.busy = false;
+  }
+}
+
 function wireSpots() {
   $("spot-visualise").addEventListener("change", (e) => setVisualise(e.target.checked));
   $("spot-threshold").addEventListener("input", (e) => {
@@ -280,13 +319,14 @@ function wireSpots() {
       sp.drag = { ...hit, start: sFrame(px, py), orig: s, moved: false, patch: {} };
       renderSpotPanel();
     } else {
-      sp.drag = { add: true, start: [px, py] };
+      sp.drag = { add: true, start: [px, py], path: [[px, py]] };
     }
   });
   c.addEventListener("pointermove", (e) => {
     const [px, py] = at(e);
     sp.hover = [px, py];
     const d = sp.drag;
+    if (d?.add) d.path.push([px, py]);
     if (d && !d.add) {
       const pt = sFrame(px, py);
       const dx = pt[0] - d.start[0];
@@ -315,14 +355,16 @@ function wireSpots() {
     if (!d) return;
     if (d.add) {
       const [px, py] = at(e);
-      if (Math.hypot(px - d.start[0], py - d.start[1]) < 6) {
-        if (sp.selected != null) {
-          // A click off every spot first drops the selection.
-          sp.selected = null;
-          renderSpotPanel();
-        }
-        addSpotAt(sFrame(px, py));
+      const far = Math.max(...d.path.map(([x, y]) => Math.hypot(x - d.start[0], y - d.start[1])));
+      if (sp.selected != null) {
+        // A click off every spot first drops the selection.
+        sp.selected = null;
+        renderSpotPanel();
       }
+      // A click adds a round spot; a drag paints a brushed one.
+      if (far < 6) addSpotAt(sFrame(px, py));
+      else addBrushedSpot(d.path.map(([x, y]) => sFrame(x, y)));
+      drawSpots();
       return;
     }
     delete ui.overrides[SPOT_TAG];

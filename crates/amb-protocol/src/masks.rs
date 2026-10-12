@@ -642,6 +642,37 @@ pub struct Stroke<'a> {
     pub erase: bool,
 }
 
+/// Dabs along a stroke through `points`, 0.2 × the radius `size` apart, as
+/// Lightroom spaces them. The radius is in frame widths and points are
+/// per-axis fractions, so stepping both axes by 0.2 × size is never coarser
+/// than that.
+pub(crate) fn dabs_along(points: &[[f64; 2]], size: f64) -> Result<Vec<(f64, f64)>, Error> {
+    let step = size * 0.2;
+    let mut dabs: Vec<(f64, f64)> = Vec::new();
+    for p in points {
+        let (x, y) = (p[0], p[1]);
+        if let Some(&(px, py)) = dabs.last() {
+            let gap = (x - px).abs().max((y - py).abs());
+            let n = (gap / step).ceil() as usize;
+            for i in 1..n {
+                let t = i as f64 / n as f64;
+                dabs.push((px + (x - px) * t, py + (y - py) * t));
+            }
+            if gap == 0.0 {
+                continue;
+            }
+        }
+        dabs.push((x, y));
+        if dabs.len() > MAX_DABS {
+            return Err(invalid(
+                "points",
+                format!("a stroke may have at most {MAX_DABS} dabs; split it"),
+            ));
+        }
+    }
+    Ok(dabs)
+}
+
 /// `paint_mask`: add a stroke to a brush part (made when `part` is absent,
 /// in a new mask when `mask` is absent too).
 pub fn paint(
@@ -678,32 +709,7 @@ pub fn paint(
             "a new mask's first part adds; give `mask` to subtract or intersect",
         ));
     }
-    // Dabs 0.2 × the radius apart, as Lightroom spaces them. The radius is in
-    // frame widths and points are per-axis fractions, so stepping both axes by
-    // 0.2 × size is never coarser than that.
-    let step = size * 0.2;
-    let mut dabs: Vec<(f64, f64)> = Vec::new();
-    for p in stroke.points {
-        let (x, y) = (p[0], p[1]);
-        if let Some(&(px, py)) = dabs.last() {
-            let gap = (x - px).abs().max((y - py).abs());
-            let n = (gap / step).ceil() as usize;
-            for i in 1..n {
-                let t = i as f64 / n as f64;
-                dabs.push((px + (x - px) * t, py + (y - py) * t));
-            }
-            if gap == 0.0 {
-                continue;
-            }
-        }
-        dabs.push((x, y));
-        if dabs.len() > MAX_DABS {
-            return Err(invalid(
-                "points",
-                format!("a stroke may have at most {MAX_DABS} dabs; split it"),
-            ));
-        }
-    }
+    let dabs = dabs_along(stroke.points, size)?;
     let paint_entry = |blend: u8, inverted: bool, sync_id: String, value: f64| -> Fields {
         let mut e: Fields = BTreeMap::new();
         e.insert("What".into(), Value::Text("Mask/Paint".into()));

@@ -37,7 +37,7 @@ Spots run in order on the scene-linear image at the end of the first pipeline st
 
 ## The editor
 
-`ui/spots.js`, opened with the Spots button or Q. Click a blemish: the backend's `spot_source` runs the donor search on a small render, and the spot is added with that donor (`sourceAutoComputed`), drawn as a dashed circle joined to the spot. Drag the spot (its donor moves with it) or the donor. The panel has Heal/Clone, Size (% of the width), Feather and Opacity, for the selected spot or the next one; [ and ] or the wheel resize; Delete removes the selected spot; Remove all is one undo step. Brushed spots from Lightroom render but aren't drawn as circles.
+`ui/spots.js`, opened with the Spots button or Q. Click a blemish: the backend's `spot_source` runs the donor search on a small render, and the spot is added with that donor (`sourceAutoComputed`), drawn as a dashed circle joined to the spot. Drag the spot (its donor moves with it) or the donor. The panel has Heal/Clone, Size (% of the width), Feather and Opacity, for the selected spot or the next one; [ and ] or the wheel resize; Delete removes the selected spot; Remove all is one undo step. Dragging on the photo paints a brushed spot instead (`add_spot` with `points`: one `Mask/Paint` stroke in the brush-mask dab format, the brush size and Feather from the panel); its donor is searched for the stroke's bounding box, whose centre copies from it, as the engine reads Lightroom's brushed spots. Brushed spots aren't drawn as circles and can't be moved yet.
 
 ## Open questions (for the Lightroom trial)
 

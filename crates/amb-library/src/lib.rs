@@ -5,6 +5,7 @@
 
 pub mod collections;
 pub mod import;
+pub mod lensdb;
 pub mod look;
 pub mod merge;
 pub mod negative;

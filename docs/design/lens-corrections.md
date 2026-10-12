@@ -17,6 +17,11 @@ Status: v1 implemented (`crates/amb-lens`, `crates/amb-engine/src/lens.rs`). Eve
 
 Not yet (Transform and Upright are in [transform.md](transform.md)): fisheye profiles, local Defringe in masks, and built-in profiles embedded in raw files (see Next).
 
+
+## Getting the lensfun database
+
+`amb lens fetch` and the editor's Lens Corrections → **Lens database…** download lensfun's database from its own update server (`https://lensfun.github.io/db/`, `version_2.tar.bz2`, about 0.5 MB), as `lensfun-update-data` does, into `~/.local/share/lensfun/updates/version_2` with its `timestamp.txt`. That folder is searched by default (after `AMB_LENSFUN_DB`), and lensfun and darktable read it too. The editor loads it at once. `--from FILE` installs a copy downloaded by hand. The data is CC BY-SA 3.0; we don't change it (`amb_library::lensdb`).
+
 ## Order in the pipeline
 
 On camera RGB, before white balance and the camera matrix, in the sensor's orientation:
@@ -84,7 +89,6 @@ Checked on real raws with the lensfun database:
   - Micro Four Thirds, Fujifilm X, Sony E and many compacts store correction data in maker notes. Lightroom applies it automatically ("Built-in Lens Profile Applied").
   - DNGs carry it as `WarpRectilinear` / `FixVignetteRadial` opcodes.
   - Reading these covers lenses that no database has.
-- `amb lens fetch`: download the lensfun database into the user data folder.
 - Transform and Upright: done, a homography in the same resampling pass ([transform.md](transform.md)).
 - Fisheye profiles and projection changes.
 - GPU resampling: the warp is about 1.5 s for 24 MP on 4 CPU cores.

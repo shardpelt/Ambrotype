@@ -27,6 +27,8 @@ allow = [
     "IJG",
     "NCSA",
     "CDLA-Permissive-2.0",
+    # libbz2-rs-sys (reading lensfun's database download): BSD-style.
+    "bzip2-1.0.6",
 ]
 
 [sources]

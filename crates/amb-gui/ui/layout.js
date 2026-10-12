@@ -273,6 +273,14 @@ function buildPanel(item) {
         auto.addEventListener("click", () => autoFlow(true, false));
         l.append(auto);
       }
+      if (e.text === "Profile" && item.panel === "lens") {
+        const fetch = document.createElement("button");
+        fetch.className = "small section-action";
+        fetch.textContent = "Lens database…";
+        fetch.title = "Download or update lensfun's lens profiles (about 0.5 MB), used when there is no profile of your own";
+        fetch.addEventListener("click", () => lensDbFlow());
+        l.append(fetch);
+      }
       if (e.text === "Upright") {
         const guided = document.createElement("button");
         guided.className = "small section-action";

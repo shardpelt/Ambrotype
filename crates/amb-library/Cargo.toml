@@ -14,9 +14,12 @@ amb-export = { path = "../amb-export" }
 amb-lens = { path = "../amb-lens" }
 amb-presets = { path = "../amb-presets" }
 amb-protocol = { path = "../amb-protocol" }
+bzip2 = "0.6.1"
 rayon = "1"
 serde.workspace = true
 serde_json.workspace = true
+tar = "0.4.46"
+ureq = "2"
 
 [dev-dependencies]
 amb-testkit = { path = "../amb-testkit" }

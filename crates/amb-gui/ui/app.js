@@ -1382,6 +1382,34 @@ async function cropToFrame() {
   }
 }
 
+// lensfun's database: download it (or update it) and load it.
+async function lensDbFlow() {
+  let st;
+  try {
+    st = await invoke("lens_db_state");
+  } catch (e) {
+    return toast(String(e), true);
+  }
+  const when = st.timestamp ? new Date(st.timestamp * 1000).toLocaleDateString() : null;
+  const have = st.lenses === null ? "The lens profiles are still loading." : `${st.lenses} lens profiles are loaded.`;
+  const ask = when
+    ? `${have} The downloaded database is from ${when}. Check for a newer one?`
+    : `${have} Download lensfun's lens database (about 0.5 MB, CC BY-SA 3.0) into ${st.dir}?`;
+  if (!confirm(ask)) return;
+  status("Downloading the lens database…");
+  $("busy").hidden = false;
+  try {
+    const r = await invoke("fetch_lens_db");
+    toast(`Lens database ready: ${r.lenses ?? 0} lens profiles`);
+    status("Lens database ready");
+    requestPreview(false);
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    $("busy").hidden = true;
+  }
+}
+
 // The open photo's edit as a one-click preset (src/session.rs `save_preset`).
 async function savePresetFlow(name = "") {
   if (!ui.info) return toast("Open a photo first.", true);

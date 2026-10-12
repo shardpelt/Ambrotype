@@ -85,6 +85,10 @@ USAGE:
                                             then the lensfun database; default locations or
                                             AMB_LCP_DIRS / AMB_LENSFUN_DB) and print the models
                                             interpolated to its focal length, aperture and distance
+    amb lens fetch [--to DIR] [--from version_2.tar.bz2] [--force]
+                                            Download lensfun's lens database (CC BY-SA 3.0) from its
+                                            update server into ~/.local/share/lensfun/updates, where it is
+                                            found by default; --from installs a downloaded copy
     amb import <SOURCE> <DEST> [--into \"{yyyy}/{yyyy}-{mm}-{dd}\"] [--rename \"{name}\"] [--start 1]
                [--keywords \"a, b\"] [--no-subfolders] [--dry-run] [--json]
                                             Copy photos from a card or folder into DEST, sorted into
@@ -368,8 +372,8 @@ fn main() -> ExitCode {
             "--json" => json = true,
             "--dry-run" => dry_run = true,
             "--brief" => brief = true,
-            "--progressive" | "--enlarge" | "--slides" | "--no-subfolders" | "--no-align"
-            | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb" => {
+            "--progressive" | "--enlarge" | "--slides" | "--force" | "--no-subfolders"
+            | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -421,6 +425,8 @@ fn main() -> ExitCode {
             | "--into"
             | "--rename"
             | "--start"
+            | "--to"
+            | "--from"
             | "--dcp-dir"
             | "--deghost"
             | "--projection"
@@ -536,6 +542,7 @@ fn main() -> ExitCode {
         }
         ["lens", "info", raw] => lens_info(Path::new(raw), &options).map(|text| println!("{text}")),
         ["lens", "match"] => lens_match_output(&options).map(|text| println!("{text}")),
+        ["lens", "fetch"] => lens_fetch(&options),
         ["protocol", "schema"] => print_json(&amb_protocol::schema::protocol_schema()),
         ["protocol", "schema", "command"] => print_json(&amb_protocol::schema::command_schema()),
         ["protocol", "schema", "query"] => print_json(&amb_protocol::schema::query_schema()),
@@ -1739,6 +1746,33 @@ fn lens_sources(
         None => LcpLibrary::scan_default(),
     };
     Ok((db, lcp))
+}
+
+/// `amb lens fetch`: lensfun's database into the user's updates folder.
+fn lens_fetch(options: &BTreeMap<&str, &str>) -> Result<(), String> {
+    use amb_library::lensdb;
+    let dir = match options.get("--to") {
+        Some(d) => PathBuf::from(d),
+        None => lensdb::user_dir().ok_or("no home folder; use --to DIR")?,
+    };
+    let got = match options.get("--from") {
+        Some(file) => {
+            let bytes = std::fs::read(file).map_err(|e| format!("{file}: {e}"))?;
+            let stamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.as_secs());
+            lensdb::install(&bytes, stamp, &dir)?
+        }
+        None => lensdb::fetch(Some(&dir), options.contains_key("--force"))?,
+    };
+    let db = amb_lens::lensfun::LensfunDb::load_dir(&got.dir).map_err(|e| e.to_string())?;
+    println!(
+        "lens database in {}: {} files, {} lenses",
+        got.dir.display(),
+        got.files,
+        db.lenses.len()
+    );
+    Ok(())
 }
 
 /// `amb lens info <RAW>`: the raw's lens metadata, then the same report as `amb lens match`.

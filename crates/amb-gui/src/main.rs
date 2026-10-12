@@ -37,7 +37,7 @@ use tauri_plugin_opener::OpenerExt;
 #[derive(Default)]
 struct AppState {
     session: Arc<Mutex<Option<Session>>>,
-    lens: Arc<OnceLock<LensSources>>,
+    lens: Arc<LensCell>,
     /// The GPU for previews, once set up (`None` inside: there is none).
     gpu: Arc<OnceLock<Option<amb_gpu::Gpu>>>,
     preset_dirs: Arc<Mutex<Vec<PathBuf>>>,
@@ -200,6 +200,24 @@ fn save_config(state: &AppState) {
 }
 
 type Res<T> = Result<T, String>;
+
+/// The lens database and profiles, loaded in the background at start and
+/// loaded again after `amb lens fetch` (Download lens database). A
+/// replaced one stays in memory until the app closes, so a render that
+/// started with it can finish; that happens once per download.
+#[derive(Default)]
+struct LensCell(Mutex<Option<&'static LensSources>>);
+
+impl LensCell {
+    fn get(&self) -> Option<&'static LensSources> {
+        *self.0.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    fn set(&self, sources: LensSources) -> Result<(), ()> {
+        *self.0.lock().unwrap_or_else(|e| e.into_inner()) = Some(Box::leak(Box::new(sources)));
+        Ok(())
+    }
+}
 
 fn empty_lens() -> &'static LensSources {
     static EMPTY: OnceLock<LensSources> = OnceLock::new();
@@ -2358,6 +2376,45 @@ fn upright_guides(state: tauri::State<'_, AppState>) -> Res<Vec<[f64; 4]>> {
         .unwrap_or_default())
 }
 
+#[derive(Serialize)]
+struct LensDbState {
+    /// Where a downloaded database goes, and whether one is there.
+    dir: Option<String>,
+    timestamp: Option<u64>,
+    /// Lenses the editor has now (from any database found).
+    lenses: Option<usize>,
+}
+
+/// The lens database: what the editor has, and the downloaded one.
+#[tauri::command]
+fn lens_db_state(state: tauri::State<'_, AppState>) -> LensDbState {
+    let dir = amb_library::lensdb::user_dir();
+    LensDbState {
+        timestamp: dir
+            .as_deref()
+            .and_then(amb_library::lensdb::installed_timestamp),
+        dir: dir.map(|d| d.display().to_string()),
+        lenses: state
+            .lens
+            .get()
+            .map(|l| l.db.as_ref().map_or(0, |db| db.lenses.len())),
+    }
+}
+
+/// Download lensfun's database (or update it), then load it.
+#[tauri::command]
+async fn fetch_lens_db(state: tauri::State<'_, AppState>) -> Res<LensDbState> {
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || -> Res<()> {
+        amb_library::lensdb::fetch(None, false)?;
+        let _ = lens.set(LensSources::load_default());
+        Ok(())
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    Ok(lens_db_state(state))
+}
+
 /// The open photo's film negative analysis as commands that store it with
 /// Auto off ("Freeze").
 #[tauri::command]
@@ -3336,6 +3393,8 @@ fn main() {
             luts_list,
             pick_watermark_image,
             negative_freeze,
+            lens_db_state,
+            fetch_lens_db,
             negative_frame,
             guided_upright,
             upright_guides,

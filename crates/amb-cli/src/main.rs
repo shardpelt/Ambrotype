@@ -72,10 +72,10 @@ USAGE:
                                             Answer protocol queries (get_param, list_params, describe,
                                             list_groups, list_masks, list_spots) as JSON
     amb protocol schema [command|query]     Print the JSON Schema of commands and queries
-    amb negative analyze <RAW>... [--out ROLL.xmp] [--json]
+    amb negative analyze <RAW>... [--slides] [--out ROLL.xmp] [--json]
                                             Estimate film base, levels and midtone of scanned negatives
                                             (the median over all frames, for a consistent roll) and write
-                                            them as a preset with Auto off
+                                            them as a preset with Auto off; --slides for slide film
     amb negative stocks [--json]            List the built-in film stock looks
     amb lens info <RAW> [--lens-db DIR] [--lcp-dir DIR]
                                             Show a raw's lens metadata and the profile it gets
@@ -368,8 +368,8 @@ fn main() -> ExitCode {
             "--json" => json = true,
             "--dry-run" => dry_run = true,
             "--brief" => brief = true,
-            "--progressive" | "--enlarge" | "--no-subfolders" | "--no-align" | "--no-crop"
-            | "--no-lens" | "--apply" | "--tone" | "--wb" => {
+            "--progressive" | "--enlarge" | "--slides" | "--no-subfolders" | "--no-align"
+            | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -524,9 +524,12 @@ fn main() -> ExitCode {
             Some(queries) => query(Path::new(state), queries),
             None => Err("query needs --queries <file.json> (or - for stdin)".into()),
         },
-        ["negative", "analyze", raws @ ..] if !raws.is_empty() => {
-            negative_analyze(raws, options.get("--out").map(Path::new), json)
-        }
+        ["negative", "analyze", raws @ ..] if !raws.is_empty() => negative_analyze(
+            raws,
+            options.get("--out").map(Path::new),
+            options.contains_key("--slides"),
+            json,
+        ),
         ["negative", "stocks"] => {
             negative_stocks(json);
             Ok(())
@@ -1392,13 +1395,23 @@ fn negative_stocks(json: bool) {
 }
 
 /// `amb negative analyze`: per-frame analysis and the roll median, as `amb:` settings.
-fn negative_analyze(raws: &[&str], out: Option<&Path>, json: bool) -> Result<(), String> {
-    use amb_engine::negative::{self, Analysis};
+fn negative_analyze(
+    raws: &[&str],
+    out: Option<&Path>,
+    slides: bool,
+    json: bool,
+) -> Result<(), String> {
+    use amb_engine::negative::{self, Analysis, NegativeType};
+    let kind = if slides {
+        NegativeType::Positive
+    } else {
+        NegativeType::Color
+    };
     let k = amb_engine::negative::DEFAULT_STRENGTHS;
     let mut frames: Vec<Analysis> = Vec::new();
     for raw in raws {
         let img = amb_engine::raw::load(Path::new(raw)).map_err(|e| format!("{raw}: {e}"))?;
-        let a = negative::analyze(&img.rgb, img.width, img.height, &k);
+        let a = negative::analyze_as(&img.rgb, img.width, img.height, kind, &k);
         if !json {
             println!(
                 "{raw}: base {:.4} {:.4} {:.4} | shadow density {:.3} {:.3} {:.3} | highlight density {:.3} {:.3} {:.3} | midtone {:.3}",
@@ -1417,6 +1430,12 @@ fn negative_analyze(raws: &[&str], out: Option<&Path>, json: bool) -> Result<(),
         frames.push(a);
     }
     let mut settings = amb_library::negative::frozen(&frames);
+    if slides {
+        settings.insert(
+            "amb:NegativeType".into(),
+            amb_presets::Value::Text("positive".into()),
+        );
+    }
     if json {
         let map: serde_json::Map<String, serde_json::Value> = settings
             .iter()

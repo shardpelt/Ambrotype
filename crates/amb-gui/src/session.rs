@@ -1043,7 +1043,8 @@ impl Session {
 
     /// The film negative analysis of this photo (film base, levels, midtone).
     pub fn negative_analysis(&self) -> amb_engine::negative::Analysis {
-        amb_library::negative::analyze_image(&self.full)
+        let kind = amb_library::negative::film_type(self.state.settings());
+        amb_library::negative::analyze_image(&self.full, kind)
     }
 
     /// Lightroom-style Auto for the photo: tone and/or white balance.

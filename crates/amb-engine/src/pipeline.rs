@@ -871,6 +871,9 @@ fn negative_settings(settings: &BTreeMap<String, Value>) -> Negative {
             {
                 NegativeType::BlackAndWhite
             }
+            Some(t) if t.eq_ignore_ascii_case("positive") || t.eq_ignore_ascii_case("slide") => {
+                NegativeType::Positive
+            }
             _ => NegativeType::Color,
         },
         auto: settings

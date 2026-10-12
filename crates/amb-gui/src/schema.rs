@@ -75,6 +75,7 @@ fn choice_options(name: &str) -> Vec<(serde_json::Value, String)> {
         "amb:NegativeType" => vec![
             (json!("color"), "Colour".into()),
             (json!("bw"), "Black & white".into()),
+            (json!("positive"), "Positive (slide)".into()),
         ],
         "amb:FilmStock" => amb_engine::negative::STOCKS
             .iter()

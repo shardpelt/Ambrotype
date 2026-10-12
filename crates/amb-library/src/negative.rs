@@ -7,24 +7,38 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use amb_engine::negative::{self, Analysis};
+use amb_engine::negative::{self, Analysis, NegativeType};
 use amb_presets::Value;
 use amb_protocol::Command;
 use rayon::prelude::*;
 
-/// Analyse one photo's raw.
+/// Analyse one photo's raw, as the film type in its sidecar says
+/// (colour negative when it says nothing).
 pub fn analyze_file(photo: &Path) -> Result<Analysis, String> {
     let source = amb_engine::source_path(photo);
     let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
-    Ok(analyze_image(&img))
+    let settings = std::fs::read_to_string(amb_engine::sidecar_path(photo))
+        .ok()
+        .and_then(|t| amb_presets::xmp::parse_crs(&t).ok())
+        .unwrap_or_default();
+    Ok(analyze_image(&img, film_type(&settings)))
 }
 
-/// Analyse a decoded photo.
-pub fn analyze_image(img: &amb_engine::raw::CameraImage) -> Analysis {
-    negative::analyze(
+/// The film type an edit says (`amb:NegativeType`).
+pub fn film_type(settings: &BTreeMap<String, Value>) -> NegativeType {
+    amb_engine::pipeline::DevelopSettings::from_settings(settings)
+        .0
+        .negative
+        .kind
+}
+
+/// Analyse a decoded photo of a film of `kind`.
+pub fn analyze_image(img: &amb_engine::raw::CameraImage, kind: NegativeType) -> Analysis {
+    negative::analyze_as(
         &img.rgb,
         img.width,
         img.height,
+        kind,
         &negative::DEFAULT_STRENGTHS,
     )
 }

@@ -71,6 +71,10 @@ pub const DEFAULT_STRENGTHS: NegativeStrengths = NegativeStrengths {
 pub enum NegativeType {
     Color,
     BlackAndWhite,
+    /// Slide (reversal) film: already a positive, so no inversion and no
+    /// film base. The same model runs on log transmittance instead of
+    /// density, and the levels take out the light source's colour.
+    Positive,
 }
 
 /// The negative conversion settings (`amb:Negative*`, `amb:FilmBase*`, `amb:FilmStock*`).
@@ -362,6 +366,16 @@ fn density(v: f64, base: f64) -> f64 {
     -(v.max(1e-6) / base.max(1e-6)).log10()
 }
 
+/// What the levels work on: density for a negative (more = brighter
+/// scene), log transmittance for a slide (the same direction).
+fn log_exposure(v: f64, base: f64, positive: bool) -> f64 {
+    if positive {
+        -density(v, 1.0)
+    } else {
+        density(v, base)
+    }
+}
+
 /// Estimate the film base from the brightest unclipped part of the scan
 /// (unexposed film: the rebate between frames, or the thinnest shadows).
 pub fn estimate_base(rgb: &[f32], w: usize, h: usize, k: &NegativeStrengths) -> [f64; 3] {
@@ -383,14 +397,37 @@ pub fn estimate_base(rgb: &[f32], w: usize, h: usize, k: &NegativeStrengths) -> 
     })
 }
 
-/// Full automatic analysis of a scanned negative.
+/// Full automatic analysis of a scanned colour negative.
 pub fn analyze(rgb: &[f32], w: usize, h: usize, k: &NegativeStrengths) -> Analysis {
-    let base = estimate_base(rgb, w, h, k);
-    levels(rgb, w, h, base, k)
+    analyze_as(rgb, w, h, NegativeType::Color, k)
+}
+
+/// [`analyze`] for a kind of film. A slide has no film base (it is 1).
+pub fn analyze_as(
+    rgb: &[f32],
+    w: usize,
+    h: usize,
+    kind: NegativeType,
+    k: &NegativeStrengths,
+) -> Analysis {
+    let positive = kind == NegativeType::Positive;
+    let base = if positive {
+        [1.0; 3]
+    } else {
+        estimate_base(rgb, w, h, k)
+    };
+    levels(rgb, w, h, base, positive, k)
 }
 
 /// Levels and midtone for a given base.
-fn levels(rgb: &[f32], w: usize, h: usize, base: [f64; 3], k: &NegativeStrengths) -> Analysis {
+fn levels(
+    rgb: &[f32],
+    w: usize,
+    h: usize,
+    base: [f64; 3],
+    positive: bool,
+    k: &NegativeStrengths,
+) -> Analysis {
     let (blocks, bw, bh) = downsample(rgb, w, h, 250_000);
     let (x0, x1) = (
         (bw as f64 * k.border) as usize,
@@ -404,7 +441,7 @@ fn levels(rgb: &[f32], w: usize, h: usize, base: [f64; 3], k: &NegativeStrengths
         .flat_map(|y| (x0..x1.max(x0 + 1).min(bw)).map(move |x| (x, y)))
         .map(|(x, y)| {
             let p = blocks[y * bw + x];
-            std::array::from_fn(|c| density(p[c], base[c]))
+            std::array::from_fn(|c| log_exposure(p[c], base[c], positive))
         })
         .collect();
     let mut density_low = [0.0; 3];
@@ -436,11 +473,16 @@ fn levels(rgb: &[f32], w: usize, h: usize, base: [f64; 3], k: &NegativeStrengths
 /// parts estimated from the image.
 pub fn resolve(n: &Negative, rgb: &[f32], w: usize, h: usize, k: &NegativeStrengths) -> Analysis {
     if n.auto {
-        return analyze(rgb, w, h, k);
+        return analyze_as(rgb, w, h, n.kind, k);
     }
-    let base = n.base.unwrap_or_else(|| estimate_base(rgb, w, h, k));
+    let positive = n.kind == NegativeType::Positive;
+    let base = match n.base {
+        Some(b) => b,
+        None if positive => [1.0; 3],
+        None => estimate_base(rgb, w, h, k),
+    };
     let need_levels = n.density_low.is_none() || n.density_high.is_none() || n.midtone.is_none();
-    let estimated = need_levels.then(|| levels(rgb, w, h, base, k));
+    let estimated = need_levels.then(|| levels(rgb, w, h, base, positive, k));
     let pick = |stored: Option<[f64; 3]>, f: fn(&Analysis) -> [f64; 3]| {
         stored.unwrap_or_else(|| f(estimated.as_ref().expect("estimated when missing")))
     };
@@ -472,6 +514,7 @@ pub struct Conversion {
     stock: Stock,
     amount: f64,
     black_and_white: bool,
+    positive: bool,
     balance: [f64; 3],
     saturation: f64,
     range: f64,
@@ -490,6 +533,7 @@ impl Conversion {
             stock,
             amount,
             black_and_white: n.kind == NegativeType::BlackAndWhite || stock.black_and_white,
+            positive: n.kind == NegativeType::Positive,
             balance: n.balance.map(|b| b / 100.0 * k.balance_range),
             saturation: blend(1.0, stock.saturation) * (1.0 + n.saturation / 100.0).max(0.0),
             range: k.scene_range * blend(1.0, stock.contrast) * (n.contrast / 100.0).exp2(),
@@ -506,7 +550,7 @@ impl Conversion {
         let m = a.midtone;
         // Normalised log exposure per channel (0 = shadow, 1 = highlight), balanced.
         let neutral: [f64; 3] = std::array::from_fn(|c| {
-            let d = density(f64::from(p[c]), a.base[c]);
+            let d = log_exposure(f64::from(p[c]), a.base[c], self.positive);
             (d - a.density_low[c]) / (a.density_high[c] - a.density_low[c]) + self.balance[c]
         });
         // Stock look (channel contrast, dye crosstalk, tints), blended by the stock amount.
@@ -645,6 +689,53 @@ mod tests {
         let cool = at(h * 7 / 8);
         assert!(warm[0] > warm[2], "{warm:?}");
         assert!(cool[2] > cool[0], "{cool:?}");
+    }
+
+    #[test]
+    fn a_slide_is_balanced_but_not_inverted() {
+        // A slide of grey ramps and a warm row, lit by a bluish light, with
+        // slide film's steep contrast (transmittance ∝ scene^1.5).
+        let (w, h) = (300, 120);
+        let light = [0.55, 0.75, 0.95];
+        let mut rgb = vec![0.0f32; w * h * 3];
+        for y in 0..h {
+            for x in 0..w {
+                let t = x as f64 / w as f64;
+                let v = 0.01 * (1.0f64 / 0.01).powf(t);
+                // The warm row stays inside the grey range, as auto levels assume.
+                let m = 0.05 + 0.5 * t;
+                let scene = if y < h * 2 / 3 {
+                    [v; 3]
+                } else {
+                    [m, m * 0.6, m * 0.4]
+                };
+                for c in 0..3 {
+                    rgb[(y * w + x) * 3 + c] = (light[c] * scene[c].powf(1.5)) as f32;
+                }
+            }
+        }
+        let n = Negative {
+            enabled: true,
+            kind: NegativeType::Positive,
+            ..Default::default()
+        };
+        let a = resolve(&n, &rgb, w, h, &K);
+        assert_eq!(a.base, [1.0; 3]);
+        apply(&mut rgb, &Conversion::new(&n, a, &K));
+        // Brighter on the slide stays brighter, and the grey rows are grey.
+        let y = h / 4;
+        let mut last = 0.0;
+        for x in (w / 10..w - w / 10).step_by(10) {
+            let p = &rgb[(y * w + x) * 3..(y * w + x) * 3 + 3];
+            let mean = (p[0] + p[1] + p[2]) / 3.0;
+            assert!(mean > last, "monotone at x={x}");
+            last = mean;
+            let spread = p.iter().cloned().fold(f32::MIN, f32::max)
+                - p.iter().cloned().fold(f32::MAX, f32::min);
+            assert!(spread < 0.12 * mean + 1e-3, "neutral at x={x}: {p:?}");
+        }
+        let i = ((h * 5 / 6) * w + w / 2) * 3;
+        assert!(rgb[i] > rgb[i + 2], "warm stays warm: {:?}", &rgb[i..i + 3]);
     }
 
     #[test]

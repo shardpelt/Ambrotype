@@ -9,7 +9,7 @@ Lightroom has no negative conversion; photographers buy the Negative Lab Pro plu
 | Tag | What it does |
 |---|---|
 | `amb:NegativeConvert` | Turn the conversion on. |
-| `amb:NegativeType` | `color` (default) or `bw`. |
+| `amb:NegativeType` | `color` (default), `bw`, or `positive` for slide film: the same model on log transmittance instead of density, so nothing is inverted; there is no film base, and the levels take out the light's colour (`amb negative analyze --slides`). |
 | `amb:NegativeAuto` | **Auto** (default True) estimates film base, levels and midtone for every photo. False uses the stored values below, which keeps a roll consistent; missing values are still estimated. |
 | `amb:FilmStock`, `amb:FilmStockAmount` | The look and its strength (0–100). `amb negative stocks` lists them. |
 | `amb:FilmBaseRed/Green/Blue` | Film base (orange mask) transmittance. |
@@ -68,6 +68,5 @@ amb negative stocks                                  # list the looks
 ## Next
 
 - Scan quality helpers: dust and scratch removal (infrared channel where available), and frame detection / auto crop of the rebate.
-- Positive (slide) film: levels and base handling without inversion.
 - Halation and grain matched to the stock.
 - Measured stock profiles, and a way for users to share them as data.

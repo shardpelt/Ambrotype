@@ -206,7 +206,6 @@ Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the plann
 
 | Item | Tag | Impact | Source |
 |---|---|---|---|
-| TIFF has no EXIF and no compression (uncompressed only; LZW/ZIP "next") | Limit | Large files and no metadata in the Photoshop round trip | [ARCHITECTURE.md](ARCHITECTURE.md):56; `crates/amb-export/src/lib.rs`:7 |
 | AVIF is 8-bit, with no ICC embedded: sRGB, Display P3 and Rec. 2020 are named by code (CICP, since 2026-10-13); Adobe RGB and ProPhoto are refused | Limit | No HDR AVIF | [ARCHITECTURE.md](ARCHITECTURE.md):58; `crates/amb-export/src/lib.rs`:222-227 |
 | WebP is lossless only (lossy needs libwebp) | Limit | Large WebP files | [ARCHITECTURE.md](ARCHITECTURE.md):57; `crates/amb-export/src/lib.rs`:49 |
 | JPEG XL export is lossless only (pure-Rust `zune-jpegxl`) and sRGB only (no ICC profile); no lossy JPEG XL. Its EXIF and XMP are boxes in a JPEG XL container (2026-10-13) | Limit | Modern delivery format, partly | `crates/amb-export/src/lib.rs` |

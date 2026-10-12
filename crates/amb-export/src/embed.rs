@@ -218,9 +218,15 @@ fn embed_png(bytes: &[u8], xmp: &str) -> Option<Vec<u8>> {
 }
 
 fn embed_tiff(bytes: &[u8], xmp: &str) -> Option<Vec<u8>> {
-    // Little-endian classic TIFF (what our encoder writes). The first IFD is
-    // copied to the end of the file with tag 700 added, and the header points
-    // at the copy; the old IFD's values stay where they are.
+    tiff_with_entries(bytes, &[(700, 1, xmp.as_bytes())])
+}
+
+/// A little-endian classic TIFF (what our encoder writes) with `extra`
+/// entries (tag, type, value) in its first directory, replacing any of the
+/// same tag. The directory is copied to the end of the file, with each of
+/// its values that sit on an odd offset, and the header points at the copy;
+/// the old directory stays where it is, unused.
+pub(crate) fn tiff_with_entries(bytes: &[u8], extra: &[(u16, u16, &[u8])]) -> Option<Vec<u8>> {
     if bytes.get(..4)? != b"II*\0" {
         return None;
     }
@@ -241,24 +247,51 @@ fn embed_tiff(bytes: &[u8], xmp: &str) -> Option<Vec<u8>> {
         })
         .collect::<Option<_>>()?;
     let next = u32_at(ifd + 2 + 12 * n)?;
-    entries.retain(|e| u16::from_le_bytes([e[0], e[1]]) != 700);
+    entries.retain(|e| {
+        let tag = u16::from_le_bytes([e[0], e[1]]);
+        !extra.iter().any(|(t, _, _)| *t == tag)
+    });
     let mut out = bytes.to_vec();
-    if out.len() % 2 == 1 {
-        out.push(0);
+    let append = |out: &mut Vec<u8>, data: &[u8]| -> Option<u32> {
+        if out.len() % 2 == 1 {
+            out.push(0);
+        }
+        let at = u32::try_from(out.len()).ok()?;
+        out.extend_from_slice(data);
+        Some(at)
+    };
+    // Values on odd offsets move.
+    for e in &mut entries {
+        let kind = u16::from_le_bytes([e[2], e[3]]);
+        let size = match kind {
+            1 | 2 | 6 | 7 => 1,
+            3 | 8 => 2,
+            4 | 9 | 11 | 13 => 4,
+            5 | 10 | 12 => 8,
+            _ => continue,
+        };
+        let len = (u32::from_le_bytes(e[4..8].try_into().ok()?) as usize).checked_mul(size)?;
+        let at = u32::from_le_bytes(e[8..12].try_into().ok()?) as usize;
+        if len > 4 && at % 2 == 1 {
+            let value = bytes.get(at..at.checked_add(len)?)?;
+            let new = append(&mut out, value)?;
+            e[8..12].copy_from_slice(&new.to_le_bytes());
+        }
     }
-    let data_at = u32::try_from(out.len()).ok()?;
-    out.extend_from_slice(xmp.as_bytes());
-    if out.len() % 2 == 1 {
-        out.push(0);
+    for (tag, kind, data) in extra {
+        let mut entry = [0u8; 12];
+        entry[..2].copy_from_slice(&tag.to_le_bytes());
+        entry[2..4].copy_from_slice(&kind.to_le_bytes());
+        entry[4..8].copy_from_slice(&u32::try_from(data.len()).ok()?.to_le_bytes());
+        if data.len() <= 4 {
+            entry[8..8 + data.len()].copy_from_slice(data);
+        } else {
+            entry[8..12].copy_from_slice(&append(&mut out, data)?.to_le_bytes());
+        }
+        entries.push(entry);
     }
-    let mut entry = [0u8; 12];
-    entry[..2].copy_from_slice(&700u16.to_le_bytes());
-    entry[2..4].copy_from_slice(&1u16.to_le_bytes()); // BYTE
-    entry[4..8].copy_from_slice(&(xmp.len() as u32).to_le_bytes());
-    entry[8..12].copy_from_slice(&data_at.to_le_bytes());
-    entries.push(entry);
     entries.sort_by_key(|e| u16::from_le_bytes([e[0], e[1]]));
-    let new_ifd = u32::try_from(out.len()).ok()?;
+    let new_ifd = append(&mut out, &[])?;
     out.extend_from_slice(&(entries.len() as u16).to_le_bytes());
     for e in &entries {
         out.extend_from_slice(e);

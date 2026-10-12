@@ -70,7 +70,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 |---|---|---|---|---|
 | JPEG | 8 | ICC | yes | quality, 4:4:4/4:2:2/4:2:0 (auto 4:4:4 at q≥90), progressive, optimised Huffman, **file-size limit** |
 | PNG | 8, 16 | ICC | yes | |
-| TIFF | 8, 16, 32 float | ICC | not yet | uncompressed (LZW/ZIP next) |
+| TIFF | 8, 16, 32 float | ICC | yes (Exif and GPS directories) | LZW, with the horizontal predictor for 8 and 16-bit (`tiff_file.rs`) |
 | WebP | 8 | ICC | yes | lossless only (lossy needs libwebp) |
 | AVIF | 8 | sRGB, Display P3, Rec. 2020 (CICP codes, no ICC) | yes | quality, speed |
 | OpenEXR | 32 float | linear, unclipped | n/a | for compositing/HDR work |

@@ -5,8 +5,8 @@
 //! Rust encoders. JPEG, PNG, TIFF and WebP get an embedded ICC profile for
 //! their colour space (sRGB, Display P3, Adobe RGB-compatible, ProPhoto,
 //! Rec. 2020); AVIF says sRGB, Display P3 or Rec. 2020 in its colour box (no
-//! ICC); EXR is linear. EXIF goes into JPEG, PNG, WebP, AVIF and JPEG XL (not
-//! TIFF yet).
+//! ICC); EXR is linear. EXIF goes into every format but EXR; TIFFs are
+//! LZW-compressed.
 //! Like Lightroom's Export dialog, an export can be resized ("Resize to Fit"),
 //! output-sharpened for screen or paper, carry EXIF metadata (with privacy
 //! choices), and, for JPEG, be limited to a file size.
@@ -22,6 +22,7 @@ pub mod dng;
 pub mod embed;
 pub mod exif;
 pub mod geometry;
+mod tiff_file;
 pub mod watermark;
 
 use std::io::Cursor;
@@ -429,13 +430,34 @@ pub fn export(
             }
             encoded
         }
-        (Format::Png, BitDepth::Sixteen) | (Format::Tiff, BitDepth::Sixteen) => {
+        (Format::Tiff, depth) => {
+            use tiff_file::Samples;
+            let samples = match depth {
+                BitDepth::Eight => Samples::U8(to_u8(&out.rgb)),
+                BitDepth::Sixteen => Samples::U16(
+                    out.rgb
+                        .par_iter()
+                        .map(|v| (v.clamp(0.0, 1.0) * 65535.0).round() as u16)
+                        .collect(),
+                ),
+                BitDepth::Float32 => Samples::F32(out.rgb.clone()),
+            };
+            let dirs = exif::export_dirs(
+                meta,
+                s.metadata,
+                &s.tags,
+                Some(exif::Output {
+                    width: w,
+                    height: h,
+                    srgb: s.color_space == OutputSpace::Srgb,
+                    jpeg: false,
+                }),
+            );
+            tiff_file::encode(&samples, w, h, &icc, dirs.as_ref()).map_err(Error::Encode)?
+        }
+        (Format::Png, BitDepth::Sixteen) => {
             let data = to_u16_bytes(&out.rgb);
             encode_image(s.format, &data, w, h, ExtendedColorType::Rgb16, &icc, exif)?
-        }
-        (Format::Tiff, BitDepth::Float32) => {
-            let data: Vec<u8> = out.rgb.iter().flat_map(|v| v.to_ne_bytes()).collect();
-            encode_image(s.format, &data, w, h, ExtendedColorType::Rgb32F, &icc, None)?
         }
         (Format::Exr, _) => {
             let data: Vec<u8> = out.rgb.iter().flat_map(|v| v.to_ne_bytes()).collect();
@@ -611,7 +633,6 @@ fn encode_image(
             image::codecs::png::CompressionType::Best,
             image::codecs::png::FilterType::Adaptive,
         )),
-        Format::Tiff => write_with!(image::codecs::tiff::TiffEncoder::new(&mut buf)),
         Format::Webp => write_with!(image::codecs::webp::WebPEncoder::new_lossless(&mut buf)),
         other => {
             return Err(Error::Unsupported(format!(
@@ -713,6 +734,35 @@ mod tests {
         let mut s = ExportSettings::new(Format::Avif);
         s.color_space = OutputSpace::ProPhoto;
         assert!(export(&img, &meta, &s, &tmp("prophoto.avif")).is_err());
+    }
+
+    #[test]
+    fn tiffs_are_compressed_and_carry_exif() {
+        use tiff::decoder::Decoder;
+        use tiff::tags::Tag;
+        let img = test_image();
+        let meta = PhotoMetadata {
+            make: "Test".into(),
+            model: "T1".into(),
+            iso: Some(200),
+            ..Default::default()
+        };
+        for depth in [BitDepth::Eight, BitDepth::Sixteen, BitDepth::Float32] {
+            let mut s = ExportSettings::new(Format::Tiff);
+            s.bit_depth = Some(depth);
+            s.metadata = MetadataPolicy::All;
+            s.tags.rating = Some(3);
+            let path = tmp(&format!("exif-{depth:?}.tif"));
+            export(&img, &meta, &s, &path).unwrap();
+            let mut d = Decoder::new(std::fs::File::open(&path).unwrap()).unwrap();
+            assert_eq!(d.get_tag_u32(Tag::Compression).unwrap(), 5, "LZW");
+            assert_eq!(d.get_tag_ascii_string(Tag::Make).unwrap(), "Test");
+            assert!(d.get_tag_u32(Tag::ExifDirectory).is_ok());
+            assert!(d.get_tag(Tag::IccProfile).is_ok());
+            assert!(d.get_tag(Tag::Unknown(700)).is_ok(), "XMP");
+            assert_eq!(d.dimensions().unwrap(), (240, 160));
+            d.read_image().unwrap();
+        }
     }
 
     #[test]

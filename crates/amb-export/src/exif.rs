@@ -37,11 +37,20 @@ const UNDEFINED: u16 = 7;
 const SRATIONAL: u16 = 10;
 const BYTE: u16 = 1;
 
-struct Entry {
-    tag: u16,
-    kind: u16,
-    count: u32,
-    data: Vec<u8>,
+/// One field: its tag, TIFF type and count, and its value (little-endian).
+pub(crate) struct Entry {
+    pub tag: u16,
+    pub kind: u16,
+    pub count: u32,
+    pub data: Vec<u8>,
+}
+
+/// The fields of an export's EXIF: the main directory (IFD0), the Exif
+/// directory and the GPS directory (without the pointers between them).
+pub(crate) struct Dirs {
+    pub ifd0: Vec<Entry>,
+    pub exif: Vec<Entry>,
+    pub gps: Vec<Entry>,
 }
 
 fn ascii(tag: u16, s: &str) -> Entry {
@@ -189,6 +198,41 @@ pub fn build_export(
     tags: &Tags,
     output: Option<Output>,
 ) -> Option<Vec<u8>> {
+    let Dirs {
+        mut ifd0,
+        mut exif,
+        mut gps,
+    } = export_dirs(meta, policy, tags, output)?;
+    // Layout: header, IFD0, Exif IFD, GPS IFD. Pointer entries are 4 bytes inline.
+    let pointers = usize::from(!exif.is_empty()) + usize::from(!gps.is_empty());
+    let ifd0_len = ifd_len(&ifd0) + 12 * pointers;
+    let exif_at = 8 + ifd0_len;
+    let gps_at = exif_at + if exif.is_empty() { 0 } else { ifd_len(&exif) };
+    if !exif.is_empty() {
+        ifd0.push(long(0x8769, exif_at as u32));
+    }
+    if !gps.is_empty() {
+        ifd0.push(long(0x8825, gps_at as u32));
+    }
+    let mut out = b"II*\0".to_vec();
+    out.extend_from_slice(&8u32.to_le_bytes());
+    write_ifd(&mut out, &mut ifd0, 8);
+    if !exif.is_empty() {
+        write_ifd(&mut out, &mut exif, exif_at);
+    }
+    if !gps.is_empty() {
+        write_ifd(&mut out, &mut gps, gps_at);
+    }
+    Some(out)
+}
+
+/// [`build_export`]'s fields, for a file that lays them out itself (TIFF).
+pub(crate) fn export_dirs(
+    meta: &PhotoMetadata,
+    policy: MetadataPolicy,
+    tags: &Tags,
+    output: Option<Output>,
+) -> Option<Dirs> {
     if policy == MetadataPolicy::None {
         return None;
     }
@@ -333,27 +377,7 @@ pub fn build_export(
             }
         }
     }
-    // Layout: header, IFD0, Exif IFD, GPS IFD. Pointer entries are 4 bytes inline.
-    let pointers = usize::from(!exif.is_empty()) + usize::from(!gps.is_empty());
-    let ifd0_len = ifd_len(&ifd0) + 12 * pointers;
-    let exif_at = 8 + ifd0_len;
-    let gps_at = exif_at + if exif.is_empty() { 0 } else { ifd_len(&exif) };
-    if !exif.is_empty() {
-        ifd0.push(long(0x8769, exif_at as u32));
-    }
-    if !gps.is_empty() {
-        ifd0.push(long(0x8825, gps_at as u32));
-    }
-    let mut out = b"II*\0".to_vec();
-    out.extend_from_slice(&8u32.to_le_bytes());
-    write_ifd(&mut out, &mut ifd0, 8);
-    if !exif.is_empty() {
-        write_ifd(&mut out, &mut exif, exif_at);
-    }
-    if !gps.is_empty() {
-        write_ifd(&mut out, &mut gps, gps_at);
-    }
-    Some(out)
+    Some(Dirs { ifd0, exif, gps })
 }
 
 #[cfg(test)]

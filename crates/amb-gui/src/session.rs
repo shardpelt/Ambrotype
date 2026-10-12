@@ -891,6 +891,89 @@ impl Session {
         Ok(self.info.clone())
     }
 
+    /// What the assistant is told about the photo: what it is, its settings
+    /// that differ from the defaults, and its numbers as edited now.
+    pub fn assistant_context(&mut self, lens: &LensSources) -> String {
+        let info = self.info();
+        let settings = self.state.settings().clone();
+        let mut set = Vec::new();
+        let mut other = Vec::new();
+        // Bookkeeping that says nothing about the look.
+        let skip = [
+            "Version",
+            "ProcessVersion",
+            "CompatibleVersion",
+            "HasSettings",
+            "AlreadyApplied",
+        ];
+        for (name, v) in settings.iter().filter(|(n, _)| !skip.contains(&n.as_str())) {
+            match v {
+                Value::Seq(_) | Value::Struct(_) => other.push(name.as_str()),
+                _ => set.push(format!(
+                    "{name}={}",
+                    amb_protocol::convert::display(name, Some(v))
+                )),
+            }
+        }
+        let small = raw::downscale(&self.full, 512);
+        let develop = self.develop(&settings, lens);
+        let stats = amb_engine::stats::measure(&pipeline::render(&small, &develop));
+        let mut out = format!(
+            "{} ({}{}), {} x {}; as shot {:.0} K, tint {:+.0}
+",
+            info.name,
+            info.camera,
+            if info.rendered {
+                ", a JPEG/TIFF, not a raw"
+            } else {
+                ""
+            },
+            info.width,
+            info.height,
+            info.as_shot_temperature,
+            info.as_shot_tint,
+        );
+        out.push_str(&if set.is_empty() {
+            "Settings: all at defaults\n".to_string()
+        } else {
+            format!("Settings: {}\n", set.join(" "))
+        });
+        if !other.is_empty() {
+            out.push_str(&format!("Also has: {}\n", other.join(", ")));
+        }
+        out.push_str(&stats.to_brief());
+        out
+    }
+
+    /// `cmds` with the as-shot white balance set first when they move
+    /// Temperature or Tint from As Shot, so `temp+=500` starts from the
+    /// camera's value (the protocol can't read it from the raw).
+    pub fn white_balance_from_as_shot(&self, cmds: Vec<Command>) -> Vec<Command> {
+        let settings = self.state.settings();
+        let moves_wb = cmds.iter().any(|c| match c {
+            Command::SetParam { name, .. } | Command::AdjustParam { name, .. } => {
+                matches!(name.as_str(), "Temperature" | "Tint")
+            }
+            _ => false,
+        });
+        if !moves_wb || settings.contains_key("Temperature") || self.full.rendered {
+            return cmds;
+        }
+        let info = self.info();
+        let mut start = vec![Command::SetParam {
+            name: "Temperature".into(),
+            value: serde_json::json!(info.as_shot_temperature.round()),
+        }];
+        if !settings.contains_key("Tint") {
+            start.push(Command::SetParam {
+                name: "Tint".into(),
+                value: serde_json::json!(info.as_shot_tint.round()),
+            });
+        }
+        start.extend(cmds);
+        start
+    }
+
     /// Lightroom-style Auto for the photo: tone and/or white balance.
     pub fn auto(
         &mut self,

@@ -7,6 +7,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod assistant;
 mod borders;
 mod collages;
 mod folder;
@@ -56,6 +57,9 @@ struct AppState {
     plugin_approvals: Mutex<plugins::Approvals>,
     plugin_recipes: Mutex<PluginRecipes>,
     import_choice: Mutex<Option<ImportChoice>>,
+    assistant: Mutex<assistant::Provider>,
+    /// The assistant's key for this run, when the keychain can't keep it.
+    assistant_key: Mutex<Option<String>>,
 }
 
 /// The import dialog's last destination and choices.
@@ -104,6 +108,9 @@ struct Config {
     /// The import dialog's last destination and choices.
     #[serde(default)]
     import: Option<ImportChoice>,
+    /// The assistant's provider and model (its key is in the keychain).
+    #[serde(default)]
+    assistant: assistant::Provider,
 }
 
 fn save_config(state: &AppState) {
@@ -161,6 +168,11 @@ fn save_config(state: &AppState) {
             .map(|r| r.clone())
             .unwrap_or_default(),
         import: state.import_choice.lock().ok().and_then(|c| c.clone()),
+        assistant: state
+            .assistant
+            .lock()
+            .map(|a| a.clone())
+            .unwrap_or_default(),
     };
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
@@ -361,6 +373,143 @@ async fn match_look(
             before: result.before,
             after: result.after,
             renders: result.evaluations,
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[derive(Serialize)]
+struct AssistantSettings {
+    provider: assistant::Provider,
+    has_key: bool,
+}
+
+/// The assistant's provider and model, and whether a key is saved.
+#[tauri::command]
+async fn assistant_settings(state: tauri::State<'_, AppState>) -> Res<AssistantSettings> {
+    let provider = state.assistant.lock().map_err(|e| e.to_string())?.clone();
+    let session_key = state
+        .assistant_key
+        .lock()
+        .map_err(|e| e.to_string())?
+        .is_some();
+    let p = provider.clone();
+    let saved = tauri::async_runtime::spawn_blocking(move || assistant::load_key(&p).is_some())
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(AssistantSettings {
+        provider,
+        has_key: saved || session_key,
+    })
+}
+
+/// Save the assistant's provider and model; a `key` goes to the keychain
+/// ("" removes it). Returns a note when the keychain couldn't keep the key.
+#[tauri::command]
+async fn assistant_save(
+    provider: assistant::Provider,
+    key: Option<String>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Option<String>> {
+    *state.assistant.lock().map_err(|e| e.to_string())? = provider.clone();
+    save_config(&state);
+    let Some(key) = key.map(|k| k.trim().to_string()) else {
+        return Ok(None);
+    };
+    let p = provider.clone();
+    let k = key.clone();
+    let stored = tauri::async_runtime::spawn_blocking(move || assistant::store_key(&p, &k))
+        .await
+        .map_err(|e| e.to_string())?;
+    let mut session_key = state.assistant_key.lock().map_err(|e| e.to_string())?;
+    match stored {
+        Ok(()) => {
+            *session_key = None;
+            Ok(None)
+        }
+        Err(e) => {
+            *session_key = (!key.is_empty()).then_some(key);
+            Ok(Some(format!(
+                "The keychain couldn't keep the key ({e}); it is used until Ambrotype closes."
+            )))
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct AssistantAnswer {
+    #[serde(flatten)]
+    outcome: assistant::Outcome,
+    state: session::StateInfo,
+}
+
+/// One request to the assistant about the open photo; its edits are applied
+/// as ordinary commands, one undo step per `amb:` line.
+#[tauri::command]
+async fn assistant_ask(
+    history: Vec<assistant::Message>,
+    request: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<AssistantAnswer> {
+    let provider = state.assistant.lock().map_err(|e| e.to_string())?.clone();
+    let session_key = state
+        .assistant_key
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone();
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let key = session_key.or_else(|| assistant::load_key(&provider));
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let photo = slot
+            .lock()
+            .map_err(|e| e.to_string())?
+            .as_ref()
+            .ok_or("no photo open")?
+            .path
+            .clone();
+        // The photo is locked only to look and to edit, not while the
+        // model thinks; a request ends if another photo was opened.
+        let with_photo = |f: &mut dyn FnMut(&mut Session) -> Res<String>| -> Res<String> {
+            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            match guard.as_mut() {
+                Some(s) if s.path == photo => f(s),
+                _ => Err("another photo was opened; the request stopped".into()),
+            }
+        };
+        let system = assistant::system_prompt();
+        let outcome = assistant::converse(
+            |messages| assistant::call(&provider, key.as_deref(), &system, messages),
+            history,
+            &request,
+            || with_photo(&mut |s| Ok(s.assistant_context(lens))),
+            |items| {
+                let commands = amb_protocol::compact::parse(items).map_err(|e| e.to_string())?;
+                with_photo(&mut |s| {
+                    let all = s.white_balance_from_as_shot(commands.clone());
+                    let mut results = s.execute(&all, Some("Assistant"))?;
+                    // The as-shot start was ours: its notes would only confuse.
+                    for o in results.iter_mut().take(all.len() - commands.len()) {
+                        o.notes.clear();
+                    }
+                    let report = amb_protocol::edit::EditReport {
+                        sidecar: s.sidecar.clone(),
+                        created: false,
+                        results,
+                        written: None,
+                        dry_run: false,
+                    };
+                    Ok(report.to_brief())
+                })
+            },
+        )?;
+        let guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_ref().ok_or("no photo open")?;
+        Ok(AssistantAnswer {
+            outcome,
+            state: s.state_info(),
         })
     })
     .await
@@ -2605,6 +2754,9 @@ fn main() {
                 if let Ok(mut c) = state.import_choice.lock() {
                     *c = config.import;
                 }
+                if let Ok(mut a) = state.assistant.lock() {
+                    *a = config.assistant;
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -2677,6 +2829,9 @@ fn main() {
             pick_photos,
             pick_photo_folder,
             library_list,
+            assistant_settings,
+            assistant_save,
+            assistant_ask,
             library_pick_folder,
             import_defaults,
             collections_list,

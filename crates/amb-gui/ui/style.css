@@ -203,6 +203,21 @@ dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-
 /* Beside the photo, not over it: the photo shows the proposed look. */
 #match-dialog { width: 400px; margin: auto 16px 48px auto; max-height: calc(100vh - 80px); overflow: auto; }
 #match-dialog::backdrop { background: transparent; }
+#assistant-dialog { position: fixed; inset: auto 16px 40px auto; margin: 0; width: 380px; max-height: calc(100vh - 100px); display: none; flex-direction: column; gap: 8px; z-index: 50; box-shadow: 0 8px 30px rgba(0, 0, 0, .45); }
+#assistant-dialog[open] { display: flex; }
+.assistant-head { display: flex; align-items: center; gap: 6px; }
+.assistant-head h2 { margin: 0; }
+.assistant-settings { display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+.assistant-settings[hidden] { display: none; }
+.assistant-settings menu { margin-top: 0; }
+.assistant-log { flex: 1 1 auto; min-height: 60px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+.assistant-log .msg { padding: 6px 9px; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.assistant-log .user { align-self: flex-end; background: var(--panel-2); max-width: 85%; }
+.assistant-log .assistant { background: var(--bg); }
+.assistant-log .app { font-family: ui-monospace, monospace; font-size: 11px; color: var(--muted); padding: 2px 9px; }
+.assistant-log .msg button { margin-top: 4px; }
+.assistant-form { display: flex; gap: 6px; align-items: flex-end; }
+.assistant-form textarea { flex: 1; resize: vertical; font: inherit; }
 .match-parts { display: grid; grid-template-columns: 1fr 1fr; }
 .match-lines { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 12px; }
 .match-lines td { padding: 3px 6px; border-bottom: 1px solid var(--line); }

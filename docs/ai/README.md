@@ -2,7 +2,7 @@
 
 Ambrotype edits photos the way Lightroom does: as a non-destructive recipe of Camera Raw settings (`crs:` tags such as `Exposure2012` or `ColorGradeShadowHue`) stored in an XMP sidecar next to the raw file. Features Lightroom lacks (e.g. film negative conversion) use our own `amb:` tags (e.g. `amb:NegativeConvert`, `amb:FilmStock`), which work with the same commands. An AI assistant edits a photo by changing those settings through the **same validated, undoable commands** a human's slider moves produce. It never paints pixels.
 
-This guide covers what works **today, through the `amb` command-line tool**. The same commands are available to your own AI app through the MCP server, `amb mcp` ([mcp.md](mcp.md)). An in-app assistant panel is planned (see [the design doc](../design/ai-control.md)).
+This guide covers what works **today, through the `amb` command-line tool**. The same commands are available to your own AI app through the MCP server, `amb mcp` ([mcp.md](mcp.md)). Inside the editor, the assistant panel lets your own model (API key or a local model) do the same ([assistant.md](assistant.md)).
 
 Related files:
 - [core.md](core.md): the **core card**, a few hundred tokens: the compact edit syntax and the most used settings with their ranges. Read it first. `amb ref` prints it; `amb ref GROUP` prints one group's settings, one line each.

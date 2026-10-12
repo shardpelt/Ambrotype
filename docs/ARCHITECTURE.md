@@ -126,4 +126,4 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 - GPU previews with masks, spots, defringe or a camera profile (they render on the CPU), and caching per stage (region renders exist for the 100% view).
 - Red eye, Guided Upright ([design/transform.md](design/transform.md)), AI masks.
 - Camera profiles (DCP) and Adobe-like base looks: today a placeholder filmic base look is used.
-- An in-app AI assistant panel (look matching exists: `amb match`, MCP `match_look`, and Match look in the editor).
+- A vision loop for the assistant panel (it gets numbers, not the photo; [ai/assistant.md](ai/assistant.md)).

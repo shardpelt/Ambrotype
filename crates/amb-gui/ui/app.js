@@ -1559,6 +1559,7 @@ async function init() {
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));
+  $("btn-assistant").addEventListener("click", () => assistantFlow().catch((e) => toast(String(e), true)));
   $("btn-surprise").addEventListener("click", () => surpriseFlow().catch((e) => toast(String(e), true)));
   // Enter in a dialog's text box means its main button, not the first one (Cancel).
   for (const form of document.querySelectorAll('dialog form[method="dialog"]')) {

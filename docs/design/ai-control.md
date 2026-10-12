@@ -21,7 +21,7 @@ Status: proposal, 2026-10-04. The owner's idea: an assistant window inside the a
 - **Surfaces that expose it:**
   1. **CLI:** `amb` with `--json` output. It has started: `amb preset inspect --json`, `amb preset dump`.
   2. **MCP server:** `amb mcp` exposes tools and resources over the Model Context Protocol. This is how "use my existing AI subscription" works in practice. The user's own AI app (Claude Desktop, Claude Code, or any MCP-capable client) connects to Ambrotype and drives it, billed to the user's existing plan. We never handle their credentials.
-  3. **In-app assistant panel:** a chat or terminal-style window inside Ambrotype. It works with a user-supplied **API key** (Anthropic, OpenAI, Google, ...) or a **local model** (Ollama / llama.cpp). Keys are stored in the OS keychain.
+  3. **In-app assistant panel** (built 2026-10-12, [ai/assistant.md](../ai/assistant.md); its edits apply at once with an Undo button, not as a pending diff): a chat or terminal-style window inside Ambrotype. It works with a user-supplied **API key** (Anthropic, OpenAI, Google, ...) or a **local model** (Ollama / llama.cpp). Keys are stored in the OS keychain.
   - Note: consumer chat subscriptions generally cannot be plugged into third-party apps directly. The supported routes are MCP (their AI app drives ours) and API keys. We say so plainly in the UI.
 - **AI-readable documentation:** a generated `docs/ai/` guide and an `llms.txt` covering:
   - every control's name, meaning, range and default (generated from the tag registry `amb-presets/data/tags.json`, so it never drifts from the code)
@@ -68,7 +68,7 @@ Later we can also learn a style from the user's own edit history (Imagen-style),
   - ~~`amb mcp` server (develop, preset, render-preview and export tools)~~ (done 2026-10-10; [ai/mcp.md](../ai/mcp.md))
   - ~~`amb match` v1 (global tone/colour statistics → parameters)~~ (done 2026-10-12)
 - **Phase 3:**
-  - the in-app assistant panel (BYO API key / local model)
+  - ~~the in-app assistant panel (BYO API key / local model)~~ (done 2026-10-12; [ai/assistant.md](../ai/assistant.md))
   - a vision refinement loop
   - match with masks (sky, subject)
 - **Later:** learn-my-style from edit history; batch "apply my look to this shoot" with per-photo adaptation.

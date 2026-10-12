@@ -54,4 +54,3 @@ The commands and queries are the same as `amb edit` and `amb query`; `amb protoc
 ## Not yet
 
 - Masks drawn by the AI from what's in the photo (subject, sky); masks are placed by coordinates today.
-- An assistant panel inside the editor.

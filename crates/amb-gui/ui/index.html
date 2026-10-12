@@ -53,6 +53,7 @@
         <input id="preset-filter" type="search" placeholder="Filter presets" spellcheck="false">
         <label class="amount">Amount <input id="preset-amount" type="range" min="0" max="200" value="100"><output id="preset-amount-out">100</output></label>
         <button id="btn-surprise" class="small match-button" title="Random looks to try: pick one you like (one undo step)" disabled>Surprise me…</button>
+        <button id="btn-assistant" class="small match-button" title="Ask your own AI model to edit the photo (Ctrl+Shift+A)">Ask AI…</button>
         <button id="btn-match" class="small match-button" title="Pick reference photos; finds the white balance, tone, colour and grading settings that give this photo their look" disabled>Match look of other photos…</button>
         <div id="preset-list" class="preset-list"><p class="hint">No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.</p></div>
       </section>
@@ -410,6 +411,36 @@
         <button id="surprise-more" type="button" class="primary">More</button>
       </menu>
     </form>
+  </dialog>
+
+  <!-- Assistant: the user's own AI model edits the photo (assistant.js). Not
+       modal, so the photo and sliders stay in reach. -->
+  <dialog id="assistant-dialog">
+    <div class="assistant-head">
+      <h2>Assistant</h2>
+      <span class="grow"></span>
+      <button id="assistant-gear" type="button" class="small" title="Model and API key">Settings</button>
+      <button id="assistant-close" type="button" class="small icon-x" title="Close (the conversation is kept)">×</button>
+    </div>
+    <form id="assistant-settings" class="assistant-settings" hidden>
+      <label>Model from
+        <select id="assistant-kind">
+          <option value="anthropic">Anthropic (API key)</option>
+          <option value="open_ai">OpenAI-compatible: OpenAI, Ollama, llama.cpp</option>
+        </select>
+      </label>
+      <label>Address <input id="assistant-url" type="text" spellcheck="false"></label>
+      <label>Model <input id="assistant-model" type="text" spellcheck="false" placeholder="The model's name, as your provider lists it"></label>
+      <label>API key <input id="assistant-key" type="password" spellcheck="false" autocomplete="off"></label>
+      <p class="hint">The key is kept in your system's keychain. The model gets numbers about the photo (brightness, clipping, colour cast) and its settings, never the photo itself. Your AI chat subscription can't be used here; with Claude Desktop or another MCP app, use <code>amb mcp</code> instead.</p>
+      <menu><button id="assistant-save" type="submit" class="primary">Save</button></menu>
+    </form>
+    <div id="assistant-log" class="assistant-log" aria-live="polite"></div>
+    <form id="assistant-form" class="assistant-form">
+      <textarea id="assistant-input" rows="2" spellcheck="true" placeholder="e.g. warmer and a bit moodier, keep the sky"></textarea>
+      <button id="assistant-send" type="submit" class="primary">Send</button>
+    </form>
+    <p id="assistant-status" class="hint"></p>
   </dialog>
 
   <!-- Match look: settings found from reference photos (app.js matchFlow). -->
@@ -1025,6 +1056,7 @@
   <script src="plugins.js"></script>
   <script src="picker.js"></script>
   <script src="learn.js"></script>
+  <script src="assistant.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

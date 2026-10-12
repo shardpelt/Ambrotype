@@ -8,9 +8,9 @@
 //! the CPU: it comes first, so its result is simply the GPU's input. Every
 //! later stage has a GPU version; one without would be a [`Step::Cpu`]: the
 //! backend brings the image back, runs the engine's own code on it and
-//! carries on (spot removal, masks and a LUT do that). Defringe and
-//! camera profiles make [`plan`] return a reason instead, and the caller
-//! renders on the CPU.
+//! carries on (a camera profile's tables and tone curve, defringe, spot
+//! removal, masks, a LUT and filling the edges a lens correction leaves do
+//! that).
 
 use crate::buffer::{Image, luminance_weights};
 use crate::color::{ColorOp, ColorPlan};
@@ -22,6 +22,7 @@ use crate::pipeline::{
 use crate::raw::CameraImage;
 use crate::tone::{self, ToneControls};
 use crate::{dehaze, detail, effects, local, local_tone};
+use rayon::prelude::*;
 
 /// Highlight recovery's numbers (see `Unclip` in the pipeline).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -133,44 +134,88 @@ pub struct Plan {
 }
 
 /// The plan for developing `img` with `s`, or why it has to be developed
-/// on the CPU (`pipeline::render`) instead.
+/// on the CPU (`pipeline::render`) instead (every edit has a plan today).
 pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
-    let cpu_only = |what: &str| Err(format!("{what} runs on the CPU only"));
-    if s.camera_profile.is_some() && !img.rendered && !s.negative.enabled {
-        return cpu_only("a camera profile");
-    }
-    if !s.lens.defringe.is_neutral() {
-        return cpu_only("defringe");
-    }
-
     let stage0 = camera_stage(img, s, &Pass::default());
-    if stage0.lens_pass.as_ref().is_some_and(|p| p.blank.is_some()) {
-        return cpu_only("filling the edges a lens correction leaves");
-    }
     let camera_rgb = stage0.rgb(img).to_vec();
     let tile = stage0.tile;
     let full = stage0.full;
     let CameraToWorking {
+        profile,
         m,
         gain,
+        hue_sat_map,
+        look_table,
+        gain_before_look,
+        gain_after_look,
         shadow_tint,
         clipped,
         unclip_reach,
-        ..
     } = camera_to_working(img, s, stage0.out);
     let cal = std::sync::Arc::new(s.calibration.clone());
-    let mut steps = vec![Step::Matrix {
-        m,
-        gain,
-        unclip: clipped.map(|u| UnclipPlan {
-            clip: u.clip,
-            gains: u.gains,
-            reach: unclip_reach,
-        }),
-        shadow_tint,
-    }];
-    // Spot removal, on the scene-linear photo as the CPU does it, with the
-    // engine's own code.
+    let unclip = clipped.map(|u| UnclipPlan {
+        clip: u.clip,
+        gains: u.gains,
+        reach: unclip_reach,
+    });
+    let mut steps = Vec::new();
+    if profile.is_some() {
+        // A camera profile: its matrix on the GPU, then its tables with the
+        // Exposure gain around the look table, as the CPU does it.
+        steps.push(Step::Matrix {
+            m,
+            gain: 1.0,
+            unclip,
+            shadow_tint: None,
+        });
+        let hue_sat_map = hue_sat_map.map(std::borrow::Cow::into_owned);
+        let look_table = look_table.cloned();
+        steps.push(Step::Cpu {
+            name: "camera profile",
+            run: Box::new(move |img| {
+                img.rgb.par_chunks_mut(3).for_each(|o| {
+                    if let Some(t) = &hue_sat_map {
+                        t.apply(o);
+                    }
+                    o.iter_mut().for_each(|v| *v *= gain_before_look);
+                    if let Some(t) = &look_table {
+                        t.apply(o);
+                    }
+                    o.iter_mut().for_each(|v| *v *= gain_after_look);
+                    if let Some((stops, end)) = shadow_tint {
+                        crate::primaries::tint_shadows(o, stops, end);
+                    }
+                })
+            }),
+        });
+    } else {
+        steps.push(Step::Matrix {
+            m,
+            gain,
+            unclip,
+            shadow_tint,
+        });
+    }
+    // The base look, or the profile's tone curve standing in for the
+    // default one.
+    let look = if img.rendered {
+        BaseLook::Linear
+    } else {
+        s.base_look
+    };
+    let curve = profile
+        .filter(|_| look == BaseLook::Default)
+        .and_then(|p| p.tone_curve.clone())
+        .map(std::sync::Arc::new);
+    // Defringe and spot removal, on the scene-linear photo as the CPU does
+    // them, with the engine's own code.
+    if !s.lens.defringe.is_neutral() {
+        let (d, k) = (s.lens.defringe, cal.lens);
+        steps.push(Step::Cpu {
+            name: "defringe",
+            run: Box::new(move |out| crate::lens::apply_defringe_in(out, &d, &k, &tile)),
+        });
+    }
     if !s.spots.is_empty() {
         let spots = s.spots.clone();
         let frame = (img.width, img.height);
@@ -192,16 +237,15 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         let masks = s.masks.clone();
         let frame = (img.width, img.height);
         let crop = s.crop.geometry(img.width, img.height);
-        let look = if img.rendered {
-            BaseLook::Linear
-        } else {
-            s.base_look
-        };
-        let (d, cal) = (drawn.clone(), cal.clone());
+        let (d, cal, curve) = (drawn.clone(), cal.clone(), curve.clone());
         steps.push(Step::Cpu {
             name: "masks",
             run: Box::new(move |out| {
-                let encode = |y| local::srgb_encode(look.apply(y));
+                let base = |y| match &curve {
+                    Some(c) => c.eval(y),
+                    None => look.apply(y),
+                };
+                let encode = |y| local::srgb_encode(base(y));
                 let m = mask::draw(&masks, out, frame, crop.as_ref(), encode, &cal.masks);
                 m.apply_light(out, &cal.masks);
                 *d.lock().expect("masks") = Some(m);
@@ -226,11 +270,18 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     }
     // 3. Base look, local Highlights/Shadows, the global tone curve.
     // A rendered image already has its tone curve.
-    steps.push(Step::BaseLook(if img.rendered {
-        BaseLook::Linear
-    } else {
-        s.base_look
-    }));
+    match curve {
+        Some(c) => steps.push(Step::Cpu {
+            name: "profile tone curve",
+            run: Box::new(move |img| {
+                img.rgb.par_chunks_mut(3).for_each(|p| {
+                    let c = c.apply_rgb([p[0], p[1], p[2]]);
+                    p.copy_from_slice(&c);
+                })
+            }),
+        }),
+        None => steps.push(Step::BaseLook(look)),
+    }
     let (w, h) = (stage0.width, stage0.height);
     if let Some(p) = local_tone::plan(&s.tone, &cal.tone, tile.scale(), w, h) {
         steps.push(Step::HighlightsShadows(Box::new(p)));
@@ -324,6 +375,14 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         steps.push(masked(&drawn, "mask overlay", |m, img| {
             m.apply_overlay(img)
         }));
+    }
+    // The edges a lens correction leaves, filled from their neighbours.
+    if let Some(blank) = stage0.lens_pass.as_ref().and_then(|p| p.blank.clone()) {
+        let k = cal.lens;
+        steps.push(Step::Cpu {
+            name: "lens edges",
+            run: Box::new(move |img| crate::lens::fill_blank(img, &blank, &k)),
+        });
     }
     Ok(Plan {
         width: stage0.width,

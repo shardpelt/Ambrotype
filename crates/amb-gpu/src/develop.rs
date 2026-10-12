@@ -966,6 +966,87 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn a_camera_profile_runs_between_the_gpu_stages() {
+        use amb_engine::pipeline::BaseLook;
+        use amb_engine::profile::{Dcp, HsvTable, ToneCurve};
+        let Some(gpu) = gpu() else { return };
+        let img = photo(160, 120);
+        // Hues turn a little and saturate, values darken towards the top.
+        let table = |vals: usize, shift: f32| HsvTable {
+            hues: 6,
+            sats: 2,
+            vals,
+            data: (0..vals * 12)
+                .map(|i| {
+                    [
+                        shift,
+                        1.0 + 0.05 * (i % 2) as f32,
+                        1.0 - 0.1 * (i / 12) as f32,
+                    ]
+                })
+                .collect(),
+            srgb_values: vals > 1,
+        };
+        let dcp = Dcp {
+            name: "Test Standard".into(),
+            camera: "Test Synthetic".into(),
+            illuminants: vec![(6504.0, img.xyz_to_cam.map(|r| r.map(f64::from)), None)],
+            hue_sat_maps: vec![(6504.0, table(1, 4.0))],
+            look_table: Some(table(2, -6.0)),
+            tone_curve: ToneCurve::from_points(&[0.0, 0.0, 0.18, 0.45, 1.0, 1.0]),
+            exposure_offset: 0.2,
+            copyright: None,
+        };
+        for (name, ev, look) in [
+            ("profile", 0.5, BaseLook::Default),
+            ("profile, darker, linear", -0.7, BaseLook::Linear),
+        ] {
+            let mut s = settings(&pixel_stages(&[
+                ("Contrast2012", n(10.0)),
+                ("ShadowTint", n(15.0)),
+            ]));
+            s.camera_profile = Some(std::sync::Arc::new(dcp.clone()));
+            s.base_look = look;
+            s.exposure_ev = ev;
+            let plan = amb_engine::plan::plan(&img, &s).unwrap();
+            let ours = gpu.render(&plan);
+            let cpu = pipeline::render(&img, &s);
+            let (max, mean) = compare(&ours.rgb, &cpu.rgb);
+            eprintln!("{name}: max {max:.2e}, mean {mean:.2e}");
+            assert!(max < 2e-3 && mean < 1e-4, "{name}: max {max}, mean {mean}");
+            s.camera_profile = None;
+            let without = pipeline::render(&img, &s);
+            assert!(compare(&cpu.rgb, &without.rgb).1 > 1e-3, "{name}");
+        }
+    }
+
+    #[test]
+    fn lens_edges_are_filled_after_the_gpu_stages() {
+        // Manual distortion without Constrain Crop leaves blank edges.
+        let tags = pixel_stages(&[
+            ("Contrast2012", n(15.0)),
+            ("LensManualDistortionAmount", n(60.0)),
+        ]);
+        let plan = amb_engine::plan::plan(&photo(160, 120), &settings(&tags)).unwrap();
+        assert!(plan.steps.iter().any(|s| format!("{s:?}") == "lens edges"));
+        check("lens edges", &tags);
+    }
+
+    #[test]
+    fn defringe_runs_between_the_gpu_stages() {
+        let tags = pixel_stages(&[
+            ("Contrast2012", n(15.0)),
+            ("DefringePurpleAmount", n(20.0)),
+            ("DefringeGreenAmount", n(20.0)),
+        ]);
+        check("defringe", &tags);
+        let img = photo(160, 120);
+        let with = pipeline::render(&img, &settings(&tags));
+        let without = pipeline::render(&img, &settings(&tags[..3]));
+        assert!(compare(&with.rgb, &without.rgb).0 > 1e-3);
+    }
+
+    #[test]
     fn masks_run_between_the_gpu_stages() {
         let t = |v: &str| Value::Text(v.into());
         let st = |p: Vec<(&str, Value)>| {

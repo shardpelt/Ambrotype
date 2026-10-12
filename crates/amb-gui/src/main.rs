@@ -248,6 +248,104 @@ async fn pick_photos(app: tauri::AppHandle) -> Res<Vec<folder::FolderPhoto>> {
         .map_err(|e| e.to_string())
 }
 
+/// Pick reference photos for Match look.
+#[tauri::command]
+async fn pick_references(app: tauri::AppHandle) -> Vec<String> {
+    app.dialog()
+        .file()
+        .set_title("Reference photos: the look to match")
+        .add_filter("Photos", &folder::photo_extensions())
+        .blocking_pick_files()
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|p| p.into_path().ok())
+        .map(|p| p.display().to_string())
+        .collect()
+}
+
+#[derive(Serialize)]
+struct MatchLine {
+    name: String,
+    label: String,
+    before: String,
+    after: String,
+}
+
+/// What Match look proposes: the commands, the same as readable lines,
+/// and how close it gets.
+#[derive(Serialize)]
+struct MatchProposal {
+    commands: Vec<Command>,
+    lines: Vec<MatchLine>,
+    before: f64,
+    after: f64,
+    renders: usize,
+}
+
+/// Find the settings that make the open photo look like `references`.
+#[tauri::command]
+async fn match_look(
+    references: Vec<String>,
+    parts: Vec<String>,
+    state: tauri::State<'_, AppState>,
+) -> Res<MatchProposal> {
+    use amb_engine::matching::Part;
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let parts = parts
+            .iter()
+            .map(|p| Part::parse(p).ok_or_else(|| format!("unknown part {p:?}")))
+            .collect::<Result<Vec<_>, _>>()?;
+        let paths: Vec<&Path> = references.iter().map(Path::new).collect();
+        // The references are measured before the photo is locked.
+        let target = amb_library::look::target_look(&paths)?;
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let result = s.match_look(&target, parts, lens);
+        let current = s.state.settings();
+        let shot = s.info();
+        let catalog = amb_protocol::catalog::Catalog::builtin();
+        let registry = amb_presets::registry::Registry::builtin();
+        let lines = result
+            .changes
+            .iter()
+            .filter(|(name, _)| name != "WhiteBalance")
+            .map(|(name, v)| {
+                // Unset white balance is the camera's.
+                let as_shot = match name.as_str() {
+                    "Temperature" => Some(shot.as_shot_temperature.round()),
+                    "Tint" => Some(shot.as_shot_tint.round()),
+                    _ => None,
+                };
+                let old = current.get(name).cloned().or_else(|| {
+                    as_shot
+                        .or_else(|| registry.numeric_default(name))
+                        .map(Value::Number)
+                });
+                MatchLine {
+                    name: name.clone(),
+                    label: catalog
+                        .text(name)
+                        .map_or_else(|| name.clone(), |t| t.label.clone()),
+                    before: amb_protocol::convert::display(name, old.as_ref()),
+                    after: amb_protocol::convert::display(name, Some(v)),
+                }
+            })
+            .collect();
+        Ok(MatchProposal {
+            commands: amb_library::look::commands(&result.changes),
+            lines,
+            before: result.before,
+            after: result.after,
+            renders: result.evaluations,
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Pick a folder and list its raws (for the collage maker).
 #[tauri::command]
 async fn pick_photo_folder(app: tauri::AppHandle) -> Res<Option<Vec<folder::FolderPhoto>>> {
@@ -2389,6 +2487,8 @@ fn main() {
             take_initial_path,
             editor_schema,
             pick_photo,
+            pick_references,
+            match_look,
             open_photo,
             execute,
             preview,

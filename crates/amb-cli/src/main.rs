@@ -1135,32 +1135,6 @@ fn stats(input: &Path, options: &BTreeMap<&str, &str>, json: bool) -> Result<Str
     Ok(text)
 }
 
-/// A photo's edit: its sidecar's settings, or none.
-fn photo_settings(photo: &Path) -> Result<amb_engine::matching::Settings, String> {
-    let sidecar = edit_target(photo);
-    if sidecar.is_file() {
-        Ok(amb_protocol::DevelopState::load(&sidecar)
-            .map_err(|e| e.to_string())?
-            .settings()
-            .clone())
-    } else {
-        Ok(Default::default())
-    }
-}
-
-/// A photo developed small with its own edit.
-fn small_render(
-    photo: &Path,
-    edge: usize,
-    options: &BTreeMap<&str, &str>,
-) -> Result<amb_engine::pipeline::ProPhotoImage, String> {
-    let source = amb_engine::source_path(photo);
-    let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
-    let mut img = amb_engine::raw::downscale(&img, edge);
-    let (develop, _, _) = develop_from(&mut img, &photo_settings(photo)?, None, None, options)?;
-    Ok(amb_engine::pipeline::render(&img, &develop))
-}
-
 /// `amb match`: the settings that make `photo` look like the references.
 fn match_look(
     photo: &Path,
@@ -1170,7 +1144,7 @@ fn match_look(
     json: bool,
 ) -> Result<String, String> {
     use amb_engine::matching::{self, MatchOptions, Part};
-    const EDGE: usize = 256;
+    use amb_library::look;
     let parts = match options.get("--parts") {
         Some(list) => list
             .split(',')
@@ -1181,15 +1155,12 @@ fn match_look(
             .collect::<Result<Vec<_>, _>>()?,
         None => Part::ALL.to_vec(),
     };
-    let looks = refs
-        .iter()
-        .map(|r| small_render(Path::new(r), EDGE, options).map(|img| matching::look_stats(&img)))
-        .collect::<Result<Vec<_>, _>>()?;
-    let target = matching::average(&looks).ok_or("give at least one reference image")?;
+    let refs_paths: Vec<&Path> = refs.iter().map(Path::new).collect();
+    let target = look::target_look(&refs_paths)?;
     let source = amb_engine::source_path(photo);
     let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
-    let mut img = amb_engine::raw::downscale(&img, EDGE);
-    let base = photo_settings(photo)?;
+    let mut img = amb_engine::raw::downscale(&img, look::EDGE);
+    let base = look::photo_settings(photo)?;
     // Lens and camera profiles are found once, for every try.
     let (base_dev, _, _) = develop_from(&mut img, &base, None, None, options)?;
     let develop = |s: &matching::Settings| {
@@ -1208,19 +1179,7 @@ fn match_look(
         },
         &develop,
     );
-    let commands: Vec<amb_protocol::Command> = result
-        .changes
-        .iter()
-        .map(|(name, v)| amb_protocol::Command::SetParam {
-            name: name.clone(),
-            value: match v {
-                amb_presets::Value::Number(n) => serde_json::json!(n),
-                amb_presets::Value::Text(t) => serde_json::json!(t),
-                amb_presets::Value::Bool(b) => serde_json::json!(b),
-                other => serde_json::json!(other.as_str()),
-            },
-        })
-        .collect();
+    let commands = look::commands(&result.changes);
     if let Some(out) = options.get("--out") {
         let mut preset = amb_protocol::DevelopState::new();
         preset.execute_all(&commands).map_err(|e| e.to_string())?;

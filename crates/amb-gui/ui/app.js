@@ -1149,7 +1149,7 @@ async function openPath(path) {
     $("photo-title").textContent = `${r.info.name}  —  ${r.info.camera}${r.info.lens ? "  ·  " + r.info.lens : ""}`;
     $("exif").textContent = [r.info.exposure, `${r.info.width} × ${r.info.height}`,
       r.info.sidecar_loaded ? "edits loaded from sidecar" : ""].filter(Boolean).join("  ·  ");
-    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-save-preset"]) $(id).disabled = false;
+    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-save-preset", "btn-match"]) $(id).disabled = false;
     if (ui.zoom.on) setZoom(false);
     setState(r.state);
     if (r.saved_previous) toast(`Saved your edits to ${r.saved_previous.replace(/^.*[\\/]/, "")}`);
@@ -1228,6 +1228,66 @@ async function savePresetFlow(name = "") {
   } catch (e) {
     toast(String(e), true);
   }
+}
+
+// Match look: pick reference photos, find settings for their look, show
+// them on the photo, and apply them as one undo step.
+async function matchFlow() {
+  if (!ui.info) return toast("Open a photo first.", true);
+  const refs = await invoke("pick_references");
+  if (!refs.length) return;
+  const dlg = $("match-dialog");
+  const names = refs.map(fileName);
+  $("match-refs").textContent = `${refs.length} reference${refs.length > 1 ? "s" : ""}: ${names.join(", ")}`;
+  const table = $("match-lines");
+  table.hidden = true;
+  table.replaceChildren();
+  $("match-apply").disabled = true;
+  $("match-find").disabled = false;
+  $("match-status").textContent = "Measures how light, warm and colourful the references are, then finds the settings that give this photo the same. The photo shows the result before you apply it.";
+  let proposal = null;
+  const preview = (commands) => {
+    ui.overrides = {};
+    for (const c of commands) ui.overrides[c.name] = c.value;
+    requestPreview(false);
+  };
+  const find = async () => {
+    const parts = [...dlg.querySelectorAll(".match-parts input:checked")].map((i) => i.value);
+    if (!parts.length) return toast("Choose at least one part to match.", true);
+    $("match-find").disabled = true;
+    $("match-apply").disabled = true;
+    $("match-status").textContent = "Finding settings…";
+    try {
+      proposal = await invoke("match_look", { references: refs, parts });
+      table.replaceChildren(...proposal.lines.map((l) => {
+        const tr = document.createElement("tr");
+        for (const t of [l.label, l.before, "→", l.after]) {
+          const td = document.createElement("td");
+          td.textContent = t;
+          tr.append(td);
+        }
+        return tr;
+      }));
+      table.hidden = !proposal.lines.length;
+      const closer = proposal.before > 0 ? Math.round(100 * (1 - proposal.after / proposal.before)) : 0;
+      $("match-status").textContent = proposal.lines.length
+        ? `${proposal.lines.length} setting${proposal.lines.length > 1 ? "s" : ""}; the look is ${closer}% closer (${proposal.renders} test renders).`
+        : "The photo already matches: nothing to change.";
+      $("match-apply").disabled = !proposal.commands.length;
+      preview(proposal.commands);
+    } catch (e) {
+      $("match-status").textContent = String(e);
+    } finally {
+      $("match-find").disabled = false;
+    }
+  };
+  $("match-find").onclick = find;
+  dlg.showModal();
+  find();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  ui.overrides = {};
+  if (choice === "ok" && proposal) await run(proposal.commands, "Match look");
+  else requestPreview(false);
 }
 
 async function loadPresets(add = false) {
@@ -1414,6 +1474,7 @@ async function init() {
   wireSpots();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
+  $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));
   // Enter in a dialog's text box means its main button, not the first one (Cancel).
   for (const form of document.querySelectorAll('dialog form[method="dialog"]')) {
     form.addEventListener("keydown", (e) => {

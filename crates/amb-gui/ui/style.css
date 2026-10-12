@@ -162,6 +162,15 @@ dialog menu button { white-space: nowrap; }
 .viewer.picking img { cursor: crosshair; }
 dialog label.wide { margin-top: 12px; }
 dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-top: 10px; color: var(--text); }
+.match-button { width: 100%; margin: 4px 0 6px; }
+/* Beside the photo, not over it: the photo shows the proposed look. */
+#match-dialog { width: 400px; margin: auto 16px 48px auto; max-height: calc(100vh - 80px); overflow: auto; }
+#match-dialog::backdrop { background: transparent; }
+.match-parts { display: grid; grid-template-columns: 1fr 1fr; }
+.match-lines { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 12px; }
+.match-lines td { padding: 3px 6px; border-bottom: 1px solid var(--line); }
+.match-lines td:nth-child(n+2) { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.match-lines td:last-child { color: var(--text); }
 dialog textarea { background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); color: var(--text); font: inherit; padding: 6px 8px; resize: vertical; }
 dialog input[type=text] { background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 8px; }
 

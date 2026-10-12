@@ -12,6 +12,7 @@ repository.workspace = true
 amb-engine = { path = "../amb-engine" }
 amb-export = { path = "../amb-export" }
 amb-lens = { path = "../amb-lens" }
+amb-presets = { path = "../amb-presets" }
 amb-protocol = { path = "../amb-protocol" }
 rayon = "1"
 serde.workspace = true

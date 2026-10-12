@@ -14,7 +14,9 @@
 //! - WebP: an `XMP ` chunk, flagged in the `VP8X` header.
 //! - AVIF: an XMP item (`mime`, `application/rdf+xml`) that describes the
 //!   image (`cdsc`), as HEIF files carry it, with its data at the end.
-//! - OpenEXR and JPEG XL: not yet.
+//! - JPEG XL: an `xml ` box, the codestream moved into a container first
+//!   (its EXIF, an `Exif` box, is added the same way when encoding).
+//! - OpenEXR: not yet.
 
 use crate::Format;
 use crate::exif::Tags;
@@ -536,6 +538,34 @@ fn embed_avif(bytes: &[u8], xmp: &str) -> Option<Vec<u8>> {
     Some(out)
 }
 
+const JXL_SIGNATURE: [u8; 12] = [0, 0, 0, 12, b'J', b'X', b'L', b' ', 0x0D, 0x0A, 0x87, 0x0A];
+
+/// A JPEG XL file with `extra` boxes (`Exif`, `xml `) before its image:
+/// a bare codestream is put in a container (`jxlc`) first.
+pub fn jxl_with_boxes(bytes: &[u8], extra: &[([u8; 4], &[u8])]) -> Option<Vec<u8>> {
+    let mut added = Vec::new();
+    for (kind, body) in extra {
+        added.extend(make_box(kind, None, body)?);
+    }
+    if bytes.starts_with(&[0xFF, 0x0A]) {
+        let mut out = JXL_SIGNATURE.to_vec();
+        out.extend(make_box(b"ftyp", None, b"jxl \0\0\0\0jxl ")?);
+        out.extend(added);
+        out.extend(make_box(b"jxlc", None, bytes)?);
+        return Some(out);
+    }
+    if !bytes.starts_with(&JXL_SIGNATURE) {
+        return None;
+    }
+    let image = boxes(bytes, 0, bytes.len())?
+        .into_iter()
+        .find(|b| matches!(&b.kind, b"jxlc" | b"jxlp"))?;
+    let mut out = bytes[..image.start].to_vec();
+    out.extend(added);
+    out.extend_from_slice(&bytes[image.start..]);
+    Some(out)
+}
+
 /// `bytes` (a finished file) with the rating and keywords added, or unchanged
 /// when there are none or the format can't carry them yet.
 pub fn embed(format: Format, bytes: Vec<u8>, tags: &Tags) -> Vec<u8> {
@@ -548,7 +578,8 @@ pub fn embed(format: Format, bytes: Vec<u8>, tags: &Tags) -> Vec<u8> {
         Format::Tiff => embed_tiff(&bytes, &xmp),
         Format::Webp => embed_webp(&bytes, &xmp),
         Format::Avif => embed_avif(&bytes, &xmp),
-        Format::Exr | Format::Jxl => None,
+        Format::Jxl => jxl_with_boxes(&bytes, &[(*b"xml ", xmp.as_bytes())]),
+        Format::Exr => None,
     };
     done.unwrap_or(bytes)
 }
@@ -670,6 +701,21 @@ mod tests {
             }
             let _ = embed(Format::Avif, bad, &tags());
         }
+    }
+
+    #[test]
+    fn jxl_boxes_go_before_the_image() {
+        let code = [0xFF, 0x0A, 1, 2, 3];
+        let one = jxl_with_boxes(&code, &[(*b"Exif", b"\0\0\0\0II*\0")]).unwrap();
+        let two = embed(Format::Jxl, one, &tags());
+        let kinds: Vec<_> = boxes(&two, 0, two.len())
+            .unwrap()
+            .iter()
+            .map(|b| b.kind)
+            .collect();
+        assert_eq!(kinds, [*b"JXL ", *b"ftyp", *b"Exif", *b"xml ", *b"jxlc"]);
+        assert!(two.ends_with(&code));
+        assert!(jxl_with_boxes(b"not jxl", &[]).is_none());
     }
 
     #[test]

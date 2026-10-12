@@ -435,7 +435,14 @@ pub fn export(
             zune_jpegxl::JxlSimpleEncoder::new(&data, options)
                 .encode(&mut buf)
                 .map_err(|e| Error::Encode(format!("{e:?}")))?;
-            buf
+            // EXIF in an `Exif` box: a zero offset to the TIFF header first.
+            match &exif {
+                Some(e) => {
+                    let item = [&[0u8; 4][..], e].concat();
+                    embed::jxl_with_boxes(&buf, &[(*b"Exif", &item)]).unwrap_or(buf)
+                }
+                None => buf,
+            }
         }
         (Format::Avif, _) => {
             let data = to_u8(&out.rgb);

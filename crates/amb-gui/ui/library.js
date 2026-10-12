@@ -636,6 +636,36 @@ async function libraryDeleteCopies() {
   else await loadLibrary(lib.dir);
 }
 
+// One conversion for a roll of negatives: the median of each frame's analysis.
+async function syncNegativeRoll() {
+  const paths = selectedPhotos().map((p) => p.path);
+  if (paths.length < 2) return toast("Select the frames of the roll.", true);
+  status(`Analysing ${paths.length} negatives…`);
+  $("busy").hidden = false;
+  try {
+    const r = await invoke("negative_sync", { paths });
+    for (const path of r.changed) {
+      const p = libPhoto(path);
+      if (p) {
+        p.edited = true;
+        updateCell(p);
+        stripUpdate(path, { edited: true });
+      }
+      refreshThumb(path);
+    }
+    if (r.state) {
+      setState(r.state);
+      requestPreview(false);
+    }
+    toast(`Synced ${r.changed.length} negative${r.changed.length === 1 ? "" : "s"}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
+    status(`One conversion for ${r.changed.length} frames`);
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    $("busy").hidden = true;
+  }
+}
+
 async function libraryPasteSettings() {
   if (!lib.copied) return toast("First copy the settings of one photo (Ctrl+Shift+C).", true);
   const targets = selectedPhotos().map((p) => p.path).filter((p) => p !== lib.copied);
@@ -875,6 +905,7 @@ function wireLibrary() {
   $("lib-open").addEventListener("click", libraryOpenFocused);
   $("lib-copy").addEventListener("click", libraryCopySettings);
   $("lib-paste").addEventListener("click", libraryPasteSettings);
+  $("lib-negative-sync").addEventListener("click", () => syncNegativeRoll());
   $("lib-plugin").addEventListener("click", () => pluginsFlow().catch((e) => toast(String(e), true)));
   $("lib-vcopy").addEventListener("click", virtualCopyKey);
   $("lib-vcopy-delete").addEventListener("click", libraryDeleteCopies);

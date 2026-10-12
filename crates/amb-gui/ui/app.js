@@ -1295,6 +1295,15 @@ function presetHover(p) {
   }, 180);
 }
 
+async function freezeNegative() {
+  if (!ui.info) return;
+  try {
+    run(await invoke("negative_freeze"), "Freeze negative analysis");
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
 // The open photo's edit as a one-click preset (src/session.rs `save_preset`).
 async function savePresetFlow(name = "") {
   if (!ui.info) return toast("Open a photo first.", true);

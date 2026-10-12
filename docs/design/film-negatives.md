@@ -63,7 +63,7 @@ amb negative stocks                                  # list the looks
 ```
 
 - `amb edit` / the AI protocol set any `amb:` setting like a Camera Raw one, with validation and clamping (`set_param amb:FilmStock vivid-100`).
-- In a future GUI, the Auto button runs the analysis and stores the values (Auto off), and "Sync roll" applies the roll median.
+- In the editor, Film Negative → **Freeze** stores the open frame's analysis with Auto off (one undo step). In the library, **Sync negative roll** analyses the selected frames and gives them all the roll median, as `amb negative analyze` does (`amb_library::negative`).
 
 ## Next
 

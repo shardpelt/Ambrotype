@@ -271,6 +271,15 @@ function buildPanel(item) {
         auto.addEventListener("click", () => autoFlow(true, false));
         l.append(auto);
       }
+      if (e.text === "Conversion") {
+        // Keep this frame's film base and levels, so later edits don't move them.
+        const freeze = document.createElement("button");
+        freeze.className = "small section-action";
+        freeze.textContent = "Freeze";
+        freeze.title = "Store this photo's film base and levels and turn Auto off (one undo step). For a whole roll: Sync negative roll in the library";
+        freeze.addEventListener("click", () => freezeNegative());
+        l.append(freeze);
+      }
       body.append(l);
     } else if (e.type === "control") {
       const def = e.def ?? ui.defs.get(e.name);

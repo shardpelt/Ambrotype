@@ -2254,6 +2254,61 @@ fn trial_overrides(
         .collect())
 }
 
+/// The open photo's film negative analysis as commands that store it with
+/// Auto off ("Freeze").
+#[tauri::command]
+async fn negative_freeze(state: tauri::State<'_, AppState>) -> Res<Vec<Command>> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_ref().ok_or("no photo open")?;
+        let frozen = amb_library::negative::frozen(&[s.negative_analysis()]);
+        Ok(amb_library::negative::commands(&frozen))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[derive(Serialize)]
+struct RollSync {
+    changed: Vec<String>,
+    errors: Vec<String>,
+    state: Option<session::StateInfo>,
+}
+
+/// Give a roll of negatives the same conversion: each frame is analysed,
+/// and the median is stored on all of them with Auto off.
+#[tauri::command]
+async fn negative_sync(paths: Vec<String>, state: tauri::State<'_, AppState>) -> Res<RollSync> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let photos: Vec<&Path> = paths.iter().map(Path::new).collect();
+        let frames = amb_library::negative::analyze_files(&photos)?;
+        let cmds = amb_library::negative::commands(&amb_library::negative::frozen(&frames));
+        let mut out = RollSync {
+            changed: Vec::new(),
+            errors: Vec::new(),
+            state: None,
+        };
+        for path in &paths {
+            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            let result = match guard.as_mut().filter(|s| s.path == Path::new(path)) {
+                Some(s) => s
+                    .execute(&cmds, Some("sync negative roll"))
+                    .map(|_| out.state = Some(s.state_info())),
+                None => library::paste_to_file(Path::new(path), &cmds),
+            };
+            match result {
+                Ok(()) => out.changed.push(path.clone()),
+                Err(e) => out.errors.push(e),
+            }
+        }
+        Ok(out)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[derive(Serialize)]
 struct Variant {
     seed: u64,
@@ -3145,6 +3200,8 @@ fn main() {
             run_plugin_many,
             trial_overrides,
             luts_list,
+            negative_freeze,
+            negative_sync,
             export_presets,
             save_export_preset,
             delete_export_preset,

@@ -58,7 +58,6 @@ Project goal for ranking: faithful Lightroom preset compatibility, free, on Wind
 | Preset UX not built: apply-time include/exclude per setting group, layered presets, apply a preset through a mask (preset masks themselves are applied), preset favourites (hovering a preset previews it, and the list can be filtered), opt-in adaptation assist | Missing | Addresses the top preset complaint ("looks nothing like the ad") | [SCOPE.md](SCOPE.md):253-259 |
 | GPU background export queue, post-export hooks, "edit in external app" | Missing | Batch workflow | [SCOPE.md](SCOPE.md):312 |
 | Native viewport risk: wry `build_as_child` is X11-only on Linux; Wayland needs the `gtk::Fixed` route; viewport-over-webview stability on all three OSes is unproven | Question | Could force Qt 6 or a different layering | [research/08](research/08-cross-platform-and-mobile.md):35; [SCOPE.md](SCOPE.md):395 |
-| Film Negative panel has the Auto switch, stocks and print controls, but no "freeze analysis" button or "Sync roll" yet | Missing | Roll consistency still needs `amb negative analyze` | [design/film-negatives.md](design/film-negatives.md); `crates/amb-gui/src/schema.rs` |
 
 ## 3. Library and catalog
 

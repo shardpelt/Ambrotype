@@ -1368,41 +1368,7 @@ fn negative_analyze(raws: &[&str], out: Option<&Path>, json: bool) -> Result<(),
         }
         frames.push(a);
     }
-    let median = |f: &dyn Fn(&Analysis) -> f64| -> f64 {
-        let mut v: Vec<f64> = frames.iter().map(f).collect();
-        v.sort_by(f64::total_cmp);
-        let n = v.len();
-        if n % 2 == 1 {
-            v[n / 2]
-        } else {
-            0.5 * (v[n / 2 - 1] + v[n / 2])
-        }
-    };
-    let round = |v: f64| (v * 10_000.0).round() / 10_000.0;
-    let mut settings = BTreeMap::new();
-    let mut put = |k: &str, v: amb_presets::Value| {
-        settings.insert(format!("amb:{k}"), v);
-    };
-    put("NegativeConvert", amb_presets::Value::Bool(true));
-    put("NegativeAuto", amb_presets::Value::Bool(false));
-    for (c, name) in ["Red", "Green", "Blue"].iter().enumerate() {
-        put(
-            &format!("FilmBase{name}"),
-            amb_presets::Value::Number(round(median(&|a| a.base[c]))),
-        );
-        put(
-            &format!("NegativeDensityLow{name}"),
-            amb_presets::Value::Number(round(median(&|a| a.density_low[c]))),
-        );
-        put(
-            &format!("NegativeDensityHigh{name}"),
-            amb_presets::Value::Number(round(median(&|a| a.density_high[c]))),
-        );
-    }
-    put(
-        "NegativeMidtone",
-        amb_presets::Value::Number(round(median(&|a| a.midtone))),
-    );
+    let mut settings = amb_library::negative::frozen(&frames);
     if json {
         let map: serde_json::Map<String, serde_json::Value> = settings
             .iter()

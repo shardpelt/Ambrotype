@@ -138,7 +138,7 @@ If the sidecar does not exist yet, `amb edit` starts from an empty one and creat
 amb render IMG_0001.CR3 /tmp/preview.jpg --preset IMG_0001.xmp
 ```
 
-`render` reads the settings from `--preset` (sidecars work too), prints the as-shot white balance and timing, and lists the settings present that the engine **does not render yet**. Those are still saved and Lightroom will honour them, but the preview will not show them. The **Status** column of the [settings reference](settings-reference.md) shows what renders. If you can look at images, compare the preview with the user's intent or reference photos and iterate. Keep the step budget in mind.
+`render` reads the settings from `--preset` (sidecars work too; without it, the photo's own sidecar), prints the as-shot white balance and timing, and lists the settings present that the engine **does not render yet**. Those are still saved and Lightroom will honour them, but the preview will not show them. The **Status** column of the [settings reference](settings-reference.md) shows what renders. If you can look at images, compare the preview with the user's intent or reference photos and iterate. Keep the step budget in mind.
 
 ### 4. Presets
 

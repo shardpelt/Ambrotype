@@ -32,8 +32,9 @@ USAGE:
     amb render <RAW> <OUT.jpg|.png|.tif|.webp|.avif|.exr|.jxl> [--preset P] [--amount A]
                                             [--look default|linear] [--calibration fitted.json]
                                             [--lens-db DIR] [--lcp-dir DIR] [export options]
-                                            Develop a raw with a preset or sidecar, export it, and report
-                                            which settings are not rendered yet
+                                            Develop a raw with its own sidecar (or --preset, a preset or
+                                            another sidecar), export it, and report which settings are not
+                                            rendered yet
     amb render <RAW>... --out-dir DIR [--format jpeg|...] [--name TEMPLATE] [same options]
                                             The same for many raws (e.g. a folder: photos/*.NEF), with the
                                             same preset and export options; one failure doesn't stop the rest.
@@ -1018,6 +1019,10 @@ fn render(
         "{} {} | {}x{} | {wb}{turned}",
         img.make, img.model, img.width, img.height
     );
+    // The photo's own edit, as Lightroom exports it, unless a preset is given.
+    let sidecar = amb_engine::sidecar_path(input);
+    let own = (preset.is_none() && sidecar.is_file()).then(|| sidecar.display().to_string());
+    let preset = preset.or(own.as_deref());
     let (develop, not_rendered, notes) =
         develop_settings(&mut img, preset, amount, look, calibration, options)?;
     for n in notes {
@@ -1083,8 +1088,8 @@ fn develop_settings(
 > {
     let mut notes = Vec::new();
     let mut settings = std::collections::BTreeMap::new();
-    if let Some(preset) = preset {
-        let preset = load(Path::new(preset))?;
+    if let Some(path) = preset {
+        let preset = load(Path::new(path))?;
         let amount = match amount {
             Some(a) => {
                 a.trim_end_matches('%')
@@ -1096,11 +1101,14 @@ fn develop_settings(
         };
         settings =
             amb_presets::amount::apply(&settings, &preset.settings, amount, Registry::builtin());
-        notes.push(format!(
-            "preset: {} at {:.0}%",
-            preset.name().unwrap_or("(unnamed)"),
-            amount * 100.0
-        ));
+        let file = Path::new(path)
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        notes.push(match preset.name() {
+            Some(name) => format!("preset: {name} at {:.0}%", amount * 100.0),
+            None => format!("edit: {file} at {:.0}%", amount * 100.0),
+        });
     }
     let (develop, not_rendered, more) = develop_from(img, &settings, look, calibration, options)?;
     notes.extend(more);

@@ -20,6 +20,18 @@ These facts were checked against Lightroom-written files (from the field notes o
 
 The brush facts and the brush model below come from the autoshade project (MIT, see NOTICE), which measured them against 29 controlled Lightroom exports and a library of real sidecars.
 
+
+## Select Sky (ours)
+
+Lightroom's AI masks keep no pixels in the file, so they have to be found again. Select Sky (`Mask/Image`, `MaskSubType` 2; `add_mask` kind `sky`, the Sky button) is found without a model (`mask::sky_map`):
+
+1. On a grid of at most 128 cells a side, each cell scores by its colour (OkLab of the tone-encoded light: bright, and blue, cyan or grey, i.e. not yellow) times how little its brightness changes against its neighbours.
+2. Cells above 0.5 in the top row start a fill through cells above 0.35, so a blue lake or a white wall that doesn't touch the sky is left out.
+3. The region grows two cells into sky-coloured cells however textured (sky between branches).
+4. Each pixel's alpha is the grid (bilinear) times that pixel's own colour score, so branches and edges against the sky stay sharp.
+
+A region render (the 100% view) takes the grid from the small render of the whole photo, like colour range targets. It misses orange sunset skies and dark storm clouds, and can take in a pale distant hill that meets the sky; a model would do better (see GAPS).
+
 ## Our model
 
 **Parts.** A *part* is what the editor shows as one mask component. Each brush stroke is its own `Mask/Paint` entry, so consecutive strokes with the same `MaskSyncID` (or, in old files, none) form one brush part. Every other entry is a part on its own.

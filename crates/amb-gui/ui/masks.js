@@ -18,6 +18,7 @@ const NEW_KINDS = [
   { kind: "radial", label: "Radial", key: "Shift+R", hint: "Drag from the centre outwards." },
   { kind: "brush", label: "Brush", key: "B", hint: "Paint on the photo. Hold Alt to erase; [ and ] change the size." },
   { kind: "luminance", label: "Luminance", key: "", hint: "Selects by brightness; set the range below." },
+  { kind: "sky", label: "Sky", key: "", hint: "Selects the sky: bright blue or grey areas joined to the top edge (our own rules, not Adobe's AI)." },
   { kind: "color", label: "Color", key: "", hint: "Click a colour in the photo; Shift-click to add more." },
 ];
 
@@ -622,11 +623,11 @@ function selectPart(i) {
 function startTool(kind, fresh, continuePart = false) {
   if (!mk.on) return;
   if (!fresh && mk.selected == null) fresh = true;
-  if (kind === "luminance") {
-    // Nothing to draw: make it, then set the range in the panel.
+  if (kind === "luminance" || kind === "sky") {
+    // Nothing to draw: make it (then set a luminance range in the panel).
     const cmd = fresh
-      ? { cmd: "add_mask", kind: "luminance" }
-      : { cmd: "add_mask", kind: "luminance", mask: mk.selected, mode: mk.addMode };
+      ? { cmd: "add_mask", kind }
+      : { cmd: "add_mask", kind, mask: mk.selected, mode: mk.addMode };
     created(cmd, fresh);
     return;
   }

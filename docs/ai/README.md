@@ -171,7 +171,7 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 | `reset_param` | `name` | Removes the setting so the default applies. |
 | `reset_group` | `group` | Removes every setting of a group, e.g. `"hsl"`. |
 | `apply_preset` | `path`, `amount`?, `include_groups`?, `exclude_groups`? | See above. |
-| `add_mask` | `kind`, `mask`?, `mode`?, `values`? | A linear, radial, luminance or color mask; with `mask`, a new part of that mask (`mode` add, subtract, intersect). See [Masks](#masks). |
+| `add_mask` | `kind`, `mask`?, `mode`?, `values`? | A linear, radial, luminance, color or sky mask (sky: Lightroom's Select Sky, found by our own rules); with `mask`, a new part of that mask (`mode` add, subtract, intersect). See [Masks](#masks). |
 | `set_mask` | `mask`, `part`?, `values` | A mask's local sliders, `name`, `active`, `amount`; with `part`, that part's geometry, `mode`, `invert`. |
 | `paint_mask` | `points`, `mask`?, `part`?, `mode`?, `size`?, `feather`?, `flow`?, `density`?, `erase`? | A brush stroke; without `part`, a new brush part (a new mask without `mask`). |
 | `remove_mask` | `mask`, `part`? | A mask, or one part. |

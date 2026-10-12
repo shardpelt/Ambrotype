@@ -217,7 +217,7 @@ impl MaskKind {
                 | MaskKind::Brush
                 | MaskKind::Luminance
                 | MaskKind::Color
-        )
+        ) || matches!(self, MaskKind::Ai(sub) if sub == "2")
     }
 }
 

@@ -160,9 +160,20 @@ pub enum Shape {
         samples: Vec<(f64, f64)>,
         amount: f64,
     },
-    /// Something we can't draw (AI, depth, Lightroom's own colour samples):
-    /// it selects nothing.
+    /// Select Sky (`Mask/Image` subtype 2), found by our own colour and
+    /// texture rules ([`sky_map`]), not Adobe's model.
+    Sky,
+    /// Something we can't draw (other AI masks, depth, Lightroom's own
+    /// colour samples): it selects nothing.
     Unsupported,
+}
+
+/// Where the sky is, in fractions of the output (a small grid, 0..1).
+#[derive(Debug, Clone, PartialEq)]
+pub struct SkyMap {
+    pub width: usize,
+    pub height: usize,
+    pub data: Vec<f32>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -463,7 +474,129 @@ fn read_shape(kind: &MaskKind, entries: &[&BTreeMap<String, Value>]) -> Shape {
                 }
             }
         }
+        MaskKind::Ai(sub) if sub == "2" => Shape::Sky,
         _ => Shape::Unsupported,
+    }
+}
+
+// ---------------------------------------------------------------- sky
+
+/// How sky-like a colour (OkLab of the tone-encoded light) is: bright, and
+/// blue, cyan or near neutral. Foliage, earth and warm colours have a
+/// positive b (yellow) and dark ones a low L, so they aren't sky.
+fn sky_colour(lab: [f32; 3]) -> f32 {
+    let [l, _, b] = lab.map(f64::from);
+    let bright = smoothstep(0.38, 0.62, l);
+    let not_yellow = 1.0 - smoothstep(0.0, 0.05, b);
+    (bright * not_yellow) as f32
+}
+
+/// **Ours, not Adobe's:** the sky as smooth, bright, blue or neutral areas
+/// joined to the top edge, on a grid of at most 128 cells a side. Each cell
+/// scores by [`sky_colour`] and how little its brightness changes against
+/// its neighbours; cells above 0.5 in the top row start a fill that spreads
+/// through cells above 0.35, then grows into sky-coloured textured cells.
+pub fn sky_map(lab: &[[f32; 3]], w: usize, h: usize) -> SkyMap {
+    let scale = (w.max(h) as f64 / 128.0).max(1.0);
+    let (sw, sh) = (
+        ((w as f64 / scale).ceil() as usize).max(1),
+        ((h as f64 / scale).ceil() as usize).max(1),
+    );
+    let mut cells = vec![[0.0f32; 3]; sw * sh];
+    let mut count = vec![0u32; sw * sh];
+    for y in 0..h {
+        let cy = ((y as f64 / scale) as usize).min(sh - 1);
+        for x in 0..w {
+            let i = cy * sw + ((x as f64 / scale) as usize).min(sw - 1);
+            for c in 0..3 {
+                cells[i][c] += lab[y * w + x][c];
+            }
+            count[i] += 1;
+        }
+    }
+    for (c, n) in cells.iter_mut().zip(&count) {
+        *c = c.map(|v| v / (*n).max(1) as f32);
+    }
+    let score: Vec<f32> = (0..sw * sh)
+        .map(|i| {
+            let (x, y) = (i % sw, i / sw);
+            let l = cells[i][0];
+            let mut change = 0.0f32;
+            for (dx, dy) in [(-1i64, 0i64), (1, 0), (0, -1), (0, 1)] {
+                let (nx, ny) = (x as i64 + dx, y as i64 + dy);
+                if nx >= 0 && ny >= 0 && (nx as usize) < sw && (ny as usize) < sh {
+                    change = change.max((cells[ny as usize * sw + nx as usize][0] - l).abs());
+                }
+            }
+            let smooth = 1.0 - smoothstep(0.02, 0.07, f64::from(change)) as f32;
+            sky_colour(cells[i]) * smooth
+        })
+        .collect();
+    let mut sky = vec![false; sw * sh];
+    let mut stack: Vec<usize> = (0..sw).filter(|&x| score[x] > 0.5).collect();
+    while let Some(i) = stack.pop() {
+        if sky[i] {
+            continue;
+        }
+        sky[i] = true;
+        let (x, y) = (i % sw, i / sw);
+        let mut push = |nx: usize, ny: usize| {
+            let j = ny * sw + nx;
+            if !sky[j] && score[j] > 0.35 {
+                stack.push(j);
+            }
+        };
+        if x > 0 {
+            push(x - 1, y);
+        }
+        if x + 1 < sw {
+            push(x + 1, y);
+        }
+        if y > 0 {
+            push(x, y - 1);
+        }
+        if y + 1 < sh {
+            push(x, y + 1);
+        }
+    }
+    // Grow two cells into neighbours whose colour is sky-like however
+    // textured (sky between branches): the per-pixel colour test then
+    // leaves the branches out.
+    for _ in 0..2 {
+        let grown: Vec<bool> = (0..sw * sh)
+            .map(|i| {
+                if sky[i] {
+                    return true;
+                }
+                let (x, y) = (i % sw, i / sw);
+                let near = (x > 0 && sky[i - 1])
+                    || (x + 1 < sw && sky[i + 1])
+                    || (y > 0 && sky[i - sw])
+                    || (y + 1 < sh && sky[i + sw]);
+                near && sky_colour(cells[i]) > 0.3
+            })
+            .collect();
+        sky = grown;
+    }
+    SkyMap {
+        width: sw,
+        height: sh,
+        data: sky.iter().map(|&s| if s { 1.0 } else { 0.0 }).collect(),
+    }
+}
+
+impl SkyMap {
+    /// Bilinear value at output fractions (u, v).
+    fn at(&self, u: f64, v: f64) -> f32 {
+        let x = (u * self.width as f64 - 0.5).clamp(0.0, (self.width - 1) as f64);
+        let y = (v * self.height as f64 - 0.5).clamp(0.0, (self.height - 1) as f64);
+        let (x0, y0) = (x.floor() as usize, y.floor() as usize);
+        let (x1, y1) = ((x0 + 1).min(self.width - 1), (y0 + 1).min(self.height - 1));
+        let (fx, fy) = ((x - x0 as f64) as f32, (y - y0 as f64) as f32);
+        let p = |xx: usize, yy: usize| self.data[yy * self.width + xx];
+        let top = p(x0, y0) + (p(x1, y0) - p(x0, y0)) * fx;
+        let bottom = p(x0, y1) + (p(x1, y1) - p(x0, y1)) * fx;
+        top + (bottom - top) * fy
     }
 }
 
@@ -560,6 +693,8 @@ struct Reference<'a> {
     width: usize,
     height: usize,
     strengths: MaskStrengths,
+    /// The buffer's place in the full output.
+    tile: Tile,
 }
 
 /// The colours colour-range masks select, one list per colour shape in
@@ -569,6 +704,10 @@ struct Reference<'a> {
 struct Targets<'a> {
     given: Option<&'a [Vec<[f32; 3]>]>,
     measured: Vec<Vec<[f32; 3]>>,
+    /// Sky maps, as colour targets: given to a region render, measured on
+    /// a whole one.
+    sky_given: Option<&'a [SkyMap]>,
+    sky_measured: Vec<SkyMap>,
 }
 
 /// Draw one shape into a plane of the output's size.
@@ -657,6 +796,27 @@ fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference, targets: &mut Targets
                 };
                 draw_color_range(&mut plane, lab, &colours, *amount, &r.strengths);
                 targets.measured.push(colours);
+            }
+        }
+        Shape::Sky => {
+            if let Some(lab) = r.lab {
+                let i = targets.sky_measured.len();
+                let map = match targets.sky_given.and_then(|g| g.get(i)) {
+                    Some(m) => m.clone(),
+                    None => sky_map(lab, w, h),
+                };
+                let t = &r.tile;
+                let (fw, fh) = (t.full_width.max(1) as f64, t.full_height.max(1) as f64);
+                plane.par_chunks_mut(w).enumerate().for_each(|(y, row)| {
+                    let v = (t.y + y) as f64 / fh;
+                    for (x, out) in row.iter_mut().enumerate() {
+                        let u = (t.x + x) as f64 / fw;
+                        // The grid says where; each pixel's colour keeps
+                        // branches and edges against the sky sharp.
+                        *out = map.at(u, v) * sky_colour(lab[y * w + x]);
+                    }
+                });
+                targets.sky_measured.push(map);
             }
         }
         Shape::Unsupported => {}
@@ -771,6 +931,8 @@ pub struct Drawn {
     tile: Tile,
     /// The colours the colour range masks selected (see [`draw_in`]).
     pub colour_targets: Vec<Vec<[f32; 3]>>,
+    /// Where Select Sky found the sky.
+    pub sky_maps: Vec<SkyMap>,
 }
 
 /// Draw every mask for an image at the end of the scene-linear stage.
@@ -794,6 +956,7 @@ pub fn draw(
         strengths,
         &Tile::of(img),
         None,
+        None,
     )
 }
 
@@ -811,6 +974,7 @@ pub fn draw_in(
     strengths: &MaskStrengths,
     tile: &Tile,
     colour_targets: Option<&[Vec<[f32; 3]>]>,
+    sky_maps: Option<&[SkyMap]>,
 ) -> Drawn {
     let frame = Frame::new(frame, crop).in_tile(tile);
     let lw = luminance_weights();
@@ -821,24 +985,27 @@ pub fn draw_in(
                 .map(|p| encode((lw[0] * p[0] + lw[1] * p[1] + lw[2] * p[2]).max(0.0)))
                 .collect()
         });
-    let lab: Option<Vec<[f32; 3]>> = masks.needs(|s| matches!(s, Shape::Color { .. })).then(|| {
-        let ok = OkLab::new();
-        img.rgb
-            .par_chunks(3)
-            .map(|p| {
-                // Compare colours as they look: tone-encode the light first.
-                let y = (lw[0] * p[0] + lw[1] * p[1] + lw[2] * p[2]).max(1e-6);
-                let s = encode(y) / y;
-                ok.from_working([p[0] * s, p[1] * s, p[2] * s])
-            })
-            .collect()
-    });
+    let lab: Option<Vec<[f32; 3]>> = masks
+        .needs(|s| matches!(s, Shape::Color { .. } | Shape::Sky))
+        .then(|| {
+            let ok = OkLab::new();
+            img.rgb
+                .par_chunks(3)
+                .map(|p| {
+                    // Compare colours as they look: tone-encode the light first.
+                    let y = (lw[0] * p[0] + lw[1] * p[1] + lw[2] * p[2]).max(1e-6);
+                    let s = encode(y) / y;
+                    ok.from_working([p[0] * s, p[1] * s, p[2] * s])
+                })
+                .collect()
+        });
     let reference = Reference {
         luminance: luminance.as_deref(),
         lab: lab.as_deref(),
         width: img.width,
         height: img.height,
         strengths: *strengths,
+        tile: *tile,
     };
     let mut planes = Vec::new();
     let mut curves = Vec::new();
@@ -846,6 +1013,8 @@ pub fn draw_in(
     let mut targets = Targets {
         given: colour_targets,
         measured: Vec::new(),
+        sky_given: sky_maps,
+        sky_measured: Vec::new(),
     };
     for c in &masks.corrections {
         let shown = masks.overlay.is_some() && masks.overlay == c.index;
@@ -869,6 +1038,7 @@ pub fn draw_in(
         overlay,
         tile: *tile,
         colour_targets: targets.measured,
+        sky_maps: targets.sky_measured,
     }
 }
 
@@ -1177,6 +1347,7 @@ mod tests {
             width: w,
             height: h,
             strengths: MaskStrengths::default(),
+            tile: Tile::whole(w, h),
         }
     }
 
@@ -1393,6 +1564,7 @@ mod tests {
             width: 10,
             height: 1,
             strengths: MaskStrengths::default(),
+            tile: Tile::whole(10, 1),
         };
         let a = draw_correction(
             &m.corrections[0],
@@ -1407,11 +1579,11 @@ mod tests {
 
     #[test]
     fn ai_masks_select_nothing_and_are_reported() {
-        let ai = st(&[("What", text("Mask/Image")), ("MaskSubType", text("2"))]);
+        let ai = st(&[("What", text("Mask/Image")), ("MaskSubType", text("1"))]);
         let s = settings(vec![correction(vec![ai])]);
         let (m, notes) = Masks::from_settings(&s);
         assert_eq!(notes.len(), 1, "{notes:?}");
-        assert!(notes[0].contains("Select Sky"));
+        assert!(notes[0].contains("Select Subject"));
         let a = draw_correction(
             &m.corrections[0],
             &Frame::new((4, 4), None),
@@ -1419,6 +1591,54 @@ mod tests {
             &mut Targets::default(),
         );
         assert!(a.iter().all(|&v| v == 0.0));
+    }
+
+    #[test]
+    fn select_sky_finds_the_sky_joined_to_the_top() {
+        // A blue sky over dark, textured trees, with a blue lake below them.
+        let (w, h) = (120, 90);
+        let ok = OkLab::new();
+        let sky = ok.from_working([0.45, 0.6, 0.9]);
+        let lab: Vec<[f32; 3]> = (0..w * h)
+            .map(|i| {
+                let (x, y) = (i % w, i / w);
+                // The sky, and the lake.
+                if y < 40 || ((65..80).contains(&y) && (30..90).contains(&x)) {
+                    sky
+                } else {
+                    // Trees: dark green with a checker texture.
+                    let t = if (x / 2 + y / 2) % 2 == 0 { 0.05 } else { 0.12 };
+                    ok.from_working([t * 0.6, t, t * 0.5])
+                }
+            })
+            .collect();
+        let map = sky_map(&lab, w, h);
+        let at =
+            |x: usize, y: usize| map.at((x as f64 + 0.5) / w as f64, (y as f64 + 0.5) / h as f64);
+        assert!(at(60, 10) > 0.99 && at(5, 30) > 0.99);
+        assert!(at(60, 55) < 0.01, "trees");
+        assert!(at(60, 72) < 0.01, "the lake isn't joined to the top");
+        // Drawn through the mask: the sky's own pixels, nothing else.
+        let ai = st(&[("What", text("Mask/Image")), ("MaskSubType", text("2"))]);
+        let (m, notes) = Masks::from_settings(&settings(vec![correction(vec![ai])]));
+        assert!(notes.is_empty(), "{notes:?}");
+        let r = Reference {
+            luminance: None,
+            lab: Some(&lab),
+            width: w,
+            height: h,
+            strengths: MaskStrengths::default(),
+            tile: Tile::whole(w, h),
+        };
+        let mut targets = Targets::default();
+        let a = draw_correction(
+            &m.corrections[0],
+            &Frame::new((w, h), None),
+            &r,
+            &mut targets,
+        );
+        assert!(a[10 * w + 60] > 0.9 && a[55 * w + 60] < 0.01 && a[72 * w + 60] < 0.01);
+        assert_eq!(targets.sky_measured.len(), 1);
     }
 
     #[test]

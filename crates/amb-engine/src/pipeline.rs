@@ -1114,6 +1114,7 @@ pub struct Globals {
     dehaze: Option<dehaze::Estimate>,
     mask_dehaze: Vec<dehaze::Estimate>,
     colour_targets: Vec<Vec<[f32; 3]>>,
+    sky_maps: Vec<mask::SkyMap>,
 }
 
 /// How one run of [`develop`] goes.
@@ -1695,10 +1696,12 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
             &cal.masks,
             &tile,
             pass.given.map(|g| g.colour_targets.as_slice()),
+            pass.given.map(|g| g.sky_maps.as_slice()),
         )
     });
     if let Some(m) = &masks {
         globals.colour_targets = m.colour_targets.clone();
+        globals.sky_maps = m.sky_maps.clone();
     }
     if let Some(m) = &masks {
         m.apply_light(&mut out, &cal.masks);

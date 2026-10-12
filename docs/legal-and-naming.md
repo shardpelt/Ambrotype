@@ -30,7 +30,7 @@ Checked on 2026-10-04. This is an engineer's reading of the rules, not legal adv
   - `LICENSE` (the GPL text from gnu.org), `NOTICE` (copyright, exceptions, ported code, library notes, trademarks), SDK `LICENSE-MIT` and `LICENSE-APACHE`
   - `license` in every Cargo.toml, and an SPDX line at the top of every source file
   - About tab in the app (copyright, no warranty, the licence and notices readable offline, a link to the source); the CLI's help says the same
-  - every dependency checked: all GPL-compatible (MIT, Apache-2.0, BSD, ISC, Zlib, MPL-2.0, Unicode-3.0, LGPL-2.1 for rawler)
+  - every dependency checked: all GPL-compatible (MIT, Apache-2.0, BSD, ISC, Zlib, MPL-2.0, Unicode-3.0, LGPL-2.1 for rawler); CI now checks this on every push (`cargo deny check licenses sources`, allowed list in `deny.toml`)
 - **Before going public:**
   1. ~~Paraphrase the verbatim Adobe quotes in `docs/adobe-docs/`.~~ Done 2026-10-11 (see §1).
   2. Make the repository public (the GPL promises the source to everyone who gets the app).

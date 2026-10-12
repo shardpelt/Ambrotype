@@ -60,6 +60,8 @@ struct AppState {
     export_presets: Mutex<Vec<ExportPreset>>,
     /// The presets starred as favourites, by path.
     preset_favourites: Mutex<Vec<String>>,
+    /// Watches the folders on screen for photos added, removed or renamed.
+    folder_watch: Mutex<Option<notify::RecommendedWatcher>>,
     assistant: Mutex<assistant::Provider>,
     /// The assistant's key for this run, when the keychain can't keep it.
     assistant_key: Mutex<Option<String>>,
@@ -2415,6 +2417,62 @@ async fn fetch_lens_db(state: tauri::State<'_, AppState>) -> Res<LensDbState> {
     Ok(lens_db_state(state))
 }
 
+/// Watch `dirs` (the library's folders and the filmstrip's) for photos
+/// added, removed or renamed, and tell the page ("folder-changed", at most
+/// about once a second). Sidecars are ignored, so our own saves don't
+/// trigger it. An empty list stops watching.
+#[tauri::command]
+fn watch_folders(
+    dirs: Vec<String>,
+    recursive: bool,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Res<()> {
+    use notify::{EventKind, RecursiveMode, Watcher};
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let mut slot = state.folder_watch.lock().map_err(|e| e.to_string())?;
+    *slot = None;
+    if dirs.is_empty() {
+        return Ok(());
+    }
+    let pending = Arc::new(AtomicBool::new(false));
+    let mut watcher = notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
+        let Ok(event) = event else { return };
+        let photos = event
+            .paths
+            .iter()
+            .any(|p| amb_engine::raw::is_raw_path(p) || amb_engine::raster::is_raster(p));
+        let relevant = matches!(
+            event.kind,
+            EventKind::Create(_)
+                | EventKind::Remove(_)
+                | EventKind::Modify(notify::event::ModifyKind::Name(_))
+        );
+        if photos && relevant && !pending.swap(true, Ordering::SeqCst) {
+            let (app, pending) = (app.clone(), pending.clone());
+            std::thread::spawn(move || {
+                // Let a copy of many files finish first.
+                std::thread::sleep(std::time::Duration::from_millis(900));
+                pending.store(false, Ordering::SeqCst);
+                use tauri::Emitter;
+                let _ = app.emit("folder-changed", ());
+            });
+        }
+    })
+    .map_err(|e| e.to_string())?;
+    let mode = if recursive {
+        RecursiveMode::Recursive
+    } else {
+        RecursiveMode::NonRecursive
+    };
+    for dir in &dirs {
+        // A folder that's gone just isn't watched.
+        let _ = watcher.watch(Path::new(dir), mode);
+    }
+    *slot = Some(watcher);
+    Ok(())
+}
+
 /// The open photo's film negative analysis as commands that store it with
 /// Auto off ("Freeze").
 #[tauri::command]
@@ -3393,6 +3451,7 @@ fn main() {
             luts_list,
             pick_watermark_image,
             negative_freeze,
+            watch_folders,
             lens_db_state,
             fetch_lens_db,
             negative_frame,

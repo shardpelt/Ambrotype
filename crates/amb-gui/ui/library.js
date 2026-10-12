@@ -100,6 +100,7 @@ async function loadLibrary(dir, more = dir === lib.dir ? lib.more : []) {
   const keep = new Set(lib.photos.map((p) => p.path));
   lib.selected = new Set([...lib.selected].filter((p) => keep.has(p)));
   renderLibrary();
+  watchShownFolders();
   if (typeof renderCollectionControls === "function") renderCollectionControls();
 }
 

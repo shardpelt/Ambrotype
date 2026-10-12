@@ -29,9 +29,9 @@ function applyStripVisibility() {
   $("filmstrip").hidden = !stripVisible();
 }
 
-async function loadFolder(path) {
+async function loadFolder(path, force = false) {
   const dir = dirOf(path);
-  if (dir === strip.dir && strip.photos.some((p) => p.path === path)) return markCurrent();
+  if (!force && dir === strip.dir && strip.photos.some((p) => p.path === path)) return markCurrent();
   strip.dir = dir;
   try {
     strip.photos = await invoke("folder_photos", { path });
@@ -40,6 +40,19 @@ async function loadFolder(path) {
     toast(`Couldn't list the folder: ${e}`, true);
   }
   renderStrip();
+  watchShownFolders();
+}
+
+// Watch the folders on screen, so photos added or removed outside the app
+// (a card copy, another program) show up without ↻.
+function watchShownFolders() {
+  const dirs = new Set([strip.dir, ...(lib.collection || lib.smart ? [] : [lib.dir, ...(lib.more ?? [])])].filter(Boolean));
+  invoke("watch_folders", { dirs: [...dirs], recursive: $("lib-subfolders").checked }).catch(() => {});
+}
+
+async function folderChanged() {
+  if (libraryOn() && lib.dir && !lib.collection && !lib.smart) await loadLibrary(lib.dir);
+  if (ui.info?.path) await loadFolder(ui.info.path, true);
 }
 
 function starText(n) {

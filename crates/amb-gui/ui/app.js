@@ -1985,6 +1985,7 @@ async function init() {
   });
 
   // Drag and drop a raw file onto the window.
+  tauri.event.listen("folder-changed", () => folderChanged());
   tauri.event.listen("tauri://drag-enter", () => $("viewer").classList.add("dragover"));
   tauri.event.listen("tauri://drag-leave", () => $("viewer").classList.remove("dragover"));
   tauri.event.listen("tauri://drag-drop", (e) => {

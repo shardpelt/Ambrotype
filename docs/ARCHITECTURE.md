@@ -72,7 +72,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 | PNG | 8, 16 | ICC | yes | |
 | TIFF | 8, 16, 32 float | ICC | not yet | uncompressed (LZW/ZIP next) |
 | WebP | 8 | ICC | yes | lossless only (lossy needs libwebp) |
-| AVIF | 8 | sRGB only for now | yes | quality, speed |
+| AVIF | 8 | sRGB, Display P3, Rec. 2020 (CICP codes, no ICC) | yes | quality, speed |
 | OpenEXR | 32 float | linear, unclipped | n/a | for compositing/HDR work |
 
 - **Colour spaces:** sRGB, Display P3, Adobe RGB (1998)-compatible, ProPhoto RGB and Rec. 2020.

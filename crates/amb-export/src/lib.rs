@@ -4,8 +4,9 @@
 //! Formats: JPEG, PNG, TIFF, WebP (lossless), AVIF and OpenEXR, all with pure
 //! Rust encoders. JPEG, PNG, TIFF and WebP get an embedded ICC profile for
 //! their colour space (sRGB, Display P3, Adobe RGB-compatible, ProPhoto,
-//! Rec. 2020); AVIF is sRGB only for now; EXR is linear. EXIF goes into JPEG,
-//! PNG, WebP and AVIF (not TIFF yet).
+//! Rec. 2020); AVIF says sRGB, Display P3 or Rec. 2020 in its colour box (no
+//! ICC); EXR is linear. EXIF goes into JPEG, PNG, WebP, AVIF and JPEG XL (not
+//! TIFF yet).
 //! Like Lightroom's Export dialog, an export can be resized ("Resize to Fit"),
 //! output-sharpened for screen or paper, carry EXIF metadata (with privacy
 //! choices), and, for JPEG, be limited to a file size.
@@ -263,6 +264,19 @@ fn srgb_to_output(rgb: [f64; 3], space: OutputSpace, linear_out: bool, float: bo
     })
 }
 
+/// The CICP colour primaries and transfer characteristics (ITU-T H.273) an
+/// AVIF names its colour space with, for the spaces that have them.
+fn avif_colour(space: OutputSpace) -> Option<(u16, u16)> {
+    match space {
+        OutputSpace::Srgb => Some((1, 13)),
+        // DCI-P3 primaries with a D65 white (SMPTE EG 432-1), sRGB curve.
+        OutputSpace::DisplayP3 => Some((12, 13)),
+        // BT.2020 primaries, with its (BT.709) curve.
+        OutputSpace::Rec2020 => Some((9, 1)),
+        OutputSpace::AdobeRgbCompatible | OutputSpace::ProPhoto => None,
+    }
+}
+
 /// Develop-to-file: orient, resize, convert, sharpen, watermark, frame and encode.
 pub fn export(
     img: &Image,
@@ -288,11 +302,12 @@ pub fn export(
                 .into(),
         ));
     }
-    if s.format == Format::Avif && s.color_space != OutputSpace::Srgb {
-        // The AVIF encoder cannot embed an ICC profile yet, and AVIF readers
-        // assume sRGB without one.
+    if s.format == Format::Avif && avif_colour(s.color_space).is_none() {
+        // The AVIF encoder cannot embed an ICC profile yet; the spaces
+        // with a code of their own (CICP) are named in its colour box.
         return Err(Error::Unsupported(
-            "AVIF export is sRGB only for now (use JPEG, PNG or TIFF for wide gamut)".into(),
+            "AVIF export is sRGB, Display P3 or Rec. 2020 (use JPEG, PNG or TIFF for Adobe RGB or ProPhoto)"
+                .into(),
         ));
     }
     let mut upright = geometry::orient(img, meta.orientation);
@@ -462,7 +477,12 @@ pub fn export(
             }
             enc.write_image(&data, w, h, ExtendedColorType::Rgb8)
                 .map_err(|e| Error::Encode(e.to_string()))?;
-            buf
+            // Named, sRGB too, rather than left for readers to assume.
+            match avif_colour(s.color_space) {
+                Some(cicp) => embed::avif_set_colour(buf, cicp)
+                    .ok_or_else(|| Error::Encode("AVIF: couldn't name the colour space".into()))?,
+                None => buf,
+            }
         }
         (format, _) => {
             let data = to_u8(&out.rgb);
@@ -651,6 +671,34 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("amb-export-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         dir.join(name)
+    }
+
+    #[test]
+    fn avif_names_wide_gamut_spaces() {
+        let img = test_image();
+        let meta = PhotoMetadata::default();
+        let nclx = |bytes: &[u8]| {
+            let at = bytes.windows(4).position(|w| w == b"nclx").unwrap() + 4;
+            (
+                u16::from_be_bytes([bytes[at], bytes[at + 1]]),
+                u16::from_be_bytes([bytes[at + 2], bytes[at + 3]]),
+            )
+        };
+        for (space, cicp) in [
+            (OutputSpace::Srgb, (1, 13)),
+            (OutputSpace::DisplayP3, (12, 13)),
+            (OutputSpace::Rec2020, (9, 1)),
+        ] {
+            let mut s = ExportSettings::new(Format::Avif);
+            s.avif_speed = 10;
+            s.color_space = space;
+            let path = tmp(&format!("space-{space:?}.avif"));
+            export(&img, &meta, &s, &path).unwrap();
+            assert_eq!(nclx(&std::fs::read(&path).unwrap()), cicp, "{space:?}");
+        }
+        let mut s = ExportSettings::new(Format::Avif);
+        s.color_space = OutputSpace::ProPhoto;
+        assert!(export(&img, &meta, &s, &tmp("prophoto.avif")).is_err());
     }
 
     #[test]

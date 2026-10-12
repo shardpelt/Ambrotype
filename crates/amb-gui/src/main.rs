@@ -57,6 +57,7 @@ struct AppState {
     plugin_approvals: Mutex<plugins::Approvals>,
     plugin_recipes: Mutex<PluginRecipes>,
     import_choice: Mutex<Option<ImportChoice>>,
+    export_presets: Mutex<Vec<ExportPreset>>,
     assistant: Mutex<assistant::Provider>,
     /// The assistant's key for this run, when the keychain can't keep it.
     assistant_key: Mutex<Option<String>>,
@@ -111,6 +112,8 @@ struct Config {
     /// The assistant's provider and model (its key is in the keychain).
     #[serde(default)]
     assistant: assistant::Provider,
+    #[serde(default)]
+    export_presets: Vec<ExportPreset>,
 }
 
 fn save_config(state: &AppState) {
@@ -172,6 +175,11 @@ fn save_config(state: &AppState) {
             .assistant
             .lock()
             .map(|a| a.clone())
+            .unwrap_or_default(),
+        export_presets: state
+            .export_presets
+            .lock()
+            .map(|p| p.clone())
             .unwrap_or_default(),
     };
     if let Some(dir) = path.parent() {
@@ -901,8 +909,13 @@ struct ExportOptions {
     quality: u8,
     bits: Option<u32>,
     color_space: String,
+    #[serde(default)]
     long_edge: Option<u32>,
-    /// Exact output size (a size preset); wins over `long_edge`.
+    /// Resize to a long or short edge, a width or height (px), megapixels
+    /// or a percent; wins over `long_edge`.
+    #[serde(default)]
+    resize: Option<ResizeChoice>,
+    /// Exact output size (a size preset); wins over the others.
     exact: Option<(u32, u32)>,
     sharpen: Option<String>,
     metadata: String,
@@ -917,6 +930,40 @@ struct ExportOptions {
 
 fn yes() -> bool {
     true
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct ResizeChoice {
+    /// long, short, width, height, mp or percent.
+    mode: String,
+    value: f64,
+}
+
+impl ResizeChoice {
+    fn resize(&self) -> Res<amb_export::Resize> {
+        use amb_export::Resize;
+        let v = self.value;
+        if !(v.is_finite() && v > 0.0) {
+            return Err(format!("resize: {v} isn't a size"));
+        }
+        let px = v.round().clamp(1.0, 65_535.0) as u32;
+        Ok(match self.mode.as_str() {
+            "long" => Resize::LongEdge(px),
+            "short" => Resize::ShortEdge(px),
+            "width" => Resize::Width(px),
+            "height" => Resize::Height(px),
+            "mp" => Resize::Megapixels(v),
+            "percent" => Resize::Percent(v),
+            other => return Err(format!("unknown resize {other:?}")),
+        })
+    }
+}
+
+/// Export choices saved under a name (the dialog's fields, as it shows them).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct ExportPreset {
+    name: String,
+    fields: serde_json::Map<String, serde_json::Value>,
 }
 
 #[derive(Serialize)]
@@ -1001,6 +1048,8 @@ fn export_settings(options: &ExportOptions) -> Res<amb_export::ExportSettings> {
             .ok_or(format!("unknown colour space {}", options.color_space))?;
         if let Some((w, h)) = options.exact.filter(|(w, h)| *w > 0 && *h > 0) {
             s.resize = Resize::Exact(w, h);
+        } else if let Some(r) = &options.resize {
+            s.resize = r.resize()?;
         } else if let Some(edge) = options.long_edge.filter(|e| *e > 0) {
             s.resize = Resize::LongEdge(edge);
         }
@@ -1020,6 +1069,48 @@ fn export_settings(options: &ExportOptions) -> Res<amb_export::ExportSettings> {
             .map(|k| k * 1000);
         Ok(s)
     }
+}
+
+/// The user's export presets, by name.
+#[tauri::command]
+fn export_presets(state: tauri::State<'_, AppState>) -> Res<Vec<ExportPreset>> {
+    Ok(state
+        .export_presets
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone())
+}
+
+/// Save (or replace) an export preset.
+#[tauri::command]
+fn save_export_preset(
+    name: String,
+    fields: serde_json::Map<String, serde_json::Value>,
+    state: tauri::State<'_, AppState>,
+) -> Res<()> {
+    let name = name.trim().to_string();
+    if name.is_empty() {
+        return Err("give the preset a name".into());
+    }
+    {
+        let mut list = state.export_presets.lock().map_err(|e| e.to_string())?;
+        list.retain(|p| p.name != name);
+        list.push(ExportPreset { name, fields });
+        list.sort_by_key(|p| p.name.to_lowercase());
+    }
+    save_config(&state);
+    Ok(())
+}
+
+#[tauri::command]
+fn delete_export_preset(name: String, state: tauri::State<'_, AppState>) -> Res<()> {
+    state
+        .export_presets
+        .lock()
+        .map_err(|e| e.to_string())?
+        .retain(|p| p.name != name);
+    save_config(&state);
+    Ok(())
 }
 
 #[tauri::command]
@@ -2971,6 +3062,9 @@ fn main() {
                 if let Ok(mut a) = state.assistant.lock() {
                     *a = config.assistant;
                 }
+                if let Ok(mut p) = state.export_presets.lock() {
+                    *p = config.export_presets;
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -3049,6 +3143,9 @@ fn main() {
             run_plugin_many,
             trial_overrides,
             luts_list,
+            export_presets,
+            save_export_preset,
+            delete_export_preset,
             pick_lut,
             open_luts_folder,
             library_pick_folder,

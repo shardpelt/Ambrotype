@@ -1482,7 +1482,7 @@ function updateExportSize() {
   const w = Number(f.exact_w.value);
   const h = Number(f.exact_h.value);
   const exact = w > 0 && h > 0;
-  f.long_edge.disabled = exact;
+  f.resize_mode.disabled = f.resize_value.disabled = exact;
   const note = $("export-size-note");
   note.classList.remove("warn");
   if (!exact) {
@@ -1518,6 +1518,93 @@ function pickExportSize() {
   updateExportSize();
 }
 
+// The Resize choice ({ mode, value }), or null for full size (or an exact size).
+function exportResize() {
+  const f = $("export-form");
+  const value = Number(f.resize_value.value);
+  if (f.resize_mode.disabled || !f.resize_mode.value || !(value > 0)) return null;
+  return { mode: f.resize_mode.value, value };
+}
+
+// The long edge the Resize choice gives the export (for the border preview).
+function resizeLongEdge() {
+  const r = exportResize();
+  if (!r || !ui.exportCropSize) return null;
+  const [w, h] = ui.exportCropSize;
+  const scale = {
+    long: r.value / Math.max(w, h),
+    short: r.value / Math.min(w, h),
+    width: r.value / w,
+    height: r.value / h,
+    mp: Math.sqrt((r.value * 1e6) / (w * h)),
+    percent: r.value / 100,
+  }[r.mode];
+  return scale > 0 ? Math.round(Math.max(w, h) * Math.min(1, scale)) : null;
+}
+
+// Export presets: the dialog's choices under a name (kept in the app's
+// settings, src/main.rs `export_presets`).
+const EXPORT_FIELDS = ["format", "quality", "bits", "color_space", "exact_w", "exact_h", "resize_mode", "resize_value",
+  "sharpen", "metadata", "max_kb", "border_preset"];
+
+async function fillExportPresets(selected = null) {
+  const f = $("export-form");
+  try {
+    ui.exportPresets = await invoke("export_presets");
+  } catch {
+    ui.exportPresets = [];
+  }
+  const option = (value, text) => Object.assign(document.createElement("option"), { value, textContent: text });
+  f.export_preset.replaceChildren(option("", ui.exportPresets.length ? "— choose —" : "None saved yet"),
+    ...ui.exportPresets.map((p) => option(p.name, p.name)));
+  f.export_preset.value = selected ?? "";
+  $("export-preset-delete").disabled = !f.export_preset.value;
+}
+
+function applyExportPreset(name) {
+  const f = $("export-form");
+  const p = ui.exportPresets?.find((x) => x.name === name);
+  $("export-preset-delete").disabled = !p;
+  if (!p) return;
+  const set = (n) => {
+    if (n in p.fields && f[n]) f[n].value = p.fields[n];
+  };
+  set("format");
+  updateExportForm();
+  for (const n of EXPORT_FIELDS.filter((n) => n !== "format")) set(n);
+  f.quality.dispatchEvent(new Event("input"));
+  f.border_preset.dispatchEvent(new Event("change"));
+  f.size_preset.value = "";
+  updateExportSize();
+}
+
+function wireExportPresets() {
+  const f = $("export-form");
+  f.export_preset.addEventListener("change", () => applyExportPreset(f.export_preset.value));
+  $("export-preset-save").addEventListener("click", async () => {
+    const name = await askName("Save export preset", "Keeps the format, size, sharpening, metadata and border choices.", f.export_preset.value);
+    if (!name) return;
+    const fields = Object.fromEntries(EXPORT_FIELDS.filter((n) => f[n]).map((n) => [n, f[n].value]));
+    try {
+      await invoke("save_export_preset", { name, fields });
+      await fillExportPresets(name);
+      toast(`Saved the export preset “${name}”`);
+    } catch (e) {
+      toast(String(e), true);
+    }
+  });
+  $("export-preset-delete").addEventListener("click", async () => {
+    const name = f.export_preset.value;
+    if (!name) return;
+    try {
+      await invoke("delete_export_preset", { name });
+      await fillExportPresets();
+    } catch (e) {
+      toast(String(e), true);
+    }
+  });
+}
+
 // `batch`: many photos from the library ({ paths, aspect, run(options) }),
 // each exported with its own edit; otherwise the open photo.
 async function exportFlow(batch = null) {
@@ -1546,6 +1633,7 @@ async function exportFlow(batch = null) {
   }
   if (!ui.borders) await loadBorders();
   fillBorderSelect();
+  await fillExportPresets($("export-form").export_preset.value || null);
   updateExportSize();
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
@@ -1556,7 +1644,7 @@ async function exportFlow(batch = null) {
     quality: Number(f.quality.value),
     bits: Number(f.bits.value),
     color_space: f.color_space.value,
-    long_edge: f.long_edge.value && f.long_edge.disabled === false ? Number(f.long_edge.value) : null,
+    resize: exportResize(),
     exact: Number(f.exact_w.value) > 0 && Number(f.exact_h.value) > 0
       ? [Number(f.exact_w.value), Number(f.exact_h.value)] : null,
     sharpen: f.sharpen.value || null,
@@ -1630,7 +1718,8 @@ async function init() {
   AmbPicker.enhance($("export-form").size_preset, { open: ["Common"] });
   wireInfo();
   wireFilmstrip();
-  $("export-form").long_edge.addEventListener("input", drawBorderPreview);
+  for (const n of ["resize_mode", "resize_value"]) $("export-form")[n].addEventListener("input", drawBorderPreview);
+  wireExportPresets();
   $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));
   wireViewer();
   wireCrop();

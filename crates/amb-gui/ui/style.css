@@ -203,6 +203,8 @@ dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-
 /* Beside the photo, not over it: the photo shows the proposed look. */
 #match-dialog { width: 400px; margin: auto 16px 48px auto; max-height: calc(100vh - 80px); overflow: auto; }
 #match-dialog::backdrop { background: transparent; }
+.export-presets { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 12px; }
+.export-presets label { flex: 1; }
 #assistant-dialog { position: fixed; inset: auto 16px 40px auto; margin: 0; width: 380px; max-height: calc(100vh - 100px); display: none; flex-direction: column; gap: 8px; z-index: 50; box-shadow: 0 8px 30px rgba(0, 0, 0, .45); }
 #assistant-dialog[open] { display: flex; }
 .assistant-head { display: flex; align-items: center; gap: 6px; }

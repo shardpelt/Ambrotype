@@ -551,6 +551,11 @@
   <dialog id="export-dialog">
     <form method="dialog" id="export-form">
       <h2>Export</h2>
+      <div class="export-presets">
+        <label>Export preset <select name="export_preset" title="Your saved export choices"></select></label>
+        <button type="button" id="export-preset-save" class="small" title="Keep these choices under a name">Save as preset…</button>
+        <button type="button" id="export-preset-delete" class="small" disabled>Delete</button>
+      </div>
       <div class="grid">
         <label>Format
           <select name="format">
@@ -585,7 +590,17 @@
           </span>
         </label>
         <p id="export-size-note" class="hint wide-note"></p>
-        <label>Resize long edge (px, empty = full size) <input name="long_edge" type="number" min="16" step="1" placeholder="Full size"></label>
+        <label>Resize
+          <span class="pair"><select name="resize_mode">
+            <option value="">Full size</option>
+            <option value="long">Long edge (px)</option>
+            <option value="short">Short edge (px)</option>
+            <option value="width">Width (px)</option>
+            <option value="height">Height (px)</option>
+            <option value="mp">Megapixels</option>
+            <option value="percent">Percent</option>
+          </select><input name="resize_value" type="number" min="0.1" step="any" placeholder="—"></span>
+        </label>
         <label>Output sharpening
           <select name="sharpen">
             <option value="">None</option>

@@ -112,7 +112,7 @@ function exportSizeChoice() {
   const w = Number(f.exact_w.value), h = Number(f.exact_h.value);
   return {
     exact: w > 0 && h > 0 ? [w, h] : null,
-    longEdge: f.long_edge.value && !f.long_edge.disabled ? Number(f.long_edge.value) : null,
+    longEdge: resizeLongEdge(),
   };
 }
 

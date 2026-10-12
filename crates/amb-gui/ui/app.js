@@ -1209,6 +1209,7 @@ async function openPath(path) {
     loadFolder(r.info.path);
     requestPreview(false);
     loadInfo();
+    offerLensDb();
     return true;
   } catch (e) {
     toast(String(e), true);
@@ -1382,6 +1383,38 @@ async function cropToFrame() {
   }
 }
 
+// Once, when no lens profiles are found at all: offer the download.
+let lensDbOffered = false;
+async function offerLensDb() {
+  if (lensDbOffered) return;
+  lensDbOffered = true;
+  try {
+    if (localStorage.getItem("lensDbOffered")) return;
+  } catch {
+    // No storage: asked once per session.
+  }
+  // The profiles load in the background at start.
+  let st = null;
+  for (let i = 0; i < 30; i++) {
+    try {
+      st = await invoke("lens_db_state");
+    } catch {
+      return;
+    }
+    if (st.lenses !== null) break;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  if (!st || st.lenses !== 0) return;
+  try {
+    localStorage.setItem("lensDbOffered", "1");
+  } catch {
+    // Asked once per session at worst.
+  }
+  if (confirm("No lens profiles were found, so Lens Corrections can't fix distortion or vignetting yet. Download lensfun's lens database now (about 0.5 MB)? You can do it later under Lens Corrections → Lens database…")) {
+    lensDbFetch();
+  }
+}
+
 // lensfun's database: download it (or update it) and load it.
 async function lensDbFlow() {
   let st;
@@ -1396,6 +1429,10 @@ async function lensDbFlow() {
     ? `${have} The downloaded database is from ${when}. Check for a newer one?`
     : `${have} Download lensfun's lens database (about 0.5 MB, CC BY-SA 3.0) into ${st.dir}?`;
   if (!confirm(ask)) return;
+  lensDbFetch();
+}
+
+async function lensDbFetch() {
   status("Downloading the lens database…");
   $("busy").hidden = false;
   try {

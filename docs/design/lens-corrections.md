@@ -20,7 +20,7 @@ Not yet (Transform and Upright are in [transform.md](transform.md)): fisheye pro
 
 ## Getting the lensfun database
 
-`amb lens fetch` and the editor's Lens Corrections → **Lens database…** download lensfun's database from its own update server (`https://lensfun.github.io/db/`, `version_2.tar.bz2`, about 0.5 MB), as `lensfun-update-data` does, into `~/.local/share/lensfun/updates/version_2` with its `timestamp.txt`. That folder is searched by default (after `AMB_LENSFUN_DB`), and lensfun and darktable read it too. The editor loads it at once. `--from FILE` installs a copy downloaded by hand. The data is CC BY-SA 3.0; we don't change it (`amb_library::lensdb`).
+`amb lens fetch` and the editor's Lens Corrections → **Lens database…** download lensfun's database from its own update server (`https://lensfun.github.io/db/`, `version_2.tar.bz2`, about 0.5 MB), as `lensfun-update-data` does, into `~/.local/share/lensfun/updates/version_2` with its `timestamp.txt`. That folder is searched by default (after `AMB_LENSFUN_DB`), and lensfun and darktable read it too. The editor loads it at once, and offers the download once when it opens a photo and finds no lens profiles at all. `--from FILE` installs a copy downloaded by hand. The data is CC BY-SA 3.0; we don't change it (`amb_library::lensdb`).
 
 ## Order in the pipeline
 

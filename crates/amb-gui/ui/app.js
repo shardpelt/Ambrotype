@@ -1238,7 +1238,11 @@ function renderPresets() {
     list.innerHTML = `<p class="hint">${ui.presets.length ? "No match." : "No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder."}</p>`;
     return;
   }
+  // Starred presets first, in their own group (they stay in theirs too).
+  const favs = ui.presetFavourites ?? new Set();
   const groups = new Map();
+  const starred = shown.filter((p) => favs.has(p.path));
+  if (starred.length) groups.set("★ Favourites", starred);
   for (const p of shown) {
     if (!groups.has(p.group)) groups.set(p.group, []);
     groups.get(p.group).push(p);
@@ -1246,25 +1250,86 @@ function renderPresets() {
   for (const [group, items] of groups) {
     const d = document.createElement("details");
     d.className = "preset-group";
-    d.open = groups.size < 6 || Boolean(filter);
+    d.open = groups.size < 6 || Boolean(filter) || group === "★ Favourites";
     const s = document.createElement("summary");
     s.textContent = `${group || "Presets"} (${items.length})`;
     d.append(s);
     for (const p of items) {
+      const row = document.createElement("div");
+      row.className = "preset-row";
       const b = document.createElement("button");
       b.className = "preset";
       b.textContent = p.name;
-      b.title = p.path;
+      b.title = `${p.path}\nRight-click to apply only some of its settings`;
       b.addEventListener("click", () => {
         presetHover(null);
         run([{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value) }]);
       });
+      b.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        presetHover(null);
+        applyPresetPartly(p);
+      });
       b.addEventListener("mouseenter", () => presetHover(p));
       b.addEventListener("mouseleave", () => presetHover(null));
-      d.append(b);
+      const star = document.createElement("button");
+      star.type = "button";
+      star.className = "preset-star";
+      star.classList.toggle("on", favs.has(p.path));
+      star.textContent = favs.has(p.path) ? "★" : "☆";
+      star.title = favs.has(p.path) ? "Remove from favourites" : "Add to favourites";
+      star.addEventListener("click", () => togglePresetFavourite(p));
+      row.append(b, star);
+      d.append(row);
     }
     list.append(d);
   }
+}
+
+async function loadPresetFavourites() {
+  try {
+    ui.presetFavourites = new Set(await invoke("preset_favourites"));
+  } catch {
+    ui.presetFavourites = new Set();
+  }
+}
+
+async function togglePresetFavourite(p) {
+  const on = !ui.presetFavourites?.has(p.path);
+  try {
+    await invoke("set_preset_favourite", { path: p.path, on });
+    await loadPresetFavourites();
+    renderPresets();
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
+// Apply a preset's settings from some groups only (Lightroom's "Apply
+// preset settings: …"); the other groups stay as they are.
+async function applyPresetPartly(p) {
+  if (!ui.info) return;
+  if (!ui.pasteGroups) ui.pasteGroups = await invoke("paste_groups");
+  const dlg = $("paste-dialog");
+  dlg.querySelector("h2").textContent = `Apply “${p.name}”`;
+  dlg.querySelector("button.primary").textContent = "Apply";
+  $("paste-what").textContent = "Only the ticked groups' settings come from the preset; the rest of the edit stays as it is.";
+  const list = $("paste-groups");
+  list.replaceChildren(...ui.pasteGroups.map((g) => {
+    const row = Object.assign(document.createElement("label"), { className: "inline-check" });
+    const box = Object.assign(document.createElement("input"), { type: "checkbox", value: g.name, checked: ui.presetGroups?.has(g.name) ?? true });
+    row.append(box, Object.assign(document.createElement("span"), { textContent: g.label }));
+    return row;
+  }));
+  dlg.showModal();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  dlg.querySelector("h2").textContent = "Paste settings";
+  dlg.querySelector("button.primary").textContent = "Paste";
+  if (choice !== "ok") return;
+  const groups = [...list.querySelectorAll("input:checked")].map((b) => b.value);
+  ui.presetGroups = new Set(groups);
+  if (!groups.length) return;
+  run([{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value), include_groups: groups }], `Preset (part): ${p.name}`);
 }
 
 // Hovering a preset shows the photo with it, as Lightroom's Navigator does;
@@ -1478,6 +1543,7 @@ async function matchFlow() {
 async function loadPresets(add = false) {
   try {
     ui.presets = await invoke(add ? "add_preset_folder" : "presets");
+    if (!ui.presetFavourites) await loadPresetFavourites();
     renderPresets();
   } catch (e) {
     toast(String(e), true);

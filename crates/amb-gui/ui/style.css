@@ -82,6 +82,11 @@ input[type=search], input[type=number], select {
 .preset-group > summary { color: var(--muted); cursor: pointer; padding: 4px 0; list-style: none; }
 .preset-group > summary::before { content: "▸ "; color: var(--faint); }
 .preset-group[open] > summary::before { content: "▾ "; }
+.preset-row { display: flex; align-items: center; }
+.preset-row .preset { flex: 1; min-width: 0; }
+.preset-star { background: none; border: 0; padding: 0 6px; color: var(--muted); opacity: 0; cursor: pointer; }
+.preset-row:hover .preset-star, .preset-star.on { opacity: 1; }
+.preset-star.on { color: var(--accent); }
 .preset { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 3px 4px 3px 16px; border-radius: 4px; color: var(--text); }
 .preset:hover { background: var(--panel-2); }
 .history { max-height: 40%; }

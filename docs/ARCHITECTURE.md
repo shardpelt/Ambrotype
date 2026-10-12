@@ -110,6 +110,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - filmstrip: the raws in the open photo's folder (`src/folder.rs`: natural name order, ratings and edit state from the sidecars, thumbnails from the camera's embedded preview via `amb_engine::raw::embedded_thumbnail`, cached on disk in the app's cache folder; `ui/filmstrip.js`). Opening another photo saves unsaved edits of the current one first
   - long size lists (crop aspect, export size) use a drop-down with collapsible groups (`ui/picker.js`, layered over the native select): common sizes open, sites collapsed
   - file names from a template for batch exports (Import's tokens: `{name}`, `{seq}`, the capture date, `{camera}`; `amb render --out-dir --name` too)
+  - presets: hover to preview, ☆ to star as a favourite (shown first), right-click to apply only some setting groups (`apply_preset` `include_groups`)
   - export presets (the dialog's choices under a name, in the app's settings) and Resize by long or short edge, width, height, megapixels or percent
   - watermarks on export: text (GNU FreeSans Bold, bundled) or a PNG logo, in one of nine places, with size, opacity and a shadow (`amb_export::watermark`; `amb render --watermark`)
   - borders on export: presets (built-in and yours) with width, a deeper bottom, colour or the photo's own colour, keyline, rounded corners, and "whole photo inside" for exact sizes; a live preview in the export dialog

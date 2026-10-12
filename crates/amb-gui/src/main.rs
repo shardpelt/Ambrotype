@@ -58,6 +58,8 @@ struct AppState {
     plugin_recipes: Mutex<PluginRecipes>,
     import_choice: Mutex<Option<ImportChoice>>,
     export_presets: Mutex<Vec<ExportPreset>>,
+    /// The presets starred as favourites, by path.
+    preset_favourites: Mutex<Vec<String>>,
     assistant: Mutex<assistant::Provider>,
     /// The assistant's key for this run, when the keychain can't keep it.
     assistant_key: Mutex<Option<String>>,
@@ -114,6 +116,8 @@ struct Config {
     assistant: assistant::Provider,
     #[serde(default)]
     export_presets: Vec<ExportPreset>,
+    #[serde(default)]
+    preset_favourites: Vec<String>,
 }
 
 fn save_config(state: &AppState) {
@@ -178,6 +182,11 @@ fn save_config(state: &AppState) {
             .unwrap_or_default(),
         export_presets: state
             .export_presets
+            .lock()
+            .map(|p| p.clone())
+            .unwrap_or_default(),
+        preset_favourites: state
+            .preset_favourites
             .lock()
             .map(|p| p.clone())
             .unwrap_or_default(),
@@ -1098,6 +1107,30 @@ fn export_settings(options: &ExportOptions) -> Res<amb_export::ExportSettings> {
             .map(|k| k * 1000);
         Ok(s)
     }
+}
+
+/// The presets starred as favourites (paths).
+#[tauri::command]
+fn preset_favourites(state: tauri::State<'_, AppState>) -> Res<Vec<String>> {
+    Ok(state
+        .preset_favourites
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone())
+}
+
+/// Star or unstar a preset.
+#[tauri::command]
+fn set_preset_favourite(path: String, on: bool, state: tauri::State<'_, AppState>) -> Res<()> {
+    {
+        let mut list = state.preset_favourites.lock().map_err(|e| e.to_string())?;
+        list.retain(|p| *p != path);
+        if on {
+            list.push(path);
+        }
+    }
+    save_config(&state);
+    Ok(())
 }
 
 /// The user's export presets, by name.
@@ -3220,6 +3253,9 @@ fn main() {
                 if let Ok(mut p) = state.export_presets.lock() {
                     *p = config.export_presets;
                 }
+                if let Ok(mut p) = state.preset_favourites.lock() {
+                    *p = config.preset_favourites;
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -3305,6 +3341,8 @@ fn main() {
             upright_guides,
             negative_sync,
             export_presets,
+            preset_favourites,
+            set_preset_favourite,
             save_export_preset,
             delete_export_preset,
             pick_lut,

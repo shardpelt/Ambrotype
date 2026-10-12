@@ -52,6 +52,7 @@
         </div>
         <input id="preset-filter" type="search" placeholder="Filter presets" spellcheck="false">
         <label class="amount">Amount <input id="preset-amount" type="range" min="0" max="200" value="100"><output id="preset-amount-out">100</output></label>
+        <button id="btn-surprise" class="small match-button" title="Random looks to try: pick one you like (one undo step)" disabled>Surprise me…</button>
         <button id="btn-match" class="small match-button" title="Pick reference photos; finds the white balance, tone, colour and grading settings that give this photo their look" disabled>Match look of other photos…</button>
         <div id="preset-list" class="preset-list"><p class="hint">No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.</p></div>
       </section>
@@ -343,6 +344,28 @@
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary">Merge</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Surprise me: random looks as thumbnails (app.js surpriseFlow). -->
+  <dialog id="surprise-dialog">
+    <form method="dialog">
+      <h2>Surprise me</h2>
+      <div class="surprise-controls">
+        <label>Style
+          <select id="surprise-style">
+            <option>Anything</option><option>Film</option><option>Moody</option><option>Bright</option><option>Muted</option>
+          </select>
+        </label>
+        <label>Strength <input id="surprise-strength" type="range" min="0" max="100" value="80"></label>
+        <label class="check"><input id="surprise-colour" type="checkbox" checked> Change colours</label>
+      </div>
+      <div id="surprise-grid" class="surprise-grid"></div>
+      <p id="surprise-status" class="hint">Click a look to apply it. Each is an ordinary edit you can keep tweaking, and Undo takes it back.</p>
+      <menu>
+        <button value="cancel" formnovalidate>Close</button>
+        <button id="surprise-more" type="button" class="primary">More</button>
       </menu>
     </form>
   </dialog>

@@ -23,6 +23,8 @@ One click for a good starting point, like Lightroom's Auto.
 
 ## Randomize button ("Surprise me")
 
+*Built 2026-10-12* (Presets → Surprise me…): six looks from the built-in Random look plugin, with consecutive seeds, rendered small without being applied; Style, Strength and Change colours re-roll them, More gives six new ones, and a click applies one as a single undo step named with its seed. Not yet: locks, scope per panel, "mutate" around the current look, film stocks, entering a seed.
+
 Play with settings and discover looks you wouldn't have tried.
 
 - Pick random values within **sensible ranges** per slider. Use narrower ranges and a bias towards subtle values, not uniform over −100..100, so most results are usable.

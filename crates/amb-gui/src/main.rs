@@ -1796,6 +1796,58 @@ async fn run_plugin(
     .map_err(|e| e.to_string())?
 }
 
+#[derive(Serialize)]
+struct Variant {
+    seed: u64,
+    commands: Vec<Command>,
+    /// A small preview, as a `data:` URL.
+    image: String,
+}
+
+/// Surprise me: `count` random looks from the built-in Random look plugin
+/// (seeds `seed`, `seed + 1`, ...), each with a small preview of the photo
+/// in it. Nothing is applied.
+#[tauri::command]
+async fn surprise(
+    seed: u64,
+    count: usize,
+    params: serde_json::Map<String, serde_json::Value>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<Variant>> {
+    let plugin = plugins::find(plugins_dir(state.inner()).as_deref(), "random-look")?;
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("open a photo first")?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        (0..count.min(12) as u64)
+            .map(|i| {
+                let seed = seed.wrapping_add(i);
+                let ctx = s.plugin_context(&plugin.manifest.permissions, seed);
+                let commands = plugin.run(&ctx, &params)?.commands;
+                // The look on a copy of the edit, shown as overrides.
+                let mut trial = s.state.clone();
+                trial.execute_all(&commands).map_err(|e| e.to_string())?;
+                let overrides: BTreeMap<String, Value> = trial
+                    .settings()
+                    .iter()
+                    .filter(|(k, v)| s.state.settings().get(*k) != Some(*v))
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect();
+                let p = s.preview(240, &overrides, false, false, lens);
+                Ok(Variant {
+                    seed,
+                    commands,
+                    image: format!("data:image/jpeg;base64,{}", plugins::base64(&p.jpeg)),
+                })
+            })
+            .collect()
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// The recipes the user saved, per plugin.
 #[tauri::command]
 fn plugin_recipes(state: tauri::State<'_, AppState>) -> Res<PluginRecipes> {
@@ -2511,6 +2563,7 @@ fn main() {
             pick_references,
             match_look,
             auto_settings,
+            surprise,
             open_photo,
             execute,
             preview,

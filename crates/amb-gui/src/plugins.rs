@@ -408,7 +408,7 @@ fn gh_api(method: &str, path: &str, body: Option<&Value>) -> Result<Value, Strin
     serde_json::from_str(&text).map_err(|e| format!("unexpected answer from GitHub: {e}"))
 }
 
-fn base64(bytes: &[u8]) -> String {
+pub(crate) fn base64(bytes: &[u8]) -> String {
     const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
     for chunk in bytes.chunks(3) {

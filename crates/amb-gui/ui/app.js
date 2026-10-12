@@ -1150,7 +1150,7 @@ async function openPath(path) {
     $("photo-title").textContent = `${r.info.name}  —  ${r.info.camera}${r.info.lens ? "  ·  " + r.info.lens : ""}`;
     $("exif").textContent = [r.info.exposure, `${r.info.width} × ${r.info.height}`,
       r.info.sidecar_loaded ? "edits loaded from sidecar" : ""].filter(Boolean).join("  ·  ");
-    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-save-preset", "btn-match"]) $(id).disabled = false;
+    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-save-preset", "btn-match", "btn-surprise"]) $(id).disabled = false;
     if (ui.zoom.on) setZoom(false);
     setState(r.state);
     if (r.saved_previous) toast(`Saved your edits to ${r.saved_previous.replace(/^.*[\\/]/, "")}`);
@@ -1251,6 +1251,63 @@ async function autoFlow(tone, white) {
     $("busy").hidden = true;
     status("");
   }
+}
+
+// Surprise me: six random looks from the Random look plugin as
+// thumbnails; clicking one applies it (one undo step). Seeds are shown so
+// a look can be found again.
+async function surpriseFlow() {
+  if (!ui.info) return toast("Open a photo first.", true);
+  const dlg = $("surprise-dialog");
+  const grid = $("surprise-grid");
+  let seed = Math.floor(Math.random() * 1e9);
+  let busy = false;
+  const roll = async () => {
+    if (busy) return;
+    busy = true;
+    $("surprise-more").disabled = true;
+    $("surprise-status").textContent = "Making looks…";
+    try {
+      const variants = await invoke("surprise", {
+        seed,
+        count: 6,
+        params: {
+          style: $("surprise-style").value,
+          strength: Number($("surprise-strength").value),
+          colour: $("surprise-colour").checked,
+        },
+      });
+      seed += variants.length;
+      grid.replaceChildren(...variants.map((v) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.title = "Apply this look";
+        const img = document.createElement("img");
+        img.src = v.image;
+        img.alt = `Look ${v.seed}`;
+        const label = document.createElement("span");
+        label.textContent = `seed ${v.seed}`;
+        b.append(img, label);
+        b.addEventListener("click", async () => {
+          dlg.close("cancel");
+          await run(v.commands, `Surprise me (seed ${v.seed})`);
+        });
+        return b;
+      }));
+      $("surprise-status").textContent = "Click a look to apply it. Each is an ordinary edit you can keep tweaking, and Undo takes it back.";
+    } catch (e) {
+      $("surprise-status").textContent = String(e);
+    } finally {
+      busy = false;
+      $("surprise-more").disabled = false;
+    }
+  };
+  $("surprise-more").onclick = roll;
+  for (const id of ["surprise-style", "surprise-colour"]) $(id).onchange = roll;
+  $("surprise-strength").onchange = roll;
+  grid.replaceChildren();
+  dlg.showModal();
+  roll();
 }
 
 // Match look: pick reference photos, find settings for their look, show
@@ -1498,6 +1555,7 @@ async function init() {
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));
+  $("btn-surprise").addEventListener("click", () => surpriseFlow().catch((e) => toast(String(e), true)));
   // Enter in a dialog's text box means its main button, not the first one (Cancel).
   for (const form of document.querySelectorAll('dialog form[method="dialog"]')) {
     form.addEventListener("keydown", (e) => {

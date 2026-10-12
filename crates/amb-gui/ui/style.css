@@ -163,6 +163,14 @@ dialog menu button { white-space: nowrap; }
 dialog label.wide { margin-top: 12px; }
 dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-top: 10px; color: var(--text); }
 .match-button { width: 100%; margin: 4px 0 6px; }
+.match-button + .match-button { margin-top: 0; }
+#surprise-dialog { width: 780px; }
+.surprise-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: end; }
+.surprise-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 14px; min-height: 120px; }
+.surprise-grid button { padding: 0; border: 2px solid transparent; border-radius: 6px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
+.surprise-grid button:hover { border-color: var(--accent); }
+.surprise-grid img { width: 100%; height: 150px; object-fit: contain; display: block; background: #000; }
+.surprise-grid span { font-size: 11px; color: var(--muted); padding: 3px 0; }
 .section-label .section-action { float: right; margin-top: -3px; text-transform: none; letter-spacing: 0; }
 /* Beside the photo, not over it: the photo shows the proposed look. */
 #match-dialog { width: 400px; margin: auto 16px 48px auto; max-height: calc(100vh - 80px); overflow: auto; }

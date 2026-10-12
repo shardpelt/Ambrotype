@@ -217,8 +217,17 @@ pub fn illuminant_temperature(code: u16) -> Option<f64> {
     })
 }
 
+/// A 3 × 3 matrix, if it is one we can invert (a damaged file can hold
+/// zeros or infinities).
 fn mat(v: &[f64]) -> Option<Mat3> {
-    (v.len() >= 9).then(|| [[v[0], v[1], v[2]], [v[3], v[4], v[5]], [v[6], v[7], v[8]]])
+    if v.len() < 9 {
+        return None;
+    }
+    let m = [[v[0], v[1], v[2]], [v[3], v[4], v[5]], [v[6], v[7], v[8]]];
+    let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+        - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+        + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+    (det.is_finite() && det.abs() > 1e-9).then_some(m)
 }
 
 fn table(dims: &[f64], data: &[f64], srgb: bool) -> Option<HsvTable> {
@@ -228,7 +237,7 @@ fn table(dims: &[f64], data: &[f64], srgb: bool) -> Option<HsvTable> {
         _ => return None,
     };
     let n = h.checked_mul(s)?.checked_mul(v)?;
-    if h == 0 || s < 2 || data.len() < n * 3 {
+    if h == 0 || s < 2 || data.len() < n.checked_mul(3)? {
         return None;
     }
     Some(HsvTable {
@@ -828,6 +837,44 @@ pub(crate) mod tests {
         ];
         e.extend(extra);
         write_dcp(&e)
+    }
+
+    #[test]
+    fn damaged_profiles_are_refused_not_panicked_on() {
+        let hsm: Vec<f64> = (0..4).flat_map(|_| [30.0, 0.5, 1.0]).collect();
+        let seed = sample(vec![
+            (HUE_SAT_MAP_DIMS, 4, vec![2.0, 2.0, 1.0], None),
+            (HUE_SAT_MAP_DATA_1, 11, hsm, None),
+            (TONE_CURVE, 11, vec![0.0, 0.0, 0.5, 0.7, 1.0, 1.0], None),
+        ]);
+        let mut state = 0x2545_f491_4f6c_dd1du64;
+        let mut next = move || {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            state as usize
+        };
+        for round in 0..5000 {
+            let mut b = seed.clone();
+            for _ in 0..1 + next() % 4 {
+                let i = next() % b.len();
+                match next() % 3 {
+                    0 => b[i] ^= 1 << (next() % 8),
+                    1 => b[i] = [0, 0xff, 0x7f, 0x80][next() % 4],
+                    _ => b.truncate(i.max(8)),
+                }
+            }
+            let parsed = std::panic::catch_unwind(|| {
+                if let Ok(d) = Dcp::parse(&b) {
+                    let mut px = [0.6f32, 0.3, 0.1];
+                    if let Some(m) = d.hue_sat_map(5000.0) {
+                        m.apply(&mut px);
+                    }
+                    let _ = d.camera_to_prophoto([0.5, 1.0, 0.7]);
+                }
+            });
+            assert!(parsed.is_ok(), "round {round}: {b:?}");
+        }
     }
 
     #[test]

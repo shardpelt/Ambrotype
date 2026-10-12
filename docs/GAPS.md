@@ -210,7 +210,7 @@ Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the plann
 | TIFF has no EXIF and no compression (uncompressed only; LZW/ZIP "next") | Limit | Large files and no metadata in the Photoshop round trip | [ARCHITECTURE.md](ARCHITECTURE.md):56; `crates/amb-export/src/lib.rs`:7 |
 | AVIF is sRGB only, 8-bit, with no ICC embedded; other colour spaces are refused | Limit | No wide-gamut or HDR AVIF | [ARCHITECTURE.md](ARCHITECTURE.md):58; `crates/amb-export/src/lib.rs`:222-227 |
 | WebP is lossless only (lossy needs libwebp) | Limit | Large WebP files | [ARCHITECTURE.md](ARCHITECTURE.md):57; `crates/amb-export/src/lib.rs`:49 |
-| No JPEG XL (via libjxl, or lossless pure Rust) | Missing | Modern delivery format | [ARCHITECTURE.md](ARCHITECTURE.md):70 |
+| JPEG XL export is lossless only (pure-Rust `zune-jpegxl`), sRGB only (no ICC profile) and carries no EXIF or XMP; no lossy JPEG XL | Limit | Modern delivery format, partly | `crates/amb-export/src/lib.rs` |
 | No HDR AVIF/JXL or gain-map export | Missing | HDR output; Lightroom HDR editing is also unsupported | [ARCHITECTURE.md](ARCHITECTURE.md):72; [SCOPE.md](SCOPE.md):332 |
 | No HEIC/HEIF, by choice (HEVC patent licensing); AVIF covers modern delivery | Limit | Apple-ecosystem delivery needs AVIF or JPEG | [ARCHITECTURE.md](ARCHITECTURE.md):67 |
 | No PSD, by choice; TIFF covers the Photoshop round trip | Limit | No layered Photoshop output | [ARCHITECTURE.md](ARCHITECTURE.md):68 |

@@ -20,3 +20,8 @@ rayon = "1"
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
+zune-core = "0.5"
+zune-jpegxl = "0.5.2"
+
+[dev-dependencies]
+jxl-oxide = "0.12"

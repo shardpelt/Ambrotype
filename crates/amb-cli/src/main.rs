@@ -29,7 +29,7 @@ USAGE:
     amb calibration defaults                Print the default model constants as calibration JSON
     amb testimage <PATTERN> <OUT.dng>       Write one synthetic target (ramp, hue, edges, colorchecker,
                                             negative: a scanned colour negative)
-    amb render <RAW> <OUT.jpg|.png|.tif|.webp|.avif|.exr> [--preset P] [--amount A]
+    amb render <RAW> <OUT.jpg|.png|.tif|.webp|.avif|.exr|.jxl> [--preset P] [--amount A]
                                             [--look default|linear] [--calibration fitted.json]
                                             [--lens-db DIR] [--lcp-dir DIR] [export options]
                                             Develop a raw with a preset or sidecar, export it, and report
@@ -126,7 +126,7 @@ USAGE:
                                             Run a plugin on a photo's edit and write its sidecar
 
 EXPORT OPTIONS (amb render):
-    --format jpeg|png|tiff|webp|avif|exr    Default: from the file extension
+    --format jpeg|png|tiff|webp|avif|exr|jxl  Default: from the file extension
     --quality 1-100                         JPEG/AVIF quality (default 90)
     --bits 8|16|32                          PNG 8/16, TIFF 8/16/32 (float); default 8, TIFF 16
     --color-space srgb|p3|adobergb|prophoto|rec2020   Default srgb; an ICC profile is embedded
@@ -1551,7 +1551,7 @@ fn export_settings(
         Some(f) => Format::from_name(f).ok_or_else(|| format!("unknown --format {f:?}"))?,
         None => Format::from_path(out).ok_or_else(|| {
             format!(
-                "{}: unknown output type (use .jpg, .png, .tif, .webp, .avif or .exr, or --format)",
+                "{}: unknown output type (use .jpg, .png, .tif, .webp, .avif, .exr or .jxl, or --format)",
                 out.display()
             )
         })?,

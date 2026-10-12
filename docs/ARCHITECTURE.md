@@ -19,7 +19,7 @@ About 23,000 lines of Rust and about 270 tests (fmt, clippy and tests run in CI 
 | `amb-lens` | Lens profiles | lensfun database and Adobe LCP readers, lens matching, interpolation, correction geometry |
 | `amb-engine` | Raw decode and develop | The pipeline below; every model constant is in `Calibration` (JSON, fitted later against Lightroom) |
 | `amb-gpu` | GPU preview | The develop pipeline's stages as wgpu compute shaders, run from an `amb_engine::plan::Plan`; stages without a kernel run on the CPU in between; equivalence tests against the CPU pipeline ([design/gpu.md](design/gpu.md)) |
-| `amb-export` | Files out | JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces, resize, output sharpening, EXIF, JPEG size limit; floating-point linear DNG for merged photos (`dng.rs`) |
+| `amb-export` | Files out | JPEG/PNG/TIFF/WebP/AVIF/EXR/JPEG XL, colour spaces, resize, output sharpening, EXIF, JPEG size limit; floating-point linear DNG for merged photos (`dng.rs`) |
 | `amb-library` | Library operations | Import: copy from a card or folder into dated folders, renamed from templates, with companions and duplicate checks (`amb import`, the editor's Import dialog); collections as small JSON files; HDR merge into a DNG next to the brackets and panorama merge with lens corrections first (`merge.rs`, over `amb_engine::merge` and `amb_engine::pano`; `amb merge hdr` / `amb merge pano`, the library's Merge to HDR… / Merge to Panorama…; [design/hdr-merge.md](design/hdr-merge.md), [design/panorama.md](design/panorama.md)) |
 | `amb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
 | `amb-cli` | The `amb` tool | `render`, `import`, `merge hdr`, `merge pano`, `mcp` (the MCP server, `src/mcp.rs`), `preset`, `edit`/`query`, `do` (the compact edit syntax), `stats`, `match` (look matching, `amb_engine::matching`), `ref` (the AI core card), `lens`, `negative`, `sweep`, `settings reference`, … |
@@ -83,7 +83,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - HEIC/HEIF, because of HEVC patent licensing; AVIF covers modern HDR-capable delivery.
   - PSD; TIFF covers the Photoshop round trip.
 - **Later:**
-  - JPEG XL (via libjxl, or lossless pure Rust).
+  - Lossy JPEG XL, and JPEG XL with an ICC profile and metadata (lossless sRGB JPEG XL exists).
   - Lossy WebP.
   - HDR AVIF/JXL.
   - DNG of the developed image.

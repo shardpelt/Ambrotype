@@ -1615,7 +1615,7 @@ async function loadPresets(add = false) {
   }
 }
 
-const DEPTHS = { jpeg: [8], png: [8, 16], tiff: [16, 8, 32], webp: [8], avif: [8], exr: [32] };
+const DEPTHS = { jpeg: [8], png: [8, 16], tiff: [16, 8, 32], webp: [8], avif: [8], exr: [32], jxl: [8, 16] };
 
 function updateExportForm() {
   const f = $("export-form");
@@ -1625,8 +1625,9 @@ function updateExportForm() {
   f.max_kb.closest("label").style.visibility = format === "jpeg" ? "visible" : "hidden";
   for (const el of f.querySelectorAll(".jpeg-only")) el.hidden = format !== "jpeg";
   for (const el of f.querySelectorAll(".avif-only")) el.hidden = format !== "avif";
-  f.color_space.disabled = format === "avif";
-  if (format === "avif") f.color_space.value = "srgb";
+  // AVIF and JPEG XL can't carry an ICC profile yet: sRGB only.
+  f.color_space.disabled = ["avif", "jxl"].includes(format);
+  if (f.color_space.disabled) f.color_space.value = "srgb";
 }
 
 // Exact size: say what will be trimmed when its aspect differs from the crop.

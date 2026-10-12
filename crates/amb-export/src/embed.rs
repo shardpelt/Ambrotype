@@ -292,7 +292,7 @@ pub fn embed(format: Format, bytes: Vec<u8>, tags: &Tags) -> Vec<u8> {
         Format::Png => embed_png(&bytes, &xmp),
         Format::Tiff => embed_tiff(&bytes, &xmp),
         Format::Webp => embed_webp(&bytes, &xmp),
-        Format::Avif | Format::Exr => None,
+        Format::Avif | Format::Exr | Format::Jxl => None,
     };
     done.unwrap_or(bytes)
 }

@@ -58,16 +58,19 @@ pub enum Format {
     Avif,
     /// OpenEXR, 32-bit float, linear (no transfer curve, no clipping).
     Exr,
+    /// Lossless JPEG XL (8 or 16-bit, sRGB only: no ICC profile yet).
+    Jxl,
 }
 
 impl Format {
-    pub const ALL: [Format; 6] = [
+    pub const ALL: [Format; 7] = [
         Format::Jpeg,
         Format::Png,
         Format::Tiff,
         Format::Webp,
         Format::Avif,
         Format::Exr,
+        Format::Jxl,
     ];
 
     pub fn from_name(name: &str) -> Option<Format> {
@@ -78,6 +81,7 @@ impl Format {
             "webp" => Format::Webp,
             "avif" => Format::Avif,
             "exr" => Format::Exr,
+            "jxl" | "jpegxl" => Format::Jxl,
             _ => return None,
         })
     }
@@ -96,13 +100,14 @@ impl Format {
             Format::Webp => "webp",
             Format::Avif => "avif",
             Format::Exr => "exr",
+            Format::Jxl => "jxl",
         }
     }
 
     pub fn bit_depths(self) -> &'static [BitDepth] {
         match self {
             Format::Jpeg | Format::Webp | Format::Avif => &[BitDepth::Eight],
-            Format::Png => &[BitDepth::Eight, BitDepth::Sixteen],
+            Format::Png | Format::Jxl => &[BitDepth::Eight, BitDepth::Sixteen],
             Format::Tiff => &[BitDepth::Eight, BitDepth::Sixteen, BitDepth::Float32],
             Format::Exr => &[BitDepth::Float32],
         }
@@ -277,6 +282,12 @@ pub fn export(
             }
         )));
     }
+    if s.format == Format::Jxl && s.color_space != OutputSpace::Srgb {
+        return Err(Error::Unsupported(
+            "JPEG XL export is sRGB only for now (its encoder can't embed an ICC profile yet)"
+                .into(),
+        ));
+    }
     if s.format == Format::Avif && s.color_space != OutputSpace::Srgb {
         // The AVIF encoder cannot embed an ICC profile yet, and AVIF readers
         // assume sRGB without one.
@@ -404,6 +415,27 @@ pub fn export(
                 .write_image(&data, w, h, ExtendedColorType::Rgb32F)
                 .map_err(|e| Error::Encode(e.to_string()))?;
             buf.into_inner()
+        }
+        (Format::Jxl, depth) => {
+            use zune_core::{
+                bit_depth::BitDepth as ZDepth, colorspace::ColorSpace, options::EncoderOptions,
+            };
+            let (data, zdepth) = if depth == BitDepth::Sixteen {
+                let v: Vec<u8> = out
+                    .rgb
+                    .iter()
+                    .flat_map(|v| ((v.clamp(0.0, 1.0) * 65535.0).round() as u16).to_ne_bytes())
+                    .collect();
+                (v, ZDepth::Sixteen)
+            } else {
+                (to_u8(&out.rgb), ZDepth::Eight)
+            };
+            let options = EncoderOptions::new(w as usize, h as usize, ColorSpace::RGB, zdepth);
+            let mut buf = Vec::new();
+            zune_jpegxl::JxlSimpleEncoder::new(&data, options)
+                .encode(&mut buf)
+                .map_err(|e| Error::Encode(format!("{e:?}")))?;
+            buf
         }
         (Format::Avif, _) => {
             let data = to_u8(&out.rgb);
@@ -561,6 +593,48 @@ mod tests {
         })
     }
 
+    #[test]
+    fn jpeg_xl_is_lossless_at_8_and_16_bits() {
+        let img = Image::from_fn(40, 30, |x, y| {
+            let v = (x as f32 / 39.0) * 0.8 + 0.1;
+            [v, (y as f32 / 29.0) * 0.5, 0.3]
+        });
+        for (depth, max) in [(BitDepth::Eight, 255.0f32), (BitDepth::Sixteen, 65535.0)] {
+            let mut s = ExportSettings::new(Format::Jxl);
+            s.bit_depth = Some(depth);
+            let path = tmp(&format!("t-{depth:?}.jxl"));
+            export(&img, &PhotoMetadata::default(), &s, &path).unwrap();
+            let file = std::fs::File::open(&path).unwrap();
+            let jxl = jxl_oxide::JxlImage::builder().read(file).unwrap();
+            let frame = jxl.render_frame(0).unwrap();
+            let fb = frame.image_all_channels();
+            assert_eq!((fb.width(), fb.height(), fb.channels()), (40, 30, 3));
+            // What was encoded comes back exactly (as output values, 0..1).
+            let mut expected = img.clone();
+            let m = OutputSpace::Srgb.from_prophoto();
+            for p in expected.rgb.chunks_mut(3) {
+                let v = [0, 1, 2].map(|i| {
+                    (m[i][0] * f64::from(p[0])
+                        + m[i][1] * f64::from(p[1])
+                        + m[i][2] * f64::from(p[2]))
+                    .clamp(0.0, 1.0)
+                });
+                for (slot, x) in p.iter_mut().zip(v) {
+                    *slot = OutputSpace::Srgb.transfer().encode(x) as f32;
+                }
+            }
+            for (got, want) in fb.buf().iter().zip(&expected.rgb) {
+                assert!(
+                    (got - want).abs() <= 1.5 / max,
+                    "{got} vs {want} at {depth:?}"
+                );
+            }
+        }
+        let mut wide = ExportSettings::new(Format::Jxl);
+        wide.color_space = OutputSpace::DisplayP3;
+        assert!(export(&img, &PhotoMetadata::default(), &wide, &tmp("p3.jxl")).is_err());
+    }
+
     fn tmp(name: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!("amb-export-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
@@ -588,6 +662,13 @@ mod tests {
                     // No pure-Rust AVIF decoder here: check the container signature.
                     let bytes = std::fs::read(&path).unwrap();
                     assert_eq!(&bytes[4..12], b"ftypavif");
+                    continue;
+                }
+                if format == Format::Jxl {
+                    // `image` can't read JPEG XL: decode with jxl-oxide.
+                    let file = std::fs::File::open(&path).unwrap();
+                    let jxl = jxl_oxide::JxlImage::builder().read(file).unwrap();
+                    assert_eq!((jxl.width(), jxl.height()), (160, 240));
                     continue;
                 }
                 let decoded = image::open(&path).unwrap_or_else(|e| panic!("{format:?}: {e}"));

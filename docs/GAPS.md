@@ -167,7 +167,6 @@ All of these are "Model v1 (ours, not Adobe's)": every constant is a starting gu
 |---|---|---|---|
 | Auto levels assume the deepest shadows and brightest highlights are close to neutral; this fails on sunset-type rolls (workaround: freeze values from another frame) | Limit | Colour casts on unusual scenes | [design/film-negatives.md](design/film-negatives.md):34 |
 | No dust and scratch removal (infrared channel where available) | Missing | Scan quality | [design/film-negatives.md](design/film-negatives.md):70 |
-| No frame detection or auto-crop of the rebate (also needs crop support) | Missing | Manual framing of every scan | [design/film-negatives.md](design/film-negatives.md):70 |
 | Halation and grain are not matched to the stock | Missing | Stock looks are colour and tone only | [design/film-negatives.md](design/film-negatives.md):72 |
 | Film stocks are our own generic looks (13) with no measured data; measured stock profiles and a way to share them as data are "next". Chromogen already sells measured stocks | Missing | "Looks like Portra" claims are deliberately avoided | [design/film-negatives.md](design/film-negatives.md):47-53, 73; [SCOPE.md](SCOPE.md):149 |
 | Model v1 constants (2.2-decade scene range, 18 % midtone, 0.2/99.8 % level percentiles, 0.3 % base fraction) are ours; the docs record only a synthetic scanned negative as a test target | Approx | Real-scan quality unknown | [design/film-negatives.md](design/film-negatives.md):26-45; `crates/amb-engine/src/negative.rs`:32-60 |

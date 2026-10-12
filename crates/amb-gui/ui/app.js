@@ -1306,6 +1306,17 @@ async function freezeNegative() {
   }
 }
 
+async function cropToFrame() {
+  if (!ui.info) return;
+  try {
+    const cmds = await invoke("negative_frame");
+    if (!cmds) return toast("No film border found around the photo.");
+    run(cmds, "Crop to frame");
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
 // The open photo's edit as a one-click preset (src/session.rs `save_preset`).
 async function savePresetFlow(name = "") {
   if (!ui.info) return toast("Open a photo first.", true);

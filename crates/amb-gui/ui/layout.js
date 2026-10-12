@@ -288,7 +288,12 @@ function buildPanel(item) {
         freeze.textContent = "Freeze";
         freeze.title = "Store this photo's film base and levels and turn Auto off (one undo step). For a whole roll: Sync negative roll in the library";
         freeze.addEventListener("click", () => freezeNegative());
-        l.append(freeze);
+        const frame = document.createElement("button");
+        frame.className = "small section-action";
+        frame.textContent = "Crop to frame";
+        frame.title = "Crop away the film rebate and the scanner holder's edges (one undo step)";
+        frame.addEventListener("click", () => cropToFrame());
+        l.append(frame, freeze);
       }
       body.append(l);
     } else if (e.type === "control") {

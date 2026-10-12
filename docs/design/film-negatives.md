@@ -63,10 +63,10 @@ amb negative stocks                                  # list the looks
 ```
 
 - `amb edit` / the AI protocol set any `amb:` setting like a Camera Raw one, with validation and clamping (`set_param amb:FilmStock vivid-100`).
-- In the editor, Film Negative → **Freeze** stores the open frame's analysis with Auto off (one undo step). In the library, **Sync negative roll** analyses the selected frames and gives them all the roll median, as `amb negative analyze` does (`amb_library::negative`).
+- In the editor, Film Negative → **Crop to frame** crops away the rebate and the holder's edges (`negative::detect_frame`: border is near the film base, nearly black or clipped; each side moves in while most of its row or column is border, plus 0.5 % for the soft edge). **Freeze** stores the open frame's analysis with Auto off (one undo step). In the library, **Sync negative roll** analyses the selected frames and gives them all the roll median, as `amb negative analyze` does (`amb_library::negative`).
 
 ## Next
 
-- Scan quality helpers: dust and scratch removal (infrared channel where available), and frame detection / auto crop of the rebate.
+- Scan quality helpers: dust and scratch removal (infrared channel where available).
 - Halation and grain matched to the stock.
 - Measured stock profiles, and a way for users to share them as data.

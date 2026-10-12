@@ -2340,6 +2340,18 @@ async fn negative_freeze(state: tauri::State<'_, AppState>) -> Res<Vec<Command>>
     .map_err(|e| e.to_string())?
 }
 
+/// Crop the open scan to its frame; `None` when no border was found.
+#[tauri::command]
+async fn negative_frame(state: tauri::State<'_, AppState>) -> Res<Option<Vec<Command>>> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let guard = slot.lock().map_err(|e| e.to_string())?;
+        Ok(guard.as_ref().ok_or("no photo open")?.negative_frame())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[derive(Serialize)]
 struct RollSync {
     changed: Vec<String>,
@@ -3288,6 +3300,7 @@ fn main() {
             luts_list,
             pick_watermark_image,
             negative_freeze,
+            negative_frame,
             guided_upright,
             upright_guides,
             negative_sync,

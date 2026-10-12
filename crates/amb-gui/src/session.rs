@@ -1047,6 +1047,34 @@ impl Session {
         amb_library::negative::analyze_image(&self.full, kind)
     }
 
+    /// The crop to a scan's frame (without rebate or holder edges), as
+    /// commands; `None` when no border is found.
+    pub fn negative_frame(&self) -> Option<Vec<Command>> {
+        let kind = amb_library::negative::film_type(self.state.settings());
+        let (l, t, r, b) = amb_engine::negative::detect_frame(
+            &self.full.rgb,
+            self.full.width,
+            self.full.height,
+            kind,
+            &amb_engine::negative::DEFAULT_STRENGTHS,
+        )?;
+        let set = |name: &str, v: serde_json::Value| Command::SetParam {
+            name: name.into(),
+            value: v,
+        };
+        let round = |v: f64| (v * 10_000.0).round() / 10_000.0;
+        Some(vec![
+            set("HasCrop", serde_json::json!(true)),
+            set("CropLeft", serde_json::json!(round(l))),
+            set("CropTop", serde_json::json!(round(t))),
+            set("CropRight", serde_json::json!(round(r))),
+            set("CropBottom", serde_json::json!(round(b))),
+            Command::ResetParam {
+                name: "CropAngle".into(),
+            },
+        ])
+    }
+
     /// Lightroom-style Auto for the photo: tone and/or white balance.
     pub fn auto(
         &mut self,

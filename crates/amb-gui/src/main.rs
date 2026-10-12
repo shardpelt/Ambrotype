@@ -3012,6 +3012,8 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        // The window opens where and as big as it was left.
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(state)
         .setup(|app| {
             // Load saved settings (added preset folders) from the config folder.

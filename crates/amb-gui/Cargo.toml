@@ -35,6 +35,7 @@ tauri-plugin-opener = "2"
 sha2 = "0.10"
 ureq = "2"
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
+tauri-plugin-window-state = "2"
 
 [dev-dependencies]
 amb-testkit = { path = "../amb-testkit" }

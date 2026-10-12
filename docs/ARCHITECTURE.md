@@ -94,7 +94,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 
 ## The desktop editor (amb-gui, v1)
 
-- **Shell:** Tauri 2, with the system webview (WebView2, WKWebView, WebKitGTK). The UI in `crates/amb-gui/ui/` is plain HTML/CSS/JS with no build step or npm.
+- **Shell:** Tauri 2, with the system webview (WebView2, WKWebView, WebKitGTK). The UI in `crates/amb-gui/ui/` is plain HTML/CSS/JS with no build step or npm. The window opens where and as big as it was left (`tauri-plugin-window-state`).
 - **One code path:** the UI only sends `amb-protocol` commands (`set_param`, `apply_preset`, `undo`, …), so it behaves exactly like the CLI and AI clients. Panels and sliders are generated from the settings registry, so they always match the engine.
 - **Preview:** rendered on the CPU from an area-downscaled copy of the raw, at screen size. Slider drags render with temporary overrides and don't touch history; release commits one undoable step. Requests are latest-wins, and a drag renders at 0.6× size.
 - **Features:**

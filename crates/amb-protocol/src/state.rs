@@ -511,6 +511,22 @@ impl DevelopState {
         }
     }
 
+    /// Take `settings` as they are, as one undo step labelled `label`: an
+    /// edit made elsewhere (another app, or an AI agent, writing the
+    /// sidecar). Returns the changes (none when nothing differs).
+    pub fn adopt(&mut self, settings: BTreeMap<String, Value>, label: &str) -> Vec<Change> {
+        let diff = diff_maps(&self.settings, &settings);
+        if !diff.is_empty() {
+            self.settings = settings;
+            self.undo.push(HistoryEntry {
+                label: label.to_string(),
+                changes: diff.clone(),
+            });
+            self.redo.clear();
+        }
+        diff
+    }
+
     /// Run several commands as one transaction: if any fails, the state is
     /// left exactly as it was and the error names the failing command.
     pub fn execute_all(&mut self, cmds: &[Command]) -> Result<Vec<Outcome>, Error> {

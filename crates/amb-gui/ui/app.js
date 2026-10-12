@@ -433,6 +433,22 @@ function setState(state) {
   learnStateChanged();
 }
 
+// Another app or an AI agent (over MCP) wrote the open photo's sidecar:
+// take its edits as one undo step, and its rating and keywords.
+async function sidecarChanged() {
+  if (!ui.info) return;
+  try {
+    const r = await invoke("reload_sidecar");
+    if (!r) return;
+    setState(r.state);
+    requestPreview(false);
+    loadInfo();
+    if (r.changes) toast("The edits were changed outside Ambrotype and are shown now (Undo goes back).");
+  } catch (e) {
+    toast(`Couldn't read the changed sidecar: ${e}`, true);
+  }
+}
+
 // Run protocol commands; several commands with a `group` label are one undo step.
 async function run(commands, group = null) {
   if (!ui.info) return;
@@ -1986,6 +2002,7 @@ async function init() {
 
   // Drag and drop a raw file onto the window.
   tauri.event.listen("folder-changed", () => folderChanged());
+  tauri.event.listen("sidecar-changed", () => sidecarChanged());
   tauri.event.listen("tauri://drag-enter", () => $("viewer").classList.add("dragover"));
   tauri.event.listen("tauri://drag-leave", () => $("viewer").classList.remove("dragover"));
   tauri.event.listen("tauri://drag-drop", (e) => {

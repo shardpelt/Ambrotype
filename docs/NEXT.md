@@ -39,6 +39,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **export presets** and Resize by long or short edge, width, height, megapixels or percent; the window opens where it was left
     - **film negatives:** Freeze keeps a frame's conversion; the library's Sync negative roll gives a roll one conversion
     - **export:** file names from a template for batches, text or logo watermarks, chroma subsampling, progressive JPEG and AVIF speed in the dialog
+    - **follows outside edits:** when another app or an AI agent (over MCP) changes the open photo's sidecar, the editor shows it at once, as one undo step
     - **Guided Upright:** draw guides; the Transform sliders straighten them ([design/transform.md](design/transform.md))
     - **Black & White panel:** monochrome with a mix per colour; Color Grading tints it
     - **HDR merge:** select bracketed raws in the library, Merge to HDR… (Auto align, Auto tone, Deghost) writes `<first>-HDR.dng` next to them, a floating-point DNG that edits like a raw ([design/hdr-merge.md](design/hdr-merge.md))

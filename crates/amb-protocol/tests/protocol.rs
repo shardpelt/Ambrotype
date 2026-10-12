@@ -762,6 +762,28 @@ fn grouped_commands_are_one_undo_step() {
 }
 
 #[test]
+fn settings_from_elsewhere_are_one_undo_step() {
+    let mut st = DevelopState::new();
+    st.execute(&Command::SetParam {
+        name: "Exposure2012".into(),
+        value: json!(0.5),
+    })
+    .unwrap();
+    st.execute(&Command::Undo).unwrap();
+    let mut theirs = std::collections::BTreeMap::new();
+    theirs.insert("Saturation".into(), Value::Number(-60.0));
+    let changes = st.adopt(theirs.clone(), "Changed outside Ambrotype");
+    assert_eq!(changes.len(), 1);
+    assert_eq!(st.undo_stack().len(), 1);
+    assert!(!st.can_redo());
+    // The same settings again: nothing to do.
+    assert!(st.adopt(theirs, "again").is_empty());
+    assert_eq!(st.undo_stack().len(), 1);
+    st.execute(&Command::Undo).unwrap();
+    assert!(st.settings().is_empty());
+}
+
+#[test]
 fn sidecar_keeps_history_and_drops_it_when_another_app_edits() {
     let dir = temp_dir("history");
     let sidecar = dir.join("IMG_0001.xmp");

@@ -49,7 +49,7 @@ The commands and queries are the same as `amb edit` and `amb query`; `amb protoc
 - **Nothing is overwritten** by `export_photo` unless you agree (`overwrite`).
 - **A log of every tool call** goes to stderr, which MCP clients show as the server's log.
 - **Renders run as a separate `amb render`,** so a preview of a 24 MP raw takes a few seconds in a release build.
-- **The editor doesn't watch sidecars.** If a photo is open in the editor while an AI edits it over MCP, reopen it to see the AI's changes (and don't edit it in both at once).
+- **The editor follows along.** If the photo is open in the editor while an AI edits it over MCP, the editor shows the AI's changes as they are saved, as one undo step ("Changed outside Ambrotype"), and takes its rating and keywords too. Unsaved edits in the editor stay one Undo away.
 
 ## Not yet
 

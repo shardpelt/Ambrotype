@@ -871,6 +871,27 @@ impl Session {
         Ok(self.sidecar.display().to_string())
     }
 
+    /// Read the sidecar again if something else changed it since we read or
+    /// wrote it (another app, or an AI agent over MCP): its develop settings
+    /// become one undo step, its rating and keywords are taken as they are.
+    /// `None` when the file is as we left it.
+    pub fn reload_sidecar(&mut self) -> Result<Option<usize>, String> {
+        let Ok(text) = std::fs::read_to_string(&self.sidecar) else {
+            return Ok(None);
+        };
+        if self.base_xmp.as_deref() == Some(text.as_str()) {
+            return Ok(None);
+        }
+        let theirs = DevelopState::from_xmp_str(&text).map_err(|e| e.to_string())?;
+        let changes = self
+            .state
+            .adopt(theirs.settings().clone(), "Changed outside Ambrotype");
+        self.info = amb_protocol::sidecar::read_info(&text);
+        self.base_xmp = Some(text);
+        self.saved = self.state.settings().clone();
+        Ok(Some(changes.len()))
+    }
+
     /// The develop settings or snapshots differ from what's in the sidecar.
     pub fn has_unsaved_edits(&self) -> bool {
         self.state.settings() != &self.saved || self.state.snapshots() != self.saved_snapshots

@@ -62,6 +62,8 @@ struct AppState {
     preset_favourites: Mutex<Vec<String>>,
     /// Watches the folders on screen for photos added, removed or renamed.
     folder_watch: Mutex<Option<notify::RecommendedWatcher>>,
+    /// Watches the open photo's sidecar for changes made outside the editor.
+    sidecar_watch: Mutex<Option<notify::RecommendedWatcher>>,
     assistant: Mutex<assistant::Provider>,
     /// The assistant's key for this run, when the keychain can't keep it.
     assistant_key: Mutex<Option<String>>,
@@ -637,10 +639,15 @@ async fn pick_photo_folder(app: tauri::AppHandle) -> Res<Option<Vec<folder::Fold
 }
 
 #[tauri::command]
-async fn open_photo(path: String, state: tauri::State<'_, AppState>) -> Res<Opened> {
+async fn open_photo(
+    path: String,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Res<Opened> {
     let slot = state.session.clone();
-    tauri::async_runtime::spawn_blocking(move || {
+    let opened = tauri::async_runtime::spawn_blocking(move || {
         let s = Session::open(Path::new(&path))?;
+        let sidecar = s.sidecar.clone();
         let mut guard = slot.lock().map_err(|e| e.to_string())?;
         // Moving to another photo keeps the edits: save them first, like
         // Lightroom writing its sidecars as you go.
@@ -654,10 +661,68 @@ async fn open_photo(path: String, state: tauri::State<'_, AppState>) -> Res<Open
             saved_previous,
         };
         *guard = Some(s);
-        Ok(opened)
+        Ok::<_, String>((opened, sidecar))
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())??;
+    let (opened, sidecar) = opened;
+    *state.sidecar_watch.lock().map_err(|e| e.to_string())? = watch_sidecar(app, &sidecar);
+    Ok(opened)
+}
+
+/// Tell the page ("sidecar-changed") when the open photo's sidecar changes
+/// on disk; [`reload_sidecar`] then tells our own saves from other writers.
+fn watch_sidecar(app: tauri::AppHandle, sidecar: &Path) -> Option<notify::RecommendedWatcher> {
+    use notify::{EventKind, RecursiveMode, Watcher};
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let dir = sidecar.parent()?.to_path_buf();
+    let target = sidecar.file_name()?.to_os_string();
+    let pending = Arc::new(AtomicBool::new(false));
+    let mut watcher = notify::recommended_watcher(move |event: notify::Result<notify::Event>| {
+        let Ok(event) = event else { return };
+        let ours = event
+            .paths
+            .iter()
+            .any(|p| p.file_name() == Some(target.as_os_str()));
+        let written = matches!(
+            event.kind,
+            EventKind::Create(_) | EventKind::Modify(_) | EventKind::Remove(_)
+        );
+        if ours && written && !pending.swap(true, Ordering::SeqCst) {
+            let (app, pending) = (app.clone(), pending.clone());
+            std::thread::spawn(move || {
+                // Let the writer finish.
+                std::thread::sleep(std::time::Duration::from_millis(300));
+                pending.store(false, Ordering::SeqCst);
+                use tauri::Emitter;
+                let _ = app.emit("sidecar-changed", ());
+            });
+        }
+    })
+    .ok()?;
+    watcher.watch(&dir, RecursiveMode::NonRecursive).ok()?;
+    Some(watcher)
+}
+
+#[derive(Serialize)]
+struct Reloaded {
+    state: session::StateInfo,
+    /// Develop settings that changed.
+    changes: usize,
+}
+
+/// Take the sidecar's settings, rating and keywords if something else
+/// changed it since we read or wrote it. `None` when it is as we left it.
+#[tauri::command]
+fn reload_sidecar(state: tauri::State<'_, AppState>) -> Res<Option<Reloaded>> {
+    let mut guard = state.session.lock().map_err(|e| e.to_string())?;
+    let Some(s) = guard.as_mut() else {
+        return Ok(None);
+    };
+    Ok(s.reload_sidecar()?.map(|changes| Reloaded {
+        state: s.state_info(),
+        changes,
+    }))
 }
 
 #[derive(Serialize)]
@@ -3509,6 +3574,7 @@ fn main() {
             negative_freeze,
             open_assistant_log,
             watch_folders,
+            reload_sidecar,
             lens_db_state,
             fetch_lens_db,
             negative_frame,

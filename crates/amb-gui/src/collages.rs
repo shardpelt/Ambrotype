@@ -21,6 +21,9 @@ pub struct TemplateEntry {
     pub builtin: bool,
     #[serde(flatten)]
     pub template: Template,
+    /// The hub template it came from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<crate::hub::HubSource>,
 }
 
 #[derive(Deserialize)]
@@ -55,6 +58,7 @@ pub fn builtin() -> Vec<TemplateEntry> {
                 free: false,
                 cells: t.cells,
             },
+            source: None,
         })
         .collect()
 }

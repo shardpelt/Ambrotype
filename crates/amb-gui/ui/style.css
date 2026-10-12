@@ -443,7 +443,9 @@ kbd { display: inline-flex; align-items: center; gap: 4px; font: inherit; font-s
 .hub-status { min-height: 18px; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
 .hub-status.error { color: var(--danger); }
 #hub-address { word-break: break-all; }
-.hub-preview.plugin, .hub-preview.preset { flex-direction: column; justify-content: center; gap: 4px; padding: 10px; font-size: 12px; color: var(--muted); background: var(--panel); }
+.hub-preview.collage { position: relative; display: block; margin: 0 auto; max-width: 100%; }
+.hub-preview.collage i { position: absolute; background: var(--faint); border-radius: 2px; }
+.hub-preview.plugin, .hub-preview.preset, .hub-preview.sizes { flex-direction: column; justify-content: center; gap: 4px; padding: 10px; font-size: 12px; color: var(--muted); background: var(--panel); }
 .hub-preview.plugin b { color: var(--text); font-weight: 600; }
 .hub-preview { height: 104px; border-radius: 6px; border: 1px solid var(--line); overflow: hidden; display: flex; }
 .hub-preview.theme .hp-view { flex: 1; display: flex; align-items: flex-end; justify-content: flex-end; padding: 8px; }

@@ -2068,12 +2068,24 @@ async fn hub_browse(state: tauri::State<'_, AppState>) -> Res<HubList> {
     let dir = looks_dir(state.inner());
     let plugins = plugins_dir(state.inner());
     let presets = own_presets_dir(state.inner());
+    let collages = state
+        .collage_templates
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone();
+    let sizes = state
+        .size_presets
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone();
     let u = url.clone();
     let entries = tauri::async_runtime::spawn_blocking(move || {
         let mine = hub::Mine {
             looks: dir.as_deref(),
             plugins: plugins.as_deref(),
             presets: presets.as_deref(),
+            collages: &collages,
+            sizes: &sizes,
         };
         hub::browse(&u, mine)
     })
@@ -2094,6 +2106,47 @@ async fn hub_install_preset(
         .await
         .map_err(|e| e.to_string())??;
     presets(state).await
+}
+
+/// Install (or update) a collage template from the hub; returns the templates.
+#[tauri::command]
+async fn hub_install_collage(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<collages::TemplateEntry>> {
+    let url = hub_index(state.inner());
+    let mut custom = state
+        .collage_templates
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone();
+    let custom = tauri::async_runtime::spawn_blocking(move || {
+        hub::install_collage(&mut custom, &url, &id).map(|_| custom)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    *state.collage_templates.lock().map_err(|e| e.to_string())? = custom;
+    save_config(state.inner());
+    collage_templates(state)
+}
+
+/// Install (or update) a size profile from the hub; returns the size presets.
+#[tauri::command]
+async fn hub_install_sizes(id: String, state: tauri::State<'_, AppState>) -> Res<Vec<SizePreset>> {
+    let url = hub_index(state.inner());
+    let mut custom = state
+        .size_presets
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone();
+    let custom = tauri::async_runtime::spawn_blocking(move || {
+        hub::install_sizes(&mut custom, &url, &id).map(|_| custom)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    *state.size_presets.lock().map_err(|e| e.to_string())? = custom;
+    save_config(state.inner());
+    size_presets(state)
 }
 
 /// Install (or update) a plugin from the hub; returns its id. It asks for
@@ -3579,6 +3632,8 @@ fn main() {
             hub_install,
             hub_install_plugin,
             hub_install_preset,
+            hub_install_collage,
+            hub_install_sizes,
             hub_submit,
             border_presets,
             save_border_preset,

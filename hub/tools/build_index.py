@@ -5,7 +5,8 @@ and check the plugins sent in under plugins/.
     python3 tools/build_index.py          # write index.json
     python3 tools/build_index.py --check  # exit 1 if index.json is out of date (CI)
 
-Each file becomes one item. Its id is the file name, and the app checks the
+Each file becomes one item (looks/, collages/ for collage templates and
+sizes/ for size profiles). Its id is the file name, and the app checks the
 file's sha256 against the index before installing it. Validate the looks
 themselves with the Ambrotype app: `ambrotype --check-look looks/*/*.json`.
 
@@ -27,12 +28,16 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 KINDS = {"layouts": ("layout", "ambrotype-layout/1"), "themes": ("theme", "ambrotype-theme/1")}
+# Other data files, each in its own top-level folder.
+DATA = {"collages": ("collage", "ambrotype-collage/1"), "sizes": ("sizes", "ambrotype-sizes/1")}
 
 
 def build():
     items, problems = [], []
-    for folder, (kind, fmt) in KINDS.items():
-        for path in sorted((ROOT / "looks" / folder).glob("*.json")):
+    folders = [(ROOT / "looks" / f, f, k) for f, k in KINDS.items()]
+    folders += [(ROOT / f, f, k) for f, k in DATA.items()]
+    for base, folder, (kind, fmt) in folders:
+        for path in sorted(base.glob("*.json")):
             rel = path.relative_to(ROOT).as_posix()
             if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", path.stem):
                 problems.append(f"{rel}: use a lower-case file name with dashes (e.g. warm-dark.json)")
@@ -44,7 +49,7 @@ def build():
                 problems.append(f"{rel}: not valid JSON: {e}")
                 continue
             if data.get("format") != fmt:
-                problems.append(f'{rel}: "format" must be "{fmt}" in looks/{folder}/')
+                problems.append(f'{rel}: "format" must be "{fmt}" in {base.relative_to(ROOT).as_posix()}/')
                 continue
             if not str(data.get("name", "")).strip():
                 problems.append(f'{rel}: needs a "name"')

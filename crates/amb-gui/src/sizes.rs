@@ -25,6 +25,9 @@ pub struct SizePreset {
     /// Built-ins can be cloned but not edited or deleted.
     #[serde(default)]
     pub builtin: bool,
+    /// The hub size profile it came from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<crate::hub::HubSource>,
 }
 
 #[derive(Deserialize)]
@@ -60,6 +63,7 @@ pub fn builtin() -> Vec<SizePreset> {
                 width: p.width,
                 height: p.height,
                 builtin: true,
+                source: None,
             })
         })
         .collect()
@@ -76,7 +80,7 @@ pub fn all(custom: &[SizePreset]) -> Vec<SizePreset> {
 }
 
 /// A cleaned-up copy of `p`, or why it cannot be saved.
-fn validate(p: &SizePreset) -> Result<SizePreset, String> {
+pub(crate) fn validate(p: &SizePreset) -> Result<SizePreset, String> {
     let name = p.name.trim();
     if name.is_empty() {
         return Err("a size preset needs a name".into());
@@ -95,6 +99,7 @@ fn validate(p: &SizePreset) -> Result<SizePreset, String> {
         width: p.width,
         height: p.height,
         builtin: false,
+        source: p.source.clone(),
     })
 }
 
@@ -141,6 +146,7 @@ mod tests {
             width: w,
             height: h,
             builtin: false,
+            source: None,
         }
     }
 

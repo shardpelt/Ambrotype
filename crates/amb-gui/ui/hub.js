@@ -106,6 +106,40 @@ function presetPreview(data) {
   return box;
 }
 
+// A collage template's cells, drawn to scale inside its page.
+function collagePreview(data) {
+  const box = document.createElement("div");
+  box.className = "hub-preview collage";
+  const ratio = Number(data?.width) / Number(data?.height) || 1;
+  // Fit 220 × 104 (the card), keeping the page's shape.
+  const width = Math.min(220, 104 * ratio);
+  box.style.width = `${Math.round(width)}px`;
+  box.style.height = `${Math.round(width / ratio)}px`;
+  box.style.background = typeof data?.background === "string" ? data.background : "#ffffff";
+  for (const c of (data?.cells ?? []).slice(0, 64)) {
+    const [x, y, w, h, angle] = c.map(Number);
+    const cell = document.createElement("i");
+    cell.style.cssText = `left:calc(${x * 100}% + 2px);top:calc(${y * 100}% + 2px);` +
+      `width:calc(${w * 100}% - 4px);height:calc(${h * 100}% - 4px)`;
+    if (angle) cell.style.transform = `rotate(${angle}deg)`;
+    box.append(cell);
+  }
+  return box;
+}
+
+// A size profile's sizes.
+function sizesPreview(data) {
+  const box = document.createElement("div");
+  box.className = "hub-preview sizes";
+  const sizes = data?.sizes ?? [];
+  box.append(Object.assign(document.createElement("b"), { textContent: `${sizes.length} size${sizes.length === 1 ? "" : "s"}` }));
+  for (const s of sizes.slice(0, 4)) {
+    box.append(Object.assign(document.createElement("span"), { textContent: `${s.name}: ${s.width} × ${s.height}` }));
+  }
+  if (sizes.length > 4) box.append(Object.assign(document.createElement("span"), { textContent: "…" }));
+  return box;
+}
+
 async function hubFlow(initial = "all") {
   const dlg = $("hub-dialog");
   let kind = initial;
@@ -126,7 +160,10 @@ async function hubFlow(initial = "all") {
       const card = document.createElement("article");
       card.className = "hub-card";
       if (e.data) {
-        const preview = { theme: themePreview, layout: layoutPreview, plugin: pluginPreview, preset: presetPreview }[e.kind];
+        const preview = {
+          theme: themePreview, layout: layoutPreview, plugin: pluginPreview, preset: presetPreview,
+          collage: collagePreview, sizes: sizesPreview,
+        }[e.kind];
         if (preview) card.append(preview(e.data));
       }
       const title = document.createElement("h3");
@@ -152,7 +189,15 @@ async function hubFlow(initial = "all") {
             install.disabled = true;
             install.textContent = "Installing…";
             try {
-              if (e.kind === "preset") {
+              if (e.kind === "collage") {
+                await invoke("hub_install_collage", { id: e.id });
+                e.installed = e.id;
+                status(`Installed "${e.name}": it's with the templates in the collage maker.`);
+              } else if (e.kind === "sizes") {
+                ui.sizes = await invoke("hub_install_sizes", { id: e.id });
+                e.installed = e.id;
+                status(`Installed "${e.name}": its sizes are in the crop tool and the export dialog.`);
+              } else if (e.kind === "preset") {
                 ui.presets = await invoke("hub_install_preset", { id: e.id });
                 renderPresets();
                 e.installed = e.id;
@@ -210,7 +255,8 @@ async function hubFlow(initial = "all") {
       list = r;
       $("hub-address").textContent = r.url;
       const count = (k) => r.entries.filter((e) => e.kind === k).length;
-      const parts = [[count("layout"), "layout"], [count("theme"), "theme"], [count("preset"), "preset"], [count("plugin"), "plugin"]]
+      const parts = [[count("layout"), "layout"], [count("theme"), "theme"], [count("preset"), "preset"],
+        [count("collage"), "collage template"], [count("sizes"), "size profile"], [count("plugin"), "plugin"]]
         .filter(([n]) => n).map(([n, w]) => `${n} ${w}${n === 1 ? "" : "s"}`);
       status(parts.length ? `${parts.join(", ")}.` : "The hub is empty so far.");
       render();

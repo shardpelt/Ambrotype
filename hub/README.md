@@ -30,6 +30,16 @@ Develop presets go in `presets/<name>.xmp` (lower case and dashes), in Lightroom
 - Add `crs:Author`, `crs:Description` and a `crs:License` if you like; presets are CC0 otherwise.
 - Run `python3 tools/build_index.py` to list it in `index.json`.
 
+## Collage templates and size profiles
+
+- **Collage templates** go in `collages/<name>.json`: the file the collage maker's **Share…** saves (`"format": "ambrotype-collage/1"`). Installed ones join the templates in the collage maker.
+- **Size profiles** go in `sizes/<name>.json`: a named set of sizes, installed as size presets for the crop tool and the export dialog:
+
+  ```json
+  { "format": "ambrotype-sizes/1", "name": "Etsy", "description": "Listing photos and the shop banner.",
+    "sizes": [ { "name": "Listing", "width": 2000, "height": 1600 }, { "name": "Banner", "width": 3360, "height": 840 } ] }
+  ```
+
 ## Plugins
 
 Plugins are small programs that make edits (Ambrotype's **Plugins** button). They run sandboxed: no files, no network, only settings the user can see and undo. How to write one: [plugins.md](https://github.com/shardpelt/Ambrotype/blob/main/docs/ai/plugins.md).

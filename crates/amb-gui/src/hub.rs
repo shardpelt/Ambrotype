@@ -74,9 +74,145 @@ pub struct HubEntry {
     pub update: bool,
 }
 
-/// Kinds this version can install: looks, plugins and develop presets.
+/// Kinds this version can install: looks, plugins, develop presets,
+/// collage templates and size profiles.
 fn known_kind(name: &str) -> bool {
-    kind_of(name).is_some() || name == "plugin" || name == "preset"
+    kind_of(name).is_some() || ["plugin", "preset", "collage", "sizes"].contains(&name)
+}
+
+/// Where an installed item came from (kept with collage templates and
+/// size presets).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct HubSource {
+    pub hub: String,
+    pub id: String,
+    pub sha256: String,
+}
+
+/// A size profile: a named set of sizes (`sizes/<name>.json`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SizeProfile {
+    pub format: String,
+    pub name: String,
+    pub sizes: Vec<ProfileSize>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProfileSize {
+    pub name: String,
+    pub width: u32,
+    pub height: u32,
+}
+
+pub const SIZES_FORMAT: &str = "ambrotype-sizes/1";
+
+fn parse_json<T: serde::de::DeserializeOwned>(bytes: &[u8]) -> Result<T, String> {
+    serde_json::from_slice(bytes).map_err(|e| format!("not valid: {e}"))
+}
+
+/// A size profile, checked: each size as a size preset would be.
+fn fetch_sizes(index_url: &str, item: &HubItem) -> Result<SizeProfile, String> {
+    let bytes = fetch_checked(index_url, &item.path, &item.sha256, MAX_ITEM_BYTES)?;
+    let profile: SizeProfile = parse_json(&bytes)?;
+    if profile.format != SIZES_FORMAT {
+        return Err(format!("\"format\" must be \"{SIZES_FORMAT}\""));
+    }
+    if profile.name.trim().is_empty() || profile.sizes.is_empty() || profile.sizes.len() > 100 {
+        return Err("a size profile needs a name and 1 to 100 sizes".into());
+    }
+    for s in &profile.sizes {
+        crate::sizes::validate(&crate::sizes::SizePreset {
+            id: String::new(),
+            name: s.name.clone(),
+            group: profile.name.clone(),
+            width: s.width,
+            height: s.height,
+            builtin: false,
+            source: None,
+        })?;
+    }
+    Ok(profile)
+}
+
+/// A collage template, checked.
+fn fetch_collage(index_url: &str, item: &HubItem) -> Result<amb_export::collage::Template, String> {
+    let bytes = fetch_checked(index_url, &item.path, &item.sha256, MAX_ITEM_BYTES)?;
+    let template: amb_export::collage::Template = parse_json(&bytes)?;
+    template.validate()?;
+    if template.name.trim().is_empty() {
+        return Err("the template needs a name".into());
+    }
+    Ok(template)
+}
+
+fn find_item(index_url: &str, id: &str, kind: &str) -> Result<HubItem, String> {
+    read_index(index_url)?
+        .into_iter()
+        .find(|i| i.id == id && i.kind == kind)
+        .ok_or_else(|| format!("{id} isn't in the hub any more"))
+}
+
+fn source_of(index_url: &str, item: &HubItem) -> HubSource {
+    HubSource {
+        hub: index_url.to_string(),
+        id: item.id.clone(),
+        sha256: item.sha256.clone(),
+    }
+}
+
+/// Install (or update) a collage template into the user's templates.
+/// Returns its id there.
+pub fn install_collage(
+    custom: &mut Vec<crate::collages::TemplateEntry>,
+    index_url: &str,
+    id: &str,
+) -> Result<String, String> {
+    let item = find_item(index_url, id, "collage")?;
+    let template = fetch_collage(index_url, &item)?;
+    let existing = custom
+        .iter()
+        .find(|t| {
+            t.source
+                .as_ref()
+                .is_some_and(|s| s.hub == index_url && s.id == item.id)
+        })
+        .map(|t| t.id.clone());
+    let entry = crate::collages::TemplateEntry {
+        id: existing.unwrap_or_default(),
+        builtin: false,
+        template,
+        source: Some(source_of(index_url, &item)),
+    };
+    crate::collages::upsert(custom, &entry)
+}
+
+/// Install (or update) a size profile: its sizes become the user's size
+/// presets, grouped under its name. Returns how many.
+pub fn install_sizes(
+    custom: &mut Vec<crate::sizes::SizePreset>,
+    index_url: &str,
+    id: &str,
+) -> Result<usize, String> {
+    let item = find_item(index_url, id, "sizes")?;
+    let profile = fetch_sizes(index_url, &item)?;
+    custom.retain(|p| {
+        !p.source
+            .as_ref()
+            .is_some_and(|s| s.hub == index_url && s.id == item.id)
+    });
+    for s in &profile.sizes {
+        let preset = crate::sizes::SizePreset {
+            id: String::new(),
+            name: s.name.clone(),
+            group: profile.name.clone(),
+            width: s.width,
+            height: s.height,
+            builtin: false,
+            source: Some(source_of(index_url, &item)),
+        };
+        crate::sizes::upsert(custom, &preset)?;
+    }
+    Ok(profile.sizes.len())
 }
 
 /// Where hub presets go in the user's presets folder (one file per hub id).
@@ -306,6 +442,14 @@ fn fetch_item(index_url: &str, item: &HubItem) -> Result<Value, String> {
     match item.kind.as_str() {
         "plugin" => return fetch_plugin_manifest(index_url, item),
         "preset" => return fetch_preset(index_url, item).map(|(_, summary)| summary),
+        "collage" => {
+            return fetch_collage(index_url, item)
+                .and_then(|t| serde_json::to_value(t).map_err(|e| e.to_string()));
+        }
+        "sizes" => {
+            return fetch_sizes(index_url, item)
+                .and_then(|p| serde_json::to_value(p).map_err(|e| e.to_string()));
+        }
         _ => {}
     }
     let bytes = fetch_checked(index_url, &item.path, &item.sha256, MAX_ITEM_BYTES)?;
@@ -375,6 +519,8 @@ pub struct Mine<'a> {
     pub looks: Option<&'a Path>,
     pub plugins: Option<&'a Path>,
     pub presets: Option<&'a Path>,
+    pub collages: &'a [crate::collages::TemplateEntry],
+    pub sizes: &'a [crate::sizes::SizePreset],
 }
 
 /// Everything in the hub, with previews and what's installed already.
@@ -382,9 +528,22 @@ pub fn browse(index_url: &str, mine: Mine<'_>) -> Result<Vec<HubEntry>, String> 
     use rayon::prelude::*;
     let items = read_index(index_url)?;
     let presets = installed_presets(mine.presets);
+    let sources = mine
+        .collages
+        .iter()
+        .filter_map(|t| t.source.as_ref().map(|s| (s, t.id.clone())))
+        .chain(
+            mine.sizes
+                .iter()
+                .filter_map(|p| p.source.as_ref().map(|s| (s, s.id.clone()))),
+        )
+        .filter(|(s, _)| s.hub == index_url)
+        .map(|(s, id)| (s.id.clone(), (id, s.sha256.clone())))
+        .collect::<Vec<_>>();
     let mut mine = {
         let mut m = installed(mine.looks, index_url);
         m.extend(installed_plugins(mine.plugins, index_url));
+        m.extend(sources);
         m
     };
     // A hub preset is known by its file name; its content tells if it's current.
@@ -708,6 +867,56 @@ mod tests {
         assert!(install_preset(&mine, &url, "preset-sidecar").is_err());
         let _ = std::fs::remove_dir_all(&hub);
         let _ = std::fs::remove_dir_all(&mine);
+    }
+
+    #[test]
+    fn collages_and_size_profiles_install_from_the_hub() {
+        let hub = temp_dir("data-hub");
+        std::fs::create_dir_all(hub.join("collages")).unwrap();
+        std::fs::create_dir_all(hub.join("sizes")).unwrap();
+        let collage = serde_json::json!({ "format": amb_export::collage::FORMAT, "name": "Two up",
+            "width": 1200, "height": 800, "cells": [[0, 0, 0.5, 1], [0.5, 0, 0.5, 1]] })
+        .to_string();
+        let sizes = serde_json::json!({ "format": SIZES_FORMAT, "name": "Etsy",
+            "sizes": [{ "name": "Listing", "width": 2000, "height": 1600 },
+                      { "name": "Banner", "width": 3360, "height": 840 }] })
+        .to_string();
+        std::fs::write(hub.join("collages/two-up.json"), &collage).unwrap();
+        std::fs::write(hub.join("sizes/etsy.json"), &sizes).unwrap();
+        let item = |id: &str, kind: &str, path: &str, text: &str| {
+            serde_json::json!({ "id": id, "kind": kind, "name": id, "path": path,
+                "sha256": sha256_hex(text.as_bytes()) })
+        };
+        let index = serde_json::json!({ "format": INDEX_FORMAT, "items": [
+            item("collage-two-up", "collage", "collages/two-up.json", &collage),
+            item("sizes-etsy", "sizes", "sizes/etsy.json", &sizes),
+        ]});
+        std::fs::write(hub.join("index.json"), index.to_string()).unwrap();
+        let url = format!("file://{}/index.json", hub.display());
+        let entries = browse(&url, Mine::default()).unwrap();
+        assert!(entries.iter().all(|e| e.error.is_none()), "{entries:?}");
+
+        let mut templates = Vec::new();
+        let id = install_collage(&mut templates, &url, "collage-two-up").unwrap();
+        // Installing again updates the same template.
+        assert_eq!(
+            install_collage(&mut templates, &url, "collage-two-up").unwrap(),
+            id
+        );
+        assert_eq!(templates.len(), 1);
+        let mut presets = Vec::new();
+        assert_eq!(install_sizes(&mut presets, &url, "sizes-etsy").unwrap(), 2);
+        assert_eq!(install_sizes(&mut presets, &url, "sizes-etsy").unwrap(), 2);
+        assert_eq!(presets.len(), 2);
+        assert!(presets.iter().all(|p| p.group == "Etsy"));
+        let mine = Mine {
+            collages: &templates,
+            sizes: &presets,
+            ..Default::default()
+        };
+        let entries = browse(&url, mine).unwrap();
+        assert!(entries.iter().all(|e| e.installed.is_some() && !e.update));
+        let _ = std::fs::remove_dir_all(&hub);
     }
 
     #[test]

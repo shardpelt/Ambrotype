@@ -449,6 +449,50 @@ async function sidecarChanged() {
   }
 }
 
+// ---------------------------------------------------------------- the selected slider
+
+// Lightroom's , and . select the previous or next slider on screen, and
+// + and - move the selected one (here = and -, Shift for ten steps).
+function slidersOnScreen() {
+  const out = [];
+  for (const [name, c] of ui.controls) {
+    const kind = c.def?.kind;
+    if (kind === "bool" || kind === "choice" || !c.label?.isConnected || c.label.offsetParent === null) continue;
+    out.push([name, c]);
+  }
+  return out.sort(([, a], [, b]) => (a.label.compareDocumentPosition(b.label) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+}
+
+function showSelectedSlider() {
+  for (const n of document.querySelectorAll(".selected-setting")) n.classList.remove("selected-setting");
+  const c = ui.controls.get(ui.selectedSlider);
+  const row = c?.label?.closest(".row, .knob, .bar-row") ?? c?.label;
+  if (!row) return;
+  row.classList.add("selected-setting");
+  row.scrollIntoView({ block: "nearest" });
+}
+
+function stepSlider(dir) {
+  const list = slidersOnScreen();
+  if (!list.length) return;
+  const at = list.findIndex(([name]) => name === ui.selectedSlider);
+  const next = at < 0 ? (dir > 0 ? 0 : list.length - 1) : (at + dir + list.length) % list.length;
+  ui.selectedSlider = list[next][0];
+  showSelectedSlider();
+  status(`${list[next][1].def.label} selected: = and - change it`);
+}
+
+function nudgeSlider(steps) {
+  const c = ui.controls.get(ui.selectedSlider);
+  if (!c?.label?.isConnected) return stepSlider(1);
+  const def = c.def;
+  const step = Number(def.step) > 0 ? Number(def.step) : 1;
+  const now = Number(currentValue(def.name)) || 0;
+  const v = Math.min(def.max ?? Infinity, Math.max(def.min ?? -Infinity, now + steps * step));
+  commit(def.name, Number(v.toFixed(4)));
+  showSelectedSlider();
+}
+
 // Run protocol commands; several commands with a `group` label are one undo step.
 async function run(commands, group = null) {
   if (!ui.info) return;

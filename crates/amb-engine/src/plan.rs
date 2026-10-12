@@ -8,7 +8,7 @@
 //! the CPU: it comes first, so its result is simply the GPU's input. Every
 //! later stage has a GPU version; one without would be a [`Step::Cpu`]: the
 //! backend brings the image back, runs the engine's own code on it and
-//! carries on. Masks, spots,
+//! carries on. Masks, spots, LUTs,
 //! defringe and camera profiles make [`plan`] return a reason instead, and
 //! the caller renders on the CPU.
 
@@ -145,6 +145,9 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     }
     if !s.spots.is_empty() {
         return cpu_only("spot removal");
+    }
+    if s.lut.is_some() {
+        return cpu_only("a LUT");
     }
     if !s.lens.defringe.is_neutral() {
         return cpu_only("defringe");

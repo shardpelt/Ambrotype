@@ -1729,6 +1729,24 @@
    "status": "approx"
   },
   {
+   "name": "amb:LUT",
+   "group": "lut",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "exact"
+  },
+  {
+   "name": "amb:LUTAmount",
+   "group": "lut",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 100,
+   "status": "exact"
+  },
+  {
    "name": "ShadowTint",
    "group": "calibration",
    "kind": "number",

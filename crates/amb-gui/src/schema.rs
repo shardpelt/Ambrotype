@@ -63,6 +63,8 @@ fn choice_options(name: &str) -> Vec<(serde_json::Value, String)> {
         ],
         // Filled per photo by the UI with the profiles found for its camera.
         "CameraProfile" => vec![(json!(""), "Default (Ambrotype)".into())],
+        // Filled by the UI with the LUTs in the LUT folder.
+        "amb:LUT" => vec![(json!(""), "None".into())],
         "PerspectiveUpright" => vec![
             (json!(0), "Off".into()),
             (json!(1), "Auto".into()),
@@ -163,7 +165,14 @@ pub fn panels() -> Vec<Panel> {
             label: "Basic",
             groups: vec!["white_balance", "tone", "presence"],
             sections: vec![
-                section("Profile", &[("CameraProfile", Some("Profile"))]),
+                section(
+                    "Profile",
+                    &[
+                        ("CameraProfile", Some("Profile")),
+                        ("amb:LUT", Some("LUT")),
+                        ("amb:LUTAmount", Some("LUT amount")),
+                    ],
+                ),
                 section(
                     "White Balance",
                     &[

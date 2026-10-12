@@ -57,6 +57,10 @@
    "label": "Detail",
    "description": "Sharpening (Amount, Radius, Detail, Masking) and manual noise reduction (luminance and colour). Judge these at 100% zoom or more."
   },
+  "lut": {
+   "label": "LUT",
+   "description": "A look from a .cube file (the 3D LUT format of Resolve and many look packs), applied after the colour and curves. Our own feature (amb: namespace); Lightroom has no LUT setting and ignores these."
+  },
   "negative": {
    "label": "Film Negative (Ambrotype)",
    "description": "Turns a camera scan of a film negative into a positive: removes the orange film base, sets per-channel levels, and applies a film stock look. Our own feature (amb: namespace); Lightroom has no equivalent tags, so Lightroom ignores these."
@@ -384,6 +388,9 @@
   "EnableGradientBasedCorrections": {"label": "Linear gradients on (old)", "description": "Older linear gradient switch (pre-2021 files)."},
   "EnableCircularGradientBasedCorrections": {"label": "Radial filters on (old)", "description": "Older radial filter switch (pre-2021 files)."},
   "EnablePaintBasedCorrections": {"label": "Adjustment brush on (old)", "description": "Older adjustment brush switch (pre-2021 files)."},
-  "EnableRedEye": {"label": "Red eye on", "description": "Red eye switch. Red eye isn't rendered yet."}
+  "EnableRedEye": {"label": "Red eye on", "description": "Red eye switch. Red eye isn't rendered yet."},
+
+  "amb:LUT": {"label": "LUT", "description": "Path of a .cube file whose look is applied after the colour and curves, on sRGB-encoded values (colours outside sRGB are clipped for the table). Empty or unset: no LUT. The path is stored as is, so a sidecar moved to another computer needs the file there too."},
+  "amb:LUTAmount": {"label": "LUT amount", "description": "How much of the LUT's look: 0 none, 100 all of it."}
  }
 }

@@ -21,6 +21,7 @@ pub mod filters;
 pub mod lens;
 pub mod local;
 pub mod local_tone;
+pub mod lut;
 pub mod mask;
 pub mod matching;
 pub mod merge;

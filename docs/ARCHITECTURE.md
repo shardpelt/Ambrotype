@@ -49,6 +49,7 @@ amb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
      → local tone sliders
   4  Texture / Clarity (then local Texture, Clarity, Saturation, Color)
   5  Vibrance, Saturation, HSL (or the B&W mix), Color Grading → parametric + point curves
+     → a .cube LUT (amb:LUT, lut.rs)
   6  noise reduction → sharpening (then local Noise, Sharpness)
   7  post-crop vignette → grain → mask overlay (editor) → paint blank lens areas
                                        ▼

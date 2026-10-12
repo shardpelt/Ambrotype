@@ -3,7 +3,7 @@ Edit: `amb do PHOTO "exp=+0.5 con+=10 reset:hsl"` [--dry-run]; MCP edit_photo {p
 Items: Name=v Name+=d Name-=d reset:Name|group preset:PATH[@amount] snap:N load:N undo redo
 Check: `amb stats PHOTO` (L*, clipping, cast) before a picture (`amb render PHOTO out.jpg --long-edge 800`).
 Match a look: `amb match PHOTO REF.jpg...` (shows changes; --apply).
-More: `amb ref GROUP`: metadata process profile white_balance tone tone_legacy presence tone_curve hsl bw_mixer point_color color_grading split_toning detail lens transform effects calibration crop local retouch enhance lens_blur hdr negative
+More: `amb ref GROUP`: metadata process profile white_balance tone tone_legacy presence tone_curve hsl bw_mixer point_color color_grading split_toning detail lens transform effects lut calibration crop local retouch enhance lens_blur hdr negative
 Short name, setting, range =default:
 temp Temperature 2000..50000 K (as shot)
 tint Tint -150..150

@@ -139,6 +139,13 @@ impl Base<'_> {
     }
 }
 
+/// A `.cube` LUT and how much of it (`amb:LUTAmount`, 0..1).
+#[derive(Debug, Clone)]
+pub struct LookLut {
+    pub table: std::sync::Arc<crate::lut::CubeLut>,
+    pub amount: f64,
+}
+
 #[derive(Debug, Clone)]
 pub struct DevelopSettings {
     pub base_look: BaseLook,
@@ -177,6 +184,8 @@ pub struct DevelopSettings {
     pub masks: Masks,
     /// Spot removal (heal and clone).
     pub spots: Spots,
+    /// A `.cube` look (`amb:LUT`), after the colour and curves.
+    pub lut: Option<LookLut>,
     /// Model constants; [`Calibration::default`] until fitted against Lightroom.
     pub calibration: Calibration,
 }
@@ -207,6 +216,7 @@ impl Default for DevelopSettings {
             camera_profile: None,
             crop: Crop::default(),
             negative: Negative::default(),
+            lut: None,
             masks: Masks::default(),
             spots: Spots::default(),
             calibration: Calibration::default(),
@@ -345,6 +355,8 @@ pub const RENDERED_TAGS: &[&str] = &[
     "PaintBasedCorrections",
     "EnablePaintBasedCorrections",
     "amb:NegativeConvert",
+    "amb:LUT",
+    "amb:LUTAmount",
     "amb:NegativeType",
     "amb:NegativeAuto",
     "amb:FilmStock",
@@ -609,6 +621,17 @@ impl DevelopSettings {
             .collect();
         not_rendered.extend(mask_notes);
         not_rendered.extend(spot_notes);
+        if let Some(path) = text(settings, "amb:LUT") {
+            let amount = num(settings, "amb:LUTAmount")
+                .unwrap_or(100.0)
+                .clamp(0.0, 100.0)
+                / 100.0;
+            match crate::lut::load(std::path::Path::new(&path)) {
+                Ok(table) if amount > 0.0 => s.lut = Some(LookLut { table, amount }),
+                Ok(_) => {}
+                Err(e) => not_rendered.push(format!("amb:LUT ({e})")),
+            }
+        }
         match s.transform.upright_mode {
             UprightMode::Off => {}
             UprightMode::Guided => not_rendered.push(
@@ -620,6 +643,31 @@ impl DevelopSettings {
         }
         (s, not_rendered)
     }
+}
+
+/// A `.cube` look on display-linear ProPhoto: through sRGB-encoded values,
+/// as LUTs expect (colours outside sRGB are clipped for the table), mixed
+/// with the original by the amount.
+fn apply_lut(out: &mut ProPhotoImage, l: &LookLut) {
+    use amb_color::matrix::xyz_d50_to_srgb;
+    let to_srgb = mul3(&xyz_d50_to_srgb(), &PROPHOTO_TO_XYZ_D50);
+    let to_pro = invert3(&to_srgb);
+    let m = |m: &[[f64; 3]; 3]| m.map(|r| r.map(|v| v as f32));
+    let (to_srgb, to_pro) = (m(&to_srgb), m(&to_pro));
+    let mat = |m: &[[f32; 3]; 3], c: [f32; 3]| {
+        [0, 1, 2].map(|i| m[i][0] * c[0] + m[i][1] * c[1] + m[i][2] * c[2])
+    };
+    let amount = l.amount as f32;
+    out.map_pixels(|c| {
+        let srgb = mat(&to_srgb, c);
+        let enc = srgb.map(|v| srgb_encode(v.clamp(0.0, 1.0)));
+        let looked = l.table.apply(enc);
+        let mixed = [0, 1, 2].map(|i| {
+            let lin = srgb_decode(looked[i].clamp(0.0, 1.0));
+            srgb[i] + (lin - srgb[i]) * amount
+        });
+        mat(&to_pro, mixed)
+    });
 }
 
 fn flag(settings: &BTreeMap<String, Value>, key: &str) -> bool {
@@ -1664,6 +1712,9 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
         });
     }
 
+    if let Some(l) = &s.lut {
+        apply_lut(&mut out, l);
+    }
     stages.mark("colour+curves");
 
     // 6. Detail: noise reduction, then sharpening.
@@ -2004,6 +2055,49 @@ mod tests {
 
     /// A camera whose RGB is linear ProPhoto (white balance and matrix are
     /// then the identity), with `f` giving each pixel.
+    #[test]
+    fn a_cube_lut_is_applied_by_its_amount() {
+        let dir = std::env::temp_dir().join(format!("amb-pipeline-lut-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        // Every colour to a mid grey (sRGB 0.5), so the result is known.
+        let path = dir.join("grey.cube");
+        std::fs::write(
+            &path,
+            format!("LUT_3D_SIZE 2\n{}", "0.5 0.5 0.5\n".repeat(8)),
+        )
+        .unwrap();
+        let img = camera(2, 1, |x, _| {
+            if x == 0 {
+                [0.05, 0.05, 0.05]
+            } else {
+                [0.6, 0.3, 0.1]
+            }
+        });
+        let render_with = |amount: &str| {
+            let (s, missing) = DevelopSettings::from_settings(&map(&[
+                ("amb:LUT", path.to_str().unwrap()),
+                ("amb:LUTAmount", amount),
+            ]));
+            assert!(missing.is_empty(), "{missing:?}");
+            render(&img, &s)
+        };
+        let plain = render(&img, &DevelopSettings::default());
+        let full = render_with("100");
+        let grey = srgb_decode(0.5);
+        for i in 0..2 {
+            let p = [0, 1, 2].map(|c| full.rgb[i * 3 + c]);
+            assert!(p.iter().all(|v| (v - grey).abs() < 0.02), "{p:?}");
+        }
+        // Half way: between the plain render and the grey.
+        let half = render_with("50");
+        let (a, b, c) = (plain.rgb[0], half.rgb[0], full.rgb[0]);
+        assert!(a.min(c) < b && b < a.max(c), "{a} {b} {c}");
+        // A missing file is reported, not rendered.
+        let (s, missing) = DevelopSettings::from_settings(&map(&[("amb:LUT", "/nowhere/x.cube")]));
+        assert!(s.lut.is_none() && missing.len() == 1 && missing[0].starts_with("amb:LUT"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     fn camera(w: usize, h: usize, f: impl Fn(usize, usize) -> [f32; 3]) -> CameraImage {
         let mut rgb = Vec::with_capacity(w * h * 3);
         for y in 0..h {

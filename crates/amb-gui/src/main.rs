@@ -1813,6 +1813,75 @@ fn hub_submit(
     Ok(url)
 }
 
+// ---------------------------------------------------------------- LUTs
+
+/// Where the user keeps `.cube` files for the LUT menu.
+fn luts_dir(state: &AppState) -> Option<PathBuf> {
+    let path = state.config_path.lock().ok()?;
+    Some(path.as_ref()?.parent()?.join("luts"))
+}
+
+#[derive(Serialize)]
+struct LutEntry {
+    name: String,
+    path: String,
+}
+
+/// The `.cube` files in the LUT folder (and its subfolders), by name.
+#[tauri::command]
+fn luts_list(state: tauri::State<'_, AppState>) -> Vec<LutEntry> {
+    fn walk(dir: &Path, depth: usize, out: &mut Vec<LutEntry>) {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return;
+        };
+        for e in entries.flatten() {
+            let p = e.path();
+            if p.is_dir() && depth < 3 {
+                walk(&p, depth + 1, out);
+            } else if p
+                .extension()
+                .is_some_and(|x| x.eq_ignore_ascii_case("cube"))
+            {
+                out.push(LutEntry {
+                    name: p
+                        .file_stem()
+                        .map(|s| s.to_string_lossy().into_owned())
+                        .unwrap_or_default(),
+                    path: p.display().to_string(),
+                });
+            }
+        }
+    }
+    let mut out = Vec::new();
+    if let Some(dir) = luts_dir(&state) {
+        walk(&dir, 0, &mut out);
+    }
+    out.sort_by_key(|l| l.name.to_lowercase());
+    out
+}
+
+/// Pick a `.cube` file anywhere.
+#[tauri::command]
+async fn pick_lut(app: tauri::AppHandle) -> Option<String> {
+    app.dialog()
+        .file()
+        .set_title("Choose a LUT")
+        .add_filter("LUT (.cube)", &["cube", "CUBE"])
+        .blocking_pick_file()
+        .and_then(|p| p.into_path().ok())
+        .map(|p| p.display().to_string())
+}
+
+/// Open the LUT folder (made if missing), to drop `.cube` files in.
+#[tauri::command]
+fn open_luts_folder(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Res<()> {
+    let dir = luts_dir(&state).ok_or("the LUT folder isn't available")?;
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    app.opener()
+        .open_path(dir.display().to_string(), None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
 // ---------------------------------------------------------------- plugins
 
 fn plugins_dir(state: &AppState) -> Option<PathBuf> {
@@ -2979,6 +3048,9 @@ fn main() {
             assistant_ask,
             run_plugin_many,
             trial_overrides,
+            luts_list,
+            pick_lut,
+            open_luts_folder,
             library_pick_folder,
             import_defaults,
             collections_list,

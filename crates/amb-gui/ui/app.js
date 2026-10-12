@@ -74,7 +74,7 @@ function fromSlider(def, s) {
 function currentValue(name) {
   if (name in ui.overrides) return ui.overrides[name];
   if (name in ui.settings) return ui.settings[name];
-  if (name === "CameraProfile") return "";
+  if (name === "CameraProfile" || name === "amb:LUT") return "";
   const def = ui.controls.get(name)?.def;
   if (ui.info?.defaults && name in ui.info.defaults) return ui.info.defaults[name];
   if (name === "Temperature") return ui.info ? Math.round(ui.info.as_shot_temperature) : 5500;
@@ -310,6 +310,9 @@ function syncControls() {
     else if (c.select && name === "CameraProfile") {
       fillProfileOptions(c.select, v);
       c.select.value = JSON.stringify(v ?? "");
+    } else if (c.select && name === "amb:LUT") {
+      fillLutOptions(c.select, v);
+      c.select.value = JSON.stringify(v ?? "");
     } else if (c.select) c.select.value = JSON.stringify(typeof v === "string" && /^\d+$/.test(v) ? Number(v) : v);
     else if (c.input) {
       const n = Number(v);
@@ -459,6 +462,7 @@ function commit(name, value) {
   if (name === "WhiteBalance" && value === "Auto") return autoFlow(false, true);
   // The default profile is no profile at all.
   if (name === "CameraProfile" && value === "") return run([{ cmd: "reset_param", name }]);
+  if (name === "amb:LUT") return commitLut(value);
   if (name === "PerspectiveUpright" && value !== 0) {
     const cleared = TRANSFORM_SLIDERS.concat(altHeld ? [] : CROP_TAGS).filter((n) => n in ui.settings);
     if (cleared.length) {
@@ -487,6 +491,47 @@ async function refreshProfiles(tries = 30) {
   }
   ui.profiles = found;
   syncControls();
+}
+
+// The LUT menu: none, the .cube files in the LUT folder, the edit's own if
+// it's elsewhere, then choosing a file or opening the folder.
+const LUT_PICK = "\u0000pick";
+const LUT_FOLDER = "\u0000folder";
+async function refreshLuts() {
+  try {
+    ui.luts = await invoke("luts_list");
+  } catch {
+    ui.luts = [];
+  }
+  syncControls();
+}
+
+function fillLutOptions(select, current) {
+  const luts = ui.luts ?? [];
+  const options = [["", "None"], ...luts.map((l) => [l.path, l.name])];
+  if (current && !luts.some((l) => l.path === current)) options.push([current, fileName(String(current)).replace(/\.cube$/i, "")]);
+  options.push([LUT_PICK, "Choose a .cube file…"], [LUT_FOLDER, "Open the LUT folder…"]);
+  const want = options.map(([v, t]) => `${v}\u0001${t}`).join("\n");
+  if (select.dataset.options !== want) {
+    select.replaceChildren(...options.map(([v, t]) => Object.assign(document.createElement("option"), { value: JSON.stringify(v), textContent: t })));
+    select.dataset.options = want;
+  }
+}
+
+async function commitLut(value) {
+  if (value === LUT_FOLDER) {
+    syncControls();
+    await invoke("open_luts_folder").catch((e) => toast(String(e), true));
+    return;
+  }
+  if (value === LUT_PICK) {
+    const path = await invoke("pick_lut");
+    syncControls();
+    if (!path) return;
+    value = path;
+  }
+  if (!value) return run([{ cmd: "reset_param", name: "amb:LUT" }]);
+  run([{ cmd: "set_param", name: "amb:LUT", value }]);
 }
 
 function fillProfileOptions(select, current) {
@@ -1147,6 +1192,7 @@ async function openPath(path) {
     const wasRendered = !!ui.info?.rendered;
     ui.info = r.info;
     refreshProfiles();
+    refreshLuts();
     // Raw and JPEG have different white balance sliders.
     if (wasRendered !== !!r.info.rendered && ui.layout) applyLayout(ui.layout);
     $("empty").hidden = true;

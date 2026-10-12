@@ -785,7 +785,16 @@ impl DevelopState {
             }
             Command::RemoveMask { mask, part } => masks::remove(next, *mask, *part)?,
             Command::DuplicateMask { mask } => masks::duplicate(next, *mask)?,
-            Command::MoveMask { mask, to } => masks::move_to(next, *mask, *to)?,
+            Command::MoveMask {
+                mask,
+                part: None,
+                to,
+            } => masks::move_to(next, *mask, *to)?,
+            Command::MoveMask {
+                mask,
+                part: Some(part),
+                to,
+            } => masks::move_part(next, *mask, *part, *to)?,
             Command::AddSpot {
                 at,
                 radius,

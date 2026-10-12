@@ -144,8 +144,9 @@ pub fn command_schema() -> Value {
             variant("cmd", "duplicate_mask", "Copy a mask (its parts and sliders), placing the copy just after it.", json!({
                 "mask": mask_index()
             }), &["mask"]),
-            variant("cmd", "move_mask", "Move a mask to another position in the list; the others keep their order.", json!({
+            variant("cmd", "move_mask", "Move a mask to another position in the list, or with part, one of its parts among its parts (they combine in order; the first must add). The others keep their order.", json!({
                 "mask": mask_index(),
+                "part": part_index(),
                 "to": { "type": "integer", "minimum": 0, "description": "New position from 0." }
             }), &["mask", "to"]),
             variant("cmd", "add_spot", "Add a round spot that heals (matches the surroundings) or clones (copies as is) a donor area onto it. Stored in Lightroom's RetouchAreas.", json!({
@@ -447,7 +448,11 @@ mod tests {
                 part: Some(0),
             },
             Command::DuplicateMask { mask: 0 },
-            Command::MoveMask { mask: 1, to: 0 },
+            Command::MoveMask {
+                mask: 1,
+                part: None,
+                to: 0,
+            },
             Command::AddSpot {
                 at: [0.3, 0.4],
                 radius: 0.02,

@@ -888,6 +888,43 @@ pub fn move_to(next: &mut BTreeMap<String, Value>, mask: usize, to: usize) -> Re
     Ok(())
 }
 
+/// `move_mask` with a part: put that part at position `to` among the mask's
+/// parts. Parts combine in order, so the first one must add.
+pub fn move_part(
+    next: &mut BTreeMap<String, Value>,
+    mask: usize,
+    part: usize,
+    to: usize,
+) -> Result<(), Error> {
+    let mut list = corrections(next);
+    let c = correction_mut(&mut list, mask)?;
+    part_range(c, mask, part)?;
+    let ranges = masks::parts(masks::components(c));
+    if to >= ranges.len() {
+        return Err(invalid(
+            "to",
+            format!("mask {mask} has {} part(s), numbered from 0", ranges.len()),
+        ));
+    }
+    let comps = components_mut(c);
+    let mut chunks: Vec<Vec<Value>> = ranges.iter().map(|r| comps[r.clone()].to_vec()).collect();
+    let moved = chunks.remove(part);
+    chunks.insert(to, moved);
+    let adds = |chunk: &[Value]| match chunk.first() {
+        Some(Value::Struct(m)) => masks::Combination::of(m).mode == masks::Mode::Add,
+        _ => true,
+    };
+    if !adds(&chunks[0]) {
+        return Err(invalid(
+            "to",
+            "the first part of a mask must add: subtract and intersect act on the parts before them",
+        ));
+    }
+    *comps = chunks.concat();
+    store(next, list);
+    Ok(())
+}
+
 /// Masks from a preset or another photo join the current ones; a mask with
 /// the same `CorrectionSyncID` is replaced. `amount` (0-2) scales their local
 /// sliders, as Lightroom's preset Amount does.
@@ -1262,6 +1299,55 @@ mod tests {
         assert_eq!(names(&s), ["Mask 1", "Mask 2", "Mask 2 copy"]);
         assert!(move_to(&mut s, 0, 3).is_err());
         assert!(duplicate(&mut s, 5).is_err());
+    }
+
+    #[test]
+    fn parts_move_within_their_mask() {
+        let mut s = BTreeMap::new();
+        let mut clamped = Vec::new();
+        add(&mut s, "linear", None, None, None, &mut clamped).unwrap();
+        add(
+            &mut s,
+            "radial",
+            Some(0),
+            Some("subtract"),
+            None,
+            &mut clamped,
+        )
+        .unwrap();
+        add(
+            &mut s,
+            "luminance",
+            Some(0),
+            Some("add"),
+            None,
+            &mut clamped,
+        )
+        .unwrap();
+        let order = |s: &BTreeMap<String, Value>| -> Vec<(String, String)> {
+            describe(s)["masks"][0]["parts"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|p| {
+                    (
+                        p["kind"].as_str().unwrap().into(),
+                        p["mode"].as_str().unwrap().into(),
+                    )
+                })
+                .collect()
+        };
+        let kinds =
+            |s: &BTreeMap<String, Value>| order(s).into_iter().map(|p| p.0).collect::<Vec<_>>();
+        assert_eq!(kinds(&s), ["linear", "radial", "luminance"]);
+        move_part(&mut s, 0, 2, 0).unwrap();
+        assert_eq!(kinds(&s), ["luminance", "linear", "radial"]);
+        assert_eq!(order(&s)[2].1, "subtract");
+        // A subtracting part can't come first.
+        let err = move_part(&mut s, 0, 2, 0).unwrap_err().to_string();
+        assert!(err.contains("first part"), "{err}");
+        assert!(move_part(&mut s, 0, 1, 3).is_err());
+        assert!(move_part(&mut s, 0, 5, 0).is_err());
     }
 
     #[test]

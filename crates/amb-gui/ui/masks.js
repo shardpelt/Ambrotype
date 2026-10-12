@@ -448,9 +448,20 @@ function renderMaskDetail(m) {
       e.stopPropagation();
       run([{ cmd: "remove_mask", mask: m.index, part: p.index }]);
     });
+    // Parts combine in order: move one up or down.
+    const move = (dir) => {
+      const b = el("button", { type: "button", class: "small", title: dir < 0 ? "Move this part up" : "Move this part down",
+        disabled: m.parts.length < 2 || (dir < 0 ? p.index === 0 : p.index === m.parts.length - 1) }, dir < 0 ? "↑" : "↓");
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        movePart(m, p.index, p.index + dir);
+      });
+      return b;
+    };
     const label = p.label + (p.rendered ? "" : " (not rendered yet)");
     const row = el("div", { class: "mask-part" + (sel ? " selected" : "") },
-      el("span", { class: "mask-name" }, label), mode, el("label", { class: "inline-check", title: "Invert" }, inv, "Inv"), del);
+      el("span", { class: "mask-name" }, label), mode, el("label", { class: "inline-check", title: "Invert" }, inv, "Inv"),
+      move(-1), move(1), del);
     row.addEventListener("click", () => selectPart(p.index));
     return row;
   });
@@ -589,6 +600,17 @@ function draftPart(values) {
 async function duplicateMask(i) {
   await run([{ cmd: "duplicate_mask", mask: i }]);
   selectMask(i + 1);
+}
+
+async function movePart(m, from, to) {
+  // The first part has to add: subtract and intersect act on the ones before.
+  const first = to === 0 ? m.parts[from] : from === 0 ? m.parts[1] : null;
+  if (first && first.mode !== "add") return toast("The first part has to add; change its mode first", true);
+  const sel = mk.part;
+  await run([{ cmd: "move_mask", mask: m.index, part: from, to }]);
+  // The selected part stays selected.
+  if (sel === from) selectPart(to);
+  else if (sel === to) selectPart(from);
 }
 
 async function moveMask(from, to) {

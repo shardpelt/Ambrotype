@@ -142,8 +142,14 @@ pub enum Command {
     },
     /// Copy a mask, placing the copy just after it.
     DuplicateMask { mask: usize },
-    /// Move a mask to position `to` in the list (0-based).
-    MoveMask { mask: usize, to: usize },
+    /// Move a mask to position `to` in the list (0-based), or with `part`,
+    /// one of its parts to position `to` among its parts.
+    MoveMask {
+        mask: usize,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        part: Option<usize>,
+        to: usize,
+    },
     /// Keep the current settings as a snapshot called `name` (replacing a
     /// snapshot of that name). Snapshots are kept with the photo; saving,
     /// renaming or deleting one doesn't change the edit, so it adds no
@@ -192,7 +198,10 @@ impl Command {
                 None => format!("remove_mask {mask}"),
             },
             Command::DuplicateMask { mask } => format!("duplicate_mask {mask}"),
-            Command::MoveMask { mask, to } => format!("move_mask {mask} to {to}"),
+            Command::MoveMask { mask, part, to } => match part {
+                Some(p) => format!("move_mask {mask} part {p} to {to}"),
+                None => format!("move_mask {mask} to {to}"),
+            },
             Command::AddSpot { kind, points, .. } => format!(
                 "add_spot {}{}",
                 kind.as_deref().unwrap_or("heal"),

@@ -75,7 +75,7 @@ All four are undoable protocol commands (`crates/amb-protocol/src/masks.rs`), so
 - `paint_mask {mask?, part?, mode?, points, size, feather, flow, density, erase?}`: a stroke through `points` (image fractions; gaps filled with dabs 0.2 × the size apart, as Lightroom spaces them). `size` is the radius as a fraction of the photo's width. Without `part` it starts a brush part (a `Mask/Aggregate`), in a new mask without `mask`.
 - `remove_mask {mask, part?}`: removing a mask's last part removes the mask.
 - `duplicate_mask {mask}`: a copy just after it, "… copy", with new sync IDs.
-- `move_mask {mask, to}`: a new position; the panel lists masks in this order.
+- `move_mask {mask, to}`: a new position; the panel lists masks in this order. With `part`, one part among the mask's parts: they combine in order, so the first part must add.
 - Query `list_masks`: names, amount, active, sliders in UI units, and each part's kind, mode, invert and geometry (for brushes, the stroke and dab counts).
 
 Applying a preset with masks *adds* them to the photo's own (replacing one with the same `CorrectionSyncID`), with the preset Amount scaling their sliders. The old per-tool tags are rendered but not editable with these commands.
@@ -87,7 +87,7 @@ Applying a preset with masks *adds* them to the photo's own (replacing one with 
 - New mask: Linear (L), Radial (Shift+R), Brush (B), Luminance, Color. Then draw: a linear from where it is full to where it ends; a radial from the centre out; a brush stroke (Alt erases; [ and ] or the wheel change the size); a colour by clicking it (Shift-click adds samples).
 - The selected mask lists its parts, each with its mode (add, subtract, intersect), invert and delete; the same buttons add a part to it. Under them: the part's settings (radial Feather and Angle; luminance From, To and Smoothness; colour Refine and samples; brush stroke count) and the mask's Amount and local sliders, grouped like Lightroom's.
 - Dragging a handle (a linear's ends or line, a radial's centre or axis ends) or a slider previews live with an edited copy of the tag as an override; release runs one command, so each change is one undo step with a readable history line ("Mask 2: edit part 1").
-- Duplicate, ↑ and ↓ above the parts copy and move the selected mask; dragging a mask's row onto another moves it there too.
+- Duplicate, ↑ and ↓ above the parts copy and move the selected mask; dragging a mask's row onto another moves it there too. Each part's own ↑ and ↓ move it among the parts.
 - O shows or hides the red overlay of the selected mask (on by default while drawing). Delete removes the selected part, or the mask with its last part. Esc stops drawing, then leaves.
 
 ## Open questions (for the Lightroom trial)

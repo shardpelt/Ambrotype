@@ -2067,13 +2067,33 @@ async fn hub_browse(state: tauri::State<'_, AppState>) -> Res<HubList> {
     let url = hub_index(state.inner());
     let dir = looks_dir(state.inner());
     let plugins = plugins_dir(state.inner());
+    let presets = own_presets_dir(state.inner());
     let u = url.clone();
     let entries = tauri::async_runtime::spawn_blocking(move || {
-        hub::browse(&u, dir.as_deref(), plugins.as_deref())
+        let mine = hub::Mine {
+            looks: dir.as_deref(),
+            plugins: plugins.as_deref(),
+            presets: presets.as_deref(),
+        };
+        hub::browse(&u, mine)
     })
     .await
     .map_err(|e| e.to_string())??;
     Ok(HubList { url, entries })
+}
+
+/// Install (or update) a develop preset from the hub; returns the presets list.
+#[tauri::command]
+async fn hub_install_preset(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<PresetEntry>> {
+    let url = hub_index(state.inner());
+    let dir = own_presets_dir(state.inner()).ok_or("the settings folder isn't available")?;
+    tauri::async_runtime::spawn_blocking(move || hub::install_preset(&dir, &url, &id))
+        .await
+        .map_err(|e| e.to_string())??;
+    presets(state).await
 }
 
 /// Install (or update) a plugin from the hub; returns its id. It asks for
@@ -3558,6 +3578,7 @@ fn main() {
             hub_browse,
             hub_install,
             hub_install_plugin,
+            hub_install_preset,
             hub_submit,
             border_presets,
             save_border_preset,

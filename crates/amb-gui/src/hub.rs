@@ -74,9 +74,90 @@ pub struct HubEntry {
     pub update: bool,
 }
 
-/// Kinds this version can install: looks, and plugins.
+/// Kinds this version can install: looks, plugins and develop presets.
 fn known_kind(name: &str) -> bool {
-    kind_of(name).is_some() || name == "plugin"
+    kind_of(name).is_some() || name == "plugin" || name == "preset"
+}
+
+/// Where hub presets go in the user's presets folder (one file per hub id).
+const PRESET_FOLDER: &str = "Hub";
+
+/// A develop preset (`.xmp`), checked: what the hub card shows about it.
+fn fetch_preset(index_url: &str, item: &HubItem) -> Result<(Vec<u8>, Value), String> {
+    let bytes = fetch_checked(index_url, &item.path, &item.sha256, MAX_ITEM_BYTES)?;
+    let text = std::str::from_utf8(&bytes).map_err(|_| "the preset isn't text")?;
+    let preset = amb_presets::Preset::parse_xmp(text).map_err(|e| e.to_string())?;
+    if preset.format != amb_presets::SourceFormat::XmpPreset {
+        return Err("not a develop preset (a photo's sidecar?)".into());
+    }
+    let catalog = amb_protocol::catalog::Catalog::builtin();
+    let mut groups: Vec<String> = Vec::new();
+    let mut count = 0;
+    for name in preset.settings.keys() {
+        let Some(tag) = catalog
+            .lookup(name)
+            .filter(|t| t.group != "metadata" && t.group != "process")
+        else {
+            continue;
+        };
+        count += 1;
+        let label = catalog
+            .group(&tag.group)
+            .map_or(tag.group.clone(), |g| g.label.clone());
+        if !groups.contains(&label) {
+            groups.push(label);
+        }
+    }
+    if count == 0 {
+        return Err("the preset changes nothing".into());
+    }
+    let summary = serde_json::json!({
+        "name": preset.name().unwrap_or(&item.name),
+        "group": preset.group(),
+        "settings": count,
+        "groups": groups,
+    });
+    Ok((bytes, summary))
+}
+
+/// Install (or update) a develop preset from the hub into `dir` (the app's
+/// presets folder), as `Hub/<id>.xmp`. Returns its path.
+pub fn install_preset(dir: &Path, index_url: &str, id: &str) -> Result<std::path::PathBuf, String> {
+    let item = read_index(index_url)?
+        .into_iter()
+        .find(|i| i.id == id && i.kind == "preset")
+        .ok_or_else(|| format!("{id} isn't in the hub any more"))?;
+    let (bytes, _) = fetch_preset(index_url, &item)?;
+    let folder = dir.join(PRESET_FOLDER);
+    std::fs::create_dir_all(&folder).map_err(|e| format!("{}: {e}", folder.display()))?;
+    let path = folder.join(format!("{}.xmp", item.id));
+    let text = String::from_utf8(bytes).map_err(|e| e.to_string())?;
+    amb_protocol::sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())?;
+    Ok(path)
+}
+
+/// The hub presets in the user's presets folder: hub id -> (path, sha256).
+fn installed_presets(dir: Option<&Path>) -> HashMap<String, (String, String)> {
+    let mut out = HashMap::new();
+    let Some(dir) = dir else { return out };
+    for entry in std::fs::read_dir(dir.join(PRESET_FOLDER))
+        .into_iter()
+        .flatten()
+        .flatten()
+    {
+        let path = entry.path();
+        let (Some(stem), Ok(bytes)) = (
+            path.file_stem().and_then(|s| s.to_str()),
+            std::fs::read(&path),
+        ) else {
+            continue;
+        };
+        if path.extension().is_some_and(|e| e == "xmp") {
+            let shown = path.display().to_string();
+            out.insert(stem.to_string(), (shown, sha256_hex(&bytes)));
+        }
+    }
+    out
 }
 
 fn kind_of(name: &str) -> Option<Kind> {
@@ -222,8 +303,10 @@ fn fetch_plugin_manifest(index_url: &str, item: &HubItem) -> Result<Value, Strin
 /// One look's file, checked against the index and validated (for a plugin,
 /// its manifest).
 fn fetch_item(index_url: &str, item: &HubItem) -> Result<Value, String> {
-    if item.kind == "plugin" {
-        return fetch_plugin_manifest(index_url, item);
+    match item.kind.as_str() {
+        "plugin" => return fetch_plugin_manifest(index_url, item),
+        "preset" => return fetch_preset(index_url, item).map(|(_, summary)| summary),
+        _ => {}
     }
     let bytes = fetch_checked(index_url, &item.path, &item.sha256, MAX_ITEM_BYTES)?;
     let data: Value = serde_json::from_slice(&bytes).map_err(|e| format!("not valid JSON: {e}"))?;
@@ -286,17 +369,30 @@ fn installed(dir: Option<&Path>, index_url: &str) -> HashMap<String, (String, St
     out
 }
 
-/// Everything in the hub, with previews and what's installed already
-/// (`dir` holds the user's looks, `plugins` their plugins).
-pub fn browse(
-    index_url: &str,
-    dir: Option<&Path>,
-    plugins: Option<&Path>,
-) -> Result<Vec<HubEntry>, String> {
+/// Where the user's own things are, to tell what's installed.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Mine<'a> {
+    pub looks: Option<&'a Path>,
+    pub plugins: Option<&'a Path>,
+    pub presets: Option<&'a Path>,
+}
+
+/// Everything in the hub, with previews and what's installed already.
+pub fn browse(index_url: &str, mine: Mine<'_>) -> Result<Vec<HubEntry>, String> {
     use rayon::prelude::*;
     let items = read_index(index_url)?;
-    let mut mine = installed(dir, index_url);
-    mine.extend(installed_plugins(plugins, index_url));
+    let presets = installed_presets(mine.presets);
+    let mut mine = {
+        let mut m = installed(mine.looks, index_url);
+        m.extend(installed_plugins(mine.plugins, index_url));
+        m
+    };
+    // A hub preset is known by its file name; its content tells if it's current.
+    for (id, have) in presets {
+        if items.iter().any(|i| i.id == id && i.kind == "preset") {
+            mine.insert(id, have);
+        }
+    }
     Ok(items
         .into_par_iter()
         .map(|item| {
@@ -453,7 +549,7 @@ mod tests {
     /// The hub template in this repo is what people copy: it must be clean and current.
     #[test]
     fn the_hub_template_is_valid() {
-        let entries = browse(&hub_url(), None, None).unwrap();
+        let entries = browse(&hub_url(), Mine::default()).unwrap();
         assert!(entries.len() >= 3);
         for e in &entries {
             assert!(e.error.is_none(), "{}: {:?}", e.item.id, e.error);
@@ -467,7 +563,14 @@ mod tests {
         let url = hub_url();
         let (kind, id) = install(&dir, &url, "theme-warm-dark").unwrap();
         assert_eq!((kind, id.as_str()), (Kind::Theme, "user:warm-dark"));
-        let entries = browse(&url, Some(&dir), None).unwrap();
+        let entries = browse(
+            &url,
+            Mine {
+                looks: Some(&dir),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         let warm = entries
             .iter()
             .find(|e| e.item.id == "theme-warm-dark")
@@ -492,7 +595,7 @@ mod tests {
         std::fs::write(copy.join("index.json"), index).unwrap();
         std::fs::write(copy.join("looks/themes/paper.json"), "{}").unwrap();
         let tampered = format!("file://{}/index.json", copy.display());
-        let entries = browse(&tampered, None, None).unwrap();
+        let entries = browse(&tampered, Mine::default()).unwrap();
         let paper = entries.iter().find(|e| e.item.id == "theme-paper").unwrap();
         assert!(paper.error.as_deref().unwrap().contains("checksum"));
         let _ = std::fs::remove_dir_all(&dir);
@@ -519,19 +622,90 @@ mod tests {
         std::fs::write(hub.join("index.json"), index.to_string()).unwrap();
         let url = format!("file://{}/index.json", hub.display());
         let mine = temp_dir("plugin-mine");
-        let entries = browse(&url, None, Some(&mine)).unwrap();
+        let entries = browse(
+            &url,
+            Mine {
+                plugins: Some(&mine),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         assert!(entries[0].error.is_none(), "{:?}", entries[0].error);
         assert_eq!(entries[0].data.as_ref().unwrap()["id"], "dice");
         assert!(entries[0].installed.is_none());
         assert_eq!(install_plugin(&mine, &url, "plugin-dice").unwrap(), "dice");
         assert!(mine.join("dice/plugin.wasm").is_file());
-        let entries = browse(&url, None, Some(&mine)).unwrap();
+        let entries = browse(
+            &url,
+            Mine {
+                plugins: Some(&mine),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         assert_eq!(entries[0].installed.as_deref(), Some("dice"));
         assert!(!entries[0].update);
         // A module changed after it was listed is refused.
         std::fs::write(hub.join("plugins/dice/plugin.wasm"), b"\0asm").unwrap();
         let err = install_plugin(&mine, &url, "plugin-dice").unwrap_err();
         assert!(err.contains("checksum"), "{err}");
+        let _ = std::fs::remove_dir_all(&hub);
+        let _ = std::fs::remove_dir_all(&mine);
+    }
+
+    #[test]
+    fn presets_install_from_the_hub_checked() {
+        let hub = temp_dir("preset-hub");
+        let fixtures = format!(
+            "{}/../amb-presets/tests/fixtures",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let preset = std::fs::read(format!("{fixtures}/punchy-teal-orange.xmp")).unwrap();
+        let sidecar = std::fs::read(format!("{fixtures}/sidecar.xmp")).unwrap();
+        std::fs::create_dir_all(hub.join("presets")).unwrap();
+        std::fs::write(hub.join("presets/punchy.xmp"), &preset).unwrap();
+        std::fs::write(hub.join("presets/sidecar.xmp"), &sidecar).unwrap();
+        let item = |id: &str, file: &str, bytes: &[u8]| {
+            serde_json::json!({ "id": id, "kind": "preset", "name": id,
+                "path": format!("presets/{file}"), "sha256": sha256_hex(bytes) })
+        };
+        let index = serde_json::json!({ "format": INDEX_FORMAT, "items": [
+            item("preset-punchy", "punchy.xmp", &preset),
+            item("preset-sidecar", "sidecar.xmp", &sidecar),
+        ]});
+        std::fs::write(hub.join("index.json"), index.to_string()).unwrap();
+        let url = format!("file://{}/index.json", hub.display());
+        let mine = temp_dir("preset-mine");
+        let presets = Mine {
+            presets: Some(&mine),
+            ..Default::default()
+        };
+        let entries = browse(&url, presets).unwrap();
+        let punchy = entries
+            .iter()
+            .find(|e| e.item.id == "preset-punchy")
+            .unwrap();
+        assert!(punchy.error.is_none(), "{:?}", punchy.error);
+        assert!(punchy.data.as_ref().unwrap()["settings"].as_u64().unwrap() > 3);
+        let side = entries
+            .iter()
+            .find(|e| e.item.id == "preset-sidecar")
+            .unwrap();
+        assert!(
+            side.error
+                .as_deref()
+                .unwrap()
+                .contains("not a develop preset")
+        );
+        let path = install_preset(&mine, &url, "preset-punchy").unwrap();
+        assert_eq!(std::fs::read(&path).unwrap(), preset);
+        let entries = browse(&url, presets).unwrap();
+        let punchy = entries
+            .iter()
+            .find(|e| e.item.id == "preset-punchy")
+            .unwrap();
+        assert!(punchy.installed.is_some() && !punchy.update);
+        assert!(install_preset(&mine, &url, "preset-sidecar").is_err());
         let _ = std::fs::remove_dir_all(&hub);
         let _ = std::fs::remove_dir_all(&mine);
     }

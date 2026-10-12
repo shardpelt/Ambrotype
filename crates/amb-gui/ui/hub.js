@@ -93,6 +93,19 @@ function pluginPreview(data) {
   return box;
 }
 
+// What a develop preset changes (the backend read and checked it).
+function presetPreview(data) {
+  const box = document.createElement("div");
+  box.className = "hub-preview preset";
+  const count = Object.assign(document.createElement("b"), {
+    textContent: `${data?.settings ?? 0} setting${data?.settings === 1 ? "" : "s"}`,
+  });
+  const groups = Object.assign(document.createElement("span"), { textContent: (data?.groups ?? []).join(", ") });
+  box.append(count, groups);
+  if (data?.group) box.append(Object.assign(document.createElement("span"), { textContent: `In “${data.group}”` }));
+  return box;
+}
+
 async function hubFlow(initial = "all") {
   const dlg = $("hub-dialog");
   let kind = initial;
@@ -113,7 +126,7 @@ async function hubFlow(initial = "all") {
       const card = document.createElement("article");
       card.className = "hub-card";
       if (e.data) {
-        const preview = { theme: themePreview, layout: layoutPreview, plugin: pluginPreview }[e.kind];
+        const preview = { theme: themePreview, layout: layoutPreview, plugin: pluginPreview, preset: presetPreview }[e.kind];
         if (preview) card.append(preview(e.data));
       }
       const title = document.createElement("h3");
@@ -139,7 +152,12 @@ async function hubFlow(initial = "all") {
             install.disabled = true;
             install.textContent = "Installing…";
             try {
-              if (e.kind === "plugin") {
+              if (e.kind === "preset") {
+                ui.presets = await invoke("hub_install_preset", { id: e.id });
+                renderPresets();
+                e.installed = e.id;
+                status(`Installed "${e.name}": it's with the presets on the left.`);
+              } else if (e.kind === "plugin") {
                 e.installed = await invoke("hub_install_plugin", { id: e.id });
                 status(`Installed "${e.name}": it's in the Plugins dialog (Ctrl+Shift+P), and asks before it first runs.`);
               } else {
@@ -156,7 +174,7 @@ async function hubFlow(initial = "all") {
           });
         }
         actions.append(install);
-        if (e.installed && e.kind !== "plugin") {
+        if (e.installed && (e.kind === "layout" || e.kind === "theme")) {
           const use = Object.assign(document.createElement("button"), { type: "button", textContent: "Use now" });
           use.addEventListener("click", () => {
             const field = e.kind === "layout" ? "active_layout" : "active_theme";
@@ -192,7 +210,7 @@ async function hubFlow(initial = "all") {
       list = r;
       $("hub-address").textContent = r.url;
       const count = (k) => r.entries.filter((e) => e.kind === k).length;
-      const parts = [[count("layout"), "layout"], [count("theme"), "theme"], [count("plugin"), "plugin"]]
+      const parts = [[count("layout"), "layout"], [count("theme"), "theme"], [count("preset"), "preset"], [count("plugin"), "plugin"]]
         .filter(([n]) => n).map(([n, w]) => `${n} ${w}${n === 1 ? "" : "s"}`);
       status(parts.length ? `${parts.join(", ")}.` : "The hub is empty so far.");
       render();

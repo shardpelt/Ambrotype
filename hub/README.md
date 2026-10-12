@@ -22,6 +22,14 @@ If you skip step 4, a maintainer can run it before merging.
 - Looks are shared under CC0 (public domain) unless the file says otherwise in `"license"`.
 - Nothing that copies another product's branding or name.
 
+## Presets
+
+Develop presets go in `presets/<name>.xmp` (lower case and dashes), in Lightroom's XMP preset format: export one from Lightroom, or use Ambrotype's **Presets → Save…** and take the file from the presets folder. The app lists them under **Browse hub… → Presets**, shows what each changes, and installs it into the presets list (group "Hub").
+
+- Share only presets you made. Bought or downloaded packs belong to their makers.
+- Add `crs:Author`, `crs:Description` and a `crs:License` if you like; presets are CC0 otherwise.
+- Run `python3 tools/build_index.py` to list it in `index.json`.
+
 ## Plugins
 
 Plugins are small programs that make edits (Ambrotype's **Plugins** button). They run sandboxed: no files, no network, only settings the user can see and undo. How to write one: [plugins.md](https://github.com/shardpelt/Ambrotype/blob/main/docs/ai/plugins.md).

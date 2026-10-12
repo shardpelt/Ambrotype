@@ -9,6 +9,9 @@ Each file becomes one item. Its id is the file name, and the app checks the
 file's sha256 against the index before installing it. Validate the looks
 themselves with the Ambrotype app: `ambrotype --check-look looks/*/*.json`.
 
+Develop presets (presets/<name>.xmp, Lightroom's XMP preset format) are
+listed as "preset-<name>".
+
 Plugins (plugins/<id>/) are listed too, as "plugin-<id>": the index holds
 the sha256 of plugin.json and of its module, and the app checks both. Each
 needs a plugin.json whose id is its folder name, its plugin.wasm, and its
@@ -16,6 +19,7 @@ Rust source, so a reviewer can read the code and rebuild the module: `amb
 plugin build plugins/<id>`, then `amb plugin check plugins/<id>`.
 """
 import hashlib
+import html
 import json
 import pathlib
 import re
@@ -55,8 +59,42 @@ def build():
                 "path": rel,
                 "sha256": hashlib.sha256(raw).hexdigest(),
             })
+    preset_items, preset_problems = check_presets()
     plugin_items, plugin_problems = check_plugins()
-    return {"format": "ambrotype-hub/1", "items": items + plugin_items}, problems + plugin_problems
+    items += preset_items + plugin_items
+    return {"format": "ambrotype-hub/1", "items": items}, problems + preset_problems + plugin_problems
+
+
+def xmp_text(raw, name):
+    """A preset's crs:<name>, as an attribute or a language alternative."""
+    text = raw.decode("utf-8", "replace")
+    m = re.search(rf'crs:{name}="([^"]*)"', text) or re.search(
+        rf"<crs:{name}>.*?<rdf:li[^>]*>(.*?)</rdf:li>", text, re.S)
+    return html.unescape(m.group(1)).strip() if m else ""
+
+
+def check_presets():
+    items, problems = [], []
+    for path in sorted((ROOT / "presets").glob("*.xmp")):
+        rel = path.relative_to(ROOT).as_posix()
+        if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", path.stem):
+            problems.append(f"{rel}: use a lower-case file name with dashes (e.g. warm-film.xmp)")
+            continue
+        raw = path.read_bytes()
+        if b"crs:PresetType" not in raw and b"<crs:PresetType" not in raw:
+            problems.append(f"{rel}: not a develop preset (no crs:PresetType); export it from Lightroom or Ambrotype")
+            continue
+        items.append({
+            "id": f"preset-{path.stem}",
+            "kind": "preset",
+            "name": xmp_text(raw, "Name") or path.stem,
+            "author": xmp_text(raw, "Author"),
+            "description": xmp_text(raw, "Description"),
+            "license": xmp_text(raw, "License") or "CC0-1.0",
+            "path": rel,
+            "sha256": hashlib.sha256(raw).hexdigest(),
+        })
+    return items, problems
 
 
 def check_plugins():

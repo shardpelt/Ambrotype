@@ -732,7 +732,7 @@ impl DevelopSettings {
 /// A `.cube` look on display-linear ProPhoto: through sRGB-encoded values,
 /// as LUTs expect (colours outside sRGB are clipped for the table), mixed
 /// with the original by the amount.
-fn apply_lut(out: &mut ProPhotoImage, l: &LookLut) {
+pub(crate) fn apply_lut(out: &mut ProPhotoImage, l: &LookLut) {
     use amb_color::matrix::xyz_d50_to_srgb;
     let to_srgb = mul3(&xyz_d50_to_srgb(), &PROPHOTO_TO_XYZ_D50);
     let to_pro = invert3(&to_srgb);

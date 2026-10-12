@@ -939,6 +939,29 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn a_lut_runs_between_the_gpu_stages() {
+        // A 2-point cube that warms and lifts the blacks a little.
+        let path = std::env::temp_dir().join(format!("amb-gpu-lut-{}.cube", std::process::id()));
+        let mut text = String::from("LUT_3D_SIZE 2\n");
+        for b in 0..2 {
+            for g in 0..2 {
+                for r in 0..2 {
+                    let (r, g, b) = (r as f32, g as f32, b as f32);
+                    text += &format!("{} {} {}\n", 0.05 + r * 0.95, g * 0.97, 0.03 + b * 0.85);
+                }
+            }
+        }
+        std::fs::write(&path, text).unwrap();
+        let tags = pixel_stages(&[
+            ("Contrast2012", n(20.0)),
+            ("amb:LUT", Value::Text(path.display().to_string())),
+            ("amb:LUTAmount", n(70.0)),
+        ]);
+        check("lut", &tags);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
     fn vignette() {
         same_as_cpu("vignette", &[("PostCropVignetteAmount", n(-60.0))]);
         same_as_cpu(

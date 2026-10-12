@@ -8,12 +8,13 @@
 //! the CPU: it comes first, so its result is simply the GPU's input. Every
 //! later stage has a GPU version; one without would be a [`Step::Cpu`]: the
 //! backend brings the image back, runs the engine's own code on it and
-//! carries on (spot removal and a LUT do that). Masks, defringe and
-//! camera profiles make [`plan`] return a reason instead, and
-//! the caller renders on the CPU.
+//! carries on (spot removal, masks and a LUT do that). Defringe and
+//! camera profiles make [`plan`] return a reason instead, and the caller
+//! renders on the CPU.
 
 use crate::buffer::{Image, luminance_weights};
 use crate::color::{ColorOp, ColorPlan};
+use crate::mask::{self, LocalAdjustments};
 use crate::pipeline::{
     BaseLook, CameraToWorking, DevelopSettings, LUT, Pass, camera_stage, camera_to_working,
     effective_detail,
@@ -135,13 +136,8 @@ pub struct Plan {
 /// on the CPU (`pipeline::render`) instead.
 pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     let cpu_only = |what: &str| Err(format!("{what} runs on the CPU only"));
-    // These keep state across several stages (masks are drawn once and
-    // used in five places), so they take the whole render to the CPU.
     if s.camera_profile.is_some() && !img.rendered && !s.negative.enabled {
         return cpu_only("a camera profile");
-    }
-    if !s.masks.is_empty() {
-        return cpu_only("masks");
     }
     if !s.lens.defringe.is_neutral() {
         return cpu_only("defringe");
@@ -188,6 +184,31 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         });
     }
 
+    // Masks are drawn once, here, on the photo as it is after spot removal,
+    // and applied with the engine's own code wherever the CPU applies them.
+    let drawn = Shared::default();
+    let any = |f: fn(&LocalAdjustments) -> bool| s.masks.corrections.iter().any(|c| f(&c.adjust));
+    if !s.masks.is_empty() {
+        let masks = s.masks.clone();
+        let frame = (img.width, img.height);
+        let crop = s.crop.geometry(img.width, img.height);
+        let look = if img.rendered {
+            BaseLook::Linear
+        } else {
+            s.base_look
+        };
+        let (d, cal) = (drawn.clone(), cal.clone());
+        steps.push(Step::Cpu {
+            name: "masks",
+            run: Box::new(move |out| {
+                let encode = |y| local::srgb_encode(look.apply(y));
+                let m = mask::draw(&masks, out, frame, crop.as_ref(), encode, &cal.masks);
+                m.apply_light(out, &cal.masks);
+                *d.lock().expect("masks") = Some(m);
+            }),
+        });
+    }
+
     // 2. Dehaze (scene-linear).
     // The whole output is rendered here, so the haze is measured on it.
     if s.dehaze != 0.0 && s.dehaze.is_finite() {
@@ -196,6 +217,12 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
             k: cal.dehaze,
             factor: dehaze::estimate_factor(full, &cal.dehaze),
         });
+    }
+    if any(|a| a.dehaze != 0.0) {
+        let cal = cal.clone();
+        steps.push(masked(&drawn, "mask dehaze", move |m, img| {
+            m.apply_dehaze(img, &cal, None, full);
+        }));
     }
     // 3. Base look, local Highlights/Shadows, the global tone curve.
     // A rendered image already has its tone curve.
@@ -219,9 +246,24 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
             lum_weights: luminance_weights(),
         });
     }
+    if any(|a| !a.tone().is_neutral()) {
+        let cal = cal.clone();
+        steps.push(masked(&drawn, "mask tone", move |m, img| {
+            m.apply_tone(img, &cal, LUT)
+        }));
+    }
     // 4. Texture / Clarity.
     if let Some(p) = local::plan(&s.local, &cal.local, tile.scale(), w, h) {
         steps.push(Step::Local(Box::new(p)));
+    }
+    if any(|a| a.texture != 0.0 || a.clarity != 0.0)
+        || any(|a| a.saturation != 0.0 || a.toning_saturation != 0.0)
+    {
+        let cal = cal.clone();
+        steps.push(masked(&drawn, "mask texture/colour", move |m, img| {
+            m.apply_local_contrast(img, &cal);
+            m.apply_color(img, &cal.masks);
+        }));
     }
     // 5. Colour, then the curves.
     if !s.color.is_neutral() {
@@ -237,6 +279,9 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     };
     if !curves.is_empty() {
         steps.push(Step::Curves(curves));
+    }
+    if s.masks.corrections.iter().any(|c| c.curves.is_some()) {
+        steps.push(masked(&drawn, "mask curves", |m, img| m.apply_curves(img)));
     }
     // The LUT, with the engine's own code (a 3D table read per pixel).
     if let Some(l) = s.lut.clone() {
@@ -256,6 +301,12 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     if let Some(p) = detail::sharpen_plan(&sharpening, &cal.detail) {
         steps.push(Step::Sharpen(Box::new(p)));
     }
+    if any(|a| a.noise > 0.0 || a.sharpness != 0.0) {
+        let cal = cal.clone();
+        steps.push(masked(&drawn, "mask detail", move |m, img| {
+            m.apply_detail(img, &cal)
+        }));
+    }
     // 7. Effects: post-crop vignette, then grain.
     if let Some(p) = effects::vignette_plan(
         &s.vignette,
@@ -269,6 +320,11 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     {
         steps.push(Step::Grain(Box::new(p)));
     }
+    if s.masks.overlay.is_some() {
+        steps.push(masked(&drawn, "mask overlay", |m, img| {
+            m.apply_overlay(img)
+        }));
+    }
     Ok(Plan {
         width: stage0.width,
         height: stage0.height,
@@ -276,4 +332,24 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         steps,
         lut_size: LUT,
     })
+}
+
+/// The masks the plan's first mask step draws, for the later ones.
+type Shared = std::sync::Arc<std::sync::Mutex<Option<mask::Drawn>>>;
+
+/// A step applying part of the drawn masks.
+fn masked(
+    drawn: &Shared,
+    name: &'static str,
+    apply: impl Fn(&mask::Drawn, &mut Image) + Send + Sync + 'static,
+) -> Step {
+    let drawn = drawn.clone();
+    Step::Cpu {
+        name,
+        run: Box::new(move |img| {
+            if let Some(m) = drawn.lock().expect("masks").as_ref() {
+                apply(m, img);
+            }
+        }),
+    }
 }

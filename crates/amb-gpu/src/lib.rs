@@ -5,7 +5,7 @@
 //! Each stage is a WGSL kernel with the same maths as its CPU stage in
 //! `amb-engine`, and a test that runs both on the same pixels and compares
 //! them. [`Gpu::render`] runs an `amb_engine::plan::Plan`; an edit the plan
-//! can't express (masks, spots, defringe, camera profiles) is rendered on
+//! can't express (defringe, camera profiles) is rendered on
 //! the CPU by the caller.
 
 mod denoise;

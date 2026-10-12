@@ -966,6 +966,83 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn masks_run_between_the_gpu_stages() {
+        let t = |v: &str| Value::Text(v.into());
+        let st = |p: Vec<(&str, Value)>| {
+            Value::Struct(p.into_iter().map(|(k, v)| (k.to_string(), v)).collect())
+        };
+        let gradient = st(vec![
+            ("What", t("Mask/Gradient")),
+            ("MaskBlendMode", t("0")),
+            ("MaskValue", t("1")),
+            ("ZeroX", t("0.5")),
+            ("ZeroY", t("0.8")),
+            ("FullX", t("0.5")),
+            ("FullY", t("0.2")),
+        ]);
+        let correction = |adjust: &[(&str, &str)]| {
+            let mut p = vec![
+                ("What", t("Correction")),
+                ("CorrectionAmount", t("1")),
+                ("CorrectionMasks", Value::Seq(vec![gradient.clone()])),
+            ];
+            p.extend(adjust.iter().map(|(k, v)| (*k, t(v))));
+            st(p)
+        };
+        let masks = |adjust: &[(&str, &str)]| {
+            (
+                "MaskGroupBasedCorrections",
+                Value::Seq(vec![correction(adjust)]),
+            )
+        };
+        // One mask step at a time, then all of them with the global stages.
+        let each = [
+            (
+                "light",
+                &[("LocalExposure2012", "0.25"), ("LocalTemperature", "0.3")][..],
+            ),
+            ("dehaze", &[("LocalDehaze", "0.4")]),
+            (
+                "tone",
+                &[("LocalContrast2012", "0.3"), ("LocalShadows2012", "0.4")],
+            ),
+            (
+                "texture",
+                &[("LocalTexture", "0.3"), ("LocalClarity2012", "0.3")],
+            ),
+            (
+                "colour",
+                &[
+                    ("LocalSaturation", "-0.4"),
+                    ("LocalToningSaturation", "0.3"),
+                ],
+            ),
+            (
+                "detail",
+                &[("LocalSharpness", "0.5"), ("LocalLuminanceNoise", "0.4")],
+            ),
+        ];
+        for (name, adjust) in each {
+            check(&format!("mask {name}"), &pixel_stages(&[masks(adjust)]));
+        }
+        let all: Vec<(&str, &str)> = each.iter().flat_map(|(_, a)| a.iter().copied()).collect();
+        let tags = [
+            ("Exposure2012", n(0.3)),
+            ("Dehaze", n(10.0)),
+            ("Contrast2012", n(15.0)),
+            ("Clarity2012", n(10.0)),
+            ("Saturation", n(10.0)),
+            masks(&all),
+        ];
+        check("masks", &tags);
+        // The masks do change the picture.
+        let img = photo(160, 120);
+        let with = pipeline::render(&img, &settings(&tags));
+        let without = pipeline::render(&img, &settings(&tags[..5]));
+        assert!(compare(&with.rgb, &without.rgb).1 > 1e-3);
+    }
+
+    #[test]
     fn a_lut_runs_between_the_gpu_stages() {
         // A 2-point cube that warms and lifts the blacks a little.
         let path = std::env::temp_dir().join(format!("amb-gpu-lut-{}.cube", std::process::id()));

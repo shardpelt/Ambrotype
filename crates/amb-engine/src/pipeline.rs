@@ -103,7 +103,7 @@ pub enum BaseLook {
 
 impl BaseLook {
     /// Scene-linear → display-linear, per channel.
-    fn apply(self, x: f32) -> f32 {
+    pub(crate) fn apply(self, x: f32) -> f32 {
         match self {
             BaseLook::Linear => x,
             BaseLook::Default => {

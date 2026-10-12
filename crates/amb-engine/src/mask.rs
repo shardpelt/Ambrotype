@@ -117,7 +117,7 @@ impl LocalAdjustments {
         }
     }
 
-    fn tone(&self) -> ToneControls {
+    pub(crate) fn tone(&self) -> ToneControls {
         ToneControls {
             contrast: self.contrast,
             highlights: self.highlights,

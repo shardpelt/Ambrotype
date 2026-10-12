@@ -163,6 +163,7 @@ dialog menu button { white-space: nowrap; }
 dialog label.wide { margin-top: 12px; }
 dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-top: 10px; color: var(--text); }
 .match-button { width: 100%; margin: 4px 0 6px; }
+.section-label .section-action { float: right; margin-top: -3px; text-transform: none; letter-spacing: 0; }
 /* Beside the photo, not over it: the photo shows the proposed look. */
 #match-dialog { width: 400px; margin: auto 16px 48px auto; max-height: calc(100vh - 80px); overflow: auto; }
 #match-dialog::backdrop { background: transparent; }

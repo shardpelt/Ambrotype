@@ -891,6 +891,27 @@ impl Session {
         Ok(self.info.clone())
     }
 
+    /// Lightroom-style Auto for the photo: tone and/or white balance.
+    pub fn auto(
+        &mut self,
+        tone: bool,
+        white: bool,
+        lens: &LensSources,
+    ) -> amb_engine::matching::MatchResult {
+        use amb_engine::matching;
+        let small = raw::downscale(&self.full, amb_library::look::EDGE);
+        let base = self.state.settings().clone();
+        let base_dev = self.develop(&base, lens);
+        let develop = |s: &matching::Settings| {
+            let mut d = matching::develop_plain(s);
+            d.lens.profile = base_dev.lens.profile.clone();
+            d.camera_profile = base_dev.camera_profile.clone();
+            d.transform.upright = base_dev.transform.upright;
+            d
+        };
+        matching::auto(&small, &base, tone, white, &develop)
+    }
+
     /// The settings that bring the photo's look to `target`, searched on a
     /// small copy, with this photo's lens and camera profiles and Upright.
     pub fn match_look(

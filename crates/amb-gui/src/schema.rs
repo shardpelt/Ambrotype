@@ -53,6 +53,7 @@ fn choice_options(name: &str) -> Vec<(serde_json::Value, String)> {
     match name {
         "WhiteBalance" => vec![
             (json!("As Shot"), "As Shot".into()),
+            (json!("Auto"), "Auto".into()),
             (json!("Custom"), "Custom".into()),
         ],
         "PostCropVignetteStyle" => vec![

@@ -282,6 +282,27 @@ struct MatchProposal {
     renders: usize,
 }
 
+/// Auto for the open photo: the commands for its tone and/or white balance.
+#[tauri::command]
+async fn auto_settings(
+    tone: bool,
+    white: bool,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<Command>> {
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        Ok(amb_library::look::commands(
+            &s.auto(tone, white, lens).changes,
+        ))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Find the settings that make the open photo look like `references`.
 #[tauri::command]
 async fn match_look(
@@ -2489,6 +2510,7 @@ fn main() {
             pick_photo,
             pick_references,
             match_look,
+            auto_settings,
             open_photo,
             execute,
             preview,

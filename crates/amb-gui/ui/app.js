@@ -453,6 +453,7 @@ for (const type of ["keydown", "keyup", "pointerdown"]) window.addEventListener(
 
 function commit(name, value) {
   delete ui.overrides[name];
+  if (name === "WhiteBalance" && value === "Auto") return autoFlow(false, true);
   // The default profile is no profile at all.
   if (name === "CameraProfile" && value === "") return run([{ cmd: "reset_param", name }]);
   if (name === "PerspectiveUpright" && value !== 0) {
@@ -1227,6 +1228,28 @@ async function savePresetFlow(name = "") {
     toast(`Saved the preset “${f.preset_name.value.trim()}” (in ${f.preset_group.value.trim() || "Yours"})`);
   } catch (e) {
     toast(String(e), true);
+  }
+}
+
+// Auto, as Lightroom's: the tone sliders (Basic's Auto button) or the
+// white balance (WB: Auto), worked out on a small copy, one undo step.
+async function autoFlow(tone, white) {
+  if (!ui.info) return;
+  status(tone ? "Auto tone…" : "Auto white balance…");
+  $("busy").hidden = false;
+  try {
+    const commands = await invoke("auto_settings", { tone, white });
+    if (white && !commands.some((c) => c.name === "Temperature" || c.name === "IncrementalTemperature")) {
+      // Too little grey to judge the light by: keep the camera's.
+      commands.push({ cmd: "set_param", name: "WhiteBalance", value: "Auto" });
+      if (!tone) toast("Too little grey in this photo to judge the light by, so Auto keeps the camera's white balance.");
+    }
+    await run(commands, tone ? "Auto" : "Auto white balance");
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    $("busy").hidden = true;
+    status("");
   }
 }
 

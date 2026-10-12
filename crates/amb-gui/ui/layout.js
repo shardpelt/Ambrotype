@@ -262,6 +262,15 @@ function buildPanel(item) {
       const l = document.createElement("div");
       l.className = "section-label";
       l.textContent = e.text;
+      if (e.text === "Tone") {
+        // Lightroom's Auto, beside the tone sliders.
+        const auto = document.createElement("button");
+        auto.className = "small section-action";
+        auto.textContent = "Auto";
+        auto.title = "Set Exposure, Contrast, Highlights, Shadows, Whites and Blacks for this photo (one undo step)";
+        auto.addEventListener("click", () => autoFlow(true, false));
+        l.append(auto);
+      }
       body.append(l);
     } else if (e.type === "control") {
       const def = e.def ?? ui.defs.get(e.name);

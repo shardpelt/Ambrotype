@@ -57,6 +57,11 @@ USAGE:
                                             (HSL per colour), solved on small
                                             renders. Shows the changes; --apply makes them one undoable
                                             step, --out also writes them as a preset
+    amb auto <PHOTO> [--tone] [--wb] [--apply] [--out PRESET.xmp] [--json]
+                                            Lightroom-style Auto: the tone sliders (and Vibrance for dull
+                                            colour) and the white balance (as Auto), from the photo's own
+                                            look; --tone or --wb for one of them. Shows the changes;
+                                            --apply makes them one undoable step
     amb stats <PHOTO> [--preset P] [--amount A] [--json]
                                             The photo developed small (with its edit, or a preset) as a
                                             few numbers instead of a picture: L* percentiles, clipped
@@ -358,7 +363,7 @@ fn main() -> ExitCode {
             "--dry-run" => dry_run = true,
             "--brief" => brief = true,
             "--progressive" | "--enlarge" | "--no-subfolders" | "--no-align" | "--no-crop"
-            | "--no-lens" | "--apply" => {
+            | "--no-lens" | "--apply" | "--tone" | "--wb" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look"
@@ -454,6 +459,13 @@ fn main() -> ExitCode {
         ["match", photo, refs @ ..] if !refs.is_empty() => match_look(
             Path::new(photo),
             refs,
+            &options,
+            options.contains_key("--apply"),
+            json,
+        )
+        .map(|t| println!("{t}")),
+        ["auto", photo] => auto(
+            Path::new(photo),
             &options,
             options.contains_key("--apply"),
             json,
@@ -1158,11 +1170,61 @@ fn match_look(
     };
     let refs_paths: Vec<&Path> = refs.iter().map(Path::new).collect();
     let target = look::target_look(&refs_paths)?;
+    let result = solve_on_photo(photo, options, |img, base, develop| {
+        let opts = MatchOptions {
+            parts,
+            ..Default::default()
+        };
+        matching::solve(img, base, &target, &opts, develop)
+    })?;
+    let extra = serde_json::json!({ "references": refs });
+    apply_result(photo, "Match look", &result, extra, options, apply, json)
+}
+
+/// `amb auto`: Lightroom-style Auto tone and white balance.
+fn auto(
+    photo: &Path,
+    options: &BTreeMap<&str, &str>,
+    apply: bool,
+    json: bool,
+) -> Result<String, String> {
+    let (only_tone, only_wb) = (options.contains_key("--tone"), options.contains_key("--wb"));
+    let (tone, white) = if only_tone || only_wb {
+        (only_tone, only_wb)
+    } else {
+        (true, true)
+    };
+    let result = solve_on_photo(photo, options, |img, base, develop| {
+        amb_engine::matching::auto(img, base, tone, white, develop)
+    })?;
+    apply_result(
+        photo,
+        "Auto",
+        &result,
+        serde_json::json!({}),
+        options,
+        apply,
+        json,
+    )
+}
+
+/// Run a look solver on the photo developed small with its edit, its lens
+/// and camera profiles found once for every try.
+fn solve_on_photo(
+    photo: &Path,
+    options: &BTreeMap<&str, &str>,
+    solve: impl FnOnce(
+        &amb_engine::raw::CameraImage,
+        &amb_engine::matching::Settings,
+        &dyn Fn(&amb_engine::matching::Settings) -> amb_engine::pipeline::DevelopSettings,
+    ) -> amb_engine::matching::MatchResult,
+) -> Result<amb_engine::matching::MatchResult, String> {
+    use amb_engine::matching;
+    use amb_library::look;
     let source = amb_engine::source_path(photo);
     let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
     let mut img = amb_engine::raw::downscale(&img, look::EDGE);
     let base = look::photo_settings(photo)?;
-    // Lens and camera profiles are found once, for every try.
     let (base_dev, _, _) = develop_from(&mut img, &base, None, None, options)?;
     let develop = |s: &matching::Settings| {
         let mut d = matching::develop_plain(s);
@@ -1170,17 +1232,21 @@ fn match_look(
         d.camera_profile = base_dev.camera_profile.clone();
         d
     };
-    let result = matching::solve(
-        &img,
-        &base,
-        &target,
-        &MatchOptions {
-            parts,
-            ..Default::default()
-        },
-        &develop,
-    );
-    let commands = look::commands(&result.changes);
+    Ok(solve(&img, &base, &develop))
+}
+
+/// Show a solver's changes, and with `apply` write them to the photo's
+/// edit as one undo step called `label`; `--out` also saves them as a preset.
+fn apply_result(
+    photo: &Path,
+    label: &str,
+    result: &amb_engine::matching::MatchResult,
+    mut extra: serde_json::Value,
+    options: &BTreeMap<&str, &str>,
+    apply: bool,
+    json: bool,
+) -> Result<String, String> {
+    let commands = amb_library::look::commands(&result.changes);
     if let Some(out) = options.get("--out") {
         let mut preset = amb_protocol::DevelopState::new();
         preset.execute_all(&commands).map_err(|e| e.to_string())?;
@@ -1194,7 +1260,7 @@ fn match_look(
         amb_protocol::DevelopState::load(&sidecar).map_err(|e| e.to_string())?
     };
     let results = state
-        .execute_grouped("Match look", &commands)
+        .execute_grouped(label, &commands)
         .map_err(|e| e.to_string())?;
     let written = if apply && !commands.is_empty() {
         state.save(&sidecar).map_err(|e| e.to_string())?;
@@ -1210,14 +1276,11 @@ fn match_look(
         dry_run: !apply,
     };
     if json {
-        let v = serde_json::json!({
-            "references": refs,
-            "distance_before": result.before,
-            "distance_after": result.after,
-            "renders": result.evaluations,
-            "edit": report.to_json(),
-        });
-        return serde_json::to_string_pretty(&v).map_err(|e| e.to_string());
+        extra["distance_before"] = serde_json::json!(result.before);
+        extra["distance_after"] = serde_json::json!(result.after);
+        extra["renders"] = serde_json::json!(result.evaluations);
+        extra["edit"] = report.to_json();
+        return serde_json::to_string_pretty(&extra).map_err(|e| e.to_string());
     }
     let mut text = format!(
         "look distance {:.1} → {:.1} ({} renders)\n",

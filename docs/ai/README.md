@@ -51,6 +51,10 @@ clipped: shadows 0.0%, highlights 19.1% (R 19.1 G 0.0 B 0.0)
 midtone cast a* +9.8 b* +10.2 (warm, magenta); chroma 32
 ```
 
+## Auto
+
+`amb auto IMG_0001.NEF` shows what Lightroom-style Auto would set: the six tone sliders (from zero, so the result doesn't depend on where they were) and the white balance (marked `Auto`). `--tone` or `--wb` for one of them, `--apply` to make it one undo step. White balance changes only when near-grey covers at least 15% of the photo; otherwise the camera's is kept.
+
 ## Matching a look
 
 "Make this look like these photos": `amb match` finds the settings for you, in code, instead of trying sliders one by one.

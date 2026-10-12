@@ -48,7 +48,18 @@ pub struct LookStats {
     /// chroma, lightness and hue offset from the band's centre (radians) of
     /// its colours.
     pub bands: [[f32; 4]; 8],
+    /// Mean (a*, b*) of the near-grey midtones (chroma under
+    /// [`NEUTRAL_CHROMA`]) and their share of the photo: the white balance,
+    /// read where the scene is probably grey.
+    pub neutral: [f32; 3],
 }
+
+/// Chroma (C*ab) under which a midtone counts as near grey for [`LookStats::neutral`].
+pub const NEUTRAL_CHROMA: f64 = 8.0;
+/// Least share of near-grey midtones for the white balance to be read from
+/// them. Below it the few near-grey pixels are as likely a coloured object
+/// (a golden ball in red cloth reads as 3.8% warm "grey") as the light.
+const MIN_NEUTRAL_SHARE: f32 = 0.05;
 
 /// Weights of a pixel of lightness `l` in the shadow, midtone and highlight zones.
 fn zone_weights(l: f64) -> [f64; 3] {
@@ -75,6 +86,7 @@ pub fn look_stats(img: &ProPhotoImage) -> LookStats {
     let mut cs = Vec::with_capacity(n);
     let mut sums = [[0.0f64; 3]; 3];
     let mut moments = [0.0f64; 5];
+    let mut neutral = [0.0f64; 3];
     let ok = crate::color::OkLab::new();
     let centres = crate::color::hsl_band_hues();
     let mut band_sums = [[0.0f64; 4]; 8];
@@ -99,6 +111,11 @@ pub fn look_stats(img: &ProPhotoImage) -> LookStats {
         let [l, a, b] = lab(p);
         for (m, v) in moments.iter_mut().zip([a, b, a * a, b * b, a * b]) {
             *m += v;
+        }
+        if (25.0..=85.0).contains(&l) && a.hypot(b) < NEUTRAL_CHROMA {
+            neutral[0] += a;
+            neutral[1] += b;
+            neutral[2] += 1.0;
         }
         let l = l.clamp(0.0, 100.0);
         ls.push(l as f32);
@@ -130,6 +147,15 @@ pub fn look_stats(img: &ProPhotoImage) -> LookStats {
         }),
         chroma: [percentile(&cs, 50.0), percentile(&cs, 90.0)],
         spread,
+        neutral: if neutral[2] > 0.0 {
+            [
+                (neutral[0] / neutral[2]) as f32,
+                (neutral[1] / neutral[2]) as f32,
+                (neutral[2] / k) as f32,
+            ]
+        } else {
+            [0.0; 3]
+        },
         bands: band_sums.map(|[w, c, l, d]| {
             if w > 1e-9 {
                 [
@@ -169,6 +195,9 @@ pub fn average(looks: &[LookStats]) -> Option<LookStats> {
             out.bands[b][c] = looks.iter().map(|s| s.bands[b][c]).sum::<f32>() / n;
         }
     }
+    for c in 0..3 {
+        out.neutral[c] = looks.iter().map(|s| s.neutral[c]).sum::<f32>() / n;
+    }
     Some(out)
 }
 
@@ -179,9 +208,9 @@ const MIN_BAND_SHARE: f32 = 0.01;
 /// [`distance`]; with `bands`, also each HSL band's colours where both
 /// looks have them (in OkLCh, times 100 to be near Lab units, weighted by
 /// how much of the photos they cover).
-fn residuals(a: &LookStats, b: &LookStats, bands: bool) -> Vec<f64> {
-    let mut r = Vec::with_capacity(9 + 6 + 2 + 3);
-    let tone = (1.0 / a.lightness.len() as f64).sqrt();
+fn residuals(a: &LookStats, b: &LookStats, k: &Weights) -> Vec<f64> {
+    let mut r = Vec::with_capacity(9 + 6 + 2 + 3 + 2);
+    let tone = k.tone * (1.0 / a.lightness.len() as f64).sqrt();
     r.extend(
         a.lightness
             .iter()
@@ -189,17 +218,30 @@ fn residuals(a: &LookStats, b: &LookStats, bands: bool) -> Vec<f64> {
             .map(|(x, y)| tone * (x - y) as f64),
     );
     for (w, (x, y)) in [0.5f64, 1.0, 0.5].iter().zip(a.zones.iter().zip(&b.zones)) {
-        r.push(w.sqrt() * (x[0] - y[0]) as f64);
-        r.push(w.sqrt() * (x[1] - y[1]) as f64);
+        r.push(k.cast * w.sqrt() * (x[0] - y[0]) as f64);
+        r.push(k.cast * w.sqrt() * (x[1] - y[1]) as f64);
     }
     r.extend(
         a.chroma
             .iter()
             .zip(&b.chroma)
-            .map(|(x, y)| (x - y) as f64 / 2f64.sqrt()),
+            .map(|(x, y)| k.colour * (x - y) as f64 / 2f64.sqrt()),
     );
-    r.extend(a.spread.iter().zip(&b.spread).map(|(x, y)| (x - y) as f64));
-    if bands {
+    r.extend(
+        a.spread
+            .iter()
+            .zip(&b.spread)
+            .map(|(x, y)| k.colour * (x - y) as f64),
+    );
+    // The near-grey cast, where both looks have enough near-grey to read it.
+    let w = if a.neutral[2].min(b.neutral[2]) >= MIN_NEUTRAL_SHARE {
+        k.neutral
+    } else {
+        0.0
+    };
+    r.push(w * (a.neutral[0] - b.neutral[0]) as f64);
+    r.push(w * (a.neutral[1] - b.neutral[1]) as f64);
+    if k.bands {
         for (x, y) in a.bands.iter().zip(&b.bands) {
             let share = x[0].min(y[0]);
             let w = if share < MIN_BAND_SHARE {
@@ -223,7 +265,46 @@ pub fn distance(a: &LookStats, b: &LookStats) -> f64 {
 
 /// [`distance`], with the HSL bands' colours too when `bands`.
 pub fn distance_with(a: &LookStats, b: &LookStats, bands: bool) -> f64 {
-    residuals(a, b, bands).iter().map(|r| r * r).sum()
+    weighted_distance(
+        a,
+        b,
+        &Weights {
+            bands,
+            ..Weights::default()
+        },
+    )
+}
+
+fn weighted_distance(a: &LookStats, b: &LookStats, k: &Weights) -> f64 {
+    residuals(a, b, k).iter().map(|r| r * r).sum()
+}
+
+/// How much each part of a look counts in the distance (1 = as in
+/// [`distance`], 0 = not at all).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Weights {
+    /// The L* percentiles.
+    pub tone: f64,
+    /// The shadow, midtone and highlight casts.
+    pub cast: f64,
+    /// Chroma percentiles and the a*/b* spread.
+    pub colour: f64,
+    /// The near-grey midtones' cast.
+    pub neutral: f64,
+    /// The HSL bands' colours.
+    pub bands: bool,
+}
+
+impl Default for Weights {
+    fn default() -> Self {
+        Weights {
+            tone: 1.0,
+            cast: 1.0,
+            colour: 1.0,
+            neutral: 1.0,
+            bands: false,
+        }
+    }
 }
 
 /// The groups of settings matching may change.
@@ -264,6 +345,8 @@ pub struct MatchOptions {
     pub parts: Vec<Part>,
     /// Most renders to try.
     pub max_evaluations: usize,
+    /// What counts in the distance (the bands are added with [`Part::Hsl`]).
+    pub weights: Weights,
 }
 
 impl Default for MatchOptions {
@@ -271,13 +354,15 @@ impl Default for MatchOptions {
         MatchOptions {
             parts: Part::ALL.to_vec(),
             max_evaluations: 600,
+            weights: Weights::default(),
         }
     }
 }
 
 #[derive(Debug, Clone, Serialize)]
 pub struct MatchResult {
-    /// Settings to set, with their new values (only those that change).
+    /// Settings to set, in this order, with their new values (only those
+    /// that change; a setting may come twice, the last value counts).
     pub changes: Vec<(String, Value)>,
     /// The distance to the references before and after.
     pub before: f64,
@@ -498,7 +583,11 @@ pub fn solve(
     };
     let with_hsl = opts.parts.contains(&Part::Hsl);
     let start_look = look(base);
-    let before = distance_with(&start_look, target, with_hsl);
+    let final_weights = Weights {
+        bands: with_hsl,
+        ..opts.weights
+    };
+    let before = weighted_distance(&start_look, target, &final_weights);
     let global: Vec<Param> = opts
         .parts
         .iter()
@@ -512,7 +601,15 @@ pub fn solve(
         let share = if with_hsl { 0.35 } else { 1.0 };
         let budget = (opts.max_evaluations as f64 * share) as usize;
         let budget = budget.saturating_sub(evaluations.get());
-        current = solve_stage(img, &current, target, &global, with_hsl, budget, &look);
+        current = solve_stage(
+            img,
+            &current,
+            target,
+            &global,
+            &final_weights,
+            budget,
+            &look,
+        );
     }
     // Then everything together, with the bands whose colours both looks have.
     if with_hsl {
@@ -527,10 +624,10 @@ pub fn solve(
         );
         if all.len() > global.len() {
             let budget = opts.max_evaluations.saturating_sub(evaluations.get());
-            current = solve_stage(img, &current, target, &all, true, budget, &look);
+            current = solve_stage(img, &current, target, &all, &final_weights, budget, &look);
         }
     }
-    let after = distance_with(&look(&current), target, with_hsl);
+    let after = weighted_distance(&look(&current), target, &final_weights);
     // Changed settings only (one left at its default isn't a change), the
     // white balance first: its mode, then Tint, then Temperature.
     let registry = Registry::builtin();
@@ -568,7 +665,7 @@ fn solve_stage(
     base: &Settings,
     target: &LookStats,
     params: &[Param],
-    bands: bool,
+    weights: &Weights,
     budget: usize,
     look: &dyn Fn(&Settings) -> LookStats,
 ) -> Settings {
@@ -578,7 +675,7 @@ fn solve_stage(
     // The Color Mixer's sliders are many: small moves of them mostly fit
     // noise, so they cost more and the smallest are dropped at the end.
     let mixer = |p: &Param| p.key.contains("Adjustment");
-    let weights: Vec<f64> = params
+    let penalty: Vec<f64> = params
         .iter()
         .map(|p| if mixer(p) { 4.0 * PENALTY } else { PENALTY }.sqrt())
         .collect();
@@ -594,9 +691,9 @@ fn solve_stage(
         let mut r = residuals(
             &look(&start.apply(base, params, &offsets(u), false)),
             target,
-            bands,
+            weights,
         );
-        r.extend(u.iter().zip(&weights).map(|(v, w)| w * v));
+        r.extend(u.iter().zip(&penalty).map(|(v, w)| w * v));
         r
     };
     let sq = |r: &[f64]| r.iter().map(|v| v * v).sum::<f64>();
@@ -681,6 +778,129 @@ const MIN_MIXER_MOVE: f64 = 5.0;
 /// Weight of the penalty on each setting's change (per typical move, squared).
 const PENALTY: f64 = 0.5;
 
+/// Where Auto puts the darkest tones, the middle and the brightest (L* at
+/// the 1st, 50th and 99th percentiles), and how far it moves each there:
+/// not all the way, so a dark, low-key photo stays darker than a bright one
+/// and a hazy one isn't forced to full contrast.
+const AUTO_ANCHORS: [f32; 3] = [2.0, 46.0, 95.0];
+const AUTO_TONE_PULL: [f32; 3] = [0.5, 0.7, 0.5];
+/// Share of the near-grey cast Auto white balance takes out: near-grey
+/// pixels may be a beige wall or dry grass, not grey, so not all of it.
+const AUTO_WHITE_PULL: f32 = 0.6;
+/// Least share of near-grey midtones for Auto to change the white balance
+/// at all. In a scene with a little near-grey (water, dry grass, a metal
+/// ball) its colour says more about the object than the light, and the
+/// camera's own white balance is the better guess.
+const AUTO_WHITE_SHARE: f32 = 0.15;
+
+/// What Auto aims for, from the photo's own look. `tone` stretches the
+/// photo's own tones so its black point, middle and white point move
+/// towards [`AUTO_ANCHORS`] (the shape in between is kept, so sliders can
+/// reach it). `white` takes the cast out of the
+/// near-grey midtones, shifting every zone's colour by the same amount; a
+/// photo with too little near-grey keeps its white balance.
+pub fn auto_target(current: &LookStats, tone: bool, white: bool) -> LookStats {
+    let mut t = current.clone();
+    if tone {
+        let l = &current.lightness;
+        let (lo, mid, hi) = (l[0], l[4], l[8]);
+        let pull = |v: f32, i: usize| v + AUTO_TONE_PULL[i] * (AUTO_ANCHORS[i] - v);
+        // The black and white points only move outwards: Auto never
+        // flattens a photo that already reaches black or white.
+        let lo2 = pull(lo, 0).min(lo);
+        let hi2 = pull(hi, 2).max(hi);
+        let mid2 = pull(mid, 1);
+        for v in t.lightness.iter_mut() {
+            *v = if *v <= mid {
+                lo2 + (*v - lo) * (mid2 - lo2) / (mid - lo).max(1e-3)
+            } else {
+                mid2 + (*v - mid) * (hi2 - mid2) / (hi - mid).max(1e-3)
+            };
+        }
+    }
+    if white && current.neutral[2] >= AUTO_WHITE_SHARE {
+        let [da, db, _] = current.neutral.map(|v| v * AUTO_WHITE_PULL);
+        for z in t.zones.iter_mut() {
+            z[0] -= da;
+            z[1] -= db;
+        }
+        t.neutral[0] -= da;
+        t.neutral[1] -= db;
+    }
+    t
+}
+
+/// Lightroom-style Auto: the tone sliders with `tone`, the white balance
+/// with `white`, found by the matching solver towards [`auto_target`].
+/// Only the tones and the near-grey cast count: brightening a photo makes
+/// its colours stronger in Lab, and that is not something to undo.
+/// Deterministic.
+pub fn auto(
+    img: &CameraImage,
+    base: &Settings,
+    tone: bool,
+    white: bool,
+    develop: &dyn Fn(&Settings) -> DevelopSettings,
+) -> MatchResult {
+    // As Lightroom's Auto, the tone sliders start from zero, so the result
+    // doesn't depend on where they were.
+    const TONE: [&str; 6] = [
+        "Exposure2012",
+        "Contrast2012",
+        "Highlights2012",
+        "Shadows2012",
+        "Whites2012",
+        "Blacks2012",
+    ];
+    let original = base;
+    let mut cleared = base.clone();
+    if tone {
+        cleared.retain(|k, _| !TONE.contains(&k.as_str()));
+    }
+    let base = &cleared;
+    let current = look_stats(&pipeline::render(img, &develop(base)));
+    let target = auto_target(&current, tone, white);
+    let white = white && current.neutral[2] >= AUTO_WHITE_SHARE;
+    let mut parts = Vec::new();
+    if white {
+        parts.push(Part::WhiteBalance);
+    }
+    if tone {
+        parts.push(Part::Tone);
+    }
+    let opts = MatchOptions {
+        parts,
+        max_evaluations: 250,
+        weights: Weights {
+            tone: 1.0,
+            cast: 0.0,
+            colour: 0.0,
+            neutral: if white { 1.0 } else { 0.0 },
+            bands: false,
+        },
+    };
+    let mut r = solve(img, base, &target, &opts, develop);
+    r.evaluations += 1;
+    // Sliders Auto left at zero that the photo had set.
+    for k in TONE {
+        let had = original
+            .get(k)
+            .and_then(Value::as_f64)
+            .is_some_and(|v| v != 0.0);
+        if tone && had && !r.changes.iter().any(|(c, _)| c == k) {
+            r.changes.push((k.to_string(), Value::Number(0.0)));
+        }
+    }
+    r.changes.retain(|(k, v)| original.get(k) != Some(v));
+    // Lightroom marks an automatic white balance as Auto, not Custom: set
+    // last, once Temperature and Tint are in (as commands, in this order).
+    if white && r.changes.iter().any(|(k, _)| k == "WhiteBalance") {
+        r.changes
+            .push(("WhiteBalance".into(), Value::Text("Auto".into())));
+    }
+    r
+}
+
 /// Settings as the pipeline renders them, with no lens or camera profiles.
 pub fn develop_plain(s: &Settings) -> DevelopSettings {
     DevelopSettings::from_settings(s).0
@@ -757,6 +977,7 @@ mod tests {
         let opts = MatchOptions {
             parts: vec![Part::WhiteBalance, Part::Tone, Part::Color],
             max_evaluations: 400,
+            ..Default::default()
         };
         let r = solve(&img, &Settings::new(), &target, &opts, &develop_plain);
         assert!(r.after < r.before / 20.0, "{r:?}");
@@ -777,12 +998,64 @@ mod tests {
         let opts = MatchOptions {
             parts: vec![Part::Hsl],
             max_evaluations: 300,
+            ..Default::default()
         };
         let r = solve(&img, &Settings::new(), &target, &opts, &develop_plain);
         assert!(r.after < r.before / 4.0, "{r:?}");
         let got: Settings = r.changes.iter().cloned().collect();
         assert!(
             num(&got, "SaturationAdjustmentRed").unwrap_or(0.0) < -25.0,
+            "{r:?}"
+        );
+    }
+
+    #[test]
+    fn auto_brightens_a_dark_photo() {
+        let mut img = photo(48, 32);
+        img.rgb.iter_mut().for_each(|v| *v *= 0.15);
+        let r = auto(&img, &Settings::new(), true, false, &develop_plain);
+        let got: Settings = r.changes.iter().cloned().collect();
+        assert!(num(&got, "Exposure2012").unwrap_or(0.0) > 0.8, "{r:?}");
+        let after = look_stats(&pipeline::render(&img, &develop_plain(&got)));
+        assert!(after.lightness[4] > 30.0, "{after:?}");
+        assert!(!got.contains_key("WhiteBalance"), "{r:?}");
+        // Deterministic, and the same whatever the tone sliders were.
+        let again = auto(&img, &Settings::new(), true, false, &develop_plain);
+        assert_eq!(again.changes, r.changes);
+        let edited = settings(&[("Exposure2012", -1.0), ("Contrast2012", 50.0)]);
+        let from_edit = auto(&img, &edited, true, false, &develop_plain);
+        let a: Settings = from_edit.changes.iter().cloned().collect();
+        assert_eq!(num(&a, "Exposure2012"), num(&got, "Exposure2012"));
+        assert_eq!(
+            num(&a, "Contrast2012").unwrap_or(0.0),
+            num(&got, "Contrast2012").unwrap_or(0.0)
+        );
+    }
+
+    #[test]
+    fn auto_white_balance_neutralises_greys() {
+        // Mostly grey wall, lit warmer than the camera's white: red up.
+        let mut img = photo(48, 32);
+        let n = img.as_shot_neutral.map(|v| v as f32);
+        for (i, px) in img.rgb.chunks_exact_mut(3).enumerate() {
+            if i % 3 != 0 {
+                let v = 0.25 + 0.2 * ((i % 48) as f32 / 48.0);
+                px.copy_from_slice(&[v * n[0] * 1.3, v * n[1], v * n[2] * 0.85]);
+            }
+        }
+        let before = look_stats(&pipeline::render(&img, &develop_plain(&Settings::new())));
+        assert!(before.neutral[2] > 0.1, "{before:?}");
+        let r = auto(&img, &Settings::new(), false, true, &develop_plain);
+        assert_eq!(
+            r.changes.last().unwrap(),
+            &("WhiteBalance".to_string(), Value::Text("Auto".into()))
+        );
+        let got: Settings = r.changes.iter().cloned().collect();
+        let after = look_stats(&pipeline::render(&img, &develop_plain(&got)));
+        let cast = |s: &LookStats| s.neutral[0].hypot(s.neutral[1]);
+        assert!(cast(&after) < cast(&before) / 1.8, "{before:?} {after:?}");
+        assert!(
+            got.contains_key("Temperature") && got.contains_key("Tint"),
             "{r:?}"
         );
     }
@@ -798,6 +1071,7 @@ mod tests {
         let opts = MatchOptions {
             parts: vec![Part::Grading],
             max_evaluations: 200,
+            ..Default::default()
         };
         let r = solve(&img, &Settings::new(), &target, &opts, &develop_plain);
         assert!(r.after < r.before / 5.0, "{r:?}");

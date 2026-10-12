@@ -4,6 +4,8 @@ Ideas for later, written down so they aren't lost. None of them are built. Each 
 
 ## Auto button
 
+*Built 2026-10-12* (`amb_engine::matching::auto`, `amb auto`, Basic → Tone → Auto, WB → Auto): the tone sliders start from zero and the match solver stretches the photo's own tones so its black point, middle and white point move part of the way to L* 2, 46 and 95; white balance takes 60% of the cast out of the near-grey midtones, only when near-grey covers at least 15% of the photo (otherwise it keeps the camera's: in a scene with a little near-grey, water, dry grass or a metal ball, its colour says more about the object than the light). Not yet: Vibrance/Saturation, Shift-click per slider, calibration against Lightroom's Auto in the trial.
+
 One click for a good starting point, like Lightroom's Auto.
 
 - **Auto (Basic):** set Exposure, Contrast, Highlights, Shadows, Whites, Blacks, Vibrance and Saturation from image statistics: histogram percentiles, mid-grey placement, clipping, and saturation of the brightest colours.

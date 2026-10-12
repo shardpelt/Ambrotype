@@ -385,7 +385,7 @@
    "min": -4,
    "max": 4,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Brightness",
@@ -394,7 +394,7 @@
    "min": -150,
    "max": 150,
    "default": 50,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Contrast",
@@ -403,7 +403,7 @@
    "min": -50,
    "max": 100,
    "default": 25,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Shadows",
@@ -412,7 +412,7 @@
    "min": 0,
    "max": 100,
    "default": 5,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "HighlightRecovery",
@@ -421,7 +421,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "FillLight",
@@ -430,7 +430,7 @@
    "min": 0,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Clarity",
@@ -439,7 +439,7 @@
    "min": -100,
    "max": 100,
    "default": 0,
-   "status": "planned"
+   "status": "approx"
   },
   {
    "name": "Texture",

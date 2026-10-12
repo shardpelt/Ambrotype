@@ -16,7 +16,7 @@ use crate::local::LocalStrengths;
 use crate::mask::MaskStrengths;
 use crate::negative::NegativeStrengths;
 use crate::primaries::PrimariesStrengths;
-use crate::tone::ToneStrengths;
+use crate::tone::{LegacyToneStrengths, ToneStrengths};
 use crate::transform::TransformStrengths;
 use crate::upright::UprightStrengths;
 
@@ -36,6 +36,8 @@ pub struct Calibration {
     pub upright: UprightStrengths,
     /// The Calibration panel (camera primaries, shadow tint).
     pub primaries: PrimariesStrengths,
+    /// Old process versions' Basic sliders read as today's.
+    pub legacy_tone: LegacyToneStrengths,
 }
 
 impl Calibration {

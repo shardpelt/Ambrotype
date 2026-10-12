@@ -309,3 +309,40 @@ mod tests {
         );
     }
 }
+
+/// How the old process versions' Basic sliders (PV2010/PV2003: `Exposure`,
+/// `Brightness`, `Contrast`, `Shadows`, `HighlightRecovery`, `FillLight`,
+/// `Clarity`) are read as today's (PV2012) ones. **Ours, a first guess**:
+/// the scale of each slider against its 2012 counterpart, to be fitted from
+/// Lightroom renders of old-process photos.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
+pub struct LegacyToneStrengths {
+    /// EV per Brightness step from its default of 50.
+    pub brightness_ev: f64,
+    /// `Contrast2012` per Contrast step from its default of 25.
+    pub contrast: f64,
+    /// `Blacks2012` per Shadows step from its default of 5 (negative: darker).
+    pub blacks: f64,
+    /// `Highlights2012` per HighlightRecovery step (negative: darker).
+    pub recovery: f64,
+    /// `Shadows2012` per Fill Light step.
+    pub fill: f64,
+    /// `Clarity2012` per old Clarity step.
+    pub clarity: f64,
+}
+
+impl Default for LegacyToneStrengths {
+    fn default() -> Self {
+        DEFAULT_LEGACY
+    }
+}
+
+pub const DEFAULT_LEGACY: LegacyToneStrengths = LegacyToneStrengths {
+    brightness_ev: 0.01,
+    contrast: 0.8,
+    blacks: -1.5,
+    recovery: -0.8,
+    fill: 0.8,
+    clarity: 0.7,
+};

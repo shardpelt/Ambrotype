@@ -354,6 +354,13 @@ pub const RENDERED_TAGS: &[&str] = &[
     "EnableCircularGradientBasedCorrections",
     "PaintBasedCorrections",
     "EnablePaintBasedCorrections",
+    "Exposure",
+    "Brightness",
+    "Contrast",
+    "Shadows",
+    "HighlightRecovery",
+    "FillLight",
+    "Clarity",
     "amb:NegativeConvert",
     "amb:LUT",
     "amb:LUTAmount",
@@ -456,12 +463,88 @@ fn without_switched_off(settings: &BTreeMap<String, Value>) -> Option<BTreeMap<S
     Some(kept)
 }
 
+/// The old process versions' Basic sliders.
+const LEGACY_TONE: [&str; 7] = [
+    "Exposure",
+    "Brightness",
+    "Contrast",
+    "Shadows",
+    "HighlightRecovery",
+    "FillLight",
+    "Clarity",
+];
+
+/// An edit from process version 2010 or 2003 (`ProcessVersion` below 6.7,
+/// or old tone sliders with no 2012 ones): its Basic sliders read as
+/// today's, where the 2012 setting isn't there ([`LegacyToneStrengths`]).
+/// `None` for a current edit.
+fn with_legacy_tone(
+    settings: &BTreeMap<String, Value>,
+    k: &crate::tone::LegacyToneStrengths,
+) -> Option<BTreeMap<String, Value>> {
+    let has = |key: &str| settings.contains_key(key);
+    if !LEGACY_TONE.iter().any(|t| has(t)) {
+        return None;
+    }
+    let old_process = match settings.get("ProcessVersion").and_then(Value::as_f64) {
+        Some(pv) => pv < 6.7,
+        None => !settings.keys().any(|k| k.ends_with("2012")),
+    };
+    if !old_process {
+        return None;
+    }
+    let n = |key: &str, default: f64| num(settings, key).unwrap_or(default);
+    let mut out = settings.clone();
+    let mut put = |key: &str, v: f64, lo: f64, hi: f64| {
+        if !has(key) && v != 0.0 {
+            out.insert(key.into(), Value::Number(v.clamp(lo, hi)));
+        }
+    };
+    let ev = n("Exposure", 0.0) + (n("Brightness", 50.0) - 50.0) * k.brightness_ev;
+    put("Exposure2012", ev, -5.0, 5.0);
+    put(
+        "Contrast2012",
+        (n("Contrast", 25.0) - 25.0) * k.contrast,
+        -100.0,
+        100.0,
+    );
+    put(
+        "Blacks2012",
+        (n("Shadows", 5.0) - 5.0) * k.blacks,
+        -100.0,
+        100.0,
+    );
+    put(
+        "Highlights2012",
+        n("HighlightRecovery", 0.0) * k.recovery,
+        -100.0,
+        100.0,
+    );
+    put("Shadows2012", n("FillLight", 0.0) * k.fill, -100.0, 100.0);
+    put("Clarity2012", n("Clarity", 0.0) * k.clarity, -100.0, 100.0);
+    Some(out)
+}
+
 impl DevelopSettings {
     /// Build from Camera Raw settings. Returns the settings plus the names of
     /// present tags this pipeline does not render yet.
     pub fn from_settings(settings: &BTreeMap<String, Value>) -> (DevelopSettings, Vec<String>) {
         let switched = without_switched_off(settings);
         let settings = switched.as_ref().unwrap_or(settings);
+        let legacy = with_legacy_tone(settings, &Calibration::default().legacy_tone);
+        // A current edit doesn't use the old sliders (nor does Lightroom).
+        let unused_legacy: Vec<String> = match legacy {
+            Some(_) => Vec::new(),
+            None => LEGACY_TONE
+                .iter()
+                .filter(|t| {
+                    let d = amb_presets::registry::Registry::builtin().numeric_default(t);
+                    matches!((num(settings, t), d), (Some(v), Some(d)) if (v - d).abs() > 1e-9)
+                })
+                .map(|t| format!("{t} (an old-process slider; this edit is process 2012 or later, which doesn't use it)"))
+                .collect(),
+        };
+        let settings = legacy.as_ref().unwrap_or(settings);
         let mut s = DevelopSettings::default();
         let wb_mode = settings
             .get("WhiteBalance")
@@ -621,6 +704,7 @@ impl DevelopSettings {
             .collect();
         not_rendered.extend(mask_notes);
         not_rendered.extend(spot_notes);
+        not_rendered.extend(unused_legacy);
         if let Some(path) = text(settings, "amb:LUT") {
             let amount = num(settings, "amb:LUTAmount")
                 .unwrap_or(100.0)
@@ -1947,6 +2031,43 @@ mod tests {
     }
 
     #[test]
+    fn old_process_sliders_are_read_as_todays() {
+        let old = [
+            ("ProcessVersion", "5.7"),
+            ("Exposure", "+0.50"),
+            ("Brightness", "+50"),
+            ("Contrast", "+75"),
+            ("Shadows", "5"),
+            ("FillLight", "20"),
+            ("HighlightRecovery", "30"),
+        ];
+        let (s, missing) = DevelopSettings::from_settings(&map(&old));
+        assert!(missing.is_empty(), "{missing:?}");
+        assert!((s.exposure_ev - 0.5).abs() < 1e-9);
+        assert!(s.tone.contrast > 0.0 && s.tone.shadows > 0.0 && s.tone.highlights < 0.0);
+        assert_eq!(s.tone.blacks, 0.0, "Shadows at its default of 5");
+        // Defaults alone change nothing.
+        let (s, _) = DevelopSettings::from_settings(&map(&[
+            ("ProcessVersion", "5.7"),
+            ("Brightness", "+50"),
+            ("Contrast", "+25"),
+        ]));
+        assert!(s.tone.is_neutral() && s.exposure_ev == 0.0);
+        // A 2012 setting wins, and a current edit ignores the old sliders.
+        let (s, _) = DevelopSettings::from_settings(&map(&[
+            ("ProcessVersion", "5.7"),
+            ("Exposure", "+1"),
+            ("Exposure2012", "-1"),
+        ]));
+        assert_eq!(s.exposure_ev, -1.0);
+        let (s, _) = DevelopSettings::from_settings(&map(&[
+            ("ProcessVersion", "11.0"),
+            ("Contrast", "+100"),
+        ]));
+        assert!(s.tone.is_neutral());
+    }
+
+    #[test]
     fn panels_switched_off_are_left_out() {
         let curve = Value::Seq(
             ["0, 0", "128, 160", "255, 255"]
@@ -2699,6 +2820,7 @@ mod tests {
             }
         );
         assert_eq!(s.exposure_ev, 0.5);
-        assert_eq!(missing, vec!["HighlightRecovery".to_string()]);
+        assert_eq!(missing.len(), 1);
+        assert!(missing[0].starts_with("HighlightRecovery ("), "{missing:?}");
     }
 }

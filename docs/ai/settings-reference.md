@@ -138,13 +138,13 @@ Tone controls of the old process versions. Only meaningful for photos still on P
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `Exposure` | Exposure (legacy) | number | -4 to 4 | 0 | planned | *Units: stops.* PV2010/PV2003 Exposure, in stops. For current process versions use Exposure2012. |
-| `Brightness` | Brightness (legacy) | number | -150 to 150 | 50 | planned | PV2010/PV2003 Brightness: mainly midtones; moving right compresses highlights and expands shadows. No PV2012 equivalent; use Exposure2012 and the tone curve. |
-| `Contrast` | Contrast (legacy) | number | -50 to 100 | 25 | planned | PV2010/PV2003 Contrast, mainly affecting midtones. For current process versions use Contrast2012. |
-| `Shadows` | Blacks (legacy) | number | 0 to 100 | 5 | planned | The PV2010/PV2003 Blacks slider: which image values map to black, with the greatest effect in the shadows. For current process versions use Blacks2012 (and Shadows2012 for shadow brightness). |
-| `HighlightRecovery` | Recovery (legacy) | number | 0 to 100 | 0 | planned | PV2010/PV2003 Recovery: reduces extreme highlights and can recover detail when one or two channels are clipped. For current process versions use Highlights2012. |
-| `FillLight` | Fill Light (legacy) | number | 0 to 100 | 0 | planned | PV2010/PV2003 Fill Light: lightens shadows while keeping blacks; may reveal noise. For current process versions use Shadows2012. |
-| `Clarity` | Clarity (legacy) | number | -100 to 100 | 0 | planned | PV2010 Clarity. For current process versions use Clarity2012. |
+| `Exposure` | Exposure (legacy) | number | -4 to 4 | 0 | rendered (approx.) | *Units: stops.* PV2010/PV2003 Exposure, in stops. For current process versions use Exposure2012. |
+| `Brightness` | Brightness (legacy) | number | -150 to 150 | 50 | rendered (approx.) | PV2010/PV2003 Brightness: mainly midtones; moving right compresses highlights and expands shadows. No PV2012 equivalent; use Exposure2012 and the tone curve. |
+| `Contrast` | Contrast (legacy) | number | -50 to 100 | 25 | rendered (approx.) | PV2010/PV2003 Contrast, mainly affecting midtones. For current process versions use Contrast2012. |
+| `Shadows` | Blacks (legacy) | number | 0 to 100 | 5 | rendered (approx.) | The PV2010/PV2003 Blacks slider: which image values map to black, with the greatest effect in the shadows. For current process versions use Blacks2012 (and Shadows2012 for shadow brightness). |
+| `HighlightRecovery` | Recovery (legacy) | number | 0 to 100 | 0 | rendered (approx.) | PV2010/PV2003 Recovery: reduces extreme highlights and can recover detail when one or two channels are clipped. For current process versions use Highlights2012. |
+| `FillLight` | Fill Light (legacy) | number | 0 to 100 | 0 | rendered (approx.) | PV2010/PV2003 Fill Light: lightens shadows while keeping blacks; may reveal noise. For current process versions use Shadows2012. |
+| `Clarity` | Clarity (legacy) | number | -100 to 100 | 0 | rendered (approx.) | PV2010 Clarity. For current process versions use Clarity2012. |
 
 <a id="presence"></a>
 

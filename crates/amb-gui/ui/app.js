@@ -1556,7 +1556,7 @@ function resizeLongEdge() {
 // Export presets: the dialog's choices under a name (kept in the app's
 // settings, src/main.rs `export_presets`).
 const EXPORT_FIELDS = ["format", "quality", "bits", "color_space", "exact_w", "exact_h", "resize_mode", "resize_value",
-  "sharpen", "metadata", "max_kb", "border_preset"];
+  "sharpen", "metadata", "max_kb", "border_preset", "name_template"];
 
 async function fillExportPresets(selected = null) {
   const f = $("export-form");
@@ -1627,6 +1627,8 @@ async function exportFlow(batch = null) {
   updateExportForm();
   dlg.querySelector("h2").textContent = batch ? `Export ${batch.paths.length} photo${batch.paths.length === 1 ? "" : "s"}` : "Export";
   $("export-go").textContent = batch ? "Choose a folder…" : "Export…";
+  // Names from a template only for a batch (one photo is named in the save dialog).
+  $("export-form").querySelector(".batch-name").hidden = !batch;
   if (batch) {
     ui.crop.enabled = false;
     ui.exportCropAspect = batch.aspect;
@@ -1662,6 +1664,7 @@ async function exportFlow(batch = null) {
     metadata: f.metadata.value,
     max_kb: f.max_kb.value ? Number(f.max_kb.value) : null,
     border: borderOn() ? readBorder() : null,
+    name_template: batch && f.name_template.value.trim() ? f.name_template.value.trim() : null,
   };
   if (batch) return batch.run(options);
   const base = ui.info.name.replace(/\.[^.]+$/, "");

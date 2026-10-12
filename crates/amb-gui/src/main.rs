@@ -926,6 +926,9 @@ struct ExportOptions {
     /// Put the photo's rating and keywords in the file's metadata.
     #[serde(default = "yes")]
     include_tags: bool,
+    /// File names for a batch, as Import's templates (`{name}`, `{seq}`, ...).
+    #[serde(default)]
+    name_template: Option<String>,
 }
 
 fn yes() -> bool {
@@ -2670,9 +2673,17 @@ async fn export_photos(
         save_open_edits(&slot)?;
         let settings = export_settings(&options)?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let template = options
+            .name_template
+            .as_deref()
+            .filter(|t| !t.trim().is_empty());
+        if let Some(t) = template {
+            amb_library::import::check_template(t)?;
+        }
         let out = library::export_many(
             &paths,
             &dir,
+            template,
             &settings,
             options.include_tags,
             lens,

@@ -319,6 +319,7 @@ pub struct ExportedMany {
 pub fn export_many(
     paths: &[String],
     dir: &Path,
+    name_template: Option<&str>,
     settings: &amb_export::ExportSettings,
     include_tags: bool,
     lens: &crate::LensSources,
@@ -334,11 +335,16 @@ pub fn export_many(
             .to_string_lossy()
             .into_owned();
         progress(i, paths.len(), &name);
-        let stem = p
-            .file_stem()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .into_owned();
+        let own = || {
+            p.file_stem()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned()
+        };
+        let stem = match name_template {
+            Some(t) => amb_library::import::file_name(t, p, i as u32 + 1).unwrap_or_else(|_| own()),
+            None => own(),
+        };
         let dest = unique_path(dir, &stem, settings.format.extension(), &mut taken);
         let result = crate::session::Session::open(p).and_then(|mut s| {
             let mut settings = settings.clone();
@@ -584,6 +590,7 @@ mod tests {
         let r = export_many(
             &paths,
             &out_dir,
+            None,
             &amb_export::ExportSettings::new(amb_export::Format::Jpeg),
             true,
             &crate::LensSources::default(),

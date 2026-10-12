@@ -196,6 +196,24 @@ fn expand(template: &str, name: &str, when: &When, seq: u32, camera: &str) -> St
         .replace("{camera}", camera)
 }
 
+/// A file name (no extension) for `photo` from a name `template`, with
+/// `seq` for `{seq}`: what Import uses, and exports with a name template.
+/// `{name}` is the photo's own name; the capture time comes from its EXIF.
+pub fn file_name(template: &str, photo: &Path, seq: u32) -> Result<String, String> {
+    check_template(template)?;
+    let (when, camera) = capture_time(&amb_engine::source_path(photo));
+    let name = photo
+        .file_stem()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .into_owned();
+    let out = clean(&expand(template, &name, &when, seq, &camera));
+    if out.is_empty() {
+        return Err(format!("{template:?} gives an empty name"));
+    }
+    Ok(out)
+}
+
 fn is_photo(path: &Path) -> bool {
     amb_engine::raw::is_raw_path(path) || amb_engine::raster::is_raster(path)
 }
@@ -553,6 +571,22 @@ pub fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn export_names_come_from_the_template() {
+        let dir = std::env::temp_dir().join(format!("amb-import-names-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let photo = dir.join("IMG_0001.dng");
+        std::fs::write(&photo, b"not a raw").unwrap();
+        assert_eq!(file_name("{name}", &photo, 1).unwrap(), "IMG_0001");
+        assert_eq!(file_name("trip_{seq}", &photo, 7).unwrap(), "trip_0007");
+        // The file's time when there's no EXIF; a name with a slash is cleaned.
+        let n = file_name("{yyyy}/{name}", &photo, 1).unwrap();
+        assert!(n.ends_with("-IMG_0001") && !n.contains('/'), "{n}");
+        assert!(file_name("{nope}", &photo, 1).is_err());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     fn temp(name: &str) -> PathBuf {
         let d = std::env::temp_dir().join(format!("amb-import-{name}-{}", std::process::id()));

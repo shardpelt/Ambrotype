@@ -88,7 +88,6 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - HDR AVIF/JXL.
   - DNG of the developed image.
   - Watermarks.
-  - Filename templates.
   - Export presets in the CLI (the editor has them).
   - Gamut mapping, instead of the current hard clip.
 
@@ -110,6 +109,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - rating (keys 1–5), pick/reject flags (P, X, U; `amblib:Flag`, plus `xmp:Rating="-1"` for an unrated reject) and keywords, written to the sidecar at once (`amb_protocol::sidecar::with_info`: `xmp:Rating`, `dc:subject`, keeping `lr:hierarchicalSubject` paths in step) and embedded in exports: XMP in JPEG/PNG/TIFF/WebP and IPTC keywords in JPEG (`amb-export/src/embed.rs`, added to the finished file), plus EXIF Rating and XPKeywords; `amb render --rating 4 --keywords "a, b"` does the same from the command line
   - filmstrip: the raws in the open photo's folder (`src/folder.rs`: natural name order, ratings and edit state from the sidecars, thumbnails from the camera's embedded preview via `amb_engine::raw::embedded_thumbnail`, cached on disk in the app's cache folder; `ui/filmstrip.js`). Opening another photo saves unsaved edits of the current one first
   - long size lists (crop aspect, export size) use a drop-down with collapsible groups (`ui/picker.js`, layered over the native select): common sizes open, sites collapsed
+  - file names from a template for batch exports (Import's tokens: `{name}`, `{seq}`, the capture date, `{camera}`; `amb render --out-dir --name` too)
   - export presets (the dialog's choices under a name, in the app's settings) and Resize by long or short edge, width, height, megapixels or percent
   - borders on export: presets (built-in and yours) with width, a deeper bottom, colour or the photo's own colour, keyline, rounded corners, and "whole photo inside" for exact sizes; a live preview in the export dialog
   - plugins: `crates/amb-plugin` loads a plugin folder (`plugin.json` + `plugin.wasm`), checks it (only the `amb.log` import), and runs it in the `wasmi` interpreter with an instruction budget and a 64 MB memory cap. The input is JSON (settings, parameters, a seed, and with permission camera facts and statistics of a ~512 px render, `amb_plugin::photo`); the output is edit commands, limited to set/adjust/reset. The editor runs them as one undo step (`run_plugin` in `src/main.rs`; the list, approvals per fingerprint, install and sharing are in `src/plugins.rs`; the dialog is `ui/plugins.js`). Built-in plugins (Auto tone, Random look, Film recipe) are embedded from `plugins/`. Recipes (named parameter sets) come from the manifest or are saved in the app's config. `amb plugin` in the CLI makes, builds, checks and runs them

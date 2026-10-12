@@ -35,7 +35,7 @@ Project goal for ranking: faithful Lightroom preset compatibility, free, on Wind
 | Open decision: own UI shell vs a RapidRAW-fork UI (Phase 2 gate, settled by a viewport spike plus the maintainer conversation) | Question | Shapes the whole GUI effort; GUI work with Tauri 2 is being started now | [SCOPE.md](SCOPE.md) §5, §12.2 |
 | Phase 0 spikes have no recorded result and there is no `docs/decisions/` (ADRs): wgpu 100 MP viewport (Tauri vs Qt), fp16 vs fp32, `ort` + SAM2-tiny, `.lrcat` read on 3 catalog versions | Question | Decisions on GPU, UI and AI runtime are unrecorded | [SCOPE.md](SCOPE.md):276-285; [research/06](research/06-tech-stack-options.md) §8.6 |
 | Governance not written: DCO sign-off, contributor AI-use policy, no-rug-pull charter, ADR on data-safety invariants, usability-test plan with Lightroom switchers. No `CONTRIBUTING.md` | Missing | Reputation and bus-factor risks rated Medium | [SCOPE.md](SCOPE.md):198, 284, 402 |
-| Repo hygiene from the architecture study not in place: `cargo-deny`, pinned `rust-toolchain.toml`, a fuzz target per parser (TIFF/DNG, XMP, ICC, DCP, lrtemplate) | Missing | Raw files and presets are untrusted input | [SCOPE.md](SCOPE.md):380-382 |
+| Repo hygiene from the architecture study not in place (`cargo-deny` licence and source checks run in CI since 2026-10-12): pinned `rust-toolchain.toml`, a fuzz target per parser (TIFF/DNG, XMP, ICC, DCP, lrtemplate) | Missing | Raw files and presets are untrusted input | [SCOPE.md](SCOPE.md):380-382 |
 | Camera-support process (per-camera fitted fallback profiles, sample-submission pipeline) not built | Missing | Users complain about Adobe's delays supporting new cameras | [SCOPE.md](SCOPE.md):297, 396 |
 
 ## 2. UI
@@ -218,7 +218,7 @@ Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the plann
 | No HEIC/HEIF, by choice (HEVC patent licensing); AVIF covers modern delivery | Limit | Apple-ecosystem delivery needs AVIF or JPEG | [ARCHITECTURE.md](ARCHITECTURE.md):67 |
 | No PSD, by choice; TIFF covers the Photoshop round trip | Limit | No layered Photoshop output | [ARCHITECTURE.md](ARCHITECTURE.md):68 |
 | No DNG export of the developed image | Missing | No interchange of a developed result as DNG | [ARCHITECTURE.md](ARCHITECTURE.md):73 |
-| No watermarks, filename templates or export presets | Missing | Batch export workflow | [ARCHITECTURE.md](ARCHITECTURE.md):74-76; [SCOPE.md](SCOPE.md):306 |
+| No watermarks (export presets, and file-name templates for batch exports, exist since 2026-10-12) | Missing | Batch export workflow | [ARCHITECTURE.md](ARCHITECTURE.md):74-76; [SCOPE.md](SCOPE.md):306 |
 | Integer outputs hard-clip to the gamut; no gamut mapping | Limit | Saturated colours clip when exporting to sRGB or P3 | `crates/amb-export/src/lib.rs`:241; `crates/amb-engine/src/output.rs`:21; [ARCHITECTURE.md](ARCHITECTURE.md):77 |
 | Output sharpening (screen, matte, glossy; low/standard/high) is Model v1 with guessed radius and strength | Approx | Differs from Lightroom's output sharpening | `crates/amb-export/src/geometry.rs`:176-185 |
 

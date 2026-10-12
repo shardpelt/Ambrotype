@@ -34,9 +34,11 @@ USAGE:
                                             [--lens-db DIR] [--lcp-dir DIR] [export options]
                                             Develop a raw with a preset or sidecar, export it, and report
                                             which settings are not rendered yet
-    amb render <RAW>... --out-dir DIR [--format jpeg|...] [same options]
+    amb render <RAW>... --out-dir DIR [--format jpeg|...] [--name TEMPLATE] [same options]
                                             The same for many raws (e.g. a folder: photos/*.NEF), with the
-                                            same preset and export options; one failure doesn't stop the rest
+                                            same preset and export options; one failure doesn't stop the rest.
+                                            --name names the files as Import does: {name} {yyyy} {mm} {dd}
+                                            {hh} {min} {ss} {seq} {camera}, e.g. trip_{seq}
     amb do <PHOTO|SIDECAR.xmp> \"<EDITS>\" [--dry-run] [--json]
                                             Edit in the compact syntax as one undoable step and print
                                             only what changed, e.g. \"exp=+0.5 con+=10 hl=-40 reset:hsl
@@ -1415,14 +1417,31 @@ fn render_many(inputs: &[&str], dir: &Path, options: &BTreeMap<&str, &str>) -> R
         None => "jpg",
     };
     std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    let template = options.get("--name").copied();
+    if let Some(t) = template {
+        amb_library::import::check_template(t)?;
+    }
     let mut failed = Vec::new();
+    let mut taken: Vec<String> = Vec::new();
     for (i, input) in inputs.iter().enumerate() {
         let input = Path::new(input);
-        let stem = input
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("photo");
-        let out = dir.join(format!("{stem}.{ext}"));
+        let stem = match template {
+            Some(t) => amb_library::import::file_name(t, input, i as u32 + 1)?,
+            None => input
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("photo")
+                .to_string(),
+        };
+        // Two photos with one name (a template without {name} or {seq}) both stay.
+        let mut name = stem.clone();
+        let mut n = 2;
+        while taken.contains(&name) {
+            name = format!("{stem}-{n}");
+            n += 1;
+        }
+        taken.push(name.clone());
+        let out = dir.join(format!("{name}.{ext}"));
         print!("[{}/{}] ", i + 1, inputs.len());
         let result = render(
             input,

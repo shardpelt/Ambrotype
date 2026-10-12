@@ -792,6 +792,7 @@ fn lens_corrections(settings: &BTreeMap<String, Value>) -> LensCorrections {
         profile_name: text(settings, "LensProfileName"),
         profile_filename: text(settings, "LensProfileFilename"),
         profile: None,
+        embedded: None,
     }
 }
 
@@ -1253,7 +1254,8 @@ fn solve_upright(img: &CameraImage, s: &DevelopSettings) -> DevelopSettings {
     let t = &mut s.transform;
     if t.upright.is_none() && t.upright_mode.is_solved() {
         let cal = &s.calibration;
-        t.upright = upright::analyse(img, &s.lens, &cal.lens, t.upright_mode, &cal.upright);
+        let lens = s.lens.for_image(&img.shot);
+        t.upright = upright::analyse(img, &lens, &cal.lens, t.upright_mode, &cal.upright);
         if t.upright.is_none() {
             // Too few lines: leave the photo uncorrected, without searching
             // again on the small copy.
@@ -1415,16 +1417,12 @@ impl CameraStage {
 /// Stage 0 for `img` developed with `s`.
 pub(crate) fn camera_stage(img: &CameraImage, s: &DevelopSettings, pass: &Pass) -> CameraStage {
     let cal = &s.calibration;
+    let lens = s.lens.for_image(&img.shot);
     let crop = s.crop.geometry(img.width, img.height);
     let mut transform = s.transform;
     if transform.upright.is_none() && transform.upright_mode.is_solved() {
-        transform.upright = upright::analyse(
-            img,
-            &s.lens,
-            &cal.lens,
-            transform.upright_mode,
-            &cal.upright,
-        );
+        transform.upright =
+            upright::analyse(img, &lens, &cal.lens, transform.upright_mode, &cal.upright);
     }
     let warp = transform.sampling_map(img.width, img.height, &cal.transform);
     let (out_w, out_h) = crop
@@ -1441,14 +1439,14 @@ pub(crate) fn camera_stage(img: &CameraImage, s: &DevelopSettings, pass: &Pass) 
     };
     let full = pass.full.unwrap_or((out_w, out_h));
     let lens_pass =
-        (s.lens.needs_camera_pass() || crop.is_some() || warp.is_some() || pass.window.is_some())
+        (lens.needs_camera_pass() || crop.is_some() || warp.is_some() || pass.window.is_some())
             .then(|| {
                 lens::apply_camera_window(
                     &img.rgb,
                     img.width,
                     img.height,
                     img.shot.crop_factor,
-                    &s.lens,
+                    &lens,
                     &cal.lens,
                     crop.as_ref(),
                     warp.as_ref(),

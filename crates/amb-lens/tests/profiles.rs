@@ -34,6 +34,7 @@ fn shot(camera: &str, lens_make: Option<&str>, lens: Option<&str>, focal: Option
         aperture: None,
         distance_m: None,
         crop_factor: None,
+        embedded: None,
     }
 }
 

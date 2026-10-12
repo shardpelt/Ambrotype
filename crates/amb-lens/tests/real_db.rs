@@ -15,6 +15,7 @@ fn shot(make: &str, model: &str, lens_make: &str, lens_model: &str, focal: f64) 
         aperture: Some(5.6),
         distance_m: None,
         crop_factor: None,
+        embedded: None,
     }
 }
 

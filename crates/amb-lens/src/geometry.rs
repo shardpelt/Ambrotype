@@ -36,6 +36,7 @@ impl PixelFrame {
             Frame::HuginShortSide { cal_crop, .. }
             | Frame::HalfDiagonal { cal_crop }
             | Frame::Acm { cal_crop, .. } => cal_crop,
+            Frame::Dng { .. } => 1.0,
         };
         let cal_crop = if cal_crop > 0.0 { cal_crop } else { 1.0 };
         let img_crop = img
@@ -61,6 +62,16 @@ impl PixelFrame {
                 PixelFrame {
                     cx: gcx,
                     cy: gcy,
+                    ux: u,
+                    uy: u,
+                }
+            }
+            Frame::Dng { cx, cy, unit } => {
+                // Embedded in this very photo: no sensor scaling.
+                let u = unit * (w.max(h) - 1.0).max(1.0);
+                PixelFrame {
+                    cx: cx * (w - 1.0),
+                    cy: cy * (h - 1.0),
                     ux: u,
                     uy: u,
                 }

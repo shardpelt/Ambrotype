@@ -26,6 +26,11 @@ pub enum Frame {
         fy: f64,
         cal_crop: f64,
     },
+    /// DNG opcodes (`WarpRectilinear`, `FixVignetteRadial`): r = 1 at the
+    /// image corner furthest from the optical centre. The centre is a
+    /// fraction of the photo's width and height, the unit a fraction of its
+    /// longest side (both from pixel centre 0 to the last pixel's centre).
+    Dng { cx: f64, cy: f64, unit: f64 },
 }
 
 impl Frame {
@@ -74,6 +79,18 @@ impl Frame {
                 fy: l(fy, fy1),
                 cal_crop: l(cal_crop, c1),
             },
+            (
+                Frame::Dng { cx, cy, unit },
+                Frame::Dng {
+                    cx: x,
+                    cy: y,
+                    unit: u,
+                },
+            ) => Frame::Dng {
+                cx: l(cx, x),
+                cy: l(cy, y),
+                unit: l(unit, u),
+            },
             _ => return None,
         })
     }
@@ -92,6 +109,11 @@ pub enum Distortion {
     /// x_d = x·(1 + k1 r² + k2 r⁴ + k3 r⁶ + 2(k4 y + k5 x)) + k5 r²,
     /// y_d = y·(1 + k1 r² + k2 r⁴ + k3 r⁶ + 2(k4 y + k5 x)) + k4 r².
     Acm { k: [f64; 5] },
+    /// DNG `WarpRectilinear` for one plane: radial kr0..kr3 and tangential
+    /// kt0, kt1 (`[kr0, kr1, kr2, kr3, kt0, kt1]`), in a [`Frame::Dng`]:
+    /// x_d = x·f + kt0·2xy + kt1·(r² + 2x²), y_d = y·f + kt1·2xy + kt0·(r² + 2y²),
+    /// f = kr0 + kr1 r² + kr2 r⁴ + kr3 r⁶.
+    Dng { k: [f64; 6] },
 }
 
 /// Lateral chromatic aberration: where red and blue sit relative to green,
@@ -113,6 +135,14 @@ pub enum Tca {
     /// distortion polynomial of [`Distortion::Acm`] times the scale factor
     /// (LCP `ChromaticRedGreenModel` / `ChromaticBlueGreenModel`).
     Acm { red: [f64; 6], blue: [f64; 6] },
+    /// DNG `WarpRectilinear` with a warp per plane ([`Distortion::Dng`]'s
+    /// coefficients): red and blue come from their own warps of the output
+    /// position the green one maps to.
+    Dng {
+        red: [f64; 6],
+        green: [f64; 6],
+        blue: [f64; 6],
+    },
 }
 
 /// Vignetting: the observed image is the ideal one times
@@ -123,13 +153,17 @@ pub enum Vignetting {
     Pa { k1: f64, k2: f64, k3: f64 },
     /// Adobe Camera Model `VignetteModelParam1..3`, in an [`Frame::Acm`] frame.
     Acm { k1: f64, k2: f64, k3: f64 },
+    /// DNG `FixVignetteRadial`: the correcting gain is
+    /// 1 + k0 r² + k1 r⁴ + k2 r⁶ + k3 r⁸ + k4 r¹⁰, in a [`Frame::Dng`].
+    DngGain { k: [f64; 5] },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Source {
     Lensfun,
     Lcp,
-    /// Correction data embedded in the raw file (DNG opcodes, maker notes). Not read yet.
+    /// Correction data embedded in the raw file (DNG `WarpRectilinear` and
+    /// `FixVignetteRadial` opcodes; maker notes aren't read yet).
     Embedded,
 }
 
@@ -153,7 +187,7 @@ impl Distortion {
     pub fn centre_scale(&self) -> f64 {
         match *self {
             Distortion::Poly3 { k1 } => 1.0 - k1,
-            Distortion::Poly5 { .. } | Distortion::Acm { .. } => 1.0,
+            Distortion::Poly5 { .. } | Distortion::Acm { .. } | Distortion::Dng { .. } => 1.0,
             Distortion::PtLens { a, b, c } => 1.0 - a - b - c,
         }
     }
@@ -176,6 +210,7 @@ impl Distortion {
                 (x * f, y * f)
             }
             Distortion::Acm { k } => acm(&k, x, y),
+            Distortion::Dng { k } => dng_warp(&k, x, y),
         }
     }
 
@@ -208,9 +243,22 @@ impl Distortion {
             (Distortion::Acm { k: a }, Distortion::Acm { k: b }) => Distortion::Acm {
                 k: std::array::from_fn(|i| l(a[i], b[i])),
             },
+            (Distortion::Dng { k: a }, Distortion::Dng { k: b }) => Distortion::Dng {
+                k: std::array::from_fn(|i| l(a[i], b[i])),
+            },
             _ => return None,
         })
     }
+}
+
+/// DNG `WarpRectilinear` on one plane (see [`Distortion::Dng`]).
+pub(crate) fn dng_warp(k: &[f64; 6], x: f64, y: f64) -> (f64, f64) {
+    let r2 = x * x + y * y;
+    let f = k[0] + r2 * (k[1] + r2 * (k[2] + r2 * k[3]));
+    (
+        x * f + k[4] * 2.0 * x * y + k[5] * (r2 + 2.0 * x * x),
+        y * f + k[5] * 2.0 * x * y + k[4] * (r2 + 2.0 * y * y),
+    )
 }
 
 /// Adobe Camera Model polynomial (radial + tangential), lensfun's form.
@@ -246,6 +294,17 @@ impl Tca {
                     (p[0] * u, p[0] * v)
                 };
                 [ch(&red), ch(&blue)]
+            }
+            Tca::Dng { red, green, blue } => {
+                // The output position green's warp maps to (x, y): a few
+                // fixed-point steps (the warp is close to the identity).
+                let (mut u, mut v) = (x, y);
+                for _ in 0..8 {
+                    let (gx, gy) = dng_warp(&green, u, v);
+                    u += x - gx;
+                    v += y - gy;
+                }
+                [dng_warp(&red, u, v), dng_warp(&blue, u, v)]
             }
         }
     }
@@ -286,6 +345,18 @@ impl Tca {
                 red: std::array::from_fn(|i| l(red[i], r2[i])),
                 blue: std::array::from_fn(|i| l(blue[i], b2[i])),
             },
+            (
+                Tca::Dng { red, green, blue },
+                Tca::Dng {
+                    red: r2,
+                    green: g2,
+                    blue: b2,
+                },
+            ) => Tca::Dng {
+                red: std::array::from_fn(|i| l(red[i], r2[i])),
+                green: std::array::from_fn(|i| l(green[i], g2[i])),
+                blue: std::array::from_fn(|i| l(blue[i], b2[i])),
+            },
             _ => return None,
         })
     }
@@ -296,6 +367,10 @@ impl Vignetting {
     pub fn falloff(&self, r2: f64) -> f64 {
         let (k1, k2, k3) = match *self {
             Vignetting::Pa { k1, k2, k3 } | Vignetting::Acm { k1, k2, k3 } => (k1, k2, k3),
+            Vignetting::DngGain { k } => {
+                let gain = 1.0 + r2 * (k[0] + r2 * (k[1] + r2 * (k[2] + r2 * (k[3] + r2 * k[4]))));
+                return 1.0 / gain.max(1e-3);
+            }
         };
         1.0 + k1 * r2 + k2 * r2 * r2 + k3 * r2 * r2 * r2
     }
@@ -378,6 +453,13 @@ impl std::fmt::Display for Frame {
                 num(fy),
                 num(cal_crop)
             ),
+            Frame::Dng { cx, cy, unit } => write!(
+                f,
+                "DNG centre ({}, {}), r=1 at {} × longest side",
+                num(cx),
+                num(cy),
+                num(unit)
+            ),
         }
     }
 }
@@ -391,6 +473,7 @@ impl std::fmt::Display for Distortion {
                 write!(f, "ptlens a={} b={} c={}", num(a), num(b), num(c))
             }
             Distortion::Acm { k } => write!(f, "acm k={}", nums(&k)),
+            Distortion::Dng { k } => write!(f, "dng warp k={}", nums(&k)),
         }
     }
 }
@@ -417,6 +500,13 @@ impl std::fmt::Display for Tca {
                 num(bb)
             ),
             Tca::Acm { red, blue } => write!(f, "acm red={} blue={}", nums(&red), nums(&blue)),
+            Tca::Dng { red, green, blue } => write!(
+                f,
+                "dng warp red={} green={} blue={}",
+                nums(&red),
+                nums(&green),
+                nums(&blue)
+            ),
         }
     }
 }
@@ -426,6 +516,7 @@ impl std::fmt::Display for Vignetting {
         let (name, k1, k2, k3) = match *self {
             Vignetting::Pa { k1, k2, k3 } => ("pa", k1, k2, k3),
             Vignetting::Acm { k1, k2, k3 } => ("acm", k1, k2, k3),
+            Vignetting::DngGain { k } => return write!(f, "dng gain k={}", nums(&k)),
         };
         write!(f, "{name} k1={} k2={} k3={}", num(k1), num(k2), num(k3))
     }
@@ -434,6 +525,26 @@ impl std::fmt::Display for Vignetting {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn dng_tca_finds_red_and_blue_through_the_green_warp() {
+        let green = [1.0, -0.03, 0.01, 0.0, 0.001, -0.002];
+        let red = [1.002, -0.03, 0.01, 0.0, 0.001, -0.002];
+        let t = Tca::Dng {
+            red,
+            green,
+            blue: green,
+        };
+        // The output point (0.6, -0.4): green comes from g, red from r.
+        let g = dng_warp(&green, 0.6, -0.4);
+        let r = dng_warp(&red, 0.6, -0.4);
+        let [tr, tb] = t.apply(g.0, g.1);
+        assert!(
+            (tr.0 - r.0).abs() < 1e-9 && (tr.1 - r.1).abs() < 1e-9,
+            "{tr:?} {r:?}"
+        );
+        assert!((tb.0 - g.0).abs() < 1e-9 && (tb.1 - g.1).abs() < 1e-9);
+    }
 
     #[test]
     fn display_is_compact() {

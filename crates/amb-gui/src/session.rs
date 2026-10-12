@@ -604,8 +604,9 @@ impl Session {
         if self.preview_src.as_ref().map(|(e, _)| *e as usize) != Some(max_edge) {
             self.preview_src = Some((max_edge as u32, downscale(&self.full, max_edge)));
         }
-        let lens_profile = develop.lens.profile.as_ref().map(|c| c.description.clone());
         let src = &self.preview_src.as_ref().expect("set above").1;
+        let lens_profile =
+            (develop.lens.for_image(&src.shot).active_profile()).map(|c| c.description.clone());
         // On the GPU when there is one and the edit allows it.
         let plan = gpu.map(|g| (g, amb_engine::plan::plan(src, &develop)));
         let (developed, gpu) = match plan {

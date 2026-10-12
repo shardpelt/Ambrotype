@@ -41,6 +41,9 @@ pub struct ShotInfo {
     pub distance_m: Option<f64>,
     /// Crop factor of the camera sensor (1.0 = 36×24 mm), when known.
     pub crop_factor: Option<f64>,
+    /// Lens corrections the raw file carries itself (DNG opcodes); they
+    /// come before any profile.
+    pub embedded: Option<Correction>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -64,7 +67,8 @@ pub fn camera_crop(db: &LensfunDb, make: &str, model: &str) -> Option<f64> {
     db.camera_crop(make, model)
 }
 
-/// Resolve the lens correction for a shot, in order: the LCP file the edit
+/// Resolve the lens correction for a shot, in order: the corrections the
+/// raw file carries ([`ShotInfo::embedded`]), the LCP file the edit
 /// names, an LCP matched by lens name, the lensfun database. A missing crop
 /// factor is filled from the lensfun camera database first.
 pub fn resolve(
@@ -73,6 +77,9 @@ pub fn resolve(
     lcp: Option<&LcpLibrary>,
     db: Option<&LensfunDb>,
 ) -> Option<Correction> {
+    if let Some(c) = &shot.embedded {
+        return Some(c.clone());
+    }
     let mut shot = shot.clone();
     if shot.crop_factor.is_none() {
         shot.crop_factor = db.and_then(|db| db.camera_crop(&shot.camera_make, &shot.camera_model));

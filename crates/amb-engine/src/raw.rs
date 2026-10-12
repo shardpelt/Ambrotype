@@ -13,7 +13,7 @@ use rawler::imgop::develop::{Intermediate, ProcessingStep, RawDevelop};
 use rawler::imgop::xyz::Illuminant;
 use rayon::prelude::*;
 
-use crate::Error;
+use crate::{Error, dng_opcodes};
 
 /// Linear camera-space image, scaled so the sensor white level is 1.0.
 pub struct CameraImage {
@@ -141,7 +141,41 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
                 .map_err(|e| Error::Decode(e.to_string()))?,
         )?,
     };
-    let (width, height, rgb) = developed;
+    let (width, height, mut rgb) = developed;
+    // A DNG's own corrections: lens shading now, its lens warp and vignette
+    // as the photo's built-in lens correction (applied in the lens pass).
+    let opcodes = read_opcodes(path);
+    let placement = placement(&raw, width, height);
+    let gain_maps: Vec<&dng_opcodes::GainMap> = opcodes
+        .iter()
+        .filter_map(|o| match o {
+            dng_opcodes::Opcode::GainMap(m) => Some(m),
+            _ => None,
+        })
+        .collect();
+    if !gain_maps.is_empty() {
+        use rawler::imgop::sensor::SensorType;
+        use rawler::rawimage::RawPhotometricInterpretation as P;
+        let (ax, ay) = raw.active_area.map_or((0, 0), |a| (a.p.x, a.p.y));
+        match &raw.photometric {
+            P::Cfa(c) if c.sensor == SensorType::Bayer => {
+                let colour = |r: usize, col: usize| c.cfa.color_at(r + ay, col + ax);
+                dng_opcodes::apply_gain_maps(
+                    &mut rgb,
+                    width,
+                    height,
+                    &gain_maps,
+                    placement,
+                    Some(&colour),
+                );
+            }
+            P::LinearRaw => {
+                dng_opcodes::apply_gain_maps(&mut rgb, width, height, &gain_maps, placement, None)
+            }
+            _ => {}
+        }
+    }
+    let embedded = dng_opcodes::correction(&opcodes, placement, width, height);
 
     // As-shot white: rawler stores multipliers (1 / neutral). Fall back to D65.
     let wb = raw.wb_coeffs;
@@ -156,7 +190,7 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         neutral_for_xy(&xyz_to_cam, 0.3127, 0.3290)
     };
 
-    let (shot, mut metadata) = read_metadata(path).unwrap_or_else(|_| {
+    let (mut shot, mut metadata) = read_metadata(path).unwrap_or_else(|_| {
         (
             amb_lens::ShotInfo {
                 camera_make: raw.clean_make.clone(),
@@ -172,6 +206,7 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         )
     });
 
+    shot.embedded = embedded;
     // Some formats only carry the orientation in the decoder's own field.
     if metadata.orientation == 1 {
         metadata.orientation = orientation_code(raw.orientation);
@@ -191,6 +226,55 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         shot,
         metadata,
     })
+}
+
+/// The opcodes in a DNG's `OpcodeList2` and `OpcodeList3`, in that order
+/// (none for other raws, or when they can't be read).
+fn read_opcodes(path: &Path) -> Vec<dng_opcodes::Opcode> {
+    use rawler::decoders::WellKnownIFD;
+    use rawler::formats::tiff::Value;
+    use rawler::tags::DngTag;
+    let read = || -> Option<Vec<dng_opcodes::Opcode>> {
+        let src = rawler::rawsource::RawSource::new(path).ok()?;
+        let decoder = rawler::get_decoder(&src).ok()?;
+        let ifd = decoder.ifd(WellKnownIFD::VirtualDngRawTags).ok()??;
+        let mut out = Vec::new();
+        for tag in [DngTag::OpcodeList2, DngTag::OpcodeList3] {
+            if let Some(Value::Undefined(b) | Value::Byte(b)) = ifd.get_entry(tag).map(|e| &e.value)
+            {
+                out.extend(dng_opcodes::parse(b));
+            }
+        }
+        Some(out)
+    };
+    std::panic::catch_unwind(read)
+        .ok()
+        .flatten()
+        .unwrap_or_default()
+}
+
+/// Where the developed photo sits in the image DNG opcodes describe (the
+/// active area), from the default crop rawler applied.
+fn placement(raw: &rawler::RawImage, width: usize, height: usize) -> dng_opcodes::Placement {
+    let stage = raw
+        .active_area
+        .map_or((raw.width, raw.height), |a| (a.d.w, a.d.h));
+    let origin = match (raw.crop_area, raw.active_area) {
+        (Some(c), Some(a)) => (c.p.x.saturating_sub(a.p.x), c.p.y.saturating_sub(a.p.y)),
+        (Some(c), None) => (c.p.x, c.p.y),
+        _ => (0, 0),
+    };
+    // Something else cropped it (an X-Trans rotation): assume centred.
+    if origin.0 + width > stage.0 || origin.1 + height > stage.1 {
+        return dng_opcodes::Placement {
+            stage,
+            origin: (
+                stage.0.saturating_sub(width) / 2,
+                stage.1.saturating_sub(height) / 2,
+            ),
+        };
+    }
+    dng_opcodes::Placement { stage, origin }
 }
 
 /// Width, height and interleaved RGB of a developed image.
@@ -439,6 +523,7 @@ pub fn read_metadata(path: &Path) -> Result<(amb_lens::ShotInfo, PhotoMetadata),
         aperture: ratio(e.fnumber),
         distance_m: ratio(e.subject_distance),
         crop_factor: None,
+        embedded: None,
     };
     Ok((shot, metadata))
 }

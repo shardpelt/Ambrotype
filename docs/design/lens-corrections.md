@@ -15,7 +15,17 @@ Status: v1 implemented (`crates/amb-lens`, `crates/amb-engine/src/lens.rs`). Eve
 | Defringe: Purple/Green Amount (0–20) and Hue ranges (0–100) | `DefringePurple*`, `DefringeGreen*` | At high-contrast edges (OkLab lightness range in a window that widens with Amount), pull chroma towards grey for hues inside the range. |
 | Constrain Crop | `CropConstrainToWarp` | Scale up until no blank area is left. |
 
-Not yet (Transform and Upright are in [transform.md](transform.md)): fisheye profiles and built-in profiles embedded in raw files (see Next).
+Not yet (Transform and Upright are in [transform.md](transform.md)): fisheye profiles, and built-in profiles in maker notes (see Next).
+
+## Corrections the DNG carries
+
+A DNG can carry its own corrections as opcodes (`OpcodeList2`, `OpcodeList3`; DNG specification, chapter 7). Phones write them for lens shading and distortion, and DNG Converter writes the built-in profiles of Micro Four Thirds and similar raws this way. We read three (`amb_engine::dng_opcodes`):
+
+- **`GainMap`** (lens shading): a grid of gains per CFA colour. Applied when the photo is loaded, after demosaicing: each colour channel gets its maps' gain (the two green maps averaged). Lightroom applies it to the raw data before demosaicing; on smooth maps the two agree.
+- **`WarpRectilinear`**: radial and tangential distortion per plane, r = 1 at the corner furthest from the optical centre. With three planes the green one is the distortion and red and blue become lateral CA.
+- **`FixVignetteRadial`**: a radial gain.
+
+The last two become the photo's own lens correction (`Source::Embedded`, "Built-in (DNG)"). As in Camera Raw, it is always applied, whether or not Enable Profile Corrections is on, and a matched profile is not used on top. The profile amount sliders still scale it. Other opcodes (bad pixels, `MapPolynomial`, `WarpFisheye`, ...) are skipped. Checked on a Pixel 6 Pro DNG from raw.pixls.us: the dark, cyan corners are gone and nothing is left blank.
 
 
 ## Getting the lensfun database
@@ -85,10 +95,7 @@ Checked on real raws with the lensfun database:
 
 ## Next
 
-- **Built-in profiles in raw files.**
-  - Micro Four Thirds, Fujifilm X, Sony E and many compacts store correction data in maker notes. Lightroom applies it automatically ("Built-in Lens Profile Applied").
-  - DNGs carry it as `WarpRectilinear` / `FixVignetteRadial` opcodes.
-  - Reading these covers lenses that no database has.
+- **Built-in profiles in maker notes.** Micro Four Thirds, Fujifilm X, Sony E and many compacts store correction data in maker notes. Lightroom applies it automatically ("Built-in Lens Profile Applied"). Reading these covers lenses that no database has. (DNGs with opcodes are read since 2026-10-12.)
 - Transform and Upright: done, a homography in the same resampling pass ([transform.md](transform.md)).
 - Fisheye profiles and projection changes.
 - GPU resampling: the warp is about 1.5 s for 24 MP on 4 CPU cores.

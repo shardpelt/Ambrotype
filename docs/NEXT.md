@@ -11,6 +11,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
   - edit protocol with undo, including grouped commands that become one undo step
   - raw engine: core Develop panels, Lens Corrections, film negatives, **crop and straighten** ([design/crop.md](design/crop.md))
   - **JPEG, PNG, TIFF and WebP:** they open like raws (colour from their ICC profile), with Lightroom's relative Temp/Tint; a JPEG next to its raw is hidden, and edits go to `photo.jpg.xmp`
+  - **phone and converted DNGs:** their own corrections (lens shading gain maps, distortion, vignetting opcodes) are applied, as Lightroom does
   - **Fujifilm raws:** RAF files (compressed too) open with a proper X-Trans demosaic (Markesteijn, ported from darktable); blown highlights stay neutral instead of turning pink
   - export: JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces with ICC
   - CLI `amb`

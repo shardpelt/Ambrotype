@@ -248,6 +248,7 @@ pub fn read_metadata(path: &Path) -> Result<(amb_lens::ShotInfo, PhotoMetadata),
         aperture: as_f64(metadata.fnumber),
         distance_m: as_f64(ratio(Tag::SubjectDistance)),
         crop_factor: None,
+        embedded: None,
     };
     Ok((shot, metadata))
 }

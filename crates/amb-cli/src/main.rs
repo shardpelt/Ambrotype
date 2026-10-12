@@ -1821,6 +1821,7 @@ fn lens_match_output(options: &BTreeMap<&str, &str>) -> Result<String, String> {
         aperture: number_option(options, "--aperture")?,
         distance_m: number_option(options, "--distance")?,
         crop_factor: number_option(options, "--crop")?,
+        embedded: None,
     };
     let mut out = String::new();
 

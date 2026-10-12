@@ -142,6 +142,9 @@ pub struct LensCorrections {
     /// The profile resolved for this image by the caller. `None` with
     /// `profile_enable` means no profile was found: nothing profile-based is applied.
     pub profile: Option<Correction>,
+    /// The raw file's own correction (DNG opcodes, [`LensCorrections::for_image`]):
+    /// always applied, in place of any profile, as Camera Raw does.
+    pub embedded: Option<Correction>,
 }
 
 impl Default for LensCorrections {
@@ -160,13 +163,28 @@ impl Default for LensCorrections {
             profile_name: None,
             profile_filename: None,
             profile: None,
+            embedded: None,
         }
     }
 }
 
 impl LensCorrections {
-    fn active_profile(&self) -> Option<&Correction> {
-        self.profile.as_ref().filter(|_| self.profile_enable)
+    /// The correction applied: the photo's own, or the chosen profile.
+    pub fn active_profile(&self) -> Option<&Correction> {
+        self.embedded
+            .as_ref()
+            .or_else(|| self.profile.as_ref().filter(|_| self.profile_enable))
+    }
+
+    /// These settings for a photo: with the corrections it carries itself.
+    pub fn for_image(&self, shot: &amb_lens::ShotInfo) -> Cow<'_, LensCorrections> {
+        if shot.embedded.is_none() || self.embedded == shot.embedded {
+            return Cow::Borrowed(self);
+        }
+        Cow::Owned(LensCorrections {
+            embedded: shot.embedded.clone(),
+            ..self.clone()
+        })
     }
 
     /// Whether anything happens before the colour matrix.
@@ -317,9 +335,10 @@ pub fn apply_camera_window(
     } else {
         None
     };
-    let profile_tca = profile
-        .as_ref()
-        .filter(|g| g.has_tca() && (lc.auto_ca || k.profile_tca_always) && auto_ca.is_none());
+    let profile_tca = profile.as_ref().filter(|g| {
+        let wanted = lc.auto_ca || k.profile_tca_always || lc.embedded.is_some();
+        g.has_tca() && wanted && auto_ca.is_none()
+    });
 
     // 3. Geometry.
     let profile_distortion = profile
@@ -911,6 +930,42 @@ mod tests {
         cal_crop: 1.0,
         cal_aspect: 1.5,
     };
+
+    #[test]
+    fn a_dng_correction_applies_without_profile_corrections() {
+        let (w, h) = (41, 31);
+        let rgb = vec![0.25f32; w * h * 3];
+        // Gain 1 + r²: 2 at the corners.
+        let c = Correction {
+            source: Source::Embedded,
+            description: "Built-in (DNG)".into(),
+            file: None,
+            distortion: None,
+            tca: None,
+            vignetting: Some((
+                Vignetting::DngGain {
+                    k: [1.0, 0.0, 0.0, 0.0, 0.0],
+                },
+                Frame::Dng {
+                    cx: 0.5,
+                    cy: 0.5,
+                    unit: 25.0 / 40.0,
+                },
+            )),
+        };
+        let shot = amb_lens::ShotInfo {
+            embedded: Some(c),
+            ..Default::default()
+        };
+        let off = LensCorrections::default();
+        assert!(!off.needs_camera_pass());
+        let lc = off.for_image(&shot);
+        assert!(lc.needs_camera_pass());
+        let out = apply_camera(&rgb, w, h, None, &lc, &DEFAULT_STRENGTHS);
+        let at = |x: usize, y: usize| out.rgb[(y * w + x) * 3];
+        assert!((at(20, 15) - 0.25).abs() < 1e-4, "{}", at(20, 15));
+        assert!((at(0, 0) - 0.5).abs() < 0.01, "{}", at(0, 0));
+    }
 
     fn lens(profile: Correction) -> LensCorrections {
         LensCorrections {

@@ -16,6 +16,7 @@ pub mod crop;
 pub mod curve;
 pub mod dehaze;
 pub mod detail;
+pub mod dng_opcodes;
 pub mod effects;
 pub mod filters;
 pub mod lens;

@@ -20,6 +20,26 @@ use serde::{Deserialize, Serialize};
 
 pub const FORMAT: &str = "ambrotype-collection/1";
 
+/// The folder the editor keeps its collections in (its config folder), for
+/// tools that work without it: `~/.config/org.ambrotype.editor/collections`
+/// on Linux, under `~/Library/Application Support` on macOS and `%APPDATA%`
+/// on Windows.
+pub fn editor_dir() -> Option<PathBuf> {
+    let env = |v: &str| {
+        std::env::var_os(v)
+            .filter(|s| !s.is_empty())
+            .map(PathBuf::from)
+    };
+    let config = if cfg!(windows) {
+        env("APPDATA")?
+    } else if cfg!(target_os = "macos") {
+        env("HOME")?.join("Library/Application Support")
+    } else {
+        env("XDG_CONFIG_HOME").or_else(|| env("HOME").map(|h| h.join(".config")))?
+    };
+    Some(config.join("org.ambrotype.editor").join("collections"))
+}
+
 /// A collection as stored.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Collection {

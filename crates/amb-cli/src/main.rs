@@ -96,6 +96,14 @@ USAGE:
                                             folders and renamed from templates ({name} {yyyy} {yy} {mm}
                                             {dd} {hh} {min} {ss} {seq} {camera}); a raw's JPEG and .xmp
                                             keep its new name; photos already there are skipped
+    amb lrcat import <CATALOG.lrcat> [--apply] [--remap OLD=NEW] [--collections DIR] [--json]
+                                            Move from Lightroom Classic: each photo's develop settings,
+                                            rating, label, flag, keywords, stack, title and caption go into
+                                            its XMP sidecar, virtual copies become ours, and collections
+                                            (in their sets) the editor's. Shows the plan; --apply writes it.
+                                            The catalogue is only read (close Lightroom first); sidecars
+                                            already there are kept. --remap /Volumes/Photos/=/mnt/photos/
+                                            finds photos that have moved
     amb merge hdr <RAW>... [--out OUT.dng] [--no-align] [--deghost low|medium|high] [--json]
                                             Merge bracketed raws of one scene into a floating-point DNG
                                             (default: <first>-HDR.dng next to them) that opens and edits
@@ -182,6 +190,96 @@ fn profile_list(raw: &Path, options: &BTreeMap<&str, &str>) -> Result<(), String
 }
 
 /// `amb import`: plan, print, then copy (unless `dry_run`).
+/// `amb lrcat import`: a Lightroom Classic catalogue into sidecars and
+/// collections.
+fn lrcat_import(catalog: &Path, options: &BTreeMap<&str, &str>, json: bool) -> Result<(), String> {
+    use amb_library::lrcat;
+    let mut opts = lrcat::Options::default();
+    if let Some(r) = options.get("--remap") {
+        let (from, to) = r
+            .split_once('=')
+            .ok_or_else(|| format!("bad --remap {r:?} (OLD=NEW)"))?;
+        opts.remap.push((from.to_string(), to.to_string()));
+    }
+    let dir = match options.get("--collections") {
+        Some(d) => PathBuf::from(d),
+        None => amb_library::collections::editor_dir()
+            .ok_or("no config folder for collections: give --collections DIR")?,
+    };
+    let apply = options.contains_key("--apply");
+    let plan = lrcat::plan(catalog, &opts)?;
+    if json && !apply {
+        return print_json(&serde_json::to_value(&plan).map_err(|e| e.to_string())?);
+    }
+    if !json {
+        for w in &plan.warnings {
+            eprintln!("warning: {w}");
+        }
+        for p in &plan.photos {
+            let why = match p.action {
+                "keep" => " (a sidecar is already there)",
+                "missing" => " (photo not found)",
+                _ => "",
+            };
+            println!("{:<7} {}{why}", p.action, p.sidecar.display());
+            if let Some(problem) = &p.problem {
+                println!("        {problem}");
+            }
+        }
+        for c in &plan.collections {
+            let set = c
+                .set
+                .as_deref()
+                .map(|s| format!(" in {s}"))
+                .unwrap_or_default();
+            println!("collection {:?}{set}: {} photo(s)", c.name, c.photos.len());
+        }
+        if !plan.smart_collections.is_empty() {
+            println!(
+                "smart collections not moved (make them again in the editor): {}",
+                plan.smart_collections.join(", ")
+            );
+        }
+        println!(
+            "catalogue version {}: {} sidecar(s) to write, {} kept, {} photo(s) not found, {} collection(s){}",
+            plan.version.as_deref().unwrap_or("unknown"),
+            plan.count("write"),
+            plan.count("keep"),
+            plan.count("missing"),
+            plan.collections.len(),
+            if apply {
+                String::new()
+            } else {
+                " (nothing written: --apply writes them)".into()
+            }
+        );
+    }
+    if !apply {
+        return Ok(());
+    }
+    let report = lrcat::apply(&plan, &dir);
+    if json {
+        print_json(&serde_json::to_value(&report).map_err(|e| e.to_string())?)?;
+    } else {
+        println!(
+            "wrote {} sidecar(s), kept {}, {} not found; {} collection(s) in {}",
+            report.written,
+            report.kept,
+            report.missing,
+            report.collections,
+            dir.display()
+        );
+        for e in &report.errors {
+            eprintln!("error: {e}");
+        }
+    }
+    if report.errors.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("{} problem(s), see above", report.errors.len()))
+    }
+}
+
 fn import(
     source: &Path,
     dest: &Path,
@@ -434,7 +532,9 @@ fn main() -> ExitCode {
             | "--dcp-dir"
             | "--deghost"
             | "--projection"
-            | "--parts" => match iter.next() {
+            | "--parts"
+            | "--remap"
+            | "--collections" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -470,6 +570,7 @@ fn main() -> ExitCode {
         ["testimage", pattern, out] => testimage(pattern, Path::new(out)),
         ["profile", "list", raw] => profile_list(Path::new(raw), &options),
         ["mcp"] => mcp::serve(),
+        ["lrcat", "import", catalog] => lrcat_import(Path::new(catalog), &options, json),
         ["merge", "hdr", raws @ ..] if raws.len() >= 2 => merge_hdr(raws, &options, json),
         ["merge", "pano", raws @ ..] if raws.len() >= 2 => merge_pano(raws, &options, json),
         ["import", source, dest] => {

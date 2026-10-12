@@ -693,7 +693,10 @@ dialog .inline-check { flex-direction: row; align-items: flex-start; gap: 6px; c
 .flag-buttons button.reject.on { color: #e5484d; }
 
 /* Import dialog (import.js) */
-#import-dialog { width: 680px; max-width: calc(100vw - 32px); }
+#import-dialog, #lrcat-dialog { width: 680px; max-width: calc(100vw - 32px); }
+#lrcat-moved { margin-top: 10px; }
+#lrcat-moved summary { cursor: pointer; color: var(--muted); }
+#lrcat-moved .grid { margin-top: 8px; }
 .folder-row { display: flex; gap: 6px; }
 .folder-row input { flex: 1; min-width: 0; }
 #import-dialog input[hidden] { display: none; }

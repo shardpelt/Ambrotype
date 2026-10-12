@@ -876,6 +876,7 @@ function wireLibrary() {
     else if (lib.dir) loadLibrary(lib.dir);
   });
   $("lib-import").addEventListener("click", () => importFlow());
+  $("lib-lrcat").addEventListener("click", () => lrcatFlow());
   $("lib-add-folder").addEventListener("click", () => addLibraryFolder());
   $("lib-drop-folders").addEventListener("click", () => loadLibrary(lib.dir, []));
   for (const b of $("lib-rating").querySelectorAll("button[data-stars]")) {

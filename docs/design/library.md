@@ -117,17 +117,30 @@ Lightroom keeps stacks in its catalogue. Ours go in the sidecar: `amblib:Stack` 
 - **Auto-stack…** groups photos taken within a number of seconds of each other, by capture time.
 - Lightroom doesn't read our stacks, and stacks across folders only show when both folders are listed.
 
+## Moving from Lightroom Classic
+
+**From Lightroom…** in the library (or `amb lrcat import Catalog.lrcat`, with `--apply` to write) reads a Lightroom Classic catalogue and moves what it knows into files we and Lightroom both read.
+
+- Each photo's sidecar gets the catalogue's develop settings (`Adobe_imageDevelopSettings`, newer than any sidecar Lightroom wrote), its rating, colour label, pick or reject flag, keywords and stack, and the metadata in the catalogue's XMP (title, caption, creator, copyright, …).
+- Virtual copies become ours, `IMG.copy-2.xmp`, `.copy-3`, … in the catalogue's order, so running it again finds the same names.
+- Collections become ours, in their sets (sets in sets are joined: "Travel / Italy"); two of one name get the set added to the later one's name. The Quick Collection comes when it has photos. Smart collections are named, not moved: they are rules, to make again here.
+- Nothing is overwritten: a photo that already has a sidecar keeps it, and the catalogue is opened read-only and `immutable` (no lock, no journal next to it). Close Lightroom first, as changes it hasn't saved into the file aren't seen; a `.lock` or `-wal` next to the catalogue gives a warning.
+- Photos that have moved (another disk or computer) are found with one path replacement: "Where Lightroom had them" / "Where they are now" (`--remap OLD=NEW`).
+- The tables and columns read are the documented ones other free catalogue readers use; optional ones (keywords, stacks, collections) are skipped when a catalogue lacks them. Tested on synthetic catalogues only so far.
+
 ## Code
 
 - `crates/amb-gui/src/library.rs`: listing, batch info changes, paste commands, batch export.
 - `crates/amb-gui/ui/library.js`: the grid, selection, panel and keys.
 - `crates/amb-gui/ui/cull.js`: loupe, compare and survey.
+- `crates/amb-library/src/lrcat.rs` and `crates/amb-gui/ui/lrcat.js`: moving from Lightroom Classic.
 - Labels and flags in `amb_protocol::sidecar::PhotoInfo` (`xmp:Label`, `amblib:Flag`); labels are exported as XMP (`amb_export::exif::Tags::label`), flags are not.
 
 ## Not yet
 
 - The extra folders aren't remembered after closing the app. Collection sets are one level deep (no sets in sets). A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does). Smart collection rules for camera, lens, ISO and the like.
 - Collections don't follow photos moved outside Ambrotype.
+- From Lightroom: smart collections, publish services, edit history and snapshots, face regions, keyword hierarchies (they come as plain keywords) and Lightroom's virtual copy names. One path replacement only.
 - Import: moving instead of copying, a second backup copy, ejecting the card, a develop preset on import, picking single photos to import.
 - Zooming in the loupe and compare views (open the photo in the editor for 100%).
 - The rest of Lightroom's metadata panel (location, IPTC contact fields, headline) and editing keyword hierarchies. Camera details are shown under the histogram, not in the panel.

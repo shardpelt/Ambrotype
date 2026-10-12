@@ -16,6 +16,7 @@ amb-presets = { path = "../amb-presets" }
 amb-protocol = { path = "../amb-protocol" }
 bzip2 = "0.6.1"
 rayon = "1"
+rusqlite = { version = "0.40.2", features = ["bundled"] }
 serde.workspace = true
 serde_json.workspace = true
 tar = "0.4.46"

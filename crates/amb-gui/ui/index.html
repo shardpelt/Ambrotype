@@ -219,6 +219,7 @@
       <button type="button" id="lib-drop-folders" class="small" title="Show only the first folder" hidden>×</button>
       <button type="button" id="lib-reload" class="small" title="Read the folder again">↻</button>
       <button type="button" id="lib-import" class="small" title="Copy photos from a card or folder (Ctrl+Shift+I)">Import…</button>
+      <button type="button" id="lib-lrcat" class="small" title="Move from Lightroom Classic: its edits, ratings, keywords and collections, from its catalogue">From Lightroom…</button>
       <span id="library-count" class="hint"></span>
       <span id="lib-views" class="lib-views" role="group" aria-label="View">
         <button type="button" data-view="grid" class="on" title="Grid (G)">Grid</button><button type="button" data-view="loupe" title="Loupe (E)">Loupe</button><button type="button" data-view="compare" title="Compare (C)">Compare</button><button type="button" data-view="survey" title="Survey (N)">Survey</button>
@@ -511,6 +512,30 @@
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary">OK</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Move from Lightroom Classic: a catalogue into sidecars and collections (lrcat.js). -->
+  <dialog id="lrcat-dialog">
+    <form method="dialog" id="lrcat-form">
+      <h2>Move from Lightroom Classic</h2>
+      <p class="hint">Each photo's edit, rating, colour label, flag, keywords, stack, title and caption go into its XMP sidecar, where both Ambrotype and Lightroom read them. Virtual copies and collections come too. The catalogue is only read: close Lightroom first. Sidecars already there are kept.</p>
+      <label>Catalogue
+        <span class="folder-row"><input name="catalog" type="text" readonly placeholder="Choose…"><button type="button" class="small" id="lrcat-pick">Choose…</button></span>
+      </label>
+      <details id="lrcat-moved">
+        <summary>The photos have moved since (another disk or computer)</summary>
+        <div class="grid">
+          <label>Where Lightroom had them <input name="from" type="text" spellcheck="false" placeholder="e.g. /Volumes/Photos/"></label>
+          <label>Where they are now <input name="to" type="text" spellcheck="false" placeholder="e.g. /home/me/Photos/"></label>
+        </div>
+      </details>
+      <div id="lrcat-summary" class="import-summary hint">Choose Lightroom's catalogue (a .lrcat file).</div>
+      <ul id="lrcat-list" class="import-list"></ul>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" id="lrcat-go" class="primary" disabled>Move</button>
       </menu>
     </form>
   </dialog>
@@ -1118,6 +1143,7 @@
   <script src="library.js"></script>
   <script src="cull.js"></script>
   <script src="import.js"></script>
+  <script src="lrcat.js"></script>
   <script src="collections.js"></script>
   <script src="plugins.js"></script>
   <script src="picker.js"></script>

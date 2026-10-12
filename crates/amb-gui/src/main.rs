@@ -3533,6 +3533,63 @@ async fn pick_folder(app: tauri::AppHandle, title: String) -> Option<String> {
         .map(|p| p.display().to_string())
 }
 
+/// Pick a Lightroom Classic catalogue.
+#[tauri::command]
+async fn pick_lrcat(app: tauri::AppHandle) -> Option<String> {
+    app.dialog()
+        .file()
+        .set_title("Move from Lightroom Classic: choose its catalogue")
+        .add_filter("Lightroom Classic catalogues", &["lrcat"])
+        .blocking_pick_file()
+        .and_then(|p| p.into_path().ok())
+        .map(|p| p.display().to_string())
+}
+
+fn lrcat_options(from: &str, to: &str) -> amb_library::lrcat::Options {
+    let mut options = amb_library::lrcat::Options::default();
+    if !from.trim().is_empty() && !to.trim().is_empty() {
+        options
+            .remap
+            .push((from.trim().to_string(), to.trim().to_string()));
+    }
+    options
+}
+
+/// What moving from a Lightroom catalogue would do, nothing written.
+#[tauri::command]
+async fn lrcat_plan(catalog: String, from: String, to: String) -> Res<serde_json::Value> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let plan = amb_library::lrcat::plan(Path::new(&catalog), &lrcat_options(&from, &to))?;
+        let mut v = serde_json::to_value(&plan).map_err(|e| e.to_string())?;
+        v["counts"] = serde_json::json!({
+            "write": plan.count("write"),
+            "keep": plan.count("keep"),
+            "missing": plan.count("missing"),
+        });
+        Ok(v)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Move from a Lightroom catalogue: sidecars next to the photos, and its
+/// collections as ours.
+#[tauri::command]
+async fn lrcat_apply(
+    app: tauri::AppHandle,
+    catalog: String,
+    from: String,
+    to: String,
+) -> Res<amb_library::lrcat::Report> {
+    let dir = collections_dir(&app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let plan = amb_library::lrcat::plan(Path::new(&catalog), &lrcat_options(&from, &to))?;
+        Ok(amb_library::lrcat::apply(&plan, &dir))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[derive(Serialize)]
 struct ImportRow {
     source: String,
@@ -3820,6 +3877,9 @@ fn main() {
             pick_folder,
             import_plan,
             import_run,
+            pick_lrcat,
+            lrcat_plan,
+            lrcat_apply,
             library_set_info,
             paste_groups,
             paste_settings,

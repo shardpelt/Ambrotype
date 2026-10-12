@@ -62,6 +62,9 @@ library's package. Notable ones:
 - jpeg-encoder: this software is based in part on the work of the
   Independent JPEG Group.
 - webpki-roots: certificate data under CDLA-Permissive-2.0.
+- GNU FreeSans Bold (crates/amb-export/data/fonts/FreeSansBold.ttf, for text
+  watermarks): Copyright 2002-2012 GNU FreeFont contributors, GPL-3.0-or-later
+  with the GNU FreeFont font exception.
 
 Binary releases include the full licence texts of every library they contain
 (docs/legal-and-naming.md, "Releases").

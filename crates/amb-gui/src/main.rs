@@ -929,6 +929,9 @@ struct ExportOptions {
     /// File names for a batch, as Import's templates (`{name}`, `{seq}`, ...).
     #[serde(default)]
     name_template: Option<String>,
+    /// Text or a logo on the photo.
+    #[serde(default)]
+    watermark: Option<amb_export::watermark::Watermark>,
 }
 
 fn yes() -> bool {
@@ -1065,6 +1068,10 @@ fn export_settings(options: &ExportOptions) -> Res<amb_export::ExportSettings> {
         if let Some(b) = &options.border {
             b.validate()?;
             s.border = Some(b.clone());
+        }
+        if let Some(w) = &options.watermark {
+            w.validate()?;
+            s.watermark = Some(w.clone());
         }
         s.max_bytes = options
             .max_kb
@@ -1961,6 +1968,18 @@ async fn pick_lut(app: tauri::AppHandle) -> Option<String> {
         .file()
         .set_title("Choose a LUT")
         .add_filter("LUT (.cube)", &["cube", "CUBE"])
+        .blocking_pick_file()
+        .and_then(|p| p.into_path().ok())
+        .map(|p| p.display().to_string())
+}
+
+/// A PNG logo for the export watermark.
+#[tauri::command]
+async fn pick_watermark_image(app: tauri::AppHandle) -> Option<String> {
+    app.dialog()
+        .file()
+        .set_title("Choose a logo")
+        .add_filter("PNG", &["png", "PNG"])
         .blocking_pick_file()
         .and_then(|p| p.into_path().ok())
         .map(|p| p.display().to_string())
@@ -3248,6 +3267,7 @@ fn main() {
             run_plugin_many,
             trial_overrides,
             luts_list,
+            pick_watermark_image,
             negative_freeze,
             guided_upright,
             upright_guides,

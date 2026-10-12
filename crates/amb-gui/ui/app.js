@@ -1556,7 +1556,48 @@ function resizeLongEdge() {
 // Export presets: the dialog's choices under a name (kept in the app's
 // settings, src/main.rs `export_presets`).
 const EXPORT_FIELDS = ["format", "quality", "bits", "color_space", "exact_w", "exact_h", "resize_mode", "resize_value",
-  "sharpen", "metadata", "max_kb", "border_preset", "name_template"];
+  "sharpen", "metadata", "max_kb", "border_preset", "name_template",
+  "wm_text", "wm_image", "wm_anchor", "wm_size", "wm_opacity", "wm_color"];
+
+// The watermark as the export expects it, or null.
+function readWatermark() {
+  const f = $("export-form");
+  const image = f.wm_image.value || null;
+  const text = f.wm_text.value.trim();
+  if (!image && !text) return null;
+  return {
+    text: image ? "" : text,
+    image,
+    color: f.wm_color.value,
+    size: Number(f.wm_size.value) || 20,
+    opacity: Number(f.wm_opacity.value),
+    anchor: f.wm_anchor.value,
+    inset: 3,
+    shadow: f.wm_shadow.checked,
+  };
+}
+
+// Show the watermark's options once there is one; a logo replaces the text.
+function updateWatermarkForm() {
+  const f = $("export-form");
+  const image = f.wm_image.value;
+  f.wm_text.disabled = Boolean(image);
+  f.wm_text.placeholder = image ? "Using a logo" : "None (e.g. © Your Name)";
+  $("wm-logo").textContent = image ? "No logo" : "Logo…";
+  $("wm-image-name").textContent = image ? fileName(image) : "";
+  for (const c of document.querySelectorAll(".wm-color, .wm-shadow")) c.hidden = Boolean(image);
+  document.querySelector(".watermark-section .wm-fields").hidden = !image && !f.wm_text.value.trim();
+}
+
+function wireWatermark() {
+  const f = $("export-form");
+  f.wm_text.addEventListener("input", updateWatermarkForm);
+  $("wm-logo").addEventListener("click", async () => {
+    if (f.wm_image.value) f.wm_image.value = "";
+    else f.wm_image.value = (await invoke("pick_watermark_image")) ?? "";
+    updateWatermarkForm();
+  });
+}
 
 async function fillExportPresets(selected = null) {
   const f = $("export-form");
@@ -1583,6 +1624,7 @@ function applyExportPreset(name) {
   set("format");
   updateExportForm();
   for (const n of EXPORT_FIELDS.filter((n) => n !== "format")) set(n);
+  updateWatermarkForm();
   f.quality.dispatchEvent(new Event("input"));
   f.border_preset.dispatchEvent(new Event("change"));
   f.size_preset.value = "";
@@ -1647,6 +1689,7 @@ async function exportFlow(batch = null) {
   if (!ui.borders) await loadBorders();
   fillBorderSelect();
   await fillExportPresets($("export-form").export_preset.value || null);
+  updateWatermarkForm();
   updateExportSize();
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
@@ -1665,6 +1708,7 @@ async function exportFlow(batch = null) {
     max_kb: f.max_kb.value ? Number(f.max_kb.value) : null,
     border: borderOn() ? readBorder() : null,
     name_template: batch && f.name_template.value.trim() ? f.name_template.value.trim() : null,
+    watermark: readWatermark(),
   };
   if (batch) return batch.run(options);
   const base = ui.info.name.replace(/\.[^.]+$/, "");
@@ -1734,6 +1778,7 @@ async function init() {
   wireFilmstrip();
   for (const n of ["resize_mode", "resize_value"]) $("export-form")[n].addEventListener("input", drawBorderPreview);
   wireExportPresets();
+  wireWatermark();
   $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));
   wireViewer();
   wireCrop();

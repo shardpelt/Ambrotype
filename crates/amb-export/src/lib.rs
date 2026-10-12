@@ -21,6 +21,7 @@ pub mod dng;
 pub mod embed;
 pub mod exif;
 pub mod geometry;
+pub mod watermark;
 
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
@@ -163,6 +164,8 @@ pub struct ExportSettings {
     pub avif_speed: u8,
     /// A frame around the photo ([`border`]).
     pub border: Option<border::Border>,
+    /// Text or a logo on the photo ([`watermark`]).
+    pub watermark: Option<watermark::Watermark>,
     /// The photo's rating and keywords, embedded with the full metadata policies.
     pub tags: exif::Tags,
 }
@@ -183,6 +186,7 @@ impl ExportSettings {
             max_bytes: None,
             avif_speed: 6,
             border: None,
+            watermark: None,
             tags: exif::Tags::default(),
         }
     }
@@ -223,21 +227,7 @@ fn frame_colour(
     float: bool,
 ) -> [f32; 3] {
     match border::parse_color(text) {
-        Some(border::Fill::Srgb(rgb)) => {
-            let srgb = OutputSpace::Srgb;
-            let lin = rgb.map(|v| srgb.transfer().decode(v));
-            let to_pro = amb_color::matrix::invert3(&srgb.from_prophoto());
-            let out_m = amb_color::matrix::mul3(&space.from_prophoto(), &to_pro);
-            [0, 1, 2].map(|i| {
-                let v = out_m[i][0] * lin[0] + out_m[i][1] * lin[1] + out_m[i][2] * lin[2];
-                let v = if float { v } else { v.clamp(0.0, 1.0) };
-                (if linear_out {
-                    v
-                } else {
-                    space.transfer().encode(v)
-                }) as f32
-            })
-        }
+        Some(border::Fill::Srgb(rgb)) => srgb_to_output(rgb, space, linear_out, float),
         _ => {
             let n = (photo.rgb.len() / 3).max(1) as f64;
             let mut sum = [0.0f64; 3];
@@ -251,7 +241,24 @@ fn frame_colour(
     }
 }
 
-/// Develop-to-file: orient, resize, convert, sharpen, frame and encode.
+/// An sRGB-encoded colour (0..1) in the output's values.
+fn srgb_to_output(rgb: [f64; 3], space: OutputSpace, linear_out: bool, float: bool) -> [f32; 3] {
+    let srgb = OutputSpace::Srgb;
+    let lin = rgb.map(|v| srgb.transfer().decode(v));
+    let to_pro = amb_color::matrix::invert3(&srgb.from_prophoto());
+    let out_m = amb_color::matrix::mul3(&space.from_prophoto(), &to_pro);
+    [0, 1, 2].map(|i| {
+        let v = out_m[i][0] * lin[0] + out_m[i][1] * lin[1] + out_m[i][2] * lin[2];
+        let v = if float { v } else { v.clamp(0.0, 1.0) };
+        (if linear_out {
+            v
+        } else {
+            space.transfer().encode(v)
+        }) as f32
+    })
+}
+
+/// Develop-to-file: orient, resize, convert, sharpen, watermark, frame and encode.
 pub fn export(
     img: &Image,
     meta: &PhotoMetadata,
@@ -318,6 +325,12 @@ pub fn export(
     });
     if let Some((media, amount)) = s.sharpen {
         geometry::output_sharpen(&mut out, media, amount);
+    }
+    // The watermark goes on the photo after sharpening, so it isn't sharpened.
+    if let Some(w) = &s.watermark {
+        let text = frame_colour(&w.color, &out, s.color_space, linear_out, float);
+        let to_output = |rgb: [f64; 3]| srgb_to_output(rgb, s.color_space, linear_out, float);
+        watermark::apply(&mut out, w, &|_| text, &to_output).map_err(Error::Unsupported)?;
     }
     // The frame goes on last, so its edge isn't sharpened.
     if let (Some(b), Some(p)) = (&s.border, &plan) {

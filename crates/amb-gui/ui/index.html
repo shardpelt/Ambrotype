@@ -671,6 +671,25 @@
           <span id="border-size" class="hint"></span>
         </div>
       </div>
+      <div class="watermark-section">
+        <label>Watermark
+          <span class="pair"><input name="wm_text" type="text" spellcheck="false" placeholder="None (e.g. © Your Name)">
+            <button type="button" id="wm-logo" class="small" title="Use a PNG logo instead of text">Logo…</button></span>
+        </label>
+        <div class="wm-fields" hidden>
+          <input name="wm_image" type="hidden">
+          <label>Where <select name="wm_anchor">
+            <option value="top-left">Top left</option><option value="top">Top</option><option value="top-right">Top right</option>
+            <option value="left">Left</option><option value="center">Centre</option><option value="right">Right</option>
+            <option value="bottom-left">Bottom left</option><option value="bottom">Bottom</option><option value="bottom-right" selected>Bottom right</option>
+          </select></label>
+          <label>Size (% of width) <input name="wm_size" type="number" min="1" max="100" step="1" value="20"></label>
+          <label>Opacity <input name="wm_opacity" type="number" min="0" max="100" step="5" value="70"></label>
+          <label class="wm-color">Colour <input name="wm_color" type="color" value="#ffffff"></label>
+          <span class="inline-check wm-shadow"><input name="wm_shadow" type="checkbox" checked><span>Shadow</span></span>
+          <span id="wm-image-name" class="hint"></span>
+        </div>
+      </div>
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary" id="export-go">Export…</button>

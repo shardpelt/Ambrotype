@@ -87,7 +87,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - Lossy WebP.
   - HDR AVIF/JXL.
   - DNG of the developed image.
-  - Watermarks.
+  - Text watermarks in other fonts.
   - Export presets in the CLI (the editor has them).
   - Gamut mapping, instead of the current hard clip.
 
@@ -111,6 +111,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - long size lists (crop aspect, export size) use a drop-down with collapsible groups (`ui/picker.js`, layered over the native select): common sizes open, sites collapsed
   - file names from a template for batch exports (Import's tokens: `{name}`, `{seq}`, the capture date, `{camera}`; `amb render --out-dir --name` too)
   - export presets (the dialog's choices under a name, in the app's settings) and Resize by long or short edge, width, height, megapixels or percent
+  - watermarks on export: text (GNU FreeSans Bold, bundled) or a PNG logo, in one of nine places, with size, opacity and a shadow (`amb_export::watermark`; `amb render --watermark`)
   - borders on export: presets (built-in and yours) with width, a deeper bottom, colour or the photo's own colour, keyline, rounded corners, and "whole photo inside" for exact sizes; a live preview in the export dialog
   - plugins: `crates/amb-plugin` loads a plugin folder (`plugin.json` + `plugin.wasm`), checks it (only the `amb.log` import), and runs it in the `wasmi` interpreter with an instruction budget and a 64 MB memory cap. The input is JSON (settings, parameters, a seed, and with permission camera facts and statistics of a ~512 px render, `amb_plugin::photo`); the output is edit commands, limited to set/adjust/reset. The editor runs them as one undo step (`run_plugin` in `src/main.rs`; the list, approvals per fingerprint, install and sharing are in `src/plugins.rs`; the dialog is `ui/plugins.js`). Built-in plugins (Auto tone, Random look, Film recipe) are embedded from `plugins/`. Recipes (named parameter sets) come from the manifest or are saved in the app's config. `amb plugin` in the CLI makes, builds, checks and runs them
   - save as preset (`session::save_preset`): the open photo's settings minus the photo-specific groups (crop, local, retouch, transform, metadata, lens blur), written as a Lightroom-style `.xmp` preset into `<config>/presets/<group>/`, which the presets list always includes

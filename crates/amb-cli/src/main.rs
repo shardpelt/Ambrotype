@@ -138,6 +138,10 @@ EXPORT OPTIONS (amb render):
     --border 5%|40px[,#ffffff|auto] | border.json   A frame around the photo; a .json preset can add
                                             a deeper bottom, a keyline, rounded corners, and fit (with
                                             --exact: the whole photo inside the frame, not cropped)
+    --watermark \"© Name\" | logo.png | watermark.json   Text or a logo (PNG, its transparency kept) on
+                                            the photo; --watermark-at bottom-right (top-left, top, top-right,
+                                            left, center, right, bottom-left, bottom), --watermark-size 20
+                                            (% of the width), --watermark-opacity 70
 
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
 XMP packet (e.g. .dng presets for Lightroom mobile). AI and script guide: docs/ai/README.md.";
@@ -368,25 +372,67 @@ fn main() -> ExitCode {
             | "--no-lens" | "--apply" | "--tone" | "--wb" => {
                 options.insert(arg.as_str(), "true");
             }
-            "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look"
-            | "--calibration" | "--commands" | "--queries" | "--camera-make" | "--camera-model"
-            | "--lens-make" | "--lens-model" | "--focal" | "--aperture" | "--distance"
-            | "--crop" | "--lens-db" | "--lcp-dir" | "--format" | "--quality" | "--bits"
-            | "--color-space" | "--subsampling" | "--long-edge" | "--short-edge" | "--width"
-            | "--height" | "--fit" | "--exact" | "--megapixels" | "--percent" | "--sharpen"
-            | "--metadata" | "--max-size" | "--avif-speed" | "--border" | "--out-dir"
-            | "--rating" | "--keywords" | "--name" | "--params" | "--into" | "--rename"
-            | "--start" | "--dcp-dir" | "--deghost" | "--projection" | "--parts" => {
-                match iter.next() {
-                    Some(value) => {
-                        options.insert(arg.as_str(), value.as_str());
-                    }
-                    None => {
-                        eprintln!("error: {arg} needs a value\n\n{USAGE}");
-                        return ExitCode::from(2);
-                    }
+            "--out"
+            | "--groups"
+            | "--synthetic"
+            | "--preset"
+            | "--amount"
+            | "--look"
+            | "--calibration"
+            | "--commands"
+            | "--queries"
+            | "--camera-make"
+            | "--camera-model"
+            | "--lens-make"
+            | "--lens-model"
+            | "--focal"
+            | "--aperture"
+            | "--distance"
+            | "--crop"
+            | "--lens-db"
+            | "--lcp-dir"
+            | "--format"
+            | "--quality"
+            | "--bits"
+            | "--color-space"
+            | "--subsampling"
+            | "--long-edge"
+            | "--short-edge"
+            | "--width"
+            | "--height"
+            | "--fit"
+            | "--exact"
+            | "--megapixels"
+            | "--percent"
+            | "--sharpen"
+            | "--metadata"
+            | "--max-size"
+            | "--avif-speed"
+            | "--border"
+            | "--out-dir"
+            | "--watermark"
+            | "--watermark-at"
+            | "--watermark-size"
+            | "--watermark-opacity"
+            | "--rating"
+            | "--keywords"
+            | "--name"
+            | "--params"
+            | "--into"
+            | "--rename"
+            | "--start"
+            | "--dcp-dir"
+            | "--deghost"
+            | "--projection"
+            | "--parts" => match iter.next() {
+                Some(value) => {
+                    options.insert(arg.as_str(), value.as_str());
                 }
-            }
+                None => {
+                    eprintln!("error: {arg} needs a value\n\n{USAGE}");
+                    return ExitCode::from(2);
+                }
+            },
             other if other.starts_with("--") => {
                 eprintln!("error: unknown option {other}\n\n{USAGE}");
                 return ExitCode::from(2);
@@ -1597,6 +1643,42 @@ fn export_settings(
             .filter(|k| !k.is_empty())
             .map(String::from)
             .collect();
+    }
+    if let Some(w) = options.get("--watermark") {
+        use amb_export::watermark::{Anchor, Watermark};
+        let lower = w.to_lowercase();
+        let mut mark = if lower.ends_with(".json") {
+            let text = std::fs::read_to_string(w).map_err(|e| format!("{w}: {e}"))?;
+            serde_json::from_str::<Watermark>(&text).map_err(|e| format!("{w}: {e}"))?
+        } else if lower.ends_with(".png") {
+            Watermark {
+                image: Some(PathBuf::from(w)),
+                ..Watermark::text("")
+            }
+        } else {
+            Watermark::text(w)
+        };
+        if let Some(a) = options.get("--watermark-at") {
+            mark.anchor =
+                Anchor::from_name(a).ok_or_else(|| format!("unknown --watermark-at {a:?}"))?;
+        }
+        let number = |key: &str| -> Result<Option<f64>, String> {
+            options
+                .get(key)
+                .map(|v| {
+                    v.parse::<f64>()
+                        .map_err(|_| format!("{key} {v:?} is not a number"))
+                })
+                .transpose()
+        };
+        if let Some(v) = number("--watermark-size")? {
+            mark.size = v;
+        }
+        if let Some(v) = number("--watermark-opacity")? {
+            mark.opacity = v;
+        }
+        mark.validate()?;
+        s.watermark = Some(mark);
     }
     if let Some(b) = options.get("--border") {
         s.border = Some(if b.ends_with(".json") {

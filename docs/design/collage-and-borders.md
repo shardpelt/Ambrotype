@@ -19,6 +19,16 @@ A border is an export option, saved and shared as a **border preset**.
 - **Where it applies:** in `amb-export`, after resize and output sharpening, so it is the same in the GUI, the CLI (`amb render --border preset.json`) and batch export.
 - **Preview:** shown in the export dialog, and optionally in the viewer as a soft-proof overlay.
 
+## Watermarks
+
+Status: built 2026-10-12 (`crates/amb-export/src/watermark.rs`).
+
+- Text, or a PNG logo with its own transparency, on the photo: after resizing and output sharpening (so it isn't sharpened), before the border (so it sits on the photo, not the frame).
+- Size is the mark's width as a percentage of the photo's width, so it looks the same at any export size. Nine places; the inset is a percentage of the short edge. Opacity, and for text a colour and a soft shadow so it reads on light and dark parts.
+- Text is set in GNU FreeSans Bold, bundled (GPL-3.0-or-later with the font exception).
+- In the export dialog (Watermark, saved with export presets) and `amb render --watermark "© Name" | logo.png | watermark.json` with `--watermark-at`, `--watermark-size`, `--watermark-opacity`.
+- Not yet: other fonts, rotation, tiling across the photo.
+
 ## Collage maker
 
 *Built (2026-10-08):*

@@ -7,6 +7,7 @@ A plugin is a small program that makes edits: "auto tone", "a random film look",
 - **It gets:** the photo's current develop settings, its own parameters and a random seed. With permission, it also gets camera facts (`photo-info`) and the histogram and average colour of the edited photo (`photo-stats`).
 - **It returns:** edits, as the same commands a slider makes (`set_param`, `adjust_param`, `reset_param`, `reset_group`), and a short message. The app applies them as **one undo step**, shown in History as "plugin <name>".
 - **It can't:** read or write files, use the network, read the clock, see other photos, or paint pixels. There is no permission for those; the sandbox doesn't have them.
+- **Many photos:** in the library, Run a plugin… runs it on each selected photo, with that photo's own settings and statistics and a seed of its own. The open photo gets one undo step; the others' sidecars are written.
 - **Limits:** about a billion instructions per run (a second or two), 64 MB of memory, 1000 commands and 1 MB of output.
 
 Plugins are Rust compiled to WebAssembly (`wasm32-unknown-unknown`) and run in the `wasmi` interpreter (`crates/amb-plugin`). Other languages work too if they follow the [ABI](#abi-for-other-languages).

@@ -1950,6 +1950,119 @@ async fn run_plugin(
 }
 
 #[derive(Serialize)]
+struct PluginBatch {
+    /// The photos the plugin changed.
+    changed: Vec<String>,
+    errors: Vec<String>,
+    /// The open photo's new state, when it was one of them.
+    state: Option<session::StateInfo>,
+    /// The plugin's message for the last photo, if any.
+    message: Option<String>,
+}
+
+/// Run a plugin on many photos, each with its own settings: the open photo
+/// as one undo step, the others in their sidecars. One failure doesn't stop
+/// the rest.
+#[tauri::command]
+async fn run_plugin_many(
+    app: tauri::AppHandle,
+    id: String,
+    params: serde_json::Map<String, serde_json::Value>,
+    paths: Vec<String>,
+    state: tauri::State<'_, AppState>,
+) -> Res<PluginBatch> {
+    use tauri::Emitter;
+    let plugin = plugins::find(plugins_dir(state.inner()).as_deref(), &id)?;
+    let allowed = plugin.manifest.permissions.is_empty()
+        || state
+            .plugin_approvals
+            .lock()
+            .map_err(|e| e.to_string())?
+            .get(&id)
+            == Some(&plugin.fingerprint());
+    if !allowed {
+        return Err("needs-approval".into());
+    }
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let seed = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos() as u64)
+            .unwrap_or(1);
+        let perms = &plugin.manifest.permissions;
+        let label = format!("plugin {}", plugin.manifest.name);
+        let mut out = PluginBatch {
+            changed: Vec::new(),
+            errors: Vec::new(),
+            state: None,
+            message: None,
+        };
+        for (i, path) in paths.iter().enumerate() {
+            let photo = Path::new(path);
+            let name = photo
+                .file_name()
+                .map_or_else(|| path.clone(), |n| n.to_string_lossy().into_owned());
+            let _ = app.emit(
+                "library-progress",
+                LibraryProgress {
+                    done: i,
+                    total: paths.len(),
+                    name: name.clone(),
+                },
+            );
+            // Random plugins give each photo its own result.
+            let seed = seed.wrapping_add(i as u64);
+            let result = (|| -> Res<bool> {
+                let open = {
+                    let guard = slot.lock().map_err(|e| e.to_string())?;
+                    guard
+                        .as_ref()
+                        .filter(|s| s.path == photo)
+                        .map(|s| s.plugin_context(perms, seed))
+                };
+                let ctx = match open.clone() {
+                    Some(ctx) => ctx,
+                    None => plugins::context_for_file(photo, perms, seed)?,
+                };
+                let run = plugin.run(&ctx, &params)?;
+                if run.message.is_some() {
+                    out.message = run.message.clone();
+                }
+                if run.commands.is_empty() {
+                    return Ok(false);
+                }
+                if open.is_some() {
+                    let mut guard = slot.lock().map_err(|e| e.to_string())?;
+                    if let Some(s) = guard.as_mut().filter(|s| s.path == photo) {
+                        s.execute(&run.commands, Some(&label))?;
+                        out.state = Some(s.state_info());
+                        return Ok(true);
+                    }
+                }
+                library::paste_to_file(photo, &run.commands)?;
+                Ok(true)
+            })();
+            match result {
+                Ok(true) => out.changed.push(path.clone()),
+                Ok(false) => {}
+                Err(e) => out.errors.push(format!("{name}: {e}")),
+            }
+        }
+        let _ = app.emit(
+            "library-progress",
+            LibraryProgress {
+                done: paths.len(),
+                total: paths.len(),
+                name: String::new(),
+            },
+        );
+        Ok(out)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[derive(Serialize)]
 struct Variant {
     seed: u64,
     commands: Vec<Command>,
@@ -2832,6 +2945,7 @@ fn main() {
             assistant_settings,
             assistant_save,
             assistant_ask,
+            run_plugin_many,
             library_pick_folder,
             import_defaults,
             collections_list,

@@ -875,6 +875,7 @@ function wireLibrary() {
   $("lib-open").addEventListener("click", libraryOpenFocused);
   $("lib-copy").addEventListener("click", libraryCopySettings);
   $("lib-paste").addEventListener("click", libraryPasteSettings);
+  $("lib-plugin").addEventListener("click", () => pluginsFlow().catch((e) => toast(String(e), true)));
   $("lib-vcopy").addEventListener("click", virtualCopyKey);
   $("lib-vcopy-delete").addEventListener("click", libraryDeleteCopies);
   $("lib-export").addEventListener("click", libraryExport);

@@ -5,7 +5,8 @@
 //! hub repo.
 //!
 //! Running is in main.rs: the plugin returns commands, which go through the
-//! session like any other edit (one undo step).
+//! session like any other edit (one undo step), or through the protocol into
+//! the sidecars of photos that aren't open ([`context_for_file`]).
 
 use amb_plugin::Plugin;
 use serde::Serialize;
@@ -30,6 +31,45 @@ const BUILTIN: [(&str, &str, &[u8]); 3] = [
         include_bytes!("../../../plugins/film-recipe/plugin.wasm"),
     ),
 ];
+
+/// What a plugin is told about a photo that isn't open: its sidecar's
+/// settings, and (only when allowed) its camera facts and statistics, which
+/// need the raw decoded.
+pub fn context_for_file(
+    photo: &Path,
+    permissions: &[amb_plugin::Permission],
+    seed: u64,
+) -> Result<amb_plugin::Context, String> {
+    use amb_plugin::Permission;
+    let sidecar = crate::session::sidecar_path(photo);
+    let settings = if sidecar.is_file() {
+        amb_protocol::DevelopState::load(&sidecar)
+            .map_err(|e| format!("{}: {e}", sidecar.display()))?
+            .settings()
+            .clone()
+    } else {
+        BTreeMap::new()
+    };
+    let wants = |p: Permission| permissions.contains(&p);
+    let img = if wants(Permission::PhotoInfo) || wants(Permission::PhotoStats) {
+        let source = amb_engine::source_path(photo);
+        Some(amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?)
+    } else {
+        None
+    };
+    Ok(amb_plugin::Context {
+        settings: amb_plugin::Context::settings_json(&settings),
+        photo: img
+            .as_ref()
+            .filter(|_| wants(Permission::PhotoInfo))
+            .map(amb_plugin::photo::info),
+        stats: img
+            .as_ref()
+            .filter(|_| wants(Permission::PhotoStats))
+            .map(|img| amb_plugin::photo::stats(img, &settings)),
+        seed,
+    })
+}
 
 /// Files shared with a plugin: its manifest, module and source, not build output.
 const SKIP: [&str; 3] = ["target", ".git", "Cargo.lock"];
@@ -567,6 +607,37 @@ mod tests {
         std::fs::write(src.join("src/lib.rs"), "// code").unwrap();
         std::fs::write(src.join("target/x/big.bin"), "build output").unwrap();
         src
+    }
+
+    #[test]
+    fn a_photo_that_isnt_open_gets_its_sidecars_settings() {
+        let dir = temp("context");
+        let photo = dir.join("a.dng");
+        amb_testkit::dng::write(
+            &photo,
+            &amb_testkit::patterns::generate("ramp").unwrap(),
+            &Default::default(),
+        )
+        .unwrap();
+        let none = context_for_file(&photo, &[], 7).unwrap();
+        assert!(none.settings.is_empty() && none.photo.is_none() && none.stats.is_none());
+        crate::library::paste_to_file(
+            &photo,
+            &[amb_protocol::Command::SetParam {
+                name: "Exposure2012".into(),
+                value: json!(0.5),
+            }],
+        )
+        .unwrap();
+        let all = [
+            amb_plugin::Permission::PhotoInfo,
+            amb_plugin::Permission::PhotoStats,
+        ];
+        let ctx = context_for_file(&photo, &all, 7).unwrap();
+        assert_eq!(ctx.settings["Exposure2012"], json!(0.5));
+        assert!(ctx.photo.is_some() && ctx.stats.is_some());
+        assert_eq!(ctx.seed, 7);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

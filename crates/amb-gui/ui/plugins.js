@@ -12,6 +12,7 @@ const pluginUi = {
   params: new Map(),      // id -> { name: value } chosen this session
   recipes: {},            // id -> the user's saved recipes [{ name, params }]
   recipe: new Map(),      // id -> the recipe picked ("b:<name>" built in, "u:<name>" yours)
+  batch: null,            // photo paths to run on, when opened from the library
   wired: false,
 };
 
@@ -217,12 +218,45 @@ function showPluginPanel(which) {
   }
 }
 
+// Run on each photo selected in the library, with its own settings.
+async function runPluginBatch(p) {
+  const paths = pluginUi.batch;
+  $("plugin-result").textContent = "Running…";
+  const off = await tauri.event.listen("library-progress", (e) => {
+    const q = e.payload;
+    if (q.done < q.total) $("plugin-result").textContent = `Running on ${q.done + 1} of ${q.total}: ${q.name}`;
+  });
+  try {
+    const r = await invoke("run_plugin_many", { id: p.id, params: paramValues(p), paths });
+    for (const path of r.changed) {
+      const photo = libPhoto(path);
+      if (photo) {
+        photo.edited = true;
+        updateCell(photo);
+        stripUpdate(path, { edited: true });
+      }
+      refreshThumb(path);
+    }
+    if (r.state) {
+      setState(r.state);
+      requestPreview(false);
+    }
+    const failed = r.errors.length ? ` · ${r.errors.length} failed: ${r.errors[0]}` : "";
+    const note = `Changed ${r.changed.length} of ${paths.length} photo${paths.length === 1 ? "" : "s"}${failed}`;
+    $("plugin-result").textContent = [r.message, note].filter(Boolean).join(" · ");
+    toast(`${p.manifest.name}: ${note}`, r.errors.length > 0);
+  } finally {
+    off();
+  }
+}
+
 async function runSelectedPlugin() {
   const p = pluginById(pluginUi.selected);
-  if (!p || !ui.info) return;
+  if (!p || (!ui.info && !pluginUi.batch)) return;
   $("plugin-run").disabled = true;
   $("plugin-result").textContent = "Running…";
   try {
+    if (pluginUi.batch) return await runPluginBatch(p);
     const r = await invoke("run_plugin", { id: p.id, params: paramValues(p) });
     setState(r.state);
     requestPreview(false);
@@ -393,6 +427,10 @@ function wirePlugins() {
 
 async function pluginsFlow() {
   wirePlugins();
+  // From the library, a plugin runs on the selected photos.
+  const sel = libraryOn() ? selectedPhotos().map((p) => p.path) : [];
+  pluginUi.batch = sel.length ? sel : null;
+  $("plugin-run").textContent = pluginUi.batch ? `Run on ${sel.length} photo${sel.length === 1 ? "" : "s"}` : "Run";
   await loadPlugins();
   showPluginPanel("detail");
   renderPlugins();

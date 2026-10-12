@@ -27,6 +27,7 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
   - Large previews are the camera's embedded preview at 1024 or 2048 pixels, then the edit's render for edited photos (both cached).
 - **Virtual copies** (Ctrl+', or Make a virtual copy in the panel): a second edit of the same photo, listed right after it as "IMG_0001.nef · Copy 2" (below).
 - **Copy and paste an edit** (Lightroom's Sync): Copy settings on one photo (Ctrl+Shift+C), select others, Paste settings (Ctrl+Shift+V).
+- **Run a plugin…** on the selection: each photo gets the plugin's result for its own settings ([ai/plugins.md](../ai/plugins.md)).
   - you choose the setting groups; crop, transform, masks and retouching are off by default
   - a ticked group becomes exactly the source's: settings the source doesn't have go back to their defaults
   - it runs as protocol commands: the open photo gets one undo step, the others their sidecars

@@ -79,7 +79,29 @@ pub struct PhotoInfo {
     /// Pick or reject.
     #[serde(default)]
     pub flag: Option<Flag>,
+    /// Title, caption, creator and copyright, as Lightroom's Metadata panel
+    /// keeps them (`dc:title`, `dc:description`, `dc:creator`, `dc:rights`).
+    /// Writing, `None` keeps what the file has and `""` removes it, so code
+    /// that only knows the rating can't lose them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub caption: Option<String>,
+    /// Several creators are separated by "; ".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub creator: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub copyright: Option<String>,
 }
+
+/// The Dublin Core properties [`PhotoInfo`]'s text fields are kept in, and
+/// whether each is a list (`rdf:Seq`) rather than a text (`rdf:Alt`).
+const DC_TEXTS: [(&str, bool); 4] = [
+    ("title", false),
+    ("description", false),
+    ("creator", true),
+    ("rights", false),
+];
 
 impl PhotoInfo {
     /// Trimmed, non-empty, unique keywords and a rating in range.
@@ -101,6 +123,20 @@ impl PhotoInfo {
                 .filter(|l| !l.is_empty())
                 .map(str::to_string),
             flag: self.flag,
+            title: self.title.as_deref().map(|t| t.trim().to_string()),
+            caption: self.caption.as_deref().map(|t| t.trim().to_string()),
+            creator: self.creator.as_deref().map(|t| t.trim().to_string()),
+            copyright: self.copyright.as_deref().map(|t| t.trim().to_string()),
+        }
+    }
+
+    /// The text field kept in `dc:<local>`.
+    fn text_mut(&mut self, local: &str) -> &mut Option<String> {
+        match local {
+            "title" => &mut self.title,
+            "description" => &mut self.caption,
+            "creator" => &mut self.creator,
+            _ => &mut self.copyright,
         }
     }
 }
@@ -153,6 +189,10 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
     let mut in_flag = false;
     let mut rated_reject = false;
     let mut in_li = false;
+    // Inside dc:title and the like: which, and the items read so far.
+    let mut in_text: Option<&'static str> = None;
+    let mut items: Vec<String> = Vec::new();
+    let mut in_item = false;
     loop {
         match reader.read_resolved_event() {
             Ok((ns, Event::Start(e))) | Ok((ns, Event::Empty(e))) => {
@@ -169,6 +209,14 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                     in_flag = true;
                 } else if in_subject && is(RDF_NS) && local == b"li" {
                     in_li = true;
+                } else if is(DC_NS) {
+                    if let Some((name, _)) = DC_TEXTS.iter().find(|(n, _)| n.as_bytes() == local) {
+                        in_text = Some(name);
+                        items.clear();
+                    }
+                } else if in_text.is_some() && is(RDF_NS) && local == b"li" {
+                    in_item = true;
+                    items.push(String::new());
                 }
                 for a in e.attributes().flatten() {
                     let (ans, alocal) = reader.resolve_attribute(a.key);
@@ -192,7 +240,11 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
             }
             Ok((_, Event::Text(t))) => {
                 let v = t.unescape().map(|v| v.to_string()).unwrap_or_default();
-                if in_li {
+                if in_item {
+                    if let Some(last) = items.last_mut() {
+                        last.push_str(&v);
+                    }
+                } else if in_li {
                     info.keywords.push(v);
                 } else if in_label {
                     info.label = Some(v);
@@ -215,6 +267,18 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                     in_flag = false;
                 } else if is(RDF_NS) && local.as_ref() == b"li" {
                     in_li = false;
+                    in_item = false;
+                } else if let Some(name) =
+                    in_text.filter(|n| is(DC_NS) && local.as_ref() == n.as_bytes())
+                {
+                    // A text keeps its first (x-default) item; creators are joined.
+                    let joined = if name == "creator" {
+                        items.join("; ")
+                    } else {
+                        items.first().cloned().unwrap_or_default()
+                    };
+                    *info.text_mut(name) = Some(joined);
+                    in_text = None;
                 }
             }
             Ok((_, Event::Eof)) | Err(_) => break,
@@ -369,6 +433,38 @@ fn apply_info(foreign: &mut Foreign, info: &PhotoInfo) {
         foreign
             .attributes
             .push((format!("{p}:Label"), label.clone()));
+    }
+    for (local, list) in DC_TEXTS {
+        let Some(text) = info.clone().text_mut(local).clone() else {
+            continue;
+        };
+        let ns = foreign.namespaces.clone();
+        foreign
+            .attributes
+            .retain(|(name, _)| resolve(name, &ns) != (Some(DC_NS), local));
+        foreign.elements.retain(|e| {
+            let (uri, l) = element_ns(e, &ns);
+            !(uri.as_deref() == Some(DC_NS) && l == local)
+        });
+        if text.is_empty() {
+            continue;
+        }
+        let p = prefix_for(foreign, DC_NS, "dc");
+        let element = if list {
+            let items: String = text
+                .split(';')
+                .map(str::trim)
+                .filter(|t| !t.is_empty())
+                .map(|t| format!("<rdf:li>{}</rdf:li>", escape_text(t)))
+                .collect();
+            format!("<{p}:{local}><rdf:Seq>{items}</rdf:Seq></{p}:{local}>")
+        } else {
+            format!(
+                "<{p}:{local}><rdf:Alt><rdf:li xml:lang=\"x-default\">{}</rdf:li></rdf:Alt></{p}:{local}>",
+                escape_text(&text)
+            )
+        };
+        foreign.elements.push(element);
     }
     if !info.keywords.is_empty() {
         let p = prefix_for(foreign, DC_NS, "dc");
@@ -689,6 +785,50 @@ pub fn write_atomic(path: &Path, text: &str) -> Result<(), Error> {
 mod tests {
     use super::*;
 
+    #[test]
+    fn title_caption_creator_and_copyright_round_trip() {
+        let info = PhotoInfo {
+            rating: Some(3),
+            title: Some("Harbour at dawn".into()),
+            caption: Some("Boats & gulls <early>".into()),
+            creator: Some("Ann; Bo".into()),
+            copyright: Some("© 2026 Ann".into()),
+            ..Default::default()
+        };
+        let xmp = with_info(None, &info).unwrap();
+        assert!(
+            xmp.contains("<rdf:Seq><rdf:li>Ann</rdf:li><rdf:li>Bo</rdf:li></rdf:Seq>"),
+            "{xmp}"
+        );
+        let back = read_info(&xmp);
+        assert_eq!(back.title.as_deref(), Some("Harbour at dawn"));
+        assert_eq!(back.caption.as_deref(), Some("Boats & gulls <early>"));
+        assert_eq!(back.creator.as_deref(), Some("Ann; Bo"));
+        assert_eq!(back.copyright.as_deref(), Some("© 2026 Ann"));
+        // Changing only the rating keeps them; "" removes one.
+        let rated = with_info(
+            Some(&xmp),
+            &PhotoInfo {
+                rating: Some(5),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(read_info(&rated).title.as_deref(), Some("Harbour at dawn"));
+        let cleared = with_info(
+            Some(&rated),
+            &PhotoInfo {
+                title: Some(String::new()),
+                ..read_info(&rated)
+            },
+        )
+        .unwrap();
+        let c = read_info(&cleared);
+        assert_eq!(c.title, None);
+        assert_eq!(c.copyright.as_deref(), Some("© 2026 Ann"));
+        assert_eq!(c.rating, Some(5));
+    }
+
     const SIDECAR: &str = r#"<x:xmpmeta xmlns:x="adobe:ns:meta/">
  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:Description rdf:about=""
@@ -716,6 +856,7 @@ mod tests {
             keywords: vec!["sunset".into(), " family ".into(), "Sunset".into()],
             label: info.label.clone(),
             flag: None,
+            ..Default::default()
         };
         let out = with_info(Some(SIDECAR), &new).unwrap();
         let back = read_info(&out);
@@ -734,6 +875,7 @@ mod tests {
             keywords: vec!["a & b".into()],
             label: Some("Green".into()),
             flag: None,
+            ..Default::default()
         };
         let fresh = with_info(None, &both).unwrap();
         assert_eq!(read_info(&fresh), both);
@@ -802,6 +944,7 @@ mod tests {
             keywords: vec!["sunset".into()],
             label: None,
             flag: None,
+            ..Default::default()
         };
         let out = with_info(Some(&lr), &info).unwrap();
         assert!(

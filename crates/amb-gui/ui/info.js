@@ -47,6 +47,10 @@ function renderInfo() {
     return chip;
   }));
   $("tag-input").disabled = !on;
+  for (const f of $("info-meta").querySelectorAll("[data-meta]")) {
+    f.disabled = !on;
+    if (document.activeElement !== f) f.value = infoState.info[f.dataset.meta] ?? "";
+  }
   const have = new Set(infoState.info.keywords.map((k) => k.toLowerCase()));
   $("tag-suggest").replaceChildren(...infoState.recent.filter((k) => !have.has(k.toLowerCase())).slice(0, 50)
     .map((k) => Object.assign(document.createElement("option"), { value: k })));
@@ -135,6 +139,16 @@ function wireInfo() {
     $("label-swatches").append(b);
   }
   for (const b of $("flag-buttons").querySelectorAll("button")) b.addEventListener("click", () => setFlag(b.dataset.flag));
+  // Title, caption, creator and copyright: saved when the field is left.
+  for (const f of $("info-meta").querySelectorAll("[data-meta]")) {
+    f.addEventListener("change", () => {
+      if (!ui.info) return;
+      saveInfo({ ...infoState.info, [f.dataset.meta]: f.value.trim() });
+      status(`${f.closest("label").firstChild.textContent.trim()} saved`);
+    });
+    // Typing in them isn't a shortcut.
+    f.addEventListener("keydown", (e) => e.stopPropagation());
+  }
   const input = $("tag-input");
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === "," || e.key === "Tab") {

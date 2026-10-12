@@ -134,6 +134,19 @@ pub struct Tags {
     pub keywords: Vec<String>,
     /// Colour label ("Red", ...): XMP only (`xmp:Label`), as Lightroom exports it.
     pub label: Option<String>,
+    /// Title (XMP `dc:title`) and caption (`dc:description`, EXIF
+    /// ImageDescription), with the full policies.
+    pub title: Option<String>,
+    pub caption: Option<String>,
+    /// Creator (`dc:creator`, EXIF Artist; several separated by "; ") and
+    /// copyright (`dc:rights`, EXIF Copyright), with every policy but None;
+    /// they replace the camera's own Artist and Copyright.
+    pub creator: Option<String>,
+    pub copyright: Option<String>,
+}
+
+fn given(s: &Option<String>) -> Option<&str> {
+    s.as_deref().map(str::trim).filter(|t| !t.is_empty())
 }
 
 /// The EXIF TIFF block for an export (orientation is always 1: exports are
@@ -156,11 +169,19 @@ pub fn build_with_tags(
         MetadataPolicy::All | MetadataPolicy::AllExceptLocation
     );
     let mut ifd0 = vec![short(0x0112, 1), ascii(0x0131, "Ambrotype")];
-    if let Some(a) = &meta.artist {
+    if let Some(a) = given(&tags.creator).or(meta.artist.as_deref()) {
         ifd0.push(ascii(0x013B, a));
     }
-    if let Some(c) = &meta.copyright {
+    if let Some(c) = given(&tags.copyright).or(meta.copyright.as_deref()) {
         ifd0.push(ascii(0x8298, c));
+    }
+    if let Some(d) = given(&tags.caption).filter(|_| {
+        matches!(
+            policy,
+            MetadataPolicy::All | MetadataPolicy::AllExceptLocation
+        )
+    }) {
+        ifd0.push(ascii(0x010E, d));
     }
     let mut exif = Vec::new();
     let mut gps = Vec::new();
@@ -337,9 +358,14 @@ mod tests {
         let tags = Tags {
             rating: Some(4),
             keywords: vec!["sea".into(), "zon".into()],
-            label: None,
+            caption: Some("Low tide".into()),
+            creator: Some("Ann".into()),
+            ..Default::default()
         };
         let t = build_with_tags(&meta(), MetadataPolicy::AllExceptLocation, &tags).unwrap();
+        // The creator replaces the camera's artist; the caption is ImageDescription.
+        assert_eq!(find(&read_ifd(&t, 8), 0x013B).unwrap(), b"Ann\0");
+        assert_eq!(find(&read_ifd(&t, 8), 0x010E).unwrap(), b"Low tide\0");
         let ifd0 = read_ifd(&t, 8);
         assert!(ifd0.windows(2).all(|w| w[0].0 < w[1].0), "tags sorted");
         assert_eq!(find(&ifd0, 0x4746).unwrap(), 4u16.to_le_bytes());
@@ -353,9 +379,11 @@ mod tests {
             String::from_utf16(&units[..units.len() - 1]).unwrap(),
             "sea;zon"
         );
-        // "Copyright only" leaves them out.
+        // "Copyright only" leaves them out, but keeps the creator.
         let t = build_with_tags(&meta(), MetadataPolicy::CopyrightOnly, &tags).unwrap();
         assert!(find(&read_ifd(&t, 8), 0x4746).is_none());
+        assert!(find(&read_ifd(&t, 8), 0x010E).is_none());
+        assert_eq!(find(&read_ifd(&t, 8), 0x013B).unwrap(), b"Ann\0");
     }
 
     #[test]

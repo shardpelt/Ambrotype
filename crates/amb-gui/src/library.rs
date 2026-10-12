@@ -104,6 +104,15 @@ pub struct InfoChange {
     pub add_keywords: Vec<String>,
     #[serde(default)]
     pub remove_keywords: Vec<String>,
+    /// Title, caption, creator and copyright: the text, or "" to clear.
+    #[serde(default)]
+    pub title: Option<String>,
+    #[serde(default)]
+    pub caption: Option<String>,
+    #[serde(default)]
+    pub creator: Option<String>,
+    #[serde(default)]
+    pub copyright: Option<String>,
 }
 
 impl InfoChange {
@@ -117,6 +126,16 @@ impl InfoChange {
         }
         if let Some(f) = &self.flag {
             out.flag = sidecar::Flag::parse(f);
+        }
+        for (field, change) in [
+            (&mut out.title, &self.title),
+            (&mut out.caption, &self.caption),
+            (&mut out.creator, &self.creator),
+            (&mut out.copyright, &self.copyright),
+        ] {
+            if let Some(v) = change {
+                *field = Some(v.clone());
+            }
         }
         let remove: Vec<String> = self
             .remove_keywords
@@ -296,6 +315,10 @@ pub fn export_many(
                     rating: s.info.rating,
                     keywords: s.info.keywords.clone(),
                     label: s.info.label.clone(),
+                    title: s.info.title.clone(),
+                    caption: s.info.caption.clone(),
+                    creator: s.info.creator.clone(),
+                    copyright: s.info.copyright.clone(),
                 };
             }
             s.export(&dest, &settings, lens)

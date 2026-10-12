@@ -37,7 +37,19 @@ pub fn xmp_packet(tags: &Tags) -> Option<String> {
         .iter()
         .filter(|k| !k.trim().is_empty())
         .collect();
-    if rating.is_none() && label.is_none() && keywords.is_empty() {
+    let texts: Vec<(&str, bool, &str)> = [
+        ("title", false, &tags.title),
+        ("description", false, &tags.caption),
+        ("creator", true, &tags.creator),
+        ("rights", false, &tags.copyright),
+    ]
+    .into_iter()
+    .filter_map(|(name, list, v)| {
+        let v = v.as_deref().map(str::trim).filter(|t| !t.is_empty())?;
+        Some((name, list, v))
+    })
+    .collect();
+    if rating.is_none() && label.is_none() && keywords.is_empty() && texts.is_empty() {
         return None;
     }
     let mut out = String::from(
@@ -55,14 +67,35 @@ pub fn xmp_packet(tags: &Tags) -> Option<String> {
     if let Some(l) = label {
         out.push_str(&format!("\n    xmp:Label=\"{}\"", escape(l)));
     }
-    if keywords.is_empty() {
+    if keywords.is_empty() && texts.is_empty() {
         out.push_str("/>\n");
     } else {
-        out.push_str(">\n   <dc:subject><rdf:Bag>");
-        for k in &keywords {
-            out.push_str(&format!("<rdf:li>{}</rdf:li>", escape(k.trim())));
+        out.push_str(">\n");
+        if !keywords.is_empty() {
+            out.push_str("   <dc:subject><rdf:Bag>");
+            for k in &keywords {
+                out.push_str(&format!("<rdf:li>{}</rdf:li>", escape(k.trim())));
+            }
+            out.push_str("</rdf:Bag></dc:subject>\n");
         }
-        out.push_str("</rdf:Bag></dc:subject>\n  </rdf:Description>\n");
+        for (name, list, v) in texts {
+            let items = if list {
+                let li: String = v
+                    .split(';')
+                    .map(str::trim)
+                    .filter(|t| !t.is_empty())
+                    .map(|t| format!("<rdf:li>{}</rdf:li>", escape(t)))
+                    .collect();
+                format!("<rdf:Seq>{li}</rdf:Seq>")
+            } else {
+                format!(
+                    "<rdf:Alt><rdf:li xml:lang=\"x-default\">{}</rdf:li></rdf:Alt>",
+                    escape(v)
+                )
+            };
+            out.push_str(&format!("   <dc:{name}>{items}</dc:{name}>\n"));
+        }
+        out.push_str("  </rdf:Description>\n");
     }
     out.push_str(" </rdf:RDF>\n</x:xmpmeta>\n<?xpacket end=\"r\"?>");
     Some(out)
@@ -273,6 +306,9 @@ mod tests {
             rating: Some(4),
             keywords: vec!["zee".into(), "Strand & duin".into()],
             label: Some("Green".into()),
+            title: Some("Duinen".into()),
+            creator: Some("Ann; Bo".into()),
+            ..Default::default()
         }
     }
 
@@ -283,6 +319,14 @@ mod tests {
             p.contains(r#"xmp:Rating="4""#) && p.contains("<rdf:li>Strand &amp; duin</rdf:li>")
         );
         assert!(p.contains(r#"xmp:Label="Green""#), "{p}");
+        assert!(
+            p.contains(r#"<dc:title><rdf:Alt><rdf:li xml:lang="x-default">Duinen</rdf:li>"#),
+            "{p}"
+        );
+        assert!(
+            p.contains("<dc:creator><rdf:Seq><rdf:li>Ann</rdf:li><rdf:li>Bo</rdf:li></rdf:Seq>"),
+            "{p}"
+        );
         assert!(xmp_packet(&Tags::default()).is_none());
         let iptc = iptc_app13(&["x".repeat(100)]).unwrap();
         assert!(iptc.starts_with(b"Photoshop 3.0\0"));

@@ -370,6 +370,12 @@ function renderPanel() {
     return chip;
   }));
   $("lib-tag-input").disabled = n === 0;
+  // Title and the like: the shared text, or empty with "(mixed)".
+  for (const f of $("lib-meta").querySelectorAll("[data-meta]")) {
+    const v = same((p) => p[f.dataset.meta] ?? "");
+    if (document.activeElement !== f) f.value = v ?? "";
+    f.placeholder = n > 1 && v === undefined ? "(mixed)" : "";
+  }
   $("lib-tag-suggest").replaceChildren(...infoState.recent.slice(0, 60).map((k) => Object.assign(document.createElement("option"), { value: k })));
   $("lib-copied").textContent = lib.copied ? `Copied from ${fileName(lib.copied)}` : "";
   $("lib-export").textContent = n > 1 ? `Export ${n} photos…` : "Export…";
@@ -386,7 +392,8 @@ async function libraryChange(change) {
     for (const u of updates) {
       const p = libPhoto(u.path);
       if (!p) continue;
-      Object.assign(p, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag });
+      Object.assign(p, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag,
+        title: u.info.title, caption: u.info.caption, creator: u.info.creator, copyright: u.info.copyright });
       updateCell(p);
       updateCullTile(u.path);
       stripUpdate(u.path, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag ?? null });
@@ -395,7 +402,8 @@ async function libraryChange(change) {
     const what = change.rating !== undefined ? (change.rating ? `Rated ${"★".repeat(change.rating)}` : "Rating cleared")
       : change.label !== undefined ? (change.label ? `${change.label} label` : "Label removed")
       : change.flag !== undefined ? FLAG_DONE[change.flag]
-      : "Keywords changed";
+      : change.add_keywords || change.remove_keywords ? "Keywords changed"
+      : "Saved";
     status(`${what}: ${updates.length} photo${updates.length === 1 ? "" : "s"}`);
     applyViewKeepingCells();
   } catch (e) {
@@ -672,6 +680,11 @@ async function libraryCollage() {
 function wireLibrary() {
   if (lib.wired) return;
   lib.wired = true;
+  // Title, caption, creator and copyright for the selection, when a field is left.
+  for (const f of $("lib-meta").querySelectorAll("[data-meta]")) {
+    f.addEventListener("change", () => libraryChange({ [f.dataset.meta]: f.value.trim() }));
+    f.addEventListener("keydown", (e) => e.stopPropagation());
+  }
   const grid = $("library-grid");
   grid.addEventListener("click", (e) => {
     const cell = e.target.closest(".lib-cell");

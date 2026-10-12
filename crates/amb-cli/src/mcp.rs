@@ -247,7 +247,7 @@ fn tools() -> Value {
         },
         {
             "name": "set_photo_info",
-            "description": "Set a photo's rating (0-5, 0 clears), colour label (Red, Yellow, Green, Blue, Purple, or \"\" to clear), flag (pick, reject, or \"\" to clear) and keywords, written to its sidecar where Lightroom reads them.",
+            "description": "Set a photo's rating (0-5, 0 clears), colour label (Red, Yellow, Green, Blue, Purple, or \"\" to clear), flag (pick, reject, or \"\" to clear), keywords, title, caption, creator and copyright (\"\" clears), written to its sidecar where Lightroom reads them and embedded in exports.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -257,6 +257,10 @@ fn tools() -> Value {
                     "flag": { "type": "string", "enum": ["pick", "reject", ""] },
                     "add_keywords": { "type": "array", "items": { "type": "string" } },
                     "remove_keywords": { "type": "array", "items": { "type": "string" } },
+                    "title": { "type": "string", "description": "\"\" clears it." },
+                    "caption": { "type": "string" },
+                    "creator": { "type": "string", "description": "Several separated by \"; \"." },
+                    "copyright": { "type": "string" },
                 },
                 "required": ["photo"],
             },
@@ -656,6 +660,16 @@ fn set_info(p: &Path, args: &Value) -> Result<Value, String> {
     info.keywords
         .retain(|k| !remove.contains(&k.to_lowercase()));
     info.keywords.extend(list("add_keywords"));
+    for (key, field) in [
+        ("title", &mut info.title),
+        ("caption", &mut info.caption),
+        ("creator", &mut info.creator),
+        ("copyright", &mut info.copyright),
+    ] {
+        if let Some(v) = args.get(key).and_then(Value::as_str) {
+            *field = Some(v.trim().to_string());
+        }
+    }
     let text = sidecar::with_info(on_disk.as_deref(), &info).map_err(|e| e.to_string())?;
     sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())?;
     let back = sidecar::read_info(&text);

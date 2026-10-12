@@ -39,6 +39,8 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 - **Smart collections** (Show → New smart collection…): photos chosen by rules, worked out each time from the sidecars and capture times, in the folders you name and their subfolders. Rules: rating, colour label, flag, keyword, file name, edited, capture date; all or any of them. Each is a small JSON file beside the collections (`amb_library::smart`). Edit rules… and Delete collection… in the panel; ↻ works them out again.
 - **Collections:** the menu next to Folder… shows a collection instead of the folder. The panel adds the selection to a collection (or a new one); B adds the selection, or the open photo in the editor, to the last collection used, like Lightroom's quick collection. Viewing a collection, the panel can remove photos from it (the files stay), rename it or delete it.
 
+- **Title, caption, creator and copyright** (under the keywords, in the library panel and in the editor): Lightroom's Metadata panel fields, kept in the sidecar as `dc:title`, `dc:description`, `dc:creator` and `dc:rights` and embedded in exports (EXIF ImageDescription, Artist and Copyright, and XMP). A creator and copyright replace the camera's own; "Copyright only" exports keep them. In the library the panel shows what the selection shares, or "(mixed)".
+
 The rating, label, flag and keyword keys work in the editor too, on the open photo. Its rating block has the label swatches and the flag buttons.
 
 ## Import
@@ -116,6 +118,6 @@ Lightroom keeps each photo's edit history and snapshots in its catalogue. Ours g
 - Collections don't follow photos moved outside Ambrotype.
 - Import: moving instead of copying, a second backup copy, ejecting the card, a develop preset on import, picking single photos to import.
 - Zooming in the loupe and compare views (open the photo in the editor for 100%).
-- A metadata panel (EXIF, caption, copyright) and editing keyword hierarchies.
+- The rest of Lightroom's metadata panel (location, IPTC contact fields, headline) and editing keyword hierarchies. Camera details are shown under the histogram, not in the panel.
 - Undo for library changes. Ratings, labels and keywords are written straight away; pasted edits can be undone per photo in the editor.
 - Background work: big pastes and exports run while you wait, with progress in the status bar.

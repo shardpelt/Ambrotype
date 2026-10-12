@@ -806,6 +806,10 @@ async fn export(
                     rating: info.rating,
                     keywords: info.keywords,
                     label: info.label,
+                    title: info.title,
+                    caption: info.caption,
+                    creator: info.creator,
+                    copyright: info.copyright,
                 };
             }
         }

@@ -71,6 +71,13 @@
           <input id="tag-input" type="text" list="tag-suggest" placeholder="Add keywords…" spellcheck="false" aria-label="Add keywords">
           <datalist id="tag-suggest"></datalist>
         </div>
+        <details class="meta-fields" id="info-meta">
+          <summary>Title, caption &amp; copyright</summary>
+          <label>Title <input data-meta="title" type="text" spellcheck="true"></label>
+          <label>Caption <textarea data-meta="caption" rows="2" spellcheck="true"></textarea></label>
+          <label>Creator <input data-meta="creator" type="text" spellcheck="false" placeholder="Name; another name"></label>
+          <label>Copyright <input data-meta="copyright" type="text" spellcheck="false" placeholder="© 2026 Your Name"></label>
+        </details>
         <p class="hint">Saved to the photo's .xmp straight away, where Lightroom reads them, and put in exports. Keys 1–5 rate, 0 clears, 6–9 set a colour label, P picks, X rejects, U unflags.</p>
       </section>
       <section class="side-section history" id="block-history">
@@ -251,6 +258,13 @@
         <div id="lib-keywords" class="lib-keywords"></div>
         <input id="lib-tag-input" type="text" list="lib-tag-suggest" placeholder="Add to the selection…" spellcheck="false" aria-label="Add keywords to the selection">
         <datalist id="lib-tag-suggest"></datalist>
+        <details class="meta-fields" id="lib-meta">
+          <summary>Title, caption &amp; copyright</summary>
+          <label>Title <input data-meta="title" type="text" data-needs="any"></label>
+          <label>Caption <textarea data-meta="caption" rows="2" data-needs="any"></textarea></label>
+          <label>Creator <input data-meta="creator" type="text" spellcheck="false" data-needs="any"></label>
+          <label>Copyright <input data-meta="copyright" type="text" spellcheck="false" data-needs="any"></label>
+        </details>
         <h3>Collections</h3>
         <div class="col-line">
           <select id="lib-add-to" aria-label="Collection to add to"></select>

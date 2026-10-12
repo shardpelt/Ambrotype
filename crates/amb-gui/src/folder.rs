@@ -28,6 +28,11 @@ pub struct FolderPhoto {
     pub flag: Option<amb_protocol::sidecar::Flag>,
     /// The sidecar has develop settings.
     pub edited: bool,
+    /// Title, caption, creator and copyright (Lightroom's Metadata panel).
+    pub title: Option<String>,
+    pub caption: Option<String>,
+    pub creator: Option<String>,
+    pub copyright: Option<String>,
 }
 
 pub fn is_raw(path: &Path) -> bool {
@@ -244,6 +249,10 @@ pub fn describe(paths: Vec<PathBuf>) -> Vec<FolderPhoto> {
                 keywords: info.keywords,
                 flag: info.flag,
                 edited,
+                title: info.title,
+                caption: info.caption,
+                creator: info.creator,
+                copyright: info.copyright,
             }
         })
         .collect()
@@ -410,6 +419,7 @@ mod tests {
                     keywords: vec![],
                     label: None,
                     flag: None,
+                    ..Default::default()
                 },
             )
             .unwrap(),

@@ -644,6 +644,7 @@ mod tests {
                 rating: Some(5),
                 keywords: vec!["noordzee".into()],
                 label: None,
+                ..Default::default()
             };
             let path = tmp(name);
             export(&img, &meta, &s, &path).unwrap();

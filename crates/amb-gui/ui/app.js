@@ -425,6 +425,7 @@ function setState(state) {
   if (ui.crop.on && cropKey(ui.settings) !== crop) reloadCrop();
   masksStateChanged();
   spotsStateChanged();
+  learnStateChanged();
 }
 
 // Run protocol commands; several commands with a `group` label are one undo step.
@@ -1527,6 +1528,7 @@ async function init() {
   $("btn-open").addEventListener("click", openDialog);
   $("btn-library").addEventListener("click", () => toggleLibrary());
   $("btn-open-empty").addEventListener("click", openDialog);
+  initLearn();
   $("btn-save").addEventListener("click", save);
   $("btn-export").addEventListener("click", exportFlow);
   $("btn-undo").addEventListener("click", () => run([{ cmd: "undo" }]));

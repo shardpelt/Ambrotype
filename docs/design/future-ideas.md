@@ -36,6 +36,8 @@ Play with settings and discover looks you wouldn't have tried.
 
 ## Tutorial mode
 
+*v1 built 2026-10-12* (Learn, F1, or "Learn the basics" on the empty screen): lessons are `crates/amb-gui/ui/lessons.json`; a card shows one step, outlines the control it is about (opening its panel), and moves on by itself when the step's goal is met in the photo's settings (`changed`, `above`/`below`, a history label). Two lessons: Editing basics (on any open photo) and Coming from Lightroom. Not yet: a bundled sample raw, goals on image statistics, the hover before/after strip, translations, the AI coach.
+
 A guided, interactive way to learn editing inside the app. Free, unlike most courses.
 
 - **Lessons:**

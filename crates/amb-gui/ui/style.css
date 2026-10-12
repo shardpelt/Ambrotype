@@ -163,6 +163,17 @@ dialog menu button { white-space: nowrap; }
 dialog label.wide { margin-top: 12px; }
 dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-top: 10px; color: var(--text); }
 .match-button { width: 100%; margin: 4px 0 6px; }
+/* Learn */
+.lesson-card { position: absolute; left: 16px; bottom: 16px; width: 340px; background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 12px 14px; box-shadow: 0 6px 24px rgba(0, 0, 0, .45); z-index: 20; }
+.lesson-head { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 11px; }
+.lesson-card p { margin: 8px 0; line-height: 1.45; }
+.lesson-buttons { display: flex; justify-content: flex-end; gap: 6px; }
+.lesson-target { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; animation: lesson-pulse 1.6s ease-in-out infinite; }
+@keyframes lesson-pulse { 50% { outline-color: transparent; } }
+.learn-list { display: flex; flex-direction: column; gap: 8px; }
+.learn-item { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; padding: 10px 12px; }
+.learn-item span { color: var(--muted); font-size: 12px; }
+#empty button + button { margin-left: 8px; }
 .match-button + .match-button { margin-top: 0; }
 #surprise-dialog { width: 780px; }
 .surprise-controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: end; }

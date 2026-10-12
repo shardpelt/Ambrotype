@@ -1,0 +1,86 @@
+{
+  "format": "ambrotype-lessons/1",
+  "about": "Lessons for Learn (F1). Each step has text, optionally a control to point at ({\"setting\": name} or {\"element\": id}) and a goal that moves on by itself when met: {\"changed\": name}, {\"setting\": name, \"above\": n} or {\"below\": n}, {\"history\": label}. Without a goal, Next moves on. Translations can be added as more files later.",
+  "lessons": [
+    {
+      "id": "basics",
+      "title": "Editing basics",
+      "summary": "White balance, light, contrast and colour on the photo you have open, in about five minutes.",
+      "needs_photo": true,
+      "steps": [
+        {
+          "text": "Every change you make is a setting, saved next to the photo in an .xmp file that Lightroom reads too. Nothing changes the photo itself. Let's start at the top of Basic."
+        },
+        {
+          "text": "White balance makes white look white. Move Temp: left is cooler (bluer), right is warmer. Try a little, then settle where the greys look neutral.",
+          "highlight": { "setting": "Temperature" },
+          "goal": { "changed": "Temperature" }
+        },
+        {
+          "text": "Exposure sets the overall brightness, in stops. Make the photo as bright as it should be in the middle tones; don't worry about the sky yet.",
+          "highlight": { "setting": "Exposure2012" },
+          "goal": { "changed": "Exposure2012" }
+        },
+        {
+          "text": "Highlights brings back detail in the bright parts (a sky, a white shirt). Pull it to the left, below −10.",
+          "highlight": { "setting": "Highlights2012" },
+          "goal": { "setting": "Highlights2012", "below": -10 }
+        },
+        {
+          "text": "Shadows opens up the dark parts without making the blacks grey. Push it to the right, above +10.",
+          "highlight": { "setting": "Shadows2012" },
+          "goal": { "setting": "Shadows2012", "above": 10 }
+        },
+        {
+          "text": "Whites and Blacks set where the brightest and darkest tones end. Press J for the clipping overlay (red: blown highlights, blue: crushed shadows), then move Blacks a little.",
+          "highlight": { "setting": "Blacks2012" },
+          "goal": { "changed": "Blacks2012" }
+        },
+        {
+          "text": "Vibrance strengthens the quieter colours and leaves skin and strong colours mostly alone; Saturation moves all colours alike. Give the photo some Vibrance.",
+          "highlight": { "setting": "Vibrance" },
+          "goal": { "changed": "Vibrance" }
+        },
+        {
+          "text": "Press \\ (backslash), or Before / After, to compare with the photo as it came from the camera. Press it again to come back.",
+          "highlight": { "element": "btn-before" }
+        },
+        {
+          "text": "Every step is in History. Click an earlier line to go back to it; your later steps stay there (greyed) until you make a new change.",
+          "highlight": { "element": "block-history" }
+        },
+        {
+          "text": "Not sure where to start on the next photo? Auto, beside Tone, sets the six tone sliders for you; then adjust from there. That's the basics. Ctrl+S saves the edit to the sidecar.",
+          "highlight": { "element": "btn-save" }
+        }
+      ]
+    },
+    {
+      "id": "lightroom",
+      "title": "Coming from Lightroom",
+      "summary": "Where Lightroom's panels, presets and shortcuts are here.",
+      "needs_photo": false,
+      "steps": [
+        {
+          "text": "Ambrotype reads and writes Lightroom's own settings: a raw's .xmp sidecar opens here as Lightroom left it, and our edits open in Lightroom. There is no catalogue to import: Library (G) shows a folder as it is.",
+          "highlight": { "element": "btn-library" }
+        },
+        {
+          "text": "Lightroom's presets work as they are. Lightroom's own preset folder is found by itself; Add folder… adds others (.xmp and .lrtemplate). Amount scales a preset, as in Lightroom.",
+          "highlight": { "element": "block-presets" }
+        },
+        {
+          "text": "The panels on the right are the Develop module's, with Lightroom's sliders and ranges. Edit layout (on the toolbar) moves them, and Appearance changes how they look."
+        },
+        {
+          "text": "Masks (M), Spot removal (Q), Crop (R) and the white balance picker (W) are on the toolbar. Many of Lightroom's shortcuts work here, and Settings (the ⚙ button) shows all of them on a keyboard map, where you can change any.",
+          "highlight": { "element": "btn-settings" }
+        },
+        {
+          "text": "Edits save to the sidecar with Ctrl+S, and when you move to another photo. Lightroom picks them up with Metadata → Read Metadata from File.",
+          "highlight": { "element": "btn-save" }
+        }
+      ]
+    }
+  ]
+}

@@ -89,6 +89,7 @@
         <p class="empty-title">Open a photo to start</p>
         <p class="hint">Drop a file here, or press Ctrl+O. Lightroom presets and XMP sidecars work as they are.</p>
         <button id="btn-open-empty" class="primary">Open photo…</button>
+        <button id="btn-learn-empty" title="Short guided lessons (F1)">Learn the basics</button>
       </div>
       <img id="preview" alt="" hidden>
       <canvas id="crop-canvas" class="crop-canvas" hidden></canvas>
@@ -96,6 +97,13 @@
       <canvas id="spot-canvas" class="crop-canvas spot-canvas" hidden></canvas>
       <div class="badge" id="before-badge" hidden>Before</div>
       <div class="busy" id="busy" hidden></div>
+      <!-- Learn: the current lesson step (learn.js). -->
+      <aside id="lesson-card" class="lesson-card" hidden>
+        <div class="lesson-head"><span id="lesson-title"></span><button id="lesson-close" class="small" title="End the lesson">×</button></div>
+        <p id="lesson-text"></p>
+        <p id="lesson-goal" class="hint">Moves on by itself when you've done it.</p>
+        <div class="lesson-buttons"><button id="lesson-back" class="small">Back</button><button id="lesson-next" class="small primary">Next</button></div>
+      </aside>
     </section>
 
     <section class="filmstrip" id="filmstrip" hidden aria-label="Photos in this folder">
@@ -345,6 +353,16 @@
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary">Merge</button>
       </menu>
+    </form>
+  </dialog>
+
+  <!-- Learn: pick a lesson (learn.js). -->
+  <dialog id="learn-dialog">
+    <form method="dialog">
+      <h2>Learn</h2>
+      <div id="learn-list" class="learn-list"></div>
+      <p class="hint">Lessons are a data file (lessons.json), so anyone can write or translate one.</p>
+      <menu><button value="cancel" formnovalidate>Close</button></menu>
     </form>
   </dialog>
 
@@ -963,6 +981,7 @@
   <script src="collections.js"></script>
   <script src="plugins.js"></script>
   <script src="picker.js"></script>
+  <script src="learn.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -214,7 +214,7 @@ Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the plann
 | No HEIC/HEIF, by choice (HEVC patent licensing); AVIF covers modern delivery | Limit | Apple-ecosystem delivery needs AVIF or JPEG | [ARCHITECTURE.md](ARCHITECTURE.md):67 |
 | No PSD, by choice; TIFF covers the Photoshop round trip | Limit | No layered Photoshop output | [ARCHITECTURE.md](ARCHITECTURE.md):68 |
 | No DNG export of the developed image | Missing | No interchange of a developed result as DNG | [ARCHITECTURE.md](ARCHITECTURE.md):73 |
-| Watermarks have one bundled font (FreeSans Bold), no rotation or tiling, and can't be shared as presets through the hub | Limit | Lightroom has more watermark options | `crates/amb-export/src/watermark.rs` |
+| Watermarks have one bundled font (FreeSans Bold) and can't be shared as presets through the hub (rotation and tiling exist since 2026-10-12) | Limit | Lightroom has more watermark options | `crates/amb-export/src/watermark.rs` |
 | Integer outputs hard-clip to the gamut; no gamut mapping | Limit | Saturated colours clip when exporting to sRGB or P3 | `crates/amb-export/src/lib.rs`:241; `crates/amb-engine/src/output.rs`:21; [ARCHITECTURE.md](ARCHITECTURE.md):77 |
 | Output sharpening (screen, matte, glossy; low/standard/high) is Model v1 with guessed radius and strength | Approx | Differs from Lightroom's output sharpening | `crates/amb-export/src/geometry.rs`:176-185 |
 

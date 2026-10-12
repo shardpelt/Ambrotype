@@ -16,6 +16,9 @@
 //!   percentage of the photo's short edge.
 //! - `opacity` 0–100; `shadow`: a soft dark copy behind text, so it reads on
 //!   light and dark parts alike.
+//! - `rotate`: degrees, counter-clockwise (−180–180).
+//! - `tile`: repeat the mark across the whole photo, in rows offset by half
+//!   a step (`anchor` and `inset` are then unused).
 //!
 //! Text is set in GNU FreeSans Bold (GPL-3.0-or-later with the font
 //! exception), bundled.
@@ -85,6 +88,14 @@ pub struct Watermark {
     pub inset: f64,
     #[serde(default = "yes")]
     pub shadow: bool,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub rotate: f64,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub tile: bool,
+}
+
+fn is_zero(v: &f64) -> bool {
+    *v == 0.0
 }
 
 fn white() -> String {
@@ -115,6 +126,8 @@ impl Watermark {
             anchor: Anchor::default(),
             inset: default_inset(),
             shadow: true,
+            rotate: 0.0,
+            tile: false,
         }
     }
 
@@ -129,6 +142,7 @@ impl Watermark {
             ("size", self.size, 1.0, 100.0),
             ("opacity", self.opacity, 0.0, 100.0),
             ("inset", self.inset, 0.0, 45.0),
+            ("rotation", self.rotate, -180.0, 180.0),
         ] {
             if !(lo..=hi).contains(&v) {
                 return Err(format!("watermark {what} must be {lo} to {hi}"));
@@ -317,30 +331,59 @@ fn image_layer(
     })
 }
 
-/// Lay the watermark over `img` (output values). `colour` turns an sRGB hex
-/// colour into output values; `to_output` an sRGB-encoded colour.
-pub fn apply(
-    img: &mut Image,
-    w: &Watermark,
-    colour: &dyn Fn(&str) -> [f32; 3],
-    to_output: &dyn Fn([f64; 3]) -> [f32; 3],
-) -> Result<(), String> {
-    w.validate()?;
-    let target = ((img.width as f64 * w.size / 100.0).round() as usize).clamp(1, img.width.max(1));
-    let layer = match &w.image {
-        Some(path) => image_layer(path, target, to_output)?,
-        None => match text_layer(w, target, colour(&w.color)) {
-            Some(l) => l,
-            None => return Ok(()),
-        },
-    };
-    let inset = (img.width.min(img.height) as f64 * w.inset / 100.0).round() as i64;
-    let (fx, fy) = w.anchor.fractions();
-    let x0 =
-        inset + ((img.width as i64 - 2 * inset - layer.width as i64) as f64 * fx).round() as i64;
-    let y0 =
-        inset + ((img.height as i64 - 2 * inset - layer.height as i64) as f64 * fy).round() as i64;
-    let opacity = (w.opacity / 100.0) as f32;
+/// `layer` turned by `degrees` (counter-clockwise) about its centre, in a
+/// box that holds it; colours are interpolated weighted by coverage.
+fn rotated(layer: &Layer, degrees: f64) -> Layer {
+    let (s, c) = degrees.to_radians().sin_cos();
+    let (w, h) = (layer.width as f64, layer.height as f64);
+    let nw = (w * c.abs() + h * s.abs()).ceil() as usize + 2;
+    let nh = (w * s.abs() + h * c.abs()).ceil() as usize + 2;
+    let (cx, cy) = (w / 2.0, h / 2.0);
+    let (ncx, ncy) = (nw as f64 / 2.0, nh as f64 / 2.0);
+    let mut rgb = vec![[0.0f32; 3]; nw * nh];
+    let mut alpha = vec![0.0f32; nw * nh];
+    for y in 0..nh {
+        for x in 0..nw {
+            // Back into the layer (y down: counter-clockwise on screen).
+            let (dx, dy) = (x as f64 + 0.5 - ncx, y as f64 + 0.5 - ncy);
+            let sx = c * dx - s * dy + cx - 0.5;
+            let sy = s * dx + c * dy + cy - 0.5;
+            let (x0, y0) = (sx.floor(), sy.floor());
+            let (fx, fy) = ((sx - x0) as f32, (sy - y0) as f32);
+            let (mut a, mut col) = (0.0f32, [0.0f32; 3]);
+            for (ix, iy, k) in [
+                (x0, y0, (1.0 - fx) * (1.0 - fy)),
+                (x0 + 1.0, y0, fx * (1.0 - fy)),
+                (x0, y0 + 1.0, (1.0 - fx) * fy),
+                (x0 + 1.0, y0 + 1.0, fx * fy),
+            ] {
+                if ix < 0.0 || iy < 0.0 || ix >= w || iy >= h {
+                    continue;
+                }
+                let i = iy as usize * layer.width + ix as usize;
+                let ka = layer.alpha[i] * k;
+                a += ka;
+                for (c, v) in col.iter_mut().zip(layer.rgb[i]) {
+                    *c += v * ka;
+                }
+            }
+            let o = y * nw + x;
+            alpha[o] = a;
+            if a > 0.0 {
+                rgb[o] = col.map(|v| v / a);
+            }
+        }
+    }
+    Layer {
+        width: nw,
+        height: nh,
+        rgb,
+        alpha,
+    }
+}
+
+/// Mix `layer` into `img` with its top left at (x0, y0).
+fn blend(img: &mut Image, layer: &Layer, x0: i64, y0: i64, opacity: f32) {
     for ly in 0..layer.height {
         let y = y0 + ly as i64;
         if y < 0 || y >= img.height as i64 {
@@ -363,6 +406,55 @@ pub fn apply(
             }
         }
     }
+}
+
+/// Lay the watermark over `img` (output values). `colour` turns an sRGB hex
+/// colour into output values; `to_output` an sRGB-encoded colour.
+pub fn apply(
+    img: &mut Image,
+    w: &Watermark,
+    colour: &dyn Fn(&str) -> [f32; 3],
+    to_output: &dyn Fn([f64; 3]) -> [f32; 3],
+) -> Result<(), String> {
+    w.validate()?;
+    let target = ((img.width as f64 * w.size / 100.0).round() as usize).clamp(1, img.width.max(1));
+    let layer = match &w.image {
+        Some(path) => image_layer(path, target, to_output)?,
+        None => match text_layer(w, target, colour(&w.color)) {
+            Some(l) => l,
+            None => return Ok(()),
+        },
+    };
+    let layer = if w.rotate.abs() > 0.01 {
+        rotated(&layer, w.rotate)
+    } else {
+        layer
+    };
+    let opacity = (w.opacity / 100.0) as f32;
+    let (iw, ih) = (img.width as i64, img.height as i64);
+    let (lw, lh) = (layer.width as i64, layer.height as i64);
+    if w.tile {
+        // A grid centred on the photo: half a mark apart across, a mark's
+        // height apart down, every other row shifted by half a step.
+        let (sx, sy) = ((lw * 3 / 2).max(1), (lh * 2).max(1));
+        let (ox, oy) = ((iw - lw) / 2, (ih - lh) / 2);
+        let first_row = -((oy + lh) / sy) - 1;
+        let last_row = (ih - oy) / sy + 1;
+        for row in first_row..=last_row {
+            let shift = if row.rem_euclid(2) == 1 { sx / 2 } else { 0 };
+            let first = -((ox + shift + lw) / sx) - 1;
+            let last = (iw - ox - shift) / sx + 1;
+            for col in first..=last {
+                blend(img, &layer, ox + shift + col * sx, oy + row * sy, opacity);
+            }
+        }
+        return Ok(());
+    }
+    let inset = (img.width.min(img.height) as f64 * w.inset / 100.0).round() as i64;
+    let (fx, fy) = w.anchor.fractions();
+    let x0 = inset + ((iw - 2 * inset - lw) as f64 * fx).round() as i64;
+    let y0 = inset + ((ih - 2 * inset - lh) as f64 * fy).round() as i64;
+    blend(img, &layer, x0, y0, opacity);
     Ok(())
 }
 
@@ -449,6 +541,55 @@ mod tests {
         assert_eq!(img.get(115, 50), [0.5, 0.5, 0.5]);
         assert_eq!(img.get(50, 50), [0.5, 0.5, 0.5]);
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_turned_mark_and_a_tiled_one() {
+        let mut w = Watermark::text("Proof");
+        w.shadow = false;
+        w.opacity = 100.0;
+        w.anchor = Anchor::Center;
+        let extent = |img: &Image| {
+            let px = changed(img);
+            let span = |f: fn(&(usize, usize)) -> usize| {
+                px.iter().map(f).max().unwrap() - px.iter().map(f).min().unwrap() + 1
+            };
+            (span(|p| p.0), span(|p| p.1))
+        };
+        let mut flat = grey(400, 400);
+        apply(&mut flat, &w, &|_| [1.0; 3], &|c| c.map(|v| v as f32)).unwrap();
+        let (fw, fh) = extent(&flat);
+        assert!(fw > 2 * fh, "{fw}×{fh}");
+        // A quarter turn stands it up.
+        w.rotate = 90.0;
+        let mut up = grey(400, 400);
+        apply(&mut up, &w, &|_| [1.0; 3], &|c| c.map(|v| v as f32)).unwrap();
+        let (uw, uh) = extent(&up);
+        assert!(
+            uw.abs_diff(fh) <= 3 && uh.abs_diff(fw) <= 3,
+            "{uw}×{uh} vs {fw}×{fh}"
+        );
+        // Tiled: marks all over, in every quarter of the photo.
+        w.rotate = 30.0;
+        w.tile = true;
+        w.size = 15.0;
+        let mut tiled = grey(400, 300);
+        apply(&mut tiled, &w, &|_| [1.0; 3], &|c| c.map(|v| v as f32)).unwrap();
+        let px = changed(&tiled);
+        for (qx, qy) in [(0, 0), (1, 0), (0, 1), (1, 1)] {
+            assert!(
+                px.iter().any(|p| p.0 / 200 == qx && p.1 / 150 == qy),
+                "quarter {qx},{qy}"
+            );
+        }
+        assert!(
+            Watermark {
+                rotate: 200.0,
+                ..Watermark::text("x")
+            }
+            .validate()
+            .is_err()
+        );
     }
 
     #[test]

@@ -145,7 +145,8 @@ EXPORT OPTIONS (amb render):
     --watermark \"© Name\" | logo.png | watermark.json   Text or a logo (PNG, its transparency kept) on
                                             the photo; --watermark-at bottom-right (top-left, top, top-right,
                                             left, center, right, bottom-left, bottom), --watermark-size 20
-                                            (% of the width), --watermark-opacity 70
+                                            (% of the width), --watermark-opacity 70, --watermark-rotate 30
+                                            (degrees), --watermark-tile (repeat it across the photo)
 
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded
 XMP packet (e.g. .dng presets for Lightroom mobile). AI and script guide: docs/ai/README.md.";
@@ -373,7 +374,8 @@ fn main() -> ExitCode {
             "--dry-run" => dry_run = true,
             "--brief" => brief = true,
             "--progressive" | "--enlarge" | "--slides" | "--force" | "--no-subfolders"
-            | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb" => {
+            | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb"
+            | "--watermark-tile" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -418,6 +420,7 @@ fn main() -> ExitCode {
             | "--watermark-at"
             | "--watermark-size"
             | "--watermark-opacity"
+            | "--watermark-rotate"
             | "--rating"
             | "--keywords"
             | "--name"
@@ -1702,6 +1705,12 @@ fn export_settings(
         }
         if let Some(v) = number("--watermark-opacity")? {
             mark.opacity = v;
+        }
+        if let Some(v) = number("--watermark-rotate")? {
+            mark.rotate = v;
+        }
+        if options.contains_key("--watermark-tile") {
+            mark.tile = true;
         }
         mark.validate()?;
         s.watermark = Some(mark);

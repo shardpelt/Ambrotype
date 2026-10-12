@@ -1718,7 +1718,7 @@ function resizeLongEdge() {
 // settings, src/main.rs `export_presets`).
 const EXPORT_FIELDS = ["format", "quality", "bits", "color_space", "exact_w", "exact_h", "resize_mode", "resize_value",
   "sharpen", "metadata", "max_kb", "border_preset", "name_template",
-  "wm_text", "wm_image", "wm_anchor", "wm_size", "wm_opacity", "wm_color", "wm_shadow",
+  "wm_text", "wm_image", "wm_anchor", "wm_size", "wm_opacity", "wm_color", "wm_shadow", "wm_rotate", "wm_tile",
   "subsampling", "progressive", "avif_speed"];
 
 // A field's value as an export preset keeps it (checkboxes as true/false).
@@ -1739,6 +1739,8 @@ function readWatermark() {
     anchor: f.wm_anchor.value,
     inset: 3,
     shadow: f.wm_shadow.checked,
+    rotate: Math.max(-180, Math.min(180, Number(f.wm_rotate.value) || 0)),
+    tile: f.wm_tile.checked,
   };
 }
 
@@ -1752,11 +1754,14 @@ function updateWatermarkForm() {
   $("wm-image-name").textContent = image ? fileName(image) : "";
   for (const c of document.querySelectorAll(".wm-color, .wm-shadow")) c.hidden = Boolean(image);
   document.querySelector(".watermark-section .wm-fields").hidden = !image && !f.wm_text.value.trim();
+  // A repeated mark covers the photo: no one place for it.
+  f.wm_anchor.disabled = f.wm_tile.checked;
 }
 
 function wireWatermark() {
   const f = $("export-form");
   f.wm_text.addEventListener("input", updateWatermarkForm);
+  f.wm_tile.addEventListener("change", updateWatermarkForm);
   $("wm-logo").addEventListener("click", async () => {
     if (f.wm_image.value) f.wm_image.value = "";
     else f.wm_image.value = (await invoke("pick_watermark_image")) ?? "";

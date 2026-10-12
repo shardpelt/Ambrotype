@@ -27,7 +27,8 @@ Status: built 2026-10-12 (`crates/amb-export/src/watermark.rs`).
 - Size is the mark's width as a percentage of the photo's width, so it looks the same at any export size. Nine places; the inset is a percentage of the short edge. Opacity, and for text a colour and a soft shadow so it reads on light and dark parts.
 - Text is set in GNU FreeSans Bold, bundled (GPL-3.0-or-later with the font exception).
 - In the export dialog (Watermark, saved with export presets) and `amb render --watermark "© Name" | logo.png | watermark.json` with `--watermark-at`, `--watermark-size`, `--watermark-opacity`.
-- Not yet: other fonts, rotation, tiling across the photo.
+- Rotation (any angle) and tiling across the photo (rows offset by half a step) since 2026-10-12: `rotate`, `tile`; `--watermark-rotate`, `--watermark-tile`; the export dialog's Rotate and Repeat across the photo.
+- Not yet: other fonts.
 
 ## Collage maker
 

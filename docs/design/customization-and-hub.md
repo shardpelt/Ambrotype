@@ -66,6 +66,7 @@ Today `buildPanels()` in `crates/amb-gui/ui/app.js` builds the right-hand panels
 *Built (2026-10-07) as described below, with these details:*
 - *Every change edits a draft copy of the layout file and re-renders it, so the screen is exactly what gets saved; undo is a stack of drafts.*
 - *Dropping something on the Add list removes it.*
+- *Without a mouse (2026-10-12): Tab reaches every panel and setting (clicking one focuses it too); Alt+Up/Down moves it, Alt+Left/Right moves a panel to the other column or a toolbar button along the bar, Enter opens its options and Delete removes it.*
 - *Built-in panels stay built-in while you only hide settings or change their control type. Reordering their contents, or renaming a setting in them, turns them into your own panel (an `items` list).*
 - *Saving a built-in layout makes your copy ("Classic (mine)").*
 - *Not built yet: tabs and free splits (layouts still have two side columns), and moving things with the keyboard alone.*

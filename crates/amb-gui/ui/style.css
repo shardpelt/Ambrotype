@@ -821,3 +821,4 @@ dialog .plugin-recipes label { flex-direction: row; align-items: center; gap: 8p
 /* Spot removal (spots.js). */
 .spot-canvas { cursor: crosshair; }
 .segmented button.active { background: var(--accent); color: var(--bg-deep, #111); }
+body.editing .column [data-item]:focus, body.editing .column [data-unit]:focus { outline: 2px solid var(--accent); outline-offset: -2px; }

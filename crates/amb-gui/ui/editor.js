@@ -2,7 +2,9 @@
 // Editor mode: change the active layout in place.
 //
 // Drag panels, blocks, settings and toolbar buttons to move them (drop on the
-// Add list to remove). Click one to change its control type, label, title or
+// Add list to remove). Without a mouse: Tab to one, Alt+arrows move it
+// (Alt+Left/Right moves a panel to the other column), Enter opens its
+// options, Delete removes it. Click one to change its control type, label, title or
 // columns, to split a panel or merge it with the next. "Add" lists what isn't
 // shown yet. Drag a column's inner edge to resize it.
 //
@@ -151,6 +153,15 @@ function decorateEditing() {
     ws.append(grip);
   }
   ws.style.gridTemplateColumns = `${widths.left}px minmax(0, 1fr) ${widths.right}px`;
+  // Everything that can be moved can be reached with Tab.
+  for (const n of ws.querySelectorAll(".column [data-item], .column .panel-body [data-unit]")) {
+    if (n.dataset.unit !== "") n.tabIndex = 0;
+  }
+  if (ui.edit.refocus) {
+    const sel = ui.edit.refocus;
+    ui.edit.refocus = null;
+    requestAnimationFrame(() => document.querySelector(sel)?.focus());
+  }
   // The edit bar sits over the middle of the photo area.
   requestAnimationFrame(() => {
     const v = $("viewer").getBoundingClientRect();
@@ -424,7 +435,10 @@ window.addEventListener("pointerdown", (e) => {
   e.preventDefault();
   e.stopPropagation();
   const what = editTarget(e.target);
-  if (what) beginDrag(e, what);
+  if (!what) return;
+  // So the arrow keys can carry on from here.
+  if (what.el?.tabIndex >= 0) what.el.focus({ preventScroll: true });
+  beginDrag(e, what);
 }, true);
 
 // While editing, the controls in the columns and the toolbar don't act.
@@ -451,11 +465,67 @@ window.addEventListener("keydown", (e) => {
     e.preventDefault();
     e.stopPropagation();
     editUndo(k === "y" || e.shiftKey);
+  } else if (!typing && keyboardEdit(e)) {
+    e.preventDefault();
+    e.stopPropagation();
   } else if (!typing) {
     // The photo's shortcuts (crop, zoom, picker...) wait until editing is done.
     e.stopPropagation();
   }
 }, true);
+
+// ---------------------------------------------------------------- keyboard
+
+// Alt+arrows move the focused panel, setting or toolbar button one place;
+// Enter opens its options and Delete removes it.
+function keyboardEdit(e) {
+  const what = editTarget(document.activeElement ?? document.body);
+  if (!what) return false;
+  if (e.key === "Enter" && !e.altKey) {
+    const r = what.el.getBoundingClientRect();
+    openInspector(what, r.left + 12, r.top + r.height / 2);
+    return true;
+  }
+  if (e.key === "Delete") {
+    removeThing(what);
+    return true;
+  }
+  if (!e.altKey || !e.key.startsWith("Arrow")) return false;
+  const dir = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1 }[e.key];
+  const across = e.key === "ArrowLeft" || e.key === "ArrowRight";
+  if (what.kind === "tool") {
+    if (!across || what.index < 0) return true;
+    const to = what.index + (dir < 0 ? -1 : 2);
+    if (to < 0) return true;
+    edit((d) => moveTool(d, what, { index: to }));
+    ui.edit.refocus = `.topbar .actions [data-tool-index="${what.index + dir}"]`;
+  } else if (what.kind === "item") {
+    const d = ui.edit.draft;
+    if (across) {
+      const side = what.side === "left" ? "right" : "left";
+      const index = Math.min(what.i, d[side]?.items?.length ?? 0);
+      ui.edit.refocus = `.column [data-item="${side}:${index}"]`;
+      edit((dr) => moveItem(dr, what, { side, index }));
+    } else {
+      const len = d[what.side]?.items?.length ?? 0;
+      const at = what.i + dir;
+      if (at < 0 || at >= len) return true;
+      ui.edit.refocus = `.column [data-item="${what.side}:${at}"]`;
+      edit((dr) => moveItem(dr, what, { side: what.side, index: dir < 0 ? at : at + 1 }));
+    }
+  } else if (what.kind === "unit" && !across) {
+    const panel = what.el.closest(".panel[data-item]");
+    const keys = [...new Set([...panel.querySelectorAll(".panel-body > [data-unit]")].map((n) => n.dataset.unit).filter(Boolean))];
+    const at = keys.indexOf(what.key) + dir;
+    if (at < 0 || at >= keys.length) return true;
+    const beforeKey = dir < 0 ? keys[at] : keys[at + 1] ?? null;
+    // The panel becomes a list of its own: its entries are j0, j1, ...
+    ui.edit.refocus = `.column [data-item="${what.side}:${what.i}"] [data-unit="j${at}"]`;
+    edit((d) => moveUnit(d, what, { type: "panel", side: what.side, i: what.i, beforeKey }));
+  }
+  status(`Moved ${what.label || "it"}`);
+  return true;
+}
 
 function beginDrag(e, what) {
   const x0 = e.clientX, y0 = e.clientY;

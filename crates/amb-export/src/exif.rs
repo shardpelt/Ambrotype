@@ -155,11 +155,39 @@ pub fn build(meta: &PhotoMetadata, policy: MetadataPolicy) -> Option<Vec<u8>> {
     build_with_tags(meta, policy, &Tags::default())
 }
 
+/// The exported file's own facts, which strict EXIF readers expect.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Output {
+    pub width: u32,
+    pub height: u32,
+    /// The output colour space is sRGB (EXIF ColorSpace 1; otherwise
+    /// "uncalibrated", with the ICC profile saying which).
+    pub srgb: bool,
+    /// A JPEG (YCbCr): adds the two tags EXIF requires for one.
+    pub jpeg: bool,
+}
+
+/// Pixels per inch written as the file's resolution (Lightroom's export
+/// default).
+pub const RESOLUTION_PPI: u32 = 240;
+
 /// [`build`], with the photo's rating and keywords.
 pub fn build_with_tags(
     meta: &PhotoMetadata,
     policy: MetadataPolicy,
     tags: &Tags,
+) -> Option<Vec<u8>> {
+    build_export(meta, policy, tags, None)
+}
+
+/// [`build_with_tags`] for a file of `output`'s size and colour space: also
+/// the resolution, pixel size, ColorSpace and the Exif and FlashPix
+/// versions.
+pub fn build_export(
+    meta: &PhotoMetadata,
+    policy: MetadataPolicy,
+    tags: &Tags,
+    output: Option<Output>,
 ) -> Option<Vec<u8>> {
     if policy == MetadataPolicy::None {
         return None;
@@ -185,6 +213,38 @@ pub fn build_with_tags(
     }
     let mut exif = Vec::new();
     let mut gps = Vec::new();
+    if let Some(o) = output {
+        ifd0.push(rationals(0x011A, &[(RESOLUTION_PPI, 1)]));
+        ifd0.push(rationals(0x011B, &[(RESOLUTION_PPI, 1)]));
+        ifd0.push(short(0x0128, 2));
+        if !full {
+            exif.push(Entry {
+                tag: 0x9000,
+                kind: UNDEFINED,
+                count: 4,
+                data: b"0232".to_vec(),
+            });
+        }
+        exif.push(Entry {
+            tag: 0xA000,
+            kind: UNDEFINED,
+            count: 4,
+            data: b"0100".to_vec(),
+        });
+        exif.push(short(0xA001, if o.srgb { 1 } else { 0xFFFF }));
+        exif.push(long(0xA002, o.width));
+        exif.push(long(0xA003, o.height));
+        if o.jpeg {
+            // YCbCr positioning "centred", components Y, Cb, Cr.
+            ifd0.push(short(0x0213, 1));
+            exif.push(Entry {
+                tag: 0x9101,
+                kind: UNDEFINED,
+                count: 4,
+                data: vec![1, 2, 3, 0],
+            });
+        }
+    }
     if full {
         if let Some(r) = tags.rating.filter(|r| (1..=5).contains(r)) {
             ifd0.push(short(0x4746, u16::from(r)));
@@ -406,6 +466,33 @@ mod tests {
         let gps = read_ifd(&t, gps_at as usize);
         assert_eq!(find(&gps, 0x0001).unwrap(), b"N\0");
         assert_eq!(find(&gps, 0x0002).unwrap().len(), 24);
+    }
+
+    #[test]
+    fn exports_carry_their_size_resolution_and_colour_space() {
+        let out = Output {
+            width: 1200,
+            height: 800,
+            srgb: false,
+            jpeg: true,
+        };
+        for policy in [MetadataPolicy::All, MetadataPolicy::CopyrightOnly] {
+            let t = build_export(&meta(), policy, &Tags::default(), Some(out)).unwrap();
+            let ifd0 = read_ifd(&t, 8);
+            assert!(ifd0.windows(2).all(|w| w[0].0 < w[1].0), "tags sorted");
+            let ppi = [RESOLUTION_PPI.to_le_bytes(), 1u32.to_le_bytes()].concat();
+            assert_eq!(find(&ifd0, 0x011A).unwrap(), ppi);
+            assert_eq!(find(&ifd0, 0x0128).unwrap(), 2u16.to_le_bytes());
+            let exif_at = u32::from_le_bytes(find(&ifd0, 0x8769).unwrap().try_into().unwrap());
+            let exif = read_ifd(&t, exif_at as usize);
+            assert!(exif.windows(2).all(|w| w[0].0 < w[1].0), "tags sorted");
+            assert_eq!(find(&exif, 0x9000).unwrap(), b"0232");
+            assert_eq!(find(&exif, 0xA000).unwrap(), b"0100");
+            assert_eq!(find(&exif, 0xA001).unwrap(), 0xFFFFu16.to_le_bytes());
+            assert_eq!(find(&exif, 0xA002).unwrap(), 1200u32.to_le_bytes());
+            assert_eq!(find(&exif, 0xA003).unwrap(), 800u32.to_le_bytes());
+            assert_eq!(find(&exif, 0x9101).unwrap(), [1, 2, 3, 0]);
+        }
     }
 
     #[test]

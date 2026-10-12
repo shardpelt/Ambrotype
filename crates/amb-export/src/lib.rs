@@ -340,8 +340,18 @@ pub fn export(
     }
 
     let icc = s.color_space.icc_profile();
-    let exif = exif::build_with_tags(meta, s.metadata, &s.tags);
     let (w, h) = (out.width as u32, out.height as u32);
+    let exif = exif::build_export(
+        meta,
+        s.metadata,
+        &s.tags,
+        Some(exif::Output {
+            width: w,
+            height: h,
+            srgb: s.color_space == OutputSpace::Srgb,
+            jpeg: s.format == Format::Jpeg,
+        }),
+    );
     let mut quality = s.quality.clamp(1, 100);
     let bytes = match (s.format, depth) {
         (Format::Jpeg, _) => {

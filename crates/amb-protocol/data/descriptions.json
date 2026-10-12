@@ -368,6 +368,22 @@
   "amb:NegativeDensityLowBlue": {"label": "Shadow density: blue", "description": "Blue density above the film base that becomes the deepest shadow (black point of the blue layer). Set by Auto or `amb negative analyze`."},
   "amb:NegativeDensityHighRed": {"label": "Highlight density: red", "description": "Red density above the film base that becomes the deepest highlight (white point of the red layer). Set by Auto or `amb negative analyze`."},
   "amb:NegativeDensityHighGreen": {"label": "Highlight density: green", "description": "Green density above the film base that becomes the deepest highlight (white point of the green layer). Set by Auto or `amb negative analyze`."},
-  "amb:NegativeDensityHighBlue": {"label": "Highlight density: blue", "description": "Blue density above the film base that becomes the deepest highlight (white point of the blue layer). Set by Auto or `amb negative analyze`."}
+  "amb:NegativeDensityHighBlue": {"label": "Highlight density: blue", "description": "Blue density above the film base that becomes the deepest highlight (white point of the blue layer). Set by Auto or `amb negative analyze`."},
+
+  "EnableToneCurve": {"label": "Tone Curve on", "description": "Tone Curve panel switch. False leaves the curves out of the render."},
+  "EnableColorAdjustments": {"label": "Color Mixer on", "description": "Color Mixer (HSL) panel switch. False leaves the colour mixer and Point Color out of the render."},
+  "EnableGrayscaleMix": {"label": "B&W mixer on", "description": "B&W mixer switch. False leaves the mixer sliders out (the photo stays black and white if the treatment says so)."},
+  "EnableSplitToning": {"label": "Color Grading on", "description": "Color Grading (Split Toning) panel switch. False leaves the grading and split toning out of the render."},
+  "EnableDetail": {"label": "Detail on", "description": "Detail panel switch. False turns sharpening and noise reduction off."},
+  "EnableLensCorrections": {"label": "Lens Corrections on", "description": "Lens Corrections panel switch. False leaves the profile, chromatic aberration, manual distortion, vignetting and defringe out."},
+  "EnableEffects": {"label": "Effects on", "description": "Effects panel switch. False leaves the post-crop vignette and grain out of the render."},
+  "EnableTransform": {"label": "Transform on", "description": "Transform panel switch. False leaves Upright and the Transform sliders out of the render."},
+  "EnableCalibration": {"label": "Calibration on", "description": "Calibration panel switch. False leaves the calibration sliders out of the render."},
+  "EnableRetouch": {"label": "Spot removal on", "description": "Spot removal switch. False leaves the heal and clone spots out of the render."},
+  "EnableMaskGroupBasedCorrections": {"label": "Masks on", "description": "Masks panel switch. False leaves all masks out of the render."},
+  "EnableGradientBasedCorrections": {"label": "Linear gradients on (old)", "description": "Older linear gradient switch (pre-2021 files)."},
+  "EnableCircularGradientBasedCorrections": {"label": "Radial filters on (old)", "description": "Older radial filter switch (pre-2021 files)."},
+  "EnablePaintBasedCorrections": {"label": "Adjustment brush on (old)", "description": "Older adjustment brush switch (pre-2021 files)."},
+  "EnableRedEye": {"label": "Red eye on", "description": "Red eye switch. Red eye isn't rendered yet."}
  }
 }

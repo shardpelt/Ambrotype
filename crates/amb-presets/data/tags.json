@@ -613,6 +613,15 @@
    "status": "approx"
   },
   {
+   "name": "EnableToneCurve",
+   "group": "tone_curve",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "approx"
+  },
+  {
    "name": "HueAdjustmentRed",
    "group": "hsl",
    "kind": "number",
@@ -892,6 +901,15 @@
    "status": "approx"
   },
   {
+   "name": "EnableColorAdjustments",
+   "group": "hsl",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "approx"
+  },
+  {
    "name": "GrayMixerMagenta",
    "group": "bw_mixer",
    "kind": "number",
@@ -917,6 +935,15 @@
    "max": null,
    "default": false,
    "status": "image-specific"
+  },
+  {
+   "name": "EnableGrayscaleMix",
+   "group": "bw_mixer",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "approx"
   },
   {
    "name": "PointColors",
@@ -1042,6 +1069,15 @@
    "min": 0,
    "max": 100,
    "default": 50,
+   "status": "approx"
+  },
+  {
+   "name": "EnableSplitToning",
+   "group": "color_grading",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
    "status": "approx"
   },
   {
@@ -1177,6 +1213,15 @@
    "min": 0,
    "max": 100,
    "default": 50,
+   "status": "approx"
+  },
+  {
+   "name": "EnableDetail",
+   "group": "detail",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
    "status": "approx"
   },
   {
@@ -1339,6 +1384,15 @@
    "min": 0,
    "max": 100,
    "default": 60,
+   "status": "approx"
+  },
+  {
+   "name": "EnableLensCorrections",
+   "group": "lens",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
    "status": "approx"
   },
   {
@@ -1567,6 +1621,15 @@
    "status": "image-specific"
   },
   {
+   "name": "EnableTransform",
+   "group": "transform",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "approx"
+  },
+  {
    "name": "PostCropVignetteAmount",
    "group": "effects",
    "kind": "number",
@@ -1657,6 +1720,15 @@
    "status": "approx"
   },
   {
+   "name": "EnableEffects",
+   "group": "effects",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "approx"
+  },
+  {
    "name": "ShadowTint",
    "group": "calibration",
    "kind": "number",
@@ -1717,6 +1789,15 @@
    "min": -100,
    "max": 100,
    "default": 0,
+   "status": "approx"
+  },
+  {
+   "name": "EnableCalibration",
+   "group": "calibration",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
    "status": "approx"
   },
   {
@@ -1864,6 +1945,42 @@
    "status": "approx"
   },
   {
+   "name": "EnableMaskGroupBasedCorrections",
+   "group": "local",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "approx"
+  },
+  {
+   "name": "EnableGradientBasedCorrections",
+   "group": "local",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "approx"
+  },
+  {
+   "name": "EnableCircularGradientBasedCorrections",
+   "group": "local",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "approx"
+  },
+  {
+   "name": "EnablePaintBasedCorrections",
+   "group": "local",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "approx"
+  },
+  {
    "name": "RetouchAreas",
    "group": "retouch",
    "kind": "seq",
@@ -1889,6 +2006,24 @@
    "max": null,
    "default": null,
    "status": "ignored-in-presets"
+  },
+  {
+   "name": "EnableRetouch",
+   "group": "retouch",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "approx"
+  },
+  {
+   "name": "EnableRedEye",
+   "group": "retouch",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": true,
+   "status": "planned"
   },
   {
    "name": "EnhanceDenoiseAlreadyApplied",

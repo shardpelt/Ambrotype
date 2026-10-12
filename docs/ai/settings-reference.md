@@ -21,20 +21,20 @@ How to read the tables:
 | [Basic: Tone](#tone) | `tone` | 7 | Global tone controls for process version 2012 and later: Exposure, Contrast, Highlights, Shadows, Whites, Blacks. |
 | [Basic: Tone (legacy PV2010/PV2003)](#tone-legacy) | `tone_legacy` | 7 | Tone controls of the old process versions. Only meaningful for photos still on PV2010/PV2003. For current edits use the 'tone' and 'presence' groups (Exposure2012, Contrast2012, Clarity2012, ...). |
 | [Basic: Presence](#presence) | `presence` | 5 | Texture, Clarity, Dehaze, Vibrance and Saturation. |
-| [Tone Curve](#tone-curve) | `tone_curve` | 14 | Parametric curve (four region sliders and three split points) and point curves (combined RGB plus Red, Green and Blue channels). Input on the horizontal axis, output on the vertical; a straight 45-degree line means no change. |
-| [Color Mixer: HSL](#hsl) | `hsl` | 24 | Hue, Saturation and Luminance per colour band (Red, Orange, Yellow, Green, Aqua, Blue, Purple, Magenta). Each slider affects all similar colours in the photo. |
-| [Black & White](#bw-mixer) | `bw_mixer` | 10 | Black & white treatment and the B&W Mix: how light or dark each colour band becomes in grey. |
+| [Tone Curve](#tone-curve) | `tone_curve` | 15 | Parametric curve (four region sliders and three split points) and point curves (combined RGB plus Red, Green and Blue channels). Input on the horizontal axis, output on the vertical; a straight 45-degree line means no change. |
+| [Color Mixer: HSL](#hsl) | `hsl` | 25 | Hue, Saturation and Luminance per colour band (Red, Orange, Yellow, Green, Aqua, Blue, Purple, Magenta). Each slider affects all similar colours in the photo. |
+| [Black & White](#bw-mixer) | `bw_mixer` | 11 | Black & white treatment and the B&W Mix: how light or dark each colour band becomes in grey. |
 | [Color Mixer: Point Color](#point-color) | `point_color` | 1 | Targeted changes to one sampled colour (up to eight swatches): Hue/Saturation/Luminance Shift, Variance and Range. |
-| [Color Grading](#color-grading) | `color_grading` | 13 | Colour wheels for Shadows, Midtones, Highlights and Global (hue, saturation, luminance each), plus Blending. Balance is stored in SplitToningBalance. |
+| [Color Grading](#color-grading) | `color_grading` | 14 | Colour wheels for Shadows, Midtones, Highlights and Global (hue, saturation, luminance each), plus Blending. Balance is stored in SplitToningBalance. |
 | [Split Toning (legacy) and Color Grading Balance](#split-toning) | `split_toning` | 5 | The pre-2020 Split Toning controls. Camera Raw reuses SplitToningBalance as the Color Grading Balance slider. |
-| [Detail](#detail) | `detail` | 10 | Sharpening (Amount, Radius, Detail, Masking) and manual noise reduction (luminance and colour). Judge these at 100% zoom or more. |
-| [Lens Corrections](#lens) | `lens` | 18 | Lens profile corrections, chromatic-aberration removal, defringing and lens vignetting. |
-| [Transform](#transform) | `transform` | 25 | Upright perspective correction and manual perspective sliders. |
-| [Effects](#effects) | `effects` | 10 | Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) and film grain (Amount, Size, Roughness). |
-| [Calibration](#calibration) | `calibration` | 7 | Shadows tint and the red, green and blue primary hue/saturation adjustments to the camera's default colour rendering. |
+| [Detail](#detail) | `detail` | 11 | Sharpening (Amount, Radius, Detail, Masking) and manual noise reduction (luminance and colour). Judge these at 100% zoom or more. |
+| [Lens Corrections](#lens) | `lens` | 19 | Lens profile corrections, chromatic-aberration removal, defringing and lens vignetting. |
+| [Transform](#transform) | `transform` | 26 | Upright perspective correction and manual perspective sliders. |
+| [Effects](#effects) | `effects` | 11 | Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) and film grain (Amount, Size, Roughness). |
+| [Calibration](#calibration) | `calibration` | 8 | Shadows tint and the red, green and blue primary hue/saturation adjustments to the camera's default colour rendering. |
 | [Crop](#crop) | `crop` | 12 | Crop rectangle, angle and orientation. Specific to one image; presets should rarely carry it. |
-| [Masks and local adjustments](#local) | `local` | 4 | Masks (AI, brush, linear and radial gradients, range masks) with their local adjustment sliders. Stored as nested structures. |
-| [Remove, heal and red eye](#retouch) | `retouch` | 3 | Spot/remove and red-eye data with image coordinates. Specific to one image and not applied from presets. |
+| [Masks and local adjustments](#local) | `local` | 8 | Masks (AI, brush, linear and radial gradients, range masks) with their local adjustment sliders. Stored as nested structures. |
+| [Remove, heal and red eye](#retouch) | `retouch` | 5 | Spot/remove and red-eye data with image coordinates. Specific to one image and not applied from presets. |
 | [Enhance (AI)](#enhance) | `enhance` | 8 | Records of AI Denoise, Raw Details and Super Resolution. Not supported by Ambrotype. |
 | [Lens Blur (AI)](#lens-blur) | `lens_blur` | 1 | Depth-map based background blur with bokeh shapes. Not supported by Ambrotype. |
 | [HDR editing](#hdr) | `hdr` | 9 | HDR edit mode and the SDR rendition settings used when an HDR edit is saved without HDR output. Not supported by Ambrotype. |
@@ -181,6 +181,7 @@ Parametric curve (four region sliders and three split points) and point curves (
 | `ParametricShadowSplit` | Curve: Shadows/Darks split | number | 10 to 70 | 25 | rendered (approx.) | Position of the boundary between the Shadows and Darks regions, as a percentage of the tonal range. |
 | `ParametricMidtoneSplit` | Curve: Darks/Lights split | number | 20 to 80 | 50 | rendered (approx.) | Position of the boundary between the Darks and Lights regions, as a percentage of the tonal range. |
 | `ParametricHighlightSplit` | Curve: Lights/Highlights split | number | 30 to 90 | 75 | rendered (approx.) | Position of the boundary between the Lights and Highlights regions, as a percentage of the tonal range. |
+| `EnableToneCurve` | Tone Curve on | bool | true / false | true | rendered (approx.) | Tone Curve panel switch. False leaves the curves out of the render. |
 
 <a id="hsl"></a>
 
@@ -214,6 +215,7 @@ Hue, Saturation and Luminance per colour band (Red, Orange, Yellow, Green, Aqua,
 | `HueAdjustmentMagenta` | Hue: Magenta | number | -100 to 100 | 0 | rendered (approx.) | Shifts the hue of magenta colours in the photo (changes the colour itself, e.g. a blue sky towards cyan or purple). 0 = unchanged. |
 | `SaturationAdjustmentMagenta` | Saturation: Magenta | number | -100 to 100 | 0 | rendered (approx.) | Vividness or purity of magenta colours. Negative mutes them, positive intensifies them. 0 = unchanged. |
 | `LuminanceAdjustmentMagenta` | Luminance: Magenta | number | -100 to 100 | 0 | rendered (approx.) | Brightness of magenta colours. Negative darkens them, positive lightens them. 0 = unchanged. |
+| `EnableColorAdjustments` | Color Mixer on | bool | true / false | true | rendered (approx.) | Color Mixer (HSL) panel switch. False leaves the colour mixer and Point Color out of the render. |
 
 <a id="bw-mixer"></a>
 
@@ -233,6 +235,7 @@ Black & white treatment and the B&W Mix: how light or dark each colour band beco
 | `GrayMixerMagenta` | B&W Mix: Magenta | number | -100 to 100 | 0 | rendered (approx.) | In a black & white conversion, how light or dark magenta areas of the original become in grey. Negative darkens, positive lightens. Only has an effect when ConvertToGrayscale is True. |
 | `ConvertToGrayscale` | Treatment: Black & White | bool | true / false | false | rendered (approx.) | True converts the photo to black & white (the B&W Mix sliders then set each colour's grey tone); False keeps colour. |
 | `AutoGrayscaleMix` | Auto B&W mix | bool | true / false | false | image-specific | True when the B&W Mix was set by Auto, which maximises the distribution of grey tones for that image. |
+| `EnableGrayscaleMix` | B&W mixer on | bool | true / false | true | rendered (approx.) | B&W mixer switch. False leaves the mixer sliders out (the photo stays black and white if the treatment says so). |
 
 <a id="point-color"></a>
 
@@ -265,6 +268,7 @@ Colour wheels for Shadows, Midtones, Highlights and Global (hue, saturation, lum
 | `ColorGradeMidtoneLum` | Grading: Midtones luminance | number | -100 to 100 | 0 | rendered (approx.) | Brightness of the midtones: negative darkens, positive lightens. |
 | `ColorGradeGlobalLum` | Grading: Global luminance | number | -100 to 100 | 0 | rendered (approx.) | Overall brightness change from the global wheel: negative darkens, positive lightens. |
 | `ColorGradeBlending` | Grading: Blending | number | 0 to 100 | 50 | rendered (approx.) | Amount of overlap (smoothness of the transition) between the shadows, midtones and highlights wheels. Higher values maximise the overlap. |
+| `EnableSplitToning` | Color Grading on | bool | true / false | true | rendered (approx.) | Color Grading (Split Toning) panel switch. False leaves the grading and split toning out of the render. |
 
 <a id="split-toning"></a>
 
@@ -298,6 +302,7 @@ Sharpening (Amount, Radius, Detail, Masking) and manual noise reduction (luminan
 | `ColorNoiseReduction` | Color noise reduction | number | 0 to 100 | 25 | rendered (approx.) | Reduces colour noise (coloured speckles). 0 = off. |
 | `ColorNoiseReductionDetail` | Color noise reduction: Detail | number | 0 to 100 | 50 | rendered (approx.) | Colour noise threshold. Higher protects thin, detailed colour edges but may leave colour speckling; lower removes speckles but may cause colour bleeding. |
 | `ColorNoiseReductionSmoothness` | Color noise reduction: Smoothness | number | 0 to 100 | 50 | rendered (approx.) | Smoothness sub-slider of colour noise reduction. Adobe's help names it without describing it further. |
+| `EnableDetail` | Detail on | bool | true / false | true | rendered (approx.) | Detail panel switch. False turns sharpening and noise reduction off. |
 
 <a id="lens"></a>
 
@@ -325,6 +330,7 @@ Lens profile corrections, chromatic-aberration removal, defringing and lens vign
 | `DefringeGreenHueLo` | Defringe: Green hue (low) | number | 0 to 100 | 40 | rendered (approx.) | Lower end of the hue range treated as green fringing. The default range is narrow to protect green/yellow subjects such as foliage. |
 | `DefringePurpleHueHi` | Defringe: Purple hue (high) | number | 0 to 100 | 70 | rendered (approx.) | Upper end of the hue range treated as purple fringing. The two ends stay at least 10 units apart. |
 | `DefringeGreenHueHi` | Defringe: Green hue (high) | number | 0 to 100 | 60 | rendered (approx.) | Upper end of the hue range treated as green fringing. The default range is narrow to protect green/yellow subjects such as foliage. |
+| `EnableLensCorrections` | Lens Corrections on | bool | true / false | true | rendered (approx.) | Lens Corrections panel switch. False leaves the profile, chromatic aberration, manual distortion, vignetting and defringe out. |
 
 <a id="transform"></a>
 
@@ -359,6 +365,7 @@ Upright perspective correction and manual perspective sliders.
 | `UprightTransform_3` | Upright transform 3 | text |  |  | image-specific | Precomputed Upright transform for one mode, computed per image. |
 | `UprightTransform_4` | Upright transform 4 | text |  |  | image-specific | Precomputed Upright transform for one mode, computed per image. |
 | `UprightTransform_5` | Upright transform 5 | text |  |  | image-specific | Precomputed Upright transform for one mode, computed per image. |
+| `EnableTransform` | Transform on | bool | true / false | true | rendered (approx.) | Transform panel switch. False leaves Upright and the Transform sliders out of the render. |
 
 <a id="effects"></a>
 
@@ -378,6 +385,7 @@ Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) an
 | `GrainSize` | Grain: Size | number | 0 to 100 | 25 | rendered (approx.) | Grain particle size. At 25 or more Adobe adds blue to work better with noise reduction, and such sizes can cause some image blurring. |
 | `GrainFrequency` | Grain: Roughness | number | 0 to 100 | 50 | rendered (approx.) | Grain regularity: lower is more uniform, higher more uneven. Together with Size it sets the grain's character. |
 | `GrainSeed` | Grain seed | number | any number |  | rendered (approx.) | Random seed of the grain pattern, specific to one image. |
+| `EnableEffects` | Effects on | bool | true / false | true | rendered (approx.) | Effects panel switch. False leaves the post-crop vignette and grain out of the render. |
 
 <a id="calibration"></a>
 
@@ -394,6 +402,7 @@ Shadows tint and the red, green and blue primary hue/saturation adjustments to t
 | `GreenSaturation` | Calibration: Green primary saturation | number | -100 to 100 | 0 | rendered (approx.) | Saturation of the green primary; negative desaturates. |
 | `BlueHue` | Calibration: Blue primary hue | number | -100 to 100 | 0 | rendered (approx.) | Shifts the hue of the blue primary: positive toward magenta, negative toward cyan. Every colour with blue in it moves with it; white stays white. Adjust hue first, then saturation. |
 | `BlueSaturation` | Calibration: Blue primary saturation | number | -100 to 100 | 0 | rendered (approx.) | Saturation of the blue primary; negative desaturates. |
+| `EnableCalibration` | Calibration on | bool | true / false | true | rendered (approx.) | Calibration panel switch. False leaves the calibration sliders out of the render. |
 
 <a id="crop"></a>
 
@@ -428,6 +437,10 @@ Masks (AI, brush, linear and radial gradients, range masks) with their local adj
 | `GradientBasedCorrections` | Linear gradients (legacy) | seq |  |  | rendered (approx.) | Graduated filter adjustments from before the Masking tool. |
 | `CircularGradientBasedCorrections` | Radial gradients (legacy) | seq |  |  | rendered (approx.) | Radial filter adjustments from before the Masking tool. |
 | `PaintBasedCorrections` | Brush adjustments (legacy) | seq |  |  | rendered (approx.) | Adjustment brush strokes from before the Masking tool. |
+| `EnableMaskGroupBasedCorrections` | Masks on | bool | true / false | true | rendered (approx.) | Masks panel switch. False leaves all masks out of the render. |
+| `EnableGradientBasedCorrections` | Linear gradients on (old) | bool | true / false | true | rendered (approx.) | Older linear gradient switch (pre-2021 files). |
+| `EnableCircularGradientBasedCorrections` | Radial filters on (old) | bool | true / false | true | rendered (approx.) | Older radial filter switch (pre-2021 files). |
+| `EnablePaintBasedCorrections` | Adjustment brush on (old) | bool | true / false | true | rendered (approx.) | Older adjustment brush switch (pre-2021 files). |
 
 <a id="retouch"></a>
 
@@ -440,6 +453,8 @@ Spot/remove and red-eye data with image coordinates. Specific to one image and n
 | `RetouchAreas` | Remove/heal spots | seq |  |  | ignored in presets | Remove, heal and clone spots with image coordinates; specific to one image. |
 | `RetouchInfo` | Spot info (legacy) | seq |  |  | ignored in presets | Legacy spot removal data; specific to one image. |
 | `RedEyeInfo` | Red eye | seq |  |  | ignored in presets | Red eye corrections (pupil size, darken) with image coordinates; specific to one image. |
+| `EnableRetouch` | Spot removal on | bool | true / false | true | rendered (approx.) | Spot removal switch. False leaves the heal and clone spots out of the render. |
+| `EnableRedEye` | Red eye on | bool | true / false | true | planned | Red eye switch. Red eye isn't rendered yet. |
 
 <a id="enhance"></a>
 

@@ -310,6 +310,13 @@ pub const RENDERED_TAGS: &[&str] = &[
     "PerspectiveY",
     "PerspectiveUpright",
     "EnableTransform",
+    "EnableToneCurve",
+    "EnableColorAdjustments",
+    "EnableGrayscaleMix",
+    "EnableSplitToning",
+    "EnableDetail",
+    "EnableLensCorrections",
+    "EnableEffects",
     "ShadowTint",
     "RedHue",
     "RedSaturation",
@@ -391,10 +398,58 @@ fn spline_of(settings: &BTreeMap<String, Value>, key: &str) -> Option<Spline> {
     Spline::from_points_255(&points).filter(|s| !s.is_identity())
 }
 
+/// Lightroom's panel switches (`crs:Enable*`) and the registry groups each
+/// one turns off. The names come from preset corpora; which settings each
+/// covers is our reading. Transform, Calibration, masks and spots read their
+/// own switches where they are read.
+const PANEL_SWITCHES: &[(&str, &[&str])] = &[
+    ("EnableToneCurve", &["tone_curve"]),
+    ("EnableColorAdjustments", &["hsl", "point_color"]),
+    ("EnableGrayscaleMix", &["bw_mixer"]),
+    ("EnableSplitToning", &["split_toning", "color_grading"]),
+    ("EnableDetail", &["detail"]),
+    ("EnableLensCorrections", &["lens"]),
+    ("EnableEffects", &["effects"]),
+];
+
+/// `settings` without the panels that are switched off, or `None` when all
+/// are on. A panel off renders as if at its defaults, except Detail, whose
+/// sharpening and noise reduction go to 0, and the black and white treatment
+/// (`ConvertToGrayscale`, a Basic panel choice), which stays.
+fn without_switched_off(settings: &BTreeMap<String, Value>) -> Option<BTreeMap<String, Value>> {
+    let off: Vec<&str> = PANEL_SWITCHES
+        .iter()
+        .filter(|(switch, _)| settings.get(*switch).and_then(Value::as_bool) == Some(false))
+        .flat_map(|(_, groups)| groups.iter().copied())
+        .collect();
+    if off.is_empty() {
+        return None;
+    }
+    let registry = amb_presets::registry::Registry::builtin();
+    let mut kept: BTreeMap<String, Value> = settings
+        .iter()
+        .filter(|(k, _)| {
+            k.as_str() == "ConvertToGrayscale"
+                || !registry
+                    .lookup(k)
+                    .is_some_and(|t| off.contains(&t.group.as_str()))
+        })
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+    if off.contains(&"detail") {
+        for k in ["Sharpness", "LuminanceSmoothing", "ColorNoiseReduction"] {
+            kept.insert(k.into(), Value::Number(0.0));
+        }
+    }
+    Some(kept)
+}
+
 impl DevelopSettings {
     /// Build from Camera Raw settings. Returns the settings plus the names of
     /// present tags this pipeline does not render yet.
     pub fn from_settings(settings: &BTreeMap<String, Value>) -> (DevelopSettings, Vec<String>) {
+        let switched = without_switched_off(settings);
+        let settings = switched.as_ref().unwrap_or(settings);
         let mut s = DevelopSettings::default();
         let wb_mode = settings
             .get("WhiteBalance")
@@ -1838,6 +1893,61 @@ mod tests {
             .iter()
             .map(|(k, v)| (k.to_string(), Value::Text(v.to_string())))
             .collect()
+    }
+
+    #[test]
+    fn panels_switched_off_are_left_out() {
+        let curve = Value::Seq(
+            ["0, 0", "128, 160", "255, 255"]
+                .map(|p| Value::Text(p.into()))
+                .to_vec(),
+        );
+        let with_curve = |pairs: &[(&str, &str)]| {
+            let mut m = map(pairs);
+            m.insert("ToneCurvePV2012".into(), curve.clone());
+            m
+        };
+        let edit = [
+            ("SaturationAdjustmentRed", "-50"),
+            ("ConvertToGrayscale", "True"),
+            ("GrayMixerRed", "40"),
+            ("ColorGradeShadowSat", "30"),
+            ("Sharpness", "60"),
+            ("GrainAmount", "40"),
+            ("AutoLateralCA", "1"),
+        ];
+        let (on, missing) = DevelopSettings::from_settings(&with_curve(&edit));
+        assert!(on.curve_rgb.is_some() && on.grain.amount > 0.0 && on.lens.auto_ca);
+        assert!(on.sharpening.amount > 0.0 && on.color.gray_mix[0] != 0.0);
+        let mut off = edit.to_vec();
+        for switch in [
+            "EnableToneCurve",
+            "EnableColorAdjustments",
+            "EnableGrayscaleMix",
+            "EnableSplitToning",
+            "EnableDetail",
+            "EnableLensCorrections",
+            "EnableEffects",
+        ] {
+            off.push((switch, "False"));
+        }
+        let (s, missing_off) = DevelopSettings::from_settings(&with_curve(&off));
+        assert!(s.curve_rgb.is_none() && s.grain.amount == 0.0 && !s.lens.auto_ca);
+        assert_eq!(s.sharpening.amount, 0.0);
+        assert!(s.color.grayscale, "the treatment stays");
+        assert_eq!(s.color.gray_mix[0], 0.0);
+        assert!(s.color.hsl.iter().flatten().all(|v| *v == 0.0));
+        assert!(s.color.grading.is_neutral());
+        assert_eq!(missing, missing_off, "the switches themselves are read");
+        // Explicitly on is the same as unset.
+        let mut on_again = edit.to_vec();
+        on_again.push(("EnableToneCurve", "True"));
+        assert!(
+            DevelopSettings::from_settings(&with_curve(&on_again))
+                .0
+                .curve_rgb
+                .is_some()
+        );
     }
 
     #[test]

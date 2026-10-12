@@ -123,7 +123,7 @@ impl Default for Grading {
 }
 
 impl Grading {
-    fn is_neutral(&self) -> bool {
+    pub(crate) fn is_neutral(&self) -> bool {
         [self.shadows, self.midtones, self.highlights, self.global]
             .iter()
             .all(|w| w.sat == 0.0 && w.lum == 0.0)

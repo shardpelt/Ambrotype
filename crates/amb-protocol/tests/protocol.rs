@@ -412,7 +412,8 @@ fn queries() {
             only_set: None,
         })
         .unwrap();
-    assert_eq!(hsl["params"].as_array().unwrap().len(), 24);
+    // 8 bands × hue, saturation, luminance, and the panel switch.
+    assert_eq!(hsl["params"].as_array().unwrap().len(), 25);
 
     let groups = s.query(&Query::ListGroups).unwrap();
     let presence = groups["groups"]

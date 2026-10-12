@@ -10,7 +10,7 @@
 //!   sidecars and JSON.
 //! - [`Command`]: undoable edits (`set_param`, `adjust_param`, `reset_param`,
 //!   `reset_group`, `apply_preset`, the [`masks`] commands `add_mask`,
-//!   `set_mask`, `paint_mask`, `remove_mask`, the [`spots`] commands
+//!   `set_mask`, `paint_mask`, `remove_mask`, `duplicate_mask`, `move_mask`, the [`spots`] commands
 //!   `add_spot`, `set_spot`, `remove_spot`, and `undo`, `redo`), validated
 //!   against the tag registry. Each returns an [`Outcome`] with a diff.
 //! - [`Query`]: read-only requests (`get_param`, `list_params`, `describe`,

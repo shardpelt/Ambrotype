@@ -47,7 +47,7 @@ USAGE:
     amb edit <SIDECAR.xmp> --commands <CMDS.json|-> [--out <NEW.xmp|.json>] [--dry-run] [--brief] [--json]
                                             Apply protocol commands (set_param, adjust_param, reset_param,
                                             reset_group, apply_preset, add_mask, set_mask, paint_mask,
-                                            remove_mask, add_spot, set_spot, remove_spot, undo, redo)
+                                            remove_mask, duplicate_mask, move_mask, add_spot, set_spot, remove_spot, undo, redo)
                                             as one transaction,
                                             print the diff and write the sidecar (other XMP metadata kept)
     amb match <PHOTO> <REF>... [--apply] [--parts wb,tone,color,grading,hsl] [--out PRESET.xmp] [--json]

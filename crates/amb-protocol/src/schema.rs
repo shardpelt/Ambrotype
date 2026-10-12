@@ -141,6 +141,13 @@ pub fn command_schema() -> Value {
                 "mask": mask_index(),
                 "part": part_index()
             }), &["mask"]),
+            variant("cmd", "duplicate_mask", "Copy a mask (its parts and sliders), placing the copy just after it.", json!({
+                "mask": mask_index()
+            }), &["mask"]),
+            variant("cmd", "move_mask", "Move a mask to another position in the list; the others keep their order.", json!({
+                "mask": mask_index(),
+                "to": { "type": "integer", "minimum": 0, "description": "New position from 0." }
+            }), &["mask", "to"]),
             variant("cmd", "add_spot", "Add a round spot that heals (matches the surroundings) or clones (copies as is) a donor area onto it. Stored in Lightroom's RetouchAreas.", json!({
                 "at": { "type": "array", "items": { "type": "number" }, "description": "[x, y] centre, fractions of the uncropped photo in stored orientation." },
                 "radius": { "type": "number", "minimum": 0.001, "maximum": 0.5, "default": 0.02, "description": "Fraction of the photo's width." },
@@ -438,6 +445,8 @@ mod tests {
                 mask: 1,
                 part: Some(0),
             },
+            Command::DuplicateMask { mask: 0 },
+            Command::MoveMask { mask: 1, to: 0 },
             Command::AddSpot {
                 at: [0.3, 0.4],
                 radius: 0.02,
@@ -532,7 +541,7 @@ mod tests {
         assert!(!validate(&doc, &doc, &json!({"query": "nope"})));
         assert_eq!(
             doc["$defs"]["Command"]["oneOf"].as_array().unwrap().len(),
-            18
+            20
         );
         assert_eq!(doc["$defs"]["Query"]["oneOf"].as_array().unwrap().len(), 7);
     }

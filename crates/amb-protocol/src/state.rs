@@ -755,6 +755,8 @@ impl DevelopState {
                 masks::paint(next, *mask, *part, mode.as_deref(), &stroke, clamped)?;
             }
             Command::RemoveMask { mask, part } => masks::remove(next, *mask, *part)?,
+            Command::DuplicateMask { mask } => masks::duplicate(next, *mask)?,
+            Command::MoveMask { mask, to } => masks::move_to(next, *mask, *to)?,
             Command::AddSpot {
                 at,
                 radius,

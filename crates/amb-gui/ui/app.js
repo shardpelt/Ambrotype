@@ -292,6 +292,8 @@ function historyLabel(label) {
     .replace(/^(paint|erase)_mask (\d+)$/, (_, v, m) => `${n(m)}: ${v === "paint" ? "brush" : "erase"}`)
     .replace(/^remove_mask (\d+) part (\d+)$/, (_, m, p) => `${n(m)}: remove part ${Number(p) + 1}`)
     .replace(/^remove_mask (\d+)$/, (_, m) => `Delete ${n(m).toLowerCase()}`)
+    .replace(/^duplicate_mask (\d+)$/, (_, m) => `Duplicate ${n(m).toLowerCase()}`)
+    .replace(/^move_mask (\d+) to (\d+)$/, (_, m, t) => `Move ${n(m).toLowerCase()} to ${Number(t) + 1}`)
     .replace(/^add_spot (\w+)$/, (_, k) => `${k === "clone" ? "Clone" : "Heal"} spot`)
     .replace(/^set_spot (\d+)$/, (_, s) => `Spot ${Number(s) + 1}`)
     .replace(/^remove_spot (\d+)$/, (_, s) => `Delete spot ${Number(s) + 1}`);

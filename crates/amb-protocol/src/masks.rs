@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Mask commands: `add_mask`, `set_mask`, `paint_mask`, `remove_mask`, and
+//! Mask commands: `add_mask`, `set_mask`, `paint_mask`, `remove_mask`,
+//! `duplicate_mask`, `move_mask`, and
 //! the `list_masks` description. They edit `MaskGroupBasedCorrections` in
 //! Lightroom's own layout ([`amb_presets::masks`]), so masks made here open in
 //! Lightroom and the other way round. Masks and parts are addressed by their
@@ -830,6 +831,46 @@ pub fn remove(
     Ok(())
 }
 
+/// `duplicate_mask`: a copy of a mask just after it, named "… copy", with
+/// sync IDs of its own so Lightroom treats it as a separate mask.
+pub fn duplicate(next: &mut BTreeMap<String, Value>, mask: usize) -> Result<(), Error> {
+    let mut list = corrections(next);
+    let mut copy = correction_mut(&mut list, mask)?.clone();
+    copy.insert("CorrectionSyncID".into(), Value::Text(masks::new_sync_id()));
+    let name = masks::text(&copy, "CorrectionName").unwrap_or_else(|| format!("Mask {}", mask + 1));
+    copy.insert("CorrectionName".into(), Value::Text(format!("{name} copy")));
+    // Strokes of one brush part share a MaskSyncID; keep them together.
+    let mut ids = BTreeMap::new();
+    for e in components_mut(&mut copy).iter_mut() {
+        if let Value::Struct(e) = e
+            && let Some(old) = masks::text(e, "MaskSyncID")
+        {
+            let id = ids.entry(old).or_insert_with(masks::new_sync_id).clone();
+            e.insert("MaskSyncID".into(), Value::Text(id));
+        }
+    }
+    list.insert(mask + 1, Value::Struct(copy));
+    store(next, list);
+    Ok(())
+}
+
+/// `move_mask`: put a mask at position `to` (0-based), the others keeping
+/// their order. The order is the panel's; Lightroom applies masks in it.
+pub fn move_to(next: &mut BTreeMap<String, Value>, mask: usize, to: usize) -> Result<(), Error> {
+    let mut list = corrections(next);
+    correction_mut(&mut list, mask)?;
+    if to >= list.len() {
+        return Err(invalid(
+            "to",
+            format!("there are {} mask(s), numbered from 0", list.len()),
+        ));
+    }
+    let m = list.remove(mask);
+    list.insert(to, m);
+    store(next, list);
+    Ok(())
+}
+
 /// Masks from a preset or another photo join the current ones; a mask with
 /// the same `CorrectionSyncID` is replaced. `amount` (0-2) scales their local
 /// sliders, as Lightroom's preset Amount does.
@@ -1152,6 +1193,58 @@ mod tests {
         };
         assert_eq!(masks::flag(e, "MaskInverted"), Some(true));
         assert_eq!(masks::flag(e, "Flipped"), Some(false));
+    }
+
+    #[test]
+    fn duplicate_and_move() {
+        let mut s = BTreeMap::new();
+        let mut clamped = Vec::new();
+        add(&mut s, "linear", None, None, None, &mut clamped).unwrap();
+        let stroke = Stroke {
+            points: &[[0.2, 0.2], [0.4, 0.2]],
+            size: 0.05,
+            feather: 50.0,
+            flow: 100.0,
+            density: 100.0,
+            erase: false,
+        };
+        paint(&mut s, None, None, None, &stroke, &mut clamped).unwrap();
+        paint(&mut s, Some(1), Some(0), None, &stroke, &mut clamped).unwrap();
+        duplicate(&mut s, 1).unwrap();
+        let names = |s: &BTreeMap<String, Value>| -> Vec<String> {
+            let d = describe(s);
+            d["masks"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|m| m["name"].as_str().unwrap().to_string())
+                .collect()
+        };
+        assert_eq!(names(&s), ["Mask 1", "Mask 2", "Mask 2 copy"]);
+        let ids = |i: usize| -> (String, Vec<String>) {
+            let Value::Seq(list) = &s[MASK_TAG] else {
+                panic!()
+            };
+            let Value::Struct(c) = &list[i] else { panic!() };
+            let strokes = masks::components(c)
+                .iter()
+                .filter_map(|e| match e {
+                    Value::Struct(e) => masks::text(e, "MaskSyncID"),
+                    _ => None,
+                })
+                .collect();
+            (masks::text(c, "CorrectionSyncID").unwrap(), strokes)
+        };
+        let ((a, a_strokes), (b, b_strokes)) = (ids(1), ids(2));
+        assert_ne!(a, b);
+        assert_eq!(a_strokes.len(), b_strokes.len());
+        assert!(a_strokes.iter().all(|id| !b_strokes.contains(id)));
+        move_to(&mut s, 2, 0).unwrap();
+        assert_eq!(names(&s), ["Mask 2 copy", "Mask 1", "Mask 2"]);
+        move_to(&mut s, 0, 2).unwrap();
+        assert_eq!(names(&s), ["Mask 1", "Mask 2", "Mask 2 copy"]);
+        assert!(move_to(&mut s, 0, 3).is_err());
+        assert!(duplicate(&mut s, 5).is_err());
     }
 
     #[test]

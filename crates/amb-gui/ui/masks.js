@@ -386,9 +386,26 @@ function renderMaskPanel() {
       run([{ cmd: "remove_mask", mask: mask.index }]);
     });
     const kinds = [...new Set(mask.parts.map((p) => p.label))].join(", ");
-    const row = el("div", { class: "mask-row" + (sel ? " selected" : ""), title: kinds },
+    const row = el("div", { class: "mask-row" + (sel ? " selected" : ""), title: `${kinds}. Drag to reorder.`, draggable: "true" },
       eye, name, el("span", { class: "hint mask-kinds" }, kinds), del);
     row.addEventListener("click", () => selectMask(mask.index));
+    // Drag a row onto another to move it there.
+    row.addEventListener("dragstart", (e) => {
+      e.dataTransfer.setData("text/x-amb-mask", String(mask.index));
+      e.dataTransfer.effectAllowed = "move";
+    });
+    row.addEventListener("dragover", (e) => {
+      if (!e.dataTransfer.types.includes("text/x-amb-mask")) return;
+      e.preventDefault();
+      row.classList.add("drop");
+    });
+    row.addEventListener("dragleave", () => row.classList.remove("drop"));
+    row.addEventListener("drop", (e) => {
+      e.preventDefault();
+      row.classList.remove("drop");
+      const from = Number(e.dataTransfer.getData("text/x-amb-mask"));
+      moveMask(from, mask.index);
+    });
     return row;
   });
   $("mask-list").replaceChildren(...rows);
@@ -406,6 +423,14 @@ function renderMaskPanel() {
 }
 
 function renderMaskDetail(m) {
+  // Duplicate and move.
+  const count = maskList().length;
+  const action = (text, title, disabled, onclick) => el("button", { type: "button", class: "small", title, disabled, onclick }, text);
+  $("mask-actions").replaceChildren(
+    action("Duplicate", "Copy this mask, sliders and all", false, () => duplicateMask(m.index)),
+    action("↑", "Move up the list", m.index === 0, () => moveMask(m.index, m.index - 1)),
+    action("↓", "Move down the list", m.index >= count - 1, () => moveMask(m.index, m.index + 1)),
+  );
   // Parts.
   const parts = m.parts.map((p) => {
     const sel = p.index === mk.part;
@@ -559,6 +584,22 @@ function draftPart(values) {
 }
 
 // ---------------------------------------------------------------- tools
+
+async function duplicateMask(i) {
+  await run([{ cmd: "duplicate_mask", mask: i }]);
+  selectMask(i + 1);
+}
+
+async function moveMask(from, to) {
+  if (from === to || !Number.isInteger(from)) return;
+  // The selected mask stays selected.
+  const sel = mk.selected;
+  await run([{ cmd: "move_mask", mask: from, to }]);
+  if (sel == null) return;
+  if (sel === from) selectMask(to);
+  else if (from < sel && sel <= to) selectMask(sel - 1);
+  else if (to <= sel && sel < from) selectMask(sel + 1);
+}
 
 function selectMask(i) {
   if (mk.selected !== i) mk.part = null;

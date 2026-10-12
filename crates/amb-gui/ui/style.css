@@ -777,6 +777,7 @@ dialog .plugin-recipes label { flex-direction: row; align-items: center; gap: 8p
 .mask-row .mask-name, .mask-part .mask-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mask-row .mask-kinds { max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0; }
 .mask-row input[type=text] { flex: 1; min-width: 0; }
+.mask-row.drop { box-shadow: inset 0 2px 0 var(--accent); }
 .mask-part select { max-width: 92px; }
 .icon-x { padding: 0 6px; line-height: 1.2; }
 .mask-detail { display: flex; flex-direction: column; gap: 6px; }

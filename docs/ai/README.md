@@ -175,6 +175,8 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 | `set_mask` | `mask`, `part`?, `values` | A mask's local sliders, `name`, `active`, `amount`; with `part`, that part's geometry, `mode`, `invert`. |
 | `paint_mask` | `points`, `mask`?, `part`?, `mode`?, `size`?, `feather`?, `flow`?, `density`?, `erase`? | A brush stroke; without `part`, a new brush part (a new mask without `mask`). |
 | `remove_mask` | `mask`, `part`? | A mask, or one part. |
+| `duplicate_mask` | `mask` | A copy just after it. |
+| `move_mask` | `mask`, `to` | A new position in the list. |
 | `add_spot` | `at`, `radius`?, `kind`?, `source`?, `feather`?, `opacity`? | A round heal (default) or clone spot; see [Spot removal](#spot-removal). |
 | `set_spot` | `spot`, `values` | `at`, `radius`, `source` (null to search again), `kind`, `feather`, `opacity`, `active`. |
 | `remove_spot` | `spot` | |

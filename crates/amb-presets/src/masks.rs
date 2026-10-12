@@ -137,15 +137,7 @@ pub const LOCAL_SLIDERS: &[LocalSlider] = &[
 
 /// Correction fields that change the image but are not rendered yet (besides
 /// the sliders marked so in [`LOCAL_SLIDERS`]).
-pub const UNRENDERED_FIELDS: &[&str] = &[
-    "LocalHue",
-    "LocalGrain",
-    "LocalPointColors",
-    "MainCurve",
-    "RedCurve",
-    "GreenCurve",
-    "BlueCurve",
-];
+pub const UNRENDERED_FIELDS: &[&str] = &["LocalHue", "LocalGrain", "LocalPointColors"];
 
 pub fn local_slider(tag: &str) -> Option<&'static LocalSlider> {
     LOCAL_SLIDERS.iter().find(|s| s.tag == tag)

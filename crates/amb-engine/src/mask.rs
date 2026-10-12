@@ -182,6 +182,59 @@ pub struct Correction {
     /// A pre-2021 range mask on the whole correction: intersected.
     pub range: Option<(Shape, bool)>,
     pub adjust: LocalAdjustments,
+    /// The mask's own point curves (`MainCurve`, `RedCurve`, ...).
+    pub curves: Option<std::sync::Arc<LocalCurves>>,
+}
+
+/// A mask's point curves: the RGB curve, then per channel, on encoded values
+/// like the global point curve.
+#[derive(Debug, Clone)]
+pub struct LocalCurves {
+    pub main: Option<crate::curve::Spline>,
+    pub channels: [Option<crate::curve::Spline>; 3],
+}
+
+impl PartialEq for LocalCurves {
+    /// Curves that give the same values (sampled) are equal.
+    fn eq(&self, other: &Self) -> bool {
+        let same = |a: &Option<crate::curve::Spline>, b: &Option<crate::curve::Spline>| match (a, b)
+        {
+            (Some(a), Some(b)) => a.lut(33) == b.lut(33),
+            (None, None) => true,
+            _ => false,
+        };
+        same(&self.main, &other.main)
+            && self
+                .channels
+                .iter()
+                .zip(&other.channels)
+                .all(|(a, b)| same(a, b))
+    }
+}
+
+impl LocalCurves {
+    fn read(c: &BTreeMap<String, Value>) -> Option<LocalCurves> {
+        let spline = |tag: &str| {
+            let pts = amb_presets::curve_points(c.get(tag)?)?;
+            // Points in 0..255 as the global curve; a curve given in 0..1 is scaled.
+            let unit = pts.iter().all(|(x, y)| *x <= 1.0 && *y <= 1.0);
+            let pts: Vec<(f64, f64)> = if unit {
+                pts.iter().map(|(x, y)| (x * 255.0, y * 255.0)).collect()
+            } else {
+                pts
+            };
+            crate::curve::Spline::from_points_255(&pts).filter(|s| !s.is_identity())
+        };
+        let curves = LocalCurves {
+            main: spline("MainCurve"),
+            channels: [
+                spline("RedCurve"),
+                spline("GreenCurve"),
+                spline("BlueCurve"),
+            ],
+        };
+        (curves.main.is_some() || curves.channels.iter().any(Option::is_some)).then_some(curves)
+    }
 }
 
 /// Every active mask of an edit, plus which one to show as an overlay.
@@ -238,7 +291,7 @@ impl Masks {
         let mut out = Vec::new();
         for c in &self.corrections {
             let shown = self.overlay.is_some() && self.overlay == c.index;
-            if !shown && c.adjust.is_neutral() {
+            if !shown && c.adjust.is_neutral() && c.curves.is_none() {
                 continue;
             }
             let shapes = c.parts.iter().map(|p| &p.shape);
@@ -334,6 +387,7 @@ fn read_correction(tag: &str, c: &BTreeMap<String, Value>, notes: &mut Vec<Strin
         parts,
         range,
         adjust: LocalAdjustments::from_correction(c),
+        curves: LocalCurves::read(c).map(std::sync::Arc::new),
     }
 }
 
@@ -710,6 +764,8 @@ fn draw_correction(
 /// Masks drawn for one render, with the adjustments they carry.
 pub struct Drawn {
     planes: Vec<(LocalAdjustments, Vec<f32>)>,
+    /// The masks with point curves, and where they apply.
+    curves: Vec<(std::sync::Arc<LocalCurves>, Vec<f32>)>,
     overlay: Option<Vec<f32>>,
     /// The part of the output the planes cover.
     tile: Tile,
@@ -785,6 +841,7 @@ pub fn draw_in(
         strengths: *strengths,
     };
     let mut planes = Vec::new();
+    let mut curves = Vec::new();
     let mut overlay = None;
     let mut targets = Targets {
         given: colour_targets,
@@ -792,12 +849,15 @@ pub fn draw_in(
     };
     for c in &masks.corrections {
         let shown = masks.overlay.is_some() && masks.overlay == c.index;
-        if !shown && c.adjust.is_neutral() {
+        if !shown && c.adjust.is_neutral() && c.curves.is_none() {
             continue;
         }
         let alpha = draw_correction(c, &frame, &reference, &mut targets);
         if shown {
             overlay = Some(alpha.clone());
+        }
+        if let Some(k) = &c.curves {
+            curves.push((k.clone(), alpha.clone()));
         }
         if !c.adjust.is_neutral() {
             planes.push((c.adjust, alpha));
@@ -805,6 +865,7 @@ pub fn draw_in(
     }
     Drawn {
         planes,
+        curves,
         overlay,
         tile: *tile,
         colour_targets: targets.measured,
@@ -969,6 +1030,37 @@ impl Drawn {
             };
             local::apply_scaled(&mut alt, &p, &cal.local, self.tile.scale());
             blend(img, &alt, alpha);
+        }
+    }
+
+    /// Each mask's point curves, after the global curves, faded by the mask.
+    pub fn apply_curves(&self, img: &mut Image) {
+        const LUT: usize = 4096;
+        for (k, alpha) in &self.curves {
+            let main = k.main.as_ref().map(|s| s.lut(LUT));
+            let channels: Vec<Option<Vec<f32>>> = k
+                .channels
+                .iter()
+                .map(|c| c.as_ref().map(|s| s.lut(LUT)))
+                .collect();
+            img.rgb
+                .par_chunks_mut(3)
+                .zip(alpha.par_iter())
+                .for_each(|(p, &m)| {
+                    if m <= 0.0 {
+                        return;
+                    }
+                    for (ch, v) in p.iter_mut().enumerate() {
+                        let mut e = local::srgb_encode(v.clamp(0.0, 1.0));
+                        if let Some(lut) = &main {
+                            e = local::lookup(lut, e);
+                        }
+                        if let Some(lut) = &channels[ch] {
+                            e = local::lookup(lut, e);
+                        }
+                        *v += (local::srgb_decode(e) - *v) * m;
+                    }
+                });
         }
     }
 
@@ -1344,6 +1436,40 @@ mod tests {
         drawn.apply_light(&mut img, &MaskStrengths::default());
         assert!((img.get(1, 1)[0] - 0.4).abs() < 1e-4, "{:?}", img.get(1, 1));
         assert!((img.get(1, 18)[0] - 0.2).abs() < 1e-6);
+    }
+
+    #[test]
+    fn a_masks_curve_applies_only_under_it() {
+        // A curve that darkens the midtones, and no sliders.
+        let mut c = correction(vec![linear("0.55", "0.45")]);
+        if let Value::Struct(m) = &mut c {
+            m.remove("LocalExposure2012");
+            m.insert(
+                "MainCurve".into(),
+                Value::Seq(["0, 0", "128, 64", "255, 255"].map(text).to_vec()),
+            );
+        }
+        let (m, notes) = Masks::from_settings(&settings(vec![c]));
+        assert!(notes.is_empty(), "{notes:?}");
+        assert!(m.corrections[0].adjust.is_neutral() && m.corrections[0].curves.is_some());
+        let mut img = Image::from_fn(4, 20, |_, _| [0.2, 0.2, 0.2]);
+        let drawn = draw(&m, &img, (4, 20), None, |v| v, &MaskStrengths::default());
+        drawn.apply_curves(&mut img);
+        assert!(img.get(1, 1)[0] < 0.1, "{:?}", img.get(1, 1));
+        assert!((img.get(1, 18)[0] - 0.2).abs() < 1e-6);
+        // An identity curve is no curve.
+        let mut id = correction(vec![linear("1", "0")]);
+        if let Value::Struct(m) = &mut id {
+            m.insert(
+                "MainCurve".into(),
+                Value::Seq(["0, 0", "255, 255"].map(text).to_vec()),
+            );
+        }
+        assert!(
+            Masks::from_settings(&settings(vec![id])).0.corrections[0]
+                .curves
+                .is_none()
+        );
     }
 
     #[test]

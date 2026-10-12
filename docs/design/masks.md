@@ -47,7 +47,9 @@ Shapes, evaluated per output pixel at its frame position (through the crop's map
 | after Texture/Clarity | Texture, Clarity; Saturation and Color (toning) | a copy through the local-contrast filter blended in; chroma scale and an OkLab tint |
 | after sharpening | Sharpness (below 0: a soft blur), Noise | a sharpened, blurred or denoised copy blended in |
 
-Not rendered yet (kept in the file, reported): Moire, Defringe, `LocalHue`, `LocalGrain`, local curves (`MainCurve`, …), `LocalPointColors`. Strengths are in `Calibration.masks` (`MaskStrengths`) for fitting.
+Mask curves (`MainCurve`, `RedCurve`, `GreenCurve`, `BlueCurve`) apply after the global curves, the same way, faded by the mask (`Drawn::apply_curves`); we read them like the global point curve, which is a guess until a Lightroom sample confirms it.
+
+Not rendered yet (kept in the file, reported): Moire, Defringe, `LocalHue`, `LocalGrain`, `LocalPointColors`. Strengths are in `Calibration.masks` (`MaskStrengths`) for fitting.
 
 **Overlay.** The editor's preview can tint one mask red (`DevelopSettings.masks.overlay`, by its position in `MaskGroupBasedCorrections`), after everything else, as Lightroom's overlay does.
 

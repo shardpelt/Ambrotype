@@ -1796,6 +1796,9 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
         });
     }
 
+    if let Some(m) = &masks {
+        m.apply_curves(&mut out);
+    }
     if let Some(l) = &s.lut {
         apply_lut(&mut out, l);
     }

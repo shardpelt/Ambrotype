@@ -323,6 +323,7 @@ async function enterSpots() {
   if (!ui.info || sp.on) return;
   if (ui.crop.on) await exitCrop(true);
   exitMasks();
+  exitGuided();
   if (ui.zoom.on) setZoom(false);
   setPicking(false);
   try {

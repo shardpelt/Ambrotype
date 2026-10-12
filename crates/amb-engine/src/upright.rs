@@ -480,6 +480,106 @@ pub fn solve(
     found.matrix().map(|_| found)
 }
 
+/// Guided Upright's result: the Transform sliders that make the guides
+/// vertical or horizontal.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GuidedSliders {
+    /// `PerspectiveVertical`, `PerspectiveHorizontal` (−100..100) and
+    /// `PerspectiveRotate` (−10..10 degrees).
+    pub vertical: f64,
+    pub horizontal: f64,
+    pub rotate: f64,
+    /// The largest angle a guide is still off by afterwards, degrees.
+    pub worst_degrees: f64,
+}
+
+/// Guided Upright (**ours**): `guides` are lines the user drew on the
+/// lens-corrected frame, as fractions of a `width`×`height` frame. Each is
+/// made vertical or horizontal, whichever it is closer to, by the manual
+/// Transform sliders: Rotate always, Vertical when two or more guides are
+/// vertical, Horizontal when two or more are horizontal. Lightroom stores
+/// its own guides in a way we can't read, so the result is the sliders,
+/// which Lightroom reads. `None` with no usable guide.
+pub fn guided(
+    guides: &[Segment],
+    width: usize,
+    height: usize,
+    k: &crate::transform::TransformStrengths,
+) -> Option<GuidedSliders> {
+    use crate::transform::Transform;
+    let (w, h) = (width as f64, height as f64);
+    type Point = (f64, f64);
+    let lines: Vec<(Point, Point, Axis)> = guides
+        .iter()
+        .map(|g| ((g.a.0 * w, g.a.1 * h), (g.b.0 * w, g.b.1 * h)))
+        .filter(|(a, b)| (b.0 - a.0).hypot(b.1 - a.1) > 4.0)
+        .map(|(a, b)| {
+            let axis = if (b.1 - a.1).abs() >= (b.0 - a.0).abs() {
+                Axis::Vertical
+            } else {
+                Axis::Horizontal
+            };
+            (a, b, axis)
+        })
+        .collect();
+    if lines.is_empty() || width == 0 || height == 0 {
+        return None;
+    }
+    let count = |axis: Axis| lines.iter().filter(|l| l.2 == axis).count();
+    let free = [
+        count(Axis::Vertical) >= 2,
+        count(Axis::Horizontal) >= 2,
+        true,
+    ];
+    // p: Vertical / 100, Horizontal / 100, Rotate / 10.
+    let sliders = |p: &[f64; 3]| Transform {
+        vertical: p[0] * 100.0,
+        horizontal: p[1] * 100.0,
+        rotate: p[2] * 10.0,
+        ..Transform::default()
+    };
+    let errors = |p: &[f64; 3]| -> Option<Vec<f64>> {
+        let m = sliders(p).forward(width, height, k)?;
+        lines
+            .iter()
+            .map(|(a, b, axis)| {
+                let (pa, pb) = (m.apply(a.0, a.1), m.apply(b.0, b.1));
+                let (dx, dy) = (pb.0 - pa.0, pb.1 - pa.1);
+                let len = dx.hypot(dy);
+                (len.is_finite() && len > 0.0)
+                    .then(|| if *axis == Axis::Vertical { dx } else { dy } / len)
+            })
+            .collect()
+    };
+    let cost = |p: &[f64; 3]| -> f64 {
+        if p.iter().any(|v| v.abs() > 1.0) {
+            return f64::MAX;
+        }
+        match errors(p) {
+            // A little pull towards no change settles what the guides don't.
+            Some(e) => {
+                e.iter().map(|r| r * r).sum::<f64>() + 1e-6 * p.iter().map(|v| v * v).sum::<f64>()
+            }
+            None => f64::MAX,
+        }
+    };
+    let mut best = nelder_mead(cost, [0.0; 3], free, 0.05);
+    // Restart once from the result, for a tighter fit.
+    best = nelder_mead(cost, best, free, 0.01);
+    let worst = errors(&best)?
+        .iter()
+        .map(|r| r.abs().min(1.0).asin().to_degrees())
+        .fold(0.0, f64::max);
+    let t = sliders(&best);
+    let round = |v: f64, step: f64| (v / step).round() * step;
+    Some(GuidedSliders {
+        vertical: round(t.vertical, 1.0),
+        horizontal: round(t.horizontal, 1.0),
+        rotate: round(t.rotate, 0.01),
+        worst_degrees: worst,
+    })
+}
+
 /// Minimise `f` over the `free` coordinates from `start` (simplex steps of
 /// `step`).
 fn nelder_mead(
@@ -560,6 +660,41 @@ fn nelder_mead(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn guided_finds_the_sliders_that_straighten_the_guides() {
+        use crate::transform::{DEFAULT_STRENGTHS as TK, Transform};
+        let (w, h) = (3000usize, 2000usize);
+        let truth = Transform {
+            vertical: -40.0,
+            rotate: 3.0,
+            ..Transform::default()
+        };
+        // Lines that are vertical (and one horizontal) after `truth`, drawn
+        // where they are on the frame before it.
+        let back = truth.forward(w, h, &TK).unwrap().inverse().unwrap();
+        let guide = |a: (f64, f64), b: (f64, f64)| {
+            let (pa, pb) = (back.apply(a.0, a.1), back.apply(b.0, b.1));
+            Segment {
+                a: (pa.0 / w as f64, pa.1 / h as f64),
+                b: (pb.0 / w as f64, pb.1 / h as f64),
+            }
+        };
+        let guides = [
+            guide((600.0, 300.0), (600.0, 1700.0)),
+            guide((2300.0, 200.0), (2300.0, 1800.0)),
+        ];
+        let g = guided(&guides, w, h, &TK).unwrap();
+        assert!((g.vertical + 40.0).abs() <= 1.0, "{g:?}");
+        assert!(g.horizontal == 0.0, "{g:?}");
+        assert!((g.rotate - 3.0).abs() < 0.05, "{g:?}");
+        assert!(g.worst_degrees < 0.1, "{g:?}");
+        // One guide only turns the photo.
+        let one = guided(&guides[..1], w, h, &TK).unwrap();
+        assert_eq!(one.vertical, 0.0);
+        assert!(one.worst_degrees < 0.1, "{one:?}");
+        assert!(guided(&[], w, h, &TK).is_none());
+    }
 
     const K: UprightStrengths = DEFAULT_STRENGTHS;
     const F: f64 = 35.0 / 21.6335;

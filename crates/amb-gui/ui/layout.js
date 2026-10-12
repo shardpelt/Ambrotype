@@ -62,6 +62,7 @@ function applyLayout(layout) {
   store.append($("crop-panel"));
   store.append($("mask-panel"));
   store.append($("spot-panel"));
+  store.append($("guided-panel"));
   ui.curve?.destroy();
   ui.wheels?.destroy();
   ui.curve = ui.wheels = null;
@@ -98,6 +99,7 @@ function applyLayout(layout) {
     else host.prepend($("crop-panel"));
     $("crop-panel").after($("mask-panel"));
     $("mask-panel").after($("spot-panel"));
+    $("spot-panel").after($("guided-panel"));
   }
   if (ui.edit) decorateEditing();
   syncControls();
@@ -270,6 +272,14 @@ function buildPanel(item) {
         auto.title = "Set Exposure, Contrast, Highlights, Shadows, Whites and Blacks for this photo (one undo step)";
         auto.addEventListener("click", () => autoFlow(true, false));
         l.append(auto);
+      }
+      if (e.text === "Upright") {
+        const guided = document.createElement("button");
+        guided.className = "small section-action";
+        guided.textContent = "Guided…";
+        guided.title = "Draw lines that should be vertical or horizontal; the Transform sliders straighten them";
+        guided.addEventListener("click", () => enterGuided());
+        l.append(guided);
       }
       if (e.text === "Conversion") {
         // Keep this frame's film base and levels, so later edits don't move them.

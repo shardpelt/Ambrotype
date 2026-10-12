@@ -2254,6 +2254,36 @@ fn trial_overrides(
         .collect())
 }
 
+#[derive(Serialize)]
+struct Guided {
+    commands: Vec<Command>,
+    /// How far the worst guide is still off, degrees.
+    worst_degrees: f64,
+}
+
+/// Guided Upright for the open photo: the Transform sliders that straighten
+/// `guides` (fractions of the upright, uncropped photo).
+#[tauri::command]
+fn guided_upright(guides: Vec<[f64; 4]>, state: tauri::State<'_, AppState>) -> Res<Guided> {
+    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    let s = guard.as_ref().ok_or("no photo open")?;
+    let (commands, worst_degrees) = s.guided_upright(&guides)?;
+    Ok(Guided {
+        commands,
+        worst_degrees,
+    })
+}
+
+/// The guides Guided Upright kept for the open photo.
+#[tauri::command]
+fn upright_guides(state: tauri::State<'_, AppState>) -> Res<Vec<[f64; 4]>> {
+    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    Ok(guard
+        .as_ref()
+        .map(Session::upright_guides)
+        .unwrap_or_default())
+}
+
 /// The open photo's film negative analysis as commands that store it with
 /// Auto off ("Freeze").
 #[tauri::command]
@@ -3208,6 +3238,8 @@ fn main() {
             trial_overrides,
             luts_list,
             negative_freeze,
+            guided_upright,
+            upright_guides,
             negative_sync,
             export_presets,
             save_export_preset,

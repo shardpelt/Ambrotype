@@ -1405,6 +1405,15 @@
    "status": "approx"
   },
   {
+   "name": "amb:UprightGuides",
+   "group": "transform",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "metadata"
+  },
+  {
    "name": "PerspectiveVertical",
    "group": "transform",
    "kind": "number",

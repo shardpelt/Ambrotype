@@ -29,7 +29,7 @@ How to read the tables:
 | [Split Toning (legacy) and Color Grading Balance](#split-toning) | `split_toning` | 5 | The pre-2020 Split Toning controls. Camera Raw reuses SplitToningBalance as the Color Grading Balance slider. |
 | [Detail](#detail) | `detail` | 11 | Sharpening (Amount, Radius, Detail, Masking) and manual noise reduction (luminance and colour). Judge these at 100% zoom or more. |
 | [Lens Corrections](#lens) | `lens` | 19 | Lens profile corrections, chromatic-aberration removal, defringing and lens vignetting. |
-| [Transform](#transform) | `transform` | 26 | Upright perspective correction and manual perspective sliders. |
+| [Transform](#transform) | `transform` | 27 | Upright perspective correction and manual perspective sliders. |
 | [Effects](#effects) | `effects` | 11 | Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) and film grain (Amount, Size, Roughness). |
 | [LUT](#lut) | `lut` | 2 | A look from a .cube file (the 3D LUT format of Resolve and many look packs), applied after the colour and curves. Our own feature (amb: namespace); Lightroom has no LUT setting and ignores these. |
 | [Calibration](#calibration) | `calibration` | 8 | Shadows tint and the red, green and blue primary hue/saturation adjustments to the camera's default colour rendering. |
@@ -341,7 +341,8 @@ Upright perspective correction and manual perspective sliders.
 
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
-| `PerspectiveUpright` | Upright mode | enum | 0 to 5 | 0 | rendered (approx.) | Automatic perspective correction: 0 Off, 1 Auto (balanced, not all the way), 2 Level (rotation only), 3 Vertical (level and vertical perspective), 4 Full (level, vertical and horizontal perspective), 5 Guided (from drawn guides; not rendered yet). The correction is found from the photo's own straight lines, after the lens corrections, and the Transform sliders apply on top of it. |
+| `PerspectiveUpright` | Upright mode | enum | 0 to 5 | 0 | rendered (approx.) | Automatic perspective correction: 0 Off, 1 Auto (balanced, not all the way), 2 Level (rotation only), 3 Vertical (level and vertical perspective), 4 Full (level, vertical and horizontal perspective), 5 Guided (Lightroom's own guides, which we can't read, so it is left off; our editor's Guided tool sets the Transform sliders instead). The correction is found from the photo's own straight lines, after the lens corrections, and the Transform sliders apply on top of it. |
+| `amb:UprightGuides` | Upright guides | text |  |  | metadata | The guides drawn with the editor's Guided Upright tool, as 'x1,y1,x2,y2' per guide (fractions of the uncropped photo in its stored orientation, before Transform), separated by ';'. Only kept so the guides can be edited again: the correction itself is in the Vertical, Horizontal and Rotate sliders, which Lightroom reads too. |
 | `PerspectiveVertical` | Transform: Vertical | number | -100 to 100 | 0 | rendered (approx.) | Vertical perspective correction: negative widens the top, which straightens verticals that lean together in a photo taken looking up; positive widens the bottom. |
 | `PerspectiveHorizontal` | Transform: Horizontal | number | -100 to 100 | 0 | rendered (approx.) | Horizontal perspective correction: positive makes the right side taller, negative the left side. |
 | `PerspectiveAspect` | Transform: Aspect | number | -100 to 100 | 0 | rendered (approx.) | Stretches the photo: positive vertically, negative horizontally. Use it after a strong perspective correction to restore proportions. |

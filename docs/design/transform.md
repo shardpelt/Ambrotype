@@ -1,6 +1,6 @@
 # Transform
 
-Status: implemented 2026-10-10. The manual sliders and Upright Auto, Level, Vertical and Full render; Upright Guided does not yet.
+Status: implemented 2026-10-10. The manual sliders and Upright Auto, Level, Vertical and Full render. Guided (2026-10-12) works our own way; see below.
 
 Code: `crates/amb-engine/src/transform.rs` (the sliders' model), `crates/amb-engine/src/upright.rs` (finding the Upright correction), composed into the resampling pass in `crates/amb-engine/src/lens.rs`. The editor's Transform panel (an Upright choice and the sliders) is generated from the registry like the others.
 
@@ -18,6 +18,16 @@ Code: `crates/amb-engine/src/transform.rs` (the sliders' model), `crates/amb-eng
 | `CropConstrainToWarp` | bool | Constrain Crop: zooms in until no blank areas remain (shared with the lens corrections). |
 | `PerspectiveUpright` | 0..5 | Upright mode: 0 off, 1 Auto, 2 Level, 3 Vertical, 4 Full, 5 Guided. The five names are Adobe's (help and Kost); the numbers are our reading, not stated anywhere ([open-questions.md](../adobe-docs/open-questions.md) Q3). Guided is not rendered; `amb render` and the editor say so. |
 | `Upright*` | — | Lightroom's own Upright analysis. Image-specific and not read: we find the correction again. Not reported as missing. |
+
+
+## Guided Upright (ours)
+
+Lightroom keeps Guided's lines in `UprightFourSegments_*`, which nothing we can read describes, and writing a guess could break Lightroom's files. So our Guided tool doesn't use `PerspectiveUpright` 5:
+
+- Transform → Upright → **Guided…** shows the photo without crop or Transform. Drag up to four guides along lines that should be vertical or horizontal (each counts as whichever it is closer to); drag an end to adjust, right-click it to remove; Enter applies, Esc cancels.
+- `upright::guided` finds the Transform sliders that straighten the guides: Rotate always, Vertical with two or more vertical guides, Horizontal with two or more horizontal ones (a least-squares fit, so more guides than needed are averaged). Aspect, Scale and the offsets stay as they are, since they don't change whether a line is straight.
+- One undo step sets Vertical, Horizontal and Rotate, turns Upright off, clears the crop (Alt keeps it, as with the other modes) and keeps the guides in `amb:UprightGuides` so they can be edited again. Lightroom reads the sliders, so the photo opens corrected there too, as a manual Transform.
+- Limits: Rotate only goes to ±10°, and Vertical and Horizontal to ±100 (the model's 30° tilt); guides that need more are fitted as far as they go, and the editor says how far off the worst one still is.
 
 ## The model (ours, not Adobe's)
 

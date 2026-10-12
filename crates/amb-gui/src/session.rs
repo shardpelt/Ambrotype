@@ -974,6 +974,73 @@ impl Session {
         start
     }
 
+    /// Guided Upright: the commands that make `guides` (each `[u1, v1, u2,
+    /// v2]`, fractions of the upright, uncropped photo) vertical or
+    /// horizontal with the Transform sliders, keep the guides, and turn
+    /// Upright off. Also the largest angle a guide is still off by.
+    pub fn guided_upright(&self, guides: &[[f64; 4]]) -> Result<(Vec<Command>, f64), String> {
+        use amb_engine::upright::{self, Segment};
+        let o = self.full.metadata.orientation;
+        let stored: Vec<Segment> = guides
+            .iter()
+            .map(|g| Segment {
+                a: amb_export::geometry::stored_fraction(o, g[0], g[1]),
+                b: amb_export::geometry::stored_fraction(o, g[2], g[3]),
+            })
+            .collect();
+        let (develop, _) = DevelopSettings::from_settings(self.state.settings());
+        let k = &develop.calibration.transform;
+        let found = upright::guided(&stored, self.full.width, self.full.height, k)
+            .ok_or("draw a guide along a line that should be vertical or horizontal")?;
+        let set = |name: &str, v: f64| {
+            if v == 0.0 {
+                Command::ResetParam { name: name.into() }
+            } else {
+                Command::SetParam {
+                    name: name.into(),
+                    value: serde_json::json!(v),
+                }
+            }
+        };
+        let text: Vec<String> = stored
+            .iter()
+            .map(|s| format!("{:.5},{:.5},{:.5},{:.5}", s.a.0, s.a.1, s.b.0, s.b.1))
+            .collect();
+        Ok((
+            vec![
+                Command::ResetParam {
+                    name: "PerspectiveUpright".into(),
+                },
+                set("PerspectiveVertical", found.vertical),
+                set("PerspectiveHorizontal", found.horizontal),
+                set("PerspectiveRotate", found.rotate),
+                Command::SetParam {
+                    name: "amb:UprightGuides".into(),
+                    value: serde_json::json!(text.join(";")),
+                },
+            ],
+            found.worst_degrees,
+        ))
+    }
+
+    /// The guides kept by Guided Upright, as fractions of the upright,
+    /// uncropped photo.
+    pub fn upright_guides(&self) -> Vec<[f64; 4]> {
+        let o = self.full.metadata.orientation;
+        let Some(Value::Text(t)) = self.state.settings().get("amb:UprightGuides") else {
+            return Vec::new();
+        };
+        t.split(';')
+            .filter_map(|g| {
+                let v: Vec<f64> = g.split(',').filter_map(|x| x.trim().parse().ok()).collect();
+                let [x1, y1, x2, y2] = v[..] else { return None };
+                let a = amb_export::geometry::upright_fraction(o, x1, y1);
+                let b = amb_export::geometry::upright_fraction(o, x2, y2);
+                Some([a.0, a.1, b.0, b.1])
+            })
+            .collect()
+    }
+
     /// The film negative analysis of this photo (film base, levels, midtone).
     pub fn negative_analysis(&self) -> amb_engine::negative::Analysis {
         amb_library::negative::analyze_image(&self.full)

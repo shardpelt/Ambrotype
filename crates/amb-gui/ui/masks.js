@@ -921,6 +921,7 @@ async function enterMasks() {
   if (!ui.info || mk.on) return;
   if (ui.crop.on) await exitCrop(true);
   exitSpots();
+  exitGuided();
   if (ui.zoom.on) setZoom(false);
   setPicking(false);
   if (!mk.sliders.length) {

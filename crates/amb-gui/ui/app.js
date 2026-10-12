@@ -567,7 +567,7 @@ async function renderLoop() {
   while (ui.preview.dirty) {
     ui.preview.dirty = false;
     const draft = ui.preview.draft;
-    const uncropped = ui.crop.on || ui.before;
+    const uncropped = ui.crop.on || ui.before || gu.on;
     try {
       if (ui.zoom.on) {
         // At 100% only committed changes render (a full-size render per drag step is too slow).
@@ -578,6 +578,7 @@ async function renderLoop() {
       const maskOverlay = ui.before ? null : maskOverlayIndex();
       // The crop tool draws its rectangle on the whole photo.
       if (ui.crop.on) overrides.HasCrop = false;
+      Object.assign(overrides, guidedOverrides());
       const buf = await invoke("preview", {
         maxEdge: previewSize(draft),
         overrides,
@@ -914,6 +915,7 @@ async function enterCrop() {
   if (!ui.info || ui.crop.on) return;
   exitMasks();
   exitSpots();
+  exitGuided();
   if (ui.zoom.on) setZoom(false);
   setPicking(false);
   let st;
@@ -1734,6 +1736,7 @@ async function init() {
   wireCrop();
   wireMasks();
   wireSpots();
+  wireGuided();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));

@@ -103,6 +103,7 @@
       <canvas id="crop-canvas" class="crop-canvas" hidden></canvas>
       <canvas id="mask-canvas" class="crop-canvas mask-canvas" hidden></canvas>
       <canvas id="spot-canvas" class="crop-canvas spot-canvas" hidden></canvas>
+      <canvas id="guide-canvas" class="crop-canvas spot-canvas" hidden></canvas>
       <div class="badge" id="before-badge" hidden>Before</div>
       <div class="busy" id="busy" hidden></div>
       <!-- Learn: the current lesson step (learn.js). -->
@@ -167,6 +168,16 @@
           <button type="button" id="spot-clear">Remove all</button>
           <span class="grow"></span>
           <button type="button" id="spot-done" class="primary" title="Q or Esc">Done</button>
+        </div>
+      </section>
+      <section id="guided-panel" class="crop-panel" hidden>
+        <div class="side-head"><h2>Guided Upright</h2><span id="guided-count" class="hint"></span></div>
+        <p class="hint" id="guided-hint"></p>
+        <div class="crop-actions">
+          <button type="button" id="guided-clear">Remove all</button>
+          <span class="grow"></span>
+          <button type="button" id="guided-cancel" title="Esc">Cancel</button>
+          <button type="button" id="guided-apply" class="primary" title="Enter">Apply</button>
         </div>
       </section>
       <section id="crop-panel" class="crop-panel" hidden>
@@ -1076,6 +1087,7 @@
   <script src="picker.js"></script>
   <script src="learn.js"></script>
   <script src="assistant.js"></script>
+  <script src="guided.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

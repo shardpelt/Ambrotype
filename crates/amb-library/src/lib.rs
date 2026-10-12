@@ -7,3 +7,4 @@ pub mod collections;
 pub mod import;
 pub mod look;
 pub mod merge;
+pub mod smart;

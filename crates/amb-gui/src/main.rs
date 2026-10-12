@@ -1967,10 +1967,16 @@ async fn share_plugin(
 
 /// The raws in a folder, with ratings, labels, keywords and capture times.
 #[tauri::command]
-async fn library_list(dir: String) -> Res<Vec<library::LibraryPhoto>> {
-    tauri::async_runtime::spawn_blocking(move || library::list(Path::new(&dir)))
-        .await
-        .map_err(|e| e.to_string())?
+async fn library_list(dir: String, subfolders: Option<bool>) -> Res<Vec<library::LibraryPhoto>> {
+    tauri::async_runtime::spawn_blocking(move || {
+        if subfolders.unwrap_or(false) {
+            library::list_tree(Path::new(&dir))
+        } else {
+            library::list(Path::new(&dir))
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 /// Pick a folder for the library.
@@ -2369,6 +2375,46 @@ fn collection_delete(app: tauri::AppHandle, name: String) -> Res<()> {
     amb_library::collections::delete(&collections_dir(&app)?, &name)
 }
 
+#[tauri::command]
+fn smart_list(app: tauri::AppHandle) -> Res<Vec<amb_library::smart::SmartCollection>> {
+    Ok(amb_library::smart::all(&collections_dir(&app)?))
+}
+
+/// Save a smart collection (replacing `previous`, when renamed).
+#[tauri::command]
+fn smart_save(
+    app: tauri::AppHandle,
+    collection: amb_library::smart::SmartCollection,
+    previous: Option<String>,
+) -> Res<()> {
+    let mut c = collection;
+    c.format = amb_library::smart::FORMAT.into();
+    c.name = c.name.trim().to_string();
+    amb_library::smart::save(&collections_dir(&app)?, &c, previous.as_deref())
+}
+
+#[tauri::command]
+fn smart_delete(app: tauri::AppHandle, name: String) -> Res<()> {
+    amb_library::smart::delete(&collections_dir(&app)?, &name)
+}
+
+/// A smart collection's photos, worked out now.
+#[tauri::command]
+async fn smart_photos(app: tauri::AppHandle, name: String) -> Res<CollectionView> {
+    let dir = collections_dir(&app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let (_, s) = amb_library::smart::find(&dir, &name)
+            .ok_or_else(|| format!("no smart collection {name:?}"))?;
+        Ok(CollectionView {
+            photos: library::smart_photos(&s),
+            name: s.name,
+            missing: Vec::new(),
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[derive(Serialize)]
 struct ImportDefaults {
     dest: Option<String>,
@@ -2635,6 +2681,10 @@ fn main() {
             collection_remove,
             collection_rename,
             collection_delete,
+            smart_list,
+            smart_save,
+            smart_delete,
+            smart_photos,
             pick_folder,
             import_plan,
             import_run,

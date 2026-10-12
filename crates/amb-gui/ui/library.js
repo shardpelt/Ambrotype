@@ -23,6 +23,7 @@ const lib = {
   loading: 0,
   observer: null,
   collection: null,    // the collection shown instead of the folder, by name
+  smart: null,         // ... when it's a smart collection, its name too
   copied: null,        // the photo "Copy settings" took its edit from
   groups: null,        // setting groups for Paste settings
   wired: false,
@@ -77,10 +78,11 @@ async function toggleLibrary(on = !lib.on) {
 async function loadLibrary(dir) {
   lib.dir = dir;
   lib.collection = null;
+  lib.smart = null;
   $("library-folder").textContent = dir ?? "";
   $("library-count").textContent = "Reading the folder…";
   try {
-    lib.photos = await invoke("library_list", { dir });
+    lib.photos = await invoke("library_list", { dir, subfolders: $("lib-subfolders").checked });
   } catch (e) {
     lib.photos = [];
     toast(`Couldn't read the folder: ${e}`, true);
@@ -514,7 +516,8 @@ async function libraryDeleteCopies() {
   }
   status(`Deleted ${copies.length - failed} virtual cop${copies.length - failed === 1 ? "y" : "ies"}`);
   lib.selected.clear();
-  if (lib.collection) await showCollection(lib.collection);
+  if (lib.smart) await showSmartCollection(lib.smart);
+  else if (lib.collection) await showCollection(lib.collection);
   else await loadLibrary(lib.dir);
 }
 
@@ -713,7 +716,11 @@ function wireLibrary() {
   });
   $("lib-choose").addEventListener("click", chooseLibraryFolder);
   $("lib-choose-empty").addEventListener("click", chooseLibraryFolder);
-  $("lib-reload").addEventListener("click", () => (lib.collection ? showCollection(lib.collection) : lib.dir && loadLibrary(lib.dir)));
+  $("lib-reload").addEventListener("click", () => {
+    if (lib.smart) showSmartCollection(lib.smart);
+    else if (lib.collection) showCollection(lib.collection);
+    else if (lib.dir) loadLibrary(lib.dir);
+  });
   $("lib-import").addEventListener("click", () => importFlow());
   for (const b of $("lib-rating").querySelectorAll("button[data-stars]")) {
     b.addEventListener("click", () => libraryChange({ rating: Number(b.dataset.stars) }));

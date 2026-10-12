@@ -155,6 +155,43 @@ pub fn list_dir(dir: &Path) -> Result<Vec<FolderPhoto>, String> {
     Ok(describe(ordered))
 }
 
+/// The photos in `dir` and all its subfolders (hidden ones left out): the
+/// folder's own first, then each subfolder's in name order. Names of
+/// photos in subfolders start with their folder (`2026-07/IMG_1.nef`).
+pub fn list_tree(dir: &Path) -> Result<Vec<FolderPhoto>, String> {
+    let mut out = list_dir(dir)?;
+    let mut subdirs: Vec<PathBuf> = std::fs::read_dir(dir)
+        .map_err(|e| format!("{}: {e}", dir.display()))?
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.is_dir())
+        .filter(|p| {
+            !p.file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.starts_with('.'))
+        })
+        .collect();
+    subdirs.sort_by(|a, b| {
+        natural(
+            &a.file_name().unwrap_or_default().to_string_lossy(),
+            &b.file_name().unwrap_or_default().to_string_lossy(),
+        )
+    });
+    for sub in subdirs {
+        let folder = sub
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned();
+        // A folder that can't be read is skipped, not the whole tree.
+        for mut p in list_tree(&sub).unwrap_or_default() {
+            p.name = format!("{folder}/{}", p.name);
+            out.push(p);
+        }
+    }
+    Ok(out)
+}
+
 /// A photo's name as shown: its file name, and "Copy N" for a virtual copy.
 pub fn display_name(path: &Path) -> String {
     let file = |p: &Path| {

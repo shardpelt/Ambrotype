@@ -35,6 +35,8 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 - **Merge to HDR** two or more bracketed raws into one floating-point DNG next to them ([hdr-merge.md](hdr-merge.md)).
 - **Merge to Panorama** two or more overlapping raws into one DNG next to them ([panorama.md](panorama.md)).
 - **Import** (Import… in the bar, or Ctrl+Shift+I anywhere): copy photos from a card or folder into the library (below).
+- **Subfolders:** tick Subfolders in the bar to show the folder's subfolders too; their photos are named with their folder (`2026-07/IMG_1.nef`).
+- **Smart collections** (Show → New smart collection…): photos chosen by rules, worked out each time from the sidecars and capture times, in the folders you name and their subfolders. Rules: rating, colour label, flag, keyword, file name, edited, capture date; all or any of them. Each is a small JSON file beside the collections (`amb_library::smart`). Edit rules… and Delete collection… in the panel; ↻ works them out again.
 - **Collections:** the menu next to Folder… shows a collection instead of the folder. The panel adds the selection to a collection (or a new one); B adds the selection, or the open photo in the editor, to the last collection used, like Lightroom's quick collection. Viewing a collection, the panel can remove photos from it (the files stay), rename it or delete it.
 
 The rating, label, flag and keyword keys work in the editor too, on the open photo. Its rating block has the label swatches and the flag buttons.
@@ -110,7 +112,7 @@ Lightroom keeps each photo's edit history and snapshots in its catalogue. Ours g
 
 ## Not yet
 
-- Subfolders, several folders at once, smart collections (by rule), collection sets, stacks. An import into dated folders shows only the first folder afterwards.
+- Several folders at once (outside smart collections), collection sets, stacks. A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does). Smart collection rules for camera, lens, ISO and the like. An import into dated folders shows only the first folder afterwards.
 - Collections don't follow photos moved outside Ambrotype.
 - Import: moving instead of copying, a second backup copy, ejecting the card, a develop preset on import, picking single photos to import.
 - Zooming in the loupe and compare views (open the photo in the editor for 100%).

@@ -163,6 +163,14 @@ dialog menu button { white-space: nowrap; }
 dialog label.wide { margin-top: 12px; }
 dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-top: 10px; color: var(--text); }
 .match-button { width: 100%; margin: 4px 0 6px; }
+/* Smart collections */
+.lib-subfolders { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+#smart-dialog { width: 600px; }
+#smart-dialog h3 { margin: 14px 0 6px; font-size: 12px; color: var(--muted); font-weight: normal; }
+.smart-folders, .smart-rules { display: flex; flex-direction: column; gap: 6px; }
+.smart-folder, .smart-rule { display: flex; gap: 6px; align-items: center; }
+.smart-folder code { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smart-rule select, .smart-rule input { flex: 1; min-width: 0; }
 /* Learn */
 .lesson-card { position: absolute; left: 16px; bottom: 16px; width: 340px; background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 12px 14px; box-shadow: 0 6px 24px rgba(0, 0, 0, .45); z-index: 20; }
 .lesson-head { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 11px; }

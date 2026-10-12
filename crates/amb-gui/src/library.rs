@@ -28,6 +28,34 @@ pub fn list(dir: &Path) -> Result<Vec<LibraryPhoto>, String> {
     Ok(with_times(folder::list_dir(dir)?))
 }
 
+/// [`list`] with the photos in every subfolder too.
+pub fn list_tree(dir: &Path) -> Result<Vec<LibraryPhoto>, String> {
+    Ok(with_times(folder::list_tree(dir)?))
+}
+
+/// The photos under a smart collection's folders that meet its rules.
+pub fn smart_photos(s: &amb_library::smart::SmartCollection) -> Vec<LibraryPhoto> {
+    let mut seen = std::collections::HashSet::new();
+    s.folders
+        .iter()
+        .filter_map(|f| list_tree(f).ok())
+        .flatten()
+        .filter(|p| seen.insert(p.photo.path.clone()))
+        .filter(|p| {
+            let facts = amb_library::smart::Facts {
+                name: &p.photo.name,
+                rating: p.photo.rating,
+                label: p.photo.label.as_deref(),
+                flag: p.photo.flag.map(|f| f.name()),
+                keywords: &p.photo.keywords,
+                edited: p.photo.edited,
+                captured: p.captured.as_deref(),
+            };
+            s.matches(&facts)
+        })
+        .collect()
+}
+
 /// The photos of a collection, in its order, and the paths no longer there.
 pub fn list_paths(paths: &[PathBuf]) -> (Vec<LibraryPhoto>, Vec<String>) {
     let (here, gone): (Vec<PathBuf>, Vec<PathBuf>) =

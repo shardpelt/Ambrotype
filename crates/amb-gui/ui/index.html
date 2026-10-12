@@ -191,6 +191,7 @@
     <div class="library-bar">
       <button type="button" id="lib-choose" class="small" title="Show another folder">Folder…</button>
       <select id="lib-source" aria-label="Show" title="Show a folder or a collection"><option value="">Folder</option></select>
+      <label class="lib-subfolders" title="Show the photos in the folder's subfolders too"><input type="checkbox" id="lib-subfolders"> Subfolders</label>
       <span id="library-folder" class="library-folder"></span>
       <button type="button" id="lib-reload" class="small" title="Read the folder again">↻</button>
       <button type="button" id="lib-import" class="small" title="Copy photos from a card or folder (Ctrl+Shift+I)">Import…</button>
@@ -258,6 +259,7 @@
         <button type="button" id="lib-remove-from" class="small" data-needs="any" hidden>Remove from this collection</button>
         <div class="col-line">
           <button type="button" id="lib-coll-rename" class="small" hidden>Rename collection…</button>
+          <button type="button" id="lib-smart-edit" class="small" hidden>Edit rules…</button>
           <button type="button" id="lib-coll-delete" class="small" hidden>Delete collection…</button>
         </div>
         <h3>Edits</h3>
@@ -406,6 +408,25 @@
         <button value="cancel" formnovalidate>Cancel</button>
         <button id="match-find" type="button">Find settings</button>
         <button id="match-apply" value="ok" class="primary" disabled>Apply</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- A smart collection's rules (collections.js). -->
+  <dialog id="smart-dialog">
+    <form method="dialog">
+      <h2 id="smart-title">Smart collection</h2>
+      <label>Name <input id="smart-name" type="text" spellcheck="false" maxlength="100"></label>
+      <h3>Look in (with subfolders)</h3>
+      <div id="smart-folders" class="smart-folders"></div>
+      <div class="crop-line"><button type="button" id="smart-add-folder" class="small">Add folder…</button></div>
+      <h3>Photos that match <select id="smart-match"><option value="all">all</option><option value="any">any</option></select> of these rules</h3>
+      <div id="smart-rules" class="smart-rules"></div>
+      <div class="crop-line"><button type="button" id="smart-add-rule" class="small">+ Rule</button></div>
+      <p id="smart-error" class="hint" role="status"></p>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button id="smart-save" value="ok" class="primary">Save</button>
       </menu>
     </form>
   </dialog>

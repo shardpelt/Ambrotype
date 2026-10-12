@@ -12,7 +12,9 @@
 //! - PNG: an `iTXt` chunk with the keyword `XML:com.adobe.xmp`, before the image data.
 //! - TIFF: tag 700 (XMLPacket) in the first IFD.
 //! - WebP: an `XMP ` chunk, flagged in the `VP8X` header.
-//! - AVIF and OpenEXR: not yet (EXIF only for AVIF).
+//! - AVIF: an XMP item (`mime`, `application/rdf+xml`) that describes the
+//!   image (`cdsc`), as HEIF files carry it, with its data at the end.
+//! - OpenEXR and JPEG XL: not yet.
 
 use crate::Format;
 use crate::exif::Tags;
@@ -281,6 +283,259 @@ fn embed_webp(bytes: &[u8], xmp: &str) -> Option<Vec<u8>> {
     Some(out)
 }
 
+/// An ISOBMFF box in `bytes[start..end]`, its content from `body`.
+struct Bmff {
+    kind: [u8; 4],
+    start: usize,
+    body: usize,
+    end: usize,
+}
+
+/// The boxes in `bytes[from..to]`, or `None` when they don't add up.
+fn boxes(bytes: &[u8], from: usize, to: usize) -> Option<Vec<Bmff>> {
+    let mut out = Vec::new();
+    let mut at = from;
+    while at < to {
+        let size = u32::from_be_bytes(bytes.get(at..at + 4)?.try_into().ok()?) as usize;
+        let kind: [u8; 4] = bytes.get(at + 4..at + 8)?.try_into().ok()?;
+        let (body, end) = match size {
+            0 => (at + 8, to),
+            1 => {
+                let large = u64::from_be_bytes(bytes.get(at + 8..at + 16)?.try_into().ok()?);
+                (at + 16, at.checked_add(usize::try_from(large).ok()?)?)
+            }
+            n => (at + 8, at.checked_add(n)?),
+        };
+        if end > to || end < body {
+            return None;
+        }
+        out.push(Bmff {
+            kind,
+            start: at,
+            body,
+            end,
+        });
+        at = end;
+    }
+    Some(out)
+}
+
+fn read_be(bytes: &[u8], at: &mut usize, n: usize) -> Option<u64> {
+    let v = bytes
+        .get(*at..*at + n)?
+        .iter()
+        .fold(0u64, |v, &b| v << 8 | u64::from(b));
+    *at += n;
+    Some(v)
+}
+
+fn push_be(out: &mut Vec<u8>, v: u64, n: usize) -> Option<()> {
+    if n < 8 && v >> (8 * n) != 0 {
+        return None;
+    }
+    out.extend_from_slice(&v.to_be_bytes()[8 - n..]);
+    Some(())
+}
+
+/// A box of `kind` around `body`; `full` adds the version and flags.
+fn make_box(kind: &[u8; 4], full: Option<[u8; 4]>, body: &[u8]) -> Option<Vec<u8>> {
+    let len = 8 + full.map_or(0, |_| 4) + body.len();
+    let mut out = u32::try_from(len).ok()?.to_be_bytes().to_vec();
+    out.extend_from_slice(kind);
+    if let Some(vf) = full {
+        out.extend_from_slice(&vf);
+    }
+    out.extend_from_slice(body);
+    Some(out)
+}
+
+/// `iloc` with `new` (an item id and where its one extent is) added, and
+/// the file offsets at or past `moved_from` moved by `delta`.
+fn grown_iloc(b: &[u8], moved_from: u64, delta: u64, new: (u64, u64, u64)) -> Option<Vec<u8>> {
+    let version = *b.first()?;
+    if version > 2 {
+        return None;
+    }
+    let mut at = 4;
+    let sizes = read_be(b, &mut at, 2)?;
+    let (offset_size, length_size) = ((sizes >> 12) as usize, (sizes >> 8 & 15) as usize);
+    let (base_size, index_size) = ((sizes >> 4 & 15) as usize, (sizes & 15) as usize);
+    let index_size = if version == 0 { 0 } else { index_size };
+    let valid = |n: usize| matches!(n, 0 | 4 | 8);
+    if offset_size == 0
+        || length_size == 0
+        || ![offset_size, length_size, base_size, index_size]
+            .into_iter()
+            .all(valid)
+    {
+        return None;
+    }
+    let id_size = if version == 2 { 4 } else { 2 };
+    let count = read_be(b, &mut at, id_size)?;
+    let mut out = b[..4].to_vec();
+    push_be(&mut out, sizes, 2)?;
+    push_be(&mut out, count + 1, id_size)?;
+    let shift = |v: u64| if v >= moved_from { v + delta } else { v };
+    for _ in 0..count {
+        let id = read_be(b, &mut at, id_size)?;
+        push_be(&mut out, id, id_size)?;
+        let method = if version == 0 {
+            0
+        } else {
+            let m = read_be(b, &mut at, 2)?;
+            push_be(&mut out, m, 2)?;
+            m & 15
+        };
+        let data_ref = read_be(b, &mut at, 2)?;
+        push_be(&mut out, data_ref, 2)?;
+        // Offsets into this file: construction method 0, no other file.
+        let in_file = method == 0 && data_ref == 0;
+        let base = read_be(b, &mut at, base_size)?;
+        let shift_base = in_file && base_size > 0 && base != 0;
+        push_be(
+            &mut out,
+            if shift_base { shift(base) } else { base },
+            base_size,
+        )?;
+        let extents = read_be(b, &mut at, 2)?;
+        push_be(&mut out, extents, 2)?;
+        for _ in 0..extents {
+            let index = read_be(b, &mut at, index_size)?;
+            push_be(&mut out, index, index_size)?;
+            let offset = read_be(b, &mut at, offset_size)?;
+            let offset = if in_file && !shift_base {
+                shift(offset)
+            } else {
+                offset
+            };
+            push_be(&mut out, offset, offset_size)?;
+            let length = read_be(b, &mut at, length_size)?;
+            push_be(&mut out, length, length_size)?;
+        }
+    }
+    let (id, offset, length) = new;
+    push_be(&mut out, id, id_size)?;
+    if version > 0 {
+        push_be(&mut out, 0, 2)?;
+    }
+    push_be(&mut out, 0, 2)?;
+    push_be(&mut out, 0, base_size)?;
+    push_be(&mut out, 1, 2)?;
+    push_be(&mut out, 0, index_size)?;
+    push_be(&mut out, offset, offset_size)?;
+    push_be(&mut out, length, length_size)?;
+    Some(out)
+}
+
+fn embed_avif(bytes: &[u8], xmp: &str) -> Option<Vec<u8>> {
+    let top = boxes(bytes, 0, bytes.len())?;
+    if top.first()?.kind != *b"ftyp" {
+        return None;
+    }
+    let meta = top.iter().find(|b| &b.kind == b"meta")?;
+    if meta.body != meta.start + 8 {
+        return None;
+    }
+    let meta_vf: [u8; 4] = bytes.get(meta.body..meta.body + 4)?.try_into().ok()?;
+    let children = boxes(bytes, meta.body + 4, meta.end)?;
+    let child = |kind: &[u8; 4]| children.iter().find(|c| &c.kind == kind);
+    let body = |c: &Bmff| &bytes[c.body..c.end];
+
+    let pitm = body(child(b"pitm")?);
+    let mut at = 4;
+    let primary = read_be(pitm, &mut at, if *pitm.first()? == 0 { 2 } else { 4 })?;
+
+    // The item ids in use, from `iinf`.
+    let iinf = child(b"iinf")?;
+    let iinf_body = body(iinf);
+    let mut at = 4;
+    let count_size = if *iinf_body.first()? == 0 { 2 } else { 4 };
+    let count = read_be(iinf_body, &mut at, count_size)?;
+    let entries = boxes(bytes, iinf.body + at, iinf.end)?;
+    if entries.len() as u64 != count {
+        return None;
+    }
+    let mut last = primary;
+    for e in &entries {
+        let b = body(e);
+        let mut at = 4;
+        let id = match b.first()? {
+            2 => read_be(b, &mut at, 2)?,
+            3 => read_be(b, &mut at, 4)?,
+            _ => continue,
+        };
+        last = last.max(id);
+    }
+    let id = last + 1;
+    if id > u64::from(u16::MAX) {
+        return None;
+    }
+    let mut infe = Vec::new();
+    push_be(&mut infe, id, 2)?;
+    infe.extend_from_slice(&[0, 0]);
+    infe.extend_from_slice(b"mime\0application/rdf+xml\0");
+    let mut new_iinf = iinf_body[..4].to_vec();
+    push_be(&mut new_iinf, count + 1, count_size)?;
+    new_iinf.extend_from_slice(bytes.get(iinf.body + 4 + count_size..iinf.end)?);
+    new_iinf.extend(make_box(b"infe", Some([2, 0, 0, 0]), &infe)?);
+    let new_iinf = make_box(b"iinf", None, &new_iinf)?;
+
+    // `cdsc`: the XMP describes the primary image.
+    let iref = child(b"iref");
+    let wide = iref.is_some_and(|r| body(r).first() == Some(&1));
+    let id_size = if wide { 4 } else { 2 };
+    let mut cdsc = Vec::new();
+    push_be(&mut cdsc, id, id_size)?;
+    push_be(&mut cdsc, 1, 2)?;
+    push_be(&mut cdsc, primary, id_size)?;
+    let cdsc = make_box(b"cdsc", None, &cdsc)?;
+    let new_iref = match iref {
+        Some(r) => {
+            let mut b = body(r).to_vec();
+            b.extend_from_slice(&cdsc);
+            make_box(b"iref", None, &b)?
+        }
+        None => make_box(b"iref", Some([0; 4]), &cdsc)?,
+    };
+
+    let iloc = child(b"iloc")?;
+    let build = |xmp_at: u64, delta: u64| -> Option<Vec<u8>> {
+        let mut inner = meta_vf.to_vec();
+        for c in &children {
+            match &c.kind {
+                b"iinf" => {
+                    inner.extend_from_slice(&new_iinf);
+                    if iref.is_none() {
+                        inner.extend_from_slice(&new_iref);
+                    }
+                }
+                b"iref" => inner.extend_from_slice(&new_iref),
+                b"iloc" => {
+                    let grown = grown_iloc(
+                        body(iloc),
+                        meta.end as u64,
+                        delta,
+                        (id, xmp_at, xmp.len() as u64),
+                    )?;
+                    inner.extend(make_box(b"iloc", None, &grown)?);
+                }
+                _ => inner.extend_from_slice(&bytes[c.start..c.end]),
+            }
+        }
+        make_box(b"meta", None, &inner)
+    };
+    // The sizes don't depend on the offsets: once to measure, once for real.
+    let delta = (build(0, 0)?.len() - (meta.end - meta.start)) as u64;
+    let xmp_at = (bytes.len() as u64) + delta + 8;
+    let new_meta = build(xmp_at, delta)?;
+    let mut out = Vec::with_capacity(bytes.len() + new_meta.len() + xmp.len() + 8);
+    out.extend_from_slice(&bytes[..meta.start]);
+    out.extend_from_slice(&new_meta);
+    out.extend_from_slice(&bytes[meta.end..]);
+    out.extend(make_box(b"mdat", None, xmp.as_bytes())?);
+    Some(out)
+}
+
 /// `bytes` (a finished file) with the rating and keywords added, or unchanged
 /// when there are none or the format can't carry them yet.
 pub fn embed(format: Format, bytes: Vec<u8>, tags: &Tags) -> Vec<u8> {
@@ -292,7 +547,8 @@ pub fn embed(format: Format, bytes: Vec<u8>, tags: &Tags) -> Vec<u8> {
         Format::Png => embed_png(&bytes, &xmp),
         Format::Tiff => embed_tiff(&bytes, &xmp),
         Format::Webp => embed_webp(&bytes, &xmp),
-        Format::Avif | Format::Exr | Format::Jxl => None,
+        Format::Avif => embed_avif(&bytes, &xmp),
+        Format::Exr | Format::Jxl => None,
     };
     done.unwrap_or(bytes)
 }
@@ -300,6 +556,7 @@ pub fn embed(format: Format, bytes: Vec<u8>, tags: &Tags) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
 
     fn tags() -> Tags {
         Tags {
@@ -334,6 +591,85 @@ mod tests {
             iptc.windows(2).any(|w| w == [0x00, 64]),
             "keywords are cut to 64 bytes"
         );
+    }
+
+    fn avif(exif: bool) -> Vec<u8> {
+        use image::ImageEncoder;
+        let mut buf = Vec::new();
+        let mut enc = image::codecs::avif::AvifEncoder::new_with_speed_quality(&mut buf, 10, 80);
+        if exif {
+            let block = crate::exif::build_with_tags(
+                &Default::default(),
+                crate::exif::MetadataPolicy::All,
+                &tags(),
+            )
+            .unwrap();
+            enc.set_exif_metadata(block).unwrap();
+        }
+        let rgb: Vec<u8> = (0..4 * 4 * 3).map(|i| (i * 13) as u8).collect();
+        enc.write_image(&rgb, 4, 4, image::ExtendedColorType::Rgb8)
+            .unwrap();
+        buf
+    }
+
+    /// Each item's data, read back through `iloc`, and the `meta` children.
+    fn items(bytes: &[u8]) -> (BTreeMap<u64, Vec<u8>>, Vec<[u8; 4]>) {
+        let top = boxes(bytes, 0, bytes.len()).unwrap();
+        let meta = top.iter().find(|b| &b.kind == b"meta").unwrap();
+        let children = boxes(bytes, meta.body + 4, meta.end).unwrap();
+        let iloc = children.iter().find(|c| &c.kind == b"iloc").unwrap();
+        let b = &bytes[iloc.body..iloc.end];
+        assert_eq!((b[0], b[4], b[5]), (0, 0x44, 0), "iloc v0, 4-byte offsets");
+        let mut at = 6;
+        let mut out = BTreeMap::new();
+        for _ in 0..read_be(b, &mut at, 2).unwrap() {
+            let id = read_be(b, &mut at, 2).unwrap();
+            at += 2;
+            let mut data = Vec::new();
+            for _ in 0..read_be(b, &mut at, 2).unwrap() {
+                let off = read_be(b, &mut at, 4).unwrap() as usize;
+                let len = read_be(b, &mut at, 4).unwrap() as usize;
+                data.extend_from_slice(&bytes[off..off + len]);
+            }
+            out.insert(id, data);
+        }
+        (out, children.iter().map(|c| c.kind).collect())
+    }
+
+    #[test]
+    fn avif_gets_an_xmp_item() {
+        let xmp = xmp_packet(&tags()).unwrap();
+        for exif in [false, true] {
+            let before = avif(exif);
+            let after = embed(Format::Avif, before.clone(), &tags());
+            let (old, _) = items(&before);
+            let (new, kinds) = items(&after);
+            // The image (and the EXIF) still read the same, and the XMP is there.
+            for (id, data) in &old {
+                assert_eq!(&new[id], data, "item {id}");
+            }
+            let added = new.keys().max().unwrap();
+            assert_eq!(new[added], xmp.as_bytes());
+            assert!(kinds.contains(b"iref"), "{kinds:?}");
+            let text = String::from_utf8_lossy(&after);
+            assert!(text.contains("mime\0application/rdf+xml\0"));
+            assert!(text.contains("cdsc"));
+        }
+        // Damaged files are left as they are, never a panic.
+        let good = avif(true);
+        let mut seed = 0x2545_f491u64;
+        for _ in 0..2000 {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            let mut bad = good.clone();
+            let i = (seed % bad.len() as u64) as usize;
+            bad[i] = (seed >> 32) as u8;
+            if seed % 5 == 0 {
+                bad.truncate(i);
+            }
+            let _ = embed(Format::Avif, bad, &tags());
+        }
     }
 
     #[test]

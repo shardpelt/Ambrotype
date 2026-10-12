@@ -69,7 +69,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 
   ![Filmstrip](images/filmstrip.png)
 
-- **Rating and keywords:** the stars and the keyword field (left column) are saved to the photo's `.xmp` straight away, in the fields Lightroom reads (`xmp:Rating`, `dc:subject`), and go into exported files: as XMP (read by Lightroom, Bridge, Apple Photos, digiKam and most websites), IPTC keywords in JPEGs, and EXIF Rating/XPKeywords for Windows. AVIF exports get the EXIF part only, for now. Keys 1–5 rate, 0 clears.
+- **Rating and keywords:** the stars and the keyword field (left column) are saved to the photo's `.xmp` straight away, in the fields Lightroom reads (`xmp:Rating`, `dc:subject`), and go into exported files: as XMP (read by Lightroom, Bridge, Apple Photos, digiKam and most websites), IPTC keywords in JPEGs, and EXIF Rating/XPKeywords for Windows. OpenEXR and JPEG XL exports don't carry them yet. Keys 1–5 rate, 0 clears.
 
   ![Rating and keywords](images/rating-keywords.png)
 

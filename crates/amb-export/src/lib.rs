@@ -446,7 +446,12 @@ pub fn export(
                 quality,
             );
             if let Some(e) = exif {
-                let _ = enc.set_exif_metadata(e);
+                // Framed as a HEIF Exif item (a zero offset to the TIFF
+                // header first), so the item is one piece: some readers
+                // (FFmpeg 6) refuse items in several.
+                let mut item = vec![0; 4];
+                item.extend_from_slice(&e);
+                let _ = enc.set_exif_metadata(item);
             }
             enc.write_image(&data, w, h, ExtendedColorType::Rgb8)
                 .map_err(|e| Error::Encode(e.to_string()))?;

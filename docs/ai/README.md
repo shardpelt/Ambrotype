@@ -51,6 +51,19 @@ clipped: shadows 0.0%, highlights 19.1% (R 19.1 G 0.0 B 0.0)
 midtone cast a* +9.8 b* +10.2 (warm, magenta); chroma 32
 ```
 
+## Matching a look
+
+"Make this look like these photos": `amb match` finds the settings for you, in code, instead of trying sliders one by one.
+
+```sh
+amb match IMG_0001.NEF ref1.jpg ref2.jpg              # show the changes
+amb match IMG_0001.NEF ref1.jpg ref2.jpg --apply      # apply them as one undoable step
+amb match IMG_0001.NEF ref.jpg --parts wb,tone        # only white balance and tone
+amb match IMG_0001.NEF ref.jpg --out look.xmp         # also save them as a preset
+```
+
+References can be JPEGs (or PNG, TIFF, WebP) or raws, developed with their own edits. It changes white balance, Exposure, Contrast, Highlights, Shadows, Whites, Blacks, Vibrance, Saturation and Color Grading's shadow and highlight tints (`--parts` wb, tone, color, grading). It measures the look (lightness spread, the colour of shadows, midtones and highlights, colourfulness), not the content, so references of other scenes work. It prints how close it got (`look distance 778 → 2.4`). Review the changes with the user before `--apply`, then fine-tune with `amb do`.
+
 ## Safety rules (read first)
 
 These come from [docs/design/ai-control.md](../design/ai-control.md). An assistant driving Ambrotype must follow them.

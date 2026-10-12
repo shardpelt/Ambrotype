@@ -52,6 +52,18 @@ fn srgb_oetf(v: f64) -> f64 {
     }
 }
 
+/// CIE L*a*b* (D50) of a linear ProPhoto pixel.
+pub(crate) fn lab(p: &[f32]) -> [f64; 3] {
+    let p = [p[0] as f64, p[1] as f64, p[2] as f64];
+    let xyz = PROPHOTO_TO_XYZ_D50.map(|row| row[0] * p[0] + row[1] * p[1] + row[2] * p[2]);
+    let (fx, fy, fz) = (
+        lab_f(xyz[0].max(0.0) / XN),
+        lab_f(xyz[1].max(0.0)),
+        lab_f(xyz[2].max(0.0) / ZN),
+    );
+    [116.0 * fy - 16.0, 500.0 * (fx - fy), 200.0 * (fy - fz)]
+}
+
 /// Measure a developed (linear ProPhoto) image.
 pub fn measure(img: &ProPhotoImage) -> Stats {
     let to_srgb = mul3(&xyz_d50_to_srgb(), &PROPHOTO_TO_XYZ_D50);

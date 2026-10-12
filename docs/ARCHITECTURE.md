@@ -22,7 +22,7 @@ About 23,000 lines of Rust and about 270 tests (fmt, clippy and tests run in CI 
 | `amb-export` | Files out | JPEG/PNG/TIFF/WebP/AVIF/EXR, colour spaces, resize, output sharpening, EXIF, JPEG size limit; floating-point linear DNG for merged photos (`dng.rs`) |
 | `amb-library` | Library operations | Import: copy from a card or folder into dated folders, renamed from templates, with companions and duplicate checks (`amb import`, the editor's Import dialog); collections as small JSON files; HDR merge into a DNG next to the brackets and panorama merge with lens corrections first (`merge.rs`, over `amb_engine::merge` and `amb_engine::pano`; `amb merge hdr` / `amb merge pano`, the library's Merge to HDR… / Merge to Panorama…; [design/hdr-merge.md](design/hdr-merge.md), [design/panorama.md](design/panorama.md)) |
 | `amb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
-| `amb-cli` | The `amb` tool | `render`, `import`, `merge hdr`, `merge pano`, `mcp` (the MCP server, `src/mcp.rs`), `preset`, `edit`/`query`, `do` (the compact edit syntax), `stats`, `ref` (the AI core card), `lens`, `negative`, `sweep`, `settings reference`, … |
+| `amb-cli` | The `amb` tool | `render`, `import`, `merge hdr`, `merge pano`, `mcp` (the MCP server, `src/mcp.rs`), `preset`, `edit`/`query`, `do` (the compact edit syntax), `stats`, `match` (look matching, `amb_engine::matching`), `ref` (the AI core card), `lens`, `negative`, `sweep`, `settings reference`, … |
 | `amb-gui` | Desktop editor (Tauri 2) | Rust `Session` (open raw, undoable edits via `amb-protocol`, downscaled preview + histogram, sidecar save, export) behind Tauri commands; plain HTML/CSS/JS UI generated from the settings registry |
 
 ## Data flow of `amb render photo.nef out.jpg --preset look.xmp`
@@ -126,4 +126,4 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 - GPU previews with masks, spots, defringe or a camera profile (they render on the CPU), and caching per stage (region renders exist for the 100% view).
 - Red eye, Guided Upright ([design/transform.md](design/transform.md)), AI masks.
 - Camera profiles (DCP) and Adobe-like base looks: today a placeholder filmic base look is used.
-- Look matching (`amb match`) for AI control (the MCP server exists: `amb mcp`, [ai/mcp.md](ai/mcp.md)).
+- Look matching in the editor (it exists as `amb match` and MCP `match_look`), and an in-app AI assistant panel.

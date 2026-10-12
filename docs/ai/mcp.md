@@ -33,6 +33,7 @@ Other clients: run `amb mcp` as a stdio server. Lens profiles (`AMB_LENSFUN_DB`,
 | `query_photo` | Read-only queries: `get_param`, `list_params`, `describe`, `list_groups`, `list_masks`, `list_spots`, `list_snapshots`. |
 | `photo_stats` | The photo developed small as a few numbers: L* percentiles, clipped shadows and highlights, midtone colour cast, chroma. A cheap check before a picture. |
 | `render_preview` | Renders the photo with its edit (or with a preset instead, at an Amount) and returns a JPEG, 256–2048 pixels, with the as-shot white balance and anything not rendered. |
+| `match_look` | Finds the settings that make the photo look like reference images (white balance, tone, Vibrance/Saturation, Color Grading tints) and shows them; `apply` writes them as one step. |
 | `export_photo` | Writes the edited photo to a file (format from the extension), with size, quality and colour space. Never overwrites unless told to. |
 | `list_photos` | The photos in a folder, with virtual copies, ratings, flags, labels, keywords and whether they're edited. |
 | `set_photo_info` | Rating, colour label, pick/reject flag and keywords, written where Lightroom reads them. |
@@ -52,6 +53,5 @@ The commands and queries are the same as `amb edit` and `amb query`; `amb protoc
 
 ## Not yet
 
-- Look matching (`amb match`): "make this look like these samples".
 - Masks drawn by the AI from what's in the photo (subject, sky); masks are placed by coordinates today.
 - An assistant panel inside the editor.

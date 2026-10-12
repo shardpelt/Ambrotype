@@ -211,6 +211,20 @@ fn tools() -> Value {
             },
         },
         {
+            "name": "match_look",
+            "description": "Find the settings that make the photo look like reference images (JPEGs, or raws with their edits): white balance, tone, Vibrance/Saturation and Color Grading shadow/highlight tints, solved by measuring small renders (no AI involved). Returns the changes; with apply they are written as one undoable step. Show the user the changes before applying.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "photo": photo,
+                    "references": { "type": "array", "items": { "type": "string" }, "minItems": 1, "description": "Paths of the reference images." },
+                    "parts": { "type": "array", "items": { "type": "string", "enum": ["wb", "tone", "color", "grading"] }, "description": "What may change (default: all)." },
+                    "apply": { "type": "boolean", "description": "Write the changes to the photo's edit (default false)." },
+                },
+                "required": ["photo", "references"],
+            },
+        },
+        {
             "name": "export_photo",
             "description": "Export the photo with its edit to a file (JPEG, PNG, TIFF, WebP, AVIF or EXR, from the extension). Refuses to overwrite an existing file unless overwrite is true.",
             "inputSchema": {
@@ -325,6 +339,7 @@ fn call(name: &str, args: &Value) -> Result<Vec<Value>, String> {
         }
         "render_preview" => render_preview(&photo(args)?, args),
         "photo_stats" => photo_stats(&photo(args)?, args),
+        "match_look" => match_look(&photo(args)?, args),
         "export_photo" => export(&photo(args)?, args),
         "list_photos" => list_photos(Path::new(arg(args, "folder")?)).map(|v| vec![json_text(&v)]),
         "set_photo_info" => set_info(&photo(args)?, args).map(|v| vec![json_text(&v)]),
@@ -414,6 +429,41 @@ fn photo_stats(p: &Path, args: &Value) -> Result<Vec<Value>, String> {
     let out = cmd
         .output()
         .map_err(|e| format!("couldn't run amb stats: {e}"))?;
+    if out.status.success() {
+        Ok(vec![text(String::from_utf8_lossy(&out.stdout).trim())])
+    } else {
+        Err(String::from_utf8_lossy(&out.stderr).trim().to_string())
+    }
+}
+
+/// Run `amb match` as a child: it renders the photo many times.
+fn match_look(p: &Path, args: &Value) -> Result<Vec<Value>, String> {
+    let refs: Vec<&str> = args
+        .get("references")
+        .and_then(Value::as_array)
+        .map(|a| a.iter().filter_map(Value::as_str).collect())
+        .unwrap_or_default();
+    if refs.is_empty() {
+        return Err("references is required: one or more image paths".into());
+    }
+    for r in &refs {
+        if !Path::new(r).is_file() {
+            return Err(format!("{r}: no such file"));
+        }
+    }
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let mut cmd = std::process::Command::new(exe);
+    cmd.arg("match").arg(p).args(&refs);
+    if let Some(parts) = args.get("parts").and_then(Value::as_array) {
+        let list: Vec<&str> = parts.iter().filter_map(Value::as_str).collect();
+        cmd.args(["--parts", &list.join(",")]);
+    }
+    if args.get("apply").and_then(Value::as_bool).unwrap_or(false) {
+        cmd.arg("--apply");
+    }
+    let out = cmd
+        .output()
+        .map_err(|e| format!("couldn't run amb match: {e}"))?;
     if out.status.success() {
         Ok(vec![text(String::from_utf8_lossy(&out.stdout).trim())])
     } else {

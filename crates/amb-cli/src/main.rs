@@ -50,6 +50,12 @@ USAGE:
                                             remove_mask, add_spot, set_spot, remove_spot, undo, redo)
                                             as one transaction,
                                             print the diff and write the sidecar (other XMP metadata kept)
+    amb match <PHOTO> <REF>... [--apply] [--parts wb,tone,color,grading] [--out PRESET.xmp] [--json]
+                                            Find the settings that make the photo look like the reference
+                                            images (JPEGs, or raws with their edits): white balance, tone,
+                                            Vibrance/Saturation and Color Grading tints, solved on small
+                                            renders. Shows the changes; --apply makes them one undoable
+                                            step, --out also writes them as a preset
     amb stats <PHOTO> [--preset P] [--amount A] [--json]
                                             The photo developed small (with its edit, or a preset) as a
                                             few numbers instead of a picture: L* percentiles, clipped
@@ -351,7 +357,7 @@ fn main() -> ExitCode {
             "--dry-run" => dry_run = true,
             "--brief" => brief = true,
             "--progressive" | "--enlarge" | "--no-subfolders" | "--no-align" | "--no-crop"
-            | "--no-lens" => {
+            | "--no-lens" | "--apply" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out" | "--groups" | "--synthetic" | "--preset" | "--amount" | "--look"
@@ -362,15 +368,17 @@ fn main() -> ExitCode {
             | "--height" | "--fit" | "--exact" | "--megapixels" | "--percent" | "--sharpen"
             | "--metadata" | "--max-size" | "--avif-speed" | "--border" | "--out-dir"
             | "--rating" | "--keywords" | "--name" | "--params" | "--into" | "--rename"
-            | "--start" | "--dcp-dir" | "--deghost" | "--projection" => match iter.next() {
-                Some(value) => {
-                    options.insert(arg.as_str(), value.as_str());
+            | "--start" | "--dcp-dir" | "--deghost" | "--projection" | "--parts" => {
+                match iter.next() {
+                    Some(value) => {
+                        options.insert(arg.as_str(), value.as_str());
+                    }
+                    None => {
+                        eprintln!("error: {arg} needs a value\n\n{USAGE}");
+                        return ExitCode::from(2);
+                    }
                 }
-                None => {
-                    eprintln!("error: {arg} needs a value\n\n{USAGE}");
-                    return ExitCode::from(2);
-                }
-            },
+            }
             other if other.starts_with("--") => {
                 eprintln!("error: unknown option {other}\n\n{USAGE}");
                 return ExitCode::from(2);
@@ -442,6 +450,14 @@ fn main() -> ExitCode {
             do_edits(Path::new(target), &edits.join(" "), dry_run, json)
                 .map(|text| println!("{text}"))
         }
+        ["match", photo, refs @ ..] if !refs.is_empty() => match_look(
+            Path::new(photo),
+            refs,
+            &options,
+            options.contains_key("--apply"),
+            json,
+        )
+        .map(|t| println!("{t}")),
         ["stats", photo] => stats(Path::new(photo), &options, json).map(|t| println!("{t}")),
         ["query", state] => match options.get("--queries") {
             Some(queries) => query(Path::new(state), queries),
@@ -991,7 +1007,6 @@ fn develop_settings(
     ),
     String,
 > {
-    use amb_engine::pipeline;
     let mut notes = Vec::new();
     let mut settings = std::collections::BTreeMap::new();
     if let Some(preset) = preset {
@@ -1013,7 +1028,30 @@ fn develop_settings(
             amount * 100.0
         ));
     }
-    let (mut develop, not_rendered) = pipeline::DevelopSettings::from_settings(&settings);
+    let (develop, not_rendered, more) = develop_from(img, &settings, look, calibration, options)?;
+    notes.extend(more);
+    Ok((develop, not_rendered, notes))
+}
+
+/// [`develop_settings`] from a settings map.
+#[allow(clippy::type_complexity)]
+fn develop_from(
+    img: &mut amb_engine::raw::CameraImage,
+    settings: &amb_engine::matching::Settings,
+    look: Option<&str>,
+    calibration: Option<&str>,
+    options: &BTreeMap<&str, &str>,
+) -> Result<
+    (
+        amb_engine::pipeline::DevelopSettings,
+        Vec<String>,
+        Vec<String>,
+    ),
+    String,
+> {
+    use amb_engine::pipeline;
+    let mut notes = Vec::new();
+    let (mut develop, not_rendered) = pipeline::DevelopSettings::from_settings(settings);
     develop.base_look = match look.unwrap_or("default") {
         "default" => pipeline::BaseLook::Default,
         "linear" => pipeline::BaseLook::Linear,
@@ -1093,6 +1131,143 @@ fn stats(input: &Path, options: &BTreeMap<&str, &str>, json: bool) -> Result<Str
     let mut text = stats.to_brief();
     if !not_rendered.is_empty() {
         text += &format!("\nnot rendered: {}", not_rendered.join(", "));
+    }
+    Ok(text)
+}
+
+/// A photo's edit: its sidecar's settings, or none.
+fn photo_settings(photo: &Path) -> Result<amb_engine::matching::Settings, String> {
+    let sidecar = edit_target(photo);
+    if sidecar.is_file() {
+        Ok(amb_protocol::DevelopState::load(&sidecar)
+            .map_err(|e| e.to_string())?
+            .settings()
+            .clone())
+    } else {
+        Ok(Default::default())
+    }
+}
+
+/// A photo developed small with its own edit.
+fn small_render(
+    photo: &Path,
+    edge: usize,
+    options: &BTreeMap<&str, &str>,
+) -> Result<amb_engine::pipeline::ProPhotoImage, String> {
+    let source = amb_engine::source_path(photo);
+    let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
+    let mut img = amb_engine::raw::downscale(&img, edge);
+    let (develop, _, _) = develop_from(&mut img, &photo_settings(photo)?, None, None, options)?;
+    Ok(amb_engine::pipeline::render(&img, &develop))
+}
+
+/// `amb match`: the settings that make `photo` look like the references.
+fn match_look(
+    photo: &Path,
+    refs: &[&str],
+    options: &BTreeMap<&str, &str>,
+    apply: bool,
+    json: bool,
+) -> Result<String, String> {
+    use amb_engine::matching::{self, MatchOptions, Part};
+    const EDGE: usize = 256;
+    let parts = match options.get("--parts") {
+        Some(list) => list
+            .split(',')
+            .map(|p| {
+                Part::parse(p.trim())
+                    .ok_or_else(|| format!("unknown part {p:?} (wb, tone, color, grading)"))
+            })
+            .collect::<Result<Vec<_>, _>>()?,
+        None => Part::ALL.to_vec(),
+    };
+    let looks = refs
+        .iter()
+        .map(|r| small_render(Path::new(r), EDGE, options).map(|img| matching::look_stats(&img)))
+        .collect::<Result<Vec<_>, _>>()?;
+    let target = matching::average(&looks).ok_or("give at least one reference image")?;
+    let source = amb_engine::source_path(photo);
+    let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
+    let mut img = amb_engine::raw::downscale(&img, EDGE);
+    let base = photo_settings(photo)?;
+    // Lens and camera profiles are found once, for every try.
+    let (base_dev, _, _) = develop_from(&mut img, &base, None, None, options)?;
+    let develop = |s: &matching::Settings| {
+        let mut d = matching::develop_plain(s);
+        d.lens.profile = base_dev.lens.profile.clone();
+        d.camera_profile = base_dev.camera_profile.clone();
+        d
+    };
+    let result = matching::solve(
+        &img,
+        &base,
+        &target,
+        &MatchOptions {
+            parts,
+            ..Default::default()
+        },
+        &develop,
+    );
+    let commands: Vec<amb_protocol::Command> = result
+        .changes
+        .iter()
+        .map(|(name, v)| amb_protocol::Command::SetParam {
+            name: name.clone(),
+            value: match v {
+                amb_presets::Value::Number(n) => serde_json::json!(n),
+                amb_presets::Value::Text(t) => serde_json::json!(t),
+                amb_presets::Value::Bool(b) => serde_json::json!(b),
+                other => serde_json::json!(other.as_str()),
+            },
+        })
+        .collect();
+    if let Some(out) = options.get("--out") {
+        let mut preset = amb_protocol::DevelopState::new();
+        preset.execute_all(&commands).map_err(|e| e.to_string())?;
+        preset.save(Path::new(out)).map_err(|e| e.to_string())?;
+    }
+    let sidecar = edit_target(photo);
+    let created = !sidecar.exists();
+    let mut state = if created {
+        amb_protocol::DevelopState::new()
+    } else {
+        amb_protocol::DevelopState::load(&sidecar).map_err(|e| e.to_string())?
+    };
+    let results = state
+        .execute_grouped("Match look", &commands)
+        .map_err(|e| e.to_string())?;
+    let written = if apply && !commands.is_empty() {
+        state.save(&sidecar).map_err(|e| e.to_string())?;
+        Some(sidecar.clone())
+    } else {
+        None
+    };
+    let report = amb_protocol::edit::EditReport {
+        sidecar,
+        created,
+        results,
+        written,
+        dry_run: !apply,
+    };
+    if json {
+        let v = serde_json::json!({
+            "references": refs,
+            "distance_before": result.before,
+            "distance_after": result.after,
+            "renders": result.evaluations,
+            "edit": report.to_json(),
+        });
+        return serde_json::to_string_pretty(&v).map_err(|e| e.to_string());
+    }
+    let mut text = format!(
+        "look distance {:.1} → {:.1} ({} renders)\n",
+        result.before, result.after, result.evaluations
+    );
+    text += &report
+        .to_brief()
+        .replace("dry run, not saved", "not applied (add --apply)");
+    if let Some(out) = options.get("--out") {
+        text += &format!("\nwrote preset {out}");
     }
     Ok(text)
 }

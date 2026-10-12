@@ -30,6 +30,8 @@ Status: proposal, 2026-10-04. The owner's idea: an assistant window inside the a
 
 ## "Make it look like these samples": `amb match`
 
+*v1 built 2026-10-12* (`amb_engine::matching`, `amb match`, MCP `match_look`). What it does today: the references and the photo are developed small (256 px) and measured as L* percentiles, the mean a*/b* of soft shadow, midtone and highlight zones, chroma percentiles and the spread of a*/b* (which tells saturation from a white balance shift). Levenberg–Marquardt moves white balance, the six tone sliders, Vibrance, Saturation and the shadow and highlight Color Grading tints together, with a finite-difference Jacobian (one render per setting per step) and a small penalty per change. On a synthetic raw it recovers a known edit (Temperature within 10 K, Exposure and Saturation exactly) in about 60 renders; a JPEG reference gets close with a different mix of sliders. Not yet: HSL per colour, the tone curve, an explanation in words, per-photo adaptation in batches.
+
 Prior art shows demand. Imagen and Aftershoot sell AI "personal profiles" that learn a photographer's style from past Lightroom edits ([research/09](../research/09-market-commercial-alternatives.md)).
 
 The core is a deterministic look-matching solver:
@@ -60,7 +62,7 @@ Later we can also learn a style from the user's own edit history (Imagen-style),
   - the generated settings reference (`docs/ai/`)
 - **Phase 2:**
   - ~~`amb mcp` server (develop, preset, render-preview and export tools)~~ (done 2026-10-10; [ai/mcp.md](../ai/mcp.md))
-  - `amb match` v1 (global tone/colour statistics → parameters)
+  - ~~`amb match` v1 (global tone/colour statistics → parameters)~~ (done 2026-10-12)
 - **Phase 3:**
   - the in-app assistant panel (BYO API key / local model)
   - a vision refinement loop

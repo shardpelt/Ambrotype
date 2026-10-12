@@ -59,6 +59,10 @@ pub fn core() -> String {
         out,
         "Check: `amb stats PHOTO` (L*, clipping, cast) before a picture (`amb render PHOTO out.jpg --long-edge 800`)."
     );
+    let _ = writeln!(
+        out,
+        "Match a look: `amb match PHOTO REF.jpg...` (shows changes; --apply)."
+    );
     let groups: Vec<&str> = c.groups().iter().map(|g| g.name.as_str()).collect();
     let _ = writeln!(out, "More: `amb ref GROUP`: {}", groups.join(" "));
     let _ = writeln!(out, "Short name, setting, range =default:");

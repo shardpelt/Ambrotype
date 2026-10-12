@@ -149,6 +149,13 @@ fn edit_describe_preview_and_export_over_stdio() {
     );
     assert!(exported.get("isError").is_none(), "{exported}");
     assert!(dir.join("out.jpg").is_file());
+    // Match the photo's tone to the exported JPEG (a look it already has).
+    let matched = text(&s.tool(
+        "match_look",
+        json!({ "photo": p, "references": [out], "parts": ["tone"] }),
+    ));
+    assert!(matched.starts_with("look distance"), "{matched}");
+    assert!(matched.contains("not applied"), "{matched}");
     let again = s.tool("export_photo", json!({ "photo": p, "out": out }));
     assert_eq!(again["isError"], true);
 

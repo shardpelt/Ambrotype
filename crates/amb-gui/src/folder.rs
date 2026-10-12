@@ -33,6 +33,8 @@ pub struct FolderPhoto {
     pub caption: Option<String>,
     pub creator: Option<String>,
     pub copyright: Option<String>,
+    /// The stack it's in, if any.
+    pub stack: Option<amb_protocol::sidecar::StackRef>,
 }
 
 pub fn is_raw(path: &Path) -> bool {
@@ -253,6 +255,7 @@ pub fn describe(paths: Vec<PathBuf>) -> Vec<FolderPhoto> {
                 caption: info.caption,
                 creator: info.creator,
                 copyright: info.copyright,
+                stack: info.stack,
             }
         })
         .collect()

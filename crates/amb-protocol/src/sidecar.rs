@@ -92,6 +92,20 @@ pub struct PhotoInfo {
     pub creator: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub copyright: Option<String>,
+    /// The stack the photo is in (`amblib:Stack`, `amblib:StackTop`: our
+    /// own, as Lightroom keeps stacks in its catalogue). Writing, `None`
+    /// keeps what the file has and an empty id takes it out of its stack.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stack: Option<StackRef>,
+}
+
+/// A photo's place in a stack: the stack's id, and whether it is the photo
+/// the stack shows when collapsed.
+#[derive(Debug, Clone, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct StackRef {
+    pub id: String,
+    #[serde(default)]
+    pub top: bool,
 }
 
 /// The Dublin Core properties [`PhotoInfo`]'s text fields are kept in, and
@@ -127,6 +141,7 @@ impl PhotoInfo {
             caption: self.caption.as_deref().map(|t| t.trim().to_string()),
             creator: self.creator.as_deref().map(|t| t.trim().to_string()),
             copyright: self.copyright.as_deref().map(|t| t.trim().to_string()),
+            stack: self.stack.clone(),
         }
     }
 
@@ -236,6 +251,19 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                     if library && alocal.as_ref() == b"Flag" {
                         info.flag = a.unescape_value().ok().and_then(|v| Flag::parse(&v));
                     }
+                    if library && alocal.as_ref() == b"Stack" {
+                        let id = a
+                            .unescape_value()
+                            .map(|v| v.trim().to_string())
+                            .unwrap_or_default();
+                        if !id.is_empty() {
+                            info.stack.get_or_insert_with(StackRef::default).id = id;
+                        }
+                    }
+                    if library && alocal.as_ref() == b"StackTop" {
+                        let top = a.unescape_value().is_ok_and(|v| v.trim() == "true");
+                        info.stack.get_or_insert_with(StackRef::default).top = top;
+                    }
                 }
             }
             Ok((_, Event::Text(t))) => {
@@ -287,6 +315,10 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
     }
     if info.flag.is_none() && rated_reject {
         info.flag = Some(Flag::Reject);
+    }
+    // A top mark without a stack means nothing.
+    if info.stack.as_ref().is_some_and(|s| s.id.is_empty()) {
+        info.stack = None;
     }
     info.cleaned_keeping_keywords()
 }
@@ -427,6 +459,24 @@ fn apply_info(foreign: &mut Foreign, info: &PhotoInfo) {
         foreign
             .attributes
             .push((format!("{p}:Flag"), flag.name().into()));
+    }
+    if let Some(stack) = &info.stack {
+        let ns = foreign.namespaces.clone();
+        foreign.attributes.retain(|(name, _)| {
+            !matches!(resolve(name, &ns), (Some(LIBRARY_NS), "Stack" | "StackTop"))
+        });
+        let id = stack.id.trim();
+        if !id.is_empty() {
+            let p = prefix_for(foreign, LIBRARY_NS, "amblib");
+            foreign
+                .attributes
+                .push((format!("{p}:Stack"), id.to_string()));
+            if stack.top {
+                foreign
+                    .attributes
+                    .push((format!("{p}:StackTop"), "true".into()));
+            }
+        }
     }
     if let Some(label) = &info.label {
         let p = prefix_for(foreign, XMP_NS, "xmp");
@@ -784,6 +834,56 @@ pub fn write_atomic(path: &Path, text: &str) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stacks_round_trip_and_survive_other_changes() {
+        let top = StackRef {
+            id: "s1".into(),
+            top: true,
+        };
+        let xmp = with_info(
+            None,
+            &PhotoInfo {
+                stack: Some(top.clone()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(read_info(&xmp).stack, Some(top.clone()));
+        let rated = with_info(
+            Some(&xmp),
+            &PhotoInfo {
+                rating: Some(2),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(read_info(&rated).stack, Some(top));
+        let moved = StackRef {
+            id: "s1".into(),
+            top: false,
+        };
+        let xmp = with_info(
+            Some(&rated),
+            &PhotoInfo {
+                stack: Some(moved.clone()),
+                ..read_info(&rated)
+            },
+        )
+        .unwrap();
+        assert_eq!(read_info(&xmp).stack, Some(moved));
+        assert!(!xmp.contains("StackTop"), "{xmp}");
+        let out = with_info(
+            Some(&xmp),
+            &PhotoInfo {
+                stack: Some(StackRef::default()),
+                ..read_info(&xmp)
+            },
+        )
+        .unwrap();
+        assert_eq!(read_info(&out).stack, None);
+        assert_eq!(read_info(&out).rating, Some(2));
+    }
 
     #[test]
     fn title_caption_creator_and_copyright_round_trip() {

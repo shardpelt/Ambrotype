@@ -113,6 +113,9 @@ pub struct InfoChange {
     pub creator: Option<String>,
     #[serde(default)]
     pub copyright: Option<String>,
+    /// Put in a stack, or out of one (an empty id).
+    #[serde(default)]
+    pub stack: Option<sidecar::StackRef>,
 }
 
 impl InfoChange {
@@ -136,6 +139,9 @@ impl InfoChange {
             if let Some(v) = change {
                 *field = Some(v.clone());
             }
+        }
+        if let Some(s) = &self.stack {
+            out.stack = Some(s.clone());
         }
         let remove: Vec<String> = self
             .remove_keywords

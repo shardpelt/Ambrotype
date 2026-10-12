@@ -105,6 +105,15 @@ Lightroom keeps each photo's edit history and snapshots in its catalogue. Ours g
 - The protocol commands are `save_snapshot` (also updates one), `apply_snapshot` (one undoable step), `rename_snapshot`, `delete_snapshot` and the `list_snapshots` query. Saving, renaming and deleting aren't edits and add no history step, as in Lightroom.
 - Lightroom may drop both when it rewrites the sidecar; then the photo simply opens with no history or snapshots. To check in the trial month.
 
+## Stacks
+
+Lightroom keeps stacks in its catalogue. Ours go in the sidecar: `amblib:Stack` names the stack and `amblib:StackTop="true"` marks its top photo.
+
+- The grid shows a closed stack as its top photo with a ⧉ count badge; clicking the badge opens or closes it.
+- **Stack** (Ctrl+G) groups the selected photos, the first one on top. **Unstack** (Ctrl+Shift+G) takes the selected photos out.
+- **Auto-stack…** groups photos taken within a number of seconds of each other, by capture time.
+- Lightroom doesn't read our stacks, and stacks across folders only show when both folders are listed.
+
 ## Code
 
 - `crates/amb-gui/src/library.rs`: listing, batch info changes, paste commands, batch export.
@@ -114,7 +123,7 @@ Lightroom keeps each photo's edit history and snapshots in its catalogue. Ours g
 
 ## Not yet
 
-- Several folders at once (outside smart collections), collection sets, stacks. A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does). Smart collection rules for camera, lens, ISO and the like. An import into dated folders shows only the first folder afterwards.
+- Several folders at once (outside smart collections), collection sets. A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does). Smart collection rules for camera, lens, ISO and the like. An import into dated folders shows only the first folder afterwards.
 - Collections don't follow photos moved outside Ambrotype.
 - Import: moving instead of copying, a second backup copy, ejecting the card, a develop preset on import, picking single photos to import.
 - Zooming in the loupe and compare views (open the photo in the editor for 100%).

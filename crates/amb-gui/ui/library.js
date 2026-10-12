@@ -24,6 +24,8 @@ const lib = {
   observer: null,
   collection: null,    // the collection shown instead of the folder, by name
   smart: null,         // ... when it's a smart collection, its name too
+  expanded: new Set(), // stack ids shown open
+  stackSizes: new Map(), // stack id -> photos in it
   copied: null,        // the photo "Copy settings" took its edit from
   groups: null,        // setting groups for Paste settings
   wired: false,
@@ -125,7 +127,82 @@ function applyView() {
   else if (sort === "rating") shown.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || byName(a, b));
   else if (sort === "edited") shown.sort((a, b) => Number(b.edited) - Number(a.edited) || byName(a, b));
   if ($("lib-reverse").checked) shown.reverse();
-  lib.shown = shown;
+  // A closed stack shows only its top photo (or its first one shown).
+  lib.stackSizes = new Map();
+  for (const p of lib.photos) if (p.stack) lib.stackSizes.set(p.stack.id, (lib.stackSizes.get(p.stack.id) ?? 0) + 1);
+  const shownTop = new Map();
+  for (const p of shown) {
+    if (!p.stack || lib.expanded.has(p.stack.id)) continue;
+    const have = shownTop.get(p.stack.id);
+    if (!have || (p.stack.top && !have.stack.top)) shownTop.set(p.stack.id, p);
+  }
+  lib.shown = shown.filter((p) => !p.stack || lib.expanded.has(p.stack.id) || shownTop.get(p.stack.id) === p);
+}
+
+// Open or close a stack in the grid.
+function toggleStack(id) {
+  if (lib.expanded.has(id)) lib.expanded.delete(id);
+  else lib.expanded.add(id);
+  renderLibrary();
+}
+
+// Selected photos into one stack, the first (or the focused) on top.
+async function stackSelection() {
+  const sel = libraryTargets();
+  if (sel.length < 2) return toast("Select two or more photos to stack.", true);
+  const top = sel.find((p) => p.path === lib.focus) ?? sel[0];
+  const id = `s${Date.now().toString(36)}`;
+  await setStacks([[top.path], sel.filter((p) => p !== top).map((p) => p.path)], id);
+  lib.expanded.delete(id);
+  status(`Stacked ${sel.length} photos`);
+  renderLibrary();
+}
+
+// Take the selected photos out of their stacks (all of a closed stack).
+async function unstackSelection() {
+  const ids = new Set(libraryTargets().map((p) => p.stack?.id).filter(Boolean));
+  if (!ids.size) return toast("None of the selected photos is in a stack.", true);
+  const paths = lib.photos.filter((p) => p.stack && ids.has(p.stack.id)).map((p) => p.path);
+  await setStacks([[], paths], "");
+  status(`Unstacked ${paths.length} photos`);
+  renderLibrary();
+}
+
+// Write stacks: `[tops, rest]` path lists into stack `id` ("" for none).
+async function setStacks([tops, rest], id) {
+  for (const [paths, top] of [[tops, true], [rest, false]]) {
+    if (!paths.length) continue;
+    try {
+      const updates = await invoke("library_set_info", { paths, change: { stack: { id, top: id ? top : false } } });
+      for (const u of updates) {
+        const p = libPhoto(u.path);
+        if (p) p.stack = u.info.stack ?? null;
+      }
+    } catch (e) {
+      toast(String(e), true);
+    }
+  }
+}
+
+// Stack the shown photos taken within `seconds` of the one before, by capture time.
+async function autoStack() {
+  const answer = await askName("Auto-stack by capture time", "Photos taken within this many seconds of the one before go into one stack (bursts, brackets). Photos already in a stack are left alone.", "5");
+  const gap = Number(answer);
+  if (answer === null || !(gap > 0)) return;
+  const time = (p) => (p.captured ? Date.parse(p.captured.replace(" ", "T")) : NaN);
+  const photos = lib.photos.filter((p) => !p.stack && !Number.isNaN(time(p))).sort((a, b) => time(a) - time(b));
+  const groups = [];
+  for (const p of photos) {
+    const g = groups[groups.length - 1];
+    if (g && time(p) - time(g[g.length - 1]) <= gap * 1000) g.push(p);
+    else groups.push([p]);
+  }
+  const stacks = groups.filter((g) => g.length > 1);
+  for (const [i, g] of stacks.entries()) {
+    await setStacks([[g[0].path], g.slice(1).map((p) => p.path)], `s${Date.now().toString(36)}${i}`);
+  }
+  status(stacks.length ? `Made ${stacks.length} stack${stacks.length === 1 ? "" : "s"} of ${stacks.reduce((n, g) => n + g.length, 0)} photos` : "No photos close enough in time to stack");
+  renderLibrary();
 }
 
 function renderLibrary() {
@@ -164,6 +241,20 @@ function renderLibrary() {
     );
     const name = Object.assign(document.createElement("div"), { className: "lib-name", textContent: p.name });
     cell.append(frame, meta, name);
+    if (p.stack) {
+      const open = lib.expanded.has(p.stack.id);
+      const badge = Object.assign(document.createElement("button"), {
+        type: "button",
+        className: `lib-stack${open ? " open" : ""}${p.stack.top ? " top" : ""}`,
+        textContent: `⧉ ${lib.stackSizes.get(p.stack.id) ?? 1}`,
+        title: open ? "Close this stack" : "Open this stack",
+      });
+      badge.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleStack(p.stack.id);
+      });
+      frame.append(badge);
+    }
     lib.cells.set(p.path, cell);
     updateCell(p);
     const url = cachedThumb(p);
@@ -392,7 +483,7 @@ async function libraryChange(change) {
     for (const u of updates) {
       const p = libPhoto(u.path);
       if (!p) continue;
-      Object.assign(p, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag,
+      Object.assign(p, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag, stack: u.info.stack ?? null,
         title: u.info.title, caption: u.info.caption, creator: u.info.creator, copyright: u.info.copyright });
       updateCell(p);
       updateCullTile(u.path);
@@ -681,6 +772,9 @@ function wireLibrary() {
   if (lib.wired) return;
   lib.wired = true;
   // Title, caption, creator and copyright for the selection, when a field is left.
+  $("lib-stack").addEventListener("click", stackSelection);
+  $("lib-unstack").addEventListener("click", unstackSelection);
+  $("lib-autostack").addEventListener("click", autoStack);
   for (const f of $("lib-meta").querySelectorAll("[data-meta]")) {
     f.addEventListener("change", () => libraryChange({ [f.dataset.meta]: f.value.trim() }));
     f.addEventListener("keydown", (e) => e.stopPropagation());

@@ -43,6 +43,11 @@ pub struct LookStats {
     /// b*, and the signed root of their covariance. Saturation scales it,
     /// white balance barely moves it, so the two can be told apart.
     pub spread: [f32; 3],
+    /// Per HSL band (in [`crate::color::BANDS`] order, weighed as the Color
+    /// Mixer weighs colours): its share of the photo, and the mean OkLCh
+    /// chroma, lightness and hue offset from the band's centre (radians) of
+    /// its colours.
+    pub bands: [[f32; 4]; 8],
 }
 
 /// Weights of a pixel of lightness `l` in the shadow, midtone and highlight zones.
@@ -70,7 +75,27 @@ pub fn look_stats(img: &ProPhotoImage) -> LookStats {
     let mut cs = Vec::with_capacity(n);
     let mut sums = [[0.0f64; 3]; 3];
     let mut moments = [0.0f64; 5];
+    let ok = crate::color::OkLab::new();
+    let centres = crate::color::hsl_band_hues();
+    let mut band_sums = [[0.0f64; 4]; 8];
     for p in img.rgb.chunks_exact(3) {
+        let [ol, oa, ob] = ok.from_working([p[0], p[1], p[2]]);
+        if ol.is_finite() && oa.is_finite() && ob.is_finite() {
+            let (chroma, hue) = (oa.hypot(ob), ob.atan2(oa));
+            for (i, w) in crate::color::hsl_band_membership(hue, chroma) {
+                if w > 0.0 {
+                    let d = (hue - centres[i] + std::f32::consts::PI)
+                        .rem_euclid(std::f32::consts::TAU)
+                        - std::f32::consts::PI;
+                    let w = w as f64;
+                    let sum = &mut band_sums[i];
+                    sum[0] += w;
+                    sum[1] += w * chroma as f64;
+                    sum[2] += w * ol as f64;
+                    sum[3] += w * d as f64;
+                }
+            }
+        }
         let [l, a, b] = lab(p);
         for (m, v) in moments.iter_mut().zip([a, b, a * a, b * b, a * b]) {
             *m += v;
@@ -105,6 +130,18 @@ pub fn look_stats(img: &ProPhotoImage) -> LookStats {
         }),
         chroma: [percentile(&cs, 50.0), percentile(&cs, 90.0)],
         spread,
+        bands: band_sums.map(|[w, c, l, d]| {
+            if w > 1e-9 {
+                [
+                    (w / k) as f32,
+                    (c / w) as f32,
+                    (l / w) as f32,
+                    (d / w) as f32,
+                ]
+            } else {
+                [0.0; 4]
+            }
+        }),
     }
 }
 
@@ -127,12 +164,22 @@ pub fn average(looks: &[LookStats]) -> Option<LookStats> {
     for c in 0..3 {
         out.spread[c] = looks.iter().map(|s| s.spread[c]).sum::<f32>() / n;
     }
+    for b in 0..8 {
+        for c in 0..4 {
+            out.bands[b][c] = looks.iter().map(|s| s.bands[b][c]).sum::<f32>() / n;
+        }
+    }
     Some(out)
 }
 
-/// The differences between two looks, weighted so their squares add up
-/// to [`distance`].
-fn residuals(a: &LookStats, b: &LookStats) -> Vec<f64> {
+/// Least share of the photo, in both looks, for a band's colours to count.
+const MIN_BAND_SHARE: f32 = 0.01;
+
+/// The differences between two looks, weighted so their squares add up to
+/// [`distance`]; with `bands`, also each HSL band's colours where both
+/// looks have them (in OkLCh, times 100 to be near Lab units, weighted by
+/// how much of the photos they cover).
+fn residuals(a: &LookStats, b: &LookStats, bands: bool) -> Vec<f64> {
     let mut r = Vec::with_capacity(9 + 6 + 2 + 3);
     let tone = (1.0 / a.lightness.len() as f64).sqrt();
     r.extend(
@@ -152,13 +199,31 @@ fn residuals(a: &LookStats, b: &LookStats) -> Vec<f64> {
             .map(|(x, y)| (x - y) as f64 / 2f64.sqrt()),
     );
     r.extend(a.spread.iter().zip(&b.spread).map(|(x, y)| (x - y) as f64));
+    if bands {
+        for (x, y) in a.bands.iter().zip(&b.bands) {
+            let share = x[0].min(y[0]);
+            let w = if share < MIN_BAND_SHARE {
+                0.0
+            } else {
+                (8.0 * share as f64).min(2.0).sqrt() * 100.0
+            };
+            r.push(w * (x[1] - y[1]) as f64);
+            r.push(w * (x[2] - y[2]) as f64);
+            r.push(w * (x[3] - y[3]) as f64 * y[1] as f64);
+        }
+    }
     r
 }
 
 /// How far apart two looks are, in squared Lab units: the tone (L*
 /// percentiles), the zone casts, chroma and spread.
 pub fn distance(a: &LookStats, b: &LookStats) -> f64 {
-    residuals(a, b).iter().map(|r| r * r).sum()
+    distance_with(a, b, false)
+}
+
+/// [`distance`], with the HSL bands' colours too when `bands`.
+pub fn distance_with(a: &LookStats, b: &LookStats, bands: bool) -> f64 {
+    residuals(a, b, bands).iter().map(|r| r * r).sum()
 }
 
 /// The groups of settings matching may change.
@@ -169,10 +234,18 @@ pub enum Part {
     Tone,
     Color,
     Grading,
+    /// The Color Mixer: hue, saturation and luminance per colour band.
+    Hsl,
 }
 
 impl Part {
-    pub const ALL: [Part; 4] = [Part::WhiteBalance, Part::Tone, Part::Color, Part::Grading];
+    pub const ALL: [Part; 5] = [
+        Part::WhiteBalance,
+        Part::Tone,
+        Part::Color,
+        Part::Grading,
+        Part::Hsl,
+    ];
 
     pub fn parse(s: &str) -> Option<Part> {
         match s {
@@ -180,6 +253,7 @@ impl Part {
             "tone" => Some(Part::Tone),
             "color" | "colour" => Some(Part::Color),
             "grading" | "color_grading" => Some(Part::Grading),
+            "hsl" | "mixer" | "color_mixer" => Some(Part::Hsl),
             _ => None,
         }
     }
@@ -196,7 +270,7 @@ impl Default for MatchOptions {
     fn default() -> Self {
         MatchOptions {
             parts: Part::ALL.to_vec(),
-            max_evaluations: 400,
+            max_evaluations: 600,
         }
     }
 }
@@ -212,41 +286,59 @@ pub struct MatchResult {
 }
 
 /// One searched parameter: an offset from the photo's own setting.
+#[derive(Debug, Clone)]
 struct Param {
-    key: &'static str,
-    part: Part,
+    key: String,
     lo: f64,
     hi: f64,
     /// Size of a "normal" move, for the penalty.
     scale: f64,
 }
 
-const fn param(key: &'static str, part: Part, range: f64, scale: f64) -> Param {
+fn param(key: &str, range: f64, scale: f64) -> Param {
     Param {
-        key,
-        part,
+        key: key.to_string(),
         lo: -range,
         hi: range,
         scale,
     }
 }
 
-const PARAMS: [Param; 14] = [
-    param("mired", Part::WhiteBalance, 200.0, 100.0),
-    param("tint", Part::WhiteBalance, 50.0, 30.0),
-    param("Exposure2012", Part::Tone, 3.0, 1.0),
-    param("Contrast2012", Part::Tone, 100.0, 50.0),
-    param("Highlights2012", Part::Tone, 100.0, 50.0),
-    param("Shadows2012", Part::Tone, 100.0, 50.0),
-    param("Whites2012", Part::Tone, 100.0, 50.0),
-    param("Blacks2012", Part::Tone, 100.0, 50.0),
-    param("Vibrance", Part::Color, 100.0, 50.0),
-    param("Saturation", Part::Color, 100.0, 50.0),
-    param("shadow_u", Part::Grading, 60.0, 40.0),
-    param("shadow_v", Part::Grading, 60.0, 40.0),
-    param("highlight_u", Part::Grading, 60.0, 40.0),
-    param("highlight_v", Part::Grading, 60.0, 40.0),
-];
+/// The settings a part searches. `mired`, `tint` and the grading `*_u`,
+/// `*_v` are stand-ins that [`Start::apply`] turns into real settings.
+fn params(part: Part) -> Vec<Param> {
+    match part {
+        Part::WhiteBalance => vec![param("mired", 200.0, 100.0), param("tint", 50.0, 30.0)],
+        Part::Tone => {
+            let mut p = vec![param("Exposure2012", 3.0, 1.0)];
+            for k in [
+                "Contrast2012",
+                "Highlights2012",
+                "Shadows2012",
+                "Whites2012",
+                "Blacks2012",
+            ] {
+                p.push(param(k, 100.0, 50.0));
+            }
+            p
+        }
+        Part::Color => vec![
+            param("Vibrance", 100.0, 50.0),
+            param("Saturation", 100.0, 50.0),
+        ],
+        Part::Grading => ["shadow_u", "shadow_v", "highlight_u", "highlight_v"]
+            .iter()
+            .map(|k| param(k, 60.0, 40.0))
+            .collect(),
+        Part::Hsl => crate::color::BANDS
+            .iter()
+            .flat_map(|band| {
+                ["Hue", "Saturation", "Luminance"]
+                    .map(|kind| param(&format!("{kind}Adjustment{band}"), 100.0, 50.0))
+            })
+            .collect(),
+    }
+}
 
 fn num(s: &Settings, key: &str) -> Option<f64> {
     s.get(key).and_then(Value::as_f64)
@@ -267,6 +359,15 @@ struct Start {
     tint: f64,
     grading: [[f64; 2]; 2],
 }
+
+const STAND_INS: [&str; 6] = [
+    "mired",
+    "tint",
+    "shadow_u",
+    "shadow_v",
+    "highlight_u",
+    "highlight_v",
+];
 
 impl Start {
     fn new(img: &CameraImage, base: &Settings) -> Start {
@@ -304,32 +405,35 @@ impl Start {
         }
     }
 
-    /// `base` with the offsets `x` (in [`PARAMS`] order) applied.
-    fn apply(&self, base: &Settings, x: &[f64], round: bool) -> Settings {
+    /// `base` with the offsets `x` of `params` applied.
+    fn apply(&self, base: &Settings, params: &[Param], x: &[f64], round: bool) -> Settings {
         let r = |v: f64, to: f64| if round { (v / to).round() * to } else { v };
+        let get = |k: &str| params.iter().position(|p| p.key == k).map_or(0.0, |i| x[i]);
         let mut s = base.clone();
         let set = |s: &mut Settings, k: &str, v: f64| {
             s.insert(k.to_string(), Value::Number(clamp_to_registry(k, v)));
         };
-        if x[0] != 0.0 || x[1] != 0.0 {
+        let (mired, tint) = (get("mired"), get("tint"));
+        if mired != 0.0 || tint != 0.0 {
             s.insert("WhiteBalance".into(), Value::Text("Custom".into()));
             if self.rendered {
-                set(&mut s, "IncrementalTemperature", r(self.temp + x[0], 1.0));
-                set(&mut s, "IncrementalTint", r(self.tint + x[1], 1.0));
+                set(&mut s, "IncrementalTemperature", r(self.temp + mired, 1.0));
+                set(&mut s, "IncrementalTint", r(self.tint + tint, 1.0));
             } else {
-                let mired = (1e6 / self.temp - x[0]).max(20.0);
-                set(&mut s, "Temperature", r(1e6 / mired, 10.0));
-                set(&mut s, "Tint", r(self.tint + x[1], 1.0));
+                let m = (1e6 / self.temp - mired).max(20.0);
+                set(&mut s, "Temperature", r(1e6 / m, 10.0));
+                set(&mut s, "Tint", r(self.tint + tint, 1.0));
             }
         }
-        for (i, p) in PARAMS.iter().enumerate().take(10).skip(2) {
-            if x[i] != 0.0 {
+        for (p, &v) in params.iter().zip(x) {
+            if v != 0.0 && !STAND_INS.contains(&p.key.as_str()) {
                 let to = if p.key == "Exposure2012" { 0.05 } else { 1.0 };
-                set(&mut s, p.key, r(num(base, p.key).unwrap_or(0.0) + x[i], to));
+                set(&mut s, &p.key, r(num(base, &p.key).unwrap_or(0.0) + v, to));
             }
         }
         for (z, zone) in ["Shadow", "Highlight"].iter().enumerate() {
-            let (du, dv) = (x[10 + 2 * z], x[11 + 2 * z]);
+            let lower = zone.to_ascii_lowercase();
+            let (du, dv) = (get(&format!("{lower}_u")), get(&format!("{lower}_v")));
             if du == 0.0 && dv == 0.0 {
                 continue;
             }
@@ -377,10 +481,9 @@ fn solve_linear(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Option<Vec<f64>> {
 /// to `target`. `develop` turns settings into what the pipeline renders (the
 /// caller adds lens and camera profiles).
 ///
-/// Levenberg–Marquardt on the look's [`residuals`] plus a penalty residual
-/// per setting (its change over a typical move), in units of those typical
-/// moves, with the Jacobian from finite differences: one small render per
-/// setting per iteration. Settings stay within their ranges.
+/// White balance, tone, colour and grading are solved together first; the
+/// Color Mixer after them, from that result, for the bands whose colours
+/// both looks have.
 pub fn solve(
     img: &CameraImage,
     base: &Settings,
@@ -388,111 +491,50 @@ pub fn solve(
     opts: &MatchOptions,
     develop: &dyn Fn(&Settings) -> DevelopSettings,
 ) -> MatchResult {
-    let start = Start::new(img, base);
     let evaluations = std::cell::Cell::new(0usize);
     let look = |s: &Settings| {
         evaluations.set(evaluations.get() + 1);
         look_stats(&pipeline::render(img, &develop(s)))
     };
-    let active: Vec<usize> = (0..PARAMS.len())
-        .filter(|&i| opts.parts.contains(&PARAMS[i].part))
+    let with_hsl = opts.parts.contains(&Part::Hsl);
+    let start_look = look(base);
+    let before = distance_with(&start_look, target, with_hsl);
+    let global: Vec<Param> = opts
+        .parts
+        .iter()
+        .filter(|p| **p != Part::Hsl)
+        .flat_map(|&p| params(p))
         .collect();
-    let n = active.len();
-    // Offsets from normalised coordinates (one unit = a typical move).
-    let offsets = |u: &[f64]| -> Vec<f64> {
-        let mut x = vec![0.0; PARAMS.len()];
-        for (k, &i) in active.iter().enumerate() {
-            let p = &PARAMS[i];
-            x[i] = (u[k] * p.scale).clamp(p.lo, p.hi);
-        }
-        x
-    };
-    let resid = |u: &[f64]| -> Vec<f64> {
-        let mut r = residuals(&look(&start.apply(base, &offsets(u), false)), target);
-        r.extend(u.iter().map(|v| PENALTY.sqrt() * v));
-        r
-    };
-    let sq = |r: &[f64]| r.iter().map(|v| v * v).sum::<f64>();
-    let mut u = vec![0.0; n];
-    let mut r = resid(&u);
-    let mut cost = sq(&r);
-    let before = cost;
-    let mut lambda = 1e-2;
-    const H: f64 = 0.02;
-    while n > 0 && evaluations.get() + n < opts.max_evaluations {
-        // Jacobian by forward differences.
-        let cols: Vec<Vec<f64>> = (0..n)
-            .map(|j| {
-                let mut v = u.clone();
-                v[j] += H;
-                resid(&v).iter().zip(&r).map(|(a, b)| (a - b) / H).collect()
-            })
-            .collect();
-        let jtj: Vec<Vec<f64>> = (0..n)
-            .map(|i| {
-                (0..n)
-                    .map(|j| cols[i].iter().zip(&cols[j]).map(|(a, b)| a * b).sum())
-                    .collect()
-            })
-            .collect();
-        let jtr: Vec<f64> = (0..n)
-            .map(|i| -cols[i].iter().zip(&r).map(|(a, b)| a * b).sum::<f64>())
-            .collect();
-        let mut accepted = false;
-        for _ in 0..6 {
-            if evaluations.get() >= opts.max_evaluations {
-                break;
-            }
-            let damped: Vec<Vec<f64>> = (0..n)
-                .map(|i| {
-                    let mut row = jtj[i].clone();
-                    row[i] += lambda * (jtj[i][i] + 1e-6);
-                    row
-                })
-                .collect();
-            let Some(step) = solve_linear(damped, jtr.clone()) else {
-                lambda *= 10.0;
-                continue;
-            };
-            let trial: Vec<f64> = u
-                .iter()
-                .zip(&step)
-                .zip(&active)
-                .map(|((v, d), &i)| {
-                    let p = &PARAMS[i];
-                    (v + d).clamp(p.lo / p.scale, p.hi / p.scale)
-                })
-                .collect();
-            let rt = resid(&trial);
-            let ct = sq(&rt);
-            if ct < cost {
-                let gain = cost - ct;
-                u = trial;
-                r = rt;
-                cost = ct;
-                lambda = (lambda / 3.0).max(1e-7);
-                accepted = gain > 1e-4 * cost.max(1e-9);
-                if !accepted {
-                    // Converged: the last step barely helped.
-                    lambda = f64::INFINITY;
-                }
-                break;
-            }
-            lambda *= 4.0;
-        }
-        if !accepted {
-            break;
+    let mut current = base.clone();
+    // The global settings first. With the Color Mixer on, they see the
+    // bands' colours too, so they don't take on what one band's change did.
+    if !global.is_empty() {
+        let share = if with_hsl { 0.35 } else { 1.0 };
+        let budget = (opts.max_evaluations as f64 * share) as usize;
+        let budget = budget.saturating_sub(evaluations.get());
+        current = solve_stage(img, &current, target, &global, with_hsl, budget, &look);
+    }
+    // Then everything together, with the bands whose colours both looks have.
+    if with_hsl {
+        let now = look(&current);
+        let mut all = global.clone();
+        all.extend(
+            params(Part::Hsl)
+                .into_iter()
+                .enumerate()
+                .filter(|(i, _)| now.bands[i / 3][0].min(target.bands[i / 3][0]) >= MIN_BAND_SHARE)
+                .map(|(_, p)| p),
+        );
+        if all.len() > global.len() {
+            let budget = opts.max_evaluations.saturating_sub(evaluations.get());
+            current = solve_stage(img, &current, target, &all, true, budget, &look);
         }
     }
-    if std::env::var_os("AMB_MATCH_DEBUG").is_some() {
-        eprintln!("end: cost {cost:.2} evals {} u {u:?}", evaluations.get());
-    }
-    let solved = start.apply(base, &offsets(&u), true);
-    let after = distance(&look(&solved), target);
+    let after = distance_with(&look(&current), target, with_hsl);
     // Changed settings only (one left at its default isn't a change), the
     // white balance first: its mode, then Tint, then Temperature.
     let registry = Registry::builtin();
-    let mut changes: Vec<(String, Value)> = solved
+    let mut changes: Vec<(String, Value)> = current
         .into_iter()
         .filter(|(k, v)| match base.get(k) {
             Some(old) => old != v,
@@ -513,6 +555,128 @@ pub fn solve(
         evaluations: evaluations.get(),
     }
 }
+
+/// One Levenberg–Marquardt search over `params`, from `base`, within
+/// `budget` renders; the result rounded as the sliders show it.
+///
+/// It minimises the look's residuals plus a penalty residual per setting
+/// (its change over a typical move), in units of those typical moves,
+/// with the Jacobian from finite differences: one small render per setting
+/// per iteration. Settings stay within their ranges.
+fn solve_stage(
+    img: &CameraImage,
+    base: &Settings,
+    target: &LookStats,
+    params: &[Param],
+    bands: bool,
+    budget: usize,
+    look: &dyn Fn(&Settings) -> LookStats,
+) -> Settings {
+    let start = Start::new(img, base);
+    let n = params.len();
+    let used = std::cell::Cell::new(0usize);
+    // The Color Mixer's sliders are many: small moves of them mostly fit
+    // noise, so they cost more and the smallest are dropped at the end.
+    let mixer = |p: &Param| p.key.contains("Adjustment");
+    let weights: Vec<f64> = params
+        .iter()
+        .map(|p| if mixer(p) { 4.0 * PENALTY } else { PENALTY }.sqrt())
+        .collect();
+    let offsets = |u: &[f64]| -> Vec<f64> {
+        params
+            .iter()
+            .zip(u)
+            .map(|(p, v)| (v * p.scale).clamp(p.lo, p.hi))
+            .collect()
+    };
+    let resid = |u: &[f64]| -> Vec<f64> {
+        used.set(used.get() + 1);
+        let mut r = residuals(
+            &look(&start.apply(base, params, &offsets(u), false)),
+            target,
+            bands,
+        );
+        r.extend(u.iter().zip(&weights).map(|(v, w)| w * v));
+        r
+    };
+    let sq = |r: &[f64]| r.iter().map(|v| v * v).sum::<f64>();
+    let mut u = vec![0.0; n];
+    let mut r = resid(&u);
+    let mut cost = sq(&r);
+    let mut lambda = 1e-2;
+    const H: f64 = 0.02;
+    while n > 0 && used.get() + n < budget {
+        let cols: Vec<Vec<f64>> = (0..n)
+            .map(|j| {
+                let mut v = u.clone();
+                v[j] += H;
+                resid(&v).iter().zip(&r).map(|(a, b)| (a - b) / H).collect()
+            })
+            .collect();
+        let jtj: Vec<Vec<f64>> = (0..n)
+            .map(|i| {
+                (0..n)
+                    .map(|j| cols[i].iter().zip(&cols[j]).map(|(a, b)| a * b).sum())
+                    .collect()
+            })
+            .collect();
+        let jtr: Vec<f64> = (0..n)
+            .map(|i| -cols[i].iter().zip(&r).map(|(a, b)| a * b).sum::<f64>())
+            .collect();
+        let mut accepted = false;
+        for _ in 0..6 {
+            if used.get() >= budget {
+                break;
+            }
+            let damped: Vec<Vec<f64>> = (0..n)
+                .map(|i| {
+                    let mut row = jtj[i].clone();
+                    row[i] += lambda * (jtj[i][i] + 1e-6);
+                    row
+                })
+                .collect();
+            let Some(step) = solve_linear(damped, jtr.clone()) else {
+                lambda *= 10.0;
+                continue;
+            };
+            let trial: Vec<f64> = u
+                .iter()
+                .zip(&step)
+                .zip(params)
+                .map(|((v, d), p)| (v + d).clamp(p.lo / p.scale, p.hi / p.scale))
+                .collect();
+            let rt = resid(&trial);
+            let ct = sq(&rt);
+            if ct < cost {
+                let gain = cost - ct;
+                u = trial;
+                r = rt;
+                cost = ct;
+                lambda = (lambda / 3.0).max(1e-7);
+                // Converged when the step barely helped.
+                accepted = gain > 1e-4 * cost.max(1e-9);
+                break;
+            }
+            lambda *= 4.0;
+        }
+        if !accepted {
+            break;
+        }
+    }
+    if std::env::var_os("AMB_MATCH_DEBUG").is_some() {
+        eprintln!("stage: cost {cost:.2} renders {} u {u:?}", used.get());
+    }
+    let mut x = offsets(&u);
+    for (v, p) in x.iter_mut().zip(params) {
+        if mixer(p) && v.abs() < MIN_MIXER_MOVE {
+            *v = 0.0;
+        }
+    }
+    start.apply(base, params, &x, true)
+}
+
+/// Color Mixer moves smaller than this are left out of the result.
+const MIN_MIXER_MOVE: f64 = 5.0;
 
 /// Weight of the penalty on each setting's change (per typical move, squared).
 const PENALTY: f64 = 0.5;
@@ -603,6 +767,24 @@ mod tests {
         assert!(n("Exposure2012") > 0.2, "{r:?}");
         assert!(n("Saturation") + n("Vibrance") < -5.0, "{r:?}");
         assert!(r.evaluations <= 401, "{r:?}");
+    }
+
+    #[test]
+    fn the_color_mixer_moves_one_band() {
+        let img = photo(48, 32);
+        let edit = settings(&[("SaturationAdjustmentRed", -70.0)]);
+        let target = look_stats(&pipeline::render(&img, &develop_plain(&edit)));
+        let opts = MatchOptions {
+            parts: vec![Part::Hsl],
+            max_evaluations: 300,
+        };
+        let r = solve(&img, &Settings::new(), &target, &opts, &develop_plain);
+        assert!(r.after < r.before / 4.0, "{r:?}");
+        let got: Settings = r.changes.iter().cloned().collect();
+        assert!(
+            num(&got, "SaturationAdjustmentRed").unwrap_or(0.0) < -25.0,
+            "{r:?}"
+        );
     }
 
     #[test]

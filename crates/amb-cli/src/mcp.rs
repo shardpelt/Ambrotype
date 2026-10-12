@@ -212,13 +212,13 @@ fn tools() -> Value {
         },
         {
             "name": "match_look",
-            "description": "Find the settings that make the photo look like reference images (JPEGs, or raws with their edits): white balance, tone, Vibrance/Saturation and Color Grading shadow/highlight tints, solved by measuring small renders (no AI involved). Returns the changes; with apply they are written as one undoable step. Show the user the changes before applying.",
+            "description": "Find the settings that make the photo look like reference images (JPEGs, or raws with their edits): white balance, tone, Vibrance/Saturation, Color Grading shadow/highlight tints and the Color Mixer (HSL per colour), solved by measuring small renders (no AI involved). Returns the changes; with apply they are written as one undoable step. Show the user the changes before applying.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "photo": photo,
                     "references": { "type": "array", "items": { "type": "string" }, "minItems": 1, "description": "Paths of the reference images." },
-                    "parts": { "type": "array", "items": { "type": "string", "enum": ["wb", "tone", "color", "grading"] }, "description": "What may change (default: all)." },
+                    "parts": { "type": "array", "items": { "type": "string", "enum": ["wb", "tone", "color", "grading", "hsl"] }, "description": "What may change (default: all)." },
                     "apply": { "type": "boolean", "description": "Write the changes to the photo's edit (default false)." },
                 },
                 "required": ["photo", "references"],

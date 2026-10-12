@@ -50,6 +50,46 @@ pub const BANDS: [&str; 8] = [
 ];
 const BAND_HSV_HUES: [f32; 8] = [0.0, 30.0, 60.0, 120.0, 180.0, 240.0, 270.0, 300.0];
 
+/// The OkLCh hue (radians, 0..2π) of each HSL band's centre, in [`BANDS`] order.
+pub fn hsl_band_hues() -> [f32; 8] {
+    band_centres().0
+}
+
+/// The band centres, and the bands in order of hue.
+fn band_centres() -> &'static ([f32; 8], [usize; 8]) {
+    static CENTRES: std::sync::OnceLock<([f32; 8], [usize; 8])> = std::sync::OnceLock::new();
+    CENTRES.get_or_init(|| {
+        let hues = BAND_HSV_HUES.map(|deg| OkLab::hue_of_hsv(deg).rem_euclid(TAU));
+        let mut order = [0, 1, 2, 3, 4, 5, 6, 7];
+        order.sort_by(|&i, &j| hues[i].total_cmp(&hues[j]));
+        (hues, order)
+    })
+}
+
+/// How much a colour of OkLCh `hue` (radians) and `chroma` belongs to each
+/// HSL band, as the Color Mixer weighs it: the two bands around the hue, as
+/// (index in [`BANDS`] order, weight), fading out near grey.
+pub fn hsl_band_membership(hue: f32, chroma: f32) -> [(usize, f32); 2] {
+    let (centres, order) = band_centres();
+    let h = hue.rem_euclid(TAU);
+    let colourful = smoothstep(0.0, 0.08, chroma);
+    for k in 0..8 {
+        let (i, j) = (order[k], order[(k + 1) % 8]);
+        let lo = centres[i];
+        let hi = if k + 1 < 8 {
+            centres[j]
+        } else {
+            centres[j] + TAU
+        };
+        let hh = if h < lo { h + TAU } else { h };
+        if hh >= lo && hh < hi {
+            let t = smoothstep(0.0, 1.0, (hh - lo) / (hi - lo));
+            return [(i, (1.0 - t) * colourful), (j, t * colourful)];
+        }
+    }
+    [(order[0], colourful), (order[0], 0.0)]
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub struct Wheel {
     pub hue: f64,

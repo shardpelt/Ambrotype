@@ -62,7 +62,7 @@ amb match IMG_0001.NEF ref.jpg --parts wb,tone        # only white balance and t
 amb match IMG_0001.NEF ref.jpg --out look.xmp         # also save them as a preset
 ```
 
-References can be JPEGs (or PNG, TIFF, WebP) or raws, developed with their own edits. It changes white balance, Exposure, Contrast, Highlights, Shadows, Whites, Blacks, Vibrance, Saturation and Color Grading's shadow and highlight tints (`--parts` wb, tone, color, grading). It measures the look (lightness spread, the colour of shadows, midtones and highlights, colourfulness), not the content, so references of other scenes work. It prints how close it got (`look distance 778 → 2.4`). Review the changes with the user before `--apply`, then fine-tune with `amb do`.
+References can be JPEGs (or PNG, TIFF, WebP) or raws, developed with their own edits. It changes white balance, Exposure, Contrast, Highlights, Shadows, Whites, Blacks, Vibrance, Saturation, Color Grading's shadow and highlight tints and the Color Mixer's hue, saturation and luminance per colour (`--parts` wb, tone, color, grading, hsl). The Color Mixer only moves colours that both photos have, and leaves out moves under 5. It measures the look (lightness spread, the colour of shadows, midtones and highlights, colourfulness), not the content, so references of other scenes work. It prints how close it got (`look distance 778 → 2.4`). Review the changes with the user before `--apply`, then fine-tune with `amb do`.
 
 ## Safety rules (read first)
 

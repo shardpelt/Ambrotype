@@ -50,10 +50,11 @@ USAGE:
                                             remove_mask, add_spot, set_spot, remove_spot, undo, redo)
                                             as one transaction,
                                             print the diff and write the sidecar (other XMP metadata kept)
-    amb match <PHOTO> <REF>... [--apply] [--parts wb,tone,color,grading] [--out PRESET.xmp] [--json]
+    amb match <PHOTO> <REF>... [--apply] [--parts wb,tone,color,grading,hsl] [--out PRESET.xmp] [--json]
                                             Find the settings that make the photo look like the reference
                                             images (JPEGs, or raws with their edits): white balance, tone,
-                                            Vibrance/Saturation and Color Grading tints, solved on small
+                                            Vibrance/Saturation, Color Grading tints and the Color Mixer
+                                            (HSL per colour), solved on small
                                             renders. Shows the changes; --apply makes them one undoable
                                             step, --out also writes them as a preset
     amb stats <PHOTO> [--preset P] [--amount A] [--json]
@@ -1150,7 +1151,7 @@ fn match_look(
             .split(',')
             .map(|p| {
                 Part::parse(p.trim())
-                    .ok_or_else(|| format!("unknown part {p:?} (wb, tone, color, grading)"))
+                    .ok_or_else(|| format!("unknown part {p:?} (wb, tone, color, grading, hsl)"))
             })
             .collect::<Result<Vec<_>, _>>()?,
         None => Part::ALL.to_vec(),

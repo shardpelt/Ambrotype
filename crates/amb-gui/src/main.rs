@@ -919,6 +919,54 @@ struct RegionMeta {
     millis: u128,
 }
 
+/// A reduced 1:1 crop with uncommitted slider changes, for the 100% view
+/// while a slider moves (framed like `region`).
+#[tauri::command]
+async fn region_draft(
+    cx: f64,
+    cy: f64,
+    width: usize,
+    height: usize,
+    overrides: BTreeMap<String, serde_json::Value>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Response> {
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let overrides: BTreeMap<String, Value> = overrides
+            .iter()
+            .filter_map(|(k, v)| Some((k.clone(), to_value(v)?)))
+            .collect();
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let r = s.region_draft(cx, cy, width, height, &overrides, lens);
+        framed_region(&r)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// A region as the page reads it: the length of its JSON facts, the facts,
+/// then the JPEG.
+fn framed_region(r: &session::Region) -> Res<Response> {
+    let meta = serde_json::to_vec(&RegionMeta {
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+        full_width: r.full_width,
+        full_height: r.full_height,
+        millis: r.millis,
+    })
+    .map_err(|e| e.to_string())?;
+    let mut out = Vec::with_capacity(4 + meta.len() + r.jpeg.len());
+    out.extend_from_slice(&(meta.len() as u32).to_le_bytes());
+    out.extend_from_slice(&meta);
+    out.extend_from_slice(&r.jpeg);
+    Ok(Response::new(out))
+}
+
 /// 1:1 crop for the 100% view, framed like `preview`: `[u32 LE len][JSON][JPEG]`.
 #[tauri::command]
 async fn region(
@@ -937,21 +985,7 @@ async fn region(
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         let r = s.region(cx, cy, width, height, before, clipping, lens);
-        let meta = serde_json::to_vec(&RegionMeta {
-            x: r.x,
-            y: r.y,
-            width: r.width,
-            height: r.height,
-            full_width: r.full_width,
-            full_height: r.full_height,
-            millis: r.millis,
-        })
-        .map_err(|e| e.to_string())?;
-        let mut out = Vec::with_capacity(4 + meta.len() + r.jpeg.len());
-        out.extend_from_slice(&(meta.len() as u32).to_le_bytes());
-        out.extend_from_slice(&meta);
-        out.extend_from_slice(&r.jpeg);
-        Ok(Response::new(out))
+        framed_region(&r)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -3679,6 +3713,7 @@ fn main() {
             execute,
             preview,
             region,
+            region_draft,
             pick_white,
             feedback_body,
             open_feedback,

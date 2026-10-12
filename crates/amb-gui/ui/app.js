@@ -630,8 +630,10 @@ async function renderLoop() {
     const uncropped = ui.crop.on || ui.before || gu.on;
     try {
       if (ui.zoom.on) {
-        // At 100% only committed changes render (a full-size render per drag step is too slow).
-        if (!draft) await renderRegion();
+        // At 100%, a slider being dragged shows on a reduced copy, enlarged;
+        // the full-size crop follows when it's released.
+        if (draft) await renderRegionDraft();
+        else await renderRegion();
         continue;
       }
       const overrides = ui.before ? {} : { ...ui.overrides };
@@ -737,8 +739,25 @@ async function renderRegion() {
   showJpeg(jpeg);
   $("viewer").classList.add("actual");
   placeRegion();
-  status(`100%: ${meta.full_width}×${meta.full_height} in ${meta.millis} ms` +
-    (Object.keys(ui.overrides).length ? " (slider changes show at 100% when released)" : ""));
+  status(`100%: ${meta.full_width}×${meta.full_height} in ${meta.millis} ms`);
+}
+
+// The 100% crop with the slider being dragged, from a reduced copy.
+async function renderRegionDraft() {
+  if (!ui.zoom.meta) return;
+  const v = $("viewer");
+  const dpr = window.devicePixelRatio || 1;
+  const { meta, jpeg } = splitFramed(await invoke("region_draft", {
+    cx: ui.zoom.cx, cy: ui.zoom.cy,
+    width: Math.round(v.clientWidth * dpr * 1.5),
+    height: Math.round(v.clientHeight * dpr * 1.5),
+    overrides: { ...ui.overrides },
+  }));
+  if (!ui.zoom.on) return;
+  ui.zoom.meta = meta;
+  showJpeg(jpeg);
+  placeRegion();
+  status(`100% draft in ${meta.millis} ms (full detail when the slider is released)`);
 }
 
 // Position the 1:1 crop so (cx, cy) sits in the viewport centre.

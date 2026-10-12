@@ -57,6 +57,9 @@ pub struct Session {
     /// Small copy of the photo the 100% view measures whole-photo
     /// statistics on ([`pipeline::measure_globals`]).
     globals_src: Option<CameraImage>,
+    /// A reduced copy for the 100% view's drafts while a slider moves,
+    /// with its long edge.
+    draft_src: Option<(usize, CameraImage)>,
     /// Rating and keywords, as in the sidecar (they are saved as they change).
     pub info: amb_protocol::sidecar::PhotoInfo,
     /// The develop settings and snapshots as last loaded or saved (for
@@ -255,6 +258,7 @@ impl Session {
             profile_note: None,
             region_cache: None,
             globals_src: None,
+            draft_src: None,
         })
     }
 
@@ -766,6 +770,84 @@ impl Session {
         }
         Region {
             jpeg: encode_jpeg(&crop, w, h, 92),
+            x,
+            y,
+            width: w,
+            height: h,
+            full_width: uw,
+            full_height: uh,
+            millis: start.elapsed().as_millis(),
+        }
+    }
+
+    /// The 100% view's crop while a slider moves (`overrides`): rendered
+    /// from a copy at a fraction of full size, so it keeps up, and shown
+    /// enlarged until the full-size crop replaces it. The position and size
+    /// are in full-size pixels, as [`Session::region`] gives them.
+    pub fn region_draft(
+        &mut self,
+        cx: f64,
+        cy: f64,
+        max_w: usize,
+        max_h: usize,
+        overrides: &BTreeMap<String, Value>,
+        lens: &LensSources,
+    ) -> Region {
+        let start = Instant::now();
+        let settings = self.effective_settings(overrides, false);
+        let develop = self.develop(&settings, lens);
+        let orientation = self.full.metadata.orientation;
+        let (sw, sh) = pipeline::output_size(&self.full, &develop);
+        let (uw, uh) = amb_export::geometry::oriented_size(sw, sh, orientation);
+        let w = max_w.clamp(16, uw);
+        let h = max_h.clamp(16, uh);
+        let x = ((cx * uw as f64) as isize - w as isize / 2).clamp(0, (uw - w) as isize) as usize;
+        let y = ((cy * uh as f64) as isize - h as isize / 2).clamp(0, (uh - h) as isize) as usize;
+        // About half a megapixel of draft, at least half size down.
+        let factor = ((w * h) as f64 / 500_000.0).sqrt().max(2.0);
+        let long = self.full.width.max(self.full.height);
+        let edge = ((long as f64 / factor).round() as usize).max(256);
+        if self.draft_src.as_ref().map(|(e, _)| *e) != Some(edge) {
+            self.draft_src = Some((edge, downscale(&self.full, edge)));
+        }
+        let src = &self.draft_src.as_ref().expect("set above").1;
+        let (dsw, dsh) = pipeline::output_size(src, &develop);
+        let (duw, duh) = amb_export::geometry::oriented_size(dsw, dsh, orientation);
+        // The same window on the reduced copy.
+        let (fx, fy) = (duw as f64 / uw as f64, duh as f64 / uh as f64);
+        let dx = ((x as f64 * fx) as usize).min(duw.saturating_sub(1));
+        let dy = ((y as f64 * fy) as usize).min(duh.saturating_sub(1));
+        let dw = ((w as f64 * fx).ceil() as usize).clamp(1, duw - dx);
+        let dh = ((h as f64 * fy).ceil() as usize).clamp(1, duh - dy);
+        // The whole-photo measurements of the full-size crop on screen will
+        // do for a draft (measuring them again each step costs more than the
+        // draft itself).
+        let globals = match &self.region_cache {
+            Some(c) => c.globals.clone(),
+            None if pipeline::needs_globals(&develop) => {
+                let full = &self.full;
+                let small = self
+                    .globals_src
+                    .get_or_insert_with(|| raw::downscale(full, pipeline::GLOBALS_LONG_SIDE));
+                pipeline::measure_globals(src, small, &develop)
+            }
+            None => pipeline::Globals::default(),
+        };
+        let corner = |ux: usize, uy: usize| {
+            amb_export::geometry::stored_position(orientation, dsw, dsh, ux, uy)
+        };
+        let (ax, ay) = corner(dx, dy);
+        let (bx, by) = corner(dx + dw - 1, dy + dh - 1);
+        let stored = amb_engine::buffer::Rect {
+            x: ax.min(bx),
+            y: ay.min(by),
+            width: ax.abs_diff(bx) + 1,
+            height: ay.abs_diff(by) + 1,
+        };
+        let part = pipeline::render_region(src, &develop, stored, &globals);
+        let upright = amb_export::geometry::orient(&part, orientation);
+        Region {
+            jpeg: encode_jpeg(&to_srgb8(&upright), upright.width, upright.height, 85),
             x,
             y,
             width: w,

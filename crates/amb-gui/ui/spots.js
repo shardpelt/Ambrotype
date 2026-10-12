@@ -21,6 +21,10 @@ const sp = {
   feather: 50,
   opacity: 100,
   busy: false,
+  // Visualise spots: the photo as white edges on black, to find dust.
+  visualise: false,
+  threshold: 50,
+  edges: null,          // { key, data } cached for one preview and size
 };
 
 const spotList = () => ui.state?.spots?.spots ?? [];
@@ -45,6 +49,7 @@ function drawSpots() {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, w, h);
   if (!sp.frame || !ui.preview.url) return;
+  if (sp.visualise) drawEdges(c, dpr);
   const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#f0b45a";
   const circle = ([x, y], r, colour, dash = []) => {
     g.setLineDash(dash);
@@ -84,6 +89,48 @@ function drawSpots() {
   }
   // The next spot's size, under the pointer.
   if (sp.hover && !sp.drag) circle(sp.hover, spotRadiusPx(sp.size / 100), "rgba(255,255,255,0.6)", [2, 3]);
+}
+
+// Lightroom's Visualize Spots: edges of the preview, white on black, so dust
+// and specks stand out. Higher thresholds show only stronger edges.
+function drawEdges(c, dpr) {
+  const img = $("preview");
+  if (!img.naturalWidth) return;
+  const r = viewRect("spot-canvas");
+  const [x0, y0] = [Math.round(r.left * dpr), Math.round(r.top * dpr)];
+  const [w, h] = [Math.max(1, Math.round(r.width * dpr)), Math.max(1, Math.round(r.height * dpr))];
+  const key = `${ui.preview.url}|${w}x${h}|${sp.threshold}`;
+  if (sp.edges?.key !== key) {
+    const off = new OffscreenCanvas(w, h);
+    const og = off.getContext("2d", { willReadFrequently: true });
+    og.drawImage(img, 0, 0, w, h);
+    const src = og.getImageData(0, 0, w, h).data;
+    const lum = new Float32Array(w * h);
+    for (let i = 0; i < w * h; i++) lum[i] = 0.299 * src[4 * i] + 0.587 * src[4 * i + 1] + 0.114 * src[4 * i + 2];
+    const out = og.createImageData(w, h);
+    // Sobel edges; the threshold (0..100) takes away the weaker ones.
+    const cut = sp.threshold * 1.2;
+    const at = (x, y) => lum[Math.min(h - 1, Math.max(0, y)) * w + Math.min(w - 1, Math.max(0, x))];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const gx = at(x + 1, y - 1) + 2 * at(x + 1, y) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x - 1, y) - at(x - 1, y + 1);
+        const gy = at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x, y - 1) - at(x + 1, y - 1);
+        const v = Math.max(0, Math.min(255, (Math.hypot(gx, gy) - cut) * 2));
+        const o = 4 * (y * w + x);
+        out.data[o] = out.data[o + 1] = out.data[o + 2] = v;
+        out.data[o + 3] = 255;
+      }
+    }
+    sp.edges = { key, data: out };
+  }
+  c.getContext("2d").putImageData(sp.edges.data, x0, y0);
+}
+
+function setVisualise(on) {
+  sp.visualise = on;
+  $("spot-visualise").checked = on;
+  $("spot-threshold").disabled = !on;
+  drawSpots();
 }
 
 // The spots with a drag applied, so the circles follow the pointer.
@@ -211,6 +258,11 @@ async function addSpotAt(pt) {
 }
 
 function wireSpots() {
+  $("spot-visualise").addEventListener("change", (e) => setVisualise(e.target.checked));
+  $("spot-threshold").addEventListener("input", (e) => {
+    sp.threshold = Number(e.target.value);
+    drawSpots();
+  });
   const c = $("spot-canvas");
   const at = (e) => {
     const r = c.getBoundingClientRect();

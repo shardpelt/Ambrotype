@@ -50,6 +50,7 @@ const KEY_ACTIONS = [
   { id: "spot-smaller", group: "Spot removal", label: "Smaller spot", keys: ["["], when: "spots", run: () => spotSize(-1) },
   { id: "spot-bigger", group: "Spot removal", label: "Bigger spot", keys: ["]"], when: "spots", run: () => spotSize(1) },
   { id: "spot-delete", group: "Spot removal", label: "Delete the selected spot", keys: ["Delete", "Backspace"], when: "spots", run: (e) => (onControl(e) ? false : deleteSpot()) },
+  { id: "spot-visualise", group: "Spot removal", label: "Visualise spots", keys: ["A"], when: "spots", run: () => setVisualise(!sp.visualise) },
   { id: "spot-leave", group: "Spot removal", label: "Leave spot removal", keys: ["Escape"], when: "spots", run: () => exitSpots() },
   { id: "mask-leave", group: "Masks", label: "Stop drawing, then leave the masks", keys: ["Escape"], when: "masks", run: () => maskEscape() },
   // Rating, labels and keywords: the open photo, or in the library the selected photos.

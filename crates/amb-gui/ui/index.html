@@ -162,6 +162,8 @@
         <div class="row"><label for="spot-opacity">Opacity</label>
           <input id="spot-opacity" type="range" min="1" max="100" step="1" value="100">
           <input id="spot-opacity-num" class="value" type="text" inputmode="decimal" spellcheck="false"></div>
+        <div class="row"><label class="inline-check" title="Show the photo as edges, white on black, so dust and specks stand out (A)"><input id="spot-visualise" type="checkbox"><span>Visualise</span></label>
+          <input id="spot-threshold" type="range" min="0" max="100" step="1" value="50" disabled title="Higher shows only stronger edges"></div>
         <p class="hint" id="spot-hint"></p>
         <div class="crop-actions">
           <button type="button" id="spot-delete" title="Delete">Delete spot</button>

@@ -14,6 +14,11 @@ Facts from Lightroom-written files, as reported by the autoshade project (MIT, s
 - **`RetouchInfo`** (pre-2018) is a list of strings, `centerX = 0.5, centerY = 0.4, radius = 0.02, sourceState = …, sourceX = 0.6, sourceY = 0.4, spotType = heal` (darktable's importer reads them the same way). We assume its radius is in frame widths too.
 - Coordinates are fractions of the uncropped photo in stored orientation, as for masks and the crop. `EnableRetouch` false turns them all off.
 
+
+## Visualise spots
+
+Spot panel → **Visualise** (A) shows the photo as Sobel edges, white on black, so dust and specks stand out, as Lightroom's Visualize Spots does; the slider raises the threshold so only stronger edges show. It is drawn in the page from the preview (`spots.js`, `drawEdges`), so it costs no render.
+
 ## How we render them
 
 Spots run in order on the scene-linear image at the end of the first pipeline stage, before masks are drawn, so range masks see the cleaned photo.

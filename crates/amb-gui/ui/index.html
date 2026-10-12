@@ -632,6 +632,10 @@
         </label>
         <label class="batch-name" hidden title="Tokens: {name} {yyyy} {yy} {mm} {dd} {hh} {min} {ss} {seq} {camera}, as in Import">File names
           <input name="name_template" type="text" spellcheck="false" placeholder="{name}"></label>
+        <label class="jpeg-only" title="How much colour detail JPEG keeps: Auto keeps it all at quality 90 and above">Chroma subsampling
+          <select name="subsampling"><option value="">Auto</option><option value="444">4:4:4 (all colour detail)</option><option value="422">4:2:2</option><option value="420">4:2:0 (smallest)</option></select></label>
+        <span class="inline-check jpeg-only"><input name="progressive" type="checkbox"><span>Progressive JPEG (shows blurry first while loading on the web)</span></span>
+        <label class="avif-only" title="Slower is smaller at the same quality">AVIF speed (1 slow – 10 fast) <input name="avif_speed" type="number" min="1" max="10" step="1" value="6"></label>
         <label class="maxkb">Limit file size (KB, JPEG) <input name="max_kb" type="number" min="10" step="10" placeholder="No limit"></label>
       </div>
       <div class="border-section">

@@ -1481,6 +1481,8 @@ function updateExportForm() {
   f.bits.innerHTML = DEPTHS[format].map((b) => `<option value="${b}">${b === 32 ? "32-bit float" : b + "-bit"}</option>`).join("");
   f.quality.closest("label").style.visibility = ["jpeg", "avif"].includes(format) ? "visible" : "hidden";
   f.max_kb.closest("label").style.visibility = format === "jpeg" ? "visible" : "hidden";
+  for (const el of f.querySelectorAll(".jpeg-only")) el.hidden = format !== "jpeg";
+  for (const el of f.querySelectorAll(".avif-only")) el.hidden = format !== "avif";
   f.color_space.disabled = format === "avif";
   if (format === "avif") f.color_space.value = "srgb";
 }
@@ -1557,7 +1559,11 @@ function resizeLongEdge() {
 // settings, src/main.rs `export_presets`).
 const EXPORT_FIELDS = ["format", "quality", "bits", "color_space", "exact_w", "exact_h", "resize_mode", "resize_value",
   "sharpen", "metadata", "max_kb", "border_preset", "name_template",
-  "wm_text", "wm_image", "wm_anchor", "wm_size", "wm_opacity", "wm_color"];
+  "wm_text", "wm_image", "wm_anchor", "wm_size", "wm_opacity", "wm_color", "wm_shadow",
+  "subsampling", "progressive", "avif_speed"];
+
+// A field's value as an export preset keeps it (checkboxes as true/false).
+const fieldValue = (el) => (el.type === "checkbox" ? el.checked : el.value);
 
 // The watermark as the export expects it, or null.
 function readWatermark() {
@@ -1619,7 +1625,9 @@ function applyExportPreset(name) {
   $("export-preset-delete").disabled = !p;
   if (!p) return;
   const set = (n) => {
-    if (n in p.fields && f[n]) f[n].value = p.fields[n];
+    if (!(n in p.fields) || !f[n]) return;
+    if (f[n].type === "checkbox") f[n].checked = p.fields[n] === true;
+    else f[n].value = p.fields[n];
   };
   set("format");
   updateExportForm();
@@ -1637,7 +1645,7 @@ function wireExportPresets() {
   $("export-preset-save").addEventListener("click", async () => {
     const name = await askName("Save export preset", "Keeps the format, size, sharpening, metadata and border choices.", f.export_preset.value);
     if (!name) return;
-    const fields = Object.fromEntries(EXPORT_FIELDS.filter((n) => f[n]).map((n) => [n, f[n].value]));
+    const fields = Object.fromEntries(EXPORT_FIELDS.filter((n) => f[n]).map((n) => [n, fieldValue(f[n])]));
     try {
       await invoke("save_export_preset", { name, fields });
       await fillExportPresets(name);
@@ -1709,6 +1717,9 @@ async function exportFlow(batch = null) {
     border: borderOn() ? readBorder() : null,
     name_template: batch && f.name_template.value.trim() ? f.name_template.value.trim() : null,
     watermark: readWatermark(),
+    subsampling: f.subsampling.value || null,
+    progressive: f.progressive.checked,
+    avif_speed: Number(f.avif_speed.value) || null,
   };
   if (batch) return batch.run(options);
   const base = ui.info.name.replace(/\.[^.]+$/, "");

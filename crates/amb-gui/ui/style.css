@@ -455,7 +455,7 @@ label.hub-url input { background: var(--bg-deep); border: 1px solid var(--line);
 
 /* ---------------------------------------------------------------- borders in the export dialog (borders.js) */
 #export-dialog { width: 640px; max-width: calc(100vw - 32px); }
-#export-form .batch-name[hidden] { display: none; }
+#export-form .batch-name[hidden], #export-form .jpeg-only[hidden], #export-form .avif-only[hidden] { display: none; }
 .watermark-section { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
 .watermark-section .wm-fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-items: end; }
 .watermark-section .wm-fields[hidden] { display: none; }

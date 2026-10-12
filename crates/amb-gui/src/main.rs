@@ -932,6 +932,14 @@ struct ExportOptions {
     /// Text or a logo on the photo.
     #[serde(default)]
     watermark: Option<amb_export::watermark::Watermark>,
+    /// JPEG chroma subsampling ("444", "422", "420"); none for automatic.
+    #[serde(default)]
+    subsampling: Option<String>,
+    #[serde(default)]
+    progressive: bool,
+    /// AVIF encoder speed, 1 (slow, small) to 10.
+    #[serde(default)]
+    avif_speed: Option<u8>,
 }
 
 fn yes() -> bool {
@@ -1072,6 +1080,17 @@ fn export_settings(options: &ExportOptions) -> Res<amb_export::ExportSettings> {
         if let Some(w) = &options.watermark {
             w.validate()?;
             s.watermark = Some(w.clone());
+        }
+        s.subsampling = match options.subsampling.as_deref() {
+            None | Some("") => None,
+            Some("444") => Some(amb_export::Subsampling::S444),
+            Some("422") => Some(amb_export::Subsampling::S422),
+            Some("420") => Some(amb_export::Subsampling::S420),
+            Some(other) => return Err(format!("unknown subsampling {other:?}")),
+        };
+        s.progressive = options.progressive;
+        if let Some(speed) = options.avif_speed {
+            s.avif_speed = speed.clamp(1, 10);
         }
         s.max_bytes = options
             .max_kb

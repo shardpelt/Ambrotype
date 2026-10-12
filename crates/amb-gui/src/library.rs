@@ -22,15 +22,41 @@ pub struct LibraryPhoto {
     pub captured: Option<String>,
 }
 
-/// The raws in `dir`, in name order, with their capture times (read from the
-/// raw headers in parallel; no image is decoded).
-pub fn list(dir: &Path) -> Result<Vec<LibraryPhoto>, String> {
-    Ok(with_times(folder::list_dir(dir)?))
-}
-
-/// [`list`] with the photos in every subfolder too.
+/// The raws in `dir` and every subfolder, in name order, with their capture
+/// times (read from the raw headers in parallel; no image is decoded).
 pub fn list_tree(dir: &Path) -> Result<Vec<LibraryPhoto>, String> {
     Ok(with_times(folder::list_tree(dir)?))
+}
+
+/// The photos of several folders in one grid, the first folder's first, each
+/// listed once. With more than one folder, names start with their folder's
+/// name (`2026-07/IMG_1.nef`) so photos with the same name can be told apart.
+pub fn list_many(dirs: &[PathBuf], subfolders: bool) -> Result<Vec<LibraryPhoto>, String> {
+    let mut seen = std::collections::HashSet::new();
+    let mut all = Vec::new();
+    for dir in dirs {
+        let photos = if subfolders {
+            folder::list_tree(dir)?
+        } else {
+            folder::list_dir(dir)?
+        };
+        let prefix = dir
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .filter(|_| dirs.len() > 1);
+        all.extend(
+            photos
+                .into_iter()
+                .filter(|p| seen.insert(p.path.clone()))
+                .map(|mut p| {
+                    if let Some(f) = &prefix {
+                        p.name = format!("{f}/{}", p.name);
+                    }
+                    p
+                }),
+        );
+    }
+    Ok(with_times(all))
 }
 
 /// The photos under a smart collection's folders that meet its rules.
@@ -361,6 +387,30 @@ mod tests {
     }
 
     #[test]
+    fn lists_several_folders_once() {
+        let root = temp("many");
+        let (one, two) = (root.join("one"), root.join("two"));
+        std::fs::create_dir_all(&one).unwrap();
+        std::fs::create_dir_all(&two).unwrap();
+        dng(&one, "a.dng");
+        dng(&two, "a.dng");
+        dng(&two, "b.dng");
+        let names = |dirs: &[PathBuf]| -> Vec<String> {
+            list_many(dirs, false)
+                .unwrap()
+                .into_iter()
+                .map(|p| p.photo.name)
+                .collect()
+        };
+        assert_eq!(names(std::slice::from_ref(&one)), ["a.dng"]);
+        assert_eq!(
+            names(&[two.clone(), one.clone(), two.clone()]),
+            ["two/a.dng", "two/b.dng", "one/a.dng"]
+        );
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
     fn changes_many_photos_info() {
         let dir = temp("info");
         let (a, b) = (dng(&dir, "a.dng"), dng(&dir, "b.dng"));
@@ -397,7 +447,7 @@ mod tests {
         )
         .unwrap();
         assert_eq!((info.rating, info.label), (None, None));
-        let listed = list(&dir).unwrap();
+        let listed = list_many(std::slice::from_ref(&dir), false).unwrap();
         assert_eq!(listed.len(), 2);
         assert_eq!(listed[1].photo.keywords, ["beach", "family"]);
         assert_eq!(listed[1].photo.label.as_deref(), Some("Green"));
@@ -412,7 +462,9 @@ mod tests {
             (Some(sidecar::Flag::Reject), Some(4))
         );
         assert_eq!(
-            list(&dir).unwrap()[1].photo.flag,
+            list_many(std::slice::from_ref(&dir), false).unwrap()[1]
+                .photo
+                .flag,
             Some(sidecar::Flag::Reject)
         );
         assert_eq!(change_info(&b, &flag("")).unwrap().flag, None);
@@ -436,7 +488,7 @@ mod tests {
         settings.insert("Exposure2012".to_string(), amb_presets::Value::Number(1.0));
         let copy = create_virtual_copy(&a, &settings, vec!["sea".into()]).unwrap();
         assert!(copy.ends_with("a.copy-2.xmp"));
-        let listed = list(&dir).unwrap();
+        let listed = list_many(std::slice::from_ref(&dir), false).unwrap();
         let names: Vec<&str> = listed.iter().map(|p| p.photo.name.as_str()).collect();
         assert_eq!(names, ["a.dng", "a.dng · Copy 2", "b.dng"]);
         let c = &listed[1].photo;
@@ -450,7 +502,10 @@ mod tests {
         );
         assert!(delete_virtual_copy(&b).is_err());
         delete_virtual_copy(&copy).unwrap();
-        assert_eq!(list(&dir).unwrap().len(), 2);
+        assert_eq!(
+            list_many(std::slice::from_ref(&dir), false).unwrap().len(),
+            2
+        );
         assert!(a.is_file());
         let _ = std::fs::remove_dir_all(&dir);
     }

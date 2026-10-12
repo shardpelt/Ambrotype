@@ -81,6 +81,7 @@ async function showCollection(name) {
     const keep = new Set(lib.photos.map((p) => p.path));
     lib.selected = new Set([...lib.selected].filter((p) => keep.has(p)));
     $("library-folder").textContent = "";
+    $("lib-drop-folders").hidden = true;
     if (view.missing.length) toast(`${view.missing.length} photo${view.missing.length === 1 ? " in it was" : "s in it were"} moved or deleted: ${fileName(view.missing[0])}${view.missing.length > 1 ? "…" : ""}`, true);
     renderLibrary();
   } catch (e) {
@@ -139,6 +140,7 @@ async function renameCollection() {
     lib.collection = c.name;
     await loadCollections();
     $("library-folder").textContent = "";
+    $("lib-drop-folders").hidden = true;
   } catch (e) {
     toast(String(e), true);
   }
@@ -188,6 +190,7 @@ async function showSmartCollection(name) {
     const keep = new Set(lib.photos.map((p) => p.path));
     lib.selected = new Set([...lib.selected].filter((p) => keep.has(p)));
     $("library-folder").textContent = "";
+    $("lib-drop-folders").hidden = true;
     renderLibrary();
   } catch (e) {
     toast(String(e), true);

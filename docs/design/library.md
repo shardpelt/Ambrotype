@@ -36,6 +36,7 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 - **Merge to Panorama** two or more overlapping raws into one DNG next to them ([panorama.md](panorama.md)).
 - **Import** (Import… in the bar, or Ctrl+Shift+I anywhere): copy photos from a card or folder into the library (below).
 - **Subfolders:** tick Subfolders in the bar to show the folder's subfolders too; their photos are named with their folder (`2026-07/IMG_1.nef`).
+- **Several folders:** + in the bar shows another folder with the one shown; their photos are named with their folder (`trip/IMG_1.nef`). "N more ×" goes back to the first folder alone, and Folder… starts again. After an import into dated folders, all of them are shown.
 - **Smart collections** (Show → New smart collection…): photos chosen by rules, worked out each time from the sidecars and capture times, in the folders you name and their subfolders. Rules: rating, colour label, flag, keyword, file name, edited, capture date; all or any of them. Each is a small JSON file beside the collections (`amb_library::smart`). Edit rules… and Delete collection… in the panel; ↻ works them out again.
 - **Collections:** the menu next to Folder… shows a collection instead of the folder. The panel adds the selection to a collection (or a new one); B adds the selection, or the open photo in the editor, to the last collection used, like Lightroom's quick collection. Viewing a collection, the panel can remove photos from it (the files stay), rename it or delete it.
 
@@ -123,7 +124,7 @@ Lightroom keeps stacks in its catalogue. Ours go in the sidecar: `amblib:Stack` 
 
 ## Not yet
 
-- Several folders at once (outside smart collections), collection sets. A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does). Smart collection rules for camera, lens, ISO and the like. An import into dated folders shows only the first folder afterwards.
+- Collection sets. The extra folders aren't remembered after closing the app. A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does). Smart collection rules for camera, lens, ISO and the like.
 - Collections don't follow photos moved outside Ambrotype.
 - Import: moving instead of copying, a second backup copy, ejecting the card, a develop preset on import, picking single photos to import.
 - Zooming in the loupe and compare views (open the photo in the editor for 100%).

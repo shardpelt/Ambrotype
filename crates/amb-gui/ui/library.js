@@ -11,6 +11,7 @@
 const lib = {
   on: false,
   dir: null,
+  more: [],            // other folders shown with it
   photos: [],          // [{ path, name, rating, label, keywords, flag, edited, captured }]
   shown: [],           // after filter and sort
   selected: new Set(), // paths
@@ -56,7 +57,7 @@ async function toggleLibrary(on = !lib.on) {
   $("btn-export").disabled = !on && !ui.info;
   if (on) {
     const dir = ui.info ? dirOf(ui.info.path) : lib.dir;
-    if (!lib.collection && dir && (dir !== lib.dir || !lib.photos.length)) await loadLibrary(dir);
+    if (!lib.collection && dir && ((dir !== lib.dir && !lib.more.includes(dir)) || !lib.photos.length)) await loadLibrary(dir);
     else renderLibrary();
     // The open photo may have been edited since: its mark and thumbnail.
     const open = ui.info && libPhoto(ui.info.path);
@@ -77,14 +78,21 @@ async function toggleLibrary(on = !lib.on) {
   }
 }
 
-async function loadLibrary(dir) {
+// Show a folder; `more` folders are shown with it (kept on a reload of the
+// same folder unless given).
+async function loadLibrary(dir, more = dir === lib.dir ? lib.more : []) {
   lib.dir = dir;
+  lib.more = more.filter((d) => d !== dir);
   lib.collection = null;
   lib.smart = null;
-  $("library-folder").textContent = dir ?? "";
+  const folder = $("library-folder");
+  folder.textContent = dir ?? "";
+  folder.title = [dir, ...lib.more].filter(Boolean).join("\n");
+  $("lib-drop-folders").hidden = !lib.more.length;
+  $("lib-drop-folders").textContent = `${lib.more.length} more ×`;
   $("library-count").textContent = "Reading the folder…";
   try {
-    lib.photos = await invoke("library_list", { dir, subfolders: $("lib-subfolders").checked });
+    lib.photos = await invoke("library_list", { dir, more: lib.more, subfolders: $("lib-subfolders").checked });
   } catch (e) {
     lib.photos = [];
     toast(`Couldn't read the folder: ${e}`, true);
@@ -99,7 +107,15 @@ async function chooseLibraryFolder() {
   const dir = await invoke("library_pick_folder");
   if (!dir) return;
   lib.selected.clear();
-  await loadLibrary(dir);
+  await loadLibrary(dir, []);
+}
+
+// Show another folder alongside the ones shown.
+async function addLibraryFolder() {
+  const dir = await invoke("library_pick_folder");
+  if (!dir) return;
+  if (!lib.dir || lib.collection) return loadLibrary(dir, []);
+  if (dir !== lib.dir && !lib.more.includes(dir)) await loadLibrary(lib.dir, [...lib.more, dir]);
 }
 
 // ---------------------------------------------------------------- filter, sort, grid
@@ -829,6 +845,8 @@ function wireLibrary() {
     else if (lib.dir) loadLibrary(lib.dir);
   });
   $("lib-import").addEventListener("click", () => importFlow());
+  $("lib-add-folder").addEventListener("click", () => addLibraryFolder());
+  $("lib-drop-folders").addEventListener("click", () => loadLibrary(lib.dir, []));
   for (const b of $("lib-rating").querySelectorAll("button[data-stars]")) {
     b.addEventListener("click", () => libraryChange({ rating: Number(b.dataset.stars) }));
   }

@@ -1969,15 +1969,20 @@ async fn share_plugin(
 
 // ---------------------------------------------------------------- library
 
-/// The raws in a folder, with ratings, labels, keywords and capture times.
+/// The raws in a folder (and any `more` folders shown with it), with
+/// ratings, labels, keywords and capture times.
 #[tauri::command]
-async fn library_list(dir: String, subfolders: Option<bool>) -> Res<Vec<library::LibraryPhoto>> {
+async fn library_list(
+    dir: String,
+    more: Option<Vec<String>>,
+    subfolders: Option<bool>,
+) -> Res<Vec<library::LibraryPhoto>> {
     tauri::async_runtime::spawn_blocking(move || {
-        if subfolders.unwrap_or(false) {
-            library::list_tree(Path::new(&dir))
-        } else {
-            library::list(Path::new(&dir))
-        }
+        let dirs: Vec<PathBuf> = std::iter::once(dir)
+            .chain(more.unwrap_or_default())
+            .map(PathBuf::from)
+            .collect();
+        library::list_many(&dirs, subfolders.unwrap_or(false))
     })
     .await
     .map_err(|e| e.to_string())?

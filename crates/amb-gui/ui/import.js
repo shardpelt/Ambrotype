@@ -143,7 +143,7 @@ async function importFlow() {
     if (r.folders.length) {
       await toggleLibrary(true);
       lib.selected.clear();
-      await loadLibrary(r.folders[0]);
+      await loadLibrary(r.folders[0], r.folders.slice(1));
     }
   } catch (e) {
     toast(String(e), true);

@@ -809,6 +809,17 @@
         <div class="crop-line">
           <button type="button" id="settings-hub-default">Use the default hub</button>
         </div>
+        <label class="hub-url">Edit in another app (Ctrl+Alt+E): your image editor
+          <span class="folder-row"><input id="settings-edit-app" type="text" readonly placeholder="The system's default app for TIFF files"><button type="button" class="small" id="settings-edit-pick">Choose…</button><button type="button" class="small" id="settings-edit-default" title="Use the system's default app for TIFF files">Default</button></span>
+        </label>
+        <label class="hub-url">The file it gets: a TIFF next to the photo, IMG_0001-Edit.tif
+          <span class="folder-row"><select id="settings-edit-space">
+            <option value="prophoto">ProPhoto RGB (keeps every colour; Lightroom's choice)</option>
+            <option value="adobergb">Adobe RGB (1998)-compatible</option>
+            <option value="p3">Display P3</option>
+            <option value="srgb">sRGB</option>
+          </select><select id="settings-edit-bits"><option value="16">16-bit</option><option value="8">8-bit</option></select></span>
+        </label>
         <div class="crop-line">
           <button type="button" id="settings-folder">Open the settings folder</button>
           <button type="button" id="settings-looks">Layouts and themes…</button>

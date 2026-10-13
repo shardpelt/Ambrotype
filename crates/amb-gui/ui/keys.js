@@ -24,6 +24,7 @@ const KEY_ACTIONS = [
   { id: "open", group: "File", label: "Open a photo", keys: ["Ctrl+O"], when: "any", button: "btn-open", run: () => openDialog() },
   { id: "save", group: "File", label: "Save the edit to the sidecar", keys: ["Ctrl+S"], when: "any", button: "btn-save", run: () => save() },
   { id: "export", group: "File", label: "Export", keys: ["Ctrl+E"], when: "any", button: "btn-export", run: () => exportFlow() },
+  { id: "edit-in", group: "File", label: "Edit in another app", hint: "The photo, as edited, goes to your image editor as a TIFF next to it (set the app in Settings → General).", keys: ["Ctrl+Alt+E"], when: "any", photo: true, run: () => editInFlow() },
   { id: "collage", group: "File", label: "Collage maker", hint: "Several photos on one canvas.", keys: ["C"], when: "main", button: "btn-collage", run: () => collageFlow() },
   { id: "undo", group: "Edit", label: "Undo", keys: ["Ctrl+Z"], when: "any", button: "btn-undo", run: () => run([{ cmd: "undo" }]) },
   { id: "redo", group: "Edit", label: "Redo", keys: ["Ctrl+Shift+Z", "Ctrl+Y"], when: "any", button: "btn-redo", run: () => run([{ cmd: "redo" }]) },
@@ -358,6 +359,31 @@ async function settingsFlow() {
     }
   };
   const onHub = () => setHub($("settings-hub").value);
+  // Edit in another app.
+  const showEditIn = (e) => {
+    $("settings-edit-app").value = e.app ?? "";
+    $("settings-edit-space").value = e.color_space;
+    $("settings-edit-bits").value = String(e.bits);
+  };
+  const saveEditIn = async (app) => {
+    try {
+      showEditIn(await invoke("set_edit_in", {
+        settings: {
+          app: app === undefined ? $("settings-edit-app").value || null : app,
+          color_space: $("settings-edit-space").value,
+          bits: Number($("settings-edit-bits").value),
+        },
+      }));
+    } catch (e) {
+      toast(String(e), true);
+    }
+  };
+  const pickEditApp = async () => {
+    const app = await invoke("pick_edit_app");
+    if (app) saveEditIn(app);
+  };
+  const editDefault = () => saveEditIn(null);
+  const onEditFormat = () => saveEditIn();
   const hubDefault = () => setHub(null);
   const openLooks = () => { dlg.close(); setTimeout(() => looksFlow().catch((e) => toast(String(e), true))); };
   const showText = (which) => async () => {
@@ -383,11 +409,16 @@ async function settingsFlow() {
   $("settings-looks").addEventListener("click", openLooks);
   $("settings-hub").addEventListener("change", onHub);
   $("settings-hub-default").addEventListener("click", hubDefault);
+  $("settings-edit-pick").addEventListener("click", pickEditApp);
+  $("settings-edit-default").addEventListener("click", editDefault);
+  $("settings-edit-space").addEventListener("change", onEditFormat);
+  $("settings-edit-bits").addEventListener("change", onEditFormat);
   $("about-licence").addEventListener("click", onLicence);
   $("about-notice").addEventListener("click", onNotice);
   $("about-source").addEventListener("click", onSource);
   $("about-text").hidden = true;
   invoke("hub_url").then((u) => ($("settings-hub").value = u)).catch(() => {});
+  invoke("edit_in_settings").then(showEditIn).catch(() => {});
 
   try {
     const info = await invoke("settings_info");
@@ -411,6 +442,10 @@ async function settingsFlow() {
   $("settings-looks").removeEventListener("click", openLooks);
   $("settings-hub").removeEventListener("change", onHub);
   $("settings-hub-default").removeEventListener("click", hubDefault);
+  $("settings-edit-pick").removeEventListener("click", pickEditApp);
+  $("settings-edit-default").removeEventListener("click", editDefault);
+  $("settings-edit-space").removeEventListener("change", onEditFormat);
+  $("settings-edit-bits").removeEventListener("change", onEditFormat);
   $("about-licence").removeEventListener("click", onLicence);
   $("about-notice").removeEventListener("click", onNotice);
   $("about-source").removeEventListener("click", onSource);

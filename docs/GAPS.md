@@ -55,7 +55,7 @@ Project goal for ranking: faithful Lightroom preset compatibility, free, on Wind
 | **Usage insights** (opt-in local counters of panels used, not-rendered preset settings, timings and crashes) not built; the Feedback button (pre-filled GitHub issue) exists | Missing | Decide what to build next from real use; privacy-first | [design/future-ideas.md](design/future-ideas.md) |
 | Develop UI parts not built: colour-managed display (ICC display profile) | Missing | Expected by Lightroom switchers | [SCOPE.md](SCOPE.md):303-311 |
 | Preset UX not built: layered presets, apply a preset through a mask (preset masks themselves are applied), opt-in adaptation assist. (Hover preview, filtering, favourites and applying only some setting groups — right-click a preset — exist.) | Missing | Addresses the top preset complaint ("looks nothing like the ad") | [SCOPE.md](SCOPE.md):253-259 |
-| GPU background export queue, post-export hooks, "edit in external app" | Missing | Batch workflow | [SCOPE.md](SCOPE.md):312 |
+| GPU background export queue, post-export hooks. Edit in another app exists (2026-10-13: Ctrl+Alt+E, a TIFF next to the photo opened in the app set in Settings), without Lightroom's "edit the original" choice for JPEGs or stacking the TIFF with its photo | Missing | Batch workflow | [SCOPE.md](SCOPE.md):312 |
 | Native viewport risk: wry `build_as_child` is X11-only on Linux; Wayland needs the `gtk::Fixed` route; viewport-over-webview stability on all three OSes is unproven | Question | Could force Qt 6 or a different layering | [research/08](research/08-cross-platform-and-mobile.md):35; [SCOPE.md](SCOPE.md):395 |
 
 ## 3. Library and catalog

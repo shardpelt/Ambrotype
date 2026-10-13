@@ -61,6 +61,7 @@ struct AppState {
     /// The presets starred as favourites, by path.
     preset_favourites: Mutex<Vec<String>>,
     mask_effects: Mutex<Vec<MaskEffect>>,
+    edit_in: Mutex<EditIn>,
     /// Watches the folders on screen for photos added, removed or renamed.
     folder_watch: Mutex<Option<notify::RecommendedWatcher>>,
     /// Watches the open photo's sidecar for changes made outside the editor.
@@ -126,6 +127,41 @@ struct Config {
     /// The user's own mask effects (the built-ins are added when listing).
     #[serde(default)]
     mask_effects: Vec<MaskEffect>,
+    /// Edit in another app: which app and what file.
+    #[serde(default)]
+    edit_in: EditIn,
+}
+
+/// Lightroom's "Edit in": the photo, as edited, goes to another app (an
+/// image editor) as a TIFF next to it, `IMG_0001-Edit.tif`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+struct EditIn {
+    /// The app (a program, or a `.app` on macOS); none: the system's
+    /// default for TIFFs.
+    #[serde(default)]
+    app: Option<String>,
+    #[serde(default = "prophoto")]
+    color_space: String,
+    #[serde(default = "sixteen")]
+    bits: u32,
+}
+
+fn prophoto() -> String {
+    "prophoto".into()
+}
+
+fn sixteen() -> u32 {
+    16
+}
+
+impl Default for EditIn {
+    fn default() -> EditIn {
+        EditIn {
+            app: None,
+            color_space: prophoto(),
+            bits: sixteen(),
+        }
+    }
 }
 
 /// A mask's sliders saved by name (the Masks panel's Effect menu), in the
@@ -213,6 +249,7 @@ fn save_config(state: &AppState) {
             .lock()
             .map(|p| p.clone())
             .unwrap_or_default(),
+        edit_in: state.edit_in.lock().map(|e| e.clone()).unwrap_or_default(),
     };
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
@@ -3540,6 +3577,85 @@ fn import_defaults(state: tauri::State<'_, AppState>) -> ImportDefaults {
     }
 }
 
+/// The Edit in settings.
+#[tauri::command]
+fn edit_in_settings(state: tauri::State<'_, AppState>) -> Res<EditIn> {
+    Ok(state.edit_in.lock().map_err(|e| e.to_string())?.clone())
+}
+
+#[tauri::command]
+fn set_edit_in(settings: EditIn, state: tauri::State<'_, AppState>) -> Res<EditIn> {
+    amb_color::space::OutputSpace::from_id(&settings.color_space)
+        .ok_or(format!("unknown colour space {}", settings.color_space))?;
+    if !matches!(settings.bits, 8 | 16) {
+        return Err("8 or 16 bits".into());
+    }
+    let settings = EditIn {
+        app: settings
+            .app
+            .map(|a| a.trim().to_string())
+            .filter(|a| !a.is_empty()),
+        ..settings
+    };
+    *state.edit_in.lock().map_err(|e| e.to_string())? = settings.clone();
+    save_config(state.inner());
+    Ok(settings)
+}
+
+/// Choose the app to edit in.
+#[tauri::command]
+async fn pick_edit_app(app: tauri::AppHandle) -> Option<String> {
+    let mut dialog = app.dialog().file().set_title("Edit in: choose the app");
+    if cfg!(target_os = "macos") {
+        dialog = dialog.set_directory("/Applications");
+    }
+    dialog
+        .blocking_pick_file()
+        .and_then(|p| p.into_path().ok())
+        .map(|p| p.display().to_string())
+}
+
+/// Edit the open photo in another app: write it, as edited, to a TIFF next
+/// to it (`IMG_0001-Edit.tif`, then `-Edit-2`, …) and open that there.
+/// The TIFF then shows in the folder like any photo.
+#[tauri::command]
+async fn edit_in(app: tauri::AppHandle, state: tauri::State<'_, AppState>) -> Res<String> {
+    let settings = state.edit_in.lock().map_err(|e| e.to_string())?.clone();
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    let path = tauri::async_runtime::spawn_blocking(move || -> Res<PathBuf> {
+        use amb_export::{BitDepth, ExportSettings, Format, MetadataPolicy};
+        let mut s = ExportSettings::new(Format::Tiff);
+        s.bit_depth = BitDepth::from_bits(settings.bits);
+        s.color_space = amb_color::space::OutputSpace::from_id(&settings.color_space)
+            .unwrap_or(amb_color::space::OutputSpace::ProPhoto);
+        s.metadata = MetadataPolicy::All;
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let session = guard.as_mut().ok_or("no photo open")?;
+        let i = &session.info;
+        s.tags = amb_export::exif::Tags {
+            rating: i.rating,
+            keywords: i.keywords.clone(),
+            label: i.label.clone(),
+            title: i.title.clone(),
+            caption: i.caption.clone(),
+            creator: i.creator.clone(),
+            copyright: i.copyright.clone(),
+        };
+        let out = session::edit_copy_path(&session.path);
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        session.export(&out, &s, lens)?;
+        Ok(out)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    let with = state.edit_in.lock().ok().and_then(|e| e.app.clone());
+    app.opener()
+        .open_path(path.display().to_string(), with)
+        .map_err(|e| format!("wrote {}, but couldn't open it: {e}", path.display()))?;
+    Ok(path.display().to_string())
+}
+
 /// Pick a folder (import source or destination).
 #[tauri::command]
 async fn pick_folder(app: tauri::AppHandle, title: String) -> Option<String> {
@@ -3770,6 +3886,9 @@ fn main() {
                 if let Ok(mut p) = state.mask_effects.lock() {
                     *p = config.mask_effects;
                 }
+                if let Ok(mut p) = state.edit_in.lock() {
+                    *p = config.edit_in;
+                }
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
@@ -3896,6 +4015,10 @@ fn main() {
             pick_folder,
             import_plan,
             import_run,
+            edit_in_settings,
+            set_edit_in,
+            pick_edit_app,
+            edit_in,
             pick_lrcat,
             lrcat_plan,
             lrcat_apply,

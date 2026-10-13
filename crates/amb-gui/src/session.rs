@@ -213,6 +213,29 @@ pub fn sidecar_path(photo: &Path) -> PathBuf {
     amb_engine::sidecar_path(photo)
 }
 
+/// Where a photo goes to be edited in another app: `IMG_0001-Edit.tif`
+/// next to it, or `-Edit-2.tif`, … when that is taken (Lightroom's names).
+/// A virtual copy's goes next to its photo.
+pub fn edit_copy_path(photo: &Path) -> PathBuf {
+    let source = amb_engine::source_path(photo);
+    let stem = source
+        .file_stem()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .into_owned();
+    (1..)
+        .map(|n| {
+            let suffix = if n == 1 {
+                String::new()
+            } else {
+                format!("-{n}")
+            };
+            source.with_file_name(format!("{stem}-Edit{suffix}.tif"))
+        })
+        .find(|p| !p.exists())
+        .expect("some name is free")
+}
+
 fn ratio_text(r: Option<(u32, u32)>, f: impl Fn(f64) -> String) -> Option<String> {
     r.filter(|r| r.1 != 0)
         .map(|(n, d)| f(f64::from(n) / f64::from(d)))
@@ -1459,6 +1482,22 @@ pub fn scan_presets(dirs: &[PathBuf]) -> Vec<PresetEntry> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn edit_copies_are_named_like_lightrooms() {
+        let dir = std::env::temp_dir().join(format!("amb-gui-editin-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let raw = dir.join("IMG_0001.NEF");
+        std::fs::write(&raw, b"x").unwrap();
+        assert_eq!(edit_copy_path(&raw), dir.join("IMG_0001-Edit.tif"));
+        std::fs::write(dir.join("IMG_0001-Edit.tif"), b"x").unwrap();
+        assert_eq!(edit_copy_path(&raw), dir.join("IMG_0001-Edit-2.tif"));
+        // A virtual copy's goes next to its photo, by the photo's name.
+        let copy = dir.join("IMG_0001.copy-2.xmp");
+        std::fs::write(&copy, "<x/>").unwrap();
+        assert_eq!(edit_copy_path(&copy), dir.join("IMG_0001-Edit-2.tif"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     /// A synthetic DNG in its own file: tests run in parallel, and two of them
     /// writing the same path would read each other's half-written file.

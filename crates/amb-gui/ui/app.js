@@ -1898,6 +1898,24 @@ function wireExportPresets() {
 
 // `batch`: many photos from the library ({ paths, aspect, run(options) }),
 // each exported with its own edit; otherwise the open photo.
+// Edit in another app (Settings → General picks it): the photo, as edited,
+// is written as a TIFF next to it and opened there; it then shows in the
+// folder like any photo.
+async function editInFlow() {
+  if (!ui.info) return;
+  $("busy").hidden = false;
+  status("Writing the TIFF for the other app…");
+  try {
+    const path = await invoke("edit_in");
+    status(`Opened ${fileName(path)} in the other app`);
+    toast(`Wrote ${fileName(path)} next to the photo and opened it. Save it there; it shows in the folder.`);
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    $("busy").hidden = true;
+  }
+}
+
 async function exportFlow(batch = null) {
   if (!batch && libraryOn()) return libraryExport();
   if (!batch && !ui.info) return;

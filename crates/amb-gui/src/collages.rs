@@ -1,16 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Collage templates for the editor: the built-ins (`data/collage-templates.json`,
-//! read-only) and the user's own (kept in the settings file), plus rendering a
+//! Collage templates for the editor: the built-ins (amb-export's
+//! `data/collage-templates.json`, read-only) and the user's own (kept in the settings file), plus rendering a
 //! collage: each photo developed with its own edits, placed, then exported.
 //! A collage can be saved as a project file (`.ambcollage`) to reopen later.
 
 use amb_export::collage::{Canvas, Placement, Template};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-
-const BUILTIN_JSON: &str = include_str!("../data/collage-templates.json");
-/// The canvas a built-in starts with (Instagram portrait); the editor can change it.
-const DEFAULT_SIZE: (u32, u32) = (1080, 1350);
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TemplateEntry {
@@ -26,38 +22,14 @@ pub struct TemplateEntry {
     pub source: Option<crate::hub::HubSource>,
 }
 
-#[derive(Deserialize)]
-struct BuiltinFile {
-    templates: Vec<BuiltinTemplate>,
-}
-
-#[derive(Deserialize)]
-struct BuiltinTemplate {
-    name: String,
-    cells: Vec<amb_export::collage::Cell>,
-}
-
 pub fn builtin() -> Vec<TemplateEntry> {
-    let file: BuiltinFile =
-        serde_json::from_str(BUILTIN_JSON).expect("data/collage-templates.json is valid");
-    file.templates
+    amb_export::collage::builtin_templates()
         .into_iter()
         .enumerate()
-        .map(|(i, t)| TemplateEntry {
+        .map(|(i, template)| TemplateEntry {
             id: format!("builtin:{}", i + 1),
             builtin: true,
-            template: Template {
-                format: amb_export::collage::FORMAT.into(),
-                name: t.name,
-                width: DEFAULT_SIZE.0,
-                height: DEFAULT_SIZE.1,
-                background: "#ffffff".into(),
-                gap: 1.5,
-                margin: 3.0,
-                radius: 0.0,
-                free: false,
-                cells: t.cells,
-            },
+            template,
             source: None,
         })
         .collect()

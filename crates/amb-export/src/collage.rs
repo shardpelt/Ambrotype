@@ -33,6 +33,9 @@ use amb_engine::buffer::Image;
 use serde::{Deserialize, Serialize};
 
 pub const FORMAT: &str = "ambrotype-collage/1";
+const BUILTIN_JSON: &str = include_str!("../data/collage-templates.json");
+/// The canvas a built-in starts with (Instagram portrait).
+pub const DEFAULT_SIZE: (u32, u32) = (1080, 1350);
 const MAX_CELLS: usize = 64;
 const MAX_SIDE: u32 = 20_000;
 
@@ -472,6 +475,37 @@ fn corner_cover(x: f32, y: f32, w: f32, h: f32, r: f32) -> f32 {
     (r - d + 0.5).clamp(0.0, 1.0)
 }
 
+/// The built-in layouts (`data/collage-templates.json`), on the default
+/// canvas with a white background, a 1.5% gap and a 3% margin.
+pub fn builtin_templates() -> Vec<Template> {
+    #[derive(Deserialize)]
+    struct File {
+        templates: Vec<Builtin>,
+    }
+    #[derive(Deserialize)]
+    struct Builtin {
+        name: String,
+        cells: Vec<Cell>,
+    }
+    let file: File =
+        serde_json::from_str(BUILTIN_JSON).expect("data/collage-templates.json is valid");
+    file.templates
+        .into_iter()
+        .map(|t| Template {
+            format: FORMAT.into(),
+            name: t.name,
+            width: DEFAULT_SIZE.0,
+            height: DEFAULT_SIZE.1,
+            background: "#ffffff".into(),
+            gap: 1.5,
+            margin: 3.0,
+            radius: 0.0,
+            free: false,
+            cells: t.cells,
+        })
+        .collect()
+}
+
 /// Pages for a batch: photos (with their aspect ratios, upright) in order,
 /// `cells` per page. Within a page, portrait photos go to the tallest cells
 /// and landscape ones to the widest, so fewer photos are cropped hard.
@@ -519,6 +553,15 @@ mod tests {
             radius: 0.0,
             cells: vec![[0.0, 0.0, 0.5, 1.0].into(), [0.5, 0.0, 0.5, 1.0].into()],
             free: false,
+        }
+    }
+
+    #[test]
+    fn builtin_layouts_are_valid() {
+        let all = builtin_templates();
+        assert!(all.len() >= 10);
+        for t in &all {
+            t.validate().unwrap_or_else(|e| panic!("{}: {e}", t.name));
         }
     }
 

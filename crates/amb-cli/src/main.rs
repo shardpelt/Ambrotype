@@ -96,6 +96,13 @@ USAGE:
                                             folders and renamed from templates ({name} {yyyy} {yy} {mm}
                                             {dd} {hh} {min} {ss} {seq} {camera}); a raw's JPEG and .xmp
                                             keep its new name; photos already there are skipped
+    amb collage list                        The built-in collage layouts
+    amb collage <LAYOUT> <PHOTO>... --out OUT.jpg [--size WxH] [--background #fff] [--gap 1.5]
+                [--margin 3] [export options]
+                                            Several photos (each with its own edit) on one canvas, as
+                                            the editor's collage maker does: LAYOUT is a built-in's
+                                            name or number, or a layout .json. Photos fill the cells by
+                                            shape; more photos than cells make pages, OUT-001.jpg, ...
     amb lrcat import <CATALOG.lrcat> [--apply] [--remap OLD=NEW] [--collections DIR] [--json]
                                             Move from Lightroom Classic: each photo's develop settings,
                                             rating, label, flag, keywords, stack, title and caption go into
@@ -194,6 +201,121 @@ fn profile_list(raw: &Path, options: &BTreeMap<&str, &str>) -> Result<(), String
 }
 
 /// `amb import`: plan, print, then copy (unless `dry_run`).
+/// `amb collage`: photos, each developed with its own sidecar, on a layout's
+/// canvas; pages when there are more photos than cells.
+fn collage(
+    layout: &str,
+    photos: &[&str],
+    out: &Path,
+    options: &BTreeMap<&str, &str>,
+) -> Result<(), String> {
+    use amb_export::collage::{self, Canvas, Placement, Template};
+    let builtins = collage::builtin_templates();
+    let mut template = if layout.ends_with(".json") {
+        let text = std::fs::read_to_string(layout).map_err(|e| format!("{layout}: {e}"))?;
+        Template::from_json(&text).map_err(|e| format!("{layout}: {e}"))?
+    } else if let Some(t) = layout
+        .parse::<usize>()
+        .ok()
+        .and_then(|n| builtins.get(n.wrapping_sub(1)))
+    {
+        t.clone()
+    } else {
+        builtins
+            .iter()
+            .find(|t| t.name.eq_ignore_ascii_case(layout.trim()))
+            .cloned()
+            .ok_or_else(|| format!("no layout {layout:?}: see amb collage list, or give a .json"))?
+    };
+    if let Some(size) = options.get("--size") {
+        let (w, h) = size
+            .split_once(['x', 'X'])
+            .and_then(|(w, h)| Some((w.trim().parse().ok()?, h.trim().parse().ok()?)))
+            .ok_or_else(|| format!("bad --size {size:?} (e.g. 1080x1350)"))?;
+        (template.width, template.height) = (w, h);
+    }
+    if let Some(bg) = options.get("--background") {
+        template.background = bg.to_string();
+    }
+    for (flag, slot) in [
+        ("--gap", &mut template.gap),
+        ("--margin", &mut template.margin),
+    ] {
+        if let Some(v) = options.get(flag) {
+            *slot = v
+                .parse()
+                .map_err(|_| format!("bad {flag} {v:?} (a percentage)"))?;
+        }
+    }
+    template.validate()?;
+    let mut export = export_settings(out, options)?;
+    export.resize = amb_export::Resize::None;
+    // Each photo developed with its own edit, upright.
+    let develop = |path: &str| -> Result<amb_engine::buffer::Image, String> {
+        let input = Path::new(path);
+        let source = amb_engine::source_path(input);
+        let mut img =
+            amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
+        let sidecar = amb_engine::sidecar_path(input);
+        let own = sidecar.is_file().then(|| sidecar.display().to_string());
+        let (settings, _, _) =
+            develop_settings(&mut img, own.as_deref(), None, None, None, options)?;
+        let developed = amb_engine::pipeline::render(&img, &settings);
+        Ok(amb_export::geometry::orient(
+            &developed,
+            img.metadata.orientation,
+        ))
+    };
+    let n = template.cells.len();
+    let pages = if photos.len() < n {
+        // Fewer photos than cells: in order.
+        vec![(0..n).map(|i| (i < photos.len()).then_some(i)).collect()]
+    } else {
+        // The photos' shapes (a quick look at each, without its crop), so
+        // they fill the cells that suit them; then page by page.
+        let aspects = photos
+            .iter()
+            .map(|p| {
+                let source = amb_engine::source_path(Path::new(p));
+                let img = amb_engine::raw::load(&source)
+                    .map_err(|e| format!("{}: {e}", source.display()))?;
+                let (w, h) = (img.width as f64, img.height.max(1) as f64);
+                Ok(if (5..=8).contains(&img.metadata.orientation) {
+                    h / w
+                } else {
+                    w / h
+                })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        collage::pages(&template, &aspects)
+    };
+    let stem = out.file_stem().unwrap_or_default().to_string_lossy();
+    let ext = out.extension().unwrap_or_default().to_string_lossy();
+    for (i, page) in pages.iter().enumerate() {
+        let mut canvas = Canvas::new(&template);
+        for (cell, photo) in page.iter().enumerate() {
+            if let Some(p) = photo {
+                canvas.place(cell, &develop(photos[*p])?, &Placement::default());
+            }
+        }
+        let path = if pages.len() == 1 {
+            out.to_path_buf()
+        } else {
+            out.with_file_name(format!("{stem}-{:03}.{ext}", i + 1))
+        };
+        amb_export::export(&canvas.image, &Default::default(), &export, &path)
+            .map_err(|e| format!("{}: {e}", path.display()))?;
+        println!(
+            "wrote {} ({} x {}, {} photo(s))",
+            path.display(),
+            template.width,
+            template.height,
+            page.iter().flatten().count()
+        );
+    }
+    Ok(())
+}
+
 /// `amb lrcat import`: a Lightroom Classic catalogue into sidecars and
 /// collections.
 fn lrcat_import(catalog: &Path, options: &BTreeMap<&str, &str>, json: bool) -> Result<(), String> {
@@ -539,6 +661,10 @@ fn main() -> ExitCode {
             | "--projection"
             | "--parts"
             | "--remap"
+            | "--size"
+            | "--background"
+            | "--gap"
+            | "--margin"
             | "--collections" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
@@ -575,6 +701,16 @@ fn main() -> ExitCode {
         ["testimage", pattern, out] => testimage(pattern, Path::new(out)),
         ["profile", "list", raw] => profile_list(Path::new(raw), &options),
         ["mcp"] => mcp::serve(),
+        ["collage", "list"] => {
+            for (i, t) in amb_export::collage::builtin_templates().iter().enumerate() {
+                println!("{:>2}  {} ({} photos)", i + 1, t.name, t.cells.len());
+            }
+            Ok(())
+        }
+        ["collage", layout, photos @ ..] if !photos.is_empty() => match options.get("--out") {
+            Some(out) => collage(layout, photos, Path::new(out), &options),
+            None => Err("collage needs --out <FILE>".into()),
+        },
         ["lrcat", "import", catalog] => lrcat_import(Path::new(catalog), &options, json),
         ["merge", "hdr", raws @ ..] if raws.len() >= 2 => merge_hdr(raws, &options, json),
         ["merge", "pano", raws @ ..] if raws.len() >= 2 => merge_pano(raws, &options, json),

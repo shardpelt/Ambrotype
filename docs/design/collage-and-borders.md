@@ -34,7 +34,8 @@ Status: built 2026-10-12 (`crates/amb-export/src/watermark.rs`).
 
 *Built (2026-10-08):*
 - *the layout format, compositing and page planner: `crates/amb-export/src/collage.rs`*
-- *rendering one collage or a batch of pages, and the layouts list: `crates/amb-gui/src/collages.rs`; built-in layouts in `crates/amb-gui/data/collage-templates.json`, yours in the settings file*
+- *from the command line (2026-10-13): `amb collage <layout> <photos>... --out page.jpg` (a built-in by name or number, `amb collage list`, or a layout .json; `--size`, `--background`, `--gap`, `--margin` and the export options), pages when there are more photos than cells*
+- *rendering one collage or a batch of pages, and the layouts list: `crates/amb-gui/src/collages.rs`; built-in layouts in `crates/amb-export/data/collage-templates.json` (`collage::builtin_templates`), yours in the settings file*
 - *the editor screen: `crates/amb-gui/ui/collage.js` (the Collage button, or C)*
 
 ![The collage maker: layouts on the left, the canvas, canvas and cell settings on the right, and the photo tray below](../images/collage.png)

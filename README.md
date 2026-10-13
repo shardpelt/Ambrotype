@@ -56,6 +56,6 @@ All rendering models are first versions ("ours, not Adobe's"). Their constants a
 
 Copyright © 2026 The Ambrotype contributors. Ambrotype is free software under the [GNU General Public License, version 3 or later](LICENSE): you may use, share and change it, and anything you distribute that is based on it must be under the same licence, with its source. It comes with no warranty.
 
-The plugin SDK (`crates/amb-plugin-sdk`) and the `amb plugin new` template are MIT or Apache-2.0, so plugins can use any licence. Credits for code from other projects (the X-Trans demosaic comes from [darktable](https://www.darktable.org/)) and library notices are in [NOTICE](NOTICE). How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
+The plugin SDK (`crates/amb-plugin-sdk`) and the `amb plugin new` template are MIT or Apache-2.0, so plugins can use any licence. Credits for code from other projects (the X-Trans demosaic comes from [darktable](https://www.darktable.org/), the Bayer one is RCD as in RawTherapee and darktable) and library notices are in [NOTICE](NOTICE). How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 *Lightroom and Camera Raw are trademarks of Adobe Inc.; Fujifilm's film simulation names are trademarks of FUJIFILM Corporation. This project is not affiliated with or endorsed by either.*

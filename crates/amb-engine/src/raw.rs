@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Raw decoding into linear camera RGB, via `rawler` (pure Rust).
 //!
-//! rawler handles container parsing, decompression, black/white scaling and
-//! demosaicing, except for X-Trans sensors, which use our own demosaic
-//! ([`crate::xtrans`]). Colour (white balance, camera matrix) is done by our
-//! pipeline.
+//! rawler handles container parsing, decompression and black/white scaling;
+//! demosaicing is ours: RCD for Bayer sensors ([`crate::rcd`]) and
+//! Markesteijn for X-Trans ([`crate::xtrans`]), with rawler's for anything
+//! else. Colour (white balance, camera matrix) is done by our pipeline.
 
 use std::path::Path;
 
@@ -135,11 +135,14 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
     ]);
     let developed = match develop_xtrans(&raw)? {
         Some(xtrans) => xtrans,
-        None => developed(
-            develop
-                .develop_intermediate(&raw)
-                .map_err(|e| Error::Decode(e.to_string()))?,
-        )?,
+        None => match develop_bayer(&raw)? {
+            Some(bayer) => bayer,
+            None => developed(
+                develop
+                    .develop_intermediate(&raw)
+                    .map_err(|e| Error::Decode(e.to_string()))?,
+            )?,
+        },
     };
     let (width, height, mut rgb) = developed;
     // A DNG's own corrections: lens shading now, its lens warp and vignette
@@ -293,15 +296,21 @@ fn developed(intermediate: Intermediate) -> Result<Developed, Error> {
     }
 }
 
-/// X-Trans sensors: our Markesteijn demosaic instead of rawler's bilinear
-/// one, then the same active-area and default crops rawler would apply.
-fn develop_xtrans(raw: &rawler::RawImage) -> Result<Option<Developed>, Error> {
-    use rawler::imgop::sensor::SensorType;
+/// A sensor's samples, its width and height, and its colour pattern.
+type Mosaic = (Vec<f32>, usize, usize, rawler::CFA);
+
+/// The sensor's mosaic, black/white scaled, cut to its active area, with
+/// the colour pattern from the area's top-left; `None` for a sensor of
+/// another kind.
+fn mosaic(
+    raw: &rawler::RawImage,
+    sensor: rawler::imgop::sensor::SensorType,
+) -> Result<Option<Mosaic>, Error> {
     use rawler::rawimage::RawPhotometricInterpretation;
     let RawPhotometricInterpretation::Cfa(config) = &raw.photometric else {
         return Ok(None);
     };
-    if config.sensor != SensorType::Xtrans
+    if config.sensor != sensor
         || !config.cfa.is_rgb()
         || raw.cpp != 1
         || raw.fuji_rotation_width.is_some()
@@ -316,17 +325,18 @@ fn develop_xtrans(raw: &rawler::RawImage) -> Result<Option<Developed>, Error> {
     };
     let roi = raw.active_area.unwrap_or(mosaic.rect());
     let cfa = config.cfa.shift(roi.p.x, roi.p.y);
-    let pattern: crate::xtrans::Pattern =
-        std::array::from_fn(|r| std::array::from_fn(|c| cfa.color_at(r, c) as u8));
     let (w, h) = (roi.d.w, roi.d.h);
     let mut samples = Vec::with_capacity(w * h);
     for y in 0..h {
         let start = (roi.p.y + y) * mosaic.width + roi.p.x;
         samples.extend_from_slice(&mosaic.data[start..start + w]);
     }
-    drop(mosaic);
-    let mut rgb = crate::xtrans::demosaic(&samples, w, h, &pattern);
-    drop(samples);
+    Ok(Some((samples, w, h, cfa)))
+}
+
+/// The default crop rawler would apply after the active area, on a
+/// developed `w × h` image.
+fn crop_default(raw: &rawler::RawImage, w: usize, h: usize, mut rgb: Vec<f32>) -> Developed {
     if let Some(mut crop) = raw.crop_area.or(raw.active_area) {
         if let Some(active) = &raw.active_area {
             crop = crop.adapt(active);
@@ -340,10 +350,43 @@ fn develop_xtrans(raw: &rawler::RawImage) -> Result<Option<Developed>, Error> {
             }
             rgb.truncate(crop.d.h * row);
             rgb.shrink_to_fit();
-            return Ok(Some((crop.d.w, crop.d.h, rgb)));
+            return (crop.d.w, crop.d.h, rgb);
         }
     }
-    Ok(Some((w, h, rgb)))
+    (w, h, rgb)
+}
+
+/// X-Trans sensors: our Markesteijn demosaic instead of rawler's bilinear
+/// one, then the same default crop rawler would apply.
+fn develop_xtrans(raw: &rawler::RawImage) -> Result<Option<Developed>, Error> {
+    let Some((samples, w, h, cfa)) = mosaic(raw, rawler::imgop::sensor::SensorType::Xtrans)? else {
+        return Ok(None);
+    };
+    let pattern: crate::xtrans::Pattern =
+        std::array::from_fn(|r| std::array::from_fn(|c| cfa.color_at(r, c) as u8));
+    let rgb = crate::xtrans::demosaic(&samples, w, h, &pattern);
+    drop(samples);
+    Ok(Some(crop_default(raw, w, h, rgb)))
+}
+
+/// Bayer sensors: RCD instead of rawler's PPG, worked at the as-shot white
+/// balance, then the same default crop rawler would apply.
+fn develop_bayer(raw: &rawler::RawImage) -> Result<Option<Developed>, Error> {
+    let Some((samples, w, h, cfa)) = mosaic(raw, rawler::imgop::sensor::SensorType::Bayer)? else {
+        return Ok(None);
+    };
+    let pattern: crate::rcd::Pattern =
+        std::array::from_fn(|r| std::array::from_fn(|c| cfa.color_at(r, c) as u8));
+    // rawler's multipliers, green 1; none known: as they are.
+    let c = raw.wb_coeffs;
+    let wb = if c[..3].iter().all(|v| v.is_finite() && *v > 0.0) {
+        [c[0] / c[1], 1.0, c[2] / c[1]]
+    } else {
+        [1.0; 3]
+    };
+    let rgb = crate::rcd::demosaic(&samples, w, h, &pattern, wb);
+    drop(samples);
+    Ok(Some(crop_default(raw, w, h, rgb)))
 }
 
 /// Area-average downscale of camera RGB so the long edge is at most `max_edge`.

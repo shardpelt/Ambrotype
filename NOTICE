@@ -49,6 +49,11 @@ crates/amb-engine/src/xtrans.rs is ported from darktable
 GPL-3.0-or-later, which adapts dcraw 9.20's X-Trans interpolation by Dave
 Coffin and Frank Markesteijn.
 
+crates/amb-engine/src/rcd.rs implements Ratio Corrected Demosaicing (RCD)
+v2.3 by Luis Sanz Rodríguez (GPL-3.0, github.com/LuisSR/RCD-Demosaicing),
+following RawTherapee's rtengine/rcd_demosaic.cc and darktable's
+src/iop/demosaicing/rcd.c (both GPL-3.0-or-later).
+
 
 Libraries
 ---------

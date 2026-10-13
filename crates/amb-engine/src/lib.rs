@@ -35,6 +35,7 @@ pub mod primaries;
 pub mod profile;
 pub mod raster;
 pub mod raw;
+pub mod rcd;
 pub mod retouch;
 pub mod stats;
 pub mod tone;

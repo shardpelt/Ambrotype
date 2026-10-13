@@ -951,7 +951,7 @@ impl Session {
             return None;
         }
         let neutral = [mean[0] / mean[1], 1.0, mean[2] / mean[1]];
-        let (x, y) = raw::xy_for_neutral(&img.xyz_to_cam, neutral);
+        let (x, y) = img.white_xy(neutral);
         if img.rendered {
             let wb = amb_engine::pipeline::incremental_for_xy(img, x, y);
             return (wb.temperature.is_finite() && wb.tint.is_finite()).then_some([

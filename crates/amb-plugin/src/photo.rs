@@ -56,6 +56,7 @@ pub fn stats(img: &CameraImage, settings: &BTreeMap<String, amb_presets::Value>)
         height: h,
         rgb,
         xyz_to_cam: img.xyz_to_cam,
+        matrices: Vec::new(),
         as_shot_neutral: img.as_shot_neutral,
         clip: img.clip,
         rendered: img.rendered,

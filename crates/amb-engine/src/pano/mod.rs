@@ -86,6 +86,7 @@ pub mod testing {
             height: h,
             rgb,
             xyz_to_cam: linalg::IDENTITY,
+            matrices: Vec::new(),
             as_shot_neutral: [1.0; 3],
             clip: [f32::INFINITY; 3],
             rendered: false,

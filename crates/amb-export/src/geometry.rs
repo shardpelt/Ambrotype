@@ -442,6 +442,7 @@ mod tests {
             height: h,
             rgb,
             xyz_to_cam: amb_color::matrix::invert3(&amb_color::matrix::PROPHOTO_TO_XYZ_D50),
+            matrices: Vec::new(),
             as_shot_neutral: [1.0; 3],
             clip: [f32::INFINITY; 3],
             rendered: false,

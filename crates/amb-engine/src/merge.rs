@@ -541,6 +541,7 @@ mod tests {
             height: h,
             rgb,
             xyz_to_cam: [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+            matrices: Vec::new(),
             as_shot_neutral: [1.0; 3],
             clip: [1.0; 3],
             rendered: false,

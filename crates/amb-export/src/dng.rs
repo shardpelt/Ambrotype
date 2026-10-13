@@ -345,6 +345,7 @@ mod tests {
             height: h,
             rgb,
             xyz_to_cam: [[0.7, -0.2, -0.05], [-0.4, 1.2, 0.2], [-0.08, 0.15, 0.6]],
+            matrices: Vec::new(),
             as_shot_neutral: [0.5, 1.0, 0.7],
             clip: [f32::INFINITY; 3],
             rendered: false,

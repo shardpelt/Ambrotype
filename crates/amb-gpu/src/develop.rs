@@ -685,6 +685,7 @@ pub(crate) mod tests {
                 [-0.4386, 1.2001, 0.2584],
                 [-0.0577, 0.1271, 0.6585],
             ],
+            matrices: Vec::new(),
             as_shot_neutral: [0.45, 1.0, 0.62],
             clip: [1.0, 1.0, 1.0],
             rendered: false,

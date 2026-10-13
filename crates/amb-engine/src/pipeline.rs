@@ -1029,7 +1029,7 @@ pub fn incremental_for_xy(img: &CameraImage, x: f64, y: f64) -> IncrementalWhite
 
 /// Temperature/Tint that Lightroom would show for this image's as-shot white.
 pub fn as_shot_temp_tint(img: &CameraImage) -> (f64, f64) {
-    let (x, y) = xy_for_neutral(&img.xyz_to_cam, img.as_shot_neutral);
+    let (x, y) = img.white_xy(img.as_shot_neutral);
     let tt = xy_to_temp_tint(x, y);
     (tt.temperature, tt.tint)
 }
@@ -1523,7 +1523,7 @@ pub(crate) fn camera_to_working<'a>(
             let (x, y) = temp_tint_to_xy(temperature, tint);
             match &profile {
                 Some(p) => p.neutral_for_xy(x, y),
-                None => neutral_for_xy(&img.xyz_to_cam, x, y),
+                None => img.neutral_for(x, y),
             }
         }
         // A converted negative is already balanced: equal channels are white,
@@ -1532,15 +1532,15 @@ pub(crate) fn camera_to_working<'a>(
         (WhiteBalance::Custom { temperature, tint }, true) => {
             let (x, y) = temp_tint_to_xy(temperature, tint);
             let (rx, ry) = temp_tint_to_xy(NEGATIVE_REFERENCE_WB.0, NEGATIVE_REFERENCE_WB.1);
-            let n = neutral_for_xy(&img.xyz_to_cam, x, y);
-            let r = neutral_for_xy(&img.xyz_to_cam, rx, ry);
+            let n = img.neutral_for(x, y);
+            let r = img.neutral_for(rx, ry);
             [n[0] / r[0], 1.0, n[2] / r[2]]
         }
     };
     // The Calibration panel's primaries fold into the camera matrix.
     let mut m = match profile {
         Some(p) => p.camera_to_prophoto(neutral),
-        None => camera_to_prophoto(&img.xyz_to_cam, neutral),
+        None => img.to_prophoto(neutral),
     };
     if let Some(p) = s.camera_calibration.matrix(&cal.primaries) {
         m = mul3(&p, &m);
@@ -2238,6 +2238,7 @@ mod tests {
             height: h,
             rgb,
             xyz_to_cam: invert3(&PROPHOTO_TO_XYZ_D50),
+            matrices: Vec::new(),
             as_shot_neutral: [1.0; 3],
             clip: [f32::INFINITY; 3],
             rendered: false,

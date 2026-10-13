@@ -23,6 +23,11 @@ pub struct CameraImage {
     pub rgb: Vec<f32>,
     /// XYZ → camera matrix (D65 calibration preferred).
     pub xyz_to_cam: Mat3,
+    /// The camera's matrices for each of its calibration illuminants
+    /// (temperature in kelvin, XYZ → camera), coolest first. With two, the
+    /// white balance picks the mix, as the DNG specification says
+    /// ([`CameraImage::xyz_to_cam_at`]); otherwise `xyz_to_cam` is used.
+    pub matrices: Vec<(f64, Mat3)>,
     /// Camera RGB of the as-shot white (green normalised to 1).
     pub as_shot_neutral: [f64; 3],
     /// Level at which each channel clips ([`clip_levels`]); infinity when it doesn't.
@@ -88,6 +93,30 @@ pub struct PhotoMetadata {
     pub gps: Option<Gps>,
 }
 
+/// Every colour matrix rawler has for the camera with its illuminant's
+/// temperature, coolest first.
+fn calibration_matrices(raw: &rawler::RawImage) -> Vec<(f64, Mat3)> {
+    let mut out: Vec<(f64, Mat3)> = raw
+        .color_matrix
+        .iter()
+        .filter_map(|(illuminant, flat)| {
+            let temp = crate::profile::illuminant_temperature(*illuminant as u16)?;
+            if flat.len() < 9 || flat.iter().any(|v| !v.is_finite()) {
+                return None;
+            }
+            let m: Mat3 =
+                std::array::from_fn(|r| std::array::from_fn(|c| f64::from(flat[r * 3 + c])));
+            let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
+                - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+                + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+            (det.abs() > 1e-9).then_some((temp, m))
+        })
+        .collect();
+    out.sort_by(|a, b| a.0.total_cmp(&b.0));
+    out.dedup_by(|a, b| a.0 == b.0);
+    out
+}
+
 fn color_matrix(raw: &rawler::RawImage) -> Result<Mat3, Error> {
     let (_, flat) = raw
         .color_matrix_find_first([
@@ -125,6 +154,7 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         ));
     }
     let xyz_to_cam = color_matrix(&raw)?;
+    let matrices = calibration_matrices(&raw);
 
     let develop = RawDevelop::new_with(&[
         ProcessingStep::Rescale,
@@ -223,6 +253,7 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         clip,
         rendered: false,
         xyz_to_cam,
+        matrices,
         as_shot_neutral,
         make: raw.clean_make.clone(),
         model: raw.clean_model.clone(),
@@ -425,6 +456,7 @@ impl CameraImage {
             height,
             rgb,
             xyz_to_cam: self.xyz_to_cam,
+            matrices: self.matrices.clone(),
             as_shot_neutral: self.as_shot_neutral,
             clip: self.clip,
             rendered: self.rendered,
@@ -572,6 +604,59 @@ pub fn read_metadata(path: &Path) -> Result<(amb_lens::ShotInfo, PhotoMetadata),
 }
 
 /// Camera RGB of a white with chromaticity (x, y), green normalised to 1.
+impl CameraImage {
+    /// XYZ → camera for a white of `temp` kelvin: the two calibration
+    /// illuminants' matrices mixed by inverse temperature (the cooler one's
+    /// alone at or below its temperature), or the one matrix there is.
+    pub fn xyz_to_cam_at(&self, temp: f64) -> Mat3 {
+        let (Some(lo), Some(hi)) = (self.matrices.first(), self.matrices.last()) else {
+            return self.xyz_to_cam;
+        };
+        if self.matrices.len() < 2 || lo.0 >= hi.0 {
+            return self.xyz_to_cam;
+        }
+        let inv = |t: f64| 1.0 / t.max(1.0);
+        let w = ((inv(temp) - inv(hi.0)) / (inv(lo.0) - inv(hi.0))).clamp(0.0, 1.0);
+        std::array::from_fn(|r| std::array::from_fn(|c| w * lo.1[r][c] + (1.0 - w) * hi.1[r][c]))
+    }
+
+    /// Camera RGB of a white with chromaticity (x, y), green = 1.
+    pub fn neutral_for(&self, x: f64, y: f64) -> [f64; 3] {
+        let temp = amb_color::temperature::xy_to_temp_tint(x, y).temperature;
+        neutral_for_xy(&self.xyz_to_cam_at(temp), x, y)
+    }
+
+    /// Chromaticity of a camera-space white. The matrix depends on it, so
+    /// it is found by iteration, as the DNG specification describes.
+    pub fn white_xy(&self, neutral: [f64; 3]) -> (f64, f64) {
+        if self.matrices.len() < 2 {
+            return xy_for_neutral(&self.xyz_to_cam, neutral);
+        }
+        let (mut x, mut y) = (0.3457, 0.3585);
+        for _ in 0..30 {
+            let temp = amb_color::temperature::xy_to_temp_tint(x, y).temperature;
+            let (nx, ny) = xy_for_neutral(&self.xyz_to_cam_at(temp), neutral);
+            if !(nx.is_finite() && ny.is_finite()) {
+                break;
+            }
+            let done = (nx - x).abs() + (ny - y).abs() < 1e-7;
+            (x, y) = (nx, ny);
+            if done {
+                break;
+            }
+        }
+        (x, y)
+    }
+
+    /// Camera RGB → linear ProPhoto for white balance `neutral`, with the
+    /// matrix for that white.
+    pub fn to_prophoto(&self, neutral: [f64; 3]) -> Mat3 {
+        let (x, y) = self.white_xy(neutral);
+        let temp = amb_color::temperature::xy_to_temp_tint(x, y).temperature;
+        crate::pipeline::camera_to_prophoto(&self.xyz_to_cam_at(temp), neutral)
+    }
+}
+
 pub fn neutral_for_xy(xyz_to_cam: &Mat3, x: f64, y: f64) -> [f64; 3] {
     let n = apply3(xyz_to_cam, xy_to_xyz(x, y));
     [n[0] / n[1], 1.0, n[2] / n[1]]
@@ -668,5 +753,77 @@ mod thumbnail_tests {
                 start.elapsed()
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod matrix_tests {
+    use super::*;
+
+    /// A camera with an illuminant-A and a D65 matrix (made up, but shaped
+    /// like a real one's).
+    fn camera() -> CameraImage {
+        let d65: Mat3 = [
+            [0.70, -0.20, -0.05],
+            [-0.40, 1.20, 0.20],
+            [-0.08, 0.15, 0.60],
+        ];
+        let a: Mat3 = [
+            [0.85, -0.30, -0.02],
+            [-0.45, 1.25, 0.22],
+            [-0.05, 0.25, 0.75],
+        ];
+        CameraImage {
+            width: 1,
+            height: 1,
+            rgb: vec![0.5; 3],
+            xyz_to_cam: d65,
+            matrices: vec![(2856.0, a), (6504.0, d65)],
+            as_shot_neutral: [1.0; 3],
+            clip: [f32::INFINITY; 3],
+            rendered: false,
+            make: "Test".into(),
+            model: "Two matrices".into(),
+            shot: Default::default(),
+            metadata: Default::default(),
+        }
+    }
+
+    #[test]
+    fn the_matrix_follows_the_white() {
+        let img = camera();
+        assert_eq!(img.xyz_to_cam_at(2000.0), img.matrices[0].1);
+        assert_eq!(img.xyz_to_cam_at(2856.0), img.matrices[0].1);
+        assert_eq!(img.xyz_to_cam_at(9000.0), img.matrices[1].1);
+        // Halfway in inverse temperature, halfway between the matrices.
+        let mid = 2.0 / (1.0 / 2856.0 + 1.0 / 6504.0);
+        let m = img.xyz_to_cam_at(mid);
+        assert!((m[0][0] - 0.775).abs() < 1e-9, "{}", m[0][0]);
+    }
+
+    #[test]
+    fn whites_round_trip_through_the_mixed_matrix() {
+        let img = camera();
+        for (t, tint) in [(2900.0, 0.0), (4300.0, 10.0), (6500.0, -5.0)] {
+            let (x, y) = amb_color::temperature::temp_tint_to_xy(t, tint);
+            let n = img.neutral_for(x, y);
+            let (bx, by) = img.white_xy(n);
+            assert!(
+                (bx - x).abs() < 1e-5 && (by - y).abs() < 1e-5,
+                "{t}: {bx},{by} vs {x},{y}"
+            );
+            // That white comes out neutral.
+            let m = img.to_prophoto(n);
+            let out = apply3(&m, n);
+            assert!(
+                (out[0] - out[1]).abs() < 1e-6 && (out[2] - out[1]).abs() < 1e-6,
+                "{out:?}"
+            );
+        }
+        // One matrix: as before.
+        let mut one = camera();
+        one.matrices.clear();
+        let n = [0.5, 1.0, 0.7];
+        assert_eq!(one.white_xy(n), xy_for_neutral(&one.xyz_to_cam, n));
     }
 }

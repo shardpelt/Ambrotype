@@ -3615,6 +3615,39 @@ async fn pick_edit_app(app: tauri::AppHandle) -> Option<String> {
         .map(|p| p.display().to_string())
 }
 
+/// After an export, as Lightroom's Post-Processing: show the files in their
+/// folder, or open them in the app for Edit in (the system's default when
+/// none is set).
+#[tauri::command]
+fn after_export(
+    paths: Vec<String>,
+    action: String,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Res<()> {
+    if paths.is_empty() {
+        return Ok(());
+    }
+    match action.as_str() {
+        "" => Ok(()),
+        "reveal" => app
+            .opener()
+            .reveal_items_in_dir(&paths)
+            .map_err(|e| e.to_string()),
+        "open" => {
+            let with = state.edit_in.lock().ok().and_then(|e| e.app.clone());
+            // A batch could start hundreds of windows: the first few.
+            for p in paths.iter().take(12) {
+                app.opener()
+                    .open_path(p, with.clone())
+                    .map_err(|e| format!("{p}: {e}"))?;
+            }
+            Ok(())
+        }
+        other => Err(format!("unknown after-export action {other:?}")),
+    }
+}
+
 /// Edit the open photo in another app: write it, as edited, to a TIFF next
 /// to it (`IMG_0001-Edit.tif`, then `-Edit-2`, …) and open that there.
 /// The TIFF then shows in the folder like any photo.
@@ -4016,6 +4049,7 @@ fn main() {
             import_plan,
             import_run,
             edit_in_settings,
+            after_export,
             set_edit_in,
             pick_edit_app,
             edit_in,

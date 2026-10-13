@@ -719,7 +719,7 @@ function libraryExport() {
   return exportFlow({
     paths: sel.map((p) => p.path),
     aspect,
-    run: async (options) => {
+    run: async (options, after) => {
       const off = await tauri.event.listen("library-progress", (e) => {
         const p = e.payload;
         status(p.done < p.total ? `Exporting ${p.done + 1} of ${p.total}: ${p.name}` : "Exported");
@@ -731,6 +731,7 @@ function libraryExport() {
         const failed = r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : "";
         toast(`Exported ${r.written.length} photo${r.written.length === 1 ? "" : "s"}${failed}`, r.errors.length > 0);
         if (r.written.length) status(`Exported ${r.written.length} photos to ${dirOf(r.written[0])}`);
+        await afterExport(r.written, after);
       } finally {
         off();
         $("busy").hidden = true;

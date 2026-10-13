@@ -659,6 +659,13 @@
             <option value="none">None</option>
           </select>
         </label>
+        <label title="What happens once the files are written">After export
+          <select name="after">
+            <option value="">Do nothing</option>
+            <option value="reveal">Show in its folder</option>
+            <option value="open">Open in the Edit-in app (Settings → General)</option>
+          </select>
+        </label>
         <label class="batch-name" hidden title="Tokens: {name} {yyyy} {yy} {mm} {dd} {hh} {min} {ss} {seq} {camera}, as in Import">File names
           <input name="name_template" type="text" spellcheck="false" placeholder="{name}"></label>
         <label class="jpeg-only" title="How much colour detail JPEG keeps: Auto keeps it all at quality 90 and above">Chroma subsampling

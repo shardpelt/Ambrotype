@@ -1785,7 +1785,7 @@ function resizeLongEdge() {
 const EXPORT_FIELDS = ["format", "quality", "bits", "color_space", "exact_w", "exact_h", "resize_mode", "resize_value",
   "sharpen", "metadata", "max_kb", "border_preset", "name_template",
   "wm_text", "wm_image", "wm_anchor", "wm_size", "wm_opacity", "wm_color", "wm_shadow", "wm_rotate", "wm_tile",
-  "subsampling", "progressive", "avif_speed"];
+  "subsampling", "progressive", "avif_speed", "after"];
 
 // A field's value as an export preset keeps it (checkboxes as true/false).
 const fieldValue = (el) => (el.type === "checkbox" ? el.checked : el.value);
@@ -1916,6 +1916,17 @@ async function editInFlow() {
   }
 }
 
+// Show the exported files in their folder, or open them (the dialog's
+// After export choice).
+async function afterExport(paths, action) {
+  if (!action || !paths.length) return;
+  try {
+    await invoke("after_export", { paths, action });
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
 async function exportFlow(batch = null) {
   if (!batch && libraryOn()) return libraryExport();
   if (!batch && !ui.info) return;
@@ -1969,7 +1980,8 @@ async function exportFlow(batch = null) {
     progressive: f.progressive.checked,
     avif_speed: Number(f.avif_speed.value) || null,
   };
-  if (batch) return batch.run(options);
+  const after = f.after.value;
+  if (batch) return batch.run(options, after);
   const base = ui.info.name.replace(/\.[^.]+$/, "");
   const path = await invoke("pick_export_path", { suggested: base, format: f.format.value });
   if (!path) return;
@@ -1979,6 +1991,7 @@ async function exportFlow(batch = null) {
     const r = await invoke("export", { path, options });
     toast(`Exported ${r.width}×${r.height}, ${(r.bytes / 1e6).toFixed(1)} MB${options.format === "jpeg" ? `, quality ${r.quality}` : ""}`);
     status(`Exported ${r.path}`);
+    await afterExport([r.path], after);
   } catch (e) {
     toast(String(e), true);
   } finally {

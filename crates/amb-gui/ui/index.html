@@ -584,6 +584,10 @@
         </label>
         <label>First number <input name="first_number" type="number" min="0" max="999999" step="1" value="1"></label>
         <label>Keywords for all <input name="keywords" type="text" spellcheck="false" placeholder="e.g. wedding, Anna &amp; Tom"></label>
+        <label title="A look for every photo that doesn't bring its own edit">Develop preset <select name="preset"><option value="">None</option></select></label>
+        <label title="A second copy of the originals, as they are named on the card, in a dated folder">Backup copy to
+          <span class="folder-row"><input name="backup" type="text" readonly placeholder="No second copy"><button type="button" class="small" data-pick="backup">Choose…</button><button type="button" class="small" data-clear="backup" title="No second copy">×</button></span>
+        </label>
       </div>
       <label class="check"><input name="subfolders" type="checkbox" checked> Include subfolders (a card's DCIM folders)</label>
       <p id="import-tokens" class="hint"></p>

@@ -12,6 +12,9 @@
 //!   name makes the new one `name-2`.
 //! - Each file is copied to a hidden temporary name, checked for size and
 //!   then renamed, so an interrupted import leaves no half-copied photos.
+//! - A develop preset can be applied as photos come in (not to one that
+//!   brings its own edit in a sidecar), and a second copy of the originals,
+//!   as they were named, can go to a backup folder.
 
 use std::collections::{BTreeMap, HashSet};
 use std::io::Read;
@@ -38,6 +41,12 @@ pub struct ImportOptions {
     pub subfolders: bool,
     /// Keywords for every imported photo's sidecar.
     pub keywords: Vec<String>,
+    /// A develop preset (`.xmp` or `.lrtemplate`) for every imported photo
+    /// that doesn't bring its own edit.
+    pub preset: Option<PathBuf>,
+    /// A second copy of the originals, unrenamed, in
+    /// `<backup>/Imported on YYYY-MM-DD/`.
+    pub backup: Option<PathBuf>,
 }
 
 impl Default for ImportOptions {
@@ -48,6 +57,8 @@ impl Default for ImportOptions {
             first_number: 1,
             subfolders: true,
             keywords: Vec::new(),
+            preset: None,
+            backup: None,
         }
     }
 }
@@ -511,6 +522,60 @@ fn add_keywords(photo: &Path, keywords: &[String]) -> Result<(), String> {
     sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())
 }
 
+/// Apply `preset` to `photo`'s edit, unless its sidecar already has
+/// develop settings (an edit made before import).
+fn apply_preset(photo: &Path, preset: &Path) -> Result<bool, String> {
+    let path = amb_engine::sidecar_path(photo);
+    if let Ok(text) = std::fs::read_to_string(&path) {
+        let settings = amb_presets::xmp::parse_crs(&text).unwrap_or_default();
+        if settings
+            .keys()
+            .any(|k| !matches!(k.as_str(), "Version" | "ProcessVersion"))
+        {
+            return Ok(false);
+        }
+    }
+    let command = serde_json::json!({ "cmd": "apply_preset", "path": preset });
+    amb_protocol::edit::run(&amb_protocol::edit::EditRequest {
+        sidecar: &path,
+        commands: &command.to_string(),
+        out: None,
+        dry_run: false,
+    })
+    .map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
+/// Where today's backup copies go: `<backup>/Imported on YYYY-MM-DD`.
+fn backup_folder(backup: &Path) -> PathBuf {
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs() as i64);
+    let w = When::from_unix(secs);
+    backup.join(format!("Imported on {:04}-{:02}-{:02}", w.y, w.mo, w.d))
+}
+
+/// Copy `from` into `dir` under its own name; a file with the same bytes
+/// already there is left, another one gets `-2`, `-3`, ….
+fn back_up(from: &Path, dir: &Path) -> Result<(), String> {
+    let (stem, ext) = split_name(from);
+    for n in 1.. {
+        let name = if n == 1 {
+            format!("{stem}{ext}")
+        } else {
+            format!("{stem}-{n}{ext}")
+        };
+        let to = dir.join(name);
+        if !to.exists() {
+            return copy_file(from, &to);
+        }
+        if same_file(from, &to) {
+            return Ok(());
+        }
+    }
+    unreachable!("some name is free")
+}
+
 /// Carry out a plan. One failed photo doesn't stop the rest.
 /// `progress(done, total, name)` is called before each photo.
 pub fn run(
@@ -525,6 +590,13 @@ pub fn run(
         .map(|k| k.trim().to_string())
         .filter(|k| !k.is_empty())
         .collect();
+    let backup = options.backup.as_deref().map(backup_folder);
+    if let Some(dir) = &backup
+        && let Err(e) = std::fs::create_dir_all(dir)
+    {
+        report.errors.push(format!("{}: {e}", dir.display()));
+        return report;
+    }
     for (i, p) in plan.iter().enumerate() {
         let Some((main_src, main_dest)) = p.files.first() else {
             continue;
@@ -553,11 +625,25 @@ pub fn run(
                 }
                 // The photo is in; a sidecar that won't take keywords is
                 // reported but doesn't undo that.
+                if let Some(preset) = &options.preset {
+                    if let Err(e) = apply_preset(main_dest, preset) {
+                        report
+                            .errors
+                            .push(format!("{name}: preset not applied: {e}"));
+                    }
+                }
                 if !keywords.is_empty() {
                     if let Err(e) = add_keywords(main_dest, &keywords) {
                         report
                             .errors
                             .push(format!("{name}: keywords not added: {e}"));
+                    }
+                }
+                if let Some(dir) = &backup {
+                    for (from, _) in &p.files {
+                        if let Err(e) = back_up(from, dir) {
+                            report.errors.push(format!("{name}: no backup copy: {e}"));
+                        }
                     }
                 }
             }
@@ -749,6 +835,63 @@ mod tests {
         let fresh: Vec<_> = next.iter().filter(|p| p.skip.is_none()).collect();
         assert_eq!(fresh.len(), 1, "{next:#?}");
         assert!(fresh[0].files[0].0.ends_with("IMG_0000.CR2"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn presets_and_backup_copies() {
+        let root = temp("preset");
+        let card = root.join("card");
+        let lib = root.join("photos");
+        write(&card.join("A.CR2"), b"raw a");
+        write(&card.join("B.CR2"), b"raw b");
+        // B was edited in the camera's app already: its edit stays.
+        write(
+            &card.join("B.xmp"),
+            br#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" crs:Exposure2012="-1.00"/></rdf:RDF></x:xmpmeta>"#,
+        );
+        let preset = root.join("bright.xmp");
+        write(
+            &preset,
+            br#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" crs:Exposure2012="+0.80" crs:Contrast2012="+15"/></rdf:RDF></x:xmpmeta>"#,
+        );
+        let options = ImportOptions {
+            folder: String::new(),
+            keywords: vec!["trip".into()],
+            preset: Some(preset),
+            backup: Some(root.join("backup")),
+            ..ImportOptions::default()
+        };
+        let plan = plan(&card, &lib, &options).unwrap();
+        let report = run(&plan, &options, &mut |_, _, _| {});
+        assert!(report.errors.is_empty(), "{:?}", report.errors);
+        assert_eq!(report.imported, 2);
+        let read = |name: &str| std::fs::read_to_string(lib.join(name)).unwrap();
+        let a = amb_presets::xmp::parse_crs(&read("A.xmp")).unwrap();
+        assert_eq!(a["Exposure2012"].as_f64(), Some(0.8));
+        assert_eq!(a["Contrast2012"].as_f64(), Some(15.0));
+        assert_eq!(sidecar::read_info(&read("A.xmp")).keywords, ["trip"]);
+        let b = amb_presets::xmp::parse_crs(&read("B.xmp")).unwrap();
+        assert_eq!(b["Exposure2012"].as_f64(), Some(-1.0));
+        assert!(!b.contains_key("Contrast2012"));
+        // The originals, as they were, in today's backup folder.
+        let day = std::fs::read_dir(root.join("backup"))
+            .unwrap()
+            .flatten()
+            .next()
+            .unwrap()
+            .path();
+        assert!(
+            day.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with("Imported on ")
+        );
+        assert_eq!(std::fs::read(day.join("A.CR2")).unwrap(), b"raw a");
+        assert!(day.join("B.xmp").exists());
+        // Again: nothing is doubled in the backup.
+        run(&plan, &options, &mut |_, _, _| {});
+        assert_eq!(std::fs::read_dir(&day).unwrap().count(), 3);
         let _ = std::fs::remove_dir_all(&root);
     }
 

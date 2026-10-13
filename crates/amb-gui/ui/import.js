@@ -28,6 +28,8 @@ function importOptions() {
     first_number: Math.max(0, Math.round(Number(f.first_number.value) || 0)),
     subfolders: f.subfolders.checked,
     keywords: f.keywords.value.split(",").map((k) => k.trim()).filter(Boolean),
+    preset: f.preset.value || null,
+    backup: f.backup.value || null,
   };
 }
 
@@ -48,11 +50,17 @@ function wireImport() {
   for (const b of $("import-form").querySelectorAll("[data-pick]")) {
     b.addEventListener("click", async () => {
       const which = b.dataset.pick;
-      const dir = await invoke("pick_folder", { title: which === "source" ? "Import photos from…" : "Import photos into…" });
+      const titles = { source: "Import photos from…", dest: "Import photos into…", backup: "Keep a second copy in…" };
+      const dir = await invoke("pick_folder", { title: titles[which] });
       if (dir) {
         f[which].value = dir;
         planImport();
       }
+    });
+  }
+  for (const b of $("import-form").querySelectorAll("[data-clear]")) {
+    b.addEventListener("click", () => {
+      f[b.dataset.clear].value = "";
     });
   }
   for (const kind of ["folder", "name"]) {
@@ -123,6 +131,18 @@ async function importFlow() {
   setTemplate("name", d.options.name);
   f.first_number.value = d.options.first_number;
   f.subfolders.checked = d.options.subfolders;
+  // The develop presets, by group; the last one chosen if it's still there.
+  if (!ui.presets?.length) ui.presets = await invoke("presets").catch(() => []);
+  const groups = new Map();
+  for (const p of ui.presets) groups.set(p.group || "Presets", [...(groups.get(p.group || "Presets") ?? []), p]);
+  f.preset.replaceChildren(Object.assign(document.createElement("option"), { value: "", textContent: "None" }),
+    ...[...groups].map(([group, list]) => {
+      const g = Object.assign(document.createElement("optgroup"), { label: group });
+      g.append(...list.map((p) => Object.assign(document.createElement("option"), { value: p.path, textContent: p.name })));
+      return g;
+    }));
+  f.preset.value = ui.presets.some((p) => p.path === d.options.preset) ? d.options.preset : "";
+  f.backup.value = d.options.backup ?? "";
   $("import-tokens").textContent = `In your own templates: ${d.tokens.map(([t, what]) => `${t} ${what}`).join(", ")}. A / makes a subfolder.`;
   const dlg = $("import-dialog");
   dlg.showModal();

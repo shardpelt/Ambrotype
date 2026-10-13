@@ -91,11 +91,13 @@ USAGE:
                                             update server into ~/.local/share/lensfun/updates, where it is
                                             found by default; --from installs a downloaded copy
     amb import <SOURCE> <DEST> [--into \"{yyyy}/{yyyy}-{mm}-{dd}\"] [--rename \"{name}\"] [--start 1]
-               [--keywords \"a, b\"] [--no-subfolders] [--dry-run] [--json]
+               [--keywords \"a, b\"] [--preset LOOK.xmp] [--backup DIR] [--no-subfolders] [--dry-run] [--json]
                                             Copy photos from a card or folder into DEST, sorted into
                                             folders and renamed from templates ({name} {yyyy} {yy} {mm}
                                             {dd} {hh} {min} {ss} {seq} {camera}); a raw's JPEG and .xmp
-                                            keep its new name; photos already there are skipped
+                                            keep its new name; photos already there are skipped. --preset
+                                            gives photos without an edit of their own a look; --backup
+                                            also copies the originals to DIR/Imported on YYYY-MM-DD
     amb collage list                        The built-in collage layouts
     amb collage <LAYOUT> <PHOTO>... --out OUT.jpg [--size WxH] [--background #fff] [--gap 1.5]
                 [--margin 3] [export options]
@@ -429,6 +431,8 @@ fn import(
             .get("--keywords")
             .map(|k| k.split(',').map(|s| s.trim().to_string()).collect())
             .unwrap_or_default(),
+        preset: options.get("--preset").map(PathBuf::from),
+        backup: options.get("--backup").map(PathBuf::from),
     };
     let plan = import::plan(source, dest, &opts)?;
     if json && dry_run {
@@ -661,6 +665,7 @@ fn main() -> ExitCode {
             | "--projection"
             | "--parts"
             | "--remap"
+            | "--backup"
             | "--size"
             | "--background"
             | "--gap"

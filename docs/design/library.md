@@ -56,6 +56,8 @@ Lightroom's Import "Copy", without a catalogue. The dialog (and `amb import SOUR
 - **Dates** come from EXIF; a file without one uses its modified time (UTC). `{seq}` counts in capture order from the first number.
 - **Companions:** a raw's same-name JPEG and `.xmp` sidecar get its new name, so they stay a pair and keep their edits.
 - **Keywords for all** go into each imported photo's sidecar.
+- **Develop preset:** a look for every photo that doesn't bring its own edit (a sidecar with develop settings keeps it), applied as the editor applies presets (`--preset` in `amb import`).
+- **Backup copy:** a second copy of the originals, under their names from the card, in `<folder>/Imported on YYYY-MM-DD/` (`--backup DIR`).
 - **Nothing is overwritten.** A photo whose exact bytes are already in its destination folder, under any name, is skipped as imported, so the same card can be imported again for its new photos. Another file with the same name makes the new one `name-2`.
 - **Safe copies:** each file is copied to a hidden temporary name, checked for size, then renamed, and keeps its modified time.
 - After the import the library shows the first folder that got photos.
@@ -141,7 +143,7 @@ Lightroom keeps stacks in its catalogue. Ours go in the sidecar: `amblib:Stack` 
 - The extra folders aren't remembered after closing the app. Collection sets are one level deep (no sets in sets). A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does). Smart collection rules for camera, lens, ISO and the like.
 - Collections don't follow photos moved outside Ambrotype.
 - From Lightroom: smart collections, publish services, edit history and snapshots, face regions, keyword hierarchies (they come as plain keywords) and Lightroom's virtual copy names. One path replacement only.
-- Import: moving instead of copying, a second backup copy, ejecting the card, a develop preset on import, picking single photos to import.
+- Import: moving instead of copying, ejecting the card, picking single photos to import. (A develop preset and a second backup copy came 2026-10-13.)
 - Zooming in the loupe and compare views (open the photo in the editor for 100%).
 - The rest of Lightroom's metadata panel (location, IPTC contact fields, headline) and editing keyword hierarchies. Camera details are shown under the histogram, not in the panel.
 - Undo for library changes. Ratings, labels and keywords are written straight away; pasted edits can be undone per photo in the editor.

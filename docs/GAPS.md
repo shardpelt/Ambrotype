@@ -69,7 +69,7 @@ Project goal for ranking: faithful Lightroom preset compatibility, free, on Wind
 | Phase 4 items: tethering (libgphoto2), print, map/GPS, face recognition, focus stacking | Missing | Parity features, deliberately last | [SCOPE.md](SCOPE.md):131, 332 |
 | HDR merge aligns translation only (no rotation or scale), takes raws only (not JPEG brackets), has no "Create stack" or HDR panorama, and its reference frame, weights and deghost rule are ours; its DNG hasn't been opened in Lightroom yet | Limit | Handheld brackets with a turn won't line up; results may differ from Lightroom's merge | [design/hdr-merge.md](design/hdr-merge.md); `crates/amb-engine/src/merge.rs` |
 | Panorama merge has no Boundary Warp, Fill Edges, HDR panorama, "Create stack" or preview, takes raws only, doesn't handle parallax, and its projection rules, blending and crop are ours; its DNG hasn't been opened in Lightroom yet | Limit | Panoramas with near objects ghost; edges need cropping where Lightroom would warp or fill them | [design/panorama.md](design/panorama.md); `crates/amb-engine/src/pano/` |
-| Soft proofing | Missing | Needed for print workflows; also relevant to gamut mapping | [SCOPE.md](SCOPE.md):323 |
+| Soft proofing exists for the export spaces (2026-10-13: S, with a gamut warning; colours beyond the space are clipped as the export clips them), not for printer and paper ICC profiles, without proof copies or a paper-white simulation, and the display is taken to be sRGB | Partial | Needed for print workflows; also relevant to gamut mapping | [SCOPE.md](SCOPE.md):323 |
 
 ## 4. Raw decoding and colour
 

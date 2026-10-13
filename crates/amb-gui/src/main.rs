@@ -62,6 +62,8 @@ struct AppState {
     preset_favourites: Mutex<Vec<String>>,
     mask_effects: Mutex<Vec<MaskEffect>>,
     edit_in: Mutex<EditIn>,
+    /// Soft proofing (for this run): the space, and the gamut warning.
+    proof: Mutex<Option<(amb_color::space::OutputSpace, bool)>>,
     /// Watches the folders on screen for photos added, removed or renamed.
     folder_watch: Mutex<Option<notify::RecommendedWatcher>>,
     /// Watches the open photo's sidecar for changes made outside the editor.
@@ -701,8 +703,10 @@ async fn open_photo(
     state: tauri::State<'_, AppState>,
 ) -> Res<Opened> {
     let slot = state.session.clone();
+    let proof = *state.proof.lock().map_err(|e| e.to_string())?;
     let opened = tauri::async_runtime::spawn_blocking(move || {
-        let s = Session::open(Path::new(&path))?;
+        let mut s = Session::open(Path::new(&path))?;
+        s.set_proof(proof);
         let sidecar = s.sidecar.clone();
         let mut guard = slot.lock().map_err(|e| e.to_string())?;
         // Moving to another photo keeps the edits: save them first, like
@@ -3615,6 +3619,25 @@ async fn pick_edit_app(app: tauri::AppHandle) -> Option<String> {
         .map(|p| p.display().to_string())
 }
 
+/// Soft proofing: show the photo as it exports to `space` (an output space
+/// id), with the colours beyond it marked when `warn`; `None` turns it off.
+#[tauri::command]
+fn set_proof(space: Option<String>, warn: bool, state: tauri::State<'_, AppState>) -> Res<()> {
+    let proof = match space {
+        Some(id) => Some((
+            amb_color::space::OutputSpace::from_id(&id)
+                .ok_or(format!("unknown colour space {id}"))?,
+            warn,
+        )),
+        None => None,
+    };
+    *state.proof.lock().map_err(|e| e.to_string())? = proof;
+    if let Some(s) = state.session.lock().map_err(|e| e.to_string())?.as_mut() {
+        s.set_proof(proof);
+    }
+    Ok(())
+}
+
 /// After an export, as Lightroom's Post-Processing: show the files in their
 /// folder, or open them in the app for Edit in (the system's default when
 /// none is set).
@@ -4049,6 +4072,7 @@ fn main() {
             import_plan,
             import_run,
             edit_in_settings,
+            set_proof,
             after_export,
             set_edit_in,
             pick_edit_app,

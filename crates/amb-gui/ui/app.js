@@ -820,6 +820,27 @@ function setPicking(on) {
   if (ui.picking) status("Click a neutral grey or white spot (Esc to cancel)");
 }
 
+// Soft proofing: the photo as it will export to a colour space (colours
+// beyond it clipped as the export clips them), with a gamut warning.
+async function toggleProof(on = !ui.proofOn) {
+  if (!ui.info && on) return;
+  ui.proofOn = on;
+  $("proof-bar").hidden = !on;
+  await applyProof();
+}
+
+async function applyProof() {
+  try {
+    await invoke("set_proof", {
+      space: ui.proofOn ? $("proof-space").value : null,
+      warn: $("proof-warn").checked,
+    });
+  } catch (e) {
+    toast(String(e), true);
+  }
+  requestPreview(false);
+}
+
 function toggleClipping() {
   if (!ui.info) return;
   ui.clipping = !ui.clipping;
@@ -2038,6 +2059,8 @@ async function init() {
   $("btn-zoom").addEventListener("click", () => setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy));
   $("btn-wb").addEventListener("click", () => setPicking(!ui.picking));
   $("btn-clip").addEventListener("click", toggleClipping);
+  $("proof-space").addEventListener("change", applyProof);
+  $("proof-warn").addEventListener("change", applyProof);
   $("btn-feedback").addEventListener("click", feedbackFlow);
   $("btn-collage").addEventListener("click", collageFlow);
   $("btn-plugins").addEventListener("click", () => pluginsFlow().catch((e) => toast(String(e), true)));

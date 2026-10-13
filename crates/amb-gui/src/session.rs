@@ -43,6 +43,9 @@ pub struct Session {
     preview_src: Option<(u32, CameraImage)>,
     pub state: DevelopState,
     pub sidecar: PathBuf,
+    /// Soft proofing: the space to show the photo as it exports to, and
+    /// whether to mark the colours beyond it.
+    proof: Option<(amb_color::space::OutputSpace, bool)>,
     /// XMP text of the sidecar we loaded, so saving keeps its other metadata.
     base_xmp: Option<String>,
     /// Resolved lens profile, keyed by (profile filename hint, auto CA or profile on).
@@ -275,6 +278,7 @@ impl Session {
                 .map(amb_protocol::sidecar::read_info)
                 .unwrap_or_default(),
             sidecar,
+            proof: None,
             base_xmp,
             lens_cache: None,
             upright_cache: None,
@@ -283,6 +287,16 @@ impl Session {
             globals_src: None,
             draft_src: None,
         })
+    }
+
+    /// Show the photo as it exports to `space` (soft proofing), marking the
+    /// colours beyond it when `warn`; `None` shows it as it is.
+    pub fn set_proof(&mut self, proof: Option<(amb_color::space::OutputSpace, bool)>) {
+        if self.proof != proof {
+            self.proof = proof;
+            // The 100% view keeps display pixels.
+            self.region_cache = None;
+        }
     }
 
     /// A border caption template filled in for this photo, as the export
@@ -655,12 +669,15 @@ impl Session {
             None => (pipeline::render(src, &develop), None),
         };
         let upright = amb_export::geometry::orient(&developed, self.full.metadata.orientation);
-        let mut bytes = to_srgb8(&upright);
+        let (mut bytes, gamut) = display(self.proof, &upright);
         let mut histogram = [vec![0u32; 256], vec![0u32; 256], vec![0u32; 256]];
         for p in bytes.chunks(3) {
             for c in 0..3 {
                 histogram[c][p[c] as usize] += 1;
             }
+        }
+        if let Some(out) = &gamut {
+            mark_gamut(&mut bytes, out);
         }
         if clipping {
             mark_clipping(&mut bytes);
@@ -745,6 +762,7 @@ impl Session {
                 globals,
             });
         }
+        let proof = self.proof;
         let cache = self.region_cache.as_mut().expect("set above");
         let w = max_w.clamp(16, uw);
         let h = max_h.clamp(16, uh);
@@ -784,7 +802,10 @@ impl Session {
             };
             let part = pipeline::render_region(&self.full, &develop, stored, &cache.globals);
             let upright = amb_export::geometry::orient(&part, orientation);
-            let srgb = to_srgb8(&upright);
+            let (mut srgb, gamut) = display(proof, &upright);
+            if let Some(out) = &gamut {
+                mark_gamut(&mut srgb, out);
+            }
             for row in 0..rh {
                 let dst = ((ry + row) * uw + rx) * 3;
                 cache.srgb[dst..dst + rw * 3]
@@ -883,7 +904,13 @@ impl Session {
         let part = pipeline::render_region(src, &develop, stored, &globals);
         let upright = amb_export::geometry::orient(&part, orientation);
         Region {
-            jpeg: encode_jpeg(&to_srgb8(&upright), upright.width, upright.height, 85),
+            jpeg: {
+                let (mut bytes, gamut) = display(self.proof, &upright);
+                if let Some(out) = &gamut {
+                    mark_gamut(&mut bytes, out);
+                }
+                encode_jpeg(&bytes, upright.width, upright.height, 85)
+            },
             x,
             y,
             width: w,
@@ -1311,6 +1338,32 @@ fn to_srgb8(img: &amb_engine::buffer::Image) -> Vec<u8> {
         .par_iter()
         .map(|v| (v * 255.0).round().clamp(0.0, 255.0) as u8)
         .collect()
+}
+
+/// A render (linear ProPhoto) as display sRGB bytes, soft-proofed when
+/// `proof` is on, and the pixels to mark as beyond the proof's gamut.
+fn display(
+    proof: Option<(amb_color::space::OutputSpace, bool)>,
+    img: &amb_engine::buffer::Image,
+) -> (Vec<u8>, Option<Vec<bool>>) {
+    match proof {
+        None => (to_srgb8(img), None),
+        Some((space, warn)) => {
+            let mut proofed = img.clone();
+            let out = space.soft_proof(&mut proofed.rgb);
+            (to_srgb8(&proofed), warn.then_some(out))
+        }
+    }
+}
+
+/// Soft proofing's gamut warning: colours the proof's space can't hold, in
+/// magenta (red and blue are the clipping warning's).
+fn mark_gamut(bytes: &mut [u8], out: &[bool]) {
+    bytes
+        .par_chunks_mut(3)
+        .zip(out.par_iter())
+        .filter(|(_, o)| **o)
+        .for_each(|(p, _)| p.copy_from_slice(&[230, 40, 210]));
 }
 
 /// Lightroom-style clipping warning: clipped highlights red, crushed shadows blue.

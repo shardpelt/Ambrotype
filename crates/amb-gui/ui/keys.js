@@ -31,6 +31,7 @@ const KEY_ACTIONS = [
   { id: "learn", group: "Help", label: "Learn: short guided lessons", keys: ["F1"], when: "any", run: () => learnFlow() },
   { id: "before", group: "View", label: "Before / after", keys: ["\\"], when: "any", button: "btn-before", run: () => toggleBefore() },
   { id: "zoom", group: "View", label: "Fit / 100% view", hint: "Or click the photo; drag to pan at 100%.", keys: ["Z"], when: "main", photo: true, button: "btn-zoom", run: () => setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy) },
+  { id: "proof", group: "View", label: "Soft proofing", hint: "See the photo as it will export to sRGB, Adobe RGB, Display P3 or ProPhoto, and mark the colours that won't fit.", keys: ["S"], when: "main", photo: true, run: () => toggleProof() },
   { id: "clipping", group: "View", label: "Clipping overlay", hint: "Red: clipped highlights, blue: crushed shadows.", keys: ["J"], when: "any", button: "btn-clip", run: () => toggleClipping() },
   { id: "crop", group: "Tools", label: "Crop and straighten", keys: ["R"], when: "any", photo: true, button: "btn-crop", run: () => toggleCrop() },
   { id: "masks", group: "Tools", label: "Masks", hint: "Gradients, brush and range masks with their own sliders.", keys: ["M"], when: "any", photo: true, button: "btn-masks", run: () => toggleMasks() },

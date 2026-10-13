@@ -122,6 +122,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - saved preset folders, and a feedback button that opens a pre-filled GitHub issue
   - save the XMP sidecar, keeping other metadata
   - export dialog
+  - soft proofing (`OutputSpace::soft_proof`, set on the session with `set_proof`): previews and the 100% view clipped to an export space, with the colours beyond it marked
   - edit in another app (`edit_in` in `src/main.rs`): a TIFF next to the photo (`session::edit_copy_path`, Lightroom's `-Edit` names), opened with the app chosen in Settings (or the system's default)
 - **Not yet:** see [GAPS.md](GAPS.md) §2.
 

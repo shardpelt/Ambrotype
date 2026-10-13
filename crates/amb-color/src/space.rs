@@ -165,6 +165,30 @@ impl OutputSpace {
         mul3(&invert3(&self.to_xyz_d50()), &PROPHOTO_TO_XYZ_D50)
     }
 
+    /// Soft proof: `rgb` (linear ProPhoto, interleaved) as it comes out in
+    /// this space, colours beyond its gamut clipped to it as an export clips
+    /// them, still in linear ProPhoto. Returns which pixels had a colour
+    /// out of the gamut (bright whites past 1 are clipping, not gamut).
+    pub fn soft_proof(self, rgb: &mut [f32]) -> Vec<bool> {
+        let to = self.from_prophoto();
+        let back = invert3(&to);
+        rgb.chunks_mut(3)
+            .map(|p| {
+                let d = crate::matrix::apply3(&to, [p[0].into(), p[1].into(), p[2].into()]);
+                let (lo, hi) = (d[0].min(d[1]).min(d[2]), d[0].max(d[1]).max(d[2]));
+                const EPS: f64 = 1e-3;
+                let out = lo < -EPS || (hi > 1.0 + EPS && lo < 1.0);
+                if out || hi > 1.0 {
+                    let r = crate::matrix::apply3(&back, d.map(|v| v.clamp(0.0, 1.0)));
+                    for (slot, v) in p.iter_mut().zip(r) {
+                        *slot = v as f32;
+                    }
+                }
+                out
+            })
+            .collect()
+    }
+
     /// An ICC v2.1 display profile describing this space.
     pub fn icc_profile(self) -> Vec<u8> {
         let (_, (wx, wy)) = self.chromaticities();
@@ -364,6 +388,29 @@ mod tests {
                 assert!((c - 1.0).abs() < 2e-3, "{space:?} {w:?}");
             }
         }
+    }
+
+    #[test]
+    fn soft_proof_clips_to_the_gamut() {
+        // A saturated ProPhoto green is beyond sRGB, inside nothing smaller.
+        let green = [0.1f32, 0.6, 0.05];
+        let grey = [0.18f32, 0.18, 0.18];
+        let mut px: Vec<f32> = green.iter().chain(&grey).copied().collect();
+        let out = OutputSpace::Srgb.soft_proof(&mut px);
+        assert_eq!(out, [true, false]);
+        // The grey is untouched; the green now fits sRGB.
+        assert_eq!(&px[3..], &grey);
+        let srgb = apply3(
+            &OutputSpace::Srgb.from_prophoto(),
+            [px[0].into(), px[1].into(), px[2].into()],
+        );
+        assert!(
+            srgb.iter().all(|v| (-1e-4..=1.0 + 1e-4).contains(v)),
+            "{srgb:?}"
+        );
+        // ProPhoto itself holds it.
+        let mut px = green.to_vec();
+        assert_eq!(OutputSpace::ProPhoto.soft_proof(&mut px), [false]);
     }
 
     #[test]

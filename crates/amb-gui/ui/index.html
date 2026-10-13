@@ -105,6 +105,18 @@
       <canvas id="spot-canvas" class="crop-canvas spot-canvas" hidden></canvas>
       <canvas id="guide-canvas" class="crop-canvas spot-canvas" hidden></canvas>
       <div class="badge" id="before-badge" hidden>Before</div>
+      <!-- Soft proofing (S): the space to see the photo in (app.js toggleProof). -->
+      <div class="proof-bar" id="proof-bar" hidden>
+        <span>Proof preview</span>
+        <select id="proof-space" title="The colour space the photo will be exported in">
+          <option value="srgb">sRGB (web)</option>
+          <option value="adobergb">Adobe RGB (1998)-compatible</option>
+          <option value="p3">Display P3</option>
+          <option value="rec2020">Rec. 2020</option>
+          <option value="prophoto">ProPhoto RGB</option>
+        </select>
+        <label title="Colours the space can't hold, in magenta"><input type="checkbox" id="proof-warn"> Gamut warning</label>
+      </div>
       <div class="busy" id="busy" hidden></div>
       <!-- Learn: the current lesson step (learn.js). -->
       <aside id="lesson-card" class="lesson-card" hidden>

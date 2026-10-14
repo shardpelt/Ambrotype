@@ -78,11 +78,37 @@ async function toggleLibrary(on = !lib.on) {
   }
 }
 
+// The folders shown with each folder last time, kept between runs.
+const SAVED_MORE = "amb.lib.more";
+
+function savedMore(dir) {
+  try {
+    return JSON.parse(localStorage.getItem(SAVED_MORE) || "{}")[dir] ?? [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMore(dir, more) {
+  try {
+    const all = JSON.parse(localStorage.getItem(SAVED_MORE) || "{}");
+    delete all[dir];
+    if (more.length) all[dir] = more;
+    // The most recent few dozen folders.
+    const keys = Object.keys(all);
+    for (const k of keys.slice(0, Math.max(0, keys.length - 40))) delete all[k];
+    localStorage.setItem(SAVED_MORE, JSON.stringify(all));
+  } catch {
+    /* not kept */
+  }
+}
+
 // Show a folder; `more` folders are shown with it (kept on a reload of the
-// same folder unless given).
-async function loadLibrary(dir, more = dir === lib.dir ? lib.more : []) {
+// same folder, and the ones shown with it last time otherwise, unless given).
+async function loadLibrary(dir, more = dir === lib.dir ? lib.more : savedMore(dir)) {
   lib.dir = dir;
   lib.more = more.filter((d) => d !== dir);
+  if (dir) saveMore(dir, lib.more);
   lib.collection = null;
   lib.smart = null;
   const folder = $("library-folder");
@@ -108,7 +134,7 @@ async function chooseLibraryFolder() {
   const dir = await invoke("library_pick_folder");
   if (!dir) return;
   lib.selected.clear();
-  await loadLibrary(dir, []);
+  await loadLibrary(dir);
 }
 
 // Show another folder alongside the ones shown.

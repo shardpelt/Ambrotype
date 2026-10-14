@@ -851,6 +851,13 @@ function toggleClipping() {
 function wireViewer() {
   const img = $("preview");
   let drag = null;
+  // The webview's own "Save image" can't save (and would save the small
+  // preview): right-click exports the photo instead.
+  $("viewer").addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    // The tools' own canvases use right-click.
+    if (ui.info && (e.target === img || e.target === $("viewer"))) exportFlow();
+  });
   img.addEventListener("mousedown", (e) => {
     if (e.button !== 0 || !ui.info) return;
     e.preventDefault();
@@ -2003,8 +2010,9 @@ async function exportFlow(batch = null) {
   };
   const after = f.after.value;
   if (batch) return batch.run(options, after);
-  const base = ui.info.name.replace(/\.[^.]+$/, "");
-  const path = await invoke("pick_export_path", { suggested: base, format: f.format.value });
+  // "-edited": a JPEG named like its raw is hidden as the raw's pair.
+  const base = `${ui.info.name.replace(/\.[^.]+$/, "")}-edited`;
+  const path = await invoke("pick_export_path", { suggested: base, format: f.format.value, dir: dirOf(ui.info.path) });
   if (!path) return;
   status(`Exporting ${path}…`);
   $("busy").hidden = false;

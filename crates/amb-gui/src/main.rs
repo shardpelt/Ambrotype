@@ -1256,10 +1256,15 @@ async fn pick_export_path(
     app: tauri::AppHandle,
     suggested: String,
     format: String,
+    dir: Option<String>,
 ) -> Option<String> {
     let ext = amb_export::Format::from_name(&format)?.extension();
-    app.dialog()
-        .file()
+    let mut dialog = app.dialog().file();
+    // Next to the photo: an app opened from the Finder starts in `/`.
+    if let Some(d) = dir.filter(|d| Path::new(d).is_dir()) {
+        dialog = dialog.set_directory(d);
+    }
+    dialog
         .set_title("Export")
         .set_file_name(format!("{suggested}.{ext}"))
         .add_filter(format.to_uppercase(), &[ext])

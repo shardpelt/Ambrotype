@@ -32,6 +32,7 @@
       <button id="btn-frame" title="Frame: a border and text around the photo (Shift+B)" disabled>Frame</button>
       <button id="btn-keys" title="All keyboard shortcuts (?)">Shortcuts</button>
       <span class="sep"></span>
+      <button id="btn-hub" title="Browse what other people shared: layouts, themes, presets, collages and plugins (Ctrl+Shift+H)">Browse</button>
       <button id="btn-plugins" title="Plugins: extra tools that make edits for you">Plugins</button>
       <span class="sep"></span>
       <button id="btn-looks" title="Appearance: layouts and themes. Choose, clone, share">Appearance</button>
@@ -1151,6 +1152,11 @@
       </div>
       <div id="hub-grid" class="hub-grid"></div>
       <p id="hub-status" class="hub-status" role="status"></p>
+      <div class="hub-link">
+        <label for="hub-link">Install a layout or theme from a link</label>
+        <input id="hub-link" type="url" placeholder="https://github.com/someone/their-theme" spellcheck="false">
+        <button type="button" id="hub-link-install">Install</button>
+      </div>
       <menu><span class="grow"></span><button value="close" class="primary">Done</button></menu>
     </form>
   </dialog>

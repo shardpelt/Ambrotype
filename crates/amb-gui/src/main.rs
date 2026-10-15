@@ -2451,6 +2451,21 @@ async fn hub_install(id: String, state: tauri::State<'_, AppState>) -> Res<Saved
     })
 }
 
+/// Install a layout or theme from a link someone shared (a file, or a GitHub
+/// repo with `theme.json` or `layout.json`).
+#[tauri::command]
+async fn hub_install_link(link: String, state: tauri::State<'_, AppState>) -> Res<SavedLook> {
+    let dir = need_looks_dir(state.inner())?;
+    let (kind, id) = tauri::async_runtime::spawn_blocking(move || hub::install_link(&dir, &link))
+        .await
+        .map_err(|e| e.to_string())??;
+    Ok(SavedLook {
+        id,
+        kind,
+        looks: looks_list(state.inner())?,
+    })
+}
+
 /// Open GitHub with this look filled in as a new file for the hub (a pull request).
 #[tauri::command]
 fn hub_submit(
@@ -4188,6 +4203,7 @@ fn main() {
             set_hub_url,
             hub_browse,
             hub_install,
+            hub_install_link,
             hub_install_plugin,
             hub_install_preset,
             preset_library,

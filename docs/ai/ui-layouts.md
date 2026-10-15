@@ -53,7 +53,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   "theme": "builtin:dark",                   // optional: switching to this layout also picks this theme
   "density": "normal",                       // "compact" | "normal" | "large"
   "toolbar_style": "icons",                  // "icons" (where one is obvious) | "words"
-  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
   "left":  { "width": 250, "items": ["presets", "history"] },
   "right": { "width": 340, "items": ["histogram", { "panel": "basic", "open": true }, { "panel": "detail" }] }
 }
@@ -89,6 +89,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   | `wb` | White-balance picker |
   | `clip` | Clipping overlay |
   | `frame` | Frame: a border and text around the photo, previewed outside the edit |
+  | `hub` | Browse: everything other people shared in the hub (layouts, themes, presets, collages, sizes, plugins) |
   | `plugins` | The Plugins dialog |
   | `looks` | The Appearance dialog (layouts and themes) |
   | `edit` | Editor mode (rearrange the layout in place) |
@@ -170,10 +171,14 @@ A widget of the wrong type (for example `toggle` on Exposure) is an error. An un
 }
 ```
 
-- **`scheme`:** `dark` or `light`; it sets the colour of native controls such as scrollbars and drop-downs.
+- **Three colours are enough.** A theme can give only `bg`, `text` and `accent`; the editor works out the other tokens from them (steps between the background and the text, matched to the Dark and Light themes). Any token you do give is kept, so start with three and set more only where the result isn't what you want:
+  ```json
+  { "format": "ambrotype-theme/1", "name": "Mint", "tokens": { "bg": "#102020", "text": "#e0f0f0", "accent": "#40d0a0" } }
+  ```
+- **`scheme`:** `dark` or `light`; when missing, it follows the background's brightness; it sets the colour of native controls such as scrollbars and drop-downs.
 - **Colour token values:** hex colours (`#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`).
 - **`radius`:** the corner rounding in px, 0–16.
-- **Missing tokens** fall back to the Dark theme.
+- **Missing tokens** are worked out from `bg`, `text` and `accent` (those three come from Dark, or Light for a light theme, when missing too).
 - **What each token colours:**
 
   | Token | Colours |
@@ -194,4 +199,5 @@ A widget of the wrong type (for example `toggle` on Exposure) is an error. An un
 ## Sharing
 
 - **Share…** in the Appearance dialog saves the file anywhere, ready to send; **Import…** adds one.
-- **Browse hub…** in the Appearance dialog installs looks other people shared, and **Submit to hub…** offers one of yours as a pull request to the hub repo. How the hub repo works: [its README](https://github.com/Ambrotypehq/ambrotype-hub#readme).
+- **Browse** in the toolbar (Ctrl+Shift+H; also **Browse hub…** in the Appearance and Plugins dialogs) installs what other people shared, and **Submit to hub…** offers one of yours as a pull request to the hub repo. How the hub repo works: [its README](https://github.com/Ambrotypehq/ambrotype-hub#readme).
+- **From a link:** at the bottom of the Browse dialog, paste a link to a layout or theme file, or to a GitHub repo with a `theme.json` or `layout.json` at its top (`https://github.com/you/your-theme`). It's checked like any other look, installed and switched to. So you can share a look from your own repo without going through the hub.

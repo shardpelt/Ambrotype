@@ -444,6 +444,8 @@ kbd { display: inline-flex; align-items: center; gap: 4px; font: inherit; font-s
 .hub-error { margin: 0; font-size: 12px; color: var(--danger); }
 .hub-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 6px; }
 .hub-actions button { font-size: 12px; padding: 3px 10px; }
+.hub-link { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.hub-link input { flex: 1; }
 .hub-status { min-height: 18px; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
 .hub-status.error { color: var(--danger); }
 #hub-address { word-break: break-all; }

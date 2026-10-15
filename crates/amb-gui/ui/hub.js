@@ -237,6 +237,29 @@ async function hubFlow(initial = "all") {
     if (!shown.length) grid.append(Object.assign(document.createElement("p"), { className: "hint", textContent: "Nothing matches." }));
   }
 
+  // A look shared by link (a file, or a GitHub repo with theme.json or layout.json).
+  const onLink = async () => {
+    const link = $("hub-link").value.trim();
+    if (!link) return $("hub-link").focus();
+    $("hub-link-install").disabled = true;
+    status("Installing from the link…");
+    try {
+      const r = await invoke("hub_install_link", { link });
+      ui.looks = r.looks;
+      ui.looks[r.kind === "layout" ? "active_layout" : "active_theme"] = r.id;
+      applyActiveLooks();
+      await invoke("set_active_look", { layout: ui.looks.active_layout, theme: ui.looks.active_theme });
+      $("hub-link").value = "";
+      status(`Installed and using "${findLook(r.kind, r.id)?.name ?? r.id}". Appearance (Ctrl+L) switches back.`);
+    } catch (err) {
+      status(String(err), true);
+    }
+    $("hub-link-install").disabled = false;
+  };
+  const onLinkKey = (ev) => { if (ev.key === "Enter") { ev.preventDefault(); onLink(); } };
+  $("hub-link-install").addEventListener("click", onLink);
+  $("hub-link").addEventListener("keydown", onLinkKey);
+
   const tabs = [...dlg.querySelectorAll(".hub-tabs button")];
   const onTab = (ev) => {
     kind = ev.currentTarget.dataset.kind;
@@ -268,4 +291,12 @@ async function hubFlow(initial = "all") {
   await new Promise((resolve) => dlg.addEventListener("close", resolve, { once: true }));
   tabs.forEach((t) => t.removeEventListener("click", onTab));
   $("hub-search").removeEventListener("input", render);
+  $("hub-link-install").removeEventListener("click", onLink);
+  $("hub-link").removeEventListener("keydown", onLinkKey);
+}
+
+// The toolbar's Browse button: the whole hub, then pick up what was installed.
+async function browseFlow() {
+  await hubFlow();
+  if (typeof loadPlugins === "function") await loadPlugins().catch(() => {});
 }

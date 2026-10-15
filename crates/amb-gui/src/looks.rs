@@ -67,9 +67,9 @@ const BUILTIN_THEMES: [(&str, &str); 4] = [
 
 /// Toolbar buttons a layout can place; "|" is a separator. "looks" is always
 /// shown (added at the end if a layout leaves it out), so there's a way back.
-pub const TOOLBAR: [&str; 21] = [
+pub const TOOLBAR: [&str; 22] = [
     "open", "library", "save", "export", "collage", "undo", "redo", "before", "crop", "masks",
-    "spots", "zoom", "wb", "clip", "frame", "plugins", "looks", "edit", "settings", "keys",
+    "spots", "zoom", "wb", "clip", "frame", "hub", "plugins", "looks", "edit", "settings", "keys",
     "feedback",
 ];
 /// Column items that aren't panels.
@@ -642,6 +642,151 @@ pub fn check_theme(v: &Value) -> Vec<Problem> {
     c.problems
 }
 
+/// Parse `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa` into 0–255 RGB (alpha is dropped).
+fn parse_hex(s: &str) -> Option<[f64; 3]> {
+    let h = s.strip_prefix('#').filter(|_| is_hex_colour(s))?;
+    let digit = |i: usize, n: usize| u8::from_str_radix(&h[i * n..i * n + n], 16).ok();
+    let mut rgb = [0.0; 3];
+    for (i, c) in rgb.iter_mut().enumerate() {
+        *c = if h.len() <= 4 {
+            f64::from(digit(i, 1)? * 17)
+        } else {
+            f64::from(digit(i, 2)?)
+        };
+    }
+    Some(rgb)
+}
+
+fn hex(c: [f64; 3]) -> String {
+    let b = |v: f64| v.round().clamp(0.0, 255.0) as u8;
+    format!("#{:02x}{:02x}{:02x}", b(c[0]), b(c[1]), b(c[2]))
+}
+
+fn mix(a: [f64; 3], b: [f64; 3], t: f64) -> [f64; 3] {
+    [0, 1, 2].map(|i| a[i] + (b[i] - a[i]) * t)
+}
+
+/// Relative luminance (WCAG), 0–1.
+fn luminance(c: [f64; 3]) -> f64 {
+    let lin = |v: f64| {
+        let v = v / 255.0;
+        if v <= 0.04045 {
+            v / 12.92
+        } else {
+            ((v + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2])
+}
+
+fn contrast(a: [f64; 3], b: [f64; 3]) -> f64 {
+    let (la, lb) = (luminance(a), luminance(b));
+    (la.max(lb) + 0.05) / (la.min(lb) + 0.05)
+}
+
+/// Fill in the tokens a theme leaves out, from its `bg`, `text` and `accent`
+/// (each taken from Dark, or Light for a light theme, when missing too), so
+/// three colours make a whole theme. Steps between background and text were
+/// matched to the Dark and Light themes. `scheme` follows the background
+/// when it's missing. Tokens the theme sets are kept.
+pub fn complete_theme(data: &mut Value) {
+    let Some(obj) = data.as_object_mut() else {
+        return;
+    };
+    let scheme = obj
+        .get("scheme")
+        .and_then(Value::as_str)
+        .map(str::to_string);
+    let tokens = obj
+        .entry("tokens")
+        .or_insert_with(|| Value::Object(Default::default()));
+    let Some(tokens) = tokens.as_object_mut() else {
+        return;
+    };
+    let get = |k: &str| tokens.get(k).and_then(Value::as_str).and_then(parse_hex);
+    let light = match scheme.as_deref() {
+        Some(s) => s == "light",
+        None => get("bg").is_some_and(|c| luminance(c) > 0.4),
+    };
+    let (bg, text, accent) = if light {
+        (
+            [236.0, 238.0, 241.0],
+            [29.0, 31.0, 35.0],
+            [184.0, 116.0, 26.0],
+        )
+    } else {
+        (
+            [27.0, 28.0, 31.0],
+            [230.0, 230.0, 232.0],
+            [232.0, 176.0, 92.0],
+        )
+    };
+    let bg = get("bg").unwrap_or(bg);
+    let text = get("text").unwrap_or(text);
+    let accent = get("accent").unwrap_or(accent);
+    let toward = |t: f64| hex(mix(bg, text, t));
+    let white = [255.0; 3];
+    let derived: [(&str, String); 16] = if light {
+        [
+            ("bg", hex(bg)),
+            ("bg-deep", toward(0.05)),
+            ("viewer", toward(0.115)),
+            ("panel", hex(mix(bg, white, 0.55))),
+            ("panel-2", hex(mix(bg, white, 1.0))),
+            ("line", toward(0.17)),
+            ("hover", hex(mix(bg, white, 0.15))),
+            ("tab-active", toward(0.07)),
+            ("text", hex(text)),
+            ("muted", toward(0.69)),
+            ("faint", toward(0.47)),
+            ("accent", hex(accent)),
+            ("accent-ink", String::new()),
+            ("danger", "#c4402f".into()),
+            ("thumb", toward(0.78)),
+            ("track", toward(0.26)),
+        ]
+    } else {
+        [
+            ("bg", hex(bg)),
+            ("bg-deep", hex(mix(bg, [0.0; 3], 0.35))),
+            ("viewer", hex(mix(bg, [0.0; 3], 0.35))),
+            ("panel", toward(0.04)),
+            ("panel-2", toward(0.075)),
+            ("line", toward(0.12)),
+            ("hover", toward(0.12)),
+            ("tab-active", toward(0.15)),
+            ("text", hex(text)),
+            ("muted", toward(0.62)),
+            ("faint", toward(0.40)),
+            ("accent", hex(accent)),
+            ("accent-ink", String::new()),
+            ("danger", "#e5675a".into()),
+            ("thumb", toward(0.93)),
+            ("track", toward(0.23)),
+        ]
+    };
+    for (k, v) in derived {
+        if tokens.contains_key(k) {
+            continue;
+        }
+        let v = if k == "accent-ink" {
+            // Whichever of background and text reads better on the accent.
+            let ink = if contrast(accent, bg) >= contrast(accent, text) {
+                bg
+            } else {
+                text
+            };
+            hex(ink)
+        } else {
+            v
+        };
+        tokens.insert(k.into(), Value::String(v));
+    }
+    tokens.entry("radius").or_insert(Value::from(6));
+    obj.entry("scheme")
+        .or_insert_with(|| Value::String(if light { "light" } else { "dark" }.into()));
+}
+
 pub fn check(kind: Kind, v: &Value) -> Vec<Problem> {
     match kind {
         Kind::Layout => check_layout(v),
@@ -651,8 +796,11 @@ pub fn check(kind: Kind, v: &Value) -> Vec<Problem> {
 
 // ---------------------------------------------------------------- storage
 
-fn look(id: String, kind: Kind, builtin: bool, data: Value) -> Look {
+fn look(id: String, kind: Kind, builtin: bool, mut data: Value) -> Look {
     let problems = check(kind, &data);
+    if kind == Kind::Theme && !problems.iter().any(|p| p.error) {
+        complete_theme(&mut data);
+    }
     let text = |k: &str| data.get(k).and_then(Value::as_str).map(str::to_string);
     Look {
         name: text("name").unwrap_or_else(|| id.clone()),
@@ -1243,5 +1391,33 @@ mod tests {
     fn slugs() {
         assert_eq!(slug("  Warm & Cosy  v2 "), "warm-cosy-v2");
         assert_eq!(slug("!!!"), "look");
+    }
+
+    #[test]
+    fn three_colours_make_a_theme() {
+        // Derived from Dark's own three colours, the rest come out close to Dark.
+        let dark: Value = serde_json::from_str(BUILTIN_THEMES[0].1).unwrap();
+        let mut three = serde_json::json!({ "format": THEME_FORMAT, "name": "t", "tokens": {
+            "bg": dark["tokens"]["bg"], "text": dark["tokens"]["text"], "accent": dark["tokens"]["accent"] } });
+        complete_theme(&mut three);
+        assert_eq!(three["scheme"], "dark");
+        for token in COLOR_TOKENS {
+            let a = parse_hex(three["tokens"][token].as_str().unwrap()).unwrap();
+            let b = parse_hex(dark["tokens"][token].as_str().unwrap()).unwrap();
+            let off = (0..3).map(|i| (a[i] - b[i]).abs()).fold(0.0, f64::max);
+            assert!(off <= 8.0, "{token}: {a:?} vs {b:?}");
+        }
+        assert!(check_theme(&three).iter().all(|p| !p.error));
+        // A light background makes a light theme; tokens given are kept.
+        let mut light = serde_json::json!({ "format": THEME_FORMAT, "name": "l",
+            "tokens": { "bg": "#fafafa", "text": "#222", "accent": "#0a6", "danger": "#f00" } });
+        complete_theme(&mut light);
+        assert_eq!(light["scheme"], "light");
+        assert_eq!(light["tokens"]["danger"], "#f00");
+        assert_eq!(light["tokens"]["text"], "#222");
+        assert_eq!(
+            light["tokens"].as_object().unwrap().len(),
+            COLOR_TOKENS.len() + 1
+        );
     }
 }

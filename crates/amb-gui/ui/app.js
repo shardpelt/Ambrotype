@@ -2087,6 +2087,7 @@ async function init() {
   $("proof-warn").addEventListener("change", applyProof);
   $("btn-feedback").addEventListener("click", feedbackFlow);
   $("btn-collage").addEventListener("click", collageFlow);
+  $("btn-hub").addEventListener("click", () => browseFlow().catch((e) => toast(String(e), true)));
   $("btn-plugins").addEventListener("click", () => pluginsFlow().catch((e) => toast(String(e), true)));
   $("btn-looks").addEventListener("click", () => looksFlow().catch((e) => toast(String(e), true)));
   wireEditor();

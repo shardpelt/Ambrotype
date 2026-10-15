@@ -4,7 +4,7 @@
   "description": "A mixing-desk feel: knobs for light, bars for presence and detail.",
   "author": "Ambrotype",
   "density": "normal",
-  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "settings", "keys", "feedback"],
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "settings", "keys", "feedback"],
   "left": { "width": 240, "items": ["presets", "info", "history"] },
   "right": {
     "width": 360,

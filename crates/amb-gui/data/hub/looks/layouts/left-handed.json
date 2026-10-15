@@ -4,7 +4,7 @@
   "description": "Classic, mirrored: the Develop panels on the left, presets and history on the right.",
   "author": "Ambrotype",
   "density": "normal",
-  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "settings", "keys", "feedback"],
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "settings", "keys", "feedback"],
   "left": {
     "width": 330,
     "items": [

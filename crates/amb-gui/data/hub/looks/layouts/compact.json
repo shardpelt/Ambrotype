@@ -4,7 +4,7 @@
   "description": "One narrow column and smaller controls, for laptop screens.",
   "author": "Ambrotype",
   "density": "compact",
-  "toolbar": ["open", "library", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "settings", "keys"],
+  "toolbar": ["open", "library", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "settings", "keys"],
   "left": { "width": 0, "items": [] },
   "right": {
     "width": 290,

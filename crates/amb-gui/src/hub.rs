@@ -683,7 +683,13 @@ pub fn browse(index_url: &str, mine: Mine<'_>) -> Result<Vec<HubEntry>, String> 
         .into_par_iter()
         .map(|item| {
             let (data, error) = match fetch_item(index_url, &item) {
-                Ok(d) => (Some(d), None),
+                Ok(mut d) => {
+                    // A theme may give only a few colours; preview it whole.
+                    if item.kind == "theme" {
+                        looks::complete_theme(&mut d);
+                    }
+                    (Some(d), None)
+                }
                 Err(e) => (None, Some(e)),
             };
             let have = mine.get(&item.id);
@@ -750,6 +756,68 @@ pub fn install(dir: &Path, index_url: &str, id: &str) -> Result<(Kind, String), 
         .remove(&item.id)
         .map(|(id, _)| id);
     looks::save(dir, kind, existing.as_deref(), data).map(|id| (kind, id))
+}
+
+/// The file addresses to try for a link someone shared: a file's own
+/// address (a GitHub page for it becomes its raw address), or a GitHub repo,
+/// whose `theme.json` or `layout.json` at the top is tried.
+pub fn link_candidates(link: &str) -> Result<Vec<String>, String> {
+    let link = link.trim().trim_end_matches('/');
+    let link = link.strip_suffix(".git").unwrap_or(link);
+    let bad = || {
+        format!(
+            "{link}: paste an https:// link to a layout or theme file, or to a GitHub repo with one"
+        )
+    };
+    if !link.starts_with("https://") || link.contains(char::is_whitespace) {
+        return Err(bad());
+    }
+    let Some(rest) = link
+        .strip_prefix("https://github.com/")
+        .or_else(|| link.strip_prefix("https://www.github.com/"))
+    else {
+        return Ok(vec![link.to_string()]);
+    };
+    let rest = rest.split(['?', '#']).next().unwrap_or_default();
+    let parts: Vec<&str> = rest.split('/').collect();
+    match parts.as_slice() {
+        [owner, repo] if !owner.is_empty() && !repo.is_empty() => Ok(["theme.json", "layout.json"]
+            .iter()
+            .map(|f| format!("https://raw.githubusercontent.com/{owner}/{repo}/HEAD/{f}"))
+            .collect()),
+        [owner, repo, "blob" | "raw", path @ ..] if !path.is_empty() => Ok(vec![format!(
+            "https://raw.githubusercontent.com/{owner}/{repo}/{}",
+            path.join("/")
+        )]),
+        _ => Err(bad()),
+    }
+}
+
+/// Install a layout or theme from a link (see `link_candidates`). It passes
+/// the same checks as any other look; the link is kept as its source.
+pub fn install_link(dir: &Path, link: &str) -> Result<(Kind, String), String> {
+    let mut last = String::new();
+    for url in link_candidates(link)? {
+        let bytes = match fetch(&url, MAX_ITEM_BYTES) {
+            Ok(b) => b,
+            Err(e) => {
+                last = e;
+                continue;
+            }
+        };
+        let mut data: Value = serde_json::from_slice(&bytes)
+            .map_err(|_| format!("{url}: not a layout or theme file (not JSON)"))?;
+        let kind = Kind::of(&data).ok_or_else(|| {
+            format!("{url}: not an Ambrotype layout or theme (\"format\" is missing)")
+        })?;
+        data["source"] = serde_json::json!({ "link": link.trim() });
+        return looks::save(dir, kind, None, data).map(|id| (kind, id));
+    }
+    Err(if last.contains("404") {
+        format!("{}: no theme.json or layout.json found there", link.trim())
+    } else {
+        last
+    })
 }
 
 /// Where a look goes in a GitHub-hosted hub: (owner/repo, branch, folder of the index).
@@ -1068,6 +1136,49 @@ mod tests {
         let entries = browse(&url, mine).unwrap();
         assert!(entries.iter().all(|e| e.installed.is_some() && !e.update));
         let _ = std::fs::remove_dir_all(&hub);
+    }
+
+    #[test]
+    fn shared_links() {
+        let raw = "https://raw.githubusercontent.com";
+        assert_eq!(
+            link_candidates("https://github.com/someone/warm-theme.git/").unwrap(),
+            [
+                format!("{raw}/someone/warm-theme/HEAD/theme.json"),
+                format!("{raw}/someone/warm-theme/HEAD/layout.json"),
+            ]
+        );
+        assert_eq!(
+            link_candidates("https://github.com/a/b/blob/main/looks/x.json").unwrap(),
+            [format!("{raw}/a/b/main/looks/x.json")]
+        );
+        assert_eq!(
+            link_candidates(" https://example.com/t.json ").unwrap(),
+            ["https://example.com/t.json"]
+        );
+        assert!(link_candidates("http://example.com/t.json").is_err());
+        assert!(link_candidates("https://github.com/someone").is_err());
+
+        let dir = temp_dir("link");
+        let file = dir.join("t.json");
+        std::fs::write(
+            &file,
+            r##"{"format":"ambrotype-theme/1","name":"Mint","tokens":{"bg":"#102020","text":"#e0f0f0","accent":"#40d0a0"}}"##,
+        )
+        .unwrap();
+        // file:// stands in for a web address here.
+        let link = format!("file://{}", file.display());
+        let looks_dir = dir.join("looks");
+        assert!(install_link(&looks_dir, &link).is_err(), "only https links");
+        let mut data: Value = serde_json::from_slice(&std::fs::read(&file).unwrap()).unwrap();
+        data["source"] = serde_json::json!({ "link": link });
+        let id = looks::save(&looks_dir, Kind::Theme, None, data).unwrap();
+        let theme = looks::all(Some(&looks_dir), Kind::Theme)
+            .into_iter()
+            .find(|l| l.id == id)
+            .unwrap();
+        assert!(theme.usable);
+        assert_eq!(theme.data["tokens"]["muted"].as_str().unwrap().len(), 7);
     }
 
     #[test]

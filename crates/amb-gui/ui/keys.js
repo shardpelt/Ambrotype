@@ -90,6 +90,7 @@ const KEY_ACTIONS = [
   { id: "next-photo", group: "Photos", label: "Next photo in the folder", keys: ["ArrowRight"], when: "main", photo: true, run: (e) => (onControl(e) ? false : stepPhoto(1)) },
   { id: "filmstrip", group: "Photos", label: "Show or hide the filmstrip", keys: ["F"], when: "any", run: () => toggleFilmstrip() },
   { id: "assistant", group: "Tools", label: "Assistant: your AI edits the photo", keys: ["Ctrl+Shift+A"], when: "any", photo: true, run: () => assistantFlow() },
+  { id: "hub", group: "Tools", label: "Browse what others shared", hint: "Layouts, themes, presets, collages and plugins from the hub.", keys: ["Ctrl+Shift+H"], when: "any", button: "btn-hub", run: () => browseFlow() },
   { id: "plugins", group: "Tools", label: "Plugins", hint: "Extra tools that make edits; run, install and share them.", keys: ["Ctrl+Shift+P"], when: "any", button: "btn-plugins", run: () => pluginsFlow() },
   { id: "looks", group: "Window", label: "Appearance: layouts and themes", keys: ["Ctrl+L"], when: "any", button: "btn-looks", run: () => looksFlow() },
   { id: "edit-layout", group: "Window", label: "Edit layout", hint: "Move panels, controls and toolbar buttons.", keys: ["Ctrl+Shift+L"], when: "any", button: "btn-edit-layout", run: () => startEditing() },

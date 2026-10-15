@@ -1662,6 +1662,54 @@ fn delete_look(
     looks_list(state.inner())
 }
 
+/// The kept setups (a layout and theme together), newest first.
+#[tauri::command]
+fn setups_list(state: tauri::State<'_, AppState>) -> Res<Vec<looks::Setup>> {
+    Ok(looks_dir(state.inner())
+        .map(|d| looks::setups(&d))
+        .unwrap_or_default())
+}
+
+/// Keep the layout and theme given (as they are now) as the setup `name`.
+#[tauri::command]
+fn setup_save(
+    name: String,
+    layout: String,
+    theme: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<looks::Setup>> {
+    let dir = need_looks_dir(state.inner())?;
+    looks::save_setup(&dir, &name, &layout, &theme)?;
+    Ok(looks::setups(&dir))
+}
+
+#[derive(Serialize)]
+struct RestoredSetup {
+    layout: String,
+    theme: String,
+    looks: looks::Looks,
+}
+
+/// The layout and theme that bring a setup back (saved again as the user's
+/// own looks if they have changed since).
+#[tauri::command]
+fn setup_restore(name: String, state: tauri::State<'_, AppState>) -> Res<RestoredSetup> {
+    let dir = need_looks_dir(state.inner())?;
+    let (layout, theme) = looks::restore_setup(&dir, &name)?;
+    Ok(RestoredSetup {
+        layout,
+        theme,
+        looks: looks_list(state.inner())?,
+    })
+}
+
+#[tauri::command]
+fn setup_delete(name: String, state: tauri::State<'_, AppState>) -> Res<Vec<looks::Setup>> {
+    let dir = need_looks_dir(state.inner())?;
+    looks::delete_setup(&dir, &name)?;
+    Ok(looks::setups(&dir))
+}
+
 /// Remember the active layout and theme.
 #[tauri::command]
 fn set_active_look(layout: String, theme: String, state: tauri::State<'_, AppState>) -> Res<()> {
@@ -4123,6 +4171,10 @@ fn main() {
             save_look,
             delete_look,
             set_active_look,
+            setups_list,
+            setup_save,
+            setup_restore,
+            setup_delete,
             import_look,
             export_look,
             open_looks_folder,

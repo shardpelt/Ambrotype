@@ -423,6 +423,69 @@ async function looksFlow() {
     if (look) choose(r.kind, look);
   };
 
+  // Saved setups: a layout and theme together, kept as they were.
+  let setups = [];
+  const PREVIOUS = "Before the last change";
+  const loadSetups = async () => {
+    setups = await invoke("setups_list").catch(() => []);
+    renderSetups();
+  };
+  function renderSetups() {
+    const list = $("looks-setups-list");
+    if (!setups.length) {
+      list.replaceChildren(Object.assign(document.createElement("p"), { className: "hint", textContent: "None yet." }));
+      return;
+    }
+    list.replaceChildren(...setups.map((s) => {
+      const row = document.createElement("div");
+      row.className = "looks-setup";
+      const when = new Date(s.saved * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+      const name = Object.assign(document.createElement("span"), {
+        textContent: s.name,
+        title: `${s.layout.data?.name ?? s.layout.id} + ${s.theme.data?.name ?? s.theme.id}, kept ${when}`,
+      });
+      const what = Object.assign(document.createElement("span"), {
+        className: "hint", textContent: `${s.layout.data?.name ?? "?"} · ${s.theme.data?.name ?? "?"}`,
+      });
+      const use = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "Use" });
+      use.addEventListener("click", async () => {
+        try {
+          const r = await invoke("setup_restore", { name: s.name });
+          ui.looks = r.looks;
+          sel.layout = r.layout;
+          sel.theme = r.theme;
+          view = { kind: "layout", id: sel.layout };
+          apply();
+          render();
+          toast(`"${s.name}" is back: Done keeps it`);
+        } catch (e) {
+          toast(String(e), true);
+        }
+      });
+      const del = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "×", title: "Forget this setup (its layout and theme stay)" });
+      del.addEventListener("click", async () => {
+        setups = await invoke("setup_delete", { name: s.name }).catch((e) => { toast(String(e), true); return setups; });
+        renderSetups();
+      });
+      row.append(name, what, use, del);
+      return row;
+    }));
+  }
+  const keepSetup = async () => {
+    const l = findLook("layout", sel.layout), t = findLook("theme", sel.theme);
+    const name = await askName("Save this setup", "The chosen layout and theme, exactly as they are now.", `${l?.name ?? "Layout"} + ${t?.name ?? "theme"}`);
+    if (!name) return;
+    try {
+      setups = await invoke("setup_save", { name, layout: sel.layout, theme: sel.theme });
+      renderSetups();
+      toast(`Saved the setup "${name}"`);
+    } catch (e) {
+      toast(String(e), true);
+    }
+  };
+  $("looks-keep").onclick = keepSetup;
+  loadSetups();
+
   function render() {
     for (const kind of ["layout", "theme"]) {
       const list = $(kind === "layout" ? "looks-layouts" : "looks-themes");
@@ -598,6 +661,10 @@ async function looksFlow() {
   $("looks-name").removeEventListener("keydown", enter);
 
   if (dlg.returnValue === "ok") {
+    // Keep what it was, so one click brings it back.
+    if (sel.layout !== before.layout || sel.theme !== before.theme) {
+      invoke("setup_save", { name: PREVIOUS, layout: before.layout, theme: before.theme }).catch(() => {});
+    }
     ui.looks.active_layout = sel.layout;
     ui.looks.active_theme = sel.theme;
     invoke("set_active_look", { layout: sel.layout, theme: sel.theme }).catch((e) => toast(String(e), true));

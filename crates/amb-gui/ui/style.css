@@ -883,3 +883,10 @@ button.tool-icon .tool-svg .cover { fill: var(--panel-2); }
 button.tool-icon:hover:not(:disabled) .tool-svg .cover { fill: var(--hover); }
 button.tool-icon.active { color: var(--accent); }
 #looks-edit { white-space: nowrap; }
+
+/* Saved setups in the Appearance dialog (layout.js). */
+.looks-setups { margin: 10px 0 6px; }
+.looks-setups h3 { margin: 0 0 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.looks-setups-list { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; max-height: 140px; overflow-y: auto; }
+.looks-setup { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; font-size: 12px; }
+.looks-setup .hint { margin: 0; }

@@ -55,14 +55,16 @@
         </div>
         <input id="preset-filter" type="search" placeholder="Filter presets" spellcheck="false">
         <label class="amount">Amount <input id="preset-amount" type="range" min="0" max="200" value="100"><output id="preset-amount-out">100</output></label>
-        <button id="btn-preset-library" class="small match-button" title="Free presets, grouped by style: hover to see one on your photo">Preset library…</button>
-        <button id="btn-surprise" class="small match-button" title="Random looks to try: pick one you like (one undo step)" disabled>Surprise me…</button>
-        <button id="btn-assistant" class="small match-button" title="Ask your own AI model to edit the photo (Ctrl+Shift+A)">Ask AI…</button>
-        <button id="btn-match" class="small match-button" title="Pick reference photos; finds the white balance, tone, colour and grading settings that give this photo their look" disabled>Match look of other photos…</button>
+        <div class="preset-tools">
+          <button id="btn-preset-library" class="small" title="Preset library: free presets, grouped by style; hover to see one on your photo">Library…</button>
+          <button id="btn-surprise" class="small" title="Surprise me: random looks to try; pick one you like (one undo step)" disabled>Surprise me…</button>
+          <button id="btn-assistant" class="small" title="Ask your own AI model to edit the photo (Ctrl+Shift+A)">Ask AI…</button>
+          <button id="btn-match" class="small" title="Match the look of other photos: pick reference photos; finds the white balance, tone, colour and grading settings that give this photo their look" disabled>Match look…</button>
+        </div>
         <div id="preset-list" class="preset-list"><p class="hint">No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.</p></div>
       </section>
       <section class="side-section info-block" id="block-info">
-        <div class="side-head"><h2>Rating, label &amp; keywords</h2></div>
+        <div class="side-head"><h2 title="Saved to the photo's .xmp straight away, where Lightroom reads them, and put in exports. Keys 1–5 rate, 0 clears, 6–9 set a colour label, P picks, X rejects, U unflags.">Rating &amp; keywords</h2></div>
         <div id="rating" class="rating" role="radiogroup" aria-label="Rating">
           <button type="button" data-stars="1" role="radio" title="1 star (1)">★</button><button type="button" data-stars="2" role="radio" title="2 stars (2)">★</button><button type="button" data-stars="3" role="radio" title="3 stars (3)">★</button><button type="button" data-stars="4" role="radio" title="4 stars (4)">★</button><button type="button" data-stars="5" role="radio" title="5 stars (5)">★</button>
           <button type="button" id="rating-clear" class="rating-clear" title="No rating (0)">×</button>
@@ -83,7 +85,6 @@
           <label>Creator <input data-meta="creator" type="text" spellcheck="false" placeholder="Name; another name"></label>
           <label>Copyright <input data-meta="copyright" type="text" spellcheck="false" placeholder="© 2026 Your Name"></label>
         </details>
-        <p class="hint">Saved to the photo's .xmp straight away, where Lightroom reads them, and put in exports. Keys 1–5 rate, 0 clears, 6–9 set a colour label, P picks, X rejects, U unflags.</p>
       </section>
       <section class="side-section history" id="block-history">
         <div class="side-head">

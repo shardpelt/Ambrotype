@@ -30,11 +30,15 @@ const folded = (() => {
   try { return JSON.parse(localStorage.getItem("folded-columns")) ?? {}; } catch { return {}; }
 })();
 
+// A side panel (Preset library, Frame) takes the left column's place while
+// it's open, so the photo doesn't shrink.
+const sidePanelOpen = () => [...document.querySelectorAll(".viewer > .preset-library")].some((p) => !p.hidden);
+
 function applySideCollapse() {
   const widths = ui.sideWidths ?? { left: 0, right: 0 };
   const shown = {};
   for (const side of ["left", "right"]) {
-    shown[side] = folded[side] ? 0 : widths[side];
+    shown[side] = folded[side] || (side === "left" && sidePanelOpen()) ? 0 : widths[side];
     $(`col-${side}`).hidden = !shown[side];
     const t = $(`fold-${side}`);
     t.hidden = !widths[side];
@@ -43,6 +47,55 @@ function applySideCollapse() {
     t.title = `${open ? "Hide" : "Show"} the ${side} column (Ctrl+${side === "left" ? "[" : "]"})`;
   }
   $("workspace").style.gridTemplateColumns = `${shown.left}px minmax(0, 1fr) ${shown.right}px`;
+}
+
+// Section heights in a column, set by dragging the line between two
+// sections; remembered on this computer. The presets list fills what's left.
+const sectionHeights = (() => {
+  try { return JSON.parse(localStorage.getItem("section-heights")) ?? {}; } catch { return {}; }
+})();
+
+function addSectionDividers(col) {
+  const sections = [...col.children].filter((el) => el.classList.contains("side-section"));
+  for (const s of sections) {
+    const h = sectionHeights[s.id];
+    s.style.height = h && !s.classList.contains("presets-block") ? `${h}px` : "";
+    s.classList.toggle("sized", Boolean(s.style.height));
+  }
+  for (let i = 1; i < sections.length; i++) {
+    const above = sections[i - 1];
+    const below = sections[i];
+    const grip = Object.assign(document.createElement("div"), { className: "section-resizer", title: "Drag to resize; double-click to reset" });
+    below.before(grip);
+    // Resize the section that doesn't fill the spare height.
+    const target = below.classList.contains("presets-block") ? above : below;
+    const sign = target === above ? 1 : -1;
+    grip.addEventListener("pointerdown", (e) => {
+      if (document.body.classList.contains("editing")) return;
+      e.preventDefault();
+      grip.setPointerCapture(e.pointerId);
+      const y0 = e.clientY;
+      const h0 = target.getBoundingClientRect().height;
+      const move = (ev) => {
+        const h = Math.max(40, Math.round(h0 + sign * (ev.clientY - y0)));
+        target.style.height = `${h}px`;
+        target.classList.add("sized");
+        sectionHeights[target.id] = h;
+      };
+      const up = () => {
+        grip.removeEventListener("pointermove", move);
+        try { localStorage.setItem("section-heights", JSON.stringify(sectionHeights)); } catch {}
+      };
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up, { once: true });
+    });
+    grip.addEventListener("dblclick", () => {
+      delete sectionHeights[target.id];
+      target.style.height = "";
+      target.classList.remove("sized");
+      try { localStorage.setItem("section-heights", JSON.stringify(sectionHeights)); } catch {}
+    });
+  }
 }
 
 function toggleColumn(side) {
@@ -117,6 +170,7 @@ function applyLayout(layout) {
   }
   ui.sideWidths = widths;
   applySideCollapse();
+  for (const side of ["left", "right"]) addSectionDividers($(`col-${side}`));
 
   // The crop panel goes to the top of the column with the most panels.
   const host = ["left", "right"]

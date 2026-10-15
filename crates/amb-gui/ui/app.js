@@ -2110,6 +2110,8 @@ async function init() {
   wireFrame();
   wireQuickTips();
   $("fold-left").addEventListener("click", () => toggleColumn("left"));
+  const panels = new MutationObserver(() => { applySideCollapse(); if (ui.info) requestPreview(false); });
+  document.querySelectorAll(".viewer > .preset-library").forEach((p) => panels.observe(p, { attributes: true, attributeFilter: ["hidden"] }));
   $("fold-right").addEventListener("click", () => toggleColumn("right"));
   $("btn-keys").addEventListener("click", showShortcuts);
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());

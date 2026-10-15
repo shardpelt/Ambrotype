@@ -40,7 +40,7 @@
       "description": "Light and clean: lifted shadows, cool whites.",
       "license": "CC0-1.0",
       "path": "presets/airy.xmp",
-      "sha256": "ae55c1a5caac8c32524755ad4caa406d60a75a3fbb4ecb8666a0394b4d6c5c3a"
+      "sha256": "83e84ce9b3d270df712be2d1b5f8674aeef7b7d0496beb1eeedf0b481324ded6"
     },
     {
       "id": "preset-bw-classic",
@@ -95,7 +95,7 @@
       "description": "Neutral and crisp, for products and interiors.",
       "license": "CC0-1.0",
       "path": "presets/clean-white.xmp",
-      "sha256": "b9c7f4cdacb90e74f95a0475359007d0b853ee40c7be68aa3495f8c9a0a6ccbc"
+      "sha256": "ba62de20de1e9741d07b71b127e16e671a7e5b1f6dc952128e0eb564b8eaeed0"
     },
     {
       "id": "preset-cloud",
@@ -106,7 +106,7 @@
       "description": "Soft pastels with low contrast.",
       "license": "CC0-1.0",
       "path": "presets/cloud.xmp",
-      "sha256": "3642c806b8db749ea1fdd24110cb516a4827f541b78073311adfcff2d904dac8"
+      "sha256": "d1e6def56fb272febdc7e77a871567c7d8f29b0b9be967996d1a5f5115ef5d4c"
     },
     {
       "id": "preset-cool-film",
@@ -128,7 +128,7 @@
       "description": "Urban and cool: crushed shadows, teal and orange.",
       "license": "CC0-1.0",
       "path": "presets/dark-city.xmp",
-      "sha256": "f987c89a337352cc0d7a50b71db097cf1beb9f432f296b51014badb3d54be52e"
+      "sha256": "3bcf58c9b5cee686bfa715cc030a7f4464552dd12a8ab9cd13d326c27d3a83c6"
     },
     {
       "id": "preset-faded-print",
@@ -150,7 +150,7 @@
       "description": "Warm highlights, soft contrast, glowing skin.",
       "license": "CC0-1.0",
       "path": "presets/golden-hour.xmp",
-      "sha256": "3519f4410696a70b26f8b89dfab61e9f643f25ded34f0eb631a80558531af44b"
+      "sha256": "73d67b04766d9e4bba08117b19ee807a81b17d386f8df2ebe69138fb28d1277f"
     },
     {
       "id": "preset-honey",
@@ -183,7 +183,7 @@
       "description": "Dark, desaturated greens and teal shadows.",
       "license": "CC0-1.0",
       "path": "presets/moody-forest.xmp",
-      "sha256": "c81da451e59b55d4536b897ca7954db16fae1b9644945e55b7fd86f4c743def3"
+      "sha256": "faf71f7c8b81f3734385318a23e37e566db287a331b461b0dcdebb99e6476e46"
     },
     {
       "id": "preset-night-lights",
@@ -194,7 +194,7 @@
       "description": "Clean night shots: cool shadows, glowing lights, less noise.",
       "license": "CC0-1.0",
       "path": "presets/night-lights.xmp",
-      "sha256": "0531eac234ec5c6ec9c9683d4d1167fd8badb70c27cdb3757e854e7b209d7390"
+      "sha256": "1505583d163f0a76fcd62e32586e81ae08473d944ef326b58004f6db0443530c"
     },
     {
       "id": "preset-peach",
@@ -205,7 +205,7 @@
       "description": "Pastel warmth for portraits.",
       "license": "CC0-1.0",
       "path": "presets/peach.xmp",
-      "sha256": "a2ed7cd2dd4265ab86556b38c529a3d13431053e1d56fb3cc605a8efe0ac052e"
+      "sha256": "e2bd08f013d0e514b265e058f3755da116e3655ff6408f03b205c633a8a48e88"
     },
     {
       "id": "preset-soft-portrait",
@@ -216,7 +216,7 @@
       "description": "Flattering skin: softer texture, warm and bright.",
       "license": "CC0-1.0",
       "path": "presets/soft-portrait.xmp",
-      "sha256": "e67f23471f825f1b9881742d03acf4aa1b04f845e825550ab942e7cf7da2381b"
+      "sha256": "c1181806ea2f0f3248df86181cab0443a98bee0f170bc0d5938e5c3f4bd0d5bd"
     },
     {
       "id": "preset-stormy",
@@ -227,7 +227,7 @@
       "description": "Heavy skies and muted colour.",
       "license": "CC0-1.0",
       "path": "presets/stormy.xmp",
-      "sha256": "59c35947d41ba1aaf9daf80885181582354a8bf5f03bd365fb45631aa9d7c025"
+      "sha256": "7cb2acb39b84e7d78b68cc0c6c934777c7ff0ab7e7163130cb1af290b46a64cd"
     },
     {
       "id": "preset-teal-orange",

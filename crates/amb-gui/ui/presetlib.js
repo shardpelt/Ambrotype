@@ -4,7 +4,7 @@
 // app.js), apply it, or add it to the presets list.
 "use strict";
 
-const plib = { items: [], group: "" };
+const plib = { items: [], group: "", thumbs: new Map(), token: 0 };
 
 async function openPresetLibrary() {
   const panel = $("preset-library");
@@ -16,7 +16,32 @@ async function openPresetLibrary() {
     plib.items = [];
     toast(`Couldn't load the preset library: ${e}`, true);
   }
+  // Thumbnails show the photo as it is now.
+  plib.thumbs.clear();
   renderPresetLibrary();
+}
+
+// Small previews of the photo with each shown preset, a few at a time so
+// the first ones appear quickly; a newer render cancels an older one.
+async function loadPresetThumbs(items) {
+  const token = ++plib.token;
+  if (!ui.info) return;
+  const todo = items.filter((p) => !plib.thumbs.has(p.id));
+  for (let i = 0; i < todo.length; i += 4) {
+    const batch = todo.slice(i, i + 4);
+    let images;
+    try {
+      images = await invoke("preset_thumbnails", { paths: batch.map((p) => p.path), amount: Number($("preset-amount").value) });
+    } catch {
+      return;
+    }
+    batch.forEach((p, k) => {
+      plib.thumbs.set(p.id, images[k]);
+      const img = document.querySelector(`#presetlib-list img[data-id="${p.id}"]`);
+      if (img && images[k]) img.src = images[k];
+    });
+    if (token !== plib.token || $("preset-library").hidden) return;
+  }
 }
 
 function closePresetLibrary() {
@@ -43,6 +68,9 @@ function renderPresetLibrary() {
   }
   list.replaceChildren(...shown.map((p) => {
     const row = Object.assign(document.createElement("div"), { className: "presetlib-item" });
+    const thumb = Object.assign(document.createElement("img"), { className: "presetlib-thumb", alt: "" });
+    thumb.dataset.id = p.id;
+    if (plib.thumbs.get(p.id)) thumb.src = plib.thumbs.get(p.id);
     const text = Object.assign(document.createElement("div"), { className: "presetlib-text" });
     text.append(Object.assign(document.createElement("strong"), { textContent: p.name }),
       Object.assign(document.createElement("span"), { className: "hint", textContent: p.description || p.group }));
@@ -66,10 +94,11 @@ function renderPresetLibrary() {
         toast(String(e), true);
       }
     });
-    row.append(text, apply, add);
+    row.append(thumb, text, apply, add);
     row.addEventListener("mouseenter", () => presetHover(p));
     return row;
   }));
+  loadPresetThumbs(shown);
 }
 
 function wirePresetLibrary() {

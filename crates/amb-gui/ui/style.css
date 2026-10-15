@@ -834,7 +834,7 @@ body.editing .column [data-item]:focus, body.editing .column [data-unit]:focus {
 .selected-setting { outline: 1px solid var(--accent); outline-offset: 1px; border-radius: 4px; }
 
 /* Preset library (presetlib.js), at the photo's left edge. */
-.preset-library { position: absolute; left: 0; top: 0; bottom: 0; width: 290px; z-index: 25; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; background: var(--panel); border-right: 1px solid var(--line); overflow: hidden; }
+.preset-library { position: absolute; left: 0; top: 0; bottom: 0; width: 330px; z-index: 25; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; background: var(--panel); border-right: 1px solid var(--line); overflow: hidden; }
 .preset-library[hidden] { display: none; }
 .presetlib-groups { display: flex; flex-wrap: wrap; gap: 4px; }
 .presetlib-groups .active { border-color: var(--accent); color: var(--accent); }
@@ -843,3 +843,5 @@ body.editing .column [data-item]:focus, body.editing .column [data-unit]:focus {
 .presetlib-item:hover { background: var(--panel-2); }
 .presetlib-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .presetlib-text .hint { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preset-library img.presetlib-thumb { max-width: none; max-height: none; box-shadow: none; width: 72px; height: 48px; object-fit: cover; flex: 0 0 auto; border-radius: 3px; background: var(--panel-2); }
+.presetlib-item { flex-wrap: nowrap; }

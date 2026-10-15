@@ -2969,6 +2969,48 @@ struct Variant {
     image: String,
 }
 
+/// Small previews of the open photo with each preset in `paths` applied
+/// (at `amount`), as `data:` URLs; `None` for a preset that can't be read.
+/// Nothing is applied.
+#[tauri::command]
+async fn preset_thumbnails(
+    paths: Vec<String>,
+    amount: f64,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<Option<String>>> {
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("open a photo first")?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        Ok(paths
+            .iter()
+            .take(64)
+            .map(|path| {
+                let commands = [Command::ApplyPreset {
+                    path: path.clone(),
+                    amount,
+                    include_groups: None,
+                    exclude_groups: None,
+                }];
+                let mut trial = s.state.clone();
+                trial.execute_all(&commands).ok()?;
+                let overrides: BTreeMap<String, Value> = trial
+                    .settings()
+                    .iter()
+                    .filter(|(k, v)| s.state.settings().get(*k) != Some(*v))
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect();
+                let p = s.preview(160, &overrides, false, false, lens);
+                Some(format!("data:image/jpeg;base64,{}", plugins::base64(&p.jpeg)))
+            })
+            .collect())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Surprise me: `count` random looks from the built-in Random look plugin
 /// (seeds `seed`, `seed + 1`, ...), each with a small preview of the photo
 /// in it. Nothing is applied.
@@ -4042,6 +4084,7 @@ fn main() {
             hub_install_plugin,
             hub_install_preset,
             preset_library,
+            preset_thumbnails,
             library_install_preset,
             hub_install_collage,
             hub_install_sizes,

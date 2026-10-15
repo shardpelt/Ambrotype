@@ -87,6 +87,7 @@ pub mod testing {
             rgb,
             xyz_to_cam: linalg::IDENTITY,
             matrices: Vec::new(),
+            highlights_rebuilt: false,
             as_shot_neutral: [1.0; 3],
             clip: [f32::INFINITY; 3],
             rendered: false,

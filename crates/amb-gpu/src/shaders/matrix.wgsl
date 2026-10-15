@@ -6,7 +6,8 @@
 struct Matrix {
     m: array<f32, 9>,
     gain: f32,
-    // Highlight recovery: on (1) or off, clip levels, white-balance gains, reach.
+    // Highlight recovery: off (0), per channel (1) or only where every
+    // channel clipped (2); clip levels, white-balance gains, reach.
     unclip: u32,
     clip: array<f32, 3>,
     gains: array<f32, 3>,
@@ -40,8 +41,15 @@ fn unclip_weights(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_wor
     if (i >= size.pixels) {
         return;
     }
+    var w = vec3<f32>(0.0);
     for (var c = 0u; c < 3u; c++) {
-        weights[i * 3u + c] = clip_weight(camera[i * 3u + c], mp.clip[c]);
+        w[c] = clip_weight(camera[i * 3u + c], mp.clip[c]);
+    }
+    if (mp.unclip == 2u) {
+        w = vec3<f32>(min(w.x, min(w.y, w.z)));
+    }
+    for (var c = 0u; c < 3u; c++) {
+        weights[i * 3u + c] = w[c];
     }
 }
 
@@ -52,7 +60,7 @@ fn matrix(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups)
         return;
     }
     var c = vec3<f32>(camera[i * 3u], camera[i * 3u + 1u], camera[i * 3u + 2u]);
-    if (mp.unclip == 1u) {
+    if (mp.unclip != 0u) {
         // Each channel: the most clipped within `reach` pixels.
         let x = i32(i % size.width);
         let y = i32(i / size.width);

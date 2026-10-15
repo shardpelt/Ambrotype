@@ -929,26 +929,35 @@ pub(crate) struct Unclip {
     pub(crate) clip: [f32; 3],
     /// White-balance gains (1 / neutral).
     pub(crate) gains: [f32; 3],
+    /// Only where every channel clipped: partly clipped pixels were rebuilt
+    /// ([`crate::highlights`]).
+    pub(crate) full_only: bool,
 }
 
 impl Unclip {
-    fn new(clip: [f32; 3], neutral: [f64; 3]) -> Self {
+    fn new(clip: [f32; 3], neutral: [f64; 3], full_only: bool) -> Self {
         Self {
             clip,
             gains: neutral.map(|n| if n > 1e-9 { (1.0 / n) as f32 } else { 1.0 }),
+            full_only,
         }
     }
 
     /// How clipped each channel is: 0 below 90% of its clip level, 1 from 98%.
     fn weights(&self, c: &[f32]) -> [f32; 3] {
-        std::array::from_fn(|i| {
+        let w: [f32; 3] = std::array::from_fn(|i| {
             let k = self.clip[i];
             if !k.is_finite() {
                 return 0.0;
             }
             let t = ((c[i] - 0.9 * k) / (0.08 * k)).clamp(0.0, 1.0);
             t * t * (3.0 - 2.0 * t)
-        })
+        });
+        if self.full_only {
+            [w[0].min(w[1]).min(w[2]); 3]
+        } else {
+            w
+        }
     }
 
     /// The weights of row `y`, each the most clipped within `r` pixels.
@@ -1559,7 +1568,7 @@ pub(crate) fn camera_to_working<'a>(
         (profile_gain, gain)
     };
     let clipped = (!s.negative.enabled && img.clip.iter().any(|c| c.is_finite()))
-        .then(|| Unclip::new(img.clip, neutral));
+        .then(|| Unclip::new(img.clip, neutral, img.highlights_rebuilt));
     let unclip_reach = if out.0.max(out.1) >= 2500 { 2 } else { 1 };
     CameraToWorking {
         profile,
@@ -1893,7 +1902,7 @@ mod tests {
     #[test]
     fn clipped_highlights_go_neutral() {
         let neutral = [0.5, 1.0, 0.6];
-        let u = Unclip::new([1.0, 0.98, 0.95], neutral);
+        let u = Unclip::new([1.0, 0.98, 0.95], neutral, false);
         let apply = |c: [f32; 3]| u.apply(c, u.weights(&c));
         // Every channel clipped: the result is the neutral, at the brightest
         // white-balanced level (here red: 1 / 0.5 = 2).
@@ -2239,6 +2248,7 @@ mod tests {
             rgb,
             xyz_to_cam: invert3(&PROPHOTO_TO_XYZ_D50),
             matrices: Vec::new(),
+            highlights_rebuilt: false,
             as_shot_neutral: [1.0; 3],
             clip: [f32::INFINITY; 3],
             rendered: false,

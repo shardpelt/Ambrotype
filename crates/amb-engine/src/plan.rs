@@ -31,6 +31,8 @@ pub struct UnclipPlan {
     pub gains: [f32; 3],
     /// Neighbourhood radius in pixels.
     pub reach: usize,
+    /// Only where every channel clipped (`Unclip::full_only`).
+    pub full_only: bool,
 }
 
 /// Lookup tables (size [`Plan::lut_size`]) on encoded values.
@@ -157,6 +159,7 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         clip: u.clip,
         gains: u.gains,
         reach: unclip_reach,
+        full_only: u.full_only,
     });
     let mut steps = Vec::new();
     if profile.is_some() {

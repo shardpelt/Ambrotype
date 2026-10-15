@@ -33,6 +33,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **hub:** Appearance → Browse hub… installs shared layouts, themes, develop presets, collage templates, size profiles and plugins (checked against the index's sha256 and validated; plugins also from the Plugins dialog); Submit to hub… opens GitHub with your look filled in as a pull request
     - **editor mode:** Edit layout rearranges the screen in place (drag and drop, control types, split and merge, add and remove, column widths) and saves it as your own layout
     - **borders** on export, with presets and colour swatches, and a caption line such as the camera and exposure
+    - **highlight recovery:** a blown sky edge, flower or sunlit wall gets its colour and texture back where at least one channel still held detail, instead of a flat white or green patch
     - **preset library** (Presets → Preset library…): 21 free starter presets by style (film, B&W, moody, bright, vivid, portrait, landscape), from the hub or built in; hover to preview on the photo, Apply, or Add to your presets
     - **soft proofing** (S): the photo as it will export to sRGB, Adobe RGB, Display P3, Rec. 2020 or ProPhoto, with a gamut warning
     - **edit in another app** (Ctrl+Alt+E): the photo, as edited, goes to your image editor as `IMG_0001-Edit.tif` next to it (ProPhoto 16-bit by default; Settings → General), and shows in the folder

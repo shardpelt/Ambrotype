@@ -32,6 +32,9 @@ pub struct CameraImage {
     pub as_shot_neutral: [f64; 3],
     /// Level at which each channel clips ([`clip_levels`]); infinity when it doesn't.
     pub clip: [f32; 3],
+    /// Partly clipped pixels were rebuilt ([`crate::highlights`]): only
+    /// pixels with every channel clipped are made neutral.
+    pub highlights_rebuilt: bool,
     /// A rendered image (JPEG, PNG, TIFF, WebP) rather than a raw: already
     /// white-balanced and toned ([`crate::raster`]).
     pub rendered: bool,
@@ -246,6 +249,8 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
     }
 
     let clip = clip_levels(&rgb);
+    // Channels that clipped where others didn't, rebuilt from those others.
+    let rebuilt = crate::highlights::reconstruct(&mut rgb, width, height, clip, as_shot_neutral);
     Ok(CameraImage {
         width,
         height,
@@ -254,6 +259,7 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         rendered: false,
         xyz_to_cam,
         matrices,
+        highlights_rebuilt: rebuilt > 0,
         as_shot_neutral,
         make: raw.clean_make.clone(),
         model: raw.clean_model.clone(),
@@ -457,6 +463,7 @@ impl CameraImage {
             rgb,
             xyz_to_cam: self.xyz_to_cam,
             matrices: self.matrices.clone(),
+            highlights_rebuilt: self.highlights_rebuilt,
             as_shot_neutral: self.as_shot_neutral,
             clip: self.clip,
             rendered: self.rendered,
@@ -779,6 +786,7 @@ mod matrix_tests {
             rgb: vec![0.5; 3],
             xyz_to_cam: d65,
             matrices: vec![(2856.0, a), (6504.0, d65)],
+            highlights_rebuilt: false,
             as_shot_neutral: [1.0; 3],
             clip: [f32::INFINITY; 3],
             rendered: false,

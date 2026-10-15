@@ -259,7 +259,7 @@ impl Gpu {
                     let params = self.storage(&MatrixParams {
                         m: flat(m),
                         gain: *gain,
-                        unclip: unclip.is_some() as u32,
+                        unclip: unclip.map_or(0, |u| if u.full_only { 2 } else { 1 }),
                         clip: unclip.map_or([0.0; 3], |u| u.clip),
                         gains: unclip.map_or([1.0; 3], |u| u.gains),
                         reach: unclip.map_or(0, |u| u.reach as u32),
@@ -686,6 +686,7 @@ pub(crate) mod tests {
                 [-0.0577, 0.1271, 0.6585],
             ],
             matrices: Vec::new(),
+            highlights_rebuilt: false,
             as_shot_neutral: [0.45, 1.0, 0.62],
             clip: [1.0, 1.0, 1.0],
             rendered: false,

@@ -936,6 +936,7 @@ mod tests {
                 [-0.0577, 0.1271, 0.6585],
             ],
             matrices: Vec::new(),
+            highlights_rebuilt: false,
             as_shot_neutral: [0.45, 1.0, 0.62],
             clip: [1.0, 1.0, 1.0],
             rendered: false,

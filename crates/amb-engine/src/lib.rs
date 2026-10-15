@@ -19,6 +19,7 @@ pub mod detail;
 pub mod dng_opcodes;
 pub mod effects;
 pub mod filters;
+pub mod highlights;
 pub mod lens;
 pub mod local;
 pub mod local_tone;

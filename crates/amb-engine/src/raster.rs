@@ -62,6 +62,7 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
         rgb,
         xyz_to_cam: invert3(&profile.to_xyz_d50),
         matrices: Vec::new(),
+        highlights_rebuilt: false,
         as_shot_neutral: [1.0; 3],
         clip: [f32::INFINITY; 3],
         rendered: true,

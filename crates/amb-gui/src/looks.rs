@@ -29,32 +29,35 @@ pub const DEFAULT_THEME: &str = "builtin:dark";
 const BUILTIN_LAYOUTS: [(&str, &str); 5] = [
     (
         "classic",
-        include_str!("../data/looks/layouts/classic.json"),
+        include_str!("../data/hub/looks/layouts/classic.json"),
     ),
     (
         "compact",
-        include_str!("../data/looks/layouts/compact.json"),
+        include_str!("../data/hub/looks/layouts/compact.json"),
     ),
     (
         "big-controls",
-        include_str!("../data/looks/layouts/big-controls.json"),
+        include_str!("../data/hub/looks/layouts/big-controls.json"),
     ),
-    ("studio", include_str!("../data/looks/layouts/studio.json")),
+    (
+        "studio",
+        include_str!("../data/hub/looks/layouts/studio.json"),
+    ),
     (
         "left-handed",
-        include_str!("../data/looks/layouts/left-handed.json"),
+        include_str!("../data/hub/looks/layouts/left-handed.json"),
     ),
 ];
 const BUILTIN_THEMES: [(&str, &str); 4] = [
-    ("dark", include_str!("../data/looks/themes/dark.json")),
-    ("light", include_str!("../data/looks/themes/light.json")),
+    ("dark", include_str!("../data/hub/looks/themes/dark.json")),
+    ("light", include_str!("../data/hub/looks/themes/light.json")),
     (
         "high-contrast",
-        include_str!("../data/looks/themes/high-contrast.json"),
+        include_str!("../data/hub/looks/themes/high-contrast.json"),
     ),
     (
         "neutral-grey",
-        include_str!("../data/looks/themes/neutral-grey.json"),
+        include_str!("../data/hub/looks/themes/neutral-grey.json"),
     ),
 ];
 

@@ -4,7 +4,7 @@ use std::fmt::Write;
 fn main() {
     // The hub's starter presets ship with the app, for the Preset Library
     // when the hub can't be reached or lists none.
-    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../hub/presets");
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("data/hub/presets");
     println!("cargo:rerun-if-changed={}", dir.display());
     let mut files: Vec<_> = std::fs::read_dir(&dir)
         .map(|d| d.flatten().map(|e| e.path()).collect())

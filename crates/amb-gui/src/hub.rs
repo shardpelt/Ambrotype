@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! The hub: browse and install shared looks (layouts and themes) and
 //! plugins, and submit your own looks (docs/design/customization-and-hub.md
-//! §4; the hub repo template is `hub/` in this repo).
+//! §4; the hub repo is `Ambrotypehq/ambrotype-hub`). The app's built-in looks
+//! and starter presets come from the hub too: `data/hub/` is a copy of the
+//! items it ships, synced by `tools/sync-hub.py`.
 //!
 //! Like Omarchy's themes there is no server: a hub is a git repo with one
 //! JSON file per look and an `index.json` listing them with their sha256.
@@ -650,7 +652,23 @@ pub fn browse(index_url: &str, mine: Mine<'_>) -> Result<Vec<HubEntry>, String> 
         .map(|(s, id)| (s.id.clone(), (id, s.sha256.clone())))
         .collect::<Vec<_>>();
     let mut mine = {
-        let mut m = installed(mine.looks, index_url);
+        // The app's own looks are hub items too; shown as built in.
+        let mut m: HashMap<String, (String, String)> = [Kind::Layout, Kind::Theme]
+            .into_iter()
+            .flat_map(|kind| looks::all(None, kind))
+            .filter(|l| l.builtin)
+            .filter_map(|l| {
+                let stem = l.id.strip_prefix("builtin:")?;
+                let kind = match l.kind {
+                    Kind::Layout => "layout",
+                    Kind::Theme => "theme",
+                };
+                let id = format!("{kind}-{stem}");
+                let item = items.iter().find(|i| i.id == id)?;
+                Some((item.id.clone(), (l.id.clone(), item.sha256.clone())))
+            })
+            .collect();
+        m.extend(installed(mine.looks, index_url));
         m.extend(installed_plugins(mine.plugins, index_url));
         m.extend(sources);
         m
@@ -804,7 +822,7 @@ mod tests {
     use super::*;
 
     fn hub_url() -> String {
-        format!("file://{}/../../hub/index.json", env!("CARGO_MANIFEST_DIR"))
+        format!("file://{}/data/hub/index.json", env!("CARGO_MANIFEST_DIR"))
     }
 
     fn temp_dir(name: &str) -> std::path::PathBuf {
@@ -814,14 +832,22 @@ mod tests {
         dir
     }
 
-    /// The hub template in this repo is what people copy: it must be clean and current.
+    /// The hub items the app ships (data/hub/) are clean and current, and its
+    /// own looks show as built in.
     #[test]
-    fn the_hub_template_is_valid() {
+    fn the_bundled_hub_items_are_valid() {
         let entries = browse(&hub_url(), Mine::default()).unwrap();
-        assert!(entries.len() >= 3);
+        assert!(entries.len() >= 9);
         for e in &entries {
             assert!(e.error.is_none(), "{}: {:?}", e.item.id, e.error);
-            assert!(e.data.is_some() && e.installed.is_none());
+            assert!(e.data.is_some());
+            if e.item.kind == "preset" {
+                assert!(e.installed.is_none());
+            } else {
+                let stem = e.item.id.split_once('-').unwrap().1;
+                assert_eq!(e.installed.as_deref(), Some(&*format!("builtin:{stem}")));
+                assert!(!e.update);
+            }
         }
     }
 
@@ -829,8 +855,8 @@ mod tests {
     fn install_update_and_checksums() {
         let dir = temp_dir("install");
         let url = hub_url();
-        let (kind, id) = install(&dir, &url, "theme-warm-dark").unwrap();
-        assert_eq!((kind, id.as_str()), (Kind::Theme, "user:warm-dark"));
+        let (kind, id) = install(&dir, &url, "theme-light").unwrap();
+        assert_eq!((kind, id.as_str()), (Kind::Theme, "user:light"));
         let entries = browse(
             &url,
             Mine {
@@ -839,33 +865,27 @@ mod tests {
             },
         )
         .unwrap();
-        let warm = entries
-            .iter()
-            .find(|e| e.item.id == "theme-warm-dark")
-            .unwrap();
-        assert_eq!(warm.installed.as_deref(), Some("user:warm-dark"));
-        assert!(!warm.update);
+        let light = entries.iter().find(|e| e.item.id == "theme-light").unwrap();
+        assert_eq!(light.installed.as_deref(), Some("user:light"));
+        assert!(!light.update);
         // Installing again updates the same look rather than making a copy.
-        assert_eq!(
-            install(&dir, &url, "theme-warm-dark").unwrap().1,
-            "user:warm-dark"
-        );
+        assert_eq!(install(&dir, &url, "theme-light").unwrap().1, "user:light");
         assert!(install(&dir, &url, "theme-nope").is_err());
 
         // A file changed after it was listed is refused.
         let copy = temp_dir("tampered");
         std::fs::create_dir_all(copy.join("looks/themes")).unwrap();
         let index = std::fs::read_to_string(format!(
-            "{}/../../hub/index.json",
+            "{}/data/hub/index.json",
             env!("CARGO_MANIFEST_DIR")
         ))
         .unwrap();
         std::fs::write(copy.join("index.json"), index).unwrap();
-        std::fs::write(copy.join("looks/themes/paper.json"), "{}").unwrap();
+        std::fs::write(copy.join("looks/themes/dark.json"), "{}").unwrap();
         let tampered = format!("file://{}/index.json", copy.display());
         let entries = browse(&tampered, Mine::default()).unwrap();
-        let paper = entries.iter().find(|e| e.item.id == "theme-paper").unwrap();
-        assert!(paper.error.as_deref().unwrap().contains("checksum"));
+        let dark = entries.iter().find(|e| e.item.id == "theme-dark").unwrap();
+        assert!(dark.error.as_deref().unwrap().contains("checksum"));
         let _ = std::fs::remove_dir_all(&dir);
         let _ = std::fs::remove_dir_all(&copy);
     }

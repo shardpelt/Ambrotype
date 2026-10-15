@@ -1,12 +1,13 @@
 {
   "format": "ambrotype-layout/1",
-  "name": "Big controls",
-  "description": "Larger text, sliders and targets: easier on touch screens and tired eyes.",
-  "density": "large",
+  "name": "Classic",
+  "description": "Presets and history on the left, the Develop panels on the right.",
+  "author": "Ambrotype",
+  "density": "normal",
   "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
-  "left": { "width": 270, "items": ["presets", "info", "history"] },
+  "left": { "width": 250, "items": ["presets", "info", "history"] },
   "right": {
-    "width": 420,
+    "width": 330,
     "items": [
       "histogram",
       { "panel": "basic", "open": true },

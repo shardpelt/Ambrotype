@@ -1,6 +1,8 @@
 {
   "format": "ambrotype-theme/1",
   "name": "Dark",
+  "description": "The default: dark grey panels with a warm accent.",
+  "author": "Ambrotype",
   "scheme": "dark",
   "tokens": {
     "bg": "#1b1c1f", "bg-deep": "#111214", "viewer": "#111214", "panel": "#232428", "panel-2": "#2a2c31",

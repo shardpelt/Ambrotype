@@ -180,7 +180,7 @@ async function hubFlow(initial = "all") {
         actions.className = "hub-actions";
         const install = Object.assign(document.createElement("button"), { type: "button" });
         if (e.installed && !e.update) {
-          install.textContent = "Installed ✓";
+          install.textContent = e.installed.startsWith("builtin:") ? "Built in ✓" : "Installed ✓";
           install.disabled = true;
         } else {
           install.textContent = e.update ? "Update" : "Install";

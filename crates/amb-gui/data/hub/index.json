@@ -2,34 +2,94 @@
   "format": "ambrotype-hub/1",
   "items": [
     {
-      "id": "layout-knob-desk",
+      "id": "layout-classic",
       "kind": "layout",
-      "name": "Knob desk",
+      "name": "Classic",
       "author": "Ambrotype",
-      "description": "Everything in one right column: white balance and tone as a grid of knobs, presence as bars, then the usual panels.",
+      "description": "Presets and history on the left, the Develop panels on the right.",
       "license": "CC0-1.0",
-      "path": "looks/layouts/knob-desk.json",
-      "sha256": "9b903c2e9d5033dc8564b3b5ff760e101a6b09bcf806dd04eb6f4d7b829faca4"
+      "path": "looks/layouts/classic.json",
+      "sha256": "9ffbc967487a03bf9e9a6f4bff33f5da3f1c1eb298d7002cbafcb31bc4f48533"
     },
     {
-      "id": "theme-paper",
-      "kind": "theme",
-      "name": "Paper",
+      "id": "layout-compact",
+      "kind": "layout",
+      "name": "Compact",
       "author": "Ambrotype",
-      "description": "A soft off-white theme with ink-blue accents and square corners.",
+      "description": "One narrow column and smaller controls, for laptop screens.",
       "license": "CC0-1.0",
-      "path": "looks/themes/paper.json",
-      "sha256": "a545583027d86a240a8f2bc3c48ada707fa98f136a95d23df01c9b8bd3b31b89"
+      "path": "looks/layouts/compact.json",
+      "sha256": "64dd1b1fabcad2c6be10cd8488f86fb8eece6b2d54ede3b52b64e80a0eabfff6"
     },
     {
-      "id": "theme-warm-dark",
-      "kind": "theme",
-      "name": "Warm dark",
+      "id": "layout-big-controls",
+      "kind": "layout",
+      "name": "Big controls",
       "author": "Ambrotype",
-      "description": "Dark, with warm browns and an amber accent.",
+      "description": "Larger text, sliders and targets: easier on touch screens and tired eyes.",
       "license": "CC0-1.0",
-      "path": "looks/themes/warm-dark.json",
-      "sha256": "f5fdb5d52e05313b3aacaad18b09e792d78391ddd63be5a5d74e93c5c9b058a0"
+      "path": "looks/layouts/big-controls.json",
+      "sha256": "5537bd9e79d246884204b97acdc80330dd7177af961388fd370f87e3c1d280f1"
+    },
+    {
+      "id": "layout-studio",
+      "kind": "layout",
+      "name": "Studio",
+      "author": "Ambrotype",
+      "description": "A mixing-desk feel: knobs for light, bars for presence and detail.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/studio.json",
+      "sha256": "b5b0c6d7695dbd20c857b01caf7a6948acc39ea6fbdfc5f5f24b871cd64a5b0e"
+    },
+    {
+      "id": "layout-left-handed",
+      "kind": "layout",
+      "name": "Left-handed",
+      "author": "Ambrotype",
+      "description": "Classic, mirrored: the Develop panels on the left, presets and history on the right.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/left-handed.json",
+      "sha256": "0c2c2367923d333d857e313b66f4fb6335e0425d7b83a70a285ddea802f97e11"
+    },
+    {
+      "id": "theme-dark",
+      "kind": "theme",
+      "name": "Dark",
+      "author": "Ambrotype",
+      "description": "The default: dark grey panels with a warm accent.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/dark.json",
+      "sha256": "adc76bfd6bd594077f3db4ff3de997d97806d76e4c9c833d864bb35b6b6e060a"
+    },
+    {
+      "id": "theme-light",
+      "kind": "theme",
+      "name": "Light",
+      "author": "Ambrotype",
+      "description": "Light grey panels with a warm accent.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/light.json",
+      "sha256": "1b614883720ed3e08b27518145348333e9cfdaddd373ae1622982c6294975de1"
+    },
+    {
+      "id": "theme-high-contrast",
+      "kind": "theme",
+      "name": "High contrast",
+      "author": "Ambrotype",
+      "description": "Black and white with a yellow accent, for low vision or bright rooms.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/high-contrast.json",
+      "sha256": "357e964c2d0d42064620a00a179bbb90fd1ea07df6585587adb2eb1aee4ce7f1"
+    },
+    {
+      "id": "theme-neutral-grey",
+      "kind": "theme",
+      "name": "Neutral grey",
+      "author": "Ambrotype",
+      "description": "No tinted colours anywhere and a mid-grey viewer, for judging colour.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/neutral-grey.json",
+      "sha256": "3f94ce0c13aa35a214b60ff48eb78ee3631810a8c4e7fad5ca011a945fa6c411"
     },
     {
       "id": "preset-airy",

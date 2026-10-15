@@ -1,6 +1,8 @@
 {
   "format": "ambrotype-theme/1",
   "name": "High contrast",
+  "description": "Black and white with a yellow accent, for low vision or bright rooms.",
+  "author": "Ambrotype",
   "scheme": "dark",
   "tokens": {
     "bg": "#000000", "bg-deep": "#000000", "viewer": "#000000", "panel": "#0d0d0d", "panel-2": "#1a1a1a",

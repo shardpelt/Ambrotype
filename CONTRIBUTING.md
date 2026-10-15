@@ -11,4 +11,4 @@ Thanks for helping. Start with [AGENTS.md](AGENTS.md) (layout, checks before com
 
 ## Looks and plugins
 
-Layouts, themes and plugins go to the hub repo, not here: see [hub/README.md](hub/README.md) and [docs/ai/plugins.md](docs/ai/plugins.md).
+Layouts, themes, presets and plugins go to the hub repo, not here (the app's own built-in ones too; `tools/sync-hub.py` copies them into `crates/amb-gui/data/hub/`): see the [hub repo](https://github.com/Ambrotypehq/ambrotype-hub) and [docs/ai/plugins.md](docs/ai/plugins.md).

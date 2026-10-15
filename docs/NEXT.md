@@ -59,7 +59,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
 ## Owner to-dos
 
 - [ ] Set up a **local** Claude Code session on the Mac so it can reach your drives and Lightroom: [desktop-setup.md § Working with an AI agent locally](desktop-setup.md#working-with-an-ai-agent-locally).
-- [ ] Fill the hub repo `Ambrotypehq/ambrotype-hub` (created, empty) with the `hub/` folder of this repo. A Claude session with access to that repo can do it: paste it [handoff-hub.md](handoff-hub.md). By hand: copy its contents to the repo's root and push; keep it public with Actions on. Shared plugins arrive there as pull requests to `plugins/<id>/`. (Or install the Claude GitHub App on the Ambrotypehq organisation so an agent can push it.) The app's **Browse hub…** reads `https://raw.githubusercontent.com/Ambrotypehq/ambrotype-hub/main/index.json`. Until then it says the hub can't be reached.
+- [x] Hub repo `Ambrotypehq/ambrotype-hub` filled and public (2026-10-15), and it's now where the built-in layouts, themes and starter presets are edited; the app ships a copy (`tools/sync-hub.py`). Shared plugins arrive there as pull requests to `plugins/<id>/`.
 
 - [ ] Try the editor on the Mac: `cargo run --release -p amb-gui -- photo.nef`. Note what feels wrong (or use the Feedback button).
 - [ ] Run `amb preset census <your preset folders>` and share the output (setting names and counts only). It ranks what to build next.

@@ -2,6 +2,7 @@
   "format": "ambrotype-layout/1",
   "name": "Left-handed",
   "description": "Classic, mirrored: the Develop panels on the left, presets and history on the right.",
+  "author": "Ambrotype",
   "density": "normal",
   "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
   "left": {

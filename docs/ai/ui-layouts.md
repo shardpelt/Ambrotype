@@ -191,4 +191,4 @@ A widget of the wrong type (for example `toggle` on Exposure) is an error. An un
 ## Sharing
 
 - **Share…** in the Appearance dialog saves the file anywhere, ready to send; **Import…** adds one.
-- **Browse hub…** in the Appearance dialog installs looks other people shared, and **Submit to hub…** offers one of yours as a pull request to the hub repo. How the hub repo works: [hub/README.md](../../hub/README.md).
+- **Browse hub…** in the Appearance dialog installs looks other people shared, and **Submit to hub…** offers one of yours as a pull request to the hub repo. How the hub repo works: [its README](https://github.com/Ambrotypehq/ambrotype-hub#readme).

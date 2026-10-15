@@ -2,6 +2,7 @@
   "format": "ambrotype-theme/1",
   "name": "Neutral grey",
   "description": "No tinted colours anywhere and a mid-grey viewer, for judging colour.",
+  "author": "Ambrotype",
   "scheme": "dark",
   "tokens": {
     "bg": "#3a3a3a", "bg-deep": "#2e2e2e", "viewer": "#6b6b6b", "panel": "#333333", "panel-2": "#404040",

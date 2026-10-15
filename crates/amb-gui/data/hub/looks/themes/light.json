@@ -1,6 +1,8 @@
 {
   "format": "ambrotype-theme/1",
   "name": "Light",
+  "description": "Light grey panels with a warm accent.",
+  "author": "Ambrotype",
   "scheme": "light",
   "tokens": {
     "bg": "#eceef1", "bg-deep": "#e2e5e9", "viewer": "#d4d7dc", "panel": "#f7f8fa", "panel-2": "#ffffff",

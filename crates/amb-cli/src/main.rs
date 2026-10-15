@@ -669,6 +669,13 @@ fn merge_pano(raws: &[&str], options: &BTreeMap<&str, &str>, json: bool) -> Resu
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    // Effect plugins in edits render as in the editor: built in, or from its
+    // plugins folder.
+    let plugins =
+        amb_library::collections::editor_dir().and_then(|d| Some(d.parent()?.join("plugins")));
+    amb_engine::plugin_effects::set_resolver(amb_plugin::effect::resolver(move |id| {
+        amb_plugin::find(plugins.as_deref(), id)
+    }));
     let mut json = false;
     let mut dry_run = false;
     let mut brief = false;

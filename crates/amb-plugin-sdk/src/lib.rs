@@ -20,6 +20,12 @@
 //! amb_plugin_sdk::export_plugin!(run);
 //! ```
 //!
+//! An *effect* plugin changes the look itself rather than moving sliders:
+//! a colour effect maps each colour to another ([`export_effect!`] with
+//! `color:`), a pixel effect gets the image ([`export_effect!`] with
+//! `pixels:`). Its parameters are kept in the photo's edit, so it is
+//! applied again whenever the photo is rendered.
+//!
 //! Build with `amb plugin build <folder>` (it runs `cargo build --target
 //! wasm32-unknown-unknown`). The same `run` can be tested natively with
 //! `cargo test`, using [`Input::for_test`].
@@ -223,6 +229,94 @@ impl Rng {
     }
 }
 
+/// What an effect gets each time it runs: its parameters, a seed that stays
+/// the same for the photo (so the look doesn't change between renders),
+/// and where its pixels sit in the photo.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Effect {
+    pub api: u32,
+    /// The effect's parameters (from its manifest), with defaults filled in.
+    #[serde(default)]
+    pub params: Map<String, Value>,
+    #[serde(default)]
+    pub seed: u64,
+    /// The pixels' top-left corner in the whole photo, and the whole photo's
+    /// size (a pixel effect may get the photo in strips or tiles).
+    #[serde(default)]
+    pub x: u32,
+    #[serde(default)]
+    pub y: u32,
+    #[serde(default)]
+    pub full_width: u32,
+    #[serde(default)]
+    pub full_height: u32,
+}
+
+impl Effect {
+    /// A number parameter (or 0 if missing).
+    pub fn number(&self, name: &str) -> f64 {
+        self.params.get(name).and_then(Value::as_f64).unwrap_or(0.0)
+    }
+
+    /// An on/off parameter (or false if missing).
+    pub fn flag(&self, name: &str) -> bool {
+        self.params
+            .get(name)
+            .and_then(Value::as_bool)
+            .unwrap_or(false)
+    }
+
+    /// A choice parameter (or "" if missing).
+    pub fn choice(&self, name: &str) -> &str {
+        self.params.get(name).and_then(Value::as_str).unwrap_or("")
+    }
+
+    /// A random number in 0..1 for the photo's pixel (x, y) (whole-photo
+    /// coordinates): the same every time, whatever part is rendered.
+    pub fn noise(&self, x: u32, y: u32) -> f32 {
+        let mut r =
+            Rng(self.seed
+                ^ ((u64::from(y) << 32) | u64::from(x)).wrapping_mul(0xD6E8_FEB8_6659_FD93));
+        (r.next_u64() >> 40) as f32 / (1u64 << 24) as f32
+    }
+
+    /// A pseudo-random generator seeded from [`Effect::seed`].
+    pub fn rng(&self) -> Rng {
+        Rng(self.seed ^ 0x9E37_79B9_7F4A_7C15)
+    }
+
+    /// An effect for native tests: these parameters, a `w` × `h` photo.
+    pub fn for_test(params: Value, w: u32, h: u32) -> Effect {
+        Effect {
+            api: API,
+            params: params.as_object().cloned().unwrap_or_default(),
+            full_width: w,
+            full_height: h,
+            ..Effect::default()
+        }
+    }
+}
+
+/// The pixels a pixel effect changes in place: RGB, interleaved, as sRGB
+/// values from 0 to 1 (as in a JPEG, before it is rounded to 8 bits).
+pub struct Pixels<'a> {
+    pub data: &'a mut [f32],
+    pub width: usize,
+    pub height: usize,
+}
+
+impl Pixels<'_> {
+    pub fn get(&self, x: usize, y: usize) -> [f32; 3] {
+        let i = (y * self.width + x) * 3;
+        [self.data[i], self.data[i + 1], self.data[i + 2]]
+    }
+
+    pub fn set(&mut self, x: usize, y: usize, rgb: [f32; 3]) {
+        let i = (y * self.width + x) * 3;
+        self.data[i..i + 3].copy_from_slice(&rgb);
+    }
+}
+
 /// What a plugin returns: edits and an optional message for the user.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Output {
@@ -324,6 +418,104 @@ pub mod abi {
         std::mem::forget(out);
         (p << 32) | n
     }
+}
+
+/// What an effect does: map one colour, or change the pixels.
+#[doc(hidden)]
+pub enum EffectFn {
+    Color(fn(&Effect, [f32; 3]) -> [f32; 3]),
+    Pixels(fn(&Effect, &mut Pixels) -> Result<(), String>),
+}
+
+#[doc(hidden)]
+pub mod effect_abi {
+    use super::{Effect, EffectFn, Pixels};
+
+    /// Run the effect on `n` floats at `px` (changed in place); `info` is the
+    /// [`Effect`] JSON with "width" and "height". Returns 0, or an error
+    /// message as `(ptr << 32) | len`.
+    ///
+    /// # Safety
+    /// The buffers must be the host's, from `amb_alloc`.
+    pub unsafe fn run(info: i32, info_len: i32, px: i32, n: i32, f: EffectFn) -> i64 {
+        // SAFETY: the host wrote `info_len` bytes at `info` and `n` floats at `px`.
+        let bytes = unsafe {
+            Vec::from_raw_parts(
+                info as usize as *mut u8,
+                info_len as usize,
+                info_len as usize,
+            )
+        };
+        let data = unsafe { std::slice::from_raw_parts_mut(px as usize as *mut f32, n as usize) };
+        let result = (|| {
+            let v: serde_json::Value =
+                serde_json::from_slice(&bytes).map_err(|e| format!("bad input: {e}"))?;
+            let effect: Effect =
+                serde_json::from_value(v.clone()).map_err(|e| format!("bad input: {e}"))?;
+            match f {
+                EffectFn::Color(f) => {
+                    for c in data.chunks_exact_mut(3) {
+                        let out = f(&effect, [c[0], c[1], c[2]]);
+                        c.copy_from_slice(&out);
+                    }
+                    Ok(())
+                }
+                EffectFn::Pixels(f) => {
+                    let width = v["width"].as_u64().unwrap_or(0) as usize;
+                    let height = v["height"].as_u64().unwrap_or(0) as usize;
+                    if width * height * 3 != data.len() {
+                        return Err("the pixels don't match their size".to_string());
+                    }
+                    f(
+                        &effect,
+                        &mut Pixels {
+                            data,
+                            width,
+                            height,
+                        },
+                    )
+                }
+            }
+        })();
+        match result {
+            Ok(()) => 0,
+            Err(e) => {
+                let mut out = e.into_bytes().into_boxed_slice();
+                let (p, n) = (out.as_mut_ptr() as usize as i64, out.len() as i64);
+                std::mem::forget(out);
+                (p << 32) | n
+            }
+        }
+    }
+}
+
+/// Export an effect: `export_effect!(color: f)` with
+/// `f: fn(&Effect, [f32; 3]) -> [f32; 3]` (sRGB 0–1 in and out; the app
+/// turns it into a colour table, so it runs fast everywhere), or
+/// `export_effect!(pixels: f)` with
+/// `f: fn(&Effect, &mut Pixels) -> Result<(), String>`.
+#[macro_export]
+macro_rules! export_effect {
+    (color: $f:path) => {
+        $crate::export_effect!(@glue $crate::EffectFn::Color($f));
+    };
+    (pixels: $f:path) => {
+        $crate::export_effect!(@glue $crate::EffectFn::Pixels($f));
+    };
+    (@glue $e:expr) => {
+        #[cfg(target_arch = "wasm32")]
+        #[unsafe(no_mangle)]
+        pub extern "C" fn amb_alloc(len: i32) -> i32 {
+            $crate::abi::alloc(len)
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        #[unsafe(no_mangle)]
+        pub extern "C" fn amb_effect(info: i32, info_len: i32, px: i32, n: i32) -> i64 {
+            // SAFETY: called by the host with buffers from `amb_alloc`.
+            unsafe { $crate::effect_abi::run(info, info_len, px, n, $e) }
+        }
+    };
 }
 
 /// Export `run` (a `fn(Input) -> Result<Output, String>`) as the plugin.

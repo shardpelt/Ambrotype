@@ -215,3 +215,72 @@ fn sidecar_text_becomes_numbers() {
         (Some(0.35), Some(true), Some("As Shot"))
     );
 }
+
+#[test]
+fn duotone_makes_a_colour_table() {
+    let p = crate::builtin("duotone").unwrap();
+    assert!(p.manifest.is_effect());
+    // An effect can't be run like an action.
+    assert!(p.run(&Context::default(), &Map::new()).is_err());
+    let table = p.color_table(&Map::new(), 0).unwrap();
+    let g = crate::effect::GRID;
+    assert_eq!(table.len(), g * g * g);
+    // Dark grey turns blue, light grey gold (the defaults).
+    let at = |v: usize| table[v + v * g + v * g * g];
+    let (dark, light) = (at(g / 5), at(g * 4 / 5));
+    assert!(dark[2] > dark[0], "{dark:?}");
+    assert!(light[0] > light[2], "{light:?}");
+}
+
+#[test]
+fn light_leak_is_the_same_whole_or_in_parts() {
+    use crate::effect::Region;
+    let p = crate::builtin("light-leak").unwrap();
+    let params: Map<String, serde_json::Value> =
+        serde_json::from_value(serde_json::json!({ "strength": 90 })).unwrap();
+    let (w, h) = (48, 40);
+    let mut whole = vec![0.3f32; w * h * 3];
+    let full = Region {
+        x: 0,
+        y: 0,
+        full_width: w,
+        full_height: h,
+    };
+    p.apply_pixels(&params, 5, &mut whole, w, h, full).unwrap();
+    assert!(whole.iter().any(|v| *v > 0.31));
+    // The lower half on its own (as a 1:1 view's tile would get it).
+    let mut part = vec![0.3f32; w * (h / 2) * 3];
+    let lower = Region { y: h / 2, ..full };
+    p.apply_pixels(&params, 5, &mut part, w, h / 2, lower)
+        .unwrap();
+    assert_eq!(&whole[w * (h / 2) * 3..], &part[..]);
+}
+
+#[test]
+fn effects_reach_the_engine_through_the_resolver() {
+    use amb_engine::plugin_effects::{self, EffectEntry, Resolved};
+    let resolve = crate::effect::resolver(|id| crate::find(None, id));
+    let entry = |plugin: &str| EffectEntry {
+        plugin: plugin.into(),
+        params: Map::new(),
+        amount: 100.0,
+        seed: 1,
+    };
+    assert!(matches!(resolve(&entry("duotone")), Ok(Resolved::Color(_))));
+    assert!(matches!(
+        resolve(&entry("light-leak")),
+        Ok(Resolved::Pixels(_))
+    ));
+    assert!(resolve(&entry("auto-tone")).is_err());
+    assert!(resolve(&entry("not-installed")).is_err());
+    // In the settings: rendered, or noted when unknown.
+    plugin_effects::set_resolver(resolve);
+    let mut s = std::collections::BTreeMap::new();
+    s.insert(
+        "amb:Effects".to_string(),
+        amb_presets::Value::Text(r#"[{"plugin":"duotone","amount":80},{"plugin":"nope"}]"#.into()),
+    );
+    let (dev, notes) = amb_engine::pipeline::DevelopSettings::from_settings(&s);
+    assert_eq!(dev.effects.len(), 1);
+    assert!(notes.iter().any(|n| n.contains("nope")), "{notes:?}");
+}

@@ -235,7 +235,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "amb-plugin-duotone"
+version = "1.0.0"
+dependencies = [
+ "amb-plugin-sdk",
+ "serde_json",
+]
+
+[[package]]
 name = "amb-plugin-film-recipe"
+version = "1.0.0"
+dependencies = [
+ "amb-plugin-sdk",
+ "serde_json",
+]
+
+[[package]]
+name = "amb-plugin-light-leak"
 version = "1.0.0"
 dependencies = [
  "amb-plugin-sdk",

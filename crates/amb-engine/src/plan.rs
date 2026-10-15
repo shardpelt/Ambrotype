@@ -346,6 +346,14 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
             run: Box::new(move |img| crate::pipeline::apply_lut(img, &l)),
         });
     }
+    // Effect plugins, with the engine's own code (and the plugin's).
+    for e in &s.effects {
+        let e = e.clone();
+        steps.push(Step::Cpu {
+            name: "effect",
+            run: Box::new(move |img| crate::plugin_effects::apply(img, &e, &tile)),
+        });
+    }
     // 6. Detail: noise reduction, then sharpening.
     let (nr, sharpening) = effective_detail(img, s);
     if let Some(p) = detail::luminance_nr_plan(&nr, &cal.detail) {

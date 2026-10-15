@@ -186,6 +186,8 @@ pub struct DevelopSettings {
     pub spots: Spots,
     /// A `.cube` look (`amb:LUT`), after the colour and curves.
     pub lut: Option<LookLut>,
+    /// Effect plugins (`amb:Effects`), in order, after the LUT.
+    pub effects: Vec<crate::plugin_effects::ActiveEffect>,
     /// Model constants; [`Calibration::default`] until fitted against Lightroom.
     pub calibration: Calibration,
 }
@@ -217,6 +219,7 @@ impl Default for DevelopSettings {
             crop: Crop::default(),
             negative: Negative::default(),
             lut: None,
+            effects: Vec::new(),
             masks: Masks::default(),
             spots: Spots::default(),
             calibration: Calibration::default(),
@@ -364,6 +367,7 @@ pub const RENDERED_TAGS: &[&str] = &[
     "amb:NegativeConvert",
     "amb:LUT",
     "amb:LUTAmount",
+    "amb:Effects",
     "amb:NegativeType",
     "amb:NegativeAuto",
     "amb:FilmStock",
@@ -716,6 +720,11 @@ impl DevelopSettings {
                 Err(e) => not_rendered.push(format!("amb:LUT ({e})")),
             }
         }
+        if let Some(effects) = text(settings, "amb:Effects") {
+            let (active, notes) = crate::plugin_effects::active(&effects);
+            s.effects = active;
+            not_rendered.extend(notes);
+        }
         match s.transform.upright_mode {
             UprightMode::Off => {}
             UprightMode::Guided => not_rendered.push(
@@ -729,15 +738,20 @@ impl DevelopSettings {
     }
 }
 
-/// A `.cube` look on display-linear ProPhoto: through sRGB-encoded values,
-/// as LUTs expect (colours outside sRGB are clipped for the table), mixed
-/// with the original by the amount.
-pub(crate) fn apply_lut(out: &mut ProPhotoImage, l: &LookLut) {
+/// Linear ProPhoto to linear sRGB, and back.
+pub(crate) fn srgb_matrices() -> ([[f32; 3]; 3], [[f32; 3]; 3]) {
     use amb_color::matrix::xyz_d50_to_srgb;
     let to_srgb = mul3(&xyz_d50_to_srgb(), &PROPHOTO_TO_XYZ_D50);
     let to_pro = invert3(&to_srgb);
     let m = |m: &[[f64; 3]; 3]| m.map(|r| r.map(|v| v as f32));
-    let (to_srgb, to_pro) = (m(&to_srgb), m(&to_pro));
+    (m(&to_srgb), m(&to_pro))
+}
+
+/// A `.cube` look on display-linear ProPhoto: through sRGB-encoded values,
+/// as LUTs expect (colours outside sRGB are clipped for the table), mixed
+/// with the original by the amount.
+pub(crate) fn apply_lut(out: &mut ProPhotoImage, l: &LookLut) {
+    let (to_srgb, to_pro) = srgb_matrices();
     let mat = |m: &[[f32; 3]; 3], c: [f32; 3]| {
         [0, 1, 2].map(|i| m[i][0] * c[0] + m[i][1] * c[1] + m[i][2] * c[2])
     };
@@ -1043,7 +1057,7 @@ pub fn as_shot_temp_tint(img: &CameraImage) -> (f64, f64) {
     (tt.temperature, tt.tint)
 }
 
-fn srgb_encode(v: f32) -> f32 {
+pub(crate) fn srgb_encode(v: f32) -> f32 {
     if v <= 0.003_130_8 {
         v * 12.92
     } else {
@@ -1051,7 +1065,7 @@ fn srgb_encode(v: f32) -> f32 {
     }
 }
 
-fn srgb_decode(v: f32) -> f32 {
+pub(crate) fn srgb_decode(v: f32) -> f32 {
     if v <= 0.040_45 {
         v / 12.92
     } else {
@@ -1814,6 +1828,9 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
     }
     if let Some(l) = &s.lut {
         apply_lut(&mut out, l);
+    }
+    for e in &s.effects {
+        crate::plugin_effects::apply(&mut out, e, &tile);
     }
     stages.mark("colour+curves");
 

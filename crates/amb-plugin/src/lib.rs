@@ -17,7 +17,10 @@
 //!   `amb_run(ptr: i32, len: i32) -> i64` (output at `ret >> 32`, length
 //!   `ret & 0xffffffff`); input and output are JSON
 //! - may import `amb.log(ptr: i32, len: i32)`, nothing else
+//!
+//! Effect plugins export `amb_effect` instead of `amb_run` ([`effect`]).
 
+pub mod effect;
 mod manifest;
 pub mod photo;
 
@@ -36,6 +39,63 @@ pub const MEMORY: usize = 64 << 20;
 const MAX_OUTPUT: usize = 1 << 20;
 const MAX_COMMANDS: usize = 1000;
 const MAX_LOG_LINES: usize = 200;
+
+/// The plugins that come with Ambrotype: manifest, id and module.
+pub const BUILTIN: [(&str, &str, &[u8]); 5] = [
+    (
+        include_str!("../../../plugins/auto-tone/plugin.json"),
+        "auto-tone",
+        include_bytes!("../../../plugins/auto-tone/plugin.wasm"),
+    ),
+    (
+        include_str!("../../../plugins/random-look/plugin.json"),
+        "random-look",
+        include_bytes!("../../../plugins/random-look/plugin.wasm"),
+    ),
+    (
+        include_str!("../../../plugins/film-recipe/plugin.json"),
+        "film-recipe",
+        include_bytes!("../../../plugins/film-recipe/plugin.wasm"),
+    ),
+    (
+        include_str!("../../../plugins/duotone/plugin.json"),
+        "duotone",
+        include_bytes!("../../../plugins/duotone/plugin.wasm"),
+    ),
+    (
+        include_str!("../../../plugins/light-leak/plugin.json"),
+        "light-leak",
+        include_bytes!("../../../plugins/light-leak/plugin.wasm"),
+    ),
+];
+
+/// A built-in plugin by id.
+pub fn builtin(id: &str) -> Option<Plugin> {
+    BUILTIN
+        .iter()
+        .find(|(_, i, _)| *i == id)
+        .and_then(|(m, _, w)| Plugin::from_parts(m, w).ok())
+}
+
+/// A plugin by id: built in, or the folder of that name in `dir` (the
+/// editor's plugins folder).
+pub fn find(dir: Option<&Path>, id: &str) -> Result<Plugin, String> {
+    if let Some(p) = builtin(id) {
+        return Ok(p);
+    }
+    let dir = dir.ok_or("the plugins folder isn't available")?;
+    if id.is_empty()
+        || !id
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    {
+        return Err(format!("no plugin {id:?}"));
+    }
+    if !dir.join(id).join("plugin.json").is_file() {
+        return Err(format!("{id} isn't installed"));
+    }
+    Plugin::load(&dir.join(id))
+}
 
 /// A loaded plugin: its manifest and module.
 #[derive(Debug, Clone)]
@@ -159,10 +219,15 @@ impl Plugin {
                 ));
             }
         }
-        for name in ["memory", "amb_alloc", "amb_run"] {
+        let (run, glue) = if self.manifest.is_effect() {
+            ("amb_effect", "export_effect!")
+        } else {
+            ("amb_run", "export_plugin!")
+        };
+        for name in ["memory", "amb_alloc", run] {
             if module.get_export(name).is_none() {
                 return Err(format!(
-                    "the plugin module doesn't export {name} (use amb_plugin_sdk::export_plugin!)"
+                    "the plugin module doesn't export {name} (use amb_plugin_sdk::{glue})"
                 ));
             }
         }
@@ -193,6 +258,12 @@ impl Plugin {
 
     /// Run the plugin. The caller applies `Outcome::commands`.
     pub fn run(&self, ctx: &Context, params: &Map<String, Value>) -> Result<Outcome, String> {
+        if self.manifest.is_effect() {
+            return Err(format!(
+                "{} is an effect: add it to a photo rather than run it",
+                self.manifest.name
+            ));
+        }
         let input = serde_json::to_vec(&self.input(ctx, params)?).map_err(|e| e.to_string())?;
         let name = &self.manifest.name;
         let (output, log, fuel_used) =
@@ -253,9 +324,8 @@ fn parse_commands(value: Option<&Value>) -> Result<Vec<Command>, String> {
         .collect()
 }
 
-/// Instantiate the module, hand it `input`, and return its output, log and
-/// the instructions used.
-fn execute(wasm: &[u8], input: &[u8]) -> Result<(Vec<u8>, Vec<String>, u64), String> {
+/// A fresh instance of the module with `fuel` instructions to spend.
+fn instantiate(wasm: &[u8], fuel: u64) -> Result<(Store<HostState>, wasmi::Instance), String> {
     let engine = engine();
     let module =
         Module::new(&engine, wasm).map_err(|e| format!("not a valid plugin module: {e}"))?;
@@ -270,7 +340,7 @@ fn execute(wasm: &[u8], input: &[u8]) -> Result<(Vec<u8>, Vec<String>, u64), Str
         },
     );
     store.limiter(|s| &mut s.limits);
-    store.set_fuel(FUEL).map_err(|e| e.to_string())?;
+    store.set_fuel(fuel).map_err(|e| e.to_string())?;
     let mut linker = Linker::new(&engine);
     linker
         .func_wrap(
@@ -293,25 +363,47 @@ fn execute(wasm: &[u8], input: &[u8]) -> Result<(Vec<u8>, Vec<String>, u64), Str
     let instance = linker
         .instantiate_and_start(&mut store, &module)
         .map_err(|e| format!("couldn't start: {e}"))?;
+    Ok((store, instance))
+}
+
+/// Copy `bytes` into the instance's memory (through `amb_alloc`); returns
+/// where they are.
+fn pass(
+    store: &mut Store<HostState>,
+    instance: &wasmi::Instance,
+    bytes: &[u8],
+) -> Result<i32, String> {
     let memory = instance
-        .get_memory(&store, "memory")
+        .get_memory(&*store, "memory")
         .ok_or("the plugin module exports no memory")?;
     let alloc = instance
-        .get_typed_func::<i32, i32>(&store, "amb_alloc")
+        .get_typed_func::<i32, i32>(&*store, "amb_alloc")
         .map_err(|e| format!("amb_alloc: {e}"))?;
+    let len = i32::try_from(bytes.len()).map_err(|_| "input too large")?;
+    let ptr = alloc.call(&mut *store, len).map_err(|e| trap(&e))?;
+    memory
+        .write(&mut *store, ptr as u32 as usize, bytes)
+        .map_err(|e| format!("couldn't pass the input: {e}"))?;
+    Ok(ptr)
+}
+
+/// Instantiate the module, hand it `input`, and return its output, log and
+/// the instructions used.
+fn execute(wasm: &[u8], input: &[u8]) -> Result<(Vec<u8>, Vec<String>, u64), String> {
+    let (mut store, instance) = instantiate(wasm, FUEL)?;
     let run = instance
         .get_typed_func::<(i32, i32), i64>(&store, "amb_run")
         .map_err(|e| format!("amb_run: {e}"))?;
-    let len = i32::try_from(input.len()).map_err(|_| "input too large")?;
-    let ptr = alloc.call(&mut store, len).map_err(|e| trap(&e))?;
-    memory
-        .write(&mut store, ptr as u32 as usize, input)
-        .map_err(|e| format!("couldn't pass the input: {e}"))?;
+    let ptr = pass(&mut store, &instance, input)?;
+    let len = input.len() as i32;
     let packed = run.call(&mut store, (ptr, len)).map_err(|e| trap(&e))? as u64;
     let (out_ptr, out_len) = ((packed >> 32) as usize, (packed & 0xffff_ffff) as usize);
     if out_len > MAX_OUTPUT {
         return Err(format!("its output is too large ({out_len} bytes)"));
     }
+    let memory = instance
+        .get_memory(&store, "memory")
+        .ok_or("the plugin module exports no memory")?;
     let mut output = vec![0u8; out_len];
     memory
         .read(&store, out_ptr, &mut output)

@@ -1747,6 +1747,15 @@
    "status": "exact"
   },
   {
+   "name": "amb:Effects",
+   "group": "lut",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": null,
+   "status": "exact"
+  },
+  {
    "name": "amb:LUTAmount",
    "group": "lut",
    "kind": "number",

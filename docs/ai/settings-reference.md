@@ -31,7 +31,7 @@ How to read the tables:
 | [Lens Corrections](#lens) | `lens` | 19 | Lens profile corrections, chromatic-aberration removal, defringing and lens vignetting. |
 | [Transform](#transform) | `transform` | 27 | Upright perspective correction and manual perspective sliders. |
 | [Effects](#effects) | `effects` | 11 | Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) and film grain (Amount, Size, Roughness). |
-| [LUT](#lut) | `lut` | 2 | A look from a .cube file (the 3D LUT format of Resolve and many look packs), applied after the colour and curves. Our own feature (amb: namespace); Lightroom has no LUT setting and ignores these. |
+| [LUT](#lut) | `lut` | 3 | A look from a .cube file (the 3D LUT format of Resolve and many look packs), applied after the colour and curves. Our own feature (amb: namespace); Lightroom has no LUT setting and ignores these. |
 | [Calibration](#calibration) | `calibration` | 8 | Shadows tint and the red, green and blue primary hue/saturation adjustments to the camera's default colour rendering. |
 | [Crop](#crop) | `crop` | 12 | Crop rectangle, angle and orientation. Specific to one image; presets should rarely carry it. |
 | [Masks and local adjustments](#local) | `local` | 8 | Masks (AI, brush, linear and radial gradients, range masks) with their local adjustment sliders. Stored as nested structures. |
@@ -398,6 +398,7 @@ A look from a .cube file (the 3D LUT format of Resolve and many look packs), app
 | Tag | Control | Kind | Range | Default | Status | Description |
 |---|---|---|---|---|---|---|
 | `amb:LUT` | LUT | text |  |  | rendered (exact) | Path of a .cube file whose look is applied after the colour and curves, on sRGB-encoded values (colours outside sRGB are clipped for the table). Empty or unset: no LUT. The path is stored as is, so a sidecar moved to another computer needs the file there too. |
+| `amb:Effects` |  | text |  |  | rendered (exact) |  |
 | `amb:LUTAmount` | LUT amount | number | 0 to 100 | 100 | rendered (exact) | How much of the LUT's look: 0 none, 100 all of it. |
 
 <a id="calibration"></a>

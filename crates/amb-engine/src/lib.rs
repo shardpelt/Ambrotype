@@ -32,6 +32,7 @@ pub mod output;
 pub mod pano;
 pub mod pipeline;
 pub mod plan;
+pub mod plugin_effects;
 pub mod primaries;
 pub mod profile;
 pub mod raster;

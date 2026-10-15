@@ -30,9 +30,18 @@ pub struct Manifest {
     pub author: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub description: String,
-    /// What the plugin is: only "action" (a button that makes edits) for now.
+    /// What the plugin is: "action" (a button that makes edits) or
+    /// "effect" (a look rendered with the photo, kept in its edit).
     #[serde(default = "action")]
     pub kind: String,
+    /// For an effect: "color" (one colour to another, made into a colour
+    /// table) or "pixels" (the image itself).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub effect: String,
+    /// For a pixel effect: how far (in pixels of the whole photo) it looks
+    /// at neighbours, so strips it gets overlap by that much (0–256).
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub margin: u32,
     #[serde(default)]
     pub permissions: Vec<Permission>,
     #[serde(default)]
@@ -58,6 +67,10 @@ pub struct Recipe {
 
 fn action() -> String {
     "action".into()
+}
+
+fn is_zero(n: &u32) -> bool {
+    *n == 0
 }
 
 fn default_wasm() -> String {
@@ -126,6 +139,10 @@ pub enum ParamKind {
 }
 
 impl Manifest {
+    pub fn is_effect(&self) -> bool {
+        self.kind == "effect"
+    }
+
     pub fn from_json(text: &str) -> Result<Manifest, String> {
         let m: Manifest =
             serde_json::from_str(text).map_err(|e| format!("not a plugin manifest: {e}"))?;
@@ -156,11 +173,30 @@ impl Manifest {
         if self.version.trim().is_empty() {
             return Err("give a version, e.g. \"1.0.0\"".into());
         }
-        if self.kind != "action" {
-            return Err(format!(
-                "unknown kind {:?} (only \"action\" for now)",
-                self.kind
-            ));
+        match (self.kind.as_str(), self.effect.as_str()) {
+            ("action", "") => {
+                if self.margin != 0 {
+                    return Err("\"margin\" is for pixel effects".into());
+                }
+            }
+            ("action", _) => return Err("\"effect\" is for effect plugins".into()),
+            ("effect", "color" | "pixels") => {
+                // An effect runs on every render, with no one to ask.
+                if !self.permissions.is_empty() {
+                    return Err("effects can't ask for permissions".into());
+                }
+                if self.margin > 256 || (self.effect == "color" && self.margin != 0) {
+                    return Err("\"margin\" must be 0–256, and only for pixel effects".into());
+                }
+            }
+            ("effect", other) => {
+                return Err(format!(
+                    "an effect needs \"effect\": \"color\" or \"pixels\", not {other:?}"
+                ));
+            }
+            (other, _) => {
+                return Err(format!("unknown kind {other:?} (\"action\" or \"effect\")"));
+            }
         }
         let wasm_ok = self.wasm.ends_with(".wasm")
             && !self.wasm.contains(['/', '\\'])

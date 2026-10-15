@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/*", "plugins/auto-tone", "plugins/random-look", "plugins/film-recipe"]
+members = ["crates/*", "plugins/auto-tone", "plugins/random-look", "plugins/film-recipe", "plugins/duotone", "plugins/light-leak"]
 
 [workspace.package]
 edition = "2024"

@@ -1,0 +1,18 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "light-leak",
+  "name": "Light leak",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "A warm glow bleeding in from the edge, as when light got into an old film camera. Each photo gets its own leak; Variation picks another.",
+  "kind": "effect",
+  "effect": "pixels",
+  "params": [
+    { "name": "strength", "label": "Strength", "type": "number", "min": 0, "max": 100, "default": 50, "step": 1 },
+    { "name": "size", "label": "Size", "type": "number", "min": 5, "max": 100, "default": 40, "step": 1 },
+    { "name": "edge", "label": "Edge", "type": "choice", "options": ["Left", "Right", "Top", "Bottom"], "default": "Left" },
+    { "name": "colour", "label": "Colour", "type": "choice", "options": ["Amber", "Red", "Pink", "Gold"], "default": "Amber" },
+    { "name": "variation", "label": "Variation", "type": "number", "min": 0, "max": 99, "default": 0, "step": 1, "description": "Another shape of leak." }
+  ],
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/light-leak"
+}

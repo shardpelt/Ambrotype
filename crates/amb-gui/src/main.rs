@@ -4065,6 +4065,11 @@ fn main() {
                 if let Ok(mut p) = state.edit_in.lock() {
                     *p = config.edit_in;
                 }
+                // Effect plugins render from the plugins folder next to the settings.
+                let plugins = path.parent().map(|d| d.join("plugins"));
+                amb_engine::plugin_effects::set_resolver(amb_plugin::effect::resolver(move |id| {
+                    amb_plugin::find(plugins.as_deref(), id)
+                }));
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }

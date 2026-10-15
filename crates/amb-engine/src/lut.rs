@@ -124,6 +124,26 @@ impl CubeLut {
         })
     }
 
+    /// A 3D table of `size`³ entries (red changing fastest), over 0–1, as
+    /// an effect plugin makes it.
+    pub fn from_grid(title: &str, size: usize, table: Vec<[f32; 3]>) -> Result<CubeLut, String> {
+        if !(2..=MAX_3D).contains(&size) || table.len() != size * size * size {
+            return Err(format!(
+                "a {size}³ table needs {} entries, not {}",
+                size * size * size,
+                table.len()
+            ));
+        }
+        Ok(CubeLut {
+            title: Some(title.to_string()),
+            domain_1d: [[0.0; 3], [1.0; 3]],
+            domain_3d: [[0.0; 3], [1.0; 3]],
+            one_d: Vec::new(),
+            size_3d: size,
+            three_d: table,
+        })
+    }
+
     /// Map one display-encoded RGB value.
     pub fn apply(&self, rgb: [f32; 3]) -> [f32; 3] {
         let mut c = rgb;

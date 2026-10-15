@@ -251,6 +251,38 @@ pub fn check(dir: &Path) -> Result<(), String> {
         };
         println!("  param {} ({}): {kind}", p.name, p.label);
     }
+    if m.is_effect() {
+        let start = std::time::Instant::now();
+        if m.effect == "color" {
+            plugin.color_table(&Map::new(), 1)?;
+            println!(
+                "  sample run: a {}³ colour table in {} ms",
+                amb_plugin::effect::GRID,
+                start.elapsed().as_millis()
+            );
+        } else {
+            let (w, h) = (640, 480);
+            let mut rgb: Vec<f32> = (0..w * h)
+                .flat_map(|i| {
+                    let v = (i % w) as f32 / w as f32;
+                    [v, v, v]
+                })
+                .collect();
+            let region = amb_plugin::effect::Region {
+                x: 0,
+                y: 0,
+                full_width: w,
+                full_height: h,
+            };
+            plugin.apply_pixels(&Map::new(), 1, &mut rgb, w, h, region)?;
+            let ms = start.elapsed().as_millis();
+            println!(
+                "  sample run: {w}×{h} pixels in {ms} ms (a 24 MP export: about {} s)",
+                (ms as f64 * 24e6 / (w * h) as f64 / 1000.0).ceil()
+            );
+        }
+        return Ok(());
+    }
     let out = plugin.run(&sample_context(), &Map::new())?;
     println!(
         "  sample run: {} edit(s) in {:.1} M steps{}",
@@ -308,6 +340,52 @@ pub fn run(
     } else {
         amb_protocol::DevelopState::new()
     };
+    if plugin.manifest.is_effect() {
+        // An effect isn't run once: it is added to the edit and rendered with it.
+        let params = plugin.manifest.resolve_params(&parse_params(params)?)?;
+        let mut effects = state
+            .settings()
+            .get("amb:Effects")
+            .and_then(|v| v.as_str().map(str::to_string))
+            .map(|t| amb_engine::plugin_effects::parse(&t))
+            .transpose()?
+            .unwrap_or_default();
+        effects.push(amb_engine::plugin_effects::EffectEntry {
+            plugin: plugin.manifest.id.clone(),
+            params,
+            amount: 100.0,
+            seed: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos() as u64 & 0xffff_ffff)
+                .unwrap_or(1),
+        });
+        let value = serde_json::to_string(&effects).map_err(|e| e.to_string())?;
+        let commands = serde_json::to_string(&serde_json::json!([
+            { "cmd": "set_param", "name": "amb:Effects", "value": value }
+        ]))
+        .map_err(|e| e.to_string())?;
+        let report = amb_protocol::edit::run(&amb_protocol::edit::EditRequest {
+            sidecar: &sidecar,
+            commands: &commands,
+            out: None,
+            dry_run,
+        })
+        .map_err(|e| e.to_string())?;
+        return if json {
+            serde_json::to_string_pretty(&report.to_json()).map_err(|e| e.to_string())
+        } else {
+            Ok(format!(
+                "Added the effect {} to {}{}",
+                plugin.manifest.name,
+                sidecar.display(),
+                if dry_run {
+                    " (dry run: nothing written)"
+                } else {
+                    ""
+                }
+            ))
+        };
+    }
     let mut ctx = Context {
         settings: Context::settings_json(state.settings()),
         photo: None,

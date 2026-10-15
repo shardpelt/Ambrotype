@@ -1,0 +1,22 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "duotone",
+  "name": "Duotone",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "The photo in two inks: one colour for the shadows, another for the highlights, keeping its brightness. A colour effect, so it is as quick as a LUT.",
+  "kind": "effect",
+  "effect": "color",
+  "params": [
+    { "name": "shadows", "label": "Shadow hue", "type": "number", "min": 0, "max": 360, "default": 220, "step": 1 },
+    { "name": "highlights", "label": "Highlight hue", "type": "number", "min": 0, "max": 360, "default": 35, "step": 1 },
+    { "name": "colour", "label": "Colour", "type": "number", "min": 0, "max": 100, "default": 60, "step": 1, "description": "How strong the two inks are; 0 is black and white." },
+    { "name": "balance", "label": "Balance", "type": "number", "min": -100, "max": 100, "default": 0, "step": 1, "description": "Where the shadow ink turns into the highlight ink." }
+  ],
+  "recipes": [
+    { "name": "Blue and gold", "params": { "shadows": 220, "highlights": 40, "colour": 60 } },
+    { "name": "Sepia", "params": { "shadows": 25, "highlights": 40, "colour": 35 } },
+    { "name": "Pop pink", "params": { "shadows": 260, "highlights": 330, "colour": 85, "balance": -20 } }
+  ],
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/duotone"
+}

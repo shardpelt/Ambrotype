@@ -14,23 +14,7 @@ use serde_json::{Value, json};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-const BUILTIN: [(&str, &str, &[u8]); 3] = [
-    (
-        include_str!("../../../plugins/auto-tone/plugin.json"),
-        "auto-tone",
-        include_bytes!("../../../plugins/auto-tone/plugin.wasm"),
-    ),
-    (
-        include_str!("../../../plugins/random-look/plugin.json"),
-        "random-look",
-        include_bytes!("../../../plugins/random-look/plugin.wasm"),
-    ),
-    (
-        include_str!("../../../plugins/film-recipe/plugin.json"),
-        "film-recipe",
-        include_bytes!("../../../plugins/film-recipe/plugin.wasm"),
-    ),
-];
+use amb_plugin::BUILTIN;
 
 /// What a plugin is told about a photo that isn't open: its sidecar's
 /// settings, and (only when allowed) its camera facts and statistics, which
@@ -95,10 +79,7 @@ pub struct PluginEntry {
 }
 
 pub fn builtin(id: &str) -> Option<Plugin> {
-    BUILTIN
-        .iter()
-        .find(|(_, i, _)| *i == id)
-        .and_then(|(m, _, w)| Plugin::from_parts(m, w).ok())
+    amb_plugin::builtin(id)
 }
 
 fn entry(
@@ -192,18 +173,7 @@ pub fn list(dir: Option<&Path>, approvals: &Approvals) -> Vec<PluginEntry> {
 
 /// A plugin by id: built-in or from the user's folder.
 pub fn find(dir: Option<&Path>, id: &str) -> Result<Plugin, String> {
-    if let Some(p) = builtin(id) {
-        return Ok(p);
-    }
-    let dir = dir.ok_or("the plugins folder isn't available")?;
-    if id.is_empty()
-        || !id
-            .chars()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
-    {
-        return Err(format!("no plugin {id:?}"));
-    }
-    Plugin::load(&dir.join(id))
+    amb_plugin::find(dir, id)
 }
 
 /// Files of a plugin folder to copy or share: relative path → absolute path.
@@ -643,7 +613,7 @@ mod tests {
     #[test]
     fn builtins_load() {
         let list = list(None, &Approvals::new());
-        assert_eq!(list.len(), 3);
+        assert_eq!(list.len(), BUILTIN.len());
         for e in &list {
             assert!(e.error.is_none(), "{:?}", e.error);
         }

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Smart collections: photos chosen by rules, like Lightroom's, over the
-//! folders you name (with their subfolders). With no catalogue they are
-//! worked out when shown, from the photos' sidecars and capture times.
+//! folders you name (with their subfolders). They are worked out when
+//! shown, from what the catalogue knows of each photo (its sidecar, and the
+//! raw header's capture time, camera, lens and exposure).
 //! Each is a small JSON file beside the ordinary collections:
 //!
 //! ```json
@@ -39,6 +40,8 @@ pub enum Match {
 /// | `name` | `contains` `!contains` | text (in the file name, any case) |
 /// | `edited` | `=` | true or false |
 /// | `captured` | `after` `before` | "YYYY-MM-DD" (after: on or after; before: earlier) |
+/// | `camera`, `lens` | `contains` `!contains` | text (any case) |
+/// | `iso`, `focal` | `>=` `<=` | a number (focal length in mm) |
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Rule {
     pub field: String,
@@ -69,9 +72,14 @@ pub struct Facts<'a> {
     pub edited: bool,
     /// "YYYY-MM-DD HH:MM:SS".
     pub captured: Option<&'a str>,
+    pub camera: Option<&'a str>,
+    pub lens: Option<&'a str>,
+    pub iso: Option<u32>,
+    /// Millimetres.
+    pub focal: Option<f64>,
 }
 
-const FIELDS: [(&str, &[&str]); 7] = [
+const FIELDS: [(&str, &[&str]); 11] = [
     ("rating", &["=", "!=", ">=", "<="]),
     ("label", &["=", "!="]),
     ("flag", &["=", "!="]),
@@ -79,6 +87,10 @@ const FIELDS: [(&str, &[&str]); 7] = [
     ("name", &["contains", "!contains"]),
     ("edited", &["="]),
     ("captured", &["after", "before"]),
+    ("camera", &["contains", "!contains"]),
+    ("lens", &["contains", "!contains"]),
+    ("iso", &[">=", "<="]),
+    ("focal", &[">=", "<="]),
 ];
 
 impl Rule {
@@ -107,6 +119,7 @@ impl Rule {
             "rating" => self.value.as_u64().is_some_and(|v| v <= 5),
             "edited" => self.value.is_boolean(),
             "captured" => self.value.as_str().is_some_and(is_date),
+            "iso" | "focal" => self.value.as_f64().is_some_and(|v| v >= 0.0),
             _ => self.value.is_string(),
         };
         if ok {
@@ -150,6 +163,25 @@ impl Rule {
                 (op == "contains") == has
             }
             ("name", op) => (op == "contains") == f.name.to_lowercase().contains(&lower),
+            ("camera" | "lens", op) => {
+                let have = if self.field == "camera" {
+                    f.camera
+                } else {
+                    f.lens
+                };
+                // Unknown never matches "contains", and always "doesn't contain".
+                let has = have.is_some_and(|h| h.to_lowercase().contains(&lower));
+                (op == "contains") == has
+            }
+            ("iso" | "focal", op) => {
+                let have = if self.field == "iso" {
+                    f.iso.map(f64::from)
+                } else {
+                    f.focal
+                };
+                let v = self.value.as_f64().unwrap_or(0.0);
+                have.is_some_and(|h| if op == ">=" { h >= v } else { h <= v })
+            }
             ("edited", _) => self.value.as_bool() == Some(f.edited),
             ("captured", op) => match f.captured.map(|c| &c[..c.len().min(10)]) {
                 // Dates as text compare in order.
@@ -314,6 +346,10 @@ mod tests {
             keywords: &kw,
             edited: true,
             captured: Some("2026-07-14 10:00:00"),
+            camera: Some("Nikon D750"),
+            lens: Some("SP 35mm f/1.8"),
+            iso: Some(400),
+            focal: Some(35.0),
         };
         let yes = [
             rule("rating", ">=", json!(4)),
@@ -327,6 +363,10 @@ mod tests {
             rule("edited", "=", json!(true)),
             rule("captured", "after", json!("2026-07-14")),
             rule("captured", "before", json!("2026-07-15")),
+            rule("camera", "contains", json!("d750")),
+            rule("lens", "!contains", json!("85mm")),
+            rule("iso", ">=", json!(400)),
+            rule("focal", "<=", json!(50)),
         ];
         for r in &yes {
             assert!(r.holds(&f), "{r:?}");
@@ -337,6 +377,9 @@ mod tests {
             rule("flag", "!=", json!("pick")),
             rule("captured", "before", json!("2026-07-14")),
             rule("edited", "=", json!(false)),
+            rule("camera", "contains", json!("canon")),
+            rule("iso", "<=", json!(200)),
+            rule("focal", ">=", json!(50.5)),
         ];
         for r in &no {
             assert!(!r.holds(&f), "{r:?}");
@@ -349,6 +392,11 @@ mod tests {
         assert!(rule("rating", "=", json!(0)).holds(&bare));
         assert!(rule("label", "=", json!("")).holds(&bare));
         assert!(!rule("captured", "after", json!("2000-01-01")).holds(&bare));
+        // Unknown camera details: "contains" fails, "doesn't contain" holds,
+        // numbers never match.
+        assert!(!rule("camera", "contains", json!("")).holds(&bare));
+        assert!(rule("lens", "!contains", json!("35")).holds(&bare));
+        assert!(!rule("iso", ">=", json!(0)).holds(&bare));
     }
 
     #[test]
@@ -359,6 +407,8 @@ mod tests {
             rule("rating", ">=", json!(9)),
             rule("captured", "after", json!("July")),
             rule("edited", "=", json!("yes")),
+            rule("iso", "=", json!(100)),
+            rule("focal", ">=", json!("wide")),
         ] {
             assert!(r.check().is_err(), "{r:?}");
             assert!(!r.holds(&Facts::default()), "{r:?}");

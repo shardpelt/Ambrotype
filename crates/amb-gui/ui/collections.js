@@ -10,6 +10,8 @@ const NEW_COLLECTION = "\u0000new";
 const NEW_SMART = "\u0000smart";
 // A smart collection's value in the Show menu.
 const SMART = "smart:";
+// Every photo in the catalogue: shown like a smart collection.
+const ALL_PHOTOS = "\u0000all";
 
 // Ask for a name in a small dialog; null when cancelled.
 // `allowEmpty`: an empty answer is "" rather than a cancel.
@@ -54,15 +56,16 @@ function renderCollectionControls() {
   });
   const smart = Object.assign(document.createElement("optgroup"), { label: "Smart collections" });
   smart.append(...coll.smart.map((c) => option(SMART + c.name, `⚙ ${c.name}`)), option(NEW_SMART, "New smart collection…"));
-  src.replaceChildren(option("", folder), ...inSets, smart);
-  src.value = lib.smart ? SMART + lib.smart : lib.collection ?? "";
+  src.replaceChildren(option("", folder), option(ALL_PHOTOS, "All photos"), ...inSets, smart);
+  src.value = lib.smart === ALL_PHOTOS ? ALL_PHOTOS : lib.smart ? SMART + lib.smart : lib.collection ?? "";
   const add = $("lib-add-to");
   add.replaceChildren(...coll.list.map((c) => option(c.name, c.name)), option(NEW_COLLECTION, "New collection…"));
   add.value = coll.target ?? coll.list[0]?.name ?? NEW_COLLECTION;
   const viewing = Boolean(lib.collection) && !lib.smart;
   for (const id of ["lib-remove-from", "lib-coll-rename", "lib-coll-set"]) $(id).hidden = !viewing;
-  $("lib-coll-delete").hidden = !viewing && !lib.smart;
-  $("lib-smart-edit").hidden = !lib.smart;
+  const ownSmart = lib.smart && lib.smart !== ALL_PHOTOS;
+  $("lib-coll-delete").hidden = !viewing && !ownSmart;
+  $("lib-smart-edit").hidden = !ownSmart;
   $("lib-subfolders").disabled = Boolean(lib.collection || lib.smart);
   if (viewing) $("lib-remove-from").textContent = `Remove from “${lib.collection}”`;
 }
@@ -73,6 +76,7 @@ async function showCollection(name) {
     renderCollectionControls();
     return editSmartCollection(null);
   }
+  if (name === ALL_PHOTOS) return showSmartCollection(ALL_PHOTOS);
   if (name?.startsWith(SMART)) return showSmartCollection(name.slice(SMART.length));
   lib.smart = null;
   if (!name) {
@@ -206,10 +210,11 @@ function wireCollections() {
 
 // Worked out when shown: the photos under its folders that meet its rules.
 async function showSmartCollection(name) {
-  $("library-count").textContent = "Looking through the folders…";
+  const all = name === ALL_PHOTOS;
+  $("library-count").textContent = all ? "Reading the catalogue…" : "Looking through the folders…";
   try {
-    const view = await invoke("smart_photos", { name });
-    lib.smart = view.name;
+    const view = all ? await invoke("catalog_photos") : await invoke("smart_photos", { name });
+    lib.smart = all ? ALL_PHOTOS : view.name;
     lib.collection = view.name;
     lib.photos = view.photos;
     const keep = new Set(lib.photos.map((p) => p.path));
@@ -233,6 +238,10 @@ const SMART_FIELDS = {
   name: { label: "File name", ops: [["contains", "contains"], ["!contains", "doesn't contain"]], text: true },
   edited: { label: "Edited", ops: [["=", "is"]], values: [[true, "yes"], [false, "no"]] },
   captured: { label: "Capture date", ops: [["after", "is on or after"], ["before", "is before"]], date: true },
+  camera: { label: "Camera", ops: [["contains", "contains"], ["!contains", "doesn't contain"]], text: true },
+  lens: { label: "Lens", ops: [["contains", "contains"], ["!contains", "doesn't contain"]], text: true },
+  iso: { label: "ISO", ops: [[">=", "is at least"], ["<=", "is at most"]], number: true },
+  focal: { label: "Focal length (mm)", ops: [[">=", "is at least"], ["<=", "is at most"]], number: true },
 };
 
 function smartRuleRow(rule = { field: "rating", op: ">=", value: 3 }) {
@@ -258,9 +267,15 @@ function smartRuleRow(rule = { field: "rating", op: ">=", value: 3 }) {
       value.read = () => f.values[Number(value.value)][0];
     } else {
       value = document.createElement("input");
-      value.type = f.date ? "date" : "text";
-      value.value = typeof r.value === "string" ? r.value : "";
-      value.read = () => value.value.trim();
+      value.type = f.date ? "date" : f.number ? "number" : "text";
+      if (f.number) {
+        value.min = "0";
+        value.value = typeof r.value === "number" ? String(r.value) : "";
+        value.read = () => Number(value.value);
+      } else {
+        value.value = typeof r.value === "string" ? r.value : "";
+        value.read = () => value.value.trim();
+      }
     }
     holder.replaceChildren(value);
   };

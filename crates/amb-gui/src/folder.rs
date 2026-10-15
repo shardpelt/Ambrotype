@@ -6,10 +6,7 @@
 //! cached on disk by path, size and modified time.
 
 use serde::Serialize;
-use std::cmp::Ordering;
 use std::path::{Path, PathBuf};
-
-pub use amb_engine::raw::RAW_EXTENSIONS;
 
 /// The long edge of filmstrip thumbnails, in pixels (sharp at 2× on a ~110 px strip).
 pub const THUMB_EDGE: u32 = 256;
@@ -37,76 +34,7 @@ pub struct FolderPhoto {
     pub stack: Option<amb_protocol::sidecar::StackRef>,
 }
 
-pub fn is_raw(path: &Path) -> bool {
-    path.extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| RAW_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
-}
-
-/// Every extension the editor opens: raws, then rendered images.
-pub fn photo_extensions() -> Vec<&'static str> {
-    RAW_EXTENSIONS
-        .iter()
-        .chain(amb_engine::raster::EXTENSIONS)
-        .copied()
-        .collect()
-}
-
-pub fn is_photo(path: &Path) -> bool {
-    is_raw(path) || amb_engine::raster::is_raster(path)
-}
-
-/// A JPEG shot together with a raw of the same name: like Lightroom, the
-/// pair is one photo, the raw.
-fn is_raw_companion(path: &Path, raw_stems: &std::collections::HashSet<String>) -> bool {
-    let jpeg = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .is_some_and(|e| matches!(e.to_ascii_lowercase().as_str(), "jpg" | "jpeg"));
-    jpeg && path
-        .file_stem()
-        .is_some_and(|s| raw_stems.contains(&s.to_string_lossy().to_lowercase()))
-}
-
-/// Compare names the way people expect: "IMG_2" before "IMG_10".
-fn natural(a: &str, b: &str) -> Ordering {
-    let (mut a, mut b) = (a.chars().peekable(), b.chars().peekable());
-    loop {
-        match (a.peek().copied(), b.peek().copied()) {
-            (None, None) => return Ordering::Equal,
-            (None, _) => return Ordering::Less,
-            (_, None) => return Ordering::Greater,
-            (Some(x), Some(y)) if x.is_ascii_digit() && y.is_ascii_digit() => {
-                let take = |it: &mut std::iter::Peekable<std::str::Chars>| {
-                    let mut s = String::new();
-                    while let Some(c) = it.peek().copied().filter(char::is_ascii_digit) {
-                        s.push(c);
-                        it.next();
-                    }
-                    s
-                };
-                let (na, nb) = (take(&mut a), take(&mut b));
-                let (ta, tb) = (na.trim_start_matches('0'), nb.trim_start_matches('0'));
-                let ord = ta
-                    .len()
-                    .cmp(&tb.len())
-                    .then_with(|| ta.cmp(tb))
-                    .then_with(|| na.len().cmp(&nb.len()));
-                if ord != Ordering::Equal {
-                    return ord;
-                }
-            }
-            (Some(x), Some(y)) => {
-                let ord = x.to_lowercase().cmp(y.to_lowercase());
-                if ord != Ordering::Equal {
-                    return ord;
-                }
-                a.next();
-                b.next();
-            }
-        }
-    }
-}
+pub use amb_library::folder::photo_extensions;
 
 /// The raws in `photo`'s folder (including it), in name order.
 pub fn list(photo: &Path) -> Result<Vec<FolderPhoto>, String> {
@@ -117,86 +45,27 @@ pub fn list(photo: &Path) -> Result<Vec<FolderPhoto>, String> {
     list_dir(dir)
 }
 
-/// The photos in `dir`, in name order; a JPEG with a raw of the same name
-/// is left out (the raw stands for both).
+/// The photos in `dir`, in name order (`amb_library::folder::photo_paths`).
 pub fn list_dir(dir: &Path) -> Result<Vec<FolderPhoto>, String> {
-    let entries = std::fs::read_dir(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
-    let found: Vec<PathBuf> = entries
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| p.is_file() && is_photo(p))
-        .filter(|p| {
-            !p.file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|n| n.starts_with('.'))
-        })
-        .collect();
-    let raw_stems: std::collections::HashSet<String> = found
-        .iter()
-        .filter(|p| is_raw(p))
-        .filter_map(|p| p.file_stem().map(|s| s.to_string_lossy().to_lowercase()))
-        .collect();
-    let mut paths: Vec<PathBuf> = found
-        .into_iter()
-        .filter(|p| !is_raw_companion(p, &raw_stems))
-        .collect();
-    paths.sort_by(|a, b| {
-        natural(
-            &a.file_name().unwrap_or_default().to_string_lossy(),
-            &b.file_name().unwrap_or_default().to_string_lossy(),
-        )
-    });
-    // Virtual copies right after their photo, in number order.
-    let mut copies = copies_in(dir, &paths);
-    copies.sort_by_key(|(_, _, n)| *n);
-    let mut ordered = Vec::with_capacity(paths.len() + copies.len());
-    for p in paths {
-        let mine: Vec<PathBuf> = copies
-            .iter()
-            .filter(|(_, photo, _)| *photo == p)
-            .map(|(c, _, _)| c.clone())
-            .collect();
-        ordered.push(p);
-        ordered.extend(mine);
-    }
-    Ok(describe(ordered))
+    Ok(describe(amb_library::folder::photo_paths(dir)?))
 }
 
-/// The photos in `dir` and all its subfolders (hidden ones left out): the
-/// folder's own first, then each subfolder's in name order. Names of
-/// photos in subfolders start with their folder (`2026-07/IMG_1.nef`).
+/// The photos in `dir` and all its subfolders: the folder's own first, then
+/// each subfolder's in name order. Names of photos in subfolders start with
+/// their folder (`2026-07/IMG_1.nef`).
 pub fn list_tree(dir: &Path) -> Result<Vec<FolderPhoto>, String> {
-    let mut out = list_dir(dir)?;
-    let mut subdirs: Vec<PathBuf> = std::fs::read_dir(dir)
-        .map_err(|e| format!("{}: {e}", dir.display()))?
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| p.is_dir())
-        .filter(|p| {
-            !p.file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|n| n.starts_with('.'))
+    let found = amb_library::folder::tree_paths(dir)?;
+    let (paths, folders): (Vec<PathBuf>, Vec<String>) = found.into_iter().unzip();
+    Ok(describe(paths)
+        .into_iter()
+        .zip(folders)
+        .map(|(mut p, f)| {
+            if !f.is_empty() {
+                p.name = format!("{f}/{}", p.name);
+            }
+            p
         })
-        .collect();
-    subdirs.sort_by(|a, b| {
-        natural(
-            &a.file_name().unwrap_or_default().to_string_lossy(),
-            &b.file_name().unwrap_or_default().to_string_lossy(),
-        )
-    });
-    for sub in subdirs {
-        let folder = sub
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .into_owned();
-        // A folder that can't be read is skipped, not the whole tree.
-        for mut p in list_tree(&sub).unwrap_or_default() {
-            p.name = format!("{folder}/{}", p.name);
-            out.push(p);
-        }
-    }
-    Ok(out)
+        .collect())
 }
 
 /// A photo's name as shown: its file name, and "Copy N" for a virtual copy.
@@ -213,52 +82,64 @@ pub fn display_name(path: &Path) -> String {
     }
 }
 
-/// The virtual copies in `dir` of the photos `photos` (sidecars named
-/// `<photo>.copy-N.xmp`), each with the photo it belongs to.
-fn copies_in(dir: &Path, photos: &[PathBuf]) -> Vec<(PathBuf, PathBuf, u32)> {
-    std::fs::read_dir(dir)
+/// The editor's catalogue (`amb_library::catalog`): what was read from
+/// each photo's files, kept until they change. In memory only when its file
+/// can't be opened, and in tests.
+pub fn catalog() -> &'static amb_library::catalog::Catalog {
+    use amb_library::catalog::{self, Catalog};
+    static CATALOG: std::sync::OnceLock<Catalog> = std::sync::OnceLock::new();
+    CATALOG.get_or_init(|| {
+        if cfg!(test) {
+            return Catalog::in_memory();
+        }
+        catalog::default_path()
+            .and_then(|p| {
+                Catalog::open(&p)
+                    .map_err(|e| eprintln!("catalogue: {e}; keeping it in memory"))
+                    .ok()
+            })
+            .unwrap_or_else(Catalog::in_memory)
+    })
+}
+
+/// Name, rating and "edited" for each of `paths` (kept in the given order),
+/// from the catalogue when the files haven't changed.
+pub fn describe(paths: Vec<PathBuf>) -> Vec<FolderPhoto> {
+    describe_with(paths).into_iter().map(|(p, _)| p).collect()
+}
+
+/// As [`describe`], with what the raw's header says about each shot.
+pub fn describe_with(paths: Vec<PathBuf>) -> Vec<(FolderPhoto, amb_library::catalog::Shot)> {
+    let records = catalog().records(&paths);
+    paths
         .into_iter()
-        .flatten()
-        .flatten()
-        .map(|e| e.path())
-        .filter_map(|p| {
-            let (photo, n) = amb_engine::virtual_copy_of(&p)?;
-            photos.contains(&photo).then_some((p, photo, n))
-        })
+        .zip(records)
+        .map(|(p, r)| from_record(&p, r))
         .collect()
 }
 
-/// Name, rating and "edited" for each of `paths` (kept in the given order).
-pub fn describe(paths: Vec<PathBuf>) -> Vec<FolderPhoto> {
-    paths
-        .into_iter()
-        .map(|p| {
-            let sidecar = std::fs::read_to_string(crate::session::sidecar_path(&p)).ok();
-            let info = sidecar
-                .as_deref()
-                .map(amb_protocol::sidecar::read_info)
-                .unwrap_or_default();
-            let edited = sidecar
-                .as_deref()
-                .and_then(|t| amb_presets::xmp::parse_crs(t).ok())
-                .is_some_and(|s| !s.is_empty());
-            FolderPhoto {
-                name: display_name(&p),
-                copy: amb_engine::virtual_copy_of(&p).map(|(_, n)| n),
-                path: p.display().to_string(),
-                rating: info.rating,
-                label: info.label,
-                keywords: info.keywords,
-                flag: info.flag,
-                edited,
-                title: info.title,
-                caption: info.caption,
-                creator: info.creator,
-                copyright: info.copyright,
-                stack: info.stack,
-            }
-        })
-        .collect()
+/// A photo as listed, from what the catalogue knows of it.
+pub fn from_record(
+    p: &Path,
+    r: amb_library::catalog::Record,
+) -> (FolderPhoto, amb_library::catalog::Shot) {
+    let info = r.info;
+    let photo = FolderPhoto {
+        name: display_name(p),
+        copy: amb_engine::virtual_copy_of(p).map(|(_, n)| n),
+        path: p.display().to_string(),
+        rating: info.rating,
+        label: info.label,
+        keywords: info.keywords,
+        flag: info.flag,
+        edited: r.edited,
+        title: info.title,
+        caption: info.caption,
+        creator: info.creator,
+        copyright: info.copyright,
+        stack: info.stack,
+    };
+    (photo, r.shot)
 }
 
 fn cache_key(path: &Path, edge: u32) -> Option<String> {
@@ -376,28 +257,6 @@ pub fn edited_thumbnail(
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn natural_order() {
-        let mut names = vec![
-            "IMG_10.NEF",
-            "img_2.nef",
-            "IMG_1.NEF",
-            "DSC_0100.NEF",
-            "DSC_099.NEF",
-        ];
-        names.sort_by(|a, b| natural(a, b));
-        assert_eq!(
-            names,
-            [
-                "DSC_099.NEF",
-                "DSC_0100.NEF",
-                "IMG_1.NEF",
-                "img_2.nef",
-                "IMG_10.NEF"
-            ]
-        );
-    }
 
     #[test]
     fn lists_raws_with_ratings_and_makes_thumbnails() {

@@ -3660,6 +3660,25 @@ async fn smart_photos(app: tauri::AppHandle, name: String) -> Res<CollectionView
     .map_err(|e| e.to_string())?
 }
 
+/// Every photo the catalogue knows, newest first.
+#[tauri::command]
+async fn catalog_photos() -> Res<CollectionView> {
+    tauri::async_runtime::spawn_blocking(|| CollectionView {
+        name: "All photos".into(),
+        photos: library::all_photos(),
+        missing: Vec::new(),
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Forget the catalogue's photos in `folder` (the files stay). They come
+/// back when the folder is shown again.
+#[tauri::command]
+fn catalog_forget(folder: String) -> usize {
+    folder::catalog().forget_folder(Path::new(&folder))
+}
+
 #[derive(Serialize)]
 struct ImportDefaults {
     dest: Option<String>,
@@ -4174,6 +4193,8 @@ fn main() {
             smart_save,
             smart_delete,
             smart_photos,
+            catalog_photos,
+            catalog_forget,
             pick_folder,
             import_plan,
             import_run,

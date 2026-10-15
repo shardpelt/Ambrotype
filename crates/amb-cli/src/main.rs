@@ -105,6 +105,15 @@ USAGE:
                                             the editor's collage maker does: LAYOUT is a built-in's
                                             name or number, or a layout .json. Photos fill the cells by
                                             shape; more photos than cells make pages, OUT-001.jpg, ...
+    amb catalog scan <DIR>...               Catalogue the photos in DIR and its subfolders: what the
+                                            library reads from each (rating, keywords, capture time,
+                                            camera, lens, ...) is kept until the files change, so big
+                                            folders open quickly. Deleting the catalogue loses nothing
+    amb catalog find [--text T] [--camera C] [--lens L] [--keyword K] [--rating N]
+                [--from DATE] [--until DATE] [--json]
+                                            Search every catalogued photo, newest first
+    amb catalog stats | forget <DIR>        How many photos it knows; forget a folder (files stay).
+                                            --catalog FILE uses another catalogue than the editor's
     amb lrcat import <CATALOG.lrcat> [--apply] [--remap OLD=NEW] [--collections DIR] [--json]
                                             Move from Lightroom Classic: each photo's develop settings,
                                             rating, label, flag, keywords, stack, title and caption go into
@@ -316,6 +325,75 @@ fn collage(
         );
     }
     Ok(())
+}
+
+/// `amb catalog`: the editor's catalogue of what it read from each photo
+/// (amb_library::catalog).
+fn catalog(args: &[&str], options: &BTreeMap<&str, &str>, json: bool) -> Result<(), String> {
+    use amb_library::catalog::{self, Catalog, Query};
+    let path = match options.get("--catalog") {
+        Some(p) => PathBuf::from(p),
+        None => catalog::default_path().ok_or("no config folder: give --catalog FILE")?,
+    };
+    let cat = Catalog::open(&path)?;
+    match args {
+        ["scan", dirs @ ..] if !dirs.is_empty() => {
+            let dirs: Vec<PathBuf> = dirs.iter().map(PathBuf::from).collect();
+            let start = std::time::Instant::now();
+            let (photos, read) = cat.scan(&dirs)?;
+            let ms = start.elapsed().as_millis();
+            if json {
+                return print_json(&serde_json::json!({ "photos": photos, "read": read, "ms": ms }));
+            }
+            println!("{photos} photos, {read} read from their files, in {ms} ms");
+            Ok(())
+        }
+        ["find"] => {
+            let query = Query {
+                text: options.get("--text").map(|s| s.to_string()),
+                camera: options.get("--camera").map(|s| s.to_string()),
+                lens: options.get("--lens").map(|s| s.to_string()),
+                keyword: options.get("--keyword").map(|s| s.to_string()),
+                rating: options
+                    .get("--rating")
+                    .map(|r| r.parse().map_err(|_| format!("bad --rating {r:?}")))
+                    .transpose()?,
+                from: options.get("--from").map(|s| s.to_string()),
+                until: options.get("--until").map(|s| s.to_string()),
+            };
+            let found = cat.find(&query);
+            if json {
+                return print_json(&serde_json::to_value(&found).map_err(|e| e.to_string())?);
+            }
+            for e in &found {
+                let shot = &e.record.shot;
+                let stars = "*".repeat(e.record.info.rating.unwrap_or(0).into());
+                println!(
+                    "{}  {:<5} {}  {}",
+                    shot.captured.as_deref().unwrap_or("          -        "),
+                    stars,
+                    shot.camera.as_deref().unwrap_or("-"),
+                    e.path.display()
+                );
+            }
+            eprintln!("{} found", found.len());
+            Ok(())
+        }
+        ["stats"] => {
+            let s = cat.stats();
+            if json {
+                return print_json(&serde_json::to_value(s).map_err(|e| e.to_string())?);
+            }
+            println!("{} photos in {} folders ({})", s.photos, s.folders, path.display());
+            Ok(())
+        }
+        ["forget", dir] => {
+            let n = cat.forget_folder(Path::new(dir));
+            println!("forgot {n} photos (the files stay)");
+            Ok(())
+        }
+        _ => Err("catalog: scan <DIR>... | find [--text T] [--camera C] [--lens L] [--keyword K] [--rating N] [--from DATE] [--until DATE] | stats | forget <DIR>".into()),
+    }
 }
 
 /// `amb lrcat import`: a Lightroom Classic catalogue into sidecars and
@@ -670,7 +748,13 @@ fn main() -> ExitCode {
             | "--background"
             | "--gap"
             | "--margin"
-            | "--collections" => match iter.next() {
+            | "--collections"
+            | "--camera"
+            | "--lens"
+            | "--keyword"
+            | "--text"
+            | "--until"
+            | "--catalog" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -717,6 +801,7 @@ fn main() -> ExitCode {
             None => Err("collage needs --out <FILE>".into()),
         },
         ["lrcat", "import", catalog] => lrcat_import(Path::new(catalog), &options, json),
+        ["catalog", rest @ ..] => catalog(rest, &options, json),
         ["merge", "hdr", raws @ ..] if raws.len() >= 2 => merge_hdr(raws, &options, json),
         ["merge", "pano", raws @ ..] if raws.len() >= 2 => merge_pano(raws, &options, json),
         ["import", source, dest] => {

@@ -161,7 +161,7 @@ function applyView() {
     if (f.flag === "unflagged" ? p.flag : f.flag === "kept" ? p.flag === "reject" : f.flag !== "all" && p.flag !== f.flag) return false;
     if (f.edited === "edited" && !p.edited) return false;
     if (f.edited === "unedited" && p.edited) return false;
-    if (f.text && !(p.name.toLowerCase().includes(f.text) || p.keywords.some((k) => k.toLowerCase().includes(f.text)))) return false;
+    if (f.text && ![p.name, ...p.keywords, p.title, p.caption, p.camera, p.lens].some((t) => t?.toLowerCase().includes(f.text))) return false;
     return true;
   });
   const sort = $("lib-sort").value;
@@ -325,7 +325,7 @@ function renderCounts() {
   const n = lib.photos.length;
   const shown = lib.shown.length;
   const sel = selectedPhotos().length;
-  $("library-count").textContent = !lib.dir ? "" : [
+  $("library-count").textContent = !lib.dir && !lib.collection ? "" : [
     `${n} photo${n === 1 ? "" : "s"}`,
     shown !== n ? `${shown} shown` : "",
     sel ? `${sel} selected` : "",

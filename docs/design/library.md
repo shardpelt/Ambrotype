@@ -7,7 +7,8 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 ## What it is
 
 - **A folder as a grid.** The Library button (or G) swaps the editor for a grid of the open photo's folder, or any folder you choose. G again, Esc, Enter or a double-click goes back to the editor; Enter and double-click open that photo.
-- **No catalogue.** Everything is read from and written to the photos' XMP sidecars, the files Lightroom and Bridge use. There is no database to import into, keep in sync or lose. The cost: one folder at a time, and a big folder is read when it opens (capture times come from the raw headers, read in parallel).
+- **The files are the library.** Everything is read from and written to the photos' XMP sidecars, the files Lightroom and Bridge use. There is no database to import into or keep in sync.
+- **The catalogue only remembers** (2026-10-15): what was read from each photo (its sidecar's rating, label, flag, keywords and metadata, whether it's edited, and the raw header's capture time, camera, lens and exposure) is kept in `catalog.sqlite` in the config folder, keyed by path and checked against the photo's and sidecar's size and modified time. A changed file, by us or another app, is read again; deleting the catalogue loses nothing. A folder of 3000 raws opens in about 0.1 s instead of 5 s once it has been shown (`amb catalog scan` on 4 Linux cores).
 - **Thumbnails** are the camera's embedded previews first (quick). Photos with edits then get a render of their edit, one at a time, cached until the raw or its sidecar changes. The filmstrip does the same.
 
 ## What you can do
@@ -38,7 +39,8 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 - **Import** (Import… in the bar, or Ctrl+Shift+I anywhere): copy photos from a card or folder into the library (below).
 - **Subfolders:** tick Subfolders in the bar to show the folder's subfolders too; their photos are named with their folder (`2026-07/IMG_1.nef`).
 - **Several folders:** + in the bar shows another folder with the one shown; their photos are named with their folder (`trip/IMG_1.nef`). "N more ×" goes back to the first folder alone, and Folder… starts again. After an import into dated folders, all of them are shown.
-- **Smart collections** (Show → New smart collection…): photos chosen by rules, worked out each time from the sidecars and capture times, in the folders you name and their subfolders. Rules: rating, colour label, flag, keyword, file name, edited, capture date; all or any of them. Each is a small JSON file beside the collections (`amb_library::smart`). Edit rules… and Delete collection… in the panel; ↻ works them out again.
+- **All photos** (Show → All photos): every photo in the catalogue, from every folder shown so far, newest first. The search box finds names, keywords, titles, captions, cameras and lenses. `amb catalog find` searches it from the command line.
+- **Smart collections** (Show → New smart collection…): photos chosen by rules, worked out each time from the catalogue, in the folders you name and their subfolders. Rules: rating, colour label, flag, keyword, file name, edited, capture date, camera, lens, ISO and focal length; all or any of them. Each is a small JSON file beside the collections (`amb_library::smart`). Edit rules… and Delete collection… in the panel; ↻ works them out again.
 - **Live folders:** the library's folders and the filmstrip's are watched (`notify`); photos added, removed or renamed outside the app show up within a second, keeping the selection. Sidecar writes don't count, so our own saves don't reload anything.
 - **Collections:** the menu next to Folder… shows a collection instead of the folder. The panel adds the selection to a collection (or a new one); B adds the selection, or the open photo in the editor, to the last collection used, like Lightroom's quick collection. Viewing a collection, the panel can remove photos from it (the files stay), rename it or delete it. **Collection set…** files it under a set (Lightroom's collection sets), and the menu groups collections by set; the set is a `set` name in the collection's file.
 
@@ -132,6 +134,7 @@ Lightroom keeps stacks in its catalogue. Ours go in the sidecar: `amblib:Stack` 
 
 ## Code
 
+- `crates/amb-library/src/folder.rs`: which files in a folder are photos, in order; `catalog.rs`: the catalogue.
 - `crates/amb-gui/src/library.rs`: listing, batch info changes, paste commands, batch export.
 - `crates/amb-gui/ui/library.js`: the grid, selection, panel and keys.
 - `crates/amb-gui/ui/cull.js`: loupe, compare and survey.
@@ -140,7 +143,8 @@ Lightroom keeps stacks in its catalogue. Ours go in the sidecar: `amblib:Stack` 
 
 ## Not yet
 
-- The extra folders aren't remembered after closing the app. Collection sets are one level deep (no sets in sets). A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does). Smart collection rules for camera, lens, ISO and the like.
+- The extra folders aren't remembered after closing the app. Collection sets are one level deep (no sets in sets). A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does).
+- The catalogue: All photos lists only folders shown before (or `amb catalog scan`ned), and it checks every file when shown, so a library of 100 000 photos takes a few seconds. Photos on a disconnected drive drop out of it until shown again. On file systems that keep modified times to the second (FAT and exFAT cards, old Mac disks), two changes to a sidecar of the same size within one second can be missed until the next change. Smart collections still look through their folders on disk rather than querying it.
 - Collections don't follow photos moved outside Ambrotype.
 - From Lightroom: smart collections, publish services, edit history and snapshots, face regions, keyword hierarchies (they come as plain keywords) and Lightroom's virtual copy names. One path replacement only.
 - Import: moving instead of copying, ejecting the card, picking single photos to import. (A develop preset and a second backup copy came 2026-10-13.)

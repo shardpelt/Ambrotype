@@ -4,22 +4,23 @@
 //! export a selection.
 //!
 //! Everything here reads and writes the photos' XMP sidecars, the same files
-//! the editor and Lightroom use; nothing else is stored. Edits go through
+//! the editor and Lightroom use; the catalogue (`folder::catalog`) only
+//! remembers what was read from them, until they change. Edits go through
 //! `amb-protocol` commands like every other edit.
 
 use crate::folder::{self, FolderPhoto};
 use amb_protocol::sidecar::{self, PhotoInfo};
-use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-/// A photo in the grid: its folder entry and when it was taken.
+/// A photo in the grid: its folder entry and the shot (when it was taken,
+/// camera, lens, exposure) from the raw's header.
 #[derive(Debug, Clone, Serialize)]
 pub struct LibraryPhoto {
     #[serde(flatten)]
     pub photo: FolderPhoto,
-    /// "YYYY-MM-DD HH:MM:SS" from the raw's EXIF, when it has one.
-    pub captured: Option<String>,
+    #[serde(flatten)]
+    pub shot: amb_library::catalog::Shot,
 }
 
 /// The raws in `dir` and every subfolder, in name order, with their capture
@@ -75,9 +76,30 @@ pub fn smart_photos(s: &amb_library::smart::SmartCollection) -> Vec<LibraryPhoto
                 flag: p.photo.flag.map(|f| f.name()),
                 keywords: &p.photo.keywords,
                 edited: p.photo.edited,
-                captured: p.captured.as_deref(),
+                captured: p.shot.captured.as_deref(),
+                camera: p.shot.camera.as_deref(),
+                lens: p.shot.lens.as_deref(),
+                iso: p.shot.iso,
+                focal: p.shot.focal,
             };
             s.matches(&facts)
+        })
+        .collect()
+}
+
+/// Every photo the catalogue knows (every folder shown in the library so
+/// far), newest first, each named with its folder (`2026-07/IMG_1.nef`).
+pub fn all_photos() -> Vec<LibraryPhoto> {
+    folder::catalog()
+        .all()
+        .into_iter()
+        .map(|e| {
+            let (mut photo, shot) = folder::from_record(&e.path, e.record);
+            let parent = amb_engine::source_path(&e.path);
+            if let Some(f) = parent.parent().and_then(|d| d.file_name()) {
+                photo.name = format!("{}/{}", f.to_string_lossy(), photo.name);
+            }
+            LibraryPhoto { photo, shot }
         })
         .collect()
 }
@@ -92,23 +114,16 @@ pub fn list_paths(paths: &[PathBuf]) -> (Vec<LibraryPhoto>, Vec<String>) {
     )
 }
 
-/// Capture times from the raw headers, read in parallel.
+/// The shots from the raw headers: from the catalogue, or read in parallel.
 fn with_times(photos: Vec<FolderPhoto>) -> Vec<LibraryPhoto> {
+    let paths: Vec<PathBuf> = photos.iter().map(|p| PathBuf::from(&p.path)).collect();
+    let records = folder::catalog().records(&paths);
     photos
-        .into_par_iter()
-        .map(|photo| {
-            let source = amb_engine::source_path(Path::new(&photo.path));
-            let captured = amb_engine::raw::read_metadata(&source)
-                .ok()
-                .and_then(|(_, m)| m.date_time_original)
-                .map(|d| {
-                    // EXIF writes "2026:05:04 12:30:00".
-                    let (date, time) = d.split_once(' ').unwrap_or((&d, ""));
-                    format!("{} {time}", date.replace(':', "-"))
-                        .trim()
-                        .to_string()
-                });
-            LibraryPhoto { photo, captured }
+        .into_iter()
+        .zip(records)
+        .map(|(photo, r)| LibraryPhoto {
+            photo,
+            shot: r.shot,
         })
         .collect()
 }

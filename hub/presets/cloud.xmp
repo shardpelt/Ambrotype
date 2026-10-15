@@ -1,0 +1,18 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Written for the Ambrotype hub. CC0-1.0: free for anyone, any use. -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4" crs:Author="Ambrotype" crs:License="CC0-1.0"
+    crs:Exposure2012="+0.30"
+    crs:Contrast2012="-30"
+    crs:Highlights2012="-20"
+    crs:Shadows2012="+35"
+    crs:Saturation="-20"
+    crs:Clarity2012="-10">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Cloud</rdf:li></rdf:Alt></crs:Name>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Bright &amp; airy</rdf:li></rdf:Alt></crs:Group>
+   <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Soft pastels with low contrast.</rdf:li></rdf:Alt></crs:Description>
+   <crs:ToneCurvePV2012><rdf:Seq><rdf:li>0, 28</rdf:li><rdf:li>64, 70</rdf:li><rdf:li>128, 132</rdf:li><rdf:li>192, 192</rdf:li><rdf:li>255, 240</rdf:li></rdf:Seq></crs:ToneCurvePV2012>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

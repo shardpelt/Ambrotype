@@ -1,0 +1,20 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Written for the Ambrotype hub. CC0-1.0: free for anyone, any use. -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4" crs:Author="Ambrotype" crs:License="CC0-1.0"
+    crs:ConvertToGrayscale="True"
+    crs:Contrast2012="+5"
+    crs:Highlights2012="-20"
+    crs:Shadows2012="+15"
+    crs:ColorGradeShadowHue="35"
+    crs:ColorGradeShadowSat="25"
+    crs:ColorGradeHighlightHue="45"
+    crs:ColorGradeHighlightSat="15">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Sepia</rdf:li></rdf:Alt></crs:Name>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Black &amp; white</rdf:li></rdf:Alt></crs:Group>
+   <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Warm-toned black and white.</rdf:li></rdf:Alt></crs:Description>
+   <crs:ToneCurvePV2012><rdf:Seq><rdf:li>0, 40</rdf:li><rdf:li>128, 130</rdf:li><rdf:li>255, 235</rdf:li></rdf:Seq></crs:ToneCurvePV2012>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

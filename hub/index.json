@@ -30,6 +30,237 @@
       "license": "CC0-1.0",
       "path": "looks/themes/warm-dark.json",
       "sha256": "f5fdb5d52e05313b3aacaad18b09e792d78391ddd63be5a5d74e93c5c9b058a0"
+    },
+    {
+      "id": "preset-airy",
+      "kind": "preset",
+      "name": "Airy",
+      "group": "Bright & airy",
+      "author": "Ambrotype",
+      "description": "Light and clean: lifted shadows, cool whites.",
+      "license": "CC0-1.0",
+      "path": "presets/airy.xmp",
+      "sha256": "ae55c1a5caac8c32524755ad4caa406d60a75a3fbb4ecb8666a0394b4d6c5c3a"
+    },
+    {
+      "id": "preset-bw-classic",
+      "kind": "preset",
+      "name": "B&W Classic",
+      "group": "Black & white",
+      "author": "Ambrotype",
+      "description": "Balanced black and white with good tonal range.",
+      "license": "CC0-1.0",
+      "path": "presets/bw-classic.xmp",
+      "sha256": "3e8dbbddaa98dc9040ec9e3954411f7b3b9d0db047e11cf799ce1e940ce1d5f4"
+    },
+    {
+      "id": "preset-bw-high-contrast",
+      "kind": "preset",
+      "name": "B&W Punch",
+      "group": "Black & white",
+      "author": "Ambrotype",
+      "description": "Deep blacks and bright whites, darkened skies.",
+      "license": "CC0-1.0",
+      "path": "presets/bw-high-contrast.xmp",
+      "sha256": "fc928a4b46d69204ba546dbf6c9ce9998fbd6072fba3c6da61d0fb6e1867daff"
+    },
+    {
+      "id": "preset-bw-sepia",
+      "kind": "preset",
+      "name": "Sepia",
+      "group": "Black & white",
+      "author": "Ambrotype",
+      "description": "Warm-toned black and white.",
+      "license": "CC0-1.0",
+      "path": "presets/bw-sepia.xmp",
+      "sha256": "2b7817dfe1662eb7205d93bbae72c5e74a951554f1af59c0538f12be8749be33"
+    },
+    {
+      "id": "preset-bw-soft",
+      "kind": "preset",
+      "name": "B&W Soft",
+      "group": "Black & white",
+      "author": "Ambrotype",
+      "description": "Gentle, matte black and white with grain.",
+      "license": "CC0-1.0",
+      "path": "presets/bw-soft.xmp",
+      "sha256": "498b3f9bee6cbf6a7fc86eadd270a59e8d5fc195c5900a15934e62ddd15a99fa"
+    },
+    {
+      "id": "preset-clean-white",
+      "kind": "preset",
+      "name": "Clean White",
+      "group": "Bright & airy",
+      "author": "Ambrotype",
+      "description": "Neutral and crisp, for products and interiors.",
+      "license": "CC0-1.0",
+      "path": "presets/clean-white.xmp",
+      "sha256": "b9c7f4cdacb90e74f95a0475359007d0b853ee40c7be68aa3495f8c9a0a6ccbc"
+    },
+    {
+      "id": "preset-cloud",
+      "kind": "preset",
+      "name": "Cloud",
+      "group": "Bright & airy",
+      "author": "Ambrotype",
+      "description": "Soft pastels with low contrast.",
+      "license": "CC0-1.0",
+      "path": "presets/cloud.xmp",
+      "sha256": "3642c806b8db749ea1fdd24110cb516a4827f541b78073311adfcff2d904dac8"
+    },
+    {
+      "id": "preset-cool-film",
+      "kind": "preset",
+      "name": "Cool Film",
+      "group": "Film",
+      "author": "Ambrotype",
+      "description": "Cool slide-film look with deep blues.",
+      "license": "CC0-1.0",
+      "path": "presets/cool-film.xmp",
+      "sha256": "0690f11c475a4218e2435e1e5f560161c17ff6c328f85b5de331ba33bc0aebb9"
+    },
+    {
+      "id": "preset-dark-city",
+      "kind": "preset",
+      "name": "Dark City",
+      "group": "Moody",
+      "author": "Ambrotype",
+      "description": "Urban and cool: crushed shadows, teal and orange.",
+      "license": "CC0-1.0",
+      "path": "presets/dark-city.xmp",
+      "sha256": "f987c89a337352cc0d7a50b71db097cf1beb9f432f296b51014badb3d54be52e"
+    },
+    {
+      "id": "preset-faded-print",
+      "kind": "preset",
+      "name": "Faded Print",
+      "group": "Film",
+      "author": "Ambrotype",
+      "description": "Like an old print: lifted blacks, muted colour, warm cast.",
+      "license": "CC0-1.0",
+      "path": "presets/faded-print.xmp",
+      "sha256": "df97a77a0b4f5b0e775e834d5cd3441f73502f33ff4926a728b10045a485e90e"
+    },
+    {
+      "id": "preset-golden-hour",
+      "kind": "preset",
+      "name": "Golden Hour",
+      "group": "Warm & soft",
+      "author": "Ambrotype",
+      "description": "Warm highlights, soft contrast, glowing skin.",
+      "license": "CC0-1.0",
+      "path": "presets/golden-hour.xmp",
+      "sha256": "3519f4410696a70b26f8b89dfab61e9f643f25ded34f0eb631a80558531af44b"
+    },
+    {
+      "id": "preset-honey",
+      "kind": "preset",
+      "name": "Honey",
+      "group": "Warm & soft",
+      "author": "Ambrotype",
+      "description": "Amber midtones and gentle fade.",
+      "license": "CC0-1.0",
+      "path": "presets/honey.xmp",
+      "sha256": "e4c5e37f7077d620c0f82d860ff6e439614b0a5594fae3ca51140e3270ca426c"
+    },
+    {
+      "id": "preset-landscape-clarity",
+      "kind": "preset",
+      "name": "Landscape Detail",
+      "group": "Landscape",
+      "author": "Ambrotype",
+      "description": "More depth and detail for scenery.",
+      "license": "CC0-1.0",
+      "path": "presets/landscape-clarity.xmp",
+      "sha256": "99887e3f071eef3fe29405bcf3ff0162ebfeca834441adf6fee1a50cdbf5e22b"
+    },
+    {
+      "id": "preset-moody-forest",
+      "kind": "preset",
+      "name": "Moody Forest",
+      "group": "Moody",
+      "author": "Ambrotype",
+      "description": "Dark, desaturated greens and teal shadows.",
+      "license": "CC0-1.0",
+      "path": "presets/moody-forest.xmp",
+      "sha256": "c81da451e59b55d4536b897ca7954db16fae1b9644945e55b7fd86f4c743def3"
+    },
+    {
+      "id": "preset-night-lights",
+      "kind": "preset",
+      "name": "Night Lights",
+      "group": "Landscape",
+      "author": "Ambrotype",
+      "description": "Clean night shots: cool shadows, glowing lights, less noise.",
+      "license": "CC0-1.0",
+      "path": "presets/night-lights.xmp",
+      "sha256": "0531eac234ec5c6ec9c9683d4d1167fd8badb70c27cdb3757e854e7b209d7390"
+    },
+    {
+      "id": "preset-peach",
+      "kind": "preset",
+      "name": "Peach",
+      "group": "Warm & soft",
+      "author": "Ambrotype",
+      "description": "Pastel warmth for portraits.",
+      "license": "CC0-1.0",
+      "path": "presets/peach.xmp",
+      "sha256": "a2ed7cd2dd4265ab86556b38c529a3d13431053e1d56fb3cc605a8efe0ac052e"
+    },
+    {
+      "id": "preset-soft-portrait",
+      "kind": "preset",
+      "name": "Soft Portrait",
+      "group": "Portrait",
+      "author": "Ambrotype",
+      "description": "Flattering skin: softer texture, warm and bright.",
+      "license": "CC0-1.0",
+      "path": "presets/soft-portrait.xmp",
+      "sha256": "e67f23471f825f1b9881742d03acf4aa1b04f845e825550ab942e7cf7da2381b"
+    },
+    {
+      "id": "preset-stormy",
+      "kind": "preset",
+      "name": "Stormy",
+      "group": "Moody",
+      "author": "Ambrotype",
+      "description": "Heavy skies and muted colour.",
+      "license": "CC0-1.0",
+      "path": "presets/stormy.xmp",
+      "sha256": "59c35947d41ba1aaf9daf80885181582354a8bf5f03bd365fb45631aa9d7c025"
+    },
+    {
+      "id": "preset-teal-orange",
+      "kind": "preset",
+      "name": "Teal & Orange",
+      "group": "Vivid",
+      "author": "Ambrotype",
+      "description": "The classic cinematic split: teal shadows, warm skin.",
+      "license": "CC0-1.0",
+      "path": "presets/teal-orange.xmp",
+      "sha256": "5c9efddbc90a1d4476ea0ebba00b52a903838028bbd5a34ba40839691ca53a6f"
+    },
+    {
+      "id": "preset-vivid-travel",
+      "kind": "preset",
+      "name": "Vivid Travel",
+      "group": "Vivid",
+      "author": "Ambrotype",
+      "description": "Punchy colour and clear skies for travel shots.",
+      "license": "CC0-1.0",
+      "path": "presets/vivid-travel.xmp",
+      "sha256": "72536ae8e17e1847ae18fbc3e9378e271e5021c97eb860c85788e86b5dcba76b"
+    },
+    {
+      "id": "preset-warm-film",
+      "kind": "preset",
+      "name": "Warm Film",
+      "group": "Film",
+      "author": "Ambrotype",
+      "description": "Warm negative-film feel: soft greens, creamy skin, fine grain.",
+      "license": "CC0-1.0",
+      "path": "presets/warm-film.xmp",
+      "sha256": "6be9e3cc86706b0de9101939db12f98f030dd49d159b26ad1c237947d44a848b"
     }
   ]
 }

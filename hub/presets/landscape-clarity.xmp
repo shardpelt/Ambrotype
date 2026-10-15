@@ -1,0 +1,23 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Written for the Ambrotype hub. CC0-1.0: free for anyone, any use. -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4" crs:Author="Ambrotype" crs:License="CC0-1.0"
+    crs:Contrast2012="+10"
+    crs:Highlights2012="-50"
+    crs:Shadows2012="+35"
+    crs:Whites2012="+15"
+    crs:Blacks2012="-15"
+    crs:Texture="+20"
+    crs:Clarity2012="+15"
+    crs:Dehaze="+15"
+    crs:Vibrance="+20"
+    crs:LuminanceAdjustmentGreen="+5"
+    crs:SaturationAdjustmentBlue="+10"
+    crs:Sharpness="45">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Landscape Detail</rdf:li></rdf:Alt></crs:Name>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Landscape</rdf:li></rdf:Alt></crs:Group>
+   <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">More depth and detail for scenery.</rdf:li></rdf:Alt></crs:Description>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

@@ -24,7 +24,7 @@ If you skip step 4, a maintainer can run it before merging.
 
 ## Presets
 
-Develop presets go in `presets/<name>.xmp` (lower case and dashes), in Lightroom's XMP preset format: export one from Lightroom, or use Ambrotype's **Presets → Save…** and take the file from the presets folder. The app lists them under **Browse hub… → Presets**, shows what each changes, and installs it into the presets list (group "Hub").
+Develop presets go in `presets/<name>.xmp` (lower case and dashes), in Lightroom's XMP preset format: export one from Lightroom, or use Ambrotype's **Presets → Save…** and take the file from the presets folder. The app lists them under **Browse hub… → Presets**, shows what each changes, and installs it into the presets list (group "Hub"). They also make up the **Preset library** (Presets → Preset library…), grouped by their `crs:Group` (give each a `Name`, a `Group` and a one-line `Description`). The ones here when the app is built ship inside it, so the library works before this repo is published or without a connection.
 
 - Share only presets you made. Bought or downloaded packs belong to their makers.
 - Add `crs:Author`, `crs:Description` and a `crs:License` if you like; presets are CC0 otherwise.

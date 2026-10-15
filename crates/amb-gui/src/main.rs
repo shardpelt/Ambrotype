@@ -2285,6 +2285,42 @@ async fn hub_install_preset(
     presets(state).await
 }
 
+fn library_cache(state: &AppState) -> Option<PathBuf> {
+    let path = state.config_path.lock().ok()?;
+    Some(
+        path.as_ref()?
+            .parent()?
+            .join("cache")
+            .join("preset-library"),
+    )
+}
+
+/// The Preset Library: the hub's presets, or the built-in starters.
+#[tauri::command]
+async fn preset_library(state: tauri::State<'_, AppState>) -> Res<Vec<hub::LibraryPreset>> {
+    let url = hub_index(state.inner());
+    let cache = library_cache(state.inner()).ok_or("the settings folder isn't available")?;
+    let presets = own_presets_dir(state.inner());
+    tauri::async_runtime::spawn_blocking(move || {
+        hub::preset_library(&url, &cache, presets.as_deref())
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Add a Preset Library preset to the presets list; returns the list.
+#[tauri::command]
+async fn library_install_preset(
+    id: String,
+    path: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<PresetEntry>> {
+    let dir = own_presets_dir(state.inner()).ok_or("the settings folder isn't available")?;
+    let cache = library_cache(state.inner()).ok_or("the settings folder isn't available")?;
+    hub::install_library_preset(&dir, &cache, &id, Path::new(&path))?;
+    presets(state).await
+}
+
 /// Install (or update) a collage template from the hub; returns the templates.
 #[tauri::command]
 async fn hub_install_collage(
@@ -4005,6 +4041,8 @@ fn main() {
             hub_install,
             hub_install_plugin,
             hub_install_preset,
+            preset_library,
+            library_install_preset,
             hub_install_collage,
             hub_install_sizes,
             hub_submit,

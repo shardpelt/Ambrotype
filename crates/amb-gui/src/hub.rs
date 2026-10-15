@@ -13,6 +13,7 @@
 //! becomes a pull request to the hub repo.
 
 use crate::looks::{self, Kind};
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -39,6 +40,9 @@ pub struct HubItem {
     pub id: String,
     pub kind: String,
     pub name: String,
+    /// A develop preset's style group ("Film", "Moody", ...).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub group: String,
     #[serde(default)]
     pub author: String,
     #[serde(default)]
@@ -268,6 +272,111 @@ pub fn install_preset(dir: &Path, index_url: &str, id: &str) -> Result<std::path
     std::fs::create_dir_all(&folder).map_err(|e| format!("{}: {e}", folder.display()))?;
     let path = folder.join(format!("{}.xmp", item.id));
     let text = String::from_utf8(bytes).map_err(|e| e.to_string())?;
+    amb_protocol::sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())?;
+    Ok(path)
+}
+
+/// The starter presets built into the app (the hub's `presets/` folder):
+/// hub id and file.
+const BUNDLED_PRESETS: &[(&str, &str)] = include!(concat!(env!("OUT_DIR"), "/bundled_presets.rs"));
+
+/// A develop preset in the Preset Library.
+#[derive(Debug, Clone, Serialize)]
+pub struct LibraryPreset {
+    pub id: String,
+    pub name: String,
+    pub group: String,
+    pub description: String,
+    pub author: String,
+    /// A local copy, for previewing and installing.
+    pub path: String,
+    pub installed: bool,
+}
+
+/// The Preset Library: the hub's develop presets, each downloaded (and
+/// checked) once into `cache`; when the hub can't be reached or has none,
+/// the starter presets built into the app. Sorted by group, then name.
+pub fn preset_library(index_url: &str, cache: &Path, presets: Option<&Path>) -> Vec<LibraryPreset> {
+    let _ = std::fs::create_dir_all(cache);
+    let entry = |id: &str, file: &Path, text: &str| -> Option<LibraryPreset> {
+        let p = amb_presets::Preset::parse_xmp(text).ok()?;
+        let get = |k: &str| {
+            p.get(k)
+                .and_then(amb_presets::Value::display_text)
+                .unwrap_or("")
+                .to_string()
+        };
+        Some(LibraryPreset {
+            id: id.to_string(),
+            name: p.name().unwrap_or(id).to_string(),
+            group: p.group().unwrap_or("Other").to_string(),
+            description: get("Description"),
+            author: get("Author"),
+            path: file.display().to_string(),
+            installed: presets
+                .is_some_and(|d| d.join(PRESET_FOLDER).join(format!("{id}.xmp")).is_file()),
+        })
+    };
+    let hub: Vec<HubItem> = read_index(index_url)
+        .map(|items| items.into_iter().filter(|i| i.kind == "preset").collect())
+        .unwrap_or_default();
+    let mut out: Vec<LibraryPreset> = hub
+        .par_iter()
+        .filter_map(|item| {
+            let file = cache.join(format!("{}-{}.xmp", item.id, item.sha256.get(..12)?));
+            let text = match std::fs::read_to_string(&file) {
+                Ok(t) => t,
+                Err(_) => {
+                    let (bytes, _) = fetch_preset(index_url, item).ok()?;
+                    let t = String::from_utf8(bytes).ok()?;
+                    amb_protocol::sidecar::write_atomic(&file, &t).ok()?;
+                    t
+                }
+            };
+            entry(&item.id, &file, &text)
+        })
+        .collect();
+    if out.is_empty() {
+        out = BUNDLED_PRESETS
+            .iter()
+            .filter_map(|(id, text)| {
+                let file = cache.join(format!("{id}.xmp"));
+                if std::fs::read_to_string(&file).ok().as_deref() != Some(text) {
+                    amb_protocol::sidecar::write_atomic(&file, text).ok()?;
+                }
+                entry(id, &file, text)
+            })
+            .collect();
+    }
+    out.sort_by(|a, b| (&a.group, &a.name).cmp(&(&b.group, &b.name)));
+    out
+}
+
+/// Install a Preset Library preset (its local copy, which must be in
+/// `cache`) into `dir` as `Hub/<id>.xmp`, where hub installs go.
+pub fn install_library_preset(
+    dir: &Path,
+    cache: &Path,
+    id: &str,
+    file: &Path,
+) -> Result<std::path::PathBuf, String> {
+    let ok_id = !id.is_empty()
+        && id
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-');
+    let inside = file
+        .canonicalize()
+        .ok()
+        .zip(cache.canonicalize().ok())
+        .is_some_and(|(f, c)| f.starts_with(c));
+    if !ok_id || !inside {
+        return Err("not a Preset Library preset".into());
+    }
+    let text = std::fs::read_to_string(file).map_err(|e| e.to_string())?;
+    amb_presets::Preset::parse_xmp(&text).map_err(|e| e.to_string())?;
+    let folder = dir.join(PRESET_FOLDER);
+    std::fs::create_dir_all(&folder).map_err(|e| format!("{}: {e}", folder.display()))?;
+    let path = folder.join(format!("{id}.xmp"));
     amb_protocol::sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())?;
     Ok(path)
 }
@@ -810,6 +919,28 @@ mod tests {
         assert!(err.contains("checksum"), "{err}");
         let _ = std::fs::remove_dir_all(&hub);
         let _ = std::fs::remove_dir_all(&mine);
+    }
+
+    #[test]
+    fn preset_library_falls_back_to_the_built_in_presets() {
+        let cache = temp_dir("plib-cache");
+        let mine = temp_dir("plib-mine");
+        let lib = preset_library("file:///nowhere/index.json", &cache, Some(&mine));
+        assert_eq!(lib.len(), BUNDLED_PRESETS.len());
+        assert!(lib.len() >= 20);
+        assert!(
+            lib.iter()
+                .all(|p| !p.group.is_empty() && !p.description.is_empty() && !p.installed)
+        );
+        let bw = lib.iter().find(|p| p.id == "preset-bw-classic").unwrap();
+        install_library_preset(&mine, &cache, &bw.id, Path::new(&bw.path)).unwrap();
+        let again = preset_library("file:///nowhere/index.json", &cache, Some(&mine));
+        assert!(again.iter().find(|p| p.id == bw.id).unwrap().installed);
+        // Only the library's own copies can be installed.
+        let elsewhere = mine.join("x.xmp");
+        std::fs::copy(&bw.path, &elsewhere).unwrap();
+        assert!(install_library_preset(&mine, &cache, "preset-x", &elsewhere).is_err());
+        assert!(install_library_preset(&mine, &cache, "../x", Path::new(&bw.path)).is_err());
     }
 
     #[test]

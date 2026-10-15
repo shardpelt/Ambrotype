@@ -93,6 +93,7 @@ def check_presets():
             "id": f"preset-{path.stem}",
             "kind": "preset",
             "name": xmp_text(raw, "Name") or path.stem,
+            "group": xmp_text(raw, "Group"),
             "author": xmp_text(raw, "Author"),
             "description": xmp_text(raw, "Description"),
             "license": xmp_text(raw, "License") or "CC0-1.0",

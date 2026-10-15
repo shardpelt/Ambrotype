@@ -1,0 +1,21 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Written for the Ambrotype hub. CC0-1.0: free for anyone, any use. -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4" crs:Author="Ambrotype" crs:License="CC0-1.0"
+    crs:Exposure2012="+0.45"
+    crs:Contrast2012="-20"
+    crs:Highlights2012="-40"
+    crs:Shadows2012="+45"
+    crs:Whites2012="+10"
+    crs:Blacks2012="+15"
+    crs:Vibrance="+10"
+    crs:Saturation="-10"
+    crs:ColorGradeHighlightHue="210"
+    crs:ColorGradeHighlightSat="6">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Airy</rdf:li></rdf:Alt></crs:Name>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Bright &amp; airy</rdf:li></rdf:Alt></crs:Group>
+   <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Light and clean: lifted shadows, cool whites.</rdf:li></rdf:Alt></crs:Description>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

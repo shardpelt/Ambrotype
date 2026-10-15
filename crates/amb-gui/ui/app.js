@@ -2089,6 +2089,7 @@ async function init() {
   wireSpots();
   wireGuided();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
+  wirePresetLibrary();
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));
   $("btn-assistant").addEventListener("click", () => assistantFlow().catch((e) => toast(String(e), true)));

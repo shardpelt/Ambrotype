@@ -1,0 +1,21 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Written for the Ambrotype hub. CC0-1.0: free for anyone, any use. -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4" crs:Author="Ambrotype" crs:License="CC0-1.0"
+    crs:Contrast2012="+20"
+    crs:Highlights2012="-40"
+    crs:Shadows2012="+30"
+    crs:Whites2012="+10"
+    crs:Blacks2012="-10"
+    crs:Clarity2012="+10"
+    crs:Dehaze="+8"
+    crs:Vibrance="+30"
+    crs:SaturationAdjustmentBlue="+15"
+    crs:LuminanceAdjustmentBlue="-10">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Vivid Travel</rdf:li></rdf:Alt></crs:Name>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Vivid</rdf:li></rdf:Alt></crs:Group>
+   <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Punchy colour and clear skies for travel shots.</rdf:li></rdf:Alt></crs:Description>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

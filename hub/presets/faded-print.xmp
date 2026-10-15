@@ -1,0 +1,21 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Written for the Ambrotype hub. CC0-1.0: free for anyone, any use. -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4" crs:Author="Ambrotype" crs:License="CC0-1.0"
+    crs:Contrast2012="-15"
+    crs:Saturation="-25"
+    crs:Highlights2012="-15"
+    crs:ColorGradeGlobalHue="45"
+    crs:ColorGradeGlobalSat="12"
+    crs:GrainAmount="25"
+    crs:GrainSize="30"
+    crs:GrainFrequency="45"
+    crs:PostCropVignetteAmount="-15">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Faded Print</rdf:li></rdf:Alt></crs:Name>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Film</rdf:li></rdf:Alt></crs:Group>
+   <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Like an old print: lifted blacks, muted colour, warm cast.</rdf:li></rdf:Alt></crs:Description>
+   <crs:ToneCurvePV2012><rdf:Seq><rdf:li>0, 28</rdf:li><rdf:li>64, 70</rdf:li><rdf:li>128, 132</rdf:li><rdf:li>192, 192</rdf:li><rdf:li>255, 240</rdf:li></rdf:Seq></crs:ToneCurvePV2012>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

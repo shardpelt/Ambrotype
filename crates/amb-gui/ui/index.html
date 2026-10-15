@@ -52,6 +52,7 @@
         </div>
         <input id="preset-filter" type="search" placeholder="Filter presets" spellcheck="false">
         <label class="amount">Amount <input id="preset-amount" type="range" min="0" max="200" value="100"><output id="preset-amount-out">100</output></label>
+        <button id="btn-preset-library" class="small match-button" title="Free presets, grouped by style: hover to see one on your photo">Preset library…</button>
         <button id="btn-surprise" class="small match-button" title="Random looks to try: pick one you like (one undo step)" disabled>Surprise me…</button>
         <button id="btn-assistant" class="small match-button" title="Ask your own AI model to edit the photo (Ctrl+Shift+A)">Ask AI…</button>
         <button id="btn-match" class="small match-button" title="Pick reference photos; finds the white balance, tone, colour and grading settings that give this photo their look" disabled>Match look of other photos…</button>
@@ -104,6 +105,14 @@
       <canvas id="mask-canvas" class="crop-canvas mask-canvas" hidden></canvas>
       <canvas id="spot-canvas" class="crop-canvas spot-canvas" hidden></canvas>
       <canvas id="guide-canvas" class="crop-canvas spot-canvas" hidden></canvas>
+      <!-- Preset library (presetlib.js): at the photo's left edge, so the photo stays in view. -->
+      <div class="preset-library" id="preset-library" hidden>
+        <div class="side-head"><h2>Preset library</h2><button type="button" class="small" id="presetlib-close" title="Close (Esc)">×</button></div>
+        <input id="presetlib-search" type="search" placeholder="Search: film, moody, portrait…" spellcheck="false">
+        <div id="presetlib-groups" class="presetlib-groups"></div>
+        <div id="presetlib-list" class="presetlib-list"><p class="hint">Loading…</p></div>
+        <p class="hint">Hover to see a preset on your photo. Free to use (CC0).</p>
+      </div>
       <div class="badge" id="before-badge" hidden>Before</div>
       <!-- Soft proofing (S): the space to see the photo in (app.js toggleProof). -->
       <div class="proof-bar" id="proof-bar" hidden>
@@ -1189,6 +1198,7 @@
   <script src="learn.js"></script>
   <script src="assistant.js"></script>
   <script src="guided.js"></script>
+  <script src="presetlib.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

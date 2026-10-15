@@ -70,6 +70,13 @@ library's package. Notable ones:
 - GNU FreeSans Bold (crates/amb-export/data/fonts/FreeSansBold.ttf, for text
   watermarks): Copyright 2002-2012 GNU FreeFont contributors, GPL-3.0-or-later
   with the GNU FreeFont font exception.
+- Fonts for captions, watermarks and the editor's Frame
+  (crates/amb-export/data/fonts/, each with its licence file there):
+  Caveat, Copyright 2014 The Caveat Project Authors, SIL OFL 1.1;
+  Reenie Beanie, Copyright 2010 James Grieshaber, SIL OFL 1.1;
+  Permanent Marker, by Font Diner, Apache-2.0;
+  Special Elite, by Astigmatic, Apache-2.0;
+  DSEG7 Classic Bold, Copyright 2017 keshikan, SIL OFL 1.1.
 
 Binary releases include the full licence texts of every library they contain
 (docs/legal-and-naming.md, "Releases").

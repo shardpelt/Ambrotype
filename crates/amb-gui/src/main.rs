@@ -815,6 +815,21 @@ fn execute(
     })
 }
 
+/// The fonts for text on exports: id and name.
+#[tauri::command]
+fn fonts() -> Vec<(&'static str, &'static str)> {
+    amb_export::fonts::FONTS
+        .iter()
+        .map(|(id, name, _)| (*id, *name))
+        .collect()
+}
+
+/// A font file, so the editor's previews use the same fonts as exports.
+#[tauri::command]
+fn font_data(id: String) -> Response {
+    Response::new(amb_export::fonts::bytes(&id).to_vec())
+}
+
 /// A border caption as the open photo's export would set it, and the tokens.
 #[tauri::command]
 fn caption_preview(
@@ -4060,6 +4075,8 @@ fn main() {
             add_preset_folder,
             crop_state,
             caption_preview,
+            fonts,
+            font_data,
             crop_commands,
             mask_frame,
             mask_sliders,

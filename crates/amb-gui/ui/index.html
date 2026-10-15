@@ -29,6 +29,8 @@
       <button id="btn-zoom" title="Fit / 100% (Z, or click the photo). Drag to pan at 100%." disabled>100%</button>
       <button id="btn-wb" title="White balance picker: click a neutral grey or white spot (W)" disabled>WB picker</button>
       <button id="btn-clip" title="Show clipped highlights (red) and shadows (blue) (J)" disabled>Clipping</button>
+      <button id="btn-frame" title="Frame: a border and text around the photo (Shift+B)" disabled>Frame</button>
+      <button id="btn-keys" title="All keyboard shortcuts (?)">Shortcuts</button>
       <span class="sep"></span>
       <button id="btn-plugins" title="Plugins: extra tools that make edits for you">Plugins</button>
       <span class="sep"></span>
@@ -105,6 +107,36 @@
       <canvas id="mask-canvas" class="crop-canvas mask-canvas" hidden></canvas>
       <canvas id="spot-canvas" class="crop-canvas spot-canvas" hidden></canvas>
       <canvas id="guide-canvas" class="crop-canvas spot-canvas" hidden></canvas>
+      <!-- Frame (frame.js): the frame and text around the photo in the editor. -->
+      <div class="preset-library frame-panel" id="frame-panel" hidden>
+        <div class="side-head"><h2>Frame</h2><button type="button" class="small" id="frame-close" title="Close (Shift+B)">×</button></div>
+        <label>Start from <select id="frame-preset"></select></label>
+        <label>Colour
+          <span class="pair swatches" id="frame-swatches">
+            <button type="button" data-color="#ffffff" title="White" style="background:#ffffff"></button>
+            <button type="button" data-color="#f7f5f0" title="Cream" style="background:#f7f5f0"></button>
+            <button type="button" data-color="#c8c8c8" title="Light grey" style="background:#c8c8c8"></button>
+            <button type="button" data-color="#333333" title="Dark grey" style="background:#333333"></button>
+            <button type="button" data-color="#000000" title="Black" style="background:#000000"></button>
+            <input id="frame-color" type="color" value="#ffffff" title="Any colour">
+          </span>
+        </label>
+        <label>Width <span class="pair"><input id="frame-width" type="range" min="0" max="15" step="0.5" value="4"><output id="frame-width-out">4</output></span></label>
+        <label>Bottom <span class="pair"><input id="frame-bottom" type="range" min="0" max="40" step="0.5" value="4"><output id="frame-bottom-out">4</output></span></label>
+        <label>Text <input id="frame-text" type="text" spellcheck="false" placeholder="e.g. Summer '26"></label>
+        <span class="inline-check"><input id="frame-specs" type="checkbox"><span>Add the photo's details (camera, mm, f-stop, shutter, ISO)</span></span>
+        <label>Font <select id="frame-font"></select></label>
+        <label>Where <select id="frame-place">
+          <option value="frame">In the frame, below the photo</option>
+          <option value="photo-br">On the photo, bottom right</option>
+          <option value="photo-bl">On the photo, bottom left</option>
+          <option value="photo-tl">On the photo, top left</option>
+        </select></label>
+        <label>Text size <input id="frame-size" type="range" min="10" max="90" step="1" value="30"></label>
+        <label>Text colour <input id="frame-text-color" type="color" value="#3a3a3a"></label>
+        <p class="hint">Drawn around the photo, not part of the edit. Export uses it as its Border.</p>
+      </div>
+      <div class="frame-label" id="frame-label" hidden></div>
       <!-- Preset library (presetlib.js): at the photo's left edge, so the photo stays in view. -->
       <div class="preset-library" id="preset-library" hidden>
         <div class="side-head"><h2>Preset library</h2><button type="button" class="small" id="presetlib-close" title="Close (Esc)">×</button></div>
@@ -727,6 +759,7 @@
             <label>Rounded corners (%) <input name="b_radius" type="number" min="0" max="50" step="0.5"></label>
             <label class="caption" title="A line of text in the bottom of the frame">Caption
               <span class="pair"><input name="b_caption" type="text" spellcheck="false" placeholder="None (e.g. {camera} · {exposure})">
+                <select name="b_font" title="Font"></select>
                 <select name="b_caption_align" title="Where the caption sits"><option value="left">Left</option><option value="center" selected>Centre</option><option value="right">Right</option></select></span>
             </label>
             <p id="border-caption-tokens" class="hint caption-tokens" hidden></p>
@@ -757,6 +790,7 @@
           <label>Opacity <input name="wm_opacity" type="number" min="0" max="100" step="5" value="70"></label>
           <label>Rotate (°) <input name="wm_rotate" type="number" min="-180" max="180" step="15" value="0"></label>
           <span class="inline-check"><input name="wm_tile" type="checkbox"><span>Repeat across the photo</span></span>
+          <label>Font <select name="wm_font"></select></label>
           <label class="wm-color">Colour <input name="wm_color" type="color" value="#ffffff"></label>
           <span class="inline-check wm-shadow"><input name="wm_shadow" type="checkbox" checked><span>Shadow</span></span>
           <span id="wm-image-name" class="hint"></span>
@@ -817,6 +851,13 @@
   </dialog>
 
   <div id="toast" class="toast" hidden></div>
+  <dialog id="shortcuts-dialog" class="shortcuts-dialog">
+    <form method="dialog">
+      <h2>Keyboard shortcuts</h2>
+      <div id="shortcuts-list" class="shortcuts-list"></div>
+      <menu><span class="grow hint">Change them in Settings (⚙). Press ? to see this again.</span><button value="ok" class="primary">Close</button></menu>
+    </form>
+  </dialog>
   <dialog id="settings-dialog">
     <form method="dialog">
       <h2>Settings</h2>
@@ -1199,6 +1240,7 @@
   <script src="assistant.js"></script>
   <script src="guided.js"></script>
   <script src="presetlib.js"></script>
+  <script src="frame.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

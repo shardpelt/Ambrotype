@@ -52,7 +52,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   "based_on": "builtin:studio",              // optional; set by Clone
   "theme": "builtin:dark",                   // optional: switching to this layout also picks this theme
   "density": "normal",                       // "compact" | "normal" | "large"
-  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "|", "plugins", "|", "looks", "edit", "settings", "feedback"],
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
   "left":  { "width": 250, "items": ["presets", "history"] },
   "right": { "width": 340, "items": ["histogram", { "panel": "basic", "open": true }, { "panel": "detail" }] }
 }
@@ -85,10 +85,12 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   | `zoom` | 100% view |
   | `wb` | White-balance picker |
   | `clip` | Clipping overlay |
+  | `frame` | Frame: a border and text around the photo, previewed outside the edit |
   | `plugins` | The Plugins dialog |
   | `looks` | The Appearance dialog (layouts and themes) |
   | `edit` | Editor mode (rearrange the layout in place) |
   | `settings` | Settings, including the keyboard shortcuts |
+  | `keys` | All keyboard shortcuts on one card |
   | `feedback` | Feedback |
 
 - `"|"` is a separator.

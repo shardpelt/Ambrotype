@@ -27,7 +27,8 @@
 //!   [`CAPTION_TOKENS`]; parts left empty (no lens known, say) are dropped
 //!   with their separator. `size` is the text's height as a percentage of
 //!   the bottom band; `color` defaults to dark on a light frame and light on
-//!   a dark one.
+//!   a dark one. `font` is one of [`crate::fonts::FONTS`] (`"handwritten"`,
+//!   `"marker"`, …; empty: Sans).
 
 use crate::geometry::Resize;
 use serde::{Deserialize, Serialize};
@@ -67,6 +68,9 @@ pub struct Caption {
     pub align: Align,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
+    /// A font from [`crate::fonts::FONTS`] (empty: the default).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub font: String,
 }
 
 pub const DEFAULT_CAPTION: &str = "{camera} · {exposure}";
@@ -86,6 +90,7 @@ impl Caption {
             size: default_caption_size(),
             align: Align::Center,
             color: None,
+            font: String::new(),
         }
     }
 }
@@ -334,6 +339,9 @@ impl Border {
             return Err("radius must be 0 to 50 (percent of the photo's short edge)".into());
         }
         if let Some(c) = &self.caption {
+            if !crate::fonts::is_known(&c.font) {
+                return Err(format!("no font {:?}", c.font));
+            }
             if !(5.0..=90.0).contains(&c.size) {
                 return Err("caption size must be 5 to 90 (percent of the bottom band)".into());
             }
@@ -483,10 +491,10 @@ pub fn draw_caption(
     }
     let mut px = (band as f64 * caption.size / 100.0) as f32;
     let room = (p.canvas.0 as f32 * 0.92).max(1.0);
-    let (mut cov, mut w, mut h) = crate::watermark::set_text(text, px);
+    let (mut cov, mut w, mut h) = crate::watermark::set_text(&caption.font, text, px);
     if w as f32 > room {
         px *= room / w as f32;
-        (cov, w, h) = crate::watermark::set_text(text, px);
+        (cov, w, h) = crate::watermark::set_text(&caption.font, text, px);
     }
     if w == 0 || h == 0 || h > band {
         return;

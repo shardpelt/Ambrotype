@@ -4,7 +4,7 @@ Status: borders built (2026-10-08), the collage maker built (2026-10-08); open i
 
 ## Borders
 
-*Built (2026-10-08): `crates/amb-export/src/border.rs` (layout, colours, compositing), border presets in the export dialog (`ui/borders.js`, built-ins in `crates/amb-gui/data/border-presets.json`, yours in the settings file), `amb render --border 5%,#fff` or `--border preset.json`, and batches with `amb render A.nef B.nef … --out-dir DIR`. Captions (2026-10-13): a line of text in the bottom band, from a template filled in with the photo's camera, lens, exposure, date, title or creator (`{camera} · {exposure}`); the export dialog's Caption field (previewed with the photo's own details) and `amb render --border-caption`. One font (FreeSans Bold), one line.*
+*Built (2026-10-08): `crates/amb-export/src/border.rs` (layout, colours, compositing), border presets in the export dialog (`ui/borders.js`, built-ins in `crates/amb-gui/data/border-presets.json`, yours in the settings file), `amb render --border 5%,#fff` or `--border preset.json`, and batches with `amb render A.nef B.nef … --out-dir DIR`. Captions (2026-10-13): a line of text in the bottom band, from a template filled in with the photo's camera, lens, exposure, date, title or creator (`{camera} · {exposure}`); the export dialog's Caption field (previewed with the photo's own details) and `amb render --border-caption`. One line. Fonts (2026-10-15): Sans (FreeSans Bold), Handwritten (Caveat), Pen (Reenie Beanie), Marker (Permanent Marker), Typewriter (Special Elite) and Date stamp (DSEG7), for captions and text watermarks (`amb-export/src/fonts.rs`). The editor's Frame panel (Shift+B) previews a border and text around the photo, outside the edit; on export it becomes the Border ("Frame") and, for text on the photo, the watermark.*
 
 ![Export with a border: Instagram 4:5, the whole photo inside a Polaroid-style frame](../images/export-border.png)
 
@@ -14,7 +14,7 @@ A border is an export option, saved and shared as a **border preset**.
   - width as a percentage of the long or short edge, or in pixels; separate inner and outer widths
   - colour, or "sampled from the photo" (average or dominant colour)
   - corner radius
-  - an optional caption or EXIF line (size, alignment, colour, text template such as `{camera} · {focal} · {aperture} · {shutter}`; built, without a choice of font)
+  - an optional caption or EXIF line (size, alignment, colour, font, text template such as `{camera} · {focal} · {aperture} · {shutter}`; built)
 - **Fit to a size preset:** for example "Instagram portrait 1080×1350 with a 4% white border". The photo is scaled to fit inside the border, and the rest is filled with the border colour. This gives the common "white frame around a landscape photo on a portrait post" look without cropping.
 - **Where it applies:** in `amb-export`, after resize and output sharpening, so it is the same in the GUI, the CLI (`amb render --border preset.json`) and batch export.
 - **Preview:** shown in the export dialog, and optionally in the viewer as a soft-proof overlay.

@@ -21,6 +21,7 @@ pub mod collage;
 pub mod dng;
 pub mod embed;
 pub mod exif;
+pub mod fonts;
 pub mod geometry;
 mod tiff_file;
 pub mod watermark;
@@ -357,7 +358,12 @@ pub fn export(
     if let Some(w) = &s.watermark {
         let text = frame_colour(&w.color, &out, s.color_space, linear_out, float);
         let to_output = |rgb: [f64; 3]| srgb_to_output(rgb, s.color_space, linear_out, float);
-        watermark::apply(&mut out, w, &|_| text, &to_output).map_err(Error::Unsupported)?;
+        // Text can carry the photo's details, as a border caption can.
+        let mut w = w.clone();
+        if w.text.contains('{') {
+            w.text = border::caption_text(&w.text, meta, &s.tags);
+        }
+        watermark::apply(&mut out, &w, &|_| text, &to_output).map_err(Error::Unsupported)?;
     }
     // The frame goes on last, so its edge isn't sharpened.
     if let (Some(b), Some(p)) = (&s.border, &plan) {

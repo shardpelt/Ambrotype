@@ -1308,7 +1308,7 @@ async function openPath(path) {
     $("photo-title").textContent = `${r.info.name}  —  ${r.info.camera}${r.info.lens ? "  ·  " + r.info.lens : ""}`;
     $("exif").textContent = [r.info.exposure, `${r.info.width} × ${r.info.height}`,
       r.info.sidecar_loaded ? "edits loaded from sidecar" : ""].filter(Boolean).join("  ·  ");
-    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-save-preset", "btn-match", "btn-surprise"]) $(id).disabled = false;
+    for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-frame", "btn-save-preset", "btn-match", "btn-surprise"]) $(id).disabled = false;
     if (ui.zoom.on) setZoom(false);
     setState(r.state);
     if (r.saved_previous) toast(`Saved your edits to ${r.saved_previous.replace(/^.*[\\/]/, "")}`);
@@ -1835,6 +1835,7 @@ function readWatermark() {
     shadow: f.wm_shadow.checked,
     rotate: Math.max(-180, Math.min(180, Number(f.wm_rotate.value) || 0)),
     tile: f.wm_tile.checked,
+    font: f.wm_font.value || "",
   };
 }
 
@@ -1983,6 +1984,10 @@ async function exportFlow(batch = null) {
   }
   if (!ui.borders) await loadBorders();
   fillBorderSelect();
+  await loadFonts();
+  fillFontSelect($("export-form").b_font, $("export-form").b_font.value);
+  fillFontSelect($("export-form").wm_font, $("export-form").wm_font.value);
+  if (!batch) frameToExport();
   await fillExportPresets($("export-form").export_preset.value || null);
   updateWatermarkForm();
   updateExportSize();
@@ -2090,6 +2095,8 @@ async function init() {
   wireGuided();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   wirePresetLibrary();
+  wireFrame();
+  $("btn-keys").addEventListener("click", showShortcuts);
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));
   $("btn-assistant").addEventListener("click", () => assistantFlow().catch((e) => toast(String(e), true)));

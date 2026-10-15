@@ -35,7 +35,7 @@ const lib = {
 const libraryOn = () => lib.on;
 const libPhoto = (path) => lib.photos.find((p) => p.path === path);
 const selectedPhotos = () => lib.shown.filter((p) => lib.selected.has(p.path));
-const VIEWER_BUTTONS = ["btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip"];
+const VIEWER_BUTTONS = ["btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-frame"];
 
 // ---------------------------------------------------------------- show, load
 

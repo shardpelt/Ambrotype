@@ -46,7 +46,7 @@ function readBorder() {
   if (f.b_key.value !== "" && Number(f.b_key.value) > 0) b.keyline = { width: Number(f.b_key.value), color: f.b_key_color.value };
   const caption = f.b_caption.value.trim();
   if (caption) {
-    b.caption = { ...(ui.borderCaptionRest ?? {}), text: caption, align: f.b_caption_align.value };
+    b.caption = { ...(ui.borderCaptionRest ?? {}), text: caption, align: f.b_caption_align.value, font: f.b_font.value || "" };
   }
   return b;
 }
@@ -66,7 +66,8 @@ function writeBorder(b) {
   f.b_radius.value = b.radius ?? 0;
   f.b_fit.checked = Boolean(b.fit);
   // The caption's size and colour aren't in the fields: kept as they were.
-  const { text = "", align = "center", ...rest } = b.caption ?? {};
+  const { text = "", align = "center", font = "", ...rest } = b.caption ?? {};
+  if (font && [...f.b_font.options].some((o) => o.value === font)) f.b_font.value = font;
   ui.borderCaptionRest = rest;
   f.b_caption.value = text;
   f.b_caption_align.value = align;

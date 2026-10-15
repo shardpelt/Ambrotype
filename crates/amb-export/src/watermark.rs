@@ -19,16 +19,16 @@
 //! - `rotate`: degrees, counter-clockwise (−180–180).
 //! - `tile`: repeat the mark across the whole photo, in rows offset by half
 //!   a step (`anchor` and `inset` are then unused).
+//! - `font`: one of [`crate::fonts::FONTS`] by id (empty: Sans). Text with
+//!   `{tokens}` is filled in like a border caption (`{camera}`, …).
 //!
-//! Text is set in GNU FreeSans Bold (GPL-3.0-or-later with the font
-//! exception), bundled.
+//! Text is set in one of the bundled fonts ([`crate::fonts`]): GNU FreeSans
+//! Bold by default, or handwriting, marker, typewriter or a date stamp.
 
 use std::path::PathBuf;
 
 use amb_engine::buffer::Image;
 use serde::{Deserialize, Serialize};
-
-const FONT: &[u8] = include_bytes!("../data/fonts/FreeSansBold.ttf");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -92,6 +92,9 @@ pub struct Watermark {
     pub rotate: f64,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub tile: bool,
+    /// A font from [`crate::fonts::FONTS`] (empty: the default).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub font: String,
 }
 
 fn is_zero(v: &f64) -> bool {
@@ -128,12 +131,16 @@ impl Watermark {
             shadow: true,
             rotate: 0.0,
             tile: false,
+            font: String::new(),
         }
     }
 
     pub fn validate(&self) -> Result<(), String> {
         if self.image.is_none() && self.text.trim().is_empty() {
             return Err("a watermark needs text or an image".into());
+        }
+        if !crate::fonts::is_known(&self.font) {
+            return Err(format!("no font {:?}", self.font));
         }
         if self.image.is_none() && crate::border::parse_color(&self.color).is_none() {
             return Err(format!("watermark colour {:?}: use #rrggbb", self.color));
@@ -161,10 +168,11 @@ struct Layer {
 }
 
 /// The text set at `px` pixels: coverage, and its size.
-pub(crate) fn set_text(text: &str, px: f32) -> (Vec<f32>, usize, usize) {
+pub(crate) fn set_text(font: &str, text: &str, px: f32) -> (Vec<f32>, usize, usize) {
     use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
-    let font = fontdue::Font::from_bytes(FONT, fontdue::FontSettings::default())
-        .expect("the bundled font reads");
+    let font =
+        fontdue::Font::from_bytes(crate::fonts::bytes(font), fontdue::FontSettings::default())
+            .expect("the bundled fonts read");
     let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
     layout.reset(&LayoutSettings::default());
     layout.append(&[&font], &TextStyle::new(text, px, 0));
@@ -227,12 +235,12 @@ fn soften(v: &[f32], w: usize, h: usize, r: usize) -> Vec<f32> {
 
 fn text_layer(w: &Watermark, target_width: usize, colour: [f32; 3]) -> Option<Layer> {
     // Measure at a reference size, then set at the size that gives the width.
-    let (_, ref_w, _) = set_text(&w.text, 100.0);
+    let (_, ref_w, _) = set_text(&w.font, &w.text, 100.0);
     if ref_w == 0 {
         return None;
     }
     let px = (100.0 * target_width as f32 / ref_w as f32).clamp(4.0, 2000.0);
-    let (cov, tw, th) = set_text(&w.text, px);
+    let (cov, tw, th) = set_text(&w.font, &w.text, px);
     if !w.shadow {
         return Some(Layer {
             width: tw,

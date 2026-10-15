@@ -8,7 +8,7 @@
 
 const TOOLBAR_IDS = {
   open: "btn-open", library: "btn-library", save: "btn-save", export: "btn-export", collage: "btn-collage", undo: "btn-undo", redo: "btn-redo",
-  before: "btn-before", crop: "btn-crop", masks: "btn-masks", spots: "btn-spots", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip",
+  before: "btn-before", crop: "btn-crop", masks: "btn-masks", spots: "btn-spots", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip", frame: "btn-frame", keys: "btn-keys",
   plugins: "btn-plugins", looks: "btn-looks", edit: "btn-edit-layout", settings: "btn-settings", feedback: "btn-feedback",
 };
 const BLOCK_IDS = { presets: "block-presets", info: "block-info", history: "block-history", histogram: "block-histogram" };

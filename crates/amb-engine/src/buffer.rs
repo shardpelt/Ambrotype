@@ -40,6 +40,11 @@ impl Tile {
         }
     }
 
+    /// Whether a `width` × `height` buffer at this tile is the whole output.
+    pub fn is_whole(&self, width: usize, height: usize) -> bool {
+        *self == Tile::whole(width, height)
+    }
+
     /// The whole of `img`.
     pub fn of(img: &Image) -> Tile {
         Tile::whole(img.width, img.height)

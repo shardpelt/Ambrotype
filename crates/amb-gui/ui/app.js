@@ -761,7 +761,7 @@ async function renderRegionDraft() {
 }
 
 // Position the 1:1 crop so (cx, cy) sits in the viewport centre.
-function placeRegion(dx = 0, dy = 0) {
+function placeRegion(dx = pan.dx, dy = pan.dy) {
   const m = ui.zoom.meta;
   if (!m) return;
   const v = $("viewer");
@@ -786,6 +786,32 @@ function setZoom(on, u = 0.5, v = 0.5) {
   $("btn-zoom").classList.toggle("active", on);
   if (!on) for (const k of ["width", "height", "left", "top"]) img.style[k] = "";
   requestPreview(false);
+}
+
+// Move the 1:1 view by a share of the viewer's size (arrow keys), or by
+// pixels (scrolling, a trackpad). The picture moves at once; the new area
+// is rendered once the moving stops.
+const pan = { dx: 0, dy: 0, timer: null };
+function panPixels(dx, dy) {
+  const m = ui.zoom.meta;
+  if (!ui.zoom.on || !m) return;
+  pan.dx -= dx;
+  pan.dy -= dy;
+  placeRegion(pan.dx, pan.dy);
+  clearTimeout(pan.timer);
+  pan.timer = setTimeout(() => {
+    const dpr = window.devicePixelRatio || 1;
+    const meta = ui.zoom.meta;
+    ui.zoom.cx = Math.min(1, Math.max(0, ui.zoom.cx - (pan.dx * dpr) / meta.full_width));
+    ui.zoom.cy = Math.min(1, Math.max(0, ui.zoom.cy - (pan.dy * dpr) / meta.full_height));
+    pan.dx = pan.dy = 0;
+    requestPreview(false);
+  }, 180);
+}
+
+function panZoom(fx, fy) {
+  const v = $("viewer");
+  panPixels(fx * v.clientWidth, fy * v.clientHeight);
 }
 
 // Where a click lands, as fractions (u, v) of the upright photo.
@@ -858,6 +884,13 @@ function wireViewer() {
     // The tools' own canvases use right-click.
     if (ui.info && (e.target === img || e.target === $("viewer"))) exportFlow();
   });
+  // Scrolling (a mouse wheel or two fingers on a trackpad) moves the 1:1 view.
+  $("viewer").addEventListener("wheel", (e) => {
+    if (!ui.zoom.on || e.ctrlKey) return;
+    e.preventDefault();
+    const k = e.deltaMode === 1 ? 16 : 1;
+    panPixels(e.deltaX * k, e.deltaY * k);
+  }, { passive: false });
   img.addEventListener("mousedown", (e) => {
     if (e.button !== 0 || !ui.info) return;
     e.preventDefault();
@@ -1300,6 +1333,7 @@ async function openPath(path) {
     spotsPhotoChanged();
     const wasRendered = !!ui.info?.rendered;
     ui.info = r.info;
+    framePhotoChanged();
     refreshProfiles();
     refreshLuts();
     // Raw and JPEG have different white balance sliders.

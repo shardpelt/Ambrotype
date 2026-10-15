@@ -407,6 +407,12 @@ impl Masks {
         self.needs(|s| matches!(s, Shape::Color { .. }))
     }
 
+    /// Sky or subject masks: found on the whole photo, so a region render
+    /// needs the maps from a whole-photo pass.
+    pub fn has_photo_maps(&self) -> bool {
+        self.needs(|s| matches!(s, Shape::Sky | Shape::Subject))
+    }
+
     fn needs(&self, f: impl Fn(&Shape) -> bool) -> bool {
         self.corrections.iter().any(|c| {
             c.parts.iter().any(|p| f(&p.shape)) || c.range.as_ref().is_some_and(|(s, _)| f(s))
@@ -908,6 +914,8 @@ fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference, targets: &mut Targets
                 // a tile of the 1:1 view uses the whole photo's.
                 let map = match (targets.sky_given.and_then(|g| g.get(i)), r.srgb) {
                     (Some(m), _) => Some(m.clone()),
+                    // Only the whole photo shows what the subject is.
+                    (None, Some(_)) if !r.tile.is_whole(w, h) => None,
                     (None, None) => None,
                     (None, Some(rgb)) => {
                         let small = crate::subject::shrink(rgb, w, h);

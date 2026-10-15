@@ -1169,6 +1169,7 @@ pub fn needs_globals(s: &DevelopSettings) -> bool {
         || s.dehaze != 0.0
         || s.masks.corrections.iter().any(|c| c.adjust.dehaze != 0.0)
         || s.masks.has_colour_range()
+        || s.masks.has_photo_maps()
 }
 
 /// Measure [`Globals`] for region renders of `img` with `s`, on `small`: a

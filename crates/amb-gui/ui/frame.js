@@ -11,6 +11,38 @@ const fr = {
 };
 const SPECS = "{camera} · {exposure}";
 
+// Each photo has its own frame, or none; remembered on this computer. A new
+// frame starts from the settings used last.
+const FRAME_FIELDS = { color: "frame-color", width: "frame-width", bottom: "frame-bottom", text: "frame-text", font: "frame-font",
+  place: "frame-place", size: "frame-size", textColor: "frame-text-color", specs: "frame-specs" };
+const framed = (() => {
+  try { return JSON.parse(localStorage.getItem("frames")) ?? {}; } catch { return {}; }
+})();
+
+function rememberFrame() {
+  const path = ui.info?.path;
+  if (!path) return;
+  if (fr.on) framed[path] = Object.fromEntries(Object.keys(FRAME_FIELDS).map((k) => [k, fr[k]]));
+  else delete framed[path];
+  try { localStorage.setItem("frames", JSON.stringify(framed)); } catch {}
+}
+
+// Another photo is open: show its frame, or none.
+function framePhotoChanged() {
+  const saved = framed[ui.info?.path];
+  if (saved) Object.assign(fr, saved);
+  for (const [k, id] of Object.entries(FRAME_FIELDS)) {
+    if (typeof fr[k] === "boolean") $(id).checked = fr[k];
+    else $(id).value = fr[k];
+  }
+  $("frame-width-out").value = fr.width;
+  $("frame-bottom-out").value = fr.bottom;
+  fr.on = Boolean(saved);
+  $("btn-frame")?.classList.toggle("active", fr.on);
+  if (!fr.on) $("frame-panel").hidden = true;
+  drawFrame();
+}
+
 // The bundled fonts, for the previews (the export uses the same files).
 async function loadFonts() {
   if (fr.fontsLoaded) return ui.fonts;
@@ -63,6 +95,7 @@ function frameBorder() {
 async function toggleFrame(on = !fr.on) {
   if (on && !ui.info) return;
   fr.on = on;
+  rememberFrame();
   $("btn-frame")?.classList.toggle("active", on);
   await showFrameSettings(on);
 }
@@ -179,6 +212,7 @@ function wireFrame() {
     fr.specs = $("frame-specs").checked;
     $("frame-width-out").value = fr.width;
     $("frame-bottom-out").value = fr.bottom;
+    rememberFrame();
     drawFrame();
   };
   for (const id of ["frame-color", "frame-width", "frame-bottom", "frame-text", "frame-font", "frame-place", "frame-size", "frame-text-color", "frame-specs"]) {

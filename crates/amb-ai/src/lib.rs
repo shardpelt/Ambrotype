@@ -6,8 +6,9 @@
 //! - **The model** is Xuebin Qin et al.'s U²-Net (Apache-2.0,
 //!   <https://github.com/xuebinqin/U-2-Net>), converted to ONNX by the rembg
 //!   project (MIT). About 4.6 MB. It isn't shipped with the app: it is
-//!   downloaded the first time a subject mask is drawn, checked against its
-//!   sha256, and kept in the editor's config folder (`models/`).
+//!   downloaded in the background when the editor first starts (or when a
+//!   subject mask first needs it), checked against its sha256, and kept in
+//!   the editor's config folder (`models/`).
 //! - **Running** is local, with `tract` (pure Rust), on all cores: about a
 //!   second on a laptop. The result for a photo is kept, so moving sliders
 //!   doesn't run it again; only a new photo or crop does.
@@ -44,6 +45,9 @@ fn sha256(bytes: &[u8]) -> String {
 /// The model file in `dir`, downloading it first if it isn't there (or
 /// isn't the right file).
 pub fn ensure_model(dir: &Path) -> Result<PathBuf, String> {
+    // One download at a time (the start-up fetch and a first subject mask).
+    static BUSY: Mutex<()> = Mutex::new(());
+    let _one = BUSY.lock().unwrap_or_else(|p| p.into_inner());
     let path = dir.join(MODEL_FILE);
     if std::fs::read(&path).is_ok_and(|b| sha256(&b) == MODEL_SHA256) {
         return Ok(path);

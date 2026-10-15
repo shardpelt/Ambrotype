@@ -2053,7 +2053,17 @@ function toggleBefore() {
 
 // ---------------------------------------------------------------- wiring
 
+// A button whose handler fails says so, rather than seeming to do nothing.
+window.addEventListener("unhandledrejection", (e) => {
+  console.error(e.reason);
+  toast(`Something went wrong: ${e.reason?.message ?? e.reason}`, true);
+});
+window.addEventListener("error", (e) => {
+  toast(`Something went wrong: ${e.message}`, true);
+});
+
 async function init() {
+  applyToolbarIcons();
   ui.panels = await invoke("editor_schema");
   for (const p of ui.panels) for (const s of p.sections) for (const def of s.controls) ui.defs.set(def.name, def);
   await loadLooks();
@@ -2064,7 +2074,8 @@ async function init() {
   $("btn-open-empty").addEventListener("click", openDialog);
   initLearn();
   $("btn-save").addEventListener("click", save);
-  $("btn-export").addEventListener("click", exportFlow);
+  // Not the click event as an argument: exportFlow(batch) would take it for a batch.
+  $("btn-export").addEventListener("click", () => exportFlow());
   $("btn-undo").addEventListener("click", () => run([{ cmd: "undo" }]));
   $("snapshot-add").addEventListener("click", addSnapshot);
   $("btn-redo").addEventListener("click", () => run([{ cmd: "redo" }]));

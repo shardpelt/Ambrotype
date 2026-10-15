@@ -4067,7 +4067,14 @@ fn main() {
                 }
                 // Select Subject: the model in the models folder, fetched on first use.
                 if let Some(models) = path.parent().map(|d| d.join("models")) {
-                    amb_engine::subject::set_finder(amb_ai::finder(models));
+                    amb_engine::subject::set_finder(amb_ai::finder(models.clone()));
+                    // Fetched in the background at the first start, so the
+                    // first subject mask doesn't wait for it.
+                    std::thread::spawn(move || {
+                        if let Err(e) = amb_ai::ensure_model(&models) {
+                            eprintln!("{e}");
+                        }
+                    });
                 }
                 // Effect plugins render from the plugins folder next to the settings.
                 let plugins = path.parent().map(|d| d.join("plugins"));

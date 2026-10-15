@@ -33,6 +33,7 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **hub:** Appearance → Browse hub… installs shared layouts, themes, develop presets, collage templates, size profiles and plugins (checked against the index's sha256 and validated; plugins also from the Plugins dialog); Submit to hub… opens GitHub with your look filled in as a pull request
     - **editor mode:** Edit layout rearranges the screen in place (drag and drop, control types, split and merge, add and remove, column widths) and saves it as your own layout
     - **borders** on export, with presets and colour swatches, and a caption line such as the camera and exposure
+    - **toolbar icons** (2026-10-15): the top bar shows icons (our own line drawings, `ui/icons.js`); hovering shows the name and shortcut
     - **Frame** in the editor (Shift+B): preview a border in any colour with text below or on the photo, in six fonts (handwritten, pen, marker, typewriter, date stamp, sans), optionally with the photo's details (camera, mm, f-stop, shutter, ISO); it isn't part of the edit, and Export starts from it
     - **highlight recovery:** a blown sky edge, flower or sunlit wall gets its colour and texture back where at least one channel still held detail, instead of a flat white or green patch
     - **preset library** (Presets → Preset library…): 21 free starter presets by style (film, B&W, moody, bright, vivid, portrait, landscape), from the hub or built in; hover to preview on the photo, Apply, or Add to your presets

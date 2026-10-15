@@ -873,3 +873,8 @@ body.editing .column [data-item]:focus, body.editing .column [data-unit]:focus {
 .fx-effect .row output { min-width: 28px; text-align: right; color: var(--muted); }
 .fx-effect .hint { font-size: 11px; color: var(--muted); margin: 4px 0 0; }
 .fx-add { width: 100%; }
+
+/* Toolbar icons (icons.js). */
+button.tool-icon { display: inline-flex; align-items: center; justify-content: center; padding: 5px 8px; line-height: 0; }
+button.tool-icon .tool-svg { display: block; }
+button.tool-icon.active { color: var(--accent); }

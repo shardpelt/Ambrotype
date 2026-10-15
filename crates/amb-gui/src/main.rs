@@ -3039,6 +3039,42 @@ async fn negative_sync(paths: Vec<String>, state: tauri::State<'_, AppState>) ->
     .map_err(|e| e.to_string())?
 }
 
+/// Run the same edit commands on several photos (a preset on the whole
+/// folder): the open one through its session (one undo step), the others
+/// into their sidecars.
+#[tauri::command]
+async fn apply_to_photos(
+    paths: Vec<String>,
+    commands: Vec<Command>,
+    label: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<RollSync> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut out = RollSync {
+            changed: Vec::new(),
+            errors: Vec::new(),
+            state: None,
+        };
+        for path in &paths {
+            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            let result = match guard.as_mut().filter(|s| s.path == Path::new(path)) {
+                Some(s) => s
+                    .execute(&commands, Some(&label))
+                    .map(|_| out.state = Some(s.state_info())),
+                None => library::paste_to_file(Path::new(path), &commands),
+            };
+            match result {
+                Ok(()) => out.changed.push(path.clone()),
+                Err(e) => out.errors.push(format!("{path}: {e}")),
+            }
+        }
+        Ok(out)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[derive(Serialize)]
 struct Variant {
     seed: u64,
@@ -4249,6 +4285,7 @@ fn main() {
             guided_upright,
             upright_guides,
             negative_sync,
+            apply_to_photos,
             export_presets,
             mask_effects,
             save_mask_effect,

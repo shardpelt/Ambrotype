@@ -27,6 +27,22 @@ function rememberFrame() {
   try { localStorage.setItem("frames", JSON.stringify(framed)); } catch {}
 }
 
+// The same frame (these settings) on every photo in the folder, or none.
+function frameOnFolder(on) {
+  const settings = Object.fromEntries(Object.keys(FRAME_FIELDS).map((k) => [k, fr[k]]));
+  const paths = folderPhotos();
+  for (const path of paths) {
+    if (on) framed[path] = { ...settings };
+    else delete framed[path];
+  }
+  try { localStorage.setItem("frames", JSON.stringify(framed)); } catch {}
+  fr.on = on;
+  $("btn-frame")?.classList.toggle("active", on);
+  if (!on) $("frame-panel").hidden = true;
+  drawFrame();
+  toast(on ? `Frame on all ${paths.length} photos in the folder` : `Frame removed from all ${paths.length} photos`);
+}
+
 // Another photo is open: show its frame, or none.
 function framePhotoChanged() {
   const saved = framed[ui.info?.path];
@@ -243,6 +259,15 @@ function wireFrame() {
   $("frame-close").addEventListener("click", () => showFrameSettings(false));
   $("frame-remove").addEventListener("click", () => toggleFrame(false));
   $("btn-frame")?.addEventListener("click", () => toggleFrame());
+  $("btn-frame")?.addEventListener("contextmenu", (e) => {
+    if (!ui.info) return;
+    const n = folderPhotos().length;
+    contextMenu(e, [
+      [fr.on ? "Turn the frame off" : "Turn the frame on", () => toggleFrame()],
+      [`Use ${fr.on ? "this" : "a"} frame on all ${n} photos in the folder`, () => frameOnFolder(true)],
+      [`Remove the frame from all ${n} photos`, () => frameOnFolder(false)],
+    ]);
+  });
   $("preview").addEventListener("load", drawFrame);
   new ResizeObserver(() => drawFrame()).observe($("viewer"));
 }

@@ -1402,15 +1402,19 @@ function renderPresets() {
       const b = document.createElement("button");
       b.className = "preset";
       b.textContent = p.name;
-      b.title = `${p.path}\nRight-click to apply only some of its settings`;
+      b.title = `${p.path}\nRight-click to apply it to the whole folder, or only some of its settings`;
       b.addEventListener("click", () => {
         presetHover(null);
         run([{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value) }]);
       });
       b.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
         presetHover(null);
-        applyPresetPartly(p);
+        const n = folderPhotos().length;
+        contextMenu(e, [
+          ["Apply", () => run([{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value) }])],
+          ["Apply some of its settings…", () => applyPresetPartly(p)],
+          ui.info && n > 1 ? [`Apply to all ${n} photos in the folder`, () => applyPresetToFolder(p)] : null,
+        ].filter(Boolean));
       });
       b.addEventListener("mouseenter", () => presetHover(p));
       b.addEventListener("mouseleave", () => presetHover(null));
@@ -1449,6 +1453,59 @@ async function togglePresetFavourite(p) {
 
 // Apply a preset's settings from some groups only (Lightroom's "Apply
 // preset settings: …"); the other groups stay as they are.
+// A small right-click menu: items are [label, action] (null for a line).
+function contextMenu(e, items) {
+  e.preventDefault();
+  document.querySelector(".ctx-menu")?.remove();
+  const menu = Object.assign(document.createElement("div"), { className: "ctx-menu", role: "menu" });
+  // The button's tooltip would cover the menu.
+  const owner = e.currentTarget instanceof Element ? e.currentTarget : null;
+  const title = owner?.getAttribute("title");
+  if (title) owner.removeAttribute("title");
+  const close = () => {
+    if (title) owner.setAttribute("title", title);
+    menu.remove();
+    removeEventListener("pointerdown", outside, true);
+    removeEventListener("keydown", esc, true);
+  };
+  const outside = (ev) => { if (!menu.contains(ev.target)) close(); };
+  const esc = (ev) => { if (ev.key === "Escape") { ev.stopPropagation(); close(); } };
+  for (const item of items) {
+    if (!item) { menu.append(document.createElement("hr")); continue; }
+    const [label, action] = item;
+    const b = Object.assign(document.createElement("button"), { type: "button", textContent: label, role: "menuitem" });
+    b.addEventListener("click", () => { close(); Promise.resolve(action()).catch((err) => toast(String(err), true)); });
+    menu.append(b);
+  }
+  document.body.append(menu);
+  const r = menu.getBoundingClientRect();
+  menu.style.left = `${Math.min(e.clientX, innerWidth - r.width - 4)}px`;
+  menu.style.top = `${Math.min(e.clientY, innerHeight - r.height - 4)}px`;
+  addEventListener("pointerdown", outside, true);
+  addEventListener("keydown", esc, true);
+}
+
+// The photos in the open photo's folder (the filmstrip's list).
+function folderPhotos() {
+  return (strip.photos ?? []).map((p) => p.path);
+}
+
+// Apply a preset to every photo in the folder (the open one as one undo step).
+async function applyPresetToFolder(p) {
+  const paths = folderPhotos();
+  if (!paths.length) return;
+  const amount = Number($("preset-amount").value);
+  status(`Applying "${p.name}" to ${paths.length} photos…`);
+  const r = await invoke("apply_to_photos", {
+    paths, label: `preset ${p.name} on the folder`,
+    commands: [{ cmd: "apply_preset", path: p.path, amount }],
+  });
+  if (r.state) setState(r.state);
+  requestPreview(false);
+  loadFolder(ui.info.path, true);
+  toast(`"${p.name}" applied to ${r.changed.length} photo${r.changed.length === 1 ? "" : "s"}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
+}
+
 async function applyPresetPartly(p) {
   if (!ui.info) return;
   if (!ui.pasteGroups) ui.pasteGroups = await invoke("paste_groups");

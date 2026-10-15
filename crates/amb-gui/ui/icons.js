@@ -50,7 +50,11 @@ const ICON_PATHS = {
 
 // Only the buttons whose icon says what it does at a glance get one; the
 // rest keep their word, so the bar stays easy to read.
-const TOOLBAR_ICONS = new Set(["open", "save", "undo", "redo", "crop", "masks", "zoom", "wb", "settings"]);
+// Collage, Spots, Clipping and Appearance have no picture that says it.
+const TOOLBAR_ICONS = new Set([
+  "open", "library", "save", "export", "undo", "redo", "before", "crop", "masks", "zoom", "wb",
+  "frame", "keys", "plugins", "edit", "settings", "feedback",
+]);
 
 function iconSvg(name) {
   const paths = ICON_PATHS[name];

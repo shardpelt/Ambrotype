@@ -4,7 +4,7 @@
   "description": "Larger text, sliders and targets: easier on touch screens and tired eyes.",
   "author": "Ambrotype",
   "density": "large",
-  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "settings", "keys", "feedback"],
   "left": { "width": 270, "items": ["presets", "info", "history"] },
   "right": {
     "width": 420,

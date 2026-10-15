@@ -4,7 +4,7 @@
   "description": "Presets and history on the left, the Develop panels on the right.",
   "author": "Ambrotype",
   "density": "normal",
-  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "settings", "keys", "feedback"],
   "left": { "width": 250, "items": ["presets", "info", "history"] },
   "right": {
     "width": 330,

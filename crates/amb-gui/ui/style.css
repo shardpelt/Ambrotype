@@ -875,9 +875,11 @@ body.editing .column [data-item]:focus, body.editing .column [data-unit]:focus {
 .fx-add { width: 100%; }
 
 /* Toolbar icons (icons.js). */
+button.tool-icon[hidden] { display: none; }
 button.tool-icon { display: inline-flex; align-items: center; justify-content: center; padding: 5px 8px; line-height: 0; }
 button.tool-icon .tool-svg { display: block; }
 /* Shapes that hide what is behind them take the button's own colour. */
 button.tool-icon .tool-svg .cover { fill: var(--panel-2); }
 button.tool-icon:hover:not(:disabled) .tool-svg .cover { fill: var(--hover); }
 button.tool-icon.active { color: var(--accent); }
+#looks-edit { white-space: nowrap; }

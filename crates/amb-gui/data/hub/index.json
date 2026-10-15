@@ -9,7 +9,7 @@
       "description": "Presets and history on the left, the Develop panels on the right.",
       "license": "CC0-1.0",
       "path": "looks/layouts/classic.json",
-      "sha256": "9ffbc967487a03bf9e9a6f4bff33f5da3f1c1eb298d7002cbafcb31bc4f48533"
+      "sha256": "3a015f97aa2a4a56777bfffea89c65a0d67a67c2ff46d1a8671c0db013203ceb"
     },
     {
       "id": "layout-compact",
@@ -19,7 +19,7 @@
       "description": "One narrow column and smaller controls, for laptop screens.",
       "license": "CC0-1.0",
       "path": "looks/layouts/compact.json",
-      "sha256": "64dd1b1fabcad2c6be10cd8488f86fb8eece6b2d54ede3b52b64e80a0eabfff6"
+      "sha256": "9676d977fb20a3a8e5419fb06539ee80118ad1345bbd07e5a6518f6e6b20f8ef"
     },
     {
       "id": "layout-big-controls",
@@ -29,7 +29,7 @@
       "description": "Larger text, sliders and targets: easier on touch screens and tired eyes.",
       "license": "CC0-1.0",
       "path": "looks/layouts/big-controls.json",
-      "sha256": "5537bd9e79d246884204b97acdc80330dd7177af961388fd370f87e3c1d280f1"
+      "sha256": "8c5a4b4075a95f1ad870ee368801cf362861df996f21f4c44e30962ea322ba58"
     },
     {
       "id": "layout-studio",
@@ -39,7 +39,7 @@
       "description": "A mixing-desk feel: knobs for light, bars for presence and detail.",
       "license": "CC0-1.0",
       "path": "looks/layouts/studio.json",
-      "sha256": "b5b0c6d7695dbd20c857b01caf7a6948acc39ea6fbdfc5f5f24b871cd64a5b0e"
+      "sha256": "8f853fdfdbd88d74f5c58b4f9dd644b2efe84c15ff5f3db071fb4d3796a2e5af"
     },
     {
       "id": "layout-left-handed",
@@ -49,7 +49,7 @@
       "description": "Classic, mirrored: the Develop panels on the left, presets and history on the right.",
       "license": "CC0-1.0",
       "path": "looks/layouts/left-handed.json",
-      "sha256": "0c2c2367923d333d857e313b66f4fb6335e0425d7b83a70a285ddea802f97e11"
+      "sha256": "bc95cf2e13e6793bc7412e5a02d7112b4a0a52e3457746b594b99f102f728761"
     },
     {
       "id": "theme-dark",

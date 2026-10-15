@@ -113,6 +113,11 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 8. **Performance:** measure release-build preview and 1:1 times on the Mac (`AMB_TIMING=1` prints each render stage's time). On 4 Linux cores a 24 MP render of a typical edit takes about 3.5 s: Texture/Clarity 0.75 s, colour 0.7 s, noise reduction 0.65 s, Highlights/Shadows 0.4 s, Dehaze 0.4 s. The editor's screen-size preview (860 × 570) takes about 70 ms. ~~Tiled 1:1 render~~ (done 2026-10-11: the 100% view renders only its tiles, `pipeline::render_region`; about 10× faster than the full render it replaced). ~~GPU preview~~ (done 2026-10-11: every stage after stage 0 on the GPU; [design/gpu.md](design/gpu.md)). Next: measure on the Mac.
 9. ~~**Installers** per OS~~ (the `Release` workflow, 2026-10-10). Left: run it on GitHub, Windows signing (SignPath) and Apple signing secrets.
 
+### Codebase track (later, when there's budget for a long run)
+
+1. **A map for agents:** a detailed map of the code (per crate and per UI file: what it owns, its main types and functions, how data flows from a slider to the render and to the sidecar) with recipes for common changes ("add a setting", "add a panel", "add a toolbar button", "add a mask kind", "add a hub item kind"). Builds on [ARCHITECTURE.md](ARCHITECTURE.md) and AGENTS.md; checked by a test where it can be (like the settings reference).
+2. **A cleanup pass to match it:** split the largest files (`amb-gui/src/main.rs`, `ui/app.js`), one clear home per concern, consistent names, dead code out. Behaviour unchanged; the tests and a by-hand run of the editor confirm it.
+
 ## Working notes
 
 - This repo was built with Claude Code. Large text sweeps went to smaller models, and parallel work to worktree agents that were then merged.

@@ -3003,7 +3003,10 @@ async fn preset_thumbnails(
                     .map(|(k, v)| (k.clone(), v.clone()))
                     .collect();
                 let p = s.preview(160, &overrides, false, false, lens);
-                Some(format!("data:image/jpeg;base64,{}", plugins::base64(&p.jpeg)))
+                Some(format!(
+                    "data:image/jpeg;base64,{}",
+                    plugins::base64(&p.jpeg)
+                ))
             })
             .collect())
     })

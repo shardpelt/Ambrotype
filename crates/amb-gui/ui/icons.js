@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Toolbar icons: simple line drawings (our own), drawn in the text colour.
+// Toolbar icons: simple line drawings (our own), drawn in the text colour,
+// for the buttons in TOOLBAR_ICONS. Drawings for the others are kept here in
+// case a layout wants them later.
 // The button keeps its name for screen readers (aria-label) and its tooltip.
 "use strict";
 
@@ -46,6 +48,10 @@ const ICON_PATHS = {
   feedback: '<path d="M4.5 5h15A1.5 1.5 0 0 1 21 6.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 3.5V17h-1A1.5 1.5 0 0 1 3 15.5v-9A1.5 1.5 0 0 1 4.5 5Z"/><path d="M7.5 9.5h9M7.5 12.5h6"/>',
 };
 
+// Only the buttons whose icon says what it does at a glance get one; the
+// rest keep their word, so the bar stays easy to read.
+const TOOLBAR_ICONS = new Set(["open", "save", "undo", "redo", "crop", "masks", "zoom", "wb", "settings"]);
+
 function iconSvg(name) {
   const paths = ICON_PATHS[name];
   if (!paths) return null;
@@ -57,7 +63,7 @@ function iconSvg(name) {
 function applyToolbarIcons() {
   for (const [name, id] of Object.entries(TOOLBAR_IDS)) {
     const b = $(id);
-    const svg = iconSvg(name);
+    const svg = TOOLBAR_ICONS.has(name) ? iconSvg(name) : null;
     if (!b || !svg || b.classList.contains("tool-icon")) continue;
     const label = b.getAttribute("aria-label") || b.textContent.trim().replace(/…$/, "");
     b.setAttribute("aria-label", label);

@@ -80,3 +80,41 @@ function applyToolbarIcons(style = "icons") {
     b.classList.toggle("tool-icon", Boolean(svg));
   }
 }
+
+// The toolbar's tooltips, shown sooner than the system's (which waits about a
+// second): the button's title, moved aside while the pointer is on it so
+// the system one doesn't show too.
+function wireQuickTips() {
+  const tip = Object.assign(document.createElement("div"), { className: "quick-tip", role: "tooltip", hidden: true });
+  document.body.append(tip);
+  let timer = null;
+  let over = null;
+  const hide = () => {
+    clearTimeout(timer);
+    tip.hidden = true;
+    if (over?.dataset.tip != null) {
+      if (!over.title) over.title = over.dataset.tip;
+      delete over.dataset.tip;
+    }
+    over = null;
+  };
+  const bar = document.querySelector(".topbar .actions");
+  bar.addEventListener("mouseover", (e) => {
+    const b = e.target.closest("button");
+    if (b === over) return;
+    hide();
+    if (!b?.title) return;
+    over = b;
+    b.dataset.tip = b.title;
+    b.removeAttribute("title");
+    timer = setTimeout(() => {
+      tip.textContent = b.dataset.tip;
+      tip.hidden = false;
+      const r = b.getBoundingClientRect();
+      const left = Math.min(Math.max(4, r.left + r.width / 2 - tip.offsetWidth / 2), innerWidth - tip.offsetWidth - 4);
+      Object.assign(tip.style, { left: `${left}px`, top: `${r.bottom + 6}px` });
+    }, 250);
+  });
+  bar.addEventListener("mouseleave", hide);
+  bar.addEventListener("mousedown", hide);
+}

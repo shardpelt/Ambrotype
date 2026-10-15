@@ -97,6 +97,8 @@
     </aside>
 
     <section class="viewer" id="viewer">
+      <button type="button" class="fold left" id="fold-left" hidden>‹</button>
+      <button type="button" class="fold right" id="fold-right" hidden>›</button>
       <div class="empty" id="empty">
         <p class="empty-title">Open a photo to start</p>
         <p class="hint">Drop a file here, or press Ctrl+O. Lightroom presets and XMP sidecars work as they are.</p>
@@ -110,7 +112,7 @@
       <canvas id="guide-canvas" class="crop-canvas spot-canvas" hidden></canvas>
       <!-- Frame (frame.js): the frame and text around the photo in the editor. -->
       <div class="preset-library frame-panel" id="frame-panel" hidden>
-        <div class="side-head"><h2>Frame</h2><button type="button" class="small" id="frame-close" title="Close (Shift+B)">×</button></div>
+        <div class="side-head"><h2>Frame</h2><button type="button" class="small" id="frame-close" title="Close the settings; the frame stays">×</button></div>
         <label>Start from <select id="frame-preset"></select></label>
         <label>Colour
           <span class="pair swatches" id="frame-swatches">
@@ -135,7 +137,8 @@
         </select></label>
         <label>Text size <input id="frame-size" type="range" min="10" max="90" step="1" value="30"></label>
         <label>Text colour <input id="frame-text-color" type="color" value="#3a3a3a"></label>
-        <p class="hint">Drawn around the photo, not part of the edit. Export uses it as its Border.</p>
+        <p class="hint">Drawn around the photo, not part of the edit. While it shows, export adds it as its Border. Closing these settings keeps it; the Frame button (Shift+B) turns it off, and on again with these settings.</p>
+        <button type="button" id="frame-remove">Remove frame</button>
       </div>
       <div class="frame-label" id="frame-label" hidden></div>
       <!-- Preset library (presetlib.js): at the photo's left edge, so the photo stays in view. -->

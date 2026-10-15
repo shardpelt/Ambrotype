@@ -107,7 +107,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
 - `width`: in px, 0–800.
 - `items`: a list, shown top to bottom.
 
-A column with width 0 or no items is hidden. Each item is one of:
+A column with width 0 or no items is hidden. A shown column can be folded away for the session and back with the arrow on the photo's edge (Ctrl+[ left, Ctrl+] right); the editor remembers it on this computer. Each item is one of:
 - The strings `presets`, `info`, `histogram` or `history`: the presets list (with the Amount slider), the rating stars and keyword field, the histogram with the photo's camera info, or the edit history. Each appears at most once; leave one out to hide it.
 - **A built-in panel:** `{ "panel": "<id>", "title"?, "open"?, "widgets"?, "hide"? }`
   - `open`: true to start expanded.

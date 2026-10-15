@@ -58,12 +58,18 @@ function frameBorder() {
   return b;
 }
 
+// The Frame button turns the frame on and off, like Before/After. Turning it
+// on opens its settings; closing them keeps the frame (and export uses it).
 async function toggleFrame(on = !fr.on) {
   if (on && !ui.info) return;
   fr.on = on;
   $("btn-frame")?.classList.toggle("active", on);
-  $("frame-panel").hidden = !on;
-  if (on) {
+  await showFrameSettings(on);
+}
+
+async function showFrameSettings(open) {
+  $("frame-panel").hidden = !open;
+  if (open) {
     $("preset-library").hidden = true;
     await loadFonts();
     fillFontSelect($("frame-font"), fr.font);
@@ -200,7 +206,8 @@ function wireFrame() {
     }
     sync();
   });
-  $("frame-close").addEventListener("click", () => toggleFrame(false));
+  $("frame-close").addEventListener("click", () => showFrameSettings(false));
+  $("frame-remove").addEventListener("click", () => toggleFrame(false));
   $("btn-frame")?.addEventListener("click", () => toggleFrame());
   $("preview").addEventListener("load", drawFrame);
   new ResizeObserver(() => drawFrame()).observe($("viewer"));

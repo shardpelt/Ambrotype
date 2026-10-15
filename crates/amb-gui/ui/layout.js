@@ -24,6 +24,35 @@ function fallbackLayout() {
   };
 }
 
+// A side column can be folded away (the arrow on the photo's edge, or
+// Ctrl+[ and Ctrl+]) and back; remembered on this computer.
+const folded = (() => {
+  try { return JSON.parse(localStorage.getItem("folded-columns")) ?? {}; } catch { return {}; }
+})();
+
+function applySideCollapse() {
+  const widths = ui.sideWidths ?? { left: 0, right: 0 };
+  const shown = {};
+  for (const side of ["left", "right"]) {
+    shown[side] = folded[side] ? 0 : widths[side];
+    $(`col-${side}`).hidden = !shown[side];
+    const t = $(`fold-${side}`);
+    t.hidden = !widths[side];
+    const open = Boolean(shown[side]);
+    t.textContent = (side === "left") === open ? "‹" : "›";
+    t.title = `${open ? "Hide" : "Show"} the ${side} column (Ctrl+${side === "left" ? "[" : "]"})`;
+  }
+  $("workspace").style.gridTemplateColumns = `${shown.left}px minmax(0, 1fr) ${shown.right}px`;
+}
+
+function toggleColumn(side) {
+  if (!ui.sideWidths?.[side]) return;
+  folded[side] = !folded[side];
+  try { localStorage.setItem("folded-columns", JSON.stringify(folded)); } catch {}
+  applySideCollapse();
+  requestPreview(false);
+}
+
 // ---------------------------------------------------------------- theme
 
 function applyTheme(theme) {
@@ -85,9 +114,9 @@ function applyLayout(layout) {
     });
     const w = Number(spec.width ?? DEFAULT_WIDTH[side]);
     widths[side] = items.length && w > 0 ? w : 0;
-    col.hidden = !widths[side];
   }
-  $("workspace").style.gridTemplateColumns = `${widths.left}px minmax(0, 1fr) ${widths.right}px`;
+  ui.sideWidths = widths;
+  applySideCollapse();
 
   // The crop panel goes to the top of the column with the most panels.
   const host = ["left", "right"]

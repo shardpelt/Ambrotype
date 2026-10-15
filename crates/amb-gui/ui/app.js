@@ -2108,6 +2108,9 @@ async function init() {
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   wirePresetLibrary();
   wireFrame();
+  wireQuickTips();
+  $("fold-left").addEventListener("click", () => toggleColumn("left"));
+  $("fold-right").addEventListener("click", () => toggleColumn("right"));
   $("btn-keys").addEventListener("click", showShortcuts);
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));

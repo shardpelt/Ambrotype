@@ -127,7 +127,7 @@ We do the same, with a little more structure:
   - **UI parts** run in a sandboxed iframe that talks to the app only by messages.
 - This replaces the earlier "plugin API (Lua → WASM)" line in [SCOPE.md](../SCOPE.md) §8.
 - *Still to come:*
-  - *plugins that add pixel effects to the pipeline, or their own panels and dialogs (the sandboxed-iframe UI above)*
+  - ~~*plugins that add pixel effects to the pipeline*~~ (2026-10-15: effect plugins, colour or pixels, kept in `amb:Effects` and drawn in the Effects panel from their manifest); *their own free-form panels and dialogs (the sandboxed-iframe UI above)*
   - *batch runs over many photos*
   - *the network permission (none of today's plugins need it)*
   - *CI rebuilding each hub plugin's module from its source (reviewers do it by hand; the hub has listed plugins in the app since 2026-10-12, each file checked against its sha256)*

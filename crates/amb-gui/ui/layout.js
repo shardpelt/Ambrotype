@@ -171,6 +171,7 @@ function panelEntries(p, section, widgets = {}, hide = []) {
 
 // A setting with the widget the layout asks for (the slider row by default).
 function makeControl(def, widget, labelText) {
+  if (def.name === "amb:Effects") return makeEffectsControl(def);
   // On a JPEG and the like, Temp and Tint drive Lightroom's relative settings.
   if (ui.info?.rendered && def.rendered) def = { ...def.rendered, label: def.label };
   const label = labelText ?? def.label;

@@ -131,9 +131,13 @@ function renderPluginDetail() {
   $("plugin-error").textContent = p.error ?? "";
   renderRecipes(p);
   renderPluginParams(p);
-  $("plugin-run").disabled = Boolean(p.error) || !ui.info;
+  const effect = m?.kind === "effect";
+  $("plugin-run").disabled = Boolean(p.error) || !ui.info || (effect && Boolean(pluginUi.batch));
   $("plugin-as-preset").disabled = !ui.info;
-  $("plugin-run").title = ui.info ? "Run it on the open photo (Undo takes it back)" : "Open a photo first";
+  $("plugin-run").textContent = effect ? "Add to photo" : pluginUi.batch ? `Run on ${pluginUi.batch.length} photo${pluginUi.batch.length === 1 ? "" : "s"}` : "Run";
+  $("plugin-run").title = !ui.info ? "Open a photo first"
+    : effect ? "An effect is kept in the edit and rendered with the photo; change or remove it in the Effects panel"
+    : "Run it on the open photo (Undo takes it back)";
   $("plugin-defaults").hidden = !(m?.params?.length);
   $("plugin-own").hidden = p.builtin;
   $("plugin-share").disabled = Boolean(p.error);
@@ -256,6 +260,13 @@ async function runSelectedPlugin() {
   $("plugin-run").disabled = true;
   $("plugin-result").textContent = "Running…";
   try {
+    if (p.manifest.kind === "effect") {
+      const list = effectsOf(currentValue("amb:Effects"));
+      list.push({ plugin: p.id, params: paramValues(p), amount: 100, seed: Math.floor(Math.random() * 2 ** 31) });
+      await run([{ cmd: "set_param", name: "amb:Effects", value: JSON.stringify(list) }], `add ${p.manifest.name}`);
+      $("plugin-result").textContent = "Added. Change it or take it off in Develop → Effects.";
+      return;
+    }
     if (pluginUi.batch) return await runPluginBatch(p);
     const r = await invoke("run_plugin", { id: p.id, params: paramValues(p) });
     setState(r.state);

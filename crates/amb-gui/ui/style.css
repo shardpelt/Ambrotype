@@ -862,3 +862,14 @@ body.editing .column [data-item]:focus, body.editing .column [data-unit]:focus {
 .shortcuts-group h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 4px; }
 .shortcuts-row { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; padding: 2px 0; }
 .shortcuts-row kbd { margin-left: 4px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel-2); font: inherit; font-size: 11px; }
+
+/* Effect plugins in the Effects panel (fx.js). */
+.fx { display: flex; flex-direction: column; gap: 6px; padding: 4px 0; }
+.fx-effect { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; background: var(--panel-2); }
+.fx-head { display: flex; align-items: center; gap: 6px; }
+.fx-head strong { flex: 0 0 auto; font-size: 12px; }
+.fx-head input[type=range] { flex: 1; min-width: 40px; }
+.fx-effect .row { display: grid; grid-template-columns: 38% 1fr auto; align-items: center; gap: 6px; font-size: 12px; }
+.fx-effect .row output { min-width: 28px; text-align: right; color: var(--muted); }
+.fx-effect .hint { font-size: 11px; color: var(--muted); margin: 4px 0 0; }
+.fx-add { width: 100%; }

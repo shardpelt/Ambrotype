@@ -131,7 +131,7 @@ The crop panel isn't placed by layouts. It appears at the top of the column with
 | `detail` | `Sharpening`, `Noise Reduction` | |
 | `lens` | `Profile`, `Manual`, `Defringe` | |
 | `transform` | `Upright`, `Transform` | |
-| `effects` | `Post-Crop Vignetting`, `Grain` | |
+| `effects` | `Post-Crop Vignetting`, `Grain`, `Plugin effects` | The effect plugins on the photo (`amb:Effects`), each with its own controls |
 | `calibration` | `Shadows`, `Red Primary`, `Green Primary`, `Blue Primary` | |
 | `negative` | `Conversion`, `Print` | |
 

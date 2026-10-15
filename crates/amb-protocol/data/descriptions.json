@@ -392,6 +392,7 @@
   "EnableRedEye": {"label": "Red eye on", "description": "Red eye switch. Red eye isn't rendered yet."},
 
   "amb:LUT": {"label": "LUT", "description": "Path of a .cube file whose look is applied after the colour and curves, on sRGB-encoded values (colours outside sRGB are clipped for the table). Empty or unset: no LUT. The path is stored as is, so a sidecar moved to another computer needs the file there too."},
-  "amb:LUTAmount": {"label": "LUT amount", "description": "How much of the LUT's look: 0 none, 100 all of it."}
+  "amb:LUTAmount": {"label": "LUT amount", "description": "How much of the LUT's look: 0 none, 100 all of it."},
+  "amb:Effects": {"label": "Plugin effects", "description": "Effect plugins rendered with the photo, in order: a JSON list of {plugin, params, amount 0-100, seed}. Set them in the Effects panel or with amb plugin run."}
  }
 }

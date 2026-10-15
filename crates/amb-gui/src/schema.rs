@@ -97,6 +97,9 @@ fn control(name: &str, label_override: Option<&str>) -> Control {
         "choice"
     } else if info.kind == "bool" {
         "bool"
+    } else if info.kind == "text" {
+        // Drawn by its own widget (amb:Effects).
+        "text"
     } else {
         "number"
     };
@@ -370,6 +373,7 @@ pub fn panels() -> Vec<Panel> {
                         ("GrainFrequency", Some("Roughness")),
                     ],
                 ),
+                section("Plugin effects", &[("amb:Effects", Some("Effects"))]),
             ],
         },
         Panel {

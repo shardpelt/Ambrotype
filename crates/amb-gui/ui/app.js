@@ -74,7 +74,7 @@ function fromSlider(def, s) {
 function currentValue(name) {
   if (name in ui.overrides) return ui.overrides[name];
   if (name in ui.settings) return ui.settings[name];
-  if (name === "CameraProfile" || name === "amb:LUT") return "";
+  if (name === "CameraProfile" || name === "amb:LUT" || name === "amb:Effects") return "";
   const def = ui.controls.get(name)?.def;
   if (ui.info?.defaults && name in ui.info.defaults) return ui.info.defaults[name];
   if (name === "Temperature") return ui.info ? Math.round(ui.info.as_shot_temperature) : 5500;

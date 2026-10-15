@@ -636,8 +636,8 @@ mod tests {
             "build output isn't copied"
         );
         let all = list(Some(&dir), &Approvals::new());
-        assert_eq!(all.len(), 4);
-        assert!(all[3].error.is_none());
+        assert_eq!(all.len(), BUILTIN.len() + 1);
+        assert!(all[BUILTIN.len()].error.is_none());
         assert!(find(Some(&dir), "my-look").is_ok());
         assert!(find(Some(&dir), "../etc").is_err());
 

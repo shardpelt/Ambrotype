@@ -1748,7 +1748,7 @@
   },
   {
    "name": "amb:Effects",
-   "group": "lut",
+   "group": "effects",
    "kind": "text",
    "min": null,
    "max": null,

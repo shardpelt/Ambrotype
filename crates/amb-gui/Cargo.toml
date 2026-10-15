@@ -22,6 +22,7 @@ amb-gpu = { path = "../amb-gpu" }
 amb-export = { path = "../amb-export" }
 amb-lens = { path = "../amb-lens" }
 amb-library = { path = "../amb-library" }
+amb-ai = { path = "../amb-ai" }
 amb-plugin = { path = "../amb-plugin" }
 amb-presets = { path = "../amb-presets" }
 amb-protocol = { path = "../amb-protocol" }

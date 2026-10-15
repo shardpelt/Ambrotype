@@ -15,6 +15,7 @@
 //! | `reset:Name`, `reset:group` | `reset_param`, `reset_group` |
 //! | `preset:PATH[@amount]` | `apply_preset` |
 //! | `sky:Name=v,Name=v` | `add_mask` sky with those sliders (`sky:exp=-0.5,sat=10`) |
+//! | `subject:Name=v,…` | `add_mask` subject, the same way (`subject:exp=0.3`) |
 //! | `snap:NAME`, `load:NAME` | `save_snapshot`, `apply_snapshot` |
 //! | `undo`, `redo` | `undo`, `redo` |
 //!
@@ -152,12 +153,12 @@ fn one(item: &str) -> Result<Command, Error> {
                 })
             }
             // A new mask with its own sliders: `sky:exp=-0.5,sat=10`.
-            "sky" => {
+            "sky" | "subject" => {
                 let mut adjust = serde_json::Map::new();
                 for pair in arg.split(',') {
                     let Some((name, v)) = pair.split_once('=') else {
                         return Err(Error::Syntax(format!(
-                            "{item:?}: expected sky:Name=v,Name=v (a new mask's sliders)"
+                            "{item:?}: expected {key}:Name=v,Name=v (a new mask's sliders)"
                         )));
                     };
                     let global = resolve(name);
@@ -179,7 +180,7 @@ fn one(item: &str) -> Result<Command, Error> {
             "snap" => Ok(Command::SaveSnapshot { name: arg.into() }),
             "load" => Ok(Command::ApplySnapshot { name: arg.into() }),
             _ => Err(Error::Syntax(format!(
-                "{item:?}: unknown {key:?}; use reset:, preset:, sky:, snap: or load:"
+                "{item:?}: unknown {key:?}; use reset:, preset:, sky:, subject:, snap: or load:"
             ))),
         };
     }

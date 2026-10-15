@@ -20,6 +20,7 @@ amb-export = { path = "../amb-export" }
 amb-color = { path = "../amb-color" }
 amb-lens = { path = "../amb-lens" }
 amb-library = { path = "../amb-library" }
+amb-ai = { path = "../amb-ai" }
 amb-plugin = { path = "../amb-plugin" }
 amb-protocol = { path = "../amb-protocol" }
 serde_json.workspace = true

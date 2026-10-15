@@ -169,6 +169,9 @@ pub enum Shape {
     /// Select Sky (`Mask/Image` subtype 2), found by our own colour and
     /// texture rules ([`sky_map`]), not Adobe's model.
     Sky,
+    /// Select Subject (`Mask/Image` subtype 1), from the app's subject
+    /// model ([`crate::subject`]).
+    Subject,
     /// Something we can't draw (other AI masks, depth, Lightroom's own
     /// colour samples): it selects nothing.
     Unsupported,
@@ -481,6 +484,7 @@ fn read_shape(kind: &MaskKind, entries: &[&BTreeMap<String, Value>]) -> Shape {
             }
         }
         MaskKind::Ai(sub) if sub == "2" => Shape::Sky,
+        MaskKind::Ai(sub) if sub == "1" && crate::subject::available() => Shape::Subject,
         _ => Shape::Unsupported,
     }
 }
@@ -696,6 +700,8 @@ struct Reference<'a> {
     luminance: Option<&'a [f32]>,
     /// OkLab per output pixel.
     lab: Option<&'a [[f32; 3]]>,
+    /// Tone-encoded sRGB per output pixel (for the subject model).
+    srgb: Option<&'a [f32]>,
     width: usize,
     height: usize,
     strengths: MaskStrengths,
@@ -823,6 +829,42 @@ fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference, targets: &mut Targets
                     }
                 });
                 targets.sky_measured.push(map);
+            }
+        }
+        Shape::Subject => {
+            {
+                let i = targets.sky_measured.len();
+                // Maps are listed in drawing order, sky and subject alike, so
+                // a tile of the 1:1 view uses the whole photo's.
+                let map = match (targets.sky_given.and_then(|g| g.get(i)), r.srgb) {
+                    (Some(m), _) => Some(m.clone()),
+                    (None, None) => None,
+                    (None, Some(rgb)) => {
+                        let small = crate::subject::shrink(rgb, w, h);
+                        match crate::subject::find(&small) {
+                            Ok(data) => Some(SkyMap {
+                                width: crate::subject::SIZE,
+                                height: crate::subject::SIZE,
+                                data,
+                            }),
+                            Err(e) => {
+                                eprintln!("Select Subject: {e}");
+                                None
+                            }
+                        }
+                    }
+                };
+                if let Some(map) = map {
+                    let t = &r.tile;
+                    let (fw, fh) = (t.full_width.max(1) as f64, t.full_height.max(1) as f64);
+                    plane.par_chunks_mut(w).enumerate().for_each(|(y, row)| {
+                        let v = (t.y + y) as f64 / fh;
+                        for (x, out) in row.iter_mut().enumerate() {
+                            *out = map.at((t.x + x) as f64 / fw, v);
+                        }
+                    });
+                    targets.sky_measured.push(map);
+                }
             }
         }
         Shape::Unsupported => {}
@@ -1005,9 +1047,26 @@ pub fn draw_in(
                 })
                 .collect()
         });
+    // The subject model sees the photo as it looks, in sRGB; only the whole
+    // photo is shown to it (a tile gets the whole photo's map).
+    let srgb: Option<Vec<f32>> =
+        (sky_maps.is_none() && masks.needs(|s| matches!(s, Shape::Subject))).then(|| {
+            let (to_srgb, _) = crate::pipeline::srgb_matrices();
+            img.rgb
+                .par_chunks(3)
+                .flat_map_iter(|p| {
+                    (0..3).map(move |i| {
+                        let v = to_srgb[i][0] * p[0] + to_srgb[i][1] * p[1] + to_srgb[i][2] * p[2];
+                        v.max(0.0)
+                    })
+                })
+                .map(|v| encode(v).clamp(0.0, 1.0))
+                .collect()
+        });
     let reference = Reference {
         luminance: luminance.as_deref(),
         lab: lab.as_deref(),
+        srgb: srgb.as_deref(),
         width: img.width,
         height: img.height,
         strengths: *strengths,
@@ -1374,6 +1433,7 @@ mod tests {
         Reference {
             luminance: None,
             lab: None,
+            srgb: None,
             width: w,
             height: h,
             strengths: MaskStrengths::default(),
@@ -1640,6 +1700,7 @@ mod tests {
         let r = Reference {
             luminance: Some(&lum),
             lab: None,
+            srgb: None,
             width: 10,
             height: 1,
             strengths: MaskStrengths::default(),
@@ -1704,6 +1765,7 @@ mod tests {
         let r = Reference {
             luminance: None,
             lab: Some(&lab),
+            srgb: None,
             width: w,
             height: h,
             strengths: MaskStrengths::default(),

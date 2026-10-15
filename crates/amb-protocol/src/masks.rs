@@ -21,7 +21,7 @@ use crate::convert::{Clamp, json_number};
 type Fields = BTreeMap<String, Value>;
 
 /// Kinds `add_mask` can make (a brush is made by `paint_mask`).
-pub const ADD_KINDS: &[&str] = &["linear", "radial", "luminance", "color", "sky"];
+pub const ADD_KINDS: &[&str] = &["linear", "radial", "luminance", "color", "sky", "subject"];
 
 /// Most dabs one stroke may hold.
 const MAX_DABS: usize = 20_000;
@@ -169,6 +169,8 @@ fn new_component(kind: &str, comb: Combination) -> Result<Fields, Error> {
         "brush" => "Mask/Paint",
         // Lightroom's Select Sky; we find the sky with our own rules.
         "sky" => "Mask/Image",
+        // Lightroom's Select Subject; found by a local model (amb-ai).
+        "subject" => "Mask/Image",
         _ => {
             return Err(invalid(
                 "kind",
@@ -185,6 +187,7 @@ fn new_component(kind: &str, comb: Combination) -> Result<Fields, Error> {
         "luminance" => "Luminance Range",
         "color" => "Color Range",
         "sky" => "Sky",
+        "subject" => "Subject",
         _ => "Brush",
     };
     e.insert("What".into(), Value::Text(what.into()));
@@ -220,6 +223,9 @@ fn new_component(kind: &str, comb: Combination) -> Result<Fields, Error> {
         }
         "sky" => {
             e.insert("MaskSubType".into(), Value::Text("2".into()));
+        }
+        "subject" => {
+            e.insert("MaskSubType".into(), Value::Text("1".into()));
         }
         "luminance" | "color" => {
             let mut r: Fields = BTreeMap::new();
@@ -1373,7 +1379,7 @@ mod tests {
         assert!(err.to_string().contains("Top < Bottom"), "{err}");
         let err = set(&mut s, 0, None, &obj(json!({"Exposur": 1})), &mut clamped).unwrap_err();
         assert!(err.to_string().contains("LocalExposure2012"), "{err}");
-        let err = add(&mut s, "subject", None, None, None, &mut clamped).unwrap_err();
+        let err = add(&mut s, "depth", None, None, None, &mut clamped).unwrap_err();
         assert!(err.to_string().contains("linear"), "{err}");
     }
 

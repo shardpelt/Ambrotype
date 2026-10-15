@@ -40,6 +40,7 @@ pub mod raw;
 pub mod rcd;
 pub mod retouch;
 pub mod stats;
+pub mod subject;
 pub mod tone;
 pub mod transform;
 pub mod upright;

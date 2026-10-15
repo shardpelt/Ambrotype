@@ -78,6 +78,11 @@ library's package. Notable ones:
   Special Elite, by Astigmatic, Apache-2.0;
   DSEG7 Classic Bold, Copyright 2017 keshikan, SIL OFL 1.1.
 
+- Downloaded on first use, not shipped: the U²-Net (small) model for Select
+  Subject masks, by Xuebin Qin et al. (https://github.com/xuebinqin/U-2-Net),
+  Apache-2.0, in the ONNX form published by the rembg project (MIT). A copy
+  with its licence is in the hub repo's models/ folder.
+
 Binary releases include the full licence texts of every library they contain
 (docs/legal-and-naming.md, "Releases").
 

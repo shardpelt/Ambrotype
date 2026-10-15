@@ -53,7 +53,7 @@ pub fn core() -> String {
     );
     let _ = writeln!(
         out,
-        "Items: Name=v Name+=d Name-=d reset:Name|group preset:PATH[@amount] sky:Name=v,… (a sky mask) snap:N load:N undo redo"
+        "Items: Name=v Name+=d Name-=d reset:Name|group preset:PATH[@amount] sky:|subject:Name=v,… (a new mask) snap:N load:N undo redo"
     );
     let _ = writeln!(
         out,

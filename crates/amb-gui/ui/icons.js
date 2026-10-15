@@ -14,8 +14,8 @@ const ICON_PATHS = {
   save: '<path d="M5 3.5h11.5l4 4V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5Z"/><path d="M7.5 3.5v5h8v-5"/><rect x="7" y="13" width="10" height="7.5" rx=".5"/>',
   // Out of the box.
   export: '<path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M8 11H5.5A1.5 1.5 0 0 0 4 12.5v6A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-6a1.5 1.5 0 0 0-1.5-1.5H16"/>',
-  // Photos side by side on one page.
-  collage: '<rect x="3.5" y="3.5" width="17" height="17" rx="1.5"/><path d="M11 3.5v17M11 12h9.5"/>',
+  // Two photos laid on top of each other at angles, as on a collage.
+  collage: '<g transform="rotate(-10 8.5 8.5)"><rect x="2.5" y="3.5" width="12" height="10" rx=".8"/><path d="m4.5 11.5 3-3 2.5 2.5"/></g><g transform="rotate(9 15 15.5)"><rect class="cover" x="8.8" y="10.5" width="12.4" height="10" rx=".8"/><circle cx="17.8" cy="13.8" r="1.2"/><path d="m10.8 18.5 3-3 3.5 3.5"/></g>',
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H10"/>',
   redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H14"/>',
   // Half before, half after.
@@ -28,8 +28,8 @@ const ICON_PATHS = {
   spots: '<rect x="2.6" y="8.2" width="18.8" height="7.6" rx="3.8" transform="rotate(-45 12 12)"/><rect x="8.6" y="8.6" width="6.8" height="6.8" transform="rotate(-45 12 12)"/><circle cx="11" cy="12" r=".6" fill="currentColor"/><circle cx="13" cy="12" r=".6" fill="currentColor"/><circle cx="12" cy="11" r=".6" fill="currentColor"/><circle cx="12" cy="13" r=".6" fill="currentColor"/>',
   // A magnifier.
   zoom: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/><path d="M10.5 7.5v6M7.5 10.5h6"/>',
-  // An eyedropper.
-  wb: '<path d="m14.5 4.5 5 5"/><path d="M13 6l5 5-8.5 8.5H5.5v-4L13 6Z"/><path d="M16 3a2.1 2.1 0 0 1 3 0l2 2a2.1 2.1 0 0 1 0 3l-1.5 1.5-5-5Z"/>',
+  // An eyedropper: a filled rubber bulb, a thin glass tube and a drop.
+  wb: '<path d="M14.6 4.1a2.7 2.7 0 0 1 3.8 0l1.5 1.5a2.7 2.7 0 0 1 0 3.8l-2.4 2.4-5.3-5.3Z" fill="currentColor"/><path d="m11.2 7.4 5.4 5.4"/><path d="M13.2 9.4 6.4 16.2a2.5 2.5 0 0 0-.7 1.4l-.3 1.4 1.4-.3a2.5 2.5 0 0 0 1.4-.7l6.8-6.8"/><path d="M3.9 20.4a1 1 0 0 1-2 0c0-.6 1-1.8 1-1.8s1 1.2 1 1.8Z" fill="currentColor"/>',
   // A warning triangle.
   clip: '<path d="M12 3.5 21.5 20h-19L12 3.5Z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.3" r=".8" fill="currentColor" stroke="none"/>',
   // A picture in a frame.
@@ -50,9 +50,9 @@ const ICON_PATHS = {
 
 // Only the buttons whose icon says what it does at a glance get one; the
 // rest keep their word, so the bar stays easy to read.
-// Collage, Spots, Clipping and Appearance have no picture that says it.
+// Spots, Clipping and Appearance have no picture that says it.
 const TOOLBAR_ICONS = new Set([
-  "open", "library", "save", "export", "undo", "redo", "before", "crop", "masks", "zoom", "wb",
+  "open", "library", "save", "export", "collage", "undo", "redo", "before", "crop", "masks", "zoom", "wb",
   "frame", "keys", "plugins", "edit", "settings", "feedback",
 ]);
 

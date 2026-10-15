@@ -177,6 +177,76 @@ pub enum Shape {
     Unsupported,
 }
 
+/// A coarse mask (`w`×`h`) snapped to the edges of the photo under it
+/// (`rgb`, tone-encoded sRGB): a guided filter on its brightness, with a
+/// radius of about 1.5 cells of the subject model's grid, then a gentle
+/// tightening so the edge is crisp but not stepped. The filter's
+/// coefficients are worked out on a copy shrunk by `step` and applied at
+/// full size (He & Sun's fast guided filter), so it costs little at 24 MP.
+fn refine_edges(plane: &[f32], rgb: &[f32], w: usize, h: usize, t: &Tile) -> Vec<f32> {
+    use crate::filters::box_blur;
+    let cell = t.full_width.max(t.full_height) as f32 / crate::subject::SIZE as f32;
+    let radius = (1.5 * cell).round().clamp(1.0, 64.0) as usize;
+    if w < 2 * radius + 1 || h < 2 * radius + 1 {
+        return plane.to_vec();
+    }
+    let guide: Vec<f32> = rgb
+        .par_chunks(3)
+        .map(|p| 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2])
+        .collect();
+    let step = (radius / 4).max(1);
+    let (sw, sh) = (w.div_ceil(step), h.div_ceil(step));
+    let shrink = |src: &[f32]| -> Vec<f32> {
+        (0..sw * sh)
+            .into_par_iter()
+            .map(|k| {
+                let (sx, sy) = (k % sw, k / sw);
+                let (x1, y1) = (((sx + 1) * step).min(w), ((sy + 1) * step).min(h));
+                let mut sum = 0.0;
+                for y in sy * step..y1 {
+                    sum += src[y * w + sx * step..y * w + x1].iter().sum::<f32>();
+                }
+                sum / ((x1 - sx * step) * (y1 - sy * step)) as f32
+            })
+            .collect()
+    };
+    let (gi, gp) = (shrink(&guide), shrink(plane));
+    let r = (radius / step).max(1);
+    let mean = |p: &[f32]| box_blur(p, sw, sh, r);
+    let (mi, mp) = (mean(&gi), mean(&gp));
+    let ii: Vec<f32> = gi.iter().map(|v| v * v).collect();
+    let ip: Vec<f32> = gi.iter().zip(&gp).map(|(a, b)| a * b).collect();
+    let (cii, cip) = (mean(&ii), mean(&ip));
+    let (a, b): (Vec<f32>, Vec<f32>) = (0..sw * sh)
+        .map(|k| {
+            let a = (cip[k] - mi[k] * mp[k]) / (cii[k] - mi[k] * mi[k] + 1e-3);
+            (a, mp[k] - a * mi[k])
+        })
+        .unzip();
+    let (a, b) = (mean(&a), mean(&b));
+    // Bilinear on the small grid, at each full-size pixel.
+    let at = |g: &[f32], x: usize, y: usize| -> f32 {
+        let fx = ((x as f32 + 0.5) / step as f32 - 0.5).clamp(0.0, (sw - 1) as f32);
+        let fy = ((y as f32 + 0.5) / step as f32 - 0.5).clamp(0.0, (sh - 1) as f32);
+        let (x0, y0) = (fx as usize, fy as usize);
+        let (x1, y1) = ((x0 + 1).min(sw - 1), (y0 + 1).min(sh - 1));
+        let (tx, ty) = (fx - x0 as f32, fy - y0 as f32);
+        let top = g[y0 * sw + x0] + (g[y0 * sw + x1] - g[y0 * sw + x0]) * tx;
+        let bottom = g[y1 * sw + x0] + (g[y1 * sw + x1] - g[y1 * sw + x0]) * tx;
+        top + (bottom - top) * ty
+    };
+    let mut out = vec![0.0f32; w * h];
+    out.par_chunks_mut(w).enumerate().for_each(|(y, row)| {
+        for (x, o) in row.iter_mut().enumerate() {
+            let v = at(&a, x, y) * guide[y * w + x] + at(&b, x, y);
+            // A soft step around the middle: firmer inside and outside.
+            let s = ((v - 0.5) * 1.6 + 0.5).clamp(0.0, 1.0);
+            *o = s * s * (3.0 - 2.0 * s);
+        }
+    });
+    out
+}
+
 /// Where the sky is, in fractions of the output (a small grid, 0..1).
 #[derive(Debug, Clone, PartialEq)]
 pub struct SkyMap {
@@ -863,6 +933,12 @@ fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference, targets: &mut Targets
                             *out = map.at((t.x + x) as f64 / fw, v);
                         }
                     });
+                    // The model sees a 320-pixel photo, so its edge is soft;
+                    // the photo's own edges sharpen it (a guided filter over
+                    // about a cell and a half of the model's grid).
+                    if let Some(rgb) = r.srgb {
+                        plane = refine_edges(&plane, rgb, w, h, t);
+                    }
                     targets.sky_measured.push(map);
                 }
             }
@@ -1047,22 +1123,21 @@ pub fn draw_in(
                 })
                 .collect()
         });
-    // The subject model sees the photo as it looks, in sRGB; only the whole
-    // photo is shown to it (a tile gets the whole photo's map).
-    let srgb: Option<Vec<f32>> =
-        (sky_maps.is_none() && masks.needs(|s| matches!(s, Shape::Subject))).then(|| {
-            let (to_srgb, _) = crate::pipeline::srgb_matrices();
-            img.rgb
-                .par_chunks(3)
-                .flat_map_iter(|p| {
-                    (0..3).map(move |i| {
-                        let v = to_srgb[i][0] * p[0] + to_srgb[i][1] * p[1] + to_srgb[i][2] * p[2];
-                        v.max(0.0)
-                    })
+    // The subject model sees the photo as it looks, in sRGB (a tile gets the
+    // whole photo's map, and refines its edges on its own pixels).
+    let srgb: Option<Vec<f32>> = masks.needs(|s| matches!(s, Shape::Subject)).then(|| {
+        let (to_srgb, _) = crate::pipeline::srgb_matrices();
+        img.rgb
+            .par_chunks(3)
+            .flat_map_iter(|p| {
+                (0..3).map(move |i| {
+                    let v = to_srgb[i][0] * p[0] + to_srgb[i][1] * p[1] + to_srgb[i][2] * p[2];
+                    v.max(0.0)
                 })
-                .map(|v| encode(v).clamp(0.0, 1.0))
-                .collect()
-        });
+            })
+            .map(|v| encode(v).clamp(0.0, 1.0))
+            .collect()
+    });
     let reference = Reference {
         luminance: luminance.as_deref(),
         lab: lab.as_deref(),

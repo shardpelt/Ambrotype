@@ -1,5 +1,6 @@
 # Hub items the app ships (tools/sync-hub.py copies them here).
 layout-classic
+layout-beginner
 layout-compact
 layout-big-controls
 layout-studio

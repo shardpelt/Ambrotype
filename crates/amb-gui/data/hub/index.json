@@ -12,6 +12,16 @@
       "sha256": "3a015f97aa2a4a56777bfffea89c65a0d67a67c2ff46d1a8671c0db013203ceb"
     },
     {
+      "id": "layout-beginner",
+      "kind": "layout",
+      "name": "Beginner",
+      "author": "Ambrotype",
+      "description": "Classic with words on every toolbar button and only the everyday tools, so nothing is a puzzle. Switch to Classic for icons and the rest.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/beginner.json",
+      "sha256": "fc11920f689384b9168aef2dce4253c9f37e77ae919fe0942d98ac6d5a25d224"
+    },
+    {
       "id": "layout-compact",
       "kind": "layout",
       "name": "Compact",

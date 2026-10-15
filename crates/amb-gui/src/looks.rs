@@ -26,10 +26,14 @@ pub const THEME_FORMAT: &str = "ambrotype-theme/1";
 pub const DEFAULT_LAYOUT: &str = "builtin:classic";
 pub const DEFAULT_THEME: &str = "builtin:dark";
 
-const BUILTIN_LAYOUTS: [(&str, &str); 5] = [
+const BUILTIN_LAYOUTS: [(&str, &str); 6] = [
     (
         "classic",
         include_str!("../data/hub/looks/layouts/classic.json"),
+    ),
+    (
+        "beginner",
+        include_str!("../data/hub/looks/layouts/beginner.json"),
     ),
     (
         "compact",
@@ -522,12 +526,20 @@ pub fn check_layout(v: &Value) -> Vec<Problem> {
             "theme",
             "density",
             "toolbar",
+            "toolbar_style",
             "filmstrip",
             "left",
             "right",
         ],
         "layout",
     );
+    if let Some(t) = obj.get("toolbar_style") {
+        if !matches!(t.as_str(), Some("icons" | "words")) {
+            c.warn(format!(
+                "unknown toolbar_style {t} (\"icons\" or \"words\"); \"icons\" is used"
+            ));
+        }
+    }
     if obj.get("filmstrip").is_some_and(|f| !f.is_boolean()) {
         c.error("\"filmstrip\" must be true or false");
     }

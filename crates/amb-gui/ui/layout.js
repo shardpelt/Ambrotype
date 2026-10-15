@@ -53,6 +53,7 @@ function applyLayout(layout) {
   const density = ["compact", "large"].includes(layout.density) ? layout.density : "normal";
   document.body.classList.remove("density-compact", "density-normal", "density-large");
   document.body.classList.add(`density-${density}`);
+  applyToolbarIcons(layout.toolbar_style === "words" ? "words" : "icons");
   buildToolbar(layout.toolbar);
   if (typeof applyStripVisibility === "function") applyStripVisibility();
 

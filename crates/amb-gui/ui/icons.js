@@ -63,17 +63,20 @@ function iconSvg(name) {
   return `<svg class="tool-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
 }
 
-// Swap the toolbar's words for icons; the name stays as the label for
-// screen readers and in the tooltip.
-function applyToolbarIcons() {
+// Show the toolbar as icons (where TOOLBAR_ICONS has one) or, for the
+// layouts that ask ("toolbar_style": "words"), as words only. The name
+// stays as the label for screen readers and in the tooltip.
+function applyToolbarIcons(style = "icons") {
   for (const [name, id] of Object.entries(TOOLBAR_IDS)) {
     const b = $(id);
-    const svg = TOOLBAR_ICONS.has(name) ? iconSvg(name) : null;
-    if (!b || !svg || b.classList.contains("tool-icon")) continue;
-    const label = b.getAttribute("aria-label") || b.textContent.trim().replace(/…$/, "");
-    b.setAttribute("aria-label", label);
+    if (!b) continue;
+    if (b.dataset.label == null) b.dataset.label = b.textContent.trim();
+    const label = b.dataset.label || b.getAttribute("aria-label") || name;
+    b.setAttribute("aria-label", label.replace(/…$/, ""));
     if (!b.title) b.title = label;
-    b.innerHTML = svg;
-    b.classList.add("tool-icon");
+    const svg = style !== "words" && TOOLBAR_ICONS.has(name) ? iconSvg(name) : null;
+    if (svg) b.innerHTML = svg;
+    else b.textContent = label;
+    b.classList.toggle("tool-icon", Boolean(svg));
   }
 }

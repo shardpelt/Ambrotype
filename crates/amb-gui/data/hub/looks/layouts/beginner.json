@@ -1,0 +1,27 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Beginner",
+  "description": "Classic with words on every toolbar button and only the everyday tools, so nothing is a puzzle. Switch to Classic for icons and the rest.",
+  "author": "Ambrotype",
+  "density": "normal",
+  "toolbar": ["open", "library", "save", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "zoom", "wb", "|", "looks", "settings", "keys", "feedback"],
+  "toolbar_style": "words",
+  "left": { "width": 250, "items": ["presets", "info", "history"] },
+  "right": {
+    "width": 330,
+    "items": [
+      "histogram",
+      { "panel": "basic", "open": true },
+      { "panel": "tone_curve" },
+      { "panel": "color_mixer" },
+      { "panel": "black_white" },
+      { "panel": "color_grading" },
+      { "panel": "detail" },
+      { "panel": "lens" },
+      { "panel": "transform" },
+      { "panel": "effects" },
+      { "panel": "calibration" },
+      { "panel": "negative" }
+    ]
+  }
+}

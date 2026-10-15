@@ -52,6 +52,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   "based_on": "builtin:studio",              // optional; set by Clone
   "theme": "builtin:dark",                   // optional: switching to this layout also picks this theme
   "density": "normal",                       // "compact" | "normal" | "large"
+  "toolbar_style": "icons",                  // "icons" (where one is obvious) | "words"
   "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
   "left":  { "width": 250, "items": ["presets", "history"] },
   "right": { "width": 340, "items": ["histogram", { "panel": "basic", "open": true }, { "panel": "detail" }] }
@@ -63,6 +64,8 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
 `filmstrip`: `true` (the default) shows the other photos of the folder under the photo; `false` hides it. F shows or hides it for the session.
 
 ### Density
+
+`toolbar_style` shows the toolbar as icons where an icon is obvious (the default) or as `words` only, as the Beginner layout does. Each button's name is always in its tooltip.
 
 `density` sets the size of text and controls: `compact` for small laptop screens, `normal` (the default), or `large` for touch screens or easier reading.
 

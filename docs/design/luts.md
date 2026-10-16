@@ -6,7 +6,7 @@ Many looks are shared as `.cube` files (the 3D LUT format of Resolve and most lo
 
 ## How it renders
 
-- After the colour and curves stage, before Detail and Effects (`pipeline.rs`, `apply_lut`).
+- After the colour and curves stage, before Detail and Effects (`pipeline/camera.rs`, `apply_lut`).
 - The pixel is turned into sRGB-encoded values, as LUTs expect, looked up (trilinear), turned back, and mixed with the original by the amount. Colours outside sRGB are clipped for the table.
 - 1D, 3D and 1D-then-3D (shaper) files, `DOMAIN_MIN`/`DOMAIN_MAX` and the `LUT_*_INPUT_RANGE` lines are read (`crates/amb-engine/src/lut.rs`). 3D tables up to 129 points a side.
 - A file is read once and again only when it changes. A missing or broken file is listed as not rendered.

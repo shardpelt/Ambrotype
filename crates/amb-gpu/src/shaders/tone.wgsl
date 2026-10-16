@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Stage 3's per-pixel parts: the base look (scene-linear to display-linear)
-// and the global tone curve on luminance; stage 5's curves. pipeline.rs is
+// and the global tone curve on luminance; stage 5's curves. pipeline/mod.rs is
 // the reference.
 
 struct Tone {
@@ -20,7 +20,7 @@ struct Tone {
 
 const NONE: u32 = 0xffffffffu;
 
-// Linear interpolation in a table over 0..1 (pipeline.rs `lookup`).
+// Linear interpolation in a table over 0..1 (pipeline/mod.rs `lookup`).
 fn lut_at(lut_offset: u32, v: f32) -> f32 {
     let n = size.lut_size;
     let pos = clamp(v, 0.0, 1.0) * f32(n - 1u);

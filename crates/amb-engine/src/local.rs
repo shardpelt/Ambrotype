@@ -39,7 +39,7 @@
 //! (box windows use fractional radii, so the effective scale is continuous), so
 //! a preview and the full-size export look the same.
 //!
-//! Interface contract (do not change without updating pipeline.rs):
+//! Interface contract (do not change without updating pipeline/):
 //! - runs on the display-linear ProPhoto image, after the base look and the
 //!   Basic tone sliders, before colour;
 //! - `texture` and `clarity` are Camera Raw slider values in -100..100;

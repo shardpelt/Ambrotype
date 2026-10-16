@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Colour noise reduction (amb-engine's detail.rs is the reference). The
+// Colour noise reduction (amb-engine's detail/ is the reference). The
 // low-resolution guided filter and the noise statistics run on the CPU;
 // here: the downscaled copy they start from, the chroma residual against the
 // smoothed chroma, the per-tile sums the noise is measured from, and the

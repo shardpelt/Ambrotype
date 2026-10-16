@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Luminance noise reduction (amb-engine's detail.rs is the reference):
+// Luminance noise reduction (amb-engine's detail/ is the reference):
 // self-guided filters on the centred encoded luminance with eps from the
 // measured noise, Detail returning removed signal where its energy clears
 // the noise, Contrast adding a low-pass of what is still removed, applied to
@@ -50,7 +50,7 @@ fn eps_at(x: f32) -> f32 {
     return lut(LUT_STEPS + 1u, x);
 }
 
-// The sRGB transfer, odd below 0 and 0 for NaN (detail.rs `Transfer`).
+// The sRGB transfer, odd below 0 and 0 for NaN (detail/util.rs `Transfer`).
 fn encode(v: f32) -> f32 {
     if (v != v) { return 0.0; }
     if (v < 0.0) { return -srgb_encode(-v); }

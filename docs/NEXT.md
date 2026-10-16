@@ -117,7 +117,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 
 0. **First, measure what helps** (plan: [design/agent-navigation.md](design/agent-navigation.md)): fresh agents on a fixed task set, with and without recipes and on-demand maps. Rounds A1 and B1 are done: with the recipes, Sonnet passed all 12 tasks at the same cost. The steps below follow from it.
 1. **A map for agents:** a detailed map of the code (per crate and per UI file: what it owns, its main types and functions, how data flows from a slider to the render and to the sidecar) with recipes for common changes ("add a setting", "add a panel", "add a toolbar button", "add a mask kind", "add a hub item kind"). Builds on [ARCHITECTURE.md](ARCHITECTURE.md) and AGENTS.md; checked by a test where it can be (like the settings reference).
-2. **A cleanup pass to match it:** ~~split the largest files~~ (2026-10-16: `amb-gui/src/commands/`, and `ui/app.js` into preview, crop, presets and export files), one clear home per concern, consistent names, dead code out. Behaviour unchanged; the tests and a by-hand run of the editor confirm it.
+2. **A cleanup pass to match it:** ~~split the largest files~~ (2026-10-16: `amb-gui/src/commands/`; `ui/app.js` into preview, crop, presets and export files; the CLI by area; the engine's `pipeline/` and `detail/` as folders), one clear home per concern, consistent names, dead code out. Behaviour unchanged; the tests and a by-hand run of the editor confirm it.
 
 ## Working notes
 

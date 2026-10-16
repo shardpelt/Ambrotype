@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Stage 1: camera RGB to scene-linear ProPhoto with white balance, Exposure,
 // highlight recovery and the Calibration panel's shadow tint
-// (`develop` and `Unclip` in amb-engine's pipeline.rs).
+// (`develop` and `Unclip` in amb-engine's pipeline/).
 
 struct Matrix {
     m: array<f32, 9>,

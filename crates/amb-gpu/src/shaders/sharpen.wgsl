@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Sharpening (amb-engine's detail.rs is the reference): an unsharp mask on
+// Sharpening (amb-engine's detail/ is the reference): an unsharp mask on
 // encoded luminance, overshoot limited to the local min/max plus a margin,
 // optionally weighted by an edge mask, applied to RGB by luminance ratio.
 
@@ -29,7 +29,7 @@ struct Sharpen {
 const MAX_LINEAR: f32 = 1e3;
 const MIN_SCALE_Y: f32 = 1e-6;
 
-// The sRGB transfer, odd below 0 and 0 for NaN (detail.rs `Transfer`).
+// The sRGB transfer, odd below 0 and 0 for NaN (detail/util.rs `Transfer`).
 fn encode(v: f32) -> f32 {
     if (v != v) { return 0.0; }
     if (v < 0.0) { return -srgb_encode(-v); }
@@ -57,7 +57,7 @@ fn sharpen_level(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_work
     lvl[i] = encode(clamp(y, -MAX_LINEAR, MAX_LINEAR));
 }
 
-// detail.rs `smoothstep`: a step when the edges meet.
+// detail/util.rs `smoothstep`: a step when the edges meet.
 fn step_edges(e0: f32, e1: f32, x: f32) -> f32 {
     if (e1 <= e0) {
         return select(0.0, 1.0, x >= e0);

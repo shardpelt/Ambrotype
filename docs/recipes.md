@@ -25,9 +25,8 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
    - Lightroom's settings keep their XMP name.
    - Our own start with `amb:` (like `amb:LUTAmount`).
 2. `crates/amb-protocol/data/descriptions.json`: its `label` and `description`. The settings reference and the editor's tooltips show them.
-3. `crates/amb-engine/src/pipeline.rs`:
-   - a field on `DevelopSettings`, read in `from_settings`;
-   - the stage called from `develop`, at its place in the pipeline order (the module header lists it).
+3. `crates/amb-engine/src/pipeline/settings.rs`: a field on `DevelopSettings`, read in `from_settings`.
+   - The stage itself: called from `develop` in `crates/amb-engine/src/pipeline/mod.rs`, at its place in the pipeline order (the module header lists it).
    - A stage that looks at neighbouring pixels takes a `Tile`, so the 1:1 view (`render_region`) matches the full render.
 4. `crates/amb-engine/src/plan.rs`: the editor's GPU preview runs a `Step` list. Add a GPU step, or a `Cpu` step that runs your engine code, or the preview won't show the setting.
 5. `crates/amb-gui/src/schema.rs`: `panels` decides which panel and section show it. The control itself comes from the registry; don't hard-code ranges or labels in the UI.

@@ -2,7 +2,7 @@
 
 Status: implemented 2026-10-10, our own model, unfitted.
 
-Code: `crates/amb-engine/src/primaries.rs`, applied with the camera matrix in `crates/amb-engine/src/pipeline.rs`. The editor's Calibration panel is generated from the registry like the others.
+Code: `crates/amb-engine/src/primaries.rs`, applied with the camera matrix in `crates/amb-engine/src/pipeline/camera.rs`. The editor's Calibration panel is generated from the registry like the others.
 
 ## Tags
 

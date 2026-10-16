@@ -2,7 +2,7 @@
 
 Status: implemented 2026-10-10 for DNG Camera Profiles (`.dcp`). Adobe's "Adobe Raw" profiles (Adobe Color, Landscape, Portrait, …), which are `.xmp` files with a look table, are not read.
 
-Code: `crates/amb-engine/src/profile.rs` (reading, finding, applying), used by `render` in `crates/amb-engine/src/pipeline.rs`. `amb profile list` and `amb render --dcp-dir`; the editor's Profile menu in the Basic panel.
+Code: `crates/amb-engine/src/profile.rs` (reading, finding, applying), used by `render` in `crates/amb-engine/src/pipeline/mod.rs`. `amb profile list` and `amb render --dcp-dir`; the editor's Profile menu in the Basic panel.
 
 ## Where profiles come from
 

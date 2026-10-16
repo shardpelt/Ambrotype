@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Dehaze: remove (positive) or add (negative) atmospheric haze.
 //!
-//! Interface contract (pipeline.rs depends on it):
+//! Interface contract (pipeline/ depends on it):
 //! - runs on the scene-linear ProPhoto image, after Exposure and before the base look;
 //! - `amount` is the Camera Raw slider value in -100..100; no-op at 0;
 //! - values may exceed 1.0 (scene-linear); output stays finite and non-negative.

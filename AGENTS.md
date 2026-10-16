@@ -24,6 +24,7 @@ cargo test --workspace
 ```
 - Changed a tag's range, default or description? Regenerate the AI settings reference with `cargo run -p amb-cli -- settings reference > docs/ai/settings-reference.md` and the core card with `cargo run -p amb-cli -- ref > docs/ai/core.md` (tests check both are current).
 - GUI changes: run the editor (`cargo run --release -p amb-gui -- photo.nef`) and try the change by hand; there are no automated UI tests yet.
+- Claude Code cloud sessions install the editor's system libraries (GTK, WebKit) when they start: `.claude/hooks/session-start.sh`.
 - Running several agents at once: give each its own `CARGO_TARGET_DIR` (or its own worktree and target dir), or they overwrite each other's binaries.
 
 ## Conventions

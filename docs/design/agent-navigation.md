@@ -57,6 +57,29 @@ Seeded bugs live on a task branch with squashed history, so `git log` doesn't gi
   - The full round is 8 tasks, 2 runs each, per condition: about 50–65 runs.
 - **Limits:** it is a small sample on one model and one repo. Treat the results as signals, not proof.
 
+## Models
+
+API prices per million tokens, input and output, from Anthropic's model table:
+
+| Model | Input | Output |
+|---|---|---|
+| Fable 5.1 | $10 | $50 |
+| Opus 5.5 | $4 | $20 |
+| Sonnet 5.5 | $2 | $10 |
+| Haiku 5.5 | $0.10 | $0.50 |
+
+Haiku's price applies to prompts up to 100K tokens. Above that it costs $0.50 and $2.50. Plan limits may not follow these ratios exactly.
+
+- **Main round on Sonnet 5.5, half Opus's price.**
+  - Help should matter most to a model that finds its way less easily. A strong model may pass every task in every setup, which would show nothing.
+  - If the help makes Sonnet reliable here, routine changes can run on Sonnet for good.
+- **An Opus 5.5 check:** A against the winning setup, one run per task. Opus is what this repo is mostly worked on with, and help that suits one model can hurt another.
+- **A Haiku 5.5 probe** on three or four easy tasks with the winning setup. It is nearly free. If Haiku passes with the recipes, the recipes carry the knowledge.
+- **No Fable:** it costs 2.5 times Opus, and nobody would use it for routine work here.
+- **Graders:** Sonnet or Haiku. Most checks are tests anyway.
+- **Fixed settings:** the same model and effort level for every run in a comparison. Compare setups within one model, never across models.
+- **Cost per completed task, not per token:** a cheap run that fails or wanders isn't cheap. A later arm could try Opus at a lower effort against Sonnet, measured the same way.
+
 ## Phases
 
 0. Run the pilot.
@@ -76,5 +99,5 @@ Seeded bugs live on a task branch with squashed history, so `git log` doesn't gi
 
 ## Before we start (owner)
 
-- **Third-party tools:** may RepoMapper and a rust-analyzer LSP plugin be installed in the test sessions? They are third-party and stay out of the repo. RepoMapper's licence still needs checking.
+- **Third-party tools:** RepoMapper and a rust-analyzer LSP plugin may be installed in the test sessions (owner, 2026-10-16). They stay out of the repo. RepoMapper's licence still needs checking.
 - **Budget:** the pilot shows what a full round costs.

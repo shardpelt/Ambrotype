@@ -1,6 +1,6 @@
 # Helping agents find their way: a plan
 
-Status: round A1 done (2026-10-16): 12 runs with today's docs, results below.
+Status: rounds A1 and B1 done (2026-10-16), results below. B1 passes all 12 tasks.
 
 The goal is to measure what helps an agent that has never seen this code make a correct change here, cheaply. We keep what works, write it down, and then clean up the code to match.
 
@@ -85,6 +85,37 @@ What it shows:
 - **Two product gaps showed up:** the compact syntax can't set `amb:` settings (`amb do "amb:LUT=…"` fails too), and setting Temperature from As Shot resets Tint to 0 unless it is set as well.
 
 For round B: recipes for "add a setting" (including the compact syntax) and "add a toolbar button" (don't touch `data/hub/`), and a line telling agents to run the exact commands a task names. Fix the environment first, so every round can build the editor.
+
+## Results: round B1 (recipes and session hook, Sonnet 5.5, one run per task)
+
+The same 12 tasks on `base/b1`: the A1 snapshot plus `docs/recipes.md`, its test, the "Common changes" lines in AGENTS.md and the session-start hook. The two product gaps A1 found were left unfixed, so t1 and t10 face the same code. Work is on `work/b1-t1`…`work/b1-t12`.
+
+| Task | A1 | B1 | B1 cost |
+|---|---|---|---|
+| t1 Fade setting end to end | Partial | Pass: ran `amb do "amb:Fade=40"`, found the compact-syntax gap and fixed it, with a test | $1.23* |
+| t2 Planted bug: vignette | Pass | Pass | $0.38 |
+| t3 Auto toolbar button | Partial | Pass: left `data/hub/` alone and said the built-in layouts need the hub repo | $0.31 |
+| t4 `amb rating` | Pass | Pass | $0.35 |
+| t5 `reset_all` command | Pass | Pass | $0.62* |
+| t6 LUTs in the hub | Pass | Pass | $0.54 |
+| t7 Planted bug: rating undoes edits | Pass | Pass | $0.24 |
+| t8 Trace the Exposure slider | Pass (8/8) | Pass (8/8, plus the bonus) | $0.56 |
+| t9 Make a theme | Pass | Pass | $0.24 |
+| t10 Make a plugin | Pass, one flaw | Pass | $0.48 |
+| t11 Make a layout | Pass | Pass | $0.23 |
+| t12 Edit a photo | Pass | Pass | $0.22 |
+
+\* t1 and t5 hit the 5-hour usage limit and resumed later; the restart re-read their context, so their cost is high and their time isn't comparable.
+
+Total about $5.40. Without t1 and t5 the other ten cost $3.55, against $3.63 for the same ten in A1.
+
+What it shows:
+- **The two A1 misses are gone.** Both came from rules the recipes now state: run the commands the task names, and don't edit `data/hub/`.
+- **The same cost.** The recipes add a file to read but no measurable cost.
+- **The hook works:** GUI tasks could build `amb-gui` and run its tests.
+- **Limits:** one run per task, and A1 left little room to improve. A harder task set would show more.
+
+Next: C1 and C2 (RepoMapper, LSP) are unlikely to help where B1 already passes everything. Run them only with harder tasks, such as larger cross-crate changes or bugs with vaguer reports.
 
 ## Models
 

@@ -22,7 +22,7 @@ const COMPOSITE_TITLES = { "point-curve": "Point curve", "color-wheels": "Colour
 const BLOCK_TITLES = { presets: "Presets", info: "Rating & keywords", history: "History", histogram: "Histogram" };
 const TOOL_TITLES = {
   open: "Open", library: "Library", save: "Save", export: "Export", collage: "Collage", undo: "Undo", redo: "Redo", before: "Before / After",
-  crop: "Crop", masks: "Masks", spots: "Spots", zoom: "100%", wb: "WB picker", clip: "Clipping", plugins: "Plugins", looks: "Appearance", edit: "Edit layout", settings: "Settings",
+  crop: "Crop", masks: "Masks", spots: "Spots", zoom: "100%", wb: "WB picker", clip: "Clipping", frame: "Frame", keys: "Shortcuts", hub: "Browse", plugins: "Plugins", looks: "Appearance", edit: "Edit layout", settings: "Settings",
   feedback: "Feedback", "|": "Separator",
 };
 

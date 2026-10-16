@@ -16,6 +16,9 @@ Ambrotype is a free, open-source Lightroom alternative in Rust. Start with [docs
 - Built-in layouts, themes and starter presets live in the hub repo (`Ambrotypehq/ambrotype-hub`); `crates/amb-gui/data/hub/` is a copy. Change them there, then run `tools/sync-hub.py <hub checkout>`.
 - Design notes in `docs/design/`, known gaps in `docs/GAPS.md`.
 
+## Common changes
+[docs/recipes.md](docs/recipes.md) lists, step by step, what adding a setting, a toolbar button, a CLI or protocol command, or a hub item kind touches. **Done means the commands the request names work as written: run them.**
+
 ## Before you commit
 ```sh
 cargo fmt --all --check
@@ -23,7 +26,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 - Changed a tag's range, default or description? Regenerate the AI settings reference with `cargo run -p amb-cli -- settings reference > docs/ai/settings-reference.md` and the core card with `cargo run -p amb-cli -- ref > docs/ai/core.md` (tests check both are current).
-- GUI changes: run the editor (`cargo run --release -p amb-gui -- photo.nef`) and try the change by hand; there are no automated UI tests yet.
+- GUI changes: run the editor (`cargo run --release -p amb-gui -- photo.nef`) and try the change by hand; there are no automated UI tests yet. Without a screen (a cloud session), use Xvfb: [docs/recipes.md](docs/recipes.md).
 - Claude Code cloud sessions install the editor's system libraries (GTK, WebKit) when they start: `.claude/hooks/session-start.sh`.
 - Running several agents at once: give each its own `CARGO_TARGET_DIR` (or its own worktree and target dir), or they overwrite each other's binaries.
 

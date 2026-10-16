@@ -52,7 +52,8 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
 
 ## Add a CLI command
 
-1. `crates/amb-cli/src/main.rs`: a line in `USAGE`, a case in the `match` in `main`, and a function.
+1. `crates/amb-cli/src/main.rs`: a line in `USAGE` and a case in the `match` in `main`.
+   - The function goes in the file for its area in `crates/amb-cli/src/` (`render.rs`, `edit.rs`, `library.rs`, `look.rs`, …), or a new one.
    - Reuse the library code rather than writing files by hand.
    - Sidecars: `amb_protocol::sidecar` (`read_info`, `with_info`, `write_atomic`).
    - Edits: `amb_protocol::edit` (`run`), so they are undoable like the editor's.
@@ -79,6 +80,7 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
    - `fetch_item` reads and checks it for the Browse dialog;
    - an `install_…` function checks its sha256 and saves it;
    - `browse` marks what's installed.
-2. `crates/amb-gui/src/commands/hub.rs`: a Tauri command that calls the install. Register it in `invoke_handler` in `crates/amb-gui/src/main.rs`.
+2. `crates/amb-gui/src/main.rs`: register the new Tauri command in `invoke_handler`.
+   - The command itself goes in `crates/amb-gui/src/commands/hub.rs` and calls the install.
 3. `crates/amb-gui/ui/hub.js`: in `hubFlow`, a preview and the Install button's branch. `crates/amb-gui/ui/index.html`: a tab in `hub-tabs`.
 4. Docs: `docs/design/customization-and-hub.md`. In the hub repo (Ambrotypehq/ambrotype-hub), tools/build_index.py lists the folders it indexes.

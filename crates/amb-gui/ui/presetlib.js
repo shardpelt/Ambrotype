@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Preset library: free develop presets by style, from the hub (or the ones
 // built into the app). Hover one to see it on the photo (presetHover in
-// app.js), apply it, or add it to the presets list.
+// presets.js), apply it, or add it to the presets list.
 "use strict";
 
 const plib = { items: [], group: "", thumbs: new Map(), token: 0 };

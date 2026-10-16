@@ -55,7 +55,7 @@ function selectedPart() {
   return m && mk.part != null ? m.parts[mk.part] ?? null : null;
 }
 
-// The overlay index for previews (app.js renderLoop).
+// The overlay index for previews (preview.js renderLoop).
 function maskOverlayIndex() {
   return mk.on && mk.overlay && mk.selected != null ? mk.selected : null;
 }

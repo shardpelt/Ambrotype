@@ -4,7 +4,7 @@
 //! removing, permission approvals, and sharing one as a pull request to the
 //! hub repo.
 //!
-//! Running is in main.rs: the plugin returns commands, which go through the
+//! Running is in commands/plugins.rs: the plugin returns commands, which go through the
 //! session like any other edit (one undo step), or through the protocol into
 //! the sidecars of photos that aren't open ([`context_for_file`]).
 

@@ -1,6 +1,6 @@
 # Helping agents find their way: a plan
 
-Status: a plan, not started (2026-10-16).
+Status: round A1 done (2026-10-16): 12 runs with today's docs, results below.
 
 The goal is to measure what helps an agent that has never seen this code make a correct change here, cheaply. We keep what works, write it down, and then clean up the code to match.
 
@@ -56,6 +56,35 @@ Seeded bugs live on a task branch with squashed history, so `git log` doesn't gi
   - A pilot comes first: 3 tasks, condition A, one run each. It checks the setup and the cost per run.
   - The full round is 8 tasks, 2 runs each, per condition: about 50–65 runs.
 - **Limits:** it is a small sample on one model and one repo. Treat the results as signals, not proof.
+
+## Results: round A1 (today's docs, Sonnet 5.5, one run per task)
+
+Twelve fresh cloud sessions, each from a one-commit snapshot of the code (branch `base/a1`, planted bugs on `base/a1-t2` and `base/a1-t7`), pushing to `work/a1-t1`…`work/a1-t12`. Hidden checks and the task texts are on branch `checks/a1`.
+
+| Task | Result | Cost | Time |
+|---|---|---|---|
+| t1 Fade setting end to end | Partial: renders to spec (black to L* 21), panel and export work; `amb do "amb:Fade=40"` from the task fails and wasn't tried | $0.42 | 19 min |
+| t2 Planted bug: vignette in the 1:1 view | Pass: the one-character fix, plus a test | $0.38 | 4 min |
+| t3 Auto toolbar button | Partial: works, but edited the bundled hub copy of the layouts, which breaks their checksum test | $0.41 | 3 min |
+| t4 `amb rating` | Pass | $0.39 | 7 min |
+| t5 `reset_all` command | Pass | $0.55 | 25 min |
+| t6 LUTs in the hub | Pass | $0.47 | 10 min |
+| t7 Planted bug: rating undoes unsaved edits | Pass, with a better fix than the original | $0.24 | 2 min |
+| t8 Trace the Exposure slider | Pass: all 8 steps of the key, with lines | $0.53 | 2 min |
+| t9 Make a theme | Pass | $0.27 | 2 min |
+| t10 Make a plugin | Pass, one flaw: from As Shot it drops the as-shot Tint | $0.39 | 5 min |
+| t11 Make a layout | Pass | $0.27 | 8 min |
+| t12 Edit a photo | Pass: darker, less colour, blue shadows (hue 220), grain | $0.24 | 4 min |
+
+Total about $4.60; times are from start to the last update.
+
+What it shows:
+- **Finding the code isn't the problem.** Both planted bugs were found and fixed in minutes, and the trace was complete. Even with no map, Sonnet navigates this repo well for focused tasks.
+- **Failures come from not checking the result.** t1 never ran the command the task named; t3 couldn't run the editor's tests. The test sessions can't build `amb-gui` (the environment's setup script doesn't install the GTK and WebKit libraries), so GUI work goes untested there.
+- **One rule in AGENTS.md was missed:** built-in layouts are changed in the hub repo, not in `data/hub/` (t3).
+- **Two product gaps showed up:** the compact syntax can't set `amb:` settings (`amb do "amb:LUT=…"` fails too), and setting Temperature from As Shot resets Tint to 0 unless it is set as well.
+
+For round B: recipes for "add a setting" (including the compact syntax) and "add a toolbar button" (don't touch `data/hub/`), and a line telling agents to run the exact commands a task names. Fix the environment first, so every round can build the editor.
 
 ## Models
 

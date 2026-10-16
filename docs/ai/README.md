@@ -190,7 +190,7 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 Validation:
 - **Unknown names are rejected** with suggestions: `"Temp"` gives `unknown setting "Temp" (did you mean Temperature, IncrementalTemperature?)`. Some short names *are* valid legacy PV2010 tags (`Exposure`, `Contrast`, `Shadows`, `Clarity`). Using them works, but the result carries a note pointing to the current tag.
 - **Wrong kinds are rejected** (e.g. a string for a slider).
-- **Side effects match Lightroom.** Setting `Temperature` or `Tint` while white balance is As Shot/Auto also sets `WhiteBalance` to `"Custom"`, in the same undo step; otherwise the new temperature would be ignored. Lightroom keeps the as-shot value of the other slider, but that value lives in the raw file, so **set both**, Temperature first: `Tint` alone under As Shot/Auto is rejected (a custom white balance without a temperature is not rendered), and `Temperature` alone gets a note because the tint becomes 0 instead of the as-shot tint. `amb render` prints the as-shot pair (`as shot: 5150 K, tint +4`).
+- **Side effects match Lightroom.** Setting `Temperature` or `Tint` while white balance is As Shot/Auto also sets `WhiteBalance` to `"Custom"`, in the same undo step; otherwise the new temperature would be ignored. `Temperature` alone keeps the photo's as-shot tint, as in Lightroom (Ambrotype renders a missing Tint as the as-shot one). `Tint` alone under As Shot/Auto is rejected (a custom white balance needs a temperature): set Temperature first, in the same batch. For files going to Lightroom, set both, since the as-shot value lives in the raw file. `amb render` prints the as-shot pair (`as shot: 5150 K, tint +4`).
 - Use the current-process tags (`Exposure2012`, `Contrast2012`, `Highlights2012`, `Shadows2012`, `Whites2012`, `Blacks2012`, `Clarity2012`), not the legacy ones.
 
 ## Queries
@@ -256,7 +256,7 @@ These are **starting points**. Apply them with `--dry-run`, render, look, and ad
 
 | Intent | Settings |
 |---|---|
-| **Warmer** | Temperature +300 to +800 K above the current value. If the photo is As Shot, read the as-shot pair from `amb render` and `set_param` Temperature to the sum, then Tint to the as-shot tint. Optional: Tint +3 to +6 on top. Warm the highlights only with ColorGradeHighlightHue 40-50, ColorGradeHighlightSat 10-20. |
+| **Warmer** | Temperature +300 to +800 K above the current value. If the photo is As Shot, read the as-shot temperature from `amb render` and `set_param` Temperature to the sum; the tint stays as shot. Optional: Tint +3 to +6 on top. Warm the highlights only with ColorGradeHighlightHue 40-50, ColorGradeHighlightSat 10-20. |
 | **Cooler** | Temperature -300 to -800 K below the current value (As Shot: as for Warmer, set Temperature then the as-shot Tint). Cool shadows only: ColorGradeShadowHue 200-220, ColorGradeShadowSat 10-20. |
 | **Green or magenta cast** | Green cast: Tint +5 to +15. Magenta cast: Tint -5 to -15. If the photo is As Shot, first `set_param` Temperature to the as-shot temperature from `amb render`, then Tint to the as-shot tint plus the correction. Cast only in the shadows: ShadowTint *(planned)*. |
 | **Brighter** | Exposure2012 +0.3 to +1.0. If the sky or highlights then clip: Highlights2012 -20 to -50, Whites2012 -5 to -15. |

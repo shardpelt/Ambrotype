@@ -122,10 +122,14 @@ fn one(item: &str) -> Result<Command, Error> {
         "redo" => return Ok(Command::Redo),
         _ => {}
     }
-    // `key:arg`, when the colon comes before any `=` (a value may hold one).
+    // `key:arg`, when the colon comes before any `=` (a value may hold one)
+    // and names a command; otherwise it's part of a setting's name, as in
+    // `amb:LUTAmount=50`.
+    const KEYS: [&str; 6] = ["reset", "preset", "sky", "subject", "snap", "load"];
     let colon = item
         .find(':')
-        .filter(|&c| item.find('=').is_none_or(|e| c < e));
+        .filter(|&c| item.find('=').is_none_or(|e| c < e))
+        .filter(|&c| KEYS.contains(&&item[..c]) || !item.contains('='));
     if let Some(c) = colon {
         let (key, arg) = (&item[..c], &item[c + 1..]);
         if arg.is_empty() {
@@ -272,6 +276,24 @@ mod tests {
         for (_, full) in ALIASES {
             assert!(Catalog::builtin().lookup(full).is_some(), "{full}");
         }
+    }
+
+    #[test]
+    fn settings_with_a_colon_in_their_name() {
+        assert_eq!(
+            parse("amb:LUTAmount=50 amb:LUTAmount+=10").unwrap(),
+            vec![
+                Command::SetParam {
+                    name: "amb:LUTAmount".into(),
+                    value: serde_json::json!(50.0),
+                },
+                Command::AdjustParam {
+                    name: "amb:LUTAmount".into(),
+                    delta: 10.0,
+                },
+            ]
+        );
+        assert!(parse("amb:LUTAmount").is_err());
     }
 
     #[test]

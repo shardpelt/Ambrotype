@@ -1566,6 +1566,8 @@ mod tests {
             &Default::default(),
         )
         .unwrap();
+        // A process with the same id may have left a sidecar here.
+        let _ = std::fs::remove_file(sidecar_path(&path));
         path
     }
 

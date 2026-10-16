@@ -58,7 +58,12 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub enum WhiteBalance {
     AsShot,
-    Custom { temperature: f64, tint: f64 },
+    /// A Kelvin temperature and a tint; with no tint set, the photo's
+    /// as-shot tint (a script that only sets Temperature keeps it).
+    Custom {
+        temperature: f64,
+        tint: Option<f64>,
+    },
 }
 
 /// Which raw-default detail settings an edit leaves unset.
@@ -557,7 +562,7 @@ impl DevelopSettings {
         let temperature = settings.get("Temperature").and_then(Value::as_f64);
         if wb_mode != "As Shot" {
             if let Some(temperature) = temperature {
-                let tint = settings.get("Tint").and_then(Value::as_f64).unwrap_or(0.0);
+                let tint = settings.get("Tint").and_then(Value::as_f64);
                 s.white_balance = WhiteBalance::Custom { temperature, tint };
             }
         }
@@ -1544,6 +1549,7 @@ pub(crate) fn camera_to_working<'a>(
         _ if img.rendered => incremental_neutral(img, s.incremental_wb),
         (WhiteBalance::AsShot, false) => img.as_shot_neutral,
         (WhiteBalance::Custom { temperature, tint }, false) => {
+            let tint = tint.unwrap_or_else(|| as_shot_temp_tint(img).1);
             let (x, y) = temp_tint_to_xy(temperature, tint);
             match &profile {
                 Some(p) => p.neutral_for_xy(x, y),
@@ -1554,7 +1560,7 @@ pub(crate) fn camera_to_working<'a>(
         // and Temperature/Tint move relative to the reference white.
         (WhiteBalance::AsShot, true) => [1.0; 3],
         (WhiteBalance::Custom { temperature, tint }, true) => {
-            let (x, y) = temp_tint_to_xy(temperature, tint);
+            let (x, y) = temp_tint_to_xy(temperature, tint.unwrap_or(0.0));
             let (rx, ry) = temp_tint_to_xy(NEGATIVE_REFERENCE_WB.0, NEGATIVE_REFERENCE_WB.1);
             let n = img.neutral_for(x, y);
             let r = img.neutral_for(rx, ry);
@@ -1867,6 +1873,29 @@ mod tests {
     use super::*;
 
     #[test]
+    fn temperature_alone_keeps_the_as_shot_tint() {
+        let mut img = busy(64, 48);
+        // A camera white with a clear tint, so 0 would show.
+        img.as_shot_neutral = [0.5, 1.0, 0.62];
+        let (temperature, tint) = as_shot_temp_tint(&img);
+        assert!(tint.abs() > 3.0, "{tint}");
+        let as_shot = render(&img, &DevelopSettings::default());
+        let custom = |tint| DevelopSettings {
+            white_balance: WhiteBalance::Custom { temperature, tint },
+            ..Default::default()
+        };
+        let max_diff = |a: &Image, b: &Image| {
+            a.rgb
+                .iter()
+                .zip(&b.rgb)
+                .map(|(x, y)| (x - y).abs())
+                .fold(0.0, f32::max)
+        };
+        assert!(max_diff(&render(&img, &custom(None)), &as_shot) < 2e-3);
+        assert!(max_diff(&render(&img, &custom(Some(0.0))), &as_shot) > 1e-2);
+    }
+
+    #[test]
     fn relative_white_balance_on_rendered_images() {
         let mut img = camera(1, 1, |_, _| [0.5, 0.5, 0.5]);
         img.xyz_to_cam = invert3(&amb_color::matrix::SRGB_TO_XYZ_D50);
@@ -1906,7 +1935,7 @@ mod tests {
         let mut s = DevelopSettings {
             white_balance: WhiteBalance::Custom {
                 temperature: 3000.0,
-                tint: 0.0,
+                tint: Some(0.0),
             },
             ..Default::default()
         };
@@ -2852,7 +2881,7 @@ mod tests {
             s.white_balance,
             WhiteBalance::Custom {
                 temperature: 5500.0,
-                tint: 10.0
+                tint: Some(10.0)
             }
         );
         assert_eq!(s.exposure_ev, 0.5);

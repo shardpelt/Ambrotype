@@ -1118,9 +1118,8 @@ fn after_set(
             ));
             if !has_tint {
                 notes.push(
-                    "Tint is not set, so the custom white balance uses tint 0 instead of the \
-                     as-shot tint; set Tint too (`amb render` prints the as-shot values, e.g. \
-                     `as shot: 5150 K, tint +4`)"
+                    "Tint is not set, so the photo keeps its as-shot tint; set Tint to change it \
+                     (`amb render` prints the as-shot values, e.g. `as shot: 5150 K, tint +4`)"
                         .into(),
                 );
             }

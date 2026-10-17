@@ -348,6 +348,9 @@ async function settingsFlow() {
     $("settings-keys").hidden = name !== "keys";
     $("settings-general").hidden = name !== "general";
     $("settings-about").hidden = name !== "about";
+    $("settings-models").hidden = name !== "models";
+    $("keys-reset-all").hidden = name !== "keys";
+    if (name === "models") modelsTab().catch((e) => toast(String(e), true));
   };
   const onTab = (e) => showTab(e.currentTarget.dataset.tab);
   const resetAll = () => {

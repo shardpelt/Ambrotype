@@ -171,7 +171,8 @@ pub enum Shape {
     Sky,
     /// Select Subject (`Mask/Image` subtype 1), from the app's subject
     /// model ([`crate::subject`]).
-    Subject,
+    /// From a model (`subject::Finder`): the main subject or the people.
+    Model(crate::subject::MapKind),
     /// Something we can't draw (other AI masks, depth, Lightroom's own
     /// colour samples): it selects nothing.
     Unsupported,
@@ -183,9 +184,9 @@ pub enum Shape {
 /// tightening so the edge is crisp but not stepped. The filter's
 /// coefficients are worked out on a copy shrunk by `step` and applied at
 /// full size (He & Sun's fast guided filter), so it costs little at 24 MP.
-fn refine_edges(plane: &[f32], rgb: &[f32], w: usize, h: usize, t: &Tile) -> Vec<f32> {
+fn refine_edges(plane: &[f32], rgb: &[f32], w: usize, h: usize, t: &Tile, grid: usize) -> Vec<f32> {
     use crate::filters::box_blur;
-    let cell = t.full_width.max(t.full_height) as f32 / crate::subject::SIZE as f32;
+    let cell = t.full_width.max(t.full_height) as f32 / grid.max(1) as f32;
     let radius = (1.5 * cell).round().clamp(1.0, 64.0) as usize;
     if w < 2 * radius + 1 || h < 2 * radius + 1 {
         return plane.to_vec();
@@ -410,7 +411,7 @@ impl Masks {
     /// Sky or subject masks: found on the whole photo, so a region render
     /// needs the maps from a whole-photo pass.
     pub fn has_photo_maps(&self) -> bool {
-        self.needs(|s| matches!(s, Shape::Sky | Shape::Subject))
+        self.needs(|s| matches!(s, Shape::Sky | Shape::Model(_)))
     }
 
     fn needs(&self, f: impl Fn(&Shape) -> bool) -> bool {
@@ -560,7 +561,14 @@ fn read_shape(kind: &MaskKind, entries: &[&BTreeMap<String, Value>]) -> Shape {
             }
         }
         MaskKind::Ai(sub) if sub == "2" => Shape::Sky,
-        MaskKind::Ai(sub) if sub == "1" && crate::subject::available() => Shape::Subject,
+        MaskKind::Ai(sub) if sub == "1" && crate::subject::available() => {
+            Shape::Model(crate::subject::MapKind::Subject)
+        }
+        // Lightroom keeps one part per person (and per face or body part);
+        // a part without those details is everyone, which is what we draw.
+        MaskKind::Ai(sub) if sub == "3" && crate::subject::available() => {
+            Shape::Model(crate::subject::MapKind::People)
+        }
         _ => Shape::Unsupported,
     }
 }
@@ -907,7 +915,7 @@ fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference, targets: &mut Targets
                 targets.sky_measured.push(map);
             }
         }
-        Shape::Subject => {
+        Shape::Model(kind) => {
             {
                 let i = targets.sky_measured.len();
                 // Maps are listed in drawing order, sky and subject alike, so
@@ -917,20 +925,17 @@ fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference, targets: &mut Targets
                     // Only the whole photo shows what the subject is.
                     (None, Some(_)) if !r.tile.is_whole(w, h) => None,
                     (None, None) => None,
-                    (None, Some(rgb)) => {
-                        let small = crate::subject::shrink(rgb, w, h);
-                        match crate::subject::find(&small) {
-                            Ok(data) => Some(SkyMap {
-                                width: crate::subject::SIZE,
-                                height: crate::subject::SIZE,
-                                data,
-                            }),
-                            Err(e) => {
-                                eprintln!("Select Subject: {e}");
-                                None
-                            }
+                    (None, Some(rgb)) => match crate::subject::find(*kind, rgb, w, h) {
+                        Ok(m) => Some(SkyMap {
+                            width: m.width,
+                            height: m.height,
+                            data: m.data,
+                        }),
+                        Err(e) => {
+                            eprintln!("{} mask: {e}", kind.task());
+                            None
                         }
-                    }
+                    },
                 };
                 if let Some(map) = map {
                     let t = &r.tile;
@@ -941,11 +946,11 @@ fn draw_shape(shape: &Shape, frame: &Frame, r: &Reference, targets: &mut Targets
                             *out = map.at((t.x + x) as f64 / fw, v);
                         }
                     });
-                    // The model sees a 320-pixel photo, so its edge is soft;
+                    // The model sees a shrunk photo, so its edge is soft;
                     // the photo's own edges sharpen it (a guided filter over
                     // about a cell and a half of the model's grid).
                     if let Some(rgb) = r.srgb {
-                        plane = refine_edges(&plane, rgb, w, h, t);
+                        plane = refine_edges(&plane, rgb, w, h, t, map.width.max(map.height));
                     }
                     targets.sky_measured.push(map);
                 }
@@ -1133,7 +1138,7 @@ pub fn draw_in(
         });
     // The subject model sees the photo as it looks, in sRGB (a tile gets the
     // whole photo's map, and refines its edges on its own pixels).
-    let srgb: Option<Vec<f32>> = masks.needs(|s| matches!(s, Shape::Subject)).then(|| {
+    let srgb: Option<Vec<f32>> = masks.needs(|s| matches!(s, Shape::Model(_))).then(|| {
         let (to_srgb, _) = crate::pipeline::srgb_matrices();
         img.rgb
             .par_chunks(3)
@@ -1863,6 +1868,65 @@ mod tests {
         );
         assert!(a[10 * w + 60] > 0.9 && a[55 * w + 60] < 0.01 && a[72 * w + 60] < 0.01);
         assert_eq!(targets.sky_measured.len(), 1);
+    }
+
+    #[test]
+    fn model_masks_ask_for_their_kind_and_background_is_the_subject_inverted() {
+        use crate::subject::{Map, MapKind};
+        // A stand-in model: the subject is the left half, the people the top.
+        crate::subject::set_finder(std::sync::Arc::new(
+            |kind: MapKind, _: &[f32], _: usize, _: usize| {
+                let n = 32;
+                let data = (0..n * n)
+                    .map(|i| {
+                        let (x, y) = (i % n, i / n);
+                        let inside = match kind {
+                            MapKind::Subject => x < n / 2,
+                            MapKind::People => y < n / 2,
+                        };
+                        if inside { 1.0 } else { 0.0 }
+                    })
+                    .collect();
+                Ok(Map {
+                    width: n,
+                    height: n,
+                    data,
+                })
+            },
+        ));
+        let (w, h) = (64, 64);
+        let srgb = vec![0.5f32; w * h * 3];
+        let draw_one = |part: Value| {
+            let (m, notes) = Masks::from_settings(&settings(vec![correction(vec![part])]));
+            assert!(notes.is_empty(), "{notes:?}");
+            let r = Reference {
+                luminance: None,
+                lab: None,
+                srgb: Some(&srgb),
+                width: w,
+                height: h,
+                strengths: MaskStrengths::default(),
+                tile: Tile::whole(w, h),
+            };
+            draw_correction(
+                &m.corrections[0],
+                &Frame::new((w, h), None),
+                &r,
+                &mut Targets::default(),
+            )
+        };
+        let subject = st(&[("What", text("Mask/Image")), ("MaskSubType", text("1"))]);
+        let background = st(&[
+            ("What", text("Mask/Image")),
+            ("MaskSubType", text("1")),
+            ("MaskInverted", Value::Bool(true)),
+        ]);
+        let people = st(&[("What", text("Mask/Image")), ("MaskSubType", text("3"))]);
+        let (s, b, p) = (draw_one(subject), draw_one(background), draw_one(people));
+        let at = |a: &[f32], x: usize, y: usize| a[y * w + x];
+        assert!(at(&s, 8, 40) > 0.9 && at(&s, 56, 40) < 0.1);
+        assert!(at(&b, 8, 40) < 0.1 && at(&b, 56, 40) > 0.9);
+        assert!(at(&p, 40, 8) > 0.9 && at(&p, 40, 56) < 0.1);
     }
 
     #[test]

@@ -125,7 +125,16 @@ fn one(item: &str) -> Result<Command, Error> {
     // `key:arg`, when the colon comes before any `=` (a value may hold one)
     // and names a command; otherwise it's part of a setting's name, as in
     // `amb:LUTAmount=50`.
-    const KEYS: [&str; 6] = ["reset", "preset", "sky", "subject", "snap", "load"];
+    const KEYS: [&str; 8] = [
+        "reset",
+        "preset",
+        "sky",
+        "subject",
+        "background",
+        "people",
+        "snap",
+        "load",
+    ];
     let colon = item
         .find(':')
         .filter(|&c| item.find('=').is_none_or(|e| c < e))
@@ -157,7 +166,7 @@ fn one(item: &str) -> Result<Command, Error> {
                 })
             }
             // A new mask with its own sliders: `sky:exp=-0.5,sat=10`.
-            "sky" | "subject" => {
+            "sky" | "subject" | "background" | "people" => {
                 let mut adjust = serde_json::Map::new();
                 for pair in arg.split(',') {
                     let Some((name, v)) = pair.split_once('=') else {

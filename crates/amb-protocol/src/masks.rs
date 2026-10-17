@@ -21,7 +21,16 @@ use crate::convert::{Clamp, json_number};
 type Fields = BTreeMap<String, Value>;
 
 /// Kinds `add_mask` can make (a brush is made by `paint_mask`).
-pub const ADD_KINDS: &[&str] = &["linear", "radial", "luminance", "color", "sky", "subject"];
+pub const ADD_KINDS: &[&str] = &[
+    "linear",
+    "radial",
+    "luminance",
+    "color",
+    "sky",
+    "subject",
+    "background",
+    "people",
+];
 
 /// Most dabs one stroke may hold.
 const MAX_DABS: usize = 20_000;
@@ -169,8 +178,11 @@ fn new_component(kind: &str, comb: Combination) -> Result<Fields, Error> {
         "brush" => "Mask/Paint",
         // Lightroom's Select Sky; we find the sky with our own rules.
         "sky" => "Mask/Image",
-        // Lightroom's Select Subject; found by a local model (amb-ai).
-        "subject" => "Mask/Image",
+        // Lightroom's Select Subject, and Select Background (the subject,
+        // inverted); found by a local model (amb-ai).
+        "subject" | "background" => "Mask/Image",
+        // Lightroom's Select People; everyone, from a local model.
+        "people" => "Mask/Image",
         _ => {
             return Err(invalid(
                 "kind",
@@ -188,6 +200,8 @@ fn new_component(kind: &str, comb: Combination) -> Result<Fields, Error> {
         "color" => "Color Range",
         "sky" => "Sky",
         "subject" => "Subject",
+        "background" => "Background",
+        "people" => "People",
         _ => "Brush",
     };
     e.insert("What".into(), Value::Text(what.into()));
@@ -224,8 +238,11 @@ fn new_component(kind: &str, comb: Combination) -> Result<Fields, Error> {
         "sky" => {
             e.insert("MaskSubType".into(), Value::Text("2".into()));
         }
-        "subject" => {
+        "subject" | "background" => {
             e.insert("MaskSubType".into(), Value::Text("1".into()));
+        }
+        "people" => {
+            e.insert("MaskSubType".into(), Value::Text("3".into()));
         }
         "luminance" | "color" => {
             let mut r: Fields = BTreeMap::new();
@@ -549,7 +566,8 @@ pub fn add(
         &kind,
         Combination {
             mode,
-            inverted: false,
+            // Lightroom's Select Background is the subject, inverted.
+            inverted: kind == "background",
         },
     )?;
     if let Some(values) = values {
@@ -1098,6 +1116,32 @@ mod tests {
 
     fn obj(v: serde_json::Value) -> Map<String, serde_json::Value> {
         v.as_object().unwrap().clone()
+    }
+
+    #[test]
+    fn background_is_the_subject_inverted_and_people_its_own_kind() {
+        let mut s = BTreeMap::new();
+        let mut clamped = Vec::new();
+        add(&mut s, "background", None, None, None, &mut clamped).unwrap();
+        add(&mut s, "people", None, None, None, &mut clamped).unwrap();
+        let Value::Seq(list) = &s[MASK_TAG] else {
+            panic!()
+        };
+        let part = |i: usize| -> Fields {
+            let Value::Struct(c) = &list[i] else { panic!() };
+            let Some(Value::Seq(parts)) = c.get("CorrectionMasks") else {
+                panic!()
+            };
+            let Value::Struct(p) = &parts[0] else {
+                panic!()
+            };
+            p.clone()
+        };
+        let (b, p) = (part(0), part(1));
+        assert_eq!(masks::text(&b, "MaskSubType").as_deref(), Some("1"));
+        assert_eq!(b.get("MaskInverted"), Some(&boolean(true)));
+        assert_eq!(masks::text(&p, "MaskSubType").as_deref(), Some("3"));
+        assert_eq!(p.get("MaskInverted"), Some(&boolean(false)));
     }
 
     #[test]

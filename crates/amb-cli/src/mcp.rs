@@ -158,7 +158,7 @@ fn tools() -> Value {
         },
         {
             "name": "edit_photo",
-            "description": "Apply edit commands to a photo's XMP sidecar as one undoable step: set_param, adjust_param, reset_param, reset_group, apply_preset, add_mask, set_mask, paint_mask, remove_mask, duplicate_mask, move_mask, add_spot, set_spot, remove_spot, save_snapshot, apply_snapshot, rename_snapshot, delete_snapshot, undo, redo. Values outside a setting's range are clamped and reported. Give either commands (JSON) or do, a compact line such as \"exp=+0.5 con+=10 hl=-40 reset:hsl\" (Name=v, Name+=d, Name-=d, reset:X, preset:PATH[@amount], sky:Name=v,… for a sky mask with those sliders, snap:N, load:N, undo, redo; short names temp tint exp con hl sh wh bl tex cla deh vib sat sharp nr cnr vig grain). With do (or brief) the reply lists only the net changes. Use dry_run first and show the user the diff.",
+            "description": "Apply edit commands to a photo's XMP sidecar as one undoable step: set_param, adjust_param, reset_param, reset_group, apply_preset, add_mask, set_mask, paint_mask, remove_mask, duplicate_mask, move_mask, add_spot, set_spot, remove_spot, save_snapshot, apply_snapshot, rename_snapshot, delete_snapshot, undo, redo. Values outside a setting's range are clamped and reported. Give either commands (JSON) or do, a compact line such as \"exp=+0.5 con+=10 hl=-40 reset:hsl\" (Name=v, Name+=d, Name-=d, reset:X, preset:PATH[@amount], sky:Name=v,… for a sky mask with those sliders (subject:, background:, people: likewise), snap:N, load:N, undo, redo; short names temp tint exp con hl sh wh bl tex cla deh vib sat sharp nr cnr vig grain). With do (or brief) the reply lists only the net changes. Use dry_run first and show the user the diff.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -266,6 +266,17 @@ fn tools() -> Value {
             },
         },
         {
+            "name": "ai_models",
+            "description": "The local AI models behind the subject, background and people masks. action list (default): each task's models (only freely licensed ones), their licence, size, speed, and which is installed and in use. install: download one (tell the user its size first). use: make an installed one its task's model. remove: delete one. Bigger models give finer edges but are slower.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": { "type": "string", "enum": ["list", "install", "use", "remove"] },
+                    "id": { "type": "string", "description": "The model's id, from list" },
+                },
+            },
+        },
+        {
             "name": "settings_reference",
             "description": "The settings an edit can use: without a group, the list of groups; with a group (e.g. tone, color_grading, hsl, local), each setting's name, range, default, status and meaning.",
             "inputSchema": { "type": "object", "properties": { "group": { "type": "string" } } },
@@ -347,6 +358,26 @@ fn call(name: &str, args: &Value) -> Result<Vec<Value>, String> {
         "export_photo" => export(&photo(args)?, args),
         "list_photos" => list_photos(Path::new(arg(args, "folder")?)).map(|v| vec![json_text(&v)]),
         "set_photo_info" => set_info(&photo(args)?, args).map(|v| vec![json_text(&v)]),
+        "ai_models" => {
+            let dir = amb_ai::default_dir().ok_or("no home folder; set AMB_MODELS")?;
+            match args.get("action").and_then(Value::as_str).unwrap_or("list") {
+                "list" => Ok(vec![json_text(&json!({
+                    "tasks": amb_ai::TASKS.map(|(t, about)| json!({"task": t, "for": about})),
+                    "models": amb_ai::list(&dir),
+                }))]),
+                "install" => amb_ai::install(&dir, arg(args, "id")?, &|_, _| {}).map(|m| {
+                    vec![text(&format!(
+                        "{} is installed; `use` makes it the {} model.",
+                        m.name, m.task
+                    ))]
+                }),
+                "use" => amb_ai::choose(&dir, arg(args, "id")?)
+                    .map(|m| vec![text(&format!("{} masks now use {}.", m.task, m.name))]),
+                "remove" => amb_ai::remove(&dir, arg(args, "id")?)
+                    .map(|()| vec![text("Removed; its task uses its default model again.")]),
+                other => Err(format!("{other:?}: action is list, install, use or remove")),
+            }
+        }
         "settings_reference" => {
             let all = amb_protocol::reference::json();
             let groups = all["groups"].as_array().cloned().unwrap_or_default();

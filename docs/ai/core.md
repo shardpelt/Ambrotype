@@ -1,6 +1,6 @@
 # Ambrotype core card
 Edit: `amb do PHOTO "exp=+0.5 con+=10 reset:hsl"` [--dry-run]; MCP edit_photo {photo, do}. One undo step; prints net changes.
-Items: Name=v Name+=d Name-=d reset:Name|group preset:PATH[@amount] sky:|subject:Name=v,… (a new mask) snap:N load:N undo redo
+Items: Name=v Name+=d Name-=d reset:Name|group preset:PATH[@amount] sky:|subject:|background:|people:Name=v,… (a new mask) snap:N load:N undo redo
 Check: `amb stats PHOTO` (L*, clipping, cast) before a picture (`amb render PHOTO out.jpg --long-edge 800`).
 Match a look: `amb match PHOTO REF.jpg...` (shows changes; --apply).
 More: `amb ref GROUP`: metadata process profile white_balance tone tone_legacy presence tone_curve hsl bw_mixer point_color color_grading split_toning detail lens transform effects lut calibration crop local retouch enhance lens_blur hdr negative

@@ -9,6 +9,7 @@ pub(crate) mod collage;
 pub(crate) mod export;
 pub(crate) mod hub;
 pub(crate) mod library;
+pub(crate) mod models;
 pub(crate) mod photo;
 pub(crate) mod plugins;
 pub(crate) mod presets;

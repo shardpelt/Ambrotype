@@ -1,7 +1,7 @@
 [package]
 name = "amb-ai"
 version = "0.1.0"
-description = "Ambrotype's local AI models: finding the subject of a photo, downloaded on first use"
+description = "Ambrotype's local AI models for masks: a list of freely licensed ones to install, the user's choice per task, and their own"
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
@@ -10,6 +10,8 @@ repository.workspace = true
 
 [dependencies]
 amb-engine = { path = "../amb-engine" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 sha2 = "0.10"
 tract-onnx = "0.23"
 tract-linalg = { version = "0.23", features = ["multithread-mm"] }

@@ -1,0 +1,81 @@
+{
+  "about": "The AI models Ambrotype can install. Only models whose weights are published under a licence that allows use in free software are listed. Each is downloaded from where its authors (or the converter) publish it, and checked against its sha256. input.size is the square side the model takes; mean and std normalise 0-1 colour after dividing by the photo's brightest value; output.activation is applied to the first output, which is then stretched to 0-1.",
+  "models": [
+    {
+      "id": "u2netp",
+      "task": "subject",
+      "name": "U²-Net small",
+      "default": true,
+      "about": "Fast and small (about 2 s a photo on a 4-core laptop). Soft edges, which the photo's own edges then sharpen.",
+      "licence": "Apache-2.0",
+      "by": "Xuebin Qin et al.; ONNX by the rembg project (MIT)",
+      "source": "https://github.com/xuebinqin/U-2-Net",
+      "bytes": 4574861,
+      "sha256": "309c8469258dda742793dce0ebea8e6dd393174f89934733ecc8b14c76f4ddd8",
+      "urls": [
+        "https://raw.githubusercontent.com/Ambrotypehq/ambrotype-hub/main/models/u2netp.onnx",
+        "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx"
+      ],
+      "input": { "size": 320, "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225] },
+      "output": { "activation": "none" }
+    },
+    {
+      "id": "u2net",
+      "task": "subject",
+      "name": "U²-Net",
+      "about": "The full-size U²-Net: the same 320-pixel view, more reliable on busy photos. About 4 s a photo.",
+      "licence": "Apache-2.0",
+      "by": "Xuebin Qin et al.; ONNX by the rembg project (MIT)",
+      "source": "https://github.com/xuebinqin/U-2-Net",
+      "bytes": 175997641,
+      "sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+      "urls": ["https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx"],
+      "input": { "size": 320, "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225] },
+      "output": { "activation": "none" }
+    },
+    {
+      "id": "isnet-general-use",
+      "task": "subject",
+      "name": "IS-Net",
+      "about": "Looks at a 1024-pixel photo, so edges, hair and thin parts come out finer. About 10 s a photo.",
+      "licence": "Apache-2.0",
+      "by": "Xuebin Qin et al. (DIS); ONNX by the rembg project (MIT)",
+      "source": "https://github.com/xuebinqin/DIS",
+      "notes": "Trained on the authors' DIS5K dataset, which has its own terms of use.",
+      "bytes": 178648008,
+      "sha256": "60920e99c45464f2ba57bee2ad08c919a52bbf852739e96947fbb4358c0d964a",
+      "urls": ["https://github.com/danielgatis/rembg/releases/download/v0.0.0/isnet-general-use.onnx"],
+      "input": { "size": 1024, "mean": [0.5, 0.5, 0.5], "std": [1.0, 1.0, 1.0] },
+      "output": { "activation": "none" }
+    },
+    {
+      "id": "birefnet-lite",
+      "task": "subject",
+      "name": "BiRefNet lite",
+      "about": "A newer, sharper model at 1024 pixels: the cleanest edges here, but slow on a CPU (over a minute a photo on 4 cores).",
+      "licence": "MIT",
+      "by": "Peng Zheng et al.",
+      "source": "https://github.com/ZhengPeng7/BiRefNet",
+      "bytes": 224005088,
+      "sha256": "5600024376f572a557870a5eb0afb1e5961636bef4e1e22132025467d0f03333",
+      "urls": ["https://github.com/ZhengPeng7/BiRefNet/releases/download/v1/BiRefNet-general-bb_swin_v1_tiny-epoch_232.onnx"],
+      "input": { "size": 1024, "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225] },
+      "output": { "activation": "sigmoid" }
+    },
+    {
+      "id": "u2net_human_seg",
+      "task": "people",
+      "name": "U²-Net people",
+      "default": true,
+      "about": "U²-Net trained on people: everyone in the photo, as one mask. About 4 s a photo.",
+      "licence": "Apache-2.0",
+      "by": "Xuebin Qin et al.; ONNX by the rembg project (MIT)",
+      "source": "https://github.com/xuebinqin/U-2-Net",
+      "bytes": 175997641,
+      "sha256": "01eb6a29a5c4d8edb30b56adad9bb3a2a0535338e480724a213e0acfd2d1c73c",
+      "urls": ["https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net_human_seg.onnx"],
+      "input": { "size": 320, "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225] },
+      "output": { "activation": "none" }
+    }
+  ]
+}

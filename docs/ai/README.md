@@ -37,7 +37,7 @@ saved IMG_0001.xmp
 | `Name+=d`, `Name-=d` | `adjust_param` |
 | `reset:Name`, `reset:group` | `reset_param`, `reset_group` |
 | `preset:PATH[@amount]` | `apply_preset` |
-| `sky:Name=v,Name=v` | `add_mask` sky with those sliders, e.g. `sky:exp=-0.5,sat=10` (a new mask each time) |
+| `sky:Name=v,Name=v` | `add_mask` sky with those sliders, e.g. `sky:exp=-0.5,sat=10` (a new mask each time); `subject:`, `background:` and `people:` the same for those masks |
 | `snap:NAME`, `load:NAME` | `save_snapshot`, `apply_snapshot` |
 | `undo`, `redo` | `undo`, `redo` |
 
@@ -172,7 +172,7 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 | `reset_param` | `name` | Removes the setting so the default applies. |
 | `reset_group` | `group` | Removes every setting of a group, e.g. `"hsl"`. |
 | `apply_preset` | `path`, `amount`?, `include_groups`?, `exclude_groups`? | See above. |
-| `add_mask` | `kind`, `mask`?, `mode`?, `values`? | A linear, radial, luminance, color or sky mask (sky: Lightroom's Select Sky, found by our own rules); with `mask`, a new part of that mask (`mode` add, subtract, intersect). See [Masks](#masks). |
+| `add_mask` | `kind`, `mask`?, `mode`?, `values`? | A linear, radial, luminance, color, sky, subject, background or people mask (sky: Lightroom's Select Sky, found by our own rules; subject, background and people: found by a local AI model, see [AI models](#ai-models)); with `mask`, a new part of that mask (`mode` add, subtract, intersect). See [Masks](#masks). |
 | `set_mask` | `mask`, `part`?, `values` | A mask's local sliders, `name`, `active`, `amount`; with `part`, that part's geometry, `mode`, `invert`. |
 | `paint_mask` | `points`, `mask`?, `part`?, `mode`?, `size`?, `feather`?, `flow`?, `density`?, `erase`? | A brush stroke; without `part`, a new brush part (a new mask without `mask`). |
 | `remove_mask` | `mask`, `part`? | A mask, or one part. |
@@ -231,7 +231,16 @@ Masks are Lightroom's own (`MaskGroupBasedCorrections`), so they open in Lightro
 - **Color:** `ColorSamples` [[x, y], ...] positions of colours to select, `ColorAmount` (refine) 0-100.
 - **Brush:** `{"cmd": "paint_mask", "points": [[0.2, 0.8], [0.4, 0.82]], "size": 0.04}` paints a new brush mask (`size` is the radius as a fraction of the photo's width); add `"mask": 0, "part": 2` to paint more into a brush part, `"erase": true` to erase.
 - **Sliders** (`set_mask` without `part`) are in UI units, by label or tag: Exposure (EV, -4..4), Contrast, Highlights, Shadows, Whites, Blacks, Temp, Tint, Texture, Clarity, Dehaze, Saturation, Sharpness, Noise (-100..100); "Color hue" (0-360) and "Color amount" (0-100) tint; `amount` 0-100 scales them all.
-- AI masks (subject, sky, people) from Lightroom are kept and reported as not rendered; they can't be made here yet.
+- **Subject, background, people:** `{"cmd": "add_mask", "kind": "people"}` (or `subject`, `background`). A local model finds them (below); `background` is the subject inverted. People is everyone at once: Lightroom's per-person and face or body parts (eyes, lips, hair…) are kept and reported as not rendered.
+
+## AI models
+
+The subject, background and people masks come from models that run on the user's computer. Each task (`subject`, `people`) uses one model; the user, or you, can choose another:
+
+- `amb models list [--json]`: every model we can install (only freely licensed ones), its licence, size, speed, and whether it's installed and chosen.
+- `amb models install ID`, then `amb models use ID`. Bigger models are slower but give finer edges; tell the user the download size and time first.
+- `amb models add FILE.onnx --task subject --name NAME --size 1024 [--mean r,g,b --std r,g,b --sigmoid]`: the user's own ONNX model (square RGB in, a map of the same side out).
+- `amb models remove ID`. The MCP server has the same as the `models` tool.
 
 ## Spot removal
 

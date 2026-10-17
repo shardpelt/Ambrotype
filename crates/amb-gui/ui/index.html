@@ -869,6 +869,7 @@
       <div class="tabs settings-tabs">
         <button type="button" data-tab="keys" class="active">Keyboard shortcuts</button>
         <button type="button" data-tab="general">General</button>
+        <button type="button" data-tab="models">AI models</button>
         <button type="button" data-tab="about">About</button>
       </div>
       <section id="settings-keys">
@@ -902,6 +903,25 @@
           <button type="button" id="settings-folder">Open the settings folder</button>
           <button type="button" id="settings-looks">Layouts and themes…</button>
         </div>
+      </section>
+      <section id="settings-models" hidden>
+        <p class="hint">The Subject, Background and People masks come from AI models that run on this computer. Pick one for each: bigger ones give finer edges but take longer. Only models whose licence allows free use are listed, downloaded from their authors.</p>
+        <div id="models-list" class="models-list"></div>
+        <details class="models-add">
+          <summary>Add your own model…</summary>
+          <p class="hint">An ONNX model that takes a square colour photo and gives a map of the same size (1 where the thing is).</p>
+          <div class="models-form">
+            <label>For <select id="model-task"></select></label>
+            <label>Name <input id="model-name" type="text" spellcheck="false" placeholder="My model"></label>
+            <label>Input size (px) <input id="model-size" type="number" min="16" max="4096" value="1024"></label>
+            <label>Mean <input id="model-mean" type="text" value="0.485,0.456,0.406" spellcheck="false"></label>
+            <label>Std <input id="model-std" type="text" value="0.229,0.224,0.225" spellcheck="false"></label>
+            <label><input id="model-sigmoid" type="checkbox"> Output is logits (apply a sigmoid)</label>
+            <label>Licence <input id="model-licence" type="text" spellcheck="false" placeholder="e.g. MIT"></label>
+          </div>
+          <div class="crop-line"><button type="button" id="model-add">Choose the .onnx file and add…</button></div>
+        </details>
+        <p id="models-message" class="keys-message" role="status"></p>
       </section>
       <section id="settings-about" hidden>
         <p><strong>Ambrotype</strong> <span id="about-version"></span><br>Copyright © 2026 The Ambrotype contributors</p>
@@ -1256,6 +1276,7 @@
   <script src="assistant.js"></script>
   <script src="guided.js"></script>
   <script src="presetlib.js"></script>
+  <script src="models.js"></script>
   <script src="frame.js"></script>
   <script src="fx.js"></script>
   <script src="icons.js"></script>

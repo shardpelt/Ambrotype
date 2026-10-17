@@ -911,3 +911,16 @@ button.tool-icon.active { color: var(--accent); }
 .ctx-menu button { text-align: left; background: none; border: 0; padding: 5px 10px; border-radius: 4px; color: var(--text); }
 .ctx-menu button:hover { background: var(--hover); }
 .ctx-menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+
+/* Settings → AI models (models.js) */
+.models-list { max-height: 340px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius); padding: 2px 10px 8px; }
+.models-list h4 { margin: 10px 0 4px; font-size: 12px; }
+.model-row { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-top: 1px solid var(--line); }
+.model-row.chosen strong { color: var(--accent); }
+.model-text { flex: 1; min-width: 0; }
+.model-source { overflow-wrap: anywhere; }
+.model-actions { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.model-in-use { font-size: 12px; color: var(--accent); }
+.models-add { margin-top: 8px; }
+.models-form { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin: 6px 0; }
+.models-form label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; }

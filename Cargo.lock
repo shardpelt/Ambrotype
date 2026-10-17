@@ -87,6 +87,8 @@ name = "amb-ai"
 version = "0.1.0"
 dependencies = [
  "amb-engine",
+ "serde",
+ "serde_json",
  "sha2",
  "tract-linalg",
  "tract-onnx",

@@ -10,6 +10,7 @@ mod lens;
 mod library;
 mod look;
 mod mcp;
+mod models;
 mod negative;
 mod plugin;
 mod presets;
@@ -24,6 +25,7 @@ use edit::*;
 use lens::*;
 use library::*;
 use look::*;
+use models::*;
 use negative::*;
 use presets::*;
 use render::*;
@@ -107,6 +109,16 @@ USAGE:
                                             Download lensfun's lens database (CC BY-SA 3.0) from its
                                             update server into ~/.local/share/lensfun/updates, where it is
                                             found by default; --from installs a downloaded copy
+    amb models [list] [--json]              The AI models for subject, background and people masks: every
+                                            freely licensed one we can install, its licence, size and
+                                            speed, and which is in use (* in use)
+    amb models install <ID>                 Download it (checked against its sha256) into the models folder
+    amb models use <ID>                     Use it for its task's masks (it has to be installed)
+    amb models add <FILE.onnx> --task subject|people --name NAME --size PX [--mean r,g,b]
+                [--std r,g,b] [--sigmoid] [--licence L] [--source URL]
+                                            Your own ONNX model: a square RGB photo in, a map of the same
+                                            side out; checked that it runs
+    amb models remove <ID>                  Delete it; its task goes back to its default
     amb import <SOURCE> <DEST> [--into \"{yyyy}/{yyyy}-{mm}-{dd}\"] [--rename \"{name}\"] [--start 1]
                [--keywords \"a, b\"] [--preset LOOK.xmp] [--backup DIR] [--no-subfolders] [--dry-run] [--json]
                                             Copy photos from a card or folder into DEST, sorted into
@@ -224,7 +236,7 @@ fn main() -> ExitCode {
             "--brief" => brief = true,
             "--progressive" | "--enlarge" | "--slides" | "--force" | "--no-subfolders"
             | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb"
-            | "--watermark-tile" => {
+            | "--watermark-tile" | "--sigmoid" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -296,7 +308,12 @@ fn main() -> ExitCode {
             | "--keyword"
             | "--text"
             | "--until"
-            | "--catalog" => match iter.next() {
+            | "--catalog"
+            | "--task"
+            | "--mean"
+            | "--std"
+            | "--licence"
+            | "--source" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -421,6 +438,11 @@ fn main() -> ExitCode {
         ["lens", "info", raw] => lens_info(Path::new(raw), &options).map(|text| println!("{text}")),
         ["lens", "match"] => lens_match_output(&options).map(|text| println!("{text}")),
         ["lens", "fetch"] => lens_fetch(&options),
+        ["models"] | ["models", "list"] => models_list(json),
+        ["models", "install", id] => models_install(id),
+        ["models", "use", id] => models_use(id),
+        ["models", "remove", id] => models_remove(id),
+        ["models", "add", file] => models_add(Path::new(file), &options),
         ["protocol", "schema"] => print_json(&amb_protocol::schema::protocol_schema()),
         ["protocol", "schema", "command"] => print_json(&amb_protocol::schema::command_schema()),
         ["protocol", "schema", "query"] => print_json(&amb_protocol::schema::query_schema()),

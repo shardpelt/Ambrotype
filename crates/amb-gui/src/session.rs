@@ -289,6 +289,12 @@ impl Session {
         })
     }
 
+    /// Drop the 100% view's kept pixels, after something outside the edit
+    /// changed how it renders (another AI model chosen, say).
+    pub fn forget_renders(&mut self) {
+        self.region_cache = None;
+    }
+
     /// Show the photo as it exports to `space` (soft proofing), marking the
     /// colours beyond it when `warn`; `None` shows it as it is.
     pub fn set_proof(&mut self, proof: Option<(amb_color::space::OutputSpace, bool)>) {
@@ -1556,10 +1562,24 @@ mod tests {
     /// writing the same path would read each other's half-written file.
     fn synthetic(name: &str) -> PathBuf {
         static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        static TIDY: std::sync::Once = std::sync::Once::new();
         let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let dir = std::env::temp_dir().join(format!("amb-gui-test-{}", std::process::id()));
+        // One folder for every run; files from runs over an hour ago go, so
+        // it doesn't grow with each `cargo test`.
+        let dir = std::env::temp_dir().join("amb-gui-tests");
         std::fs::create_dir_all(&dir).unwrap();
-        let path = dir.join(format!("{name}-{n}.dng"));
+        TIDY.call_once(|| {
+            let hour_ago = std::time::SystemTime::now() - std::time::Duration::from_secs(3600);
+            for e in std::fs::read_dir(&dir).into_iter().flatten().flatten() {
+                if e.metadata()
+                    .and_then(|m| m.modified())
+                    .is_ok_and(|t| t < hour_ago)
+                {
+                    let _ = std::fs::remove_file(e.path());
+                }
+            }
+        });
+        let path = dir.join(format!("{name}-{}-{n}.dng", std::process::id()));
         amb_testkit::dng::write(
             &path,
             &amb_testkit::patterns::generate(name).unwrap(),

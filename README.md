@@ -2,7 +2,7 @@
 
 A free, open-source photo editor and organiser for Windows, macOS and Linux, in the spirit of Adobe Lightroom®. It opens your raws, edits them without touching the originals, and applies the Lightroom presets you already bought, faithfully.
 
-![Ambrotype editor](docs/images/gui-v1.png)
+![The Ambrotype editor with a sample preset applied](docs/images/editor.png)
 
 **Status: early, and moving fast.** There are no installers yet: build it from source (below). Expect rough edges, and please report them (the Feedback button in the app opens a pre-filled issue).
 

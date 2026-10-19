@@ -165,11 +165,12 @@ pub(crate) fn catalog(
                 let shot = &e.record.shot;
                 let stars = "*".repeat(e.record.info.rating.unwrap_or(0).into());
                 println!(
-                    "{}  {:<5} {}  {}",
+                    "{}  {:<5} {}  {}{}",
                     shot.captured.as_deref().unwrap_or("          -        "),
                     stars,
                     shot.camera.as_deref().unwrap_or("-"),
-                    e.path.display()
+                    e.path.display(),
+                    if e.offline { "  (offline)" } else { "" }
                 );
             }
             eprintln!("{} found", found.len());
@@ -188,7 +189,74 @@ pub(crate) fn catalog(
             println!("forgot {n} photos (the files stay)");
             Ok(())
         }
-        _ => Err("catalog: scan <DIR>... | find [--text T] [--camera C] [--lens L] [--keyword K] [--rating N] [--from DATE] [--until DATE] | stats | forget <DIR>".into()),
+        // The library folders the editor keeps indexed (amb_library::roots).
+        ["add" | "remove", dir] => {
+            let file = roots_file(options)?;
+            let folders = if args[0] == "add" {
+                amb_library::roots::add(&file, Path::new(dir))?
+            } else {
+                amb_library::roots::remove(&file, Path::new(dir))?
+            };
+            for f in &folders {
+                println!("{}", f.display());
+            }
+            Ok(())
+        }
+        ["index"] => {
+            let file = roots_file(options)?;
+            let folders = amb_library::roots::load(&file);
+            if folders.is_empty() {
+                return Err("no library folders yet: amb catalog add <DIR>".into());
+            }
+            let mut out = Vec::new();
+            for f in &folders {
+                let r = cat.index(f, &|done, total| {
+                    if !json {
+                        eprint!("\r{}: {done}/{total}", f.display());
+                    }
+                })?;
+                if !json {
+                    eprintln!();
+                    if r.offline {
+                        println!("{}: can't be reached; its photos stay listed, offline", f.display());
+                    } else {
+                        println!(
+                            "{}: {} photos, {} read from their files, {} gone",
+                            f.display(),
+                            r.photos,
+                            r.read,
+                            r.forgotten
+                        );
+                    }
+                }
+                out.push(serde_json::json!({ "folder": f, "result": r }));
+            }
+            if json {
+                return print_json(&serde_json::Value::Array(out));
+            }
+            Ok(())
+        }
+        ["folders"] => {
+            let folders = cat.folders();
+            if json {
+                return print_json(&serde_json::to_value(&folders).map_err(|e| e.to_string())?);
+            }
+            for f in &folders {
+                let off = if f.offline { "  (offline)" } else { "" };
+                println!("{:>7}  {}{off}", f.photos, f.folder.display());
+            }
+            Ok(())
+        }
+        _ => Err("catalog: scan <DIR>... | find [--text T] [--camera C] [--lens L] [--keyword K] [--rating N] [--from DATE] [--until DATE] | stats | folders | forget <DIR> | add <DIR> | remove <DIR> | index".into()),
+    }
+}
+
+/// The library folders list: `--folders FILE`, or the editor's.
+fn roots_file(options: &BTreeMap<&str, &str>) -> Result<PathBuf, String> {
+    match options.get("--folders") {
+        Some(p) => Ok(PathBuf::from(p)),
+        None => amb_library::roots::default_path()
+            .ok_or_else(|| "no config folder: give --folders FILE".into()),
     }
 }
 

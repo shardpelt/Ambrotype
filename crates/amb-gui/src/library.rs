@@ -21,6 +21,9 @@ pub struct LibraryPhoto {
     pub photo: FolderPhoto,
     #[serde(flatten)]
     pub shot: amb_library::catalog::Shot,
+    /// On a drive that isn't plugged in: listed from the catalogue.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub offline: bool,
 }
 
 /// The raws in `dir` and every subfolder, in name order, with their capture
@@ -99,7 +102,11 @@ pub fn all_photos() -> Vec<LibraryPhoto> {
             if let Some(f) = parent.parent().and_then(|d| d.file_name()) {
                 photo.name = format!("{}/{}", f.to_string_lossy(), photo.name);
             }
-            LibraryPhoto { photo, shot }
+            LibraryPhoto {
+                photo,
+                shot,
+                offline: e.offline,
+            }
         })
         .collect()
 }
@@ -124,6 +131,7 @@ fn with_times(photos: Vec<FolderPhoto>) -> Vec<LibraryPhoto> {
         .map(|(photo, r)| LibraryPhoto {
             photo,
             shot: r.shot,
+            offline: false,
         })
         .collect()
 }

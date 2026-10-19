@@ -12,4 +12,5 @@ pub mod look;
 pub mod lrcat;
 pub mod merge;
 pub mod negative;
+pub mod roots;
 pub mod smart;

@@ -48,6 +48,15 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 
 The rating, label, flag and keyword keys work in the editor too, on the open photo. Its rating block has the label swatches and the flag buttons.
 
+## Library folders
+
+Folders, or whole drives, that the catalogue keeps indexed (photo manager track, step 1; started 2026-10-19). The list is the user's, in `library-folders.json` in the config folder (`amb_library::roots`); the catalogue stays a cache.
+
+- `amb catalog add DIR` / `remove DIR` changes the list; a folder inside one already listed adds nothing.
+- `amb catalog index` reads every library folder: new and changed photos are read, photos gone are forgotten, with progress. A folder that can't be reached (an unplugged drive) is left alone: its photos stay listed, offline.
+- `amb catalog folders` lists each folder with its photo count, marked offline where it can't be reached: what the folder tree will show.
+- Still to come in the editor: indexing in the background at start, a folder tree with counts beside the grid, a grid that only draws what's on screen, and previews kept for offline photos.
+
 ## Import
 
 Lightroom's Import "Copy", without a catalogue. The dialog (and `amb import SOURCE DEST`) shows what will happen before anything is copied.
@@ -144,7 +153,7 @@ Lightroom keeps stacks in its catalogue. Ours go in the sidecar: `amblib:Stack` 
 ## Not yet
 
 - The extra folders aren't remembered after closing the app. Collection sets are one level deep (no sets in sets). A smart collection doesn't update by itself when a photo's rating changes while it is shown (↻ does).
-- The catalogue: All photos lists only folders shown before (or `amb catalog scan`ned), and it checks every file when shown, so a library of 100 000 photos takes a few seconds. Photos on a disconnected drive drop out of it until shown again. On file systems that keep modified times to the second (FAT and exFAT cards, old Mac disks), two changes to a sidecar of the same size within one second can be missed until the next change. Smart collections still look through their folders on disk rather than querying it.
+- The catalogue: All photos lists the folders shown before, the library folders (below) and anything `amb catalog scan`ned. Since 2026-10-19 it lists what was read last time without looking at each file, so it stays quick; a sidecar changed by another app shows when its folder is shown or indexed again. Photos on a drive that isn't plugged in stay listed, dimmed as offline; their previews come back with the drive. On file systems that keep modified times to the second (FAT and exFAT cards, old Mac disks), two changes to a sidecar of the same size within one second can be missed until the next change. Smart collections still look through their folders on disk rather than querying it.
 - Collections don't follow photos moved outside Ambrotype.
 - From Lightroom: smart collections, publish services, edit history and snapshots, face regions, keyword hierarchies (they come as plain keywords) and Lightroom's virtual copy names. One path replacement only.
 - Import: moving instead of copying, ejecting the card, picking single photos to import. (A develop preset and a second backup copy came 2026-10-13.)

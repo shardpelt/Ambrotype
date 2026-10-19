@@ -273,7 +273,8 @@ function renderLibrary() {
     const cell = document.createElement("div");
     cell.className = "lib-cell";
     cell.dataset.path = p.path;
-    cell.title = [p.name, p.captured, p.keywords.join(", ")].filter(Boolean).join("\n");
+    cell.title = [p.name, p.captured, p.keywords.join(", "), p.offline && "Offline: its drive isn't plugged in"].filter(Boolean).join("\n");
+    cell.classList.toggle("offline", Boolean(p.offline));
     const frame = Object.assign(document.createElement("div"), { className: "lib-frame" });
     frame.append(Object.assign(document.createElement("img"), { alt: "", draggable: false }));
     const meta = Object.assign(document.createElement("div"), { className: "lib-meta" });

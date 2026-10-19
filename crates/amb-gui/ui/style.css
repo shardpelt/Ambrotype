@@ -692,6 +692,7 @@ dialog .inline-check { flex-direction: row; align-items: flex-start; gap: 6px; c
 .lib-flag.reject, .film-flag.reject { color: #e5484d; font-weight: 700; }
 .film-flag { text-shadow: 0 0 3px #000; font-size: 11px; }
 .lib-cell.rejected .lib-frame img, .film-cell.rejected img { opacity: .35; }
+.lib-cell.offline .lib-frame { opacity: .45; outline: 1px dashed var(--line); }
 .flag-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .flag-buttons { display: inline-flex; gap: 3px; }
 .flag-buttons button { padding: 1px 7px; font-size: 12px; line-height: 1.4; }

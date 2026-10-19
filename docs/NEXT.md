@@ -116,7 +116,7 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 
 Make Ambrotype a great place to browse, sort and manage a very large photo collection, not only to edit. It builds on the library ([design/library.md](design/library.md)): sidecars stay the source of truth and the catalogue stays a cache that can be thrown away. Ideas, roughly in order:
 
-1. **Scale:** index whole drives in the background (hundreds of thousands of photos), with a preview cache, a grid that only draws what's on screen, and a folder tree with counts. Photos on drives that aren't plugged in stay listed, with their thumbnails, and come back when the drive does.
+1. **Scale** (started 2026-10-19: library folders, `amb catalog add`/`index`/`folders`, offline photos stay listed; next the editor's background index, folder tree and a grid that draws only what's on screen): index whole drives in the background (hundreds of thousands of photos), with a preview cache, a grid that only draws what's on screen, and a folder tree with counts. Photos on drives that aren't plugged in stay listed, with their thumbnails, and come back when the drive does.
 2. **Ways to browse:** a timeline (years, months, days, with a scrubber), a calendar, and a map from GPS tags (photos without GPS can be placed from a GPX track or by dragging).
 3. **Duplicates and bursts:** exact duplicates by file hash, near-duplicates and bursts by a picture fingerprint, grouped into stacks, with "keep the best, reject the rest".
 4. **Culling help:** score sharpness, closed eyes and exposure, so the best of a burst comes first. Local models only.

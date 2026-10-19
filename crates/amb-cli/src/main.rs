@@ -147,6 +147,10 @@ USAGE:
                                             Search every catalogued photo, newest first
     amb catalog stats | forget <DIR>        How many photos it knows; forget a folder (files stay).
                                             --catalog FILE uses another catalogue than the editor's
+    amb catalog add <DIR> | remove <DIR>    Library folders (whole drives too) the editor keeps indexed
+    amb catalog index                       Bring every library folder up to date; an unplugged drive's
+                                            photos stay listed, offline. --folders FILE: another list
+    amb catalog folders [--json]            Each catalogued folder with its photo count
     amb lrcat import <CATALOG.lrcat> [--apply] [--remap OLD=NEW] [--collections DIR] [--json]
                                             Move from Lightroom Classic: each photo's develop settings,
                                             rating, label, flag, keywords, stack, title and caption go into
@@ -317,6 +321,7 @@ fn main() -> ExitCode {
             | "--text"
             | "--until"
             | "--catalog"
+            | "--folders"
             | "--task"
             | "--channel"
             | "--mean"

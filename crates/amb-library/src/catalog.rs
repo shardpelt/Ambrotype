@@ -8,7 +8,8 @@
 //! against the file sizes and modified times of the photo and its sidecar:
 //! anything changed, by us or by another app, is read again. So it can't go
 //! out of date, and deleting it loses nothing; it is rebuilt as folders are
-//! shown.
+//! shown, and the library folders (`roots`) are indexed in the background.
+//! Photos on a drive that isn't plugged in stay listed, marked offline.
 //!
 //! One SQLite file in the editor's config folder (`catalog.sqlite`).
 
@@ -16,7 +17,7 @@ use amb_protocol::sidecar::{self, PhotoInfo};
 use rayon::prelude::*;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
@@ -132,6 +133,9 @@ pub struct Entry {
     pub path: PathBuf,
     #[serde(flatten)]
     pub record: Record,
+    /// Its folder can't be reached (a drive not plugged in): listed from
+    /// what was read last time.
+    pub offline: bool,
 }
 
 /// What to look for across the catalogue; every part given must match.
@@ -192,6 +196,30 @@ impl Query {
             && has(shot.lens.as_deref(), &self.lens)
     }
 }
+
+/// A folder the catalogue has photos in, for the folder tree.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct FolderCount {
+    pub folder: PathBuf,
+    pub photos: usize,
+    /// The folder can't be reached now (a drive not plugged in).
+    pub offline: bool,
+}
+
+/// What indexing a library folder did.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize)]
+pub struct Indexed {
+    pub photos: usize,
+    /// Read from their files: new, or changed since last time.
+    pub read: usize,
+    /// Gone from the folder, so no longer listed.
+    pub forgotten: usize,
+    /// The folder couldn't be reached; nothing was changed.
+    pub offline: bool,
+}
+
+/// How many photos are indexed at a time between progress reports.
+const INDEX_CHUNK: usize = 500;
 
 /// How many photos the catalogue knows, in how many folders.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -383,28 +411,107 @@ impl Catalog {
         let _ = tx.commit();
     }
 
-    /// Every photo in the catalogue that is still there, newest first, with
-    /// its record brought up to date. Photos gone from disk are forgotten.
+    /// Every photo in the catalogue, newest first, as last read. The files
+    /// aren't looked at (only whether each folder can be reached), so this
+    /// stays quick for hundreds of thousands of photos; indexing and showing
+    /// a folder keep the records current.
     pub fn all(&self) -> Vec<Entry> {
-        let paths: Vec<PathBuf> = {
+        let rows: Vec<(String, String, String)> = {
             let db = self.db.lock().unwrap_or_else(|e| e.into_inner());
-            let Ok(mut q) = db.prepare("SELECT path FROM photos ORDER BY captured DESC, path")
+            let Ok(mut q) =
+                db.prepare("SELECT path, folder, record FROM photos ORDER BY captured DESC, path")
             else {
                 return Vec::new();
             };
-            q.query_map([], |r| r.get::<_, String>(0))
-                .map(|rows| rows.flatten().map(PathBuf::from).collect())
+            q.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+                .map(|rows| rows.flatten().collect())
                 .unwrap_or_default()
         };
-        let (here, gone): (Vec<PathBuf>, Vec<PathBuf>) = paths
-            .into_par_iter()
-            .partition(|p| p.exists() && amb_engine::source_path(p).is_file());
-        self.forget(&gone);
-        let records = self.records(&here);
-        here.into_iter()
-            .zip(records)
-            .map(|(path, record)| Entry { path, record })
+        let reachable = reachable(rows.iter().map(|r| r.1.as_str()));
+        rows.into_par_iter()
+            .map(|(path, folder, json)| Entry {
+                path: PathBuf::from(path),
+                record: serde_json::from_str(&json).unwrap_or_default(),
+                offline: !reachable.contains(&folder),
+            })
             .collect()
+    }
+
+    /// The folders with photos, each with how many, sorted by path.
+    pub fn folders(&self) -> Vec<FolderCount> {
+        let rows: Vec<(String, i64)> = {
+            let db = self.db.lock().unwrap_or_else(|e| e.into_inner());
+            let Ok(mut q) =
+                db.prepare("SELECT folder, COUNT(*) FROM photos GROUP BY folder ORDER BY folder")
+            else {
+                return Vec::new();
+            };
+            q.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+                .map(|rows| rows.flatten().collect())
+                .unwrap_or_default()
+        };
+        let reachable = reachable(rows.iter().map(|r| r.0.as_str()));
+        rows.into_iter()
+            .map(|(folder, n)| FolderCount {
+                offline: !reachable.contains(&folder),
+                folder: PathBuf::from(folder),
+                photos: n as usize,
+            })
+            .collect()
+    }
+
+    /// Bring a library folder (and its subfolders) up to date: new and
+    /// changed photos are read, photos gone from it are forgotten.
+    /// `progress(done, total)` follows along. A folder that can't be
+    /// reached (an unplugged drive) is left as it was, its photos offline.
+    pub fn index(&self, root: &Path, progress: &dyn Fn(usize, usize)) -> Result<Indexed, String> {
+        if !root.is_dir() {
+            return Ok(Indexed {
+                offline: true,
+                ..Default::default()
+            });
+        }
+        let paths: Vec<PathBuf> = crate::folder::tree_paths(root)?
+            .into_iter()
+            .map(|(p, _)| p)
+            .collect();
+        let mut read = 0;
+        progress(0, paths.len());
+        for (i, chunk) in paths.chunks(INDEX_CHUNK).enumerate() {
+            read += self.records_counted(chunk).1;
+            progress(
+                (i * INDEX_CHUNK + chunk.len()).min(paths.len()),
+                paths.len(),
+            );
+        }
+        let seen: HashSet<String> = paths.iter().map(|p| key(p)).collect();
+        let gone: Vec<PathBuf> = self
+            .paths_under(root)
+            .into_iter()
+            .filter(|p| !seen.contains(p))
+            .map(PathBuf::from)
+            .collect();
+        self.forget(&gone);
+        Ok(Indexed {
+            photos: paths.len(),
+            read,
+            forgotten: gone.len(),
+            offline: false,
+        })
+    }
+
+    /// The catalogued photos in `folder` and its subfolders.
+    fn paths_under(&self, folder: &Path) -> Vec<String> {
+        let db = self.db.lock().unwrap_or_else(|e| e.into_inner());
+        let (f, prefix) = folder_and_prefix(folder);
+        let Ok(mut q) = db.prepare(
+            "SELECT path FROM photos WHERE folder = ?1 OR substr(folder, 1, length(?2)) = ?2",
+        ) else {
+            return Vec::new();
+        };
+        q.query_map(params![f, prefix], |r| r.get::<_, String>(0))
+            .map(|rows| rows.flatten().collect())
+            .unwrap_or_default()
     }
 
     /// The photos in the catalogue that match `query`, newest first.
@@ -442,11 +549,10 @@ impl Catalog {
     /// Forget every photo in `folder` and its subfolders.
     pub fn forget_folder(&self, folder: &Path) -> usize {
         let db = self.db.lock().unwrap_or_else(|e| e.into_inner());
-        let f = folder.display().to_string();
-        let sep = std::path::MAIN_SEPARATOR;
+        let (f, prefix) = folder_and_prefix(folder);
         db.execute(
             "DELETE FROM photos WHERE folder = ?1 OR substr(folder, 1, length(?2)) = ?2",
-            params![f, format!("{}{sep}", f.trim_end_matches(sep))],
+            params![f, prefix],
         )
         .unwrap_or(0)
     }
@@ -466,6 +572,24 @@ impl Catalog {
 
 fn key(photo: &Path) -> String {
     photo.display().to_string()
+}
+
+/// A folder as stored, and the start its subfolders share ("/a" and "/a/").
+fn folder_and_prefix(folder: &Path) -> (String, String) {
+    let f = folder.display().to_string();
+    let sep = std::path::MAIN_SEPARATOR;
+    let prefix = format!("{}{sep}", f.trim_end_matches(sep));
+    (f, prefix)
+}
+
+/// Which of these folders can be reached now, each looked at once.
+fn reachable<'a>(folders: impl Iterator<Item = &'a str>) -> HashSet<String> {
+    let unique: HashSet<&str> = folders.collect();
+    unique
+        .into_par_iter()
+        .filter(|f| Path::new(f).is_dir())
+        .map(str::to_string)
+        .collect()
 }
 
 #[cfg(test)]
@@ -520,8 +644,10 @@ mod tests {
         cat.store(std::iter::once((&photo, stamp(&photo).unwrap(), &planted)));
         assert_eq!(cat.record(&photo).info.rating, Some(1));
 
-        // Gone from disk: forgotten by `all`.
+        // Gone from its folder: forgotten when the folder is indexed.
         std::fs::remove_file(&photo).unwrap();
+        let r = cat.index(&dir, &|_, _| {}).unwrap();
+        assert_eq!((r.photos, r.forgotten), (0, 1));
         assert!(cat.all().is_empty());
         assert_eq!(cat.stats().photos, 0);
         let _ = std::fs::remove_dir_all(&dir);
@@ -554,6 +680,53 @@ mod tests {
         assert_eq!(cat.forget_folder(&sub), 1);
         assert_eq!(cat.forget_folder(&dir), 1);
         assert_eq!(cat.stats().photos, 0);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn photos_on_an_unplugged_drive_stay_listed_as_offline() {
+        let dir = temp_dir("offline");
+        let drive = dir.join("drive");
+        let shoot = drive.join("2026").join("07");
+        std::fs::create_dir_all(&shoot).unwrap();
+        for name in ["a.jpg", "b.jpg", "c.jpg"] {
+            std::fs::write(shoot.join(name), b"x").unwrap();
+        }
+        write(&shoot.join("a.jpg"), &info(5, "lake"));
+        std::fs::write(drive.join("d.jpg"), b"x").unwrap();
+        let cat = Catalog::in_memory();
+        let reports = std::sync::Mutex::new(Vec::new());
+        let r = cat
+            .index(&drive, &|done, total| {
+                reports.lock().unwrap().push((done, total))
+            })
+            .unwrap();
+        assert_eq!((r.photos, r.read, r.forgotten, r.offline), (4, 4, 0, false));
+        assert_eq!(reports.lock().unwrap().last(), Some(&(4, 4)));
+        let counts: Vec<(PathBuf, usize)> = cat
+            .folders()
+            .into_iter()
+            .map(|f| (f.folder, f.photos))
+            .collect();
+        assert_eq!(counts, [(drive.clone(), 1), (shoot.clone(), 3)]);
+
+        // The drive is unplugged: nothing is forgotten, all of it is offline.
+        let away = dir.join("away");
+        std::fs::rename(&drive, &away).unwrap();
+        assert!(cat.index(&drive, &|_, _| {}).unwrap().offline);
+        let all = cat.all();
+        assert_eq!(all.len(), 4);
+        assert!(all.iter().all(|e| e.offline));
+        let a = all.iter().find(|e| e.path.ends_with("a.jpg")).unwrap();
+        assert_eq!(a.record.info.rating, Some(5));
+        assert!(cat.folders().iter().all(|f| f.offline));
+
+        // Plugged back in, with one photo deleted meanwhile.
+        std::fs::rename(&away, &drive).unwrap();
+        std::fs::remove_file(shoot.join("c.jpg")).unwrap();
+        let r = cat.index(&drive, &|_, _| {}).unwrap();
+        assert_eq!((r.photos, r.read, r.forgotten), (3, 0, 1));
+        assert!(cat.all().iter().all(|e| !e.offline));
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

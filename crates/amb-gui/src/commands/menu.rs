@@ -2,8 +2,8 @@
 //! The menu bar. The UI sends its menus (`ui/menu.js`: the keyboard actions
 //! by name, with their keys), so changed shortcuts show in them; choosing an
 //! item sends its action id back as a `menu` event (`main`). On macOS it is
-//! the system's menu bar; Windows and Linux show it in the window only with
-//! `AMB_MENU_BAR=1`, as their toolbar holds the same commands.
+//! the system's menu bar; Windows and Linux show it in the window when the
+//! user asks for it (Settings → General) or with `AMB_MENU_BAR=1`.
 
 use std::collections::HashMap;
 
@@ -47,19 +47,26 @@ fn yes() -> bool {
     true
 }
 
-/// Whether this system shows the menu bar.
-pub(crate) fn shown() -> bool {
-    cfg!(target_os = "macos") || std::env::var("AMB_MENU_BAR").is_ok_and(|v| v == "1")
+/// Whether the menu bar is shown: always on macOS (the system's bar at
+/// the top of the screen), elsewhere when `wanted`.
+fn shown(wanted: bool) -> bool {
+    cfg!(target_os = "macos") || wanted || std::env::var("AMB_MENU_BAR").is_ok_and(|v| v == "1")
 }
 
-/// Puts up the menu bar the UI describes; false where none is shown.
+/// Puts up the menu bar the UI describes, or takes it away; false where
+/// none is shown.
 #[tauri::command]
 pub(crate) fn set_menu(
     app: AppHandle,
     state: tauri::State<'_, AppState>,
     menus: Vec<Entry>,
+    wanted: bool,
 ) -> Res<bool> {
-    if !shown() {
+    if !shown(wanted) {
+        app.remove_menu().map_err(|e| e.to_string())?;
+        if let Ok(mut m) = state.menu_items.lock() {
+            m.clear();
+        }
         return Ok(false);
     }
     let mut items = HashMap::new();

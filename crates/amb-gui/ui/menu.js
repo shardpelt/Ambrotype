@@ -2,7 +2,7 @@
 // The menu bar: the keyboard actions (keys.js) by name, in menus as
 // Lightroom has them, with their current keys. On macOS it is the system's
 // menu bar at the top of the screen; Windows and Linux show it in the window
-// only with AMB_MENU_BAR=1 (src/commands/menu.rs). An item runs its action
+// when Settings → General says so (src/commands/menu.rs). An item runs its action
 // as its key does, and is greyed out where the key wouldn't work.
 "use strict";
 
@@ -86,7 +86,7 @@ async function buildMenu() {
     items: menuEntries(names, IS_MAC),
   }));
   try {
-    menuState.shown = await invoke("set_menu", { menus });
+    menuState.shown = await invoke("set_menu", { menus, wanted: menuWanted() });
     menuState.enabled = {};
     syncMenu();
   } catch (e) {
@@ -134,7 +134,19 @@ function runMenuItem(id) {
   requestAnimationFrame(syncMenu);
 }
 
+// Windows and Linux: the Settings switch, kept in this computer's browser storage.
+function menuWanted() {
+  try { return localStorage.getItem("amb.menuBar") === "1"; } catch { return false; }
+}
+
 function wireMenu() {
+  // macOS always has it, at the top of the screen.
+  $("settings-menu-row").hidden = IS_MAC;
+  $("settings-menu-bar").checked = menuWanted();
+  $("settings-menu-bar").addEventListener("change", () => {
+    try { localStorage.setItem("amb.menuBar", $("settings-menu-bar").checked ? "1" : ""); } catch { /* not kept */ }
+    buildMenu();
+  });
   tauri.event.listen("menu", (e) => runMenuItem(e.payload));
   // Most changes of tool or photo come from a click or a key.
   for (const type of ["click", "keyup"]) document.addEventListener(type, () => requestAnimationFrame(syncMenu), true);

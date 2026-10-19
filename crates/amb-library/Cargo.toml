@@ -20,7 +20,7 @@ rusqlite = { version = "0.40.2", features = ["bundled"] }
 serde.workspace = true
 serde_json.workspace = true
 tar = "0.4.46"
-ureq = "2"
+ureq = { version = "2", features = ["native-certs"] }
 
 [dev-dependencies]
 amb-testkit = { path = "../amb-testkit" }

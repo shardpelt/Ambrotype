@@ -2,10 +2,12 @@
 /crates/amb-gui/gen
 /target-*
 
-# Maintainers' private notes: digests of Adobe's help, SDKs and specs, and
-# owner hand-off prompts. Kept on the maintainer's machine, not published.
+# Maintainers' private notes: digests of Adobe's help, SDKs and specs, the
+# script that fetched the help pages, and owner hand-off prompts. Kept on the
+# maintainer's machine, not published.
 /docs/adobe-docs/
 /docs/handoff-*.md
 /docs/sources-to-collect.md
+/tools/adobe-help-mirror/
 /TODO.md
 /CLAUDE.local.md

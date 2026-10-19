@@ -137,18 +137,26 @@ function keyLabel(combo) {
   return [...mods, name].join("+");
 }
 
+// Which actions' keys work now (an action's `when`).
+const keyContext = () => (libraryOn() ? "library" : ui.crop.on ? "crop" : mk.on ? "masks" : sp.on ? "spots" : "main");
+
+// When each action last ran from its key, so a menu bar that saw the key too
+// doesn't run it again (menu.js).
+const keyRunAt = {};
+
 function dispatchKey(e) {
   if (e.target.matches("input[type=number], input[type=search], input[type=text], textarea, input.value")) return;
   // Keys belong to an open dialog.
   if (document.querySelector("dialog[open]")) return;
   const combo = comboOf(e);
   if (!combo) return;
-  const ctx = libraryOn() ? "library" : ui.crop.on ? "crop" : mk.on ? "masks" : sp.on ? "spots" : "main";
+  const ctx = keyContext();
   for (const a of KEY_ACTIONS) {
     if (!keysFor(a).includes(combo)) continue;
     if (a.when !== "any" && !contextsOf(a).includes(ctx)) continue;
     if (a.photo && !ui.info) continue;
     if (a.run(e) === false) continue;
+    keyRunAt[a.id] = Date.now();
     e.preventDefault();
     return;
   }
@@ -162,6 +170,7 @@ function updateKeyHints() {
     const keys = keysFor(a).map(keyLabel).join(" or ");
     b.title = `${a.label}${keys ? ` (${keys})` : ""}${a.hint ? `\n${a.hint}` : ""}`;
   }
+  buildMenu();
 }
 
 async function loadKeybindings() {

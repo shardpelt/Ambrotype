@@ -329,6 +329,7 @@ function syncControls() {
   const nr = ui.state?.not_rendered ?? [];
   $("status-right").textContent = nr.length ? `Not rendered yet: ${nr.length} setting(s)` : "";
   $("status-right").title = nr.join(", ");
+  syncMenu();
 }
 
 // Snapshots: named copies of the edit, kept in the photo's sidecar. Click
@@ -940,6 +941,7 @@ async function init() {
     resizeTimer = setTimeout(() => requestPreview(false), 250);
   });
 
+  wireMenu();
   // Drag and drop a raw file onto the window.
   tauri.event.listen("folder-changed", () => folderChanged());
   tauri.event.listen("sidecar-changed", () => sidecarChanged());

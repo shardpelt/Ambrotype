@@ -42,10 +42,11 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
 3. `crates/amb-gui/src/looks.rs`: `TOOLBAR` lists the names a layout may use; check the array's length.
 4. `crates/amb-gui/ui/app.js`: the click handler, with the others in `init`.
 5. `crates/amb-gui/ui/keys.js`: optionally a shortcut in `KEY_ACTIONS`, with `button:` set to the id so the tooltip shows the key.
-6. `crates/amb-gui/ui/editor.js`: its name in `TOOL_TITLES`, for editing layouts.
-7. `crates/amb-gui/ui/library.js`: if it acts on the photo, add its id to `VIEWER_BUTTONS` (hidden in the library).
-8. `crates/amb-gui/ui/icons.js`: an icon in `ICON_PATHS` and `TOOLBAR_ICONS`, only if the picture is obvious; otherwise it stays a word.
-9. `docs/ai/ui-layouts.md`: a row in the toolbar table, and in the example `toolbar`.
+6. `crates/amb-gui/ui/menu.js`: with a shortcut, the action's id in `MENU_BAR` (the menu bar), and a title in `MENU_TITLES` if its label is a sentence; a test checks the ids.
+7. `crates/amb-gui/ui/editor.js`: its name in `TOOL_TITLES`, for editing layouts.
+8. `crates/amb-gui/ui/library.js`: if it acts on the photo, add its id to `VIEWER_BUTTONS` (hidden in the library).
+9. `crates/amb-gui/ui/icons.js`: an icon in `ICON_PATHS` and `TOOLBAR_ICONS`, only if the picture is obvious; otherwise it stays a word.
+10. `docs/ai/ui-layouts.md`: a row in the toolbar table, and in the example `toolbar`.
    - The test `format_reference_is_complete` checks every name is documented.
 10. Built-in layouts list their buttons. A new button shows in every layout that has no `toolbar` list; to add it to the built-in ones, see "Done means it works as asked" above.
 

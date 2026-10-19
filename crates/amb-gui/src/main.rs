@@ -81,6 +81,8 @@ struct AppState {
     assistant: Mutex<assistant::Provider>,
     /// The assistant's key for this run, when the keychain can't keep it.
     assistant_key: Mutex<Option<String>>,
+    /// The menu bar's items by action id, to grey them out.
+    menu_items: Mutex<std::collections::HashMap<String, tauri::menu::MenuItem<tauri::Wry>>>,
 }
 
 /// The import dialog's last destination and choices.
@@ -360,6 +362,11 @@ fn main() {
         // The window opens where and as big as it was left.
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(state)
+        // The menu bar's items run their action in the UI (`ui/menu.js`).
+        .on_menu_event(|app, event| {
+            use tauri::Emitter;
+            let _ = app.emit("menu", event.id().as_ref());
+        })
         .setup(|app| {
             // Load saved settings (added preset folders) from the config folder.
             if let Ok(dir) = app.path().app_config_dir() {
@@ -445,6 +452,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::photo::take_initial_path,
+            commands::menu::set_menu,
+            commands::menu::menu_enable,
             commands::photo::editor_schema,
             commands::photo::pick_photo,
             commands::presets::pick_references,

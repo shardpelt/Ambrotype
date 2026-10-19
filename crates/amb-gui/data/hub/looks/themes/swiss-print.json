@@ -1,0 +1,26 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Swiss print",
+  "description": "Unbleached paper, carbon ink and one hazard red, with square corners: a Swiss industrial print look, after the brutalist guide in the taste-skill design skills (Leonxlnx/taste-skill, MIT).",
+  "author": "Ambrotype",
+  "scheme": "light",
+  "tokens": {
+    "bg": "#f4f4f0",
+    "bg-deep": "#eae8e3",
+    "viewer": "#dddbd5",
+    "panel": "#f9f9f6",
+    "panel-2": "#ffffff",
+    "line": "#9a9891",
+    "hover": "#ecebe6",
+    "tab-active": "#e1dfd9",
+    "text": "#111111",
+    "muted": "#4a4a47",
+    "faint": "#75736e",
+    "accent": "#e61919",
+    "accent-ink": "#ffffff",
+    "danger": "#e61919",
+    "thumb": "#111111",
+    "track": "#bdbbb4",
+    "radius": 0
+  }
+}

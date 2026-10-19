@@ -1,0 +1,69 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Console",
+  "description": "A wide mixing console: every main control is a knob, four to a row, so the whole edit fits on one screen.",
+  "author": "Ambrotype",
+  "density": "compact",
+  "toolbar": ["open", "library", "save", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "|", "hub", "plugins", "|", "looks", "settings", "keys"],
+  "left": { "width": 220, "items": ["presets", "info", "history"] },
+  "right": {
+    "width": 440,
+    "items": [
+      "histogram",
+      {
+        "title": "Light",
+        "open": true,
+        "columns": 4,
+        "items": [
+          { "setting": "WhiteBalance", "widget": "segmented", "label": "WB" },
+          { "setting": "Temperature", "widget": "knob", "label": "Temp" },
+          { "setting": "Tint", "widget": "knob" },
+          { "setting": "Exposure2012", "widget": "knob", "label": "Exp" },
+          { "setting": "Contrast2012", "widget": "knob", "label": "Con" },
+          { "setting": "Highlights2012", "widget": "knob", "label": "High" },
+          { "setting": "Shadows2012", "widget": "knob", "label": "Shad" },
+          { "setting": "Whites2012", "widget": "knob", "label": "Whites" },
+          { "setting": "Blacks2012", "widget": "knob", "label": "Blacks" }
+        ]
+      },
+      {
+        "title": "Presence",
+        "open": true,
+        "columns": 4,
+        "items": [
+          { "setting": "Texture", "widget": "knob" },
+          { "setting": "Clarity2012", "widget": "knob", "label": "Clarity" },
+          { "setting": "Dehaze", "widget": "knob" },
+          { "setting": "Vibrance", "widget": "knob" },
+          { "setting": "Saturation", "widget": "knob", "label": "Sat" }
+        ]
+      },
+      {
+        "title": "Detail",
+        "open": true,
+        "columns": 4,
+        "items": [
+          { "setting": "Sharpness", "widget": "knob", "label": "Sharpen" },
+          { "setting": "SharpenRadius", "widget": "knob", "label": "Radius" },
+          { "setting": "SharpenDetail", "widget": "knob", "label": "Detail" },
+          { "setting": "SharpenEdgeMasking", "widget": "knob", "label": "Masking" },
+          { "setting": "LuminanceSmoothing", "widget": "knob", "label": "Noise" },
+          { "setting": "ColorNoiseReduction", "widget": "knob", "label": "Color NR" },
+          { "setting": "PostCropVignetteAmount", "widget": "knob", "label": "Vignette" },
+          { "setting": "GrainAmount", "widget": "knob", "label": "Grain" }
+        ]
+      },
+      { "panel": "basic", "title": "Profile", "hide": ["WhiteBalance", "Temperature", "Tint", "Exposure2012", "Contrast2012", "Highlights2012", "Shadows2012", "Whites2012", "Blacks2012", "Texture", "Clarity2012", "Dehaze", "Vibrance", "Saturation"] },
+      { "panel": "tone_curve" },
+      { "panel": "color_mixer" },
+      { "panel": "color_grading" },
+      { "panel": "black_white" },
+      { "panel": "detail", "hide": ["Sharpness", "SharpenRadius", "SharpenDetail", "SharpenEdgeMasking", "LuminanceSmoothing", "ColorNoiseReduction"] },
+      { "panel": "effects", "hide": ["PostCropVignetteAmount", "GrainAmount"] },
+      { "panel": "lens" },
+      { "panel": "transform" },
+      { "panel": "calibration" },
+      { "panel": "negative" }
+    ]
+  }
+}

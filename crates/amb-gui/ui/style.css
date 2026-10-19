@@ -76,7 +76,7 @@ input[type=search], input[type=number], select {
 .right { border-left: 1px solid var(--line); grid-column: 3; grid-row: 1 / 3; }
 .side-section { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; min-height: 0; }
 /* Presets fill the spare height of their column (and scroll inside it). */
-.column > .presets-block { flex: 1 0 220px; }
+.column > .presets-block { flex: 1 0 220px; overflow-y: auto; }
 .side-head { display: flex; align-items: center; justify-content: space-between; }
 .amount { display: grid; grid-template-columns: auto 1fr 32px; align-items: center; gap: 8px; color: var(--muted); }
 .preset-list { overflow-y: auto; flex: 1; min-height: 80px; }

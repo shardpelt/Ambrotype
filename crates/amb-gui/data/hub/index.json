@@ -62,6 +62,46 @@
       "sha256": "f210572a34ecbd87b118d4ec98acfbaf90ad47e2c8002843f74ffb958674bfe6"
     },
     {
+      "id": "layout-focus",
+      "kind": "layout",
+      "name": "Focus",
+      "author": "Ambrotype",
+      "description": "The photo first: no left column, no filmstrip, a short toolbar and one slim column with the everyday panels on top.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/focus.json",
+      "sha256": "f4acad0074dd4bdc9d58f186aa3ffcf844ad429d2119ffc248811524ad304749"
+    },
+    {
+      "id": "layout-console",
+      "kind": "layout",
+      "name": "Console",
+      "author": "Ambrotype",
+      "description": "A wide mixing console: every main control is a knob, four to a row, so the whole edit fits on one screen.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/console.json",
+      "sha256": "37822d568f2b7afb6ac82a486567bca20d55880cfb9b4f049e7f3b2b48036c24"
+    },
+    {
+      "id": "layout-two-benches",
+      "kind": "layout",
+      "name": "Two benches",
+      "author": "Ambrotype",
+      "description": "Light and geometry on the right, colour on the left: the curve and the grading wheels open side by side with Basic, for wide screens.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/two-benches.json",
+      "sha256": "edda666661cc30cd8f971d8a42da5871bd591998a5dc3d490fda4e33ff8419d8"
+    },
+    {
+      "id": "layout-film-lab",
+      "kind": "layout",
+      "name": "Film lab",
+      "author": "Ambrotype",
+      "description": "For scanned negatives and film looks: the negative conversion opens first, then tone, grain and vignette; the crop and white-balance tools sit up front.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/film-lab.json",
+      "sha256": "2e9249f02e93556dc9297f27c7589ad042462f581dbce3cb085549a7dc524d45"
+    },
+    {
       "id": "theme-dark",
       "kind": "theme",
       "name": "Dark",
@@ -100,6 +140,66 @@
       "license": "CC0-1.0",
       "path": "looks/themes/neutral-grey.json",
       "sha256": "3f94ce0c13aa35a214b60ff48eb78ee3631810a8c4e7fad5ca011a945fa6c411"
+    },
+    {
+      "id": "theme-cupertino-light",
+      "kind": "theme",
+      "name": "Cupertino Light",
+      "author": "Ambrotype",
+      "description": "Light grey windows, white controls and system blue, in the style of Apple's macOS design guidelines (its published system colours). macOS is a trademark of Apple Inc.; not affiliated with or endorsed by Apple.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/cupertino-light.json",
+      "sha256": "d5cfd114fc06a2e85eff41e743114609d36e0777c7cc7e203420a5abb505a891"
+    },
+    {
+      "id": "theme-cupertino-dark",
+      "kind": "theme",
+      "name": "Cupertino Dark",
+      "author": "Ambrotype",
+      "description": "Graphite windows, soft white text and the dark-mode system blue, in the style of Apple's macOS design guidelines. macOS is a trademark of Apple Inc.; not affiliated with or endorsed by Apple.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/cupertino-dark.json",
+      "sha256": "0ae326d454ee8de5c253d2152e96a94f8358e355af28c35087db3a2d4caca6d0"
+    },
+    {
+      "id": "theme-swiss-print",
+      "kind": "theme",
+      "name": "Swiss print",
+      "author": "Ambrotype",
+      "description": "Unbleached paper, carbon ink and one hazard red, with square corners: a Swiss industrial print look, after the brutalist guide in the taste-skill design skills (Leonxlnx/taste-skill, MIT).",
+      "license": "CC0-1.0",
+      "path": "looks/themes/swiss-print.json",
+      "sha256": "eb9590597ccef0c07b50166649914f8dc97566c4a2b96c33e6cd564a40ad9d9d"
+    },
+    {
+      "id": "theme-telemetry",
+      "kind": "theme",
+      "name": "Telemetry",
+      "author": "Ambrotype",
+      "description": "A switched-off screen, white phosphor text and one hazard red, with square corners, after the brutalist guide's dark terminal mode in the taste-skill design skills (Leonxlnx/taste-skill, MIT).",
+      "license": "CC0-1.0",
+      "path": "looks/themes/telemetry.json",
+      "sha256": "f3095c082aaf6d701f527c6bb8ad7d1555a8486e859ae0fbaaab212fd6b9f606"
+    },
+    {
+      "id": "theme-stone",
+      "kind": "theme",
+      "name": "Stone",
+      "author": "Ambrotype",
+      "description": "A low-chroma stone ground with deep green as the one accent and oxblood for warnings: warmth without beige, after the colour guide in the taste-skill design skills (Leonxlnx/taste-skill, MIT).",
+      "license": "CC0-1.0",
+      "path": "looks/themes/stone.json",
+      "sha256": "6c0511dd384c6aa64702e1b09f1616321829d88ab2906dc10b885c222ee99540"
+    },
+    {
+      "id": "theme-graphite",
+      "kind": "theme",
+      "name": "Graphite",
+      "author": "Ambrotype",
+      "description": "A deep, slightly cool neutral with one teal accent; panels stand apart by a lighter step, not lines or glow, after the colour guide in the taste-skill design skills (Leonxlnx/taste-skill, MIT).",
+      "license": "CC0-1.0",
+      "path": "looks/themes/graphite.json",
+      "sha256": "2ceb6b4eb1c7650e97189cf2e2102d3edcf7134097cf94b78fe4524671025fe9"
     },
     {
       "id": "preset-airy",

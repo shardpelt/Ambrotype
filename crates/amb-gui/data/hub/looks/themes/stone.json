@@ -1,0 +1,26 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Stone",
+  "description": "A low-chroma stone ground with deep green as the one accent and oxblood for warnings: warmth without beige, after the colour guide in the taste-skill design skills (Leonxlnx/taste-skill, MIT).",
+  "author": "Ambrotype",
+  "scheme": "light",
+  "tokens": {
+    "bg": "#e7e5e0",
+    "bg-deep": "#dedbd5",
+    "viewer": "#cfccc6",
+    "panel": "#eeece8",
+    "panel-2": "#f6f5f2",
+    "line": "#cbc8c1",
+    "hover": "#e2dfd9",
+    "tab-active": "#d6d3cc",
+    "text": "#1f2420",
+    "muted": "#4e554f",
+    "faint": "#7d837e",
+    "accent": "#1f5b3f",
+    "accent-ink": "#ffffff",
+    "danger": "#9b2c2c",
+    "thumb": "#2b312c",
+    "track": "#b9b6af",
+    "radius": 4
+  }
+}

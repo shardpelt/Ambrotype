@@ -1,0 +1,29 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Focus",
+  "description": "The photo first: no left column, no filmstrip, a short toolbar and one slim column with the everyday panels on top.",
+  "author": "Ambrotype",
+  "density": "compact",
+  "filmstrip": false,
+  "toolbar": ["open", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "zoom", "|", "looks", "settings"],
+  "left": { "width": 0, "items": [] },
+  "right": {
+    "width": 270,
+    "items": [
+      "histogram",
+      { "panel": "basic", "open": true },
+      { "panel": "tone_curve" },
+      { "panel": "color_mixer" },
+      { "panel": "detail" },
+      { "panel": "color_grading" },
+      { "panel": "black_white" },
+      { "panel": "effects" },
+      { "panel": "lens" },
+      { "panel": "transform" },
+      { "panel": "calibration" },
+      { "panel": "negative" },
+      "presets",
+      "history"
+    ]
+  }
+}

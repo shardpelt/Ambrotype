@@ -1,0 +1,27 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Film lab",
+  "description": "For scanned negatives and film looks: the negative conversion opens first, then tone, grain and vignette; the crop and white-balance tools sit up front.",
+  "author": "Ambrotype",
+  "density": "normal",
+  "toolbar_style": "words",
+  "toolbar": ["open", "library", "export", "|", "undo", "redo", "|", "before", "crop", "wb", "spots", "zoom", "clip", "|", "looks", "settings"],
+  "left": { "width": 230, "items": ["info", "presets", "history"] },
+  "right": {
+    "width": 330,
+    "items": [
+      "histogram",
+      { "panel": "negative", "open": true },
+      { "panel": "basic", "open": true },
+      { "panel": "tone_curve" },
+      { "panel": "effects", "open": true },
+      { "panel": "black_white" },
+      { "panel": "color_grading" },
+      { "panel": "color_mixer" },
+      { "panel": "detail" },
+      { "panel": "lens" },
+      { "panel": "transform" },
+      { "panel": "calibration" }
+    ]
+  }
+}

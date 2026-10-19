@@ -1,0 +1,33 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Two benches",
+  "description": "Light and geometry on the right, colour on the left: the curve and the grading wheels open side by side with Basic, for wide screens.",
+  "author": "Ambrotype",
+  "density": "normal",
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
+  "left": {
+    "width": 340,
+    "items": [
+      { "panel": "tone_curve", "open": true },
+      { "panel": "color_mixer", "open": true },
+      { "panel": "color_grading", "open": true },
+      { "panel": "black_white" },
+      { "panel": "calibration" },
+      "presets",
+      "history"
+    ]
+  },
+  "right": {
+    "width": 340,
+    "items": [
+      "histogram",
+      { "panel": "basic", "open": true },
+      { "panel": "detail" },
+      { "panel": "lens" },
+      { "panel": "transform" },
+      { "panel": "effects" },
+      { "panel": "negative" },
+      "info"
+    ]
+  }
+}

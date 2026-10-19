@@ -1,0 +1,26 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Cupertino Dark",
+  "description": "Graphite windows, soft white text and the dark-mode system blue, in the style of Apple's macOS design guidelines. macOS is a trademark of Apple Inc.; not affiliated with or endorsed by Apple.",
+  "author": "Ambrotype",
+  "scheme": "dark",
+  "tokens": {
+    "bg": "#2b2b2b",
+    "bg-deep": "#242424",
+    "viewer": "#1e1e1e",
+    "panel": "#2f2f2f",
+    "panel-2": "#3a3a3a",
+    "line": "#474747",
+    "hover": "#3b3b3b",
+    "tab-active": "#4a4a4a",
+    "text": "#dfdfdf",
+    "muted": "#a9a9a9",
+    "faint": "#707070",
+    "accent": "#0a84ff",
+    "accent-ink": "#ffffff",
+    "danger": "#ff453a",
+    "thumb": "#d9d9d9",
+    "track": "#5a5a5a",
+    "radius": 6
+  }
+}

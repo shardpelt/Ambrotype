@@ -26,7 +26,7 @@ pub const THEME_FORMAT: &str = "ambrotype-theme/1";
 pub const DEFAULT_LAYOUT: &str = "builtin:classic";
 pub const DEFAULT_THEME: &str = "builtin:dark";
 
-const BUILTIN_LAYOUTS: [(&str, &str); 6] = [
+const BUILTIN_LAYOUTS: [(&str, &str); 10] = [
     (
         "classic",
         include_str!("../data/hub/looks/layouts/classic.json"),
@@ -51,8 +51,24 @@ const BUILTIN_LAYOUTS: [(&str, &str); 6] = [
         "left-handed",
         include_str!("../data/hub/looks/layouts/left-handed.json"),
     ),
+    (
+        "focus",
+        include_str!("../data/hub/looks/layouts/focus.json"),
+    ),
+    (
+        "console",
+        include_str!("../data/hub/looks/layouts/console.json"),
+    ),
+    (
+        "two-benches",
+        include_str!("../data/hub/looks/layouts/two-benches.json"),
+    ),
+    (
+        "film-lab",
+        include_str!("../data/hub/looks/layouts/film-lab.json"),
+    ),
 ];
-const BUILTIN_THEMES: [(&str, &str); 4] = [
+const BUILTIN_THEMES: [(&str, &str); 10] = [
     ("dark", include_str!("../data/hub/looks/themes/dark.json")),
     ("light", include_str!("../data/hub/looks/themes/light.json")),
     (
@@ -62,6 +78,27 @@ const BUILTIN_THEMES: [(&str, &str); 4] = [
     (
         "neutral-grey",
         include_str!("../data/hub/looks/themes/neutral-grey.json"),
+    ),
+    (
+        "cupertino-light",
+        include_str!("../data/hub/looks/themes/cupertino-light.json"),
+    ),
+    (
+        "cupertino-dark",
+        include_str!("../data/hub/looks/themes/cupertino-dark.json"),
+    ),
+    (
+        "swiss-print",
+        include_str!("../data/hub/looks/themes/swiss-print.json"),
+    ),
+    (
+        "telemetry",
+        include_str!("../data/hub/looks/themes/telemetry.json"),
+    ),
+    ("stone", include_str!("../data/hub/looks/themes/stone.json")),
+    (
+        "graphite",
+        include_str!("../data/hub/looks/themes/graphite.json"),
     ),
 ];
 

@@ -1,0 +1,26 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Graphite",
+  "description": "A deep, slightly cool neutral with one teal accent; panels stand apart by a lighter step, not lines or glow, after the colour guide in the taste-skill design skills (Leonxlnx/taste-skill, MIT).",
+  "author": "Ambrotype",
+  "scheme": "dark",
+  "tokens": {
+    "bg": "#16181a",
+    "bg-deep": "#101113",
+    "viewer": "#0e0f10",
+    "panel": "#1d2023",
+    "panel-2": "#24282b",
+    "line": "#2c3034",
+    "hover": "#2a2e32",
+    "tab-active": "#33383c",
+    "text": "#e4e6e7",
+    "muted": "#a0a6ab",
+    "faint": "#6f767c",
+    "accent": "#4fb3a6",
+    "accent-ink": "#0e1112",
+    "danger": "#e06c5f",
+    "thumb": "#d9dcde",
+    "track": "#42484d",
+    "radius": 8
+  }
+}

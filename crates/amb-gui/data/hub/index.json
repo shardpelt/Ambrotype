@@ -102,6 +102,46 @@
       "sha256": "2e9249f02e93556dc9297f27c7589ad042462f581dbce3cb085549a7dc524d45"
     },
     {
+      "id": "layout-color-grading",
+      "kind": "layout",
+      "name": "Colour grading",
+      "author": "Ambrotype",
+      "description": "For colour work: big grading wheels in a wide left column, with the curve, colour mixer and calibration open on the right; exposure stays at hand, the rest is folded away.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/color-grading.json",
+      "sha256": "4fe394b1f3fb445b46aec6d0da624fc66d21594ac1037dd955ae8000c887b73d"
+    },
+    {
+      "id": "layout-black-and-white",
+      "kind": "layout",
+      "name": "Black & white",
+      "author": "Ambrotype",
+      "description": "For monochrome: the B&W switch and colour mix on top, then tone, contrast and the curve, with grain and vignette open below and split toning from the grading wheels.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/black-and-white.json",
+      "sha256": "f4182736eedbcfb39953a3b5ef045c0b2cda061def683f1c92b3bcd93582fb16"
+    },
+    {
+      "id": "layout-retouch",
+      "kind": "layout",
+      "name": "Retouch",
+      "author": "Ambrotype",
+      "description": "For portraits and clean-up: masks, spot removal and the 100% view up front, Detail open for sharpening and noise, and Texture and Clarity as knobs for skin.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/retouch.json",
+      "sha256": "bd8e38a8d975b12c2d131555356ab10fc90a88d755b416a75117ffa18981db63"
+    },
+    {
+      "id": "layout-collage-prep",
+      "kind": "layout",
+      "name": "Collage prep",
+      "author": "Ambrotype",
+      "description": "For getting a set of photos to match before the collage maker (C): presets and ratings on the left, the filmstrip on (copy one edit and paste it onto the rest in the library, G), quick tone and colour on the right, and Frame, crop and the collage button up front.",
+      "license": "CC0-1.0",
+      "path": "looks/layouts/collage-prep.json",
+      "sha256": "71817572d6c75ad3d2c1477d8abf794e949b89eaf4d2e24faac78ecc68ab8992"
+    },
+    {
       "id": "theme-dark",
       "kind": "theme",
       "name": "Dark",

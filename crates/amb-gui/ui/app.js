@@ -414,7 +414,14 @@ function renderHistory() {
     }
     hist.append(li);
   });
-  hist.querySelector(".current")?.scrollIntoView({ block: "nearest" });
+  // Keep the current step in view inside the list only: scrollIntoView would
+  // also scroll the column, and the panels above History with it.
+  const cur = hist.querySelector(".current");
+  if (cur) {
+    const top = cur.offsetTop - hist.offsetTop;
+    if (top < hist.scrollTop) hist.scrollTop = top;
+    else if (top + cur.offsetHeight > hist.scrollTop + hist.clientHeight) hist.scrollTop = top + cur.offsetHeight - hist.clientHeight;
+  }
 }
 
 // ---------------------------------------------------------------- state & commands

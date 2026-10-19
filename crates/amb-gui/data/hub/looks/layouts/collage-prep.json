@@ -1,0 +1,28 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Collage prep",
+  "description": "For getting a set of photos to match before the collage maker (C): presets and ratings on the left, the filmstrip on (copy one edit and paste it onto the rest in the library, G), quick tone and colour on the right, and Frame, crop and the collage button up front.",
+  "author": "Ambrotype",
+  "density": "compact",
+  "filmstrip": true,
+  "toolbar": ["library", "open", "collage", "export", "|", "undo", "redo", "|", "before", "crop", "frame", "wb", "|", "hub", "|", "looks", "settings"],
+  "left": { "width": 260, "items": ["presets", "info"] },
+  "right": {
+    "width": 300,
+    "items": [
+      "histogram",
+      { "panel": "basic", "open": true },
+      { "panel": "color_grading" },
+      { "panel": "effects", "open": true },
+      { "panel": "tone_curve" },
+      { "panel": "color_mixer" },
+      { "panel": "black_white" },
+      { "panel": "detail" },
+      { "panel": "lens" },
+      { "panel": "transform" },
+      { "panel": "calibration" },
+      { "panel": "negative" },
+      "history"
+    ]
+  }
+}

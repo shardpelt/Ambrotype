@@ -9,6 +9,10 @@ layout-focus
 layout-console
 layout-two-benches
 layout-film-lab
+layout-color-grading
+layout-black-and-white
+layout-retouch
+layout-collage-prep
 theme-dark
 theme-light
 theme-high-contrast

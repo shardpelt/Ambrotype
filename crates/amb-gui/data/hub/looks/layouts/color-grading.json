@@ -1,0 +1,32 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Colour grading",
+  "description": "For colour work: big grading wheels in a wide left column, with the curve, colour mixer and calibration open on the right; exposure stays at hand, the rest is folded away.",
+  "author": "Ambrotype",
+  "density": "normal",
+  "toolbar": ["open", "library", "save", "export", "|", "undo", "redo", "|", "before", "masks", "zoom", "wb", "clip", "|", "looks", "settings"],
+  "left": {
+    "width": 380,
+    "items": [
+      { "panel": "color_grading", "title": "Grading wheels", "open": true },
+      { "panel": "calibration", "open": true },
+      "presets"
+    ]
+  },
+  "right": {
+    "width": 340,
+    "items": [
+      "histogram",
+      { "panel": "basic", "open": true },
+      { "panel": "tone_curve", "open": true },
+      { "panel": "color_mixer", "open": true },
+      { "panel": "effects" },
+      { "panel": "black_white" },
+      { "panel": "detail" },
+      { "panel": "lens" },
+      { "panel": "transform" },
+      { "panel": "negative" },
+      "history"
+    ]
+  }
+}

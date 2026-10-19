@@ -26,7 +26,7 @@ pub const THEME_FORMAT: &str = "ambrotype-theme/1";
 pub const DEFAULT_LAYOUT: &str = "builtin:classic";
 pub const DEFAULT_THEME: &str = "builtin:dark";
 
-const BUILTIN_LAYOUTS: [(&str, &str); 10] = [
+const BUILTIN_LAYOUTS: [(&str, &str); 14] = [
     (
         "classic",
         include_str!("../data/hub/looks/layouts/classic.json"),
@@ -66,6 +66,22 @@ const BUILTIN_LAYOUTS: [(&str, &str); 10] = [
     (
         "film-lab",
         include_str!("../data/hub/looks/layouts/film-lab.json"),
+    ),
+    (
+        "color-grading",
+        include_str!("../data/hub/looks/layouts/color-grading.json"),
+    ),
+    (
+        "black-and-white",
+        include_str!("../data/hub/looks/layouts/black-and-white.json"),
+    ),
+    (
+        "retouch",
+        include_str!("../data/hub/looks/layouts/retouch.json"),
+    ),
+    (
+        "collage-prep",
+        include_str!("../data/hub/looks/layouts/collage-prep.json"),
     ),
 ];
 const BUILTIN_THEMES: [(&str, &str); 10] = [

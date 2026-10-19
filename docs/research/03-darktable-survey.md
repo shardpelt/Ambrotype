@@ -1,7 +1,7 @@
 # Darktable Source Code Survey: RAW Processing Architecture & Algorithms
 
 **Date:** 2026-10-03  
-**Source:** Darktable repository cloned at `/tmp/claude-0/-home-user-ambrotype/9d928064-5f0a-5bba-a70a-c3f779d5122a/scratchpad/darktable`  
+**Source:** a local clone of the darktable repository  
 **Codebase Size:** ~522k LOC (C/C++), 100 IOP modules, ~33k LOC masks/blending subsystem
 
 ---

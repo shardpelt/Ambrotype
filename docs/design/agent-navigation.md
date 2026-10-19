@@ -1,6 +1,6 @@
 # Helping agents find their way: a plan
 
-Status: rounds A1 and B1 done (2026-10-16), results below. B1 passes all 12 tasks. The test branches (`base/*`, `work/*`) were deleted before the repository went public; the task texts and hidden checks are on `checks/a1`.
+Status: rounds A1 and B1 done (2026-10-16), results below. B1 passes all 12 tasks. The test branches (`base/*`, `work/*`, `checks/a1`) aren't in the public repository; the maintainer keeps the task texts and hidden checks privately, so future runs stay blind.
 
 The goal is to measure what helps an agent that has never seen this code make a correct change here, cheaply. We keep what works, write it down, and then clean up the code to match.
 

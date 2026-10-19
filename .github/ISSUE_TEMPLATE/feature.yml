@@ -1,6 +1,6 @@
 name: Idea or feature request
 description: Something Ambrotype should do
-labels: [idea]
+labels: [enhancement]
 body:
   - type: textarea
     id: what

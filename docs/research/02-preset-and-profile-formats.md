@@ -271,14 +271,14 @@ Another common alt: presets include `crs:ToneCurvePV2012`, HSL, ColorGrade, curv
 ---------------------------------------------------------------------------
 ## 5. Existing importers (surveyed locally and online)
 
-### 5.1 darktable (local: scratchpad/darktable/src/develop/lightroom.c, 1631 lines; lightroom.h)
+### 5.1 darktable (local: clone/darktable/src/develop/lightroom.c, 1631 lines; lightroom.h)
 Entry: `dt_lightroom_import(imgid, dev, iauto)` (L1125) reads `<name>.xmp`, accepts only `x:xmpmeta` root (L1167), registers namespaces crs, dc, tiff, xmp, exif, lr, rdf (L1260-1295) and runs XPath `//crs:*` (elements) and `//@crs:*` (attributes) (L1300). `.lrtemplate` and develop-preset `.xmp` are **not** a separate path: it imports *sidecar* XMPs only (also used by `darktable-cli`/"import lr edits" when importing images with a Lr sidecar).
 Mapped (from `xmlStrcmp(name, "...")` list): CropTop/Right/Left/Bottom/Angle/HasCrop/ImageWidth/ImageLength/Orientation -> `clipping`+`flip`; **Exposure2012**, **Blacks2012** -> `exposure` (blacks via `lr2dt_blacks` table {-100->+0.020, 0->0, 100->-0.010}); PostCropVignette{Amount,Midpoint,Style,Feather,Roundness} -> `vignette` (tables lr2dt_vignette_gain/midpoint); Grain{Amount,Frequency} -> `grain` (tables); Parametric* + ToneCurveName2012 + ToneCurvePV2012 -> `tonecurve` (spline from the Seq; named curves handled); HueAdjustment*/SaturationAdjustment*/LuminanceAdjustment* (8 colours) -> `colorzones` (value/200+0.5); SplitToning{Shadow,Highlight}{Hue,Saturation}+Balance -> `splittoning`; **Clarity2012** -> `bilat` (local contrast; table +-100 -> +-0.65); RetouchInfo -> `spots`; metadata: Rating, Label (colour), subject/hierarchicalSubject (tags), title/description/creator/rights, GPS*. Also sets colorin to `cmatrix` for raws.
 **Not mapped**: WhiteBalance/Temperature/Tint, Contrast2012, Highlights2012, Shadows2012, Whites2012, Texture, Dehaze, Vibrance, Saturation, ColorGrade*, Sharpness*, NR, lens profile, Upright/perspective, masks (GradientBased/Circular/Paint/MaskGroup), Look/profile/LUTs, curves per channel (Red/Green/Blue), GrayMixer/ConvertToGrayscale, calibration primaries, point colours. No amount scaling, no preset/lrtemplate handling. Hardcoded legacy-version module params (`dt_iop_*_params_v1_t`).
 Takeaway: darktable's approach = direct 1:1 or LUT-based mapping of a small subset to native modules, no fidelity claims. Table style `lr2dt_t{lr,dt}` + piecewise-linear interpolation is reusable as our "calibration table" pattern.
 Other darktable pieces: `src/imageio/imageio_dng.h` (DNG writing), Lua scripts community: "lr2dt"? Not found.[?]
 
-### 5.2 RawTherapee (local clone scratchpad/RawTherapee)
+### 5.2 RawTherapee (local: clone/RawTherapee)
 **No Lightroom/XMP-crs importer in the repository** (grep for `crs:`/`lrtemplate`/`Lightroom` finds only `rtgui/windows/iccprofilecreator.cc` text mention and libraw changelog). RawTherapee does implement **DCP reading/applying** (rtengine/dcp.cc: ForwardMatrix, HueSatMap with interpolation by illuminant, LookTable, ToneCurve, "baseline exposure", `DCPProfile::apply`) and reads LCP lens profiles (rtengine/lcp.cc) and has "Film Simulation" (HaldCLUT) tool. Users convert presets by hand/with Lightroom-to-PP3 forum scripts (not maintained) [?]. Takeaway: RT's DCP code is the best open-source implementation to study/license-compat (GPLv3).
 
 ### 5.3 Others
@@ -342,4 +342,4 @@ Architecture
 - https://www.adobe.com/support/downloads/dng/dng_sdk_eula_win.html ; https://www.adobe.com/support/downloads/dng/dng_sdk.html ; https://helpx.adobe.com/camera-raw/digital-negative.html ; https://scancode-licensedb.aboutcode.org/adobe-dng-spec-patent.html ; https://github.com/hfiguiere/dng_sdk
 - https://github.com/chrisperkles/LightroomPresetsToLUTS ; https://github.com/ly1lb/lightroom-preset-decoder ; https://colorsuite.app/
 - https://ask.metafilter.com/285181/Does-this-Adobe-Lightroom-preset-format-conform-to-any-standard ; https://digital-photography-school.com/lightroom-preset-compatibility-xmp-or-lrtemplate/
-- Local: scratchpad/darktable/src/develop/lightroom.c (+lightroom.h); scratchpad/RawTherapee (no importer; rtengine/dcp.cc for DCP).
+- Local: clone/darktable/src/develop/lightroom.c (+lightroom.h); clone/RawTherapee (no importer; rtengine/dcp.cc for DCP).

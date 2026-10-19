@@ -5,7 +5,7 @@ A short "start here" for contributors and for the next work session. Details are
 ## State
 
 - **Branch:** `main`; changes arrive as pull requests. About 590 tests are green.
-- **Name:** **Ambrotype**. The GitHub repo is `shardpelt/Ambrotype` (renamed from flightbroom; old links redirect).
+- **Name:** **Ambrotype**. The GitHub repo is `shardpelt/Ambrotype`.
 - **Built:**
   - preset/sidecar reader and writer (`crs:` and our `amb:` tags)
   - edit protocol with undo, including grouped commands that become one undo step

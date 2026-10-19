@@ -1,6 +1,6 @@
 # RapidRAW survey (for a Lightroom-preset-compatible open-source editor)
 
-Snapshot: clone at `scratchpad/RapidRAW`, HEAD "Merge pull request #1813" dated 2026-10-02. Paths below are relative to the repo root.
+Snapshot: clone at `clone/RapidRAW`, HEAD "Merge pull request #1813" dated 2026-10-02. Paths below are relative to the repo root.
 Method: targeted grep/sed. `preset_converter.rs` read in full; the main shader read for the `main()` pipeline, tonal, colour and exposure functions. Other files were skimmed, so treat details marked "not verified" as open.
 
 ## 1. Project facts

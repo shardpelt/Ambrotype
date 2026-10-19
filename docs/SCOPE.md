@@ -417,14 +417,16 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 
 ---
 
-## 12. Open decisions for the project owner
+## 12. Open decisions for the project owner (as of the 2026-10-03 draft)
+
+Since decided: 1 (GPL-3.0-or-later, 2026-10-08), 2 (our own engine with a Tauri editor) and 6 (the name, Ambrotype). The rest are still open.
 
 1. Licence: GPL-3.0-or-later (recommended) vs permissive (§6). **Decide before accepting outside contributions or porting GPL code.**
 2. Approach: new engine first with the UI decided at the Phase 2 gate (recommended), vs fork RapidRAW now (§5).
 3. Fidelity target that defines "compatible" (proposal: median ΔE00 < 2, p95 < 5 over the corpus for the top-20 tags).
 4. Who holds a licensed Lightroom Classic install to run the calibration sweeps, and where reference renders are stored (private; only CC0 inputs are committed).
 5. Whether to reach out to RapidRAW's maintainer about a shared, Adobe-compatible engine crate.
-6. Product name: renamed from "Flightbroom" to **Ambrotype** (for now) on 2026-10-05. The GitHub repo is renamed (`shardpelt/Ambrotype`). Alternatives kept: Photochrom, Argentype (see [legal.md](legal.md) for checks, registration and the rename checklist).
+6. Product name: renamed from "Flightbroom" to **Ambrotype** (for now) on 2026-10-05. The GitHub repo is `shardpelt/Ambrotype`.
 
 ---
 

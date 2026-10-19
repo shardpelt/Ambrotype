@@ -113,6 +113,21 @@ Another open-source Lightroom alternative, [LightCraft](https://github.com/story
 8. **Performance:** measure release-build preview and 1:1 times on the Mac (`AMB_TIMING=1` prints each render stage's time). On 4 Linux cores a 24 MP render of a typical edit takes about 3.5 s: Texture/Clarity 0.75 s, colour 0.7 s, noise reduction 0.65 s, Highlights/Shadows 0.4 s, Dehaze 0.4 s. The editor's screen-size preview (860 × 570) takes about 70 ms. ~~Tiled 1:1 render~~ (done 2026-10-11: the 100% view renders only its tiles, `pipeline::render_region`; about 10× faster than the full render it replaced). ~~GPU preview~~ (done 2026-10-11: every stage after stage 0 on the GPU; [design/gpu.md](design/gpu.md)). Next: measure on the Mac.
 9. ~~**Installers** per OS~~ (the `Release` workflow, 2026-10-10). Left: run it on GitHub, Windows signing (SignPath) and Apple signing secrets.
 
+### Photo manager track (owner, 2026-10-19)
+
+Make Ambrotype a great place to browse, sort and manage a very large photo collection, not only to edit. It builds on the library ([design/library.md](design/library.md)): sidecars stay the source of truth and the catalogue stays a cache that can be thrown away. Ideas, roughly in order:
+
+1. **Scale:** index whole drives in the background (hundreds of thousands of photos), with a preview cache, a grid that only draws what's on screen, and a folder tree with counts. Photos on drives that aren't plugged in stay listed, with their thumbnails, and come back when the drive does.
+2. **Ways to browse:** a timeline (years, months, days, with a scrubber), a calendar, and a map from GPS tags (photos without GPS can be placed from a GPX track or by dragging).
+3. **Duplicates and bursts:** exact duplicates by file hash, near-duplicates and bursts by a picture fingerprint, grouped into stacks, with "keep the best, reject the rest".
+4. **Culling help:** score sharpness, closed eyes and exposure, so the best of a burst comes first. Local models only.
+5. **Search by what's in the photo:** a local image-and-text model ("dog on a beach at sunset") and optional local face grouping, both off by default and never uploaded. Models must have a licence we can use (AI models list).
+6. **File care:** move, rename and delete with sidecars and JPEG pairs kept together (to the system trash), batch rename, reorganise into dated folders, a keyword tree manager, metadata templates, and "find missing photos" after files moved outside the app.
+7. **Safety:** checksums kept in the catalogue to catch silent file corruption, a backup check (is every photo also on the backup drive?), and how much space each folder, year and camera takes.
+8. **Several computers:** a library on a NAS or synced folder used from more than one machine, each with its own catalogue cache.
+9. **Sharing:** export a static web gallery and a slideshow from a collection.
+10. **Videos:** list and play the clips next to the photos, with ratings and keywords, so a card's whole import lives in one place.
+
 ### Codebase track (later, when there's budget for a long run)
 
 0. **First, measure what helps** (plan: [design/agent-navigation.md](design/agent-navigation.md)): fresh agents on a fixed task set, with and without recipes and on-demand maps. Rounds A1 and B1 are done: with the recipes, Sonnet passed all 12 tasks at the same cost. The steps below follow from it.

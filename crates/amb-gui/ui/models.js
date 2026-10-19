@@ -99,7 +99,10 @@ async function addOwnModel() {
       size: Number($("model-size").value),
       mean: triple("model-mean"),
       std: triple("model-std"),
-      activation: $("model-sigmoid").checked ? "sigmoid" : "none",
+      activation: $("model-activation").value,
+      layout: $("model-layout").value,
+      channel: $("model-channel").value === "" ? null : Number($("model-channel").value),
+      invert: $("model-invert").checked,
       licence: $("model-licence").value.trim(),
     };
     const file = await invoke("pick_model_file");

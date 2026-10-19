@@ -239,7 +239,7 @@ The subject, background and people masks come from models that run on the user's
 
 - `amb models list [--json]`: every model we can install (only freely licensed ones), its licence, size, speed, and whether it's installed and chosen.
 - `amb models install ID`, then `amb models use ID`. Bigger models are slower but give finer edges; tell the user the download size and time first.
-- `amb models add FILE.onnx --task subject --name NAME --size 1024 [--mean r,g,b --std r,g,b --sigmoid]`: the user's own ONNX model (square RGB in, a map of the same side out).
+- `amb models add FILE.onnx --task subject --name NAME --size 1024 [--mean r,g,b --std r,g,b] [--sigmoid|--softmax] [--nhwc] [--channel N] [--invert]`: the user's own ONNX model (square RGB in, a map of the same side out, or one per class). [own-models.md](../own-models.md) has the steps for MediaPipe's people model (hair, skin, clothes), which users convert themselves.
 - `amb models remove ID`. The MCP server has the same as the `models` tool.
 
 ## Spot removal

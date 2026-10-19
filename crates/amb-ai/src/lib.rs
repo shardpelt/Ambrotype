@@ -46,6 +46,24 @@ pub struct Input {
     /// Colour normalisation: `(v / brightest − mean) / std`, per channel.
     pub mean: [f32; 3],
     pub std: [f32; 3],
+    /// How the photo is laid out: colour planes first (`nchw`, PyTorch
+    /// models) or colour last per pixel (`nhwc`, TensorFlow/MediaPipe ones).
+    #[serde(default, skip_serializing_if = "Layout::is_nchw")]
+    pub layout: Layout,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Layout {
+    #[default]
+    Nchw,
+    Nhwc,
+}
+
+impl Layout {
+    fn is_nchw(&self) -> bool {
+        *self == Layout::Nchw
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -56,12 +74,23 @@ pub enum Activation {
     None,
     /// A logistic function first (models that give logits).
     Sigmoid,
+    /// Several maps (one per class) turned into shares that add up to 1
+    /// at each pixel; used as they are, not stretched.
+    Softmax,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct Output {
     #[serde(default)]
     pub activation: Activation,
+    /// For a model that gives several maps (one per class), the one to use,
+    /// from 0.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub channel: Option<usize>,
+    /// Use the opposite of the map: a background class, inverted, is
+    /// everything in front of it.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub invert: bool,
 }
 
 /// A model in the list, or one of the user's own.
@@ -127,6 +156,12 @@ pub struct CustomModel {
     pub std: [f32; 3],
     #[serde(default)]
     pub activation: Activation,
+    #[serde(default)]
+    pub layout: Layout,
+    #[serde(default)]
+    pub channel: Option<usize>,
+    #[serde(default)]
+    pub invert: bool,
     #[serde(default)]
     pub licence: String,
     #[serde(default)]
@@ -402,15 +437,18 @@ pub fn add_custom(dir: &Path, file: &Path, m: CustomModel) -> Result<ModelSpec, 
             size: m.size,
             mean: m.mean,
             std: m.std,
+            layout: m.layout,
         },
         output: Output {
             activation: m.activation,
+            channel: m.channel,
+            invert: m.invert,
         },
         custom: true,
     };
     // It has to run before it's listed.
     let model = load(file, &spec)?;
-    let grey = vec![0.5f32; m.size * m.size * 3];
+    let grey = vec![0.5f32; spec.input.size * spec.input.size * 3];
     let t = std::time::Instant::now();
     run(&model, &spec, &grey)?;
     let mut spec = spec;
@@ -437,7 +475,13 @@ fn load(path: &Path, spec: &ModelSpec) -> Result<Model, String> {
     let s = spec.input.size;
     tract_onnx::onnx()
         .model_for_path(path)
-        .and_then(|m| m.with_input_fact(0, f32::fact([1, 3, s, s]).into()))
+        .and_then(|m| {
+            let shape = match spec.input.layout {
+                Layout::Nchw => [1, 3, s, s],
+                Layout::Nhwc => [1, s, s, 3],
+            };
+            m.with_input_fact(0, f32::fact(shape).into())
+        })
         .and_then(|m| m.into_optimized())
         .and_then(|m| m.into_runnable())
         .map_err(|e| format!("{} didn't load: {e}", spec.name))
@@ -447,38 +491,87 @@ fn load(path: &Path, spec: &ModelSpec) -> Result<Model, String> {
 fn run(model: &Model, spec: &ModelSpec, rgb: &[f32]) -> Result<Vec<f32>, String> {
     let (size, mean, std) = (spec.input.size, spec.input.mean, spec.input.std);
     let max = rgb.iter().copied().fold(1e-6f32, f32::max);
-    let input = tract_ndarray::Array4::from_shape_fn((1, 3, size, size), |(_, c, y, x)| {
-        (rgb[(y * size + x) * 3 + c] / max - mean[c]) / std[c]
-    });
+    let px = |y: usize, x: usize, c: usize| (rgb[(y * size + x) * 3 + c] / max - mean[c]) / std[c];
+    let input = match spec.input.layout {
+        Layout::Nchw => {
+            tract_ndarray::Array4::from_shape_fn((1, 3, size, size), |(_, c, y, x)| px(y, x, c))
+        }
+        Layout::Nhwc => {
+            tract_ndarray::Array4::from_shape_fn((1, size, size, 3), |(_, y, x, c)| px(y, x, c))
+        }
+    };
     let out = model
         .run(tvec!(Tensor::from(input).into()))
         .map_err(|e| format!("{} failed: {e}", spec.name))?;
-    let mut map: Vec<f32> = out[0]
+    let view = out[0]
         .to_plain_array_view::<f32>()
-        .map_err(|e| e.to_string())?
-        .iter()
-        .copied()
-        .collect();
-    if map.len() != size * size {
+        .map_err(|e| e.to_string())?;
+    let shape = view.shape().to_vec();
+    let values: Vec<f32> = view.iter().copied().collect();
+    let n = size * size;
+    if values.is_empty() || values.len() % n != 0 {
         return Err(format!(
-            "{} gave {} values, not {}×{}",
+            "{} gave {} values ({shape:?}), not maps of {size}×{size}",
             spec.name,
-            map.len(),
-            size,
-            size
+            values.len()
         ));
     }
-    if spec.output.activation == Activation::Sigmoid {
+    // One map, or one per class: colour-last ([1, s, s, C]) or planes.
+    let classes = values.len() / n;
+    let last_dim = shape.last().copied().unwrap_or(1);
+    let at = |i: usize, c: usize| {
+        if classes > 1 && last_dim == classes {
+            values[i * classes + c]
+        } else {
+            values[c * n + i]
+        }
+    };
+    let channel = match spec.output.channel {
+        Some(c) if c < classes => c,
+        Some(c) => {
+            return Err(format!(
+                "{} gives {classes} maps; channel {c} isn't one (0 to {})",
+                spec.name,
+                classes - 1
+            ));
+        }
+        None if classes == 1 => 0,
+        None => {
+            return Err(format!(
+                "{} gives {classes} maps; say which one to use (channel)",
+                spec.name
+            ));
+        }
+    };
+    let mut map: Vec<f32> = match spec.output.activation {
+        Activation::Softmax => (0..n)
+            .map(|i| {
+                let top = (0..classes).map(|c| at(i, c)).fold(f32::MIN, f32::max);
+                let sum: f32 = (0..classes).map(|c| (at(i, c) - top).exp()).sum();
+                (at(i, channel) - top).exp() / sum
+            })
+            .collect(),
+        Activation::Sigmoid => (0..n)
+            .map(|i| 1.0 / (1.0 + (-at(i, channel)).exp()))
+            .collect(),
+        Activation::None => (0..n).map(|i| at(i, channel)).collect(),
+    };
+    if spec.output.activation != Activation::Softmax {
+        // Stretched to 0–1, as the authors do.
+        let (lo, hi) = map
+            .iter()
+            .fold((f32::MAX, f32::MIN), |(a, b), &v| (a.min(v), b.max(v)));
+        let span = (hi - lo).max(1e-6);
         for v in &mut map {
-            *v = 1.0 / (1.0 + (-*v).exp());
+            *v = (*v - lo) / span;
         }
     }
-    // Stretched to 0–1, as the authors do.
-    let (lo, hi) = map
-        .iter()
-        .fold((f32::MAX, f32::MIN), |(a, b), &v| (a.min(v), b.max(v)));
-    let span = (hi - lo).max(1e-6);
-    Ok(map.into_iter().map(|v| (v - lo) / span).collect())
+    if spec.output.invert {
+        for v in &mut map {
+            *v = 1.0 - *v;
+        }
+    }
+    Ok(map)
 }
 
 /// A short fingerprint of what the photo looks like (bright or dark against

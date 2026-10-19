@@ -909,14 +909,17 @@
         <div id="models-list" class="models-list"></div>
         <details class="models-add">
           <summary>Add your own model…</summary>
-          <p class="hint">An ONNX model that takes a square colour photo and gives a map of the same size (1 where the thing is).</p>
+          <p class="hint">An ONNX model that takes a square colour photo and gives a map of the same size (1 where the thing is), or one map per class. To use MediaPipe's people model (hair, skin, clothes), see the guide in the Ambrotype repository: docs/own-models.md.</p>
           <div class="models-form">
             <label>For <select id="model-task"></select></label>
             <label>Name <input id="model-name" type="text" spellcheck="false" placeholder="My model"></label>
             <label>Input size (px) <input id="model-size" type="number" min="16" max="4096" value="1024"></label>
             <label>Mean <input id="model-mean" type="text" value="0.485,0.456,0.406" spellcheck="false"></label>
             <label>Std <input id="model-std" type="text" value="0.229,0.224,0.225" spellcheck="false"></label>
-            <label><input id="model-sigmoid" type="checkbox"> Output is logits (apply a sigmoid)</label>
+            <label>Photo layout <select id="model-layout"><option value="nchw">Colour planes first (PyTorch, most ONNX)</option><option value="nhwc">Colour per pixel (TensorFlow, MediaPipe)</option></select></label>
+            <label>Output <select id="model-activation"><option value="none">A map, used as it is</option><option value="sigmoid">Scores (apply a sigmoid)</option><option value="softmax">One score per class (softmax)</option></select></label>
+            <label>Map to use, if it gives several <input id="model-channel" type="number" min="0" max="255" placeholder="0"></label>
+            <label><input id="model-invert" type="checkbox"> Invert (a background class gives everything else)</label>
             <label>Licence <input id="model-licence" type="text" spellcheck="false" placeholder="e.g. MIT"></label>
           </div>
           <div class="crop-line"><button type="button" id="model-add">Choose the .onnx file and add…</button></div>

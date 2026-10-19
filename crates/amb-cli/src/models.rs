@@ -145,11 +145,24 @@ pub(crate) fn models_add(file: &Path, options: &BTreeMap<&str, &str>) -> Result<
         size,
         mean: [0.485, 0.456, 0.406],
         std: [0.229, 0.224, 0.225],
-        activation: if options.contains_key("--sigmoid") {
+        activation: if options.contains_key("--softmax") {
+            amb_ai::Activation::Softmax
+        } else if options.contains_key("--sigmoid") {
             amb_ai::Activation::Sigmoid
         } else {
             amb_ai::Activation::None
         },
+        layout: if options.contains_key("--nhwc") {
+            amb_ai::Layout::Nhwc
+        } else {
+            amb_ai::Layout::Nchw
+        },
+        channel: options
+            .get("--channel")
+            .map(|c| c.parse::<usize>())
+            .transpose()
+            .map_err(|_| "--channel is a map's number, from 0".to_string())?,
+        invert: options.contains_key("--invert"),
         licence: options.get("--licence").unwrap_or(&"").to_string(),
         source: options.get("--source").unwrap_or(&"").to_string(),
     };

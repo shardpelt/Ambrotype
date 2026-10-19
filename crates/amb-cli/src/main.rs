@@ -115,9 +115,13 @@ USAGE:
     amb models install <ID>                 Download it (checked against its sha256) into the models folder
     amb models use <ID>                     Use it for its task's masks (it has to be installed)
     amb models add <FILE.onnx> --task subject|people --name NAME --size PX [--mean r,g,b]
-                [--std r,g,b] [--sigmoid] [--licence L] [--source URL]
+                [--std r,g,b] [--sigmoid|--softmax] [--nhwc] [--channel N] [--invert]
+                [--licence L] [--source URL]
                                             Your own ONNX model: a square RGB photo in, a map of the same
-                                            side out; checked that it runs
+                                            side out (or one per class: --channel picks one, --softmax
+                                            turns scores into shares, --invert flips it; --nhwc for
+                                            TensorFlow/MediaPipe models); checked that it runs.
+                                            Guide: docs/own-models.md
     amb models remove <ID>                  Delete it; its task goes back to its default
     amb import <SOURCE> <DEST> [--into \"{yyyy}/{yyyy}-{mm}-{dd}\"] [--rename \"{name}\"] [--start 1]
                [--keywords \"a, b\"] [--preset LOOK.xmp] [--backup DIR] [--no-subfolders] [--dry-run] [--json]
@@ -236,7 +240,7 @@ fn main() -> ExitCode {
             "--brief" => brief = true,
             "--progressive" | "--enlarge" | "--slides" | "--force" | "--no-subfolders"
             | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb"
-            | "--watermark-tile" | "--sigmoid" => {
+            | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -310,6 +314,7 @@ fn main() -> ExitCode {
             | "--until"
             | "--catalog"
             | "--task"
+            | "--channel"
             | "--mean"
             | "--std"
             | "--licence"

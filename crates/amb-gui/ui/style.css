@@ -920,6 +920,7 @@ button.tool-icon.active { color: var(--accent); }
 .model-text { flex: 1; min-width: 0; }
 .model-source { overflow-wrap: anywhere; }
 .model-actions { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.model-detail { color: var(--accent); font-size: 11px; letter-spacing: 1px; }
 .model-in-use { font-size: 12px; color: var(--accent); }
 .models-add { margin-top: 8px; }
 .models-form { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; margin: 6px 0; }

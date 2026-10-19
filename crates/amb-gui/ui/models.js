@@ -10,6 +10,14 @@ function megabytes(bytes) {
   return bytes ? `${Math.max(1, Math.round(bytes / 1e6))} MB` : "";
 }
 
+// Seconds per photo (on a 4-core laptop) in words.
+function modelSpeed(seconds) {
+  if (!seconds) return "";
+  if (seconds < 1) return "under a second a photo";
+  if (seconds < 60) return `about ${Math.round(seconds)} s a photo`;
+  return `about ${Math.round(seconds / 60)} min a photo`;
+}
+
 function modelsMessage(text) {
   $("models-message").textContent = text;
 }
@@ -46,10 +54,12 @@ function renderModels(list) {
       if (m.installed && (m.custom || !m.default)) {
         actions.push(el("button", { type: "button", class: "small", onclick: () => modelAction("ai_model_remove", m.id, `Removed ${m.name}.`) }, "Remove"));
       }
-      const facts = [m.licence, m.installed ? megabytes(m.bytes) : "", m.by].filter(Boolean).join(" · ");
+      const facts = [megabytes(m.bytes), modelSpeed(m.seconds), m.licence].filter(Boolean).join(" · ");
       box.append(el("div", { class: "model-row" + (m.chosen ? " chosen" : "") },
         el("div", { class: "model-text" },
-          el("strong", {}, m.name), " ", el("span", { class: "hint" }, facts),
+          el("strong", {}, m.name), " ",
+          m.detail ? el("span", { class: "model-detail", title: `Edge detail ${m.detail} of 5` }, "●".repeat(m.detail) + "○".repeat(5 - m.detail)) : "",
+          " ", el("span", { class: "hint" }, facts),
           el("div", { class: "hint" }, m.about + (m.notes ? ` Note: ${m.notes}` : "") + (m.chosen && !m.installed ? " It downloads by itself the first time a mask needs it." : "")),
           m.source ? el("div", { class: "hint model-source" }, m.source) : ""),
         el("div", { class: "model-actions" }, ...actions)));

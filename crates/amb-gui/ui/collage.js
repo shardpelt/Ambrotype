@@ -109,7 +109,7 @@ function trayPhoto(path) {
 }
 
 // The canvas image of a photo: with its edits (and crop) when it has any.
-function bigImage(path) {
+function collageImage(path) {
   if (!collage.big.has(path)) {
     const edited = path === ui.info?.path || trayPhoto(path)?.edited;
     const p = invoke(edited ? "edited_thumbnail" : "thumbnail", { path, edge: COLLAGE_BIG })
@@ -196,7 +196,7 @@ function renderStage() {
       const grip = Object.assign(document.createElement("span"), { className: "col-grip", textContent: "⠿", title: "Drag to another cell to swap" });
       cell.append(holder, grip);
       cell.classList.add("loading");
-      bigImage(c.path).then((info) => {
+      collageImage(c.path).then((info) => {
         if (collage.cells[i] !== c) return;
         img.src = info.url;
         cell.classList.remove("loading");
@@ -264,7 +264,7 @@ function placeImage(cell, i, info) {
 async function refreshCell(i) {
   const cell = $("col-stage").querySelector(`.col-cell[data-index="${i}"]`);
   const c = collage.cells[i];
-  if (cell && c?.path) placeImage(cell, i, await bigImage(c.path));
+  if (cell && c?.path) placeImage(cell, i, await collageImage(c.path));
 }
 
 // Keep a pan inside the photo: store the clamped centre.
@@ -849,7 +849,7 @@ async function shareTemplate() {
   }
 }
 
-async function importTemplate() {
+async function importCollageTemplate() {
   try {
     const t = await invoke("import_collage_template");
     if (!t) return;
@@ -1255,7 +1255,7 @@ function wireCollage() {
   $("col-save").addEventListener("click", saveTemplate);
   $("col-delete").addEventListener("click", deleteTemplate);
   $("col-share").addEventListener("click", shareTemplate);
-  $("col-import").addEventListener("click", importTemplate);
+  $("col-import").addEventListener("click", importCollageTemplate);
   $("col-fill").addEventListener("click", fillEmpty);
   $("col-add").addEventListener("click", () => addPhotos(false));
   $("col-add-folder").addEventListener("click", () => addPhotos(true));

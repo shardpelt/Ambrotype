@@ -624,6 +624,41 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    /// The UI's scripts share one global scope (plain `<script>` files), so
+    /// two top-level functions or variables with one name would silently
+    /// replace each other.
+    #[test]
+    fn ui_scripts_declare_each_top_level_name_once() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");
+        let mut seen = std::collections::BTreeMap::<String, String>::new();
+        let mut clashes = Vec::new();
+        for entry in std::fs::read_dir(&dir).unwrap().flatten() {
+            let path = entry.path();
+            if path.extension().is_none_or(|x| x != "js") {
+                continue;
+            }
+            let file = path.file_name().unwrap().to_string_lossy().to_string();
+            for line in std::fs::read_to_string(&path).unwrap().lines() {
+                let rest = line.strip_prefix("async ").unwrap_or(line);
+                let name = ["function ", "const ", "let ", "var ", "class "]
+                    .iter()
+                    .find_map(|k| rest.strip_prefix(k))
+                    .map(|r| {
+                        r.chars()
+                            .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == '$')
+                            .collect::<String>()
+                    })
+                    .filter(|n| !n.is_empty());
+                if let Some(name) = name {
+                    if let Some(first) = seen.insert(name.clone(), file.clone()) {
+                        clashes.push(format!("{name}: {first} and {file}"));
+                    }
+                }
+            }
+        }
+        assert!(clashes.is_empty(), "{clashes:?}");
+    }
+
     #[test]
     fn built_in_mask_effects_use_local_sliders_in_range() {
         let v: serde_json::Value = serde_json::from_str(super::BUILTIN_MASK_EFFECTS).unwrap();

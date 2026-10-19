@@ -25,8 +25,32 @@ pub(crate) fn models_list(json: bool) -> Result<(), String> {
             "models": all,
         }));
     }
+    let speed = |s: f64| {
+        if s <= 0.0 {
+            "?".to_string()
+        } else if s < 1.0 {
+            "<1 s".to_string()
+        } else {
+            format!("{s:.0} s")
+        }
+    };
+    let detail = |d: u8| {
+        if d == 0 {
+            "?".to_string()
+        } else {
+            format!(
+                "{}{}",
+                "●".repeat(d as usize),
+                "○".repeat(5 - d.min(5) as usize)
+            )
+        }
+    };
     for (task, about) in amb_ai::TASKS {
         println!("{task}: {about}");
+        println!(
+            "  {:<20} {:<16} {:>7} {:>6}  {:<6} {:<11}",
+            "id", "name", "size", "time", "detail", "licence"
+        );
         for m in all.iter().filter(|m| m.spec.task == task) {
             let s = &m.spec;
             let mark = match (m.chosen, m.installed) {
@@ -36,10 +60,12 @@ pub(crate) fn models_list(json: bool) -> Result<(), String> {
                 (false, false) => "  not installed",
             };
             println!(
-                "  {:<20} {:<16} {:>7}  {:<11} {}",
+                "  {:<20} {:<16} {:>7} {:>6}  {:<6} {:<11} {}",
                 s.id,
                 s.name,
                 megabytes(s.bytes),
+                speed(s.seconds),
+                detail(s.detail),
                 s.licence,
                 mark
             );
@@ -51,7 +77,9 @@ pub(crate) fn models_list(json: bool) -> Result<(), String> {
             }
         }
     }
-    println!("\nInstall with `amb models install ID`, then `amb models use ID`.");
+    println!(
+        "\nTime is per photo on a 4-core laptop; detail is how fine the edges are (●●●●● finest).\nInstall with `amb models install ID`, then `amb models use ID`."
+    );
     Ok(())
 }
 

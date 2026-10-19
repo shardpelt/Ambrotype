@@ -90,6 +90,13 @@ pub struct ModelSpec {
     pub sha256: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub urls: Vec<String>,
+    /// Seconds per photo on a 4-core laptop CPU; for the user's own, as
+    /// measured when it was added (on their computer). 0 when unknown.
+    #[serde(default)]
+    pub seconds: f64,
+    /// How fine the edges should be, 1 (soft) to 5 (finest); 0 when unknown.
+    #[serde(default)]
+    pub detail: u8,
     pub input: Input,
     #[serde(default)]
     pub output: Output,
@@ -233,8 +240,10 @@ pub fn list(dir: &Path) -> Vec<ModelState> {
         .iter()
         .filter_map(|(t, _)| chosen(dir, t).ok().map(|s| s.id))
         .collect();
-    all_specs(dir)
-        .into_iter()
+    let mut all = all_specs(dir);
+    // Per task, the finest first.
+    all.sort_by(|a, b| a.task.cmp(&b.task).then(b.detail.cmp(&a.detail)));
+    all.into_iter()
         .map(|spec| ModelState {
             installed: is_installed(dir, &spec),
             chosen: chosen_ids.contains(&spec.id),
@@ -387,6 +396,8 @@ pub fn add_custom(dir: &Path, file: &Path, m: CustomModel) -> Result<ModelSpec, 
             .len(),
         sha256: sha256_file(file)?,
         urls: Vec::new(),
+        seconds: 0.0,
+        detail: 0,
         input: Input {
             size: m.size,
             mean: m.mean,
@@ -400,7 +411,10 @@ pub fn add_custom(dir: &Path, file: &Path, m: CustomModel) -> Result<ModelSpec, 
     // It has to run before it's listed.
     let model = load(file, &spec)?;
     let grey = vec![0.5f32; m.size * m.size * 3];
+    let t = std::time::Instant::now();
     run(&model, &spec, &grey)?;
+    let mut spec = spec;
+    spec.seconds = (t.elapsed().as_secs_f64() * 10.0).round() / 10.0;
     std::fs::create_dir_all(dir.join("custom")).map_err(|e| e.to_string())?;
     std::fs::copy(file, file_of(dir, &spec.id)).map_err(|e| e.to_string())?;
     let text = serde_json::to_string_pretty(&spec).expect("plain spec");
@@ -674,6 +688,7 @@ mod tests {
                 s.id
             );
             assert!(s.source.starts_with("https://"), "{}", s.id);
+            assert!(s.seconds > 0.0 && (1..=5).contains(&s.detail), "{}", s.id);
         }
     }
 

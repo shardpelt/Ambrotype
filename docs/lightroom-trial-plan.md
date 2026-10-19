@@ -16,14 +16,12 @@ A month of Lightroom Classic is our only chance to gather **ground truth**: refe
 | Preset corpus | Your purchased presets plus free ones, kept in a private folder and never committed | You |
 | Run sheet | A checklist and folder layout so every export is labelled with LR version, process version and settings | To write |
 
-## Storage setup (owner's hardware: 2 TB drive + 2 × 960 GB Kingston A400 SSDs over USB)
-- Keep Lightroom's **catalog and Camera Raw cache on the fastest internal drive** (the 2 TB).
-- Use **A400 #1 for inputs** (the sweep kit) and **A400 #2 for exports**, so reads and writes don't contend.
-- The A400 is a DRAM-less SATA SSD. Over USB 3 it reads at about 400 MB/s, but sustained writes slow sharply once its cache fills (tens to about 100 MB/s). That's fine for exports, but expect long batches to slow down. Use USB 3 ports, not USB 2.
-- Format the drives exFAT if they'll move between Windows, macOS and Linux; otherwise NTFS on Windows.
-- Budget: about 30–60 GB of renders with the storage guidance below, so space is not a concern. Keep a copy of the final archive on two drives.
-
-**On the MacBook Air (M1) instead:** Lightroom Classic runs natively on Apple Silicon. Keep the catalog and Camera Raw cache on the internal drive. Put the kit and the exports on the 960 GB SSD, formatted APFS, unless it must also be read on Windows (then exFAT). With only one external drive, reads and writes share it; that's fine, just slower. Keep the Mac plugged in and awake during long exports (`caffeinate -dis`). See [desktop-setup.md](desktop-setup.md#macos-on-apple-silicon-m1-and-later-with-an-external-ssd).
+## Storage setup
+- Keep Lightroom's **catalog and Camera Raw cache on the fastest internal drive**.
+- With two external drives, use one for inputs (the sweep kit) and one for exports, so reads and writes don't contend. Cheap DRAM-less SSDs slow down on long sustained writes; that's fine for exports, just slower. Use USB 3 ports.
+- Format the drives exFAT if they'll move between Windows, macOS and Linux; otherwise the system's own format (APFS on a Mac, NTFS on Windows).
+- Budget: about 30–60 GB of renders with the storage guidance below. Keep a copy of the final archive on two drives.
+- **On a Mac:** Lightroom Classic runs natively on Apple Silicon. Keep the Mac plugged in and awake during long exports (`caffeinate -dis`). See [desktop-setup.md](desktop-setup.md#macos-on-apple-silicon-m1-and-later-with-an-external-ssd).
 
 ## Plan type
 - Pick the **monthly, no-commitment** plan. Adobe's "annual, billed monthly" plan charges a fee if you cancel early. Check the current terms when you subscribe.

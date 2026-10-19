@@ -85,7 +85,7 @@ pub fn markdown() -> String {
     );
     let _ = writeln!(
         out,
-        "- Descriptions follow Adobe's help (digested in `docs/adobe-docs/`). Where Adobe does not document something, the description says so."
+        "- Descriptions follow Adobe's help, in our own words. Where Adobe does not document something, the description says so."
     );
     let _ = writeln!(out);
     let _ = writeln!(out, "## Groups");

@@ -15,7 +15,7 @@ Code: `crates/amb-engine/src/primaries.rs`, applied with the camera matrix in `c
 
 ## The model (ours, not Adobe's)
 
-Lightroom's help calls these the red, green and blue primaries and says Shadows corrects a green or magenta cast in the shadows ([classic-develop.md](../adobe-docs/classic-develop.md), Calibration). No source says which space the primaries live in or how far Shadow Tint reaches ([open-questions.md](../adobe-docs/open-questions.md) Q5). We move the primaries of the linear ProPhoto working space, right after the camera matrix and white balance:
+Lightroom's help calls these the red, green and blue primaries and says Shadows corrects a green or magenta cast in the shadows (Adobe's help (maintainers' notes), Calibration). No source says which space the primaries live in or how far Shadow Tint reaches (the maintainers' source notes). We move the primaries of the linear ProPhoto working space, right after the camera matrix and white balance:
 
 1. Each primary (1, 0, 0), (0, 1, 0), (0, 0, 1) is split into grey (1/3, 1/3, 1/3) and its difference from grey. The difference is turned about the grey axis by the hue slider and scaled by the saturation slider.
 2. The three new primaries make a matrix. Its columns are rescaled so (1, 1, 1) maps to (1, 1, 1): white and greys don't change, so the sliders never shift the white balance.

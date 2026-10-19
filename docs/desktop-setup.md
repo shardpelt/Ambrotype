@@ -10,11 +10,6 @@ When a release is published, its page on GitHub has installers: `.msi` or `-setu
    ```sh
    git clone https://github.com/shardpelt/Ambrotype.git
    cd Ambrotype
-   git checkout claude/lightroom-alternative-scope-xlnf0p
-   ```
-   Already cloned under the old name (`flightbroom`)? GitHub redirects it, but you can point it at the new name:
-   ```sh
-   git remote set-url origin https://github.com/shardpelt/Ambrotype.git
    ```
 3. Build and test:
    ```sh
@@ -27,20 +22,20 @@ When a release is published, its page on GitHub has installers: `.msi` or `-setu
 amb render photo.NEF out.jpg                       # any raw rawler supports (NEF, CR2/CR3, ARW, RAF, DNG, ...)
 amb render photo.NEF out.jpg --preset look.xmp --amount 70
 amb preset inspect look.xmp                        # what a preset contains and what we can't do yet
-amb preset census "D:/Presets"                     # which settings your whole preset collection uses
+amb preset census ~/Presets                        # which settings your whole preset collection uses
 ```
 Rendering covers the core Develop panels (white balance, Basic tone and presence, curves, HSL, Color Grading, Detail, Lens Corrections, Effects) plus film negatives, with a placeholder base look; nothing is fitted to Lightroom yet. The command lists what it skipped. If you can, send back the `amb preset census` output for your bought presets. It's only setting names and counts, no preset content, and it tells us what to build first.
 
-## 3. Prepare the Lightroom kit (before subscribing)
-Put the kit on the first Kingston SSD and the exports on the second one (see [lightroom-trial-plan.md](lightroom-trial-plan.md)).
+## 3. Prepare a Lightroom kit (for measuring Lightroom)
+Only needed to fit our models against Lightroom ([lightroom-trial-plan.md](lightroom-trial-plan.md)). Keep the kit and Lightroom's exports on a fast drive.
 ```sh
 amb sweep plan                                                # the 74 sweeps
-amb sweep generate --out E:/kit --synthetic ramp,hue,edges,colorchecker
-amb sweep generate --out E:/kit-raw --groups tone,white_balance,presence  D:/raws/*.NEF
+amb sweep generate --out kit --synthetic ramp,hue,edges,colorchecker
+amb sweep generate --out kit-raw --groups tone,white_balance,presence  raws/*.NEF
 ```
 
 ## 4. Smoke test with Lightroom's 7-day free trial
-1. Import a few files from `E:/kit` with **Add**.
+1. Import a few files from `kit` with **Add**.
 2. Check three things:
    - The synthetic DNGs open, showing the profile "Ambrotype Linear ProPhoto".
    - The settings are applied: open `colorchecker__Exposure2012_p1.dng` and Exposure should read +1.00.
@@ -141,7 +136,6 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   ```sh
   cd /Volumes/<SSD>
   git clone https://github.com/shardpelt/Ambrotype.git && cd Ambrotype
-  git checkout claude/lightroom-alternative-scope-xlnf0p
   cargo run --release -p amb-gui -- ~/Pictures/photo.nef
   ```
 - **Spotlight:** exclude the `target/` folder (System Settings → Spotlight → Search Privacy) so it doesn't index build files.

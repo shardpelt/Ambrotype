@@ -235,6 +235,10 @@ fn main() -> ExitCode {
     let mut iter = args.iter();
     while let Some(arg) = iter.next() {
         match arg.as_str() {
+            "--help" | "-h" => {
+                println!("{USAGE}");
+                return ExitCode::SUCCESS;
+            }
             "--json" => json = true,
             "--dry-run" => dry_run = true,
             "--brief" => brief = true,

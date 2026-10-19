@@ -8,7 +8,7 @@ Make the Film recipe looks ([ai/film-recipes.md](../ai/film-recipes.md)) match F
 
 ## What is allowed
 
-We measure the camera's output, as we do for Lightroom ([legal-and-naming.md](../legal-and-naming.md) §1): run the camera normally, look at its JPEGs, and fit our own numbers. A colour look isn't protected; only the files that carry it are. So:
+We measure the camera's output, as we do for Lightroom ([legal.md](../legal.md) §1): run the camera normally, look at its JPEGs, and fit our own numbers. A colour look isn't protected; only the files that carry it are. So:
 
 - **Yes:** the owner's own raws and the JPEGs their camera makes from them; fitting our settings or our own lookup tables to them; publishing the fitted numbers.
 - **Never:** firmware, X RAW STUDIO's or any app's internals, the Fujifilm camera-matching profiles inside Lightroom or Capture One, or anyone else's LUTs. Never commit the raws or the camera JPEGs.

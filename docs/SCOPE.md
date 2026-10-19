@@ -2,7 +2,7 @@
 
 *A free, open-source Lightroom alternative that renders purchased Lightroom presets faithfully.*
 
-Status: scoping draft, 2026-10-03. This document synthesises the research in [`docs/research/`](research/) and the digests of Adobe's official help in [`docs/adobe-docs/`](adobe-docs/). Where it states a fact, the linked doc gives the source. Where it gives an estimate or recommendation, it says so.
+Status: the scoping draft of 2026-10-03, kept for its reasoning; [NEXT.md](NEXT.md) says where the project is now. This document synthesises the research in [`docs/research/`](research/) and the maintainers' notes from Adobe's official help. Where it states a fact, the linked doc gives the source. Where it gives an estimate or recommendation, it says so.
 
 ---
 
@@ -81,13 +81,7 @@ Status: scoping draft, 2026-10-03. This document synthesises the research in [`d
 
 ## 3. What Lightroom is (feature map)
 
-Full detail lives in [01-lightroom-feature-inventory](research/01-lightroom-feature-inventory.md). It is written from secondary sources and background knowledge, and tagged by confidence. The source-only digests of Adobe's own help pages are the authoritative reference:
-
-- [classic-develop.md](adobe-docs/classic-develop.md): every Develop panel, slider and mask type, plus process versions
-- [classic-library.md](adobe-docs/classic-library.md): catalog, previews, import, keywords, collections, metadata
-- [classic-output.md](adobe-docs/classic-output.md): export, print, publish, tethering, plug-ins
-- [camera-raw.md](adobe-docs/camera-raw.md): the shared ACR engine, presets, profiles, XMP and DNG facts
-- [cloud-editing.md](adobe-docs/cloud-editing.md) and [cloud-organize-and-share.md](adobe-docs/cloud-organize-and-share.md): Lightroom (cloud), AI features, differences from Classic
+Full detail lives in [01-lightroom-feature-inventory](research/01-lightroom-feature-inventory.md). It is written from secondary sources and background knowledge, and tagged by confidence. Adobe's own help pages are the authoritative reference; the maintainers' notes from them aren't in the repository.
 
 **Develop pipeline surface to replicate (PV2012 / PV5 / PV6):**
 - Profile + Amount
@@ -220,7 +214,7 @@ From [09](research/09-market-commercial-alternatives.md), [12](research/12-user-
   - anything from decompiling Lightroom
 - **Users' purchased presets:** we read them locally and never redistribute or convert them for sharing. Some seller licences forbid conversion; reading them for application in the user's own editor is the defensible interoperability use. This needs counsel before 1.0.
 - **Trademark:** don't use "Lightroom" in the product name.
-  - The working name was "Flightbroom", an evident play on "Lightroom". On 2026-10-05 the project was renamed **Ambrotype** (for now) to avoid that risk; see [legal-and-naming.md](legal-and-naming.md).
+  - The working name was "Flightbroom", an evident play on "Lightroom". On 2026-10-05 the project was renamed **Ambrotype** (for now) to avoid that risk; see [legal.md](legal.md).
   - Checks so far for "Ambrotype": no software or app using it found; ambrotype.org and ambrotype.photo looked unregistered. Trademark registers (TMview, WIPO) not yet searched.
   - **Mitigations:**
     - never use Adobe's logos, colours or the word "Lightroom" in branding
@@ -247,7 +241,7 @@ The tag-level detail (full `crs:` table, file formats, Amount, Looks, masks) is 
 - **Parsing.** A real namespace-aware XMP/RDF parser plus a Lua-table subset parser for `.lrtemplate`.
 - **Canonical model.** It mirrors `crs:` names 1:1, is sparse (present ≠ default), keeps unknown tags losslessly, and dispatches per process version.
 - **Tag registry.** A JSON registry records status, range, default and scale per tag.
-- **Amount.** It is a lerp from current settings to the preset (curves and LUTs blend toward identity). Adobe's docs confirm two separate Amount sliders: the Preset Amount (ACR 14.4+, June 2022), and the profile Amount, which applies only to Adaptive, Artistic, B&W, Modern and Vintage profiles. The scaling math for either is not documented ([camera-raw.md](adobe-docs/camera-raw.md)), so measure it with the harness.
+- **Amount.** It is a lerp from current settings to the preset (curves and LUTs blend toward identity). Adobe's docs confirm two separate Amount sliders: the Preset Amount (ACR 14.4+, June 2022), and the profile Amount, which applies only to Adaptive, Artistic, B&W, Modern and Vintage profiles. The scaling math for either is not documented (Adobe's help (maintainers' notes)), so measure it with the harness.
 - **Profiles.** `CameraProfile` and `Look` resolve through a profile registry: the user's Adobe profiles if installed, else our fitted base profiles. Decoding `Look` `RGBTable`/`Table_` LUTs is a research task; no complete public decoder is known.
 - **Masks.** Geometric and range masks are native. AI masks are regenerated with our own segmenters, never stored as pixels. `RetouchAreas` from presets are ignored.
 - **Preset experience** (from user research, [12 §4, §6](research/12-user-feedback-and-design-implications.md)):
@@ -430,7 +424,7 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 3. Fidelity target that defines "compatible" (proposal: median ΔE00 < 2, p95 < 5 over the corpus for the top-20 tags).
 4. Who holds a licensed Lightroom Classic install to run the calibration sweeps, and where reference renders are stored (private; only CC0 inputs are committed).
 5. Whether to reach out to RapidRAW's maintainer about a shared, Adobe-compatible engine crate.
-6. Product name: renamed from "Flightbroom" to **Ambrotype** (for now) on 2026-10-05. Still to do: trademark search, domain, handles, GitHub repo rename. Alternatives kept: Photochrom, Argentype (see [legal-and-naming.md](legal-and-naming.md) for checks, registration and the rename checklist).
+6. Product name: renamed from "Flightbroom" to **Ambrotype** (for now) on 2026-10-05. The GitHub repo is renamed (`shardpelt/Ambrotype`). Alternatives kept: Photochrom, Argentype (see [legal.md](legal.md) for checks, registration and the rename checklist).
 
 ---
 
@@ -446,16 +440,13 @@ This is the full argument from [06](research/06-tech-stack-options.md), condense
 | [research/06-tech-stack-options.md](research/06-tech-stack-options.md) | Language, GPU, UI, catalog, AI runtime, plugins, packaging, reference architecture, spikes |
 | [research/07-rapidraw-survey.md](research/07-rapidraw-survey.md) | RapidRAW pipeline, preset converter mapping, gaps, fork/contribute analysis |
 | [research/08-cross-platform-and-mobile.md](research/08-cross-platform-and-mobile.md) | Per-OS desktop parity, mobile constraints, UI options for mobile, licensing and app stores, sync, "do this now" checklist |
-| [sources-to-collect.md](sources-to-collect.md) | Prioritised list of blocked/login-only sources + ready-to-paste Cowork prompt |
 | [lightroom-trial-plan.md](lightroom-trial-plan.md) | How to use the one-month Lightroom subscription to capture all ground-truth renders |
 | [research/09-market-commercial-alternatives.md](research/09-market-commercial-alternatives.md) | Commercial and freemium competitors, their Lightroom migration and preset support, reviews, market gap |
 | [research/10-reading-list.md](research/10-reading-list.md) | Books and free resources, prioritised |
 | [research/11-architecture-lessons-from-large-oss.md](research/11-architecture-lessons-from-large-oss.md) | How VLC, FFmpeg, Blender, OBS, GEGL, darktable, mpv and Rust projects are structured; Rust verdict; recommended workspace |
 | [research/12-user-feedback-and-design-implications.md](research/12-user-feedback-and-design-implications.md) | What users love and hate about Lightroom, competitors and presets (Reddit, 660 threads); design implications; anti-goals |
-| [adobe-docs/](adobe-docs/) | Source-only digests of 236 official Adobe help pages (Classic, cloud, Camera Raw) |
 
 ### How this research was produced
 - Parallel research agents (Sonnet for synthesis-heavy topics, Haiku for code sweeps) worked over local clones of darktable, RawTherapee and RapidRAW, plus the web.
-- helpx.adobe.com blocks automated fetches, so 236 official help pages were mirrored through the Wayback Machine (Feb–Oct 2026 snapshots) and condensed by source-only digest agents. See [`adobe-docs/README.md`](adobe-docs/README.md).
 - The lead reviewer spot-checked the agents' claims against source and corrected them: the darktable import table, licence compatibility, Adobe GPU requirements and RapidRAW's converter constants.
 - Items tagged `[K]`, `[?]`, `[INF]` or `[background]` inside the research docs are unverified.

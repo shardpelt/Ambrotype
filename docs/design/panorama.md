@@ -1,6 +1,6 @@
 # Panorama merge
 
-Lightroom's Photo Merge > Panorama stitches overlapping photos into one wider photo. Its options are the projection (Spherical, Cylindrical, Perspective, or Auto Select), Auto Crop, Boundary Warp and Fill Edges. The result is a DNG named `-Pano` that edits like a raw, with lens profile corrections already applied ([adobe-docs/expert-notes.md](../adobe-docs/expert-notes.md), Panoramas). Ours has the projections, Auto crop and the corrected DNG.
+Lightroom's Photo Merge > Panorama stitches overlapping photos into one wider photo. Its options are the projection (Spherical, Cylindrical, Perspective, or Auto Select), Auto Crop, Boundary Warp and Fill Edges. The result is a DNG named `-Pano` that edits like a raw, with lens profile corrections already applied (Adobe's help (maintainers' notes), Panoramas). Ours has the projections, Auto crop and the corrected DNG.
 
 ## Using it
 

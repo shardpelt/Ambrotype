@@ -16,7 +16,7 @@ Code: `crates/amb-engine/src/transform.rs` (the sliders' model), `crates/amb-eng
 | `PerspectiveX`, `PerspectiveY` | −100..100 | Move the photo right and down. ±100 is half the width or height. |
 | `EnableTransform` | bool | False turns all of the above off. |
 | `CropConstrainToWarp` | bool | Constrain Crop: zooms in until no blank areas remain (shared with the lens corrections). |
-| `PerspectiveUpright` | 0..5 | Upright mode: 0 off, 1 Auto, 2 Level, 3 Vertical, 4 Full, 5 Guided. The five names are Adobe's (help and Kost); the numbers are our reading, not stated anywhere ([open-questions.md](../adobe-docs/open-questions.md) Q3). Guided is not rendered; `amb render` and the editor say so. |
+| `PerspectiveUpright` | 0..5 | Upright mode: 0 off, 1 Auto, 2 Level, 3 Vertical, 4 Full, 5 Guided. The five names are Adobe's (help and Kost); the numbers are our reading, not stated anywhere (the maintainers' source notes). Guided is not rendered; `amb render` and the editor say so. |
 | `Upright*` | — | Lightroom's own Upright analysis. Image-specific and not read: we find the correction again. Not reported as missing. |
 
 

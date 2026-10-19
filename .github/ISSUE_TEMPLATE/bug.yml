@@ -1,0 +1,31 @@
+name: Bug report
+description: Something doesn't work or looks wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again
+      placeholder: "1. Open a .NEF from a Nikon Z6\n2. Set Exposure to +1\n3. ..."
+  - type: input
+    id: system
+    attributes:
+      label: System
+      placeholder: macOS 15 on Apple Silicon / Windows 11 / Ubuntu 24.04
+  - type: input
+    id: version
+    attributes:
+      label: Ambrotype version or commit
+      description: Settings → About, or `git rev-parse --short HEAD`.
+  - type: textarea
+    id: extra
+    attributes:
+      label: Camera, preset or file
+      description: The camera and lens, or the preset involved. Don't attach purchased presets or other people's photos.

@@ -439,7 +439,7 @@ One Git repository, one Cargo workspace, directories per **layer and licence zon
 ambrotype/
   Cargo.toml  Cargo.lock  rust-toolchain.toml  deny.toml  clippy.toml
   LICENSES/ (MPL-2.0, GPL-3.0-or-later, CC-BY-SA data licence)  REUSE.toml  SECURITY.md  CONTRIBUTING.md (DCO)
-  docs/            ARCHITECTURE.md  TESTING.md  RELEASES.md  decisions/ (ADRs)  research/  adobe-docs/
+  docs/            ARCHITECTURE.md  TESTING.md  RELEASES.md  decisions/ (ADRs)  research/
   crates/
     core/          MPL-2.0   headless engine; no UI, no OS APIs, no GPL deps
     gpl-pack/      GPL-3.0-or-later   desktop-only ported algorithms and GPL bindings

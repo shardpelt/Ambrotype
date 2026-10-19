@@ -1,10 +1,10 @@
-# Where we left off (2026-10-08)
+# Where we are
 
-A short "start here" for the next work session. Details are in [ARCHITECTURE.md](ARCHITECTURE.md) (what exists) and [GAPS.md](GAPS.md) (everything missing). New to the repo, or an AI agent? Read [AGENTS.md](../AGENTS.md) first.
+A short "start here" for contributors and for the next work session. Details are in [ARCHITECTURE.md](ARCHITECTURE.md) (what exists) and [GAPS.md](GAPS.md) (everything missing). New to the repo, or an AI agent? Read [AGENTS.md](../AGENTS.md) first.
 
 ## State
 
-- **Branch:** `claude/lightroom-alternative-scope-xlnf0p`. Everything is committed and pushed; about 430 tests are green.
+- **Branch:** `main`; changes arrive as pull requests. About 590 tests are green.
 - **Name:** **Ambrotype**. The GitHub repo is `shardpelt/Ambrotype` (renamed from flightbroom; old links redirect).
 - **Built:**
   - preset/sidecar reader and writer (`crs:` and our `amb:` tags)
@@ -58,17 +58,15 @@ A short "start here" for the next work session. Details are in [ARCHITECTURE.md]
     - **panorama merge:** select overlapping raws in the library, Merge to Panorama… (projection, Auto crop, lens corrections first, Auto tone) writes `<first>-Pano.dng` next to them; `amb merge pano` from the command line ([design/panorama.md](design/panorama.md))
     - **collage maker** (C): layouts with gap, outer border, corners and background; drag photos into cells, then move, zoom, rotate, or edit them in the editor; **arrange freely** (move, resize, turn and overlap frames by hand); save the collage as a `.ambcollage` file to reopen and edit; save and share layouts; batch a whole folder into pages ([design/collage-and-borders.md](design/collage-and-borders.md))
 
-## Owner to-dos
+## Help wanted
 
-- [ ] Set up a **local** Claude Code session on the Mac so it can reach your drives and Lightroom: [desktop-setup.md § Working with an AI agent locally](desktop-setup.md#working-with-an-ai-agent-locally).
-- [x] Hub repo `Ambrotypehq/ambrotype-hub` filled and public (2026-10-15), and it's now where the built-in layouts, themes and starter presets are edited; the app ships a copy (`tools/sync-hub.py`). Shared plugins arrive there as pull requests to `plugins/<id>/`.
+Things anyone with the right kit can do; open an issue first so two people don't do the same one.
 
-- [ ] Try the editor on the Mac: `cargo run --release -p amb-gui -- photo.nef`. Note what feels wrong (or use the Feedback button).
-- [ ] Run `amb preset census <your preset folders>` and share the output (setting names and counts only). It ranks what to build next.
-- [x] Digest the big source files on your own machine ([handoff-sources.md](handoff-sources.md)). Done 2026-10-11; the answers are in [adobe-docs/open-questions.md](adobe-docs/open-questions.md) and are now in the code and design docs.
-- [ ] Two facts would let us render creative and Adobe Raw profiles (`Look`, `RGBTable`): the base-85 alphabet the DNG SDK uses for `Table_<md5>` text (the 85 characters, in order, from `dng_big_table.cpp`), and, from one Adobe Raw profile `.xmp` you have installed (for example Adobe Color), the names of the `crs:` properties that hold table fingerprints. Property names and an encoding alphabet are facts; copy no table data. A local session can add both to `docs/adobe-docs/dng-sdk-behaviour.md`.
-- [ ] Lightroom trial month: follow [lightroom-trial-plan.md](lightroom-trial-plan.md) (sweep kit: `amb sweep generate`).
-- [ ] Fujifilm shoot (later): raws plus in-camera re-renders with every film simulation, so the Film recipe looks can be fitted. What to shoot: [design/film-look-measurement.md](design/film-look-measurement.md).
+- **Try the editor on a Mac or Windows machine** and report what feels wrong (the Feedback button opens a pre-filled issue). Most testing so far is on Linux.
+- **Run `amb preset census <your preset folders>`** and share the output (setting names and counts only, no preset files). It ranks what to build next.
+- **Lightroom samples:** if you have Lightroom, the measurements in [lightroom-trial-plan.md](lightroom-trial-plan.md) let us fit our models (sweep kit: `amb sweep generate`). Share only fitted numbers, never Adobe's renders or files.
+- **Film simulation references:** raws plus in-camera re-renders with each film simulation, so the Film recipe looks can be fitted ([design/film-look-measurement.md](design/film-look-measurement.md)).
+- **Creative and Adobe Raw profiles** (`Look`, `RGBTable`) need two facts: the 85-character alphabet the DNG SDK uses for `Table_<md5>` text, and the names of the `crs:` properties that hold table fingerprints in an Adobe Raw profile `.xmp`. Facts only; copy no table data.
 
 ## Next steps
 

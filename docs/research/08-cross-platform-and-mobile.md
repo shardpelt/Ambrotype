@@ -320,7 +320,7 @@ No sidecar can sit next to a `PHAsset`; recipes live in the app's own store keye
 
 ## 7. What a mobile v1 should contain
 
-Reference: Lightroom mobile Loupe panels are Actions, Presets, Crop, Edit (Light, Color, Effects, Detail, Optics, Geometry), Remove, plus Masking; press-and-hold for Before; Undo/Redo; presets/profiles with an Amount slider; export `[repo: adobe-docs/cloud-editing.md §1-13]`.
+Reference: Lightroom mobile Loupe panels are Actions, Presets, Crop, Edit (Light, Color, Effects, Detail, Optics, Geometry), Remove, plus Masking; press-and-hold for Before; Undo/Redo; presets/profiles with an Amount slider; export `[repo: Adobe's help (maintainers' notes) §1-13]`.
 
 **Mobile v1 = "edit-and-export companion":**
 

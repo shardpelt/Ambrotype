@@ -8,7 +8,7 @@ How to read the tables:
 - **Range / Default**: best-known values from the registry. Most are not yet verified against Lightroom. Numbers outside the range are clamped, and the clamping is reported. An empty default means the value depends on the image (e.g. As Shot white balance) or the tag has no single default.
 - A setting that is absent from a sidecar means "untouched": its default applies. `reset_param` removes a setting.
 - **Status** is Ambrotype's rendering support: *rendered (approx.)* = the engine renders it with a model not yet fitted to Lightroom; *planned* = stored and round-tripped, not rendered yet; *image-specific* = depends on one photo (crop, auto settings), presets should rarely carry it; *metadata* = describes the file, not the look; *unsupported* = recognised AI/cloud feature, kept but never rendered.
-- Descriptions follow Adobe's help (digested in `docs/adobe-docs/`). Where Adobe does not document something, the description says so.
+- Descriptions follow Adobe's help, in our own words. Where Adobe does not document something, the description says so.
 
 ## Groups
 

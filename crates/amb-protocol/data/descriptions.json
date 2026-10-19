@@ -1,5 +1,5 @@
 {
- "_comment": "Photographer-oriented descriptions of Camera Raw (crs:) settings, keyed by tag name. Written from docs/adobe-docs/*.md (digests of Adobe's help). Where Adobe's help does not say something, the text says so instead of guessing. Ranges and defaults are NOT stored here: they come from amb-presets/data/tags.json. 'band_templates' expand to one entry per colour band ({band} = Red, {band_lower} = red).",
+ "_comment": "Photographer-oriented descriptions of Camera Raw (crs:) settings, keyed by tag name. Written from Adobe's help, in our own words. Where Adobe's help does not say something, the text says so instead of guessing. Ranges and defaults are NOT stored here: they come from amb-presets/data/tags.json. 'band_templates' expand to one entry per colour band ({band} = Red, {band_lower} = red).",
  "groups": {
   "metadata": {
    "label": "Preset metadata",

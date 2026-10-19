@@ -11,7 +11,7 @@
 //! Some settings are never scaled: Auto, lens corrections and geometry
 //! (Transform, Upright, crop) always apply at the preset's values, even at
 //! Amount 0 (Lightroom Queen on Lightroom Classic 11.4; see
-//! docs/adobe-docs/open-questions.md, Q11).
+//! the maintainers' source notes).
 
 use std::collections::BTreeMap;
 

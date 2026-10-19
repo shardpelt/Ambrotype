@@ -2,7 +2,7 @@
 
 Status: v1 implemented (`crates/amb-engine/src/negative.rs`). It turns a camera scan of a colour or black-and-white negative into a positive, with an auto mode, built-in film stock looks and full manual control. Everything is settable from presets and sidecars.
 
-Lightroom has no negative conversion; photographers buy the Negative Lab Pro plug-in for it. So these settings live in **our own XMP namespace**: `amb:` = `http://ns.ambrotype.org/develop/1.0/`. The URI changes with the product name before the first public release (see legal-and-naming.md). Lightroom ignores the tags. Whether it keeps them when it rewrites a sidecar (Save Metadata) is still to be checked in the Lightroom trial.
+Lightroom has no negative conversion; photographers buy the Negative Lab Pro plug-in for it. So these settings live in **our own XMP namespace**: `amb:` = `http://ns.ambrotype.org/develop/1.0/`. The URI changes with the product name before the first public release (see legal.md). Lightroom ignores the tags. Whether it keeps them when it rewrites a sidecar (Save Metadata) is still to be checked in the Lightroom trial.
 
 ## Settings
 

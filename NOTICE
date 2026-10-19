@@ -84,7 +84,7 @@ library's package. Notable ones:
   with its licence is in the hub repo's models/ folder.
 
 Binary releases include the full licence texts of every library they contain
-(docs/legal-and-naming.md, "Releases").
+(docs/legal.md, "Releases").
 
 
 Trademarks

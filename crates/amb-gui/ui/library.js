@@ -469,11 +469,14 @@ function renderPanel() {
   $("lib-hint").textContent = active
     ? "Changes go to the active photo (the framed one). Click a photo to make it active; G or Esc goes back to the grid."
     : "Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.";
+  // What can't be done for this selection is left out rather than greyed.
   for (const el of $("library-panel").querySelectorAll("[data-needs]")) {
     const need = el.dataset.needs;
-    el.disabled = need === "one" ? n !== 1 : need === "many" ? n < 2
-      : need === "paste" ? !lib.copied || !sel.some((p) => p.path !== lib.copied) : n === 0;
+    el.classList.toggle("needs-off", need === "one" ? n !== 1 : need === "many" ? n < 2
+      : need === "paste" ? !lib.copied || !sel.some((p) => p.path !== lib.copied) : n === 0);
   }
+  $("library-panel").classList.toggle("empty", !n && !active);
+  $("lib-hint").hidden = Boolean(n) && !active;
   // What the selection has in common.
   const same = (f) => (n && sel.every((p) => f(p) === f(sel[0])) ? f(sel[0]) : undefined);
   const rating = same((p) => p.rating ?? 0);

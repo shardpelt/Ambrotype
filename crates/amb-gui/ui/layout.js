@@ -99,6 +99,8 @@ function addSectionDividers(col) {
 }
 
 function toggleColumn(side) {
+  // In the library the same keys fold its folders and panel.
+  if (libraryOn()) return toggleLibrarySide(side);
   if (!ui.sideWidths?.[side]) return;
   folded[side] = !folded[side];
   try { localStorage.setItem("folded-columns", JSON.stringify(folded)); } catch {}

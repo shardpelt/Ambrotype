@@ -943,6 +943,7 @@ async function init() {
 
   wireMenu();
   wireFolderTree();
+  wireLibraryMenus();
   // Drag and drop a raw file onto the window.
   tauri.event.listen("folder-changed", () => folderChanged());
   tauri.event.listen("sidecar-changed", () => sidecarChanged());

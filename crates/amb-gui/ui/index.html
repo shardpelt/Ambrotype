@@ -276,35 +276,48 @@
       <button type="button" id="lib-add-folder" class="small" title="Show another folder with this one">+</button>
       <button type="button" id="lib-drop-folders" class="small" title="Show only the first folder" hidden>×</button>
       <button type="button" id="lib-reload" class="small" title="Read the folder again">↻</button>
-      <button type="button" id="lib-import" class="small" title="Copy photos from a card or folder (Ctrl+Shift+I)">Import…</button>
-      <button type="button" id="lib-lrcat" class="small" title="Move from Lightroom Classic: its edits, ratings, keywords and collections, from its catalogue">From Lightroom…</button>
+      <details id="lib-import-menu" class="lib-menu"><summary title="Bring photos in">Import ▾</summary>
+        <div class="lib-menu-pop">
+          <button type="button" id="lib-import" class="small" title="Copy photos from a card or folder (Ctrl+Shift+I)">From a card or folder…</button>
+          <button type="button" id="lib-lrcat" class="small" title="Move from Lightroom Classic: its edits, ratings, keywords and collections, from its catalogue">From Lightroom Classic…</button>
+        </div>
+      </details>
       <span id="library-count" class="hint"></span>
       <span id="lib-views" class="lib-views" role="group" aria-label="View">
         <button type="button" data-view="grid" class="on" title="Grid (G)">Grid</button><button type="button" data-view="loupe" title="Loupe (E)">Loupe</button><button type="button" data-view="compare" title="Compare (C)">Compare</button><button type="button" data-view="survey" title="Survey (N)">Survey</button>
       </span>
       <span class="grow"></span>
       <input id="lib-search" type="search" placeholder="Name, keyword, camera or lens" spellcheck="false" aria-label="Search">
+      <details id="lib-filter-menu" class="lib-menu"><summary id="lib-filter-summary" title="Filter and sort">Filter ▾</summary>
+        <div class="lib-menu-pop lib-filter-pop">
+          <label>Rating
       <select id="lib-filter-rating" aria-label="Rating filter" title="Rating">
-        <option value="0">Any rating</option><option value="unrated">Unrated</option>
-        <option value="1">★ and up</option><option value="2">★★ and up</option><option value="3">★★★ and up</option>
-        <option value="4">★★★★ and up</option><option value="5">★★★★★</option>
-      </select>
+            <option value="0">Any rating</option><option value="unrated">Unrated</option>
+            <option value="1">★ and up</option><option value="2">★★ and up</option><option value="3">★★★ and up</option>
+            <option value="4">★★★★ and up</option><option value="5">★★★★★</option>
+          </select></label>
+          <label>Color
       <select id="lib-filter-label" aria-label="Color filter" title="Color label">
-        <option value="all">Any color</option><option value="none">No color</option>
-        <option>Red</option><option>Yellow</option><option>Green</option><option>Blue</option><option>Purple</option>
-      </select>
+            <option value="all">Any color</option><option value="none">No color</option>
+            <option>Red</option><option>Yellow</option><option>Green</option><option>Blue</option><option>Purple</option>
+          </select></label>
+          <label>Flag
       <select id="lib-filter-flag" aria-label="Flag filter" title="Pick or reject flag">
-        <option value="all">Any flag</option><option value="pick">Picks</option><option value="reject">Rejected</option>
-        <option value="unflagged">Unflagged</option><option value="kept">Not rejected</option>
-      </select>
+            <option value="all">Any flag</option><option value="pick">Picks</option><option value="reject">Rejected</option>
+            <option value="unflagged">Unflagged</option><option value="kept">Not rejected</option>
+          </select></label>
+          <label>Edits
       <select id="lib-filter-edited" aria-label="Edit filter" title="Edited or not">
-        <option value="all">Edited or not</option><option value="edited">Edited</option><option value="unedited">Not edited</option>
-      </select>
+            <option value="all">Edited or not</option><option value="edited">Edited</option><option value="unedited">Not edited</option>
+          </select></label>
+          <label>Sort
       <select id="lib-sort" aria-label="Sort" title="Sort by">
-        <option value="name">By name</option><option value="captured">By capture time</option>
-        <option value="rating">By rating</option><option value="edited">Edited first</option>
-      </select>
-      <label class="inline-check" title="Reverse the order"><input id="lib-reverse" type="checkbox"><span>⇅</span></label>
+            <option value="name">By name</option><option value="captured">By capture time</option>
+            <option value="rating">By rating</option><option value="edited">Edited first</option>
+          </select></label>
+          <label>Reverse order <input id="lib-reverse" type="checkbox"></label>
+        </div>
+      </details>
       <input id="lib-size" type="range" min="100" max="320" value="160" title="Thumbnail size" aria-label="Thumbnail size">
     </div>
     <div class="library-body">
@@ -322,9 +335,12 @@
         <p class="hint">Or open a photo: the library shows its folder.</p>
         <button type="button" id="lib-choose-empty" class="primary">Choose folder…</button>
       </div>
+      <button type="button" id="lib-fold-left" class="fold left lib-fold" title="Hide the folders (Ctrl+[)">‹</button>
+      <button type="button" id="lib-fold-right" class="fold right lib-fold" title="Hide the panel (Ctrl+])">›</button>
       <aside id="library-panel" class="library-panel">
         <h2 id="lib-sel-count">Nothing selected</h2>
         <p id="lib-hint" class="hint">Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.</p>
+        <div class="sel-only">
         <h3>Rating</h3>
         <div id="lib-rating" class="rating">
           <button type="button" data-stars="1" title="1 star (1)">★</button><button type="button" data-stars="2" title="2 stars (2)">★</button><button type="button" data-stars="3" title="3 stars (3)">★</button><button type="button" data-stars="4" title="4 stars (4)">★</button><button type="button" data-stars="5" title="5 stars (5)">★</button>
@@ -348,6 +364,7 @@
           <label>Creator <input data-meta="creator" type="text" spellcheck="false" data-needs="any"></label>
           <label>Copyright <input data-meta="copyright" type="text" spellcheck="false" data-needs="any"></label>
         </details>
+        </div>
         <h3>Collections</h3>
         <div class="col-line">
           <select id="lib-add-to" aria-label="Collection to add to"></select>
@@ -360,14 +377,27 @@
           <button type="button" id="lib-smart-edit" class="small" hidden>Edit rules…</button>
           <button type="button" id="lib-coll-delete" class="small" hidden>Delete collection…</button>
         </div>
+        <div class="sel-only">
         <h3>Edits</h3>
         <div class="col-line">
           <button type="button" id="lib-copy" class="small" data-needs="one" title="Copy this photo's develop settings (Ctrl+Shift+C)">Copy settings</button>
           <button type="button" id="lib-paste" class="small" data-needs="paste" title="Give the selected photos the copied settings (Ctrl+Shift+V)">Paste settings…</button>
-          <button type="button" id="lib-negative-sync" class="small" data-needs="many" title="Film negatives: analyse each selected frame and give them all the roll's median film base and levels (Auto off)">Sync negative roll</button>
-          <button type="button" id="lib-plugin" class="small" data-needs="any" title="Run a plugin on each selected photo, with its own settings">Run a plugin…</button>
         </div>
         <p id="lib-copied" class="hint"></p>
+        <h3>Use</h3>
+        <div class="col-line">
+          <button type="button" id="lib-open" class="small" data-needs="any" title="Open in the editor (Enter, or double-click)">Open in editor</button>
+          <button type="button" id="lib-export" class="small primary" data-needs="any" title="Export the selection with the same choices, one file each (Ctrl+E)">Export…</button>
+          <button type="button" id="lib-collage" class="small" data-needs="any" title="Start a collage with the selected photos">Make a collage</button>
+        </div>
+        <details class="lib-more">
+          <summary>More</summary>
+          <div class="col-line">
+          <button type="button" id="lib-negative-sync" class="small" data-needs="many" title="Film negatives: analyse each selected frame and give them all the roll's median film base and levels (Auto off)">Sync negative roll</button>
+          <button type="button" id="lib-plugin" class="small" data-needs="any" title="Run a plugin on each selected photo, with its own settings">Run a plugin…</button>
+          <button type="button" id="lib-hdr" class="small" data-needs="many" title="Merge bracketed raws of one scene into one HDR photo (a DNG next to them)">Merge to HDR…</button>
+          <button type="button" id="lib-pano" class="small" data-needs="many" title="Stitch overlapping raws into one panorama (a DNG next to them)">Merge to Panorama…</button>
+          </div>
         <div class="col-line">
           <button type="button" id="lib-stack" class="small" data-needs="many" title="Group the selection into one stack, shown as its top photo (Ctrl+G)">Stack</button>
           <button type="button" id="lib-unstack" class="small" data-needs="any" title="Take the selected photos' stacks apart (Ctrl+Shift+G)">Unstack</button>
@@ -377,13 +407,7 @@
           <button type="button" id="lib-vcopy" class="small" data-needs="one" title="A second edit of this photo, as its own sidecar (Ctrl+')">Make a virtual copy</button>
           <button type="button" id="lib-vcopy-delete" class="small" data-needs="any" hidden title="Delete the selected virtual copies (their photo stays)">Delete copy</button>
         </div>
-        <h3>Use</h3>
-        <div class="col-line">
-          <button type="button" id="lib-open" class="small" data-needs="any" title="Open in the editor (Enter, or double-click)">Open in editor</button>
-          <button type="button" id="lib-export" class="small primary" data-needs="any" title="Export the selection with the same choices, one file each (Ctrl+E)">Export…</button>
-          <button type="button" id="lib-collage" class="small" data-needs="any" title="Start a collage with the selected photos">Make a collage</button>
-          <button type="button" id="lib-hdr" class="small" data-needs="many" title="Merge bracketed raws of one scene into one HDR photo (a DNG next to them)">Merge to HDR…</button>
-          <button type="button" id="lib-pano" class="small" data-needs="many" title="Stitch overlapping raws into one panorama (a DNG next to them)">Merge to Panorama…</button>
+        </details>
         </div>
       </aside>
     </div>
@@ -1273,6 +1297,7 @@
   <script src="keys.js"></script>
   <script src="menu.js"></script>
   <script src="folders.js"></script>
+  <script src="libmenus.js"></script>
   <script src="hub.js"></script>
   <script src="borders.js"></script>
   <script src="info.js"></script>

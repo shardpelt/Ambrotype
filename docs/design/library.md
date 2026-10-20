@@ -13,6 +13,8 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 
 ## What you can do
 
+- **A quiet screen** (2026-10-20): filters and sort sit under **Filter ▾** in the bar (it shows how many are on), Import and From Lightroom under **Import ▾**. The panel shows only what the selection can use: nothing selected leaves just a hint and the collections, and rarer actions (merges, negative roll, plugins, stacks, virtual copies) are under **More**. The Folders panel and the right panel fold away with ‹ › or Ctrl (⌘)+[ and Ctrl+], as the editor's columns do, remembered on this computer.
+
 - **Find:** sort by name, capture time, rating or "edited first" (and reverse), filter by rating, colour label, flag and edited or not, and search names and keywords.
 - **Select:** click, Shift-click for a range, Ctrl (⌘)-click for more; arrow keys move (Shift extends); Ctrl+A all shown, Ctrl+D none.
 - **Rate, label and tag the selection:**

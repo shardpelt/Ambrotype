@@ -1,0 +1,14 @@
+{
+  "format": "ambrotype-ai-apps/1",
+  "about": "The AI apps Connect an AI app… lists (connect.js). Each has a name, where its MCP settings are, and a snippet: \"json\" (the usual mcpServers block), \"vscode\" (VS Code's servers block) or a command, where {amb} is the path of amb. Any app that runs MCP servers works, listed or not.",
+  "apps": [
+    { "name": "Any MCP app", "where": "Add an MCP server (stdio) in the app's settings: the command above, or this block in its MCP config file.", "snippet": "json" },
+    { "name": "Claude Code", "where": "Run this once in a terminal.", "snippet": "claude mcp add ambrotype -- {amb} mcp" },
+    { "name": "Codex (OpenAI)", "where": "Run this once in a terminal.", "snippet": "codex mcp add ambrotype -- {amb} mcp" },
+    { "name": "Gemini CLI", "where": "Run this once in a terminal.", "snippet": "gemini mcp add ambrotype {amb} mcp" },
+    { "name": "Claude Desktop", "where": "Settings → Developer → Edit Config: add this to claude_desktop_config.json, then restart it.", "snippet": "json" },
+    { "name": "Cursor", "where": "Add this to ~/.cursor/mcp.json (or Settings → MCP).", "snippet": "json" },
+    { "name": "VS Code", "where": "Add this to .vscode/mcp.json in your folder (or MCP: Add Server… in the command palette).", "snippet": "vscode" },
+    { "name": "LM Studio (local models)", "where": "Program → Install → Edit mcp.json, and add this.", "snippet": "json" }
+  ]
+}

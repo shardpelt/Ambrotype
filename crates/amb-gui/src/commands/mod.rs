@@ -6,6 +6,7 @@ pub(crate) mod appearance;
 pub(crate) mod assistant;
 pub(crate) mod catalog;
 pub(crate) mod collage;
+pub(crate) mod connect;
 pub(crate) mod export;
 pub(crate) mod hub;
 pub(crate) mod library;

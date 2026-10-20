@@ -491,6 +491,26 @@
     </form>
   </dialog>
 
+  <!-- Connect an AI app (connect.js): amb mcp for any MCP app, or a terminal. -->
+  <dialog id="connect-dialog" class="connect-dialog">
+    <form method="dialog">
+      <h2>Connect an AI app</h2>
+      <p class="hint">Any AI app that can run MCP servers (an open standard) can edit, preview and export your photos with Ambrotype's own commands, on your own AI plan. Every change is a normal edit you can undo, and shows here at once.</p>
+      <label class="hub-url">The command to give it
+        <span class="folder-row"><input id="connect-command" type="text" readonly spellcheck="false"><button type="button" class="small" id="connect-copy-command">Copy</button></span>
+      </label>
+      <p id="connect-missing" class="hub-error" hidden>The amb program wasn't found next to Ambrotype. The installers include it; from the source, build it with <code>cargo build --release -p amb-cli</code>.</p>
+      <label class="hub-url">Your app
+        <select id="connect-app"></select>
+      </label>
+      <p id="connect-where" class="hint"></p>
+      <pre id="connect-snippet" class="connect-snippet"></pre>
+      <div class="crop-line"><button type="button" class="small" id="connect-copy">Copy</button></div>
+      <p class="hint">Or work in a terminal: any command-line agent (or you) can run <code>amb</code> on the photos there, such as <code>amb do photo.nef "exp=+0.3"</code>. It opens in <code id="connect-folder"></code>.</p>
+      <menu><button type="button" id="connect-terminal">Open a terminal here</button><span class="grow"></span><button value="ok" class="primary">Done</button></menu>
+    </form>
+  </dialog>
+
   <!-- Surprise me: random looks as thumbnails (app.js surpriseFlow). -->
   <dialog id="surprise-dialog">
     <form method="dialog">
@@ -532,7 +552,7 @@
       <label>Address <input id="assistant-url" type="text" spellcheck="false"></label>
       <label>Model <input id="assistant-model" type="text" spellcheck="false" placeholder="The model's name, as your provider lists it"></label>
       <label>API key <input id="assistant-key" type="password" spellcheck="false" autocomplete="off"></label>
-      <p class="hint">The key is kept in your system's keychain. The model gets numbers about the photo (brightness, clipping, colour cast) and its settings; it sees the photo itself only while "Show it the photo" is ticked. Your AI chat subscription can't be used here; with Claude Desktop or another MCP app, use <code>amb mcp</code> instead.</p>
+      <p class="hint">The key is kept in your system's keychain. The model gets numbers about the photo (brightness, clipping, colour cast) and its settings; it sees the photo itself only while "Show it the photo" is ticked. Your AI chat subscription can't be used here; to use it, connect your AI app instead: <button type="button" class="small" id="assistant-connect">Connect an AI app…</button></p>
       <menu><button id="assistant-save" type="submit" class="primary">Save</button></menu>
     </form>
     <div id="assistant-log" class="assistant-log" aria-live="polite"></div>
@@ -1312,6 +1332,7 @@
   <script src="search.js"></script>
   <script src="tasks.js"></script>
   <script src="interfaces.js"></script>
+  <script src="connect.js"></script>
   <script src="hub.js"></script>
   <script src="borders.js"></script>
   <script src="info.js"></script>

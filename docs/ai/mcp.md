@@ -4,7 +4,9 @@
 
 ## Setting it up
 
-Build or install `amb`, then point your AI app at it.
+**From the editor:** Help → **Connect an AI app…** (or Ctrl/⌘+K, "connect") shows the command with this computer's real path to `amb`, the setup line or config block for common apps (any app that runs MCP servers works; the list is `crates/amb-gui/ui/ai-apps.json`), and **Open a terminal here**: the system's terminal in the open photo's folder with `amb` on the PATH, for command-line agents.
+
+By hand: build or install `amb`, then point your AI app at it.
 
 **Claude Code:**
 

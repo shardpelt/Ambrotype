@@ -500,6 +500,8 @@ fn main() {
             commands::settings::set_interface,
             commands::settings::pick_interface_folder,
             commands::settings::open_interfaces_folder,
+            commands::connect::ai_connect_info,
+            commands::connect::open_terminal,
             commands::settings::interface_share_plan,
             commands::settings::share_interface,
             commands::menu::menu_enable,

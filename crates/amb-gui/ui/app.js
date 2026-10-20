@@ -958,6 +958,7 @@ async function init() {
   wireSearch();
   wireTasks();
   wireInterfaces();
+  wireConnect();
   // Drag and drop a raw file onto the window.
   tauri.event.listen("folder-changed", () => folderChanged());
   tauri.event.listen("sidecar-changed", () => sidecarChanged());

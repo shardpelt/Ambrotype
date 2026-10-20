@@ -15,7 +15,8 @@ const IS_MAC = /Mac|iPhone|iPad/.test(navigator.platform);
 // `button`: the toolbar button whose tooltip shows the keys.
 // Colour labels, written to the sidecar as Lightroom does (`xmp:Label`).
 const LABELS = ["Red", "Yellow", "Green", "Blue", "Purple"];
-const LABEL_COLOURS = { Red: "#e5484d", Yellow: "#f1c40f", Green: "#46a758", Blue: "#3e7bfa", Purple: "#8e4ec6" };
+// Muted and even in brightness, so no label shouts; readable on dark and light themes.
+const LABEL_COLOURS = { Red: "#cf6a5e", Yellow: "#d2b260", Green: "#73a17c", Blue: "#6189c2", Purple: "#9580c0" };
 
 // Flag keys work everywhere but the crop tool, where X swaps the aspect.
 const FLAG_CONTEXTS = ["main", "masks", "spots", "library"];

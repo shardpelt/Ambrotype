@@ -134,7 +134,7 @@ function wireInfo() {
   for (const l of LABELS) {
     const b = Object.assign(document.createElement("button"), { type: "button", title: `${l} label (${LABELS.indexOf(l) < 4 ? 6 + LABELS.indexOf(l) : "no key"})` });
     b.dataset.label = l;
-    b.style.background = LABEL_COLOURS[l];
+    b.style.setProperty("--swatch", LABEL_COLOURS[l]);
     b.addEventListener("click", () => setLabel(l));
     $("label-swatches").append(b);
   }

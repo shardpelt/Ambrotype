@@ -142,21 +142,31 @@ pub fn from_record(
     (photo, r.shot)
 }
 
+/// The file's size and modified time (nanoseconds), or while it can't be
+/// reached (an unplugged drive) the ones the catalogue saw last, so its
+/// cached thumbnails still show.
+fn file_stamp(path: &Path) -> Option<(u64, u128)> {
+    match std::fs::metadata(path) {
+        Ok(meta) => Some((
+            meta.len(),
+            meta.modified()
+                .ok()?
+                .duration_since(std::time::UNIX_EPOCH)
+                .ok()?
+                .as_nanos(),
+        )),
+        Err(_) => {
+            let s = catalog().stamp_of(path)?;
+            Some((s.size as u64, s.modified as u128))
+        }
+    }
+}
+
 fn cache_key(path: &Path, edge: u32) -> Option<String> {
     use sha2::{Digest, Sha256};
-    let meta = std::fs::metadata(path).ok()?;
-    let modified = meta
-        .modified()
-        .ok()?
-        .duration_since(std::time::UNIX_EPOCH)
-        .ok()?
-        .as_nanos();
+    let (len, modified) = file_stamp(path)?;
     let mut h = Sha256::new();
-    h.update(format!(
-        "v1|{}|{}|{modified}|{edge}",
-        path.display(),
-        meta.len()
-    ));
+    h.update(format!("v1|{}|{len}|{modified}|{edge}", path.display()));
     Some(
         h.finalize()
             .iter()
@@ -224,16 +234,23 @@ pub fn edited_thumbnail(
 ) -> Result<Vec<u8>, String> {
     let edge = edge.clamp(64, 2048);
     let sidecar = crate::session::sidecar_path(path);
-    let stamp = std::fs::metadata(&sidecar).ok().and_then(|m| {
-        Some((
-            m.len(),
-            m.modified()
-                .ok()?
-                .duration_since(std::time::UNIX_EPOCH)
-                .ok()?
-                .as_nanos(),
-        ))
-    });
+    let stamp = std::fs::metadata(&sidecar)
+        .ok()
+        .and_then(|m| {
+            Some((
+                m.len(),
+                m.modified()
+                    .ok()?
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .ok()?
+                    .as_nanos(),
+            ))
+        })
+        // Offline: the sidecar as the catalogue saw it last.
+        .or_else(|| {
+            let s = catalog().stamp_of(path).filter(|_| !path.exists())?;
+            (s.sidecar_size >= 0).then_some((s.sidecar_size as u64, s.sidecar_modified as u128))
+        });
     let key = cache
         .zip(cache_key(path, edge))
         .zip(stamp)

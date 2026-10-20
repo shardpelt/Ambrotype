@@ -55,7 +55,10 @@ Folders, or whole drives, that the catalogue keeps indexed (photo manager track,
 - `amb catalog add DIR` / `remove DIR` changes the list; a folder inside one already listed adds nothing.
 - `amb catalog index` reads every library folder: new and changed photos are read, photos gone are forgotten, with progress. A folder that can't be reached (an unplugged drive) is left alone: its photos stay listed, offline.
 - `amb catalog folders` lists each folder with its photo count, marked offline where it can't be reached: what the folder tree will show.
-- Still to come in the editor: indexing in the background at start, a folder tree with counts beside the grid, a grid that only draws what's on screen, and previews kept for offline photos.
+- **In the editor** (2026-10-20): a **Folders** panel left of the grid lists the library folders and their subfolders with photo counts (+ adds one, × removes it and its photos from the catalogue; the files stay). Clicking a folder shows it, with Subfolders as ticked. The library folders are indexed in the background a few seconds after the start (progress under the tree), and checked every 30 seconds for a drive that came back, which is then indexed again.
+- **Offline:** a folder that can't be reached is greyed out and marked offline. Showing it lists its photos from the catalogue, with their cached thumbnails in grey; opening one in the editor says to plug the drive in. When the drive is back, the folder is shown from it again.
+- New photos: a folder on screen is watched, so photos added show within a second (↻ reads it again by hand). Library folders not on screen catch up at the next start or when their drive comes back.
+- Still to come: a grid that only draws what's on screen (very large folders), and keeping the thumbnail cache within a size.
 
 ## Import
 

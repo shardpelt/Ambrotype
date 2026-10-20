@@ -309,3 +309,136 @@ pub(crate) async fn import_run(
     .await
     .map_err(|e| e.to_string())?
 }
+
+// ---------------------------------------------------------------- library folders
+
+/// The library folders' list (`amb_library::roots`), next to the settings.
+fn roots_file(app: &tauri::AppHandle) -> Res<PathBuf> {
+    app.path()
+        .app_config_dir()
+        .map(|d| d.join("library-folders.json"))
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Serialize)]
+pub(crate) struct LibraryRoot {
+    pub(crate) path: PathBuf,
+    /// Can't be reached now (a drive not plugged in).
+    pub(crate) offline: bool,
+}
+
+/// What the Folders panel shows.
+#[derive(Serialize)]
+pub(crate) struct LibraryFolders {
+    pub(crate) roots: Vec<LibraryRoot>,
+    /// Every catalogued folder inside them, with its count.
+    pub(crate) folders: Vec<amb_library::catalog::FolderCount>,
+    /// An index is running.
+    pub(crate) indexing: bool,
+}
+
+/// Whether the library folders are being indexed now (one run at a time).
+static INDEXING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+#[tauri::command]
+pub(crate) async fn library_folders(app: tauri::AppHandle) -> Res<LibraryFolders> {
+    let file = roots_file(&app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let roots = amb_library::roots::load(&file);
+        let folders = folder::catalog()
+            .folders()
+            .into_iter()
+            .filter(|f| roots.iter().any(|r| f.folder.starts_with(r)))
+            .collect();
+        LibraryFolders {
+            roots: roots
+                .into_iter()
+                .map(|path| LibraryRoot {
+                    offline: !path.is_dir(),
+                    path,
+                })
+                .collect(),
+            folders,
+            indexing: INDEXING.load(std::sync::atomic::Ordering::Relaxed),
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Add a library folder (a whole drive is fine) and start indexing it.
+#[tauri::command]
+pub(crate) fn add_library_folder(app: tauri::AppHandle, path: String) -> Res<()> {
+    amb_library::roots::add(&roots_file(&app)?, Path::new(&path))?;
+    index_library(app);
+    Ok(())
+}
+
+/// Stop keeping a library folder indexed; `forget` also drops its photos
+/// from the catalogue (the files stay).
+#[tauri::command]
+pub(crate) fn remove_library_folder(app: tauri::AppHandle, path: String, forget: bool) -> Res<()> {
+    amb_library::roots::remove(&roots_file(&app)?, Path::new(&path))?;
+    if forget {
+        folder::catalog().forget_folder(Path::new(&path));
+    }
+    Ok(())
+}
+
+#[derive(Clone, Serialize)]
+struct IndexProgress {
+    folder: PathBuf,
+    done: usize,
+    total: usize,
+}
+
+#[derive(Clone, Serialize)]
+struct IndexDone {
+    folder: PathBuf,
+    #[serde(flatten)]
+    result: amb_library::catalog::Indexed,
+}
+
+/// Bring every library folder up to date in the background: progress as
+/// `index-progress`, each folder's result as `index-done`, and
+/// `index-finished` at the end. False when a run is already going.
+#[tauri::command]
+pub(crate) fn index_library(app: tauri::AppHandle) -> bool {
+    use std::sync::atomic::Ordering;
+    use tauri::Emitter;
+    let Ok(file) = roots_file(&app) else {
+        return false;
+    };
+    if INDEXING.swap(true, Ordering::SeqCst) {
+        return false;
+    }
+    std::thread::spawn(move || {
+        for root in amb_library::roots::load(&file) {
+            let progress = |done, total| {
+                let _ = app.emit(
+                    "index-progress",
+                    IndexProgress {
+                        folder: root.clone(),
+                        done,
+                        total,
+                    },
+                );
+            };
+            match folder::catalog().index(&root, &progress) {
+                Ok(result) => {
+                    let _ = app.emit(
+                        "index-done",
+                        IndexDone {
+                            folder: root.clone(),
+                            result,
+                        },
+                    );
+                }
+                Err(e) => eprintln!("indexing {}: {e}", root.display()),
+            }
+        }
+        INDEXING.store(false, Ordering::SeqCst);
+        let _ = app.emit("index-finished", ());
+    });
+    true
+}

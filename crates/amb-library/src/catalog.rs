@@ -51,14 +51,14 @@ pub struct Record {
     pub shot: Shot,
 }
 
-/// Sizes and modified times of a photo and its sidecar; a record is
-/// current while these match.
+/// Sizes and modified times (nanoseconds) of a photo and its sidecar (-1
+/// when there is none); a record is current while these match.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct Stamp {
-    size: i64,
-    modified: i64,
-    sidecar_size: i64,
-    sidecar_modified: i64,
+pub struct Stamp {
+    pub size: i64,
+    pub modified: i64,
+    pub sidecar_size: i64,
+    pub sidecar_modified: i64,
 }
 
 fn file_stamp(path: &Path) -> Option<(i64, i64)> {
@@ -500,6 +500,27 @@ impl Catalog {
         })
     }
 
+    /// The sizes and times last seen for `photo`'s files, so caches keyed by
+    /// them (thumbnails) still find it while its drive is unplugged.
+    pub fn stamp_of(&self, photo: &Path) -> Option<Stamp> {
+        let db = self.db.lock().unwrap_or_else(|e| e.into_inner());
+        db.query_row(
+            "SELECT size, modified, sidecar_size, sidecar_modified FROM photos WHERE path = ?1",
+            [key(photo)],
+            |r| {
+                Ok(Stamp {
+                    size: r.get(0)?,
+                    modified: r.get(1)?,
+                    sidecar_size: r.get(2)?,
+                    sidecar_modified: r.get(3)?,
+                })
+            },
+        )
+        .optional()
+        .ok()
+        .flatten()
+    }
+
     /// The catalogued photos in `folder` and its subfolders.
     fn paths_under(&self, folder: &Path) -> Vec<String> {
         let db = self.db.lock().unwrap_or_else(|e| e.into_inner());
@@ -719,6 +740,9 @@ mod tests {
         assert!(all.iter().all(|e| e.offline));
         let a = all.iter().find(|e| e.path.ends_with("a.jpg")).unwrap();
         assert_eq!(a.record.info.rating, Some(5));
+        let s = cat.stamp_of(&a.path).unwrap();
+        assert_eq!(s.size, 1);
+        assert!(s.sidecar_size > 0);
         assert!(cat.folders().iter().all(|f| f.offline));
 
         // Plugged back in, with one photo deleted meanwhile.

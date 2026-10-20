@@ -126,6 +126,7 @@ async function loadLibrary(dir, more = dir === lib.dir ? lib.more : savedMore(di
   const keep = new Set(lib.photos.map((p) => p.path));
   lib.selected = new Set([...lib.selected].filter((p) => keep.has(p)));
   renderLibrary();
+  renderFolderTree();
   watchShownFolders();
   if (typeof renderCollectionControls === "function") renderCollectionControls();
 }
@@ -590,6 +591,7 @@ function addLibraryTyped() {
 
 async function libraryOpen(path) {
   if (!path) return;
+  if (libPhoto(path)?.offline) return toast("This photo's drive isn't plugged in. Plug it in to open the photo.", true);
   await toggleLibrary(false);
   if (path !== ui.info?.path) await openPath(path);
 }

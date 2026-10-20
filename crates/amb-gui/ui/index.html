@@ -308,6 +308,13 @@
       <input id="lib-size" type="range" min="100" max="320" value="160" title="Thumbnail size" aria-label="Thumbnail size">
     </div>
     <div class="library-body">
+      <aside id="library-tree" class="library-tree" aria-label="Library folders">
+        <div class="tree-head"><span>Folders</span>
+          <button type="button" id="tree-add" class="small" title="Add a library folder: a folder or a whole drive, kept indexed so it can be browsed and searched, also while unplugged">+</button></div>
+        <ul id="tree-list" class="tree-list"></ul>
+        <p id="tree-empty" class="hint">Add the folders, or whole drives, where your photos are. They're indexed in the background; an unplugged drive's photos stay listed.</p>
+        <p id="tree-progress" class="hint tree-progress" hidden></p>
+      </aside>
       <div id="library-grid" class="library-grid" tabindex="-1"></div>
       <div id="library-view" class="library-view" tabindex="-1" hidden></div>
       <div id="library-empty" class="library-empty" hidden>
@@ -1265,6 +1272,7 @@
   <script src="editor.js"></script>
   <script src="keys.js"></script>
   <script src="menu.js"></script>
+  <script src="folders.js"></script>
   <script src="hub.js"></script>
   <script src="borders.js"></script>
   <script src="info.js"></script>

@@ -38,16 +38,30 @@ pub fn list_tree(dir: &Path) -> Result<Vec<LibraryPhoto>, String> {
 pub fn list_many(dirs: &[PathBuf], subfolders: bool) -> Result<Vec<LibraryPhoto>, String> {
     let mut seen = std::collections::HashSet::new();
     let mut all = Vec::new();
+    let mut offline = Vec::new();
     for dir in dirs {
+        let prefix = dir
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .filter(|_| dirs.len() > 1);
+        // On a drive that isn't plugged in: the photos as last read.
+        if !dir.is_dir() {
+            let known = catalog_folder(dir, subfolders);
+            if !known.is_empty() {
+                offline.extend(known.into_iter().map(|mut p| {
+                    if let Some(f) = &prefix {
+                        p.photo.name = format!("{f}/{}", p.photo.name);
+                    }
+                    p
+                }));
+                continue;
+            }
+        }
         let photos = if subfolders {
             folder::list_tree(dir)?
         } else {
             folder::list_dir(dir)?
         };
-        let prefix = dir
-            .file_name()
-            .map(|n| n.to_string_lossy().into_owned())
-            .filter(|_| dirs.len() > 1);
         all.extend(
             photos
                 .into_iter()
@@ -60,7 +74,34 @@ pub fn list_many(dirs: &[PathBuf], subfolders: bool) -> Result<Vec<LibraryPhoto>
                 }),
         );
     }
-    Ok(with_times(all))
+    let mut out = with_times(all);
+    out.extend(offline);
+    Ok(out)
+}
+
+/// The catalogue's photos in `dir` (and its subfolders), named as a folder
+/// listing names them, each marked offline when `dir` can't be reached.
+pub fn catalog_folder(dir: &Path, subfolders: bool) -> Vec<LibraryPhoto> {
+    folder::catalog()
+        .all()
+        .into_iter()
+        .filter_map(|e| {
+            let parent = amb_engine::source_path(&e.path).parent()?.to_path_buf();
+            let rel = parent.strip_prefix(dir).ok()?.to_path_buf();
+            if !subfolders && !rel.as_os_str().is_empty() {
+                return None;
+            }
+            let (mut photo, shot) = folder::from_record(&e.path, e.record);
+            if !rel.as_os_str().is_empty() {
+                photo.name = format!("{}/{}", rel.display(), photo.name);
+            }
+            Some(LibraryPhoto {
+                photo,
+                shot,
+                offline: e.offline,
+            })
+        })
+        .collect()
 }
 
 /// The photos under a smart collection's folders that meet its rules.

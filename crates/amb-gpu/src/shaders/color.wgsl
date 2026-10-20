@@ -108,7 +108,8 @@ fn color(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) 
     let lab = mat(2u, vec3<f32>(cbrt(lms.x), cbrt(lms.y), cbrt(lms.z)));
     var l = lab.x;
     var chroma = length(lab.yz);
-    var hue = atan2(lab.z, lab.y);
+    // A grey has no hue: 0, as on the CPU (atan2(0, 0) is NaN on Direct3D).
+    var hue = select(atan2(lab.z, lab.y), 0.0, lab.y == 0.0 && lab.z == 0.0);
 
     let bw = band_weights(hue);
     let bands = array<u32, 2>(u32(bw.x), u32(bw.y));

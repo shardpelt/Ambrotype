@@ -1,0 +1,4 @@
+# Every text file keeps LF line endings, on Windows too: the bundled hub
+# items are checked against their sha256 (crates/amb-gui/data/hub), and
+# tests read files byte for byte.
+* text=auto eol=lf

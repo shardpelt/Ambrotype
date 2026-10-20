@@ -44,6 +44,35 @@ pub(crate) fn feedback_body(
     body
 }
 
+/// The new-issue address for a piece of feedback. It goes through the
+/// repository's issue forms (`.github/ISSUE_TEMPLATE`): their labels apply
+/// for anyone, where a `labels=` in the address only works for maintainers.
+/// The text fills the form's first box (`what`).
+fn feedback_url(kind: &str, title: &str, body: &str) -> String {
+    let template = if kind == "Idea" {
+        "feature.yml"
+    } else {
+        "bug.yml"
+    };
+    let mut url = format!(
+        "{FEEDBACK_URL}?template={template}&title={}&what={}",
+        percent_encode(&format!("[{kind}] {}", title.trim())),
+        percent_encode(body)
+    );
+    if template == "bug.yml" {
+        url.push_str(&format!(
+            "&system={}&version={}",
+            percent_encode(&format!(
+                "{} ({})",
+                std::env::consts::OS,
+                std::env::consts::ARCH
+            )),
+            percent_encode(env!("CARGO_PKG_VERSION"))
+        ));
+    }
+    url
+}
+
 /// Open the pre-filled GitHub issue in the browser.
 #[tauri::command]
 pub(crate) fn open_feedback(
@@ -62,19 +91,7 @@ pub(crate) fn open_feedback(
         body.truncate(cut);
         body.push_str("\n… (truncated)");
     }
-    let label = match kind.as_str() {
-        "Bug" => "bug",
-        "Idea" => "enhancement",
-        "Looks different from Lightroom" => "fidelity",
-        "Slow" => "performance",
-        _ => "feedback",
-    };
-    let url = format!(
-        "{FEEDBACK_URL}?labels={}&title={}&body={}",
-        percent_encode(&format!("feedback,{label}")),
-        percent_encode(&format!("[{kind}] {}", title.trim())),
-        percent_encode(&body)
-    );
+    let url = feedback_url(&kind, &title, &body);
     app.opener()
         .open_url(url, None::<&str>)
         .map_err(|e| e.to_string())
@@ -150,4 +167,36 @@ pub(crate) fn open_settings_folder(
     app.opener()
         .open_path(folder, None::<&str>)
         .map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    /// The address names an issue form that exists, and fields it has.
+    #[test]
+    fn feedback_fills_the_repository_issue_forms() {
+        let root =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.github/ISSUE_TEMPLATE");
+        for (kind, template) in [
+            ("Bug", "bug.yml"),
+            ("Idea", "feature.yml"),
+            ("Slow", "bug.yml"),
+        ] {
+            let url = super::feedback_url(kind, " It crashes ", "Line 1\nLine & 2");
+            assert!(url.starts_with(super::FEEDBACK_URL), "{url}");
+            assert!(url.contains(&format!("template={template}&")), "{url}");
+            assert!(
+                url.contains(&format!("title=%5B{kind}%5D%20It%20crashes&")),
+                "{url}"
+            );
+            assert!(url.contains("what=Line%201%0ALine%20%26%202"), "{url}");
+            assert!(!url.contains("labels="), "{url}");
+            let form = std::fs::read_to_string(root.join(template)).unwrap();
+            for field in url.split('&').skip(2).map(|p| p.split('=').next().unwrap()) {
+                assert!(
+                    form.contains(&format!("id: {field}\n")),
+                    "{template} has no field {field}"
+                );
+            }
+        }
+    }
 }

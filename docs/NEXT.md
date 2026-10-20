@@ -97,14 +97,19 @@ Then retire the auto "Getting around" card.
 
 ### First release (v0.1) checklist
 
-- [ ] Make `shardpelt/Ambrotype` public (CI can't run while it's private: every job stops before its first step)
-- [ ] CI green on Linux, Windows (x64, ARM) and macOS
-- [ ] Run the `Release` workflow by hand once; install each artifact ([releasing.md](releasing.md))
-- [ ] Try the editor on the Mac: menu bar, library, a custom interface, export
-- [ ] Try it once on Windows
-- [ ] Hub history clean-up (`docs/handoff-hub-scrub.md`, local only), then re-sync `data/hub/SOURCE`
-- [ ] Release notes: say it's an early preview, unsigned (Gatekeeper/SmartScreen warnings and how to open anyway), Lightroom fidelity not yet fitted
+State on 2026-10-20 (evening): the repo is public and CI runs. Linux, macOS and the licence check are green. Windows found two real bugs, both fixed: NaN pixels in the GPU colour stage (`b0d17dd`), and CRLF checkouts breaking the hub checksums (`.gitattributes`, `2e61191`). That last fix still needs a green Windows run.
+
+- [x] Make `shardpelt/Ambrotype` public
+- [ ] CI green on Windows (x64, ARM): check the run on `2e61191`; Linux and macOS are green
+- [ ] Run the `Release` workflow by hand once (Actions tab); install each artifact ([releasing.md](releasing.md))
+- [ ] Optional, before building: `strip = true` in `[profile.release]` (about 60 MB smaller installs; downloads shrink less)
+- [ ] Try the editor on the Mac: menu bar (and Interface → Back to the Built-in Interface), library, a custom interface, Connect an AI App… → Open a terminal here, export
+- [ ] Try it once on Windows (same list; the terminal opens with `cmd`)
+- [ ] Hub history clean-up: the hub's first 8 of 12 commits carry a model name in their Co-Authored-By trailer. Rewrite only those lines to `Co-Authored-By: Claude <noreply@anthropic.com>` (git filter-repo, owner-approved force-push with a lease on `ba3a0c8`; tree `6e6320d` must not change). The step-by-step hand-off was a local, untracked file in the cloud session; ask for it to be written again if it's gone. Then re-sync `data/hub/SOURCE`
+- [ ] Release notes: an early preview, unsigned (Gatekeeper/SmartScreen warnings and how to open anyway), Lightroom fidelity not yet fitted
 - [ ] Tag `v0.1.0`, check the draft release, publish
+
+After the release: the pinned teaching plan above (the owner provides the sample raw).
 
 There are two tracks that can run in parallel: the UI track is what users see and share, and the fidelity track depends on the Lightroom trial data.
 

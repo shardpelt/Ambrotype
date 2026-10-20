@@ -972,3 +972,15 @@ button.tool-icon.active { color: var(--accent); }
 .library-tree { grid-column: 1; grid-row: 1; }
 .library-grid, .library-view { grid-column: 2; grid-row: 1; }
 .library-panel { grid-column: 3; grid-row: 1; }
+
+/* Search everything (Ctrl/⌘+K) */
+.search-dialog { width: 620px; max-width: calc(100vw - 32px); padding: 10px; margin-top: 12vh; }
+.search-dialog > input { width: 100%; box-sizing: border-box; font-size: 15px; padding: 9px 12px; }
+.search-results { list-style: none; margin: 8px 0 0; padding: 0; max-height: 52vh; overflow-y: auto; }
+.search-row { display: flex; align-items: baseline; gap: 10px; padding: 6px 10px; border-radius: var(--radius); cursor: pointer; }
+.search-row.on { background: var(--hover); }
+.search-row.off { opacity: .45; cursor: default; }
+.search-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-kind { color: var(--muted); font-size: 11px; }
+.search-row kbd { color: var(--muted); font-size: 11px; font-family: inherit; min-width: 34px; text-align: right; }
+.search-dialog #search-none { margin: 10px 4px 4px; }

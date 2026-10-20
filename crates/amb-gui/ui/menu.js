@@ -23,7 +23,7 @@ const MENU_BAR = [
   ["Library", ["library", "|", "lib-loupe", "lib-compare", "lib-survey", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
   ["View", ["before", "zoom", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
   ["Window", ["#minimize", "#maximize", "|", "looks", "edit-layout", "|", "hub", "|", "#bring_all_to_front"], "window"],
-  ["Help", ["learn", "shortcuts", "|", "feedback", "source"], "help"],
+  ["Help", ["search", "|", "learn", "shortcuts", "|", "feedback", "source"], "help"],
 ];
 // Only on macOS: the rest have them in the window's title bar, or no Edit menu.
 const MENU_MAC_ONLY = new Set(["#services", "#hide", "#hide_others", "#show_all", "#cut", "#copy", "#paste", "#fullscreen", "#minimize", "#maximize", "#bring_all_to_front"]);
@@ -41,7 +41,7 @@ const MENU_TITLES = {
   zoom: "Fit / 100%", proof: "Soft Proofing", clipping: "Clipping Overlay", frame: "Frame", filmstrip: "Filmstrip",
   "fold-left": "Left Column", "fold-right": "Right Column", looks: "Appearance…", "edit-layout": "Edit Layout",
   hub: "Browse the Hub…", settings: "Settings…", learn: "Learn the Basics", shortcuts: "Keyboard Shortcuts",
-  feedback: "Send Feedback…", source: "Ambrotype on GitHub",
+  feedback: "Send Feedback…", source: "Ambrotype on GitHub", search: "Search Everything…",
 };
 
 // Items that aren't keyboard actions.

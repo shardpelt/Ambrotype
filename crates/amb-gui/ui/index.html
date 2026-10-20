@@ -887,6 +887,11 @@
   </dialog>
 
   <div id="toast" class="toast" hidden></div>
+  <dialog id="search-dialog" class="search-dialog" aria-label="Search everything">
+    <input id="search-input" type="search" placeholder="Search commands, settings, panels, presets, layouts…" spellcheck="false" autocomplete="off">
+    <ul id="search-results" class="search-results"></ul>
+    <p id="search-none" class="hint" hidden>Nothing found.</p>
+  </dialog>
   <dialog id="shortcuts-dialog" class="shortcuts-dialog">
     <form method="dialog">
       <h2>Keyboard shortcuts</h2>
@@ -1298,6 +1303,7 @@
   <script src="menu.js"></script>
   <script src="folders.js"></script>
   <script src="libmenus.js"></script>
+  <script src="search.js"></script>
   <script src="hub.js"></script>
   <script src="borders.js"></script>
   <script src="info.js"></script>

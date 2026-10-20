@@ -60,7 +60,7 @@ Folders, or whole drives, that the catalogue keeps indexed (photo manager track,
 - **In the editor** (2026-10-20): a **Folders** panel left of the grid lists the library folders and their subfolders with photo counts (+ adds one, × removes it and its photos from the catalogue; the files stay). Clicking a folder shows it, with Subfolders as ticked. The library folders are indexed in the background a few seconds after the start (progress under the tree), and checked every 30 seconds for a drive that came back, which is then indexed again.
 - **Offline:** a folder that can't be reached is greyed out and marked offline. Showing it lists its photos from the catalogue, with their cached thumbnails in grey; opening one in the editor says to plug the drive in. When the drive is back, the folder is shown from it again.
 - New photos: a folder on screen is watched, so photos added show within a second (↻ reads it again by hand). Library folders not on screen catch up at the next start or when their drive comes back.
-- Still to come: a grid that only draws what's on screen (very large folders), and keeping the thumbnail cache within a size.
+- **Very large folders** (2026-10-20): the grid draws only the rows on screen and a few around them (6000 photos scroll like 60), and keeps the pictures of the last 3000 photos shown. The thumbnail cache on disk is kept within 2 GB: at each start the thumbnails shown least lately go first (an offline photo whose thumbnail went shows a blank frame until its drive is back).
 
 ## Import
 

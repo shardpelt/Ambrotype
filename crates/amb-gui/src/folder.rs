@@ -11,6 +11,10 @@ use std::path::{Path, PathBuf};
 /// The long edge of filmstrip thumbnails, in pixels (sharp at 2× on a ~110 px strip).
 pub const THUMB_EDGE: u32 = 256;
 
+/// The most the thumbnail cache keeps; past it, the thumbnails shown least
+/// lately go first.
+pub const THUMB_CACHE_BYTES: u64 = 2 << 30;
+
 #[derive(Debug, Clone, Serialize)]
 pub struct FolderPhoto {
     pub path: String,
@@ -176,6 +180,48 @@ fn cache_key(path: &Path, edge: u32) -> Option<String> {
     )
 }
 
+/// A cached file, marked as just used so pruning keeps it.
+fn read_cached(path: &Path) -> Option<Vec<u8>> {
+    let bytes = std::fs::read(path).ok()?;
+    if let Ok(f) = std::fs::File::options().append(true).open(path) {
+        let _ = f.set_modified(std::time::SystemTime::now());
+    }
+    Some(bytes)
+}
+
+/// Keep the cache folder within `max` bytes: the files used least lately
+/// (by modified time, which a cache hit renews) are deleted first. Returns
+/// how many files went and how many bytes that freed.
+pub fn prune_cache(dir: &Path, max: u64) -> (usize, u64) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return (0, 0);
+    };
+    let mut files: Vec<(std::time::SystemTime, u64, PathBuf)> = entries
+        .flatten()
+        .filter_map(|e| {
+            let m = e.metadata().ok().filter(|m| m.is_file())?;
+            Some((m.modified().ok()?, m.len(), e.path()))
+        })
+        .collect();
+    let mut total: u64 = files.iter().map(|f| f.1).sum();
+    if total <= max {
+        return (0, 0);
+    }
+    files.sort();
+    let (mut removed, mut freed) = (0, 0);
+    for (_, len, path) in files {
+        if total <= max {
+            break;
+        }
+        if std::fs::remove_file(&path).is_ok() {
+            total -= len;
+            freed += len;
+            removed += 1;
+        }
+    }
+    (removed, freed)
+}
+
 fn encode_jpeg(rgb: &[u8], w: u32, h: u32) -> Result<Vec<u8>, String> {
     let mut out = Vec::new();
     let enc = jpeg_encoder::Encoder::new(&mut out, 82);
@@ -197,7 +243,7 @@ pub fn thumbnail(path: &Path, edge: u32, cache: Option<&Path>) -> Result<Vec<u8>
     let key = cache
         .zip(cache_key(path, edge))
         .map(|(dir, k)| dir.join(format!("{k}.jpg")));
-    if let Some(bytes) = key.as_ref().and_then(|k| std::fs::read(k).ok()) {
+    if let Some(bytes) = key.as_ref().and_then(|k| read_cached(k)) {
         return Ok(bytes);
     }
     let jpeg = match amb_engine::raw::embedded_thumbnail(path, edge) {
@@ -255,7 +301,7 @@ pub fn edited_thumbnail(
         .zip(cache_key(path, edge))
         .zip(stamp)
         .map(|((dir, k), (len, t))| dir.join(format!("e-{k}-{len}-{t}.jpg")));
-    if let Some(bytes) = key.as_ref().and_then(|k| std::fs::read(k).ok()) {
+    if let Some(bytes) = key.as_ref().and_then(|k| read_cached(k)) {
         return Ok(bytes);
     }
     let mut s = crate::session::Session::open(path)?;
@@ -274,6 +320,28 @@ pub fn edited_thumbnail(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_thumbnail_cache_lets_the_least_used_go_first() {
+        let dir = std::env::temp_dir().join(format!("amb-thumb-cache-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let t0 = std::time::SystemTime::now() - std::time::Duration::from_secs(1000);
+        for (i, name) in ["a.jpg", "b.jpg", "c.jpg", "d.jpg"].iter().enumerate() {
+            let p = dir.join(name);
+            std::fs::write(&p, [0u8; 100]).unwrap();
+            let f = std::fs::File::options().append(true).open(&p).unwrap();
+            f.set_modified(t0 + std::time::Duration::from_secs(i as u64 * 10))
+                .unwrap();
+        }
+        // "a" is the oldest, but shown again just now: it stays.
+        assert_eq!(read_cached(&dir.join("a.jpg")).unwrap().len(), 100);
+        assert_eq!(prune_cache(&dir, 400), (0, 0));
+        assert_eq!(prune_cache(&dir, 250), (2, 200));
+        assert!(dir.join("a.jpg").exists() && dir.join("d.jpg").exists());
+        assert!(!dir.join("b.jpg").exists() && !dir.join("c.jpg").exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn lists_raws_with_ratings_and_makes_thumbnails() {

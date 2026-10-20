@@ -52,7 +52,7 @@ function setLibraryView(view) {
     if (cull.active && order.includes(cull.active)) {
       lib.focus = cull.active;
       renderSelection();
-      lib.cells.get(cull.active)?.scrollIntoView({ block: "nearest" });
+      revealPhoto(cull.active);
     }
     $("library-grid").focus({ preventScroll: true });
   } else {

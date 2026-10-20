@@ -447,6 +447,18 @@ fn main() {
                 if let Ok(mut p) = state.config_path.lock() {
                     *p = Some(path);
                 }
+                // The thumbnail cache kept within its size, out of the way of the start.
+                if let Ok(cache) = app.path().app_cache_dir() {
+                    std::thread::spawn(move || {
+                        let (n, bytes) = folder::prune_cache(
+                            &cache.join("thumbnails"),
+                            folder::THUMB_CACHE_BYTES,
+                        );
+                        if n > 0 {
+                            eprintln!("thumbnail cache: let {n} go ({} MB)", bytes >> 20);
+                        }
+                    });
+                }
             }
             Ok(())
         })

@@ -69,7 +69,7 @@ async function toggleLibrary(on = !lib.on) {
     }
     if (ui.info && libPhoto(ui.info.path)) {
       if (!lib.selected.size) select(ui.info.path, "only");
-      lib.cells.get(ui.info.path)?.scrollIntoView({ block: "center" });
+      revealPhoto(ui.info.path, "center");
     }
     $("library-grid").focus({ preventScroll: true });
   } else {
@@ -249,6 +249,14 @@ async function autoStack() {
   renderLibrary();
 }
 
+// The grid draws only the rows on screen and a few around them, between two
+// spacers that stand in for the rest, so a folder of 100 000 photos scrolls
+// like one of 100. Every cell is a square frame plus a caption, so a row's
+// place follows from the column count.
+const GRID_GAP = 10;
+const GRID_PAD = 12;
+const GRID_OVERSCAN = 4;
+
 function renderLibrary() {
   applyView();
   const grid = $("library-grid");
@@ -256,7 +264,7 @@ function renderLibrary() {
   lib.queue = [];
   lib.editedQueue = [];
   lib.cells.clear();
-  grid.replaceChildren();
+  lib.rangeKey = null;
   $("library-empty").hidden = Boolean(lib.dir || lib.collection);
   // What just scrolled into view loads first: after a fast scroll the photos
   // passed on the way wait behind the ones on screen.
@@ -270,45 +278,119 @@ function renderLibrary() {
     lib.queue = seen.concat(lib.queue);
     pumpLibraryThumbs();
   }, { root: grid, rootMargin: "300px 0px" });
-  for (const p of lib.shown) {
-    const cell = document.createElement("div");
-    cell.className = "lib-cell";
-    cell.dataset.path = p.path;
-    cell.title = [p.name, p.captured, p.keywords.join(", "), p.offline && "Offline: its drive isn't plugged in"].filter(Boolean).join("\n");
-    cell.classList.toggle("offline", Boolean(p.offline));
-    const frame = Object.assign(document.createElement("div"), { className: "lib-frame" });
-    frame.append(Object.assign(document.createElement("img"), { alt: "", draggable: false }));
-    const meta = Object.assign(document.createElement("div"), { className: "lib-meta" });
-    meta.append(
-      Object.assign(document.createElement("span"), { className: "lib-flag" }),
-      Object.assign(document.createElement("span"), { className: "lib-stars" }),
-      Object.assign(document.createElement("span"), { className: "lib-edited", title: "Has edits" }),
-    );
-    const name = Object.assign(document.createElement("div"), { className: "lib-name", textContent: p.name });
-    cell.append(frame, meta, name);
-    if (p.stack) {
-      const open = lib.expanded.has(p.stack.id);
-      const badge = Object.assign(document.createElement("button"), {
-        type: "button",
-        className: `lib-stack${open ? " open" : ""}${p.stack.top ? " top" : ""}`,
-        textContent: `⧉ ${lib.stackSizes.get(p.stack.id) ?? 1}`,
-        title: open ? "Close this stack" : "Open this stack",
-      });
-      badge.addEventListener("click", (e) => {
-        e.stopPropagation();
-        toggleStack(p.stack.id);
-      });
-      frame.append(badge);
-    }
-    lib.cells.set(p.path, cell);
-    updateCell(p);
-    const url = cachedThumb(p);
-    if (url) cell.querySelector("img").src = url;
-    lib.observer.observe(cell);
-    grid.append(cell);
+  lib.spacers = [0, 1].map(() => Object.assign(document.createElement("div"), { className: "lib-spacer" }));
+  grid.replaceChildren(...lib.spacers);
+  renderRange(true);
+  // The caption's height, measured once, places every row.
+  const cell = lib.cells.values().next().value;
+  if (cell && !lib.cellExtra) {
+    lib.cellExtra = cell.offsetHeight - cell.querySelector(".lib-frame").offsetHeight;
+    renderRange(true);
   }
   renderCounts();
   renderSelection();
+}
+
+function gridMetrics() {
+  const grid = $("library-grid");
+  const thumb = Number($("lib-size").value);
+  const width = Math.max(thumb, grid.clientWidth - 2 * GRID_PAD);
+  const cols = Math.max(1, Math.floor((width + GRID_GAP) / (thumb + GRID_GAP)));
+  const cellW = (width - (cols - 1) * GRID_GAP) / cols;
+  return { cols, rowH: cellW + (lib.cellExtra ?? 44) + GRID_GAP };
+}
+
+// Draw the rows in view; cells already drawn are kept, with their pictures.
+function renderRange(force = false) {
+  const grid = $("library-grid");
+  if (!lib.spacers) return;
+  const { cols, rowH } = gridMetrics();
+  const rows = Math.ceil(lib.shown.length / cols);
+  const first = Math.max(0, Math.floor((grid.scrollTop - GRID_PAD) / rowH) - GRID_OVERSCAN);
+  const last = Math.min(rows, Math.ceil((grid.scrollTop + grid.clientHeight) / rowH) + GRID_OVERSCAN);
+  const key = `${first}:${last}:${cols}:${Math.round(rowH)}`;
+  if (!force && key === lib.rangeKey) return;
+  lib.rangeKey = key;
+  // A spacer is a grid row too: the gap after it is part of its height.
+  const [top, bottom] = lib.spacers;
+  top.hidden = first === 0;
+  top.style.height = `${first * rowH - GRID_GAP}px`;
+  bottom.hidden = last >= rows;
+  bottom.style.height = `${(rows - last) * rowH - GRID_GAP}px`;
+  const cells = new Map();
+  for (const p of lib.shown.slice(first * cols, last * cols)) cells.set(p.path, lib.cells.get(p.path) ?? makeCell(p));
+  lib.cells = cells;
+  grid.replaceChildren(top, ...cells.values(), bottom);
+  lib.observer.disconnect();
+  for (const cell of cells.values()) if (!cell.querySelector("img").getAttribute("src")) lib.observer.observe(cell);
+}
+
+function makeCell(p) {
+  const cell = document.createElement("div");
+  cell.className = "lib-cell";
+  cell.dataset.path = p.path;
+  cell.title = [p.name, p.captured, p.keywords.join(", "), p.offline && "Offline: its drive isn't plugged in"].filter(Boolean).join("\n");
+  cell.classList.toggle("offline", Boolean(p.offline));
+  const frame = Object.assign(document.createElement("div"), { className: "lib-frame" });
+  frame.append(Object.assign(document.createElement("img"), { alt: "", draggable: false }));
+  const meta = Object.assign(document.createElement("div"), { className: "lib-meta" });
+  meta.append(
+    Object.assign(document.createElement("span"), { className: "lib-flag" }),
+    Object.assign(document.createElement("span"), { className: "lib-stars" }),
+    Object.assign(document.createElement("span"), { className: "lib-edited", title: "Has edits" }),
+  );
+  const name = Object.assign(document.createElement("div"), { className: "lib-name", textContent: p.name });
+  cell.append(frame, meta, name);
+  if (p.stack) {
+    const open = lib.expanded.has(p.stack.id);
+    const badge = Object.assign(document.createElement("button"), {
+      type: "button",
+      className: `lib-stack${open ? " open" : ""}${p.stack.top ? " top" : ""}`,
+      textContent: `⧉ ${lib.stackSizes.get(p.stack.id) ?? 1}`,
+      title: open ? "Close this stack" : "Open this stack",
+    });
+    badge.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleStack(p.stack.id);
+    });
+    frame.append(badge);
+  }
+  lib.cells.set(p.path, cell);
+  updateCell(p);
+  cell.classList.toggle("selected", lib.selected.has(p.path));
+  cell.classList.toggle("focus", p.path === lib.focus);
+  const url = cachedThumb(p);
+  if (url) cell.querySelector("img").src = url;
+  return cell;
+}
+
+// Scroll so a photo is in view, drawing it if it wasn't.
+function revealPhoto(path, block = "nearest") {
+  const grid = $("library-grid");
+  const i = lib.shown.findIndex((p) => p.path === path);
+  if (i < 0) return;
+  const { cols, rowH } = gridMetrics();
+  const y = GRID_PAD + Math.floor(i / cols) * rowH;
+  const h = rowH - GRID_GAP;
+  if (block === "center") grid.scrollTop = y - (grid.clientHeight - h) / 2;
+  else if (y < grid.scrollTop) grid.scrollTop = y - GRID_PAD;
+  else if (y + h > grid.scrollTop + grid.clientHeight) grid.scrollTop = y + h - grid.clientHeight + GRID_PAD;
+  renderRange();
+}
+
+// Pictures are kept for the photos seen lately; older ones are let go (and
+// fetched again from the disk cache if they come back into view).
+const THUMB_URLS_KEPT = 3000;
+
+function keepThumbUrl(key, url) {
+  lib.urls.set(key, url);
+  if (lib.urls.size <= THUMB_URLS_KEPT) return;
+  for (const [k, u] of lib.urls) {
+    if (lib.urls.size <= THUMB_URLS_KEPT * 0.8) break;
+    if (lib.cells.has(k.split("|").slice(0, -2).join("|"))) continue;
+    URL.revokeObjectURL(u);
+    lib.urls.delete(k);
+  }
 }
 
 function updateCell(p) {
@@ -363,7 +445,7 @@ function pumpLibraryThumbs() {
     invoke("thumbnail", { path, edge })
       .then((buf) => {
         const url = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
-        lib.urls.set(key, url);
+        keepThumbUrl(key, url);
         if (!lib.urls.has(`${path}|${edge}|true`)) cell.querySelector("img").src = url;
         if (p.edited) lib.editedQueue.push(path);
       })
@@ -386,7 +468,7 @@ function pumpLibraryThumbs() {
     call
       .then((buf) => {
         const url = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
-        lib.urls.set(key, url);
+        keepThumbUrl(key, url);
         cell.querySelector("img").src = url;
       })
       .catch(() => {})
@@ -447,14 +529,12 @@ function renderSelection() {
 function moveFocus(key, extend) {
   const order = lib.shown.map((p) => p.path);
   if (!order.length) return;
-  const grid = $("library-grid");
-  const first = grid.firstElementChild;
-  const cols = first ? Math.max(1, Math.round(grid.clientWidth / (first.offsetWidth + 10))) : 1;
+  const { cols } = gridMetrics();
   const at = Math.max(0, order.indexOf(lib.focus));
   const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols }[key];
   const next = order[Math.min(order.length - 1, Math.max(0, at + step))];
   select(next, extend ? "range" : "only");
-  lib.cells.get(next)?.scrollIntoView({ block: "nearest" });
+  revealPhoto(next);
 }
 
 // ---------------------------------------------------------------- the panel: rate, label, keywords
@@ -634,7 +714,7 @@ async function virtualCopyKey() {
     if (lib.collection) await addToCollection([copy], lib.collection);
     else await loadLibrary(lib.dir);
     select(copy, "only");
-    lib.cells.get(copy)?.scrollIntoView({ block: "nearest" });
+    revealPhoto(copy);
     return;
   }
   if (!ui.info) return false;
@@ -860,6 +940,9 @@ function wireLibrary() {
     f.addEventListener("keydown", (e) => e.stopPropagation());
   }
   const grid = $("library-grid");
+  // Rows come and go as the grid scrolls or changes width.
+  grid.addEventListener("scroll", () => requestAnimationFrame(() => renderRange()), { passive: true });
+  new ResizeObserver(() => renderRange()).observe(grid);
   grid.addEventListener("click", (e) => {
     const cell = e.target.closest(".lib-cell");
     if (!cell) {
@@ -894,6 +977,7 @@ function wireLibrary() {
   });
   $("lib-size").addEventListener("input", () => {
     grid.style.setProperty("--thumb", `${$("lib-size").value}px`);
+    renderRange(true);
     for (const cell of lib.cells.values()) {
       const url = cachedThumb(libPhoto(cell.dataset.path));
       if (url) cell.querySelector("img").src = url;

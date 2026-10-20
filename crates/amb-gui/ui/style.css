@@ -797,7 +797,10 @@ body.library-mode #workspace { display: none; }
 .lib-cell:hover { background: var(--hover); }
 .lib-cell.selected { background: var(--tab-active); border-color: var(--accent); }
 .lib-cell.focus { box-shadow: 0 0 0 1px var(--text) inset; }
-.lib-cell.labelled { border-bottom: 3px solid var(--label); }
+.lib-cell { border-bottom-width: 3px; }
+.lib-cell.labelled { border-bottom-color: var(--label); }
+.lib-spacer { grid-column: 1 / -1; }
+.lib-spacer[hidden] { display: none; }
 .lib-cell.open .lib-name::before { content: "● "; color: var(--accent); }
 .lib-frame { aspect-ratio: 1; display: grid; place-items: center; background: var(--bg-deep); border-radius: 3px; overflow: hidden; }
 .lib-frame img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; }

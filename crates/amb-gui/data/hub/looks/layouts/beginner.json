@@ -6,7 +6,7 @@
   "density": "normal",
   "toolbar": ["open", "library", "save", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "zoom", "wb", "|", "hub", "looks", "settings", "keys", "feedback"],
   "toolbar_style": "words",
-  "left": { "width": 250, "items": ["presets", "info", "history"] },
+  "left": { "width": 250, "items": ["presets", "history"] },
   "right": {
     "width": 330,
     "items": [

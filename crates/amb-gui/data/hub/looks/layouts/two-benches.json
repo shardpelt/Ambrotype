@@ -26,8 +26,7 @@
       { "panel": "lens" },
       { "panel": "transform" },
       { "panel": "effects" },
-      { "panel": "negative" },
-      "info"
+      { "panel": "negative" }
     ]
   }
 }

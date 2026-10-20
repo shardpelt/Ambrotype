@@ -9,7 +9,7 @@
       "description": "Presets and history on the left, the Develop panels on the right.",
       "license": "CC0-1.0",
       "path": "looks/layouts/classic.json",
-      "sha256": "9f06aaafb9b69e0cd9eec10f32c7144e32f6221b014481b0906539397586a5bd"
+      "sha256": "f9e60dfbdaf1dac2eda457ef62651e38cf9e3007a3e767466cec1fe8bd9ff743"
     },
     {
       "id": "layout-beginner",
@@ -19,7 +19,7 @@
       "description": "Classic with words on every toolbar button and only the everyday tools, so nothing is a puzzle. Switch to Classic for icons and the rest.",
       "license": "CC0-1.0",
       "path": "looks/layouts/beginner.json",
-      "sha256": "ab70f3a6ffd4138188c0fb7e81764d57ec1796bc2e2fe717beaabfc14086d5fe"
+      "sha256": "ed047f4b19295a26faa0e19ce588f894c95ec1196eacb7c80b5a27e0b6d0d896"
     },
     {
       "id": "layout-compact",
@@ -29,7 +29,7 @@
       "description": "One narrow column and smaller controls, for laptop screens.",
       "license": "CC0-1.0",
       "path": "looks/layouts/compact.json",
-      "sha256": "2bd592dbe8f91d0d803c04209bb4eebcfa4d0242ef01b07b1eb4c2a022b69626"
+      "sha256": "4e8b9e2e7a5eb63b51ba35aec40abd2cf2d12a94b862cd985ab30a47bf3d73be"
     },
     {
       "id": "layout-big-controls",
@@ -39,7 +39,7 @@
       "description": "Larger text, sliders and targets: easier on touch screens and tired eyes.",
       "license": "CC0-1.0",
       "path": "looks/layouts/big-controls.json",
-      "sha256": "e4ba57dca90788d07a57320769ecb623343d9cdb1b1a483ce367ae947eb57ef0"
+      "sha256": "84d62b7c86a8f2f80786b094e105fcddc155f1d1283734b71e5754709ebba81c"
     },
     {
       "id": "layout-studio",
@@ -49,7 +49,7 @@
       "description": "A mixing-desk feel: knobs for light, bars for presence and detail.",
       "license": "CC0-1.0",
       "path": "looks/layouts/studio.json",
-      "sha256": "29699523db4dfe105d243a1652144c731c72367bc4888330358ecd5b03614282"
+      "sha256": "86fafe95d68dcd2d4b25f2a06de4bc26504e54fe97f993140b8e5202a67fbd6b"
     },
     {
       "id": "layout-left-handed",
@@ -59,7 +59,7 @@
       "description": "Classic, mirrored: the Develop panels on the left, presets and history on the right.",
       "license": "CC0-1.0",
       "path": "looks/layouts/left-handed.json",
-      "sha256": "f210572a34ecbd87b118d4ec98acfbaf90ad47e2c8002843f74ffb958674bfe6"
+      "sha256": "ba877a8c6e4cab2094803ea2d29745525153848dd52e23f56c5d804d1dca863e"
     },
     {
       "id": "layout-focus",
@@ -79,7 +79,7 @@
       "description": "A wide mixing console: every main control is a knob, four to a row, so the whole edit fits on one screen.",
       "license": "CC0-1.0",
       "path": "looks/layouts/console.json",
-      "sha256": "37822d568f2b7afb6ac82a486567bca20d55880cfb9b4f049e7f3b2b48036c24"
+      "sha256": "cbdfd5dfaa506e23caeaf390c82302ca70589da16f6978134a179b6aa39ffaac"
     },
     {
       "id": "layout-two-benches",
@@ -89,7 +89,7 @@
       "description": "Light and geometry on the right, colour on the left: the curve and the grading wheels open side by side with Basic, for wide screens.",
       "license": "CC0-1.0",
       "path": "looks/layouts/two-benches.json",
-      "sha256": "edda666661cc30cd8f971d8a42da5871bd591998a5dc3d490fda4e33ff8419d8"
+      "sha256": "e2d4ce668ef8e0716e791a0f15b351282c1f2cbe74ffa8c3a28374882206b6e2"
     },
     {
       "id": "layout-film-lab",
@@ -119,7 +119,7 @@
       "description": "For monochrome: the B&W switch and colour mix on top, then tone, contrast and the curve, with grain and vignette open below and split toning from the grading wheels.",
       "license": "CC0-1.0",
       "path": "looks/layouts/black-and-white.json",
-      "sha256": "f4182736eedbcfb39953a3b5ef045c0b2cda061def683f1c92b3bcd93582fb16"
+      "sha256": "a719a773f5d30ef2ce9bab8fc53418af655585c6de37b42c13c68e7b12ed2194"
     },
     {
       "id": "layout-retouch",
@@ -129,7 +129,7 @@
       "description": "For portraits and clean-up: masks, spot removal and the 100% view up front, Detail open for sharpening and noise, and Texture and Clarity as knobs for skin.",
       "license": "CC0-1.0",
       "path": "looks/layouts/retouch.json",
-      "sha256": "bd8e38a8d975b12c2d131555356ab10fc90a88d755b416a75117ffa18981db63"
+      "sha256": "e2704110bf9a97e47efe2bdc6b5debfa16a7dcd156cc720019622a6f226ae8b1"
     },
     {
       "id": "layout-collage-prep",

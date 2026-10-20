@@ -5,7 +5,7 @@
   "author": "Ambrotype",
   "density": "normal",
   "toolbar": ["open", "library", "save", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "clip", "|", "looks", "settings"],
-  "left": { "width": 230, "items": ["presets", "info", "history"] },
+  "left": { "width": 230, "items": ["presets", "history"] },
   "right": {
     "width": 340,
     "items": [

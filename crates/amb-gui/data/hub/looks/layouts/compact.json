@@ -22,7 +22,6 @@
       { "panel": "calibration" },
       { "panel": "negative" },
       "presets",
-      "info",
       "history"
     ]
   }

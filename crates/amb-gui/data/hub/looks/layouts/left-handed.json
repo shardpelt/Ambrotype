@@ -22,5 +22,5 @@
       { "panel": "negative" }
     ]
   },
-  "right": { "width": 250, "items": ["presets", "info", "history"] }
+  "right": { "width": 250, "items": ["presets", "history"] }
 }

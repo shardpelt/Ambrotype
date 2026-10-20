@@ -74,6 +74,37 @@ Things anyone with the right kit can do; open an issue first so two people don't
 
 ## Next steps
 
+### Pinned: teach by showing, not by cards (owner, 2026-10-20)
+
+Card tips get skipped. Learn's lessons stay in Help → Learn, but first-run teaching should show, not tell. In this order:
+
+1. **A sample photo that teaches through its History.** On first launch a bundled sample raw opens with an edit already made. Stepping through History (click or ←/→) lights up the control each step changed and animates it to its value, so you see what it does and where it lives.
+2. **Hold ⌘/Ctrl to see every shortcut:** small key labels on buttons, sliders and tasks while the key is held.
+3. **Empty states that teach:** no photos → the Library is one big "drop a folder here"; an unedited photo → the most useful sliders glow faintly until first used.
+4. **Task bar hover previews:** a live miniature of the task's layout before switching.
+5. **Watch mode (maybe):** a ghost cursor does a 20-second edit on the sample; any key or click stops it.
+
+Then retire the auto "Getting around" card.
+
+**The sample raw (the owner can provide it).** One photo that needs every basic slider:
+- a bright sky and deep shadows in one frame, about 1 stop under (Exposure, Highlights, Shadows, Whites/Blacks)
+- a visible colour cast to fix: warm indoor light, or blue shade (Temp/Tint), with something white or grey in it
+- muted and saturated colours side by side (Vibrance vs Saturation), e.g. foliage and a painted door
+- a slightly tilted horizon or vertical (Crop/Straighten); a dust spot is a bonus (Spot removal)
+- no identifiable people, logos or private places; GPS stripped
+- your own shot, shared as CC0 (or CC BY); DNG preferred (NEF/CR3/ARW fine), under 30 MB
+
+### First release (v0.1) checklist
+
+- [ ] Make `shardpelt/Ambrotype` public (CI can't run while it's private: every job stops before its first step)
+- [ ] CI green on Linux, Windows (x64, ARM) and macOS
+- [ ] Run the `Release` workflow by hand once; install each artifact ([releasing.md](releasing.md))
+- [ ] Try the editor on the Mac: menu bar, library, a custom interface, export
+- [ ] Try it once on Windows
+- [ ] Hub history clean-up (`docs/handoff-hub-scrub.md`, local only), then re-sync `data/hub/SOURCE`
+- [ ] Release notes: say it's an early preview, unsigned (Gatekeeper/SmartScreen warnings and how to open anyway), Lightroom fidelity not yet fitted
+- [ ] Tag `v0.1.0`, check the draft release, publish
+
 There are two tracks that can run in parallel: the UI track is what users see and share, and the fidelity track depends on the Lightroom trial data.
 
 ### UI and sharing track (agreed 2026-10-07, in this order)

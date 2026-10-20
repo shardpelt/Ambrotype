@@ -4,6 +4,8 @@ A free, open-source photo editor and organiser for Windows, macOS and Linux, in 
 
 ![The Ambrotype editor with a sample preset applied](docs/images/editor.png)
 
+<sub>Photo: a Nikon D750 sample raw from [raw.pixls.us](https://raw.pixls.us/), shared under CC0 (public domain).</sub>
+
 **Status: early, and moving fast.** There are no installers yet: build it from source (below). Expect rough edges, and please report them (the Feedback button in the app opens a pre-filled issue).
 
 ## What it does

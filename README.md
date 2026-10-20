@@ -13,7 +13,7 @@ A free, open-source photo editor and organiser for Windows, macOS and Linux, in 
 - **Presets:** Lightroom `.xmp` and `.lrtemplate` presets with Amount, a preset library, Auto, Match look and Surprise me.
 - **Library:** folders, collections and smart collections, ratings, labels, flags, keywords, compare and survey views, import from a card, and moving from a Lightroom Classic catalogue.
 - **More:** spot removal, HDR and panorama merges, LUTs, a collage maker, borders and frames, export to JPEG, PNG, TIFF, WebP, AVIF, OpenEXR and JPEG XL with colour management.
-- **Make it yours:** layouts and themes as small JSON files, shared through the [hub](https://github.com/Ambrotypehq/ambrotype-hub), and sandboxed plugins.
+- **Make it yours:** layouts and themes as small JSON files, shared through the [hub](https://github.com/Ambrotypehq/ambrotype-hub), and sandboxed plugins ([how](docs/make-it-yours.md)).
 - **AI-friendly:** the `amb` command-line tool and an MCP server (`amb mcp`) let scripts and your own AI assistant make the same edits as the app.
 
 All rendering models are our own ("ours, not Adobe's"): they're built by black-box measurement, never from Adobe's code or files. [docs/GAPS.md](docs/GAPS.md) lists everything that is still approximate or missing.
@@ -55,6 +55,7 @@ All rendering models are our own ("ours, not Adobe's"): they're built by black-b
 - [docs/GAPS.md](docs/GAPS.md): every known gap, guess and open question.
 - [docs/recipes.md](docs/recipes.md): step by step, what a common change touches.
 - [docs/design/](docs/design/): one note per feature; [docs/ai/](docs/ai/): the guide for AI clients ([llms.txt](llms.txt)).
+- [docs/make-it-yours.md](docs/make-it-yours.md): change the layout and colours, and share them through the hub (or your own).
 - [docs/desktop-setup.md](docs/desktop-setup.md): building and running on each system.
 - [docs/legal.md](docs/legal.md): the legal position (formats, black-box testing, trademarks, licences).
 - [docs/SCOPE.md](docs/SCOPE.md) and [docs/research/](docs/research/): the original scoping and research.

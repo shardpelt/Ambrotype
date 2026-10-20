@@ -35,7 +35,7 @@ Using an AI coding assistant is fine, and the repo is set up for it (`AGENTS.md`
 
 ## Looks, presets and plugins
 
-Layouts, themes, presets and plugins go to the [hub repo](https://github.com/Ambrotypehq/ambrotype-hub), not here (the app's built-in ones too; `tools/sync-hub.py` copies them into `crates/amb-gui/data/hub/`). See [docs/ai/plugins.md](docs/ai/plugins.md) for plugins.
+Layouts, themes, presets and plugins go to the [hub repo](https://github.com/Ambrotypehq/ambrotype-hub), not here ([docs/make-it-yours.md](docs/make-it-yours.md) shows how) (the app's built-in ones too; `tools/sync-hub.py` copies them into `crates/amb-gui/data/hub/`). See [docs/ai/plugins.md](docs/ai/plugins.md) for plugins.
 
 ## Conduct and security
 

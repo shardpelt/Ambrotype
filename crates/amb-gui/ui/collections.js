@@ -175,7 +175,7 @@ async function moveCollectionToSet() {
 }
 
 async function deleteCollection() {
-  if (!lib.collection || !confirm(`Delete the collection “${lib.collection}”? Its photos stay where they are.`)) return;
+  if (!lib.collection || !await askYes(`Delete the collection “${lib.collection}”? Its photos stay where they are.`)) return;
   try {
     if (lib.smart) await invoke("smart_delete", { name: lib.smart });
     else await invoke("collection_delete", { name: lib.collection });

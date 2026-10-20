@@ -46,6 +46,7 @@ pub(crate) async fn hub_browse(state: tauri::State<'_, AppState>) -> Res<HubList
     let url = hub_index(state.inner());
     let dir = looks_dir(state.inner());
     let plugins = plugins_dir(state.inner());
+    let interfaces = super::settings::interfaces_dir(state.inner()).ok();
     let presets = own_presets_dir(state.inner());
     let collages = state
         .collage_templates
@@ -62,6 +63,7 @@ pub(crate) async fn hub_browse(state: tauri::State<'_, AppState>) -> Res<HubList
         let mine = hub::Mine {
             looks: dir.as_deref(),
             plugins: plugins.as_deref(),
+            interfaces: interfaces.as_deref(),
             presets: presets.as_deref(),
             collages: &collages,
             sizes: &sizes,
@@ -179,6 +181,20 @@ pub(crate) async fn hub_install_plugin(
     let url = hub_index(state.inner());
     let dir = plugins_dir(state.inner()).ok_or("the plugins folder isn't available")?;
     tauri::async_runtime::spawn_blocking(move || hub::install_plugin(&dir, &url, &id))
+        .await
+        .map_err(|e| e.to_string())?
+}
+
+/// Install (or update) a custom interface from the hub; returns its folder.
+/// The Browse dialog warns first: it's code with the app's full reach.
+#[tauri::command]
+pub(crate) async fn hub_install_interface(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<PathBuf> {
+    let url = hub_index(state.inner());
+    let dir = super::settings::interfaces_dir(state.inner())?;
+    tauri::async_runtime::spawn_blocking(move || hub::install_interface(&dir, &url, &id))
         .await
         .map_err(|e| e.to_string())?
 }

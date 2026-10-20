@@ -5,7 +5,7 @@
   "author": "Ambrotype",
   "density": "compact",
   "filmstrip": true,
-  "toolbar": ["library", "open", "collage", "export", "|", "undo", "redo", "|", "before", "crop", "frame", "wb", "|", "hub", "|", "looks", "settings"],
+  "toolbar": ["open", "collage", "export", "|", "undo", "redo", "|", "before", "crop", "frame", "wb", "|", "hub", "|", "looks", "settings"],
   "left": { "width": 260, "items": ["presets", "info"] },
   "right": {
     "width": 300,

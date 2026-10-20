@@ -1182,7 +1182,7 @@ async function saveProject(as = false, path = null) {
 }
 
 async function openProject(path = null) {
-  if (collage.dirty && collage.cells.some((c) => c?.path) && !confirm("This collage has changes that aren't saved. Open another one anyway?")) return;
+  if (collage.dirty && collage.cells.some((c) => c?.path) && !await askYes("This collage has changes that aren't saved. Open another one anyway?")) return;
   try {
     const o = await invoke("open_collage_project", { path });
     if (!o) return;

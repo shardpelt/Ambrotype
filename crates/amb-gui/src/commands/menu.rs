@@ -82,6 +82,57 @@ pub(crate) fn set_menu(
     Ok(true)
 }
 
+/// The menu bar under a custom interface: the app's actions are the built-in
+/// interface's, so it has only a way back to that (`main` handles
+/// "builtin"), and the system's own items. Windows and Linux get it only
+/// when a menu bar was up already.
+pub(crate) fn interface_menu(app: &AppHandle) -> Res<()> {
+    if !cfg!(target_os = "macos") && app.menu().is_none() {
+        return Ok(());
+    }
+    let back = Entry::Item {
+        id: "builtin".into(),
+        text: "Back to the Built-in Interface".into(),
+        keys: None,
+        enabled: true,
+    };
+    let native = |n: &str| Entry::Native { name: n.into() };
+    let mut menus = Vec::new();
+    if cfg!(target_os = "macos") {
+        menus.push(Entry::Submenu {
+            text: "Ambrotype".into(),
+            role: None,
+            items: vec![
+                native("about"),
+                Entry::Separator,
+                native("hide"),
+                native("quit"),
+            ],
+        });
+        menus.push(Entry::Submenu {
+            text: "Edit".into(),
+            role: None,
+            items: ["cut", "copy", "paste"].map(native).into(),
+        });
+    }
+    menus.push(Entry::Submenu {
+        text: "Interface".into(),
+        role: None,
+        items: vec![back],
+    });
+    let mut items = HashMap::new();
+    let menu = Menu::new(app).map_err(|e| e.to_string())?;
+    for entry in &menus {
+        menu.append(&build(app, entry, &mut items)?)
+            .map_err(|e| e.to_string())?;
+    }
+    app.set_menu(menu).map_err(|e| e.to_string())?;
+    if let Ok(mut m) = app.state::<AppState>().menu_items.lock() {
+        *m = items;
+    }
+    Ok(())
+}
+
 /// Greys out (or back) the items whose action can't run now: no photo open,
 /// or another tool's keys.
 #[tauri::command]
@@ -226,7 +277,10 @@ mod tests {
                 .is_some_and(|d| d.parse::<u8>().is_ok_and(|d| d <= 5))
                 || ["red", "yellow", "green", "blue"]
                     .iter()
-                    .any(|c| name == format!("label-{c}"));
+                    .any(|c| name == format!("label-{c}"))
+                || ["library", "develop", "color", "retouch", "film", "collage"]
+                    .iter()
+                    .any(|t| name == format!("task-{t}"));
             assert!(
                 generated
                     || keys.contains(&format!("id: \"{name}\""))

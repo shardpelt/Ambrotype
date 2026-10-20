@@ -52,6 +52,7 @@ async function toggleLibrary(on = !lib.on) {
   $("workspace").hidden = on;
   $("library").hidden = !on;
   document.body.classList.toggle("library-mode", on);
+  renderTasks();
   $("btn-library")?.classList.toggle("active", on);
   for (const id of VIEWER_BUTTONS) $(id).disabled = on || !ui.info;
   $("btn-export").disabled = !on && !ui.info;
@@ -726,7 +727,7 @@ async function libraryDeleteCopies() {
   const copies = libraryTargets().filter((p) => p.copy);
   if (!copies.length) return;
   const what = copies.length === 1 ? copies[0].name : `${copies.length} virtual copies`;
-  if (!confirm(`Delete ${what}? Only the copy's edit goes; the photo stays.`)) return;
+  if (!await askYes(`Delete ${what}? Only the copy's edit goes; the photo stays.`)) return;
   // The editor can't keep a deleted copy open: switch to its photo first.
   const open = copies.find((p) => p.path === ui.info?.path);
   if (open) {

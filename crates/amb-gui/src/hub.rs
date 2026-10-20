@@ -8,9 +8,11 @@
 //! Like Omarchy's themes there is no server: a hub is a git repo with one
 //! JSON file per look and an `index.json` listing them with their sha256.
 //! Each file must match its checksum and pass the same validation as any
-//! other look before it is saved as one of the user's. The only code is a
-//! plugin's WebAssembly module, which runs in the plugin sandbox and asks
-//! for its permissions on first use, like a plugin installed from a folder.
+//! other look before it is saved as one of the user's. Code comes in two
+//! kinds: a plugin's WebAssembly module, which runs in the plugin sandbox and
+//! asks for its permissions on first use, like a plugin installed from a
+//! folder; and a custom interface's files (interface.rs), which the app
+//! warns about before installing and before showing.
 //! Submitting opens GitHub's "new file" page with the look filled in, which
 //! becomes a pull request to the hub repo.
 
@@ -30,7 +32,16 @@ const MAX_INDEX_BYTES: u64 = 2 << 20;
 const MAX_ITEM_BYTES: u64 = 256 << 10;
 /// A plugin's module (the share dialog keeps whole plugins under 5 MB).
 const MAX_PLUGIN_FILE_BYTES: u64 = 5 << 20;
-/// Kept in an installed plugin's folder: where it came from.
+/// A custom interface: how many files, how big each and all together.
+pub(crate) const MAX_INTERFACE_FILES: usize = 200;
+const MAX_INTERFACE_FILE_BYTES: u64 = 5 << 20;
+pub(crate) const MAX_INTERFACE_BYTES: u64 = 20 << 20;
+/// What a custom interface may be made of: web pages and their parts.
+const INTERFACE_EXTENSIONS: &[&str] = &[
+    "html", "htm", "js", "mjs", "css", "json", "svg", "png", "jpg", "jpeg", "webp", "gif", "ico",
+    "woff2", "woff", "ttf", "wasm", "md", "txt",
+];
+/// Kept in an installed plugin's or interface's folder: where it came from.
 const HUB_SOURCE_FILE: &str = ".hub.json";
 const MAX_ITEMS: usize = 500;
 /// GitHub's "new file" link carries the file in the address; longer than this
@@ -54,8 +65,8 @@ pub struct HubItem {
     /// The file, relative to the index (a plugin's `plugin.json`).
     pub path: String,
     pub sha256: String,
-    /// A plugin's other files (its module), relative to `path`'s folder,
-    /// with their sha256.
+    /// A plugin's or interface's other files (a module; pages, scripts and
+    /// pictures), relative to `path`'s folder, with their sha256.
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub files: BTreeMap<String, String>,
 }
@@ -81,9 +92,9 @@ pub struct HubEntry {
 }
 
 /// Kinds this version can install: looks, plugins, develop presets,
-/// collage templates and size profiles.
+/// collage templates, size profiles and custom interfaces.
 fn known_kind(name: &str) -> bool {
-    kind_of(name).is_some() || ["plugin", "preset", "collage", "sizes"].contains(&name)
+    kind_of(name).is_some() || ["plugin", "preset", "collage", "sizes", "interface"].contains(&name)
 }
 
 /// Where an installed item came from (kept with collage templates and
@@ -547,11 +558,129 @@ fn fetch_plugin_manifest(index_url: &str, item: &HubItem) -> Result<Value, Strin
     serde_json::from_str(&text).map_err(|e| e.to_string())
 }
 
+/// A custom interface's `interface.json`, checked, and its list of files
+/// (for the Browse dialog to show before anything is installed).
+fn fetch_interface_manifest(index_url: &str, item: &HubItem) -> Result<Value, String> {
+    let name = interface_folder_name(item)?;
+    if !item.path.ends_with("/interface.json") {
+        return Err("the index should point at its interface.json".into());
+    }
+    if !item.files.contains_key("index.html") {
+        return Err("the index doesn't list its index.html".into());
+    }
+    if item.files.len() > MAX_INTERFACE_FILES {
+        return Err(format!("more than {MAX_INTERFACE_FILES} files"));
+    }
+    for file in item.files.keys() {
+        interface_file_ok(file)?;
+    }
+    let bytes = fetch_checked(index_url, &item.path, &item.sha256, MAX_ITEM_BYTES)?;
+    let manifest: crate::interface::Manifest =
+        serde_json::from_slice(&bytes).map_err(|e| format!("interface.json: {e}"))?;
+    let mut data = serde_json::to_value(manifest).map_err(|e| e.to_string())?;
+    data["folder"] = name.into();
+    data["files"] = item.files.keys().cloned().collect::<Vec<_>>().into();
+    Ok(data)
+}
+
+/// An interface's folder name: its id without `interface-`.
+fn interface_folder_name(item: &HubItem) -> Result<&str, String> {
+    item.id
+        .strip_prefix("interface-")
+        .filter(|n| {
+            !n.is_empty()
+                && n.len() <= 63
+                && n.chars()
+                    .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        })
+        .ok_or_else(|| format!("{} isn't a valid interface id", item.id))
+}
+
+/// A path inside an interface's folder: plain names, no way out of it, and
+/// only the kinds of file a web page is made of.
+pub(crate) fn interface_file_ok(path: &str) -> Result<(), String> {
+    let bad = || Err(format!("bad file name in the index: {path:?}"));
+    if path.is_empty() || path.len() > 200 || path.contains('\\') {
+        return bad();
+    }
+    for part in path.split('/') {
+        if part.is_empty()
+            || part.starts_with('.')
+            || !part
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || "-_. ".contains(c))
+        {
+            return bad();
+        }
+    }
+    let ext = path.rsplit_once('.').map(|(_, e)| e.to_ascii_lowercase());
+    if !ext.is_some_and(|e| INTERFACE_EXTENSIONS.contains(&e.as_str())) {
+        return Err(format!(
+            "{path}: not a kind of file an interface is made of"
+        ));
+    }
+    Ok(())
+}
+
+/// Install (or update) a custom interface from the hub into `dir` (the
+/// user's interfaces folder), every file checked against the index. Returns
+/// its folder.
+pub fn install_interface(
+    dir: &Path,
+    index_url: &str,
+    id: &str,
+) -> Result<std::path::PathBuf, String> {
+    let item = read_index(index_url)?
+        .into_iter()
+        .find(|i| i.id == id && i.kind == "interface")
+        .ok_or_else(|| format!("{id} isn't in the hub any more"))?;
+    fetch_interface_manifest(index_url, &item)?;
+    let name = interface_folder_name(&item)?;
+    let folder = item.path.rsplit_once('/').map_or("", |(f, _)| f);
+    std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    let tmp = dir.join(format!(".{name}.installing"));
+    let _ = std::fs::remove_dir_all(&tmp);
+    let staged = (|| -> Result<(), String> {
+        let mut total = 0u64;
+        let manifest = fetch_checked(index_url, &item.path, &item.sha256, MAX_ITEM_BYTES)?;
+        std::fs::create_dir_all(&tmp).map_err(|e| e.to_string())?;
+        std::fs::write(tmp.join("interface.json"), manifest).map_err(|e| e.to_string())?;
+        for (file, sha) in &item.files {
+            let bytes = fetch_checked(
+                index_url,
+                &format!("{folder}/{file}"),
+                sha,
+                MAX_INTERFACE_FILE_BYTES,
+            )?;
+            total += bytes.len() as u64;
+            if total > MAX_INTERFACE_BYTES {
+                return Err(format!("bigger than {} MB", MAX_INTERFACE_BYTES >> 20));
+            }
+            let path = tmp.join(file);
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            }
+            std::fs::write(path, bytes).map_err(|e| e.to_string())?;
+        }
+        let source = serde_json::json!({ "hub": index_url, "id": item.id, "sha256": item.sha256 });
+        std::fs::write(tmp.join(HUB_SOURCE_FILE), source.to_string()).map_err(|e| e.to_string())
+    })();
+    let target = dir.join(name);
+    let done = staged.and_then(|()| {
+        // An update replaces the old files whole: none of them is kept.
+        let _ = std::fs::remove_dir_all(&target);
+        std::fs::rename(&tmp, &target).map_err(|e| e.to_string())
+    });
+    let _ = std::fs::remove_dir_all(&tmp);
+    done.map(|()| target)
+}
+
 /// One look's file, checked against the index and validated (for a plugin,
 /// its manifest).
 fn fetch_item(index_url: &str, item: &HubItem) -> Result<Value, String> {
     match item.kind.as_str() {
         "plugin" => return fetch_plugin_manifest(index_url, item),
+        "interface" => return fetch_interface_manifest(index_url, item),
         "preset" => return fetch_preset(index_url, item).map(|(_, summary)| summary),
         "collage" => {
             return fetch_collage(index_url, item)
@@ -583,7 +712,8 @@ fn fetch_item(index_url: &str, item: &HubItem) -> Result<Value, String> {
     Ok(data)
 }
 
-/// The user's plugins that came from this hub: hub id -> (plugin id, sha256).
+/// The user's plugins (or interfaces) that came from this hub: hub id ->
+/// (folder name, sha256).
 fn installed_plugins(dir: Option<&Path>, index_url: &str) -> HashMap<String, (String, String)> {
     let mut out = HashMap::new();
     let Some(dir) = dir else { return out };
@@ -629,6 +759,7 @@ fn installed(dir: Option<&Path>, index_url: &str) -> HashMap<String, (String, St
 pub struct Mine<'a> {
     pub looks: Option<&'a Path>,
     pub plugins: Option<&'a Path>,
+    pub interfaces: Option<&'a Path>,
     pub presets: Option<&'a Path>,
     pub collages: &'a [crate::collages::TemplateEntry],
     pub sizes: &'a [crate::sizes::SizePreset],
@@ -670,6 +801,7 @@ pub fn browse(index_url: &str, mine: Mine<'_>) -> Result<Vec<HubEntry>, String> 
             .collect();
         m.extend(installed(mine.looks, index_url));
         m.extend(installed_plugins(mine.plugins, index_url));
+        m.extend(installed_plugins(mine.interfaces, index_url));
         m.extend(sources);
         m
     };
@@ -1005,6 +1137,80 @@ mod tests {
         std::fs::write(hub.join("plugins/dice/plugin.wasm"), b"\0asm").unwrap();
         let err = install_plugin(&mine, &url, "plugin-dice").unwrap_err();
         assert!(err.contains("checksum"), "{err}");
+        let _ = std::fs::remove_dir_all(&hub);
+        let _ = std::fs::remove_dir_all(&mine);
+    }
+
+    #[test]
+    fn interfaces_install_from_the_hub_checked() {
+        let hub = temp_dir("ui-hub");
+        let files: [(&str, &[u8]); 3] = [
+            ("index.html", b"<script src=\"js/app.js\"></script>"),
+            ("js/app.js", b"// hi"),
+            ("look.css", b"body{}"),
+        ];
+        let manifest = br#"{"name": "Tiny", "author": "Me"}"#;
+        let base = hub.join("interfaces/tiny");
+        std::fs::create_dir_all(base.join("js")).unwrap();
+        std::fs::write(base.join("interface.json"), manifest).unwrap();
+        for (name, bytes) in files {
+            std::fs::write(base.join(name), bytes).unwrap();
+        }
+        let item = |files: Value| {
+            serde_json::json!({ "format": INDEX_FORMAT, "items": [{
+                "id": "interface-tiny", "kind": "interface", "name": "Tiny",
+                "path": "interfaces/tiny/interface.json", "sha256": sha256_hex(manifest),
+                "files": files,
+            }]})
+            .to_string()
+        };
+        let listed: serde_json::Map<String, Value> = files
+            .iter()
+            .map(|(n, b)| (n.to_string(), sha256_hex(b).into()))
+            .collect();
+        std::fs::write(hub.join("index.json"), item(listed.clone().into())).unwrap();
+        let url = format!("file://{}/index.json", hub.display());
+        let mine = temp_dir("ui-mine");
+        let browse_mine = || {
+            browse(
+                &url,
+                Mine {
+                    interfaces: Some(&mine),
+                    ..Default::default()
+                },
+            )
+            .unwrap()
+        };
+        let entries = browse_mine();
+        assert!(entries[0].error.is_none(), "{:?}", entries[0].error);
+        assert_eq!(entries[0].data.as_ref().unwrap()["name"], "Tiny");
+        assert_eq!(entries[0].data.as_ref().unwrap()["files"][1], "js/app.js");
+        let dir = install_interface(&mine, &url, "interface-tiny").unwrap();
+        assert!(crate::interface::is_interface(&dir));
+        assert!(dir.join("js/app.js").is_file());
+        assert_eq!(browse_mine()[0].installed.as_deref(), Some("tiny"));
+        // Changed after it was listed: refused, and the installed copy stays.
+        std::fs::write(base.join("js/app.js"), b"// changed").unwrap();
+        let err = install_interface(&mine, &url, "interface-tiny").unwrap_err();
+        assert!(err.contains("checksum"), "{err}");
+        assert!(dir.join("js/app.js").is_file());
+        // Nothing outside its folder, and only what pages are made of.
+        for bad in [
+            "../evil.html",
+            "js/../../x.js",
+            ".hidden.js",
+            "run.sh",
+            "a\\b.js",
+        ] {
+            let mut files = listed.clone();
+            files.insert(bad.into(), sha256_hex(b"x").into());
+            std::fs::write(hub.join("index.json"), item(files.into())).unwrap();
+            assert!(browse_mine()[0].error.is_some(), "{bad}");
+            assert!(
+                install_interface(&mine, &url, "interface-tiny").is_err(),
+                "{bad}"
+            );
+        }
         let _ = std::fs::remove_dir_all(&hub);
         let _ = std::fs::remove_dir_all(&mine);
     }

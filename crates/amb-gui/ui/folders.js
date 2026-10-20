@@ -113,7 +113,7 @@ async function addLibraryRoot() {
 }
 
 async function removeLibraryFolder(path) {
-  if (!confirm(`Remove “${path}” from the library folders? Its photos leave the catalogue; the files stay where they are.`)) return;
+  if (!await askYes(`Remove “${path}” from the library folders? Its photos leave the catalogue; the files stay where they are.`)) return;
   try {
     await invoke("remove_library_folder", { path, forget: true });
     await loadFolderTree();

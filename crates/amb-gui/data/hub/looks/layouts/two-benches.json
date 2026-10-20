@@ -4,7 +4,7 @@
   "description": "Light and geometry on the right, colour on the left: the curve and the grading wheels open side by side with Basic, for wide screens.",
   "author": "Ambrotype",
   "density": "normal",
-  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "edit", "settings", "feedback"],
   "left": {
     "width": 340,
     "items": [

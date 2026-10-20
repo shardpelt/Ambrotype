@@ -11,6 +11,7 @@
 <body>
   <header class="topbar">
     <div class="brand"><span class="logo" aria-hidden="true"></span>Ambrotype</div>
+    <nav id="task-bar" class="task-bar" role="tablist" aria-label="Task"></nav>
     <div class="actions">
       <button id="btn-open" title="Open a photo: raw, JPEG, PNG, TIFF or WebP (Ctrl+O)">Open</button>
       <button id="btn-library" title="Library: all the photos in the folder, to rate, label, tag and export many at once">Library</button>
@@ -32,7 +33,7 @@
       <button id="btn-frame" title="Frame: a border and text around the photo (Shift+B)" disabled>Frame</button>
       <button id="btn-keys" title="All keyboard shortcuts (?)">Shortcuts</button>
       <span class="sep"></span>
-      <button id="btn-hub" title="Browse what other people shared: layouts, themes, presets, collages and plugins (Ctrl+Shift+H)">Browse</button>
+      <button id="btn-hub" title="Browse what other people shared: layouts, themes, presets, collages, plugins and interfaces (Ctrl+Shift+H)">Browse</button>
       <button id="btn-plugins" title="Plugins: extra tools that make edits for you">Plugins</button>
       <span class="sep"></span>
       <button id="btn-looks" title="Appearance: layouts and themes. Choose, clone, share">Appearance</button>
@@ -164,13 +165,6 @@
         <label title="Colours the space can't hold, in magenta"><input type="checkbox" id="proof-warn"> Gamut warning</label>
       </div>
       <div class="busy" id="busy" hidden></div>
-      <!-- Learn: the current lesson step (learn.js). -->
-      <aside id="lesson-card" class="lesson-card" hidden>
-        <div class="lesson-head"><span id="lesson-title"></span><button id="lesson-close" class="small" title="End the lesson">×</button></div>
-        <p id="lesson-text"></p>
-        <p id="lesson-goal" class="hint">Moves on by itself when you've done it.</p>
-        <div class="lesson-buttons"><button id="lesson-back" class="small">Back</button><button id="lesson-next" class="small primary">Next</button></div>
-      </aside>
     </section>
 
     <section class="filmstrip" id="filmstrip" hidden aria-label="Photos in this folder">
@@ -935,6 +929,9 @@
             <option value="srgb">sRGB</option>
           </select><select id="settings-edit-bits"><option value="16">16-bit</option><option value="8">8-bit</option></select></span>
         </label>
+        <label class="hub-url">Interface: the whole window, built in or one of your own (docs/ai/custom-interface.md)
+          <span class="folder-row"><select id="settings-interface"></select><button type="button" class="small" id="settings-interface-pick">Use a folder…</button><button type="button" class="small" id="settings-interface-folder" title="Where installed interfaces are kept">Open folder</button><button type="button" class="small" id="settings-interface-share" title="Offer the chosen interface to the hub as a pull request, so others can install it">Share…</button></span>
+        </label>
         <label class="check" id="settings-menu-row"><input type="checkbox" id="settings-menu-bar"> Show the menu bar in the window (every command by name, with its keys)</label>
         <div class="crop-line">
           <button type="button" id="settings-folder">Open the settings folder</button>
@@ -1200,8 +1197,8 @@
 
   <dialog id="hub-dialog">
     <form method="dialog">
-      <h2>Hub: shared looks, presets and plugins</h2>
-      <p class="hint">Layouts, themes, develop presets, collage templates, size profiles and plugins other people made, checked before they're installed. All but plugins are small data files; plugins run sandboxed and ask before they see anything but the edit. From <span id="hub-address"></span></p>
+      <h2>Hub: what others shared</h2>
+      <p class="hint">Layouts, themes, develop presets, collage templates, size profiles, plugins and interfaces other people made, checked before they're installed. Most are small data files; plugins run sandboxed and ask before they see anything but the edit; an interface is a whole program, so the app asks first. From <span id="hub-address"></span></p>
       <div class="hub-bar">
         <div class="tabs hub-tabs">
           <button type="button" data-kind="all" class="active">All</button>
@@ -1211,6 +1208,7 @@
           <button type="button" data-kind="collage">Collages</button>
           <button type="button" data-kind="sizes">Sizes</button>
           <button type="button" data-kind="plugin">Plugins</button>
+          <button type="button" data-kind="interface">Interfaces</button>
         </div>
         <input id="hub-search" type="search" placeholder="Search the hub" spellcheck="false">
       </div>
@@ -1291,6 +1289,14 @@
     </form>
   </dialog>
 
+  <!-- Learn: the current lesson step (learn.js), over the editor and the library alike. -->
+  <aside id="lesson-card" class="lesson-card" hidden>
+    <div class="lesson-head"><span id="lesson-title"></span><button id="lesson-close" class="small" title="End the lesson">×</button></div>
+    <p id="lesson-text"></p>
+    <p id="lesson-goal" class="hint">Moves on by itself when you've done it.</p>
+    <div class="lesson-buttons"><button id="lesson-back" class="small">Back</button><button id="lesson-next" class="small primary">Next</button></div>
+  </aside>
+
   <script src="curve.js"></script>
   <script src="crop.js"></script>
   <script src="masks.js"></script>
@@ -1304,6 +1310,8 @@
   <script src="folders.js"></script>
   <script src="libmenus.js"></script>
   <script src="search.js"></script>
+  <script src="tasks.js"></script>
+  <script src="interfaces.js"></script>
   <script src="hub.js"></script>
   <script src="borders.js"></script>
   <script src="info.js"></script>

@@ -8,6 +8,8 @@ A look is two small JSON files:
 
 They contain no code and no CSS, so they are safe to share. Built-in looks can't be changed; clone one in the Appearance dialog, or write a new file.
 
+Want more than rearranging the editor's own controls? A **custom interface** replaces the whole window with your own HTML, CSS and JavaScript: [custom-interface.md](custom-interface.md).
+
 **People don't need this file** (their guide: [make-it-yours.md](../make-it-yours.md)). **Edit layout…** in the Appearance dialog (or Ctrl+Shift+L; an `edit` toolbar button if a layout lists one) does all of it by hand:
 - drag panels, blocks, settings and toolbar buttons to move them
 - click one to change its control type, label, title or columns, or to split or merge panels

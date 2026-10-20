@@ -13,6 +13,7 @@ mod collages;
 mod commands;
 mod folder;
 mod hub;
+mod interface;
 mod keys;
 mod library;
 mod looks;
@@ -81,6 +82,8 @@ struct AppState {
     assistant: Mutex<assistant::Provider>,
     /// The assistant's key for this run, when the keychain can't keep it.
     assistant_key: Mutex<Option<String>>,
+    /// The custom interface chosen in Settings (a folder), if any.
+    interface: Mutex<Option<PathBuf>>,
     /// The menu bar's items by action id, to grey them out.
     menu_items: Mutex<std::collections::HashMap<String, tauri::menu::MenuItem<tauri::Wry>>>,
 }
@@ -144,6 +147,9 @@ struct Config {
     /// Edit in another app: which app and what file.
     #[serde(default)]
     edit_in: EditIn,
+    /// A custom interface folder shown instead of the built-in one.
+    #[serde(default)]
+    interface: Option<PathBuf>,
 }
 
 /// Lightroom's "Edit in": the photo, as edited, goes to another app (an
@@ -264,6 +270,7 @@ fn save_config(state: &AppState) {
             .map(|p| p.clone())
             .unwrap_or_default(),
         edit_in: state.edit_in.lock().map(|e| e.clone()).unwrap_or_default(),
+        interface: state.interface.lock().ok().and_then(|i| i.clone()),
     };
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
@@ -355,16 +362,31 @@ fn main() {
         }
         let _ = gpu.set(found);
     });
-    *state.initial_path.lock().expect("fresh mutex") = std::env::args().nth(1);
+    *state.initial_path.lock().expect("fresh mutex") =
+        std::env::args().skip(1).find(|a| !a.starts_with("--"));
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         // The window opens where and as big as it was left.
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(state)
+        // A custom interface's files (interface.rs).
+        .register_uri_scheme_protocol(interface::SCHEME, |_ctx, request| {
+            interface::serve(request.uri().path())
+        })
         // The menu bar's items run their action in the UI (`ui/menu.js`).
         .on_menu_event(|app, event| {
             use tauri::Emitter;
+            // A way back that works whatever the custom interface does.
+            if event.id().as_ref() == "builtin" {
+                let state = app.state::<AppState>();
+                if let Ok(mut i) = state.interface.lock() {
+                    *i = None;
+                }
+                save_config(&state);
+                let _ = commands::settings::show_interface(app, None);
+                return;
+            }
             let _ = app.emit("menu", event.id().as_ref());
         })
         .setup(|app| {
@@ -428,6 +450,15 @@ fn main() {
                 if let Ok(mut p) = state.edit_in.lock() {
                     *p = config.edit_in;
                 }
+                // A custom interface, unless this run keeps to the built-in one.
+                if let Some(dir) = config.interface.filter(|d| interface::is_interface(d)) {
+                    if let Ok(mut i) = state.interface.lock() {
+                        *i = Some(dir.clone());
+                    }
+                    if !interface::builtin_forced() {
+                        let _ = commands::settings::show_interface(app.handle(), Some(dir));
+                    }
+                }
                 // Select Subject: the model in the models folder, fetched on first use.
                 if let Some(models) = path.parent().map(|d| d.join("models")) {
                     amb_engine::subject::set_finder(amb_ai::finder(models.clone()));
@@ -465,6 +496,12 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::photo::take_initial_path,
             commands::menu::set_menu,
+            commands::settings::interfaces,
+            commands::settings::set_interface,
+            commands::settings::pick_interface_folder,
+            commands::settings::open_interfaces_folder,
+            commands::settings::interface_share_plan,
+            commands::settings::share_interface,
             commands::menu::menu_enable,
             commands::photo::editor_schema,
             commands::photo::pick_photo,
@@ -525,6 +562,7 @@ fn main() {
             commands::hub::hub_install,
             commands::hub::hub_install_link,
             commands::hub::hub_install_plugin,
+            commands::hub::hub_install_interface,
             commands::hub::hub_install_preset,
             commands::hub::preset_library,
             commands::presets::preset_thumbnails,
@@ -682,6 +720,29 @@ mod tests {
             }
         }
         assert!(clashes.is_empty(), "{clashes:?}");
+    }
+
+    /// The dialog plugin replaces the page's confirm() and alert() with
+    /// calls that don't block (confirm()'s even fails), so a "Delete…?" guard
+    /// written with them never asks. askYes() (app.js) is the way.
+    #[test]
+    fn ui_scripts_ask_with_ask_yes() {
+        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");
+        for entry in std::fs::read_dir(&dir).unwrap().flatten() {
+            let path = entry.path();
+            if path.extension().is_none_or(|x| x != "js") {
+                continue;
+            }
+            for (i, line) in std::fs::read_to_string(&path).unwrap().lines().enumerate() {
+                let code = line.split("//").next().unwrap_or("");
+                for call in ["confirm(", "alert(", "prompt("] {
+                    let bare = code.match_indices(call).any(|(at, _)| {
+                        !code[..at].ends_with(|c: char| c.is_alphanumeric() || c == '.' || c == '_')
+                    });
+                    assert!(!bare, "{}:{}: {call}", path.display(), i + 1);
+                }
+            }
+        }
     }
 
     #[test]

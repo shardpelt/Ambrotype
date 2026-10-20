@@ -1,0 +1,6 @@
+{
+  "name": "Minimal",
+  "description": "A one-column editor: open a photo, a few sliders, undo, save. A starting point for your own interface.",
+  "author": "The Ambrotype contributors",
+  "license": "GPL-3.0-or-later"
+}

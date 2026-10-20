@@ -9,7 +9,7 @@
       "description": "Presets and history on the left, the Develop panels on the right.",
       "license": "CC0-1.0",
       "path": "looks/layouts/classic.json",
-      "sha256": "f9e60dfbdaf1dac2eda457ef62651e38cf9e3007a3e767466cec1fe8bd9ff743"
+      "sha256": "394e9d0b990c288093e4db9c12b144cc2f48bc9e380ddbdc874c68bc73141be6"
     },
     {
       "id": "layout-beginner",
@@ -19,7 +19,7 @@
       "description": "Classic with words on every toolbar button and only the everyday tools, so nothing is a puzzle. Switch to Classic for icons and the rest.",
       "license": "CC0-1.0",
       "path": "looks/layouts/beginner.json",
-      "sha256": "ed047f4b19295a26faa0e19ce588f894c95ec1196eacb7c80b5a27e0b6d0d896"
+      "sha256": "732a18ed4021300225b3a9452958905e252eab90963a2ecb5c25d0ff08f3e46d"
     },
     {
       "id": "layout-compact",
@@ -29,7 +29,7 @@
       "description": "One narrow column and smaller controls, for laptop screens.",
       "license": "CC0-1.0",
       "path": "looks/layouts/compact.json",
-      "sha256": "4e8b9e2e7a5eb63b51ba35aec40abd2cf2d12a94b862cd985ab30a47bf3d73be"
+      "sha256": "5018fee7b6f9e259653032640da4618919002a1514b6d8e7337430c87b3fd0a6"
     },
     {
       "id": "layout-big-controls",
@@ -39,7 +39,7 @@
       "description": "Larger text, sliders and targets: easier on touch screens and tired eyes.",
       "license": "CC0-1.0",
       "path": "looks/layouts/big-controls.json",
-      "sha256": "84d62b7c86a8f2f80786b094e105fcddc155f1d1283734b71e5754709ebba81c"
+      "sha256": "4e05df5d465f923a4486f323f7641501a555fc1edb2c3cff6c72eb21eb8a60ec"
     },
     {
       "id": "layout-studio",
@@ -49,7 +49,7 @@
       "description": "A mixing-desk feel: knobs for light, bars for presence and detail.",
       "license": "CC0-1.0",
       "path": "looks/layouts/studio.json",
-      "sha256": "86fafe95d68dcd2d4b25f2a06de4bc26504e54fe97f993140b8e5202a67fbd6b"
+      "sha256": "2384a4e00a8b39d0d9436d2197bf294ba9d9b16b8ccbd8acc20eae6144e54937"
     },
     {
       "id": "layout-left-handed",
@@ -59,7 +59,7 @@
       "description": "Classic, mirrored: the Develop panels on the left, presets and history on the right.",
       "license": "CC0-1.0",
       "path": "looks/layouts/left-handed.json",
-      "sha256": "ba877a8c6e4cab2094803ea2d29745525153848dd52e23f56c5d804d1dca863e"
+      "sha256": "76161ba1059998cb974cdade6e57574037a98220784775d5a4173cbcd5ee11da"
     },
     {
       "id": "layout-focus",
@@ -79,7 +79,7 @@
       "description": "A wide mixing console: every main control is a knob, four to a row, so the whole edit fits on one screen.",
       "license": "CC0-1.0",
       "path": "looks/layouts/console.json",
-      "sha256": "cbdfd5dfaa506e23caeaf390c82302ca70589da16f6978134a179b6aa39ffaac"
+      "sha256": "297510cc769892bb3349419af17a351af57c782a68a7296c2cf6421fd32300de"
     },
     {
       "id": "layout-two-benches",
@@ -89,7 +89,7 @@
       "description": "Light and geometry on the right, colour on the left: the curve and the grading wheels open side by side with Basic, for wide screens.",
       "license": "CC0-1.0",
       "path": "looks/layouts/two-benches.json",
-      "sha256": "e2d4ce668ef8e0716e791a0f15b351282c1f2cbe74ffa8c3a28374882206b6e2"
+      "sha256": "eeb1546a963a324ac6b492329400a2a9f976c75104750598acc05792d29c26c6"
     },
     {
       "id": "layout-film-lab",
@@ -99,7 +99,7 @@
       "description": "For scanned negatives and film looks: the negative conversion opens first, then tone, grain and vignette; the crop and white-balance tools sit up front.",
       "license": "CC0-1.0",
       "path": "looks/layouts/film-lab.json",
-      "sha256": "2e9249f02e93556dc9297f27c7589ad042462f581dbce3cb085549a7dc524d45"
+      "sha256": "9c3496659fa9dc71c9a7f4f824ce470f7a6923dc253589ccd5c96e95df9f248d"
     },
     {
       "id": "layout-color-grading",
@@ -109,7 +109,7 @@
       "description": "For colour work: big grading wheels in a wide left column, with the curve, colour mixer and calibration open on the right; exposure stays at hand, the rest is folded away.",
       "license": "CC0-1.0",
       "path": "looks/layouts/color-grading.json",
-      "sha256": "4fe394b1f3fb445b46aec6d0da624fc66d21594ac1037dd955ae8000c887b73d"
+      "sha256": "ac86c372ca3c6021c4fdf3eca96fe7d39af835077e9ecbc70f84bca038c25f5e"
     },
     {
       "id": "layout-black-and-white",
@@ -119,7 +119,7 @@
       "description": "For monochrome: the B&W switch and colour mix on top, then tone, contrast and the curve, with grain and vignette open below and split toning from the grading wheels.",
       "license": "CC0-1.0",
       "path": "looks/layouts/black-and-white.json",
-      "sha256": "a719a773f5d30ef2ce9bab8fc53418af655585c6de37b42c13c68e7b12ed2194"
+      "sha256": "d7eccb5c38d367b5d5e891a16b67fbd2ad567796eac87e2d97acd7a4884cfa12"
     },
     {
       "id": "layout-retouch",
@@ -129,7 +129,7 @@
       "description": "For portraits and clean-up: masks, spot removal and the 100% view up front, Detail open for sharpening and noise, and Texture and Clarity as knobs for skin.",
       "license": "CC0-1.0",
       "path": "looks/layouts/retouch.json",
-      "sha256": "e2704110bf9a97e47efe2bdc6b5debfa16a7dcd156cc720019622a6f226ae8b1"
+      "sha256": "6f1bbb51a64342b6d1b912e8a94da54e8ac0474cece15711caa0b679e53dcdec"
     },
     {
       "id": "layout-collage-prep",
@@ -139,7 +139,7 @@
       "description": "For getting a set of photos to match before the collage maker (C): presets and ratings on the left, the filmstrip on (copy one edit and paste it onto the rest in the library, G), quick tone and colour on the right, and Frame, crop and the collage button up front.",
       "license": "CC0-1.0",
       "path": "looks/layouts/collage-prep.json",
-      "sha256": "71817572d6c75ad3d2c1477d8abf794e949b89eaf4d2e24faac78ecc68ab8992"
+      "sha256": "badb5e91ddf0f3c852bf4eb9c5188952ea6ed1cad04f9182ea2b3fbf6f1f1c67"
     },
     {
       "id": "theme-dark",

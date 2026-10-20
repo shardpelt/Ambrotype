@@ -258,10 +258,13 @@ pub fn remove(dir: &Path, id: &str) -> Result<(), String> {
 
 // ---------------------------------------------------------------- sharing
 
-/// What sharing a plugin would send, shown to the user before anything happens.
+/// What sharing a plugin (or a custom interface, interface.rs) would send,
+/// shown to the user before anything happens.
 #[derive(Debug, Clone, Serialize)]
 pub struct SharePlan {
     pub id: String,
+    /// The branch on the user's fork, e.g. `plugin-warm-it-up`.
+    pub pr_branch: String,
     /// The hub repo (owner/name) and its branch.
     pub repo: String,
     pub branch: String,
@@ -353,6 +356,7 @@ pub fn share_plan(dir: &Path, id: &str, index_url: &str) -> Result<SharePlan, St
     let has_source = files.iter().any(|f| f.path.ends_with(".rs"));
     Ok(SharePlan {
         id: id.to_string(),
+        pr_branch: format!("plugin-{id}"),
         upload_url: format!("https://github.com/{repo}/upload/{branch}/{target}"),
         title: format!(
             "Add plugin: {} {}",
@@ -369,7 +373,7 @@ pub fn share_plan(dir: &Path, id: &str, index_url: &str) -> Result<SharePlan, St
 }
 
 /// The GitHub CLI user, if `gh` is installed and logged in.
-fn gh_user() -> Option<String> {
+pub(crate) fn gh_user() -> Option<String> {
     let out = std::process::Command::new("gh")
         .args(["api", "user", "--jq", ".login"])
         .output()
@@ -504,7 +508,7 @@ pub fn share_with(
     let sha = commit["sha"]
         .as_str()
         .ok_or("unexpected answer from GitHub (no commit)")?;
-    let branch = format!("plugin-{}", plan.id);
+    let branch = &plan.pr_branch;
     let created = api(
         "POST",
         &format!("repos/{fork}/git/refs"),

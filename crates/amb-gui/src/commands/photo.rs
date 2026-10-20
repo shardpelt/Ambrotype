@@ -79,6 +79,18 @@ pub(crate) async fn open_photo(
     let slot = state.session.clone();
     let proof = *state.proof.lock().map_err(|e| e.to_string())?;
     let opened = tauri::async_runtime::spawn_blocking(move || {
+        // The photo that's open already (another interface's page asking
+        // again) keeps its edits and history.
+        if let Some(s) = slot.lock().map_err(|e| e.to_string())?.as_ref() {
+            if s.path == Path::new(&path) {
+                let opened = Opened {
+                    info: s.info(),
+                    state: s.state_info(),
+                    saved_previous: None,
+                };
+                return Ok((opened, s.sidecar.clone()));
+            }
+        }
         let mut s = Session::open(Path::new(&path))?;
         s.set_proof(proof);
         let sidecar = s.sidecar.clone();

@@ -4,7 +4,7 @@
   "description": "For monochrome: the B&W switch and colour mix on top, then tone, contrast and the curve, with grain and vignette open below and split toning from the grading wheels.",
   "author": "Ambrotype",
   "density": "normal",
-  "toolbar": ["open", "library", "save", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "clip", "|", "looks", "settings"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "clip", "|", "looks", "settings"],
   "left": { "width": 230, "items": ["presets", "history"] },
   "right": {
     "width": 340,

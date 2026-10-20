@@ -49,10 +49,11 @@ function endLesson() {
   $("lesson-card").hidden = true;
 }
 
-// The element a step points at: a setting's row, or an element by id.
+// The element a step points at: a setting's row, or an element by id (one
+// this layout hides isn't pointed at).
 function lessonTarget(h) {
   if (!h) return null;
-  if (h.element) return $(h.element);
+  if (h.element) return $(h.element)?.getClientRects().length ? $(h.element) : null;
   const c = h.setting && ui.controls.get(h.setting);
   if (!c) return null;
   const el = c.label ?? c.check;
@@ -64,13 +65,16 @@ function clearLessonTarget() {
   learn.target = null;
 }
 
-function showStep(i) {
+async function showStep(i) {
   const l = learn.lesson;
   learn.step = i;
-  // Where the settings were when the step began, for "changed" goals.
-  learn.start = { ...ui.settings };
   const step = l.steps[i];
   clearLessonTarget();
+  // A step about another task goes there first.
+  if (step.task && currentTask() !== step.task) await switchTask(step.task);
+  if (learn.lesson !== l || learn.step !== i) return;
+  // Where the settings were when the step began, for "changed" goals.
+  learn.start = { ...ui.settings };
   const target = lessonTarget(step.highlight);
   if (target) {
     // Open the panel it's in and bring it into view.

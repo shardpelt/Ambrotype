@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "The main window: core events and window control. App commands are allowed by default; dialogs run from Rust.",
+  "description": "The main window: core events and window control. App commands are allowed by default; file dialogs run from Rust. yes-or-no questions use the dialog plugin's message box.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "dialog:allow-message"]
 }

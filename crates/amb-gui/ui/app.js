@@ -50,6 +50,17 @@ function toast(text, error = false) {
 
 function status(text) { $("status").textContent = text; }
 
+// Yes or no, in the system's own dialog. (The page's confirm() can't be used:
+// the dialog plugin turns it into a call that fails.)
+async function askYes(message) {
+  try {
+    return await window.__TAURI__.dialog.ask(message, { title: "Ambrotype", kind: "warning" });
+  } catch (e) {
+    toast(String(e), true);
+    return false;
+  }
+}
+
 function decimals(def) { return def.step < 1 ? 2 : 0; }
 
 function format(def, v) {
@@ -365,8 +376,8 @@ function renderSnapshots() {
         const to = await askName("Rename snapshot", "", s.name);
         if (to && to !== s.name) run([{ cmd: "rename_snapshot", name: s.name, to }]);
       }),
-      act("×", "Delete", () => {
-        if (confirm(`Delete the snapshot “${s.name}”? The photo's edit stays as it is.`)) {
+      act("×", "Delete", async () => {
+        if (await askYes(`Delete the snapshot “${s.name}”? The photo's edit stays as it is.`)) {
           run([{ cmd: "delete_snapshot", name: s.name }]);
         }
       }),
@@ -383,7 +394,7 @@ async function addSnapshot() {
   const name = await askName("New snapshot", "The edit as it is now, under a name, to come back to. Kept in the photo's .xmp.", stamp);
   if (!name) return;
   const taken = (ui.state.snapshots ?? []).some((s) => s.name === name);
-  if (taken && !confirm(`Replace the snapshot “${name}” with the edit as it is now?`)) return;
+  if (taken && !await askYes(`Replace the snapshot “${name}” with the edit as it is now?`)) return;
   run([{ cmd: "save_snapshot", name }]);
 }
 
@@ -779,7 +790,7 @@ async function offerLensDb() {
   } catch {
     // Asked once per session at worst.
   }
-  if (confirm("No lens profiles were found, so Lens Corrections can't fix distortion or vignetting yet. Download lensfun's lens database now (about 0.5 MB)? You can do it later under Lens Corrections → Lens database…")) {
+  if (await askYes("No lens profiles were found, so Lens Corrections can't fix distortion or vignetting yet. Download lensfun's lens database now (about 0.5 MB)? You can do it later under Lens Corrections → Lens database…")) {
     lensDbFetch();
   }
 }
@@ -797,7 +808,7 @@ async function lensDbFlow() {
   const ask = when
     ? `${have} The downloaded database is from ${when}. Check for a newer one?`
     : `${have} Download lensfun's lens database (about 0.5 MB, CC BY-SA 3.0) into ${st.dir}?`;
-  if (!confirm(ask)) return;
+  if (!await askYes(ask)) return;
   lensDbFetch();
 }
 
@@ -945,6 +956,8 @@ async function init() {
   wireFolderTree();
   wireLibraryMenus();
   wireSearch();
+  wireTasks();
+  wireInterfaces();
   // Drag and drop a raw file onto the window.
   tauri.event.listen("folder-changed", () => folderChanged());
   tauri.event.listen("sidecar-changed", () => sidecarChanged());

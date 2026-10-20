@@ -48,6 +48,11 @@ input[type=search], input[type=number], select {
 /* Top bar */
 .topbar { display: flex; align-items: center; gap: 16px; padding: 0 12px; background: var(--bg-deep); border-bottom: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: .02em; }
+/* Tasks: Library · Develop · Color · …, a quiet segmented control. */
+.task-bar { display: flex; gap: 2px; padding: 2px; border-radius: calc(var(--radius) + 2px); background: var(--bg); flex-shrink: 0; }
+.task-bar button { border: 0; background: none; padding: 4px 9px; font-size: 12px; color: var(--muted); border-radius: var(--radius); }
+.task-bar button:hover { color: var(--text); background: var(--hover); }
+.task-bar button.on { color: var(--text); background: var(--tab-active); font-weight: 600; }
 .logo { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle, #faf0dc 0 22%, var(--bg-deep) 23% 38%, #f0d6a0 39% 52%, var(--bg-deep) 53% 66%, var(--accent) 67%); }
 .actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .actions button { white-space: nowrap; }
@@ -191,7 +196,7 @@ dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-
 .smart-folder code { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .smart-rule select, .smart-rule input { flex: 1; min-width: 0; }
 /* Learn */
-.lesson-card { position: absolute; left: 16px; bottom: 16px; width: 340px; background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 12px 14px; box-shadow: 0 6px 24px rgba(0, 0, 0, .45); z-index: 20; }
+.lesson-card { position: fixed; left: 50%; transform: translateX(-50%); bottom: 40px; width: 360px; background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; padding: 12px 14px; box-shadow: 0 6px 24px rgba(0, 0, 0, .45); z-index: 20; }
 .lesson-head { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 11px; }
 .lesson-card p { margin: 8px 0; line-height: 1.45; }
 .lesson-buttons { display: flex; justify-content: flex-end; gap: 6px; }
@@ -451,8 +456,8 @@ kbd { display: inline-flex; align-items: center; gap: 4px; font: inherit; font-s
 #hub-address { word-break: break-all; }
 .hub-preview.collage { position: relative; display: block; margin: 0 auto; max-width: 100%; }
 .hub-preview.collage i { position: absolute; background: var(--faint); border-radius: 2px; }
-.hub-preview.plugin, .hub-preview.preset, .hub-preview.sizes { flex-direction: column; justify-content: center; gap: 4px; padding: 10px; font-size: 12px; color: var(--muted); background: var(--panel); }
-.hub-preview.plugin b { color: var(--text); font-weight: 600; }
+.hub-preview.plugin, .hub-preview.preset, .hub-preview.sizes, .hub-preview.interface { flex-direction: column; justify-content: center; gap: 4px; padding: 10px; font-size: 12px; color: var(--muted); background: var(--panel); }
+.hub-preview.plugin b, .hub-preview.interface b { color: var(--text); font-weight: 600; }
 .hub-preview { height: 104px; border-radius: 6px; border: 1px solid var(--line); overflow: hidden; display: flex; }
 .hub-preview.theme .hp-view { flex: 1; display: flex; align-items: flex-end; justify-content: flex-end; padding: 8px; }
 .hub-preview.theme .hp-side { flex: 0 0 42%; display: flex; flex-direction: column; gap: 7px; padding: 10px; }

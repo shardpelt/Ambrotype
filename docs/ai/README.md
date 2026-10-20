@@ -9,6 +9,7 @@ Related files:
 - [settings-reference.md](settings-reference.md): every setting, with its range, default, Ambrotype render status and a description. It is generated from the code (`amb settings reference`, or `--json` for machine use).
 - `amb protocol schema`: JSON Schema of the commands and queries below.
 - [ui-layouts.md](ui-layouts.md): making editor layouts and themes ("looks") for the user, e.g. "knobs instead of sliders, a warm theme".
+- [custom-interface.md](custom-interface.md): writing a whole new front end for the user (HTML, CSS, JavaScript) that replaces the editor's window and calls the same commands.
 - [plugins.md](plugins.md): making a plugin for the user ("a button that warms skin tones"): sandboxed WebAssembly that returns these same commands.
 - [film-recipes.md](film-recipes.md): turning a camera film recipe the user found online into settings with the Film recipe plugin.
 - [/llms.txt](../../llms.txt): index for language models.

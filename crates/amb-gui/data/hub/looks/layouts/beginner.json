@@ -4,7 +4,7 @@
   "description": "Classic with words on every toolbar button and only the everyday tools, so nothing is a puzzle. Switch to Classic for icons and the rest.",
   "author": "Ambrotype",
   "density": "normal",
-  "toolbar": ["open", "library", "save", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "zoom", "wb", "|", "hub", "looks", "settings", "keys", "feedback"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "zoom", "wb", "|", "hub", "looks", "settings", "feedback"],
   "toolbar_style": "words",
   "left": { "width": 250, "items": ["presets", "history"] },
   "right": {

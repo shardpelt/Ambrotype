@@ -4,7 +4,7 @@
   "description": "For colour work: big grading wheels in a wide left column, with the curve, colour mixer and calibration open on the right; exposure stays at hand, the rest is folded away.",
   "author": "Ambrotype",
   "density": "normal",
-  "toolbar": ["open", "library", "save", "export", "|", "undo", "redo", "|", "before", "masks", "zoom", "wb", "clip", "|", "looks", "settings"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "masks", "zoom", "wb", "clip", "|", "looks", "settings"],
   "left": {
     "width": 380,
     "items": [

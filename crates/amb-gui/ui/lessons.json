@@ -1,7 +1,54 @@
 {
   "format": "ambrotype-lessons/1",
-  "about": "Lessons for Learn (F1). Each step has text, optionally a control to point at ({\"setting\": name} or {\"element\": id}) and a goal that moves on by itself when met: {\"changed\": name}, {\"setting\": name, \"above\": n} or {\"below\": n}, {\"history\": label}. Without a goal, Next moves on. Translations can be added as more files later.",
+  "about": "Lessons for Learn (F1). Each step has text, optionally a task to switch to first ({\"task\": \"library\"}; tasks.js), a control to point at ({\"setting\": name} or {\"element\": id}) and a goal that moves on by itself when met: {\"changed\": name}, {\"setting\": name, \"above\": n} or {\"below\": n}, {\"history\": label}. Without a goal, Next moves on. Translations can be added as more files later.",
   "lessons": [
+    {
+      "id": "tour",
+      "title": "Getting around",
+      "summary": "Tasks, the library, search and where everything is, in two minutes. No photo needed.",
+      "needs_photo": false,
+      "steps": [
+        {
+          "text": "Ambrotype is split into tasks, along the top: Library to find and sort photos, Develop to edit one, and Color, Retouch, Film and Collage, which show only what that job needs. Ctrl+Alt+1 to 6 switch between them.",
+          "highlight": { "element": "task-bar" }
+        },
+        {
+          "text": "This is the Library. The Folders panel lists your library folders: add one with +, and every photo in it (and its subfolders) is in the catalogue. Photos on a drive that isn't plugged in stay listed, greyed out.",
+          "task": "library",
+          "highlight": { "element": "library-tree" }
+        },
+        {
+          "text": "Filter narrows the grid by rating, flag, colour label, keyword or camera; Import copies photos in from a card. 1–5 rate, P and X pick and reject, 6–9 add a colour label.",
+          "task": "library",
+          "highlight": { "element": "lib-filter-menu" }
+        },
+        {
+          "text": "‹ and › fold the sides away for a bigger grid (Ctrl+[ and Ctrl+]). Double-click a photo to edit it.",
+          "task": "library",
+          "highlight": { "element": "lib-fold-left" }
+        },
+        {
+          "text": "Develop is the full editor: the panels on the right are Lightroom's, with its sliders and ranges. Each task remembers the layout you pick while in it.",
+          "task": "develop",
+          "highlight": { "element": "task-bar" }
+        },
+        {
+          "text": "Lost a control? Press Ctrl+K (⌘K on a Mac) and type a few letters: it finds any command, setting, panel, preset, layout or theme, even one this layout doesn't show."
+        },
+        {
+          "text": "Every command is also in the menu bar, with its keys: at the top of the screen on a Mac; on Windows and Linux, turn it on in Settings → General. Settings also has every shortcut on a keyboard map, to change any.",
+          "highlight": { "element": "btn-settings" }
+        },
+        {
+          "text": "Appearance changes the layout and the colours; Edit layout moves panels and buttons by dragging. Browse gets layouts, themes, presets, plugins and even whole other interfaces that people shared.",
+          "highlight": { "element": "btn-looks" }
+        },
+        {
+          "text": "Something wrong, or an idea? Feedback opens a report with the details filled in. F1 brings these lessons back any time.",
+          "highlight": { "element": "btn-feedback" }
+        }
+      ]
+    },
     {
       "id": "basics",
       "title": "Editing basics",
@@ -62,15 +109,15 @@
       "needs_photo": false,
       "steps": [
         {
-          "text": "Ambrotype reads and writes Lightroom's own settings: a raw's .xmp sidecar opens here as Lightroom left it, and our edits open in Lightroom. There is no catalogue to import: Library (G) shows a folder as it is.",
-          "highlight": { "element": "btn-library" }
+          "text": "Ambrotype reads and writes Lightroom's own settings: a raw's .xmp sidecar opens here as Lightroom left it, and our edits open in Lightroom. Add your photo folders in the Library task (G); nothing is copied or converted.",
+          "highlight": { "element": "task-bar" }
         },
         {
           "text": "Lightroom's presets work as they are. Lightroom's own preset folder is found by itself; Add folder… adds others (.xmp and .lrtemplate). Amount scales a preset, as in Lightroom.",
           "highlight": { "element": "block-presets" }
         },
         {
-          "text": "The panels on the right are the Develop module's, with Lightroom's sliders and ranges. Edit layout (on the toolbar) moves them, and Appearance changes how they look."
+          "text": "The panels on the right are the Develop module's, with Lightroom's sliders and ranges. Edit layout (in Appearance) moves them, and Appearance changes how they look."
         },
         {
           "text": "Masks (M), Spot removal (Q), Crop (R) and the white balance picker (W) are on the toolbar. Many of Lightroom's shortcuts work here, and Settings (the ⚙ button) shows all of them on a keyboard map, where you can change any.",

@@ -319,7 +319,7 @@ async function installPlugin() {
 async function removeSelectedPlugin() {
   const p = pluginById(pluginUi.selected);
   if (!p || p.builtin) return;
-  if (!confirm(`Remove ${p.manifest?.name ?? p.id}? Its folder is deleted.`)) return;
+  if (!await askYes(`Remove ${p.manifest?.name ?? p.id}? Its folder is deleted.`)) return;
   try {
     pluginUi.list = await invoke("remove_plugin", { id: p.id });
     pluginUi.selected = pluginUi.list[0]?.id ?? null;

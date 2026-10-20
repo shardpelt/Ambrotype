@@ -29,6 +29,7 @@ const KEY_ACTIONS = [
   { id: "collage", group: "File", label: "Collage maker", hint: "Several photos on one canvas.", keys: ["C"], when: "main", button: "btn-collage", run: () => collageFlow() },
   { id: "undo", group: "Edit", label: "Undo", keys: ["Ctrl+Z"], when: "any", button: "btn-undo", run: () => run([{ cmd: "undo" }]) },
   { id: "redo", group: "Edit", label: "Redo", keys: ["Ctrl+Shift+Z", "Ctrl+Y"], when: "any", button: "btn-redo", run: () => run([{ cmd: "redo" }]) },
+  ...["library", "develop", "color", "retouch", "film", "collage"].map((t, i) => ({ id: `task-${t}`, group: "Tasks", label: `${t[0].toUpperCase()}${t.slice(1)} task`, keys: [`Ctrl+Alt+${i + 1}`], when: "any", run: () => switchTask(t) })),
   { id: "search", group: "Help", label: "Search everything: commands, settings, panels, presets, layouts", keys: ["Ctrl+K"], when: "any", run: () => searchFlow() },
   { id: "learn", group: "Help", label: "Learn: short guided lessons", keys: ["F1"], when: "any", run: () => learnFlow() },
   { id: "before", group: "View", label: "Before / after", keys: ["\\"], when: "any", button: "btn-before", run: () => toggleBefore() },
@@ -96,7 +97,7 @@ const KEY_ACTIONS = [
   { id: "fold-right", group: "Window", label: "Hide or show the right column", keys: ["Ctrl+]"], when: "any", run: () => toggleColumn("right") },
   { id: "filmstrip", group: "Photos", label: "Show or hide the filmstrip", keys: ["F"], when: "any", run: () => toggleFilmstrip() },
   { id: "assistant", group: "Tools", label: "Assistant: your AI edits the photo", keys: ["Ctrl+Shift+A"], when: "any", photo: true, run: () => assistantFlow() },
-  { id: "hub", group: "Tools", label: "Browse what others shared", hint: "Layouts, themes, presets, collages and plugins from the hub.", keys: ["Ctrl+Shift+H"], when: "any", button: "btn-hub", run: () => browseFlow() },
+  { id: "hub", group: "Tools", label: "Browse what others shared", hint: "Layouts, themes, presets, collages, plugins and interfaces from the hub.", keys: ["Ctrl+Shift+H"], when: "any", button: "btn-hub", run: () => browseFlow() },
   { id: "plugins", group: "Tools", label: "Plugins", hint: "Extra tools that make edits; run, install and share them.", keys: ["Ctrl+Shift+P"], when: "any", button: "btn-plugins", run: () => pluginsFlow() },
   { id: "looks", group: "Window", label: "Appearance: layouts and themes", keys: ["Ctrl+L"], when: "any", button: "btn-looks", run: () => looksFlow() },
   { id: "edit-layout", group: "Window", label: "Edit layout", hint: "Move panels, controls and toolbar buttons.", keys: ["Ctrl+Shift+L"], when: "any", button: "btn-edit-layout", run: () => startEditing() },
@@ -441,6 +442,7 @@ async function settingsFlow() {
   $("about-text").hidden = true;
   invoke("hub_url").then((u) => ($("settings-hub").value = u)).catch(() => {});
   invoke("edit_in_settings").then(showEditIn).catch(() => {});
+  renderInterfaces();
 
   try {
     const info = await invoke("settings_info");

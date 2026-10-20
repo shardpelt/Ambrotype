@@ -463,6 +463,7 @@ function applyActiveLooks() {
   const layout = findLook("layout", ui.looks?.active_layout);
   applyTheme(theme?.usable ? theme.data : null);
   applyLayout(layout?.usable ? layout.data : fallbackLayout());
+  if ($("task-bar").children.length) renderTasks();
 }
 
 async function loadLooks() {

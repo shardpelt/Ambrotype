@@ -1,0 +1,24 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Ambrotype — Minimal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <button id="open">Open…</button>
+    <button id="undo" disabled>Undo</button>
+    <button id="redo" disabled>Redo</button>
+    <button id="save" disabled>Save</button>
+    <span id="status"></span>
+    <button id="back" title="Back to the built-in interface">Built-in interface</button>
+  </header>
+  <main>
+    <div id="view"><img id="photo" alt=""><p id="empty">Open a photo to start.</p></div>
+    <aside id="sliders"></aside>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

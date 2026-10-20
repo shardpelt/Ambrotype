@@ -93,6 +93,20 @@ function pluginPreview(data) {
   return box;
 }
 
+// A custom interface: code with the app's full reach, so say so, and what
+// it's made of.
+function interfacePreview(data) {
+  const box = document.createElement("div");
+  box.className = "hub-preview interface";
+  const files = data?.files ?? [];
+  box.append(
+    Object.assign(document.createElement("b"), { textContent: "A whole other interface: code with the app's full reach" }),
+    Object.assign(document.createElement("span"), { textContent: `${files.length} file${files.length === 1 ? "" : "s"}: ${files.slice(0, 4).join(", ")}${files.length > 4 ? ", …" : ""}` }),
+    Object.assign(document.createElement("span"), { textContent: "Read its files in the hub repo before installing" }),
+  );
+  return box;
+}
+
 // What a develop preset changes (the backend read and checked it).
 function presetPreview(data) {
   const box = document.createElement("div");
@@ -162,7 +176,7 @@ async function hubFlow(initial = "all") {
       if (e.data) {
         const preview = {
           theme: themePreview, layout: layoutPreview, plugin: pluginPreview, preset: presetPreview,
-          collage: collagePreview, sizes: sizesPreview,
+          collage: collagePreview, sizes: sizesPreview, interface: interfacePreview,
         }[e.kind];
         if (preview) card.append(preview(e.data));
       }
@@ -202,6 +216,13 @@ async function hubFlow(initial = "all") {
                 renderPresets();
                 e.installed = e.id;
                 status(`Installed "${e.name}": it's with the presets on the left.`);
+              } else if (e.kind === "interface") {
+                if (!await askYes(`Install the interface "${e.name}"?\n\nIt's a program with the app's full reach (your photos, edits and settings), not a sandboxed plugin. Install it only if you trust its author or have read its files on the hub.`)) {
+                  render();
+                  return;
+                }
+                e.installed = await invoke("hub_install_interface", { id: e.id });
+                status(`Installed "${e.name}": choose it in Settings → General → Interface, or press Use now.`);
               } else if (e.kind === "plugin") {
                 e.installed = await invoke("hub_install_plugin", { id: e.id });
                 status(`Installed "${e.name}": it's in the Plugins dialog (Ctrl+Shift+P), and asks before it first runs.`);
@@ -219,6 +240,16 @@ async function hubFlow(initial = "all") {
           });
         }
         actions.append(install);
+        if (e.installed && e.kind === "interface") {
+          const use = Object.assign(document.createElement("button"), { type: "button", textContent: "Use now" });
+          // Installed shows the folder's name; switching wants its path.
+          use.addEventListener("click", async () => {
+            const { installed } = await invoke("interfaces");
+            const hit = installed.find((i) => i.path === e.installed || i.path.split(/[\\/]/).pop() === e.installed);
+            if (hit) useInterface(hit.path);
+          });
+          actions.append(use);
+        }
         if (e.installed && (e.kind === "layout" || e.kind === "theme")) {
           const use = Object.assign(document.createElement("button"), { type: "button", textContent: "Use now" });
           use.addEventListener("click", () => {
@@ -279,7 +310,8 @@ async function hubFlow(initial = "all") {
       $("hub-address").textContent = r.url;
       const count = (k) => r.entries.filter((e) => e.kind === k).length;
       const parts = [[count("layout"), "layout"], [count("theme"), "theme"], [count("preset"), "preset"],
-        [count("collage"), "collage template"], [count("sizes"), "size profile"], [count("plugin"), "plugin"]]
+        [count("collage"), "collage template"], [count("sizes"), "size profile"], [count("plugin"), "plugin"],
+        [count("interface"), "interface"]]
         .filter(([n]) => n).map(([n, w]) => `${n} ${w}${n === 1 ? "" : "s"}`);
       status(parts.length ? `${parts.join(", ")}.` : "The hub is empty so far.");
       render();

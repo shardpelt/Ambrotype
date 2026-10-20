@@ -53,7 +53,7 @@ Three ways, from simplest to widest:
 
 The hub is only a GitHub repo of files with an `index.json`; there's no server. To run one for a club, a class or a team:
 1. Fork or copy [Ambrotypehq/ambrotype-hub](https://github.com/Ambrotypehq/ambrotype-hub).
-2. Add your files under `looks/`, `presets/`, `collages/`, `sizes/` or `plugins/`, then run `python3 tools/build_index.py` to update `index.json`.
+2. Add your files under `looks/`, `presets/`, `collages/`, `sizes/`, `plugins/` or `interfaces/`, then run `python3 tools/build_index.py` to update `index.json`.
 3. In Ambrotype, **Settings → General → Hub address**: the raw address of its index, such as `https://raw.githubusercontent.com/your-club/ambrotype-hub/main/index.json`. A hub on your own computer works too (`file:///path/to/hub/index.json`). **Use the default hub** goes back.
 
 Browse then lists your hub's items; installing checks each file against the checksum in the index.
@@ -61,3 +61,7 @@ Browse then lists your hub's items; installing checks each file against the chec
 ## Also shared through the hub
 
 The same Browse button installs develop presets, collage templates, export size lists and plugins. Plugins are small programs, so they're sandboxed and show what they ask for before you install them; how to write one is in [ai/plugins.md](ai/plugins.md).
+
+## Go further: a whole interface of your own
+
+A layout rearranges the editor's own controls. If you want something else altogether (one big slider for a friend, a touch screen, a culling screen), write a **custom interface**: a folder with an `index.html` and your own scripts and styles, which replaces the whole window and calls the same commands. Ask an AI agent to write one with [ai/custom-interface.md](ai/custom-interface.md) as its guide, then pick it in **Settings → General → Interface**. **Share…** next to it sends it to the hub; others find it under **Browse → Interfaces**. It's a program, so the app asks before installing or showing one, and the menu bar's **Interface → Back to the Built-in Interface** (or starting with `--builtin-ui`) always comes back.

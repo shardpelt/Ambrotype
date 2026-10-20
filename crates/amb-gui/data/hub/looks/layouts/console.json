@@ -4,7 +4,7 @@
   "description": "A wide mixing console: every main control is a knob, four to a row, so the whole edit fits on one screen.",
   "author": "Ambrotype",
   "density": "compact",
-  "toolbar": ["open", "library", "save", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "|", "hub", "plugins", "|", "looks", "settings", "keys"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "|", "hub", "plugins", "|", "looks", "settings"],
   "left": { "width": 220, "items": ["presets", "history"] },
   "right": {
     "width": 440,

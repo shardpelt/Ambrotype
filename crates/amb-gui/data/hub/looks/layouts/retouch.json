@@ -4,7 +4,7 @@
   "description": "For portraits and clean-up: masks, spot removal and the 100% view up front, Detail open for sharpening and noise, and Texture and Clarity as knobs for skin.",
   "author": "Ambrotype",
   "density": "normal",
-  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "masks", "spots", "zoom", "crop", "wb", "|", "plugins", "|", "looks", "settings", "keys"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "before", "masks", "spots", "zoom", "crop", "wb", "|", "plugins", "|", "looks", "settings"],
   "left": { "width": 230, "items": ["history", "presets"] },
   "right": {
     "width": 330,

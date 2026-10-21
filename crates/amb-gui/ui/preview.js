@@ -317,6 +317,7 @@ function wireViewer() {
       return;
     }
     if (d.moved) return;
+    if (!ui.zoom.on && !ui.picking && onFrameBorder(e)) return showFrameSettings(true);
     const [u, v] = photoPoint(e);
     if (ui.picking) pickWhite(u, v);
     else setZoom(!ui.zoom.on, u, v);

@@ -386,13 +386,27 @@ pub(crate) fn trial_overrides(
     trial.execute_all(&commands).map_err(|e| e.to_string())?;
     let before = s.state.to_json()["settings"].clone();
     let after = trial.to_json()["settings"].clone();
-    Ok(after
+    let mut out: serde_json::Map<String, serde_json::Value> = after
         .as_object()
         .into_iter()
         .flatten()
         .filter(|(k, v)| before.get(k.as_str()) != Some(*v))
         .map(|(k, v)| (k.clone(), v.clone()))
-        .collect())
+        .collect();
+    // A setting the commands reset shows at its default (a preset applied
+    // to the original resets the look first).
+    for k in before.as_object().into_iter().flatten().map(|(k, _)| k) {
+        if after.get(k.as_str()).is_none() {
+            if let Some(d) = amb_presets::registry::Registry::builtin()
+                .lookup(k)
+                .and_then(|t| t.default)
+                .filter(|d| !d.is_null())
+            {
+                out.insert(k.clone(), d);
+            }
+        }
+    }
+    Ok(out)
 }
 
 #[derive(Serialize)]

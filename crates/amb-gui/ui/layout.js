@@ -34,6 +34,67 @@ const folded = (() => {
 // it's open, so the photo doesn't shrink.
 const sidePanelOpen = () => [...document.querySelectorAll(".viewer > .preset-library")].some((p) => !p.hidden);
 
+// Column widths dragged outside editor mode, per layout, on this computer:
+// a layout's own width is only where it starts.
+const colWidths = (() => {
+  try { return JSON.parse(localStorage.getItem("amb.colWidths")) ?? {}; } catch { return {}; }
+})();
+const COL_MIN = 140, COL_MAX = 800;
+
+function saveColWidths() {
+  try { localStorage.setItem("amb.colWidths", JSON.stringify(colWidths)); } catch { /* not kept */ }
+}
+
+// A handle on each shown column's inner edge: drag to resize, double-click
+// for the layout's own width.
+function addColumnGrips(shown) {
+  const ws = $("workspace");
+  ws.querySelectorAll(".col-resizer").forEach((n) => n.remove());
+  if (ui.edit) return;
+  for (const side of ["left", "right"]) {
+    if (!shown[side]) continue;
+    const grip = Object.assign(document.createElement("div"), { className: "col-resizer", title: "Drag to resize; double-click for the layout's width" });
+    grip.style[side] = `${shown[side] - 4}px`;
+    grip.addEventListener("pointerdown", (ev) => dragColumn(ev, side, grip, shown));
+    grip.addEventListener("dblclick", () => {
+      delete colWidths[ui.looks?.active_layout]?.[side];
+      saveColWidths();
+      ui.sideWidths[side] = ui.layoutWidths?.[side] ?? ui.sideWidths[side];
+      applySideCollapse();
+    });
+    ws.append(grip);
+  }
+}
+
+function dragColumn(ev, side, grip, shown) {
+  if (ev.button !== 0) return;
+  ev.preventDefault();
+  const ws = $("workspace");
+  const r = ws.getBoundingClientRect();
+  let w = shown[side];
+  grip.classList.add("dragging");
+  const move = (e) => {
+    w = Math.round(Math.min(COL_MAX, Math.max(COL_MIN, side === "left" ? e.clientX - r.left : r.right - e.clientX)));
+    const cols = { ...shown, [side]: w };
+    ws.style.gridTemplateColumns = `${cols.left}px minmax(0, 1fr) ${cols.right}px`;
+    grip.style[side] = `${w - 4}px`;
+  };
+  const up = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    grip.classList.remove("dragging");
+    const id = ui.looks?.active_layout;
+    if (id) {
+      colWidths[id] = { ...colWidths[id], [side]: w };
+      saveColWidths();
+    }
+    ui.sideWidths[side] = w;
+    applySideCollapse();
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", up);
+}
+
 function applySideCollapse() {
   const widths = ui.sideWidths ?? { left: 0, right: 0 };
   const shown = {};
@@ -47,6 +108,7 @@ function applySideCollapse() {
     t.title = `${open ? "Hide" : "Show"} the ${side} column (Ctrl+${side === "left" ? "[" : "]"})`;
   }
   $("workspace").style.gridTemplateColumns = `${shown.left}px minmax(0, 1fr) ${shown.right}px`;
+  addColumnGrips(shown);
 }
 
 // Section heights in a column, set by dragging the line between two
@@ -170,6 +232,10 @@ function applyLayout(layout) {
     const w = Number(spec.width ?? DEFAULT_WIDTH[side]);
     widths[side] = items.length && w > 0 ? w : 0;
   }
+  // The layout's widths, then any dragged on this computer.
+  ui.layoutWidths = { ...widths };
+  const mine = colWidths[ui.looks?.active_layout] ?? {};
+  for (const side of ["left", "right"]) if (widths[side] && mine[side]) widths[side] = mine[side];
   ui.sideWidths = widths;
   applySideCollapse();
   for (const side of ["left", "right"]) addSectionDividers($(`col-${side}`));

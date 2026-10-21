@@ -36,7 +36,7 @@ function searchItems() {
   for (const p of ui.presets ?? []) {
     items.push({
       kind: "Preset", title: p.name, also: p.group ?? "", enabled: Boolean(ui.info),
-      run: () => run([{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value) }]),
+      run: () => applyPreset(p),
     });
   }
   for (const kind of ["layout", "theme"]) {

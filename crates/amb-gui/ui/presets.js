@@ -3,6 +3,35 @@
 // preset, Auto, Surprise me and Match look.
 "use strict";
 
+// One choice for every preset: on top of the edit (they chain, as in
+// Lightroom), or from the original. "The original" resets the look groups
+// first and keeps what belongs to this photo: crop, spots, masks, geometry
+// and a film negative's conversion. Kept on this computer.
+function presetsFromOriginal() {
+  return $("preset-from-original").checked;
+}
+
+// The commands that apply a preset, by that choice; one undo step.
+async function presetCommands(path, extra = {}) {
+  const apply = { cmd: "apply_preset", path, amount: Number($("preset-amount").value), ...extra };
+  if (!presetsFromOriginal()) return [apply];
+  if (!ui.pasteGroups) ui.pasteGroups = await invoke("paste_groups");
+  const resets = ui.pasteGroups.filter((g) => g.default && g.name !== "negative").map((g) => ({ cmd: "reset_group", group: g.name }));
+  return [...resets, apply];
+}
+
+async function applyPreset(p) {
+  run(await presetCommands(p.path), `Preset: ${p.name}`);
+}
+
+function wirePresetOriginal() {
+  const box = $("preset-from-original");
+  try { box.checked = localStorage.getItem("amb.presetsFromOriginal") === "1"; } catch { /* default: on top */ }
+  box.addEventListener("change", () => {
+    try { localStorage.setItem("amb.presetsFromOriginal", box.checked ? "1" : ""); } catch { /* not kept */ }
+  });
+}
+
 function renderPresets() {
   const list = $("preset-list");
   const filter = $("preset-filter").value.trim().toLowerCase();
@@ -37,13 +66,13 @@ function renderPresets() {
       b.title = `${p.path}\nRight-click to apply it to the whole folder, or only some of its settings`;
       b.addEventListener("click", () => {
         presetHover(null);
-        run([{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value) }]);
+        applyPreset(p);
       });
       b.addEventListener("contextmenu", (e) => {
         presetHover(null);
         const n = folderPhotos().length;
         contextMenu(e, [
-          ["Apply", () => run([{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value) }])],
+          ["Apply", () => applyPreset(p)],
           ["Apply some of its settings…", () => applyPresetPartly(p)],
           ui.info && n > 1 ? [`Apply to all ${n} photos in the folder`, () => applyPresetToFolder(p)] : null,
         ].filter(Boolean));
@@ -86,11 +115,10 @@ async function togglePresetFavourite(p) {
 async function applyPresetToFolder(p) {
   const paths = folderPhotos();
   if (!paths.length) return;
-  const amount = Number($("preset-amount").value);
   status(`Applying "${p.name}" to ${paths.length} photos…`);
   const r = await invoke("apply_to_photos", {
     paths, label: `preset ${p.name} on the folder`,
-    commands: [{ cmd: "apply_preset", path: p.path, amount }],
+    commands: await presetCommands(p.path),
   });
   if (r.state) setState(r.state);
   requestPreview(false);
@@ -142,9 +170,7 @@ function presetHover(p) {
   if (!ui.info || ui.active || ui.crop.on) return;
   hoverPreset.timer = setTimeout(async () => {
     try {
-      const overrides = await invoke("trial_overrides", {
-        commands: [{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value) }],
-      });
+      const overrides = await invoke("trial_overrides", { commands: await presetCommands(p.path) });
       if (token !== hoverPreset.token) return;
       ui.overrides = overrides;
       hoverPreset.shown = true;

@@ -205,6 +205,19 @@ function drawFrame() {
   }
 }
 
+// A click on the frame around the photo (not on the photo): the viewer
+// opens the frame's settings instead of zooming in (preview.js).
+function onFrameBorder(e) {
+  const img = $("preview");
+  if (!fr.on || !img.dataset.framed) return false;
+  const r = img.getBoundingClientRect();
+  const cs = getComputedStyle(img);
+  const [t, rt, b, l] = ["paddingTop", "paddingRight", "paddingBottom", "paddingLeft"].map((k) => parseFloat(cs[k]) || 0);
+  const inFrame = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  const onPhoto = e.clientX > r.left + l && e.clientX < r.right - rt && e.clientY > r.top + t && e.clientY < r.bottom - b;
+  return inFrame && !onPhoto;
+}
+
 // Export: start from the frame (Border "Frame", and on-photo text as the watermark).
 function frameToExport() {
   if (!fr.on) return;
@@ -237,6 +250,14 @@ function wireFrame() {
     fr.size = Number($("frame-size").value);
     fr.textColor = $("frame-text-color").value;
     fr.specs = $("frame-specs").checked;
+    // A caption needs room: a thin bottom band (it sizes the text) grows
+    // once, to 12% of the photo; it can be made thin again after.
+    const captioned = (fr.text.trim() || fr.specs) && fr.place === "frame";
+    if (captioned && !fr.grown && fr.bottom < 12) {
+      fr.bottom = 12;
+      $("frame-bottom").value = 12;
+    }
+    fr.grown = Boolean(captioned);
     $("frame-width-out").value = fr.width;
     $("frame-bottom-out").value = fr.bottom;
     rememberFrame();
@@ -268,6 +289,19 @@ function wireFrame() {
     sync();
   });
   $("frame-close").addEventListener("click", () => showFrameSettings(false));
+  // The settings are a pop-over: a click anywhere else, Esc, or another task
+  // puts them away and leaves the frame on, so the edit can go on around it.
+  document.addEventListener("pointerdown", (e) => {
+    if ($("frame-panel").hidden) return;
+    if (e.target.closest("#frame-panel, #btn-frame, dialog, .ctx-menu")) return;
+    showFrameSettings(false);
+  }, true);
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || $("frame-panel").hidden || document.querySelector("dialog[open]")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    showFrameSettings(false);
+  }, true);
   $("frame-remove").addEventListener("click", () => toggleFrame(false));
   $("btn-frame")?.addEventListener("click", () => toggleFrame());
   $("btn-frame")?.addEventListener("contextmenu", (e) => {
@@ -275,9 +309,10 @@ function wireFrame() {
     const n = folderPhotos().length;
     contextMenu(e, [
       [fr.on ? "Turn the frame off" : "Turn the frame on", () => toggleFrame()],
+      fr.on ? ["Frame settings…", () => showFrameSettings(true)] : null,
       [`Use ${fr.on ? "this" : "a"} frame on all ${n} photos in the folder`, () => frameOnFolder(true)],
       [`Remove the frame from all ${n} photos`, () => frameOnFolder(false)],
-    ]);
+    ].filter(Boolean));
   });
   $("preview").addEventListener("load", drawFrame);
   new ResizeObserver(() => drawFrame()).observe($("viewer"));

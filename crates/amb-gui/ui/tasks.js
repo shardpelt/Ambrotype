@@ -44,6 +44,8 @@ async function switchTask(id) {
   if (from?.layout && ui.looks?.active_layout && !libraryOn()) taskState.layouts[from.id] = ui.looks.active_layout;
   taskState.current = id;
   saveTasks();
+  // The frame's settings are put away; the frame stays on.
+  if (!$("frame-panel").hidden) showFrameSettings(false);
   if (id === "library") {
     await toggleLibrary(true);
   } else {

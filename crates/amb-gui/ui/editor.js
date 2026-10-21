@@ -189,7 +189,12 @@ function resizeColumn(ev, side, grip) {
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
     grip.classList.remove("dragging");
-    if (w) edit((d) => { col(d, side).width = w; });
+    if (w) {
+      // The layout's own width now; a width dragged outside editor mode would hide it.
+      delete colWidths[ui.looks?.active_layout]?.[side];
+      saveColWidths();
+      edit((d) => { col(d, side).width = w; });
+    }
   };
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);

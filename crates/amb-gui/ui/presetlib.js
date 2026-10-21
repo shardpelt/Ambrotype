@@ -78,7 +78,7 @@ function renderPresetLibrary() {
     apply.disabled = !ui.info;
     apply.addEventListener("click", () => {
       presetHover(null);
-      run([{ cmd: "apply_preset", path: p.path, amount: Number($("preset-amount").value) }], `Preset: ${p.name}`);
+      applyPreset(p);
     });
     const add = Object.assign(document.createElement("button"), { type: "button", className: "small",
       textContent: p.installed ? "Added" : "Add", title: "Keep it in your presets list" });

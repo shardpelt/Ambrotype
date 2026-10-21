@@ -956,6 +956,7 @@ async function init() {
   wireFolderTree();
   wireLibraryMenus();
   wireSearch();
+  wirePresetOriginal();
   wireTasks();
   wireInterfaces();
   wireConnect();

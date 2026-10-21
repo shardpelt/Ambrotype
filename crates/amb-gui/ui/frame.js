@@ -145,7 +145,16 @@ const frameBlocked = () => ui.crop.on || mk.on || sp.on || ui.zoom.on || (typeof
 function drawFrame() {
   const img = $("preview");
   const label = $("frame-label");
-  for (const k of ["padding", "background", "width", "height", "boxSizing"]) img.style[k] = "";
+  // Undo only what the frame set: the preview's own size lock (a draft
+  // shown at the settled size, preview.js) must stay. While dragging, the
+  // photo keeps the size it had inside the frame.
+  if (img.dataset.framed) {
+    for (const k of ["padding", "background", "boxSizing"]) img.style[k] = "";
+    const keep = ui.preview.draft && fr.base;
+    img.style.width = keep ? `${fr.base[0]}px` : "";
+    img.style.height = keep ? `${fr.base[1]}px` : "";
+    delete img.dataset.framed;
+  }
   label.hidden = true;
   if (!fr.on || img.hidden || !img.naturalWidth || frameBlocked()) return;
   // Another photo: its own details.
@@ -155,6 +164,8 @@ function drawFrame() {
   }
   // The photo's place without the frame, then everything scaled to fit it.
   const r = img.getBoundingClientRect();
+  fr.base = [r.width, r.height];
+  img.dataset.framed = "1";
   const short = Math.min(r.width, r.height);
   const side = (fr.width / 100) * short;
   const bottom = (fr.bottom / 100) * short;

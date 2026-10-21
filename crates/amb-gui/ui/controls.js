@@ -4,7 +4,7 @@
 // returns { el, entry }; `entry` goes into ui.controls like makeRow's, with
 // set(value) so syncControls() can update it.
 //
-//   number settings: knob (drag up/down), bar (drag across), number (type, or drag the label)
+//   number settings: knob (drag round it), bar (drag across), number (type, or drag the label)
 //   bool settings:   toggle (a switch)
 //   choices:         segmented (a row of buttons)
 "use strict";
@@ -71,7 +71,7 @@ const AmbControls = (() => {
     const span = hi - lo || 1;
     const cell = document.createElement("div");
     cell.className = "knob";
-    cell.title = `${def.description}\nDrag up or down (Shift: fine). Double-click to reset.`;
+    cell.title = `${def.description}\nPoint and drag round the dial (Shift: fine, drag up or down). Double-click to reset.`;
     const NS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", "0 0 40 40");
@@ -107,18 +107,42 @@ const AmbControls = (() => {
       tick.setAttribute("d", `M${x0.toFixed(2)} ${y0.toFixed(2)} L${x1.toFixed(2)} ${y1.toFixed(2)}`);
       value.textContent = format(def, val);
     }
-    let startPos = lo;
+    // The value is where a line from the dial's centre to the pointer
+    // crosses the dial. In the gap at the bottom it stays at the nearer end.
+    // Shift: fine, by dragging up or down instead.
+    function posAt(e) {
+      const r = svg.getBoundingClientRect();
+      const deg = (Math.atan2(e.clientY - (r.top + r.height / 2), e.clientX - (r.left + r.width / 2)) * 180) / Math.PI;
+      const rel = (((deg - A0) % 360) + 360) % 360;
+      const t = rel <= SWEEP ? rel / SWEEP : rel - SWEEP < (360 - rel) ? 1 : 0;
+      return lo + t * span;
+    }
+    let startPos = lo, fineFrom = null;
+    const moveTo = (p) => {
+      pos = clamp(p, lo, hi);
+      val = valueAt(def, pos);
+      draw();
+      h.input(val);
+    };
     drag(svg, {
-      start() { startPos = pos; cell.classList.add("dragging"); },
-      move(dx, dy, e) {
-        pos = clamp(startPos - (dy / (e.shiftKey ? 2500 : 250)) * span, lo, hi);
-        val = valueAt(def, pos);
-        draw();
-        h.input(val);
+      start(e) {
+        startPos = pos;
+        cell.classList.add("dragging");
+        if (!e.shiftKey) moveTo(posAt(e));
       },
-      end(moved) {
+      move(dx, dy, e) {
+        if (e.shiftKey) {
+          fineFrom ??= { pos, dy };
+          moveTo(fineFrom.pos - ((dy - fineFrom.dy) / 2500) * span);
+        } else {
+          fineFrom = null;
+          moveTo(posAt(e));
+        }
+      },
+      end() {
         cell.classList.remove("dragging");
-        if (moved) h.commit(valueAt(def, pos));
+        fineFrom = null;
+        if (pos !== startPos) h.commit(valueAt(def, pos));
       },
     });
     svg.addEventListener("dblclick", h.reset);

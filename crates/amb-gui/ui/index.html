@@ -819,7 +819,9 @@
             <span class="inline-check fit"><input name="b_fit" type="checkbox"><span>Whole photo inside the frame (with an exact size, instead of cropping to fill)</span></span>
             <span class="pair save"><input name="b_name" type="text" placeholder="Preset name" spellcheck="false">
               <button type="button" id="border-save" class="small">Save preset</button>
-              <button type="button" id="border-delete" class="small" disabled>Delete</button></span>
+              <button type="button" id="border-delete" class="small" disabled>Delete</button>
+              <button type="button" id="border-share" class="small" title="Save this border as a file to send to someone, or to add to the hub">Share…</button>
+              <button type="button" id="border-open" class="small" title="Add a border someone shared with you (a .json file)">Open…</button></span>
           </div>
         </div>
         <div class="border-preview-wrap">
@@ -1221,7 +1223,7 @@
   <dialog id="hub-dialog">
     <form method="dialog">
       <h2>Hub: what others shared</h2>
-      <p class="hint">Layouts, themes, develop presets, collage templates, size profiles, plugins and interfaces other people made, checked before they're installed. Most are small data files; plugins run sandboxed and ask before they see anything but the edit; an interface is a whole program, so the app asks first. From <span id="hub-address"></span></p>
+      <p class="hint">Layouts, themes, develop presets, collage templates, size profiles, borders, plugins and interfaces other people made, checked before they're installed. Most are small data files; plugins run sandboxed and ask before they see anything but the edit; an interface is a whole program, so the app asks first. From <span id="hub-address"></span></p>
       <div class="hub-bar">
         <div class="tabs hub-tabs">
           <button type="button" data-kind="all" class="active">All</button>
@@ -1230,6 +1232,7 @@
           <button type="button" data-kind="preset">Presets</button>
           <button type="button" data-kind="collage">Collages</button>
           <button type="button" data-kind="sizes">Sizes</button>
+          <button type="button" data-kind="border">Borders</button>
           <button type="button" data-kind="plugin">Plugins</button>
           <button type="button" data-kind="interface">Interfaces</button>
         </div>

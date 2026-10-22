@@ -141,6 +141,26 @@ function collagePreview(data) {
   return box;
 }
 
+// A border around a grey photo, to scale (a 3:2 photo).
+function borderPreview(data) {
+  const box = document.createElement("div");
+  box.className = "hub-preview border";
+  const pct = (v) => (data?.unit === "px" ? 0 : Math.max(0, Number(v) || 0));
+  const side = pct(data?.width);
+  const bottom = data?.bottom == null ? side : pct(data.bottom);
+  // Percent of the short edge (64 px tall photo).
+  const px = (v) => Math.round((v / 100) * 64);
+  const frame = document.createElement("div");
+  frame.style.cssText = `padding:${px(side)}px ${px(side)}px ${px(bottom)}px;border-radius:${px(Number(data?.radius) || 0)}px`;
+  frame.style.background = /^#[0-9a-f]{3,8}$/i.test(data?.color ?? "") ? data.color : "#888";
+  const photo = document.createElement("i");
+  const key = data?.keyline;
+  if (key?.width > 0) photo.style.outline = `${Math.max(1, px(key.width))}px solid ${key.color}`;
+  frame.append(photo);
+  box.append(frame);
+  return box;
+}
+
 // A size profile's sizes.
 function sizesPreview(data) {
   const box = document.createElement("div");
@@ -176,7 +196,7 @@ async function hubFlow(initial = "all") {
       if (e.data) {
         const preview = {
           theme: themePreview, layout: layoutPreview, plugin: pluginPreview, preset: presetPreview,
-          collage: collagePreview, sizes: sizesPreview, interface: interfacePreview,
+          collage: collagePreview, sizes: sizesPreview, border: borderPreview, interface: interfacePreview,
         }[e.kind];
         if (preview) card.append(preview(e.data));
       }
@@ -207,6 +227,10 @@ async function hubFlow(initial = "all") {
                 await invoke("hub_install_collage", { id: e.id });
                 e.installed = e.id;
                 status(`Installed "${e.name}": it's with the templates in the collage maker.`);
+              } else if (e.kind === "border") {
+                ui.borders = await invoke("hub_install_border", { id: e.id });
+                e.installed = e.id;
+                status(`Installed "${e.name}": it's with the borders in the export dialog and the Frame panel.`);
               } else if (e.kind === "sizes") {
                 ui.sizes = await invoke("hub_install_sizes", { id: e.id });
                 e.installed = e.id;
@@ -310,7 +334,7 @@ async function hubFlow(initial = "all") {
       $("hub-address").textContent = r.url;
       const count = (k) => r.entries.filter((e) => e.kind === k).length;
       const parts = [[count("layout"), "layout"], [count("theme"), "theme"], [count("preset"), "preset"],
-        [count("collage"), "collage template"], [count("sizes"), "size profile"], [count("plugin"), "plugin"],
+        [count("collage"), "collage template"], [count("sizes"), "size profile"], [count("border"), "border"], [count("plugin"), "plugin"],
         [count("interface"), "interface"]]
         .filter(([n]) => n).map(([n, w]) => `${n} ${w}${n === 1 ? "" : "s"}`);
       status(parts.length ? `${parts.join(", ")}.` : "The hub is empty so far.");

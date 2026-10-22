@@ -202,18 +202,6 @@ async function sampleFlow() {
 // of the steps stay in History to click through.
 async function watchFlow() {
   if (teach.watching) return;
-  // The button's own tooltip would stay up while the pointer rests on it.
-  const button = $("btn-watch-empty");
-  const title = button.title;
-  button.removeAttribute("title");
-  try {
-    await watchSample();
-  } finally {
-    button.title = title;
-  }
-}
-
-async function watchSample() {
   status("Getting the sample photo (18 MB the first time)…");
   $("busy").hidden = false;
   let path;

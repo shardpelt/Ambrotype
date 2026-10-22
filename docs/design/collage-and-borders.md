@@ -8,7 +8,7 @@ Status: borders built (2026-10-08), the collage maker built (2026-10-08); open i
 
 ![Export with a border: Instagram 4:5, the whole photo inside a Polaroid-style frame](../images/export-border.png)
 
-A border is an export option, saved and shared as a **border preset**.
+A border is an export option, saved and shared as a **border preset**. Since 2026-10-22 the built-ins start with White, White with a black line (a keyline around the photo) and Polaroid (a deeper bottom), and a border is shared as a file (Share… and Open… in the export dialog) or installed from the hub (`borders/` in the hub repo).
 
 - **Settings:**
   - width as a percentage of the long or short edge, or in pixels; separate inner and outer widths

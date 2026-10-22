@@ -283,6 +283,22 @@ function wireBorders() {
       toast(String(e), true);
     }
   });
+  $("border-share").addEventListener("click", async () => {
+    try {
+      const path = await invoke("share_border_preset", { border: readBorder() });
+      if (path) toast(`Saved ${path}: send it to someone, or add it to the hub as a pull request.`);
+    } catch (e) {
+      toast(String(e), true);
+    }
+  });
+  $("border-open").addEventListener("click", async () => {
+    try {
+      const border = await invoke("import_border_preset");
+      if (border) await addBorder(border);
+    } catch (e) {
+      toast(String(e), true);
+    }
+  });
   $("border-delete").addEventListener("click", async () => {
     const id = f.border_preset.value;
     try {
@@ -295,4 +311,17 @@ function wireBorders() {
       toast(String(e), true);
     }
   });
+}
+
+// Add a shared border (a file, or the hub's) to yours and pick it.
+async function addBorder(border) {
+  const [list, saved] = await invoke("save_border_preset", { preset: { id: "", ...border } });
+  ui.borders = list;
+  ui.borderChoice = saved;
+  fillBorderSelect(saved);
+  writeBorder(border);
+  $("border-delete").disabled = false;
+  updateExportSize();
+  drawBorderPreview();
+  toast(`Added border "${border.name}"`);
 }

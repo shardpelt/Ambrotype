@@ -314,6 +314,50 @@ pub(crate) fn delete_border_preset(
     border_presets(state)
 }
 
+/// Save a border preset as a file to share (`ambrotype-border/1`).
+#[tauri::command]
+pub(crate) async fn share_border_preset(
+    app: tauri::AppHandle,
+    border: amb_export::border::Border,
+) -> Res<Option<String>> {
+    border.validate()?;
+    let Some(path) = app
+        .dialog()
+        .file()
+        .set_title("Share this border")
+        .set_file_name(format!("{}.json", border.name))
+        .add_filter("Borders", &["json"])
+        .blocking_save_file()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    let text = serde_json::to_string_pretty(&border).map_err(|e| e.to_string())? + "\n";
+    std::fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
+    Ok(Some(path.display().to_string()))
+}
+
+/// Read a shared border file; the dialog then saves it as one of the user's.
+#[tauri::command]
+pub(crate) async fn import_border_preset(
+    app: tauri::AppHandle,
+) -> Res<Option<amb_export::border::Border>> {
+    let Some(path) = app
+        .dialog()
+        .file()
+        .set_title("Open a border")
+        .add_filter("Borders", &["json"])
+        .blocking_pick_file()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    let text = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+    amb_export::border::Border::from_json(&text)
+        .map(Some)
+        .map_err(|e| format!("{}: {e}", path.display()))
+}
+
 /// A PNG logo for the export watermark.
 #[tauri::command]
 pub(crate) async fn pick_watermark_image(app: tauri::AppHandle) -> Option<String> {

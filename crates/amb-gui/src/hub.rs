@@ -92,9 +92,18 @@ pub struct HubEntry {
 }
 
 /// Kinds this version can install: looks, plugins, develop presets,
-/// collage templates, size profiles and custom interfaces.
+/// collage templates, size profiles, border presets and custom interfaces.
 fn known_kind(name: &str) -> bool {
-    kind_of(name).is_some() || ["plugin", "preset", "collage", "sizes", "interface"].contains(&name)
+    kind_of(name).is_some()
+        || [
+            "plugin",
+            "preset",
+            "collage",
+            "sizes",
+            "border",
+            "interface",
+        ]
+        .contains(&name)
 }
 
 /// Where an installed item came from (kept with collage templates and
@@ -162,6 +171,17 @@ fn fetch_collage(index_url: &str, item: &HubItem) -> Result<amb_export::collage:
     Ok(template)
 }
 
+/// A border preset, checked.
+fn fetch_border(index_url: &str, item: &HubItem) -> Result<amb_export::border::Border, String> {
+    let bytes = fetch_checked(index_url, &item.path, &item.sha256, MAX_ITEM_BYTES)?;
+    let text = std::str::from_utf8(&bytes).map_err(|e| e.to_string())?;
+    let border = amb_export::border::Border::from_json(text)?;
+    if border.name.trim().is_empty() {
+        return Err("the border needs a name".into());
+    }
+    Ok(border)
+}
+
 fn find_item(index_url: &str, id: &str, kind: &str) -> Result<HubItem, String> {
     read_index(index_url)?
         .into_iter()
@@ -201,6 +221,31 @@ pub fn install_collage(
         source: Some(source_of(index_url, &item)),
     };
     crate::collages::upsert(custom, &entry)
+}
+
+/// Install (or update) a border preset into the user's. Returns its id there.
+pub fn install_border(
+    custom: &mut Vec<crate::borders::BorderPreset>,
+    index_url: &str,
+    id: &str,
+) -> Result<String, String> {
+    let item = find_item(index_url, id, "border")?;
+    let border = fetch_border(index_url, &item)?;
+    let existing = custom
+        .iter()
+        .find(|b| {
+            b.source
+                .as_ref()
+                .is_some_and(|s| s.hub == index_url && s.id == item.id)
+        })
+        .map(|b| b.id.clone());
+    let preset = crate::borders::BorderPreset {
+        id: existing.unwrap_or_default(),
+        builtin: false,
+        border,
+        source: Some(source_of(index_url, &item)),
+    };
+    crate::borders::upsert(custom, &preset)
 }
 
 /// Install (or update) a size profile: its sizes become the user's size
@@ -686,6 +731,10 @@ fn fetch_item(index_url: &str, item: &HubItem) -> Result<Value, String> {
             return fetch_collage(index_url, item)
                 .and_then(|t| serde_json::to_value(t).map_err(|e| e.to_string()));
         }
+        "border" => {
+            return fetch_border(index_url, item)
+                .and_then(|b| serde_json::to_value(b).map_err(|e| e.to_string()));
+        }
         "sizes" => {
             return fetch_sizes(index_url, item)
                 .and_then(|p| serde_json::to_value(p).map_err(|e| e.to_string()));
@@ -763,6 +812,7 @@ pub struct Mine<'a> {
     pub presets: Option<&'a Path>,
     pub collages: &'a [crate::collages::TemplateEntry],
     pub sizes: &'a [crate::sizes::SizePreset],
+    pub borders: &'a [crate::borders::BorderPreset],
 }
 
 /// Everything in the hub, with previews and what's installed already.
@@ -778,6 +828,11 @@ pub fn browse(index_url: &str, mine: Mine<'_>) -> Result<Vec<HubEntry>, String> 
             mine.sizes
                 .iter()
                 .filter_map(|p| p.source.as_ref().map(|s| (s, s.id.clone()))),
+        )
+        .chain(
+            mine.borders
+                .iter()
+                .filter_map(|b| b.source.as_ref().map(|s| (s, b.id.clone()))),
         )
         .filter(|(s, _)| s.hub == index_url)
         .map(|(s, id)| (s.id.clone(), (id, s.sha256.clone())))
@@ -1295,10 +1350,11 @@ mod tests {
     }
 
     #[test]
-    fn collages_and_size_profiles_install_from_the_hub() {
+    fn collages_size_profiles_and_borders_install_from_the_hub() {
         let hub = temp_dir("data-hub");
         std::fs::create_dir_all(hub.join("collages")).unwrap();
         std::fs::create_dir_all(hub.join("sizes")).unwrap();
+        std::fs::create_dir_all(hub.join("borders")).unwrap();
         let collage = serde_json::json!({ "format": amb_export::collage::FORMAT, "name": "Two up",
             "width": 1200, "height": 800, "cells": [[0, 0, 0.5, 1], [0.5, 0, 0.5, 1]] })
         .to_string();
@@ -1308,6 +1364,10 @@ mod tests {
         .to_string();
         std::fs::write(hub.join("collages/two-up.json"), &collage).unwrap();
         std::fs::write(hub.join("sizes/etsy.json"), &sizes).unwrap();
+        let border = serde_json::json!({ "format": amb_export::border::FORMAT, "name": "Keyline",
+            "width": 5, "color": "#ffffff", "keyline": { "width": 0.3, "color": "#000000" } })
+        .to_string();
+        std::fs::write(hub.join("borders/keyline.json"), &border).unwrap();
         let item = |id: &str, kind: &str, path: &str, text: &str| {
             serde_json::json!({ "id": id, "kind": kind, "name": id, "path": path,
                 "sha256": sha256_hex(text.as_bytes()) })
@@ -1315,6 +1375,7 @@ mod tests {
         let index = serde_json::json!({ "format": INDEX_FORMAT, "items": [
             item("collage-two-up", "collage", "collages/two-up.json", &collage),
             item("sizes-etsy", "sizes", "sizes/etsy.json", &sizes),
+            item("border-keyline", "border", "borders/keyline.json", &border),
         ]});
         std::fs::write(hub.join("index.json"), index.to_string()).unwrap();
         let url = format!("file://{}/index.json", hub.display());
@@ -1334,9 +1395,18 @@ mod tests {
         assert_eq!(install_sizes(&mut presets, &url, "sizes-etsy").unwrap(), 2);
         assert_eq!(presets.len(), 2);
         assert!(presets.iter().all(|p| p.group == "Etsy"));
+        let mut borders = Vec::new();
+        let id = install_border(&mut borders, &url, "border-keyline").unwrap();
+        assert_eq!(
+            install_border(&mut borders, &url, "border-keyline").unwrap(),
+            id
+        );
+        assert_eq!(borders.len(), 1);
+        assert_eq!(borders[0].border.keyline.as_ref().unwrap().width, 0.3);
         let mine = Mine {
             collages: &templates,
             sizes: &presets,
+            borders: &borders,
             ..Default::default()
         };
         let entries = browse(&url, mine).unwrap();

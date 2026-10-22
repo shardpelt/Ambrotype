@@ -8,7 +8,7 @@ Status: §1 layouts, the built-in looks and §2 themes are **built** (2026-10-07
 
 ## The idea in one line
 
-Everything a user can make and share is a small file: a **layout**, a **theme**, a **preset pack**, a **collage template** ([collage-and-borders.md](collage-and-borders.md)), a **size profile**, a **plugin**. One editor makes them, the user's own AI can write them, and one hub shares them.
+Everything a user can make and share is a small file: a **layout**, a **theme**, a **preset pack**, a **collage template** ([collage-and-borders.md](collage-and-borders.md)), a **size profile**, a **border**, a **plugin**. One editor makes them, the user's own AI can write them, and one hub shares them.
 
 ## 1. Layouts (foobar2000-style)
 
@@ -90,7 +90,7 @@ A toggle (toolbar button or a key) that makes the current layout editable in pla
 - *In the app, **Appearance → Browse hub…** lists the looks with previews drawn from their own data (theme colours, layout columns; no screenshots, nothing loaded from other sites into the page). Install checks the checksum and validates the look before saving it as one of yours, with a `source` record, so the hub shows "Installed" and "Update" later.*
 - ***Submit to hub…** opens GitHub's new-file page in the hub repo with the look filled in. Committing it there makes the pull request (GitHub forks for people without access). No GitHub login is needed inside Ambrotype.*
 - *The default hub is `Ambrotypehq/ambrotype-hub` (public, filled 2026-10-15); **Settings → General** points the app at another one, including a `file://` hub for testing.*
-- *Plugins are in the hub too (2026-10-12): Browse hub… in Appearance or in the Plugins dialog lists them with what they ask to see; the index holds the sha256 of each plugin's manifest and module, and installing runs the same checks as Install from folder. Develop presets too (`presets/<name>.xmp`, installed into the presets list's "Hub" group). Collage templates (`collages/`) and size profiles (`sizes/`, `ambrotype-sizes/1`) too, since 2026-10-12: each installed one remembers its hub item, so installing again updates it.*
+- *Plugins are in the hub too (2026-10-12): Browse hub… in Appearance or in the Plugins dialog lists them with what they ask to see; the index holds the sha256 of each plugin's manifest and module, and installing runs the same checks as Install from folder. Develop presets too (`presets/<name>.xmp`, installed into the presets list's "Hub" group). Collage templates (`collages/`) and size profiles (`sizes/`, `ambrotype-sizes/1`) too, since 2026-10-12: each installed one remembers its hub item, so installing again updates it. Borders (`borders/`, `ambrotype-border/1`) too, since 2026-10-22: installed with the user's border presets, and the export dialog's Share… and Open… save and read the same file.*
 
 [Omarchy](https://learn.omacom.io/2/the-omarchy-manual/90/extra-themes) shows that sharing doesn't need a server:
 
@@ -120,7 +120,7 @@ We do the same, with a little more structure:
 
 ![The Plugins dialog after a Random look run: parameters from the manifest, the result, and the changed sliders](../images/plugins.png)
 
-- **Data items** (layouts, themes, presets, collage templates, size profiles) contain no code, so they are safe to install from the hub.
+- **Data items** (layouts, themes, presets, collage templates, size profiles, borders) contain no code, so they are safe to install from the hub.
 - **Code plugins** need a sandbox before they can be shared:
   - **Preferred:** run plugins as WebAssembly (`wasmtime`), with an API that is the `amb-protocol` commands plus a small UI API (add a panel, a button, a dialog).
   - **No ambient file or network access.** The manifest asks for permissions (for example "read the open photo's pixels" or "network: api.example.com") and the user approves them once.

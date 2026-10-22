@@ -2,6 +2,26 @@
   "note": "Built-in border presets (read-only in the app; users can clone them). Widths are a percentage of the short edge unless \"unit\" is \"px\". See crates/amb-export/src/border.rs.",
   "presets": [
     {
+      "name": "White",
+      "width": 5,
+      "color": "#ffffff"
+    },
+    {
+      "name": "White, black line",
+      "width": 5,
+      "color": "#ffffff",
+      "keyline": {
+        "width": 0.3,
+        "color": "#000000"
+      }
+    },
+    {
+      "name": "Polaroid",
+      "width": 5,
+      "bottom": 18,
+      "color": "#f7f5f0"
+    },
+    {
       "name": "Thin white",
       "width": 2,
       "color": "#ffffff"
@@ -15,11 +35,6 @@
       "name": "Thin grey",
       "width": 2,
       "color": "#808080"
-    },
-    {
-      "name": "Medium white",
-      "width": 5,
-      "color": "#ffffff"
     },
     {
       "name": "Medium black",

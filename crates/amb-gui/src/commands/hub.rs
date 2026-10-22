@@ -58,6 +58,11 @@ pub(crate) async fn hub_browse(state: tauri::State<'_, AppState>) -> Res<HubList
         .lock()
         .map_err(|e| e.to_string())?
         .clone();
+    let borders = state
+        .border_presets
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone();
     let u = url.clone();
     let entries = tauri::async_runtime::spawn_blocking(move || {
         let mine = hub::Mine {
@@ -67,6 +72,7 @@ pub(crate) async fn hub_browse(state: tauri::State<'_, AppState>) -> Res<HubList
             presets: presets.as_deref(),
             collages: &collages,
             sizes: &sizes,
+            borders: &borders,
         };
         hub::browse(&u, mine)
     })
@@ -249,4 +255,28 @@ pub(crate) fn hub_submit(
         .open_url(url.clone(), None::<&str>)
         .map_err(|e| e.to_string())?;
     Ok(url)
+}
+
+/// Install (or update) a border preset from the hub; returns the presets.
+#[tauri::command]
+pub(crate) async fn hub_install_border(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<borders::BorderPreset>> {
+    let url = hub_index(state.inner());
+    let mut custom = state
+        .border_presets
+        .lock()
+        .map_err(|e| e.to_string())?
+        .clone();
+    let custom = tauri::async_runtime::spawn_blocking(move || {
+        hub::install_border(&mut custom, &url, &id).map(|_| custom)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    *state.border_presets.lock().map_err(|e| e.to_string())? = custom;
+    save_config(state.inner());
+    Ok(borders::all(
+        &state.border_presets.lock().map_err(|e| e.to_string())?,
+    ))
 }

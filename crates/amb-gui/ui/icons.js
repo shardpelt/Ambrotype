@@ -83,7 +83,8 @@ function applyToolbarIcons(style = "icons") {
 
 // The toolbar's tooltips, shown sooner than the system's (which waits about a
 // second): the button's title, moved aside while the pointer is on it so
-// the system one doesn't show too.
+// the system one doesn't show too. The empty screen's buttons too: there the
+// system tooltip would stay up after a click hides them (Watch an edit).
 function wireQuickTips() {
   const tip = Object.assign(document.createElement("div"), { className: "quick-tip", role: "tooltip", hidden: true });
   document.body.append(tip);
@@ -98,23 +99,24 @@ function wireQuickTips() {
     }
     over = null;
   };
-  const bar = document.querySelector(".topbar .actions");
-  bar.addEventListener("mouseover", (e) => {
-    const b = e.target.closest("button");
-    if (b === over) return;
-    hide();
-    if (!b?.title) return;
-    over = b;
-    b.dataset.tip = b.title;
-    b.removeAttribute("title");
-    timer = setTimeout(() => {
-      tip.textContent = b.dataset.tip;
-      tip.hidden = false;
-      const r = b.getBoundingClientRect();
-      const left = Math.min(Math.max(4, r.left + r.width / 2 - tip.offsetWidth / 2), innerWidth - tip.offsetWidth - 4);
-      Object.assign(tip.style, { left: `${left}px`, top: `${r.bottom + 6}px` });
-    }, 250);
-  });
-  bar.addEventListener("mouseleave", hide);
-  bar.addEventListener("mousedown", hide);
+  for (const bar of [document.querySelector(".topbar .actions"), $("empty")]) {
+    bar.addEventListener("mouseover", (e) => {
+      const b = e.target.closest("button");
+      if (b === over) return;
+      hide();
+      if (!b?.title) return;
+      over = b;
+      b.dataset.tip = b.title;
+      b.removeAttribute("title");
+      timer = setTimeout(() => {
+        tip.textContent = b.dataset.tip;
+        tip.hidden = false;
+        const r = b.getBoundingClientRect();
+        const left = Math.min(Math.max(4, r.left + r.width / 2 - tip.offsetWidth / 2), innerWidth - tip.offsetWidth - 4);
+        Object.assign(tip.style, { left: `${left}px`, top: `${r.bottom + 6}px` });
+      }, 250);
+    });
+    bar.addEventListener("mouseleave", hide);
+    bar.addEventListener("mousedown", hide);
+  }
 }

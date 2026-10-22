@@ -17,6 +17,9 @@ pub struct BorderPreset {
     pub builtin: bool,
     #[serde(flatten)]
     pub border: Border,
+    /// Where it came from, when installed from the hub.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<crate::hub::HubSource>,
 }
 
 #[derive(Deserialize)]
@@ -46,6 +49,7 @@ pub fn builtin() -> Vec<BorderPreset> {
             id: format!("builtin:{}", slug(&border.name)),
             builtin: true,
             border,
+            source: None,
         })
         .collect()
 }

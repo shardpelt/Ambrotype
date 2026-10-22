@@ -38,7 +38,7 @@ A short "start here" for contributors and for the next work session. Details are
     - **library** (G): a folder as a grid; sort, filter and search; select many to rate, label and keyword at once; copy one photo's edit and paste it onto others (by setting group); export the selection; start a collage with it ([design/library.md](design/library.md))
     - **hub:** the toolbar's Browse button (Ctrl+Shift+H; also Appearance → Browse hub…) installs shared layouts, themes, develop presets, collage templates, size profiles, plugins and custom interfaces (checked against the index's sha256 and validated; plugins also from the Plugins dialog); Submit to hub… opens GitHub with your look filled in as a pull request; a layout or theme can also be installed from a link (a file, or a GitHub repo with `theme.json` or `layout.json`), and a theme needs only `bg`, `text` and `accent` (the rest are worked out, 2026-10-15)
     - **editor mode:** Edit layout rearranges the screen in place (drag and drop, control types, split and merge, add and remove, column widths) and saves it as your own layout
-    - **borders** on export, with presets and colour swatches, and a caption line such as the camera and exposure
+    - **borders** on export, with presets (White, White with a black line, Polaroid and more) and colour swatches, and a caption line such as the camera and exposure; share a border as a file or through the hub
     - **saved setups** (2026-10-15): Appearance → Save this setup… keeps the layout and theme together, as copies, to come back to after trying others; the one before the last change is kept by itself (`looks::save_setup`, files in the looks folder's `setups/`)
     - **toolbar icons** (2026-10-15): the top bar shows icons where they are obvious (our own line drawings, `ui/icons.js`); Spots, Clipping and Appearance keep their words; the **Beginner** layout shows words on every button and only the everyday tools (`"toolbar_style": "words"`); hovering shows the name and shortcut
     - **Frame** in the editor (Shift+B): preview a border in any colour with text below or on the photo, in six fonts (handwritten, pen, marker, typewriter, date stamp, sans), optionally with the photo's details (camera, mm, f-stop, shutter, ISO); it isn't part of the edit, and Export starts from it
@@ -112,6 +112,8 @@ State on 2026-10-20 (evening): the repo is public and CI runs. Linux, macOS and 
 - [ ] Tag `v0.1.0`, check the draft release, publish
 
 After the release: the owner's sample raw (spec above) replaces the stand-in.
+
+Hub repo to-do: the app installs borders from `borders/*.json` (kind `border`), but the hub's `tools/build_index.py` doesn't index that folder yet. Add it there, with White, White with a black line and Polaroid to start.
 
 There are two tracks that can run in parallel: the UI track is what users see and share, and the fidelity track depends on the Lightroom trial data.
 

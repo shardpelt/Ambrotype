@@ -5,8 +5,9 @@ The `Release` workflow (`.github/workflows/release.yml`) builds installers for e
 ## Making a release
 
 1. Set the version in `crates/amb-gui/tauri.conf.json` and the crates' `Cargo.toml` (they share it).
-2. Tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
-3. The workflow builds each platform and attaches the installers to a **draft** GitHub release. Check them, write the notes, then publish.
+2. Write the notes in `docs/release-notes/<tag>.md` (like `v0.1.0.md`); the draft release starts with them.
+3. Tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
+4. The workflow builds each platform and attaches the installers to a **draft** GitHub release. Check them and the notes, then publish.
 
 To try the build without a release, run the workflow by hand from the Actions tab: the installers are kept as build artifacts.
 

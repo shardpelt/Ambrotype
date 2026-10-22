@@ -15,6 +15,11 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 
+# No debug symbols in the programs: about 60 MB smaller installs. Crash
+# reports show addresses instead of function names.
+[profile.release]
+strip = true
+
 # Plugins for Ambrotype (WebAssembly): small and fast to load.
 # `amb plugin build` builds with it.
 [profile.plugin]

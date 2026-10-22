@@ -77,4 +77,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: true
+          # The notes for this tag, if written (docs/release-notes/).
+          body_path: docs/release-notes/${{ github.ref_name }}.md
           files: dist/*

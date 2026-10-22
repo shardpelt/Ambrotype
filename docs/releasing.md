@@ -17,7 +17,7 @@ To try the build without a release, run the workflow by hand from the Actions ta
 |---|---|---|
 | Linux x64 | ubuntu-22.04 | `.deb`, `.rpm`, `.AppImage` |
 | Windows x64 and ARM64 | windows-latest, windows-11-arm | `.msi`, `-setup.exe` (NSIS) |
-| macOS Apple Silicon and Intel | macos-latest, macos-13 | `.dmg` |
+| macOS Apple Silicon and Intel | macos-latest (Intel cross-built) | `.dmg` |
 
 Every installer also carries the `amb` command-line tool, next to the editor's own program (Tauri's `externalBin`): in `/usr/bin` with the `.deb`, in the install folder on Windows, and in `Ambrotype.app/Contents/MacOS` on macOS. That is the `amb` to point an AI app at for `amb mcp` ([ai/mcp.md](ai/mcp.md)).
 

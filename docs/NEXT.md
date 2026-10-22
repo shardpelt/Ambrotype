@@ -80,11 +80,11 @@ Things anyone with the right kit can do; open an issue first so two people don't
 
 Card tips get skipped. Learn's lessons stay in Help → Learn, but first-run teaching should show, not tell. Done on 2026-10-22 (`ui/teach.js`):
 
-1. ~~**A sample photo that teaches through its History.**~~ The empty screen's **Try a sample photo** (and Help → Open the sample photo) downloads a stand-in raw (the CC0 D750 still life from raw.pixls.us, 18 MB, checked) with a nine-step edit. Clicking a History step (or Ctrl+Z) lights up the controls it changed and slides them to their value. Left: swap in the owner's photo below (a new `data/sample/` sidecar, URL and checksum in `commands/sample.rs`); stepping with ←/→ (those keys move between photos today).
+1. ~~**A sample photo that teaches through its History.**~~ The empty screen's **Try a sample photo** (and Help → Open the sample photo) downloads a stand-in raw (the CC0 D750 still life from raw.pixls.us, 18 MB, checked) with a nine-step edit. Clicking a History step (or Ctrl+Z) lights up the controls it changed and slides them to their value. With History focused (clicked, or Tab) the arrow keys step through it and Home/End go to the ends. Left: swap in the owner's photo below (a new `data/sample/` sidecar, URL and checksum in `commands/sample.rs`).
 2. ~~**Hold ⌘/Ctrl to see every shortcut**~~ on the toolbar buttons and tasks (not on sliders: they have no keys).
 3. ~~**Empty states that teach:**~~ the library says "drop a folder here", and a folder dropped anywhere opens in it; on an unedited photo Exposure, Highlights, Shadows, Temp and Vibrance glow faintly until the first edit.
 4. ~~**Task bar hover previews:**~~ a sketch of the task's columns and panels (open ones highlighted), with its key.
-5. **Watch mode (maybe):** a ghost cursor does a 20-second edit on the sample; any key or click stops it. Not started.
+5. ~~**Watch mode:**~~ Help → Watch an edit (or the empty screen's button) opens the sample afresh, goes back to Original, and a ghost cursor replays its nine steps in about 20 seconds, each named beside it. Any key, click or scroll stops it; the rest stays in History.
 
 There was no automatic "Getting around" card to retire: Learn only opens on F1 or the empty screen's button.
 
@@ -111,7 +111,7 @@ State on 2026-10-20 (evening): the repo is public and CI runs. Linux, macOS and 
 - [ ] After publishing: README's "no installers yet" becomes a link to the release
 - [ ] Tag `v0.1.0`, check the draft release, publish
 
-After the release: the owner's sample raw (spec above) replaces the stand-in; watch mode if wanted.
+After the release: the owner's sample raw (spec above) replaces the stand-in.
 
 There are two tracks that can run in parallel: the UI track is what users see and share, and the fidelity track depends on the Lightroom trial data.
 

@@ -95,7 +95,7 @@
         </div>
         <ul id="snapshot-list" class="snapshot-list"></ul>
         <div class="side-head"><h2>History</h2></div>
-        <ol id="history-list" class="history-list"></ol>
+        <ol id="history-list" class="history-list" tabindex="0" aria-label="History: the arrow keys step through it"></ol>
       </section>
     </aside>
 
@@ -107,6 +107,7 @@
         <p class="hint">Drop a photo or a folder here, or press Ctrl+O. Lightroom presets and XMP sidecars work as they are.</p>
         <button id="btn-open-empty" class="primary">Open photo…</button>
         <button id="btn-sample-empty" title="A raw photo with an edit already made: step through its History to see what each slider does (18 MB download the first time)">Try a sample photo</button>
+        <button id="btn-watch-empty" title="A ghost cursor edits the sample photo in about 20 seconds; any key or click stops it">Watch an edit</button>
         <button id="btn-learn-empty" title="Short guided lessons (F1)">Learn the basics</button>
       </div>
       <img id="preview" alt="" hidden>

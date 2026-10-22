@@ -111,6 +111,7 @@ input[type=search], input[type=number], select {
 .history-list li.current { color: var(--text); font-weight: 600; cursor: default; }
 .history-list li.current:hover { background: none; }
 .history-list li.undone { opacity: 0.5; }
+.history-list:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
 
 /* Viewer */
 .viewer { position: relative; background: var(--viewer); display: grid; place-items: center; min-width: 0; min-height: 0; overflow: hidden; }
@@ -218,6 +219,11 @@ dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-
 @keyframes taught { from { box-shadow: 0 0 0 2px var(--accent); background: color-mix(in srgb, var(--accent) 22%, transparent); } }
 .try-me { border-radius: 4px; animation: try-me 2.8s ease-in-out infinite; }
 @keyframes try-me { 50% { background: color-mix(in srgb, var(--accent) 10%, transparent); } }
+.ghost-cursor { position: fixed; left: 0; top: 0; z-index: 1001; pointer-events: none; }
+.ghost-cursor svg { display: block; fill: #fff; stroke: #000; stroke-width: 1.2; filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.5)); transition: transform 0.12s; }
+.ghost-cursor.pressed svg { transform: scale(0.85); }
+.ghost-cursor span { position: absolute; left: 20px; top: 20px; padding: 2px 7px; border-radius: 4px; white-space: nowrap; font-size: 12px; background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 3px rgb(0 0 0 / 0.35); }
+.ghost-cursor.flip span { left: auto; right: 4px; }
 .key-badge { position: fixed; z-index: 1000; transform: translateX(-50%); pointer-events: none; padding: 1px 5px; border-radius: 4px; font: 600 11px/1.4 var(--mono, ui-monospace, monospace); background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 3px rgb(0 0 0 / 0.35); white-space: nowrap; }
 .learn-list { display: flex; flex-direction: column; gap: 8px; }
 .learn-item { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; padding: 10px 12px; }

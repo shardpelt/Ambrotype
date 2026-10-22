@@ -422,9 +422,8 @@ function renderHistory() {
     if (i !== done.length) {
       li.title = i < done.length ? "Go back to this step" : "Go forward to this step";
       li.addEventListener("click", () => {
-        const n = i - done.length;
-        teach.fromHistory = true;
-        run(Array.from({ length: Math.abs(n) }, () => ({ cmd: n < 0 ? "undo" : "redo" })));
+        hist.focus({ preventScroll: true });
+        historyGo(i - done.length);
       });
     }
     hist.append(li);
@@ -437,6 +436,36 @@ function renderHistory() {
     if (top < hist.scrollTop) hist.scrollTop = top;
     else if (top + cur.offsetHeight > hist.scrollTop + hist.clientHeight) hist.scrollTop = top + cur.offsetHeight - hist.clientHeight;
   }
+}
+
+// Move `n` steps through History: back when negative, as one batch.
+// A held arrow key waits for each step before the next.
+async function historyGo(n) {
+  if (!n || ui.historyBusy) return;
+  ui.historyBusy = true;
+  teach.fromHistory = true;
+  try {
+    await run(Array.from({ length: Math.abs(n) }, () => ({ cmd: n < 0 ? "undo" : "redo" })));
+  } finally {
+    ui.historyBusy = false;
+  }
+}
+
+// With History focused (clicked, or Tab), the arrows step through it one
+// step at a time and Home/End go to the first and last; the photo's own
+// arrow keys wait until it loses focus.
+function wireHistoryKeys() {
+  const hist = $("history-list");
+  hist.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey || !ui.state) return;
+    const done = ui.state.history?.length ?? 0;
+    const undone = ui.state.redo_history?.length ?? 0;
+    const n = { ArrowUp: -1, ArrowLeft: -1, ArrowDown: 1, ArrowRight: 1, Home: -done, End: undone }[e.key];
+    if (n === undefined) return;
+    e.preventDefault();
+    e.stopPropagation();
+    historyGo(Math.max(-done, Math.min(undone, n)));
+  });
 }
 
 // ---------------------------------------------------------------- state & commands
@@ -879,6 +908,8 @@ async function init() {
   $("btn-library").addEventListener("click", () => toggleLibrary());
   $("btn-open-empty").addEventListener("click", openDialog);
   $("btn-sample-empty").addEventListener("click", () => sampleFlow());
+  $("btn-watch-empty").addEventListener("click", () => watchFlow());
+  wireHistoryKeys();
   initLearn();
   wireKeyBadges();
   $("btn-save").addEventListener("click", save);

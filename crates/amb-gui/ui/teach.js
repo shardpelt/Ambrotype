@@ -2,7 +2,8 @@
 // Teaching by showing (docs/NEXT.md, "teach by showing"): stepping through
 // History lights up the controls each step changed and moves them to their
 // value; holding Ctrl (⌘ on a Mac) shows every shortcut on the buttons; on a
-// photo not yet edited the most useful sliders glow faintly until first used.
+// photo not yet edited the most useful sliders glow faintly until first used;
+// watch mode replays the sample's edit with a ghost cursor.
 "use strict";
 
 const teach = { tweens: new Map(), held: null, badges: [] };
@@ -82,7 +83,7 @@ function teachMove(before, after, shown, open) {
 function teachStateChanged(prev, shown) {
   const open = teach.fromHistory;
   teach.fromHistory = false;
-  if (!prev || !ui.state) return;
+  if (!prev || !ui.state || teach.quiet) return;
   const was = [prev.history?.length ?? 0, prev.redo_history?.length ?? 0];
   const now = [ui.state.history?.length ?? 0, ui.state.redo_history?.length ?? 0];
   if (was[0] !== now[0] && was[0] + was[1] === now[0] + now[1]) teachMove(prev.settings ?? {}, ui.settings, shown, open);
@@ -192,4 +193,125 @@ async function sampleFlow() {
   const hist = $("history-list");
   hist.classList.add("try-me");
   hist.addEventListener("click", () => hist.classList.remove("try-me"), { once: true });
+}
+
+// ------------------------------------------------------------- watch mode
+
+// A ghost cursor replays the sample's edit, one History step at a time,
+// about 20 seconds in all. Any key or click stops it where it is; the rest
+// of the steps stay in History to click through.
+async function watchFlow() {
+  if (teach.watching) return;
+  // The button's own tooltip would stay up while the pointer rests on it.
+  const button = $("btn-watch-empty");
+  const title = button.title;
+  button.removeAttribute("title");
+  try {
+    await watchSample();
+  } finally {
+    button.title = title;
+  }
+}
+
+async function watchSample() {
+  status("Getting the sample photo (18 MB the first time)…");
+  $("busy").hidden = false;
+  let path;
+  try {
+    path = await invoke("sample_photo", { fresh: true });
+  } catch (e) {
+    toast(`Couldn't get the sample photo: ${e}`, true);
+    status("Ready");
+    return;
+  } finally {
+    $("busy").hidden = true;
+  }
+  if (!await openPath(path)) return;
+  // Back to Original without lighting anything up.
+  teach.quiet = true;
+  try {
+    await run(Array.from({ length: ui.state?.history?.length ?? 0 }, () => ({ cmd: "undo" })));
+  } finally {
+    teach.quiet = false;
+  }
+
+  const w = { stopped: false, timer: null, wake: null };
+  teach.watching = w;
+  const ghost = document.createElement("div");
+  ghost.className = "ghost-cursor";
+  ghost.innerHTML = '<svg viewBox="0 0 16 22" width="18" height="24"><path d="M1 1v17l4.5-4.2L8.6 21l3-1.3-3.1-7H14z"/></svg><span></span>';
+  const caption = ghost.querySelector("span");
+  document.body.append(ghost);
+  const stop = (e) => {
+    if (!e.isTrusted || w.stopped) return;
+    w.stopped = true;
+    clearTimeout(w.timer);
+    w.wake?.();
+  };
+  const events = ["keydown", "pointerdown", "wheel"];
+  for (const t of events) window.addEventListener(t, stop, true);
+  const wait = (ms) => new Promise((done) => {
+    w.wake = done;
+    w.timer = setTimeout(done, ms);
+  });
+  const at = { x: innerWidth / 2, y: innerHeight / 2 };
+  const glide = (x, y, ms) => {
+    ghost.style.transition = `transform ${ms}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+    ghost.style.transform = `translate(${x}px, ${y}px)`;
+    // The caption goes left of the cursor near the right edge.
+    ghost.classList.toggle("flip", x + 24 + caption.offsetWidth > innerWidth);
+    Object.assign(at, { x, y });
+    return wait(ms);
+  };
+  ghost.style.transform = `translate(${at.x}px, ${at.y}px)`;
+  status("Watching an edit: any key or click stops it");
+
+  try {
+    await wait(400);
+    while (!w.stopped && ui.state?.redo_history?.length) {
+      const label = ui.state.redo_history[0];
+      const name = /^set_param (\S+)$/.exec(label)?.[1];
+      const row = name && teachRow(name);
+      const panel = row?.closest("details");
+      if (panel && !panel.open) panel.open = true;
+      row?.scrollIntoView({ block: "nearest" });
+      caption.textContent = historyLabel(label);
+      const target = row ? watchPoint(name, row, currentValue(name)) : centreOf($("history-list"));
+      await glide(target.x, target.y, 700);
+      if (w.stopped) break;
+      ghost.classList.add("pressed");
+      teach.fromHistory = true;
+      await run([{ cmd: "redo" }]);
+      if (row) {
+        const end = watchPoint(name, row, currentValue(name));
+        await glide(end.x, end.y, 450);
+      }
+      ghost.classList.remove("pressed");
+      await wait(900);
+    }
+  } finally {
+    for (const t of events) window.removeEventListener(t, stop, true);
+    ghost.remove();
+    teach.watching = null;
+  }
+  status(w.stopped ? "Stopped. The rest of the edit is in History: click a step to go on" : "That's the edit. Click a History step to see it again");
+}
+
+// Where a hand would grab a control: a slider's thumb, else its middle.
+function watchPoint(name, row, value) {
+  const c = ui.controls.get(name);
+  const input = c?.input;
+  if (input?.type === "range" && Number.isFinite(Number(value))) {
+    const r = input.getBoundingClientRect();
+    const min = Number(input.min), max = Number(input.max);
+    const k = Math.min(1, Math.max(0, (toSlider(c.def, Number(value)) - min) / (max - min || 1)));
+    return { x: r.left + 7 + k * (r.width - 14), y: r.top + r.height / 2 };
+  }
+  return centreOf(row);
+}
+
+function centreOf(el) {
+  const r = el.getBoundingClientRect();
+  if (!r.width) return { x: innerWidth / 2, y: innerHeight / 2 };
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
 }

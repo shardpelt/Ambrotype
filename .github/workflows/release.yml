@@ -61,7 +61,14 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: cargo tauri build --target ${{ matrix.target }} --config tauri.release.conf.json
+        shell: bash
+        run: |
+          # A secret that isn't set arrives empty; Tauri would still try to
+          # sign with it, so drop the empty ones (unsigned build).
+          for v in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            [ -n "${!v}" ] || unset "$v"
+          done
+          cargo tauri build --target ${{ matrix.target }} --config tauri.release.conf.json
       - name: Collect the installers
         shell: bash
         run: |

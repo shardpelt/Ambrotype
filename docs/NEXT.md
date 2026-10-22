@@ -102,7 +102,7 @@ State on 2026-10-20 (evening): the repo is public and CI runs. Linux, macOS and 
 
 - [x] Make `shardpelt/Ambrotype` public
 - [x] CI green on Windows (x64, ARM): green since `74d455d` (2026-10-22): plugins no longer call into the app (it crashed on x64), and the GPU tests take turns (ARM)
-- [ ] Run the `Release` workflow by hand once (Actions tab); install each artifact ([releasing.md](releasing.md))
+- [x] Run the `Release` workflow by hand once: green on every platform since `2bf5a58` (2026-10-22; Macs unsigned, Intel Macs built on Apple Silicon). Installing each one is the hand tests below
 - [x] `strip = true` in `[profile.release]` (about 60 MB smaller installs; downloads shrink less)
 - [ ] Try the editor on the Mac: menu bar (and Interface → Back to the Built-in Interface), library, a custom interface, Connect an AI App… → Open a terminal here, export
 - [ ] Try it once on Windows (same list; the terminal opens with `cmd`)

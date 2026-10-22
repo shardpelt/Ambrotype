@@ -18,8 +18,12 @@ const pluginUi = {
 
 const pluginById = (id) => pluginUi.list.find((p) => p.id === id);
 
+// Built-in plugins with their own place in the editor aren't listed twice:
+// Random look is Surprise me…, the effects are in the Effects panel.
+const PLUGINS_ELSEWHERE = new Set(["random-look", "duotone", "light-leak"]);
+
 async function loadPlugins() {
-  pluginUi.list = await invoke("plugins_list");
+  pluginUi.list = (await invoke("plugins_list")).filter((p) => !(p.builtin && PLUGINS_ELSEWHERE.has(p.id)));
   pluginUi.recipes = await invoke("plugin_recipes").catch(() => ({}));
   if (!pluginById(pluginUi.selected)) pluginUi.selected = pluginUi.list[0]?.id ?? null;
 }

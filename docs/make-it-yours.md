@@ -5,7 +5,7 @@ How to change how Ambrotype looks and is laid out, and how to share it. Nothing 
 ## 1. Pick one
 
 **Appearance** in the toolbar (Ctrl+L) lists the layouts and themes. Click one to use it.
-- **Built-in layouts:** for every day (Classic, Compact, Studio…), for a task (Film lab, Colour grading, Black & white, Retouch, Collage prep), and for comfort (Beginner, Big controls, Left-handed).
+- **Built-in layouts:** for every day (Classic, Compact, Studio…), for a task (Black & white; the task bar's Color, Retouch, Film and Collage have their own, listed in Appearance only while you're in that task), and for comfort (Beginner, Big controls, Left-handed).
 - **Built-in themes:** Dark and Light, High contrast, and a few in other styles.
 - **Save this setup…** keeps the layout and theme you have now together under a name, to switch back in one click.
 

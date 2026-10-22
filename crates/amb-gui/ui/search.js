@@ -39,9 +39,10 @@ function searchItems() {
       run: () => applyPreset(p),
     });
   }
+  for (const t of TASKS) items.push({ kind: "Task", title: t.label, also: t.hint, enabled: true, run: () => switchTask(t.id) });
   for (const kind of ["layout", "theme"]) {
     for (const l of ui.looks?.[`${kind}s`] ?? []) {
-      if (!l.usable) continue;
+      if (!l.usable || TASK_LAYOUTS.has(l.id)) continue;
       items.push({ kind: kind === "layout" ? "Layout" : "Theme", title: l.name ?? l.data?.name ?? l.id, also: l.id, enabled: true, run: () => switchLook(kind, l.id) });
     }
   }

@@ -641,7 +641,9 @@ async function looksFlow() {
   function render() {
     for (const kind of ["layout", "theme"]) {
       const list = $(kind === "layout" ? "looks-layouts" : "looks-themes");
-      list.replaceChildren(...ui.looks[`${kind}s`].map((look) => {
+      // A task's own layout is in the task bar; it's listed only while chosen.
+      const shown = ui.looks[`${kind}s`].filter((look) => !TASK_LAYOUTS.has(look.id) || sel[kind] === look.id);
+      list.replaceChildren(...shown.map((look) => {
         const b = document.createElement("button");
         b.type = "button";
         b.className = "look";

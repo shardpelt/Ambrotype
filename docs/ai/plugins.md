@@ -176,7 +176,7 @@ The input JSON has `api` (1), `params`, `settings`, `seed`, and with permission 
 ## Examples
 
 - [`plugins/auto-tone`](../../plugins/auto-tone): Exposure, Whites and Blacks from the histogram (`photo-stats`).
-- [`plugins/random-look`](../../plugins/random-look): a new look from a style each run (the seed; no permissions).
+- [`plugins/random-look`](../../plugins/random-look): a new look from a style each run (the seed; no permissions). The editor runs it as **Surprise me…**, so the Plugins dialog doesn't list it; the built-in effects are in the Effects panel instead.
 - [`plugins/film-recipe`](../../plugins/film-recipe): a camera-style picture menu (film look, grain, white balance shift, tone and more) with ready-made recipes (`photo-info`, for the as-shot white balance). Guide: [film-recipes.md](film-recipes.md).
 
 - [`plugins/duotone`](../../plugins/duotone): an effect, two inks for shadows and highlights (`"effect": "color"`).

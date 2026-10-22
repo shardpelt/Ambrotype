@@ -14,6 +14,10 @@ const TASKS = [
   { id: "collage", label: "Collage", hint: "Prepare photos for a collage", layout: "builtin:collage-prep" },
 ];
 
+// The task bar's own layouts (not Develop's everyday one), kept out of the
+// Appearance list.
+const TASK_LAYOUTS = new Set(TASKS.filter((t) => t.layout && t.id !== "develop").map((t) => t.layout));
+
 const taskState = (() => {
   try { return JSON.parse(localStorage.getItem("amb.tasks")) ?? {}; } catch { return {}; }
 })();

@@ -39,6 +39,10 @@ pub const MEMORY: usize = 64 << 20;
 const MAX_OUTPUT: usize = 1 << 20;
 const MAX_COMMANDS: usize = 1000;
 const MAX_LOG_LINES: usize = 200;
+/// Calls from a plugin into the host crash the interpreter on Windows x64
+/// (docs/GAPS.md), so plugins there may not import `amb.log`; the SDK now
+/// returns log lines with the output instead.
+const LOG_IMPORT_CRASHES: bool = cfg!(all(windows, target_arch = "x86_64"));
 
 /// The plugins that come with Ambrotype: manifest, id and module.
 pub const BUILTIN: [(&str, &str, &[u8]); 5] = [
@@ -211,6 +215,12 @@ impl Plugin {
         let module = Module::new(&engine, &self.wasm)
             .map_err(|e| format!("not a valid plugin module: {e}"))?;
         for import in module.imports() {
+            if (import.module(), import.name()) == ("amb", "log") && LOG_IMPORT_CRASHES {
+                return Err(
+                    "the plugin calls amb.log, which crashes on Windows x64: rebuild it with the current amb-plugin-sdk"
+                        .into(),
+                );
+            }
             if (import.module(), import.name()) != ("amb", "log") {
                 return Err(format!(
                     "the plugin asks for {}.{}, which Ambrotype doesn't offer (only amb.log)",
@@ -274,6 +284,17 @@ impl Plugin {
             return Err(format!("{name}: {err}"));
         }
         let commands = parse_commands(value.get("commands")).map_err(|e| format!("{name}: {e}"))?;
+        let mut log = log;
+        let lines = value
+            .get("log")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten();
+        for line in lines.filter_map(Value::as_str) {
+            if log.len() < MAX_LOG_LINES {
+                log.push(line.chars().take(1000).collect());
+            }
+        }
         let message = value
             .get("message")
             .and_then(Value::as_str)

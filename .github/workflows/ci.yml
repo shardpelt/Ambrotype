@@ -30,12 +30,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
-      - name: Diagnose Windows crashes (temporary)
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        run: |
-          cargo test -p amb-plugin --lib -- --test-threads=1 --nocapture
-          cargo test -p amb-gpu --lib -- --test-threads=1 --nocapture
       # Every crate's failures in one run, not only the first crate's.
       - run: cargo test --workspace --no-fail-fast
 

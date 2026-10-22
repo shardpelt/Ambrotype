@@ -368,26 +368,33 @@ impl Output {
     }
 }
 
-/// Write a line to the plugin's log (shown in the Plugins dialog).
+/// Lines from [`log`], handed back with the output.
+static LOG: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+/// Write a line to the plugin's log (shown in the Plugins dialog). The lines
+/// go back with the output, so a plugin needs nothing from the host.
 pub fn log(text: &str) {
     #[cfg(target_arch = "wasm32")]
-    {
-        #[link(wasm_import_module = "amb")]
-        unsafe extern "C" {
-            #[link_name = "log"]
-            fn amb_log(ptr: *const u8, len: usize);
+    if let Ok(mut log) = LOG.lock() {
+        if log.len() < 200 {
+            log.push(text.chars().take(1000).collect());
         }
-        // SAFETY: the host only reads `len` bytes at `ptr`.
-        unsafe { amb_log(text.as_ptr(), text.len()) };
     }
     #[cfg(not(target_arch = "wasm32"))]
     eprintln!("{text}");
 }
 
+/// The lines logged since the last call.
+fn take_log() -> Vec<String> {
+    LOG.lock()
+        .map(|mut l| std::mem::take(&mut *l))
+        .unwrap_or_default()
+}
+
 /// The WebAssembly glue `export_plugin!` expands to. Not for direct use.
 #[doc(hidden)]
 pub mod abi {
-    use super::{Input, Output};
+    use super::{Input, Output, take_log};
 
     /// Memory for the host to write the input into.
     pub fn alloc(len: i32) -> i32 {
@@ -405,12 +412,16 @@ pub mod abi {
         // SAFETY: the host wrote `len` bytes into the buffer `alloc` returned.
         let bytes =
             unsafe { Vec::from_raw_parts(ptr as usize as *mut u8, len as usize, len as usize) };
-        let result = match serde_json::from_slice::<Input>(&bytes) {
+        let mut result = match serde_json::from_slice::<Input>(&bytes) {
             Ok(input) => f(input)
                 .map(|o| serde_json::to_value(o).unwrap_or_default())
                 .unwrap_or_else(|e| serde_json::json!({ "error": e })),
             Err(e) => serde_json::json!({ "error": format!("bad input: {e}") }),
         };
+        let log = take_log();
+        if let (false, Some(map)) = (log.is_empty(), result.as_object_mut()) {
+            map.insert("log".into(), log.into());
+        }
         let mut out = serde_json::to_vec(&result)
             .unwrap_or_default()
             .into_boxed_slice();

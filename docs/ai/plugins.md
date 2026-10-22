@@ -147,7 +147,7 @@ fn fade(e: &Effect, px: &mut Pixels) -> Result<(), String> {
 - **Permissions and settings:** ask for the fewest permissions, and use only setting names from the settings reference.
 - **Before handing it over:** write native tests (`Input::for_test(json!({...}))`) and run `cargo test`, then `amb plugin build`. Fix everything it reports. Tell the user what the plugin does, its parameters and its permissions.
 - **Results:** make it idempotent where that makes sense. Running a tone plugin twice should not keep pushing the photo, because its statistics come from the photo as already edited.
-- **What not to try:** don't work around the sandbox (no file, network or clock code). It wouldn't link: the only import a plugin may have is `amb.log`.
+- **What not to try:** don't work around the sandbox (no file, network or clock code). It wouldn't link: a plugin may import nothing but the old `amb.log`.
 
 ## Licence
 
@@ -167,11 +167,11 @@ A plugin module is a `wasm32` module that:
 - exports `memory`
 - exports `amb_alloc(len: i32) -> i32`: memory for the input
 - exports `amb_run(ptr: i32, len: i32) -> i64`: reads `len` bytes of input JSON at `ptr`, and returns the output JSON's address in the high 32 bits and its length in the low 32 bits
-- may import `amb.log(ptr: i32, len: i32)`, and nothing else
+- imports nothing (older plugins may import `amb.log(ptr: i32, len: i32)`; the app refuses those on Windows x64, where host calls crash the interpreter)
 
 An effect exports `amb_effect(info_ptr: i32, info_len: i32, px_ptr: i32, n: i32) -> i64` instead of `amb_run`: it changes `n` floats (RGB) at `px_ptr` in place, given the effect JSON (`api`, `params`, `seed`, `x`, `y`, `width`, `height`, `full_width`, `full_height`) at `info_ptr`, and returns 0, or an error message as `(ptr << 32) | len`. Both buffers come from `amb_alloc`.
 
-The input JSON has `api` (1), `params`, `settings`, `seed`, and with permission `photo` and `stats`. The output JSON is `{"commands": [...], "message": "..."}`, or `{"error": "..."}`. The command objects are the protocol's (`amb protocol schema command`), limited to `set_param`, `adjust_param`, `reset_param` and `reset_group`. `crates/amb-plugin/src/tests.rs` has small hand-written modules.
+The input JSON has `api` (1), `params`, `settings`, `seed`, and with permission `photo` and `stats`. The output JSON is `{"commands": [...], "message": "...", "log": ["..."]}`, or `{"error": "..."}`. The command objects are the protocol's (`amb protocol schema command`), limited to `set_param`, `adjust_param`, `reset_param` and `reset_group`. `crates/amb-plugin/src/tests.rs` has small hand-written modules.
 
 ## Examples
 

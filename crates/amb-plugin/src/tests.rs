@@ -56,10 +56,25 @@ fn the_log_import_works() {
         "i32.const 1024 i32.const 2 call $log",
         r#"(import "amb" "log" (func $log (param i32 i32)))"#,
     );
+    if LOG_IMPORT_CRASHES {
+        let err = Plugin::from_parts(&manifest("[]"), &wasm).unwrap_err();
+        assert!(err.contains("rebuild"), "{err}");
+        return;
+    }
     let p = Plugin::from_parts(&manifest("[]"), &wasm).unwrap();
     assert_eq!(
         p.run(&Context::default(), &Map::new()).unwrap().log,
         ["{\""]
+    );
+}
+
+#[test]
+fn log_lines_come_back_with_the_output() {
+    let wasm = module(r#"{"commands":[],"log":["one","two"]}"#, "", "");
+    let p = Plugin::from_parts(&manifest("[]"), &wasm).unwrap();
+    assert_eq!(
+        p.run(&Context::default(), &Map::new()).unwrap().log,
+        ["one", "two"]
     );
 }
 

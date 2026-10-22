@@ -240,14 +240,30 @@ impl Kernel {
 pub(crate) mod tests {
     use super::*;
 
+    /// A device for one test. Tests take turns: several devices at once
+    /// crash Direct3D 12 on Windows ARM.
+    pub(crate) struct TestGpu {
+        gpu: Gpu,
+        _turn: std::sync::MutexGuard<'static, ()>,
+    }
+
+    impl std::ops::Deref for TestGpu {
+        type Target = Gpu;
+        fn deref(&self) -> &Gpu {
+            &self.gpu
+        }
+    }
+
     /// A software GPU (lavapipe or llvmpipe) is enough for the tests; with
     /// none at all, they are skipped with a note.
-    pub(crate) fn gpu() -> Option<Gpu> {
-        let g = Gpu::new(true);
-        if g.is_none() {
+    pub(crate) fn gpu() -> Option<TestGpu> {
+        static TURN: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let turn = TURN.lock().unwrap_or_else(|e| e.into_inner());
+        let Some(gpu) = Gpu::new(true) else {
             eprintln!("no GPU adapter (install mesa-vulkan-drivers for lavapipe): skipped");
-        }
-        g
+            return None;
+        };
+        Some(TestGpu { gpu, _turn: turn })
     }
 
     #[test]

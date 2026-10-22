@@ -130,6 +130,15 @@ pub(crate) async fn pick_export_path(
     dir: Option<String>,
 ) -> Option<String> {
     let ext = amb_export::Format::from_name(&format)?.extension();
+    // A UI test saves without asking.
+    if let Some(t) = crate::uitest::current() {
+        return Some(
+            t.out_dir
+                .join(format!("{suggested}.{ext}"))
+                .display()
+                .to_string(),
+        );
+    }
     let mut dialog = app.dialog().file();
     // Next to the photo: an app opened from the Finder starts in `/`.
     if let Some(d) = dir.filter(|d| Path::new(d).is_dir()) {

@@ -216,6 +216,7 @@ function selectOnFocus(box) {
 
 function makeRow(def) {
   const row = document.createElement("div");
+  row.dataset.name = def.name;
   const entry = { def };
   if (def.kind === "bool") {
     row.className = "row check";
@@ -1032,6 +1033,9 @@ async function init() {
   // A photo given on the command line.
   const initial = await invoke("take_initial_path");
   if (initial) openAny(initial);
+  // `ambrotype --ui-test SCRIPT` (uitest.js).
+  const test = await invoke("ui_test");
+  if (test) runUiTest(test);
 }
 
 init().catch((e) => toast(String(e), true));

@@ -21,6 +21,7 @@ mod plugins;
 mod schema;
 mod session;
 mod sizes;
+mod uitest;
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -344,6 +345,19 @@ fn main() {
     if args.get(1).map(String::as_str) == Some("--check-look") {
         std::process::exit(if looks::check_files(&args[2..]) { 0 } else { 1 });
     }
+    // `ambrotype --ui-test SCRIPT.js [PHOTO]` runs a scripted UI test (uitest.rs).
+    let mut rest: Vec<String> = args.iter().skip(1).cloned().collect();
+    if let Some(i) = rest.iter().position(|a| a == "--ui-test") {
+        let Some(script) = rest.get(i + 1).cloned() else {
+            eprintln!("--ui-test needs a script");
+            std::process::exit(2);
+        };
+        if let Err(e) = uitest::start(&script) {
+            eprintln!("{e}");
+            std::process::exit(2);
+        }
+        rest.drain(i..i + 2);
+    }
     let state = AppState::default();
     *state.preset_dirs.lock().expect("fresh mutex") = session::default_preset_dirs();
     // Lens profile sources can take a moment (thousands of files): load them in
@@ -363,7 +377,7 @@ fn main() {
         let _ = gpu.set(found);
     });
     *state.initial_path.lock().expect("fresh mutex") =
-        std::env::args().skip(1).find(|a| !a.starts_with("--"));
+        rest.into_iter().find(|a| !a.starts_with("--"));
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
@@ -495,6 +509,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::photo::take_initial_path,
+            uitest::ui_test,
+            uitest::ui_test_done,
             commands::menu::set_menu,
             commands::settings::interfaces,
             commands::settings::set_interface,

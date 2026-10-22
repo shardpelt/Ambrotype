@@ -101,7 +101,7 @@ Then retire the auto "Getting around" card.
 State on 2026-10-20 (evening): the repo is public and CI runs. Linux, macOS and the licence check are green. Windows found two real bugs, both fixed: NaN pixels in the GPU colour stage (`b0d17dd`), and CRLF checkouts breaking the hub checksums (`.gitattributes`, `2e61191`). That last fix still needs a green Windows run.
 
 - [x] Make `shardpelt/Ambrotype` public
-- [ ] CI green on Windows (x64, ARM): check the run on `2e61191`; Linux and macOS are green
+- [x] CI green on Windows (x64, ARM): green since `74d455d` (2026-10-22): plugins no longer call into the app (it crashed on x64), and the GPU tests take turns (ARM)
 - [ ] Run the `Release` workflow by hand once (Actions tab); install each artifact ([releasing.md](releasing.md))
 - [ ] Optional, before building: `strip = true` in `[profile.release]` (about 60 MB smaller installs; downloads shrink less)
 - [ ] Try the editor on the Mac: menu bar (and Interface → Back to the Built-in Interface), library, a custom interface, Connect an AI App… → Open a terminal here, export

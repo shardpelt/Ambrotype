@@ -59,7 +59,9 @@ function showTermTip(el) {
   if (!t) return;
   basics.tip ??= Object.assign(document.createElement("div"), { className: "help-tip term-tip", role: "tooltip" });
   basics.tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: t.term }), ` ${t.short}`,
-    Object.assign(document.createElement("small"), { textContent: "Click to read more in Photography basics" }));
+    Object.assign(document.createElement("small"), {
+      textContent: `${ZONE_OF[t.id] && !$("preview").hidden && !el.closest("dialog") ? "Lit up on your photo. " : ""}Click to read more in Photography basics`,
+    }));
   document.body.append(basics.tip);
   const r = el.getBoundingClientRect();
   const w = basics.tip.offsetWidth, h = basics.tip.offsetHeight;

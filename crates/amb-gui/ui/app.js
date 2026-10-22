@@ -913,6 +913,7 @@ async function init() {
   wireHistoryKeys();
   wireHelpCards();
   wireTerms();
+  wireZones();
   initLearn();
   wireKeyBadges();
   $("btn-save").addEventListener("click", save);

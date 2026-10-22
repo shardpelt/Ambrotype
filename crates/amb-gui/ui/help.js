@@ -14,6 +14,7 @@ function addHelpMark(entry, def) {
   const mark = Object.assign(document.createElement("span"), { className: "help-mark", textContent: "?", tabIndex: 0 });
   mark.setAttribute("role", "button");
   mark.setAttribute("aria-label", `About ${def.label}`);
+  mark.dataset.setting = def.name;
   // The label is a drag and double-click target; the mark is only for help.
   for (const t of ["pointerdown", "mousedown", "dblclick"]) mark.addEventListener(t, (e) => e.stopPropagation());
   mark.addEventListener("click", (e) => {
@@ -63,7 +64,8 @@ function placeBeside(el, mark) {
 function showHelpTip(mark, def) {
   help.tip ??= Object.assign(document.createElement("div"), { className: "help-tip", role: "tooltip" });
   help.tip.textContent = def.description;
-  help.tip.append(Object.assign(document.createElement("small"), { textContent: "Click for more" }));
+  const lit = ZONE_OF[def.name] && !$("preview").hidden ? "Lit up on your photo. " : "";
+  help.tip.append(Object.assign(document.createElement("small"), { textContent: `${lit}Click for more` }));
   document.body.append(help.tip);
   placeBeside(help.tip, mark);
 }

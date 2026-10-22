@@ -878,6 +878,14 @@ mod tests {
     #[test]
     fn uris_escape_paths() {
         let u = uri(Path::new("/a b/c%d#e?.lrcat"));
-        assert_eq!(u, "file:///a%20b/c%25d%23e%3F.lrcat?immutable=1");
+        // On Windows the path gets the current drive: file:///D:/a%20b/…
+        assert!(u.starts_with("file:///"), "{u}");
+        assert!(u.ends_with("/a%20b/c%25d%23e%3F.lrcat?immutable=1"), "{u}");
+        if cfg!(windows) {
+            let u = uri(Path::new(r"C:\a b\x.lrcat"));
+            assert_eq!(u, "file:///C:/a%20b/x.lrcat?immutable=1");
+        } else {
+            assert_eq!(u, "file:///a%20b/c%25d%23e%3F.lrcat?immutable=1");
+        }
     }
 }

@@ -927,7 +927,11 @@ mod tests {
                 format!(
                     "{} {}",
                     src.file_name().unwrap().to_string_lossy(),
-                    dst.strip_prefix(root.join("lib")).unwrap().display()
+                    // `/` between folders on every system, for the comparison.
+                    dst.strip_prefix(root.join("lib"))
+                        .unwrap()
+                        .to_string_lossy()
+                        .replace('\\', "/")
                 )
             })
             .collect();

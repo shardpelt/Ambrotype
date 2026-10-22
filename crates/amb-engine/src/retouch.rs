@@ -249,123 +249,174 @@ fn sample(img: &Image, x: f64, y: f64) -> [f32; 3] {
     out
 }
 
-fn log_luma(p: [f32; 3]) -> f32 {
-    let lw = luminance_weights();
-    (lw[0] * p[0] + lw[1] * p[1] + lw[2] * p[2]).max(1e-5).ln()
-}
-
 /// The donor offset (output pixels) whose surroundings best match the
-/// spot's: candidates around the spot at 1.6 to 4 radii in 16 directions,
-/// scored on log luminance along two rings, plus how much busier the
-/// candidate's inside is than its own surroundings (a donor holding an object
-/// is; a stretch of the same edge or texture isn't).
+/// spot's, for the spot's own shape (a round spot or a brushed stroke).
+/// Candidates lie in 24 directions, just clear of the spot along each one and
+/// further out; each is scored on the band around the spot: how far the
+/// donor's band differs from the spot's (log luminance; for a heal, which
+/// evens out brightness, mostly in shape, a little in level), plus how far
+/// the donor's inside strays from what its own band predicts (a donor
+/// holding an object or a line does), how different its fine texture is from
+/// the band's, and its distance. A donor may not overlap the spot.
 fn search_offset(
     img: &Image,
-    centre: (f64, f64),
-    radius: f64,
+    p: &Placed,
+    clone: bool,
     (x0, y0, x1, y1): (f64, f64, f64, f64),
 ) -> (f64, f64) {
-    let r = radius.max(1.0);
-    let ring: Vec<(f64, f64)> = (0..32)
-        .flat_map(|i| {
-            let t = i as f64 / 32.0 * std::f64::consts::TAU;
-            [1.25, 1.6].map(|k| (t.cos() * r * k, t.sin() * r * k))
-        })
-        .collect();
-    let inside: Vec<(f64, f64)> = (0..16)
-        .flat_map(|i| {
-            let t = i as f64 / 16.0 * std::f64::consts::TAU;
-            [0.0, 0.45, 0.85].map(|k| (t.cos() * r * k, t.sin() * r * k))
-        })
-        .collect();
-    let target: Vec<f32> = ring
+    let margin = (p.radius * 0.35).clamp(3.0, 40.0) as usize;
+    let (ex0, ey0) = (p.x0.saturating_sub(margin), p.y0.saturating_sub(margin));
+    let ex1 = (p.x0 + p.w + margin).min(img.width);
+    let ey1 = (p.y0 + p.h + margin).min(img.height);
+    let (ew, eh) = (ex1 - ex0, ey1 - ey0);
+    let mut mask = vec![0.0f32; ew * eh];
+    for j in 0..p.h {
+        for i in 0..p.w {
+            if p.alpha[j * p.w + i] > 0.01 {
+                mask[(p.y0 - ey0 + j) * ew + (p.x0 - ex0 + i)] = 1.0;
+            }
+        }
+    }
+    let near = box_blur(&mask, ew, eh, margin);
+    let (mut band, mut inside) = (Vec::new(), Vec::new());
+    for j in 0..eh {
+        for i in 0..ew {
+            let k = j * ew + i;
+            let pt = ((ex0 + i) as f64, (ey0 + j) as f64);
+            if mask[k] > 0.0 {
+                inside.push(pt);
+            } else if near[k] > 0.0 {
+                band.push(pt);
+            }
+        }
+    }
+    // A few hundred points each is plenty to compare.
+    let thin = |v: Vec<(f64, f64)>, n: usize| -> Vec<(f64, f64)> {
+        let step = v.len().div_ceil(n).max(1);
+        v.into_iter().step_by(step).collect()
+    };
+    let (band, inside) = (thin(band, 600), thin(inside, 400));
+    if band.is_empty() || inside.is_empty() {
+        return (p.radius.max(1.0) * 2.2, 0.0);
+    }
+    // Log luminance with a floor, as the eye sees it: plain logs blow the
+    // noise of near-black areas up into differences that swamp the rest.
+    let lw = luminance_weights();
+    let luma = |pts: &[(f64, f64)], (dx, dy): (f64, f64)| -> Vec<f64> {
+        pts.iter()
+            .map(|&(x, y)| {
+                let p = sample(img, x + dx, y + dy);
+                ((lw[0] * p[0] + lw[1] * p[1] + lw[2] * p[2]).max(0.0) as f64 + 0.005).ln()
+            })
+            .collect()
+    };
+    let mean = |v: &[f64]| v.iter().sum::<f64>() / v.len() as f64;
+    let var = |v: &[f64]| {
+        let m = mean(v);
+        v.iter().map(|x| (x - m).powi(2)).sum::<f64>() / v.len() as f64
+    };
+    // Fine texture: the difference to the pixel two to the right.
+    let fine = |pts: &[(f64, f64)], (dx, dy): (f64, f64)| -> f64 {
+        let a = luma(pts, (dx, dy));
+        let b = luma(pts, (dx + 2.0, dy));
+        (a.iter().zip(&b).map(|(a, b)| (a - b).powi(2)).sum::<f64>() / a.len() as f64).sqrt()
+    };
+    let target = luma(&band, (0.0, 0.0));
+    let target_fine = fine(&band, (0.0, 0.0));
+    // How each inside point is guessed from the band (inverse squared
+    // distance weights); the same for every candidate, as both move together.
+    let guess: Vec<Vec<f32>> = inside
         .iter()
-        .map(|&(dx, dy)| log_luma(sample(img, centre.0 + dx, centre.1 + dy)))
+        .map(|&(x, y)| {
+            let w: Vec<f64> = band
+                .iter()
+                .map(|&(bx, by)| 1.0 / ((bx - x).powi(2) + (by - y).powi(2)).max(1.0))
+                .collect();
+            let total: f64 = w.iter().sum();
+            w.iter().map(|v| (v / total) as f32).collect()
+        })
         .collect();
-    let mut best = ((r * 2.2, 0.0), f64::INFINITY);
-    for dist in [1.6, 2.2, 3.0, 4.0] {
-        for i in 0..16 {
-            let t = (i as f64 + 0.5 * (dist as i32 % 2) as f64) / 16.0 * std::f64::consts::TAU;
-            let off = (t.cos() * r * dist, t.sin() * r * dist);
-            let (cx, cy) = (centre.0 + off.0, centre.1 + off.1);
-            // The donor and its ring must be in the picture.
-            let reach = r * 1.6;
-            if cx - reach < x0 || cy - reach < y0 || cx + reach > x1 || cy + reach > y1 {
+    let in_mask = |x: f64, y: f64| {
+        let (i, j) = (x.round() - ex0 as f64, y.round() - ey0 as f64);
+        i >= 0.0
+            && j >= 0.0
+            && (i as usize) < ew
+            && (j as usize) < eh
+            && mask[j as usize * ew + i as usize] > 0.0
+    };
+    // The spot's width along each direction, so a donor clears it.
+    let clearance: Vec<(f64, f64, f64)> = (0..24)
+        .map(|d| {
+            let t = d as f64 / 24.0 * std::f64::consts::TAU;
+            let (ux, uy) = (t.cos(), t.sin());
+            let proj = inside.iter().map(|&(x, y)| x * ux + y * uy);
+            let (lo, hi) = proj.fold((f64::INFINITY, f64::NEG_INFINITY), |(a, b), v| {
+                (a.min(v), b.max(v))
+            });
+            (ux, uy, hi - lo + margin as f64)
+        })
+        .collect();
+    // Distance counts in the spot's narrowest width: beside a long stroke
+    // is near, along it is far.
+    let thinnest = clearance
+        .iter()
+        .map(|c| c.2)
+        .fold(f64::INFINITY, f64::min)
+        .max(1.0);
+    let mut best = ((p.radius.max(1.0) * 2.2, 0.0), f64::INFINITY);
+    for &(ux, uy, clear) in &clearance {
+        for k in [1.0, 1.35, 1.8, 2.5] {
+            let off = ((ux * clear * k).round(), (uy * clear * k).round());
+            // The donor and its band must be in the picture.
+            let (bx0, by0, bx1, by1) = (
+                ex0 as f64 + off.0,
+                ey0 as f64 + off.1,
+                ex1 as f64 + off.0,
+                ey1 as f64 + off.1,
+            );
+            if bx0 < x0 || by0 < y0 || bx1 > x1 || by1 > y1 {
                 continue;
             }
-            let around: Vec<f64> = ring
+            let overlap = inside
                 .iter()
-                .map(|&(dx, dy)| log_luma(sample(img, cx + dx, cy + dy)) as f64)
-                .collect();
-            let ssd: f64 = around
-                .iter()
-                .zip(&target)
-                .map(|(a, &t)| (a - t as f64).powi(2))
-                .sum::<f64>()
-                / ring.len() as f64;
-            let lum: Vec<f64> = inside
-                .iter()
-                .map(|&(dx, dy)| log_luma(sample(img, cx + dx, cy + dy)) as f64)
-                .collect();
-            let var = |v: &[f64]| {
-                let mean = v.iter().sum::<f64>() / v.len() as f64;
-                v.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / v.len() as f64
+                .filter(|&&(x, y)| in_mask(x + off.0, y + off.1))
+                .count();
+            if overlap * 50 > inside.len() {
+                continue;
+            }
+            let around = luma(&band, off);
+            let diff: Vec<f64> = around.iter().zip(&target).map(|(a, t)| a - t).collect();
+            let shape = if clone {
+                diff.iter().map(|e| e * e).sum::<f64>() / diff.len() as f64
+            } else {
+                // The heal evens out brightness, but brightening a much
+                // darker donor brings up its noise and faint lines with it.
+                var(&diff) + 0.5 * mean(&diff).powi(2)
             };
-            let busier = (var(&lum) - var(&around)).max(0.0);
-            // Prefer near donors a little: the scene changes with distance.
-            let score = ssd + busier + 0.002 * dist;
+            // Something in the donor that its own band doesn't explain (an
+            // object, a streak) would be carried into the spot: how far its
+            // inside is from what its band predicts there.
+            let inner = luma(&inside, off);
+            let structure = inner
+                .iter()
+                .zip(&guess)
+                .map(|(v, w)| {
+                    let g: f64 = w.iter().zip(&around).map(|(&w, a)| w as f64 * a).sum();
+                    (v - g).powi(2)
+                })
+                .sum::<f64>()
+                / inner.len() as f64;
+            let texture = (fine(&inside, off) - target_fine).powi(2);
+            // Near donors are likelier to match: the scene changes with
+            // distance, which the band alone may not show.
+            let far = 0.004 * (off.0.hypot(off.1) / thinnest);
+            let score = shape + structure + texture + far;
             if score < best.1 {
                 best = (off, score);
             }
         }
     }
     best.0
-}
-
-/// Fit `a + b·x + c·y` to (x, y, v) by least squares; constant when the
-/// points can't carry a plane.
-fn fit_plane(pts: &[(f64, f64, f64)]) -> [f64; 3] {
-    let n = pts.len() as f64;
-    if pts.is_empty() {
-        return [0.0; 3];
-    }
-    let mean = pts.iter().map(|p| p.2).sum::<f64>() / n;
-    if pts.len() < 12 {
-        return [mean, 0.0, 0.0];
-    }
-    let (mut sx, mut sy, mut sxx, mut syy, mut sxy, mut sv, mut sxv, mut syv) =
-        (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-    for &(x, y, v) in pts {
-        sx += x;
-        sy += y;
-        sxx += x * x;
-        syy += y * y;
-        sxy += x * y;
-        sv += v;
-        sxv += x * v;
-        syv += y * v;
-    }
-    // Normal equations [n sx sy; sx sxx sxy; sy sxy syy] · [a b c] = [sv sxv syv].
-    let m = [[n, sx, sy], [sx, sxx, sxy], [sy, sxy, syy]];
-    let rhs = [sv, sxv, syv];
-    let det = |m: [[f64; 3]; 3]| {
-        m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
-            - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
-            + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
-    };
-    let d = det(m);
-    if d.abs() < 1e-9 {
-        return [mean, 0.0, 0.0];
-    }
-    let mut out = [0.0; 3];
-    for (k, o) in out.iter_mut().enumerate() {
-        let mut mk = m;
-        for row in 0..3 {
-            mk[row][k] = rhs[row];
-        }
-        *o = det(mk) / d;
-    }
-    out
 }
 
 /// Apply every spot, in order. `frame` is the uncropped frame's size and
@@ -406,7 +457,7 @@ pub fn apply_in(
                 let (tx, ty) = frame.target(fx, fy);
                 (tx - p.centre.0, ty - p.centre.1)
             }
-            None => search_offset(img, p.centre, p.radius, bounds),
+            None => search_offset(img, &p, spot.kind == SpotKind::Clone, bounds),
         };
         heal_one(img, &p, offset, spot.kind == SpotKind::Clone);
     }
@@ -463,8 +514,9 @@ pub fn footprints(
             let writes = around(centre, r + 2.0);
             let donor = match spot.source {
                 Some((u, v)) => around(to_output(u, v), r + ring + 2.0),
-                // Candidates up to 4 radii away, with their rings.
-                None => around(centre, 5.6 * r.max(1.0) + 3.0),
+                // Candidates up to 2.5 × (the spot's width and a margin)
+                // away, with their bands.
+                None => around(centre, 6.0 * r.max(1.0) + 4.0 * ring + 3.0),
             };
             let own = around(centre, r + ring);
             let reads = [
@@ -479,46 +531,14 @@ pub fn footprints(
 }
 
 fn heal_one(img: &mut Image, p: &Placed, offset: (f64, f64), clone: bool) {
+    // Whole pixels: a fractional offset would blur the donor's texture.
+    let offset = (offset.0.round(), offset.1.round());
     let snapshot = img.clone();
-    // The plane: log(target) − log(donor) over a ring just outside the spot.
-    let plane = if clone {
+    let field = if clone {
         None
     } else {
-        let margin = (p.radius * 0.35).clamp(2.0, 40.0) as usize;
-        let (ex0, ey0) = (p.x0.saturating_sub(margin), p.y0.saturating_sub(margin));
-        let ex1 = (p.x0 + p.w + margin).min(img.width);
-        let ey1 = (p.y0 + p.h + margin).min(img.height);
-        let (ew, eh) = (ex1 - ex0, ey1 - ey0);
-        let mut inside = vec![0.0f32; ew * eh];
-        for j in 0..p.h {
-            for i in 0..p.w {
-                if p.alpha[j * p.w + i] > 0.01 {
-                    inside[(p.y0 - ey0 + j) * ew + (p.x0 - ex0 + i)] = 1.0;
-                }
-            }
-        }
-        let near = box_blur(&inside, ew, eh, margin);
-        let mut pts: [Vec<(f64, f64, f64)>; 3] = [Vec::new(), Vec::new(), Vec::new()];
-        let norm = p.radius.max(1.0);
-        for j in 0..eh {
-            for i in 0..ew {
-                let k = j * ew + i;
-                if inside[k] > 0.0 || near[k] <= 0.0 {
-                    continue;
-                }
-                let (x, y) = ((ex0 + i) as f64, (ey0 + j) as f64);
-                let t = snapshot.get(ex0 + i, ey0 + j);
-                let d = sample(&snapshot, x + offset.0, y + offset.1);
-                let (rx, ry) = ((x - p.centre.0) / norm, (y - p.centre.1) / norm);
-                for c in 0..3 {
-                    let v = (t[c].max(1e-5).ln() - d[c].max(1e-5).ln()) as f64;
-                    pts[c].push((rx, ry, v));
-                }
-            }
-        }
-        Some([fit_plane(&pts[0]), fit_plane(&pts[1]), fit_plane(&pts[2])])
+        Some(correction(&snapshot, p, offset))
     };
-    let norm = p.radius.max(1.0);
     for j in 0..p.h {
         for i in 0..p.w {
             let a = p.alpha[j * p.w + i];
@@ -527,11 +547,10 @@ fn heal_one(img: &mut Image, p: &Placed, offset: (f64, f64), clone: bool) {
             }
             let (x, y) = ((p.x0 + i) as f64, (p.y0 + j) as f64);
             let mut d = sample(&snapshot, x + offset.0, y + offset.1);
-            if let Some(pl) = &plane {
-                let (rx, ry) = ((x - p.centre.0) / norm, (y - p.centre.1) / norm);
+            if let Some((f, fw, (fx0, fy0))) = &field {
+                let k = (p.y0 + j - fy0) * fw + (p.x0 + i - fx0);
                 for c in 0..3 {
-                    let g = (pl[c][0] + pl[c][1] * rx + pl[c][2] * ry).clamp(-6.0, 6.0);
-                    d[c] *= g.exp() as f32;
+                    d[c] *= f[c][k].clamp(-6.0, 6.0).exp();
                 }
             }
             let t = snapshot.get(p.x0 + i, p.y0 + j);
@@ -539,6 +558,123 @@ fn heal_one(img: &mut Image, p: &Placed, offset: (f64, f64), clone: bool) {
             img.set(p.x0 + i, p.y0 + j, out);
         }
     }
+}
+
+/// The heal's correction, log(target) − log(donor) per channel, over the
+/// spot's box and a margin: measured in a band just outside the spot,
+/// smoothed there, and carried smoothly across the inside (a membrane, by
+/// push-pull interpolation). Brightness, colour and curved shading carry
+/// over from the edge all round; the donor's texture stays. Returns the
+/// three planes, their width and their origin.
+#[allow(clippy::type_complexity)]
+fn correction(
+    snapshot: &Image,
+    p: &Placed,
+    offset: (f64, f64),
+) -> ([Vec<f32>; 3], usize, (usize, usize)) {
+    let margin = (p.radius * 0.35).clamp(3.0, 40.0) as usize;
+    let (ex0, ey0) = (p.x0.saturating_sub(margin), p.y0.saturating_sub(margin));
+    let ex1 = (p.x0 + p.w + margin).min(snapshot.width);
+    let ey1 = (p.y0 + p.h + margin).min(snapshot.height);
+    let (ew, eh) = (ex1 - ex0, ey1 - ey0);
+    let mut inside = vec![0.0f32; ew * eh];
+    for j in 0..p.h {
+        for i in 0..p.w {
+            if p.alpha[j * p.w + i] > 0.01 {
+                inside[(p.y0 - ey0 + j) * ew + (p.x0 - ex0 + i)] = 1.0;
+            }
+        }
+    }
+    let near = box_blur(&inside, ew, eh, margin);
+    // Known values: the band outside the spot.
+    let known: Vec<f32> = (0..ew * eh)
+        .map(|k| f32::from(inside[k] == 0.0 && near[k] > 0.0))
+        .collect();
+    let smooth = (p.radius * 0.15).clamp(1.0, 12.0) as usize;
+    let weight = box_blur(&known, ew, eh, smooth);
+    let planes = [0, 1, 2].map(|c| {
+        let mut v = vec![0.0f32; ew * eh];
+        for j in 0..eh {
+            for i in 0..ew {
+                let k = j * ew + i;
+                if known[k] > 0.0 {
+                    let (x, y) = ((ex0 + i) as f64, (ey0 + j) as f64);
+                    let t = snapshot.get(ex0 + i, ey0 + j)[c];
+                    let d = sample(snapshot, x + offset.0, y + offset.1)[c];
+                    v[k] = t.max(1e-5).ln() - d.max(1e-5).ln();
+                }
+            }
+        }
+        // Smooth along the band so the texture of either side doesn't print
+        // into the correction.
+        let sum = box_blur(&v, ew, eh, smooth);
+        let band: Vec<f32> = (0..ew * eh)
+            .map(|k| {
+                if known[k] > 0.0 && weight[k] > 0.0 {
+                    sum[k] / weight[k]
+                } else {
+                    0.0
+                }
+            })
+            .collect();
+        let mut filled = push_pull(&band, &known, ew, eh);
+        // A last smoothing inside only, so coarse levels leave no steps.
+        let soft = box_blur(&filled, ew, eh, smooth.max(2));
+        for k in 0..ew * eh {
+            if known[k] == 0.0 {
+                filled[k] = soft[k];
+            }
+        }
+        filled
+    });
+    (planes, ew, (ex0, ey0))
+}
+
+/// Fill the unknown (`weight` 0) values of a plane smoothly from the known
+/// ones: average down to coarser levels until everything is covered, then
+/// fill each level's gaps from the one above (Gortler et al.'s push-pull).
+fn push_pull(values: &[f32], weight: &[f32], w: usize, h: usize) -> Vec<f32> {
+    if w <= 1 && h <= 1 || weight.iter().all(|&k| k >= 1.0) {
+        return values.to_vec();
+    }
+    let (cw, ch) = (w.div_ceil(2), h.div_ceil(2));
+    let mut cv = vec![0.0f32; cw * ch];
+    let mut cwgt = vec![0.0f32; cw * ch];
+    for j in 0..h {
+        for i in 0..w {
+            let (k, ck) = (j * w + i, (j / 2) * cw + i / 2);
+            cv[ck] += values[k] * weight[k];
+            cwgt[ck] += weight[k];
+        }
+    }
+    for k in 0..cw * ch {
+        if cwgt[k] > 0.0 {
+            cv[k] /= cwgt[k];
+        }
+        cwgt[k] = cwgt[k].min(1.0);
+    }
+    if cwgt.iter().all(|&k| k == 0.0) {
+        return values.to_vec();
+    }
+    let coarse = push_pull(&cv, &cwgt, cw, ch);
+    // Bilinear up from the coarse level, for the parts this level lacks.
+    let up = |x: f32, y: f32| {
+        let x = (x / 2.0 - 0.25).clamp(0.0, (cw - 1) as f32);
+        let y = (y / 2.0 - 0.25).clamp(0.0, (ch - 1) as f32);
+        let (x0, y0) = (x.floor() as usize, y.floor() as usize);
+        let (x1, y1) = ((x0 + 1).min(cw - 1), (y0 + 1).min(ch - 1));
+        let (fx, fy) = (x - x0 as f32, y - y0 as f32);
+        let g = |xx: usize, yy: usize| coarse[yy * cw + xx];
+        let top = g(x0, y0) + (g(x1, y0) - g(x0, y0)) * fx;
+        let bot = g(x0, y1) + (g(x1, y1) - g(x0, y1)) * fx;
+        top + (bot - top) * fy
+    };
+    (0..w * h)
+        .map(|k| {
+            let a = weight[k].min(1.0);
+            values[k] * a + up((k % w) as f32, (k / w) as f32) * (1.0 - a)
+        })
+        .collect()
 }
 
 /// A donor for a new round spot at `centre` with `radius` (fractions; the
@@ -551,19 +687,44 @@ pub fn find_source(
     centre: (f64, f64),
     radius: f64,
 ) -> (f64, f64) {
+    let spot = Spot {
+        kind: SpotKind::Heal,
+        shape: SpotShape::Ellipse {
+            centre,
+            size: (radius, radius),
+        },
+        source: None,
+        feather: DEFAULT_FEATHER,
+        opacity: 1.0,
+    };
+    find_spot_source(img, frame, crop, &spot).unwrap_or(centre)
+}
+
+/// A donor for `spot`, round or brushed, searched for its own shape on
+/// `img` (the developed output for `frame`/`crop`): the centre its centre
+/// copies from, in fractions. `None` when the spot is off the picture.
+pub fn find_spot_source(
+    img: &Image,
+    frame: (usize, usize),
+    crop: Option<&CropGeometry>,
+    spot: &Spot,
+) -> Option<(f64, f64)> {
     let f = Frame::new(frame, crop);
-    let (cfx, cfy) = f.pixel(centre.0, centre.1);
-    let (cx, cy) = f.target(cfx, cfy);
-    let r = radius * f.width * f.scale();
+    let p = place(spot, &f, img.width, img.height)?;
     let bounds = (0.0, 0.0, img.width as f64, img.height as f64);
-    let (ox, oy) = search_offset(img, (cx, cy), r, bounds);
-    let (sx, sy) = f.source(cx + ox, cy + oy);
-    ((sx + 0.5) / f.width, (sy + 0.5) / f.height)
+    let (ox, oy) = search_offset(img, &p, spot.kind == SpotKind::Clone, bounds);
+    let (sx, sy) = f.source(p.centre.0 + ox, p.centre.1 + oy);
+    Some(((sx + 0.5) / f.width, (sy + 0.5) / f.height))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn log_luma(p: [f32; 3]) -> f32 {
+        let lw = luminance_weights();
+        (lw[0] * p[0] + lw[1] * p[1] + lw[2] * p[2]).max(1e-5).ln()
+    }
 
     fn text(s: &str) -> Value {
         Value::Text(s.into())
@@ -657,17 +818,115 @@ mod tests {
         assert!(Spots::from_settings(&s).0.is_empty());
     }
 
-    #[test]
-    fn plane_fit() {
-        let pts: Vec<(f64, f64, f64)> = (0..50)
-            .map(|i| {
-                let (x, y) = ((i % 7) as f64, (i / 7) as f64);
-                (x, y, 1.0 + 0.5 * x - 0.25 * y)
+    /// Skin-like texture: a soft gradient with fine grain and pores, and a
+    /// curved dark scar across it. Returns (with scar, clean).
+    fn textured(w: usize, h: usize) -> (Image, Image) {
+        let hash = |x: usize, y: usize| {
+            let mut v = (x as u32).wrapping_mul(374761393) ^ (y as u32).wrapping_mul(668265263);
+            v = (v ^ (v >> 13)).wrapping_mul(1274126177);
+            (v ^ (v >> 16)) as f32 / u32::MAX as f32
+        };
+        let clean = Image::from_fn(w, h, |x, y| {
+            let (fx, fy) = (x as f32 / w as f32, y as f32 / h as f32);
+            // Rounded shading, as on a cheek: not a plane over a long stroke.
+            let base = 0.25 + 0.15 * fx + 0.08 * (fx * 12.0).sin() * (fy * 7.0).cos();
+            let grain = 1.0 + 0.10 * (hash(x, y) - 0.5) + 0.06 * (hash(x / 3, y / 3) - 0.5);
+            let v = base * grain;
+            [v, v * 0.78, v * 0.66]
+        });
+        let scar = Image::from_fn(w, h, |x, y| {
+            let mut p = clean.get(x, y);
+            // y = 60 + 12·sin(x / 18), 3 px wide, from x = 60 to 140.
+            let cy = 60.0 + 12.0 * (x as f32 / 18.0).sin();
+            if (60..140).contains(&x) && (y as f32 - cy).abs() < 2.0 {
+                p = [p[0] * 0.45, p[1] * 0.4, p[2] * 0.45];
+            }
+            p
+        });
+        (scar, clean)
+    }
+
+    /// Leftover blemish, seams at the edge, and lost texture after healing a
+    /// brushed stroke along the scar.
+    fn brushed_heal_scores() -> (f64, f64, f64) {
+        let (w, h) = (200, 120);
+        let (mut img, clean) = textured(w, h);
+        let (m, n) = brush::kernel_exponents(0.5);
+        let dabs = (60..140)
+            .step_by(2)
+            .map(|x| brush::Dab {
+                x: (x as f64 + 0.5) / w as f64,
+                y: (60.0 + 12.0 * (x as f64 / 18.0).sin() + 0.5) / h as f64,
+                radius: 6.0 / w as f64,
+                deposit: 1.0,
+                half_m: (m / 2.0) as f32,
+                n: n as f32,
             })
             .collect();
-        let p = fit_plane(&pts);
-        assert!(
-            (p[0] - 1.0).abs() < 1e-9 && (p[1] - 0.5).abs() < 1e-9 && (p[2] + 0.25).abs() < 1e-9
-        );
+        let spots = Spots {
+            spots: vec![Spot {
+                kind: SpotKind::Heal,
+                shape: SpotShape::Brush(vec![brush::Stroke { dabs, erase: false }]),
+                source: None,
+                feather: 0.5,
+                opacity: 1.0,
+            }],
+        };
+        apply(&mut img, &spots, (w, h), None);
+        let ll = |im: &Image| -> Vec<f32> {
+            (0..w * h).map(|k| log_luma(im.get(k % w, k / w))).collect()
+        };
+        let (a, c) = (ll(&img), ll(&clean));
+        let diff: Vec<f32> = a.iter().zip(&c).map(|(a, c)| a - c).collect();
+        let low = box_blur(&diff, w, h, 3);
+        let inside = |x: usize, y: usize| {
+            let cy = 60.0 + 12.0 * (x as f32 / 18.0).sin();
+            (62..138).contains(&x) && (y as f32 - cy).abs() < 4.0
+        };
+        let edge = |x: usize, y: usize| {
+            let cy = 60.0 + 12.0 * (x as f32 / 18.0).sin();
+            (62..138).contains(&x) && ((y as f32 - cy).abs() - 7.0).abs() < 2.0
+        };
+        let (mut res, mut nr, mut seam, mut ns) = (0.0, 0, 0.0, 0);
+        for y in 1..h - 1 {
+            for x in 1..w - 1 {
+                if inside(x, y) {
+                    res += low[y * w + x].abs() as f64;
+                    nr += 1;
+                }
+                if edge(x, y) {
+                    let gx = low[y * w + x + 1] - low[y * w + x - 1];
+                    let gy = low[(y + 1) * w + x] - low[(y - 1) * w + x];
+                    seam += (gx * gx + gy * gy).sqrt() as f64;
+                    ns += 1;
+                }
+            }
+        }
+        // Texture: high-pass energy inside, healed against clean.
+        let hp = |v: &[f32]| -> f64 {
+            let b = box_blur(v, w, h, 2);
+            let (mut e, mut k) = (0.0, 0);
+            for y in 0..h {
+                for x in 0..w {
+                    if inside(x, y) {
+                        e += ((v[y * w + x] - b[y * w + x]) as f64).powi(2);
+                        k += 1;
+                    }
+                }
+            }
+            (e / k as f64).sqrt()
+        };
+        (res / nr as f64, seam / ns as f64, hp(&a) / hp(&c))
+    }
+
+    #[test]
+    fn brushed_heal_blends_in() {
+        // Before 2026-10-22 (a plane fitted to the edge, a donor for the
+        // stroke's bounding circle): residual 0.087, seam 0.027, texture 0.84.
+        let (residual, seam, texture) = brushed_heal_scores();
+        eprintln!("residual {residual:.4} seam {seam:.4} texture {texture:.3}");
+        assert!(residual < 0.03, "the scar shows through: {residual}");
+        assert!(seam < 0.012, "a seam at the edge: {seam}");
+        assert!(texture > 0.85, "the texture is smeared: {texture}");
     }
 }

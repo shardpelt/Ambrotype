@@ -217,15 +217,19 @@ pub(crate) async fn spot_source(
     x: f64,
     y: f64,
     radius: f64,
+    points: Option<Vec<[f64; 2]>>,
+    feather: Option<f64>,
     state: tauri::State<'_, AppState>,
 ) -> Res<[f64; 2]> {
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let guard = slot.lock().map_err(|e| e.to_string())?;
-        let (sx, sy) = guard
-            .as_ref()
-            .ok_or("no photo open")?
-            .spot_source(x, y, radius);
+        let session = guard.as_ref().ok_or("no photo open")?;
+        // A brushed spot: searched for the stroke's own shape.
+        let (sx, sy) = match &points {
+            Some(p) => session.stroke_source(p, radius, feather.unwrap_or(50.0))?,
+            None => session.spot_source(x, y, radius),
+        };
         Ok([sx, sy])
     })
     .await

@@ -269,7 +269,7 @@ async function addSpotAt(pt) {
 }
 
 // A brushed spot along `points` (frame fractions): the donor is searched for
-// the stroke's bounding box, and its centre copies from there.
+// the stroke's own shape, and the stroke's centre copies from there.
 async function addBrushedSpot(points) {
   if (sp.busy || points.length < 2) return;
   sp.busy = true;
@@ -278,10 +278,7 @@ async function addBrushedSpot(points) {
     const xs = points.map((p) => p[0]);
     const ys = points.map((p) => p[1]);
     const centre = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
-    // Half the box's larger side, in widths, plus the brush.
-    const aspect = sp.frame.frame_height / sp.frame.frame_width;
-    const extent = Math.max(Math.max(...xs) - Math.min(...xs), (Math.max(...ys) - Math.min(...ys)) * aspect) / 2 + radius;
-    const source = await invoke("spot_source", { x: centre[0], y: centre[1], radius: extent });
+    const source = await invoke("spot_source", { x: centre[0], y: centre[1], radius, points, feather: sp.feather });
     const before = spotList().length;
     await run([{
       cmd: "add_spot", at: centre, radius, kind: sp.kind, source, source_auto: true,

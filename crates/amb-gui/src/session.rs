@@ -464,6 +464,38 @@ impl Session {
         )
     }
 
+    /// A donor for a brushed spot along `points` (frame fractions) with the
+    /// brush's `radius` and `feather` (0-100), searched for the stroke's
+    /// own shape: the centre the stroke's centre copies from.
+    pub fn stroke_source(
+        &self,
+        points: &[[f64; 2]],
+        radius: f64,
+        feather: f64,
+    ) -> Result<(f64, f64), String> {
+        let (develop, _) = DevelopSettings::from_settings(self.state.settings());
+        // The stroke as add_spot would store it, read back as the engine does.
+        let mut area = BTreeMap::new();
+        let spot = amb_protocol::spots::NewSpot {
+            kind: None,
+            at: points.first().copied().unwrap_or([0.5, 0.5]),
+            radius,
+            source: None,
+            source_auto: true,
+            feather,
+            opacity: 100.0,
+            points: Some(points),
+        };
+        amb_protocol::spots::add(&mut area, &spot, &mut Vec::new()).map_err(|e| e.to_string())?;
+        let (spots, _) = amb_engine::retouch::Spots::from_settings(&area);
+        let spot = spots.spots.first().ok_or("the stroke is empty")?;
+        let src = downscale(&self.full, 1024);
+        let out = pipeline::render(&src, &develop);
+        let crop = develop.crop.geometry(src.width, src.height);
+        amb_engine::retouch::find_spot_source(&out, (src.width, src.height), crop.as_ref(), spot)
+            .ok_or_else(|| "the stroke is outside the photo".into())
+    }
+
     /// Run commands; with a `group` label they become one undo step.
     pub fn execute(
         &mut self,

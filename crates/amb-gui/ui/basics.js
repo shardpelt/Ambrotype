@@ -3,7 +3,8 @@
 // to how a photo is made and edited, and the terms the help cards link to.
 // In a help card a term such as "midtones" is underlined faintly: hovering
 // it says what it means, clicking it opens the guide at that term. Nothing
-// shows unless asked for. The text is a data file (basics.json).
+// shows unless asked for. The text is a data file (basics.json); the
+// drawings are figures.js.
 "use strict";
 
 const basics = { data: null, loading: null, tip: null };
@@ -114,6 +115,8 @@ async function basicsFlow(at = null) {
     page.replaceChildren();
     if (chapter) {
       page.append(Object.assign(document.createElement("h3"), { textContent: chapter.title }));
+      const fig = chapter.figure && figure(chapter.figure);
+      if (fig) page.append(fig);
       for (const text of chapter.body) {
         const p = document.createElement("p");
         p.append(linkTerms(text));
@@ -132,7 +135,10 @@ async function basicsFlow(at = null) {
       short.append(linkTerms(term.short, term.term));
       const body = document.createElement("p");
       body.append(linkTerms(term.body, term.term));
-      page.append(short, body);
+      page.append(short);
+      const fig = figure(term.id);
+      if (fig) page.append(fig);
+      page.append(body);
     }
     for (const b of nav.querySelectorAll("button")) b.classList.toggle("active", b.dataset.id === id);
     nav.querySelector(`[data-id="${id}"]`)?.scrollIntoView({ block: "nearest" });

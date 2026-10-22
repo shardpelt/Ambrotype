@@ -1,8 +1,9 @@
 {
-  "note": "Photography basics (basics.js): a short guide and the terms the editor's help links to. Plain words, our own. A term's id is what other text links to; `also` are other forms that link to it.",
+  "note": "Photography basics (basics.js): a short guide and the terms the editor's help links to. Plain words, our own. A term's id is what other text links to; `also` are other forms that link to it. A chapter's `figure`, and a term with the same id as one, show a drawing from figures.js.",
   "guide": [
     {
       "id": "light",
+      "figure": "exposure-triangle",
       "title": "1. A photo is recorded light",
       "body": [
         "A camera measures how much light reached each point of its sensor while the shutter was open. Bright parts of the scene sent a lot of light, dark parts little.",
@@ -20,6 +21,7 @@
     },
     {
       "id": "exposure",
+      "figure": "histogram",
       "title": "3. Brightness first",
       "body": [
         "Start with Exposure: make the photo about as bright as it should be overall, judging the subject, not the sky or a lamp.",
@@ -29,6 +31,7 @@
     },
     {
       "id": "contrast",
+      "figure": "contrast",
       "title": "4. Contrast and tone",
       "body": [
         "Contrast is the difference between light and dark. More contrast looks bold and graphic, less looks soft and calm. Neither is right; it is part of the mood.",
@@ -37,6 +40,7 @@
     },
     {
       "id": "colour",
+      "figure": "kelvin",
       "title": "5. Colour",
       "body": [
         "Light has a colour. Indoor bulbs are orange, shade is blue, and our eyes adjust without noticing; the camera does not. White balance (Temp and Tint) removes that colour cast so whites look white, or keeps some of it on purpose for warmth or cold.",
@@ -46,6 +50,7 @@
     },
     {
       "id": "detail",
+      "figure": "iso",
       "title": "6. Detail and noise",
       "body": [
         "Sharpening makes edges crisper; Texture and Clarity add bite to fine and medium detail. All three are best judged zoomed in to 100%.",
@@ -54,6 +59,7 @@
     },
     {
       "id": "composition",
+      "figure": "vignette",
       "title": "7. Framing",
       "body": [
         "Cropping changes what the viewer sees first. Straighten tilted horizons, cut distractions from the edges, and choose an aspect ratio that suits where the photo goes.",

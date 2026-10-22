@@ -283,6 +283,7 @@ function makeRow(def) {
     Object.assign(entry, { input, number, label });
   }
   ui.controls.set(def.name, entry);
+  addHelpMark(entry, def);
   return row;
 }
 
@@ -910,6 +911,7 @@ async function init() {
   $("btn-sample-empty").addEventListener("click", () => sampleFlow());
   $("btn-watch-empty").addEventListener("click", () => watchFlow());
   wireHistoryKeys();
+  wireHelpCards();
   initLearn();
   wireKeyBadges();
   $("btn-save").addEventListener("click", save);

@@ -332,6 +332,7 @@ function makeControl(def, widget, labelText) {
   if (maker && allowed.includes(widget)) {
     const { el, entry } = maker(def, label);
     ui.controls.set(def.name, entry);
+    addHelpMark(entry, def);
     return el;
   }
   return makeRow(label === def.label ? def : { ...def, label });

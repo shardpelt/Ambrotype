@@ -20,6 +20,20 @@ pub struct TagText {
     /// Units, when the value is not a plain slider position ("stops", "K", ...).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub units: Option<String>,
+    /// Longer help for the editor's "?" card: how it shows in a photo and
+    /// when to move it. Only the most used settings have it so far.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub coach: Option<Coach>,
+}
+
+/// How a setting shows in a photo, and when to raise or lower it.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct Coach {
+    pub looks: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub more: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub less: Option<String>,
 }
 
 /// A registry group with its documentation.
@@ -90,6 +104,7 @@ impl Catalog {
                             label: fill(&template.label),
                             description: fill(&template.description),
                             units: None,
+                            coach: None,
                         },
                     );
                 }

@@ -85,6 +85,7 @@ Card tips get skipped. Learn's lessons stay in Help → Learn, but first-run tea
 3. ~~**Empty states that teach:**~~ the library says "drop a folder here", and a folder dropped anywhere opens in it; on an unedited photo Exposure, Highlights, Shadows, Temp and Vibrance glow faintly until the first edit.
 4. ~~**Task bar hover previews:**~~ a sketch of the task's columns and panels (open ones highlighted), with its key.
 5. ~~**Watch mode:**~~ Help → Watch an edit (or the empty screen's button) opens the sample afresh, goes back to Original, and a ghost cursor replays its nine steps in about 20 seconds, each named beside it. Any key, click or scroll stops it; the rest stays in History.
+6. ~~**A "?" by every setting**~~ (`ui/help.js`): hover for a line on what it does, click for a card: how it shows in a photo, when to raise it, when to lower it, its range and start value. The longer text (`coach` in `crates/amb-protocol/data/descriptions.json`) is written for 18 settings so far (Basic, vignette, sharpening, noise reduction, grain); the rest show their description. Left: coach text for the other panels.
 
 There was no automatic "Getting around" card to retire: Learn only opens on F1 or the empty screen's button.
 

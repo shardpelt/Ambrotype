@@ -19,6 +19,9 @@ pub struct Control {
     pub default: Option<serde_json::Value>,
     pub units: Option<String>,
     pub description: String,
+    /// The "?" card's longer help, when written.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub coach: Option<amb_protocol::catalog::Coach>,
     /// For choices: (stored value, label).
     pub options: Vec<(serde_json::Value, String)>,
     /// The setting this control drives instead on a rendered image (JPEG
@@ -125,6 +128,7 @@ fn control(name: &str, label_override: Option<&str>) -> Control {
         default: info.default.clone().filter(|d| !d.is_null()),
         units: text.and_then(|t| t.units.clone()),
         description: text.map(|t| t.description.clone()).unwrap_or_default(),
+        coach: text.and_then(|t| t.coach.clone()),
         options,
         rendered: match name {
             "Temperature" => Some(Box::new(control("IncrementalTemperature", label_override))),

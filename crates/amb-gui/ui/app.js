@@ -11,6 +11,7 @@ const $ = (id) => document.getElementById(id);
 const ui = {
   panels: [],            // editor schema
   defs: new Map(),       // setting name -> its control definition (from the schema)
+  historyNames: new Map(), // setting name -> its name in History, where the label alone is ambiguous
   looks: null,           // layouts and themes (src/looks.rs), with the active ids
   layout: null,          // the active layout (layout.js renders it)
   histogram: null,       // the last histogram, redrawn when the theme or layout changes
@@ -289,7 +290,7 @@ function makeRow(def) {
 // slider's label), "add_mask linear to mask 0" → "Mask 1: add linear".
 function historyLabel(label) {
   const n = (i) => `Mask ${Number(i) + 1}`;
-  const named = (tag) => ui.defs.get(tag)?.label ?? tag;
+  const named = (tag) => ui.historyNames.get(tag) ?? ui.defs.get(tag)?.label ?? tag;
   return label
     .replace(/^set_param (\S+)$/, (_, t) => named(t))
     .replace(/^reset_param (\S+)$/, (_, t) => `Reset ${named(t)}`)
@@ -341,6 +342,7 @@ function syncControls() {
   $("status-right").textContent = nr.length ? `Not rendered yet: ${nr.length} setting(s)` : "";
   $("status-right").title = nr.join(", ");
   syncMenu();
+  glowUnused();
 }
 
 // Snapshots: named copies of the edit, kept in the photo's sidecar. Click
@@ -421,6 +423,7 @@ function renderHistory() {
       li.title = i < done.length ? "Go back to this step" : "Go forward to this step";
       li.addEventListener("click", () => {
         const n = i - done.length;
+        teach.fromHistory = true;
         run(Array.from({ length: Math.abs(n) }, () => ({ cmd: n < 0 ? "undo" : "redo" })));
       });
     }
@@ -440,6 +443,8 @@ function renderHistory() {
 
 function setState(state) {
   const crop = cropKey(ui.settings);
+  const prev = ui.state;
+  const shown = teachShown();
   ui.state = state;
   ui.settings = state.settings ?? {};
   const held = ui.active && ui.active in ui.overrides ? { [ui.active]: ui.overrides[ui.active] } : {};
@@ -450,6 +455,7 @@ function setState(state) {
   masksStateChanged();
   spotsStateChanged();
   learnStateChanged();
+  teachStateChanged(prev, shown);
 }
 
 // Another app or an AI agent (over MCP) wrote the open photo's sidecar:
@@ -860,13 +866,21 @@ async function init() {
   applyToolbarIcons();
   ui.panels = await invoke("editor_schema");
   for (const p of ui.panels) for (const s of p.sections) for (const def of s.controls) ui.defs.set(def.name, def);
+  // A label several settings share ("Amount") gets its section in History.
+  const seen = new Map();
+  for (const p of ui.panels) for (const s of p.sections) for (const def of s.controls) seen.set(def.label, (seen.get(def.label) ?? 0) + 1);
+  for (const p of ui.panels) for (const s of p.sections) for (const def of s.controls) {
+    if (seen.get(def.label) > 1 && s.label) ui.historyNames.set(def.name, `${s.label}: ${def.label}`);
+  }
   await loadLooks();
   await loadKeybindings();
 
   $("btn-open").addEventListener("click", openDialog);
   $("btn-library").addEventListener("click", () => toggleLibrary());
   $("btn-open-empty").addEventListener("click", openDialog);
+  $("btn-sample-empty").addEventListener("click", () => sampleFlow());
   initLearn();
+  wireKeyBadges();
   $("btn-save").addEventListener("click", save);
   // Not the click event as an argument: exportFlow(batch) would take it for a batch.
   $("btn-export").addEventListener("click", () => exportFlow());
@@ -963,12 +977,17 @@ async function init() {
   // Drag and drop a raw file onto the window.
   tauri.event.listen("folder-changed", () => folderChanged());
   tauri.event.listen("sidecar-changed", () => sidecarChanged());
-  tauri.event.listen("tauri://drag-enter", () => $("viewer").classList.add("dragover"));
-  tauri.event.listen("tauri://drag-leave", () => $("viewer").classList.remove("dragover"));
-  tauri.event.listen("tauri://drag-drop", (e) => {
-    $("viewer").classList.remove("dragover");
-    const paths = e.payload?.paths ?? [];
-    if (paths.length) openAny(paths[0]);
+  // A folder (no file extension) opens in the library instead.
+  const dropZone = () => $(libraryOn() ? "library-empty" : "viewer");
+  tauri.event.listen("tauri://drag-enter", () => dropZone().classList.add("dragover"));
+  tauri.event.listen("tauri://drag-leave", () => dropZone().classList.remove("dragover"));
+  tauri.event.listen("tauri://drag-drop", async (e) => {
+    dropZone().classList.remove("dragover");
+    const path = e.payload?.paths?.[0];
+    if (!path) return;
+    if (/\.[a-z0-9]{2,12}$/i.test(path)) return openAny(path);
+    if (!libraryOn()) await switchTask("library");
+    loadLibrary(path, []);
   });
   loadPresets();
   await loadSizes();

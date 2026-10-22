@@ -16,4 +16,5 @@ pub(crate) mod photo;
 pub(crate) mod plugins;
 pub(crate) mod presets;
 pub(crate) mod preview;
+pub(crate) mod sample;
 pub(crate) mod settings;

@@ -23,7 +23,7 @@ const MENU_BAR = [
   ["Library", ["library", "|", "lib-loupe", "lib-compare", "lib-survey", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
   ["View", ["before", "zoom", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
   ["Window", ["#minimize", "#maximize", "|", ["Task", ["task-library", "task-develop", "task-color", "task-retouch", "task-film", "task-collage"]], "|", "looks", "edit-layout", "|", "hub", "|", "#bring_all_to_front"], "window"],
-  ["Help", ["search", "|", "connect-ai", "|", "learn", "shortcuts", "|", "feedback", "source"], "help"],
+  ["Help", ["search", "|", "connect-ai", "|", "learn", "sample", "shortcuts", "|", "feedback", "source"], "help"],
 ];
 // Only on macOS: the rest have them in the window's title bar, or no Edit menu.
 const MENU_MAC_ONLY = new Set(["#services", "#hide", "#hide_others", "#show_all", "#cut", "#copy", "#paste", "#fullscreen", "#minimize", "#maximize", "#bring_all_to_front"]);

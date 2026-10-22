@@ -1,0 +1,21 @@
+<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="ambrotype">
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about=""
+    xmlns:amblib="http://ns.ambrotype.org/library/1.0/"
+    xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+     crs:Blacks2012="-12"
+     crs:Exposure2012="+0.45"
+     crs:Highlights2012="-35"
+     crs:PostCropVignetteAmount="-18"
+     crs:Shadows2012="+40"
+     crs:Temperature="6600"
+     crs:Texture="+25"
+     crs:Vibrance="+20"
+     crs:WhiteBalance="Custom"
+     crs:Whites2012="+15">
+   <amblib:History>{"redo":[],"settings":"56e9f1817b226eaf","trimmed":false,"undo":[{"changes":[{"after":0.45,"before":null,"name":"Exposure2012"}],"label":"set_param Exposure2012"},{"changes":[{"after":-35.0,"before":null,"name":"Highlights2012"}],"label":"set_param Highlights2012"},{"changes":[{"after":40.0,"before":null,"name":"Shadows2012"}],"label":"set_param Shadows2012"},{"changes":[{"after":15.0,"before":null,"name":"Whites2012"}],"label":"set_param Whites2012"},{"changes":[{"after":-12.0,"before":null,"name":"Blacks2012"}],"label":"set_param Blacks2012"},{"changes":[{"after":6600.0,"before":null,"name":"Temperature"},{"after":"Custom","before":null,"name":"WhiteBalance"}],"label":"set_param Temperature"},{"changes":[{"after":25.0,"before":null,"name":"Texture"}],"label":"set_param Texture"},{"changes":[{"after":20.0,"before":null,"name":"Vibrance"}],"label":"set_param Vibrance"},{"changes":[{"after":-18.0,"before":null,"name":"PostCropVignetteAmount"}],"label":"set_param PostCropVignetteAmount"}],"version":1}</amblib:History>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>

@@ -502,6 +502,7 @@ fn main() {
             commands::settings::open_interfaces_folder,
             commands::connect::ai_connect_info,
             commands::connect::open_terminal,
+            commands::sample::sample_photo,
             commands::settings::interface_share_plan,
             commands::settings::share_interface,
             commands::menu::menu_enable,

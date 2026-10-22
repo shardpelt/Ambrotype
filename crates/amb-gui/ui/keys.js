@@ -32,6 +32,7 @@ const KEY_ACTIONS = [
   ...["library", "develop", "color", "retouch", "film", "collage"].map((t, i) => ({ id: `task-${t}`, group: "Tasks", label: `${t[0].toUpperCase()}${t.slice(1)} task`, keys: [`Ctrl+Alt+${i + 1}`], when: "any", run: () => switchTask(t) })),
   { id: "search", group: "Help", label: "Search everything: commands, settings, panels, presets, layouts", keys: ["Ctrl+K"], when: "any", run: () => searchFlow() },
   { id: "connect-ai", group: "Help", label: "Connect an AI app", hint: "Any AI app that runs MCP servers, or a terminal for a command-line agent.", keys: [], when: "any", run: () => connectFlow().catch((e) => toast(String(e), true)) },
+  { id: "sample", group: "Help", label: "Open the sample photo", hint: "A raw with an edit already made: step through its History to see what each slider does.", keys: [], when: "any", run: () => sampleFlow() },
   { id: "learn", group: "Help", label: "Learn: short guided lessons", keys: ["F1"], when: "any", run: () => learnFlow() },
   { id: "before", group: "View", label: "Before / after", keys: ["\\"], when: "any", button: "btn-before", run: () => toggleBefore() },
   { id: "zoom", group: "View", label: "Fit / 100% view", hint: "Or click the photo; drag to pan at 100%.", keys: ["Z"], when: "main", photo: true, button: "btn-zoom", run: () => setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy) },

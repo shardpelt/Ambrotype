@@ -104,8 +104,9 @@
       <button type="button" class="fold right" id="fold-right" hidden>›</button>
       <div class="empty" id="empty">
         <p class="empty-title">Open a photo to start</p>
-        <p class="hint">Drop a file here, or press Ctrl+O. Lightroom presets and XMP sidecars work as they are.</p>
+        <p class="hint">Drop a photo or a folder here, or press Ctrl+O. Lightroom presets and XMP sidecars work as they are.</p>
         <button id="btn-open-empty" class="primary">Open photo…</button>
+        <button id="btn-sample-empty" title="A raw photo with an edit already made: step through its History to see what each slider does (18 MB download the first time)">Try a sample photo</button>
         <button id="btn-learn-empty" title="Short guided lessons (F1)">Learn the basics</button>
       </div>
       <img id="preview" alt="" hidden>
@@ -326,8 +327,8 @@
       <div id="library-grid" class="library-grid" tabindex="-1"></div>
       <div id="library-view" class="library-view" tabindex="-1" hidden></div>
       <div id="library-empty" class="library-empty" hidden>
-        <p class="empty-title">Choose a folder of photos</p>
-        <p class="hint">Or open a photo: the library shows its folder.</p>
+        <p class="empty-title">Drop a folder of photos here</p>
+        <p class="hint">Or choose one, or open a photo: the library shows its folder.</p>
         <button type="button" id="lib-choose-empty" class="primary">Choose folder…</button>
       </div>
       <button type="button" id="lib-fold-left" class="fold left lib-fold" title="Hide the folders (Ctrl+[)">‹</button>
@@ -1347,6 +1348,7 @@
   <script src="plugins.js"></script>
   <script src="picker.js"></script>
   <script src="learn.js"></script>
+  <script src="teach.js"></script>
   <script src="assistant.js"></script>
   <script src="guided.js"></script>
   <script src="presetlib.js"></script>

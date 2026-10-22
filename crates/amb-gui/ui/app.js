@@ -912,6 +912,7 @@ async function init() {
   $("btn-watch-empty").addEventListener("click", () => watchFlow());
   wireHistoryKeys();
   wireHelpCards();
+  wireTerms();
   initLearn();
   wireKeyBadges();
   $("btn-save").addEventListener("click", save);

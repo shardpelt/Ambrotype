@@ -494,6 +494,19 @@
     </form>
   </dialog>
 
+  <!-- Photography basics (basics.js): the guide and its terms. -->
+  <dialog id="basics-dialog" class="basics-dialog">
+    <form method="dialog">
+      <h2>Photography basics</h2>
+      <div class="basics-body">
+        <nav id="basics-nav" class="basics-nav"></nav>
+        <article id="basics-page" class="basics-page" tabindex="-1"></article>
+      </div>
+      <p class="hint">Underlined words open their meaning. The text is a data file (basics.json), so anyone can improve or translate it.</p>
+      <menu><button value="cancel" formnovalidate>Close</button></menu>
+    </form>
+  </dialog>
+
   <!-- Connect an AI app (connect.js): amb mcp for any MCP app, or a terminal. -->
   <dialog id="connect-dialog" class="connect-dialog">
     <form method="dialog">
@@ -1354,6 +1367,7 @@
   <script src="learn.js"></script>
   <script src="teach.js"></script>
   <script src="help.js"></script>
+  <script src="basics.js"></script>
   <script src="assistant.js"></script>
   <script src="guided.js"></script>
   <script src="presetlib.js"></script>

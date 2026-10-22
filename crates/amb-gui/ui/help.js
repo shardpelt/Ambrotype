@@ -81,19 +81,21 @@ function toggleHelpCard(mark, def) {
   const card = Object.assign(document.createElement("div"), { className: "help-card", role: "dialog" });
   card.setAttribute("aria-label", def.label);
   const add = (tag, text, className = "") => card.appendChild(Object.assign(document.createElement(tag), { textContent: text, className }));
+  // Paragraphs with their photography terms linked (basics.js).
+  const para = (text) => card.appendChild(document.createElement("p")).append(linkTerms(text, def.label));
   add("h4", def.label);
-  add("p", def.description);
+  para(def.description);
   const c = def.coach;
   if (c) {
     add("h5", "In a photo");
-    add("p", c.looks);
+    para(c.looks);
     if (c.more) {
       add("h5", def.kind === "number" ? "Raise it when" : "Use it when");
-      add("p", c.more);
+      para(c.more);
     }
     if (c.less) {
       add("h5", "Lower it when");
-      add("p", c.less);
+      para(c.less);
     }
   }
   const facts = [];
@@ -102,6 +104,10 @@ function toggleHelpCard(mark, def) {
   if (def.units) facts.push(def.units);
   if (facts.length) add("p", facts.join(" · "), "help-facts");
   if (def.kind === "number") add("p", "Double-click the label to reset it.", "help-facts");
+  const more = add("p", "", "help-facts");
+  const link = Object.assign(document.createElement("span"), { className: "term", textContent: "Photography basics", tabIndex: 0 });
+  link.dataset.term = "workflow";
+  more.append("New to editing? ", link);
   document.body.append(card);
   placeBeside(card, mark);
   help.card = card;

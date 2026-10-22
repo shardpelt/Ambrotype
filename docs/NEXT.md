@@ -86,6 +86,7 @@ Card tips get skipped. Learn's lessons stay in Help → Learn, but first-run tea
 4. ~~**Task bar hover previews:**~~ a sketch of the task's columns and panels (open ones highlighted), with its key.
 5. ~~**Watch mode:**~~ Help → Watch an edit (or the empty screen's button) opens the sample afresh, goes back to Original, and a ghost cursor replays its nine steps in about 20 seconds, each named beside it. Any key, click or scroll stops it; the rest stays in History.
 6. ~~**A "?" by every setting**~~ (`ui/help.js`): hover for a line on what it does, click for a card: how it shows in a photo, when to raise it, when to lower it, its range and start value. The longer text (`coach` in `crates/amb-protocol/data/descriptions.json`) is written for 18 settings so far (Basic, vignette, sharpening, noise reduction, grain); the rest show their description. Left: coach text for the other panels.
+7. ~~**Photography basics**~~ (Help → Photography basics, Shift+F1; `ui/basics.js`, text in `ui/basics.json`): an eight-step guide to how a photo is made and edited, and 26 terms. In a "?" card, terms such as *midtones* or *clipping* are underlined faintly: hover for a line, click to open the guide there. Nothing shows unless asked for, so it stays out of a pro's way. Left: more terms, terms in Learn's lessons, translations.
 
 There was no automatic "Getting around" card to retire: Learn only opens on F1 or the empty screen's button.
 

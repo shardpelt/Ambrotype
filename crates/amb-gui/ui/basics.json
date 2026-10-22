@@ -1,0 +1,100 @@
+{
+  "note": "Photography basics (basics.js): a short guide and the terms the editor's help links to. Plain words, our own. A term's id is what other text links to; `also` are other forms that link to it.",
+  "guide": [
+    {
+      "id": "light",
+      "title": "1. A photo is recorded light",
+      "body": [
+        "A camera measures how much light reached each point of its sensor while the shutter was open. Bright parts of the scene sent a lot of light, dark parts little.",
+        "Three things set how much light is recorded: the aperture (how wide the lens opens), the shutter speed (how long it stays open) and the ISO (how much the signal is amplified). Each one doubling the light is one stop.",
+        "Each has a side effect. A wide aperture blurs the background (shallow depth of field), a slow shutter blurs movement, and a high ISO adds noise. Choosing between them is most of the craft of taking the picture."
+      ]
+    },
+    {
+      "id": "raw",
+      "title": "2. Raw: the negative",
+      "body": [
+        "A raw file keeps what the sensor measured, before the camera turned it into a picture. It holds more highlight and shadow detail than a JPEG and leaves white balance open, so you can change it later at no cost.",
+        "A raw on its own looks flat and dull. Editing is developing it: deciding how bright, how contrasty and what colour the picture should be. Nothing you do changes the raw file; the edit is a list of settings kept beside it (the sidecar)."
+      ]
+    },
+    {
+      "id": "exposure",
+      "title": "3. Brightness first",
+      "body": [
+        "Start with Exposure: make the photo about as bright as it should be overall, judging the subject, not the sky or a lamp.",
+        "Then look at the histogram. It shows how many pixels there are at each brightness, dark on the left, bright on the right. A pile pressed against either edge means clipping: detail lost to pure black or pure white.",
+        "Highlights and Shadows bring back detail at the two ends without changing the middle. Whites and Blacks then set where the very brightest and darkest tones sit."
+      ]
+    },
+    {
+      "id": "contrast",
+      "title": "4. Contrast and tone",
+      "body": [
+        "Contrast is the difference between light and dark. More contrast looks bold and graphic, less looks soft and calm. Neither is right; it is part of the mood.",
+        "The tone curve is the precise version of the tone sliders: it maps every input brightness to an output brightness. An S-shape adds contrast; lifting the bottom-left corner gives the faded, matte look."
+      ]
+    },
+    {
+      "id": "colour",
+      "title": "5. Colour",
+      "body": [
+        "Light has a colour. Indoor bulbs are orange, shade is blue, and our eyes adjust without noticing; the camera does not. White balance (Temp and Tint) removes that colour cast so whites look white, or keeps some of it on purpose for warmth or cold.",
+        "Saturation is how strong colours are. Vibrance raises the weak ones more than the strong ones and spares skin, so it is the safer slider.",
+        "HSL and colour grading change single colours or tint the shadows, midtones and highlights separately: a blue sky deeper, a green less yellow, warm highlights with cool shadows."
+      ]
+    },
+    {
+      "id": "detail",
+      "title": "6. Detail and noise",
+      "body": [
+        "Sharpening makes edges crisper; Texture and Clarity add bite to fine and medium detail. All three are best judged zoomed in to 100%.",
+        "Noise is the grainy speckle of high ISO and dark areas lifted a lot. Noise reduction smooths it, at the cost of fine detail; find the balance at 100% too."
+      ]
+    },
+    {
+      "id": "composition",
+      "title": "7. Framing",
+      "body": [
+        "Cropping changes what the viewer sees first. Straighten tilted horizons, cut distractions from the edges, and choose an aspect ratio that suits where the photo goes.",
+        "A vignette (darker corners) leads the eye to the middle; masks let you brighten or darken one part, like a face or the sky, on its own."
+      ]
+    },
+    {
+      "id": "workflow",
+      "title": "8. A simple order to work in",
+      "body": [
+        "1. Crop and straighten. 2. White balance. 3. Exposure. 4. Highlights, Shadows, Whites, Blacks. 5. Contrast or the curve. 6. Colour: Vibrance, HSL, grading. 7. Detail and noise at 100%. 8. Local touches with masks. 9. Export for where it goes.",
+        "Use History and the Before view often: step back, compare, and stop when the photo looks like what you remember or what you meant."
+      ]
+    }
+  ],
+  "terms": [
+    { "id": "aperture", "term": "Aperture", "also": ["f-stop", "f-number"], "short": "How wide the lens opens. A small f-number (f/1.8) lets in a lot of light and blurs the background.", "body": "Written as f/1.8, f/8 and so on: the smaller the number, the wider the opening. Each full step (f/2.8 to f/4) halves the light. Wide apertures give a shallow depth of field; narrow ones keep more in focus." },
+    { "id": "shutter", "term": "Shutter speed", "also": ["exposure time"], "short": "How long the sensor collects light. Long times blur movement; short ones freeze it.", "body": "Written as 1/250 s, 1/30 s, 2 s. Halving the time halves the light. Below about 1/(focal length) in seconds, hand-held photos start to blur from shake." },
+    { "id": "iso", "term": "ISO", "short": "How much the camera amplifies the signal. Higher ISO is brighter but noisier.", "body": "Doubling the ISO is one stop brighter. It does not add light; it amplifies what was captured, noise included. Modern cameras are clean up to a few thousand." },
+    { "id": "stop", "term": "Stop", "also": ["stops"], "short": "A doubling or halving of light. Exposure +1 is one stop brighter.", "body": "The common unit for aperture, shutter speed, ISO and the Exposure slider. A scene's dynamic range is also counted in stops." },
+    { "id": "raw", "term": "Raw", "also": ["raw file"], "short": "The sensor's own measurements, before the camera made a picture. More latitude than a JPEG.", "body": "Raw files (NEF, CR3, ARW, RAF, DNG…) keep more highlight and shadow detail and leave white balance open. They need developing, which is what this editor does." },
+    { "id": "histogram", "term": "Histogram", "short": "A graph of how many pixels there are at each brightness, dark on the left, bright on the right.", "body": "It shows at a glance if a photo is dark, bright, flat or contrasty, and whether anything is clipped. There is no right shape; it depends on the scene." },
+    { "id": "clipping", "term": "Clipping", "also": ["clipped", "blown out", "blown-out", "crushed"], "short": "Detail lost to pure white or pure black: every pixel there has the same value.", "body": "Clipped highlights are 'blown out'; clipped shadows are 'crushed'. Some clipping (the sun, a lamp) is fine. Turn on Clipping in the toolbar to see it on the photo." },
+    { "id": "highlights", "term": "Highlights", "also": ["bright areas", "bright parts"], "short": "The bright parts of a photo: sky, white clothes, light sources.", "body": "Roughly the top quarter of the brightness range, just below the whites." },
+    { "id": "midtones", "term": "Midtones", "also": ["midtone", "middle tones"], "short": "The tones halfway between black and white: most skin, foliage, grey stone.", "body": "Most of what we look at in a photo sits in the midtones, so changing them (Exposure, Contrast, the middle of the curve) changes the photo's feel the most." },
+    { "id": "shadows", "term": "Shadows", "also": ["dark areas", "dark parts"], "short": "The dark parts of a photo, just above black.", "body": "Roughly the bottom quarter of the brightness range. Lifting them reveals detail but also shows noise." },
+    { "id": "contrast", "term": "Contrast", "short": "The difference between light and dark parts. High contrast is bold; low is soft.", "body": "Global contrast spreads the whole tone range; local contrast (Clarity, Texture) works on details and edges." },
+    { "id": "dynamic-range", "term": "Dynamic range", "short": "The span from the darkest to the brightest tone that still holds detail, in stops.", "body": "A sunny scene with deep shade can exceed what a sensor records in one shot. Raw files hold more of it than JPEGs; HDR merges several exposures for still more." },
+    { "id": "white-balance", "term": "White balance", "also": ["colour cast", "color cast"], "short": "Removing the colour of the light so whites look white.", "body": "Measured as a temperature in kelvin (K) on a blue-to-yellow scale plus a green-to-magenta tint. Daylight is about 5500 K, indoor bulbs about 3000 K." },
+    { "id": "saturation", "term": "Saturation", "short": "How strong colours are, from grey to vivid.", "body": "Too much looks garish and loses detail in colourful areas. Vibrance is a gentler version that spares skin and already-strong colours." },
+    { "id": "hue", "term": "Hue", "short": "Which colour something is: red, orange, yellow, green and so on.", "body": "In HSL, a hue slider moves one colour towards its neighbours, such as turning yellow-green grass greener." },
+    { "id": "luminance", "term": "Luminance", "short": "How light or dark a colour is, apart from its hue and saturation.", "body": "In HSL, luminance brightens or darkens one colour, such as a deeper blue sky. Luminance noise is noise in brightness, not colour." },
+    { "id": "noise", "term": "Noise", "also": ["grainy", "speckle"], "short": "Random speckle from high ISO or lifted shadows.", "body": "Luminance noise looks like grain; colour noise looks like red, green and blue blotches. Noise reduction removes both, at some cost to detail." },
+    { "id": "sharpening", "term": "Sharpening", "short": "Adding contrast at edges so detail looks crisper.", "body": "Raw photos need a little. Too much makes halos and grit. Sharpen for the screen or print size you export to." },
+    { "id": "halo", "term": "Halo", "also": ["halos"], "short": "A bright or dark rim along strong edges, a sign of too much sharpening, Clarity or Shadows.", "body": "Look along a dark tree against a bright sky. If you see a glow, ease off the slider that caused it." },
+    { "id": "vignette", "term": "Vignette", "short": "Darker (or lighter) corners that lead the eye to the middle.", "body": "Some lenses make one by themselves; lens corrections remove it, and the Effects vignette adds one on purpose." },
+    { "id": "depth-of-field", "term": "Depth of field", "also": ["shallow depth of field"], "short": "How much of the scene, front to back, looks sharp.", "body": "Wide apertures, long lenses and close subjects make it shallow (a blurred background); narrow apertures make it deep." },
+    { "id": "crop", "term": "Crop", "also": ["aspect ratio"], "short": "Cutting the edges of a photo to change what it shows and its shape.", "body": "The aspect ratio is the shape: 3:2 is most cameras, 4:5 suits Instagram portrait, 16:9 a screen." },
+    { "id": "mask", "term": "Mask", "also": ["masks"], "short": "A selection of part of the photo, so an edit only applies there.", "body": "Masks can be drawn (brush, gradients) or found for you (subject, sky, people). Each mask has its own sliders." },
+    { "id": "profile", "term": "Profile", "short": "The starting colour and tone the raw is drawn with, before any slider.", "body": "Different profiles give different base looks from the same raw. Changing one moves no slider." },
+    { "id": "sidecar", "term": "Sidecar", "also": ["XMP"], "short": "The small .xmp file beside a photo that holds its edit. The photo itself never changes.", "body": "Lightroom writes the same kind of file, so edits can move between the two apps." },
+    { "id": "kelvin", "term": "Kelvin", "short": "The unit of colour temperature. Lower is warmer light (orange), higher is cooler (blue).", "body": "Confusingly, raising the Temp slider makes the photo warmer: you tell it the light was bluer, so it adds yellow to compensate." }
+  ]
+}

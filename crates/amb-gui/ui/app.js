@@ -914,6 +914,8 @@ async function init() {
   wireHelpCards();
   wireTerms();
   wireZones();
+  wireBoxZoom();
+  wireLoupe();
   initLearn();
   wireKeyBadges();
   $("btn-save").addEventListener("click", save);

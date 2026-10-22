@@ -113,16 +113,13 @@ function showJpeg(jpeg) {
   ui.preview.url = url;
 }
 
-// 1:1 crop of the full-size render around (cx, cy); 1.5× the viewport so a
-// short pan doesn't show empty space before the next crop arrives.
+// A crop of the full-size render around (cx, cy), at 100% or a zoom box's
+// scale (regionSize).
 async function renderRegion() {
-  const v = $("viewer");
-  const dpr = window.devicePixelRatio || 1;
-  status("Rendering 100%…");
+  status(`Rendering ${zoomLabel()}…`);
+  const [width, height] = regionSize();
   const { meta, jpeg } = splitFramed(await invoke("region", {
-    cx: ui.zoom.cx, cy: ui.zoom.cy,
-    width: Math.round(v.clientWidth * dpr * 1.5),
-    height: Math.round(v.clientHeight * dpr * 1.5),
+    cx: ui.zoom.cx, cy: ui.zoom.cy, width, height,
     before: ui.before,
     clipping: ui.clipping,
   }));
@@ -135,44 +132,70 @@ async function renderRegion() {
   showJpeg(jpeg);
   $("viewer").classList.add("actual");
   placeRegion();
-  status(`100%: ${meta.full_width}×${meta.full_height} in ${meta.millis} ms`);
+  status(`${zoomLabel()}: ${meta.full_width}×${meta.full_height} in ${meta.millis} ms`);
 }
 
-// The 100% crop with the slider being dragged, from a reduced copy.
+// The zoomed crop with the slider being dragged, from a reduced copy.
 async function renderRegionDraft() {
   if (!ui.zoom.meta) return;
-  const v = $("viewer");
-  const dpr = window.devicePixelRatio || 1;
+  const [width, height] = regionSize();
   const { meta, jpeg } = splitFramed(await invoke("region_draft", {
-    cx: ui.zoom.cx, cy: ui.zoom.cy,
-    width: Math.round(v.clientWidth * dpr * 1.5),
-    height: Math.round(v.clientHeight * dpr * 1.5),
+    cx: ui.zoom.cx, cy: ui.zoom.cy, width, height,
     overrides: { ...ui.overrides },
   }));
   if (!ui.zoom.on) return;
   ui.zoom.meta = meta;
   showJpeg(jpeg);
   placeRegion();
-  status(`100% draft in ${meta.millis} ms (full detail when the slider is released)`);
+  status(`${zoomLabel()} draft in ${meta.millis} ms (full detail when the slider is released)`);
 }
 
-// Position the 1:1 crop so (cx, cy) sits in the viewport centre.
+// Screen pixels per full-size pixel: 1 at 100%; a zoom box (right-drag)
+// fills the viewer with the box instead. `m` gives the full size, else the
+// photo's own size stands in until the first crop arrives.
+function zoomScale(m = ui.zoom.meta) {
+  const box = ui.zoom.box;
+  if (!box) return 1;
+  const v = $("viewer");
+  const dpr = window.devicePixelRatio || 1;
+  const fw = m?.full_width ?? ui.info?.width ?? 1;
+  const fh = m?.full_height ?? ui.info?.height ?? 1;
+  const s = Math.min((v.clientWidth * dpr) / (box.w * fw), (v.clientHeight * dpr) / (box.h * fh)) * 0.96;
+  return Math.min(8, Math.max(0.05, s));
+}
+
+const zoomLabel = () => `${Math.round(zoomScale() * 100)}%`;
+
+// The full-size area to render: 1.5× what the viewer shows, so a short pan
+// doesn't show empty space; at most 4096 pixels a side.
+function regionSize() {
+  const v = $("viewer");
+  const dpr = window.devicePixelRatio || 1;
+  const s = zoomScale();
+  return [v.clientWidth, v.clientHeight].map((n) => Math.min(4096, Math.round((n * dpr * 1.5) / s)));
+}
+
+// Position the crop so (cx, cy) sits in the viewport centre.
 function placeRegion(dx = pan.dx, dy = pan.dy) {
   const m = ui.zoom.meta;
   if (!m) return;
   const v = $("viewer");
   const dpr = window.devicePixelRatio || 1;
+  const k = zoomScale(m) / dpr;
   const img = $("preview");
-  img.style.width = `${m.width / dpr}px`;
-  img.style.height = `${m.height / dpr}px`;
-  const centreX = (ui.zoom.cx * m.full_width - m.x) / dpr;
-  const centreY = (ui.zoom.cy * m.full_height - m.y) / dpr;
+  img.style.width = `${m.width * k}px`;
+  img.style.height = `${m.height * k}px`;
+  const centreX = (ui.zoom.cx * m.full_width - m.x) * k;
+  const centreY = (ui.zoom.cy * m.full_height - m.y) * k;
   img.style.left = `${v.clientWidth / 2 - centreX + dx}px`;
   img.style.top = `${v.clientHeight / 2 - centreY + dy}px`;
 }
 
-function setZoom(on, u = 0.5, v = 0.5) {
+// `box` (fractions of the photo's width and height) zooms to fit that area;
+// without it, 100%.
+function setZoom(on, u = 0.5, v = 0.5, box = null) {
   ui.zoom.on = on;
+  ui.zoom.box = on ? box : null;
   ui.zoom.cx = u;
   ui.zoom.cy = v;
   ui.zoom.meta = null;
@@ -198,8 +221,9 @@ function panPixels(dx, dy) {
   pan.timer = setTimeout(() => {
     const dpr = window.devicePixelRatio || 1;
     const meta = ui.zoom.meta;
-    ui.zoom.cx = Math.min(1, Math.max(0, ui.zoom.cx - (pan.dx * dpr) / meta.full_width));
-    ui.zoom.cy = Math.min(1, Math.max(0, ui.zoom.cy - (pan.dy * dpr) / meta.full_height));
+    const k = zoomScale(meta);
+    ui.zoom.cx = Math.min(1, Math.max(0, ui.zoom.cx - (pan.dx * dpr) / k / meta.full_width));
+    ui.zoom.cy = Math.min(1, Math.max(0, ui.zoom.cy - (pan.dy * dpr) / k / meta.full_height));
     pan.dx = pan.dy = 0;
     requestPreview(false);
   }, 180);
@@ -277,8 +301,9 @@ function wireViewer() {
   // preview): right-click exports the photo instead.
   $("viewer").addEventListener("contextmenu", (e) => {
     e.preventDefault();
-    // The tools' own canvases use right-click.
-    if (ui.info && (e.target === img || e.target === $("viewer"))) exportFlow();
+    // The tools' own canvases use right-click. With box zoom on, a right
+    // click that doesn't drag exports instead (quickzoom.js).
+    if (ui.info && (e.target === img || e.target === $("viewer")) && !boxZoomWanted()) exportFlow();
   });
   // Scrolling (a mouse wheel or two fingers on a trackpad) moves the 1:1 view.
   $("viewer").addEventListener("wheel", (e) => {
@@ -311,8 +336,9 @@ function wireViewer() {
       // Move the centre by the drag distance (in full-size pixels) and fetch a new crop.
       const dpr = window.devicePixelRatio || 1;
       const m = ui.zoom.meta;
-      ui.zoom.cx = Math.min(1, Math.max(0, ui.zoom.cx - ((e.clientX - d.x) * dpr) / m.full_width));
-      ui.zoom.cy = Math.min(1, Math.max(0, ui.zoom.cy - ((e.clientY - d.y) * dpr) / m.full_height));
+      const k = zoomScale(m);
+      ui.zoom.cx = Math.min(1, Math.max(0, ui.zoom.cx - ((e.clientX - d.x) * dpr) / k / m.full_width));
+      ui.zoom.cy = Math.min(1, Math.max(0, ui.zoom.cy - ((e.clientY - d.y) * dpr) / k / m.full_height));
       requestPreview(false);
       return;
     }

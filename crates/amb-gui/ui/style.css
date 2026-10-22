@@ -985,6 +985,11 @@ button.tool-icon.active { color: var(--accent); }
 .term { text-decoration: underline dotted; text-underline-offset: 2px; text-decoration-color: color-mix(in srgb, currentColor 50%, transparent); cursor: help; }
 .term:hover, .term:focus-visible { color: var(--accent); text-decoration-color: currentColor; }
 .term-tip { z-index: 1003; max-width: 280px; }
+.zoom-box { position: fixed; z-index: 50; pointer-events: none; border: 1.5px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.4); }
+.loupe { position: absolute; z-index: 7; width: 220px; height: 220px; border-radius: 50%; overflow: hidden; pointer-events: none; border: 2px solid #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.5), 0 6px 20px rgb(0 0 0 / 0.5); background: #000 no-repeat; }
+.loupe img { position: absolute; max-width: none; max-height: none; box-shadow: none; }
+.loupe-mag { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; background: rgb(0 0 0 / 0.6); color: #fff; }
+.viewer.loupe-on img#preview { cursor: crosshair; }
 .zone-overlay { position: absolute; pointer-events: none; z-index: 5; }
 .zone-badge { position: absolute; z-index: 6; pointer-events: none; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 4px rgb(0 0 0 / 0.4); }
 .basics-dialog { width: min(820px, 94vw); }

@@ -16,7 +16,7 @@ A short "start here" for contributors and for the next work session. Details are
   - export: JPEG/PNG/TIFF/WebP/AVIF/EXR/JPEG XL, colour spaces with ICC (AVIF: sRGB, Display P3 and Rec. 2020 by code), rating, keywords and metadata as XMP in all but EXR
   - CLI `amb`
   - desktop editor (`amb-gui`, Tauri 2) with:
-    - 1:1 zoom and pan (only the shown tiles are rendered, and kept while panning)
+    - 1:1 zoom and pan (only the shown tiles are rendered, and kept while panning); right-drag a box to zoom to it, Z or Space back to the whole photo (Settings can turn the box off); the loupe (I) shows the part under the pointer at 100–400% without zooming in
     - white-balance picker
     - clipping overlay
     - point-curve editor

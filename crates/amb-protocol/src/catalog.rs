@@ -57,6 +57,8 @@ struct BandTemplate {
     prefix: String,
     label: String,
     description: String,
+    #[serde(default)]
+    coach: Option<Coach>,
 }
 
 #[derive(Deserialize)]
@@ -104,7 +106,11 @@ impl Catalog {
                             label: fill(&template.label),
                             description: fill(&template.description),
                             units: None,
-                            coach: None,
+                            coach: template.coach.as_ref().map(|c| Coach {
+                                looks: fill(&c.looks),
+                                more: c.more.as_deref().map(fill),
+                                less: c.less.as_deref().map(fill),
+                            }),
                         },
                     );
                 }

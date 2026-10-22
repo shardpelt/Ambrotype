@@ -139,6 +139,7 @@ input[type=search], input[type=number], select {
 .panel-body { padding: 2px 12px 12px; }
 .section-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin: 10px 0 4px; }
 .row { display: grid; grid-template-columns: 96px 1fr 56px; align-items: center; gap: 8px; padding: 2px 0; }
+.row[hidden] { display: none; }
 .row label { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: default; user-select: none; }
 .row label.changed { color: var(--accent); }
 .row input.value { width: 56px; background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); padding: 2px 4px; text-align: right; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }

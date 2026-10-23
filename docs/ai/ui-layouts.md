@@ -65,6 +65,14 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
 
 `filmstrip`: `true` (the default) shows the other photos of the folder under the photo; `false` hides it. F shows or hides it for the session.
 
+### Tabs
+
+A column's items can include `{ "tab": "Name" }` (1 to 24 characters, each name once per column). The items after it, up to the next tab, show while that tab is chosen; items before the first tab always show (the histogram, say). The tabs sit in one bar at the top of the column, where the first one is, and the chosen tab is remembered per layout on this computer. Search, and keys that pick a slider, bring its tab forward. Classic and Minimalism use three: Tone & colour, Detail & lens, More.
+
+```json
+"right": { "width": 330, "items": ["histogram", { "tab": "Tone" }, { "panel": "basic", "open": true }, { "tab": "Detail" }, { "panel": "detail" }] }
+```
+
 ### Chrome
 
 `chrome`: `"normal"` (the default) or `"hidden"`. Hidden shows only the photo, edge to edge: no top bar, status bar or column edges. The side columns slide in over the photo while the pointer is at the window's left or right edge (or with Ctrl+[ and Ctrl+]), and the top bar while it's at the top. Shortcuts all work. The Minimalism layout uses it.

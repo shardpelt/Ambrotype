@@ -95,6 +95,13 @@ function dragColumn(ev, side, grip, shown) {
   window.addEventListener("pointerup", up);
 }
 
+// The fold buttons' mark: a window with that side's column, filled while
+// it shows. (Arrows read as previous / next photo.)
+function sidebarIcon(side, open) {
+  const x = side === "left" ? 3.5 : 14.5;
+  return `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2" y="3.5" width="16" height="13" rx="2"/><rect x="${x}" y="5" width="2" height="10" rx=".5" fill="${open ? "currentColor" : "none"}" stroke="${open ? "none" : "currentColor"}"/></svg>`;
+}
+
 function applySideCollapse() {
   const widths = ui.sideWidths ?? { left: 0, right: 0 };
   if (chromeHidden()) {
@@ -121,7 +128,7 @@ function applySideCollapse() {
     const t = $(`fold-${side}`);
     t.hidden = !widths[side];
     const open = Boolean(shown[side]);
-    t.textContent = (side === "left") === open ? "‹" : "›";
+    t.innerHTML = sidebarIcon(side, open);
     t.title = `${open ? "Hide" : "Show"} the ${side} column (Ctrl+${side === "left" ? "[" : "]"})`;
   }
   $("workspace").style.gridTemplateColumns = `${shown.left}px minmax(0, 1fr) ${shown.right}px`;
@@ -272,6 +279,36 @@ function wireChrome() {
   }
 }
 
+// The chosen tab of a column, per layout, on this computer.
+function columnTab(side) {
+  try { return JSON.parse(localStorage.getItem("amb.tabs") ?? "{}")[`${ui.looks?.active_layout}:${side}`] ?? null; } catch { return null; }
+}
+
+function showColumnTab(side, name) {
+  const col = $(`col-${side}`);
+  const tabs = [...col.querySelectorAll(":scope > .column-tabs .column-tab")];
+  if (!tabs.length) return;
+  if (!tabs.some((b) => b.dataset.tab === name)) name = tabs[0].dataset.tab;
+  for (const b of tabs) {
+    b.classList.toggle("on", b.dataset.tab === name);
+    b.setAttribute("aria-selected", b.dataset.tab === name);
+  }
+  // Editor mode shows every tab's panels, to move them between tabs.
+  for (const el of col.querySelectorAll(":scope > [data-tab]")) el.classList.toggle("tab-off", !ui.edit && el.dataset.tab !== name);
+  try {
+    const all = JSON.parse(localStorage.getItem("amb.tabs") ?? "{}");
+    all[`${ui.looks?.active_layout}:${side}`] = name;
+    localStorage.setItem("amb.tabs", JSON.stringify(all));
+  } catch { /* not kept */ }
+  requestAnimationFrame(redrawCanvases);
+}
+
+// Bring the tab holding `el` forward (search, help, a shortcut to a slider).
+function revealInTab(el) {
+  const holder = el?.closest(".column > [data-tab]");
+  if (holder?.classList.contains("tab-off")) showColumnTab(holder.parentElement.id.replace("col-", ""), holder.dataset.tab);
+}
+
 // ---------------------------------------------------------------- theme
 
 function applyTheme(theme) {
@@ -323,15 +360,34 @@ function applyLayout(layout) {
     col.replaceChildren();
     const spec = layout[side] ?? {};
     const items = Array.isArray(spec.items) ? spec.items : [];
+    // `{ "tab": "Name" }` starts a tab: what follows shows while it's chosen
+    // (one bar of tabs, where the first one is).
+    let tab = null;
+    let bar = null;
     items.forEach((item, i) => {
+      if (item && typeof item === "object" && typeof item.tab === "string") {
+        tab = item.tab;
+        if (!bar) {
+          bar = Object.assign(document.createElement("div"), { className: "column-tabs", role: "tablist" });
+          col.append(bar);
+        }
+        const b = Object.assign(document.createElement("button"), { type: "button", className: "column-tab", textContent: tab, role: "tab" });
+        b.dataset.tab = tab;
+        b.addEventListener("click", () => showColumnTab(side, b.dataset.tab));
+        bar.append(b);
+        return;
+      }
       let el = null;
       if (typeof item === "string") el = BLOCK_IDS[item] ? $(BLOCK_IDS[item]) : null;
       else if (item && typeof item === "object") el = buildPanel(item);
       if (!el) return;
       // Where it is in the layout file, for editor mode (editor.js).
       el.dataset.item = `${side}:${i}`;
+      if (tab) el.dataset.tab = tab;
+      else delete el.dataset.tab;
       col.append(el);
     });
+    if (bar) showColumnTab(side, columnTab(side) ?? bar.firstChild.dataset.tab);
     const w = Number(spec.width ?? DEFAULT_WIDTH[side]);
     widths[side] = items.length && w > 0 ? w : 0;
   }

@@ -826,6 +826,7 @@
     </form>
   </dialog>
 
+  <div id="status-note" class="status-note" hidden></div>
   <footer class="statusbar">
     <span id="status">Ready</span>
     <span id="status-right"></span>
@@ -1089,6 +1090,8 @@
         <label class="hub-url">Interface: the whole window, built in or one of your own (docs/ai/custom-interface.md)
           <span class="folder-row"><select id="settings-interface"></select><button type="button" class="small" id="settings-interface-pick">Use a folder…</button><button type="button" class="small" id="settings-interface-folder" title="Where installed interfaces are kept">Open folder</button><button type="button" class="small" id="settings-interface-share" title="Offer the chosen interface to the hub as a pull request, so others can install it">Share…</button></span>
         </label>
+        <label class="check"><input type="checkbox" id="settings-wheel-photos"> Scrolling on the photo goes to the next or previous photo (zoomed in, it still moves the view)</label>
+        <label class="check"><input type="checkbox" id="settings-statusbar"> Show the status bar under the photo (preview size and time; hidden, other messages show briefly over the photo)</label>
         <label class="check"><input type="checkbox" id="settings-box-zoom"> Right-drag on the photo zooms to that box (Z or Space goes back); off, a right click exports</label>
         <label class="hub-url" id="settings-monitor-row">Monitor colour: show the preview in your monitor's own colours (for a wide-gamut or calibrated screen)
           <span class="folder-row"><select id="settings-monitor"><option value="auto">Automatic: the desktop's profile</option><option value="off">Off: plain sRGB</option><option value="file">A profile file</option></select><button type="button" class="small" id="settings-monitor-pick">Choose a profile…</button></span>

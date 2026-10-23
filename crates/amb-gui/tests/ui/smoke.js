@@ -34,6 +34,36 @@ await t.step("every panel opens", async () => {
   t.expect(t.visible(t.row("HueAdjustmentRed")), "the Color Mixer open");
 });
 
+await t.step("the right column's tabs show one group of panels at a time", async () => {
+  const tabs = [...document.querySelectorAll("#col-right .column-tab")];
+  t.expect(tabs.length >= 2, `tabs: ${tabs.map((b) => b.textContent).join(", ")}`);
+  const shown = () => [...document.querySelectorAll("#col-right > details.panel")].filter((d) => !d.classList.contains("tab-off")).map((d) => d.dataset.tab);
+  t.click(tabs[1]);
+  t.expect(shown().length && shown().every((n) => n === tabs[1].dataset.tab), "only the second tab's panels");
+  // Search finds a setting in another tab and brings that tab forward.
+  revealSetting("Exposure2012");
+  t.expect(t.visible(t.row("Exposure2012")), "Exposure shown again");
+});
+
+await t.step("no status bar; scrolling on the photo can step through the folder", async () => {
+  t.expect(document.body.classList.contains("status-off") && document.querySelector(".statusbar").getBoundingClientRect().height === 0, "the status bar hidden");
+  status("A message");
+  t.expect(!$("status-note").hidden, "a message shows over the photo");
+  const real = stepPhoto;
+  let stepped = 0;
+  stepPhoto = (d) => (stepped += d);
+  const wheelAt = () => $("viewer").dispatchEvent(new WheelEvent("wheel", { deltaY: 100, bubbles: true, cancelable: true }));
+  wheelAt();
+  t.expect(stepped === 0, "off by default");
+  $("settings-wheel-photos").checked = true;
+  $("settings-wheel-photos").dispatchEvent(new Event("change"));
+  wheelAt();
+  stepPhoto = real;
+  $("settings-wheel-photos").checked = false;
+  $("settings-wheel-photos").dispatchEvent(new Event("change"));
+  t.expect(stepped === 1, "on, scrolling down goes to the next photo");
+});
+
 await t.step("a section's buttons never cover the row under them, even in a narrow column", async () => {
   const col = $("col-right");
   const was = col.style.width;
@@ -79,7 +109,8 @@ await t.step("a preset's notes for scripts become one short line", async () => {
     "copied Temperature, Tint unscaled at 50%: no current value",
     "WhiteBalance set to \"Custom\" so that Temperature takes effect",
   ]);
-  t.expect(said === "23 of its settings aren't supported yet (kept in the file for Lightroom)", said);
+  t.expect(said === "", `nothing to say: ${said}`);
+  t.expect(notesForPeople(["no change"]) === "No change", "a no-op says so");
 });
 
 await t.step("the whole photo fills the viewer", async () => {

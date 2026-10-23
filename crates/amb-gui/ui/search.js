@@ -112,6 +112,7 @@ function revealSetting(name) {
   const c = ui.controls.get(name);
   if (!c?.label?.isConnected) return;
   const panel = c.label.closest("details.panel");
+  revealInTab(panel);
   if (panel) panel.open = true;
   ui.selectedSlider = name;
   showSelectedSlider();
@@ -119,6 +120,7 @@ function revealSetting(name) {
 }
 
 function revealPanel(details) {
+  revealInTab(details);
   details.open = true;
   details.scrollIntoView({ block: "start", behavior: "smooth" });
 }

@@ -460,7 +460,8 @@
       updateReadout();
     }
 
-    const observer = new ResizeObserver(resize);
+    // Next frame: resizing the canvas inside the callback loops the observer.
+    const observer = new ResizeObserver(() => requestAnimationFrame(resize));
     observer.observe(wrap);
     channel(active);
     resize();

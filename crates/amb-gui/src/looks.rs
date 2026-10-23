@@ -414,9 +414,24 @@ impl Checker {
             self.error(format!("{side}.items must be a list"));
             return;
         };
+        let mut tabs = HashSet::new();
         for (i, item) in items.iter().enumerate() {
             let at = format!("{side}.items[{i}]");
             match item {
+                // A tab: what follows it shows while it's chosen.
+                Value::Object(t) if t.contains_key("tab") => {
+                    self.known_keys(t, &["tab"], &at);
+                    match t["tab"].as_str().map(str::trim) {
+                        Some(name) if !name.is_empty() && name.chars().count() <= 24 => {
+                            if !tabs.insert(name.to_string()) {
+                                self.error(format!("{at}: tab \"{name}\" appears twice"));
+                            }
+                        }
+                        _ => self.error(format!(
+                            "{at}: \"tab\" must be a name of 1 to 24 characters"
+                        )),
+                    }
+                }
                 Value::String(b) if BLOCKS.contains(&b.as_str()) => {
                     if !self.blocks.insert(b.clone()) {
                         self.error(format!("{at}: \"{b}\" appears more than once"));
@@ -1423,6 +1438,22 @@ mod tests {
             missing.is_empty(),
             "docs/ai/ui-layouts.md doesn't mention {missing:?}"
         );
+    }
+
+    #[test]
+    fn tabs_in_a_column() {
+        let layout = |items: Value| json!({ "format": LAYOUT_FORMAT, "name": "T", "right": { "width": 300, "items": items } });
+        let ok = check_layout(&layout(
+            json!(["histogram", { "tab": "Tone" }, { "panel": "basic" }, { "tab": "Detail" }, { "panel": "detail" }]),
+        ));
+        assert!(ok.iter().all(|p| !p.error), "{ok:?}");
+        let twice = check_layout(&layout(json!([{ "tab": "A" }, { "tab": "A" }])));
+        assert!(
+            twice.iter().any(|p| p.error && p.message.contains("twice")),
+            "{twice:?}"
+        );
+        let empty = check_layout(&layout(json!([{ "tab": " " }])));
+        assert!(empty.iter().any(|p| p.error), "{empty:?}");
     }
 
     #[test]

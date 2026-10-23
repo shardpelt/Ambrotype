@@ -57,6 +57,11 @@ function wireBoxZoom() {
     if (w < 0.002 || h < 0.002) return;
     setZoom(true, (u0 + u1) / 2, (v0 + v1) / 2, { w, h });
   });
+  const steps = $("settings-wheel-photos");
+  steps.checked = wheelSteps();
+  steps.addEventListener("change", () => {
+    try { localStorage.setItem("amb.wheelPhotos", steps.checked ? "1" : "0"); } catch { /* not kept */ }
+  });
   const pref = $("settings-box-zoom");
   if (pref) {
     pref.checked = boxZoomWanted();

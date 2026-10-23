@@ -124,7 +124,7 @@ input[type=search], input[type=number], select {
 .viewer.dragover { outline: 2px dashed var(--accent); outline-offset: -12px; }
 .empty { text-align: center; }
 .empty-title { font-size: 18px; margin: 0 0 6px; }
-.badge { position: absolute; top: 14px; left: 14px; background: rgba(0,0,0,.6); padding: 4px 10px; border-radius: 12px; font-size: 12px; }
+.badge { position: absolute; top: 14px; left: 44px; background: rgba(0,0,0,.6); padding: 4px 10px; border-radius: 12px; font-size: 12px; }
 .busy { position: absolute; top: 14px; right: 14px; width: 14px; height: 14px; border: 2px solid var(--faint); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -774,8 +774,8 @@ body.library-mode #workspace { display: none; }
 .library-body { --tree-w: 210px; --panel-w: 270px; position: relative; flex: 1; display: grid; grid-template-columns: var(--tree-w) minmax(0, 1fr) var(--panel-w); min-height: 0; }
 .library-body.tree-off { --tree-w: 0px; }
 .library-body.panel-off { --panel-w: 0px; }
-.library-body .lib-fold.left { left: var(--tree-w); }
-.library-body .lib-fold.right { right: var(--panel-w); }
+.library-body .lib-fold.left { left: calc(var(--tree-w) + 6px); }
+.library-body .lib-fold.right { right: calc(var(--panel-w) + 6px); }
 .library-folder { display: none; }
 .lib-menu { position: relative; }
 .lib-menu > summary { list-style: none; cursor: pointer; padding: 3px 9px; border: 1px solid var(--line); border-radius: var(--radius); font-size: 12px; white-space: nowrap; user-select: none; }
@@ -1016,10 +1016,13 @@ button.tool-icon.active { color: var(--accent); }
 .basics-figure { margin: 4px 0 14px; padding: 8px; border-radius: 6px; background: var(--panel-2); color: var(--text); }
 .basics-figure svg { display: block; width: 100%; max-width: 480px; height: auto; margin: 0 auto; font-family: inherit; }
 .basics-page button { margin-top: 6px; }
-.fold { position: absolute; top: 50%; z-index: 5; width: 16px; height: 48px; margin-top: -24px; padding: 0; border: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 13px; line-height: 1; opacity: 0.7; }
+/* Fold a column: a small sidebar mark in the photo's top corner, not an
+   arrow halfway down (that read as previous / next photo). */
+.fold { position: absolute; top: 8px; z-index: 5; width: 26px; height: 22px; padding: 0; display: grid; place-items: center; border: 1px solid var(--line); background: var(--panel); color: var(--muted); opacity: 0.55; }
+.fold svg { width: 16px; height: 16px; }
 .fold:hover { opacity: 1; color: var(--text); }
-.fold.left { left: 0; border-left: 0; border-radius: 0 var(--radius) var(--radius) 0; }
-.fold.right { right: 0; border-right: 0; border-radius: var(--radius) 0 0 var(--radius); }
+.fold.left { left: 6px; border-radius: var(--radius); }
+.fold.right { right: 6px; border-radius: var(--radius); }
 .fold[hidden] { display: none; }
 .section-resizer { flex: none; height: 6px; margin: -3px 0; position: relative; z-index: 2; cursor: row-resize; }
 .section-resizer:hover, .section-resizer:active { background: var(--accent); opacity: .5; }
@@ -1222,3 +1225,19 @@ body.chrome-hidden.peek-left .column.left, body.chrome-hidden.peek-right .column
 .slideshow-dialog label { display: flex; flex-direction: row; align-items: center; gap: 8px; }
 .slideshow-dialog select { width: auto; }
 .slideshow-dialog input[type="number"] { width: 64px; }
+
+/* The status bar hidden (Settings → General, the default): the photo gets
+   its row; messages show briefly over the bottom of the window. */
+body.status-off { grid-template-rows: 44px 1fr 0; }
+body.status-off.topbar-off, body.status-off.library-mode { grid-template-rows: 0 1fr 0; }
+body.status-off .statusbar { visibility: hidden; border: 0; }
+.status-note { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 70; max-width: 70vw; padding: 5px 12px; border-radius: var(--radius); background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; box-shadow: 0 4px 16px rgba(0, 0, 0, .35); }
+.status-note[hidden] { display: none; }
+
+/* Tabs in a column (a layout's { "tab": … } items): the bar stays at the
+   top while the column scrolls. */
+.column-tabs { position: sticky; top: 0; z-index: 3; display: flex; gap: 2px; padding: 6px 8px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.column-tab { flex: 1; min-width: 0; padding: 4px 6px; font-size: 12px; background: transparent; border-color: transparent; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.column-tab:hover { color: var(--text); background: var(--hover); }
+.column-tab.on { color: var(--text); background: var(--tab-active); border-color: var(--line); }
+.column > .tab-off { display: none; }

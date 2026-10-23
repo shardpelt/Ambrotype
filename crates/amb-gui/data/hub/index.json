@@ -9,7 +9,7 @@
       "description": "Presets and history on the left, the Develop panels on the right.",
       "license": "CC0-1.0",
       "path": "looks/layouts/classic.json",
-      "sha256": "394e9d0b990c288093e4db9c12b144cc2f48bc9e380ddbdc874c68bc73141be6"
+      "sha256": "e16c37fa2d7ff39cb5c581e1d8ae190ac1ab583b64da05758fa7a73b4ccde5b6"
     },
     {
       "id": "layout-beginner",
@@ -149,7 +149,7 @@
       "description": "Only the photo, edge to edge: no menus, toolbar, status bar or filmstrip. Shortcuts all work. The panels slide in over the photo while the pointer is at the window's left or right edge (or with Ctrl+[ and Ctrl+]); the toolbar while it's at the top.",
       "license": "CC0-1.0",
       "path": "looks/layouts/minimalism.json",
-      "sha256": "04da94ccaec67457fe892a4b258399f6607995b97db4fdb0cee60e0e59de50bd"
+      "sha256": "4bc9a9a51338fbb58f4ec418fbb931b8a34bb39bad4d10b97f6a825de40aab94"
     },
     {
       "id": "theme-dark",

@@ -13,14 +13,17 @@
     "width": 300,
     "items": [
       "histogram",
+      { "tab": "Tone & colour" },
       { "panel": "basic", "open": true },
       { "panel": "tone_curve" },
       { "panel": "color_mixer" },
       { "panel": "black_white" },
       { "panel": "color_grading" },
+      { "tab": "Detail & lens" },
       { "panel": "detail" },
       { "panel": "lens" },
       { "panel": "transform" },
+      { "tab": "More" },
       { "panel": "effects" },
       { "panel": "calibration" },
       { "panel": "negative" }

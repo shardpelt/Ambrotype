@@ -49,7 +49,32 @@ function toast(text, error = false) {
   toast.timer = setTimeout(() => (t.hidden = true), error ? 6000 : 3000);
 }
 
-function status(text) { $("status").textContent = text; }
+// The status bar's text. With the bar hidden (Settings → General), a
+// message shows briefly over the photo instead, unless it's `routine`
+// (preview sizes and times).
+function status(text, routine = false) {
+  $("status").textContent = text;
+  if (routine || !document.body.classList.contains("status-off") || !text) return;
+  const note = $("status-note");
+  note.textContent = text;
+  note.hidden = false;
+  clearTimeout(note.timer);
+  note.timer = setTimeout(() => (note.hidden = true), 3500);
+}
+
+function setStatusBar(show) {
+  document.body.classList.toggle("status-off", !show);
+  $("settings-statusbar").checked = show;
+  try { localStorage.setItem("amb.statusbar", show ? "1" : "0"); } catch { /* not kept */ }
+  if (ui.info) requestPreview(false);
+}
+
+function wireStatusBar() {
+  let show = false;
+  try { show = localStorage.getItem("amb.statusbar") === "1"; } catch { /* hidden */ }
+  setStatusBar(show);
+  $("settings-statusbar").addEventListener("change", (e) => setStatusBar(e.target.checked));
+}
 
 // Yes or no, in the system's own dialog. (The page's confirm() can't be used:
 // the dialog plugin turns it into a call that fails.)
@@ -551,20 +576,15 @@ function nudgeSlider(steps) {
 }
 
 // The protocol's notes are written for scripts and AI clients, with every
-// setting named. People get one short line, and only for what changes what
-// they see: settings a preset has that aren't supported yet, values it had
-// out of range, or nothing changing at all.
+// setting named. People get a few words, and only when something didn't
+// happen: values out of range, or nothing changing at all. (Settings not
+// supported yet are kept in the sidecar for Lightroom; nothing to do.)
 function notesForPeople(notes) {
   const out = [];
   for (const n of notes) {
     let m;
-    if ((m = n.match(/^copied (\d+) setting\(s\) unknown/))) {
-      out.push(`${m[1]} of its settings aren't supported yet (kept in the file for Lightroom)`);
-    } else if ((m = n.match(/^skipped (\d+) invalid preset value/))) {
-      out.push(`${m[1]} of its values were out of range and skipped`);
-    } else if (n === "no change") {
-      out.push("No change: the photo already has these settings");
-    }
+    if ((m = n.match(/^skipped (\d+) invalid preset value/))) out.push(`${m[1]} values out of range, skipped`);
+    else if (n === "no change") out.push("No change");
   }
   return out.join(" · ");
 }
@@ -724,7 +744,7 @@ async function openFolder(dir) {
 }
 
 async function openPath(path) {
-  status(`Opening ${path}…`);
+  status(`Opening ${path}…`, true);
   $("busy").hidden = false;
   try {
     const r = await invoke("open_photo", { path });
@@ -1047,6 +1067,7 @@ async function init() {
   wireConnect();
   wireMonitor();
   wireTopbar();
+  wireStatusBar();
   wireChrome();
   wireSlideshow();
   // Drag and drop a raw file onto the window.

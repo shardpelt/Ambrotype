@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The library's quieter chrome: the Import and Filter menus in its bar, and
-// folding away the Folders panel and the right panel (‹ ›, or Ctrl+[ and
+// folding away the Folders panel and the right panel (the sidebar buttons, or Ctrl+[ and
 // Ctrl+] as in the editor), remembered on this computer.
 "use strict";
 
@@ -17,7 +17,7 @@ function applyLibraryFolds() {
   for (const side of ["left", "right"]) {
     const open = !libFolded[side];
     const b = $(`lib-fold-${side}`);
-    b.textContent = (side === "left") === open ? "‹" : "›";
+    b.innerHTML = sidebarIcon(side, open);
     b.title = `${open ? "Hide" : "Show"} the ${side === "left" ? "folders" : "panel"} (Ctrl+${side === "left" ? "[" : "]"})`;
   }
 }

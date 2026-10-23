@@ -62,7 +62,7 @@ async function renderLoop() {
       ui.curve?.setHistogram(meta.histogram);
       status(`${meta.width}×${meta.height} preview in ${meta.millis} ms` +
         (meta.gpu ? " on the GPU" : "") +
-        (meta.lens_profile ? `  ·  Lens: ${meta.lens_profile}` : ""));
+        (meta.lens_profile ? `  ·  Lens: ${meta.lens_profile}` : ""), true);
       $("status").title = meta.gpu ? `Developed on ${meta.gpu}` :
         meta.cpu_reason ? `Developed on the CPU: ${meta.cpu_reason}` : "Developed on the CPU (no GPU found)";
     } catch (e) {
@@ -111,8 +111,9 @@ function fitPreview() {
   if (ui.zoom.on || !img.naturalWidth) return;
   const v = $("viewer");
   const s = Math.min(v.clientWidth / img.naturalWidth, v.clientHeight / img.naturalHeight);
-  img.style.width = `${Math.floor(img.naturalWidth * s)}px`;
-  img.style.height = `${Math.floor(img.naturalHeight * s)}px`;
+  const [w, h] = [`${Math.floor(img.naturalWidth * s)}px`, `${Math.floor(img.naturalHeight * s)}px`];
+  if (img.style.width !== w) img.style.width = w;
+  if (img.style.height !== h) img.style.height = h;
 }
 
 function showJpeg(jpeg) {
@@ -128,7 +129,7 @@ function showJpeg(jpeg) {
 // A crop of the full-size render around (cx, cy), at 100% or a zoom box's
 // scale (regionSize).
 async function renderRegion() {
-  status(`Rendering ${zoomLabel()}…`);
+  status(`Rendering ${zoomLabel()}…`, true);
   const [width, height] = regionSize();
   const { meta, jpeg } = splitFramed(await invoke("region", {
     cx: ui.zoom.cx, cy: ui.zoom.cy, width, height,
@@ -150,7 +151,7 @@ async function renderRegion() {
   $("viewer").classList.add("actual");
   placeRegion();
   if (moved) requestPreview(false);
-  status(`${zoomLabel()}: ${meta.full_width}×${meta.full_height} in ${meta.millis} ms`);
+  status(`${zoomLabel()}: ${meta.full_width}×${meta.full_height} in ${meta.millis} ms`, true);
 }
 
 // The zoomed crop with the slider being dragged, from a reduced copy.
@@ -165,7 +166,7 @@ async function renderRegionDraft() {
   ui.zoom.meta = meta;
   showJpeg(jpeg);
   placeRegion();
-  status(`${zoomLabel()} draft in ${meta.millis} ms (full detail when the slider is released)`);
+  status(`${zoomLabel()} draft in ${meta.millis} ms (full detail when the slider is released)`, true);
 }
 
 // Screen pixels per full-size pixel: 1 at 100%; a zoom box (right-drag)
@@ -322,10 +323,16 @@ function toggleClipping() {
   requestPreview(false);
 }
 
+// Settings → General: scrolling on the whole photo steps through the folder.
+function wheelSteps() {
+  try { return localStorage.getItem("amb.wheelPhotos") === "1"; } catch { return false; }
+}
+
 function wireViewer() {
   const img = $("preview");
   let drag = null;
-  new ResizeObserver(fitPreview).observe($("viewer"));
+  // After layout, so resizing the photo doesn't loop the observer.
+  new ResizeObserver(() => requestAnimationFrame(fitPreview)).observe($("viewer"));
   // The webview's own "Save image" can't save (and would save the small
   // preview): right-click exports the photo instead.
   $("viewer").addEventListener("contextmenu", (e) => {
@@ -334,8 +341,21 @@ function wireViewer() {
     // click that doesn't drag exports instead (quickzoom.js).
     if (ui.info && (e.target === img || e.target === $("viewer")) && !boxZoomWanted()) exportFlow();
   });
-  // Scrolling (a mouse wheel or two fingers on a trackpad) moves the 1:1 view.
+  // Scrolling (a mouse wheel or two fingers on a trackpad) moves the 1:1 view;
+  // on the whole photo, if Settings asks, it goes to the next or previous one.
+  const wheel = { sum: 0, at: 0 };
   $("viewer").addEventListener("wheel", (e) => {
+    if (!ui.zoom.on && !e.ctrlKey && wheelSteps() && keyContext() === "main" && ui.info) {
+      e.preventDefault();
+      // One photo per notch, or per good swipe on a trackpad.
+      wheel.sum += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      if (Math.abs(wheel.sum) >= 50 && Date.now() - wheel.at > 250) {
+        wheel.at = Date.now();
+        stepPhoto(Math.sign(wheel.sum));
+        wheel.sum = 0;
+      }
+      return;
+    }
     if (!ui.zoom.on || e.ctrlKey) return;
     e.preventDefault();
     const k = e.deltaMode === 1 ? 16 : 1;

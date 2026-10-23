@@ -1182,8 +1182,9 @@ async function exportCollage() {
   if (!collage.cells.some((c) => c?.path)) return toast("Put some photos in the cells first.", true);
   const t = templateForExport();
   const options = exportOptions();
-  const path = await invoke("pick_export_path", { suggested: suggestedName(), format: options.format });
+  const path = await invoke("pick_export_path", { suggested: suggestedName(), format: options.format, dir: lastExportDir() });
   if (!path) return;
+  rememberExportDir(path);
   setBusy(true, "Rendering…");
   try {
     const cells = t.cells.map((_, i) => ({ path: collage.cells[i]?.path ?? null, placement: collage.cells[i]?.placement ?? defaultPlacement() }));
@@ -1227,7 +1228,10 @@ async function exportBatch() {
       photos: photos.map((p, i) => ({ path: p.path, aspect: shapes[i] })),
       groups: batchGroups(),
       options: exportOptions(),
+      dir: lastExportDir(),
     });
+    // The pages' folder: next time's start.
+    if (written?.length) try { localStorage.setItem("amb.exportDir", dirOf(written[0])); } catch { /* not kept */ }
     if (written) {
       toast(`Wrote ${written.length} pages`);
       status(`Wrote ${written.length} collage pages to ${dirOf(written[0] ?? "")}`);

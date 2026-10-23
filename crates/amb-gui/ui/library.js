@@ -861,8 +861,9 @@ function libraryExport() {
       });
       $("busy").hidden = false;
       try {
-        const r = await invoke("export_photos", { paths: sel.map((p) => p.path), options });
+        const r = await invoke("export_photos", { paths: sel.map((p) => p.path), options, dir: lastExportDir() });
         if (!r) return;
+        if (r.written.length) try { localStorage.setItem("amb.exportDir", dirOf(r.written[0])); } catch { /* not kept */ }
         const failed = r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : "";
         toast(`Exported ${r.written.length} photo${r.written.length === 1 ? "" : "s"}${failed}`, r.errors.length > 0);
         if (r.written.length) status(`Exported ${r.written.length} photos to ${dirOf(r.written[0])}`);

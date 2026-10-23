@@ -273,4 +273,5 @@ await t.step("Ctrl+E exports a JPEG", async () => {
   t.click("#export-go");
   await t.until("the export", () => t.status().startsWith("Exported "), 120000);
   t.log(t.status());
+  t.expect(lastExportDir() && t.status().includes(lastExportDir()), `the folder kept for next time: ${lastExportDir()}`);
 });

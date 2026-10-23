@@ -343,12 +343,16 @@ pub(crate) async fn export_photos(
     app: tauri::AppHandle,
     paths: Vec<String>,
     options: ExportOptions,
+    dir: Option<String>,
     state: tauri::State<'_, AppState>,
 ) -> Res<Option<library::ExportedMany>> {
     use tauri::Emitter;
-    let Some(dir) = app
-        .dialog()
-        .file()
+    let mut dialog = app.dialog().file();
+    // Where the last export went.
+    if let Some(d) = dir.filter(|d| Path::new(d).is_dir()) {
+        dialog = dialog.set_directory(d);
+    }
+    let Some(dir) = dialog
         .set_title("Export the selected photos to…")
         .blocking_pick_folder()
         .and_then(|p| p.into_path().ok())

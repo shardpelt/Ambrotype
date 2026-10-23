@@ -246,12 +246,16 @@ pub(crate) async fn export_collage_batch(
     photos: Vec<BatchPhoto>,
     groups: Option<Vec<Vec<usize>>>,
     options: ExportOptions,
+    dir: Option<String>,
     state: tauri::State<'_, AppState>,
 ) -> Res<Option<Vec<String>>> {
     use tauri::Emitter;
-    let Some(dir) = app
-        .dialog()
-        .file()
+    let mut dialog = app.dialog().file();
+    // Where the last export went.
+    if let Some(d) = dir.filter(|d| std::path::Path::new(d).is_dir()) {
+        dialog = dialog.set_directory(d);
+    }
+    let Some(dir) = dialog
         .set_title("Folder for the collage pages")
         .blocking_pick_folder()
         .and_then(|p| p.into_path().ok())

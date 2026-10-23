@@ -3,6 +3,17 @@
 // in another app.
 "use strict";
 
+// The folder the last export went to, on this computer: the save dialogs
+// start there (else next to the photo).
+function lastExportDir() {
+  try { return localStorage.getItem("amb.exportDir") || null; } catch { return null; }
+}
+
+function rememberExportDir(path) {
+  if (!path) return;
+  try { localStorage.setItem("amb.exportDir", dirOf(path)); } catch { /* not kept */ }
+}
+
 const DEPTHS = { jpeg: [8], png: [8, 16], tiff: [16, 8, 32], webp: [8], avif: [8], exr: [32], jxl: [8, 16] };
 
 function updateExportForm() {
@@ -298,8 +309,9 @@ async function exportFlow(batch = null) {
   if (batch) return batch.run(options, after);
   // "-edited": a JPEG named like its raw is hidden as the raw's pair.
   const base = `${ui.info.name.replace(/\.[^.]+$/, "")}-edited`;
-  const path = await invoke("pick_export_path", { suggested: base, format: f.format.value, dir: dirOf(ui.info.path) });
+  const path = await invoke("pick_export_path", { suggested: base, format: f.format.value, dir: lastExportDir() ?? dirOf(ui.info.path) });
   if (!path) return;
+  rememberExportDir(path);
   status(`Exporting ${path}…`);
   $("busy").hidden = false;
   try {

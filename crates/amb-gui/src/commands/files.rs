@@ -149,8 +149,8 @@ pub(crate) async fn files_find_moved(
 pub(crate) async fn keywords_all() -> Res<Vec<(String, usize)>> {
     tauri::async_runtime::spawn_blocking(|| {
         let mut counts: BTreeMap<String, (String, usize)> = BTreeMap::new();
-        for e in folder::catalog().all().into_iter().filter(|e| !e.offline) {
-            for k in &e.record.info.keywords {
+        for (_, record) in current_records() {
+            for k in &record.info.keywords {
                 counts
                     .entry(k.to_lowercase())
                     .or_insert_with(|| (k.clone(), 0))
@@ -184,15 +184,14 @@ pub(crate) async fn keywords_change(
             ..Default::default()
         };
         let mut n = 0;
-        for e in folder::catalog().all().into_iter().filter(|e| !e.offline) {
-            let has = e
-                .record
+        for (path, record) in current_records() {
+            let has = record
                 .info
                 .keywords
                 .iter()
                 .any(|k| wanted.contains(&k.trim().to_lowercase()));
             if has {
-                change_one(&slot, &e.path.display().to_string(), &change)?;
+                change_one(&slot, &path.display().to_string(), &change)?;
                 n += 1;
             }
         }
@@ -200,6 +199,19 @@ pub(crate) async fn keywords_change(
     })
     .await
     .map_err(|e| e.to_string())?
+}
+
+/// Every photo the catalogue knows that can be reached, with its record
+/// read again where its file or sidecar changed since.
+fn current_records() -> Vec<(PathBuf, amb_library::catalog::Record)> {
+    let paths: Vec<PathBuf> = folder::catalog()
+        .all()
+        .into_iter()
+        .filter(|e| !e.offline)
+        .map(|e| e.path)
+        .collect();
+    let records = folder::catalog().records(&paths);
+    paths.into_iter().zip(records).collect()
 }
 
 /// A saved set of metadata to give photos at once (Lightroom's metadata

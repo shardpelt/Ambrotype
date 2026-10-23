@@ -762,6 +762,22 @@ mod tests {
     /// The UI's scripts share one global scope (plain `<script>` files), so
     /// two top-level functions or variables with one name would silently
     /// replace each other.
+    /// Two elements with one id: `$(id)` finds only the first, so the
+    /// other's code silently acts on the wrong element.
+    #[test]
+    fn page_ids_are_unique() {
+        let page = include_str!("../ui/index.html");
+        let mut seen = std::collections::BTreeSet::new();
+        let mut twice = Vec::new();
+        for part in page.split(" id=\"").skip(1) {
+            let id = part.split('"').next().unwrap_or_default();
+            if !seen.insert(id) {
+                twice.push(id);
+            }
+        }
+        assert!(twice.is_empty(), "ids used twice in index.html: {twice:?}");
+    }
+
     #[test]
     fn ui_scripts_declare_each_top_level_name_once() {
         let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");

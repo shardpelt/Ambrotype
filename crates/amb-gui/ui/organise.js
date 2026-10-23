@@ -250,6 +250,9 @@ const checkedKeywords = () => [...$("keywords-list").querySelectorAll("input:che
 
 function keywordButtons() {
   const n = checkedKeywords().length;
+  const sel = selectedPhotos().length;
+  $("keywords-add").disabled = !n || !sel;
+  $("keywords-add").textContent = sel ? `Add to ${sel} selected` : "Add to the selection";
   $("keywords-rename").disabled = n === 0;
   $("keywords-rename").textContent = n > 1 ? `Merge ${n} into…` : "Rename…";
   $("keywords-remove").disabled = n === 0;
@@ -350,7 +353,7 @@ function wireOrganise() {
   $("lib-delete").addEventListener("click", deleteFlow);
   $("lib-undo-move").addEventListener("click", undoMove);
   $("lib-missing").addEventListener("click", missingFlow);
-  $("lib-keywords").addEventListener("click", keywordsFlow);
+  $("lib-keyword-list").addEventListener("click", keywordsFlow);
   $("lib-meta-templates").addEventListener("click", metaTemplatesFlow);
   $("files-go").addEventListener("click", () => {
     $("files-dialog").close();
@@ -361,6 +364,10 @@ function wireOrganise() {
   $("missing-close").addEventListener("click", () => $("missing-dialog").close());
   $("keywords-filter").addEventListener("input", renderKeywordList);
   $("keywords-rename").addEventListener("click", () => changeKeywords(false));
+  $("keywords-add").addEventListener("click", async () => {
+    await libraryChange({ add_keywords: checkedKeywords() });
+    await renderKeywordList();
+  });
   $("keywords-remove").addEventListener("click", () => changeKeywords(true));
   $("keywords-close").addEventListener("click", () => $("keywords-dialog").close());
   $("meta-choose").addEventListener("change", fillMetaTemplate);

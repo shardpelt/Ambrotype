@@ -21,6 +21,7 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 - **Rate, label and tag the selection:**
   - 1–5 rate and 0 clears; 6–9 set Red, Yellow, Green or Blue, and the same key again removes it (Lightroom's keys)
   - the panel shows what the selection shares: keywords on every photo (× removes from all) and on some of them (+ adds to the rest)
+  - several keywords at once, with commas; the recent keywords sit under the box as buttons, one click adding one to every selected photo (2026-10-23). Organise → Keywords… can also give ticked keywords to the selection
   - P flags a pick, X a reject, U removes the flag (Lightroom's keys); rejected photos are dimmed
   - written to each photo's `.xmp` at once: `xmp:Rating`, `xmp:Label`, `dc:subject`, and the flag (below)
 - **Look closer** (Lightroom's culling views, buttons in the bar):
@@ -84,7 +85,7 @@ Other ways to browse what the library shows (a folder, a collection or All photo
 - **Delete…** moves the selected photos with all their files to the system's trash: the freedesktop.org trash on Linux (the drive's own `.Trash-<uid>` for other drives), the Finder's on macOS, the Recycle Bin on Windows.
 - The open photo is saved first, and reopened from its new place. The catalogue and every collection follow the moves.
 - **Find missing photos…** lists photos the catalogue knows whose file is gone from a folder that can be reached (moved or deleted outside Ambrotype). **Look in a folder…** finds them there and in its subfolders by name and size, and follows them. A name found twice with that size is left alone.
-- **Keywords…** lists every keyword in the catalogue with how many photos have it. Tick some to rename them, merge them into one, or remove them, in every photo's sidecar.
+- **Keywords…** lists every keyword in the catalogue with how many photos have it. Tick some to give them to the selected photos, or to rename them, merge them into one, or remove them, in every photo's sidecar.
 - **Metadata templates…** keep a title, caption, creator, copyright and keywords to give many photos at once (Lightroom's metadata presets). Empty fields leave the photos' own; keywords are added. They are kept in the settings file.
 
 ## Duplicates and bursts

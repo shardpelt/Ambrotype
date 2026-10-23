@@ -35,11 +35,35 @@ await t.step("one photo has no duplicates", async () => {
 });
 
 await t.step("Keywords and Find missing photos open", async () => {
-  t.click("#lib-keywords");
+  t.click("#lib-keyword-list");
   await t.until("the keyword list", () => $("keywords-dialog").open && !$("keywords-list").textContent.includes("Reading"));
   $("keywords-dialog").close();
   t.click("#lib-missing");
   await t.until("the answer", () => $("missing-status").textContent && !$("missing-status").textContent.startsWith("Looking"));
   t.log($("missing-status").textContent);
   $("missing-dialog").close();
+});
+
+await t.step("recent keywords add to the selection in one click", async () => {
+  select(first, "only");
+  await libraryChange({ add_keywords: ["ui-test"] });
+  await libraryChange({ remove_keywords: ["ui-test"] });
+  const chip = await t.until("the recent chip", () => [...document.querySelectorAll("#lib-tag-recent .tag-recent")].find((b) => b.textContent === "+ ui-test"));
+  chip.click();
+  await t.until("the keyword back", () => libPhoto(first).keywords.includes("ui-test"));
+  t.click("#lib-keyword-list");
+  await t.until("the list", () => [...document.querySelectorAll("#keywords-list input")].some((b) => b.value === "ui-test"));
+  $("keywords-dialog").close();
+  await libraryChange({ remove_keywords: ["ui-test"] });
+});
+
+await t.step("the top bar hides and comes back at the top edge", async () => {
+  const bar = document.querySelector(".topbar");
+  t.key("Ctrl+Shift+T");
+  await t.until("hidden", () => bar.getBoundingClientRect().bottom <= 1);
+  $("topbar-edge").dispatchEvent(new MouseEvent("mouseenter"));
+  await t.until("shown while pointed at", () => bar.getBoundingClientRect().top >= 0);
+  t.key("Ctrl+Shift+T");
+  await t.until("back", () => !document.body.classList.contains("topbar-off"));
+  t.expect($("settings-topbar").checked, "Settings to say it shows");
 });

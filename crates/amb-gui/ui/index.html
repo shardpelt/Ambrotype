@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="widgets.css">
 </head>
 <body>
+  <div id="topbar-edge" class="topbar-edge" hidden></div>
   <header class="topbar">
     <div class="brand"><span class="logo" aria-hidden="true"></span>Ambrotype</div>
     <nav id="task-bar" class="task-bar" role="tablist" aria-label="Task"></nav>
@@ -289,7 +290,7 @@
           <button type="button" id="lib-undo-move" class="small" title="Put the photos of the last move or rename back" hidden>Undo the last move</button>
           <button type="button" id="lib-delete" class="small danger" title="Move the selected photos, with their sidecars and companions, to the trash">Delete…</button>
           <hr>
-          <button type="button" id="lib-keywords" class="small" title="Every keyword in the library: rename, merge or remove them everywhere">Keywords…</button>
+          <button type="button" id="lib-keyword-list" class="small" title="Every keyword in the library: rename, merge or remove them everywhere">Keywords…</button>
           <button type="button" id="lib-meta-templates" class="small" title="Saved titles, captions, creator, copyright and keywords to give photos at once">Metadata templates…</button>
           <button type="button" id="lib-missing" class="small" title="Photos moved or deleted outside Ambrotype: find where they went">Find missing photos…</button>
         </div>
@@ -369,8 +370,9 @@
           <button type="button" id="lib-label-clear" class="small" data-needs="any" title="No label">None</button></div>
         <h3>Keywords</h3>
         <div id="lib-keywords" class="lib-keywords"></div>
-        <input id="lib-tag-input" type="text" list="lib-tag-suggest" placeholder="Add to the selection…" spellcheck="false" aria-label="Add keywords to the selection">
+        <input id="lib-tag-input" type="text" list="lib-tag-suggest" placeholder="Add to the selection (commas for several)…" spellcheck="false" aria-label="Add keywords to the selection">
         <datalist id="lib-tag-suggest"></datalist>
+        <div id="lib-tag-recent" class="lib-tag-recent" aria-label="Recent keywords: click to add to the selection"></div>
         <details class="meta-fields" id="lib-meta">
           <summary>Title, caption &amp; copyright</summary>
           <label>Title <input data-meta="title" type="text" data-needs="any"></label>
@@ -664,12 +666,13 @@
 
   <dialog id="keywords-dialog" class="files-dialog">
     <h2>Keywords</h2>
-    <p class="hint">Every keyword in the library, and how many photos have it. Tick some to rename them, merge them into one, or remove them: each photo's sidecar changes.</p>
+    <p class="hint">Every keyword in the library, and how many photos have it. Tick some to give them to the selected photos, rename them, merge them into one, or remove them everywhere: each photo's sidecar changes.</p>
     <input id="keywords-filter" type="search" placeholder="Filter" spellcheck="false" aria-label="Filter keywords">
     <div id="keywords-list" class="files-list keywords-list"></div>
     <menu>
       <button type="button" id="keywords-close">Close</button>
       <button type="button" id="keywords-remove" class="danger">Remove</button>
+      <button type="button" id="keywords-add" title="Give the ticked keywords to every selected photo">Add to the selection</button>
       <button type="button" id="keywords-rename" class="primary">Rename…</button>
     </menu>
   </dialog>
@@ -1067,6 +1070,7 @@
           <small class="hint" id="settings-monitor-note"></small>
         </label>
         <label class="check"><input type="checkbox" id="settings-map-tiles"> Map images from OpenStreetMap in the library's Map (off: the map is a plain grid; on, it asks openstreetmap.org for the area shown)</label>
+        <label class="check"><input type="checkbox" id="settings-topbar"> Show the top bar (Ctrl+Shift+T). Hidden, it comes back while the pointer is at the window's top edge</label>
         <label class="check" id="settings-menu-row"><input type="checkbox" id="settings-menu-bar"> Show the menu bar in the window (every command by name, with its keys)</label>
         <div class="crop-line">
           <button type="button" id="settings-folder">Open the settings folder</button>

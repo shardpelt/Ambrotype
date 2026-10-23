@@ -170,6 +170,39 @@ function toggleColumn(side) {
   requestPreview(false);
 }
 
+// The top bar can be hidden for more room (Settings, Ctrl+Shift+T); a thin
+// strip at the window's top edge then shows it while the pointer is there.
+function setTopbar(show) {
+  document.body.classList.toggle("topbar-off", !show);
+  document.body.classList.remove("topbar-peek");
+  $("topbar-edge").hidden = show;
+  const pref = $("settings-topbar");
+  if (pref) pref.checked = show;
+  try { localStorage.setItem("amb.topbar", show ? "1" : "0"); } catch { /* not kept */ }
+  requestPreview(false);
+  return true;
+}
+
+function wireTopbar() {
+  let shown = true;
+  try { shown = localStorage.getItem("amb.topbar") !== "0"; } catch { /* shown */ }
+  const bar = document.querySelector(".topbar");
+  let leave = 0;
+  $("topbar-edge").addEventListener("mouseenter", () => {
+    clearTimeout(leave);
+    document.body.classList.add("topbar-peek");
+  });
+  bar.addEventListener("mouseenter", () => clearTimeout(leave));
+  bar.addEventListener("mouseleave", () => {
+    // Not while one of its menus is open.
+    if (bar.querySelector("details[open]")) return;
+    leave = setTimeout(() => document.body.classList.remove("topbar-peek"), 400);
+  });
+  $("settings-topbar")?.addEventListener("change", (e) => setTopbar(e.target.checked));
+  if (!shown) setTopbar(false);
+  else if ($("settings-topbar")) $("settings-topbar").checked = true;
+}
+
 // ---------------------------------------------------------------- theme
 
 function applyTheme(theme) {

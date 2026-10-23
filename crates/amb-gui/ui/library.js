@@ -596,6 +596,13 @@ function renderPanel() {
     return chip;
   }));
   $("lib-tag-input").disabled = n === 0;
+  // Recent keywords not on every selected photo yet: one click adds.
+  const recent = n ? infoState.recent.filter((k) => counts.get(k.toLowerCase())?.n !== n).slice(0, 12) : [];
+  $("lib-tag-recent").replaceChildren(...recent.map((k) => {
+    const b = Object.assign(document.createElement("button"), { type: "button", className: "tag-recent", textContent: `+ ${k}`, title: `Add "${k}" to the ${n} selected` });
+    b.addEventListener("click", () => libraryChange({ add_keywords: [k] }));
+    return b;
+  }));
   // Title and the like: the shared text, or empty with "(mixed)".
   for (const f of $("lib-meta").querySelectorAll("[data-meta]")) {
     const v = same((p) => p[f.dataset.meta] ?? "");
@@ -625,6 +632,10 @@ async function libraryChange(change) {
       stripUpdate(u.path, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag ?? null });
     }
     if (ui.info && paths.includes(ui.info.path)) loadInfo();
+    // Keywords just used come first among the recent ones.
+    for (const k of [...(change.add_keywords ?? [])].reverse()) {
+      infoState.recent = [k, ...infoState.recent.filter((r) => r.toLowerCase() !== k.toLowerCase())];
+    }
     const what = change.rating !== undefined ? (change.rating ? `Rated ${"★".repeat(change.rating)}` : "Rating cleared")
       : change.label !== undefined ? (change.label ? `${change.label} label` : "Label removed")
       : change.flag !== undefined ? FLAG_DONE[change.flag]

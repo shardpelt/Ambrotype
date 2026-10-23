@@ -100,6 +100,7 @@ const KEY_ACTIONS = [
   { id: "pan-down", group: "View", label: "Move down the zoomed-in photo", keys: ["ArrowDown"], when: "main", photo: true, run: (e) => (onControl(e) || !ui.zoom.on ? false : panZoom(0, 0.25)) },
   { id: "fold-left", group: "Window", label: "Hide or show the left column", keys: ["Ctrl+["], when: "any", run: () => toggleColumn("left") },
   { id: "fold-right", group: "Window", label: "Hide or show the right column", keys: ["Ctrl+]"], when: "any", run: () => toggleColumn("right") },
+  { id: "topbar", group: "Window", label: "Hide or show the top bar", hint: "Hidden, it comes back while the pointer is at the window's top edge.", keys: ["Ctrl+Shift+T"], when: "any", run: () => setTopbar(document.body.classList.contains("topbar-off")) },
   { id: "filmstrip", group: "Photos", label: "Show or hide the filmstrip", keys: ["F"], when: "any", run: () => toggleFilmstrip() },
   { id: "assistant", group: "Tools", label: "Assistant: your AI edits the photo", keys: ["Ctrl+Shift+A"], when: "any", photo: true, run: () => assistantFlow() },
   { id: "hub", group: "Tools", label: "Browse what others shared", hint: "Layouts, themes, presets, collages, plugins and interfaces from the hub.", keys: ["Ctrl+Shift+H"], when: "any", button: "btn-hub", run: () => browseFlow() },

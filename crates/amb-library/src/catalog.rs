@@ -444,6 +444,28 @@ impl Catalog {
         let _ = tx.commit();
     }
 
+    /// Photos whose folder can be reached but whose file is gone (moved or
+    /// deleted outside the app), with the size the file had.
+    pub fn missing(&self) -> Vec<(PathBuf, i64)> {
+        let rows: Vec<(String, String, i64)> = {
+            let db = self.db.lock().unwrap_or_else(|e| e.into_inner());
+            let Ok(mut q) = db.prepare("SELECT path, folder, size FROM photos ORDER BY path")
+            else {
+                return Vec::new();
+            };
+            q.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+                .map(|rows| rows.flatten().collect())
+                .unwrap_or_default()
+        };
+        let reachable = reachable(rows.iter().map(|r| r.1.as_str()));
+        rows.into_par_iter()
+            .filter(|(path, folder, _)| {
+                reachable.contains(folder) && !amb_engine::source_path(Path::new(path)).exists()
+            })
+            .map(|(path, _, size)| (PathBuf::from(path), size))
+            .collect()
+    }
+
     /// Every photo in the catalogue, newest first, as last read. The files
     /// aren't looked at (only whether each folder can be reached), so this
     /// stays quick for hundreds of thousands of photos; indexing and showing

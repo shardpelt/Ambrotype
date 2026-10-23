@@ -181,7 +181,7 @@ pub fn check_template(template: &str) -> Result<(), String> {
 }
 
 /// A file or folder name part: no separators or characters Windows refuses.
-fn clean(part: &str) -> String {
+pub(crate) fn clean(part: &str) -> String {
     let s: String = part
         .chars()
         .map(|c| match c {
@@ -270,7 +270,7 @@ struct Group {
 /// A file's photo name and the rest of its name: `IMG_1` and `.CR2` for
 /// `IMG_1.CR2`, `.xmp` for its sidecar, `.copy-2.xmp` for a virtual copy,
 /// `.jpg.xmp` for a JPEG's sidecar `IMG_1.jpg.xmp`.
-fn split_name(f: &Path) -> (String, String) {
+pub(crate) fn split_name(f: &Path) -> (String, String) {
     let name = f
         .file_name()
         .unwrap_or_default()
@@ -482,7 +482,7 @@ pub fn plan(source: &Path, dest: &Path, options: &ImportOptions) -> Result<Vec<P
 
 /// Copy `from` to `to` through a hidden temporary file, keeping the
 /// modified time.
-fn copy_file(from: &Path, to: &Path) -> Result<(), String> {
+pub(crate) fn copy_file(from: &Path, to: &Path) -> Result<(), String> {
     let err = |e: std::io::Error| format!("{}: {e}", to.display());
     if let Some(dir) = to.parent() {
         std::fs::create_dir_all(dir).map_err(err)?;

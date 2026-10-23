@@ -282,6 +282,16 @@
       <details id="lib-organise-menu" class="lib-menu"><summary title="Tidy up the photos shown (or the selected ones)">Organise ▾</summary>
         <div class="lib-menu-pop" id="lib-organise-pop">
           <button type="button" id="lib-duplicates" class="small" title="Find copies of the same photo, alike pictures and bursts; keep the best">Duplicates and bursts…</button>
+          <hr>
+          <button type="button" id="lib-move" class="small" title="Move the selected photos, with their sidecars and companions, to another folder">Move to a folder…</button>
+          <button type="button" id="lib-rename" class="small" title="Give the selected photos new names from a template">Rename…</button>
+          <button type="button" id="lib-dated" class="small" title="Move the selected photos (or all shown) into folders by capture date">Sort into dated folders…</button>
+          <button type="button" id="lib-undo-move" class="small" title="Put the photos of the last move or rename back" hidden>Undo the last move</button>
+          <button type="button" id="lib-delete" class="small danger" title="Move the selected photos, with their sidecars and companions, to the trash">Delete…</button>
+          <hr>
+          <button type="button" id="lib-keywords" class="small" title="Every keyword in the library: rename, merge or remove them everywhere">Keywords…</button>
+          <button type="button" id="lib-meta-templates" class="small" title="Saved titles, captions, creator, copyright and keywords to give photos at once">Metadata templates…</button>
+          <button type="button" id="lib-missing" class="small" title="Photos moved or deleted outside Ambrotype: find where they went">Find missing photos…</button>
         </div>
       </details>
       <span id="library-count" class="hint"></span>
@@ -630,6 +640,61 @@
   </dialog>
 
   <!-- A name, for collections (collections.js). -->
+  <!-- File care (organise.js): move, rename, dated folders. -->
+  <dialog id="files-dialog" class="files-dialog">
+    <h2 id="files-title"></h2>
+    <div id="files-options" class="files-options"></div>
+    <p id="files-summary" class="hint"></p>
+    <div id="files-list" class="files-list"></div>
+    <menu>
+      <button type="button" id="files-cancel">Cancel</button>
+      <button type="button" id="files-go" class="primary">Move</button>
+    </menu>
+  </dialog>
+
+  <dialog id="missing-dialog" class="files-dialog">
+    <h2>Find missing photos</h2>
+    <p id="missing-status" class="hint"></p>
+    <div id="missing-list" class="files-list"></div>
+    <menu>
+      <button type="button" id="missing-close">Close</button>
+      <button type="button" id="missing-look" class="primary">Look in a folder…</button>
+    </menu>
+  </dialog>
+
+  <dialog id="keywords-dialog" class="files-dialog">
+    <h2>Keywords</h2>
+    <p class="hint">Every keyword in the library, and how many photos have it. Tick some to rename them, merge them into one, or remove them: each photo's sidecar changes.</p>
+    <input id="keywords-filter" type="search" placeholder="Filter" spellcheck="false" aria-label="Filter keywords">
+    <div id="keywords-list" class="files-list keywords-list"></div>
+    <menu>
+      <button type="button" id="keywords-close">Close</button>
+      <button type="button" id="keywords-remove" class="danger">Remove</button>
+      <button type="button" id="keywords-rename" class="primary">Rename…</button>
+    </menu>
+  </dialog>
+
+  <dialog id="meta-dialog" class="files-dialog">
+    <h2>Metadata templates</h2>
+    <p class="hint">A title, caption, creator, copyright and keywords to give many photos at once. Empty fields leave the photos' own; keywords are added.</p>
+    <select id="meta-choose" aria-label="Template"></select>
+    <form id="meta-form" class="meta-form" onsubmit="return false">
+      <label>Name <input name="name" type="text" spellcheck="false" maxlength="80"></label>
+      <label>Title <input name="title" type="text"></label>
+      <label>Caption <input name="caption" type="text"></label>
+      <label>Creator <input name="creator" type="text"></label>
+      <label>Copyright <input name="copyright" type="text" placeholder="© 2026 Your Name"></label>
+      <label>Keywords <input name="keywords" type="text" placeholder="travel, Iceland"></label>
+    </form>
+    <menu>
+      <button type="button" id="meta-from-photo" title="Fill in from the first selected photo">From the selected photo</button>
+      <button type="button" id="meta-delete" class="danger">Delete</button>
+      <button type="button" id="meta-save">Save template</button>
+      <button type="button" id="meta-close">Close</button>
+      <button type="button" id="meta-apply" class="primary">Apply</button>
+    </menu>
+  </dialog>
+
   <!-- Duplicates and bursts (duplicates.js). -->
   <dialog id="dupes-dialog" class="dupes-dialog">
     <h2>Duplicates and bursts</h2>
@@ -1393,6 +1458,7 @@
   <script src="cull.js"></script>
   <script src="browse.js"></script>
   <script src="duplicates.js"></script>
+  <script src="organise.js"></script>
   <script src="import.js"></script>
   <script src="lrcat.js"></script>
   <script src="collections.js"></script>

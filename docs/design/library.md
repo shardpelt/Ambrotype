@@ -75,6 +75,18 @@ Other ways to browse what the library shows (a folder, a collection or All photo
   - **From a GPX track** (**Match GPX track…**): each photo's capture time is looked up on the track (`amb_library::gpx`). Cameras write local time without a zone and GPX keeps UTC, so it asks how many hours the camera's clock was ahead of UTC (guessed from this computer's time zone on that date). Between two track points the place is interpolated; a photo more than 5 minutes from any point isn't placed. Photos that already have a place keep it. It works on the selection, or on every photo shown.
   - **Map images** are OpenStreetMap's, only when turned on (Settings → General, or the button on the map), since fetching them tells openstreetmap.org which area you look at. Off, the map is a plain grid of latitudes and longitudes with the pins on it. The images are credited on the map, with a link to OpenStreetMap's copyright page.
 
+## File care
+
+**Organise** in the library bar (2026-10-23; `amb_library::files`, `ui/organise.js`). A photo's files move together: the raw, its same-name JPEG, its sidecar and its virtual copies, as Import groups them.
+
+- **Move to a folder…**, **Rename…** and **Sort into dated folders…** act on the selected photos (dated folders: all shown when none is selected). Each shows every new name first. Names come from Import's tokens (`{yyyy}`, `{seq}`, `{camera}`, …); a folder template's `/` makes subfolders. Nothing is overwritten: a taken name gets `-2`, `-3`. Across drives a file is copied, checked, then removed. If one of a photo's files can't move, the others go back.
+- **Undo the last move** puts the files of the last move or rename back.
+- **Delete…** moves the selected photos with all their files to the system's trash: the freedesktop.org trash on Linux (the drive's own `.Trash-<uid>` for other drives), the Finder's on macOS, the Recycle Bin on Windows.
+- The open photo is saved first, and reopened from its new place. The catalogue and every collection follow the moves.
+- **Find missing photos…** lists photos the catalogue knows whose file is gone from a folder that can be reached (moved or deleted outside Ambrotype). **Look in a folder…** finds them there and in its subfolders by name and size, and follows them. A name found twice with that size is left alone.
+- **Keywords…** lists every keyword in the catalogue with how many photos have it. Tick some to rename them, merge them into one, or remove them, in every photo's sidecar.
+- **Metadata templates…** keep a title, caption, creator, copyright and keywords to give many photos at once (Lightroom's metadata presets). Empty fields leave the photos' own; keywords are added. They are kept in the settings file.
+
 ## Duplicates and bursts
 
 **Organise → Duplicates and bursts…** looks among the photos shown, or the selected ones (2026-10-23; `amb_library::duplicates`, `ui/duplicates.js`).

@@ -233,6 +233,34 @@ pub fn move_to_set(dir: &Path, name: &str, set: &str) -> Result<Collection, Stri
     Ok(c)
 }
 
+/// Photos moved or renamed: `moves` (old path, new path) are followed in
+/// every collection. Returns how many collections changed.
+pub fn relink(dir: &Path, moves: &[(PathBuf, PathBuf)]) -> usize {
+    let map: std::collections::HashMap<&PathBuf, &PathBuf> =
+        moves.iter().map(|(a, b)| (a, b)).collect();
+    let mut changed = 0;
+    for entry in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+        let path = entry.path();
+        let Some(mut c) = std::fs::read_to_string(&path)
+            .ok()
+            .and_then(|t| serde_json::from_str::<Collection>(&t).ok())
+        else {
+            continue;
+        };
+        let mut touched = false;
+        for p in &mut c.photos {
+            if let Some(to) = map.get(p) {
+                *p = (*to).clone();
+                touched = true;
+            }
+        }
+        if touched && write(&path, &c).is_ok() {
+            changed += 1;
+        }
+    }
+    changed
+}
+
 /// Delete a collection (not its photos).
 pub fn delete(dir: &Path, name: &str) -> Result<(), String> {
     let (path, _) = find(dir, name).ok_or_else(|| format!("no collection {name:?}"))?;

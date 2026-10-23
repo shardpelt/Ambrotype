@@ -75,6 +75,8 @@ struct AppState {
     preset_favourites: Mutex<Vec<String>>,
     mask_effects: Mutex<Vec<MaskEffect>>,
     edit_in: Mutex<EditIn>,
+    /// Metadata templates (library → Organise).
+    metadata_templates: Mutex<Vec<commands::files::MetadataTemplate>>,
     /// The monitor profile choice (Settings).
     monitor: Mutex<monitor::Choice>,
     /// Soft proofing (for this run): the space, and the gamut warning.
@@ -151,6 +153,8 @@ struct Config {
     /// Edit in another app: which app and what file.
     #[serde(default)]
     edit_in: EditIn,
+    #[serde(default)]
+    metadata_templates: Vec<commands::files::MetadataTemplate>,
     /// Which monitor profile the preview is shown in.
     #[serde(default)]
     monitor: monitor::Choice,
@@ -278,6 +282,11 @@ fn save_config(state: &AppState) {
             .unwrap_or_default(),
         edit_in: state.edit_in.lock().map(|e| e.clone()).unwrap_or_default(),
         monitor: state.monitor.lock().map(|m| m.clone()).unwrap_or_default(),
+        metadata_templates: state
+            .metadata_templates
+            .lock()
+            .map(|m| m.clone())
+            .unwrap_or_default(),
         interface: state.interface.lock().ok().and_then(|i| i.clone()),
     };
     if let Some(dir) = path.parent() {
@@ -473,6 +482,9 @@ fn main() {
                 }
                 if let Ok(mut m) = state.monitor.lock() {
                     *m = config.monitor;
+                }
+                if let Ok(mut m) = state.metadata_templates.lock() {
+                    *m = config.metadata_templates;
                 }
                 // A custom interface, unless this run keeps to the built-in one.
                 if let Some(dir) = config.interface.filter(|d| interface::is_interface(d)) {
@@ -691,6 +703,15 @@ fn main() {
             commands::catalog::lrcat_apply,
             commands::library::library_set_info,
             commands::library::library_find_duplicates,
+            commands::files::files_plan,
+            commands::files::files_apply,
+            commands::files::files_trash,
+            commands::files::files_missing,
+            commands::files::files_find_moved,
+            commands::files::keywords_all,
+            commands::files::keywords_change,
+            commands::files::metadata_templates,
+            commands::files::save_metadata_template,
             commands::places::pick_gpx,
             commands::places::open_osm_copyright,
             commands::places::library_match_gpx,

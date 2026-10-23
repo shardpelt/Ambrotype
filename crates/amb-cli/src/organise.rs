@@ -18,6 +18,24 @@ use crate::print_json;
 
 type Options<'a> = BTreeMap<&'a str, &'a str>;
 
+/// As [`photos`], folders with all their subfolders' photos too.
+fn photos_deep(args: &[&str]) -> Result<Vec<PathBuf>, String> {
+    let mut out = Vec::new();
+    for a in args {
+        let p = std::path::absolute(a).map_err(|e| format!("{a}: {e}"))?;
+        if p.is_dir() {
+            out.extend(
+                amb_library::folder::tree_paths(&p)?
+                    .into_iter()
+                    .map(|(p, _)| p),
+            );
+        } else {
+            out.extend(photos(&[a])?);
+        }
+    }
+    Ok(out)
+}
+
 /// The photos named: files as given, folders as the photos in them.
 fn photos(args: &[&str]) -> Result<Vec<PathBuf>, String> {
     let mut out = Vec::new();
@@ -641,7 +659,12 @@ pub(crate) const SLIDE_EFFECTS: [&str; 6] = ["none", "fade", "slide", "zoom", "b
 /// `amb slideshow`: opens the editor straight into a slideshow of the photos
 /// (folders as the photos in them), with the slideshow dialog's options.
 pub(crate) fn slideshow(args: &[&str], options: &Options, dry_run: bool) -> Result<(), String> {
-    let photos = photos(args)?;
+    let deep = options.contains_key("--subfolders");
+    let photos = if deep {
+        photos_deep(args)?
+    } else {
+        photos(args)?
+    };
     if photos.is_empty() {
         return Err("no photos to show".into());
     }
@@ -663,7 +686,7 @@ pub(crate) fn slideshow(args: &[&str], options: &Options, dry_run: bool) -> Resu
         "--effect".into(),
         effect.into(),
     ];
-    for flag in ["--shuffle", "--window"] {
+    for flag in ["--shuffle", "--window", "--subfolders"] {
         if options.contains_key(flag) {
             gui_args.push(flag.into());
         }

@@ -57,13 +57,15 @@ function renderFolderTree() {
   const list = $("tree-list");
   list.replaceChildren(...folderTreeNodes().map(folderTreeItem));
   $("tree-empty").hidden = tree.roots.length > 0;
+  syncTreeMode();
 }
 
 function folderTreeItem(node) {
   const li = document.createElement("li");
   const row = Object.assign(document.createElement("div"), { className: "tree-row", title: node.path });
   row.classList.toggle("offline", node.offline);
-  row.classList.toggle("current", lib.dir === node.path && !lib.collection);
+  const shown = !lib.collection && !lib.smart && (lib.dir === node.path || lib.more.includes(node.path));
+  row.classList.toggle("current", shown);
   const kids = [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   const open = tree.open.has(node.path);
   const twist = Object.assign(document.createElement("span"), { className: "twist", textContent: kids.length ? (open ? "▾" : "▸") : "" });
@@ -84,7 +86,8 @@ function folderTreeItem(node) {
     });
     row.append(remove);
   }
-  row.addEventListener("click", () => showTreeFolder(node.path));
+  // Ctrl (⌘)-click: show this folder too, or not any more.
+  row.addEventListener("click", (e) => (e.ctrlKey || e.metaKey ? toggleTreeFolder(node.path) : showTreeFolder(node.path)));
   li.append(row);
   if (open && kids.length) {
     const ul = document.createElement("ul");
@@ -98,6 +101,42 @@ async function showTreeFolder(path) {
   lib.selected.clear();
   await loadLibrary(path, []);
   renderFolderTree();
+}
+
+async function toggleTreeFolder(path) {
+  if (!lib.dir || lib.collection || lib.smart) return showTreeFolder(path);
+  if (path === lib.dir) {
+    // The first folder leaves; the next one shown takes its place.
+    if (!lib.more.length) return;
+    const [next, ...rest] = lib.more;
+    await loadLibrary(next, rest);
+  } else {
+    const more = lib.more.includes(path) ? lib.more.filter((d) => d !== path) : [...lib.more, path];
+    await loadLibrary(lib.dir, more);
+  }
+  renderFolderTree();
+}
+
+// Folders | All photos, like a phone's gallery: every photo the library
+// knows, in one timeline, or a folder at a time.
+async function setTreeMode(all) {
+  if (all) {
+    await showCollection(ALL_PHOTOS);
+    if (cull.view === "grid") $("lib-sort").value = "captured";
+    $("lib-reverse").checked = true;
+    renderLibrary();
+  } else {
+    await showCollection("");
+  }
+  syncTreeMode();
+}
+
+function syncTreeMode() {
+  const all = lib.smart === ALL_PHOTOS;
+  $("tree-mode-all").classList.toggle("on", all);
+  $("tree-mode-folders").classList.toggle("on", !all);
+  $("tree-mode-all").setAttribute("aria-selected", all);
+  $("tree-mode-folders").setAttribute("aria-selected", !all);
 }
 
 async function addLibraryRoot() {
@@ -124,6 +163,8 @@ async function removeLibraryFolder(path) {
 
 function wireFolderTree() {
   $("tree-add").addEventListener("click", addLibraryRoot);
+  $("tree-mode-folders").addEventListener("click", () => setTreeMode(false));
+  $("tree-mode-all").addEventListener("click", () => setTreeMode(true));
   const progress = $("tree-progress");
   tauri.event.listen("index-progress", (e) => {
     const { folder, done, total } = e.payload;

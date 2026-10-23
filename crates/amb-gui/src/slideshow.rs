@@ -18,6 +18,8 @@ pub struct Start {
     pub effect: String,
     pub shuffle: bool,
     pub fullscreen: bool,
+    /// Folders with all their subfolders.
+    pub subfolders: bool,
 }
 
 /// What the page gets: the photos, folders listed, and the options.
@@ -42,6 +44,7 @@ pub fn take(args: &mut Vec<String>) -> Option<Start> {
         effect: "fade".into(),
         shuffle: false,
         fullscreen: true,
+        subfolders: false,
     };
     let mut it = std::mem::take(args).into_iter();
     while let Some(a) = it.next() {
@@ -49,6 +52,7 @@ pub fn take(args: &mut Vec<String>) -> Option<Start> {
             "--slideshow" => {}
             "--shuffle" => start.shuffle = true,
             "--window" => start.fullscreen = false,
+            "--subfolders" => start.subfolders = true,
             "--seconds" => {
                 if let Some(s) = it.next().and_then(|v| v.parse::<u32>().ok()) {
                     start.seconds = s.clamp(1, 600);
@@ -81,7 +85,11 @@ pub(crate) async fn take_slideshow() -> Result<Option<Show>, String> {
             let p = Path::new(p);
             if p.is_dir() {
                 photos.extend(folder::describe(std::mem::take(&mut files)));
-                photos.extend(folder::list_dir(p)?);
+                photos.extend(if s.subfolders {
+                    folder::list_tree(p)?
+                } else {
+                    folder::list_dir(p)?
+                });
             } else {
                 files.push(PathBuf::from(p));
             }
@@ -129,7 +137,8 @@ mod tests {
                 seconds: 9,
                 effect: "slide".into(),
                 shuffle: true,
-                fullscreen: false
+                fullscreen: false,
+                subfolders: false
             }
         );
         let mut plain = args(&["photo.nef"]);

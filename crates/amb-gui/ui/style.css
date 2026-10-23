@@ -1267,3 +1267,8 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 .film-cell:hover .film-stars.editable span:not(.on) { color: rgba(200, 200, 200, .55); text-shadow: 0 0 3px #000; }
 .film-cell .film-stars.editable:hover span { color: rgba(200, 200, 200, .55); text-shadow: 0 0 3px #000; }
 .film-cell:hover .film-stars.editable:hover span:is(:hover, :has(~ span:hover)) { color: var(--accent); }
+
+/* Folders | All photos, at the top of the library's Folders panel. */
+.tree-mode { display: flex; gap: 2px; margin: 0 2px 8px; padding: 2px; background: var(--bg-deep); border-radius: var(--radius); }
+.tree-mode button { flex: 1; padding: 3px 6px; font-size: 12px; background: transparent; border-color: transparent; color: var(--muted); }
+.tree-mode button.on { background: var(--tab-active); color: var(--text); border-color: var(--line); }

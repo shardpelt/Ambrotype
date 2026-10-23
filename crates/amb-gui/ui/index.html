@@ -347,6 +347,10 @@
     </div>
     <div class="library-body">
       <aside id="library-tree" class="library-tree" aria-label="Library folders">
+        <div class="tree-mode" role="tablist" aria-label="Show">
+          <button type="button" id="tree-mode-folders" role="tab" title="One folder at a time (Ctrl-click more to show them together)">Folders</button>
+          <button type="button" id="tree-mode-all" role="tab" title="Every photo in the library folders, newest first, as one timeline">All photos</button>
+        </div>
         <div class="tree-head"><span>Folders</span>
           <button type="button" id="tree-add" class="small" title="Add a library folder: a folder or a whole drive, kept indexed so it can be browsed and searched, also while unplugged">+</button></div>
         <ul id="tree-list" class="tree-list"></ul>

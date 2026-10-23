@@ -68,6 +68,8 @@ jobs:
         run: |
           cargo build -p amb-gui -p amb-cli
           target/debug/amb testimage colorchecker "$RUNNER_TEMP/test.dng"
+          # A second folder, for showing folders together (browse.js).
+          mkdir -p "$RUNNER_TEMP/more" && target/debug/amb testimage ramp "$RUNNER_TEMP/more/other.dng"
           export XDG_CONFIG_HOME="$RUNNER_TEMP/cfg" XDG_CACHE_HOME="$RUNNER_TEMP/cache" XDG_DATA_HOME="$RUNNER_TEMP/data"
           for t in crates/amb-gui/tests/ui/*.js; do
             xvfb-run -a -s "-screen 0 1600x1000x24" target/debug/ambrotype --ui-test "$t" "$RUNNER_TEMP/test.dng"

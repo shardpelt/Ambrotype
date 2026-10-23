@@ -2,6 +2,7 @@
 // The library's other views: Timeline and Map; placing a photo on the map;
 // the slideshow.
 // Run: ambrotype --ui-test crates/amb-gui/tests/ui/browse.js photo.dng
+// (with a folder "more" holding a photo next to it: amb testimage ramp more/other.dng)
 
 await t.step("Open folder shows a folder in the library", async () => {
   await t.until("the photo", () => ui.info, 60000);
@@ -60,6 +61,25 @@ await t.step("dragging the grid moves through it; a drag doesn't select", async 
   spacer.remove();
   t.expect(moved > 100, `moved down: ${moved}`);
   t.expect(lib.selected.size === 0, "nothing selected");
+});
+
+await t.step("Folders | All photos, and Ctrl-click shows more folders together", async () => {
+  const dir = lib.dir;
+  await setTreeMode(true);
+  t.expect(lib.smart === ALL_PHOTOS && $("tree-mode-all").classList.contains("on"), "All photos");
+  t.expect($("lib-sort").value === "captured" && $("lib-reverse").checked, "newest first");
+  await setTreeMode(false);
+  t.expect(!lib.smart && lib.dir === dir && $("tree-mode-folders").classList.contains("on"), "back to the folder");
+  const one = lib.photos.length;
+  // CI makes it: a folder "more" next to the test photo, with one photo.
+  const parent = `${dir}${dir.includes("\\") ? "\\" : "/"}more`;
+  await toggleTreeFolder(parent);
+  t.expect(lib.more.includes(parent) && lib.photos.length > one, `two folders: ${lib.photos.length} photos`);
+  await toggleTreeFolder(parent);
+  t.expect(!lib.more.includes(parent) && lib.photos.length === one, "one folder again");
+  $("lib-sort").value = "name";
+  $("lib-reverse").checked = false;
+  renderLibrary();
 });
 
 await t.step("Rated photos shows every rated photo, best first", async () => {

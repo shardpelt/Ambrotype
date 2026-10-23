@@ -240,4 +240,37 @@ fn slideshow_starts_the_editor_with_its_options() {
         .unwrap();
     assert!(!bad.status.success());
     assert!(String::from_utf8_lossy(&bad.stderr).contains("one of none, fade"));
+
+    // --subfolders takes in the photos in folders under it too.
+    std::fs::create_dir_all(lib.dir.join("p/2026/june")).unwrap();
+    std::fs::copy(
+        lib.dir.join("p/IMG_1.dng"),
+        lib.dir.join("p/2026/june/IMG_9.dng"),
+    )
+    .unwrap();
+    let count = |deep: bool| {
+        let mut args = vec!["slideshow", "p", "--dry-run"];
+        if deep {
+            args.push("--subfolders");
+        }
+        let out = Command::new(env!("CARGO_BIN_EXE_amb"))
+            .args(&args)
+            .current_dir(&lib.dir)
+            .output()
+            .unwrap();
+        (
+            String::from_utf8_lossy(&out.stderr).into_owned(),
+            String::from_utf8_lossy(&out.stdout).into_owned(),
+        )
+    };
+    assert!(
+        count(false).0.contains("Would show 3 photos"),
+        "{:?}",
+        count(false)
+    );
+    let (said, cmd) = count(true);
+    assert!(
+        said.contains("Would show 4 photos") && cmd.contains("--subfolders"),
+        "{said} {cmd}"
+    );
 }

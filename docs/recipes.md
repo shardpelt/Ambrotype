@@ -19,8 +19,9 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
   xdotool clicks and types (`DISPLAY=:99 xdotool mousemove 100 20 click 1`).
 - **UI tests:** scripts in `crates/amb-gui/tests/ui/` drive the editor from inside the page and check what it shows. Run one:
   ```sh
-  amb testimage colorchecker /tmp/test.dng
-  DISPLAY=:99 ambrotype --ui-test crates/amb-gui/tests/ui/smoke.js /tmp/test.dng
+  amb testimage colorchecker /tmp/ui/test.dng
+  amb testimage ramp /tmp/ui/more/other.dng      # browse.js shows a second folder too
+  DISPLAY=:99 ambrotype --ui-test crates/amb-gui/tests/ui/smoke.js /tmp/ui/test.dng
   ```
   It prints each step and exits 0 when all pass. A script is the body of an async function of `t` (`ui/uitest.js`): `t.step(name, fn)`, `t.setSlider("Exposure2012", 1)`, `t.key("Ctrl+Z")`, `t.click(selector)`, `t.until(what, () => cond)`, `t.expect(ok, what)`, `t.row(name)`, `t.setting(name)`, `t.visible(el)`. Save dialogs don't open: exports go to a temporary folder. A `console.error` or an uncaught error fails the run. Use a fresh config folder (`XDG_CONFIG_HOME`) so your own settings don't change the result. CI runs every script in that folder on Linux. A UI bug fix gets a step there.
 - **Built-in layouts, themes and presets:** never edit them in `crates/amb-gui/data/hub/`. They are copies, checked against `crates/amb-gui/data/hub/index.json`. Change them in the hub repo and run `tools/sync-hub.py`, or leave that step to the maintainer and say so.

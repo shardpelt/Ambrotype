@@ -104,9 +104,21 @@ function splitFramed(buf) {
   return { meta, jpeg: bytes.subarray(4 + len) };
 }
 
+// The whole photo fills the viewer, scaled up too (a small photo, or a
+// preview smaller than the screen), keeping its shape.
+function fitPreview() {
+  const img = $("preview");
+  if (ui.zoom.on || !img.naturalWidth) return;
+  const v = $("viewer");
+  const s = Math.min(v.clientWidth / img.naturalWidth, v.clientHeight / img.naturalHeight);
+  img.style.width = `${Math.floor(img.naturalWidth * s)}px`;
+  img.style.height = `${Math.floor(img.naturalHeight * s)}px`;
+}
+
 function showJpeg(jpeg) {
   const url = URL.createObjectURL(new Blob([jpeg], { type: "image/jpeg" }));
   const img = $("preview");
+  img.onload = fitPreview;
   img.src = url;
   img.hidden = ui.crop.on;
   if (ui.preview.url) URL.revokeObjectURL(ui.preview.url);
@@ -313,6 +325,7 @@ function toggleClipping() {
 function wireViewer() {
   const img = $("preview");
   let drag = null;
+  new ResizeObserver(fitPreview).observe($("viewer"));
   // The webview's own "Save image" can't save (and would save the small
   // preview): right-click exports the photo instead.
   $("viewer").addEventListener("contextmenu", (e) => {

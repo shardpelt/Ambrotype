@@ -12,8 +12,8 @@ const ICON_PATHS = {
   library: '<rect x="8" y="3" width="13" height="10" rx="1"/><rect class="cover" x="5.5" y="5.5" width="13" height="10" rx="1"/><rect class="cover" x="3" y="8" width="13" height="10" rx="1"/><path d="m4.8 16.2 3.4-3.4 2.6 2.6 1.6-1.6 2 2"/><circle cx="12.8" cy="11" r="1"/>',
   // A floppy disk.
   save: '<path d="M5 3.5h11.5l4 4V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5Z"/><path d="M7.5 3.5v5h8v-5"/><rect x="7" y="13" width="10" height="7.5" rx=".5"/>',
-  // Down into a tray: a file comes out of the app.
-  export: '<path d="M12 3v11"/><path d="M7.5 9.5 12 14l4.5-4.5"/><path d="M4 14.5v4A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-4"/>',
+  // Up out of a tray: the photo leaves the app (not a download).
+  export: '<path d="M12 15V4"/><path d="M7.5 8.5 12 4l4.5 4.5"/><path d="M4 14.5v4A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-4"/>',
   // Two photos laid on top of each other at angles, as on a collage.
   collage: '<g transform="rotate(-10 8.5 8.5)"><rect x="2.5" y="3.5" width="12" height="10" rx=".8"/><path d="m4.5 11.5 3-3 2.5 2.5"/></g><g transform="rotate(9 15 15.5)"><rect class="cover" x="8.8" y="10.5" width="12.4" height="10" rx=".8"/><circle cx="17.8" cy="13.8" r="1.2"/><path d="m10.8 18.5 3-3 3.5 3.5"/></g>',
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H10"/>',

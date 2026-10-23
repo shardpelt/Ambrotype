@@ -520,7 +520,7 @@ function buildPanel(item) {
     if (e.type === "label") {
       const l = document.createElement("div");
       l.className = "section-label";
-      l.textContent = e.text;
+      l.append(Object.assign(document.createElement("span"), { className: "section-name", textContent: e.text }));
       if (e.text === "Tone") {
         // Lightroom's Auto, beside the tone sliders.
         const auto = document.createElement("button");

@@ -34,6 +34,23 @@ await t.step("every panel opens", async () => {
   t.expect(t.visible(t.row("HueAdjustmentRed")), "the Color Mixer open");
 });
 
+await t.step("a section's buttons never cover the row under them, even in a narrow column", async () => {
+  const col = $("col-right");
+  const was = col.style.width;
+  col.style.width = "260px";
+  for (const d of col.querySelectorAll("details.panel")) d.open = true;
+  await new Promise((r) => requestAnimationFrame(r));
+  const bad = [];
+  for (const label of col.querySelectorAll(".section-label")) {
+    const next = label.nextElementSibling;
+    if (!next || !label.querySelector(".section-action")) continue;
+    const bottom = Math.max(...[...label.querySelectorAll(".section-action")].map((b) => b.getBoundingClientRect().bottom));
+    if (bottom > next.getBoundingClientRect().top + 1) bad.push(label.querySelector(".section-name").textContent);
+  }
+  col.style.width = was;
+  t.expect(!bad.length, `buttons over the next row in: ${bad.join(", ")}`);
+});
+
 await t.step("the Color Mixer shows one tab at a time", async () => {
   t.expect(!t.visible(t.row("SaturationAdjustmentRed")), "Saturation rows hidden on the Hue tab");
   const tab = [...document.querySelectorAll(".tabs button")].find((b) => b.textContent === "Saturation");
@@ -63,6 +80,12 @@ await t.step("a preset's notes for scripts become one short line", async () => {
     "WhiteBalance set to \"Custom\" so that Temperature takes effect",
   ]);
   t.expect(said === "23 of its settings aren't supported yet (kept in the file for Lightroom)", said);
+});
+
+await t.step("the whole photo fills the viewer", async () => {
+  const img = $("preview").getBoundingClientRect();
+  const view = $("viewer").getBoundingClientRect();
+  t.expect(Math.abs(img.width - view.width) <= 2 || Math.abs(img.height - view.height) <= 2, `photo ${Math.round(img.width)}×${Math.round(img.height)} in ${Math.round(view.width)}×${Math.round(view.height)}`);
 });
 
 await t.step("a click near the photo's corner zooms in without showing past its edge", async () => {

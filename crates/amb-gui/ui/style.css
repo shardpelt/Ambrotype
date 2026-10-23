@@ -1167,3 +1167,11 @@ body.topbar-off.topbar-peek .topbar { transform: none; box-shadow: 0 4px 16px rg
 .lib-tag-recent:empty { display: none; }
 .tag-recent { padding: 1px 7px; font-size: 11px; border-radius: 10px; color: var(--muted); background: none; }
 .tag-recent:hover { color: var(--text); border-color: var(--accent); }
+
+/* In the library the editor's top bar goes; its task switcher sits at the
+   start of the library's bar (library.js toggleLibrary). */
+body.library-mode { grid-template-rows: 0 1fr 26px; }
+body.library-mode .topbar { height: 0; padding: 0; border: 0; overflow: hidden; transform: none; }
+body.library-mode .topbar-edge { display: none; }
+.lib-task-slot:empty { display: none; }
+.lib-task-slot { margin-right: 6px; }

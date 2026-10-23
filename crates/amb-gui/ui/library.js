@@ -51,6 +51,11 @@ async function toggleLibrary(on = !lib.on) {
   }
   if (!on) setLibraryView("grid");
   lib.on = on;
+  // The library is only about organising: the editor's top bar goes, and
+  // its task switcher comes into the library's own bar.
+  const tasks = $("task-bar");
+  if (on) $("lib-task-slot").append(tasks);
+  else document.querySelector(".topbar .brand").after(tasks);
   $("workspace").hidden = on;
   $("library").hidden = !on;
   document.body.classList.toggle("library-mode", on);
@@ -952,6 +957,7 @@ function wireLibrary() {
   wireBrowse();
   wireDuplicates();
   wireOrganise();
+  $("lib-settings").addEventListener("click", () => $("btn-settings").click());
   // Title, caption, creator and copyright for the selection, when a field is left.
   $("lib-stack").addEventListener("click", stackSelection);
   $("lib-unstack").addEventListener("click", unstackSelection);

@@ -13,6 +13,7 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 
 ## What you can do
 
+- **Only the library** (2026-10-23): the editor's top bar (its name, editing tools, undo, crop and the rest) goes while the library shows. The task switcher (Library · Develop · Color · …) sits at the start of the library's own bar, and ⚙ at its end opens Settings.
 - **A quiet screen** (2026-10-20): filters and sort sit under **Filter ▾** in the bar (it shows how many are on), Import and From Lightroom under **Import ▾**. The panel shows only what the selection can use: nothing selected leaves just a hint and the collections, and rarer actions (merges, negative roll, plugins, stacks, virtual copies) are under **More**. The Folders panel and the right panel fold away with ‹ › or Ctrl (⌘)+[ and Ctrl+], as the editor's columns do, remembered on this computer.
 - **Organising lives here** (2026-10-20): the built-in editing layouts leave out Rating & keywords, as they're for organising, not for editing colour; their keys (1–5, 6–9, P, X, U) still work on the open photo. Film lab and Collage prep keep them.
 

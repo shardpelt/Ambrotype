@@ -8,6 +8,11 @@ await t.step("the library shows the photo's folder", async () => {
   await t.until("the grid", () => lib.photos.length > 0);
 });
 
+await t.step("the library has no editor top bar, but keeps the tasks", async () => {
+  t.expect(document.querySelector(".topbar").getBoundingClientRect().height === 0, "the top bar gone");
+  t.expect($("lib-task-slot").contains($("task-bar")) && t.visible("#task-bar"), "the tasks in the library bar");
+});
+
 await t.step("Timeline opens", async () => {
   t.click('#lib-views [data-view="timeline"]');
   await t.until("the timeline", () => document.querySelector(".tl-months, .browse-empty"));
@@ -30,4 +35,10 @@ await t.step("Remove place takes it out again", async () => {
   t.expect(!libPhoto(ui.info.path).gps, "no place");
   t.key("Escape");
   await t.until("the grid", () => cull.view === "grid");
+});
+
+await t.step("the editor gets its top bar back", async () => {
+  await toggleLibrary(false);
+  t.expect(document.querySelector(".topbar").getBoundingClientRect().height > 30, "the top bar");
+  t.expect(document.querySelector(".topbar").contains($("task-bar")), "the tasks in it");
 });

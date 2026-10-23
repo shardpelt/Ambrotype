@@ -267,6 +267,7 @@
   <!-- The library grid (library.js); replaces the workspace while shown. -->
   <section id="library" class="library" hidden aria-label="Library">
     <div class="library-bar">
+      <span id="lib-task-slot" class="lib-task-slot"></span>
       <button type="button" id="lib-choose" class="small" title="Show another folder">Folder…</button>
       <select id="lib-source" aria-label="Show" title="Show a folder or a collection"><option value="">Folder</option></select>
       <label class="lib-subfolders" title="Show the photos in the folder's subfolders too"><input type="checkbox" id="lib-subfolders"> Subfolders</label>
@@ -332,6 +333,7 @@
           <label>Reverse order <input id="lib-reverse" type="checkbox"></label>
         </div>
       </details>
+      <button type="button" id="lib-settings" class="small" title="Settings (Ctrl+,)" aria-label="Settings">⚙</button>
       <input id="lib-size" type="range" min="100" max="320" value="160" title="Thumbnail size" aria-label="Thumbnail size">
     </div>
     <div class="library-body">

@@ -81,6 +81,27 @@ await t.step("Minimalism hides the chrome; the panels slide in from the edge", a
   t.expect(!body.contains("chrome-hidden") && $("edge-right").hidden, "the chrome back");
 });
 
+await t.step("a group's 2 × 2 is a square of its best four", async () => {
+  await collageFlow();
+  await t.until("the collage maker", () => $("collage-dialog").open && collage.templates.length);
+  const p = ui.info.path;
+  collage.tray = [{ path: p, name: "a" }, { path: `${p}#2`, name: "b" }];
+  collage.groups = [[p, `${p}#2`]];
+  renderTray();
+  t.expect(document.querySelector(".tray-group button")?.textContent === "2 × 2", "a 2 × 2 button on the group");
+  t.expect($("col-group").textContent === "Ungroup" && !$("col-batch-groups-row").hidden, "Ungroup, and pages per group");
+  groupGrid([p, p, p, p, p]);
+  t.expect(collage.t.cells.length === 4 && collage.t.width === collage.t.height, "a square 2 × 2");
+  t.expect(collage.cells.length === 4 && collage.cells.every((c) => c.path === p), "four photos in it");
+  t.click("#col-no-borders");
+  t.expect(collage.t.gap === 0 && collage.t.margin === 0 && $("col-gap-out").textContent === "0%", "no borders");
+  $("col-batch-groups").checked = true;
+  updateBatchNote();
+  t.expect($("col-batch-note").textContent.includes("fewer than 4"), $("col-batch-note").textContent);
+  setTray([]);
+  closeCollage();
+});
+
 await t.step("Ctrl+E exports a JPEG", async () => {
   t.key("Ctrl+E");
   await t.until("the Export dialog", () => $("export-dialog").open);

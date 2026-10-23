@@ -244,6 +244,7 @@ pub(crate) async fn export_collage_batch(
     app: tauri::AppHandle,
     template: amb_export::collage::Template,
     photos: Vec<BatchPhoto>,
+    groups: Option<Vec<Vec<usize>>>,
     options: ExportOptions,
     state: tauri::State<'_, AppState>,
 ) -> Res<Option<Vec<String>>> {
@@ -268,6 +269,7 @@ pub(crate) async fn export_collage_batch(
         let written = collages::render_batch(
             &template,
             &photos,
+            groups.as_deref(),
             &dir,
             &s,
             lens,

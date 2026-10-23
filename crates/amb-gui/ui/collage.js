@@ -23,6 +23,7 @@ const collage = {
   cells: [],            // per cell: { path, placement } or null
   selected: -1,
   tray: [],             // [{ path, name, rating, edited }]
+  groups: null,         // "Group alike": [[path, ...], ...] best first, or null
   trayDir: null,        // the folder the tray was filled from (the editor's)
   small: new Map(),     // path -> { url, w, h }: tray thumbnails (also give the shape)
   big: new Map(),       // path -> Promise of { url, w, h }: canvas images
@@ -921,6 +922,7 @@ function wireCanvasForm() {
       else syncCanvasForm();
     });
   }
+  $("col-no-borders").addEventListener("click", () => setCanvas({ gap: 0, margin: 0 }));
   $("col-swap").addEventListener("click", () => setCanvas({ width: collage.t.height, height: collage.t.width }));
   for (const b of $("col-swatches").querySelectorAll("button")) b.addEventListener("click", () => setCanvas({ background: b.dataset.color }));
   $("col-bg").addEventListener("input", () => setCanvas({ background: $("col-bg").value }));
@@ -947,7 +949,57 @@ function setTray(photos, append = false) {
   collage.tray = append ? [...collage.tray, ...add] : add;
   // Photos you picked aren't replaced when the editor moves to another folder.
   collage.trayDir = null;
+  collage.groups = null;
   renderTray();
+}
+
+// "Group alike": alike pictures and bursts in the tray (the library's
+// Duplicates finder, looser), each group best first and together at the
+// front, the rest after. A group's "2 × 2" button lays out its best four.
+async function groupTray() {
+  if (collage.groups) {
+    collage.groups = null;
+    return renderTray();
+  }
+  if (collage.tray.length < 2) return toast("Add some photos to the tray first.", true);
+  $("col-tray-count").textContent = "Grouping…";
+  $("col-group").disabled = true;
+  try {
+    const found = await invoke("library_find_duplicates", { paths: collage.tray.map((p) => p.path), burstSeconds: 2, maxBits: 10 });
+    // Exact copies aren't a group to lay out; one of each is in the others.
+    const groups = found.filter((g) => g.kind !== "same").map((g) => g.photos);
+    if (!groups.length) {
+      toast("No alike photos or bursts in the tray.");
+      return updateTrayCount();
+    }
+    const byPath = new Map(collage.tray.map((p) => [p.path, p]));
+    const grouped = new Set(groups.flat());
+    collage.tray = [...groups.flat().map((p) => byPath.get(p)).filter(Boolean), ...collage.tray.filter((p) => !grouped.has(p.path))];
+    collage.groups = groups;
+    renderTray();
+  } catch (e) {
+    toast(String(e), true);
+    updateTrayCount();
+  } finally {
+    $("col-group").disabled = false;
+  }
+}
+
+// The built-in square grid, square canvas, a group's best four in it. Drag
+// inside a cell to line its photo up; scroll to zoom.
+function groupGrid(paths) {
+  const grid = collage.templates.find((e) => e.builtin && templateOf(e).cells.length === 4
+    && templateOf(e).cells.every(([, , w, h]) => w === 0.5 && h === 0.5));
+  if (!grid) return toast("The 2 × 2 grid layout is missing.", true);
+  applyTemplate(grid);
+  const side = Math.max(collage.t.width, collage.t.height);
+  setCanvas({ width: side, height: side });
+  collage.cells = paths.slice(0, 4).map((path) => ({ path, placement: defaultPlacement() }));
+  collage.selected = -1;
+  touch();
+  renderStage();
+  renderTrayMarks();
+  status("Drag inside a square to line its photo up; scroll to zoom");
 }
 
 function renderTray() {
@@ -962,9 +1014,27 @@ function renderTray() {
       queueTrayThumb(e.target);
     }
   }, { root: list, rootMargin: "0px 400px" });
+  const groupOf = new Map((collage.groups ?? []).flatMap((g, n) => g.map((path) => [path, n])));
+  let lastGroup = -1;
   for (const p of collage.tray) {
+    const n = groupOf.get(p.path) ?? -1;
+    if (collage.groups && n !== lastGroup) {
+      // A head before each group, and before the photos in none.
+      const head = Object.assign(document.createElement("div"), { className: "tray-group" });
+      if (n >= 0) {
+        const g = collage.groups[n];
+        head.append(Object.assign(document.createElement("span"), { textContent: `Group ${n + 1} · ${g.length}` }));
+        const make = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "2 × 2", title: "A square of this group's best four photos" });
+        make.addEventListener("click", () => groupGrid(g));
+        head.append(make);
+      } else {
+        head.append(Object.assign(document.createElement("span"), { textContent: "Not grouped" }));
+      }
+      list.append(head);
+      lastGroup = n;
+    }
     const item = document.createElement("div");
-    item.className = "tray-item";
+    item.className = n >= 0 ? `tray-item grouped g${n % 2}` : "tray-item";
     item.dataset.path = p.path;
     item.title = `${p.name}\nDrag into a cell, or click to fill the selected (or next empty) cell.`;
     const img = Object.assign(document.createElement("img"), { alt: "", draggable: false });
@@ -975,6 +1045,10 @@ function renderTray() {
     remove.addEventListener("pointerdown", (e) => e.stopPropagation());
     remove.addEventListener("click", () => {
       collage.tray = collage.tray.filter((x) => x.path !== p.path);
+      if (collage.groups) {
+        collage.groups = collage.groups.map((g) => g.filter((x) => x !== p.path)).filter((g) => g.length > 1);
+        return renderTray();
+      }
       item.remove();
       updateTrayCount();
     });
@@ -1023,13 +1097,33 @@ function batchPhotos() {
 }
 
 function updateTrayCount() {
-  $("col-tray-count").textContent = collage.tray.length ? `${collage.tray.length} photos` : "Empty: add photos or a folder";
+  const groups = collage.groups ? `, ${collage.groups.length} group${collage.groups.length === 1 ? "" : "s"}` : "";
+  $("col-tray-count").textContent = collage.tray.length ? `${collage.tray.length} photos${groups}` : "Empty: add photos or a folder";
+  $("col-group").textContent = collage.groups ? "Ungroup" : "Group alike";
+  $("col-batch-groups-row").hidden = !collage.groups;
   updateBatchNote();
+}
+
+// With "One page per group": each group's photos that pass the filter, as
+// indexes into batchPhotos().
+function batchGroups() {
+  if (!collage.groups || !$("col-batch-groups").checked) return null;
+  const at = new Map(batchPhotos().map((p, i) => [p.path, i]));
+  return collage.groups.map((g) => g.filter((p) => at.has(p)).map((p) => at.get(p)));
 }
 
 function updateBatchNote() {
   const n = batchPhotos().length;
   const per = collage.t?.cells.length ?? 1;
+  const groups = batchGroups();
+  if (groups) {
+    const pages = groups.filter((g) => g.length >= per).length;
+    const small = groups.length - pages;
+    $("col-batch-note").textContent = `${pages} page${pages === 1 ? "" : "s"}, one per group: its best ${per}.`
+      + (small ? ` ${small} group${small === 1 ? " has" : "s have"} fewer than ${per} photos and ${small === 1 ? "is" : "are"} left out.` : "");
+    $("col-batch").disabled = !pages || collage.busy;
+    return;
+  }
   const pages = Math.ceil(n / per);
   $("col-batch-note").textContent = n
     ? `${n} photo${n === 1 ? "" : "s"} → ${pages} page${pages === 1 ? "" : "s"} of ${per} cells.`
@@ -1131,6 +1225,7 @@ async function exportBatch() {
     const written = await invoke("export_collage_batch", {
       template: templateForExport(),
       photos: photos.map((p, i) => ({ path: p.path, aspect: shapes[i] })),
+      groups: batchGroups(),
       options: exportOptions(),
     });
     if (written) {
@@ -1257,6 +1352,8 @@ function wireCollage() {
   $("col-share").addEventListener("click", shareTemplate);
   $("col-import").addEventListener("click", importCollageTemplate);
   $("col-fill").addEventListener("click", fillEmpty);
+  $("col-group").addEventListener("click", groupTray);
+  $("col-batch-groups").addEventListener("change", updateBatchNote);
   $("col-add").addEventListener("click", () => addPhotos(false));
   $("col-add-folder").addEventListener("click", () => addPhotos(true));
   $("col-tray-clear").addEventListener("click", () => setTray([]));

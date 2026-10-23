@@ -285,9 +285,12 @@ pub fn render(
 /// Photos are matched to cells by shape (`photos` are path and width/height
 /// of the upright photo), each placed with the default fit.
 /// `progress(page, pages, done, total)` is called after each photo.
+/// `groups` (indexes into `photos`): one page per group instead of the
+/// photos in order (`amb_export::collage::group_pages`).
 pub fn render_batch(
     template: &Template,
     photos: &[(String, f64)],
+    groups: Option<&[Vec<usize>]>,
     dir: &Path,
     settings: &amb_export::ExportSettings,
     lens: &crate::LensSources,
@@ -298,7 +301,13 @@ pub fn render_batch(
         .iter()
         .map(|(_, a)| if a.is_finite() && *a > 0.0 { *a } else { 1.5 })
         .collect();
-    let pages = amb_export::collage::pages(template, &aspects);
+    let pages = match groups {
+        Some(g) => amb_export::collage::group_pages(template, &aspects, g),
+        None => amb_export::collage::pages(template, &aspects),
+    };
+    if pages.is_empty() {
+        return Err("no group has enough photos for this layout".into());
+    }
     let stem: String = template
         .name
         .chars()
@@ -413,6 +422,7 @@ mod tests {
         let pages = render_batch(
             &t,
             &photos,
+            None,
             &dir,
             &amb_export::ExportSettings::new(amb_export::Format::Png),
             &crate::LensSources::default(),

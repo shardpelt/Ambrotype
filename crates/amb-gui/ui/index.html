@@ -1203,6 +1203,7 @@
         <label class="col-range">Outer border <span><input id="col-margin" type="range" min="0" max="15" step="0.25"><output id="col-margin-out"></output></span></label>
         <label class="col-range">Rounded corners <span><input id="col-radius" type="range" min="0" max="20" step="0.25"><output id="col-radius-out"></output></span></label>
         <p class="hint">Gap, border and corners are % of the short edge, so they look the same at any size.</p>
+        <button type="button" id="col-no-borders" class="small" title="Gap and outer border to 0: the photos meet edge to edge">No borders</button>
         <button type="button" id="col-free">Arrange freely</button>
 
         <h3>Cell</h3>
@@ -1261,6 +1262,7 @@
             <option value="5">★★★★★</option>
           </select>
         </label>
+        <label id="col-batch-groups-row" hidden><input id="col-batch-groups" type="checkbox"> One page per group</label>
         <p id="col-batch-note" class="hint"></p>
         <button type="button" id="col-batch" title="Choose a folder; pages are named after the layout">Export pages…</button>
       </aside>
@@ -1270,6 +1272,7 @@
         <strong>Photos</strong>
         <span id="col-tray-count" class="hint"></span>
         <span class="grow"></span>
+        <button type="button" id="col-group" class="small" title="Put alike photos and bursts together, best first; each group gets a 2 × 2 button">Group alike</button>
         <button type="button" id="col-fill" class="small" title="Put tray photos into the empty cells, in order">Fill empty cells</button>
         <button type="button" id="col-add" class="small">Add photos…</button>
         <button type="button" id="col-add-folder" class="small">Add folder…</button>

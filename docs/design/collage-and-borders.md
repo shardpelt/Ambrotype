@@ -107,6 +107,7 @@ How it works:
 - **Placement:** portrait and landscape photos go to cells of the matching orientation when the template has both; a face- or subject-aware default crop comes later, with masks.
 - **Preview:** a page grid shows the result, where you can swap photos between pages before exporting.
 - **Background job:** export runs as a background job with progress, and resumes if interrupted.
+- **By groups (built 2026-10-23):** **Group alike** in the tray puts alike photos and bursts together, best first (the library's Duplicates finder, looser: up to 10 of 64 fingerprint bits may differ, bursts within 2 s; exact copies count once). Each group's **2 × 2** button lays its best four into the square 2 × 2 grid on a square canvas, where you drag in each square to line its photo up and scroll to zoom. **One page per group** in the batch makes a page from each group's best photos (`amb_export::collage::group_pages`); groups smaller than the layout are left out.
 - The same batch idea applies to borders: "apply this border preset to every photo in the folder at Instagram portrait size".
 
 ## Open questions

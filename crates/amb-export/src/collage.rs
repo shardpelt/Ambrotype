@@ -537,6 +537,29 @@ pub fn pages(template: &Template, aspects: &[f64]) -> Vec<Vec<Option<usize>>> {
     out
 }
 
+/// Pages for a batch by groups (alike photos, bursts; each best first): one
+/// page per group of at least as many photos as cells, with its first ones,
+/// matched to cell shapes as [`pages`] does. Smaller groups are left out.
+pub fn group_pages(
+    template: &Template,
+    aspects: &[f64],
+    groups: &[Vec<usize>],
+) -> Vec<Vec<Option<usize>>> {
+    let n = template.cells.len().max(1);
+    groups
+        .iter()
+        .filter(|g| g.len() >= n && g.iter().all(|&i| i < aspects.len()))
+        .map(|g| {
+            let take = &g[..n];
+            let shapes: Vec<f64> = take.iter().map(|&i| aspects[i]).collect();
+            pages(template, &shapes)[0]
+                .iter()
+                .map(|s| s.map(|k| take[k]))
+                .collect()
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -631,6 +654,14 @@ mod tests {
         assert_eq!(p.len(), 2);
         assert_eq!(p[0], vec![Some(1), Some(0)]);
         assert_eq!(p[1], vec![Some(2), None]);
+
+        // By groups: one page each, its first photos; too small a group is left out.
+        let g = group_pages(
+            &t,
+            &[1.5, 1.5, 0.67, 1.5, 1.5],
+            &[vec![2, 3, 4], vec![0], vec![1, 0]],
+        );
+        assert_eq!(g, vec![vec![Some(3), Some(2)], vec![Some(0), Some(1)]]);
     }
     #[test]
     fn free_cells_turn_overlap_and_round_trip() {

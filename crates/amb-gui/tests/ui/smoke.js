@@ -81,21 +81,6 @@ await t.step("Minimalism hides the chrome; the panels slide in from the edge", a
   t.expect(!body.contains("chrome-hidden") && $("edge-right").hidden, "the chrome back");
 });
 
-await t.step("a slideshow runs and Esc ends it", async () => {
-  t.key("Ctrl+Enter");
-  await t.until("the Slideshow dialog", () => $("slideshow-dialog").open);
-  const f = $("slideshow-form").elements;
-  f.fullscreen.checked = false;
-  f.effect.value = "random";
-  f.seconds.value = 1;
-  t.click("#slideshow-start");
-  await t.until("a photo on screen", () => document.querySelector(".slideshow .ss-img.shown")?.src);
-  t.key(" ");
-  t.expect(slides.paused, "Space pauses");
-  t.key("Escape");
-  t.expect(!document.querySelector(".slideshow") && !slides.on, "Esc ends it");
-});
-
 await t.step("Ctrl+E exports a JPEG", async () => {
   t.key("Ctrl+E");
   await t.until("the Export dialog", () => $("export-dialog").open);

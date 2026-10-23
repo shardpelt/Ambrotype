@@ -20,8 +20,8 @@ const MENU_BAR = [
     ["Flag", ["flag-pick", "flag-reject", "flag-none"]],
     "keywords", "|", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
   ]],
-  ["Library", ["library", "|", "lib-loupe", "lib-compare", "lib-survey", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
-  ["View", ["before", "zoom", "loupe", "proof", "clipping", "frame", "|", "slideshow", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
+  ["Library", ["library", "|", "lib-loupe", "lib-compare", "lib-survey", "|", "slideshow", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
+  ["View", ["before", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
   ["Window", ["#minimize", "#maximize", "|", ["Task", ["task-library", "task-develop", "task-color", "task-retouch", "task-film", "task-collage"]], "|", "looks", "edit-layout", "|", "hub", "|", "#bring_all_to_front"], "window"],
   ["Help", ["search", "|", "connect-ai", "|", "learn", "basics", "sample", "watch", "shortcuts", "|", "feedback", "source"], "help"],
 ];

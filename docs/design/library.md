@@ -93,9 +93,9 @@ From the command line (2026-10-23): `amb move`, `amb rename`, `amb sort` and `am
 
 ## Slideshow
 
-Ctrl+Enter, the toolbar's Slideshow or ▶ Slideshow in the library bar. It shows the photos in the grid (or the selected ones, if more than one), or in the editor the folder's photos starting at the open one. Each photo is its large thumbnail with its edit (the open one with its edit as it is now). Settings, kept on this computer: seconds per photo, shuffle, full screen, and the change (straight cut, fade, slide, slow zoom, through black, or a random one of those each time). Space pauses, ← → step, Esc or a click ends it; moving the mouse shows a small bar with the same buttons.
+In the library only: Ctrl+Enter, ▶ Slideshow in the library bar, or Library → Slideshow. It shows the photos in the grid (or the selected ones, if more than one), each as its large thumbnail with its edit. Settings, kept on this computer: seconds per photo, shuffle, full screen, and the change (straight cut, fade, slide, slow zoom, through black, or a random one of those each time). Space pauses, ← → step, Esc or a click ends it; moving the mouse shows a small bar with the same buttons.
 
-From a terminal, `amb slideshow PHOTO|DIR... [--seconds N] [--shuffle] [--effect E] [--window]` opens the editor straight into one (`ambrotype --slideshow …`, `crates/amb-gui/src/slideshow.rs`); when it ends, the editor opens the photo shown last. It finds the editor next to `amb`, or through `AMB_EDITOR`.
+From a terminal, `amb slideshow PHOTO|DIR... [--seconds N] [--shuffle] [--effect E] [--window]` opens the editor straight into one (`ambrotype --slideshow …`, `crates/amb-gui/src/slideshow.rs`); when it ends, the library shows that folder. It finds the editor next to `amb`, or through `AMB_EDITOR`.
 
 ## Duplicates and bursts
 

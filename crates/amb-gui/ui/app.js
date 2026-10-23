@@ -1072,7 +1072,7 @@ async function init() {
   const show = await invoke("take_slideshow");
   if (show?.photos.length) {
     const { photos, ...settings } = show;
-    startSlideshow(photos, settings, { remember: false, done: (p) => openAny(p.path) });
+    startSlideshow(photos, settings, { remember: false, done: (p) => openFolder(dirOf(p.path)) });
   }
   // `ambrotype --ui-test SCRIPT` (uitest.js).
   const test = await invoke("ui_test");

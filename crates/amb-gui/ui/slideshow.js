@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Slideshow (Ctrl+Enter, the toolbar's ▶ or the library's Slideshow): the
-// photos shown in the library (or the selected ones), or in the editor the
-// folder's photos from the open one on, each with its edit, full screen on
-// black. Settings: seconds per photo, in order or shuffled, full screen or
+// Slideshow, in the library (Ctrl+Enter or ▶ Slideshow in its bar; `amb
+// slideshow` from a terminal): the photos shown (or the selected ones),
+// each with its edit, full screen on black. Settings: seconds per photo, in order or shuffled, full screen or
 // in the window, and a change effect (none, fade, slide, slow zoom, through
 // black, or a random one each time). Kept on this computer.
 //
@@ -22,30 +21,22 @@ function slideshowSettings() {
   }
 }
 
-// The photos a slideshow shows, from where you are.
+// The library's selected photos (two or more), else all it shows.
 function slideshowPhotos() {
-  if (lib.on) {
-    const sel = selectedPhotos();
-    return sel.length > 1 ? sel : lib.shown;
-  }
-  if (!ui.info) return [];
-  // The open photo shows its edit as it is now, saved or not.
-  const all = (strip.photos.length ? strip.photos : [{ path: ui.info.path }])
-    .map((p) => (p.path === ui.info.path ? { ...p, edited: true } : p));
-  const i = Math.max(0, all.findIndex((p) => p.path === ui.info.path));
-  return [...all.slice(i), ...all.slice(0, i)];
+  const sel = selectedPhotos();
+  return sel.length > 1 ? sel : lib.shown;
 }
 
 function slideshowFlow() {
   const photos = slideshowPhotos();
-  if (!photos.length) return toast("Open a photo or a folder first.", true);
+  if (!photos.length) return toast("No photos shown in the library.", true);
   const s = slideshowSettings();
   const f = $("slideshow-form");
   f.elements.seconds.value = s.seconds;
   f.elements.shuffle.checked = s.shuffle;
   f.elements.fullscreen.checked = s.fullscreen;
   f.elements.effect.value = s.effect;
-  $("slideshow-count").textContent = `${photos.length} photo${photos.length === 1 ? "" : "s"}${lib.on && selectedPhotos().length > 1 ? " selected" : ""}`;
+  $("slideshow-count").textContent = `${photos.length} photo${photos.length === 1 ? "" : "s"}${selectedPhotos().length > 1 ? " selected" : ""}`;
   $("slideshow-dialog").showModal();
   return true;
 }
@@ -191,7 +182,6 @@ function wireSlideshow() {
   });
   $("slideshow-cancel").addEventListener("click", () => $("slideshow-dialog").close());
   $("lib-slideshow").addEventListener("click", slideshowFlow);
-  $("btn-slideshow").addEventListener("click", slideshowFlow);
   // Its own keys while it runs; nothing else hears them.
   window.addEventListener("keydown", (e) => {
     if (!slides.on) return;

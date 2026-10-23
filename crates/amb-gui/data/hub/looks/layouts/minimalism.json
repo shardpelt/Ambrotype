@@ -7,7 +7,7 @@
   "chrome": "hidden",
   "filmstrip": false,
   "theme": "builtin:minimalism",
-  "toolbar": ["open", "slideshow", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "zoom", "|", "looks", "settings"],
+  "toolbar": ["open", "library", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "zoom", "|", "looks", "settings"],
   "left": { "width": 240, "items": ["presets", "history"] },
   "right": {
     "width": 300,

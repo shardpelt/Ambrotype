@@ -65,6 +65,17 @@ await t.step("a preset's notes for scripts become one short line", async () => {
   t.expect(said === "23 of its settings aren't supported yet (kept in the file for Lightroom)", said);
 });
 
+await t.step("a click near the photo's corner zooms in without showing past its edge", async () => {
+  setZoom(true, 0.001, 0.999);
+  await t.until("the 100% view", () => ui.zoom.meta, 60000);
+  const img = $("preview").getBoundingClientRect();
+  const view = $("viewer").getBoundingClientRect();
+  t.expect(img.left <= view.left + 1 && img.bottom >= view.bottom - 1, `no void: photo ${Math.round(img.left)},${Math.round(img.bottom)} viewer ${Math.round(view.left)},${Math.round(view.bottom)}`);
+  t.expect(ui.zoom.cx > 0.001 && ui.zoom.cy < 0.999, "the centre moved in from the corner");
+  setZoom(false);
+  await t.until("the whole photo", () => !$("viewer").classList.contains("actual"));
+});
+
 await t.step("Minimalism hides the chrome; the panels slide in from the edge", async () => {
   const before = { layout: ui.looks.active_layout, theme: ui.looks.active_theme };
   Object.assign(ui.looks, { active_layout: "builtin:minimalism", active_theme: "builtin:minimalism" });
@@ -76,6 +87,11 @@ await t.step("Minimalism hides the chrome; the panels slide in from the edge", a
   t.expect(body.contains("peek-right"), "Ctrl+] slides the right column in");
   t.key("Ctrl+]");
   t.expect(!body.contains("peek-right"), "and out");
+  // The pointer leaving it hides it again, even with a panel open.
+  peekColumn("right", true);
+  t.expect($("col-right").querySelector("details[open]"), "an open panel");
+  $("col-right").dispatchEvent(new MouseEvent("mouseleave"));
+  await t.until("the column hides after the pointer leaves", () => !body.contains("peek-right"), 3000);
   Object.assign(ui.looks, { active_layout: before.layout, active_theme: before.theme });
   applyActiveLooks();
   t.expect(!body.contains("chrome-hidden") && $("edge-right").hidden, "the chrome back");

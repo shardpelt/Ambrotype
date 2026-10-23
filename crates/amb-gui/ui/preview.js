@@ -129,9 +129,15 @@ async function renderRegion() {
     return;
   }
   ui.zoom.meta = meta;
+  // Now the real full size is known (a crop changes it): if that moves the
+  // centre much, render again around the new one.
+  const [u, v] = clampZoomCentre(ui.zoom.cx, ui.zoom.cy, meta);
+  const moved = Math.abs(u - ui.zoom.cx) * meta.full_width > meta.width / 6 || Math.abs(v - ui.zoom.cy) * meta.full_height > meta.height / 6;
+  [ui.zoom.cx, ui.zoom.cy] = [u, v];
   showJpeg(jpeg);
   $("viewer").classList.add("actual");
   placeRegion();
+  if (moved) requestPreview(false);
   status(`${zoomLabel()}: ${meta.full_width}×${meta.full_height} in ${meta.millis} ms`);
 }
 
@@ -175,7 +181,20 @@ function regionSize() {
   return [v.clientWidth, v.clientHeight].map((n) => Math.min(4096, Math.round((n * dpr * 1.5) / s)));
 }
 
-// Position the crop so (cx, cy) sits in the viewport centre.
+// The view's centre (fractions of the photo) kept where the view stays on
+// the photo: near an edge it stops at the edge, and a side smaller than the
+// viewer stays centred. `m` gives the full size (else the photo's own).
+function clampZoomCentre(u, v, m = ui.zoom.meta) {
+  const view = $("viewer");
+  const k = zoomScale(m) / (window.devicePixelRatio || 1);
+  const fw = m?.full_width ?? ui.info?.width ?? 1;
+  const fh = m?.full_height ?? ui.info?.height ?? 1;
+  const clamp = (c, half) => (half >= 0.5 ? 0.5 : Math.min(1 - half, Math.max(half, c)));
+  return [clamp(u, view.clientWidth / 2 / k / fw), clamp(v, view.clientHeight / 2 / k / fh)];
+}
+
+// Position the crop so (cx, cy) sits in the viewport centre, moved by
+// (dx, dy) screen pixels while dragging, never past the photo's edges.
 function placeRegion(dx = pan.dx, dy = pan.dy) {
   const m = ui.zoom.meta;
   if (!m) return;
@@ -185,10 +204,9 @@ function placeRegion(dx = pan.dx, dy = pan.dy) {
   const img = $("preview");
   img.style.width = `${m.width * k}px`;
   img.style.height = `${m.height * k}px`;
-  const centreX = (ui.zoom.cx * m.full_width - m.x) * k;
-  const centreY = (ui.zoom.cy * m.full_height - m.y) * k;
-  img.style.left = `${v.clientWidth / 2 - centreX + dx}px`;
-  img.style.top = `${v.clientHeight / 2 - centreY + dy}px`;
+  const [u, w] = clampZoomCentre(ui.zoom.cx - dx / k / m.full_width, ui.zoom.cy - dy / k / m.full_height, m);
+  img.style.left = `${v.clientWidth / 2 - (u * m.full_width - m.x) * k}px`;
+  img.style.top = `${v.clientHeight / 2 - (w * m.full_height - m.y) * k}px`;
 }
 
 // `box` (fractions of the photo's width and height) zooms to fit that area;
@@ -196,9 +214,8 @@ function placeRegion(dx = pan.dx, dy = pan.dy) {
 function setZoom(on, u = 0.5, v = 0.5, box = null) {
   ui.zoom.on = on;
   ui.zoom.box = on ? box : null;
-  ui.zoom.cx = u;
-  ui.zoom.cy = v;
   ui.zoom.meta = null;
+  [ui.zoom.cx, ui.zoom.cy] = on ? clampZoomCentre(u, v, null) : [u, v];
   const img = $("preview");
   // The "actual" layout is applied once the 1:1 crop arrives (renderRegion).
   if (!on) $("viewer").classList.remove("actual");
@@ -222,8 +239,7 @@ function panPixels(dx, dy) {
     const dpr = window.devicePixelRatio || 1;
     const meta = ui.zoom.meta;
     const k = zoomScale(meta);
-    ui.zoom.cx = Math.min(1, Math.max(0, ui.zoom.cx - (pan.dx * dpr) / k / meta.full_width));
-    ui.zoom.cy = Math.min(1, Math.max(0, ui.zoom.cy - (pan.dy * dpr) / k / meta.full_height));
+    [ui.zoom.cx, ui.zoom.cy] = clampZoomCentre(ui.zoom.cx - (pan.dx * dpr) / k / meta.full_width, ui.zoom.cy - (pan.dy * dpr) / k / meta.full_height, meta);
     pan.dx = pan.dy = 0;
     requestPreview(false);
   }, 180);
@@ -337,8 +353,7 @@ function wireViewer() {
       const dpr = window.devicePixelRatio || 1;
       const m = ui.zoom.meta;
       const k = zoomScale(m);
-      ui.zoom.cx = Math.min(1, Math.max(0, ui.zoom.cx - ((e.clientX - d.x) * dpr) / k / m.full_width));
-      ui.zoom.cy = Math.min(1, Math.max(0, ui.zoom.cy - ((e.clientY - d.y) * dpr) / k / m.full_height));
+      [ui.zoom.cx, ui.zoom.cy] = clampZoomCentre(ui.zoom.cx - ((e.clientX - d.x) * dpr) / k / m.full_width, ui.zoom.cy - ((e.clientY - d.y) * dpr) / k / m.full_height, m);
       requestPreview(false);
       return;
     }

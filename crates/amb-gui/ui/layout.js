@@ -258,9 +258,10 @@ function wireChrome() {
     col.addEventListener("mouseenter", () => clearTimeout(peekTimers[side]));
     col.addEventListener("mouseleave", () => {
       if (!chromeHidden()) return;
-      // Not while a slider is held or one of its menus is open.
+      // Not while a slider is held (dragging past the edge), or once the
+      // pointer is back. (Panels are <details> too, so open ones don't count.)
       const later = () => {
-        if (ui.active || col.querySelector("details[open]") || col.contains(document.activeElement?.closest("select"))) {
+        if (ui.active || col.matches(":hover")) {
           peekTimers[side] = setTimeout(later, 400);
         } else {
           document.body.classList.remove(`peek-${side}`);

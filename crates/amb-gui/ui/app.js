@@ -1068,6 +1068,12 @@ async function init() {
   // A photo given on the command line.
   const initial = await invoke("take_initial_path");
   if (initial) openAny(initial);
+  // `amb slideshow` (slideshow.rs).
+  const show = await invoke("take_slideshow");
+  if (show?.photos.length) {
+    const { photos, ...settings } = show;
+    startSlideshow(photos, settings, { remember: false, done: (p) => openAny(p.path) });
+  }
   // `ambrotype --ui-test SCRIPT` (uitest.js).
   const test = await invoke("ui_test");
   if (test) runUiTest(test);

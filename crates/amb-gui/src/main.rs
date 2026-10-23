@@ -22,6 +22,7 @@ mod plugins;
 mod schema;
 mod session;
 mod sizes;
+mod slideshow;
 mod uitest;
 
 use std::collections::BTreeMap;
@@ -374,6 +375,10 @@ fn main() {
         }
         rest.drain(i..i + 2);
     }
+    // `ambrotype --slideshow ... PHOTO|DIR...` (slideshow.rs).
+    if let Some(show) = slideshow::take(&mut rest) {
+        *slideshow::PENDING.lock().expect("fresh mutex") = Some(show);
+    }
     let state = AppState::default();
     *state.preset_dirs.lock().expect("fresh mutex") = session::default_preset_dirs();
     // Lens profile sources can take a moment (thousands of files): load them in
@@ -531,6 +536,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::photo::take_initial_path,
+            slideshow::take_slideshow,
             uitest::ui_test,
             uitest::ui_test_done,
             commands::menu::set_menu,

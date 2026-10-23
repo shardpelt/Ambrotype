@@ -180,6 +180,11 @@ USAGE:
                                             sidecar, JPEG twin and virtual copies; nothing is overwritten
                                             (-2, -3, ...); the catalogue and collections follow
     amb trash <PHOTO|DIR>... [--dry-run]    Photos with all their files to the system's trash
+    amb slideshow <PHOTO|DIR>... [--seconds 1-600] [--shuffle] [--window]
+                  [--effect none|fade|slide|zoom|black|random]
+                                            Opens the editor straight into a slideshow of the photos, each
+                                            with its edit: 4 s each, a fade, full screen unless --window;
+                                            random picks a change each time. Space pauses, Esc ends
     amb keywords [list] [--json] | rename <K>... --to <NEW> | remove <K>... [--dry-run]
                                             Every keyword in the catalogue with its count; rename, merge
                                             or remove keywords in every photo's sidecar
@@ -284,7 +289,7 @@ fn main() -> ExitCode {
             "--progressive" | "--enlarge" | "--slides" | "--force" | "--no-subfolders"
             | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb"
             | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert"
-            | "--replace" | "--stack" | "--reject" => {
+            | "--replace" | "--stack" | "--reject" | "--shuffle" | "--window" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -377,7 +382,9 @@ fn main() -> ExitCode {
             | "--offset"
             | "--alike"
             | "--burst"
-            | "--by" => match iter.next() {
+            | "--by"
+            | "--seconds"
+            | "--effect" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -441,6 +448,9 @@ fn main() -> ExitCode {
             organise::relocate(kind, photos, &options, dry_run, json)
         }
         ["trash", photos @ ..] if !photos.is_empty() => organise::trash(photos, &options, dry_run),
+        ["slideshow", photos @ ..] if !photos.is_empty() => {
+            organise::slideshow(photos, &options, dry_run)
+        }
         ["keywords", rest @ ..] => organise::keywords(rest, &options, dry_run, json),
         ["collection", rest @ ..] => organise::collection(rest, &options, json),
         ["merge", "hdr", raws @ ..] if raws.len() >= 2 => merge_hdr(raws, &options, json),

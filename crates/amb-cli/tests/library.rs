@@ -211,3 +211,33 @@ fn keywords_collections_and_missing_photos() {
         "{shown}"
     );
 }
+
+#[test]
+fn slideshow_starts_the_editor_with_its_options() {
+    let lib = Lib::new("slideshow");
+    let cmd = lib.amb(&[
+        "slideshow",
+        "p",
+        "--seconds",
+        "7",
+        "--effect",
+        "random",
+        "--shuffle",
+        "--dry-run",
+    ]);
+    assert!(
+        cmd.contains("--slideshow --seconds 7 --effect random --shuffle"),
+        "{cmd}"
+    );
+    assert!(
+        cmd.trim_end().ends_with("p"),
+        "the folder, as a folder: {cmd}"
+    );
+    let bad = Command::new(env!("CARGO_BIN_EXE_amb"))
+        .args(["slideshow", "p", "--effect", "wipe", "--dry-run"])
+        .current_dir(&lib.dir)
+        .output()
+        .unwrap();
+    assert!(!bad.status.success());
+    assert!(String::from_utf8_lossy(&bad.stderr).contains("one of none, fade"));
+}

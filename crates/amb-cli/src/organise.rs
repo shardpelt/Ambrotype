@@ -634,3 +634,80 @@ pub(crate) fn collection(args: &[&str], options: &Options, json: bool) -> Result
         _ => Err("collection [list] | show <NAME> | add <NAME> <PHOTO>... | remove <NAME> <PHOTO>... | delete <NAME>".into()),
     }
 }
+
+/// The change effects a slideshow knows (the editor's `ui/slideshow.js`).
+pub(crate) const SLIDE_EFFECTS: [&str; 6] = ["none", "fade", "slide", "zoom", "black", "random"];
+
+/// `amb slideshow`: opens the editor straight into a slideshow of the photos
+/// (folders as the photos in them), with the slideshow dialog's options.
+pub(crate) fn slideshow(args: &[&str], options: &Options, dry_run: bool) -> Result<(), String> {
+    let photos = photos(args)?;
+    if photos.is_empty() {
+        return Err("no photos to show".into());
+    }
+    let seconds = options.get("--seconds").copied().unwrap_or("4");
+    if !seconds.parse::<u32>().is_ok_and(|s| (1..=600).contains(&s)) {
+        return Err(format!("--seconds {seconds}: a whole number from 1 to 600"));
+    }
+    let effect = options.get("--effect").copied().unwrap_or("fade");
+    if !SLIDE_EFFECTS.contains(&effect) {
+        return Err(format!(
+            "--effect {effect}: one of {}",
+            SLIDE_EFFECTS.join(", ")
+        ));
+    }
+    let mut gui_args = vec![
+        "--slideshow".to_string(),
+        "--seconds".into(),
+        seconds.into(),
+        "--effect".into(),
+        effect.into(),
+    ];
+    for flag in ["--shuffle", "--window"] {
+        if options.contains_key(flag) {
+            gui_args.push(flag.into());
+        }
+    }
+    // Folders stay folders, so the command line stays short.
+    for a in args {
+        let p = std::path::absolute(a).map_err(|e| format!("{a}: {e}"))?;
+        gui_args.push(p.to_string_lossy().into_owned());
+    }
+    let editor = editor_path();
+    if dry_run {
+        println!("{} {}", editor.display(), gui_args.join(" "));
+        eprintln!("Would show {}", photos_n(photos.len()));
+        return Ok(());
+    }
+    std::process::Command::new(&editor)
+        .args(&gui_args)
+        .spawn()
+        .map_err(|e| {
+            format!(
+                "couldn't start the editor ({}): {e}; set AMB_EDITOR to its path",
+                editor.display()
+            )
+        })?;
+    eprintln!("Showing {}", photos_n(photos.len()));
+    Ok(())
+}
+
+/// The editor: AMB_EDITOR, else next to `amb` (where the installers put
+/// both), else `ambrotype` on the PATH.
+fn editor_path() -> PathBuf {
+    if let Some(p) = std::env::var_os("AMB_EDITOR") {
+        return PathBuf::from(p);
+    }
+    if let Some(dir) = std::env::current_exe()
+        .ok()
+        .and_then(|e| e.parent().map(Path::to_path_buf))
+    {
+        for name in ["ambrotype", "Ambrotype"] {
+            let p = dir.join(format!("{name}{}", std::env::consts::EXE_SUFFIX));
+            if p.is_file() {
+                return p;
+            }
+        }
+    }
+    PathBuf::from("ambrotype")
+}

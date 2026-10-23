@@ -50,8 +50,13 @@ function slideshowFlow() {
   return true;
 }
 
-async function startSlideshow(photos, settings) {
-  try { localStorage.setItem("amb.slideshow", JSON.stringify(settings)); } catch { /* not kept */ }
+// `remember`: keep the settings for next time (not for `amb slideshow`'s);
+// `done(photo)`: called with the photo shown last when it ends.
+async function startSlideshow(photos, settings, { remember = true, done = null } = {}) {
+  if (remember) {
+    try { localStorage.setItem("amb.slideshow", JSON.stringify(settings)); } catch { /* not kept */ }
+  }
+  slides.done = done;
   slides.settings = settings;
   slides.list = settings.shuffle ? shuffled(photos) : [...photos];
   slides.at = 0;
@@ -169,6 +174,7 @@ async function endSlideshow() {
   clearTimeout(slides.hideBar);
   slides.el.remove();
   slides.el = null;
+  slides.done?.(slides.list[slides.at]);
   if (slides.settings.fullscreen && !slides.wasFullscreen) await invoke("window_fullscreen", { on: false }).catch(() => {});
 }
 

@@ -23,7 +23,9 @@ function renderInfo() {
   const on = Boolean(ui.info);
   block.classList.toggle("disabled", !on);
   const rating = infoState.info.rating ?? 0;
-  for (const b of $("rating").querySelectorAll("button[data-stars]")) {
+  // The panel's stars, and the filmstrip's (the editing layouts leave the
+  // panel out, so the photo's rating is always at hand there).
+  for (const b of document.querySelectorAll("#rating button[data-stars], #strip-rating button[data-stars]")) {
     const n = Number(b.dataset.stars);
     b.classList.toggle("on", n <= rating);
     b.setAttribute("aria-checked", String(n === rating));
@@ -125,7 +127,7 @@ function addTyped() {
 }
 
 function wireInfo() {
-  for (const b of $("rating").querySelectorAll("button[data-stars]")) {
+  for (const b of document.querySelectorAll("#rating button[data-stars], #strip-rating button[data-stars]")) {
     const n = Number(b.dataset.stars);
     // Clicking the current rating again clears it, like Lightroom.
     b.addEventListener("click", () => setRating((infoState.info.rating ?? 0) === n ? 0 : n));

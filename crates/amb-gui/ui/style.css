@@ -1249,3 +1249,10 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 /* Under the 100% view (preview.js placeUnder): never caught by a click. */
 .viewer img.zoom-under { pointer-events: none; cursor: default; }
 .viewer:not(.actual) img.zoom-under { display: none; }
+
+/* The open photo's stars in the filmstrip's bar (info.js). */
+.strip-rating { display: inline-flex; margin-left: 6px; }
+.strip-rating button { padding: 0 2px; border: 0; background: none; color: var(--faint); font-size: 14px; line-height: 1; }
+.strip-rating button.on { color: var(--accent); }
+.strip-rating button:hover:not(:disabled) { color: var(--text); }
+.strip-rating:hover button.on { color: var(--accent); }

@@ -39,6 +39,24 @@ await t.step("Remove place takes it out again", async () => {
   await t.until("the grid", () => cull.view === "grid");
 });
 
+await t.step("Rated photos shows every rated photo, best first", async () => {
+  select(ui.info.path, "only");
+  await libraryChange({ rating: 4 });
+  $("lib-source").value = RATED;
+  $("lib-source").dispatchEvent(new Event("change"));
+  await t.until("all photos", () => lib.smart === ALL_PHOTOS && lib.photos.length > 0, 30000);
+  t.expect($("lib-filter-rating").value === "1" && $("lib-sort").value === "rating", "one star and up, by rating");
+  t.expect(lib.shown.every((p) => (p.rating ?? 0) >= 1), "only rated photos");
+  t.expect($("lib-source").value === RATED, "the list says Rated photos");
+  await showCollection("");
+  $("lib-filter-rating").value = "0";
+  $("lib-sort").value = "name";
+  renderLibrary();
+  await t.until("the folder", () => libPhoto(ui.info.path));
+  select(ui.info.path, "only");
+  await libraryChange({ rating: 0 });
+});
+
 await t.step("the library runs a slideshow; Esc ends it", async () => {
   t.key("Ctrl+Enter");
   await t.until("the Slideshow dialog", () => $("slideshow-dialog").open);

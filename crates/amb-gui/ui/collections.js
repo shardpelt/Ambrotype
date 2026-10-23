@@ -12,6 +12,8 @@ const NEW_SMART = "\u0000smart";
 const SMART = "smart:";
 // Every photo in the catalogue: shown like a smart collection.
 const ALL_PHOTOS = "\u0000all";
+// "Rated photos": All photos with one star or more, highest first.
+const RATED = "\u0000rated";
 
 // Ask for a name in a small dialog; null when cancelled.
 // `allowEmpty`: an empty answer is "" rather than a cancel.
@@ -56,8 +58,9 @@ function renderCollectionControls() {
   });
   const smart = Object.assign(document.createElement("optgroup"), { label: "Smart collections" });
   smart.append(...coll.smart.map((c) => option(SMART + c.name, `⚙ ${c.name}`)), option(NEW_SMART, "New smart collection…"));
-  src.replaceChildren(option("", folder), option(ALL_PHOTOS, "All photos"), ...inSets, smart);
-  src.value = lib.smart === ALL_PHOTOS ? ALL_PHOTOS : lib.smart ? SMART + lib.smart : lib.collection ?? "";
+  src.replaceChildren(option("", folder), option(ALL_PHOTOS, "All photos"), option(RATED, "★ Rated photos, best first"), ...inSets, smart);
+  const rated = lib.smart === ALL_PHOTOS && $("lib-filter-rating").value !== "0" && $("lib-filter-rating").value !== "unrated" && $("lib-sort").value === "rating";
+  src.value = rated ? RATED : lib.smart === ALL_PHOTOS ? ALL_PHOTOS : lib.smart ? SMART + lib.smart : lib.collection ?? "";
   const add = $("lib-add-to");
   add.replaceChildren(...coll.list.map((c) => option(c.name, c.name)), option(NEW_COLLECTION, "New collection…"));
   add.value = coll.target ?? coll.list[0]?.name ?? NEW_COLLECTION;
@@ -76,7 +79,17 @@ async function showCollection(name) {
     renderCollectionControls();
     return editSmartCollection(null);
   }
-  if (name === ALL_PHOTOS) return showSmartCollection(ALL_PHOTOS);
+  if (name === RATED) {
+    // Filter ▾ then narrows it to the stars wanted (★★★ and up, say).
+    if (["0", "unrated"].includes($("lib-filter-rating").value)) $("lib-filter-rating").value = "1";
+    $("lib-sort").value = "rating";
+    $("lib-reverse").checked = false;
+    return showSmartCollection(ALL_PHOTOS);
+  }
+  if (name === ALL_PHOTOS) {
+    if (lib.smart === ALL_PHOTOS) $("lib-filter-rating").value = "0";
+    return showSmartCollection(ALL_PHOTOS);
+  }
   if (name?.startsWith(SMART)) return showSmartCollection(name.slice(SMART.length));
   lib.smart = null;
   if (!name) {

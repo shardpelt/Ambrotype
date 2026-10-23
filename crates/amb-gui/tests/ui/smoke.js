@@ -113,6 +113,15 @@ await t.step("a preset's notes for scripts become one short line", async () => {
   t.expect(notesForPeople(["no change"]) === "No change", "a no-op says so");
 });
 
+await t.step("the filmstrip's stars rate the open photo", async () => {
+  const star = document.querySelector('#strip-rating [data-stars="3"]');
+  t.click(star);
+  await t.until("rated", () => infoState.info.rating === 3, 10000);
+  t.expect(star.classList.contains("on") && !document.querySelector('#strip-rating [data-stars="4"]').classList.contains("on"), "three stars lit");
+  t.click(star);
+  await t.until("cleared", () => !infoState.info.rating, 10000);
+});
+
 await t.step("the whole photo fills the viewer", async () => {
   const img = $("preview").getBoundingClientRect();
   const view = $("viewer").getBoundingClientRect();

@@ -1257,3 +1257,13 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 .strip-rating button:hover:not(:disabled) { color: var(--text); }
 .strip-rating:hover button.on { color: var(--accent); }
 .library-grid.dragging { cursor: grabbing; scroll-behavior: auto; user-select: none; }
+
+/* Clickable stars on filmstrip photos (Settings → General): the missing ones
+   show in grey while the pointer is on the photo; hovering a star lights it
+   and those before it. */
+.film-stars.editable { pointer-events: auto; display: inline-flex; letter-spacing: 0; font-size: 12px; }
+.film-stars.editable span { cursor: pointer; padding: 0 1px; }
+.film-stars.editable span:not(.on) { color: transparent; text-shadow: none; }
+.film-cell:hover .film-stars.editable span:not(.on) { color: rgba(200, 200, 200, .55); text-shadow: 0 0 3px #000; }
+.film-cell .film-stars.editable:hover span { color: rgba(200, 200, 200, .55); text-shadow: 0 0 3px #000; }
+.film-cell:hover .film-stars.editable:hover span:is(:hover, :has(~ span:hover)) { color: var(--accent); }

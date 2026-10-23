@@ -122,6 +122,16 @@ await t.step("the filmstrip's stars rate the open photo", async () => {
   await t.until("cleared", () => !infoState.info.rating, 10000);
 });
 
+await t.step("a filmstrip photo's stars rate it", async () => {
+  const stars = strip.cells.get(ui.info.path).querySelector(".film-stars");
+  t.expect(stars.classList.contains("editable") && stars.children.length === 5, "five stars to click");
+  stars.querySelector('[data-stars="2"]').click();
+  await t.until("rated", () => infoState.info.rating === 2, 10000);
+  t.expect(stars.querySelectorAll(".on").length === 2, "two lit");
+  stars.querySelector('[data-stars="2"]').click();
+  await t.until("cleared", () => !infoState.info.rating, 10000);
+});
+
 await t.step("the whole photo fills the viewer", async () => {
   const img = $("preview").getBoundingClientRect();
   const view = $("viewer").getBoundingClientRect();

@@ -59,6 +59,40 @@ function starText(n) {
   return n ? "★".repeat(n) : "";
 }
 
+// Settings → General: a filmstrip photo's stars can be clicked to rate it
+// (hovering shows the missing ones in grey); on unless turned off.
+function stripStarsClickable() {
+  try { return localStorage.getItem("amb.stripStars") !== "0"; } catch { return true; }
+}
+
+function renderStars(el, rating) {
+  const n = rating ?? 0;
+  el.classList.toggle("editable", stripStarsClickable());
+  if (!stripStarsClickable()) {
+    el.textContent = starText(n);
+    return;
+  }
+  el.replaceChildren(...[1, 2, 3, 4, 5].map((k) => {
+    const s = Object.assign(document.createElement("span"), { textContent: "★", title: `${k} star${k === 1 ? "" : "s"}` });
+    s.dataset.stars = k;
+    s.classList.toggle("on", k <= n);
+    return s;
+  }));
+}
+
+// A star on a filmstrip photo: that rating (the same one again clears it).
+async function rateFromStrip(p, k) {
+  const rating = (p.rating ?? 0) === k ? 0 : k;
+  if (p.path === ui.info?.path) return setRating(rating);
+  try {
+    const [u] = await invoke("library_set_info", { paths: [p.path], change: { rating } });
+    stripUpdate(p.path, { rating: u?.info.rating ?? (rating || null) });
+    status(rating ? `Rated ${p.name} ${"★".repeat(rating)}` : `Rating cleared: ${p.name}`);
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
 function renderStrip() {
   const list = $("filmstrip-list");
   strip.observer?.disconnect();
@@ -84,7 +118,14 @@ function renderStrip() {
     img.draggable = false;
     const meta = document.createElement("span");
     meta.className = "film-meta";
-    const stars = Object.assign(document.createElement("span"), { className: "film-stars", textContent: starText(p.rating) });
+    const stars = Object.assign(document.createElement("span"), { className: "film-stars" });
+    renderStars(stars, p.rating);
+    stars.addEventListener("click", (e) => {
+      const k = Number(e.target.dataset?.stars);
+      if (!k) return;
+      e.stopPropagation();
+      rateFromStrip(p, k);
+    });
     const dot = Object.assign(document.createElement("span"), { className: "film-edited", title: "Has edits", hidden: !p.edited });
     const label = Object.assign(document.createElement("span"), { className: "film-label", hidden: !p.label, title: p.label ? `${p.label} label` : "" });
     if (p.label) label.style.background = LABEL_COLOURS[p.label] ?? "var(--muted)";
@@ -191,7 +232,7 @@ function stripUpdate(path, { rating, label, edited, keywords, flag } = {}) {
   if (!cell) return;
   if (rating !== undefined) {
     p.rating = rating;
-    cell.querySelector(".film-stars").textContent = starText(rating);
+    renderStars(cell.querySelector(".film-stars"), rating);
   }
   if (label !== undefined) {
     p.label = label;
@@ -296,6 +337,15 @@ function dragToScroll(list, axis = "x", when = () => true) {
 }
 
 function wireFilmstrip() {
+  const pref = $("settings-strip-stars");
+  pref.checked = stripStarsClickable();
+  pref.addEventListener("change", () => {
+    try { localStorage.setItem("amb.stripStars", pref.checked ? "1" : "0"); } catch { /* not kept */ }
+    for (const p of strip.photos) {
+      const el = strip.cells.get(p.path)?.querySelector(".film-stars");
+      if (el) renderStars(el, p.rating);
+    }
+  });
   // A vertical wheel scrolls the strip sideways.
   const list = $("filmstrip-list");
   list.addEventListener("wheel", (e) => {

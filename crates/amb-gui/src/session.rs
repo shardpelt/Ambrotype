@@ -254,19 +254,29 @@ impl Session {
         let source = amb_engine::source_path(path);
         let full = raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
         let sidecar = sidecar_path(path);
-        // No sidecar yet: a JPEG or TIFF may carry Lightroom's edits inside.
-        let text = std::fs::read_to_string(&sidecar).ok().or_else(|| {
-            full.rendered
+        // An empty sidecar file counts as none.
+        let own = std::fs::read_to_string(&sidecar)
+            .ok()
+            .filter(|t| !t.trim().is_empty());
+        let (state, base_xmp) = match own {
+            Some(text) => {
+                let state = DevelopState::from_xmp_str(&text).map_err(|e| {
+                    format!(
+                        "{} (next to the photo) isn't an XMP file Ambrotype can read: {e}. Move or rename it to open the photo without it.",
+                        sidecar.display()
+                    )
+                })?;
+                (state, Some(text))
+            }
+            // No sidecar yet: a JPEG or TIFF may carry Lightroom's edits
+            // inside; metadata there that isn't readable is left alone.
+            None => full
+                .rendered
                 .then(|| std::fs::read(path).ok())
                 .flatten()
                 .and_then(|b| amb_presets::find_embedded_xmp(&b).map(str::to_string))
-        });
-        let (state, base_xmp) = match text {
-            Some(text) => (
-                DevelopState::from_xmp_str(&text).map_err(|e| e.to_string())?,
-                Some(text),
-            ),
-            None => (DevelopState::new(), None),
+                .and_then(|text| Some((DevelopState::from_xmp_str(&text).ok()?, Some(text))))
+                .unwrap_or_else(|| (DevelopState::new(), None)),
         };
         let saved = state.settings().clone();
         let saved_snapshots = state.snapshots().to_vec();

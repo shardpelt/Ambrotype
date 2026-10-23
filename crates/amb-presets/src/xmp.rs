@@ -224,6 +224,13 @@ fn property_value(node: &Node) -> Value {
     Value::Text(node.text.clone())
 }
 
+/// An `x:xmpmeta` or `rdf:RDF` element anywhere in the tree.
+fn is_packet(node: &Node) -> bool {
+    node.children
+        .iter()
+        .any(|c| c.is(RDF_NS, "RDF") || c.is("adobe:ns:meta/", "xmpmeta") || is_packet(c))
+}
+
 fn collect_descriptions<'a>(node: &'a Node, out: &mut Vec<&'a Node>) {
     for child in &node.children {
         if child.is(RDF_NS, "Description") {
@@ -242,7 +249,13 @@ pub fn parse_crs(input: &str) -> Result<BTreeMap<String, Value>, Error> {
     let mut descriptions = Vec::new();
     collect_descriptions(&root, &mut descriptions);
     if descriptions.is_empty() {
-        return Err(Error::NotXmp);
+        // An empty packet (`<x:xmpmeta><rdf:RDF/></x:xmpmeta>`, as phones and
+        // some apps write) is XMP with nothing in it: no settings.
+        return if is_packet(&root) {
+            Ok(BTreeMap::new())
+        } else {
+            Err(Error::NotXmp)
+        };
     }
     let mut settings = BTreeMap::new();
     for desc in descriptions {
@@ -328,5 +341,15 @@ mod tests {
             parse_crs("<html><body/></html>"),
             Err(Error::NotXmp)
         ));
+    }
+
+    #[test]
+    fn an_empty_packet_has_no_settings() {
+        let empty = r#"<?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"></rdf:RDF></x:xmpmeta>
+<?xpacket end="w"?>"#;
+        assert!(parse_crs(empty).unwrap().is_empty());
+        let bare = r#"<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"/>"#;
+        assert!(parse_crs(bare).unwrap().is_empty());
     }
 }

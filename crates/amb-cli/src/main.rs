@@ -12,6 +12,7 @@ mod look;
 mod mcp;
 mod models;
 mod negative;
+mod organise;
 mod plugin;
 mod presets;
 mod render;
@@ -151,6 +152,40 @@ USAGE:
     amb catalog index                       Bring every library folder up to date; an unplugged drive's
                                             photos stay listed, offline. --folders FILE: another list
     amb catalog folders [--json]            Each catalogued folder with its photo count
+    amb catalog missing [--json]            Photos whose files are gone from a folder that can be reached
+                                            (moved or deleted outside Ambrotype)
+    amb catalog relink <DIR>                Find them in DIR and its subfolders by name and size; the
+                                            catalogue and collections follow them there
+    amb info <PHOTO|DIR>... [--json]        What each photo's sidecar says: rating, label, flag,
+                                            keywords, title, caption, creator, copyright, place, stack
+    amb tag <PHOTO|DIR>... [--rating 0-5] [--label Red|...|none] [--flag pick|reject|none]
+            [--add \"a, b\"] [--remove \"c\"] [--title T] [--caption C] [--creator C]
+            [--copyright C] [--place LAT,LON|none] [--dry-run] [--json]
+                                            One change to many photos at once, in their sidecars, as the
+                                            library does it (a place as Lightroom's map writes it)
+    amb place <PHOTO|DIR>... --gpx TRACK.gpx [--offset HOURS] [--replace] [--dry-run] [--json]
+                                            Where photos were taken, from a GPS track: --offset is how
+                                            many hours the camera's clock was ahead of UTC; photos with a
+                                            place (or the camera's GPS) keep it unless --replace
+    amb duplicates <PHOTO|DIR>... [--alike 0-20] [--burst SECONDS] [--stack] [--reject] [--json]
+                                            Same files, alike pictures (--alike bits of 64 may differ,
+                                            default 6; 0: same files only) and bursts (default 2 s),
+                                            best first; --stack stacks each group with the best on top,
+                                            --reject picks the best and rejects the rest
+    amb move <PHOTO|DIR>... --to DIR [--dry-run] [--json]
+    amb rename <PHOTO|DIR>... --name TEMPLATE [--dry-run] [--json]
+    amb sort <PHOTO|DIR>... --into DIR [--by \"{yyyy}/{yyyy}-{mm}-{dd}\"] [--dry-run] [--json]
+                                            Move, rename (Import's tokens: {name} {yyyy} {mm} {dd} {seq}
+                                            {camera} ...) or sort into dated folders, each photo with its
+                                            sidecar, JPEG twin and virtual copies; nothing is overwritten
+                                            (-2, -3, ...); the catalogue and collections follow
+    amb trash <PHOTO|DIR>... [--dry-run]    Photos with all their files to the system's trash
+    amb keywords [list] [--json] | rename <K>... --to <NEW> | remove <K>... [--dry-run]
+                                            Every keyword in the catalogue with its count; rename, merge
+                                            or remove keywords in every photo's sidecar
+    amb collection [list] | show <NAME> | add <NAME> <PHOTO>... | remove <NAME> <PHOTO>...
+                   | delete <NAME> [--collections DIR] [--json]
+                                            The editor's collections (photos from any folders)
     amb lrcat import <CATALOG.lrcat> [--apply] [--remap OLD=NEW] [--collections DIR] [--json]
                                             Move from Lightroom Classic: each photo's develop settings,
                                             rating, label, flag, keywords, stack, title and caption go into
@@ -248,7 +283,8 @@ fn main() -> ExitCode {
             "--brief" => brief = true,
             "--progressive" | "--enlarge" | "--slides" | "--force" | "--no-subfolders"
             | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb"
-            | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert" => {
+            | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert"
+            | "--replace" | "--stack" | "--reject" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -327,7 +363,21 @@ fn main() -> ExitCode {
             | "--mean"
             | "--std"
             | "--licence"
-            | "--source" => match iter.next() {
+            | "--source"
+            | "--label"
+            | "--flag"
+            | "--add"
+            | "--remove"
+            | "--title"
+            | "--caption"
+            | "--creator"
+            | "--copyright"
+            | "--place"
+            | "--gpx"
+            | "--offset"
+            | "--alike"
+            | "--burst"
+            | "--by" => match iter.next() {
                 Some(value) => {
                     options.insert(arg.as_str(), value.as_str());
                 }
@@ -374,7 +424,25 @@ fn main() -> ExitCode {
             None => Err("collage needs --out <FILE>".into()),
         },
         ["lrcat", "import", catalog] => lrcat_import(Path::new(catalog), &options, json),
+        ["catalog", "missing"] => organise::missing(None, &options, json),
+        ["catalog", "relink", dir] => organise::missing(Some(dir), &options, json),
         ["catalog", rest @ ..] => catalog(rest, &options, json),
+        ["info", photos @ ..] if !photos.is_empty() => organise::info(photos, json),
+        ["tag", photos @ ..] if !photos.is_empty() => {
+            organise::tag(photos, &options, dry_run, json)
+        }
+        ["place", photos @ ..] if !photos.is_empty() => {
+            organise::place(photos, &options, dry_run, json)
+        }
+        ["duplicates", photos @ ..] if !photos.is_empty() => {
+            organise::duplicates(photos, &options, json)
+        }
+        [kind @ ("move" | "rename" | "sort"), photos @ ..] if !photos.is_empty() => {
+            organise::relocate(kind, photos, &options, dry_run, json)
+        }
+        ["trash", photos @ ..] if !photos.is_empty() => organise::trash(photos, &options, dry_run),
+        ["keywords", rest @ ..] => organise::keywords(rest, &options, dry_run, json),
+        ["collection", rest @ ..] => organise::collection(rest, &options, json),
         ["merge", "hdr", raws @ ..] if raws.len() >= 2 => merge_hdr(raws, &options, json),
         ["merge", "pano", raws @ ..] if raws.len() >= 2 => merge_pano(raws, &options, json),
         ["import", source, dest] => {

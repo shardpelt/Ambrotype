@@ -260,6 +260,16 @@ A heal copies from the source and matches the surroundings; a clone copies as is
 
 `amb import SOURCE DEST` copies photos from a card or folder into dated folders (`--into "{yyyy}/{yyyy}-{mm}-{dd}"`, the default), optionally renamed (`--rename "{yyyy}{mm}{dd}_{seq}"`), with `--keywords "a, b"` for all. A raw's JPEG and sidecar move with it; photos already there are skipped. Run it with `--dry-run` first and show the user the plan; `--json` gives the plan or the report as JSON.
 
+## Organising photos
+
+The library's work, without the editor (each takes photos or folders; `--json` for machine output; `amb --help` lists every option):
+
+- `amb info PHOTOS` reads ratings, labels, flags, keywords, title, caption, creator, copyright, place and stack. `amb tag PHOTOS --rating 4 --add "beach, sun" --label Red --flag pick --place 52.37,4.89` changes many photos at once (`--remove`, `--title`, `--caption`, `--creator`, `--copyright`; `none` clears a label, flag or place).
+- `amb place PHOTOS --gpx TRACK.gpx --offset 2` places photos from a GPS track (the camera clock 2 hours ahead of UTC).
+- `amb duplicates PHOTOS` lists same files, alike pictures and bursts, best first; `--stack` or `--reject` acts on them.
+- `amb move PHOTOS --to DIR`, `amb rename PHOTOS --name "trip_{seq}"`, `amb sort PHOTOS --into DIR --by "{yyyy}/{mm}"` and `amb trash PHOTOS` move each photo with its sidecar, JPEG twin and virtual copies. Run them with `--dry-run` first and show the user the plan.
+- `amb keywords` lists the catalogue's keywords; `amb keywords rename OLD --to NEW` and `amb keywords remove K` change them everywhere. `amb collection add NAME PHOTOS` and `amb catalog missing` / `relink DIR` do the rest.
+
 ## Intent to settings cheat sheet
 
 These are **starting points**. Apply them with `--dry-run`, render, look, and adjust. Use smaller values for subtle requests and larger ones for "much more". Values are Camera Raw slider units; check ranges in the [reference](settings-reference.md). Settings marked *(planned)* are saved and Lightroom honours them, but Ambrotype's preview may not render them yet (see the Status column).

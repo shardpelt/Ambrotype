@@ -88,6 +88,8 @@ Other ways to browse what the library shows (a folder, a collection or All photo
 - **Keywords…** lists every keyword in the catalogue with how many photos have it. Tick some to give them to the selected photos, or to rename them, merge them into one, or remove them, in every photo's sidecar.
 - **Metadata templates…** keep a title, caption, creator, copyright and keywords to give many photos at once (Lightroom's metadata presets). Empty fields leave the photos' own; keywords are added. They are kept in the settings file.
 
+From the command line (2026-10-23): `amb move`, `amb rename`, `amb sort` and `amb trash` (with `--dry-run` to see the plan), `amb keywords`, `amb catalog missing` and `amb catalog relink DIR`; `amb tag` and `amb info` for ratings, labels, flags, keywords, metadata and places on many photos at once; `amb place --gpx`, `amb duplicates` and `amb collection`. Code: `crates/amb-cli/src/organise.rs`.
+
 ## Duplicates and bursts
 
 **Organise → Duplicates and bursts…** looks among the photos shown, or the selected ones (2026-10-23; `amb_library::duplicates`, `ui/duplicates.js`).

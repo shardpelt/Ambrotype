@@ -134,7 +134,8 @@ pub(crate) fn catalog(
     let cat = Catalog::open(&path)?;
     match args {
         ["scan", dirs @ ..] if !dirs.is_empty() => {
-            let dirs: Vec<PathBuf> = dirs.iter().map(PathBuf::from).collect();
+            // Absolute, as the editor keeps them.
+            let dirs: Vec<PathBuf> = dirs.iter().map(|d| absolute(d)).collect();
             let start = std::time::Instant::now();
             let (photos, read) = cat.scan(&dirs)?;
             let ms = start.elapsed().as_millis();
@@ -185,7 +186,7 @@ pub(crate) fn catalog(
             Ok(())
         }
         ["forget", dir] => {
-            let n = cat.forget_folder(Path::new(dir));
+            let n = cat.forget_folder(&absolute(dir));
             println!("forgot {n} photos (the files stay)");
             Ok(())
         }
@@ -193,9 +194,9 @@ pub(crate) fn catalog(
         ["add" | "remove", dir] => {
             let file = roots_file(options)?;
             let folders = if args[0] == "add" {
-                amb_library::roots::add(&file, Path::new(dir))?
+                amb_library::roots::add(&file, &absolute(dir))?
             } else {
-                amb_library::roots::remove(&file, Path::new(dir))?
+                amb_library::roots::remove(&file, &absolute(dir))?
             };
             for f in &folders {
                 println!("{}", f.display());
@@ -252,6 +253,10 @@ pub(crate) fn catalog(
 }
 
 /// The library folders list: `--folders FILE`, or the editor's.
+fn absolute(p: &str) -> PathBuf {
+    std::path::absolute(p).unwrap_or_else(|_| PathBuf::from(p))
+}
+
 fn roots_file(options: &BTreeMap<&str, &str>) -> Result<PathBuf, String> {
     match options.get("--folders") {
         Some(p) => Ok(PathBuf::from(p)),

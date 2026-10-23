@@ -49,7 +49,7 @@ Here sx and sy stretch the crop by less than half a pixel, so a whole number of 
 
 ## Crop to the view
 
-The crop tool opened while zoomed in (Settings → General, on by default) starts with what the view shows: the view's centre and size in the developed photo's pixels, mapped into the current crop along its turned axes (`viewRect` in `ui/croptool.js`). Done crops to it. Lens corrections and Transform bend the mapping a little; the rectangle can be adjusted before Done.
+The crop tool opened while zoomed in (Settings → General, on by default) starts with what the view shows: the view's centre and size in the developed photo's pixels, mapped into the current crop along its turned axes (`zoomViewRect` in `ui/croptool.js`). Done crops to it. Lens corrections and Transform bend the mapping a little; the rectangle can be adjusted before Done.
 
 ## Level
 

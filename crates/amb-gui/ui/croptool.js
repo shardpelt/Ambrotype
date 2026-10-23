@@ -133,7 +133,7 @@ function cropToView() {
 
 // The part of the photo the zoomed view shows, as a crop rectangle over the
 // whole photo: inside the current crop `r`, along its turned axes.
-function viewRect(r, sign) {
+function zoomViewRect(r, sign) {
   const m = ui.zoom.meta;
   if (!m) return null;
   const v = $("viewer");
@@ -166,7 +166,7 @@ async function enterCrop() {
   ui.crop.enabled = st.enabled;
   ui.crop.angleSign = st.angle_sign;
   // Zoomed in: start from the view (Done crops to it).
-  const view = zoomed?.meta ? viewRect(st.rect, st.angle_sign) : null;
+  const view = zoomed?.meta ? zoomViewRect(st.rect, st.angle_sign) : null;
   if (ui.zoom.on) setZoom(false);
   const rect = view ?? st.rect;
   chooseAspect(rect, st.enabled || Boolean(view));

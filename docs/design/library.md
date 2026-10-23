@@ -75,6 +75,18 @@ Other ways to browse what the library shows (a folder, a collection or All photo
   - **From a GPX track** (**Match GPX track…**): each photo's capture time is looked up on the track (`amb_library::gpx`). Cameras write local time without a zone and GPX keeps UTC, so it asks how many hours the camera's clock was ahead of UTC (guessed from this computer's time zone on that date). Between two track points the place is interpolated; a photo more than 5 minutes from any point isn't placed. Photos that already have a place keep it. It works on the selection, or on every photo shown.
   - **Map images** are OpenStreetMap's, only when turned on (Settings → General, or the button on the map), since fetching them tells openstreetmap.org which area you look at. Off, the map is a plain grid of latitudes and longitudes with the pins on it. The images are credited on the map, with a link to OpenStreetMap's copyright page.
 
+## Duplicates and bursts
+
+**Organise → Duplicates and bursts…** looks among the photos shown, or the selected ones (2026-10-23; `amb_library::duplicates`, `ui/duplicates.js`).
+
+- **Same file:** identical bytes, such as a card imported twice under other names. Only files of equal size are read whole and hashed (SHA-256), so this stays quick.
+- **Alike:** pictures whose fingerprints are close: a 64-bit difference hash of a small grey copy of the camera's preview. That finds the same shot resized or re-saved, and frames of one scene. *Nearly identical*, *Alike* and *Loosely alike* allow 3, 6 or 10 of 64 bits to differ.
+- **Burst:** photos from one camera, each taken within a few seconds of the one before (2 by default; 0 leaves bursts out).
+- Of identical files, only one takes part in looking for alike pictures and bursts, so a copy doesn't pull its group into another.
+- **The best first** (★): a pick before others and a reject last, then the highest rating, an edit, the sharpest picture (the spread of a Laplacian over a small copy), the larger file, the plainer name. Click another photo to keep it instead.
+- **Per group, or all at once:** **Stack** puts a group into one stack with the best on top; **Reject the rest** flags the best as a pick and the others as rejects (nothing is deleted; Filter → Rejected shows them). **Show** selects the group in the grid.
+- What was measured is kept in the catalogue (`prints`) while each file is unchanged, so looking again is quick. Virtual copies are left out: they share their photo's file.
+
 ## Import
 
 Lightroom's Import "Copy", without a catalogue. The dialog (and `amb import SOURCE DEST`) shows what will happen before anything is copied.

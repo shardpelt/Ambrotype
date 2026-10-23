@@ -15,11 +15,13 @@ amb-lens = { path = "../amb-lens" }
 amb-presets = { path = "../amb-presets" }
 amb-protocol = { path = "../amb-protocol" }
 bzip2 = "0.6.1"
+image = { version = "0.25", default-features = false, features = ["jpeg"] }
 quick-xml.workspace = true
 rayon = "1"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 serde.workspace = true
 serde_json.workspace = true
+sha2 = "0.10"
 tar = "0.4.46"
 ureq = { version = "2", features = ["native-certs"] }
 

@@ -279,6 +279,11 @@
           <button type="button" id="lib-lrcat" class="small" title="Move from Lightroom Classic: its edits, ratings, keywords and collections, from its catalogue">From Lightroom Classic…</button>
         </div>
       </details>
+      <details id="lib-organise-menu" class="lib-menu"><summary title="Tidy up the photos shown (or the selected ones)">Organise ▾</summary>
+        <div class="lib-menu-pop" id="lib-organise-pop">
+          <button type="button" id="lib-duplicates" class="small" title="Find copies of the same photo, alike pictures and bursts; keep the best">Duplicates and bursts…</button>
+        </div>
+      </details>
       <span id="library-count" class="hint"></span>
       <button type="button" id="lib-date" class="small lib-date" title="Show every date again" hidden></button>
       <span id="lib-views" class="lib-views" role="group" aria-label="View">
@@ -625,6 +630,25 @@
   </dialog>
 
   <!-- A name, for collections (collections.js). -->
+  <!-- Duplicates and bursts (duplicates.js). -->
+  <dialog id="dupes-dialog" class="dupes-dialog">
+    <h2>Duplicates and bursts</h2>
+    <p class="hint">Finds copies of the same file, alike pictures (the same shot re-saved, or frames of one scene) and bursts. In each group the best comes first, marked ★: a pick, then the highest rating, an edit, the sharpest picture. Click another photo to make it the one kept.</p>
+    <div class="dupes-options">
+      <label>Alike <select id="dupes-alike"><option value="0">Same files only</option><option value="3">Nearly identical</option><option value="6" selected>Alike</option><option value="10">Loosely alike</option></select></label>
+      <label>Bursts within <input id="dupes-burst" type="number" min="0" max="60" step="1" value="2"> s</label>
+      <span id="dupes-scope" class="hint"></span>
+      <button type="button" id="dupes-find" class="primary">Find</button>
+    </div>
+    <p id="dupes-status" class="hint"></p>
+    <div id="dupes-list" class="dupes-list"></div>
+    <menu>
+      <button type="button" id="dupes-stack-all" title="Each group into a stack, the best on top">Stack all</button>
+      <button type="button" id="dupes-reject-all" title="Flag the best of each group as a pick and the rest as rejects">Keep the best, reject the rest</button>
+      <button type="button" id="dupes-close">Close</button>
+    </menu>
+  </dialog>
+
   <dialog id="name-dialog">
     <form method="dialog">
       <h2 id="name-title"></h2>
@@ -1368,6 +1392,7 @@
   <script src="library.js"></script>
   <script src="cull.js"></script>
   <script src="browse.js"></script>
+  <script src="duplicates.js"></script>
   <script src="import.js"></script>
   <script src="lrcat.js"></script>
   <script src="collections.js"></script>

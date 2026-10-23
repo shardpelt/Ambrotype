@@ -218,11 +218,13 @@ dependencies = [
  "amb-protocol",
  "amb-testkit",
  "bzip2",
+ "image",
  "quick-xml 0.37.5",
  "rayon",
  "rusqlite",
  "serde",
  "serde_json",
+ "sha2",
  "tar",
  "ureq",
 ]

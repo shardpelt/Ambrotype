@@ -939,6 +939,7 @@ function wireLibrary() {
   if (lib.wired) return;
   lib.wired = true;
   wireBrowse();
+  wireDuplicates();
   // Title, caption, creator and copyright for the selection, when a field is left.
   $("lib-stack").addEventListener("click", stackSelection);
   $("lib-unstack").addEventListener("click", unstackSelection);

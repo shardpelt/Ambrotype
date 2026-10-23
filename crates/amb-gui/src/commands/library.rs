@@ -40,6 +40,58 @@ pub(crate) async fn thumbnail(
     .map_err(|e| e.to_string())?
 }
 
+/// Photos among `paths` that are the same file, alike, or one burst
+/// (`amb_library::duplicates`), best first in each group. Progress goes to
+/// the page as "duplicates-progress" ([done, total]).
+#[tauri::command]
+pub(crate) async fn library_find_duplicates(
+    paths: Vec<String>,
+    burst_seconds: f64,
+    max_bits: u32,
+    app: tauri::AppHandle,
+) -> Res<Vec<amb_library::duplicates::Group>> {
+    use tauri::Emitter;
+    let cache = app
+        .path()
+        .app_cache_dir()
+        .ok()
+        .map(|d| d.join("thumbnails"));
+    tauri::async_runtime::spawn_blocking(move || {
+        let photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
+        // The camera's preview, or the thumbnail the library shows.
+        let thumb = |p: &Path| {
+            amb_engine::raw::embedded_thumbnail(p, 256)
+                .ok()
+                .flatten()
+                .or_else(|| {
+                    let jpeg = folder::thumbnail(p, 256, cache.as_deref()).ok()?;
+                    amb_library::duplicates::decode_jpeg(&jpeg)
+                })
+        };
+        let last = std::sync::Mutex::new(std::time::Instant::now());
+        let progress = |done: usize, total: usize| {
+            let mut last = last.lock().unwrap_or_else(|e| e.into_inner());
+            if done == total || last.elapsed().as_millis() > 200 {
+                *last = std::time::Instant::now();
+                let _ = app.emit("duplicates-progress", [done, total]);
+            }
+        };
+        let options = amb_library::duplicates::Options {
+            burst_seconds,
+            max_bits: max_bits.min(20),
+        };
+        Ok(amb_library::duplicates::find(
+            folder::catalog(),
+            &photos,
+            options,
+            &thumb,
+            &progress,
+        ))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Watch `dirs` (the library's folders and the filmstrip's) for photos
 /// added, removed or renamed, and tell the page ("folder-changed", at most
 /// about once a second). Sidecars are ignored, so our own saves don't

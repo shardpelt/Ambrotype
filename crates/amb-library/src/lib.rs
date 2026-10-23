@@ -5,6 +5,7 @@
 
 pub mod catalog;
 pub mod collections;
+pub mod duplicates;
 pub mod folder;
 pub mod gpx;
 pub mod import;

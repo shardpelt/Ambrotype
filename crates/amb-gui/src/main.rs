@@ -690,6 +690,7 @@ fn main() {
             commands::catalog::lrcat_plan,
             commands::catalog::lrcat_apply,
             commands::library::library_set_info,
+            commands::library::library_find_duplicates,
             commands::places::pick_gpx,
             commands::places::open_osm_copyright,
             commands::places::library_match_gpx,

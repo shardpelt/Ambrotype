@@ -298,7 +298,7 @@ impl Catalog {
             .map_err(e)?;
         if version != VERSION {
             // Only a cache: an older layout is simply started again.
-            db.execute_batch("DROP TABLE IF EXISTS photos;")
+            db.execute_batch("DROP TABLE IF EXISTS photos; DROP TABLE IF EXISTS prints;")
                 .map_err(e)?;
         }
         db.execute_batch(
@@ -314,6 +314,12 @@ impl Catalog {
                 camera TEXT,
                 lens TEXT,
                 rating INTEGER
+            );
+            CREATE TABLE IF NOT EXISTS prints (
+                path TEXT PRIMARY KEY,
+                size INTEGER NOT NULL,
+                modified INTEGER NOT NULL,
+                print TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS photos_folder ON photos(folder);
             CREATE INDEX IF NOT EXISTS photos_captured ON photos(captured);",
@@ -615,6 +621,75 @@ impl Catalog {
             photos: count("SELECT COUNT(*) FROM photos"),
             folders: count("SELECT COUNT(DISTINCT folder) FROM photos"),
         }
+    }
+}
+
+/// What finding duplicates measured of a photo's file (`crate::duplicates`),
+/// kept while the file's size and modified time stay the same.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Print {
+    /// The file's SHA-256, hex; measured only when another file is as big.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sha256: Option<String>,
+    /// A 64-bit difference hash of the picture: alike pictures differ in few bits.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dhash: Option<u64>,
+    /// How sharp the picture looks (higher is sharper; only for comparing
+    /// photos of one scene).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sharpness: Option<f32>,
+}
+
+impl Catalog {
+    /// The prints kept for `photos` (`None` where none is, or the file changed).
+    pub fn prints(&self, photos: &[PathBuf]) -> Vec<Option<Print>> {
+        let db = self.db.lock().unwrap_or_else(|e| e.into_inner());
+        let Ok(mut q) =
+            db.prepare_cached("SELECT size, modified, print FROM prints WHERE path = ?1")
+        else {
+            return vec![None; photos.len()];
+        };
+        photos
+            .iter()
+            .map(|p| {
+                let (size, modified) = file_stamp(&amb_engine::source_path(p))?;
+                let (s, m, json) = q
+                    .query_row([key(p)], |r| {
+                        Ok((
+                            r.get::<_, i64>(0)?,
+                            r.get::<_, i64>(1)?,
+                            r.get::<_, String>(2)?,
+                        ))
+                    })
+                    .optional()
+                    .ok()??;
+                ((s, m) == (size, modified))
+                    .then(|| serde_json::from_str(&json).ok())
+                    .flatten()
+            })
+            .collect()
+    }
+
+    /// Keep `prints` for their photos' files as they are now.
+    pub fn store_prints(&self, prints: &[(PathBuf, Print)]) {
+        let mut db = self.db.lock().unwrap_or_else(|e| e.into_inner());
+        let Ok(tx) = db.transaction() else { return };
+        {
+            let Ok(mut q) = tx.prepare_cached(
+                "INSERT OR REPLACE INTO prints (path, size, modified, print) VALUES (?1, ?2, ?3, ?4)",
+            ) else {
+                return;
+            };
+            for (p, print) in prints {
+                let Some((size, modified)) = file_stamp(&amb_engine::source_path(p)) else {
+                    continue;
+                };
+                if let Ok(json) = serde_json::to_string(print) {
+                    let _ = q.execute(params![key(p), size, modified, json]);
+                }
+            }
+        }
+        let _ = tx.commit();
     }
 }
 

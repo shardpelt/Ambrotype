@@ -112,7 +112,7 @@ State on 2026-10-20 (evening): the repo is public and CI runs. Linux, macOS and 
 - [x] `strip = true` in `[profile.release]` (about 60 MB smaller installs; downloads shrink less)
 - [ ] Try the editor on the Mac: menu bar (and Interface → Back to the Built-in Interface), library, a custom interface, Connect an AI App… → Open a terminal here, export
 - [ ] Try it once on Windows (same list; the terminal opens with `cmd`)
-- [ ] Hub history clean-up: the hub's first 8 of 12 commits carry a model name in their Co-Authored-By trailer. Rewrite only those lines to `Co-Authored-By: Claude <noreply@anthropic.com>` (git filter-repo, owner-approved force-push with a lease on `ba3a0c8`; tree `6e6320d` must not change). The step-by-step hand-off was a local, untracked file in the cloud session; ask for it to be written again if it's gone. Then re-sync `data/hub/SOURCE`
+- [x] ~~Hub history clean-up~~: dropped (owner, 2026-10-23). Older commits in both repos keep their trailers; new ones name no model
 - [x] Release notes: `docs/release-notes/v0.1.0.md` (the draft release starts with it). Read it before publishing
 - [ ] After publishing: README's "no installers yet" becomes a link to the release
 - [ ] Tag `v0.1.0`, check the draft release, publish

@@ -39,6 +39,11 @@ keyring = { version = "3", features = ["apple-native", "windows-native", "sync-s
 tauri-plugin-window-state = "2"
 notify = "8"
 
+# Already part of the editor through Tauri; used to read the monitor's
+# colour profile from the desktop.
+[target.'cfg(target_os = "linux")'.dependencies]
+gdk = "0.18"
+
 [dev-dependencies]
 amb-testkit = { path = "../amb-testkit" }
 image = { version = "0.25", default-features = false, features = ["png"] }

@@ -334,6 +334,83 @@ pub(crate) fn open_interfaces_folder(
         .map_err(|e| e.to_string())
 }
 
+/// Use the monitor profile chosen in Settings, reading the desktop's
+/// profile for the window's monitor when it is Automatic. Runs on the main
+/// (GTK) thread. Says whether what is in use changed.
+pub(crate) fn recheck_monitor(app: &tauri::AppHandle) -> (monitor::Status, bool) {
+    let choice = app
+        .state::<AppState>()
+        .monitor
+        .lock()
+        .map(|m| m.clone())
+        .unwrap_or_default();
+    let desktop = (choice == monitor::Choice::Auto)
+        .then(|| window_centre(app))
+        .flatten()
+        .and_then(|(x, y)| monitor::desktop_profile(x, y));
+    monitor::update(&choice, desktop)
+}
+
+/// The middle of the main window, in logical pixels.
+fn window_centre(app: &tauri::AppHandle) -> Option<(i32, i32)> {
+    let w = app.get_webview_window("main")?;
+    let (pos, size, scale) = (
+        w.outer_position().ok()?,
+        w.outer_size().ok()?,
+        w.scale_factor().ok()?,
+    );
+    let x = (pos.x as f64 + size.width as f64 / 2.0) / scale;
+    let y = (pos.y as f64 + size.height as f64 / 2.0) / scale;
+    Some((x as i32, y as i32))
+}
+
+/// `recheck_monitor` from a command: on the main thread, waited for.
+async fn recheck_monitor_now(app: tauri::AppHandle) -> Res<monitor::Status> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let handle = app.clone();
+    app.run_on_main_thread(move || {
+        let _ = tx.send(recheck_monitor(&handle).0);
+    })
+    .map_err(|e| e.to_string())?;
+    tauri::async_runtime::spawn_blocking(move || {
+        rx.recv_timeout(std::time::Duration::from_secs(5))
+            .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// The monitor profile in use (Settings), found again.
+#[tauri::command]
+pub(crate) async fn monitor_profile(app: tauri::AppHandle) -> Res<monitor::Status> {
+    recheck_monitor_now(app).await
+}
+
+/// Choose how the preview matches the monitor; returns what is in use.
+#[tauri::command]
+pub(crate) async fn set_monitor_profile(
+    choice: monitor::Choice,
+    app: tauri::AppHandle,
+) -> Res<monitor::Status> {
+    {
+        let state = app.state::<AppState>();
+        *state.monitor.lock().map_err(|e| e.to_string())? = choice;
+        save_config(state.inner());
+    }
+    recheck_monitor_now(app).await
+}
+
+#[tauri::command]
+pub(crate) async fn pick_monitor_profile(app: tauri::AppHandle) -> Option<String> {
+    app.dialog()
+        .file()
+        .set_title("Choose your monitor's colour profile")
+        .add_filter("ICC profiles", &["icc", "icm", "ICC", "ICM"])
+        .blocking_pick_file()
+        .and_then(|p| p.into_path().ok())
+        .map(|p| p.display().to_string())
+}
+
 #[cfg(test)]
 mod tests {
     /// The address names an issue form that exists, and fields it has.

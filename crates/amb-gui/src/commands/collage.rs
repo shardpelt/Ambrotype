@@ -173,6 +173,7 @@ pub(crate) async fn edited_thumbnail(
             }
         }
         let mut s = Session::open(Path::new(&path))?;
+        s.on_screen = true;
         Ok(Response::new(
             s.preview(edge, &none, false, false, lens).jpeg,
         ))

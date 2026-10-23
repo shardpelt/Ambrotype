@@ -111,7 +111,10 @@ pub(crate) async fn assistant_ask(
         // The photo as edited now, small, when the user lets the model see it.
         let mut picture = || {
             with_photo(&mut |s| {
+                // Plain sRGB for the model, not the monitor's colours.
+                let on_screen = std::mem::replace(&mut s.on_screen, false);
                 let p = s.preview(512, &BTreeMap::new(), false, false, lens);
+                s.on_screen = on_screen;
                 Ok(plugins::base64(&p.jpeg))
             })
         };

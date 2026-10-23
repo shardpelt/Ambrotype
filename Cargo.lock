@@ -181,6 +181,7 @@ dependencies = [
  "amb-presets",
  "amb-protocol",
  "amb-testkit",
+ "gdk",
  "image",
  "jpeg-encoder",
  "keyring",

@@ -43,6 +43,10 @@ pub struct Session {
     preview_src: Option<(u32, CameraImage)>,
     pub state: DevelopState,
     pub sidecar: PathBuf,
+    /// Its JPEGs are for the editor's window, so they are converted to the
+    /// monitor's profile (`crate::monitor`); off for thumbnails kept on disk
+    /// and pictures sent elsewhere.
+    pub on_screen: bool,
     /// Soft proofing: the space to show the photo as it exports to, and
     /// whether to mark the colours beyond it.
     proof: Option<(amb_color::space::OutputSpace, bool)>,
@@ -278,6 +282,7 @@ impl Session {
                 .map(amb_protocol::sidecar::read_info)
                 .unwrap_or_default(),
             sidecar,
+            on_screen: false,
             proof: None,
             base_xmp,
             lens_cache: None,
@@ -721,7 +726,13 @@ impl Session {
             mark_clipping(&mut bytes);
         }
         Preview {
-            jpeg: encode_jpeg(&bytes, upright.width, upright.height, 88),
+            jpeg: encode_jpeg(
+                self.on_screen,
+                &mut bytes,
+                upright.width,
+                upright.height,
+                88,
+            ),
             width: upright.width,
             height: upright.height,
             histogram,
@@ -864,7 +875,7 @@ impl Session {
             mark_clipping(&mut crop);
         }
         Region {
-            jpeg: encode_jpeg(&crop, w, h, 92),
+            jpeg: encode_jpeg(self.on_screen, &mut crop, w, h, 92),
             x,
             y,
             width: w,
@@ -947,7 +958,13 @@ impl Session {
                 if let Some(out) = &gamut {
                     mark_gamut(&mut bytes, out);
                 }
-                encode_jpeg(&bytes, upright.width, upright.height, 85)
+                encode_jpeg(
+                    self.on_screen,
+                    &mut bytes,
+                    upright.width,
+                    upright.height,
+                    85,
+                )
             },
             x,
             y,
@@ -1415,7 +1432,11 @@ fn mark_clipping(bytes: &mut [u8]) {
     });
 }
 
-fn encode_jpeg(bytes: &[u8], w: usize, h: usize, quality: u8) -> Vec<u8> {
+/// `bytes` (sRGB) as a JPEG; for the screen, in the monitor's colours.
+fn encode_jpeg(on_screen: bool, bytes: &mut [u8], w: usize, h: usize, quality: u8) -> Vec<u8> {
+    if on_screen {
+        crate::monitor::apply(bytes);
+    }
     let mut jpeg = Vec::new();
     let mut enc = jpeg_encoder::Encoder::new(&mut jpeg, quality);
     enc.set_sampling_factor(jpeg_encoder::SamplingFactor::R_4_2_0);

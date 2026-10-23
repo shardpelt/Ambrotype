@@ -143,6 +143,37 @@ pub fn parse(b: &[u8]) -> Option<RgbProfile> {
     Some(RgbProfile { to_xyz_d50, curves })
 }
 
+/// The profile's name as it gives it (its `desc` tag), for showing the user.
+pub fn description(b: &[u8]) -> Option<String> {
+    let count = u32_at(b, 128)? as usize;
+    let t = (0..count.min(256)).find_map(|i| {
+        let at = 132 + i * 12;
+        (b.get(at..at + 4)? == b"desc").then_some(())?;
+        let (offset, size) = (u32_at(b, at + 4)? as usize, u32_at(b, at + 8)? as usize);
+        b.get(offset..offset.checked_add(size)?)
+    })?;
+    let text = match t.get(0..4)? {
+        // ICC v2: a count, then ASCII.
+        b"desc" => {
+            let n = u32_at(t, 8)? as usize;
+            String::from_utf8_lossy(t.get(12..12 + n)?).into_owned()
+        }
+        // ICC v4: localized UTF-16; the first record will do.
+        b"mluc" => {
+            let (len, offset) = (u32_at(t, 20)? as usize, u32_at(t, 24)? as usize);
+            let units: Vec<u16> = t
+                .get(offset..offset + len)?
+                .chunks_exact(2)
+                .map(|c| u16::from_be_bytes([c[0], c[1]]))
+                .collect();
+            String::from_utf16_lossy(&units)
+        }
+        _ => return None,
+    };
+    let text = text.trim_end_matches('\0').trim().to_string();
+    (!text.is_empty()).then_some(text)
+}
+
 fn parse_curve(t: &[u8]) -> Option<Curve> {
     match t.get(0..4)? {
         b"curv" => {
@@ -205,6 +236,12 @@ mod tests {
                 assert!((lin - v).abs() < 2e-3, "{space:?} {v}: {lin}");
             }
         }
+    }
+
+    #[test]
+    fn reads_the_name() {
+        let name = description(&OutputSpace::DisplayP3.icc_profile()).unwrap();
+        assert!(name.contains("P3"), "{name}");
     }
 
     #[test]

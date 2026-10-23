@@ -92,6 +92,7 @@ pub(crate) async fn open_photo(
             }
         }
         let mut s = Session::open(Path::new(&path))?;
+        s.on_screen = true;
         s.set_proof(proof);
         let sidecar = s.sidecar.clone();
         let mut guard = slot.lock().map_err(|e| e.to_string())?;

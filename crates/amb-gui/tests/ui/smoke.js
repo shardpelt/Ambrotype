@@ -49,6 +49,13 @@ await t.step("a ? opens its help card", async () => {
   t.key("Escape");
 });
 
+await t.step("Settings says how the monitor's colours are handled", async () => {
+  const s = await t.invoke("set_monitor_profile", { choice: { mode: "off" } });
+  t.expect(s.choice.mode === "off" && $("settings-monitor-note").textContent !== "", "a monitor note");
+  await t.invoke("set_monitor_profile", { choice: { mode: "auto" } });
+  t.log(s.note);
+});
+
 await t.step("Ctrl+E exports a JPEG", async () => {
   t.key("Ctrl+E");
   await t.until("the Export dialog", () => $("export-dialog").open);

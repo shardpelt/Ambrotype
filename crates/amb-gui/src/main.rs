@@ -17,6 +17,7 @@ mod interface;
 mod keys;
 mod library;
 mod looks;
+mod monitor;
 mod plugins;
 mod schema;
 mod session;
@@ -74,6 +75,8 @@ struct AppState {
     preset_favourites: Mutex<Vec<String>>,
     mask_effects: Mutex<Vec<MaskEffect>>,
     edit_in: Mutex<EditIn>,
+    /// The monitor profile choice (Settings).
+    monitor: Mutex<monitor::Choice>,
     /// Soft proofing (for this run): the space, and the gamut warning.
     proof: Mutex<Option<(amb_color::space::OutputSpace, bool)>>,
     /// Watches the folders on screen for photos added, removed or renamed.
@@ -148,6 +151,9 @@ struct Config {
     /// Edit in another app: which app and what file.
     #[serde(default)]
     edit_in: EditIn,
+    /// Which monitor profile the preview is shown in.
+    #[serde(default)]
+    monitor: monitor::Choice,
     /// A custom interface folder shown instead of the built-in one.
     #[serde(default)]
     interface: Option<PathBuf>,
@@ -271,6 +277,7 @@ fn save_config(state: &AppState) {
             .map(|p| p.clone())
             .unwrap_or_default(),
         edit_in: state.edit_in.lock().map(|e| e.clone()).unwrap_or_default(),
+        monitor: state.monitor.lock().map(|m| m.clone()).unwrap_or_default(),
         interface: state.interface.lock().ok().and_then(|i| i.clone()),
     };
     if let Some(dir) = path.parent() {
@@ -464,6 +471,9 @@ fn main() {
                 if let Ok(mut p) = state.edit_in.lock() {
                     *p = config.edit_in;
                 }
+                if let Ok(mut m) = state.monitor.lock() {
+                    *m = config.monitor;
+                }
                 // A custom interface, unless this run keeps to the built-in one.
                 if let Some(dir) = config.interface.filter(|d| interface::is_interface(d)) {
                     if let Ok(mut i) = state.interface.lock() {
@@ -515,6 +525,9 @@ fn main() {
             commands::settings::interfaces,
             commands::settings::set_interface,
             commands::settings::pick_interface_folder,
+            commands::settings::monitor_profile,
+            commands::settings::set_monitor_profile,
+            commands::settings::pick_monitor_profile,
             commands::settings::open_interfaces_folder,
             commands::connect::ai_connect_info,
             commands::connect::open_terminal,
@@ -702,6 +715,18 @@ fn main() {
                 let state = app.state::<AppState>();
                 if let Err(e) = save_open_edits(&state.session) {
                     eprintln!("could not save the open photo's edits: {e}");
+                }
+            }
+            // Moved to another monitor: show the preview in its colours.
+            if let tauri::RunEvent::WindowEvent {
+                event: tauri::WindowEvent::Moved(_),
+                ..
+            } = event
+            {
+                use tauri::Emitter;
+                let (status, changed) = commands::settings::recheck_monitor(app);
+                if changed {
+                    let _ = app.emit("monitor-changed", status);
                 }
             }
         });

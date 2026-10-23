@@ -2,10 +2,11 @@
 // The library's other views: Timeline and Map; placing a photo on the map.
 // Run: ambrotype --ui-test crates/amb-gui/tests/ui/browse.js photo.dng
 
-await t.step("the library shows the photo's folder", async () => {
+await t.step("Open folder shows a folder in the library", async () => {
   await t.until("the photo", () => ui.info, 60000);
-  await toggleLibrary(true);
-  await t.until("the grid", () => lib.photos.length > 0);
+  t.expect(t.visible("#btn-open-folder-empty") || !t.visible("#empty"), "the button on the start screen");
+  await openFolder(dirOf(ui.info.path));
+  await t.until("the grid", () => libraryOn() && lib.photos.length > 0);
 });
 
 await t.step("the library has no editor top bar, but keeps the tasks", async () => {

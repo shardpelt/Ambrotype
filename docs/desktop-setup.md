@@ -105,7 +105,8 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 
   | Keys | Action |
   |---|---|
-  | Ctrl+O, Ctrl+S, Ctrl+E | Open, save the sidecar, export |
+  | Ctrl+O, Ctrl+Shift+O | Open a photo; open a folder in the library |
+  | Ctrl+S, Ctrl+E | Save the sidecar, export |
   | Ctrl+Z / Ctrl+Shift+Z or Ctrl+Y | Undo / redo |
   | Ctrl+K | Search everything |
   | F1, Shift+F1, Shift+? | Learn, Photography basics, all shortcuts |

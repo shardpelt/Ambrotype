@@ -714,6 +714,15 @@ async function feedbackFlow() {
 
 // ---------------------------------------------------------------- photo
 
+// A folder of photos opens in the library (chosen, or dropped on the window).
+async function openFolder(dir) {
+  if (!dir) dir = await invoke("library_pick_folder");
+  if (!dir) return false;
+  if (!libraryOn()) await switchTask("library");
+  await loadLibrary(dir, []);
+  return true;
+}
+
 async function openPath(path) {
   status(`Opening ${path}…`);
   $("busy").hidden = false;
@@ -932,6 +941,7 @@ async function init() {
   $("btn-open").addEventListener("click", openDialog);
   $("btn-library").addEventListener("click", () => toggleLibrary());
   $("btn-open-empty").addEventListener("click", openDialog);
+  $("btn-open-folder-empty").addEventListener("click", () => openFolder());
   $("btn-sample-empty").addEventListener("click", () => sampleFlow());
   $("btn-watch-empty").addEventListener("click", () => watchFlow());
   wireHistoryKeys();
@@ -1049,8 +1059,7 @@ async function init() {
     const path = e.payload?.paths?.[0];
     if (!path) return;
     if (/\.[a-z0-9]{2,12}$/i.test(path)) return openAny(path);
-    if (!libraryOn()) await switchTask("library");
-    loadLibrary(path, []);
+    openFolder(path);
   });
   loadPresets();
   await loadSizes();

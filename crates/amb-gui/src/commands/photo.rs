@@ -501,6 +501,22 @@ pub(crate) async fn negative_freeze(state: tauri::State<'_, AppState>) -> Res<Ve
     .map_err(|e| e.to_string())?
 }
 
+/// The crop tool's Level: the straighten angle that levels the open photo;
+/// `None` when it has too few long lines to tell.
+#[tauri::command]
+pub(crate) async fn level_angle(state: tauri::State<'_, AppState>) -> Res<Option<f64>> {
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        Ok(s.level_angle(lens))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Crop the open scan to its frame; `None` when no border was found.
 #[tauri::command]
 pub(crate) async fn negative_frame(state: tauri::State<'_, AppState>) -> Res<Option<Vec<Command>>> {

@@ -47,6 +47,10 @@ Here sx and sy stretch the crop by less than half a pixel, so a whole number of 
 - Aspect locks: Original, Free, 1:1, 4:5, 2:3, 3:4, 16:9, 9:16, and every size preset (`crates/amb-gui/data/size-presets.json`, plus the user's own, kept in the app's `settings.json`). X swaps portrait and landscape. `CropWidth`, `CropHeight` and `CropUnits` are not written.
 - Export can produce an exact size from a size preset (`Resize::Exact`, CLI `--exact WxH`). When its aspect differs from the crop, the image is scaled to cover the size and centre-cropped, and the dialog says so.
 
+## Level
+
+The crop tool's **Level ⟂** (L) asks for the angle Upright's Level fit finds (`Session::level_angle`: `amb_engine::upright::analyse` in Level mode, on the lens-corrected photo's long, near-horizontal and near-vertical lines), turned into the tool's upright view, and sets it like the Angle slider, so the rectangle shrinks to fit. A photo with too few lines says so. It is a plain straighten, stored as `CropAngle`, which Lightroom reads; Upright's Level stays a separate Transform setting. Tried on a horizon turned 4°: Level gave −4.00° and the export's horizon measured level.
+
 ## Open questions (for the Lightroom trial)
 
 1. **Angle sign.** We take darktable's word that a positive `CropAngle` turns the photo counter-clockwise. To check: straighten a photo in Lightroom by +5° and read the sidecar. If Lightroom disagrees, flip `crop::ANGLE_SIGN`.

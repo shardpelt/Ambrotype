@@ -197,6 +197,25 @@ function toggleCrop() {
   else enterCrop();
 }
 
+// Level: the angle that makes the photo's long lines (a horizon, a
+// building's edges) level and upright, set like the Angle slider, so the
+// crop shrinks to fit inside the turned photo.
+async function levelCrop() {
+  const b = $("crop-level");
+  b.disabled = true;
+  try {
+    const a = await invoke("level_angle");
+    if (a == null) return toast("No clear horizon or straight lines to level by: drag outside the frame, or use Angle.", true);
+    ui.crop.tool.setAngle(Math.max(-45, Math.min(45, a)));
+    ui.crop.tool.endAngle();
+    status(a === 0 ? "Already level" : `Levelled by ${a > 0 ? "+" : ""}${a.toFixed(2)}°`);
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    b.disabled = false;
+  }
+}
+
 // Reset: no crop, no straighten (one undo step when there was a crop).
 async function resetCrop() {
   if (!ui.crop.on) return;
@@ -261,6 +280,7 @@ function wireCrop() {
     // Let Enter apply the crop again rather than reopen the list.
     e.target.blur();
   });
+  $("crop-level").addEventListener("click", levelCrop);
   const angle = $("crop-angle");
   angle.addEventListener("input", () => ui.crop.tool.setAngle(Number(angle.value)));
   angle.addEventListener("change", () => ui.crop.tool.endAngle());

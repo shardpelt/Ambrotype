@@ -50,6 +50,7 @@ const KEY_ACTIONS = [
   { id: "wb", group: "Tools", label: "White-balance picker", hint: "Then click something neutral grey or white.", keys: ["W"], when: "main", button: "btn-wb", run: () => setPicking(!ui.picking) },
   { id: "leave", group: "Tools", label: "Leave the picker", keys: ["Escape"], when: "main", run: () => setPicking(false) },
   { id: "crop-draw", group: "Crop tool", label: "Draw a new crop (corner to corner)", keys: ["D"], when: "crop", run: () => ui.crop.tool.setDrawMode(!ui.crop.tool.drawMode()) },
+  { id: "crop-level", group: "Crop tool", label: "Level the horizon", hint: "Straighten by the photo's long lines, and crop to fit.", keys: ["L"], when: "crop", button: "crop-level", run: () => levelCrop() },
   { id: "crop-swap", group: "Crop tool", label: "Swap portrait and landscape", keys: ["X"], when: "crop", run: () => swapCrop() },
   { id: "crop-apply", group: "Crop tool", label: "Apply the crop", keys: ["Enter"], when: "crop", run: (e) => (e.target.matches("button, select") ? false : exitCrop(true)) },
   { id: "crop-cancel", group: "Crop tool", label: "Cancel the crop", keys: ["Escape"], when: "crop", run: () => exitCrop(false) },

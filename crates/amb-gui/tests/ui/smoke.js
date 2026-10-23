@@ -119,6 +119,16 @@ await t.step("the whole photo fills the viewer", async () => {
   t.expect(Math.abs(img.width - view.width) <= 2 || Math.abs(img.height - view.height) <= 2, `photo ${Math.round(img.width)}×${Math.round(img.height)} in ${Math.round(view.width)}×${Math.round(view.height)}`);
 });
 
+await t.step("Level in the crop tool keeps a level photo level", async () => {
+  t.key("r");
+  await t.until("the crop tool", () => ui.crop.on);
+  t.click("#crop-level");
+  await t.until("Level done", () => !$("crop-level").disabled && $("crop-angle-num").value !== "", 30000);
+  t.expect(Math.abs(Number($("crop-angle").value)) < 0.5, `the colour chart is level already: ${$("crop-angle").value}`);
+  t.key("Escape");
+  await t.until("the crop tool closed", () => !ui.crop.on);
+});
+
 await t.step("a click near the photo's corner zooms in without showing past its edge", async () => {
   setZoom(true, 0.001, 0.999);
   await t.until("the 100% view", () => ui.zoom.meta, 60000);

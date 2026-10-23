@@ -536,6 +536,37 @@ impl Session {
         }
     }
 
+    /// The straighten angle that levels the photo, in the crop tool's
+    /// degrees (the upright view): Upright's Level fit, which turns the
+    /// photo until its long lines near horizontal and vertical are. `None`
+    /// when it has too few of them.
+    pub fn level_angle(&mut self, lens: &LensSources) -> Option<f64> {
+        let settings = self.state.settings().clone();
+        let develop = self.develop(&settings, lens);
+        let cal = &develop.calibration;
+        let k = amb_engine::upright::analyse(
+            &self.full,
+            &develop.lens,
+            &cal.lens,
+            amb_engine::transform::UprightMode::Level,
+            &cal.upright,
+        )?;
+        // The fit turns the photo by θ counter-clockwise, as a positive
+        // CropAngle does; the upright view flips it for mirrored photos.
+        let crop = amb_engine::crop::Crop {
+            enabled: true,
+            angle: k.theta.to_degrees() * amb_engine::crop::ANGLE_SIGN,
+            ..Default::default()
+        };
+        let r = amb_export::geometry::upright_crop(
+            &crop,
+            self.full.width,
+            self.full.height,
+            self.full.metadata.orientation,
+        );
+        Some((r.angle * 100.0).round() / 100.0)
+    }
+
     /// The commands that set the crop to `rect` (the crop tool's Done). The
     /// whole photo with no angle turns the crop off.
     pub fn crop_commands(&self, rect: &CropRect) -> Vec<Command> {

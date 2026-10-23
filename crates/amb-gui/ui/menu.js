@@ -11,7 +11,7 @@
 // Windows and Linux list there (macOS has it in the app's own menu).
 const MENU_BAR = [
   ["Ambrotype", ["#about", "|", "settings", "|", "#services", "|", "#hide", "#hide_others", "#show_all", "|", "#quit"], "mac"],
-  ["File", ["open", "import", "|", "save", "export", "edit-in", "|", "collage", "|", "~settings", "|", "#close_window", "~#quit"]],
+  ["File", ["open", "open-folder", "import", "|", "save", "export", "edit-in", "|", "collage", "|", "~settings", "|", "#close_window", "~#quit"]],
   ["Edit", ["undo", "redo", "|", "#cut", "#copy", "#paste", "lib-all", "lib-none", "|", "lib-copy", "lib-paste"]],
   ["Photo", [
     "crop", "masks", "spots", "wb", "|",
@@ -21,7 +21,7 @@ const MENU_BAR = [
     "keywords", "|", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
   ]],
   ["Library", ["library", "|", "lib-loupe", "lib-compare", "lib-survey", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
-  ["View", ["before", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
+  ["View", ["before", "zoom", "loupe", "proof", "clipping", "frame", "|", "slideshow", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
   ["Window", ["#minimize", "#maximize", "|", ["Task", ["task-library", "task-develop", "task-color", "task-retouch", "task-film", "task-collage"]], "|", "looks", "edit-layout", "|", "hub", "|", "#bring_all_to_front"], "window"],
   ["Help", ["search", "|", "connect-ai", "|", "learn", "basics", "sample", "watch", "shortcuts", "|", "feedback", "source"], "help"],
 ];
@@ -30,7 +30,7 @@ const MENU_MAC_ONLY = new Set(["#services", "#hide", "#hide_others", "#show_all"
 
 // Menu titles, where the action's own label (keys.js) is a sentence.
 const MENU_TITLES = {
-  open: "Open…", import: "Import Photos…", save: "Save", export: "Export…", "edit-in": "Edit in Another App",
+  open: "Open…", "open-folder": "Open Folder…", slideshow: "Slideshow…", import: "Import Photos…", save: "Save", export: "Export…", "edit-in": "Edit in Another App",
   collage: "Collage Maker…", "lib-all": "Select All", "lib-none": "Select None", "lib-copy": "Copy Settings",
   "lib-paste": "Paste Settings", crop: "Crop and Straighten", spots: "Spot Removal", wb: "White Balance Picker",
   "rate-0": "No Rating", "label-red": "Red", "label-yellow": "Yellow", "label-green": "Green", "label-blue": "Blue",

@@ -26,7 +26,7 @@ pub const THEME_FORMAT: &str = "ambrotype-theme/1";
 pub const DEFAULT_LAYOUT: &str = "builtin:classic";
 pub const DEFAULT_THEME: &str = "builtin:dark";
 
-const BUILTIN_LAYOUTS: [(&str, &str); 14] = [
+const BUILTIN_LAYOUTS: [(&str, &str); 15] = [
     (
         "classic",
         include_str!("../data/hub/looks/layouts/classic.json"),
@@ -83,8 +83,12 @@ const BUILTIN_LAYOUTS: [(&str, &str); 14] = [
         "collage-prep",
         include_str!("../data/hub/looks/layouts/collage-prep.json"),
     ),
+    (
+        "minimalism",
+        include_str!("../data/hub/looks/layouts/minimalism.json"),
+    ),
 ];
-const BUILTIN_THEMES: [(&str, &str); 10] = [
+const BUILTIN_THEMES: [(&str, &str); 11] = [
     ("dark", include_str!("../data/hub/looks/themes/dark.json")),
     ("light", include_str!("../data/hub/looks/themes/light.json")),
     (
@@ -116,13 +120,37 @@ const BUILTIN_THEMES: [(&str, &str); 10] = [
         "graphite",
         include_str!("../data/hub/looks/themes/graphite.json"),
     ),
+    (
+        "minimalism",
+        include_str!("../data/hub/looks/themes/minimalism.json"),
+    ),
 ];
 
 /// Toolbar buttons a layout can place; "|" is a separator. "looks" is always
 /// shown (added at the end if a layout leaves it out), so there's a way back.
-pub const TOOLBAR: [&str; 22] = [
-    "open", "library", "save", "export", "collage", "undo", "redo", "before", "crop", "masks",
-    "spots", "zoom", "wb", "clip", "frame", "hub", "plugins", "looks", "edit", "settings", "keys",
+pub const TOOLBAR: [&str; 23] = [
+    "open",
+    "library",
+    "slideshow",
+    "save",
+    "export",
+    "collage",
+    "undo",
+    "redo",
+    "before",
+    "crop",
+    "masks",
+    "spots",
+    "zoom",
+    "wb",
+    "clip",
+    "frame",
+    "hub",
+    "plugins",
+    "looks",
+    "edit",
+    "settings",
+    "keys",
     "feedback",
 ];
 /// Column items that aren't panels.
@@ -581,6 +609,7 @@ pub fn check_layout(v: &Value) -> Vec<Problem> {
             "toolbar",
             "toolbar_style",
             "filmstrip",
+            "chrome",
             "left",
             "right",
         ],
@@ -590,6 +619,13 @@ pub fn check_layout(v: &Value) -> Vec<Problem> {
         if !matches!(t.as_str(), Some("icons" | "words")) {
             c.warn(format!(
                 "unknown toolbar_style {t} (\"icons\" or \"words\"); \"icons\" is used"
+            ));
+        }
+    }
+    if let Some(t) = obj.get("chrome") {
+        if !matches!(t.as_str(), Some("normal" | "hidden")) {
+            c.warn(format!(
+                "unknown chrome {t} (\"normal\" or \"hidden\"); \"normal\" is used"
             ));
         }
     }

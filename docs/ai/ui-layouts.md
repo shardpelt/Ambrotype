@@ -55,7 +55,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   "theme": "builtin:dark",                   // optional: switching to this layout also picks this theme
   "density": "normal",                       // "compact" | "normal" | "large"
   "toolbar_style": "icons",                  // "icons" (where one is obvious) | "words"
-  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
+  "toolbar": ["open", "library", "slideshow", "save", "export", "collage", "|", "undo", "redo", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
   "left":  { "width": 250, "items": ["presets", "history"] },
   "right": { "width": 340, "items": ["histogram", { "panel": "basic", "open": true }, { "panel": "detail" }] }
 }
@@ -64,6 +64,10 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
 ### Filmstrip
 
 `filmstrip`: `true` (the default) shows the other photos of the folder under the photo; `false` hides it. F shows or hides it for the session.
+
+### Chrome
+
+`chrome`: `"normal"` (the default) or `"hidden"`. Hidden shows only the photo, edge to edge: no top bar, status bar or column edges. The side columns slide in over the photo while the pointer is at the window's left or right edge (or with Ctrl+[ and Ctrl+]), and the top bar while it's at the top. Shortcuts all work. The Minimalism layout uses it.
 
 ### Density
 
@@ -79,6 +83,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   |---|---|
   | `open` | Open |
   | `library` | The library grid |
+  | `slideshow` | A slideshow of the folder or library (Ctrl+Enter) |
   | `save` | Save sidecar |
   | `export` | Export |
   | `collage` | The collage maker |

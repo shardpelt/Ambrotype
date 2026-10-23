@@ -27,6 +27,7 @@ const KEY_ACTIONS = [
   { id: "save", group: "File", label: "Save the edit to the sidecar", keys: ["Ctrl+S"], when: "any", button: "btn-save", run: () => save() },
   { id: "export", group: "File", label: "Export", keys: ["Ctrl+E"], when: "any", button: "btn-export", run: () => exportFlow() },
   { id: "edit-in", group: "File", label: "Edit in another app", hint: "The photo, as edited, goes to your image editor as a TIFF next to it (set the app in Settings → General).", keys: ["Ctrl+Alt+E"], when: "any", photo: true, run: () => editInFlow() },
+  { id: "slideshow", group: "View", label: "Slideshow", hint: "The photos shown (or the selected ones), full screen; choose how long each stays, shuffle and the change effect. Space pauses, ← → step, Esc ends.", keys: ["Ctrl+Enter"], when: "any", button: "btn-slideshow", run: () => slideshowFlow() },
   { id: "collage", group: "File", label: "Collage maker", hint: "Several photos on one canvas.", keys: ["C"], when: "main", button: "btn-collage", run: () => collageFlow() },
   { id: "undo", group: "Edit", label: "Undo", keys: ["Ctrl+Z"], when: "any", button: "btn-undo", run: () => run([{ cmd: "undo" }]) },
   { id: "redo", group: "Edit", label: "Redo", keys: ["Ctrl+Shift+Z", "Ctrl+Y"], when: "any", button: "btn-redo", run: () => run([{ cmd: "redo" }]) },

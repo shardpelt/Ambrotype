@@ -13,6 +13,7 @@ layout-color-grading
 layout-black-and-white
 layout-retouch
 layout-collage-prep
+layout-minimalism
 theme-dark
 theme-light
 theme-high-contrast
@@ -23,6 +24,7 @@ theme-swiss-print
 theme-telemetry
 theme-stone
 theme-graphite
+theme-minimalism
 preset-airy
 preset-bw-classic
 preset-bw-high-contrast

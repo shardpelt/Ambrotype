@@ -91,6 +91,10 @@ Other ways to browse what the library shows (a folder, a collection or All photo
 
 From the command line (2026-10-23): `amb move`, `amb rename`, `amb sort` and `amb trash` (with `--dry-run` to see the plan), `amb keywords`, `amb catalog missing` and `amb catalog relink DIR`; `amb tag` and `amb info` for ratings, labels, flags, keywords, metadata and places on many photos at once; `amb place --gpx`, `amb duplicates` and `amb collection`. Code: `crates/amb-cli/src/organise.rs`.
 
+## Slideshow
+
+Ctrl+Enter, the toolbar's Slideshow or ▶ Slideshow in the library bar. It shows the photos in the grid (or the selected ones, if more than one), or in the editor the folder's photos starting at the open one. Each photo is its large thumbnail with its edit (the open one with its edit as it is now). Settings, kept on this computer: seconds per photo, shuffle, full screen, and the change (straight cut, fade, slide, slow zoom, through black, or a random one of those each time). Space pauses, ← → step, Esc or a click ends it; moving the mouse shows a small bar with the same buttons.
+
 ## Duplicates and bursts
 
 **Organise → Duplicates and bursts…** looks among the photos shown, or the selected ones (2026-10-23; `amb_library::duplicates`, `ui/duplicates.js`).
@@ -207,3 +211,4 @@ Lightroom keeps stacks in its catalogue. Ours go in the sidecar: `amblib:Stack` 
 - The rest of Lightroom's metadata panel (location, IPTC contact fields, headline) and editing keyword hierarchies. Camera details are shown under the histogram, not in the panel.
 - Undo for library changes. Ratings, labels and keywords are written straight away; pasted edits can be undone per photo in the editor.
 - Background work: big pastes and exports run while you wait, with progress in the status bar.
+- Slideshow: no music, and it can't be exported as a video or web page yet.

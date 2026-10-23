@@ -65,6 +65,37 @@ await t.step("a preset's notes for scripts become one short line", async () => {
   t.expect(said === "23 of its settings aren't supported yet (kept in the file for Lightroom)", said);
 });
 
+await t.step("Minimalism hides the chrome; the panels slide in from the edge", async () => {
+  const before = { layout: ui.looks.active_layout, theme: ui.looks.active_theme };
+  Object.assign(ui.looks, { active_layout: "builtin:minimalism", active_theme: "builtin:minimalism" });
+  applyActiveLooks();
+  const body = document.body.classList;
+  t.expect(body.contains("chrome-hidden") && body.contains("topbar-off"), "the chrome hidden");
+  t.expect(!$("edge-right").hidden && $("filmstrip").hidden, "a right edge strip, no filmstrip");
+  t.key("Ctrl+]");
+  t.expect(body.contains("peek-right"), "Ctrl+] slides the right column in");
+  t.key("Ctrl+]");
+  t.expect(!body.contains("peek-right"), "and out");
+  Object.assign(ui.looks, { active_layout: before.layout, active_theme: before.theme });
+  applyActiveLooks();
+  t.expect(!body.contains("chrome-hidden") && $("edge-right").hidden, "the chrome back");
+});
+
+await t.step("a slideshow runs and Esc ends it", async () => {
+  t.key("Ctrl+Enter");
+  await t.until("the Slideshow dialog", () => $("slideshow-dialog").open);
+  const f = $("slideshow-form").elements;
+  f.fullscreen.checked = false;
+  f.effect.value = "random";
+  f.seconds.value = 1;
+  t.click("#slideshow-start");
+  await t.until("a photo on screen", () => document.querySelector(".slideshow .ss-img.shown")?.src);
+  t.key(" ");
+  t.expect(slides.paused, "Space pauses");
+  t.key("Escape");
+  t.expect(!document.querySelector(".slideshow") && !slides.on, "Esc ends it");
+});
+
 await t.step("Ctrl+E exports a JPEG", async () => {
   t.key("Ctrl+E");
   await t.until("the Export dialog", () => $("export-dialog").open);

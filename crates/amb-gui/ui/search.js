@@ -125,6 +125,9 @@ function revealPanel(details) {
 
 function switchLook(kind, id) {
   ui.looks[kind === "layout" ? "active_layout" : "active_theme"] = id;
+  // A layout that names a theme brings it, as in the Appearance dialog.
+  const theme = kind === "layout" && findLook("layout", id)?.data?.theme;
+  if (theme && findLook("theme", theme)?.usable) ui.looks.active_theme = theme;
   applyActiveLooks();
   invoke("set_active_look", { layout: ui.looks.active_layout, theme: ui.looks.active_theme }).catch((e) => toast(String(e), true));
 }

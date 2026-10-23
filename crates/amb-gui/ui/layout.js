@@ -7,7 +7,7 @@
 "use strict";
 
 const TOOLBAR_IDS = {
-  open: "btn-open", library: "btn-library", save: "btn-save", export: "btn-export", collage: "btn-collage", undo: "btn-undo", redo: "btn-redo",
+  open: "btn-open", library: "btn-library", slideshow: "btn-slideshow", save: "btn-save", export: "btn-export", collage: "btn-collage", undo: "btn-undo", redo: "btn-redo",
   before: "btn-before", crop: "btn-crop", masks: "btn-masks", spots: "btn-spots", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip", frame: "btn-frame", keys: "btn-keys",
   hub: "btn-hub", plugins: "btn-plugins", looks: "btn-looks", edit: "btn-edit-layout", settings: "btn-settings", feedback: "btn-feedback",
 };
@@ -97,6 +97,23 @@ function dragColumn(ev, side, grip, shown) {
 
 function applySideCollapse() {
   const widths = ui.sideWidths ?? { left: 0, right: 0 };
+  if (chromeHidden()) {
+    // Over the photo, out of sight until the pointer reaches that edge.
+    for (const side of ["left", "right"]) {
+      const col = $(`col-${side}`);
+      col.hidden = !widths[side];
+      col.style.width = `${widths[side]}px`;
+      $(`fold-${side}`).hidden = true;
+      $(`edge-${side}`).hidden = !widths[side];
+    }
+    $("workspace").style.gridTemplateColumns = "0px minmax(0, 1fr) 0px";
+    addColumnGrips({ left: 0, right: 0 });
+    return;
+  }
+  for (const side of ["left", "right"]) {
+    $(`col-${side}`).style.width = "";
+    $(`edge-${side}`).hidden = true;
+  }
   const shown = {};
   for (const side of ["left", "right"]) {
     shown[side] = folded[side] || (side === "left" && sidePanelOpen()) ? 0 : widths[side];
@@ -164,6 +181,8 @@ function toggleColumn(side) {
   // In the library the same keys fold its folders and panel.
   if (libraryOn()) return toggleLibrarySide(side);
   if (!ui.sideWidths?.[side]) return;
+  // With the chrome hidden the keys slide the column in and out.
+  if (chromeHidden()) return peekColumn(side, !document.body.classList.contains(`peek-${side}`));
   folded[side] = !folded[side];
   try { localStorage.setItem("folded-columns", JSON.stringify(folded)); } catch {}
   applySideCollapse();
@@ -203,6 +222,55 @@ function wireTopbar() {
   else if ($("settings-topbar")) $("settings-topbar").checked = true;
 }
 
+// A layout with `"chrome": "hidden"` (Minimalism) shows only the photo: no
+// top bar, status bar or filmstrip, and its side columns slide in over the
+// photo while the pointer is at the window's left or right edge (or with
+// Ctrl+[ and Ctrl+]). Shortcuts all work. Not while editing the layout.
+const chromeHidden = () => ui.layout?.chrome === "hidden" && !ui.edit;
+const peekTimers = {};
+
+function applyChrome() {
+  const on = chromeHidden();
+  const was = document.body.classList.contains("chrome-hidden");
+  document.body.classList.toggle("chrome-hidden", on);
+  if (on && !was) {
+    document.body.classList.add("topbar-off");
+    $("topbar-edge").hidden = false;
+  } else if (!on && was) {
+    document.body.classList.remove("peek-left", "peek-right");
+    let shown = true;
+    try { shown = localStorage.getItem("amb.topbar") !== "0"; } catch { /* shown */ }
+    document.body.classList.toggle("topbar-off", !shown);
+    $("topbar-edge").hidden = shown;
+  }
+}
+
+function peekColumn(side, show) {
+  clearTimeout(peekTimers[side]);
+  document.body.classList.toggle(`peek-${side}`, show);
+  return true;
+}
+
+function wireChrome() {
+  for (const side of ["left", "right"]) {
+    $(`edge-${side}`).addEventListener("mouseenter", () => peekColumn(side, true));
+    const col = $(`col-${side}`);
+    col.addEventListener("mouseenter", () => clearTimeout(peekTimers[side]));
+    col.addEventListener("mouseleave", () => {
+      if (!chromeHidden()) return;
+      // Not while a slider is held or one of its menus is open.
+      const later = () => {
+        if (ui.active || col.querySelector("details[open]") || col.contains(document.activeElement?.closest("select"))) {
+          peekTimers[side] = setTimeout(later, 400);
+        } else {
+          document.body.classList.remove(`peek-${side}`);
+        }
+      };
+      peekTimers[side] = setTimeout(later, 500);
+    });
+  }
+}
+
 // ---------------------------------------------------------------- theme
 
 function applyTheme(theme) {
@@ -235,6 +303,7 @@ function applyLayout(layout) {
   applyToolbarIcons(layout.toolbar_style === "words" ? "words" : "icons");
   buildToolbar(layout.toolbar);
   if (typeof applyStripVisibility === "function") applyStripVisibility();
+  applyChrome();
 
   // Take everything out, then place what the layout asks for.
   const store = $("block-store");

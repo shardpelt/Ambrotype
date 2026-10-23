@@ -539,6 +539,7 @@ fn main() {
             commands::settings::pick_interface_folder,
             commands::settings::monitor_profile,
             commands::settings::set_monitor_profile,
+            commands::settings::window_fullscreen,
             commands::settings::pick_monitor_profile,
             commands::settings::open_interfaces_folder,
             commands::connect::ai_connect_info,

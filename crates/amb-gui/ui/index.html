@@ -10,12 +10,15 @@
 </head>
 <body>
   <div id="topbar-edge" class="topbar-edge" hidden></div>
+  <div id="edge-left" class="side-edge left" hidden></div>
+  <div id="edge-right" class="side-edge right" hidden></div>
   <header class="topbar">
     <div class="brand"><span class="logo" aria-hidden="true"></span>Ambrotype</div>
     <nav id="task-bar" class="task-bar" role="tablist" aria-label="Task"></nav>
     <div class="actions">
       <button id="btn-open" title="Open a photo: raw, JPEG, PNG, TIFF or WebP (Ctrl+O)">Open</button>
       <button id="btn-library" title="Library: all the photos in the folder, to rate, label, tag and export many at once">Library</button>
+      <button id="btn-slideshow" title="Slideshow: the folder's photos full screen, one after another (Ctrl+Enter)">Slideshow</button>
       <button id="btn-save" title="Save the edit to the photo's XMP sidecar (Ctrl+S)" disabled>Save</button>
       <button id="btn-export" class="primary" title="Export (Ctrl+E)" disabled>Export…</button>
       <button id="btn-collage" title="Collage maker: several photos on one canvas">Collage</button>
@@ -334,6 +337,7 @@
           <label>Reverse order <input id="lib-reverse" type="checkbox"></label>
         </div>
       </details>
+      <button type="button" id="lib-slideshow" class="small" title="Slideshow of the photos shown, or the selected ones (Ctrl+Enter)">▶ Slideshow</button>
       <button type="button" id="lib-settings" class="small" title="Settings (Ctrl+,)" aria-label="Settings">⚙</button>
       <input id="lib-size" type="range" min="100" max="320" value="160" title="Thumbnail size" aria-label="Thumbnail size">
     </div>
@@ -718,6 +722,25 @@
       <button type="button" id="dupes-reject-all" title="Flag the best of each group as a pick and the rest as rejects">Keep the best, reject the rest</button>
       <button type="button" id="dupes-close">Close</button>
     </menu>
+  </dialog>
+
+  <dialog id="slideshow-dialog" class="slideshow-dialog">
+    <form id="slideshow-form" method="dialog">
+      <h2>Slideshow</h2>
+      <p id="slideshow-count" class="hint"></p>
+      <label>Each photo for <input name="seconds" type="number" min="1" max="600" step="1" value="4"> seconds</label>
+      <label>Change <select name="effect">
+        <option value="none">Straight cut</option><option value="fade">Fade</option><option value="slide">Slide</option>
+        <option value="zoom">Slow zoom</option><option value="black">Through black</option><option value="random">A random one each time</option>
+      </select></label>
+      <label><input name="shuffle" type="checkbox"> Shuffle</label>
+      <label><input name="fullscreen" type="checkbox" checked> Full screen</label>
+      <p class="hint">Space pauses, ← → step, Esc ends.</p>
+      <menu>
+        <button type="button" id="slideshow-cancel">Cancel</button>
+        <button type="submit" id="slideshow-start" class="primary">Start</button>
+      </menu>
+    </form>
   </dialog>
 
   <dialog id="name-dialog">
@@ -1479,6 +1502,7 @@
   <script src="zones.js"></script>
   <script src="quickzoom.js"></script>
   <script src="monitor.js"></script>
+  <script src="slideshow.js"></script>
   <script src="assistant.js"></script>
   <script src="guided.js"></script>
   <script src="presetlib.js"></script>

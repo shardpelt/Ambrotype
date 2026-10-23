@@ -10,6 +10,8 @@ const ICON_PATHS = {
   open: '<path d="M3 18V6.5A1.5 1.5 0 0 1 4.5 5h4l2 2h7A1.5 1.5 0 0 1 19 8.5V10"/><path d="M3 18l2.6-6.6A1.5 1.5 0 0 1 7 10.5h13.4a1 1 0 0 1 .9 1.4L18.8 18a1.5 1.5 0 0 1-1.4 1H4.4A1.4 1.4 0 0 1 3 18Z"/>',
   // A stack of prints: the photos you have.
   library: '<rect x="8" y="3" width="13" height="10" rx="1"/><rect class="cover" x="5.5" y="5.5" width="13" height="10" rx="1"/><rect class="cover" x="3" y="8" width="13" height="10" rx="1"/><path d="m4.8 16.2 3.4-3.4 2.6 2.6 1.6-1.6 2 2"/><circle cx="12.8" cy="11" r="1"/>',
+  // A play mark on a photo: the slideshow.
+  slideshow: '<rect x="3" y="4.5" width="18" height="15" rx="1.5"/><path d="M10 9v6l5-3Z" fill="currentColor"/>',
   // A floppy disk.
   save: '<path d="M5 3.5h11.5l4 4V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V5A1.5 1.5 0 0 1 5 3.5Z"/><path d="M7.5 3.5v5h8v-5"/><rect x="7" y="13" width="10" height="7.5" rx=".5"/>',
   // Down into a tray: a file comes out of the app.
@@ -53,7 +55,7 @@ const ICON_PATHS = {
 // rest keep their word, so the bar stays easy to read.
 // Spots, Clipping and Appearance have no picture that says it.
 const TOOLBAR_ICONS = new Set([
-  "open", "library", "save", "export", "collage", "undo", "redo", "before", "crop", "masks", "zoom", "wb",
+  "open", "library", "slideshow", "save", "export", "collage", "undo", "redo", "before", "crop", "masks", "zoom", "wb",
   "frame", "keys", "plugins", "edit", "settings", "feedback",
 ]);
 

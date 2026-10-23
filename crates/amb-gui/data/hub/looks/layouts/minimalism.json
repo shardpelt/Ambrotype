@@ -1,0 +1,29 @@
+{
+  "format": "ambrotype-layout/1",
+  "name": "Minimalism",
+  "description": "Only the photo, edge to edge: no menus, toolbar, status bar or filmstrip. Shortcuts all work. The panels slide in over the photo while the pointer is at the window's left or right edge (or with Ctrl+[ and Ctrl+]); the toolbar while it's at the top.",
+  "author": "Ambrotype",
+  "density": "compact",
+  "chrome": "hidden",
+  "filmstrip": false,
+  "theme": "builtin:minimalism",
+  "toolbar": ["open", "slideshow", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "zoom", "|", "looks", "settings"],
+  "left": { "width": 240, "items": ["presets", "history"] },
+  "right": {
+    "width": 300,
+    "items": [
+      "histogram",
+      { "panel": "basic", "open": true },
+      { "panel": "tone_curve" },
+      { "panel": "color_mixer" },
+      { "panel": "black_white" },
+      { "panel": "color_grading" },
+      { "panel": "detail" },
+      { "panel": "lens" },
+      { "panel": "transform" },
+      { "panel": "effects" },
+      { "panel": "calibration" },
+      { "panel": "negative" }
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Minimalism",
+  "description": "Near-black around the photo so nothing competes with it; quiet greys and an off-white accent, no colour of its own.",
+  "author": "Ambrotype",
+  "scheme": "dark",
+  "tokens": {
+    "bg": "#0c0c0c",
+    "bg-deep": "#080808",
+    "viewer": "#050505",
+    "panel": "#121212",
+    "panel-2": "#1c1c1c",
+    "line": "#232323",
+    "hover": "#222222",
+    "tab-active": "#2a2a2a",
+    "text": "#e6e6e6",
+    "muted": "#9a9a9a",
+    "faint": "#5e5e5e",
+    "accent": "#ededed",
+    "accent-ink": "#0c0c0c",
+    "danger": "#d9766b",
+    "thumb": "#e6e6e6",
+    "track": "#3a3a3a",
+    "radius": 2
+  }
+}

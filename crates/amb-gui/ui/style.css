@@ -1175,3 +1175,44 @@ body.library-mode .topbar { height: 0; padding: 0; border: 0; overflow: hidden; 
 body.library-mode .topbar-edge { display: none; }
 .lib-task-slot:empty { display: none; }
 .lib-task-slot { margin-right: 6px; }
+
+/* A layout with the chrome hidden (Minimalism, layout.js applyChrome): only
+   the photo, edge to edge. The side columns slide in over it while the
+   pointer is at the window's left or right edge. */
+body.chrome-hidden:not(.library-mode) { grid-template-rows: 0 1fr 0; }
+body.chrome-hidden:not(.library-mode) .statusbar { visibility: hidden; border: 0; }
+body.chrome-hidden .viewer { grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
+body.chrome-hidden .viewer img { max-width: 100%; max-height: 100%; box-shadow: none; }
+body.chrome-hidden .column { position: fixed; top: 0; bottom: 0; z-index: 55; transition: transform .18s ease, opacity .18s ease; opacity: 0; box-shadow: 0 0 24px rgba(0, 0, 0, .5); }
+body.chrome-hidden .column.left { left: 0; transform: translateX(-100%); }
+body.chrome-hidden .column.right { right: 0; transform: translateX(100%); }
+body.chrome-hidden.peek-left .column.left, body.chrome-hidden.peek-right .column.right { transform: none; opacity: .97; }
+.side-edge { position: fixed; top: 0; bottom: 0; width: 6px; z-index: 54; }
+.side-edge.left { left: 0; }
+.side-edge.right { right: 0; }
+.side-edge[hidden], body.library-mode .side-edge { display: none; }
+
+/* The slideshow (slideshow.js): two pictures on black, one coming in over
+   the other with the chosen effect. */
+.slideshow { position: fixed; inset: 0; z-index: 200; background: #000; cursor: none; outline: none; overflow: hidden; }
+.slideshow.pointer { cursor: default; }
+.ss-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: none; }
+.ss-img.shown { opacity: 1; }
+.ss-img.in-fade, .ss-img.out-fade { transition: opacity .9s ease; }
+.ss-img.in-slide { transform: translateX(100%); opacity: 1; transition: transform .8s cubic-bezier(.2, .7, .2, 1); }
+.ss-img.in-slide.shown { transform: none; }
+.ss-img.out-slide { transform: translateX(-100%); opacity: 1; transition: transform .8s cubic-bezier(.2, .7, .2, 1); }
+.ss-img.in-zoom { transform: scale(1); transition: opacity .9s ease, transform calc(var(--ss-seconds, 4s) + 1s) linear; }
+.ss-img.in-zoom.shown { transform: scale(1.08); }
+.ss-img.out-zoom { transform: scale(1.08); transition: opacity .9s ease; }
+.ss-img.in-black { transition: opacity .6s ease .6s; }
+.ss-img.out-black { transition: opacity .6s ease; }
+.ss-bar { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: rgba(20, 20, 20, .75); border-radius: 8px; color: #ddd; font-size: 12px; }
+.ss-bar[hidden] { display: none; }
+.ss-bar button { background: none; border-color: transparent; color: #eee; min-width: 28px; }
+.ss-where { padding: 0 8px; white-space: nowrap; max-width: 50vw; overflow: hidden; text-overflow: ellipsis; }
+.slideshow-dialog { width: 380px; }
+.slideshow-dialog form { display: grid; gap: 10px; }
+.slideshow-dialog label { display: flex; flex-direction: row; align-items: center; gap: 8px; }
+.slideshow-dialog select { width: auto; }
+.slideshow-dialog input[type="number"] { width: 64px; }

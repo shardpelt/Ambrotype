@@ -442,3 +442,13 @@ mod tests {
         }
     }
 }
+
+/// Puts the window in or out of full screen (the slideshow); returns whether
+/// it was full screen before.
+#[tauri::command]
+pub(crate) fn window_fullscreen(on: bool, app: tauri::AppHandle) -> Res<bool> {
+    let window = app.get_webview_window("main").ok_or("no main window")?;
+    let was = window.is_fullscreen().map_err(|e| e.to_string())?;
+    window.set_fullscreen(on).map_err(|e| e.to_string())?;
+    Ok(was)
+}

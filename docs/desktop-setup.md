@@ -69,7 +69,8 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 - **Filmstrip:** the other photos in the photo's folder (a JPEG shot together with a raw of the same name is shown once, as the raw) are shown under it, in name order, with their stars and a dot for photos with edits. Click one or use ← → to open it; your edits to the photo you leave are saved to its sidecar first. Thumbnails come from the preview the camera embedded (quick), and are cached; the open photo's thumbnail shows its edit. Files that can't be opened are marked and skipped.
 
   ![Filmstrip](images/filmstrip.png)
-- **More room:** Ctrl+[ and Ctrl+] fold the left and right columns; Ctrl+Shift+T (or Settings → General) hides the top bar, which slides back in while the pointer is at the window's top edge.
+- **More room:** Ctrl+[ and Ctrl+] fold the left and right columns; Ctrl+Shift+T (or Settings → General) hides the top bar, which slides back in while the pointer is at the window's top edge. The **Minimalism** layout (Appearance) goes further: only the photo, on near-black, with no menus or bars; the panels slide in while the pointer is at the left or right edge, and every shortcut works.
+- **Slideshow** (Ctrl+Enter, the toolbar's Slideshow, or ▶ Slideshow in the library): the photos shown in the library (or the selected ones), or the folder's photos from the open one on, each with its edit. Choose how long each stays, shuffle or in order, full screen or in the window, and the change: a straight cut, fade, slide, slow zoom, through black, or a random one each time. Space pauses, ← → step, Esc or a click ends it.
 - **Rating and keywords:** the stars and the keyword field are saved to the photo's `.xmp` straight away, in the fields Lightroom reads (`xmp:Rating`, `dc:subject`), and go into exported files: as XMP (read by Lightroom, Bridge, Apple Photos, digiKam and most websites), IPTC keywords in JPEGs, and EXIF Rating/XPKeywords for Windows. OpenEXR exports don't carry them yet. Keys 1–5 rate, 0 clears.
 
   ![Rating and keywords](images/rating-keywords.png)
@@ -135,6 +136,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | C | Collage maker |
   | F | Filmstrip |
   | Ctrl+[ , Ctrl+], Ctrl+Shift+T | Left column, right column, top bar |
+  | Ctrl+Enter | Slideshow (Space pauses, ← → step, Esc ends) |
   | Ctrl+Alt+1–6 | Tasks |
   | Ctrl+Alt+E | Edit in another app |
   | Ctrl+Shift+P, Ctrl+Shift+H, Ctrl+Shift+A | Plugins, browse the hub, assistant |

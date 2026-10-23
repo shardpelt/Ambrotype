@@ -550,13 +550,35 @@ function nudgeSlider(steps) {
   showSelectedSlider();
 }
 
+// The protocol's notes are written for scripts and AI clients, with every
+// setting named. People get one short line, and only for what changes what
+// they see: settings a preset has that aren't supported yet, values it had
+// out of range, or nothing changing at all.
+function notesForPeople(notes) {
+  const out = [];
+  for (const n of notes) {
+    let m;
+    if ((m = n.match(/^copied (\d+) setting\(s\) unknown/))) {
+      out.push(`${m[1]} of its settings aren't supported yet (kept in the file for Lightroom)`);
+    } else if ((m = n.match(/^skipped (\d+) invalid preset value/))) {
+      out.push(`${m[1]} of its values were out of range and skipped`);
+    } else if (n === "no change") {
+      out.push("No change: the photo already has these settings");
+    }
+  }
+  return out.join(" · ");
+}
+
 // Run protocol commands; several commands with a `group` label are one undo step.
 async function run(commands, group = null) {
   if (!ui.info) return;
   try {
     const r = await invoke("execute", { commands, group });
     setState(r.state);
-    if (r.notes.length) toast(r.notes.join(" · "));
+    const said = notesForPeople(r.notes);
+    if (said) toast(said);
+    // The full notes (written for scripts and AI clients) stay at hand.
+    $("status").title = r.notes.join("\n");
     requestPreview(false);
   } catch (e) {
     toast(String(e), true);

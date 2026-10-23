@@ -56,6 +56,15 @@ await t.step("Settings says how the monitor's colours are handled", async () => 
   t.log(s.note);
 });
 
+await t.step("a preset's notes for scripts become one short line", async () => {
+  const said = notesForPeople([
+    "copied 23 setting(s) unknown to the registry without validation: A, B, C",
+    "copied Temperature, Tint unscaled at 50%: no current value",
+    "WhiteBalance set to \"Custom\" so that Temperature takes effect",
+  ]);
+  t.expect(said === "23 of its settings aren't supported yet (kept in the file for Lightroom)", said);
+});
+
 await t.step("Ctrl+E exports a JPEG", async () => {
   t.key("Ctrl+E");
   await t.until("the Export dialog", () => $("export-dialog").open);

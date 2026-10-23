@@ -43,6 +43,7 @@ impl Lib {
             .env("XDG_CONFIG_HOME", self.dir.join("config"))
             .env("XDG_DATA_HOME", self.dir.join("data"))
             .env("HOME", &self.dir)
+            .env("APPDATA", self.dir.join("config"))
             .output()
             .expect("amb runs");
         assert!(
@@ -163,11 +164,14 @@ fn duplicates_rename_sort_and_trash() {
         .unwrap()
         .path();
     assert_eq!(std::fs::read_dir(&year).unwrap().count(), 6);
-    // Trash: the photo and its sidecar.
-    let photo = year.join("trip_0001.dng");
-    lib.amb(&["trash", photo.to_str().unwrap()]);
-    assert!(!photo.exists() && !year.join("trip_0001.xmp").exists());
-    assert!(lib.has("data/Trash/files/trip_0001.dng"));
+    // Trash: the photo and its sidecar. Only on Linux, where the trash is a
+    // folder the test can give (macOS and Windows use the system's own).
+    if cfg!(target_os = "linux") {
+        let photo = year.join("trip_0001.dng");
+        lib.amb(&["trash", photo.to_str().unwrap()]);
+        assert!(!photo.exists() && !year.join("trip_0001.xmp").exists());
+        assert!(lib.has("data/Trash/files/trip_0001.dng"));
+    }
 }
 
 #[test]
@@ -201,8 +205,9 @@ fn keywords_collections_and_missing_photos() {
             .is_empty()
     );
     let shown = lib.json(&["collection", "show", "Trip"]);
+    let moved = PathBuf::from(shown[0].as_str().unwrap());
     assert!(
-        shown[0].as_str().unwrap().ends_with("elsewhere/IMG_1.dng"),
+        moved.is_absolute() && moved.ends_with("elsewhere/IMG_1.dng"),
         "{shown}"
     );
 }

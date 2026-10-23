@@ -19,12 +19,12 @@ jobs:
       - uses: actions/checkout@v4
       # The runners' package mirror is often slow (tens of KB/s), so the
       # downloaded packages are kept between runs and only new ones fetched.
-      - name: Keep the downloaded packages (Linux)
+      - name: Packages downloaded before (Linux)
         if: runner.os == 'Linux'
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/apt-archives
-          key: apt-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          key: apt-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}
           restore-keys: apt-${{ runner.os }}-${{ runner.arch }}-
       - name: Install webview build dependencies (Linux, for the Tauri GUI) and a software Vulkan GPU
         if: runner.os == 'Linux'
@@ -40,9 +40,18 @@ jobs:
           $apt install -y mesa-vulkan-drivers
           # A virtual screen for the editor's UI test.
           $apt install -y xvfb
-          # The cache action reads them as the runner user.
+      # Kept even when the install timed out, so the next run carries on
+      # from what this one fetched.
+      - name: Keep the downloaded packages (Linux)
+        if: always() && runner.os == 'Linux'
+        run: |
           sudo chown -R "$USER" ~/apt-archives
-          rm -rf ~/apt-archives/partial ~/apt-archives/lock
+          sudo rm -rf ~/apt-archives/partial ~/apt-archives/lock
+      - if: always() && runner.os == 'Linux'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/apt-archives
+          key: apt-${{ runner.os }}-${{ runner.arch }}-${{ github.run_id }}
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt

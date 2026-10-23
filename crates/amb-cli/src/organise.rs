@@ -486,7 +486,9 @@ pub(crate) fn missing(relink: Option<&str>, options: &Options, json: bool) -> Re
         );
         return Ok(());
     };
-    let found = files::find_moved(&missing, Path::new(dir));
+    // Absolute, as the catalogue and collections keep them.
+    let dir = std::path::absolute(dir).map_err(|e| format!("{dir}: {e}"))?;
+    let found = files::find_moved(&missing, &dir);
     follow(&found, options);
     cat.records(&found.iter().map(|f| f.1.clone()).collect::<Vec<_>>());
     if json {

@@ -17,17 +17,32 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      # The runners' package mirror is often slow (tens of KB/s), so the
+      # downloaded packages are kept between runs and only new ones fetched.
+      - name: Keep the downloaded packages (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/cache@v4
+        with:
+          path: ~/apt-archives
+          key: apt-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          restore-keys: apt-${{ runner.os }}-${{ runner.arch }}-
       - name: Install webview build dependencies (Linux, for the Tauri GUI) and a software Vulkan GPU
         if: runner.os == 'Linux'
-        # A stalled package mirror once held a run for over half an hour; fail fast instead.
-        timeout-minutes: 10
+        # A stalled package mirror once held a run for over half an hour; fail
+        # rather than wait. The first run, with nothing kept yet, needs longest.
+        timeout-minutes: 20
         run: |
+          mkdir -p ~/apt-archives/partial
+          apt="sudo apt-get -o Dir::Cache::Archives=$HOME/apt-archives -o Acquire::Retries=3"
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev librsvg2-dev libxdo-dev
+          $apt install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev librsvg2-dev libxdo-dev
           # lavapipe: amb-gpu's tests compare GPU and CPU renders on it.
-          sudo apt-get install -y mesa-vulkan-drivers
+          $apt install -y mesa-vulkan-drivers
           # A virtual screen for the editor's UI test.
-          sudo apt-get install -y xvfb
+          $apt install -y xvfb
+          # The cache action reads them as the runner user.
+          sudo chown -R "$USER" ~/apt-archives
+          rm -rf ~/apt-archives/partial ~/apt-archives/lock
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt

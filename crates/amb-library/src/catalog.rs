@@ -22,7 +22,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 /// Bumped when what is stored changes; an older catalogue is emptied.
-const VERSION: i64 = 1;
+const VERSION: i64 = 2;
 
 /// What the raw's header says about the shot.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -40,6 +40,9 @@ pub struct Shot {
     pub shutter: Option<f64>,
     /// Millimetres.
     pub focal: Option<f64>,
+    /// Where the camera's GPS says it was taken: latitude, longitude.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub camera_gps: Option<[f64; 2]>,
 }
 
 /// What the library shows of a photo: its sidecar's rating, label,
@@ -124,6 +127,30 @@ fn shot_of(m: &amb_engine::raw::PhotoMetadata) -> Shot {
         aperture: ratio(m.fnumber),
         shutter: ratio(m.exposure_time),
         focal: ratio(m.focal_length),
+        camera_gps: m.gps.as_ref().and_then(|g| {
+            let deg = |(r, dms): &(String, [(u32, u32); 3]), neg: &str| {
+                let [d, m, s] = dms.map(|v| ratio(Some(v)));
+                let v = d? + m.unwrap_or(0.0) / 60.0 + s.unwrap_or(0.0) / 3600.0;
+                Some(if r.trim().eq_ignore_ascii_case(neg) {
+                    -v
+                } else {
+                    v
+                })
+            };
+            let (lat, lon) = (deg(&g.latitude, "S")?, deg(&g.longitude, "W")?);
+            // Cameras without a fix write zeros.
+            (lat != 0.0 || lon != 0.0).then_some([lat, lon])
+        }),
+    }
+}
+
+impl Record {
+    /// Where it was taken: a place set in the sidecar, or the camera's GPS.
+    pub fn place(&self) -> Option<[f64; 2]> {
+        self.info
+            .place()
+            .map(|(a, b)| [a, b])
+            .or(self.shot.camera_gps)
     }
 }
 

@@ -280,8 +280,9 @@
         </div>
       </details>
       <span id="library-count" class="hint"></span>
+      <button type="button" id="lib-date" class="small lib-date" title="Show every date again" hidden></button>
       <span id="lib-views" class="lib-views" role="group" aria-label="View">
-        <button type="button" data-view="grid" class="on" title="Grid (G)">Grid</button><button type="button" data-view="loupe" title="Loupe (E)">Loupe</button><button type="button" data-view="compare" title="Compare (C)">Compare</button><button type="button" data-view="survey" title="Survey (N)">Survey</button>
+        <button type="button" data-view="grid" class="on" title="Grid (G)">Grid</button><button type="button" data-view="loupe" title="Loupe (E)">Loupe</button><button type="button" data-view="compare" title="Compare (C)">Compare</button><button type="button" data-view="survey" title="Survey (N)">Survey</button><button type="button" data-view="timeline" title="Timeline: the photos shown by year, month and day">Timeline</button><button type="button" data-view="map" title="Map: the photos shown by where they were taken">Map</button>
       </span>
       <span class="grow"></span>
       <input id="lib-search" type="search" placeholder="Name, keyword, camera or lens" spellcheck="false" aria-label="Search">
@@ -327,6 +328,7 @@
       </aside>
       <div id="library-grid" class="library-grid" tabindex="-1"></div>
       <div id="library-view" class="library-view" tabindex="-1" hidden></div>
+      <div id="lib-scrubber" class="lib-scrubber" title="Drag to jump through the years" hidden></div>
       <div id="library-empty" class="library-empty" hidden>
         <p class="empty-title">Drop a folder of photos here</p>
         <p class="hint">Or choose one, or open a photo: the library shows its folder.</p>
@@ -975,6 +977,7 @@
           <span class="folder-row"><select id="settings-monitor"><option value="auto">Automatic: the desktop's profile</option><option value="off">Off: plain sRGB</option><option value="file">A profile file</option></select><button type="button" class="small" id="settings-monitor-pick">Choose a profile…</button></span>
           <small class="hint" id="settings-monitor-note"></small>
         </label>
+        <label class="check"><input type="checkbox" id="settings-map-tiles"> Map images from OpenStreetMap in the library's Map (off: the map is a plain grid; on, it asks openstreetmap.org for the area shown)</label>
         <label class="check" id="settings-menu-row"><input type="checkbox" id="settings-menu-bar"> Show the menu bar in the window (every command by name, with its keys)</label>
         <div class="crop-line">
           <button type="button" id="settings-folder">Open the settings folder</button>
@@ -1364,6 +1367,7 @@
   <script src="collage.js"></script>
   <script src="library.js"></script>
   <script src="cull.js"></script>
+  <script src="browse.js"></script>
   <script src="import.js"></script>
   <script src="lrcat.js"></script>
   <script src="collections.js"></script>

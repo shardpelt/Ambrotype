@@ -6,6 +6,7 @@
 pub mod catalog;
 pub mod collections;
 pub mod folder;
+pub mod gpx;
 pub mod import;
 pub mod lensdb;
 pub mod look;

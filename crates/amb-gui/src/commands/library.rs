@@ -187,16 +187,7 @@ pub(crate) async fn library_set_info(
     let updates = tauri::async_runtime::spawn_blocking(move || -> Res<Vec<InfoUpdate>> {
         let mut out = Vec::new();
         for path in paths {
-            let info = {
-                let mut guard = slot.lock().map_err(|e| e.to_string())?;
-                match guard.as_mut().filter(|s| s.path == Path::new(&path)) {
-                    Some(s) => {
-                        let new = change.apply(&s.info);
-                        s.set_info(&new)?
-                    }
-                    None => library::change_info(Path::new(&path), &change)?,
-                }
-            };
+            let info = change_one(&slot, &path, &change)?;
             out.push(InfoUpdate { path, info });
         }
         Ok(out)
@@ -213,6 +204,23 @@ pub(crate) async fn library_set_info(
     }
     save_config(state.inner());
     Ok(updates)
+}
+
+/// Change one photo's info: through its session when it is the open photo
+/// (so the editor stays in step), in its sidecar otherwise.
+pub(crate) fn change_one(
+    slot: &Mutex<Option<Session>>,
+    path: &str,
+    change: &library::InfoChange,
+) -> Res<amb_protocol::sidecar::PhotoInfo> {
+    let mut guard = slot.lock().map_err(|e| e.to_string())?;
+    match guard.as_mut().filter(|s| s.path == Path::new(path)) {
+        Some(s) => {
+            let new = change.apply(&s.info);
+            s.set_info(&new)
+        }
+        None => library::change_info(Path::new(path), change),
+    }
 }
 
 /// The setting groups "Paste settings" offers.

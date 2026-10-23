@@ -37,6 +37,7 @@ use crate::Error;
 const XMP_NS: &str = "http://ns.adobe.com/xap/1.0/";
 const DC_NS: &str = "http://purl.org/dc/elements/1.1/";
 const LR_NS: &str = "http://ns.adobe.com/lightroom/1.0/";
+const EXIF_NS: &str = "http://ns.adobe.com/exif/1.0/";
 /// Ambrotype's library namespace: photo state that isn't a develop setting.
 pub const LIBRARY_NS: &str = "http://ns.ambrotype.org/library/1.0/";
 
@@ -97,6 +98,12 @@ pub struct PhotoInfo {
     /// keeps what the file has and an empty id takes it out of its stack.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stack: Option<StackRef>,
+    /// Where the photo was taken, as "latitude,longitude" in decimal
+    /// degrees, when the sidecar says (`exif:GPSLatitude` and
+    /// `exif:GPSLongitude`, as Lightroom writes a place set on its map).
+    /// Writing, `None` keeps what the file has and `""` removes it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub gps: Option<String>,
 }
 
 /// A photo's place in a stack: the stack's id, and whether it is the photo
@@ -142,7 +149,16 @@ impl PhotoInfo {
             creator: self.creator.as_deref().map(|t| t.trim().to_string()),
             copyright: self.copyright.as_deref().map(|t| t.trim().to_string()),
             stack: self.stack.clone(),
+            gps: self.gps.as_deref().map(|g| match parse_place(g) {
+                Some((lat, lon)) => format!("{lat:.6},{lon:.6}"),
+                None => String::new(),
+            }),
         }
+    }
+
+    /// The place, as (latitude, longitude) in degrees.
+    pub fn place(&self) -> Option<(f64, f64)> {
+        parse_place(self.gps.as_deref()?)
     }
 
     /// The text field kept in `dc:<local>`.
@@ -154,6 +170,50 @@ impl PhotoInfo {
             _ => &mut self.copyright,
         }
     }
+}
+
+/// "latitude,longitude" in decimal degrees, in range.
+pub fn parse_place(s: &str) -> Option<(f64, f64)> {
+    let (lat, lon) = s.split_once(',')?;
+    let (lat, lon) = (
+        lat.trim().parse::<f64>().ok()?,
+        lon.trim().parse::<f64>().ok()?,
+    );
+    ((-90.0..=90.0).contains(&lat) && (-180.0..=180.0).contains(&lon)).then_some((lat, lon))
+}
+
+/// XMP's EXIF GPS coordinate, "DDD,MM.mmmmK" or "DDD,MM,SSK" (K is N, S, E
+/// or W), as signed degrees.
+fn parse_xmp_coordinate(s: &str) -> Option<f64> {
+    let s = s.trim();
+    let sign = match s.chars().last()? {
+        'N' | 'E' | 'n' | 'e' => 1.0,
+        'S' | 'W' | 's' | 'w' => -1.0,
+        _ => return None,
+    };
+    let parts: Vec<f64> = s[..s.len() - 1]
+        .split(',')
+        .map(|p| p.trim().parse::<f64>().ok())
+        .collect::<Option<_>>()?;
+    let deg = match parts.as_slice() {
+        [d] => *d,
+        [d, m] => d + m / 60.0,
+        [d, m, sec] => d + m / 60.0 + sec / 3600.0,
+        _ => return None,
+    };
+    Some(sign * deg)
+}
+
+/// Signed degrees as XMP's "DDD,MM.mmmmmmK".
+fn xmp_coordinate(v: f64, pos: char, neg: char) -> String {
+    let a = v.abs();
+    let d = a.trunc();
+    format!(
+        "{},{:.6}{}",
+        d as i64,
+        (a - d) * 60.0,
+        if v < 0.0 { neg } else { pos }
+    )
 }
 
 /// A rating as stored: stars, or -1 for rejected.
@@ -208,6 +268,9 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
     let mut in_text: Option<&'static str> = None;
     let mut items: Vec<String> = Vec::new();
     let mut in_item = false;
+    // exif:GPSLatitude and exif:GPSLongitude, as attributes or elements.
+    let mut gps: [Option<f64>; 2] = [None, None];
+    let mut in_gps: Option<usize> = None;
     loop {
         match reader.read_resolved_event() {
             Ok((ns, Event::Start(e))) | Ok((ns, Event::Empty(e))) => {
@@ -222,6 +285,10 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                     in_label = true;
                 } else if is(LIBRARY_NS) && local == b"Flag" {
                     in_flag = true;
+                } else if is(EXIF_NS) && local == b"GPSLatitude" {
+                    in_gps = Some(0);
+                } else if is(EXIF_NS) && local == b"GPSLongitude" {
+                    in_gps = Some(1);
                 } else if in_subject && is(RDF_NS) && local == b"li" {
                     in_li = true;
                 } else if is(DC_NS) {
@@ -247,6 +314,15 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                             .unwrap_or_default();
                         (info.rating, rated_reject) = parse_rating(&v);
                     }
+                    let exif =
+                        matches!(ans, ResolveResult::Bound(n) if n.as_ref() == EXIF_NS.as_bytes());
+                    if exif && matches!(alocal.as_ref(), b"GPSLatitude" | b"GPSLongitude") {
+                        let i = usize::from(alocal.as_ref() == b"GPSLongitude");
+                        gps[i] = a
+                            .unescape_value()
+                            .ok()
+                            .and_then(|v| parse_xmp_coordinate(&v));
+                    }
                     let library = matches!(ans, ResolveResult::Bound(n) if n.as_ref() == LIBRARY_NS.as_bytes());
                     if library && alocal.as_ref() == b"Flag" {
                         info.flag = a.unescape_value().ok().and_then(|v| Flag::parse(&v));
@@ -268,7 +344,9 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
             }
             Ok((_, Event::Text(t))) => {
                 let v = t.unescape().map(|v| v.to_string()).unwrap_or_default();
-                if in_item {
+                if let Some(i) = in_gps {
+                    gps[i] = parse_xmp_coordinate(&v);
+                } else if in_item {
                     if let Some(last) = items.last_mut() {
                         last.push_str(&v);
                     }
@@ -293,6 +371,9 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
                     in_label = false;
                 } else if is(LIBRARY_NS) && local.as_ref() == b"Flag" {
                     in_flag = false;
+                } else if is(EXIF_NS) && matches!(local.as_ref(), b"GPSLatitude" | b"GPSLongitude")
+                {
+                    in_gps = None;
                 } else if is(RDF_NS) && local.as_ref() == b"li" {
                     in_li = false;
                     in_item = false;
@@ -312,6 +393,9 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
             Ok((_, Event::Eof)) | Err(_) => break,
             _ => {}
         }
+    }
+    if let [Some(lat), Some(lon)] = gps {
+        info.gps = Some(format!("{lat:.6},{lon:.6}"));
     }
     if info.flag.is_none() && rated_reject {
         info.flag = Some(Flag::Reject);
@@ -476,6 +560,26 @@ fn apply_info(foreign: &mut Foreign, info: &PhotoInfo) {
                     .attributes
                     .push((format!("{p}:StackTop"), "true".into()));
             }
+        }
+    }
+    if let Some(gps) = &info.gps {
+        let ns = foreign.namespaces.clone();
+        let is_gps = |l: &str| matches!(l, "GPSLatitude" | "GPSLongitude");
+        foreign
+            .attributes
+            .retain(|(name, _)| !matches!(resolve(name, &ns), (Some(EXIF_NS), l) if is_gps(l)));
+        foreign.elements.retain(|e| {
+            let (uri, l) = element_ns(e, &ns);
+            !(uri.as_deref() == Some(EXIF_NS) && is_gps(&l))
+        });
+        if let Some((lat, lon)) = parse_place(gps) {
+            let p = prefix_for(foreign, EXIF_NS, "exif");
+            foreign
+                .attributes
+                .push((format!("{p}:GPSLatitude"), xmp_coordinate(lat, 'N', 'S')));
+            foreign
+                .attributes
+                .push((format!("{p}:GPSLongitude"), xmp_coordinate(lon, 'E', 'W')));
         }
     }
     if let Some(label) = &info.label {
@@ -834,6 +938,51 @@ pub fn write_atomic(path: &Path, text: &str) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn places_round_trip_in_lightrooms_form() {
+        let xmp = with_info(
+            None,
+            &PhotoInfo {
+                gps: Some("52.3676,-4.9041".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert!(xmp.contains("GPSLatitude=\"52,22.056000N\""), "{xmp}");
+        assert!(xmp.contains("GPSLongitude=\"4,54.246000W\""), "{xmp}");
+        let (lat, lon) = read_info(&xmp).place().unwrap();
+        assert!((lat - 52.3676).abs() < 1e-6 && (lon + 4.9041).abs() < 1e-6);
+        // Kept by other changes, removed by "".
+        let rated = with_info(
+            Some(&xmp),
+            &PhotoInfo {
+                rating: Some(3),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert!(read_info(&rated).place().is_some());
+        let gone = with_info(
+            Some(&rated),
+            &PhotoInfo {
+                gps: Some(String::new()),
+                ..read_info(&rated)
+            },
+        )
+        .unwrap();
+        assert_eq!(read_info(&gone).gps, None, "{gone}");
+        // Lightroom's element form, with seconds.
+        let lr = r#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<rdf:Description rdf:about="" xmlns:exif="http://ns.adobe.com/exif/1.0/">
+<exif:GPSLatitude>33,51,30S</exif:GPSLatitude><exif:GPSLongitude>151,12.5E</exif:GPSLongitude>
+</rdf:Description></rdf:RDF></x:xmpmeta>"#;
+        let (lat, lon) = read_info(lr).place().unwrap();
+        assert!(
+            (lat + 33.858333).abs() < 1e-5 && (lon - 151.208333).abs() < 1e-5,
+            "{lat} {lon}"
+        );
+    }
 
     #[test]
     fn stacks_round_trip_and_survive_other_changes() {

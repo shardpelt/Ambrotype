@@ -36,6 +36,9 @@ pub struct FolderPhoto {
     pub copyright: Option<String>,
     /// The stack it's in, if any.
     pub stack: Option<amb_protocol::sidecar::StackRef>,
+    /// Where it was taken (latitude, longitude), as set in the sidecar
+    /// (the camera's own GPS is the shot's `camera_gps`).
+    pub gps: Option<[f64; 2]>,
 }
 
 pub use amb_library::folder::photo_extensions;
@@ -127,8 +130,10 @@ pub fn from_record(
     p: &Path,
     r: amb_library::catalog::Record,
 ) -> (FolderPhoto, amb_library::catalog::Shot) {
+    let gps = r.info.place().map(|(a, b)| [a, b]);
     let info = r.info;
     let photo = FolderPhoto {
+        gps,
         name: display_name(p),
         copy: amb_engine::virtual_copy_of(p).map(|(_, n)| n),
         path: p.display().to_string(),

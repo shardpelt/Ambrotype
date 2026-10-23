@@ -13,6 +13,7 @@ pub(crate) mod library;
 pub(crate) mod menu;
 pub(crate) mod models;
 pub(crate) mod photo;
+pub(crate) mod places;
 pub(crate) mod plugins;
 pub(crate) mod presets;
 pub(crate) mod preview;

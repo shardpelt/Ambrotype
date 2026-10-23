@@ -63,6 +63,18 @@ Folders, or whole drives, that the catalogue keeps indexed (photo manager track,
 - New photos: a folder on screen is watched, so photos added show within a second (↻ reads it again by hand). Library folders not on screen catch up at the next start or when their drive comes back.
 - **Very large folders** (2026-10-20): the grid draws only the rows on screen and a few around them (6000 photos scroll like 60), and keeps the pictures of the last 3000 photos shown. The thumbnail cache on disk is kept within 2 GB: at each start the thumbnails shown least lately go first (an offline photo whose thumbnail went shows a blank frame until its drive is back).
 
+## Timeline and map
+
+Other ways to browse what the library shows (a folder, a collection or All photos, after the filters), as views next to Grid, Loupe, Compare and Survey (2026-10-23; `ui/browse.js`).
+
+- **Timeline:** the years as bars, and the chosen year as twelve month calendars. A day with photos shows the first one's thumbnail and how many there are. Clicking a day or a month name shows just those photos in the grid, and a date chip in the bar (`14 July 2026 ×`) shows all dates again. Double-clicking a year, or **Show all of 2026**, shows the year.
+- **Scrubber:** sorted by capture time, the grid has a strip on its right edge with the years. Dragging along it jumps through the photos and says which month you're at.
+- **Map:** the photos with a place, as pins; close ones are grouped with a count. Hover a pin for a thumbnail, click to select its photos (Ctrl for more), double-click to zoom in (or open a single photo). Drag to pan, the wheel zooms, **Fit** shows every pin.
+  - **Where places come from:** the camera's GPS (read into the catalogue), or a place set here. Set places go into the sidecar as Lightroom writes them (`exif:GPSLatitude`, `exif:GPSLongitude`, "DDD,MM.mmmmmmK"), and win over the camera's. Exports with all metadata write them as EXIF GPS.
+  - **Placing by hand:** photos without a place are in a tray under the map: drag one onto the map (the whole selection moves together if it's selected). Or select photos and right-click where they were taken. **Remove place** takes a set place out again (the camera's own GPS stays).
+  - **From a GPX track** (**Match GPX track…**): each photo's capture time is looked up on the track (`amb_library::gpx`). Cameras write local time without a zone and GPX keeps UTC, so it asks how many hours the camera's clock was ahead of UTC (guessed from this computer's time zone on that date). Between two track points the place is interpolated; a photo more than 5 minutes from any point isn't placed. Photos that already have a place keep it. It works on the selection, or on every photo shown.
+  - **Map images** are OpenStreetMap's, only when turned on (Settings → General, or the button on the map), since fetching them tells openstreetmap.org which area you look at. Off, the map is a plain grid of latitudes and longitudes with the pins on it. The images are credited on the map, with a link to OpenStreetMap's copyright page.
+
 ## Import
 
 Lightroom's Import "Copy", without a catalogue. The dialog (and `amb import SOURCE DEST`) shows what will happen before anything is copied.

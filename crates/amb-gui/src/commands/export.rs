@@ -170,6 +170,7 @@ pub(crate) async fn export(
                 .and_then(|g| g.as_ref().map(|s| s.info.clone()))
             {
                 s.tags = amb_export::exif::Tags {
+                    place: info.place(),
                     rating: info.rating,
                     keywords: info.keywords,
                     label: info.label,
@@ -479,6 +480,7 @@ pub(crate) async fn edit_in(
             caption: i.caption.clone(),
             creator: i.creator.clone(),
             copyright: i.copyright.clone(),
+            place: i.place(),
         };
         let out = session::edit_copy_path(&session.path);
         let lens = lens.get().unwrap_or_else(|| empty_lens());

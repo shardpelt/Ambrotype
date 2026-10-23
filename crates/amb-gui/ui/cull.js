@@ -8,7 +8,7 @@
 "use strict";
 
 const cull = {
-  view: "grid",     // "grid", "loupe", "compare" or "survey"
+  view: "grid",     // "grid", "loupe", "compare", "survey", or browse.js's "timeline" or "map"
   active: null,     // the photo keys act on
   select: null,     // compare: the left photo
   candidate: null,  // compare: the right photo
@@ -16,7 +16,7 @@ const cull = {
   loads: new Map(), // `${path}|${edge}|${edited}` -> Promise<url>
 };
 
-const cullOn = () => lib.on && cull.view !== "grid";
+const cullOn = () => lib.on && ["loupe", "compare", "survey"].includes(cull.view);
 
 // The photos the panel and the rating keys act on.
 function libraryTargets() {
@@ -28,7 +28,7 @@ function libraryTargets() {
 function setLibraryView(view) {
   if (!lib.on) return false;
   const order = lib.shown.map((p) => p.path);
-  if (!order.length && view !== "grid") return false;
+  if (!order.length && view !== "grid" && !BROWSE_VIEWS.includes(view)) return false;
   const sel = selectedPhotos().map((p) => p.path);
   // Going from one view to another keeps the active photo.
   const focus = cullOn() && order.includes(cull.active) ? cull.active
@@ -55,9 +55,12 @@ function setLibraryView(view) {
       revealPhoto(cull.active);
     }
     $("library-grid").focus({ preventScroll: true });
+  } else if (BROWSE_VIEWS.includes(view)) {
+    renderBrowse();
   } else {
     renderCull();
   }
+  renderScrubber();
   return true;
 }
 
@@ -248,7 +251,7 @@ function surveyRemove(path) {
 
 // Esc and G: back to the grid first.
 function cullLeave() {
-  return cullOn() ? setLibraryView("grid") : false;
+  return lib.on && cull.view !== "grid" ? setLibraryView("grid") : false;
 }
 
 function wireCull() {

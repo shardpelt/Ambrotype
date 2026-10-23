@@ -1065,3 +1065,51 @@ button.tool-icon.active { color: var(--accent); }
 .task-sketch-col span.open { background: color-mix(in srgb, var(--accent) 35%, transparent); }
 .task-sketch-photo { flex: 1; border-radius: 3px; background: linear-gradient(135deg, color-mix(in srgb, var(--muted) 35%, transparent), color-mix(in srgb, var(--muted) 12%, transparent)); }
 .task-sketch-grid { flex: 1; background: repeating-linear-gradient(90deg, transparent 0 4px, var(--panel) 4px 6px), repeating-linear-gradient(0deg, color-mix(in srgb, var(--muted) 25%, transparent) 0 22px, var(--panel) 22px 26px); border-radius: 3px; }
+
+/* Library: timeline, scrubber and map (browse.js) */
+.lib-date { border-color: var(--accent); }
+.library-view.browse { display: flex; flex-direction: column; gap: 10px; overflow: auto; }
+.browse-empty { margin: auto; }
+.tl-years { display: flex; align-items: flex-end; gap: 4px; height: 74px; flex: none; overflow-x: auto; }
+.tl-year { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; height: 100%; min-width: 44px; padding: 2px 4px; font-size: 11px; background: none; border-color: transparent; }
+.tl-year .tl-bar { width: 22px; background: var(--track); border-radius: 3px 3px 0 0; }
+.tl-year.on .tl-bar { background: var(--accent); }
+.tl-year.on { border-color: var(--line); }
+.tl-head { display: flex; align-items: center; gap: 12px; flex: none; }
+.tl-months { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.tl-month.empty { opacity: .45; }
+.tl-month-title { display: block; width: 100%; text-align: left; background: none; border: none; padding: 2px 0 6px; font-size: 13px; color: var(--muted); }
+.tl-month-title b { color: var(--text); }
+.tl-month-title:not(:disabled):hover b { color: var(--accent); }
+.tl-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.tl-dow { font-size: 10px; color: var(--faint); text-align: center; }
+.tl-day { position: relative; aspect-ratio: 1; border-radius: 4px; background: var(--bg-deep); font-size: 10px; color: var(--faint); padding: 0; border: none; background-size: cover; background-position: center; overflow: hidden; }
+.tl-day.has { color: #fff; cursor: pointer; box-shadow: inset 0 0 0 1px var(--line); }
+.tl-day.has:hover { box-shadow: inset 0 0 0 2px var(--accent); }
+.tl-num { position: absolute; top: 2px; left: 3px; text-shadow: 0 0 3px #000; }
+.tl-count { position: absolute; right: 2px; bottom: 2px; padding: 0 3px; border-radius: 3px; background: rgba(0, 0, 0, .65); font-size: 9px; }
+.lib-scrubber { position: absolute; top: 0; bottom: 0; right: calc(var(--panel-w) + 2px); width: 34px; z-index: 3; cursor: ns-resize; touch-action: none; }
+.lib-scrubber[hidden] { display: none; }
+.lib-scrubber:hover, .lib-scrubber.dragging { background: color-mix(in srgb, var(--bg-deep) 70%, transparent); }
+.scrub-mark { position: absolute; right: 4px; font-size: 10px; color: var(--faint); transform: translateY(-1px); pointer-events: none; }
+.lib-scrubber:hover .scrub-mark { color: var(--muted); }
+.scrub-tip { position: absolute; right: 38px; transform: translateY(-50%); padding: 3px 8px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--accent); font-size: 12px; white-space: nowrap; pointer-events: none; }
+.library-view.map { overflow: hidden; }
+.map-bar { display: flex; align-items: center; gap: 6px; flex: none; }
+.map { position: relative; flex: 1; min-height: 200px; overflow: hidden; border-radius: var(--radius); background: var(--bg-deep); cursor: grab; outline: none; touch-action: none; }
+.map:active { cursor: grabbing; }
+.map-tiles, .map-pins { position: absolute; inset: 0; }
+.map-tiles img { position: absolute; width: 256px; height: 256px; user-select: none; }
+.map-grid line { stroke: var(--line); stroke-width: 1; }
+.map-grid text { fill: var(--faint); font-size: 10px; }
+.map-pin { position: absolute; min-width: 22px; height: 22px; padding: 0 5px; transform: translate(-50%, -50%); border-radius: 11px; border: 2px solid #fff; background: var(--accent); color: var(--accent-ink); font-size: 11px; font-weight: 600; box-shadow: 0 1px 4px rgba(0, 0, 0, .5); }
+.map-pin.one { min-width: 14px; width: 14px; height: 14px; padding: 0; }
+.map-pin.selected { background: #fff; border-color: var(--accent); }
+.map-peek { position: fixed; z-index: 50; max-width: 180px; max-height: 140px; transform: translate(-50%, calc(-100% - 10px)); border: 2px solid #fff; border-radius: 4px; box-shadow: 0 2px 10px rgba(0, 0, 0, .6); pointer-events: none; background: var(--bg-deep); }
+.map-peek:not([src]) { width: 120px; height: 80px; }
+.map-credit { position: absolute; right: 4px; bottom: 4px; padding: 1px 6px; font-size: 10px; background: rgba(255, 255, 255, .8); color: #333; border: none; border-radius: 3px; }
+.map-tray { display: flex; align-items: center; gap: 6px; flex: none; height: 76px; overflow-x: auto; overflow-y: hidden; }
+.map-tray[hidden] { display: none; }
+.map-tray .hint { flex: none; max-width: 150px; font-size: 11px; }
+.map-thumb { flex: none; height: 64px; width: 64px; object-fit: cover; border-radius: 4px; border: 2px solid transparent; background: var(--panel); cursor: grab; }
+.map-thumb.selected { border-color: var(--accent); }

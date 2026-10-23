@@ -29,6 +29,8 @@ const lib = {
   stackSizes: new Map(), // stack id -> photos in it
   copied: null,        // the photo "Copy settings" took its edit from
   groups: null,        // setting groups for Paste settings
+  date: null,          // only photos taken then: "2026", "2026-07" or "2026-07-14" (browse.js)
+  beforeDate: null,    // what the filters show before the date filter
   wired: false,
 };
 
@@ -166,6 +168,8 @@ function applyView() {
     if (f.text && ![p.name, ...p.keywords, p.title, p.caption, p.camera, p.lens].some((t) => t?.toLowerCase().includes(f.text))) return false;
     return true;
   });
+  lib.beforeDate = shown;
+  if (lib.date) shown = shown.filter((p) => p.captured?.startsWith(lib.date));
   const sort = $("lib-sort").value;
   const byName = (a, b) => lib.photos.indexOf(a) - lib.photos.indexOf(b);
   if (sort === "captured") shown.sort((a, b) => (a.captured ?? "~").localeCompare(b.captured ?? "~") || byName(a, b));
@@ -290,6 +294,8 @@ function renderLibrary() {
   }
   renderCounts();
   renderSelection();
+  renderScrubber();
+  if (browseOn()) renderBrowse();
 }
 
 function gridMetrics() {
@@ -932,6 +938,7 @@ async function libraryCollage() {
 function wireLibrary() {
   if (lib.wired) return;
   lib.wired = true;
+  wireBrowse();
   // Title, caption, creator and copyright for the selection, when a field is left.
   $("lib-stack").addEventListener("click", stackSelection);
   $("lib-unstack").addEventListener("click", unstackSelection);

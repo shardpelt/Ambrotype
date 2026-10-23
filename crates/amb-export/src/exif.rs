@@ -2,7 +2,7 @@
 //! A small EXIF writer: IFD0, the Exif IFD and the GPS IFD as a little-endian
 //! TIFF structure (what JPEG APP1, PNG eXIf, WebP and AVIF carry).
 
-use amb_engine::raw::{PhotoMetadata, Ratio};
+use amb_engine::raw::{Gps, PhotoMetadata, Ratio};
 
 /// Which metadata goes into an export (Lightroom's Export → Metadata choices).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -152,6 +152,28 @@ pub struct Tags {
     /// they replace the camera's own Artist and Copyright.
     pub creator: Option<String>,
     pub copyright: Option<String>,
+    /// Where it was taken (latitude, longitude), when set in the sidecar:
+    /// replaces the camera's GPS, with the full policy.
+    pub place: Option<(f64, f64)>,
+}
+
+/// Signed degrees as EXIF GPS: the hemisphere and degrees, minutes, seconds.
+fn gps_of((lat, lon): (f64, f64)) -> Gps {
+    let dms = |v: f64| {
+        let a = v.abs();
+        let (d, m) = (a.trunc(), (a.fract() * 60.0).trunc());
+        let s = ((a * 3600.0) - d * 3600.0 - m * 60.0).max(0.0);
+        [
+            (d as u32, 1),
+            (m as u32, 1),
+            ((s * 10000.0).round() as u32, 10000),
+        ]
+    };
+    Gps {
+        latitude: ((if lat < 0.0 { "S" } else { "N" }).into(), dms(lat)),
+        longitude: ((if lon < 0.0 { "W" } else { "E" }).into(), dms(lon)),
+        altitude: None,
+    }
 }
 
 fn given(s: &Option<String>) -> Option<&str> {
@@ -354,7 +376,8 @@ pub(crate) fn export_dirs(
             exif.push(ascii(0xA434, m));
         }
         if policy == MetadataPolicy::All {
-            if let Some(g) = &meta.gps {
+            let placed = tags.place.map(gps_of);
+            if let Some(g) = placed.as_ref().or(meta.gps.as_ref()) {
                 gps.push(Entry {
                     tag: 0x0000,
                     kind: BYTE,
@@ -383,7 +406,6 @@ pub(crate) fn export_dirs(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use amb_engine::raw::Gps;
 
     fn meta() -> PhotoMetadata {
         PhotoMetadata {
@@ -435,6 +457,29 @@ mod tests {
 
     fn find(ifd: &[(u16, u16, u32, Vec<u8>)], tag: u16) -> Option<Vec<u8>> {
         ifd.iter().find(|e| e.0 == tag).map(|e| e.3.clone())
+    }
+
+    #[test]
+    fn a_place_from_the_sidecar_replaces_the_cameras() {
+        let g = gps_of((-33.8568, 151.2153));
+        assert_eq!(g.latitude.0, "S");
+        assert_eq!(g.longitude.1[0], (151, 1));
+        let back = |dms: [(u32, u32); 3]| {
+            dms.iter()
+                .zip([1.0, 60.0, 3600.0])
+                .map(|((n, d), k)| *n as f64 / *d as f64 / k)
+                .sum::<f64>()
+        };
+        assert!((back(g.latitude.1) - 33.8568).abs() < 1e-6);
+        assert!((back(g.longitude.1) - 151.2153).abs() < 1e-6);
+        let tags = Tags {
+            place: Some((-33.8568, 151.2153)),
+            ..Default::default()
+        };
+        let with = build_with_tags(&meta(), MetadataPolicy::All, &tags).unwrap();
+        let without = build_with_tags(&meta(), MetadataPolicy::All, &Tags::default()).unwrap();
+        assert_ne!(with, without);
+        assert!(with.windows(2).any(|w| w == b"S\0"));
     }
 
     #[test]

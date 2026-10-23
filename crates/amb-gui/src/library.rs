@@ -206,6 +206,9 @@ pub struct InfoChange {
     /// Put in a stack, or out of one (an empty id).
     #[serde(default)]
     pub stack: Option<sidecar::StackRef>,
+    /// Set where it was taken ("latitude,longitude"), or "" to clear it.
+    #[serde(default)]
+    pub gps: Option<String>,
 }
 
 impl InfoChange {
@@ -219,6 +222,9 @@ impl InfoChange {
         }
         if let Some(f) = &self.flag {
             out.flag = sidecar::Flag::parse(f);
+        }
+        if let Some(g) = &self.gps {
+            out.gps = Some(g.clone());
         }
         for (field, change) in [
             (&mut out.title, &self.title),
@@ -421,6 +427,7 @@ pub fn export_many(
                     caption: s.info.caption.clone(),
                     creator: s.info.creator.clone(),
                     copyright: s.info.copyright.clone(),
+                    place: s.info.place(),
                 };
             }
             s.export(&dest, &settings, lens)

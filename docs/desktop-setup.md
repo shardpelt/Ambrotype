@@ -2,7 +2,7 @@
 
 ## 0. Installers
 
-When a release is published, its page on GitHub has installers: `.msi` or `-setup.exe` for Windows, `.dmg` for macOS, `.deb`, `.rpm` or `.AppImage` for Linux. They include the `amb` command-line tool. Until signing is set up, macOS and Windows warn that the app is from an unknown developer (macOS: right-click → Open). How releases are made: [releasing.md](releasing.md).
+None is published yet: the first will be v0.1.0, on the repository's [Releases](https://github.com/shardpelt/Ambrotype/releases) page. Until then, build it from source (below). A release has installers: `.msi` or `-setup.exe` for Windows, `.dmg` for macOS, `.deb`, `.rpm` or `.AppImage` for Linux. They include the `amb` command-line tool. Until signing is set up, macOS and Windows warn that the app is from an unknown developer (macOS: right-click → Open). How releases are made: [releasing.md](releasing.md).
 
 ## 1. Install and build (Windows, macOS or Linux)
 1. Install Rust from <https://rustup.rs>. On Windows, accept the Visual Studio C++ build tools prompt. On macOS, run `xcode-select --install` first.
@@ -18,13 +18,14 @@ When a release is published, its page on GitHub has installers: `.msi` or `-setu
    ```
 
 ## 2. Try it on your own photos
+`amb` is in `target/release/` after the build (or run it as `cargo run --release -p amb-cli -- …`; `amb --help` lists every command).
 ```sh
 amb render photo.NEF out.jpg                       # any raw rawler supports (NEF, CR2/CR3, ARW, RAF, DNG, ...)
 amb render photo.NEF out.jpg --preset look.xmp --amount 70
 amb preset inspect look.xmp                        # what a preset contains and what we can't do yet
 amb preset census ~/Presets                        # which settings your whole preset collection uses
 ```
-Rendering covers the core Develop panels (white balance, Basic tone and presence, curves, HSL, Color Grading, Detail, Lens Corrections, Effects) plus film negatives, with a placeholder base look; nothing is fitted to Lightroom yet. The command lists what it skipped. If you can, send back the `amb preset census` output for your bought presets. It's only setting names and counts, no preset content, and it tells us what to build first.
+Rendering covers the Develop panels (white balance, tone and presence, curves, colour mixer, colour grading, detail, lens corrections, transform, effects, calibration, masks and spots) plus film negatives, with our own base look; nothing is fitted to Lightroom's yet. The command lists any settings it skipped. The library's work (tagging, places, duplicates, moving and renaming) has commands too: [ai/README.md](ai/README.md), Organising photos. If you can, send back the `amb preset census` output for your bought presets. It's only setting names and counts, no preset content, and it tells us what to build first.
 
 ## 3. Prepare a Lightroom kit (for measuring Lightroom)
 Only needed to fit our models against Lightroom ([lightroom-trial-plan.md](lightroom-trial-plan.md)). Keep the kit and Lightroom's exports on a fast drive.
@@ -45,10 +46,10 @@ amb sweep generate --out kit-raw --groups tone,white_balance,presence  raws/*.NE
 
 ## The desktop editor (GUI)
 
-The editor is `crates/amb-gui` (Tauri 2). It is an early version: open a raw (or a JPEG, PNG, TIFF or WebP), edit with sliders and presets, before/after, undo/redo, save the XMP sidecar, export.
+The editor is `crates/amb-gui` (Tauri 2): open a raw (or a JPEG, PNG, TIFF or WebP), edit it, organise a whole library, export.
 
 ```sh
-cargo run --release -p amb-gui                    # opens an empty window; drop a raw on it or press Ctrl+O
+cargo run --release -p amb-gui                    # opens an empty window; drop a raw or a folder on it, or press Ctrl+O
 cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 ```
 
@@ -58,14 +59,18 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   ```sh
   sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev librsvg2-dev libxdo-dev
   ```
-- **Presets:** Lightroom's own preset folder is used automatically when it exists (`%APPDATA%\Adobe\CameraRaw\Settings` on Windows, `~/Library/Application Support/Adobe/CameraRaw/Settings` on macOS), plus `~/.local/share/ambrotype/presets`. "Add folder…" adds any other folder for the session. **Save…** keeps the photo's edit as your own one-click preset (without the crop, masks, retouching and geometry); it is listed under "Yours" and stored as a Lightroom-style `.xmp` in the app's settings folder (`presets/`), so Lightroom can import it too.
+- **First steps:** the empty window offers **Try a sample photo** (a CC0 raw with a nine-step edit to step through in History) and **Watch an edit** (a ghost cursor replays it). Every setting has a **?**: hover for a line on what it does, click for when to raise or lower it. **Help → Photography basics** (Shift+F1) explains exposure, tones, colour and the rest; **Learn** (F1) has short lessons. **Ctrl+K** searches every command, setting, panel and preset.
+- **Tasks:** the bar at the top switches between Library, Develop, Color, Retouch, Film and Collage (Ctrl+Alt+1–6), each with the panels it needs.
+- **Presets:** Lightroom's own preset folder is used automatically when it exists (`%APPDATA%\Adobe\CameraRaw\Settings` on Windows, `~/Library/Application Support/Adobe/CameraRaw/Settings` on macOS), plus `~/.local/share/ambrotype/presets`. **Add folder…** adds any other folder (kept for next time). **Save…** keeps the photo's edit as your own one-click preset (without the crop, masks, retouching and geometry); it is listed under "Yours" and stored as a Lightroom-style `.xmp` in the app's settings folder (`presets/`), so Lightroom can import it too. **Library…** has free starter presets; hover one to see it on your photo.
 - **Black & White:** the Black & White panel turns the photo monochrome and sets how bright each colour becomes in grey (darker blue skies, lighter skin). Color Grading still applies on top, for sepia and other tints.
+- **Masks** (M): linear (L) and radial (Shift+R) gradients, brush (B), luminance and colour ranges, and AI Subject, Background and People masks that run on your computer ([design/masks.md](design/masks.md)). **Spot removal** (Q): click a spot to heal or clone it, or brush over a longer blemish ([design/spot-removal.md](design/spot-removal.md)).
+- **Checking detail:** Z or Space switches between the whole photo and 100%; right-drag a box on the photo to zoom to it; I shows a loupe at 100% under the pointer. S soft-proofs the export's colour space.
+- **Monitor colour:** on Linux the preview is shown in your monitor's profile (from the desktop, or a file chosen in Settings → General); macOS and Windows do this themselves.
 - **Filmstrip:** the other photos in the photo's folder (a JPEG shot together with a raw of the same name is shown once, as the raw) are shown under it, in name order, with their stars and a dot for photos with edits. Click one or use ← → to open it; your edits to the photo you leave are saved to its sidecar first. Thumbnails come from the preview the camera embedded (quick), and are cached; the open photo's thumbnail shows its edit. Files that can't be opened are marked and skipped.
 
   ![Filmstrip](images/filmstrip.png)
-
 - **More room:** Ctrl+[ and Ctrl+] fold the left and right columns; Ctrl+Shift+T (or Settings → General) hides the top bar, which slides back in while the pointer is at the window's top edge.
-- **Rating and keywords:** the stars and the keyword field (left column) are saved to the photo's `.xmp` straight away, in the fields Lightroom reads (`xmp:Rating`, `dc:subject`), and go into exported files: as XMP (read by Lightroom, Bridge, Apple Photos, digiKam and most websites), IPTC keywords in JPEGs, and EXIF Rating/XPKeywords for Windows. OpenEXR exports don't carry them yet. Keys 1–5 rate, 0 clears.
+- **Rating and keywords:** the stars and the keyword field are saved to the photo's `.xmp` straight away, in the fields Lightroom reads (`xmp:Rating`, `dc:subject`), and go into exported files: as XMP (read by Lightroom, Bridge, Apple Photos, digiKam and most websites), IPTC keywords in JPEGs, and EXIF Rating/XPKeywords for Windows. OpenEXR exports don't carry them yet. Keys 1–5 rate, 0 clears.
 
   ![Rating and keywords](images/rating-keywords.png)
 
@@ -74,61 +79,68 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 - **Plugins:** the Plugins button (or Ctrl+Shift+P) runs small tools that make edits for you: **Auto tone**, **Random look** and **Film recipe**, a camera-style picture menu (film look, grain, white balance shift, highlight and shadow tone, and more) for typing in film recipes you find online ([ai/film-recipes.md](ai/film-recipes.md)). Each run is one step in History, so Undo takes it back. A plugin that wants to see the photo's histogram or camera facts asks first. Parameter sets can be saved as **recipes**, and **Save as preset…** keeps a plugin's result as a preset. **Install from folder…** adds one, **Share as pull request…** offers yours to the hub, and **Make one with AI…** writes instructions for your own AI assistant to build a new one. Writing plugins: [ai/plugins.md](ai/plugins.md).
 
   ![Plugins](images/plugins.png)
-
-- **Library:** the Library button (or G) shows the photo's folder as a grid. Sort, filter and search it; click, Shift-click and Ctrl/⌘-click to select many; then press 1–5 to rate them, 6–9 for a colour label, P or X to flag them as picks or rejects, or add keywords in the panel. **Copy settings** on one photo and **Paste settings** onto others to give a whole series the same edit, **Export…** the selection with the usual export choices, or **Make a collage** with it. Everything is saved to the photos' `.xmp` files, where Lightroom reads it. Enter or a double-click opens a photo.
+- **Library:** the Library task (or G) shows the photo's folder as a grid, without the editor's tools. Sort, filter and search it; click, Shift-click and Ctrl/⌘-click to select many; then press 1–5 to rate them, 6–9 for a colour label, P or X to flag them as picks or rejects, or add keywords in the panel (several at once with commas, or one click on a recent one). **Copy settings** on one photo and **Paste settings** onto others to give a whole series the same edit, **Export…** the selection with the usual export choices, or **Make a collage** with it. Everything is saved to the photos' `.xmp` files, where Lightroom reads it. Enter or a double-click opens a photo.
+  - **Views:** Loupe (E), Compare (C) and Survey (N) for culling; **Timeline** (years and month calendars) and **Map** (photos by place; place others from a GPX track or by dropping them on the map).
+  - **Organise ▾:** find duplicates and bursts and keep the best; move, rename or sort photos into dated folders with their sidecars; delete to the trash; rename keywords everywhere; metadata templates; find photos moved outside the app ([design/library.md](design/library.md)).
+  - **Folders** (left): add whole drives to keep them indexed, also while unplugged. **Import ▾** copies from a card, or moves you from a Lightroom Classic catalogue.
 
   ![Library](images/library.png)
 
 - **Collage:** the Collage button (or C) opens the collage maker. Pick a layout, drag photos from the tray into the cells, then drag to move a photo in its cell, scroll to zoom, R to rotate. **Edit photo** opens a photo in the editor and **← Back to collage** returns. Set the size, background, gap, outer border and rounded corners on the right; split or remove cells, or press **Arrange freely** to move, resize, turn and overlap the photos by hand. **Save** keeps the whole collage in a `.ambcollage` file to reopen and edit later (Export can save one next to each image), and **Export pages…** puts a whole folder into pages of the layout.
 
   ![Collage maker](images/collage.png)
-
 - **Crop:** with no crop yet, the crop tool starts with a cross cursor: press at one corner and drag to the other, like a screenshot selection. Then adjust it with the handles.
 
   ![Drawing a crop corner to corner](images/crop-draw.png)
-
+- **Frame** (Shift+B): a border around the photo (White, a black keyline, Polaroid, your own), with a caption; exports add it.
 - **Appearance:** the Appearance button picks a layout (Classic, Beginner, Compact, Big controls, Studio with knobs, Left-handed, Focus, Console, Two benches, and for tasks Film lab, Colour grading, Black & white, Retouch and Collage prep) and a theme (Dark, Light, High contrast, Neutral grey, Cupertino Light and Dark, Swiss print, Telemetry, Stone, Graphite). Clone one to rename it or edit its colours; Share… and Import… move them between machines, and **Browse hub…** installs looks other people shared. **Edit layout…** in that dialog (or Ctrl+Shift+L) rearranges the screen in place: drag things to move them (onto the Add list to remove them), click one to change it, then Save. **Save this setup…** keeps the layout and theme together, exactly as they are, to come back to with Use; the setup from before your last change is kept for you. Your AI assistant can write new ones: [ai/ui-layouts.md](ai/ui-layouts.md).
 - **Lens profiles** are found as for the CLI (lensfun database, your Adobe `.lcp` files; see docs/design/lens-corrections.md).
+- **Camera profiles:** the Profile menu (Basic panel) lists the `.dcp` profiles found for the photo's camera, in Camera Raw's profile folders and folders named in `AMB_DCP_DIRS`. Profiles you made with a ColorChecker work too.
 - **GPU:** the preview is developed on the graphics card when there is one (Metal on a Mac, Vulkan or DirectX elsewhere); the status bar then says "on the GPU", and hovering over it names the GPU, or says why a preview was made on the CPU (masks, defringe and camera profiles are CPU-only for now). Exports and the 100% view use the CPU. Set `AMB_GPU=off` to turn it off ([design/gpu.md](design/gpu.md)).
-- **Keyboard:** every shortcut can be changed in **Settings** (the ⚙ button, or Ctrl+,). It shows them on a keyboard map and as a list, catches clashes, and keeps only your changes, so new defaults still arrive.
+- **Keyboard:** every shortcut can be changed in **Settings** (the ⚙ button, or Ctrl+,), which shows them on a keyboard map and as a list, catches clashes, and keeps only your changes, so new defaults still arrive. **Shift+?** shows them all; holding Ctrl (⌘) shows each button's key on it.
 
   ![Settings: keyboard shortcuts](images/settings-shortcuts.png)
 
-  The defaults:
+  The main defaults (Ctrl is ⌘ on macOS):
 
   | Keys | Action |
   |---|---|
-  | Ctrl+O | Open |
-  | Ctrl+S | Save sidecar |
-  | Ctrl+E | Export |
+  | Ctrl+O, Ctrl+S, Ctrl+E | Open, save the sidecar, export |
   | Ctrl+Z / Ctrl+Shift+Z or Ctrl+Y | Undo / redo |
-  | `\` | Before/after |
-  | Z, or click the photo | 100% view at that point; drag to pan |
-  | W | White-balance picker: click something neutral grey or white |
-  | J | Clipping overlay (red: clipped highlights, blue: crushed shadows) |
-  | R | Crop and straighten. With no crop yet, the cursor is a cross: press at one corner and drag to the other. D draws a new one, X swaps the aspect, Enter applies, Esc cancels |
-  | Esc | Leave the picker or crop tool |
+  | Ctrl+K | Search everything |
+  | F1, Shift+F1, Shift+? | Learn, Photography basics, all shortcuts |
   | ← → | Previous / next photo in the folder (edits are saved first) |
-  | F | Show or hide the filmstrip |
-  | Ctrl+Shift+P | Plugins |
-  | C | Collage maker (in it: R turns the selected photo, Delete empties the cell, Ctrl+S / Ctrl+O save and open the collage, arrow keys nudge and `[` `]` restack free frames, Esc closes) |
-  | 1–5, 0 | Rate the photo, or the selection in the library (0 clears) |
+  | `\` | Before / after |
+  | Z or Space, I | Whole photo / 100%; loupe |
+  | J, S | Clipping overlay; soft proofing |
+  | W | White-balance picker: click something neutral grey or white |
+  | R | Crop and straighten (D draws a new crop, X swaps the aspect, Enter applies, Esc cancels) |
+  | M, Q | Masks (L linear, Shift+R radial, B brush, O overlay); spot removal |
+  | `[` `]` | Smaller / bigger brush or spot |
+  | Shift+B | Frame |
+  | `.` `,` then `=` `-` | Select the next / previous slider, then raise / lower it (Shift: ten steps) |
+  | 1–5, 0 | Rate (0 clears) |
   | 6, 7, 8, 9 | Red, yellow, green, blue label (the same key again removes it) |
-  | P, X, U | Flag as a pick, flag as rejected, remove the flag (not in the crop tool, where X swaps the aspect) |
-  | G | Library grid / editor (from loupe, compare or survey: back to the grid) |
+  | P, X, U | Pick, reject, remove the flag |
+  | K | Jump to the keyword field |
+  | G | Library grid / editor |
   | E, C, N | In the library: loupe, compare, survey |
-  | Ctrl+Shift+I | Import photos from a card or folder |
-  | B | Add the selection (or the open photo) to the last collection used |
-  | Ctrl+' | Make a virtual copy (a second edit of the photo) |
-
-- **Camera profiles:** the Profile menu (Basic panel) lists the `.dcp` profiles found for the photo's camera, in Camera Raw's profile folders and folders named in `AMB_DCP_DIRS`. Profiles you made with a ColorChecker work too.
-  | Ctrl+Shift+C / Ctrl+Shift+V | In the library: copy one photo's settings / paste them onto the selection |
-  | K | Jump to the keyword field (Enter or a comma adds a keyword) |
-  | Ctrl+L / Ctrl+Shift+L | Appearance / Edit layout |
-  | Ctrl+, | Settings and shortcuts |
+  | Ctrl+A, Ctrl+D | In the library: select all, none |
+  | Ctrl+G, Ctrl+Shift+G | Stack, unstack |
+  | Ctrl+Shift+C / Ctrl+Shift+V | Copy one photo's settings / paste them onto the selection |
+  | Ctrl+' | Make a virtual copy |
+  | B | Add to the last collection used (in masks: a brush) |
+  | Ctrl+Shift+I | Import from a card or folder |
+  | C | Collage maker |
+  | F | Filmstrip |
+  | Ctrl+[ , Ctrl+], Ctrl+Shift+T | Left column, right column, top bar |
+  | Ctrl+Alt+1–6 | Tasks |
+  | Ctrl+Alt+E | Edit in another app |
+  | Ctrl+Shift+P, Ctrl+Shift+H, Ctrl+Shift+A | Plugins, browse the hub, assistant |
+  | Ctrl+L / Ctrl+Shift+L | Appearance / edit layout |
+  | Ctrl+, | Settings |
   | Double-click a slider's knob or name | Reset it |
   | Shift while dragging a slider | Fine adjustment (a tenth as fast) |
-  | Ctrl is Cmd on macOS | |
 
 ## macOS on Apple Silicon (M1 and later), with an external SSD
 

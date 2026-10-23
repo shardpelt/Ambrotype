@@ -17,7 +17,7 @@ Thanks for helping. Ambrotype is young, so small, focused changes are the easies
    cargo clippy --workspace --all-targets -- -D warnings
    cargo test --workspace
    ```
-4. For editor (GUI) changes, run the editor and try the change by hand (`cargo run --release -p amb-gui -- photo.nef`); there are no automated UI tests yet. A screenshot in the pull request helps.
+4. For editor (GUI) changes, run the editor and try the change by hand (`cargo run --release -p amb-gui -- photo.nef`), and add a step to a script in `crates/amb-gui/tests/ui/` so the bug can't come back (`ambrotype --ui-test SCRIPT.js photo.dng`; CI runs them on Linux; [docs/recipes.md](docs/recipes.md)). A screenshot in the pull request helps.
 5. Update the docs the change affects: `docs/NEXT.md`, `docs/GAPS.md`, `docs/ARCHITECTURE.md` and the feature's note in `docs/design/`.
 6. Commit with a first line like `area: summary` (for example `engine: faster dehaze`), then say why. Open a pull request against `main`; the template asks a few questions.
 

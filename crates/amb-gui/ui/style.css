@@ -1256,3 +1256,4 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 .strip-rating button.on { color: var(--accent); }
 .strip-rating button:hover:not(:disabled) { color: var(--text); }
 .strip-rating:hover button.on { color: var(--accent); }
+.library-grid.dragging { cursor: grabbing; scroll-behavior: auto; user-select: none; }

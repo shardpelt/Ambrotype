@@ -39,6 +39,29 @@ await t.step("Remove place takes it out again", async () => {
   await t.until("the grid", () => cull.view === "grid");
 });
 
+await t.step("dragging the grid moves through it; a drag doesn't select", async () => {
+  const grid = $("library-grid");
+  grid.scrollTop = 0;
+  librarySelectNone();
+  // The grid redraws its rows after a change; add room to scroll after that.
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  const spacer = Object.assign(document.createElement("div"), { style: "height: 4000px; grid-column: 1 / -1" });
+  grid.append(spacer);
+  const cell = grid.querySelector(".lib-cell");
+  const at = cell.getBoundingClientRect();
+  const ev = (type, y) => cell.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: at.left + 20, clientY: y, pointerId: 9, button: 0, pointerType: "mouse" }));
+  ev("pointerdown", at.top + 200);
+  ev("pointermove", at.top + 180);
+  ev("pointermove", at.top - 100);
+  ev("pointerup", at.top - 100);
+  cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 50));
+  const moved = grid.scrollTop;
+  spacer.remove();
+  t.expect(moved > 100, `moved down: ${moved}`);
+  t.expect(lib.selected.size === 0, "nothing selected");
+});
+
 await t.step("Rated photos shows every rated photo, best first", async () => {
   select(ui.info.path, "only");
   await libraryChange({ rating: 4 });

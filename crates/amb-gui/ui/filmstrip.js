@@ -237,33 +237,36 @@ function toggleFilmstrip() {
   requestPreview(false);
 }
 
-// Press and drag the strip to move along it, as on a touch screen; let go
+// Press and drag a list to move along it, as on a touch screen; let go
 // while moving and it glides to a stop. A click that didn't drag still
-// opens the photo.
-function wireStripDrag(list) {
+// works. `axis` is "x" (the filmstrip) or "y" (the library grid); `when`
+// says whether a press may start a drag (Shift- and Ctrl-clicks select).
+function dragToScroll(list, axis = "x", when = () => true) {
+  const along = axis === "x" ? "clientX" : "clientY";
+  const scroll = axis === "x" ? "scrollLeft" : "scrollTop";
   let drag = null;
   let glide = 0;
   list.addEventListener("dragstart", (e) => e.preventDefault());
   list.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || e.pointerType === "touch") return;
+    if (e.button !== 0 || e.pointerType === "touch" || e.shiftKey || e.ctrlKey || e.metaKey || !when(e)) return;
     cancelAnimationFrame(glide);
     list.classList.remove("dragging");
-    drag = { x: e.clientX, left: list.scrollLeft, moved: false, id: e.pointerId, v: 0, t: performance.now(), last: e.clientX };
+    drag = { at: e[along], start: list[scroll], moved: false, id: e.pointerId, v: 0, t: performance.now(), last: e[along] };
   });
   list.addEventListener("pointermove", (e) => {
     if (!drag || e.pointerId !== drag.id) return;
-    const dx = e.clientX - drag.x;
-    if (!drag.moved && Math.abs(dx) < 5) return;
+    const d = e[along] - drag.at;
+    if (!drag.moved && Math.abs(d) < 5) return;
     if (!drag.moved) {
       drag.moved = true;
       try { list.setPointerCapture(e.pointerId); } catch { /* a pointer the page made up (tests) */ }
       list.classList.add("dragging");
     }
-    list.scrollLeft = drag.left - dx;
+    list[scroll] = drag.start - d;
     const now = performance.now();
-    if (now > drag.t) drag.v = 0.8 * drag.v + 0.2 * ((drag.last - e.clientX) / (now - drag.t));
+    if (now > drag.t) drag.v = 0.8 * drag.v + 0.2 * ((drag.last - e[along]) / (now - drag.t));
     drag.t = now;
-    drag.last = e.clientX;
+    drag.last = e[along];
   });
   const end = (e) => {
     if (!drag || e.pointerId !== drag.id) return;
@@ -280,7 +283,7 @@ function wireStripDrag(list) {
     const step = (now) => {
       const dt = now - prev;
       prev = now;
-      list.scrollLeft += v * dt;
+      list[scroll] += v * dt;
       v *= Math.pow(0.995, dt);
       if (Math.abs(v) > 0.02) glide = requestAnimationFrame(step);
       else list.classList.remove("dragging");
@@ -301,7 +304,7 @@ function wireFilmstrip() {
       list.scrollLeft += e.deltaY;
     }
   }, { passive: false });
-  wireStripDrag(list);
+  dragToScroll(list, "x");
   $("filmstrip-prev").addEventListener("click", () => stepPhoto(-1));
   $("filmstrip-next").addEventListener("click", () => stepPhoto(1));
   $("preview").addEventListener("load", () => {

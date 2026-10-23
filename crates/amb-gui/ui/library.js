@@ -978,6 +978,8 @@ function wireLibrary() {
     }
     select(cell.dataset.path, e.shiftKey ? "range" : e.ctrlKey || e.metaKey ? "toggle" : "only");
   });
+  // Press and drag the grid up and down, as on a touch screen.
+  dragToScroll(grid, "y", () => cull.view === "grid");
   // Shift-click selects photos, not text.
   grid.addEventListener("mousedown", (e) => {
     if (e.shiftKey || e.detail > 1) e.preventDefault();

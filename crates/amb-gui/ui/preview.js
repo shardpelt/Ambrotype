@@ -58,6 +58,12 @@ async function renderLoop() {
       showJpeg(jpeg);
       ui.preview.uncropped = uncropped;
       ui.preview.overlay = maskOverlay != null;
+      // The whole photo as it looks, kept to show under the 100% view at once.
+      if (!draft && !uncropped && !ui.before && !ui.clipping && maskOverlay == null) {
+        if (ui.preview.fitUrl) URL.revokeObjectURL(ui.preview.fitUrl);
+        ui.preview.fitUrl = URL.createObjectURL(new Blob([jpeg], { type: "image/jpeg" }));
+        ui.preview.fitPath = ui.info.path;
+      }
       drawHistogram(meta.histogram);
       ui.curve?.setHistogram(meta.histogram);
       status(`${meta.width}×${meta.height} preview in ${meta.millis} ms` +
@@ -142,6 +148,8 @@ async function renderRegion() {
     return;
   }
   ui.zoom.meta = meta;
+  ui.zoom.full = { path: ui.info.path, w: meta.full_width, h: meta.full_height };
+  $("preview").style.visibility = "";
   // Now the real full size is known (a crop changes it): if that moves the
   // centre much, render again around the new one.
   const [u, v] = clampZoomCentre(ui.zoom.cx, ui.zoom.cy, meta);
@@ -206,9 +214,29 @@ function clampZoomCentre(u, v, m = ui.zoom.meta) {
   return [clamp(u, view.clientWidth / 2 / k / fw), clamp(v, view.clientHeight / 2 / k / fh)];
 }
 
+// The whole photo enlarged under the 100% view: shown the moment you zoom in,
+// and wherever a drag goes past the sharp area until it's rendered.
+function placeUnder(dx = 0, dy = 0) {
+  const under = $("zoom-under");
+  if (under.hidden || !under.naturalWidth) return;
+  const m = ui.zoom.meta;
+  const known = ui.zoom.full?.path === ui.info?.path ? ui.zoom.full : null;
+  const fw = m?.full_width ?? known?.w ?? ui.info.width;
+  const fh = m?.full_height ?? known?.h ?? fw * (under.naturalHeight / under.naturalWidth);
+  const fake = { full_width: fw, full_height: fh };
+  const k = zoomScale(m ?? fake) / (window.devicePixelRatio || 1);
+  const v = $("viewer");
+  const [u, w] = clampZoomCentre(ui.zoom.cx - dx / k / fw, ui.zoom.cy - dy / k / fh, m ?? fake);
+  under.style.width = `${fw * k}px`;
+  under.style.height = `${fh * k}px`;
+  under.style.left = `${v.clientWidth / 2 - u * fw * k}px`;
+  under.style.top = `${v.clientHeight / 2 - w * fh * k}px`;
+}
+
 // Position the crop so (cx, cy) sits in the viewport centre, moved by
 // (dx, dy) screen pixels while dragging, never past the photo's edges.
 function placeRegion(dx = pan.dx, dy = pan.dy) {
+  placeUnder(dx, dy);
   const m = ui.zoom.meta;
   if (!m) return;
   const v = $("viewer");
@@ -230,8 +258,22 @@ function setZoom(on, u = 0.5, v = 0.5, box = null) {
   ui.zoom.meta = null;
   [ui.zoom.cx, ui.zoom.cy] = on ? clampZoomCentre(u, v, null) : [u, v];
   const img = $("preview");
-  // The "actual" layout is applied once the 1:1 crop arrives (renderRegion).
-  if (!on) $("viewer").classList.remove("actual");
+  const under = $("zoom-under");
+  // Zooming in shows the whole photo enlarged at once, the sharp crop on top
+  // when it arrives (renderRegion).
+  const quick = on && ui.preview.fitUrl && ui.preview.fitPath === ui.info?.path;
+  under.hidden = !quick;
+  if (quick) {
+    under.onload = () => placeUnder();
+    under.src = ui.preview.fitUrl;
+    $("viewer").classList.add("actual");
+    img.style.visibility = "hidden";
+    placeUnder();
+  }
+  if (!on) {
+    $("viewer").classList.remove("actual");
+    img.style.visibility = "";
+  }
   $("btn-zoom").classList.toggle("active", on);
   if (!on) for (const k of ["width", "height", "left", "top"]) img.style[k] = "";
   requestPreview(false);

@@ -237,6 +237,61 @@ function toggleFilmstrip() {
   requestPreview(false);
 }
 
+// Press and drag the strip to move along it, as on a touch screen; let go
+// while moving and it glides to a stop. A click that didn't drag still
+// opens the photo.
+function wireStripDrag(list) {
+  let drag = null;
+  let glide = 0;
+  list.addEventListener("dragstart", (e) => e.preventDefault());
+  list.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || e.pointerType === "touch") return;
+    cancelAnimationFrame(glide);
+    list.classList.remove("dragging");
+    drag = { x: e.clientX, left: list.scrollLeft, moved: false, id: e.pointerId, v: 0, t: performance.now(), last: e.clientX };
+  });
+  list.addEventListener("pointermove", (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.x;
+    if (!drag.moved && Math.abs(dx) < 5) return;
+    if (!drag.moved) {
+      drag.moved = true;
+      try { list.setPointerCapture(e.pointerId); } catch { /* a pointer the page made up (tests) */ }
+      list.classList.add("dragging");
+    }
+    list.scrollLeft = drag.left - dx;
+    const now = performance.now();
+    if (now > drag.t) drag.v = 0.8 * drag.v + 0.2 * ((drag.last - e.clientX) / (now - drag.t));
+    drag.t = now;
+    drag.last = e.clientX;
+  });
+  const end = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag;
+    drag = null;
+    if (!d.moved) return;
+    // The click this release makes isn't a choice of photo.
+    const eat = (c) => { c.stopPropagation(); c.preventDefault(); };
+    list.addEventListener("click", eat, { capture: true, once: true });
+    setTimeout(() => list.removeEventListener("click", eat, { capture: true }), 0);
+    // ("dragging" also turns smooth scrolling off for the glide.)
+    let v = performance.now() - d.t > 80 ? 0 : d.v; // pixels per ms
+    let prev = performance.now();
+    const step = (now) => {
+      const dt = now - prev;
+      prev = now;
+      list.scrollLeft += v * dt;
+      v *= Math.pow(0.995, dt);
+      if (Math.abs(v) > 0.02) glide = requestAnimationFrame(step);
+      else list.classList.remove("dragging");
+    };
+    if (Math.abs(v) > 0.1) glide = requestAnimationFrame(step);
+    else list.classList.remove("dragging");
+  };
+  list.addEventListener("pointerup", end);
+  list.addEventListener("pointercancel", end);
+}
+
 function wireFilmstrip() {
   // A vertical wheel scrolls the strip sideways.
   const list = $("filmstrip-list");
@@ -246,6 +301,7 @@ function wireFilmstrip() {
       list.scrollLeft += e.deltaY;
     }
   }, { passive: false });
+  wireStripDrag(list);
   $("filmstrip-prev").addEventListener("click", () => stepPhoto(-1));
   $("filmstrip-next").addEventListener("click", () => stepPhoto(1));
   $("preview").addEventListener("load", () => {

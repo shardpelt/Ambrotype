@@ -114,6 +114,7 @@
         <button id="btn-watch-empty" title="A ghost cursor edits the sample photo in about 20 seconds; any key or click stops it">Watch an edit</button>
         <button id="btn-learn-empty" title="Short guided lessons (F1)">Learn the basics</button>
       </div>
+      <img id="zoom-under" class="zoom-under" alt="" hidden>
       <img id="preview" alt="" hidden>
       <canvas id="crop-canvas" class="crop-canvas" hidden></canvas>
       <canvas id="mask-canvas" class="crop-canvas mask-canvas" hidden></canvas>
@@ -1095,6 +1096,7 @@
         </label>
         <label class="check"><input type="checkbox" id="settings-wheel-photos"> Scrolling on the photo goes to the next or previous photo (zoomed in, it still moves the view)</label>
         <label class="check"><input type="checkbox" id="settings-statusbar"> Show the status bar under the photo (preview size and time; hidden, other messages show briefly over the photo)</label>
+        <label class="check"><input type="checkbox" id="settings-crop-view"> Opening the crop tool while zoomed in starts the crop from what you see</label>
         <label class="check"><input type="checkbox" id="settings-box-zoom"> Right-drag on the photo zooms to that box (Z or Space goes back); off, a right click exports</label>
         <label class="hub-url" id="settings-monitor-row">Monitor colour: show the preview in your monitor's own colours (for a wide-gamut or calibrated screen)
           <span class="folder-row"><select id="settings-monitor"><option value="auto">Automatic: the desktop's profile</option><option value="off">Off: plain sRGB</option><option value="file">A profile file</option></select><button type="button" class="small" id="settings-monitor-pick">Choose a profile…</button></span>

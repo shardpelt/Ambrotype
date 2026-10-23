@@ -119,6 +119,51 @@ await t.step("the whole photo fills the viewer", async () => {
   t.expect(Math.abs(img.width - view.width) <= 2 || Math.abs(img.height - view.height) <= 2, `photo ${Math.round(img.width)}×${Math.round(img.height)} in ${Math.round(view.width)}×${Math.round(view.height)}`);
 });
 
+await t.step("zooming in shows the photo at once; a drag never shows black", async () => {
+  setZoom(true, 0.3, 0.3);
+  t.expect(!$("zoom-under").hidden && $("viewer").classList.contains("actual"), "the enlarged photo shows before the 100% crop arrives");
+  await t.until("the 100% view", () => ui.zoom.meta, 60000);
+  t.expect($("preview").style.visibility === "", "the sharp crop on top");
+  placeRegion(-400, -300);
+  const under = $("zoom-under").getBoundingClientRect();
+  const view = $("viewer").getBoundingClientRect();
+  t.expect(under.left <= view.left + 1 && under.top <= view.top + 1 && under.right >= view.right - 1 && under.bottom >= view.bottom - 1, "photo under the whole view while dragging");
+  placeRegion(0, 0);
+});
+
+await t.step("the crop tool opened while zoomed in starts from the view", async () => {
+  t.key("r");
+  await t.until("the crop tool", () => ui.crop.on);
+  const r = ui.crop.tool.rect();
+  t.expect(r.width < ui.info.width * 0.95 || r.height < ui.info.height * 0.95, `a crop smaller than the photo: ${Math.round(r.width)}×${Math.round(r.height)}`);
+  t.key("Escape");
+  await t.until("the crop tool closed", () => !ui.crop.on);
+  t.expect(!ui.zoom.on && $("zoom-under").hidden, "back to the whole photo");
+});
+
+await t.step("dragging the filmstrip moves along it and doesn't open a photo", async () => {
+  const list = $("filmstrip-list");
+  const spacer = Object.assign(document.createElement("div"), { style: "flex: none; width: 3000px" });
+  list.append(spacer);
+  list.scrollLeft = 0;
+  const cell = list.querySelector(".film-cell") ?? list.firstElementChild;
+  const at = cell.getBoundingClientRect();
+  let opened = false;
+  const real = openPath;
+  openPath = async () => (opened = true);
+  const ev = (type, x) => cell.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: x, clientY: at.top + 10, pointerId: 7, button: 0, pointerType: "mouse" }));
+  ev("pointerdown", at.left + 40);
+  ev("pointermove", at.left + 20);
+  ev("pointermove", at.left - 160);
+  ev("pointerup", at.left - 160);
+  cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 50));
+  openPath = real;
+  spacer.remove();
+  t.expect(list.scrollLeft > 100 || list.scrollWidth <= list.clientWidth, `moved along: ${list.scrollLeft}`);
+  t.expect(!opened, "no photo opened");
+});
+
 await t.step("Level in the crop tool keeps a level photo level", async () => {
   t.key("r");
   await t.until("the crop tool", () => ui.crop.on);

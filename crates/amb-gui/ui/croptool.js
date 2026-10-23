@@ -125,12 +125,35 @@ function setCropMode(on) {
   for (const id of ["btn-zoom", "btn-wb"]) $(id).disabled = on || !ui.info;
 }
 
+// Settings → General: the crop tool opened while zoomed in starts with what
+// the view shows.
+function cropToView() {
+  try { return localStorage.getItem("amb.cropToView") !== "0"; } catch { return true; }
+}
+
+// The part of the photo the zoomed view shows, as a crop rectangle over the
+// whole photo: inside the current crop `r`, along its turned axes.
+function viewRect(r, sign) {
+  const m = ui.zoom.meta;
+  if (!m) return null;
+  const v = $("viewer");
+  const k = zoomScale(m) / (window.devicePixelRatio || 1);
+  const [fw, fh] = [m.full_width, m.full_height];
+  const half = [Math.min(fw, v.clientWidth / k) / 2, Math.min(fh, v.clientHeight / k) / 2];
+  const [x, y] = [ui.zoom.cx * fw, ui.zoom.cy * fh];
+  const [sx, sy] = [r.width / fw, r.height / fh];
+  const [du, dv] = [(x - fw / 2) * sx, (y - fh / 2) * sy];
+  const t = (sign * r.angle * Math.PI) / 180;
+  const [c, s] = [Math.cos(t), Math.sin(t)];
+  return { cx: r.cx + du * c - dv * s, cy: r.cy + du * s + dv * c, width: 2 * half[0] * sx, height: 2 * half[1] * sy, angle: r.angle };
+}
+
 async function enterCrop() {
   if (!ui.info || ui.crop.on) return;
   exitMasks();
   exitSpots();
   exitGuided();
-  if (ui.zoom.on) setZoom(false);
+  const zoomed = ui.zoom.on && cropToView() ? { meta: ui.zoom.meta } : null;
   setPicking(false);
   let st;
   try {
@@ -142,12 +165,17 @@ async function enterCrop() {
   ui.crop.start = st.rect;
   ui.crop.enabled = st.enabled;
   ui.crop.angleSign = st.angle_sign;
-  chooseAspect(st.rect, st.enabled);
+  // Zoomed in: start from the view (Done crops to it).
+  const view = zoomed?.meta ? viewRect(st.rect, st.angle_sign) : null;
+  if (ui.zoom.on) setZoom(false);
+  const rect = view ?? st.rect;
+  chooseAspect(rect, st.enabled || Boolean(view));
   setCropMode(true);
   // No crop yet: start by drawing one, like a screenshot selection.
   ui.crop.tool.setRatio(lockedRatio());
-  ui.crop.tool.start({ width: ui.info.width, height: ui.info.height, angleSign: st.angle_sign, rect: st.rect, draw: !st.enabled });
-  syncCropPanel(st.rect);
+  ui.crop.tool.start({ width: ui.info.width, height: ui.info.height, angleSign: st.angle_sign, rect, draw: !st.enabled && !view });
+  syncCropPanel(rect);
+  if (view) status("The crop starts from the zoomed view: adjust it, then Done");
   requestPreview(false);
 }
 
@@ -281,6 +309,11 @@ function wireCrop() {
     e.target.blur();
   });
   $("crop-level").addEventListener("click", levelCrop);
+  const view = $("settings-crop-view");
+  view.checked = cropToView();
+  view.addEventListener("change", () => {
+    try { localStorage.setItem("amb.cropToView", view.checked ? "1" : "0"); } catch { /* not kept */ }
+  });
   const angle = $("crop-angle");
   angle.addEventListener("input", () => ui.crop.tool.setAngle(Number(angle.value)));
   angle.addEventListener("change", () => ui.crop.tool.endAngle());

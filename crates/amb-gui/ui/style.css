@@ -1241,3 +1241,11 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 .column-tab:hover { color: var(--text); background: var(--hover); }
 .column-tab.on { color: var(--text); background: var(--tab-active); border-color: var(--line); }
 .column > .tab-off { display: none; }
+
+/* Dragging the filmstrip moves it at once (no smooth scrolling). */
+.filmstrip-list { cursor: grab; }
+.filmstrip-list.dragging { cursor: grabbing; scroll-behavior: auto; user-select: none; }
+
+/* Under the 100% view (preview.js placeUnder): never caught by a click. */
+.viewer img.zoom-under { pointer-events: none; cursor: default; }
+.viewer:not(.actual) img.zoom-under { display: none; }

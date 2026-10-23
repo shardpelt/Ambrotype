@@ -51,6 +51,10 @@ Here sx and sy stretch the crop by less than half a pixel, so a whole number of 
 
 The crop tool opened while zoomed in (Settings → General, on by default) starts with what the view shows: the view's centre and size in the developed photo's pixels, mapped into the current crop along its turned axes (`zoomViewRect` in `ui/croptool.js`). Done crops to it. Lens corrections and Transform bend the mapping a little; the rectangle can be adjusted before Done.
 
+## Guides and snapping
+
+While turning (a drag outside the frame, or the Angle slider), the crop tool draws the photo's long straight lines near horizontal or vertical: the segments Upright's detector finds (`amb_engine::upright::guide_lines`, at most 40, longest first), in the tool's upright pixels (`guide_lines` command). A line turns green when the angle makes it level or upright. A drag snaps to such an angle within 0.6°; Alt turns freely. The crop keeps a locked aspect and shrinks to the largest rectangle inside the turned photo, as with the slider.
+
 ## Level
 
 The crop tool's **Level ⟂** (L) asks for the angle Upright's Level fit finds (`Session::level_angle`: `amb_engine::upright::analyse` in Level mode, on the lens-corrected photo's long, near-horizontal and near-vertical lines), turned into the tool's upright view, and sets it like the Angle slider, so the rectangle shrinks to fit. A photo with too few lines says so. It is a plain straighten, stored as `CropAngle`, which Lightroom reads; Upright's Level stays a separate Transform setting. Tried on a horizon turned 4°: Level gave −4.00° and the export's horizon measured level.

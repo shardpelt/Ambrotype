@@ -577,6 +577,29 @@ impl Session {
         Some((r.angle * 100.0).round() / 100.0)
     }
 
+    /// The photo's long straight lines for the crop tool to show and snap
+    /// to while straightening, in upright pixels (the tool's frame).
+    pub fn guide_lines(&mut self, lens: &LensSources) -> Vec<[f64; 4]> {
+        let settings = self.state.settings().clone();
+        let develop = self.develop(&settings, lens);
+        let cal = &develop.calibration;
+        let o = self.full.metadata.orientation;
+        let (uw, uh) = amb_export::geometry::oriented_size(self.full.width, self.full.height, o);
+        amb_engine::upright::guide_lines(&self.full, &develop.lens, &cal.lens, &cal.upright, 40)
+            .into_iter()
+            .map(|[x0, y0, x1, y1]| {
+                let a = amb_export::geometry::upright_fraction(o, x0, y0);
+                let b = amb_export::geometry::upright_fraction(o, x1, y1);
+                [
+                    a.0 * uw as f64,
+                    a.1 * uh as f64,
+                    b.0 * uw as f64,
+                    b.1 * uh as f64,
+                ]
+            })
+            .collect()
+    }
+
     /// The commands that set the crop to `rect` (the crop tool's Done). The
     /// whole photo with no angle turns the crop off.
     pub fn crop_commands(&self, rect: &CropRect) -> Vec<Command> {

@@ -120,6 +120,49 @@ pub fn analyse(
     solve(&segments, mode, focal_35mm / (0.5 * 43.267), k)
 }
 
+/// The photo's long straight edges near horizontal or vertical (the lines
+/// Upright fits), longest first, at most `max`: each as two points in
+/// fractions of the (stored, lens-corrected) frame's width and height.
+pub fn guide_lines(
+    img: &CameraImage,
+    lc: &LensCorrections,
+    lens_k: &LensStrengths,
+    k: &UprightStrengths,
+    max: usize,
+) -> Vec<[f64; 4]> {
+    if img.width < 16 || img.height < 16 {
+        return Vec::new();
+    }
+    let (w, h, small) = shrink(&img.rgb, img.width, img.height, ANALYSIS_EDGE);
+    let pass = lens::apply_camera(&small, w, h, img.shot.crop_factor, lc, lens_k);
+    let lum = luminance(&pass.rgb);
+    let mut segs = detect(&lum, pass.width, pass.height, pass.blank.as_deref(), k);
+    let near = k.candidate.to_radians().sin();
+    segs.retain(|s| {
+        let len = s.length();
+        len > 0.0 && {
+            let (ux, uy) = ((s.b.0 - s.a.0) / len, (s.b.1 - s.a.1) / len);
+            ux.abs() < near || uy.abs() < near
+        }
+    });
+    segs.sort_by(|a, b| b.length().total_cmp(&a.length()));
+    segs.truncate(max);
+    let (_, back) = crate::transform::normalising(pass.width, pass.height);
+    let (fw, fh) = (pass.width as f64, pass.height as f64);
+    segs.iter()
+        .map(|s| {
+            let a = back.apply(s.a.0, s.a.1);
+            let b = back.apply(s.b.0, s.b.1);
+            [
+                (a.0 + 0.5) / fw,
+                (a.1 + 0.5) / fh,
+                (b.0 + 0.5) / fw,
+                (b.1 + 0.5) / fh,
+            ]
+        })
+        .collect()
+}
+
 /// Integer-factor area average to a long edge of at most `max_edge`.
 fn shrink(rgb: &[f32], width: usize, height: usize, max_edge: usize) -> (usize, usize, Vec<f32>) {
     let factor = width.max(height).div_ceil(max_edge).max(1);

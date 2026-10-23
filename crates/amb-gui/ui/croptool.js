@@ -176,6 +176,8 @@ async function enterCrop() {
   ui.crop.tool.start({ width: ui.info.width, height: ui.info.height, angleSign: st.angle_sign, rect, draw: !st.enabled && !view });
   syncCropPanel(rect);
   if (view) status("The crop starts from the zoomed view: adjust it, then Done");
+  // The photo's straight lines, to show and snap to while straightening.
+  invoke("guide_lines").then((lines) => ui.crop.on && ui.crop.tool.setGuides(lines)).catch(() => {});
   requestPreview(false);
 }
 
@@ -288,7 +290,7 @@ function wireCrop() {
       $("crop-draw").classList.toggle("active", on);
       const hint = on
         ? "Press at one corner of the crop and drag to the opposite corner. Or adjust the frame with the controls here."
-        : "Drag the edges or corners, inside to move, outside the frame to straighten. Draw ⌖ (D) starts a new one. Enter applies, Esc cancels.";
+        : "Drag the edges or corners, inside to move, outside the frame to turn: the photo's straight lines show, and it snaps when one comes level (hold Alt to turn freely). Draw ⌖ (D) starts a new one. Enter applies, Esc cancels.";
       $("crop-hint").textContent = hint;
       if (ui.crop.on) status(on ? "Crop: drag from one corner to the other" : "Crop: adjust the frame; Enter applies, Esc cancels");
     },

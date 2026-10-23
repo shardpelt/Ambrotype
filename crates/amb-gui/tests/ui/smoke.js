@@ -183,6 +183,27 @@ await t.step("dragging the filmstrip moves along it and doesn't open a photo", a
   t.expect(!opened, "no photo opened");
 });
 
+await t.step("turning in the crop tool snaps to the photo's straight lines", async () => {
+  t.key("r");
+  await t.until("the crop tool", () => ui.crop.on);
+  const lines = await t.invoke("guide_lines");
+  t.expect(lines.length > 0, "the colour chart has straight lines");
+  ui.crop.tool.setGuides(lines);
+  ui.crop.tool.setDrawMode(false);
+  const c = $("crop-canvas");
+  const r = c.getBoundingClientRect();
+  const [cx, cy, R] = [r.left + r.width / 2, r.top + r.height / 2, r.width / 2 - 3];
+  const at = (deg, alt = false) => ({ bubbles: true, clientX: cx + R * Math.cos((deg * Math.PI) / 180), clientY: cy + R * Math.sin((deg * Math.PI) / 180), pointerId: 4, button: 0, altKey: alt });
+  c.dispatchEvent(new PointerEvent("pointerdown", at(0)));
+  c.dispatchEvent(new PointerEvent("pointermove", at(0.3)));
+  t.expect(Math.abs(ui.crop.tool.rect().angle) < 0.05, `a small turn snaps back level: ${ui.crop.tool.rect().angle}`);
+  c.dispatchEvent(new PointerEvent("pointermove", at(0.3, true)));
+  t.expect(Math.abs(ui.crop.tool.rect().angle) > 0.2, `Alt turns freely: ${ui.crop.tool.rect().angle}`);
+  c.dispatchEvent(new PointerEvent("pointerup", at(0.3, true)));
+  t.key("Escape");
+  await t.until("the crop tool closed", () => !ui.crop.on);
+});
+
 await t.step("Level in the crop tool keeps a level photo level", async () => {
   t.key("r");
   await t.until("the crop tool", () => ui.crop.on);

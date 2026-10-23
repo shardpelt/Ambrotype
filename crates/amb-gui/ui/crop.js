@@ -131,6 +131,27 @@
     let drag = null;
     let angleBase = null;  // the rectangle before a slider straighten
     let drawing = false;   // draw mode: the next drag draws a new rectangle
+    // The photo's straight lines ([x0, y0, x1, y1] in photo pixels), shown
+    // while straightening; a turn that brings one level or upright snaps to it.
+    let guides = [];
+    let snaps = [];        // the angles (degrees, the tool's) that level a guide
+    const SNAP = 0.6;      // degrees
+
+    // The angle that makes guide `l` level (or upright, when it's steep).
+    function levelling(l) {
+      const phi = (Math.atan2(l[3] - l[1], l[2] - l[0]) * 180) / Math.PI;
+      let a = ((phi + 90) % 180 + 180) % 180 - 90; // the line's slant, −90..90
+      if (a > 45) a -= 90;
+      else if (a < -45) a += 90;
+      return a / sign;
+    }
+
+    function snapped(angle, free) {
+      if (free || !snaps.length) return angle;
+      let best = null;
+      for (const s of snaps) if (Math.abs(s - angle) < SNAP && (best == null || Math.abs(s - angle) < Math.abs(best - angle))) best = s;
+      return best ?? angle;
+    }
 
     // View: the photo turned by −θ about its centre (so the crop is level),
     // fitted to the canvas.
@@ -191,6 +212,18 @@
       } else {
         g.fillStyle = "#2a2c31";
         g.fillRect(0, 0, W, H);
+      }
+      // The straight lines while straightening; the ones level now stand out.
+      if (guides.length && ((drag && drag.kind === "rotate") || angleBase)) {
+        for (const l of guides) {
+          const on = Math.abs(levelling(l) - rect.angle) < 0.05;
+          g.strokeStyle = on ? "rgba(120, 230, 140, 0.95)" : "rgba(255, 210, 90, 0.55)";
+          g.lineWidth = (on ? 2.5 : 1.5) / L.S;
+          g.beginPath();
+          g.moveTo(l[0], l[1]);
+          g.lineTo(l[2], l[3]);
+          g.stroke();
+        }
       }
       g.restore();
 
@@ -345,7 +378,8 @@
         d = Math.atan2(Math.sin(d), Math.cos(d));
         // The photo follows the pointer: a clockwise drag turns it clockwise.
         const deg = s.angle - (d * 180) / Math.PI / sign;
-        const angle = Math.round(Math.min(MAX_ANGLE, Math.max(-MAX_ANGLE, deg)) * 100) / 100;
+        // Snaps to a line coming level; Alt turns freely.
+        const angle = snapped(Math.round(Math.min(MAX_ANGLE, Math.max(-MAX_ANGLE, deg)) * 100) / 100, drag.free);
         rect = straighten(s, angle, W, H, sign);
       } else if (kind === "move") {
         const [c, sn] = axes(s.angle, sign);
@@ -393,7 +427,7 @@
         drag = { kind: hit(X, Y), X, Y, L, start: { ...rect }, centre: toView(L, rect.cx, rect.cy), pointer: [X, Y] };
       }
       if (drag.kind === "rotate") canvas.style.cursor = "grabbing";
-      canvas.setPointerCapture(e.pointerId);
+      try { canvas.setPointerCapture(e.pointerId); } catch { /* a pointer the page made up (tests) */ }
       draw();
     });
     canvas.addEventListener("pointermove", (e) => {
@@ -404,6 +438,7 @@
         return;
       }
       drag.pointer = [X, Y];
+      drag.free = e.altKey;
       if (drag.kind === "draw") {
         // A click (no real drag) draws nothing.
         if (!drag.moved && Math.hypot(X - drag.X, Y - drag.Y) < 4) return;
@@ -444,6 +479,8 @@
         rect = { ...o.rect };
         drag = null;
         angleBase = null;
+        guides = [];
+        snaps = [];
         setDrawing(Boolean(o.draw));
       },
       stop() { rect = null; drag = null; drawing = false; draw(); },
@@ -482,6 +519,12 @@
         changed(true);
       },
       endAngle() { angleBase = null; if (rect) changed(false); },
+      /** The photo's straight lines to show and snap to while straightening. */
+      setGuides(lines) {
+        guides = lines ?? [];
+        snaps = [...new Set(guides.map((l) => Math.round(levelling(l) * 100) / 100))].filter((a) => Math.abs(a) <= MAX_ANGLE);
+        draw();
+      },
       draw,
       destroy() { observer.disconnect(); },
     };

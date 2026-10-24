@@ -339,9 +339,9 @@ pub(crate) fn preset_submit(
     }
 }
 
-/// Show a preset's file in the system's file manager.
+/// Show a file (a preset, a photo) in the system's file manager.
 #[tauri::command]
-pub(crate) fn reveal_preset(app: tauri::AppHandle, path: String) -> Res<()> {
+pub(crate) fn reveal_file(app: tauri::AppHandle, path: String) -> Res<()> {
     use tauri_plugin_opener::OpenerExt;
     app.opener()
         .reveal_item_in_dir(&path)

@@ -3,6 +3,40 @@
 // in another app.
 "use strict";
 
+// A photo on the clipboard, with its edit (3072 pixels on the long side),
+// to paste into a chat, mail or document.
+async function copyImage(path) {
+  status("Copying the photo…");
+  try {
+    const [w, h] = await invoke("copy_image", { path });
+    toast(`Copied the photo (${w} × ${h}): paste it anywhere`);
+    status("Copied the photo");
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
+async function copyPath(paths) {
+  try {
+    await invoke("copy_text", { text: paths.join("\n") });
+    toast(paths.length === 1 ? "Copied the file's path" : `Copied ${paths.length} paths`);
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
+// Right-click on the photo: copy it, its path, find it, export it.
+function photoMenu(e) {
+  if (!ui.info) return;
+  const path = ui.info.path;
+  contextMenu(e, [
+    ["Copy image", () => copyImage(path)],
+    ["Copy file path", () => copyPath([path])],
+    ["Show in folder", () => invoke("reveal_file", { path }).catch((err) => toast(String(err), true))],
+    ["Export…", () => exportFlow()],
+  ]);
+}
+
 // The folder the last export went to, on this computer: the save dialogs
 // start there (else next to the photo).
 function lastExportDir() {

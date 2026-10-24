@@ -29,6 +29,9 @@ allow = [
     "CDLA-Permissive-2.0",
     # libbz2-rs-sys (reading lensfun's database download): BSD-style.
     "bzip2-1.0.6",
+    # clipboard-win and error-code (Copy image, via the clipboard plugin,
+    # on Windows): the Boost licence, permissive and GPL-compatible.
+    "BSL-1.0",
 ]
 
 [sources]

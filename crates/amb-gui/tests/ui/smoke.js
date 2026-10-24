@@ -284,6 +284,15 @@ await t.step("Save to… keeps a preset in a folder of yours; a preset can go to
   t.key("Ctrl+Z");
 });
 
+await t.step("right-click on the photo: Copy image puts it on the clipboard", async () => {
+  photoMenu(new MouseEvent("contextmenu", { clientX: 400, clientY: 300 }));
+  const items = [...document.querySelectorAll(".ctx-menu button")].map((b) => b.textContent);
+  t.expect(["Copy image", "Copy file path", "Show in folder", "Export…"].every((i) => items.includes(i)), items.join(", "));
+  document.querySelector(".ctx-menu")?.remove();
+  const [w, h] = await t.invoke("copy_image", { path: ui.info.path });
+  t.expect(w > 0 && h > 0 && Math.max(w, h) <= 3072, `copied ${w}×${h}`);
+});
+
 await t.step("Ctrl+E exports a JPEG", async () => {
   t.key("Ctrl+E");
   await t.until("the Export dialog", () => $("export-dialog").open);

@@ -985,6 +985,21 @@ function wireLibrary() {
   grid.addEventListener("mousedown", (e) => {
     if (e.shiftKey || e.detail > 1) e.preventDefault();
   });
+  // Right-click a photo: copy it, its path, find it, open it, export.
+  grid.addEventListener("contextmenu", (e) => {
+    const cell = e.target.closest(".lib-cell");
+    if (!cell) return;
+    const path = cell.dataset.path;
+    if (!lib.selected.has(path)) select(path, "only");
+    const sel = selectedPhotos();
+    contextMenu(e, [
+      ["Copy image", () => copyImage(path)],
+      [sel.length > 1 ? `Copy ${sel.length} file paths` : "Copy file path", () => copyPath(sel.map((p) => p.path))],
+      ["Show in folder", () => invoke("reveal_file", { path }).catch((err) => toast(String(err), true))],
+      ["Open in the editor", () => libraryOpen(path)],
+      [sel.length > 1 ? `Export ${sel.length} photos…` : "Export…", () => libraryExport()],
+    ]);
+  });
   grid.addEventListener("dblclick", (e) => {
     const cell = e.target.closest(".lib-cell");
     if (cell) libraryOpen(cell.dataset.path);

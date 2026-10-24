@@ -501,6 +501,62 @@ pub(crate) async fn negative_freeze(state: tauri::State<'_, AppState>) -> Res<Ve
     .map_err(|e| e.to_string())?
 }
 
+/// Long edge of a photo copied to the clipboard: big enough to paste into a
+/// chat, mail or document, small enough to copy at once.
+const COPY_EDGE: usize = 3072;
+
+/// Put a photo, with its edit, on the clipboard as a picture (the open
+/// photo with its edit as it is now, saved or not). Returns its size.
+#[tauri::command]
+pub(crate) async fn copy_image(
+    app: tauri::AppHandle,
+    path: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<(u32, u32)> {
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    let rgb = tauri::async_runtime::spawn_blocking(move || -> Res<_> {
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let none = Default::default();
+        let jpeg = {
+            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            match guard.as_mut().filter(|s| s.path == Path::new(&path)) {
+                Some(s) => {
+                    // In sRGB, not the monitor's colours the preview is in.
+                    let screen = std::mem::replace(&mut s.on_screen, false);
+                    let p = s.preview(COPY_EDGE, &none, false, false, lens);
+                    s.on_screen = screen;
+                    p.jpeg
+                }
+                None => {
+                    drop(guard);
+                    Session::open(Path::new(&path))?
+                        .preview(COPY_EDGE, &none, false, false, lens)
+                        .jpeg
+                }
+            }
+        };
+        amb_library::duplicates::decode_jpeg(&jpeg)
+            .ok_or_else(|| "couldn't render the photo".to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    let (w, h) = rgb.dimensions();
+    let rgba: Vec<u8> = rgb.pixels().flat_map(|p| [p[0], p[1], p[2], 255]).collect();
+    app.clipboard()
+        .write_image(&tauri::image::Image::new_owned(rgba, w, h))
+        .map_err(|e| format!("couldn't copy to the clipboard: {e}"))?;
+    Ok((w, h))
+}
+
+/// Put text (a file's path) on the clipboard.
+#[tauri::command]
+pub(crate) fn copy_text(app: tauri::AppHandle, text: String) -> Res<()> {
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+    app.clipboard().write_text(text).map_err(|e| e.to_string())
+}
+
 /// The crop tool's Level: the straighten angle that levels the open photo;
 /// `None` when it has too few long lines to tell.
 #[tauri::command]

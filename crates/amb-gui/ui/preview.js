@@ -375,13 +375,13 @@ function wireViewer() {
   let drag = null;
   // After layout, so resizing the photo doesn't loop the observer.
   new ResizeObserver(() => requestAnimationFrame(fitPreview)).observe($("viewer"));
-  // The webview's own "Save image" can't save (and would save the small
-  // preview): right-click exports the photo instead.
+  // The webview's own menu can't save the photo (and would copy the small
+  // preview): right-click shows the photo's menu instead (Copy image, Export…).
   $("viewer").addEventListener("contextmenu", (e) => {
     e.preventDefault();
     // The tools' own canvases use right-click. With box zoom on, a right
-    // click that doesn't drag exports instead (quickzoom.js).
-    if (ui.info && (e.target === img || e.target === $("viewer")) && !boxZoomWanted()) exportFlow();
+    // click that doesn't drag shows the menu (quickzoom.js).
+    if (ui.info && (e.target === img || e.target === $("viewer")) && !boxZoomWanted()) photoMenu(e);
   });
   // Scrolling (a mouse wheel or two fingers on a trackpad) moves the 1:1 view;
   // on the whole photo, if Settings asks, it goes to the next or previous one.

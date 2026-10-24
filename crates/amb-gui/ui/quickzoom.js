@@ -49,8 +49,8 @@ function wireBoxZoom() {
     if (!b || e.button !== 2) return;
     qz.box = null;
     b.el.remove();
-    // A right click without a drag: what right-click did before.
-    if (!b.moved) return exportFlow();
+    // A right click without a drag: the photo's menu.
+    if (!b.moved) return photoMenu(e);
     const [u0, v0] = photoAt(b.x, b.y);
     const [u1, v1] = photoAt(e.clientX, e.clientY);
     const w = Math.abs(u1 - u0), h = Math.abs(v1 - v0);

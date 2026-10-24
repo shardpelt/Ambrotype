@@ -402,6 +402,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         // The window opens where and as big as it was left.
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .manage(state)
@@ -537,9 +538,11 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::photo::take_initial_path,
             commands::photo::level_angle,
+            commands::photo::copy_image,
+            commands::photo::copy_text,
             commands::presets::save_preset_to,
             commands::presets::preset_submit,
-            commands::presets::reveal_preset,
+            commands::presets::reveal_file,
             commands::photo::guide_lines,
             slideshow::take_slideshow,
             uitest::ui_test,

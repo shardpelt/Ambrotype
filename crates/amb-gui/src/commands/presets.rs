@@ -249,11 +249,103 @@ pub(crate) async fn save_preset(
             .clone()
     };
     tauri::async_runtime::spawn_blocking(move || {
-        session::save_preset(&dir, &name, &group, &settings)
+        session::save_preset(&dir, &name, &group, &settings, true)
     })
     .await
     .map_err(|e| e.to_string())??;
     presets(state).await
+}
+
+/// "Save to…": the preset into a folder the user picks (a synced folder, to
+/// have it on every computer), which joins the preset folders. `None` when
+/// they cancel.
+#[tauri::command]
+pub(crate) async fn save_preset_to(
+    app: tauri::AppHandle,
+    name: String,
+    group: String,
+    dir: Option<String>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Option<Vec<PresetEntry>>> {
+    let settings = {
+        let guard = state.session.lock().map_err(|e| e.to_string())?;
+        guard
+            .as_ref()
+            .ok_or("open a photo first")?
+            .state
+            .settings()
+            .clone()
+    };
+    // A UI test saves into its own folder without asking.
+    let folder = if let Some(t) = crate::uitest::current() {
+        Some(t.out_dir.join("presets"))
+    } else {
+        let mut dialog = app.dialog().file().set_title("Save the preset in…");
+        if let Some(d) = dir.filter(|d| Path::new(d).is_dir()) {
+            dialog = dialog.set_directory(d);
+        }
+        dialog
+            .blocking_pick_folder()
+            .and_then(|p| p.into_path().ok())
+    };
+    let Some(folder) = folder else {
+        return Ok(None);
+    };
+    let target = folder.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        session::save_preset(&target, &name, &group, &settings, false)
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    // Listed from now on, unless a preset folder already holds it.
+    {
+        let mut dirs = state.preset_dirs.lock().map_err(|e| e.to_string())?;
+        let own = own_presets_dir(state.inner());
+        if !dirs.iter().chain(own.iter()).any(|d| folder.starts_with(d)) {
+            dirs.push(folder);
+        }
+    }
+    save_config(state.inner());
+    presets(state).await.map(Some)
+}
+
+/// Offer a preset to the hub: GitHub opens with it filled in as a new file
+/// (a pull request), or, when it's too big for a link, on the hub's upload
+/// page with the file shown in its folder to drag there. Returns which.
+#[tauri::command]
+pub(crate) fn preset_submit(
+    app: tauri::AppHandle,
+    path: String,
+    name: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<&'static str> {
+    use tauri_plugin_opener::OpenerExt;
+    let text = std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))?;
+    let index = crate::commands::hub::hub_index(state.inner());
+    match crate::hub::submit_preset_url(&index, &name, &text)? {
+        Ok(url) => {
+            app.opener()
+                .open_url(url, None::<&str>)
+                .map_err(|e| e.to_string())?;
+            Ok("link")
+        }
+        Err(upload) => {
+            app.opener()
+                .open_url(upload, None::<&str>)
+                .map_err(|e| e.to_string())?;
+            let _ = app.opener().reveal_item_in_dir(&path);
+            Ok("upload")
+        }
+    }
+}
+
+/// Show a preset's file in the system's file manager.
+#[tauri::command]
+pub(crate) fn reveal_preset(app: tauri::AppHandle, path: String) -> Res<()> {
+    use tauri_plugin_opener::OpenerExt;
+    app.opener()
+        .reveal_item_in_dir(&path)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

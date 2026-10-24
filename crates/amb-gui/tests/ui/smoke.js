@@ -267,6 +267,23 @@ await t.step("a group's 2 × 2 is a square of its best four", async () => {
   closeCollage();
 });
 
+await t.step("Save to… keeps a preset in a folder of yours; a preset can go to the hub", async () => {
+  t.setSlider("Exposure2012", 0.5);
+  const flow = savePresetFlow("Shared look");
+  await t.until("the Save dialog", () => $("save-preset-dialog").open);
+  $("save-preset-dialog").close("to");
+  await flow;
+  const p = ui.presets.find((x) => x.name === "Shared look");
+  t.expect(p && p.path.includes("ambrotype-ui-test"), `saved in the folder chosen: ${p?.path}`);
+  // Its right-click menu offers the hub and the file.
+  const row = [...document.querySelectorAll("#preset-list .preset")].find((b) => b.textContent === "Shared look");
+  row.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 50, clientY: 50 }));
+  const items = [...document.querySelectorAll(".ctx-menu button")].map((b) => b.textContent);
+  t.expect(items.includes("Share to the hub…") && items.includes("Show the file"), items.join(", "));
+  document.querySelector(".ctx-menu")?.remove();
+  t.key("Ctrl+Z");
+});
+
 await t.step("Ctrl+E exports a JPEG", async () => {
   t.key("Ctrl+E");
   await t.until("the Export dialog", () => $("export-dialog").open);

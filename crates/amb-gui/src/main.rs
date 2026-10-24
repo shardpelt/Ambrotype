@@ -537,6 +537,9 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::photo::take_initial_path,
             commands::photo::level_angle,
+            commands::presets::save_preset_to,
+            commands::presets::preset_submit,
+            commands::presets::reveal_preset,
             commands::photo::guide_lines,
             slideshow::take_slideshow,
             uitest::ui_test,

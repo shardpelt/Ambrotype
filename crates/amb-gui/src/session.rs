@@ -1532,6 +1532,7 @@ pub fn save_preset(
     name: &str,
     group: &str,
     settings: &BTreeMap<String, Value>,
+    in_group_folder: bool,
 ) -> Result<PathBuf, String> {
     let name = name.trim();
     let group = if group.trim().is_empty() {
@@ -1587,7 +1588,12 @@ pub fn save_preset(
     out.insert("UUID".into(), Value::Text(uuid));
     out.insert("HasSettings".into(), Value::Text("True".into()));
     out.insert("SupportsAmount".into(), Value::Text("True".into()));
-    let folder = dir.join(safe(group));
+    // Into a folder per group, or straight into a folder the user chose.
+    let folder = if in_group_folder {
+        dir.join(safe(group))
+    } else {
+        dir.to_path_buf()
+    };
     std::fs::create_dir_all(&folder).map_err(|e| format!("{}: {e}", folder.display()))?;
     let path = folder.join(format!("{}.xmp", safe(name)));
     let text = amb_presets::xmp_writer::write_packet(&out, amb_presets::is_signed_tag);
@@ -1970,7 +1976,7 @@ mod tests {
         settings.insert("GrainAmount".to_string(), Value::Text("25".into()));
         settings.insert("CropTop".to_string(), Value::Text("0.1".into()));
         settings.insert("HasCrop".to_string(), Value::Text("True".into()));
-        let path = save_preset(&dir, "Faded street", "", &settings).unwrap();
+        let path = save_preset(&dir, "Faded street", "", &settings, true).unwrap();
         assert!(
             path.ends_with("Yours/Faded street.xmp"),
             "{}",
@@ -1988,7 +1994,7 @@ mod tests {
             (found[0].name.as_str(), found[0].group.as_str()),
             ("Faded street", "Yours")
         );
-        assert!(save_preset(&dir, " ", "", &settings).is_err());
+        assert!(save_preset(&dir, " ", "", &settings, true).is_err());
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

@@ -1032,6 +1032,42 @@ fn url_encode(s: &str) -> String {
     out
 }
 
+/// Where a preset of the user's goes on the hub: GitHub's "new file" page in
+/// the hub's `presets/` folder with the .xmp filled in (`Ok(url)`), or, for a
+/// file too big for a link, `Err(upload page)` to drop the file on.
+pub fn submit_preset_url(
+    index_url: &str,
+    name: &str,
+    xmp: &str,
+) -> Result<Result<String, String>, String> {
+    let (repo, branch, folder) = github_repo(index_url).ok_or(
+        "submitting needs a hub on GitHub (an address on raw.githubusercontent.com); see Settings → General",
+    )?;
+    let mut stem: String = name
+        .to_lowercase()
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() { c } else { '-' })
+        .collect();
+    while stem.contains("--") {
+        stem = stem.replace("--", "-");
+    }
+    let stem = stem.trim_matches('-');
+    let stem = if stem.is_empty() { "preset" } else { stem };
+    let url = format!(
+        "https://github.com/{repo}/new/{branch}?filename={}&value={}&message={}",
+        url_encode(&format!("{folder}presets/{stem}.xmp")),
+        url_encode(xmp),
+        url_encode(&format!("Add preset {name}")),
+    );
+    Ok(if url.len() <= MAX_SUBMIT_URL {
+        Ok(url)
+    } else {
+        Err(format!(
+            "https://github.com/{repo}/upload/{branch}/{folder}presets"
+        ))
+    })
+}
+
 /// A link that opens GitHub's "new file" page in the hub repo with this look
 /// filled in; committing it there proposes a pull request.
 pub fn submit_url(index_url: &str, kind: Kind, data: &Value) -> Result<String, String> {
@@ -1070,6 +1106,26 @@ pub fn submit_url(index_url: &str, kind: Kind, data: &Value) -> Result<String, S
         );
     }
     Ok(url)
+}
+
+#[cfg(test)]
+mod preset_submit_tests {
+    use super::*;
+
+    #[test]
+    fn a_preset_goes_to_the_hubs_presets_folder() {
+        let index = "https://raw.githubusercontent.com/Ambrotypehq/ambrotype-hub/main/index.json";
+        let url = submit_preset_url(index, "Warm Matte!", "<x:xmpmeta/>")
+            .unwrap()
+            .unwrap();
+        assert!(url.starts_with("https://github.com/Ambrotypehq/ambrotype-hub/new/main?filename=presets%2Fwarm-matte.xmp&value=%3Cx%3Axmpmeta%2F%3E"), "{url}");
+        let big = "x".repeat(MAX_SUBMIT_URL);
+        assert_eq!(
+            submit_preset_url(index, "Big", &big).unwrap(),
+            Err("https://github.com/Ambrotypehq/ambrotype-hub/upload/main/presets".into())
+        );
+        assert!(submit_preset_url("https://example.com/index.json", "A", "").is_err());
+    }
 }
 
 #[cfg(test)]

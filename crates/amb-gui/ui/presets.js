@@ -75,6 +75,8 @@ function renderPresets() {
           ["Apply", () => applyPreset(p)],
           ["Apply some of its settings…", () => applyPresetPartly(p)],
           ui.info && n > 1 ? [`Apply to all ${n} photos in the folder`, () => applyPresetToFolder(p)] : null,
+          ["Show the file", () => invoke("reveal_preset", { path: p.path }).catch((err) => toast(String(err), true))],
+          ["Share to the hub…", () => sharePresetToHub(p)],
         ].filter(Boolean));
       });
       b.addEventListener("mouseenter", () => presetHover(p));
@@ -181,6 +183,20 @@ function presetHover(p) {
   }, 180);
 }
 
+// Offer a preset to the hub as a pull request on GitHub (a GitHub account is
+// needed there). Only for presets you made: bought ones aren't yours to share.
+async function sharePresetToHub(p) {
+  if (!(await askYes(`Share “${p.name}” with everyone on the Ambrotype hub? Only share presets you made yourself: bought or downloaded ones usually may not be passed on. GitHub opens; you need an account there.`))) return;
+  try {
+    const how = await invoke("preset_submit", { path: p.path, name: p.name });
+    toast(how === "link"
+      ? "GitHub is open with the preset filled in: press Commit changes, then Create pull request."
+      : "The preset is too big for a link: GitHub is open on the hub's upload page, and the file is shown in its folder. Drag it in, then Propose changes.");
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
 // The open photo's edit as a one-click preset (src/session.rs `save_preset`).
 async function savePresetFlow(name = "") {
   if (!ui.info) return toast("Open a photo first.", true);
@@ -190,8 +206,21 @@ async function savePresetFlow(name = "") {
   dlg.showModal();
   f.preset_name.focus();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
-  if (choice !== "ok") return;
+  if (choice !== "ok" && choice !== "to") return;
   try {
+    if (choice === "to") {
+      // Into a folder of the user's (a synced one): it joins the preset folders.
+      let last = null;
+      try { last = localStorage.getItem("amb.presetSaveDir"); } catch { /* none */ }
+      const list = await invoke("save_preset_to", { name: f.preset_name.value, group: f.preset_group.value, dir: last });
+      if (!list) return;
+      ui.presets = list;
+      const saved = ui.presets.find((p) => p.name === f.preset_name.value.trim());
+      if (saved) try { localStorage.setItem("amb.presetSaveDir", dirOf(saved.path)); } catch { /* not kept */ }
+      renderPresets();
+      toast(`Saved the preset “${f.preset_name.value.trim()}”${saved ? ` in ${dirOf(saved.path)}` : ""}`);
+      return;
+    }
     ui.presets = await invoke("save_preset", { name: f.preset_name.value, group: f.preset_group.value });
     renderPresets();
     toast(`Saved the preset “${f.preset_name.value.trim()}” (in ${f.preset_group.value.trim() || "Yours"})`);

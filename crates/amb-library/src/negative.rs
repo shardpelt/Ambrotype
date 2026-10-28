@@ -7,13 +7,13 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use amb_engine::negative::{self, Analysis, NegativeType};
+use amb_engine::negative::{Analysis, NegativeType};
 use amb_presets::Value;
 use amb_protocol::Command;
 use rayon::prelude::*;
 
-/// Analyse one photo's raw, as the film type in its sidecar says
-/// (colour negative when it says nothing).
+/// Analyse one photo's raw as Auto would now, with its edit: the film type,
+/// a picked film base and the crop (levels are measured inside it).
 pub fn analyze_file(photo: &Path) -> Result<Analysis, String> {
     let source = amb_engine::source_path(photo);
     let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
@@ -21,7 +21,7 @@ pub fn analyze_file(photo: &Path) -> Result<Analysis, String> {
         .ok()
         .and_then(|t| amb_presets::xmp::parse_crs(&t).ok())
         .unwrap_or_default();
-    Ok(analyze_image(&img, film_type(&settings)))
+    Ok(analyze_image(&img, &settings, true))
 }
 
 /// The film type an edit says (`amb:NegativeType`).
@@ -32,15 +32,16 @@ pub fn film_type(settings: &BTreeMap<String, Value>) -> NegativeType {
         .kind
 }
 
-/// Analyse a decoded photo of a film of `kind`.
-pub fn analyze_image(img: &amb_engine::raw::CameraImage, kind: NegativeType) -> Analysis {
-    negative::analyze_as(
-        &img.rgb,
-        img.width,
-        img.height,
-        kind,
-        &negative::DEFAULT_STRENGTHS,
-    )
+/// The analysis a render of a decoded photo with `settings` makes, on a
+/// small copy; `fresh`: what Auto would measure now (keeping a picked base).
+pub fn analyze_image(
+    img: &amb_engine::raw::CameraImage,
+    settings: &BTreeMap<String, Value>,
+    fresh: bool,
+) -> Analysis {
+    let small = amb_engine::raw::downscale(img, amb_engine::pipeline::GLOBALS_LONG_SIDE);
+    let develop = amb_engine::pipeline::DevelopSettings::from_settings(settings).0;
+    amb_engine::pipeline::negative_analysis(&small, &develop, fresh)
 }
 
 /// Analyse several photos in parallel; one that can't be read is an error.
@@ -86,6 +87,15 @@ pub fn frozen(frames: &[Analysis]) -> BTreeMap<String, Value> {
         "NegativeMidtone",
         Value::Number(round(median(&|a| a.midtone))),
     );
+    // Expired film's crossover, when there is one.
+    if frames.iter().any(|a| a.crossover != [0.0; 3]) {
+        for (c, name) in ["Red", "Green", "Blue"].iter().enumerate() {
+            put(
+                &format!("NegativeCrossover{name}"),
+                Value::Number(round(median(&|a| a.crossover[c]))),
+            );
+        }
+    }
     settings
 }
 
@@ -113,6 +123,7 @@ mod tests {
             density_low: [0.1; 3],
             density_high: [1.5; 3],
             midtone,
+            crossover: [0.0; 3],
         }
     }
 

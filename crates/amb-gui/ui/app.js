@@ -841,6 +841,17 @@ async function freezeNegative() {
   }
 }
 
+// Pick a negative's film base on the photo; `measure`: forget a picked one,
+// so it is measured from the scan again.
+function pickBaseFlow(measure = false) {
+  if (!ui.info) return;
+  if (measure) {
+    run(["Red", "Green", "Blue"].map((c) => ({ cmd: "reset_param", name: `amb:FilmBase${c}` })), "Measure film base");
+    return;
+  }
+  setPicking(ui.picking === "base" ? false : "base");
+}
+
 async function cropToFrame() {
   if (!ui.info) return;
   try {
@@ -980,7 +991,7 @@ async function init() {
   $("btn-redo").addEventListener("click", () => run([{ cmd: "redo" }]));
   $("btn-before").addEventListener("click", toggleBefore);
   $("btn-zoom").addEventListener("click", () => setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy));
-  $("btn-wb").addEventListener("click", () => setPicking(!ui.picking));
+  $("btn-wb").addEventListener("click", () => setPicking(ui.picking === "white" ? false : "white"));
   $("btn-clip").addEventListener("click", toggleClipping);
   $("proof-space").addEventListener("change", applyProof);
   $("proof-warn").addEventListener("change", applyProof);

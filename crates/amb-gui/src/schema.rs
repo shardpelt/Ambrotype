@@ -419,7 +419,9 @@ pub fn panels() -> Vec<Panel> {
                     &[
                         ("amb:NegativeConvert", Some("Convert negative")),
                         ("amb:NegativeAuto", Some("Auto")),
+                        ("amb:NegativeRange", Some("Fixed range")),
                         ("amb:NegativeType", Some("Type")),
+                        ("amb:NegativeExpired", Some("Expired film")),
                         ("amb:FilmStock", Some("Film stock")),
                         ("amb:FilmStockAmount", Some("Stock amount")),
                     ],

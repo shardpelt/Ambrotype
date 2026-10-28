@@ -607,14 +607,19 @@ function buildPanel(item) {
         const freeze = document.createElement("button");
         freeze.className = "small section-action";
         freeze.textContent = "Freeze";
-        freeze.title = "Store this photo's film base and levels and turn Auto off (one undo step). For a whole roll: Sync negative roll in the library";
+        freeze.title = "Store the film base and levels this photo shows now and turn Auto off (one undo step). For a whole roll: Sync negative roll in the library";
         freeze.addEventListener("click", () => freezeNegative());
         const frame = document.createElement("button");
         frame.className = "small section-action";
         frame.textContent = "Crop to frame";
         frame.title = "Crop away the film rebate and the scanner holder's edges (one undo step)";
         frame.addEventListener("click", () => cropToFrame());
-        l.append(frame, freeze);
+        const base = document.createElement("button");
+        base.className = "small section-action pick-base";
+        base.textContent = "Pick base";
+        base.title = "Click the clear film between frames to set the film base (before Crop to frame, or with the crop off). Alt-click to measure it from the scan again";
+        base.addEventListener("click", (ev) => pickBaseFlow(ev.altKey));
+        l.append(base, frame, freeze);
       }
       body.append(l);
     } else if (e.type === "control") {

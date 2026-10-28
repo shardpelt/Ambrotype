@@ -1040,17 +1040,29 @@ impl Session {
         }
     }
 
-    /// White balance that makes the clicked spot neutral: (u, v) are
-    /// fractions of the upright, uncropped photo. Returns (Temperature, Tint).
-    /// The white balance settings that make the spot at (`u`, `v`) neutral:
-    /// Temperature and Tint on a raw, their relative versions on a rendered image.
-    pub fn pick_white(&self, u: f64, v: f64) -> Option<[(&'static str, f64); 2]> {
+    /// The pixel of the photo (stored orientation, uncropped) under a point
+    /// of it as shown: (`u`, `v`) are fractions of the upright photo, cropped
+    /// when it has a crop.
+    fn shown_pixel(&self, u: f64, v: f64) -> (usize, usize) {
+        let (develop, _) = DevelopSettings::from_settings(self.state.settings());
+        let (w, h) = (self.full.width, self.full.height);
+        let o = self.full.metadata.orientation;
+        let g = develop.crop.geometry(w, h);
+        let (cw, ch) = g.as_ref().map_or((w, h), |g| (g.width, g.height));
+        let (s, t) = amb_export::geometry::stored_fraction(o, u.clamp(0.0, 1.0), v.clamp(0.0, 1.0));
+        let (x, y) = (s * cw as f64 - 0.5, t * ch as f64 - 0.5);
+        let (fx, fy) = g.as_ref().map_or((x, y), |g| g.source(x, y));
+        (
+            fx.round().clamp(0.0, (w - 1) as f64) as usize,
+            fy.round().clamp(0.0, (h - 1) as f64) as usize,
+        )
+    }
+
+    /// The mean camera RGB of a small patch around a point of the photo as
+    /// shown ([`Self::shown_pixel`]); `None` on a clipped or black spot.
+    fn shown_patch(&self, u: f64, v: f64) -> Option<[f64; 3]> {
         let img = &self.full;
-        let o = img.metadata.orientation;
-        let (ow, oh) = amb_export::geometry::oriented_size(img.width, img.height, o);
-        let ux = ((u.clamp(0.0, 1.0) * (ow - 1) as f64).round()) as usize;
-        let uy = ((v.clamp(0.0, 1.0) * (oh - 1) as f64).round()) as usize;
-        let (sx, sy) = amb_export::geometry::stored_position(o, img.width, img.height, ux, uy);
+        let (sx, sy) = self.shown_pixel(u, v);
         // Average a small patch to beat noise.
         let r = (img.width.max(img.height) / 600).max(2);
         let mut acc = [0.0f64; 3];
@@ -1065,10 +1077,38 @@ impl Session {
             }
         }
         let mean = acc.map(|a| a / n);
-        // Clipped or black spots can't define a white.
-        if mean[1] <= 1e-4 || mean.iter().any(|c| *c >= 0.98 || *c <= 0.0) {
-            return None;
-        }
+        (mean[1] > 1e-4 && mean.iter().all(|c| *c < 0.98 && *c > 0.0)).then_some(mean)
+    }
+
+    /// The film base under a point of the photo as shown (the clear film
+    /// between frames), and a warning when it is denser than the clearest
+    /// film the scan holds, which suggests the picture rather than bare film.
+    pub fn pick_film_base(&self, u: f64, v: f64) -> Option<([f64; 3], Option<String>)> {
+        let base = self.shown_patch(u, v)?;
+        let kind = amb_library::negative::film_type(self.state.settings());
+        let small = downscale(&self.full, pipeline::GLOBALS_LONG_SIDE);
+        let clearest = amb_engine::negative::estimate_base(
+            &small.rgb,
+            small.width,
+            small.height,
+            kind,
+            &amb_engine::negative::DEFAULT_STRENGTHS,
+        );
+        let denser = (0..3).all(|c| (clearest[c] / base[c]).log10() > 0.15);
+        let warning = denser.then(|| {
+            "That spot is denser than the clearest film in the scan, so it may be part of the picture. \
+             Pick the clear strip between frames (turn the crop off to see it)."
+                .to_string()
+        });
+        Some((base, warning))
+    }
+
+    /// The white balance settings that make the spot at (`u`, `v`) of the
+    /// photo as shown neutral: Temperature and Tint on a raw, their relative
+    /// versions on a rendered image.
+    pub fn pick_white(&self, u: f64, v: f64) -> Option<[(&'static str, f64); 2]> {
+        let img = &self.full;
+        let mean = self.shown_patch(u, v)?;
         let neutral = [mean[0] / mean[1], 1.0, mean[2] / mean[1]];
         let (x, y) = img.white_xy(neutral);
         if img.rendered {
@@ -1327,10 +1367,10 @@ impl Session {
             .collect()
     }
 
-    /// The film negative analysis of this photo (film base, levels, midtone).
+    /// The film negative analysis this photo renders with now (film base,
+    /// levels, midtone), as Freeze stores it.
     pub fn negative_analysis(&self) -> amb_engine::negative::Analysis {
-        let kind = amb_library::negative::film_type(self.state.settings());
-        amb_library::negative::analyze_image(&self.full, kind)
+        amb_library::negative::analyze_image(&self.full, self.state.settings(), false)
     }
 
     /// The crop to a scan's frame (without rebate or holder edges), as

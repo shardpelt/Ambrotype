@@ -233,6 +233,26 @@ pub fn measure_globals(img: &CameraImage, small: &CameraImage, s: &DevelopSettin
     globals
 }
 
+/// The film negative analysis a render of `img` with `s` makes (film base
+/// from the whole scan, levels inside the crop), with the conversion on.
+/// `fresh`: what Auto would measure now, keeping a stored film base (for
+/// Sync negative roll). Pass a small copy ([`crate::raw::downscale`]): this
+/// converts the whole of `img`.
+pub fn negative_analysis(
+    img: &CameraImage,
+    s: &DevelopSettings,
+    fresh: bool,
+) -> negative::Analysis {
+    let mut s = s.clone();
+    s.negative.enabled = true;
+    if fresh {
+        s.negative.auto = true;
+    }
+    camera_stage(img, &s, &Pass::default())
+        .negative
+        .expect("the conversion is on")
+}
+
 /// Render `window` of the output (in pixels of the full, unoriented render)
 /// as [`render`] would, without rendering the rest: only the window and a
 /// margin as wide as the edit's filters reach go through the pipeline.

@@ -53,7 +53,7 @@ A short "start here" for contributors and for the next work session. Details are
     - **save as preset:** Presets → Save… (or Save as preset… in the Plugins dialog) keeps the photo's edit, without the crop and other photo-specific settings, as a one-click preset under "Yours"
     - **LUTs:** Basic → Profile → LUT applies a `.cube` look (from the LUT folder or any file) with an amount ([design/luts.md](design/luts.md))
     - **export presets** and Resize by long or short edge, width, height, megapixels or percent; the window opens where it was left
-    - **film negatives:** Freeze keeps a frame's conversion; the library's Sync negative roll gives a roll one conversion
+    - **film negatives:** Freeze keeps a frame's conversion; the library's Sync negative roll gives a roll one conversion. Since 2026-10-28: Pick base (click the clear film), the base measured on the whole scan (not mistaking unclipped sprocket holes for it) and the levels inside the crop, Auto off printing every frame alike with a fixed density range, and Expired film ([design/film-negatives.md](design/film-negatives.md))
     - **export:** file names from a template for batches, text or logo watermarks, chroma subsampling, progressive JPEG and AVIF speed in the dialog
     - **follows outside edits:** when another app or an AI agent (over MCP) changes the open photo's sidecar, the editor shows it at once, as one undo step
     - **Guided Upright:** draw guides; the Transform sliders straighten them ([design/transform.md](design/transform.md))
@@ -181,11 +181,11 @@ Make Ambrotype a great place to browse, sort and manage a very large photo colle
 
 Ideas from two film-scan apps, negaflow (Apache-2.0) and NegPy (GPL-3), rebuilt in our own code from their docs and public sources. None of these needs their authors' permission or their code. The comparison, what we don't take, and the patent check are in [research/16](research/16-film-scan-apps-survey.md). Sizes are S (a day or two), M (a week) and L (more). Roughly in this order:
 
-1. **Quick conversion wins:**
-   - a fixed density range when Auto is off (S)
-   - a film base eyedropper, a roll base, and a base found along the frame edge (M)
-   - a metering region and a border to ignore (S)
-   - an expired-film target (S)
+1. ~~**Quick conversion wins**~~ (done 2026-10-28):
+   - ~~a fixed density range when Auto is off~~ (`amb:NegativeRange`)
+   - ~~a film base eyedropper~~ (Pick base) and ~~a roll base~~ (pick on one frame, then Paste settings → Film negative); ~~a base that isn't bare light~~ (holes or gaps around the film)
+   - ~~a metering region~~: the levels are measured inside the crop, the base on the whole scan. Left: drawing a region by hand
+   - ~~an expired-film target~~ (`amb:NegativeExpired`: evens out the layers' midtones)
 2. **Cast removal along the greys:** red and blue fitted to green on the least-saturated pixels from shadows to highlights, with a strength slider (M). Fixes the sunset case in [GAPS.md](GAPS.md) §9.
 3. **Auto Density and Auto Grade**, metered only on parts with detail, with highlight and shadow holds (M). The patents behind them have expired; check the 2002 one before building.
 4. **Roll baseline:** odd frames keep their own analysis, Use this frame, Lock bounds, and scenes grouped by light (M). Builds on Sync negative roll.

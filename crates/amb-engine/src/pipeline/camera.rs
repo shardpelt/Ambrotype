@@ -248,12 +248,26 @@ pub(crate) fn camera_stage(img: &CameraImage, s: &DevelopSettings, pass: &Pass) 
         .as_ref()
         .map_or((img.width, img.height), |p| (p.width, p.height));
     let camera_rgb = lens_pass.as_ref().map_or(&img.rgb, |p| &p.rgb);
-    // 0b. Film negative → positive (on camera RGB, before white balance).
+    // 0b. Film negative → positive (on camera RGB, before white balance):
+    // the film base from the whole scan (the rebate is outside the crop),
+    // the levels inside the crop.
     let mut negative = None;
     let negative_rgb = s.negative.enabled.then(|| {
         let a = match pass.given.and_then(|g| g.negative) {
             Some(a) => a,
-            None => negative::resolve(&s.negative, camera_rgb, width, height, &cal.negative),
+            None => {
+                let whole = negative::Scan {
+                    rgb: &img.rgb,
+                    width: img.width,
+                    height: img.height,
+                };
+                let metered = negative::Scan {
+                    rgb: camera_rgb,
+                    width,
+                    height,
+                };
+                negative::resolve(&s.negative, whole, metered, &cal.negative)
+            }
         };
         negative = Some(a);
         let conversion = negative::Conversion::new(&s.negative, a, &cal.negative);

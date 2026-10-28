@@ -320,6 +320,35 @@ pub(crate) fn pick_white(u: f64, v: f64, state: tauri::State<'_, AppState>) -> R
     })
 }
 
+/// Film base from a click on the clear film between frames: stores it (and
+/// turns the conversion on) as one undoable step.
+#[tauri::command]
+pub(crate) fn pick_film_base(u: f64, v: f64, state: tauri::State<'_, AppState>) -> Res<Executed> {
+    let mut guard = state.session.lock().map_err(|e| e.to_string())?;
+    let s = guard.as_mut().ok_or("no photo open")?;
+    let (base, warning) = s
+        .pick_film_base(u, v)
+        .ok_or("pick the clear film between frames: that spot is clipped or black")?;
+    let round = |v: f64| (v * 10_000.0).round() / 10_000.0;
+    let mut cmds = vec![Command::SetParam {
+        name: "amb:NegativeConvert".into(),
+        value: serde_json::json!(true),
+    }];
+    for (c, name) in ["Red", "Green", "Blue"].iter().enumerate() {
+        cmds.push(Command::SetParam {
+            name: format!("amb:FilmBase{name}"),
+            value: serde_json::json!(round(base[c])),
+        });
+    }
+    s.execute(&cmds, Some("film base picker"))?;
+    Ok(Executed {
+        state: s.state_info(),
+        notes: vec![warning.unwrap_or_else(|| {
+            "Film base set. Alt-click Pick base to measure it from the scan again.".into()
+        })],
+    })
+}
+
 #[tauri::command]
 pub(crate) fn save_sidecar(state: tauri::State<'_, AppState>) -> Res<String> {
     let mut guard = state.session.lock().map_err(|e| e.to_string())?;

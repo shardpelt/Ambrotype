@@ -293,6 +293,27 @@ await t.step("right-click on the photo: Copy image puts it on the clipboard", as
   t.expect(w > 0 && h > 0 && Math.max(w, h) <= 3072, `copied ${w}×${h}`);
 });
 
+await t.step("Pick base: a click on the photo stores the film base; Alt-click forgets it", async () => {
+  const pick = document.querySelector(".pick-base");
+  t.expect(pick, "the Film Negative panel's Pick base button");
+  const steps = t.historyLength();
+  t.click(pick);
+  await t.until("picking the base", () => ui.picking === "base" && $("viewer").classList.contains("picking"));
+  const r = $("preview").getBoundingClientRect();
+  const at = { clientX: r.left + r.width * 0.5, clientY: r.top + r.height * 0.5, button: 0, bubbles: true };
+  $("preview").dispatchEvent(new MouseEvent("mousedown", at));
+  window.dispatchEvent(new MouseEvent("mouseup", at));
+  await t.until("a film base", () => t.setting("amb:FilmBaseRed") != null, 30000);
+  t.expect(t.setting("amb:NegativeConvert") === true, "the conversion on");
+  t.expect(!ui.picking && !pick.classList.contains("active"), "picking over");
+  t.expect(t.historyLength() === steps + 1, "one history step");
+  pick.dispatchEvent(new MouseEvent("click", { altKey: true, bubbles: true }));
+  await t.until("the base measured again", () => t.setting("amb:FilmBaseRed") == null);
+  t.key("Ctrl+Z");
+  t.key("Ctrl+Z");
+  await t.until("the photo as it was", () => !t.setting("amb:NegativeConvert"));
+});
+
 await t.step("Ctrl+E exports a JPEG", async () => {
   t.key("Ctrl+E");
   await t.until("the Export dialog", () => $("export-dialog").open);

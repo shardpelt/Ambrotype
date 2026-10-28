@@ -318,10 +318,12 @@ function photoPoint(e) {
   return [fx, fy];
 }
 
-async function pickWhite(u, v) {
+// A click while picking: white balance, or a film negative's base.
+async function pickAt(u, v) {
+  const what = ui.picking;
   setPicking(false);
   try {
-    const r = await invoke("pick_white", { u, v });
+    const r = await invoke(what === "base" ? "pick_film_base" : "pick_white", { u, v });
     setState(r.state);
     toast(r.notes.join(" "));
     requestPreview(false);
@@ -330,11 +332,15 @@ async function pickWhite(u, v) {
   }
 }
 
-function setPicking(on) {
-  ui.picking = on && Boolean(ui.info);
-  $("viewer").classList.toggle("picking", ui.picking);
-  $("btn-wb").classList.toggle("active", ui.picking);
-  if (ui.picking) status("Click a neutral grey or white spot (Esc to cancel)");
+// `what`: "white" (the white-balance picker), "base" (a negative's film
+// base), or false to stop picking.
+function setPicking(what) {
+  ui.picking = Boolean(ui.info) && what ? (what === true ? "white" : what) : false;
+  $("viewer").classList.toggle("picking", Boolean(ui.picking));
+  $("btn-wb").classList.toggle("active", ui.picking === "white");
+  document.querySelectorAll(".pick-base").forEach((b) => b.classList.toggle("active", ui.picking === "base"));
+  if (ui.picking === "white") status("Click a neutral grey or white spot (Esc to cancel)");
+  if (ui.picking === "base") status("Click the clear film between frames (Esc to cancel)");
 }
 
 // Soft proofing: the photo as it will export to a colour space (colours
@@ -435,7 +441,7 @@ function wireViewer() {
     if (d.moved) return;
     if (!ui.zoom.on && !ui.picking && onFrameBorder(e)) return showFrameSettings(true);
     const [u, v] = photoPoint(e);
-    if (ui.picking) pickWhite(u, v);
+    if (ui.picking) pickAt(u, v);
     else setZoom(!ui.zoom.on, u, v);
   });
 }

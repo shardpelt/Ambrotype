@@ -47,7 +47,7 @@ const KEY_ACTIONS = [
   { id: "crop", group: "Tools", label: "Crop and straighten", keys: ["R"], when: "any", photo: true, button: "btn-crop", run: () => toggleCrop() },
   { id: "masks", group: "Tools", label: "Masks", hint: "Gradients, brush and range masks with their own sliders.", keys: ["M"], when: "any", photo: true, button: "btn-masks", run: () => toggleMasks() },
   { id: "spots", group: "Tools", label: "Spot removal", hint: "Heal or clone blemishes and distractions.", keys: ["Q"], when: "any", photo: true, button: "btn-spots", run: () => toggleSpots() },
-  { id: "wb", group: "Tools", label: "White-balance picker", hint: "Then click something neutral grey or white.", keys: ["W"], when: "main", button: "btn-wb", run: () => setPicking(!ui.picking) },
+  { id: "wb", group: "Tools", label: "White-balance picker", hint: "Then click something neutral grey or white.", keys: ["W"], when: "main", button: "btn-wb", run: () => setPicking(ui.picking === "white" ? false : "white") },
   { id: "leave", group: "Tools", label: "Leave the picker", keys: ["Escape"], when: "main", run: () => setPicking(false) },
   { id: "crop-draw", group: "Crop tool", label: "Draw a new crop (corner to corner)", keys: ["D"], when: "crop", run: () => ui.crop.tool.setDrawMode(!ui.crop.tool.drawMode()) },
   { id: "crop-level", group: "Crop tool", label: "Level the horizon", hint: "Straighten by the photo's long lines, and crop to fit.", keys: ["L"], when: "crop", button: "crop-level", run: () => levelCrop() },

@@ -10,9 +10,11 @@ Lightroom has no negative conversion; photographers buy the Negative Lab Pro plu
 |---|---|
 | `amb:NegativeConvert` | Turn the conversion on. |
 | `amb:NegativeType` | `color` (default), `bw`, or `positive` for slide film: the same model on log transmittance instead of density, so nothing is inverted; there is no film base, and the levels take out the light's colour (`amb negative analyze --slides`). |
-| `amb:NegativeAuto` | **Auto** (default True) estimates film base, levels and midtone for every photo. False uses the stored values below, which keeps a roll consistent; missing values are still estimated. |
+| `amb:NegativeAuto` | **Auto** (default True) measures the levels and midtone for every photo, inside its crop. False uses the stored levels and midtone; missing ones come from the fixed density range below, so every frame of a roll is printed the same way (a frame exposed a stop more prints a stop brighter). |
+| `amb:NegativeRange` | With Auto off and no stored levels: the density range above the base that spans the print (default 1.3, ours). Slides, which have no base, measure their levels instead. |
+| `amb:NegativeExpired` | **Expired film**: also evens out the colour layers' midtones (their crossover). Measured, or stored in `amb:NegativeCrossoverRed/Green/Blue` by Freeze and Sync. Does nothing on black-and-white film. |
 | `amb:FilmStock`, `amb:FilmStockAmount` | The look and its strength (0–100). `amb negative stocks` lists them. |
-| `amb:FilmBaseRed/Green/Blue` | Film base (orange mask) transmittance. |
+| `amb:FilmBaseRed/Green/Blue` | Film base (orange mask) transmittance. Picked on the photo (**Pick base**), stored by Freeze, or measured from the whole scan when missing, with Auto on or off. |
 | `amb:NegativeDensityLow*/High*` | Per-channel shadow and highlight densities above the base (the levels). |
 | `amb:NegativeMidtone` | Which point of the range becomes 18 % grey. |
 | `amb:NegativeExposure` | Print exposure in EV. |
@@ -28,9 +30,12 @@ After the conversion, every regular setting works on the **positive**. Temperatu
 On camera RGB, after Lens Corrections and before white balance:
 
 1. **Film base:** divide by the base colour, so unexposed film becomes 1, and take density D = −log10(transmittance).
-   - Auto takes the median of the brightest 0.3 % of unclipped samples: the rebate between frames if it's in the scan, else the thinnest shadows.
+   - Measured on the whole scan, not the crop, since the rebate between frames is usually outside it. It is the median of the brightest 0.3 % of unclipped samples: the rebate if it's in the scan, else the thinnest shadows.
+   - **Bare light** (2026-10-28): sprocket holes, or a gap between film and holder, can be brighter than the base without clipping. Film can't be brighter than its base, so the brightest area counts as bare light when a flat area at least 0.1 D denser in every channel lies along most of its edge (holes sit inside the rebate), and, on colour film, that area is orange against it (0.2 D denser in blue than in red). The base is then that area. A dark picture edge beside the rebate is neither all around it nor orange against it.
 2. **Levels:** per channel, map D_low → 0 (deepest shadow) and D_high → 1 (brightest highlight).
-   - Auto uses the 0.2 % and 99.8 % percentiles, ignoring a 5 % border for the film holder.
+   - Auto uses the 0.2 % and 99.8 % percentiles inside the crop, ignoring a 5 % border for the film holder. Crop to frame first, so the holder and rebate don't count.
+   - Auto off without stored levels: D_low = 0.1 and D_high = 0.1 + the density range, with the midtone in the middle of the range (ours). On colour film the range is shared out 0.93 : 1 : 1.07 (red, green, blue), since the blue layer is the steepest and red the flattest in a camera scan (ours, from the general shape of published colour negative curves). The idea of a fixed range with Auto off comes from negaflow ([research/16](../research/16-film-scan-apps-survey.md)).
+   - **Expired film** bends each layer between its levels, `v + b·v·(1 − v)`, so its midtone meets the others' while its ends stay put. `b` comes from the medians of the most neutral half of the midtones, within ±0.35.
    - This removes the orange mask's colour and balances the dye layers. It assumes the deepest shadows and brightest highlights are close to neutral, which is true of most scenes; when it isn't (a sunset roll), freeze good values from another frame.
 3. **Film stock look**, in these normalised log units:
    - per-channel contrast (colour crossover)
@@ -63,10 +68,14 @@ amb negative stocks                                  # list the looks
 ```
 
 - `amb edit` / the AI protocol set any `amb:` setting like a Camera Raw one, with validation and clamping (`set_param amb:FilmStock vivid-100`).
-- In the editor, Film Negative → **Crop to frame** crops away the rebate and the holder's edges (`negative::detect_frame`: border is near the film base, nearly black or clipped; each side moves in while most of its row or column is border, plus 0.5 % for the soft edge). **Freeze** stores the open frame's analysis with Auto off (one undo step). In the library, **Sync negative roll** analyses the selected frames and gives them all the roll median, as `amb negative analyze` does (`amb_library::negative`).
+- In the editor, Film Negative → **Pick base**: click the clear film between frames (before Crop to frame, or with the crop off). Alt-click measures it from the scan again. To give a roll one base: pick it on one frame, Copy settings, then Paste settings → Film negative on the others (Auto stays on, so each frame keeps its own levels).
+- In the editor, Film Negative → **Crop to frame** crops away the rebate and the holder's edges (`negative::detect_frame`: border is near the film base, nearly black or clipped; each side moves in while most of its row or column is border, plus 0.5 % for the soft edge). **Freeze** stores the analysis the open frame shows now, with Auto off (one undo step). In the library, **Sync negative roll** analyses the selected frames as Auto would (each with its crop and any picked base) and gives them all the roll median (`amb_library::negative`). `amb negative analyze` does the same for raws without sidecars.
 
 ## Next
 
+The Film lab track in [NEXT.md](../NEXT.md) has the order. In short:
+
+- Per-film layer shares for Auto off (now one set for every colour film).
 - Scan quality helpers: dust and scratch removal (infrared channel where available).
 - Halation and grain matched to the stock.
 - Measured stock profiles, and a way for users to share them as data.

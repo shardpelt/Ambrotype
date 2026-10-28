@@ -574,6 +574,7 @@ fn main() {
             commands::preview::region,
             commands::preview::region_draft,
             commands::photo::pick_white,
+            commands::photo::pick_film_base,
             commands::settings::feedback_body,
             commands::settings::open_feedback,
             commands::models::ai_models,

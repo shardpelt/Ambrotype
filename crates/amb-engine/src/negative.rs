@@ -20,9 +20,11 @@
 //!    with contrast, toe and shoulder, so the rest of the pipeline (Exposure,
 //!    tone, colour, curves, ...) works on an ordinary positive.
 //!
-//! Auto mode estimates base, levels and midtone per image ([`analyze`]);
-//! stored values (from `amb negative analyze`, or typed in) are used when auto
-//! is off, which keeps a whole roll consistent. All constants are in
+//! The film base is a stored value (picked on the photo, or from Freeze or
+//! `amb negative analyze`) or estimated from the whole scan, where the rebate
+//! between frames is. Auto measures the levels and midtone per image, inside
+//! the crop ([`resolve`]); with Auto off they come from stored values or a
+//! fixed density range, so frames of a roll print alike. All constants are in
 //! [`NegativeStrengths`].
 
 use rayon::prelude::*;
@@ -47,6 +49,24 @@ pub struct NegativeStrengths {
     /// Toe/Shoulder ±100 → change of the compression coefficient.
     pub toe_range: f64,
     pub shoulder_range: f64,
+    /// Bare light (perforations, gaps beside the film) is at least this much
+    /// density brighter than the film base, in every channel.
+    pub light_gap: f64,
+    /// On colour negative film, the orange base is at least this much denser
+    /// in blue than in red, seen against bare light.
+    pub mask_tilt: f64,
+    /// Share of bare light's edge that must border film base (holes in the
+    /// rebate; a gap along the film).
+    pub light_surround: f64,
+    /// Auto off without stored levels: shadow density above the base, and
+    /// where the midtone sits in the range (the range is `amb:NegativeRange`).
+    pub fixed_floor: f64,
+    pub fixed_midtone: f64,
+    /// ... and each colour layer's share of that range on colour negative
+    /// film: blue is the steepest and red the flattest in a camera scan.
+    pub fixed_layers: [f64; 3],
+    /// Expired film: most a layer's midtone may move (normalised units).
+    pub crossover_limit: f64,
 }
 
 impl Default for NegativeStrengths {
@@ -65,6 +85,13 @@ pub const DEFAULT_STRENGTHS: NegativeStrengths = NegativeStrengths {
     balance_range: 0.08,
     toe_range: 0.5,
     shoulder_range: 0.5,
+    light_gap: 0.1,
+    mask_tilt: 0.2,
+    light_surround: 0.6,
+    fixed_floor: 0.1,
+    fixed_midtone: 0.5,
+    fixed_layers: [0.93, 1.0, 1.07],
+    crossover_limit: 0.35,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -82,17 +109,24 @@ pub enum NegativeType {
 pub struct Negative {
     pub enabled: bool,
     pub kind: NegativeType,
-    /// Auto: estimate base, levels and midtone for every image, ignoring stored values.
+    /// Auto: measure levels and midtone for every image, ignoring stored ones.
     pub auto: bool,
     /// Film stock id (see [`STOCKS`]).
     pub stock: String,
     /// How much of the stock look to apply, 0..100.
     pub stock_amount: f64,
-    /// Stored analysis (used when `auto` is off; missing parts are estimated).
+    /// The film base; estimated from the scan when missing.
     pub base: Option<[f64; 3]>,
+    /// Stored analysis, used when `auto` is off.
     pub density_low: Option<[f64; 3]>,
     pub density_high: Option<[f64; 3]>,
     pub midtone: Option<f64>,
+    /// Auto off, levels not stored: the density range above the base (negatives).
+    pub range: f64,
+    /// Expired film: even out the colour layers' midtones (crossover).
+    pub expired: bool,
+    /// Stored crossover (used when `auto` is off and `expired` is on).
+    pub crossover: Option<[f64; 3]>,
     /// Print exposure in EV.
     pub exposure: f64,
     /// −100..100 each.
@@ -116,6 +150,9 @@ impl Default for Negative {
             density_low: None,
             density_high: None,
             midtone: None,
+            range: DEFAULT_RANGE,
+            expired: false,
+            crossover: None,
             exposure: 0.0,
             contrast: 0.0,
             balance: [0.0; 3],
@@ -126,14 +163,28 @@ impl Default for Negative {
     }
 }
 
+/// `amb:NegativeRange`'s default: the density range of a normally exposed
+/// negative of an ordinary scene (ours).
+pub const DEFAULT_RANGE: f64 = 1.3;
+
 /// Per-image analysis: film base transmittance (raw-normalised, white level = 1),
-/// per-channel density levels, and the midtone (0..1 in normalised log units).
+/// per-channel density levels, the midtone (0..1 in normalised log units), and
+/// the per-layer crossover bend (0 unless the film is expired).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Analysis {
     pub base: [f64; 3],
     pub density_low: [f64; 3],
     pub density_high: [f64; 3],
     pub midtone: f64,
+    pub crossover: [f64; 3],
+}
+
+/// An interleaved camera RGB image (a whole scan, or the part being developed).
+#[derive(Debug, Clone, Copy)]
+pub struct Scan<'a> {
+    pub rgb: &'a [f32],
+    pub width: usize,
+    pub height: usize,
 }
 
 /// A film stock look, applied to normalised log values (0 = shadow, 1 = highlight).
@@ -376,25 +427,109 @@ fn log_exposure(v: f64, base: f64, positive: bool) -> f64 {
     }
 }
 
-/// Estimate the film base from the brightest unclipped part of the scan
-/// (unexposed film: the rebate between frames, or the thinnest shadows).
-pub fn estimate_base(rgb: &[f32], w: usize, h: usize, k: &NegativeStrengths) -> [f64; 3] {
-    let (blocks, _, _) = downsample(rgb, w, h, 250_000);
-    let mut candidates: Vec<&[f64; 3]> = blocks
-        .iter()
-        .filter(|p| p.iter().all(|v| *v < 0.97) && p.iter().all(|v| *v > 0.0))
-        .collect();
-    if candidates.is_empty() {
-        candidates = blocks.iter().collect();
-    }
-    candidates.sort_by(|a, b| (b[0] + b[1] + b[2]).total_cmp(&(a[0] + a[1] + a[2])));
-    let n =
-        ((candidates.len() as f64 * k.base_fraction).ceil() as usize).clamp(1, candidates.len());
-    let top = &candidates[..n];
+/// The per-channel median of the first `n` of `order` (brightest first).
+fn top_median(blocks: &[[f64; 3]], order: &[usize], n: usize) -> [f64; 3] {
+    let top = &order[..n.clamp(1, order.len())];
     std::array::from_fn(|c| {
-        let mut v: Vec<f64> = top.iter().map(|p| p[c]).collect();
+        let mut v: Vec<f64> = top.iter().map(|&i| blocks[i][c]).collect();
         percentile(&mut v, 0.5).max(1e-4)
     })
+}
+
+/// Estimate the film base from the scan: the brightest unclipped film (the
+/// rebate between frames, or the thinnest shadows).
+///
+/// **Ours.** Film can't be brighter than its base, so a brighter area is bare
+/// light: sprocket holes, or a gap between the film and the holder, when the
+/// scan didn't clip them. The brightest area counts as bare light when a flat
+/// area at least `light_gap` denser in every channel borders most of its edge
+/// (holes sit inside the rebate), and on colour film that area is orange
+/// against it (denser in blue than in red by `mask_tilt`). The base is then
+/// that area. A dark picture edge next to the rebate is neither all around it
+/// nor orange against it.
+pub fn estimate_base(
+    rgb: &[f32],
+    w: usize,
+    h: usize,
+    kind: NegativeType,
+    k: &NegativeStrengths,
+) -> [f64; 3] {
+    let (blocks, bw, bh) = downsample(rgb, w, h, 250_000);
+    let usable = |p: &[f64; 3]| p.iter().all(|v| *v < 0.97 && *v > 0.0);
+    let mut order: Vec<usize> = (0..blocks.len()).filter(|&i| usable(&blocks[i])).collect();
+    if order.is_empty() {
+        order = (0..blocks.len()).collect();
+    }
+    let brightness = |i: usize| -> f64 { blocks[i].iter().map(|v| v.max(1e-6).ln()).sum() };
+    order.sort_by(|&a, &b| brightness(b).total_cmp(&brightness(a)));
+    let n = (order.len() as f64 * k.base_fraction).ceil() as usize;
+    let brightest = top_median(&blocks, &order, n);
+
+    let film: Vec<usize> = order
+        .iter()
+        .copied()
+        .filter(|&i| (0..3).all(|c| density(blocks[i][c], brightest[c]) >= k.light_gap))
+        .collect();
+    if film.len() < n {
+        return brightest;
+    }
+    let below = top_median(&blocks, &film, n);
+    let gap: [f64; 3] = std::array::from_fn(|c| density(below[c], brightest[c]));
+    if kind == NegativeType::Color && gap[2] - gap[0] < k.mask_tilt {
+        return brightest;
+    }
+    // 1 = like the brightest area, 2 = like the area below it.
+    let near = |p: &[f64; 3], to: &[f64; 3]| (0..3).all(|c| density(p[c], to[c]).abs() < 0.05);
+    let class: Vec<u8> = blocks
+        .iter()
+        .map(|p| {
+            if !usable(p) {
+                0
+            } else if near(p, &brightest) {
+                1
+            } else if near(p, &below) {
+                2
+            } else {
+                0
+            }
+        })
+        .collect();
+    if class.iter().filter(|c| **c == 2).count() < n {
+        return brightest;
+    }
+    // The brightest area's edge: how much of it has the area below within
+    // a few blocks (past the soft blocks that mix the two).
+    const REACH: usize = 3;
+    let (mut edge, mut bordered) = (0usize, 0usize);
+    for y in 0..bh {
+        for x in 0..bw {
+            if class[y * bw + x] != 1 {
+                continue;
+            }
+            let outside = [(0, -1), (0, 1), (-1, 0), (1, 0)].iter().any(|(dx, dy)| {
+                let (nx, ny) = (x as isize + dx, y as isize + dy);
+                nx >= 0
+                    && ny >= 0
+                    && (nx as usize) < bw
+                    && (ny as usize) < bh
+                    && class[ny as usize * bw + nx as usize] != 1
+            });
+            if !outside {
+                continue;
+            }
+            edge += 1;
+            let found = (y.saturating_sub(REACH)..(y + REACH + 1).min(bh)).any(|ny| {
+                (x.saturating_sub(REACH)..(x + REACH + 1).min(bw))
+                    .any(|nx| class[ny * bw + nx] == 2)
+            });
+            bordered += usize::from(found);
+        }
+    }
+    if edge > 0 && bordered as f64 >= k.light_surround * edge as f64 {
+        below
+    } else {
+        brightest
+    }
 }
 
 /// Full automatic analysis of a scanned colour negative.
@@ -410,25 +545,23 @@ pub fn analyze_as(
     kind: NegativeType,
     k: &NegativeStrengths,
 ) -> Analysis {
-    let positive = kind == NegativeType::Positive;
-    let base = if positive {
-        [1.0; 3]
-    } else {
-        estimate_base(rgb, w, h, k)
+    let scan = Scan {
+        rgb,
+        width: w,
+        height: h,
     };
-    levels(rgb, w, h, base, positive, k)
+    let n = Negative {
+        enabled: true,
+        kind,
+        ..Default::default()
+    };
+    resolve(&n, scan, scan, k)
 }
 
-/// Levels and midtone for a given base.
-fn levels(
-    rgb: &[f32],
-    w: usize,
-    h: usize,
-    base: [f64; 3],
-    positive: bool,
-    k: &NegativeStrengths,
-) -> Analysis {
-    let (blocks, bw, bh) = downsample(rgb, w, h, 250_000);
+/// The part being developed as log exposure per block (density for a
+/// negative), without a border for the film holder.
+fn samples(scan: Scan, base: [f64; 3], positive: bool, k: &NegativeStrengths) -> Vec<[f64; 3]> {
+    let (blocks, bw, bh) = downsample(scan.rgb, scan.width, scan.height, 250_000);
     let (x0, x1) = (
         (bw as f64 * k.border) as usize,
         bw - (bw as f64 * k.border) as usize,
@@ -437,21 +570,25 @@ fn levels(
         (bh as f64 * k.border) as usize,
         bh - (bh as f64 * k.border) as usize,
     );
-    let inner: Vec<[f64; 3]> = (y0..y1.max(y0 + 1).min(bh))
+    (y0..y1.max(y0 + 1).min(bh))
         .flat_map(|y| (x0..x1.max(x0 + 1).min(bw)).map(move |x| (x, y)))
         .map(|(x, y)| {
             let p = blocks[y * bw + x];
             std::array::from_fn(|c| log_exposure(p[c], base[c], positive))
         })
-        .collect();
+        .collect()
+}
+
+/// Levels and midtone measured on `samples`, for a given base.
+fn levels(samples: &[[f64; 3]], base: [f64; 3], k: &NegativeStrengths) -> Analysis {
     let mut density_low = [0.0; 3];
     let mut density_high = [1.0; 3];
     for c in 0..3 {
-        let mut d: Vec<f64> = inner.iter().map(|p| p[c]).collect();
+        let mut d: Vec<f64> = samples.iter().map(|p| p[c]).collect();
         density_low[c] = percentile(&mut d, k.level_low);
         density_high[c] = percentile(&mut d, k.level_high).max(density_low[c] + 0.05);
     }
-    let mut mids: Vec<f64> = inner
+    let mut mids: Vec<f64> = samples
         .iter()
         .map(|p| {
             (0..3)
@@ -466,41 +603,143 @@ fn levels(
         density_low,
         density_high,
         midtone,
+        crossover: [0.0; 3],
     }
 }
 
-/// The analysis to render with: auto, or the stored values with any missing
-/// parts estimated from the image.
-pub fn resolve(n: &Negative, rgb: &[f32], w: usize, h: usize, k: &NegativeStrengths) -> Analysis {
-    if n.auto {
-        return analyze_as(rgb, w, h, n.kind, k);
+/// Expired film's crossover: the bend per layer ([`bend`]) that brings each
+/// layer's midtone to their common one. **Ours.** Old film loses speed and
+/// contrast unevenly per layer, so a grey shows a cast that changes from
+/// shadows to highlights; the levels already match the ends, this matches
+/// the middle. It is measured on the grey axis: the most common colour
+/// among the midtones (greys of one cast cluster, coloured things scatter),
+/// and only when enough of the midtones are there.
+fn crossover(samples: &[[f64; 3]], a: &Analysis, k: &NegativeStrengths) -> [f64; 3] {
+    let normal: Vec<[f64; 3]> = samples
+        .iter()
+        .map(|p| {
+            std::array::from_fn(|c| {
+                (p[c] - a.density_low[c]) / (a.density_high[c] - a.density_low[c])
+            })
+        })
+        .filter(|v: &[f64; 3]| {
+            let mean = (v[0] + v[1] + v[2]) / 3.0;
+            (0.2..=0.8).contains(&mean)
+        })
+        .collect();
+    if normal.len() < 64 {
+        return [0.0; 3];
     }
+    const BIN: f64 = 0.02;
+    let key = |v: &[f64; 3]| {
+        (
+            ((v[0] - v[1]) / BIN).round() as i32,
+            ((v[2] - v[1]) / BIN).round() as i32,
+        )
+    };
+    let mut counts = std::collections::BTreeMap::new();
+    for v in &normal {
+        *counts.entry(key(v)).or_insert(0usize) += 1;
+    }
+    let near = |a: (i32, i32), b: (i32, i32)| (a.0 - b.0).abs() <= 1 && (a.1 - b.1).abs() <= 1;
+    let around = |at: (i32, i32)| -> usize {
+        counts
+            .iter()
+            .filter(|(k, _)| near(**k, at))
+            .map(|(_, n)| n)
+            .sum()
+    };
+    let Some(axis) = counts.keys().copied().max_by_key(|k| around(*k)) else {
+        return [0.0; 3];
+    };
+    let grey: Vec<&[f64; 3]> = normal.iter().filter(|v| near(key(v), axis)).collect();
+    if grey.len() < normal.len() / 20 {
+        return [0.0; 3];
+    }
+    let mids: [f64; 3] = std::array::from_fn(|c| {
+        let mut v: Vec<f64> = grey.iter().map(|p| p[c]).collect();
+        percentile(&mut v, 0.5)
+    });
+    let target = (mids[0] + mids[1] + mids[2]) / 3.0;
+    mids.map(|m| {
+        let m = m.clamp(0.05, 0.95);
+        ((target - m) / (m * (1.0 - m))).clamp(-k.crossover_limit, k.crossover_limit)
+    })
+}
+
+/// A layer's crossover bend: `v + b·v·(1 − v)` between the levels (the ends
+/// stay put, the middle moves), straight lines with the same slopes beyond.
+fn bend(v: f64, b: f64) -> f64 {
+    if v < 0.0 {
+        v * (1.0 + b)
+    } else if v > 1.0 {
+        1.0 + (v - 1.0) * (1.0 - b)
+    } else {
+        v + b * v * (1.0 - v)
+    }
+}
+
+/// The analysis to render with. `whole` is the whole scan, where the film
+/// base is found (the rebate is usually outside the crop); `metered` is the
+/// part being developed, where Auto measures the levels and midtone.
+///
+/// - The film base: the stored one, or estimated from `whole`.
+/// - Auto: levels and midtone measured on `metered`.
+/// - Auto off: the stored levels and midtone; missing ones come from the
+///   fixed density range `n.range` above the base (a slide, which has no
+///   base, measures them instead).
+/// - Expired film: the crossover, stored (Auto off) or measured; none otherwise.
+pub fn resolve(n: &Negative, whole: Scan, metered: Scan, k: &NegativeStrengths) -> Analysis {
     let positive = n.kind == NegativeType::Positive;
     let base = match n.base {
         Some(b) => b,
         None if positive => [1.0; 3],
-        None => estimate_base(rgb, w, h, k),
-    };
-    let need_levels = n.density_low.is_none() || n.density_high.is_none() || n.midtone.is_none();
-    let estimated = need_levels.then(|| levels(rgb, w, h, base, positive, k));
-    let pick = |stored: Option<[f64; 3]>, f: fn(&Analysis) -> [f64; 3]| {
-        stored.unwrap_or_else(|| f(estimated.as_ref().expect("estimated when missing")))
-    };
-    let density_low = pick(n.density_low, |a| a.density_low);
-    let mut density_high = pick(n.density_high, |a| a.density_high);
-    for c in 0..3 {
-        density_high[c] = density_high[c].max(density_low[c] + 0.01);
+        None => estimate_base(whole.rgb, whole.width, whole.height, n.kind, k),
     }
-    Analysis {
-        base: base.map(|b| b.max(1e-4)),
-        density_low,
-        density_high,
-        midtone: n
-            .midtone
-            .or(estimated.map(|a| a.midtone))
-            .unwrap_or(0.5)
-            .clamp(0.05, 0.95),
+    .map(|b| b.max(1e-4));
+    let measured = std::cell::OnceCell::new();
+    let samples = || measured.get_or_init(|| samples(metered, base, positive, k));
+    let mut a = if n.auto {
+        levels(samples(), base, k)
+    } else {
+        let missing = n.density_low.is_none() || n.density_high.is_none() || n.midtone.is_none();
+        let fallback = (positive && missing).then(|| levels(samples(), base, k));
+        let density_low = n
+            .density_low
+            .or(fallback.map(|a| a.density_low))
+            .unwrap_or([k.fixed_floor; 3]);
+        let layers = match n.kind {
+            NegativeType::Color => k.fixed_layers,
+            _ => [1.0; 3],
+        };
+        let mut density_high = n
+            .density_high
+            .or(fallback.map(|a| a.density_high))
+            .unwrap_or_else(|| {
+                std::array::from_fn(|c| density_low[c] + n.range.max(0.1) * layers[c])
+            });
+        for c in 0..3 {
+            density_high[c] = density_high[c].max(density_low[c] + 0.01);
+        }
+        Analysis {
+            base,
+            density_low,
+            density_high,
+            midtone: n
+                .midtone
+                .or(fallback.map(|a| a.midtone))
+                .unwrap_or(k.fixed_midtone)
+                .clamp(0.05, 0.95),
+            crossover: [0.0; 3],
+        }
+    };
+    if n.expired && n.kind != NegativeType::BlackAndWhite {
+        a.crossover = match (n.auto, n.crossover) {
+            (false, Some(stored)) => stored,
+            _ => crossover(samples(), &a, k),
+        };
     }
+    a
 }
 
 /// The frame of a scan: the photo without the film rebate around it (bare
@@ -521,7 +760,7 @@ pub fn detect_frame(
     if bw < 8 || bh < 8 {
         return None;
     }
-    let base = (kind != NegativeType::Positive).then(|| estimate_base(rgb, w, h, k));
+    let base = (kind != NegativeType::Positive).then(|| estimate_base(rgb, w, h, kind, k));
     let bright = blocks
         .iter()
         .map(|p| p[0].max(p[1]).max(p[2]))
@@ -630,7 +869,8 @@ impl Conversion {
         // Normalised log exposure per channel (0 = shadow, 1 = highlight), balanced.
         let neutral: [f64; 3] = std::array::from_fn(|c| {
             let d = log_exposure(f64::from(p[c]), a.base[c], self.positive);
-            (d - a.density_low[c]) / (a.density_high[c] - a.density_low[c]) + self.balance[c]
+            let v = (d - a.density_low[c]) / (a.density_high[c] - a.density_low[c]);
+            bend(v, a.crossover[c]) + self.balance[c]
         });
         // Stock look (channel contrast, dye crosstalk, tints), blended by the stock amount.
         let contrasted: [f64; 3] =
@@ -688,6 +928,10 @@ mod tests {
     /// different per layer).
     const GAMMA: [f64; 3] = [0.55, 0.6, 0.65];
 
+    fn scan_of(rgb: &[f32], width: usize, height: usize) -> Scan<'_> {
+        Scan { rgb, width, height }
+    }
+
     /// Simulate scanning a negative of a scene with linear values `scene` (RGB).
     fn negative_of(scene: [f64; 3]) -> [f32; 3] {
         std::array::from_fn(|c| {
@@ -729,7 +973,7 @@ mod tests {
     fn base_estimate_finds_the_rebate() {
         let (w, h) = (400, 200);
         let rgb = scan(w, h);
-        let base = estimate_base(&rgb, w, h, &K);
+        let base = estimate_base(&rgb, w, h, NegativeType::Color, &K);
         for c in 0..3 {
             assert!((base[c] - BASE[c]).abs() < 0.01, "{base:?}");
         }
@@ -743,7 +987,7 @@ mod tests {
             enabled: true,
             ..Default::default()
         };
-        let a = resolve(&n, &rgb, w, h, &K);
+        let a = resolve(&n, scan_of(&rgb, w, h), scan_of(&rgb, w, h), &K);
         let conv = Conversion::new(&n, a, &K);
         apply(&mut rgb, &conv);
         // Grey rows stay neutral and get brighter left → right.
@@ -798,7 +1042,7 @@ mod tests {
             kind: NegativeType::Positive,
             ..Default::default()
         };
-        let a = resolve(&n, &rgb, w, h, &K);
+        let a = resolve(&n, scan_of(&rgb, w, h), scan_of(&rgb, w, h), &K);
         assert_eq!(a.base, [1.0; 3]);
         apply(&mut rgb, &Conversion::new(&n, a, &K));
         // Brighter on the slide stays brighter, and the grey rows are grey.
@@ -854,22 +1098,221 @@ mod tests {
     fn stored_analysis_is_used_when_auto_is_off() {
         let (w, h) = (200, 100);
         let rgb = scan(w, h);
-        let auto = analyze(&rgb, w, h, &K);
         let n = Negative {
             enabled: true,
             auto: false,
             base: Some([0.5, 0.5, 0.5]),
             midtone: Some(0.4),
+            range: 1.5,
             ..Default::default()
         };
-        let a = resolve(&n, &rgb, w, h, &K);
+        let a = resolve(&n, scan_of(&rgb, w, h), scan_of(&rgb, w, h), &K);
         assert_eq!(a.base, [0.5, 0.5, 0.5]);
         assert_eq!(a.midtone, 0.4);
-        // Levels were missing, so they were estimated (relative to the stored base).
-        assert!(a.density_low != auto.density_low);
-        // Auto ignores stored values.
-        let auto_n = Negative { auto: true, ..n };
-        assert_eq!(resolve(&auto_n, &rgb, w, h, &K), auto);
+        // Levels were missing, so they come from the fixed range, shared
+        // out by layer on colour film.
+        assert_eq!(a.density_low, [K.fixed_floor; 3]);
+        for c in 0..3 {
+            let want = K.fixed_floor + 1.5 * K.fixed_layers[c];
+            assert!(
+                (a.density_high[c] - want).abs() < 1e-9,
+                "{:?}",
+                a.density_high
+            );
+        }
+        // Auto measures the levels, keeping the stored base.
+        let auto = resolve(
+            &Negative {
+                auto: true,
+                ..n.clone()
+            },
+            scan_of(&rgb, w, h),
+            scan_of(&rgb, w, h),
+            &K,
+        );
+        assert_eq!(auto.base, [0.5, 0.5, 0.5]);
+        assert_ne!(auto.density_high, a.density_high);
+        // Without a stored base, it is measured from the scan.
+        let measured = resolve(
+            &Negative { base: None, ..n },
+            scan_of(&rgb, w, h),
+            scan_of(&rgb, w, h),
+            &K,
+        );
+        assert!(
+            (measured.base[0] - BASE[0]).abs() < 0.01,
+            "{:?}",
+            measured.base
+        );
+    }
+
+    #[test]
+    fn auto_off_prints_frames_alike() {
+        // The same scene on two frames, the second exposed a stop more.
+        let (w, h) = (300, 120);
+        let frame = |gain: f64| -> Vec<f32> {
+            let mut rgb = scan(w, h);
+            for y in 0..h {
+                for x in w / 20..w {
+                    let t = x as f64 / w as f64;
+                    let v = 0.005 * (1.0f64 / 0.005).powf(t) * gain;
+                    let p = negative_of([v; 3]);
+                    rgb[(y * w + x) * 3..(y * w + x) * 3 + 3].copy_from_slice(&p);
+                }
+            }
+            rgb
+        };
+        let (one, two) = (frame(1.0), frame(2.0));
+        let grey = negative_of([0.05; 3]);
+        let render = |n: &Negative, rgb: &[f32]| {
+            let a = resolve(n, scan_of(rgb, w, h), scan_of(rgb, w, h), &K);
+            Conversion::new(n, a, &K).apply(grey)[1]
+        };
+        let off = Negative {
+            enabled: true,
+            auto: false,
+            ..Default::default()
+        };
+        // Auto off: the same film prints the same on both frames.
+        assert!((render(&off, &one) / render(&off, &two) - 1.0).abs() < 0.01);
+        // ... so the frame exposed a stop more prints about a stop brighter
+        // where the scene is the same (a grey patch shot at 0.05 and at 0.1).
+        let brighter = negative_of([0.1; 3]);
+        let a = resolve(&off, scan_of(&two, w, h), scan_of(&two, w, h), &K);
+        let ratio = Conversion::new(&off, a, &K).apply(brighter)[1] / render(&off, &two);
+        assert!((1.6..2.6).contains(&ratio), "{ratio}");
+        // Auto evens out each frame's exposure instead.
+        let auto = Negative {
+            enabled: true,
+            ..Default::default()
+        };
+        let a1 = resolve(&auto, scan_of(&one, w, h), scan_of(&one, w, h), &K);
+        let a2 = resolve(&auto, scan_of(&two, w, h), scan_of(&two, w, h), &K);
+        let p1 = Conversion::new(&auto, a1, &K).apply(grey)[1];
+        let p2 = Conversion::new(&auto, a2, &K).apply(brighter)[1];
+        assert!((p1 / p2 - 1.0).abs() < 0.2, "{p1} {p2}");
+    }
+
+    #[test]
+    fn the_base_comes_from_the_whole_scan_and_the_levels_from_the_crop() {
+        // The test scan in a black holder: the holder is denser than any
+        // film, so levels measured over it put the highlights too far.
+        let (w, h) = (400, 200);
+        let inner = scan(w, h);
+        let (pw, ph) = (w + 80, h + 80);
+        let mut rgb = vec![0.0005f32; pw * ph * 3];
+        for y in 0..h {
+            let (o, i) = (((y + 40) * pw + 40) * 3, y * w * 3);
+            rgb[o..o + w * 3].copy_from_slice(&inner[i..i + w * 3]);
+        }
+        // The crop: the photo, without the rebate strip.
+        let (cw, ch) = (w - w / 20, h);
+        let mut crop = Vec::with_capacity(cw * ch * 3);
+        for y in 0..h {
+            let i = (y * w + w / 20) * 3;
+            crop.extend_from_slice(&inner[i..i + cw * 3]);
+        }
+        let n = Negative {
+            enabled: true,
+            ..Default::default()
+        };
+        let whole = scan_of(&rgb, pw, ph);
+        let cropped = resolve(&n, whole, scan_of(&crop, cw, ch), &K);
+        let uncropped = resolve(&n, whole, whole, &K);
+        for (c, base) in BASE.iter().enumerate() {
+            assert!((cropped.base[c] - base).abs() < 0.01, "{:?}", cropped.base);
+            assert!(cropped.density_high[c] < uncropped.density_high[c] - 0.3);
+        }
+        // Measured on the crop alone, the base would be the thinnest shadow.
+        let alone = resolve(&n, scan_of(&crop, cw, ch), scan_of(&crop, cw, ch), &K);
+        assert!(alone.base[2] < BASE[2] - 0.02, "{:?}", alone.base);
+    }
+
+    /// The test scan, exposed a stop darker, with sprocket holes in its
+    /// rebate strip that let the light through unclipped: the light is
+    /// `gap` density brighter than the film base.
+    fn holes(w: usize, h: usize, gap: [f64; 3]) -> (Vec<f32>, [f64; 3]) {
+        let mut rgb: Vec<f32> = scan(w, h).iter().map(|v| v * 0.5).collect();
+        let base = BASE.map(|b| b * 0.5);
+        let rebate = w / 20;
+        for y in 0..h {
+            for x in rebate / 4..rebate * 3 / 4 {
+                if y % 16 < 10 {
+                    for c in 0..3 {
+                        rgb[(y * w + x) * 3 + c] = (base[c] * 10f64.powf(gap[c])) as f32;
+                    }
+                }
+            }
+        }
+        (rgb, base)
+    }
+
+    #[test]
+    fn the_base_is_not_the_light_through_the_perforations() {
+        let (w, h) = (400, 200);
+        let close = |found: [f64; 3], base: [f64; 3]| {
+            (0..3).all(|c| (found[c] - base[c]).abs() < 0.005 * base[c].max(0.1) / 0.1)
+        };
+        // Colour film: the orange base is far denser in blue than in red.
+        let (rgb, base) = holes(w, h, [0.25, 0.6, 0.85]);
+        let found = estimate_base(&rgb, w, h, NegativeType::Color, &K);
+        assert!(close(found, base), "{found:?} {base:?}");
+        // Black-and-white film: a grey base, found by the holes it surrounds.
+        let (rgb, base) = holes(w, h, [0.25; 3]);
+        let found = estimate_base(&rgb, w, h, NegativeType::BlackAndWhite, &K);
+        assert!(close(found, base), "{found:?} {base:?}");
+        // Without holes the rebate is still the base, though the picture
+        // beside it is dark: it is neither around it nor orange against it.
+        let rgb = scan(w, h);
+        let found = estimate_base(&rgb, w, h, NegativeType::Color, &K);
+        assert!(close(found, BASE), "{found:?}");
+        let found = estimate_base(&rgb, w, h, NegativeType::BlackAndWhite, &K);
+        assert!(close(found, BASE), "{found:?}");
+    }
+
+    #[test]
+    fn expired_film_evens_out_the_layers_midtones() {
+        // Grey ramps on film whose blue layer bows: its midtones are too
+        // dense though its ends match the others (a crossover).
+        let (w, h) = (300, 120);
+        let mut rgb = vec![0.0f32; w * h * 3];
+        for y in 0..h {
+            for x in 0..w {
+                let t = x as f64 / w as f64;
+                let l = 2.6 * t;
+                for c in 0..3 {
+                    let bow = if c == 2 { 0.12 * l * (2.6 - l) } else { 0.0 };
+                    let d = GAMMA[1] * l + bow;
+                    rgb[(y * w + x) * 3 + c] = (BASE[c] * 10f64.powf(-d)) as f32;
+                }
+            }
+        }
+        let cast = |expired: bool| {
+            let n = Negative {
+                enabled: true,
+                base: Some(BASE),
+                expired,
+                ..Default::default()
+            };
+            let a = resolve(&n, scan_of(&rgb, w, h), scan_of(&rgb, w, h), &K);
+            let c = Conversion::new(&n, a, &K);
+            let mut out = rgb.clone();
+            apply(&mut out, &c);
+            let i = (h / 2 * w + w / 2) * 3;
+            let p = &out[i..i + 3];
+            (p[2] / p[1]).ln().abs()
+        };
+        let (plain, mended) = (cast(false), cast(true));
+        assert!(mended < plain * 0.5, "plain {plain}, expired {mended}");
+        // Black-and-white film has no layers to even out.
+        let n = Negative {
+            enabled: true,
+            kind: NegativeType::BlackAndWhite,
+            expired: true,
+            ..Default::default()
+        };
+        let a = resolve(&n, scan_of(&rgb, w, h), scan_of(&rgb, w, h), &K);
+        assert_eq!(a.crossover, [0.0; 3]);
     }
 
     #[test]
@@ -879,6 +1322,7 @@ mod tests {
             density_low: [0.0; 3],
             density_high: GAMMA.map(|g| g * 2.7),
             midtone: 0.5,
+            crossover: [0.0; 3],
         };
         let grey = negative_of([0.05; 3]);
         let render = |n: Negative| Conversion::new(&n, a, &K).apply(grey);
@@ -938,6 +1382,7 @@ mod tests {
             density_low: [0.0; 3],
             density_high: GAMMA.map(|g| g * 2.7),
             midtone: 0.5,
+            crossover: [0.0; 3],
         };
         let n = Negative {
             stock: "bw-classic-400".into(),

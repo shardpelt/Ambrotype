@@ -103,6 +103,17 @@ await t.step("Settings says how the monitor's colours are handled", async () => 
   t.log(s.note);
 });
 
+await t.step("applying a preset shows no note, and its button no tooltip", async () => {
+  const p = ui.presets[0];
+  const b = [...document.querySelectorAll("#preset-list .preset")].find((x) => x.textContent === p.name);
+  t.expect(b && !b.title, "no tooltip on the preset");
+  $("toast").hidden = true;
+  await applyPreset(p);
+  await t.sleep(300);
+  t.expect($("toast").hidden, `no note: ${$("toast").textContent}`);
+  t.key("Ctrl+Z");
+});
+
 await t.step("a preset's notes for scripts become one short line", async () => {
   const said = notesForPeople([
     "copied 23 setting(s) unknown to the registry without validation: A, B, C",

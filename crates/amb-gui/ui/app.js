@@ -590,12 +590,13 @@ function notesForPeople(notes) {
 }
 
 // Run protocol commands; several commands with a `group` label are one undo step.
-async function run(commands, group = null) {
+// `quiet`: no note on screen afterwards.
+async function run(commands, group = null, { quiet = false } = {}) {
   if (!ui.info) return;
   try {
     const r = await invoke("execute", { commands, group });
     setState(r.state);
-    const said = notesForPeople(r.notes);
+    const said = !quiet && notesForPeople(r.notes);
     if (said) toast(said);
     // The full notes (written for scripts and AI clients) stay at hand.
     $("status").title = r.notes.join("\n");
@@ -970,7 +971,7 @@ async function init() {
   await loadKeybindings();
 
   $("btn-open").addEventListener("click", openDialog);
-  $("btn-library").addEventListener("click", () => toggleLibrary());
+  $("btn-library").addEventListener("click", () => libraryToggle());
   $("btn-open-empty").addEventListener("click", openDialog);
   $("btn-open-folder-empty").addEventListener("click", () => openFolder());
   $("btn-sample-empty").addEventListener("click", () => sampleFlow());

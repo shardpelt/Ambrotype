@@ -53,7 +53,7 @@ async function switchTask(id) {
   if (id === "library") {
     await toggleLibrary(true);
   } else {
-    if (libraryOn()) await toggleLibrary(false);
+    if (libraryOn()) await leaveLibrary();
     const layout = taskLayout(t);
     if (ui.looks && layout !== ui.looks.active_layout && findLook("layout", layout)?.usable) switchLook("layout", layout);
   }

@@ -702,6 +702,22 @@ async function libraryOpen(path) {
   if (path !== ui.info?.path) await openPath(path);
 }
 
+// Leaving the library for the editor (a task, G, Escape): the editor shows
+// the library's photo, as Lightroom's Develop does. That's the focused or
+// selected photo, else the open one if the library shows it, else the first
+// one shown; with nothing shown, the editor stays as it was.
+function leaveLibrary() {
+  const shown = (path) => path && lib.shown.some((p) => p.path === path);
+  const pick = [lib.focus, selectedPhotos()[0]?.path, ui.info?.path, lib.shown[0]?.path].find(shown);
+  if (!pick || libPhoto(pick)?.offline) return toggleLibrary(false);
+  return libraryOpen(pick);
+}
+
+// G and the Library button: into the library, or out of it to its photo.
+function libraryToggle() {
+  return libraryOn() ? leaveLibrary() : toggleLibrary(true);
+}
+
 function libraryOpenFocused() {
   return libraryOpen((cullOn() && cull.active) || lib.focus || selectedPhotos()[0]?.path);
 }

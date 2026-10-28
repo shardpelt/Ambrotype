@@ -115,6 +115,23 @@ await t.step("the library runs a slideshow; Esc ends it", async () => {
   t.expect(!document.querySelector(".slideshow") && !slides.on, "Esc ends it");
 });
 
+await t.step("Develop opens the library's photo, from another folder too", async () => {
+  const first = ui.info.path;
+  const parent = `${lib.dir}${lib.dir.includes("\\") ? "\\" : "/"}more`;
+  await toggleTreeFolder(parent);
+  const other = lib.shown.find((p) => p.path !== first);
+  t.expect(other, "a second photo shown");
+  select(other.path, "only");
+  await switchTask("develop");
+  await t.until("the other photo in the editor", () => !libraryOn() && ui.info?.path === other.path, 60000);
+  await switchTask("library");
+  await libraryOpen(first);
+  await t.until("the first photo again", () => ui.info?.path === first, 60000);
+  await switchTask("library");
+  if (lib.more.includes(parent)) await toggleTreeFolder(parent);
+  t.expect(libraryOn() && !lib.more.length, "back in the library, one folder");
+});
+
 await t.step("the editor gets its top bar back", async () => {
   await toggleLibrary(false);
   t.expect(document.querySelector(".topbar").getBoundingClientRect().height > 30, "the top bar");

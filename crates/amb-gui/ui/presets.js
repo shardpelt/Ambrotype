@@ -20,8 +20,9 @@ async function presetCommands(path, extra = {}) {
   return [...resets, apply];
 }
 
+// Quietly: the photo and History show what it did.
 async function applyPreset(p) {
-  run(await presetCommands(p.path), `Preset: ${p.name}`);
+  run(await presetCommands(p.path), `Preset: ${p.name}`, { quiet: true });
 }
 
 function wirePresetOriginal() {
@@ -63,7 +64,6 @@ function renderPresets() {
       const b = document.createElement("button");
       b.className = "preset";
       b.textContent = p.name;
-      b.title = `${p.path}\nRight-click to apply it to the whole folder, or only some of its settings`;
       b.addEventListener("click", () => {
         presetHover(null);
         applyPreset(p);

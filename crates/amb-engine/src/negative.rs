@@ -62,10 +62,11 @@ pub struct NegativeStrengths {
     /// where the midtone sits in the range (the range is `amb:NegativeRange`).
     pub fixed_floor: f64,
     pub fixed_midtone: f64,
-    /// ... and each colour layer's share of that range on colour negative
-    /// film: blue is the steepest and red the flattest in a camera scan.
-    pub fixed_layers: [f64; 3],
-    /// Expired film: most a layer's midtone may move (normalised units).
+    /// Expired film: the levels (of green, 0..1) where red and blue are
+    /// matched to green, how far around each the grey axis is read, and the
+    /// most a layer may move there.
+    pub crossover_at: [f64; 3],
+    pub crossover_window: f64,
     pub crossover_limit: f64,
 }
 
@@ -88,10 +89,11 @@ pub const DEFAULT_STRENGTHS: NegativeStrengths = NegativeStrengths {
     light_gap: 0.1,
     mask_tilt: 0.2,
     light_surround: 0.6,
-    fixed_floor: 0.1,
+    fixed_floor: 0.05,
     fixed_midtone: 0.5,
-    fixed_layers: [0.93, 1.0, 1.07],
-    crossover_limit: 0.35,
+    crossover_at: [0.25, 0.5, 0.75],
+    crossover_window: 0.15,
+    crossover_limit: 0.18,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -126,7 +128,7 @@ pub struct Negative {
     /// Expired film: even out the colour layers' midtones (crossover).
     pub expired: bool,
     /// Stored crossover (used when `auto` is off and `expired` is on).
-    pub crossover: Option<[f64; 3]>,
+    pub crossover: Option<Crossover>,
     /// Print exposure in EV.
     pub exposure: f64,
     /// −100..100 each.
@@ -163,20 +165,29 @@ impl Default for Negative {
     }
 }
 
-/// `amb:NegativeRange`'s default: the density range of a normally exposed
-/// negative of an ordinary scene (ours).
-pub const DEFAULT_RANGE: f64 = 1.3;
+/// `amb:NegativeRange`'s default: the green layer's density range in a
+/// normally exposed negative of an ordinary scene (ours; about the median of
+/// the BlueNeg frames we tried, docs/design/film-negatives.md).
+pub const DEFAULT_RANGE: f64 = 1.0;
+
+/// Expired film's crossover: per layer (red, green, blue), how far its
+/// neutral sits from green's at each of [`NegativeStrengths::crossover_at`],
+/// in normalised units. Green's row is always zero.
+pub type Crossover = [[f64; 3]; 3];
+
+/// No crossover.
+pub const NO_CROSSOVER: Crossover = [[0.0; 3]; 3];
 
 /// Per-image analysis: film base transmittance (raw-normalised, white level = 1),
 /// per-channel density levels, the midtone (0..1 in normalised log units), and
-/// the per-layer crossover bend (0 unless the film is expired).
+/// the crossover (none unless the film is expired).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Analysis {
     pub base: [f64; 3],
     pub density_low: [f64; 3],
     pub density_high: [f64; 3],
     pub midtone: f64,
-    pub crossover: [f64; 3],
+    pub crossover: Crossover,
 }
 
 /// An interleaved camera RGB image (a whole scan, or the part being developed).
@@ -603,18 +614,19 @@ fn levels(samples: &[[f64; 3]], base: [f64; 3], k: &NegativeStrengths) -> Analys
         density_low,
         density_high,
         midtone,
-        crossover: [0.0; 3],
+        crossover: NO_CROSSOVER,
     }
 }
 
-/// Expired film's crossover: the bend per layer ([`bend`]) that brings each
-/// layer's midtone to their common one. **Ours.** Old film loses speed and
-/// contrast unevenly per layer, so a grey shows a cast that changes from
-/// shadows to highlights; the levels already match the ends, this matches
-/// the middle. It is measured on the grey axis: the most common colour
-/// among the midtones (greys of one cast cluster, coloured things scatter),
-/// and only when enough of the midtones are there.
-fn crossover(samples: &[[f64; 3]], a: &Analysis, k: &NegativeStrengths) -> [f64; 3] {
+/// Expired film's crossover. **Ours.** Old film loses speed and contrast
+/// unevenly per layer (most often the blue-sensitive one, on top), so a grey
+/// shows a cast that changes from shadows to highlights. The levels match
+/// the ends of each layer; this matches red and blue to green along the
+/// grey axis, at a shadow, a midtone and a highlight level of green. At each,
+/// the grey axis is the most common colour among the pixels of that level
+/// (greys of one cast cluster, coloured things scatter); a level without
+/// enough of them is left alone.
+fn crossover(samples: &[[f64; 3]], a: &Analysis, k: &NegativeStrengths) -> Crossover {
     let normal: Vec<[f64; 3]> = samples
         .iter()
         .map(|p| {
@@ -622,14 +634,7 @@ fn crossover(samples: &[[f64; 3]], a: &Analysis, k: &NegativeStrengths) -> [f64;
                 (p[c] - a.density_low[c]) / (a.density_high[c] - a.density_low[c])
             })
         })
-        .filter(|v: &[f64; 3]| {
-            let mean = (v[0] + v[1] + v[2]) / 3.0;
-            (0.2..=0.8).contains(&mean)
-        })
         .collect();
-    if normal.len() < 64 {
-        return [0.0; 3];
-    }
     const BIN: f64 = 0.02;
     let key = |v: &[f64; 3]| {
         (
@@ -637,46 +642,70 @@ fn crossover(samples: &[[f64; 3]], a: &Analysis, k: &NegativeStrengths) -> [f64;
             ((v[2] - v[1]) / BIN).round() as i32,
         )
     };
-    let mut counts = std::collections::BTreeMap::new();
-    for v in &normal {
-        *counts.entry(key(v)).or_insert(0usize) += 1;
-    }
     let near = |a: (i32, i32), b: (i32, i32)| (a.0 - b.0).abs() <= 1 && (a.1 - b.1).abs() <= 1;
-    let around = |at: (i32, i32)| -> usize {
-        counts
+    let mut out = NO_CROSSOVER;
+    for (j, &at) in k.crossover_at.iter().enumerate() {
+        let level: Vec<&[f64; 3]> = normal
             .iter()
-            .filter(|(k, _)| near(**k, at))
-            .map(|(_, n)| n)
-            .sum()
-    };
-    let Some(axis) = counts.keys().copied().max_by_key(|k| around(*k)) else {
-        return [0.0; 3];
-    };
-    let grey: Vec<&[f64; 3]> = normal.iter().filter(|v| near(key(v), axis)).collect();
-    if grey.len() < normal.len() / 20 {
-        return [0.0; 3];
+            .filter(|v| (v[1] - at).abs() <= k.crossover_window)
+            .collect();
+        if level.len() < 64 {
+            continue;
+        }
+        let mut counts = std::collections::BTreeMap::new();
+        for v in &level {
+            *counts.entry(key(v)).or_insert(0usize) += 1;
+        }
+        let around = |at: (i32, i32)| -> usize {
+            counts
+                .iter()
+                .filter(|(k, _)| near(**k, at))
+                .map(|(_, n)| n)
+                .sum()
+        };
+        let Some(axis) = counts.keys().copied().max_by_key(|k| around(*k)) else {
+            continue;
+        };
+        let grey: Vec<&&[f64; 3]> = level.iter().filter(|v| near(key(v), axis)).collect();
+        if grey.len() < level.len() / 20 {
+            continue;
+        }
+        for c in [0, 2] {
+            let mut d: Vec<f64> = grey.iter().map(|v| v[c] - v[1]).collect();
+            out[c][j] = percentile(&mut d, 0.5).clamp(-k.crossover_limit, k.crossover_limit);
+        }
     }
-    let mids: [f64; 3] = std::array::from_fn(|c| {
-        let mut v: Vec<f64> = grey.iter().map(|p| p[c]).collect();
-        percentile(&mut v, 0.5)
-    });
-    let target = (mids[0] + mids[1] + mids[2]) / 3.0;
-    mids.map(|m| {
-        let m = m.clamp(0.05, 0.95);
-        ((target - m) / (m * (1.0 - m))).clamp(-k.crossover_limit, k.crossover_limit)
-    })
+    // Each layer's curve must keep rising: its matched levels stay in order.
+    for c in [0, 2] {
+        for j in 1..3 {
+            let floor = k.crossover_at[j - 1] + out[c][j - 1] + 0.1;
+            out[c][j] = out[c][j].max(floor - k.crossover_at[j]);
+        }
+    }
+    out
 }
 
-/// A layer's crossover bend: `v + b·v·(1 − v)` between the levels (the ends
-/// stay put, the middle moves), straight lines with the same slopes beyond.
-fn bend(v: f64, b: f64) -> f64 {
-    if v < 0.0 {
-        v * (1.0 + b)
-    } else if v > 1.0 {
-        1.0 + (v - 1.0) * (1.0 - b)
-    } else {
-        v + b * v * (1.0 - v)
+/// A layer's crossover curve: the level `v` where its neutral sits goes to
+/// green's, through the matched levels and the ends (0 and 1 stay put),
+/// straight lines between them and beyond.
+fn uncross(v: f64, offsets: [f64; 3], at: [f64; 3]) -> f64 {
+    if offsets == [0.0; 3] {
+        return v;
     }
+    let from = [
+        0.0,
+        at[0] + offsets[0],
+        at[1] + offsets[1],
+        at[2] + offsets[2],
+        1.0,
+    ];
+    let to = [0.0, at[0], at[1], at[2], 1.0];
+    if v <= 0.0 || v >= 1.0 {
+        return v;
+    }
+    let i = (1..5).find(|&i| v <= from[i]).unwrap_or(4);
+    let t = (v - from[i - 1]) / (from[i] - from[i - 1]).max(1e-9);
+    to[i - 1] + t * (to[i] - to[i - 1])
 }
 
 /// The analysis to render with. `whole` is the whole scan, where the film
@@ -686,8 +715,9 @@ fn bend(v: f64, b: f64) -> f64 {
 /// - The film base: the stored one, or estimated from `whole`.
 /// - Auto: levels and midtone measured on `metered`.
 /// - Auto off: the stored levels and midtone; missing ones come from the
-///   fixed density range `n.range` above the base (a slide, which has no
-///   base, measures them instead).
+///   fixed density range `n.range` above the base for green, shared out over
+///   the layers as measured (each layer's range belongs to the film and the
+///   scanner, not the exposure). A slide, which has no base, measures them.
 /// - Expired film: the crossover, stored (Auto off) or measured; none otherwise.
 pub fn resolve(n: &Negative, whole: Scan, metered: Scan, k: &NegativeStrengths) -> Analysis {
     let positive = n.kind == NegativeType::Positive;
@@ -708,15 +738,16 @@ pub fn resolve(n: &Negative, whole: Scan, metered: Scan, k: &NegativeStrengths) 
             .density_low
             .or(fallback.map(|a| a.density_low))
             .unwrap_or([k.fixed_floor; 3]);
-        let layers = match n.kind {
-            NegativeType::Color => k.fixed_layers,
-            _ => [1.0; 3],
-        };
         let mut density_high = n
             .density_high
             .or(fallback.map(|a| a.density_high))
             .unwrap_or_else(|| {
-                std::array::from_fn(|c| density_low[c] + n.range.max(0.1) * layers[c])
+                let m = levels(samples(), base, k);
+                let green = (m.density_high[1] - m.density_low[1]).max(0.05);
+                std::array::from_fn(|c| {
+                    let share = (m.density_high[c] - m.density_low[c]) / green;
+                    density_low[c] + n.range.max(0.1) * share
+                })
             });
         for c in 0..3 {
             density_high[c] = density_high[c].max(density_low[c] + 0.01);
@@ -730,7 +761,7 @@ pub fn resolve(n: &Negative, whole: Scan, metered: Scan, k: &NegativeStrengths) 
                 .or(fallback.map(|a| a.midtone))
                 .unwrap_or(k.fixed_midtone)
                 .clamp(0.05, 0.95),
-            crossover: [0.0; 3],
+            crossover: NO_CROSSOVER,
         }
     };
     if n.expired && n.kind != NegativeType::BlackAndWhite {
@@ -839,6 +870,7 @@ pub struct Conversion {
     toe: f64,
     shoulder: f64,
     gain: f64,
+    crossover_at: [f64; 3],
 }
 
 impl Conversion {
@@ -858,6 +890,7 @@ impl Conversion {
             toe: blend(0.0, stock.toe) + n.toe / 100.0 * k.toe_range,
             shoulder: blend(0.0, stock.shoulder) + n.shoulder / 100.0 * k.shoulder_range,
             gain: k.midtone_grey * n.exposure.exp2(),
+            crossover_at: k.crossover_at,
         }
     }
 
@@ -870,7 +903,7 @@ impl Conversion {
         let neutral: [f64; 3] = std::array::from_fn(|c| {
             let d = log_exposure(f64::from(p[c]), a.base[c], self.positive);
             let v = (d - a.density_low[c]) / (a.density_high[c] - a.density_low[c]);
-            bend(v, a.crossover[c]) + self.balance[c]
+            uncross(v, a.crossover[c], self.crossover_at) + self.balance[c]
         });
         // Stock look (channel contrast, dye crosstalk, tints), blended by the stock amount.
         let contrasted: [f64; 3] =
@@ -1109,16 +1142,24 @@ mod tests {
         let a = resolve(&n, scan_of(&rgb, w, h), scan_of(&rgb, w, h), &K);
         assert_eq!(a.base, [0.5, 0.5, 0.5]);
         assert_eq!(a.midtone, 0.4);
-        // Levels were missing, so they come from the fixed range, shared
-        // out by layer on colour film.
+        // Levels were missing, so they come from the fixed range: green
+        // spans it, the other layers keep their measured share.
         assert_eq!(a.density_low, [K.fixed_floor; 3]);
-        for c in 0..3 {
-            let want = K.fixed_floor + 1.5 * K.fixed_layers[c];
-            assert!(
-                (a.density_high[c] - want).abs() < 1e-9,
-                "{:?}",
-                a.density_high
-            );
+        assert!((a.density_high[1] - (K.fixed_floor + 1.5)).abs() < 1e-9);
+        let m = resolve(
+            &Negative {
+                auto: true,
+                ..n.clone()
+            },
+            scan_of(&rgb, w, h),
+            scan_of(&rgb, w, h),
+            &K,
+        );
+        let share = |a: &Analysis, c: usize| {
+            (a.density_high[c] - a.density_low[c]) / (a.density_high[1] - a.density_low[1])
+        };
+        for c in [0, 2] {
+            assert!((share(&a, c) - share(&m, c)).abs() < 1e-9);
         }
         // Auto measures the levels, keeping the stored base.
         let auto = resolve(
@@ -1270,40 +1311,57 @@ mod tests {
         assert!(close(found, BASE), "{found:?}");
     }
 
-    #[test]
-    fn expired_film_evens_out_the_layers_midtones() {
-        // Grey ramps on film whose blue layer bows: its midtones are too
-        // dense though its ends match the others (a crossover).
-        let (w, h) = (300, 120);
+    /// A grey ramp on film whose blue layer is off by `shift(l)` density at
+    /// log exposure `l` (0..2.6), its ends matching the others.
+    fn crossed(w: usize, h: usize, shift: impl Fn(f64) -> f64) -> Vec<f32> {
         let mut rgb = vec![0.0f32; w * h * 3];
         for y in 0..h {
             for x in 0..w {
-                let t = x as f64 / w as f64;
-                let l = 2.6 * t;
+                let l = 2.6 * x as f64 / w as f64;
                 for c in 0..3 {
-                    let bow = if c == 2 { 0.12 * l * (2.6 - l) } else { 0.0 };
-                    let d = GAMMA[1] * l + bow;
+                    let d = GAMMA[1] * l + if c == 2 { shift(l) } else { 0.0 };
                     rgb[(y * w + x) * 3 + c] = (BASE[c] * 10f64.powf(-d)) as f32;
                 }
             }
         }
-        let cast = |expired: bool| {
-            let n = Negative {
-                enabled: true,
-                base: Some(BASE),
-                expired,
-                ..Default::default()
-            };
-            let a = resolve(&n, scan_of(&rgb, w, h), scan_of(&rgb, w, h), &K);
-            let c = Conversion::new(&n, a, &K);
-            let mut out = rgb.clone();
-            apply(&mut out, &c);
-            let i = (h / 2 * w + w / 2) * 3;
-            let p = &out[i..i + 3];
-            (p[2] / p[1]).ln().abs()
+        rgb
+    }
+
+    /// The blue cast (|ln b/g|) at a fraction `at` along the converted ramp.
+    fn cast(rgb: &[f32], w: usize, h: usize, expired: bool, at: f64) -> f64 {
+        let n = Negative {
+            enabled: true,
+            base: Some(BASE),
+            expired,
+            ..Default::default()
         };
-        let (plain, mended) = (cast(false), cast(true));
+        let a = resolve(&n, scan_of(rgb, w, h), scan_of(rgb, w, h), &K);
+        let c = Conversion::new(&n, a, &K);
+        let mut out = rgb.to_vec();
+        apply(&mut out, &c);
+        let i = (h / 2 * w + (w as f64 * at) as usize) * 3;
+        (out[i + 2] / out[i + 1]).ln().abs() as f64
+    }
+
+    #[test]
+    fn expired_film_matches_the_layers_from_shadows_to_highlights() {
+        let (w, h) = (300, 120);
+        // The blue layer bows: its midtones are too dense (a crossover).
+        let bowed = crossed(w, h, |l| 0.12 * l * (2.6 - l));
+        let (plain, mended) = (
+            cast(&bowed, w, h, false, 0.5),
+            cast(&bowed, w, h, true, 0.5),
+        );
         assert!(mended < plain * 0.5, "plain {plain}, expired {mended}");
+        // An S: blue too dense in the shadows, too thin in the highlights.
+        let s = crossed(w, h, |l| 0.06 * (std::f64::consts::TAU * l / 2.6).sin());
+        for at in [0.25, 0.75] {
+            let (plain, mended) = (cast(&s, w, h, false, at), cast(&s, w, h, true, at));
+            assert!(
+                mended < plain * 0.5,
+                "at {at}: plain {plain}, expired {mended}"
+            );
+        }
         // Black-and-white film has no layers to even out.
         let n = Negative {
             enabled: true,
@@ -1311,8 +1369,8 @@ mod tests {
             expired: true,
             ..Default::default()
         };
-        let a = resolve(&n, scan_of(&rgb, w, h), scan_of(&rgb, w, h), &K);
-        assert_eq!(a.crossover, [0.0; 3]);
+        let a = resolve(&n, scan_of(&bowed, w, h), scan_of(&bowed, w, h), &K);
+        assert_eq!(a.crossover, NO_CROSSOVER);
     }
 
     #[test]
@@ -1322,7 +1380,7 @@ mod tests {
             density_low: [0.0; 3],
             density_high: GAMMA.map(|g| g * 2.7),
             midtone: 0.5,
-            crossover: [0.0; 3],
+            crossover: NO_CROSSOVER,
         };
         let grey = negative_of([0.05; 3]);
         let render = |n: Negative| Conversion::new(&n, a, &K).apply(grey);
@@ -1382,7 +1440,7 @@ mod tests {
             density_low: [0.0; 3],
             density_high: GAMMA.map(|g| g * 2.7),
             midtone: 0.5,
-            crossover: [0.0; 3],
+            crossover: NO_CROSSOVER,
         };
         let n = Negative {
             stock: "bw-classic-400".into(),

@@ -85,6 +85,7 @@ pub(crate) fn negative_analyze(
             .map(|(k, v)| {
                 let value = match v {
                     amb_presets::Value::Bool(b) => serde_json::Value::Bool(*b),
+                    amb_presets::Value::Text(t) => serde_json::json!(t),
                     other => serde_json::json!(other.as_f64()),
                 };
                 (k.clone(), value)

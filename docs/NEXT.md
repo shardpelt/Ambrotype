@@ -185,7 +185,8 @@ Ideas from two film-scan apps, negaflow (Apache-2.0) and NegPy (GPL-3), rebuilt 
    - ~~a fixed density range when Auto is off~~ (`amb:NegativeRange`)
    - ~~a film base eyedropper~~ (Pick base) and ~~a roll base~~ (pick on one frame, then Paste settings → Film negative); ~~a base that isn't bare light~~ (holes or gaps around the film)
    - ~~a metering region~~: the levels are measured inside the crop, the base on the whole scan. Left: drawing a region by hand
-   - ~~an expired-film target~~ (`amb:NegativeExpired`: evens out the layers' midtones)
+   - ~~an expired-film target~~ (`amb:NegativeExpired`: matches red and blue to green from shadows to highlights)
+   - Tried on eight real scans from the BlueNeg dataset (2026-10-28), which fixed Auto off and Expired film ([design/film-negatives.md](design/film-negatives.md))
 2. **Cast removal along the greys:** red and blue fitted to green on the least-saturated pixels from shadows to highlights, with a strength slider (M). Fixes the sunset case in [GAPS.md](GAPS.md) §9.
 3. **Auto Density and Auto Grade**, metered only on parts with detail, with highlight and shadow holds (M). The patents behind them have expired; check the 2002 one before building.
 4. **Roll baseline:** odd frames keep their own analysis, Use this frame, Lock bounds, and scenes grouped by light (M). Builds on Sync negative roll.

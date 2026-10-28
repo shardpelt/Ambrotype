@@ -339,7 +339,6 @@ pub const RENDERED_TAGS: &[&str] = &[
     "amb:NegativeRange",
     "amb:NegativeExpired",
     "amb:NegativeCrossoverRed",
-    "amb:NegativeCrossoverGreen",
     "amb:NegativeCrossoverBlue",
     "amb:NegativeExposure",
     "amb:NegativeContrast",
@@ -807,6 +806,26 @@ pub(super) fn rgb_triple(settings: &BTreeMap<String, Value>, prefix: &str) -> Op
     Some([r, g, b])
 }
 
+/// Expired film's stored crossover: `amb:NegativeCrossoverRed` and `Blue`,
+/// each three numbers (at a shadow, a midtone and a highlight level of green).
+fn crossover_tags(settings: &BTreeMap<String, Value>) -> Option<negative::Crossover> {
+    let row = |name: &str| -> Option<[f64; 3]> {
+        let t = text(settings, name)?;
+        let v: Vec<f64> = t
+            .split([' ', ','])
+            .filter(|x| !x.is_empty())
+            .filter_map(|x| x.parse().ok())
+            .collect();
+        (v.len() == 3).then(|| [v[0], v[1], v[2]])
+    };
+    let (red, blue) = (
+        row("amb:NegativeCrossoverRed"),
+        row("amb:NegativeCrossoverBlue"),
+    );
+    (red.is_some() || blue.is_some())
+        .then(|| [red.unwrap_or([0.0; 3]), [0.0; 3], blue.unwrap_or([0.0; 3])])
+}
+
 pub(super) fn negative_settings(settings: &BTreeMap<String, Value>) -> Negative {
     let d = Negative::default();
     Negative {
@@ -834,7 +853,7 @@ pub(super) fn negative_settings(settings: &BTreeMap<String, Value>) -> Negative 
         midtone: num(settings, "amb:NegativeMidtone"),
         range: num(settings, "amb:NegativeRange").unwrap_or(d.range),
         expired: flag(settings, "amb:NegativeExpired"),
-        crossover: rgb_triple(settings, "amb:NegativeCrossover"),
+        crossover: crossover_tags(settings),
         exposure: num(settings, "amb:NegativeExposure").unwrap_or(0.0),
         contrast: num(settings, "amb:NegativeContrast").unwrap_or(0.0),
         balance: [

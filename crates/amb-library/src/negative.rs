@@ -7,7 +7,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use amb_engine::negative::{Analysis, NegativeType};
+use amb_engine::negative::{Analysis, NO_CROSSOVER, NegativeType};
 use amb_presets::Value;
 use amb_protocol::Command;
 use rayon::prelude::*;
@@ -87,12 +87,15 @@ pub fn frozen(frames: &[Analysis]) -> BTreeMap<String, Value> {
         "NegativeMidtone",
         Value::Number(round(median(&|a| a.midtone))),
     );
-    // Expired film's crossover, when there is one.
-    if frames.iter().any(|a| a.crossover != [0.0; 3]) {
-        for (c, name) in ["Red", "Green", "Blue"].iter().enumerate() {
+    // Expired film's crossover, when there is one: three numbers per layer.
+    if frames.iter().any(|a| a.crossover != NO_CROSSOVER) {
+        for (c, name) in [(0, "Red"), (2, "Blue")] {
+            let row: Vec<String> = (0..3)
+                .map(|j| format!("{}", round(median(&|a| a.crossover[c][j]))))
+                .collect();
             put(
                 &format!("NegativeCrossover{name}"),
-                Value::Number(round(median(&|a| a.crossover[c]))),
+                Value::Text(row.join(" ")),
             );
         }
     }
@@ -107,6 +110,7 @@ pub fn commands(settings: &BTreeMap<String, Value>) -> Vec<Command> {
             name: name.clone(),
             value: match v {
                 Value::Bool(b) => serde_json::json!(b),
+                Value::Text(t) => serde_json::json!(t),
                 other => serde_json::json!(other.as_f64()),
             },
         })
@@ -123,7 +127,7 @@ mod tests {
             density_low: [0.1; 3],
             density_high: [1.5; 3],
             midtone,
-            crossover: [0.0; 3],
+            crossover: NO_CROSSOVER,
         }
     }
 

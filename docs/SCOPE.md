@@ -141,6 +141,8 @@ From [09](research/09-market-commercial-alternatives.md), [12](research/12-user-
 | **RapidRAW** | **AGPL-3** | Rust, Tauri, React, wgpu | Closest product to our goal. About 37k LOC of Rust and 2.6k of WGSL. Fast GPU pipeline, AI masks/inpaint/denoise via ONNX, Android build. Its colour science is its own: no DCP/ICC, multiplier WB, hand-tuned tone mapper. JSON sidecars, no catalog DB, solo maintainer with heavy churn. Strong **UI/UX reference**, weak base for Adobe fidelity. [07](research/07-rapidraw-survey.md) |
 | Safelight | GPL | (new, Sept 2026) | A new free RAW editor "built like an IDE" (modular panels, Windows/Linux/macOS/browser), announced on discuss.pixls.us. Too new to assess; watch it. It also rules out "Safelight" as our name. |
 | Chromogen | Proprietary (paid, free trial) | Windows/macOS | A film-emulation RAW editor: 13 stocks "measured from real film", grain, halation, push/pull. A direct reference point for our film-negative and film-stock work. |
+| negaflow | Apache-2.0 | Swift (macOS), C#/C++ (Windows) | A film-scan app: rolls, inversion with a measured film base, dust and scratch repair (with infrared), print layouts and contact sheets. Ideas in our Film lab track. [16](research/16-film-scan-apps-survey.md) |
+| NegPy | GPL-3 | Python, PyQt6, Rust core, wgpu | A film-scan app built around a paper curve in density: Auto Density and Grade, cast removal, roll baselines, flat-field, dust repair, darkroom aids, alternative processes, scanner capture. Ideas in our Film lab track. [16](research/16-film-scan-apps-survey.md) |
 | vkdt | BSD-2 | C, Vulkan | GPU node-graph design reference. |
 | digiKam | GPL-2+ | C++, Qt | DAM reference: faces, metadata, huge libraries. |
 | LibRaw / rawler / rawspeed | LGPL / LGPL / LGPL | C++ / Rust / C++ | Raw decoding options. rawler is used by RapidRAW. |
@@ -447,6 +449,7 @@ Since decided: 1 (GPL-3.0-or-later, 2026-10-08), 2 (our own engine with a Tauri 
 | [research/10-reading-list.md](research/10-reading-list.md) | Books and free resources, prioritised |
 | [research/11-architecture-lessons-from-large-oss.md](research/11-architecture-lessons-from-large-oss.md) | How VLC, FFmpeg, Blender, OBS, GEGL, darktable, mpv and Rust projects are structured; Rust verdict; recommended workspace |
 | [research/12-user-feedback-and-design-implications.md](research/12-user-feedback-and-design-implications.md) | What users love and hate about Lightroom, competitors and presets (Reddit, 660 threads); design implications; anti-goals |
+| [research/16-film-scan-apps-survey.md](research/16-film-scan-apps-survey.md) | negaflow and NegPy compared with Ambrotype; what we can rebuild, what we don't take, patents; the Film lab track's backlog |
 
 ### How this research was produced
 - Parallel research agents (Sonnet for synthesis-heavy topics, Haiku for code sweeps) worked over local clones of darktable, RawTherapee and RapidRAW, plus the web.

@@ -177,6 +177,33 @@ Make Ambrotype a great place to browse, sort and manage a very large photo colle
 9. **Sharing:** export a static web gallery and a slideshow from a collection. (2026-10-23: a slideshow in the app, Ctrl+Enter. Left: exporting one as a video or a web page, and music.)
 10. **Videos:** list and play the clips next to the photos, with ratings and keywords, so a card's whole import lives in one place.
 
+### Film lab track (owner, 2026-10-28)
+
+Ideas from two film-scan apps, negaflow (Apache-2.0) and NegPy (GPL-3), rebuilt in our own code from their docs and public sources. None of these needs their authors' permission or their code. The comparison, what we don't take, and the patent check are in [research/16](research/16-film-scan-apps-survey.md). Sizes are S (a day or two), M (a week) and L (more). Roughly in this order:
+
+1. **Quick conversion wins:**
+   - a fixed density range when Auto is off (S)
+   - a film base eyedropper, a roll base, and a base found along the frame edge (M)
+   - a metering region and a border to ignore (S)
+   - an expired-film target (S)
+2. **Cast removal along the greys:** red and blue fitted to green on the least-saturated pixels from shadows to highlights, with a strength slider (M). Fixes the sunset case in [GAPS.md](GAPS.md) §9.
+3. **Auto Density and Auto Grade**, metered only on parts with detail, with highlight and shadow holds (M). The patents behind them have expired; check the 2002 one before building.
+4. **Roll baseline:** odd frames keep their own analysis, Use this frame, Lock bounds, and scenes grouped by light (M). Builds on Sync negative roll.
+5. **Dust and scratches:** automatic, a guided rectangle, a heal brush that searches its stroke, a line tool, infrared from a fourth channel or an `_ir` file, a check that keeps wires and lettering, grain kept, repairs as layers in the sidecar (L). Test bench: FILM-R v2, downloaded, never committed.
+6. **Film look on digital photos:** halation in linear light, grain that follows density, a paper-like roll-off (M).
+7. **Darkroom aids:** density and zone under the cursor, zone overlay, placing a spot in a zone, step wedge, negative range and scan-clip readouts, test strip, ring-around, peek at the negative (M); Pick Better, choosing between two versions to tune one setting at a time (M).
+8. **Scans in:** flat-field from a shot of the bare light, a channel-bleed matrix per film type or from a colour chart, half-frame split, a strip split into frames, stitching a large negative (M each).
+9. **A paper curve in density:** toe, straight line and shoulder, ISO-R grades, split grade, preflash, B&W papers fitted from public datasheets (L). Candidate for negative model v2.
+10. **Print and output:**
+    - a contact sheet as film strips, with a straight proof (M)
+    - print layouts and paper sizes (M)
+    - printer and paper soft proof, applied once to the composed page (M)
+    - a flat 16-bit master (S)
+11. **B&W processes and finishing:** lith, cyanotype, Sabattier, chemical toners, edge burn, filed carrier, chroma denoise that keeps edges, a skin chroma ceiling (S–M each; some as effect plugins).
+12. **Film metadata:** stock, camera and development per roll, search terms such as `film:… iso:>=400`, and a hot folder (M).
+
+Not taken: NegPy's print tables (made from Fujifilm printer software and profiles), negaflow's lab-scanner profiles named after the machines, and CC BY-SA data NegPy carries (spektrafilm dye curves, DX codes) unless the owner says yes.
+
 ### Codebase track (later, when there's budget for a long run)
 
 0. **First, measure what helps** (plan: [design/agent-navigation.md](design/agent-navigation.md)): fresh agents on a fixed task set, with and without recipes and on-demand maps. Rounds A1 and B1 are done: with the recipes, Sonnet passed all 12 tasks at the same cost. The steps below follow from it.

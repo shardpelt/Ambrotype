@@ -1748,7 +1748,7 @@ mod tests {
         std::fs::write(dir.join("Look/IMG_1.NEF"), b"x").unwrap();
         std::fs::write(dir.join("Look/IMG_1.xmp"), packet("")).unwrap();
         std::fs::write(dir.join("Look/IMG_1.copy-2.xmp"), packet("")).unwrap();
-        let found: Vec<String> = scan_presets(&[dir.clone()])
+        let found: Vec<String> = scan_presets(std::slice::from_ref(&dir))
             .into_iter()
             .map(|p| p.name)
             .collect();

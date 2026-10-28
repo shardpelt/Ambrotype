@@ -1668,10 +1668,31 @@ pub fn scan_presets(dirs: &[PathBuf]) -> Vec<PresetEntry> {
                 walk(&p, out, depth + 1);
             } else if p.extension().and_then(|x| x.to_str()).is_some_and(|x| {
                 x.eq_ignore_ascii_case("xmp") || x.eq_ignore_ascii_case("lrtemplate")
-            }) {
+            }) && !is_photo_sidecar(&p)
+            {
                 out.push(p);
             }
         }
+    }
+    // A photo's own sidecar (IMG_1234.xmp next to IMG_1234.NEF, or a
+    // virtual copy's), not a preset: a folder of presets can hold photos.
+    fn is_photo_sidecar(p: &Path) -> bool {
+        if amb_engine::virtual_copy_of(p).is_some() {
+            return true;
+        }
+        let (Some(dir), Some(stem)) = (p.parent(), p.file_stem()) else {
+            return false;
+        };
+        std::fs::read_dir(dir).is_ok_and(|entries| {
+            entries.flatten().any(|e| {
+                let q = e.path();
+                q != p
+                    && q.file_stem() == Some(stem)
+                    && q.extension().and_then(|x| x.to_str()).is_some_and(|x| {
+                        !x.eq_ignore_ascii_case("xmp") && !x.eq_ignore_ascii_case("lrtemplate")
+                    })
+            })
+        })
     }
     let mut files = Vec::new();
     for d in dirs {
@@ -1704,6 +1725,36 @@ pub fn scan_presets(dirs: &[PathBuf]) -> Vec<PresetEntry> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn photo_sidecars_are_not_presets() {
+        let dir = std::env::temp_dir().join(format!("amb-gui-presets-{}", std::process::id()));
+        std::fs::create_dir_all(dir.join("Look")).unwrap();
+        let packet = |name: &str| {
+            amb_presets::xmp_writer::write_packet(
+                &[
+                    (
+                        "Name".to_string(),
+                        Value::Alt(vec![("x-default".into(), name.into())]),
+                    ),
+                    ("Exposure2012".to_string(), Value::Number(0.5)),
+                ]
+                .into_iter()
+                .collect(),
+                amb_presets::is_signed_tag,
+            )
+        };
+        std::fs::write(dir.join("Look/Warm.xmp"), packet("Warm")).unwrap();
+        std::fs::write(dir.join("Look/IMG_1.NEF"), b"x").unwrap();
+        std::fs::write(dir.join("Look/IMG_1.xmp"), packet("")).unwrap();
+        std::fs::write(dir.join("Look/IMG_1.copy-2.xmp"), packet("")).unwrap();
+        let found: Vec<String> = scan_presets(&[dir.clone()])
+            .into_iter()
+            .map(|p| p.name)
+            .collect();
+        assert_eq!(found, ["Warm"]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn edit_copies_are_named_like_lightrooms() {

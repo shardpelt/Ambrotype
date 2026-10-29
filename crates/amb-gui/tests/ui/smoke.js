@@ -327,6 +327,19 @@ await t.step("Pick base: a click on the photo stores the film base; Alt-click fo
   await t.until("the photo as it was", () => !t.setting("amb:NegativeConvert"));
 });
 
+await t.step("Find dust in the Spot panel: none on a clean chart, and no history step", async () => {
+  t.key("Q");
+  await t.until("the spot tool", () => sp.on && !$("spot-panel").hidden);
+  const steps = t.historyLength();
+  $("toast").hidden = true;
+  t.click("#spot-dust");
+  await t.until("its note", () => !$("toast").hidden && $("toast").textContent.includes("dust"), 60000);
+  t.expect($("toast").textContent.startsWith("No dust found"), `the note: ${$("toast").textContent}`);
+  t.expect(t.historyLength() === steps, "no history step");
+  t.click("#spot-done");
+  await t.until("the spot tool closed", () => !sp.on);
+});
+
 await t.step("Ctrl+E exports a JPEG", async () => {
   t.key("Ctrl+E");
   await t.until("the Export dialog", () => $("export-dialog").open);

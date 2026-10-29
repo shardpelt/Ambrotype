@@ -237,6 +237,35 @@ pub(crate) async fn spot_source(
     .map_err(|e| e.to_string())?
 }
 
+/// Find dust and hairs on the scan and heal them, as one undoable step.
+#[tauri::command]
+pub(crate) async fn find_dust(state: tauri::State<'_, AppState>) -> Res<Executed> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let found = s.find_dust();
+        if !found.commands.is_empty() {
+            s.execute(&found.commands, Some("dust and hairs"))?;
+        }
+        let note = match (found.specks, found.hairs) {
+            (0, 0) if found.covered > 0 => "No new dust: spots already cover what was found.".to_string(),
+            (0, 0) => "No dust found. Faint specks, busy areas and long straight scratches are left to you.".to_string(),
+            (specks, hairs) => format!(
+                "Healed {specks} speck{} and {hairs} hair{}. Click a spot to change or delete it.",
+                if specks == 1 { "" } else { "s" },
+                if hairs == 1 { "" } else { "s" }
+            ),
+        };
+        Ok(Executed {
+            state: s.state_info(),
+            notes: vec![note],
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// The mask tool's map from the shown photo to mask coordinates.
 #[tauri::command]
 pub(crate) fn mask_frame(state: tauri::State<'_, AppState>) -> Res<session::MaskFrame> {

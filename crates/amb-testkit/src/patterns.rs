@@ -4,7 +4,7 @@
 
 use crate::dng::{LinearImage, PROPHOTO_TO_XYZ_D50, SRGB_TO_XYZ_D50, apply3, invert3, mul3};
 
-pub const NAMES: &[&str] = &["ramp", "hue", "edges", "colorchecker", "negative"];
+pub const NAMES: &[&str] = &["ramp", "hue", "edges", "colorchecker", "negative", "dust"];
 
 pub fn generate(name: &str) -> Option<LinearImage> {
     Some(match name {
@@ -13,6 +13,7 @@ pub fn generate(name: &str) -> Option<LinearImage> {
         "edges" => edges(),
         "colorchecker" => colorchecker(),
         "negative" => negative(),
+        "dust" => dust(),
         _ => return None,
     })
 }
@@ -246,6 +247,64 @@ pub fn negative() -> LinearImage {
     }
     img
 }
+
+/// A scanned slide of a grainy sky with dust on it: [`DUST_SPECKS`] specks
+/// of 1 to 4 pixels' radius, one curved hair, and a straight dark wire right
+/// across, which is not dust.
+pub fn dust() -> LinearImage {
+    let (w, h) = (1200u32, 800u32);
+    let mut img = LinearImage::new(w, h);
+    let mut seed = 0x2545_f491u32;
+    let mut grain = move || {
+        seed ^= seed << 13;
+        seed ^= seed >> 17;
+        seed ^= seed << 5;
+        f64::from(seed) / f64::from(u32::MAX) - 0.5
+    };
+    for y in 0..h {
+        for x in 0..w {
+            let sky = 0.25 + 0.15 * f64::from(y) / f64::from(h);
+            let g = 1.0 + 0.05 * grain();
+            img.set(x, y, [sky * 0.8 * g, sky * g, sky * 1.2 * g]);
+        }
+    }
+    let mut darken = |x: u32, y: u32| {
+        let p = img.get(x, y).map(|v| f64::from(v) * 0.2);
+        img.set(x, y, p);
+    };
+    for (i, &(cx, cy)) in DUST_SPECKS.iter().enumerate() {
+        let r = 1 + (i % 4) as i64;
+        for dy in -r..=r {
+            for dx in -r..=r {
+                if dx * dx + dy * dy <= r * r {
+                    darken((i64::from(cx) + dx) as u32, (i64::from(cy) + dy) as u32);
+                }
+            }
+        }
+    }
+    for t in 0..40u32 {
+        let (x, y) = (600 + t, 600 + (8.0 * (f64::from(t) / 7.0).sin()) as u32 + 8);
+        darken(x, y);
+        darken(x, y + 1);
+    }
+    for x in 0..w {
+        darken(x, 120);
+        darken(x, 121);
+    }
+    img
+}
+
+/// Where [`dust`] puts its specks.
+pub const DUST_SPECKS: [(u32, u32); 8] = [
+    (100, 300),
+    (250, 500),
+    (400, 250),
+    (520, 700),
+    (700, 350),
+    (850, 550),
+    (1000, 200),
+    (1100, 650),
+];
 
 #[cfg(test)]
 mod tests {

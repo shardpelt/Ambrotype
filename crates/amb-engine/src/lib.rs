@@ -17,6 +17,7 @@ pub mod curve;
 pub mod dehaze;
 pub mod detail;
 pub mod dng_opcodes;
+pub mod dust;
 pub mod effects;
 pub mod filters;
 pub mod highlights;

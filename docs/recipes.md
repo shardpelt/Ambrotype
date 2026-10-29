@@ -5,7 +5,7 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
 ## Done means it works as asked
 
 - **Run the exact commands the request names**, as written, and read their output. "Tests pass" is not enough when the request says `amb do photo.nef "amb:LUTAmount=50"` should work.
-- **For a test photo:** `amb testimage colorchecker photo.dng` (also `ramp`, `hue`, `edges`, `negative`). Then:
+- **For a test photo:** `amb testimage colorchecker photo.dng` (also `ramp`, `hue`, `edges`, `negative`, `dust`). Then:
   - `amb do photo.dng "Name=value"` to edit it;
   - `amb stats photo.dng --json` to see the result as numbers;
   - `amb render photo.dng out.jpg` to export it.

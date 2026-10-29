@@ -125,7 +125,7 @@ Each idea is rebuilt from the description, in our pipeline and our `amb:` namesp
 
 **Dust and scratches**
 
-9. **Dust and scratch repair** (both). Fills GAPS §9's "no dust and scratch removal". L. It would bring:
+9. **Dust and scratch repair** (both; specks and hairs built 2026-10-29, [design/dust.md](../design/dust.md)). Fills GAPS §9's "no dust and scratch removal". L. It would bring:
    - an automatic pass across the whole frame
    - a guided rectangle that looks harder
    - a heal brush that searches its stroke

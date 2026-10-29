@@ -6,6 +6,7 @@
 pub mod catalog;
 pub mod collections;
 pub mod duplicates;
+pub mod dust;
 pub mod files;
 pub mod folder;
 pub mod gpx;

@@ -463,6 +463,12 @@ impl Session {
         }
     }
 
+    /// Dust and hairs on the whole scan, as heal spots to add
+    /// (`amb_library::dust`), leaving out what the edit's spots cover.
+    pub fn find_dust(&self) -> amb_library::dust::Found {
+        amb_library::dust::find_image(&self.full, self.state.settings())
+    }
+
     /// A donor for a new spot at `(x, y)` with `radius` (fractions; the radius
     /// of the width): the engine's search on a small render of the photo.
     pub fn spot_source(&self, x: f64, y: f64, radius: f64) -> (f64, f64) {

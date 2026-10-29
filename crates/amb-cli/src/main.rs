@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+mod dust;
 mod edit;
 mod lens;
 mod library;
@@ -22,6 +23,7 @@ use amb_presets::Preset;
 use amb_presets::registry::Registry;
 use amb_presets::report::{self, Report};
 
+use dust::*;
 use edit::*;
 use lens::*;
 use library::*;
@@ -48,7 +50,7 @@ USAGE:
                                             and/or synthetic DNG targets with embedded settings
     amb calibration defaults                Print the default model constants as calibration JSON
     amb testimage <PATTERN> <OUT.dng>       Write one synthetic target (ramp, hue, edges, colorchecker,
-                                            negative: a scanned colour negative)
+                                            negative: a scanned colour negative, dust: a slide with dust)
     amb render <RAW> <OUT.jpg|.png|.tif|.webp|.avif|.exr|.jxl> [--preset P] [--amount A]
                                             [--look default|linear] [--calibration fitted.json]
                                             [--lens-db DIR] [--lcp-dir DIR] [export options]
@@ -85,6 +87,11 @@ USAGE:
                                             colour) and the white balance (as Auto), from the photo's own
                                             look; --tone or --wb for one of them. Shows the changes;
                                             --apply makes them one undoable step
+    amb dust <PHOTO> [--apply] [--json]     Dust and hairs on a film scan (darker specks and short curved
+                                            lines on smooth ground; not long straight scratches), each as a
+                                            heal spot with its donor. Shows them; --apply adds them as one
+                                            undoable step. Spots already there are kept, and a second run
+                                            adds only new ones
     amb stats <PHOTO> [--preset P] [--amount A] [--json]
                                             The photo developed small (with its edit, or a preset) as a
                                             few numbers instead of a picture: L* percentiles, clipped
@@ -513,6 +520,9 @@ fn main() -> ExitCode {
             json,
         )
         .map(|t| println!("{t}")),
+        ["dust", photo] => {
+            dust(Path::new(photo), options.contains_key("--apply"), json).map(|t| println!("{t}"))
+        }
         ["stats", photo] => stats(Path::new(photo), &options, json).map(|t| println!("{t}")),
         ["query", state] => match options.get("--queries") {
             Some(queries) => query(Path::new(state), queries),

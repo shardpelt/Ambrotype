@@ -90,6 +90,6 @@ amb negative stocks                                  # list the looks
 The Film lab track in [NEXT.md](../NEXT.md) has the order. In short:
 
 - Per-film layer shares for Auto off (now one set for every colour film).
-- Scan quality helpers: dust and scratch removal (infrared channel where available).
+- Scan quality helpers: straight scratches and an infrared channel for dust (specks and hairs are found since 2026-10-29: [dust.md](dust.md)).
 - Halation and grain matched to the stock.
 - Measured stock profiles, and a way for users to share them as data.

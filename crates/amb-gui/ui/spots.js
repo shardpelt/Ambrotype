@@ -389,6 +389,7 @@ function wireSpots() {
   slider("spot-feather", "feather", 0);
   slider("spot-opacity", "opacity", 0);
   $("spot-delete").addEventListener("click", deleteSpot);
+  $("spot-dust").addEventListener("click", findDust);
   $("spot-clear").addEventListener("click", () => {
     const n = spotList().length;
     if (!n) return;
@@ -399,6 +400,23 @@ function wireSpots() {
   $("spot-done").addEventListener("click", () => exitSpots());
   $("preview").addEventListener("load", () => drawSpots());
   new ResizeObserver(() => drawSpots()).observe($("viewer"));
+}
+
+// Dust and hairs on the scan, healed as spots in one undo step.
+async function findDust() {
+  const b = $("spot-dust");
+  b.disabled = true;
+  try {
+    const r = await invoke("find_dust");
+    setState(r.state);
+    toast(r.notes.join(" "));
+    requestPreview(false);
+    drawSpots();
+  } catch (err) {
+    toast(String(err), true);
+  } finally {
+    b.disabled = false;
+  }
 }
 
 function deleteSpot() {

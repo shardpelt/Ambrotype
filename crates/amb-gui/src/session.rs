@@ -469,6 +469,12 @@ impl Session {
         amb_library::dust::find_image(&self.full, self.state.settings())
     }
 
+    /// Heal spots along a straight scratch drawn from `from` to `to`
+    /// (fractions): the line moved onto the scratch, in pieces.
+    pub fn scratch_spots(&self, from: [f64; 2], to: [f64; 2]) -> Vec<amb_protocol::Command> {
+        amb_library::dust::line_image(&self.full, from, to)
+    }
+
     /// A donor for a new spot at `(x, y)` with `radius` (fractions; the radius
     /// of the width): the engine's search on a small render of the photo.
     pub fn spot_source(&self, x: f64, y: f64, radius: f64) -> (f64, f64) {

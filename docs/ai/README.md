@@ -55,7 +55,7 @@ midtone cast a* +9.8 b* +10.2 (warm, magenta); chroma 32
 
 ## Auto
 
-`amb dust SCAN.dng` finds dust and short hairs on a film scan and shows them as heal spots; `--apply` adds them as one undo step, `--json` lists them. It leaves long straight scratches, busy areas and faint specks alone.
+`amb dust SCAN.dng` finds dust and short hairs on a film scan and shows them as heal spots; `--apply` adds them as one undo step, `--json` lists them. It leaves long straight scratches, busy areas and faint specks alone; `--line X0,Y0,X1,Y1` (photo fractions, drawn roughly) heals a straight scratch along that line.
 
 `amb auto IMG_0001.NEF` shows what Lightroom-style Auto would set: the six tone sliders (from zero, so the result doesn't depend on where they were) and the white balance (marked `Auto`). `--tone` or `--wb` for one of them, `--apply` to make it one undo step. White balance changes only when near-grey covers at least 15% of the photo; otherwise the camera's is kept.
 

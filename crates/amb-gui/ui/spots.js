@@ -176,7 +176,7 @@ function renderSpotPanel() {
   $("spot-count").textContent = `${list.length} spot(s)` + (legacy ? `, ${legacy} older` : "");
   $("spot-hint").textContent = s
     ? (s.note ? `${s.note}. ` : "") + "Drag the spot or its source to move them. Delete removes it; click elsewhere for a new one."
-    : "Click a blemish to remove it. Drag the dashed source circle to pick where it copies from. [ and ] or the wheel change the size."
+    : "Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag the dashed source circle to pick where it copies from. [ and ] or the wheel change the size."
       + (made ? ` ${made} spot(s) were filled by Lightroom itself; they are healed from a nearby area here.` : "");
   drawSpots();
 }
@@ -316,14 +316,15 @@ function wireSpots() {
       sp.drag = { ...hit, start: sFrame(px, py), orig: s, moved: false, patch: {} };
       renderSpotPanel();
     } else {
-      sp.drag = { add: true, start: [px, py], path: [[px, py]] };
+      // Shift: a straight line, healed along the scratch it finds.
+      sp.drag = { add: true, line: e.shiftKey, start: [px, py], path: [[px, py]] };
     }
   });
   c.addEventListener("pointermove", (e) => {
     const [px, py] = at(e);
     sp.hover = [px, py];
     const d = sp.drag;
-    if (d?.add) d.path.push([px, py]);
+    if (d?.add) d.line ? (d.path = [d.start, [px, py]]) : d.path.push([px, py]);
     if (d && !d.add) {
       const pt = sFrame(px, py);
       const dx = pt[0] - d.start[0];
@@ -359,7 +360,8 @@ function wireSpots() {
         renderSpotPanel();
       }
       // A click adds a round spot; a drag paints a brushed one.
-      if (far < 6) addSpotAt(sFrame(px, py));
+      if (d.line && far >= 6) healLine(sFrame(...d.start), sFrame(px, py));
+      else if (far < 6) addSpotAt(sFrame(px, py));
       else addBrushedSpot(d.path.map(([x, y]) => sFrame(x, y)));
       drawSpots();
       return;
@@ -400,6 +402,18 @@ function wireSpots() {
   $("spot-done").addEventListener("click", () => exitSpots());
   $("preview").addEventListener("load", () => drawSpots());
   new ResizeObserver(() => drawSpots()).observe($("viewer"));
+}
+
+// A straight scratch: the line moves onto it and is healed in pieces.
+async function healLine(from, to) {
+  try {
+    const r = await invoke("heal_line", { from, to });
+    setState(r.state);
+    requestPreview(false);
+    drawSpots();
+  } catch (err) {
+    toast(String(err), true);
+  }
 }
 
 // Dust and hairs on the scan, healed as spots in one undo step.

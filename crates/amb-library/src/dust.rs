@@ -82,48 +82,77 @@ pub fn spots_for(
             found.covered += 1;
             continue;
         }
-        let radius = (d.radius + MARGIN) / wf;
-        let frac = |p: (f64, f64)| [(p.0 + 0.5) / wf, (p.1 + 0.5) / hf];
-        let command = if d.is_hair() {
-            // A brushed spot copies its stroke's box centre from `source`.
-            let (x0, x1) = d
-                .path
-                .iter()
-                .fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.0), b.max(p.0)));
-            let (y0, y1) = d
-                .path
-                .iter()
-                .fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.1), b.max(p.1)));
-            let middle = ((x0 + x1) / 2.0, (y0 + y1) / 2.0);
+        if d.is_hair() {
             found.hairs += 1;
-            Command::AddSpot {
-                at: frac(middle),
-                radius,
-                kind: Some("heal".into()),
-                source: Some(frac((middle.0 + d.donor.0, middle.1 + d.donor.1))),
-                source_auto: true,
-                feather: FEATHER,
-                opacity: 100.0,
-                points: Some(d.path.iter().map(|&p| frac(p)).collect()),
-            }
         } else {
             found.specks += 1;
-            Command::AddSpot {
-                at: frac(d.centre),
-                radius,
-                kind: Some("heal".into()),
-                source: Some(frac((d.centre.0 + d.donor.0, d.centre.1 + d.donor.1))),
-                source_auto: true,
-                feather: FEATHER,
-                opacity: 100.0,
-                points: None,
-            }
-        };
+        }
+        let command = spot_command(d, w, h);
         found.commands.push(command);
         let r = d.radius + MARGIN;
         taken.extend(d.path.iter().map(|&p| (p, r)));
     }
     found
+}
+
+/// The heal spot for one defect (pixels of a `w`×`h` image): round for a
+/// speck, brushed along a hair or a line.
+pub fn spot_command(d: &Defect, w: usize, h: usize) -> Command {
+    let (wf, hf) = (w as f64, h as f64);
+    let radius = (d.radius + MARGIN) / wf;
+    let frac = |p: (f64, f64)| [(p.0 + 0.5) / wf, (p.1 + 0.5) / hf];
+    if d.is_hair() {
+        // A brushed spot copies its stroke's box centre from `source`.
+        let (x0, x1) = d
+            .path
+            .iter()
+            .fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.0), b.max(p.0)));
+        let (y0, y1) = d
+            .path
+            .iter()
+            .fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.1), b.max(p.1)));
+        let middle = ((x0 + x1) / 2.0, (y0 + y1) / 2.0);
+        Command::AddSpot {
+            at: frac(middle),
+            radius,
+            kind: Some("heal".into()),
+            source: Some(frac((middle.0 + d.donor.0, middle.1 + d.donor.1))),
+            source_auto: true,
+            feather: FEATHER,
+            opacity: 100.0,
+            points: Some(d.path.iter().map(|&p| frac(p)).collect()),
+        }
+    } else {
+        Command::AddSpot {
+            at: frac(d.centre),
+            radius,
+            kind: Some("heal".into()),
+            source: Some(frac((d.centre.0 + d.donor.0, d.centre.1 + d.donor.1))),
+            source_auto: true,
+            feather: FEATHER,
+            opacity: 100.0,
+            points: None,
+        }
+    }
+}
+
+/// A straight scratch along a line from `from` to `to` (fractions of the
+/// photo): the line moved onto the scratch, as brushed heal spots, one per
+/// piece.
+pub fn line_image(img: &CameraImage, from: [f64; 2], to: [f64; 2]) -> Vec<Command> {
+    let (wf, hf) = (img.width as f64, img.height as f64);
+    let px = |p: [f64; 2]| (p[0] * wf - 0.5, p[1] * hf - 0.5);
+    dust::line(&img.rgb, img.width, img.height, px(from), px(to))
+        .iter()
+        .map(|d| spot_command(d, img.width, img.height))
+        .collect()
+}
+
+/// [`line_image`] on a photo's raw.
+pub fn line_file(photo: &Path, from: [f64; 2], to: [f64; 2]) -> Result<Vec<Command>, String> {
+    let source = amb_engine::source_path(photo);
+    let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
+    Ok(line_image(&img, from, to))
 }
 
 #[cfg(test)]

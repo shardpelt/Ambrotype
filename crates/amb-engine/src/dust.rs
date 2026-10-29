@@ -505,6 +505,169 @@ fn percentile(v: &mut [f32], q: f64) -> f32 {
     *v.select_nth_unstable_by(i, f32::total_cmp).1
 }
 
+/// A straight scratch along a line drawn from `a` to `b` (pixels), as
+/// pieces of at most 160 pixels (at 4,000 on the long side), each moved
+/// onto the scratch on its own, so a scratch that drifts a little is
+/// followed, and each healed from its own side. **Ours.** Where two pieces
+/// meet, their ends are joined halfway.
+pub fn line(rgb: &[f32], w: usize, h: usize, a: (f64, f64), b: (f64, f64)) -> Vec<Defect> {
+    let f: Vec<f32> = rgb
+        .chunks_exact(3)
+        .map(|p| ((p[0] + 2.0 * p[1] + p[2]) / 4.0).max(1e-4).ln())
+        .collect();
+    let scale = (w.max(h) as f64 / 4000.0).max(0.5);
+    let length = (b.0 - a.0).hypot(b.1 - a.1);
+    let pieces = ((length / (160.0 * scale)).ceil() as usize).max(1);
+    let mut out: Vec<Defect> = (0..pieces)
+        .map(|i| {
+            let t0 = i as f64 / pieces as f64;
+            let t1 = (i + 1) as f64 / pieces as f64;
+            let p = |t: f64| (a.0 + (b.0 - a.0) * t, a.1 + (b.1 - a.1) * t);
+            piece(&f, w, h, p(t0), p(t1))
+        })
+        .collect();
+    for i in 1..out.len() {
+        let (end, start) = (out[i - 1].path[1], out[i].path[0]);
+        let mid = ((end.0 + start.0) / 2.0, (end.1 + start.1) / 2.0);
+        out[i - 1].path[1] = mid;
+        out[i].path[0] = mid;
+    }
+    for d in &mut out {
+        d.centre = (
+            (d.path[0].0 + d.path[1].0) / 2.0,
+            (d.path[0].1 + d.path[1].1) / 2.0,
+        );
+    }
+    out
+}
+
+/// One piece of a scratch from `a` to `b`: the line moved onto it (each end
+/// up to `reach` pixels across), how wide it is, and a donor beside it.
+/// Each end is moved to where the line differs most from the bands on both
+/// sides of it, dark or light (a scratch through the emulsion shows light
+/// on a negative's scan, one in the base dark). Where nothing stands out,
+/// the line stays as drawn, a few pixels wide.
+fn piece(f: &[f32], w: usize, h: usize, a: (f64, f64), b: (f64, f64)) -> Defect {
+    let at = |x: f64, y: f64| -> Option<f32> {
+        let (xi, yi) = (x.round(), y.round());
+        (xi >= 0.0 && yi >= 0.0 && xi < w as f64 && yi < h as f64)
+            .then(|| f[yi as usize * w + xi as usize])
+    };
+    let scale = (w.max(h) as f64 / 4000.0).max(0.5);
+    let reach = (12.0 * scale).round().max(8.0) as i64;
+    let length = (b.0 - a.0).hypot(b.1 - a.1).max(1.0);
+    let (ux, uy) = ((b.0 - a.0) / length, (b.1 - a.1) / length);
+    let (nx, ny) = (-uy, ux);
+    let steps = length.ceil() as usize;
+    // The mean along the line from a+oa·n to b+ob·n, offset across by `by`.
+    let mean = |oa: f64, ob: f64, by: f64| -> f64 {
+        let (mut sum, mut n) = (0.0, 0.0);
+        for k in 0..=steps {
+            let t = k as f64 / steps as f64;
+            let o = oa + (ob - oa) * t + by;
+            if let Some(v) = at(
+                a.0 + (b.0 - a.0) * t + o * nx,
+                a.1 + (b.1 - a.1) * t + o * ny,
+            ) {
+                sum += v as f64;
+                n += 1.0;
+            }
+        }
+        if n > 0.0 { sum / n } else { 0.0 }
+    };
+    let side = 4.0 * scale.max(1.0);
+    // A ridge: darker (or lighter) than both bands, by the smaller step;
+    // a picture's edge is a step to one side only.
+    let contrast = |oa: f64, ob: f64| {
+        let on = mean(oa, ob, 0.0);
+        let (c1, c2) = (on - mean(oa, ob, side), on - mean(oa, ob, -side));
+        if c1 * c2 > 0.0 {
+            c1.signum() * c1.abs().min(c2.abs())
+        } else {
+            0.0
+        }
+    };
+    // In half pixels. A scratch wider than a pixel gives a plateau of
+    // nearly as good lines; its middle is the line.
+    let mut tried = Vec::new();
+    for oa in -2 * reach..=2 * reach {
+        for ob in -2 * reach..=2 * reach {
+            let (oa, ob) = (oa as f64 / 2.0, ob as f64 / 2.0);
+            tried.push((contrast(oa, ob), oa, ob));
+        }
+    }
+    let top = tried.iter().copied().fold((0.0f64, 0.0, 0.0), |b, t| {
+        if t.0.abs() > b.0.abs() { t } else { b }
+    });
+    let near: Vec<_> = tried
+        .iter()
+        .filter(|t| t.0 * top.0 > 0.0 && t.0.abs() >= 0.9 * top.0.abs())
+        .collect();
+    let n = near.len().max(1) as f64;
+    let (c, oa, ob) = (
+        top.0,
+        near.iter().map(|t| t.1).sum::<f64>() / n,
+        near.iter().map(|t| t.2).sum::<f64>() / n,
+    );
+    let snapped = c.abs() >= 0.04;
+    let (oa, ob) = if snapped { (oa, ob) } else { (0.0, 0.0) };
+    // Its width: the offsets across where the line still differs by half.
+    let half_width = if snapped {
+        let base = (mean(oa, ob, side * 2.0) + mean(oa, ob, -side * 2.0)) / 2.0;
+        let mut r = 0.0;
+        for k in 1..=(reach as usize * 2) {
+            let o = k as f64 * 0.5;
+            let inside = |by: f64| ((mean(oa, ob, by) - base) / c).max(0.0);
+            if inside(o).max(inside(-o)) >= 0.5 {
+                r = o;
+            } else {
+                break;
+            }
+        }
+        // No wider than a hair: past that the bands on either side are
+        // more likely a second scratch or the picture.
+        r.min(3.0 * scale.max(1.0))
+    } else {
+        1.5 * scale.max(1.0)
+    };
+    let pa = (a.0 + oa * nx, a.1 + oa * ny);
+    let pb = (b.0 + ob * nx, b.1 + ob * ny);
+    let radius = half_width + 1.0;
+    // The donor: across, on the side whose band is evener.
+    let gap = 2.5 * radius + 2.0;
+    let evenness = |by: f64| {
+        let v: Vec<f64> = (0..=steps)
+            .filter_map(|k| {
+                let t = k as f64 / steps as f64;
+                let o = oa + (ob - oa) * t + by;
+                at(
+                    a.0 + (b.0 - a.0) * t + o * nx,
+                    a.1 + (b.1 - a.1) * t + o * ny,
+                )
+                .map(f64::from)
+            })
+            .collect();
+        if v.len() < 2 {
+            return f64::MAX;
+        }
+        let m = v.iter().sum::<f64>() / v.len() as f64;
+        v.iter().map(|x| (x - m).powi(2)).sum::<f64>() / v.len() as f64
+    };
+    let by = if evenness(gap) <= evenness(-gap) {
+        gap
+    } else {
+        -gap
+    };
+    Defect {
+        centre: ((pa.0 + pb.0) / 2.0, (pa.1 + pb.1) / 2.0),
+        radius,
+        path: vec![pa, pb],
+        donor: (by * nx, by * ny),
+        contrast: c.abs(),
+        pixels: Vec::new(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -612,5 +775,39 @@ mod tests {
     fn a_clean_sky_has_none() {
         let (w, h) = (600, 400);
         assert!(find(&sky(w, h), w, h, true, &DEFAULT_DUST).is_empty());
+    }
+
+    #[test]
+    fn a_drawn_line_moves_onto_the_scratch() {
+        let (w, h) = (600, 400);
+        let mut rgb = sky(w, h);
+        // A light scratch, 2 pixels wide, a little slanted.
+        for x in 50..550 {
+            let y = 200 + (x - 50) / 50;
+            for c in 0..3 {
+                rgb[(y * w + x) * 3 + c] *= 3.0;
+                rgb[((y + 1) * w + x) * 3 + c] *= 3.0;
+            }
+        }
+        // Drawn a few pixels off.
+        let pieces = line(&rgb, w, h, (60.0, 195.0), (540.0, 213.0));
+        assert_eq!(pieces.len(), 7, "pieces of 80 pixels at this size");
+        for p in pieces.windows(2) {
+            assert_eq!(p[0].path[1], p[1].path[0], "joined");
+        }
+        let (pa, pb) = (pieces[0].path[0], pieces[6].path[1]);
+        let d = &pieces[0];
+        assert!(
+            (pa.1 - 200.5).abs() <= 1.0 && (pb.1 - 209.5).abs() <= 1.0,
+            "{d:?}"
+        );
+        assert!(d.radius >= 1.5 && d.radius <= 4.0, "{d:?}");
+        assert!(d.donor.1.abs() > d.radius, "{d:?}");
+        // Over nothing, the line stays as drawn.
+        let d = line(&sky(w, h), w, h, (60.0, 100.0), (540.0, 100.0));
+        assert_eq!(
+            (d[0].path[0], d[d.len() - 1].path[1]),
+            ((60.0, 100.0), (540.0, 100.0))
+        );
     }
 }

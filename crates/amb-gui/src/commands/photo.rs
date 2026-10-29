@@ -266,6 +266,28 @@ pub(crate) async fn find_dust(state: tauri::State<'_, AppState>) -> Res<Executed
     .map_err(|e| e.to_string())?
 }
 
+/// Heal a straight scratch along a line drawn on the photo, as one step.
+#[tauri::command]
+pub(crate) async fn heal_line(
+    from: [f64; 2],
+    to: [f64; 2],
+    state: tauri::State<'_, AppState>,
+) -> Res<Executed> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let cmds = s.scratch_spots(from, to);
+        s.execute(&cmds, Some("scratch"))?;
+        Ok(Executed {
+            state: s.state_info(),
+            notes: Vec::new(),
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// The mask tool's map from the shown photo to mask coordinates.
 #[tauri::command]
 pub(crate) fn mask_frame(state: tauri::State<'_, AppState>) -> Res<session::MaskFrame> {

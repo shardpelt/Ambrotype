@@ -1,6 +1,6 @@
 # Dust and hairs on film scans
 
-Status: v1 built 2026-10-29. Code: `crates/amb-engine/src/dust.rs` (the search), `crates/amb-library/src/dust.rs` (defects to spots), `amb dust`, and the Spot panel's **Find dust** button.
+Status: v1 built 2026-10-29, with a line tool for straight scratches. Code: `crates/amb-engine/src/dust.rs` (the search), `crates/amb-library/src/dust.rs` (defects to spots), `amb dust` (`--line` for a scratch), and the spot tool: the **Find dust** button, and Shift-drag for a scratch.
 
 ## What it does
 
@@ -34,6 +34,21 @@ On the scan, before a negative is turned positive, dust and hairs block light, s
 
 The heal itself is the spot tool's ([spot-removal.md](spot-removal.md)). It copies the donor whole, grain included, and matches it to the edge, so the grain carries across.
 
+## Straight scratches (the line tool)
+
+In the spot tool, Shift-drag along a scratch (or `amb dust PHOTO --line X0,Y0,X1,Y1`). There is no automatic search for them, since a long straight line is as likely a mast or a horizon.
+
+- The line is cut into pieces of at most 160 pixels (at 4,000 on the long side), so a scratch that drifts a little is followed.
+- Each piece's ends move up to 12 pixels across, half a pixel at a time, to where the line is a ridge: darker, or lighter, than the bands 4 pixels to both sides, by the smaller of the two steps. A picture's edge is a step to one side only, so it doesn't pull the line. Where several lines are nearly as good (a scratch wider than a pixel), the middle one is taken. Where nothing stands out (under 0.04), the piece stays where it was drawn.
+- Neighbouring pieces meet halfway.
+- Each piece becomes a brushed heal spot, as wide as the scratch (at most a hair's width), healed from the evener side.
+
+On the long scratch of the FILM-R Provia scan, drawn roughly along it, it follows the scratch over 1,600 pixels and takes it out; a second scratch beside it stays until it is drawn too. Faint seams can show where a piece crosses an edge of the picture.
+
+## Strength
+
+Each repair is a spot, so its strength is the spot's Opacity, and it can be selected, moved or deleted in the spot tool. There are no separate repair layers.
+
 ## The bench
 
 The FILM-R dataset (Ivanova, Williamson and Henderson, Eurographics 2023; CC BY 4.0) is 44 damaged 35 mm scans with an expert's repairs, as positive JPEGs. It is never committed:
@@ -51,8 +66,6 @@ On six of the scans (2026-10-29; three negatives, two slides, one Cinestill):
 
 ## Not yet
 
-- Long straight scratches: a line tool, with no automatic search, since a long line is as likely a horizon.
-- A scan's infrared channel (a fourth channel, or an `_ir` file), which shows dust directly.
+- A scan's infrared channel (a fourth channel, or an `_ir` file), which shows dust directly: parked until there is a scan with one to test on ([GAPS.md](../GAPS.md) §9).
 - A guided rectangle that searches harder in one area, and a heal brush that searches along its stroke.
 - Light defects on a scan (emulsion scratches on a negative show light there, dark once inverted).
-- Repairs as their own layers with an on switch and a strength; for now they are spots.

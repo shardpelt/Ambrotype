@@ -87,11 +87,13 @@ USAGE:
                                             colour) and the white balance (as Auto), from the photo's own
                                             look; --tone or --wb for one of them. Shows the changes;
                                             --apply makes them one undoable step
-    amb dust <PHOTO> [--apply] [--json]     Dust and hairs on a film scan (darker specks and short curved
+    amb dust <PHOTO> [--line X0,Y0,X1,Y1] [--apply] [--json]
+                                            Dust and hairs on a film scan (darker specks and short curved
                                             lines on smooth ground; not long straight scratches), each as a
                                             heal spot with its donor. Shows them; --apply adds them as one
                                             undoable step. Spots already there are kept, and a second run
-                                            adds only new ones
+                                            adds only new ones. --line heals a straight scratch along a line
+                                            (photo fractions, roughly drawn: it moves onto the scratch)
     amb stats <PHOTO> [--preset P] [--amount A] [--json]
                                             The photo developed small (with its edit, or a preset) as a
                                             few numbers instead of a picture: L* percentiles, clipped
@@ -301,6 +303,7 @@ fn main() -> ExitCode {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
+            | "--line"
             | "--groups"
             | "--synthetic"
             | "--preset"
@@ -520,9 +523,7 @@ fn main() -> ExitCode {
             json,
         )
         .map(|t| println!("{t}")),
-        ["dust", photo] => {
-            dust(Path::new(photo), options.contains_key("--apply"), json).map(|t| println!("{t}"))
-        }
+        ["dust", photo] => dust(Path::new(photo), &options, json).map(|t| println!("{t}")),
         ["stats", photo] => stats(Path::new(photo), &options, json).map(|t| println!("{t}")),
         ["query", state] => match options.get("--queries") {
             Some(queries) => query(Path::new(state), queries),

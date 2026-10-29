@@ -60,3 +60,32 @@ fn finds_dust_and_heals_it_once() {
     assert_eq!(again["covered"], 9);
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+#[test]
+fn a_line_drawn_near_the_wire_moves_onto_it() {
+    let dir = std::env::temp_dir().join(format!("amb-cli-dust-line-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    amb(&dir, &["testimage", "dust", "slide.dng"]);
+    // The wire is on rows 120-121 of 800; drawn 4 rows off.
+    let found: serde_json::Value = serde_json::from_str(&amb(
+        &dir,
+        &[
+            "dust",
+            "slide.dng",
+            "--line",
+            "0.1,0.155,0.9,0.155",
+            "--json",
+        ],
+    ))
+    .unwrap();
+    let spots = found["spots"].as_array().unwrap();
+    assert!(spots.len() >= 2, "{found}");
+    for spot in spots {
+        for p in spot["points"].as_array().unwrap() {
+            let y = p[1].as_f64().unwrap() * 800.0;
+            assert!((y - 121.0).abs() <= 1.0, "a point off the wire: {spot}");
+        }
+    }
+    std::fs::remove_dir_all(&dir).unwrap();
+}

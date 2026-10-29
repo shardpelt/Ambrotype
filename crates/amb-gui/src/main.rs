@@ -597,6 +597,7 @@ fn main() {
             commands::photo::mask_sliders,
             commands::photo::spot_source,
             commands::photo::find_dust,
+            commands::photo::heal_line,
             commands::presets::size_presets,
             commands::presets::save_size_preset,
             commands::presets::delete_size_preset,

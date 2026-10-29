@@ -327,7 +327,7 @@ await t.step("Pick base: a click on the photo stores the film base; Alt-click fo
   await t.until("the photo as it was", () => !t.setting("amb:NegativeConvert"));
 });
 
-await t.step("Find dust in the Spot panel: none on a clean chart, and no history step", async () => {
+await t.step("Spot panel: Find dust finds none on a clean chart; Shift-drag heals a line as one step", async () => {
   t.key("Q");
   await t.until("the spot tool", () => sp.on && !$("spot-panel").hidden);
   const steps = t.historyLength();
@@ -336,6 +336,17 @@ await t.step("Find dust in the Spot panel: none on a clean chart, and no history
   await t.until("its note", () => !$("toast").hidden && $("toast").textContent.includes("dust"), 60000);
   t.expect($("toast").textContent.startsWith("No dust found"), `the note: ${$("toast").textContent}`);
   t.expect(t.historyLength() === steps, "no history step");
+  // Shift-drag heals along a straight line, as one step.
+  const before = spotList().length;
+  const c = $("spot-canvas").getBoundingClientRect();
+  const pt = (fx, fy, extra = {}) => ({ clientX: c.left + c.width * fx, clientY: c.top + c.height * fy, button: 0, shiftKey: true, bubbles: true, pointerId: 1, ...extra });
+  $("spot-canvas").dispatchEvent(new PointerEvent("pointerdown", pt(0.3, 0.5)));
+  $("spot-canvas").dispatchEvent(new PointerEvent("pointermove", pt(0.5, 0.52)));
+  $("spot-canvas").dispatchEvent(new PointerEvent("pointerup", pt(0.7, 0.55)));
+  await t.until("the scratch healed", () => spotList().length > before, 30000);
+  t.expect(t.historyLength() === steps + 1, "one history step");
+  t.key("Ctrl+Z");
+  await t.until("undone", () => spotList().length === before);
   t.click("#spot-done");
   await t.until("the spot tool closed", () => !sp.on);
 });

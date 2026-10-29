@@ -105,7 +105,7 @@ Each idea is rebuilt from the description, in our pipeline and our `amb:` namesp
    - a stored roll base
 
    M.
-3. **Cast removal along the greys** (NegPy). Fit red and blue to green using the frame's least-saturated pixels in shadows, midtones and highlights, with a strength slider. Fixes the sunset case in GAPS §9. M.
+3. **Cast removal along the greys** (NegPy; built 2026-10-29 as `amb:NegativeCastRemoval`). Fit red and blue to green using the frame's least-saturated pixels in shadows, midtones and highlights, with a strength slider. Fixes the sunset case in GAPS §9. M.
 4. **Separate Auto Density and Auto Grade** (NegPy):
    - metered only on parts of the frame with detail
    - pulled only part-way toward a typical value

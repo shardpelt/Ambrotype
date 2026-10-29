@@ -166,7 +166,7 @@ All of these are "Model v1 (ours, not Adobe's)": every constant is a starting gu
 
 | Item | Tag | Impact | Source |
 |---|---|---|---|
-| Auto levels assume the deepest shadows and brightest highlights are close to neutral; this fails on sunset-type rolls (workaround: freeze values from another frame) | Limit | Colour casts on unusual scenes | [design/film-negatives.md](design/film-negatives.md):34; cast removal along the greys: [research/16](research/16-film-scan-apps-survey.md) §6 item 3 |
+| Auto levels assume the deepest shadows and brightest highlights are close to neutral; this fails on sunset-type rolls. Cast removal (2026-10-29, off by default) reads the greys at five levels instead; tried on a synthetic sunset and two real frames only, and it leaves frames with few greys (night scenes) alone | Limit | Colour casts on unusual scenes | [design/film-negatives.md](design/film-negatives.md):34 |
 | Auto off without stored levels measures each colour layer's share of the range on the photo (2026-10-28, after fixed shares turned real scans yellow), so its colour still depends a little on the scene: a slight green-cyan tint on some daylight frames of the BlueNeg test. Sync negative roll, or per-film shares, would fix it | Limit | Colour rolls printed with Auto off | [design/film-negatives.md](design/film-negatives.md) (Tried on real scans); `crates/amb-engine/src/negative.rs` (`resolve`) |
 | Telling bare light (unclipped sprocket holes, gaps) from the film base is our own rule, tried only on synthetic scans (the BlueNeg frames have no rebate). Expired film's crossover was tried on eight BlueNeg frames (2026-10-28): it fixes a faded blue layer's S-shaped cast; a scene with little grey in it can still pull it (kept within ±0.18) | Approx | Real-scan quality partly known | `crates/amb-engine/src/negative.rs` (`estimate_base`, `crossover`); [design/film-negatives.md](design/film-negatives.md) |
 | No dust and scratch removal (infrared channel where available) | Missing | Scan quality | [design/film-negatives.md](design/film-negatives.md):70; plan: [research/16](research/16-film-scan-apps-survey.md) §6 item 9 |
@@ -189,7 +189,7 @@ All of these are "Model v1 (ours, not Adobe's)": every constant is a starting gu
 | `.cube` LUTs work (`amb:LUT`, Basic → Profile → LUT) but assume sRGB input and output, store the file's path as is (a moved sidecar needs the file at the same place), and run on the CPU inside the GPU preview (a read-back each render) | Limit | Log or wide-gamut LUTs look wrong | [design/luts.md](design/luts.md) |
 | HDR editing tags (`HDREditMode`, `HDRMaxValue`, `SDR*`, 9 tags) unsupported | Limit | HDR-edited photos render as SDR | `crates/amb-presets/data/tags.json` (group `hdr`); [SCOPE.md](SCOPE.md):332 |
 | Tag registry ranges, defaults and steps are best-known values, mostly unverified; several (Point Color, LensBlur, HDR tags, mask enums) are from memory | Question | Wrong clamping or defaults change preset results | `crates/amb-presets/data/tags.json`:2; `crates/amb-protocol/src/reference.rs`:75; [research/02](research/02-preset-and-profile-formats.md):329 |
-| No crs: tag has status "exact": all 105 rendered Camera Raw tags are "approx". The 13 "exact" tags are our own `amb:` negative settings | Approx | No Camera Raw setting is yet fitted to Lightroom | `crates/amb-presets/data/tags.json` |
+| No crs: tag has status "exact": all 157 rendered Camera Raw tags are "approx". The 19 "exact" tags are our own `amb:` settings (negative 16, LUT 2, Effects 1) | Approx | No Camera Raw setting is yet fitted to Lightroom | `crates/amb-presets/data/tags.json` |
 | Preset corpus (purchased and free presets, private, never committed) not assembled for end-to-end regression | Missing | No whole-preset fidelity score is possible | [lightroom-trial-plan.md](lightroom-trial-plan.md):15, 55 |
 
 ### Tag registry status (253 tags, 2026-10-08)
@@ -198,12 +198,12 @@ Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the plann
 
 | Status | Tags | Notes |
 |---|---|---|
-| approx | 136 | rendered with an unfitted model: tone, presence, tone curve (11), HSL (24), color grading (13), split toning (5), detail (10), effects (10), lens (18), white balance (5), B&W mixer (9), local (masks) 4, transform 8, calibration 7, profile 1 (`CameraProfile`, when the `.dcp` is found) |
-| planned | 16 | tone_legacy 7 of 7; point_color 1 of 1; profile 5 of 6 (`CameraProfileDigest`, `Look`, `RGBTable`, `LookTable`, `OverrideLookVignette`); tone_curve 3 (`ToneCurve`, `ToneCurveName`, `ToneCurveName2012`) |
+| approx | 157 | rendered with an unfitted model: tone 6, tone_legacy 7, presence 5, tone curve 12, HSL 25, color grading 14, split toning 5, detail 11, effects 11, lens 19, white balance 5, B&W mixer 10, local (masks) 8, transform 9, calibration 8, retouch 1, profile 1 (`CameraProfile`, when the `.dcp` is found) |
+| planned | 10 | profile 5 of 6 (`CameraProfileDigest`, `Look`, `RGBTable`, `LookTable`, `OverrideLookVignette`); tone_curve 3 (`ToneCurve`, `ToneCurveName`, `ToneCurveName2012`); point_color 1 of 1; `EnableRedEye` |
 | unsupported | 18 | enhance 8; hdr 9; lens_blur 1 |
-| image-specific | 41 | crop 12; transform 17; negative 10; bw_mixer 1; tone 1 (not expected in presets; also not rendered, because there is no crop) |
-| exact | 13 | our own `amb:` negative settings only |
-| metadata | 26 | preset descriptors and process version |
+| image-specific | 43 | crop 12; transform 17; negative 12; bw_mixer 1; tone 1 (not expected in presets; also not rendered, because there is no crop) |
+| exact | 19 | our own `amb:` settings only: negative 16, LUT 2, Effects 1 |
+| metadata | 27 | preset descriptors and process version |
 | ignored-in-presets | 3 | `RetouchAreas`, `RetouchInfo`, `RedEyeInfo`, by design (the first two render as spots) |
 
 ## 11. Export
@@ -292,7 +292,7 @@ Items that can only be settled with a Lightroom subscription. They are batched i
 
 Chosen by impact on the main goal: faithful Lightroom preset compatibility, free, cross-platform.
 
-1. **Run the Lightroom measurement month and fit the `Calibration` constants.** Every one of the 120 rendered Camera Raw tags is "approx"; nothing has been fitted, so no fidelity claim can be made. Finish the prerequisites first (interaction sidecars, run sheet, CC0 raws, `dng_validate` check).
+1. **Run the Lightroom measurement month and fit the `Calibration` constants.** Every one of the 157 rendered Camera Raw tags is "approx"; nothing has been fitted, so no fidelity claim can be made. Finish the prerequisites first (interaction sidecars, run sheet, CC0 raws, `dng_validate` check).
 2. **Replace the placeholder base look and add camera profiles.** Every preset renders through the profile, and the placeholder ACES-fit curve is not Adobe's; read the user's own DCPs in place, fit substitute profiles, and decode `Look` LUTs.
 3. ~~**Local, edge-aware Highlights and Shadows.**~~ Done 2026-10-08; their strengths still need fitting (item 1).
 4. ~~**Masks and local adjustments (linear, radial, brush, range).**~~ Done 2026-10-08; their fall-offs and strengths still need fitting (item 1).

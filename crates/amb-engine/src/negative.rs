@@ -68,6 +68,17 @@ pub struct NegativeStrengths {
     pub crossover_at: [f64; 3],
     pub crossover_window: f64,
     pub crossover_limit: f64,
+    /// Cast removal: the levels (of green, 0..1) where the greys are read,
+    /// how far around each, the least share of a level's pixels a colour
+    /// needs to be a candidate grey, how near the line of greys a candidate
+    /// must sit, the least share of the frame's pixels the greys must
+    /// cover, and the most a layer's lift or slope against green may change.
+    pub cast_at: [f64; 5],
+    pub cast_window: f64,
+    pub cast_share: f64,
+    pub cast_tolerance: f64,
+    pub cast_coverage: f64,
+    pub cast_limit: f64,
 }
 
 impl Default for NegativeStrengths {
@@ -94,6 +105,12 @@ pub const DEFAULT_STRENGTHS: NegativeStrengths = NegativeStrengths {
     crossover_at: [0.25, 0.5, 0.75],
     crossover_window: 0.15,
     crossover_limit: 0.18,
+    cast_at: [0.15, 0.3, 0.5, 0.7, 0.85],
+    cast_window: 0.08,
+    cast_share: 0.03,
+    cast_tolerance: 0.04,
+    cast_coverage: 0.1,
+    cast_limit: 0.3,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -129,6 +146,9 @@ pub struct Negative {
     pub expired: bool,
     /// Stored crossover (used when `auto` is off and `expired` is on).
     pub crossover: Option<Crossover>,
+    /// Cast removal along the greys, 0..100: how far measured levels move
+    /// so the frame's greys come out grey (stored levels already have it).
+    pub cast_removal: f64,
     /// Print exposure in EV.
     pub exposure: f64,
     /// −100..100 each.
@@ -155,6 +175,7 @@ impl Default for Negative {
             range: DEFAULT_RANGE,
             expired: false,
             crossover: None,
+            cast_removal: 0.0,
             exposure: 0.0,
             contrast: 0.0,
             balance: [0.0; 3],
@@ -599,23 +620,182 @@ fn levels(samples: &[[f64; 3]], base: [f64; 3], k: &NegativeStrengths) -> Analys
         density_low[c] = percentile(&mut d, k.level_low);
         density_high[c] = percentile(&mut d, k.level_high).max(density_low[c] + 0.05);
     }
-    let mut mids: Vec<f64> = samples
-        .iter()
-        .map(|p| {
-            (0..3)
-                .map(|c| (p[c] - density_low[c]) / (density_high[c] - density_low[c]))
-                .sum::<f64>()
-                / 3.0
-        })
-        .collect();
-    let midtone = percentile(&mut mids, 0.5).clamp(0.25, 0.75);
     Analysis {
         base,
         density_low,
         density_high,
-        midtone,
+        midtone: midtone(samples, density_low, density_high),
         crossover: NO_CROSSOVER,
     }
+}
+
+/// The midtone: the median of the samples between the levels.
+fn midtone(samples: &[[f64; 3]], low: [f64; 3], high: [f64; 3]) -> f64 {
+    let mut mids: Vec<f64> = samples
+        .iter()
+        .map(|p| {
+            (0..3)
+                .map(|c| (p[c] - low[c]) / (high[c] - low[c]))
+                .sum::<f64>()
+                / 3.0
+        })
+        .collect();
+    percentile(&mut mids, 0.5).clamp(0.25, 0.75)
+}
+
+/// The samples between the levels, 0..1 per layer.
+fn normalise(samples: &[[f64; 3]], a: &Analysis) -> Vec<[f64; 3]> {
+    samples
+        .iter()
+        .map(|p| {
+            std::array::from_fn(|c| {
+                (p[c] - a.density_low[c]) / (a.density_high[c] - a.density_low[c])
+            })
+        })
+        .collect()
+}
+
+/// Cast removal along the greys. **Ours.** The levels make each layer's
+/// ends meet, which takes a cast out only when the deepest shadow and the
+/// brightest highlight are grey: a sunset's orange sky or a lamp's glow
+/// puts a cast of their own into everything else. This reads the greys at
+/// five levels of green instead. At each level, the colours (red and blue
+/// against green) that at least `cast_share` of its pixels share are the
+/// candidates. The greys are the straight line (a layer's lift and slope
+/// against green) that the most pixels' candidates agree with, within
+/// `cast_tolerance`: greys of one cast line up from shadows to highlights,
+/// a coloured sky or wall sits off the line at its own level. The line
+/// through two or more agreeing levels moves red's and blue's levels, by
+/// `strength` (0..1). Without two, or when those greys are fewer than
+/// `cast_coverage` of the frame's pixels (a night scene: its dark sky sits
+/// in the film's toe and on the scanner's noise), nothing changes.
+fn remove_cast(
+    samples: &[[f64; 3]],
+    a: &Analysis,
+    strength: f64,
+    k: &NegativeStrengths,
+) -> Analysis {
+    let normal = normalise(samples, a);
+    const BIN: f64 = 0.02;
+    let key = |v: &[f64; 3]| {
+        (
+            ((v[0] - v[1]) / BIN).round() as i32,
+            ((v[2] - v[1]) / BIN).round() as i32,
+        )
+    };
+    let near = |a: (i32, i32), b: (i32, i32)| (a.0 - b.0).abs() <= 1 && (a.1 - b.1).abs() <= 1;
+    // Candidates: (green level, red offset, blue offset, pixels).
+    let mut candidates: Vec<(f64, f64, f64, f64)> = Vec::new();
+    for &at in &k.cast_at {
+        let level: Vec<&[f64; 3]> = normal
+            .iter()
+            .filter(|v| (v[1] - at).abs() <= k.cast_window)
+            .collect();
+        if level.len() < 64 {
+            continue;
+        }
+        let mut counts = std::collections::BTreeMap::new();
+        for v in &level {
+            *counts.entry(key(v)).or_insert(0usize) += 1;
+        }
+        let around = |at: (i32, i32)| -> usize {
+            counts
+                .iter()
+                .filter(|(k, _)| near(**k, at))
+                .map(|(_, n)| n)
+                .sum()
+        };
+        let enough = ((level.len() as f64 * k.cast_share).ceil() as usize).max(16);
+        // Each colour shared widely enough, strongest first, one per patch.
+        let mut bins: Vec<((i32, i32), usize)> = counts
+            .keys()
+            .map(|b| (*b, around(*b)))
+            .filter(|(_, n)| *n >= enough)
+            .collect();
+        bins.sort_by(|x, y| y.1.cmp(&x.1).then(x.0.cmp(&y.0)));
+        let mut taken: Vec<(i32, i32)> = Vec::new();
+        for (b, _) in bins {
+            if taken
+                .iter()
+                .any(|t| (t.0 - b.0).abs() <= 2 && (t.1 - b.1).abs() <= 2)
+            {
+                continue;
+            }
+            taken.push(b);
+            let members: Vec<&&[f64; 3]> = level.iter().filter(|v| near(key(v), b)).collect();
+            let mut r: Vec<f64> = members.iter().map(|v| v[0] - v[1]).collect();
+            let mut bl: Vec<f64> = members.iter().map(|v| v[2] - v[1]).collect();
+            candidates.push((
+                at,
+                percentile(&mut r, 0.5),
+                percentile(&mut bl, 0.5),
+                members.len() as f64,
+            ));
+        }
+    }
+    // A line is ((red lift, red slope), (blue lift, blue slope)); each level
+    // agrees through its candidate nearest the line, if near enough.
+    type Line = ((f64, f64), (f64, f64));
+    let agreeing = |line: Line| -> Vec<(f64, f64, f64, f64)> {
+        let mut out: Vec<(f64, f64, f64, f64)> = Vec::new();
+        for &at in &k.cast_at {
+            let miss = |c: &(f64, f64, f64, f64)| {
+                (c.1 - line.0.0 - line.0.1 * at).hypot(c.2 - line.1.0 - line.1.1 * at)
+            };
+            if let Some(c) = candidates
+                .iter()
+                .filter(|c| c.0 == at && miss(c) <= k.cast_tolerance)
+                .min_by(|x, y| miss(x).total_cmp(&miss(y)))
+            {
+                out.push(*c);
+            }
+        }
+        out
+    };
+    let mut lines: Vec<Line> = vec![((0.0, 0.0), (0.0, 0.0))];
+    for (i, p) in candidates.iter().enumerate() {
+        for q in &candidates[i + 1..] {
+            if q.0 != p.0 {
+                let (sr, sb) = ((q.1 - p.1) / (q.0 - p.0), (q.2 - p.2) / (q.0 - p.0));
+                lines.push(((p.1 - sr * p.0, sr), (p.2 - sb * p.0, sb)));
+            }
+        }
+    }
+    let weight = |cs: &[(f64, f64, f64, f64)]| cs.iter().map(|c| c.3).sum::<f64>();
+    let Some(greys) = lines
+        .into_iter()
+        .map(agreeing)
+        .filter(|cs| cs.len() >= 2)
+        .max_by(|x, y| weight(x).total_cmp(&weight(y)))
+    else {
+        return *a;
+    };
+    // The weighted straight line through the agreeing greys, per layer.
+    let w = weight(&greys);
+    if w < k.cast_coverage * normal.len() as f64 {
+        return *a;
+    }
+    let mx = greys.iter().map(|g| g.0 * g.3).sum::<f64>() / w;
+    let sxx: f64 = greys.iter().map(|g| g.3 * (g.0 - mx).powi(2)).sum();
+    let fit = |get: fn(&(f64, f64, f64, f64)) -> f64| {
+        let my = greys.iter().map(|g| get(g) * g.3).sum::<f64>() / w;
+        let sxy: f64 = greys.iter().map(|g| g.3 * (g.0 - mx) * (get(g) - my)).sum();
+        let slope = (sxy / sxx.max(1e-9)).clamp(-k.cast_limit, k.cast_limit);
+        ((my - slope * mx).clamp(-k.cast_limit, k.cast_limit), slope)
+    };
+    let line = [fit(|g| g.1), (0.0, 0.0), fit(|g| g.2)];
+    // A grey of green level x sits at lift + (1 + slope)·x in this layer;
+    // its levels move so that it lands on x.
+    let mut out = *a;
+    for c in [0, 2] {
+        let (lift, slope) = (line[c].0 * strength, line[c].1 * strength);
+        let range = a.density_high[c] - a.density_low[c];
+        out.density_low[c] = a.density_low[c] + lift * range;
+        out.density_high[c] =
+            (a.density_low[c] + (lift + 1.0 + slope) * range).max(out.density_low[c] + 0.05);
+    }
+    out.midtone = midtone(samples, out.density_low, out.density_high);
+    out
 }
 
 /// Expired film's crossover. **Ours.** Old film loses speed and contrast
@@ -627,14 +807,7 @@ fn levels(samples: &[[f64; 3]], base: [f64; 3], k: &NegativeStrengths) -> Analys
 /// (greys of one cast cluster, coloured things scatter); a level without
 /// enough of them is left alone.
 fn crossover(samples: &[[f64; 3]], a: &Analysis, k: &NegativeStrengths) -> Crossover {
-    let normal: Vec<[f64; 3]> = samples
-        .iter()
-        .map(|p| {
-            std::array::from_fn(|c| {
-                (p[c] - a.density_low[c]) / (a.density_high[c] - a.density_low[c])
-            })
-        })
-        .collect();
+    let normal = normalise(samples, a);
     const BIN: f64 = 0.02;
     let key = |v: &[f64; 3]| {
         (
@@ -764,6 +937,10 @@ pub fn resolve(n: &Negative, whole: Scan, metered: Scan, k: &NegativeStrengths) 
             crossover: NO_CROSSOVER,
         }
     };
+    let stored = !n.auto && n.density_low.is_some() && n.density_high.is_some();
+    if n.cast_removal > 0.0 && n.kind != NegativeType::BlackAndWhite && !stored {
+        a = remove_cast(samples(), &a, (n.cast_removal / 100.0).clamp(0.0, 1.0), k);
+    }
     if n.expired && n.kind != NegativeType::BlackAndWhite {
         a.crossover = match (n.auto, n.crossover) {
             (false, Some(stored)) => stored,
@@ -1371,6 +1548,130 @@ mod tests {
         };
         let a = resolve(&n, scan_of(&bowed, w, h), scan_of(&bowed, w, h), &K);
         assert_eq!(a.crossover, NO_CROSSOVER);
+    }
+
+    /// A sunset-like scene: greys from shadow to midtone over half the
+    /// frame, a bright orange sky over a quarter, dark silhouettes below.
+    fn sunset(w: usize, h: usize, sky: bool) -> Vec<f32> {
+        let mut rgb = vec![0.0f32; w * h * 3];
+        for y in 0..h {
+            for x in 0..w {
+                let t = x as f64 / w as f64;
+                let scene = match (y * 4) / h {
+                    0 | 1 => [0.02 + 0.3 * t; 3],
+                    2 if sky => {
+                        let s = 0.4 + 0.6 * t;
+                        [s, 0.55 * s, 0.25 * s]
+                    }
+                    2 => [0.05 + 0.25 * t; 3],
+                    _ => [0.006 + 0.004 * t; 3],
+                };
+                rgb[(y * w + x) * 3..(y * w + x) * 3 + 3].copy_from_slice(&negative_of(scene));
+            }
+        }
+        rgb
+    }
+
+    /// How far a pixel is from grey (|ln r/g| + |ln b/g|) and its red to
+    /// blue ratio, after converting with Cast removal at `strength`.
+    fn after_cast_removal(
+        rgb: &[f32],
+        w: usize,
+        h: usize,
+        strength: f64,
+        at: (f64, f64),
+    ) -> (f64, f64) {
+        let n = Negative {
+            enabled: true,
+            base: Some(BASE),
+            cast_removal: strength,
+            ..Default::default()
+        };
+        let a = resolve(&n, scan_of(rgb, w, h), scan_of(rgb, w, h), &K);
+        let mut out = rgb.to_vec();
+        apply(&mut out, &Conversion::new(&n, a, &K));
+        let i = (((h as f64 * at.1) as usize) * w + (w as f64 * at.0) as usize) * 3;
+        let (r, g, b) = (out[i] as f64, out[i + 1] as f64, out[i + 2] as f64);
+        ((r / g).ln().abs() + (b / g).ln().abs(), r / b)
+    }
+
+    #[test]
+    fn cast_removal_finds_the_greys_under_an_orange_sky() {
+        let (w, h) = (300, 200);
+        let scan = sunset(w, h, true);
+        for x in [0.3, 0.6, 0.9] {
+            let (plain, _) = after_cast_removal(&scan, w, h, 0.0, (x, 0.25));
+            let (mended, _) = after_cast_removal(&scan, w, h, 100.0, (x, 0.25));
+            assert!(
+                mended < plain * 0.4,
+                "grey at {x}: plain {plain}, cast removal {mended}"
+            );
+            assert!(mended < 0.05, "grey at {x}: {mended}");
+        }
+        // The sky stays orange, more so than when the levels made it grey.
+        let (_, plain) = after_cast_removal(&scan, w, h, 0.0, (0.5, 0.625));
+        let (_, mended) = after_cast_removal(&scan, w, h, 100.0, (0.5, 0.625));
+        assert!(
+            mended > plain && mended > 1.5,
+            "sky r/b: plain {plain}, cast removal {mended}"
+        );
+        // Half way is about half the change.
+        let (half, _) = after_cast_removal(&scan, w, h, 50.0, (0.6, 0.25));
+        let (plain, _) = after_cast_removal(&scan, w, h, 0.0, (0.6, 0.25));
+        assert!(
+            half < plain * 0.8 && half > plain * 0.2,
+            "half {half}, plain {plain}"
+        );
+        // A frame that is grey already stays grey.
+        let grey = sunset(w, h, false);
+        let (plain, _) = after_cast_removal(&grey, w, h, 0.0, (0.6, 0.25));
+        let (mended, _) = after_cast_removal(&grey, w, h, 100.0, (0.6, 0.25));
+        assert!(
+            mended < plain + 0.02,
+            "grey frame: plain {plain}, cast removal {mended}"
+        );
+        // A frame with few greys in it is left alone.
+        let mut colourful = sunset(w, h, true);
+        for y in h / 20..h {
+            for x in 0..w {
+                let (t, u) = (x as f64 / w as f64, y as f64 / h as f64);
+                let hue = std::f64::consts::TAU * (t + 0.37 * u);
+                let v = 0.02 + 0.3 * u;
+                let scene = [0.0, 2.1, 4.2].map(|o| v * (1.0 + 0.8 * (hue + o).cos()));
+                colourful[(y * w + x) * 3..(y * w + x) * 3 + 3]
+                    .copy_from_slice(&negative_of(scene));
+            }
+        }
+        let n = Negative {
+            enabled: true,
+            base: Some(BASE),
+            ..Default::default()
+        };
+        let removing = Negative {
+            cast_removal: 100.0,
+            ..n.clone()
+        };
+        let few = scan_of(&colourful, w, h);
+        assert_eq!(resolve(&removing, few, few, &K), resolve(&n, few, few, &K));
+        // Stored levels already hold it.
+        let plain = Negative {
+            enabled: true,
+            base: Some(BASE),
+            ..Default::default()
+        };
+        let a = resolve(&plain, scan_of(&scan, w, h), scan_of(&scan, w, h), &K);
+        let n = Negative {
+            enabled: true,
+            auto: false,
+            base: Some(BASE),
+            density_low: Some(a.density_low),
+            density_high: Some(a.density_high),
+            midtone: Some(a.midtone),
+            cast_removal: 100.0,
+            ..Default::default()
+        };
+        let stored = resolve(&n, scan_of(&scan, w, h), scan_of(&scan, w, h), &K);
+        assert_eq!(stored.density_high, a.density_high);
     }
 
     #[test]

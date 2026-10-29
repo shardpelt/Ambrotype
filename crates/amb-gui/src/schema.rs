@@ -421,6 +421,7 @@ pub fn panels() -> Vec<Panel> {
                         ("amb:NegativeAuto", Some("Auto")),
                         ("amb:NegativeRange", Some("Fixed range")),
                         ("amb:NegativeType", Some("Type")),
+                        ("amb:NegativeCastRemoval", Some("Cast removal")),
                         ("amb:NegativeExpired", Some("Expired film")),
                         ("amb:FilmStock", Some("Film stock")),
                         ("amb:FilmStockAmount", Some("Stock amount")),

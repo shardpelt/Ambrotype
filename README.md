@@ -11,7 +11,7 @@ A free, open-source photo editor and organiser for Windows, macOS and Linux, in 
 ## What it does
 
 - **Edits raws** (and JPEG, PNG, TIFF, WebP) with Lightroom's Develop panels: white balance, tone, presence, curves, colour mixer, colour grading, detail, lens corrections, transform and Upright, effects, calibration. Edits live in XMP sidecars that Lightroom can read too.
-- **Film negatives:** colour and black-and-white negatives turned into positives, with a film base picker, Sync across a roll, a fixed range for frames that should print alike, and an Expired film setting for faded rolls.
+- **Film negatives:** colour and black-and-white negatives turned into positives, with a film base picker, Sync across a roll, a fixed range for frames that should print alike, cast removal along the greys, and an Expired film setting for faded rolls.
 - **Local adjustments:** linear, radial and brush masks, luminance and colour ranges, Sky, and AI Subject, Background and People masks that run on your computer (pick the model in Settings → AI models).
 - **Presets:** Lightroom `.xmp` and `.lrtemplate` presets with Amount, a preset library, Auto, Match look and Surprise me; save your own to any folder or share them to the hub.
 - **Library:** folders (whole drives, also while unplugged), collections and smart collections, ratings, labels, flags, keywords, compare and survey views, a timeline and a map, a slideshow, import from a card, and moving from a Lightroom Classic catalogue.

@@ -176,10 +176,10 @@ The cloud sessions on claude.ai/code run in a container that can't see your driv
 
 ### The Lightroom trial batches with a local agent
 
-The agent can't click through Lightroom for you, but it can do everything around it:
+The batches run from our Lightroom plug-in (File → Plug-in Extras → Run a kit session…), and the agent can do the hand tasks too through computer use in the Claude desktop app ([how](lightroom-trial-plan.md#can-claude-click-through-it)). Around them:
 
 - **Before importing:** generate the sweep kit onto the SSD (`amb sweep generate …`, see [lightroom-trial-plan.md](lightroom-trial-plan.md)) and check that the counts and folder layout match the run sheet.
-- **In Lightroom (you):** import the folder, select all, and export with the saved export preset. That's a few clicks per batch, however many images it holds.
+- **In Lightroom (you):** run the session with the plug-in, or import the folder, select all and export with the saved export preset. That's a few clicks per batch, however many images it holds.
 - **After exporting:** the agent checks that every expected export exists, then renders the same files with `amb` and compares them, and fits the model constants from the differences.
 
 

@@ -294,7 +294,18 @@ fn steps<'a>(stem: &str, plan: &'a [Sweep]) -> Vec<Step<'a>> {
                 settings.insert(k.clone(), extra.clone());
             }
             settings.insert(sweep.tag.clone(), Value::Number(v));
-            let name = format!("{stem}__{}_{}", sweep.tag, value_label(v));
+            let mut name = format!("{stem}__{}_{}", sweep.tag, value_label(v));
+            // A second sweep of the same setting (with other settings beside
+            // it) gets those in its names, or its files would replace the
+            // first sweep's.
+            if steps.iter().any(|s| s.0 == name) {
+                for (k, extra) in &sweep.extra {
+                    match extra.as_f64() {
+                        Some(n) => name.push_str(&format!("__{k}_{}", value_label(n))),
+                        None => name.push_str(&format!("__{k}")),
+                    }
+                }
+            }
             steps.push((name, sweep.group, &sweep.tag, Some(v), settings));
         }
     }
@@ -417,6 +428,19 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn every_step_has_its_own_file() {
+        let plan = default_plan();
+        let names: Vec<String> = steps("x", &plan).into_iter().map(|s| s.0).collect();
+        let unique: std::collections::BTreeSet<&String> = names.iter().collect();
+        assert_eq!(unique.len(), names.len());
+        assert!(
+            names.contains(
+                &"x__LensManualDistortionAmount_m100__CropConstrainToWarp_p1".to_string()
+            )
+        );
     }
 
     #[test]

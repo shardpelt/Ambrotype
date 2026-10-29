@@ -14,12 +14,12 @@ Yes, for the parts done by hand, using computer use in the **Claude desktop app*
 - You approve each app it may use. Lightroom gets full access; a browser only read access.
 - Claude sees the screen and clicks like a person, so it's slow. It suits part 4 (reading slider ranges, drawing a mask, saving a sidecar), not thousands of exports.
 
-The batches don't need it: two clicks each. A Lightroom Classic plug-in of our own could do even those, and read every slider's exact range ("Automating" below).
+The batches don't need it: two clicks each, or one command of our own Lightroom Classic plug-in, which also reads every slider's range ("The plug-in" below).
 
 ## Short version
 
 1. Before: build `amb`, run the kit script, shoot the own-photos list, set up a drive.
-2. Day 1, on the free 7-day trial: install, write down versions, set preferences, make the export presets, run **0-check** and check the result.
+2. Day 1, on the free 7-day trial: install, write down versions, set preferences, make the export presets, add our plug-in, run **0-check** by hand and with the plug-in, and check the results.
 3. Then subscribe and run the batches: **1a, 1b, 2, 3, 4**, about a day of exports in all.
 4. By hand: interface facts, Auto, preset Amount, profiles, masks, red eye, Point Color, Upright, our `amb:` tags.
 5. Copy the exports to two drives, then cancel.
@@ -112,11 +112,15 @@ The CC0 set has no portrait, night or backlit scene, and some tests need a parti
    In all three: Rename To = Filename (the names must match `manifest.csv`), Output Sharpening off, Metadata = All Metadata, no watermark, After Export = Do nothing, export to a folder named after the session (for example `lr-out/0-check`).
 7. **Run 0-check.** Import `0-check`, select all (Ctrl/⌘+A), Export with `amb full TIFF16`.
 8. **Check it.** In Develop, open `2414__Exposure2012_p1.ARW`: Exposure should read +1.00. Open `ramp__Contrast2012_m100.dng`: Contrast should read −100. If they read 0, the sidecars weren't read: stop and ask.
-9. Tell Claude where `lr-out/0-check` is, or run `amb render` on the same files to compare. We confirm the kit works before you subscribe.
+9. **Add the plug-in:** File → Plug-in Manager → Add, and choose `tools/lightroom-kit/ambrotype-kit.lrplugin` from the repo. Its commands are under File → Plug-in Extras.
+10. **Run 0-check with the plug-in too:** File → Plug-in Extras → Run a kit session…, choose the `0-check` folder, and change Into to `lr-out/0-check-plugin`. It shows the files it will make; Run.
+11. Tell Claude where `lr-out` is. We compare the two 0-check runs with each other and with `amb render`, and confirm the kit and the plug-in work before you subscribe.
 
 ## 3. The batches
 
-For each folder: Import it, select all, Export with its preset into `lr-out/<folder>`. One folder at a time; remove it from the catalogue (select all, Remove) before the next, so the catalogue stays small.
+For each folder, either:
+- **With the plug-in** (once 0-check showed it matches): File → Plug-in Extras → Run a kit session…, choose the folder, Run. It picks the export preset for the folder and exports into `lr-out/<folder>` beside the kit. It adds only one photo per raw to the catalogue, so 2-real needs ten photos, not 6,150. If it stops, run it again: it skips what's exported.
+- **By hand:** Import it, select all, Export with its preset into `lr-out/<folder>`. One folder at a time; remove it from the catalogue (select all, Remove) before the next, so the catalogue stays small.
 
 | Folder | Export preset | Exports | Export size | Note |
 |---|---|---:|---:|---|
@@ -133,7 +137,7 @@ Not in the kit yet (to add before the month): the slider pairs that work togethe
 
 Save every sidecar asked for: select the photo, Metadata → Save Metadata to File, and keep the `.xmp`. Keep screenshots in `lr-out/ui/`.
 
-1. **Every slider's range, default and step.** For each slider in each Develop panel: the lowest and highest value, the default, how far one arrow-key press moves it, and what double-clicking does. A table or screenshots. Adobe's documentation leaves most of these out.
+1. **Every slider's range, default and step.** Select one of the ten raws, then File → Plug-in Extras → Read the Develop sliders… and save `lr-out/ui/sliders.csv`. It writes each Develop setting's lowest and highest value, default, and how far one step moves it, and puts each slider back. By hand only: what double-clicking a slider does. Adobe's documentation leaves most of these out.
 2. **Auto.** On each of the ten raws, press Auto (Basic panel) and save the sidecar. That shows what Auto writes.
 3. **Preset Amount.** Apply five to ten presets at Amount 0, 25, 50, 75, 100, 150 and 200; export each. It measures Adobe's undocumented Amount maths.
 4. **Profiles.** Render the three chart raws and three real raws with Adobe Color, Standard, Neutral, Landscape, Portrait, Vivid, Camera Matching and a few creative profiles, at several Amounts.
@@ -159,16 +163,25 @@ Save every sidecar asked for: select the photo, Metadata → Save Metadata to Fi
 
 The fitting (matching our sliders to these renders) runs afterwards on your computer, offline, from `lr-out` and the manifests. Only fitted numbers go into the repo.
 
-## Automating (options, not decided)
+## The plug-in
 
-1. **A Lightroom Classic plug-in** written by us with the Classic SDK (Lua). It could import the ten raws once and apply each kit sidecar in turn before exporting, with no copies, and step through masks. It could also read every slider's exact range (`LrDevelopController.getRange`) instead of part 4.1 by hand. It runs on your trial, offline, with your own files. The SDK documentation is copyrighted ("for informational use"): read it for names and calls, copy none of it.
-2. **The cloud Lightroom API** (`lr.adobe.io`). Upload a raw once, put a kit sidecar on it (`PUT …/xmp/develop`), ask for a rendition, download, repeat. Limits:
+`tools/lightroom-kit/ambrotype-kit.lrplugin`, our own code (Lua, Lightroom Classic SDK 6 or later). It runs on your trial, offline, with your own files.
+
+- **Run a kit session…** adds each raw's `__baseline` file to the catalogue once. Then, row by row of `manifest.csv`, it applies that step's sidecar to the photo (and puts back what the step before changed) and exports it under the step's name. Synthetic DNGs carry their settings, so they are added and exported as they are. Every step goes into `kit-log.csv` in the export folder, with any setting Lightroom holds differently from the sidecar (a sign it clamps or ignores it).
+- **Read the Develop sliders…** writes the range, default and step of every Develop setting (part 4.1).
+- **Not tried in Lightroom yet.** `lua5.1 tools/lightroom-kit/test-plugin.lua` tests it against a stand-in for Lightroom; the export settings are the names Lightroom writes in its export presets, and the 0-check comparison (part 2) confirms them.
+- The SDK documentation is copyrighted ("for informational use"): it was read for names and calls only; nothing is copied from it.
+- Not done by it: masks, presets at an Amount, profiles. Those stay hand tasks (part 4).
+
+## Automating further (options, not decided)
+
+1. **The cloud Lightroom API** (`lr.adobe.io`). Upload a raw once, put a kit sidecar on it (`PUT …/xmp/develop`), ask for a rendition, download, repeat. Limits:
    - It needs an Adobe developer key (partner access may need Adobe's approval) and a signed-in subscription.
    - It uploads the test raws to Adobe (fine for CC0 ones).
    - Its output is 8-bit JPEG from the cloud engine, which may differ from Classic's.
 
    Check Adobe's developer terms first.
-3. **Claude with computer use** for part 4 (above).
+2. **Claude with computer use** for part 4 (above).
 
 ## Storage and legal
 

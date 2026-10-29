@@ -40,6 +40,8 @@ jobs:
           $apt install -y mesa-vulkan-drivers
           # A virtual screen for the editor's UI test.
           $apt install -y xvfb
+          # Lua 5.1, as in Lightroom, for the measuring kit's plug-in test.
+          $apt install -y lua5.1
       # Kept even when the install timed out, so the next run carries on
       # from what this one fetched.
       - name: Keep the downloaded packages (Linux)
@@ -74,6 +76,14 @@ jobs:
           for t in crates/amb-gui/tests/ui/*.js; do
             xvfb-run -a -s "-screen 0 1600x1000x24" target/debug/ambrotype --ui-test "$t" "$RUNNER_TEMP/test.dng"
           done
+      # The Lightroom Classic plug-in (tools/lightroom-kit), against a stand-in
+      # for Lightroom, on a kit session made by amb (the raw is a dummy file).
+      - name: Lightroom plug-in test (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          echo dummy > "$RUNNER_TEMP/2414.ARW"
+          target/debug/amb sweep generate --out "$RUNNER_TEMP/kit/4-lens" --groups tone,white_balance,lens --synthetic ramp "$RUNNER_TEMP/2414.ARW"
+          lua5.1 tools/lightroom-kit/test-plugin.lua "$RUNNER_TEMP/kit/4-lens"
 
   licences:
     name: dependency licences

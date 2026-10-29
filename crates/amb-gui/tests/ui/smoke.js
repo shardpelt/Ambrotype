@@ -103,19 +103,6 @@ await t.step("Settings says how the monitor's colours are handled", async () => 
   t.log(s.note);
 });
 
-await t.step("applying a preset shows no note, and its button no tooltip", async () => {
-  // Whichever preset is drawn first: the list's order follows the folders'.
-  const b = await t.until("a preset button", () => document.querySelector("#preset-list .preset"), 10000);
-  const p = ui.presets.find((x) => x.name === b.textContent);
-  t.expect(p, `a preset named ${b.textContent}`);
-  t.expect(!b.title, `no tooltip on the preset: ${b.title}`);
-  $("toast").hidden = true;
-  await applyPreset(p);
-  await t.sleep(300);
-  t.expect($("toast").hidden, `no note: ${$("toast").textContent}`);
-  t.key("Ctrl+Z");
-});
-
 await t.step("a preset's notes for scripts become one short line", async () => {
   const said = notesForPeople([
     "copied 23 setting(s) unknown to the registry without validation: A, B, C",
@@ -294,6 +281,19 @@ await t.step("Save to… keeps a preset in a folder of yours; a preset can go to
   const items = [...document.querySelectorAll(".ctx-menu button")].map((b) => b.textContent);
   t.expect(items.includes("Share to the hub…") && items.includes("Show the file"), items.join(", "));
   document.querySelector(".ctx-menu")?.remove();
+  t.key("Ctrl+Z");
+});
+
+await t.step("applying a preset shows no note, and its button no tooltip", async () => {
+  // The preset the step before saved (a fresh setup has no other).
+  const b = [...document.querySelectorAll("#preset-list .preset")].find((x) => x.textContent === "Shared look");
+  const p = ui.presets.find((x) => x.name === "Shared look");
+  t.expect(b && p, "the saved preset in the list");
+  t.expect(!b.title, `no tooltip on the preset: ${b.title}`);
+  $("toast").hidden = true;
+  await applyPreset(p);
+  await t.sleep(300);
+  t.expect($("toast").hidden, `no note: ${$("toast").textContent}`);
   t.key("Ctrl+Z");
 });
 

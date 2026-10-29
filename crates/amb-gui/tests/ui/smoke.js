@@ -104,9 +104,11 @@ await t.step("Settings says how the monitor's colours are handled", async () => 
 });
 
 await t.step("applying a preset shows no note, and its button no tooltip", async () => {
-  const p = ui.presets[0];
-  const b = [...document.querySelectorAll("#preset-list .preset")].find((x) => x.textContent === p.name);
-  t.expect(b && !b.title, "no tooltip on the preset");
+  // Whichever preset is drawn first: the list's order follows the folders'.
+  const b = await t.until("a preset button", () => document.querySelector("#preset-list .preset"), 10000);
+  const p = ui.presets.find((x) => x.name === b.textContent);
+  t.expect(p, `a preset named ${b.textContent}`);
+  t.expect(!b.title, `no tooltip on the preset: ${b.title}`);
   $("toast").hidden = true;
   await applyPreset(p);
   await t.sleep(300);

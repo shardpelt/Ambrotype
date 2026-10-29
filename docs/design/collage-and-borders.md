@@ -25,10 +25,9 @@ Status: built 2026-10-12 (`crates/amb-export/src/watermark.rs`).
 
 - Text, or a PNG logo with its own transparency, on the photo: after resizing and output sharpening (so it isn't sharpened), before the border (so it sits on the photo, not the frame).
 - Size is the mark's width as a percentage of the photo's width, so it looks the same at any export size. Nine places; the inset is a percentage of the short edge. Opacity, and for text a colour and a soft shadow so it reads on light and dark parts.
-- Text is set in GNU FreeSans Bold, bundled (GPL-3.0-or-later with the font exception).
+- Text is set in one of six bundled fonts (`amb-export/src/fonts.rs`): Sans (GNU FreeSans Bold, GPL-3.0-or-later with the font exception), Handwritten, Pen, Marker, Typewriter and Date stamp (licences in `NOTICE`).
 - In the export dialog (Watermark, saved with export presets) and `amb render --watermark "© Name" | logo.png | watermark.json` with `--watermark-at`, `--watermark-size`, `--watermark-opacity`.
 - Rotation (any angle) and tiling across the photo (rows offset by half a step) since 2026-10-12: `rotate`, `tile`; `--watermark-rotate`, `--watermark-tile`; the export dialog's Rotate and Repeat across the photo.
-- Not yet: other fonts.
 
 ## Collage maker
 

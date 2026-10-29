@@ -23,7 +23,8 @@ A short "start here" for contributors and for the next work session. Details are
     - colour-grading wheels
     - saved preset folders
     - feedback button (pre-filled GitHub issue)
-    - crop and straighten tool (R), with aspect lock
+    - crop and straighten tool (R), with aspect lock; Level (L) straightens by the photo's long lines, and turning snaps to them (2026-10-23)
+    - **copy image** (2026-10-24): right-click the photo or a thumbnail → Copy image, with its edit, to paste into a chat or document
     - **size presets** (Instagram, Snapchat, TikTok, X, Reddit, YouTube, Pinterest, LinkedIn and print sizes, plus custom ones) for the crop and exact-size export (`amb render --exact WxH` too)
     - **appearance (looks):** the UI is drawn from a layout file (toolbar, side columns, panels, and knob/bar/slider/number per setting) and a theme (colour tokens). Built-in looks (Classic, Beginner, Compact, Big controls, Studio, Left-handed, and since 2026-10-19 Focus, Console, Two benches, and task layouts Film lab, Colour grading, Black & white, Retouch and Collage prep; Dark, Light, High contrast, Neutral grey, and Cupertino Light and Dark in the style of macOS, plus Swiss print, Telemetry, Stone and Graphite after the taste-skill design guides) can be cloned, renamed, shared and imported in the Appearance dialog. AI assistants can write them ([ai/ui-layouts.md](ai/ui-layouts.md), `ambrotype --check-look`)
     - **settings and shortcuts:** the ⚙ button lists every keyboard shortcut on a keyboard map and lets you change them (clashes are caught; only changes are stored); Shift+? or the Shortcuts button shows them all on one card
@@ -50,7 +51,7 @@ A short "start here" for contributors and for the next work session. Details are
     - **edit in another app** (Ctrl+Alt+E): the photo, as edited, goes to your image editor as `IMG_0001-Edit.tif` next to it (ProPhoto 16-bit by default; Settings → General), and shows in the folder
     - **from Lightroom Classic:** the library's From Lightroom… (or `amb lrcat import`) moves a catalogue's edits, ratings, labels, flags, keywords, stacks, virtual copies and collections into sidecars and our collections; the catalogue is only read
     - **plugins** (Ctrl+Shift+P): sandboxed WebAssembly plugins that make edits (one undo step), with permission prompts, install from a folder, Share as pull request, and "Make one with AI…" instructions for the user's own assistant. Built in: Auto tone, Random look and **Film recipe** (a camera-style picture menu for typing in film recipes, with ready-made ones; [ai/film-recipes.md](ai/film-recipes.md)). Parameter sets can be saved as **recipes**. CLI: `amb plugin new/build/check/run` ([ai/plugins.md](ai/plugins.md))
-    - **save as preset:** Presets → Save… (or Save as preset… in the Plugins dialog) keeps the photo's edit, without the crop and other photo-specific settings, as a one-click preset under "Yours"
+    - **save as preset:** Presets → Save… (or Save as preset… in the Plugins dialog) keeps the photo's edit, without the crop and other photo-specific settings, as a one-click preset under "Yours"; Save to… puts it in any folder, Share to the hub opens a pre-filled submission (2026-10-24)
     - **LUTs:** Basic → Profile → LUT applies a `.cube` look (from the LUT folder or any file) with an amount ([design/luts.md](design/luts.md))
     - **export presets** and Resize by long or short edge, width, height, megapixels or percent; the window opens where it was left
     - **film negatives:** Freeze keeps a frame's conversion; the library's Sync negative roll gives a roll one conversion. Since 2026-10-28: Pick base (click the clear film), the base measured on the whole scan (not mistaking unclipped sprocket holes for it) and the levels inside the crop, Auto off printing every frame alike with a fixed density range, and Expired film ([design/film-negatives.md](design/film-negatives.md))
@@ -72,7 +73,7 @@ Things anyone with the right kit can do; open an issue first so two people don't
 
 - **Try the editor on a Mac or Windows machine** and report what feels wrong (the Feedback button opens a pre-filled issue). Most testing so far is on Linux.
 - **Run `amb preset census <your preset folders>`** and share the output (setting names and counts only, no preset files). It ranks what to build next.
-- **Lightroom samples:** if you have Lightroom, the measurements in [lightroom-trial-plan.md](lightroom-trial-plan.md) let us fit our models (sweep kit: `amb sweep generate`). Share only fitted numbers, never Adobe's renders or files.
+- **Lightroom samples:** if you have Lightroom, the measurements in [lightroom-trial-plan.md](lightroom-trial-plan.md) let us fit our models (kit: `tools/lightroom-kit/make-kit.sh`). Share only fitted numbers, never Adobe's renders or files.
 - **Film simulation references:** raws plus in-camera re-renders with each film simulation, so the Film recipe looks can be fitted ([design/film-look-measurement.md](design/film-look-measurement.md)).
 - **Creative and Adobe Raw profiles** (`Look`, `RGBTable`) need two facts: the 85-character alphabet the DNG SDK uses for `Table_<md5>` text, and the names of the `crs:` properties that hold table fingerprints in an Adobe Raw profile `.xmp`. Facts only; copy no table data.
 

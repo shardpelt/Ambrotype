@@ -5,6 +5,7 @@ Ambrotype is a free, open-source Lightroom alternative in Rust. Start with [docs
 ## Layout
 - `crates/amb-presets`: Lightroom XMP/preset reader and the tag registry (`data/tags.json`).
 - `crates/amb-engine`: the raw pipeline.
+- `crates/amb-lens` (lens profiles: lensfun and `.lcp`), `crates/amb-color` (Temperature/Tint, colour spaces, ICC) and `crates/amb-testkit` (synthetic test photos, the Lightroom measuring kit).
 - `crates/amb-ai`: local AI models for the Subject, Background and People masks: a list of freely licensed models to install (`data/models.json`), the user's choice per task, and their own ONNX models; run with `tract`.
 - `crates/amb-gpu`: the pipeline's stages as wgpu compute shaders, for the editor's preview; each checked against its CPU stage ([docs/design/gpu.md](docs/design/gpu.md)).
 - `crates/amb-protocol`: undoable edit commands. **Every edit from the GUI, CLI or an AI goes through these commands.**
@@ -13,6 +14,7 @@ Ambrotype is a free, open-source Lightroom alternative in Rust. Start with [docs
 - `crates/amb-gui`: Tauri 2 editor. Its UI is plain HTML/CSS/JS in `crates/amb-gui/ui/` (no npm, no build step).
 - `crates/amb-cli`: the `amb` tool.
 - `crates/amb-plugin` (the sandboxed plugin host) and `crates/amb-plugin-sdk` (what plugins are written with); example and built-in plugins in `plugins/` (rebuild a changed one with `amb plugin build plugins/<id>` and commit its `plugin.wasm`). Guide: [docs/ai/plugins.md](docs/ai/plugins.md).
+- `tools/`: `sync-hub.py` (copy the hub repo in) and `lightroom-kit/` (test raws and session folders for a Lightroom trial, [docs/lightroom-trial-plan.md](docs/lightroom-trial-plan.md)).
 - Built-in layouts, themes and starter presets live in the hub repo (`Ambrotypehq/ambrotype-hub`); `crates/amb-gui/data/hub/` is a copy. Change them there, then run `tools/sync-hub.py <hub checkout>`.
 - Design notes in `docs/design/`, known gaps in `docs/GAPS.md`.
 

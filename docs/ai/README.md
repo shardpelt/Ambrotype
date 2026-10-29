@@ -291,7 +291,7 @@ These are **starting points**. Apply them with `--dry-run`, render, look, and ad
 | **Brighter, cleaner skin** | Skin lives mostly in the orange band (and some red): LuminanceAdjustmentOrange +10 to +25, LuminanceAdjustmentRed +5. Too orange: SaturationAdjustmentOrange -5 to -15. Raise colour with Vibrance rather than Saturation: Adobe's Vibrance protects skin tones. Smoother skin: Texture -10 to -25. |
 | **Punchy landscape** | Vibrance +20 to +35, Highlights2012 -40, Shadows2012 +30, Whites2012 +10, Blacks2012 -10, SaturationAdjustmentBlue +10, LuminanceAdjustmentBlue -10. Clarity2012 +10 to +25 and Dehaze +5 to +15. |
 | **Muted, desaturated** | Saturation -15 to -30 with Vibrance 0 to +5 (keeps some colour in muted areas), or Vibrance -20 to -40 for a gentler effect. |
-| **Black & white** | ConvertToGrayscale `true` *(planned)*. Darker sky: GrayMixerBlue -20 to -40. Lighter skin: GrayMixerOrange +10 to +20. Then Contrast2012 +15 to +30. |
+| **Black & white** | ConvertToGrayscale `true`. Darker sky: GrayMixerBlue -20 to -40. Lighter skin: GrayMixerOrange +10 to +20. Then Contrast2012 +15 to +30. |
 | **Vignette** | PostCropVignetteAmount -10 to -30 (darker corners), PostCropVignetteFeather 50-80, PostCropVignetteMidpoint 30-50. |
 | **Sharper for screen** | Sharpness 40-60, SharpenRadius 1.0, SharpenDetail 25, SharpenEdgeMasking 30-60 (more for portraits, so smooth areas stay smooth). |
 | **Less noise (high ISO)** | LuminanceSmoothing 20-40, keep ColorNoiseReduction at 25 or raise it to 40. |

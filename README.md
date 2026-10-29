@@ -10,13 +10,14 @@ A free, open-source photo editor and organiser for Windows, macOS and Linux, in 
 
 ## What it does
 
-- **Edits raws** (and JPEG, PNG, TIFF, WebP) with Lightroom's Develop panels: white balance, tone, presence, curves, colour mixer, colour grading, detail, lens corrections, transform and Upright, effects, calibration, film negatives. Edits live in XMP sidecars that Lightroom can read too.
+- **Edits raws** (and JPEG, PNG, TIFF, WebP) with Lightroom's Develop panels: white balance, tone, presence, curves, colour mixer, colour grading, detail, lens corrections, transform and Upright, effects, calibration. Edits live in XMP sidecars that Lightroom can read too.
+- **Film negatives:** colour and black-and-white negatives turned into positives, with a film base picker, Sync across a roll, a fixed range for frames that should print alike, and an Expired film setting for faded rolls.
 - **Local adjustments:** linear, radial and brush masks, luminance and colour ranges, Sky, and AI Subject, Background and People masks that run on your computer (pick the model in Settings → AI models).
-- **Presets:** Lightroom `.xmp` and `.lrtemplate` presets with Amount, a preset library, Auto, Match look and Surprise me.
-- **Library:** folders (whole drives, also while unplugged), collections and smart collections, ratings, labels, flags, keywords, compare and survey views, a timeline and a map, import from a card, and moving from a Lightroom Classic catalogue.
+- **Presets:** Lightroom `.xmp` and `.lrtemplate` presets with Amount, a preset library, Auto, Match look and Surprise me; save your own to any folder or share them to the hub.
+- **Library:** folders (whole drives, also while unplugged), collections and smart collections, ratings, labels, flags, keywords, compare and survey views, a timeline and a map, a slideshow, import from a card, and moving from a Lightroom Classic catalogue.
 - **Organise:** duplicates and bursts (keep the best), move, rename and sort into dated folders with sidecars kept together, delete to the trash, keywords and metadata templates, and finding photos moved outside the app.
 - **Learn as you go:** a sample photo to step through, a **?** by every setting, Photography basics with tones lit up on your own photo, and short lessons.
-- **More:** spot removal and a heal brush, HDR and panorama merges, LUTs, a collage maker, borders and frames, quick zoom and a loupe, soft proofing, monitor colour, export to JPEG, PNG, TIFF, WebP, AVIF, OpenEXR and JPEG XL with colour management.
+- **More:** spot removal and a heal brush, HDR and panorama merges, LUTs, a collage maker, borders and frames, quick zoom and a loupe, soft proofing, monitor colour, copy a photo to the clipboard, export to JPEG, PNG, TIFF, WebP, AVIF, OpenEXR and JPEG XL with colour management.
 - **Make it yours:** layouts and themes as small JSON files, shared through the [hub](https://github.com/Ambrotypehq/ambrotype-hub), and sandboxed plugins ([how](docs/make-it-yours.md)).
 - **AI-friendly:** the `amb` command-line tool and an MCP server (`amb mcp`) let scripts and your own AI assistant make the same edits as the app.
 
@@ -62,6 +63,7 @@ All rendering models are our own ("ours, not Adobe's"): they're built by black-b
 - [docs/make-it-yours.md](docs/make-it-yours.md): change the layout and colours, and share them through the hub (or your own).
 - [docs/desktop-setup.md](docs/desktop-setup.md): building and running on each system, and a tour of the editor with its shortcuts.
 - [docs/releasing.md](docs/releasing.md): how installers are built and released.
+- [docs/lightroom-trial-plan.md](docs/lightroom-trial-plan.md): what to measure during a Lightroom trial; `tools/lightroom-kit/` builds the test photos.
 - [docs/legal.md](docs/legal.md): the legal position (formats, black-box testing, trademarks, licences).
 - [docs/SCOPE.md](docs/SCOPE.md) and [docs/research/](docs/research/): the original scoping and research.
 

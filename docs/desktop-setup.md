@@ -27,22 +27,8 @@ amb preset census ~/Presets                        # which settings your whole p
 ```
 Rendering covers the Develop panels (white balance, tone and presence, curves, colour mixer, colour grading, detail, lens corrections, transform, effects, calibration, masks and spots) plus film negatives, with our own base look; nothing is fitted to Lightroom's yet. The command lists any settings it skipped. The library's work (tagging, places, duplicates, moving and renaming) has commands too: [ai/README.md](ai/README.md), Organising photos. If you can, send back the `amb preset census` output for your bought presets. It's only setting names and counts, no preset content, and it tells us what to build first.
 
-## 3. Prepare a Lightroom kit (for measuring Lightroom)
-Only needed to fit our models against Lightroom ([lightroom-trial-plan.md](lightroom-trial-plan.md)). Keep the kit and Lightroom's exports on a fast drive.
-```sh
-amb sweep plan                                                # the 74 sweeps
-amb sweep generate --out kit --synthetic ramp,hue,edges,colorchecker
-amb sweep generate --out kit-raw --groups tone,white_balance,presence  raws/*.NEF
-```
-
-## 4. Smoke test with Lightroom's 7-day free trial
-1. Import a few files from `kit` with **Add**.
-2. Check three things:
-   - The synthetic DNGs open, showing the profile "Ambrotype Linear ProPhoto".
-   - The settings are applied: open `colorchecker__Exposure2012_p1.dng` and Exposure should read +1.00.
-   - The proprietary-raw copies pick up their `.xmp` sidecars.
-3. Note the Lightroom version and the process version it shows.
-4. Report anything that doesn't import before starting the paid month.
+## 3. Measuring Lightroom (only for a Lightroom trial)
+[lightroom-trial-plan.md](lightroom-trial-plan.md) is the step-by-step runbook. In short: `tools/lightroom-kit/make-kit.sh <KIT-DIR>` downloads ten CC0 raws and builds one folder per session; run **0-check** on the 7-day free trial before subscribing.
 
 ## The desktop editor (GUI)
 
@@ -89,7 +75,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 - **Plugins:** the Plugins button (or Ctrl+Shift+P) runs small tools that make edits for you: **Auto tone**, **Random look** and **Film recipe**, a camera-style picture menu (film look, grain, white balance shift, highlight and shadow tone, and more) for typing in film recipes you find online ([ai/film-recipes.md](ai/film-recipes.md)). Each run is one step in History, so Undo takes it back. A plugin that wants to see the photo's histogram or camera facts asks first. Parameter sets can be saved as **recipes**, and **Save as preset…** keeps a plugin's result as a preset. **Install from folder…** adds one, **Share as pull request…** offers yours to the hub, and **Make one with AI…** writes instructions for your own AI assistant to build a new one. Writing plugins: [ai/plugins.md](ai/plugins.md).
 
   ![Plugins](images/plugins.png)
-- **Library:** the Library task (or G) shows the photo's folder as a grid, without the editor's tools. Sort, filter and search it; click, Shift-click and Ctrl/⌘-click to select many; then press 1–5 to rate them, 6–9 for a colour label, P or X to flag them as picks or rejects, or add keywords in the panel (several at once with commas, or one click on a recent one). **Copy settings** on one photo and **Paste settings** onto others to give a whole series the same edit, **Export…** the selection with the usual export choices, or **Make a collage** with it. Everything is saved to the photos' `.xmp` files, where Lightroom reads it. Enter or a double-click opens a photo.
+- **Library:** the Library task (or G) shows the photo's folder as a grid, without the editor's tools. Develop (or G, or Esc) opens the photo you chose there. Sort, filter and search it; click, Shift-click and Ctrl/⌘-click to select many; then press 1–5 to rate them, 6–9 for a colour label, P or X to flag them as picks or rejects, or add keywords in the panel (several at once with commas, or one click on a recent one). **Copy settings** on one photo and **Paste settings** onto others to give a whole series the same edit, **Export…** the selection with the usual export choices, or **Make a collage** with it. Everything is saved to the photos' `.xmp` files, where Lightroom reads it. Enter or a double-click opens a photo.
   - **Views:** Loupe (E), Compare (C) and Survey (N) for culling; **Timeline** (years and month calendars) and **Map** (photos by place; place others from a GPX track or by dropping them on the map).
   - **Organise ▾:** find duplicates and bursts and keep the best; move, rename or sort photos into dated folders with their sidecars; delete to the trash; rename keywords everywhere; metadata templates; find photos moved outside the app ([design/library.md](design/library.md)).
   - **Folders** (left): add whole drives to keep them indexed, also while unplugged. **Import ▾** copies from a card, or moves you from a Lightroom Classic catalogue.
@@ -99,14 +85,15 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 - **Collage:** the Collage button (or C) opens the collage maker. Pick a layout, drag photos from the tray into the cells, then drag to move a photo in its cell, scroll to zoom, R to rotate. **Edit photo** opens a photo in the editor and **← Back to collage** returns. Set the size, background, gap, outer border and rounded corners on the right; split or remove cells, or press **Arrange freely** to move, resize, turn and overlap the photos by hand. **Save** keeps the whole collage in a `.ambcollage` file to reopen and edit later (Export can save one next to each image), and **Export pages…** puts a whole folder into pages of the layout. **Group alike** in the tray puts alike photos and bursts together; a group's **2 × 2** button makes a square of its best four (drag in each square to line it up); **No borders** makes the photos meet edge to edge, and **One page per group** exports one such page for every group.
 
   ![Collage maker](images/collage.png)
+- **Film negatives:** the Film task's Negative panel turns a scanned negative into a positive. **Pick base** and a click on the clear film between frames sets the film base (Alt-click forgets it). **Sync** gives a whole roll one conversion. **Fixed range** (with Auto off) prints frames alike; **Expired film** neutralises a faded roll's colour crossover ([design/film-negatives.md](design/film-negatives.md)).
 - **Crop:** with no crop yet, the crop tool starts with a cross cursor: press at one corner and drag to the other, like a screenshot selection. Then adjust it with the handles.
 
   ![Drawing a crop corner to corner](images/crop-draw.png)
 - **Frame** (Shift+B): a border around the photo (White, a black keyline, Polaroid, your own), with a caption; exports add it.
-- **Appearance:** the Appearance button picks a layout (Classic, Beginner, Compact, Big controls, Studio with knobs, Left-handed, Focus, Console, Two benches, and for tasks Film lab, Colour grading, Black & white, Retouch and Collage prep) and a theme (Dark, Light, High contrast, Neutral grey, Cupertino Light and Dark, Swiss print, Telemetry, Stone, Graphite). Clone one to rename it or edit its colours; Share… and Import… move them between machines, and **Browse hub…** installs looks other people shared. **Edit layout…** in that dialog (or Ctrl+Shift+L) rearranges the screen in place: drag things to move them (onto the Add list to remove them), click one to change it, then Save. **Save this setup…** keeps the layout and theme together, exactly as they are, to come back to with Use; the setup from before your last change is kept for you. Your AI assistant can write new ones: [ai/ui-layouts.md](ai/ui-layouts.md).
+- **Appearance:** the Appearance button picks a layout (Classic, Beginner, Compact, Big controls, Studio with knobs, Left-handed, Focus, Console, Two benches, Minimalism (no bars; the columns slide in from the window's edges), and for tasks Film lab, Colour grading, Black & white, Retouch and Collage prep) and a theme (Dark, Light, High contrast, Neutral grey, Cupertino Light and Dark, Swiss print, Telemetry, Stone, Graphite, Minimalism). Clone one to rename it or edit its colours; Share… and Import… move them between machines, and **Browse hub…** installs looks other people shared. **Edit layout…** in that dialog (or Ctrl+Shift+L) rearranges the screen in place: drag things to move them (onto the Add list to remove them), click one to change it, then Save. **Save this setup…** keeps the layout and theme together, exactly as they are, to come back to with Use; the setup from before your last change is kept for you. Your AI assistant can write new ones: [ai/ui-layouts.md](ai/ui-layouts.md).
 - **Lens profiles** are found as for the CLI (lensfun database, your Adobe `.lcp` files; see docs/design/lens-corrections.md).
 - **Camera profiles:** the Profile menu (Basic panel) lists the `.dcp` profiles found for the photo's camera, in Camera Raw's profile folders and folders named in `AMB_DCP_DIRS`. Profiles you made with a ColorChecker work too.
-- **GPU:** the preview is developed on the graphics card when there is one (Metal on a Mac, Vulkan or DirectX elsewhere); the status bar then says "on the GPU", and hovering over it names the GPU, or says why a preview was made on the CPU (masks, defringe and camera profiles are CPU-only for now). Exports and the 100% view use the CPU. Set `AMB_GPU=off` to turn it off ([design/gpu.md](design/gpu.md)).
+- **GPU:** the preview is developed on the graphics card when there is one (Metal on a Mac, Vulkan or DirectX elsewhere); the status bar (Settings → General turns it on) then says "on the GPU", and hovering over it names the GPU, or says why a preview was made on the CPU (masks, defringe and camera profiles are CPU-only for now). Exports and the 100% view use the CPU. Set `AMB_GPU=off` to turn it off ([design/gpu.md](design/gpu.md)).
 - **Keyboard:** every shortcut can be changed in **Settings** (the ⚙ button, or Ctrl+,), which shows them on a keyboard map and as a list, catches clashes, and keeps only your changes, so new defaults still arrive. **Shift+?** shows them all; holding Ctrl (⌘) shows each button's key on it.
 
   ![Settings: keyboard shortcuts](images/settings-shortcuts.png)

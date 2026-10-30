@@ -65,7 +65,11 @@ pub(crate) fn models_list(json: bool) -> Result<(), String> {
                 s.name,
                 megabytes(s.total_bytes()),
                 speed(s.seconds),
-                detail(s.detail),
+                if s.task == "search" {
+                    "–".to_string()
+                } else {
+                    detail(s.detail)
+                },
                 s.licence,
                 mark
             );

@@ -244,7 +244,7 @@ Masks are Lightroom's own (`MaskGroupBasedCorrections`), so they open in Lightro
 
 ## AI models
 
-The subject, background and people masks, and Smart search, come from models that run on the user's computer. Each task (`subject`, `people`, `search`) uses one model; the user, or you, can choose another. Search models are optional and never install by themselves: `clip-b32` (156 MB, the default) or `siglip2-base` (690 MB, better).
+The subject, background and people masks, and Smart search, come from models that run on the user's computer. Each task (`subject`, `people`, `search`) uses one model; the user, or you, can choose another. Search models are optional and never install by themselves: `clip-b32` (156 MB, the default), `clip-b32-fast` (418 MB, about 4× quicker to index) or `siglip2-base` (690 MB, better).
 
 - `amb models list [--json]`: every model we can install (only freely licensed ones), its licence, size, speed, and whether it's installed and chosen.
 - `amb models install ID`, then `amb models use ID`. Bigger models are slower but give finer edges; tell the user the download size and time first.

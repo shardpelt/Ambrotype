@@ -103,6 +103,8 @@ function renderPresetLibrary() {
 
 function wirePresetLibrary() {
   $("btn-preset-library").addEventListener("click", openPresetLibrary);
+  $("btn-fuji-recipe").addEventListener("click", fujiRecipeFlow);
+  $("fuji-sensor").addEventListener("change", (e) => { e.target.dataset.touched = "1"; });
   $("presetlib-close").addEventListener("click", closePresetLibrary);
   $("presetlib-search").addEventListener("input", renderPresetLibrary);
   $("presetlib-list").addEventListener("mouseleave", () => presetHover(null));

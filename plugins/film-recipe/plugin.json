@@ -2,12 +2,9 @@
   "format": "ambrotype-plugin/1",
   "id": "film-recipe",
   "name": "Film recipe",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Ambrotype",
   "description": "A film look plus the picture settings of a camera menu: grain, colour depth, white balance shift, dynamic range, highlight and shadow tone, colour, sharpness, noise reduction and clarity. Type in a recipe as you'd set it on a camera, or start from one below; save yours as a recipe, or the result as a preset.",
-  "permissions": [
-    "photo-info"
-  ],
   "params": [
     {
       "name": "look",
@@ -30,6 +27,9 @@
         "Mono Red",
         "Mono Green",
         "Fine Mono",
+        "Fine Mono Yellow",
+        "Fine Mono Red",
+        "Fine Mono Green",
         "Sepia"
       ],
       "default": "Standard",
@@ -91,6 +91,9 @@
         "Shade",
         "Tungsten",
         "Fluorescent",
+        "Fluorescent 1",
+        "Fluorescent 2",
+        "Fluorescent 3",
         "Kelvin"
       ],
       "default": "As shot"
@@ -136,6 +139,19 @@
       ],
       "default": "DR100",
       "description": "Higher keeps more highlight detail."
+    },
+    {
+      "name": "dr_priority",
+      "label": "Dynamic range priority",
+      "type": "choice",
+      "options": [
+        "Off",
+        "Weak",
+        "Strong",
+        "Auto"
+      ],
+      "default": "Off",
+      "description": "Keeps highlights and shadows both; sets the dynamic range and both tones itself."
     },
     {
       "name": "highlight",

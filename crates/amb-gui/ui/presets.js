@@ -229,6 +229,37 @@ async function savePresetFlow(name = "") {
   }
 }
 
+// A pasted Fujifilm-style recipe as a preset in the Fuji group (src/commands/presets.rs
+// `fuji_recipe`); applied to the open photo straight away.
+async function fujiRecipeFlow() {
+  const dlg = $("fuji-dialog");
+  const f = dlg.querySelector("form");
+  // The open photo's camera picks the sensor when it's a Fujifilm.
+  const camera = ui.info?.camera || "";
+  if (/fujifilm/i.test(camera) && !f.fuji_sensor.dataset.touched) {
+    const model = camera.replace(/fujifilm/i, "").trim();
+    f.fuji_sensor.dataset.camera = model;
+  }
+  dlg.showModal();
+  f.fuji_text.focus();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice !== "ok" || !f.fuji_text.value.trim()) return;
+  try {
+    const sensor = f.fuji_sensor.value || f.fuji_sensor.dataset.camera || null;
+    const r = await invoke("fuji_recipe", { text: f.fuji_text.value, sensor, name: f.fuji_name.value });
+    ui.presets = r.presets;
+    renderPresets();
+    const notes = r.notes.length ? ` ${r.notes.join(". ")}.` : "";
+    toast(`Made the preset “${r.name}” (Fuji, ${r.sensor}).${notes}`);
+    const made = ui.presets.find((p) => p.path === r.path);
+    if (made && ui.info) await applyPreset(made);
+    f.fuji_text.value = "";
+    f.fuji_name.value = "";
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
 // Auto, as Lightroom's: the tone sliders (Basic's Auto button) or the
 // white balance (WB: Auto), worked out on a small copy, one undo step.
 async function autoFlow(tone, white) {

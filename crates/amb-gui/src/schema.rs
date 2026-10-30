@@ -187,6 +187,8 @@ pub fn panels() -> Vec<Panel> {
                         ("WhiteBalance", Some("WB")),
                         ("Temperature", Some("Temp")),
                         ("Tint", None),
+                        ("amb:WBShiftRed", Some("Shift: red")),
+                        ("amb:WBShiftBlue", Some("Shift: blue")),
                     ],
                 ),
                 section(

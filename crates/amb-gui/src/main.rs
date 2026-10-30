@@ -741,6 +741,7 @@ fn main() {
             commands::plugins::save_plugin_recipe,
             commands::plugins::delete_plugin_recipe,
             commands::presets::save_preset,
+            commands::presets::fuji_recipe,
             commands::plugins::install_plugin,
             commands::plugins::remove_plugin,
             commands::plugins::approve_plugin,

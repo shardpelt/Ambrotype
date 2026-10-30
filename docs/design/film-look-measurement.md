@@ -1,6 +1,6 @@
 # Measuring Fujifilm's film simulations
 
-Status: planned (2026-10-08). It needs someone with a Fujifilm camera to make the shots (see Help wanted in [NEXT.md](../NEXT.md)).
+Status: planned (2026-10-08). Pasted Fuji recipes (2026-10-30, [ai/film-recipes.md](../ai/film-recipes.md)) use the looks as they are until this is done. It needs someone with a Fujifilm camera to make the shots (see Help wanted in [NEXT.md](../NEXT.md)).
 
 ## Goal
 
@@ -12,7 +12,7 @@ We measure the camera's output, as we do for Lightroom ([legal.md](../legal.md) 
 
 - **Yes:** a photographer's own raws and the JPEGs their camera makes from them; fitting our settings or our own lookup tables to them; publishing the fitted numbers.
 - **Never:** firmware, X RAW STUDIO's or any app's internals, the Fujifilm camera-matching profiles inside Lightroom or Capture One, or anyone else's LUTs. Never commit the raws or the camera JPEGs.
-- **Names:** Fujifilm's simulation names stay out of the app; docs may say which of our looks is closest.
+- **Names:** Fujifilm's simulation names stay out of the app's own looks; docs may say which of our looks is closest. Since 2026-10-30 the app reads them in pasted recipes (Presets → Fuji recipe…, the "Fuji" group), with the trademark notice in the dialog.
 
 ## What to shoot
 

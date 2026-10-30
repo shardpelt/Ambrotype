@@ -178,6 +178,20 @@ fn look(name: &str) -> Look {
             clarity: 6.0,
             ..COLOUR
         },
+        // Fine Mono through a coloured filter: the filter's mix on Fine Mono's tone.
+        "Fine Mono Yellow" => Look {
+            mono: Some([15.0, 15.0, 20.0, 0.0, -10.0, -25.0, -10.0, 0.0]),
+            ..look("Fine Mono")
+        },
+        "Fine Mono Red" => Look {
+            mono: Some([40.0, 30.0, 15.0, -15.0, -30.0, -45.0, -15.0, 15.0]),
+            contrast: 20.0,
+            ..look("Fine Mono")
+        },
+        "Fine Mono Green" => Look {
+            mono: Some([-15.0, -5.0, 15.0, 30.0, 10.0, -10.0, -15.0, -20.0]),
+            ..look("Fine Mono")
+        },
         "Sepia" => Look {
             mono: Some(MONO),
             contrast: 4.0,
@@ -206,6 +220,10 @@ fn white_balance(name: &str) -> Option<(f64, f64)> {
         "Shade" => (7500.0, 10.0),
         "Tungsten" => (2850.0, 0.0),
         "Fluorescent" => (3800.0, 21.0),
+        // Daylight, warm white and cool white tubes.
+        "Fluorescent 1" => (6300.0, 18.0),
+        "Fluorescent 2" => (3000.0, 18.0),
+        "Fluorescent 3" => (4100.0, 18.0),
         _ => return None,
     })
 }
@@ -261,13 +279,23 @@ pub fn run(input: Input) -> Result<Output, String> {
 
     // Tone: dynamic range protects highlights; highlight / shadow tone bend the curve
     // (+ is harder: brighter highlights, deeper shadows), half steps allowed.
-    let (dr_highlights, dr_whites, dr_shadows) = match input.choice("dynamic_range") {
-        "DR200" => (-20.0, -5.0, 0.0),
-        "DR400" => (-40.0, -10.0, 5.0),
+    // Dynamic range priority sets the range and both tones itself, softer
+    // than DR400 alone (ours).
+    let priority = match input.choice("dr_priority") {
+        "Weak" | "Auto" => Some((-45.0, -10.0, 10.0, -1.0, -1.0)),
+        "Strong" => Some((-60.0, -15.0, 20.0, -2.0, -2.0)),
+        _ => None,
+    };
+    let (dr_highlights, dr_whites, dr_shadows) = match (priority, input.choice("dynamic_range")) {
+        (Some((hl, wh, sh, _, _)), _) => (hl, wh, sh),
+        (None, "DR200") => (-20.0, -5.0, 0.0),
+        (None, "DR400") => (-40.0, -10.0, 5.0),
         _ => (0.0, 0.0, 0.0),
     };
-    let h = input.number("highlight");
-    let s = input.number("shadow");
+    let (h, s) = match priority {
+        Some((_, _, _, h, s)) => (h, s),
+        None => (input.number("highlight"), input.number("shadow")),
+    };
     let [cs, cd, cl, ch] = lk.curve;
     let colour = input.number("colour");
     out = out
@@ -340,39 +368,22 @@ pub fn run(input: Input) -> Result<Output, String> {
         out = out.set(&k, round(v).clamp(-100.0, 100.0));
     }
 
-    // White balance, with the shift on a red (+) / blue (+) grid: red-minus-blue
-    // warms (in mireds), red-plus-blue adds magenta.
+    // White balance, and the shift on a red (+) / blue (+) grid as its own
+    // settings, so it moves whatever white balance the photo gets (As Shot too).
     let (r, b) = (input.number("wb_red"), input.number("wb_blue"));
     let wb = input.choice("white_balance");
     let base = match wb {
         "Kelvin" => Some((input.number("kelvin"), 0.0)),
-        "As shot" if r != 0.0 || b != 0.0 => {
-            let p = input
-                .photo
-                .as_ref()
-                .ok_or("needs the photo's white balance for a shift (the photo-info permission)")?;
-            Some((
-                p.as_shot_temperature
-                    .ok_or("the photo has no white balance to shift")?,
-                p.as_shot_tint.unwrap_or(0.0),
-            ))
-        }
         other => white_balance(other),
     };
     let mut note = format!("{name} look");
     match base {
         Some((t, tint)) => {
-            let temp = (1e6 / (1e6 / t - 4.0 * (r - b))).clamp(2000.0, 50000.0);
             out = out
                 .set("WhiteBalance", "Custom")
-                .set("Temperature", (temp / 10.0).round() * 10.0)
-                .set("Tint", round(tint + 3.0 * (r + b)).clamp(-150.0, 150.0));
-            if wb != "As shot" || r != 0.0 || b != 0.0 {
-                note.push_str(&format!(
-                    ", white balance {} K",
-                    (temp / 10.0).round() * 10.0
-                ));
-            }
+                .set("Temperature", t)
+                .set("Tint", tint);
+            note.push_str(&format!(", white balance {t} K"));
         }
         None => {
             out = out
@@ -380,6 +391,10 @@ pub fn run(input: Input) -> Result<Output, String> {
                 .reset("Temperature")
                 .reset("Tint");
         }
+    }
+    out = out.set("amb:WBShiftRed", r).set("amb:WBShiftBlue", b);
+    if r != 0.0 || b != 0.0 {
+        note.push_str(&format!(", shift red {r:+}, blue {b:+}"));
     }
     Ok(out.message(note))
 }
@@ -394,7 +409,7 @@ mod tests {
     fn input(params: serde_json::Value) -> Input {
         let mut defaults = serde_json::json!({
             "look": "Standard", "grain": "Off", "grain_size": "Small", "colour_depth": "Off", "blue_depth": "Off",
-            "white_balance": "As shot", "kelvin": 5500, "wb_red": 0, "wb_blue": 0, "dynamic_range": "DR100",
+            "white_balance": "As shot", "kelvin": 5500, "wb_red": 0, "wb_blue": 0, "dynamic_range": "DR100", "dr_priority": "Off",
             "highlight": 0, "shadow": 0, "colour": 0, "sharpness": 0, "noise_reduction": 0, "clarity": 0,
             "tone_warm": 0, "tone_magenta": 0
         });
@@ -428,9 +443,10 @@ mod tests {
         assert_eq!(value(&out, "GrainAmount"), Some(25.0.into()));
         assert_eq!(value(&out, "Saturation"), Some((-30.0).into()));
         assert_eq!(value(&out, "ParametricShadows"), Some((-22.0).into()));
-        // Red +2 / blue -4 warms Daylight's 5500 K.
-        let t = value(&out, "Temperature").unwrap().as_f64().unwrap();
-        assert!(t > 6000.0 && t < 7000.0, "{t}");
+        // Daylight, shifted red +2 / blue -4 by the engine.
+        assert_eq!(value(&out, "Temperature"), Some(5500.0.into()));
+        assert_eq!(value(&out, "amb:WBShiftRed"), Some(2.0.into()));
+        assert_eq!(value(&out, "amb:WBShiftBlue"), Some((-4.0).into()));
         // Colour depth deepens reds on top of the look's own HSL.
         assert_eq!(value(&out, "LuminanceAdjustmentRed"), Some((-12.0).into()));
         assert!(out.message.unwrap().starts_with("Muted Chrome look"));
@@ -439,8 +455,13 @@ mod tests {
     #[test]
     fn as_shot_shifts_from_the_camera_and_mono_tones() {
         let out = run(input(serde_json::json!({ "wb_red": 1, "wb_blue": 1 }))).unwrap();
-        assert_eq!(value(&out, "Temperature"), Some(5000.0.into()));
-        assert_eq!(value(&out, "Tint"), Some(10.0.into()));
+        assert_eq!(value(&out, "WhiteBalance"), Some("As Shot".into()));
+        assert_eq!(value(&out, "amb:WBShiftBlue"), Some(1.0.into()));
+        let strong = run(input(
+            serde_json::json!({ "dr_priority": "Strong", "highlight": 3 }),
+        ))
+        .unwrap();
+        assert_eq!(value(&strong, "Highlights2012"), Some((-60.0).into()));
         let plain = run(input(serde_json::json!({}))).unwrap();
         assert_eq!(value(&plain, "WhiteBalance"), Some("As Shot".into()));
 
@@ -469,6 +490,9 @@ mod tests {
             "Mono Red",
             "Mono Green",
             "Fine Mono",
+            "Fine Mono Yellow",
+            "Fine Mono Red",
+            "Fine Mono Green",
             "Sepia",
         ] {
             for extreme in [-4, 4] {

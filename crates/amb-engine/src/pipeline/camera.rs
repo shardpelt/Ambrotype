@@ -171,6 +171,19 @@ pub fn incremental_for_xy(img: &CameraImage, x: f64, y: f64) -> IncrementalWhite
     }
 }
 
+/// A camera-style white balance shift, per step: red minus blue warms by
+/// this many mireds, and red plus blue adds this much Tint (magenta).
+/// **Ours**, not measured against a camera yet.
+pub const WB_SHIFT_MIRED: f64 = 4.0;
+pub const WB_SHIFT_TINT: f64 = 3.0;
+
+/// The white (x, y) moved by a white balance shift (`[red, blue]` steps).
+pub fn wb_shifted(x: f64, y: f64, shift: [f64; 2]) -> (f64, f64) {
+    let t = xy_to_temp_tint(x, y);
+    let mired = (1e6 / t.temperature - WB_SHIFT_MIRED * (shift[0] - shift[1])).max(20.0);
+    temp_tint_to_xy(1e6 / mired, t.tint + WB_SHIFT_TINT * (shift[0] + shift[1]))
+}
+
 /// Temperature/Tint that Lightroom would show for this image's as-shot white.
 pub fn as_shot_temp_tint(img: &CameraImage) -> (f64, f64) {
     let (x, y) = img.white_xy(img.as_shot_neutral);
@@ -341,6 +354,30 @@ pub(crate) fn camera_to_working<'a>(
             let n = img.neutral_for(x, y);
             let r = img.neutral_for(rx, ry);
             [n[0] / r[0], 1.0, n[2] / r[2]]
+        }
+    };
+    let neutral = match s.wb_shift {
+        [0.0, 0.0] => neutral,
+        _ if s.negative.enabled => neutral,
+        shift if img.rendered => {
+            let wb = s.incremental_wb;
+            incremental_neutral(
+                img,
+                IncrementalWhiteBalance {
+                    temperature: wb.temperature
+                        + WB_SHIFT_MIRED * (shift[0] - shift[1]) / INCREMENTAL_MIRED_PER_STEP,
+                    tint: wb.tint
+                        + WB_SHIFT_TINT * (shift[0] + shift[1]) / INCREMENTAL_TINT_PER_STEP,
+                },
+            )
+        }
+        shift => {
+            let (x, y) = img.white_xy(neutral);
+            let (x, y) = wb_shifted(x, y, shift);
+            match &profile {
+                Some(p) => p.neutral_for_xy(x, y),
+                None => img.neutral_for(x, y),
+            }
         }
     };
     // The Calibration panel's primaries fold into the camera matrix.

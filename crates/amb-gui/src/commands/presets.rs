@@ -256,6 +256,55 @@ pub(crate) async fn save_preset(
     presets(state).await
 }
 
+/// What a pasted Fujifilm-style recipe became.
+#[derive(serde::Serialize)]
+pub(crate) struct FujiPreset {
+    name: String,
+    sensor: String,
+    notes: Vec<String>,
+    path: String,
+    presets: Vec<PresetEntry>,
+}
+
+/// A pasted Fujifilm-style recipe, recreated through the Film recipe plugin
+/// and saved as a preset in the "Fuji" group (`amb_plugin::fuji`). `sensor`
+/// is used when the recipe doesn't name one.
+#[tauri::command]
+pub(crate) async fn fuji_recipe(
+    text: String,
+    sensor: Option<String>,
+    name: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<FujiPreset> {
+    let dir = own_presets_dir(state.inner()).ok_or("the settings folder isn't available")?;
+    let (name, sensor, notes, path) = tauri::async_runtime::spawn_blocking(move || {
+        let sensor = sensor
+            .as_deref()
+            .and_then(amb_plugin::fuji::Sensor::from_name);
+        let made = amb_plugin::fuji::recreate(&text, sensor)?;
+        let name = Some(name.trim().to_string())
+            .filter(|n| !n.is_empty())
+            .or(made.recipe.name.clone())
+            .unwrap_or_else(|| "Fuji recipe".into());
+        let path = session::save_preset(&dir, &name, "Fuji", &made.settings, true)?;
+        Ok::<_, String>((
+            name,
+            made.recipe.sensor.name().to_string(),
+            made.recipe.notes,
+            path.display().to_string(),
+        ))
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+    Ok(FujiPreset {
+        name,
+        sensor,
+        notes,
+        path,
+        presets: presets(state).await?,
+    })
+}
+
 /// "Save to…": the preset into a folder the user picks (a synced folder, to
 /// have it on every computer), which joins the preset folders. `None` when
 /// they cancel.

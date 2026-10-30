@@ -105,6 +105,9 @@ pub struct DevelopSettings {
     pub base_look: BaseLook,
     pub white_balance: WhiteBalance,
     pub incremental_wb: IncrementalWhiteBalance,
+    /// A camera-style white balance shift (red, blue; -9..9 steps) on top of
+    /// the white balance: `amb:WBShiftRed`/`Blue`.
+    pub wb_shift: [f64; 2],
     /// Settings left at Camera Raw's raw defaults because the edit doesn't
     /// set them; rendered images default them to 0 instead ([`RENDERED_DEFAULTS`]).
     pub unset_detail: UnsetDetail,
@@ -152,6 +155,7 @@ impl Default for DevelopSettings {
             base_look: BaseLook::Default,
             white_balance: WhiteBalance::AsShot,
             incremental_wb: IncrementalWhiteBalance::default(),
+            wb_shift: [0.0; 2],
             unset_detail: UnsetDetail::default(),
             exposure_ev: 0.0,
             tone: ToneControls::default(),
@@ -319,6 +323,8 @@ pub const RENDERED_TAGS: &[&str] = &[
     "FillLight",
     "Clarity",
     "amb:NegativeConvert",
+    "amb:WBShiftRed",
+    "amb:WBShiftBlue",
     "amb:LUT",
     "amb:LUTAmount",
     "amb:Effects",
@@ -522,6 +528,10 @@ impl DevelopSettings {
                 s.white_balance = WhiteBalance::Custom { temperature, tint };
             }
         }
+        s.wb_shift = [
+            num(settings, "amb:WBShiftRed").unwrap_or(0.0),
+            num(settings, "amb:WBShiftBlue").unwrap_or(0.0),
+        ];
         // As Lightroom: the relative sliders count only under a custom white balance.
         if wb_mode != "As Shot" {
             s.incremental_wb = IncrementalWhiteBalance {

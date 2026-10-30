@@ -297,6 +297,20 @@ await t.step("applying a preset shows no note, and its button no tooltip", async
   t.key("Ctrl+Z");
 });
 
+await t.step("Fuji recipe: a pasted recipe becomes a preset in the Fuji group, put on the photo", async () => {
+  const steps = t.historyLength();
+  const flow = fujiRecipeFlow();
+  await t.until("the dialog", () => $("fuji-dialog").open);
+  $("fuji-text").value = "Test Roll\nFilm Simulation: Classic Chrome\nGrain Effect: Weak, Small\nWhite Balance: Auto, +2 Red & -4 Blue";
+  $("fuji-sensor").value = "X-Trans IV";
+  $("fuji-dialog").close("ok");
+  await flow;
+  const p = ui.presets.find((x) => x.name === "Test Roll");
+  t.expect(p?.group === "Fuji", `in the Fuji group: ${JSON.stringify(p)}`);
+  await t.until("it on the photo", () => t.historyLength() > steps);
+  t.key("Ctrl+Z");
+});
+
 await t.step("right-click on the photo: Copy image puts it on the clipboard", async () => {
   photoMenu(new MouseEvent("contextmenu", { clientX: 400, clientY: 300 }));
   const items = [...document.querySelectorAll(".ctx-menu button")].map((b) => b.textContent);

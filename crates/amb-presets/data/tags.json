@@ -298,6 +298,24 @@
    "status": "approx"
   },
   {
+   "name": "amb:WBShiftRed",
+   "group": "white_balance",
+   "kind": "number",
+   "min": -9,
+   "max": 9,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "amb:WBShiftBlue",
+   "group": "white_balance",
+   "kind": "number",
+   "min": -9,
+   "max": 9,
+   "default": 0,
+   "status": "exact"
+  },
+  {
    "name": "IncrementalTemperature",
    "group": "white_balance",
    "kind": "number",

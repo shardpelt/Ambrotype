@@ -25,6 +25,34 @@ fn temperature_alone_keeps_the_as_shot_tint() {
 }
 
 #[test]
+fn a_white_balance_shift_moves_as_shot_too() {
+    let img = busy(64, 48);
+    let mean = |s: &DevelopSettings| {
+        let out = render(&img, s);
+        let n = (out.rgb.len() / 3) as f32;
+        let sum = |c: usize| out.rgb.iter().skip(c).step_by(3).sum::<f32>() / n;
+        (sum(0), sum(2))
+    };
+    let (r0, b0) = mean(&DevelopSettings::default());
+    // Red minus blue warms.
+    let (r1, b1) = mean(&DevelopSettings {
+        wb_shift: [2.0, -4.0],
+        ..Default::default()
+    });
+    assert!(r1 > r0 && b1 < b0, "{r0} {b0} -> {r1} {b1}");
+    // On the white (x, y): 4 mireds a step and 3 Tint a step.
+    let (x, y) = temp_tint_to_xy(5000.0, 0.0);
+    let t = xy_to_temp_tint(
+        wb_shifted(x, y, [1.0, 1.0]).0,
+        wb_shifted(x, y, [1.0, 1.0]).1,
+    );
+    assert!(
+        (t.temperature - 5000.0).abs() < 5.0 && (t.tint - 6.0).abs() < 0.2,
+        "{t:?}"
+    );
+}
+
+#[test]
 fn relative_white_balance_on_rendered_images() {
     let mut img = camera(1, 1, |_, _| [0.5, 0.5, 0.5]);
     img.xyz_to_cam = invert3(&amb_color::matrix::SRGB_TO_XYZ_D50);

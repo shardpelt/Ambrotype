@@ -7,6 +7,7 @@ use std::process::ExitCode;
 
 mod dust;
 mod edit;
+mod fuji;
 mod lens;
 mod library;
 mod look;
@@ -87,6 +88,15 @@ USAGE:
                                             colour) and the white balance (as Auto), from the photo's own
                                             look; --tone or --wb for one of them. Shows the changes;
                                             --apply makes them one undoable step
+    amb fuji <RECIPE.txt|-> [PHOTO] [--sensor S] [--name N] [--out PRESET.xmp] [--apply] [--json]
+                                            A Fujifilm-style camera recipe, pasted as it's written (Film
+                                            Simulation, Dynamic Range, Highlight, Shadow, Color, Grain Effect,
+                                            White Balance with its shift…), recreated as develop settings
+                                            through the Film recipe plugin. --sensor (X-Trans I to V, Bayer,
+                                            GFX, or a camera model such as X-T3) keeps the settings to what
+                                            those cameras have, when the recipe doesn't say. --out writes it
+                                            as a preset in the Fuji group; with a PHOTO, --apply puts it on
+                                            the photo (one undoable step)
     amb dust <PHOTO> [--line X0,Y0,X1,Y1] [--apply] [--json]
                                             Dust and hairs on a film scan (darker specks and short curved
                                             lines on smooth ground; not long straight scratches), each as a
@@ -306,6 +316,7 @@ fn main() -> ExitCode {
             "--out"
             | "--line"
             | "--baseline"
+            | "--sensor"
             | "--groups"
             | "--synthetic"
             | "--preset"
@@ -525,6 +536,10 @@ fn main() -> ExitCode {
             json,
         )
         .map(|t| println!("{t}")),
+        ["fuji", recipe] => fuji::fuji(recipe, None, &options, json).map(|t| println!("{t}")),
+        ["fuji", recipe, photo] => {
+            fuji::fuji(recipe, Some(Path::new(photo)), &options, json).map(|t| println!("{t}"))
+        }
         ["dust", photo] => dust(Path::new(photo), &options, json).map(|t| println!("{t}")),
         ["stats", photo] => stats(Path::new(photo), &options, json).map(|t| println!("{t}")),
         ["query", state] => match options.get("--queries") {

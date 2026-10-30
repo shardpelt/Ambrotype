@@ -62,6 +62,7 @@
         <label class="inline-check preset-original" title="On: a preset replaces the look of the edit (crop, spots, masks and geometry stay). Off: presets add up, each on top of the last."><input id="preset-from-original" type="checkbox"><span>Apply to the original, not on top</span></label>
         <div class="preset-tools">
           <button id="btn-preset-library" class="small" title="Preset library: free presets, grouped by style; hover to see one on your photo">Library…</button>
+          <button id="btn-fuji-recipe" class="small" title="Fuji recipe: paste a Fujifilm camera recipe (film simulation, grain, white balance…) and get it as a preset">Fuji recipe…</button>
           <button id="btn-surprise" class="small" title="Surprise me: random looks to try; pick one you like (one undo step)" disabled>Surprise me…</button>
           <button id="btn-assistant" class="small" title="Ask your own AI model to edit the photo (Ctrl+Shift+A)">Ask AI…</button>
           <button id="btn-match" class="small" title="Match the look of other photos: pick reference photos; finds the white balance, tone, colour and grading settings that give this photo their look" disabled>Match look…</button>
@@ -457,6 +458,26 @@
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="to" title="Save it in a folder you choose, such as one OneDrive, Dropbox or iCloud keeps in sync, so your other computers have it too; the folder joins your preset folders">Save to…</button>
         <button value="ok" class="primary">Save preset</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="fuji-dialog">
+    <form method="dialog">
+      <h2>Fuji recipe</h2>
+      <p class="hint">Paste a recipe as it's written: one setting a line (Film Simulation, Dynamic Range, Highlight, Shadow, Color, Grain Effect, White Balance…). It becomes a preset in the Fuji group. The sensor decides which settings and ranges the camera has.</p>
+      <textarea name="fuji_text" id="fuji-text" rows="12" spellcheck="false" placeholder="Film Simulation: Classic Chrome&#10;Dynamic Range: DR400&#10;Highlight: -1&#10;Shadow: +1&#10;Grain Effect: Weak, Small&#10;White Balance: Auto, +2 Red &amp; -4 Blue"></textarea>
+      <div class="grid">
+        <label>Name <input name="fuji_name" id="fuji-name" type="text" spellcheck="false" placeholder="From the recipe"></label>
+        <label>Sensor <select name="fuji_sensor" id="fuji-sensor">
+          <option value="">From the recipe (else X-Trans V)</option>
+          <option>X-Trans V</option><option>X-Trans IV</option><option>X-Trans III</option><option>X-Trans II</option><option>X-Trans I</option><option>Bayer</option><option>GFX</option>
+        </select></label>
+      </div>
+      <p class="hint">Our looks are ours, matched to Fujifilm's film simulations by name only, not measured yet. Fujifilm and its film simulation names are trademarks of FUJIFILM Corporation; Ambrotype is not affiliated with it.</p>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Make preset</button>
       </menu>
     </form>
   </dialog>

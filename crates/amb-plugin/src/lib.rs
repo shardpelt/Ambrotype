@@ -21,6 +21,7 @@
 //! Effect plugins export `amb_effect` instead of `amb_run` ([`effect`]).
 
 pub mod effect;
+pub mod fuji;
 mod manifest;
 pub mod photo;
 

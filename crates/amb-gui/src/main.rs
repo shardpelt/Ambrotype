@@ -586,6 +586,7 @@ fn main() {
             commands::photo::save_sidecar,
             commands::export::pick_export_path,
             commands::export::share_compare,
+            commands::library::contact_sheet,
             commands::export::export,
             commands::presets::presets,
             commands::presets::add_preset_folder,

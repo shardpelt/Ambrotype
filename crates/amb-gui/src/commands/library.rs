@@ -545,3 +545,66 @@ pub(crate) async fn pick_folder(app: tauri::AppHandle, title: String) -> Option<
         .and_then(|p| p.into_path().ok())
         .map(|p| p.display().to_string())
 }
+
+/// The contact sheet dialog's choices.
+#[derive(Debug, Deserialize)]
+pub(crate) struct ContactOptions {
+    style: String,
+    columns: usize,
+    paper: String,
+    landscape: bool,
+    title: String,
+    format: String,
+}
+
+/// Contact sheets of `paths` (`amb_library::contact`), saved where the user
+/// picks; the pages written, `None` when they cancel.
+#[tauri::command]
+pub(crate) async fn contact_sheet(
+    app: tauri::AppHandle,
+    paths: Vec<String>,
+    options: ContactOptions,
+    dir: Option<String>,
+) -> Res<Option<Vec<String>>> {
+    use amb_export::contact::{Sheet, Style, paper};
+    let format = amb_export::Format::from_name(&options.format).ok_or("unknown format")?;
+    let name = format!("contact-sheet.{}", format.extension());
+    let out = if let Some(t) = crate::uitest::current() {
+        Some(t.out_dir.join(&name))
+    } else {
+        let mut dialog = app.dialog().file();
+        if let Some(d) = dir.filter(|d| Path::new(d).is_dir()) {
+            dialog = dialog.set_directory(d);
+        }
+        dialog
+            .set_title("Save the contact sheet")
+            .set_file_name(&name)
+            .add_filter(format.extension().to_uppercase(), &[format.extension()])
+            .blocking_save_file()
+            .and_then(|p| p.into_path().ok())
+    };
+    let Some(out) = out else {
+        return Ok(None);
+    };
+    let (width, height) = paper(&options.paper).ok_or("unknown paper size")?;
+    let mut sheet = Sheet {
+        width,
+        height,
+        columns: options.columns.clamp(1, 20),
+        style: Style::from_name(&options.style).ok_or("unknown style")?,
+        title: options.title.trim().to_string(),
+    };
+    if options.landscape {
+        (sheet.width, sheet.height) = (sheet.height, sheet.width);
+    }
+    let photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
+    tauri::async_runtime::spawn_blocking(move || {
+        let export = amb_export::ExportSettings::new(format);
+        let pages = amb_library::contact::write(&photos, &sheet, &export, &out)?;
+        Ok(Some(
+            pages.iter().map(|p| p.display().to_string()).collect(),
+        ))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

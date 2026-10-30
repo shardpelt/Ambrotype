@@ -790,6 +790,42 @@ async function libraryDeleteCopies() {
 
 // One conversion for a roll of negatives (roll baseline): each scene's
 // median, odd frames their own, or the focused frame as the baseline.
+// Contact sheets of the selected photos, saved where the user picks
+// (src/commands/library.rs `contact_sheet`).
+async function contactSheetFlow() {
+  const paths = selectedPhotos().map((p) => p.path);
+  if (!paths.length) return toast("Select the photos for the sheet.", true);
+  const dlg = $("contact-dialog");
+  $("contact-what").textContent = `${paths.length} photo${paths.length === 1 ? "" : "s"}, in the order shown.`;
+  const style = $("contact-style");
+  style.onchange = () => { $("contact-columns").value = style.value === "film" ? 6 : 5; };
+  dlg.showModal();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice !== "ok") return;
+  const options = {
+    style: style.value,
+    columns: Number($("contact-columns").value) || 6,
+    paper: $("contact-paper").value,
+    landscape: $("contact-landscape").checked,
+    title: $("contact-title").value,
+    format: $("contact-format").value,
+  };
+  status(`Making a contact sheet of ${paths.length} photos…`);
+  $("busy").hidden = false;
+  try {
+    const pages = await invoke("contact_sheet", { paths, options, dir: lastExportDir() });
+    if (pages?.length) {
+      rememberExportDir(pages[0]);
+      toast(pages.length === 1 ? `Saved the contact sheet: ${pages[0]}` : `Saved ${pages.length} pages of contact sheets in ${dirOf(pages[0])}`);
+    }
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    $("busy").hidden = true;
+    status("Ready");
+  }
+}
+
 async function syncNegativeRoll() {
   const paths = selectedPhotos().map((p) => p.path);
   if (paths.length < 2) return toast("Select the frames of the roll.", true);
@@ -1105,6 +1141,7 @@ function wireLibrary() {
   $("lib-copy").addEventListener("click", libraryCopySettings);
   $("lib-paste").addEventListener("click", libraryPasteSettings);
   $("lib-negative-sync").addEventListener("click", () => syncNegativeRoll());
+  $("lib-contact").addEventListener("click", () => contactSheetFlow());
   $("lib-plugin").addEventListener("click", () => pluginsFlow().catch((e) => toast(String(e), true)));
   $("lib-vcopy").addEventListener("click", virtualCopyKey);
   $("lib-vcopy-delete").addEventListener("click", libraryDeleteCopies);

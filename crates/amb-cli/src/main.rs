@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+mod contact;
 mod dust;
 mod edit;
 mod fuji;
@@ -98,6 +99,13 @@ USAGE:
                                             those cameras have, when the recipe doesn't say. --out writes it
                                             as a preset in the Fuji group; with a PHOTO, --apply puts it on
                                             the photo (one undoable step)
+    amb contact <PHOTO|DIR>... --out SHEET.jpg [--style film|plain] [--columns N]
+                [--paper a4|a3|letter|8x10|11x14] [--landscape] [--title TEXT]
+                                            Contact sheets at 300 dpi: each photo small with its edit, as
+                                            strips of 35 mm film (sprocket holes, frame numbers and the
+                                            title as edge print; 6 frames a strip, a 36-frame roll on one
+                                            A4 page) or a plain grid with file names. More photos than
+                                            fit make pages: SHEET-001.jpg, ...
     amb share <PHOTO> --out PAGE.html [--long-edge 2048]
                                             One web page with the photo before its edit (framed as the
                                             edit is) and after, and a bar to drag between them; both
@@ -316,7 +324,7 @@ fn main() -> ExitCode {
             | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb"
             | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert"
             | "--replace" | "--stack" | "--reject" | "--shuffle" | "--window" | "--subfolders"
-            | "--no-scenes" | "--no-odd" | "--own-midtone" => {
+            | "--no-scenes" | "--no-odd" | "--own-midtone" | "--landscape" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -404,6 +412,9 @@ fn main() -> ExitCode {
             | "--add"
             | "--remove"
             | "--title"
+            | "--style"
+            | "--columns"
+            | "--paper"
             | "--caption"
             | "--creator"
             | "--copyright"
@@ -546,6 +557,12 @@ fn main() -> ExitCode {
         ["fuji", recipe, photo] => {
             fuji::fuji(recipe, Some(Path::new(photo)), &options, json).map(|t| println!("{t}"))
         }
+        ["contact", photos @ ..] if !photos.is_empty() => match options.get("--out") {
+            Some(out) => {
+                contact::contact(photos, Path::new(out), &options).map(|t| println!("{t}"))
+            }
+            None => Err("contact needs --out SHEET.jpg (or .png, .tif)".into()),
+        },
         ["share", photo] => match options.get("--out") {
             Some(out) => {
                 share::share(Path::new(photo), Path::new(out), &options).map(|t| println!("{t}"))

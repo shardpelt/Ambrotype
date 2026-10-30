@@ -19,6 +19,7 @@
 pub mod border;
 pub mod collage;
 pub mod compare;
+pub mod contact;
 pub mod dng;
 pub mod embed;
 pub mod exif;

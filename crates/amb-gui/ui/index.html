@@ -425,6 +425,7 @@
           <button type="button" id="lib-open" class="small" data-needs="any" title="Open in the editor (Enter, or double-click)">Open in editor</button>
           <button type="button" id="lib-export" class="small primary" data-needs="any" title="Export the selection with the same choices, one file each (Ctrl+E)">Export…</button>
           <button type="button" id="lib-collage" class="small" data-needs="any" title="Start a collage with the selected photos">Make a collage</button>
+          <button type="button" id="lib-contact" class="small" data-needs="any" title="Contact sheets to print: the selected photos small on pages, as strips of film or a plain grid">Contact sheet…</button>
         </div>
         <details class="lib-more">
           <summary>More</summary>
@@ -509,6 +510,27 @@
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary">Sync</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Contact sheets (library.js contactSheetFlow). -->
+  <dialog id="contact-dialog">
+    <form method="dialog">
+      <h2>Contact sheet</h2>
+      <p id="contact-what" class="hint"></p>
+      <div class="grid">
+        <label>Style <select id="contact-style"><option value="film">Film strips</option><option value="plain">Plain grid with names</option></select></label>
+        <label>Across <input id="contact-columns" type="number" min="1" max="20" value="6"></label>
+        <label>Paper <select id="contact-paper"><option value="a4">A4</option><option value="letter">Letter</option><option value="8x10">8 × 10 in</option><option value="a3">A3</option><option value="11x14">11 × 14 in</option></select></label>
+        <label>Format <select id="contact-format"><option value="jpeg">JPEG</option><option value="tiff">TIFF</option><option value="png">PNG</option></select></label>
+        <label>Title <input id="contact-title" type="text" spellcheck="false" placeholder="Roll 12 · Portra 400"></label>
+      </div>
+      <label class="inline-check"><input id="contact-landscape" type="checkbox"><span>Landscape page</span></label>
+      <p class="hint">At 300 dpi, each photo with its edit. More photos than fit make more pages.</p>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Make sheet…</button>
       </menu>
     </form>
   </dialog>

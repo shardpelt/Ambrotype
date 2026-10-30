@@ -100,6 +100,18 @@ await t.step("Sync negative roll asks how: scenes, odd frames, a baseline frame"
   lib.selected.clear();
 });
 
+await t.step("Contact sheet: the selection as film strips on a page", async () => {
+  lib.selected = new Set(lib.shown.map((p) => p.path));
+  const flow = contactSheetFlow();
+  await t.until("the dialog", () => $("contact-dialog").open);
+  $("contact-title").value = "Test roll";
+  $("contact-dialog").close("ok");
+  $("toast").hidden = true;
+  await flow;
+  t.expect($("toast").textContent.startsWith("Saved the contact sheet"), `the note: ${$("toast").textContent}`);
+  lib.selected.clear();
+});
+
 await t.step("Rated photos shows every rated photo, best first", async () => {
   select(ui.info.path, "only");
   await libraryChange({ rating: 4 });

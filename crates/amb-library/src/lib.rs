@@ -5,6 +5,7 @@
 
 pub mod catalog;
 pub mod collections;
+pub mod contact;
 pub mod duplicates;
 pub mod dust;
 pub mod files;

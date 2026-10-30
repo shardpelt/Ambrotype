@@ -37,7 +37,7 @@ fn photos_deep(args: &[&str]) -> Result<Vec<PathBuf>, String> {
 }
 
 /// The photos named: files as given, folders as the photos in them.
-fn photos(args: &[&str]) -> Result<Vec<PathBuf>, String> {
+pub(crate) fn photos(args: &[&str]) -> Result<Vec<PathBuf>, String> {
     let mut out = Vec::new();
     for a in args {
         // Absolute, as the catalogue and collections keep them.

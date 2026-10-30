@@ -80,6 +80,10 @@ Things anyone with the right kit can do; open an issue first so two people don't
 
 ## Next steps
 
+### From the competition (2026-10-30)
+
+LightCraft, Rembrandt, Redlamp, FlashView and Tenzen, what to take from each, why people pay for Tenzen, and our niche: [research/17](research/17-competitors-2026.md). In work, in this order: ~~before/after split~~ (done), a blank-canvas layout editor, a shareable before/after page, contact sheets, Touch (drag on the photo), smart search (CLIP).
+
 ### Pinned: teach by showing, not by cards (owner, 2026-10-20)
 
 Card tips get skipped. Learn's lessons stay in Help → Learn, but first-run teaching should show, not tell. Done on 2026-10-22 (`ui/teach.js`):

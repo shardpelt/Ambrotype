@@ -111,6 +111,7 @@ const KEY_ACTIONS = [
   { id: "plugins", group: "Tools", label: "Plugins", hint: "Extra tools that make edits; run, install and share them.", keys: ["Ctrl+Shift+P"], when: "any", button: "btn-plugins", run: () => pluginsFlow() },
   { id: "looks", group: "Window", label: "Appearance: layouts and themes", keys: ["Ctrl+L"], when: "any", button: "btn-looks", run: () => looksFlow() },
   { id: "edit-layout", group: "Window", label: "Edit layout", hint: "Move panels, controls and toolbar buttons.", keys: ["Ctrl+Shift+L"], when: "any", button: "btn-edit-layout", run: () => startEditing() },
+  { id: "blank-layout", group: "Window", label: "New layout from scratch", hint: "A blank canvas: empty columns and toolbar, filled from Add.", keys: [], when: "any", run: () => startEditing(true) },
   { id: "settings", group: "Window", label: "Settings and keyboard shortcuts", keys: ["Ctrl+,"], when: "any", button: "btn-settings", run: () => settingsFlow() },
   { id: "feedback", group: "Window", label: "Send feedback", hint: "A bug, an idea, or a photo that looks different from Lightroom.", keys: [], when: "any", button: "btn-feedback", run: () => feedbackFlow() },
 ];

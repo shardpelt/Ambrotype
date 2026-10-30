@@ -943,6 +943,10 @@ async function looksFlow() {
       dlg.close("ok");
       setTimeout(startEditing);
     },
+    "looks-blank": async () => {
+      dlg.close("ok");
+      setTimeout(() => startEditing(true));
+    },
     "looks-reload": async () => {
       ui.looks = await invoke("looks");
       for (const kind of ["layout", "theme"]) {

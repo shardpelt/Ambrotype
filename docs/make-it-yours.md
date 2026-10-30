@@ -11,7 +11,7 @@ How to change how Ambrotype looks and is laid out, and how to share it. Nothing 
 
 ## 2. Change a layout
 
-1. In Appearance, choose the layout closest to what you want and press **Edit layout…** (Ctrl+Shift+L). A built-in layout is copied first; yours is changed as it is.
+1. In Appearance, choose the layout closest to what you want and press **Edit layout…** (Ctrl+Shift+L). A built-in layout is copied first; yours is changed as it is. Or press **Start from scratch…** for a blank canvas: empty columns and toolbar, filled by dragging from Add.
 2. On screen:
    - **drag** panels, settings and toolbar buttons to move them;
    - **click** one to change its control (slider, knob, bar or number), label or columns, or to split or merge panels;

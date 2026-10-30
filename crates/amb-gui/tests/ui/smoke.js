@@ -336,6 +336,17 @@ await t.step("Y splits before and after; the bar drags", async () => {
   t.key("Ctrl+Z");
 });
 
+await t.step("Start from scratch: a blank layout, filled from Add; Cancel puts the old one back", async () => {
+  startEditing(true);
+  t.expect(!$("edit-palette").hidden, "Add is open");
+  const visible = (id) => { const el = $(id); return el && !el.hidden && el.offsetParent !== null; };
+  t.expect(!visible("btn-crop") && !visible("block-histogram"), "no buttons or blocks yet");
+  addFromPalette({ add: "block", name: "histogram" });
+  t.expect(visible("block-histogram"), "the histogram was added");
+  await finishEditing(false);
+  t.expect(visible("btn-crop"), "the old layout is back");
+});
+
 await t.step("right-click on the photo: Copy image puts it on the clipboard", async () => {
   photoMenu(new MouseEvent("contextmenu", { clientX: 400, clientY: 300 }));
   const items = [...document.querySelectorAll(".ctx-menu button")].map((b) => b.textContent);

@@ -22,7 +22,7 @@ const MENU_BAR = [
   ]],
   ["Library", ["library", "|", "lib-loupe", "lib-compare", "lib-survey", "|", "slideshow", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
   ["View", ["before", "split", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
-  ["Window", ["#minimize", "#maximize", "|", ["Task", ["task-library", "task-develop", "task-color", "task-retouch", "task-film", "task-collage"]], "|", "looks", "edit-layout", "|", "hub", "|", "#bring_all_to_front"], "window"],
+  ["Window", ["#minimize", "#maximize", "|", ["Task", ["task-library", "task-develop", "task-color", "task-retouch", "task-film", "task-collage"]], "|", "looks", "edit-layout", "blank-layout", "|", "hub", "|", "#bring_all_to_front"], "window"],
   ["Help", ["search", "|", "connect-ai", "|", "learn", "basics", "sample", "watch", "shortcuts", "|", "feedback", "source"], "help"],
 ];
 // Only on macOS: the rest have them in the window's title bar, or no Edit menu.
@@ -39,7 +39,7 @@ const MENU_TITLES = {
   plugins: "Plugins…", library: "Library Grid", "lib-loupe": "Loupe", "lib-compare": "Compare", "lib-survey": "Survey",
   "lib-stack": "Stack", "lib-unstack": "Unstack", "prev-photo": "Previous Photo", "next-photo": "Next Photo",
   zoom: "Fit / 100%", proof: "Soft Proofing", clipping: "Clipping Overlay", frame: "Frame", filmstrip: "Filmstrip",
-  "fold-left": "Left Column", "fold-right": "Right Column", looks: "Appearance…", "edit-layout": "Edit Layout",
+  "fold-left": "Left Column", "fold-right": "Right Column", looks: "Appearance…", "edit-layout": "Edit Layout", "blank-layout": "New Layout from Scratch",
   hub: "Browse the Hub…", settings: "Settings…", learn: "Learn the Basics", shortcuts: "Keyboard Shortcuts",
   feedback: "Send Feedback…", source: "Ambrotype on GitHub", search: "Search Everything…", "connect-ai": "Connect an AI App…",
   "task-library": "Library", "task-develop": "Develop", "task-color": "Color", "task-retouch": "Retouch", "task-film": "Film", "task-collage": "Collage",

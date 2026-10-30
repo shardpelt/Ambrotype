@@ -28,13 +28,24 @@ const TOOL_TITLES = {
 
 // ---------------------------------------------------------------- start, stop, undo
 
-function startEditing() {
+// A blank canvas: no panels, no toolbar buttons, empty columns to drop
+// things into from Add.
+const BLANK_LAYOUT = {
+  format: "ambrotype-layout/1",
+  name: "New layout",
+  toolbar: [],
+  left: { width: 250, items: [] },
+  right: { width: 330, items: [] },
+};
+
+// `blank`: start a new layout from nothing instead of changing this one.
+function startEditing(blank = false) {
   if (ui.edit) return;
   if (ui.crop.on) exitCrop(false);
   exitMasks();
   exitSpots();
-  const look = findLook("layout", ui.looks?.active_layout);
-  const draft = structuredClone(look?.usable ? look.data : ui.layout);
+  const look = blank ? null : findLook("layout", ui.looks?.active_layout);
+  const draft = structuredClone(blank ? BLANK_LAYOUT : look?.usable ? look.data : ui.layout);
   ui.edit = {
     look,
     original: ui.layout,
@@ -47,12 +58,18 @@ function startEditing() {
   };
   document.body.classList.add("editing");
   $("edit-bar").hidden = false;
-  $("edit-name").value = look && !look.builtin ? look.name : `${draft.name ?? "Layout"} (mine)`;
+  $("edit-name").value = blank ? "" : look && !look.builtin ? look.name : `${draft.name ?? "Layout"} (mine)`;
+  $("edit-name").placeholder = blank ? "New layout" : "";
   $("edit-density").value = ["compact", "large"].includes(draft.density) ? draft.density : "normal";
   $("edit-theme").replaceChildren(...(ui.looks?.themes ?? []).filter((t) => t.usable).map((t) =>
     Object.assign(document.createElement("option"), { value: t.id, textContent: t.name, selected: t.id === ui.edit.theme })));
   updateEditBar();
   applyLayout(draft);
+  if (blank) {
+    togglePalette(true);
+    status("A blank layout: drag panels, blocks and buttons from Add into the columns and the toolbar");
+    return;
+  }
   status("Editing the layout: drag things to move them, click one to change it");
 }
 

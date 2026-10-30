@@ -1019,6 +1019,7 @@ async function init() {
   wireMasks();
   wireSpots();
   wireSplit();
+  wireTouch();
   wireGuided();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   wirePresetLibrary();

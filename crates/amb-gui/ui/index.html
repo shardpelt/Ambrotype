@@ -164,6 +164,15 @@
         <p class="hint">Hover to see a preset on your photo. Free to use (CC0).</p>
       </div>
       <div class="badge" id="before-badge" hidden>Before</div>
+      <!-- Touch (T): drag on the photo to change what is under the pointer (touch.js). -->
+      <div class="proof-bar touch-bar" id="touch-bar" hidden>
+        <span>Touch: drag up or down on the photo</span>
+        <button type="button" class="small" data-touch="tone" title="The tone curve's region for the brightness under the pointer">Tone</button>
+        <button type="button" class="small" data-touch="hue" title="The hue of the colour under the pointer">Hue</button>
+        <button type="button" class="small" data-touch="saturation" title="The saturation of the colour under the pointer">Saturation</button>
+        <button type="button" class="small" data-touch="luminance" title="The brightness of the colour under the pointer (the B&amp;W mix for a black-and-white photo)">Luminance</button>
+        <button type="button" class="small" id="touch-close" title="Stop (T or Esc)">×</button>
+      </div>
       <!-- Soft proofing (S): the space to see the photo in (app.js toggleProof). -->
       <div class="proof-bar" id="proof-bar" hidden>
         <span>Proof preview</span>
@@ -1585,6 +1594,7 @@
   <script src="monitor.js"></script>
   <script src="slideshow.js"></script>
   <script src="split.js"></script>
+  <script src="touch.js"></script>
   <script src="assistant.js"></script>
   <script src="guided.js"></script>
   <script src="presetlib.js"></script>

@@ -21,7 +21,7 @@ const MENU_BAR = [
     "keywords", "|", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
   ]],
   ["Library", ["library", "|", "lib-loupe", "lib-compare", "lib-survey", "|", "slideshow", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
-  ["View", ["before", "split", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
+  ["View", ["before", "split", "touch", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
   ["Window", ["#minimize", "#maximize", "|", ["Task", ["task-library", "task-develop", "task-color", "task-retouch", "task-film", "task-collage"]], "|", "looks", "edit-layout", "blank-layout", "|", "hub", "|", "#bring_all_to_front"], "window"],
   ["Help", ["search", "|", "connect-ai", "|", "learn", "basics", "sample", "watch", "shortcuts", "|", "feedback", "source"], "help"],
 ];
@@ -30,7 +30,7 @@ const MENU_MAC_ONLY = new Set(["#services", "#hide", "#hide_others", "#show_all"
 
 // Menu titles, where the action's own label (keys.js) is a sentence.
 const MENU_TITLES = {
-  open: "Open…", "open-folder": "Open Folder…", slideshow: "Slideshow…", import: "Import Photos…", save: "Save", export: "Export…", "edit-in": "Edit in Another App", "share-compare": "Share Before and After…",
+  open: "Open…", "open-folder": "Open Folder…", slideshow: "Slideshow…", import: "Import Photos…", save: "Save", export: "Export…", "edit-in": "Edit in Another App", "share-compare": "Share Before and After…", touch: "Touch: Drag on the Photo",
   collage: "Collage Maker…", "lib-all": "Select All", "lib-none": "Select None", "lib-copy": "Copy Settings",
   "lib-paste": "Paste Settings", crop: "Crop and Straighten", spots: "Spot Removal", wb: "White Balance Picker",
   "rate-0": "No Rating", "label-red": "Red", "label-yellow": "Yellow", "label-green": "Green", "label-blue": "Blue",

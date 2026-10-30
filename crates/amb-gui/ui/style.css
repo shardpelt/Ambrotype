@@ -1285,3 +1285,6 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 .split-label { position: absolute; top: 10px; padding: 3px 9px; border-radius: 10px; background: rgb(0 0 0 / 0.6); color: #fff; font-size: 12px; white-space: nowrap; pointer-events: none; }
 .split-label.before { right: 20px; }
 .split-label.after { left: 20px; }
+/* Touch (touch.js). */
+.viewer.touching img#preview { cursor: ns-resize; }
+.touch-bar button.active { background: var(--accent); color: var(--accent-ink); }

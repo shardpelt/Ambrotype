@@ -347,6 +347,29 @@ await t.step("Start from scratch: a blank layout, filled from Add; Cancel puts t
   t.expect(visible("btn-crop"), "the old layout is back");
 });
 
+await t.step("Touch (T): a drag up on the photo changes what is under it, as one step", async () => {
+  document.activeElement?.blur();
+  t.key("T");
+  t.expect(touchState.on && !$("touch-bar").hidden, "Touch is on");
+  // What a drag would change, by colour.
+  t.expect(touchTargets([0.05, 0.05, 0.05], "tone").targets[0][0] === "ParametricShadows", "dark: shadows");
+  t.expect(touchTargets([0.95, 0.95, 0.95], "tone").targets[0][0] === "ParametricHighlights", "bright: highlights");
+  const orange = touchTargets([0.9, 0.5, 0.1], "saturation").targets.map(([n]) => n);
+  t.expect(orange.includes("SaturationAdjustmentOrange"), `orange: ${orange}`);
+  const img = $("preview");
+  await t.until("the photo", () => img.naturalWidth > 0 && !img.hidden);
+  const r = img.getBoundingClientRect();
+  const [x, y] = [r.left + r.width / 2, r.top + r.height / 2];
+  img.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: x, clientY: y }));
+  window.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientX: x, clientY: y - 60 }));
+  window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientX: x, clientY: y - 60 }));
+  await t.until("a curve region moved", () => Object.keys(ui.settings).some((n) => n.startsWith("Parametric")));
+  t.expect(!ui.zoom.on, "the drag didn't zoom");
+  t.key("Ctrl+Z");
+  t.key("Escape");
+  t.expect(!touchState.on, "Esc stops it");
+});
+
 await t.step("Share before and after makes one web page", async () => {
   t.setSlider("Exposure2012", 0.7);
   $("toast").hidden = true;

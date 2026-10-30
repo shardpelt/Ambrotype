@@ -21,6 +21,12 @@ A free, open-source photo editor and organiser for Windows, macOS and Linux, in 
 - **Make it yours:** layouts and themes as small JSON files, shared through the [hub](https://github.com/Ambrotypehq/ambrotype-hub), and sandboxed plugins ([how](docs/make-it-yours.md)).
 - **AI-friendly:** the `amb` command-line tool and an MCP server (`amb mcp`) let scripts and your own AI assistant make the same edits as the app.
 
+### Make it yours
+
+Every layout and theme is a small JSON file: move panels between columns, swap sliders for dials, recolour everything, or hide all but the photo. Fifteen layouts and eleven themes come built in (Appearance), and more are shared on the [hub](https://github.com/Ambrotypehq/ambrotype-hub). Some of them on the same photo:
+
+![Eight built-in layout and theme pairs on the same photo](docs/images/looks.jpg)
+
 All rendering models are our own ("ours, not Adobe's"): they're built by black-box measurement, never from Adobe's code or files. [docs/GAPS.md](docs/GAPS.md) lists everything that is still approximate or missing.
 
 ## Build and run

@@ -22,6 +22,8 @@ const ui = {
   overrides: {},         // values being dragged, not yet committed
   active: null,          // the setting whose slider is held (holdWhileDragging)
   before: false,
+  // Before / after split with a draggable bar (split.js).
+  split: false,
   hslTab: "Hue",
   // `uncropped`: the shown preview is the whole photo (what the crop tool draws on).
   preview: { inFlight: false, dirty: false, draft: false, url: null, uncropped: false },
@@ -941,6 +943,7 @@ async function save() {
 function toggleBefore() {
   if (!ui.info) return;
   ui.before = !ui.before;
+  if (ui.before && ui.split) toggleSplit();
   $("before-badge").hidden = !ui.before;
   $("btn-before").classList.toggle("active", ui.before);
   requestPreview(false);
@@ -1015,6 +1018,7 @@ async function init() {
   wireCrop();
   wireMasks();
   wireSpots();
+  wireSplit();
   wireGuided();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   wirePresetLibrary();

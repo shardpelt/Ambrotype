@@ -818,15 +818,27 @@ impl Session {
         }
     }
 
-    /// The settings to render: the state (or nothing, for "before") plus
-    /// uncommitted slider overrides.
+    /// The settings to render: the state (or, for "before", only its framing:
+    /// crop, geometry and lens corrections, so it lines up with the edit in the
+    /// split view) plus uncommitted slider overrides.
     fn effective_settings(
         &self,
         overrides: &BTreeMap<String, Value>,
         before: bool,
     ) -> BTreeMap<String, Value> {
         if before {
-            return BTreeMap::new();
+            let catalog = amb_protocol::catalog::Catalog::builtin();
+            return self
+                .state
+                .settings()
+                .iter()
+                .filter(|(k, _)| {
+                    catalog
+                        .lookup(k)
+                        .is_some_and(|t| BEFORE_KEEPS.contains(&t.group.as_str()))
+                })
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect();
         }
         let mut settings = self.state.settings().clone();
         for (k, v) in overrides {
@@ -1566,6 +1578,9 @@ pub struct PresetEntry {
     pub group: String,
     pub path: String,
 }
+
+/// Settings groups "before" keeps: where the photo's edges are.
+const BEFORE_KEEPS: [&str; 3] = ["crop", "transform", "lens"];
 
 /// Settings groups a saved preset leaves out: they belong to one photo.
 const PHOTO_SPECIFIC_GROUPS: [&str; 6] = [

@@ -1273,3 +1273,15 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 .tree-mode { display: flex; gap: 2px; margin: 0 2px 8px; padding: 2px; background: var(--bg-deep); border-radius: var(--radius); }
 .tree-mode button { flex: 1; padding: 3px 6px; font-size: 12px; background: transparent; border-color: transparent; color: var(--muted); }
 .tree-mode button.on { background: var(--tab-active); color: var(--text); border-color: var(--line); }
+/* Before / after split (split.js). */
+.viewer img.split-before { position: absolute; max-width: none; max-height: none; pointer-events: none; z-index: 2; }
+.split-bar { position: absolute; z-index: 3; width: 24px; margin-left: -12px; cursor: ew-resize; touch-action: none; }
+.split-bar::before { content: ""; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: rgb(255 255 255 / 0.9); box-shadow: 0 0 4px rgb(0 0 0 / 0.6); }
+.split-handle { position: absolute; left: 50%; top: 50%; width: 28px; height: 28px; transform: translate(-50%, -50%); border-radius: 50%; background: rgb(255 255 255 / 0.95); box-shadow: 0 1px 6px rgb(0 0 0 / 0.5); }
+.split-handle::before, .split-handle::after { content: ""; position: absolute; top: 9px; border: 5px solid transparent; }
+.split-handle::before { left: 2px; border-right-color: #333; }
+.split-handle::after { right: 2px; border-left-color: #333; }
+.split-bar.dragging .split-handle { background: var(--accent); }
+.split-label { position: absolute; top: 10px; padding: 3px 9px; border-radius: 10px; background: rgb(0 0 0 / 0.6); color: #fff; font-size: 12px; white-space: nowrap; pointer-events: none; }
+.split-label.before { right: 20px; }
+.split-label.after { left: 20px; }

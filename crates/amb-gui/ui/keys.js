@@ -38,6 +38,7 @@ const KEY_ACTIONS = [
   { id: "basics", group: "Help", label: "Photography basics", hint: "How a photo is made and edited, step by step, and what the terms mean.", keys: ["Shift+F1"], when: "any", run: () => basicsFlow() },
   { id: "learn", group: "Help", label: "Learn: short guided lessons", keys: ["F1"], when: "any", run: () => learnFlow() },
   { id: "before", group: "View", label: "Before / after", keys: ["\\"], when: "any", button: "btn-before", run: () => toggleBefore() },
+  { id: "split", group: "View", label: "Before / after split", hint: "Before on the left of a bar, after on the right; drag the bar.", keys: ["Y"], when: "main", photo: true, run: () => toggleSplit() },
   { id: "zoom", group: "View", label: "Fit / 100% view", hint: "Or click the photo; drag to pan at 100%. Right-drag a box to zoom to it.", keys: ["Z", "Space"], when: "main", photo: true, button: "btn-zoom", run: (e) => (e.key === " " && e.target.matches("button, input, select, textarea, summary") ? false : setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy)) },
   { id: "loupe", group: "View", label: "Loupe: see the part under the pointer at 100%", hint: "Scroll to magnify (100–400%). I or Esc closes it.", keys: ["I"], when: "main", photo: true, run: () => toggleLoupe() },
   { id: "proof", group: "View", label: "Soft proofing", hint: "See the photo as it will export to sRGB, Adobe RGB, Display P3 or ProPhoto, and mark the colours that won't fit.", keys: ["S"], when: "main", photo: true, run: () => toggleProof() },

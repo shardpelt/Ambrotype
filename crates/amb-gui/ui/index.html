@@ -25,7 +25,7 @@
       <button id="btn-undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
       <button id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
       <span class="sep"></span>
-      <button id="btn-before" title="Show the photo before edits (\)" disabled>Before / After</button>
+      <button id="btn-before" title="Show the photo before edits (\); split before and after with Y" disabled>Before / After</button>
       <span class="sep"></span>
       <button id="btn-crop" title="Crop and straighten (R)" disabled>Crop</button>
       <button id="btn-masks" title="Masks (M)" disabled>Masks</button>
@@ -117,6 +117,9 @@
       </div>
       <img id="zoom-under" class="zoom-under" alt="" hidden>
       <img id="preview" alt="" hidden>
+      <!-- Before / after split (split.js): the before photo over the left part, and the bar. -->
+      <img id="preview-before" class="split-before" alt="" hidden>
+      <div id="split-bar" class="split-bar" hidden title="Drag to move the split (Y turns it off)"><span class="split-label before">Before</span><span class="split-label after">After</span><span class="split-handle"></span></div>
       <canvas id="crop-canvas" class="crop-canvas" hidden></canvas>
       <canvas id="mask-canvas" class="crop-canvas mask-canvas" hidden></canvas>
       <canvas id="spot-canvas" class="crop-canvas spot-canvas" hidden></canvas>
@@ -1558,6 +1561,7 @@
   <script src="quickzoom.js"></script>
   <script src="monitor.js"></script>
   <script src="slideshow.js"></script>
+  <script src="split.js"></script>
   <script src="assistant.js"></script>
   <script src="guided.js"></script>
   <script src="presetlib.js"></script>

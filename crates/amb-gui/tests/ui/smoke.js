@@ -298,7 +298,6 @@ await t.step("applying a preset shows no note, and its button no tooltip", async
 });
 
 await t.step("Fuji recipe: a pasted recipe becomes a preset in the Fuji group, put on the photo", async () => {
-  const steps = t.historyLength();
   const flow = fujiRecipeFlow();
   await t.until("the dialog", () => $("fuji-dialog").open);
   $("fuji-text").value = "Test Roll\nFilm Simulation: Classic Chrome\nGrain Effect: Weak, Small\nWhite Balance: Auto, +2 Red & -4 Blue";
@@ -307,7 +306,33 @@ await t.step("Fuji recipe: a pasted recipe becomes a preset in the Fuji group, p
   await flow;
   const p = ui.presets.find((x) => x.name === "Test Roll");
   t.expect(p?.group === "Fuji", `in the Fuji group: ${JSON.stringify(p)}`);
-  await t.until("it on the photo", () => t.historyLength() > steps);
+  await t.until("it on the photo", () => ui.state?.settings?.["amb:WBShiftBlue"] === -4);
+  t.key("Ctrl+Z");
+});
+
+await t.step("Y splits before and after; the bar drags", async () => {
+  t.setSlider("Exposure2012", 1);
+  // Keys typed in a slider's number box are the number's, not shortcuts.
+  document.activeElement?.blur();
+  t.key("Y");
+  t.expect(ui.split, "Y turns the split on");
+  await t.until("the before half", () => !$("preview-before").hidden && !$("split-bar").hidden, 20000);
+  // The two halves line up once the photo has settled at its size.
+  const lined = () => {
+    const [p, b] = [$("preview").getBoundingClientRect(), $("preview-before").getBoundingClientRect()];
+    return Math.abs(p.left - b.left) < 2 && Math.abs(p.width - b.width) < 2;
+  };
+  await t.until("the halves line up", lined, 10000);
+  const p = $("preview").getBoundingClientRect();
+  const bar = $("split-bar");
+  const y = p.top + p.height / 2;
+  bar.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: bar.getBoundingClientRect().left + 12, clientY: y, pointerId: 1 }));
+  bar.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: p.left + p.width * 0.25, clientY: y, pointerId: 1 }));
+  bar.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
+  const at = bar.getBoundingClientRect();
+  t.expect(Math.abs(at.left + at.width / 2 - (p.left + p.width * 0.25)) < 3, `the bar followed: ${at.left}`);
+  t.key("Y");
+  t.expect($("split-bar").hidden, "Y again hides it");
   t.key("Ctrl+Z");
 });
 

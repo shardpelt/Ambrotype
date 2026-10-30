@@ -23,7 +23,7 @@ async function renderLoop() {
   while (ui.preview.dirty) {
     ui.preview.dirty = false;
     const draft = ui.preview.draft;
-    const uncropped = ui.crop.on || ui.before || gu.on;
+    const uncropped = ui.crop.on || gu.on;
     try {
       if (ui.zoom.on) {
         // At 100%, a slider being dragged shows on a reduced copy, enlarged;
@@ -56,6 +56,7 @@ async function renderLoop() {
         img.style.width = img.style.height = "";
       }
       showJpeg(jpeg);
+      requestAnimationFrame(placeSplit);
       ui.preview.uncropped = uncropped;
       ui.preview.overlay = maskOverlay != null;
       // The whole photo as it looks, kept to show under the 100% view at once.
@@ -64,6 +65,7 @@ async function renderLoop() {
         ui.preview.fitUrl = URL.createObjectURL(new Blob([jpeg], { type: "image/jpeg" }));
         ui.preview.fitPath = ui.info.path;
       }
+      if (ui.split && !draft) await renderSplitBefore(previewSize(false));
       drawHistogram(meta.histogram);
       ui.curve?.setHistogram(meta.histogram);
       status(`${meta.width}×${meta.height} preview in ${meta.millis} ms` +
@@ -114,12 +116,13 @@ function splitFramed(buf) {
 // preview smaller than the screen), keeping its shape.
 function fitPreview() {
   const img = $("preview");
-  if (ui.zoom.on || !img.naturalWidth) return;
+  if (ui.zoom.on || !img.naturalWidth) return placeSplit();
   const v = $("viewer");
   const s = Math.min(v.clientWidth / img.naturalWidth, v.clientHeight / img.naturalHeight);
   const [w, h] = [`${Math.floor(img.naturalWidth * s)}px`, `${Math.floor(img.naturalHeight * s)}px`];
   if (img.style.width !== w) img.style.width = w;
   if (img.style.height !== h) img.style.height = h;
+  placeSplit();
 }
 
 function showJpeg(jpeg) {

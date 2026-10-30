@@ -152,6 +152,23 @@ impl Catalog {
         self.groups.iter().find(|g| g.name == name)
     }
 
+    /// Only the settings that decide where the photo's edges are (crop,
+    /// geometry and lens corrections): the photo "before" its edits, framed
+    /// as the edit is, so the two line up side by side.
+    pub fn framing(
+        &self,
+        settings: &std::collections::BTreeMap<String, amb_presets::Value>,
+    ) -> std::collections::BTreeMap<String, amb_presets::Value> {
+        settings
+            .iter()
+            .filter(|(k, _)| {
+                self.lookup(k)
+                    .is_some_and(|t| ["crop", "transform", "lens"].contains(&t.group.as_str()))
+            })
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    }
+
     /// Registry information for a tag (exact name or prefix rule).
     pub fn lookup(&self, name: &str) -> Option<TagInfo> {
         Registry::builtin().lookup(name)

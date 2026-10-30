@@ -82,7 +82,7 @@ Things anyone with the right kit can do; open an issue first so two people don't
 
 ### From the competition (2026-10-30)
 
-LightCraft, Rembrandt, Redlamp, FlashView and Tenzen, what to take from each, why people pay for Tenzen, and our niche: [research/17](research/17-competitors-2026.md). In work, in this order: ~~before/after split~~ (done), ~~a blank-canvas layout editor~~ (done: Appearance → Start from scratch…), a shareable before/after page, contact sheets, Touch (drag on the photo), smart search (CLIP).
+LightCraft, Rembrandt, Redlamp, FlashView and Tenzen, what to take from each, why people pay for Tenzen, and our niche: [research/17](research/17-competitors-2026.md). In work, in this order: ~~before/after split~~ (done), ~~a blank-canvas layout editor~~ (done: Appearance → Start from scratch…), ~~a shareable before/after page~~ (done: File → Share Before and After…, `amb share`), contact sheets, Touch (drag on the photo), smart search (CLIP).
 
 ### Pinned: teach by showing, not by cards (owner, 2026-10-20)
 

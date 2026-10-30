@@ -122,6 +122,55 @@ pub(crate) struct Exported {
     pub(crate) quality: u8,
 }
 
+/// "Share before/after…": a page with the photo before and after its edit
+/// and a bar to drag (`Session::compare_page`), saved where the user picks;
+/// `None` when they cancel.
+#[tauri::command]
+pub(crate) async fn share_compare(
+    app: tauri::AppHandle,
+    dir: Option<String>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Option<String>> {
+    let stem = {
+        let guard = state.session.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_ref().ok_or("open a photo first")?;
+        s.path
+            .file_stem()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "photo".into())
+    };
+    let name = format!("{stem}-before-after.html");
+    // A UI test saves without asking.
+    let out = if let Some(t) = crate::uitest::current() {
+        Some(t.out_dir.join(&name))
+    } else {
+        let mut dialog = app.dialog().file();
+        if let Some(d) = dir.filter(|d| Path::new(d).is_dir()) {
+            dialog = dialog.set_directory(d);
+        }
+        dialog
+            .set_title("Share before and after")
+            .set_file_name(&name)
+            .add_filter("Web page", &["html"])
+            .blocking_save_file()
+            .and_then(|p| p.into_path().ok())
+    };
+    let Some(out) = out else {
+        return Ok(None);
+    };
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        s.compare_page(&out, 2048, lens)?;
+        Ok(Some(out.display().to_string()))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 pub(crate) async fn pick_export_path(
     app: tauri::AppHandle,

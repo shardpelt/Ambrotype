@@ -18,6 +18,7 @@ mod organise;
 mod plugin;
 mod presets;
 mod render;
+mod share;
 mod sweep;
 
 use amb_presets::Preset;
@@ -97,6 +98,11 @@ USAGE:
                                             those cameras have, when the recipe doesn't say. --out writes it
                                             as a preset in the Fuji group; with a PHOTO, --apply puts it on
                                             the photo (one undoable step)
+    amb share <PHOTO> --out PAGE.html [--long-edge 2048]
+                                            One web page with the photo before its edit (framed as the
+                                            edit is) and after, and a bar to drag between them; both
+                                            photos are inside the file, so it works offline and on any
+                                            web host
     amb dust <PHOTO> [--line X0,Y0,X1,Y1] [--apply] [--json]
                                             Dust and hairs on a film scan (darker specks and short curved
                                             lines on smooth ground; not long straight scratches), each as a
@@ -540,6 +546,12 @@ fn main() -> ExitCode {
         ["fuji", recipe, photo] => {
             fuji::fuji(recipe, Some(Path::new(photo)), &options, json).map(|t| println!("{t}"))
         }
+        ["share", photo] => match options.get("--out") {
+            Some(out) => {
+                share::share(Path::new(photo), Path::new(out), &options).map(|t| println!("{t}"))
+            }
+            None => Err("share needs --out PAGE.html".into()),
+        },
         ["dust", photo] => dust(Path::new(photo), &options, json).map(|t| println!("{t}")),
         ["stats", photo] => stats(Path::new(photo), &options, json).map(|t| println!("{t}")),
         ["query", state] => match options.get("--queries") {

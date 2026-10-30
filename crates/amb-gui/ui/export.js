@@ -34,7 +34,28 @@ function photoMenu(e) {
     ["Copy file path", () => copyPath([path])],
     ["Show in folder", () => invoke("reveal_file", { path }).catch((err) => toast(String(err), true))],
     ["Export…", () => exportFlow()],
+    ["Share before and after…", () => shareCompareFlow()],
   ]);
+}
+
+// A web page with the photo before and after its edit (src/commands/export.rs
+// `share_compare`).
+async function shareCompareFlow() {
+  if (!ui.info) return;
+  status("Making the before/after page…");
+  $("busy").hidden = false;
+  try {
+    const path = await invoke("share_compare", { dir: lastExportDir() });
+    if (path) {
+      rememberExportDir(path);
+      toast(`Saved the before/after page: ${path}`);
+    }
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    $("busy").hidden = true;
+    status("Ready");
+  }
 }
 
 // The folder the last export went to, on this computer: the save dialogs

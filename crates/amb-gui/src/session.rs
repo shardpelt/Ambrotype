@@ -827,18 +827,7 @@ impl Session {
         before: bool,
     ) -> BTreeMap<String, Value> {
         if before {
-            let catalog = amb_protocol::catalog::Catalog::builtin();
-            return self
-                .state
-                .settings()
-                .iter()
-                .filter(|(k, _)| {
-                    catalog
-                        .lookup(k)
-                        .is_some_and(|t| BEFORE_KEEPS.contains(&t.group.as_str()))
-                })
-                .map(|(k, v)| (k.clone(), v.clone()))
-                .collect();
+            return amb_protocol::catalog::Catalog::builtin().framing(self.state.settings());
         }
         let mut settings = self.state.settings().clone();
         for (k, v) in overrides {
@@ -1502,6 +1491,44 @@ impl Session {
     }
 
     /// Full-resolution render and export.
+    /// A before/after page (`amb_export::compare`): the photo before its
+    /// edits (framed as the edit is) and after, `long_edge` pixels on the
+    /// long side, in one HTML file at `out`.
+    pub fn compare_page(
+        &mut self,
+        out: &Path,
+        long_edge: usize,
+        lens: &LensSources,
+    ) -> Result<(), String> {
+        let after = self.state.settings().clone();
+        let before = amb_protocol::catalog::Catalog::builtin().framing(&after);
+        let src = downscale(&self.full, long_edge.max(256) * 2);
+        let tmp = std::env::temp_dir().join(format!("amb-compare-{}", std::process::id()));
+        std::fs::create_dir_all(&tmp).map_err(|e| e.to_string())?;
+        let mut settings = amb_export::ExportSettings::new(amb_export::Format::Jpeg);
+        settings.quality = 88;
+        settings.resize = amb_export::Resize::LongEdge(long_edge as u32);
+        settings.metadata = amb_export::MetadataPolicy::None;
+        let mut jpegs = Vec::new();
+        for (name, s) in [("before", &before), ("after", &after)] {
+            let develop = self.develop(s, lens);
+            let developed = pipeline::render(&src, &develop);
+            let file = tmp.join(format!("{name}.jpg"));
+            let report = amb_export::export(&developed, &self.full.metadata, &settings, &file)
+                .map_err(|e| e.to_string())?;
+            jpegs.push((std::fs::read(&file).map_err(|e| e.to_string())?, report));
+        }
+        let _ = std::fs::remove_dir_all(&tmp);
+        let (w, h) = (jpegs[1].1.width, jpegs[1].1.height);
+        let title = self
+            .path
+            .file_stem()
+            .map(|s| s.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "Photo".into());
+        let html = amb_export::compare::page(&title, &jpegs[0].0, &jpegs[1].0, w, h);
+        std::fs::write(out, html).map_err(|e| format!("{}: {e}", out.display()))
+    }
+
     pub fn export(
         &mut self,
         out: &Path,
@@ -1578,9 +1605,6 @@ pub struct PresetEntry {
     pub group: String,
     pub path: String,
 }
-
-/// Settings groups "before" keeps: where the photo's edges are.
-const BEFORE_KEEPS: [&str; 3] = ["crop", "transform", "lens"];
 
 /// Settings groups a saved preset leaves out: they belong to one photo.
 const PHOTO_SPECIFIC_GROUPS: [&str; 6] = [

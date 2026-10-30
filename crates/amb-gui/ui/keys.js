@@ -26,6 +26,7 @@ const KEY_ACTIONS = [
   { id: "open-folder", group: "File", label: "Open a folder", hint: "Its photos in the library.", keys: ["Ctrl+Shift+O"], when: "any", run: () => openFolder() },
   { id: "save", group: "File", label: "Save the edit to the sidecar", keys: ["Ctrl+S"], when: "any", button: "btn-save", run: () => save() },
   { id: "export", group: "File", label: "Export", keys: ["Ctrl+E"], when: "any", button: "btn-export", run: () => exportFlow() },
+  { id: "share-compare", group: "File", label: "Share before and after", hint: "One web page with the photo before and after its edit and a bar to drag; it works offline and on any web host.", keys: [], when: "any", photo: true, run: () => shareCompareFlow() },
   { id: "edit-in", group: "File", label: "Edit in another app", hint: "The photo, as edited, goes to your image editor as a TIFF next to it (set the app in Settings → General).", keys: ["Ctrl+Alt+E"], when: "any", photo: true, run: () => editInFlow() },
     { id: "collage", group: "File", label: "Collage maker", hint: "Several photos on one canvas.", keys: ["C"], when: "main", button: "btn-collage", run: () => collageFlow() },
   { id: "undo", group: "Edit", label: "Undo", keys: ["Ctrl+Z"], when: "any", button: "btn-undo", run: () => run([{ cmd: "undo" }]) },

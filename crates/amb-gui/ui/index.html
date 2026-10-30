@@ -425,7 +425,7 @@
         <details class="lib-more">
           <summary>More</summary>
           <div class="col-line">
-          <button type="button" id="lib-negative-sync" class="small" data-needs="many" title="Film negatives: analyse each selected frame and give them all the roll's median film base and levels (Auto off)">Sync negative roll</button>
+          <button type="button" id="lib-negative-sync" class="small" data-needs="many" title="Film negatives: analyse each selected frame and give the roll one conversion (Auto off): frames in different light get their own, odd frames keep theirs">Sync negative roll…</button>
           <button type="button" id="lib-plugin" class="small" data-needs="any" title="Run a plugin on each selected photo, with its own settings">Run a plugin…</button>
           <button type="button" id="lib-hdr" class="small" data-needs="many" title="Merge bracketed raws of one scene into one HDR photo (a DNG next to them)">Merge to HDR…</button>
           <button type="button" id="lib-pano" class="small" data-needs="many" title="Stitch overlapping raws into one panorama (a DNG next to them)">Merge to Panorama…</button>
@@ -469,6 +469,22 @@
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary">Paste</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Sync negative roll (library.js). -->
+  <dialog id="roll-dialog">
+    <form method="dialog">
+      <h2>Sync negative roll</h2>
+      <p id="roll-what" class="hint"></p>
+      <label class="inline-check"><input id="roll-scenes" type="checkbox" checked><span>Frames in different light (daylight, lamps) get their own conversion</span></label>
+      <label class="inline-check"><input id="roll-odd" type="checkbox" checked><span>Odd frames (two stops or more off) keep their own</span></label>
+      <label class="inline-check"><input id="roll-own-midtone" type="checkbox"><span>Each frame keeps its own brightness (share only the base and levels)</span></label>
+      <label class="inline-check"><input id="roll-baseline" type="checkbox"><span id="roll-baseline-label">Use this frame as the baseline</span></label>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Sync</button>
       </menu>
     </form>
   </dialog>

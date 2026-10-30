@@ -115,3 +115,87 @@ pub(crate) fn negative_analyze(
     }
     Ok(())
 }
+
+/// `amb negative sync`: one conversion for a roll (roll baseline): each
+/// scene's median, odd frames their own; `--apply` writes every sidecar.
+pub(crate) fn negative_sync(
+    photos: &[&str],
+    options: &BTreeMap<&str, &str>,
+    json: bool,
+) -> Result<(), String> {
+    use amb_library::negative::{RollOptions, analyze_files, commands, roll};
+    let paths: Vec<&Path> = photos.iter().map(Path::new).collect();
+    let baseline = match options.get("--baseline") {
+        Some(b) => Some(
+            paths
+                .iter()
+                .position(|p| *p == Path::new(b))
+                .ok_or_else(|| format!("--baseline {b} is not one of the photos"))?,
+        ),
+        None => None,
+    };
+    let o = RollOptions {
+        scenes: !options.contains_key("--no-scenes"),
+        odd: !options.contains_key("--no-odd"),
+        own_midtone: options.contains_key("--own-midtone"),
+        baseline,
+    };
+    let frames = analyze_files(&paths)?;
+    let plan = roll(&frames, &o);
+    let apply = options.contains_key("--apply");
+    let mut written = Vec::new();
+    if apply {
+        for (photo, frame) in paths.iter().zip(&plan) {
+            let sidecar = crate::edit::edit_target(photo);
+            let mut state = if sidecar.exists() {
+                amb_protocol::DevelopState::load(&sidecar).map_err(|e| e.to_string())?
+            } else {
+                amb_protocol::DevelopState::new()
+            };
+            state
+                .execute_grouped("Sync negative roll", &commands(&frame.settings))
+                .map_err(|e| e.to_string())?;
+            state.save(&sidecar).map_err(|e| e.to_string())?;
+            written.push(sidecar.display().to_string());
+        }
+    }
+    if json {
+        let frames: Vec<serde_json::Value> = paths
+            .iter()
+            .zip(&plan)
+            .map(|(p, f)| {
+                serde_json::json!({
+                    "photo": p.display().to_string(),
+                    "scene": f.scene,
+                    "odd": f.odd,
+                    "settings": f.settings,
+                })
+            })
+            .collect();
+        println!(
+            "{}",
+            serde_json::to_string_pretty(
+                &serde_json::json!({ "frames": frames, "written": written })
+            )
+            .map_err(|e| e.to_string())?
+        );
+        return Ok(());
+    }
+    for (p, f) in paths.iter().zip(&plan) {
+        println!(
+            "{}: scene {}{}",
+            p.display(),
+            f.scene + 1,
+            if f.odd { ", odd: keeps its own" } else { "" }
+        );
+    }
+    println!(
+        "{}",
+        if apply {
+            format!("wrote {} sidecar(s)", written.len())
+        } else {
+            "not applied (add --apply)".into()
+        }
+    );
+    Ok(())
+}

@@ -299,11 +299,13 @@ fn main() -> ExitCode {
             "--progressive" | "--enlarge" | "--slides" | "--force" | "--no-subfolders"
             | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb"
             | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert"
-            | "--replace" | "--stack" | "--reject" | "--shuffle" | "--window" | "--subfolders" => {
+            | "--replace" | "--stack" | "--reject" | "--shuffle" | "--window" | "--subfolders"
+            | "--no-scenes" | "--no-odd" | "--own-midtone" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
             | "--line"
+            | "--baseline"
             | "--groups"
             | "--synthetic"
             | "--preset"
@@ -535,6 +537,9 @@ fn main() -> ExitCode {
             options.contains_key("--slides"),
             json,
         ),
+        ["negative", "sync", photos @ ..] if photos.len() >= 2 => {
+            negative_sync(photos, &options, json)
+        }
         ["negative", "stocks"] => {
             negative_stocks(json);
             Ok(())

@@ -30,7 +30,7 @@ Ambrotype is a general raw editor in which negatives are one panel. Both of thes
 | Film base | Found as a wide bright band along the frame edge, with several strips handled together; an eyedropper; typed RGB; a per-stock default when it can't be measured | Read from the rebate; click the clear film between frames to set the roll's base | The median of the brightest 0.3 % of the picture |
 | Auto | One Auto Balance switch. Off uses a fixed range (colour 1.55 D, B&W 2.17 D), so equal film gives equal prints | Auto Density and Auto Grade, metered only on parts with detail, with holds for highlights and shadows | One Auto for base, levels and midtone. Off uses stored values |
 | Colour cast | Levels per channel | Cast Removal: balances each layer against the frame's greys, from shadows to highlights | Assumes the deepest shadows and brightest highlights are neutral; fails on sunsets ([GAPS.md](../GAPS.md) §9) |
-| Rolls | Develop a whole folder with one process and target | Roll baseline (odd frames keep their own), scenes grouped by light, roll defaults with per-frame overrides, Lock Bounds | Freeze one frame; Sync negative roll (one median for the selection) |
+| Rolls | Develop a whole folder with one process and target | Roll baseline (odd frames keep their own), scenes grouped by light, roll defaults with per-frame overrides, Lock Bounds | Freeze one frame; Sync negative roll (a median per scene, odd frames kept, a chosen baseline, own brightness) |
 | Scan corrections | None listed | Flat-field from a shot of the bare light; channel bleed between dyes, light and sensor (3 × 3, per film type or measured from a colour chart shot on film); narrowband light; three-shot RGB merge | Lens corrections only |
 | Frames | Finds frames on a flatbed preview by grain texture and fits an even spacing | Half-frame split, stitching a large negative, HDR for slides | Crop to frame (finds one frame's edges); panorama and HDR merges for raws |
 | Dust and scratches | Automatic, a guided rectangle, brush, clone, infrared. Checks that wires and window frames aren't scratches. Repairs are layers | Automatic (spots and hairs), infrared, heal strokes, a line tool for straight scratches, clone. Keeps the grain | Heal and clone spots by hand |
@@ -112,7 +112,7 @@ Each idea is rebuilt from the description, in our pipeline and our `amb:` namesp
    - with holds for highlights and shadows
 
    Replaces model v1's fixed percentiles. M.
-5. **Roll baseline** (NegPy). Builds on Sync negative roll:
+5. **Roll baseline** (NegPy; built 2026-10-30 as Sync negative roll…'s options and `amb negative sync`). Builds on Sync negative roll:
    - frames far from the roll's median keep their own analysis
    - Use this frame as the baseline
    - Lock bounds

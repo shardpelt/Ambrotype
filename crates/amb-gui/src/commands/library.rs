@@ -153,26 +153,34 @@ pub(crate) struct RollSync {
     pub(crate) changed: Vec<String>,
     pub(crate) errors: Vec<String>,
     pub(crate) state: Option<session::StateInfo>,
+    /// How many scenes the roll had, and how many frames kept their own.
+    pub(crate) scenes: usize,
+    pub(crate) odd: usize,
 }
 
-/// Give a roll of negatives the same conversion: each frame is analysed,
-/// and the median is stored on all of them with Auto off.
+/// Give a roll of negatives one conversion: each frame is analysed, and
+/// its scene's baseline (the median, or a chosen frame) is stored on it
+/// with Auto off; odd frames keep their own (`amb_library::negative::roll`).
 #[tauri::command]
 pub(crate) async fn negative_sync(
     paths: Vec<String>,
+    options: Option<amb_library::negative::RollOptions>,
     state: tauri::State<'_, AppState>,
 ) -> Res<RollSync> {
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let photos: Vec<&Path> = paths.iter().map(Path::new).collect();
         let frames = amb_library::negative::analyze_files(&photos)?;
-        let cmds = amb_library::negative::commands(&amb_library::negative::frozen(&frames));
+        let plan = amb_library::negative::roll(&frames, &options.unwrap_or_default());
         let mut out = RollSync {
             changed: Vec::new(),
             errors: Vec::new(),
             state: None,
+            scenes: plan.iter().map(|f| f.scene + 1).max().unwrap_or(0),
+            odd: plan.iter().filter(|f| f.odd).count(),
         };
-        for path in &paths {
+        for (path, frame) in paths.iter().zip(&plan) {
+            let cmds = amb_library::negative::commands(&frame.settings);
             let mut guard = slot.lock().map_err(|e| e.to_string())?;
             let result = match guard.as_mut().filter(|s| s.path == Path::new(path)) {
                 Some(s) => s

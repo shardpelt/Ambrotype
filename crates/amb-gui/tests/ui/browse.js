@@ -82,6 +82,24 @@ await t.step("Folders | All photos, and Ctrl-click shows more folders together",
   renderLibrary();
 });
 
+await t.step("Sync negative roll asks how: scenes, odd frames, a baseline frame", async () => {
+  const parent = `${lib.dir}${lib.dir.includes("\\") ? "\\" : "/"}more`;
+  await toggleTreeFolder(parent);
+  await t.until("both folders", () => lib.shown.length >= 2);
+  lib.selected = new Set(lib.shown.map((p) => p.path));
+  lib.focus = ui.info.path;
+  const flow = syncNegativeRoll();
+  await t.until("the dialog", () => $("roll-dialog").open);
+  t.expect($("roll-scenes").checked && $("roll-odd").checked && !$("roll-own-midtone").checked, "scenes and odd frames on");
+  t.expect(!$("roll-baseline").disabled && $("roll-baseline-label").textContent.includes(fileName(ui.info.path)), $("roll-baseline-label").textContent);
+  // Cancelled: the test photos are not negatives, and later scripts use them.
+  $("roll-dialog").close("cancel");
+  await flow;
+  t.expect(!ui.settings["amb:NegativeConvert"], "nothing changed");
+  await toggleTreeFolder(parent);
+  lib.selected.clear();
+});
+
 await t.step("Rated photos shows every rated photo, best first", async () => {
   select(ui.info.path, "only");
   await libraryChange({ rating: 4 });

@@ -788,14 +788,30 @@ async function libraryDeleteCopies() {
   else await loadLibrary(lib.dir);
 }
 
-// One conversion for a roll of negatives: the median of each frame's analysis.
+// One conversion for a roll of negatives (roll baseline): each scene's
+// median, odd frames their own, or the focused frame as the baseline.
 async function syncNegativeRoll() {
   const paths = selectedPhotos().map((p) => p.path);
   if (paths.length < 2) return toast("Select the frames of the roll.", true);
+  const dlg = $("roll-dialog");
+  const focus = paths.includes(lib.focus) ? lib.focus : null;
+  $("roll-what").textContent = `${paths.length} frames. Each is analysed; the roll then shares one film base and levels, with Auto off, so a frame exposed a stop more prints a stop brighter.`;
+  $("roll-baseline").disabled = !focus;
+  $("roll-baseline").checked = false;
+  $("roll-baseline-label").textContent = focus ? `Use ${fileName(focus)} as the baseline` : "Use this frame as the baseline (click one first)";
+  dlg.showModal();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice !== "ok") return;
+  const options = {
+    scenes: $("roll-scenes").checked,
+    odd: $("roll-odd").checked,
+    own_midtone: $("roll-own-midtone").checked,
+    baseline: $("roll-baseline").checked && focus ? paths.indexOf(focus) : null,
+  };
   status(`Analysing ${paths.length} negatives…`);
   $("busy").hidden = false;
   try {
-    const r = await invoke("negative_sync", { paths });
+    const r = await invoke("negative_sync", { paths, options });
     for (const path of r.changed) {
       const p = libPhoto(path);
       if (p) {
@@ -809,7 +825,10 @@ async function syncNegativeRoll() {
       setState(r.state);
       requestPreview(false);
     }
-    toast(`Synced ${r.changed.length} negative${r.changed.length === 1 ? "" : "s"}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
+    const parts = [];
+    if (r.scenes > 1) parts.push(`${r.scenes} scenes`);
+    if (r.odd > 0) parts.push(`${r.odd} odd frame${r.odd === 1 ? "" : "s"} kept their own`);
+    toast(`Synced ${r.changed.length} negative${r.changed.length === 1 ? "" : "s"}${parts.length ? ` (${parts.join(", ")})` : ""}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
     status(`One conversion for ${r.changed.length} frames`);
   } catch (e) {
     toast(String(e), true);

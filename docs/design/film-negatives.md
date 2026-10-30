@@ -83,7 +83,13 @@ amb negative stocks                                  # list the looks
 
 - `amb edit` / the AI protocol set any `amb:` setting like a Camera Raw one, with validation and clamping (`set_param amb:FilmStock vivid-100`).
 - In the editor, Film Negative → **Pick base**: click the clear film between frames (before Crop to frame, or with the crop off). Alt-click measures it from the scan again. To give a roll one base: pick it on one frame, Copy settings, then Paste settings → Film negative on the others (Auto stays on, so each frame keeps its own levels).
-- In the editor, Film Negative → **Crop to frame** crops away the rebate and the holder's edges (`negative::detect_frame`: border is near the film base, nearly black or clipped; each side moves in while most of its row or column is border, plus 0.5 % for the soft edge). **Freeze** stores the analysis the open frame shows now, with Auto off (one undo step). In the library, **Sync negative roll** analyses the selected frames as Auto would (each with its crop and any picked base) and gives them all the roll median (`amb_library::negative`). `amb negative analyze` does the same for raws without sidecars.
+- In the editor, Film Negative → **Crop to frame** crops away the rebate and the holder's edges (`negative::detect_frame`: border is near the film base, nearly black or clipped; each side moves in while most of its row or column is border, plus 0.5 % for the soft edge). **Freeze** stores the analysis the open frame shows now, with Auto off (one undo step). In the library, **Sync negative roll…** analyses the selected frames as Auto would (each with its crop and any picked base) and gives them one conversion (`amb_library::negative::roll`; `amb negative sync` does the same, `amb negative analyze` gives raws without sidecars the median). It asks how:
+  - **Scenes** (on): frames are grouped by the colour of their light, read as the red and blue highlight levels against green (log ratios within 0.2). Each group gets its own median. On the BlueNeg test, one Yokohama roll stays one scene, and Hong Kong by day and Disney at night split.
+  - **Odd frames** (on): a frame whose levels sit more than 0.35 density (about two stops) from its group's baseline keeps its own analysis.
+  - **Baseline**: the frame in focus in the library, if it is among the selected, is its group's baseline instead of the median.
+  - **Own brightness** ("lock bounds"): frames share the base and levels, each keeps its own midtone.
+
+  These rules and numbers are ours.
 
 ## Next
 

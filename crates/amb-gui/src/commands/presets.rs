@@ -491,6 +491,8 @@ pub(crate) async fn apply_to_photos(
             changed: Vec::new(),
             errors: Vec::new(),
             state: None,
+            scenes: 0,
+            odd: 0,
         };
         for path in &paths {
             let mut guard = slot.lock().map_err(|e| e.to_string())?;

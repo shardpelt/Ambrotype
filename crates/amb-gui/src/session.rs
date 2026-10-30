@@ -1779,7 +1779,10 @@ mod tests {
 
     #[test]
     fn photo_sidecars_are_not_presets() {
-        let dir = std::env::temp_dir().join(format!("amb-gui-presets-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!(
+            "amb-gui-sidecars-not-presets-{}",
+            std::process::id()
+        ));
         std::fs::create_dir_all(dir.join("Look")).unwrap();
         let packet = |name: &str| {
             amb_presets::xmp_writer::write_packet(

@@ -90,6 +90,14 @@ library's package. Notable ones:
   Apache-2.0, in the ONNX form published by the rembg project (MIT). A copy
   with its licence is in the hub repo's models/ folder.
 
+- Downloaded only when the user installs them, not shipped: the search
+  models for Smart search. CLIP ViT-B/32 by OpenAI (Radford et al.,
+  https://github.com/openai/CLIP), MIT, Copyright (c) 2021 OpenAI, in the
+  8-bit ONNX form published by Xenova (Transformers.js); SigLIP 2 base by
+  Google (Tschannen et al., https://huggingface.co/google/siglip2-base-patch16-224),
+  Apache-2.0, in the ONNX form published by the ONNX Community. Their
+  tokenizer files come from the same places.
+
 Binary releases include the full licence texts of every library they contain
 (docs/legal.md, "Releases").
 

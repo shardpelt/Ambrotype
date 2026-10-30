@@ -765,7 +765,7 @@ dialog .inline-check { flex-direction: row; align-items: flex-start; gap: 6px; c
 body.library-mode #workspace { display: none; }
 .library { display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
 .library[hidden] { display: none; }
-.library-bar { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--bg-deep); }
+.library-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; row-gap: 4px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--bg-deep); }
 .library-bar > * { flex: none; }
 .library-folder { flex: 0 1 auto; min-width: 40px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; direction: rtl; text-align: left; }
 .library-bar select, .library-bar input[type=search] { padding: 3px 4px; font-size: 12px; }

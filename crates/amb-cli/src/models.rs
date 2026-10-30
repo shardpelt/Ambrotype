@@ -4,7 +4,7 @@
 
 use crate::*;
 
-fn models_dir() -> Result<PathBuf, String> {
+pub(crate) fn models_dir() -> Result<PathBuf, String> {
     amb_ai::default_dir().ok_or_else(|| "no home folder; set AMB_MODELS".into())
 }
 
@@ -63,7 +63,7 @@ pub(crate) fn models_list(json: bool) -> Result<(), String> {
                 "  {:<20} {:<16} {:>7} {:>6}  {:<6} {:<11} {}",
                 s.id,
                 s.name,
-                megabytes(s.bytes),
+                megabytes(s.total_bytes()),
                 speed(s.seconds),
                 detail(s.detail),
                 s.licence,
@@ -96,7 +96,7 @@ pub(crate) fn models_install(id: &str) -> Result<(), String> {
     println!(
         "{} is installed ({}). Use it with `amb models use {}`.",
         spec.name,
-        megabytes(spec.bytes),
+        megabytes(spec.total_bytes()),
         spec.id
     );
     Ok(())
@@ -104,7 +104,11 @@ pub(crate) fn models_install(id: &str) -> Result<(), String> {
 
 pub(crate) fn models_use(id: &str) -> Result<(), String> {
     let spec = amb_ai::choose(&models_dir()?, id)?;
-    println!("{} masks now use {}.", spec.task, spec.name);
+    if spec.task == "search" {
+        println!("Smart search now uses {}.", spec.name);
+    } else {
+        println!("{} masks now use {}.", spec.task, spec.name);
+    }
     Ok(())
 }
 

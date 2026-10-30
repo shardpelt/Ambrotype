@@ -371,8 +371,13 @@ fn call(name: &str, args: &Value) -> Result<Vec<Value>, String> {
                         m.name, m.task
                     ))]
                 }),
-                "use" => amb_ai::choose(&dir, arg(args, "id")?)
-                    .map(|m| vec![text(&format!("{} masks now use {}.", m.task, m.name))]),
+                "use" => amb_ai::choose(&dir, arg(args, "id")?).map(|m| {
+                    vec![text(&if m.task == "search" {
+                        format!("Smart search now uses {}.", m.name)
+                    } else {
+                        format!("{} masks now use {}.", m.task, m.name)
+                    })]
+                }),
                 "remove" => amb_ai::remove(&dir, arg(args, "id")?)
                     .map(|()| vec![text("Removed; its task uses its default model again.")]),
                 other => Err(format!("{other:?}: action is list, install, use or remove")),

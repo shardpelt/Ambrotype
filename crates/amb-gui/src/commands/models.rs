@@ -115,3 +115,81 @@ pub(crate) async fn ai_model_add(
         .map_err(|e| e.to_string())??;
     list(&state)
 }
+
+/// What a smart search found: the photos, best first, with their scores.
+#[derive(Serialize)]
+pub(crate) struct SmartFound {
+    found: Vec<(String, f32)>,
+    model: String,
+    indexed: usize,
+}
+
+/// The loaded search model, kept between searches (loading takes a second).
+static SEARCH_MODEL: std::sync::Mutex<Option<std::sync::Arc<amb_ai::search::Embedder>>> =
+    std::sync::Mutex::new(None);
+
+/// Smart search over `paths`: by `query`'s words, or for photos `like` one of
+/// them, with the chosen search model. Photos not indexed yet are indexed
+/// first ("smart-progress" tells how far), and kept in the catalogue.
+#[tauri::command]
+pub(crate) async fn smart_search(
+    paths: Vec<String>,
+    query: Option<String>,
+    like: Option<String>,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Res<SmartFound> {
+    let dir = models_dir(state.inner())?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let spec = amb_ai::chosen(&dir, "search")?;
+        if !amb_ai::list(&dir)
+            .iter()
+            .any(|m| m.spec.id == spec.id && m.installed)
+        {
+            return Err(
+                "Smart search needs a search model: Settings → AI models → Search.".to_string(),
+            );
+        }
+        let model = {
+            let mut slot = SEARCH_MODEL.lock().map_err(|e| e.to_string())?;
+            match slot.as_ref().filter(|m| m.spec.id == spec.id) {
+                Some(m) => m.clone(),
+                None => {
+                    let m = std::sync::Arc::new(amb_ai::search::Embedder::load(&dir, &spec)?);
+                    *slot = Some(m.clone());
+                    m
+                }
+            }
+        };
+        let cat = folder::catalog();
+        let photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
+        let embed = |px: &amb_library::search::Pixels| model.image(&px.0, px.1, px.2);
+        let indexed = amb_library::search::index(cat, &spec.id, &photos, &embed, &|done, total| {
+            let _ = tauri::Emitter::emit(&app, "smart-progress", [done, total]);
+        });
+        let target = match (&like, &query) {
+            (Some(l), _) => cat
+                .vectors(&spec.id, &[PathBuf::from(l)])
+                .pop()
+                .flatten()
+                .ok_or("couldn't read that photo")?,
+            (None, Some(q)) => model.text(q)?,
+            (None, None) => return Err("nothing to search for".into()),
+        };
+        let others: Vec<PathBuf> = photos
+            .into_iter()
+            .filter(|p| like.as_deref() != Some(p.to_string_lossy().as_ref()))
+            .collect();
+        let found = amb_library::search::rank(cat, &spec.id, &others, &target)
+            .into_iter()
+            .map(|(p, s)| (p.display().to_string(), s))
+            .collect();
+        Ok(SmartFound {
+            found,
+            model: spec.name,
+            indexed,
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

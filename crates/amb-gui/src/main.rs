@@ -587,6 +587,7 @@ fn main() {
             commands::export::pick_export_path,
             commands::export::share_compare,
             commands::library::contact_sheet,
+            commands::models::smart_search,
             commands::export::export,
             commands::presets::presets,
             commands::presets::add_preset_folder,

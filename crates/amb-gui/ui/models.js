@@ -46,15 +46,15 @@ function renderModels(list) {
       const busy = models.progress[m.id];
       const actions = [];
       if (m.chosen && m.installed) actions.push(el("span", { class: "model-in-use" }, "In use"));
-      else if (m.installed) actions.push(el("button", { type: "button", class: "small", onclick: () => modelAction("ai_model_use", m.id, `${m.name} is in use for ${task} masks.`) }, "Use"));
+      else if (m.installed) actions.push(el("button", { type: "button", class: "small", onclick: () => modelAction("ai_model_use", m.id, task === "search" ? `Smart search now uses ${m.name}.` : `${m.name} is in use for ${task} masks.`) }, "Use"));
       if (!m.installed && busy == null) {
-        actions.push(el("button", { type: "button", class: "small", title: m.urls?.[0] ?? "", onclick: () => installModel(m) }, `Install (${megabytes(m.bytes)})`));
+        actions.push(el("button", { type: "button", class: "small", title: m.urls?.[0] ?? "", onclick: () => installModel(m) }, `Install (${megabytes(m.total_bytes ?? m.bytes)})`));
       }
       if (busy != null) actions.push(el("span", { class: "hint" }, `Downloading… ${busy}%`));
       if (m.installed && (m.custom || !m.default)) {
         actions.push(el("button", { type: "button", class: "small", onclick: () => modelAction("ai_model_remove", m.id, `Removed ${m.name}.`) }, "Remove"));
       }
-      const facts = [megabytes(m.bytes), modelSpeed(m.seconds), m.licence].filter(Boolean).join(" · ");
+      const facts = [megabytes(m.total_bytes ?? m.bytes), modelSpeed(m.seconds), m.licence].filter(Boolean).join(" · ");
       box.append(el("div", { class: "model-row" + (m.chosen ? " chosen" : "") },
         el("div", { class: "model-text" },
           el("strong", {}, m.name), " ",
@@ -69,7 +69,7 @@ function renderModels(list) {
 
 async function installModel(m) {
   models.progress[m.id] = 0;
-  modelsMessage(`Downloading ${m.name} (${megabytes(m.bytes)})…`);
+  modelsMessage(`Downloading ${m.name} (${megabytes(m.total_bytes ?? m.bytes)})…`);
   renderModels(await invoke("ai_models"));
   try {
     const list = await invoke("ai_model_install", { id: m.id });

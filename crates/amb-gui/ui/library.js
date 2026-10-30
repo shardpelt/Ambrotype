@@ -170,17 +170,27 @@ function applyView() {
     if (f.flag === "unflagged" ? p.flag : f.flag === "kept" ? p.flag === "reject" : f.flag !== "all" && p.flag !== f.flag) return false;
     if (f.edited === "edited" && !p.edited) return false;
     if (f.edited === "unedited" && p.edited) return false;
-    if (f.text && ![p.name, ...p.keywords, p.title, p.caption, p.camera, p.lens].some((t) => t?.toLowerCase().includes(f.text))) return false;
+    if (f.text && !lib.found && ![p.name, ...p.keywords, p.title, p.caption, p.camera, p.lens].some((t) => t?.toLowerCase().includes(f.text))) return false;
     return true;
   });
+  // A smart search shows its finds, best first.
+  // ...for the photos it searched: another folder or collection drops it.
+  if (lib.found && lib.found.of !== lib.photos) {
+    lib.found = null;
+    $("lib-smart-chip").hidden = true;
+  }
+  if (lib.found) {
+    const rank = lib.found.rank;
+    shown = shown.filter((p) => rank.has(p.path)).sort((a, b) => rank.get(a.path) - rank.get(b.path));
+  }
   lib.beforeDate = shown;
   if (lib.date) shown = shown.filter((p) => p.captured?.startsWith(lib.date));
   const sort = $("lib-sort").value;
   const byName = (a, b) => lib.photos.indexOf(a) - lib.photos.indexOf(b);
-  if (sort === "captured") shown.sort((a, b) => (a.captured ?? "~").localeCompare(b.captured ?? "~") || byName(a, b));
+  if (lib.found) { /* best first */ } else if (sort === "captured") shown.sort((a, b) => (a.captured ?? "~").localeCompare(b.captured ?? "~") || byName(a, b));
   else if (sort === "rating") shown.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || byName(a, b));
   else if (sort === "edited") shown.sort((a, b) => Number(b.edited) - Number(a.edited) || byName(a, b));
-  if ($("lib-reverse").checked) shown.reverse();
+  if ($("lib-reverse").checked && !lib.found) shown.reverse();
   // A closed stack shows only its top photo (or its first one shown).
   lib.stackSizes = new Map();
   for (const p of lib.photos) if (p.stack) lib.stackSizes.set(p.stack.id, (lib.stackSizes.get(p.stack.id) ?? 0) + 1);
@@ -826,6 +836,39 @@ async function contactSheetFlow() {
   }
 }
 
+// Smart search over the photos the library has open: by the search box's
+// words, or (`like`) for photos like one (src/commands/models.rs `smart_search`).
+async function smartSearch(like = null) {
+  const query = $("lib-search").value.trim();
+  if (!like && !query) return toast("Type what to look for, then press Smart (a dog on a beach, snowy mountains).", true);
+  const paths = lib.photos.map((p) => p.path);
+  status(like ? "Looking for photos like it…" : `Looking for “${query}”…`);
+  $("busy").hidden = false;
+  try {
+    const r = await invoke("smart_search", { paths, query: like ? null : query, like });
+    lib.found = {
+      of: lib.photos,
+      rank: new Map(r.found.map(([p], i) => [p, i])),
+      label: like ? `Like ${fileName(like)}` : `“${query}”`,
+    };
+    const chip = $("lib-smart-chip");
+    chip.textContent = `${lib.found.label}: ${r.found.length} found ×`;
+    chip.hidden = false;
+    renderLibrary();
+    status(`${r.found.length} found with ${r.model}${r.indexed ? ` (${r.indexed} photos indexed first)` : ""}`);
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    $("busy").hidden = true;
+  }
+}
+
+function clearSmartSearch() {
+  lib.found = null;
+  $("lib-smart-chip").hidden = true;
+  renderLibrary();
+}
+
 async function syncNegativeRoll() {
   const paths = selectedPhotos().map((p) => p.path);
   if (paths.length < 2) return toast("Select the frames of the roll.", true);
@@ -1068,6 +1111,7 @@ function wireLibrary() {
       [sel.length > 1 ? `Copy ${sel.length} file paths` : "Copy file path", () => copyPath(sel.map((p) => p.path))],
       ["Show in folder", () => invoke("reveal_file", { path }).catch((err) => toast(String(err), true))],
       ["Open in the editor", () => libraryOpen(path)],
+      ["Find similar photos", () => smartSearch(path)],
       [sel.length > 1 ? `Export ${sel.length} photos…` : "Export…", () => libraryExport()],
     ]);
   });
@@ -1142,6 +1186,16 @@ function wireLibrary() {
   $("lib-paste").addEventListener("click", libraryPasteSettings);
   $("lib-negative-sync").addEventListener("click", () => syncNegativeRoll());
   $("lib-contact").addEventListener("click", () => contactSheetFlow());
+  $("lib-smart").addEventListener("click", () => smartSearch());
+  $("lib-smart-chip").addEventListener("click", clearSmartSearch);
+  $("lib-search").addEventListener("keydown", (e) => {
+    // Typing filters by name and keywords as you go; Enter searches what is in the photos.
+    if (e.key === "Enter") smartSearch();
+  });
+  tauri.event.listen("smart-progress", (e) => {
+    const [done, total] = e.payload;
+    status(`Indexing photos for smart search (once): ${done} of ${total}…`, true);
+  });
   $("lib-plugin").addEventListener("click", () => pluginsFlow().catch((e) => toast(String(e), true)));
   $("lib-vcopy").addEventListener("click", virtualCopyKey);
   $("lib-vcopy-delete").addEventListener("click", libraryDeleteCopies);

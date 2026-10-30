@@ -29,10 +29,16 @@ use amb_engine::subject::{Map, MapKind};
 use serde::{Deserialize, Serialize};
 use tract_onnx::prelude::*;
 
+pub mod search;
+
 /// The tasks a model can do, with what they're for.
-pub const TASKS: [(&str, &str); 2] = [
+pub const TASKS: [(&str, &str); 3] = [
     ("subject", "Select Subject and Select Background"),
     ("people", "Select People (everyone, as one mask)"),
+    (
+        "search",
+        "Smart search: find photos by what is in them, or like another one",
+    ),
 ];
 
 /// Models up to this size install by themselves the first time a mask needs
@@ -132,6 +138,29 @@ pub struct ModelSpec {
     /// Added by the user ([`add_custom`]), not from the list.
     #[serde(default)]
     pub custom: bool,
+    /// More files it needs beside `<id>.onnx` (a search model's text half
+    /// and tokenizer), kept as `<id>.<name>`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub files: Vec<ModelFile>,
+    /// For a search model: how it reads text and photos.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub search: Option<search::SearchSpec>,
+}
+
+/// One more file of a model.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ModelFile {
+    pub name: String,
+    pub bytes: u64,
+    pub sha256: String,
+    pub urls: Vec<String>,
+}
+
+impl ModelSpec {
+    /// Bytes to download, all files together.
+    pub fn total_bytes(&self) -> u64 {
+        self.bytes + self.files.iter().map(|f| f.bytes).sum::<u64>()
+    }
 }
 
 /// A model as [`list`] shows it.
@@ -142,6 +171,8 @@ pub struct ModelState {
     pub installed: bool,
     /// The one its task uses now.
     pub chosen: bool,
+    /// Bytes to download, all its files together.
+    pub total_bytes: u64,
 }
 
 /// What the user says about their own model ([`add_custom`]).
@@ -204,8 +235,14 @@ fn file_of(dir: &Path, id: &str) -> PathBuf {
 }
 
 fn is_installed(dir: &Path, spec: &ModelSpec) -> bool {
-    std::fs::metadata(file_of(dir, &spec.id))
-        .is_ok_and(|m| m.is_file() && (spec.bytes == 0 || m.len() == spec.bytes))
+    let there = |path: PathBuf, bytes: u64| {
+        std::fs::metadata(path).is_ok_and(|m| m.is_file() && (bytes == 0 || m.len() == bytes))
+    };
+    there(file_of(dir, &spec.id), spec.bytes)
+        && spec
+            .files
+            .iter()
+            .all(|f| there(dir.join(format!("{}.{}", spec.id, f.name)), f.bytes))
 }
 
 fn custom_specs(dir: &Path) -> Vec<ModelSpec> {
@@ -280,6 +317,7 @@ pub fn list(dir: &Path) -> Vec<ModelState> {
     all.sort_by(|a, b| a.task.cmp(&b.task).then(b.detail.cmp(&a.detail)));
     all.into_iter()
         .map(|spec| ModelState {
+            total_bytes: spec.total_bytes(),
             installed: is_installed(dir, &spec),
             chosen: chosen_ids.contains(&spec.id),
             spec,
@@ -331,10 +369,48 @@ pub fn install(dir: &Path, id: &str, progress: &dyn Fn(u64, u64)) -> Result<Mode
         return Err(format!("{}'s file is missing; add it again", spec.name));
     }
     std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
-    let path = file_of(dir, id);
-    let part = dir.join(format!("{id}.onnx.part"));
+    // Every file, one after the other; progress counts them all.
+    let total = spec.total_bytes();
+    let mut before = 0;
+    let mut parts = vec![(
+        file_of(dir, id),
+        spec.bytes,
+        spec.sha256.clone(),
+        spec.urls.clone(),
+    )];
+    for f in &spec.files {
+        parts.push((
+            dir.join(format!("{id}.{}", f.name)),
+            f.bytes,
+            f.sha256.clone(),
+            f.urls.clone(),
+        ));
+    }
+    for (path, bytes, sha256, urls) in parts {
+        let ok = std::fs::metadata(&path).is_ok_and(|m| m.len() == bytes);
+        if !ok {
+            download(&path, bytes, &sha256, &urls, &|done| {
+                progress(before + done, total)
+            })
+            .map_err(|e| format!("couldn't download {} ({e})", spec.name))?;
+        }
+        before += bytes;
+    }
+    Ok(spec)
+}
+
+/// Fetch one file from the first of `urls` that gives the expected one
+/// (`bytes` long, with this sha256) into `path`.
+fn download(
+    path: &Path,
+    bytes: u64,
+    sha256: &str,
+    urls: &[String],
+    progress: &dyn Fn(u64),
+) -> Result<(), String> {
+    let part = path.with_extension("part");
     let mut problems = Vec::new();
-    for url in &spec.urls {
+    for url in urls {
         let agent = ureq::AgentBuilder::new()
             .timeout_connect(std::time::Duration::from_secs(30))
             .timeout_read(std::time::Duration::from_secs(60))
@@ -342,7 +418,7 @@ pub fn install(dir: &Path, id: &str, progress: &dyn Fn(u64, u64)) -> Result<Mode
             .build();
         let got = (|| -> Result<(), String> {
             let r = agent.get(url).call().map_err(|e| e.to_string())?;
-            let mut src = r.into_reader().take(spec.bytes + 1);
+            let mut src = r.into_reader().take(bytes + 1);
             let mut out = std::fs::File::create(&part).map_err(|e| e.to_string())?;
             let mut buf = vec![0u8; 1 << 16];
             let mut done = 0u64;
@@ -353,27 +429,23 @@ pub fn install(dir: &Path, id: &str, progress: &dyn Fn(u64, u64)) -> Result<Mode
                 }
                 out.write_all(&buf[..n]).map_err(|e| e.to_string())?;
                 done += n as u64;
-                progress(done, spec.bytes);
+                progress(done);
             }
             out.flush().map_err(|e| e.to_string())?;
-            if done != spec.bytes || sha256_file(&part)? != spec.sha256 {
+            if done != bytes || sha256_file(&part)? != sha256 {
                 return Err("not the expected file".into());
             }
-            std::fs::rename(&part, &path).map_err(|e| e.to_string())
+            std::fs::rename(&part, path).map_err(|e| e.to_string())
         })();
         match got {
-            Ok(()) => return Ok(spec),
+            Ok(()) => return Ok(()),
             Err(e) => {
                 let _ = std::fs::remove_file(&part);
                 problems.push(format!("{url}: {e}"));
             }
         }
     }
-    Err(format!(
-        "couldn't download {} ({})",
-        spec.name,
-        problems.join("; ")
-    ))
+    Err(problems.join("; "))
 }
 
 /// Delete model `id`'s file (and, for the user's own, its description). Its
@@ -381,6 +453,9 @@ pub fn install(dir: &Path, id: &str, progress: &dyn Fn(u64, u64)) -> Result<Mode
 pub fn remove(dir: &Path, id: &str) -> Result<(), String> {
     let spec = find_spec(dir, id)?;
     let _ = std::fs::remove_file(file_of(dir, id));
+    for f in &spec.files {
+        let _ = std::fs::remove_file(dir.join(format!("{id}.{}", f.name)));
+    }
     if spec.custom {
         let _ = std::fs::remove_file(dir.join("custom").join(format!("{id}.json")));
     }
@@ -433,6 +508,8 @@ pub fn add_custom(dir: &Path, file: &Path, m: CustomModel) -> Result<ModelSpec, 
         urls: Vec::new(),
         seconds: 0.0,
         detail: 0,
+        files: Vec::new(),
+        search: None,
         input: Input {
             size: m.size,
             mean: m.mean,
@@ -781,7 +858,20 @@ mod tests {
                 s.id
             );
             assert!(s.source.starts_with("https://"), "{}", s.id);
-            assert!(s.seconds > 0.0 && (1..=5).contains(&s.detail), "{}", s.id);
+            assert!(s.seconds > 0.0, "{}", s.id);
+            if s.task == "search" {
+                // Search models: their text half and tokenizer too.
+                assert!(s.search.is_some() && s.files.len() == 2, "{}", s.id);
+                for f in &s.files {
+                    assert!(
+                        f.bytes > 0 && f.sha256.len() == 64 && !f.urls.is_empty(),
+                        "{}",
+                        s.id
+                    );
+                }
+            } else {
+                assert!((1..=5).contains(&s.detail), "{}", s.id);
+            }
         }
     }
 

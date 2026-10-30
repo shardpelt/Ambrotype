@@ -19,6 +19,7 @@ mod organise;
 mod plugin;
 mod presets;
 mod render;
+mod search;
 mod share;
 mod sweep;
 
@@ -106,6 +107,13 @@ USAGE:
                                             title as edge print; 6 frames a strip, a 36-frame roll on one
                                             A4 page) or a plain grid with file names. More photos than
                                             fit make pages: SHEET-001.jpg, ...
+    amb search <WORDS> <PHOTO|DIR>... [--json]
+    amb search --like <PHOTO> <PHOTO|DIR>... [--json]
+                                            Smart search: the photos ranked by what is in them (dog on a
+                                            beach, snowy mountains), or by likeness to another photo,
+                                            with the chosen search model (`amb models install clip-b32`,
+                                            156 MB, or siglip2-base, 690 MB and better). Photos are indexed
+                                            once (about 0.7 s each) and kept in the catalogue
     amb share <PHOTO> --out PAGE.html [--long-edge 2048]
                                             One web page with the photo before its edit (framed as the
                                             edit is) and after, and a bar to drag between them; both
@@ -400,6 +408,7 @@ fn main() -> ExitCode {
             | "--text"
             | "--until"
             | "--catalog"
+            | "--like"
             | "--folders"
             | "--task"
             | "--channel"
@@ -563,6 +572,7 @@ fn main() -> ExitCode {
             }
             None => Err("contact needs --out SHEET.jpg (or .png, .tif)".into()),
         },
+        ["search", rest @ ..] => search::search(rest, &options, json).map(|t| println!("{t}")),
         ["share", photo] => match options.get("--out") {
             Some(out) => {
                 share::share(Path::new(photo), Path::new(out), &options).map(|t| println!("{t}"))

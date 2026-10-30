@@ -18,8 +18,22 @@
         "https://raw.githubusercontent.com/Ambrotypehq/ambrotype-hub/main/models/u2netp.onnx",
         "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx"
       ],
-      "input": { "size": 320, "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225] },
-      "output": { "activation": "none" }
+      "input": {
+        "size": 320,
+        "mean": [
+          0.485,
+          0.456,
+          0.406
+        ],
+        "std": [
+          0.229,
+          0.224,
+          0.225
+        ]
+      },
+      "output": {
+        "activation": "none"
+      }
     },
     {
       "id": "u2net",
@@ -33,9 +47,25 @@
       "seconds": 3.5,
       "detail": 3,
       "sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
-      "urls": ["https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx"],
-      "input": { "size": 320, "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225] },
-      "output": { "activation": "none" }
+      "urls": [
+        "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx"
+      ],
+      "input": {
+        "size": 320,
+        "mean": [
+          0.485,
+          0.456,
+          0.406
+        ],
+        "std": [
+          0.229,
+          0.224,
+          0.225
+        ]
+      },
+      "output": {
+        "activation": "none"
+      }
     },
     {
       "id": "isnet-general-use",
@@ -50,9 +80,25 @@
       "seconds": 10.5,
       "detail": 4,
       "sha256": "60920e99c45464f2ba57bee2ad08c919a52bbf852739e96947fbb4358c0d964a",
-      "urls": ["https://github.com/danielgatis/rembg/releases/download/v0.0.0/isnet-general-use.onnx"],
-      "input": { "size": 1024, "mean": [0.5, 0.5, 0.5], "std": [1.0, 1.0, 1.0] },
-      "output": { "activation": "none" }
+      "urls": [
+        "https://github.com/danielgatis/rembg/releases/download/v0.0.0/isnet-general-use.onnx"
+      ],
+      "input": {
+        "size": 1024,
+        "mean": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "std": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "output": {
+        "activation": "none"
+      }
     },
     {
       "id": "birefnet-lite",
@@ -66,9 +112,25 @@
       "seconds": 74,
       "detail": 5,
       "sha256": "5600024376f572a557870a5eb0afb1e5961636bef4e1e22132025467d0f03333",
-      "urls": ["https://github.com/ZhengPeng7/BiRefNet/releases/download/v1/BiRefNet-general-bb_swin_v1_tiny-epoch_232.onnx"],
-      "input": { "size": 1024, "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225] },
-      "output": { "activation": "sigmoid" }
+      "urls": [
+        "https://github.com/ZhengPeng7/BiRefNet/releases/download/v1/BiRefNet-general-bb_swin_v1_tiny-epoch_232.onnx"
+      ],
+      "input": {
+        "size": 1024,
+        "mean": [
+          0.485,
+          0.456,
+          0.406
+        ],
+        "std": [
+          0.229,
+          0.224,
+          0.225
+        ]
+      },
+      "output": {
+        "activation": "sigmoid"
+      }
     },
     {
       "id": "u2net_human_seg",
@@ -83,9 +145,137 @@
       "seconds": 3.5,
       "detail": 3,
       "sha256": "01eb6a29a5c4d8edb30b56adad9bb3a2a0535338e480724a213e0acfd2d1c73c",
-      "urls": ["https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net_human_seg.onnx"],
-      "input": { "size": 320, "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225] },
-      "output": { "activation": "none" }
+      "urls": [
+        "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net_human_seg.onnx"
+      ],
+      "input": {
+        "size": 320,
+        "mean": [
+          0.485,
+          0.456,
+          0.406
+        ],
+        "std": [
+          0.229,
+          0.224,
+          0.225
+        ]
+      },
+      "output": {
+        "activation": "none"
+      }
+    },
+    {
+      "id": "clip-b32",
+      "task": "search",
+      "name": "CLIP ViT-B/32",
+      "default": true,
+      "about": "Smaller download (156 MB). Finds photos by what is in them: things, places, scenes, light. About 0.7 s a photo to index on a 4-core laptop, once; a search takes a moment.",
+      "licence": "MIT",
+      "by": "OpenAI (Radford et al.); ONNX by Xenova (Transformers.js), 8-bit",
+      "source": "https://github.com/openai/CLIP",
+      "notes": "OpenAI's model card calls CLIP a research model and advises against surveillance and face recognition uses; it is used here only to find your own photos on your own computer.",
+      "bytes": 89117001,
+      "sha256": "583fd1110a514667812fee7d684952aaf82a99b959760c8d7dca7e0ab9839299",
+      "urls": [
+        "https://huggingface.co/Xenova/clip-vit-base-patch32/resolve/6b7c523703ae26e39be4b03774966f8571c7f523/onnx/vision_model_quantized.onnx"
+      ],
+      "seconds": 0.7,
+      "detail": 0,
+      "input": {
+        "size": 224,
+        "mean": [
+          0.48145466,
+          0.4578275,
+          0.40821073
+        ],
+        "std": [
+          0.26862954,
+          0.26130258,
+          0.27577711
+        ]
+      },
+      "files": [
+        {
+          "name": "text.onnx",
+          "bytes": 64504507,
+          "sha256": "73baab855d406190da9faa498cfedf65f15cf309f4cc7385b7b032e6d08e5c3a",
+          "urls": [
+            "https://huggingface.co/Xenova/clip-vit-base-patch32/resolve/6b7c523703ae26e39be4b03774966f8571c7f523/onnx/text_model_quantized.onnx"
+          ]
+        },
+        {
+          "name": "tokenizer.json",
+          "bytes": 2224119,
+          "sha256": "f7f3b7af117d467b58374797691a6438d3e6b9e9cef800dfd5dced7f697a90cd",
+          "urls": [
+            "https://huggingface.co/Xenova/clip-vit-base-patch32/resolve/6b7c523703ae26e39be4b03774966f8571c7f523/tokenizer.json"
+          ]
+        }
+      ],
+      "search": {
+        "tokenizer": "clip",
+        "length": 77,
+        "lowercase": true,
+        "image_output": 0,
+        "text_output": 0,
+        "fit": "crop"
+      }
+    },
+    {
+      "id": "siglip2-base",
+      "task": "search",
+      "name": "SigLIP 2 base",
+      "about": "Bigger download (690 MB), better results: newer, trained on more pictures and many languages. About 0.6 s a photo to index on a 4-core laptop; a search takes about a second.",
+      "licence": "Apache-2.0",
+      "by": "Google (Tschannen et al.); ONNX by the ONNX Community (Transformers.js); the text half 8-bit",
+      "source": "https://huggingface.co/google/siglip2-base-patch16-224",
+      "bytes": 371807752,
+      "sha256": "c0573e3f4140c3a7c4e9cc5912bd6b26a033b46a6a8e8af26cbea262b163bcad",
+      "urls": [
+        "https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX/resolve/ba1f3b0843f24bc5417d38e19c37b287d719b2f4/onnx/vision_model.onnx"
+      ],
+      "seconds": 0.6,
+      "detail": 0,
+      "input": {
+        "size": 224,
+        "mean": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "std": [
+          0.5,
+          0.5,
+          0.5
+        ]
+      },
+      "files": [
+        {
+          "name": "text.onnx",
+          "bytes": 283438275,
+          "sha256": "3a0603d3a00c05a80a6ded4743c16aaac7b1e62cdcc7e362e7ce418659b96400",
+          "urls": [
+            "https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX/resolve/ba1f3b0843f24bc5417d38e19c37b287d719b2f4/onnx/text_model_quantized.onnx"
+          ]
+        },
+        {
+          "name": "tokenizer.json",
+          "bytes": 34363039,
+          "sha256": "cb9140fae3ac5122c972d37adf83e1248471a38147ad76f8215c8872c6fd8322",
+          "urls": [
+            "https://huggingface.co/onnx-community/siglip2-base-patch16-224-ONNX/resolve/ba1f3b0843f24bc5417d38e19c37b287d719b2f4/tokenizer.json"
+          ]
+        }
+      ],
+      "search": {
+        "tokenizer": "gemma",
+        "length": 64,
+        "lowercase": true,
+        "image_output": 1,
+        "text_output": 1,
+        "fit": "squash"
+      }
     }
   ]
 }

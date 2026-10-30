@@ -112,6 +112,17 @@ await t.step("Contact sheet: the selection as film strips on a page", async () =
   lib.selected.clear();
 });
 
+await t.step("Smart search without a search model says where to get one; the grid stays as it was", async () => {
+  const before = lib.shown.length;
+  $("lib-search").value = "a ship at sea";
+  $("toast").hidden = true;
+  await smartSearch();
+  t.expect(!lib.found && $("toast").textContent.includes("AI models"), `the note: ${$("toast").textContent}`);
+  $("lib-search").value = "";
+  renderLibrary();
+  t.expect(lib.shown.length === before, "the same photos shown");
+});
+
 await t.step("Rated photos shows every rated photo, best first", async () => {
   select(ui.info.path, "only");
   await libraryChange({ rating: 4 });

@@ -244,12 +244,13 @@ Masks are Lightroom's own (`MaskGroupBasedCorrections`), so they open in Lightro
 
 ## AI models
 
-The subject, background and people masks come from models that run on the user's computer. Each task (`subject`, `people`) uses one model; the user, or you, can choose another:
+The subject, background and people masks, and Smart search, come from models that run on the user's computer. Each task (`subject`, `people`, `search`) uses one model; the user, or you, can choose another. Search models are optional and never install by themselves: `clip-b32` (156 MB, the default) or `siglip2-base` (690 MB, better).
 
 - `amb models list [--json]`: every model we can install (only freely licensed ones), its licence, size, speed, and whether it's installed and chosen.
 - `amb models install ID`, then `amb models use ID`. Bigger models are slower but give finer edges; tell the user the download size and time first.
 - `amb models add FILE.onnx --task subject --name NAME --size 1024 [--mean r,g,b --std r,g,b] [--sigmoid|--softmax] [--nhwc] [--channel N] [--invert]`: the user's own ONNX model (square RGB in, a map of the same side out, or one per class). [own-models.md](../own-models.md) has the steps for MediaPipe's people model (hair, skin, clothes), which users convert themselves.
 - `amb models remove ID`. The MCP server has the same as the `models` tool.
+- `amb search "WORDS" PHOTO|DIR... [--json]` finds photos by what is in them; `amb search --like PHOTO DIR...` finds photos like one. The first search indexes the photos (about 0.7 s each) and keeps their vectors in the catalogue.
 
 ## Spot removal
 

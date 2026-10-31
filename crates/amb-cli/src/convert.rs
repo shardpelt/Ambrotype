@@ -40,6 +40,7 @@ pub(crate) fn convert(
         &export,
         &to,
         !options.contains_key("--no-edits"),
+        amb_gpu::full::shared(),
         &|n, total| {
             eprint!("\r{n}/{total}");
         },
@@ -63,6 +64,9 @@ pub(crate) fn convert(
             String::new()
         }
     );
+    if let Some(Ok(gpu)) = amb_gpu::full::last() {
+        out += &format!("\ndeveloped on the GPU ({gpu})");
+    }
     for e in &done.errors {
         out += &format!("\nfailed: {e}");
     }

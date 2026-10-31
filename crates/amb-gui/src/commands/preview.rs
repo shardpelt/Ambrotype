@@ -36,7 +36,7 @@ pub(crate) async fn preview(
         let mut guard = slot.lock().map_err(|e| e.to_string())?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
-        let gpu = gpu.get().and_then(Option::as_ref);
+        let gpu = gpu.get().copied().flatten();
         let p = s.preview_masked(
             max_edge,
             &overrides,

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! The develop pipeline on the GPU (wgpu compute shaders), for the editor's
-//! preview. This is the only crate that touches wgpu.
+//! preview and full-size exports ([`full`]). This is the only crate that touches wgpu.
 //!
 //! Each stage is a WGSL kernel with the same maths as its CPU stage in
 //! `amb-engine`, and a test that runs both on the same pixels and compares
@@ -11,6 +11,7 @@
 mod denoise;
 mod develop;
 mod device;
+pub mod full;
 mod local;
 
 pub use device::Gpu;

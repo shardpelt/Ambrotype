@@ -16,6 +16,7 @@ path = "src/main.rs"
 amb-presets = { path = "../amb-presets" }
 amb-testkit = { path = "../amb-testkit" }
 amb-engine = { path = "../amb-engine" }
+amb-gpu = { path = "../amb-gpu" }
 amb-export = { path = "../amb-export" }
 amb-color = { path = "../amb-color" }
 amb-lens = { path = "../amb-lens" }

@@ -53,7 +53,7 @@ struct AppState {
     session: Arc<Mutex<Option<Session>>>,
     lens: Arc<LensCell>,
     /// The GPU for previews, once set up (`None` inside: there is none).
-    gpu: Arc<OnceLock<Option<amb_gpu::Gpu>>>,
+    gpu: Arc<OnceLock<Option<&'static amb_gpu::Gpu>>>,
     preset_dirs: Arc<Mutex<Vec<PathBuf>>>,
     /// The user's own size presets (the built-ins are added when listing).
     size_presets: Mutex<Vec<SizePreset>>,
@@ -388,10 +388,11 @@ fn main() {
         let _ = lens.set(LensSources::load_default());
     });
     // The GPU too (and its kernels compiled); previews use the CPU until then.
+    // Exports use the same one (`amb_gpu::full::shared`).
     let gpu = state.gpu.clone();
     std::thread::spawn(move || {
-        let found = amb_gpu::Gpu::new(false);
-        if let Some(g) = &found {
+        let found = amb_gpu::full::shared();
+        if let Some(g) = found {
             g.warm_up();
             eprintln!("previews on the GPU: {}", g.name());
         }

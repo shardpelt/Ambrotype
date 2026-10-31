@@ -79,7 +79,7 @@ pub(crate) fn render(
         println!("{n}");
     }
     let export = export_settings(out, options)?;
-    let developed = pipeline::render(&img, &develop);
+    let (developed, on) = amb_gpu::full::render(amb_gpu::full::shared(), &img, &develop);
     let report = amb_export::export(&developed, &img.metadata, &export, out)
         .map_err(|e| format!("{}: {e}", out.display()))?;
     println!(
@@ -107,6 +107,9 @@ pub(crate) fn render(
         report.bytes as f64 / 1e6,
         start.elapsed().as_secs_f64()
     );
+    if let Ok(gpu) = on {
+        println!("developed on the GPU ({gpu})");
+    }
     if !not_rendered.is_empty() {
         println!(
             "not rendered yet ({}): {}",

@@ -666,6 +666,7 @@ pub(crate) async fn convert_raws(
             &export,
             &out,
             options.edits,
+            amb_gpu::full::shared(),
             &|done, total| {
                 let _ = app.emit("convert-progress", [done, total]);
             },

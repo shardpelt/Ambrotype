@@ -9,6 +9,9 @@ pub struct Gpu {
     pub(crate) queue: wgpu::Queue,
     info: wgpu::AdapterInfo,
     kernels: std::sync::OnceLock<crate::develop::Kernels>,
+    /// Bytes of buffers made so far (a render's share is its peak memory:
+    /// they all live until its work is submitted).
+    allocated: std::sync::atomic::AtomicUsize,
 }
 
 impl Gpu {
@@ -55,6 +58,7 @@ impl Gpu {
             queue,
             info,
             kernels: std::sync::OnceLock::new(),
+            allocated: Default::default(),
         })
     }
 
@@ -72,7 +76,29 @@ impl Gpu {
         bytes as usize / (3 * 4)
     }
 
+    /// The GPU memory a render may use, in bytes. wgpu can't tell how much
+    /// a GPU has, so this is 4 GB (most GPUs from the last years have that
+    /// much, or share the computer's memory), or `AMB_GPU_MEMORY` in MB.
+    pub fn memory_budget(&self) -> usize {
+        let mb = std::env::var("AMB_GPU_MEMORY")
+            .ok()
+            .and_then(|v| v.parse::<usize>().ok())
+            .unwrap_or(4096);
+        mb << 20
+    }
+
+    /// Bytes of buffers made so far.
+    pub fn allocated(&self) -> usize {
+        self.allocated.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    fn count(&self, bytes: usize) {
+        self.allocated
+            .fetch_add(bytes, std::sync::atomic::Ordering::Relaxed);
+    }
+
     pub(crate) fn upload(&self, data: &[f32]) -> wgpu::Buffer {
+        self.count(data.len() * 4);
         self.device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("pixels"),
@@ -95,6 +121,7 @@ impl Gpu {
 
     /// A zeroed storage buffer of `len` floats.
     pub(crate) fn buffer(&self, len: usize) -> wgpu::Buffer {
+        self.count(len.max(1) * 4);
         self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("scratch"),
             size: (len.max(1) * 4) as u64,

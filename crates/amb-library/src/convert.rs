@@ -12,8 +12,14 @@
 //! photo can be changed and exported again. A photo the user edited already
 //! keeps that edit with Camera and Auto. A JPEG already there is left
 //! alone, so a stopped run carries on where it was.
+//!
+//! Photos are developed on the GPU when there is one ([`amb_gpu::full`]),
+//! and a few at a time, so one is read while another is developed and a
+//! third saved.
 
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use amb_engine::matching::{self, LookStats, MatchOptions};
 use amb_engine::pipeline;
@@ -24,6 +30,10 @@ use crate::look;
 /// The camera's own JPEG is used as it is from this long side up; a smaller
 /// one is only a guide to its colours.
 pub const CAMERA_JPEG_EDGE: u32 = 2000;
+
+/// Photos converted at once: enough to keep reading, developing and saving
+/// busy, few enough for the memory (each full-size photo is a few hundred MB).
+pub const AT_ONCE: usize = 3;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Look {
@@ -55,18 +65,22 @@ pub struct Converted {
     /// Photos given the camera's own JPEG as it is.
     pub camera_jpegs: usize,
     pub errors: Vec<String>,
+    /// Where they were developed: "on the GPU (name)" or "on the CPU (why)".
+    pub developed: Option<String>,
 }
 
 /// Convert `photos` into `out_dir` with `look`, written with `export`
-/// (its format decides the extension). `edits`: keep Auto's and Like's
-/// settings in the raws' sidecars. `progress` hears how many are done.
+/// (its format decides the extension), developed on `gpu` when given.
+/// `edits`: keep Auto's and Like's settings in the raws' sidecars.
+/// `progress` hears how many are done.
 pub fn convert(
     photos: &[PathBuf],
     look: &Look,
     export: &amb_export::ExportSettings,
     out_dir: &Path,
     edits: bool,
-    progress: &dyn Fn(usize, usize),
+    gpu: Option<&amb_gpu::Gpu>,
+    progress: &(dyn Fn(usize, usize) + Sync),
 ) -> Converted {
     let mut done = Converted::default();
     if let Err(e) = std::fs::create_dir_all(out_dir) {
@@ -84,43 +98,97 @@ pub fn convert(
         },
         _ => None,
     };
+    let job = Job {
+        look,
+        target: target.as_ref(),
+        export,
+        edits,
+        gpu,
+    };
     let ext = export.format.extension();
-    for (i, photo) in photos.iter().enumerate() {
-        let stem = photo.file_stem().unwrap_or_default().to_string_lossy();
-        let out = out_dir.join(format!("{stem}.{ext}"));
-        if out.exists() {
-            done.skipped += 1;
-        } else {
-            // A photo the user edited already keeps that edit (Camera, Auto).
-            let edited = look::photo_settings(photo).is_ok_and(|s| !s.is_empty());
-            let result = match look {
-                Look::Camera | Look::Auto if edited => {
-                    developed(photo, export, &out, false, "", &|_, _, _| no_change())
+    let next = AtomicUsize::new(0);
+    let finished = AtomicUsize::new(0);
+    let results = Mutex::new(vec![None; photos.len()]);
+    std::thread::scope(|scope| {
+        for _ in 0..AT_ONCE.min(photos.len()) {
+            scope.spawn(|| {
+                loop {
+                    let i = next.fetch_add(1, Ordering::Relaxed);
+                    let Some(photo) = photos.get(i) else { break };
+                    let stem = photo.file_stem().unwrap_or_default().to_string_lossy();
+                    let out = out_dir.join(format!("{stem}.{ext}"));
+                    let result = if out.exists() {
+                        Outcome::Skipped
+                    } else {
+                        match job.one(photo, &out) {
+                            Ok(camera_jpeg) => Outcome::Written(out, camera_jpeg),
+                            Err(e) => Outcome::Failed(format!("{}: {e}", photo.display())),
+                        }
+                    };
+                    results.lock().expect("results")[i] = Some(result);
+                    progress(finished.fetch_add(1, Ordering::Relaxed) + 1, photos.len());
                 }
-                Look::Camera => camera(photo, export, &out, edits).map(|used| {
-                    done.camera_jpegs += used as usize;
-                }),
-                Look::Auto => developed(photo, export, &out, edits, "Auto", &|img, base, d| {
-                    matching::auto(img, base, true, true, d)
-                }),
-                Look::Like(reference) if reference == photo => {
-                    developed(photo, export, &out, false, "", &|_, _, _| no_change())
-                }
-                Look::Like(_) => {
-                    let target = target.as_ref().expect("measured above");
-                    developed(photo, export, &out, edits, "Match look", &|img, base, d| {
-                        matching::solve(img, base, target, &MatchOptions::default(), d)
-                    })
-                }
-            };
-            match result {
-                Ok(()) => done.written.push(out),
-                Err(e) => done.errors.push(format!("{}: {e}", photo.display())),
+            });
+        }
+    });
+    // In the photos' order, whichever finished first.
+    for result in results.into_inner().expect("results").into_iter().flatten() {
+        match result {
+            Outcome::Skipped => done.skipped += 1,
+            Outcome::Written(out, camera_jpeg) => {
+                done.camera_jpegs += camera_jpeg as usize;
+                done.written.push(out);
+            }
+            Outcome::Failed(e) => done.errors.push(e),
+        }
+    }
+    done.developed = amb_gpu::full::last_where();
+    done
+}
+
+#[derive(Clone)]
+enum Outcome {
+    Skipped,
+    /// Written, and whether as the camera's own JPEG.
+    Written(PathBuf, bool),
+    Failed(String),
+}
+
+/// What every photo of a conversion shares.
+struct Job<'a> {
+    look: &'a Look,
+    target: Option<&'a LookStats>,
+    export: &'a amb_export::ExportSettings,
+    edits: bool,
+    gpu: Option<&'a amb_gpu::Gpu>,
+}
+
+impl Job<'_> {
+    /// Convert one photo to `out`; true when the camera's own JPEG was used.
+    fn one(&self, photo: &Path, out: &Path) -> Result<bool, String> {
+        let (export, edits) = (self.export, self.edits);
+        let developed = |edits: bool, label: &str, solve: &Solver| {
+            developed(photo, export, out, edits, label, self.gpu, solve).map(|()| false)
+        };
+        // A photo the user edited already keeps that edit (Camera, Auto).
+        let edited = look::photo_settings(photo).is_ok_and(|s| !s.is_empty());
+        match self.look {
+            Look::Camera | Look::Auto if edited => developed(false, "", &|_, _, _| no_change()),
+            Look::Camera => camera(photo, export, out, edits, self.gpu),
+            Look::Auto => developed(edits, "Auto", &|img, base, d| {
+                matching::auto(img, base, true, true, d)
+            }),
+            Look::Like(reference) if reference == photo => {
+                developed(false, "", &|_, _, _| no_change())
+            }
+            Look::Like(_) => {
+                let target = self.target.expect("measured before");
+                developed(edits, "Match look", &|img, base, d| {
+                    matching::solve(img, base, target, &MatchOptions::default(), d)
+                })
             }
         }
-        progress(i + 1, photos.len());
     }
-    done
 }
 
 fn no_change() -> matching::MatchResult {
@@ -139,12 +207,13 @@ fn camera(
     export: &amb_export::ExportSettings,
     out: &Path,
     edits: bool,
+    gpu: Option<&amb_gpu::Gpu>,
 ) -> Result<bool, String> {
     let source = amb_engine::source_path(photo);
     let preview = amb_engine::raw::embedded_preview(&source).map_err(|e| e.to_string())?;
     let Some(preview) = preview else {
         // No JPEG inside: Auto is the nearest thing.
-        developed(photo, export, out, edits, "Auto", &|img, base, d| {
+        developed(photo, export, out, edits, "Auto", gpu, &|img, base, d| {
             matching::auto(img, base, true, true, d)
         })?;
         return Ok(false);
@@ -161,7 +230,8 @@ fn camera(
     let result = if preview.width().max(preview.height()) >= CAMERA_JPEG_EDGE {
         (|| {
             let img = amb_engine::raw::load(&tmp).map_err(|e| e.to_string())?;
-            let rendered = pipeline::render(&img, &matching::develop_plain(&Default::default()));
+            let develop = matching::develop_plain(&Default::default());
+            let (rendered, _) = amb_gpu::full::render(gpu, &img, &develop);
             // The raw's date, camera and lens; the JPEG is upright already.
             let (_, mut meta) =
                 amb_engine::raw::read_metadata(&source).map_err(|e| e.to_string())?;
@@ -171,9 +241,15 @@ fn camera(
         })()
     } else {
         look::reference_look(&tmp).and_then(|target: LookStats| {
-            developed(photo, export, out, edits, "Camera look", &|img, base, d| {
-                matching::solve(img, base, &target, &MatchOptions::default(), d)
-            })
+            developed(
+                photo,
+                export,
+                out,
+                edits,
+                "Camera look",
+                gpu,
+                &|img, base, d| matching::solve(img, base, &target, &MatchOptions::default(), d),
+            )
             .map(|()| false)
         })
     };
@@ -190,13 +266,14 @@ type Solver<'a> = dyn Fn(
 
 /// Solve settings on the photo developed small, keep them in its sidecar
 /// (with `edits`, as one undo step called `label`), and export it developed
-/// at full size with them.
+/// at full size with them (on `gpu` when given).
 fn developed(
     photo: &Path,
     export: &amb_export::ExportSettings,
     out: &Path,
     edits: bool,
     label: &str,
+    gpu: Option<&amb_gpu::Gpu>,
     solve: &Solver,
 ) -> Result<(), String> {
     let source = amb_engine::source_path(photo);
@@ -219,7 +296,8 @@ fn developed(
             state.save(&sidecar).map_err(|e| e.to_string())?;
         }
     }
-    let rendered = pipeline::render(&full, &matching::develop_plain(state.settings()));
+    let develop = matching::develop_plain(state.settings());
+    let (rendered, _) = amb_gpu::full::render(gpu, &full, &develop);
     amb_export::export(&rendered, &full.metadata, export, out).map_err(|e| e.to_string())?;
     Ok(())
 }

@@ -1462,11 +1462,11 @@ impl Session {
     }
 
     /// The photo developed with its current settings, full size and upright
-    /// (working space), e.g. for a collage cell.
+    /// (working space), e.g. for a collage cell; on the GPU when there is one.
     pub fn render_upright(&mut self, lens: &LensSources) -> amb_engine::buffer::Image {
         let current = self.state.settings().clone();
         let develop = self.develop(&current, lens);
-        let developed = pipeline::render(&self.full, &develop);
+        let (developed, _) = amb_gpu::full::render(amb_gpu::full::shared(), &self.full, &develop);
         amb_export::geometry::orient(&developed, self.full.metadata.orientation)
     }
 
@@ -1490,7 +1490,6 @@ impl Session {
         }
     }
 
-    /// Full-resolution render and export.
     /// A before/after page (`amb_export::compare`): the photo before its
     /// edits (framed as the edit is) and after, `long_edge` pixels on the
     /// long side, in one HTML file at `out`.
@@ -1529,6 +1528,7 @@ impl Session {
         std::fs::write(out, html).map_err(|e| format!("{}: {e}", out.display()))
     }
 
+    /// Full-resolution render (on the GPU when there is one) and export.
     pub fn export(
         &mut self,
         out: &Path,
@@ -1537,7 +1537,7 @@ impl Session {
     ) -> Result<amb_export::ExportReport, String> {
         let current = self.state.settings().clone();
         let develop = self.develop(&current, lens);
-        let developed = pipeline::render(&self.full, &develop);
+        let (developed, _) = amb_gpu::full::render(amb_gpu::full::shared(), &self.full, &develop);
         amb_export::export(&developed, &self.full.metadata, settings, out)
             .map_err(|e| format!("{}: {e}", out.display()))
     }

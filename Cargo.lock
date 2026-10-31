@@ -104,6 +104,7 @@ dependencies = [
  "amb-color",
  "amb-engine",
  "amb-export",
+ "amb-gpu",
  "amb-lens",
  "amb-library",
  "amb-plugin",
@@ -215,6 +216,7 @@ version = "0.1.0"
 dependencies = [
  "amb-engine",
  "amb-export",
+ "amb-gpu",
  "amb-lens",
  "amb-presets",
  "amb-protocol",

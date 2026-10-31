@@ -11,6 +11,7 @@ repository.workspace = true
 [dependencies]
 amb-engine = { path = "../amb-engine" }
 amb-export = { path = "../amb-export" }
+amb-gpu = { path = "../amb-gpu" }
 amb-lens = { path = "../amb-lens" }
 amb-presets = { path = "../amb-presets" }
 amb-protocol = { path = "../amb-protocol" }

@@ -273,6 +273,13 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
             m.apply_dehaze(img, &cal, None, full);
         }));
     }
+    if !s.glow.is_neutral() {
+        let glow = s.glow;
+        steps.push(Step::Cpu {
+            name: "halation and bloom",
+            run: Box::new(move |img| crate::glow::apply_in(img, &glow, &tile)),
+        });
+    }
     // 3. Base look, local Highlights/Shadows, the global tone curve.
     // A rendered image already has its tone curve.
     match curve {

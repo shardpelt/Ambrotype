@@ -37,6 +37,18 @@ await t.step("search: a setting's name and a number sets it", async () => {
   await t.until("Contrast back", () => !("Contrast2012" in ui.settings));
 });
 
+await t.step("Effects → Glow: Halation is a slider, one undoable step", async () => {
+  revealSetting("amb:Halation");
+  t.expect(t.visible(t.row("amb:Halation")) && t.visible(t.row("amb:Bloom")), "Halation and Bloom shown");
+  const src = $("preview").src;
+  t.setSlider("amb:Halation", 60);
+  await t.until("Halation 60", () => t.setting("amb:Halation") === 60);
+  await t.until("a new preview", () => $("preview").src !== src);
+  await run([{ cmd: "undo" }]);
+  await t.until("Halation off", () => !("amb:Halation" in ui.settings));
+  revealSetting("Exposure2012");
+});
+
 await t.step("History shows the step's values before and after", async () => {
   const values = () => document.querySelector("#history-list li.current .history-values")?.textContent ?? "";
   await t.until("the values", () => values().endsWith("→ +1.00"));

@@ -1738,6 +1738,33 @@
    "status": "approx"
   },
   {
+   "name": "amb:Halation",
+   "group": "effects",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "amb:Bloom",
+   "group": "effects",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "amb:GlowSize",
+   "group": "effects",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 50,
+   "status": "exact"
+  },
+  {
    "name": "GrainSeed",
    "group": "effects",
    "kind": "number",

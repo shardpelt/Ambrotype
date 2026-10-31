@@ -123,6 +123,8 @@ pub struct DevelopSettings {
     pub sharpening: Sharpening,
     pub vignette: Vignette,
     pub grain: Grain,
+    /// Halation and bloom (`amb:Halation`, `amb:Bloom`, `amb:GlowSize`).
+    pub glow: crate::glow::Glow,
     pub lens: LensCorrections,
     /// The Transform sliders (after the lens corrections, before the crop).
     pub transform: Transform,
@@ -169,6 +171,7 @@ impl Default for DevelopSettings {
             sharpening: Sharpening::default(),
             vignette: Vignette::default(),
             grain: Grain::default(),
+            glow: crate::glow::Glow::default(),
             lens: LensCorrections::default(),
             transform: Transform::default(),
             camera_calibration: CameraCalibration::default(),
@@ -327,6 +330,9 @@ pub const RENDERED_TAGS: &[&str] = &[
     "amb:WBShiftBlue",
     "amb:LUT",
     "amb:LUTAmount",
+    "amb:Halation",
+    "amb:Bloom",
+    "amb:GlowSize",
     "amb:Effects",
     "amb:NegativeType",
     "amb:NegativeAuto",
@@ -638,6 +644,12 @@ impl DevelopSettings {
             size: num(settings, "GrainSize").unwrap_or(gd.size),
             roughness: num(settings, "GrainFrequency").unwrap_or(gd.roughness),
             seed: num(settings, "GrainSeed").map_or(gd.seed, |v| v as u64),
+        };
+        let gl = crate::glow::Glow::default();
+        s.glow = crate::glow::Glow {
+            halation: num(settings, "amb:Halation").unwrap_or(gl.halation),
+            bloom: num(settings, "amb:Bloom").unwrap_or(gl.bloom),
+            size: num(settings, "amb:GlowSize").unwrap_or(gl.size),
         };
         s.lens = lens_corrections(settings);
         s.transform = transform_settings(settings);

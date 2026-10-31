@@ -379,6 +379,14 @@ pub fn panels() -> Vec<Panel> {
                         ("GrainFrequency", Some("Roughness")),
                     ],
                 ),
+                section(
+                    "Glow",
+                    &[
+                        ("amb:Halation", Some("Halation")),
+                        ("amb:Bloom", Some("Bloom")),
+                        ("amb:GlowSize", Some("Size")),
+                    ],
+                ),
                 section("Plugin effects", &[("amb:Effects", Some("Effects"))]),
             ],
         },

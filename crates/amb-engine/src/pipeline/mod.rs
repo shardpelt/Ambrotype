@@ -8,7 +8,7 @@
 //!    → film negative conversion (optional, `amb:` settings) [sensor-linear]
 //! 1. camera RGB → white balance + camera matrix → XYZ → Bradford to D50 →
 //!    linear ProPhoto → Exposure (2^EV) → Defringe           [scene-linear]
-//! 2. Dehaze                                                 [scene-linear]
+//! 2. Dehaze → halation and bloom ([`crate::glow`])            [scene-linear]
 //! 3. base look → Basic tone controls (luminance, hue-preserving) [display-linear]
 //! 4. Texture / Clarity (local contrast)
 //! 5. colour (Vibrance, Saturation, HSL, Color Grading in OkLab) →
@@ -333,6 +333,7 @@ fn region_plan(img: &CameraImage, s: &DevelopSettings, window: Rect) -> Rect {
     let scale = Tile::whole(full.0, full.1).scale();
     let reach = early_reach(s, full)
         + 2
+        + crate::glow::reach(&s.glow, scale)
         + local_tone::reach(&s.tone, &cal.tone, scale)
         + local::reach(&s.local, &cal.local, scale)
         + detail::noise_reduction_reach(&s.noise_reduction, &cal.detail)
@@ -577,6 +578,8 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
         globals.mask_dehaze = m.apply_dehaze(&mut out, cal, given, full);
     }
     stages.mark("dehaze");
+    crate::glow::apply_in(&mut out, &s.glow, &tile);
+    stages.mark("glow");
     if pass.measure_only {
         return (out, globals);
     }

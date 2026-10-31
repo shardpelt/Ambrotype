@@ -90,7 +90,7 @@ NegPy cites five patents for its metering and lab tools:
 | Alkofer, US 4,731,671 | Contrast matching (Auto Grade) | 1988 | Expired |
 | Boyack & Juenger, US 5,724,456 | Brightness from detailed areas (Auto Density) | 1998 | Expired |
 | Fujifilm, US 5,739,922 | Chroma denoise | 1998 | Expired |
-| Gindele, US 7,113,649 | Shadow reach | 2006, filed 2002-06-24 | Its 20-year term ran out in 2022; check for a term adjustment before building |
+| Gindele, US 7,113,649 | Shadow reach | 2006, filed 2002-06-24 | Expired: Google Patents gives an adjusted expiry of 2024-08-03 (checked 2026-10-31) |
 
 ## 6. Ideas for Ambrotype (the backlog)
 

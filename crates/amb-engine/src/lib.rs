@@ -20,6 +20,7 @@ pub mod dng_opcodes;
 pub mod dust;
 pub mod effects;
 pub mod filters;
+pub mod glow;
 pub mod highlights;
 pub mod lens;
 pub mod local;

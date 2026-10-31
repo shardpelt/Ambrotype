@@ -1,6 +1,6 @@
 # Where we are
 
-A short "start here" for contributors and for the next work session. Details are in [ARCHITECTURE.md](ARCHITECTURE.md) (what exists) and [GAPS.md](GAPS.md) (everything missing). New to the repo, or an AI agent? Read [AGENTS.md](../AGENTS.md) first.
+A short "start here" for contributors and for the next work session. The running short list of what comes next, and what waits on the owner, is [WHATS-NEXT.md](WHATS-NEXT.md). Details are in [ARCHITECTURE.md](ARCHITECTURE.md) (what exists) and [GAPS.md](GAPS.md) (everything missing). New to the repo, or an AI agent? Read [AGENTS.md](../AGENTS.md) first.
 
 ## State
 

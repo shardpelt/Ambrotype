@@ -1206,6 +1206,13 @@ pub(crate) mod tests {
         );
         same_as_cpu("grain", &[("GrainAmount", n(60.0))]);
         same_as_cpu(
+            "grain, film response",
+            &[
+                ("GrainAmount", n(60.0)),
+                ("amb:GrainFilm", Value::Bool(true)),
+            ],
+        );
+        same_as_cpu(
             "large, smooth grain",
             &[
                 ("GrainAmount", n(100.0)),

@@ -30,7 +30,7 @@ How to read the tables:
 | [Detail](#detail) | `detail` | 11 | Sharpening (Amount, Radius, Detail, Masking) and manual noise reduction (luminance and colour). Judge these at 100% zoom or more. |
 | [Lens Corrections](#lens) | `lens` | 19 | Lens profile corrections, chromatic-aberration removal, defringing and lens vignetting. |
 | [Transform](#transform) | `transform` | 27 | Upright perspective correction and manual perspective sliders. |
-| [Effects](#effects) | `effects` | 15 | Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) and film grain (Amount, Size, Roughness). |
+| [Effects](#effects) | `effects` | 16 | Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) and film grain (Amount, Size, Roughness). |
 | [LUT](#lut) | `lut` | 2 | A look from a .cube file (the 3D LUT format of Resolve and many look packs), applied after the colour and curves. Our own feature (amb: namespace); Lightroom has no LUT setting and ignores these. |
 | [Calibration](#calibration) | `calibration` | 8 | Shadows tint and the red, green and blue primary hue/saturation adjustments to the camera's default colour rendering. |
 | [Crop](#crop) | `crop` | 12 | Crop rectangle, angle and orientation. Specific to one image; presets should rarely carry it. |
@@ -388,6 +388,7 @@ Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) an
 | `GrainAmount` | Grain: Amount | number | 0 to 100 | 0 | rendered (approx.) | Strength of simulated film grain. 0 = off. |
 | `GrainSize` | Grain: Size | number | 0 to 100 | 25 | rendered (approx.) | Grain particle size. At 25 or more Adobe adds blue to work better with noise reduction, and such sizes can cause some image blurring. |
 | `GrainFrequency` | Grain: Roughness | number | 0 to 100 | 50 | rendered (approx.) | Grain regularity: lower is more uniform, higher more uneven. Together with Size it sets the grain's character. |
+| `amb:GrainFilm` | Grain: Film response | bool | true / false | false | rendered (exact) | True: grain follows a negative's density, as in a print from film: strongest in the light midtones, fading into deep shadows and clean highlights. False: Lightroom's even midtone grain. |
 | `amb:Halation` | Halation | number | 0 to 100 | 0 | rendered (exact) | A red-orange halo around bright highlights, as film makes when light bounces off its base into the red layer. 0 = off. |
 | `amb:Bloom` | Bloom | number | 0 to 100 | 0 | rendered (exact) | A soft glow of their own colour around bright parts, as light scattering in the lens and emulsion makes. 0 = off. |
 | `amb:GlowSize` | Glow size | number | 0 to 100 | 50 | rendered (exact) | How far halation and bloom spread, relative to the photo: 0 tight, 50 normal, 100 wide. |

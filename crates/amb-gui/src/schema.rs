@@ -377,6 +377,7 @@ pub fn panels() -> Vec<Panel> {
                         ("GrainAmount", Some("Amount")),
                         ("GrainSize", Some("Size")),
                         ("GrainFrequency", Some("Roughness")),
+                        ("amb:GrainFilm", Some("Film response")),
                     ],
                 ),
                 section(

@@ -330,6 +330,7 @@ pub const RENDERED_TAGS: &[&str] = &[
     "amb:WBShiftBlue",
     "amb:LUT",
     "amb:LUTAmount",
+    "amb:GrainFilm",
     "amb:Halation",
     "amb:Bloom",
     "amb:GlowSize",
@@ -646,6 +647,7 @@ impl DevelopSettings {
             size: num(settings, "GrainSize").unwrap_or(gd.size),
             roughness: num(settings, "GrainFrequency").unwrap_or(gd.roughness),
             seed: num(settings, "GrainSeed").map_or(gd.seed, |v| v as u64),
+            film: flag(settings, "amb:GrainFilm"),
         };
         let gl = crate::glow::Glow::default();
         s.glow = crate::glow::Glow {

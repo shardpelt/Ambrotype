@@ -103,6 +103,9 @@ pub struct Grain {
     pub size: f64,
     pub roughness: f64,
     pub seed: u64,
+    /// `amb:GrainFilm`: the grain follows the film's density (see
+    /// [`film_tone_weight`]) instead of Lightroom's even midtone curve.
+    pub film: bool,
 }
 
 impl Default for Grain {
@@ -112,6 +115,7 @@ impl Default for Grain {
             size: 25.0,
             roughness: 50.0,
             seed: 0,
+            film: false,
         }
     }
 }
@@ -843,6 +847,30 @@ fn grain_tone_weight(y: f32, power: f32) -> f32 {
     }
 }
 
+/// Film response (`amb:GrainFilm`), **ours**, from how a print shows a
+/// negative's grain: the grain's density noise grows with the square root of
+/// the negative's density (Selwyn's law; the negative is densest where the
+/// print is light), and the paper turns density noise into print noise in
+/// proportion to its contrast at that tone, an S-curve, steepest in the
+/// midtones and flat at black and paper white. So grain peaks in the light
+/// midtones and fades into the deepest shadows and the brightest highlights.
+/// Normalised to 1 at its peak.
+fn film_tone_weight(y: f32) -> f32 {
+    fn raw(l: f32) -> f32 {
+        // The negative's density above base, 0..1 across the print's tones.
+        let density = (l + 0.1) / 1.1;
+        density.sqrt() * (4.0 * l * (1.0 - l)).clamp(0.0, 1.0)
+    }
+    // The peak, found once.
+    static PEAK: std::sync::OnceLock<f32> = std::sync::OnceLock::new();
+    let peak = *PEAK.get_or_init(|| {
+        (0..=1000)
+            .map(|i| raw(i as f32 / 1000.0))
+            .fold(0.0, f32::max)
+    });
+    raw(lightness(y.clamp(0.0, 1.0))) / peak
+}
+
 /// Entries of the tone-weight table over luminance 0..1 (linearly interpolated;
 /// the weight is smooth there, so the error is far below a visible level).
 const GRAIN_WEIGHT_LUT: usize = 4096;
@@ -885,14 +913,22 @@ pub fn grain_plan(p: &Grain, k: &EffectsStrengths, full: (usize, usize)) -> Opti
         (amount * k.grain_strength.max(0.0)) as f32,
         field.variance,
         k.grain_tone_power.max(0.0) as f32,
+        p.film,
     );
     (field.inv_std != 0.0 && op.strength != 0.0).then_some(GrainPlan { field, op })
 }
 
 impl GrainOp {
-    fn new(strength: f32, variance: f32, tone_power: f32) -> GrainOp {
+    fn new(strength: f32, variance: f32, tone_power: f32, film: bool) -> GrainOp {
         let mut weight: Vec<f32> = (0..=GRAIN_WEIGHT_LUT)
-            .map(|i| grain_tone_weight(i as f32 / GRAIN_WEIGHT_LUT as f32, tone_power))
+            .map(|i| {
+                let y = i as f32 / GRAIN_WEIGHT_LUT as f32;
+                if film {
+                    film_tone_weight(y)
+                } else {
+                    grain_tone_weight(y, tone_power)
+                }
+            })
             .collect();
         weight.push(weight[GRAIN_WEIGHT_LUT]);
         GrainOp {
@@ -986,6 +1022,36 @@ mod tests {
             amount,
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn film_grain_follows_density() {
+        // By print lightness: none at black and white, a peak in the light
+        // midtones, more in a light tone than in the matching dark one.
+        let at = |l: f32| {
+            // Luminance for CIE lightness l (linear below L 0.08).
+            let y = if l > 0.08 {
+                ((l + 0.16) / 1.16).powi(3)
+            } else {
+                l * 100.0 * 27.0 / 24389.0
+            };
+            film_tone_weight(y)
+        };
+        assert!(at(0.0) < 1e-3 && at(1.0) < 1e-3, "{} {}", at(0.0), at(1.0));
+        let peak = (1..100)
+            .map(|i| i as f32 / 100.0)
+            .max_by(|a, b| at(*a).total_cmp(&at(*b)))
+            .unwrap();
+        assert!((0.52..0.65).contains(&peak), "peak at L {peak}");
+        assert!((at(peak) - 1.0).abs() < 0.01);
+        assert!(at(0.75) > at(0.25) * 1.2, "{} vs {}", at(0.75), at(0.25));
+        // Lightroom's curve is even about the middle.
+        assert!(
+            (grain_tone_weight(((0.75f32 + 0.16) / 1.16).powi(3), 1.0)
+                - grain_tone_weight(((0.25f32 + 0.16) / 1.16).powi(3), 1.0))
+            .abs()
+                < 1e-3
+        );
     }
 
     fn grain(amount: f64) -> Grain {

@@ -68,6 +68,8 @@ function folderTreeItem(node) {
   row.classList.toggle("current", shown);
   const kids = [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   const open = tree.open.has(node.path);
+  row.dataset.path = node.path;
+  if (kids.length) row.dataset.kids = "1";
   const twist = Object.assign(document.createElement("span"), { className: "twist", textContent: kids.length ? (open ? "▾" : "▸") : "" });
   twist.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -162,6 +164,16 @@ async function removeLibraryFolder(path) {
 }
 
 function wireFolderTree() {
+  // Double-click a folder with folders inside: open or close it. On the list,
+  // not the row: the first click redraws the tree.
+  $("tree-list").addEventListener("dblclick", (e) => {
+    const row = e.target.closest?.(".tree-row");
+    if (!row?.dataset.kids || e.target.closest("button")) return;
+    const path = row.dataset.path;
+    if (tree.open.has(path)) tree.open.delete(path);
+    else tree.open.add(path);
+    renderFolderTree();
+  });
   $("tree-add").addEventListener("click", addLibraryRoot);
   $("tree-mode-folders").addEventListener("click", () => setTreeMode(false));
   $("tree-mode-all").addEventListener("click", () => setTreeMode(true));

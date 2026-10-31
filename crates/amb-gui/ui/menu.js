@@ -11,7 +11,7 @@
 // Windows and Linux list there (macOS has it in the app's own menu).
 const MENU_BAR = [
   ["Ambrotype", ["#about", "|", "settings", "|", "#services", "|", "#hide", "#hide_others", "#show_all", "|", "#quit"], "mac"],
-  ["File", ["open", "open-folder", "import", "|", "save", "export", "share-compare", "edit-in", "|", "collage", "|", "~settings", "|", "#close_window", "~#quit"]],
+  ["File", ["open", "open-folder", "import", "|", "save", "export", "convert-raws", "share-compare", "edit-in", "|", "collage", "|", "~settings", "|", "#close_window", "~#quit"]],
   ["Edit", ["undo", "redo", "|", "#cut", "#copy", "#paste", "lib-all", "lib-none", "|", "lib-copy", "lib-paste"]],
   ["Photo", [
     "crop", "masks", "spots", "wb", "|",
@@ -32,7 +32,7 @@ const MENU_MAC_ONLY = new Set(["#services", "#hide", "#hide_others", "#show_all"
 const MENU_TITLES = {
   open: "Open…", "open-folder": "Open Folder…", slideshow: "Slideshow…", import: "Import Photos…", save: "Save", export: "Export…", "edit-in": "Edit in Another App", "share-compare": "Share Before and After…", touch: "Touch: Drag on the Photo",
   collage: "Collage Maker…", "lib-all": "Select All", "lib-none": "Select None", "lib-copy": "Copy Settings",
-  "lib-paste": "Paste Settings", "save-preset": "New Preset from This Photo…", crop: "Crop and Straighten", spots: "Spot Removal", wb: "White Balance Picker",
+  "lib-paste": "Paste Settings", "save-preset": "New Preset from This Photo…", "convert-raws": "Convert Raws to JPEGs…", crop: "Crop and Straighten", spots: "Spot Removal", wb: "White Balance Picker",
   "rate-0": "No Rating", "label-red": "Red", "label-yellow": "Yellow", "label-green": "Green", "label-blue": "Blue",
   "flag-pick": "Pick", "flag-reject": "Reject", "flag-none": "No Flag", keywords: "Add Keywords",
   "virtual-copy": "Make a Virtual Copy", "quick-collection": "Add to the Last Collection", assistant: "Assistant…",

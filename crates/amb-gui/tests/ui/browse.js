@@ -75,6 +75,24 @@ await t.step("the folder strip opens a folder inside this one, and .. goes back 
   await t.until("back up", () => lib.dir.replace(/[\\/]+$/, "") === dir.replace(/[\\/]+$/, ""));
 });
 
+await t.step("double-click a folder in the tree: it closes, and opens again", async () => {
+  // A stand-in library folder with one folder inside.
+  const saved = { roots: tree.roots, folders: tree.folders, open: new Set(tree.open) };
+  tree.roots = [{ path: "/photos", offline: false }];
+  tree.folders = [{ folder: "/photos/trip", photos: 3 }];
+  tree.open = new Set(["/photos"]);
+  renderFolderTree();
+  const row = () => [...$("tree-list").querySelectorAll(".tree-row")].find((r) => r.dataset.path === "/photos");
+  const dbl = () => row().querySelector(".tree-name").dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+  t.expect($("tree-list").textContent.includes("trip"), "trip shown");
+  dbl();
+  t.expect(!$("tree-list").textContent.includes("trip"), "closed");
+  dbl();
+  t.expect($("tree-list").textContent.includes("trip"), "open again");
+  Object.assign(tree, saved);
+  renderFolderTree();
+});
+
 await t.step("Folders | All photos, and Ctrl-click shows more folders together", async () => {
   const dir = lib.dir;
   await setTreeMode(true);

@@ -57,6 +57,16 @@ await t.step("Ctrl+Shift+N makes a preset from the photo's edit", async () => {
   t.expect(KEY_ACTIONS.some((a) => a.id === "save-preset") && MENU_BAR.flat(3).includes("save-preset"), "in the menu bar too");
 });
 
+await t.step("Convert raws from the editor: the open photo's folder, like this photo", async () => {
+  const flow = convertRawsFlow();
+  await t.until("the dialog", () => $("convert-dialog").open);
+  t.expect($("convert-what").textContent.includes("in this folder"), $("convert-what").textContent);
+  t.expect(!$("convert-like").disabled, "Like this photo offered");
+  $("convert-dialog").close("cancel");
+  await flow;
+  t.expect(MENU_BAR.flat(3).includes("convert-raws"), "in the File menu");
+});
+
 await t.step("History shows the step's values before and after", async () => {
   const values = () => document.querySelector("#history-list li.current .history-values")?.textContent ?? "";
   await t.until("the values", () => values().endsWith("→ +1.00"));

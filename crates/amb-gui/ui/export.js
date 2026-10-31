@@ -36,6 +36,7 @@ function photoMenu(e) {
     ["Export…", () => exportFlow()],
     ["Share before and after…", () => shareCompareFlow()],
     ["Make a preset from this edit…", () => savePresetFlow()],
+    ["Convert this folder's raws to JPEGs…", () => convertRawsFlow()],
   ]);
 }
 

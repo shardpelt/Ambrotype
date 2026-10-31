@@ -978,18 +978,30 @@ async function syncNegativeRoll() {
   }
 }
 
-// Raws to JPEGs (src/commands/library.rs `convert_raws`): the selection, or
-// every photo shown when none is selected.
+// Raws to JPEGs (src/commands/library.rs `convert_raws`): in the library
+// the selection, or every photo shown when none is selected; in the editor
+// the open photo's folder (the filmstrip), like the open photo.
 async function convertRawsFlow() {
-  const sel = selectedPhotos();
-  const paths = (sel.length ? sel : lib.shown).map((p) => p.path);
+  let paths, what, like;
+  if (lib.on) {
+    const sel = selectedPhotos();
+    paths = (sel.length ? sel : lib.shown).map((p) => p.path);
+    what = sel.length ? " selected" : " shown";
+    like = lib.focus && paths.includes(lib.focus) ? lib.focus : null;
+  } else {
+    if (!ui.info) return toast("Open a photo first.", true);
+    // Its edit as it is now, for "like this photo" and for itself.
+    await invoke("save_sidecar").catch(() => {});
+    paths = (strip.photos?.length ? strip.photos : [{ path: ui.info.path }]).map((p) => p.path);
+    what = " in this folder";
+    like = ui.info.path;
+  }
   if (!paths.length) return;
   const dlg = $("convert-dialog");
   const f = dlg.querySelector("form");
-  const like = lib.focus && paths.includes(lib.focus) ? lib.focus : null;
-  $("convert-what").textContent = `${paths.length} photo${paths.length === 1 ? "" : "s"}${sel.length ? " selected" : " shown"}.`;
+  $("convert-what").textContent = `${paths.length} photo${paths.length === 1 ? "" : "s"}${what}.`;
   $("convert-like").disabled = !like;
-  $("convert-like-label").innerHTML = like ? `<b>Like ${fileName(like)}</b>: every photo matched to the one you edited` : "<b>Like one I edited</b>: click that photo first, then Convert raws";
+  $("convert-like-label").innerHTML = like ? `<b>Like ${fileName(like)}</b>: every photo matched to ${lib.on ? "the one you edited" : "this one's edit"}` : "<b>Like one I edited</b>: click that photo first, then Convert raws";
   if (!like && f.convert_look.value === "like") f.convert_look.value = "camera";
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));

@@ -9,6 +9,7 @@
 "use strict";
 
 const lib = {
+  dirs: [], // folder tiles shown before the photos (renderSubfolders)
   on: false,
   dir: null,
   more: [],            // other folders shown with it
@@ -278,43 +279,41 @@ const GRID_GAP = 10;
 const GRID_PAD = 12;
 const GRID_OVERSCAN = 4;
 
-// The folder strip above the grid: the folder above this one, then the
-// folders inside it with their photo counts; a click opens one.
+// The folders inside the one shown come first in the grid, as tiles (the
+// folder above it as ".."); a click opens one.
 async function renderSubfolders() {
-  const strip = $("lib-subdirs");
   const dir = lib.dir;
-  // The last folder's chips go at once: they'd open the wrong folders.
-  strip.replaceChildren();
-  strip.hidden = true;
+  lib.dirs = [];
+  renderRange(true);
   // Only for one folder on its own (not a collection, All photos or a search).
-  if (!dir || lib.collection || lib.smart || lib.more.length) {
-    strip.hidden = true;
-    return;
-  }
+  if (!dir || lib.collection || lib.smart || lib.more.length) return;
   let subs = [];
   try {
     subs = await invoke("library_subfolders", { dir });
   } catch { /* none shown */ }
-  if (lib.dir !== dir) return;
+  if (lib.dir !== dir || lib.collection || lib.smart) return;
   const sep = dir.includes("\\") ? "\\" : "/";
   const trimmed = dir.replace(/[\\/]+$/, "");
   const parent = trimmed.includes(sep) ? trimmed.slice(0, trimmed.lastIndexOf(sep)) || sep : null;
-  const chip = (text, count, title, go) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", className: "lib-subdir", title });
-    b.append(Object.assign(document.createElement("span"), { textContent: "📁" }), Object.assign(document.createElement("span"), { className: "name", textContent: text }));
-    if (count !== null) b.append(Object.assign(document.createElement("span"), { className: "count", textContent: String(count) }));
-    b.addEventListener("click", go);
-    return b;
-  };
-  const chips = subs.map((s) => chip(s.name, s.photos, `${s.path}\n${s.photos} photo${s.photos === 1 ? "" : "s"}${s.folders ? ", and folders" : ""}: click to open`, () => loadLibrary(s.path, [])));
-  if (parent) chips.unshift(chip("..", null, `Up to ${parent}`, () => loadLibrary(parent, [])));
-  strip.replaceChildren(...chips);
-  strip.hidden = chips.length === 0;
+  lib.dirs = [...(parent ? [{ path: parent, name: "..", up: true }] : []), ...subs];
+  renderRange(true);
+}
+
+function makeDirCell(d) {
+  const cell = Object.assign(document.createElement("div"), { className: "lib-cell lib-dir" });
+  cell.dataset.dir = d.path;
+  cell.title = d.up ? `Up to ${d.path}` : `${d.path}\n${d.photos} photo${d.photos === 1 ? "" : "s"}${d.folders ? ", and folders" : ""}: click to open`;
+  const frame = Object.assign(document.createElement("div"), { className: "lib-frame" });
+  frame.append(Object.assign(document.createElement("span"), { className: "lib-dir-icon", textContent: d.up ? "↑" : "📁" }));
+  const meta = Object.assign(document.createElement("div"), { className: "lib-meta" });
+  if (!d.up) meta.append(Object.assign(document.createElement("span"), { className: "lib-dir-count", textContent: `${d.photos} photo${d.photos === 1 ? "" : "s"}${d.folders ? " +" : ""}` }));
+  cell.append(frame, meta, Object.assign(document.createElement("div"), { className: "lib-name", textContent: d.up ? ".. (up)" : d.name }));
+  return cell;
 }
 
 function renderLibrary() {
   applyView();
-  if (lib.collection || lib.smart) $("lib-subdirs").hidden = true;
+  if (lib.collection || lib.smart) lib.dirs = [];
   const grid = $("library-grid");
   lib.observer?.disconnect();
   lib.queue = [];
@@ -363,10 +362,12 @@ function renderRange(force = false) {
   const grid = $("library-grid");
   if (!lib.spacers) return;
   const { cols, rowH } = gridMetrics();
-  const rows = Math.ceil(lib.shown.length / cols);
+  // Folder tiles first, then the photos.
+  const dirs = lib.dirs ?? [];
+  const rows = Math.ceil((dirs.length + lib.shown.length) / cols);
   const first = Math.max(0, Math.floor((grid.scrollTop - GRID_PAD) / rowH) - GRID_OVERSCAN);
   const last = Math.min(rows, Math.ceil((grid.scrollTop + grid.clientHeight) / rowH) + GRID_OVERSCAN);
-  const key = `${first}:${last}:${cols}:${Math.round(rowH)}`;
+  const key = `${first}:${last}:${cols}:${Math.round(rowH)}:${dirs.length}`;
   if (!force && key === lib.rangeKey) return;
   lib.rangeKey = key;
   // A spacer is a grid row too: the gap after it is part of its height.
@@ -376,11 +377,19 @@ function renderRange(force = false) {
   bottom.hidden = last >= rows;
   bottom.style.height = `${(rows - last) * rowH - GRID_GAP}px`;
   const cells = new Map();
-  for (const p of lib.shown.slice(first * cols, last * cols)) cells.set(p.path, lib.cells.get(p.path) ?? makeCell(p));
+  for (let i = first * cols; i < Math.min(last * cols, dirs.length + lib.shown.length); i++) {
+    if (i < dirs.length) {
+      const key = `dir:${dirs[i].path}:${dirs[i].up ? 1 : 0}`;
+      cells.set(key, lib.cells.get(key) ?? makeDirCell(dirs[i]));
+    } else {
+      const p = lib.shown[i - dirs.length];
+      cells.set(p.path, lib.cells.get(p.path) ?? makeCell(p));
+    }
+  }
   lib.cells = cells;
   grid.replaceChildren(top, ...cells.values(), bottom);
   lib.observer.disconnect();
-  for (const cell of cells.values()) if (!cell.querySelector("img").getAttribute("src")) lib.observer.observe(cell);
+  for (const cell of cells.values()) if (cell.querySelector("img") && !cell.querySelector("img").getAttribute("src")) lib.observer.observe(cell);
 }
 
 function makeCell(p) {
@@ -425,8 +434,9 @@ function makeCell(p) {
 // Scroll so a photo is in view, drawing it if it wasn't.
 function revealPhoto(path, block = "nearest") {
   const grid = $("library-grid");
-  const i = lib.shown.findIndex((p) => p.path === path);
-  if (i < 0) return;
+  const at = lib.shown.findIndex((p) => p.path === path);
+  if (at < 0) return;
+  const i = at + (lib.dirs?.length ?? 0);
   const { cols, rowH } = gridMetrics();
   const y = GRID_PAD + Math.floor(i / cols) * rowH;
   const h = rowH - GRID_GAP;
@@ -1273,6 +1283,7 @@ function wireLibrary() {
       if (e.target === grid) librarySelectNone();
       return;
     }
+    if (cell.dataset.dir) return loadLibrary(cell.dataset.dir, []);
     select(cell.dataset.path, e.shiftKey ? "range" : e.ctrlKey || e.metaKey ? "toggle" : "only");
   });
   // Press and drag the grid up and down, as on a touch screen.
@@ -1284,7 +1295,7 @@ function wireLibrary() {
   // Right-click a photo: copy it, its path, find it, open it, export.
   grid.addEventListener("contextmenu", (e) => {
     const cell = e.target.closest(".lib-cell");
-    if (!cell) return;
+    if (!cell || cell.dataset.dir) return;
     const path = cell.dataset.path;
     if (!lib.selected.has(path)) select(path, "only");
     const sel = selectedPhotos();
@@ -1302,7 +1313,7 @@ function wireLibrary() {
   });
   grid.addEventListener("dblclick", (e) => {
     const cell = e.target.closest(".lib-cell");
-    if (cell) libraryOpen(cell.dataset.path);
+    if (cell?.dataset.path) libraryOpen(cell.dataset.path);
   });
   document.addEventListener("keydown", (e) => {
     if (!lib.on || document.querySelector("dialog[open]") || e.target.matches("input, select, textarea")) return;
@@ -1324,6 +1335,7 @@ function wireLibrary() {
     grid.style.setProperty("--thumb", `${$("lib-size").value}px`);
     renderRange(true);
     for (const cell of lib.cells.values()) {
+      if (cell.dataset.dir) continue;
       const url = cachedThumb(libPhoto(cell.dataset.path));
       if (url) cell.querySelector("img").src = url;
       else lib.queue.push(cell.dataset.path);

@@ -184,7 +184,7 @@ function wireScrubber() {
     const f = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
     const i = Math.min(lib.shown.length - 1, Math.floor(f * lib.shown.length));
     const { cols, rowH } = gridMetrics();
-    $("library-grid").scrollTop = Math.floor(i / cols) * rowH;
+    $("library-grid").scrollTop = Math.floor((i + (lib.dirs?.length ?? 0)) / cols) * rowH;
     const tip = strip.querySelector(".scrub-tip");
     const c = lib.shown[i]?.captured;
     tip.hidden = !c;

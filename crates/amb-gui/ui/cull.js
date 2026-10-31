@@ -47,7 +47,6 @@ function setLibraryView(view) {
   cull.view = view;
   $("library-view").hidden = view === "grid";
   $("library-grid").hidden = view !== "grid";
-  $("library-grid").parentElement.hidden = view !== "grid";
   for (const b of document.querySelectorAll("#lib-views button")) b.classList.toggle("on", b.dataset.view === view);
   if (view === "grid") {
     if (cull.active && order.includes(cull.active)) {

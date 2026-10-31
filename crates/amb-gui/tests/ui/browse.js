@@ -48,7 +48,7 @@ await t.step("dragging the grid moves through it; a drag doesn't select", async 
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   const spacer = Object.assign(document.createElement("div"), { style: "height: 4000px; grid-column: 1 / -1" });
   grid.append(spacer);
-  const cell = grid.querySelector(".lib-cell");
+  const cell = grid.querySelector(".lib-cell:not(.lib-dir)");
   const at = cell.getBoundingClientRect();
   const ev = (type, y) => cell.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: at.left + 20, clientY: y, pointerId: 9, button: 0, pointerType: "mouse" }));
   ev("pointerdown", at.top + 200);
@@ -63,16 +63,19 @@ await t.step("dragging the grid moves through it; a drag doesn't select", async 
   t.expect(lib.selected.size === 0, "nothing selected");
 });
 
-await t.step("the folder strip opens a folder inside this one, and .. goes back up", async () => {
+await t.step("the grid shows the folders inside this one first, as tiles; a click opens one", async () => {
   const dir = lib.dir;
-  await t.until("the strip", () => !$("lib-subdirs").hidden && $("lib-subdirs").textContent.includes("more"));
-  const more = [...$("lib-subdirs").children].find((b) => b.querySelector(".name").textContent === "more");
-  t.expect(more.querySelector(".count").textContent === "1", "one photo in more");
-  t.click(more);
+  const tile = (name) => [...$("library-grid").querySelectorAll(".lib-dir")].find((c) => c.querySelector(".lib-name").textContent === name);
+  await t.until("the more tile", () => tile("more"));
+  const cells = [...$("library-grid").querySelectorAll(".lib-cell")];
+  t.expect(cells.indexOf(tile("more")) < cells.findIndex((c) => !c.classList.contains("lib-dir")), "before the photos");
+  t.expect(tile("more").querySelector(".lib-dir-count").textContent === "1 photo", tile("more").textContent);
+  t.click(tile("more").querySelector(".lib-frame"));
   await t.until("the folder more", () => lib.dir !== dir && lib.dir.endsWith("more") && lib.photos.length === 1);
-  await t.until("its strip: only ..", () => !$("lib-subdirs").hidden && $("lib-subdirs").children.length === 1);
-  t.click([...$("lib-subdirs").children].find((b) => b.querySelector(".name").textContent === ".."));
+  await t.until("its tiles: only ..", () => lib.dirs.length === 1 && tile(".. (up)"));
+  t.click(tile(".. (up)").querySelector(".lib-frame"));
   await t.until("back up", () => lib.dir.replace(/[\\/]+$/, "") === dir.replace(/[\\/]+$/, ""));
+  await t.until("the more tile again", () => tile("more"));
 });
 
 await t.step("double-click a folder in the tree: it closes, and opens again", async () => {
@@ -156,7 +159,7 @@ await t.step("Smart search without a search model says where to get one; the gri
 await t.step("right-click in the library: a preset onto the selected photos, one step each", async () => {
   lib.selected = new Set(lib.shown.map((p) => p.path));
   const paths = [...lib.selected];
-  const cell = document.querySelector(".lib-cell");
+  const cell = document.querySelector(".lib-cell:not(.lib-dir)");
   cell.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 60, clientY: 60 }));
   const items = [...document.querySelectorAll(".ctx-menu button")].map((b) => b.textContent);
   document.querySelector(".ctx-menu")?.remove();

@@ -1725,10 +1725,15 @@ pub fn scan_presets(dirs: &[PathBuf]) -> Vec<PresetEntry> {
             }
         }
     }
-    // A photo's own sidecar (IMG_1234.xmp next to IMG_1234.NEF, or a
-    // virtual copy's), not a preset: a folder of presets can hold photos.
+    // A photo's own sidecar (IMG_1234.xmp next to IMG_1234.NEF,
+    // photo.jpg.xmp next to photo.jpg, or a virtual copy's), not a preset:
+    // a folder of presets can hold photos.
     fn is_photo_sidecar(p: &Path) -> bool {
         if amb_engine::virtual_copy_of(p).is_some() {
+            return true;
+        }
+        // A JPEG's (or other rendered photo's) sidecar is its whole name plus .xmp.
+        if p.file_stem().is_some_and(|s| p.with_file_name(s).is_file()) {
             return true;
         }
         let (Some(dir), Some(stem)) = (p.parent(), p.file_stem()) else {
@@ -1802,6 +1807,9 @@ mod tests {
         std::fs::write(dir.join("Look/IMG_1.NEF"), b"x").unwrap();
         std::fs::write(dir.join("Look/IMG_1.xmp"), packet("")).unwrap();
         std::fs::write(dir.join("Look/IMG_1.copy-2.xmp"), packet("")).unwrap();
+        // A JPEG's sidecar keeps the photo's whole name.
+        std::fs::write(dir.join("Look/DSCF9692.JPG"), b"x").unwrap();
+        std::fs::write(dir.join("Look/DSCF9692.JPG.xmp"), packet("")).unwrap();
         let found: Vec<String> = scan_presets(std::slice::from_ref(&dir))
             .into_iter()
             .map(|p| p.name)

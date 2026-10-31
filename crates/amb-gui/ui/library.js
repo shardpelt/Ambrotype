@@ -37,7 +37,9 @@ const lib = {
 
 const libraryOn = () => lib.on;
 const libPhoto = (path) => lib.photos.find((p) => p.path === path);
-const selectedPhotos = () => lib.shown.filter((p) => lib.selected.has(p.path));
+// The photos an action is for: the library's selection, or in the editor
+// the filmstrip's (Ctrl- and Shift-click there).
+const selectedPhotos = () => (lib.on ? lib.shown.filter((p) => lib.selected.has(p.path)) : stripSelected());
 const VIEWER_BUTTONS = ["btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-frame"];
 
 // ---------------------------------------------------------------- show, load
@@ -804,7 +806,14 @@ function libraryOpenFocused() {
   return libraryOpen((cullOn() && cull.active) || lib.focus || selectedPhotos()[0]?.path);
 }
 
-function libraryCopySettings() {
+async function libraryCopySettings() {
+  if (!lib.on) {
+    // The editor: the open photo's edit, as it is now.
+    if (!ui.info) return;
+    await invoke("save_sidecar").catch(() => {});
+    lib.copied = ui.info.path;
+    return toast(`Copied the settings of ${fileName(ui.info.path)}: select photos in the filmstrip (Ctrl- or Shift-click), then Paste settings`);
+  }
   const sel = selectedPhotos();
   if (sel.length !== 1) return toast("Select the one photo to copy the settings from.", true);
   lib.copied = sel[0].path;
@@ -1002,8 +1011,9 @@ async function convertRawsFlow() {
     if (!ui.info) return toast("Open a photo first.", true);
     // Its edit as it is now, for "like this photo" and for itself.
     await invoke("save_sidecar").catch(() => {});
-    paths = (strip.photos?.length ? strip.photos : [{ path: ui.info.path }]).map((p) => p.path);
-    what = " in this folder";
+    const picked = stripSelected();
+    paths = (picked.length ? picked : strip.photos?.length ? strip.photos : [{ path: ui.info.path }]).map((p) => p.path);
+    what = picked.length ? " selected in the filmstrip" : " in this folder";
     like = ui.info.path;
   }
   if (!paths.length) return;

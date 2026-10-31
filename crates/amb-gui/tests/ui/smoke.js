@@ -73,6 +73,21 @@ await t.step("Negative: Auto Density and Auto Grade are switches beside Auto", a
   revealSetting("Exposure2012");
 });
 
+await t.step("filmstrip: Ctrl-click selects; right-click acts on the selection", async () => {
+  const cell = strip.cells.get(ui.info.path);
+  cell.dispatchEvent(new MouseEvent("click", { bubbles: true, ctrlKey: true }));
+  t.expect(cell.classList.contains("selected") && strip.selected.size === 1, "selected");
+  t.expect($("filmstrip-count").textContent === "1 selected", $("filmstrip-count").textContent);
+  t.expect(selectedPhotos().length === 1, "actions see it");
+  cell.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 300, clientY: 700 }));
+  const items = [...document.querySelectorAll(".ctx-menu button")].map((b) => b.textContent);
+  t.expect(["Apply a preset…", "Export…", "Convert to JPEG…"].every((x) => items.includes(x)), items.join(", "));
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  document.querySelector(".ctx-menu")?.remove();
+  cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  t.expect(strip.selected.size === 0 && !cell.classList.contains("selected"), "a plain click clears it");
+});
+
 await t.step("History shows the step's values before and after", async () => {
   const values = () => document.querySelector("#history-list li.current .history-values")?.textContent ?? "";
   await t.until("the values", () => values().endsWith("→ +1.00"));

@@ -4,7 +4,9 @@
 // to its sidecar first (src/commands/photo.rs `open_photo`). Thumbnails are the
 // previews cameras embed (src/folder.rs), then, for photos with edits, a render
 // of the edit (cached until the sidecar changes); the open photo's own cell
-// shows its current edit.
+// shows its current edit. Ctrl- (⌘-) and Shift-click select photos instead of
+// opening one; right-click then applies a preset, pastes settings, exports or
+// converts them all.
 "use strict";
 
 const strip = {
@@ -17,7 +19,62 @@ const strip = {
   loading: 0,
   observer: null,
   hidden: false,
+  selected: new Set(), // paths picked with Ctrl- or Shift-click
+  anchor: null,        // where a Shift-click range starts
 };
+
+const stripSelected = () => strip.photos.filter((p) => strip.selected.has(p.path));
+
+// Ctrl-click toggles a photo, Shift-click picks the range from the last one;
+// the open photo joins a new selection.
+function stripSelect(path, how) {
+  if (!strip.selected.size && ui.info?.path && path !== ui.info.path) strip.selected.add(ui.info.path);
+  const order = strip.photos.map((p) => p.path);
+  if (how === "range") {
+    const from = Math.max(0, order.indexOf(strip.anchor ?? ui.info?.path));
+    const to = order.indexOf(path);
+    for (let i = Math.min(from, to); i <= Math.max(from, to); i++) strip.selected.add(order[i]);
+  } else if (strip.selected.has(path)) strip.selected.delete(path);
+  else strip.selected.add(path);
+  strip.anchor = path;
+  markSelected();
+}
+
+function stripClearSelection() {
+  strip.selected.clear();
+  strip.anchor = null;
+  markSelected();
+}
+
+function markSelected() {
+  for (const [path, cell] of strip.cells) cell.classList.toggle("selected", strip.selected.has(path));
+  const n = strip.selected.size;
+  $("filmstrip-count").textContent = n ? `${n} selected` : strip.photos.length ? `${strip.photos.length} photos` : "";
+}
+
+// Right-click a filmstrip photo: actions for the selection (or that photo).
+function stripMenu(e, p) {
+  e.preventDefault();
+  if (!strip.selected.has(p.path)) {
+    strip.selected.clear();
+    strip.selected.add(p.path);
+    strip.anchor = p.path;
+    markSelected();
+  }
+  const paths = stripSelected().map((x) => x.path);
+  const n = paths.length;
+  const many = (one, more) => (n > 1 ? more.replace("N", n) : one);
+  contextMenu(e, [
+    p.path !== ui.info?.path && ["Open", () => openPath(p.path)],
+    [many("Apply a preset…", "Apply a preset to N photos…"), () => presetsOnPhotos(paths)],
+    lib.copied && [many("Paste settings…", "Paste settings onto N photos…"), () => libraryPasteSettings()],
+    [many("Export…", "Export N photos…"), () => libraryExport()],
+    [many("Convert to JPEG…", "Convert N raws to JPEGs…"), () => convertRawsFlow()],
+    null,
+    ["Copy the open photo's settings", () => libraryCopySettings()],
+    n > 1 && ["Clear the selection", () => stripClearSelection()],
+  ].filter((x) => x !== false && x !== undefined));
+}
 
 const dirOf = (p) => p.replace(/[\\/][^\\/]*$/, "");
 
@@ -135,19 +192,24 @@ function renderStrip() {
     meta.append(flag, stars, label, dot);
     const name = Object.assign(document.createElement("span"), { className: "film-name", textContent: p.name });
     cell.append(img, meta, name);
-    cell.addEventListener("click", async () => {
+    cell.addEventListener("click", async (e) => {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) return stripSelect(p.path, e.shiftKey ? "range" : "toggle");
+      if (strip.selected.size) stripClearSelection();
       if (p.path === ui.info?.path) return;
       if (!(await openPath(p.path))) {
         p.broken = true;
         cell.classList.add("broken");
       }
     });
+    cell.addEventListener("contextmenu", (e) => stripMenu(e, p));
     if (strip.edited.has(p.path)) img.src = strip.edited.get(p.path);
     else strip.observer.observe(cell);
     strip.cells.set(p.path, cell);
     list.append(cell);
   }
-  $("filmstrip-count").textContent = strip.photos.length ? `${strip.photos.length} photos` : "";
+  // A new folder starts with nothing selected.
+  for (const path of strip.selected) if (!strip.cells.has(path)) strip.selected.delete(path);
+  markSelected();
   markCurrent();
 }
 

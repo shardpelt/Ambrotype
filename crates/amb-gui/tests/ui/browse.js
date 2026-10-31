@@ -44,10 +44,13 @@ await t.step("dragging the grid moves through it; a drag doesn't select", async 
   const grid = $("library-grid");
   grid.scrollTop = 0;
   librarySelectNone();
+  // Folder tiles come first; the photo may be a row further down.
+  revealPhoto(lib.shown[0].path);
   // The grid redraws its rows after a change; add room to scroll after that.
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   const spacer = Object.assign(document.createElement("div"), { style: "height: 4000px; grid-column: 1 / -1" });
   grid.append(spacer);
+  const start = grid.scrollTop;
   const cell = grid.querySelector(".lib-cell:not(.lib-dir)");
   const at = cell.getBoundingClientRect();
   const ev = (type, y) => cell.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: at.left + 20, clientY: y, pointerId: 9, button: 0, pointerType: "mouse" }));
@@ -57,7 +60,7 @@ await t.step("dragging the grid moves through it; a drag doesn't select", async 
   ev("pointerup", at.top - 100);
   cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   await new Promise((r) => setTimeout(r, 50));
-  const moved = grid.scrollTop;
+  const moved = grid.scrollTop - start;
   spacer.remove();
   t.expect(moved > 100, `moved down: ${moved}`);
   t.expect(lib.selected.size === 0, "nothing selected");

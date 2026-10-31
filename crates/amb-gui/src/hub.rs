@@ -518,7 +518,14 @@ pub fn check_hub(hub: &Path) -> bool {
             return false;
         }
     };
-    let index = format!("file://{}", hub.join("index.json").display());
+    // Forward slashes: item paths are found next to the index by its last '/'.
+    let index = format!(
+        "file://{}",
+        hub.join("index.json")
+            .display()
+            .to_string()
+            .replace('\\', "/")
+    );
     let items = match read_index(&index) {
         Ok(items) => items,
         Err(e) => {

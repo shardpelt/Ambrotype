@@ -916,6 +916,48 @@ async function syncNegativeRoll() {
   }
 }
 
+// Raws to JPEGs (src/commands/library.rs `convert_raws`): the selection, or
+// every photo shown when none is selected.
+async function convertRawsFlow() {
+  const sel = selectedPhotos();
+  const paths = (sel.length ? sel : lib.shown).map((p) => p.path);
+  if (!paths.length) return;
+  const dlg = $("convert-dialog");
+  const f = dlg.querySelector("form");
+  const like = lib.focus && paths.includes(lib.focus) ? lib.focus : null;
+  $("convert-what").textContent = `${paths.length} photo${paths.length === 1 ? "" : "s"}${sel.length ? " selected" : " shown"}.`;
+  $("convert-like").disabled = !like;
+  $("convert-like-label").innerHTML = like ? `<b>Like ${fileName(like)}</b>: every photo matched to the one you edited` : "<b>Like one I edited</b>: click that photo first, then Convert raws";
+  if (!like && f.convert_look.value === "like") f.convert_look.value = "camera";
+  dlg.showModal();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice !== "ok") return;
+  const options = {
+    look: f.convert_look.value,
+    like,
+    long_edge: Number($("convert-size").value),
+    quality: Number($("convert-quality").value) || 90,
+    edits: $("convert-edits").checked,
+  };
+  status(`Converting ${paths.length} raws…`);
+  $("busy").hidden = false;
+  try {
+    const r = await invoke("convert_raws", { paths, options });
+    if (!r) return;
+    for (const path of paths) refreshThumb(path);
+    const parts = [`${r.written.length} JPEG${r.written.length === 1 ? "" : "s"} written`];
+    if (r.camera_jpegs) parts.push(`${r.camera_jpegs} as the camera saved ${r.camera_jpegs === 1 ? "it" : "them"}`);
+    if (r.skipped) parts.push(`${r.skipped} already there`);
+    if (r.errors.length) parts.push(`${r.errors.length} failed: ${r.errors[0]}`);
+    toast(parts.join("; "), r.errors.length > 0);
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    $("busy").hidden = true;
+    status("Ready");
+  }
+}
+
 // Pick a preset, then apply it to `paths` (the library's selection), each
 // photo one undoable step (src/commands/presets.rs `apply_to_photos`).
 async function presetsOnPhotos(paths) {
@@ -1248,6 +1290,11 @@ function wireLibrary() {
   $("lib-paste").addEventListener("click", libraryPasteSettings);
   $("lib-negative-sync").addEventListener("click", () => syncNegativeRoll());
   $("lib-contact").addEventListener("click", () => contactSheetFlow());
+  $("lib-convert").addEventListener("click", () => convertRawsFlow());
+  tauri.event.listen("convert-progress", (e) => {
+    const [done, total] = e.payload;
+    status(`Converting: ${done} of ${total}…`, true);
+  });
   $("lib-smart").addEventListener("click", () => smartSearch());
   $("lib-smart-chip").addEventListener("click", clearSmartSearch);
   $("lib-search").addEventListener("keydown", (e) => {

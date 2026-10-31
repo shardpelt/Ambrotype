@@ -142,7 +142,27 @@ await t.step("right-click in the library: a preset onto the selected photos, one
   first.click();
   await flow;
   t.expect($("toast").textContent.includes("applied to"), `the note: ${$("toast").textContent}`);
+  // Take it off again: later steps and scripts use the same photos.
+  // The open photo with the editor's own undo; the others in their files.
+  const others = paths.filter((p) => p !== ui.info.path);
+  if (others.length) await t.invoke("apply_to_photos", { paths: others, label: "undo", commands: [{ cmd: "undo" }] });
+  if (paths.includes(ui.info.path)) await run([{ cmd: "undo" }]);
+  t.expect(!ui.settings.Exposure2012, `the photo as it was: ${ui.settings.Exposure2012}`);
   lib.selected.clear();
+});
+
+await t.step("Convert raws: the photos shown to JPEGs, on Auto", async () => {
+  lib.selected.clear();
+  const flow = convertRawsFlow();
+  await t.until("the dialog", () => $("convert-dialog").open);
+  t.expect($("convert-like").disabled || lib.focus, "Like needs a photo picked first");
+  $("convert-dialog").querySelector("form").convert_look.value = "auto";
+  // The test photos' own edits stay as they are, for the later steps and scripts.
+  $("convert-edits").checked = false;
+  $("convert-dialog").close("ok");
+  $("toast").hidden = true;
+  await flow;
+  t.expect($("toast").textContent.includes("JPEG") && !$("toast").classList.contains("error"), `the note: ${$("toast").textContent}`);
 });
 
 await t.step("Rated photos shows every rated photo, best first", async () => {

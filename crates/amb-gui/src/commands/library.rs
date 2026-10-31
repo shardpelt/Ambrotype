@@ -608,3 +608,69 @@ pub(crate) async fn contact_sheet(
     .await
     .map_err(|e| e.to_string())?
 }
+
+/// The Convert raws dialog's choices.
+#[derive(Debug, Deserialize)]
+pub(crate) struct ConvertOptions {
+    /// `camera`, `auto` or `like`.
+    look: String,
+    /// For `like`: the photo to match.
+    like: Option<String>,
+    /// Long side in pixels; 0 for full size.
+    long_edge: u32,
+    quality: u8,
+    edits: bool,
+}
+
+/// Raws to JPEGs (`amb_library::convert`) in a folder the user picks; what
+/// was done, `None` when they cancel. "convert-progress" tells how far.
+#[tauri::command]
+pub(crate) async fn convert_raws(
+    app: tauri::AppHandle,
+    paths: Vec<String>,
+    options: ConvertOptions,
+) -> Res<Option<amb_library::convert::Converted>> {
+    use amb_library::convert::{self, Look};
+    let look = match options.look.as_str() {
+        "camera" => Look::Camera,
+        "auto" => Look::Auto,
+        "like" => Look::Like(PathBuf::from(
+            options.like.ok_or("pick the photo to match first")?,
+        )),
+        other => return Err(format!("unknown look {other}")),
+    };
+    let out = if let Some(t) = crate::uitest::current() {
+        Some(t.out_dir.join("converted"))
+    } else {
+        app.dialog()
+            .file()
+            .set_title("Put the JPEGs in…")
+            .blocking_pick_folder()
+            .and_then(|p| p.into_path().ok())
+    };
+    let Some(out) = out else {
+        return Ok(None);
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        use tauri::Emitter;
+        let mut export = amb_export::ExportSettings::new(amb_export::Format::Jpeg);
+        export.quality = options.quality.clamp(1, 100);
+        export.metadata = amb_export::MetadataPolicy::All;
+        if options.long_edge > 0 {
+            export.resize = amb_export::Resize::LongEdge(options.long_edge);
+        }
+        let photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
+        Ok(Some(convert::convert(
+            &photos,
+            &look,
+            &export,
+            &out,
+            options.edits,
+            &|done, total| {
+                let _ = app.emit("convert-progress", [done, total]);
+            },
+        )))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

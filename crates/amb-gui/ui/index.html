@@ -436,6 +436,7 @@
           <button type="button" id="lib-open" class="small" data-needs="any" title="Open in the editor (Enter, or double-click)">Open in editor</button>
           <button type="button" id="lib-export" class="small primary" data-needs="any" title="Export the selection with the same choices, one file each (Ctrl+E)">Export…</button>
           <button type="button" id="lib-collage" class="small" data-needs="any" title="Start a collage with the selected photos">Make a collage</button>
+          <button type="button" id="lib-convert" class="small" data-needs="any" title="Raws to JPEGs in one go (a card shot in RAW by mistake): as the camera would have saved them, each on Auto, or all like one you edited">Convert raws…</button>
           <button type="button" id="lib-contact" class="small" data-needs="any" title="Contact sheets to print: the selected photos small on pages, as strips of film or a plain grid">Contact sheet…</button>
         </div>
         <details class="lib-more">
@@ -534,6 +535,27 @@
       <label class="amount">Amount <input id="preset-pick-amount" type="range" min="0" max="200" value="100"><output id="preset-pick-amount-out">100</output></label>
       <p class="hint">Each photo gets the preset on top of its own edit, as one undoable step per photo. Crop, masks and spots stay.</p>
       <menu><button value="cancel" formnovalidate>Cancel</button></menu>
+    </form>
+  </dialog>
+
+  <!-- Raws to JPEGs (library.js convertRawsFlow). -->
+  <dialog id="convert-dialog">
+    <form method="dialog">
+      <h2>Convert raws to JPEGs</h2>
+      <p id="convert-what" class="hint"></p>
+      <label class="inline-check"><input type="radio" name="convert_look" value="camera" checked><span><b>As the camera would have saved them</b>: its own JPEG inside each raw (or the raw matched to it)</span></label>
+      <label class="inline-check"><input type="radio" name="convert_look" value="auto"><span><b>Auto</b>: each photo's own Auto tone and white balance</span></label>
+      <label class="inline-check"><input type="radio" name="convert_look" value="like" id="convert-like"><span id="convert-like-label"><b>Like one I edited</b>: every photo matched to it</span></label>
+      <div class="grid">
+        <label>Size <select id="convert-size"><option value="0">Full size</option><option value="3840">3840 px (4K screens)</option><option value="2048">2048 px (sharing)</option><option value="1080">1080 px (small)</option></select></label>
+        <label>Quality <input id="convert-quality" type="number" min="50" max="100" value="90"></label>
+      </div>
+      <label class="inline-check"><input id="convert-edits" type="checkbox" checked><span>Keep the settings with the raws, to change and export again later</span></label>
+      <p class="hint">The raws stay as they are. Photos you edited already keep their edit. JPEGs already in the folder are kept, so a stopped run carries on.</p>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" class="primary">Choose folder and convert…</button>
+      </menu>
     </form>
   </dialog>
 

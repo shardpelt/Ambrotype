@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 mod contact;
+mod convert;
 mod dust;
 mod edit;
 mod fuji;
@@ -100,6 +101,15 @@ USAGE:
                                             those cameras have, when the recipe doesn't say. --out writes it
                                             as a preset in the Fuji group; with a PHOTO, --apply puts it on
                                             the photo (one undoable step)
+    amb convert <PHOTO|DIR>... --to FOLDER [--look camera|auto|like:PHOTO] [--no-edits]
+                [export options]
+                                            Raws to JPEGs in one go (a card shot in RAW by mistake): camera,
+                                            the default, gives what the camera would have saved (its own
+                                            JPEG inside the raw when that is big enough, else the raw matched
+                                            to it); auto, each photo's Auto tone and white balance; like:PHOTO,
+                                            each matched to the look of one you edited. Auto and like keep
+                                            their settings in the raws' sidecars (not with --no-edits).
+                                            JPEGs already there are kept, so a stopped run carries on
     amb contact <PHOTO|DIR>... --out SHEET.jpg [--style film|plain] [--columns N]
                 [--paper a4|a3|letter|8x10|11x14] [--landscape] [--title TEXT]
                                             Contact sheets at 300 dpi: each photo small with its edit, as
@@ -332,7 +342,7 @@ fn main() -> ExitCode {
             | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb"
             | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert"
             | "--replace" | "--stack" | "--reject" | "--shuffle" | "--window" | "--subfolders"
-            | "--no-scenes" | "--no-odd" | "--own-midtone" | "--landscape" => {
+            | "--no-scenes" | "--no-odd" | "--own-midtone" | "--landscape" | "--no-edits" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -565,6 +575,9 @@ fn main() -> ExitCode {
         ["fuji", recipe] => fuji::fuji(recipe, None, &options, json).map(|t| println!("{t}")),
         ["fuji", recipe, photo] => {
             fuji::fuji(recipe, Some(Path::new(photo)), &options, json).map(|t| println!("{t}"))
+        }
+        ["convert", photos @ ..] if !photos.is_empty() => {
+            convert::convert(photos, &options, json).map(|t| println!("{t}"))
         }
         ["contact", photos @ ..] if !photos.is_empty() => match options.get("--out") {
             Some(out) => {

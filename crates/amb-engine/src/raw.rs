@@ -701,23 +701,38 @@ pub fn embedded_thumbnail(path: &Path, max_edge: u32) -> Result<Option<image::Rg
     let small = if crate::raster::is_raster(path) {
         crate::raster::quick_image(path, max_edge.max(16))?
     } else {
-        let src =
-            rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
-        let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
-        let params = rawler::decoders::RawDecodeParams::default();
-        // The larger preview first (sharper when scaled down), then the small thumbnail.
-        let found = match decoder.preview_image(&src, &params) {
-            Ok(Some(img)) => Some(img),
-            _ => decoder.thumbnail_image(&src, &params).ok().flatten(),
-        };
-        let Some(img) = found.filter(|i| i.width() >= 32 && i.height() >= 32) else {
+        let Some(img) = embedded_jpeg(path)? else {
             return Ok(None);
         };
         img.thumbnail(max_edge.max(16), max_edge.max(16)).to_rgb8()
     };
+    Ok(Some(upright(path, small)))
+}
+
+/// The camera's own JPEG inside a raw, as large as it stores one, upright:
+/// what the camera would have saved had it been set to JPEG (often full
+/// size; on some cameras smaller). `None` when it keeps none.
+pub fn embedded_preview(path: &Path) -> Result<Option<image::RgbImage>, Error> {
+    Ok(embedded_jpeg(path)?.map(|img| upright(path, img.to_rgb8())))
+}
+
+/// The larger preview a raw keeps (sharper when scaled down), else its small thumbnail.
+fn embedded_jpeg(path: &Path) -> Result<Option<image::DynamicImage>, Error> {
+    let src = rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
+    let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
+    let params = rawler::decoders::RawDecodeParams::default();
+    let found = match decoder.preview_image(&src, &params) {
+        Ok(Some(img)) => Some(img),
+        _ => decoder.thumbnail_image(&src, &params).ok().flatten(),
+    };
+    Ok(found.filter(|i| i.width() >= 32 && i.height() >= 32))
+}
+
+/// An embedded preview turned as the raw says it was held.
+fn upright(path: &Path, small: image::RgbImage) -> image::RgbImage {
     let orientation = read_metadata(path).map(|(_, m)| m.orientation).unwrap_or(1);
     use image::imageops::{flip_horizontal, flip_vertical, rotate90, rotate180, rotate270};
-    Ok(Some(match orientation {
+    match orientation {
         2 => flip_horizontal(&small),
         3 => rotate180(&small),
         4 => flip_vertical(&small),
@@ -726,7 +741,7 @@ pub fn embedded_thumbnail(path: &Path, max_edge: u32) -> Result<Option<image::Rg
         7 => rotate270(&flip_horizontal(&small)),
         8 => rotate270(&small),
         _ => small,
-    }))
+    }
 }
 
 #[cfg(test)]

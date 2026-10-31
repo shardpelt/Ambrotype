@@ -72,3 +72,43 @@ fn a_contact_sheet_pages_a_roll() {
     );
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn raws_convert_to_jpegs_and_a_second_run_carries_on() {
+    let dir = std::env::temp_dir().join(format!("amb-cli-convert-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(dir.join("card")).unwrap();
+    let amb = |args: &[&str]| {
+        let out = Command::new(env!("CARGO_BIN_EXE_amb"))
+            .args(args)
+            .current_dir(&dir)
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "amb {args:?}: {}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        String::from_utf8(out.stdout).unwrap()
+    };
+    amb(&["testimage", "ramp", "card/a.dng"]);
+    amb(&["testimage", "colorchecker", "card/b.dng"]);
+    // No camera JPEG inside these: the camera look falls back to Auto.
+    let said = amb(&["convert", "card", "--to", "jpegs", "--long-edge", "300"]);
+    assert!(said.starts_with("2 written"), "{said}");
+    assert!(dir.join("jpegs/a.jpg").exists() && dir.join("jpegs/b.jpg").exists());
+    assert!(
+        dir.join("card/a.xmp").exists(),
+        "Auto's settings kept with the raw"
+    );
+    let again = amb(&[
+        "convert",
+        "card",
+        "--to",
+        "jpegs",
+        "--look",
+        "like:card/b.dng",
+    ]);
+    assert!(again.contains("2 already there"), "{again}");
+    let _ = std::fs::remove_dir_all(&dir);
+}

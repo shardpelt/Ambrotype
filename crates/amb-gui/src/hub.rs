@@ -510,7 +510,8 @@ pub fn fetch(url: &str, max: u64) -> Result<Vec<u8>, String> {
 /// kind's own checks, a plugin's module), and print each one's result; true
 /// when all install. The hub's CI runs it on every submission.
 pub fn check_hub(hub: &Path) -> bool {
-    let hub = match hub.canonicalize() {
+    // Not canonicalize: on Windows it gives \\?\C:\..., which isn't a file:// address.
+    let hub = match std::path::absolute(hub) {
         Ok(h) => h,
         Err(e) => {
             println!("{}: {e}", hub.display());

@@ -429,6 +429,8 @@ pub fn panels() -> Vec<Panel> {
                     &[
                         ("amb:NegativeConvert", Some("Convert negative")),
                         ("amb:NegativeAuto", Some("Auto")),
+                        ("amb:NegativeAutoDensity", Some("Auto Density")),
+                        ("amb:NegativeAutoGrade", Some("Auto Grade")),
                         ("amb:NegativeRange", Some("Fixed range")),
                         ("amb:NegativeType", Some("Type")),
                         ("amb:NegativeCastRemoval", Some("Cast removal")),

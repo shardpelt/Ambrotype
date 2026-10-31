@@ -67,6 +67,12 @@ await t.step("Convert raws from the editor: the open photo's folder, like this p
   t.expect(MENU_BAR.flat(3).includes("convert-raws"), "in the File menu");
 });
 
+await t.step("Negative: Auto Density and Auto Grade are switches beside Auto", async () => {
+  revealSetting("amb:NegativeAutoDensity");
+  t.expect(t.visible(t.row("amb:NegativeAutoDensity")) && t.visible(t.row("amb:NegativeAutoGrade")), "both shown");
+  revealSetting("Exposure2012");
+});
+
 await t.step("History shows the step's values before and after", async () => {
   const values = () => document.querySelector("#history-list li.current .history-values")?.textContent ?? "";
   await t.until("the values", () => values().endsWith("→ +1.00"));

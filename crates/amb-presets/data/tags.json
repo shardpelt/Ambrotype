@@ -2458,6 +2458,24 @@
    "status": "exact"
   },
   {
+   "name": "amb:NegativeAutoDensity",
+   "group": "negative",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": false,
+   "status": "exact"
+  },
+  {
+   "name": "amb:NegativeAutoGrade",
+   "group": "negative",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": false,
+   "status": "exact"
+  },
+  {
    "name": "amb:NegativeCrossoverRed",
    "group": "negative",
    "kind": "text",

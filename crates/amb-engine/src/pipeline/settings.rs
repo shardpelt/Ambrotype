@@ -351,6 +351,8 @@ pub const RENDERED_TAGS: &[&str] = &[
     "amb:NegativeRange",
     "amb:NegativeExpired",
     "amb:NegativeCastRemoval",
+    "amb:NegativeAutoDensity",
+    "amb:NegativeAutoGrade",
     "amb:NegativeCrossoverRed",
     "amb:NegativeCrossoverBlue",
     "amb:NegativeExposure",
@@ -878,6 +880,8 @@ pub(super) fn negative_settings(settings: &BTreeMap<String, Value>) -> Negative 
         expired: flag(settings, "amb:NegativeExpired"),
         crossover: crossover_tags(settings),
         cast_removal: num(settings, "amb:NegativeCastRemoval").unwrap_or(d.cast_removal),
+        auto_density: flag(settings, "amb:NegativeAutoDensity"),
+        auto_grade: flag(settings, "amb:NegativeAutoGrade"),
         exposure: num(settings, "amb:NegativeExposure").unwrap_or(0.0),
         contrast: num(settings, "amb:NegativeContrast").unwrap_or(0.0),
         balance: [

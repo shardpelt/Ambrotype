@@ -79,6 +79,20 @@ pub struct NegativeStrengths {
     pub cast_tolerance: f64,
     pub cast_coverage: f64,
     pub cast_limit: f64,
+    /// Auto Density and Auto Grade: a block has detail when its density
+    /// changes at least this much to its neighbours (D), and when it is in
+    /// the busier `detail_share` of the frame's blocks.
+    pub detail_floor: f64,
+    pub detail_share: f64,
+    /// Auto Density: how far the midtone moves from `fixed_midtone` to the
+    /// detail's median (1 all the way).
+    pub density_pull: f64,
+    /// Auto Grade: how far the range moves from the film's usual one
+    /// (`amb:NegativeRange`) to the detail's, and the levels' percentiles on
+    /// the detailed blocks.
+    pub grade_pull: f64,
+    pub grade_low: f64,
+    pub grade_high: f64,
 }
 
 impl Default for NegativeStrengths {
@@ -111,6 +125,12 @@ pub const DEFAULT_STRENGTHS: NegativeStrengths = NegativeStrengths {
     cast_tolerance: 0.04,
     cast_coverage: 0.1,
     cast_limit: 0.3,
+    detail_floor: 0.02,
+    detail_share: 0.5,
+    density_pull: 0.7,
+    grade_pull: 0.6,
+    grade_low: 0.005,
+    grade_high: 0.995,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -149,6 +169,13 @@ pub struct Negative {
     /// Cast removal along the greys, 0..100: how far measured levels move
     /// so the frame's greys come out grey (stored levels already have it).
     pub cast_removal: f64,
+    /// Auto Density: the midtone from the parts with detail, pulled part-way
+    /// to a typical print (Auto only).
+    pub auto_density: bool,
+    /// Auto Grade: the contrast from the parts with detail, pulled part-way
+    /// to the film's usual range, with holds for highlights and shadows
+    /// (Auto only).
+    pub auto_grade: bool,
     /// Print exposure in EV.
     pub exposure: f64,
     /// −100..100 each.
@@ -176,6 +203,8 @@ impl Default for Negative {
             expired: false,
             crossover: None,
             cast_removal: 0.0,
+            auto_density: false,
+            auto_grade: false,
             exposure: 0.0,
             contrast: 0.0,
             balance: [0.0; 3],
@@ -592,7 +621,13 @@ pub fn analyze_as(
 
 /// The part being developed as log exposure per block (density for a
 /// negative), without a border for the film holder.
-fn samples(scan: Scan, base: [f64; 3], positive: bool, k: &NegativeStrengths) -> Vec<[f64; 3]> {
+/// Also the width of their grid (blocks per row), for [`detailed`].
+fn samples_grid(
+    scan: Scan,
+    base: [f64; 3],
+    positive: bool,
+    k: &NegativeStrengths,
+) -> (Vec<[f64; 3]>, usize) {
     let (blocks, bw, bh) = downsample(scan.rgb, scan.width, scan.height, 250_000);
     let (x0, x1) = (
         (bw as f64 * k.border) as usize,
@@ -602,13 +637,97 @@ fn samples(scan: Scan, base: [f64; 3], positive: bool, k: &NegativeStrengths) ->
         (bh as f64 * k.border) as usize,
         bh - (bh as f64 * k.border) as usize,
     );
-    (y0..y1.max(y0 + 1).min(bh))
-        .flat_map(|y| (x0..x1.max(x0 + 1).min(bw)).map(move |x| (x, y)))
+    let (xs, xe) = (x0, x1.max(x0 + 1).min(bw));
+    let v = (y0..y1.max(y0 + 1).min(bh))
+        .flat_map(|y| (xs..xe).map(move |x| (x, y)))
         .map(|(x, y)| {
             let p = blocks[y * bw + x];
             std::array::from_fn(|c| log_exposure(p[c], base[c], positive))
         })
-        .collect()
+        .collect();
+    (v, xe.saturating_sub(xs).max(1))
+}
+
+/// The samples with detail: blocks whose mean density differs from their
+/// neighbours' by at least `detail_floor`, the busier `detail_share` of
+/// them. Flat areas (an empty sky, a blank wall, the film's unexposed
+/// shadows) are left out, so they don't decide brightness or contrast.
+/// `None` when too few have detail (a fog, a flat test frame).
+fn detailed(samples: &[[f64; 3]], w: usize, k: &NegativeStrengths) -> Option<Vec<[f64; 3]>> {
+    let h = samples.len() / w.max(1);
+    if w < 3 || h < 3 {
+        return None;
+    }
+    let lum = |p: &[f64; 3]| (p[0] + p[1] + p[2]) / 3.0;
+    let mut activity: Vec<(f64, usize)> = Vec::new();
+    for y in 1..h - 1 {
+        for x in 1..w - 1 {
+            let i = y * w + x;
+            let c = lum(&samples[i]);
+            let a = [i - 1, i + 1, i - w, i + w]
+                .iter()
+                .map(|&j| (lum(&samples[j]) - c).abs())
+                .sum::<f64>()
+                / 4.0;
+            activity.push((a, i));
+        }
+    }
+    let mut sorted: Vec<f64> = activity.iter().map(|a| a.0).collect();
+    let cut = percentile(&mut sorted, 1.0 - k.detail_share).max(k.detail_floor);
+    let keep: Vec<[f64; 3]> = activity
+        .iter()
+        .filter(|a| a.0 >= cut)
+        .map(|a| samples[a.1])
+        .collect();
+    (keep.len() * 20 >= activity.len()).then_some(keep)
+}
+
+/// Auto Density and Auto Grade on top of the extremes' levels `a`. **Ours**,
+/// after the published idea of metering a print on the parts with detail
+/// (expired US 5,724,456 and US 4,731,671): the brightness and the contrast
+/// come from the detailed blocks, each pulled only part-way from a typical
+/// print; the holds keep the detail's own shadows and highlights inside
+/// the print.
+fn auto_density_grade(
+    samples: &[[f64; 3]],
+    w: usize,
+    a: &Analysis,
+    n: &Negative,
+    k: &NegativeStrengths,
+) -> Analysis {
+    let Some(detail) = detailed(samples, w, k) else {
+        return *a;
+    };
+    let mut out = *a;
+    if n.auto_grade {
+        // The detail's levels per layer, then the range scaled from them.
+        let mut lo = [0.0; 3];
+        let mut hi = [0.0; 3];
+        for c in 0..3 {
+            let mut d: Vec<f64> = detail.iter().map(|p| p[c]).collect();
+            lo[c] = percentile(&mut d, k.grade_low);
+            hi[c] = percentile(&mut d, k.grade_high).max(lo[c] + 0.05);
+        }
+        let measured = hi[1] - lo[1];
+        let range = n.range.max(0.1) + k.grade_pull * (measured - n.range.max(0.1));
+        // Holds: never narrower than the detail itself (it must not clip),
+        // nor more than twice as wide (a flat frame stays soft, not grey).
+        let range = range.clamp(measured, 2.0 * measured);
+        let scale = range / measured;
+        for c in 0..3 {
+            let mid = (lo[c] + hi[c]) / 2.0;
+            let half = (hi[c] - lo[c]) / 2.0 * scale;
+            out.density_low[c] = mid - half;
+            out.density_high[c] = mid + half;
+        }
+    }
+    if n.auto_density {
+        let m = midtone(&detail, out.density_low, out.density_high);
+        out.midtone = (k.fixed_midtone + k.density_pull * (m - k.fixed_midtone)).clamp(0.05, 0.95);
+    } else if n.auto_grade {
+        out.midtone = midtone(samples, out.density_low, out.density_high);
+    }
+    out
 }
 
 /// Levels and midtone measured on `samples`, for a given base.
@@ -901,9 +1020,15 @@ pub fn resolve(n: &Negative, whole: Scan, metered: Scan, k: &NegativeStrengths) 
     }
     .map(|b| b.max(1e-4));
     let measured = std::cell::OnceCell::new();
-    let samples = || measured.get_or_init(|| samples(metered, base, positive, k));
+    let grid = || measured.get_or_init(|| samples_grid(metered, base, positive, k));
+    let samples = || &grid().0;
     let mut a = if n.auto {
-        levels(samples(), base, k)
+        let a = levels(samples(), base, k);
+        if n.auto_density || n.auto_grade {
+            auto_density_grade(samples(), grid().1, &a, n, k)
+        } else {
+            a
+        }
     } else {
         let missing = n.density_low.is_none() || n.density_high.is_none() || n.midtone.is_none();
         let fallback = (positive && missing).then(|| levels(samples(), base, k));
@@ -1177,6 +1302,104 @@ mod tests {
             }
         }
         rgb
+    }
+
+    /// A scene that is mostly flat bright sky (`sky` of the frame) over a
+    /// detailed, darker subject: a checker of textures around `subject`.
+    fn sky_scene(w: usize, h: usize, sky: f64, subject: f64) -> Vec<f32> {
+        let mut rgb = vec![0.0f32; w * h * 3];
+        for y in 0..h {
+            for x in 0..w {
+                let scene = if (y as f64) < sky * h as f64 {
+                    [0.6, 0.6, 0.6]
+                } else {
+                    // Texture: small blocks a stop apart.
+                    let t = if (x / 6 + y / 6) % 2 == 0 { 1.4 } else { 0.7 };
+                    [subject * t; 3]
+                };
+                rgb[(y * w + x) * 3..][..3].copy_from_slice(&negative_of(scene));
+            }
+        }
+        rgb
+    }
+
+    /// The print's value (mean of the layers) at a pixel after conversion.
+    fn printed(rgb: &[f32], w: usize, h: usize, n: &Negative, x: usize, y: usize) -> f32 {
+        let a = resolve(n, scan_of(rgb, w, h), scan_of(rgb, w, h), &K);
+        let mut out = rgb.to_vec();
+        apply(&mut out, &Conversion::new(n, a, &K));
+        let p = &out[(y * w + x) * 3..][..3];
+        (p[0] + p[1] + p[2]) / 3.0
+    }
+
+    #[test]
+    fn auto_density_meters_the_subject_not_the_sky() {
+        let (w, h) = (240, 240);
+        // The same subject under a small and a large sky.
+        let small = sky_scene(w, h, 0.2, 0.05);
+        let large = sky_scene(w, h, 0.75, 0.05);
+        let plain = Negative {
+            enabled: true,
+            ..Default::default()
+        };
+        let dense = Negative {
+            auto_density: true,
+            ..plain.clone()
+        };
+        // Sample a block of the subject's average (left-right averaged over texture).
+        let subject = |rgb: &[f32], n: &Negative| {
+            (0..12)
+                .map(|i| printed(rgb, w, h, n, 100 + i, h - 20))
+                .sum::<f32>()
+                / 12.0
+        };
+        let plain_shift = (subject(&small, &plain) / subject(&large, &plain))
+            .log2()
+            .abs();
+        let dense_shift = (subject(&small, &dense) / subject(&large, &dense))
+            .log2()
+            .abs();
+        eprintln!(
+            "subject moved by the sky: {plain_shift:.2} stops plain, {dense_shift:.2} with Auto Density"
+        );
+        assert!(
+            dense_shift < plain_shift * 0.6,
+            "the sky moves the subject less: {plain_shift:.2} stops plain, {dense_shift:.2} with Auto Density"
+        );
+    }
+
+    #[test]
+    fn auto_grade_keeps_a_soft_frame_soft() {
+        let (w, h) = (240, 240);
+        // A flat (foggy) frame: little texture, a narrow range.
+        let mut rgb = vec![0.0f32; w * h * 3];
+        for y in 0..h {
+            for x in 0..w {
+                let t = if (x / 6 + y / 6) % 2 == 0 { 1.15 } else { 0.87 };
+                let v = 0.12 * t * (1.0 + 0.3 * y as f64 / h as f64);
+                rgb[(y * w + x) * 3..][..3].copy_from_slice(&negative_of([v; 3]));
+            }
+        }
+        let plain = Negative {
+            enabled: true,
+            ..Default::default()
+        };
+        let graded = Negative {
+            auto_grade: true,
+            ..plain.clone()
+        };
+        let contrast = |n: &Negative| {
+            let a = printed(&rgb, w, h, n, 30, 30);
+            let b = printed(&rgb, w, h, n, 36, 30);
+            (a.max(b) / a.min(b)).log2()
+        };
+        let (c0, c1) = (contrast(&plain), contrast(&graded));
+        eprintln!("texture contrast: {c0:.2} stops plain, {c1:.2} with Auto Grade");
+        assert!(
+            c1 < c0 * 0.8,
+            "softer with Auto Grade: {c0:.2} vs {c1:.2} stops"
+        );
+        assert!(c1 > 0.0, "but not grey");
     }
 
     #[test]

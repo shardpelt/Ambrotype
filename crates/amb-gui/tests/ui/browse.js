@@ -63,6 +63,18 @@ await t.step("dragging the grid moves through it; a drag doesn't select", async 
   t.expect(lib.selected.size === 0, "nothing selected");
 });
 
+await t.step("the folder strip opens a folder inside this one, and .. goes back up", async () => {
+  const dir = lib.dir;
+  await t.until("the strip", () => !$("lib-subdirs").hidden && $("lib-subdirs").textContent.includes("more"));
+  const more = [...$("lib-subdirs").children].find((b) => b.querySelector(".name").textContent === "more");
+  t.expect(more.querySelector(".count").textContent === "1", "one photo in more");
+  t.click(more);
+  await t.until("the folder more", () => lib.dir !== dir && lib.dir.endsWith("more") && lib.photos.length === 1);
+  await t.until("its strip: only ..", () => !$("lib-subdirs").hidden && $("lib-subdirs").children.length === 1);
+  t.click([...$("lib-subdirs").children].find((b) => b.querySelector(".name").textContent === ".."));
+  await t.until("back up", () => lib.dir.replace(/[\\/]+$/, "") === dir.replace(/[\\/]+$/, ""));
+});
+
 await t.step("Folders | All photos, and Ctrl-click shows more folders together", async () => {
   const dir = lib.dir;
   await setTreeMode(true);

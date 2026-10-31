@@ -134,6 +134,7 @@ async function loadLibrary(dir, more = dir === lib.dir ? lib.more : savedMore(di
   const keep = new Set(lib.photos.map((p) => p.path));
   lib.selected = new Set([...lib.selected].filter((p) => keep.has(p)));
   renderLibrary();
+  renderSubfolders();
   renderFolderTree();
   watchShownFolders();
   if (typeof renderCollectionControls === "function") renderCollectionControls();
@@ -277,8 +278,43 @@ const GRID_GAP = 10;
 const GRID_PAD = 12;
 const GRID_OVERSCAN = 4;
 
+// The folder strip above the grid: the folder above this one, then the
+// folders inside it with their photo counts; a click opens one.
+async function renderSubfolders() {
+  const strip = $("lib-subdirs");
+  const dir = lib.dir;
+  // The last folder's chips go at once: they'd open the wrong folders.
+  strip.replaceChildren();
+  strip.hidden = true;
+  // Only for one folder on its own (not a collection, All photos or a search).
+  if (!dir || lib.collection || lib.smart || lib.more.length) {
+    strip.hidden = true;
+    return;
+  }
+  let subs = [];
+  try {
+    subs = await invoke("library_subfolders", { dir });
+  } catch { /* none shown */ }
+  if (lib.dir !== dir) return;
+  const sep = dir.includes("\\") ? "\\" : "/";
+  const trimmed = dir.replace(/[\\/]+$/, "");
+  const parent = trimmed.includes(sep) ? trimmed.slice(0, trimmed.lastIndexOf(sep)) || sep : null;
+  const chip = (text, count, title, go) => {
+    const b = Object.assign(document.createElement("button"), { type: "button", className: "lib-subdir", title });
+    b.append(Object.assign(document.createElement("span"), { textContent: "📁" }), Object.assign(document.createElement("span"), { className: "name", textContent: text }));
+    if (count !== null) b.append(Object.assign(document.createElement("span"), { className: "count", textContent: String(count) }));
+    b.addEventListener("click", go);
+    return b;
+  };
+  const chips = subs.map((s) => chip(s.name, s.photos, `${s.path}\n${s.photos} photo${s.photos === 1 ? "" : "s"}${s.folders ? ", and folders" : ""}: click to open`, () => loadLibrary(s.path, [])));
+  if (parent) chips.unshift(chip("..", null, `Up to ${parent}`, () => loadLibrary(parent, [])));
+  strip.replaceChildren(...chips);
+  strip.hidden = chips.length === 0;
+}
+
 function renderLibrary() {
   applyView();
+  if (lib.collection || lib.smart) $("lib-subdirs").hidden = true;
   const grid = $("library-grid");
   lib.observer?.disconnect();
   lib.queue = [];

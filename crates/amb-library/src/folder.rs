@@ -23,6 +23,55 @@ pub fn photo_extensions() -> Vec<&'static str> {
         .collect()
 }
 
+/// A folder inside the one shown, for the library's folder strip.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct Subfolder {
+    pub path: std::path::PathBuf,
+    pub name: String,
+    /// Photos directly in it.
+    pub photos: usize,
+    /// It has folders of its own.
+    pub folders: bool,
+}
+
+/// The folders directly inside `dir`, by name (hidden ones left out).
+pub fn subfolders(dir: &Path) -> Vec<Subfolder> {
+    let dirs = |d: &Path| -> Vec<std::path::PathBuf> {
+        std::fs::read_dir(d)
+            .map(|rd| {
+                rd.flatten()
+                    .map(|e| e.path())
+                    .filter(|p| p.is_dir())
+                    .filter(|p| {
+                        !p.file_name()
+                            .is_some_and(|n| n.to_string_lossy().starts_with('.'))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    };
+    let mut out: Vec<Subfolder> = dirs(dir)
+        .into_iter()
+        .map(|path| {
+            let photos = std::fs::read_dir(&path)
+                .map(|rd| rd.flatten().filter(|e| is_photo(&e.path())).count())
+                .unwrap_or(0);
+            Subfolder {
+                name: path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .into_owned(),
+                folders: !dirs(&path).is_empty(),
+                photos,
+                path,
+            }
+        })
+        .collect();
+    out.sort_by_key(|s| s.name.to_lowercase());
+    out
+}
+
 pub fn is_photo(path: &Path) -> bool {
     is_raw(path) || amb_engine::raster::is_raster(path)
 }
@@ -177,6 +226,25 @@ fn copies_in(dir: &Path, photos: &[PathBuf]) -> Vec<(PathBuf, PathBuf, u32)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn subfolders_with_their_photo_counts() {
+        let dir = std::env::temp_dir().join(format!("amb-subfolders-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        for d in ["Trip", "beach/day 1", ".hidden"] {
+            std::fs::create_dir_all(dir.join(d)).unwrap();
+        }
+        for f in ["Trip/a.NEF", "Trip/b.jpg", "Trip/notes.txt", "a.NEF"] {
+            std::fs::write(dir.join(f), b"x").unwrap();
+        }
+        let subs = subfolders(&dir);
+        let seen: Vec<_> = subs
+            .iter()
+            .map(|s| (s.name.as_str(), s.photos, s.folders))
+            .collect();
+        assert_eq!(seen, [("beach", 0, true), ("Trip", 2, false)]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn natural_order() {

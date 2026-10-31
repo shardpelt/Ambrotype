@@ -218,6 +218,14 @@ pub(crate) async fn library_list(
     .map_err(|e| e.to_string())?
 }
 
+/// The folders inside `dir`, for the library's folder strip.
+#[tauri::command]
+pub(crate) async fn library_subfolders(dir: String) -> Res<Vec<amb_library::folder::Subfolder>> {
+    tauri::async_runtime::spawn_blocking(move || amb_library::folder::subfolders(Path::new(&dir)))
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Pick a folder for the library.
 #[tauri::command]
 pub(crate) async fn library_pick_folder(app: tauri::AppHandle) -> Option<String> {

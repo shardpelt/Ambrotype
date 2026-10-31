@@ -505,6 +505,63 @@ pub fn fetch(url: &str, max: u64) -> Result<Vec<u8>, String> {
     Ok(bytes)
 }
 
+/// `ambrotype --check-hub HUB_FOLDER`: install every item of a hub checkout
+/// into a scratch folder, as the app installs it (checksums, formats, each
+/// kind's own checks, a plugin's module), and print each one's result; true
+/// when all install. The hub's CI runs it on every submission.
+pub fn check_hub(hub: &Path) -> bool {
+    let hub = match hub.canonicalize() {
+        Ok(h) => h,
+        Err(e) => {
+            println!("{}: {e}", hub.display());
+            return false;
+        }
+    };
+    let index = format!("file://{}", hub.join("index.json").display());
+    let items = match read_index(&index) {
+        Ok(items) => items,
+        Err(e) => {
+            println!("index.json: error: {e}");
+            return false;
+        }
+    };
+    let scratch = std::env::temp_dir().join(format!("amb-check-hub-{}", std::process::id()));
+    let mut ok = true;
+    for item in &items {
+        let dir = scratch.join(&item.id);
+        let result = (|| -> Result<(), String> {
+            std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+            match item.kind.as_str() {
+                "plugin" => install_plugin(&dir, &index, &item.id).map(drop),
+                "interface" => install_interface(&dir, &index, &item.id).map(drop),
+                "preset" => install_preset(&dir, &index, &item.id).map(drop),
+                "collage" => install_collage(&mut Vec::new(), &index, &item.id).map(drop),
+                "border" => install_border(&mut Vec::new(), &index, &item.id).map(drop),
+                "sizes" => install_sizes(&mut Vec::new(), &index, &item.id).map(drop),
+                _ => install(&dir, &index, &item.id).map(drop),
+            }
+        })();
+        match result {
+            Ok(()) => println!("{}: ok ({})", item.id, item.path),
+            Err(e) => {
+                ok = false;
+                println!("{}: error: {e} ({})", item.id, item.path);
+            }
+        }
+    }
+    let _ = std::fs::remove_dir_all(&scratch);
+    println!(
+        "{} items, {}",
+        items.len(),
+        if ok {
+            "all install"
+        } else {
+            "some don't install"
+        }
+    );
+    ok
+}
+
 /// The address of a file listed in the index (paths are relative to it).
 fn item_url(index_url: &str, path: &str) -> Result<String, String> {
     let ok = !path.is_empty()
@@ -1134,6 +1191,28 @@ mod tests {
 
     fn hub_url() -> String {
         format!("file://{}/data/hub/index.json", env!("CARGO_MANIFEST_DIR"))
+    }
+
+    #[test]
+    fn the_built_in_hub_copy_installs_whole() {
+        let hub = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("data/hub");
+        assert!(check_hub(&hub));
+    }
+
+    #[test]
+    fn a_hub_item_that_wont_install_fails_the_check() {
+        let hub = temp_dir("bad-hub");
+        std::fs::create_dir_all(hub.join("looks/themes")).unwrap();
+        let theme =
+            br##"{"format": "ambrotype-theme/1", "name": "Bad", "tokens": {"bg": "url(x)"}}"##;
+        std::fs::write(hub.join("looks/themes/bad.json"), theme).unwrap();
+        let index = serde_json::json!({"format": "ambrotype-hub/1", "items": [{
+            "id": "theme-bad", "kind": "theme", "name": "Bad", "path": "looks/themes/bad.json",
+            "sha256": sha256_hex(theme),
+        }]});
+        std::fs::write(hub.join("index.json"), index.to_string()).unwrap();
+        assert!(!check_hub(&hub));
+        let _ = std::fs::remove_dir_all(&hub);
     }
 
     fn temp_dir(name: &str) -> std::path::PathBuf {

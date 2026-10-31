@@ -362,6 +362,19 @@ fn main() {
     if args.get(1).map(String::as_str) == Some("--check-look") {
         std::process::exit(if looks::check_files(&args[2..]) { 0 } else { 1 });
     }
+    // `ambrotype --check-hub HUB_FOLDER` installs every hub item in a scratch
+    // folder, as the app would, and exits (the hub's CI).
+    if args.get(1).map(String::as_str) == Some("--check-hub") {
+        let Some(hub) = args.get(2) else {
+            eprintln!("--check-hub needs the hub's folder");
+            std::process::exit(2);
+        };
+        std::process::exit(if hub::check_hub(std::path::Path::new(hub)) {
+            0
+        } else {
+            1
+        });
+    }
     // `ambrotype --ui-test SCRIPT.js [PHOTO]` runs a scripted UI test (uitest.rs).
     let mut rest: Vec<String> = args.iter().skip(1).cloned().collect();
     if let Some(i) = rest.iter().position(|a| a == "--ui-test") {

@@ -673,22 +673,48 @@ function applyViewKeepingCells() {
 
 // Keys: in the library they act on the selection; in the editor on the open photo.
 function rateKey(n) {
-  if (lib.on) return libraryChange({ rating: n });
-  return ui.info ? setRating(n) : false;
+  if (lib.on) return advancing(libraryChange({ rating: n }));
+  return ui.info ? advancing(setRating(n)) : false;
 }
 
 function labelKey(label) {
   if (lib.on) {
     const sel = libraryTargets();
     if (!sel.length) return false;
-    return libraryChange({ label: sel.every((p) => p.label === label) ? "" : label });
+    return advancing(libraryChange({ label: sel.every((p) => p.label === label) ? "" : label }));
   }
-  return ui.info ? setLabel(label) : false;
+  return ui.info ? advancing(setLabel(label)) : false;
 }
 
 function flagKey(flag) {
-  if (lib.on) return libraryTargets().length ? libraryChange({ flag }) : false;
-  return ui.info ? setFlag(flag) : false;
+  if (lib.on) return libraryTargets().length ? advancing(libraryChange({ flag })) : false;
+  return ui.info ? advancing(setFlag(flag)) : false;
+}
+
+// Auto-advance (Settings → General): after rating one photo from the
+// keyboard, go to the next, to cull a card quickly. Not with several
+// selected, nor in compare or survey.
+function autoAdvanceOn() {
+  try { return localStorage.getItem("amb.autoAdvance") === "1"; } catch { return false; }
+}
+
+function advancing(change) {
+  if (!autoAdvanceOn()) return change;
+  let next = null;
+  if (!lib.on) next = "editor";
+  else if (!(cullOn() && cull.view !== "loupe") && libraryTargets().length === 1) {
+    // Chosen before the change: a filter may hide the photo just rated.
+    const order = lib.shown.map((p) => p.path);
+    next = order[order.indexOf(lib.focus) + 1] ?? null;
+  }
+  Promise.resolve(change).then(() => {
+    if (next === "editor") stepPhoto(1);
+    else if (next && lib.on) {
+      select(next, "only");
+      revealPhoto(next);
+    }
+  });
+  return change;
 }
 
 function keywordsKey() {
@@ -1168,6 +1194,11 @@ async function libraryCollage() {
 // ---------------------------------------------------------------- wiring
 
 function wireLibrary() {
+  const advance = $("settings-auto-advance");
+  advance.checked = autoAdvanceOn();
+  advance.addEventListener("change", () => {
+    try { localStorage.setItem("amb.autoAdvance", advance.checked ? "1" : "0"); } catch { /* not kept */ }
+  });
   if (lib.wired) return;
   lib.wired = true;
   wireBrowse();

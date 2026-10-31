@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Search everything (Ctrl/⌘+K): one box that finds any command, setting,
 // panel, preset, layout or theme by name and takes you to it, so nothing is
-// lost behind a layout that doesn't show it.
+// lost behind a layout that doesn't show it. A setting's name and a number
+// ("exposure 0.7", "temp 5200") sets it.
 "use strict";
 
 const searchState = { items: [], shown: [], at: 0 };
@@ -28,6 +29,7 @@ function searchItems() {
     items.push({
       kind: "Setting", title: c.def.label, also: `${name} ${panel ?? ""}`, enabled: shown && Boolean(ui.info),
       note: shown ? (panel ? `Setting · ${panel}` : "") : "not in this layout", run: () => revealSetting(name),
+      number: c.input && typeof c.def.min === "number" && typeof c.def.max === "number" ? name : null,
     });
   }
   for (const s of document.querySelectorAll("#workspace details.panel > summary > span:first-child")) {
@@ -62,10 +64,37 @@ function searchScore(item, words) {
   return score + (item.enabled ? 5 : 0) - title.length / 100;
 }
 
+// "exposure 0.7": the numeric settings those words find, set to the number
+// (within the slider's range), best first.
+function searchValues(words) {
+  if (words.length < 2 || !ui.info) return [];
+  const value = Number(words.at(-1).replace(",", "."));
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(words.at(-1).replace(",", ".")) || !Number.isFinite(value)) return [];
+  const name = words.slice(0, -1);
+  return searchState.items
+    .filter((it) => it.kind === "Setting" && it.enabled && it.number)
+    .map((it) => [searchScore(it, name), it])
+    .filter(([s]) => s >= 0)
+    .sort((a, b) => b[0] - a[0])
+    .slice(0, 3)
+    .map(([, it]) => {
+      const def = ui.controls.get(it.number).def;
+      const v = Math.min(def.max, Math.max(def.min, value));
+      return {
+        kind: "Set", title: `Set ${it.title} to ${format(def, v)}`, also: "", enabled: true,
+        note: v === value ? "Set" : `Set · ${def.min} to ${def.max}`,
+        run: () => run([{ cmd: "set_param", name: it.number, value: v }]),
+      };
+    });
+}
+
 function renderSearch() {
   const words = $("search-input").value.toLowerCase().split(/\s+/).filter(Boolean);
   searchState.shown = words.length
-    ? searchState.items.map((it) => [searchScore(it, words), it]).filter(([s]) => s >= 0).sort((a, b) => b[0] - a[0]).slice(0, 60).map(([, it]) => it)
+    ? [
+      ...searchValues(words),
+      ...searchState.items.map((it) => [searchScore(it, words), it]).filter(([s]) => s >= 0).sort((a, b) => b[0] - a[0]).slice(0, 60).map(([, it]) => it),
+    ]
     : searchState.items.filter((it) => it.kind === "Command" && it.enabled).slice(0, 12);
   searchState.at = Math.min(searchState.at, Math.max(0, searchState.shown.length - 1));
   const list = $("search-results");

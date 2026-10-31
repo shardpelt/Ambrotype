@@ -26,6 +26,23 @@ await t.step("Ctrl+Z undoes and Ctrl+Shift+Z redoes", async () => {
   await t.until("Exposure +1 again", () => t.setting("Exposure2012") === 1);
 });
 
+await t.step("search: a setting's name and a number sets it", async () => {
+  searchFlow();
+  $("search-input").value = "contrast 25";
+  $("search-input").dispatchEvent(new Event("input"));
+  t.expect(searchState.shown[0]?.title === "Set Contrast to +25", `first: ${searchState.shown[0]?.title}`);
+  t.key("Enter");
+  await t.until("Contrast +25", () => t.setting("Contrast2012") === 25);
+  await run([{ cmd: "undo" }]);
+  await t.until("Contrast back", () => !("Contrast2012" in ui.settings));
+});
+
+await t.step("History shows the step's values before and after", async () => {
+  const values = () => document.querySelector("#history-list li.current .history-values")?.textContent ?? "";
+  await t.until("the values", () => values().endsWith("→ +1.00"));
+  t.expect(document.querySelector("#history-list li.current").title.includes("Exposure: "), "the tooltip to name Exposure");
+});
+
 await t.step("every panel opens", async () => {
   for (const d of document.querySelectorAll("details.panel")) {
     if (!d.open) t.click(d.querySelector("summary"));

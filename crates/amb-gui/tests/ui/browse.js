@@ -183,6 +183,26 @@ await t.step("Rated photos shows every rated photo, best first", async () => {
   await libraryChange({ rating: 0 });
 });
 
+await t.step("Auto-advance: a rating from the keyboard goes on to the next photo", async () => {
+  const parent = `${lib.dir}${lib.dir.includes("\\") ? "\\" : "/"}more`;
+  await toggleTreeFolder(parent);
+  const order = lib.shown.map((p) => p.path);
+  t.expect(order.length >= 2, `two photos: ${order.length}`);
+  $("settings-auto-advance").checked = true;
+  $("settings-auto-advance").dispatchEvent(new Event("change"));
+  select(order[0], "only");
+  await rateKey(2);
+  await t.until("the next photo selected", () => lib.focus === order[1] && libraryTargets().length === 1);
+  t.expect(libPhoto(order[0]).rating === 2, "the first rated");
+  $("settings-auto-advance").checked = false;
+  $("settings-auto-advance").dispatchEvent(new Event("change"));
+  select(order[0], "only");
+  await rateKey(0);
+  t.expect(lib.focus === order[0], "off: it stays");
+  await toggleTreeFolder(parent);
+  select(ui.info.path, "only");
+});
+
 await t.step("the library runs a slideshow; Esc ends it", async () => {
   t.key("Ctrl+Enter");
   await t.until("the Slideshow dialog", () => $("slideshow-dialog").open);

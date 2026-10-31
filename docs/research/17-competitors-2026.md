@@ -91,16 +91,16 @@ Sizes: S a day or two, M a week, L more.
 3. Contact sheets and print layouts, film strips with edge print for the film lab. M.
 4. Film looks with halation and bloom, modelled from datasheets (Redlamp; already Film lab item 6). M.
 5. Open a Lightroom catalogue in place, not only import (Tenzen). M.
-6. Before and after values in History (Redlamp). S.
-7. Typing values in the command palette: "exposure 0.7" (Redlamp). S.
+6. ~~Before and after values in History~~ (done 2026-10-31). S.
+7. ~~Typing values in the command palette: "exposure 0.7"~~ (done 2026-10-31). S.
 8. A blank-canvas layout editor: start a layout from nothing. S.
 
 **Good for everyone**
 9. Touch: drag on the photo to change tone or colour (Rembrandt; Lightroom's targeted adjustment). M.
 10. Smart search with CLIP on the device, and Find similar (Rembrandt). M.
 11. Pick the best in a burst by sharpness and open eyes (Rembrandt). M.
-12. Auto-advance after rating; speed budgets published like Redlamp's performance card (FlashView, Redlamp). S.
-13. Bug reports without a GitHub account (Redlamp). S.
+12. ~~Auto-advance after rating~~ (done 2026-10-31); speed budgets published like Redlamp's performance card (FlashView, Redlamp). S.
+13. ~~Bug reports without a GitHub account~~ (done 2026-10-31). S.
 14. Agents driving the whole UI, not only edits (LightCraft). M.
 
 **Later or not ours**

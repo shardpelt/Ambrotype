@@ -82,7 +82,7 @@ Things anyone with the right kit can do; open an issue first so two people don't
 
 ### Convert raws (2026-10-31)
 
-For a card shot in RAW by mistake (a friend's niece's camera): the library's **Convert raws…** and `amb convert` make JPEGs as the camera would have saved them, on Auto, or like one edited photo; photos already edited keep their edit, and a stopped run carries on. Also: right-click a library selection to apply a preset to all of it. Exports, Convert raws and `amb render` develop on the GPU when there is one and the photo fits (about 30 MP with 4 GB), and Convert raws does three photos at a time ([design/gpu.md](design/gpu.md)).
+For a card shot in RAW by mistake (a friend's niece's camera): the library's **Convert raws…** and `amb convert` make JPEGs as the camera would have saved them, on Auto, or like one edited photo; photos already edited keep their edit, and a stopped run carries on. Also: right-click a library selection to apply a preset to all of it. Exports, Convert raws and `amb render` develop on the GPU when there is one and the photo fits (about 30 MP with 4 GB), and Convert raws does three photos at a time ([design/gpu.md](design/gpu.md)). Small wins: History shows each step's values ("0.00 → +0.70", every change in its tooltip); Search (Ctrl+K) sets a setting from its name and a number ("exposure 0.7"); Settings → General can go to the next photo after a rating, flag or label from the keyboard.
 
 ### From the competition (2026-10-30)
 

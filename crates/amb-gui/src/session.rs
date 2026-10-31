@@ -122,6 +122,40 @@ pub struct PhotoInfo {
     pub defaults: BTreeMap<String, f64>,
 }
 
+/// A History step's simple changes (numbers, switches, choices; not masks
+/// or curves), the first few of them.
+#[derive(Debug, Clone, Serialize)]
+pub struct StepChanges {
+    pub shown: Vec<amb_protocol::state::Change>,
+    /// Changes not in `shown`.
+    pub more: usize,
+}
+
+impl StepChanges {
+    const SHOWN: usize = 3;
+
+    fn of(entry: &amb_protocol::state::HistoryEntry) -> StepChanges {
+        use amb_presets::Value;
+        let simple = |v: &Option<Value>| {
+            matches!(
+                v,
+                None | Some(Value::Number(_) | Value::Bool(_) | Value::Text(_))
+            )
+        };
+        let shown: Vec<_> = entry
+            .changes
+            .iter()
+            .filter(|c| simple(&c.before) && simple(&c.after))
+            .take(Self::SHOWN)
+            .cloned()
+            .collect();
+        StepChanges {
+            more: entry.changes.len() - shown.len(),
+            shown,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct StateInfo {
     pub settings: serde_json::Value,
@@ -131,6 +165,9 @@ pub struct StateInfo {
     pub history: Vec<String>,
     /// The steps undone and not yet replaced by a new edit, next to redo first.
     pub redo_history: Vec<String>,
+    /// What each step of `history` and then `redo_history` changed, for the
+    /// History panel's before → after values.
+    pub history_changes: Vec<StepChanges>,
     /// The history read from the sidecar starts after older steps that
     /// weren't kept, not at the photo's original state.
     pub history_trimmed: bool,
@@ -413,6 +450,10 @@ impl Session {
                 .iter()
                 .rev()
                 .map(|h| h.label.clone())
+                .collect(),
+            history_changes: (self.state.undo_stack().iter())
+                .chain(self.state.redo_stack().iter().rev())
+                .map(StepChanges::of)
                 .collect(),
             history_trimmed: self.state.history_trimmed(),
             snapshots: self

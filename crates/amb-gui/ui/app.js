@@ -341,6 +341,24 @@ function historyLabel(label) {
     .replace(/^remove_spot (\d+)$/, (_, s) => `Delete spot ${Number(s) + 1}`);
 }
 
+// A History value in the slider's own format; unset is the default.
+function historyValue(tag, v) {
+  if (v == null) {
+    if (ui.info?.defaults && tag in ui.info.defaults) v = ui.info.defaults[tag];
+    else if (tag === "Temperature" || tag === "Tint") return "As Shot";
+    else v = ui.defs.get(tag)?.default ?? 0;
+  }
+  const def = ui.defs.get(tag);
+  if (typeof v === "number") return def ? format(def, v) || String(v) : String(Math.round(v * 100) / 100);
+  if (typeof v === "boolean") return v ? "on" : "off";
+  return String(v) || "none";
+}
+
+// "0.00 → +0.70" for a step's changes (Redlamp shows them too).
+function historyChange(c) {
+  return `${historyValue(c.name, c.before)} → ${historyValue(c.name, c.after)}`;
+}
+
 function syncControls() {
   for (const [name, c] of ui.controls) {
     if (name === ui.active) continue;
@@ -444,11 +462,22 @@ function renderHistory() {
   const first = ui.state.history_trimmed ? "Earlier edits" : "Original";
   const steps = [first, ...done.map(historyLabel), ...undone.map(historyLabel)];
   hist.start = 0;
+  const changes = ui.state.history_changes ?? [];
   steps.forEach((text, i) => {
     const li = document.createElement("li");
     li.textContent = text;
     li.classList.toggle("current", i === done.length);
     li.classList.toggle("undone", i > done.length);
+    // Its values: one change on the line, every change in the tooltip.
+    const step = i > 0 ? changes[i - 1] : null;
+    const lines = (step?.shown ?? []).map((c) => `${ui.historyNames.get(c.name) ?? ui.defs.get(c.name)?.label ?? c.name}: ${historyChange(c)}`);
+    if (step?.more) lines.push(`and ${step.more} more`);
+    if (step?.shown.length === 1 && !step.more) {
+      const v = document.createElement("span");
+      v.className = "history-values";
+      v.textContent = historyChange(step.shown[0]);
+      li.append(" ", v);
+    }
     if (i !== done.length) {
       li.title = i < done.length ? "Go back to this step" : "Go forward to this step";
       li.addEventListener("click", () => {
@@ -456,6 +485,7 @@ function renderHistory() {
         historyGo(i - done.length);
       });
     }
+    if (lines.length) li.title = [li.title, ...lines].filter(Boolean).join("\n");
     hist.append(li);
   });
   // Keep the current step in view inside the list only: scrollIntoView would

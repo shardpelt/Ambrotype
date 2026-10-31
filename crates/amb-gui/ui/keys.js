@@ -80,6 +80,7 @@ const KEY_ACTIONS = [
   { id: "flag-none", group: "Rating", label: "Remove the flag", keys: ["U"], when: FLAG_CONTEXTS, run: () => flagKey("") },
   { id: "library", group: "Library", label: "Library grid / editor", hint: "All the photos in the folder, to rate, label, tag and export many at once.", keys: ["G"], when: "any", button: "btn-library", run: () => cullLeave() || libraryToggle() },
   { id: "import", group: "Library", label: "Import photos from a card or folder", hint: "Copied into dated folders, renamed if you like.", keys: ["Ctrl+Shift+I"], when: "any", run: () => importFlow() },
+  { id: "save-preset", group: "Edit", label: "Make a preset from this photo's edit", hint: "Its settings, without the crop, as a one-click preset.", keys: ["Ctrl+Shift+N"], when: "any", photo: true, button: "btn-save-preset", run: () => savePresetFlow() },
   { id: "virtual-copy", group: "Library", label: "Make a virtual copy", hint: "A second edit of the photo, kept as its own sidecar.", keys: ["Ctrl+'"], when: ["main", "library"], run: () => virtualCopyKey() },
   { id: "quick-collection", group: "Library", label: "Add to the last collection used", hint: "The selection, or the open photo.", keys: ["B"], when: ["main", "library"], run: () => quickCollectionKey() },
   { id: "lib-loupe", group: "Library", label: "Loupe: one photo large", hint: "← → step through the photos.", keys: ["E"], when: "library", run: () => setLibraryView("loupe") },

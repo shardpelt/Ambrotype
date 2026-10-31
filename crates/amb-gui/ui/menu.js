@@ -18,7 +18,7 @@ const MENU_BAR = [
     ["Rating", ["rate-1", "rate-2", "rate-3", "rate-4", "rate-5", "|", "rate-0"]],
     ["Colour Label", ["label-red", "label-yellow", "label-green", "label-blue"]],
     ["Flag", ["flag-pick", "flag-reject", "flag-none"]],
-    "keywords", "|", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
+    "keywords", "|", "save-preset", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
   ]],
   ["Library", ["library", "|", "lib-loupe", "lib-compare", "lib-survey", "|", "slideshow", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
   ["View", ["before", "split", "touch", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
@@ -32,7 +32,7 @@ const MENU_MAC_ONLY = new Set(["#services", "#hide", "#hide_others", "#show_all"
 const MENU_TITLES = {
   open: "Open…", "open-folder": "Open Folder…", slideshow: "Slideshow…", import: "Import Photos…", save: "Save", export: "Export…", "edit-in": "Edit in Another App", "share-compare": "Share Before and After…", touch: "Touch: Drag on the Photo",
   collage: "Collage Maker…", "lib-all": "Select All", "lib-none": "Select None", "lib-copy": "Copy Settings",
-  "lib-paste": "Paste Settings", crop: "Crop and Straighten", spots: "Spot Removal", wb: "White Balance Picker",
+  "lib-paste": "Paste Settings", "save-preset": "New Preset from This Photo…", crop: "Crop and Straighten", spots: "Spot Removal", wb: "White Balance Picker",
   "rate-0": "No Rating", "label-red": "Red", "label-yellow": "Yellow", "label-green": "Green", "label-blue": "Blue",
   "flag-pick": "Pick", "flag-reject": "Reject", "flag-none": "No Flag", keywords: "Add Keywords",
   "virtual-copy": "Make a Virtual Copy", "quick-collection": "Add to the Last Collection", assistant: "Assistant…",

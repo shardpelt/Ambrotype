@@ -49,6 +49,14 @@ await t.step("Effects → Glow: Halation is a slider, one undoable step", async 
   revealSetting("Exposure2012");
 });
 
+await t.step("Ctrl+Shift+N makes a preset from the photo's edit", async () => {
+  document.activeElement?.blur();
+  t.key("Ctrl+Shift+N");
+  await t.until("the dialog", () => $("save-preset-dialog").open);
+  $("save-preset-dialog").close("cancel");
+  t.expect(KEY_ACTIONS.some((a) => a.id === "save-preset") && MENU_BAR.flat(3).includes("save-preset"), "in the menu bar too");
+});
+
 await t.step("History shows the step's values before and after", async () => {
   const values = () => document.querySelector("#history-list li.current .history-values")?.textContent ?? "";
   await t.until("the values", () => values().endsWith("→ +1.00"));

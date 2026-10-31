@@ -35,6 +35,7 @@ function photoMenu(e) {
     ["Show in folder", () => invoke("reveal_file", { path }).catch((err) => toast(String(err), true))],
     ["Export…", () => exportFlow()],
     ["Share before and after…", () => shareCompareFlow()],
+    ["Make a preset from this edit…", () => savePresetFlow()],
   ]);
 }
 

@@ -22,7 +22,7 @@ A short "start here" for contributors and for the next work session. Details are
     - point-curve editor
     - colour-grading wheels
     - saved preset folders
-    - feedback button (pre-filled GitHub issue)
+    - feedback button (pre-filled GitHub issue, or by email to ambrotypeapp@gmail.com without a GitHub account, or copy the report)
     - crop and straighten tool (R), with aspect lock; Level (L) straightens by the photo's long lines, and turning snaps to them (2026-10-23)
     - **copy image** (2026-10-24): right-click the photo or a thumbnail → Copy image, with its edit, to paste into a chat or document
     - **size presets** (Instagram, Snapchat, TikTok, X, Reddit, YouTube, Pinterest, LinkedIn and print sizes, plus custom ones) for the crop and exact-size export (`amb render --exact WxH` too)
@@ -72,7 +72,7 @@ A short "start here" for contributors and for the next work session. Details are
 
 Things anyone with the right kit can do; open an issue first so two people don't do the same one.
 
-- **Try the editor on a Mac or Windows machine** and report what feels wrong (the Feedback button opens a pre-filled issue). Most testing so far is on Linux.
+- **Try the editor on a Mac or Windows machine** and report what feels wrong (the Feedback button opens a pre-filled GitHub issue, or an email without a GitHub account). Most testing so far is on Linux.
 - **Run `amb preset census <your preset folders>`** and share the output (setting names and counts only, no preset files). It ranks what to build next.
 - **Lightroom samples:** if you have Lightroom, the measurements in [lightroom-trial-plan.md](lightroom-trial-plan.md) let us fit our models (kit: `tools/lightroom-kit/make-kit.sh`). Share only fitted numbers, never Adobe's renders or files.
 - **Film simulation references:** raws plus in-camera re-renders with each film simulation, so the Film recipe looks can be fitted ([design/film-look-measurement.md](design/film-look-measurement.md)).

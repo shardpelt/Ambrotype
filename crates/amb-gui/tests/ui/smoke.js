@@ -432,6 +432,16 @@ await t.step("Spot panel: Find dust finds none on a clean chart; Shift-drag heal
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("Feedback works without a GitHub account: by email, or copied", async () => {
+  const flow = feedbackFlow();
+  await t.until("the dialog", () => $("feedback-dialog").open);
+  const buttons = [...$("feedback-dialog").querySelectorAll("menu button")].map((b) => b.value);
+  t.expect(["copy", "email", "ok"].every((v) => buttons.includes(v)), buttons.join(", "));
+  t.expect($("feedback-form").preview.value.includes("Kind"), "the report shown before sending");
+  $("feedback-dialog").close("cancel");
+  await flow;
+});
+
 await t.step("Ctrl+E exports a JPEG", async () => {
   t.key("Ctrl+E");
   await t.until("the Export dialog", () => $("export-dialog").open);

@@ -722,14 +722,13 @@ async function feedbackFlow() {
   await refresh();
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
-  if (choice !== "ok") return;
+  const title = f.title.value || f.kind.value;
+  if (choice === "copy") return copyText(`[${f.kind.value}] ${title}\n\n${f.preview.value}`, "The report");
+  if (choice !== "ok" && choice !== "email") return;
+  const email = choice === "email";
   try {
-    await invoke("open_feedback", {
-      kind: f.kind.value,
-      title: f.title.value || f.kind.value,
-      body: f.preview.value,
-    });
-    toast("Opened GitHub in your browser. Thank you!");
+    await invoke("open_feedback", { kind: f.kind.value, title, body: f.preview.value, email });
+    toast(email ? "Opened your mail app with the report. Thank you!" : "Opened GitHub in your browser. Thank you!");
   } catch (e) {
     toast(String(e), true);
   }

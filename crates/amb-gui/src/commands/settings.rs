@@ -7,6 +7,31 @@ use crate::*;
 /// user submits it there).
 pub(crate) const FEEDBACK_URL: &str = "https://github.com/shardpelt/Ambrotype/issues/new";
 
+/// Or, for people without a GitHub account, an email to the project.
+pub(crate) const FEEDBACK_EMAIL: &str = "ambrotypeapp@gmail.com";
+
+/// A pre-filled email with the feedback.
+fn feedback_mailto(kind: &str, title: &str, body: &str) -> String {
+    format!(
+        "mailto:{FEEDBACK_EMAIL}?subject={}&body={}",
+        percent_encode(&format!("[Ambrotype {kind}] {}", title.trim())),
+        percent_encode(body)
+    )
+}
+
+/// `body` cut to `max` bytes (whole characters), saying so.
+fn shortened(mut body: String, max: usize) -> String {
+    if body.len() > max {
+        let mut cut = max;
+        while !body.is_char_boundary(cut) {
+            cut -= 1;
+        }
+        body.truncate(cut);
+        body.push_str("\n… (shortened; Copy report in the Feedback dialog has all of it)");
+    }
+    body
+}
+
 pub(crate) fn percent_encode(s: &str) -> String {
     let mut out = String::with_capacity(s.len() * 3);
     for b in s.bytes() {
@@ -73,25 +98,23 @@ fn feedback_url(kind: &str, title: &str, body: &str) -> String {
     url
 }
 
-/// Open the pre-filled GitHub issue in the browser.
+/// Open the pre-filled GitHub issue in the browser, or (`email`) a
+/// pre-filled email in the user's mail app.
 #[tauri::command]
 pub(crate) fn open_feedback(
     app: tauri::AppHandle,
     kind: String,
     title: String,
     body: String,
+    email: Option<bool>,
 ) -> Res<()> {
-    // Keep URLs within what browsers and GitHub accept.
-    let mut body = body;
-    if body.len() > 6000 {
-        let mut cut = 6000;
-        while !body.is_char_boundary(cut) {
-            cut -= 1;
-        }
-        body.truncate(cut);
-        body.push_str("\n… (truncated)");
-    }
-    let url = feedback_url(&kind, &title, &body);
+    // Keep addresses within what browsers, GitHub and mail apps accept
+    // (some mail apps stop at about 2000 characters).
+    let url = if email.unwrap_or(false) {
+        feedback_mailto(&kind, &title, &shortened(body, 1500))
+    } else {
+        feedback_url(&kind, &title, &shortened(body, 6000))
+    };
     app.opener()
         .open_url(url, None::<&str>)
         .map_err(|e| e.to_string())
@@ -413,6 +436,21 @@ pub(crate) async fn pick_monitor_profile(app: tauri::AppHandle) -> Option<String
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn feedback_by_email_needs_no_account() {
+        let url = super::feedback_mailto("Bug", " It crashes ", "Line 1\nLine & 2");
+        assert!(
+            url.starts_with("mailto:ambrotypeapp@gmail.com?subject="),
+            "{url}"
+        );
+        assert!(
+            url.contains("%5BAmbrotype%20Bug%5D%20It%20crashes&body=Line%201%0ALine%20%26%202"),
+            "{url}"
+        );
+        let long = super::shortened("é".repeat(1000), 1501);
+        assert!(long.len() < 1600 && long.ends_with("all of it)"), "{long}");
+    }
+
     /// The address names an issue form that exists, and fields it has.
     #[test]
     fn feedback_fills_the_repository_issue_forms() {

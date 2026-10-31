@@ -1112,7 +1112,7 @@
   <dialog id="feedback-dialog">
     <form method="dialog" id="feedback-form">
       <h2>Send feedback</h2>
-      <p class="hint">This opens a pre-filled issue on GitHub in your browser. Nothing is sent until you submit it there; you can edit everything first.</p>
+      <p class="hint">Send it on GitHub (a free account) or by email to ambrotypeapp@gmail.com, from your browser or mail app, filled in; nothing is sent until you send it there, and you can change everything first. Or copy it to send any other way.</p>
       <div class="grid">
         <label>Kind
           <select name="kind">
@@ -1131,7 +1131,9 @@
       <label class="wide">Will be sent <textarea name="preview" rows="6" readonly></textarea></label>
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
-        <button value="ok" class="primary">Open on GitHub…</button>
+        <button value="copy" formnovalidate title="Copy the report, to paste anywhere">Copy report</button>
+        <button value="email" title="Opens your mail app with the report filled in, to ambrotypeapp@gmail.com; no GitHub account needed">Send by email…</button>
+        <button value="ok" class="primary" title="Opens a filled-in issue on GitHub (needs a free GitHub account)">Open on GitHub…</button>
       </menu>
     </form>
   </dialog>

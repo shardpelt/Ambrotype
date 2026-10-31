@@ -6,7 +6,7 @@ A free, open-source photo editor and organiser for Windows, macOS and Linux, in 
 
 <sub>Photo: a Nikon D750 sample raw from [raw.pixls.us](https://raw.pixls.us/), shared under CC0 (public domain).</sub>
 
-**Status: early, and moving fast.** No installers are published yet: the first release (v0.1.0) will have them for Windows, macOS and Linux on the [Releases](https://github.com/shardpelt/Ambrotype/releases) page. Until then, build it from source (below). Expect rough edges, and please report them (the Feedback button in the app opens a pre-filled issue).
+**Status: early, and moving fast.** No installers are published yet: the first release (v0.1.0) will have them for Windows, macOS and Linux on the [Releases](https://github.com/shardpelt/Ambrotype/releases) page. Until then, build it from source (below). Expect rough edges, and please report them: the Feedback button in the app opens a pre-filled GitHub issue, or an email to ambrotypeapp@gmail.com if you have no GitHub account.
 
 ## What it does
 

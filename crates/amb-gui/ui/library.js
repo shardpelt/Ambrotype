@@ -916,6 +916,65 @@ async function syncNegativeRoll() {
   }
 }
 
+// Pick a preset, then apply it to `paths` (the library's selection), each
+// photo one undoable step (src/commands/presets.rs `apply_to_photos`).
+async function presetsOnPhotos(paths) {
+  if (!paths.length) return;
+  if (!ui.presets?.length) await loadPresets();
+  const dlg = $("preset-pick-dialog");
+  const filter = $("preset-pick-filter");
+  const amount = $("preset-pick-amount");
+  $("preset-pick-title").textContent = paths.length > 1 ? `Apply a preset to ${paths.length} photos` : `Apply a preset to ${fileName(paths[0])}`;
+  amount.oninput = () => { $("preset-pick-amount-out").value = amount.value; };
+  amount.oninput();
+  let chosen = null;
+  const render = () => {
+    const q = filter.value.trim().toLowerCase();
+    const shown = (ui.presets ?? []).filter((p) => !q || `${p.group} ${p.name}`.toLowerCase().includes(q));
+    $("preset-pick-list").replaceChildren(...shown.map((p) => {
+      const b = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: p.name, title: p.group });
+      b.addEventListener("click", () => { chosen = p; dlg.close("ok"); });
+      return b;
+    }));
+    if (!shown.length) $("preset-pick-list").append(Object.assign(document.createElement("p"), { className: "hint", textContent: "No presets match." }));
+  };
+  filter.value = "";
+  filter.oninput = render;
+  render();
+  dlg.showModal();
+  filter.focus();
+  const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice !== "ok" || !chosen) return;
+  status(`Applying "${chosen.name}" to ${paths.length} photos…`);
+  $("busy").hidden = false;
+  try {
+    const r = await invoke("apply_to_photos", {
+      paths,
+      label: `preset ${chosen.name}`,
+      commands: await presetCommands(chosen.path, { amount: Number(amount.value) }),
+    });
+    for (const path of r.changed) {
+      const p = libPhoto(path);
+      if (p) {
+        p.edited = true;
+        updateCell(p);
+        stripUpdate(path, { edited: true });
+      }
+      refreshThumb(path);
+    }
+    if (r.state) {
+      setState(r.state);
+      requestPreview(false);
+    }
+    toast(`"${chosen.name}" applied to ${r.changed.length} photo${r.changed.length === 1 ? "" : "s"}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    $("busy").hidden = true;
+    status("Ready");
+  }
+}
+
 async function libraryPasteSettings() {
   if (!lib.copied) return toast("First copy the settings of one photo (Ctrl+Shift+C).", true);
   const targets = selectedPhotos().map((p) => p.path).filter((p) => p !== lib.copied);
@@ -1112,8 +1171,11 @@ function wireLibrary() {
       ["Show in folder", () => invoke("reveal_file", { path }).catch((err) => toast(String(err), true))],
       ["Open in the editor", () => libraryOpen(path)],
       ["Find similar photos", () => smartSearch(path)],
+      null,
+      [sel.length > 1 ? `Apply a preset to ${sel.length} photos…` : "Apply a preset…", () => presetsOnPhotos(sel.map((p) => p.path))],
+      lib.copied ? [sel.length > 1 ? `Paste settings onto ${sel.length} photos…` : "Paste settings…", () => libraryPasteSettings()] : false,
       [sel.length > 1 ? `Export ${sel.length} photos…` : "Export…", () => libraryExport()],
-    ]);
+    ].filter((x) => x !== false));
   });
   grid.addEventListener("dblclick", (e) => {
     const cell = e.target.closest(".lib-cell");

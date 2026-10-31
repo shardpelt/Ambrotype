@@ -123,6 +123,28 @@ await t.step("Smart search without a search model says where to get one; the gri
   t.expect(lib.shown.length === before, "the same photos shown");
 });
 
+await t.step("right-click in the library: a preset onto the selected photos, one step each", async () => {
+  lib.selected = new Set(lib.shown.map((p) => p.path));
+  const paths = [...lib.selected];
+  const cell = document.querySelector(".lib-cell");
+  cell.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 60, clientY: 60 }));
+  const items = [...document.querySelectorAll(".ctx-menu button")].map((b) => b.textContent);
+  document.querySelector(".ctx-menu")?.remove();
+  t.expect(items.some((i) => i.startsWith("Apply a preset")) && items.some((i) => i.startsWith("Export")), items.join(", "));
+  // A preset made for the test (a fresh setup has none): Exposure +1.
+  await run([{ cmd: "set_param", name: "Exposure2012", value: 1 }], "test");
+  ui.presets = await t.invoke("save_preset", { name: "Test brighter", group: "Tests" });
+  await run([{ cmd: "undo" }]);
+  const flow = presetsOnPhotos(paths);
+  await t.until("the picker", () => $("preset-pick-dialog").open);
+  const first = $("preset-pick-list").querySelector("button");
+  t.expect(first, "presets to pick from");
+  first.click();
+  await flow;
+  t.expect($("toast").textContent.includes("applied to"), `the note: ${$("toast").textContent}`);
+  lib.selected.clear();
+});
+
 await t.step("Rated photos shows every rated photo, best first", async () => {
   select(ui.info.path, "only");
   await libraryChange({ rating: 4 });

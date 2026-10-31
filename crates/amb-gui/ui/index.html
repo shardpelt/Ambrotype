@@ -525,6 +525,18 @@
     </form>
   </dialog>
 
+  <!-- A preset onto the selected photos (library.js presetsOnPhotos). -->
+  <dialog id="preset-pick-dialog">
+    <form method="dialog">
+      <h2 id="preset-pick-title">Apply a preset</h2>
+      <input id="preset-pick-filter" type="search" placeholder="Filter presets" spellcheck="false">
+      <div id="preset-pick-list" class="preset-pick-list"></div>
+      <label class="amount">Amount <input id="preset-pick-amount" type="range" min="0" max="200" value="100"><output id="preset-pick-amount-out">100</output></label>
+      <p class="hint">Each photo gets the preset on top of its own edit, as one undoable step per photo. Crop, masks and spots stay.</p>
+      <menu><button value="cancel" formnovalidate>Cancel</button></menu>
+    </form>
+  </dialog>
+
   <!-- Contact sheets (library.js contactSheetFlow). -->
   <dialog id="contact-dialog">
     <form method="dialog">

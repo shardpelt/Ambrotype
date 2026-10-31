@@ -59,7 +59,7 @@ midtone cast a* +9.8 b* +10.2 (warm, magenta); chroma 32
 
 `amb contact PHOTO|DIR... --out sheet.jpg [--style film|plain] [--columns N] [--paper a4|letter|8x10] [--title T]` makes contact sheets at 300 dpi.
 
-`amb convert PHOTO|DIR... --to FOLDER [--look camera|auto|like:PHOTO] [--no-edits]` turns raws into JPEGs: camera (default) is what the camera would have saved, auto is each photo's Auto, like:PHOTO matches all to one edited photo. Auto and like keep their settings in the raws' sidecars.
+`amb convert PHOTO|DIR... --to FOLDER [--look camera|auto|like:PHOTO] [--no-edits] [--best-of-bursts]` turns raws into JPEGs: camera (default) is what the camera would have saved, auto is each photo's Auto, like:PHOTO matches all to one edited photo. Auto and like keep their settings in the raws' sidecars. `--best-of-bursts` converts only the best of each burst (as `amb duplicates` ranks them).
 
 `amb share PHOTO --out page.html` writes one web page with the photo before and after its edit and a bar to drag (both photos inside the file).
 

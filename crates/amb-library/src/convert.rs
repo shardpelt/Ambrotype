@@ -67,6 +67,9 @@ pub struct Converted {
     pub errors: Vec<String>,
     /// Where they were developed: "on the GPU (name)" or "on the CPU (why)".
     pub developed: Option<String>,
+    /// Photos not converted: not the best of their burst
+    /// ([`best_of_bursts`]; set by the caller).
+    pub left_out: usize,
 }
 
 /// Convert `photos` into `out_dir` with `look`, written with `export`
@@ -189,6 +192,36 @@ impl Job<'_> {
             }
         }
     }
+}
+
+/// `photos` with only the best of each burst (and one of identical files),
+/// as the duplicates finder ranks them ([`crate::duplicates`]), in their
+/// order; and how many were left out.
+pub fn best_of_bursts(
+    catalog: &crate::catalog::Catalog,
+    photos: &[PathBuf],
+) -> (Vec<PathBuf>, usize) {
+    let options = crate::duplicates::Options {
+        max_bits: 0,
+        ..Default::default()
+    };
+    let thumb = |p: &Path| amb_engine::raw::embedded_thumbnail(p, 256).ok().flatten();
+    let groups = crate::duplicates::find(catalog, photos, options, &thumb, &|_, _| {});
+    keep_best(photos, &groups)
+}
+
+/// `photos` without all but the first (best) of each group.
+fn keep_best(photos: &[PathBuf], groups: &[crate::duplicates::Group]) -> (Vec<PathBuf>, usize) {
+    let left_out: std::collections::HashSet<&PathBuf> = groups
+        .iter()
+        .flat_map(|g| g.photos.iter().skip(1))
+        .collect();
+    let kept: Vec<PathBuf> = (photos.iter())
+        .filter(|p| !left_out.contains(p))
+        .cloned()
+        .collect();
+    let n = photos.len() - kept.len();
+    (kept, n)
 }
 
 fn no_change() -> matching::MatchResult {
@@ -314,5 +347,19 @@ mod tests {
             Some(Look::Like(PathBuf::from("a.nef")))
         );
         assert_eq!(Look::parse("sepia"), None);
+    }
+
+    #[test]
+    fn only_the_best_of_a_burst_is_kept() {
+        use crate::duplicates::{Group, Kind};
+        let p = |s: &str| PathBuf::from(s);
+        let photos = [p("a"), p("b1"), p("b2"), p("b3"), p("c")];
+        let burst = Group {
+            kind: Kind::Burst,
+            photos: vec![p("b2"), p("b1"), p("b3")],
+        };
+        let (kept, left_out) = keep_best(&photos, &[burst]);
+        assert_eq!(kept, [p("a"), p("b2"), p("c")]);
+        assert_eq!(left_out, 2);
     }
 }

@@ -620,6 +620,9 @@ pub(crate) struct ConvertOptions {
     long_edge: u32,
     quality: u8,
     edits: bool,
+    /// Only the best of each burst.
+    #[serde(default)]
+    best_of_bursts: bool,
 }
 
 /// Raws to JPEGs (`amb_library::convert`) in a folder the user picks; what
@@ -659,8 +662,12 @@ pub(crate) async fn convert_raws(
         if options.long_edge > 0 {
             export.resize = amb_export::Resize::LongEdge(options.long_edge);
         }
-        let photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
-        Ok(Some(convert::convert(
+        let mut photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
+        let mut left_out = 0;
+        if options.best_of_bursts {
+            (photos, left_out) = convert::best_of_bursts(folder::catalog(), &photos);
+        }
+        let mut done = convert::convert(
             &photos,
             &look,
             &export,
@@ -670,7 +677,9 @@ pub(crate) async fn convert_raws(
             &|done, total| {
                 let _ = app.emit("convert-progress", [done, total]);
             },
-        )))
+        );
+        done.left_out = left_out;
+        Ok(Some(done))
     })
     .await
     .map_err(|e| e.to_string())?

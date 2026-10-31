@@ -29,12 +29,18 @@ pub(crate) fn convert(
             return Err(format!("--look like:{}: no such photo", p.display()));
         }
     }
-    let photos = crate::organise::photos(args)?;
+    let mut photos = crate::organise::photos(args)?;
+    // --best-of-bursts: only the best photo of each burst.
+    let mut left_out = 0;
+    if options.contains_key("--best-of-bursts") {
+        let catalog = crate::organise::open_catalog(options)?;
+        (photos, left_out) = convert::best_of_bursts(&catalog, &photos);
+    }
     // The format from --format (JPEG unless said), the rest from the export options.
     let name = format!("x.{}", options.get("--format").copied().unwrap_or("jpg"));
     let mut export = export_settings(Path::new(&name), options)?;
     export.metadata = amb_export::MetadataPolicy::All;
-    let done = convert::convert(
+    let mut done = convert::convert(
         &photos,
         &look,
         &export,
@@ -46,6 +52,7 @@ pub(crate) fn convert(
         },
     );
     eprintln!();
+    done.left_out = left_out;
     if json {
         return serde_json::to_string_pretty(&done).map_err(|e| e.to_string());
     }
@@ -64,6 +71,9 @@ pub(crate) fn convert(
             String::new()
         }
     );
+    if done.left_out > 0 {
+        out += &format!("\n{} left out: not the best of their burst", done.left_out);
+    }
     if let Some(Ok(gpu)) = amb_gpu::full::last() {
         out += &format!("\ndeveloped on the GPU ({gpu})");
     }

@@ -964,6 +964,7 @@ async function convertRawsFlow() {
     long_edge: Number($("convert-size").value),
     quality: Number($("convert-quality").value) || 90,
     edits: $("convert-edits").checked,
+    best_of_bursts: $("convert-bursts").checked,
   };
   status(`Converting ${paths.length} raws…`);
   $("busy").hidden = false;
@@ -974,6 +975,7 @@ async function convertRawsFlow() {
     const parts = [`${r.written.length} JPEG${r.written.length === 1 ? "" : "s"} written`];
     if (r.camera_jpegs) parts.push(`${r.camera_jpegs} as the camera saved ${r.camera_jpegs === 1 ? "it" : "them"}`);
     if (r.skipped) parts.push(`${r.skipped} already there`);
+    if (r.left_out) parts.push(`${r.left_out} left out (not the best of their burst)`);
     if (r.errors.length) parts.push(`${r.errors.length} failed: ${r.errors[0]}`);
     toast(parts.join("; "), r.errors.length > 0);
   } catch (e) {

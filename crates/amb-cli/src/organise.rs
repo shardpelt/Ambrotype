@@ -56,7 +56,7 @@ pub(crate) fn photos(args: &[&str]) -> Result<Vec<PathBuf>, String> {
     Ok(out)
 }
 
-fn open_catalog(options: &Options) -> Result<Catalog, String> {
+pub(crate) fn open_catalog(options: &Options) -> Result<Catalog, String> {
     let path = match options.get("--catalog") {
         Some(p) => PathBuf::from(p),
         None => catalog::default_path().ok_or("no config folder: give --catalog FILE")?,

@@ -149,10 +149,10 @@ pub fn command_schema() -> Value {
                 "part": part_index(),
                 "to": { "type": "integer", "minimum": 0, "description": "New position from 0." }
             }), &["mask", "to"]),
-            variant("cmd", "add_spot", "Add a round spot that heals (matches the surroundings) or clones (copies as is) a donor area onto it. Stored in Lightroom's RetouchAreas.", json!({
+            variant("cmd", "add_spot", "Add a round spot that heals (matches the surroundings) or clones (copies as is) a donor area onto it, or removes what is there (kind remove: AI Remove fills it with what belongs there, from its model, else heals it). Stored in Lightroom's RetouchAreas.", json!({
                 "at": { "type": "array", "items": { "type": "number" }, "description": "[x, y] centre, fractions of the uncropped photo in stored orientation." },
                 "radius": { "type": "number", "minimum": 0.001, "maximum": 0.5, "default": 0.02, "description": "Fraction of the photo's width." },
-                "kind": { "type": "string", "enum": ["heal", "clone"], "default": "heal" },
+                "kind": { "type": "string", "enum": ["heal", "clone", "remove"], "default": "heal" },
                 "source": { "type": "array", "items": { "type": "number" }, "description": "[x, y] donor centre; searched for when absent." },
                 "source_auto": { "type": "boolean", "default": false, "description": "The source came from a search (Lightroom's auto)." },
                 "feather": { "type": "number", "minimum": 0, "maximum": 100, "default": 50 },

@@ -267,7 +267,7 @@ Spots are Lightroom's own `RetouchAreas`. Positions are fractions of the uncropp
 ]
 ```
 
-A heal copies from the source and matches the surroundings; a clone copies as is. Without `source` the engine picks a donor nearby each time it renders; render and look, and give an explicit `source` if it picked badly. Spots Lightroom filled with content-aware or generative fill are healed from a nearby area here, and reported.
+A heal copies from the source and matches the surroundings; a clone copies as is. Without `source` the engine picks a donor nearby each time it renders; render and look, and give an explicit `source` if it picked badly. `kind: "remove"` makes a Remove spot with no source: AI Remove fills it with what belongs there when its model is installed (Settings → AI models), and heals it from a nearby area otherwise. Lightroom's content-aware and generative spots are filled the same way.
 
 ## Importing photos
 

@@ -323,7 +323,8 @@ fn main() -> ExitCode {
     let plugins =
         amb_library::collections::editor_dir().and_then(|d| Some(d.parent()?.join("plugins")));
     if let Some(models) = amb_ai::default_dir() {
-        amb_engine::subject::set_finder(amb_ai::finder(models));
+        amb_engine::subject::set_finder(amb_ai::finder(models.clone()));
+        amb_engine::retouch::set_inpainter(amb_ai::remove::inpainter(models));
     }
     amb_engine::plugin_effects::set_resolver(amb_plugin::effect::resolver(move |id| {
         amb_plugin::find(plugins.as_deref(), id)

@@ -64,6 +64,15 @@ impl SpotKind {
         }
     }
 
+    /// Its `SpotType` in Lightroom's settings.
+    pub fn spot_type(self) -> &'static str {
+        match self {
+            SpotKind::Clone => "clone",
+            SpotKind::Heal => "heal",
+            SpotKind::ContentAware | SpotKind::Generative => "heal_patchmatch",
+        }
+    }
+
     /// Whether Lightroom made up the pixels (we can only approximate).
     pub fn synthesised(self) -> bool {
         matches!(self, SpotKind::ContentAware | SpotKind::Generative)
@@ -157,12 +166,7 @@ pub fn new_area(
     opacity: f64,
 ) -> BTreeMap<String, Value> {
     let mut a: BTreeMap<String, Value> = BTreeMap::new();
-    let spot_type = match kind {
-        SpotKind::Clone => "clone",
-        SpotKind::Heal => "heal",
-        SpotKind::ContentAware | SpotKind::Generative => "heal_patchmatch",
-    };
-    a.insert("SpotType".into(), Value::Text(spot_type.into()));
+    a.insert("SpotType".into(), Value::Text(kind.spot_type().into()));
     let state = if source.is_none() || source_auto {
         "sourceAutoComputed"
     } else {

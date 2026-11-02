@@ -29,15 +29,20 @@ use amb_engine::subject::{Map, MapKind};
 use serde::{Deserialize, Serialize};
 use tract_onnx::prelude::*;
 
+pub mod remove;
 pub mod search;
 
 /// The tasks a model can do, with what they're for.
-pub const TASKS: [(&str, &str); 3] = [
+pub const TASKS: [(&str, &str); 4] = [
     ("subject", "Select Subject and Select Background"),
     ("people", "Select People (everyone, as one mask)"),
     (
         "search",
         "Smart search: find photos by what is in them, or like another one",
+    ),
+    (
+        "remove",
+        "AI Remove: fill a Remove spot with what belongs there",
     ),
 ];
 
@@ -234,7 +239,7 @@ fn file_of(dir: &Path, id: &str) -> PathBuf {
     dir.join(format!("{id}.onnx"))
 }
 
-fn is_installed(dir: &Path, spec: &ModelSpec) -> bool {
+pub(crate) fn is_installed(dir: &Path, spec: &ModelSpec) -> bool {
     let there = |path: PathBuf, bytes: u64| {
         std::fs::metadata(path).is_ok_and(|m| m.is_file() && (bytes == 0 || m.len() == bytes))
     };
@@ -869,7 +874,8 @@ mod tests {
                         s.id
                     );
                 }
-            } else {
+            } else if s.task != "remove" {
+                // Masks: how much edge detail they keep.
                 assert!((1..=5).contains(&s.detail), "{}", s.id);
             }
         }

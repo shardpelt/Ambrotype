@@ -510,6 +510,18 @@ await t.step("Spot panel: Find dust finds none on a clean chart; Shift-drag heal
   t.expect(t.historyLength() === steps + 1, "one history step");
   t.key("Ctrl+Z");
   await t.until("undone", () => spotList().length === before);
+  // Remove: a click makes a content-aware spot with no source.
+  t.click('#spot-kind [data-kind="remove"]');
+  t.expect(document.querySelector('#spot-kind [data-kind="remove"]').classList.contains("active"), "Remove chosen");
+  const click = (extra) => pt(0.4, 0.4, { shiftKey: false, ...extra });
+  $("spot-canvas").dispatchEvent(new PointerEvent("pointerdown", click()));
+  $("spot-canvas").dispatchEvent(new PointerEvent("pointerup", click()));
+  await t.until("the Remove spot", () => spotList().length > before, 30000);
+  const r = spotList()[spotList().length - 1];
+  t.expect(r.kind === "content-aware" && !r.source, `a Remove spot: ${JSON.stringify(r)}`);
+  t.key("Ctrl+Z");
+  await t.until("undone", () => spotList().length === before);
+  t.click('#spot-kind [data-kind="heal"]');
   t.click("#spot-done");
   await t.until("the spot tool closed", () => !sp.on);
 });

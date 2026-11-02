@@ -46,7 +46,7 @@ function renderModels(list) {
       const busy = models.progress[m.id];
       const actions = [];
       if (m.chosen && m.installed) actions.push(el("span", { class: "model-in-use" }, "In use"));
-      else if (m.installed) actions.push(el("button", { type: "button", class: "small", onclick: () => modelAction("ai_model_use", m.id, task === "search" ? `Smart search now uses ${m.name}.` : `${m.name} is in use for ${task} masks.`) }, "Use"));
+      else if (m.installed) actions.push(el("button", { type: "button", class: "small", onclick: () => modelAction("ai_model_use", m.id, task === "search" ? `Smart search now uses ${m.name}.` : task === "remove" ? `AI Remove now uses ${m.name}.` : `${m.name} is in use for ${task} masks.`) }, "Use"));
       if (!m.installed && busy == null) {
         actions.push(el("button", { type: "button", class: "small", title: m.urls?.[0] ?? "", onclick: () => installModel(m) }, `Install (${megabytes(m.total_bytes ?? m.bytes)})`));
       }

@@ -11,6 +11,10 @@
 //! Lightroom does not store, and spots made without one) heal from the donor
 //! [`find_source`] picks: the nearby area whose surroundings best match.
 //!
+//! With an inpainter registered ([`set_inpainter`]: AI Remove, a model the
+//! user installs), content-aware and generative spots are filled by it
+//! instead ([`fill_one`]), with the photo's grain put back over the fill.
+//!
 //! Spots run in order on the scene-linear image, before masks are drawn, so
 //! range masks see the cleaned photo. They work on the cropped image, so a
 //! donor outside the crop is clamped to its edge.
@@ -129,7 +133,7 @@ impl Spots {
         }
         if synthesised > 0 {
             notes.push(format!(
-                "{RETOUCH_TAG}: {synthesised} content-aware or generative spot(s) are healed from a nearby area instead (Lightroom doesn't store their pixels)"
+                "{RETOUCH_TAG}: {synthesised} content-aware or generative spot(s) are healed from a nearby area unless AI Remove's model is installed (Lightroom doesn't store their pixels)"
             ));
         }
         (out, notes)
@@ -451,6 +455,13 @@ pub fn apply_in(
         let Some(p) = place(spot, &frame, img.width, img.height) else {
             continue;
         };
+        if spot.kind.synthesised() && spot.source.is_none() {
+            if let Some(fill) = inpainter() {
+                if fill_one(img, &p, &*fill).is_ok() {
+                    continue;
+                }
+            }
+        }
         let offset = match spot.source {
             Some((sx, sy)) => {
                 let (fx, fy) = frame.pixel(sx, sy);
@@ -461,6 +472,192 @@ pub fn apply_in(
         };
         heal_one(img, &p, offset, spot.kind == SpotKind::Clone);
     }
+}
+
+/// The side of the square an [`Inpainter`] takes and gives back.
+pub const INPAINT_SIZE: usize = 512;
+
+/// Fills a hole: `rgb` (sRGB-encoded 0..1, [`INPAINT_SIZE`]² pixels,
+/// interleaved) where `mask` (one value a pixel, 1 = fill) is set; returns
+/// the same layout, or why not.
+pub type Inpainter = dyn Fn(&[f32], &[f32]) -> Result<Vec<f32>, String> + Send + Sync;
+
+static INPAINTER: std::sync::RwLock<Option<std::sync::Arc<Inpainter>>> =
+    std::sync::RwLock::new(None);
+
+/// Register the inpainter content-aware spots are filled with (`amb-ai`
+/// registers the AI Remove model when it is installed).
+pub fn set_inpainter(f: std::sync::Arc<Inpainter>) {
+    *INPAINTER.write().unwrap_or_else(|e| e.into_inner()) = Some(f);
+}
+
+fn inpainter() -> Option<std::sync::Arc<Inpainter>> {
+    INPAINTER.read().unwrap_or_else(|e| e.into_inner()).clone()
+}
+
+/// The context around a spot the inpainter sees: a square this many spot
+/// radii from its centre to each side (inside what [`footprints`] reads).
+const FILL_CONTEXT: f64 = 3.0;
+
+/// Fill spot `p` with `fill`. **Ours.** A square around the spot (three of
+/// its radii each way) goes to the model at [`INPAINT_SIZE`], with its
+/// brightness scaled so its bright end sits at 1 and sRGB-encoded; the
+/// fill comes back the same way, is laid in through the spot's feathered
+/// alpha, and gets the grain of the ring around the spot (its fine detail's
+/// spread per channel, as seeded noise), so it doesn't look smoother than
+/// the photo.
+fn fill_one(img: &mut Image, p: &Placed, fill: &Inpainter) -> Result<(), String> {
+    use crate::pipeline::{srgb_decode, srgb_encode};
+    let n = INPAINT_SIZE;
+    let half = (p.radius * FILL_CONTEXT).max(24.0);
+    let bx0 = (p.centre.0 - half).floor().max(0.0) as usize;
+    let by0 = (p.centre.1 - half).floor().max(0.0) as usize;
+    let bx1 = ((p.centre.0 + half).ceil() as usize).min(img.width);
+    let by1 = ((p.centre.1 + half).ceil() as usize).min(img.height);
+    if bx1 <= bx0 + 4 || by1 <= by0 + 4 {
+        return Err("no room around the spot".into());
+    }
+    let side = (bx1 - bx0).max(by1 - by0) as f64;
+    // Model pixel (u, v) <-> photo pixel.
+    let s = n as f64 / side;
+    let to_photo = |u: usize, v: usize| {
+        (
+            bx0 as f64 + (u as f64 + 0.5) / s - 0.5,
+            by0 as f64 + (v as f64 + 0.5) / s - 0.5,
+        )
+    };
+    let alpha_at = |x: f64, y: f64| -> f32 {
+        let (i, j) = (
+            x.round() as isize - p.x0 as isize,
+            y.round() as isize - p.y0 as isize,
+        );
+        if i < 0 || j < 0 || i >= p.w as isize || j >= p.h as isize {
+            0.0
+        } else {
+            p.alpha[j as usize * p.w + i as usize]
+        }
+    };
+    // Brightness scale: the box's bright end (99.5th percentile) at 1.
+    let lw = luminance_weights();
+    let mut lum: Vec<f32> = (by0..by1)
+        .flat_map(|y| (bx0..bx1).map(move |x| (x, y)))
+        .map(|(x, y)| {
+            let c = img.get(x, y);
+            lw[0] * c[0] + lw[1] * c[1] + lw[2] * c[2]
+        })
+        .collect();
+    lum.sort_by(f32::total_cmp);
+    let scale = lum[(lum.len() - 1) * 995 / 1000].max(1e-4);
+    let mut rgb = vec![0.0f32; n * n * 3];
+    let mut mask = vec![0.0f32; n * n];
+    let clamp = |x: f64, lo: usize, hi: usize| x.clamp(lo as f64, (hi - 1) as f64);
+    for v in 0..n {
+        for u in 0..n {
+            let (x, y) = to_photo(u, v);
+            let (x, y) = (clamp(x, bx0, bx1), clamp(y, by0, by1));
+            let hole = alpha_at(x, y) > 0.01;
+            let c = sample(img, x, y);
+            let k = v * n + u;
+            mask[k] = hole as u8 as f32;
+            for ch in 0..3 {
+                rgb[k * 3 + ch] = if hole {
+                    0.0
+                } else {
+                    srgb_encode((c[ch] / scale).clamp(0.0, 1.0))
+                };
+            }
+        }
+    }
+    let out = fill(&rgb, &mask)?;
+    if out.len() != n * n * 3 {
+        return Err("the inpainter gave the wrong size".into());
+    }
+    // The ring's grain: spread of each channel's fine detail (pixel minus
+    // its 3×3 mean) where the spot isn't.
+    let grain = ring_grain(img, p, (bx0, by0, bx1, by1));
+    let seed = p.centre.0.to_bits() ^ p.centre.1.to_bits().rotate_left(17);
+    for j in 0..p.h {
+        for i in 0..p.w {
+            let a = p.alpha[j * p.w + i];
+            if a <= 0.0 {
+                continue;
+            }
+            let (x, y) = (p.x0 + i, p.y0 + j);
+            let (u, v) = (
+                (x as f64 - bx0 as f64 + 0.5) * s - 0.5,
+                (y as f64 - by0 as f64 + 0.5) * s - 0.5,
+            );
+            let f = bilinear(&out, n, u, v);
+            let t = img.get(x, y);
+            let filled: [f32; 3] = std::array::from_fn(|c| {
+                let noise = gaussian(seed, (x as u64) << 32 | y as u64, c as u64);
+                (srgb_decode(f[c].clamp(0.0, 1.0)) * scale + grain[c] * noise).max(0.0)
+            });
+            img.set(x, y, [0, 1, 2].map(|c| t[c] + (filled[c] - t[c]) * a));
+        }
+    }
+    Ok(())
+}
+
+/// Bilinear sample of an interleaved RGB `n × n` image at (u, v).
+fn bilinear(rgb: &[f32], n: usize, u: f64, v: f64) -> [f32; 3] {
+    let u = u.clamp(0.0, (n - 1) as f64);
+    let v = v.clamp(0.0, (n - 1) as f64);
+    let (x0, y0) = (u.floor() as usize, v.floor() as usize);
+    let (x1, y1) = ((x0 + 1).min(n - 1), (y0 + 1).min(n - 1));
+    let (fx, fy) = ((u - x0 as f64) as f32, (v - y0 as f64) as f32);
+    let at = |x: usize, y: usize, c: usize| rgb[(y * n + x) * 3 + c];
+    std::array::from_fn(|c| {
+        let top = at(x0, y0, c) * (1.0 - fx) + at(x1, y0, c) * fx;
+        let bottom = at(x0, y1, c) * (1.0 - fx) + at(x1, y1, c) * fx;
+        top * (1.0 - fy) + bottom * fy
+    })
+}
+
+/// Per channel, the spread of fine detail around the spot (outside it,
+/// inside the box).
+fn ring_grain(img: &Image, p: &Placed, (x0, y0, x1, y1): (usize, usize, usize, usize)) -> [f32; 3] {
+    let mut sum = [0.0f64; 3];
+    let mut count = 0usize;
+    for y in (y0 + 1)..(y1 - 1) {
+        for x in (x0 + 1)..(x1 - 1) {
+            let inside = x >= p.x0
+                && y >= p.y0
+                && x < p.x0 + p.w
+                && y < p.y0 + p.h
+                && p.alpha[(y - p.y0) * p.w + (x - p.x0)] > 0.0;
+            if inside {
+                continue;
+            }
+            let mut mean = [0.0f32; 3];
+            for dy in 0..3 {
+                for dx in 0..3 {
+                    let c = img.get(x + dx - 1, y + dy - 1);
+                    (0..3).for_each(|k| mean[k] += c[k] / 9.0);
+                }
+            }
+            let c = img.get(x, y);
+            (0..3).for_each(|k| sum[k] += f64::from((c[k] - mean[k]).powi(2)));
+            count += 1;
+        }
+    }
+    // A 3×3 mean removes about a ninth of white noise's spread too.
+    sum.map(|v| (v / count.max(1) as f64 * 9.0 / 8.0).sqrt() as f32)
+}
+
+/// A standard normal number from a seed and a position (deterministic, so
+/// every render of the spot looks the same).
+fn gaussian(seed: u64, at: u64, channel: u64) -> f32 {
+    let mix = |mut z: u64| {
+        z = (z ^ (z >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+        z ^ (z >> 31)
+    };
+    let a = mix(seed ^ mix(at ^ channel.wrapping_mul(0x9e37_79b9_7f4a_7c15)));
+    let b = mix(a);
+    let u1 = ((a >> 11) as f64 + 0.5) / (1u64 << 53) as f64;
+    let u2 = (b >> 11) as f64 / (1u64 << 53) as f64;
+    ((-2.0 * u1.ln()).sqrt() * (std::f64::consts::TAU * u2).cos()) as f32
 }
 
 /// Where each spot writes, and what it reads to do so (its own box and the
@@ -820,6 +1017,67 @@ mod tests {
 
     /// Skin-like texture: a soft gradient with fine grain and pores, and a
     /// curved dark scar across it. Returns (with scar, clean).
+    #[test]
+    fn an_inpainter_fills_the_spot_and_the_grain_comes_back() {
+        let (w, h) = (200, 120);
+        let (mut img, clean) = textured(w, h);
+        // A dark blot to remove.
+        for y in 50..70 {
+            for x in 90..110 {
+                img.set(x, y, [0.02, 0.02, 0.02]);
+            }
+        }
+        let before = img.clone();
+        let spot = Spot {
+            kind: SpotKind::ContentAware,
+            shape: SpotShape::Ellipse {
+                centre: (100.0 / w as f64, 60.0 / h as f64),
+                size: (14.0 / w as f64, 14.0 / w as f64),
+            },
+            source: None,
+            feather: 0.3,
+            opacity: 1.0,
+        };
+        let frame = Frame::new((w, h), None);
+        let p = place(&spot, &frame, w, h).unwrap();
+        // A stand-in model: every hole pixel gets the mean of the rest.
+        let fill = |rgb: &[f32], mask: &[f32]| -> Result<Vec<f32>, String> {
+            let mut sum = [0.0f32; 3];
+            let mut n = 0.0;
+            for (k, m) in mask.iter().enumerate() {
+                if *m == 0.0 {
+                    (0..3).for_each(|c| sum[c] += rgb[k * 3 + c]);
+                    n += 1.0;
+                }
+            }
+            let mean = sum.map(|v| v / n);
+            Ok((0..rgb.len())
+                .map(|i| {
+                    if mask[i / 3] > 0.0 {
+                        mean[i % 3]
+                    } else {
+                        rgb[i]
+                    }
+                })
+                .collect())
+        };
+        fill_one(&mut img, &p, &fill).unwrap();
+        // The blot is gone: near the photo's level, not black.
+        let centre = img.get(100, 60);
+        let around = clean.get(100, 60);
+        assert!(
+            (centre[0] / around[0] - 1.0).abs() < 0.35,
+            "{centre:?} vs {around:?}"
+        );
+        // Grain: the filled area isn't flat.
+        let v: Vec<f32> = (95..105).map(|x| img.get(x, 60)[0]).collect();
+        let mean = v.iter().sum::<f32>() / v.len() as f32;
+        let spread = (v.iter().map(|x| (x - mean).powi(2)).sum::<f32>() / v.len() as f32).sqrt();
+        assert!(spread > 0.004, "grain {spread}");
+        // Far from the spot, nothing changed.
+        assert_eq!(img.get(10, 10), before.get(10, 10));
+    }
+
     fn textured(w: usize, h: usize) -> (Image, Image) {
         let hash = |x: usize, y: usize| {
             let mut v = (x as u32).wrapping_mul(374761393) ^ (y as u32).wrapping_mul(668265263);

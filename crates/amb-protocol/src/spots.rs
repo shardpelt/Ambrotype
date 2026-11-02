@@ -42,7 +42,12 @@ fn parse_kind(s: &str) -> Result<SpotKind, Error> {
     match s.trim().to_ascii_lowercase().as_str() {
         "heal" => Ok(SpotKind::Heal),
         "clone" => Ok(SpotKind::Clone),
-        other => Err(invalid("kind", format!("{other:?} is not heal or clone"))),
+        // AI Remove (Lightroom's content-aware Remove): no donor.
+        "remove" | "content-aware" => Ok(SpotKind::ContentAware),
+        other => Err(invalid(
+            "kind",
+            format!("{other:?} is not heal, clone or remove"),
+        )),
     }
 }
 
@@ -229,9 +234,9 @@ pub fn set(
             "kind" => {
                 let k = parse_kind(
                     v.as_str()
-                        .ok_or_else(|| invalid(&name, "expects heal or clone"))?,
+                        .ok_or_else(|| invalid(&name, "expects heal, clone or remove"))?,
                 )?;
-                a.insert("SpotType".into(), Value::Text(k.name().into()));
+                a.insert("SpotType".into(), Value::Text(k.spot_type().into()));
                 a.remove("fill_method");
             }
             "feather" => {
@@ -306,7 +311,7 @@ pub fn describe(settings: &BTreeMap<String, Value>) -> serde_json::Value {
                 None => d["shape"] = json!("brush"),
             }
             if kind.synthesised() {
-                d["note"] = json!("Lightroom filled this spot itself; we heal it from a nearby area");
+                d["note"] = json!("filled by AI Remove when its model is installed (Settings → AI models); healed from a nearby area otherwise");
             }
             Some(d)
         })

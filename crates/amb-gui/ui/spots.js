@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Spot removal (Lightroom's Remove tool, heal and clone). Plain JS, no build step.
+// Spot removal (Lightroom's Remove tool: heal, clone and AI Remove). Plain JS, no build step.
 //
 // Every change is a protocol command (add_spot, set_spot, remove_spot) on
 // Lightroom's RetouchAreas. Click the photo to add a spot: the engine suggests
@@ -159,7 +159,7 @@ function renderSpotPanel() {
   if (sp.selected != null && !list.some((s) => s.index === sp.selected)) sp.selected = null;
   const s = selectedSpot();
   for (const b of document.querySelectorAll("#spot-kind button")) {
-    const kind = s ? s.kind : sp.kind;
+    const kind = s ? spotKind(s) : sp.kind;
     b.classList.toggle("active", b.dataset.kind === kind);
   }
   const set = (id, v) => {
@@ -172,12 +172,13 @@ function renderSpotPanel() {
   $("spot-delete").disabled = !s;
   $("spot-clear").disabled = !list.length;
   const legacy = ui.state?.spots?.legacy;
-  const made = list.filter((x) => x.note).length;
+  const made = list.filter((x) => x.kind === "generative").length;
   $("spot-count").textContent = `${list.length} spot(s)` + (legacy ? `, ${legacy} older` : "");
   $("spot-hint").textContent = s
     ? (s.note ? `${s.note}. ` : "") + "Drag the spot or its source to move them. Delete removes it; click elsewhere for a new one."
     : "Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag the dashed source circle to pick where it copies from. [ and ] or the wheel change the size."
-      + (made ? ` ${made} spot(s) were filled by Lightroom itself; they are healed from a nearby area here.` : "");
+      + (sp.kind === "remove" ? " Remove fills it with what belongs there (AI Remove, Settings → AI models); until its model is installed, it is healed from a nearby area." : "")
+      + (made ? ` ${made} spot(s) were filled by Lightroom's Generative Remove; AI Remove fills them here.` : "");
   drawSpots();
 }
 
@@ -192,6 +193,12 @@ function spotValue(key, v) {
     sp[key] = v;
   }
   renderSpotPanel();
+}
+
+// The panel's name for a spot's kind: Lightroom's content-aware and
+// generative spots are Remove spots.
+function spotKind(s) {
+  return s.kind === "content-aware" || s.kind === "generative" ? "remove" : s.kind;
 }
 
 function setSpotKind(kind) {
@@ -253,7 +260,8 @@ async function addSpotAt(pt) {
   sp.busy = true;
   try {
     const radius = sp.size / 100;
-    const source = await invoke("spot_source", { x: pt[0], y: pt[1], radius });
+    // A Remove spot has no source.
+    const source = sp.kind === "remove" ? undefined : await invoke("spot_source", { x: pt[0], y: pt[1], radius });
     const before = spotList().length;
     await run([{
       cmd: "add_spot", at: pt, radius, kind: sp.kind, source, source_auto: true,
@@ -278,7 +286,7 @@ async function addBrushedSpot(points) {
     const xs = points.map((p) => p[0]);
     const ys = points.map((p) => p[1]);
     const centre = [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
-    const source = await invoke("spot_source", { x: centre[0], y: centre[1], radius, points, feather: sp.feather });
+    const source = sp.kind === "remove" ? undefined : await invoke("spot_source", { x: centre[0], y: centre[1], radius, points, feather: sp.feather });
     const before = spotList().length;
     await run([{
       cmd: "add_spot", at: centre, radius, kind: sp.kind, source, source_auto: true,

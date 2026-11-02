@@ -333,6 +333,40 @@
         "text_output": 1,
         "fit": "squash"
       }
+    },
+    {
+      "id": "lama",
+      "task": "remove",
+      "name": "Big-LaMa",
+      "default": true,
+      "about": "Fills a removed object with what belongs there, from the rest of the picture. 208 MB; about 10 s a removal on a 4-core laptop the first time, then kept.",
+      "licence": "Apache-2.0",
+      "by": "Suvorov et al. (Samsung AI); ONNX by Carve",
+      "source": "https://github.com/advimman/lama",
+      "notes": "Trained on the Places2 dataset (CC BY 4.0).",
+      "bytes": 208044816,
+      "sha256": "1faef5301d78db7dda502fe59966957ec4b79dd64e16f03ed96913c7a4eb68d6",
+      "urls": [
+        "https://huggingface.co/Carve/LaMa-ONNX/resolve/c3c0c9e468934d62e79c329e35d82dd09ff8c444/lama_fp32.onnx"
+      ],
+      "seconds": 10.0,
+      "detail": 0,
+      "input": {
+        "size": 512,
+        "mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "std": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "output": {
+        "activation": "none"
+      }
     }
   ]
 }

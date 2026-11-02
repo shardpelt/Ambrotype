@@ -1,6 +1,6 @@
 # Spot removal (heal and clone)
 
-Status: implemented 2026-10-10. Round heal and clone spots, read and written as Lightroom's own `RetouchAreas`; Lightroom's brushed spots, content-aware and generative fills, and the pre-2018 `RetouchInfo` are read and rendered. Red eye is not done yet.
+Status: implemented 2026-10-10. Round heal and clone spots, read and written as Lightroom's own `RetouchAreas`; Lightroom's brushed spots, content-aware and generative fills, and the pre-2018 `RetouchInfo` are read and rendered. AI Remove (our own content-aware fill, Big-LaMa) added 2026-11-02. Red eye is not done yet.
 
 Code: `crates/amb-presets/src/retouch.rs` (the shared model), `crates/amb-engine/src/retouch.rs` (rendering and the donor search), `crates/amb-protocol/src/spots.rs` (commands), `crates/amb-gui/ui/spots.js` (the tool).
 
@@ -26,7 +26,7 @@ Spots run in order on the scene-linear image at the end of the first pipeline st
 - **Alpha:** a round spot is full inside 1 − `Feather` of its radius and fades to 0 at its edge (smoothstep), times `Opacity`. A brushed spot uses the brush model.
 - **Clone:** the donor area copied as it is.
 - **Heal:** the donor copied at a whole-pixel offset (so its texture isn't blurred), then matched to the spot's surroundings. In log space, the difference between the spot's surroundings and the donor's (a band just outside the spot, smoothed along it) is carried smoothly across the inside as a membrane (push-pull interpolation), and added. Brightness, colour and curved shading carry over from the whole edge, which a plane (used until 2026-10-22) couldn't do for long brushed strokes; the donor's texture stays. This is ours, not Lightroom's algorithm.
-- **No donor** (content-aware, generative, or a spot added without one), and the editor's pick for a new spot: the search follows the spot's own shape, round or brushed. Candidates lie in 24 directions, just clear of the spot along each one and up to 2.5 times further. Each is scored on the band around the spot (log luminance with a small floor, so the noise of near-black areas doesn't swamp it): how far the donor's band differs from the spot's in shape, and a little in level (brightening a much darker donor brings up its noise and faint lines); how far the donor's inside strays from what its own band predicts (an object or a line in the donor); how different its fine texture is; and its distance, counted in the spot's narrowest width (beside a long stroke is near, along it is far). A donor may not overlap the spot. `amb render` and the editor say that content-aware and generative spots are approximated this way.
+- **No donor** (content-aware, generative, or a spot added without one), and the editor's pick for a new spot: the search follows the spot's own shape, round or brushed. Candidates lie in 24 directions, just clear of the spot along each one and up to 2.5 times further. Each is scored on the band around the spot (log luminance with a small floor, so the noise of near-black areas doesn't swamp it): how far the donor's band differs from the spot's in shape, and a little in level (brightening a much darker donor brings up its noise and faint lines); how far the donor's inside strays from what its own band predicts (an object or a line in the donor); how different its fine texture is; and its distance, counted in the spot's narrowest width (beside a long stroke is near, along it is far). A donor may not overlap the spot. `amb render` and the editor say that content-aware and generative spots are approximated this way when AI Remove's model is not installed.
 - A test scores a brushed heal across a curved scar on skin-like texture with rounded shading (`brushed_heal_blends_in`): leftover blemish 0.019 (0.087 before), seam 0.008 (0.027), fine texture kept at 88% (84%).
 - Spots work on the cropped image, so a donor outside the crop is clamped to the crop's edge.
 
@@ -47,3 +47,14 @@ Spots run in order on the scene-linear image at the end of the first pipeline st
 3. Which fields Lightroom needs to read our areas: we write `SpotType`, `SourceState`, `Method`, `SourceX`, `OffsetY`, `Feather`, `Opacity` and the ellipse; not `Seed` or the patch-match fields.
 4. Whether spots, like brushes, are placed before the lens corrections.
 5. Red eye (`RedEyeInfo`) and pet eye: the format is unknown; the trial keeps a sample ([lightroom-trial-plan.md](../lightroom-trial-plan.md) item 12).
+
+## AI Remove (2026-11-02)
+
+The panel's **Remove** kind (and `add_spot` with `kind: "remove"`) writes a content-aware spot (`heal_patchmatch`, no donor), as Lightroom's Remove does. Lightroom's own content-aware and generative spots are filled the same way.
+
+- **The model:** Big-LaMa (Apache-2.0, trained on Places2), the "remove" task in Settings → AI models. 208 MB, so it is never downloaded by itself. It runs with tract on the CPU: about 12 s to load once, then about 10 s a spot on 4 cores. Until it is installed, these spots are healed from a searched donor, as before.
+- **What it sees** (`retouch::fill_one`): a square box around the spot, 3 radii each way (at least 24 px), scaled to 512 × 512. Brightness is scaled so the box's 99.5th percentile of luminance sits at 1, then sRGB-encoded; the hole is zeroed and marked where the spot's alpha is over 0.01.
+- **Back into the photo:** the fill is sampled back bilinearly, decoded and rescaled, and blended by the spot's alpha. The model gives a clean fill, so grain is put back: the spread of the box's fine detail (pixel minus its 3 × 3 mean) outside the hole, as seeded noise.
+- **Kept:** the last 16 fills, by a hash of the model's input, so a preview re-render doesn't run it again.
+- **Next:** the same network in our own WGSL kernels on the GPU, checked against tract, with the CPU as the fallback.
+

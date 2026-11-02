@@ -28,7 +28,7 @@ How to read the tables:
 | [Color Grading](#color-grading) | `color_grading` | 14 | Colour wheels for Shadows, Midtones, Highlights and Global (hue, saturation, luminance each), plus Blending. Balance is stored in SplitToningBalance. |
 | [Split Toning (legacy) and Color Grading Balance](#split-toning) | `split_toning` | 5 | The pre-2020 Split Toning controls. Camera Raw reuses SplitToningBalance as the Color Grading Balance slider. |
 | [Detail](#detail) | `detail` | 11 | Sharpening (Amount, Radius, Detail, Masking) and manual noise reduction (luminance and colour). Judge these at 100% zoom or more. |
-| [Lens Corrections](#lens) | `lens` | 19 | Lens profile corrections, chromatic-aberration removal, defringing and lens vignetting. |
+| [Lens Corrections](#lens) | `lens` | 20 | Lens profile corrections, chromatic-aberration removal, defringing and lens vignetting. |
 | [Transform](#transform) | `transform` | 27 | Upright perspective correction and manual perspective sliders. |
 | [Effects](#effects) | `effects` | 16 | Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) and film grain (Amount, Size, Roughness). |
 | [LUT](#lut) | `lut` | 2 | A look from a .cube file (the 3D LUT format of Resolve and many look packs), applied after the colour and curves. Our own feature (amb: namespace); Lightroom has no LUT setting and ignores these. |
@@ -333,6 +333,7 @@ Lens profile corrections, chromatic-aberration removal, defringing and lens vign
 | `DefringeGreenHueLo` | Defringe: Green hue (low) | number | 0 to 100 | 40 | rendered (approx.) | Lower end of the hue range treated as green fringing. The default range is narrow to protect green/yellow subjects such as foliage. |
 | `DefringePurpleHueHi` | Defringe: Purple hue (high) | number | 0 to 100 | 70 | rendered (approx.) | Upper end of the hue range treated as purple fringing. The two ends stay at least 10 units apart. |
 | `DefringeGreenHueHi` | Defringe: Green hue (high) | number | 0 to 100 | 60 | rendered (approx.) | Upper end of the hue range treated as green fringing. The default range is narrow to protect green/yellow subjects such as foliage. |
+| `amb:DefringeAuto` | Defringe: Auto | bool | true / false | false | rendered (exact) | True: finds and removes purple, blue, green and cyan fringes along high-contrast edges by itself, keeping colours that belong to the area around them (a blue sky, a green leaf). Works with the Amount sliders or without them. |
 | `EnableLensCorrections` | Lens Corrections on | bool | true / false | true | rendered (approx.) | Lens Corrections panel switch. False leaves the profile, chromatic aberration, manual distortion, vignetting and defringe out. |
 
 <a id="transform"></a>

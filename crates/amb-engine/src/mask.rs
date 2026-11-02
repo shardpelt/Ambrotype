@@ -1300,6 +1300,7 @@ impl Drawn {
                 .for_each(|(w, &m)| *w *= 1.0 - s * m);
         }
         lens::apply_defringe_weighted(img, global, &cal.lens, &self.tile, protect.as_deref());
+        lens::apply_auto_defringe_in(img, global, &cal.lens, &self.tile);
         for (a, alpha) in self.each(|a| a.defringe > 0.0) {
             let amount = cal.masks.defringe * a.defringe / 100.0;
             let d = Defringe {

@@ -325,6 +325,7 @@ pub fn panels() -> Vec<Panel> {
                 section(
                     "Defringe",
                     &[
+                        ("amb:DefringeAuto", Some("Auto")),
                         ("DefringePurpleAmount", Some("Purple Amount")),
                         ("DefringePurpleHueLo", Some("Purple Hue (low)")),
                         ("DefringePurpleHueHi", Some("Purple Hue (high)")),

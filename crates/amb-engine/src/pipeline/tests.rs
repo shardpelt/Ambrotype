@@ -572,6 +572,7 @@ fn region_matches_the_full_render() {
                     ("SharpenRadius", "2"),
                     ("SharpenEdgeMasking", "30"),
                     ("DefringePurpleAmount", "10"),
+                    ("amb:DefringeAuto", "True"),
                 ],
                 &[],
             ),

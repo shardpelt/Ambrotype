@@ -16,9 +16,11 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 3. **Convert raws on more cameras:** try Sony, Canon and Fujifilm raws (only a Nikon D750 so far).
 4. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
 5. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
-6. **From the competition:** chromatic aberration removal without a lens profile, Edit Replay as a video, a scene-referred highlight roll-off option, AI Remove and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place; pick the best in a burst by open eyes ([research/17](research/17-competitors-2026.md)).
+6. **From the competition:** Edit Replay as a video, a scene-referred highlight roll-off option, AI Remove and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place; pick the best in a burst by open eyes ([research/17](research/17-competitors-2026.md)).
 
 ## Recently done
+
+- 2026-11-02: Defringe → Auto: finds and removes purple, blue, green and cyan fringes by itself (with Remove Chromatic Aberration, which already measured CA without a lens profile)
 
 - 2026-11-02: GPU exports in tiles for any size, sized from the free memory the driver reports (Vulkan, Direct3D 12, Metal)
 

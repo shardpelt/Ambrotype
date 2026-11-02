@@ -96,6 +96,9 @@ pub struct Defringe {
     pub green_amount: f64,
     pub green_hue_lo: f64,
     pub green_hue_hi: f64,
+    /// `amb:DefringeAuto`: find and remove fringes without hue bands
+    /// ([`apply_auto_defringe_in`]).
+    pub auto: bool,
 }
 
 impl Default for Defringe {
@@ -107,13 +110,14 @@ impl Default for Defringe {
             green_amount: 0.0,
             green_hue_lo: 40.0,
             green_hue_hi: 60.0,
+            auto: false,
         }
     }
 }
 
 impl Defringe {
     pub fn is_neutral(&self) -> bool {
-        self.purple_amount <= 0.0 && self.green_amount <= 0.0
+        self.purple_amount <= 0.0 && self.green_amount <= 0.0 && !self.auto
     }
 }
 
@@ -768,7 +772,11 @@ fn robust_fit(samples: &[(f64, f64)], max_shift: f64) -> Option<RadialShift> {
 /// Defringe's search radius in pixels on an output of `tile`'s full size.
 pub fn defringe_radius(d: &Defringe, k: &LensStrengths, tile: &Tile) -> usize {
     let resolution = ((tile.full_width * tile.full_height) as f64 / 24e6).sqrt();
-    let amount = d.purple_amount.max(d.green_amount);
+    // Auto searches as far as the sliders at 4 (of 20) do.
+    let amount =
+        d.purple_amount
+            .max(d.green_amount)
+            .max(if d.auto { AUTO_FRINGE_AMOUNT } else { 0.0 });
     ((1.0 + amount * k.defringe_radius) * resolution)
         .round()
         .max(1.0) as usize
@@ -785,6 +793,102 @@ pub fn apply_defringe(img: &mut Image, d: &Defringe, k: &LensStrengths) {
 /// radius of the full output.
 pub fn apply_defringe_in(img: &mut Image, d: &Defringe, k: &LensStrengths, tile: &Tile) {
     apply_defringe_weighted(img, d, k, tile, None);
+    if d.auto {
+        apply_auto_defringe_in(img, d, k, tile);
+    }
+}
+
+/// Auto's search reach, as if the Amount sliders were at this.
+const AUTO_FRINGE_AMOUNT: f64 = 4.0;
+/// OkLab hues (degrees) fringes come in: green to cyan, and blue through
+/// purple to magenta. Reds, oranges and yellows are left alone (skin,
+/// sunsets).
+const FRINGE_HUES: [(f64, f64); 2] = [(115.0, 205.0), (235.0, 350.0)];
+
+/// Automatic fringe removal (`amb:DefringeAuto`). **Ours.** Lateral
+/// chromatic aberration is fixed by moving red and blue (Remove Chromatic
+/// Aberration); what remains along high-contrast edges is a thin line of
+/// colour: purple or blue on one side, green or cyan on the other. Such a
+/// line's colour is not the colour of the area around it. So near edges,
+/// a pixel in a fringe hue loses the part of its colour that stands out
+/// from its neighbourhood's average colour (its excess chroma), and keeps
+/// the rest: a blue sky or a green leaf at an edge stays blue or green.
+pub fn apply_auto_defringe_in(img: &mut Image, d: &Defringe, k: &LensStrengths, tile: &Tile) {
+    if !d.auto || img.width < 3 || img.height < 3 {
+        return;
+    }
+    let (w, h) = (img.width, img.height);
+    let oklab = OkLab::new();
+    let positive = |p: &[f32]| [p[0].max(0.0), p[1].max(0.0), p[2].max(0.0)];
+    let lab: Vec<[f32; 3]> = img
+        .rgb
+        .par_chunks(3)
+        .map(|p| oklab.from_working(positive(p)))
+        .collect();
+    let radius = defringe_radius(d, k, tile);
+    let lightness: Vec<f32> = lab.iter().map(|l| l[0]).collect();
+    let contrast = local_range(&lightness, w, h, radius);
+    let (clo, chi) = (k.defringe_contrast_lo, k.defringe_contrast_hi);
+    let edge: Vec<f32> = contrast
+        .iter()
+        .map(|&c| smoothstep(clo, chi, f64::from(c)) as f32)
+        .collect();
+    // The surroundings' colour: a, b averaged over three times the reach,
+    // from the flat pixels only (the fringe and its edge left out).
+    let flat: Vec<f32> = edge.iter().map(|e| 1.0 - e).collect();
+    let weighted = |c: usize| {
+        let v: Vec<f32> = lab.iter().zip(&flat).map(|(l, f)| l[c] * f).collect();
+        crate::filters::box_blur(&v, w, h, 3 * radius)
+    };
+    let (a_sum, b_sum, f_sum) = (
+        weighted(1),
+        weighted(2),
+        crate::filters::box_blur(&flat, w, h, 3 * radius),
+    );
+    let mean = |i: usize| {
+        if f_sum[i] > 1e-3 {
+            (a_sum[i] / f_sum[i], b_sum[i] / f_sum[i])
+        } else {
+            (0.0, 0.0)
+        }
+    };
+    let in_hues = |hue: f64| {
+        FRINGE_HUES
+            .iter()
+            .map(|&(lo, hi)| {
+                smoothstep(lo - 10.0, lo, hue) * (1.0 - smoothstep(hi, hi + 10.0, hue))
+            })
+            .fold(0.0, f64::max)
+    };
+    img.rgb.par_chunks_mut(3).enumerate().for_each(|(i, p)| {
+        let edge = f64::from(edge[i]);
+        if edge <= 0.0 {
+            return;
+        }
+        let l = lab[i];
+        let chroma = f64::from(l[1].hypot(l[2]));
+        if chroma < 0.01 {
+            return;
+        }
+        let hue = f64::from(l[2].atan2(l[1])).to_degrees().rem_euclid(360.0);
+        let fringe = in_hues(hue);
+        if fringe <= 0.0 {
+            return;
+        }
+        // The share of the colour not explained by the surroundings:
+        // the pixel's chroma beyond its projection on the mean colour.
+        let (ma, mb) = mean(i);
+        let (ma, mb) = (f64::from(ma), f64::from(mb));
+        let along = (f64::from(l[1]) * ma + f64::from(l[2]) * mb) / chroma;
+        let excess = ((chroma - along.max(0.0)) / chroma).clamp(0.0, 1.0);
+        let wgt = (edge * fringe * excess) as f32;
+        if wgt <= 0.0 {
+            return;
+        }
+        let keep = 1.0 - wgt;
+        let out = oklab.to_working([l[0], l[1] * keep, l[2] * keep]);
+        p.copy_from_slice(&out);
+    });
 }
 
 /// [`apply_defringe_in`] with its strength scaled per pixel by `weight`
@@ -796,7 +900,8 @@ pub fn apply_defringe_weighted(
     tile: &Tile,
     weight: Option<&[f32]>,
 ) {
-    if d.is_neutral() || img.width < 3 || img.height < 3 {
+    let sliders = d.purple_amount > 0.0 || d.green_amount > 0.0;
+    if !sliders || img.width < 3 || img.height < 3 {
         return;
     }
     let (w, h) = (img.width, img.height);
@@ -1352,5 +1457,55 @@ mod tests {
         };
         apply_defringe(&mut img2, &green_only, &DEFAULT_STRENGTHS);
         assert!(chroma(img2.get(21, 20)) > 0.09);
+    }
+
+    #[test]
+    fn auto_defringe_finds_fringes_and_keeps_colours_that_belong() {
+        let (w, h) = (120, 40);
+        let oklab = OkLab::new();
+        let at = |deg: f32, c: f32| {
+            let r = deg.to_radians();
+            oklab.to_working([0.5, c * r.cos(), c * r.sin()])
+        };
+        let (purple, green, sky) = (at(310.0, 0.1), at(150.0, 0.1), at(255.0, 0.1));
+        let mut img = Image::new(w, h);
+        for y in 0..h {
+            for x in 0..w {
+                let v = match x {
+                    0..20 => [0.02; 3],  // dark branch
+                    20..22 => purple,    // its purple fringe
+                    22..40 => [0.9; 3],  // bright
+                    40..42 => green,     // a green fringe the other way
+                    42..60 => [0.02; 3], // dark
+                    _ => sky,            // a blue sky beside it
+                };
+                img.set(x, y, v);
+            }
+        }
+        let d = Defringe {
+            auto: true,
+            ..Default::default()
+        };
+        apply_defringe(&mut img, &d, &DEFAULT_STRENGTHS);
+        let chroma = |p: [f32; 3]| {
+            let l = oklab.from_working(p);
+            l[1].hypot(l[2])
+        };
+        assert!(
+            chroma(img.get(21, 20)) < 0.04,
+            "purple fringe: {}",
+            chroma(img.get(21, 20))
+        );
+        assert!(
+            chroma(img.get(40, 20)) < 0.04,
+            "green fringe: {}",
+            chroma(img.get(40, 20))
+        );
+        assert!(
+            chroma(img.get(62, 20)) > 0.07,
+            "the sky at the edge: {}",
+            chroma(img.get(62, 20))
+        );
+        assert!(chroma(img.get(100, 20)) > 0.099, "the sky away from it");
     }
 }

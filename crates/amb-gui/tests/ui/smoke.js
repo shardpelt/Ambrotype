@@ -41,6 +41,8 @@ await t.step("Effects → Glow: Halation is a slider, one undoable step", async 
   revealSetting("amb:Halation");
   t.expect(t.visible(t.row("amb:Halation")) && t.visible(t.row("amb:Bloom")), "Halation and Bloom shown");
   t.expect(t.visible(t.row("amb:GrainFilm")), "Grain's Film response shown");
+  revealSetting("amb:DefringeAuto");
+  t.expect(t.visible(t.row("amb:DefringeAuto")), "Defringe's Auto shown");
   const src = $("preview").src;
   t.setSlider("amb:Halation", 60);
   await t.until("Halation 60", () => t.setting("amb:Halation") === 60);

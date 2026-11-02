@@ -35,6 +35,7 @@ function photoMenu(e) {
     ["Show in folder", () => invoke("reveal_file", { path }).catch((err) => toast(String(err), true))],
     ["Export…", () => exportFlow()],
     ["Share before and after…", () => shareCompareFlow()],
+    ["Export Edit Replay (video)…", () => replayFlow()],
     ["Make a preset from this edit…", () => savePresetFlow()],
     ["Convert this folder's raws to JPEGs…", () => convertRawsFlow()],
   ]);
@@ -55,6 +56,32 @@ async function shareCompareFlow() {
   } catch (e) {
     toast(String(e), true);
   } finally {
+    $("busy").hidden = true;
+    status("Ready");
+  }
+}
+
+// File → Export Edit Replay…: a video of the edit from its History
+// (src/commands/export.rs `export_replay`), with frames counted in the status.
+async function replayFlow() {
+  if (!ui.info) return;
+  if (!(ui.state?.history ?? []).length) return toast("This photo has no History to replay yet: edit it first.", true);
+  status("Making the Edit Replay…");
+  $("busy").hidden = false;
+  const off = await tauri.event.listen("replay-progress", (e) => {
+    const [done, total] = e.payload;
+    status(`Making the Edit Replay: frame ${done} of ${total}`);
+  });
+  try {
+    const r = await invoke("export_replay", { dir: lastExportDir() });
+    if (r) {
+      rememberExportDir(r.path);
+      toast(`Saved the Edit Replay (${r.steps} steps, ${r.seconds.toFixed(1)} s): ${r.path}`);
+    }
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    off();
     $("busy").hidden = true;
     status("Ready");
   }

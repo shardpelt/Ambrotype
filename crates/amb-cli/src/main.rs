@@ -111,6 +111,10 @@ USAGE:
                                             their settings in the raws' sidecars (not with --no-edits).
                                             JPEGs already there are kept, so a stopped run carries on.
                                             --best-of-bursts converts only the best photo of each burst
+    amb replay <PHOTO> --out REPLAY.mp4 [--long-edge N] [--no-captions]
+                                            Edit Replay: a short video of the photo's edit from its History,
+                                            each step easing in and named, the before and the after held;
+                                            AV1 in MP4, 1080 pixels on the long side by default
     amb contact <PHOTO|DIR>... --out SHEET.jpg [--style film|plain] [--columns N]
                 [--paper a4|a3|letter|8x10|11x14] [--landscape] [--title TEXT]
                                             Contact sheets at 300 dpi: each photo small with its edit, as
@@ -344,7 +348,7 @@ fn main() -> ExitCode {
             | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert"
             | "--replace" | "--stack" | "--reject" | "--shuffle" | "--window" | "--subfolders"
             | "--no-scenes" | "--no-odd" | "--own-midtone" | "--landscape" | "--no-edits"
-            | "--best-of-bursts" => {
+            | "--best-of-bursts" | "--no-captions" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -578,6 +582,40 @@ fn main() -> ExitCode {
         ["fuji", recipe, photo] => {
             fuji::fuji(recipe, Some(Path::new(photo)), &options, json).map(|t| println!("{t}"))
         }
+        ["replay", photo] => match options.get("--out") {
+            Some(out) => (|| -> Result<(), String> {
+                let mut o = amb_library::replay::ReplayOptions::default();
+                if let Some(v) = options.get("--long-edge") {
+                    o.long_edge = v.parse().map_err(|_| format!("--long-edge {v}: pixels"))?;
+                }
+                o.captions = !options.contains_key("--no-captions");
+                let r = amb_library::replay::replay(
+                    Path::new(photo),
+                    Path::new(out),
+                    &o,
+                    amb_gpu::full::shared(),
+                    &|n, total| eprint!("\r{n}/{total} frames"),
+                )?;
+                eprintln!();
+                if json {
+                    println!(
+                        "{}",
+                        serde_json::to_string_pretty(&r).map_err(|e| e.to_string())?
+                    );
+                } else {
+                    println!(
+                        "wrote {out} ({} steps, {:.1} s, {}x{}, {:.1} MB)",
+                        r.steps,
+                        r.seconds,
+                        r.width,
+                        r.height,
+                        r.bytes as f64 / 1e6
+                    );
+                }
+                Ok(())
+            })(),
+            None => Err("replay needs --out FILE.mp4".into()),
+        },
         ["convert", photos @ ..] if !photos.is_empty() => {
             convert::convert(photos, &options, json).map(|t| println!("{t}"))
         }

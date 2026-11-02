@@ -600,6 +600,7 @@ fn main() {
             commands::photo::save_sidecar,
             commands::export::pick_export_path,
             commands::export::share_compare,
+            commands::export::export_replay,
             commands::library::contact_sheet,
             commands::library::convert_raws,
             commands::models::smart_search,

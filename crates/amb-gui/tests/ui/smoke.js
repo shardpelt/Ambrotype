@@ -92,6 +92,16 @@ await t.step("filmstrip: Ctrl-click selects; right-click acts on the selection",
   t.expect(strip.selected.size === 0 && !cell.classList.contains("selected"), "a plain click clears it");
 });
 
+await t.step("File → Export Edit Replay makes a video of the History", async () => {
+  t.setSlider("Exposure2012", 0.5);
+  await t.until("Exposure +0.5", () => t.setting("Exposure2012") === 0.5);
+  const r = await invoke("export_replay", { dir: null, longEdge: 320 });
+  t.expect(r && r.steps >= 1 && r.frames > 30 && r.bytes > 1000 && r.path.endsWith(".mp4"), JSON.stringify(r));
+  t.expect(MENU_BAR.flat(3).includes("replay"), "in the File menu");
+  await run([{ cmd: "undo" }]);
+  await t.until("Exposure back", () => t.setting("Exposure2012") !== 0.5);
+});
+
 await t.step("History shows the step's values before and after", async () => {
   const values = () => document.querySelector("#history-list li.current .history-values")?.textContent ?? "";
   await t.until("the values", () => values().endsWith("→ +1.00"));

@@ -16,9 +16,11 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 3. **Convert raws on more cameras:** try Sony, Canon and Fujifilm raws (only a Nikon D750 so far).
 4. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
 5. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
-6. **From the competition:** Edit Replay as a video, AI Remove and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place; pick the best in a burst by open eyes ([research/17](research/17-competitors-2026.md)).
+6. **From the competition:** AI Remove (CPU first, then our own GPU kernels) and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place; pick the best in a burst by open eyes ([research/17](research/17-competitors-2026.md)).
 
 ## Recently done
+
+- 2026-11-02: Edit Replay: File → Export Edit Replay…, `amb replay`: an AV1 MP4 of the edit from its History, steps easing in and named (a 6 s, 1080 px replay takes about 30 s on 4 cores)
 
 - 2026-11-02: Highlight roll-off (Effects → Film finish): highlights ease into white keeping their hue, fading like paper near the top
 

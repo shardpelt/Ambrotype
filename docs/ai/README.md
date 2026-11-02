@@ -61,6 +61,8 @@ midtone cast a* +9.8 b* +10.2 (warm, magenta); chroma 32
 
 `amb convert PHOTO|DIR... --to FOLDER [--look camera|auto|like:PHOTO] [--no-edits] [--best-of-bursts]` turns raws into JPEGs: camera (default) is what the camera would have saved, auto is each photo's Auto, like:PHOTO matches all to one edited photo. Auto and like keep their settings in the raws' sidecars. `--best-of-bursts` converts only the best of each burst (as `amb duplicates` ranks them).
 
+`amb replay PHOTO --out replay.mp4 [--long-edge N] [--no-captions]` writes Edit Replay: a short AV1 MP4 of the photo's edit from its History, each step easing in and named.
+
 `amb share PHOTO --out page.html` writes one web page with the photo before and after its edit and a bar to drag (both photos inside the file).
 
 `amb dust SCAN.dng` finds dust and short hairs on a film scan and shows them as heal spots; `--apply` adds them as one undo step, `--json` lists them. It leaves long straight scratches, busy areas and faint specks alone; `--line X0,Y0,X1,Y1` (photo fractions, drawn roughly) heals a straight scratch along that line.

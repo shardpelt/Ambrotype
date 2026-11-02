@@ -171,6 +171,69 @@ pub(crate) async fn share_compare(
     .map_err(|e| e.to_string())?
 }
 
+/// "Export Edit Replay…": a video of the open photo's edit from its
+/// History (`amb_library::replay`), saved where the user picks; `None` when
+/// they cancel. Progress goes out as "replay-progress" [done, total].
+#[tauri::command]
+pub(crate) async fn export_replay(
+    app: tauri::AppHandle,
+    dir: Option<String>,
+    long_edge: Option<usize>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Option<amb_library::replay::Replay>> {
+    let photo = {
+        let guard = state.session.lock().map_err(|e| e.to_string())?;
+        guard.as_ref().ok_or("open a photo first")?.path.clone()
+    };
+    // The History as it is now, with the photo's last change.
+    save_open_edits(&state.session)?;
+    let stem = photo
+        .file_stem()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_else(|| "photo".into());
+    let name = format!("{stem}-replay.mp4");
+    let out = if let Some(t) = crate::uitest::current() {
+        Some(t.out_dir.join(&name))
+    } else {
+        let mut dialog = app.dialog().file();
+        if let Some(d) = dir.filter(|d| Path::new(d).is_dir()) {
+            dialog = dialog.set_directory(d);
+        }
+        dialog
+            .set_title("Export Edit Replay")
+            .set_file_name(&name)
+            .add_filter("MP4 video", &["mp4"])
+            .blocking_save_file()
+            .and_then(|p| p.into_path().ok())
+    };
+    let Some(out) = out else {
+        return Ok(None);
+    };
+    tauri::async_runtime::spawn_blocking(move || {
+        use tauri::Emitter;
+        let o = amb_library::replay::ReplayOptions {
+            long_edge: long_edge.unwrap_or(1080).clamp(240, 4096),
+            ..Default::default()
+        };
+        let last = std::sync::Mutex::new(std::time::Instant::now());
+        let progress = |done: usize, total: usize| {
+            let mut last = last.lock().unwrap_or_else(|e| e.into_inner());
+            if done == total || last.elapsed().as_millis() > 200 {
+                *last = std::time::Instant::now();
+                let _ = app.emit("replay-progress", [done, total]);
+            }
+        };
+        amb_library::replay::replay(&photo, &out, &o, amb_gpu::full::shared(), &progress).map(
+            |mut r| {
+                r.path = Some(out.display().to_string());
+                Some(r)
+            },
+        )
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 pub(crate) async fn pick_export_path(
     app: tauri::AppHandle,

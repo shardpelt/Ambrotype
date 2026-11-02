@@ -26,6 +26,7 @@ pub mod exif;
 pub mod fonts;
 pub mod geometry;
 mod tiff_file;
+pub mod video;
 pub mod watermark;
 
 use std::io::Cursor;

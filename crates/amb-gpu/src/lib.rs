@@ -13,5 +13,6 @@ mod develop;
 mod device;
 pub mod full;
 mod local;
+pub mod memory;
 
 pub use device::Gpu;

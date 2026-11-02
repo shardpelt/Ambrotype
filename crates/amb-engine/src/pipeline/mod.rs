@@ -139,24 +139,24 @@ impl Drop for Stages {
 #[derive(Debug, Clone, Default)]
 pub struct Globals {
     negative: Option<negative::Analysis>,
-    dehaze: Option<dehaze::Estimate>,
-    mask_dehaze: Vec<dehaze::Estimate>,
-    colour_targets: Vec<Vec<[f32; 3]>>,
-    sky_maps: Vec<mask::SkyMap>,
+    pub(crate) dehaze: Option<dehaze::Estimate>,
+    pub(crate) mask_dehaze: Vec<dehaze::Estimate>,
+    pub(crate) colour_targets: Vec<Vec<[f32; 3]>>,
+    pub(crate) sky_maps: Vec<mask::SkyMap>,
 }
 
 /// How one run of [`develop`] goes.
 #[derive(Default)]
 pub(crate) struct Pass<'a> {
     /// The rectangle of the output to render; all of it when `None`.
-    window: Option<Rect>,
+    pub(crate) window: Option<Rect>,
     /// The full-size output's size, when this run renders a small copy of
     /// it (estimates are laid out for the full size).
-    full: Option<(usize, usize)>,
+    pub(crate) full: Option<(usize, usize)>,
     /// Measurements to use instead of measuring.
-    given: Option<&'a Globals>,
+    pub(crate) given: Option<&'a Globals>,
     /// Stop once the last measurement is taken.
-    measure_only: bool,
+    pub(crate) measure_only: bool,
 }
 
 pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
@@ -297,7 +297,7 @@ pub fn render_region(
 
 /// `s` with Upright's correction found on the full-size `img`, so a region
 /// and a small copy use the same one.
-fn solve_upright(img: &CameraImage, s: &DevelopSettings) -> DevelopSettings {
+pub(crate) fn solve_upright(img: &CameraImage, s: &DevelopSettings) -> DevelopSettings {
     let mut s = s.clone();
     let t = &mut s.transform;
     if t.upright.is_none() && t.upright_mode.is_solved() {
@@ -327,7 +327,7 @@ const REGION_ALIGN: usize = 64;
 /// The rectangle a region render develops for `window`: the window with a
 /// margin as wide as the filters reach, grown to hold whatever spots
 /// writing into it read.
-fn region_plan(img: &CameraImage, s: &DevelopSettings, window: Rect) -> Rect {
+pub(crate) fn region_plan(img: &CameraImage, s: &DevelopSettings, window: Rect) -> Rect {
     let full = output_size(img, s);
     let cal = &s.calibration;
     let scale = Tile::whole(full.0, full.1).scale();

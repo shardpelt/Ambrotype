@@ -12,12 +12,12 @@
 //! removal, masks, a LUT and filling the edges a lens correction leaves do
 //! that).
 
-use crate::buffer::{Image, luminance_weights};
+use crate::buffer::{Image, Rect, luminance_weights};
 use crate::color::{ColorOp, ColorPlan};
 use crate::mask::{self, LocalAdjustments};
 use crate::pipeline::{
-    BaseLook, CameraToWorking, DevelopSettings, LUT, Pass, camera_stage, camera_to_working,
-    effective_detail,
+    BaseLook, CameraToWorking, DevelopSettings, Globals, LUT, Pass, camera_stage,
+    camera_to_working, effective_detail,
 };
 use crate::raw::CameraImage;
 use crate::tone::{self, ToneControls};
@@ -133,12 +133,71 @@ pub struct Plan {
     pub steps: Vec<Step>,
     /// Entries in every lookup table.
     pub lut_size: usize,
+    /// Where this image's top-left pixel is in the full output: (0, 0) for
+    /// a whole render, the work area's corner for a region
+    /// ([`plan_region`]). Position-dependent stages (vignette, grain) use it.
+    pub origin: (usize, usize),
+}
+
+/// A region of the output as [`plan_region`] plans it.
+pub struct RegionPlan {
+    pub plan: Plan,
+    /// The window asked for, in the full output.
+    pub window: Rect,
+    /// The window inside the plan's image (the work area is larger by the
+    /// filters' reach).
+    pub inside: Rect,
+}
+
+/// The plan for `window` of the output (pixels of the full, unoriented
+/// render), as `pipeline::render_region` develops it on the CPU: the window
+/// plus a margin as wide as the filters reach, with `globals` (from
+/// `pipeline::measure_globals`) instead of measuring on the part. For
+/// rendering a large photo in tiles.
+pub fn plan_region(
+    img: &CameraImage,
+    s: &DevelopSettings,
+    window: Rect,
+    globals: &Globals,
+) -> Result<RegionPlan, String> {
+    let s = crate::pipeline::solve_upright(img, s);
+    let (w, h) = crate::pipeline::output_size(img, &s);
+    let x = window.x.min(w.saturating_sub(1));
+    let y = window.y.min(h.saturating_sub(1));
+    let window = Rect {
+        x,
+        y,
+        width: window.width.clamp(1, w - x),
+        height: window.height.clamp(1, h - y),
+    };
+    let work = crate::pipeline::region_plan(img, &s, window);
+    let pass = Pass {
+        window: Some(work),
+        given: Some(globals),
+        ..Pass::default()
+    };
+    let plan = plan_with(img, &s, &pass)?;
+    Ok(RegionPlan {
+        plan,
+        window,
+        inside: Rect {
+            x: window.x - work.x,
+            y: window.y - work.y,
+            width: window.width,
+            height: window.height,
+        },
+    })
 }
 
 /// The plan for developing `img` with `s`, or why it has to be developed
 /// on the CPU (`pipeline::render`) instead (every edit has a plan today).
 pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
-    let stage0 = camera_stage(img, s, &Pass::default());
+    plan_with(img, s, &Pass::default())
+}
+
+fn plan_with(img: &CameraImage, s: &DevelopSettings, pass: &Pass) -> Result<Plan, String> {
+    let given = pass.given;
+    let stage0 = camera_stage(img, s, pass);
     let camera_rgb = stage0.rgb(img).to_vec();
     let tile = stage0.tile;
     let full = stage0.full;
@@ -219,7 +278,6 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         steps.push(Step::Cpu {
             name: "spot removal",
             run: Box::new(move |out| {
-                let tile = crate::buffer::Tile::whole(out.width, out.height);
                 crate::retouch::apply_in(out, &spots, frame, crop.as_ref(), &tile);
             }),
         });
@@ -236,6 +294,9 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         let crop = s.crop.geometry(img.width, img.height);
         let (d, cal, curve) = (drawn.clone(), cal.clone(), curve.clone());
         let defringe = s.lens.defringe;
+        // A region uses the colours and sky measured on the whole photo.
+        let targets = given.map(|g| g.colour_targets.clone());
+        let skies = given.map(|g| g.sky_maps.clone());
         steps.push(Step::Cpu {
             name: "masks",
             run: Box::new(move |out| {
@@ -244,7 +305,17 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
                     None => look.apply(y),
                 };
                 let encode = |y| local::srgb_encode(base(y));
-                let m = mask::draw(&masks, out, frame, crop.as_ref(), encode, &cal.masks);
+                let m = mask::draw_in(
+                    &masks,
+                    out,
+                    frame,
+                    crop.as_ref(),
+                    encode,
+                    &cal.masks,
+                    &tile,
+                    targets.as_deref(),
+                    skies.as_deref(),
+                );
                 m.apply_defringe(out, &defringe, &cal);
                 m.apply_light(out, &cal.masks);
                 *d.lock().expect("masks") = Some(m);
@@ -259,18 +330,32 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
     }
 
     // 2. Dehaze (scene-linear).
-    // The whole output is rendered here, so the haze is measured on it.
-    if s.dehaze != 0.0 && s.dehaze.is_finite() {
-        steps.push(Step::Dehaze {
-            amount: s.dehaze,
-            k: cal.dehaze,
-            factor: dehaze::estimate_factor(full, &cal.dehaze),
-        });
+    // The whole output is measured on the GPU; a region takes the haze
+    // measured on the whole photo, with the engine's own code.
+    match given.and_then(|g| g.dehaze.clone()) {
+        Some(e) if s.dehaze != 0.0 && s.dehaze.is_finite() => {
+            let (amount, k) = (s.dehaze, cal.dehaze);
+            steps.push(Step::Cpu {
+                name: "dehaze",
+                run: Box::new(move |img| {
+                    dehaze::apply_haze(img, amount, &k, &tile, dehaze::Haze::Given(&e));
+                }),
+            });
+        }
+        _ if s.dehaze != 0.0 && s.dehaze.is_finite() => {
+            steps.push(Step::Dehaze {
+                amount: s.dehaze,
+                k: cal.dehaze,
+                factor: dehaze::estimate_factor(full, &cal.dehaze),
+            });
+        }
+        _ => {}
     }
     if any(|a| a.dehaze != 0.0) {
         let cal = cal.clone();
+        let estimates = given.map(|g| g.mask_dehaze.clone());
         steps.push(masked(&drawn, "mask dehaze", move |m, img| {
-            m.apply_dehaze(img, &cal, None, full);
+            m.apply_dehaze(img, &cal, estimates.as_deref(), full);
         }));
     }
     if !s.glow.is_neutral() {
@@ -410,6 +495,7 @@ pub fn plan(img: &CameraImage, s: &DevelopSettings) -> Result<Plan, String> {
         camera_rgb,
         steps,
         lut_size: LUT,
+        origin: (tile.x, tile.y),
     })
 }
 

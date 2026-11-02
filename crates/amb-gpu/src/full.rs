@@ -74,19 +74,25 @@ fn on_gpu(
     if FAILED.load(Ordering::Relaxed) {
         return Err("the GPU failed an earlier full-size render".into());
     }
-    let pixels = img.width * img.height;
-    if pixels > gpu.max_pixels() || pixels.saturating_mul(12 * COPIES) > gpu.memory_budget() {
-        return Err(format!(
-            "{} MP is too large for this GPU",
-            pixels.div_ceil(1_000_000)
-        ));
-    }
-    let plan = amb_engine::plan::plan(img, develop)?;
+    // A whole photo at once when it fits; else in tiles that do.
+    let fits = (gpu.memory_budget() / (12 * COPIES)).min(gpu.max_pixels());
     let _turn = TURN.lock().unwrap_or_else(|e| e.into_inner());
-    // wgpu reports running out of memory, or a lost device, by panicking.
-    let out = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| gpu.render(&plan)));
+    let out = if img.width * img.height <= fits {
+        let plan = amb_engine::plan::plan(img, develop)?;
+        safely(gpu, &plan)?
+    } else {
+        tiled(gpu, img, develop, fits)?
+    };
+    Ok((out, gpu.name()))
+}
+
+/// `plan` rendered on `gpu`, or why not. wgpu reports running out of
+/// memory, or a lost device, by panicking; either turns the GPU off for
+/// full-size renders.
+fn safely(gpu: &Gpu, plan: &amb_engine::plan::Plan) -> Result<Image, String> {
+    let out = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| gpu.render(plan)));
     match out {
-        Ok(out) if out.rgb.iter().all(|v| v.is_finite()) => Ok((out, gpu.name())),
+        Ok(out) if out.rgb.iter().all(|v| v.is_finite()) => Ok(out),
         Ok(_) => {
             FAILED.store(true, Ordering::Relaxed);
             Err("the GPU's render had invalid pixels".into())
@@ -98,11 +104,111 @@ fn on_gpu(
     }
 }
 
+/// The smallest tile side tried before giving up on the GPU.
+const MIN_TILE: usize = 256;
+
+/// `img` developed in tiles of at most `fits` pixels each (with their
+/// margins), as `pipeline::render_region` does on the CPU: the whole-photo
+/// measurements (haze, a negative's levels, colour ranges) come from a small
+/// copy, and each tile is developed with the margin its filters reach.
+fn tiled(
+    gpu: &Gpu,
+    img: &CameraImage,
+    develop: &DevelopSettings,
+    fits: usize,
+) -> Result<Image, String> {
+    use amb_engine::buffer::Rect;
+    let (w, h) = pipeline::output_size(img, develop);
+    let small = amb_engine::raw::downscale(img, pipeline::GLOBALS_LONG_SIDE);
+    let globals = pipeline::measure_globals(img, &small, develop);
+    let mut out = Image {
+        width: w,
+        height: h,
+        rgb: vec![0.0; w * h * 3],
+    };
+    // A square window whose work area (with margins) fits; smaller if not.
+    let mut side = ((fits as f64).sqrt() * 0.8) as usize;
+    let mut y = 0;
+    while y < h {
+        let mut x = 0;
+        let mut row_height = 0;
+        while x < w {
+            let window = Rect {
+                x,
+                y,
+                width: side.min(w - x),
+                height: side.min(h - y),
+            };
+            let r = amb_engine::plan::plan_region(img, develop, window, &globals)?;
+            if r.plan.width * r.plan.height > fits && side > MIN_TILE {
+                // The margins are wider than guessed: smaller tiles, and
+                // this row again.
+                side = (side * 7 / 10).max(MIN_TILE);
+                x = 0;
+                row_height = 0;
+                continue;
+            }
+            let part = safely(gpu, &r.plan)?;
+            let (win, inside) = (r.window, r.inside);
+            for row in 0..win.height {
+                let from = ((inside.y + row) * part.width + inside.x) * 3;
+                let to = ((win.y + row) * w + win.x) * 3;
+                out.rgb[to..to + win.width * 3]
+                    .copy_from_slice(&part.rgb[from..from + win.width * 3]);
+            }
+            row_height = win.height;
+            x += win.width;
+        }
+        y += row_height;
+    }
+    Ok(out)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::develop::tests::{compare, photo, settings};
     use crate::device::tests::gpu;
+
+    #[test]
+    fn a_large_photo_renders_in_tiles_like_the_cpu() {
+        let Some(gpu) = gpu() else { return };
+        let img = photo(900, 600);
+        // Filters with reach, position-dependent effects and a mask, no
+        // noise reduction (it measures the noise on each tile, as the CPU's
+        // regions do).
+        let n = amb_presets::Value::Number;
+        let s = settings(&[
+            ("ColorNoiseReduction", n(0.0)),
+            ("Clarity2012", n(30.0)),
+            ("Shadows2012", n(40.0)),
+            ("Sharpness", n(40.0)),
+            ("PostCropVignetteAmount", n(-40.0)),
+            ("GrainAmount", n(30.0)),
+            ("amb:Halation", n(60.0)),
+        ]);
+        // About 40 tiles' worth.
+        let out = tiled(&gpu, &img, &s, 900 * 600 / 30).unwrap();
+        let cpu = pipeline::render(&img, &s);
+        assert_eq!((out.width, out.height), (cpu.width, cpu.height));
+        let (max, mean) = compare(&out.rgb, &cpu.rgb);
+        eprintln!("tiled: max {max:.2e}, mean {mean:.2e}");
+        assert!(max < 5e-3 && mean < 2e-4, "max {max}, mean {mean}");
+    }
+
+    #[test]
+    fn tiles_share_the_whole_photo_s_haze() {
+        let Some(gpu) = gpu() else { return };
+        let img = photo(900, 600);
+        let n = amb_presets::Value::Number;
+        let s = settings(&[("ColorNoiseReduction", n(0.0)), ("Dehaze", n(40.0))]);
+        let out = tiled(&gpu, &img, &s, 900 * 600 / 12).unwrap();
+        let cpu = pipeline::render(&img, &s);
+        let (max, mean) = compare(&out.rgb, &cpu.rgb);
+        eprintln!("tiled dehaze: max {max:.2e}, mean {mean:.2e}");
+        // The haze is measured on a small copy, as the CPU's regions do.
+        assert!(max < 3e-2 && mean < 3e-3, "max {max}, mean {mean}");
+    }
 
     #[test]
     fn falls_back_to_the_cpu_without_a_gpu() {

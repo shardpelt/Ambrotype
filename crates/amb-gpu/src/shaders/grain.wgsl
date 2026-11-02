@@ -19,6 +19,9 @@ struct Grain {
     strength: f32,
     variance: f32,
     lum: array<f32, 3>,
+    // Where this image sits in the full output (a tile of a large export).
+    x0: i32,
+    y0: i32,
 }
 
 @group(0) @binding(0) var<storage, read_write> img: array<f32>;
@@ -81,7 +84,7 @@ fn grain_white(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgr
     let pw = gp.w + 2u * gp.margin;
     if (i >= pw * (gp.h + 2u * gp.margin)) { return; }
     let m = i32(gp.margin);
-    white[i] = hash_noise(i32(i % pw) - m, i32(i / pw) - m);
+    white[i] = hash_noise(i32(i % pw) - m + gp.x0, i32(i / pw) - m + gp.y0);
 }
 
 // Horizontal blur of every padded row at the image's columns, taps summed

@@ -125,6 +125,8 @@ struct GrainParams {
     strength: f32,
     variance: f32,
     lum: [f32; 3],
+    x0: i32,
+    y0: i32,
 }
 
 #[repr(C)]
@@ -373,8 +375,8 @@ impl Gpu {
                     let params = self.storage(&VignetteParams {
                         w: plan.width as u32,
                         h: plan.height as u32,
-                        x0: 0,
-                        y0: 0,
+                        x0: plan.origin.0 as u32,
+                        y0: plan.origin.1 as u32,
                         p: m.p,
                         inner: m.inner,
                         outer: m.outer,
@@ -417,6 +419,8 @@ impl Gpu {
                         strength: op.strength,
                         variance: op.variance,
                         lum: op.lum,
+                        x0: plan.origin.0 as i32,
+                        y0: plan.origin.1 as i32,
                     });
                     let taps = self.upload(&[f.fine.as_slice(), &f.coarse].concat());
                     let weight = self.upload(&op.weight);

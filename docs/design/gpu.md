@@ -15,10 +15,13 @@ The editor's preview is rendered at the size of the screen: about 2560 pixels wi
 Export, batch export, collages, Convert raws and `amb render` develop at full size on the GPU too (`amb_gpu::full::render`), with the same plan as the preview. The photo goes to the CPU pipeline instead when:
 
 - there is no GPU, or only a software one;
-- it doesn't fit: one buffer can't hold it (`Gpu::max_pixels`), or about 12 copies of it would pass the memory budget (4 GB, or `AMB_GPU_MEMORY` in MB; wgpu can't tell how much memory a GPU has). 12 copies is the measured peak of an edit with Clarity, Shadows, Dehaze and the raw defaults (`Gpu::allocated` counts it). A 24 MP photo needs about 3.5 GB;
 - an earlier full-size render failed on this GPU (out of memory or a lost device): wgpu reports those by panicking, which is caught.
 
-One full-size render runs at a time. The editor and its exports share one GPU (`amb_gpu::full::shared`). `amb render` and `amb convert` say "developed on the GPU (name)" when they used it; `amb convert --json` also says why the CPU. The test `a_full_size_render_matches_the_cpu` compares a 1200 × 800 render both ways. Not tiled yet: larger photos (about 30 MP and up with the default budget) go to the CPU. Contact sheets develop small photos on the CPU, several at once.
+A photo too large for the GPU at once is rendered **in tiles** (2026-11-02, `amb_gpu::full`): each tile is planned like the CPU's 1:1 regions (`amb_engine::plan::plan_region`): the tile plus a margin as wide as its filters reach, with the whole-photo measurements (haze, a negative's levels, colour ranges, sky) taken once from a small copy (`pipeline::measure_globals`). Spot removal, masks and Dehaze use the tile's position; vignette and grain get its origin (`Plan::origin`), so they line up across tiles. Tiles hold at most what fits: one binding (`Gpu::max_pixels`; colour noise reduction keeps 5 floats a pixel) and about 12 copies of the tile within the memory budget.
+
+**The memory budget** (`Gpu::memory_budget`): `AMB_GPU_MEMORY` (MB) when set; else 80% of what the driver says is free ([`memory.rs`](../../crates/amb-gpu/src/memory.rs): Vulkan's `VK_EXT_memory_budget`, DXGI's video memory info on Direct3D 12, Metal's recommended working set); else 4 GB. On lavapipe (software Vulkan) the driver reports 15 GB free.
+
+One full-size render runs at a time. The editor and its exports share one GPU (`amb_gpu::full::shared`). `amb render` and `amb convert` say "developed on the GPU (name)" when they used it; `amb convert --json` also says why the CPU. Tests: `a_full_size_render_matches_the_cpu` (whole), `a_large_photo_renders_in_tiles_like_the_cpu` and `tiles_share_the_whole_photo_s_haze` (about 40 and 12 tiles, within 2e-6 of the CPU). On the 24 MP D750 raw in tiles on lavapipe: mean difference 0.005 of 255, 0.008% of pixels more than 2 apart, scattered (noise reduction measures the noise per tile, as the CPU's regions do), no seams. Contact sheets develop small photos on the CPU, several at once.
 
 ## Stages
 

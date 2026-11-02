@@ -163,9 +163,12 @@ version = "0.1.0"
 dependencies = [
  "amb-engine",
  "amb-presets",
+ "ash",
  "bytemuck",
+ "metal",
  "pollster",
  "wgpu",
+ "windows 0.58.0",
 ]
 
 [[package]]

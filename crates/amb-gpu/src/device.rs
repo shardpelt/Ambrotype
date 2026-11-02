@@ -8,6 +8,7 @@ pub struct Gpu {
     pub(crate) device: wgpu::Device,
     pub(crate) queue: wgpu::Queue,
     info: wgpu::AdapterInfo,
+    pub(crate) adapter: wgpu::Adapter,
     kernels: std::sync::OnceLock<crate::develop::Kernels>,
     /// Bytes of buffers made so far (a render's share is its peak memory:
     /// they all live until its work is submitted).
@@ -57,6 +58,7 @@ impl Gpu {
             device,
             queue,
             info,
+            adapter,
             kernels: std::sync::OnceLock::new(),
             allocated: Default::default(),
         })
@@ -67,24 +69,31 @@ impl Gpu {
         format!("{} ({:?})", self.info.name, self.info.backend)
     }
 
-    /// The largest image (in pixels) one buffer can hold.
+    /// The largest image (in pixels) a render can take: its largest buffer
+    /// (colour noise reduction's, 5 floats a pixel) must fit one binding.
     pub fn max_pixels(&self) -> usize {
         let limits = self.device.limits();
         let bytes = limits
             .max_storage_buffer_binding_size
             .min(limits.max_buffer_size.min(u32::MAX as u64) as u32);
-        bytes as usize / (3 * 4)
+        bytes as usize / (5 * 4)
     }
 
-    /// The GPU memory a render may use, in bytes. wgpu can't tell how much
-    /// a GPU has, so this is 4 GB (most GPUs from the last years have that
-    /// much, or share the computer's memory), or `AMB_GPU_MEMORY` in MB.
+    /// The GPU memory a render may use, in bytes: `AMB_GPU_MEMORY` (MB)
+    /// when set; else 80% of what the driver says is free ([`crate::memory`]);
+    /// else 4 GB, which most GPUs from the last years have (or share with
+    /// the computer).
     pub fn memory_budget(&self) -> usize {
-        let mb = std::env::var("AMB_GPU_MEMORY")
+        if let Some(mb) = std::env::var("AMB_GPU_MEMORY")
             .ok()
             .and_then(|v| v.parse::<usize>().ok())
-            .unwrap_or(4096);
-        mb << 20
+        {
+            return mb << 20;
+        }
+        match crate::memory::available(&self.adapter) {
+            Some(free) => (free as f64 * 0.8) as usize,
+            None => 4096 << 20,
+        }
     }
 
     /// Bytes of buffers made so far.

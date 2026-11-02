@@ -14,5 +14,16 @@ bytemuck = { version = "1", features = ["derive"] }
 pollster = "0.4"
 wgpu = { version = "26", default-features = false, features = ["std", "parking_lot", "wgsl", "vulkan", "metal", "dx12", "gles"] }
 
+# Asking the driver how much GPU memory is free (src/memory.rs): the same
+# versions wgpu uses.
+[target.'cfg(not(any(target_vendor = "apple", target_arch = "wasm32")))'.dependencies]
+ash = "0.38"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = ["Win32_Graphics_Dxgi", "Win32_Graphics_Dxgi_Common", "Win32_Foundation"] }
+
+[target.'cfg(target_vendor = "apple")'.dependencies]
+metal = "0.32"
+
 [dev-dependencies]
 amb-presets = { path = "../amb-presets" }

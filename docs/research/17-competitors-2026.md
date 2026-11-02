@@ -9,6 +9,7 @@ Read 2026-10-30 from each project's README or website, not their code. Numbers (
 | **LightCraft** ([repo](https://github.com/storytold/lightcraft)) | Lightroom rebuilt in pure Rust, alpha | MIT or Apache-2.0, free | Own raw decoders, wgpu, egui; Windows, macOS, Linux, FreeBSD, browser (WebAssembly) | ~15k stars, 833 open PRs |
 | **Rembrandt** ([repo](https://github.com/thesnarkitecht/rembrandt)) | Lightroom Classic-style editor with on-device AI | GPL-3, free | JS + WebGL2/WebGPU in Tauri, LibRaw; desktop and self-hosted browser | ~190 stars |
 | **Redlamp** ([repo](https://github.com/pdcgomes/redlamp)) | Raw developer, darkroom-minded, alpha | MPL-2.0, free | Swift, Metal, Core ML; Apple Silicon Macs only | ~350 stars |
+| **CalibRaw** ([repo](https://github.com/Duecki1/CalibRaw), [site](https://calibraw.dueckis.de)) | RAW editor with offline AI and creative effects; added 2026-11-02 | GPL-3.0-or-later, free | Rust, wgpu/WGSL, egui; LibRaw + Rawler; Linux (Flathub), Android (F-Droid), Windows, macOS | ~220 stars, ~1,170 commits, released |
 | **FlashView** ([issues](https://github.com/merlin1de/FlashView), [site](https://flashview.net)) | Fast culling browser, basic editing in beta | Closed, one-off licence after a 60-day trial | Windows only, SSD required | Small |
 | **Tenzen Light Studio** ([site](https://tenzen.studio)) | Lightroom alternative in a suite of Adobe replacements | Closed, $59 once (suite $89); Photoshop and InDesign alternatives free | Windows, macOS, Linux | Commercial |
 | darktable, RawTherapee, ART, digiKam | The established free editors | GPL | C/C++, all desktops | Large, mature |
@@ -35,6 +36,19 @@ The new projects share our shape: XMP sidecars, Lightroom panel order, local AI,
 - Edit like me, Match my camera, Make these consistent, Pick the best (sharpness, open eyes).
 - A self-hosted server to edit the library from a browser on the home network.
 - Share how: a replay video of the edit.
+
+**CalibRaw** (read 2026-11-02 from its README, roadmap, architecture doc and code layout; about 157,000 lines of Rust and 12,600 of WGSL)
+- **Android app** on F-Droid, with the same engine and sidecars as the desktop; Linux on Flathub. The only one of these with a phone app.
+- **The GPU is the pipeline**, not an add-on: every stage is a compute shader, and exports render **in tiles** streamed to the encoder in row bands, so large raws fit any GPU.
+- **It asks the GPU how much memory is free** (Vulkan `VK_EXT_memory_budget`, DXGI on Windows, Metal's working-set size) instead of guessing, and plans tiles from that.
+- **Scene-referred tone:** Sigmoid tone mapping and Opposed and LCh highlight recovery (after darktable); Bayer RCD and X-Trans Markesteijn demosaicing in shaders.
+- **Creative effects through masks:** depth-based fog, rain with drops behind near objects, wet surfaces with puddles and reflections, relighting from scene depth, light rays, smoke, edge glow, neon, lens/motion/radial/tilt-shift blur, halation, glow, pixelate.
+- **AI, all local:** subject and background (BiRefNet), sky, depth (Depth Anything V2), click-to-select objects (SAM 2.1), people parts (Sapiens2, a non-open licence), **AI Remove** (Big-LaMa, with the photo's grain put back) and **AI Denoise** on the raw (RawNIND).
+- **Edit Replay:** a 30 fps MP4 of the edit, step by step, for Reels and Shorts.
+- **Point Color** (sample a colour, refine its range, preview it), focus stacking, HDR merge, chromatic aberration removal without a lens profile, JPEG XL export.
+- **Edits are `.calibraw` JSON sidecars**, not XMP; Lightroom presets are imported and translated on load. Lightroom's own sidecars and catalogues are not read.
+- **Architecture enforced in CI** (`cargo xtask arch-check`: which crate may depend on which, no `target_os` outside the platform layer).
+- Missing (its roadmap): virtual copies, culling tools, collections, edit history, compound masks, changeable shortcuts, a preset repository.
 
 **Redlamp**
 - History shows each step's before and after values.
@@ -72,7 +86,7 @@ What it means for us: we are free, so the lessons are 1, 3 and 4. Say "free, no 
 
 ## Our niche
 
-Many projects now aim at "Lightroom, but free". That is not a niche. What only we have:
+Many projects now aim at "Lightroom, but free". That is not a niche. CalibRaw (2026-11-02) is the closest in stack (Rust, wgpu, GPL) and ahead on the GPU, effects, local AI and Android; it doesn't read Lightroom's sidecars or catalogues, has no film lab, and no plugins, hub or layouts. What only we have:
 
 1. **Lightroom compatibility you can check.** Lightroom's own XMP and presets, read and written as they are, and catalogue import. Our Lightroom Classic plug-in measures Lightroom, so our sliders can match its numbers.
 2. **The film lab.** Negative conversion, roll baseline by scene, dust and scratch repair, film stocks, Fuji recipes. The others have at most a dust button. Negative Lab Pro costs about $99 and needs Lightroom.
@@ -95,6 +109,13 @@ Sizes: S a day or two, M a week, L more.
 7. ~~Typing values in the command palette: "exposure 0.7"~~ (done 2026-10-31). S.
 8. A blank-canvas layout editor: start a layout from nothing. S.
 
+**From CalibRaw (2026-11-02)**
+15. Ask the GPU how much memory is free (Vulkan, DXGI, Metal), instead of our fixed 4 GB guess, and **tile GPU exports** so large photos use the GPU too. M.
+16. Scene-referred highlight handling (a Sigmoid tone curve, Opposed highlight recovery) to compare against ours, measured against Lightroom first. M.
+17. Edit Replay as a video (we have Watch mode in the app). S.
+18. AI Remove and AI Denoise on the raw, as optional models in Settings → AI models, if their licences are open. L.
+19. Chromatic aberration removal without a lens profile. M.
+
 **Good for everyone**
 9. Touch: drag on the photo to change tone or colour (Rembrandt; Lightroom's targeted adjustment). M.
 10. Smart search with CLIP on the device, and Find similar (Rembrandt). M.
@@ -111,4 +132,4 @@ Sizes: S a day or two, M a week, L more.
 
 ## Merging projects
 
-Their stacks differ (Rust + egui, JS + WebGL, Swift + Metal, Rust + plain JS), so code can't be merged by a script. Features can be ported from their descriptions. Licences: Rembrandt's GPL-3 code could come in as is; LightCraft's MIT/Apache code could come in (one way only); Redlamp's MPL-2.0 files can be combined with GPL code but stay MPL. Any code taken needs the owner's yes first and a credit in `NOTICE`. Rembrandt shares our licence and our idea (XMP, local AI), so working together is worth a message.
+Their stacks differ (Rust + egui, JS + WebGL, Swift + Metal, Rust + plain JS), so code can't be merged by a script. Features can be ported from their descriptions. Licences: Rembrandt's GPL-3 code could come in as is; LightCraft's MIT/Apache code could come in (one way only); Redlamp's MPL-2.0 files can be combined with GPL code but stay MPL. Any code taken needs the owner's yes first and a credit in `NOTICE`. Rembrandt shares our licence and our idea (XMP, local AI), so working together is worth a message. CalibRaw is GPL-3.0-or-later too, so its code could come in with a credit in `NOTICE` (owner's yes first); its WGSL shaders and GPU memory queries are the most reusable parts.

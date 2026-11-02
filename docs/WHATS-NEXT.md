@@ -13,7 +13,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 1. **Paper-like highlight roll-off** for film looks (Film lab item 6), then **a paper curve in density** (item 9).
 2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
-3. **GPU exports in tiles,** so photos over about 30 MP use the GPU too ([design/gpu.md](design/gpu.md)).
+3. **GPU exports in tiles,** so photos over about 30 MP use the GPU too, and **ask the GPU its free memory** (Vulkan, DXGI, Metal) as CalibRaw does, instead of a fixed 4 GB ([design/gpu.md](design/gpu.md), [research/17](research/17-competitors-2026.md)).
 4. **Convert raws on more cameras:** try Sony, Canon and Fujifilm raws (only a Nikon D750 so far).
 5. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
 6. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).

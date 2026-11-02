@@ -30,7 +30,7 @@ How to read the tables:
 | [Detail](#detail) | `detail` | 11 | Sharpening (Amount, Radius, Detail, Masking) and manual noise reduction (luminance and colour). Judge these at 100% zoom or more. |
 | [Lens Corrections](#lens) | `lens` | 20 | Lens profile corrections, chromatic-aberration removal, defringing and lens vignetting. |
 | [Transform](#transform) | `transform` | 27 | Upright perspective correction and manual perspective sliders. |
-| [Effects](#effects) | `effects` | 16 | Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) and film grain (Amount, Size, Roughness). |
+| [Effects](#effects) | `effects` | 17 | Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) and film grain (Amount, Size, Roughness). |
 | [LUT](#lut) | `lut` | 2 | A look from a .cube file (the 3D LUT format of Resolve and many look packs), applied after the colour and curves. Our own feature (amb: namespace); Lightroom has no LUT setting and ignores these. |
 | [Calibration](#calibration) | `calibration` | 8 | Shadows tint and the red, green and blue primary hue/saturation adjustments to the camera's default colour rendering. |
 | [Crop](#crop) | `crop` | 12 | Crop rectangle, angle and orientation. Specific to one image; presets should rarely carry it. |
@@ -393,6 +393,7 @@ Post-crop vignette (styles, Amount, Midpoint, Roundness, Feather, Highlights) an
 | `amb:Halation` | Halation | number | 0 to 100 | 0 | rendered (exact) | A red-orange halo around bright highlights, as film makes when light bounces off its base into the red layer. 0 = off. |
 | `amb:Bloom` | Bloom | number | 0 to 100 | 0 | rendered (exact) | A soft glow of their own colour around bright parts, as light scattering in the lens and emulsion makes. 0 = off. |
 | `amb:GlowSize` | Glow size | number | 0 to 100 | 50 | rendered (exact) | How far halation and bloom spread, relative to the photo: 0 tight, 50 normal, 100 wide. |
+| `amb:HighlightRolloff` | Highlight roll-off | number | 0 to 100 | 0 | rendered (exact) | Highlights ease into white the way a print from film does, instead of clipping: bright colours keep their hue and fade gently toward white near the top. 0 = off; higher starts the roll-off lower. |
 | `GrainSeed` | Grain seed | number | any number |  | rendered (approx.) | Random seed of the grain pattern, specific to one image. |
 | `EnableEffects` | Effects on | bool | true / false | true | rendered (approx.) | Effects panel switch. False leaves the post-crop vignette and grain out of the render. |
 | `amb:Effects` | Plugin effects | text |  |  | rendered (exact) | Effect plugins rendered with the photo, in order: a JSON list of {plugin, params, amount 0-100, seed}. Set them in the Effects panel or with amb plugin run. |

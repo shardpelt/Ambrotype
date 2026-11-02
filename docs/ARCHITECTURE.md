@@ -47,7 +47,7 @@ amb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
      → Exposure → Calibration shadow tint → Defringe
      → spot removal (heal and clone, retouch.rs) → masks drawn (alpha per mask, mask.rs)
      → local Exposure, Temp, Tint
-  2  Dehaze (then local Dehaze) → halation and bloom (amb:Halation, amb:Bloom, glow.rs)
+  2  Dehaze (then local Dehaze) → halation and bloom (amb:Halation, amb:Bloom, glow.rs) → highlight roll-off (amb:HighlightRolloff, rolloff.rs)
   3  base look (or the camera profile's tone curve) → Highlights/Shadows (local: guided-filter base) → Contrast, Whites, Blacks (global curve)
      → local tone sliders
   4  Texture / Clarity (then local Texture, Clarity, Saturation, Color)

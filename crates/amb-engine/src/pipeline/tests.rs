@@ -588,6 +588,7 @@ fn region_matches_the_full_render() {
                     ("amb:Halation", "80"),
                     ("amb:Bloom", "40"),
                     ("amb:GlowSize", "20"),
+                    ("amb:HighlightRolloff", "70"),
                     ("HasCrop", "True"),
                     ("CropLeft", "0.1"),
                     ("CropTop", "0.1"),

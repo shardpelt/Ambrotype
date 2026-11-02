@@ -382,6 +382,10 @@ pub fn panels() -> Vec<Panel> {
                     ],
                 ),
                 section(
+                    "Film finish",
+                    &[("amb:HighlightRolloff", Some("Highlight roll-off"))],
+                ),
+                section(
                     "Glow",
                     &[
                         ("amb:Halation", Some("Halation")),

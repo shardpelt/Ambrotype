@@ -8,7 +8,8 @@
 //!    → film negative conversion (optional, `amb:` settings) [sensor-linear]
 //! 1. camera RGB → white balance + camera matrix → XYZ → Bradford to D50 →
 //!    linear ProPhoto → Exposure (2^EV) → Defringe           [scene-linear]
-//! 2. Dehaze → halation and bloom ([`crate::glow`])            [scene-linear]
+//! 2. Dehaze → halation and bloom ([`crate::glow`]) → highlight roll-off
+//!    ([`crate::rolloff`])                                   [scene-linear]
 //! 3. base look → Basic tone controls (luminance, hue-preserving) [display-linear]
 //! 4. Texture / Clarity (local contrast)
 //! 5. colour (Vibrance, Saturation, HSL, Color Grading in OkLab) →
@@ -579,7 +580,8 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
     }
     stages.mark("dehaze");
     crate::glow::apply_in(&mut out, &s.glow, &tile);
-    stages.mark("glow");
+    crate::rolloff::apply(&mut out, s.rolloff);
+    stages.mark("glow+roll-off");
     if pass.measure_only {
         return (out, globals);
     }

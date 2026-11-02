@@ -365,6 +365,13 @@ fn plan_with(img: &CameraImage, s: &DevelopSettings, pass: &Pass) -> Result<Plan
             run: Box::new(move |img| crate::glow::apply_in(img, &glow, &tile)),
         });
     }
+    if s.rolloff > 0.0 {
+        let amount = s.rolloff;
+        steps.push(Step::Cpu {
+            name: "highlight roll-off",
+            run: Box::new(move |img| crate::rolloff::apply(img, amount)),
+        });
+    }
     // 3. Base look, local Highlights/Shadows, the global tone curve.
     // A rendered image already has its tone curve.
     match curve {

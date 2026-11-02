@@ -125,6 +125,8 @@ pub struct DevelopSettings {
     pub grain: Grain,
     /// Halation and bloom (`amb:Halation`, `amb:Bloom`, `amb:GlowSize`).
     pub glow: crate::glow::Glow,
+    /// `amb:HighlightRolloff`, 0..100 ([`crate::rolloff`]).
+    pub rolloff: f64,
     pub lens: LensCorrections,
     /// The Transform sliders (after the lens corrections, before the crop).
     pub transform: Transform,
@@ -172,6 +174,7 @@ impl Default for DevelopSettings {
             vignette: Vignette::default(),
             grain: Grain::default(),
             glow: crate::glow::Glow::default(),
+            rolloff: 0.0,
             lens: LensCorrections::default(),
             transform: Transform::default(),
             camera_calibration: CameraCalibration::default(),
@@ -332,6 +335,7 @@ pub const RENDERED_TAGS: &[&str] = &[
     "amb:LUT",
     "amb:LUTAmount",
     "amb:GrainFilm",
+    "amb:HighlightRolloff",
     "amb:Halation",
     "amb:Bloom",
     "amb:GlowSize",
@@ -656,6 +660,7 @@ impl DevelopSettings {
             bloom: num(settings, "amb:Bloom").unwrap_or(gl.bloom),
             size: num(settings, "amb:GlowSize").unwrap_or(gl.size),
         };
+        s.rolloff = num(settings, "amb:HighlightRolloff").unwrap_or(0.0);
         s.lens = lens_corrections(settings);
         s.transform = transform_settings(settings);
         s.camera_calibration = calibration_settings(settings);

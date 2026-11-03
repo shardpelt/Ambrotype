@@ -33,7 +33,7 @@ const KEY_ACTIONS = [
   { id: "undo", group: "Edit", label: "Undo", keys: ["Ctrl+Z"], when: "any", button: "btn-undo", run: () => run([{ cmd: "undo" }]) },
   { id: "redo", group: "Edit", label: "Redo", keys: ["Ctrl+Shift+Z", "Ctrl+Y"], when: "any", button: "btn-redo", run: () => run([{ cmd: "redo" }]) },
   ...["library", "develop", "color", "retouch", "film", "collage"].map((t, i) => ({ id: `task-${t}`, group: "Tasks", label: `${t[0].toUpperCase()}${t.slice(1)} task`, keys: [`Ctrl+Alt+${i + 1}`], when: "any", run: () => switchTask(t) })),
-  { id: "search", group: "Help", label: "Search everything: commands, settings, panels, presets, layouts", keys: ["Ctrl+K"], when: "any", run: () => searchFlow() },
+  { id: "search", group: "Help", label: "Search everything: commands, settings, panels, presets, layouts", keys: ["Ctrl+K"], when: "any", button: "btn-search", run: () => searchFlow() },
   { id: "connect-ai", group: "Help", label: "Connect an AI app", hint: "Any AI app that runs MCP servers, or a terminal for a command-line agent.", keys: [], when: "any", run: () => connectFlow().catch((e) => toast(String(e), true)) },
   { id: "sample", group: "Help", label: "Open the sample photo", hint: "A raw with an edit already made: step through its History to see what each slider does.", keys: [], when: "any", run: () => sampleFlow() },
   { id: "watch", group: "Help", label: "Watch an edit", hint: "A ghost cursor edits the sample photo in about 20 seconds; any key or click stops it. Starts the sample's edit afresh.", keys: [], when: "any", run: () => watchFlow() },

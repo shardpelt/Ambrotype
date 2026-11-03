@@ -5,7 +5,7 @@
   "author": "Ambrotype",
   "density": "compact",
   "filmstrip": false,
-  "toolbar": ["open", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "zoom", "|", "looks", "settings"],
+  "toolbar": ["open", "export", "|", "undo", "redo", "|", "before", "crop", "masks", "zoom", "|", "search", "looks", "settings"],
   "left": { "width": 0, "items": [] },
   "right": {
     "width": 270,

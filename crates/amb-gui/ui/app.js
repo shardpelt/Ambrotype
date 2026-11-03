@@ -1060,6 +1060,7 @@ async function init() {
   document.querySelectorAll(".viewer > .preset-library").forEach((p) => panels.observe(p, { attributes: true, attributeFilter: ["hidden"] }));
   $("fold-right").addEventListener("click", () => toggleColumn("right"));
   $("btn-keys").addEventListener("click", showShortcuts);
+  $("btn-search").addEventListener("click", searchFlow);
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));
   $("btn-assistant").addEventListener("click", () => assistantFlow().catch((e) => toast(String(e), true)));

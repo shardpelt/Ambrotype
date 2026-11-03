@@ -26,8 +26,10 @@ await t.step("Ctrl+Z undoes and Ctrl+Shift+Z redoes", async () => {
   await t.until("Exposure +1 again", () => t.setting("Exposure2012") === 1);
 });
 
-await t.step("search: a setting's name and a number sets it", async () => {
-  searchFlow();
+await t.step("search: the Search button opens it; a setting's name and a number sets it", async () => {
+  t.expect(t.visible("#btn-search"), "a Search button in the toolbar");
+  t.click("#btn-search");
+  await t.until("the search box", () => $("search-dialog").open);
   $("search-input").value = "contrast 25";
   $("search-input").dispatchEvent(new Event("input"));
   t.expect(searchState.shown[0]?.title === "Set Contrast to +25", `first: ${searchState.shown[0]?.title}`);

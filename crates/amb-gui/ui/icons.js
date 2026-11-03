@@ -28,6 +28,8 @@ const ICON_PATHS = {
   spots: '<rect x="2.6" y="8.2" width="18.8" height="7.6" rx="3.8" transform="rotate(-45 12 12)"/><rect x="8.6" y="8.6" width="6.8" height="6.8" transform="rotate(-45 12 12)"/><circle cx="11" cy="12" r=".6" fill="currentColor"/><circle cx="13" cy="12" r=".6" fill="currentColor"/><circle cx="12" cy="11" r=".6" fill="currentColor"/><circle cx="12" cy="13" r=".6" fill="currentColor"/>',
   // A magnifier.
   zoom: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/><path d="M10.5 7.5v6M7.5 10.5h6"/>',
+  // A magnifier with nothing in it: find anything.
+  search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/>',
   // An eyedropper: a long rubber bulb, a crossbar wider than the tube, a
   // tapered glass tube and a drop falling from its tip.
   wb: '<rect x="15" y="1.6" width="4.4" height="8.4" rx="2.2" transform="rotate(45 17.2 5.8)" fill="currentColor" stroke="none"/><path d="m11.4 7.6 4.9 4.9" stroke-width="2"/><path d="M12.6 10.6 6.2 17 5.4 19.4l2.4-.8 6.4-6.4"/><path d="M4.4 22.2a1.1 1.1 0 0 1-2.2 0c0-.6 1.1-1.9 1.1-1.9s1.1 1.3 1.1 1.9Z" fill="currentColor" stroke="none" transform="translate(0 -.5)"/>',
@@ -54,7 +56,7 @@ const ICON_PATHS = {
 // Spots, Clipping and Appearance have no picture that says it.
 const TOOLBAR_ICONS = new Set([
   "open", "library", "save", "export", "collage", "undo", "redo", "before", "crop", "masks", "zoom", "wb",
-  "frame", "keys", "plugins", "edit", "settings", "feedback",
+  "frame", "search", "keys", "plugins", "edit", "settings", "feedback",
 ]);
 
 function iconSvg(name) {

@@ -11,7 +11,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **I'm new to editing** → the empty window's **Try a sample photo** (a nine-step edit to step through in History) and **Watch an edit** (a cursor replays it). Help → **Learn** (F1) has short lessons, Help → **Photography basics** (Shift+F1) explains exposure, tones and colour on your own photo, and every setting has a **?** to hover or click.
 - **Open a photo or a folder** → **Open a photo** (Ctrl+O), **Open a folder** (Ctrl+Shift+O), or drop it on the window. Raws (NEF, CR2/CR3, ARW, RAF, DNG, …), JPEG, PNG, TIFF and WebP.
 - **Switch between library and editing** → **Library Grid** (G), or the task bar at the top: **Library**, **Develop**, **Color**, **Retouch**, **Film**, **Collage** (Ctrl+Alt+1–6).
-- **Find a command or setting I can't see** → **Search Everything** (Ctrl+K): type its name, or a setting and a number ("exposure 0.7").
+- **Find a command or setting I can't see** → **Search Everything** (Ctrl+K, or the magnifier in the toolbar): type its name, or a setting and a number ("exposure 0.7").
 - **See everything the app can do** → Help → **What Ambrotype Can Do** (this list, with a filter).
 - **See all shortcuts, or change them** → **Keyboard Shortcuts** (Shift+?) shows them; **Settings** (Ctrl+,) changes them.
 

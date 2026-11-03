@@ -1317,4 +1317,3 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 .feature-row:hover, .feature-row:focus-visible { background: var(--panel-2); }
 .feature-want { color: var(--text); font-weight: 600; }
 .feature-how { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-

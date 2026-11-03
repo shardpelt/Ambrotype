@@ -105,7 +105,7 @@ function updateExportForm() {
   const format = f.format.value;
   f.bits.innerHTML = DEPTHS[format].map((b) => `<option value="${b}">${b === 32 ? "32-bit float" : b + "-bit"}</option>`).join("");
   f.quality.closest("label").style.visibility = ["jpeg", "avif"].includes(format) ? "visible" : "hidden";
-  f.max_kb.closest("label").style.visibility = format === "jpeg" ? "visible" : "hidden";
+  f.max_mb.closest("label").style.visibility = format === "jpeg" ? "visible" : "hidden";
   for (const el of f.querySelectorAll(".jpeg-only")) el.hidden = format !== "jpeg";
   for (const el of f.querySelectorAll(".avif-only")) el.hidden = format !== "avif";
   // JPEG XL can't carry an ICC profile yet: sRGB only. AVIF names its
@@ -187,17 +187,9 @@ function resizeLongEdge() {
 // Export presets: the dialog's choices under a name (kept in the app's
 // settings, src/commands/export.rs `export_presets`).
 const EXPORT_FIELDS = ["format", "quality", "bits", "color_space", "exact_w", "exact_h", "resize_mode", "resize_value",
-  "sharpen", "metadata", "max_kb", "border_preset", "name_template",
+  "sharpen", "metadata", "max_mb", "border_preset", "name_template",
   "wm_text", "wm_image", "wm_anchor", "wm_size", "wm_opacity", "wm_color", "wm_shadow", "wm_rotate", "wm_tile",
   "subsampling", "progressive", "avif_speed", "after", "small_copy", "small_mb"];
-
-// Built-in export presets, offered before the saved ones (not deletable).
-// WhatsApp refuses photos over 16 MB: the JPEG's quality comes down only as
-// far as it must to fit, with a little room to spare.
-const BUILTIN_EXPORT_PRESETS = [
-  { name: "WhatsApp (under 16 MB)", builtin: true,
-    fields: { format: "jpeg", quality: "100", color_space: "srgb", max_kb: "15500", metadata: "no-location" } },
-];
 
 // A field's value as an export preset keeps it (checkboxes as true/false).
 const fieldValue = (el) => (el.type === "checkbox" ? el.checked : el.value);
@@ -255,15 +247,11 @@ async function fillExportPresets(selected = null) {
   } catch {
     ui.exportPresets = [];
   }
-  ui.exportPresets = [...BUILTIN_EXPORT_PRESETS, ...ui.exportPresets.filter((p) => !BUILTIN_EXPORT_PRESETS.some((b) => b.name === p.name))];
   const option = (value, text) => Object.assign(document.createElement("option"), { value, textContent: text });
-  f.export_preset.replaceChildren(option("", "— choose —"), ...ui.exportPresets.map((p) => option(p.name, p.name)));
+  f.export_preset.replaceChildren(option("", ui.exportPresets.length ? "— choose —" : "None saved yet"),
+    ...ui.exportPresets.map((p) => option(p.name, p.name)));
   f.export_preset.value = selected ?? "";
-  $("export-preset-delete").disabled = !f.export_preset.value || isBuiltinExportPreset(f.export_preset.value);
-}
-
-function isBuiltinExportPreset(name) {
-  return BUILTIN_EXPORT_PRESETS.some((b) => b.name === name);
+  $("export-preset-delete").disabled = !f.export_preset.value;
 }
 
 // The smaller copy's size only matters once it is on.
@@ -275,7 +263,7 @@ function updateSmallCopy() {
 function applyExportPreset(name) {
   const f = $("export-form");
   const p = ui.exportPresets?.find((x) => x.name === name);
-  $("export-preset-delete").disabled = !p || p.builtin;
+  $("export-preset-delete").disabled = !p;
   if (!p) return;
   const set = (n) => {
     if (!(n in p.fields) || !f[n]) return;
@@ -285,6 +273,8 @@ function applyExportPreset(name) {
   set("format");
   updateExportForm();
   for (const n of EXPORT_FIELDS.filter((n) => n !== "format")) set(n);
+  // Presets saved before the limit was in MB kept it in KB.
+  if (!("max_mb" in p.fields) && p.fields.max_kb) f.max_mb.value = Number(p.fields.max_kb) / 1000;
   updateWatermarkForm();
   updateSmallCopy();
   f.quality.dispatchEvent(new Event("input"));
@@ -297,6 +287,11 @@ function wireExportPresets() {
   const f = $("export-form");
   f.export_preset.addEventListener("change", () => applyExportPreset(f.export_preset.value));
   f.small_copy.addEventListener("change", updateSmallCopy);
+  f.max_mb_pick.addEventListener("change", () => {
+    const v = f.max_mb_pick.value;
+    if (v) f.max_mb.value = v === "none" ? "" : v;
+    f.max_mb_pick.value = "";
+  });
   $("export-preset-save").addEventListener("click", async () => {
     const name = await askName("Save export preset", "Keeps the format, size, sharpening, metadata and border choices.", f.export_preset.value);
     if (!name) return;
@@ -402,7 +397,7 @@ async function exportFlow(batch = null) {
       ? [Number(f.exact_w.value), Number(f.exact_h.value)] : null,
     sharpen: f.sharpen.value || null,
     metadata: f.metadata.value,
-    max_kb: f.max_kb.value ? Number(f.max_kb.value) : null,
+    max_kb: Number(f.max_mb.value) > 0 ? Math.round(Number(f.max_mb.value) * 1000) : null,
     border: borderOn() ? readBorder() : null,
     name_template: batch && f.name_template.value.trim() ? f.name_template.value.trim() : null,
     watermark: readWatermark(),

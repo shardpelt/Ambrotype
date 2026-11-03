@@ -1035,7 +1035,9 @@
           <select name="subsampling"><option value="">Auto</option><option value="444">4:4:4 (all colour detail)</option><option value="422">4:2:2</option><option value="420">4:2:0 (smallest)</option></select></label>
         <span class="inline-check jpeg-only"><input name="progressive" type="checkbox"><span>Progressive JPEG (shows blurry first while loading on the web)</span></span>
         <label class="avif-only" title="Slower is smaller at the same quality">AVIF speed (1 slow – 10 fast) <input name="avif_speed" type="number" min="1" max="10" step="1" value="6"></label>
-        <label class="maxkb">Limit file size (KB, JPEG) <input name="max_kb" type="number" min="10" step="10" placeholder="No limit"></label>
+        <label class="maxkb" title="JPEG: the quality comes down only as far as it must for the file to fit">Keep under (MB, JPEG)
+          <span class="max-mb"><input name="max_mb" type="number" min="0.01" step="0.5" placeholder="No limit">
+          <select name="max_mb_pick" title="Common limits"><option value="">Sizes…</option><option value="16">16 MB (WhatsApp's max)</option><option value="8">8 MB</option><option value="5">5 MB</option><option value="3">3 MB</option><option value="1">1 MB</option><option value="none">No limit</option></select></span></label>
         <label class="small-copy" title="Also saves NAME-small.jpg beside the export, at most this size, for social media and messages: as sharp as fits, and smaller in pixels only when it must be">
           <span class="inline-check"><input name="small_copy" type="checkbox"><span>Also a smaller copy, up to</span></span>
           <input name="small_mb" type="number" min="0.1" step="0.5" value="3"> MB</label>

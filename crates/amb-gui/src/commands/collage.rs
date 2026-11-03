@@ -225,6 +225,7 @@ pub(crate) async fn export_collage(
             height: r.height,
             bytes: r.bytes,
             quality: r.quality,
+            small: r.small.map(|c| (c.path.display().to_string(), c.bytes)),
         })
     })
     .await

@@ -297,6 +297,8 @@ EXPORT OPTIONS (amb render):
     --sharpen screen|matte|glossy[:low|standard|high]   Output sharpening
     --metadata all|no-location|copyright|none           EXIF to include (default no-location)
     --max-size 500k|2M                      JPEG: lower the quality until the file fits
+    --small-copy 3M                         Also write NAME-small.jpg, at most that size (as sharp as fits,
+                                            smaller in pixels only when it must be), for sharing
     --subsampling 444|422|420  --progressive  --avif-speed 1-10
     --rating 1-5  --keywords \"beach, sunset\"   Put a rating and keywords in the file (XMP, IPTC in JPEG,
                                             EXIF), with the all / no-location metadata policies
@@ -390,6 +392,7 @@ fn main() -> ExitCode {
             | "--sharpen"
             | "--metadata"
             | "--max-size"
+            | "--small-copy"
             | "--avif-speed"
             | "--border"
             | "--border-caption"

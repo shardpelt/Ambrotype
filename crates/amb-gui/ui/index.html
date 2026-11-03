@@ -1036,6 +1036,9 @@
         <span class="inline-check jpeg-only"><input name="progressive" type="checkbox"><span>Progressive JPEG (shows blurry first while loading on the web)</span></span>
         <label class="avif-only" title="Slower is smaller at the same quality">AVIF speed (1 slow – 10 fast) <input name="avif_speed" type="number" min="1" max="10" step="1" value="6"></label>
         <label class="maxkb">Limit file size (KB, JPEG) <input name="max_kb" type="number" min="10" step="10" placeholder="No limit"></label>
+        <label class="small-copy" title="Also saves NAME-small.jpg beside the export, at most this size, for social media and messages: as sharp as fits, and smaller in pixels only when it must be">
+          <span class="inline-check"><input name="small_copy" type="checkbox"><span>Also a smaller copy, up to</span></span>
+          <input name="small_mb" type="number" min="0.1" step="0.5" value="3"> MB</label>
       </div>
       <div class="border-section">
         <div class="border-fields">

@@ -21,6 +21,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 ## Recently done
 
 - 2026-11-03: exports, Convert raws and collages default to quality 100 (was 90); Convert raws falls back to Auto when a raw's preview can't be read
+- 2026-11-03: Export: a built-in WhatsApp (under 16 MB) preset, and Also a smaller copy, up to N MB (NAME-small.jpg beside the export, for social media; `amb render --small-copy 3M`)
 
 - 2026-11-03: Sony raws: Convert raws uses the camera's full-size JPEG where the ARW has one (A7 IV, A7R V; it was matching the raw to the small preview), and the camera's own distortion correction is read and applied (an A6400's kit zoom now frames like its JPEG). Tried on six Sony raws
 

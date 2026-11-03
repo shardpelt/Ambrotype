@@ -107,6 +107,16 @@ pub(crate) fn render(
         report.bytes as f64 / 1e6,
         start.elapsed().as_secs_f64()
     );
+    if let Some(small) = &report.small {
+        println!(
+            "wrote {} (JPG q{}, {}x{}, {:.1} MB)",
+            small.path.display(),
+            small.quality,
+            small.width,
+            small.height,
+            small.bytes as f64 / 1e6
+        );
+    }
     if let Ok(gpu) = on {
         println!("developed on the GPU ({gpu})");
     }
@@ -413,23 +423,13 @@ pub(crate) fn export_settings(
             .ok_or_else(|| format!("bad --metadata {m:?} (all, no-location, copyright, none)"))?;
     }
     if let Some(size) = options.get("--max-size") {
-        let lower = size.to_ascii_lowercase();
-        let (num, mult) = if let Some(n) = lower.strip_suffix(['k']) {
-            (n, 1e3)
-        } else if let Some(n) = lower.strip_suffix(['m']) {
-            (n, 1e6)
-        } else {
-            (lower.as_str(), 1.0)
-        };
-        let bytes = num
-            .trim_end_matches('b')
-            .parse::<f64>()
-            .map_err(|_| format!("bad --max-size {size:?} (e.g. 500k, 2M)"))?
-            * mult;
         if format != Format::Jpeg {
             return Err("--max-size works with JPEG only".into());
         }
-        s.max_bytes = Some(bytes as u64);
+        s.max_bytes = Some(file_size("--max-size", size)?);
+    }
+    if let Some(size) = options.get("--small-copy") {
+        s.small_copy = Some(file_size("--small-copy", size)?);
     }
     if let Some(speed) = int("--avif-speed")? {
         s.avif_speed = speed.clamp(1, 10) as u8;
@@ -518,4 +518,23 @@ pub(crate) fn export_settings(
         b.validate()?;
     }
     Ok(s)
+}
+
+/// A file size: "500k", "2M", "2.5mb" or bytes.
+fn file_size(key: &str, size: &str) -> Result<u64, String> {
+    let lower = size.trim().to_ascii_lowercase();
+    let lower = lower.strip_suffix('b').unwrap_or(&lower);
+    let (num, mult) = if let Some(n) = lower.strip_suffix('k') {
+        (n, 1e3)
+    } else if let Some(n) = lower.strip_suffix('m') {
+        (n, 1e6)
+    } else {
+        (lower, 1.0)
+    };
+    num.trim()
+        .parse::<f64>()
+        .ok()
+        .filter(|v| v.is_finite() && *v > 0.0)
+        .map(|v| (v * mult) as u64)
+        .ok_or_else(|| format!("bad {key} {size:?} (e.g. 500k, 2M)"))
 }

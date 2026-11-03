@@ -536,11 +536,28 @@ await t.step("Feedback works without a GitHub account: by email, or copied", asy
   await flow;
 });
 
-await t.step("Ctrl+E exports a JPEG", async () => {
+await t.step("Ctrl+E exports a JPEG (WhatsApp preset, quality 100)", async () => {
   t.key("Ctrl+E");
   await t.until("the Export dialog", () => $("export-dialog").open);
+  // Quality 100 by default; the WhatsApp preset keeps it under 16 MB.
+  const f = $("export-form");
+  t.expect(f.quality.value === "100", `default quality ${f.quality.value}`);
+  await t.until("the presets", () => [...f.export_preset.options].some((o) => o.value.startsWith("WhatsApp")));
+  f.export_preset.value = "WhatsApp (under 16 MB)";
+  f.export_preset.dispatchEvent(new Event("change"));
+  t.expect(f.format.value === "jpeg" && f.max_kb.value === "15500" && f.color_space.value === "srgb", "WhatsApp: a JPEG under 16 MB in sRGB");
+  t.expect($("export-preset-delete").disabled, "a built-in preset can't be deleted");
+  // And a smaller copy beside it.
+  t.expect(f.small_mb.disabled, "its size waits for the switch");
+  t.click('#export-form [name="small_copy"]');
+  t.expect(!f.small_mb.disabled, "the size can be set");
+  f.small_mb.value = "0.05";
+  $("toast").hidden = true;
   t.click("#export-go");
   await t.until("the export", () => t.status().startsWith("Exported "), 120000);
+  await t.until("its note", () => !$("toast").hidden);
+  t.expect($("toast").textContent.includes("-small.jpg"), `the smaller copy: ${$("toast").textContent}`);
+  t.click('#export-form [name="small_copy"]');
   t.log(t.status());
   t.expect(lastExportDir() && t.status().includes(lastExportDir()), `the folder kept for next time: ${lastExportDir()}`);
 });

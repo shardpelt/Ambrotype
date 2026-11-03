@@ -189,7 +189,15 @@ function resizeLongEdge() {
 const EXPORT_FIELDS = ["format", "quality", "bits", "color_space", "exact_w", "exact_h", "resize_mode", "resize_value",
   "sharpen", "metadata", "max_kb", "border_preset", "name_template",
   "wm_text", "wm_image", "wm_anchor", "wm_size", "wm_opacity", "wm_color", "wm_shadow", "wm_rotate", "wm_tile",
-  "subsampling", "progressive", "avif_speed", "after"];
+  "subsampling", "progressive", "avif_speed", "after", "small_copy", "small_mb"];
+
+// Built-in export presets, offered before the saved ones (not deletable).
+// WhatsApp refuses photos over 16 MB: the JPEG's quality comes down only as
+// far as it must to fit, with a little room to spare.
+const BUILTIN_EXPORT_PRESETS = [
+  { name: "WhatsApp (under 16 MB)", builtin: true,
+    fields: { format: "jpeg", quality: "100", color_space: "srgb", max_kb: "15500", metadata: "no-location" } },
+];
 
 // A field's value as an export preset keeps it (checkboxes as true/false).
 const fieldValue = (el) => (el.type === "checkbox" ? el.checked : el.value);
@@ -247,17 +255,27 @@ async function fillExportPresets(selected = null) {
   } catch {
     ui.exportPresets = [];
   }
+  ui.exportPresets = [...BUILTIN_EXPORT_PRESETS, ...ui.exportPresets.filter((p) => !BUILTIN_EXPORT_PRESETS.some((b) => b.name === p.name))];
   const option = (value, text) => Object.assign(document.createElement("option"), { value, textContent: text });
-  f.export_preset.replaceChildren(option("", ui.exportPresets.length ? "— choose —" : "None saved yet"),
-    ...ui.exportPresets.map((p) => option(p.name, p.name)));
+  f.export_preset.replaceChildren(option("", "— choose —"), ...ui.exportPresets.map((p) => option(p.name, p.name)));
   f.export_preset.value = selected ?? "";
-  $("export-preset-delete").disabled = !f.export_preset.value;
+  $("export-preset-delete").disabled = !f.export_preset.value || isBuiltinExportPreset(f.export_preset.value);
+}
+
+function isBuiltinExportPreset(name) {
+  return BUILTIN_EXPORT_PRESETS.some((b) => b.name === name);
+}
+
+// The smaller copy's size only matters once it is on.
+function updateSmallCopy() {
+  const f = $("export-form");
+  f.small_mb.disabled = !f.small_copy.checked;
 }
 
 function applyExportPreset(name) {
   const f = $("export-form");
   const p = ui.exportPresets?.find((x) => x.name === name);
-  $("export-preset-delete").disabled = !p;
+  $("export-preset-delete").disabled = !p || p.builtin;
   if (!p) return;
   const set = (n) => {
     if (!(n in p.fields) || !f[n]) return;
@@ -268,6 +286,7 @@ function applyExportPreset(name) {
   updateExportForm();
   for (const n of EXPORT_FIELDS.filter((n) => n !== "format")) set(n);
   updateWatermarkForm();
+  updateSmallCopy();
   f.quality.dispatchEvent(new Event("input"));
   f.border_preset.dispatchEvent(new Event("change"));
   f.size_preset.value = "";
@@ -277,6 +296,7 @@ function applyExportPreset(name) {
 function wireExportPresets() {
   const f = $("export-form");
   f.export_preset.addEventListener("change", () => applyExportPreset(f.export_preset.value));
+  f.small_copy.addEventListener("change", updateSmallCopy);
   $("export-preset-save").addEventListener("click", async () => {
     const name = await askName("Save export preset", "Keeps the format, size, sharpening, metadata and border choices.", f.export_preset.value);
     if (!name) return;
@@ -366,6 +386,7 @@ async function exportFlow(batch = null) {
   if (!batch) frameToExport();
   await fillExportPresets($("export-form").export_preset.value || null);
   updateWatermarkForm();
+  updateSmallCopy();
   updateExportSize();
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
@@ -388,6 +409,7 @@ async function exportFlow(batch = null) {
     subsampling: f.subsampling.value || null,
     progressive: f.progressive.checked,
     avif_speed: Number(f.avif_speed.value) || null,
+    small_mb: f.small_copy.checked && Number(f.small_mb.value) > 0 ? Number(f.small_mb.value) : null,
   };
   const after = f.after.value;
   if (batch) return batch.run(options, after);
@@ -400,7 +422,8 @@ async function exportFlow(batch = null) {
   $("busy").hidden = false;
   try {
     const r = await invoke("export", { path, options });
-    toast(`Exported ${r.width}×${r.height}, ${(r.bytes / 1e6).toFixed(1)} MB${options.format === "jpeg" ? `, quality ${r.quality}` : ""}`);
+    toast(`Exported ${r.width}×${r.height}, ${(r.bytes / 1e6).toFixed(1)} MB${options.format === "jpeg" ? `, quality ${r.quality}` : ""}`
+      + (r.small ? `, and a ${(r.small[1] / 1e6).toFixed(1)} MB copy (${fileName(r.small[0])})` : ""));
     status(`Exported ${r.path}`);
     await afterExport([r.path], after);
   } catch (e) {

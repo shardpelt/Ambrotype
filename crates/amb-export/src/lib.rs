@@ -179,6 +179,9 @@ pub struct ExportSettings {
     pub watermark: Option<watermark::Watermark>,
     /// The photo's rating and keywords, embedded with the full metadata policies.
     pub tags: exif::Tags,
+    /// Also write a smaller copy at most this many bytes ([`small_path`]):
+    /// a JPEG for sharing, as sharp as fits.
+    pub small_copy: Option<u64>,
 }
 
 impl ExportSettings {
@@ -199,6 +202,7 @@ impl ExportSettings {
             border: None,
             watermark: None,
             tags: exif::Tags::default(),
+            small_copy: None,
         }
     }
 }
@@ -213,7 +217,29 @@ pub struct ExportReport {
     pub color_space: OutputSpace,
     /// The JPEG quality actually used (after a file-size limit).
     pub quality: u8,
+    /// The smaller copy, when one was asked for.
+    pub small: Option<SmallCopy>,
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SmallCopy {
+    pub path: PathBuf,
+    pub width: usize,
+    pub height: usize,
+    pub bytes: u64,
+    pub quality: u8,
+}
+
+/// Where the smaller copy of an export to `path` goes: "photo-small.jpg"
+/// beside "photo.tif".
+pub fn small_path(path: &Path) -> PathBuf {
+    let stem = path.file_stem().unwrap_or_default().to_string_lossy();
+    path.with_file_name(format!("{stem}-small.jpg"))
+}
+
+/// The lowest JPEG quality the smaller copy goes to before it is made
+/// smaller in pixels instead (below it, JPEG blocks start to show).
+pub const SMALL_MIN_QUALITY: u8 = 85;
 
 /// Small deterministic dither in [-0.5, 0.5) code values.
 fn dither(i: usize) -> f32 {
@@ -284,6 +310,76 @@ fn avif_colour(space: OutputSpace) -> Option<(u16, u16)> {
 
 /// Develop-to-file: orient, resize, convert, sharpen, watermark, frame and encode.
 pub fn export(
+    img: &Image,
+    meta: &PhotoMetadata,
+    s: &ExportSettings,
+    path: &Path,
+) -> Result<ExportReport, Error> {
+    let mut report = export_one(img, meta, s, path)?;
+    if let Some(limit) = s.small_copy {
+        report.small = Some(export_small(img, meta, s, &small_path(path), limit)?);
+    }
+    Ok(report)
+}
+
+/// The smaller copy: a JPEG in sRGB, full size when it fits at quality
+/// [`SMALL_MIN_QUALITY`] or more, else made smaller in pixels until it does,
+/// at the highest quality that fits.
+fn export_small(
+    img: &Image,
+    meta: &PhotoMetadata,
+    s: &ExportSettings,
+    path: &Path,
+    limit: u64,
+) -> Result<SmallCopy, Error> {
+    let mut small = s.clone();
+    small.format = Format::Jpeg;
+    small.bit_depth = None;
+    small.color_space = OutputSpace::Srgb;
+    small.small_copy = None;
+    small.quality = 100;
+    small.max_bytes = Some(limit.max(10_000));
+    let mut long: Option<u32> = None;
+    for _ in 0..8 {
+        if let Some(l) = long {
+            small.resize = Resize::LongEdge(l);
+        }
+        match export_one(img, meta, &small, path) {
+            Ok(r) if r.quality >= SMALL_MIN_QUALITY => {
+                return Ok(SmallCopy {
+                    path: path.to_path_buf(),
+                    width: r.width,
+                    height: r.height,
+                    bytes: r.bytes,
+                    quality: r.quality,
+                });
+            }
+            // Too large at a good quality: fewer pixels. Measure it at the
+            // lowest good quality; JPEG size goes roughly with pixel count.
+            Ok(r) => {
+                let mut at = small.clone();
+                at.quality = SMALL_MIN_QUALITY;
+                at.max_bytes = None;
+                let m = export_one(img, meta, &at, path)?;
+                let edge = m.width.max(m.height) as f64;
+                let ratio = (m.bytes as f64 / limit as f64).max(1.02);
+                long = Some(((edge / ratio.sqrt()) * 0.97).max(64.0) as u32);
+                let _ = r;
+            }
+            Err(Error::Encode(_)) => {
+                let edge =
+                    long.map_or_else(|| f64::from(img.width.max(img.height) as u32), f64::from);
+                long = Some((edge * 0.6).max(64.0) as u32);
+            }
+            Err(e) => return Err(e),
+        }
+    }
+    Err(Error::Encode(format!(
+        "cannot make a copy under {limit} bytes; choose a larger size"
+    )))
+}
+
+fn export_one(
     img: &Image,
     meta: &PhotoMetadata,
     s: &ExportSettings,
@@ -555,6 +651,7 @@ pub fn export(
         bit_depth: depth,
         color_space: s.color_space,
         quality,
+        small: None,
     })
 }
 
@@ -946,6 +1043,31 @@ mod tests {
             full.bytes / 3
         );
         assert!(limited.quality < 95);
+    }
+
+    #[test]
+    fn a_smaller_copy_fits_its_limit_beside_the_export() {
+        // Noise: large as a JPEG, so the copy has to lose pixels.
+        let img = Image::from_fn(1200, 800, |x, y| {
+            let n = ((x * 7919 + y * 104_729) % 1000) as f32 / 1000.0;
+            [n, 1.0 - n, (n * 3.0) % 1.0]
+        });
+        let mut s = ExportSettings::new(Format::Tiff);
+        s.small_copy = Some(150_000);
+        let path = tmp("big.tif");
+        let r = export(&img, &PhotoMetadata::default(), &s, &path).unwrap();
+        let small = r.small.unwrap();
+        assert_eq!(small.path, tmp("big-small.jpg"));
+        let bytes = std::fs::metadata(&small.path).unwrap().len();
+        assert!(bytes <= 150_000 && bytes == small.bytes, "{bytes}");
+        assert!(small.quality >= SMALL_MIN_QUALITY, "{}", small.quality);
+        assert!(small.width < 1200 && small.width > 200, "{}", small.width);
+        // The main export is untouched: a full-size TIFF.
+        assert_eq!((r.width, r.format), (1200, Format::Tiff));
+        // A roomy limit keeps every pixel.
+        s.small_copy = Some(50_000_000);
+        let r = export(&img, &PhotoMetadata::default(), &s, &path).unwrap();
+        assert_eq!(r.small.unwrap().width, 1200);
     }
 
     #[test]

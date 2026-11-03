@@ -73,6 +73,9 @@ pub(crate) struct ExportOptions {
     /// AVIF encoder speed, 1 (slow, small) to 10.
     #[serde(default)]
     pub(crate) avif_speed: Option<u8>,
+    /// Also a smaller JPEG beside it, at most this many megabytes.
+    #[serde(default)]
+    pub(crate) small_mb: Option<f64>,
 }
 
 pub(crate) fn yes() -> bool {
@@ -120,6 +123,8 @@ pub(crate) struct Exported {
     pub(crate) height: usize,
     pub(crate) bytes: u64,
     pub(crate) quality: u8,
+    /// The smaller copy: its path and size in bytes.
+    pub(crate) small: Option<(String, u64)>,
 }
 
 /// "Share before/after…": a page with the photo before and after its edit
@@ -303,6 +308,7 @@ pub(crate) async fn export(
             height: r.height,
             bytes: r.bytes,
             quality: r.quality,
+            small: r.small.map(|c| (c.path.display().to_string(), c.bytes)),
         })
     })
     .await
@@ -356,6 +362,10 @@ pub(crate) fn export_settings(options: &ExportOptions) -> Res<amb_export::Export
             .max_kb
             .filter(|k| *k > 0 && format == Format::Jpeg)
             .map(|k| k * 1000);
+        s.small_copy = options
+            .small_mb
+            .filter(|m| m.is_finite() && *m > 0.0)
+            .map(|m| (m * 1e6) as u64);
         Ok(s)
     }
 }

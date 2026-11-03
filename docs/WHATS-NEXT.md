@@ -1,6 +1,6 @@
 # What's next
 
-A short running list, kept up to date as work lands. Newest decisions first. The full roadmap and its tracks are in [NEXT.md](NEXT.md); what's missing is in [GAPS.md](GAPS.md).
+A short running list, kept up to date as work lands. Newest decisions first. The full roadmap and its tracks are in [NEXT.md](NEXT.md); what's missing is in [GAPS.md](GAPS.md). Projects we researched, and when we last checked them, are in [research/watchlist.md](research/watchlist.md).
 
 ## Waiting on the owner
 
@@ -19,6 +19,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 6. **From the competition:** AI Remove on the GPU (our own kernels) and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place; pick the best in a burst by open eyes ([research/17](research/17-competitors-2026.md)).
 
 ## Recently done
+
+- 2026-11-03: a watchlist of the projects we researched, with when we last checked each ([research/watchlist.md](research/watchlist.md))
 
 - 2026-11-02: AI Remove: the Spot panel's Remove fills a spot with what belongs there (Big-LaMa, Apache-2.0, an optional 208 MB download in Settings → AI models; CPU, about 10 s a spot). Lightroom's content-aware and generative spots are filled the same way
 

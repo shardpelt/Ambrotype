@@ -25,6 +25,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
   - **Tips where text normally is:** now and then, a tip as the placeholder of a search or filter box, or in an empty menu or panel area; gone once you click or type there.
   - **One answer leads to more:** a How to shows two or three related features ("also: Keep under N MB, Also a smaller copy"), and the features list can be followed from one to the next.
   - Tips come from [FEATURES.md](FEATURES.md), skip features already used, and are rare enough not to nag.
+  - Two switches in Settings → General, both on by default: "Tips while waiting" and "Tips in menus and empty boxes".
 
 ## Recently done
 

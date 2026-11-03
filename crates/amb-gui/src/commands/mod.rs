@@ -8,6 +8,7 @@ pub(crate) mod catalog;
 pub(crate) mod collage;
 pub(crate) mod connect;
 pub(crate) mod export;
+pub(crate) mod features;
 pub(crate) mod files;
 pub(crate) mod hub;
 pub(crate) mod library;

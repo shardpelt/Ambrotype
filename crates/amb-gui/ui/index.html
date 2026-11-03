@@ -1167,9 +1167,17 @@
 
   <div id="toast" class="toast" hidden></div>
   <dialog id="search-dialog" class="search-dialog" aria-label="Search everything">
-    <input id="search-input" type="search" placeholder="Search commands, settings, panels, presets, layouts…" spellcheck="false" autocomplete="off">
+    <input id="search-input" type="search" placeholder="Search commands, settings, presets… or what you want to do" spellcheck="false" autocomplete="off">
     <ul id="search-results" class="search-results"></ul>
     <p id="search-none" class="hint" hidden>Nothing found.</p>
+  </dialog>
+  <dialog id="how-dialog" class="how-dialog">
+    <form method="dialog">
+      <p class="hint" id="how-section"></p>
+      <h2 id="how-want"></h2>
+      <p id="how-text"></p>
+      <menu><span id="how-actions"></span><span class="grow"></span><button value="close">Close</button></menu>
+    </form>
   </dialog>
   <dialog id="shortcuts-dialog" class="shortcuts-dialog">
     <form method="dialog">

@@ -20,6 +20,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-03: Search Everything (Ctrl+K) finds what you want to do ("whatsapp", "raw by mistake") from FEATURES.md, shows where it is, with buttons for what it names
+
 - 2026-11-03: [FEATURES.md](FEATURES.md), what the app can do by what you want to do, with where each thing is and its `amb` command (linked from the README, llms.txt and the AI guide)
 
 - 2026-11-03: exports, Convert raws and collages default to quality 100 (was 90); Convert raws falls back to Auto when a raw's preview can't be read

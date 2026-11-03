@@ -1299,3 +1299,11 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 .touch-bar button.active { background: var(--accent); color: var(--accent-ink); }
 /* Preset picker for the library's selection (library.js presetsOnPhotos). */
 .preset-pick-list { display: flex; flex-wrap: wrap; gap: 4px; max-height: 50vh; overflow: auto; margin: 8px 0; min-width: 360px; max-width: 560px; }
+
+/* Search → How to: where a feature is */
+.how-dialog { max-width: 520px; }
+.how-dialog h2 { margin: 2px 0 10px; }
+.how-dialog #how-text { line-height: 1.5; color: var(--text); }
+.how-dialog #how-text code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--panel-2); white-space: nowrap; }
+.how-dialog menu { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+#how-actions { display: flex; gap: 8px; flex-wrap: wrap; }

@@ -563,6 +563,7 @@ fn main() {
             uitest::ui_test,
             uitest::ui_test_done,
             commands::menu::set_menu,
+            commands::features::features,
             commands::settings::interfaces,
             commands::settings::set_interface,
             commands::settings::pick_interface_folder,

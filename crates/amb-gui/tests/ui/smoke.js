@@ -37,6 +37,26 @@ await t.step("search: a setting's name and a number sets it", async () => {
   await t.until("Contrast back", () => !("Contrast2012" in ui.settings));
 });
 
+await t.step("search: what you want to do finds the feature, with a button for it", async () => {
+  searchFlow();
+  await t.until("the features list", () => ui.features?.length > 50);
+  const type = (text) => {
+    $("search-input").value = text;
+    $("search-input").dispatchEvent(new Event("input"));
+  };
+  type("whatsapp");
+  t.expect(searchState.shown[0]?.kind === "How to", `first: ${searchState.shown[0]?.kind} ${searchState.shown[0]?.title}`);
+  type("raw by mistake");
+  const hit = searchState.shown[0];
+  t.expect(hit?.title.includes("RAW by mistake"), `first: ${hit?.title}`);
+  t.key("Enter");
+  await t.until("the How to", () => $("how-dialog").open);
+  t.expect($("how-text").querySelector("code")?.textContent.startsWith("amb convert"), $("how-text").textContent);
+  const buttons = [...$("how-actions").querySelectorAll("button")].map((b) => b.dataset.key);
+  t.expect(buttons.includes("a:convert-raws"), `its buttons: ${buttons.join(", ")}`);
+  $("how-dialog").close();
+});
+
 await t.step("Effects → Glow: Halation is a slider, one undoable step", async () => {
   revealSetting("amb:Halation");
   t.expect(t.visible(t.row("amb:Halation")) && t.visible(t.row("amb:Bloom")), "Halation and Bloom shown");

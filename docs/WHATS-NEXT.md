@@ -20,7 +20,11 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Ideas for later
 
-- **Tips while waiting** (owner, 2026-11-03): while something loads or runs (opening a raw, an export, Convert raws, AI Remove), show one short tip about a feature, so people find ones they didn't know. Take them from [FEATURES.md](FEATURES.md), skip what they've already used, with a button to try it.
+- **Teach by showing** (owner, 2026-11-03): the app should teach its features by showing them, not by manuals, and one question should open up many related features. Ideas:
+  - **Tips while waiting:** while something loads or runs (opening a raw, an export, Convert raws, AI Remove), one short tip about a feature, with a button to try it.
+  - **Tips where text normally is:** now and then, a tip as the placeholder of a search or filter box, or in an empty menu or panel area; gone once you click or type there.
+  - **One answer leads to more:** a How to shows two or three related features ("also: Keep under N MB, Also a smaller copy"), and the features list can be followed from one to the next.
+  - Tips come from [FEATURES.md](FEATURES.md), skip features already used, and are rare enough not to nag.
 
 ## Recently done
 

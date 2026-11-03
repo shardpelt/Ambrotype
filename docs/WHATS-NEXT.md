@@ -18,6 +18,10 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 5. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
 6. **From the competition:** AI Remove on the GPU (our own kernels) and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place; pick the best in a burst by open eyes ([research/17](research/17-competitors-2026.md)).
 
+## Ideas for later
+
+- **Tips while waiting** (owner, 2026-11-03): while something loads or runs (opening a raw, an export, Convert raws, AI Remove), show one short tip about a feature, so people find ones they didn't know. Take them from [FEATURES.md](FEATURES.md), skip what they've already used, with a button to try it.
+
 ## Recently done
 
 - 2026-11-03: a Search button (magnifier) in the toolbar of every built-in layout

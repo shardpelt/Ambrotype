@@ -131,15 +131,58 @@ function chooseSearch(i) {
 }
 
 // The features list, read once from the app (commands/features.rs).
+let featuresLoading = null;
 function loadFeatures() {
-  if (ui.features) return;
-  ui.features = [];
-  invoke("features").then((list) => {
+  if (ui.features?.length) return Promise.resolve(ui.features);
+  featuresLoading ??= invoke("features").then((list) => {
     ui.features = list;
-    if (!$("search-dialog").open) return;
-    searchState.items = searchItems();
-    renderSearch();
-  }).catch(() => {});
+    if ($("search-dialog").open) {
+      searchState.items = searchItems();
+      renderSearch();
+    }
+    return list;
+  }).catch(() => {
+    featuresLoading = null;
+    return [];
+  });
+  return featuresLoading;
+}
+
+// Help → What Ambrotype Can Do: the whole list by section, with a filter.
+async function featuresFlow() {
+  const dlg = $("features-dialog");
+  if (dlg.open) return;
+  await loadFeatures();
+  $("features-filter").value = "";
+  renderFeatures();
+  dlg.showModal();
+  $("features-filter").focus();
+}
+
+function renderFeatures() {
+  const words = $("features-filter").value.toLowerCase().split(/\s+/).filter(Boolean);
+  const hits = (ui.features ?? []).filter((f) => {
+    const hay = `${f.want} ${f.how} ${f.section}`.toLowerCase();
+    return words.every((w) => hay.includes(w));
+  });
+  const list = $("features-list");
+  const out = [];
+  let section = null;
+  for (const f of hits) {
+    if (f.section !== section) {
+      section = f.section;
+      out.push(Object.assign(document.createElement("h3"), { textContent: section }));
+    }
+    const row = Object.assign(document.createElement("button"), { type: "button", className: "feature-row" });
+    row.append(
+      Object.assign(document.createElement("span"), { className: "feature-want", textContent: f.want }),
+      Object.assign(document.createElement("span"), { className: "feature-how", textContent: f.how }),
+    );
+    row.addEventListener("click", () => showHow(f));
+    out.push(row);
+  }
+  list.replaceChildren(...out);
+  $("features-none").hidden = hits.length > 0;
 }
 
 // A feature: where it is, with a button for each thing it names in bold
@@ -175,6 +218,7 @@ function showHow(f) {
     buttons.push(b);
   }
   $("how-actions").replaceChildren(...buttons);
+  $("how-all").hidden = $("features-dialog").open;
   $("how-dialog").showModal();
 }
 
@@ -200,6 +244,22 @@ function howTarget(name) {
     .find((b) => b.offsetParent && !b.disabled && !b.closest("dialog") && norm(b.textContent) === n);
   if (button) return { key: `b:${n}`, run: () => button.click() };
   return null;
+}
+
+function wireFeatures() {
+  $("features-filter").addEventListener("input", renderFeatures);
+  $("search-all").addEventListener("click", () => {
+    const words = $("search-input").value;
+    $("search-dialog").close();
+    featuresFlow().then(() => {
+      $("features-filter").value = words;
+      renderFeatures();
+    });
+  });
+  $("how-all").addEventListener("click", () => {
+    $("how-dialog").close();
+    if (!$("features-dialog").open) featuresFlow();
+  });
 }
 
 function searchFlow() {

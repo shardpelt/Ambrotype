@@ -1041,6 +1041,7 @@ async function init() {
   wireFilmstrip();
   for (const n of ["resize_mode", "resize_value"]) $("export-form")[n].addEventListener("input", drawBorderPreview);
   wireExportPresets();
+  wireFeatures();
   wireWatermark();
   $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));
   wireViewer();

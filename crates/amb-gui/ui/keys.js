@@ -39,6 +39,7 @@ const KEY_ACTIONS = [
   { id: "watch", group: "Help", label: "Watch an edit", hint: "A ghost cursor edits the sample photo in about 20 seconds; any key or click stops it. Starts the sample's edit afresh.", keys: [], when: "any", run: () => watchFlow() },
   { id: "basics", group: "Help", label: "Photography basics", hint: "How a photo is made and edited, step by step, and what the terms mean.", keys: ["Shift+F1"], when: "any", run: () => basicsFlow() },
   { id: "learn", group: "Help", label: "Learn: short guided lessons", keys: ["F1"], when: "any", run: () => learnFlow() },
+  { id: "features", group: "Help", label: "What Ambrotype can do: every feature, by what you want to do", keys: [], when: "any", run: () => featuresFlow() },
   { id: "before", group: "View", label: "Before / after", keys: ["\\"], when: "any", button: "btn-before", run: () => toggleBefore() },
   { id: "touch", group: "Tools", label: "Touch: drag on the photo to change the tone or colour under the pointer", hint: "Up or down changes the tone curve's region, or the colour's hue, saturation or brightness.", keys: ["T"], when: "main", photo: true, run: () => toggleTouch() },
   { id: "split", group: "View", label: "Before / after split", hint: "Before on the left of a bar, after on the right; drag the bar.", keys: ["Y"], when: "main", photo: true, run: () => toggleSplit() },

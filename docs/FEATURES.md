@@ -2,7 +2,7 @@
 
 Find what you want to do (Ctrl+F works, or ask your AI to read this page). Each line says what you'd want, what does it, where to find it in the app, and the `amb` command when there is one. Names in **bold** are what you click.
 
-In the app, **Search Everything** (Ctrl+K) finds this list too: type what you want ("whatsapp", "raw by mistake", "crooked horizon"), and it shows where it is, with a button for it.
+In the app, this list is Help → **What Ambrotype Can Do**, with a filter, and **Search Everything** (Ctrl+K) finds it too: type what you want ("whatsapp", "raw by mistake", "crooked horizon"), and it shows where it is, with a button for it.
 
 Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the library.
 
@@ -12,6 +12,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Open a photo or a folder** → **Open a photo** (Ctrl+O), **Open a folder** (Ctrl+Shift+O), or drop it on the window. Raws (NEF, CR2/CR3, ARW, RAF, DNG, …), JPEG, PNG, TIFF and WebP.
 - **Switch between library and editing** → **Library Grid** (G), or the task bar at the top: **Library**, **Develop**, **Color**, **Retouch**, **Film**, **Collage** (Ctrl+Alt+1–6).
 - **Find a command or setting I can't see** → **Search Everything** (Ctrl+K): type its name, or a setting and a number ("exposure 0.7").
+- **See everything the app can do** → Help → **What Ambrotype Can Do** (this list, with a filter).
 - **See all shortcuts, or change them** → **Keyboard Shortcuts** (Shift+?) shows them; **Settings** (Ctrl+,) changes them.
 
 ## Editing a photo

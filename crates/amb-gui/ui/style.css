@@ -1307,3 +1307,14 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 .how-dialog #how-text code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--panel-2); white-space: nowrap; }
 .how-dialog menu { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 #how-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Help → What Ambrotype Can Do */
+.features-dialog { width: min(720px, 92vw); }
+.features-dialog #features-filter { width: 100%; box-sizing: border-box; margin: 6px 0 10px; }
+.features-list { max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+.features-list h3 { margin: 12px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.feature-row { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 6px 8px; border: 0; background: transparent; border-radius: 6px; }
+.feature-row:hover, .feature-row:focus-visible { background: var(--panel-2); }
+.feature-want { color: var(--text); font-weight: 600; }
+.feature-how { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+

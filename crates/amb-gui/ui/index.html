@@ -1169,14 +1169,24 @@
   <dialog id="search-dialog" class="search-dialog" aria-label="Search everything">
     <input id="search-input" type="search" placeholder="Search commands, settings, presets… or what you want to do" spellcheck="false" autocomplete="off">
     <ul id="search-results" class="search-results"></ul>
-    <p id="search-none" class="hint" hidden>Nothing found.</p>
+    <p id="search-none" class="hint" hidden>Nothing found. <button type="button" id="search-all" class="small">Browse all features…</button></p>
   </dialog>
   <dialog id="how-dialog" class="how-dialog">
     <form method="dialog">
       <p class="hint" id="how-section"></p>
       <h2 id="how-want"></h2>
       <p id="how-text"></p>
-      <menu><span id="how-actions"></span><span class="grow"></span><button value="close">Close</button></menu>
+      <menu><span id="how-actions"></span><span class="grow"></span><button type="button" id="how-all" class="small">All features…</button><button value="close">Close</button></menu>
+    </form>
+  </dialog>
+  <dialog id="features-dialog" class="features-dialog" aria-label="What Ambrotype can do">
+    <form method="dialog">
+      <h2>What Ambrotype can do</h2>
+      <p class="hint">Every feature, by what you want to do. Click one to see where it is.</p>
+      <input id="features-filter" type="search" placeholder="Filter: e.g. dust, whatsapp, horizon" spellcheck="false" autocomplete="off">
+      <div id="features-list" class="features-list"></div>
+      <p id="features-none" class="hint" hidden>Nothing found. Search Everything (Ctrl+K) also finds commands and settings by name.</p>
+      <menu><span class="grow"></span><button value="close">Close</button></menu>
     </form>
   </dialog>
   <dialog id="shortcuts-dialog" class="shortcuts-dialog">

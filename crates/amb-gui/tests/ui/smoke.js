@@ -54,7 +54,19 @@ await t.step("search: what you want to do finds the feature, with a button for i
   t.expect($("how-text").querySelector("code")?.textContent.startsWith("amb convert"), $("how-text").textContent);
   const buttons = [...$("how-actions").querySelectorAll("button")].map((b) => b.dataset.key);
   t.expect(buttons.includes("a:convert-raws"), `its buttons: ${buttons.join(", ")}`);
+  // All features…: the whole list, filtered, and a row opens its How to.
+  t.click("#how-all");
+  await t.until("the features list", () => $("features-dialog").open);
+  t.expect($("features-list").querySelectorAll(".feature-row").length > 50, "every feature listed");
+  $("features-filter").value = "dust";
+  $("features-filter").dispatchEvent(new Event("input"));
+  const rows = [...$("features-list").querySelectorAll(".feature-row")];
+  t.expect(rows.length >= 1 && rows.length < 5, `filtered to ${rows.length}`);
+  rows[0].click();
+  await t.until("its How to", () => $("how-dialog").open);
+  t.expect($("how-all").hidden, "no All features… inside the list");
   $("how-dialog").close();
+  $("features-dialog").close();
 });
 
 await t.step("Effects → Glow: Halation is a slider, one undoable step", async () => {

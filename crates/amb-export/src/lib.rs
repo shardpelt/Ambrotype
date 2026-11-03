@@ -185,7 +185,7 @@ impl ExportSettings {
     pub fn new(format: Format) -> ExportSettings {
         ExportSettings {
             format,
-            quality: 90,
+            quality: 100,
             bit_depth: None,
             color_space: OutputSpace::Srgb,
             subsampling: None,

@@ -233,7 +233,7 @@ fn tools() -> Value {
                     "photo": photo,
                     "out": { "type": "string", "description": "The file to write, e.g. /photos/out/IMG_1.jpg" },
                     "long_edge": { "type": "integer", "minimum": 16, "maximum": 65535, "description": "Resize so the long edge is at most this many pixels." },
-                    "quality": { "type": "integer", "minimum": 1, "maximum": 100, "description": "JPEG/AVIF quality (default 90)." },
+                    "quality": { "type": "integer", "minimum": 1, "maximum": 100, "description": "JPEG/AVIF quality (default 100)." },
                     "color_space": { "type": "string", "enum": ["srgb", "p3", "adobergb", "prophoto", "rec2020"] },
                     "overwrite": { "type": "boolean" },
                 },

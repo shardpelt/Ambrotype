@@ -288,7 +288,7 @@ USAGE:
 
 EXPORT OPTIONS (amb render):
     --format jpeg|png|tiff|webp|avif|exr|jxl  Default: from the file extension
-    --quality 1-100                         JPEG/AVIF quality (default 90)
+    --quality 1-100                         JPEG/AVIF quality (default 100)
     --bits 8|16|32                          PNG 8/16, TIFF 8/16/32 (float); default 8, TIFF 16
     --color-space srgb|p3|adobergb|prophoto|rec2020   Default srgb; an ICC profile is embedded
     --long-edge N | --short-edge N | --width N | --height N | --fit WxH | --megapixels M | --percent P

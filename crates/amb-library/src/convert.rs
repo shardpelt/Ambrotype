@@ -243,7 +243,8 @@ fn camera(
     gpu: Option<&amb_gpu::Gpu>,
 ) -> Result<bool, String> {
     let source = amb_engine::source_path(photo);
-    let preview = amb_engine::raw::embedded_preview(&source).map_err(|e| e.to_string())?;
+    // A preview that can't be read counts as none.
+    let preview = amb_engine::raw::embedded_preview(&source).ok().flatten();
     let Some(preview) = preview else {
         // No JPEG inside: Auto is the nearest thing.
         developed(photo, export, out, edits, "Auto", gpu, &|img, base, d| {

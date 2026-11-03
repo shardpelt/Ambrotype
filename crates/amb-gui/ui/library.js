@@ -1030,7 +1030,7 @@ async function convertRawsFlow() {
     look: f.convert_look.value,
     like,
     long_edge: Number($("convert-size").value),
-    quality: Number($("convert-quality").value) || 90,
+    quality: Number($("convert-quality").value) || 100,
     edits: $("convert-edits").checked,
     best_of_bursts: $("convert-bursts").checked,
   };

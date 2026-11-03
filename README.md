@@ -61,7 +61,8 @@ All rendering models are our own ("ours, not Adobe's"): they're built by black-b
 
 ## Docs
 
-- [docs/NEXT.md](docs/NEXT.md): where the project is and what's next. **Start here.**
+- [docs/FEATURES.md](docs/FEATURES.md): everything the app can do, by what you want to do, with where to find it. **Using it? Start here.**
+- [docs/NEXT.md](docs/NEXT.md): where the project is and what's next. **Developing? Start here.**
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how it's built today.
 - [docs/GAPS.md](docs/GAPS.md): every known gap, guess and open question.
 - [docs/recipes.md](docs/recipes.md): step by step, what a common change touches.

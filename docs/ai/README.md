@@ -5,6 +5,7 @@ Ambrotype edits photos the way Lightroom does: as a non-destructive recipe of Ca
 This guide covers what works **today, through the `amb` command-line tool**. The same commands are available to your own AI app through the MCP server, `amb mcp` ([mcp.md](mcp.md)). Inside the editor, the assistant panel lets your own model (API key or a local model) do the same ([assistant.md](assistant.md)).
 
 Related files:
+- [../FEATURES.md](../FEATURES.md): what the app can do, by what a user wants, with where each feature is in the app and its `amb` command. Look there first for "how do I…" questions.
 - [core.md](core.md): the **core card**, a few hundred tokens: the compact edit syntax and the most used settings with their ranges. Read it first. `amb ref` prints it; `amb ref GROUP` prints one group's settings, one line each.
 - [settings-reference.md](settings-reference.md): every setting, with its range, default, Ambrotype render status and a description. It is generated from the code (`amb settings reference`, or `--json` for machine use).
 - `amb protocol schema`: JSON Schema of the commands and queries below.

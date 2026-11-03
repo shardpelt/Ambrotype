@@ -251,14 +251,15 @@ fn camera(
         })?;
         return Ok(false);
     };
-    // Through a file, so it reads like any JPEG (sRGB, as the camera saved it).
+    // Through a file, so it reads like any photo (sRGB, as the camera saved
+    // it); PNG, so the camera's JPEG isn't compressed a second time.
     let tmp = std::env::temp_dir().join(format!(
-        "amb-convert-{}-{}.jpg",
+        "amb-convert-{}-{}.png",
         std::process::id(),
         photo.file_stem().unwrap_or_default().to_string_lossy()
     ));
     preview
-        .save_with_format(&tmp, image::ImageFormat::Jpeg)
+        .save_with_format(&tmp, image::ImageFormat::Png)
         .map_err(|e| e.to_string())?;
     let result = if preview.width().max(preview.height()) >= CAMERA_JPEG_EDGE {
         (|| {

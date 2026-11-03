@@ -13,12 +13,14 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 1. **A paper curve in density** (Film lab item 9).
 2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
-3. **Convert raws on more cameras:** try Sony, Canon and Fujifilm raws (only a Nikon D750 so far).
+3. **Convert raws on more cameras:** Canon and Fujifilm next (Nikon and Sony done).
 4. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
 5. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
 6. **From the competition:** AI Remove on the GPU (our own kernels) and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place; pick the best in a burst by open eyes ([research/17](research/17-competitors-2026.md)).
 
 ## Recently done
+
+- 2026-11-03: Sony raws: Convert raws uses the camera's full-size JPEG where the ARW has one (A7 IV, A7R V; it was matching the raw to the small preview), and the camera's own distortion correction is read and applied (an A6400's kit zoom now frames like its JPEG). Tried on six Sony raws
 
 - 2026-11-03: a watchlist of the projects we researched, with when we last checked each ([research/watchlist.md](research/watchlist.md))
 

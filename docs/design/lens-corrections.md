@@ -16,7 +16,7 @@ Status: v1 implemented (`crates/amb-lens`, `crates/amb-engine/src/lens.rs`). Eve
 | Defringe: Purple/Green Amount (0–20) and Hue ranges (0–100) | `DefringePurple*`, `DefringeGreen*` | At high-contrast edges (OkLab lightness range in a window that widens with Amount), pull chroma towards grey for hues inside the range. |
 | Constrain Crop | `CropConstrainToWarp` | Scale up until no blank area is left. |
 
-Not yet (Transform and Upright are in [transform.md](transform.md)): fisheye profiles, and built-in profiles in maker notes (see Next).
+Not yet (Transform and Upright are in [transform.md](transform.md)): fisheye profiles, and built-in profiles in maker notes other than Sony's distortion (see Next).
 
 ## Corrections the DNG carries
 
@@ -27,6 +27,10 @@ A DNG can carry its own corrections as opcodes (`OpcodeList2`, `OpcodeList3`; DN
 - **`FixVignetteRadial`**: a radial gain.
 
 The last two become the photo's own lens correction (`Source::Embedded`, "Built-in (DNG)"). As in Camera Raw, it is always applied, whether or not Enable Profile Corrections is on, and a matched profile is not used on top. The profile amount sliders still scale it. Other opcodes (bad pixels, `MapPolynomial`, `WarpFisheye`, ...) are skipped. Checked on a Pixel 6 Pro DNG from raw.pixls.us: the dark, cyan corners are gone and nothing is left blank.
+
+### Sony's built-in distortion (2026-11-03)
+
+A Sony ARW keeps the camera's own lens correction in its raw image's IFD (`amb_engine::sony`). When `DistortionCorrection` (0x7036) is on, its `DistortionCorrParams` (0x7037: a knot count, then the knots) becomes the photo's built-in correction ("Built-in (Sony)", `Distortion::Knots`), applied like a DNG's. Measured, not documented: the knots are evenly spaced from the centre to the corner of the camera's corrected frame (the sensor's, zoomed in by the corner's scale so nothing is blank), and each scales the radius an output pixel comes from by 1 + v / 2^14. On an A6400 with the E PZ 18-105mm at 105 mm (corner value 2156, a 13 % zoom), our render matches the camera's JPEG framing within 0.3 % across the frame. Not used yet: the vignetting (0x7032) and CA (0x7035) tags. The camera's JPEGs from an A7 III and A7R V showed no measurable vignetting correction, so we couldn't confirm their scale.
 
 
 ## Getting the lensfun database
@@ -96,7 +100,7 @@ Checked on real raws with the lensfun database:
 
 ## Next
 
-- **Built-in profiles in maker notes.** Micro Four Thirds, Fujifilm X, Sony E and many compacts store correction data in maker notes. Lightroom applies it automatically ("Built-in Lens Profile Applied"). Reading these covers lenses that no database has. (DNGs with opcodes are read since 2026-10-12.)
+- **Built-in profiles in maker notes.** Micro Four Thirds, Fujifilm X and many compacts store correction data in maker notes (Sony's distortion is read since 2026-11-03). Lightroom applies it automatically ("Built-in Lens Profile Applied"). Reading these covers lenses that no database has. (DNGs with opcodes are read since 2026-10-12.)
 - Transform and Upright: done, a homography in the same resampling pass ([transform.md](transform.md)).
 - Fisheye profiles and projection changes.
 - GPU resampling: the warp is about 1.5 s for 24 MP on 4 CPU cores.

@@ -114,7 +114,14 @@ pub enum Distortion {
     /// x_d = x·f + kt0·2xy + kt1·(r² + 2x²), y_d = y·f + kt1·2xy + kt0·(r² + 2y²),
     /// f = kr0 + kr1 r² + kr2 r⁴ + kr3 r⁶.
     Dng { k: [f64; 6] },
+    /// Radius scale at evenly spaced knots, `scale[0]` at the centre and
+    /// `scale[n - 1]` at r = 1 (Sony's `DistortionCorrParams`), linear in
+    /// between and past the last knot: rd = ru · s(ru).
+    Knots { n: usize, scale: [f64; MAX_KNOTS] },
 }
+
+/// The most knots a [`Distortion::Knots`] holds.
+pub const MAX_KNOTS: usize = 16;
 
 /// Lateral chromatic aberration: where red and blue sit relative to green,
 /// applied to the green channel's (already distorted) position.
@@ -163,7 +170,7 @@ pub enum Source {
     Lensfun,
     Lcp,
     /// Correction data embedded in the raw file (DNG `WarpRectilinear` and
-    /// `FixVignetteRadial` opcodes; maker notes aren't read yet).
+    /// `FixVignetteRadial` opcodes; Sony's distortion tags in an ARW).
     Embedded,
 }
 
@@ -187,7 +194,10 @@ impl Distortion {
     pub fn centre_scale(&self) -> f64 {
         match *self {
             Distortion::Poly3 { k1 } => 1.0 - k1,
-            Distortion::Poly5 { .. } | Distortion::Acm { .. } | Distortion::Dng { .. } => 1.0,
+            Distortion::Poly5 { .. }
+            | Distortion::Acm { .. }
+            | Distortion::Dng { .. }
+            | Distortion::Knots { .. } => 1.0,
             Distortion::PtLens { a, b, c } => 1.0 - a - b - c,
         }
     }
@@ -211,6 +221,10 @@ impl Distortion {
             }
             Distortion::Acm { k } => acm(&k, x, y),
             Distortion::Dng { k } => dng_warp(&k, x, y),
+            Distortion::Knots { n, scale } => {
+                let f = knots_at(&scale[..n.clamp(2, MAX_KNOTS)], r2.sqrt());
+                (x * f, y * f)
+            }
         }
     }
 
@@ -246,9 +260,24 @@ impl Distortion {
             (Distortion::Dng { k: a }, Distortion::Dng { k: b }) => Distortion::Dng {
                 k: std::array::from_fn(|i| l(a[i], b[i])),
             },
+            (Distortion::Knots { n, scale: a }, Distortion::Knots { n: m, scale: b }) if n == m => {
+                Distortion::Knots {
+                    n,
+                    scale: std::array::from_fn(|i| l(a[i], b[i])),
+                }
+            }
             _ => return None,
         })
     }
+}
+
+/// `knots` (at 0, 1/(n-1), …, 1) at radius `r`, linear in between and past
+/// the last one.
+fn knots_at(knots: &[f64], r: f64) -> f64 {
+    let n = knots.len();
+    let t = (r * (n - 1) as f64).max(0.0);
+    let i = (t as usize).min(n - 2);
+    knots[i] + (knots[i + 1] - knots[i]) * (t - i as f64)
 }
 
 /// DNG `WarpRectilinear` on one plane (see [`Distortion::Dng`]).
@@ -474,6 +503,9 @@ impl std::fmt::Display for Distortion {
             }
             Distortion::Acm { k } => write!(f, "acm k={}", nums(&k)),
             Distortion::Dng { k } => write!(f, "dng warp k={}", nums(&k)),
+            Distortion::Knots { n, scale } => {
+                write!(f, "radius scale at {n} knots={}", nums(&scale[..n]))
+            }
         }
     }
 }

@@ -211,7 +211,9 @@ pub fn load(path: &Path) -> Result<CameraImage, Error> {
             _ => {}
         }
     }
-    let embedded = dng_opcodes::correction(&opcodes, placement, width, height);
+    // Else a Sony ARW's own distortion correction (what its JPEGs show).
+    let embedded = dng_opcodes::correction(&opcodes, placement, width, height)
+        .or_else(|| crate::sony::correction(path, placement, width, height));
 
     // As-shot white: rawler stores multipliers (1 / neutral). Fall back to D65.
     let wb = raw.wb_coeffs;
@@ -701,7 +703,7 @@ pub fn embedded_thumbnail(path: &Path, max_edge: u32) -> Result<Option<image::Rg
     let small = if crate::raster::is_raster(path) {
         crate::raster::quick_image(path, max_edge.max(16))?
     } else {
-        let Some(img) = embedded_jpeg(path)? else {
+        let Some(img) = embedded_jpeg(path, false)? else {
             return Ok(None);
         };
         img.thumbnail(max_edge.max(16), max_edge.max(16)).to_rgb8()
@@ -713,11 +715,13 @@ pub fn embedded_thumbnail(path: &Path, max_edge: u32) -> Result<Option<image::Rg
 /// what the camera would have saved had it been set to JPEG (often full
 /// size; on some cameras smaller). `None` when it keeps none.
 pub fn embedded_preview(path: &Path) -> Result<Option<image::RgbImage>, Error> {
-    Ok(embedded_jpeg(path)?.map(|img| upright(path, img.to_rgb8())))
+    Ok(embedded_jpeg(path, true)?.map(|img| upright(path, img.to_rgb8())))
 }
 
 /// The larger preview a raw keeps (sharper when scaled down), else its small thumbnail.
-fn embedded_jpeg(path: &Path) -> Result<Option<image::DynamicImage>, Error> {
+/// `largest` also looks for a full-size JPEG rawler doesn't offer (slow to
+/// decode: not for thumbnails).
+fn embedded_jpeg(path: &Path, largest: bool) -> Result<Option<image::DynamicImage>, Error> {
     let src = rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
     let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
     let params = rawler::decoders::RawDecodeParams::default();
@@ -725,7 +729,20 @@ fn embedded_jpeg(path: &Path) -> Result<Option<image::DynamicImage>, Error> {
         Ok(Some(img)) => Some(img),
         _ => decoder.thumbnail_image(&src, &params).ok().flatten(),
     };
-    Ok(found.filter(|i| i.width() >= 32 && i.height() >= 32))
+    // A larger JPEG in the file's IFDs (Sony's full-size one).
+    let larger = largest
+        .then(|| crate::sony::largest_jpeg(path))
+        .flatten()
+        .and_then(|b| image::load_from_memory_with_format(&b, image::ImageFormat::Jpeg).ok())
+        .filter(|j| {
+            found.as_ref().is_none_or(|f| {
+                u64::from(j.width()) * u64::from(j.height())
+                    > u64::from(f.width()) * u64::from(f.height())
+            })
+        });
+    Ok(larger
+        .or(found)
+        .filter(|i| i.width() >= 32 && i.height() >= 32))
 }
 
 /// An embedded preview turned as the raw says it was held.

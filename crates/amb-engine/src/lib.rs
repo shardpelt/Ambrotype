@@ -42,6 +42,7 @@ pub mod raw;
 pub mod rcd;
 pub mod retouch;
 pub mod rolloff;
+pub mod sony;
 pub mod stats;
 pub mod subject;
 pub mod tone;

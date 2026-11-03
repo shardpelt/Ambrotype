@@ -30,7 +30,8 @@ About 87,000 lines of Rust and about 630 tests (fmt, clippy and tests run in CI 
 
 ```
 raw file ──rawler──▶ CameraImage (camera RGB, white = 1, per-channel clip levels, + metadata: lens, EXIF, orientation;
-                     a DNG's gain maps applied, its warp and vignette opcodes kept as the photo's own lens correction)
+                     a DNG's gain maps applied, its warp and vignette opcodes kept as the photo's own lens correction,
+                     or a Sony ARW's distortion tags, amb-engine/src/sony.rs)
          (rawler decodes; we demosaic: RCD for Bayer in amb-engine/src/rcd.rs, our Markesteijn port for X-Trans in amb-engine/src/xtrans.rs)
          (then partly clipped highlights rebuilt from their other channels: amb-engine/src/highlights.rs)
 JPEG/PNG/TIFF/WebP ──raster.rs──▶ CameraImage too: the image's RGB made linear by its ICC profile

@@ -260,6 +260,15 @@ function updateSmallCopy() {
   f.small_mb.disabled = !f.small_copy.checked;
 }
 
+// With a size limit, the quality is the most it gets: it comes down to fit.
+function updateQualityName() {
+  const f = $("export-form");
+  const limited = f.format.value === "jpeg" && Number(f.max_mb.value) > 0;
+  const name = f.quality.closest("label").querySelector(".q-name");
+  name.textContent = limited ? "Quality (at most)" : "Quality";
+  name.title = limited ? `Lowered only as far as it must for the file to stay under ${f.max_mb.value} MB` : "";
+}
+
 function applyExportPreset(name) {
   const f = $("export-form");
   const p = ui.exportPresets?.find((x) => x.name === name);
@@ -277,6 +286,7 @@ function applyExportPreset(name) {
   if (!("max_mb" in p.fields) && p.fields.max_kb) f.max_mb.value = Number(p.fields.max_kb) / 1000;
   updateWatermarkForm();
   updateSmallCopy();
+  updateQualityName();
   f.quality.dispatchEvent(new Event("input"));
   f.border_preset.dispatchEvent(new Event("change"));
   f.size_preset.value = "";
@@ -291,7 +301,10 @@ function wireExportPresets() {
     const v = f.max_mb_pick.value;
     if (v) f.max_mb.value = v === "none" ? "" : v;
     f.max_mb_pick.value = "";
+    updateQualityName();
   });
+  f.max_mb.addEventListener("input", updateQualityName);
+  f.format.addEventListener("change", updateQualityName);
   $("export-preset-save").addEventListener("click", async () => {
     const name = await askName("Save export preset", "Keeps the format, size, sharpening, metadata and border choices.", f.export_preset.value);
     if (!name) return;
@@ -382,6 +395,7 @@ async function exportFlow(batch = null) {
   await fillExportPresets($("export-form").export_preset.value || null);
   updateWatermarkForm();
   updateSmallCopy();
+  updateQualityName();
   updateExportSize();
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));

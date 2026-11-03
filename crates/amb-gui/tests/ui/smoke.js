@@ -545,6 +545,7 @@ await t.step("Ctrl+E exports a JPEG (quality 100, under 16 MB, with a smaller co
   f.max_mb_pick.value = "16";
   f.max_mb_pick.dispatchEvent(new Event("change"));
   t.expect(f.max_mb.value === "16" && f.max_mb_pick.value === "", `kept under ${f.max_mb.value} MB`);
+  t.expect(f.quality.closest("label").textContent.includes("at most"), "the quality reads as the most it gets");
   // And a smaller copy beside it.
   t.expect(f.small_mb.disabled, "its size waits for the switch");
   t.click('#export-form [name="small_copy"]');

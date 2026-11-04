@@ -1005,6 +1005,9 @@ async function init() {
     if (seen.get(def.label) > 1 && s.label) ui.historyNames.set(def.name, `${s.label}: ${def.label}`);
   }
   await loadLooks();
+  // Task plugins bring their tabs and layouts.
+  await loadTaskPlugins();
+  applyActiveLooks();
   await loadKeybindings();
 
   $("btn-open").addEventListener("click", openDialog);
@@ -1067,7 +1070,6 @@ async function init() {
   $("btn-keys").addEventListener("click", showShortcuts);
   $("btn-search").addEventListener("click", searchFlow);
   $("btn-auto").addEventListener("click", () => autoEditFlow());
-  wireTrip();
   wireToolBlocks();
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));

@@ -299,3 +299,40 @@ fn effects_reach_the_engine_through_the_resolver() {
     assert_eq!(dev.effects.len(), 1);
     assert!(notes.iter().any(|n| n.contains("nope")), "{notes:?}");
 }
+
+#[test]
+fn a_task_is_a_layout_and_tools_with_no_module() {
+    let trippy = crate::builtin("trippy").expect("the Trippy task is built in");
+    assert!(trippy.manifest.is_task() && trippy.wasm.is_empty());
+    let task = trippy.manifest.task.as_ref().unwrap();
+    assert_eq!(task.label, "Trippy");
+    assert!(task.tools.iter().any(|t| t.command == "trip-me" && t.big));
+    assert!(
+        task.tools
+            .iter()
+            .any(|t| t.effect == "hue-trip" && t.recipe == "Acid")
+    );
+    assert!(
+        trippy
+            .run(&Default::default(), &Default::default())
+            .is_err()
+    );
+    // Each tool does one thing.
+    let base = |tools: &str| {
+        format!(
+            r#"{{"format":"ambrotype-plugin/1","id":"t","name":"T","version":"1","kind":"task","task":{{"label":"T","layout":{{}},"tools":{tools}}}}}"#
+        )
+    };
+    assert!(Manifest::from_json(&base(r#"[{"label":"A","command":"auto-edit"}]"#)).is_ok());
+    let two = Manifest::from_json(&base(
+        r#"[{"label":"A","command":"auto-edit","effect":"duotone"}]"#,
+    ));
+    assert!(two.unwrap_err().contains("one of"));
+    let recipe = Manifest::from_json(&base(r#"[{"label":"A","command":"x","recipe":"Acid"}]"#));
+    assert!(recipe.is_err());
+    // A task's layout is an object, and only tasks have one.
+    let not_object = base("[]").replace(r#""layout":{}"#, r#""layout":"builtin:classic""#);
+    assert!(Manifest::from_json(&not_object).is_err());
+    let action_with_task = base("[]").replace(r#""kind":"task""#, r#""kind":"action""#);
+    assert!(Manifest::from_json(&action_with_task).is_err());
+}

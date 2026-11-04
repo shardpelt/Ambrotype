@@ -11,7 +11,7 @@ const TOOLBAR_IDS = {
   before: "btn-before", crop: "btn-crop", masks: "btn-masks", spots: "btn-spots", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip", frame: "btn-frame", keys: "btn-keys",
   hub: "btn-hub", plugins: "btn-plugins", looks: "btn-looks", edit: "btn-edit-layout", settings: "btn-settings", feedback: "btn-feedback",
 };
-const BLOCK_IDS = { presets: "block-presets", info: "block-info", history: "block-history", histogram: "block-histogram", trip: "block-trip", quick: "block-quick", retouch: "block-retouch" };
+const BLOCK_IDS = { presets: "block-presets", info: "block-info", history: "block-history", histogram: "block-histogram", tools: "block-tools", quick: "block-quick", retouch: "block-retouch" };
 const WHEEL_SECTIONS = ["Shadow", "Midtone", "Highlight", "Global"];
 const DEFAULT_WIDTH = { left: 250, right: 330 };
 

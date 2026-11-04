@@ -46,7 +46,7 @@ const MAX_LOG_LINES: usize = 200;
 const LOG_IMPORT_CRASHES: bool = cfg!(all(windows, target_arch = "x86_64"));
 
 /// The plugins that come with Ambrotype: manifest, id and module.
-pub const BUILTIN: [(&str, &str, &[u8]); 7] = [
+pub const BUILTIN: [(&str, &str, &[u8]); 8] = [
     (
         include_str!("../../../plugins/auto-tone/plugin.json"),
         "auto-tone",
@@ -81,6 +81,12 @@ pub const BUILTIN: [(&str, &str, &[u8]); 7] = [
         include_str!("../../../plugins/hue-trip/plugin.json"),
         "hue-trip",
         include_bytes!("../../../plugins/hue-trip/plugin.wasm"),
+    ),
+    // A task: a layout and buttons, no module.
+    (
+        include_str!("../../../plugins/trippy/plugin.json"),
+        "trippy",
+        &[],
     ),
 ];
 
@@ -180,6 +186,12 @@ impl Plugin {
             .map_err(|e| format!("{}: {e}", manifest_path.display()))?;
         let manifest =
             Manifest::from_json(&text).map_err(|e| format!("{}: {e}", manifest_path.display()))?;
+        if manifest.is_task() {
+            return Ok(Plugin {
+                manifest,
+                wasm: Vec::new(),
+            });
+        }
         let wasm_path = dir.join(&manifest.wasm);
         let wasm = std::fs::read(&wasm_path).map_err(|e| {
             format!(
@@ -222,6 +234,10 @@ impl Plugin {
     /// Check the module: valid WebAssembly with the exports a plugin needs
     /// and no imports other than `amb.log`.
     pub fn check(&self) -> Result<(), String> {
+        if self.manifest.is_task() {
+            // No module to run: a layout and buttons.
+            return Ok(());
+        }
         let engine = engine();
         let module = Module::new(&engine, &self.wasm)
             .map_err(|e| format!("not a valid plugin module: {e}"))?;
@@ -282,6 +298,12 @@ impl Plugin {
         if self.manifest.is_effect() {
             return Err(format!(
                 "{} is an effect: add it to a photo rather than run it",
+                self.manifest.name
+            ));
+        }
+        if self.manifest.is_task() {
+            return Err(format!(
+                "{} is a task: it is a tab in the task bar, not something to run",
                 self.manifest.name
             ));
         }

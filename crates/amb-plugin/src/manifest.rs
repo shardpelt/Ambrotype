@@ -30,8 +30,10 @@ pub struct Manifest {
     pub author: String,
     #[serde(default, skip_serializing_if = "String::is_empty")]
     pub description: String,
-    /// What the plugin is: "action" (a button that makes edits) or
-    /// "effect" (a look rendered with the photo, kept in its edit).
+    /// What the plugin is: "action" (a button that makes edits), "effect"
+    /// (a look rendered with the photo, kept in its edit) or "task" (a tab
+    /// in the task bar: a layout and tool buttons, no code;
+    /// docs/design/plugin-kinds.md).
     #[serde(default = "action")]
     pub kind: String,
     /// For an effect: "color" (one colour to another, made into a colour
@@ -55,7 +57,54 @@ pub struct Manifest {
     /// Ready-made sets of parameter values to start from.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub recipes: Vec<Recipe>,
+    /// For a task: its tab.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task: Option<Task>,
 }
+
+/// A task plugin's tab: its name in the task bar, the layout it opens, and
+/// the tool buttons its layout's `tools` block shows.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Task {
+    pub label: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub hint: String,
+    /// A layout (`ambrotype-layout/1`, as a layout file holds).
+    pub layout: Value,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tools: Vec<Tool>,
+}
+
+/// A task's button: what it says and what it does, which is one of
+/// `command` (an editor command by its shortcut id, as Keyboard Shortcuts
+/// lists them: "auto-edit", "remove-object"), `effect` (an effect plugin
+/// put on the photo, from one of its `recipe`s or `params`, in place of
+/// the one already there) or `plugin` (an action plugin run with
+/// `params`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Tool {
+    pub label: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub hint: String,
+    /// Shown wide, first.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub big: bool,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub command: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub effect: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub plugin: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub recipe: String,
+    #[serde(default, skip_serializing_if = "Map::is_empty")]
+    pub params: Map<String, Value>,
+}
+
+/// At most this many tool buttons in a task.
+const MAX_TOOLS: usize = 24;
 
 /// A named set of parameter values (left-out parameters keep their default).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -143,6 +192,11 @@ impl Manifest {
         self.kind == "effect"
     }
 
+    /// A task has no module: it is a layout and buttons.
+    pub fn is_task(&self) -> bool {
+        self.kind == "task"
+    }
+
     pub fn from_json(text: &str) -> Result<Manifest, String> {
         let m: Manifest =
             serde_json::from_str(text).map_err(|e| format!("not a plugin manifest: {e}"))?;
@@ -194,9 +248,52 @@ impl Manifest {
                     "an effect needs \"effect\": \"color\" or \"pixels\", not {other:?}"
                 ));
             }
-            (other, _) => {
-                return Err(format!("unknown kind {other:?} (\"action\" or \"effect\")"));
+            ("task", "") => {
+                if !self.permissions.is_empty() || !self.params.is_empty() || self.margin != 0 {
+                    return Err(
+                        "a task has no permissions, parameters or margin: its tools have them"
+                            .into(),
+                    );
+                }
+                let task = self
+                    .task
+                    .as_ref()
+                    .ok_or("a task needs \"task\": its label, layout and tools")?;
+                let label = task.label.trim();
+                if label.is_empty() || label.chars().count() > 24 {
+                    return Err("a task's label must be 1 to 24 characters".into());
+                }
+                if !task.layout.is_object() {
+                    return Err("a task's \"layout\" must be a layout object".into());
+                }
+                if task.tools.len() > MAX_TOOLS {
+                    return Err(format!("at most {MAX_TOOLS} tools"));
+                }
+                for t in &task.tools {
+                    let does = [&t.command, &t.effect, &t.plugin]
+                        .iter()
+                        .filter(|s| !s.is_empty())
+                        .count();
+                    if t.label.trim().is_empty() || does != 1 {
+                        return Err(format!(
+                            "tool {:?}: give it a label and one of \"command\", \"effect\" or \"plugin\"",
+                            t.label
+                        ));
+                    }
+                    if !t.recipe.is_empty() && t.effect.is_empty() {
+                        return Err(format!("tool {:?}: \"recipe\" is for an effect", t.label));
+                    }
+                }
             }
+            ("task", _) => return Err("\"effect\" is for effect plugins".into()),
+            (other, _) => {
+                return Err(format!(
+                    "unknown kind {other:?} (\"action\", \"effect\" or \"task\")"
+                ));
+            }
+        }
+        if self.task.is_some() && !self.is_task() {
+            return Err("\"task\" is for task plugins".into());
         }
         let wasm_ok = self.wasm.ends_with(".wasm")
             && !self.wasm.contains(['/', '\\'])

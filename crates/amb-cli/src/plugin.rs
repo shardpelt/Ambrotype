@@ -251,6 +251,14 @@ pub fn check(dir: &Path) -> Result<(), String> {
         };
         println!("  param {} ({}): {kind}", p.name, p.label);
     }
+    if let Some(t) = &m.task {
+        println!(
+            "  a task: {:?} with {} tool(s); its layout is checked when the editor lists it",
+            t.label,
+            t.tools.len()
+        );
+        return Ok(());
+    }
     if m.is_effect() {
         let start = std::time::Instant::now();
         if m.effect == "color" {

@@ -1,18 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The Trip block (the Trippy task): big buttons that put playful effects on
-// the photo in one click: rainbow foil (Holographic), psychedelic colour
-// (Hue trip), a light leak, pop duotone, or Trip me, a new random mix each
-// click. They are ordinary effects (amb:Effects), so the Effects panel
-// tunes them and Undo takes each click back.
+// Trip me and Back to normal, the Trippy task's commands (the task itself
+// is a task plugin, plugins/trippy): a new random mix of psychedelic
+// colour, rainbow foil and light leaks each click, or the trip taken off.
+// They are ordinary effects (amb:Effects), so the Effects panel tunes them
+// and Undo takes each click back. Also task tools' effect buttons
+// (`setEffect`), for any task plugin.
 "use strict";
 
-// The plugins a trip is made of, and the recipes shown as buttons.
+// The plugins a trip is made of.
 const TRIP_PLUGINS = ["hue-trip", "holographic", "light-leak", "duotone"];
-const TRIP_BUTTONS = [
-  ["hue-trip", "Acid"], ["hue-trip", "Pop art"], ["hue-trip", "Dream"],
-  ["holographic", "Foil sticker"], ["holographic", "Oil slick"], ["holographic", "Prism"],
-  ["duotone", "Pop pink"],
-];
 
 function tripEffects() {
   return effectsOf(currentValue("amb:Effects"));
@@ -37,10 +33,15 @@ function tripRecipe(plugin, name) {
   return m?.recipes?.find((r) => r.name === name)?.params ?? {};
 }
 
-// One recipe: replaces that plugin's effect, keeps the rest of the trip.
-async function tripApply(plugin, name) {
-  const others = tripEffects().filter((e) => TRIP_PLUGINS.includes(e.plugin) && e.plugin !== plugin);
-  await setTrip([...others, { plugin, params: tripRecipe(plugin, name), amount: 100, seed: tripSeed() }], `Trip: ${name}`);
+// An effect plugin on the photo with `params` (or a recipe's), in place of
+// the one of that plugin already there; one undo step.
+async function setEffect(plugin, { recipe = "", params = {} } = {}, what = null) {
+  if (!ui.info) return toast("Open a photo first.", true);
+  if (!fx.plugins.length) await loadEffectPlugins();
+  if (!fx.plugins.some((p) => p.id === plugin)) return toast(`The effect ${plugin} isn't installed.`, true);
+  const values = { ...(recipe ? tripRecipe(plugin, recipe) : {}), ...params };
+  const list = [...tripEffects().filter((e) => e.plugin !== plugin), { plugin, params: values, amount: 100, seed: tripSeed() }];
+  await run([{ cmd: "set_param", name: "amb:Effects", value: JSON.stringify(list) }], what ?? (recipe || plugin));
 }
 
 // A random number in [lo, hi], rounded to `step`.
@@ -64,21 +65,5 @@ function tripMix() {
   return out.map((e) => ({ ...e, amount: 100, seed: tripSeed() }));
 }
 
-function wireTrip() {
-  const box = $("trip-buttons");
-  const big = Object.assign(document.createElement("button"), { type: "button", className: "trip-me", textContent: "Trip me", title: "A new random mix of psychedelic colour, rainbow foil and light leaks, each click (Undo takes it back)" });
-  big.addEventListener("click", () => setTrip(tripMix(), "Trip me"));
-  const buttons = TRIP_BUTTONS.map(([plugin, name]) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", className: "trip-recipe", textContent: name });
-    b.dataset.plugin = plugin;
-    b.addEventListener("click", () => tripApply(plugin, name));
-    return b;
-  });
-  const clear = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "Back to normal", title: "Take the trip's effects off the photo (other effects stay)" });
-  clear.addEventListener("click", () => setTrip([], "Trip: back to normal"));
-  box.replaceChildren(big, ...buttons, clear);
-  // Each recipe's tooltip is its plugin's description, once they're loaded.
-  loadEffectPlugins().then(() => {
-    for (const b of buttons) b.title = fx.plugins.find((p) => p.id === b.dataset.plugin)?.manifest?.description ?? "";
-  });
-}
+const tripMe = () => setTrip(tripMix(), "Trip me");
+const tripClear = () => setTrip([], "Trip: back to normal");

@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Tasks: the bar at the top (Library · Develop · Color · Retouch · Film ·
-// Collage · Trippy) switches between the library and layouts made for one job each,
-// so the right controls are on screen for what you're doing. A task keeps
-// the layout you choose while in it (Appearance), on this computer.
+// Collage, then the task plugins: Trippy, and any installed) switches
+// between the library and layouts made for one job each, so the right
+// controls are on screen for what you're doing. A task keeps the layout you
+// choose while in it (Appearance), on this computer. A task plugin
+// (`"kind": "task"`, docs/design/plugin-kinds.md) brings its layout
+// (`plugin:<id>`) and the buttons its layout's `tools` block shows.
 "use strict";
 
 const TASKS = [
@@ -12,12 +15,62 @@ const TASKS = [
   { id: "retouch", label: "Retouch", hint: "Spots, brushes and masks", layout: "builtin:retouch" },
   { id: "film", label: "Film", hint: "Scanned film negatives", layout: "builtin:film-lab" },
   { id: "collage", label: "Collage", hint: "Prepare photos for a collage", layout: "builtin:collage-prep" },
-  { id: "trippy", label: "Trippy", hint: "Playful looks: psychedelic colour, rainbow foil, light leaks", layout: "builtin:trippy" },
 ];
 
 // The task bar's own layouts (not Develop's everyday one), kept out of the
-// Appearance list.
+// Appearance list; task plugins' join when they load.
 const TASK_LAYOUTS = new Set(TASKS.filter((t) => t.layout && t.id !== "develop").map((t) => t.layout));
+
+// Task plugins, from the plugin list: added after the built-in tasks, their
+// layouts to the looks.
+async function loadTaskPlugins() {
+  let list = [];
+  try {
+    list = await invoke("plugins_list");
+  } catch {
+    return;
+  }
+  for (const p of list) {
+    const task = p.manifest?.kind === "task" && !p.error ? p.manifest.task : null;
+    if (!task || TASKS.some((t) => t.id === p.id)) continue;
+    const layout = `plugin:${p.id}`;
+    TASKS.push({ id: p.id, label: task.label, hint: task.hint || p.manifest.description, layout, tools: task.tools ?? [], plugin: true });
+    TASK_LAYOUTS.add(layout);
+    if (ui.looks && !findLook("layout", layout)) {
+      ui.looks.layouts.push({ id: layout, name: task.layout.name ?? task.label, data: task.layout, usable: true, builtin: p.builtin });
+    }
+  }
+}
+
+// What a task plugin's tool does, run.
+async function runTaskTool(tool) {
+  if (tool.command) {
+    const a = KEY_ACTIONS.find((x) => x.id === tool.command);
+    if (!a) return toast(`No command ${tool.command}.`, true);
+    return a.run();
+  }
+  if (!ui.info) return toast("Open a photo first.", true);
+  if (tool.effect) return setEffect(tool.effect, { recipe: tool.recipe, params: tool.params }, tool.label);
+  const r = await invoke("run_plugin", { id: tool.plugin, params: tool.params ?? {} });
+  setState(r.state);
+  requestPreview(false);
+  if (r.message) toast(`${tool.label}: ${r.message}`);
+}
+
+// The tools block: the task on screen's buttons.
+function renderTaskTools() {
+  const t = TASKS.find((x) => x.id === currentTask());
+  const tools = t?.tools ?? [];
+  $("tools-title").textContent = t?.label ? `${t.label} tools` : "Tools";
+  $("tools-task").replaceChildren(...tools.map((tool, i) => {
+    const b = Object.assign(document.createElement("button"), { type: "button", className: `tool-tile${tool.big ? " big" : ""}`, title: tool.hint ?? "" });
+    b.dataset.tool = String(i);
+    b.append(Object.assign(document.createElement("strong"), { textContent: tool.label }));
+    if (tool.hint) b.append(Object.assign(document.createElement("span"), { textContent: tool.hint }));
+    b.addEventListener("click", () => Promise.resolve(runTaskTool(tool)).catch((e) => toast(String(e), true)));
+    return b;
+  }));
+}
 
 const taskState = (() => {
   try { return JSON.parse(localStorage.getItem("amb.tasks")) ?? {}; } catch { return {}; }
@@ -65,6 +118,7 @@ function renderTasks() {
   const now = currentTask();
   // Each task has its own accent (style.css), so you can see where you are.
   document.body.dataset.task = now;
+  renderTaskTools();
   for (const b of $("task-bar").children) {
     const on = b.dataset.task === now;
     b.classList.toggle("on", on);
@@ -77,7 +131,7 @@ function wireTasks() {
   bar.replaceChildren(...TASKS.map((t, i) => {
     const b = Object.assign(document.createElement("button"), { type: "button", textContent: t.label, role: "tab" });
     b.dataset.task = t.id;
-    b.setAttribute("aria-label", `${t.label}: ${t.hint} (${keyLabel(`Ctrl+Alt+${i + 1}`)})`);
+    b.setAttribute("aria-label", i < 9 ? `${t.label}: ${t.hint} (${keyLabel(`Ctrl+Alt+${i + 1}`)})` : `${t.label}: ${t.hint}`);
     b.addEventListener("click", () => switchTask(t.id));
     return b;
   }));

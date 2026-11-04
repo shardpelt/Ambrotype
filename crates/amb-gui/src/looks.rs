@@ -26,7 +26,7 @@ pub const THEME_FORMAT: &str = "ambrotype-theme/1";
 pub const DEFAULT_LAYOUT: &str = "builtin:classic";
 pub const DEFAULT_THEME: &str = "builtin:dark";
 
-const BUILTIN_LAYOUTS: [(&str, &str); 16] = [
+const BUILTIN_LAYOUTS: [(&str, &str); 15] = [
     (
         "classic",
         include_str!("../data/hub/looks/layouts/classic.json"),
@@ -87,10 +87,6 @@ const BUILTIN_LAYOUTS: [(&str, &str); 16] = [
         "minimalism",
         include_str!("../data/hub/looks/layouts/minimalism.json"),
     ),
-    (
-        "trippy",
-        include_str!("../data/hub/looks/layouts/trippy.json"),
-    ),
 ];
 const BUILTIN_THEMES: [(&str, &str); 11] = [
     ("dark", include_str!("../data/hub/looks/themes/dark.json")),
@@ -143,7 +139,7 @@ pub const BLOCKS: [&str; 7] = [
     "info",
     "history",
     "histogram",
-    "trip",
+    "tools",
     "quick",
     "retouch",
 ];

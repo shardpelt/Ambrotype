@@ -1,0 +1,46 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "trippy",
+  "name": "Trippy",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "A task for playing: psychedelic colour, rainbow foil and light leaks in one click, with the Effects panel open to tune them. A task plugin: a tab with its own layout and buttons, and no code.",
+  "kind": "task",
+  "task": {
+    "label": "Trippy",
+    "hint": "Playful looks: psychedelic colour, rainbow foil, light leaks",
+    "layout": {
+      "format": "ambrotype-layout/1",
+      "name": "Trippy",
+      "description": "The Trippy task's tools on the left, the Effects panel open on the right to tune them.",
+      "author": "Ambrotype",
+      "density": "normal",
+      "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "search", "|", "before", "masks", "zoom", "|", "plugins", "hub", "|", "looks", "settings"],
+      "left": { "width": 260, "items": ["tools", "presets", "history"] },
+      "right": {
+        "width": 340,
+        "items": [
+          "histogram",
+          { "panel": "effects", "open": true },
+          { "panel": "color_mixer", "open": true },
+          { "panel": "color_grading" },
+          { "panel": "basic" },
+          { "panel": "tone_curve" }
+        ]
+      }
+    },
+    "tools": [
+      { "label": "Trip me", "hint": "A new random mix each click", "big": true, "command": "trip-me" },
+      { "label": "Acid", "hint": "Colours turned round the wheel", "effect": "hue-trip", "recipe": "Acid" },
+      { "label": "Pop art", "hint": "Posterised, bold colour", "effect": "hue-trip", "recipe": "Pop art" },
+      { "label": "Dream", "hint": "Soft, shifted colour", "effect": "hue-trip", "recipe": "Dream" },
+      { "label": "Foil sticker", "hint": "Holographic rainbow foil", "effect": "holographic", "recipe": "Foil sticker" },
+      { "label": "Oil slick", "hint": "Foil that follows the light", "effect": "holographic", "recipe": "Oil slick" },
+      { "label": "Prism", "hint": "Wide soft rainbow", "effect": "holographic", "recipe": "Prism" },
+      { "label": "Pop pink", "hint": "Two pink inks", "effect": "duotone", "recipe": "Pop pink" },
+      { "label": "Light leak", "hint": "A warm glow from the edge", "effect": "light-leak" },
+      { "label": "Back to normal", "hint": "The trip's effects off again", "command": "trip-clear" }
+    ]
+  },
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/trippy"
+}

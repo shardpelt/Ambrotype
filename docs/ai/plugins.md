@@ -141,6 +141,35 @@ fn fade(e: &Effect, px: &mut Pixels) -> Result<(), String> {
 
 `amb plugin build` (and `check`) runs an effect once on a sample and says how long a 24 MP export would take. Test the function natively with `Effect::for_test(params, width, height)`.
 
+## Task plugins
+
+A task is a tab in the task bar (after Library, Develop, Color, Retouch, Film and Collage): a layout and tool buttons. It has no code, no module and no permissions, so it is a folder with only `plugin.json`. Why the kinds are what they are: [design/plugin-kinds.md](../design/plugin-kinds.md).
+
+```json
+{
+  "format": "ambrotype-plugin/1",
+  "id": "my-task",
+  "name": "My task",
+  "version": "1.0.0",
+  "kind": "task",
+  "task": {
+    "label": "Clean-up",
+    "hint": "Shown when you hover its tab",
+    "layout": { "format": "ambrotype-layout/1", "name": "Clean-up", "left": { "width": 260, "items": ["tools", "history"] }, "right": { "width": 330, "items": ["histogram", { "panel": "basic", "open": true }] } },
+    "tools": [
+      { "label": "Remove object", "hint": "Click it", "big": true, "command": "remove-object" },
+      { "label": "Auto", "command": "auto-edit" },
+      { "label": "Sepia", "effect": "duotone", "recipe": "Sepia" },
+      { "label": "Warm look", "plugin": "film-recipe", "params": { "look": "Classic Chrome" } }
+    ]
+  }
+}
+```
+
+- **`layout`** is a layout as a layout file holds it ([ui-layouts.md](ui-layouts.md)); put the `tools` block where its buttons go. It is checked when the editor lists the plugin, and kept out of the Appearance list.
+- **Each tool** does one thing: `command` (an editor command by its id, as Keyboard Shortcuts lists them), `effect` (an effect plugin from a `recipe` or `params`, in place of the one already on the photo) or `plugin` (an action plugin run with `params`). `big` shows it wide and first. At most 24.
+- `amb plugin check <dir>` checks the manifest. [`plugins/trippy`](../../plugins/trippy) is the built-in example.
+
 ## Rules for AI assistants
 
 - **Where to write:** only in the plugin's own folder (the plugins folder above, or a path the user names). Don't change Ambrotype's source unless the user is changing Ambrotype itself.
@@ -183,5 +212,6 @@ The input JSON has `api` (1), `params`, `settings`, `seed`, and with permission 
 - [`plugins/light-leak`](../../plugins/light-leak): an effect, a glow from one edge (`"effect": "pixels"`).
 - [`plugins/holographic`](../../plugins/holographic): an effect, rainbow foil across the photo that bends with its light (`"effect": "pixels"`, a lookup table instead of trigonometry per pixel).
 - [`plugins/hue-trip`](../../plugins/hue-trip): an effect, colours turned round the wheel by brightness, posterised and painted (`"effect": "color"`).
+- [`plugins/trippy`](../../plugins/trippy): a task, the Trippy tab (its layout and buttons for the effects above; no module).
 
-All five are built into the app. After changing one, rebuild its module with `amb plugin build plugins/<id>` and commit `plugin.wasm` with the source.
+All of them are built into the app. After changing one, rebuild its module with `amb plugin build plugins/<id>` and commit `plugin.wasm` with the source.

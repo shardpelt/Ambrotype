@@ -96,27 +96,29 @@ await t.step("Help → Camera simulator: the settings change the picture and say
   $("camsim-dialog").close();
 });
 
-await t.step("Trippy task: Trip me and a recipe put effects on, Back to normal takes them off", async () => {
-  t.expect([...$("task-bar").children].some((b) => b.dataset.task === "trippy"), "a Trippy task");
+await t.step("Trippy, a task plugin: its tools put effects on and take them off", async () => {
+  t.expect([...$("task-bar").children].some((b) => b.dataset.task === "trippy"), "a Trippy task from its plugin");
   await switchTask("trippy");
-  await t.until("the Trip block", () => t.visible("#block-trip") && t.visible(".trip-me"));
+  await t.until("its tools", () => t.visible("#block-tools") && $("tools-title").textContent === "Trippy tools");
+  t.expect(ui.looks.active_layout === "plugin:trippy", `layout ${ui.looks.active_layout}`);
+  const tile = (label) => [...document.querySelectorAll("#tools-task .tool-tile")].find((b) => b.querySelector("strong").textContent === label);
   const fxOn = () => effectsOf(currentValue("amb:Effects")).map((e) => e.plugin);
   const steps = t.historyLength();
-  t.click(".trip-me");
+  t.click(tile("Trip me"));
   await t.until("a trip", () => fxOn().some((p) => p === "hue-trip" || p === "holographic"));
   t.expect(t.historyLength() === steps + 1, "one history step");
-  const acid = [...document.querySelectorAll(".trip-recipe")].find((b) => b.textContent === "Acid");
-  t.click(acid);
+  t.click(tile("Acid"));
   await t.until("Acid", () => effectsOf(currentValue("amb:Effects")).find((e) => e.plugin === "hue-trip")?.params.turn === 120);
   t.expect(fxOn().filter((p) => p === "hue-trip").length === 1, `one Hue trip: ${fxOn()}`);
   await t.until("History names the effects", () => /→ .*Hue trip/.test(document.querySelector("#history-list li.current .history-values")?.textContent ?? ""));
   t.expect(!document.querySelector("#history-list li.current .history-values").textContent.includes("{"), "no JSON in History");
-  t.expect(document.querySelector("#block-trip + *, .fx-effect") != null, "the Effects panel shows it");
-  [...$("trip-buttons").querySelectorAll("button")].find((b) => b.textContent === "Back to normal").click();
+  t.click(tile("Back to normal"));
   await t.until("no trip", () => fxOn().length === 0);
   // Back to where the edit was, for the steps after this one.
   for (let i = 0; i < 3; i++) await run([{ cmd: "undo" }]);
   await t.until("back at the Exposure step", () => document.querySelector("#history-list li.current .history-values")?.textContent.endsWith("→ +1.00"));
+  // Not in the Appearance list: it is the task's.
+  t.expect(TASK_LAYOUTS.has("plugin:trippy"), "kept out of Appearance");
   await switchTask("develop");
 });
 

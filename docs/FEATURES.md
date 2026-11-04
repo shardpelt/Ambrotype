@@ -104,6 +104,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **A different layout or colours** → **Appearance** (Ctrl+L): built-in layouts and themes; **Edit Layout**, or **New Layout from Scratch**.
 - **Hide everything but the photo** → the Minimalism layout in **Appearance**, or fold the **Left Column** (Ctrl+[), **Right Column** (Ctrl+]) and the top bar (Ctrl+Shift+T).
 - **Small tools that edit for me** → **Plugins** (Ctrl+Shift+P); write your own ([ai/plugins.md](ai/plugins.md)).
+- **My own tab with my tools** → a task plugin: a layout and buttons in a `plugin.json`, no code; it joins the task bar ([ai/plugins.md](ai/plugins.md#task-plugins)). Trippy is one.
 - **Use my own AI model for masks** → **Settings** → AI models → add an ONNX model ([own-models.md](own-models.md)).
 - **Camera profiles (.dcp), my ColorChecker profile** → **Basic** → Profile.
 

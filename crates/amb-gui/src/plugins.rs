@@ -89,6 +89,22 @@ fn entry(
     plugin: Result<Plugin, String>,
     approvals: &Approvals,
 ) -> PluginEntry {
+    // A task's layout is checked as a layout file would be.
+    let plugin = plugin.and_then(|p| match &p.manifest.task {
+        Some(t) => {
+            let errors: Vec<String> = crate::looks::check_layout(&t.layout)
+                .into_iter()
+                .filter(|x| x.error)
+                .map(|x| x.message)
+                .collect();
+            if errors.is_empty() {
+                Ok(p)
+            } else {
+                Err(format!("its layout: {}", errors.join("; ")))
+            }
+        }
+        None => Ok(p),
+    });
     match plugin {
         Ok(p) => {
             let fingerprint = p.fingerprint();

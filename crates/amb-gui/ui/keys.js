@@ -33,6 +33,10 @@ const KEY_ACTIONS = [
   { id: "undo", group: "Edit", label: "Undo", keys: ["Ctrl+Z"], when: "any", button: "btn-undo", run: () => run([{ cmd: "undo" }]) },
   { id: "redo", group: "Edit", label: "Redo", keys: ["Ctrl+Shift+Z", "Ctrl+Y"], when: "any", button: "btn-redo", run: () => run([{ cmd: "redo" }]) },
   ...["library", "develop", "color", "retouch", "film", "collage", "trippy"].map((t, i) => ({ id: `task-${t}`, group: "Tasks", label: `${t[0].toUpperCase()}${t.slice(1)} task`, keys: [`Ctrl+Alt+${i + 1}`], when: "any", run: () => switchTask(t) })),
+  // Installed task plugins after Trippy.
+  ...[7, 8].map((n) => ({ id: `task-${n + 1}`, group: "Tasks", label: `Task ${n + 1} (an installed task plugin)`, keys: [`Ctrl+Alt+${n + 1}`], when: "any", run: () => TASKS[n] && switchTask(TASKS[n].id) })),
+  { id: "trip-me", group: "Effects", label: "Trip me: a random mix of psychedelic colour, foil and light leaks", keys: [], when: "main", photo: true, run: () => tripMe() },
+  { id: "trip-clear", group: "Effects", label: "Trip: back to normal (the trip's effects off)", keys: [], when: "main", photo: true, run: () => tripClear() },
   { id: "auto-edit", group: "Edit", label: "Auto edit: tone, white balance, lens corrections, vibrance and a level horizon", hint: "A starting point for the whole photo, in one undo step.", keys: ["Ctrl+U"], when: "main", button: "btn-auto", run: () => autoEditFlow() },
   { id: "search", group: "Help", label: "Search everything: commands, settings, panels, presets, layouts", keys: ["Ctrl+K"], when: "any", button: "btn-search", run: () => searchFlow() },
   { id: "connect-ai", group: "Help", label: "Connect an AI app", hint: "Any AI app that runs MCP servers, or a terminal for a command-line agent.", keys: [], when: "any", run: () => connectFlow().catch((e) => toast(String(e), true)) },

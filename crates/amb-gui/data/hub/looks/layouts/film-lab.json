@@ -5,7 +5,7 @@
   "author": "Ambrotype",
   "density": "normal",
   "toolbar_style": "words",
-  "toolbar": ["open", "export", "|", "undo", "redo", "|", "search", "|", "before", "crop", "wb", "spots", "zoom", "clip", "|", "looks", "settings"],
+  "toolbar": ["open", "export", "|", "undo", "redo", "|", "auto", "search", "|", "before", "crop", "wb", "spots", "zoom", "clip", "|", "looks", "settings"],
   "left": { "width": 230, "items": ["info", "presets", "history"] },
   "right": {
     "width": 330,

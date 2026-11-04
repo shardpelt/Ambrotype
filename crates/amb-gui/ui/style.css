@@ -37,6 +37,9 @@ button:disabled { opacity: .4; cursor: default; }
 select:disabled, input:disabled { opacity: .5; }
 button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 button.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+/* Auto edit: the big button, so it's the first thing a new photo invites. */
+button.auto-edit { display: inline-flex; align-items: center; gap: 5px; padding-inline: 12px; font-weight: 600; color: var(--accent); border-color: var(--accent); }
+button.auto-edit:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
 button.small { padding: 2px 8px; font-size: 12px; }
 button.active { outline: 1px solid var(--accent); }
 input, select { font: inherit; color: var(--text); }

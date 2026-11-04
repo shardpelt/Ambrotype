@@ -30,10 +30,11 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **Tasks that feel different** (owner, 2026-11-04): Develop, Color and Retouch feel like the same window three times, and Remove and subject detection are hard to find. Each task should show its own tools first (Retouch: Remove, heal, dust, subject; Color: grading, mixer, curves).
 - **Tabs as plugins** (owner, 2026-11-04): tasks (Develop, Film, ...) could be plugins, so people add their own. Rethink plugin kinds: one broad kind, or edit tools, effects, tasks, exporters?
 - **Trippy mode** (owner, 2026-11-04): a playful task with the striking views (Visualize Spots, highlight hover, extreme slider values), and holographic effects.
-- **Auto edit** (owner, 2026-11-04): one prominent button that edits the whole photo (tone, colour, crop, straighten), as a starting point.
 - **Camera simulator** (owner, 2026-11-04): a basic scene where shutter speed, aperture, ISO and focal length change the picture (motion blur, depth of field, noise, exposure), to learn what they do.
 
 ## Recently done
+
+- 2026-11-04: Auto edit: a big Auto button (wand, Ctrl+U) in every built-in layout's toolbar: Auto tone and white balance, lens profile, colour fringes, Vibrance +15 and Level (cropped to fit, when there's no crop yet), one undo step; the toast says what it did
 
 - 2026-11-04: brushed spots resize (Size) and move (`set_spot`); Ctrl+scroll zooms at the pointer (not the brush size); zoomed in, the arrows and a right-drag move the photo with a tool open; not zoomed in, a right-drag on a tool draws a zoom box
 

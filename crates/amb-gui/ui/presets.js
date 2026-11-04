@@ -282,6 +282,50 @@ async function autoFlow(tone, white) {
   }
 }
 
+// Auto edit: a starting point for the whole photo in one undo step. Auto
+// tone and white balance, the lens profile and colour fringes, a little
+// vibrance, and a crooked horizon levelled (cropped to fit) when the photo
+// has clear lines and no crop yet. The toast says what it did.
+async function autoEditFlow() {
+  if (!ui.info) return toast("Open a photo first.", true);
+  if (ui.crop.on) await exitCrop(true);
+  status("Auto edit…");
+  $("busy").hidden = false;
+  const btn = $("btn-auto");
+  if (btn) btn.disabled = true;
+  try {
+    const did = [];
+    const commands = await invoke("auto_settings", { tone: true, white: true });
+    if (commands.some((c) => /Exposure|Contrast|Highlights|Shadows|Whites|Blacks/.test(c.name))) did.push("tone");
+    if (commands.some((c) => c.name === "Temperature" || c.name === "IncrementalTemperature")) did.push("white balance");
+    const set = (name, value) => commands.push({ cmd: "set_param", name, value });
+    if (!currentValue("LensProfileEnable")) set("LensProfileEnable", true);
+    if (!currentValue("AutoLateralCA")) set("AutoLateralCA", true);
+    if (!currentValue("Vibrance")) {
+      set("Vibrance", 15);
+      did.push("vibrance");
+    }
+    did.push("lens corrections");
+    if (!currentValue("HasCrop")) {
+      const a = await invoke("level_angle").catch(() => null);
+      if (a != null && Math.abs(a) >= 0.2) {
+        const st = await invoke("crop_state");
+        const rect = AmbCrop.straighten(st.rect, Math.max(-45, Math.min(45, a)), ui.info.width, ui.info.height, st.angle_sign);
+        commands.push(...(await invoke("crop_commands", { rect })));
+        did.push(`levelled ${a > 0 ? "+" : ""}${a.toFixed(1)}°`);
+      }
+    }
+    await run(commands, "Auto edit");
+    toast(`Auto edit: ${did.join(", ")}. A starting point to adjust; Undo (Ctrl+Z) takes it all back.`);
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    $("busy").hidden = true;
+    if (btn) btn.disabled = !ui.info;
+    status("");
+  }
+}
+
 // Surprise me: six random looks from the Random look plugin as
 // thumbnails; clicking one applies it (one undo step). Seeds are shown so
 // a look can be found again.

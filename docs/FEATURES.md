@@ -17,6 +17,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 
 ## Editing a photo
 
+- **Edit it for me, as a start** → **Auto** (the wand in the toolbar, Ctrl+U): tone, white balance, lens corrections, a little vibrance, and a crooked horizon levelled, in one undo step.
 - **Brighter, darker, more contrast, recover highlights or shadows** → the **Basic** panel: **Exposure**, **Contrast**, **Highlights**, **Shadows**, **Whites**, **Blacks**. Auto (in Tone) does it for you.
 - **Wrong colours, too blue or yellow** → white balance in **Basic**: As Shot, Auto, or the **White Balance Picker** (W) and a click on something grey or white.
 - **More or less colourful** → **Vibrance** and **Saturation**; one colour at a time in the **Color Mixer**.

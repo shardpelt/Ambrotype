@@ -28,6 +28,8 @@ const ICON_PATHS = {
   spots: '<rect x="2.6" y="8.2" width="18.8" height="7.6" rx="3.8" transform="rotate(-45 12 12)"/><rect x="8.6" y="8.6" width="6.8" height="6.8" transform="rotate(-45 12 12)"/><circle cx="11" cy="12" r=".6" fill="currentColor"/><circle cx="13" cy="12" r=".6" fill="currentColor"/><circle cx="12" cy="11" r=".6" fill="currentColor"/><circle cx="12" cy="13" r=".6" fill="currentColor"/>',
   // A magnifier.
   zoom: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/><path d="M10.5 7.5v6M7.5 10.5h6"/>',
+  // A wand with sparkles: the photo edited for you.
+  auto: '<path d="m4 20 11-11"/><path d="m13.5 7.5 3 3"/><path d="M18 3v3M16.5 4.5h3M20 10v2M19 11h2M10 3v2M9 4h2" stroke-width="1.5"/>',
   // A magnifier with nothing in it: find anything.
   search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/>',
   // An eyedropper: a long rubber bulb, a crossbar wider than the tube, a
@@ -56,7 +58,7 @@ const ICON_PATHS = {
 // Spots, Clipping and Appearance have no picture that says it.
 const TOOLBAR_ICONS = new Set([
   "open", "library", "save", "export", "collage", "undo", "redo", "before", "crop", "masks", "zoom", "wb",
-  "frame", "search", "keys", "plugins", "edit", "settings", "feedback",
+  "frame", "auto", "search", "keys", "plugins", "edit", "settings", "feedback",
 ]);
 
 function iconSvg(name) {
@@ -77,7 +79,8 @@ function applyToolbarIcons(style = "icons") {
     b.setAttribute("aria-label", label.replace(/…$/, ""));
     if (!b.title) b.title = label;
     const svg = style !== "words" && TOOLBAR_ICONS.has(name) ? iconSvg(name) : null;
-    if (svg) b.innerHTML = svg;
+    // Auto edit keeps its word beside the wand: it's the big button.
+    if (svg) b.innerHTML = name === "auto" ? `${svg}<span>${label}</span>` : svg;
     else b.textContent = label;
     b.classList.toggle("tool-icon", Boolean(svg));
   }

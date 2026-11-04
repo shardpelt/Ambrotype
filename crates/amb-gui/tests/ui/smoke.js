@@ -39,6 +39,19 @@ await t.step("search: the Search button opens it; a setting's name and a number 
   await t.until("Contrast back", () => !("Contrast2012" in ui.settings));
 });
 
+await t.step("Auto edit: the big button edits the whole photo, as one undo step", async () => {
+  t.expect(t.visible("#btn-auto") && !$("btn-auto").disabled, "an Auto button in the toolbar");
+  t.expect($("btn-auto").textContent.includes("Auto"), "the button keeps its word");
+  const steps = t.historyLength();
+  t.click("#btn-auto");
+  await t.until("Auto edit", () => t.setting("Vibrance") === 15, 60000);
+  await t.until("one history step", () => t.historyLength() === steps + 1);
+  t.expect(t.setting("LensProfileEnable") === true && t.setting("AutoLateralCA") === true, "lens corrections on");
+  t.expect(t.setting("Exposure2012") !== 1, "the tone set afresh");
+  await run([{ cmd: "undo" }]);
+  await t.until("all of it undone", () => !t.setting("Vibrance") && t.setting("Exposure2012") === 1);
+});
+
 await t.step("search: what you want to do finds the feature, with a button for it", async () => {
   searchFlow();
   await t.until("the features list", () => ui.features?.length > 50);

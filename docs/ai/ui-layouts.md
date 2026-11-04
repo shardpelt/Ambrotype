@@ -55,7 +55,7 @@ Your own looks live in the app's settings folder, under `looks/layouts/` and `lo
   "theme": "builtin:dark",                   // optional: switching to this layout also picks this theme
   "density": "normal",                       // "compact" | "normal" | "large"
   "toolbar_style": "icons",                  // "icons" (where one is obvious) | "words"
-  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "search", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
+  "toolbar": ["open", "library", "save", "export", "collage", "|", "undo", "redo", "|", "auto", "search", "|", "before", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "edit", "settings", "keys", "feedback"],
   "left":  { "width": 250, "items": ["presets", "history"] },
   "right": { "width": 340, "items": ["histogram", { "panel": "basic", "open": true }, { "panel": "detail" }] }
 }
@@ -108,6 +108,7 @@ A column's items can include `{ "tab": "Name" }` (1 to 24 characters, each name 
   | `looks` | The Appearance dialog (layouts and themes) |
   | `edit` | Editor mode (rearrange the layout in place) |
   | `settings` | Settings, including the keyboard shortcuts |
+  | `auto` | Auto edit (Ctrl+U): tone, white balance, lens corrections, vibrance and a level horizon in one undo step; shown with its word |
   | `search` | Search everything (Ctrl+K): commands, settings, presets, and what you want to do |
   | `keys` | All keyboard shortcuts on one card |
   | `feedback` | Feedback |

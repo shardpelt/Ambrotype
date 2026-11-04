@@ -62,6 +62,39 @@ pub fn find(kind: MapKind, rgb: &[f32], w: usize, h: usize) -> Result<Map, Strin
     }
 }
 
+/// What to select an object by (Select Object), in fractions of the
+/// picture the selector is given.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Prompt {
+    /// A click on it (`positive`), or on what is not it.
+    Point { x: f64, y: f64, positive: bool },
+    /// A click on a part of something: the part, not the whole.
+    Part { x: f64, y: f64 },
+    /// A box round it.
+    Box { x0: f64, y0: f64, x1: f64, y1: f64 },
+}
+
+/// Given the picture as tone-encoded sRGB (0–1, interleaved, `w`×`h`) and
+/// prompts, how much each cell is the object they point at (0–1). The
+/// editor and `amb` register one (`amb-ai`, the "objects" model) once the
+/// model is installed.
+pub type Selector = dyn Fn(&[f32], usize, usize, &[Prompt]) -> Result<Map, String> + Send + Sync;
+
+static SELECTOR: RwLock<Option<Arc<Selector>>> = RwLock::new(None);
+
+pub fn set_selector(f: Arc<Selector>) {
+    *SELECTOR.write().unwrap_or_else(|e| e.into_inner()) = Some(f);
+}
+
+/// The object `prompts` point at, from the registered selector.
+pub fn select(rgb: &[f32], w: usize, h: usize, prompts: &[Prompt]) -> Result<Map, String> {
+    let f = SELECTOR.read().unwrap_or_else(|e| e.into_inner()).clone();
+    match f {
+        Some(f) => f(rgb, w, h, prompts),
+        None => Err("no object selection here".into()),
+    }
+}
+
 /// `rgb` (`w`×`h`, interleaved) box-filtered to `size`×`size` (stretched to
 /// a square, as the models expect).
 pub fn shrink(rgb: &[f32], w: usize, h: usize, size: usize) -> Vec<f32> {

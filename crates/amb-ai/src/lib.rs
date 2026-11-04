@@ -29,11 +29,12 @@ use amb_engine::subject::{Map, MapKind};
 use serde::{Deserialize, Serialize};
 use tract_onnx::prelude::*;
 
+pub mod objects;
 pub mod remove;
 pub mod search;
 
 /// The tasks a model can do, with what they're for.
-pub const TASKS: [(&str, &str); 4] = [
+pub const TASKS: [(&str, &str); 5] = [
     ("subject", "Select Subject and Select Background"),
     ("people", "Select People (everyone, as one mask)"),
     (
@@ -43,6 +44,10 @@ pub const TASKS: [(&str, &str); 4] = [
     (
         "remove",
         "AI Remove: fill a Remove spot with what belongs there",
+    ),
+    (
+        "objects",
+        "Select an object by a click or a box (Remove object)",
     ),
 ];
 
@@ -894,6 +899,9 @@ mod tests {
                         s.id
                     );
                 }
+            } else if s.task == "objects" {
+                // Select Object models: their decoder too.
+                assert!(s.files.iter().any(|f| f.name == "decoder.onnx"), "{}", s.id);
             } else if s.task != "remove" {
                 // Masks: how much edge detail they keep.
                 assert!((1..=5).contains(&s.detail), "{}", s.id);

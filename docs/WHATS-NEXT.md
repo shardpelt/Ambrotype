@@ -20,7 +20,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Ideas for later
 
-- **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): click-to-select objects (LightCraft and Redlamp use SAM; SAM 2.1 is Apache-2.0, needs the owner's okay as a new model), which would make Remove object a click; masks asked in words ("person", "car", RapidRAW); face-part masks; AI models on the GPU (RapidRAW: DirectML, CoreML).
+- **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): Select Object as a mask kind (the click-to-select model is in, for Remove object); masks asked in words ("person", "car", RapidRAW); face-part masks; AI models on the GPU (RapidRAW: DirectML, CoreML).
 - **Teach by showing** (owner, 2026-11-03): the app should teach its features by showing them, not by manuals, and one question should open up many related features. Ideas:
   - **Tips while waiting:** while something loads or runs (opening a raw, an export, Convert raws, AI Remove), one short tip about a feature, with a button to try it.
   - **Tips where text normally is:** now and then, a tip as the placeholder of a search or filter box, or in an empty menu or panel area; gone once you click or type there.
@@ -32,6 +32,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **Camera simulator** (owner, 2026-11-04): a basic scene where shutter speed, aperture, ISO and focal length change the picture (motion blur, depth of field, noise, exposure), to learn what they do.
 
 ## Recently done
+
+- 2026-11-04: click to select: Remove object takes a click (SAM 2.1 tiny, Apache-2.0, a 130 MB install in Settings → AI models; about 9 s the first time on a photo, then under a second); a click takes the whole object, Alt-click a part; boxes use SAM too when installed
 
 - 2026-11-04: MI-GAN (MIT, 30 MB) as AI Remove's fast choice in Settings → AI models: about five times faster than Big-LaMa
 

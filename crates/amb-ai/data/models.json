@@ -401,6 +401,50 @@
       "output": {
         "activation": "none"
       }
+    },
+    {
+      "id": "sam2.1-tiny",
+      "task": "objects",
+      "name": "SAM 2.1 tiny",
+      "default": true,
+      "about": "Selects the object you click (or draw a box round): Remove object then takes all of it. 130 MB; about 9 s to look at a photo the first time, then a fraction of a second a click.",
+      "licence": "Apache-2.0",
+      "by": "Meta AI (Segment Anything 2.1); ONNX by cstr",
+      "source": "https://github.com/facebookresearch/sam2",
+      "notes": "Trained on Meta's SA-1B and SA-V datasets.",
+      "bytes": 109473919,
+      "sha256": "4fda6e68561e27808cedffa8689749a622bba5f11ba66f4ca4e3a8a9f6360db5",
+      "urls": [
+        "https://huggingface.co/cstr/sam2.1-hiera-tiny-ONNX/resolve/12bdf0f712731bd0b52ccbff807683ce49b726b9/encoder.onnx"
+      ],
+      "seconds": 9.0,
+      "detail": 0,
+      "input": {
+        "size": 1024,
+        "mean": [
+          0.485,
+          0.456,
+          0.406
+        ],
+        "std": [
+          0.229,
+          0.224,
+          0.225
+        ]
+      },
+      "files": [
+        {
+          "name": "decoder.onnx",
+          "bytes": 20655795,
+          "sha256": "0ae944e08e55814c19afa4d143ef07b1a3dbad2decd77c15ec3ab220b9f57247",
+          "urls": [
+            "https://huggingface.co/cstr/sam2.1-hiera-tiny-ONNX/resolve/12bdf0f712731bd0b52ccbff807683ce49b726b9/decoder.onnx"
+          ]
+        }
+      ],
+      "output": {
+        "activation": "none"
+      }
     }
   ]
 }

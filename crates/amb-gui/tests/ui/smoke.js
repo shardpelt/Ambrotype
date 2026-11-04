@@ -651,7 +651,7 @@ await t.step("Spot panel: Find dust finds none on a clean chart; Shift-drag heal
   await t.until("the spot tool closed", () => !sp.on);
 });
 
-await t.step("Remove object: Shift+Q opens the tool for a box; a box sends its corners; Esc cancels", async () => {
+await t.step("Remove object: Shift+Q opens the tool; a box sends its corners, a click its point; Esc cancels", async () => {
   t.key("Shift+Q");
   await t.until("box mode", () => sp.on && sp.object && $("spot-object").classList.contains("active"));
   t.expect($("spot-hint").textContent.includes("box"), $("spot-hint").textContent);
@@ -660,16 +660,23 @@ await t.step("Remove object: Shift+Q opens the tool for a box; a box sends its c
   const spots = spotList().length;
   const asked = [];
   const real = window.removeObject;
-  window.removeObject = async (rect) => { asked.push(rect); setObjectMode(false); };
+  window.removeObject = async (target) => { asked.push(target); setObjectMode(false); };
   const c = $("spot-canvas").getBoundingClientRect();
   const pt = (fx, fy) => ({ clientX: c.left + c.width * fx, clientY: c.top + c.height * fy, button: 0, bubbles: true, pointerId: 1 });
   $("spot-canvas").dispatchEvent(new PointerEvent("pointerdown", pt(0.6, 0.6)));
   $("spot-canvas").dispatchEvent(new PointerEvent("pointermove", pt(0.4, 0.5)));
   $("spot-canvas").dispatchEvent(new PointerEvent("pointerup", pt(0.3, 0.3)));
   window.removeObject = real;
-  t.expect(asked.length === 1, `asked ${asked.length}`);
-  const [x0, y0, x1, y1] = asked[0];
-  t.expect(x0 < x1 && y0 < y1, `corners in order: ${asked[0]}`);
+  t.expect(asked.length === 1 && asked[0].rect, `asked ${JSON.stringify(asked)}`);
+  const [x0, y0, x1, y1] = asked[0].rect;
+  t.expect(x0 < x1 && y0 < y1, `corners in order: ${asked[0].rect}`);
+  // A click asks for the object under it.
+  setObjectMode(true);
+  window.removeObject = async (target) => { asked.push(target); setObjectMode(false); };
+  $("spot-canvas").dispatchEvent(new PointerEvent("pointerdown", pt(0.5, 0.5)));
+  $("spot-canvas").dispatchEvent(new PointerEvent("pointerup", pt(0.5, 0.5)));
+  window.removeObject = real;
+  t.expect(asked.length === 2 && asked[1].point?.length === 2, `a click: ${JSON.stringify(asked[1])}`);
   t.expect(!sp.object && spotList().length === spots, "one box, then back to spots; no spot drawn");
   // Esc leaves box mode first, then the tool.
   t.click("#spot-object");

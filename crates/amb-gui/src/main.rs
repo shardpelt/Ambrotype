@@ -518,6 +518,7 @@ fn main() {
                 // Select Subject: the model in the models folder, fetched on first use.
                 if let Some(models) = path.parent().map(|d| d.join("models")) {
                     amb_engine::subject::set_finder(amb_ai::finder(models.clone()));
+                    amb_engine::subject::set_selector(amb_ai::objects::selector(models.clone()));
                     amb_engine::retouch::set_inpainter(amb_ai::remove::inpainter(models.clone()));
                     // Fetched in the background at the first start, so the
                     // first subject mask doesn't wait for it.

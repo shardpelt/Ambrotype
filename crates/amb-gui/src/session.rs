@@ -510,10 +510,13 @@ impl Session {
         amb_library::dust::find_image(&self.full, self.state.settings())
     }
 
-    /// Remove object: the spot covering what the Subject model finds in
-    /// `rect` (fractions of the frame).
-    pub fn remove_object(&self, rect: [f64; 4]) -> Result<amb_library::object::Object, String> {
-        amb_library::object::find(&self.full, self.state.settings(), rect)
+    /// Remove object: the spot covering the object clicked or boxed
+    /// (fractions of the frame).
+    pub fn remove_object(
+        &self,
+        target: amb_library::object::Target,
+    ) -> Result<amb_library::object::Object, String> {
+        amb_library::object::find(&self.full, self.state.settings(), target)
     }
 
     /// Heal spots along a straight scratch drawn from `from` to `to`

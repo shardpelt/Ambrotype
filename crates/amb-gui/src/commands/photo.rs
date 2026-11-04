@@ -266,26 +266,43 @@ pub(crate) async fn find_dust(state: tauri::State<'_, AppState>) -> Res<Executed
     .map_err(|e| e.to_string())?
 }
 
-/// Remove object: the Subject model outlines what is in `rect` ([x0, y0,
-/// x1, y1], frame fractions, as spots are), and one Remove spot covers
-/// all of it, as one step.
+/// Remove object: the object at `point` ([x, y]) or in `rect` ([x0, y0,
+/// x1, y1]; frame fractions, as spots are) is outlined, and one Remove
+/// spot covers all of it, as one step.
 #[tauri::command]
 pub(crate) async fn remove_object(
-    rect: [f64; 4],
+    rect: Option<[f64; 4]>,
+    point: Option<[f64; 2]>,
+    part: Option<bool>,
     state: tauri::State<'_, AppState>,
 ) -> Res<Executed> {
+    use amb_library::object::Target;
+    let target = match (point, rect) {
+        (Some(p), _) if part == Some(true) => Target::Part(p),
+        (Some(p), _) => Target::Click(p),
+        (None, Some(r)) => Target::Box(r),
+        (None, None) => return Err("click the object, or drag a box round it".into()),
+    };
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let mut guard = slot.lock().map_err(|e| e.to_string())?;
         let s = guard.as_mut().ok_or("no photo open")?;
-        let found = s.remove_object(rect)?;
+        let found = s.remove_object(target)?;
         s.execute(&[found.command], Some("remove object"))?;
+        let what = match target {
+            Target::Click(_) | Target::Part(_) => {
+                format!("{:.0} % of the photo", found.share * 100.0)
+            }
+            Target::Box(_) => format!("{:.0} % of the box", found.share * 100.0),
+        };
+        let tip = if found.selected {
+            "Not what you meant? Undo, then Alt-click for just a part, or drag a box round it."
+        } else {
+            "Not all of it? Undo and draw the box closer, or brush over the rest. Settings → AI models → SAM 2.1 tiny selects by a click, more exactly."
+        };
         Ok(Executed {
             state: s.state_info(),
-            notes: vec![format!(
-                "Found the object ({:.0} % of the box) and removed it in one spot. Not all of it? Undo and draw the box closer, or brush over the rest.",
-                found.share * 100.0
-            )],
+            notes: vec![format!("Found the object ({what}) and removed it in one spot. {tip}")],
         })
     })
     .await

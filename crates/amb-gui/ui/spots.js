@@ -189,7 +189,7 @@ function renderSpotPanel() {
   const made = list.filter((x) => x.kind === "generative").length;
   $("spot-count").textContent = `${list.length} spot(s)` + (legacy ? `, ${legacy} older` : "");
   $("spot-hint").textContent = sp.object
-    ? "Drag a box round the object: the Subject model finds its outline, and AI Remove fills all of it in one spot."
+    ? "Click the object (Alt-click for just a part), or drag a box round it: its outline is found (SAM 2.1 for a click, Settings → AI models), and AI Remove fills all of it in one spot."
     : s
     ? (s.note ? `${s.note}. ` : "") + "Drag the spot or its source to move them. Delete removes it; click elsewhere for a new one."
     : "Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag the dashed source circle to pick where it copies from. [ and ] or the wheel change the size."
@@ -335,7 +335,7 @@ function wireSpots() {
     const [px, py] = at(e);
     const hit = sp.object ? null : hitSpot(px, py);
     if (sp.object) {
-      sp.drag = { add: true, box: true, start: [px, py], path: [[px, py]] };
+      sp.drag = { add: true, box: true, part: e.altKey, start: [px, py], path: [[px, py]] };
     } else if (hit) {
       sp.selected = hit.spot;
       const s = selectedSpot();
@@ -380,12 +380,9 @@ function wireSpots() {
     if (d.box) {
       const [px, py] = at(e);
       const [a, b] = [sFrame(...d.start), sFrame(px, py)];
-      if (Math.hypot(px - d.start[0], py - d.start[1]) < 8) {
-        toast("Drag a box round the object to remove.");
-        drawSpots();
-        return;
-      }
-      removeObject([Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]);
+      // A click selects the object under it (SAM); a drag, what is in the box.
+      if (Math.hypot(px - d.start[0], py - d.start[1]) < 8) removeObject({ point: a, part: d.part });
+      else removeObject({ rect: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])] });
       return;
     }
     if (d.add) {
@@ -469,20 +466,21 @@ function setObjectMode(on) {
   sp.object = on;
   $("spot-object").classList.toggle("active", on);
   $("spot-canvas").classList.toggle("boxing", on);
-  status(on ? "Remove object: drag a box round it" : "Spot removal: click a blemish");
+  status(on ? "Remove object: click it, or drag a box round it" : "Spot removal: click a blemish");
   renderSpotPanel();
 }
 
-// The Subject model outlines what is in the box, and one AI Remove spot
-// covers all of it (removing an object in pieces brings it back).
-async function removeObject(rect) {
+// The object clicked ({ point }) or boxed ({ rect }) is outlined (SAM, or
+// the Subject model on the box), and one AI Remove spot covers all of it
+// (removing an object in pieces brings it back).
+async function removeObject(target) {
   setObjectMode(false);
   sp.busy = true;
   status("Finding the object…");
   $("busy").hidden = false;
   try {
     const before = spotList().length;
-    const r = await invoke("remove_object", { rect });
+    const r = await invoke("remove_object", target);
     setState(r.state);
     if (spotList().length > before) sp.selected = spotList()[spotList().length - 1].index;
     toast(r.notes.join(" "));

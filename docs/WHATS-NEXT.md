@@ -26,13 +26,14 @@ A short running list, kept up to date as work lands. Newest decisions first. The
   - **One answer leads to more:** a How to shows two or three related features ("also: Keep under N MB, Also a smaller copy"), and the features list can be followed from one to the next.
   - Tips come from [FEATURES.md](FEATURES.md), skip features already used, and are rare enough not to nag.
   - Two switches in Settings → General, both on by default: "Tips while waiting" and "Tips in menus and empty boxes".
-- **Remove an object in one go** (owner, 2026-11-04): click an object, the subject model finds its outline, and AI Remove fills all of it at once. Removing it in several spots goes wrong (each fill sees the rest of the object); one spot over the whole object works well.
 - **Tasks that feel different** (owner, 2026-11-04): Develop, Color and Retouch feel like the same window three times, and Remove and subject detection are hard to find. Each task should show its own tools first (Retouch: Remove, heal, dust, subject; Color: grading, mixer, curves).
 - **Tabs as plugins** (owner, 2026-11-04): tasks (Develop, Film, ...) could be plugins, so people add their own. Rethink plugin kinds: one broad kind, or edit tools, effects, tasks, exporters?
 - **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots, highlight hover), sliders past their usual ranges.
 - **Camera simulator** (owner, 2026-11-04): a basic scene where shutter speed, aperture, ISO and focal length change the picture (motion blur, depth of field, noise, exposure), to learn what they do.
 
 ## Recently done
+
+- 2026-11-04: Remove object (Shift+Q, the Spot panel's first button): drag a box round something; the Subject model outlines it on just that box, and one Remove spot of dabs covers the outline, widened a little, so AI Remove fills all of it at once (`add_spot` `separate`)
 
 - 2026-11-04: the Trippy task (Ctrl+Alt+7): a Trip block with Trip me (a random mix each click) and recipe buttons, over two new built-in effects, Hue trip (psychedelic colour: turned by brightness, posterised, painted) and Holographic (rainbow foil that bends with the light); History names effects instead of showing their JSON
 

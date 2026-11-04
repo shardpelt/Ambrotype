@@ -125,6 +125,11 @@ pub enum Command {
         /// bounding-box centre copies from.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         points: Option<Vec<[f64; 2]>>,
+        /// With `points`: each point is a dab of its own, not a stroke to
+        /// fill in between (an outline covered by dabs, as Remove object
+        /// makes).
+        #[serde(default, skip_serializing_if = "is_false")]
+        separate: bool,
     },
     /// Change a spot: `at`, `radius`, `source` (null to search), `kind`,
     /// `feather`, `opacity`, `active`.

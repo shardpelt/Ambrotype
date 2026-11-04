@@ -510,6 +510,12 @@ impl Session {
         amb_library::dust::find_image(&self.full, self.state.settings())
     }
 
+    /// Remove object: the spot covering what the Subject model finds in
+    /// `rect` (fractions of the frame).
+    pub fn remove_object(&self, rect: [f64; 4]) -> Result<amb_library::object::Object, String> {
+        amb_library::object::find(&self.full, self.state.settings(), rect)
+    }
+
     /// Heal spots along a straight scratch drawn from `from` to `to`
     /// (fractions): the line moved onto the scratch, in pieces.
     pub fn scratch_spots(&self, from: [f64; 2], to: [f64; 2]) -> Vec<amb_protocol::Command> {
@@ -553,6 +559,7 @@ impl Session {
             feather,
             opacity: 100.0,
             points: Some(points),
+            separate: false,
         };
         amb_protocol::spots::add(&mut area, &spot, &mut Vec::new()).map_err(|e| e.to_string())?;
         let (spots, _) = amb_engine::retouch::Spots::from_settings(&area);

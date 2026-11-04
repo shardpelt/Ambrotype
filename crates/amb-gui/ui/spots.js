@@ -21,6 +21,8 @@ const sp = {
   feather: 50,
   opacity: 100,
   busy: false,
+  // Remove object: the next drag draws a box round what to remove.
+  object: false,
   // Visualise spots: the photo as white edges on black, to find dust.
   visualise: false,
   threshold: 50,
@@ -87,8 +89,20 @@ function drawSpots() {
     }
     circle(at, r, colour);
   }
+  // Remove object: the box being drawn.
+  if (sp.drag?.box) {
+    const [x0, y0] = sp.drag.start;
+    const [x1, y1] = sp.drag.path.at(-1);
+    g.setLineDash([6, 4]);
+    g.lineWidth = 2;
+    g.strokeStyle = "rgba(255,255,255,0.9)";
+    g.fillStyle = "rgba(255,80,80,0.15)";
+    g.fillRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
+    g.strokeRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x1 - x0), Math.abs(y1 - y0));
+    g.setLineDash([]);
+  }
   // A brushed spot being painted.
-  const path = sp.drag?.add ? sp.drag.path : null;
+  const path = sp.drag?.add && !sp.drag.box ? sp.drag.path : null;
   if (path?.length > 1) {
     g.beginPath();
     g.moveTo(...path[0]);
@@ -99,7 +113,7 @@ function drawSpots() {
     g.stroke();
   }
   // The next spot's size, under the pointer.
-  if (sp.hover && !sp.drag) circle(sp.hover, spotRadiusPx(sp.size / 100), "rgba(255,255,255,0.6)", [2, 3]);
+  if (sp.hover && !sp.drag && !sp.object) circle(sp.hover, spotRadiusPx(sp.size / 100), "rgba(255,255,255,0.6)", [2, 3]);
 }
 
 // Lightroom's Visualize Spots: edges of the preview, white on black, so dust
@@ -174,7 +188,9 @@ function renderSpotPanel() {
   const legacy = ui.state?.spots?.legacy;
   const made = list.filter((x) => x.kind === "generative").length;
   $("spot-count").textContent = `${list.length} spot(s)` + (legacy ? `, ${legacy} older` : "");
-  $("spot-hint").textContent = s
+  $("spot-hint").textContent = sp.object
+    ? "Drag a box round the object: the Subject model finds its outline, and AI Remove fills all of it in one spot."
+    : s
     ? (s.note ? `${s.note}. ` : "") + "Drag the spot or its source to move them. Delete removes it; click elsewhere for a new one."
     : "Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag the dashed source circle to pick where it copies from. [ and ] or the wheel change the size."
       + (sp.kind === "remove" ? " Remove fills it with what belongs there (AI Remove, Settings → AI models); until its model is installed, it is healed from a nearby area." : "")
@@ -317,8 +333,10 @@ function wireSpots() {
     e.preventDefault();
     c.setPointerCapture(e.pointerId);
     const [px, py] = at(e);
-    const hit = hitSpot(px, py);
-    if (hit) {
+    const hit = sp.object ? null : hitSpot(px, py);
+    if (sp.object) {
+      sp.drag = { add: true, box: true, start: [px, py], path: [[px, py]] };
+    } else if (hit) {
       sp.selected = hit.spot;
       const s = selectedSpot();
       sp.drag = { ...hit, start: sFrame(px, py), orig: s, moved: false, patch: {} };
@@ -332,7 +350,7 @@ function wireSpots() {
     const [px, py] = at(e);
     sp.hover = [px, py];
     const d = sp.drag;
-    if (d?.add) d.line ? (d.path = [d.start, [px, py]]) : d.path.push([px, py]);
+    if (d?.add) d.line || d.box ? (d.path = [d.start, [px, py]]) : d.path.push([px, py]);
     if (d && !d.add) {
       const pt = sFrame(px, py);
       const dx = pt[0] - d.start[0];
@@ -359,6 +377,17 @@ function wireSpots() {
     const d = sp.drag;
     sp.drag = null;
     if (!d) return;
+    if (d.box) {
+      const [px, py] = at(e);
+      const [a, b] = [sFrame(...d.start), sFrame(px, py)];
+      if (Math.hypot(px - d.start[0], py - d.start[1]) < 8) {
+        toast("Drag a box round the object to remove.");
+        drawSpots();
+        return;
+      }
+      removeObject([Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])]);
+      return;
+    }
     if (d.add) {
       const [px, py] = at(e);
       const far = Math.max(...d.path.map(([x, y]) => Math.hypot(x - d.start[0], y - d.start[1])));
@@ -410,6 +439,7 @@ function wireSpots() {
   slider("spot-opacity", "opacity", 0);
   $("spot-delete").addEventListener("click", deleteSpot);
   $("spot-dust").addEventListener("click", findDust);
+  $("spot-object").addEventListener("click", () => setObjectMode(!sp.object));
   $("spot-clear").addEventListener("click", () => {
     const n = spotList().length;
     if (!n) return;
@@ -431,6 +461,40 @@ async function healLine(from, to) {
     drawSpots();
   } catch (err) {
     toast(String(err), true);
+  }
+}
+
+// Remove object: the next drag draws a box; Esc or the button again cancels.
+function setObjectMode(on) {
+  sp.object = on;
+  $("spot-object").classList.toggle("active", on);
+  $("spot-canvas").classList.toggle("boxing", on);
+  status(on ? "Remove object: drag a box round it" : "Spot removal: click a blemish");
+  renderSpotPanel();
+}
+
+// The Subject model outlines what is in the box, and one AI Remove spot
+// covers all of it (removing an object in pieces brings it back).
+async function removeObject(rect) {
+  setObjectMode(false);
+  sp.busy = true;
+  status("Finding the object…");
+  $("busy").hidden = false;
+  try {
+    const before = spotList().length;
+    const r = await invoke("remove_object", { rect });
+    setState(r.state);
+    if (spotList().length > before) sp.selected = spotList()[spotList().length - 1].index;
+    toast(r.notes.join(" "));
+    requestPreview(false);
+    renderSpotPanel();
+  } catch (err) {
+    toast(String(err), true);
+  } finally {
+    sp.busy = false;
+    $("busy").hidden = true;
+    status("");
+    drawSpots();
   }
 }
 
@@ -484,6 +548,7 @@ async function enterSpots() {
 
 function exitSpots() {
   if (!sp.on) return;
+  if (sp.object) setObjectMode(false);
   sp.on = false;
   sp.drag = null;
   delete ui.overrides[SPOT_TAG];

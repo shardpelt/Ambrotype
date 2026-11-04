@@ -33,7 +33,7 @@ pub const ADD_KINDS: &[&str] = &[
 ];
 
 /// Most dabs one stroke may hold.
-const MAX_DABS: usize = 20_000;
+pub(crate) const MAX_DABS: usize = 20_000;
 
 fn invalid(name: impl Into<String>, reason: impl Into<String>) -> Error {
     Error::InvalidValue {

@@ -37,6 +37,10 @@ button:disabled { opacity: .4; cursor: default; }
 select:disabled, input:disabled { opacity: .5; }
 button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
 button.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+/* Remove object: the Spot panel's first button; the canvas draws a box. */
+.spot-object { width: 100%; margin: 2px 0 8px; padding: 8px; font-weight: 600; border-color: var(--accent); color: var(--accent); }
+.spot-object.active, .spot-object:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
+#spot-canvas.boxing { cursor: crosshair; }
 /* The Trip block: one big button, then a grid of recipes. */
 .trip-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; padding: 4px 0 8px; }
 .trip-buttons .trip-me { grid-column: 1 / -1; padding: 12px; font-size: 1.1em; font-weight: 700; color: #fff; border: none;

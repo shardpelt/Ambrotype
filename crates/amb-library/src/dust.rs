@@ -121,6 +121,7 @@ pub fn spot_command(d: &Defect, w: usize, h: usize) -> Command {
             feather: FEATHER,
             opacity: 100.0,
             points: Some(d.path.iter().map(|&p| frac(p)).collect()),
+            separate: false,
         }
     } else {
         Command::AddSpot {
@@ -132,6 +133,7 @@ pub fn spot_command(d: &Defect, w: usize, h: usize) -> Command {
             feather: FEATHER,
             opacity: 100.0,
             points: None,
+            separate: false,
         }
     }
 }

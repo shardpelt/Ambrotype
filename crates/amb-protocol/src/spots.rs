@@ -102,6 +102,8 @@ pub struct NewSpot<'a> {
     pub opacity: f64,
     /// A brushed spot's stroke (`at` is then unused).
     pub points: Option<&'a [[f64; 2]]>,
+    /// The points are dabs of their own, not a stroke to fill in.
+    pub separate: bool,
 }
 
 /// `add_spot`: a round heal or clone spot, or with `points` a brushed one.
@@ -135,7 +137,9 @@ pub fn add(
         opacity,
     );
     if let Some(points) = s.points {
-        if points.len() < 2 || points.iter().flatten().any(|v| !v.is_finite()) {
+        if points.len() < if s.separate { 1 } else { 2 }
+            || points.iter().flatten().any(|v| !v.is_finite())
+        {
             return Err(invalid(
                 "points",
                 "a brushed spot needs two or more [x, y] points",
@@ -143,7 +147,17 @@ pub fn add(
         }
         // The same stroke format as a brush mask; the spot's own Feather
         // gives the brush's softness.
-        let dabs = crate::masks::dabs_along(points, radius)?;
+        let dabs = if s.separate {
+            if points.len() > crate::masks::MAX_DABS {
+                return Err(invalid(
+                    "points",
+                    format!("a spot may have at most {} dabs", crate::masks::MAX_DABS),
+                ));
+            }
+            points.iter().map(|p| (p[0], p[1])).collect()
+        } else {
+            crate::masks::dabs_along(points, radius)?
+        };
         let mut e: Fields = BTreeMap::new();
         e.insert("What".into(), Value::Text("Mask/Paint".into()));
         e.insert("MaskActive".into(), boolean(true));
@@ -422,6 +436,7 @@ mod tests {
             feather: 50.0,
             opacity: 100.0,
             points: None,
+            separate: false,
         }
     }
 
@@ -467,6 +482,35 @@ mod tests {
     }
 
     #[test]
+    fn separate_points_are_dabs_of_their_own() {
+        let mut s = BTreeMap::new();
+        let dots = [[0.2, 0.3], [0.8, 0.3], [0.5, 0.7]];
+        add(
+            &mut s,
+            &NewSpot {
+                kind: Some("remove"),
+                points: Some(&dots),
+                separate: true,
+                ..spot([0.5, 0.5])
+            },
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let Value::Seq(areas) = &s[RETOUCH_TAG] else {
+            panic!()
+        };
+        let Value::Struct(a) = &areas[0] else {
+            panic!()
+        };
+        let comps = retouch::shape_components(a);
+        let Some(Value::Seq(dabs)) = comps[0].get("Dabs") else {
+            panic!()
+        };
+        // Three dabs, nothing filled in between them.
+        assert_eq!(dabs.len(), 3, "{dabs:?}");
+    }
+
+    #[test]
     fn a_brushed_spot_is_a_paint_stroke() {
         let mut s = BTreeMap::new();
         let mut clamped = Vec::new();
@@ -475,6 +519,7 @@ mod tests {
             &mut s,
             &NewSpot {
                 points: Some(&stroke),
+                separate: false,
                 source: Some([0.5, 0.5]),
                 ..spot([0.0, 0.0])
             },
@@ -505,6 +550,7 @@ mod tests {
                 &mut s,
                 &NewSpot {
                     points: Some(&stroke[..1]),
+                    separate: false,
                     ..spot([0.0, 0.0])
                 },
                 &mut clamped

@@ -804,9 +804,11 @@ impl DevelopState {
                 feather,
                 opacity,
                 points,
+                separate,
             } => {
                 let spot = spots::NewSpot {
                     points: points.as_deref(),
+                    separate: *separate,
                     kind: kind.as_deref(),
                     at: *at,
                     radius: *radius,

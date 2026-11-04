@@ -52,6 +52,7 @@ const KEY_ACTIONS = [
   { id: "clipping", group: "View", label: "Clipping overlay", hint: "Red: clipped highlights, blue: crushed shadows.", keys: ["J"], when: "any", button: "btn-clip", run: () => toggleClipping() },
   { id: "crop", group: "Tools", label: "Crop and straighten", keys: ["R"], when: "any", photo: true, button: "btn-crop", run: () => toggleCrop() },
   { id: "masks", group: "Tools", label: "Masks", hint: "Gradients, brush and range masks with their own sliders.", keys: ["M"], when: "any", photo: true, button: "btn-masks", run: () => toggleMasks() },
+  { id: "remove-object", group: "Tools", label: "Remove object", hint: "Draw a box round it: the Subject model finds its outline, and AI Remove fills it in one spot.", keys: ["Shift+Q"], when: ["main", "spots"], photo: true, run: async () => { await enterSpots(); if (sp.on) setObjectMode(true); } },
   { id: "spots", group: "Tools", label: "Spot removal", hint: "Heal or clone blemishes and distractions.", keys: ["Q"], when: "any", photo: true, button: "btn-spots", run: () => toggleSpots() },
   { id: "wb", group: "Tools", label: "White-balance picker", hint: "Then click something neutral grey or white.", keys: ["W"], when: "main", button: "btn-wb", run: () => setPicking(ui.picking === "white" ? false : "white") },
   { id: "leave", group: "Tools", label: "Leave the picker or Touch", keys: ["Escape"], when: "main", run: () => (touchState.on ? toggleTouch(false) : setPicking(false)) },
@@ -71,7 +72,7 @@ const KEY_ACTIONS = [
   { id: "spot-bigger", group: "Spot removal", label: "Bigger spot", keys: ["]"], when: "spots", run: () => spotSize(1) },
   { id: "spot-delete", group: "Spot removal", label: "Delete the selected spot", keys: ["Delete", "Backspace"], when: "spots", run: (e) => (onControl(e) ? false : deleteSpot()) },
   { id: "spot-visualise", group: "Spot removal", label: "Visualise spots", keys: ["A"], when: "spots", run: () => setVisualise(!sp.visualise) },
-  { id: "spot-leave", group: "Spot removal", label: "Leave spot removal", keys: ["Escape"], when: "spots", run: () => exitSpots() },
+  { id: "spot-leave", group: "Spot removal", label: "Leave spot removal", keys: ["Escape"], when: "spots", run: () => (sp.object ? setObjectMode(false) : exitSpots()) },
   { id: "mask-leave", group: "Masks", label: "Stop drawing, then leave the masks", keys: ["Escape"], when: "masks", run: () => maskEscape() },
   // Rating, labels and keywords: the open photo, or in the library the selected photos.
   ...[1, 2, 3, 4, 5].map((n) => ({ id: `rate-${n}`, group: "Rating", label: `Rate ${"★".repeat(n)}`, keys: [String(n)], when: "any", run: () => rateKey(n) })),

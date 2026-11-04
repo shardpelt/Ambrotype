@@ -625,6 +625,35 @@ await t.step("Spot panel: Find dust finds none on a clean chart; Shift-drag heal
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("Remove object: Shift+Q opens the tool for a box; a box sends its corners; Esc cancels", async () => {
+  t.key("Shift+Q");
+  await t.until("box mode", () => sp.on && sp.object && $("spot-object").classList.contains("active"));
+  t.expect($("spot-hint").textContent.includes("box"), $("spot-hint").textContent);
+  t.expect($("spot-panel").firstElementChild.nextElementSibling === $("spot-object"), "the panel's first button");
+  // A drag draws a box and asks for that box (the model isn't run here).
+  const spots = spotList().length;
+  const asked = [];
+  const real = window.removeObject;
+  window.removeObject = async (rect) => { asked.push(rect); setObjectMode(false); };
+  const c = $("spot-canvas").getBoundingClientRect();
+  const pt = (fx, fy) => ({ clientX: c.left + c.width * fx, clientY: c.top + c.height * fy, button: 0, bubbles: true, pointerId: 1 });
+  $("spot-canvas").dispatchEvent(new PointerEvent("pointerdown", pt(0.6, 0.6)));
+  $("spot-canvas").dispatchEvent(new PointerEvent("pointermove", pt(0.4, 0.5)));
+  $("spot-canvas").dispatchEvent(new PointerEvent("pointerup", pt(0.3, 0.3)));
+  window.removeObject = real;
+  t.expect(asked.length === 1, `asked ${asked.length}`);
+  const [x0, y0, x1, y1] = asked[0];
+  t.expect(x0 < x1 && y0 < y1, `corners in order: ${asked[0]}`);
+  t.expect(!sp.object && spotList().length === spots, "one box, then back to spots; no spot drawn");
+  // Esc leaves box mode first, then the tool.
+  t.click("#spot-object");
+  t.expect(sp.object, "the button turns it on");
+  t.key("Escape");
+  t.expect(!sp.object && sp.on, "Esc ends box mode, the tool stays");
+  t.key("Escape");
+  await t.until("the spot tool closed", () => !sp.on);
+});
+
 await t.step("Feedback works without a GitHub account: by email, or copied", async () => {
   const flow = feedbackFlow();
   await t.until("the dialog", () => $("feedback-dialog").open);

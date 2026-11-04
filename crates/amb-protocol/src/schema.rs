@@ -156,7 +156,9 @@ pub fn command_schema() -> Value {
                 "source": { "type": "array", "items": { "type": "number" }, "description": "[x, y] donor centre; searched for when absent." },
                 "source_auto": { "type": "boolean", "default": false, "description": "The source came from a search (Lightroom's auto)." },
                 "feather": { "type": "number", "minimum": 0, "maximum": 100, "default": 50 },
-                "opacity": { "type": "number", "minimum": 1, "maximum": 100, "default": 100 }
+                "opacity": { "type": "number", "minimum": 1, "maximum": 100, "default": 100 },
+                "points": { "type": "array", "items": { "type": "array", "items": { "type": "number" } }, "description": "A brushed spot: [[x, y], ...] along the stroke (gaps are filled with dabs); radius is the brush's." },
+                "separate": { "type": "boolean", "default": false, "description": "With points: each point is a dab of its own, not a stroke (an outline covered by dabs)." }
             }), &["at"]),
             variant("cmd", "set_spot", "Change a spot: at, radius, source (null to search again), kind, feather, opacity, active.", json!({
                 "spot": { "type": "integer", "minimum": 0, "description": "Spot position from 0, as list_spots shows it." },
@@ -462,6 +464,7 @@ mod tests {
                 feather: 50.0,
                 opacity: 100.0,
                 points: None,
+                separate: false,
             },
             Command::SetSpot {
                 spot: 0,

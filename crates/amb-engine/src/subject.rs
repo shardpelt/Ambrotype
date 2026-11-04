@@ -53,7 +53,8 @@ pub fn available() -> bool {
     FINDER.read().unwrap_or_else(|e| e.into_inner()).is_some()
 }
 
-pub(crate) fn find(kind: MapKind, rgb: &[f32], w: usize, h: usize) -> Result<Map, String> {
+/// The map `kind` asks for, from the registered finder.
+pub fn find(kind: MapKind, rgb: &[f32], w: usize, h: usize) -> Result<Map, String> {
     let f = FINDER.read().unwrap_or_else(|e| e.into_inner()).clone();
     match f {
         Some(f) => f(kind, rgb, w, h),

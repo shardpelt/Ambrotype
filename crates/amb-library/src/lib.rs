@@ -18,6 +18,7 @@ pub mod look;
 pub mod lrcat;
 pub mod merge;
 pub mod negative;
+pub mod object;
 pub mod replay;
 pub mod roots;
 pub mod search;

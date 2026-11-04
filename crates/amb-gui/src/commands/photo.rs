@@ -266,6 +266,32 @@ pub(crate) async fn find_dust(state: tauri::State<'_, AppState>) -> Res<Executed
     .map_err(|e| e.to_string())?
 }
 
+/// Remove object: the Subject model outlines what is in `rect` ([x0, y0,
+/// x1, y1], frame fractions, as spots are), and one Remove spot covers
+/// all of it, as one step.
+#[tauri::command]
+pub(crate) async fn remove_object(
+    rect: [f64; 4],
+    state: tauri::State<'_, AppState>,
+) -> Res<Executed> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let found = s.remove_object(rect)?;
+        s.execute(&[found.command], Some("remove object"))?;
+        Ok(Executed {
+            state: s.state_info(),
+            notes: vec![format!(
+                "Found the object ({:.0} % of the box) and removed it in one spot. Not all of it? Undo and draw the box closer, or brush over the rest.",
+                found.share * 100.0
+            )],
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Heal a straight scratch along a line drawn on the photo, as one step.
 #[tauri::command]
 pub(crate) async fn heal_line(

@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! AI Remove: the inpainter the engine fills content-aware spots with
 //! ([`amb_engine::retouch::set_inpainter`]), running the model the "remove"
-//! task uses (Big-LaMa, Apache-2.0) with tract, once the user installs it.
-//! Nothing is downloaded by itself: the model is 208 MB. Without it, the
-//! engine heals such spots from a searched donor.
+//! task uses with tract, once the user installs it: Big-LaMa (Apache-2.0,
+//! 208 MB, the best fills) or MI-GAN (MIT, 30 MB, several times faster).
+//! Nothing is downloaded by itself. Without one, the engine heals such
+//! spots from a searched donor.
 //!
 //! LaMa takes the photo (0..1, colour planes first) and the mask (1 = fill)
-//! at 512 × 512, and gives the filled photo in 0..255. The last results are
-//! kept, so a spot is filled once per preview size, not on every render.
+//! at 512 × 512, and gives the filled photo in 0..255. MI-GAN takes and
+//! gives bytes (0..255), its mask 255 where the photo is kept. The last
+//! results are kept, so a spot is filled once per preview size, not on
+//! every render.
 
 use std::collections::VecDeque;
 use std::path::{Path, PathBuf};
@@ -16,7 +19,14 @@ use std::sync::{Arc, Mutex};
 use amb_engine::retouch::{INPAINT_SIZE, Inpainter};
 use tract_onnx::prelude::*;
 
-type Model = Arc<TypedRunnableModel>;
+use crate::Pixels;
+
+/// A loaded remove model, and what its pixels are.
+#[derive(Clone)]
+pub struct Model {
+    runnable: Arc<TypedRunnableModel>,
+    pixels: Pixels,
+}
 
 /// Results kept: (a fingerprint of the input, the fill).
 const KEPT: usize = 16;
@@ -51,7 +61,7 @@ pub fn inpainter(dir: PathBuf) -> Arc<Inpainter> {
                 match m.as_ref() {
                     Some((id, r)) if *id == spec.id => r.clone(),
                     _ => {
-                        let r = load(&file)?;
+                        let r = load(&file, spec.input.pixels)?;
                         *m = Some((spec.id.clone(), r.clone()));
                         r
                     }
@@ -67,19 +77,26 @@ pub fn inpainter(dir: PathBuf) -> Arc<Inpainter> {
     )
 }
 
-/// LaMa with its two inputs fixed at the inpainter's size.
-pub fn load(path: &Path) -> Result<Model, String> {
+/// A remove model with its two inputs fixed at the inpainter's size.
+pub fn load(path: &Path, pixels: Pixels) -> Result<Model, String> {
     let n = INPAINT_SIZE;
     let name = path.display();
     tract_linalg::multithread::set_default_executor(
         tract_linalg::multithread::Executor::RayonGlobal,
     );
+    let fact = |shape: [usize; 4]| -> InferenceFact {
+        match pixels {
+            Pixels::Float => f32::fact(shape).into(),
+            Pixels::Bytes => u8::fact(shape).into(),
+        }
+    };
     tract_onnx::onnx()
         .model_for_path(path)
-        .and_then(|m| m.with_input_fact(0, f32::fact([1, 3, n, n]).into()))
-        .and_then(|m| m.with_input_fact(1, f32::fact([1, 1, n, n]).into()))
+        .and_then(|m| m.with_input_fact(0, fact([1, 3, n, n])))
+        .and_then(|m| m.with_input_fact(1, fact([1, 1, n, n])))
         .and_then(|m| m.into_optimized())
         .and_then(|m| m.into_runnable())
+        .map(|runnable| Model { runnable, pixels })
         .map_err(|e| format!("{name} didn't load: {e}"))
 }
 
@@ -89,20 +106,52 @@ pub fn run(model: &Model, rgb: &[f32], mask: &[f32]) -> Result<Vec<f32>, String>
     let planes: Vec<f32> = (0..3)
         .flat_map(|c| (0..n * n).map(move |i| rgb[i * 3 + c]))
         .collect();
-    let image =
-        tract_ndarray::Array4::from_shape_vec((1, 3, n, n), planes).map_err(|e| e.to_string())?;
-    let hole = tract_ndarray::Array4::from_shape_vec((1, 1, n, n), mask.to_vec())
-        .map_err(|e| e.to_string())?;
+    let shape = |c: usize| (1, c, n, n);
+    let inputs: TVec<TValue> = match model.pixels {
+        Pixels::Float => {
+            let image = tract_ndarray::Array4::from_shape_vec(shape(3), planes);
+            let hole = tract_ndarray::Array4::from_shape_vec(shape(1), mask.to_vec());
+            let (image, hole) = image
+                .and_then(|i| hole.map(|h| (i, h)))
+                .map_err(|e| e.to_string())?;
+            tvec!(Tensor::from(image).into(), Tensor::from(hole).into())
+        }
+        Pixels::Bytes => {
+            let byte = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+            let image = tract_ndarray::Array4::from_shape_vec(
+                shape(3),
+                planes.iter().map(|&v| byte(v)).collect(),
+            );
+            // MI-GAN keeps where the mask is 255.
+            let keep = tract_ndarray::Array4::from_shape_vec(
+                shape(1),
+                mask.iter()
+                    .map(|&m| if m >= 0.5 { 0u8 } else { 255u8 })
+                    .collect(),
+            );
+            let (image, keep) = image
+                .and_then(|i| keep.map(|k| (i, k)))
+                .map_err(|e| e.to_string())?;
+            tvec!(Tensor::from(image).into(), Tensor::from(keep).into())
+        }
+    };
     let out = model
-        .run(tvec!(Tensor::from(image).into(), Tensor::from(hole).into()))
+        .runnable
+        .run(inputs)
         .map_err(|e| format!("AI Remove: {e}"))?;
     let t = out[0]
-        .to_plain_array_view::<f32>()
-        .map_err(|e| e.to_string())?;
+        .cast_to::<f32>()
+        .map_err(|e| e.to_string())?
+        .into_owned();
     if t.shape() != [1, 3, n, n] {
         return Err(format!("AI Remove gave {:?}", t.shape()));
     }
-    let flat: Vec<f32> = t.iter().copied().collect();
+    let flat: Vec<f32> = t
+        .to_plain_array_view::<f32>()
+        .map_err(|e| e.to_string())?
+        .iter()
+        .copied()
+        .collect();
     Ok((0..n * n * 3)
         .map(|i| (flat[(i % 3) * n * n + i / 3] / 255.0).clamp(0.0, 1.0))
         .collect())
@@ -124,14 +173,20 @@ mod tests {
     use super::*;
 
     /// Needs the model: `AMB_LAMA=path/to/lama.onnx cargo test -p amb-ai
-    /// --release -- --ignored stripes`.
+    /// --release -- --ignored stripes` (MI-GAN: `AMB_LAMA=migan.onnx
+    /// AMB_REMOVE_BYTES=1`).
     #[test]
     #[ignore]
     fn lama_continues_stripes_through_the_hole() {
         let Some(path) = std::env::var_os("AMB_LAMA") else {
             return;
         };
-        let model = load(Path::new(&path)).unwrap();
+        let bytes = std::env::var_os("AMB_REMOVE_BYTES").is_some();
+        let model = load(
+            Path::new(&path),
+            if bytes { Pixels::Bytes } else { Pixels::Float },
+        )
+        .unwrap();
         let n = INPAINT_SIZE;
         // Vertical stripes, 32 px wide; a hole in the middle.
         let stripe = |x: usize| if (x / 32) % 2 == 0 { 0.8 } else { 0.2 };

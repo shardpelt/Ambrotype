@@ -33,6 +33,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-04: MI-GAN (MIT, 30 MB) as AI Remove's fast choice in Settings → AI models: about five times faster than Big-LaMa
+
 - 2026-11-04: tasks that differ: Develop opens on Quick fixes (Auto edit, Auto tone and WB, Level, lens fixes, Surprise me), Retouch on Retouch tools (Remove object, AI Remove, Heal, Find dust, Subject, People, Background and Sky masks, Brush), Color shows only Basic's colour; each task has its own accent colour
 
 - 2026-11-04: watchlist recheck: every project checked again, five new ones listed (Safelight, LightZone, Retoucan, LrGeniusAI, Lightroom AI Bridge)

@@ -61,6 +61,25 @@ pub struct Input {
     /// models) or colour last per pixel (`nhwc`, TensorFlow/MediaPipe ones).
     #[serde(default, skip_serializing_if = "Layout::is_nchw")]
     pub layout: Layout,
+    /// What the pixels are: numbers (`float`, normalised as above) or
+    /// bytes (`bytes`, 0–255 in and out; for a remove model the mask is
+    /// 255 where the photo is kept, as MI-GAN's).
+    #[serde(default, skip_serializing_if = "Pixels::is_float")]
+    pub pixels: Pixels,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Pixels {
+    #[default]
+    Float,
+    Bytes,
+}
+
+impl Pixels {
+    fn is_float(&self) -> bool {
+        *self == Pixels::Float
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -520,6 +539,7 @@ pub fn add_custom(dir: &Path, file: &Path, m: CustomModel) -> Result<ModelSpec, 
             mean: m.mean,
             std: m.std,
             layout: m.layout,
+            pixels: Pixels::Float,
         },
         output: Output {
             activation: m.activation,

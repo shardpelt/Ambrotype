@@ -367,6 +367,40 @@
       "output": {
         "activation": "none"
       }
+    },
+    {
+      "id": "migan",
+      "task": "remove",
+      "name": "MI-GAN (fast)",
+      "about": "Fills a removed object about five times faster than Big-LaMa, in a 30 MB download; its fills are a little rougher on large removals.",
+      "licence": "MIT",
+      "by": "Sargsyan et al. (Picsart AI Research)",
+      "source": "https://github.com/Picsart-AI-Research/MI-GAN",
+      "notes": "Trained on the Places2 dataset (CC BY 4.0).",
+      "bytes": 29546882,
+      "sha256": "593eba0b7e04730f1b61c0a3cbca68d97d8d6a7ff5c6a44a7b9d7fcd880fc5ae",
+      "urls": [
+        "https://huggingface.co/andraniksargsyan/migan/resolve/406830d0fa60666da0071c342ad2fbc8f30c5c64/migan.onnx"
+      ],
+      "seconds": 2.0,
+      "detail": 0,
+      "input": {
+        "size": 512,
+        "mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "std": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "pixels": "bytes"
+      },
+      "output": {
+        "activation": "none"
+      }
     }
   ]
 }

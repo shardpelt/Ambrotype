@@ -35,7 +35,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Find the AI tools (remove, select subject, people, sky)** → the **Retouch** task (Ctrl+Alt+4): **Retouch tools** on the left, a button each.
 - **Change only part of the photo** → **Masks** (M): linear (L), radial (Shift+R), brush (B), luminance and colour ranges, Sky, and AI Subject, Background and People masks (they run on your computer; **Settings** → AI models).
 - **Remove a person, a bin, a car, anything** → **Remove object…** (Shift+Q, first in the **Spot Removal** panel): drag a box round it; the Subject model finds its outline and AI Remove fills all of it in one spot.
-- **Remove a spot, a blemish, a wire** → **Spot Removal** (Q): click it or brush over it; Heal, Clone or Remove (AI Remove fills it with what belongs there, once its model is installed in **Settings** → AI models).
+- **Remove a spot, a blemish, a wire** → **Spot Removal** (Q): click it or brush over it; Heal, Clone or Remove (AI Remove fills it with what belongs there, once its model is installed in **Settings** → AI models: Big-LaMa for the best fills, MI-GAN for five times the speed).
 - **Undo, or go back to an earlier version** → **Undo** (Ctrl+Z); the History panel (click any step); Snapshots (+ keeps the edit under a name).
 - **See before and after** → **Before / after** (`\`); **Before / after split** (Y) has a bar to drag.
 - **Check focus and detail** → **Fit / 100%** (Z or Space, or Ctrl+scroll at the pointer), **Loupe** (I), or right-drag a box to zoom to it. Zoomed in, the arrow keys or a right-drag move the photo, also with a tool open.

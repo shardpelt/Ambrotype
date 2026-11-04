@@ -26,6 +26,7 @@ Projects we surveyed, with where they stood when we last looked, so we can check
 
 | Product | Price | Survey | Last checked | Where it was | Watch for |
 |---|---|---|---|---|---|
+| [Photon](https://getphoton.com) (Aftershoot) | Free, closed; paid for by Aftershoot | [17](17-competitors-2026.md) | 2026-11-04 | Launched September 2026 (MODE, Minneapolis); macOS, Windows; offline; some tools "will be included" | The AI Coach: it explains why each adjustment helps; style suggestions; reviewers: only three options, slow lessons |
 | [FlashView](https://flashview.net) | One-off after a 60-day trial | [17](17-competitors-2026.md) | 2026-10-30 | Windows only; editing in beta | Fast culling |
 | [Tenzen Light Studio](https://tenzen.studio) | $59 once | [17](17-competitors-2026.md) | 2026-10-30 | Windows, macOS, Linux | Why people pay for it |
 | Capture One, DxO PhotoLab, ON1, Luminar Neo, Affinity, Exposure, ACDSee, Zoner, Pixelmator Pro/Photomator, DaVinci Resolve Photo, Pixieset | Paid or freemium | [09](09-market-commercial-alternatives.md) | 2026-10-03 | See the survey | New AI tools, Lightroom migration, price changes |

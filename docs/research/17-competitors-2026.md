@@ -130,6 +130,12 @@ Sizes: S a day or two, M a week, L more.
 - Focus stacking (Redlamp): useful, but a niche of its own; after HDR and panorama it would fit the merge tools.
 - A suite of Adobe replacements (Tenzen): not ours.
 
+**From Photon (Aftershoot, 2026-11-04)**
+
+Photon is a free, closed RAW editor from Aftershoot (the paid culling and editing app), for macOS and Windows, offline, launched in September 2026. Its editing is the usual set (Basic, curves, HSL, sharpening, noise, crop), simplified. What's different is the **AI Coach**: pick one of a few suggested styles, and it says in plain words what could be better, which slider to move, and what that does to the photo. Reviewers found it sensible but limited (three options) and slow to make a lesson. Read from its site and a review ([ProVideo Coalition](https://www.provideocoalition.com/aftershoot-photon-a-free-raw-editor-with-an-ai-coach/)), not its code.
+
+20. **Explain an edit:** our Auto, Match look and the Assistant could say why each change helps ("Shadows +30: the faces were in shade"), on the photo, as a lesson. It fits "teach by showing" (WHATS-NEXT, Ideas for later); our Photography basics and the **?** by each setting already explain the sliders. M.
+
 ## Merging projects
 
 Their stacks differ (Rust + egui, JS + WebGL, Swift + Metal, Rust + plain JS), so code can't be merged by a script. Features can be ported from their descriptions. Licences: Rembrandt's GPL-3 code could come in as is; LightCraft's MIT/Apache code could come in (one way only); Redlamp's MPL-2.0 files can be combined with GPL code but stay MPL. Any code taken needs the owner's yes first and a credit in `NOTICE`. Rembrandt shares our licence and our idea (XMP, local AI), so working together is worth a message. CalibRaw is GPL-3.0-or-later too, so its code could come in with a credit in `NOTICE` (owner's yes first); its WGSL shaders and GPU memory queries are the most reusable parts.

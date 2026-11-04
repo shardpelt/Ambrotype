@@ -656,6 +656,24 @@
   </dialog>
 
   <!-- Photography basics (basics.js): the guide and its terms. -->
+  <!-- Camera simulator (camsim.js): settings tried on a drawn scene. -->
+  <dialog id="camsim-dialog" class="camsim-dialog">
+    <form method="dialog">
+      <h2>Camera simulator</h2>
+      <canvas id="camsim-canvas" width="640" height="400"></canvas>
+      <p id="camsim-notes" class="hint camsim-notes"></p>
+      <div class="camsim-controls">
+        <label>Shutter speed <input id="camsim-shutter" type="range" min="0" step="1"><output id="camsim-shutter-v"></output></label>
+        <label>Aperture <input id="camsim-aperture" type="range" min="0" step="1"><output id="camsim-aperture-v"></output></label>
+        <label>ISO <input id="camsim-iso" type="range" min="0" step="1"><output id="camsim-iso-v"></output></label>
+        <label>Focal length <input id="camsim-focal" type="range" min="0" step="1"><output id="camsim-focal-v"></output></label>
+        <label>Light <select id="camsim-light"><option value="sunny">Sunny</option><option value="cloudy">Cloudy</option><option value="indoors">Indoors</option><option value="dusk">Dusk</option></select></label>
+        <label class="inline-check" title="Keep the person the same size by walking back as you zoom in: the background grows"><input id="camsim-walk" type="checkbox"><span>Walk back as you zoom</span></label>
+      </div>
+      <menu><button id="camsim-auto" title="The shutter speed that exposes it well at this aperture and ISO">Auto exposure</button><span class="grow"></span><button value="cancel" formnovalidate>Close</button></menu>
+    </form>
+  </dialog>
+
   <dialog id="basics-dialog" class="basics-dialog">
     <form method="dialog">
       <h2>Photography basics</h2>
@@ -1671,6 +1689,7 @@
   <script src="help.js"></script>
   <script src="figures.js"></script>
   <script src="basics.js"></script>
+  <script src="camsim.js"></script>
   <script src="zones.js"></script>
   <script src="quickzoom.js"></script>
   <script src="monitor.js"></script>

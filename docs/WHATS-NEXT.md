@@ -29,9 +29,10 @@ A short running list, kept up to date as work lands. Newest decisions first. The
   - Two switches in Settings → General, both on by default: "Tips while waiting" and "Tips in menus and empty boxes".
 - **Tabs as plugins** (owner, 2026-11-04): tasks (Develop, Film, ...) could be plugins, so people add their own. Rethink plugin kinds: one broad kind, or edit tools, effects, tasks, exporters?
 - **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots, highlight hover), sliders past their usual ranges.
-- **Camera simulator** (owner, 2026-11-04): a basic scene where shutter speed, aperture, ISO and focal length change the picture (motion blur, depth of field, noise, exposure), to learn what they do.
 
 ## Recently done
+
+- 2026-11-04: Help → Camera simulator: a drawn scene (sky, hills, trees, a person, a rolling ball, grass) through a pinhole camera on a 36 mm sensor; shutter speed, aperture, ISO, focal length and the light change exposure, depth of field (blur circles per layer), motion blur and camera shake, and grain; Walk back as you zoom shows compression; notes say what each setting did
 
 - 2026-11-04: click to select: Remove object takes a click (SAM 2.1 tiny, Apache-2.0, a 130 MB install in Settings → AI models; about 9 s the first time on a photo, then under a second); a click takes the whole object, Alt-click a part; boxes use SAM too when installed
 

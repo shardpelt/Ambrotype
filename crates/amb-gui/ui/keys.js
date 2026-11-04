@@ -39,6 +39,7 @@ const KEY_ACTIONS = [
   { id: "sample", group: "Help", label: "Open the sample photo", hint: "A raw with an edit already made: step through its History to see what each slider does.", keys: [], when: "any", run: () => sampleFlow() },
   { id: "watch", group: "Help", label: "Watch an edit", hint: "A ghost cursor edits the sample photo in about 20 seconds; any key or click stops it. Starts the sample's edit afresh.", keys: [], when: "any", run: () => watchFlow() },
   { id: "basics", group: "Help", label: "Photography basics", hint: "How a photo is made and edited, step by step, and what the terms mean.", keys: ["Shift+F1"], when: "any", run: () => basicsFlow() },
+  { id: "camsim", group: "Help", label: "Camera simulator", hint: "Try shutter speed, aperture, ISO and focal length on a drawn scene and see what each does: blur, depth of field, grain, zoom.", keys: [], when: "any", run: () => camsimFlow() },
   { id: "learn", group: "Help", label: "Learn: short guided lessons", keys: ["F1"], when: "any", run: () => learnFlow() },
   { id: "features", group: "Help", label: "What Ambrotype can do: every feature, by what you want to do", keys: [], when: "any", run: () => featuresFlow() },
   { id: "before", group: "View", label: "Before / after", keys: ["\\"], when: "any", button: "btn-before", run: () => toggleBefore() },

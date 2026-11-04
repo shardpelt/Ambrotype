@@ -78,6 +78,24 @@ await t.step("tasks differ: Develop opens on Quick fixes, Retouch on its tools, 
   await t.until("Develop back", () => shown("Exposure2012"));
 });
 
+await t.step("Help → Camera simulator: the settings change the picture and say what they do", async () => {
+  camsimFlow();
+  await t.until("the simulator", () => $("camsim-dialog").open && $("camsim-notes").textContent.startsWith("Exposure"));
+  t.expect($("camsim-notes").textContent.includes("well exposed"), `sunny 16: ${$("camsim-notes").textContent}`);
+  const pixels = () => $("camsim-canvas").getContext("2d").getImageData(0, 0, 640, 400).data;
+  const sum = (d) => d.reduce((a, v) => a + v, 0);
+  const before = sum(pixels());
+  // A slow shutter: brighter, the ball blurs, and Auto exposure brings it back.
+  $("camsim-shutter").value = "7";
+  $("camsim-shutter").dispatchEvent(new Event("input"));
+  await t.until("1/30 s", () => $("camsim-shutter-v").textContent === "1/30 s");
+  t.expect(sum(pixels()) > before, "brighter");
+  t.expect(/too bright/.test($("camsim-notes").textContent) && /motion blur/.test($("camsim-notes").textContent), $("camsim-notes").textContent);
+  t.click("#camsim-auto");
+  await t.until("well exposed again", () => $("camsim-notes").textContent.includes("well exposed"));
+  $("camsim-dialog").close();
+});
+
 await t.step("Trippy task: Trip me and a recipe put effects on, Back to normal takes them off", async () => {
   t.expect([...$("task-bar").children].some((b) => b.dataset.task === "trippy"), "a Trippy task");
   await switchTask("trippy");

@@ -29,10 +29,12 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **Remove an object in one go** (owner, 2026-11-04): click an object, the subject model finds its outline, and AI Remove fills all of it at once. Removing it in several spots goes wrong (each fill sees the rest of the object); one spot over the whole object works well.
 - **Tasks that feel different** (owner, 2026-11-04): Develop, Color and Retouch feel like the same window three times, and Remove and subject detection are hard to find. Each task should show its own tools first (Retouch: Remove, heal, dust, subject; Color: grading, mixer, curves).
 - **Tabs as plugins** (owner, 2026-11-04): tasks (Develop, Film, ...) could be plugins, so people add their own. Rethink plugin kinds: one broad kind, or edit tools, effects, tasks, exporters?
-- **Trippy mode** (owner, 2026-11-04): a playful task with the striking views (Visualize Spots, highlight hover, extreme slider values), and holographic effects.
+- **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots, highlight hover), sliders past their usual ranges.
 - **Camera simulator** (owner, 2026-11-04): a basic scene where shutter speed, aperture, ISO and focal length change the picture (motion blur, depth of field, noise, exposure), to learn what they do.
 
 ## Recently done
+
+- 2026-11-04: the Trippy task (Ctrl+Alt+7): a Trip block with Trip me (a random mix each click) and recipe buttons, over two new built-in effects, Hue trip (psychedelic colour: turned by brightness, posterised, painted) and Holographic (rainbow foil that bends with the light); History names effects instead of showing their JSON
 
 - 2026-11-04: Auto edit: a big Auto button (wand, Ctrl+U) in every built-in layout's toolbar: Auto tone and white balance, lens profile, colour fringes, Vibrance +15 and Level (cropped to fit, when there's no crop yet), one undo step; the toast says what it did
 

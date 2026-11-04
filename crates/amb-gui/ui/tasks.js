@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Tasks: the bar at the top (Library · Develop · Color · Retouch · Film ·
-// Collage) switches between the library and layouts made for one job each,
+// Collage · Trippy) switches between the library and layouts made for one job each,
 // so the right controls are on screen for what you're doing. A task keeps
 // the layout you choose while in it (Appearance), on this computer.
 "use strict";
@@ -12,6 +12,7 @@ const TASKS = [
   { id: "retouch", label: "Retouch", hint: "Spots, brushes and masks", layout: "builtin:retouch" },
   { id: "film", label: "Film", hint: "Scanned film negatives", layout: "builtin:film-lab" },
   { id: "collage", label: "Collage", hint: "Prepare photos for a collage", layout: "builtin:collage-prep" },
+  { id: "trippy", label: "Trippy", hint: "Playful looks: psychedelic colour, rainbow foil, light leaks", layout: "builtin:trippy" },
 ];
 
 // The task bar's own layouts (not Develop's everyday one), kept out of the

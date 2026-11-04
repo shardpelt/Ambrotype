@@ -10,7 +10,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 
 - **I'm new to editing** → the empty window's **Try a sample photo** (a nine-step edit to step through in History) and **Watch an edit** (a cursor replays it). Help → **Learn** (F1) has short lessons, Help → **Photography basics** (Shift+F1) explains exposure, tones and colour on your own photo, and every setting has a **?** to hover or click.
 - **Open a photo or a folder** → **Open a photo** (Ctrl+O), **Open a folder** (Ctrl+Shift+O), or drop it on the window. Raws (NEF, CR2/CR3, ARW, RAF, DNG, …), JPEG, PNG, TIFF and WebP.
-- **Switch between library and editing** → **Library Grid** (G), or the task bar at the top: **Library**, **Develop**, **Color**, **Retouch**, **Film**, **Collage** (Ctrl+Alt+1–6).
+- **Switch between library and editing** → **Library Grid** (G), or the task bar at the top: **Library**, **Develop**, **Color**, **Retouch**, **Film**, **Collage**, **Trippy** (Ctrl+Alt+1–7).
 - **Find a command or setting I can't see** → **Search Everything** (Ctrl+K, or the magnifier in the toolbar): type its name, or a setting and a number ("exposure 0.7").
 - **See everything the app can do** → Help → **What Ambrotype Can Do** (this list, with a filter).
 - **See all shortcuts, or change them** → **Keyboard Shortcuts** (Shift+?) shows them; **Settings** (Ctrl+,) changes them.
@@ -25,6 +25,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Black and white** → the **Black & White** panel; it sets how bright each colour becomes in grey.
 - **A film look, a tint, sepia** → **Color Grading**, a LUT (in **Basic**), or a preset; for scanned negatives, the film stocks in **Film Negative**.
 - **Fuji film recipe from the internet** → Presets → **Fuji recipe…** (paste it), or **Plugins** → Film recipe. `amb fuji RECIPE.txt PHOTO`.
+- **Something wild: psychedelic colour, rainbow foil, a hologram look** → the **Trippy** task (Ctrl+Alt+7): **Trip me** (a new random mix each click), Acid, Pop art, Dream, Foil sticker, Oil slick, Prism; tune them in **Effects** → Plugin effects (Hue trip, Holographic). `amb plugin run plugins/hue-trip PHOTO --params turn=120`.
 - **Film grain, halation, bloom, highlights that fade like a print** → **Effects**: Grain (with Film response), Glow, Highlight roll-off.
 - **Sharper, less noise** → **Detail**: Sharpening, Noise Reduction.
 - **Crooked horizon** → **Crop and Straighten** (R), then **Level the horizon** (L), or drag outside the frame to turn it by hand.

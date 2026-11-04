@@ -26,7 +26,7 @@ pub const THEME_FORMAT: &str = "ambrotype-theme/1";
 pub const DEFAULT_LAYOUT: &str = "builtin:classic";
 pub const DEFAULT_THEME: &str = "builtin:dark";
 
-const BUILTIN_LAYOUTS: [(&str, &str); 15] = [
+const BUILTIN_LAYOUTS: [(&str, &str); 16] = [
     (
         "classic",
         include_str!("../data/hub/looks/layouts/classic.json"),
@@ -87,6 +87,10 @@ const BUILTIN_LAYOUTS: [(&str, &str); 15] = [
         "minimalism",
         include_str!("../data/hub/looks/layouts/minimalism.json"),
     ),
+    (
+        "trippy",
+        include_str!("../data/hub/looks/layouts/trippy.json"),
+    ),
 ];
 const BUILTIN_THEMES: [(&str, &str); 11] = [
     ("dark", include_str!("../data/hub/looks/themes/dark.json")),
@@ -134,7 +138,7 @@ pub const TOOLBAR: [&str; 24] = [
     "search", "keys", "feedback",
 ];
 /// Column items that aren't panels.
-pub const BLOCKS: [&str; 4] = ["presets", "info", "history", "histogram"];
+pub const BLOCKS: [&str; 5] = ["presets", "info", "history", "histogram", "trip"];
 /// Widgets that edit several settings at once; each can appear once.
 pub const COMPOSITES: [&str; 2] = ["point-curve", "color-wheels"];
 pub const DENSITIES: [&str; 3] = ["compact", "normal", "large"];

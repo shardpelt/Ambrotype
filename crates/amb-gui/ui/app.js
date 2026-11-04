@@ -348,6 +348,11 @@ function historyValue(tag, v) {
     else if (tag === "Temperature" || tag === "Tint") return "As Shot";
     else v = ui.defs.get(tag)?.default ?? 0;
   }
+  // Plugin effects: their names, not the JSON they're kept as.
+  if (tag === "amb:Effects") {
+    const names = effectsOf(v).map((e) => fx.plugins.find((p) => p.id === e.plugin)?.manifest?.name ?? e.plugin);
+    return names.join(", ") || "none";
+  }
   const def = ui.defs.get(tag);
   if (typeof v === "number") return def ? format(def, v) || String(v) : String(Math.round(v * 100) / 100);
   if (typeof v === "boolean") return v ? "on" : "off";
@@ -1062,6 +1067,7 @@ async function init() {
   $("btn-keys").addEventListener("click", showShortcuts);
   $("btn-search").addEventListener("click", searchFlow);
   $("btn-auto").addEventListener("click", () => autoEditFlow());
+  wireTrip();
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));
   $("btn-assistant").addEventListener("click", () => assistantFlow().catch((e) => toast(String(e), true)));

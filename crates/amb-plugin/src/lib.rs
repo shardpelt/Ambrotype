@@ -46,7 +46,7 @@ const MAX_LOG_LINES: usize = 200;
 const LOG_IMPORT_CRASHES: bool = cfg!(all(windows, target_arch = "x86_64"));
 
 /// The plugins that come with Ambrotype: manifest, id and module.
-pub const BUILTIN: [(&str, &str, &[u8]); 5] = [
+pub const BUILTIN: [(&str, &str, &[u8]); 7] = [
     (
         include_str!("../../../plugins/auto-tone/plugin.json"),
         "auto-tone",
@@ -71,6 +71,16 @@ pub const BUILTIN: [(&str, &str, &[u8]); 5] = [
         include_str!("../../../plugins/light-leak/plugin.json"),
         "light-leak",
         include_bytes!("../../../plugins/light-leak/plugin.wasm"),
+    ),
+    (
+        include_str!("../../../plugins/holographic/plugin.json"),
+        "holographic",
+        include_bytes!("../../../plugins/holographic/plugin.wasm"),
+    ),
+    (
+        include_str!("../../../plugins/hue-trip/plugin.json"),
+        "hue-trip",
+        include_bytes!("../../../plugins/hue-trip/plugin.wasm"),
     ),
 ];
 

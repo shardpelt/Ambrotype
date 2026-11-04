@@ -1,0 +1,24 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "holographic",
+  "name": "Holographic",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "Rainbow foil over the photo, like a hologram sticker or an oil slick: bands of colour that run across it and bend with its light, strongest in the bright parts.",
+  "kind": "effect",
+  "effect": "pixels",
+  "params": [
+    { "name": "strength", "label": "Strength", "type": "number", "min": 0, "max": 100, "default": 60, "step": 1 },
+    { "name": "bands", "label": "Bands", "type": "number", "min": 1, "max": 40, "default": 6, "step": 0.5, "description": "How many rainbows fit across the photo." },
+    { "name": "angle", "label": "Angle", "type": "number", "min": 0, "max": 180, "default": 30, "step": 1, "description": "Which way the bands run, in degrees." },
+    { "name": "follow", "label": "Follows the light", "type": "number", "min": 0, "max": 100, "default": 50, "step": 1, "description": "How much the bands bend with the photo's brightness: 0 is straight stripes, 100 is an oil slick." },
+    { "name": "shift", "label": "Shift", "type": "number", "min": 0, "max": 360, "default": 0, "step": 1, "description": "Turns the rainbow's colours." },
+    { "name": "pastel", "label": "Pastel", "type": "number", "min": 0, "max": 100, "default": 30, "step": 1, "description": "Softer, paler colours, like foil." }
+  ],
+  "recipes": [
+    { "name": "Foil sticker", "params": { "strength": 60, "bands": 6, "angle": 30, "follow": 50, "pastel": 40 } },
+    { "name": "Oil slick", "params": { "strength": 70, "bands": 14, "angle": 60, "follow": 95, "pastel": 0 } },
+    { "name": "Prism", "params": { "strength": 45, "bands": 2, "angle": 135, "follow": 15, "pastel": 20 } }
+  ],
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/holographic"
+}

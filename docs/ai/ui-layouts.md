@@ -124,7 +124,7 @@ A column's items can include `{ "tab": "Name" }` (1 to 24 characters, each name 
 - `items`: a list, shown top to bottom.
 
 A column with width 0 or no items is hidden. A shown column can be folded away for the session and back with the arrow on the photo's edge (Ctrl+[ left, Ctrl+] right); the editor remembers it on this computer. Drag the line between two blocks in a column (presets, rating, history) to resize them; double-click it to reset. Each item is one of:
-- The strings `presets`, `info`, `histogram` or `history`: the presets list (with the Amount slider), the rating stars and keyword field, the histogram with the photo's camera info, or the edit history. Each appears at most once; leave one out to hide it.
+- The strings `presets`, `info`, `histogram`, `history` or `trip`: the presets list (with the Amount slider), the rating stars and keyword field, the histogram with the photo's camera info, the edit history, or the Trip block (Trip me and the playful effect recipes, as in the Trippy layout). Each appears at most once; leave one out to hide it.
 - **A built-in panel:** `{ "panel": "<id>", "title"?, "open"?, "widgets"?, "hide"? }`
   - `open`: true to start expanded.
   - `widgets`: maps setting names to a control type, e.g. `{ "Exposure2012": "knob" }`.

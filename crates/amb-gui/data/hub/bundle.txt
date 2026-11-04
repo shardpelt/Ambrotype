@@ -14,6 +14,7 @@ layout-black-and-white
 layout-retouch
 layout-collage-prep
 layout-minimalism
+layout-trippy
 theme-dark
 theme-light
 theme-high-contrast

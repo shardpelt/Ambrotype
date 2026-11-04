@@ -181,5 +181,7 @@ The input JSON has `api` (1), `params`, `settings`, `seed`, and with permission 
 
 - [`plugins/duotone`](../../plugins/duotone): an effect, two inks for shadows and highlights (`"effect": "color"`).
 - [`plugins/light-leak`](../../plugins/light-leak): an effect, a glow from one edge (`"effect": "pixels"`).
+- [`plugins/holographic`](../../plugins/holographic): an effect, rainbow foil across the photo that bends with its light (`"effect": "pixels"`, a lookup table instead of trigonometry per pixel).
+- [`plugins/hue-trip`](../../plugins/hue-trip): an effect, colours turned round the wheel by brightness, posterised and painted (`"effect": "color"`).
 
 All five are built into the app. After changing one, rebuild its module with `amb plugin build plugins/<id>` and commit `plugin.wasm` with the source.

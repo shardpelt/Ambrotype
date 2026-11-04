@@ -1297,8 +1297,9 @@ mod tests {
         let wheel_tags = 12;
         assert_eq!(c.controls.len() + wheel_tags, catalog().kinds.len());
         assert_eq!(c.composites.len(), 2);
-        // Presets, history and the histogram; Rating & keywords is the library's.
-        assert_eq!(c.blocks.len(), 3);
+        // Quick fixes, presets, history and the histogram; Rating &
+        // keywords is the library's.
+        assert_eq!(c.blocks.len(), 4);
     }
 
     #[test]

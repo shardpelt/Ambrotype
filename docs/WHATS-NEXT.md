@@ -29,6 +29,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-04: AI Remove sees the photo at its own scale (at least 512 px of context, averaged down, never blown up); the Spot panel's Size follows the slider as it moves, up to 25 % of the width
+
 - 2026-11-03: a Search button (magnifier) in the toolbar of every built-in layout
 
 - 2026-11-03: Help → What Ambrotype Can Do: the features list in the app, by section, with a filter; each opens its How to, and search's How to and "nothing found" link to it

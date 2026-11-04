@@ -498,9 +498,15 @@ fn inpainter() -> Option<std::sync::Arc<Inpainter>> {
 /// The context around a spot the inpainter sees: a square this many spot
 /// radii from its centre to each side (inside what [`footprints`] reads).
 const FILL_CONTEXT: f64 = 3.0;
+/// At least this much context each side of the centre, in the render's
+/// pixels: the model sees the photo at its own scale (a small crop blown up
+/// to the model's size looks nothing like a photo, and it fills it with
+/// odd texture).
+pub(crate) const FILL_MIN_HALF: f64 = INPAINT_SIZE as f64 / 2.0;
 
 /// Fill spot `p` with `fill`. **Ours.** A square around the spot (three of
-/// its radii each way) goes to the model at [`INPAINT_SIZE`], with its
+/// its radii each way, at least [`FILL_MIN_HALF`]) goes to the model at
+/// [`INPAINT_SIZE`] (averaged down, never blown up when the photo is larger), with its
 /// brightness scaled so its bright end sits at 1 and sRGB-encoded; the
 /// fill comes back the same way, is laid in through the spot's feathered
 /// alpha, and gets the grain of the ring around the spot (its fine detail's
@@ -509,15 +515,20 @@ const FILL_CONTEXT: f64 = 3.0;
 fn fill_one(img: &mut Image, p: &Placed, fill: &Inpainter) -> Result<(), String> {
     use crate::pipeline::{srgb_decode, srgb_encode};
     let n = INPAINT_SIZE;
-    let half = (p.radius * FILL_CONTEXT).max(24.0);
-    let bx0 = (p.centre.0 - half).floor().max(0.0) as usize;
-    let by0 = (p.centre.1 - half).floor().max(0.0) as usize;
-    let bx1 = ((p.centre.0 + half).ceil() as usize).min(img.width);
-    let by1 = ((p.centre.1 + half).ceil() as usize).min(img.height);
-    if bx1 <= bx0 + 4 || by1 <= by0 + 4 {
+    // A square box around the spot, slid inward at the photo's edges so it
+    // stays square (a box cut short would be stretched for the model).
+    let half = (p.radius * FILL_CONTEXT).max(FILL_MIN_HALF);
+    let side = ((2.0 * half).ceil() as usize)
+        .min(img.width)
+        .min(img.height);
+    if side < 8 {
         return Err("no room around the spot".into());
     }
-    let side = (bx1 - bx0).max(by1 - by0) as f64;
+    let start =
+        |c: f64, len: usize| ((c - side as f64 / 2.0).round().max(0.0) as usize).min(len - side);
+    let (bx0, by0) = (start(p.centre.0, img.width), start(p.centre.1, img.height));
+    let (bx1, by1) = (bx0 + side, by0 + side);
+    let side = side as f64;
     // Model pixel (u, v) <-> photo pixel.
     let s = n as f64 / side;
     let to_photo = |u: usize, v: usize| {
@@ -525,6 +536,35 @@ fn fill_one(img: &mut Image, p: &Placed, fill: &Inpainter) -> Result<(), String>
             bx0 as f64 + (u as f64 + 0.5) / s - 0.5,
             by0 as f64 + (v as f64 + 0.5) / s - 0.5,
         )
+    };
+    // Each model pixel from the photo pixels it covers: averaged when the
+    // box is larger than the model (no aliasing), else interpolated.
+    let step = 1.0 / s;
+    let read = |x: f64, y: f64| -> [f32; 3] {
+        if step <= 1.0 {
+            return sample(img, x, y);
+        }
+        let reach = step / 2.0;
+        let (xa, xb) = (
+            ((x - reach).ceil().max(bx0 as f64)) as usize,
+            ((x + reach).floor() as usize).min(bx1 - 1),
+        );
+        let (ya, yb) = (
+            ((y - reach).ceil().max(by0 as f64)) as usize,
+            ((y + reach).floor() as usize).min(by1 - 1),
+        );
+        let mut sum = [0.0f32; 3];
+        let mut k = 0.0f32;
+        for yy in ya..=yb.max(ya) {
+            for xx in xa..=xb.max(xa) {
+                let c = img.get(xx, yy);
+                for ch in 0..3 {
+                    sum[ch] += c[ch];
+                }
+                k += 1.0;
+            }
+        }
+        sum.map(|v| v / k.max(1.0))
     };
     let alpha_at = |x: f64, y: f64| -> f32 {
         let (i, j) = (
@@ -556,7 +596,7 @@ fn fill_one(img: &mut Image, p: &Placed, fill: &Inpainter) -> Result<(), String>
             let (x, y) = to_photo(u, v);
             let (x, y) = (clamp(x, bx0, bx1), clamp(y, by0, by1));
             let hole = alpha_at(x, y) > 0.01;
-            let c = sample(img, x, y);
+            let c = read(x, y);
             let k = v * n + u;
             mask[k] = hole as u8 as f32;
             for ch in 0..3 {
@@ -714,6 +754,20 @@ pub fn footprints(
                 // Candidates up to 2.5 × (the spot's width and a margin)
                 // away, with their bands.
                 None => around(centre, 6.0 * r.max(1.0) + 4.0 * ring + 3.0),
+            };
+            // A Remove spot's fill sees a square box that can slide by up
+            // to its own half at the photo's edges.
+            let donor = if spot.kind.synthesised() {
+                let half = (r * FILL_CONTEXT).max(FILL_MIN_HALF);
+                let fill = around(centre, 2.0 * half + 2.0);
+                [
+                    fill[0].min(donor[0]),
+                    fill[1].min(donor[1]),
+                    fill[2].max(donor[2]),
+                    fill[3].max(donor[3]),
+                ]
+            } else {
+                donor
             };
             let own = around(centre, r + ring);
             let reads = [

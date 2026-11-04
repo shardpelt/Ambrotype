@@ -544,6 +544,13 @@ await t.step("Spot panel: Find dust finds none on a clean chart; Shift-drag heal
   t.expect(t.historyLength() === steps + 1, "one history step");
   t.key("Ctrl+Z");
   await t.until("undone", () => spotList().length === before);
+  // The Size slider sets the next spot's size as it moves, up to 25 %.
+  const was = sp.size;
+  $("spot-size").value = "20";
+  $("spot-size").dispatchEvent(new Event("input"));
+  t.expect(sp.size === 20 && $("spot-size").max === "25", `size ${sp.size}, max ${$("spot-size").max}`);
+  $("spot-size").value = String(was);
+  $("spot-size").dispatchEvent(new Event("input"));
   // Remove: a click makes a content-aware spot with no source.
   t.click('#spot-kind [data-kind="remove"]');
   t.expect(document.querySelector('#spot-kind [data-kind="remove"]').classList.contains("active"), "Remove chosen");

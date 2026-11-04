@@ -211,7 +211,7 @@ function setSpotKind(kind) {
 function spotSize(dir) {
   const s = selectedSpot();
   const cur = s?.radius != null ? s.radius * 100 : sp.size;
-  const next = Math.min(10, Math.max(0.2, cur * (dir > 0 ? 1.15 : 1 / 1.15)));
+  const next = Math.min(25, Math.max(0.2, cur * (dir > 0 ? 1.15 : 1 / 1.15)));
   spotValue("size", Math.round(next * 100) / 100);
 }
 
@@ -388,7 +388,15 @@ function wireSpots() {
   const slider = (id, key, digits) => {
     const range = $(id);
     const num = $(`${id}-num`);
-    range.addEventListener("input", () => (num.value = Number(range.value).toFixed(digits)));
+    range.addEventListener("input", () => {
+      num.value = Number(range.value).toFixed(digits);
+      // The next spot's size follows the slider as it moves (the circle
+      // under the pointer shows it); a selected spot changes on release.
+      if (key === "size" && !selectedSpot()) {
+        sp.size = Number(range.value);
+        drawSpots();
+      }
+    });
     range.addEventListener("change", () => spotValue(key, Number(range.value)));
     num.addEventListener("change", () => {
       const v = Math.min(Number(range.max), Math.max(Number(range.min), Number(num.value.replace(",", "."))));

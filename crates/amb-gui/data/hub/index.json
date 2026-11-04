@@ -6,10 +6,10 @@
       "kind": "layout",
       "name": "Classic",
       "author": "Ambrotype",
-      "description": "Presets and history on the left, the Develop panels on the right.",
+      "description": "Develop: Quick fixes on the left (Auto edit, Auto tone and white balance, Level, lens fixes) above the presets and history; the Develop panels on the right.",
       "license": "CC0-1.0",
       "path": "looks/layouts/classic.json",
-      "sha256": "4b2ceafc3f40db2b310e0b40677ee6f98a42d4f11c079a920f5af003a8778bcb"
+      "sha256": "526d6e07f5fffb6d586d2df5483e67f6eb97c3279acbdcb6029b49c8ecc3dc3a"
     },
     {
       "id": "layout-beginner",
@@ -106,10 +106,10 @@
       "kind": "layout",
       "name": "Colour grading",
       "author": "Ambrotype",
-      "description": "For colour work: big grading wheels in a wide left column, with the curve, colour mixer and calibration open on the right; exposure stays at hand, the rest is folded away.",
+      "description": "Colour: big grading wheels on the left; on the right the colour mixer and curve open, and only Basic's colour (white balance, vibrance, saturation), with the light sliders left to Develop.",
       "license": "CC0-1.0",
       "path": "looks/layouts/color-grading.json",
-      "sha256": "2688493882ab76dc2c54e7f0bb474d995e8a6563b413d076ac2241d813957244"
+      "sha256": "6d9d11e870891caa1d9571678c09632e70c186b94c15d8aeaeded1d6b29746cd"
     },
     {
       "id": "layout-black-and-white",
@@ -126,10 +126,10 @@
       "kind": "layout",
       "name": "Retouch",
       "author": "Ambrotype",
-      "description": "For portraits and clean-up: masks, spot removal and the 100% view up front, Detail open for sharpening and noise, and Texture and Clarity as knobs for skin.",
+      "description": "Retouch: its own tools on the left (Remove object, AI Remove, Heal, Find dust, and the Subject, People, Background and Sky masks), with Detail open and Texture and Clarity as knobs for skin on the right.",
       "license": "CC0-1.0",
       "path": "looks/layouts/retouch.json",
-      "sha256": "1650811d716f7f8b68a0b6b84fd44ef10ba8aeb35496caf4823710992dc8c307"
+      "sha256": "8513de834f2a756d019cf9eb41536bd027a114c75f7558003690a95f7daa9d78"
     },
     {
       "id": "layout-collage-prep",

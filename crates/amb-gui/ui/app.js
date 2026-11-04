@@ -1068,6 +1068,7 @@ async function init() {
   $("btn-search").addEventListener("click", searchFlow);
   $("btn-auto").addEventListener("click", () => autoEditFlow());
   wireTrip();
+  wireToolBlocks();
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
   $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));
   $("btn-assistant").addEventListener("click", () => assistantFlow().catch((e) => toast(String(e), true)));

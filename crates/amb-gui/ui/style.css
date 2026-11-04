@@ -41,6 +41,22 @@ button.primary:hover:not(:disabled) { background: var(--accent); filter: brightn
 .spot-object { width: 100%; margin: 2px 0 8px; padding: 8px; font-weight: 600; border-color: var(--accent); color: var(--accent); }
 .spot-object.active, .spot-object:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
 #spot-canvas.boxing { cursor: crosshair; }
+/* Tool blocks: a task's own tools as big tiles, a name and what it does. */
+.tool-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px 0 8px; }
+.tool-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; text-align: left; white-space: normal; }
+.tool-tile strong { font-size: 1em; }
+.tool-tile span { font-size: .82em; opacity: .7; line-height: 1.25; }
+.tool-tile.big { grid-column: 1 / -1; border-color: var(--task-accent, var(--accent)); }
+.tool-tile.big strong { color: var(--task-accent, var(--accent)); font-size: 1.1em; }
+.tool-tile:hover:not(:disabled) { border-color: var(--task-accent, var(--accent)); }
+/* Each task's accent: the task bar's underline and its big tiles. */
+body[data-task="develop"] { --task-accent: #e0a040; }
+body[data-task="color"] { --task-accent: #c060e0; }
+body[data-task="retouch"] { --task-accent: #40b0e0; }
+body[data-task="film"] { --task-accent: #e06040; }
+body[data-task="collage"] { --task-accent: #60c080; }
+body[data-task="trippy"] { --task-accent: #ff3d9a; }
+.task-bar button.on { box-shadow: inset 0 -2px 0 var(--task-accent, var(--accent)); }
 /* The Trip block: one big button, then a grid of recipes. */
 .trip-buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; padding: 4px 0 8px; }
 .trip-buttons .trip-me { grid-column: 1 / -1; padding: 12px; font-size: 1.1em; font-weight: 700; color: #fff; border: none;

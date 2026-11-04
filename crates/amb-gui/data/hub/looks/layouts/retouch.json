@@ -1,11 +1,11 @@
 {
   "format": "ambrotype-layout/1",
   "name": "Retouch",
-  "description": "For portraits and clean-up: masks, spot removal and the 100% view up front, Detail open for sharpening and noise, and Texture and Clarity as knobs for skin.",
+  "description": "Retouch: its own tools on the left (Remove object, AI Remove, Heal, Find dust, and the Subject, People, Background and Sky masks), with Detail open and Texture and Clarity as knobs for skin on the right.",
   "author": "Ambrotype",
   "density": "normal",
   "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "search", "|", "before", "masks", "spots", "zoom", "crop", "wb", "|", "plugins", "|", "looks", "settings"],
-  "left": { "width": 230, "items": ["history", "presets"] },
+  "left": { "width": 270, "items": ["retouch", "history", "presets"] },
   "right": {
     "width": 330,
     "items": [

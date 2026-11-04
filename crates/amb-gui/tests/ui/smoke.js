@@ -52,6 +52,32 @@ await t.step("Auto edit: the big button edits the whole photo, as one undo step"
   await t.until("all of it undone", () => !t.setting("Vibrance") && t.setting("Exposure2012") === 1);
 });
 
+await t.step("tasks differ: Develop opens on Quick fixes, Retouch on its tools, Color on colour only", async () => {
+  await switchTask("develop");
+  await t.until("Quick fixes", () => t.visible("#block-quick") && !t.visible("#block-retouch"));
+  t.expect(document.body.dataset.task === "develop", `accent ${document.body.dataset.task}`);
+  await switchTask("retouch");
+  await t.until("Retouch tools", () => t.visible("#block-retouch") && !t.visible("#block-quick"));
+  const tiles = [...document.querySelectorAll("#tools-retouch .tool-tile")].map((b) => b.dataset.tool);
+  t.expect(["object", "remove", "subject", "people", "background", "sky", "dust"].every((x) => tiles.includes(x)), tiles.join(", "));
+  t.expect(document.querySelector("#tools-retouch .tool-tile").dataset.tool === "object" && document.querySelector("#tools-retouch .tool-tile").classList.contains("big"), "Remove object first, big");
+  // Its tiles open the tools.
+  document.querySelector('#tools-retouch [data-tool="object"]').click();
+  await t.until("box mode", () => sp.on && sp.object);
+  t.key("Escape");
+  t.key("Escape");
+  await t.until("spots closed", () => !sp.on);
+  document.querySelector('#tools-retouch [data-tool="brush"]').click();
+  await t.until("masks with the brush", () => mk.on && mk.tool === "brush");
+  exitMasks();
+  await switchTask("color");
+  await t.until("the Color layout", () => document.body.dataset.task === "color");
+  const shown = (name) => { try { return t.visible(t.row(name)); } catch { return false; } };
+  t.expect(!shown("Exposure2012") && shown("Vibrance"), "colour only in Basic");
+  await switchTask("develop");
+  await t.until("Develop back", () => shown("Exposure2012"));
+});
+
 await t.step("Trippy task: Trip me and a recipe put effects on, Back to normal takes them off", async () => {
   t.expect([...$("task-bar").children].some((b) => b.dataset.task === "trippy"), "a Trippy task");
   await switchTask("trippy");

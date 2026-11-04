@@ -63,6 +63,8 @@ async function switchTask(id) {
 
 function renderTasks() {
   const now = currentTask();
+  // Each task has its own accent (style.css), so you can see where you are.
+  document.body.dataset.task = now;
   for (const b of $("task-bar").children) {
     const on = b.dataset.task === now;
     b.classList.toggle("on", on);

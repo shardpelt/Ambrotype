@@ -138,7 +138,15 @@ pub const TOOLBAR: [&str; 24] = [
     "search", "keys", "feedback",
 ];
 /// Column items that aren't panels.
-pub const BLOCKS: [&str; 5] = ["presets", "info", "history", "histogram", "trip"];
+pub const BLOCKS: [&str; 7] = [
+    "presets",
+    "info",
+    "history",
+    "histogram",
+    "trip",
+    "quick",
+    "retouch",
+];
 /// Widgets that edit several settings at once; each can appear once.
 pub const COMPOSITES: [&str; 2] = ["point-curve", "color-wheels"];
 pub const DENSITIES: [&str; 3] = ["compact", "normal", "large"];

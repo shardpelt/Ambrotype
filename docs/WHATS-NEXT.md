@@ -27,12 +27,13 @@ A short running list, kept up to date as work lands. Newest decisions first. The
   - **One answer leads to more:** a How to shows two or three related features ("also: Keep under N MB, Also a smaller copy"), and the features list can be followed from one to the next.
   - Tips come from [FEATURES.md](FEATURES.md), skip features already used, and are rare enough not to nag.
   - Two switches in Settings → General, both on by default: "Tips while waiting" and "Tips in menus and empty boxes".
-- **Tasks that feel different** (owner, 2026-11-04): Develop, Color and Retouch feel like the same window three times, and Remove and subject detection are hard to find. Each task should show its own tools first (Retouch: Remove, heal, dust, subject; Color: grading, mixer, curves).
 - **Tabs as plugins** (owner, 2026-11-04): tasks (Develop, Film, ...) could be plugins, so people add their own. Rethink plugin kinds: one broad kind, or edit tools, effects, tasks, exporters?
 - **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots, highlight hover), sliders past their usual ranges.
 - **Camera simulator** (owner, 2026-11-04): a basic scene where shutter speed, aperture, ISO and focal length change the picture (motion blur, depth of field, noise, exposure), to learn what they do.
 
 ## Recently done
+
+- 2026-11-04: tasks that differ: Develop opens on Quick fixes (Auto edit, Auto tone and WB, Level, lens fixes, Surprise me), Retouch on Retouch tools (Remove object, AI Remove, Heal, Find dust, Subject, People, Background and Sky masks, Brush), Color shows only Basic's colour; each task has its own accent colour
 
 - 2026-11-04: watchlist recheck: every project checked again, five new ones listed (Safelight, LightZone, Retoucan, LrGeniusAI, Lightroom AI Bridge)
 

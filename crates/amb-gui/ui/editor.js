@@ -19,7 +19,7 @@
 
 const EDIT_ZONES = ".column, .topbar .actions";
 const COMPOSITE_TITLES = { "point-curve": "Point curve", "color-wheels": "Colour wheels" };
-const BLOCK_TITLES = { presets: "Presets", info: "Rating & keywords", history: "History", histogram: "Histogram", trip: "Trip" };
+const BLOCK_TITLES = { presets: "Presets", info: "Rating & keywords", history: "History", histogram: "Histogram", trip: "Trip", quick: "Quick fixes", retouch: "Retouch tools" };
 const TOOL_TITLES = {
   open: "Open", library: "Library", save: "Save", export: "Export", collage: "Collage", undo: "Undo", redo: "Redo", before: "Before / After",
   crop: "Crop", masks: "Masks", spots: "Spots", zoom: "100%", wb: "WB picker", clip: "Clipping", frame: "Frame", auto: "Auto edit", search: "Search", keys: "Shortcuts", hub: "Browse", plugins: "Plugins", looks: "Appearance", edit: "Edit layout", settings: "Settings",

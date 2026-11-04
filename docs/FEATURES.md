@@ -10,7 +10,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 
 - **I'm new to editing** → the empty window's **Try a sample photo** (a nine-step edit to step through in History) and **Watch an edit** (a cursor replays it). Help → **Learn** (F1) has short lessons, Help → **Photography basics** (Shift+F1) explains exposure, tones and colour on your own photo, and every setting has a **?** to hover or click.
 - **Open a photo or a folder** → **Open a photo** (Ctrl+O), **Open a folder** (Ctrl+Shift+O), or drop it on the window. Raws (NEF, CR2/CR3, ARW, RAF, DNG, …), JPEG, PNG, TIFF and WebP.
-- **Switch between library and editing** → **Library Grid** (G), or the task bar at the top: **Library**, **Develop**, **Color**, **Retouch**, **Film**, **Collage**, **Trippy** (Ctrl+Alt+1–7).
+- **Switch between library and editing** → **Library Grid** (G), or the task bar at the top: **Library**, **Develop**, **Color**, **Retouch**, **Film**, **Collage**, **Trippy** (Ctrl+Alt+1–7). Each opens on its own tools: Develop on **Quick fixes**, Retouch on **Retouch tools**, Color on the wheels and mixer.
 - **Find a command or setting I can't see** → **Search Everything** (Ctrl+K, or the magnifier in the toolbar): type its name, or a setting and a number ("exposure 0.7").
 - **See everything the app can do** → Help → **What Ambrotype Can Do** (this list, with a filter).
 - **See all shortcuts, or change them** → **Keyboard Shortcuts** (Shift+?) shows them; **Settings** (Ctrl+,) changes them.
@@ -32,6 +32,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Crop** → **Crop and Straighten** (R), then drag corner to corner like a screenshot; X swaps portrait and landscape, Enter applies.
 - **Converging lines on buildings** → **Transform** → Upright.
 - **Lens distortion, dark corners, colour fringes** → **Lens Corrections**: profile corrections (lensfun database or your Adobe `.lcp` files), Remove Chromatic Aberration, Defringe → Auto. Sony and DNG raws bring their own distortion correction. `amb lens info RAW`.
+- **Find the AI tools (remove, select subject, people, sky)** → the **Retouch** task (Ctrl+Alt+4): **Retouch tools** on the left, a button each.
 - **Change only part of the photo** → **Masks** (M): linear (L), radial (Shift+R), brush (B), luminance and colour ranges, Sky, and AI Subject, Background and People masks (they run on your computer; **Settings** → AI models).
 - **Remove a person, a bin, a car, anything** → **Remove object…** (Shift+Q, first in the **Spot Removal** panel): drag a box round it; the Subject model finds its outline and AI Remove fills all of it in one spot.
 - **Remove a spot, a blemish, a wire** → **Spot Removal** (Q): click it or brush over it; Heal, Clone or Remove (AI Remove fills it with what belongs there, once its model is installed in **Settings** → AI models).

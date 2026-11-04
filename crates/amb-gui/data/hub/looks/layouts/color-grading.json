@@ -1,7 +1,7 @@
 {
   "format": "ambrotype-layout/1",
   "name": "Colour grading",
-  "description": "For colour work: big grading wheels in a wide left column, with the curve, colour mixer and calibration open on the right; exposure stays at hand, the rest is folded away.",
+  "description": "Colour: big grading wheels on the left; on the right the colour mixer and curve open, and only Basic's colour (white balance, vibrance, saturation), with the light sliders left to Develop.",
   "author": "Ambrotype",
   "density": "normal",
   "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "search", "|", "before", "masks", "zoom", "wb", "clip", "|", "looks", "settings"],
@@ -17,7 +17,7 @@
     "width": 340,
     "items": [
       "histogram",
-      { "panel": "basic", "open": true },
+      { "panel": "basic", "title": "Colour", "open": true, "hide": ["Exposure2012", "Contrast2012", "Highlights2012", "Shadows2012", "Whites2012", "Blacks2012", "Texture", "Clarity2012", "Dehaze"] },
       { "panel": "tone_curve", "open": true },
       { "panel": "color_mixer", "open": true },
       { "panel": "effects" },

@@ -1,11 +1,11 @@
 {
   "format": "ambrotype-layout/1",
   "name": "Classic",
-  "description": "Presets and history on the left, the Develop panels on the right.",
+  "description": "Develop: Quick fixes on the left (Auto edit, Auto tone and white balance, Level, lens fixes) above the presets and history; the Develop panels on the right.",
   "author": "Ambrotype",
   "density": "normal",
   "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "search", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "settings", "feedback"],
-  "left": { "width": 250, "items": ["presets", "history"] },
+  "left": { "width": 260, "items": ["quick", "presets", "history"] },
   "right": {
     "width": 330,
     "items": [

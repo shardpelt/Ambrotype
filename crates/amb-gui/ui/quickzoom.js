@@ -7,7 +7,7 @@
 // magnification.
 "use strict";
 
-const qz = { box: null, loupe: null, mag: 1, timer: null, busy: false, at: null };
+const qz = { box: null, pan: null, loupe: null, mag: 1, timer: null, busy: false, at: null };
 
 function boxZoomWanted() {
   try { return localStorage.getItem("amb.boxZoom") !== "0"; } catch { return true; }
@@ -24,13 +24,31 @@ function photoAt(x, y) {
 function wireBoxZoom() {
   const viewer = $("viewer");
   const img = $("preview");
+  // On the photo, or on a tool's canvas over it (spots, masks, crop).
+  const onPhoto = (e) => e.target === img || (e.target.tagName === "CANVAS" && viewer.contains(e.target));
   viewer.addEventListener("mousedown", (e) => {
-    if (e.button !== 2 || !ui.info || !boxZoomWanted() || e.target !== img || ui.picking) return;
+    if (e.button !== 2 || !ui.info || ui.picking || !onPhoto(e)) return;
+    // Zoomed in, a right-drag moves the photo, also with a tool open.
+    if (ui.zoom.on) {
+      e.preventDefault();
+      qz.pan = { x: e.clientX, y: e.clientY, moved: false };
+      return;
+    }
+    if (!boxZoomWanted()) return;
     e.preventDefault();
     const el = Object.assign(document.createElement("div"), { className: "zoom-box" });
     qz.box = { x: e.clientX, y: e.clientY, el, moved: false };
   });
   window.addEventListener("mousemove", (e) => {
+    const p = qz.pan;
+    if (p) {
+      const dx = e.clientX - p.x, dy = e.clientY - p.y;
+      if (!p.moved && Math.abs(dx) + Math.abs(dy) < 4) return;
+      p.moved = true;
+      img.classList.add("panning");
+      placeRegion(dx, dy);
+      return;
+    }
     const b = qz.box;
     if (!b) return;
     const w = e.clientX - b.x, h = e.clientY - b.y;
@@ -45,6 +63,14 @@ function wireBoxZoom() {
     });
   });
   window.addEventListener("mouseup", (e) => {
+    const p = qz.pan;
+    if (p && e.button === 2) {
+      qz.pan = null;
+      img.classList.remove("panning");
+      if (!p.moved) return e.target === img ? photoMenu(e) : undefined;
+      panBy(e.clientX - p.x, e.clientY - p.y);
+      return;
+    }
     const b = qz.box;
     if (!b || e.button !== 2) return;
     qz.box = null;
@@ -148,7 +174,7 @@ async function loupeRender() {
 function wireLoupe() {
   window.addEventListener("mousemove", moveLoupe);
   $("viewer").addEventListener("wheel", (e) => {
-    if (!qz.loupe || ui.zoom.on) return;
+    if (!qz.loupe || ui.zoom.on || e.ctrlKey || e.metaKey) return;
     e.preventDefault();
     qz.mag = e.deltaY < 0 ? Math.min(4, qz.mag * 2) : Math.max(1, qz.mag / 2);
     loupeRender();

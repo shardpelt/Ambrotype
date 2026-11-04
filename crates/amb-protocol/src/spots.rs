@@ -169,6 +169,64 @@ pub fn add(
     Ok(())
 }
 
+/// The brush strokes of a spot's shape (its `Mask/Paint` parts).
+fn strokes(items: &mut [Value]) -> impl Iterator<Item = &mut BTreeMap<String, Value>> {
+    items.iter_mut().filter_map(|c| match c {
+        Value::Struct(m) if masks::text(m, "What").as_deref() == Some("Mask/Paint") => Some(m),
+        _ => None,
+    })
+}
+
+/// Move a brushed spot so the middle of its strokes' dabs is at `to`.
+fn move_strokes(items: &mut [Value], to: (f64, f64)) {
+    let (mut x0, mut y0, mut x1, mut y1) = (
+        f64::INFINITY,
+        f64::INFINITY,
+        f64::NEG_INFINITY,
+        f64::NEG_INFINITY,
+    );
+    for m in strokes(items) {
+        if let Some(Value::Seq(dabs)) = m.get("Dabs") {
+            for (x, y) in dabs
+                .iter()
+                .filter_map(Value::as_str)
+                .filter_map(masks::parse_dab)
+            {
+                (x0, y0, x1, y1) = (x0.min(x), y0.min(y), x1.max(x), y1.max(y));
+            }
+        }
+    }
+    if x0 > x1 {
+        return;
+    }
+    let (dx, dy) = (to.0 - (x0 + x1) / 2.0, to.1 - (y0 + y1) / 2.0);
+    for m in strokes(items) {
+        if let Some(Value::Seq(dabs)) = m.get_mut("Dabs") {
+            for d in dabs.iter_mut() {
+                if let Some((x, y)) = d.as_str().and_then(masks::parse_dab) {
+                    *d = Value::Text(masks::format_dab(x + dx, y + dy));
+                }
+            }
+        }
+    }
+}
+
+/// Give a brushed spot's strokes brush radius `r` (and drop radius changes
+/// inside a stroke).
+fn resize_strokes(items: &mut [Value], r: f64) {
+    for m in strokes(items) {
+        m.insert("Radius".into(), number(r));
+        if let Some(Value::Seq(dabs)) = m.get_mut("Dabs") {
+            dabs.retain(|d| {
+                !matches!(
+                    d.as_str().and_then(masks::parse_dab_token),
+                    Some(masks::DabToken::Radius(_))
+                )
+            });
+        }
+    }
+}
+
 const KEYS: &[&str] = &[
     "at", "radius", "source", "kind", "feather", "opacity", "active",
 ];
@@ -198,10 +256,20 @@ pub fn set(
                         "only a round spot can be moved or resized this way",
                     ));
                 };
-                let Some(Value::Struct(e)) = items.iter_mut().find(|c| {
+                let round = items.iter().position(|c| {
                     matches!(c, Value::Struct(m) if masks::text(m, "What").as_deref() == Some("Mask/Ellipse"))
-                }) else {
-                    return Err(invalid(&name, "this spot is brushed; only a round spot can be moved or resized"));
+                });
+                let Some(Value::Struct(e)) = round.and_then(|i| items.get_mut(i)) else {
+                    // A brushed spot: its strokes move, or take the new
+                    // brush radius.
+                    if key == "at" {
+                        let to = point(&name, v)?;
+                        move_strokes(items, to);
+                    } else {
+                        let r = clamp(&name, num(v)?, 0.001, 0.5, clamped);
+                        resize_strokes(items, r);
+                    }
+                    continue;
                 };
                 if key == "at" {
                     let (x, y) = point(&name, v)?;
@@ -308,7 +376,17 @@ pub fn describe(settings: &BTreeMap<String, Value>) -> serde_json::Value {
                     d["at"] = json!([x, y]);
                     d["radius"] = json!(sx.max(sy));
                 }
-                None => d["shape"] = json!("brush"),
+                None => {
+                    d["shape"] = json!("brush");
+                    // The brush's radius, as a round spot's.
+                    let r = retouch::shape_components(a)
+                        .iter()
+                        .find(|c| masks::text(c, "What").as_deref() == Some("Mask/Paint"))
+                        .and_then(|c| masks::num(c, "Radius"));
+                    if let Some(r) = r {
+                        d["radius"] = json!(r);
+                    }
+                }
             }
             if kind.synthesised() {
                 d["note"] = json!("filled by AI Remove when its model is installed (Settings → AI models); healed from a nearby area otherwise");
@@ -345,6 +423,47 @@ mod tests {
             opacity: 100.0,
             points: None,
         }
+    }
+
+    #[test]
+    fn a_brushed_spot_moves_and_takes_a_new_size() {
+        let mut next = BTreeMap::new();
+        let mut clamped = Vec::new();
+        let points = [[0.2, 0.3], [0.4, 0.3]];
+        let mut s = spot([0.0, 0.0]);
+        s.kind = Some("remove");
+        s.points = Some(&points);
+        add(&mut next, &s, &mut clamped).unwrap();
+        let d = describe(&next);
+        assert_eq!(d["spots"][0]["shape"], "brush");
+        assert_eq!(d["spots"][0]["radius"], 0.02);
+        set(
+            &mut next,
+            0,
+            &obj(json!({"radius": 0.05, "at": [0.5, 0.6]})),
+            &mut clamped,
+        )
+        .unwrap();
+        let d = describe(&next);
+        assert_eq!(d["spots"][0]["radius"], 0.05);
+        // The strokes' middle moved from (0.3, 0.3) to (0.5, 0.6).
+        let Value::Struct(a) = &retouch::areas(&next)[0] else {
+            panic!()
+        };
+        let dabs: Vec<(f64, f64)> = retouch::shape_components(a)
+            .iter()
+            .filter_map(|c| match c.get("Dabs") {
+                Some(Value::Seq(d)) => Some(d.clone()),
+                _ => None,
+            })
+            .flatten()
+            .filter_map(|v| v.as_str().and_then(masks::parse_dab))
+            .collect();
+        let (x0, x1) = dabs
+            .iter()
+            .fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.0), b.max(p.0)));
+        assert!(((x0 + x1) / 2.0 - 0.5).abs() < 1e-5, "{x0} {x1}");
+        assert!(dabs.iter().all(|p| (p.1 - 0.6).abs() < 1e-5));
     }
 
     #[test]

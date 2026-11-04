@@ -968,7 +968,8 @@ function wireMasks() {
     drawMasks();
   });
   c.addEventListener("wheel", (e) => {
-    if (mk.tool !== "brush") return;
+    // Ctrl + scroll zooms (the viewer's).
+    if (mk.tool !== "brush" || e.ctrlKey || e.metaKey) return;
     e.preventDefault();
     brushSize(e.deltaY < 0 ? 1 : -1);
   }, { passive: false });

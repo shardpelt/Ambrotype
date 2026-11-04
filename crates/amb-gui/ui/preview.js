@@ -379,6 +379,17 @@ function wheelSteps() {
   try { return localStorage.getItem("amb.wheelPhotos") === "1"; } catch { return false; }
 }
 
+// After a drag of (dx, dy) screen pixels at 100%: move the centre by it
+// (in full-size pixels) and fetch the new crop.
+function panBy(dx, dy) {
+  const m = ui.zoom.meta;
+  if (!m) return;
+  const dpr = window.devicePixelRatio || 1;
+  const k = zoomScale(m);
+  [ui.zoom.cx, ui.zoom.cy] = clampZoomCentre(ui.zoom.cx - (dx * dpr) / k / m.full_width, ui.zoom.cy - (dy * dpr) / k / m.full_height, m);
+  requestPreview(false);
+}
+
 function wireViewer() {
   const img = $("preview");
   let drag = null;
@@ -396,6 +407,17 @@ function wireViewer() {
   // on the whole photo, if Settings asks, it goes to the next or previous one.
   const wheel = { sum: 0, at: 0 };
   $("viewer").addEventListener("wheel", (e) => {
+    // Ctrl (⌘) + scroll, or a pinch: zoom in at the pointer, or back out.
+    if ((e.ctrlKey || e.metaKey) && ui.info) {
+      e.preventDefault();
+      if (e.deltaY < 0 && !ui.zoom.on) {
+        const [u, v] = photoPoint(e);
+        setZoom(true, u, v);
+      } else if (e.deltaY > 0 && ui.zoom.on) {
+        setZoom(false);
+      }
+      return;
+    }
     if (!ui.zoom.on && !e.ctrlKey && wheelSteps() && keyContext() === "main" && ui.info) {
       e.preventDefault();
       // One photo per notch, or per good swipe on a trackpad.
@@ -433,12 +455,7 @@ function wireViewer() {
     drag = null;
     img.classList.remove("panning");
     if (ui.zoom.on && d.moved && ui.zoom.meta) {
-      // Move the centre by the drag distance (in full-size pixels) and fetch a new crop.
-      const dpr = window.devicePixelRatio || 1;
-      const m = ui.zoom.meta;
-      const k = zoomScale(m);
-      [ui.zoom.cx, ui.zoom.cy] = clampZoomCentre(ui.zoom.cx - ((e.clientX - d.x) * dpr) / k / m.full_width, ui.zoom.cy - ((e.clientY - d.y) * dpr) / k / m.full_height, m);
-      requestPreview(false);
+      panBy(e.clientX - d.x, e.clientY - d.y);
       return;
     }
     if (d.moved) return;

@@ -381,6 +381,8 @@ function wireSpots() {
     run([{ cmd: "set_spot", spot: d.spot, values }]);
   });
   c.addEventListener("wheel", (e) => {
+    // Ctrl + scroll zooms (the viewer's).
+    if (e.ctrlKey || e.metaKey) return;
     e.preventDefault();
     spotSize(e.deltaY < 0 ? 1 : -1);
   }, { passive: false });

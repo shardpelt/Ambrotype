@@ -26,8 +26,16 @@ A short running list, kept up to date as work lands. Newest decisions first. The
   - **One answer leads to more:** a How to shows two or three related features ("also: Keep under N MB, Also a smaller copy"), and the features list can be followed from one to the next.
   - Tips come from [FEATURES.md](FEATURES.md), skip features already used, and are rare enough not to nag.
   - Two switches in Settings → General, both on by default: "Tips while waiting" and "Tips in menus and empty boxes".
+- **Remove an object in one go** (owner, 2026-11-04): click an object, the subject model finds its outline, and AI Remove fills all of it at once. Removing it in several spots goes wrong (each fill sees the rest of the object); one spot over the whole object works well.
+- **Tasks that feel different** (owner, 2026-11-04): Develop, Color and Retouch feel like the same window three times, and Remove and subject detection are hard to find. Each task should show its own tools first (Retouch: Remove, heal, dust, subject; Color: grading, mixer, curves).
+- **Tabs as plugins** (owner, 2026-11-04): tasks (Develop, Film, ...) could be plugins, so people add their own. Rethink plugin kinds: one broad kind, or edit tools, effects, tasks, exporters?
+- **Trippy mode** (owner, 2026-11-04): a playful task with the striking views (Visualize Spots, highlight hover, extreme slider values), and holographic effects.
+- **Auto edit** (owner, 2026-11-04): one prominent button that edits the whole photo (tone, colour, crop, straighten), as a starting point.
+- **Camera simulator** (owner, 2026-11-04): a basic scene where shutter speed, aperture, ISO and focal length change the picture (motion blur, depth of field, noise, exposure), to learn what they do.
 
 ## Recently done
+
+- 2026-11-04: brushed spots resize (Size) and move (`set_spot`); Ctrl+scroll zooms at the pointer (not the brush size); zoomed in, the arrows and a right-drag move the photo with a tool open; not zoomed in, a right-drag on a tool draws a zoom box
 
 - 2026-11-04: AI Remove sees the photo at its own scale (at least 512 px of context, averaged down, never blown up); the Spot panel's Size follows the slider as it moves, up to 25 % of the width
 

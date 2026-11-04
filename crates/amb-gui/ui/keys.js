@@ -104,10 +104,12 @@ const KEY_ACTIONS = [
   { id: "slider-down", group: "Sliders", label: "Lower the selected slider a step", keys: ["-"], when: "main", photo: true, run: () => nudgeSlider(-1) },
   { id: "slider-up-more", group: "Sliders", label: "Raise the selected slider ten steps", keys: ["Shift++"], when: "main", photo: true, run: () => nudgeSlider(10) },
   { id: "slider-down-more", group: "Sliders", label: "Lower the selected slider ten steps", keys: ["Shift+_"], when: "main", photo: true, run: () => nudgeSlider(-10) },
-  { id: "prev-photo", group: "Photos", label: "Previous photo in the folder", keys: ["ArrowLeft"], when: "main", photo: true, run: (e) => (onControl(e) ? false : ui.zoom.on ? panZoom(-0.25, 0) : stepPhoto(-1)) },
-  { id: "next-photo", group: "Photos", label: "Next photo in the folder", keys: ["ArrowRight"], when: "main", photo: true, run: (e) => (onControl(e) ? false : ui.zoom.on ? panZoom(0.25, 0) : stepPhoto(1)) },
-  { id: "pan-up", group: "View", label: "Move up the zoomed-in photo", keys: ["ArrowUp"], when: "main", photo: true, run: (e) => (onControl(e) || !ui.zoom.on ? false : panZoom(0, -0.25)) },
-  { id: "pan-down", group: "View", label: "Move down the zoomed-in photo", keys: ["ArrowDown"], when: "main", photo: true, run: (e) => (onControl(e) || !ui.zoom.on ? false : panZoom(0, 0.25)) },
+  // Zoomed in, the arrows move the photo, also with a tool open; on the
+  // whole photo, ← → go to the previous or next photo (not inside a tool).
+  { id: "prev-photo", group: "Photos", label: "Previous photo in the folder", keys: ["ArrowLeft"], when: ["main", "crop", "masks", "spots"], photo: true, run: (e) => (onControl(e) ? false : ui.zoom.on ? panZoom(-0.25, 0) : keyContext() === "main" ? stepPhoto(-1) : false) },
+  { id: "next-photo", group: "Photos", label: "Next photo in the folder", keys: ["ArrowRight"], when: ["main", "crop", "masks", "spots"], photo: true, run: (e) => (onControl(e) ? false : ui.zoom.on ? panZoom(0.25, 0) : keyContext() === "main" ? stepPhoto(1) : false) },
+  { id: "pan-up", group: "View", label: "Move up the zoomed-in photo", keys: ["ArrowUp"], when: ["main", "crop", "masks", "spots"], photo: true, run: (e) => (onControl(e) || !ui.zoom.on ? false : panZoom(0, -0.25)) },
+  { id: "pan-down", group: "View", label: "Move down the zoomed-in photo", keys: ["ArrowDown"], when: ["main", "crop", "masks", "spots"], photo: true, run: (e) => (onControl(e) || !ui.zoom.on ? false : panZoom(0, 0.25)) },
   { id: "fold-left", group: "Window", label: "Hide or show the left column", keys: ["Ctrl+["], when: "any", run: () => toggleColumn("left") },
   { id: "fold-right", group: "Window", label: "Hide or show the right column", keys: ["Ctrl+]"], when: "any", run: () => toggleColumn("right") },
   { id: "topbar", group: "Window", label: "Hide or show the top bar", hint: "Hidden, it comes back while the pointer is at the window's top edge.", keys: ["Ctrl+Shift+T"], when: "any", run: () => setTopbar(document.body.classList.contains("topbar-off")) },

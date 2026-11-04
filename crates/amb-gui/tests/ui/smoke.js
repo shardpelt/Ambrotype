@@ -544,6 +544,27 @@ await t.step("Spot panel: Find dust finds none on a clean chart; Shift-drag heal
   t.expect(t.historyLength() === steps + 1, "one history step");
   t.key("Ctrl+Z");
   await t.until("undone", () => spotList().length === before);
+  // Ctrl + scroll zooms in at the pointer (not the spot size); arrows and a
+  // right-drag move the zoomed-in photo with the tool open; Ctrl + scroll
+  // back out.
+  const size = sp.size;
+  const wheelAt = (deltaY) => $("spot-canvas").dispatchEvent(new WheelEvent("wheel", {
+    deltaY, ctrlKey: true, clientX: c.left + c.width / 2, clientY: c.top + c.height / 2, bubbles: true, cancelable: true }));
+  wheelAt(-100);
+  await t.until("zoomed in", () => ui.zoom.on && ui.zoom.meta);
+  t.expect(sp.size === size, `the spot size stays (${sp.size})`);
+  const cx = ui.zoom.cx;
+  t.key("ArrowRight");
+  await t.until("moved right", () => ui.zoom.cx > cx);
+  const cy = ui.zoom.cy;
+  const mouse = (type, x, y) => $("spot-canvas").dispatchEvent(new MouseEvent(type, { button: 2, clientX: x, clientY: y, bubbles: true }));
+  mouse("mousedown", c.left + 300, c.top + 300);
+  window.dispatchEvent(new MouseEvent("mousemove", { clientX: c.left + 300, clientY: c.top + 200 }));
+  window.dispatchEvent(new MouseEvent("mouseup", { button: 2, clientX: c.left + 300, clientY: c.top + 200 }));
+  await t.until("a right-drag moved it", () => ui.zoom.cy > cy);
+  t.expect(sp.on, "still in spot removal");
+  wheelAt(100);
+  await t.until("the whole photo", () => !ui.zoom.on);
   // The Size slider sets the next spot's size as it moves, up to 25 %.
   const was = sp.size;
   $("spot-size").value = "20";

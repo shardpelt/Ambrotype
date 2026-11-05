@@ -27,9 +27,11 @@ A short running list, kept up to date as work lands. Newest decisions first. The
   - **One answer leads to more:** a How to shows two or three related features ("also: Keep under N MB, Also a smaller copy"), and the features list can be followed from one to the next.
   - Tips come from [FEATURES.md](FEATURES.md), skip features already used, and are rare enough not to nag.
   - Two switches in Settings → General, both on by default: "Tips while waiting" and "Tips in menus and empty boxes".
-- **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots done as Edges and Neon, highlight hover), sliders past their usual ranges; and (owner, 2026-11-05) range selectors (highlights, shadows, …) and editors in Trippy.
+- **More trippy** (owner, 2026-11-04): done 2026-11-05 (Edges and Neon, Where with its hover view, amounts to 200 %). Still to do: Basic's own sliders past their ranges in Trippy (Lightroom's ranges are kept in the sidecar, so it would be our own extra settings).
 
 ## Recently done
+
+- 2026-11-05: more trippy: any effect can be kept to part of the photo (Effects → Where: highlights, midtones, shadows, or a colour; amb:Effects `where`, judged from the photo before it), and hovering Where tints where on the photo; in Trippy an effect's amount goes to 200 % (the change pushed further than the effect makes it); Trippy tools Acid highlights and Foil shadows
 
 - 2026-11-05: masks asked in words: Masks → Describe it, and Select object's Or type what ("cow", "the water"): sky, people, subject and background straight away; anything else by the search model choosing among what SAM finds (the photo's best windows, refined, and a coarse grid), with what's round each thing greyed, so it's a selection like a click (Adjust, Remove, Move…)
 

@@ -8,6 +8,12 @@
 //! [ { "plugin": "duotone", "params": { "shadows": 220 }, "amount": 80, "seed": 12345 } ]
 //! ```
 //!
+//! `amount` goes to 200 (past 100 the change is pushed further than the
+//! effect makes it). `where` keeps an effect to part of the photo, judged
+//! from the photo before it: `highlights`, `midtones`, `shadows`, or a
+//! colour (`reds`, `oranges`, `yellows`, `greens`, `aquas`, `blues`,
+//! `purples`, `magentas`), fading in softly.
+//!
 //! The engine doesn't run plugins itself (they live in `amb-plugin`, which
 //! builds on the engine): the app registers a [`Resolver`] that turns an
 //! entry into a colour table or a pixel function. Where none is registered,
@@ -32,6 +38,71 @@ pub struct EffectEntry {
     /// The same for every render of this photo, so the look holds still.
     #[serde(default)]
     pub seed: u64,
+    /// Only on part of the photo (see the module's notes); everywhere when
+    /// left out.
+    #[serde(default, rename = "where", skip_serializing_if = "Option::is_none")]
+    pub place: Option<String>,
+}
+
+/// Where an effect goes, judged from the photo before it.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Place {
+    Highlights,
+    Midtones,
+    Shadows,
+    /// A hue, in degrees.
+    Hue(f32),
+}
+
+impl Place {
+    pub fn parse(name: &str) -> Option<Place> {
+        Some(match name.trim().to_lowercase().as_str() {
+            "highlights" => Place::Highlights,
+            "midtones" => Place::Midtones,
+            "shadows" => Place::Shadows,
+            "reds" => Place::Hue(0.0),
+            "oranges" => Place::Hue(30.0),
+            "yellows" => Place::Hue(60.0),
+            "greens" => Place::Hue(120.0),
+            "aquas" => Place::Hue(180.0),
+            "blues" => Place::Hue(225.0),
+            "purples" => Place::Hue(270.0),
+            "magentas" => Place::Hue(315.0),
+            _ => return None,
+        })
+    }
+
+    /// How much of the effect a pixel gets (0–1), from its sRGB-encoded
+    /// colour (0–1) before the effect.
+    pub fn weight(self, c: [f32; 3]) -> f32 {
+        let smooth = |a: f32, b: f32, x: f32| {
+            let t = ((x - a) / (b - a)).clamp(0.0, 1.0);
+            t * t * (3.0 - 2.0 * t)
+        };
+        let l = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        match self {
+            Place::Highlights => smooth(0.45, 0.8, l),
+            Place::Shadows => 1.0 - smooth(0.2, 0.55, l),
+            Place::Midtones => (1.0 - ((l - 0.5) / 0.32).powi(2)).max(0.0),
+            Place::Hue(centre) => {
+                let (hi, lo) = (c[0].max(c[1]).max(c[2]), c[0].min(c[1]).min(c[2]));
+                let chroma = hi - lo;
+                if chroma <= 1e-4 {
+                    return 0.0;
+                }
+                let h = if hi == c[0] {
+                    60.0 * ((c[1] - c[2]) / chroma).rem_euclid(6.0)
+                } else if hi == c[1] {
+                    60.0 * ((c[2] - c[0]) / chroma + 2.0)
+                } else {
+                    60.0 * ((c[0] - c[1]) / chroma + 4.0)
+                };
+                let d = (h - centre).rem_euclid(360.0);
+                let d = d.min(360.0 - d);
+                (1.0 - d / 40.0).max(0.0) * smooth(0.04, 0.18, chroma)
+            }
+        }
+    }
 }
 
 fn hundred() -> f64 {
@@ -81,8 +152,9 @@ pub fn resolve(e: &EffectEntry) -> Result<Resolved, String> {
 pub struct ActiveEffect {
     pub plugin: String,
     pub what: Resolved,
-    /// 0..1.
+    /// 0..2 (past 1, pushed further).
     pub amount: f32,
+    pub place: Option<Place>,
 }
 
 impl std::fmt::Debug for ActiveEffect {
@@ -109,7 +181,8 @@ pub fn active(text: &str) -> (Vec<ActiveEffect>, Vec<String>) {
     let mut out = Vec::new();
     let mut notes = Vec::new();
     for e in entries {
-        let amount = (e.amount.clamp(0.0, 100.0) / 100.0) as f32;
+        let amount = (e.amount.clamp(0.0, 200.0) / 100.0) as f32;
+        let place = e.place.as_deref().and_then(Place::parse);
         if amount <= 0.0 {
             continue;
         }
@@ -118,6 +191,7 @@ pub fn active(text: &str) -> (Vec<ActiveEffect>, Vec<String>) {
                 plugin: e.plugin,
                 what,
                 amount,
+                place,
             }),
             Err(why) => notes.push(format!("amb:Effects {} ({why})", e.plugin)),
         }
@@ -129,19 +203,22 @@ pub fn active(text: &str) -> (Vec<ActiveEffect>, Vec<String>) {
 /// (colours outside sRGB are clipped for it, as for a LUT), mixed with the
 /// photo by its amount. A pixel effect that fails leaves the photo as it was.
 pub(crate) fn apply(out: &mut Image, e: &ActiveEffect, tile: &Tile) {
+    let (to_srgb, to_pro) = crate::pipeline::srgb_matrices();
+    let mat = |m: &[[f32; 3]; 3], c: &[f32]| {
+        [0, 1, 2].map(|i| m[i][0] * c[0] + m[i][1] * c[1] + m[i][2] * c[2])
+    };
+    // The photo before it, kept where only part of it changes or the
+    // change is pushed past the effect's own.
+    let before = (e.place.is_some() || e.amount > 1.0).then(|| out.rgb.clone());
     match &e.what {
         Resolved::Color(table) => crate::pipeline::apply_lut(
             out,
             &crate::pipeline::LookLut {
                 table: table.clone(),
-                amount: f64::from(e.amount),
+                amount: f64::from(e.amount.min(1.0)),
             },
         ),
         Resolved::Pixels(run) => {
-            let (to_srgb, to_pro) = crate::pipeline::srgb_matrices();
-            let mat = |m: &[[f32; 3]; 3], c: &[f32]| {
-                [0, 1, 2].map(|i| m[i][0] * c[0] + m[i][1] * c[1] + m[i][2] * c[2])
-            };
             let linear: Vec<f32> = out
                 .rgb
                 .chunks_exact(3)
@@ -155,7 +232,7 @@ pub(crate) fn apply(out: &mut Image, e: &ActiveEffect, tile: &Tile) {
                 eprintln!("effect {}: {why}", e.plugin);
                 return;
             }
-            let amount = e.amount;
+            let amount = e.amount.min(1.0);
             for ((o, lin), new) in out
                 .rgb
                 .chunks_exact_mut(3)
@@ -172,6 +249,20 @@ pub(crate) fn apply(out: &mut Image, e: &ActiveEffect, tile: &Tile) {
             }
         }
     }
+    let Some(before) = before else {
+        return;
+    };
+    // What changed, pushed (amount past 1) and kept to its place.
+    let push = e.amount.max(1.0);
+    for (o, b) in out.rgb.chunks_exact_mut(3).zip(before.chunks_exact(3)) {
+        let w = e.place.map_or(1.0, |p| {
+            let s = mat(&to_srgb, b).map(|v| crate::pipeline::srgb_encode(v.clamp(0.0, 1.0)));
+            p.weight(s)
+        });
+        for i in 0..3 {
+            o[i] = (b[i] + (o[i] - b[i]) * push * w).max(0.0);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -185,5 +276,25 @@ mod tests {
         assert_eq!((e[0].amount, e[0].seed), (100.0, 0));
         assert!(parse("").unwrap().is_empty());
         assert!(parse("{").is_err());
+    }
+
+    #[test]
+    fn places_weigh_tones_and_colours() {
+        let (hi, sh, mid) = (Place::Highlights, Place::Shadows, Place::Midtones);
+        assert!(hi.weight([0.95; 3]) > 0.99 && hi.weight([0.1; 3]) < 0.01);
+        assert!(sh.weight([0.05; 3]) > 0.99 && sh.weight([0.9; 3]) < 0.01);
+        assert!(mid.weight([0.5; 3]) > 0.99 && mid.weight([0.02; 3]) < 0.01);
+        let blues = Place::parse("Blues").unwrap();
+        assert!(
+            blues.weight([0.1, 0.3, 0.9]) > 0.6,
+            "{}",
+            blues.weight([0.1, 0.3, 0.9])
+        );
+        assert!(blues.weight([0.9, 0.2, 0.1]) < 0.01 && blues.weight([0.5; 3]) == 0.0);
+        assert!(Place::parse("everywhere").is_none());
+        let e = parse(r#"[{"plugin":"x","where":"shadows","amount":150}]"#).unwrap();
+        assert_eq!(e[0].place.as_deref(), Some("shadows"));
+        let back = serde_json::to_string(&parse(r#"[{"plugin":"x"}]"#).unwrap()).unwrap();
+        assert!(!back.contains("where"), "{back}");
     }
 }

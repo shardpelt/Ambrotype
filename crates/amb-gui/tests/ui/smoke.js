@@ -194,10 +194,23 @@ await t.step("Trippy, a task plugin: its tools put effects on and take them off"
   // Visualise's view as a look: Neon (Paint's edges glowing on black).
   t.click(tile("Neon"));
   await t.until("Neon", () => effectsOf(currentValue("amb:Effects")).find((e) => e.plugin === "paint")?.params.style === "Neon");
+  // Kept to the highlights and pushed past full; the Effects panel says
+  // where, and hovering it shows where on the photo.
+  t.click(tile("Acid highlights"));
+  await t.until("Acid highlights", () => effectsOf(currentValue("amb:Effects")).some((e) => e.plugin === "hue-trip" && e.where === "highlights" && e.amount === 160));
+  revealSetting("amb:Effects");
+  await t.until("its Where", () => [...document.querySelectorAll(".fx-where select")].some((x) => x.value === "highlights"));
+  const row = [...document.querySelectorAll(".fx-where")].find((r) => r.querySelector("select").value === "highlights");
+  await t.until("the preview", () => $("preview").complete && $("preview").naturalWidth > 0);
+  row.dispatchEvent(new MouseEvent("mouseenter"));
+  t.expect(!$("where-canvas").hidden, "hovering Where shows where");
+  row.dispatchEvent(new MouseEvent("mouseleave"));
+  t.expect($("where-canvas").hidden, "and leaving hides it");
+  t.expect([...document.querySelectorAll(".fx-effect input[type=range]")][0].max === "200", "Amount to 200 in Trippy");
   t.click(tile("Back to normal"));
   await t.until("no trip", () => fxOn().length === 0);
   // Back to where the edit was, for the steps after this one.
-  for (let i = 0; i < 4; i++) await run([{ cmd: "undo" }]);
+  for (let i = 0; i < 5; i++) await run([{ cmd: "undo" }]);
   await t.until("back at the Exposure step", () => document.querySelector("#history-list li.current .history-values")?.textContent.endsWith("→ +1.00"));
   // Not in the Appearance list: it is the task's.
   t.expect(TASK_LAYOUTS.has("plugin:trippy"), "kept out of Appearance");

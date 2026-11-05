@@ -80,8 +80,8 @@ pub struct Task {
 /// `command` (an editor command by its shortcut id, as Keyboard Shortcuts
 /// lists them: "auto-edit", "remove-object"), `effect` (an effect plugin
 /// put on the photo, from one of its `recipe`s or `params`, in place of
-/// the one already there) or `plugin` (an action plugin run with
-/// `params`).
+/// the one already there, with `where` and `amount` if given) or `plugin`
+/// (an action plugin run with `params`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Tool {
@@ -101,6 +101,12 @@ pub struct Tool {
     pub recipe: String,
     #[serde(default, skip_serializing_if = "Map::is_empty")]
     pub params: Map<String, Value>,
+    /// For an `effect`: only on part of the photo ("highlights", "blues";
+    /// amb:Effects' `where`) and how much (to 200; 100 when left out).
+    #[serde(default, rename = "where", skip_serializing_if = "String::is_empty")]
+    pub place: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub amount: Option<f64>,
 }
 
 /// At most this many tool buttons in a task.
@@ -282,6 +288,23 @@ impl Manifest {
                     }
                     if !t.recipe.is_empty() && t.effect.is_empty() {
                         return Err(format!("tool {:?}: \"recipe\" is for an effect", t.label));
+                    }
+                    if (!t.place.is_empty() || t.amount.is_some()) && t.effect.is_empty() {
+                        return Err(format!(
+                            "tool {:?}: \"where\" and \"amount\" are for an effect",
+                            t.label
+                        ));
+                    }
+                    if !t.place.is_empty()
+                        && amb_engine::plugin_effects::Place::parse(&t.place).is_none()
+                    {
+                        return Err(format!(
+                            "tool {:?}: \"where\" is highlights, midtones, shadows or a colour (reds … magentas)",
+                            t.label
+                        ));
+                    }
+                    if t.amount.is_some_and(|a| !(0.0..=200.0).contains(&a)) {
+                        return Err(format!("tool {:?}: \"amount\" is 0 to 200", t.label));
                     }
                 }
             }

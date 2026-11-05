@@ -280,6 +280,7 @@ fn effects_reach_the_engine_through_the_resolver() {
         params: Map::new(),
         amount: 100.0,
         seed: 1,
+        place: None,
     };
     assert!(matches!(resolve(&entry("duotone")), Ok(Resolved::Color(_))));
     assert!(matches!(

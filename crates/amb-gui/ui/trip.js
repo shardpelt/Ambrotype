@@ -33,14 +33,16 @@ function tripRecipe(plugin, name) {
   return m?.recipes?.find((r) => r.name === name)?.params ?? {};
 }
 
-// An effect plugin on the photo with `params` (or a recipe's), in place of
-// the one of that plugin already there; one undo step.
-async function setEffect(plugin, { recipe = "", params = {} } = {}, what = null) {
+// An effect plugin on the photo with `params` (or a recipe's), `where`
+// (only the highlights, the blues…) and `amount` (to 200), in place of the
+// one of that plugin already there; one undo step.
+async function setEffect(plugin, { recipe = "", params = {}, where = null, amount = 100 } = {}, what = null) {
   if (!ui.info) return toast("Open a photo first.", true);
   if (!fx.plugins.length) await loadEffectPlugins();
   if (!fx.plugins.some((p) => p.id === plugin)) return toast(`The effect ${plugin} isn't installed.`, true);
   const values = { ...(recipe ? tripRecipe(plugin, recipe) : {}), ...params };
-  const list = [...tripEffects().filter((e) => e.plugin !== plugin), { plugin, params: values, amount: 100, seed: tripSeed() }];
+  const entry = { plugin, params: values, amount, seed: tripSeed(), ...(where ? { where } : {}) };
+  const list = [...tripEffects().filter((e) => e.plugin !== plugin), entry];
   await run([{ cmd: "set_param", name: "amb:Effects", value: JSON.stringify(list) }], what ?? (recipe || plugin));
 }
 

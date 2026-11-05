@@ -366,6 +366,7 @@ pub fn run(
                 .duration_since(std::time::UNIX_EPOCH)
                 .map(|d| d.as_nanos() as u64 & 0xffff_ffff)
                 .unwrap_or(1),
+            place: None,
         });
         let value = serde_json::to_string(&effects).map_err(|e| e.to_string())?;
         let commands = serde_json::to_string(&serde_json::json!([

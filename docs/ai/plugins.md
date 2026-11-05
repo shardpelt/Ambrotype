@@ -112,7 +112,7 @@ A recipe is a named set of parameter values. A plugin can ship some in its manif
 
 ## Effect plugins
 
-An effect is rendered with the photo every time, like a slider, rather than run once. It is kept in the photo's edit as `amb:Effects` (which plugin, its parameters, an amount and a seed), so changing it later, undoing it or exporting all work. Lightroom ignores the setting.
+An effect is rendered with the photo every time, like a slider, rather than run once. It is kept in the photo's edit as `amb:Effects` (which plugin, its parameters, an amount and a seed), so changing it later, undoing it or exporting all work. Two more keys are the host's, for any effect: `amount` goes to 200 (past 100 the change is pushed further than the effect makes it), and `where` keeps it to part of the photo, judged from the photo before it: `highlights`, `midtones`, `shadows`, `reds`, `oranges`, `yellows`, `greens`, `aquas`, `blues`, `purples` or `magentas`. Lightroom ignores the setting.
 
 - **In the editor:** Develop → **Effects → Plugin effects**: "Add an effect…", then its own controls (drawn from `params`), an amount slider, ↑ to apply it earlier and × to remove it. The Plugins dialog's **Add to photo** does the same with the dialog's values. `amb plugin run <dir> photo.nef --params ...` adds one from the command line.
 - **Two kinds** (`"kind": "effect"` and `"effect"` in plugin.json):

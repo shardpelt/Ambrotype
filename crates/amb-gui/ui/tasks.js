@@ -50,7 +50,7 @@ async function runTaskTool(tool) {
     return a.run();
   }
   if (!ui.info) return toast("Open a photo first.", true);
-  if (tool.effect) return setEffect(tool.effect, { recipe: tool.recipe, params: tool.params }, tool.label);
+  if (tool.effect) return setEffect(tool.effect, { recipe: tool.recipe, params: tool.params, where: tool.where, amount: tool.amount }, tool.label);
   const r = await invoke("run_plugin", { id: tool.plugin, params: tool.params ?? {} });
   setState(r.state);
   requestPreview(false);

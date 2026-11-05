@@ -93,7 +93,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **File too big to send (WhatsApp, email)** → **Export** → Keep under (MB); 16 MB is WhatsApp's maximum. `amb render … --max-size 16M`.
 - **A big file and a small one for social media** → **Export** → Also a smaller copy, up to N MB (saves NAME-small.jpg beside it). `amb render … --small-copy 3M`.
 - **Exactly 1080 × 1350 for Instagram** → **Export** → Size preset, or Exact size.
-- **Shot RAW by mistake, want JPEGs like the camera makes** → **Convert raws** (library, File menu, or right-click): as the camera would have saved them, Auto, or like one photo you edited. `amb convert CARD --to JPEGS`.
+- **Shot RAW by mistake, want JPEGs like the camera makes** → **Convert raws** (library, File menu, or right-click): as the camera would have saved them, Auto, or like one photo you edited (pick which from the edited ones). `amb convert CARD --to JPEGS`.
 - **Paste the photo into a chat or document** → right-click → Copy image.
 - **A border, a Polaroid frame, a caption** → **Frame** (Shift+B).
 - **A watermark or logo** → **Export** → Watermark.

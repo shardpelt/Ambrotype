@@ -31,6 +31,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-05: Convert raws' Like … shows the edited photos among them to pick which one to match (it took the focused photo only)
+
 - 2026-11-05: Best in each burst (library → Organise): bursts among the photos shown, each ranked by focus (sharpness on the faces, or the sharpest part) and open eyes (YuNet, MIT, 0.2 MB, an optional install in Settings → AI models; how open, against the burst's other frames); in the grid the best is marked with why, the rest dimmed with what's wrong; Pick best, reject rest, or Stack each
 
 - 2026-11-05: Select object is easier to find and use: **Select** in every built-in layout's toolbar (with its word, beside Auto), and once something is selected its actions (Adjust, Brighten, Darken, Move, Remove, Soften background, Shadow) sit on a bar right under it on the photo. Visualise's edge view is a Trippy look: Paint's new Edges and Neon styles (Trippy tools Edges and Neon)

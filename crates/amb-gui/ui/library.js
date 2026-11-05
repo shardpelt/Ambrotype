@@ -1021,8 +1021,33 @@ async function convertRawsFlow() {
   const dlg = $("convert-dialog");
   const f = dlg.querySelector("form");
   $("convert-what").textContent = `${paths.length} photo${paths.length === 1 ? "" : "s"}${what}.`;
-  $("convert-like").disabled = !like;
-  $("convert-like-label").innerHTML = like ? `<b>Like ${fileName(like)}</b>: every photo matched to ${lib.on ? "the one you edited" : "this one's edit"}` : "<b>Like one I edited</b>: click that photo first, then Convert raws";
+  // Which photo to match: the edited ones among them (the focused or open
+  // one first), to pick from.
+  const info = (path) => (lib.on ? libPhoto(path) : strip.photos?.find((p) => p.path === path)) ?? { path };
+  const edited = paths.filter((p) => p !== like && info(p).edited);
+  const choices = [...(like ? [like] : []), ...edited].slice(0, 30);
+  if (!like && choices.length) like = choices[0];
+  const showLike = () => {
+    $("convert-like").disabled = !like;
+    $("convert-like-label").innerHTML = like
+      ? `<b>Like ${fileName(like)}</b>: every photo matched to it${choices.length > 1 ? " (pick another below)" : ""}`
+      : "<b>Like one I edited</b>: edit one of them first";
+    for (const b of $("convert-like-pick").children) b.classList.toggle("on", b.dataset.path === like);
+  };
+  $("convert-like-pick").replaceChildren(...(choices.length > 1 ? choices : []).map((path) => {
+    const b = Object.assign(document.createElement("button"), { type: "button", title: `Match every photo to ${fileName(path)}` });
+    b.dataset.path = path;
+    const img = Object.assign(document.createElement("img"), { alt: fileName(path) });
+    bigImage(info(path), 128, true).then((u) => { img.src = u; }).catch(() => {});
+    b.append(img);
+    b.addEventListener("click", () => {
+      like = path;
+      f.convert_look.value = "like";
+      showLike();
+    });
+    return b;
+  }));
+  showLike();
   if (!like && f.convert_look.value === "like") f.convert_look.value = "camera";
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));

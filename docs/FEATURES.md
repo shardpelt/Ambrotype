@@ -32,7 +32,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Crooked horizon** → **Crop and Straighten** (R), then **Level the horizon** (L), or drag outside the frame to turn it by hand.
 - **Crop** → **Crop and Straighten** (R), then drag corner to corner like a screenshot; X swaps portrait and landscape, Enter applies.
 - **Converging lines on buildings** → **Transform** → Upright.
-- **Lens distortion, dark corners, colour fringes** → **Lens Corrections**: profile corrections (lensfun database or your Adobe `.lcp` files), Remove Chromatic Aberration, Defringe → Auto. Sony and DNG raws bring their own distortion correction. `amb lens info RAW`.
+- **Lens distortion, dark corners, colour fringes** → **Lens Corrections**: profile corrections (lensfun's database, downloaded by itself at the first start when there is none, or your Adobe `.lcp` files), Remove Chromatic Aberration, Defringe → Auto. Sony and DNG raws bring their own distortion correction. `amb lens info RAW`.
 - **Find the AI tools (remove, select subject, people, sky)** → the **Retouch** task (Ctrl+Alt+4): **Retouch tools** on the left, a button each.
 - **Change only part of the photo** → **Masks** (M): linear (L), radial (Shift+R), brush (B), luminance and colour ranges, Sky, and AI Subject, Background and People masks (they run on your computer; **Settings** → AI models).
 - **Remove a person, a bin, a car, anything** → **Remove object…** (Shift+Q, first in the **Spot Removal** panel, or **Retouch tools**): click it (Alt-click for just a part) or drag a box round it; its outline is found (a click needs SAM 2.1 tiny in **Settings** → AI models) and AI Remove fills all of it in one spot.

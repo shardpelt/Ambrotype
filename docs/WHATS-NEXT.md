@@ -31,6 +31,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-05: the first start asks nothing: with no lens profiles, lensfun's database (0.5 MB) downloads quietly instead of a dialog over the app
+
 - 2026-11-05: eleven Wild presets (Toy camera, Miniature, Infrared, Cross-process, Dreamland, Acid, Hologram, Oil painting, Cartoon, Poster, Pop art) over two new built-in effects, Paint (Oil, Cartoon, Poster: a Kuwahara filter, ink lines, flat tones) and Tilt-shift; the starter presets in four groups instead of eight (Everyday, Film & mood, Black & white, Wild); built-in effects now run natively on all cores (Paint on a 24 MP photo: 335 s in the sandbox, 9.5 s natively)
 
 - 2026-11-04: tasks as plugins: a third plugin kind, `task` (a tab with its own layout and tool buttons that run commands, effects or action plugins; no code), and the kinds written down ([design/plugin-kinds.md](design/plugin-kinds.md): action, effect, task; exporters, importers and panels later). Trippy is now a built-in task plugin

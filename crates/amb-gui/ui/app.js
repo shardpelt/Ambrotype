@@ -81,6 +81,8 @@ function wireStatusBar() {
 // Yes or no, in the system's own dialog. (The page's confirm() can't be used:
 // the dialog plugin turns it into a call that fails.)
 async function askYes(message) {
+  // Counted, so a test can tell nothing asks at the first start.
+  ui.asked = (ui.asked ?? 0) + 1;
   try {
     return await window.__TAURI__.dialog.ask(message, { title: "Ambrotype", kind: "warning" });
   } catch (e) {
@@ -902,13 +904,17 @@ async function cropToFrame() {
 
 // Once, when no lens profiles are found at all: offer the download.
 let lensDbOffered = false;
+// No lens profiles at all (no lensfun installed, none downloaded): fetch
+// lensfun's database quietly (about 0.5 MB), as the small Subject model is,
+// rather than asking in a dialog before the first photo is even seen. Once
+// per computer; Lens Corrections → Lens database… updates it.
 async function offerLensDb() {
   if (lensDbOffered) return;
   lensDbOffered = true;
   try {
     if (localStorage.getItem("lensDbOffered")) return;
   } catch {
-    // No storage: asked once per session.
+    // No storage: once per session.
   }
   // The profiles load in the background at start.
   let st = null;
@@ -921,14 +927,20 @@ async function offerLensDb() {
     if (st.lenses !== null) break;
     await new Promise((r) => setTimeout(r, 1000));
   }
-  if (!st || st.lenses !== 0) return;
+  if (!st || st.lenses !== 0 || st.testing) return;
   try {
     localStorage.setItem("lensDbOffered", "1");
   } catch {
-    // Asked once per session at worst.
+    // Once per session at worst.
   }
-  if (await askYes("No lens profiles were found, so Lens Corrections can't fix distortion or vignetting yet. Download lensfun's lens database now (about 0.5 MB)? You can do it later under Lens Corrections → Lens database…")) {
-    lensDbFetch();
+  try {
+    const r = await invoke("fetch_lens_db");
+    if (r.lenses) {
+      toast(`Downloaded lens profiles (lensfun, ${r.lenses} lenses): Lens Corrections can now fix distortion and vignetting.`);
+      requestPreview(false);
+    }
+  } catch {
+    // Offline: Lens Corrections → Lens database… can fetch it later.
   }
 }
 

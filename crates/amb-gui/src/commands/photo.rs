@@ -577,6 +577,8 @@ pub(crate) struct LensDbState {
     pub(crate) timestamp: Option<u64>,
     /// Lenses the editor has now (from any database found).
     pub(crate) lenses: Option<usize>,
+    /// A UI test is running: nothing is downloaded by itself.
+    pub(crate) testing: bool,
 }
 
 /// The lens database: what the editor has, and the downloaded one.
@@ -592,6 +594,7 @@ pub(crate) fn lens_db_state(state: tauri::State<'_, AppState>) -> LensDbState {
             .lens
             .get()
             .map(|l| l.db.as_ref().map_or(0, |db| db.lenses.len())),
+        testing: crate::uitest::current().is_some(),
     }
 }
 

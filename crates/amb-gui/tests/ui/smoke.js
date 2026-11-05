@@ -8,6 +8,12 @@ await t.step("the photo opens and a preview shows", async () => {
   await t.until("the preview", () => t.visible("#preview") && $("preview").naturalWidth > 0, 60000);
 });
 
+await t.step("the first start asks nothing: no dialog over the photo", async () => {
+  await t.sleep(1500);
+  const open = [...document.querySelectorAll("dialog[open]")].map((d) => d.id);
+  t.expect(!open.length && !ui.asked, `open: ${open.join(", ")}; system questions: ${ui.asked ?? 0}`);
+});
+
 const before = t.setting("Exposure2012") ?? 0;
 await t.step("a slider edits the photo, as one history step", async () => {
   const steps = t.historyLength();

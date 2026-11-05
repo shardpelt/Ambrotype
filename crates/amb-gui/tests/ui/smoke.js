@@ -565,6 +565,15 @@ await t.step("Y splits before and after; the bar drags", async () => {
   t.expect(Math.abs(at.left + at.width / 2 - (p.left + p.width * 0.25)) < 3, `the bar followed: ${at.left}`);
   t.key("Y");
   t.expect($("split-bar").hidden, "Y again hides it");
+  // Before / after: the split with the bar near the right edge, to drag in.
+  t.key("\\");
+  await t.until("the bar at the side", () => !$("split-bar").hidden && !$("preview-before").hidden, 20000);
+  const side = $("split-bar").getBoundingClientRect();
+  const q = $("preview").getBoundingClientRect();
+  t.expect(side.left > q.left + q.width * 0.85, `near the right edge: ${side.left} of ${q.left}+${q.width}`);
+  t.expect($("btn-before").classList.contains("active") && !ui.before, "the button lit, the split shown");
+  t.key("\\");
+  t.expect($("split-bar").hidden && !$("btn-before").classList.contains("active"), "again: back to the edit");
   t.key("Ctrl+Z");
 });
 
@@ -660,6 +669,22 @@ await t.step("Spot panel: Find dust finds none on a clean chart; Shift-drag heal
   t.expect(t.historyLength() === steps + 1, "one history step");
   t.key("Ctrl+Z");
   await t.until("undone", () => spotList().length === before);
+  // Z and the 100% button zoom with the tool open, and the tool stays.
+  t.expect(!$("btn-zoom").disabled, "the 100% button works in spot removal");
+  t.key("z");
+  await t.until("Z zooms in", () => ui.zoom.on);
+  t.click("#btn-zoom");
+  await t.until("and out", () => !ui.zoom.on);
+  t.expect(sp.on, "still in spot removal");
+  // Zoomed in, opening the tool keeps the zoom.
+  exitSpots();
+  setZoom(true);
+  await t.until("zoomed", () => ui.zoom.on);
+  t.key("Q");
+  await t.until("the spot tool", () => sp.on);
+  t.expect(ui.zoom.on, "the zoom kept");
+  setZoom(false);
+  await t.until("fit", () => !ui.zoom.on);
   // Ctrl + scroll zooms in at the pointer (not the spot size); arrows and a
   // right-drag move the zoomed-in photo with the tool open; Ctrl + scroll
   // back out.

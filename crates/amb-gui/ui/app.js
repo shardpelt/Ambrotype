@@ -986,12 +986,24 @@ async function save() {
   }
 }
 
+// Before / after (\\): the split with its bar near the right edge, so the
+// photo shows as it was and the bar drags in to show the edit; again to
+// leave. Zoomed in or cropping, where the split can't show, the whole
+// photo as it was instead.
 function toggleBefore() {
   if (!ui.info) return;
-  ui.before = !ui.before;
-  if (ui.before && ui.split) toggleSplit();
+  if (ui.before) {
+    ui.before = false;
+  } else if (ui.split) {
+    toggleSplit();
+  } else if (ui.zoom.on || ui.crop.on) {
+    ui.before = true;
+  } else {
+    splitAt = 0.92;
+    toggleSplit();
+  }
   $("before-badge").hidden = !ui.before;
-  $("btn-before").classList.toggle("active", ui.before);
+  $("btn-before").classList.toggle("active", ui.before || ui.split);
   requestPreview(false);
 }
 

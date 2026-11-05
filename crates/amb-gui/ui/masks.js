@@ -1005,7 +1005,6 @@ async function enterMasks() {
   if (ui.crop.on) await exitCrop(true);
   exitSpots();
   exitGuided();
-  if (ui.zoom.on) setZoom(false);
   setPicking(false);
   if (!mk.sliders.length) {
     try {
@@ -1022,7 +1021,8 @@ async function enterMasks() {
   $("mask-canvas").hidden = false;
   $("mask-panel").hidden = false;
   $("btn-masks").classList.toggle("active", true);
-  for (const id of ["btn-zoom", "btn-wb"]) $(id).disabled = true;
+  // Zoom stays: retouching wants a close look.
+  $("btn-wb").disabled = true;
   renderMaskPanel();
   requestPreview(false);
 }
@@ -1036,7 +1036,7 @@ function exitMasks() {
   $("mask-canvas").hidden = true;
   $("mask-panel").hidden = true;
   $("btn-masks").classList.toggle("active", false);
-  for (const id of ["btn-zoom", "btn-wb"]) $(id).disabled = !ui.info;
+  $("btn-wb").disabled = !ui.info;
   status("Ready");
   requestPreview(false);
 }

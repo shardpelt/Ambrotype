@@ -39,8 +39,8 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Remove a person, a bin, a car, anything** → **Remove object…** (Shift+Q, first in the **Spot Removal** panel, or **Retouch tools**): click it (Alt-click for just a part) or drag a box round it; its outline is found (a click needs SAM 2.1 tiny in **Settings** → AI models) and AI Remove fills all of it in one spot.
 - **Remove a spot, a blemish, a wire** → **Spot Removal** (Q): click it or brush over it; Heal, Clone or Remove (AI Remove fills it with what belongs there, once its model is installed in **Settings** → AI models: Big-LaMa for the best fills, MI-GAN for five times the speed).
 - **Undo, or go back to an earlier version** → **Undo** (Ctrl+Z); the History panel (click any step); Snapshots (+ keeps the edit under a name).
-- **See before and after** → **Before / after** (`\`); **Before / after split** (Y) has a bar to drag.
-- **Check focus and detail** → **Fit / 100%** (Z or Space, or Ctrl+scroll at the pointer), **Loupe** (I), or right-drag a box to zoom to it. Zoomed in, the arrow keys or a right-drag move the photo, also with a tool open.
+- **See before and after** → **Before / after** (`\`): the photo as it was, with a bar at the side to drag in and see the edit; **Before / after split** (Y) puts the bar where you left it.
+- **Check focus and detail** → **Fit / 100%** (Z or Space, or Ctrl+scroll at the pointer), **Loupe** (I), or right-drag a box to zoom to it. Zoomed in, the arrow keys or a right-drag move the photo; all of these also work with Spot Removal or Masks open.
 - **Clipped whites or blacks** → **Clipping Overlay** (J).
 - **Will it print or look right elsewhere** → **Soft Proofing** (S) shows the export's colour space.
 - **Make the same edit on many photos** → **Copy Settings** (Ctrl+Shift+C) and **Paste Settings** on a selection (Ctrl+Shift+V), or **New Preset from This Photo** (Ctrl+Shift+N) and apply it.

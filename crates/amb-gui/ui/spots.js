@@ -527,7 +527,6 @@ async function enterSpots() {
   if (ui.crop.on) await exitCrop(true);
   exitMasks();
   exitGuided();
-  if (ui.zoom.on) setZoom(false);
   setPicking(false);
   try {
     sp.frame = await invoke("mask_frame");
@@ -539,7 +538,8 @@ async function enterSpots() {
   $("spot-canvas").hidden = false;
   $("spot-panel").hidden = false;
   $("btn-spots").classList.add("active");
-  for (const id of ["btn-zoom", "btn-wb"]) $(id).disabled = true;
+  // Zoom stays: retouching wants a close look.
+  $("btn-wb").disabled = true;
   status("Spot removal: click a blemish");
   renderSpotPanel();
 }
@@ -553,7 +553,7 @@ function exitSpots() {
   $("spot-canvas").hidden = true;
   $("spot-panel").hidden = true;
   $("btn-spots").classList.remove("active");
-  for (const id of ["btn-zoom", "btn-wb"]) $(id).disabled = !ui.info;
+  $("btn-wb").disabled = !ui.info;
   status("Ready");
   requestPreview(false);
 }

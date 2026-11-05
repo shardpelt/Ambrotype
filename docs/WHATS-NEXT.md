@@ -31,6 +31,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-05: Before / after (\\) shows the split with its bar at the side, to drag in; Z, Space and the 100% button zoom with Spot Removal or Masks open, and opening them keeps the zoom
+
 - 2026-11-05: Convert raws on Canon and Fujifilm: Canon raws (CR2 and CR3: 5D IV, 6D II, 90D, R6, R10) already gave the camera's full-size JPEG; Fujifilm keeps a smaller one (4416 px for a 7728 px X-T5, 4000 for an 11648 px GFX100S), which was used as it was, so its raws are now developed at full size and matched to it. The JPEG is used as it is only when it is at least 85 % of the raw's size
 
 - 2026-11-05: tips: while something takes a moment, a card with one feature to try (from FEATURES.md, at most every 90 s, features already used skipped); the search box and preset filter now and then suggest what to type; two switches in Settings → General

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Before / after split (Y): the photo before its edits on the left of a bar,
-// after on the right; drag the bar to move it. "Before" keeps the crop and
+// Before / after split (Y, or Before / After with the bar starting near the
+// right edge): the photo before its edits on the left of a bar, after on
+// the right; drag the bar to move it. "Before" keeps the crop and
 // geometry (src/session.rs `effective_settings`), so both halves line up.
 "use strict";
 
@@ -12,7 +13,11 @@ let splitAt = (() => {
 function toggleSplit() {
   if (!ui.info) return;
   ui.split = !ui.split;
-  if (ui.split && ui.before) toggleBefore();
+  if (ui.split && ui.before) {
+    ui.before = false;
+    $("before-badge").hidden = true;
+  }
+  $("btn-before").classList.toggle("active", ui.split);
   if (!ui.split) {
     const img = $("preview-before");
     if (img.src) URL.revokeObjectURL(img.src);

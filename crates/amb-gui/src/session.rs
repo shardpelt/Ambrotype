@@ -525,6 +525,16 @@ impl Session {
         Ok(self.selection.insert(sel))
     }
 
+    /// Select Object by words: the thing `like` scores best, kept for its
+    /// actions (amb_library::object::select_words).
+    pub fn select_words(
+        &mut self,
+        like: &amb_library::object::Like<'_>,
+    ) -> Result<&amb_library::object::Selection, String> {
+        let sel = amb_library::object::select_words(&self.full, self.state.settings(), like)?;
+        Ok(self.selection.insert(sel))
+    }
+
     /// Remove object: the spot covering the object clicked or boxed
     /// (fractions of the frame).
     pub fn remove_object(

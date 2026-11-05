@@ -128,6 +128,32 @@ pub(crate) struct SmartFound {
 static SEARCH_MODEL: std::sync::Mutex<Option<std::sync::Arc<amb_ai::search::Embedder>>> =
     std::sync::Mutex::new(None);
 
+/// The chosen search model, loaded once; `what` needs it (for the note
+/// when it isn't installed).
+pub(crate) fn search_model(
+    dir: &Path,
+    what: &str,
+) -> Result<std::sync::Arc<amb_ai::search::Embedder>, String> {
+    let spec = amb_ai::chosen(dir, "search")?;
+    if !amb_ai::list(dir)
+        .iter()
+        .any(|m| m.spec.id == spec.id && m.installed)
+    {
+        return Err(format!(
+            "{what} needs a search model: Settings → AI models → Search."
+        ));
+    }
+    let mut slot = SEARCH_MODEL.lock().map_err(|e| e.to_string())?;
+    Ok(match slot.as_ref().filter(|m| m.spec.id == spec.id) {
+        Some(m) => m.clone(),
+        None => {
+            let m = std::sync::Arc::new(amb_ai::search::Embedder::load(dir, &spec)?);
+            *slot = Some(m.clone());
+            m
+        }
+    })
+}
+
 /// Smart search over `paths`: by `query`'s words, or for photos `like` one of
 /// them, with the chosen search model. Photos not indexed yet are indexed
 /// first ("smart-progress" tells how far), and kept in the catalogue.
@@ -141,26 +167,8 @@ pub(crate) async fn smart_search(
 ) -> Res<SmartFound> {
     let dir = models_dir(state.inner())?;
     tauri::async_runtime::spawn_blocking(move || {
-        let spec = amb_ai::chosen(&dir, "search")?;
-        if !amb_ai::list(&dir)
-            .iter()
-            .any(|m| m.spec.id == spec.id && m.installed)
-        {
-            return Err(
-                "Smart search needs a search model: Settings → AI models → Search.".to_string(),
-            );
-        }
-        let model = {
-            let mut slot = SEARCH_MODEL.lock().map_err(|e| e.to_string())?;
-            match slot.as_ref().filter(|m| m.spec.id == spec.id) {
-                Some(m) => m.clone(),
-                None => {
-                    let m = std::sync::Arc::new(amb_ai::search::Embedder::load(&dir, &spec)?);
-                    *slot = Some(m.clone());
-                    m
-                }
-            }
-        };
+        let model = search_model(&dir, "Smart search")?;
+        let spec = model.spec.clone();
         let cat = folder::catalog();
         let photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
         let embed = |px: &amb_library::search::Pixels| model.image(&px.0, px.1, px.2);

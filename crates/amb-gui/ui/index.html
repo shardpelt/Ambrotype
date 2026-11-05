@@ -239,6 +239,7 @@
           <label class="inline-check" title="Show the selected mask in red (O)"><input id="mask-overlay" type="checkbox" checked><span>Overlay</span></label>
         </div>
         <div class="crop-line mask-new" id="mask-new"></div>
+        <input id="mask-words" class="words-box" type="search" placeholder="Describe it: a car, the dog, sky…" title="A mask of what you name: sky, people, the subject or the background straight away; anything else with the search and object selection models (Settings → AI models)" spellcheck="false" autocomplete="off">
         <div class="mask-list" id="mask-list"></div>
         <div id="mask-tool" class="mask-tool"></div>
         <div id="mask-detail" class="mask-detail" hidden>
@@ -283,6 +284,7 @@
       <section id="select-panel" class="crop-panel select-panel" hidden>
         <div class="side-head"><h2>Select object</h2></div>
         <p class="hint" id="select-hint"></p>
+        <input id="select-words" class="words-box" type="search" placeholder="Or type what: a car, the dog, a boat…" title="Selects what you name (needs the search model and SAM 2.1 tiny, Settings → AI models)" spellcheck="false" autocomplete="off">
         <label class="inline-check" id="select-shadow-row" hidden title="Its shadow, shown in blue: Remove and Move take it with the object"><input id="select-shadow" type="checkbox"><span>Its shadow too</span></label>
         <div class="tool-tiles" id="select-actions">
           <button type="button" class="tool-tile" data-action="adjust"><strong>Adjust</strong><span>A mask of it, with sliders</span></button>

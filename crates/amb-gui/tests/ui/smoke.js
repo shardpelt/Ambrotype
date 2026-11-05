@@ -103,6 +103,15 @@ await t.step("tasks differ: Develop opens on Quick fixes, Retouch on its tools, 
   t.expect(!sl.on, "and again leaves");
   t.key("O");
   await t.until("O opens it", () => sl.on);
+  // Typing what: words without the search model say where to get it; a
+  // word for a mask the app makes goes straight to it.
+  t.expect(t.visible("#select-words"), "a box to type what");
+  $("select-words").value = "a red car";
+  $("toast").hidden = true;
+  $("select-words").dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  await t.until("the note", () => !$("toast").hidden && !sl.busy);
+  t.expect($("toast").textContent.includes("search model") && sl.on, `the note: ${$("toast").textContent}`);
+  t.expect(maskWord("the sky") === "sky" && maskWord("people") === "people" && maskWord("a car") === null, "mask words");
   t.key("Escape");
   // Its tiles open the tools.
   document.querySelector('#tools-retouch [data-tool="object"]').click();

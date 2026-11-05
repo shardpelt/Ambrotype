@@ -179,6 +179,50 @@ async function setSelectShadow(on) {
   }
 }
 
+// Words that name a mask the app already makes, straight away.
+const MASK_WORDS = {
+  sky: "sky", skies: "sky",
+  person: "people", people: "people", man: "people", woman: "people", child: "people", kid: "people", persons: "people", everyone: "people",
+  subject: "subject", "main subject": "subject",
+  background: "background",
+};
+
+function maskWord(words) {
+  return MASK_WORDS[words.trim().toLowerCase().replace(/^(the|a|an)\s+/, "")] ?? null;
+}
+
+// Select what `words` name: the search model finds it, SAM outlines it.
+async function selectWords(words) {
+  if (!words.trim() || sl.busy) return false;
+  sl.busy = true;
+  $("busy").hidden = false;
+  status(`Looking for “${words.trim()}”…`);
+  renderSelectPanel();
+  try {
+    gotSelection(await invoke("select_words", { words }));
+    sl.clicks = [];
+    status(`Selected “${words.trim()}”`);
+    return true;
+  } catch (e) {
+    toast(String(e), true);
+    return false;
+  } finally {
+    sl.busy = false;
+    $("busy").hidden = true;
+    if (sl.on) renderSelectPanel();
+  }
+}
+
+// Masks → Describe it: the mask of what's named, opened with its sliders.
+async function maskFromWords(words) {
+  const kind = maskWord(words);
+  if (kind) return startTool(kind, true);
+  exitMasks();
+  await enterSelect();
+  if (!sl.on || !(await selectWords(words))) return;
+  await selectApply("adjust");
+}
+
 function selectClear() {
   sl.clicks = [];
   sl.dabs = null;
@@ -319,6 +363,24 @@ function wireSelect() {
   const barShadow = bar.querySelector('[data-bar="shadow"] input');
   barShadow.addEventListener("change", () => setSelectShadow(barShadow.checked));
   $("select-clear").addEventListener("click", selectClear);
+  $("select-words").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const words = e.target.value;
+    const kind = maskWord(words);
+    if (kind) {
+      // A mask the app makes by itself: there, in Masks.
+      exitSelect();
+      maskFlow(kind);
+      return;
+    }
+    selectWords(words);
+  });
+  $("mask-words").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    maskFromWords(e.target.value);
+  });
   $("select-shadow").addEventListener("change", () => setSelectShadow($("select-shadow").checked));
   $("select-done").addEventListener("click", exitSelect);
   $("preview").addEventListener("load", () => drawSelect());

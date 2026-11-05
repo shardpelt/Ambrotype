@@ -367,6 +367,32 @@ pub(crate) async fn select_object(
     .map_err(|e| e.to_string())?
 }
 
+/// Select Object by words ("car", "the boat"): the thing in the photo the
+/// search model finds most like them, outlined by the object selector
+/// (amb_library::object::select_words). Kept for `selection_apply`.
+#[tauri::command]
+pub(crate) async fn select_words(
+    words: String,
+    state: tauri::State<'_, AppState>,
+) -> Res<Selected> {
+    let dir = crate::commands::models::models_dir(state.inner())?;
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        if words.trim().is_empty() {
+            return Err("say what to select: a car, a dog, the boat".into());
+        }
+        let model = crate::commands::models::search_model(&dir, "Selecting by words")?;
+        let found = model.words(&words)?;
+        let like =
+            |rgb: &[f32], w: usize, h: usize| model.image(rgb, w, h).map(|v| found.score(&v));
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        Ok(Selected::of(s.select_words(&like)?))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Take the selected object's shadow with it, or not.
 #[tauri::command]
 pub(crate) async fn selection_shadow(on: bool, state: tauri::State<'_, AppState>) -> Res<Selected> {

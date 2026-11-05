@@ -320,6 +320,7 @@ dialog input[type=text] { background: var(--bg-deep); border: 1px solid var(--li
 .crop-canvas[hidden] { display: none; }
 .select-bar { position: absolute; z-index: 6; display: flex; gap: 4px; align-items: center; padding: 4px; border-radius: 8px; background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35); white-space: nowrap; }
 .select-bar[hidden] { display: none; }
+.words-box { width: 100%; box-sizing: border-box; }
 .select-bar button { padding: 4px 9px; }
 .select-bar button.active { background: var(--accent); color: var(--accent-text, #fff); }
 .select-bar .inline-check { padding: 0 6px; }

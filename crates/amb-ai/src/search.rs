@@ -103,6 +103,76 @@ impl Embedder {
     }
 }
 
+/// What a picture is compared with when asking how like some words it is:
+/// what most of a photo is, when it isn't the thing.
+const ELSE: [&str; 13] = [
+    "ground",
+    "grass",
+    "sky",
+    "water",
+    "a wall",
+    "trees",
+    "a road",
+    "a building",
+    "a person",
+    "an animal",
+    "a car",
+    "the background",
+    "something",
+];
+
+/// Words to find in pictures (`Embedder::words`).
+pub struct Words {
+    /// The words' vector first, then what else a picture might be.
+    texts: Vec<Vec<f32>>,
+}
+
+impl Embedder {
+    /// `words` ("car", "a red door") ready to compare pictures with.
+    pub fn words(&self, words: &str) -> Result<Words, String> {
+        let words = words.trim().to_lowercase();
+        let mut texts = vec![self.text(&format!("a photo of {}", with_article(&words)))?];
+        for other in ELSE {
+            let bare = other
+                .trim_start_matches("a ")
+                .trim_start_matches("an ")
+                .trim_start_matches("the ");
+            if bare != words && !words.ends_with(&format!(" {bare}")) {
+                texts.push(self.text(&format!("a photo of {other}"))?);
+            }
+        }
+        Ok(Words { texts })
+    }
+}
+
+impl Words {
+    /// How likely a picture (its vector) is the words rather than what
+    /// else it might be: 0–1, as CLIP's softmax over them.
+    pub fn score(&self, image: &[f32]) -> f32 {
+        let logits: Vec<f32> = self
+            .texts
+            .iter()
+            .map(|t| 100.0 * similarity(image, t))
+            .collect();
+        let top = logits.iter().copied().fold(f32::MIN, f32::max);
+        let sum: f32 = logits.iter().map(|l| (l - top).exp()).sum();
+        (logits[0] - top).exp() / sum
+    }
+}
+
+/// "a car", "an owl", or the words as they are when they already start
+/// with an article or are plural-looking.
+fn with_article(words: &str) -> String {
+    let first = words.split_whitespace().next().unwrap_or("");
+    if ["a", "an", "the", "some", "my", "two", "three"].contains(&first) || words.ends_with('s') {
+        words.to_string()
+    } else if words.starts_with(['a', 'e', 'i', 'o', 'u']) {
+        format!("an {words}")
+    } else {
+        format!("a {words}")
+    }
+}
+
 /// How alike two vectors from [`Embedder`] are: −1 to 1 (they're unit length).
 pub fn similarity(a: &[f32], b: &[f32]) -> f32 {
     a.iter().zip(b).map(|(x, y)| x * y).sum()
@@ -365,6 +435,18 @@ fn byte_char(b: u8) -> char {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn words_get_an_article_and_a_score_is_a_share() {
+        assert_eq!(with_article("car"), "a car");
+        assert_eq!(with_article("owl"), "an owl");
+        assert_eq!(with_article("the moon"), "the moon");
+        assert_eq!(with_article("boats"), "boats");
+        let words = Words {
+            texts: vec![vec![1.0, 0.0], vec![0.0, 1.0]],
+        };
+        assert!(words.score(&[1.0, 0.0]) > 0.99 && words.score(&[0.0, 1.0]) < 0.01);
+    }
+
     use super::*;
 
     fn bpe(kind: Kind, vocab: &[&str], merges: &[(&str, &str)]) -> Bpe {

@@ -19,7 +19,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Ideas for later
 
-- **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): masks asked in words ("person", "car", RapidRAW); face-part masks; AI models on the GPU (RapidRAW: DirectML, CoreML).
+- **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): face-part masks; AI models on the GPU (RapidRAW: DirectML, CoreML).
 - **Teach by showing** (owner, 2026-11-03): the app should teach its features by showing them, not by manuals, and one question should open up many related features. Ideas:
   - Done 2026-11-05: tips while waiting and in the search box and preset filter, from FEATURES.md, used features skipped, both switches in Settings → General; each How to lists two or three related features to follow.
   - **Tips while waiting:** while something loads or runs (opening a raw, an export, Convert raws, AI Remove), one short tip about a feature, with a button to try it.
@@ -30,6 +30,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots done as Edges and Neon, highlight hover), sliders past their usual ranges; and (owner, 2026-11-05) range selectors (highlights, shadows, …) and editors in Trippy.
 
 ## Recently done
+
+- 2026-11-05: masks asked in words: Masks → Describe it, and Select object's Or type what ("cow", "the water"): sky, people, subject and background straight away; anything else by the search model choosing among what SAM finds (the photo's best windows, refined, and a coarse grid), with what's round each thing greyed, so it's a selection like a click (Adjust, Remove, Move…)
 
 - 2026-11-05: Convert raws' Like … shows the edited photos among them to pick which one to match (it took the focused photo only)
 

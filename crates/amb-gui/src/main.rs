@@ -623,6 +623,7 @@ fn main() {
             commands::photo::remove_object,
             commands::photo::select_object,
             commands::photo::selection_shadow,
+            commands::photo::select_words,
             commands::photo::selection_apply,
             commands::photo::heal_line,
             commands::presets::size_presets,

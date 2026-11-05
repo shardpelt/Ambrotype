@@ -105,7 +105,7 @@ USAGE:
                 [export options]
                                             Raws to JPEGs in one go (a card shot in RAW by mistake): camera,
                                             the default, gives what the camera would have saved (its own
-                                            JPEG inside the raw when that is big enough, else the raw matched
+                                            JPEG inside the raw when that is full size, else the raw matched
                                             to it); auto, each photo's Auto tone and white balance; like:PHOTO,
                                             each matched to the look of one you edited. Auto and like keep
                                             their settings in the raws' sidecars (not with --no-edits).

@@ -3,8 +3,9 @@
 //! a card shot in RAW by mistake, with one of three looks:
 //!
 //! - **Camera:** what the camera would have saved as JPEG. Most raws keep
-//!   that JPEG inside; when it is big enough it is used as it is, else the
-//!   raw is developed and matched to it.
+//!   that JPEG inside; when it is full size it is used as it is, else (a
+//!   smaller one, as Fujifilm's) the raw is developed at full size and
+//!   matched to it.
 //! - **Auto:** each photo's own Auto tone and white balance.
 //! - **Like:** each photo matched to the look of one the user edited.
 //!
@@ -27,9 +28,13 @@ use amb_protocol::DevelopState;
 
 use crate::look;
 
-/// The camera's own JPEG is used as it is from this long side up; a smaller
-/// one is only a guide to its colours.
+/// The camera's own JPEG is used as it is when it is (about) full size:
+/// from this long side up, and at least `FULL_SIZE` of the raw's. A smaller
+/// one is only a guide to its colours: Fujifilm keeps a third to an eighth
+/// of the pixels (4416 px for a 7728 px X-T5), so its raw is developed at
+/// full size and matched to that JPEG.
 pub const CAMERA_JPEG_EDGE: u32 = 2000;
+const FULL_SIZE: f64 = 0.85;
 
 /// Photos converted at once: enough to keep reading, developing and saving
 /// busy, few enough for the memory (each full-size photo is a few hundred MB).
@@ -262,7 +267,11 @@ fn camera(
     preview
         .save_with_format(&tmp, image::ImageFormat::Png)
         .map_err(|e| e.to_string())?;
-    let result = if preview.width().max(preview.height()) >= CAMERA_JPEG_EDGE {
+    let long = preview.width().max(preview.height());
+    let raw_long = amb_engine::raw::raw_size(&source).map(|(w, h)| w.max(h) as f64);
+    let full_size =
+        long >= CAMERA_JPEG_EDGE && raw_long.is_none_or(|r| f64::from(long) >= FULL_SIZE * r);
+    let result = if full_size {
         (|| {
             let img = amb_engine::raw::load(&tmp).map_err(|e| e.to_string())?;
             let develop = matching::develop_plain(&Default::default());

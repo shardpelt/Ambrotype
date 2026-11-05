@@ -714,6 +714,20 @@ pub fn embedded_thumbnail(path: &Path, max_edge: u32) -> Result<Option<image::Rg
 /// The camera's own JPEG inside a raw, as large as it stores one, upright:
 /// what the camera would have saved had it been set to JPEG (often full
 /// size; on some cameras smaller). `None` when it keeps none.
+/// The raw's sensor size in pixels, read without decoding it (None for a
+/// raster file or what can't be read).
+pub fn raw_size(path: &Path) -> Option<(usize, usize)> {
+    if crate::raster::is_raster(path) {
+        return None;
+    }
+    let src = rawler::rawsource::RawSource::new(path).ok()?;
+    let decoder = rawler::get_decoder(&src).ok()?;
+    let img = decoder
+        .raw_image(&src, &rawler::decoders::RawDecodeParams::default(), true)
+        .ok()?;
+    Some((img.width, img.height))
+}
+
 pub fn embedded_preview(path: &Path) -> Result<Option<image::RgbImage>, Error> {
     Ok(embedded_jpeg(path, true)?.map(|img| upright(path, img.to_rgb8())))
 }

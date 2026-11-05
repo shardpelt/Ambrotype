@@ -13,10 +13,9 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 1. **A paper curve in density** (Film lab item 9).
 2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
-3. **Convert raws on more cameras:** Canon and Fujifilm next (Nikon and Sony done).
-4. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
-5. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
-6. **From the competition:** AI Remove on the GPU (our own kernels) and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place; pick the best in a burst by open eyes ([research/17](research/17-competitors-2026.md)).
+3. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
+4. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
+5. **From the competition:** AI Remove on the GPU (our own kernels) and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place; pick the best in a burst by open eyes ([research/17](research/17-competitors-2026.md)).
 
 ## Ideas for later
 
@@ -31,6 +30,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots, highlight hover), sliders past their usual ranges.
 
 ## Recently done
+
+- 2026-11-05: Convert raws on Canon and Fujifilm: Canon raws (CR2 and CR3: 5D IV, 6D II, 90D, R6, R10) already gave the camera's full-size JPEG; Fujifilm keeps a smaller one (4416 px for a 7728 px X-T5, 4000 for an 11648 px GFX100S), which was used as it was, so its raws are now developed at full size and matched to it. The JPEG is used as it is only when it is at least 85 % of the raw's size
 
 - 2026-11-05: tips: while something takes a moment, a card with one feature to try (from FEATURES.md, at most every 90 s, features already used skipped); the search box and preset filter now and then suggest what to type; two switches in Settings → General
 

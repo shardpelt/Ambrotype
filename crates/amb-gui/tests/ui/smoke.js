@@ -84,6 +84,33 @@ await t.step("tasks differ: Develop opens on Quick fixes, Retouch on its tools, 
   await t.until("Develop back", () => shown("Exposure2012"));
 });
 
+await t.step("tips: a feature to try, skipped once used, with switches in Settings", async () => {
+  await loadFeatures();
+  t.expect(!window.__ambTipShownAtStart && $("tip-card").hidden, "no tip during tests by itself");
+  const tip = pickTip();
+  t.expect(tip?.f.want && tip.target.key, "a tip to show");
+  t.expect(showTip(tip) && t.visible("#tip-card") && $("tip-want").textContent === tip.f.want, "the card shows it");
+  // Not now hides it; a used command isn't offered again.
+  t.click("#tip-close");
+  t.expect($("tip-card").hidden, "hidden");
+  markUsed(tip.target.key);
+  for (let i = 0; i < 20; i++) t.expect(pickTip()?.target.key !== tip.target.key, "used ones skipped");
+  // The search box can suggest what to type.
+  const random = Math.random;
+  Math.random = () => 0.1;
+  boxTip($("search-input"), "Search");
+  Math.random = random;
+  t.expect(/try “/.test($("search-input").placeholder), $("search-input").placeholder);
+  // The switches.
+  t.expect($("settings-tips-wait").checked && $("settings-tips-boxes").checked, "both on by default");
+  $("settings-tips-boxes").checked = false;
+  $("settings-tips-boxes").dispatchEvent(new Event("change"));
+  boxTip($("search-input"), "Search");
+  t.expect($("search-input").placeholder === "Search" && !tipsOn("boxes"), "off: the plain hint");
+  $("settings-tips-boxes").checked = true;
+  $("settings-tips-boxes").dispatchEvent(new Event("change"));
+});
+
 await t.step("Help → Camera simulator: the settings change the picture and say what they do", async () => {
   camsimFlow();
   await t.until("the simulator", () => $("camsim-dialog").open && $("camsim-notes").textContent.startsWith("Exposure"));

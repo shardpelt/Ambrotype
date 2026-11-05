@@ -1062,6 +1062,7 @@ async function init() {
   for (const n of ["resize_mode", "resize_value"]) $("export-form")[n].addEventListener("input", drawBorderPreview);
   wireExportPresets();
   wireFeatures();
+  wireTips();
   wireWatermark();
   $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));
   wireViewer();

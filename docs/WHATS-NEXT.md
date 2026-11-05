@@ -22,6 +22,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 - **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): Select Object as a mask kind (the click-to-select model is in, for Remove object); masks asked in words ("person", "car", RapidRAW); face-part masks; AI models on the GPU (RapidRAW: DirectML, CoreML).
 - **Teach by showing** (owner, 2026-11-03): the app should teach its features by showing them, not by manuals, and one question should open up many related features. Ideas:
+  - Done 2026-11-05: tips while waiting and in the search box and preset filter, from FEATURES.md, used features skipped, both switches in Settings → General. Still to do: one answer leading to more.
   - **Tips while waiting:** while something loads or runs (opening a raw, an export, Convert raws, AI Remove), one short tip about a feature, with a button to try it.
   - **Tips where text normally is:** now and then, a tip as the placeholder of a search or filter box, or in an empty menu or panel area; gone once you click or type there.
   - **One answer leads to more:** a How to shows two or three related features ("also: Keep under N MB, Also a smaller copy"), and the features list can be followed from one to the next.
@@ -30,6 +31,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots, highlight hover), sliders past their usual ranges.
 
 ## Recently done
+
+- 2026-11-05: tips: while something takes a moment, a card with one feature to try (from FEATURES.md, at most every 90 s, features already used skipped); the search box and preset filter now and then suggest what to type; two switches in Settings → General
 
 - 2026-11-05: the first start asks nothing: with no lens profiles, lensfun's database (0.5 MB) downloads quietly instead of a dialog over the app
 

@@ -200,6 +200,11 @@
         <label title="Colours the space can't hold, in magenta"><input type="checkbox" id="proof-warn"> Gamut warning</label>
       </div>
       <div class="busy" id="busy" hidden></div>
+      <aside class="tip-card" id="tip-card" hidden role="status">
+        <p><strong>Tip:</strong> <span id="tip-want"></span></p>
+        <p class="hint" id="tip-how"></p>
+        <div class="tip-actions"><button type="button" class="small primary" id="tip-try">Try it</button><button type="button" class="small" id="tip-close" title="Tips can be turned off in Settings → General">Not now</button></div>
+      </aside>
     </section>
 
     <section class="filmstrip" id="filmstrip" hidden aria-label="Photos in this folder">
@@ -1269,6 +1274,8 @@
           <span class="folder-row"><select id="settings-interface"></select><button type="button" class="small" id="settings-interface-pick">Use a folder…</button><button type="button" class="small" id="settings-interface-folder" title="Where installed interfaces are kept">Open folder</button><button type="button" class="small" id="settings-interface-share" title="Offer the chosen interface to the hub as a pull request, so others can install it">Share…</button></span>
         </label>
         <label class="check"><input type="checkbox" id="settings-strip-stars"> Click the stars on the filmstrip's photos to rate them (hovering shows the missing stars in grey)</label>
+        <label class="check"><input type="checkbox" id="settings-tips-wait"> Tips while waiting: one feature to try, now and then, while something loads or runs</label>
+        <label class="check"><input type="checkbox" id="settings-tips-boxes"> Tips in menus and empty boxes: the search box and preset filter suggest something to type</label>
         <label class="check"><input type="checkbox" id="settings-auto-advance"> After a rating, flag or label from the keyboard, go to the next photo</label>
         <label class="check"><input type="checkbox" id="settings-wheel-photos"> Scrolling on the photo goes to the next or previous photo (zoomed in, it still moves the view)</label>
         <label class="check"><input type="checkbox" id="settings-statusbar"> Show the status bar under the photo (preview size and time; hidden, other messages show briefly over the photo)</label>
@@ -1689,6 +1696,7 @@
   <script src="figures.js"></script>
   <script src="basics.js"></script>
   <script src="camsim.js"></script>
+  <script src="tips.js"></script>
   <script src="zones.js"></script>
   <script src="quickzoom.js"></script>
   <script src="monitor.js"></script>

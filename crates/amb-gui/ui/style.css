@@ -41,6 +41,10 @@ button.primary:hover:not(:disabled) { background: var(--accent); filter: brightn
 .spot-object { width: 100%; margin: 2px 0 8px; padding: 8px; font-weight: 600; border-color: var(--accent); color: var(--accent); }
 .spot-object.active, .spot-object:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
 #spot-canvas.boxing { cursor: crosshair; }
+/* A tip over the photo while something takes a moment (tips.js). */
+.tip-card { position: absolute; left: 16px; bottom: 16px; z-index: 30; max-width: 340px; padding: 10px 12px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--border); box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+.tip-card p { margin: 0 0 4px; }
+.tip-card .tip-actions { display: flex; gap: 6px; margin-top: 6px; }
 /* Camera simulator. */
 .camsim-dialog canvas { display: block; width: 640px; max-width: 100%; height: auto; border-radius: var(--radius); background: #000; }
 .camsim-notes { min-height: 3.6em; max-width: 640px; }

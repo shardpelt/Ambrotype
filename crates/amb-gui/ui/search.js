@@ -269,6 +269,7 @@ function searchFlow() {
   searchState.items = searchItems();
   searchState.at = 0;
   $("search-input").value = "";
+  boxTip($("search-input"), "Search commands, settings, presets… or what you want to do");
   renderSearch();
   dlg.showModal();
   $("search-input").focus();

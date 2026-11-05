@@ -524,6 +524,7 @@ function deleteSpot() {
 
 async function enterSpots() {
   if (!ui.info || sp.on) return;
+  if (typeof exitSelect === "function") exitSelect();
   if (ui.crop.on) await exitCrop(true);
   exitMasks();
   exitGuided();

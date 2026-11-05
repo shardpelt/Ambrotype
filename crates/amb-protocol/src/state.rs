@@ -772,8 +772,10 @@ impl DevelopState {
                 flow,
                 density,
                 erase,
+                dabs,
             } => {
                 let stroke = masks::Stroke {
+                    dabs: dabs.as_deref(),
                     points,
                     size: *size,
                     feather: *feather,

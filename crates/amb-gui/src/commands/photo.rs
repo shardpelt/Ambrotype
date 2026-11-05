@@ -287,10 +287,10 @@ pub(crate) async fn remove_object(
     tauri::async_runtime::spawn_blocking(move || {
         let mut guard = slot.lock().map_err(|e| e.to_string())?;
         let s = guard.as_mut().ok_or("no photo open")?;
-        let found = s.remove_object(target)?;
+        let found = s.remove_object(target.clone())?;
         s.execute(&[found.command], Some("remove object"))?;
         let what = match target {
-            Target::Click(_) | Target::Part(_) => {
+            Target::Click(_) | Target::Part(_) | Target::Clicks(_) => {
                 format!("{:.0} % of the photo", found.share * 100.0)
             }
             Target::Box(_) => format!("{:.0} % of the box", found.share * 100.0),
@@ -303,6 +303,156 @@ pub(crate) async fn remove_object(
         Ok(Executed {
             state: s.state_info(),
             notes: vec![format!("Found the object ({what}) and removed it in one spot. {tip}")],
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// What Select Object found: dabs to draw its outline with (`[x, y,
+/// radius]`, frame fractions, the radius of the width) and how much of the
+/// photo it is.
+#[derive(serde::Serialize)]
+pub(crate) struct Selected {
+    dabs: Vec<[f64; 3]>,
+    share: f64,
+    centre: [f64; 2],
+}
+
+/// Select Object: the object under `clicks` (`[x, y, 1]` on it, `[x, y, 0]`
+/// on what isn't; frame fractions), or `part` for just the part under one
+/// click, or in `rect`. Kept for `selection_apply`.
+#[tauri::command]
+pub(crate) async fn select_object(
+    clicks: Vec<[f64; 3]>,
+    part: Option<bool>,
+    rect: Option<[f64; 4]>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Selected> {
+    use amb_library::object::Target;
+    let target = match (rect, clicks.as_slice()) {
+        (Some(r), _) => Target::Box(r),
+        (None, [one]) if part == Some(true) => Target::Part([one[0], one[1]]),
+        (None, []) => return Err("click on the object".into()),
+        (None, list) => Target::Clicks(list.iter().map(|c| ([c[0], c[1]], c[2] > 0.5)).collect()),
+    };
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let sel = s.select_object(&target)?;
+        Ok(Selected {
+            dabs: sel.mask_dabs(),
+            share: sel.share,
+            centre: sel.centre(),
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Do something with the selected object, as one step: `remove` it (one
+/// AI Remove spot), `move` it `by` [dx, dy], or make a mask of it
+/// (`adjust`, `brighten`, `darken`; `background` for everything else,
+/// softened). Returns the new state; a mask is the last one.
+#[tauri::command]
+pub(crate) async fn selection_apply(
+    action: String,
+    by: Option<[f64; 2]>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Executed> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let sel = s.selection.clone().ok_or("select an object first")?;
+        let masks_now = amb_protocol::masks::describe(s.state.settings())["masks"]
+            .as_array()
+            .map_or(0, Vec::len);
+        let mask_of = |name: &str, adjust: serde_json::Value, invert: bool| -> Vec<Command> {
+            let mut cmds = vec![Command::PaintMask {
+                mask: None,
+                part: None,
+                mode: None,
+                points: Vec::new(),
+                size: 0.05,
+                feather: 20.0,
+                flow: 100.0,
+                density: 100.0,
+                erase: false,
+                dabs: Some(sel.mask_dabs()),
+            }];
+            let mut values = adjust.as_object().cloned().unwrap_or_default();
+            values.insert("name".into(), name.into());
+            cmds.push(Command::SetMask {
+                mask: masks_now,
+                part: None,
+                values,
+            });
+            if invert {
+                cmds.push(Command::SetMask {
+                    mask: masks_now,
+                    part: Some(0),
+                    values: serde_json::json!({ "invert": true })
+                        .as_object()
+                        .cloned()
+                        .unwrap_or_default(),
+                });
+            }
+            cmds
+        };
+        let (cmds, label, note): (Vec<Command>, &str, String) = match action.as_str() {
+            "remove" => (
+                vec![sel.remove().command],
+                "remove object",
+                "Removed it in one spot.".into(),
+            ),
+            "move" => {
+                let by = by.ok_or("where to: drag the outline")?;
+                (
+                    sel.move_by(by),
+                    "move object",
+                    "Moved it: copied to the new place, removed where it was.".into(),
+                )
+            }
+            "adjust" => (
+                mask_of("Object", serde_json::json!({}), false),
+                "object mask",
+                "A mask of it: its sliders are in Masks.".into(),
+            ),
+            "brighten" => (
+                mask_of(
+                    "Object, brighter",
+                    serde_json::json!({ "Exposure": 0.5 }),
+                    false,
+                ),
+                "brighten object",
+                "Brighter (+0.5 EV), as a mask you can change in Masks.".into(),
+            ),
+            "darken" => (
+                mask_of(
+                    "Object, darker",
+                    serde_json::json!({ "Exposure": -0.5 }),
+                    false,
+                ),
+                "darken object",
+                "Darker (−0.5 EV), as a mask you can change in Masks.".into(),
+            ),
+            "background" => (
+                mask_of(
+                    "Background, softened",
+                    serde_json::json!({ "Sharpness": -80, "Clarity": -40 }),
+                    true,
+                ),
+                "soften background",
+                "Everything but it, softened, as a mask you can change in Masks.".into(),
+            ),
+            other => return Err(format!("unknown action {other:?}")),
+        };
+        s.execute(&cmds, Some(label))?;
+        Ok(Executed {
+            state: s.state_info(),
+            notes: vec![note],
         })
     })
     .await

@@ -65,8 +65,24 @@ await t.step("tasks differ: Develop opens on Quick fixes, Retouch on its tools, 
   await switchTask("retouch");
   await t.until("Retouch tools", () => t.visible("#block-retouch") && !t.visible("#block-quick"));
   const tiles = [...document.querySelectorAll("#tools-retouch .tool-tile")].map((b) => b.dataset.tool);
-  t.expect(["object", "remove", "subject", "people", "background", "sky", "dust"].every((x) => tiles.includes(x)), tiles.join(", "));
-  t.expect(document.querySelector("#tools-retouch .tool-tile").dataset.tool === "object" && document.querySelector("#tools-retouch .tool-tile").classList.contains("big"), "Remove object first, big");
+  t.expect(["select", "object", "remove", "subject", "people", "background", "sky", "dust"].every((x) => tiles.includes(x)), tiles.join(", "));
+  t.expect(document.querySelector("#tools-retouch .tool-tile").dataset.tool === "select" && document.querySelector("#tools-retouch .tool-tile").classList.contains("big"), "Select object first, big");
+  // Select object: O opens it, its actions wait for a selection, Esc leaves.
+  document.querySelector('#tools-retouch [data-tool="select"]').click();
+  await t.until("Select object", () => sl.on && t.visible("#select-panel"));
+  t.expect([...document.querySelectorAll("#select-actions button")].every((b) => b.disabled), "nothing to act on yet");
+  sl.dabs = [[0.5, 0.5, 0.05]];
+  renderSelectPanel();
+  t.expect([...document.querySelectorAll("#select-actions button")].every((b) => !b.disabled), "the actions once something is selected");
+  t.click("#select-move");
+  t.expect(sl.moving && $("select-hint").textContent.startsWith("Drag"), "Move waits for a drag");
+  t.key("Escape");
+  t.expect(!sl.moving && sl.on, "Esc stops moving first");
+  t.key("Escape");
+  t.expect(!sl.on && $("select-panel").hidden, "then leaves");
+  t.key("O");
+  await t.until("O opens it", () => sl.on);
+  t.key("Escape");
   // Its tiles open the tools.
   document.querySelector('#tools-retouch [data-tool="object"]').click();
   await t.until("box mode", () => sp.on && sp.object);

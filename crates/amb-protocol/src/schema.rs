@@ -135,7 +135,8 @@ pub fn command_schema() -> Value {
                 "feather": { "type": "number", "minimum": 0, "maximum": 100, "default": 50 },
                 "flow": { "type": "number", "minimum": 1, "maximum": 100, "default": 100 },
                 "density": { "type": "number", "minimum": 1, "maximum": 100, "default": 100 },
-                "erase": { "type": "boolean", "default": false }
+                "erase": { "type": "boolean", "default": false },
+                "dabs": { "type": "array", "items": { "type": "array", "items": { "type": "number" } }, "description": "Dabs of their own instead of a stroke: [[x, y, radius], ...], radius a fraction of the width (an outline covered, as Select Object makes)." }
             }), &["points"]),
             variant("cmd", "remove_mask", "Remove a mask, or one of its parts (removing the last part removes the mask).", json!({
                 "mask": mask_index(),
@@ -444,6 +445,7 @@ mod tests {
                 flow: 100.0,
                 density: 100.0,
                 erase: false,
+                dabs: None,
             },
             Command::RemoveMask {
                 mask: 1,

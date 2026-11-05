@@ -52,7 +52,8 @@ const TOOL_BLOCKS = {
     { id: "surprise", label: "Surprise me", hint: "Six random looks to pick from", run: () => surpriseFlow() },
   ],
   retouch: [
-    { id: "object", label: "Remove object", big: true, hint: "Click it or box it; AI removes all of it", run: async () => { await enterSpots(); if (sp.on) setObjectMode(true); } },
+    { id: "select", label: "Select object", big: true, hint: "Click it: adjust, remove, move it", run: () => enterSelect() },
+    { id: "object", label: "Remove object", hint: "Click it or box it; AI removes all of it", run: async () => { await enterSpots(); if (sp.on) setObjectMode(true); } },
     { id: "remove", label: "AI Remove", hint: "Click or brush over something", run: () => spotFlow("remove") },
     { id: "heal", label: "Heal", hint: "Blemishes and specks", run: () => spotFlow("heal") },
     { id: "dust", label: "Find dust", hint: "Specks and hairs on a scan", run: async () => { await enterSpots(); if (sp.on) findDust(); } },

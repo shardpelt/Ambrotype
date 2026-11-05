@@ -655,12 +655,14 @@ fn bilinear(rgb: &[f32], n: usize, u: f64, v: f64) -> [f32; 3] {
 }
 
 /// Per channel, the spread of fine detail around the spot (outside it,
-/// inside the box).
+/// inside the box): the median of its size, as a standard deviation
+/// (× 1.4826), so edges and texture in the ring (another object, a clone
+/// next to it) don't count as grain, as they would in a plain spread.
 fn ring_grain(img: &Image, p: &Placed, (x0, y0, x1, y1): (usize, usize, usize, usize)) -> [f32; 3] {
-    let mut sum = [0.0f64; 3];
-    let mut count = 0usize;
-    for y in (y0 + 1)..(y1 - 1) {
-        for x in (x0 + 1)..(x1 - 1) {
+    let mut detail: [Vec<f32>; 3] = std::array::from_fn(|_| Vec::new());
+    // Every second pixel each way is plenty, and four times quicker.
+    for y in ((y0 + 1)..(y1 - 1)).step_by(2) {
+        for x in ((x0 + 1)..(x1 - 1)).step_by(2) {
             let inside = x >= p.x0
                 && y >= p.y0
                 && x < p.x0 + p.w
@@ -677,12 +679,18 @@ fn ring_grain(img: &Image, p: &Placed, (x0, y0, x1, y1): (usize, usize, usize, u
                 }
             }
             let c = img.get(x, y);
-            (0..3).for_each(|k| sum[k] += f64::from((c[k] - mean[k]).powi(2)));
-            count += 1;
+            (0..3).for_each(|k| detail[k].push((c[k] - mean[k]).abs()));
         }
     }
     // A 3×3 mean removes about a ninth of white noise's spread too.
-    sum.map(|v| (v / count.max(1) as f64 * 9.0 / 8.0).sqrt() as f32)
+    detail.map(|mut v| {
+        if v.is_empty() {
+            return 0.0;
+        }
+        let mid = v.len() / 2;
+        let (_, m, _) = v.select_nth_unstable_by(mid, f32::total_cmp);
+        *m * 1.4826 * (9.0f32 / 8.0).sqrt()
+    })
 }
 
 /// A standard normal number from a seed and a position (deterministic, so

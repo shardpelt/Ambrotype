@@ -350,6 +350,7 @@ function applyLayout(layout) {
   store.append($("mask-panel"));
   store.append($("spot-panel"));
   store.append($("guided-panel"));
+  store.append($("select-panel"));
   ui.curve?.destroy();
   ui.wheels?.destroy();
   ui.curve = ui.wheels = null;
@@ -411,6 +412,7 @@ function applyLayout(layout) {
     $("crop-panel").after($("mask-panel"));
     $("mask-panel").after($("spot-panel"));
     $("spot-panel").after($("guided-panel"));
+    $("guided-panel").after($("select-panel"));
   }
   if (ui.edit) decorateEditing();
   syncControls();

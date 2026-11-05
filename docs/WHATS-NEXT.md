@@ -19,7 +19,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Ideas for later
 
-- **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): Select Object as a mask kind (the click-to-select model is in, for Remove object); masks asked in words ("person", "car", RapidRAW); face-part masks; AI models on the GPU (RapidRAW: DirectML, CoreML).
+- **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): masks asked in words ("person", "car", RapidRAW); face-part masks; AI models on the GPU (RapidRAW: DirectML, CoreML).
 - **Teach by showing** (owner, 2026-11-03): the app should teach its features by showing them, not by manuals, and one question should open up many related features. Ideas:
   - Done 2026-11-05: tips while waiting and in the search box and preset filter, from FEATURES.md, used features skipped, both switches in Settings → General. Still to do: one answer leading to more.
   - **Tips while waiting:** while something loads or runs (opening a raw, an export, Convert raws, AI Remove), one short tip about a feature, with a button to try it.
@@ -30,6 +30,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots, highlight hover), sliders past their usual ranges.
 
 ## Recently done
+
+- 2026-11-05: Select object (O): click a thing (Shift adds, Alt takes away, or a box) and SAM outlines it; then Adjust (a brush mask covering it: big dabs inside, small at the edge, Lightroom's own format), Brighten, Darken, Soften background, Remove, or Move (a clone at the new place, then a Remove spot where it was, leaving the clone alone). A fill's grain is now the median of the ring's detail, so an object next to a hole doesn't make the fill noisy
 
 - 2026-11-05: Before / after (\\) shows the split with its bar at the side, to drag in; Z, Space and the 100% button zoom with Spot Removal or Masks open, and opening them keeps the zoom
 

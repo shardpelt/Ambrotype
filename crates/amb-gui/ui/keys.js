@@ -49,7 +49,7 @@ const KEY_ACTIONS = [
   { id: "before", group: "View", label: "Before / after: the photo as it was, with a bar to drag in", keys: ["\\"], when: "any", button: "btn-before", run: () => toggleBefore() },
   { id: "touch", group: "Tools", label: "Touch: drag on the photo to change the tone or colour under the pointer", hint: "Up or down changes the tone curve's region, or the colour's hue, saturation or brightness.", keys: ["T"], when: "main", photo: true, run: () => toggleTouch() },
   { id: "split", group: "View", label: "Before / after split", hint: "Before on the left of a bar, after on the right; drag the bar.", keys: ["Y"], when: "main", photo: true, run: () => toggleSplit() },
-  { id: "zoom", group: "View", label: "Fit / 100% view", hint: "Or click the photo; drag to pan at 100%. Right-drag a box to zoom to it.", keys: ["Z", "Space"], when: ["main", "masks", "spots"], photo: true, button: "btn-zoom", run: (e) => (e.key === " " && e.target.matches("button, input, select, textarea, summary") ? false : setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy)) },
+  { id: "zoom", group: "View", label: "Fit / 100% view", hint: "Or click the photo; drag to pan at 100%. Right-drag a box to zoom to it.", keys: ["Z", "Space"], when: ["main", "masks", "spots", "select"], photo: true, button: "btn-zoom", run: (e) => (e.key === " " && e.target.matches("button, input, select, textarea, summary") ? false : setZoom(!ui.zoom.on, ui.zoom.cx, ui.zoom.cy)) },
   { id: "loupe", group: "View", label: "Loupe: see the part under the pointer at 100%", hint: "Scroll to magnify (100–400%). I or Esc closes it.", keys: ["I"], when: "main", photo: true, run: () => toggleLoupe() },
   { id: "proof", group: "View", label: "Soft proofing", hint: "See the photo as it will export to sRGB, Adobe RGB, Display P3 or ProPhoto, and mark the colours that won't fit.", keys: ["S"], when: "main", photo: true, run: () => toggleProof() },
   { id: "frame", group: "View", label: "Frame: border and text around the photo", keys: ["Shift+B"], when: "main", photo: true, button: "btn-frame", run: () => toggleFrame() },
@@ -58,6 +58,8 @@ const KEY_ACTIONS = [
   { id: "crop", group: "Tools", label: "Crop and straighten", keys: ["R"], when: "any", photo: true, button: "btn-crop", run: () => toggleCrop() },
   { id: "masks", group: "Tools", label: "Masks", hint: "Gradients, brush and range masks with their own sliders.", keys: ["M"], when: "any", photo: true, button: "btn-masks", run: () => toggleMasks() },
   { id: "remove-object", group: "Tools", label: "Remove object", hint: "Draw a box round it: the Subject model finds its outline, and AI Remove fills it in one spot.", keys: ["Shift+Q"], when: ["main", "spots"], photo: true, run: async () => { await enterSpots(); if (sp.on) setObjectMode(true); } },
+  { id: "select", group: "Tools", label: "Select object", hint: "Click a person, a car, the sky: then adjust it with a mask, remove it, move it, or soften the background.", keys: ["O"], when: ["main", "spots", "select"], photo: true, run: () => toggleSelect() },
+  { id: "select-leave", group: "Select object", label: "Leave Select object", keys: ["Escape"], when: "select", run: () => (sl.moving ? (sl.moving = false, sl.offset = [0, 0], renderSelectPanel()) : exitSelect()) },
   { id: "spots", group: "Tools", label: "Spot removal", hint: "Heal or clone blemishes and distractions.", keys: ["Q"], when: "any", photo: true, button: "btn-spots", run: () => toggleSpots() },
   { id: "wb", group: "Tools", label: "White-balance picker", hint: "Then click something neutral grey or white.", keys: ["W"], when: "main", button: "btn-wb", run: () => setPicking(ui.picking === "white" ? false : "white") },
   { id: "leave", group: "Tools", label: "Leave the picker or Touch", keys: ["Escape"], when: "main", run: () => (touchState.on ? toggleTouch(false) : setPicking(false)) },
@@ -113,10 +115,10 @@ const KEY_ACTIONS = [
   { id: "slider-down-more", group: "Sliders", label: "Lower the selected slider ten steps", keys: ["Shift+_"], when: "main", photo: true, run: () => nudgeSlider(-10) },
   // Zoomed in, the arrows move the photo, also with a tool open; on the
   // whole photo, ← → go to the previous or next photo (not inside a tool).
-  { id: "prev-photo", group: "Photos", label: "Previous photo in the folder", keys: ["ArrowLeft"], when: ["main", "crop", "masks", "spots"], photo: true, run: (e) => (onControl(e) ? false : ui.zoom.on ? panZoom(-0.25, 0) : keyContext() === "main" ? stepPhoto(-1) : false) },
-  { id: "next-photo", group: "Photos", label: "Next photo in the folder", keys: ["ArrowRight"], when: ["main", "crop", "masks", "spots"], photo: true, run: (e) => (onControl(e) ? false : ui.zoom.on ? panZoom(0.25, 0) : keyContext() === "main" ? stepPhoto(1) : false) },
-  { id: "pan-up", group: "View", label: "Move up the zoomed-in photo", keys: ["ArrowUp"], when: ["main", "crop", "masks", "spots"], photo: true, run: (e) => (onControl(e) || !ui.zoom.on ? false : panZoom(0, -0.25)) },
-  { id: "pan-down", group: "View", label: "Move down the zoomed-in photo", keys: ["ArrowDown"], when: ["main", "crop", "masks", "spots"], photo: true, run: (e) => (onControl(e) || !ui.zoom.on ? false : panZoom(0, 0.25)) },
+  { id: "prev-photo", group: "Photos", label: "Previous photo in the folder", keys: ["ArrowLeft"], when: ["main", "crop", "masks", "spots", "select"], photo: true, run: (e) => (onControl(e) ? false : ui.zoom.on ? panZoom(-0.25, 0) : keyContext() === "main" ? stepPhoto(-1) : false) },
+  { id: "next-photo", group: "Photos", label: "Next photo in the folder", keys: ["ArrowRight"], when: ["main", "crop", "masks", "spots", "select"], photo: true, run: (e) => (onControl(e) ? false : ui.zoom.on ? panZoom(0.25, 0) : keyContext() === "main" ? stepPhoto(1) : false) },
+  { id: "pan-up", group: "View", label: "Move up the zoomed-in photo", keys: ["ArrowUp"], when: ["main", "crop", "masks", "spots", "select"], photo: true, run: (e) => (onControl(e) || !ui.zoom.on ? false : panZoom(0, -0.25)) },
+  { id: "pan-down", group: "View", label: "Move down the zoomed-in photo", keys: ["ArrowDown"], when: ["main", "crop", "masks", "spots", "select"], photo: true, run: (e) => (onControl(e) || !ui.zoom.on ? false : panZoom(0, 0.25)) },
   { id: "fold-left", group: "Window", label: "Hide or show the left column", keys: ["Ctrl+["], when: "any", run: () => toggleColumn("left") },
   { id: "fold-right", group: "Window", label: "Hide or show the right column", keys: ["Ctrl+]"], when: "any", run: () => toggleColumn("right") },
   { id: "topbar", group: "Window", label: "Hide or show the top bar", hint: "Hidden, it comes back while the pointer is at the window's top edge.", keys: ["Ctrl+Shift+T"], when: "any", run: () => setTopbar(document.body.classList.contains("topbar-off")) },
@@ -167,7 +169,7 @@ function keyLabel(combo) {
 }
 
 // Which actions' keys work now (an action's `when`).
-const keyContext = () => (libraryOn() ? "library" : ui.crop.on ? "crop" : mk.on ? "masks" : sp.on ? "spots" : "main");
+const keyContext = () => (libraryOn() ? "library" : ui.crop.on ? "crop" : mk.on ? "masks" : sp.on ? "spots" : sl.on ? "select" : "main");
 
 // When each action last ran from its key, so a menu bar that saw the key too
 // doesn't run it again (menu.js).

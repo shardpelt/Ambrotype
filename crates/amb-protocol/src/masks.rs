@@ -668,6 +668,8 @@ pub fn set(
 /// One stroke for `paint_mask`.
 pub struct Stroke<'a> {
     pub points: &'a [[f64; 2]],
+    /// Dabs of their own, `[x, y, radius]`, in place of `points`.
+    pub dabs: Option<&'a [[f64; 3]]>,
     /// Brush radius as a fraction of the image's width.
     pub size: f64,
     /// 0-100.
@@ -718,16 +720,30 @@ pub fn paint(
     stroke: &Stroke,
     clamped: &mut Vec<Clamp>,
 ) -> Result<(), Error> {
-    if stroke.points.is_empty() {
+    if stroke.points.is_empty() && stroke.dabs.is_none_or(|d| d.is_empty()) {
         return Err(invalid(
             "points",
             "a stroke needs at least one [x, y] point",
         ));
     }
-    if stroke.points.iter().flatten().any(|v| !v.is_finite()) {
+    if stroke.points.iter().flatten().any(|v| !v.is_finite())
+        || stroke
+            .dabs
+            .into_iter()
+            .flatten()
+            .flatten()
+            .any(|v| !v.is_finite())
+    {
         return Err(invalid("points", "points must be finite numbers"));
     }
-    let size = clamp("size", stroke.size, 0.001, 0.5, clamped);
+    if stroke.dabs.is_some_and(|d| d.len() > MAX_DABS) {
+        return Err(invalid("dabs", format!("at most {MAX_DABS} dabs")));
+    }
+    // Given dabs: the brush's radius is the first one's.
+    let size = match stroke.dabs.and_then(|d| d.first()) {
+        Some(d) => d[2].clamp(0.0005, 0.5),
+        None => clamp("size", stroke.size, 0.001, 0.5, clamped),
+    };
     let feather = clamp("feather", stroke.feather, 0.0, 100.0, clamped);
     let flow = clamp("flow", stroke.flow, 1.0, 100.0, clamped);
     let density = clamp("density", stroke.density, 1.0, 100.0, clamped) / 100.0;
@@ -744,7 +760,27 @@ pub fn paint(
             "a new mask's first part adds; give `mask` to subtract or intersect",
         ));
     }
-    let dabs = dabs_along(stroke.points, size)?;
+    // The Dabs list: a stroke's, or the given dabs with an `r` token
+    // wherever the radius changes.
+    let tokens: Vec<Value> = match stroke.dabs {
+        Some(given) => {
+            let mut out = Vec::with_capacity(given.len() + 8);
+            let mut r = size;
+            for &[x, y, radius] in given {
+                let radius = radius.clamp(0.0005, 0.5);
+                if (radius - r).abs() > 1e-6 {
+                    out.push(Value::Text(format!("r {radius:.6}")));
+                    r = radius;
+                }
+                out.push(Value::Text(masks::format_dab(x, y)));
+            }
+            out
+        }
+        None => dabs_along(stroke.points, size)?
+            .iter()
+            .map(|&(x, y)| Value::Text(masks::format_dab(x, y)))
+            .collect(),
+    };
     let paint_entry = |blend: u8, inverted: bool, sync_id: String, value: f64| -> Fields {
         let mut e: Fields = BTreeMap::new();
         e.insert("What".into(), Value::Text("Mask/Paint".into()));
@@ -756,14 +792,7 @@ pub fn paint(
         e.insert("Radius".into(), number(size));
         e.insert("Flow".into(), number(flow / 100.0));
         e.insert("CenterWeight".into(), number(1.0 - feather / 100.0));
-        e.insert(
-            "Dabs".into(),
-            Value::Seq(
-                dabs.iter()
-                    .map(|&(x, y)| Value::Text(masks::format_dab(x, y)))
-                    .collect(),
-            ),
-        );
+        e.insert("Dabs".into(), Value::Seq(tokens.clone()));
         e
     };
 
@@ -1180,6 +1209,7 @@ mod tests {
             None,
             Some("subtract"),
             &Stroke {
+                dabs: None,
                 points: &[[0.1, 0.1], [0.2, 0.1]],
                 size: 0.05,
                 feather: 50.0,
@@ -1243,6 +1273,7 @@ mod tests {
 
         // A second stroke joins the brush part; then erase in it.
         let stroke = |erase| Stroke {
+            dabs: None,
             points: &[[0.3, 0.3]],
             size: 0.05,
             feather: 0.0,
@@ -1305,6 +1336,7 @@ mod tests {
         let mut clamped = Vec::new();
         add(&mut s, "linear", None, None, None, &mut clamped).unwrap();
         let stroke = Stroke {
+            dabs: None,
             points: &[[0.2, 0.2], [0.4, 0.2]],
             size: 0.05,
             feather: 50.0,
@@ -1439,5 +1471,33 @@ mod tests {
         let d = describe(&s);
         assert_eq!(d["masks"].as_array().unwrap().len(), 1);
         assert_eq!(d["masks"][0]["sliders"]["LocalExposure2012"], 0.5);
+    }
+
+    #[test]
+    fn given_dabs_keep_their_own_sizes() {
+        let mut s = BTreeMap::new();
+        let dabs = [[0.5, 0.5, 0.1], [0.62, 0.5, 0.1], [0.7, 0.5, 0.02]];
+        paint(
+            &mut s,
+            None,
+            None,
+            None,
+            &Stroke {
+                dabs: Some(&dabs),
+                points: &[],
+                size: 0.05,
+                feather: 0.0,
+                flow: 100.0,
+                density: 100.0,
+                erase: false,
+            },
+            &mut Vec::new(),
+        )
+        .unwrap();
+        let text = format!("{:?}", s);
+        // Three dabs, the brush's radius the first's, one size change.
+        assert_eq!(text.matches("d 0.").count(), 3, "{text}");
+        assert!(text.contains("r 0.020000"), "{text}");
+        assert!(!text.contains("r 0.100000"), "{text}");
     }
 }

@@ -1002,6 +1002,7 @@ async function loadMaskFrame() {
 
 async function enterMasks() {
   if (!ui.info || mk.on) return;
+  if (typeof exitSelect === "function") exitSelect();
   if (ui.crop.on) await exitCrop(true);
   exitSpots();
   exitGuided();

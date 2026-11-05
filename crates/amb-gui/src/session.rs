@@ -73,6 +73,8 @@ pub struct Session {
     /// "unsaved edits").
     saved: BTreeMap<String, Value>,
     saved_snapshots: Vec<amb_protocol::Snapshot>,
+    /// Select Object: the object last selected, for its actions.
+    pub selection: Option<amb_library::object::Selection>,
 }
 
 /// Full-resolution upright sRGB renders for the 100% view: the parts
@@ -338,6 +340,7 @@ impl Session {
             region_cache: None,
             globals_src: None,
             draft_src: None,
+            selection: None,
         })
     }
 
@@ -512,6 +515,15 @@ impl Session {
 
     /// Remove object: the spot covering the object clicked or boxed
     /// (fractions of the frame).
+    /// Select Object: the object `target` points at, kept for its actions.
+    pub fn select_object(
+        &mut self,
+        target: &amb_library::object::Target,
+    ) -> Result<&amb_library::object::Selection, String> {
+        let sel = amb_library::object::select(&self.full, self.state.settings(), target)?;
+        Ok(self.selection.insert(sel))
+    }
+
     pub fn remove_object(
         &self,
         target: amb_library::object::Target,

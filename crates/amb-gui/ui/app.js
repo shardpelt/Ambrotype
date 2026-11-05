@@ -1081,6 +1081,7 @@ async function init() {
   wireCrop();
   wireMasks();
   wireSpots();
+  wireSelect();
   wireSplit();
   wireTouch();
   wireGuided();

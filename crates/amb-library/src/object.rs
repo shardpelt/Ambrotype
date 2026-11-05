@@ -30,12 +30,29 @@ const MIN_WIDEN: f64 = 4.0;
 
 /// What to remove: a box round it, or a click on it (fractions of the
 /// uncropped photo as stored, as spots are).
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum Target {
     Box([f64; 4]),
     Click([f64; 2]),
     /// A click on a part of something: only that part.
     Part([f64; 2]),
+    /// Several clicks: on it (true) and on what is not it (false).
+    Clicks(Vec<([f64; 2], bool)>),
+}
+
+/// An object selected on the photo: where it is, at `EDGE` pixels on the
+/// long side (the whole frame, as spots and masks are placed on it).
+#[derive(Debug, Clone)]
+pub struct Selection {
+    pub mask: Vec<bool>,
+    pub width: usize,
+    pub height: usize,
+    /// The share of the box (or, for clicks, the photo) it fills (0-1).
+    pub share: f64,
+    /// Found by the object selection model, not the Subject model on a box.
+    pub selected: bool,
+    lo: (usize, usize),
+    hi: (usize, usize),
 }
 
 /// What was found: the spot to add, how much of the box (or, for a click,
@@ -58,6 +75,15 @@ pub fn find(
     settings: &BTreeMap<String, Value>,
     target: Target,
 ) -> Result<Object, String> {
+    Ok(select(img, settings, &target)?.remove())
+}
+
+/// The object at `target`: its outline on the photo.
+pub fn select(
+    img: &CameraImage,
+    settings: &BTreeMap<String, Value>,
+    target: &Target,
+) -> Result<Selection, String> {
     let (mut develop, _) = DevelopSettings::from_settings(settings);
     // The whole frame, as spots are placed on it.
     develop.crop.enabled = false;
@@ -68,24 +94,40 @@ pub fn find(
     let (wf, hf) = (w as f64, h as f64);
     let mut mask = vec![false; w * h];
     let (selected, area) = match target {
-        Target::Click([x, y]) | Target::Part([x, y]) => {
-            let (x, y) = (x.clamp(0.0, 1.0), y.clamp(0.0, 1.0));
-            let prompt = match target {
-                Target::Part(_) => Prompt::Part { x, y },
-                _ => Prompt::Point {
-                    x,
-                    y,
-                    positive: true,
-                },
+        Target::Click(_) | Target::Part(_) | Target::Clicks(_) => {
+            let point = |[x, y]: [f64; 2], positive| Prompt::Point {
+                x: x.clamp(0.0, 1.0),
+                y: y.clamp(0.0, 1.0),
+                positive,
             };
-            let map = amb_engine::subject::select(&rgb, w, h, &[prompt])?;
+            let prompts: Vec<Prompt> = match target {
+                Target::Part([x, y]) => vec![Prompt::Part {
+                    x: x.clamp(0.0, 1.0),
+                    y: y.clamp(0.0, 1.0),
+                }],
+                Target::Click(p) => vec![point(*p, true)],
+                Target::Clicks(list) => list.iter().map(|(p, on)| point(*p, *on)).collect(),
+                Target::Box(_) => unreachable!(),
+            };
+            if !prompts.iter().any(|p| {
+                !matches!(
+                    p,
+                    Prompt::Point {
+                        positive: false,
+                        ..
+                    }
+                )
+            }) {
+                return Err("click on the object first".into());
+            }
+            let map = amb_engine::subject::select(&rgb, w, h, &prompts)?;
             fill(&mut mask, w, h, (0, 0, w, h), |px, py| {
                 map_at(&map, px / wf, py / hf)
             });
             (true, w * h)
         }
         Target::Box(rect) => {
-            let [x0, y0, x1, y1] = rect.map(|v| v.clamp(0.0, 1.0));
+            let [x0, y0, x1, y1] = rect.map(|v: f64| v.clamp(0.0, 1.0));
             let (x0, x1) = (x0.min(x1), x0.max(x1));
             let (y0, y1) = (y0.min(y1), y0.max(y1));
             let (bx0, by0, bx1, by1) = (x0 * wf, y0 * hf, x1 * wf, y1 * hf);
@@ -144,7 +186,7 @@ pub fn find(
     let inside = mask.iter().filter(|m| **m).count();
     if inside < 16 {
         return Err(match target {
-            Target::Click(_) | Target::Part(_) => {
+            Target::Click(_) | Target::Part(_) | Target::Clicks(_) => {
                 "nothing to select there: click on the object itself, or drag a box round it".into()
             }
             Target::Box(_) => {
@@ -153,39 +195,216 @@ pub fn find(
             }
         });
     }
-    // Widened by a share of the object's size.
     let (mut lo, mut hi) = ((w, h), (0, 0));
     for (i, _) in mask.iter().enumerate().filter(|(_, m)| **m) {
         let (x, y) = (i % w, i / w);
         lo = (lo.0.min(x), lo.1.min(y));
         hi = (hi.0.max(x), hi.1.max(y));
     }
-    let size = (hi.0 - lo.0).max(hi.1 - lo.1) as f64;
-    let r = (WIDEN * size).max(MIN_WIDEN);
-    let dabs = cover(&mask, w, h, r);
-    let points: Vec<[f64; 2]> = dabs
-        .iter()
-        .map(|&(x, y)| [(x + 0.5) / wf, (y + 0.5) / hf])
-        .collect();
-    let at = [
-        (lo.0 + hi.0) as f64 / 2.0 / wf,
-        (lo.1 + hi.1) as f64 / 2.0 / hf,
-    ];
-    Ok(Object {
-        command: Command::AddSpot {
-            at,
+    Ok(Selection {
+        share: inside as f64 / area.max(1) as f64,
+        mask,
+        width: w,
+        height: h,
+        selected,
+        lo,
+        hi,
+    })
+}
+
+impl Selection {
+    fn size(&self) -> f64 {
+        (self.hi.0 - self.lo.0).max(self.hi.1 - self.lo.1) as f64
+    }
+
+    /// The middle of its bounding box, in fractions.
+    pub fn centre(&self) -> [f64; 2] {
+        [
+            (self.lo.0 + self.hi.0) as f64 / 2.0 / self.width as f64,
+            (self.lo.1 + self.hi.1) as f64 / 2.0 / self.height as f64,
+        ]
+    }
+
+    /// One Remove spot over all of it, widened a little (shadows, soft
+    /// edges and the model's blur go with it).
+    pub fn remove(&self) -> Object {
+        let (wf, hf) = (self.width as f64, self.height as f64);
+        let r = (WIDEN * self.size()).max(MIN_WIDEN);
+        let points: Vec<[f64; 2]> = cover(&self.mask, self.width, self.height, r)
+            .iter()
+            .map(|&(x, y)| [(x + 0.5) / wf, (y + 0.5) / hf])
+            .collect();
+        Object {
+            command: Command::AddSpot {
+                at: self.centre(),
+                radius: r / wf,
+                kind: Some("remove".into()),
+                source: None,
+                source_auto: true,
+                feather: 30.0,
+                opacity: 100.0,
+                points: Some(points),
+                separate: true,
+            },
+            share: self.share,
+            selected: self.selected,
+        }
+    }
+
+    /// Move it by `by` (fractions): a clone of it at the new place, then
+    /// one Remove spot where it was (in this order, so the clone copies
+    /// the object, not the fill), leaving out what the clone now covers
+    /// (spots apply one after another, so it would wipe the clone).
+    pub fn move_by(&self, by: [f64; 2]) -> Vec<Command> {
+        let (wf, hf) = (self.width as f64, self.height as f64);
+        let r = (0.02 * self.size()).max(MIN_WIDEN);
+        let points: Vec<[f64; 2]> = cover(&self.mask, self.width, self.height, r)
+            .iter()
+            .map(|&(x, y)| [(x + 0.5) / wf + by[0], (y + 0.5) / hf + by[1]])
+            .collect();
+        let c = self.centre();
+        let (w, h) = (self.width, self.height);
+        let (dx, dy) = ((by[0] * wf).round() as isize, (by[1] * hf).round() as isize);
+        // Where the clone lands, in pixels.
+        let moved = |x: isize, y: isize| {
+            let (sx, sy) = (x - dx, y - dy);
+            sx >= 0
+                && sy >= 0
+                && (sx as usize) < w
+                && (sy as usize) < h
+                && self.mask[sy as usize * w + sx as usize]
+        };
+        let rest: Vec<bool> = (0..w * h)
+            .map(|i| self.mask[i] && !moved((i % w) as isize, (i / w) as isize))
+            .collect();
+        let rr = (WIDEN * self.size()).max(MIN_WIDEN);
+        // The Remove spot's dabs, none reaching into the clone.
+        let remove: Vec<[f64; 2]> = cover(&rest, w, h, rr)
+            .into_iter()
+            .filter(|&(x, y)| {
+                let reach = 1.6 * rr;
+                (0..12).all(|k| {
+                    let a = k as f64 * std::f64::consts::TAU / 12.0;
+                    !moved(
+                        (x + reach * a.cos()) as isize,
+                        (y + reach * a.sin()) as isize,
+                    )
+                }) && !moved(x as isize, y as isize)
+            })
+            .map(|(x, y)| [(x + 0.5) / wf, (y + 0.5) / hf])
+            .collect();
+        let mut out = vec![Command::AddSpot {
+            at: [c[0] + by[0], c[1] + by[1]],
             radius: r / wf,
-            kind: Some("remove".into()),
-            source: None,
-            source_auto: true,
-            feather: 30.0,
+            kind: Some("clone".into()),
+            source: Some(c),
+            source_auto: false,
+            feather: 25.0,
             opacity: 100.0,
             points: Some(points),
             separate: true,
-        },
-        share: inside as f64 / area.max(1) as f64,
-        selected,
-    })
+        }];
+        if !remove.is_empty() {
+            out.push(Command::AddSpot {
+                at: c,
+                radius: rr / wf,
+                kind: Some("remove".into()),
+                source: None,
+                source_auto: true,
+                feather: 30.0,
+                opacity: 100.0,
+                points: Some(remove),
+                separate: true,
+            });
+        }
+        out
+    }
+
+    /// A brush mask's dabs covering it, `[x, y, radius]` in fractions (the
+    /// radius of the width): each dab as big as fits inside (its distance
+    /// to the edge), so a few big ones fill it and small ones follow the
+    /// outline.
+    pub fn mask_dabs(&self) -> Vec<[f64; 3]> {
+        let (w, h) = (self.width, self.height);
+        let dist = distance_inside(&self.mask, w, h);
+        let mut order: Vec<usize> = (0..w * h).filter(|&i| self.mask[i]).collect();
+        order.sort_by(|&a, &b| dist[b].total_cmp(&dist[a]));
+        let mut covered = vec![false; w * h];
+        let mut out = Vec::new();
+        const SMALLEST: f32 = 2.0;
+        for i in order {
+            if covered[i] {
+                continue;
+            }
+            let r = (dist[i] + 0.5).max(SMALLEST);
+            let (cx, cy) = ((i % w) as f32, (i / w) as f32);
+            // Marked within a little less than the dab, so neighbours overlap.
+            let mark = r * 0.85;
+            let m = mark.ceil() as isize;
+            for dy in -m..=m {
+                for dx in -m..=m {
+                    if (dx * dx + dy * dy) as f32 > mark * mark {
+                        continue;
+                    }
+                    let (x, y) = (cx as isize + dx, cy as isize + dy);
+                    if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
+                        covered[y as usize * w + x as usize] = true;
+                    }
+                }
+            }
+            covered[i] = true;
+            out.push([
+                (f64::from(cx) + 0.5) / w as f64,
+                (f64::from(cy) + 0.5) / h as f64,
+                f64::from(r) / w as f64,
+            ]);
+        }
+        out
+    }
+}
+
+/// For each pixel of `mask`, about how far (pixels) it is from the nearest
+/// pixel outside it (a two-pass chamfer distance).
+fn distance_inside(mask: &[bool], w: usize, h: usize) -> Vec<f32> {
+    let big = (w + h) as f32;
+    let mut d: Vec<f32> = mask.iter().map(|&m| if m { big } else { 0.0 }).collect();
+    let (a, b) = (1.0f32, std::f32::consts::SQRT_2);
+    let at = |d: &[f32], x: isize, y: isize| {
+        if x < 0 || y < 0 || x as usize >= w || y as usize >= h {
+            0.0
+        } else {
+            d[y as usize * w + x as usize]
+        }
+    };
+    for y in 0..h as isize {
+        for x in 0..w as isize {
+            let i = y as usize * w + x as usize;
+            if d[i] == 0.0 {
+                continue;
+            }
+            let v = d[i]
+                .min(at(&d, x - 1, y) + a)
+                .min(at(&d, x, y - 1) + a)
+                .min(at(&d, x - 1, y - 1) + b)
+                .min(at(&d, x + 1, y - 1) + b);
+            d[i] = v;
+        }
+    }
+    for y in (0..h as isize).rev() {
+        for x in (0..w as isize).rev() {
+            let i = y as usize * w + x as usize;
+            if d[i] == 0.0 {
+                continue;
+            }
+            let v = d[i]
+                .min(at(&d, x + 1, y) + a)
+                .min(at(&d, x, y + 1) + a)
+                .min(at(&d, x + 1, y + 1) + b)
+                .min(at(&d, x - 1, y + 1) + b);
+            d[i] = v;
+        }
+    }
+    d
 }
 
 /// Set `mask` where `value` (at a pixel's centre) is at least a half,
@@ -306,5 +525,51 @@ mod tests {
             dabs.iter().all(|&(x, _)| !(45.0..75.0).contains(&x)),
             "{dabs:?}"
         );
+    }
+
+    #[test]
+    fn mask_dabs_fill_a_shape_with_few_big_dabs_and_stay_inside() {
+        let (w, h) = (200, 120);
+        let mut mask = vec![false; w * h];
+        for y in 20..100 {
+            for x in 30..170 {
+                mask[y * w + x] = true;
+            }
+        }
+        let sel = Selection {
+            mask: mask.clone(),
+            width: w,
+            height: h,
+            share: 1.0,
+            selected: true,
+            lo: (30, 20),
+            hi: (169, 99),
+        };
+        let dabs = sel.mask_dabs();
+        let px: Vec<(f64, f64, f64)> = dabs
+            .iter()
+            .map(|d| (d[0] * w as f64, d[1] * h as f64, d[2] * w as f64))
+            .collect();
+        // Every pixel of the shape is under a dab.
+        for y in 0..h {
+            for x in 0..w {
+                if mask[y * w + x] {
+                    let (fx, fy) = (x as f64 + 0.5, y as f64 + 0.5);
+                    assert!(
+                        px.iter()
+                            .any(|&(cx, cy, r)| (cx - fx).hypot(cy - fy) <= r + 0.5),
+                        "{x},{y}"
+                    );
+                }
+            }
+        }
+        // Not far outside, and far fewer dabs than pixels.
+        for &(cx, cy, r) in &px {
+            assert!(
+                cx - r > 27.0 && cx + r < 173.0 && cy - r > 17.0 && cy + r < 103.0,
+                "{cx},{cy} r {r}"
+            );
+        }
+        assert!(px.len() < 600, "{} dabs", px.len());
     }
 }

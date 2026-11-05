@@ -101,6 +101,11 @@ pub enum Command {
         density: f64,
         #[serde(default, skip_serializing_if = "is_false")]
         erase: bool,
+        /// Dabs of their own instead of a stroke through `points`: `[x, y,
+        /// radius]` each (radius a fraction of the width), as Select Object
+        /// covers an outline (big inside, small at the edge).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        dabs: Option<Vec<[f64; 3]>>,
     },
     /// Add a round spot at `at` (image fractions): `kind` heal (default) or
     /// clone, `radius` a fraction of the width, `source` the donor centre

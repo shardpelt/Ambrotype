@@ -80,12 +80,27 @@ await t.step("tasks differ: Develop opens on Quick fixes, Retouch on its tools, 
   t.expect(t.visible("#select-shadow-row") && !$("select-shadow").checked && $("select-hint").textContent.includes("shadow"), "a shadow found is offered");
   sl.shadowDabs = [];
   renderSelectPanel();
+  // Its actions also sit right by the selection, on the photo.
+  t.expect(t.visible("#select-bar"), "the action bar by the selection");
+  const bar = $("select-bar").getBoundingClientRect();
+  const view = $("select-canvas").getBoundingClientRect();
+  t.expect(bar.left >= view.left && bar.right <= view.right && bar.top >= view.top && bar.bottom <= view.bottom, "on the photo's view");
+  $("select-bar").querySelector('[data-bar="move"]').click();
+  t.expect(sl.moving, "the bar's Move");
+  $("select-bar").querySelector('[data-bar="move"]').click();
+  t.expect(!sl.moving, "and again stops it");
   t.click("#select-move");
   t.expect(sl.moving && $("select-hint").textContent.startsWith("Drag"), "Move waits for a drag");
   t.key("Escape");
   t.expect(!sl.moving && sl.on, "Esc stops moving first");
   t.key("Escape");
-  t.expect(!sl.on && $("select-panel").hidden, "then leaves");
+  t.expect(!sl.on && $("select-panel").hidden && $("select-bar").hidden, "then leaves");
+  // The toolbar's Select button (in every built-in layout) opens it too.
+  t.expect(t.visible("#btn-select") && $("btn-select").textContent.includes("Select"), "Select in the toolbar, with its word");
+  t.click("#btn-select");
+  await t.until("the toolbar's Select", () => sl.on);
+  t.click("#btn-select");
+  t.expect(!sl.on, "and again leaves");
   t.key("O");
   await t.until("O opens it", () => sl.on);
   t.key("Escape");
@@ -167,10 +182,13 @@ await t.step("Trippy, a task plugin: its tools put effects on and take them off"
   t.expect(fxOn().filter((p) => p === "hue-trip").length === 1, `one Hue trip: ${fxOn()}`);
   await t.until("History names the effects", () => /→ .*Hue trip/.test(document.querySelector("#history-list li.current .history-values")?.textContent ?? ""));
   t.expect(!document.querySelector("#history-list li.current .history-values").textContent.includes("{"), "no JSON in History");
+  // Visualise's view as a look: Neon (Paint's edges glowing on black).
+  t.click(tile("Neon"));
+  await t.until("Neon", () => effectsOf(currentValue("amb:Effects")).find((e) => e.plugin === "paint")?.params.style === "Neon");
   t.click(tile("Back to normal"));
   await t.until("no trip", () => fxOn().length === 0);
   // Back to where the edit was, for the steps after this one.
-  for (let i = 0; i < 3; i++) await run([{ cmd: "undo" }]);
+  for (let i = 0; i < 4; i++) await run([{ cmd: "undo" }]);
   await t.until("back at the Exposure step", () => document.querySelector("#history-list li.current .history-values")?.textContent.endsWith("→ +1.00"));
   // Not in the Appearance list: it is the task's.
   t.expect(TASK_LAYOUTS.has("plugin:trippy"), "kept out of Appearance");

@@ -39,6 +39,7 @@ function drawSelect() {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, w, h);
   if (!sl.frame) return;
+  placeSelectBar();
   if (sl.dabs) {
     // The object, tinted: its dabs filled on a layer, then shown at once.
     const layer = document.createElement("canvas");
@@ -89,8 +90,38 @@ function drawSelect() {
   }
 }
 
+// The actions' bar, just under what's selected (above it when there's no
+// room), so what to do with it is right there.
+function placeSelectBar() {
+  const bar = $("select-bar");
+  const show = sl.on && Boolean(sl.dabs) && !sl.drag;
+  bar.hidden = !show;
+  if (!show) return;
+  const scale = sl.frame.frame_width * pxScale(sl.frame, "select-canvas");
+  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const [x, y, r] of sl.shadow ? sl.dabs : [...sl.dabs, ...sl.shadowDabs]) {
+    const [px, py] = slCanvas(x, y);
+    const rr = r * scale;
+    [x0, y0, x1, y1] = [Math.min(x0, px - rr), Math.min(y0, py - rr), Math.max(x1, px + rr), Math.max(y1, py + rr)];
+  }
+  const c = $("select-canvas");
+  const [cw, ch] = [c.clientWidth, c.clientHeight];
+  const [bw, bh] = [bar.offsetWidth, bar.offsetHeight];
+  const left = Math.max(8, Math.min(cw - bw - 8, (x0 + x1) / 2 - bw / 2));
+  let top = y1 + 10;
+  if (top + bh > ch - 8) top = y0 - bh - 10;
+  if (top < 8) top = Math.max(8, Math.min(ch - bh - 8, y1 - bh - 10));
+  bar.style.left = `${c.offsetLeft + left}px`;
+  bar.style.top = `${c.offsetTop + top}px`;
+}
+
 function renderSelectPanel() {
   const have = Boolean(sl.dabs);
+  for (const b of document.querySelectorAll("#select-bar button")) b.disabled = sl.busy;
+  $("select-bar").querySelector('[data-bar="move"]').classList.toggle("active", sl.moving);
+  const shadowBox = $("select-bar").querySelector('[data-bar="shadow"]');
+  shadowBox.hidden = !sl.shadowDabs.length;
+  shadowBox.querySelector("input").checked = sl.shadow;
   for (const b of document.querySelectorAll("#select-actions button")) b.disabled = !have || sl.busy;
   $("select-clear").disabled = !have && !sl.clicks.length;
   $("select-shadow-row").hidden = !have || !sl.shadowDabs.length;
@@ -209,6 +240,7 @@ function exitSelect() {
   sl.drag = null;
   $("select-canvas").hidden = true;
   $("select-panel").hidden = true;
+  $("select-bar").hidden = true;
   $("btn-wb").disabled = !ui.info;
   status("Ready");
 }
@@ -276,10 +308,16 @@ function wireSelect() {
   for (const b of document.querySelectorAll("#select-actions button[data-action]")) {
     b.addEventListener("click", () => selectApply(b.dataset.action));
   }
-  $("select-move").addEventListener("click", () => {
+  const toggleMove = () => {
     sl.moving = !sl.moving;
     renderSelectPanel();
-  });
+  };
+  $("select-move").addEventListener("click", toggleMove);
+  const bar = $("select-bar");
+  for (const b of bar.querySelectorAll("button[data-action]")) b.addEventListener("click", () => selectApply(b.dataset.action));
+  bar.querySelector('[data-bar="move"]').addEventListener("click", toggleMove);
+  const barShadow = bar.querySelector('[data-bar="shadow"] input');
+  barShadow.addEventListener("change", () => setSelectShadow(barShadow.checked));
   $("select-clear").addEventListener("click", selectClear);
   $("select-shadow").addEventListener("change", () => setSelectShadow($("select-shadow").checked));
   $("select-done").addEventListener("click", exitSelect);

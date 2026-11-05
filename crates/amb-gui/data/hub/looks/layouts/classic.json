@@ -4,7 +4,7 @@
   "description": "Develop: Quick fixes on the left (Auto edit, Auto tone and white balance, Level, lens fixes) above the presets and history; the Develop panels on the right.",
   "author": "Ambrotype",
   "density": "normal",
-  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "search", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "settings", "feedback"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "select", "search", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "settings", "feedback"],
   "left": { "width": 260, "items": ["quick", "presets", "history"] },
   "right": {
     "width": 330,

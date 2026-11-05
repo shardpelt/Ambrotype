@@ -8,7 +8,7 @@
 "use strict";
 
 // The plugins a trip is made of.
-const TRIP_PLUGINS = ["hue-trip", "holographic", "light-leak", "duotone"];
+const TRIP_PLUGINS = ["hue-trip", "holographic", "light-leak", "duotone", "paint"];
 
 function tripEffects() {
   return effectsOf(currentValue("amb:Effects"));

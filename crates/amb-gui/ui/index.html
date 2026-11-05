@@ -24,6 +24,7 @@
       <span class="sep"></span>
       <button id="btn-undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
       <button id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
+      <button id="btn-select" class="auto-edit" title="Select object: click a thing in the photo, then adjust, move or remove it (O)" disabled>Select</button>
       <button id="btn-auto" class="auto-edit" title="Auto edit: tone, white balance, lens corrections, vibrance and a level horizon in one go, as a starting point (Ctrl+U)" disabled>Auto</button>
       <button id="btn-search" title="Search everything: commands, settings, presets, and what you want to do">Search</button>
       <span class="sep"></span>
@@ -138,6 +139,16 @@
       <canvas id="mask-canvas" class="crop-canvas mask-canvas" hidden></canvas>
       <canvas id="spot-canvas" class="crop-canvas spot-canvas" hidden></canvas>
       <canvas id="select-canvas" class="crop-canvas spot-canvas" hidden></canvas>
+      <!-- Select object's actions, right by what's selected (select.js). -->
+      <div id="select-bar" class="select-bar" hidden>
+        <button type="button" data-action="adjust" title="A mask of it, with its sliders">Adjust</button>
+        <button type="button" data-action="brighten" title="+0.5 EV on it">Brighten</button>
+        <button type="button" data-action="darken" title="−0.5 EV on it">Darken</button>
+        <button type="button" data-bar="move" title="Drag it somewhere else">Move</button>
+        <button type="button" data-action="remove" title="AI fills where it was">Remove</button>
+        <button type="button" data-action="background" title="Everything else softer">Soften background</button>
+        <label class="inline-check" data-bar="shadow" title="Take its shadow (in blue) with it"><input type="checkbox"><span>Shadow</span></label>
+      </div>
       <canvas id="guide-canvas" class="crop-canvas spot-canvas" hidden></canvas>
       <!-- Frame (frame.js): the frame and text around the photo in the editor. -->
       <div class="preset-library frame-panel" id="frame-panel" hidden>

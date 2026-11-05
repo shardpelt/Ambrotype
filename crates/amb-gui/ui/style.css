@@ -318,6 +318,11 @@ dialog input[type=text] { background: var(--bg-deep); border: 1px solid var(--li
 /* Crop tool */
 .crop-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
 .crop-canvas[hidden] { display: none; }
+.select-bar { position: absolute; z-index: 6; display: flex; gap: 4px; align-items: center; padding: 4px; border-radius: 8px; background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35); white-space: nowrap; }
+.select-bar[hidden] { display: none; }
+.select-bar button { padding: 4px 9px; }
+.select-bar button.active { background: var(--accent); color: var(--accent-text, #fff); }
+.select-bar .inline-check { padding: 0 6px; }
 .crop-panel { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; background: var(--panel-2); }
 .crop-panel[hidden] { display: none; }
 .crop-panel .row select { min-width: 0; }

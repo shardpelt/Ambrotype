@@ -6,7 +6,8 @@
 //! brush-like patches and edges stay. Sums over squares come from integral
 //! images, so a big brush costs no more than a small one. Cartoon and
 //! Poster add flat bands of tone and ink lines (a difference of two blurs
-//! of the brightness, dark where it dips).
+//! of the brightness, dark where it dips). Edges and Neon are Visualise
+//! Spots' view as a look: the edges glowing on black, white or coloured.
 
 use amb_plugin_sdk::{Effect, Pixels};
 
@@ -143,7 +144,30 @@ pub fn paint(e: &Effect, px: &mut Pixels) -> Result<(), String> {
                 }),
             );
             let mut c = best.1;
-            if style == "Poster" || levels >= 2 {
+            if style == "Edges" || style == "Neon" {
+                // Visualise Spots' view: the edges glowing on black, white
+                // (Edges) or in the photo's own colours, made vivid (Neon).
+                let a = r.div_ceil(4).max(1);
+                let (xl, xr) = (x.saturating_sub(a), (x + a + 1).min(w));
+                let (yt, yb) = (y.saturating_sub(a), (y + a + 1).min(h));
+                let gx = mean_box(3, x + 1, yt, xr.max(x + 2).min(w), yb)
+                    - mean_box(3, xl, yt, x.max(xl + 1), yb);
+                let gy = mean_box(3, xl, y + 1, xr, yb.max(y + 2).min(h))
+                    - mean_box(3, xl, yt, xr, y.max(yt + 1));
+                let edge = (gx.hypot(gy) as f32 * 10.0 - 0.04)
+                    .clamp(0.0, 1.0)
+                    .powf(0.8);
+                c = if style == "Edges" {
+                    [edge; 3]
+                } else {
+                    // The colour round the edge (a pixel on its dark side has little).
+                    let o = [0, 1, 2].map(|k| mean_box(k, xl, yt, xr, yb) as f32);
+                    let l = luma(o);
+                    let vivid = o.map(|v| (l + (v - l) * 3.0).clamp(0.0, 1.0));
+                    let peak = vivid[0].max(vivid[1]).max(vivid[2]).max(1e-3);
+                    vivid.map(|v| (v / peak * edge * 1.3).min(1.0))
+                };
+            } else if style == "Poster" || levels >= 2 {
                 // Flat bands of brightness, keeping the colour.
                 let n = if levels >= 2 { levels } else { 4 } as f32 - 1.0;
                 let l = luma(c).max(1e-4);
@@ -261,5 +285,41 @@ mod tests {
         tones.sort();
         tones.dedup();
         assert!(tones.len() <= 6, "{tones:?}");
+    }
+
+    #[test]
+    fn edges_glow_on_black_and_neon_keeps_the_colour() {
+        let (w, h) = (60, 30);
+        let photo: Vec<f32> = (0..w * h)
+            .flat_map(|i| {
+                if i % w < 30 {
+                    [0.1, 0.1, 0.1]
+                } else {
+                    [0.9, 0.3, 0.2]
+                }
+            })
+            .collect();
+        let mut data = photo.clone();
+        run(
+            serde_json::json!({ "style": "Edges", "brush": 10, "lines": 0, "colours": 0, "strength": 100 }),
+            &mut data,
+            w,
+            h,
+        );
+        assert!(
+            data[(15 * w + 30) * 3] > 0.5,
+            "the edge: {}",
+            data[(15 * w + 30) * 3]
+        );
+        assert!(data[(15 * w + 10) * 3] < 0.05 && data[(15 * w + 50) * 3] < 0.05);
+        let mut neon = photo;
+        run(
+            serde_json::json!({ "style": "Neon", "brush": 10, "lines": 0, "colours": 0, "strength": 100 }),
+            &mut neon,
+            w,
+            h,
+        );
+        let c = &neon[(15 * w + 29) * 3..][..3];
+        assert!(c[0] > c[1] && c[0] > c[2] && c[0] > 0.3, "{c:?}");
     }
 }

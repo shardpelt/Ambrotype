@@ -27,9 +27,11 @@ A short running list, kept up to date as work lands. Newest decisions first. The
   - **One answer leads to more:** a How to shows two or three related features ("also: Keep under N MB, Also a smaller copy"), and the features list can be followed from one to the next.
   - Tips come from [FEATURES.md](FEATURES.md), skip features already used, and are rare enough not to nag.
   - Two switches in Settings → General, both on by default: "Tips while waiting" and "Tips in menus and empty boxes".
-- **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots, highlight hover), sliders past their usual ranges.
+- **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots done as Edges and Neon, highlight hover), sliders past their usual ranges; and (owner, 2026-11-05) range selectors (highlights, shadows, …) and editors in Trippy.
 
 ## Recently done
+
+- 2026-11-05: Select object is easier to find and use: **Select** in every built-in layout's toolbar (with its word, beside Auto), and once something is selected its actions (Adjust, Brighten, Darken, Move, Remove, Soften background, Shadow) sit on a bar right under it on the photo. Visualise's edge view is a Trippy look: Paint's new Edges and Neon styles (Trippy tools Edges and Neon)
 
 - 2026-11-05: Select object follows the photo's edges (a colour guided filter redraws SAM's coarse map from the photo, so the outline no longer steps or leaves holes) and offers the shadow it casts (shown in blue; Its shadow too takes it along, so Move and Remove take it with the object). Each How to now ends with two or three related features (same bold names, words or section), each opening its own How to
 

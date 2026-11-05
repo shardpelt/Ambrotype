@@ -30,6 +30,8 @@ const ICON_PATHS = {
   zoom: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/><path d="M10.5 7.5v6M7.5 10.5h6"/>',
   // A wand with sparkles: the photo edited for you.
   auto: '<path d="m4 20 11-11"/><path d="m13.5 7.5 3 3"/><path d="M18 3v3M16.5 4.5h3M20 10v2M19 11h2M10 3v2M9 4h2" stroke-width="1.5"/>',
+  // A dashed box round a thing, with a pointer: select an object.
+  select: '<path d="M4 9V5h4M16 5h4v4M20 15v1M4 15v4h4" stroke-dasharray="2 2.2"/><path d="m12 11 8 3.2-3.4 1.2L15.4 19z"/>',
   // A magnifier with nothing in it: find anything.
   search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/>',
   // An eyedropper: a long rubber bulb, a crossbar wider than the tube, a
@@ -58,7 +60,7 @@ const ICON_PATHS = {
 // Spots, Clipping and Appearance have no picture that says it.
 const TOOLBAR_ICONS = new Set([
   "open", "library", "save", "export", "collage", "undo", "redo", "before", "crop", "masks", "zoom", "wb",
-  "frame", "auto", "search", "keys", "plugins", "edit", "settings", "feedback",
+  "frame", "auto", "select", "search", "keys", "plugins", "edit", "settings", "feedback",
 ]);
 
 function iconSvg(name) {
@@ -79,8 +81,9 @@ function applyToolbarIcons(style = "icons") {
     b.setAttribute("aria-label", label.replace(/…$/, ""));
     if (!b.title) b.title = label;
     const svg = style !== "words" && TOOLBAR_ICONS.has(name) ? iconSvg(name) : null;
-    // Auto edit keeps its word beside the wand: it's the big button.
-    if (svg) b.innerHTML = name === "auto" ? `${svg}<span>${label}</span>` : svg;
+    // Auto edit and Select keep their word beside the picture: they're
+    // the big buttons, for people who don't know them yet.
+    if (svg) b.innerHTML = name === "auto" || name === "select" ? `${svg}<span>${name === "select" ? "Select" : label}</span>` : svg;
     else b.textContent = label;
     b.classList.toggle("tool-icon", Boolean(svg));
   }

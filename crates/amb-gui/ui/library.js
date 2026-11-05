@@ -40,7 +40,7 @@ const libPhoto = (path) => lib.photos.find((p) => p.path === path);
 // The photos an action is for: the library's selection, or in the editor
 // the filmstrip's (Ctrl- and Shift-click there).
 const selectedPhotos = () => (lib.on ? lib.shown.filter((p) => lib.selected.has(p.path)) : stripSelected());
-const VIEWER_BUTTONS = ["btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-frame", "btn-auto"];
+const VIEWER_BUTTONS = ["btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-frame", "btn-auto", "btn-select"];
 
 // ---------------------------------------------------------------- show, load
 

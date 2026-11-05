@@ -4,7 +4,7 @@
   "description": "Retouch: its own tools on the left (Remove object, AI Remove, Heal, Find dust, and the Subject, People, Background and Sky masks), with Detail open and Texture and Clarity as knobs for skin on the right.",
   "author": "Ambrotype",
   "density": "normal",
-  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "search", "|", "before", "masks", "spots", "zoom", "crop", "wb", "|", "plugins", "|", "looks", "settings"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "select", "search", "|", "before", "masks", "spots", "zoom", "crop", "wb", "|", "plugins", "|", "looks", "settings"],
   "left": { "width": 270, "items": ["retouch", "history", "presets"] },
   "right": {
     "width": 330,

@@ -15,7 +15,7 @@
       "description": "The Trippy task's tools on the left, the Effects panel open on the right to tune them.",
       "author": "Ambrotype",
       "density": "normal",
-      "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "search", "|", "before", "masks", "zoom", "|", "plugins", "hub", "|", "looks", "settings"],
+      "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "select", "search", "|", "before", "masks", "zoom", "|", "plugins", "hub", "|", "looks", "settings"],
       "left": { "width": 260, "items": ["tools", "presets", "history"] },
       "right": {
         "width": 340,
@@ -39,6 +39,8 @@
       { "label": "Prism", "hint": "Wide soft rainbow", "effect": "holographic", "recipe": "Prism" },
       { "label": "Pop pink", "hint": "Two pink inks", "effect": "duotone", "recipe": "Pop pink" },
       { "label": "Light leak", "hint": "A warm glow from the edge", "effect": "light-leak" },
+      { "label": "Edges", "hint": "Glowing edges on black, as Visualise shows them", "effect": "paint", "recipe": "Edges" },
+      { "label": "Neon", "hint": "The edges glowing in their own colours", "effect": "paint", "recipe": "Neon" },
       { "label": "Back to normal", "hint": "The trip's effects off again", "command": "trip-clear" }
     ]
   },

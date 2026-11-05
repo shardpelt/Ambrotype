@@ -4,7 +4,7 @@
   "description": "Colour: big grading wheels on the left; on the right the colour mixer and curve open, and only Basic's colour (white balance, vibrance, saturation), with the light sliders left to Develop.",
   "author": "Ambrotype",
   "density": "normal",
-  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "search", "|", "before", "masks", "zoom", "wb", "clip", "|", "looks", "settings"],
+  "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "select", "search", "|", "before", "masks", "zoom", "wb", "clip", "|", "looks", "settings"],
   "left": {
     "width": 380,
     "items": [

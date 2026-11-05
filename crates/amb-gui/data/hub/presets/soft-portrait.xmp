@@ -12,7 +12,7 @@
     crs:SaturationAdjustmentOrange="-5"
     crs:PostCropVignetteAmount="-10">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Soft Portrait</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Portrait</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Everyday</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Flattering skin: softer texture, warm and bright.</rdf:li></rdf:Alt></crs:Description>
    <crs:ToneCurvePV2012><rdf:Seq><rdf:li>0, 10</rdf:li><rdf:li>64, 58</rdf:li><rdf:li>128, 130</rdf:li><rdf:li>192, 200</rdf:li><rdf:li>255, 250</rdf:li></rdf:Seq></crs:ToneCurvePV2012>
   </rdf:Description>

@@ -13,7 +13,7 @@
     crs:ColorGradeShadowSat="10"
     crs:ColorGradeBlending="70">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Golden Hour</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Warm &amp; soft</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Everyday</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Warm highlights, soft contrast, glowing skin.</rdf:li></rdf:Alt></crs:Description>
   </rdf:Description>
  </rdf:RDF>

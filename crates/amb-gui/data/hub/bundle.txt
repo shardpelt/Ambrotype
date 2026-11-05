@@ -46,3 +46,14 @@ preset-stormy
 preset-teal-orange
 preset-vivid-travel
 preset-warm-film
+preset-toy-camera
+preset-miniature
+preset-infrared
+preset-cross-process
+preset-dreamland
+preset-acid
+preset-hologram
+preset-oil-painting
+preset-cartoon
+preset-poster
+preset-pop-art

@@ -336,3 +336,56 @@ fn a_task_is_a_layout_and_tools_with_no_module() {
     let action_with_task = base("[]").replace(r#""kind":"task""#, r#""kind":"action""#);
     assert!(Manifest::from_json(&action_with_task).is_err());
 }
+
+#[test]
+fn built_in_effects_run_natively_as_they_do_in_the_sandbox() {
+    use crate::effect::Region;
+    for (manifest, id, wasm) in crate::BUILTIN {
+        let native = crate::builtin(id).unwrap();
+        if !native.manifest.is_effect() {
+            continue;
+        }
+        // The same module with a custom section added: not the built-in one,
+        // so it runs in the sandbox.
+        let mut other = wasm.to_vec();
+        other.extend([0x00, 0x02, 0x01, b'x']);
+        let sandboxed = Plugin::from_parts(manifest, &other).unwrap();
+        let params = Map::new();
+        if native.manifest.effect == "color" {
+            let (a, b) = (
+                native.color_table(&params, 7).unwrap(),
+                sandboxed.color_table(&params, 7).unwrap(),
+            );
+            let most = a
+                .iter()
+                .zip(&b)
+                .flat_map(|(x, y)| (0..3).map(move |k| (x[k] - y[k]).abs()))
+                .fold(0.0, f32::max);
+            assert!(most < 1e-5, "{id}: {most}");
+        } else {
+            let (w, h) = (96, 300);
+            let rgb: Vec<f32> = (0..w * h * 3)
+                .map(|i| ((i * 7919) % 101) as f32 / 100.0)
+                .collect();
+            let region = Region {
+                x: 0,
+                y: 0,
+                full_width: w,
+                full_height: h,
+            };
+            let (mut a, mut b) = (rgb.clone(), rgb);
+            native
+                .apply_pixels(&params, 7, &mut a, w, h, region)
+                .unwrap();
+            sandboxed
+                .apply_pixels(&params, 7, &mut b, w, h, region)
+                .unwrap();
+            let most = a
+                .iter()
+                .zip(&b)
+                .map(|(x, y)| (x - y).abs())
+                .fold(0.0, f32::max);
+            assert!(most < 1e-4, "{id}: {most}");
+        }
+    }
+}

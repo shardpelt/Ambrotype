@@ -1,0 +1,22 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "tilt-shift",
+  "name": "Tilt-shift",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "A sharp band across the photo and blur growing above and below it, as a tilted lens does: shot from high up, the world looks like a model (a miniature).",
+  "kind": "effect",
+  "effect": "pixels",
+  "margin": 96,
+  "params": [
+    { "name": "position", "label": "Position", "type": "number", "min": 0, "max": 100, "default": 60, "step": 1, "description": "Where the sharp band is, from the top." },
+    { "name": "band", "label": "Sharp band", "type": "number", "min": 0, "max": 100, "default": 20, "step": 1, "description": "How tall the sharp band is." },
+    { "name": "blur", "label": "Blur", "type": "number", "min": 0, "max": 100, "default": 60, "step": 1 },
+    { "name": "falloff", "label": "Falloff", "type": "number", "min": 5, "max": 100, "default": 35, "step": 1, "description": "How quickly the blur grows away from the band." }
+  ],
+  "recipes": [
+    { "name": "Miniature", "params": { "position": 60, "band": 15, "blur": 70, "falloff": 30 } },
+    { "name": "Soft edges", "params": { "position": 50, "band": 45, "blur": 40, "falloff": 50 } }
+  ],
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/tilt-shift"
+}

@@ -13,7 +13,7 @@
     crs:Saturation="-10"
     crs:Sharpness="40">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Clean White</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Bright &amp; airy</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Everyday</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Neutral and crisp, for products and interiors.</rdf:li></rdf:Alt></crs:Description>
   </rdf:Description>
  </rdf:RDF>

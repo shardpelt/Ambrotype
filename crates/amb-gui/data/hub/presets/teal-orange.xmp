@@ -15,7 +15,7 @@
     crs:ColorGradeHighlightHue="35"
     crs:ColorGradeHighlightSat="25">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Teal &amp; Orange</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Vivid</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Film &amp; mood</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">The classic cinematic split: teal shadows, warm skin.</rdf:li></rdf:Alt></crs:Description>
   </rdf:Description>
  </rdf:RDF>

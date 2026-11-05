@@ -243,9 +243,16 @@ version = "0.1.0"
 dependencies = [
  "amb-engine",
  "amb-export",
+ "amb-plugin-duotone",
+ "amb-plugin-holographic",
+ "amb-plugin-hue-trip",
+ "amb-plugin-light-leak",
+ "amb-plugin-paint",
  "amb-plugin-sdk",
+ "amb-plugin-tilt-shift",
  "amb-presets",
  "amb-protocol",
+ "rayon",
  "serde",
  "serde_json",
  "sha2",
@@ -302,6 +309,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "amb-plugin-paint"
+version = "1.0.0"
+dependencies = [
+ "amb-plugin-sdk",
+ "serde_json",
+]
+
+[[package]]
 name = "amb-plugin-random-look"
 version = "1.0.0"
 dependencies = [
@@ -314,6 +329,14 @@ name = "amb-plugin-sdk"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "amb-plugin-tilt-shift"
+version = "1.0.0"
+dependencies = [
+ "amb-plugin-sdk",
  "serde_json",
 ]
 

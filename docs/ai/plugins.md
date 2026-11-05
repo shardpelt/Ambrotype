@@ -119,7 +119,7 @@ An effect is rendered with the photo every time, like a slider, rather than run 
   - `"color"`: a function from one colour to another. The app asks it once for a 33×33×33 grid and renders the result as a colour table, like a `.cube` LUT, so it costs nothing per render and works on the GPU preview.
   - `"pixels"`: a function that changes the image. It gets sRGB values from 0 to 1 (as in a JPEG), possibly in strips or tiles, with `x`, `y`, `full_width` and `full_height` saying where they are in the photo. Use those (and `noise(x, y)`) so the result is the same whichever part is rendered. `"margin"` (0–256 pixels) is how far it looks at neighbours; strips overlap by that much.
 - **No permissions:** effects can't ask for any. They see their parameters, their seed and their pixels.
-- **Speed:** pixel effects run in the interpreter: Light leak takes about a quarter of a second on the editor's preview and 10–30 s on a 24 MP export. Keep the per-pixel work small, and move everything that doesn't depend on the pixel out of the loop.
+- **Speed:** the built-in effects run natively, on all cores; yours run in the interpreter: Light leak takes about a quarter of a second on the editor's preview and 10–30 s on a 24 MP export. Keep the per-pixel work small, and move everything that doesn't depend on the pixel out of the loop.
 
 ```rust
 use amb_plugin_sdk::{Effect, Pixels};
@@ -212,6 +212,8 @@ The input JSON has `api` (1), `params`, `settings`, `seed`, and with permission 
 - [`plugins/light-leak`](../../plugins/light-leak): an effect, a glow from one edge (`"effect": "pixels"`).
 - [`plugins/holographic`](../../plugins/holographic): an effect, rainbow foil across the photo that bends with its light (`"effect": "pixels"`, a lookup table instead of trigonometry per pixel).
 - [`plugins/hue-trip`](../../plugins/hue-trip): an effect, colours turned round the wheel by brightness, posterised and painted (`"effect": "color"`).
+- [`plugins/paint`](../../plugins/paint): an effect, oil painting, cartoon or poster (`"effect": "pixels"`, `"margin": 96`; a Kuwahara filter from integral images, so a big brush costs no more than a small one).
+- [`plugins/tilt-shift`](../../plugins/tilt-shift): an effect, a sharp band and blur above and below (`"effect": "pixels"`, `"margin": 96`).
 - [`plugins/trippy`](../../plugins/trippy): a task, the Trippy tab (its layout and buttons for the effects above; no module).
 
 All of them are built into the app. After changing one, rebuild its module with `amb plugin build plugins/<id>` and commit `plugin.wasm` with the source.

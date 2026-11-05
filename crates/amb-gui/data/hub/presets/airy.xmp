@@ -13,7 +13,7 @@
     crs:ColorGradeHighlightHue="210"
     crs:ColorGradeHighlightSat="6">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Airy</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Bright &amp; airy</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Everyday</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Light and clean: lifted shadows, cool whites.</rdf:li></rdf:Alt></crs:Description>
   </rdf:Description>
  </rdf:RDF>

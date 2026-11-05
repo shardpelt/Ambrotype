@@ -1,0 +1,24 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "paint",
+  "name": "Paint",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "The photo as a painting: Oil (soft brush strokes that keep the edges), Cartoon (flat colours with ink lines) or Poster (a few bold tones).",
+  "kind": "effect",
+  "effect": "pixels",
+  "margin": 96,
+  "params": [
+    { "name": "style", "label": "Style", "type": "choice", "options": ["Oil", "Cartoon", "Poster"], "default": "Oil" },
+    { "name": "brush", "label": "Brush", "type": "number", "min": 1, "max": 100, "default": 35, "step": 1, "description": "How big the strokes are." },
+    { "name": "lines", "label": "Ink lines", "type": "number", "min": 0, "max": 100, "default": 0, "step": 1, "description": "Dark outlines along the edges, as in a cartoon." },
+    { "name": "colours", "label": "Colours", "type": "number", "min": 0, "max": 16, "default": 0, "step": 1, "description": "Flat bands of tone; 0 is smooth." },
+    { "name": "strength", "label": "Strength", "type": "number", "min": 0, "max": 100, "default": 100, "step": 1 }
+  ],
+  "recipes": [
+    { "name": "Oil painting", "params": { "style": "Oil", "brush": 40, "lines": 0, "colours": 0 } },
+    { "name": "Cartoon", "params": { "style": "Cartoon", "brush": 25, "lines": 70, "colours": 6 } },
+    { "name": "Poster", "params": { "style": "Poster", "brush": 15, "lines": 20, "colours": 4 } }
+  ],
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/paint"
+}

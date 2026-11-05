@@ -265,12 +265,12 @@
       "id": "preset-airy",
       "kind": "preset",
       "name": "Airy",
-      "group": "Bright & airy",
+      "group": "Everyday",
       "author": "Ambrotype",
       "description": "Light and clean: lifted shadows, cool whites.",
       "license": "CC0-1.0",
       "path": "presets/airy.xmp",
-      "sha256": "83e84ce9b3d270df712be2d1b5f8674aeef7b7d0496beb1eeedf0b481324ded6"
+      "sha256": "99098876822040a12de076ab1072bf2c4ef3ef6bf1c2e4e31e5eb1adf0f6899a"
     },
     {
       "id": "preset-bw-classic",
@@ -320,177 +320,298 @@
       "id": "preset-clean-white",
       "kind": "preset",
       "name": "Clean White",
-      "group": "Bright & airy",
+      "group": "Everyday",
       "author": "Ambrotype",
       "description": "Neutral and crisp, for products and interiors.",
       "license": "CC0-1.0",
       "path": "presets/clean-white.xmp",
-      "sha256": "ba62de20de1e9741d07b71b127e16e671a7e5b1f6dc952128e0eb564b8eaeed0"
+      "sha256": "0926c865edc4124a7ecd9c7fee5f73f6961e0a77bbff2ad79751a72096c426c2"
     },
     {
       "id": "preset-cloud",
       "kind": "preset",
       "name": "Cloud",
-      "group": "Bright & airy",
+      "group": "Everyday",
       "author": "Ambrotype",
       "description": "Soft pastels with low contrast.",
       "license": "CC0-1.0",
       "path": "presets/cloud.xmp",
-      "sha256": "d1e6def56fb272febdc7e77a871567c7d8f29b0b9be967996d1a5f5115ef5d4c"
+      "sha256": "af672f84c6d9344d324d78364693be2e7e155040d8401f95a3b914e85b9af8bc"
     },
     {
       "id": "preset-cool-film",
       "kind": "preset",
       "name": "Cool Film",
-      "group": "Film",
+      "group": "Film & mood",
       "author": "Ambrotype",
       "description": "Cool slide-film look with deep blues.",
       "license": "CC0-1.0",
       "path": "presets/cool-film.xmp",
-      "sha256": "0690f11c475a4218e2435e1e5f560161c17ff6c328f85b5de331ba33bc0aebb9"
+      "sha256": "13ab088e0ac16428a76ca6a9e8da35ff6aa05296905c8130302a1cf54fc2d37a"
     },
     {
       "id": "preset-dark-city",
       "kind": "preset",
       "name": "Dark City",
-      "group": "Moody",
+      "group": "Film & mood",
       "author": "Ambrotype",
       "description": "Urban and cool: crushed shadows, teal and orange.",
       "license": "CC0-1.0",
       "path": "presets/dark-city.xmp",
-      "sha256": "3bcf58c9b5cee686bfa715cc030a7f4464552dd12a8ab9cd13d326c27d3a83c6"
+      "sha256": "3dfbe0ec84ed7251b5a00771aaaccb54d1a9af36fb47d17937620cda86089b00"
     },
     {
       "id": "preset-faded-print",
       "kind": "preset",
       "name": "Faded Print",
-      "group": "Film",
+      "group": "Film & mood",
       "author": "Ambrotype",
       "description": "Like an old print: lifted blacks, muted colour, warm cast.",
       "license": "CC0-1.0",
       "path": "presets/faded-print.xmp",
-      "sha256": "df97a77a0b4f5b0e775e834d5cd3441f73502f33ff4926a728b10045a485e90e"
+      "sha256": "8daf1e6f12d077a1d7c976ca327040bcee182004f48adc9ee2ec3929ef8fff47"
     },
     {
       "id": "preset-golden-hour",
       "kind": "preset",
       "name": "Golden Hour",
-      "group": "Warm & soft",
+      "group": "Everyday",
       "author": "Ambrotype",
       "description": "Warm highlights, soft contrast, glowing skin.",
       "license": "CC0-1.0",
       "path": "presets/golden-hour.xmp",
-      "sha256": "73d67b04766d9e4bba08117b19ee807a81b17d386f8df2ebe69138fb28d1277f"
+      "sha256": "d9aa3565a3d77b8d781dcd4c05c51a2f65fb745ab131fc8e3f6fadda82ab80a8"
     },
     {
       "id": "preset-honey",
       "kind": "preset",
       "name": "Honey",
-      "group": "Warm & soft",
+      "group": "Everyday",
       "author": "Ambrotype",
       "description": "Amber midtones and gentle fade.",
       "license": "CC0-1.0",
       "path": "presets/honey.xmp",
-      "sha256": "e4c5e37f7077d620c0f82d860ff6e439614b0a5594fae3ca51140e3270ca426c"
+      "sha256": "a72cbd43dd8aa019dab85a672f60a723d40f2b46d877a4babe39cce5c728805e"
     },
     {
       "id": "preset-landscape-clarity",
       "kind": "preset",
       "name": "Landscape Detail",
-      "group": "Landscape",
+      "group": "Everyday",
       "author": "Ambrotype",
       "description": "More depth and detail for scenery.",
       "license": "CC0-1.0",
       "path": "presets/landscape-clarity.xmp",
-      "sha256": "99887e3f071eef3fe29405bcf3ff0162ebfeca834441adf6fee1a50cdbf5e22b"
+      "sha256": "c9a77f446e92bbcc221a5bdffe88fe90abd73f64c9ff812babfb291227ad7b48"
     },
     {
       "id": "preset-moody-forest",
       "kind": "preset",
       "name": "Moody Forest",
-      "group": "Moody",
+      "group": "Film & mood",
       "author": "Ambrotype",
       "description": "Dark, desaturated greens and teal shadows.",
       "license": "CC0-1.0",
       "path": "presets/moody-forest.xmp",
-      "sha256": "faf71f7c8b81f3734385318a23e37e566db287a331b461b0dcdebb99e6476e46"
+      "sha256": "1482feed786dfb9d517e1d774ea88673819cb5ca8385bb2b965ecf4bb21f7fae"
     },
     {
       "id": "preset-night-lights",
       "kind": "preset",
       "name": "Night Lights",
-      "group": "Landscape",
+      "group": "Film & mood",
       "author": "Ambrotype",
       "description": "Clean night shots: cool shadows, glowing lights, less noise.",
       "license": "CC0-1.0",
       "path": "presets/night-lights.xmp",
-      "sha256": "1505583d163f0a76fcd62e32586e81ae08473d944ef326b58004f6db0443530c"
+      "sha256": "6a23e84e66b884caa3555116b0087a5e4430965da51f2542b68c0627e02d39c5"
     },
     {
       "id": "preset-peach",
       "kind": "preset",
       "name": "Peach",
-      "group": "Warm & soft",
+      "group": "Everyday",
       "author": "Ambrotype",
       "description": "Pastel warmth for portraits.",
       "license": "CC0-1.0",
       "path": "presets/peach.xmp",
-      "sha256": "e2bd08f013d0e514b265e058f3755da116e3655ff6408f03b205c633a8a48e88"
+      "sha256": "6a72336f378849927191742a2b4524e46fadbe9661261b18bf85695fda6dc76d"
     },
     {
       "id": "preset-soft-portrait",
       "kind": "preset",
       "name": "Soft Portrait",
-      "group": "Portrait",
+      "group": "Everyday",
       "author": "Ambrotype",
       "description": "Flattering skin: softer texture, warm and bright.",
       "license": "CC0-1.0",
       "path": "presets/soft-portrait.xmp",
-      "sha256": "c1181806ea2f0f3248df86181cab0443a98bee0f170bc0d5938e5c3f4bd0d5bd"
+      "sha256": "a307df16e020093494170d48f97ece3c5f2063a47eb3bf0f1ba5ebf5d32af72d"
     },
     {
       "id": "preset-stormy",
       "kind": "preset",
       "name": "Stormy",
-      "group": "Moody",
+      "group": "Film & mood",
       "author": "Ambrotype",
       "description": "Heavy skies and muted colour.",
       "license": "CC0-1.0",
       "path": "presets/stormy.xmp",
-      "sha256": "7cb2acb39b84e7d78b68cc0c6c934777c7ff0ab7e7163130cb1af290b46a64cd"
+      "sha256": "5303403be77537df728da9700e4cacfbbbae2fea8572c6f2b74dba827b987af5"
     },
     {
       "id": "preset-teal-orange",
       "kind": "preset",
       "name": "Teal & Orange",
-      "group": "Vivid",
+      "group": "Film & mood",
       "author": "Ambrotype",
       "description": "The classic cinematic split: teal shadows, warm skin.",
       "license": "CC0-1.0",
       "path": "presets/teal-orange.xmp",
-      "sha256": "5c9efddbc90a1d4476ea0ebba00b52a903838028bbd5a34ba40839691ca53a6f"
+      "sha256": "af8181273c2a5f32b3537b3e84234187f68d702079d5b1c857bd3f9e901cc776"
     },
     {
       "id": "preset-vivid-travel",
       "kind": "preset",
       "name": "Vivid Travel",
-      "group": "Vivid",
+      "group": "Everyday",
       "author": "Ambrotype",
       "description": "Punchy colour and clear skies for travel shots.",
       "license": "CC0-1.0",
       "path": "presets/vivid-travel.xmp",
-      "sha256": "72536ae8e17e1847ae18fbc3e9378e271e5021c97eb860c85788e86b5dcba76b"
+      "sha256": "547c6dfcb894fd27e5f89b59654e0fa6f8ded83393faf9415027146a7b1d71fa"
     },
     {
       "id": "preset-warm-film",
       "kind": "preset",
       "name": "Warm Film",
-      "group": "Film",
+      "group": "Film & mood",
       "author": "Ambrotype",
       "description": "Warm negative-film feel: soft greens, creamy skin, fine grain.",
       "license": "CC0-1.0",
       "path": "presets/warm-film.xmp",
-      "sha256": "6be9e3cc86706b0de9101939db12f98f030dd49d159b26ad1c237947d44a848b"
+      "sha256": "6abba87ba402fa28224a75b4bdf09cb58e1b87714669570ca21057272c3525ae"
+    },
+    {
+      "id": "preset-toy-camera",
+      "kind": "preset",
+      "name": "Toy camera",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "A cheap plastic camera: strong colour and contrast, dark corners and a light leak.",
+      "license": "CC0-1.0",
+      "path": "presets/toy-camera.xmp",
+      "sha256": "296fe4e4fc74a800e872733342ec2750e8d165be28f0f426e8cb46b54df9f244"
+    },
+    {
+      "id": "preset-miniature",
+      "kind": "preset",
+      "name": "Miniature",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "Tilt-shift: a sharp band and blur above and below, with bright toy colours, so a view from high up looks like a model.",
+      "license": "CC0-1.0",
+      "path": "presets/miniature.xmp",
+      "sha256": "a33c5c3968a8ea91f2349cd10a26c61b7a67cc737016bb1f758c0dbde211ea47"
+    },
+    {
+      "id": "preset-infrared",
+      "kind": "preset",
+      "name": "Infrared",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "Surreal colour as on infrared film: green turns pink and red, the sky goes teal.",
+      "license": "CC0-1.0",
+      "path": "presets/infrared.xmp",
+      "sha256": "625d8c113c6b5fb90e84d634ef398ce125e8ba61b9914081f245aa37f5d4637d"
+    },
+    {
+      "id": "preset-cross-process",
+      "kind": "preset",
+      "name": "Cross-process",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "Slide film developed as a negative: blue shadows, yellow highlights, harsh contrast.",
+      "license": "CC0-1.0",
+      "path": "presets/cross-process.xmp",
+      "sha256": "675e92d223dd323584098eb6d781452d8756bda871476d4b2eb8b2a910ac0eb6"
+    },
+    {
+      "id": "preset-dreamland",
+      "kind": "preset",
+      "name": "Dreamland",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "Soft, shifted colours that drift through the tones.",
+      "license": "CC0-1.0",
+      "path": "presets/dreamland.xmp",
+      "sha256": "080c55d561942943ad04dda70e479bab5066af195a8346b21ccdba776d9fa4b3"
+    },
+    {
+      "id": "preset-acid",
+      "kind": "preset",
+      "name": "Acid",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "Psychedelic: every tone a different colour.",
+      "license": "CC0-1.0",
+      "path": "presets/acid.xmp",
+      "sha256": "48e1f000cfa677f6fecb6fe5cf9c52d01f9c9e3976196523ec7f1e86722bfdba"
+    },
+    {
+      "id": "preset-hologram",
+      "kind": "preset",
+      "name": "Hologram",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "Rainbow foil over the photo, like a hologram sticker.",
+      "license": "CC0-1.0",
+      "path": "presets/hologram.xmp",
+      "sha256": "d98a07e79ca7b7b6838fc9d17b7279cb97b63b6d5e19cea0f4515197928d2de8"
+    },
+    {
+      "id": "preset-oil-painting",
+      "kind": "preset",
+      "name": "Oil painting",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "Soft brush strokes that keep the edges, in rich colour.",
+      "license": "CC0-1.0",
+      "path": "presets/oil-painting.xmp",
+      "sha256": "356827bcb751c4c3193d4d93cc54058f94bb6b130456f1fba7a8e7ad149e0c2c"
+    },
+    {
+      "id": "preset-cartoon",
+      "kind": "preset",
+      "name": "Cartoon",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "Flat colours with ink lines.",
+      "license": "CC0-1.0",
+      "path": "presets/cartoon.xmp",
+      "sha256": "40ebd119ed50bd084229fe9dd21655c11135930211df199aee0b98a7dea2eeaa"
+    },
+    {
+      "id": "preset-poster",
+      "kind": "preset",
+      "name": "Poster",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "A few bold tones, like a screen print.",
+      "license": "CC0-1.0",
+      "path": "presets/poster.xmp",
+      "sha256": "c0d42e8c911ed6efd912c694f80ba225507f58fb752ced2aea09ab5e028b1e5b"
+    },
+    {
+      "id": "preset-pop-art",
+      "kind": "preset",
+      "name": "Pop art",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "Loud posterised colour.",
+      "license": "CC0-1.0",
+      "path": "presets/pop-art.xmp",
+      "sha256": "c426bd1f94053cf0365f35e5bd50231db7dd6658431438d6eaad3941a577718c"
     }
   ]
 }

@@ -9,7 +9,7 @@
     crs:Saturation="-20"
     crs:Clarity2012="-10">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Cloud</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Bright &amp; airy</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Everyday</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Soft pastels with low contrast.</rdf:li></rdf:Alt></crs:Description>
    <crs:ToneCurvePV2012><rdf:Seq><rdf:li>0, 28</rdf:li><rdf:li>64, 70</rdf:li><rdf:li>128, 132</rdf:li><rdf:li>192, 192</rdf:li><rdf:li>255, 240</rdf:li></rdf:Seq></crs:ToneCurvePV2012>
   </rdf:Description>

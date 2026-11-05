@@ -1,0 +1,15 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Written for the Ambrotype hub. CC0-1.0: free for anyone, any use. -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" xmlns:amb="http://ns.ambrotype.org/develop/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4" crs:Author="Ambrotype" crs:License="CC0-1.0"
+    crs:Vibrance="+20"
+    crs:Contrast2012="+10"
+    crs:Texture="-30"
+    amb:Effects="[{&quot;plugin&quot;:&quot;paint&quot;,&quot;params&quot;:{&quot;style&quot;:&quot;Oil&quot;,&quot;brush&quot;:30,&quot;lines&quot;:0,&quot;colours&quot;:0,&quot;strength&quot;:100},&quot;amount&quot;:100.0,&quot;seed&quot;:1000}]">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Oil painting</rdf:li></rdf:Alt></crs:Name>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Wild</rdf:li></rdf:Alt></crs:Group>
+   <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Soft brush strokes that keep the edges, in rich colour.</rdf:li></rdf:Alt></crs:Description>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

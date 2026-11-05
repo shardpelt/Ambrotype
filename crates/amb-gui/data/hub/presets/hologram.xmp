@@ -1,0 +1,14 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Written for the Ambrotype hub. CC0-1.0: free for anyone, any use. -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" xmlns:amb="http://ns.ambrotype.org/develop/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4" crs:Author="Ambrotype" crs:License="CC0-1.0"
+    crs:Contrast2012="+10"
+    crs:Clarity2012="+10"
+    amb:Effects="[{&quot;plugin&quot;:&quot;holographic&quot;,&quot;params&quot;:{&quot;strength&quot;:60,&quot;bands&quot;:6,&quot;angle&quot;:30,&quot;follow&quot;:50,&quot;shift&quot;:0,&quot;pastel&quot;:40},&quot;amount&quot;:100.0,&quot;seed&quot;:1000}]">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Hologram</rdf:li></rdf:Alt></crs:Name>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Wild</rdf:li></rdf:Alt></crs:Group>
+   <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Rainbow foil over the photo, like a hologram sticker.</rdf:li></rdf:Alt></crs:Description>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

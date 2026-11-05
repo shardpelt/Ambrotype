@@ -14,7 +14,7 @@
     crs:SaturationAdjustmentBlue="+15"
     crs:LuminanceAdjustmentBlue="-10">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Vivid Travel</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Vivid</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Everyday</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Punchy colour and clear skies for travel shots.</rdf:li></rdf:Alt></crs:Description>
   </rdf:Description>
  </rdf:RDF>

@@ -13,7 +13,7 @@
     crs:ColorGradeGlobalHue="210"
     crs:ColorGradeGlobalSat="8">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Stormy</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Moody</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Film &amp; mood</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Heavy skies and muted colour.</rdf:li></rdf:Alt></crs:Description>
   </rdf:Description>
  </rdf:RDF>

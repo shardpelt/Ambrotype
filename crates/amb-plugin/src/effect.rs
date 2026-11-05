@@ -68,7 +68,16 @@ impl Plugin {
         info["height"] = 1.into();
         info["full_width"] = n.into();
         info["full_height"] = 1.into();
-        call(self, &info, &mut data, FUEL + FUEL_PER_POINT * n as u64)?;
+        if let Some(crate::native::Native::Color(f)) = crate::native::of(self) {
+            let e: amb_plugin_sdk::Effect =
+                serde_json::from_value(info).map_err(|e| e.to_string())?;
+            for c in data.chunks_exact_mut(3) {
+                let out = f(&e, [c[0], c[1], c[2]]);
+                c.copy_from_slice(&out);
+            }
+        } else {
+            call(self, &info, &mut data, FUEL + FUEL_PER_POINT * n as u64)?;
+        }
         Ok(data
             .chunks_exact(3)
             .map(|c| {
@@ -102,6 +111,9 @@ impl Plugin {
         }
         let margin = self.manifest.margin as usize;
         let base = self.effect_info(params, seed)?;
+        if let Some(crate::native::Native::Pixels(f)) = crate::native::of(self) {
+            return native_pixels(f, &base, rgb, width, height, region, margin);
+        }
         let rows = (STRIP_FLOATS / (width * 3))
             .saturating_sub(2 * margin)
             .max(1);
@@ -132,6 +144,60 @@ impl Plugin {
         }
         Ok(())
     }
+}
+
+/// A built-in pixel effect run natively, in strips on all cores (as in
+/// the sandbox, each strip with `margin` rows of overlap, so the result is
+/// the same).
+fn native_pixels(
+    f: fn(&amb_plugin_sdk::Effect, &mut amb_plugin_sdk::Pixels) -> Result<(), String>,
+    base: &Value,
+    rgb: &mut [f32],
+    width: usize,
+    height: usize,
+    region: Region,
+    margin: usize,
+) -> Result<(), String> {
+    use rayon::prelude::*;
+    let mut e: amb_plugin_sdk::Effect =
+        serde_json::from_value(base.clone()).map_err(|e| e.to_string())?;
+    e.x = region.x as u32;
+    e.full_width = region.full_width as u32;
+    e.full_height = region.full_height as u32;
+    // Strips tall enough that the overlap stays a small part of the work.
+    let rows = (4 * margin).max(128);
+    let starts: Vec<usize> = (0..height).step_by(rows).collect();
+    let src: &[f32] = rgb;
+    let done: Vec<Result<Vec<f32>, String>> = starts
+        .par_iter()
+        .map(|&y0| {
+            let y1 = (y0 + rows).min(height);
+            let (a, b) = (y0.saturating_sub(margin), (y1 + margin).min(height));
+            let mut strip = src[a * width * 3..b * width * 3].to_vec();
+            let mut e = e.clone();
+            e.y = (region.y + a) as u32;
+            f(
+                &e,
+                &mut amb_plugin_sdk::Pixels {
+                    data: &mut strip,
+                    width,
+                    height: b - a,
+                },
+            )?;
+            Ok(strip[(y0 - a) * width * 3..(y1 - a) * width * 3].to_vec())
+        })
+        .collect();
+    for (y0, keep) in starts.into_iter().zip(done) {
+        let keep = keep?;
+        for (o, v) in rgb[y0 * width * 3..].iter_mut().zip(&keep) {
+            *o = if v.is_finite() {
+                v.clamp(0.0, 1.0)
+            } else {
+                0.0
+            };
+        }
+    }
+    Ok(())
 }
 
 /// One call to `amb_effect` in a fresh instance.

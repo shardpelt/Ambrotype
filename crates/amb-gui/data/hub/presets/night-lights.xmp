@@ -14,7 +14,7 @@
     crs:ColorGradeHighlightSat="15"
     crs:LuminanceSmoothing="30">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Night Lights</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Landscape</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Film &amp; mood</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Clean night shots: cool shadows, glowing lights, less noise.</rdf:li></rdf:Alt></crs:Description>
   </rdf:Description>
  </rdf:RDF>

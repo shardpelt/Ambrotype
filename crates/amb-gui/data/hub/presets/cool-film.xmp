@@ -18,7 +18,7 @@
     crs:GrainSize="20"
     crs:GrainFrequency="50">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Cool Film</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Film</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Film &amp; mood</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Cool slide-film look with deep blues.</rdf:li></rdf:Alt></crs:Description>
   </rdf:Description>
  </rdf:RDF>

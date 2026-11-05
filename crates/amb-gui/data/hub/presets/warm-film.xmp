@@ -18,7 +18,7 @@
     crs:GrainSize="25"
     crs:GrainFrequency="50">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Warm Film</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Film</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Film &amp; mood</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Warm negative-film feel: soft greens, creamy skin, fine grain.</rdf:li></rdf:Alt></crs:Description>
    <crs:ToneCurvePV2012><rdf:Seq><rdf:li>0, 40</rdf:li><rdf:li>128, 130</rdf:li><rdf:li>255, 235</rdf:li></rdf:Seq></crs:ToneCurvePV2012>
   </rdf:Description>

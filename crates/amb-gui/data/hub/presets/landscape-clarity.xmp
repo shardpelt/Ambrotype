@@ -16,7 +16,7 @@
     crs:SaturationAdjustmentBlue="+10"
     crs:Sharpness="45">
    <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Landscape Detail</rdf:li></rdf:Alt></crs:Name>
-   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Landscape</rdf:li></rdf:Alt></crs:Group>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Everyday</rdf:li></rdf:Alt></crs:Group>
    <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">More depth and detail for scenery.</rdf:li></rdf:Alt></crs:Description>
   </rdf:Description>
  </rdf:RDF>

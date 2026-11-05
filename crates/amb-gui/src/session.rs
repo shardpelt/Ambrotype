@@ -513,17 +513,20 @@ impl Session {
         amb_library::dust::find_image(&self.full, self.state.settings())
     }
 
-    /// Remove object: the spot covering the object clicked or boxed
-    /// (fractions of the frame).
-    /// Select Object: the object `target` points at, kept for its actions.
+    /// Select Object: the object `target` points at, with its shadow if
+    /// `shadow` (and one was found), kept for its actions.
     pub fn select_object(
         &mut self,
         target: &amb_library::object::Target,
+        shadow: bool,
     ) -> Result<&amb_library::object::Selection, String> {
-        let sel = amb_library::object::select(&self.full, self.state.settings(), target)?;
+        let mut sel = amb_library::object::select(&self.full, self.state.settings(), target)?;
+        sel.set_shadow(shadow);
         Ok(self.selection.insert(sel))
     }
 
+    /// Remove object: the spot covering the object clicked or boxed
+    /// (fractions of the frame).
     pub fn remove_object(
         &self,
         target: amb_library::object::Target,

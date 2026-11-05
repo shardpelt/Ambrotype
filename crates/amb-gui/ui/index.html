@@ -272,6 +272,7 @@
       <section id="select-panel" class="crop-panel select-panel" hidden>
         <div class="side-head"><h2>Select object</h2></div>
         <p class="hint" id="select-hint"></p>
+        <label class="inline-check" id="select-shadow-row" hidden title="Its shadow, shown in blue: Remove and Move take it with the object"><input id="select-shadow" type="checkbox"><span>Its shadow too</span></label>
         <div class="tool-tiles" id="select-actions">
           <button type="button" class="tool-tile" data-action="adjust"><strong>Adjust</strong><span>A mask of it, with sliders</span></button>
           <button type="button" class="tool-tile" data-action="remove"><strong>Remove</strong><span>AI fills where it was</span></button>
@@ -1229,6 +1230,7 @@
       <p class="hint" id="how-section"></p>
       <h2 id="how-want"></h2>
       <p id="how-text"></p>
+      <div id="how-also" class="how-also" hidden><span class="hint">Also:</span></div>
       <menu><span id="how-actions"></span><span class="grow"></span><button type="button" id="how-all" class="small">All features…</button><button value="close">Close</button></menu>
     </form>
   </dialog>

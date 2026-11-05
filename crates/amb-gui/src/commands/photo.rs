@@ -317,16 +317,35 @@ pub(crate) struct Selected {
     dabs: Vec<[f64; 3]>,
     share: f64,
     centre: [f64; 2],
+    /// Its shadow, when one was found: its dabs (shown, to offer it), its
+    /// size as a share of the object's, and whether it is taken too.
+    shadow_dabs: Vec<[f64; 3]>,
+    shadow: f64,
+    with_shadow: bool,
+}
+
+impl Selected {
+    fn of(sel: &amb_library::object::Selection) -> Self {
+        Selected {
+            dabs: sel.mask_dabs(),
+            share: sel.share,
+            centre: sel.centre(),
+            shadow_dabs: sel.shadow_dabs(),
+            shadow: sel.shadow_share(),
+            with_shadow: sel.with_shadow(),
+        }
+    }
 }
 
 /// Select Object: the object under `clicks` (`[x, y, 1]` on it, `[x, y, 0]`
 /// on what isn't; frame fractions), or `part` for just the part under one
-/// click, or in `rect`. Kept for `selection_apply`.
+/// click, or in `rect`; with its `shadow` too. Kept for `selection_apply`.
 #[tauri::command]
 pub(crate) async fn select_object(
     clicks: Vec<[f64; 3]>,
     part: Option<bool>,
     rect: Option<[f64; 4]>,
+    shadow: Option<bool>,
     state: tauri::State<'_, AppState>,
 ) -> Res<Selected> {
     use amb_library::object::Target;
@@ -340,12 +359,24 @@ pub(crate) async fn select_object(
     tauri::async_runtime::spawn_blocking(move || {
         let mut guard = slot.lock().map_err(|e| e.to_string())?;
         let s = guard.as_mut().ok_or("no photo open")?;
-        let sel = s.select_object(&target)?;
-        Ok(Selected {
-            dabs: sel.mask_dabs(),
-            share: sel.share,
-            centre: sel.centre(),
-        })
+        Ok(Selected::of(
+            s.select_object(&target, shadow == Some(true))?,
+        ))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Take the selected object's shadow with it, or not.
+#[tauri::command]
+pub(crate) async fn selection_shadow(on: bool, state: tauri::State<'_, AppState>) -> Res<Selected> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let sel = s.selection.as_mut().ok_or("select an object first")?;
+        sel.set_shadow(on);
+        Ok(Selected::of(sel))
     })
     .await
     .map_err(|e| e.to_string())?

@@ -23,3 +23,4 @@ pub mod replay;
 pub mod roots;
 pub mod search;
 pub mod smart;
+pub mod snap;

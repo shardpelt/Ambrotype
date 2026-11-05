@@ -5,6 +5,7 @@
 // Darken, Soften the background, Remove (one AI Remove spot) or Move (drag
 // it: a clone at the new place, removed where it was). Shift-click adds
 // more of it, Alt-click takes a part away; a drag draws a box round it.
+// A shadow it casts shows in blue, and "Its shadow too" takes it along.
 // Everything it makes is an ordinary mask or spot, one undo step each.
 "use strict";
 
@@ -13,6 +14,8 @@ const sl = {
   frame: null,
   clicks: [],      // [x, y, 1 on it | 0 not it], frame fractions
   dabs: null,      // the outline: [x, y, radius] frame fractions
+  shadowDabs: [],  // its shadow, when one was found (shown in blue, offered)
+  shadow: false,   // take its shadow too (kept for the next selection)
   busy: false,
   drag: null,      // { start, path, box } while the pointer is down
   moving: false,   // Move: the next drag moves the outline
@@ -43,16 +46,21 @@ function drawSelect() {
     layer.height = c.height;
     const lg = layer.getContext("2d");
     lg.setTransform(dpr, 0, 0, dpr, 0, 0);
-    lg.fillStyle = "#ff3d7f";
     const scale = sl.frame.frame_width * pxScale(sl.frame, "select-canvas");
     const [ox, oy] = sl.offset;
-    lg.beginPath();
-    for (const [x, y, r] of sl.dabs) {
-      const [px, py] = slCanvas(x, y);
-      lg.moveTo(px + ox + r * scale, py + oy);
-      lg.arc(px + ox, py + oy, Math.max(0.5, r * scale), 0, 7);
-    }
-    lg.fill();
+    const paint = (dabs, colour) => {
+      lg.fillStyle = colour;
+      lg.beginPath();
+      for (const [x, y, r] of dabs) {
+        const [px, py] = slCanvas(x, y);
+        lg.moveTo(px + ox + r * scale, py + oy);
+        lg.arc(px + ox, py + oy, Math.max(0.5, r * scale), 0, 7);
+      }
+      lg.fill();
+    };
+    paint(sl.dabs, "#ff3d7f");
+    // Its shadow, offered (blue) until it's taken (then in the outline).
+    if (!sl.shadow && sl.shadowDabs.length && !sl.moving) paint(sl.shadowDabs, "#3d8bff");
     g.save();
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalAlpha = 0.45;
@@ -85,11 +93,16 @@ function renderSelectPanel() {
   const have = Boolean(sl.dabs);
   for (const b of document.querySelectorAll("#select-actions button")) b.disabled = !have || sl.busy;
   $("select-clear").disabled = !have && !sl.clicks.length;
+  $("select-shadow-row").hidden = !have || !sl.shadowDabs.length;
+  $("select-shadow").checked = sl.shadow;
+  $("select-shadow").disabled = sl.busy;
   $("select-move").classList.toggle("active", sl.moving);
   $("select-hint").textContent = sl.moving
     ? "Drag the outline to where it should go."
     : have
-      ? "Shift-click adds more of it, Alt-click takes a part away. Then pick what to do with it."
+      ? sl.shadowDabs.length && !sl.shadow
+        ? "Its shadow is in blue: tick “Its shadow too” to take it along. Shift-click adds more, Alt-click takes a part away."
+        : "Shift-click adds more of it, Alt-click takes a part away. Then pick what to do with it."
       : "Click the object to select it, or drag a box round it. Shift-click adds, Alt-click takes away.";
   drawSelect();
 }
@@ -101,8 +114,8 @@ async function selectAsk({ rect = null, part = false } = {}) {
   status("Finding the object…");
   renderSelectPanel();
   try {
-    const r = await invoke("select_object", { clicks: sl.clicks, part, rect });
-    sl.dabs = r.dabs;
+    const r = await invoke("select_object", { clicks: sl.clicks, part, rect, shadow: sl.shadow });
+    gotSelection(r);
     status(`Selected (${Math.round(r.share * 1000) / 10} % of the ${rect ? "box" : "photo"})`);
   } catch (e) {
     toast(String(e), true);
@@ -114,9 +127,31 @@ async function selectAsk({ rect = null, part = false } = {}) {
   }
 }
 
+function gotSelection(r) {
+  sl.dabs = r.dabs;
+  sl.shadowDabs = r.shadow_dabs ?? [];
+}
+
+// Take its shadow too, or not (no need to ask the model again).
+async function setSelectShadow(on) {
+  sl.shadow = on;
+  if (!sl.dabs || sl.busy) return renderSelectPanel();
+  sl.busy = true;
+  renderSelectPanel();
+  try {
+    gotSelection(await invoke("selection_shadow", { on }));
+  } catch (e) {
+    toast(String(e), true);
+  } finally {
+    sl.busy = false;
+    renderSelectPanel();
+  }
+}
+
 function selectClear() {
   sl.clicks = [];
   sl.dabs = null;
+  sl.shadowDabs = [];
   sl.moving = false;
   sl.offset = [0, 0];
   renderSelectPanel();
@@ -246,6 +281,7 @@ function wireSelect() {
     renderSelectPanel();
   });
   $("select-clear").addEventListener("click", selectClear);
+  $("select-shadow").addEventListener("change", () => setSelectShadow($("select-shadow").checked));
   $("select-done").addEventListener("click", exitSelect);
   $("preview").addEventListener("load", () => drawSelect());
   new ResizeObserver(() => drawSelect()).observe($("viewer"));

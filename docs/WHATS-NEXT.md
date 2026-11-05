@@ -21,7 +21,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 - **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): masks asked in words ("person", "car", RapidRAW); face-part masks; AI models on the GPU (RapidRAW: DirectML, CoreML).
 - **Teach by showing** (owner, 2026-11-03): the app should teach its features by showing them, not by manuals, and one question should open up many related features. Ideas:
-  - Done 2026-11-05: tips while waiting and in the search box and preset filter, from FEATURES.md, used features skipped, both switches in Settings → General. Still to do: one answer leading to more.
+  - Done 2026-11-05: tips while waiting and in the search box and preset filter, from FEATURES.md, used features skipped, both switches in Settings → General; each How to lists two or three related features to follow.
   - **Tips while waiting:** while something loads or runs (opening a raw, an export, Convert raws, AI Remove), one short tip about a feature, with a button to try it.
   - **Tips where text normally is:** now and then, a tip as the placeholder of a search or filter box, or in an empty menu or panel area; gone once you click or type there.
   - **One answer leads to more:** a How to shows two or three related features ("also: Keep under N MB, Also a smaller copy"), and the features list can be followed from one to the next.
@@ -30,6 +30,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots, highlight hover), sliders past their usual ranges.
 
 ## Recently done
+
+- 2026-11-05: Select object follows the photo's edges (a colour guided filter redraws SAM's coarse map from the photo, so the outline no longer steps or leaves holes) and offers the shadow it casts (shown in blue; Its shadow too takes it along, so Move and Remove take it with the object). Each How to now ends with two or three related features (same bold names, words or section), each opening its own How to
 
 - 2026-11-05: Select object (O): click a thing (Shift adds, Alt takes away, or a box) and SAM outlines it; then Adjust (a brush mask covering it: big dabs inside, small at the edge, Lightroom's own format), Brighten, Darken, Soften background, Remove, or Move (a clone at the new place, then a Remove spot where it was, leaving the clone alone). A fill's grain is now the median of the ring's detail, so an object next to a hole doesn't make the fill noisy
 

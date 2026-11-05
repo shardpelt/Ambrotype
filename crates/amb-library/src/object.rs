@@ -27,6 +27,11 @@ const CONTEXT: f64 = 0.15;
 /// blur round the object go with it.
 const WIDEN: f64 = 0.05;
 const MIN_WIDEN: f64 = 4.0;
+/// The outline snaps to the photo's edges within this many pixels (at
+/// `EDGE`; the model's map has a cell every 8), following colour edges at
+/// least this strong (`snap::guided`).
+const SNAP_RADIUS: usize = 8;
+const SNAP_EPS: f32 = 1e-3;
 
 /// What to remove: a box round it, or a click on it (fractions of the
 /// uncropped photo as stored, as spots are).
@@ -53,6 +58,11 @@ pub struct Selection {
     pub selected: bool,
     lo: (usize, usize),
     hi: (usize, usize),
+    /// The object alone, and its shadow (the darker patch joined to it;
+    /// empty when there's none), which `set_shadow` adds to `mask`.
+    object: Vec<bool>,
+    shadow: Vec<bool>,
+    with_shadow: bool,
 }
 
 /// What was found: the spot to add, how much of the box (or, for a click,
@@ -121,7 +131,7 @@ pub fn select(
                 return Err("click on the object first".into());
             }
             let map = amb_engine::subject::select(&rgb, w, h, &prompts)?;
-            fill(&mut mask, w, h, (0, 0, w, h), |px, py| {
+            fill_snapped(&mut mask, &rgb, w, h, (0, 0, w, h), |px, py| {
                 map_at(&map, px / wf, py / hf)
             });
             (true, w * h)
@@ -147,7 +157,7 @@ pub fn select(
             let prompt = Prompt::Box { x0, y0, x1, y1 };
             match amb_engine::subject::select(&rgb, w, h, &[prompt]) {
                 Ok(map) => {
-                    fill(&mut mask, w, h, inner, |px, py| {
+                    fill_snapped(&mut mask, &rgb, w, h, inner, |px, py| {
                         map_at(&map, px / wf, py / hf)
                     });
                     (true, area)
@@ -195,24 +205,150 @@ pub fn select(
             }
         });
     }
-    let (mut lo, mut hi) = ((w, h), (0, 0));
-    for (i, _) in mask.iter().enumerate().filter(|(_, m)| **m) {
-        let (x, y) = (i % w, i / w);
-        lo = (lo.0.min(x), lo.1.min(y));
-        hi = (hi.0.max(x), hi.1.max(y));
-    }
+    let (lo, hi) = bounds(&mask, w);
+    let size = (hi.0 - lo.0).max(hi.1 - lo.1) as f64;
+    let shadow = shadow_of(&mask, &rgb, w, h, size);
     Ok(Selection {
         share: inside as f64 / area.max(1) as f64,
+        object: mask.clone(),
         mask,
         width: w,
         height: h,
         selected,
         lo,
         hi,
+        shadow,
+        with_shadow: false,
     })
 }
 
+/// The smallest and largest x and y set in `mask`.
+fn bounds(mask: &[bool], w: usize) -> ((usize, usize), (usize, usize)) {
+    let (mut lo, mut hi) = ((usize::MAX, usize::MAX), (0, 0));
+    for (i, _) in mask.iter().enumerate().filter(|(_, m)| **m) {
+        let (x, y) = (i % w, i / w);
+        lo = (lo.0.min(x), lo.1.min(y));
+        hi = (hi.0.max(x), hi.1.max(y));
+    }
+    (lo, hi)
+}
+
+/// The shadow of `object` (`size` pixels across): what round where it
+/// stands (its lowest quarter) is clearly darker than the photo a little further out, joined to it, and
+/// within 20 % of its size. Nothing when that would be more than half the
+/// object (a dark background, not a shadow).
+fn shadow_of(object: &[bool], rgb: &[f32], w: usize, h: usize, size: f64) -> Vec<bool> {
+    let n = w * h;
+    let none = Vec::new();
+    if size < 8.0 {
+        return none;
+    }
+    let lum: Vec<f32> = (0..n)
+        .map(|i| 0.2126 * rgb[i * 3] + 0.7152 * rgb[i * 3 + 1] + 0.0722 * rgb[i * 3 + 2])
+        .collect();
+    let outside: Vec<bool> = object.iter().map(|m| !m).collect();
+    // How far each pixel outside it is from it.
+    let dist = distance_inside(&outside, w, h);
+    let reach = (0.2 * size) as f32;
+    // The photo round it, beyond where a shadow would be: its brightness
+    // nearby, as a mean over just those pixels.
+    let far: Vec<f32> = (0..n)
+        .map(|i| f32::from(u8::from(outside[i] && dist[i] > 0.2 * size as f32)))
+        .collect();
+    let lit: Vec<f32> = (0..n).map(|i| lum[i] * far[i]).collect();
+    let r = ((0.3 * size) as usize).max(4);
+    let (sum, count) = (
+        crate::snap::box_mean(&lit, w, h, r),
+        crate::snap::box_mean(&far, w, h, r),
+    );
+    // A shadow it casts, lit from above, starts where it stands: near its
+    // lowest quarter and below its middle; dark folds and corners beside
+    // or above it are not its shadow.
+    let (lo, hi) = bounds(object, w);
+    let mid = lo.1 + (hi.1 - lo.1) / 2;
+    let foot_y = lo.1 + (hi.1 - lo.1) * 3 / 4;
+    let foot: Vec<bool> = (0..n).map(|i| object[i] && i / w >= foot_y).collect();
+    let not_foot: Vec<bool> = foot.iter().map(|f| !f).collect();
+    let from_foot = distance_inside(&not_foot, w, h);
+    let place = |i: usize| i / w > mid && from_foot[i] <= reach;
+    let dark = |i: usize| {
+        if !outside[i] || !place(i) || count[i] < 0.05 {
+            return false;
+        }
+        let around = sum[i] / count[i];
+        lum[i] < 0.7 * around && lum[i] < around - 0.02
+    };
+    // Grown out from the object through dark pixels.
+    let mut shadow = vec![false; n];
+    let mut queue: std::collections::VecDeque<usize> = (0..n).filter(|&i| foot[i]).collect();
+    while let Some(i) = queue.pop_front() {
+        let (x, y) = ((i % w) as isize, (i / w) as isize);
+        for (dx, dy) in [
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1),
+            (-1, -1),
+            (1, -1),
+            (-1, 1),
+            (1, 1),
+        ] {
+            let (nx, ny) = (x + dx, y + dy);
+            if nx < 0 || ny < 0 || nx as usize >= w || ny as usize >= h {
+                continue;
+            }
+            let j = ny as usize * w + nx as usize;
+            if !shadow[j] && dark(j) {
+                shadow[j] = true;
+                queue.push_back(j);
+            }
+        }
+    }
+    // Its specks and holes evened out.
+    let soft: Vec<f32> = shadow.iter().map(|&s| f32::from(u8::from(s))).collect();
+    let soft = crate::snap::box_mean(&soft, w, h, 2);
+    let shadow: Vec<bool> = (0..n)
+        .map(|i| outside[i] && place(i) && soft[i] >= 0.4)
+        .collect();
+    let (found, own) = (
+        shadow.iter().filter(|s| **s).count(),
+        object.iter().filter(|s| **s).count(),
+    );
+    // A few pixels are only the edge's own shading; more than half the
+    // object is a dark background.
+    if found * 50 < own || found * 2 > own {
+        return none;
+    }
+    shadow
+}
+
 impl Selection {
+    /// Its shadow's size, as a share of the object's (0 when none was found).
+    pub fn shadow_share(&self) -> f64 {
+        let own = self.object.iter().filter(|s| **s).count();
+        self.shadow.iter().filter(|s| **s).count() as f64 / own.max(1) as f64
+    }
+
+    /// Take its shadow with it (or not): what Remove, Move and the masks act on.
+    pub fn set_shadow(&mut self, on: bool) {
+        let on = on && !self.shadow.is_empty();
+        self.with_shadow = on;
+        self.mask = if on {
+            self.object
+                .iter()
+                .zip(&self.shadow)
+                .map(|(a, b)| *a || *b)
+                .collect()
+        } else {
+            self.object.clone()
+        };
+        (self.lo, self.hi) = bounds(&self.mask, self.width);
+    }
+
+    pub fn with_shadow(&self) -> bool {
+        self.with_shadow
+    }
+
     fn size(&self) -> f64 {
         (self.hi.0 - self.lo.0).max(self.hi.1 - self.lo.1) as f64
     }
@@ -325,42 +461,54 @@ impl Selection {
     /// to the edge), so a few big ones fill it and small ones follow the
     /// outline.
     pub fn mask_dabs(&self) -> Vec<[f64; 3]> {
-        let (w, h) = (self.width, self.height);
-        let dist = distance_inside(&self.mask, w, h);
-        let mut order: Vec<usize> = (0..w * h).filter(|&i| self.mask[i]).collect();
-        order.sort_by(|&a, &b| dist[b].total_cmp(&dist[a]));
-        let mut covered = vec![false; w * h];
-        let mut out = Vec::new();
-        const SMALLEST: f32 = 2.0;
-        for i in order {
-            if covered[i] {
-                continue;
-            }
-            let r = (dist[i] + 0.5).max(SMALLEST);
-            let (cx, cy) = ((i % w) as f32, (i / w) as f32);
-            // Marked within a little less than the dab, so neighbours overlap.
-            let mark = r * 0.85;
-            let m = mark.ceil() as isize;
-            for dy in -m..=m {
-                for dx in -m..=m {
-                    if (dx * dx + dy * dy) as f32 > mark * mark {
-                        continue;
-                    }
-                    let (x, y) = (cx as isize + dx, cy as isize + dy);
-                    if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
-                        covered[y as usize * w + x as usize] = true;
-                    }
+        dabs_inside(&self.mask, self.width, self.height)
+    }
+
+    /// Its shadow's dabs alone, as `mask_dabs` (empty when none was found).
+    pub fn shadow_dabs(&self) -> Vec<[f64; 3]> {
+        if self.shadow.is_empty() {
+            return Vec::new();
+        }
+        dabs_inside(&self.shadow, self.width, self.height)
+    }
+}
+
+/// A brush mask's dabs covering `mask` (see `Selection::mask_dabs`).
+fn dabs_inside(mask: &[bool], w: usize, h: usize) -> Vec<[f64; 3]> {
+    let dist = distance_inside(mask, w, h);
+    let mut order: Vec<usize> = (0..w * h).filter(|&i| mask[i]).collect();
+    order.sort_by(|&a, &b| dist[b].total_cmp(&dist[a]));
+    let mut covered = vec![false; w * h];
+    let mut out = Vec::new();
+    const SMALLEST: f32 = 2.0;
+    for i in order {
+        if covered[i] {
+            continue;
+        }
+        let r = (dist[i] + 0.5).max(SMALLEST);
+        let (cx, cy) = ((i % w) as f32, (i / w) as f32);
+        // Marked within a little less than the dab, so neighbours overlap.
+        let mark = r * 0.85;
+        let m = mark.ceil() as isize;
+        for dy in -m..=m {
+            for dx in -m..=m {
+                if (dx * dx + dy * dy) as f32 > mark * mark {
+                    continue;
+                }
+                let (x, y) = (cx as isize + dx, cy as isize + dy);
+                if x >= 0 && y >= 0 && (x as usize) < w && (y as usize) < h {
+                    covered[y as usize * w + x as usize] = true;
                 }
             }
-            covered[i] = true;
-            out.push([
-                (f64::from(cx) + 0.5) / w as f64,
-                (f64::from(cy) + 0.5) / h as f64,
-                f64::from(r) / w as f64,
-            ]);
         }
-        out
+        covered[i] = true;
+        out.push([
+            (f64::from(cx) + 0.5) / w as f64,
+            (f64::from(cy) + 0.5) / h as f64,
+            f64::from(r) / w as f64,
+        ]);
     }
+    out
 }
 
 /// For each pixel of `mask`, about how far (pixels) it is from the nearest
@@ -421,6 +569,52 @@ fn fill(
         for x in x0..x1 {
             if value(x as f64 + 0.5, y as f64 + 0.5) >= 0.5 {
                 mask[y * w + x] = true;
+            }
+        }
+    }
+}
+
+/// Like `fill`, with the map's edge snapped to the photo's first: the
+/// object selection model's map is coarse, so its outline would come out
+/// in steps (`snap`). Only round where the map is, to keep it quick.
+fn fill_snapped(
+    mask: &mut [bool],
+    rgb: &[f32],
+    w: usize,
+    _h: usize,
+    area: (usize, usize, usize, usize),
+    value: impl Fn(f64, f64) -> f32,
+) {
+    let (x0, y0, x1, y1) = area;
+    let (aw, ah) = (x1 - x0, y1 - y0);
+    let soft: Vec<f32> = (0..aw * ah)
+        .map(|i| value((x0 + i % aw) as f64 + 0.5, (y0 + i / aw) as f64 + 0.5))
+        .collect();
+    let (mut lo, mut hi) = ((aw, ah), (0, 0));
+    for (i, _) in soft.iter().enumerate().filter(|(_, v)| **v >= 0.02) {
+        let (x, y) = (i % aw, i / aw);
+        lo = (lo.0.min(x), lo.1.min(y));
+        hi = (hi.0.max(x), hi.1.max(y));
+    }
+    if lo.0 > hi.0 {
+        return;
+    }
+    let grow = 3 * SNAP_RADIUS;
+    let (cx0, cy0) = (lo.0.saturating_sub(grow), lo.1.saturating_sub(grow));
+    let (cx1, cy1) = ((hi.0 + grow + 1).min(aw), (hi.1 + grow + 1).min(ah));
+    let (cw, chh) = (cx1 - cx0, cy1 - cy0);
+    let mut p = Vec::with_capacity(cw * chh);
+    let mut colours = Vec::with_capacity(cw * chh * 3);
+    for y in cy0..cy1 {
+        p.extend_from_slice(&soft[y * aw + cx0..y * aw + cx1]);
+        let row = (y0 + y) * w + x0;
+        colours.extend_from_slice(&rgb[(row + cx0) * 3..(row + cx1) * 3]);
+    }
+    let q = crate::snap::guided(&p, &colours, cw, chh, SNAP_RADIUS, SNAP_EPS);
+    for y in 0..chh {
+        for x in 0..cw {
+            if q[y * cw + x] >= 0.5 {
+                mask[(y0 + cy0 + y) * w + x0 + cx0 + x] = true;
             }
         }
     }
@@ -544,6 +738,9 @@ mod tests {
             selected: true,
             lo: (30, 20),
             hi: (169, 99),
+            object: mask.clone(),
+            shadow: Vec::new(),
+            with_shadow: false,
         };
         let dabs = sel.mask_dabs();
         let px: Vec<(f64, f64, f64)> = dabs
@@ -571,5 +768,52 @@ mod tests {
             );
         }
         assert!(px.len() < 600, "{} dabs", px.len());
+    }
+
+    #[test]
+    fn a_shadow_joined_to_the_object_is_found_and_a_dark_patch_away_from_it_is_not() {
+        // A bright disc on mid grey, a dark ellipse under it, touching it,
+        // and a dark square far off.
+        let (w, h) = (400, 300);
+        let mut rgb = vec![0.6f32; w * h * 3];
+        let mut object = vec![false; w * h];
+        let mut truth = vec![false; w * h];
+        for y in 0..h {
+            for x in 0..w {
+                let (fx, fy) = (x as f64, y as f64);
+                let i = y * w + x;
+                let disc = (fx - 200.0).hypot(fy - 120.0) < 60.0;
+                let under = ((fx - 200.0) / 70.0).hypot((fy - 185.0) / 12.0) < 1.0;
+                let patch = (20..60).contains(&x) && (20..60).contains(&y);
+                let v = if disc {
+                    0.9
+                } else if under || patch {
+                    0.25
+                } else {
+                    0.6
+                };
+                rgb[i * 3..][..3].fill(v);
+                object[i] = disc;
+                truth[i] = under && !disc;
+            }
+        }
+        let (lo, hi) = bounds(&object, w);
+        let size = (hi.0 - lo.0).max(hi.1 - lo.1) as f64;
+        let shadow = shadow_of(&object, &rgb, w, h, size);
+        assert!(!shadow.is_empty());
+        let found = (0..w * h).filter(|&i| shadow[i] && truth[i]).count();
+        let want = truth.iter().filter(|t| **t).count();
+        assert!(found * 10 > want * 7, "{found} of {want}");
+        let stray = (0..w * h).filter(|&i| shadow[i] && !truth[i]).count();
+        assert!(stray * 10 < want, "{stray} stray");
+        assert!((0..60 * w).all(|i| !shadow[i] || i % w > 60));
+        // On a dark background there's no shadow to take.
+        let mut dark = rgb.clone();
+        for (i, o) in object.iter().enumerate() {
+            if !o {
+                dark[i * 3..][..3].fill(0.1);
+            }
+        }
+        assert!(shadow_of(&object, &dark, w, h, size).is_empty());
     }
 }

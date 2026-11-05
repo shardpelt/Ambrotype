@@ -185,9 +185,41 @@ function renderFeatures() {
   $("features-none").hidden = hits.length > 0;
 }
 
+// Words too common to tie two features together.
+const HOW_COMMON = new Set("with from that this your what when them they into like more than have make does each also only just then there their photo photos click right open drag show shows button settings".split(" "));
+
+// Features close to `f`, best first: ones naming the same things in bold,
+// sharing words, or in the same section; so one answer leads to the next.
+function relatedFeatures(f, count = 3) {
+  const words = (x) => new Set((`${x.want} ${x.how}`.toLowerCase().match(/[a-z]{4,}/g) ?? []).filter((w) => !HOW_COMMON.has(w)));
+  const names = (x) => new Set(x.names.map((n) => n.toLowerCase().replace(/[…:]+$/, "")));
+  const [mine, my] = [words(f), names(f)];
+  const list = ui.features ?? [];
+  const at = list.indexOf(f);
+  const out = list
+    .filter((o) => o !== f && o.want !== f.want)
+    .map((o) => {
+      let score = o.section === f.section ? 1.5 : 0;
+      for (const n of names(o)) if (my.has(n)) score += 3;
+      for (const w of words(o)) if (mine.has(w)) score += 1;
+      return [score, o];
+    })
+    .filter(([score]) => score >= 2.5)
+    .sort((a, b) => b[0] - a[0])
+    .slice(0, count)
+    .map(([, o]) => o);
+  // Too few: its neighbours in the list, which are about the same thing.
+  for (const d of [1, -1, 2, -2]) {
+    const o = list[at + d];
+    if (out.length >= 2 || at < 0) break;
+    if (o && o.section === f.section && !out.includes(o)) out.push(o);
+  }
+  return out;
+}
+
 // A feature: where it is, with a button for each thing it names in bold
 // that can be used from here: a command, a task, a panel, a setting, or a
-// button on screen.
+// button on screen; and two or three related features to follow.
 function showHow(f) {
   $("how-section").textContent = f.section;
   $("how-want").textContent = f.want;
@@ -218,8 +250,18 @@ function showHow(f) {
     buttons.push(b);
   }
   $("how-actions").replaceChildren(...buttons);
+  const also = relatedFeatures(f);
+  $("how-also").replaceChildren(
+    Object.assign(document.createElement("span"), { className: "hint", textContent: "Also:" }),
+    ...also.map((o) => {
+      const b = Object.assign(document.createElement("button"), { type: "button", textContent: o.want });
+      b.addEventListener("click", () => showHow(o));
+      return b;
+    }),
+  );
+  $("how-also").hidden = !also.length;
   $("how-all").hidden = $("features-dialog").open;
-  $("how-dialog").showModal();
+  if (!$("how-dialog").open) $("how-dialog").showModal();
 }
 
 // What a bold name in the features list stands for, if it can be used now.

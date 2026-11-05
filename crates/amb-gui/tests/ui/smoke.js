@@ -74,6 +74,12 @@ await t.step("tasks differ: Develop opens on Quick fixes, Retouch on its tools, 
   sl.dabs = [[0.5, 0.5, 0.05]];
   renderSelectPanel();
   t.expect([...document.querySelectorAll("#select-actions button")].every((b) => !b.disabled), "the actions once something is selected");
+  t.expect($("select-shadow-row").hidden, "no shadow offered when none was found");
+  sl.shadowDabs = [[0.5, 0.6, 0.02]];
+  renderSelectPanel();
+  t.expect(t.visible("#select-shadow-row") && !$("select-shadow").checked && $("select-hint").textContent.includes("shadow"), "a shadow found is offered");
+  sl.shadowDabs = [];
+  renderSelectPanel();
   t.click("#select-move");
   t.expect(sl.moving && $("select-hint").textContent.startsWith("Drag"), "Move waits for a drag");
   t.key("Escape");
@@ -188,6 +194,12 @@ await t.step("search: what you want to do finds the feature, with a button for i
   t.expect($("how-text").querySelector("code")?.textContent.startsWith("amb convert"), $("how-text").textContent);
   const buttons = [...$("how-actions").querySelectorAll("button")].map((b) => b.dataset.key);
   t.expect(buttons.includes("a:convert-raws"), `its buttons: ${buttons.join(", ")}`);
+  // One answer leads to more: related features, each opening its own How to.
+  const also = [...$("how-also").querySelectorAll("button")];
+  t.expect(!$("how-also").hidden && also.length >= 2 && also.length <= 3, `related: ${also.map((b) => b.textContent).join(" | ")}`);
+  const next = also[0].textContent;
+  also[0].click();
+  t.expect($("how-dialog").open && $("how-want").textContent === next, `followed to: ${$("how-want").textContent}`);
   // All features…: the whole list, filtered, and a row opens its How to.
   t.click("#how-all");
   await t.until("the features list", () => $("features-dialog").open);

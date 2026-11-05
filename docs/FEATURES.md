@@ -71,6 +71,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Import from a memory card** → **Import Photos** (Ctrl+Shift+I): copies into dated folders, renames, skips duplicates. `amb import CARD DEST`.
 - **Move from Lightroom Classic** → Import ▾ → from a Lightroom catalogue (edits, ratings, keywords, collections). `amb lrcat import CATALOG.lrcat`.
 - **Rate, label, flag, keyword** → 1–5 rate, 6–9 colour labels, **Pick** (P), **Reject** (X), **Add Keywords** (K). `amb tag`.
+- **Pick the best shot of a burst (in focus, eyes open)** → library → Organise → **Best in each burst**: the best of each burst is marked with why, the rest dimmed with what's wrong (eyes closed, soft); then **Pick best, reject rest** or **Stack each**. A click on a dimmed photo's badge keeps it instead. Eyes need YuNet in **Settings** → AI models; without it, focus alone.
 - **Cull fast** → **Loupe** (E), **Compare** (C), **Survey** (N); auto-advance after a rating (**Settings** → General).
 - **Find a photo by what's in it ("dog on a beach")** → the library's Smart search, or right-click → Find similar photos. `amb search "dog on a beach" DIR`.
 - **Find photos by camera, lens, date, rating** → the library's filters and search. `amb catalog find`.

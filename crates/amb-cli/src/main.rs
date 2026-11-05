@@ -327,6 +327,7 @@ fn main() -> ExitCode {
     if let Some(models) = amb_ai::default_dir() {
         amb_engine::subject::set_finder(amb_ai::finder(models.clone()));
         amb_engine::subject::set_selector(amb_ai::objects::selector(models.clone()));
+        amb_engine::subject::set_face_finder(amb_ai::faces::finder(models.clone()));
         amb_engine::retouch::set_inpainter(amb_ai::remove::inpainter(models));
     }
     amb_engine::plugin_effects::set_resolver(amb_plugin::effect::resolver(move |id| {

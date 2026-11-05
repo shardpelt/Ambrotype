@@ -92,6 +92,97 @@ pub(crate) async fn library_find_duplicates(
     .map_err(|e| e.to_string())?
 }
 
+/// One burst, best first: each photo with its score and what stands out.
+#[derive(serde::Serialize)]
+pub(crate) struct BurstPhoto {
+    path: PathBuf,
+    score: f32,
+    note: String,
+}
+
+#[derive(serde::Serialize)]
+pub(crate) struct Bursts {
+    bursts: Vec<Vec<BurstPhoto>>,
+    /// The face finder is installed (else only focus counts).
+    faces: bool,
+}
+
+/// Best in each burst: the bursts among `paths` (photos from one camera
+/// each within `burst_seconds` of the one before), each ranked by focus and
+/// open eyes (amb_library::burst), best first ("bursts-progress").
+#[tauri::command]
+pub(crate) async fn library_best_in_bursts(
+    paths: Vec<String>,
+    burst_seconds: f64,
+    app: tauri::AppHandle,
+) -> Res<Bursts> {
+    use rayon::prelude::*;
+    use tauri::Emitter;
+    let cache = app
+        .path()
+        .app_cache_dir()
+        .ok()
+        .map(|d| d.join("thumbnails"));
+    tauri::async_runtime::spawn_blocking(move || {
+        let photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
+        let thumb = |p: &Path, edge: u32| {
+            amb_engine::raw::embedded_thumbnail(p, edge)
+                .ok()
+                .flatten()
+                .or_else(|| {
+                    let jpeg = folder::thumbnail(p, edge, cache.as_deref()).ok()?;
+                    amb_library::duplicates::decode_jpeg(&jpeg)
+                })
+        };
+        let small = |p: &Path| thumb(p, 256);
+        let options = amb_library::duplicates::Options {
+            burst_seconds: burst_seconds.max(0.1),
+            max_bits: 0,
+        };
+        let groups: Vec<Vec<PathBuf>> =
+            amb_library::duplicates::find(folder::catalog(), &photos, options, &small, &|_, _| {})
+                .into_iter()
+                .filter(|g| g.kind == amb_library::duplicates::Kind::Burst)
+                .map(|g| g.photos)
+                .collect();
+        let faces = amb_engine::subject::faces(&[0.0; 8 * 8 * 3], 8, 8).is_ok();
+        let total: usize = groups.iter().map(Vec::len).sum();
+        let done = std::sync::atomic::AtomicUsize::new(0);
+        let bursts = groups
+            .into_iter()
+            .map(|g| {
+                let looks: Vec<amb_library::burst::Look> = g
+                    .par_iter()
+                    .map(|p| {
+                        let look = thumb(p, 1600).map_or(
+                            amb_library::burst::Look {
+                                sharp: 0.0,
+                                eyes: None,
+                                faces: 0,
+                            },
+                            |img| amb_library::burst::look(&img),
+                        );
+                        let n = done.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+                        let _ = app.emit("bursts-progress", [n, total]);
+                        look
+                    })
+                    .collect();
+                amb_library::burst::rank(&looks)
+                    .into_iter()
+                    .map(|r| BurstPhoto {
+                        path: g[r.index].clone(),
+                        score: r.score,
+                        note: r.note,
+                    })
+                    .collect()
+            })
+            .collect();
+        Ok(Bursts { bursts, faces })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Watch `dirs` (the library's folders and the filmstrip's) for photos
 /// added, removed or renamed, and tell the page ("folder-changed", at most
 /// about once a second). Sidecars are ignored, so our own saves don't

@@ -95,6 +95,38 @@ pub fn select(rgb: &[f32], w: usize, h: usize, prompts: &[Prompt]) -> Result<Map
     }
 }
 
+/// A face in a picture: its box, its two eyes' centres and how sure the
+/// finder is (0–1), in fractions of the picture.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Face {
+    pub x0: f32,
+    pub y0: f32,
+    pub x1: f32,
+    pub y1: f32,
+    pub eyes: [[f32; 2]; 2],
+    pub score: f32,
+}
+
+/// Given a picture as sRGB (0–1, interleaved, `w`×`h`), the faces in it.
+/// The editor and `amb` register one (`amb-ai`, the "faces" model) once it
+/// is installed.
+pub type FaceFinder = dyn Fn(&[f32], usize, usize) -> Result<Vec<Face>, String> + Send + Sync;
+
+static FACES: RwLock<Option<Arc<FaceFinder>>> = RwLock::new(None);
+
+pub fn set_face_finder(f: Arc<FaceFinder>) {
+    *FACES.write().unwrap_or_else(|e| e.into_inner()) = Some(f);
+}
+
+/// The faces in the picture, from the registered finder.
+pub fn faces(rgb: &[f32], w: usize, h: usize) -> Result<Vec<Face>, String> {
+    let f = FACES.read().unwrap_or_else(|e| e.into_inner()).clone();
+    match f {
+        Some(f) => f(rgb, w, h),
+        None => Err("no face finder here".into()),
+    }
+}
+
 /// `rgb` (`w`×`h`, interleaved) box-filtered to `size`×`size` (stretched to
 /// a square, as the models expect).
 pub fn shrink(rgb: &[f32], w: usize, h: usize, size: usize) -> Vec<f32> {

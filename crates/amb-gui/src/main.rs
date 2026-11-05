@@ -519,6 +519,7 @@ fn main() {
                 if let Some(models) = path.parent().map(|d| d.join("models")) {
                     amb_engine::subject::set_finder(amb_ai::finder(models.clone()));
                     amb_engine::subject::set_selector(amb_ai::objects::selector(models.clone()));
+                    amb_engine::subject::set_face_finder(amb_ai::faces::finder(models.clone()));
                     amb_engine::retouch::set_inpainter(amb_ai::remove::inpainter(models.clone()));
                     // Fetched in the background at the first start, so the
                     // first subject mask doesn't wait for it.
@@ -748,6 +749,7 @@ fn main() {
             commands::catalog::lrcat_apply,
             commands::library::library_set_info,
             commands::library::library_find_duplicates,
+            commands::library::library_best_in_bursts,
             commands::files::files_plan,
             commands::files::files_apply,
             commands::files::files_trash,

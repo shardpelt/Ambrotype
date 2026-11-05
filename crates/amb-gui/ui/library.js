@@ -473,6 +473,7 @@ function updateCell(p) {
   cell.style.setProperty("--label", p.label ? LABEL_COLOURS[p.label] ?? "var(--muted)" : "transparent");
   cell.classList.toggle("labelled", Boolean(p.label));
   cell.classList.toggle("open", p.path === ui.info?.path);
+  cullCell(cell, p);
 }
 
 function renderCounts() {
@@ -1273,6 +1274,7 @@ function wireLibrary() {
   lib.wired = true;
   wireBrowse();
   wireDuplicates();
+  wireBursts();
   wireOrganise();
   $("lib-settings").addEventListener("click", () => $("btn-settings").click());
   // Title, caption, creator and copyright for the selection, when a field is left.

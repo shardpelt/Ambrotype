@@ -3,6 +3,7 @@
 //! sidecars, shared by the `amb` tool and the editor. The files are the
 //! library; the catalogue only remembers what was read from them.
 
+pub mod burst;
 pub mod catalog;
 pub mod collections;
 pub mod contact;

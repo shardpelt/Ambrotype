@@ -353,6 +353,7 @@
       </details>
       <details id="lib-organise-menu" class="lib-menu"><summary title="Tidy up the photos shown (or the selected ones)">Organise ▾</summary>
         <div class="lib-menu-pop" id="lib-organise-pop">
+          <button type="button" id="lib-bursts" class="small" title="In each burst, mark the photo in focus with eyes open and dim the rest; then pick it and reject the rest, or stack them">Best in each burst</button>
           <button type="button" id="lib-duplicates" class="small" title="Find copies of the same photo, alike pictures and bursts; keep the best">Duplicates and bursts…</button>
           <hr>
           <button type="button" id="lib-move" class="small" title="Move the selected photos, with their sidecars and companions, to another folder">Move to a folder…</button>
@@ -422,6 +423,13 @@
         <p id="tree-progress" class="hint tree-progress" hidden></p>
       </aside>
       <div id="library-grid" class="library-grid" tabindex="-1"></div>
+      <!-- Best in each burst (bursts.js): what to do with the bursts. -->
+      <div id="cull-bar" class="cull-bar" hidden>
+        <span id="cull-text"></span>
+        <button type="button" id="cull-reject" class="primary small" title="Flag the best of each burst as a pick and the others as rejects">Pick best, reject rest</button>
+        <button type="button" id="cull-stack" class="small" title="Each burst into one stack, the best on top">Stack each</button>
+        <button type="button" id="cull-done" class="small" title="Stop marking (nothing is changed)">Done</button>
+      </div>
       <div id="library-view" class="library-view" tabindex="-1" hidden></div>
       <div id="lib-scrubber" class="lib-scrubber" title="Drag to jump through the years" hidden></div>
       <div id="library-empty" class="library-empty" hidden>
@@ -1713,6 +1721,7 @@
   <script src="cull.js"></script>
   <script src="browse.js"></script>
   <script src="duplicates.js"></script>
+  <script src="bursts.js"></script>
   <script src="organise.js"></script>
   <script src="import.js"></script>
   <script src="lrcat.js"></script>

@@ -15,7 +15,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
 3. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
 4. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
-5. **From the competition:** AI Remove on the GPU (our own kernels) and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place; pick the best in a burst by open eyes ([research/17](research/17-competitors-2026.md)).
+5. **From the competition:** AI Remove on the GPU (our own kernels) and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place ([research/17](research/17-competitors-2026.md)).
 
 ## Ideas for later
 
@@ -30,6 +30,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **More trippy** (owner, 2026-11-04; the Trippy task is done): striking views in it (Visualize Spots done as Edges and Neon, highlight hover), sliders past their usual ranges; and (owner, 2026-11-05) range selectors (highlights, shadows, …) and editors in Trippy.
 
 ## Recently done
+
+- 2026-11-05: Best in each burst (library → Organise): bursts among the photos shown, each ranked by focus (sharpness on the faces, or the sharpest part) and open eyes (YuNet, MIT, 0.2 MB, an optional install in Settings → AI models; how open, against the burst's other frames); in the grid the best is marked with why, the rest dimmed with what's wrong; Pick best, reject rest, or Stack each
 
 - 2026-11-05: Select object is easier to find and use: **Select** in every built-in layout's toolbar (with its word, beside Auto), and once something is selected its actions (Adjust, Brighten, Darken, Move, Remove, Soften background, Shadow) sit on a bar right under it on the photo. Visualise's edge view is a Trippy look: Paint's new Edges and Neon styles (Trippy tools Edges and Neon)
 

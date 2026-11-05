@@ -136,6 +136,33 @@ await t.step("Sync negative roll asks how: scenes, odd frames, a baseline frame"
   lib.selected.clear();
 });
 
+await t.step("Best in each burst: the best marked with why, the rest dimmed; Done clears it", async () => {
+  const parent = `${lib.dir}${lib.dir.includes("\\") ? "\\" : "/"}more`;
+  await toggleTreeFolder(parent);
+  await t.until("both folders", () => lib.shown.length >= 2);
+  renderLibrary();
+  const paths = lib.shown.map((p) => p.path).filter((p) => lib.cells.has(p)).slice(0, 2);
+  t.expect(paths.length === 2, `two photos on screen: ${lib.shown.length} shown, ${lib.cells.size} drawn`);
+  // The real search: these two weren't taken in one burst.
+  const found = await t.invoke("library_best_in_bursts", { paths, burstSeconds: 2 });
+  t.expect(Array.isArray(found.bursts) && found.faces === false, JSON.stringify(found));
+  // A burst as it would come back.
+  bcull.bursts = [[...paths]];
+  bcull.notes = new Map([[paths[0], "sharpest"], [paths[1], "soft"]]);
+  bcull.faces = false;
+  setCull(true);
+  const cell = (p) => lib.cells.get(p);
+  t.expect(cell(paths[0]).classList.contains("cull-best") && cell(paths[1]).classList.contains("cull-rest"), "best marked, the rest dimmed");
+  t.expect(cell(paths[0]).querySelector(".lib-cull").textContent.includes("sharpest"), "says why");
+  t.expect(t.visible("#cull-bar") && $("cull-text").textContent.includes("YuNet"), $("cull-text").textContent);
+  cell(paths[1]).querySelector(".lib-cull").click();
+  t.expect(bcull.best.has(paths[1]) && cell(paths[0]).classList.contains("cull-rest"), "a click keeps that one instead");
+  t.click("#cull-done");
+  t.expect(!t.visible("#cull-bar") && !cell(paths[0]).classList.contains("cull-rest") && !cell(paths[1]).querySelector(".lib-cull"), "Done clears it");
+  t.expect(KEY_ACTIONS.some((a) => a.id === "best-in-bursts"), "a command, for search");
+  await toggleTreeFolder(parent);
+});
+
 await t.step("Contact sheet: the selection as film strips on a page", async () => {
   lib.selected = new Set(lib.shown.map((p) => p.path));
   const flow = contactSheetFlow();

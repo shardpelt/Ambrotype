@@ -234,7 +234,10 @@ impl Conv {
 /// The compiled kernels, all of one layout.
 pub(crate) struct Kernels {
     layout: wgpu::BindGroupLayout,
-    pipelines: HashMap<&'static str, wgpu::ComputePipeline>,
+    pipeline_layout: wgpu::PipelineLayout,
+    module: wgpu::ShaderModule,
+    /// Made when first used: most models need only a few.
+    pipelines: std::sync::Mutex<HashMap<&'static str, wgpu::ComputePipeline>>,
     /// Bound where a kernel takes fewer inputs.
     empty: wgpu::Buffer,
 }
@@ -298,20 +301,7 @@ impl Kernels {
             label: Some("nn"),
             source: wgpu::ShaderSource::Wgsl(include_str!("shaders/nn.wgsl").into()),
         });
-        let pipelines = ENTRIES
-            .iter()
-            .map(|entry| {
-                let p = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                    label: Some(entry),
-                    layout: Some(&pipeline_layout),
-                    module: &module,
-                    entry_point: Some(entry),
-                    compilation_options: Default::default(),
-                    cache: None,
-                });
-                (*entry, p)
-            })
-            .collect();
+        let pipelines = std::sync::Mutex::new(HashMap::new());
         let empty = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("empty"),
             size: 16,
@@ -320,9 +310,32 @@ impl Kernels {
         });
         Kernels {
             layout,
+            pipeline_layout,
+            module,
             pipelines,
             empty,
         }
+    }
+
+    fn pipeline(&self, gpu: &Gpu, entry: &str) -> wgpu::ComputePipeline {
+        let name = ENTRIES
+            .iter()
+            .find(|e| **e == entry)
+            .expect("a kernel in nn.wgsl");
+        let mut made = self.pipelines.lock().unwrap_or_else(|e| e.into_inner());
+        made.entry(name)
+            .or_insert_with(|| {
+                gpu.device
+                    .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                        label: Some(name),
+                        layout: Some(&self.pipeline_layout),
+                        module: &self.module,
+                        entry_point: Some(name),
+                        compilation_options: Default::default(),
+                        cache: None,
+                    })
+            })
+            .clone()
     }
 }
 
@@ -463,6 +476,7 @@ impl Session<'_> {
         groups: [u32; 3],
     ) {
         let kernels = self.gpu.nn_kernels();
+        let pipeline = kernels.pipeline(self.gpu, entry);
         let mut p = [0i32; 64];
         p[..params.len()].copy_from_slice(params);
         let uniform = self
@@ -498,7 +512,7 @@ impl Session<'_> {
             .get_or_insert_with(|| self.gpu.device.create_command_encoder(&Default::default()));
         {
             let mut pass = encoder.begin_compute_pass(&Default::default());
-            pass.set_pipeline(&kernels.pipelines[entry]);
+            pass.set_pipeline(&pipeline);
             pass.set_bind_group(0, &bind, &[]);
             pass.dispatch_workgroups(groups[0], groups[1], groups[2]);
         }

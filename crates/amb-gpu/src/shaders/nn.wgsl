@@ -153,7 +153,12 @@ fn matmul(@builtin(local_invocation_index) li: u32, @builtin(workgroup_id) wg: v
     let ty = i32(li / 16u);
     let m0 = i32(wg.y) * 64;
     let n0 = i32(wg.x) * 64;
-    var acc: array<f32, 16>;
+    // Four rows of four outputs (no arrays: some shader compilers unroll
+    // indexed ones into far too much code).
+    var acc0 = vec4<f32>(0.0);
+    var acc1 = vec4<f32>(0.0);
+    var acc2 = vec4<f32>(0.0);
+    var acc3 = vec4<f32>(0.0);
     for (var k0 = 0; k0 < K; k0 += 16) {
         for (var e = 0; e < 4; e++) {
             let idx = i32(li) + e * 256;
@@ -171,29 +176,32 @@ fn matmul(@builtin(local_invocation_index) li: u32, @builtin(workgroup_id) wg: v
         }
         workgroupBarrier();
         for (var k = 0; k < 16; k++) {
-            var ra: array<f32, 4>;
-            var rb: array<f32, 4>;
-            for (var q = 0; q < 4; q++) {
-                ra[q] = ta[k * 64 + ty * 4 + q];
-                rb[q] = tb[k * 64 + tx * 4 + q];
-            }
-            for (var q = 0; q < 4; q++) {
-                for (var r = 0; r < 4; r++) {
-                    acc[q * 4 + r] += ra[q] * rb[r];
-                }
-            }
+            let i = k * 64 + ty * 4;
+            let j = k * 64 + tx * 4;
+            let rb = vec4<f32>(tb[j], tb[j + 1], tb[j + 2], tb[j + 3]);
+            acc0 += ta[i] * rb;
+            acc1 += ta[i + 1] * rb;
+            acc2 += ta[i + 2] * rb;
+            acc3 += ta[i + 3] * rb;
         }
         workgroupBarrier();
     }
-    for (var q = 0; q < 4; q++) {
-        let m = m0 + ty * 4 + q;
-        for (var r = 0; r < 4; r++) {
-            let n = n0 + tx * 4 + r;
-            if (m < M && n < N) {
-                out[oc + m * P(25u) + n * P(26u)] = acc[q * 4 + r];
-            }
-        }
-    }
+    mm_store(m0 + ty * 4, n0 + tx * 4, oc, acc0);
+    mm_store(m0 + ty * 4 + 1, n0 + tx * 4, oc, acc1);
+    mm_store(m0 + ty * 4 + 2, n0 + tx * 4, oc, acc2);
+    mm_store(m0 + ty * 4 + 3, n0 + tx * 4, oc, acc3);
+}
+
+// Four outputs of row `m` from column `n`, those inside the matrix.
+fn mm_store(m: i32, n: i32, oc: i32, v: vec4<f32>) {
+    if (m >= P(0u)) { return; }
+    let at = oc + m * P(25u);
+    let s = P(26u);
+    let N = P(1u);
+    if (n < N) { out[at + n * s] = v.x; }
+    if (n + 1 < N) { out[at + (n + 1) * s] = v.y; }
+    if (n + 2 < N) { out[at + (n + 2) * s] = v.z; }
+    if (n + 3 < N) { out[at + (n + 3) * s] = v.w; }
 }
 
 // Convolution as a matrix product, per group (the z of the dispatch): rows
@@ -223,7 +231,12 @@ fn conv(@builtin(local_invocation_index) li: u32, @builtin(workgroup_id) wg: vec
     let ty = i32(li / 16u);
     let m0 = i32(wg.y) * 64;
     let n0 = i32(wg.x) * 64;
-    var acc: array<f32, 16>;
+    // Four rows of four outputs (no arrays: some shader compilers unroll
+    // indexed ones into far too much code).
+    var acc0 = vec4<f32>(0.0);
+    var acc1 = vec4<f32>(0.0);
+    var acc2 = vec4<f32>(0.0);
+    var acc3 = vec4<f32>(0.0);
     for (var k0 = 0; k0 < K; k0 += 16) {
         for (var e = 0; e < 4; e++) {
             let idx = i32(li) + e * 256;
@@ -253,36 +266,42 @@ fn conv(@builtin(local_invocation_index) li: u32, @builtin(workgroup_id) wg: vec
         }
         workgroupBarrier();
         for (var k = 0; k < 16; k++) {
-            var ra: array<f32, 4>;
-            var rb: array<f32, 4>;
-            for (var q = 0; q < 4; q++) {
-                ra[q] = ta[k * 64 + ty * 4 + q];
-                rb[q] = tb[k * 64 + tx * 4 + q];
-            }
-            for (var q = 0; q < 4; q++) {
-                for (var r = 0; r < 4; r++) {
-                    acc[q * 4 + r] += ra[q] * rb[r];
-                }
-            }
+            let i = k * 64 + ty * 4;
+            let j = k * 64 + tx * 4;
+            let rb = vec4<f32>(tb[j], tb[j + 1], tb[j + 2], tb[j + 3]);
+            acc0 += ta[i] * rb;
+            acc1 += ta[i + 1] * rb;
+            acc2 += ta[i + 2] * rb;
+            acc3 += ta[i + 3] * rb;
         }
         workgroupBarrier();
     }
-    for (var q = 0; q < 4; q++) {
-        let m = m0 + ty * 4 + q;
-        if (m >= M) { continue; }
-        let o = g * Og + m;
-        var bias = 0.0;
-        if (P(18u) != 0) { bias = c[o]; }
-        for (var r = 0; r < 4; r++) {
-            let col = n0 + tx * 4 + r;
-            if (col < N) {
-                let ox = col % OW;
-                let oy = (col / OW) % OH;
-                let n = col / (OW * OH);
-                out[((n * O + o) * OH + oy) * OW + ox] = acc[q * 4 + r] + bias;
-            }
-        }
-    }
+    conv_store(m0 + ty * 4, n0 + tx * 4, g, acc0);
+    conv_store(m0 + ty * 4 + 1, n0 + tx * 4, g, acc1);
+    conv_store(m0 + ty * 4 + 2, n0 + tx * 4, g, acc2);
+    conv_store(m0 + ty * 4 + 3, n0 + tx * 4, g, acc3);
+}
+
+// One output pixel of channel `m` (in group `g`), with its bias.
+fn conv_one(m: i32, col: i32, g: i32, v: f32) {
+    let OH = P(5u);
+    let OW = P(6u);
+    if (col >= P(0u) * OH * OW) { return; }
+    let o = g * P(17u) + m;
+    var bias = 0.0;
+    if (P(18u) != 0) { bias = c[o]; }
+    let ox = col % OW;
+    let oy = (col / OW) % OH;
+    let n = col / (OW * OH);
+    out[((n * P(4u) + o) * OH + oy) * OW + ox] = v + bias;
+}
+
+fn conv_store(m: i32, col: i32, g: i32, v: vec4<f32>) {
+    if (m >= P(17u)) { return; }
+    conv_one(m, col, g, v.x);
+    conv_one(m, col + 1, g, v.y);
+    conv_one(m, col + 2, g, v.z);
+    conv_one(m, col + 3, g, v.w);
 }
 
 // Convolution one output at a time, for few output channels per group

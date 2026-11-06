@@ -37,7 +37,7 @@ async function loadTaskPlugins() {
     TASKS.push({ id: p.id, label: task.label, hint: task.hint || p.manifest.description, layout, tools: task.tools ?? [], plugin: true });
     TASK_LAYOUTS.add(layout);
     if (ui.looks && !findLook("layout", layout)) {
-      ui.looks.layouts.push({ id: layout, name: task.layout.name ?? task.label, data: task.layout, usable: true, builtin: p.builtin });
+      ui.looks.layouts.push({ id: layout, name: task.layout.name ?? task.label, data: task.layout, usable: true, builtin: p.builtin, problems: [] });
     }
   }
 }

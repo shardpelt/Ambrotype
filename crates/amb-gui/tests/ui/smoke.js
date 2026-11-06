@@ -833,6 +833,18 @@ await t.step("Remove object: Shift+Q opens the tool; a box sends its corners, a 
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("Appearance opens on every task (Trippy's plugin layout too)", async () => {
+  const was = currentTask();
+  for (const task of TASKS.map((x) => x.id).filter((id) => id !== "library")) {
+    await switchTask(task);
+    const flow = looksFlow();
+    await t.until(`Appearance on ${task}`, () => $("looks-dialog").open);
+    $("looks-dialog").close("cancel");
+    await flow;
+  }
+  await switchTask(was);
+});
+
 await t.step("a narrow toolbar puts the buttons that don't fit under ⋯, and they still work", async () => {
   const bar = document.querySelector(".topbar .actions");
   // The top bar never runs past the window, whatever the window's width.

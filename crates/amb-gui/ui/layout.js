@@ -823,7 +823,7 @@ async function looksFlow() {
         name.textContent = look.name;
         const marks = document.createElement("span");
         marks.className = "marks";
-        marks.textContent = (look.problems.length ? "⚠ " : "") + (look.builtin ? "🔒" : "");
+        marks.textContent = (look.problems?.length ? "⚠ " : "") + (look.builtin ? "🔒" : "");
         b.title = look.builtin ? "Built in: clone it to make changes" : (look.usable ? "" : "Can't be used: see the problems below");
         b.append(name, marks);
         b.addEventListener("click", () => choose(kind, look));

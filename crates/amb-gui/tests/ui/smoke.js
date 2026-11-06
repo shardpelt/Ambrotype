@@ -833,6 +833,15 @@ await t.step("Remove object: Shift+Q opens the tool; a box sends its corners, a 
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("a drag or Select All doesn't select the photo or the panels in blue", async () => {
+  // The workspace: the photo, the panels and the toolbar.
+  document.getSelection().selectAllChildren($("workspace"));
+  const picked = String(document.getSelection()).trim();
+  document.getSelection().removeAllRanges();
+  t.expect(picked === "", `nothing selected (got ${picked.length} characters)`);
+  t.expect(getComputedStyle(document.querySelector("textarea, input[type=text], input[type=search]")).userSelect !== "none", "text boxes still select");
+});
+
 await t.step("Appearance opens on every task (Trippy's plugin layout too)", async () => {
   const was = currentTask();
   for (const task of TASKS.map((x) => x.id).filter((id) => id !== "library")) {

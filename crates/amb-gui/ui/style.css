@@ -27,6 +27,11 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
 body { display: grid; grid-template-rows: 44px 1fr 26px; grid-template-columns: minmax(0, 1fr); }
+/* An app, not a page: a click or drag never selects the photo or labels in
+   blue (and a stray selection can't stick). Text you might copy still can be. */
+body { -webkit-user-select: none; user-select: none; }
+img, canvas { -webkit-user-drag: none; }
+input, textarea, [contenteditable], pre, code, .toast, .connect-snippet, dialog p, .help-text { -webkit-user-select: text; user-select: text; }
 h2 { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
 button {
   font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line);

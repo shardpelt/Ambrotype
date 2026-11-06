@@ -48,9 +48,11 @@ fn sample_at(dir: &Path, fresh: bool, fetch: impl Fn() -> Res<Vec<u8>>) -> Res<P
 #[tauri::command]
 pub(crate) async fn sample_photo(state: tauri::State<'_, AppState>, fresh: bool) -> Res<PathBuf> {
     let dir = sample_dir(state.inner())?;
-    tauri::async_runtime::spawn_blocking(move || sample_at(&dir, fresh, || hub::fetch_large(URL, SIZE)))
-        .await
-        .map_err(|e| e.to_string())?
+    tauri::async_runtime::spawn_blocking(move || {
+        sample_at(&dir, fresh, || hub::fetch_large(URL, SIZE))
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[cfg(test)]

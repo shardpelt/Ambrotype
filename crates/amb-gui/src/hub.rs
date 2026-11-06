@@ -482,7 +482,11 @@ pub fn fetch_large(url: &str, max: u64) -> Result<Vec<u8>, String> {
     fetch_with(url, max, None)
 }
 
-fn fetch_with(url: &str, max: u64, overall: Option<std::time::Duration>) -> Result<Vec<u8>, String> {
+fn fetch_with(
+    url: &str,
+    max: u64,
+    overall: Option<std::time::Duration>,
+) -> Result<Vec<u8>, String> {
     let mut bytes = Vec::new();
     if let Some(path) = url.strip_prefix("file://") {
         std::fs::File::open(path)

@@ -52,10 +52,12 @@ button.primary:hover:not(:disabled) { background: var(--accent); filter: brightn
 .camsim-controls label { display: grid; grid-template-columns: 7em 1fr 5.5em; align-items: center; gap: 6px; }
 .camsim-controls label.inline-check { display: flex; }
 /* Tool blocks: a task's own tools as big tiles, a name and what it does. */
-.tool-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px 0 8px; }
-.tool-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; text-align: left; white-space: normal; }
-.tool-tile strong { font-size: 1em; }
-.tool-tile span { font-size: .82em; opacity: .7; line-height: 1.25; }
+.tool-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; gap: 6px; padding: 4px 0 8px; }
+/* Block text, not a flex column: WebKit on macOS measured a flex <button>
+   a line short, so the last line of a hint was cut off. */
+.tool-tile { display: block; min-width: 0; height: auto; padding: 8px 10px; text-align: left; white-space: normal; }
+.tool-tile strong { display: block; font-size: 1em; margin-bottom: 2px; }
+.tool-tile span { display: block; font-size: .82em; opacity: .7; line-height: 1.25; }
 .tool-tile.big { grid-column: 1 / -1; border-color: var(--task-accent, var(--accent)); }
 .tool-tile.big strong { color: var(--task-accent, var(--accent)); font-size: 1.1em; }
 .tool-tile:hover:not(:disabled) { border-color: var(--task-accent, var(--accent)); }
@@ -83,7 +85,8 @@ input[type=search], input[type=number], select {
 .hint { color: var(--faint); font-size: 12px; }
 
 /* Top bar */
-.topbar { display: flex; align-items: center; gap: 16px; padding: 0 12px; background: var(--bg-deep); border-bottom: 1px solid var(--line); }
+.topbar { display: flex; align-items: center; gap: 16px; padding: 0 12px; background: var(--bg-deep); border-bottom: 1px solid var(--line); min-width: 0; max-width: 100vw; overflow: hidden; }
+.brand, .task-bar { flex-shrink: 0; }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: .02em; }
 /* Tasks: Library · Develop · Color · …, a quiet segmented control. */
 .task-bar { display: flex; gap: 2px; padding: 2px; border-radius: calc(var(--radius) + 2px); background: var(--bg); flex-shrink: 0; }
@@ -91,21 +94,28 @@ input[type=search], input[type=number], select {
 .task-bar button:hover { color: var(--text); background: var(--hover); }
 .task-bar button.on { color: var(--text); background: var(--tab-active); font-weight: 600; }
 .logo { width: 18px; height: 18px; border-radius: 50%; background: radial-gradient(circle, #faf0dc 0 22%, var(--bg-deep) 23% 38%, #f0d6a0 39% 52%, var(--bg-deep) 53% 66%, var(--accent) 67%); }
-.actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.actions button { white-space: nowrap; }
-/* Narrower windows (a 13" laptop): tighter buttons, then the toolbar scrolls
-   sideways rather than running off the edge. */
+.actions { display: flex; align-items: center; gap: 6px; flex-shrink: 1; min-width: 0; overflow: hidden; }
+.actions button { white-space: nowrap; flex: none; }
+/* Buttons that don't fit go into the ⋯ menu at the end (toolbar.js). */
+.actions > .overflowed { display: none !important; }
+.toolbar-more { flex: none; white-space: nowrap; }
+.toolbar-more[hidden] { display: none; }
+.toolbar-menu { position: fixed; z-index: 200; display: flex; flex-direction: column; gap: 2px; padding: 4px; min-width: 160px; max-height: 80vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 6px 24px rgba(0, 0, 0, .45); }
+.toolbar-menu[hidden] { display: none; }
+.toolbar-menu button { display: flex; align-items: center; gap: 8px; justify-content: flex-start; text-align: left; white-space: nowrap; border-color: transparent; background: none; }
+.toolbar-menu button:hover:not(:disabled) { background: var(--hover); }
+.toolbar-menu button svg, .toolbar-menu .menu-icon-space { width: 18px; height: 18px; flex: none; }
+/* Narrower windows (a 13" laptop): tighter buttons first. */
 @media (max-width: 1560px) {
   .topbar { gap: 10px; }
-  .actions { gap: 4px; flex-shrink: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-  .actions::-webkit-scrollbar { display: none; }
+  .actions { gap: 4px; }
   .actions button { padding: 5px 7px; }
   .actions .sep { margin: 0 2px; }
-  /* The photo's name gives way first. */
-  .photo-title { flex: 1 1 0; max-width: none; }
 }
 .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
 .photo-title { margin-left: auto; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; min-width: 0; }
+/* The photo's name gives way first, then toolbar buttons go to ⋯. */
+.photo-title { flex: 1 1 0; }
 
 /* Workspace */
 .workspace { display: grid; grid-template-columns: 250px minmax(0, 1fr) 330px; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
@@ -119,8 +129,10 @@ input[type=search], input[type=number], select {
 .side-section { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; min-height: 0; }
 /* Presets fill the spare height of their column (and scroll inside it). */
 .column > .presets-block { flex: 1 0 220px; overflow-y: auto; }
-.side-head { display: flex; align-items: center; justify-content: space-between; }
-.amount { display: grid; grid-template-columns: auto 1fr 32px; align-items: center; gap: 8px; color: var(--muted); }
+.side-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; }
+.side-actions button { white-space: nowrap; }
+.amount { display: grid; grid-template-columns: auto minmax(0, 1fr) 32px; align-items: center; gap: 8px; color: var(--muted); }
+.amount input[type=range] { min-width: 0; width: 100%; }
 .preset-list { overflow-y: auto; flex: 1; min-height: 80px; }
 .preset-group > summary { color: var(--muted); cursor: pointer; padding: 4px 0; list-style: none; }
 .preset-group > summary::before { content: "▸ "; color: var(--faint); }
@@ -193,7 +205,7 @@ input[type=search], input[type=number], select {
 @container (max-width: 250px) {
   .row:not(.check):not(.number-row) { grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px; }
   .row:not(.check):not(.number-row) > input[type=range], .row:not(.check):not(.number-row) > select { grid-column: 1 / -1; grid-row: 2; width: 100%; }
-  .preset-tools, .side-head { flex-wrap: wrap; }
+  .preset-tools { flex-wrap: wrap; }
 }
 
 input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; margin: 0; }

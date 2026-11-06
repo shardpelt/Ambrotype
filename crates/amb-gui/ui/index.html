@@ -47,8 +47,10 @@
       <button id="btn-settings" aria-label="Settings">Settings</button>
       <button id="btn-feedback" title="Report a bug, an idea, or a photo that looks different from Lightroom">Feedback</button>
     </div>
+    <button type="button" id="btn-toolbar-more" class="toolbar-more" title="More: the toolbar buttons that don't fit" aria-haspopup="menu" hidden>⋯</button>
     <div class="photo-title" id="photo-title"></div>
   </header>
+  <div id="toolbar-menu" class="toolbar-menu" role="menu" hidden></div>
 
   <main class="workspace" id="workspace">
     <aside class="column left" id="col-left">
@@ -1716,6 +1718,7 @@
   <script src="menu.js"></script>
   <script src="folders.js"></script>
   <script src="lightroom.js"></script>
+  <script src="toolbar.js"></script>
   <script src="libmenus.js"></script>
   <script src="search.js"></script>
   <script src="tasks.js"></script>

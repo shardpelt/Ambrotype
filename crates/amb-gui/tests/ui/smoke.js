@@ -833,6 +833,30 @@ await t.step("Remove object: Shift+Q opens the tool; a box sends its corners, a 
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("a narrow toolbar puts the buttons that don't fit under ⋯, and they still work", async () => {
+  const bar = document.querySelector(".topbar .actions");
+  // The top bar never runs past the window, whatever the window's width.
+  const top = document.querySelector(".topbar").getBoundingClientRect();
+  t.expect(top.right <= window.innerWidth + 1 && bar.getBoundingClientRect().right <= window.innerWidth, `top bar ${top.right} in a ${window.innerWidth} px window`);
+  bar.style.maxWidth = "320px";
+  fitToolbar();
+  const hidden = overflowedButtons();
+  t.expect(hidden.length > 3 && !$("btn-toolbar-more").hidden, `${hidden.length} under ⋯`);
+  t.expect(bar.scrollWidth <= bar.clientWidth + 1, "nothing cut off at the edge");
+  t.click("#btn-toolbar-more");
+  const items = [...$("toolbar-menu").querySelectorAll("button")];
+  t.expect(!$("toolbar-menu").hidden && items.length === hidden.length, `${items.length} in the menu`);
+  let clicked = false;
+  const last = hidden.at(-1);
+  const spy = (e) => { clicked = true; e.stopImmediatePropagation(); };
+  last.addEventListener("click", spy, { capture: true, once: true });
+  items.at(-1).click();
+  t.expect(clicked && $("toolbar-menu").hidden, `its entry clicks ${last.id} and closes the menu`);
+  bar.style.maxWidth = "";
+  fitToolbar();
+  t.expect($("btn-toolbar-more").hidden || overflowedButtons().length < hidden.length, "room again: the buttons come back");
+});
+
 await t.step("Settings → AI models says where models run (GPU or CPU, and why)", async () => {
   await modelsTab();
   const said = $("models-runs-on").textContent;

@@ -46,6 +46,7 @@ function startEditing(blank = false) {
   exitSpots();
   const look = blank ? null : findLook("layout", ui.looks?.active_layout);
   const draft = structuredClone(blank ? BLANK_LAYOUT : look?.usable ? look.data : ui.layout);
+  if (typeof scheduleFitToolbar === "function") scheduleFitToolbar();
   ui.edit = {
     look,
     original: ui.layout,
@@ -95,6 +96,7 @@ async function finishEditing(save) {
     }
   }
   ui.edit = null;
+  if (typeof scheduleFitToolbar === "function") scheduleFitToolbar();
   closeInspector();
   $("edit-palette").hidden = true;
   $("edit-bar").hidden = true;

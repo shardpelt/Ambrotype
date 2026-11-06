@@ -77,8 +77,7 @@ fn file_stamp(path: &Path) -> Option<(i64, i64)> {
 
 fn stamp(photo: &Path) -> Option<Stamp> {
     let (size, modified) = file_stamp(&amb_engine::source_path(photo))?;
-    let (sidecar_size, sidecar_modified) =
-        file_stamp(&amb_engine::sidecar_path(photo)).unwrap_or((-1, -1));
+    let (sidecar_size, sidecar_modified) = amb_engine::sidecar_stamp(photo).unwrap_or((-1, -1));
     Some(Stamp {
         size,
         modified,
@@ -89,7 +88,7 @@ fn stamp(photo: &Path) -> Option<Stamp> {
 
 /// Read a photo's record from its files, without the catalogue.
 pub fn read(photo: &Path) -> Record {
-    let text = std::fs::read_to_string(amb_engine::sidecar_path(photo)).ok();
+    let text = amb_engine::sidecar_text(photo);
     let info = text.as_deref().map(sidecar::read_info).unwrap_or_default();
     let edited = text
         .as_deref()

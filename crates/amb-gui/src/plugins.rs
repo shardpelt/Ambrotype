@@ -26,7 +26,7 @@ pub fn context_for_file(
 ) -> Result<amb_plugin::Context, String> {
     use amb_plugin::Permission;
     let sidecar = crate::session::sidecar_path(photo);
-    let settings = if sidecar.is_file() {
+    let settings = if sidecar.is_file() || amb_presets::linked::get(&sidecar).is_some() {
         amb_protocol::DevelopState::load(&sidecar)
             .map_err(|e| format!("{}: {e}", sidecar.display()))?
             .settings()

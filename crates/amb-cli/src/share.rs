@@ -20,8 +20,7 @@ pub(crate) fn share(
     let source = amb_engine::source_path(photo);
     let mut img =
         amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
-    let after = std::fs::read_to_string(amb_engine::sidecar_path(photo))
-        .ok()
+    let after = amb_engine::sidecar_text(photo)
         .and_then(|t| amb_presets::xmp::parse_crs(&t).ok())
         .unwrap_or_default();
     let before = amb_protocol::catalog::Catalog::builtin().framing(&after);

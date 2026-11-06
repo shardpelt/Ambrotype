@@ -424,6 +424,10 @@
         <ul id="tree-list" class="tree-list"></ul>
         <p id="tree-empty" class="hint">Add the folders, or whole drives, where your photos are. They're indexed in the background; an unplugged drive's photos stay listed.</p>
         <p id="tree-progress" class="hint tree-progress" hidden></p>
+        <div class="tree-head"><span>Lightroom</span>
+          <button type="button" id="tree-lr-add" class="small" title="Open a Lightroom Classic catalogue in place: its folders, collections, edits, ratings and keywords show here, nothing imported; the catalogue is only read">+</button></div>
+        <ul id="tree-lr-list" class="tree-list"></ul>
+        <p id="tree-lr-empty" class="hint">Use a Lightroom Classic catalogue as it is: + opens it in place, without importing.</p>
       </aside>
       <div id="library-grid" class="library-grid" tabindex="-1"></div>
       <!-- Best in each burst (bursts.js): what to do with the bursts. -->
@@ -955,7 +959,7 @@
   <dialog id="lrcat-dialog">
     <form method="dialog" id="lrcat-form">
       <h2>Move from Lightroom Classic</h2>
-      <p class="hint">Each photo's edit, rating, colour label, flag, keywords, stack, title and caption go into its XMP sidecar, where both Ambrotype and Lightroom read them. Virtual copies and collections come too. The catalogue is only read: close Lightroom first. Sidecars already there are kept.</p>
+      <p class="hint">Each photo's edit, rating, colour label, flag, keywords, stack, title and caption go into its XMP sidecar, where both Ambrotype and Lightroom read them. Virtual copies and collections come too. The catalogue is only read: close Lightroom first. Sidecars already there are kept. Or <strong>Open in place</strong>: nothing is written, and the library shows the catalogue's folders and collections as they are, in step with Lightroom.</p>
       <label>Catalogue
         <span class="folder-row"><input name="catalog" type="text" readonly placeholder="Choose…"><button type="button" class="small" id="lrcat-pick">Choose…</button></span>
       </label>
@@ -970,6 +974,7 @@
       <ul id="lrcat-list" class="import-list"></ul>
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
+        <button value="inplace" id="lrcat-inplace" disabled title="Show the catalogue's folders, collections and edits without writing anything (Folders panel → Lightroom)">Open in place</button>
         <button value="ok" id="lrcat-go" class="primary" disabled>Move</button>
       </menu>
     </form>
@@ -1710,6 +1715,7 @@
   <script src="keys.js"></script>
   <script src="menu.js"></script>
   <script src="folders.js"></script>
+  <script src="lightroom.js"></script>
   <script src="libmenus.js"></script>
   <script src="search.js"></script>
   <script src="tasks.js"></script>

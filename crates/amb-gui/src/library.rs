@@ -263,7 +263,8 @@ impl InfoChange {
 /// owns that one). Returns the new info.
 pub fn change_info(photo: &Path, change: &InfoChange) -> Result<PhotoInfo, String> {
     let path = crate::session::sidecar_path(photo);
-    let on_disk = std::fs::read_to_string(&path).ok();
+    // From a Lightroom catalogue opened in place, when it knows the photo.
+    let on_disk = amb_engine::sidecar_text(photo);
     let info = change.apply(
         &on_disk
             .as_deref()

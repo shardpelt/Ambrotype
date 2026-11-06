@@ -22,6 +22,7 @@ async function loadFolderTree() {
     tree.loaded = true;
     renderFolderTree();
     if (back.length && !r.indexing) invoke("index_library");
+    loadLightroom();
   } catch (e) {
     console.warn("library folders:", e);
   }
@@ -58,13 +59,14 @@ function renderFolderTree() {
   list.replaceChildren(...folderTreeNodes().map(folderTreeItem));
   $("tree-empty").hidden = tree.roots.length > 0;
   syncTreeMode();
+  renderLightroom();
 }
 
 function folderTreeItem(node) {
   const li = document.createElement("li");
   const row = Object.assign(document.createElement("div"), { className: "tree-row", title: node.path });
   row.classList.toggle("offline", node.offline);
-  const shown = !lib.collection && !lib.smart && (lib.dir === node.path || lib.more.includes(node.path));
+  const shown = !lib.collection && !lib.smart && !lib.lightroom && (lib.dir === node.path || lib.more.includes(node.path));
   row.classList.toggle("current", shown);
   const kids = [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   const open = tree.open.has(node.path);
@@ -164,6 +166,7 @@ async function removeLibraryFolder(path) {
 }
 
 function wireFolderTree() {
+  wireLightroom();
   // Double-click a folder with folders inside: open or close it. On the list,
   // not the row: the first click redraws the tree.
   $("tree-list").addEventListener("dblclick", (e) => {

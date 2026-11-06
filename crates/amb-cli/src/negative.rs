@@ -147,11 +147,8 @@ pub(crate) fn negative_sync(
     if apply {
         for (photo, frame) in paths.iter().zip(&plan) {
             let sidecar = crate::edit::edit_target(photo);
-            let mut state = if sidecar.exists() {
-                amb_protocol::DevelopState::load(&sidecar).map_err(|e| e.to_string())?
-            } else {
-                amb_protocol::DevelopState::new()
-            };
+            let mut state =
+                amb_protocol::DevelopState::load_or_new(&sidecar).map_err(|e| e.to_string())?;
             state
                 .execute_grouped("Sync negative roll", &commands(&frame.settings))
                 .map_err(|e| e.to_string())?;

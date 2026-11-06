@@ -284,19 +284,9 @@ pub fn edited_thumbnail(
     lens: &crate::LensSources,
 ) -> Result<Vec<u8>, String> {
     let edge = edge.clamp(64, 2048);
-    let sidecar = crate::session::sidecar_path(path);
-    let stamp = std::fs::metadata(&sidecar)
-        .ok()
-        .and_then(|m| {
-            Some((
-                m.len(),
-                m.modified()
-                    .ok()?
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .ok()?
-                    .as_nanos(),
-            ))
-        })
+    // Its sidecar, or a Lightroom catalogue opened in place.
+    let stamp = amb_engine::sidecar_stamp(path)
+        .map(|(len, t)| (len as u64, t as u128))
         // Offline: the sidecar as the catalogue saw it last.
         .or_else(|| {
             let s = catalog().stamp_of(path).filter(|_| !path.exists())?;

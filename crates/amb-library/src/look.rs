@@ -23,7 +23,7 @@ pub fn photo_settings(photo: &Path) -> Result<matching::Settings, String> {
     } else {
         amb_engine::sidecar_path(photo)
     };
-    if !sidecar.is_file() {
+    if !sidecar.is_file() && amb_presets::linked::get(&sidecar).is_none() {
         return Ok(Default::default());
     }
     Ok(DevelopState::load(&sidecar)

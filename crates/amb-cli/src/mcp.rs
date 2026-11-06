@@ -416,16 +416,12 @@ fn describe(p: &Path) -> Result<Value, String> {
     let (shot, meta) = amb_engine::raw::read_metadata(&source)
         .map_err(|e| format!("{}: {e}", source.display()))?;
     let sidecar = amb_engine::sidecar_path(p);
-    let xmp = std::fs::read_to_string(&sidecar).ok();
+    let xmp = amb_engine::sidecar_text(p);
     let info = xmp
         .as_deref()
         .map(amb_protocol::sidecar::read_info)
         .unwrap_or_default();
-    let state = if sidecar.is_file() {
-        amb_protocol::DevelopState::load(&sidecar).map_err(|e| e.to_string())?
-    } else {
-        amb_protocol::DevelopState::new()
-    };
+    let state = amb_protocol::DevelopState::load_or_new(&sidecar).map_err(|e| e.to_string())?;
     let (_, not_rendered) = amb_engine::pipeline::DevelopSettings::from_settings(state.settings());
     let q = |query: Value| {
         state
@@ -635,7 +631,7 @@ fn list_photos(dir: &Path) -> Result<Value, String> {
             (is_photo(p) && !jpeg_of_raw) || amb_engine::virtual_copy_of(p).is_some()
         })
         .map(|p| {
-            let xmp = std::fs::read_to_string(amb_engine::sidecar_path(p)).ok();
+            let xmp = amb_engine::sidecar_text(p);
             let info = xmp
                 .as_deref()
                 .map(amb_protocol::sidecar::read_info)
@@ -661,7 +657,7 @@ fn list_photos(dir: &Path) -> Result<Value, String> {
 fn set_info(p: &Path, args: &Value) -> Result<Value, String> {
     use amb_protocol::sidecar::{self, Flag};
     let path = amb_engine::sidecar_path(p);
-    let on_disk = std::fs::read_to_string(&path).ok();
+    let on_disk = amb_presets::linked::text(&path);
     let mut info = on_disk
         .as_deref()
         .map(sidecar::read_info)

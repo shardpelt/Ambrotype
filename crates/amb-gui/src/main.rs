@@ -440,6 +440,11 @@ fn main() {
             let _ = app.emit("menu", event.id().as_ref());
         })
         .setup(|app| {
+            // Lightroom catalogues opened in place: their photos' edits are
+            // read from them from the start.
+            if let Ok(dir) = app.path().app_config_dir() {
+                commands::catalog::lightroom_at(&dir);
+            }
             // Load saved settings (added preset folders) from the config folder.
             if let Ok(dir) = app.path().app_config_dir() {
                 let path = dir.join("settings.json");
@@ -736,6 +741,10 @@ fn main() {
             commands::catalog::add_library_folder,
             commands::catalog::remove_library_folder,
             commands::catalog::index_library,
+            commands::catalog::lightroom_catalogues,
+            commands::catalog::lightroom_open,
+            commands::catalog::lightroom_close,
+            commands::catalog::lightroom_collection,
             commands::library::pick_folder,
             commands::catalog::import_plan,
             commands::catalog::import_run,

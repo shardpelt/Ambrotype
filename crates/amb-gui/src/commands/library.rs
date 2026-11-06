@@ -523,7 +523,7 @@ pub(crate) async fn create_virtual_copy(
         let (settings, keywords) = match open {
             Some(found) => found,
             None => {
-                let text = std::fs::read_to_string(session::sidecar_path(&photo)).ok();
+                let text = amb_engine::sidecar_text(&photo);
                 let settings = text
                     .as_deref()
                     .and_then(|t| amb_presets::xmp::parse_crs(t).ok())

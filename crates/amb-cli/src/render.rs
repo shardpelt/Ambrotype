@@ -71,7 +71,8 @@ pub(crate) fn render(
     );
     // The photo's own edit, as Lightroom exports it, unless a preset is given.
     let sidecar = amb_engine::sidecar_path(input);
-    let own = (preset.is_none() && sidecar.is_file()).then(|| sidecar.display().to_string());
+    let known = sidecar.is_file() || amb_presets::linked::get(&sidecar).is_some();
+    let own = (preset.is_none() && known).then(|| sidecar.display().to_string());
     let preset = preset.or(own.as_deref());
     let (develop, not_rendered, notes) =
         develop_settings(&mut img, preset, amount, look, calibration, options)?;

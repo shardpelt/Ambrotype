@@ -118,6 +118,41 @@ await t.step("Folders | All photos, and Ctrl-click shows more folders together",
   renderLibrary();
 });
 
+await t.step("a Lightroom catalogue opens in place: its folder and collection, with its edits, nothing written", async () => {
+  const dir = lib.dir;
+  const sep = dir.includes("\\") ? "\\" : "/";
+  // CI makes it (amb lrcat sample): more/other.dng rated 4, Red, Exposure +1.
+  const catalogue = `${dir}${sep}more${sep}Sample.lrcat`;
+  t.expect(t.visible("#tree-lr-add"), "the Lightroom + in the Folders panel");
+  // Left open by a run that stopped: closed first.
+  for (const c of await invoke("lightroom_catalogues")) await invoke("lightroom_close", { path: c.catalogue });
+  let opened = null;
+  try {
+    opened = await invoke("lightroom_open", { path: catalogue });
+  } catch (e) {
+    t.log(`no sample catalogue (amb lrcat sample ${catalogue} …): ${e}`);
+    return;
+  }
+  t.expect(opened.photos === 1 && opened.collections.length === 1, `${opened.photos} photo, ${opened.collections.length} collection`);
+  await loadLightroom();
+  const rows = [...$("tree-lr-list").querySelectorAll(".tree-row")];
+  t.expect(rows.length === 3, `catalogue, folder and collection: ${rows.map((r) => r.textContent).join(" | ")}`);
+  // Its folder: the photo with Lightroom's rating, label and edit.
+  rows[1].click();
+  await t.until("its folder", () => lib.photos.length === 1 && lib.photos[0].path.endsWith("other.dng"));
+  const p = lib.photos[0];
+  t.expect(p.rating === 4 && p.label === "Red" && p.edited, `from the catalogue: ${JSON.stringify({ rating: p.rating, label: p.label, edited: p.edited })}`);
+  // Its collection, shown like one of ours.
+  [...$("tree-lr-list").querySelectorAll(".tree-row")][2].click();
+  await t.until("the collection", () => lib.lightroom?.name === "Selects" && lib.photos.length === 1 && lib.photos[0].path.endsWith("other.dng"));
+  t.expect($("library-folder").textContent === "Lightroom: Selects", $("library-folder").textContent);
+  // Closed, the photo is as its own files say.
+  await invoke("lightroom_close", { path: opened.catalogue });
+  await loadLightroom();
+  t.expect($("tree-lr-list").children.length === 0 && t.visible("#tree-lr-empty"), "closed");
+  await loadLibrary(dir, []);
+});
+
 await t.step("Sync negative roll asks how: scenes, odd frames, a baseline frame", async () => {
   const parent = `${lib.dir}${lib.dir.includes("\\") ? "\\" : "/"}more`;
   await toggleTreeFolder(parent);

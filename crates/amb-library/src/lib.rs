@@ -15,6 +15,7 @@ pub mod folder;
 pub mod gpx;
 pub mod import;
 pub mod lensdb;
+pub mod lightroom;
 pub mod look;
 pub mod lrcat;
 pub mod merge;

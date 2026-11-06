@@ -15,7 +15,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
 3. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
 4. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
-5. **From the competition:** raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place ([research/17](research/17-competitors-2026.md)).
+5. **From the competition:** raw AI Denoise (our own builds, after CalibRaw's ideas) ([research/17](research/17-competitors-2026.md)).
 
 ## Ideas for later
 
@@ -30,6 +30,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **More trippy** (owner, 2026-11-04): done 2026-11-05 (Edges and Neon, Where with its hover view, amounts to 200 %). Still to do: Basic's own sliders past their ranges in Trippy (Lightroom's ranges are kept in the sidecar, so it would be our own extra settings).
 
 ## Recently done
+
+- 2026-11-06: a Lightroom Classic catalogue opened in place (library → Folders panel → Lightroom +, From Lightroom… → Open in place, `amb lrcat open`): its folders and collections in the Folders panel, its photos with their Lightroom edits, ratings, labels, flags and keywords, read from the catalogue through every sidecar read (`amb_presets::linked`) with nothing imported or written; the newer of sidecar and catalogue wins, so editing here or in Lightroom keeps them in step. `amb lrcat sample` makes a small catalogue to try it
 
 - 2026-11-06: AI models on the GPU, with our own kernels (`amb-gpu`'s `nn`: convolutions, matrix products, the element-wise and shape layers): SAM 2.1, Big-LaMa, MI-GAN, YuNet and full-precision search models run there when the computer has a GPU, each layer we have no kernel for on the CPU in between, and the whole model on the CPU if a run fails; on a software GPU each matches the CPU (LaMa and SAM within 1e-5). Settings → AI models and `amb models` say where they run; `AMB_AI_GPU=off` keeps them on the CPU
 

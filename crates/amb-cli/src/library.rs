@@ -547,3 +547,68 @@ pub(crate) fn merge_pano(
     );
     Ok(())
 }
+
+/// `amb lrcat open | close | list`: Lightroom catalogues opened in place
+/// (amb_library::lightroom), the list the editor shows in its Folders panel.
+pub(crate) fn lrcat_in_place(what: &str, catalog: Option<&Path>, json: bool) -> Result<(), String> {
+    use amb_library::lightroom;
+    let file = lightroom::default_path().ok_or("no settings folder")?;
+    let list = lightroom::Catalogues::new(file);
+    let show = |o: &lightroom::Opened| {
+        println!(
+            "{}: {} photos in {} folders, {} collections{}",
+            o.catalogue.display(),
+            o.photos,
+            o.folders.len(),
+            o.collections.len(),
+            if o.missing > 0 {
+                format!(", {} not found", o.missing)
+            } else {
+                String::new()
+            }
+        );
+        for w in &o.warnings {
+            println!("  {w}");
+        }
+    };
+    match (what, catalog) {
+        ("open", Some(c)) => {
+            let o = list.add(c)?;
+            if json {
+                return print_json(&serde_json::to_value(o.as_ref()).map_err(|e| e.to_string())?);
+            }
+            show(&o);
+            println!("Opened in place: nothing imported or written; the catalogue is only read.");
+        }
+        ("close", Some(c)) => {
+            let c = std::fs::canonicalize(c).unwrap_or_else(|_| c.to_path_buf());
+            list.remove(&c)?;
+            println!("Closed {} (sidecars written meanwhile stay).", c.display());
+        }
+        _ => {
+            let all = list.all();
+            if json {
+                let v: Vec<serde_json::Value> = all
+                    .iter()
+                    .map(|(path, o)| match o {
+                        Ok(o) => serde_json::to_value(o.as_ref()).unwrap_or_default(),
+                        Err(e) => serde_json::json!({ "catalogue": path, "error": e }),
+                    })
+                    .collect();
+                return print_json(&serde_json::Value::Array(v));
+            }
+            if all.is_empty() {
+                println!(
+                    "No Lightroom catalogue is open in place (`amb lrcat open CATALOG.lrcat`)."
+                );
+            }
+            for (path, o) in all {
+                match o {
+                    Ok(o) => show(&o),
+                    Err(e) => println!("{}: can't be read now: {e}", path.display()),
+                }
+            }
+        }
+    }
+    Ok(())
+}

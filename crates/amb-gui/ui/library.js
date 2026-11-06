@@ -26,6 +26,8 @@ const lib = {
   observer: null,
   collection: null,    // the collection shown instead of the folder, by name
   smart: null,         // ... when it's a smart collection, its name too
+  // A Lightroom catalogue's collection shown ({ catalogue, name }; lightroom.js).
+  lightroom: null,
   expanded: new Set(), // stack ids shown open
   stackSizes: new Map(), // stack id -> photos in it
   copied: null,        // the photo "Copy settings" took its edit from
@@ -122,6 +124,7 @@ async function loadLibrary(dir, more = dir === lib.dir ? lib.more : savedMore(di
   if (dir) saveMore(dir, lib.more);
   lib.collection = null;
   lib.smart = null;
+  lib.lightroom = null;
   const folder = $("library-folder");
   folder.textContent = dir ?? "";
   folder.title = [dir, ...lib.more].filter(Boolean).join("\n");

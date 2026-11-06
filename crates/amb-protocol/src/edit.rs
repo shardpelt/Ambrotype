@@ -49,11 +49,7 @@ pub fn run_compact(req: &EditRequest) -> Result<EditReport, Error> {
 
 fn apply(req: &EditRequest, commands: &[crate::Command]) -> Result<EditReport, Error> {
     let created = !req.sidecar.exists();
-    let mut state = if created {
-        DevelopState::new()
-    } else {
-        DevelopState::load(req.sidecar)?
-    };
+    let mut state = DevelopState::load_or_new(req.sidecar)?;
     let results = state.execute_all(commands)?;
     let dest = req.out.unwrap_or(req.sidecar);
     let changed = results.iter().any(|o| !o.diff.is_empty());
@@ -198,11 +194,7 @@ impl EditReport {
 /// loaded from `path` (an empty state if it does not exist).
 pub fn run_queries(path: &Path, queries: &str) -> Result<serde_json::Value, Error> {
     let queries = parse_queries(queries)?;
-    let state = if path.exists() {
-        DevelopState::load(path)?
-    } else {
-        DevelopState::new()
-    };
+    let state = DevelopState::load_or_new(path)?;
     let answers = queries
         .iter()
         .enumerate()

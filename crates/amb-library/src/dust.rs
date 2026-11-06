@@ -34,8 +34,7 @@ const MARGIN: f64 = 1.5;
 pub fn find_file(photo: &Path) -> Result<Found, String> {
     let source = amb_engine::source_path(photo);
     let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
-    let settings = std::fs::read_to_string(amb_engine::sidecar_path(photo))
-        .ok()
+    let settings = amb_engine::sidecar_text(photo)
         .and_then(|t| amb_presets::xmp::parse_crs(&t).ok())
         .unwrap_or_default();
     Ok(find_image(&img, &settings))

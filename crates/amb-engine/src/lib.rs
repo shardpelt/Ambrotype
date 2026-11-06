@@ -70,6 +70,19 @@ pub fn sidecar_path(photo: &std::path::Path) -> std::path::PathBuf {
     }
 }
 
+/// A photo's edits as sidecar XMP: its sidecar (an empty one counts as
+/// none), or what a Lightroom catalogue opened in place knows of it when
+/// that changed after the sidecar ([`amb_presets::linked`]).
+pub fn sidecar_text(photo: &std::path::Path) -> Option<String> {
+    amb_presets::linked::text(&sidecar_path(photo))
+}
+
+/// The size and modified time (nanoseconds) of what [`sidecar_text`]
+/// reads, to tell when it changed; `None` when there's nothing.
+pub fn sidecar_stamp(photo: &std::path::Path) -> Option<(i64, i64)> {
+    amb_presets::linked::stamp(&sidecar_path(photo))
+}
+
 /// A virtual copy: a second edit of a photo, kept as its own sidecar next
 /// to it, `IMG_0001.copy-2.xmp` for `IMG_0001.nef` (`photo.jpg.copy-2.xmp`
 /// for `photo.jpg`). Lightroom reads only `IMG_0001.xmp`, so it doesn't see

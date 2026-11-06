@@ -248,6 +248,15 @@ USAGE:
     amb collection [list] | show <NAME> | add <NAME> <PHOTO>... | remove <NAME> <PHOTO>...
                    | delete <NAME> [--collections DIR] [--json]
                                             The editor's collections (photos from any folders)
+    amb lrcat open <CATALOG.lrcat> | close <CATALOG.lrcat> | list [--json]
+    amb lrcat sample <OUT.lrcat> <PHOTO>...  A small catalogue in Lightroom's layout of these photos (rated
+                                            4, Red, picked, Exposure +1, a collection Selects), to try
+                                            catalogues without Lightroom
+                                            Open a Lightroom Classic catalogue in place: nothing imported
+                                            or written. The editor's library and every amb command read
+                                            its photos' edits, ratings and keywords from it (a sidecar
+                                            written since wins); its folders and collections show in the
+                                            library's Folders panel
     amb lrcat import <CATALOG.lrcat> [--apply] [--remap OLD=NEW] [--collections DIR] [--json]
                                             Move from Lightroom Classic: each photo's develop settings,
                                             rating, label, flag, keywords, stack, title and caption go into
@@ -329,6 +338,11 @@ fn main() -> ExitCode {
         amb_engine::subject::set_selector(amb_ai::objects::selector(models.clone()));
         amb_engine::subject::set_face_finder(amb_ai::faces::finder(models.clone()));
         amb_engine::retouch::set_inpainter(amb_ai::remove::inpainter(models));
+    }
+    // Lightroom catalogues opened in place: their photos' edits are read
+    // from them, as in the editor.
+    if let Some(file) = amb_library::lightroom::default_path().filter(|f| f.is_file()) {
+        amb_library::lightroom::Catalogues::new(file).install();
     }
     amb_engine::plugin_effects::set_resolver(amb_plugin::effect::resolver(move |id| {
         amb_plugin::find(plugins.as_deref(), id)
@@ -503,6 +517,14 @@ fn main() -> ExitCode {
             None => Err("collage needs --out <FILE>".into()),
         },
         ["lrcat", "import", catalog] => lrcat_import(Path::new(catalog), &options, json),
+        ["lrcat", "open", catalog] => lrcat_in_place("open", Some(Path::new(catalog)), json),
+        ["lrcat", "close", catalog] => lrcat_in_place("close", Some(Path::new(catalog)), json),
+        ["lrcat", "list"] | ["lrcat"] => lrcat_in_place("list", None, json),
+        ["lrcat", "sample", out, photos @ ..] if !photos.is_empty() => {
+            let photos: Vec<PathBuf> = photos.iter().map(PathBuf::from).collect();
+            amb_library::lrcat::write_sample(Path::new(out), &photos)
+                .map(|()| println!("wrote {out}: {} photo(s), rated 4, Red, picked, Exposure +1, in a collection \"Selects\"", photos.len()))
+        }
         ["catalog", "missing"] => organise::missing(None, &options, json),
         ["catalog", "relink", dir] => organise::missing(Some(dir), &options, json),
         ["catalog", rest @ ..] => catalog(rest, &options, json),

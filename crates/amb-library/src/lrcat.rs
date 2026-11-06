@@ -379,7 +379,7 @@ pub struct PlannedPhoto {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub problem: Option<String>,
     #[serde(skip)]
-    text: String,
+    pub(crate) text: String,
 }
 
 /// A collection to make (or add to).
@@ -608,13 +608,134 @@ pub fn apply(plan: &Plan, collections_dir: &Path) -> Report {
     report
 }
 
+/// Write a small catalogue in Lightroom Classic's layout (the tables we
+/// read) holding `photos`, each rated 4, labelled Red and picked, with the
+/// keyword "harbour", Exposure +1 and Contrast +20, and a collection
+/// "Selects" of them all: for trying catalogues without Lightroom, and for
+/// tests (`amb lrcat sample`).
+pub fn write_sample(catalog: &Path, photos: &[PathBuf]) -> Result<(), String> {
+    if catalog.exists() {
+        return Err(format!("{} is already there", catalog.display()));
+    }
+    let db = Connection::open(catalog).map_err(|e| e.to_string())?;
+    let sql = |q: &str, p: &[&dyn rusqlite::ToSql]| {
+        db.execute(q, p).map(|_| ()).map_err(|e| e.to_string())
+    };
+    db.execute_batch(
+        "CREATE TABLE Adobe_variablesTable (id_local INTEGER PRIMARY KEY, id_global, name, type, value);
+        INSERT INTO Adobe_variablesTable VALUES (1, 'v', 'Adobe_DBVersion', NULL, '1300025');
+        CREATE TABLE AgLibraryRootFolder (id_local INTEGER PRIMARY KEY, id_global, absolutePath, name, relativePathFromCatalog);
+        CREATE TABLE AgLibraryFolder (id_local INTEGER PRIMARY KEY, id_global, parentId, pathFromRoot, rootFolder, visibility);
+        CREATE TABLE AgLibraryFile (id_local INTEGER PRIMARY KEY, id_global, baseName, errorMessage, errorTime,
+            extension, externalModTime, folder, idx_filename, importHash, lc_idx_filename, lc_idx_filenameExtension,
+            md5, modTime, originalFilename, sidecarExtensions);
+        CREATE TABLE Adobe_images (id_local INTEGER PRIMARY KEY, id_global, aspectRatioCache, bitDepth,
+            captureTime, colorChannels, colorLabels, colorMode, copyCreationTime, copyName, copyReason,
+            developSettingsIDCache, fileFormat, fileHeight, fileWidth, hasMissingSidecars, masterImage,
+            orientation, originalCaptureTime, originalRootEntity, panningDistanceH, panningDistanceV,
+            pick, positionInFolder, propertiesCache, pyramidIDCache, rating, rootFile, sidecarStatus,
+            touchCount, touchTime);
+        CREATE TABLE Adobe_AdditionalMetadata (id_local INTEGER PRIMARY KEY, id_global, additionalInfoSet,
+            embeddedXmp, externalXmpIsDirty, image, incrementalWhiteBalance, internalXmpDigest,
+            isRawFile, lastSynchronizedHash, lastSynchronizedTimestamp, metadataPresetID,
+            metadataVersion, monochrome, xmp);
+        CREATE TABLE Adobe_imageDevelopSettings (id_local INTEGER PRIMARY KEY, allowFastRender, beforeSettingsIDCache,
+            croppedHeight, croppedWidth, digest, fileHeight, fileWidth, grayscale, hasDevelopAdjustments,
+            hasDevelopAdjustmentsEx, historySettingsID, image, processVersion, settingsID, snapshotID,
+            text, validatedForVersion, whiteBalance);
+        CREATE TABLE AgLibraryKeyword (id_local INTEGER PRIMARY KEY, id_global, dateCreated, genealogy,
+            imageCountCache, includeOnExport, includeParents, includeSynonyms, keywordType, lastApplied,
+            lc_name, name, parent);
+        INSERT INTO AgLibraryKeyword (id_local, name) VALUES (1, 'harbour');
+        CREATE TABLE AgLibraryKeywordImage (id_local INTEGER PRIMARY KEY, image, tag);
+        CREATE TABLE AgLibraryFolderStack (id_local INTEGER PRIMARY KEY, id_global, collapsed, text);
+        CREATE TABLE AgLibraryFolderStackImage (id_local INTEGER PRIMARY KEY, collapsed, image, position, stack);
+        CREATE TABLE AgLibraryCollection (id_local INTEGER PRIMARY KEY, creationId, genealogy, imageCount,
+            name, parent, systemOnly);
+        INSERT INTO AgLibraryCollection (id_local, creationId, name, parent, systemOnly)
+            VALUES (1, 'com.adobe.ag.library.collection', 'Selects', NULL, 0);
+        CREATE TABLE AgLibraryCollectionImage (id_local INTEGER PRIMARY KEY, collection, image, pick,
+            positionInCollection);",
+    )
+    .map_err(|e| e.to_string())?;
+    let mut folders: Vec<PathBuf> = Vec::new();
+    for (i, photo) in photos.iter().enumerate() {
+        let photo =
+            std::fs::canonicalize(photo).map_err(|e| format!("{}: {e}", photo.display()))?;
+        let dir = photo
+            .parent()
+            .ok_or("a photo without a folder")?
+            .to_path_buf();
+        let folder = match folders.iter().position(|f| *f == dir) {
+            Some(k) => k + 1,
+            None => {
+                folders.push(dir.clone());
+                let k = folders.len();
+                // Lightroom keeps paths with forward slashes, ending in one.
+                let root = format!(
+                    "{}/",
+                    dir.to_string_lossy()
+                        .replace('\\', "/")
+                        .trim_end_matches('/')
+                );
+                sql(
+                    "INSERT INTO AgLibraryRootFolder (id_local, absolutePath, name) VALUES (?1, ?2, ?3)",
+                    &[&(k as i64), &root, &"photos"],
+                )?;
+                sql(
+                    "INSERT INTO AgLibraryFolder (id_local, pathFromRoot, rootFolder) VALUES (?1, '', ?1)",
+                    &[&(k as i64)],
+                )?;
+                k
+            }
+        } as i64;
+        let id = i as i64 + 1;
+        let stem = photo
+            .file_stem()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned();
+        let ext = photo
+            .extension()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned();
+        let name = photo
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .into_owned();
+        sql(
+            "INSERT INTO AgLibraryFile (id_local, baseName, extension, folder, idx_filename) VALUES (?1, ?2, ?3, ?4, ?5)",
+            &[&id, &stem, &ext, &folder, &name],
+        )?;
+        sql(
+            "INSERT INTO Adobe_images (id_local, colorLabels, pick, rating, rootFile) VALUES (?1, 'Red', 1.0, 4.0, ?1)",
+            &[&id],
+        )?;
+        sql(
+            "INSERT INTO Adobe_imageDevelopSettings (image, text) VALUES (?1, 's = { Exposure2012 = 1, Contrast2012 = 20, ProcessVersion = \"11.0\", }')",
+            &[&id],
+        )?;
+        sql(
+            "INSERT INTO AgLibraryKeywordImage (image, tag) VALUES (?1, 1)",
+            &[&id],
+        )?;
+        sql(
+            "INSERT INTO AgLibraryCollectionImage (collection, image, positionInCollection) VALUES (1, ?1, ?1)",
+            &[&id],
+        )?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
 
     /// A small catalogue in Lightroom Classic's layout (the tables and
     /// columns we read, as other catalogue readers document them).
-    fn catalogue(dir: &Path, photos: &Path) -> PathBuf {
+    pub(crate) fn catalogue(dir: &Path, photos: &Path) -> PathBuf {
         let path = dir.join("Test Catalog.lrcat");
         let db = Connection::open(&path).unwrap();
         let root = format!("{}/", photos.to_string_lossy().replace('\\', "/"));
@@ -697,6 +818,26 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("photos/2024")).unwrap();
         dir
+    }
+
+    #[test]
+    fn a_sample_catalogue_reads_back() {
+        let dir = temp("sample");
+        let photo = dir.join("photos/2024/a.dng");
+        std::fs::write(&photo, b"x").unwrap();
+        let catalog = dir.join("Sample.lrcat");
+        write_sample(&catalog, std::slice::from_ref(&photo)).unwrap();
+        let c = read(&catalog).unwrap();
+        assert_eq!(c.photos.len(), 1);
+        let p = &c.photos[0];
+        assert_eq!(PathBuf::from(&p.path), photo.canonicalize().unwrap());
+        assert_eq!(
+            (p.info.rating, p.info.label.as_deref()),
+            (Some(4), Some("Red"))
+        );
+        assert_eq!(p.info.keywords, ["harbour"]);
+        assert_eq!(c.collections[0].photos, [p.id]);
+        assert!(write_sample(&catalog, &[]).is_err(), "never over a file");
     }
 
     #[test]

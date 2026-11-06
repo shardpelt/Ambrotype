@@ -293,10 +293,9 @@ impl Session {
         let source = amb_engine::source_path(path);
         let full = raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
         let sidecar = sidecar_path(path);
-        // An empty sidecar file counts as none.
-        let own = std::fs::read_to_string(&sidecar)
-            .ok()
-            .filter(|t| !t.trim().is_empty());
+        // An empty sidecar file counts as none; a Lightroom catalogue opened
+        // in place may know the photo instead.
+        let own = amb_engine::sidecar_text(path);
         let (state, base_xmp) = match own {
             Some(text) => {
                 let state = DevelopState::from_xmp_str(&text).map_err(|e| {

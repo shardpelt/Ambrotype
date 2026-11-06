@@ -75,6 +75,7 @@ function renderCollectionControls() {
 
 // Show a collection in the library ("" for the folder).
 async function showCollection(name) {
+  lib.lightroom = null;
   if (name === NEW_SMART) {
     renderCollectionControls();
     return editSmartCollection(null);

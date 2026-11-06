@@ -327,7 +327,7 @@ fn developed(
     let result = solve(&small, &base, &|s| matching::develop_plain(s));
     let commands = look::commands(&result.changes);
     let sidecar = amb_engine::sidecar_path(photo);
-    let mut state = if sidecar.is_file() {
+    let mut state = if sidecar.is_file() || amb_presets::linked::get(&sidecar).is_some() {
         DevelopState::load(&sidecar).map_err(|e| e.to_string())?
     } else {
         DevelopState::from_settings(base.clone())

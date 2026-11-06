@@ -145,11 +145,7 @@ pub(crate) fn apply_result(
     }
     let sidecar = edit_target(photo);
     let created = !sidecar.exists();
-    let mut state = if created {
-        amb_protocol::DevelopState::new()
-    } else {
-        amb_protocol::DevelopState::load(&sidecar).map_err(|e| e.to_string())?
-    };
+    let mut state = amb_protocol::DevelopState::load_or_new(&sidecar).map_err(|e| e.to_string())?;
     let results = state
         .execute_grouped(label, &commands)
         .map_err(|e| e.to_string())?;

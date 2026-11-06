@@ -37,6 +37,7 @@ const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 async function runLrcatPlan() {
   const go = $("lrcat-go");
   go.disabled = true;
+  $("lrcat-inplace").disabled = true;
   lrc.plan = null;
   $("lrcat-list").replaceChildren();
   const args = lrcatArgs();
@@ -71,6 +72,7 @@ async function runLrcatPlan() {
       );
       return li;
     }));
+    $("lrcat-inplace").disabled = false;
     const work = c.write + plan.collections.length;
     go.disabled = work === 0;
     go.textContent = c.write ? `Write ${plural(c.write, "sidecar")}` : "Move";
@@ -85,6 +87,7 @@ async function lrcatFlow() {
   dlg.showModal();
   if (lrcatArgs().catalog) planLrcat();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  if (choice === "inplace") return openLightroomCatalogue(lrcatArgs().catalog);
   if (choice !== "ok" || !lrc.plan) return;
   $("busy").hidden = false;
   try {

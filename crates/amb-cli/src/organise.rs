@@ -73,8 +73,7 @@ fn collections_dir(options: &Options) -> Result<PathBuf, String> {
 }
 
 fn read_info(photo: &Path) -> PhotoInfo {
-    std::fs::read_to_string(amb_engine::sidecar_path(photo))
-        .ok()
+    amb_engine::sidecar_text(photo)
         .as_deref()
         .map(sidecar::read_info)
         .unwrap_or_default()
@@ -82,7 +81,8 @@ fn read_info(photo: &Path) -> PhotoInfo {
 
 fn write_info(photo: &Path, info: &PhotoInfo) -> Result<PhotoInfo, String> {
     let path = amb_engine::sidecar_path(photo);
-    let on_disk = std::fs::read_to_string(&path).ok();
+    // From a Lightroom catalogue opened in place, when it knows the photo.
+    let on_disk = amb_engine::sidecar_text(photo);
     let text = sidecar::with_info(on_disk.as_deref(), info).map_err(|e| e.to_string())?;
     sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())?;
     Ok(sidecar::read_info(&text))

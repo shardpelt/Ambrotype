@@ -7,6 +7,7 @@
 //! this preset", which is different from "set to the default".
 
 pub mod amount;
+pub mod linked;
 pub mod lrtemplate;
 pub mod masks;
 pub mod registry;
@@ -123,6 +124,16 @@ impl Preset {
     /// Read and parse a file. XMP packets embedded in other files (DNG, JPEG)
     /// are located by their `<x:xmpmeta` marker.
     pub fn from_path(path: &Path) -> Result<Preset, Error> {
+        // A sidecar a Lightroom catalogue opened in place knows better.
+        let sidecar = path
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case("xmp"));
+        if let Some(text) = linked::get(path)
+            .filter(|_| sidecar)
+            .and(linked::text(path))
+        {
+            return Self::parse(&text);
+        }
         let bytes = std::fs::read(path)?;
         if let Ok(text) = std::str::from_utf8(&bytes) {
             return Self::parse(text);

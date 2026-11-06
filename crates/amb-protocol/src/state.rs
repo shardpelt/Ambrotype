@@ -379,12 +379,26 @@ impl DevelopState {
             return Self::from_json_str(&text).map_err(|e| at(e.to_string()));
         }
         if has_extension(path, "xmp") {
-            // A sidecar: with its stored history.
-            let text = std::fs::read_to_string(path).map_err(|e| at(e.to_string()))?;
+            // A sidecar: with its stored history. A Lightroom catalogue
+            // opened in place may know it better (`amb_presets::linked`).
+            let text = match amb_presets::linked::text(path) {
+                Some(t) => t,
+                None => std::fs::read_to_string(path).map_err(|e| at(e.to_string()))?,
+            };
             return Self::from_xmp_str(&text).map_err(|e| at(e.to_string()));
         }
         let preset = Preset::from_path(path).map_err(|e| at(e.to_string()))?;
         Ok(Self::from_settings(preset.settings))
+    }
+
+    /// [`load`](Self::load) a sidecar, or a new state when there is none
+    /// (and no Lightroom catalogue opened in place knows its photo).
+    pub fn load_or_new(path: &Path) -> Result<Self, Error> {
+        if path.exists() || amb_presets::linked::get(path).is_some() {
+            Self::load(path)
+        } else {
+            Ok(Self::new())
+        }
     }
 
     /// Save to `.json` or `.xmp`, both with the history (in the XMP as
@@ -409,8 +423,13 @@ impl DevelopState {
         } else if has_extension(path, "xmp") {
             let history = self.history_for_sidecar();
             let snapshots = self.snapshots_for_sidecar();
+            let linked = || amb_presets::linked::get(path).and(amb_presets::linked::text(path));
             let original = match base {
                 Some(base) => base.to_string(),
+                // A Lightroom catalogue opened in place: its metadata stays.
+                None if !path.exists() || amb_presets::linked::get(path).is_some() => {
+                    linked().unwrap_or_default()
+                }
                 None => match std::fs::read_to_string(path) {
                     Ok(existing) => existing,
                     Err(e) if e.kind() == std::io::ErrorKind::NotFound => String::new(),

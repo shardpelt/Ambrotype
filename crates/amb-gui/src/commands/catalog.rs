@@ -442,3 +442,147 @@ pub(crate) fn index_library(app: tauri::AppHandle) -> bool {
     });
     true
 }
+
+// Lightroom Classic catalogues opened in place (amb_library::lightroom):
+// shown in the Folders panel, read, never written.
+
+static LIGHTROOM: std::sync::OnceLock<std::sync::Arc<amb_library::lightroom::Catalogues>> =
+    std::sync::OnceLock::new();
+
+/// The catalogues opened in place, listed in `config_dir`; made the source
+/// every sidecar read asks, on first use.
+pub(crate) fn lightroom_at(config_dir: &Path) -> &'static amb_library::lightroom::Catalogues {
+    LIGHTROOM.get_or_init(|| {
+        let c =
+            amb_library::lightroom::Catalogues::new(config_dir.join("lightroom-catalogues.json"));
+        c.install();
+        c
+    })
+}
+
+fn lightroom(app: &tauri::AppHandle) -> Res<&'static amb_library::lightroom::Catalogues> {
+    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    Ok(lightroom_at(&dir))
+}
+
+/// A collection of a catalogue's, by how many photos it has.
+#[derive(Serialize)]
+pub(crate) struct LrCollectionView {
+    name: String,
+    set: Option<String>,
+    photos: usize,
+}
+
+/// A catalogue opened in place, for the Folders panel.
+#[derive(Serialize)]
+pub(crate) struct LrCatalogueView {
+    catalogue: PathBuf,
+    name: String,
+    /// Why it can't be read now (moved, or not a catalogue).
+    error: Option<String>,
+    photos: usize,
+    missing: usize,
+    folders: Vec<amb_library::lightroom::Folder>,
+    collections: Vec<LrCollectionView>,
+    smart_collections: Vec<String>,
+    warnings: Vec<String>,
+}
+
+fn lr_view(
+    catalogue: PathBuf,
+    opened: Result<std::sync::Arc<amb_library::lightroom::Opened>, String>,
+) -> LrCatalogueView {
+    let name = catalogue
+        .file_stem()
+        .map(|s| s.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    match opened {
+        Ok(o) => LrCatalogueView {
+            catalogue,
+            name,
+            error: None,
+            photos: o.photos,
+            missing: o.missing,
+            folders: o.folders.clone(),
+            collections: o
+                .collections
+                .iter()
+                .map(|c| LrCollectionView {
+                    name: c.name.clone(),
+                    set: c.set.clone(),
+                    photos: c.photos.len(),
+                })
+                .collect(),
+            smart_collections: o.smart_collections.clone(),
+            warnings: o.warnings.clone(),
+        },
+        Err(e) => LrCatalogueView {
+            catalogue,
+            name,
+            error: Some(e),
+            photos: 0,
+            missing: 0,
+            folders: Vec::new(),
+            collections: Vec::new(),
+            smart_collections: Vec::new(),
+            warnings: Vec::new(),
+        },
+    }
+}
+
+#[tauri::command]
+pub(crate) async fn lightroom_catalogues(app: tauri::AppHandle) -> Res<Vec<LrCatalogueView>> {
+    let c = lightroom(&app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        c.all()
+            .into_iter()
+            .map(|(path, opened)| lr_view(path, opened))
+            .collect()
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Open a catalogue in place: nothing is imported or written.
+#[tauri::command]
+pub(crate) async fn lightroom_open(app: tauri::AppHandle, path: String) -> Res<LrCatalogueView> {
+    let c = lightroom(&app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let opened = c.add(Path::new(&path))?;
+        Ok(lr_view(opened.catalogue.clone(), Ok(opened)))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Stop showing a catalogue; sidecars written meanwhile stay.
+#[tauri::command]
+pub(crate) fn lightroom_close(app: tauri::AppHandle, path: String) -> Res<()> {
+    lightroom(&app)?.remove(Path::new(&path))
+}
+
+/// A catalogue's collection, shown like one of ours.
+#[tauri::command]
+pub(crate) async fn lightroom_collection(
+    app: tauri::AppHandle,
+    catalogue: String,
+    name: String,
+) -> Res<CollectionView> {
+    let c = lightroom(&app)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let opened = c.get(Path::new(&catalogue))?;
+        let found = opened
+            .collections
+            .iter()
+            .find(|x| x.name == name)
+            .ok_or_else(|| format!("no collection {name:?} in {catalogue}"))?;
+        let (photos, missing) = library::list_paths(&found.photos);
+        Ok(CollectionView {
+            name: found.name.clone(),
+            photos,
+            missing,
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}

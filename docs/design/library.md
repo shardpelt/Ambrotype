@@ -195,13 +195,23 @@ Lightroom keeps stacks in its catalogue. Ours go in the sidecar: `amblib:Stack` 
 - Photos that have moved (another disk or computer) are found with one path replacement: "Where Lightroom had them" / "Where they are now" (`--remap OLD=NEW`).
 - The tables and columns read are the documented ones other free catalogue readers use; optional ones (keywords, stacks, collections) are skipped when a catalogue lacks them. Tested on synthetic catalogues only so far.
 
+## A Lightroom catalogue in place (2026-11-06)
+
+The library's Folders panel → **Lightroom +** (or From Lightroom… → **Open in place**, `amb lrcat open Catalog.lrcat`) uses a catalogue as it is: nothing imported, nothing written next to the photos, the catalogue only read.
+
+- **What shows:** under Lightroom in the Folders panel, each catalogue with its folders (by their last two names, with counts) and collections (in their sets). A folder opens as any folder does; a collection shows like one of ours, read-only.
+- **How:** `amb_presets::linked` is asked for every sidecar read, by the sidecar's path (`amb_engine::sidecar_text`, `amb_protocol::DevelopState::load`, `Preset::from_path` for a sidecar, the catalogue index's stamps). `amb_library::lightroom::Catalogues` answers from the catalogues listed in `lightroom-catalogues.json` (beside `library-folders.json`): each read with `lrcat::plan`, kept until its file's modified time changes (looked at no more than every 2 s).
+- **The last change wins:** a sidecar written after the catalogue last changed (by us or Lightroom) is read; otherwise the catalogue's copy. An edit, rating or keyword change here writes the sidecar as usual, starting from the catalogue's edit and metadata, so it then wins; a later edit in Lightroom (a newer catalogue file) brings the catalogue's back. Lightroom sees our changes only through the sidecars (Metadata → Read Metadata from Files), as with any photo.
+- **Not shown in place:** virtual copies (they would be files of ours: From Lightroom… moves them) and smart collections (named only). Moved photos are counted as not found (From Lightroom… can remap them).
+- **Trying it without Lightroom:** `amb lrcat sample OUT.lrcat PHOTO…` writes a small catalogue in Lightroom's layout (rated 4, Red, picked, Exposure +1, a collection "Selects"); CI's UI test opens one in place (`tests/ui/browse.js`).
+
 ## Code
 
 - `crates/amb-library/src/folder.rs`: which files in a folder are photos, in order; `catalog.rs`: the catalogue.
 - `crates/amb-gui/src/library.rs`: listing, batch info changes, paste commands, batch export.
 - `crates/amb-gui/ui/library.js`: the grid, selection, panel and keys.
 - `crates/amb-gui/ui/cull.js`: loupe, compare and survey.
-- `crates/amb-library/src/lrcat.rs` and `crates/amb-gui/ui/lrcat.js`: moving from Lightroom Classic.
+- `crates/amb-library/src/lrcat.rs` and `crates/amb-gui/ui/lrcat.js`: moving from Lightroom Classic; `crates/amb-library/src/lightroom.rs`, `crates/amb-presets/src/linked.rs` and `crates/amb-gui/ui/lightroom.js`: a catalogue in place.
 - Labels and flags in `amb_protocol::sidecar::PhotoInfo` (`xmp:Label`, `amblib:Flag`); labels are exported as XMP (`amb_export::exif::Tags::label`), flags are not.
 
 ## Not yet

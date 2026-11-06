@@ -46,11 +46,8 @@ pub(crate) fn fuji(
     let apply = photo.filter(|_| options.contains_key("--apply"));
     if let Some(photo) = apply {
         let sidecar = edit_target(photo);
-        let mut state = if sidecar.exists() {
-            amb_protocol::DevelopState::load(&sidecar).map_err(|e| e.to_string())?
-        } else {
-            amb_protocol::DevelopState::new()
-        };
+        let mut state =
+            amb_protocol::DevelopState::load_or_new(&sidecar).map_err(|e| e.to_string())?;
         state
             .execute_grouped(&format!("Fuji recipe: {name}"), &made.commands)
             .map_err(|e| e.to_string())?;

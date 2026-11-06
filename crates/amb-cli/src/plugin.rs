@@ -342,12 +342,8 @@ pub fn run(
     } else {
         amb_engine::sidecar_path(target)
     };
-    let state = if sidecar.exists() {
-        amb_protocol::DevelopState::load(&sidecar)
-            .map_err(|e| format!("{}: {e}", sidecar.display()))?
-    } else {
-        amb_protocol::DevelopState::new()
-    };
+    let state = amb_protocol::DevelopState::load_or_new(&sidecar)
+        .map_err(|e| format!("{}: {e}", sidecar.display()))?;
     if plugin.manifest.is_effect() {
         // An effect isn't run once: it is added to the edit and rendered with it.
         let params = plugin.manifest.resolve_params(&parse_params(params)?)?;

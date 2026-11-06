@@ -16,7 +16,8 @@
 //!   and `custom/<id>.json` for the user's own models' descriptions.
 //! - **Downloads** come from where the authors (or the converter) publish
 //!   the model, and are checked against the sha256 in the list.
-//! - **Running** is local, with `tract` (pure Rust), on all cores. The result
+//! - **Running** is local: on the GPU with our own kernels when there is
+//!   one (`net`), else with `tract` (pure Rust) on all cores. The result
 //!   for a photo is kept, so moving sliders doesn't run it again; only a new
 //!   photo or crop does.
 
@@ -30,6 +31,8 @@ use serde::{Deserialize, Serialize};
 use tract_onnx::prelude::*;
 
 pub mod faces;
+mod net;
+pub use net::runs_on;
 pub mod objects;
 pub mod remove;
 pub mod search;
@@ -581,7 +584,7 @@ pub fn ensure_model(dir: &Path) -> Result<PathBuf, String> {
     Ok(file_of(dir, &spec.id))
 }
 
-type Model = Arc<TypedRunnableModel>;
+type Model = Arc<crate::net::Net>;
 
 fn load(path: &Path, spec: &ModelSpec) -> Result<Model, String> {
     let s = spec.input.size;
@@ -594,8 +597,7 @@ fn load(path: &Path, spec: &ModelSpec) -> Result<Model, String> {
             };
             m.with_input_fact(0, f32::fact(shape).into())
         })
-        .and_then(|m| m.into_optimized())
-        .and_then(|m| m.into_runnable())
+        .and_then(crate::net::build)
         .map_err(|e| format!("{} didn't load: {e}", spec.name))
 }
 

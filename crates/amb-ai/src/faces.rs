@@ -16,7 +16,7 @@ use std::sync::{Arc, Mutex};
 use amb_engine::subject::{Face, FaceFinder};
 use tract_onnx::prelude::*;
 
-type Runnable = Arc<TypedRunnableModel>;
+type Runnable = Arc<crate::net::Net>;
 
 /// The side of the picture YuNet looks at.
 const SIZE: usize = 640;
@@ -48,8 +48,7 @@ pub fn finder(dir: PathBuf) -> Arc<FaceFinder> {
                 let model = tract_onnx::onnx()
                     .model_for_path(&path)
                     .and_then(|m| m.with_input_fact(0, f32::fact([1, 3, SIZE, SIZE]).into()))
-                    .and_then(|m| m.into_optimized())
-                    .and_then(|m| m.into_runnable())
+                    .and_then(crate::net::build)
                     .map_err(|e| format!("{} didn't load ({}): {e}", spec.name, path.display()))?;
                 *guard = Some((spec.id.clone(), model));
             }

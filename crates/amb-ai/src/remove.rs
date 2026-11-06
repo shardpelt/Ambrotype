@@ -24,7 +24,7 @@ use crate::Pixels;
 /// A loaded remove model, and what its pixels are.
 #[derive(Clone)]
 pub struct Model {
-    runnable: Arc<TypedRunnableModel>,
+    runnable: Arc<crate::net::Net>,
     pixels: Pixels,
 }
 
@@ -94,8 +94,7 @@ pub fn load(path: &Path, pixels: Pixels) -> Result<Model, String> {
         .model_for_path(path)
         .and_then(|m| m.with_input_fact(0, fact([1, 3, n, n])))
         .and_then(|m| m.with_input_fact(1, fact([1, 1, n, n])))
-        .and_then(|m| m.into_optimized())
-        .and_then(|m| m.into_runnable())
+        .and_then(crate::net::build)
         .map(|runnable| Model { runnable, pixels })
         .map_err(|e| format!("{name} didn't load: {e}"))
 }

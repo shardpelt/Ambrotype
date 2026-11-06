@@ -43,7 +43,7 @@ fn crop() -> String {
     "crop".into()
 }
 
-type Model = std::sync::Arc<TypedRunnableModel>;
+type Model = std::sync::Arc<crate::net::Net>;
 
 /// A loaded search model.
 pub struct Embedder {
@@ -203,8 +203,7 @@ fn load_fixed(path: &Path, input: TypedFact) -> Result<Model, String> {
     }
     model
         .with_input_fact(0, input.into())
-        .and_then(|m| m.into_optimized())
-        .and_then(|m| m.into_runnable())
+        .and_then(crate::net::build)
         .map_err(|e| format!("{name} didn't load: {e}"))
 }
 

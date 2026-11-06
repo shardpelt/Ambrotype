@@ -38,6 +38,8 @@ async function modelAction(cmd, id, done) {
 }
 
 function renderModels(list) {
+  // Where they run: our GPU kernels, or the CPU (and why).
+  $("models-runs-on").textContent = list.runs_on ? `Models run ${list.runs_on}. Small ones stay on the CPU, where they are quicker.` : "";
   const box = $("models-list");
   box.replaceChildren();
   for (const [task, about] of list.tasks) {

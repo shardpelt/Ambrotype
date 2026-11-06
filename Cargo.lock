@@ -87,6 +87,7 @@ name = "amb-ai"
 version = "0.1.0"
 dependencies = [
  "amb-engine",
+ "amb-gpu",
  "regex",
  "serde",
  "serde_json",

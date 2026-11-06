@@ -10,6 +10,7 @@ pub struct Gpu {
     info: wgpu::AdapterInfo,
     pub(crate) adapter: wgpu::Adapter,
     kernels: std::sync::OnceLock<crate::develop::Kernels>,
+    pub(crate) nn: std::sync::OnceLock<crate::nn::Kernels>,
     /// Bytes of buffers made so far (a render's share is its peak memory:
     /// they all live until its work is submitted).
     allocated: std::sync::atomic::AtomicUsize,
@@ -60,6 +61,7 @@ impl Gpu {
             info,
             adapter,
             kernels: std::sync::OnceLock::new(),
+            nn: std::sync::OnceLock::new(),
             allocated: Default::default(),
         })
     }
@@ -101,7 +103,7 @@ impl Gpu {
         self.allocated.load(std::sync::atomic::Ordering::Relaxed)
     }
 
-    fn count(&self, bytes: usize) {
+    pub(crate) fn count(&self, bytes: usize) {
         self.allocated
             .fetch_add(bytes, std::sync::atomic::Ordering::Relaxed);
     }

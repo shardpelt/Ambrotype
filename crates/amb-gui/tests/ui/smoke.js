@@ -833,6 +833,12 @@ await t.step("Remove object: Shift+Q opens the tool; a box sends its corners, a 
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("Settings → AI models says where models run (GPU or CPU, and why)", async () => {
+  await modelsTab();
+  const said = $("models-runs-on").textContent;
+  t.expect(/^Models run on the (GPU|CPU) \(.+\)/.test(said), `said: ${said}`);
+});
+
 await t.step("Feedback works without a GitHub account: by email, or copied", async () => {
   const flow = feedbackFlow();
   await t.until("the dialog", () => $("feedback-dialog").open);

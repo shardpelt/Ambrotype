@@ -22,7 +22,7 @@ use tract_onnx::prelude::*;
 
 use crate::ModelSpec;
 
-type Runnable = Arc<TypedRunnableModel>;
+type Runnable = Arc<crate::net::Net>;
 
 /// The encoder's three outputs for one picture.
 type Features = Arc<[TValue; 3]>;
@@ -196,8 +196,7 @@ fn load(
             .and_then(|m| m.with_input_fact(4, i64::fact([1, n]).into())),
     };
     model
-        .and_then(|m| m.into_optimized())
-        .and_then(|m| m.into_runnable())
+        .and_then(crate::net::build)
         .map_err(|e| format!("{} didn't load ({}): {e}", spec.name, path.display()))
 }
 

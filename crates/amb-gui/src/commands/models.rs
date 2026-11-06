@@ -23,6 +23,8 @@ pub(crate) struct ModelsList {
     pub(crate) tasks: Vec<(&'static str, &'static str)>,
     pub(crate) models: Vec<amb_ai::ModelState>,
     pub(crate) folder: String,
+    /// Where models run: "on the GPU (name)" or "on the CPU (why)".
+    pub(crate) runs_on: String,
 }
 
 fn list(state: &AppState) -> Res<ModelsList> {
@@ -31,6 +33,7 @@ fn list(state: &AppState) -> Res<ModelsList> {
         tasks: amb_ai::TASKS.to_vec(),
         models: amb_ai::list(&dir),
         folder: dir.display().to_string(),
+        runs_on: amb_ai::runs_on(),
     })
 }
 

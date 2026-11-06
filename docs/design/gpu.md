@@ -55,3 +55,15 @@ The editor's preview of the same edit was also compared both ways in the editor,
 - Speed has not been measured on a real GPU yet: this was built on a machine without one. Measure on the Mac (Apple Silicon): the status bar (Settings → General) shows each preview's time, and `AMB_GPU=off` gives the CPU's for comparison.
 - Every stage runs on the GPU now, with a few small trips back: the dehaze estimate (when Dehaze is set), colour noise reduction's guided filter and noise measurement (a 1/16 copy and the tile sums), and luminance noise reduction's noise measurement (one set of sums per 16-pixel tile). Each trip waits for the GPU to finish what came before it.
 - Luminance noise reduction: the GPU makes the centred encoded luminance and the Haar power of each 16-pixel tile, the CPU takes the noise percentiles per luminance band and returns the noise and eps tables (`detail::luminance_nr_tables`), and the GPU runs the two self-guided filters, Detail's soft threshold, Contrast's blur and the luminance ratio.
+
+## AI models (2026-11-06)
+
+`amb-ai`'s models run on the GPU too, with our own kernels (`src/nn.rs`, `shaders/nn.wgsl`), not a vendor runtime:
+
+- **The graph:** `amb-ai/src/net.rs` loads a model with tract, simplifies it (tract's "decluttered" form) and walks it layer by layer. A layer with a kernel runs on the GPU; any other (shapes, integer maths, a cast from bytes) runs with tract's own code on the CPU, its inputs read back and its outputs sent again. Weights are sent once and kept.
+- **Which models:** only if every convolution and matrix product can run on the GPU, and only if the model has at least 2·10⁸ multiply-adds (smaller ones are quicker on the CPU). A run that fails (a wgpu error included) runs on the CPU, and the model stays there.
+- **Kernels:** convolution as a tiled matrix product reading the input in place (64 × 64 outputs a workgroup, 4 × 4 a thread), a direct one for depthwise convolutions, transposed convolution, matrix products by strides (up to three batch axes; operands copied into order only when their axes don't line up), element-wise maths with broadcasting, a strided copy for transposes, slices, broadcasts, tiles and nearest upsampling, padding (constant, reflect, edge), reductions, softmax, RMS norm, max pooling and gather. All f32.
+- **Order:** work is recorded in one command list and sent every 64 kernels. A queue write lands before work not yet sent, so the session sends its work before each upload (a reused buffer may still be read).
+- **Checks:** `net.rs`'s tests build a small network and compare it with tract; `AMB_NET=model.onnx AMB_NET_SHAPE=… cargo test -p amb-ai --release -- --ignored net` compares a real model (on lavapipe: YuNet 3e-7, SAM 2.1 tiny 8e-6, Big-LaMa 9e-7, MI-GAN one level in 255 from rounding to bytes). `AMB_NET_CHECK=1` compares every layer and names the first that differs.
+- **Not yet:** speed on a real GPU is unmeasured; no fp16; a tensor over the GPU's largest buffer binding runs its layer on the CPU (lavapipe: 128 MB, which SAM's attention passes).
+

@@ -6,7 +6,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 1. **v0.1.0:** try the editor on a Mac and once on Windows (the list is in NEXT.md's v0.1 checklist), then say go: tag, check the draft release, publish, and point the README at it.
 2. **Auto Density and Auto Grade on real negatives:** try both switches (Negative panel, beside Auto) on a roll. If they look right, they become Auto's default.
-3. **GPU speed:** export a 24 MP raw on the Mac with and without `AMB_GPU=off` (both are tiled or whole as the GPU's memory allows).
+3. **GPU speed:** export a 24 MP raw on the Mac with and without `AMB_GPU=off` (both are tiled or whole as the GPU's memory allows). And AI on the GPU: time Select object's first click and an AI Remove with and without `AMB_AI_GPU=off` (Settings → AI models says where they run).
 4. **Your sample raw** to replace the stand-in sample photo, after the release.
 
 ## Up next (in this order)
@@ -15,11 +15,11 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
 3. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
 4. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
-5. **From the competition:** AI Remove on the GPU (our own kernels) and raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place ([research/17](research/17-competitors-2026.md)).
+5. **From the competition:** raw AI Denoise (our own builds, after CalibRaw's ideas); open a Lightroom catalogue in place ([research/17](research/17-competitors-2026.md)).
 
 ## Ideas for later
 
-- **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): face-part masks; AI models on the GPU (RapidRAW: DirectML, CoreML).
+- **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): face-part masks.
 - **Teach by showing** (owner, 2026-11-03): the app should teach its features by showing them, not by manuals, and one question should open up many related features. Ideas:
   - Done 2026-11-05: tips while waiting and in the search box and preset filter, from FEATURES.md, used features skipped, both switches in Settings → General; each How to lists two or three related features to follow.
   - **Tips while waiting:** while something loads or runs (opening a raw, an export, Convert raws, AI Remove), one short tip about a feature, with a button to try it.
@@ -30,6 +30,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **More trippy** (owner, 2026-11-04): done 2026-11-05 (Edges and Neon, Where with its hover view, amounts to 200 %). Still to do: Basic's own sliders past their ranges in Trippy (Lightroom's ranges are kept in the sidecar, so it would be our own extra settings).
 
 ## Recently done
+
+- 2026-11-06: AI models on the GPU, with our own kernels (`amb-gpu`'s `nn`: convolutions, matrix products, the element-wise and shape layers): SAM 2.1, Big-LaMa, MI-GAN, YuNet and full-precision search models run there when the computer has a GPU, each layer we have no kernel for on the CPU in between, and the whole model on the CPU if a run fails; on a software GPU each matches the CPU (LaMa and SAM within 1e-5). Settings → AI models and `amb models` say where they run; `AMB_AI_GPU=off` keeps them on the CPU
 
 - 2026-11-05: more trippy: any effect can be kept to part of the photo (Effects → Where: highlights, midtones, shadows, or a colour; amb:Effects `where`, judged from the photo before it), and hovering Where tints where on the photo; in Trippy an effect's amount goes to 200 % (the change pushed further than the effect makes it); Trippy tools Acid highlights and Foil shadows
 

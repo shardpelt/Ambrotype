@@ -23,6 +23,7 @@ pub(crate) fn models_list(json: bool) -> Result<(), String> {
         return print_json(&serde_json::json!({
             "tasks": amb_ai::TASKS.map(|(t, about)| serde_json::json!({"task": t, "for": about})),
             "models": all,
+            "runs_on": amb_ai::runs_on(),
         }));
     }
     let speed = |s: f64| {
@@ -82,7 +83,11 @@ pub(crate) fn models_list(json: bool) -> Result<(), String> {
         }
     }
     println!(
-        "\nTime is per photo on a 4-core laptop; detail is how fine the edges are (●●●●● finest).\nInstall with `amb models install ID`, then `amb models use ID`."
+        "\nModels run {} (small ones stay on the CPU).",
+        amb_ai::runs_on()
+    );
+    println!(
+        "Time is per photo on a 4-core laptop; detail is how fine the edges are (●●●●● finest).\nInstall with `amb models install ID`, then `amb models use ID`."
     );
     Ok(())
 }

@@ -473,6 +473,16 @@ fn kind_of(name: &str) -> Option<Kind> {
 
 /// Read a hub file: `https://` (or `file://`, for a hub on disk), at most `max` bytes.
 pub fn fetch(url: &str, max: u64) -> Result<Vec<u8>, String> {
+    fetch_with(url, max, Some(std::time::Duration::from_secs(20)))
+}
+
+/// A large download (the sample photo): no limit on the whole, only on
+/// connecting and on each read, so a slow connection still gets there.
+pub fn fetch_large(url: &str, max: u64) -> Result<Vec<u8>, String> {
+    fetch_with(url, max, None)
+}
+
+fn fetch_with(url: &str, max: u64, overall: Option<std::time::Duration>) -> Result<Vec<u8>, String> {
     let mut bytes = Vec::new();
     if let Some(path) = url.strip_prefix("file://") {
         std::fs::File::open(path)
@@ -481,10 +491,14 @@ pub fn fetch(url: &str, max: u64) -> Result<Vec<u8>, String> {
             .read_to_end(&mut bytes)
             .map_err(|e| format!("{path}: {e}"))?;
     } else if url.starts_with("https://") {
-        let agent = ureq::AgentBuilder::new()
-            .timeout(std::time::Duration::from_secs(20))
-            .try_proxy_from_env(true)
-            .build();
+        let mut agent = ureq::AgentBuilder::new()
+            .timeout_connect(std::time::Duration::from_secs(20))
+            .timeout_read(std::time::Duration::from_secs(30))
+            .try_proxy_from_env(true);
+        if let Some(t) = overall {
+            agent = agent.timeout(t);
+        }
+        let agent = agent.build();
         let response = agent.get(url).call().map_err(|e| match e {
             ureq::Error::Status(404, _) => format!("{url}: not found (404)"),
             other => format!("{url}: {other}"),

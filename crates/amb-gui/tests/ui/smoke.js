@@ -833,6 +833,17 @@ await t.step("Remove object: Shift+Q opens the tool; a box sends its corners, a 
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("Watch an edit on this photo: Auto edit's changes one History step at a time; Undo takes them back", async () => {
+  const before = ui.state.history.length;
+  const watching = watchOwnFlow();
+  await t.until("the ghost cursor", () => document.querySelector(".ghost-cursor"), 20000);
+  await watching;
+  const added = ui.state.history.length - before;
+  t.expect(added >= 2 && !document.querySelector(".ghost-cursor"), `${added} steps, then the ghost leaves`);
+  await run(Array.from({ length: added }, () => ({ cmd: "undo" })));
+  t.expect(ui.state.history.length === before, "back as it was");
+});
+
 await t.step("slow work shows a note on the photo with its seconds; a render after Remove says it's filling", async () => {
   const done = showWorking("Removing…", 0);
   await t.until("the note", () => !$("working-note").hidden);

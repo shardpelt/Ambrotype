@@ -43,11 +43,12 @@ fn sample_at(dir: &Path, fresh: bool, fetch: impl Fn() -> Res<Vec<u8>>) -> Res<P
     Ok(raw)
 }
 
-/// The sample photo's path (18 MB to download the first time).
+/// The sample photo's path (18 MB to download the first time; a slow
+/// connection is fine, as long as it keeps coming).
 #[tauri::command]
 pub(crate) async fn sample_photo(state: tauri::State<'_, AppState>, fresh: bool) -> Res<PathBuf> {
     let dir = sample_dir(state.inner())?;
-    tauri::async_runtime::spawn_blocking(move || sample_at(&dir, fresh, || hub::fetch(URL, SIZE)))
+    tauri::async_runtime::spawn_blocking(move || sample_at(&dir, fresh, || hub::fetch_large(URL, SIZE)))
         .await
         .map_err(|e| e.to_string())?
 }

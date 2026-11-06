@@ -31,6 +31,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-06: fixes from trying it on a Mac: toolbar buttons that don't fit go under ⋯ (the top bar ran off the window); Appearance opens on the Trippy tab; no blue selection from stray drags; a note with its seconds while Remove object works; Presets head and tool tiles fit; the sample photo downloads on slow connections; Help → Watch an edit on this photo
+
 - 2026-11-06: a Lightroom Classic catalogue opened in place (library → Folders panel → Lightroom +, From Lightroom… → Open in place, `amb lrcat open`): its folders and collections in the Folders panel, its photos with their Lightroom edits, ratings, labels, flags and keywords, read from the catalogue through every sidecar read (`amb_presets::linked`) with nothing imported or written; the newer of sidecar and catalogue wins, so editing here or in Lightroom keeps them in step. `amb lrcat sample` makes a small catalogue to try it
 
 - 2026-11-06: AI models on the GPU, with our own kernels (`amb-gpu`'s `nn`: convolutions, matrix products, the element-wise and shape layers): SAM 2.1, Big-LaMa, MI-GAN, YuNet and full-precision search models run there when the computer has a GPU, each layer we have no kernel for on the CPU in between, and the whole model on the CPU if a run fails; on a software GPU each matches the CPU (LaMa and SAM within 1e-5). Settings → AI models and `amb models` say where they run; `AMB_AI_GPU=off` keeps them on the CPU

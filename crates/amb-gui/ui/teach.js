@@ -208,8 +208,11 @@ async function watchFlow() {
   try {
     path = await invoke("sample_photo", { fresh: true });
   } catch (e) {
-    toast(`Couldn't get the sample photo: ${e}`, true);
+    $("busy").hidden = true;
     status("Ready");
+    // Your own photo will do instead.
+    if (ui.info && await askYes(`Couldn't get the sample photo (${e}). Watch an edit on the photo you have open instead? It makes Auto edit's changes one at a time, as History steps you can undo.`)) return watchOwnFlow();
+    toast(`Couldn't get the sample photo: ${e}. Open a photo of yours, then Help → Watch an edit on this photo.`, true);
     return;
   } finally {
     $("busy").hidden = true;
@@ -222,7 +225,68 @@ async function watchFlow() {
   } finally {
     teach.quiet = false;
   }
+  await ghostReplay(() => {
+    const label = ui.state?.redo_history?.[0];
+    if (!label) return null;
+    return {
+      name: /^set_param (\S+)$/.exec(label)?.[1],
+      caption: historyLabel(label),
+      apply: () => {
+        teach.fromHistory = true;
+        return run([{ cmd: "redo" }]);
+      },
+    };
+  });
+}
 
+// The same on the open photo: Auto edit's changes (tone, white balance,
+// vibrance, lens corrections, a level horizon), made one at a time by the
+// ghost cursor, each its own History step.
+async function watchOwnFlow() {
+  if (teach.watching) return;
+  if (!ui.info) return toast("Open a photo first, then watch an edit on it.", true);
+  if (ui.crop.on) await exitCrop(true);
+  status("Working out an edit for this photo…");
+  $("busy").hidden = false;
+  const steps = [];
+  try {
+    const commands = await invoke("auto_settings", { tone: true, white: true });
+    for (const c of commands) steps.push({ name: c.name, commands: [c] });
+    const set = (name, value) => steps.push({ name, commands: [{ cmd: "set_param", name, value }] });
+    if (!currentValue("Vibrance")) set("Vibrance", 15);
+    if (!currentValue("LensProfileEnable")) set("LensProfileEnable", true);
+    if (!currentValue("AutoLateralCA")) set("AutoLateralCA", true);
+    if (!currentValue("HasCrop")) {
+      const a = await invoke("level_angle").catch(() => null);
+      if (a != null && Math.abs(a) >= 0.2) {
+        const st = await invoke("crop_state");
+        const rect = AmbCrop.straighten(st.rect, Math.max(-45, Math.min(45, a)), ui.info.width, ui.info.height, st.angle_sign);
+        steps.push({ caption: `Level the horizon (${a > 0 ? "+" : ""}${a.toFixed(1)}°)`, commands: await invoke("crop_commands", { rect }) });
+      }
+    }
+  } catch (e) {
+    toast(String(e), true);
+    return;
+  } finally {
+    $("busy").hidden = true;
+    status("");
+  }
+  if (!steps.length) return toast("This photo needs nothing from Auto edit: there's nothing to watch.");
+  await ghostReplay(() => {
+    const step = steps.shift();
+    if (!step) return null;
+    return {
+      name: step.name,
+      caption: step.caption ?? historyLabel(`set_param ${step.name}`),
+      apply: () => run(step.commands, step.caption),
+    };
+  });
+}
+
+// The ghost cursor: for each step `next` gives ({ name, caption, apply }),
+// it glides to the setting's control, makes the change, and moves on, until
+// there are none or a key or click stops it.
+async function ghostReplay(next) {
   const w = { stopped: false, timer: null, wake: null };
   teach.watching = w;
   const ghost = document.createElement("div");
@@ -256,20 +320,19 @@ async function watchFlow() {
 
   try {
     await wait(400);
-    while (!w.stopped && ui.state?.redo_history?.length) {
-      const label = ui.state.redo_history[0];
-      const name = /^set_param (\S+)$/.exec(label)?.[1];
+    let step;
+    while (!w.stopped && (step = next())) {
+      const name = step.name;
       const row = name && teachRow(name);
       const panel = row?.closest("details");
       if (panel && !panel.open) panel.open = true;
       row?.scrollIntoView({ block: "nearest" });
-      caption.textContent = historyLabel(label);
+      caption.textContent = step.caption;
       const target = row ? watchPoint(name, row, currentValue(name)) : centreOf($("history-list"));
       await glide(target.x, target.y, 700);
       if (w.stopped) break;
       ghost.classList.add("pressed");
-      teach.fromHistory = true;
-      await run([{ cmd: "redo" }]);
+      await step.apply();
       if (row) {
         const end = watchPoint(name, row, currentValue(name));
         await glide(end.x, end.y, 450);
@@ -282,7 +345,7 @@ async function watchFlow() {
     ghost.remove();
     teach.watching = null;
   }
-  status(w.stopped ? "Stopped. The rest of the edit is in History: click a step to go on" : "That's the edit. Click a History step to see it again");
+  status(w.stopped ? "Stopped. What was done is in History: click a step to go back to it" : "That's the edit. Click a History step to see it again");
 }
 
 // Where a hand would grab a control: a slider's thumb, else its middle.

@@ -128,10 +128,10 @@ fn unary(@builtin(global_invocation_id) id: vec3<u32>, @builtin(num_workgroups) 
     out[i] = v;
 }
 
-// Tiled matrix products: 64 × 64 outputs per workgroup, 4 × 4 per thread,
-// 16 of the shared axis at a time.
-var<workgroup> ta: array<f32, 1024>;
-var<workgroup> tb: array<f32, 1024>;
+// Matrix products: 64 × 64 outputs per workgroup, 4 × 4 per thread, each
+// thread reading its rows and columns itself. (Tiles shared through
+// workgroup memory are faster on most GPUs, but crashed Windows on ARM's
+// software GPU, so they wait until we can test on real ones.)
 
 // C[m, n] = Σk A[m, k] B[k, n] for each of up to three batch axes, each
 // operand addressed by strides. P: 0 M, 1 N, 2 K, 4..7 batch shape,
@@ -159,37 +159,30 @@ fn matmul(@builtin(local_invocation_index) li: u32, @builtin(workgroup_id) wg: v
     var acc1 = vec4<f32>(0.0);
     var acc2 = vec4<f32>(0.0);
     var acc3 = vec4<f32>(0.0);
-    for (var k0 = 0; k0 < K; k0 += 16) {
-        for (var e = 0; e < 4; e++) {
-            let idx = i32(li) + e * 256;
-            let j = idx % 64;
-            let k = idx / 64;
-            let m = m0 + j;
-            let n = n0 + j;
-            let kk = k0 + k;
-            var va = 0.0;
-            if (m < M && kk < K) { va = a[oa + m * P(9u) + kk * P(10u)]; }
-            ta[k * 64 + j] = va;
-            var vb = 0.0;
-            if (n < N && kk < K) { vb = b[ob + kk * P(17u) + n * P(18u)]; }
-            tb[k * 64 + j] = vb;
-        }
-        workgroupBarrier();
-        for (var k = 0; k < 16; k++) {
-            let i = k * 64 + ty * 4;
-            let j = k * 64 + tx * 4;
-            let rb = vec4<f32>(tb[j], tb[j + 1], tb[j + 2], tb[j + 3]);
-            acc0 += ta[i] * rb;
-            acc1 += ta[i + 1] * rb;
-            acc2 += ta[i + 2] * rb;
-            acc3 += ta[i + 3] * rb;
-        }
-        workgroupBarrier();
+    let r = m0 + ty * 4;
+    let q = n0 + tx * 4;
+    for (var k = 0; k < K; k++) {
+        let rb = vec4<f32>(mm_b(ob, k, q, N), mm_b(ob, k, q + 1, N), mm_b(ob, k, q + 2, N), mm_b(ob, k, q + 3, N));
+        acc0 += mm_a(oa, r, k, M) * rb;
+        acc1 += mm_a(oa, r + 1, k, M) * rb;
+        acc2 += mm_a(oa, r + 2, k, M) * rb;
+        acc3 += mm_a(oa, r + 3, k, M) * rb;
     }
     mm_store(m0 + ty * 4, n0 + tx * 4, oc, acc0);
     mm_store(m0 + ty * 4 + 1, n0 + tx * 4, oc, acc1);
     mm_store(m0 + ty * 4 + 2, n0 + tx * 4, oc, acc2);
     mm_store(m0 + ty * 4 + 3, n0 + tx * 4, oc, acc3);
+}
+
+// A[m, k] and B[k, n], 0 outside the matrices.
+fn mm_a(oa: i32, m: i32, k: i32, M: i32) -> f32 {
+    if (m >= M) { return 0.0; }
+    return a[oa + m * P(9u) + k * P(10u)];
+}
+
+fn mm_b(ob: i32, k: i32, n: i32, N: i32) -> f32 {
+    if (n >= N) { return 0.0; }
+    return b[ob + k * P(17u) + n * P(18u)];
 }
 
 // Four outputs of row `m` from column `n`, those inside the matrix.
@@ -237,49 +230,46 @@ fn conv(@builtin(local_invocation_index) li: u32, @builtin(workgroup_id) wg: vec
     var acc1 = vec4<f32>(0.0);
     var acc2 = vec4<f32>(0.0);
     var acc3 = vec4<f32>(0.0);
-    for (var k0 = 0; k0 < K; k0 += 16) {
-        for (var e = 0; e < 4; e++) {
-            let idx = i32(li) + e * 256;
-            let j = idx % 64;
-            let k = idx / 64;
-            let m = m0 + j;
-            let col = n0 + j;
-            let kk = k0 + k;
-            var va = 0.0;
-            if (m < M && kk < K) { va = b[(g * Og + m) * K + kk]; }
-            ta[k * 64 + j] = va;
-            var vb = 0.0;
-            if (col < N && kk < K) {
-                let kx = kk % KW;
-                let ky = (kk / KW) % KH;
-                let ci = kk / (KW * KH);
-                let ox = col % OW;
-                let oy = (col / OW) % OH;
-                let n = col / (OW * OH);
-                let iy = oy * P(9u) - P(11u) + ky * P(13u);
-                let ix = ox * P(10u) - P(12u) + kx * P(14u);
-                if (iy >= 0 && iy < H && ix >= 0 && ix < W) {
-                    vb = a[((n * C + g * Cg + ci) * H + iy) * W + ix];
-                }
-            }
-            tb[k * 64 + j] = vb;
-        }
-        workgroupBarrier();
-        for (var k = 0; k < 16; k++) {
-            let i = k * 64 + ty * 4;
-            let j = k * 64 + tx * 4;
-            let rb = vec4<f32>(tb[j], tb[j + 1], tb[j + 2], tb[j + 3]);
-            acc0 += ta[i] * rb;
-            acc1 += ta[i + 1] * rb;
-            acc2 += ta[i + 2] * rb;
-            acc3 += ta[i + 3] * rb;
-        }
-        workgroupBarrier();
+    let r = m0 + ty * 4;
+    let q = n0 + tx * 4;
+    for (var k = 0; k < K; k++) {
+        let rb = vec4<f32>(conv_x(k, q, g, N), conv_x(k, q + 1, g, N), conv_x(k, q + 2, g, N), conv_x(k, q + 3, g, N));
+        acc0 += conv_w(r, k, g, M, K) * rb;
+        acc1 += conv_w(r + 1, k, g, M, K) * rb;
+        acc2 += conv_w(r + 2, k, g, M, K) * rb;
+        acc3 += conv_w(r + 3, k, g, M, K) * rb;
     }
     conv_store(m0 + ty * 4, n0 + tx * 4, g, acc0);
     conv_store(m0 + ty * 4 + 1, n0 + tx * 4, g, acc1);
     conv_store(m0 + ty * 4 + 2, n0 + tx * 4, g, acc2);
     conv_store(m0 + ty * 4 + 3, n0 + tx * 4, g, acc3);
+}
+
+// The kernel's tap `k` for output channel `m` of group `g`.
+fn conv_w(m: i32, k: i32, g: i32, M: i32, K: i32) -> f32 {
+    if (m >= M) { return 0.0; }
+    return b[(g * P(17u) + m) * K + k];
+}
+
+// The input under tap `k` of output pixel `col` (n, y, x), 0 in the padding.
+fn conv_x(k: i32, col: i32, g: i32, N: i32) -> f32 {
+    if (col >= N) { return 0.0; }
+    let KH = P(7u);
+    let KW = P(8u);
+    let OH = P(5u);
+    let OW = P(6u);
+    let H = P(2u);
+    let W = P(3u);
+    let kx = k % KW;
+    let ky = (k / KW) % KH;
+    let ci = k / (KW * KH);
+    let ox = col % OW;
+    let oy = (col / OW) % OH;
+    let n = col / (OW * OH);
+    let iy = oy * P(9u) - P(11u) + ky * P(13u);
+    let ix = ox * P(10u) - P(12u) + kx * P(14u);
+    if (iy < 0 || iy >= H || ix < 0 || ix >= W) { return 0.0; }
+    return a[((n * P(1u) + g * P(16u) + ci) * H + iy) * W + ix];
 }
 
 // One output pixel of channel `m` (in group `g`), with its bias.

@@ -144,6 +144,7 @@ async function selectAsk({ rect = null, part = false } = {}) {
   $("busy").hidden = false;
   status("Finding the object…");
   renderSelectPanel();
+  const done = showWorking("Finding the object… (the first click on a photo takes longer)");
   try {
     const r = await invoke("select_object", { clicks: sl.clicks, part, rect, shadow: sl.shadow });
     gotSelection(r);
@@ -152,6 +153,7 @@ async function selectAsk({ rect = null, part = false } = {}) {
     toast(String(e), true);
     if (!sl.dabs) sl.clicks = [];
   } finally {
+    done();
     sl.busy = false;
     $("busy").hidden = true;
     renderSelectPanel();
@@ -237,9 +239,13 @@ async function selectApply(action, by = null) {
   if (!sl.dabs || sl.busy) return;
   sl.busy = true;
   renderSelectPanel();
+  const filling = ["remove", "move"].includes(action);
+  const done = showWorking(filling ? "Removing…" : "Working…");
   try {
     const r = await invoke("selection_apply", { action, by });
     setState(r.state);
+    ui.preview.filling = filling;
+    done();
     requestPreview(false);
     toast(r.notes.join(" "));
     if (["adjust", "brighten", "darken", "background"].includes(action)) {
@@ -253,6 +259,7 @@ async function selectApply(action, by = null) {
   } catch (e) {
     toast(String(e), true);
   } finally {
+    done();
     sl.busy = false;
     if (sl.on) renderSelectPanel();
   }

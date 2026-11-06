@@ -10,6 +10,34 @@ function previewSize(draft) {
   return draft ? Math.max(512, Math.round(full * 0.6)) : full;
 }
 
+// A note on the photo while something slow runs, with the seconds so far,
+// so a long AI Remove doesn't look forgotten. Shown after `after` ms;
+// returns what ends it.
+const workingNote = { timer: null, tick: null, count: 0 };
+function showWorking(text, after = 800) {
+  workingNote.count += 1;
+  const el = $("working-note");
+  const start = performance.now();
+  clearTimeout(workingNote.timer);
+  clearInterval(workingNote.tick);
+  const draw = () => {
+    const s = Math.round((performance.now() - start) / 1000);
+    el.textContent = s >= 2 ? `${text} ${s} s` : text;
+  };
+  workingNote.timer = setTimeout(() => {
+    draw();
+    el.hidden = false;
+    workingNote.tick = setInterval(draw, 1000);
+  }, after);
+  const mine = workingNote.count;
+  return () => {
+    if (mine !== workingNote.count) return;
+    clearTimeout(workingNote.timer);
+    clearInterval(workingNote.tick);
+    el.hidden = true;
+  };
+}
+
 function requestPreview(draft) {
   if (!ui.info) return;
   ui.preview.dirty = true;
@@ -20,6 +48,8 @@ function requestPreview(draft) {
 async function renderLoop() {
   ui.preview.inFlight = true;
   $("busy").hidden = false;
+  // A render that fills an AI Remove spot can take a while.
+  const done = showWorking(ui.preview.filling ? "Filling in what you removed…" : "Rendering…", ui.preview.filling ? 300 : 2000);
   while (ui.preview.dirty) {
     ui.preview.dirty = false;
     const draft = ui.preview.draft;
@@ -79,6 +109,8 @@ async function renderLoop() {
   }
   $("busy").hidden = true;
   ui.preview.inFlight = false;
+  ui.preview.filling = false;
+  done();
 }
 
 function drawHistogram(h) {

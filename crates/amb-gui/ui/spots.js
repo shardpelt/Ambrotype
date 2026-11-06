@@ -478,10 +478,13 @@ async function removeObject(target) {
   sp.busy = true;
   status("Finding the object…");
   $("busy").hidden = false;
+  const done = showWorking("Finding the object to remove…");
   try {
     const before = spotList().length;
     const r = await invoke("remove_object", target);
     setState(r.state);
+    ui.preview.filling = true;
+    done();
     if (spotList().length > before) sp.selected = spotList()[spotList().length - 1].index;
     toast(r.notes.join(" "));
     requestPreview(false);
@@ -489,6 +492,7 @@ async function removeObject(target) {
   } catch (err) {
     toast(String(err), true);
   } finally {
+    done();
     sp.busy = false;
     $("busy").hidden = true;
     status("");

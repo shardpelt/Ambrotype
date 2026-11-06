@@ -833,6 +833,18 @@ await t.step("Remove object: Shift+Q opens the tool; a box sends its corners, a 
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("slow work shows a note on the photo with its seconds; a render after Remove says it's filling", async () => {
+  const done = showWorking("Removing…", 0);
+  await t.until("the note", () => !$("working-note").hidden);
+  t.expect($("working-note").textContent.startsWith("Removing…"), $("working-note").textContent);
+  done();
+  t.expect($("working-note").hidden, "gone when the work is done");
+  ui.preview.filling = true;
+  requestPreview(false);
+  await t.until("the render", () => !ui.preview.inFlight);
+  t.expect(!ui.preview.filling && $("working-note").hidden, "the filling note ends with the render");
+});
+
 await t.step("a drag or Select All doesn't select the photo or the panels in blue", async () => {
   // The workspace: the photo, the panels and the toolbar.
   document.getSelection().selectAllChildren($("workspace"));

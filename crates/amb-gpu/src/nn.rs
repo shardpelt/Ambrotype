@@ -280,7 +280,7 @@ impl Kernels {
                 binding: 4,
                 visibility: wgpu::ShaderStages::COMPUTE,
                 ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
                     has_dynamic_offset: false,
                     min_binding_size: None,
                 },
@@ -485,7 +485,7 @@ impl Session<'_> {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("nn params"),
                 contents: bytemuck::cast_slice(&p),
-                usage: wgpu::BufferUsages::UNIFORM,
+                usage: wgpu::BufferUsages::STORAGE,
             });
         let mut entries: Vec<wgpu::BindGroupEntry> = bufs
             .iter()

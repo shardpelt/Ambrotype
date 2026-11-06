@@ -581,7 +581,7 @@ pub(crate) fn lrcat_in_place(what: &str, catalog: Option<&Path>, json: bool) -> 
             println!("Opened in place: nothing imported or written; the catalogue is only read.");
         }
         ("close", Some(c)) => {
-            let c = std::fs::canonicalize(c).unwrap_or_else(|_| c.to_path_buf());
+            let c = amb_library::lrcat::full_path(c).unwrap_or_else(|_| c.to_path_buf());
             list.remove(&c)?;
             println!("Closed {} (sidecars written meanwhile stay).", c.display());
         }

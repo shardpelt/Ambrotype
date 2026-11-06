@@ -192,7 +192,7 @@ impl Catalogues {
     /// Open `catalogue` in place (it must be one Lightroom can read).
     pub fn add(&self, catalogue: &Path) -> Result<Arc<Opened>, String> {
         let catalogue =
-            std::fs::canonicalize(catalogue).unwrap_or_else(|_| catalogue.to_path_buf());
+            crate::lrcat::full_path(catalogue).unwrap_or_else(|_| catalogue.to_path_buf());
         let opened = Arc::new(open(&catalogue)?);
         let mut list = load(&self.file);
         if !list.contains(&catalogue) {
@@ -212,14 +212,14 @@ impl Catalogues {
 
     /// Stop showing `catalogue`; its photos' sidecars stay as they are.
     pub fn remove(&self, catalogue: &Path) -> Result<(), String> {
+        let full = crate::lrcat::full_path(catalogue).unwrap_or_else(|_| catalogue.to_path_buf());
         let mut list = load(&self.file);
-        list.retain(|c| c != catalogue);
+        list.retain(|c| c != catalogue && *c != full);
         save(&self.file, &list)?;
         self.changed();
-        self.kept
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .remove(catalogue);
+        let mut kept = self.kept.lock().unwrap_or_else(|e| e.into_inner());
+        kept.remove(catalogue);
+        kept.remove(&full);
         Ok(())
     }
 

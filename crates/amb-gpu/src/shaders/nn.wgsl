@@ -2,17 +2,17 @@
 // Kernels for running AI models (neural networks) on the GPU: the layers
 // the models we offer are made of, on contiguous f32 tensors. Every entry
 // point shares one layout: the output at binding 0, up to three inputs,
-// and the parameters (64 integers; floats are bit-cast) as a uniform.
+// and the parameters (64 integers; floats are bit-cast), read-only, as
+// every other kernel here takes them.
 
 @group(0) @binding(0) var<storage, read_write> out: array<f32>;
 @group(0) @binding(1) var<storage, read> a: array<f32>;
 @group(0) @binding(2) var<storage, read> b: array<f32>;
 @group(0) @binding(3) var<storage, read> c: array<f32>;
-struct Params { v: array<vec4<i32>, 16> }
-@group(0) @binding(4) var<uniform> params: Params;
+@group(0) @binding(4) var<storage, read> params: array<i32, 64>;
 
 fn P(k: u32) -> i32 {
-    return params.v[k / 4u][k % 4u];
+    return params[k];
 }
 
 fn F(k: u32) -> f32 {

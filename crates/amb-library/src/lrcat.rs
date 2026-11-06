@@ -608,6 +608,20 @@ pub fn apply(plan: &Plan, collections_dir: &Path) -> Report {
     report
 }
 
+/// A file's full path as people (and Lightroom) write it: links followed,
+/// without Windows's `\\?\` prefix.
+pub fn full_path(path: &Path) -> std::io::Result<PathBuf> {
+    let full = std::fs::canonicalize(path)?;
+    let text = full.to_string_lossy();
+    Ok(if let Some(unc) = text.strip_prefix(r"\\?\UNC\") {
+        PathBuf::from(format!(r"\\{unc}"))
+    } else if let Some(rest) = text.strip_prefix(r"\\?\") {
+        PathBuf::from(rest)
+    } else {
+        full
+    })
+}
+
 /// Write a small catalogue in Lightroom Classic's layout (the tables we
 /// read) holding `photos`, each rated 4, labelled Red and picked, with the
 /// keyword "harbour", Exposure +1 and Contrast +20, and a collection
@@ -660,8 +674,7 @@ pub fn write_sample(catalog: &Path, photos: &[PathBuf]) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
     let mut folders: Vec<PathBuf> = Vec::new();
     for (i, photo) in photos.iter().enumerate() {
-        let photo =
-            std::fs::canonicalize(photo).map_err(|e| format!("{}: {e}", photo.display()))?;
+        let photo = full_path(photo).map_err(|e| format!("{}: {e}", photo.display()))?;
         let dir = photo
             .parent()
             .ok_or("a photo without a folder")?
@@ -830,7 +843,7 @@ pub(crate) mod tests {
         let c = read(&catalog).unwrap();
         assert_eq!(c.photos.len(), 1);
         let p = &c.photos[0];
-        assert_eq!(PathBuf::from(&p.path), photo.canonicalize().unwrap());
+        assert_eq!(PathBuf::from(&p.path), full_path(&photo).unwrap());
         assert_eq!(
             (p.info.rating, p.info.label.as_deref()),
             (Some(4), Some("Red"))

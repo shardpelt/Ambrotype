@@ -167,25 +167,31 @@ async function addLibraryFolder() {
 const RASTER_FILE = /\.(jpe?g|png|tiff?|webp|heic|heif|avif|jxl|gif|bmp)$/i;
 
 // Raws and their JPEG twins are one photo in the lists, shown as the raw.
-// JPEG only shows the twins instead, asked for once per listing. A virtual
-// copy (IMG.copy-2.xmp, photo.jpg.copy-2.xmp) goes with its photo's kind.
-function photosOfFileKind(kind) {
+// JPEG only shows the twins instead, and "JPEG if there is one" shows each
+// raw's twin in its place; the twins are asked for once per listing. A
+// virtual copy (IMG.copy-2.xmp, photo.jpg.copy-2.xmp) goes with its photo.
+function photosOfFileKind(kind, preferJpeg = false) {
   const raster = (p) => RASTER_FILE.test(p.path.replace(/\.copy-\d+\.xmp$/i, ""));
   if (kind === "raw") return lib.photos.filter((p) => !raster(p));
-  if (kind !== "jpeg") return lib.photos;
+  if (kind !== "jpeg" && !preferJpeg) return lib.photos;
   if (lib.twins?.of !== lib.photos) {
     const of = lib.photos;
-    lib.twins = { of, photos: [] };
+    lib.twins = { of, photos: [], byRaw: new Map() };
     const raws = of.filter((p) => p.copy == null && !raster(p)).map((p) => p.path);
     if (raws.length) {
       invoke("library_twin_jpegs", { paths: raws }).then((photos) => {
         if (lib.twins?.of !== of) return;
+        // Each twin by its raw: the same folder and name.
+        const stem = (path) => path.replace(/\.[^./\\]+$/, "").toLowerCase();
+        const twinOf = new Map(photos.map((t) => [stem(t.path), t]));
         lib.twins.photos = photos;
+        for (const r of raws) if (twinOf.has(stem(r))) lib.twins.byRaw.set(r, twinOf.get(stem(r)));
         renderLibrary();
       }).catch((e) => console.warn("JPEG twins:", e));
     }
   }
-  return [...lib.photos.filter(raster), ...lib.twins.photos];
+  if (kind === "jpeg") return [...lib.photos.filter(raster), ...lib.twins.photos];
+  return lib.photos.map((p) => lib.twins.byRaw.get(p.path) ?? p);
 }
 
 function applyView() {
@@ -196,7 +202,7 @@ function applyView() {
     edited: $("lib-filter-edited").value,
     text: $("lib-search").value.trim().toLowerCase(),
   };
-  let shown = photosOfFileKind($("lib-filter-file").value).filter((p) => {
+  let shown = photosOfFileKind($("lib-filter-file").value, $("lib-prefer-jpeg").checked).filter((p) => {
     if (f.rating === "unrated" ? p.rating : (p.rating ?? 0) < Number(f.rating)) return false;
     if (f.label === "none" ? p.label : f.label !== "all" && p.label !== f.label) return false;
     if (f.flag === "unflagged" ? p.flag : f.flag === "kept" ? p.flag === "reject" : f.flag !== "all" && p.flag !== f.flag) return false;
@@ -220,7 +226,7 @@ function applyView() {
   const sort = $("lib-sort").value;
   // In the listing's order; a JPEG twin (not in it) by its name.
   const at = new Map(lib.photos.map((p, i) => [p, i]));
-  const twins = $("lib-filter-file").value === "jpeg";
+  const twins = $("lib-filter-file").value === "jpeg" || $("lib-prefer-jpeg").checked;
   const byName = twins
     ? (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })
     : (a, b) => at.get(a) - at.get(b);
@@ -1397,6 +1403,12 @@ function wireLibrary() {
   }, true);
   for (const b of $("lib-flags").querySelectorAll("button")) b.addEventListener("click", () => libraryChange({ flag: b.dataset.flag }));
   for (const id of ["lib-filter-rating", "lib-filter-label", "lib-filter-flag", "lib-filter-edited", "lib-filter-file", "lib-sort", "lib-reverse"]) $(id).addEventListener("change", renderLibrary);
+  // JPEG if there is one: remembered on this computer.
+  try { $("lib-prefer-jpeg").checked = localStorage.getItem("amb.preferJpeg") === "1"; } catch { /* no storage */ }
+  $("lib-prefer-jpeg").addEventListener("change", () => {
+    try { localStorage.setItem("amb.preferJpeg", $("lib-prefer-jpeg").checked ? "1" : "0"); } catch { /* no storage */ }
+    renderLibrary();
+  });
   let searchTimer;
   $("lib-search").addEventListener("input", () => {
     clearTimeout(searchTimer);

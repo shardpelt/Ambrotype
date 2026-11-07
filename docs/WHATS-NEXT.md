@@ -31,7 +31,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
-- 2026-11-07: library Filter → File: Raw only, or JPEG only (a raw's JPEG twin in its place)
+- 2026-11-07: library Filter → File: Raw only, or JPEG only (a raw's JPEG twin in its place); and the library bar's JPEG if there is one
 
 - 2026-11-06: fixes from trying it on a Mac: toolbar buttons that don't fit go under ⋯ (the top bar ran off the window); Appearance opens on the Trippy tab; no blue selection from stray drags; a note with its seconds while Remove object works; Presets head and tool tiles fit; the sample photo downloads on slow connections; Help → Watch an edit on this photo
 

@@ -132,6 +132,12 @@ await t.step("Filter → File: raws only, or JPEGs only (a raw's JPEG twin in it
   f.value = "all";
   f.dispatchEvent(new Event("change"));
   t.expect(lib.shown.length === all, "all again");
+  // The toggle: each raw's JPEG when it has one, the rest as they are.
+  t.click("#lib-prefer-jpeg");
+  await t.until("the twins asked for", () => lib.twins?.of === lib.photos);
+  t.expect(lib.shown.length === all, `as many photos: ${lib.shown.length}`);
+  t.click("#lib-prefer-jpeg");
+  t.expect(!$("lib-prefer-jpeg").checked && lib.shown.length === all, "off again");
 });
 
 await t.step("a Lightroom catalogue opens in place: its folder and collection, with its edits, nothing written", async () => {

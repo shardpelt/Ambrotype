@@ -833,6 +833,31 @@ await t.step("Remove object: Shift+Q opens the tool; a box sends its corners, a 
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("tips stop after Not now three times, or at once with Don't show tips", async () => {
+  await loadFeatures();
+  const on = () => tipsOn("wait") && tipsOn("boxes");
+  const reset = () => {
+    for (const id of ["settings-tips-wait", "settings-tips-boxes"]) {
+      $(id).checked = true;
+      $(id).dispatchEvent(new Event("change"));
+    }
+  };
+  reset();
+  for (let i = 0; i < 3; i++) {
+    t.expect(on(), `tips still on before Not now ${i + 1}`);
+    t.expect(showTip(), "a tip to show");
+    t.click("#tip-close");
+    t.expect($("tip-card").hidden, "the card goes");
+  }
+  t.expect(!on() && !$("settings-tips-wait").checked && !$("settings-tips-boxes").checked, "off after three, in Settings too");
+  t.expect($("toast").textContent.includes("Settings → General"), `says where: ${$("toast").textContent}`);
+  reset();
+  showTip();
+  t.click("#tip-never");
+  t.expect(!on() && $("tip-card").hidden, "Don't show tips: off at once");
+  reset();
+});
+
 await t.step("Watch an edit on this photo: Auto edit's changes one History step at a time; Undo takes them back", async () => {
   const before = ui.state.history.length;
   const watching = watchOwnFlow();

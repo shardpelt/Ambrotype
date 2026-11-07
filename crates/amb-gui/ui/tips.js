@@ -8,7 +8,8 @@
 //   something to type.
 // Features whose commands you have already used are skipped. Two switches
 // in Settings → General, both on: "Tips while waiting" and "Tips in menus
-// and empty boxes". Never during UI tests (unless one asks).
+// and empty boxes". The card's Don't show tips turns both off, and so does
+// Not now three times in a row. Never during UI tests (unless one asks).
 "use strict";
 
 const tips = { last: 0, timer: 0, hideTimer: 0, used: new Set() };
@@ -59,6 +60,7 @@ function showTip(tip = pickTip()) {
   $("tip-how").textContent = how.charAt(0).toUpperCase() + how.slice(1);
   $("tip-try").onclick = () => {
     hideTip();
+    setDismissed(0);
     markUsed(tip.target.key);
     requestAnimationFrame(() => tip.target.run());
   };
@@ -67,6 +69,41 @@ function showTip(tip = pickTip()) {
   clearTimeout(tips.hideTimer);
   tips.hideTimer = setTimeout(hideTip, 12000);
   return true;
+}
+
+// How many tips in a row were put away with Not now.
+function dismissed() {
+  try {
+    return Number(localStorage.getItem("amb.tipsDismissed") ?? 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function setDismissed(n) {
+  try {
+    localStorage.setItem("amb.tipsDismissed", String(n));
+  } catch {
+    // Not kept.
+  }
+}
+
+// No more tips, either kind; Settings → General shows them off.
+function stopTips(why) {
+  hideTip();
+  setDismissed(0);
+  for (const [id, kind] of [["settings-tips-wait", "wait"], ["settings-tips-boxes", "boxes"]]) {
+    setTipsOn(kind, false);
+    $(id).checked = false;
+  }
+  toast(`${why} Settings → General turns them on again.`);
+}
+
+function tipNotNow() {
+  const n = dismissed() + 1;
+  if (n >= 3) return stopTips("No more tips.");
+  setDismissed(n);
+  hideTip();
 }
 
 function hideTip() {
@@ -111,11 +148,15 @@ function wireTips() {
     };
   }
   new MutationObserver(busyChanged).observe($("busy"), { attributes: true, attributeFilter: ["hidden"] });
-  $("tip-close").addEventListener("click", hideTip);
+  $("tip-close").addEventListener("click", tipNotNow);
+  $("tip-never").addEventListener("click", () => stopTips("Tips are off."));
   for (const [id, kind] of [["settings-tips-wait", "wait"], ["settings-tips-boxes", "boxes"]]) {
     const box = $(id);
     box.checked = tipsOn(kind);
-    box.addEventListener("change", () => setTipsOn(kind, box.checked));
+    box.addEventListener("change", () => {
+      setTipsOn(kind, box.checked);
+      if (box.checked) setDismissed(0);
+    });
   }
   // The preset filter suggests a group or a preset to type.
   $("preset-filter").addEventListener("focus", () => {

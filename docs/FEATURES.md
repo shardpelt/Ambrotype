@@ -14,7 +14,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Switch between library and editing** → **Library Grid** (G), or the task bar at the top: **Library**, **Develop**, **Color**, **Retouch**, **Film**, **Collage**, **Trippy** (Ctrl+Alt+1–7). Each opens on its own tools: Develop on **Quick fixes**, Retouch on **Retouch tools**, Color on the wheels and mixer.
 - **Find a command or setting I can't see** → **Search Everything** (Ctrl+K, or the magnifier in the toolbar): type its name, or a setting and a number ("exposure 0.7").
 - **See everything the app can do** → Help → **What Ambrotype Can Do** (this list, with a filter).
-- **Tips, or no tips** → **Settings** (Ctrl+,) → General: Tips while waiting, Tips in menus and empty boxes (both on).
+- **Tips, or no tips** → a tip's **Don't show tips** (or **Not now** three times in a row) turns them off; **Settings** (Ctrl+,) → General: Tips while waiting, Tips in menus and empty boxes (both on) turns them on again.
 - **See all shortcuts, or change them** → **Keyboard Shortcuts** (Shift+?) shows them; **Settings** (Ctrl+,) changes them.
 
 ## Editing a photo

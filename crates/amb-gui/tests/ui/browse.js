@@ -118,6 +118,22 @@ await t.step("Folders | All photos, and Ctrl-click shows more folders together",
   renderLibrary();
 });
 
+await t.step("Filter → File: raws only, or JPEGs only (a raw's JPEG twin in its place)", async () => {
+  const all = lib.shown.length;
+  const f = $("lib-filter-file");
+  f.value = "raw";
+  f.dispatchEvent(new Event("change"));
+  t.expect(lib.shown.every((p) => !/\.(jpe?g|png|tiff?|webp)$/i.test(p.path)), "raws only");
+  t.expect($("lib-filter-summary").textContent.includes("1"), `the filter counts: ${$("lib-filter-summary").textContent}`);
+  f.value = "jpeg";
+  f.dispatchEvent(new Event("change"));
+  await t.until("the JPEG list", () => lib.twins?.of === lib.photos);
+  t.expect(lib.shown.every((p) => /\.(jpe?g|png|tiff?|webp|heic|heif|avif|jxl|gif|bmp)$/i.test(p.path)), `JPEGs only: ${lib.shown.map((p) => p.name).join(", ")}`);
+  f.value = "all";
+  f.dispatchEvent(new Event("change"));
+  t.expect(lib.shown.length === all, "all again");
+});
+
 await t.step("a Lightroom catalogue opens in place: its folder and collection, with its edits, nothing written", async () => {
   const dir = lib.dir;
   const sep = dir.includes("\\") ? "\\" : "/";

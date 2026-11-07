@@ -88,6 +88,39 @@ fn is_raw_companion(path: &Path, raw_stems: &std::collections::HashSet<String>) 
         .is_some_and(|s| raw_stems.contains(&s.to_string_lossy().to_lowercase()))
 }
 
+/// The JPEGs shot with these raws (the same name next to them, `.jpg` or
+/// `.jpeg` in any case), which the photo lists leave out; in the raws' order.
+pub fn raw_twins(raws: &[PathBuf]) -> Vec<PathBuf> {
+    let mut by_dir: std::collections::HashMap<PathBuf, Vec<PathBuf>> = Default::default();
+    let mut out = Vec::new();
+    for raw in raws.iter().filter(|p| is_raw(p)) {
+        let Some(dir) = raw.parent() else { continue };
+        let jpegs = by_dir.entry(dir.to_path_buf()).or_insert_with(|| {
+            std::fs::read_dir(dir)
+                .map(|e| {
+                    e.flatten()
+                        .map(|e| e.path())
+                        .filter(|p| !hidden(p))
+                        .filter(|p| {
+                            p.extension().and_then(|e| e.to_str()).is_some_and(|e| {
+                                matches!(e.to_ascii_lowercase().as_str(), "jpg" | "jpeg")
+                            })
+                        })
+                        .collect()
+                })
+                .unwrap_or_default()
+        });
+        let stem = raw.file_stem().map(|s| s.to_string_lossy().to_lowercase());
+        if let Some(j) = jpegs
+            .iter()
+            .find(|j| j.file_stem().map(|s| s.to_string_lossy().to_lowercase()) == stem)
+        {
+            out.push(j.clone());
+        }
+    }
+    out
+}
+
 /// Compare names the way people expect: "IMG_2" before "IMG_10".
 pub fn natural(a: &str, b: &str) -> Ordering {
     let (mut a, mut b) = (a.chars().peekable(), b.chars().peekable());
@@ -226,6 +259,21 @@ fn copies_in(dir: &Path, photos: &[PathBuf]) -> Vec<(PathBuf, PathBuf, u32)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_raw_s_jpeg_twin_is_found() {
+        let dir = std::env::temp_dir().join(format!("amb-twins-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        for f in ["A.NEF", "A.JPG", "B.nef", "C.jpg", "._A.JPG"] {
+            std::fs::write(dir.join(f), b"x").unwrap();
+        }
+        let twins = raw_twins(&[dir.join("A.NEF"), dir.join("B.nef"), dir.join("C.jpg")]);
+        assert_eq!(twins, [dir.join("A.JPG")]);
+        // The lists show the raw alone.
+        assert!(!photo_paths(&dir).unwrap().contains(&dir.join("A.JPG")));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn subfolders_with_their_photo_counts() {

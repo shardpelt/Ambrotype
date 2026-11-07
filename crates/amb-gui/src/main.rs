@@ -688,6 +688,7 @@ fn main() {
             commands::photo::pick_photos,
             commands::photo::pick_photo_folder,
             commands::library::library_list,
+            commands::library::library_twin_jpegs,
             commands::library::library_subfolders,
             commands::assistant::assistant_settings,
             commands::assistant::assistant_save,

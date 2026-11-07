@@ -11,6 +11,18 @@ pub(crate) async fn folder_photos(path: String) -> Res<Vec<folder::FolderPhoto>>
         .map_err(|e| e.to_string())?
 }
 
+/// The JPEGs shot with these raws, which the library shows as one photo
+/// with the raw (Filter → File: JPEG only lists them).
+#[tauri::command]
+pub(crate) async fn library_twin_jpegs(paths: Vec<String>) -> Res<Vec<library::LibraryPhoto>> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let raws: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
+        library::list_paths(&amb_library::folder::raw_twins(&raws)).0
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
 /// A small JPEG of a raw for the filmstrip (cached in the app's cache folder).
 #[tauri::command]
 pub(crate) async fn thumbnail(

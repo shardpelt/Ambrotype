@@ -163,6 +163,31 @@ async function addLibraryFolder() {
 
 // ---------------------------------------------------------------- filter, sort, grid
 
+// Image files a camera writes besides its raws (a DNG counts as a raw).
+const RASTER_FILE = /\.(jpe?g|png|tiff?|webp|heic|heif|avif|jxl|gif|bmp)$/i;
+
+// Raws and their JPEG twins are one photo in the lists, shown as the raw.
+// JPEG only shows the twins instead, asked for once per listing. A virtual
+// copy (IMG.copy-2.xmp, photo.jpg.copy-2.xmp) goes with its photo's kind.
+function photosOfFileKind(kind) {
+  const raster = (p) => RASTER_FILE.test(p.path.replace(/\.copy-\d+\.xmp$/i, ""));
+  if (kind === "raw") return lib.photos.filter((p) => !raster(p));
+  if (kind !== "jpeg") return lib.photos;
+  if (lib.twins?.of !== lib.photos) {
+    const of = lib.photos;
+    lib.twins = { of, photos: [] };
+    const raws = of.filter((p) => p.copy == null && !raster(p)).map((p) => p.path);
+    if (raws.length) {
+      invoke("library_twin_jpegs", { paths: raws }).then((photos) => {
+        if (lib.twins?.of !== of) return;
+        lib.twins.photos = photos;
+        renderLibrary();
+      }).catch((e) => console.warn("JPEG twins:", e));
+    }
+  }
+  return [...lib.photos.filter(raster), ...lib.twins.photos];
+}
+
 function applyView() {
   const f = {
     rating: $("lib-filter-rating").value,
@@ -171,7 +196,7 @@ function applyView() {
     edited: $("lib-filter-edited").value,
     text: $("lib-search").value.trim().toLowerCase(),
   };
-  let shown = lib.photos.filter((p) => {
+  let shown = photosOfFileKind($("lib-filter-file").value).filter((p) => {
     if (f.rating === "unrated" ? p.rating : (p.rating ?? 0) < Number(f.rating)) return false;
     if (f.label === "none" ? p.label : f.label !== "all" && p.label !== f.label) return false;
     if (f.flag === "unflagged" ? p.flag : f.flag === "kept" ? p.flag === "reject" : f.flag !== "all" && p.flag !== f.flag) return false;
@@ -193,10 +218,16 @@ function applyView() {
   lib.beforeDate = shown;
   if (lib.date) shown = shown.filter((p) => p.captured?.startsWith(lib.date));
   const sort = $("lib-sort").value;
-  const byName = (a, b) => lib.photos.indexOf(a) - lib.photos.indexOf(b);
+  // In the listing's order; a JPEG twin (not in it) by its name.
+  const at = new Map(lib.photos.map((p, i) => [p, i]));
+  const twins = $("lib-filter-file").value === "jpeg";
+  const byName = twins
+    ? (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })
+    : (a, b) => at.get(a) - at.get(b);
   if (lib.found) { /* best first */ } else if (sort === "captured") shown.sort((a, b) => (a.captured ?? "~").localeCompare(b.captured ?? "~") || byName(a, b));
   else if (sort === "rating") shown.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || byName(a, b));
   else if (sort === "edited") shown.sort((a, b) => Number(b.edited) - Number(a.edited) || byName(a, b));
+  else if (twins) shown.sort(byName);
   if ($("lib-reverse").checked && !lib.found) shown.reverse();
   // A closed stack shows only its top photo (or its first one shown).
   lib.stackSizes = new Map();
@@ -1365,7 +1396,7 @@ function wireLibrary() {
     }
   }, true);
   for (const b of $("lib-flags").querySelectorAll("button")) b.addEventListener("click", () => libraryChange({ flag: b.dataset.flag }));
-  for (const id of ["lib-filter-rating", "lib-filter-label", "lib-filter-flag", "lib-filter-edited", "lib-sort", "lib-reverse"]) $(id).addEventListener("change", renderLibrary);
+  for (const id of ["lib-filter-rating", "lib-filter-label", "lib-filter-flag", "lib-filter-edited", "lib-filter-file", "lib-sort", "lib-reverse"]) $(id).addEventListener("change", renderLibrary);
   let searchTimer;
   $("lib-search").addEventListener("input", () => {
     clearTimeout(searchTimer);

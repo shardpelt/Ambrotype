@@ -70,6 +70,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 ## Library and organising
 
 - **Import from a memory card** → **Import Photos** (Ctrl+Shift+I): copies into dated folders, renames, skips duplicates. `amb import CARD DEST`.
+- **See only the raws, or only the JPEGs, when browsing** → library → **Filter ▾** → **File**: Raw only, or JPEG only (a raw shot with a JPEG shows its JPEG then; normally they're one photo, shown as the raw).
 - **Move from Lightroom Classic** → Import ▾ → from a Lightroom catalogue (edits, ratings, keywords, collections). `amb lrcat import CATALOG.lrcat`.
 - **Use my Lightroom catalogue as it is, without importing** → library → Folders panel → **Lightroom +** (or From Lightroom Classic… → **Open in place**): its folders and collections show there, its photos with their Lightroom edits, ratings, labels and keywords; nothing is written to the catalogue, and an edit here goes into the photo's sidecar. `amb lrcat open CATALOG.lrcat`.
 - **Rate, label, flag, keyword** → 1–5 rate, 6–9 colour labels, **Pick** (P), **Reject** (X), **Add Keywords** (K). `amb tag`.

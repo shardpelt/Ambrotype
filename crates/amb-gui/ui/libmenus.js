@@ -35,6 +35,7 @@ function updateFilterSummary() {
     $("lib-filter-label").value !== "all",
     $("lib-filter-flag").value !== "all",
     $("lib-filter-edited").value !== "all",
+    $("lib-filter-file").value !== "all",
   ].filter(Boolean).length;
   $("lib-filter-summary").textContent = on ? `Filter · ${on} ▾` : "Filter ▾";
   $("lib-filter-menu").classList.toggle("active", on > 0);
@@ -56,6 +57,6 @@ function wireLibraryMenus() {
     e.stopPropagation();
   }, true);
   for (const b of $("lib-import-menu").querySelectorAll("button")) b.addEventListener("click", () => ($("lib-import-menu").open = false));
-  for (const id of ["lib-filter-rating", "lib-filter-label", "lib-filter-flag", "lib-filter-edited"]) $(id).addEventListener("change", updateFilterSummary);
+  for (const id of ["lib-filter-rating", "lib-filter-label", "lib-filter-flag", "lib-filter-edited", "lib-filter-file"]) $(id).addEventListener("change", updateFilterSummary);
   updateFilterSummary();
 }

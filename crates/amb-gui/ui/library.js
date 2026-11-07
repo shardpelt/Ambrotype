@@ -1403,12 +1403,6 @@ function wireLibrary() {
   }, true);
   for (const b of $("lib-flags").querySelectorAll("button")) b.addEventListener("click", () => libraryChange({ flag: b.dataset.flag }));
   for (const id of ["lib-filter-rating", "lib-filter-label", "lib-filter-flag", "lib-filter-edited", "lib-filter-file", "lib-sort", "lib-reverse"]) $(id).addEventListener("change", renderLibrary);
-  // JPEG if there is one: remembered on this computer.
-  try { $("lib-prefer-jpeg").checked = localStorage.getItem("amb.preferJpeg") === "1"; } catch { /* no storage */ }
-  $("lib-prefer-jpeg").addEventListener("change", () => {
-    try { localStorage.setItem("amb.preferJpeg", $("lib-prefer-jpeg").checked ? "1" : "0"); } catch { /* no storage */ }
-    renderLibrary();
-  });
   let searchTimer;
   $("lib-search").addEventListener("input", () => {
     clearTimeout(searchTimer);

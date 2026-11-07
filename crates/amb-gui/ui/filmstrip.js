@@ -86,12 +86,49 @@ function applyStripVisibility() {
   $("filmstrip").hidden = !stripVisible();
 }
 
+// The library bar's "JPEG if there is one" holds here too: a raw shot
+// with a JPEG is its JPEG in the filmstrip, so ← → go through the JPEGs.
+async function stripPhotos(photos) {
+  if (!$("lib-prefer-jpeg")?.checked) return photos;
+  const raws = photos.filter((p) => p.copy == null && !RASTER_FILE.test(p.path)).map((p) => p.path);
+  if (!raws.length) return photos;
+  try {
+    const twins = await invoke("library_twin_jpegs", { paths: raws });
+    const stem = (path) => path.replace(/\.[^./\\]+$/, "").toLowerCase();
+    const byStem = new Map(twins.map((t) => [stem(t.path), t]));
+    return photos.map((p) => (p.copy == null && byStem.has(stem(p.path)) && !RASTER_FILE.test(p.path) ? byStem.get(stem(p.path)) : p));
+  } catch (e) {
+    console.warn("JPEG twins:", e);
+    return photos;
+  }
+}
+
+// The switch is in the library bar and the filmstrip bar, wired at start
+// (not when the library first opens), and remembered on this computer.
+function wirePreferJpeg() {
+  const inLib = $("lib-prefer-jpeg");
+  const inStrip = $("strip-prefer-jpeg");
+  let on = false;
+  try { on = localStorage.getItem("amb.preferJpeg") === "1"; } catch { /* no storage */ }
+  inLib.checked = inStrip.checked = on;
+  const changed = (from) => {
+    inLib.checked = inStrip.checked = from.checked;
+    try { localStorage.setItem("amb.preferJpeg", from.checked ? "1" : "0"); } catch { /* no storage */ }
+    if (libraryOn()) renderLibrary();
+    if (ui.info?.path) loadFolder(ui.info.path, true);
+  };
+  inLib.addEventListener("change", () => changed(inLib));
+  inStrip.addEventListener("change", () => changed(inStrip));
+}
+
+document.addEventListener("DOMContentLoaded", wirePreferJpeg);
+
 async function loadFolder(path, force = false) {
   const dir = dirOf(path);
   if (!force && dir === strip.dir && strip.photos.some((p) => p.path === path)) return markCurrent();
   strip.dir = dir;
   try {
-    strip.photos = await invoke("folder_photos", { path });
+    strip.photos = await stripPhotos(await invoke("folder_photos", { path }));
   } catch (e) {
     strip.photos = [];
     toast(`Couldn't list the folder: ${e}`, true);
@@ -256,15 +293,24 @@ function pumpThumbs() {
   }
 }
 
+// Where the open photo is in the filmstrip: itself, or (a raw shown by its
+// JPEG, or the other way round) its twin of the same name.
+function stripIndexOf(path) {
+  const i = strip.photos.findIndex((p) => p.path === path);
+  if (i >= 0 || !path) return i;
+  const stem = path.replace(/\.[^./\\]+$/, "").toLowerCase();
+  return strip.photos.findIndex((p) => p.copy == null && p.path.replace(/\.[^./\\]+$/, "").toLowerCase() === stem);
+}
+
 function markCurrent() {
-  const current = ui.info?.path;
+  const current = strip.photos[stripIndexOf(ui.info?.path)]?.path;
   for (const [path, cell] of strip.cells) {
     const on = path === current;
     cell.classList.toggle("current", on);
     cell.setAttribute("aria-current", on ? "true" : "false");
     if (on) cell.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
-  const i = strip.photos.findIndex((p) => p.path === current);
+  const i = stripIndexOf(current);
   $("filmstrip-pos").textContent = i >= 0 ? `${i + 1} / ${strip.photos.length}` : "";
 }
 
@@ -319,7 +365,7 @@ async function stepPhoto(delta) {
   if (strip.stepping) return;
   strip.stepping = true;
   try {
-    let i = strip.photos.findIndex((p) => p.path === ui.info?.path);
+    let i = stripIndexOf(ui.info?.path);
     if (i < 0) return;
     for (i += delta; i >= 0 && i < strip.photos.length; i += delta) {
       const p = strip.photos[i];

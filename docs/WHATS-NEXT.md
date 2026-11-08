@@ -7,7 +7,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 1. **v0.1.0:** try the editor on a Mac and once on Windows (the list is in NEXT.md's v0.1 checklist), then say go: tag, check the draft release, publish, and point the README at it.
 2. **Auto Density and Auto Grade on real negatives:** try both switches (Negative panel, beside Auto) on a roll. If they look right, they become Auto's default.
 3. **GPU speed:** export a 24 MP raw on the Mac with and without `AMB_GPU=off` (both are tiled or whole as the GPU's memory allows). And AI on the GPU: time Select object's first click and an AI Remove with and without `AMB_AI_GPU=off` (Settings → AI models says where they run).
-4. **Your sample raw** to replace the stand-in sample photo, after the release.
+4. **Tabs:** decide the proposals in [design/tabs.md](design/tabs.md) (merge Color and Retouch into Develop, make Collage the collage maker itself).
+5. **Your sample raw** to replace the stand-in sample photo, after the release.
 
 ## Up next (in this order)
 
@@ -30,6 +31,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **More trippy** (owner, 2026-11-04): done 2026-11-05 (Edges and Neon, Where with its hover view, amounts to 200 %). Still to do: Basic's own sliders past their ranges in Trippy (Lightroom's ranges are kept in the sidecar, so it would be our own extra settings).
 
 ## Recently done
+
+- 2026-11-08: the viewer (V, ⛶ View): photos full screen as an image viewer, ← → or the screen's sides to step, Esc ends on the photo got to; and [design/tabs.md](design/tabs.md), what makes a tab, a mode, a view, a tool or a dialog
 
 - 2026-11-07: tips stop after Not now three times in a row, or at once with the card's Don't show tips (Settings → General turns them on again)
 

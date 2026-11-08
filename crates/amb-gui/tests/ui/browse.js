@@ -177,6 +177,32 @@ await t.step("a Lightroom catalogue opens in place: its folder and collection, w
   await loadLibrary(dir, []);
 });
 
+await t.step("View (V): the photos full screen, ← → and the screen's sides step, Esc ends on the photo got to", async () => {
+  const dir = lib.dir;
+  const more = `${dir}${dir.includes("\\") ? "\\" : "/"}more`;
+  await loadLibrary(dir, [more]);
+  t.expect(lib.shown.length >= 2, `${lib.shown.length} photos`);
+  select(lib.shown[0].path);
+  t.click("#lib-view");
+  await t.until("the viewer", () => document.querySelector(".slideshow.viewer") && slides.on);
+  t.expect(slides.at === 0 && !document.querySelector('.slideshow [data-do="pause"]'), "from the focused photo, no timer");
+  const key = (k) => window.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true }));
+  key("ArrowRight");
+  await t.until("the next photo", () => slides.at === 1);
+  const el = document.querySelector(".slideshow.viewer");
+  el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth * 0.1, clientY: innerHeight / 2, bubbles: true }));
+  await t.until("back by the left side", () => slides.at === 0);
+  el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth / 2, clientY: innerHeight / 2, bubbles: true }));
+  t.expect(slides.on, "a click in the middle doesn't end it");
+  el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth * 0.9, clientY: innerHeight / 2, bubbles: true }));
+  await t.until("on by the right side", () => slides.at === 1);
+  const at = slides.list[1].path;
+  key("Escape");
+  await t.until("the viewer gone", () => !slides.on && !document.querySelector(".slideshow"));
+  t.expect(lib.focus === at && lib.selected.has(at), "the photo got to is selected");
+  await loadLibrary(dir, []);
+});
+
 await t.step("Sync negative roll asks how: scenes, odd frames, a baseline frame", async () => {
   const parent = `${lib.dir}${lib.dir.includes("\\") ? "\\" : "/"}more`;
   await toggleTreeFolder(parent);

@@ -833,6 +833,14 @@ await t.step("Remove object: Shift+Q opens the tool; a box sends its corners, a 
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("View (V) in Develop: the filmstrip's photos full screen from the open one; Esc back", async () => {
+  t.key("V");
+  await t.until("the viewer", () => slides.on && document.querySelector(".slideshow.viewer"));
+  t.expect(slides.list[slides.at].path === ui.info.path, "starts at the open photo");
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  await t.until("back", () => !slides.on);
+});
+
 await t.step("tips stop after Not now three times, or at once with Don't show tips", async () => {
   await loadFeatures();
   const on = () => tipsOn("wait") && tipsOn("boxes");

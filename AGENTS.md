@@ -35,6 +35,7 @@ cargo test --workspace
 
 ## Conventions
 - Settings and panels are generated from the registry; don't hard-code ranges or labels in the UI.
+- Tabs, modes, views, tools and dialogs: [docs/design/tabs.md](docs/design/tabs.md) says which a feature is. Prefer the smaller kind; a new tab needs a row there.
 - The app teaches by showing: a new feature should be easy to stumble on where people already look (search, the features list, a tip, a button in the How to), not only in docs.
 - Models that imitate Lightroom are "ours, not Adobe's": black-box measurement only, never Adobe code or data files (see `docs/legal.md`).
 - Match the surrounding code's style and comment density. Keep docs in plain, short sentences, and update `docs/WHATS-NEXT.md` (move what you finished to "Recently done"), `docs/NEXT.md`, `docs/GAPS.md` and `docs/ARCHITECTURE.md` when you change what exists. A feature people use goes in `docs/FEATURES.md` too, as what they'd want, where it is, and its `amb` command.

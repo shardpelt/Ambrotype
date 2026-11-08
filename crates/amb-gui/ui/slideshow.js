@@ -7,6 +7,12 @@
 //
 // While it runs: Space pauses, ← → step, Esc (or a click) ends it; moving
 // the mouse shows a small bar with the same buttons.
+//
+// The viewer (V, ⛶ View in the library bar or the filmstrip's) is the same
+// screen as an image viewer: no timer, starting at the photo you're on;
+// ← → (or Space, Home, End) and a click on the left or right of the screen
+// step; Esc ends it on the photo you got to (selected in the library,
+// open in Develop). A mode, not a tab (docs/design/tabs.md).
 "use strict";
 
 const SLIDE_EFFECTS = ["fade", "slide", "zoom", "black"];
@@ -43,33 +49,78 @@ function slideshowFlow() {
 
 // `remember`: keep the settings for next time (not for `amb slideshow`'s);
 // `done(photo)`: called with the photo shown last when it ends.
-async function startSlideshow(photos, settings, { remember = true, done = null } = {}) {
+async function startSlideshow(photos, settings, { remember = true, done = null, start = 0 } = {}) {
   if (remember) {
     try { localStorage.setItem("amb.slideshow", JSON.stringify(settings)); } catch { /* not kept */ }
   }
   slides.done = done;
   slides.settings = settings;
   slides.list = settings.shuffle ? shuffled(photos) : [...photos];
-  slides.at = 0;
+  slides.at = start;
   slides.paused = false;
   slides.on = true;
-  const el = Object.assign(document.createElement("div"), { className: "slideshow", tabIndex: -1 });
-  el.innerHTML = '<img class="ss-img" alt=""><img class="ss-img" alt=""><div class="ss-bar" hidden><button type="button" data-do="prev" title="Previous (←)">‹</button><button type="button" data-do="pause" title="Pause (Space)">❚❚</button><button type="button" data-do="next" title="Next (→)">›</button><span class="ss-where"></span><button type="button" data-do="end" title="End (Esc)">✕</button></div>';
+  const viewer = Boolean(settings.viewer);
+  const el = Object.assign(document.createElement("div"), { className: `slideshow${viewer ? " viewer" : ""}`, tabIndex: -1 });
+  const pause = viewer ? "" : '<button type="button" data-do="pause" title="Pause (Space)">❚❚</button>';
+  el.innerHTML = `<img class="ss-img" alt=""><img class="ss-img" alt=""><div class="ss-bar" hidden><button type="button" data-do="prev" title="Previous (←)">‹</button>${pause}<button type="button" data-do="next" title="Next (→)">›</button><span class="ss-where"></span><button type="button" data-do="end" title="End (Esc)">✕</button></div>`;
   document.body.append(el);
   slides.el = el;
+  // The viewer's thirds: left steps back, right on, the middle only shows
+  // the bar.
+  const side = (e) => {
+    const x = e.clientX / innerWidth;
+    return x < 0.3 ? -1 : x > 0.7 ? 1 : 0;
+  };
   el.addEventListener("click", (e) => {
     const b = e.target.closest("[data-do]");
-    if (!b) return endSlideshow();
-    e.stopPropagation();
-    ({ prev: () => stepSlide(-1), next: () => stepSlide(1), pause: togglePause, end: endSlideshow })[b.dataset.do]();
+    if (b) {
+      e.stopPropagation();
+      ({ prev: () => stepSlide(-1), next: () => stepSlide(1), pause: togglePause, end: endSlideshow })[b.dataset.do]();
+      return;
+    }
+    if (!viewer) return endSlideshow();
+    const d = side(e);
+    if (d) stepSlide(d);
+    else showSlideBar();
   });
-  el.addEventListener("mousemove", showSlideBar);
+  el.addEventListener("mousemove", (e) => {
+    showSlideBar();
+    if (viewer) {
+      el.classList.toggle("at-left", side(e) < 0);
+      el.classList.toggle("at-right", side(e) > 0);
+    }
+  });
   el.focus();
   if (settings.fullscreen) {
     slides.wasFullscreen = await invoke("window_fullscreen", { on: true }).catch(() => true);
   }
-  await showSlide(0, true);
+  await showSlide(start, true);
   schedule();
+}
+
+// The viewer: the library's photos as shown (from the focused one), or in
+// Develop the filmstrip's (from the open one).
+function viewerFlow() {
+  let list = [];
+  let start = 0;
+  let done;
+  if (libraryOn()) {
+    list = lib.shown;
+    start = Math.max(0, list.findIndex((p) => p.path === lib.focus));
+    done = (p) => {
+      if (!p) return;
+      select(p.path);
+      revealPhoto(p.path);
+    };
+  } else if (ui.info) {
+    list = strip.photos;
+    start = Math.max(0, stripIndexOf(ui.info.path));
+    done = (p) => {
+      if (p && strip.photos[stripIndexOf(ui.info?.path)]?.path !== p.path) openPath(p.path);
+    };
+  }
+  if (!list.length) return toast(libraryOn() ? "No photos shown in the library." : "Open a photo first.", true);
+  return startSlideshow(list, { seconds: 0, shuffle: false, fullscreen: true, effect: "none", viewer: true }, { remember: false, done, start });
 }
 
 function shuffled(list) {
@@ -120,13 +171,14 @@ async function showSlide(i, first = false) {
   old.className = `ss-img out-${effect}`;
   next.classList.add("shown");
   slides.el.querySelector(".ss-where").textContent = `${slides.at + 1} / ${n} · ${p.name ?? fileName(p.path)}`;
-  // Fetch the next one meanwhile.
+  // Fetch the next one meanwhile (and, viewing, the one before).
   slideImage(slides.list[(slides.at + 1) % n]).catch(() => {});
+  if (slides.settings.viewer && n > 2) slideImage(slides.list[(slides.at + n - 1) % n]).catch(() => {});
 }
 
 function schedule() {
   clearTimeout(slides.timer);
-  if (!slides.on || slides.paused) return;
+  if (!slides.on || slides.paused || slides.settings.viewer) return;
   slides.timer = setTimeout(async () => {
     await showSlide(slides.at + 1);
     schedule();
@@ -139,6 +191,7 @@ async function stepSlide(d) {
 }
 
 function togglePause() {
+  if (slides.settings.viewer) return;
   slides.paused = !slides.paused;
   slides.el.querySelector('[data-do="pause"]').textContent = slides.paused ? "▶" : "❚❚";
   showSlideBar();
@@ -182,12 +235,18 @@ function wireSlideshow() {
   });
   $("slideshow-cancel").addEventListener("click", () => $("slideshow-dialog").close());
   $("lib-slideshow").addEventListener("click", slideshowFlow);
+  $("lib-view").addEventListener("click", viewerFlow);
+  $("strip-view").addEventListener("click", viewerFlow);
   // Its own keys while it runs; nothing else hears them.
   window.addEventListener("keydown", (e) => {
     if (!slides.on) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     if (e.key === "Escape") endSlideshow();
+    else if (slides.settings.viewer && [" ", "PageDown"].includes(e.key)) stepSlide(1);
+    else if (slides.settings.viewer && e.key === "PageUp") stepSlide(-1);
+    else if (slides.settings.viewer && e.key === "Home") stepSlide(-slides.at);
+    else if (slides.settings.viewer && e.key === "End") stepSlide(slides.list.length - 1 - slides.at);
     else if (e.key === " ") togglePause();
     else if (e.key === "ArrowRight") stepSlide(1);
     else if (e.key === "ArrowLeft") stepSlide(-1);

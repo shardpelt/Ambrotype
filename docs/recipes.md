@@ -82,11 +82,11 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
 
 ## Add a kind of hub item
 
-1. `crates/amb-gui/src/hub.rs`:
+1. `crates/amb-gui/src/hub/mod.rs`:
    - `known_kind` accepts it;
    - `fetch_item` reads and checks it for the Browse dialog;
-   - an `install_…` function checks its sha256 and saves it;
    - `browse` marks what's installed.
+   - In `hub/kinds.rs`, an `install_…` function checks its sha256 and saves it.
 2. `crates/amb-gui/src/commands/mod.rs`: register the new Tauri command in `handler`.
    - The command itself goes in `crates/amb-gui/src/commands/hub.rs` and calls the install.
 3. `crates/amb-gui/ui/hub.js`: in `hubFlow`, a preview and the Install button's branch. `crates/amb-gui/ui/index.html`: a tab in `hub-tabs`.

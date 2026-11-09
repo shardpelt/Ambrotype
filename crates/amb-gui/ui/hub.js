@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The hub: browse shared layouts, themes and plugins, install them, and use
-// them (src/hub.rs fetches, checks and saves them). Previews are drawn here from
+// them (src/hub/ fetches, checks and saves them). Previews are drawn here from
 // each look's own data (theme colours, layout columns), so the hub needs no
 // screenshots and nothing is loaded from other sites into the page.
 "use strict";

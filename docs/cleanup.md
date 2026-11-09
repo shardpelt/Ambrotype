@@ -363,7 +363,7 @@ Why: 1,243 lines. Validating a layout or theme is half of it.
 
 Commit: `editor: looks.rs split into checks, setups and storage`. Why: "1,243 lines, half of it validation."
 
-### ☐ F5. amb-gui `hub.rs` → `hub/`
+### ☑ F5. amb-gui `hub.rs` → `hub/` (2026-11-09)
 
 Why: 1,193 lines: the index, each item kind's fetch and install, submission links and the hub's CI check.
 

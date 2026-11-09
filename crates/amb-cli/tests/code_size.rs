@@ -18,7 +18,6 @@ const OVER_BUDGET: &[(&str, usize)] = &[
     ("crates/amb-engine/src/mask.rs", 1600),
     ("crates/amb-engine/src/negative.rs", 1400),
     ("crates/amb-protocol/src/state.rs", 1400),
-    ("crates/amb-gui/src/hub.rs", 1300),
     ("crates/amb-protocol/src/masks.rs", 1300),
     ("crates/amb-ai/src/net.rs", 1300),
     ("crates/amb-engine/src/lens.rs", 1200),

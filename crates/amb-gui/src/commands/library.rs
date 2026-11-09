@@ -11,6 +11,32 @@ pub(crate) async fn folder_photos(path: String) -> Res<Vec<folder::FolderPhoto>>
         .map_err(|e| e.to_string())?
 }
 
+/// One photo as the viewer's info panel shows it: the library's record (its
+/// rating, label, flag, keywords, title, and the shot from its header) and
+/// the file's size.
+#[derive(Serialize)]
+pub(crate) struct PhotoDetails {
+    #[serde(flatten)]
+    photo: library::LibraryPhoto,
+    bytes: Option<u64>,
+}
+
+#[tauri::command]
+pub(crate) async fn photo_details(path: String) -> Res<PhotoDetails> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let p = PathBuf::from(&path);
+        let photo = library::list_paths(std::slice::from_ref(&p))
+            .0
+            .into_iter()
+            .next()
+            .ok_or_else(|| format!("{path}: not found"))?;
+        let bytes = std::fs::metadata(amb_engine::source_path(&p)).ok().map(|m| m.len());
+        Ok(PhotoDetails { photo, bytes })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// The JPEGs shot with these raws, which the library shows as one photo
 /// with the raw (Filter → File: JPEG only lists them).
 #[tauri::command]

@@ -1292,6 +1292,25 @@ body.chrome-hidden.peek-left .column.left, body.chrome-hidden.peek-right .column
 .slideshow { position: fixed; inset: 0; z-index: 200; background: #000; cursor: none; outline: none; overflow: hidden; }
 .slideshow.pointer { cursor: default; }
 .slideshow.viewer.pointer.at-left { cursor: w-resize; }
+.ss-info { position: absolute; top: 16px; right: 16px; bottom: 16px; width: 300px; overflow-y: auto; padding: 14px 16px; background: rgba(20, 20, 20, .92); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #ddd; border-radius: 10px; font-size: 13px; cursor: default; user-select: text; -webkit-user-select: text; z-index: 2; }
+.ss-info[hidden] { display: none; }
+.ss-info dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 0 0 6px; }
+.ss-info dt { color: #999; }
+.ss-info dd { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ss-info h4 { margin: 12px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #999; }
+.ss-info button { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .15); color: #ddd; }
+.ss-stars button { background: none; border: 0; padding: 0 2px; font-size: 20px; color: #555; }
+.ss-stars button.on { color: #f0c040; }
+.ss-labels { display: flex; gap: 6px; }
+.ss-labels button { width: 22px; height: 22px; padding: 0; border-radius: 50%; background: var(--swatch); opacity: .55; }
+.ss-labels button.on { opacity: 1; outline: 2px solid #fff; }
+.ss-flags { display: flex; gap: 6px; }
+.ss-flags button.on { border-color: #f0c040; color: #fff; }
+.ss-keywords { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.ss-chip { display: inline-flex; align-items: center; gap: 2px; padding: 1px 2px 1px 8px; border-radius: 999px; background: rgba(255, 255, 255, .1); }
+.ss-chip button { border: 0; background: none; padding: 0 4px; }
+.ss-info input { width: 100%; background: rgba(0, 0, 0, .4); color: #eee; border: 1px solid rgba(255, 255, 255, .2); }
+.ss-info-hint { color: #888; font-size: 11px; margin-top: 12px; }
 .slideshow.viewer.pointer.at-right { cursor: e-resize; }
 .ss-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: none; }
 .ss-img.shown { opacity: 1; }

@@ -70,7 +70,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 ## Library and organising
 
 - **Import from a memory card** → **Import Photos** (Ctrl+Shift+I): copies into dated folders, renames, skips duplicates. `amb import CARD DEST`.
-- **Look through photos full screen, like an image viewer** → **V**, or **⛶ View** in the library bar or the filmstrip's bar: from the photo you're on, ← → (or Space) or a click on the left or right of the screen steps, Esc ends on the photo you got to. With **JPEG if there is one**, the camera's JPEGs.
+- **Look through photos full screen, like an image viewer** → **V**, or **⛶ View** in the library bar or the filmstrip's bar: from the photo you're on, ← → (or Space) or a click on the left or right of the screen steps, Esc ends on the photo you got to. With **JPEG if there is one**, the camera's JPEGs. While viewing, 0–5 rate, P X U flag, 6–9 label, and **I** or a right-click shows the photo's info (camera, lens, exposure, date, size) with its rating, label, flag and keywords to change.
 - **Go through the camera's JPEGs big, after a shoot** → **JPEG if there is one** (the library bar, or the filmstrip's bar in Develop): a raw shot with a JPEG shows as its JPEG, other raws stay, and ← → step through them. For the photo alone, big: the library's Loupe (E, ← → to step), or the buttons at the photo's top corners fold the side panels away.
 - **See only the raws, or only the JPEGs, when browsing** → library → **Filter ▾** → **File**: Raw only, or JPEG only (a raw shot with a JPEG shows its JPEG then; normally they're one photo, shown as the raw).
 - **Move from Lightroom Classic** → Import ▾ → from a Lightroom catalogue (edits, ratings, keywords, collections). `amb lrcat import CATALOG.lrcat`.

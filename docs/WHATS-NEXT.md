@@ -32,6 +32,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-09: the viewer rates, flags and labels with the library's keys, and its info panel (I or right-click) shows the shot and edits rating, label, flag and keywords
+
 - 2026-11-08: the viewer (V, ⛶ View): photos full screen as an image viewer, ← → or the screen's sides to step, Esc ends on the photo got to; and [design/tabs.md](design/tabs.md), what makes a tab, a mode, a view, a tool or a dialog
 
 - 2026-11-07: tips stop after Not now three times in a row, or at once with the card's Don't show tips (Settings → General turns them on again)

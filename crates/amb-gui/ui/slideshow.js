@@ -12,7 +12,10 @@
 // screen as an image viewer: no timer, starting at the photo you're on;
 // ← → (or Space, Home, End) and a click on the left or right of the screen
 // step; Esc ends it on the photo you got to (selected in the library,
-// open in Develop). A mode, not a tab (docs/design/tabs.md).
+// open in Develop). 0–5 rate, P X U flag, 6–9 label, as in the library;
+// I or a right-click opens the info panel: the shot (camera, lens,
+// exposure, date, size) and the rating, label, flag and keywords, to
+// change there. A mode, not a tab (docs/design/tabs.md).
 "use strict";
 
 const SLIDE_EFFECTS = ["fade", "slide", "zoom", "black"];
@@ -62,7 +65,8 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
   const viewer = Boolean(settings.viewer);
   const el = Object.assign(document.createElement("div"), { className: `slideshow${viewer ? " viewer" : ""}`, tabIndex: -1 });
   const pause = viewer ? "" : '<button type="button" data-do="pause" title="Pause (Space)">❚❚</button>';
-  el.innerHTML = `<img class="ss-img" alt=""><img class="ss-img" alt=""><div class="ss-bar" hidden><button type="button" data-do="prev" title="Previous (←)">‹</button>${pause}<button type="button" data-do="next" title="Next (→)">›</button><span class="ss-where"></span><button type="button" data-do="end" title="End (Esc)">✕</button></div>`;
+  const info = viewer ? '<aside class="ss-info" hidden></aside>' : "";
+  el.innerHTML = `<img class="ss-img" alt=""><img class="ss-img" alt="">${info}<div class="ss-bar" hidden><button type="button" data-do="prev" title="Previous (←)">‹</button>${pause}<button type="button" data-do="next" title="Next (→)">›</button><span class="ss-where"></span><button type="button" data-do="end" title="End (Esc)">✕</button></div>`;
   document.body.append(el);
   slides.el = el;
   // The viewer's thirds: left steps back, right on, the middle only shows
@@ -71,7 +75,12 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
     const x = e.clientX / innerWidth;
     return x < 0.3 ? -1 : x > 0.7 ? 1 : 0;
   };
+  el.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    if (viewer) toggleViewerInfo();
+  });
   el.addEventListener("click", (e) => {
+    if (e.target.closest(".ss-info")) return;
     const b = e.target.closest("[data-do]");
     if (b) {
       e.stopPropagation();
@@ -94,7 +103,13 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
   if (settings.fullscreen) {
     slides.wasFullscreen = await invoke("window_fullscreen", { on: true }).catch(() => true);
   }
-  await showSlide(start, true);
+  if (viewer) {
+    let open = false;
+    try { open = localStorage.getItem("amb.viewerInfo") === "1"; } catch { /* not kept */ }
+    if (open) el.querySelector(".ss-info").hidden = false;
+  }
+  // Steps taken while the window went full screen count.
+  await showSlide(slides.at, true);
   schedule();
 }
 
@@ -170,10 +185,117 @@ async function showSlide(i, first = false) {
   next.style.transition = "";
   old.className = `ss-img out-${effect}`;
   next.classList.add("shown");
-  slides.el.querySelector(".ss-where").textContent = `${slides.at + 1} / ${n} · ${p.name ?? fileName(p.path)}`;
+  showWhere();
+  if (slides.settings.viewer) renderViewerInfo();
   // Fetch the next one meanwhile (and, viewing, the one before).
   slideImage(slides.list[(slides.at + 1) % n]).catch(() => {});
   if (slides.settings.viewer && n > 2) slideImage(slides.list[(slides.at + n - 1) % n]).catch(() => {});
+}
+
+// The bar's text: where in the list, the name, and (viewing) the rating
+// and flag.
+function showWhere() {
+  const n = slides.list.length;
+  const p = slides.list[slides.at];
+  const parts = [`${slides.at + 1} / ${n}`, p.name ?? fileName(p.path)];
+  if (slides.settings.viewer) {
+    if (p.rating) parts.push("★".repeat(p.rating));
+    if (p.label) parts.push(p.label);
+    if (p.flag) parts.push(p.flag === "pick" ? "⚑ Pick" : "✕ Rejected");
+  }
+  slides.el.querySelector(".ss-where").textContent = parts.join(" · ");
+}
+
+// A change to the photo on screen (rating, label, flag, keywords), written
+// as the library writes it (through the editor when it's the open photo),
+// and shown in the library and filmstrip too.
+async function viewerChange(change) {
+  const p = slides.list[slides.at];
+  try {
+    const [u] = await invoke("library_set_info", { paths: [p.path], change });
+    const info = u?.info ?? {};
+    const fields = { rating: info.rating ?? null, label: info.label ?? null, flag: info.flag ?? null, keywords: info.keywords ?? [] };
+    for (const list of [slides.list, lib.photos, strip.photos]) {
+      for (const x of list) if (x.path === p.path) Object.assign(x, fields);
+    }
+    if (typeof updateCell === "function") updateCell(p);
+    stripUpdate(p.path, fields);
+    if (p.path === ui.info?.path) slides.openChanged = true;
+    if (slides.on && slides.list[slides.at] === p) {
+      showWhere();
+      renderViewerInfo();
+      showSlideBar();
+    }
+  } catch (e) {
+    toast(String(e), true);
+  }
+}
+
+function toggleViewerInfo(on) {
+  const panel = slides.el?.querySelector(".ss-info");
+  if (!panel) return;
+  panel.hidden = on === undefined ? !panel.hidden : !on;
+  try { localStorage.setItem("amb.viewerInfo", panel.hidden ? "0" : "1"); } catch { /* not kept */ }
+  renderViewerInfo();
+}
+
+// The info panel: the shot, then what can be changed.
+async function renderViewerInfo() {
+  const panel = slides.el?.querySelector(".ss-info");
+  if (!panel || panel.hidden) return;
+  const p = slides.list[slides.at];
+  const seq = (slides.infoSeq = (slides.infoSeq ?? 0) + 1);
+  let d = p;
+  try {
+    d = { ...p, ...(await invoke("photo_details", { path: p.path })) };
+  } catch { /* what the list knows */ }
+  if (seq !== slides.infoSeq || !slides.on) return;
+  const shutter = (s) => (s >= 1 ? `${Math.round(s * 10) / 10} s` : `1/${Math.round(1 / s)} s`);
+  const rows = [
+    ["File", d.name ?? fileName(d.path)],
+    ["Taken", d.captured],
+    ["Camera", d.camera],
+    ["Lens", d.lens],
+    ["Exposure", [d.shutter && shutter(d.shutter), d.aperture && `f/${Math.round(d.aperture * 10) / 10}`, d.iso && `ISO ${d.iso}`].filter(Boolean).join("  ·  ")],
+    ["Focal length", d.focal && `${Math.round(d.focal)} mm`],
+    ["Size", d.bytes && `${(d.bytes / 1e6).toFixed(1)} MB`],
+    ["Title", d.title],
+    ["Folder", dirOf(d.path)],
+  ].filter(([, v]) => v);
+  const el = (tag, attrs = {}, ...kids) => {
+    const n = Object.assign(document.createElement(tag), attrs);
+    n.append(...kids);
+    return n;
+  };
+  const stars = el("div", { className: "ss-stars" }, ...[1, 2, 3, 4, 5].map((k) => el("button", {
+    type: "button", textContent: "★", title: `${k} star${k === 1 ? "" : "s"} (${k})`, className: k <= (d.rating ?? 0) ? "on" : "",
+    onclick: () => viewerChange({ rating: (d.rating ?? 0) === k ? 0 : k }),
+  })));
+  const labels = el("div", { className: "ss-labels" }, ...Object.keys(LABEL_COLOURS).map((l, i) => {
+    const b = el("button", { type: "button", title: `${l}${i < 4 ? ` (${6 + i})` : ""}`, className: d.label === l ? "on" : "", onclick: () => viewerChange({ label: d.label === l ? "" : l }) });
+    b.style.setProperty("--swatch", LABEL_COLOURS[l]);
+    return b;
+  }));
+  const flag = (f, text, key) => el("button", { type: "button", textContent: text, title: `${text} (${key})`, className: (d.flag ?? "") === f ? "on" : "", onclick: () => viewerChange({ flag: f }) });
+  const flags = el("div", { className: "ss-flags" }, flag("pick", "Pick", "P"), flag("reject", "Reject", "X"), flag("", "Neither", "U"));
+  const keywords = el("div", { className: "ss-keywords" }, ...(d.keywords ?? []).map((k) => el("span", { className: "ss-chip" }, k, el("button", {
+    type: "button", textContent: "×", title: `Remove ${k}`, onclick: () => viewerChange({ remove_keywords: [k] }),
+  }))));
+  const add = el("input", { type: "text", placeholder: "Add keywords (Enter; commas between)", spellcheck: false });
+  add.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && add.value.trim()) {
+      viewerChange({ add_keywords: add.value.split(",").map((k) => k.trim()).filter(Boolean) });
+      add.value = "";
+    }
+  });
+  panel.replaceChildren(
+    el("dl", {}, ...rows.flatMap(([k, v]) => [el("dt", { textContent: k }), el("dd", { textContent: v, title: v })])),
+    el("h4", { textContent: "Rating" }), stars,
+    el("h4", { textContent: "Label" }), labels,
+    el("h4", { textContent: "Flag" }), flags,
+    el("h4", { textContent: "Keywords" }), keywords, add,
+    el("p", { className: "ss-info-hint", textContent: "I or right-click hides this · 0–5 rate · P X U flag · 6–9 label" }),
+  );
 }
 
 function schedule() {
@@ -219,6 +341,11 @@ async function endSlideshow() {
   slides.el.remove();
   slides.el = null;
   slides.done?.(slides.list[slides.at]);
+  // The open photo was rated or tagged here: its panels catch up.
+  if (slides.openChanged) {
+    slides.openChanged = false;
+    loadInfo();
+  }
   if (slides.settings.fullscreen && !slides.wasFullscreen) await invoke("window_fullscreen", { on: false }).catch(() => {});
 }
 
@@ -240,8 +367,33 @@ function wireSlideshow() {
   // Its own keys while it runs; nothing else hears them.
   window.addEventListener("keydown", (e) => {
     if (!slides.on) return;
+    // Typing keywords in the viewer's info panel: the box has the keys
+    // (Esc leaves it).
+    if (e.target.closest?.(".ss-info") && e.target.matches("input")) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.target.blur();
+        slides.el.focus();
+      }
+      // The app's own keys leave text boxes alone.
+      return;
+    }
     e.preventDefault();
     e.stopImmediatePropagation();
+    const viewing = slides.settings.viewer;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (viewing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (/^[0-5]$/.test(k)) return viewerChange({ rating: Number(k) });
+      if (/^[6-9]$/.test(k)) {
+        const l = Object.keys(LABEL_COLOURS)[Number(k) - 6];
+        return viewerChange({ label: slides.list[slides.at].label === l ? "" : l });
+      }
+      if (k === "p") return viewerChange({ flag: "pick" });
+      if (k === "x") return viewerChange({ flag: "reject" });
+      if (k === "u") return viewerChange({ flag: "" });
+      if (k === "i") return toggleViewerInfo();
+    }
     if (e.key === "Escape") endSlideshow();
     else if (slides.settings.viewer && [" ", "PageDown"].includes(e.key)) stepSlide(1);
     else if (slides.settings.viewer && e.key === "PageUp") stepSlide(-1);

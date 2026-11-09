@@ -196,6 +196,31 @@ await t.step("View (V): the photos full screen, ← → and the screen's sides s
   t.expect(slides.on, "a click in the middle doesn't end it");
   el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth * 0.9, clientY: innerHeight / 2, bubbles: true }));
   await t.until("on by the right side", () => slides.at === 1);
+  // Rating, flag and keywords while viewing; the info panel shows the shot.
+  const shown = slides.list[1];
+  key("3");
+  await t.until("rated 3", () => shown.rating === 3);
+  t.expect(lib.photos.find((p) => p.path === shown.path)?.rating === 3, "the library has it too");
+  t.expect(document.querySelector(".ss-where").textContent.includes("★★★"), `the bar shows it: ${document.querySelector(".ss-where").textContent}`);
+  key("p");
+  await t.until("picked", () => shown.flag === "pick");
+  // (Open or shut as last time: shut first.)
+  if (!document.querySelector(".ss-info").hidden) key("i");
+  key("i");
+  await t.until("the info panel", () => !document.querySelector(".ss-info").hidden && document.querySelector(".ss-info dl"));
+  t.expect(document.querySelector(".ss-info").textContent.includes("Camera"), "the shot");
+  const input = document.querySelector(".ss-info input");
+  input.value = "viewer-test";
+  input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+  await t.until("the keyword", () => shown.keywords?.includes("viewer-test") && document.querySelector(".ss-chip"));
+  t.expect(slides.at === 1, "typing didn't step");
+  [...document.querySelectorAll(".ss-chip")].find((c) => c.textContent.includes("viewer-test")).querySelector("button").click();
+  await t.until("the keyword gone", () => !shown.keywords?.includes("viewer-test"));
+  key("0");
+  key("u");
+  await t.until("back as it was", () => !shown.rating && !shown.flag);
+  key("i");
+  t.expect(document.querySelector(".ss-info").hidden, "I hides the panel");
   const at = slides.list[1].path;
   key("Escape");
   await t.until("the viewer gone", () => !slides.on && !document.querySelector(".slideshow"));

@@ -29,6 +29,8 @@
 
 use rayon::prelude::*;
 
+use crate::math::smoothstep_f64 as smoothstep;
+
 /// Model constants.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
@@ -1152,11 +1154,6 @@ pub fn detect_frame(
         inset(fx(r), r < bw, -1.0),
         inset(fy(b), b < bh, -1.0),
     ))
-}
-
-fn smoothstep(e0: f64, e1: f64, x: f64) -> f64 {
-    let t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);
-    t * t * (3.0 - 2.0 * t)
 }
 
 /// Prepared per-image conversion.

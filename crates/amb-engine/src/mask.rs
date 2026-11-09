@@ -31,6 +31,7 @@ use crate::detail::{NoiseReduction, Sharpening};
 use crate::filters::{gaussian_blur, gaussian_reach};
 use crate::lens::{self, Defringe};
 use crate::local::LocalContrast;
+use crate::math::smoothstep_f64 as smoothstep;
 use crate::tone::{self, ToneControls};
 use crate::{dehaze, detail, local};
 
@@ -768,14 +769,6 @@ impl Frame {
     pub(crate) fn scale(&self) -> f64 {
         1.0 / self.ex.0.hypot(self.ex.1).max(1e-9)
     }
-}
-
-pub(crate) fn smoothstep(e0: f64, e1: f64, x: f64) -> f64 {
-    if e1 <= e0 {
-        return if x < e0 { 0.0 } else { 1.0 };
-    }
-    let t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);
-    t * t * (3.0 - 2.0 * t)
 }
 
 /// What a correction's mask needs from the image.

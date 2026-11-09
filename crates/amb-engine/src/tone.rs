@@ -11,6 +11,8 @@
 //! constants live in [`ToneStrengths`] so the calibration harness can fit them
 //! against Lightroom sweeps instead of us guessing.
 
+use crate::math::smoothstep_f64;
+
 /// Strength constants, at slider = ±100. Fitted later; these are starting guesses.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
@@ -103,11 +105,6 @@ fn gaussian(x: f64, centre: f64, width: f64) -> f64 {
     (-d * d).exp()
 }
 
-fn smoothstep(t: f64) -> f64 {
-    let t = t.clamp(0.0, 1.0);
-    t * t * (3.0 - 2.0 * t)
-}
-
 /// Smooth bump that is 1 in the middle of [lo, hi] and fades to 0 just outside it.
 fn region_bump(x: f64, lo: f64, hi: f64) -> f64 {
     let centre = 0.5 * (lo + hi);
@@ -152,7 +149,8 @@ pub fn region_lut(c: &ToneControls, k: &ToneStrengths, size: usize) -> Vec<f32> 
         .map(|i| {
             let x = i as f64 / (size - 1) as f64;
             // Pure black and white stay put (Blacks and Whites move those).
-            let ends = smoothstep(x / 0.04) * smoothstep((1.0 - x) / 0.04);
+            let ends =
+                smoothstep_f64(0.0, 1.0, x / 0.04) * smoothstep_f64(0.0, 1.0, (1.0 - x) / 0.04);
             let y = x + ends
                 * (k.shadows * c.shadows / 100.0 * gaussian(x, 0.25, 0.17) * (1.0 - x)
                     + k.highlights * c.highlights / 100.0 * gaussian(x, 0.75, 0.17) * x);

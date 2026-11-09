@@ -14,6 +14,8 @@ use std::f32::consts::TAU;
 
 use amb_color::matrix::{Mat3, PROPHOTO_TO_XYZ_D50, invert3, mul3, xyz_d50_to_srgb};
 
+use crate::math::smoothstep;
+
 /// Strength constants at slider = ±100. Starting guesses, to be fitted.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(default)]
@@ -233,11 +235,6 @@ impl Default for OkLab {
     fn default() -> Self {
         Self::new()
     }
-}
-
-fn smoothstep(e0: f32, e1: f32, x: f32) -> f32 {
-    let t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);
-    t * t * (3.0 - 2.0 * t)
 }
 
 /// Prepared per-image colour operation.

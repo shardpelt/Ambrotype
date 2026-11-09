@@ -3,6 +3,7 @@
 //! mask (see the module docs above).
 
 use super::*;
+use crate::math::smoothstep;
 
 /// Sharpening as numbers (for other backends): the unsharp mask's `gain`
 /// and blur `kernel` on encoded luminance, the halo window (radius `win`,

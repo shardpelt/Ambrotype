@@ -29,7 +29,8 @@ use crate::brush;
 use crate::buffer::{Image, Tile, luminance_weights};
 use crate::crop::CropGeometry;
 use crate::filters::box_blur;
-use crate::mask::{Frame, smoothstep};
+use crate::mask::Frame;
+use crate::math::smoothstep_f64 as smoothstep;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SpotShape {

@@ -124,7 +124,7 @@ The editor's scripts are plain `<script>` files sharing one global scope, loaded
 
 ## Phase 1: small merges
 
-### ☐ S1. One `smoothstep` for the engine
+### ☑ S1. One `smoothstep` for the engine (2026-11-09)
 
 Why: eight copies of one function, two with a guard for equal edges and six without (those give NaN when the edges are equal and `x` is on them). Every call passes the lower edge first, so the guarded form changes no result.
 

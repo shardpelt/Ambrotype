@@ -30,6 +30,7 @@ use crate::buffer::{Image, Rect, Tile};
 use crate::color::OkLab;
 use crate::crop::CropGeometry;
 use crate::filters::transpose;
+use crate::math::smoothstep_f64 as smoothstep;
 use crate::transform::Homography;
 
 /// Strength and shape constants, fitted later against Lightroom sweeps.
@@ -230,11 +231,6 @@ impl RadialShift {
 fn centre(w: usize, h: usize) -> (f64, f64, f64) {
     let (cx, cy) = ((w as f64 - 1.0) / 2.0, (h as f64 - 1.0) / 2.0);
     (cx, cy, cx.hypot(cy).max(1.0))
-}
-
-fn smoothstep(e0: f64, e1: f64, x: f64) -> f64 {
-    let t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);
-    t * t * (3.0 - 2.0 * t)
 }
 
 /// Apply the camera-space part of the lens corrections. `crop_factor` is the

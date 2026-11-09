@@ -247,15 +247,6 @@ pub(super) fn dot(w: [f32; 3], p: &[f32]) -> f32 {
     w[0] * p[0] + w[1] * p[1] + w[2] * p[2]
 }
 
-#[inline]
-pub(super) fn smoothstep(e0: f32, e1: f32, x: f32) -> f32 {
-    if e1 <= e0 {
-        return if x >= e0 { 1.0 } else { 0.0 };
-    }
-    let t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);
-    t * t * (3.0 - 2.0 * t)
-}
-
 /// Linear interpolation in a table sampling 0..1 at `M - 1` steps (fixed size,
 /// so the compiler drops the bounds checks). `v` must be in 0..1.
 #[inline]

@@ -69,6 +69,7 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::buffer::{Image, Tile, luminance_weights};
+use crate::math::smoothstep;
 
 /// `PostCropVignetteAmount` -100..100, `...Midpoint` 0..100 (50), `...Roundness` -100..100 (0),
 /// `...Feather` 0..100 (50), `...HighlightContrast` 0..100 (0), `...Style` 1 = Highlight
@@ -198,11 +199,6 @@ impl Default for EffectsStrengths {
 
 /// Image area that the resolution-independent grain size is defined at (6000 × 4000).
 const REFERENCE_PIXELS: f64 = 6000.0 * 4000.0;
-
-fn smoothstep(e0: f32, e1: f32, x: f32) -> f32 {
-    let t = ((x - e0) / (e1 - e0)).clamp(0.0, 1.0);
-    t * t * (3.0 - 2.0 * t)
-}
 
 // ---------------------------------------------------------------- vignette
 

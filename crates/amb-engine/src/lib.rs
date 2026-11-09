@@ -28,6 +28,7 @@ pub mod local_tone;
 pub mod lut;
 pub mod mask;
 pub mod matching;
+pub(crate) mod math;
 pub mod merge;
 pub mod negative;
 pub mod output;

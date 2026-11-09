@@ -32,7 +32,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Sharper, less noise** → **Detail**: Sharpening, Noise Reduction.
 - **Crooked horizon** → **Crop and Straighten** (R), then **Level the horizon** (L), or drag outside the frame to turn it by hand.
 - **Crop** → **Crop and Straighten** (R), then drag corner to corner like a screenshot; X swaps portrait and landscape, Enter applies.
-- **Converging lines on buildings** → **Transform** → Upright.
+- **Converging lines on buildings** → **Transform** → Upright; or draw guides along the lines (**Guided**) and the sliders straighten them.
 - **Lens distortion, dark corners, colour fringes** → **Lens Corrections**: profile corrections (lensfun's database, downloaded by itself at the first start when there is none, or your Adobe `.lcp` files), Remove Chromatic Aberration, Defringe → Auto. Sony and DNG raws bring their own distortion correction. `amb lens info RAW`.
 - **Find the AI tools (remove, select subject, people, sky)** → Develop's **Retouch tools**, on the left under Quick fixes, a button each.
 - **Change only part of the photo** → **Masks** (M): linear (L), radial (Shift+R), brush (B), luminance and colour ranges, Sky, and AI Subject, Background and People masks (they run on your computer; **Settings** → AI models).
@@ -50,6 +50,9 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **A wild look: toy camera, miniature (tilt-shift), infrared, cartoon, oil painting** → Presets → **Wild** (Toy camera, Miniature, Infrared, Cross-process, Dreamland, Acid, Hologram, Oil painting, Cartoon, Poster, Pop art); tune them in **Effects** → Plugin effects (Paint, Tilt-shift).
 - **Surprise me with a look** → Presets → **Surprise me…**, or **Plugins** → Random look.
 - **Let an AI edit the photo** → **Assistant** (Ctrl+Shift+A), or **Connect an AI App** (Help menu; `amb mcp`).
+- **Edit the open photo from another app or an AI at the same time** → the editor shows the change at once, as one undo step.
+- **Colours on my screen look off** → on Linux the preview is shown in the monitor's own profile (**Settings** → General: Automatic, Off or a file); macOS and Windows do it themselves.
+- **Blown sky edge, flower or sunlit wall** → highlights where one channel still held detail get their colour and texture back by themselves; **Clipping Overlay** (J) shows what's left.
 - **Edit in Photoshop or another app** → **Edit in Another App** (Ctrl+Alt+E; choose the app in **Settings** → General).
 
 ## Presets
@@ -58,6 +61,8 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Save my own preset** → **New Preset from This Photo** (Ctrl+Shift+N, or **+ New preset…** in Presets). It works in Lightroom too.
 - **What's inside a preset, and what don't you support yet** → `amb preset inspect PRESET.xmp`.
 - **Find presets, layouts and themes others made** → **Browse the Hub** (Ctrl+Shift+H).
+- **Ready-made looks to start from** → Presets → **Preset library…**: 21 free presets by style (film, B&W, moody, bright, vivid, portrait, landscape); hover to preview, **Apply**, or **Add to your presets**.
+- **A preset that replaces my edit, or adds to it** → Presets → **Apply to the original, not on top**: on, a preset replaces the look (crop, spots, masks and geometry stay); off, presets add up as in Lightroom.
 
 ## Film negatives and scans
 
@@ -95,9 +100,11 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 
 - **Export** → **Export** (Ctrl+E): JPEG, PNG, TIFF, WebP, AVIF, OpenEXR or JPEG XL; size, sharpening, metadata, colour space, border, watermark. `amb render PHOTO OUT.jpg`.
 - **Many photos at once** → select them in the library (or the filmstrip) and **Export**. `amb render PHOTOS… --out-dir DIR`.
+- **Name batch files by a template** → **Export** → file name ({name}, {seq}, the date, {camera}). `amb render PHOTOS… --out-dir DIR --name TEMPLATE`.
+- **JPEG chroma subsampling, progressive JPEG** → **Export**; AVIF has a speed.
 - **File too big to send (WhatsApp, email)** → **Export** → Keep under (MB); 16 MB is WhatsApp's maximum. `amb render … --max-size 16M`.
 - **A big file and a small one for social media** → **Export** → Also a smaller copy, up to N MB (saves NAME-small.jpg beside it). `amb render … --small-copy 3M`.
-- **Exactly 1080 × 1350 for Instagram** → **Export** → Size preset, or Exact size.
+- **Exactly 1080 × 1350 for Instagram** → **Export** → Size preset, or Exact size (the crop's size presets cover Instagram, TikTok, YouTube, print and more). `amb render --exact 1080x1350`.
 - **Shot RAW by mistake, want JPEGs like the camera makes** → **Convert raws** (library, File menu, or right-click): as the camera would have saved them, Auto, or like one photo you edited (pick which from the edited ones). `amb convert CARD --to JPEGS`.
 - **Paste the photo into a chat or document** → right-click → Copy image.
 - **A border, a Polaroid frame, a caption** → **Frame** (Shift+B).
@@ -111,6 +118,11 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 ## Make it yours
 
 - **A different layout or colours** → **Appearance** (Ctrl+L): built-in layouts and themes; **Edit Layout**, or **New Layout from Scratch**.
+- **Wider or narrower side columns** → drag a column's inner edge (double-click for the layout's width); it's kept per layout.
+- **Keep a layout and theme together** → **Appearance** → **Save this setup…**; the one before your last change is kept by itself.
+- **Words on every button, only the everyday tools** → the Beginner layout in **Appearance**.
+- **Use the menu bar** → on a Mac it's at the top of the screen; on Windows and Linux, **Settings** → General shows it in the window. Every command is there with its keys.
+- **Replace the whole window with my own interface** → **Settings** → General → Interface (a folder with an `index.html`, written by hand or by an AI; [ai/custom-interface.md](ai/custom-interface.md)); the menu bar's Interface → Back to the Built-in Interface, or `--builtin-ui`, always comes back.
 - **Hide everything but the photo** → the Minimalism layout in **Appearance**, or fold the **Left Column** (Ctrl+[), **Right Column** (Ctrl+]) and the top bar (Ctrl+Shift+T).
 - **Small tools that edit for me** → **Plugins** (Ctrl+Shift+P); write your own ([ai/plugins.md](ai/plugins.md)).
 - **My own tab with my tools** → a task plugin: a layout and buttons in a `plugin.json`, no code; it joins the task bar ([ai/plugins.md](ai/plugins.md#task-plugins)). Trippy is one.

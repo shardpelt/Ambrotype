@@ -624,7 +624,7 @@ Why: 78 scripts in one folder. Grouped by what they belong to, the folder says w
 
 Commit: `editor: the UI's scripts in folders`. Why: "78 scripts in one folder; now the folder says what part of the editor a script belongs to."
 
-### ☐ R4. Docs with one home per fact
+### ☑ R4. Docs with one home per fact (2026-11-09)
 
 Why: `NEXT.md`'s "Built" list repeats `FEATURES.md` (what people can do) and `ARCHITECTURE.md` (how it's built), so a fact goes stale in one place.
 

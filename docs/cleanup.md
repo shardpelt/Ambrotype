@@ -348,7 +348,7 @@ Why: 956 and 826 lines of commands for several parts of the editor.
 
 Commit: `editor: photo and library commands split by area`. Why: "956 and 826 lines; selecting, the tools and batch work now have their own files."
 
-### ☐ F4. amb-gui `looks.rs` → `looks/`
+### ☑ F4. amb-gui `looks.rs` → `looks/` (2026-11-09)
 
 Why: 1,243 lines. Validating a layout or theme is half of it.
 

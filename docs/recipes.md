@@ -46,7 +46,7 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
 
 1. `crates/amb-gui/ui/index.html`: a `<button id="btn-…" title="…">Word</button>` among the others in `topbar`.
 2. `crates/amb-gui/ui/layout.js`: `TOOLBAR_IDS` maps the layout name to the button's id.
-3. `crates/amb-gui/src/looks.rs`: `TOOLBAR` lists the names a layout may use; check the array's length.
+3. `crates/amb-gui/src/looks/mod.rs`: `TOOLBAR` lists the names a layout may use; check the array's length.
 4. `crates/amb-gui/ui/app.js`: the click handler, with the others in `init`.
 5. `crates/amb-gui/ui/keys.js`: optionally a shortcut in `KEY_ACTIONS`, with `button:` set to the id so the tooltip shows the key.
 6. `crates/amb-gui/ui/menu.js`: with a shortcut, the action's id in `MENU_BAR` (the menu bar), and a title in `MENU_TITLES` if its label is a sentence; a test checks the ids.

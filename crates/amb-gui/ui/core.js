@@ -13,7 +13,7 @@ const ui = {
   panels: [],            // editor schema
   defs: new Map(),       // setting name -> its control definition (from the schema)
   historyNames: new Map(), // setting name -> its name in History, where the label alone is ambiguous
-  looks: null,           // layouts and themes (src/looks.rs), with the active ids
+  looks: null,           // layouts and themes (src/looks/), with the active ids
   layout: null,          // the active layout (layout.js renders it)
   histogram: null,       // the last histogram, redrawn when the theme or layout changes
   keybindings: {},       // shortcuts the user changed (keys.js has the defaults)

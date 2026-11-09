@@ -235,7 +235,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 
 - **Shell:** Tauri 2, with the system webview (WebView2, WKWebView, WebKitGTK). The UI in `crates/amb-gui/ui/` is plain HTML/CSS/JS with no build step or npm. The window opens where and as big as it was left (`tauri-plugin-window-state`).
 - **Where things are:**
-  - Rust: `src/main.rs` holds startup; the app state is in `src/state.rs` and the saved settings in `src/config.rs`. Every command is registered in `handler` in `src/commands/mod.rs`. The Tauri commands themselves are in `src/commands/`, one file per area: `appearance`, `assistant`, `catalog`, `collage`, `connect`, `export`, `features`, `files`, `hub`, `library`, `menu`, `models`, `photo`, `places`, `plugins`, `presets`, `preview`, `sample`, `settings` (plus `mod.rs`). The logic they call is in the other `src/` files (`session/`, `preset_files.rs`, `looks.rs`, `hub.rs`, …).
+  - Rust: `src/main.rs` holds startup; the app state is in `src/state.rs` and the saved settings in `src/config.rs`. Every command is registered in `handler` in `src/commands/mod.rs`. The Tauri commands themselves are in `src/commands/`, one file per area: `appearance`, `assistant`, `batch`, `catalog`, `collage`, `connect`, `export`, `features`, `files`, `hub`, `library`, `menu`, `models`, `photo`, `places`, `plugins`, `presets`, `preview`, `sample`, `select`, `settings`, `tools` (plus `mod.rs`). The logic they call is in the other `src/` files (`session/`, `preset_files.rs`, `looks/`, `hub.rs`, …).
   - JS: `ui/core.js` (loaded first) holds the shared helpers: `invoke`, `$`, the shared state (`ui`), `toast`, `status`, `askYes`, `el` and the path helpers. `ui/app.js` holds the slider rows and `init`, which wires the buttons. The preview loop and 1:1 view are in `preview.js`, the crop panel in `croptool.js`, the Presets panel in `presets.js` and the Export dialog in `export.js`; the other panels and dialogs each have their own file.
   - Monitor colour: `src/monitor.rs` keeps the profile in use (Settings → General: Automatic, Off or a file); the editor's session converts its JPEGs to it as they are encoded (`Session::on_screen`; thumbnails and the assistant's pictures stay sRGB). Linux only: macOS and Windows webviews match colours themselves.
   - UI tests: `ambrotype --ui-test SCRIPT.js` (`src/uitest.rs`) puts the script into the page, where `ui/uitest.js` runs it with its helpers and reports back; exports skip the save dialog. Scripts are in `tests/ui/`.
@@ -258,7 +258,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - right-column tabs (`.column-tabs` in `ui/layout.js`, the chosen tab kept per layout in localStorage `amb.tabs`); the status bar is off unless Settings → General turns it on, and notes then show briefly over the photo (`#status-note`)
   - size presets (built-in for social sites and print, plus custom) for the crop aspect and exact-size export
   - **looks:** the toolbar, side columns and panels come from a layout file and the colours from a theme.
-    - `src/looks.rs` validates and stores them.
+    - `src/looks/` validates (`check.rs`), stores and keeps setups (`setups.rs`) for them.
     - `ui/layout.js` renders them.
     - `ui/controls.js` has the knob, bar, number, toggle and segmented controls.
     - `ui/editor.js` is editor mode, which edits a draft of the layout and re-renders it.

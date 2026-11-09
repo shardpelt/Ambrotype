@@ -1,6 +1,6 @@
 # Layouts and themes ("looks"): format reference
 
-How to make a layout or theme for the Ambrotype editor, by hand or by asking an AI assistant ("give me a compact layout with knobs for the tone sliders and a warm dark theme"). Design background: [design/customization-and-hub.md](../design/customization-and-hub.md). Validation and storage: `crates/amb-gui/src/looks.rs`.
+How to make a layout or theme for the Ambrotype editor, by hand or by asking an AI assistant ("give me a compact layout with knobs for the tone sliders and a warm dark theme"). Design background: [design/customization-and-hub.md](../design/customization-and-hub.md). Validation and storage: `crates/amb-gui/src/looks/`.
 
 A look is two small JSON files:
 - a **layout**: what goes where, and which kind of control each setting uses

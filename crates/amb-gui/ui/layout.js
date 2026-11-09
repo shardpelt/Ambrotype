@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Appearance ("looks"): the active layout (toolbar, side columns, panels, the widget each
 // setting uses) and theme (colour tokens), and the Appearance dialog.
-// The file formats are in docs/ai/ui-layouts.md; src/looks.rs validates and
+// The file formats are in docs/ai/ui-layouts.md; src/looks/ validates and
 // stores them. Panels still take their settings, ranges and labels from the
 // editor schema, so a layout only decides where and how they are shown.
 "use strict";

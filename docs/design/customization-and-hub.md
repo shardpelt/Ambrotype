@@ -1,6 +1,6 @@
 # Customisable UI, themes, the hub and AI-made features
 
-Status: §1 layouts, the built-in looks and §2 themes are **built** (2026-10-07): `crates/amb-gui/src/looks.rs`, `ui/layout.js`, `ui/controls.js`, built-ins in `crates/amb-gui/data/hub/looks/`, a copy of the hub's (since 2026-10-15 the hub is where they are edited; `tools/sync-hub.py` copies the items listed in `data/hub/bundle.txt`). The format reference for people and AI assistants is [docs/ai/ui-layouts.md](../ai/ui-layouts.md). Editor mode (§3) and the hub (§4) are **built** too (`ui/editor.js`; `src/hub.rs`, `ui/hub.js`, and the [hub repo](https://github.com/Ambrotypehq/ambrotype-hub)). Plugins (§5) and the AI flows (§6) are next (UI track step 7 in [NEXT.md](../NEXT.md)).
+Status: §1 layouts, the built-in looks and §2 themes are **built** (2026-10-07): `crates/amb-gui/src/looks/`, `ui/layout.js`, `ui/controls.js`, built-ins in `crates/amb-gui/data/hub/looks/`, a copy of the hub's (since 2026-10-15 the hub is where they are edited; `tools/sync-hub.py` copies the items listed in `data/hub/bundle.txt`). The format reference for people and AI assistants is [docs/ai/ui-layouts.md](../ai/ui-layouts.md). Editor mode (§3) and the hub (§4) are **built** too (`ui/editor.js`; `src/hub.rs`, `ui/hub.js`, and the [hub repo](https://github.com/Ambrotypehq/ambrotype-hub)). Plugins (§5) and the AI flows (§6) are next (UI track step 7 in [NEXT.md](../NEXT.md)).
 
 ![The Studio layout (knobs and bars) with the Light theme](../images/looks-studio-light.png)
 

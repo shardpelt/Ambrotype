@@ -191,7 +191,7 @@ The phases and their tasks are in [cleanup.md](../cleanup.md), each with its fil
 | 0. Guard rails (done) | UI tests read subfolders and check every script loads; a file-size test; the metrics script in `tools/` | | none |
 | 1. Small merges (done) | `math.rs` (smoothstep), one `file_stamp`, `core.js`, a `store` helper | any model | low |
 | 2. Split big files (done) | 9 Rust files and 6 UI scripts, along their sections | any model, one task each | low: tests and the UI scripts catch mistakes |
-| 3. Structure | `amb-ops`; `Prefs`; UI folders; docs with one home per fact | planned by a strong model, owner says go | medium |
+| 3. Structure (done) | `amb-ops`; `Prefs`; UI folders; docs with one home per fact | planned by a strong model, owner says go | medium |
 
 **Not now:**
 - **ES modules for the UI:** the webviews support them without a build step. But the UI tests and the menu call globals, and 1,085 names would need imports. Do it only if the global scope keeps causing bugs after `core.js` and the splits.

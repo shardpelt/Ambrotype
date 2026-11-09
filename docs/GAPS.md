@@ -300,9 +300,7 @@ From the structure review of 2026-11-09 ([design/structure.md](design/structure.
 | Item | Tag | Impact | Source |
 |---|---|---|---|
 | Some files are past the size budget (800 production lines for Rust, 700 for a UI script); `OVER_BUDGET` in `crates/amb-cli/tests/code_size.rs` lists them, each held at its size until it is split | Limit | People and agents read far more than they change; merge conflicts gather there | [cleanup.md](cleanup.md), phase 2 |
-| The UI's 63 scripts share one global scope (1,085 top-level names), and the helpers they all use now live in `core.js`, which loads first | Limit | Load order matters in ways nothing states | [cleanup.md](cleanup.md) S3, R3 |
-| Small helpers are copied between UI scripts: getting a file's name from its path 9 times (the engine's 8 `smoothstep`s became one on 2026-11-09) | Limit | Copies drift | [cleanup.md](cleanup.md) S3 |
-| `NEXT.md`'s "Built" list repeats `FEATURES.md` and `ARCHITECTURE.md` | Limit | A fact goes stale in one place | [cleanup.md](cleanup.md) R4 |
+| The UI's 78 scripts (in folders by part since 2026-11-09) share one global scope, so the order `index.html` loads them in matters; the helpers they all use are in `ui/core/core.js`, which loads first. Two tests check that each script loads once and each top-level name is declared once | Limit | A script's top-level code may only use names from scripts loaded before it | [design/structure.md](design/structure.md), "Not now" |
 
 ## Top 10 to close next
 

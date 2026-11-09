@@ -12,7 +12,7 @@ Ambrotype is a free, open-source Lightroom alternative in Rust. Start with [docs
 - `crates/amb-export`: file writing.
 - `crates/amb-library`: library operations on folders and sidecars (import, collections).
 - `crates/amb-ops`: operations that render photos (convert raws, edit replay, merges, objects, bursts, dust, negatives); uses `amb-library`.
-- `crates/amb-gui`: Tauri 2 editor. Its UI is plain HTML/CSS/JS in `crates/amb-gui/ui/` (no npm, no build step).
+- `crates/amb-gui`: Tauri 2 editor. Its UI is plain HTML/CSS/JS in `crates/amb-gui/ui/` (no npm, no build step), the scripts in folders by part: `core/`, `looks/`, `develop/`, `tools/`, `library/`, `collage/`, `dialogs/`, `help/`.
 - `crates/amb-cli`: the `amb` tool.
 - `crates/amb-plugin` (the sandboxed plugin host) and `crates/amb-plugin-sdk` (what plugins are written with); example and built-in plugins in `plugins/` (rebuild a changed one with `amb plugin build plugins/<id>` and commit its `plugin.wasm`). Guide: [docs/ai/plugins.md](docs/ai/plugins.md).
 - `tools/`: `sync-hub.py` (copy the hub repo in) and `lightroom-kit/` (test raws, session folders and our Lightroom Classic plug-in for a Lightroom trial, [docs/lightroom-trial-plan.md](docs/lightroom-trial-plan.md); test the plug-in with `lua5.1 tools/lightroom-kit/test-plugin.lua`).

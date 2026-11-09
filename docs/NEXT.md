@@ -158,7 +158,7 @@ Not taken: NegPy's print tables (made from Fujifilm printer software and profile
 
 ### Codebase track
 
-The structure review of 2026-11-09 ([design/structure.md](design/structure.md)) found no need for a rewrite. Its cleanup is in [cleanup.md](cleanup.md), in exact steps for smaller models: guard rails, small merges and splitting the big files are done (2026-11-09); the structural steps wait for the owner's go.
+The structure review of 2026-11-09 ([design/structure.md](design/structure.md)) found no need for a rewrite. Its cleanup is in [cleanup.md](cleanup.md), in exact steps for smaller models: guard rails, small merges, splitting the big files and the structural steps (`amb-ops`, the saved settings behind one lock, the UI's scripts in folders, docs with one home per fact) are all done (2026-11-09).
 
 
 0. **First, measure what helps** (plan: [design/agent-navigation.md](design/agent-navigation.md)): fresh agents on a fixed task set, with and without recipes and on-demand maps. Rounds A1 and B1 are done: with the recipes, Sonnet passed all 12 tasks at the same cost. The steps below follow from it.

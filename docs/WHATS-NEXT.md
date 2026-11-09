@@ -11,11 +11,12 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Up next (in this order)
 
-1. **A paper curve in density** (Film lab item 9).
-2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
-3. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
-4. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
-5. **From the competition:** raw AI Denoise (our own builds, after CalibRaw's ideas) ([research/17](research/17-competitors-2026.md)).
+1. **Rotate a photo** (owner, 2026-11-09): a quarter turn left or right, and flip, as Lightroom's Rotate Left and Right (Ctrl+[ and Ctrl+]). In the library for the selection, and in Develop for the open photo; undoable, and in `amb`. Lightroom stores the result as `tiff:Orientation` in the sidecar. Crops and masks are in the stored orientation, so they stay put. Today only the crop tool straightens, and a collage cell turns its photo.
+2. **A paper curve in density** (Film lab item 9).
+3. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
+4. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
+5. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
+6. **From the competition:** raw AI Denoise (our own builds, after CalibRaw's ideas) ([research/17](research/17-competitors-2026.md)).
 
 ## Ideas for later
 

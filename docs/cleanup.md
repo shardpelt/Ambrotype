@@ -543,25 +543,97 @@ The other files past the budget (all under 1,000 lines) stay pinned at their siz
 
 ## Phase 3: structure
 
-These change how the code is organised, not only where it sits. The owner says go first. Then a strong model writes each one's exact steps here, in the same form as above, and smaller models carry them out.
+These change how the code is organised, not only where it sits. The owner said go on 2026-11-09. Do them in this order; R4 touches only docs and can run beside the others.
 
-- **R1. `amb-ops`, the batch photo operations, out of `amb-library`.**
-  - Move `convert`, `replay`, `merge`, `object`, `snap`, `burst`, `dust`, `negative` and `look` into a new crate that depends on `amb-library`.
-  - `amb-library` then no longer needs `amb-gpu` or `amb-export` (check `contact`: `search.rs` uses `contact::small`, so `contact` stays, or that helper moves first).
-  - The editor and `amb` change their paths, from `amb_library::convert` to `amb_ops::convert`.
-- **R2. `Prefs`: one lock for the saved settings.**
-  - `AppState`'s saved-settings fields become one `Mutex<Config>`.
-  - `save_config` writes it as it is, with no copying.
-  - Commands lock `state.prefs` and change a field.
-  - Do it one field at a time; the settings file's format stays the same.
-- **R3. UI folders.** Group `ui/` into `core/`, `develop/`, `tools/`, `library/`, `dialogs/`, `help/` (the tests already read subfolders, task G1). Then update:
-  - the paths in `index.html`;
-  - `crates/amb-gui/src/commands/menu.rs`'s test, which reads `menu.js` and `keys.js` by name;
-  - `docs/recipes.md`;
-  - the docs.
-- **R4. Docs with one home per fact** ([design/structure.md](design/structure.md), "Target shape").
-  - `NEXT.md`'s "Built" list becomes a link to `FEATURES.md`, after anything only it says moves to `FEATURES.md` or `ARCHITECTURE.md`.
-  - "Recently done" in `WHATS-NEXT.md` keeps the last month; older entries go to the release notes.
+### ☐ R1. `amb-ops`: the operations that render photos, out of `amb-library`
+
+Why: `amb-library` held both the library (catalogue, folders, import, collections, files, Lightroom, search) and batch operations that render photos, so it needed `amb-gpu` too.
+
+1. Create `crates/amb-ops/Cargo.toml` like `crates/amb-library/Cargo.toml` (the same `version` and `*.workspace = true` lines), with:
+   - `name = "amb-ops"`, `description = "Operations that render photos: raws to JPEGs, edit replays, HDR and panorama merges, objects, bursts, dust and negatives"`;
+   - `[dependencies]`: `amb-engine`, `amb-export`, `amb-gpu`, `amb-lens`, `amb-library`, `amb-presets`, `amb-protocol` (all `{ path = "../…" }`), and `image`, `rayon`, `serde`, `serde_json` written exactly as in `amb-library`'s file;
+   - `[dev-dependencies]`: `amb-testkit = { path = "../amb-testkit" }`.
+2. Create `crates/amb-ops/src/lib.rs`: the SPDX line; `//! Operations that render photos, shared by the `amb` tool and the editor: raws to JPEGs, edit replays, merges, objects, bursts, dust and negatives. The library itself (folders, catalogue, sidecars) is `amb-library`.`; then `pub mod burst; pub mod convert; pub mod dust; pub mod merge; pub mod negative; pub mod object; pub mod replay; pub mod snap;`.
+3. `git mv crates/amb-library/src/X.rs crates/amb-ops/src/X.rs` for X in `burst convert dust merge negative object replay snap`, and delete their `pub mod` lines from `crates/amb-library/src/lib.rs`.
+4. In the moved files, change `crate::catalog`, `crate::duplicates` and `crate::look` (also `use crate::look;`) to `amb_library::catalog`, `amb_library::duplicates` and `amb_library::look`. `crate::snap` stays. `look` and `contact` stay in `amb-library`: search renders thumbnails with `contact::small`, which uses `look`.
+5. In `crates/amb-library/Cargo.toml`, delete the `amb-gpu` line (nothing left uses it; the build says if something does), and drop "HDR merge" from its `description`.
+6. Add `amb-ops = { path = "../amb-ops" }` to `crates/amb-gui/Cargo.toml` and `crates/amb-cli/Cargo.toml`, beside their `amb-library` lines. Then change their code from `amb_library::X` to `amb_ops::X` for the eight moved modules only (`grep -rn "amb_library::\(burst\|convert\|dust\|merge\|negative\|object\|replay\|snap\)" crates`). `amb_library::contact` and `amb_library::look` stay.
+7. In `crates/amb-cli/tests/code_size.rs`, `crates/amb-library/src/object.rs` becomes `crates/amb-ops/src/object.rs` in `OVER_BUDGET` (same number).
+8. Docs: a row for `amb-ops` in `docs/ARCHITECTURE.md`'s crate table (and the moved modules out of `amb-library`'s row), a line for it in `AGENTS.md`'s Layout, the crate graph in `docs/design/structure.md`, and `amb_library::X` → `amb_ops::X` wherever docs name a moved module (`grep -rn "amb_library::\(burst\|convert\|dust\|merge\|negative\|object\|replay\|snap\)\|amb-library/src/\(burst\|convert\|dust\|merge\|negative\|object\|replay\|snap\)" docs AGENTS.md`). In `docs/GAPS.md`, delete the code-health row that says `amb-library` holds both jobs.
+9. The whole workspace's checks (`cargo fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`; the test count must not change) and the UI tests (they open, merge and convert photos).
+
+Commit: `ops: the operations that render photos move to amb-ops`. Why: "amb-library held the library and batch operations that render photos; now amb-library no longer needs amb-gpu."
+
+### ☐ R2. `Prefs`: the saved settings behind one lock
+
+Why: `AppState` held 18 saved settings each behind its own `Mutex`; `save_config` copied each into `Config` and `apply_config` copied each back, so a new saved setting touched four places.
+
+1. In `crates/amb-gui/src/config.rs`, make every field of `Config` `pub(crate)`. Leave its `serde` attributes and types exactly as they are: the settings file's format must not change.
+2. In `crates/amb-gui/src/state.rs`, replace these 18 fields of `AppState` with one, `pub(crate) prefs: Mutex<Config>,` (doc comment: `/// The saved settings (settings.json), behind one lock: read them with [`AppState::prefs`], change them with [`AppState::change_prefs`].`): `size_presets`, `look`, `keybindings`, `hub_url`, `border_presets`, `recent_keywords`, `collage_templates`, `plugin_approvals`, `plugin_recipes`, `import_choice`, `export_presets`, `preset_favourites`, `mask_effects`, `edit_in`, `metadata_templates`, `monitor`, `assistant`, `interface`. **`preset_dirs` stays** as it is: it also holds the default folders, which aren't saved. In the place `AppState` is built, put `prefs: Mutex::new(Config::default())`.
+3. Add to `state.rs`, in an `impl AppState`:
+   ```rust
+   /// Something read from the saved settings.
+   pub(crate) fn prefs<T>(&self, read: impl FnOnce(&Config) -> T) -> Res<T> {
+       let prefs = self.prefs.lock().map_err(|e| e.to_string())?;
+       Ok(read(&prefs))
+   }
+
+   /// Changes the saved settings, then writes them to the settings file.
+   /// Inside `change`, only read and change fields: calling anything that
+   /// takes the state (`save_config`, `prefs`, `change_prefs`, a command)
+   /// would wait for this same lock forever.
+   pub(crate) fn change_prefs<T>(&self, change: impl FnOnce(&mut Config) -> T) -> Res<T> {
+       let out = {
+           let mut prefs = self.prefs.lock().map_err(|e| e.to_string())?;
+           change(&mut prefs)
+       };
+       save_config(self);
+       Ok(out)
+   }
+   ```
+4. `save_config`: first compute the user's own preset folders from `state.preset_dirs` as it does now (lock, compute, unlock); then lock `state.prefs`, set its `preset_dirs` to them, serialize it with `serde_json` as the old code serialized its `Config`, and unlock; then write the file as before. Never hold both locks at once.
+5. `apply_config(state, mut config)`: keep the `preset_dirs` part as it is; then `config.keybindings = keys::validate(&config.keybindings).unwrap_or_default();` and `config.interface = config.interface.filter(|d| interface::is_interface(d));` (a folder that's gone is dropped, as before); `let interface = config.interface.clone();`; store it: `*state.prefs.lock().expect("fresh mutex") = config;`; return `interface`. In `main.rs`, the interface block no longer sets the interface (prefs has it): `if let Some(dir) = interface { if !interface::builtin_forced() { … show_interface … } }`.
+6. Every other use, field by field (`grep -rn "state\.\(size_presets\|look\|keybindings\|hub_url\|border_presets\|recent_keywords\|collage_templates\|plugin_approvals\|plugin_recipes\|import_choice\|export_presets\|preset_favourites\|mask_effects\|edit_in\|metadata_templates\|monitor\|assistant\|interface\)\b" crates/amb-gui/src`, about 46). `look.0`/`look.1` are `layout`/`theme`; `import_choice` is `import`.
+   - A read becomes `state.prefs(|p| p.X.clone())?` (or computes what it needs inside the closure).
+   - A change followed by `save_config(…)` becomes `state.change_prefs(|p| { … })?`, and that `save_config` call goes. A change that wasn't saved before may use `change_prefs` too: saving more often is harmless.
+   - Inside a closure, call no function that takes `state`/`AppState`. If a site needs one, read what it needs with `prefs` first, then call it outside.
+   - Run `cargo check -p amb-gui --all-targets` after each field.
+7. `docs/GAPS.md`: delete the code-health row about `AppState`. `docs/design/structure.md` and `docs/ARCHITECTURE.md`: say the saved settings are one `Config` behind `AppState::prefs`.
+8. The scoped amb-gui checks and **the UI tests** (a lock taken twice hangs: a UI test that times out after this change is a sign of it).
+
+Commit: `editor: the saved settings behind one lock`. Why: "18 settings each had a lock and two copies; now Config is the state, and a new setting is one field."
+
+### ☐ R3. UI folders
+
+Why: 78 scripts in one folder. Grouped by what they belong to, the folder says where a feature lives. Only paths change: the scripts keep their names and their load order.
+
+1. Move each script with `git mv crates/amb-gui/ui/NAME.js crates/amb-gui/ui/FOLDER/NAME.js`:
+   - `core/`: core, keys, menu, search, toolbar, tasks, icons, picker, uitest, app;
+   - `looks/`: layout, columns, looks-dialog, editor, editor-keys, editor-inspector;
+   - `develop/`: curve, wheels, controls, info, filmstrip, quickzoom, split, touch, zones, presetlib, frame, fx, preview, presets, rows, history, photo;
+   - `tools/`: crop, croptool, masks, mask-draw, mask-panel, spots, select, guided, toolblocks, trip;
+   - `library/`: folders, lightroom, libmenus, library, library-grid, library-actions, cull, browse, duplicates, bursts, organise, import, lrcat, collections, slideshow;
+   - `collage/`: collage, collage-canvas, collage-free, collage-tray;
+   - `dialogs/`: interfaces, connect, hub, borders, plugins, assistant, models, monitor, export;
+   - `help/`: learn, teach, help, figures, basics, camsim, tips.
+   `index.html`, `widgets-demo.html`, `style.css`, `widgets.css` and the `.json` files stay where they are: the scripts `fetch("basics.json")` and the others relative to the page.
+2. In `index.html`, each `<script src="NAME.js">` becomes `<script src="FOLDER/NAME.js">`, in the same place. In `widgets-demo.html`, `curve.js` and `wheels.js` become `develop/curve.js` and `develop/wheels.js`.
+3. `crates/amb-gui/src/commands/menu.rs`'s test reads `ui.join("menu.js")` and `ui.join("keys.js")`: make them `core/menu.js` and `core/keys.js`.
+4. Every path that names a moved script, in docs, Rust comments and tests: `ui/NAME.js` and `crates/amb-gui/ui/NAME.js` become `ui/FOLDER/NAME.js` and `crates/amb-gui/ui/FOLDER/NAME.js` (about 115, including `docs/recipes.md`, which its test checks). Bare names in comments (`(keys.js)`) stay. Do it with a short script from the list above rather than by hand, then check `grep -rnE "ui/[a-z-]+\.js" docs AGENTS.md crates tools` shows only the new paths (and `uitest.js`'s own test scripts under `crates/amb-gui/tests/ui/`, which don't move).
+5. The scoped amb-gui checks (the Rust tests check that `index.html` loads every script once and each top-level name is declared once) and the UI tests.
+
+Commit: `editor: the UI's scripts in folders`. Why: "78 scripts in one folder; now the folder says what part of the editor a script belongs to."
+
+### ☐ R4. Docs with one home per fact
+
+Why: `NEXT.md`'s "Built" list repeats `FEATURES.md` (what people can do) and `ARCHITECTURE.md` (how it's built), so a fact goes stale in one place.
+
+1. For each bullet of the "Built" list under "## State" in `docs/NEXT.md`: find where `docs/FEATURES.md` (user-facing) or `docs/ARCHITECTURE.md` (technical) says the same. If neither does, add the missing fact there first: a feature people use goes in `FEATURES.md` as what they'd want, where it is and its `amb` command (AGENTS.md says how); a technical fact goes in `ARCHITECTURE.md` beside the code it describes.
+2. Then replace the whole "Built" list with one bullet: `- **Built:** what people can do is in [FEATURES.md](FEATURES.md), how it is built in [ARCHITECTURE.md](ARCHITECTURE.md), and what's missing in [GAPS.md](GAPS.md).`
+3. Keep everything else in `NEXT.md` (the tracks, the checklist, the working notes). In `docs/WHATS-NEXT.md`, "Recently done" keeps the last month; entries older than that move to the newest file in `docs/release-notes/`, under a heading for the month. (Today every entry is from the last month: nothing moves yet.)
+4. Check every link in the changed files resolves. No code changes; no cargo checks needed beyond `cargo test -p amb-cli --test recipes`.
+
+Commit: `docs: one home per fact; NEXT's Built list points at FEATURES and ARCHITECTURE`. Why: "The list repeated both, and its facts went stale in one place or the other."
 
 ## Found while cleaning
 

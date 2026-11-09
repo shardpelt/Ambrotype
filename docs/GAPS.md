@@ -299,7 +299,7 @@ From the structure review of 2026-11-09 ([design/structure.md](design/structure.
 
 | Item | Tag | Impact | Source |
 |---|---|---|---|
-| 21 Rust files are past 800 production lines and 6 UI scripts past 700 (the largest: `session.rs` 1,855 lines, `library.js` 1,488); a test holds each at its size until it is split (`crates/amb-cli/tests/code_size.rs`) | Limit | People and agents read far more than they change; merge conflicts gather there | [cleanup.md](cleanup.md), phase 2 |
+| Some files are past the size budget (800 production lines for Rust, 700 for a UI script); `OVER_BUDGET` in `crates/amb-cli/tests/code_size.rs` lists them, each held at its size until it is split | Limit | People and agents read far more than they change; merge conflicts gather there | [cleanup.md](cleanup.md), phase 2 |
 | The UI's 63 scripts share one global scope (1,085 top-level names), and the helpers they all use now live in `core.js`, which loads first | Limit | Load order matters in ways nothing states | [cleanup.md](cleanup.md) S3, R3 |
 | `AppState` (`crates/amb-gui/src/state.rs`) has 29 fields, 27 behind their own lock, and the saved settings are copied field by field into `Config` | Limit | A new saved setting touches four places | [cleanup.md](cleanup.md) R2 |
 | `amb-library` holds both the library and the operations that render photos (convert, replay, merge, object, burst, dust, negative, look), so it depends on `amb-gpu` and `amb-export` | Limit | Slower builds, and no clear home for a new operation | [cleanup.md](cleanup.md) R1 |

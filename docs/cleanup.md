@@ -260,7 +260,7 @@ Commit: `editor: localStorage through store`. Why: "Sixty-nine reads and writes,
 
 Each task splits one file (two in F3) along its sections. Sizes are production lines on 2026-11-09.
 
-### ☐ F1. amb-gui `main.rs`: config, state and the handler list out
+### ☑ F1. amb-gui `main.rs`: config, state and the handler list out (2026-11-09)
 
 Why: `main` was 460 lines: startup, then the list of 232 Tauri commands. The saved settings and the app's state are their own concerns.
 

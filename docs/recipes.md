@@ -87,7 +87,7 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
    - `fetch_item` reads and checks it for the Browse dialog;
    - an `install_…` function checks its sha256 and saves it;
    - `browse` marks what's installed.
-2. `crates/amb-gui/src/main.rs`: register the new Tauri command in `invoke_handler`.
+2. `crates/amb-gui/src/commands/mod.rs`: register the new Tauri command in `handler`.
    - The command itself goes in `crates/amb-gui/src/commands/hub.rs` and calls the install.
 3. `crates/amb-gui/ui/hub.js`: in `hubFlow`, a preview and the Install button's branch. `crates/amb-gui/ui/index.html`: a tab in `hub-tabs`.
 4. Docs: `docs/design/customization-and-hub.md`. In the hub repo (Ambrotypehq/ambrotype-hub), tools/build_index.py lists the folders it indexes.

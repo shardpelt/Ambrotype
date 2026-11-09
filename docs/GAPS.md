@@ -301,7 +301,7 @@ From the structure review of 2026-11-09 ([design/structure.md](design/structure.
 |---|---|---|---|
 | 21 Rust files are past 800 production lines and 6 UI scripts past 700 (the largest: `session.rs` 1,855 lines, `library.js` 1,488); a test holds each at its size until it is split (`crates/amb-cli/tests/code_size.rs`) | Limit | People and agents read far more than they change; merge conflicts gather there | [cleanup.md](cleanup.md), phase 2 |
 | The UI's 63 scripts share one global scope (1,085 top-level names), and the helpers they all use now live in `core.js`, which loads first | Limit | Load order matters in ways nothing states | [cleanup.md](cleanup.md) S3, R3 |
-| `AppState` (`crates/amb-gui/src/main.rs`) has 29 fields, 27 behind their own lock, and the saved settings are copied field by field into `Config` | Limit | A new saved setting touches four places | [cleanup.md](cleanup.md) R2 |
+| `AppState` (`crates/amb-gui/src/state.rs`) has 29 fields, 27 behind their own lock, and the saved settings are copied field by field into `Config` | Limit | A new saved setting touches four places | [cleanup.md](cleanup.md) R2 |
 | `amb-library` holds both the library and the operations that render photos (convert, replay, merge, object, burst, dust, negative, look), so it depends on `amb-gpu` and `amb-export` | Limit | Slower builds, and no clear home for a new operation | [cleanup.md](cleanup.md) R1 |
 | Small helpers are copied between UI scripts: getting a file's name from its path 9 times (the engine's 8 `smoothstep`s became one on 2026-11-09) | Limit | Copies drift | [cleanup.md](cleanup.md) S3 |
 | `NEXT.md`'s "Built" list repeats `FEATURES.md` and `ARCHITECTURE.md` | Limit | A fact goes stale in one place | [cleanup.md](cleanup.md) R4 |

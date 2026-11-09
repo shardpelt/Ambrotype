@@ -96,7 +96,7 @@ window.__TAURI__.event.listen("sidecar-changed", () => { /* the .xmp changed on 
 
 ### Everything else
 
-Export, masks, crop, presets, the library catalogue, collections, plugins: the full list is the `generate_handler!` block in `crates/amb-gui/src/main.rs`, and each is used somewhere in `crates/amb-gui/ui/`. Search the UI for `invoke("name"` to see its arguments in use.
+Export, masks, crop, presets, the library catalogue, collections, plugins: the full list is the `generate_handler!` block in `crates/amb-gui/src/commands/mod.rs`, and each is used somewhere in `crates/amb-gui/ui/`. Search the UI for `invoke("name"` to see its arguments in use.
 
 ## Rules for AI agents
 

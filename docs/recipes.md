@@ -71,7 +71,7 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
 1. `crates/amb-protocol/src/command.rs`:
    - a variant of `Command`;
    - its text in `label`, which History shows.
-2. `crates/amb-protocol/src/state.rs`: what it does, in `execute`. A command is one undo step.
+2. `crates/amb-protocol/src/state/mod.rs`: what it does, in `execute`. A command is one undo step.
 3. `crates/amb-protocol/src/schema.rs`: its JSON Schema in `command_schema`.
 4. `crates/amb-protocol/src/compact.rs`: a compact form, if it needs one (parsed in `one`).
 5. `crates/amb-protocol/src/card.rs`: the core card in `core`, then regenerate `docs/ai/core.md` (step 6 of "Add a develop setting").

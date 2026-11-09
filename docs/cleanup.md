@@ -382,7 +382,7 @@ Why: 1,193 lines: the index, each item kind's fetch and install, submission link
 
 Commit: `editor: hub.rs split by kind`. Why: "1,193 lines; each item kind's fetch and install, the submission links and the CI check now have their own files."
 
-### ☐ F6. amb-protocol `state.rs` → `state/`
+### ☑ F6. amb-protocol `state.rs` → `state/` (2026-11-09)
 
 Why: 1,210 lines for `DevelopState`: history, snapshots, sidecar reading and writing, executing, planning and queries.
 

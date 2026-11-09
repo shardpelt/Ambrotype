@@ -51,6 +51,17 @@ cargo test --workspace
 
 While working, `cargo check -p <crate> --all-targets` is faster.
 
+A task that changes only `amb-gui` (no other crate depends on it) or only the UI's scripts can run these instead of the whole workspace's clippy and tests:
+
+```sh
+cargo fmt --all
+cargo clippy -p amb-gui --all-targets -- -D warnings
+cargo test -p amb-gui
+cargo test -p amb-cli --test code_size --test recipes
+```
+
+Whoever pushes runs the whole workspace's checks first.
+
 UI, for any task that touches `crates/amb-gui/ui/`: also run the UI tests, as CI does. The UI is built into the binary, so build first.
 
 ```sh

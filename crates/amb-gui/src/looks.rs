@@ -1293,9 +1293,9 @@ mod tests {
         let wheel_tags = 12;
         assert_eq!(c.controls.len() + wheel_tags, catalog().kinds.len());
         assert_eq!(c.composites.len(), 2);
-        // Quick fixes, presets, history and the histogram; Rating &
-        // keywords is the library's.
-        assert_eq!(c.blocks.len(), 4);
+        // Quick fixes, the Retouch tools, presets, history and the
+        // histogram; Rating & keywords is the library's.
+        assert_eq!(c.blocks.len(), 5);
     }
 
     #[test]

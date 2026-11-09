@@ -6,10 +6,10 @@
       "kind": "layout",
       "name": "Classic",
       "author": "Ambrotype",
-      "description": "Develop: Quick fixes on the left (Auto edit, Auto tone and white balance, Level, lens fixes) above the presets and history; the Develop panels on the right.",
+      "description": "Develop: Quick fixes (Auto edit, Auto tone and white balance, Level, lens fixes) and the Retouch tools (Select object, Remove object, AI Remove, Heal, Find dust, the AI masks) on the left above the presets and history; the Develop panels on the right in four tabs: Tone, Colour (grading wheels and mixer), Detail & lens, More.",
       "license": "CC0-1.0",
       "path": "looks/layouts/classic.json",
-      "sha256": "007a7bbaeb800a26f68f904cd651ba89157f23f5893f04f8d449a66399f26d09"
+      "sha256": "77ecfef7356d5c4a1a8139acbfe9bc37e570d0c1ac4ed4215b3728e5f6e5fa39"
     },
     {
       "id": "layout-beginner",

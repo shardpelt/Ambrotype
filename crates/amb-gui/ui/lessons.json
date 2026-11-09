@@ -9,7 +9,7 @@
       "needs_photo": false,
       "steps": [
         {
-          "text": "Ambrotype is split into tasks, along the top: Library to find and sort photos, Develop to edit one, and Color, Retouch, Film and Collage, which show only what that job needs. Ctrl+Alt+1 to 6 switch between them.",
+          "text": "Ambrotype is split into tasks, along the top: Library to find and sort photos, Develop to edit one (its Colour tab and Retouch tools included), Film for scanned negatives, and Collage, the collage maker. Ctrl+Alt+1 to 4 switch between them.",
           "highlight": { "element": "task-bar" }
         },
         {

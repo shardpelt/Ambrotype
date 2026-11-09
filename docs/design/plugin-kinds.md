@@ -8,7 +8,7 @@ What a plugin can be, and why these. Decided 2026-11-04, when the owner asked fo
 |---|---|---|---|---|
 | `action` | A button that makes edits once (a set of protocol commands, one undo step) | Yes, sandboxed WebAssembly | Plugins dialog; a task's tool button | Auto tone, Random look, Film recipe |
 | `effect` | A look rendered with the photo every time, kept in its edit (`amb:Effects`); `color` (a colour table) or `pixels` | Yes, sandboxed WebAssembly | Effects → Plugin effects; a task's tool button | Duotone, Light leak, Hue trip, Holographic |
-| `task` | A tab in the task bar: a layout and tool buttons | No | The task bar (Ctrl+Alt+7–9) | Trippy |
+| `task` | A tab in the task bar: a layout and tool buttons | No | The task bar (Ctrl+Alt+6–9) | Trippy |
 
 A **task** is data only, so it can't do harm and needs no approval: its layout is checked like a layout file, and each tool does one of three things, all of which go through the usual commands:
 

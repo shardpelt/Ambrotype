@@ -1,28 +1,29 @@
 {
   "format": "ambrotype-layout/1",
   "name": "Classic",
-  "description": "Develop: Quick fixes on the left (Auto edit, Auto tone and white balance, Level, lens fixes) above the presets and history; the Develop panels on the right.",
+  "description": "Develop: Quick fixes (Auto edit, Auto tone and white balance, Level, lens fixes) and the Retouch tools (Select object, Remove object, AI Remove, Heal, Find dust, the AI masks) on the left above the presets and history; the Develop panels on the right in four tabs: Tone, Colour (grading wheels and mixer), Detail & lens, More.",
   "author": "Ambrotype",
   "density": "normal",
   "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "select", "search", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "settings", "feedback"],
-  "left": { "width": 260, "items": ["quick", "presets", "history"] },
+  "left": { "width": 260, "items": ["quick", "retouch", "presets", "history"] },
   "right": {
     "width": 330,
     "items": [
       "histogram",
-      { "tab": "Tone & colour" },
+      { "tab": "Tone" },
       { "panel": "basic", "open": true },
       { "panel": "tone_curve" },
-      { "panel": "color_mixer" },
+      { "tab": "Colour" },
+      { "panel": "color_grading", "open": true },
+      { "panel": "color_mixer", "open": true },
       { "panel": "black_white" },
-      { "panel": "color_grading" },
+      { "panel": "calibration" },
       { "tab": "Detail & lens" },
       { "panel": "detail" },
       { "panel": "lens" },
       { "panel": "transform" },
       { "tab": "More" },
       { "panel": "effects" },
-      { "panel": "calibration" },
       { "panel": "negative" }
     ]
   }

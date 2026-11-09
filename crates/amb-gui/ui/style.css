@@ -57,6 +57,10 @@ button.primary:hover:not(:disabled) { background: var(--accent); filter: brightn
 .camsim-controls label { display: grid; grid-template-columns: 7em 1fr 5.5em; align-items: center; gap: 6px; }
 .camsim-controls label.inline-check { display: flex; }
 /* Tool blocks: a task's own tools as big tiles, a name and what it does. */
+.tool-block .fold-head { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.tool-block .fold-head::before { content: "▾"; font-size: 10px; opacity: .6; }
+.tool-block.folded .fold-head::before { content: "▸"; }
+.tool-block.folded .tool-tiles { display: none; }
 .tool-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; gap: 6px; padding: 4px 0 8px; }
 /* Block text, not a flex column: WebKit on macOS measured a flex <button>
    a line short, so the last line of a hint was cut off. */
@@ -1344,7 +1348,7 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 /* Tabs in a column (a layout's { "tab": … } items): the bar stays at the
    top while the column scrolls. */
 .column-tabs { position: sticky; top: 0; z-index: 3; display: flex; gap: 2px; padding: 6px 8px; background: var(--panel); border-bottom: 1px solid var(--line); }
-.column-tab { flex: 1; min-width: 0; padding: 4px 6px; font-size: 12px; background: transparent; border-color: transparent; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.column-tab { flex: 1 1 auto; min-width: 0; padding: 4px 6px; font-size: 12px; background: transparent; border-color: transparent; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .column-tab:hover { color: var(--text); background: var(--hover); }
 .column-tab.on { color: var(--text); background: var(--tab-active); border-color: var(--line); }
 .column > .tab-off { display: none; }

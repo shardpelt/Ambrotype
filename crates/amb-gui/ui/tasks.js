@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Tasks: the bar at the top (Library · Develop · Color · Retouch · Film ·
-// Collage, then the task plugins: Trippy, and any installed) switches
-// between the library and layouts made for one job each, so the right
-// controls are on screen for what you're doing. A task keeps the layout you
+// Tasks: the bar at the top (Library · Develop · Film · Collage, then the
+// task plugins: Trippy, and any installed) switches between the library,
+// layouts made for one job each, and the collage maker, so the right
+// controls are on screen for what you're doing. What earns a tab:
+// docs/design/tabs.md (Color and Retouch became part of Develop, and their
+// layouts stay in Appearance). A task keeps the layout you
 // choose while in it (Appearance), on this computer. A task plugin
 // (`"kind": "task"`, docs/design/plugin-kinds.md) brings its layout
 // (`plugin:<id>`) and the buttons its layout's `tools` block shows.
@@ -11,11 +13,13 @@
 const TASKS = [
   { id: "library", label: "Library", hint: "Find, rate, sort and tag photos" },
   { id: "develop", label: "Develop", hint: "Edit the photo: light, colour, detail", layout: "builtin:classic" },
-  { id: "color", label: "Color", hint: "Colour grading: wheels, mixer and curves up front", layout: "builtin:color-grading" },
-  { id: "retouch", label: "Retouch", hint: "Spots, brushes and masks", layout: "builtin:retouch" },
   { id: "film", label: "Film", hint: "Scanned film negatives", layout: "builtin:film-lab" },
-  { id: "collage", label: "Collage", hint: "Prepare photos for a collage", layout: "builtin:collage-prep" },
+  // The collage maker itself: a screen of its own, not a layout.
+  { id: "collage", label: "Collage", hint: "Several photos on one canvas: the collage maker", open: () => collageFlow() },
 ];
+
+// Tabs that were, until 2026-11-09: someone last in one goes back to Develop.
+const RETIRED_TASKS = { color: "builtin:color-grading", retouch: "builtin:retouch", collage: "builtin:collage-prep" };
 
 // The task bar's own layouts (not Develop's everyday one), kept out of the
 // Appearance list; task plugins' join when they load.
@@ -86,9 +90,11 @@ function taskLayout(t) {
   return mine && findLook("layout", mine)?.usable ? mine : t.layout;
 }
 
-// The task on screen: the library, or the editing task whose layout is up.
+// The task on screen: the library, the collage maker, or the editing task
+// whose layout is up.
 function currentTask() {
   if (libraryOn()) return "library";
+  if ($("collage-dialog")?.open) return "collage";
   const active = ui.looks?.active_layout;
   const mine = TASKS.find((t) => t.id === taskState.current && t.layout && taskLayout(t) === active);
   return (mine ?? TASKS.find((t) => t.layout && taskLayout(t) === active))?.id ?? taskState.current ?? "develop";
@@ -97,6 +103,13 @@ function currentTask() {
 async function switchTask(id) {
   const t = TASKS.find((x) => x.id === id);
   if (!t) return;
+  // The collage maker opens over the task you're in, and closes back to it.
+  if (t.open) {
+    await t.open();
+    renderTasks();
+    return;
+  }
+  if ($("collage-dialog")?.open) closeCollage();
   // The layout chosen in the task being left is that task's from now on.
   const from = TASKS.find((x) => x.id === currentTask());
   if (from?.layout && ui.looks?.active_layout && !libraryOn()) taskState.layouts[from.id] = ui.looks.active_layout;
@@ -126,7 +139,23 @@ function renderTasks() {
   }
 }
 
+// Last in a tab that's gone (Color, Retouch, the old Collage prep): back to
+// Develop, its own layout too, once.
+function retireTasks() {
+  const was = RETIRED_TASKS[taskState.current];
+  for (const id of Object.keys(RETIRED_TASKS)) delete taskState.layouts[id];
+  if (!was) return;
+  taskState.current = "develop";
+  saveTasks();
+  const develop = TASKS.find((t) => t.id === "develop");
+  const layout = taskLayout(develop);
+  if (ui.looks?.active_layout === was && !libraryOn() && findLook("layout", layout)?.usable) switchLook("layout", layout);
+}
+
 function wireTasks() {
+  retireTasks();
+  // The collage maker's tab is lit while it's open.
+  for (const ev of ["close", "cancel"]) $("collage-dialog").addEventListener(ev, () => setTimeout(renderTasks));
   const bar = $("task-bar");
   bar.replaceChildren(...TASKS.map((t, i) => {
     const b = Object.assign(document.createElement("button"), { type: "button", textContent: t.label, role: "tab" });

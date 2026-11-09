@@ -31,21 +31,23 @@ When unsure, prefer the smaller kind: a tool before a dialog, a mode before a ta
 
 "I want to look through photos full screen, like an image viewer" (2026-11-08): you go in to see, then come back, and it needs no controls of its own. **A mode**: the viewer, V or ⛶ View in the library bar and the filmstrip's bar.
 
-## The tabs today, and what could change
+## The tabs
 
-A brainstorm, for the owner to decide. "Proposal" marks a recommendation, nothing is changed yet.
+Decided 2026-11-09: **Library · Develop · Film · Collage**, then task plugins (Trippy).
 
-| Tab | Passes? | Notes | Proposal |
-|---|---|---|---|
-| Library | Yes | Finding, sorting, rating, tagging many photos; its own views. | Stays. |
-| Develop | Yes | Editing one photo. | Stays, the default. |
-| Color | Partly | Same job as Develop (editing), with colour grading up front. Fails 2 only narrowly: its controls are Develop's, rearranged. | Merge: a "Colour" tab inside Develop's right column (beside Tone & colour, Detail & lens, More), or keep it only as a layout in Appearance. |
-| Retouch | Partly | Its tools (Remove object, Heal, Find dust, masks) are modes and tools that Develop's toolbar reaches too. | Merge into Develop: its tools block under Quick fixes, the layout kept in Appearance for those who like it. |
-| Film | Yes | Scanning negatives is its own way of working: pick the base, density, sync a roll. | Stays. |
-| Collage | No, as it is | Two things carry the name: this tab (getting photos to match) and the collage maker (C), a separate screen. Confusing. | Make the Collage tab the collage maker itself; the prep layout goes to Appearance. |
-| Trippy | Yes (plugin) | Playful looks; a task plugin, so it can be removed by uninstalling it. | Stays a plugin. |
+| Tab | Passes? | Why |
+|---|---|---|
+| Library | Yes | Finding, sorting, rating, tagging many photos; its own views. |
+| Develop | Yes | Editing one photo; the default. |
+| Film | Yes | Scanning negatives is its own way of working: pick the base, density, sync a roll. |
+| Collage | Yes | The collage maker itself: a canvas and tray of its own. It opens over the tab you were in and closes back to it. |
+| Trippy | Yes (plugin) | Playful looks; a task plugin, so it can be removed by uninstalling it. |
 
-If the proposals were all taken: **Library · Develop · Film · Collage**, then task plugins (Trippy). Fewer tabs, each clearly a different job.
+What went (2026-11-09):
+- **Color** was Develop with colour grading up front, the same job with the same controls rearranged. Now Develop's right column has a **Colour** tab (grading wheels and mixer open), and the Colour grading layout stays in Appearance.
+- **Retouch** was Develop with its tools (Remove object, Heal, Find dust, the AI masks) first, and those are modes and tools Develop reaches too. Now its **Retouch tools** sit under Quick fixes in Develop (tool blocks fold by their heading), and the Retouch layout stays in Appearance.
+- **Collage prep** (the old Collage tab, a layout for getting photos to match) was confused with the collage maker. The Collage tab is now the maker; the Collage prep layout stays in Appearance.
+- Someone last in one of those comes back to Develop, with its own layout, once.
 
 Ideas that would pass as tabs later: Print (layouts on paper), Book.
 

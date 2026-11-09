@@ -58,12 +58,17 @@ await t.step("Auto edit: the big button edits the whole photo, as one undo step"
   await t.until("all of it undone", () => !t.setting("Vibrance") && t.setting("Exposure2012") === 1);
 });
 
-await t.step("tasks differ: Develop opens on Quick fixes, Retouch on its tools, Color on colour only", async () => {
+await t.step("tabs: Develop has Quick fixes and the Retouch tools, a Colour tab, and folds; no Color or Retouch tab", async () => {
   await switchTask("develop");
-  await t.until("Quick fixes", () => t.visible("#block-quick") && !t.visible("#block-retouch"));
+  for (const name of ["quick", "retouch"]) if ($(`block-${name}`).classList.contains("folded")) foldToolBlock(name, false);
+  await t.until("Quick fixes and Retouch tools", () => t.visible("#block-quick") && t.visible("#block-retouch"));
   t.expect(document.body.dataset.task === "develop", `accent ${document.body.dataset.task}`);
-  await switchTask("retouch");
-  await t.until("Retouch tools", () => t.visible("#block-retouch") && !t.visible("#block-quick"));
+  t.expect(!TASKS.some((x) => ["color", "retouch"].includes(x.id)) && TASKS.map((x) => x.id).slice(0, 4).join() === "library,develop,film,collage", TASKS.map((x) => x.id).join());
+  // A heading folds its block, and it stays folded.
+  $("block-retouch").querySelector(".fold-head").click();
+  t.expect(!t.visible("#tools-retouch") && localStorage.getItem("amb.fold.retouch") === "1", "folded");
+  $("block-retouch").querySelector(".fold-head").click();
+  t.expect(t.visible("#tools-retouch"), "unfolded");
   const tiles = [...document.querySelectorAll("#tools-retouch .tool-tile")].map((b) => b.dataset.tool);
   t.expect(["select", "object", "remove", "subject", "people", "background", "sky", "dust"].every((x) => tiles.includes(x)), tiles.join(", "));
   t.expect(document.querySelector("#tools-retouch .tool-tile").dataset.tool === "select" && document.querySelector("#tools-retouch .tool-tile").classList.contains("big"), "Select object first, big");
@@ -122,12 +127,23 @@ await t.step("tasks differ: Develop opens on Quick fixes, Retouch on its tools, 
   document.querySelector('#tools-retouch [data-tool="brush"]').click();
   await t.until("masks with the brush", () => mk.on && mk.tool === "brush");
   exitMasks();
-  await switchTask("color");
-  await t.until("the Color layout", () => document.body.dataset.task === "color");
-  const shown = (name) => { try { return t.visible(t.row(name)); } catch { return false; } };
-  t.expect(!shown("Exposure2012") && shown("Vibrance"), "colour only in Basic");
-  await switchTask("develop");
-  await t.until("Develop back", () => shown("Exposure2012"));
+  // Colour grading has its own tab in Develop's right column.
+  const tab = document.querySelector('#col-right .column-tab[data-tab="Colour"]');
+  t.expect(tab, "a Colour tab in Develop");
+  tab.click();
+  await t.until("its panels", () => t.visible(document.querySelector('#col-right [data-tab="Colour"]:not(.column-tab)')));
+  document.querySelector("#col-right .column-tab").click();
+  // Someone last in the old Color tab comes back to Develop's own layout.
+  taskState.current = "color";
+  switchLook("layout", "builtin:color-grading");
+  await t.until("the colour layout up", () => ui.looks.active_layout === "builtin:color-grading");
+  retireTasks();
+  await t.until("Develop's layout back", () => ui.looks.active_layout === "builtin:classic" && taskState.current === "develop");
+  // The collage maker is the Collage tab: lit while open, closing goes back.
+  await switchTask("collage");
+  await t.until("the collage maker", () => $("collage-dialog").open && document.body.dataset.task === "collage");
+  closeCollage();
+  await t.until("back to Develop", () => !$("collage-dialog").open && document.body.dataset.task === "develop");
 });
 
 await t.step("tips: a feature to try, skipped once used, with switches in Settings", async () => {
@@ -331,6 +347,8 @@ await t.step("every panel opens", async () => {
     if (!d.open) t.click(d.querySelector("summary"));
     await t.sleep(30);
   }
+  // The mixer is in Develop's Colour tab.
+  revealSetting("HueAdjustmentRed");
   t.expect(t.visible(t.row("HueAdjustmentRed")), "the Color Mixer open");
 });
 
@@ -382,6 +400,7 @@ await t.step("a section's buttons never cover the row under them, even in a narr
 });
 
 await t.step("the Color Mixer shows one tab at a time", async () => {
+  revealSetting("HueAdjustmentRed");
   t.expect(!t.visible(t.row("SaturationAdjustmentRed")), "Saturation rows hidden on the Hue tab");
   const tab = [...document.querySelectorAll(".tabs button")].find((b) => b.textContent === "Saturation");
   t.click(tab);
@@ -900,7 +919,7 @@ await t.step("a drag or Select All doesn't select the photo or the panels in blu
 
 await t.step("Appearance opens on every task (Trippy's plugin layout too)", async () => {
   const was = currentTask();
-  for (const task of TASKS.map((x) => x.id).filter((id) => id !== "library")) {
+  for (const task of TASKS.filter((x) => x.layout).map((x) => x.id)) {
     await switchTask(task);
     const flow = looksFlow();
     await t.until(`Appearance on ${task}`, () => $("looks-dialog").open);

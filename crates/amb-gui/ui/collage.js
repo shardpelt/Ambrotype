@@ -1443,6 +1443,8 @@ async function collageFlow() {
     renderTemplates();
     updateTrayCount();
     $("collage-dialog").showModal();
+    // Its tab lights up, however it was opened (C, the button, the tab).
+    if (typeof renderTasks === "function") renderTasks();
     requestAnimationFrame(renderStage);
   } catch (e) {
     toast(String(e), true);

@@ -65,7 +65,28 @@ const TOOL_BLOCKS = {
   ],
 };
 
+// A tool block folds to its heading (a click on it), remembered per block,
+// so Develop's left column can hold Quick fixes and the Retouch tools.
+function foldToolBlock(name, folded) {
+  const block = $(`block-${name}`);
+  if (!block) return;
+  block.classList.toggle("folded", folded);
+  block.querySelector(".fold-head")?.setAttribute("aria-expanded", String(!folded));
+  try { localStorage.setItem(`amb.fold.${name}`, folded ? "1" : "0"); } catch { /* not kept */ }
+}
+
 function wireToolBlocks() {
+  for (const name of ["quick", "retouch"]) {
+    const h = $(`block-${name}`)?.querySelector(".side-head h2");
+    if (!h) continue;
+    const head = Object.assign(document.createElement("button"), { type: "button", className: "fold-head", title: "Fold or unfold" });
+    head.append(...h.childNodes);
+    h.replaceChildren(head);
+    head.addEventListener("click", () => foldToolBlock(name, !$(`block-${name}`).classList.contains("folded")));
+    let folded = false;
+    try { folded = localStorage.getItem(`amb.fold.${name}`) === "1"; } catch { /* not kept */ }
+    foldToolBlock(name, folded);
+  }
   for (const [name, tools] of Object.entries(TOOL_BLOCKS)) {
     const box = $(`tools-${name}`);
     if (!box) continue;

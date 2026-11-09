@@ -165,7 +165,7 @@ pub(crate) struct ImportDefaults {
 /// The import dialog's starting choices: the last ones used.
 #[tauri::command]
 pub(crate) fn import_defaults(state: tauri::State<'_, AppState>) -> ImportDefaults {
-    let last = state.import_choice.lock().ok().and_then(|c| c.clone());
+    let last = state.prefs(|p| p.import.clone()).ok().flatten();
     ImportDefaults {
         dest: last.as_ref().map(|c| c.dest.clone()),
         options: last.map(|c| c.options).unwrap_or_default(),
@@ -282,13 +282,12 @@ pub(crate) async fn import_run(
     state: tauri::State<'_, AppState>,
 ) -> Res<amb_library::import::Report> {
     use tauri::Emitter;
-    if let Ok(mut c) = state.import_choice.lock() {
-        *c = Some(ImportChoice {
+    let _ = state.change_prefs(|p| {
+        p.import = Some(ImportChoice {
             dest: dest.clone(),
             options: options.clone(),
         });
-    }
-    save_config(&state);
+    });
     tauri::async_runtime::spawn_blocking(move || {
         let plan = amb_library::import::plan(Path::new(&source), Path::new(&dest), &options)?;
         Ok(amb_library::import::run(

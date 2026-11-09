@@ -233,11 +233,7 @@ pub(crate) struct MetadataTemplate {
 
 #[tauri::command]
 pub(crate) fn metadata_templates(state: tauri::State<'_, AppState>) -> Res<Vec<MetadataTemplate>> {
-    Ok(state
-        .metadata_templates
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone())
+    state.prefs(|p| p.metadata_templates.clone())
 }
 
 /// Save a template (replacing one with its name), or with no fields but
@@ -252,14 +248,13 @@ pub(crate) fn save_metadata_template(
     if name.is_empty() {
         return Err("the template needs a name".into());
     }
-    {
-        let mut all = state.metadata_templates.lock().map_err(|e| e.to_string())?;
+    state.change_prefs(|p| {
+        let all = &mut p.metadata_templates;
         all.retain(|t| !t.name.eq_ignore_ascii_case(&name));
         if delete != Some(true) {
             all.push(MetadataTemplate { name, ..template });
             all.sort_by_key(|t| t.name.to_lowercase());
         }
-    }
-    save_config(state.inner());
+    })?;
     metadata_templates(state)
 }

@@ -10,7 +10,7 @@ pub(crate) fn looks_dir(state: &AppState) -> Option<PathBuf> {
 }
 
 pub(crate) fn looks_list(state: &AppState) -> Res<looks::Looks> {
-    let (layout, theme) = state.look.lock().map_err(|e| e.to_string())?.clone();
+    let (layout, theme) = state.prefs(|p| (p.layout.clone(), p.theme.clone()))?;
     Ok(looks::list(
         looks_dir(state).as_deref(),
         layout.as_deref(),
@@ -121,8 +121,10 @@ pub(crate) fn set_active_look(
     theme: String,
     state: tauri::State<'_, AppState>,
 ) -> Res<()> {
-    *state.look.lock().map_err(|e| e.to_string())? = (Some(layout), Some(theme));
-    save_config(state.inner());
+    state.change_prefs(|p| {
+        p.layout = Some(layout);
+        p.theme = Some(theme);
+    })?;
     Ok(())
 }
 

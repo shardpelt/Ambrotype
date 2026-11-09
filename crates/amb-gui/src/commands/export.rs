@@ -373,11 +373,7 @@ pub(crate) fn export_settings(options: &ExportOptions) -> Res<amb_export::Export
 /// The user's export presets, by name.
 #[tauri::command]
 pub(crate) fn export_presets(state: tauri::State<'_, AppState>) -> Res<Vec<ExportPreset>> {
-    Ok(state
-        .export_presets
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone())
+    state.prefs(|p| p.export_presets.clone())
 }
 
 /// Save (or replace) an export preset.
@@ -391,32 +387,23 @@ pub(crate) fn save_export_preset(
     if name.is_empty() {
         return Err("give the preset a name".into());
     }
-    {
-        let mut list = state.export_presets.lock().map_err(|e| e.to_string())?;
+    state.change_prefs(|p| {
+        let list = &mut p.export_presets;
         list.retain(|p| p.name != name);
         list.push(ExportPreset { name, fields });
         list.sort_by_key(|p| p.name.to_lowercase());
-    }
-    save_config(&state);
-    Ok(())
+    })
 }
 
 #[tauri::command]
 pub(crate) fn delete_export_preset(name: String, state: tauri::State<'_, AppState>) -> Res<()> {
-    state
-        .export_presets
-        .lock()
-        .map_err(|e| e.to_string())?
-        .retain(|p| p.name != name);
-    save_config(&state);
-    Ok(())
+    state.change_prefs(|p| p.export_presets.retain(|p| p.name != name))
 }
 
 /// Built-in border presets followed by the user's.
 #[tauri::command]
 pub(crate) fn border_presets(state: tauri::State<'_, AppState>) -> Res<Vec<borders::BorderPreset>> {
-    let custom = state.border_presets.lock().map_err(|e| e.to_string())?;
-    Ok(borders::all(&custom))
+    state.prefs(|p| borders::all(&p.border_presets))
 }
 
 /// Add or update a border preset of the user's; returns the list and the saved id.
@@ -425,11 +412,7 @@ pub(crate) fn save_border_preset(
     preset: borders::BorderPreset,
     state: tauri::State<'_, AppState>,
 ) -> Res<(Vec<borders::BorderPreset>, String)> {
-    let id = {
-        let mut custom = state.border_presets.lock().map_err(|e| e.to_string())?;
-        borders::upsert(&mut custom, &preset)?
-    };
-    save_config(state.inner());
+    let id = state.change_prefs(|p| borders::upsert(&mut p.border_presets, &preset))??;
     Ok((border_presets(state)?, id))
 }
 
@@ -438,11 +421,7 @@ pub(crate) fn delete_border_preset(
     id: String,
     state: tauri::State<'_, AppState>,
 ) -> Res<Vec<borders::BorderPreset>> {
-    {
-        let mut custom = state.border_presets.lock().map_err(|e| e.to_string())?;
-        borders::remove(&mut custom, &id)?;
-    }
-    save_config(state.inner());
+    state.change_prefs(|p| borders::remove(&mut p.border_presets, &id))??;
     border_presets(state)
 }
 
@@ -505,7 +484,7 @@ pub(crate) async fn pick_watermark_image(app: tauri::AppHandle) -> Option<String
 /// The Edit in settings.
 #[tauri::command]
 pub(crate) fn edit_in_settings(state: tauri::State<'_, AppState>) -> Res<EditIn> {
-    Ok(state.edit_in.lock().map_err(|e| e.to_string())?.clone())
+    state.prefs(|p| p.edit_in.clone())
 }
 
 #[tauri::command]
@@ -522,8 +501,7 @@ pub(crate) fn set_edit_in(settings: EditIn, state: tauri::State<'_, AppState>) -
             .filter(|a| !a.is_empty()),
         ..settings
     };
-    *state.edit_in.lock().map_err(|e| e.to_string())? = settings.clone();
-    save_config(state.inner());
+    state.change_prefs(|p| p.edit_in = settings.clone())?;
     Ok(settings)
 }
 
@@ -560,7 +538,7 @@ pub(crate) fn after_export(
             .reveal_items_in_dir(&paths)
             .map_err(|e| e.to_string()),
         "open" => {
-            let with = state.edit_in.lock().ok().and_then(|e| e.app.clone());
+            let with = state.prefs(|p| p.edit_in.app.clone()).ok().flatten();
             // A batch could start hundreds of windows: the first few.
             for p in paths.iter().take(12) {
                 app.opener()
@@ -581,7 +559,7 @@ pub(crate) async fn edit_in(
     app: tauri::AppHandle,
     state: tauri::State<'_, AppState>,
 ) -> Res<String> {
-    let settings = state.edit_in.lock().map_err(|e| e.to_string())?.clone();
+    let settings = state.prefs(|p| p.edit_in.clone())?;
     let slot = state.session.clone();
     let lens = state.lens.clone();
     let path = tauri::async_runtime::spawn_blocking(move || -> Res<PathBuf> {
@@ -611,7 +589,7 @@ pub(crate) async fn edit_in(
     })
     .await
     .map_err(|e| e.to_string())??;
-    let with = state.edit_in.lock().ok().and_then(|e| e.app.clone());
+    let with = state.prefs(|p| p.edit_in.app.clone()).ok().flatten();
     app.opener()
         .open_path(path.display().to_string(), with)
         .map_err(|e| format!("wrote {}, but couldn't open it: {e}", path.display()))?;

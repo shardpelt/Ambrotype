@@ -51,7 +51,7 @@ use commands::export::*;
 use commands::hub::*;
 use commands::plugins::*;
 use commands::presets::*;
-use config::{BUILTIN_MASK_EFFECTS, EditIn, ImportChoice, MaskEffect, save_config};
+use config::{BUILTIN_MASK_EFFECTS, Config, EditIn, ImportChoice, MaskEffect, save_config};
 use state::{AppState, empty_lens, save_open_edits};
 
 /// Recipes the user saved, per plugin id.
@@ -156,10 +156,7 @@ fn main() {
             // A way back that works whatever the custom interface does.
             if event.id().as_ref() == "builtin" {
                 let state = app.state::<AppState>();
-                if let Ok(mut i) = state.interface.lock() {
-                    *i = None;
-                }
-                save_config(&state);
+                let _ = state.change_prefs(|p| p.interface = None);
                 let _ = commands::settings::show_interface(app, None);
                 return;
             }
@@ -178,10 +175,7 @@ fn main() {
                 let state = app.state::<AppState>();
                 let interface = config::apply_config(&state, config);
                 // A custom interface, unless this run keeps to the built-in one.
-                if let Some(dir) = interface.filter(|d| interface::is_interface(d)) {
-                    if let Ok(mut i) = state.interface.lock() {
-                        *i = Some(dir.clone());
-                    }
+                if let Some(dir) = interface {
                     if !interface::builtin_forced() {
                         let _ = commands::settings::show_interface(app.handle(), Some(dir));
                     }

@@ -199,15 +199,14 @@ pub(crate) async fn library_set_info(
     })
     .await
     .map_err(|e| e.to_string())??;
-    {
-        let mut recent = state.recent_keywords.lock().map_err(|e| e.to_string())?;
+    state.change_prefs(|p| {
+        let recent = &mut p.recent_keywords;
         for k in updates.iter().flat_map(|u| u.info.keywords.iter()).rev() {
             recent.retain(|r| !r.eq_ignore_ascii_case(k));
             recent.insert(0, k.clone());
         }
         recent.truncate(200);
-    }
-    save_config(state.inner());
+    })?;
     Ok(updates)
 }
 

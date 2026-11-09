@@ -8,8 +8,7 @@ use crate::*;
 pub(crate) fn collage_templates(
     state: tauri::State<'_, AppState>,
 ) -> Res<Vec<collages::TemplateEntry>> {
-    let custom = state.collage_templates.lock().map_err(|e| e.to_string())?;
-    Ok(collages::all(&custom))
+    state.prefs(|p| collages::all(&p.collage_templates))
 }
 
 #[tauri::command]
@@ -17,11 +16,7 @@ pub(crate) fn save_collage_template(
     template: collages::TemplateEntry,
     state: tauri::State<'_, AppState>,
 ) -> Res<(Vec<collages::TemplateEntry>, String)> {
-    let id = {
-        let mut custom = state.collage_templates.lock().map_err(|e| e.to_string())?;
-        collages::upsert(&mut custom, &template)?
-    };
-    save_config(state.inner());
+    let id = state.change_prefs(|p| collages::upsert(&mut p.collage_templates, &template))??;
     Ok((collage_templates(state)?, id))
 }
 
@@ -30,11 +25,7 @@ pub(crate) fn delete_collage_template(
     id: String,
     state: tauri::State<'_, AppState>,
 ) -> Res<Vec<collages::TemplateEntry>> {
-    {
-        let mut custom = state.collage_templates.lock().map_err(|e| e.to_string())?;
-        collages::remove(&mut custom, &id)?;
-    }
-    save_config(state.inner());
+    state.change_prefs(|p| collages::remove(&mut p.collage_templates, &id))??;
     collage_templates(state)
 }
 

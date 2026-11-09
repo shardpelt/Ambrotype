@@ -564,7 +564,7 @@ Why: `amb-library` held both the library (catalogue, folders, import, collection
 
 Commit: `ops: the operations that render photos move to amb-ops`. Why: "amb-library held the library and batch operations that render photos; now amb-library no longer needs amb-gpu."
 
-### ☐ R2. `Prefs`: the saved settings behind one lock
+### ☑ R2. `Prefs`: the saved settings behind one lock (2026-11-09)
 
 Why: `AppState` held 18 saved settings each behind its own `Mutex`; `save_config` copied each into `Config` and `apply_config` copied each back, so a new saved setting touched four places.
 

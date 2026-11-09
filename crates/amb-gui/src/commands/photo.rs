@@ -226,11 +226,7 @@ pub(crate) fn info_state(state: &AppState) -> Res<InfoState> {
         .as_ref()
         .map(|s| s.info.clone())
         .unwrap_or_default();
-    let recent = state
-        .recent_keywords
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone();
+    let recent = state.prefs(|p| p.recent_keywords.clone())?;
     Ok(InfoState { info, recent })
 }
 
@@ -251,15 +247,14 @@ pub(crate) fn set_photo_info(
         let s = guard.as_mut().ok_or("no photo is open")?;
         s.set_info(&info)?
     };
-    {
-        let mut recent = state.recent_keywords.lock().map_err(|e| e.to_string())?;
+    state.change_prefs(|p| {
+        let recent = &mut p.recent_keywords;
         for k in saved.keywords.iter().rev() {
             recent.retain(|r| !r.eq_ignore_ascii_case(k));
             recent.insert(0, k.clone());
         }
         recent.truncate(200);
-    }
-    save_config(state.inner());
+    })?;
     info_state(state.inner())
 }
 

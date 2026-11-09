@@ -125,11 +125,7 @@ pub(crate) async fn match_look(
 /// The presets starred as favourites (paths).
 #[tauri::command]
 pub(crate) fn preset_favourites(state: tauri::State<'_, AppState>) -> Res<Vec<String>> {
-    Ok(state
-        .preset_favourites
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone())
+    state.prefs(|p| p.preset_favourites.clone())
 }
 
 /// Star or unstar a preset.
@@ -139,15 +135,13 @@ pub(crate) fn set_preset_favourite(
     on: bool,
     state: tauri::State<'_, AppState>,
 ) -> Res<()> {
-    {
-        let mut list = state.preset_favourites.lock().map_err(|e| e.to_string())?;
+    state.change_prefs(|p| {
+        let list = &mut p.preset_favourites;
         list.retain(|p| *p != path);
         if on {
             list.push(path);
         }
-    }
-    save_config(&state);
-    Ok(())
+    })
 }
 
 #[derive(Serialize)]
@@ -166,11 +160,7 @@ pub(crate) fn mask_effects(state: tauri::State<'_, AppState>) -> Res<MaskEffects
     let file: File = serde_json::from_str(BUILTIN_MASK_EFFECTS).map_err(|e| e.to_string())?;
     Ok(MaskEffects {
         builtin: file.effects,
-        mine: state
-            .mask_effects
-            .lock()
-            .map_err(|e| e.to_string())?
-            .clone(),
+        mine: state.prefs(|p| p.mask_effects.clone())?,
     })
 }
 
@@ -189,13 +179,12 @@ pub(crate) fn save_mask_effect(
         .into_iter()
         .filter(|(k, v)| v.is_finite() && amb_presets::masks::local_slider(k).is_some())
         .collect();
-    {
-        let mut list = state.mask_effects.lock().map_err(|e| e.to_string())?;
+    state.change_prefs(|p| {
+        let list = &mut p.mask_effects;
         list.retain(|e| e.name != name);
         list.push(MaskEffect { name, values });
         list.sort_by_key(|e| e.name.to_lowercase());
-    }
-    save_config(&state);
+    })?;
     mask_effects(state)
 }
 
@@ -204,12 +193,7 @@ pub(crate) fn delete_mask_effect(
     name: String,
     state: tauri::State<'_, AppState>,
 ) -> Res<MaskEffects> {
-    state
-        .mask_effects
-        .lock()
-        .map_err(|e| e.to_string())?
-        .retain(|e| e.name != name);
-    save_config(&state);
+    state.change_prefs(|p| p.mask_effects.retain(|e| e.name != name))?;
     mask_effects(state)
 }
 
@@ -423,8 +407,7 @@ pub(crate) async fn add_preset_folder(
 /// Built-in size presets followed by the user's.
 #[tauri::command]
 pub(crate) fn size_presets(state: tauri::State<'_, AppState>) -> Res<Vec<SizePreset>> {
-    let custom = state.size_presets.lock().map_err(|e| e.to_string())?;
-    Ok(sizes::all(&custom))
+    state.prefs(|p| sizes::all(&p.size_presets))
 }
 
 /// Add a user size preset (or a clone of a built-in), or update one.
@@ -433,11 +416,7 @@ pub(crate) fn save_size_preset(
     preset: SizePreset,
     state: tauri::State<'_, AppState>,
 ) -> Res<Vec<SizePreset>> {
-    {
-        let mut custom = state.size_presets.lock().map_err(|e| e.to_string())?;
-        sizes::upsert(&mut custom, &preset)?;
-    }
-    save_config(state.inner());
+    state.change_prefs(|p| sizes::upsert(&mut p.size_presets, &preset))??;
     size_presets(state)
 }
 
@@ -446,11 +425,7 @@ pub(crate) fn delete_size_preset(
     id: String,
     state: tauri::State<'_, AppState>,
 ) -> Res<Vec<SizePreset>> {
-    {
-        let mut custom = state.size_presets.lock().map_err(|e| e.to_string())?;
-        sizes::remove(&mut custom, &id)?;
-    }
-    save_config(state.inner());
+    state.change_prefs(|p| sizes::remove(&mut p.size_presets, &id))??;
     size_presets(state)
 }
 

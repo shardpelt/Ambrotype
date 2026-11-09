@@ -14,7 +14,7 @@ pub(crate) struct AssistantSettings {
 pub(crate) async fn assistant_settings(
     state: tauri::State<'_, AppState>,
 ) -> Res<AssistantSettings> {
-    let provider = state.assistant.lock().map_err(|e| e.to_string())?.clone();
+    let provider = state.prefs(|p| p.assistant.clone())?;
     let session_key = state
         .assistant_key
         .lock()
@@ -38,8 +38,7 @@ pub(crate) async fn assistant_save(
     key: Option<String>,
     state: tauri::State<'_, AppState>,
 ) -> Res<Option<String>> {
-    *state.assistant.lock().map_err(|e| e.to_string())? = provider.clone();
-    save_config(&state);
+    state.change_prefs(|p| p.assistant = provider.clone())?;
     let Some(key) = key.map(|k| k.trim().to_string()) else {
         return Ok(None);
     };
@@ -79,7 +78,7 @@ pub(crate) async fn assistant_ask(
     see: Option<bool>,
     state: tauri::State<'_, AppState>,
 ) -> Res<AssistantAnswer> {
-    let provider = state.assistant.lock().map_err(|e| e.to_string())?.clone();
+    let provider = state.prefs(|p| p.assistant.clone())?;
     let session_key = state
         .assistant_key
         .lock()

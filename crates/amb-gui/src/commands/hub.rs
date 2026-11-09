@@ -5,10 +5,9 @@ use crate::*;
 
 pub(crate) fn hub_index(state: &AppState) -> String {
     state
-        .hub_url
-        .lock()
+        .prefs(|p| p.hub_url.clone())
         .ok()
-        .and_then(|h| h.clone())
+        .flatten()
         .unwrap_or_else(|| hub::DEFAULT_INDEX.to_string())
 }
 
@@ -29,8 +28,7 @@ pub(crate) fn set_hub_url(url: Option<String>, state: tauri::State<'_, AppState>
             return Err("a hub address is an https:// link to its index.json".into());
         }
     }
-    *state.hub_url.lock().map_err(|e| e.to_string())? = url;
-    save_config(state.inner());
+    state.change_prefs(|p| p.hub_url = url)?;
     Ok(hub_index(state.inner()))
 }
 
@@ -48,21 +46,9 @@ pub(crate) async fn hub_browse(state: tauri::State<'_, AppState>) -> Res<HubList
     let plugins = plugins_dir(state.inner());
     let interfaces = super::settings::interfaces_dir(state.inner()).ok();
     let presets = own_presets_dir(state.inner());
-    let collages = state
-        .collage_templates
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone();
-    let sizes = state
-        .size_presets
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone();
-    let borders = state
-        .border_presets
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone();
+    let collages = state.prefs(|p| p.collage_templates.clone())?;
+    let sizes = state.prefs(|p| p.size_presets.clone())?;
+    let borders = state.prefs(|p| p.border_presets.clone())?;
     let u = url.clone();
     let entries = tauri::async_runtime::spawn_blocking(move || {
         let mine = hub::Mine {
@@ -140,18 +126,13 @@ pub(crate) async fn hub_install_collage(
     state: tauri::State<'_, AppState>,
 ) -> Res<Vec<collages::TemplateEntry>> {
     let url = hub_index(state.inner());
-    let mut custom = state
-        .collage_templates
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone();
+    let mut custom = state.prefs(|p| p.collage_templates.clone())?;
     let custom = tauri::async_runtime::spawn_blocking(move || {
         hub::install_collage(&mut custom, &url, &id).map(|_| custom)
     })
     .await
     .map_err(|e| e.to_string())??;
-    *state.collage_templates.lock().map_err(|e| e.to_string())? = custom;
-    save_config(state.inner());
+    state.change_prefs(|p| p.collage_templates = custom)?;
     collage_templates(state)
 }
 
@@ -162,18 +143,13 @@ pub(crate) async fn hub_install_sizes(
     state: tauri::State<'_, AppState>,
 ) -> Res<Vec<SizePreset>> {
     let url = hub_index(state.inner());
-    let mut custom = state
-        .size_presets
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone();
+    let mut custom = state.prefs(|p| p.size_presets.clone())?;
     let custom = tauri::async_runtime::spawn_blocking(move || {
         hub::install_sizes(&mut custom, &url, &id).map(|_| custom)
     })
     .await
     .map_err(|e| e.to_string())??;
-    *state.size_presets.lock().map_err(|e| e.to_string())? = custom;
-    save_config(state.inner());
+    state.change_prefs(|p| p.size_presets = custom)?;
     size_presets(state)
 }
 
@@ -264,19 +240,12 @@ pub(crate) async fn hub_install_border(
     state: tauri::State<'_, AppState>,
 ) -> Res<Vec<borders::BorderPreset>> {
     let url = hub_index(state.inner());
-    let mut custom = state
-        .border_presets
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone();
+    let mut custom = state.prefs(|p| p.border_presets.clone())?;
     let custom = tauri::async_runtime::spawn_blocking(move || {
         hub::install_border(&mut custom, &url, &id).map(|_| custom)
     })
     .await
     .map_err(|e| e.to_string())??;
-    *state.border_presets.lock().map_err(|e| e.to_string())? = custom;
-    save_config(state.inner());
-    Ok(borders::all(
-        &state.border_presets.lock().map_err(|e| e.to_string())?,
-    ))
+    state.change_prefs(|p| p.border_presets = custom)?;
+    state.prefs(|p| borders::all(&p.border_presets))
 }

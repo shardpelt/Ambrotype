@@ -9,11 +9,7 @@ pub(crate) fn plugins_dir(state: &AppState) -> Option<PathBuf> {
 }
 
 pub(crate) fn plugins_state(state: &AppState) -> Res<Vec<plugins::PluginEntry>> {
-    let approvals = state
-        .plugin_approvals
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone();
+    let approvals = state.prefs(|p| p.plugin_approvals.clone())?;
     Ok(plugins::list(plugins_dir(state).as_deref(), &approvals))
 }
 
@@ -52,10 +48,9 @@ pub(crate) fn remove_plugin(
 ) -> Res<Vec<plugins::PluginEntry>> {
     let dir = plugins_dir(state.inner()).ok_or("the plugins folder isn't available")?;
     plugins::remove(&dir, &id)?;
-    if let Ok(mut a) = state.plugin_approvals.lock() {
-        a.remove(&id);
-    }
-    save_config(state.inner());
+    state.change_prefs(|p| {
+        p.plugin_approvals.remove(&id);
+    })?;
     plugins_state(state.inner())
 }
 
@@ -70,12 +65,9 @@ pub(crate) fn approve_plugin(
     if plugin.fingerprint() != fingerprint {
         return Err("the plugin changed since it was shown; look again before allowing it".into());
     }
-    state
-        .plugin_approvals
-        .lock()
-        .map_err(|e| e.to_string())?
-        .insert(id, fingerprint);
-    save_config(state.inner());
+    state.change_prefs(|p| {
+        p.plugin_approvals.insert(id, fingerprint);
+    })?;
     plugins_state(state.inner())
 }
 
@@ -97,12 +89,7 @@ pub(crate) async fn run_plugin(
 ) -> Res<PluginRun> {
     let plugin = plugins::find(plugins_dir(state.inner()).as_deref(), &id)?;
     let allowed = plugin.manifest.permissions.is_empty()
-        || state
-            .plugin_approvals
-            .lock()
-            .map_err(|e| e.to_string())?
-            .get(&id)
-            == Some(&plugin.fingerprint());
+        || state.prefs(|p| p.plugin_approvals.get(&id).cloned())? == Some(plugin.fingerprint());
     if !allowed {
         return Err("needs-approval".into());
     }
@@ -175,12 +162,7 @@ pub(crate) async fn run_plugin_many(
     use tauri::Emitter;
     let plugin = plugins::find(plugins_dir(state.inner()).as_deref(), &id)?;
     let allowed = plugin.manifest.permissions.is_empty()
-        || state
-            .plugin_approvals
-            .lock()
-            .map_err(|e| e.to_string())?
-            .get(&id)
-            == Some(&plugin.fingerprint());
+        || state.prefs(|p| p.plugin_approvals.get(&id).cloned())? == Some(plugin.fingerprint());
     if !allowed {
         return Err("needs-approval".into());
     }
@@ -266,11 +248,7 @@ pub(crate) async fn run_plugin_many(
 /// The recipes the user saved, per plugin.
 #[tauri::command]
 pub(crate) fn plugin_recipes(state: tauri::State<'_, AppState>) -> Res<PluginRecipes> {
-    Ok(state
-        .plugin_recipes
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone())
+    state.prefs(|p| p.plugin_recipes.clone())
 }
 
 /// Save (or replace, by name) a recipe for a plugin: its parameter values.
@@ -287,13 +265,11 @@ pub(crate) fn save_plugin_recipe(
         return Err("give the recipe a name".into());
     }
     let params = plugin.manifest.resolve_params(&params)?;
-    {
-        let mut all = state.plugin_recipes.lock().map_err(|e| e.to_string())?;
-        let list = all.entry(id).or_default();
+    state.change_prefs(|p| {
+        let list = p.plugin_recipes.entry(id).or_default();
         list.retain(|r| !r.name.eq_ignore_ascii_case(&name));
         list.push(amb_plugin::Recipe { name, params });
-    }
-    save_config(state.inner());
+    })?;
     plugin_recipes(state)
 }
 
@@ -303,13 +279,11 @@ pub(crate) fn delete_plugin_recipe(
     name: String,
     state: tauri::State<'_, AppState>,
 ) -> Res<PluginRecipes> {
-    {
-        let mut all = state.plugin_recipes.lock().map_err(|e| e.to_string())?;
-        if let Some(list) = all.get_mut(&id) {
+    state.change_prefs(|p| {
+        if let Some(list) = p.plugin_recipes.get_mut(&id) {
             list.retain(|r| r.name != name);
         }
-    }
-    save_config(state.inner());
+    })?;
     plugin_recipes(state)
 }
 

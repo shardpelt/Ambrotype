@@ -123,7 +123,7 @@ pub(crate) fn open_feedback(
 /// The keyboard shortcuts the user changed (the UI knows the defaults).
 #[tauri::command]
 pub(crate) fn keybindings(state: tauri::State<'_, AppState>) -> Res<keys::Bindings> {
-    Ok(state.keybindings.lock().map_err(|e| e.to_string())?.clone())
+    state.prefs(|p| p.keybindings.clone())
 }
 
 #[tauri::command]
@@ -132,8 +132,7 @@ pub(crate) fn set_keybindings(
     state: tauri::State<'_, AppState>,
 ) -> Res<()> {
     let clean = keys::validate(&bindings)?;
-    *state.keybindings.lock().map_err(|e| e.to_string())? = clean;
-    save_config(state.inner());
+    state.change_prefs(|p| p.keybindings = clean)?;
     Ok(())
 }
 
@@ -235,7 +234,7 @@ pub(crate) fn interfaces(state: tauri::State<'_, AppState>) -> Res<Interfaces> {
         .unwrap_or_default();
     installed.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(Interfaces {
-        active: state.interface.lock().ok().and_then(|i| i.clone()),
+        active: state.prefs(|p| p.interface.clone())?,
         installed,
         folder,
     })
@@ -255,10 +254,7 @@ pub(crate) fn set_interface(
             return Err(format!("{} has no index.html", d.display()));
         }
     }
-    if let Ok(mut i) = state.interface.lock() {
-        *i = dir.clone();
-    }
-    save_config(&state);
+    state.change_prefs(|p| p.interface = dir.clone())?;
     show_interface(&app, dir)
 }
 
@@ -363,9 +359,7 @@ pub(crate) fn open_interfaces_folder(
 pub(crate) fn recheck_monitor(app: &tauri::AppHandle) -> (monitor::Status, bool) {
     let choice = app
         .state::<AppState>()
-        .monitor
-        .lock()
-        .map(|m| m.clone())
+        .prefs(|p| p.monitor.clone())
         .unwrap_or_default();
     let desktop = (choice == monitor::Choice::Auto)
         .then(|| window_centre(app))
@@ -417,8 +411,7 @@ pub(crate) async fn set_monitor_profile(
 ) -> Res<monitor::Status> {
     {
         let state = app.state::<AppState>();
-        *state.monitor.lock().map_err(|e| e.to_string())? = choice;
-        save_config(state.inner());
+        state.change_prefs(|p| p.monitor = choice)?;
     }
     recheck_monitor_now(app).await
 }

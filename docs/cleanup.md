@@ -455,7 +455,7 @@ Why: 1,452 lines in ten sections.
 
 Commit: `editor: collage.js split by part`. Why: "1,452 lines; the canvas, free arrangement and the tray now have their own files."
 
-### ☐ F11. `app.js`
+### ☑ F11. `app.js` (2026-11-09)
 
 Why: 1,188 lines (less after S3): slider rows, History, opening and saving photos, and the start.
 

@@ -1058,7 +1058,7 @@ button.tool-icon:hover:not(:disabled) .tool-svg .cover { fill: var(--hover); }
 button.tool-icon.active { color: var(--accent); }
 #looks-edit { white-space: nowrap; }
 
-/* Saved setups in the Appearance dialog (layout.js). */
+/* Saved setups in the Appearance dialog (looks-dialog.js). */
 .looks-setups { margin: 10px 0 6px; }
 .looks-setups h3 { margin: 0 0 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .looks-setups-list { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; max-height: 140px; overflow-y: auto; }
@@ -1256,7 +1256,7 @@ button.tool-icon.active { color: var(--accent); }
 .meta-form label { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 8px; }
 button.danger { color: var(--danger); }
 
-/* The top bar hidden (layout.js setTopbar): it slides in over the top while
+/* The top bar hidden (columns.js setTopbar): it slides in over the top while
    the pointer is at the window's edge. */
 body.topbar-off { grid-template-rows: 0 1fr 26px; }
 body.topbar-off .topbar { position: relative; z-index: 60; height: 44px; transform: translateY(-100%); transition: transform .15s ease; }
@@ -1276,7 +1276,7 @@ body.library-mode .topbar-edge { display: none; }
 .lib-task-slot:empty { display: none; }
 .lib-task-slot { margin-right: 6px; }
 
-/* A layout with the chrome hidden (Minimalism, layout.js applyChrome): only
+/* A layout with the chrome hidden (Minimalism, columns.js applyChrome): only
    the photo, edge to edge. The side columns slide in over it while the
    pointer is at the window's left or right edge. */
 body.chrome-hidden:not(.library-mode) { grid-template-rows: 0 1fr 0; }

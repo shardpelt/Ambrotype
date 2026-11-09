@@ -479,7 +479,7 @@ Why: 1,082 lines: the masks' state, geometry, drawing, panel, drafts, tools.
 
 Commit: `editor: masks.js split into drawing and the panel`. Why: "1,082 lines; drawing and the panel now have their own files."
 
-### ☐ F13. `layout.js` and `editor.js`
+### ☑ F13. `layout.js` and `editor.js` (2026-11-09)
 
 Why: 1,009 and 989 lines.
 

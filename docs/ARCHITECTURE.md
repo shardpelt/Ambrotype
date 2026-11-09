@@ -255,14 +255,14 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - film base picker (`pick_film_base`: Pick base in the Negative panel; a click on clear film between frames sets `FilmBase*`, Alt-click forgets it; the WB picker shares `Session::shown_patch`, which follows the crop)
   - crop Level (the angle from the photo's long lines, `guide_lines`), guide lines the rotation snaps to, and crop to the view when zoomed in (`ui/croptool.js`)
   - copy the photo to the clipboard (right-click on the photo: `copy_image`, an edited render through the clipboard plugin; `copy_text` for text)
-  - right-column tabs (`.column-tabs` in `ui/layout.js`, the chosen tab kept per layout in localStorage `amb.tabs`); the status bar is off unless Settings → General turns it on, and notes then show briefly over the photo (`#status-note`)
+  - right-column tabs (`.column-tabs` in `ui/columns.js`, the chosen tab kept per layout in localStorage `amb.tabs`); the status bar is off unless Settings → General turns it on, and notes then show briefly over the photo (`#status-note`)
   - size presets (built-in for social sites and print, plus custom) for the crop aspect and exact-size export
   - **looks:** the toolbar, side columns and panels come from a layout file and the colours from a theme.
     - `src/looks/` validates (`check.rs`), stores and keeps setups (`setups.rs`) for them.
-    - `ui/layout.js` renders them.
+    - `ui/layout.js` renders them (the columns, in `columns.js`; the Appearance dialog, in `looks-dialog.js`).
     - `ui/controls.js` has the knob, bar, number, toggle and segmented controls.
-    - `ui/editor.js` is editor mode, which edits a draft of the layout and re-renders it.
-    - A layout with `"chrome": "hidden"` (Minimalism) hides the bars and slides the columns in over the photo from the window's edges (`applyChrome` in `ui/layout.js`).
+    - `ui/editor.js` (with `editor-keys.js` and `editor-inspector.js`) is editor mode, which edits a draft of the layout and re-renders it.
+    - A layout with `"chrome": "hidden"` (Minimalism) hides the bars and slides the columns in over the photo from the window's edges (`applyChrome` in `ui/columns.js`).
   - **slideshow:** `ui/slideshow.js`. Two image layers on black; each photo's large edited thumbnail (`bigImage`, cached with the library's), the next one fetched while the current shows; CSS classes give the change effect. Full screen through the `window_fullscreen` command
   - **tasks:** `ui/tasks.js` draws the task bar (Library, Develop, Film, Collage, then task plugins; what earns a tab: [design/tabs.md](design/tabs.md)).
     - Library opens the library, Collage the collage maker (back to the task you were in when it closes).

@@ -452,9 +452,16 @@ await t.step("a filmstrip photo's stars rate it", async () => {
 });
 
 await t.step("the whole photo fills the viewer", async () => {
-  const img = $("preview").getBoundingClientRect();
-  const view = $("viewer").getBoundingClientRect();
-  t.expect(Math.abs(img.width - view.width) <= 2 || Math.abs(img.height - view.height) <= 2, `photo ${Math.round(img.width)}×${Math.round(img.height)} in ${Math.round(view.width)}×${Math.round(view.height)}`);
+  const sizes = () => [$("preview").getBoundingClientRect(), $("viewer").getBoundingClientRect()];
+  const fills = () => {
+    const [img, view] = sizes();
+    return Math.abs(img.width - view.width) <= 2 || Math.abs(img.height - view.height) <= 2;
+  };
+  // The photo is fitted on the frame after the viewer changes size
+  // (fitPreview), which the steps before may just have done.
+  await t.until("the photo fitted", fills, 5000).catch(() => {});
+  const [img, view] = sizes();
+  t.expect(fills(), `photo ${Math.round(img.width)}×${Math.round(img.height)} in ${Math.round(view.width)}×${Math.round(view.height)}`);
 });
 
 await t.step("zooming in shows the photo at once; a drag never shows black", async () => {

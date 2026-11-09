@@ -443,7 +443,7 @@ Why: 1,488 lines: the library's state, grid, thumbnails, selection, panel, batch
 
 Commit: `editor: library.js split into grid and actions`. Why: "1,488 lines; the grid and thumbnails, and the actions on many photos, now have their own files."
 
-### ☐ F10. `collage.js`
+### ☑ F10. `collage.js` (2026-11-09)
 
 Why: 1,452 lines in ten sections.
 

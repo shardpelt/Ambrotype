@@ -361,7 +361,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - Paste settings as `reset_group` + `apply_preset` (the source sidecar, limited to the chosen groups), the open photo as one undo step.
     - Batch export through the export dialog.
     - Edited thumbnails are rendered and cached until the sidecar changes (`folder::edited_thumbnail`), also for the filmstrip.
-  - collage maker (`ui/collage.js`, a full-window dialog):
+  - collage maker (`ui/collage.js` and `ui/collage-*.js`, a full-window dialog):
     - Free layouts (frames moved, resized, turned and stacked by hand) are composited with a turned, soft-edged resample over what is beneath.
     - Collages save as `.ambcollage` project files (`collages::save_project` / `open_project`: photo paths full and relative).
     - Layouts (`ambrotype-collage/1`) are validated, laid out and composited by `amb-export/src/collage.rs` (cover fit with pan, zoom and quarter turns, rounded corners, a page planner that matches photo shapes to cell shapes).

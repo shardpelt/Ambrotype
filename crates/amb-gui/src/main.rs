@@ -819,9 +819,31 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    /// The UI's scripts share one global scope (plain `<script>` files), so
-    /// two top-level functions or variables with one name would silently
-    /// replace each other.
+    /// The UI's files with this extension, in `ui/` and its subfolders, with
+    /// their paths from `ui/` (`library/grid.js`).
+    fn ui_files(ext: &str) -> Vec<(String, std::path::PathBuf)> {
+        let ui = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");
+        let mut dirs = vec![ui.clone()];
+        let mut files = Vec::new();
+        while let Some(dir) = dirs.pop() {
+            for entry in std::fs::read_dir(&dir).unwrap().flatten() {
+                let path = entry.path();
+                if path.is_dir() {
+                    dirs.push(path);
+                } else if path.extension().is_some_and(|x| x == ext) {
+                    let rel = path
+                        .strip_prefix(&ui)
+                        .unwrap()
+                        .to_string_lossy()
+                        .replace('\\', "/");
+                    files.push((rel, path));
+                }
+            }
+        }
+        files.sort();
+        files
+    }
+
     /// Two elements with one id: `$(id)` finds only the first, so the
     /// other's code silently acts on the wrong element.
     #[test]
@@ -838,17 +860,37 @@ mod tests {
         assert!(twice.is_empty(), "ids used twice in index.html: {twice:?}");
     }
 
+    /// Every script in `ui/` is loaded by the page, once, and every script
+    /// the page loads exists: a file split in two whose new half isn't in
+    /// index.html would leave its functions undefined.
+    #[test]
+    fn every_ui_script_is_loaded_once() {
+        let page = include_str!("../ui/index.html");
+        let mut loaded = Vec::new();
+        for part in page.split("<script src=\"").skip(1) {
+            loaded.push(part.split('"').next().unwrap_or_default().to_string());
+        }
+        let files: Vec<String> = ui_files("js").into_iter().map(|(rel, _)| rel).collect();
+        for file in &files {
+            let times = loaded.iter().filter(|l| *l == file).count();
+            assert_eq!(times, 1, "{file} is loaded {times} times by index.html");
+        }
+        for script in &loaded {
+            assert!(
+                files.contains(script),
+                "index.html loads {script}, which isn't in ui/"
+            );
+        }
+    }
+
+    /// The UI's scripts share one global scope (plain `<script>` files), so
+    /// two top-level functions or variables with one name would silently
+    /// replace each other.
     #[test]
     fn ui_scripts_declare_each_top_level_name_once() {
-        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");
         let mut seen = std::collections::BTreeMap::<String, String>::new();
         let mut clashes = Vec::new();
-        for entry in std::fs::read_dir(&dir).unwrap().flatten() {
-            let path = entry.path();
-            if path.extension().is_none_or(|x| x != "js") {
-                continue;
-            }
-            let file = path.file_name().unwrap().to_string_lossy().to_string();
+        for (file, path) in ui_files("js") {
             for line in std::fs::read_to_string(&path).unwrap().lines() {
                 let rest = line.strip_prefix("async ").unwrap_or(line);
                 let name = ["function ", "const ", "let ", "var ", "class "]
@@ -875,12 +917,7 @@ mod tests {
     /// written with them never asks. askYes() (app.js) is the way.
     #[test]
     fn ui_scripts_ask_with_ask_yes() {
-        let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");
-        for entry in std::fs::read_dir(&dir).unwrap().flatten() {
-            let path = entry.path();
-            if path.extension().is_none_or(|x| x != "js") {
-                continue;
-            }
+        for (_, path) in ui_files("js") {
             for (i, line) in std::fs::read_to_string(&path).unwrap().lines().enumerate() {
                 let code = line.split("//").next().unwrap_or("");
                 for call in ["confirm(", "alert(", "prompt("] {

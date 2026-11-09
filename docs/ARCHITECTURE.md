@@ -1,30 +1,166 @@
-# Architecture as built (October 2026)
+# Architecture as built (November 2026)
 
 The target architecture is in [SCOPE.md §9](SCOPE.md). This page describes what exists today.
 
 **Short version:**
 - Ambrotype is a Rust **library-first** project. The engine, preset reader, lens database and export are libraries.
-- There are two front ends: the `amb` command-line tool and an early desktop editor (`amb-gui`, Tauri 2).
+- There are two front ends: the `amb` command-line tool and a desktop editor (`amb-gui`, Tauri 2).
 - The GUI, the MCP server for AI assistants (`amb mcp`) and the CLI are all clients of the same libraries, through one command protocol, like FFmpeg/libmpv and their players.
 
 ## Crates
 
-About 87,000 lines of Rust and about 630 tests (fmt, clippy and tests run in CI on Linux, Windows, macOS and Windows on ARM).
+About 104,000 lines of Rust, 735 Rust tests and 3 UI test scripts (89 steps). fmt, clippy and tests run in CI on Linux, Windows, macOS and Windows on ARM; the UI scripts on Linux. Sizes, the crate graph and the size budget: [design/structure.md](design/structure.md).
 
-| Crate | Role | Main parts |
+| Crate | Role | Main modules |
 |---|---|---|
-| `amb-presets` | Read and write settings | XMP (`crs:` Adobe tags plus our `amb:` tags), `.lrtemplate`, XMP embedded in DNG/JPEG; the tag registry (`data/tags.json`); preset Amount scaling; the mask model (`masks.rs`: Lightroom's correction tags, slider units, parts) and spots (`retouch.rs`); `linked.rs`: where a sidecar's text comes from when a Lightroom catalogue is opened in place (the newer of the file and the catalogue's copy) |
-| `amb-protocol` | Typed edit commands for GUI/CLI/AI | `set/adjust/reset_param`, `apply_preset`, mask commands (`add/set/paint/remove/duplicate/move_mask`, `list_masks`), spot commands (`add/set/remove_spot`, `list_spots`), snapshots (`save/apply/rename/delete_snapshot`, `list_snapshots`), undo/redo, queries, JSON Schema; sidecar merge that keeps foreign metadata, with the edit history and snapshots stored in it (`amblib:History`, `amblib:Snapshots`); the AI settings reference |
+| `amb-presets` | Read and write settings, and the tag registry | `masks.rs`, `retouch.rs`, `linked.rs`, `data/tags.json` |
+| `amb-protocol` | Typed edit commands for GUI, CLI and AI | commands, queries, `sidecar`, JSON Schema |
 | `amb-color` | Colour science | Temperature/Tint ↔ xy, matrices, Bradford adaptation, output colour spaces and generated ICC profiles, reading matrix ICC profiles, sRGB → monitor conversion (`display.rs`) |
-| `amb-lens` | Lens profiles | lensfun database and Adobe LCP readers, lens matching, interpolation, correction geometry |
+| `amb-lens` | Lens profiles | lensfun and Adobe LCP readers, lens matching, interpolation, correction geometry |
 | `amb-engine` | Raw decode and develop | The pipeline below; every model constant is in `Calibration` (JSON, fitted later against Lightroom) |
-| `amb-ai` | Local AI models | Faces and eyes (`faces.rs`: YuNet, its three grids decoded to boxes and eye points). Smart search (`search.rs`: CLIP and SigLIP 2 models of an image half, a text half and a tokenizer, our own byte-pair tokenizer for both kinds; photos and words to unit vectors). Subject, Background and People masks: a list of freely licensed models to install (`data/models.json`), the user's choice per task, and their own ONNX models; run on the GPU (`net.rs`: tract's simplified graph walked layer by layer, each layer with a kernel in `amb_gpu::nn` on the GPU, the rest with tract on the CPU; small models, and all when there is no GPU, with `tract` on all cores), downloaded from their authors and checked by sha256, results kept per photo fingerprint; registered with `amb_engine::subject` by the editor and `amb` ([design/masks.md](design/masks.md)). AI Remove (`remove.rs`): Big-LaMa, or MI-GAN for speed (its pixels are bytes, `input.pixels`), fills content-aware spots, registered with `amb_engine::retouch::set_inpainter` ([design/spot-removal.md](design/spot-removal.md)) |
-| `amb-gpu` | GPU preview | The develop pipeline's stages as wgpu compute shaders, run from an `amb_engine::plan::Plan`; stages without a kernel run on the CPU in between; equivalence tests against the CPU pipeline ([design/gpu.md](design/gpu.md)). `nn.rs`: tensors and AI model layers (convolution as a tiled matrix product, transposed convolution, matrix products by strides, element-wise, copies, padding, reductions, softmax, RMS norm, max pooling, gather) for `amb-ai` |
-| `amb-export` | Files out | JPEG/PNG/TIFF/WebP/AVIF/EXR/JPEG XL, colour spaces, resize, output sharpening, EXIF, JPEG size limit, a smaller copy beside any export (`small_copy`: NAME-small.jpg under a size, as sharp as fits, fewer pixels only below quality 85); floating-point linear DNG for merged photos (`dng.rs`); a before/after web page with both photos inside (`compare.rs`; `amb share`, File → Share Before and After…); contact sheets as film strips or a grid (`contact.rs`, filled by `amb_library::contact`; `amb contact`, the library's Contact sheet…); AV1 video in our own MP4 writer (`video.rs`, rav1e) for Edit Replay (frames from `amb_library::replay`; `amb replay`, File → Export Edit Replay…) |
-| `amb-library` | Library operations | The catalogue (`catalog.rs`: a SQLite index in the config folder of what was read from each photo's sidecar and raw header, checked against file sizes and modified times, so it can't go stale and can be deleted; `amb catalog`) and which files in a folder are photos (`folder.rs`). Import: copy from a card or folder into dated folders, renamed from templates, with companions and duplicate checks (`amb import`, the editor's Import dialog); collections as small JSON files; moving from Lightroom Classic (`lrcat.rs`: reads a `.lrcat` read-only and immutable with SQLite, writes each photo's sidecar from the catalogue's develop settings, XMP and library tables, and its collections as ours; `amb lrcat import`, the library's From Lightroom…); a catalogue opened in place (`lightroom.rs`: the catalogues listed, each read again when its file changes, answering `amb_presets::linked` for every sidecar read; `amb lrcat open`, the Folders panel's Lightroom section, `ui/lightroom.js`); places from GPX tracks (`gpx.rs`); duplicates and bursts (`duplicates.rs`, its measurements kept in the catalogue); best in a burst (`burst.rs`: each photo's sharpness on its faces or its sharpest part and how open the eyes are, from faces found by `amb_engine::subject::faces` (YuNet in `amb-ai/src/faces.rs`), then ranked against the burst's other photos; the library's Best in each burst, `ui/bursts.js`); moving, renaming and deleting photos with their companions, the trash, and finding photos moved outside the app (`files.rs`); the library folders (`roots.rs`) and smart collections (`smart.rs`); raws to JPEGs (`convert.rs`: the camera's own JPEG inside the raw via `raw::embedded_preview`, or Auto, or Match look to an edited photo, solved small and exported full size; `amb convert`, the library's Convert raws…); smart search over files (`search.rs`: each photo's vector kept in the catalogue's `vectors` table until the file changes, ranked against words or another photo; `amb search`, the library's Smart and Find similar photos); an object selected (`object.rs`, `Selection`: a mask on the frame from the object selector or the Subject model, its edge snapped to the photo's by a colour guided filter (`snap.rs`), and the shadow it casts (`shadow_of`: darker than round it, grown from where it stands; `set_shadow` takes it along); `select_words`: what's named, found by asking the object selector about a coarse grid and the middles of the windows the search model finds most like the words (refined twice), each thing found scored by the search model with what's round it greyed (`amb_ai::search::Words`: the words against what else a photo might be, as a softmax), a smaller thing inside the best one preferred, and as-good ones apart from it added; `remove`, `move_by` (a clone, then a Remove spot that leaves it alone) and `mask_dabs` (a distance transform's dabs for a brush mask); Select object in `ui/select.js`) and an object in a box to one Remove spot (`object.rs`: a click or a box asked of the object selector (`amb_engine::subject::select`, SAM 2.1 tiny in `amb-ai/src/objects.rs`: the encoder once per photo, the decoder per click), or for a box without it the Subject model on just the box; its outline covered by dabs; the Spot panel's Remove object…); dust and hairs to heal spots (`dust.rs`, over `amb_engine::dust`; `amb dust`, the Spot panel's Find dust; [design/dust.md](design/dust.md)); film negative rolls (`negative.rs`: the analysis frozen into settings, one frame, or a roll grouped into scenes by light with odd frames kept (`roll`), through `pipeline::negative_analysis`; `amb negative analyze` and `amb negative sync`, the library's Sync negative roll…); look matching on files (`look.rs`; `amb match`); HDR merge into a DNG next to the brackets and panorama merge with lens corrections first (`merge.rs`, over `amb_engine::merge` and `amb_engine::pano`; `amb merge hdr` / `amb merge pano`, the library's Merge to HDR… / Merge to Panorama…; [design/hdr-merge.md](design/hdr-merge.md), [design/panorama.md](design/panorama.md)) |
+| `amb-ai` | Local AI models | `faces.rs`, `search.rs`, `net.rs`, `objects.rs`, `remove.rs`, `data/models.json` |
+| `amb-gpu` | GPU preview and AI kernels | The pipeline's stages as wgpu compute shaders; `nn.rs` |
+| `amb-export` | Files out | `dng.rs`, `compare.rs`, `contact.rs`, `video.rs`, `embed.rs`, `border.rs`, `collage.rs`, `watermark.rs`, `fonts.rs` |
+| `amb-library` | Library operations on folders and sidecars | `catalog.rs`, `folder.rs`, `lrcat.rs`, `lightroom.rs`, `files.rs`, `convert.rs`, `object.rs`, `merge.rs` |
 | `amb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
-| `amb-cli` | The `amb` tool | `render`, `import`, `merge hdr`, `merge pano`, `mcp` (the MCP server, `src/mcp.rs`), `preset`, `edit`/`query`, `do` (the compact edit syntax), `stats`, `match` (look matching, `amb_engine::matching`), `ref` (the AI core card), `auto`, `dust`, `lens`, `profile`, `negative`, `sweep`, `testimage`, `calibration`, `protocol schema`, `settings reference`, `models`, `plugin`, `collage`, `slideshow` (opens the editor), `lrcat import`, and the library's `catalog`, `info`, `tag`, `place`, `duplicates`, `move`/`rename`/`sort`/`trash`, `keywords` and `collection` (`src/organise.rs`), … |
+| `amb-cli` | The `amb` tool | `src/mcp.rs`, `src/organise.rs` |
 | `amb-gui` | Desktop editor (Tauri 2) | Rust `Session` (open raw, undoable edits via `amb-protocol`, downscaled preview + histogram, sidecar save, export) behind Tauri commands; plain HTML/CSS/JS UI generated from the settings registry |
+
+### `amb-presets`
+
+- XMP (`crs:` Adobe tags plus our `amb:` tags), `.lrtemplate`, and XMP embedded in DNG and JPEG.
+- The tag registry (`data/tags.json`).
+- Preset Amount scaling.
+- The mask model (`masks.rs`): Lightroom's correction tags, slider units, parts.
+- Spots (`retouch.rs`).
+- `linked.rs`: where a sidecar's text comes from when a Lightroom catalogue is opened in place (the newer of the file and the catalogue's copy).
+
+### `amb-protocol`
+
+- Edit commands:
+  - `set/adjust/reset_param`, `apply_preset`.
+  - Mask commands: `add/set/paint/remove/duplicate/move_mask`, `list_masks`.
+  - Spot commands: `add/set/remove_spot`, `list_spots`.
+  - Snapshots: `save/apply/rename/delete_snapshot`, `list_snapshots`.
+  - Undo and redo.
+- Queries, and the JSON Schema.
+- The sidecar merge keeps foreign metadata. The edit history and snapshots are stored in it (`amblib:History`, `amblib:Snapshots`).
+- The AI settings reference.
+
+### `amb-ai`
+
+- Faces and eyes (`faces.rs`): YuNet, its three grids decoded to boxes and eye points.
+- Smart search (`search.rs`):
+  - CLIP and SigLIP 2 models, each of an image half, a text half and a tokenizer.
+  - Our own byte-pair tokenizer for both kinds.
+  - Photos and words become unit vectors.
+- Subject, Background and People masks:
+  - A list of freely licensed models to install (`data/models.json`), the user's choice per task, and their own ONNX models.
+  - Run on the GPU (`net.rs`): tract's simplified graph is walked layer by layer, each layer with a kernel in `amb_gpu::nn` on the GPU and the rest with tract on the CPU.
+  - Small models, and all models when there is no GPU, run with `tract` on all cores.
+  - Downloaded from their authors and checked by sha256. Results are kept per photo fingerprint.
+  - Registered with `amb_engine::subject` by the editor and `amb` ([design/masks.md](design/masks.md)).
+- AI Remove (`remove.rs`):
+  - Big-LaMa, or MI-GAN for speed (its pixels are bytes, `input.pixels`).
+  - Fills content-aware spots.
+  - Registered with `amb_engine::retouch::set_inpainter` ([design/spot-removal.md](design/spot-removal.md)).
+
+### `amb-gpu`
+
+- The develop pipeline's stages as wgpu compute shaders, run from an `amb_engine::plan::Plan`.
+- Stages without a kernel run on the CPU in between.
+- Equivalence tests against the CPU pipeline ([design/gpu.md](design/gpu.md)).
+- `nn.rs`: tensors and AI model layers, for `amb-ai`:
+  - Convolution as a tiled matrix product, and transposed convolution.
+  - Matrix products by strides.
+  - Element-wise operations, copies and padding.
+  - Reductions, softmax, RMS norm, max pooling and gather.
+
+### `amb-export`
+
+- Formats: JPEG, PNG, TIFF, WebP, AVIF, EXR and JPEG XL.
+- Colour spaces, resize, output sharpening, EXIF, and the JPEG size limit.
+- A smaller copy beside any export (`small_copy`): NAME-small.jpg under a size, as sharp as fits, with fewer pixels only below quality 85.
+- Floating-point linear DNG for merged photos (`dng.rs`).
+- A before/after web page with both photos inside (`compare.rs`; `amb share`, File → Share Before and After…).
+- Contact sheets as film strips or a grid (`contact.rs`):
+  - Filled by `amb_library::contact`.
+  - `amb contact`, the library's Contact sheet….
+- AV1 video in our own MP4 writer (`video.rs`, rav1e) for Edit Replay:
+  - Frames come from `amb_library::replay`.
+  - `amb replay`, File → Export Edit Replay….
+
+### `amb-library`
+
+The library:
+
+- The catalogue (`catalog.rs`): a SQLite index, in the config folder, of what was read from each photo's sidecar and raw header. It is checked against file sizes and modified times, so it can't go stale and can be deleted. `amb catalog`.
+- Which files in a folder are photos (`folder.rs`).
+- Import (`import.rs`):
+  - Copy from a card or folder into dated folders, renamed from templates, with companions and duplicate checks.
+  - `amb import`, the editor's Import dialog.
+- Collections (`collections.rs`) as small JSON files.
+- Moving from Lightroom Classic (`lrcat.rs`):
+  - Reads a `.lrcat` read-only and immutable with SQLite.
+  - Writes each photo's sidecar from the catalogue's develop settings, XMP and library tables, and its collections as ours.
+  - `amb lrcat import`, the library's From Lightroom….
+- A catalogue opened in place (`lightroom.rs`):
+  - The catalogues are listed, and each is read again when its file changes.
+  - It answers `amb_presets::linked` for every sidecar read.
+  - `amb lrcat open`, the Folders panel's Lightroom section, `ui/lightroom.js`.
+- Places from GPX tracks (`gpx.rs`).
+- Duplicates and bursts (`duplicates.rs`), its measurements kept in the catalogue.
+- Moving, renaming and deleting photos with their companions, the trash, and finding photos moved outside the app (`files.rs`).
+- The library folders (`roots.rs`) and smart collections (`smart.rs`).
+- Smart search over files (`search.rs`):
+  - Each photo's vector is kept in the catalogue's `vectors` table until the file changes.
+  - Ranked against words or another photo.
+  - `amb search`, the library's Smart and Find similar photos.
+
+Operations on photos:
+
+- Raws to JPEGs (`convert.rs`):
+  - The camera's own JPEG inside the raw via `raw::embedded_preview`, or Auto, or Match look to an edited photo, solved small and exported full size.
+  - `amb convert`, the library's Convert raws….
+- An object selected (`object.rs`, `Selection`):
+  - A mask on the frame from the object selector or the Subject model, its edge snapped to the photo's by a colour guided filter (`snap.rs`).
+  - The shadow it casts (`shadow_of`): darker than round it, grown from where it stands. `set_shadow` takes it along.
+  - `select_words`: what's named.
+    - Found by asking the object selector about a coarse grid and the middles of the windows the search model finds most like the words (refined twice).
+    - Each thing found is scored by the search model with what's round it greyed (`amb_ai::search::Words`: the words against what else a photo might be, as a softmax).
+    - A smaller thing inside the best one is preferred, and as-good ones apart from it are added.
+  - `remove`, `move_by` (a clone, then a Remove spot that leaves it alone) and `mask_dabs` (a distance transform's dabs for a brush mask).
+  - Select object in `ui/select.js`.
+- An object in a box to one Remove spot (`object.rs`):
+  - A click or a box is asked of the object selector (`amb_engine::subject::select`, SAM 2.1 tiny in `amb-ai/src/objects.rs`: the encoder once per photo, the decoder per click).
+  - For a box without it, the Subject model on just the box.
+  - Its outline is covered by dabs.
+  - The Spot panel's Remove object….
+- Dust and hairs to heal spots (`dust.rs`, over `amb_engine::dust`):
+  - `amb dust`, the Spot panel's Find dust.
+  - [design/dust.md](design/dust.md).
+- Film negative rolls (`negative.rs`):
+  - The analysis is frozen into settings, for one frame, or a roll is grouped into scenes by light with odd frames kept (`roll`), through `pipeline::negative_analysis`.
+  - `amb negative analyze` and `amb negative sync`, the library's Sync negative roll….
+- Look matching on files (`look.rs`; `amb match`).
+- HDR merge into a DNG next to the brackets, and panorama merge with lens corrections first (`merge.rs`, over `amb_engine::merge` and `amb_engine::pano`):
+  - `amb merge hdr` / `amb merge pano`, the library's Merge to HDR… / Merge to Panorama….
+  - [design/hdr-merge.md](design/hdr-merge.md), [design/panorama.md](design/panorama.md).
+- Best in a burst (`burst.rs`):
+  - Each photo's sharpness on its faces or its sharpest part, and how open the eyes are, from faces found by `amb_engine::subject::faces` (YuNet in `amb-ai/src/faces.rs`).
+  - Then ranked against the burst's other photos.
+  - The library's Best in each burst, `ui/bursts.js`.
+- `replay.rs` and `contact.rs` fill `amb-export`'s video and contact sheets (see `amb-export` above).
+
+### `amb-cli`
+
+The `amb` commands, by kind:
+
+- Editing: `do` (the compact edit syntax), `edit`, `query`, `auto`, `match` (look matching, `amb_engine::matching`), `fuji`, `dust`, `negative`.
+- The library and files: `import`, `catalog`, `info`, `tag`, `place`, `duplicates`, `search`, `lrcat` (`import`, `open`, `close`, `list`, `sample`), and `move`, `rename`, `sort`, `trash`, `keywords`, `collection` (`src/organise.rs`).
+- Files out: `render`, `convert`, `merge` (`hdr`, `pano`), `collage`, `contact`, `replay`, `share`, `slideshow` (opens the editor).
+- AI, MCP and plugins: `mcp` (the MCP server, `src/mcp.rs`), `ref` (the AI core card), `protocol schema`, `settings reference`, `models`, `plugin` (makes, builds, checks and runs plugins).
+- Measuring and tooling: `preset`, `stats`, `lens`, `profile`, `sweep`, `testimage`, `calibration`.
 
 ## Data flow of `amb render photo.nef out.jpg --preset look.xmp`
 
@@ -99,7 +235,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 
 - **Shell:** Tauri 2, with the system webview (WebView2, WKWebView, WebKitGTK). The UI in `crates/amb-gui/ui/` is plain HTML/CSS/JS with no build step or npm. The window opens where and as big as it was left (`tauri-plugin-window-state`).
 - **Where things are:**
-  - Rust: `src/main.rs` holds the app state, saved settings and startup, and registers every command in `invoke_handler`. The Tauri commands themselves are in `src/commands/`, one file per area: `photo`, `preview`, `export`, `presets`, `appearance`, `settings`, `assistant`, `collage`, `connect`, `hub`, `plugins`, `library` and `catalog`. The logic they call is in the other `src/` files (`session.rs`, `looks.rs`, `hub.rs`, …).
+  - Rust: `src/main.rs` holds the app state, saved settings and startup, and registers every command in `invoke_handler`. The Tauri commands themselves are in `src/commands/`, one file per area: `appearance`, `assistant`, `catalog`, `collage`, `connect`, `export`, `features`, `files`, `hub`, `library`, `menu`, `models`, `photo`, `places`, `plugins`, `presets`, `preview`, `sample`, `settings` (plus `mod.rs`). The logic they call is in the other `src/` files (`session.rs`, `looks.rs`, `hub.rs`, …).
   - JS: `ui/app.js` holds the shared state (`ui`), the slider rows and `init`, which wires the buttons. The preview loop and 1:1 view are in `preview.js`, the crop panel in `croptool.js`, the Presets panel in `presets.js` and the Export dialog in `export.js`; the other panels and dialogs each have their own file.
   - Monitor colour: `src/monitor.rs` keeps the profile in use (Settings → General: Automatic, Off or a file); the editor's session converts its JPEGs to it as they are encoded (`Session::on_screen`; thumbnails and the assistant's pictures stay sRGB). Linux only: macOS and Windows webviews match colours themselves.
   - UI tests: `ambrotype --ui-test SCRIPT.js` (`src/uitest.rs`) puts the script into the page, where `ui/uitest.js` runs it with its helpers and reports back; exports skip the save dialog. Scripts are in `tests/ui/`.
@@ -110,34 +246,128 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - Basic, Tone Curve (parametric), Color Mixer (HSL tabs), Black & White, Color Grading, Detail, Lens Corrections, Transform, Effects, Calibration and Film Negative panels
   - presets list (Lightroom's own folder when present, or added folders) with an Amount slider
   - history, undo/redo (a drag of a curve point or colour wheel, or a WB pick, is one step), before/after, histogram
-  - 1:1 view with panning: only the tiles (256 px) the view needs are rendered (`render_region`), and kept until the committed settings change, so panning back is instant. White-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels, crop and straighten tool (draw a crop corner to corner like a screenshot, then adjust; aspect lock, size presets), mask tool (`ui/masks.js`: linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map; [design/masks.md](design/masks.md)), spot removal (`ui/spots.js`: heal and clone spots with a suggested donor, and Remove spots filled by AI Remove, `spot_source`; Find dust adds a heal spot per speck and hair, `find_dust`; [design/spot-removal.md](design/spot-removal.md), [design/dust.md](design/dust.md))
+  - 1:1 view with panning, and the tools that work on the photo:
+    - Only the tiles (256 px) the view needs are rendered (`render_region`), and kept until the committed settings change, so panning back is instant.
+    - White-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels.
+    - Crop and straighten tool: draw a crop corner to corner like a screenshot, then adjust; aspect lock, size presets.
+    - Mask tool (`ui/masks.js`): linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map ([design/masks.md](design/masks.md)).
+    - Spot removal (`ui/spots.js`): heal and clone spots with a suggested donor, and Remove spots filled by AI Remove (`spot_source`). Find dust adds a heal spot per speck and hair (`find_dust`). [design/spot-removal.md](design/spot-removal.md), [design/dust.md](design/dust.md).
   - film base picker (`pick_film_base`: Pick base in the Negative panel; a click on clear film between frames sets `FilmBase*`, Alt-click forgets it; the WB picker shares `Session::shown_patch`, which follows the crop)
   - crop Level (the angle from the photo's long lines, `guide_lines`), guide lines the rotation snaps to, and crop to the view when zoomed in (`ui/croptool.js`)
   - copy the photo to the clipboard (right-click on the photo: `copy_image`, an edited render through the clipboard plugin; `copy_text` for text)
   - right-column tabs (`.column-tabs` in `ui/layout.js`, the chosen tab kept per layout in localStorage `amb.tabs`); the status bar is off unless Settings → General turns it on, and notes then show briefly over the photo (`#status-note`)
   - size presets (built-in for social sites and print, plus custom) for the crop aspect and exact-size export
-  - **looks:** the toolbar, side columns and panels come from a layout file and the colours from a theme (`src/looks.rs` validates and stores them; `ui/layout.js` renders; `ui/controls.js` has the knob, bar, number, toggle and segmented controls; `ui/editor.js` is editor mode, which edits a draft of the layout and re-renders it). A layout with `"chrome": "hidden"` (Minimalism) hides the bars and slides the columns in over the photo from the window's edges (`applyChrome` in `ui/layout.js`)
+  - **looks:** the toolbar, side columns and panels come from a layout file and the colours from a theme.
+    - `src/looks.rs` validates and stores them.
+    - `ui/layout.js` renders them.
+    - `ui/controls.js` has the knob, bar, number, toggle and segmented controls.
+    - `ui/editor.js` is editor mode, which edits a draft of the layout and re-renders it.
+    - A layout with `"chrome": "hidden"` (Minimalism) hides the bars and slides the columns in over the photo from the window's edges (`applyChrome` in `ui/layout.js`).
   - **slideshow:** `ui/slideshow.js`. Two image layers on black; each photo's large edited thumbnail (`bigImage`, cached with the library's), the next one fetched while the current shows; CSS classes give the change effect. Full screen through the `window_fullscreen` command
-  - **tasks:** `ui/tasks.js` draws the task bar (Library, Develop, Film, Collage, then task plugins; what earns a tab: [design/tabs.md](design/tabs.md)). Library opens the library, Collage the collage maker (back to the task you were in when it closes); the others switch to a built-in layout, or the one the user picked in that task (localStorage `amb.tasks`). Develop's Classic layout holds what were the Color and Retouch tabs: the Retouch tools under Quick fixes, a Colour tab of panels; tool blocks fold by their heading
-  - **custom interfaces:** `src/interface.rs` serves a folder with an `index.html` on the `ambui` scheme (`ambui://localhost/`, `http://ambui.localhost/` on Windows), only files inside it. Tauri treats the app's own schemes as local, so the page calls the same commands. Settings → General picks it (`set_interface` navigates the window and puts up a small menu with a way back; the open photo comes along through `take_initial_path`, and `open_photo` on the open photo keeps its session). Installed ones live in `<config>/interfaces/`; `--builtin-ui` ignores the choice. Guide: [ai/custom-interface.md](ai/custom-interface.md)
+  - **tasks:** `ui/tasks.js` draws the task bar (Library, Develop, Film, Collage, then task plugins; what earns a tab: [design/tabs.md](design/tabs.md)).
+    - Library opens the library, Collage the collage maker (back to the task you were in when it closes).
+    - The others switch to a built-in layout, or the one the user picked in that task (localStorage `amb.tasks`).
+    - Develop's Classic layout holds what were the Color and Retouch tabs: the Retouch tools under Quick fixes, a Colour tab of panels; tool blocks fold by their heading.
+  - **custom interfaces:** `src/interface.rs` serves a folder with an `index.html` on the `ambui` scheme (`ambui://localhost/`, `http://ambui.localhost/` on Windows), only files inside it.
+    - Tauri treats the app's own schemes as local, so the page calls the same commands.
+    - Settings → General picks it: `set_interface` navigates the window and puts up a small menu with a way back. The open photo comes along through `take_initial_path`, and `open_photo` on the open photo keeps its session.
+    - Installed ones live in `<config>/interfaces/`; `--builtin-ui` ignores the choice.
+    - Guide: [ai/custom-interface.md](ai/custom-interface.md).
   - **connect an AI app:** `ui/connect.js` (Help → Connect an AI App…) shows `amb mcp` with the path found by `commands/connect.rs` (next to the editor, else on the PATH) and the setup for the apps in `ui/ai-apps.json`; `open_terminal` opens the system's terminal in the open photo's folder with `amb` first on the PATH
-  - **quick zoom:** `ui/quickzoom.js`. A right-drag box sets `ui.zoom.box`; `zoomScale` in `ui/preview.js` turns it into a scale, and the zoomed view renders a region at 100% (at most 4096 px a side) that the page scales to fit. The loupe asks `region` for a small square at 100% around the pointer, showing the preview enlarged until it arrives. The box can be turned off in Settings (kept in the page's local storage, like the menu bar)
-  - **teaching by showing:** `ui/teach.js`. After an undo or redo (a History click, Ctrl+Z, or the arrow keys with History focused) the controls that step changed glow and slide to their value. Help → Watch an edit replays the sample's History with a ghost cursor (`watchFlow`); any key or click stops it. Holding Ctrl (⌘) shows each toolbar button's and task's key. On a photo with no edit yet, Exposure, Highlights, Shadows, Temp and Vibrance glow faintly. Help → Open the sample photo (or the empty screen's button) downloads a CC0 Nikon D750 raw from raw.pixls.us into `sample/` in the settings folder, checks its sha256, and adds an edit with one History step per slider (`commands/sample.rs`, `data/sample/d750.xmp`). Hovering a task shows a sketch of its layout (`ui/tasks.js`). A "?" by each setting (`ui/help.js`) shows its description on hover and, on click, a card with the `coach` text from `descriptions.json` (how it shows in a photo, when to raise or lower it), passed through `schema.rs`. Words in it that are terms in `ui/basics.json` link to Photography basics (`ui/basics.js`): hover for a line, click to open the guide; tone and colour terms also light up their pixels on the preview (`ui/zones.js`, computed in the page from the preview JPEG); the guide's drawings are SVG from `ui/figures.js`
+  - **quick zoom:** `ui/quickzoom.js`.
+    - A right-drag box sets `ui.zoom.box`; `zoomScale` in `ui/preview.js` turns it into a scale, and the zoomed view renders a region at 100% (at most 4096 px a side) that the page scales to fit.
+    - The loupe asks `region` for a small square at 100% around the pointer, showing the preview enlarged until it arrives.
+    - The box can be turned off in Settings (kept in the page's local storage, like the menu bar).
+  - **teaching by showing:** `ui/teach.js`.
+    - After an undo or redo (a History click, Ctrl+Z, or the arrow keys with History focused) the controls that step changed glow and slide to their value.
+    - Help → Watch an edit replays the sample's History with a ghost cursor (`watchFlow`); any key or click stops it.
+    - Holding Ctrl (⌘) shows each toolbar button's and task's key.
+    - On a photo with no edit yet, Exposure, Highlights, Shadows, Temp and Vibrance glow faintly.
+    - Help → Open the sample photo (or the empty screen's button) downloads a CC0 Nikon D750 raw from raw.pixls.us into `sample/` in the settings folder, checks its sha256, and adds an edit with one History step per slider (`commands/sample.rs`, `data/sample/d750.xmp`).
+    - Hovering a task shows a sketch of its layout (`ui/tasks.js`).
+    - A "?" by each setting (`ui/help.js`) shows its description on hover and, on click, a card with the `coach` text from `descriptions.json` (how it shows in a photo, when to raise or lower it), passed through `schema.rs`.
+      - Words in it that are terms in `ui/basics.json` link to Photography basics (`ui/basics.js`): hover for a line, click to open the guide.
+      - Tone and colour terms also light up their pixels on the preview (`ui/zones.js`, computed in the page from the preview JPEG).
+      - The guide's drawings are SVG from `ui/figures.js`.
   - **yes-or-no questions:** `askYes` in `ui/app.js` (the dialog plugin's message box). The page's own `confirm()` can't be used: the dialog plugin replaces it with a call that fails, so it never asks (a test keeps it out)
-  - **hub:** `src/hub.rs` reads a hub's `index.json` (https, or file:// for testing), checks each look file against its sha256, validates it and saves it as one of the user's looks (a plugin's or interface's other files are listed with their own sha256, and an interface holds only web files); it also builds the GitHub link for submitting a look. `ui/hub.js` is the Browse dialog, with previews drawn from the looks' own data. The hub repo is `Ambrotypehq/ambrotype-hub`; the app's built-in looks and starter presets are a copy of some of its items in `data/hub/` (`tools/sync-hub.py`), and the hub shows those as built in
-  - **settings and keyboard shortcuts:** `ui/keys.js` has one table of actions with default keys; it runs the shortcuts, writes the toolbar tooltips and drives the Settings dialog (keyboard map, rebinding, clash checks). Only the user's changes are stored (`src/keys.rs`, in the settings file). `ui/menu.js` builds the menu bar from the same table (`MENU_BAR`), and `ui/search.js` (Ctrl+K) searches it with the settings, panels, presets and looks, sets a numeric setting from its name and a number ("exposure 0.7"), and finds what people want to do in docs/FEATURES.md (built in by `src/commands/features.rs`; a "How to" shows where it is, with buttons for the commands, panels, settings and buttons it names in bold); `src/commands/menu.rs` puts it up (macOS always; Windows and Linux when Settings → General asks, kept in the webview's storage) and sends a chosen item back as a `menu` event. Built-ins are in `data/looks/`; the user's own are files in the config folder. Format: [ai/ui-layouts.md](ai/ui-layouts.md)
-  - rating (keys 1–5), pick/reject flags (P, X, U; `amblib:Flag`, plus `xmp:Rating="-1"` for an unrated reject) and keywords, written to the sidecar at once (`amb_protocol::sidecar::with_info`: `xmp:Rating`, `dc:subject`, keeping `lr:hierarchicalSubject` paths in step) and embedded in exports: XMP in JPEG/PNG/TIFF/WebP and IPTC keywords in JPEG (`amb-export/src/embed.rs`, added to the finished file), plus EXIF Rating and XPKeywords; `amb render --rating 4 --keywords "a, b"` does the same from the command line
-  - filmstrip: the raws in the open photo's folder (`src/folder.rs`: natural name order, ratings and edit state from the sidecars, thumbnails from the camera's embedded preview via `amb_engine::raw::embedded_thumbnail`, cached on disk in the app's cache folder; `ui/filmstrip.js`). Opening another photo saves unsaved edits of the current one first
+  - **hub:**
+    - `src/hub.rs` reads a hub's `index.json` (https, or file:// for testing), checks each look file against its sha256, validates it and saves it as one of the user's looks. A plugin's or interface's other files are listed with their own sha256, and an interface holds only web files.
+    - It also builds the GitHub link for submitting a look.
+    - `ui/hub.js` is the Browse dialog, with previews drawn from the looks' own data.
+    - The hub repo is `Ambrotypehq/ambrotype-hub`. The app's built-in looks and starter presets are a copy of some of its items in `data/hub/` (`tools/sync-hub.py`), and the hub shows those as built in.
+  - **settings and keyboard shortcuts:**
+    - `ui/keys.js` has one table of actions with default keys; it runs the shortcuts, writes the toolbar tooltips and drives the Settings dialog (keyboard map, rebinding, clash checks). Only the user's changes are stored (`src/keys.rs`, in the settings file).
+    - `ui/menu.js` builds the menu bar from the same table (`MENU_BAR`).
+    - `ui/search.js` (Ctrl+K) searches that table with the settings, panels, presets and looks.
+      - It sets a numeric setting from its name and a number ("exposure 0.7").
+      - It finds what people want to do in docs/FEATURES.md (built in by `src/commands/features.rs`): a "How to" shows where it is, with buttons for the commands, panels, settings and buttons it names in bold.
+    - `src/commands/menu.rs` puts the menu bar up (macOS always; Windows and Linux when Settings → General asks, kept in the webview's storage) and sends a chosen item back as a `menu` event.
+    - The built-in layouts and themes are copies of the hub's, in `crates/amb-gui/data/hub/looks/` (`tools/sync-hub.py` copies them); the user's own are files in the config folder. Format: [ai/ui-layouts.md](ai/ui-layouts.md).
+  - rating (keys 1–5), pick/reject flags (P, X, U) and keywords:
+    - Flags are `amblib:Flag`, plus `xmp:Rating="-1"` for an unrated reject.
+    - They are written to the sidecar at once (`amb_protocol::sidecar::with_info`: `xmp:Rating`, `dc:subject`, keeping `lr:hierarchicalSubject` paths in step).
+    - They are embedded in exports: XMP in JPEG/PNG/TIFF/WebP and IPTC keywords in JPEG (`amb-export/src/embed.rs`, added to the finished file), plus EXIF Rating and XPKeywords.
+    - `amb render --rating 4 --keywords "a, b"` does the same from the command line.
+  - filmstrip: the raws in the open photo's folder (`ui/filmstrip.js`).
+    - `src/folder.rs`: natural name order, ratings and edit state from the sidecars.
+    - Thumbnails come from the camera's embedded preview via `amb_engine::raw::embedded_thumbnail`, cached on disk in the app's cache folder.
+    - Opening another photo saves unsaved edits of the current one first.
   - long size lists (crop aspect, export size) use a drop-down with collapsible groups (`ui/picker.js`, layered over the native select): common sizes open, sites collapsed
   - file names from a template for batch exports (Import's tokens: `{name}`, `{seq}`, the capture date, `{camera}`; `amb render --out-dir --name` too)
   - presets: hover to preview, ☆ to star as a favourite (shown first), right-click to apply only some setting groups (`apply_preset` `include_groups`)
   - export presets (the dialog's choices under a name, in the app's settings) and Resize by long or short edge, width, height, megapixels or percent
   - watermarks on export: text (GNU FreeSans Bold, bundled) or a PNG logo, in one of nine places, with size, opacity and a shadow (`amb_export::watermark`; `amb render --watermark`)
-  - borders on export: presets (built-in and yours) with width, a deeper bottom, colour or the photo's own colour, keyline, rounded corners, "whole photo inside" for exact sizes, and a caption line from the photo's metadata (`border::caption_text`); a live preview in the export dialog. Captions and text watermarks pick a font from `amb-export/src/fonts.rs` (the editor loads the same files, `font_data`). The editor's Frame panel (`ui/frame.js`) draws the border with CSS around the preview and the text as an overlay, outside the edit, and fills the export dialog's Border and Watermark from it
-  - plugins: `crates/amb-plugin` loads a plugin folder (`plugin.json` + `plugin.wasm`), checks it (no imports but the old `amb.log`, refused on Windows x64; log lines come back with the output), and runs it in the `wasmi` interpreter with an instruction budget and a 64 MB memory cap. The input is JSON (settings, parameters, a seed, and with permission camera facts and statistics of a ~512 px render, `amb_plugin::photo`); the output is edit commands, limited to set/adjust/reset. The editor runs them as one undo step (`run_plugin` in `src/commands/plugins.rs`; the list, approvals per fingerprint, install and sharing are in `src/plugins.rs`; the dialog is `ui/plugins.js`). Built-in plugins (Auto tone, Random look, Film recipe, Duotone, Light leak, Holographic, Hue trip, Paint, Tilt-shift, and the Trippy task) are embedded from `plugins/` (`amb_plugin::BUILTIN`); the built-in effects also run natively (`native.rs`: the same crates linked in, on all cores, only for the built-in module itself), a user's plugin always in the sandbox. Effect plugins (`amb_plugin::effect`) export `amb_effect` instead: the edit keeps them in `amb:Effects`, the engine renders them after the LUT (`amb_engine::plugin_effects`, a CPU step in the GPU preview; an amount past 100 pushes the change further, and `where` (`Place`) keeps it to the highlights, midtones, shadows or a colour) through a resolver the editor and `amb` register, colour effects as a 33³ table and pixel effects in strips; `ui/fx.js` draws them in the Effects panel; `ui/tips.js` shows tips from the features list (while busy, and as search and filter hints; used commands skipped); `ui/camsim.js` is Help → Camera simulator (a drawn scene through a pinhole camera; nothing edited); `ui/trip.js` has Trip me and the effect setter task tools use. Task plugins (`"kind": "task"`, no module: a layout and tools, [design/plugin-kinds.md](design/plugin-kinds.md)) join the task bar (`ui/tasks.js`; their layouts as `plugin:<id>`, checked by `looks::check_layout`); Trippy is one (`plugins/trippy`). Recipes (named parameter sets) come from the manifest or are saved in the app's config. `amb_plugin::fuji` reads a pasted Fujifilm-style recipe into Film recipe's parameters, kept to its sensor generation's settings, and runs it on an empty edit for a preset (Presets → Fuji recipe…, `fuji_recipe` in `src/commands/presets.rs`; `amb fuji`). `amb plugin` in the CLI makes, builds, checks and runs them
-  - save as preset (`session::save_preset`): the open photo's settings minus the photo-specific groups (crop, local, retouch, transform, metadata, lens blur), written as a Lightroom-style `.xmp` preset into `<config>/presets/<group>/`, which the presets list always includes; Save to… writes it anywhere (`save_preset_to`), Share to the hub opens a pre-filled submission (`preset_submit`), and Show file reveals it (`reveal_file`). The presets list skips a photo's own sidecar in a preset folder (`is_photo_sidecar`)
-  - library (`ui/library.js`, `src/library.rs`; [design/library.md](design/library.md)): the Folders panel (`ui/folders.js`: library folders from `amb-library::roots`, indexed in the background by `commands/catalog.rs`; offline folders listed from the catalogue), a folder as a grid, with loupe, compare and survey views for culling (`ui/cull.js`), file care (`ui/organise.js`, `commands/files.rs`, `amb-library::files`: moves and renames with companions, the trash, finding moved photos, keywords and metadata templates), duplicates and bursts (`ui/duplicates.js`, `amb-library::duplicates`, its measurements kept in the catalogue), Timeline and Map views (`ui/browse.js`; places from GPX tracks by `amb-library::gpx`, set by `commands/places.rs`) an Import dialog (`ui/import.js`, `amb-library::import`), collections (`ui/collections.js`, `amb-library::collections`, kept in the config folder) and virtual copies (sidecars `IMG.copy-N.xmp`; `amb_engine::virtual_copy_of` / `source_path`), read from the sidecars (ratings, `xmp:Label` colour labels, keywords) and the raw headers (capture time, camera, lens, exposure, in parallel) through the catalogue (`folder::catalog`), which also gives All photos (the Folders | All photos switch) and a Rated photos view; stars in the filmstrip; Develop or Esc opens the library's chosen photo (`leaveLibrary`); batch rating/label/keyword changes (the open photo's through its session); paste settings as `reset_group` + `apply_preset` (the source sidecar, limited to the chosen groups), the open photo as one undo step; batch export through the export dialog. Edited thumbnails are rendered and cached until the sidecar changes (`folder::edited_thumbnail`), also for the filmstrip
-  - collage maker (`ui/collage.js`, a full-window dialog): free layouts (frames moved, resized, turned and stacked by hand) are composited with a turned, soft-edged resample over what is beneath; collages save as `.ambcollage` project files (`collages::save_project` / `open_project`: photo paths full and relative); layouts (`ambrotype-collage/1`) are validated, laid out and composited by `amb-export/src/collage.rs` (cover fit with pan, zoom and quarter turns, rounded corners, a page planner that matches photo shapes to cell shapes). `src/collages.rs` renders each photo from its raw with its sidecar edits (`Session::render_upright`, one photo at a time) into the canvas, then exports it; batches write numbered pages. The canvas preview mirrors the Rust layout maths in JS and shows the photos' edits (`edited_thumbnail`); the open photo's unsaved edits are saved before a collage export
+  - borders on export:
+    - Presets (built-in and yours) with width, a deeper bottom, colour or the photo's own colour, keyline, rounded corners, "whole photo inside" for exact sizes, and a caption line from the photo's metadata (`border::caption_text`).
+    - A live preview in the export dialog.
+    - Captions and text watermarks pick a font from `amb-export/src/fonts.rs` (the editor loads the same files, `font_data`).
+    - The editor's Frame panel (`ui/frame.js`) draws the border with CSS around the preview and the text as an overlay, outside the edit, and fills the export dialog's Border and Watermark from it.
+  - plugins:
+    - `crates/amb-plugin` loads a plugin folder (`plugin.json` + `plugin.wasm`), checks it (no imports but the old `amb.log`, refused on Windows x64; log lines come back with the output), and runs it in the `wasmi` interpreter with an instruction budget and a 64 MB memory cap.
+    - The input is JSON (settings, parameters, a seed, and with permission camera facts and statistics of a ~512 px render, `amb_plugin::photo`); the output is edit commands, limited to set/adjust/reset.
+    - The editor runs them as one undo step (`run_plugin` in `src/commands/plugins.rs`; the list, approvals per fingerprint, install and sharing are in `src/plugins.rs`; the dialog is `ui/plugins.js`).
+    - Built-in plugins (Auto tone, Random look, Film recipe, Duotone, Light leak, Holographic, Hue trip, Paint, Tilt-shift, and the Trippy task) are embedded from `plugins/` (`amb_plugin::BUILTIN`). The built-in effects also run natively (`native.rs`: the same crates linked in, on all cores, only for the built-in module itself), a user's plugin always in the sandbox.
+    - Effect plugins (`amb_plugin::effect`) export `amb_effect` instead:
+      - The edit keeps them in `amb:Effects`.
+      - The engine renders them after the LUT (`amb_engine::plugin_effects`, a CPU step in the GPU preview; an amount past 100 pushes the change further, and `where` (`Place`) keeps it to the highlights, midtones, shadows or a colour).
+      - They go through a resolver the editor and `amb` register: colour effects as a 33³ table and pixel effects in strips.
+      - `ui/fx.js` draws them in the Effects panel.
+    - `ui/tips.js` shows tips from the features list (while busy, and as search and filter hints; used commands skipped).
+    - `ui/camsim.js` is Help → Camera simulator (a drawn scene through a pinhole camera; nothing edited).
+    - `ui/trip.js` has Trip me and the effect setter task tools use.
+    - Task plugins (`"kind": "task"`, no module: a layout and tools, [design/plugin-kinds.md](design/plugin-kinds.md)) join the task bar (`ui/tasks.js`; their layouts as `plugin:<id>`, checked by `looks::check_layout`). Trippy is one (`plugins/trippy`).
+    - Recipes (named parameter sets) come from the manifest or are saved in the app's config.
+    - `amb_plugin::fuji` reads a pasted Fujifilm-style recipe into Film recipe's parameters, kept to its sensor generation's settings, and runs it on an empty edit for a preset (Presets → Fuji recipe…, `fuji_recipe` in `src/commands/presets.rs`; `amb fuji`).
+    - `amb plugin` in the CLI makes, builds, checks and runs them.
+  - save as preset (`session::save_preset`):
+    - The open photo's settings minus the photo-specific groups (crop, local, retouch, transform, metadata, lens blur), written as a Lightroom-style `.xmp` preset into `<config>/presets/<group>/`, which the presets list always includes.
+    - Save to… writes it anywhere (`save_preset_to`).
+    - Share to the hub opens a pre-filled submission (`preset_submit`).
+    - Show file reveals it (`reveal_file`).
+    - The presets list skips a photo's own sidecar in a preset folder (`is_photo_sidecar`).
+  - library (`ui/library.js`, `src/library.rs`; [design/library.md](design/library.md)):
+    - The Folders panel (`ui/folders.js`): library folders from `amb-library::roots`, indexed in the background by `commands/catalog.rs`; offline folders listed from the catalogue.
+    - A folder as a grid, with loupe, compare and survey views for culling (`ui/cull.js`).
+    - File care (`ui/organise.js`, `commands/files.rs`, `amb-library::files`): moves and renames with companions, the trash, finding moved photos, keywords and metadata templates.
+    - Duplicates and bursts (`ui/duplicates.js`, `amb-library::duplicates`, its measurements kept in the catalogue).
+    - Timeline and Map views (`ui/browse.js`; places from GPX tracks by `amb-library::gpx`, set by `commands/places.rs`).
+    - An Import dialog (`ui/import.js`, `amb-library::import`).
+    - Collections (`ui/collections.js`, `amb-library::collections`, kept in the config folder).
+    - Virtual copies (sidecars `IMG.copy-N.xmp`; `amb_engine::virtual_copy_of` / `source_path`).
+    - Photos are read from the sidecars (ratings, `xmp:Label` colour labels, keywords) and the raw headers (capture time, camera, lens, exposure, in parallel) through the catalogue (`folder::catalog`), which also gives All photos (the Folders | All photos switch) and a Rated photos view.
+    - Stars in the filmstrip.
+    - Develop or Esc opens the library's chosen photo (`leaveLibrary`).
+    - Batch rating/label/keyword changes (the open photo's through its session).
+    - Paste settings as `reset_group` + `apply_preset` (the source sidecar, limited to the chosen groups), the open photo as one undo step.
+    - Batch export through the export dialog.
+    - Edited thumbnails are rendered and cached until the sidecar changes (`folder::edited_thumbnail`), also for the filmstrip.
+  - collage maker (`ui/collage.js`, a full-window dialog):
+    - Free layouts (frames moved, resized, turned and stacked by hand) are composited with a turned, soft-edged resample over what is beneath.
+    - Collages save as `.ambcollage` project files (`collages::save_project` / `open_project`: photo paths full and relative).
+    - Layouts (`ambrotype-collage/1`) are validated, laid out and composited by `amb-export/src/collage.rs` (cover fit with pan, zoom and quarter turns, rounded corners, a page planner that matches photo shapes to cell shapes).
+    - `src/collages.rs` renders each photo from its raw with its sidecar edits (`Session::render_upright`, one photo at a time) into the canvas, then exports it; batches write numbered pages.
+    - The canvas preview mirrors the Rust layout maths in JS and shows the photos' edits (`edited_thumbnail`).
+    - The open photo's unsaved edits are saved before a collage export.
   - saved preset folders, and a feedback button that opens a pre-filled GitHub issue, or an email to ambrotypeapp@gmail.com for people without a GitHub account, or copies the report
   - save the XMP sidecar, keeping other metadata
   - export dialog

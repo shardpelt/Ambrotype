@@ -2,7 +2,7 @@
 
 Status: implemented 2026-10-08. Linear and radial gradients, brush, luminance range and colour range masks, combined by add, subtract and intersect, each mask with its own local sliders. They are read and written as Lightroom's own tags, so masks round-trip with Lightroom Classic 11+ and Camera Raw 14+. The fall-off shapes and slider strengths are ours and wait for the Lightroom trial.
 
-Code: `crates/amb-presets/src/masks.rs` (the shared model: tags, slider units, parts), `crates/amb-engine/src/mask/` (drawing and rendering), `crates/amb-protocol/src/masks.rs` (commands), `crates/amb-gui/ui/masks.js`, `mask-draw.js` and `mask-panel.js` (the tool).
+Code: `crates/amb-presets/src/masks.rs` (the shared model: tags, slider units, parts), `crates/amb-engine/src/mask/` (drawing and rendering), `crates/amb-protocol/src/masks/` (commands), `crates/amb-gui/ui/masks.js`, `mask-draw.js` and `mask-panel.js` (the tool).
 
 ## Lightroom's format
 
@@ -80,7 +80,7 @@ Not rendered yet (kept in the file, reported): Moire, `LocalHue`, `LocalGrain`, 
 
 ## Commands
 
-All four are undoable protocol commands (`crates/amb-protocol/src/masks.rs`), so the editor, the CLI and AI clients make masks the same way. Masks and parts are numbered from 0 as `list_masks` shows them.
+All four are undoable protocol commands (`crates/amb-protocol/src/masks/`), so the editor, the CLI and AI clients make masks the same way. Masks and parts are numbered from 0 as `list_masks` shows them.
 
 - `add_mask {kind, mask?, mode?, values?}`: `kind` linear, radial, luminance or color. Without `mask`, a new mask; with it, a new part of that mask joined by `mode`.
 - `set_mask {mask, part?, values}`: without `part`, the local sliders in UI units (by tag, `LocalExposure2012`, or label, `Exposure`), `name`, `active` and `amount` (0–100); with `part`, its geometry (Lightroom's field names: `ZeroX`…, `Top`…, `Angle`, `Feather`, `LumRange`, `ColorSamples`, `ColorAmount`), `mode`, `invert`, `active`, `name`. Geometry is checked (two different linear points; Top < Bottom and Left < Right).

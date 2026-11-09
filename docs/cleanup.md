@@ -499,7 +499,7 @@ Why: 1,009 and 989 lines.
 
 Commit: `editor: layout.js and editor.js split`. Why: "About 1,000 lines each; the columns, the Appearance dialog, editor mode's keys and its inspector now have their own files."
 
-### ☐ F14. amb-protocol `masks.rs` → `masks/`
+### ☑ F14. amb-protocol `masks.rs` → `masks/` (2026-11-09)
 
 Why: 1,141 lines: the helpers that read and write a mask's fields, the mask commands, and describing masks.
 

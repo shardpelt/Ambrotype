@@ -330,10 +330,12 @@ pub(crate) async fn save_preset_to(
     })
     .await
     .map_err(|e| e.to_string())??;
-    // Listed from now on, unless a preset folder already holds it.
+    // Listed from now on, unless a preset folder already holds it. The
+    // settings path is read first: save_config takes it before preset_dirs,
+    // so taking it while holding preset_dirs could deadlock.
+    let own = own_presets_dir(state.inner());
     {
         let mut dirs = state.preset_dirs.lock().map_err(|e| e.to_string())?;
-        let own = own_presets_dir(state.inner());
         if !dirs.iter().chain(own.iter()).any(|d| folder.starts_with(d)) {
             dirs.push(folder);
         }

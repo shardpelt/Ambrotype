@@ -4,7 +4,7 @@ A short "start here" for contributors and for the next work session. The running
 
 ## State
 
-- **Branch:** `main`. About 630 Rust tests and 3 UI test scripts are green.
+- **Branch:** `main`. About 735 Rust tests and 3 UI test scripts (89 steps) are green.
 - **Name:** **Ambrotype**. The GitHub repo is `shardpelt/Ambrotype`.
 - **Built:**
   - preset/sidecar reader and writer (`crs:` and our `amb:` tags)
@@ -216,11 +216,14 @@ Ideas from two film-scan apps, negaflow (Apache-2.0) and NegPy (GPL-3), rebuilt 
 
 Not taken: NegPy's print tables (made from Fujifilm printer software and profiles), negaflow's lab-scanner profiles named after the machines, and CC BY-SA data NegPy carries (spektrafilm dye curves, DX codes) unless the owner says yes.
 
-### Codebase track (later, when there's budget for a long run)
+### Codebase track
+
+The structure review of 2026-11-09 ([design/structure.md](design/structure.md)) found no need for a rewrite. Its cleanup is in [cleanup.md](cleanup.md), in exact steps for smaller models: guard rails (done), small merges, splitting the big files, then structural steps the owner agrees first.
+
 
 0. **First, measure what helps** (plan: [design/agent-navigation.md](design/agent-navigation.md)): fresh agents on a fixed task set, with and without recipes and on-demand maps. Rounds A1 and B1 are done: with the recipes, Sonnet passed all 12 tasks at the same cost. The steps below follow from it.
-1. **A map for agents:** a detailed map of the code (per crate and per UI file: what it owns, its main types and functions, how data flows from a slider to the render and to the sidecar) with recipes for common changes ("add a setting", "add a panel", "add a toolbar button", "add a mask kind", "add a hub item kind"). Builds on [ARCHITECTURE.md](ARCHITECTURE.md) and AGENTS.md; checked by a test where it can be (like the settings reference).
-2. **A cleanup pass to match it:** ~~split the largest files~~ (2026-10-16: `amb-gui/src/commands/`; `ui/app.js` into preview, crop, presets and export files; the CLI by area; the engine's `pipeline/` and `detail/` as folders), one clear home per concern, consistent names, dead code out. Behaviour unchanged; the tests and a by-hand run of the editor confirm it.
+1. **A map for agents** (largely done: [recipes.md](recipes.md), checked by a test; [ARCHITECTURE.md](ARCHITECTURE.md); [design/structure.md](design/structure.md)): a detailed map of the code (per crate and per UI file: what it owns, its main types and functions, how data flows from a slider to the render and to the sidecar) with recipes for common changes ("add a setting", "add a panel", "add a toolbar button", "add a mask kind", "add a hub item kind"). Builds on [ARCHITECTURE.md](ARCHITECTURE.md) and AGENTS.md; checked by a test where it can be (like the settings reference).
+2. **A cleanup pass to match it** ([cleanup.md](cleanup.md)): ~~split the largest files~~ (2026-10-16: `amb-gui/src/commands/`; `ui/app.js` into preview, crop, presets and export files; the CLI by area; the engine's `pipeline/` and `detail/` as folders), one clear home per concern, consistent names, dead code out. Behaviour unchanged; the tests and a by-hand run of the editor confirm it.
 
 ## Working notes
 

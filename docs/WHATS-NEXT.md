@@ -31,6 +31,8 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-09: a structure review of the whole codebase ([design/structure.md](design/structure.md)): no rewrite needed; the big files, the UI's shared names and copied helpers are cleaned up in exact steps for smaller models ([cleanup.md](cleanup.md)). Guard rails first: a size budget test, the UI-script tests reading subfolders and checking every script loads, and `tools/code-metrics.py`
+
 - 2026-11-09: tabs are Library · Develop · Film · Collage ([design/tabs.md](design/tabs.md)): Color became Develop's Colour tab, Retouch its Retouch tools under Quick fixes (blocks fold), and the Collage tab opens the collage maker itself
 
 - 2026-11-09: the viewer rates, flags and labels with the library's keys, and its info panel (I or right-click) shows the shot and edits rating, label, flag and keywords

@@ -21,6 +21,8 @@ Ambrotype is a free, open-source Lightroom alternative in Rust. Start with [docs
 ## Common changes
 [docs/recipes.md](docs/recipes.md) lists, step by step, what adding a setting, a toolbar button, a CLI or protocol command, or a hub item kind touches. **Done means the commands the request names work as written: run them.**
 
+Keeping it lean: [docs/design/structure.md](docs/design/structure.md) is the codebase's shape and size budget, and [docs/cleanup.md](docs/cleanup.md) the cleanup tasks, in exact steps. A test (`crates/amb-cli/tests/code_size.rs`) fails when a file passes the budget: split it along its sections rather than raising the limit. `python3 tools/code-metrics.py` measures.
+
 ## Before you commit
 ```sh
 cargo fmt --all --check

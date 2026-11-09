@@ -172,7 +172,7 @@ From [09](research/09-market-commercial-alternatives.md), [12](research/12-user-
 
 ---
 
-## 6. Licensing (decision needed)
+## 6. Licensing (decided 2026-10-08: GPL-3.0-or-later)
 
 **Recommendation: GPL-3.0-or-later.** The earlier split-licence idea (MPL core + GPL modules) existed only to keep an iOS App Store app possible. With mobile dropped it adds complexity for nothing. The full analysis, should iOS ever come back, is in [08 §5](research/08-cross-platform-and-mobile.md).
 

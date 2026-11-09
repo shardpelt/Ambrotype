@@ -148,9 +148,9 @@ Haiku's price applies to prompts up to 100K tokens. Above that it costs $0.50 an
 3. Write B from what the transcripts show.
 4. Run B, C1 and C2, then compare.
 5. Keep what helped:
-   - write the findings in `docs/ai/agent-practices.md`;
+   - keep the findings in this file's Results, and what helped in [recipes.md](../recipes.md) and AGENTS.md;
    - add tests that keep the recipes and file summaries current, as the settings reference has.
-6. Clean up the code, starting where agents struggled:
+6. Clean up the code, starting where agents struggled (planned in [structure.md](structure.md), the steps in [cleanup.md](../cleanup.md)):
    - split `amb-gui/src/main.rs` and `ui/app.js` by concern;
    - use names that are easy to search for;
    - remove dead code.

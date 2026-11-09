@@ -775,7 +775,9 @@ mod tests {
         for (depth, max) in [(BitDepth::Eight, 255.0f32), (BitDepth::Sixteen, 65535.0)] {
             let mut s = ExportSettings::new(Format::Jxl);
             s.bit_depth = Some(depth);
-            let path = tmp(&format!("t-{depth:?}.jxl"));
+            // Not `t-…`: every_format_writes_a_decodable_file writes those at
+            // the same time.
+            let path = tmp(&format!("lossless-{depth:?}.jxl"));
             export(&img, &PhotoMetadata::default(), &s, &path).unwrap();
             let file = std::fs::File::open(&path).unwrap();
             let jxl = jxl_oxide::JxlImage::builder().read(file).unwrap();

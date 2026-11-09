@@ -15,7 +15,6 @@ const JS_BUDGET: usize = 700;
 /// split instead (docs/cleanup.md says how), or its number is raised in the
 /// same commit, saying why in the commit message.
 const OVER_BUDGET: &[(&str, usize)] = &[
-    ("crates/amb-engine/src/mask.rs", 1600),
     ("crates/amb-engine/src/negative.rs", 1400),
     ("crates/amb-protocol/src/masks.rs", 1300),
     ("crates/amb-ai/src/net.rs", 1300),

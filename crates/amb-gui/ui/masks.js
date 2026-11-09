@@ -157,7 +157,7 @@ function ellipsePoints(p, k = 1) {
     const th = (i / 64) * 2 * Math.PI;
     const u = a * Math.cos(th);
     const v = b * Math.sin(th);
-    // The engine's inverse rotation (src/mask.rs).
+    // The engine's inverse rotation (src/mask/geometry.rs).
     pts.push(framePixel(cx, cy, u * cos + v * sin, -u * sin + v * cos));
   }
   return pts;

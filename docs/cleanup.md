@@ -400,7 +400,7 @@ Why: 1,210 lines for `DevelopState`: history, snapshots, sidecar reading and wri
 
 Commit: `protocol: state.rs split by concern`. Why: "1,210 lines; snapshots, sidecar files, planning and queries now have their own files."
 
-### ☐ F7. amb-engine `mask.rs` → `mask/`
+### ☑ F7. amb-engine `mask.rs` → `mask/` (2026-11-09)
 
 Why: 1,497 lines: the mask model, the sky, drawing shapes and applying local adjustments. It already has sections.
 

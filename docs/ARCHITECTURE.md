@@ -182,7 +182,7 @@ amb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
   1  clipped channels → neutral, white balance + camera matrix (× Calibration primaries) → linear ProPhoto
      (a camera profile, profile.rs: its matrices, hue/sat map, exposure offset, look table)
      → Exposure → Calibration shadow tint → Defringe
-     → spot removal (heal, clone and AI Remove, retouch.rs) → masks drawn (alpha per mask, mask.rs)
+     → spot removal (heal, clone and AI Remove, retouch.rs) → masks drawn (alpha per mask, mask/)
      → local Exposure, Temp, Tint
   2  Dehaze (then local Dehaze) → halation and bloom (amb:Halation, amb:Bloom, glow.rs) → highlight roll-off (amb:HighlightRolloff, rolloff.rs)
   3  base look (or the camera profile's tone curve) → Highlights/Shadows (local: guided-filter base) → Contrast, Whites, Blacks (global curve)

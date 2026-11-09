@@ -8,7 +8,7 @@ async function renderInterfaces() {
   const sel = $("settings-interface");
   try {
     const info = await invoke("interfaces");
-    const name = (i) => i.name ?? i.path.split(/[\\/]/).pop();
+    const name = (i) => i.name ?? fileName(i.path);
     const opts = [{ value: "", text: "Built-in" }, ...info.installed.map((i) => ({ value: i.path, text: name(i) }))];
     if (info.active && !info.installed.some((i) => i.path === info.active)) opts.push({ value: info.active, text: info.active });
     sel.replaceChildren(...opts.map((o) => Object.assign(document.createElement("option"), { value: o.value, textContent: o.text })));

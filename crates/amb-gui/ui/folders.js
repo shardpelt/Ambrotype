@@ -79,7 +79,7 @@ function folderTreeItem(node) {
     else tree.open.add(node.path);
     renderFolderTree();
   });
-  const name = Object.assign(document.createElement("span"), { className: "tree-name", textContent: node.root ? node.path.split(/[\\/]/).filter(Boolean).pop() ?? node.path : node.name });
+  const name = Object.assign(document.createElement("span"), { className: "tree-name", textContent: node.root ? folderName(node.path) ?? node.path : node.name });
   const count = Object.assign(document.createElement("span"), { className: "tree-count", textContent: folderTotal(node).toLocaleString() });
   row.append(twist, name, count);
   if (node.root) {
@@ -184,7 +184,7 @@ function wireFolderTree() {
   tauri.event.listen("index-progress", (e) => {
     const { folder, done, total } = e.payload;
     progress.hidden = false;
-    progress.textContent = `Indexing ${folder.split(/[\\/]/).filter(Boolean).pop() ?? folder}: ${done.toLocaleString()} of ${total.toLocaleString()} photos`;
+    progress.textContent = `Indexing ${folderName(folder) ?? folder}: ${done.toLocaleString()} of ${total.toLocaleString()} photos`;
   });
   tauri.event.listen("index-done", () => loadFolderTree());
   tauri.event.listen("index-finished", () => {

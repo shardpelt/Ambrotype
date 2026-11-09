@@ -914,7 +914,7 @@ mod tests {
 
     /// The dialog plugin replaces the page's confirm() and alert() with
     /// calls that don't block (confirm()'s even fails), so a "Delete…?" guard
-    /// written with them never asks. askYes() (app.js) is the way.
+    /// written with them never asks. askYes() (core.js) is the way.
     #[test]
     fn ui_scripts_ask_with_ask_yes() {
         for (_, path) in ui_files("js") {

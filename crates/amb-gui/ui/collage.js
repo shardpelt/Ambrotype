@@ -145,8 +145,6 @@ function touch() {
   updateTitle();
 }
 
-const fileName = (p) => p.replace(/^.*[\\/]/, "");
-
 function updateTitle() {
   const t = collage.t;
   const doc = collage.docPath ? `${fileName(collage.docPath)}${collage.dirty ? " •" : ""}` : "Not saved";
@@ -307,7 +305,7 @@ function syncCellTools() {
     ? "Drag a frame to move it, its corners to resize, the round handle to turn it. Drop a photo on empty canvas for a new frame."
     : "Drag photos from below into the cells. In a cell: drag to move the photo, scroll to zoom, double-click to fit.";
   $("col-cell-hint").textContent = has
-    ? `Cell ${i + 1}${photo ? ": " + (trayPhoto(photo)?.name ?? photo.replace(/^.*[\\/]/, "")) : " (empty)"}`
+    ? `Cell ${i + 1}${photo ? ": " + (trayPhoto(photo)?.name ?? fileName(photo)) : " (empty)"}`
     : "Click a cell to change it.";
 }
 
@@ -673,7 +671,7 @@ function startDrag(e, path, fromCell = -1) {
       ghost.className = "col-ghost";
       const small = collage.small.get(path);
       if (small) ghost.append(Object.assign(document.createElement("img"), { src: small.url, alt: "" }));
-      else ghost.textContent = path.replace(/^.*[\\/]/, "");
+      else ghost.textContent = fileName(path);
       dlg.append(ghost);
     }
     ghost.style.left = `${ev.clientX + 8}px`;

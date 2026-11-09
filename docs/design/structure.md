@@ -113,7 +113,7 @@ JS: 30 of 964 functions are over 80 lines. The longest: `crop.js` `create` (408)
 
 ### Coupling
 
-- `app.js` defines `$`, `invoke`, `ui` and the toast, but loads last. 56 other files use its names. It works only because no file uses them while loading.
+- `$`, `invoke`, `ui` and the toast lived in `app.js`, which loads last, so 56 other files used its names. They are now in `core.js`, which loads first.
 - After it: `masks.js` (used by 32 files), `library.js` (24), `preview.js` (22), `collage.js` (17).
 - `AppState` (`amb-gui/src/main.rs`) has 29 fields, 27 of them behind a `Mutex`. Most are saved settings: `save_config` copies them one by one into `Config` (20 fields).
 - `amb-library` has two jobs:

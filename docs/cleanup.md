@@ -179,7 +179,7 @@ Why: `amb-library`'s `catalog.rs` has a private copy of `amb_presets::linked::fi
 
 Commit: `library: one file_stamp`. Why: "The catalogue had its own copy of amb_presets::linked::file_stamp."
 
-### ☐ S3. `core.js`: the UI's shared helpers, loaded first
+### ☑ S3. `core.js`: the UI's shared helpers, loaded first (2026-11-09)
 
 Why: the helpers every file uses lived in `app.js`, the last file to load. A few small helpers were copied between files.
 

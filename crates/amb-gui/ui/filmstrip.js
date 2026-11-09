@@ -76,8 +76,6 @@ function stripMenu(e, p) {
   ].filter((x) => x !== false && x !== undefined));
 }
 
-const dirOf = (p) => p.replace(/[\\/][^\\/]*$/, "");
-
 function stripVisible() {
   return Boolean(ui.info) && !strip.hidden && ui.layout?.filmstrip !== false;
 }

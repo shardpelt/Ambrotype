@@ -109,7 +109,7 @@ async function planFiles() {
   $("files-summary").textContent = org.plan.length
     ? `${org.plan.length} photo${org.plan.length === 1 ? "" : "s"}, ${files} file${files === 1 ? "" : "s"} with their sidecars and companions${same > 0 ? ` · ${same} already there` : ""}. Nothing is overwritten.`
     : "They are already there.";
-  const base = (p) => p.replace(/^.*[\\/]/, "");
+  const base = (p) => fileName(p);
   const rel = (p) => (org.mode === "rename" ? base(p) : p);
   $("files-list").replaceChildren(...org.plan.slice(0, 300).map((p) => {
     const row = Object.assign(document.createElement("div"), { className: "files-row" });

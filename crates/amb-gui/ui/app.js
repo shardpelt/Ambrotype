@@ -4,65 +4,7 @@
 // GUI behaves exactly like the CLI and AI clients.
 "use strict";
 
-const tauri = window.__TAURI__;
-const invoke = (cmd, args) => tauri.core.invoke(cmd, args);
-const $ = (id) => document.getElementById(id);
-
-const ui = {
-  panels: [],            // editor schema
-  defs: new Map(),       // setting name -> its control definition (from the schema)
-  historyNames: new Map(), // setting name -> its name in History, where the label alone is ambiguous
-  looks: null,           // layouts and themes (src/looks.rs), with the active ids
-  layout: null,          // the active layout (layout.js renders it)
-  histogram: null,       // the last histogram, redrawn when the theme or layout changes
-  keybindings: {},       // shortcuts the user changed (keys.js has the defaults)
-  controls: new Map(),   // name -> { def, input, number, label, select, check }
-  settings: {},          // committed settings (from the Rust state)
-  info: null,            // photo info
-  overrides: {},         // values being dragged, not yet committed
-  active: null,          // the setting whose slider is held (holdWhileDragging)
-  before: false,
-  // Before / after split with a draggable bar (split.js).
-  split: false,
-  hslTab: "Hue",
-  // `uncropped`: the shown preview is the whole photo (what the crop tool draws on).
-  preview: { inFlight: false, dirty: false, draft: false, url: null, uncropped: false },
-  presets: [],
-  zoom: { on: false, cx: 0.5, cy: 0.5, meta: null, pan: null },
-  picking: false,
-  clipping: false,
-  curve: null,
-  wheels: null,
-  // Crop tool: `start` is the committed rectangle when the tool opened;
-  // `aspect` the lock ("free", "original", "4:5", "size:<id>"), `swapped` its X.
-  crop: { on: false, tool: null, start: null, enabled: false, aspect: "original", swapped: false, angleSign: 1 },
-  sizes: [],             // size presets (built-in, then the user's)
-  exportCropAspect: 1,
-};
-
 // ---------------------------------------------------------------- helpers
-
-function toast(text, error = false) {
-  const t = $("toast");
-  t.textContent = text;
-  t.classList.toggle("error", error);
-  t.hidden = false;
-  clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => (t.hidden = true), error ? 6000 : 3000);
-}
-
-// The status bar's text. With the bar hidden (Settings → General), a
-// message shows briefly over the photo instead, unless it's `routine`
-// (preview sizes and times).
-function status(text, routine = false) {
-  $("status").textContent = text;
-  if (routine || !document.body.classList.contains("status-off") || !text) return;
-  const note = $("status-note");
-  note.textContent = text;
-  note.hidden = false;
-  clearTimeout(note.timer);
-  note.timer = setTimeout(() => (note.hidden = true), 3500);
-}
 
 function setStatusBar(show) {
   document.body.classList.toggle("status-off", !show);
@@ -76,19 +18,6 @@ function wireStatusBar() {
   try { show = localStorage.getItem("amb.statusbar") === "1"; } catch { /* hidden */ }
   setStatusBar(show);
   $("settings-statusbar").addEventListener("change", (e) => setStatusBar(e.target.checked));
-}
-
-// Yes or no, in the system's own dialog. (The page's confirm() can't be used:
-// the dialog plugin turns it into a call that fails.)
-async function askYes(message) {
-  // Counted, so a test can tell nothing asks at the first start.
-  ui.asked = (ui.asked ?? 0) + 1;
-  try {
-    return await window.__TAURI__.dialog.ask(message, { title: "Ambrotype", kind: "warning" });
-  } catch (e) {
-    toast(String(e), true);
-    return false;
-  }
 }
 
 function decimals(def) { return def.step < 1 ? 2 : 0; }
@@ -807,7 +736,7 @@ async function openPath(path) {
     for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-frame", "btn-auto", "btn-select", "btn-save-preset", "btn-match", "btn-surprise"]) $(id).disabled = false;
     if (ui.zoom.on) setZoom(false);
     setState(r.state);
-    if (r.saved_previous) toast(`Saved your edits to ${r.saved_previous.replace(/^.*[\\/]/, "")}`);
+    if (r.saved_previous) toast(`Saved your edits to ${fileName(r.saved_previous)}`);
     applyStripVisibility();
     loadFolder(r.info.path);
     requestPreview(false);

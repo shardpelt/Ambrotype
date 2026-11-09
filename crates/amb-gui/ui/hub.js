@@ -269,7 +269,7 @@ async function hubFlow(initial = "all") {
           // Installed shows the folder's name; switching wants its path.
           use.addEventListener("click", async () => {
             const { installed } = await invoke("interfaces");
-            const hit = installed.find((i) => i.path === e.installed || i.path.split(/[\\/]/).pop() === e.installed);
+            const hit = installed.find((i) => i.path === e.installed || fileName(i.path) === e.installed);
             if (hit) useInterface(hit.path);
           });
           actions.append(use);

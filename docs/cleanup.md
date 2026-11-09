@@ -331,7 +331,7 @@ Why: 1,855 lines, the largest file. The open photo's rendering, tools, retouch a
 
 Commit: `editor: session.rs split by concern`. Why: "1,855 lines: rendering, tools, retouch and AI contexts now have their own files, and the presets list its own module."
 
-### ☐ F3. amb-gui `commands/photo.rs` and `commands/library.rs`
+### ☑ F3. amb-gui `commands/photo.rs` and `commands/library.rs` (2026-11-09)
 
 Why: 956 and 826 lines of commands for several parts of the editor.
 

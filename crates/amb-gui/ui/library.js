@@ -923,7 +923,7 @@ async function libraryDeleteCopies() {
 // One conversion for a roll of negatives (roll baseline): each scene's
 // median, odd frames their own, or the focused frame as the baseline.
 // Contact sheets of the selected photos, saved where the user picks
-// (src/commands/library.rs `contact_sheet`).
+// (src/commands/batch.rs `contact_sheet`).
 async function contactSheetFlow() {
   const paths = selectedPhotos().map((p) => p.path);
   if (!paths.length) return toast("Select the photos for the sheet.", true);
@@ -1038,7 +1038,7 @@ async function syncNegativeRoll() {
   }
 }
 
-// Raws to JPEGs (src/commands/library.rs `convert_raws`): in the library
+// Raws to JPEGs (src/commands/batch.rs `convert_raws`): in the library
 // the selection, or every photo shown when none is selected; in the editor
 // the open photo's folder (the filmstrip), like the open photo.
 async function convertRawsFlow() {

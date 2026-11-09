@@ -45,10 +45,10 @@ use tauri_plugin_opener::OpenerExt;
 
 // Helpers the command modules share with each other.
 use commands::appearance::*;
+use commands::batch::*;
 use commands::collage::*;
 use commands::export::*;
 use commands::hub::*;
-use commands::library::*;
 use commands::plugins::*;
 use commands::presets::*;
 use config::{BUILTIN_MASK_EFFECTS, EditIn, ImportChoice, MaskEffect, save_config};

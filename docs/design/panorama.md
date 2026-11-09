@@ -10,7 +10,7 @@ Lightroom's Photo Merge > Panorama stitches overlapping photos into one wider ph
 
 ## How it works (ours, not Adobe's)
 
-After Brown & Lowe (2007), "Automatic Panoramic Image Stitching using Invariant Features". `amb_library::merge::pano` loads the frames, then `amb_engine::pano::stitch` aligns and renders them, on demosaiced camera RGB.
+After Brown & Lowe (2007), "Automatic Panoramic Image Stitching using Invariant Features". `amb_ops::merge::pano` loads the frames, then `amb_engine::pano::stitch` aligns and renders them, on demosaiced camera RGB.
 
 1. **Lens corrections first** (on by default): each frame's lens profile (your LCP files, then lensfun), for distortion, vignetting and colour fringes, zoomed so no blank edges remain. Stitching assumes a perfect pinhole camera, so distortion left in shows as seams. The lensfun database also gives the camera's crop factor.
 2. **Upright:** each frame is turned as its EXIF orientation says, so portrait and landscape frames mix.

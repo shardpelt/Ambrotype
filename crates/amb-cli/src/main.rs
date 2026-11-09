@@ -612,12 +612,12 @@ fn main() -> ExitCode {
         }
         ["replay", photo] => match options.get("--out") {
             Some(out) => (|| -> Result<(), String> {
-                let mut o = amb_library::replay::ReplayOptions::default();
+                let mut o = amb_ops::replay::ReplayOptions::default();
                 if let Some(v) = options.get("--long-edge") {
                     o.long_edge = v.parse().map_err(|_| format!("--long-edge {v}: pixels"))?;
                 }
                 o.captions = !options.contains_key("--no-captions");
-                let r = amb_library::replay::replay(
+                let r = amb_ops::replay::replay(
                     Path::new(photo),
                     Path::new(out),
                     &o,

@@ -5,30 +5,30 @@ use super::*;
 
 impl Session {
     /// Dust and hairs on the whole scan, as heal spots to add
-    /// (`amb_library::dust`), leaving out what the edit's spots cover.
-    pub fn find_dust(&self) -> amb_library::dust::Found {
-        amb_library::dust::find_image(&self.full, self.state.settings())
+    /// (`amb_ops::dust`), leaving out what the edit's spots cover.
+    pub fn find_dust(&self) -> amb_ops::dust::Found {
+        amb_ops::dust::find_image(&self.full, self.state.settings())
     }
 
     /// Select Object: the object `target` points at, with its shadow if
     /// `shadow` (and one was found), kept for its actions.
     pub fn select_object(
         &mut self,
-        target: &amb_library::object::Target,
+        target: &amb_ops::object::Target,
         shadow: bool,
-    ) -> Result<&amb_library::object::Selection, String> {
-        let mut sel = amb_library::object::select(&self.full, self.state.settings(), target)?;
+    ) -> Result<&amb_ops::object::Selection, String> {
+        let mut sel = amb_ops::object::select(&self.full, self.state.settings(), target)?;
         sel.set_shadow(shadow);
         Ok(self.selection.insert(sel))
     }
 
     /// Select Object by words: the thing `like` scores best, kept for its
-    /// actions (amb_library::object::select_words).
+    /// actions (amb_ops::object::select_words).
     pub fn select_words(
         &mut self,
-        like: &amb_library::object::Like<'_>,
-    ) -> Result<&amb_library::object::Selection, String> {
-        let sel = amb_library::object::select_words(&self.full, self.state.settings(), like)?;
+        like: &amb_ops::object::Like<'_>,
+    ) -> Result<&amb_ops::object::Selection, String> {
+        let sel = amb_ops::object::select_words(&self.full, self.state.settings(), like)?;
         Ok(self.selection.insert(sel))
     }
 
@@ -36,15 +36,15 @@ impl Session {
     /// (fractions of the frame).
     pub fn remove_object(
         &self,
-        target: amb_library::object::Target,
-    ) -> Result<amb_library::object::Object, String> {
-        amb_library::object::find(&self.full, self.state.settings(), target)
+        target: amb_ops::object::Target,
+    ) -> Result<amb_ops::object::Object, String> {
+        amb_ops::object::find(&self.full, self.state.settings(), target)
     }
 
     /// Heal spots along a straight scratch drawn from `from` to `to`
     /// (fractions): the line moved onto the scratch, in pieces.
     pub fn scratch_spots(&self, from: [f64; 2], to: [f64; 2]) -> Vec<amb_protocol::Command> {
-        amb_library::dust::line_image(&self.full, from, to)
+        amb_ops::dust::line_image(&self.full, from, to)
     }
 
     /// A donor for a new spot at `(x, y)` with `radius` (fractions; the radius

@@ -21,6 +21,7 @@ amb-export = { path = "../amb-export" }
 amb-color = { path = "../amb-color" }
 amb-lens = { path = "../amb-lens" }
 amb-library = { path = "../amb-library" }
+amb-ops = { path = "../amb-ops" }
 amb-ai = { path = "../amb-ai" }
 amb-plugin = { path = "../amb-plugin" }
 amb-protocol = { path = "../amb-protocol" }

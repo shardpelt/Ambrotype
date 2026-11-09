@@ -164,8 +164,8 @@ pub(crate) async fn negative_freeze(state: tauri::State<'_, AppState>) -> Res<Ve
     tauri::async_runtime::spawn_blocking(move || {
         let guard = slot.lock().map_err(|e| e.to_string())?;
         let s = guard.as_ref().ok_or("no photo open")?;
-        let frozen = amb_library::negative::frozen(&[s.negative_analysis()]);
-        Ok(amb_library::negative::commands(&frozen))
+        let frozen = amb_ops::negative::frozen(&[s.negative_analysis()]);
+        Ok(amb_ops::negative::commands(&frozen))
     })
     .await
     .map_err(|e| e.to_string())?

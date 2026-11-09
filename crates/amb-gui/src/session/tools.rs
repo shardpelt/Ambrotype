@@ -172,7 +172,7 @@ impl Session {
     /// film the scan holds, which suggests the picture rather than bare film.
     pub fn pick_film_base(&self, u: f64, v: f64) -> Option<([f64; 3], Option<String>)> {
         let base = self.shown_patch(u, v)?;
-        let kind = amb_library::negative::film_type(self.state.settings());
+        let kind = amb_ops::negative::film_type(self.state.settings());
         let small = downscale(&self.full, pipeline::GLOBALS_LONG_SIDE);
         let clearest = amb_engine::negative::estimate_base(
             &small.rgb,
@@ -314,13 +314,13 @@ impl Session {
     /// The film negative analysis this photo renders with now (film base,
     /// levels, midtone), as Freeze stores it.
     pub fn negative_analysis(&self) -> amb_engine::negative::Analysis {
-        amb_library::negative::analyze_image(&self.full, self.state.settings(), false)
+        amb_ops::negative::analyze_image(&self.full, self.state.settings(), false)
     }
 
     /// The crop to a scan's frame (without rebate or holder edges), as
     /// commands; `None` when no border is found.
     pub fn negative_frame(&self) -> Option<Vec<Command>> {
-        let kind = amb_library::negative::film_type(self.state.settings());
+        let kind = amb_ops::negative::film_type(self.state.settings());
         let (l, t, r, b) = amb_engine::negative::detect_frame(
             &self.full.rgb,
             self.full.width,

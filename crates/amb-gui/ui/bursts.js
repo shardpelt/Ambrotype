@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Best in each burst (library → Organise): the bursts among the
 // photos shown (or selected), each ranked by focus and open eyes
-// (amb_library::burst; eyes when YuNet is installed in Settings → AI
+// (amb_ops::burst; eyes when YuNet is installed in Settings → AI
 // models). In the grid the best of each burst is marked with why, and the
 // rest are dimmed with what's wrong with them; a bar over the grid picks
 // the best and rejects the rest, or stacks each burst with the best on

@@ -25,15 +25,15 @@ pub(crate) fn dust(
             let [x0, y0, x1, y1] = v[..] else {
                 return Err(usage.into());
             };
-            let commands = amb_library::dust::line_file(photo, [x0, y0], [x1, y1])?;
-            let found = amb_library::dust::Found {
+            let commands = amb_ops::dust::line_file(photo, [x0, y0], [x1, y1])?;
+            let found = amb_ops::dust::Found {
                 hairs: commands.len(),
                 commands,
                 ..Default::default()
             };
             (found, "Scratch")
         }
-        None => (amb_library::dust::find_file(photo)?, "Dust and hairs"),
+        None => (amb_ops::dust::find_file(photo)?, "Dust and hairs"),
     };
     let sidecar = edit_target(photo);
     let created = !sidecar.exists();

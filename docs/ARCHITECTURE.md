@@ -21,7 +21,8 @@ About 104,000 lines of Rust, 735 Rust tests and 3 UI test scripts (89 steps). fm
 | `amb-ai` | Local AI models | `faces.rs`, `search.rs`, `net/`, `objects.rs`, `remove.rs`, `data/models.json` |
 | `amb-gpu` | GPU preview and AI kernels | The pipeline's stages as wgpu compute shaders; `nn.rs` |
 | `amb-export` | Files out | `dng.rs`, `compare.rs`, `contact.rs`, `video.rs`, `embed.rs`, `border.rs`, `collage.rs`, `watermark.rs`, `fonts.rs` |
-| `amb-library` | Library operations on folders and sidecars | `catalog.rs`, `folder.rs`, `lrcat.rs`, `lightroom.rs`, `files.rs`, `convert.rs`, `object.rs`, `merge.rs` |
+| `amb-library` | Library operations on folders and sidecars | `catalog.rs`, `folder.rs`, `lrcat.rs`, `lightroom.rs`, `files.rs` |
+| `amb-ops` | Operations that render photos | `convert.rs`, `replay.rs`, `merge.rs`, `object.rs`, `snap.rs`, `burst.rs`, `dust.rs`, `negative.rs` |
 | `amb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
 | `amb-cli` | The `amb` tool | `src/mcp.rs`, `src/organise.rs` |
 | `amb-gui` | Desktop editor (Tauri 2) | Rust `Session` (open raw, undoable edits via `amb-protocol`, downscaled preview + histogram, sidecar save, export) behind Tauri commands; plain HTML/CSS/JS UI generated from the settings registry |
@@ -87,7 +88,7 @@ About 104,000 lines of Rust, 735 Rust tests and 3 UI test scripts (89 steps). fm
   - Filled by `amb_library::contact`.
   - `amb contact`, the library's Contact sheet….
 - AV1 video in our own MP4 writer (`video.rs`, rav1e) for Edit Replay:
-  - Frames come from `amb_library::replay`.
+  - Frames come from `amb_ops::replay`.
   - `amb replay`, File → Export Edit Replay….
 
 ### `amb-library`

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! `amb convert`: raws to JPEGs in one go (`amb_library::convert`).
+//! `amb convert`: raws to JPEGs in one go (`amb_ops::convert`).
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -12,7 +12,7 @@ pub(crate) fn convert(
     options: &BTreeMap<&str, &str>,
     json: bool,
 ) -> Result<String, String> {
-    use amb_library::convert::{self, Look};
+    use amb_ops::convert::{self, Look};
     let to = PathBuf::from(
         options
             .get("--to")

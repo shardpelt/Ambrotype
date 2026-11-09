@@ -545,7 +545,7 @@ The other files past the budget (all under 1,000 lines) stay pinned at their siz
 
 These change how the code is organised, not only where it sits. The owner said go on 2026-11-09. Do them in this order; R4 touches only docs and can run beside the others.
 
-### ☐ R1. `amb-ops`: the operations that render photos, out of `amb-library`
+### ☑ R1. `amb-ops`: the operations that render photos, out of `amb-library` (2026-11-09)
 
 Why: `amb-library` held both the library (catalogue, folders, import, collections, files, Lightroom, search) and batch operations that render photos, so it needed `amb-gpu` too.
 

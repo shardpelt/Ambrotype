@@ -108,6 +108,7 @@ dependencies = [
  "amb-gpu",
  "amb-lens",
  "amb-library",
+ "amb-ops",
  "amb-plugin",
  "amb-presets",
  "amb-protocol",
@@ -184,6 +185,7 @@ dependencies = [
  "amb-gpu",
  "amb-lens",
  "amb-library",
+ "amb-ops",
  "amb-plugin",
  "amb-presets",
  "amb-protocol",
@@ -221,7 +223,6 @@ version = "0.1.0"
 dependencies = [
  "amb-engine",
  "amb-export",
- "amb-gpu",
  "amb-lens",
  "amb-presets",
  "amb-protocol",
@@ -236,6 +237,24 @@ dependencies = [
  "sha2",
  "tar",
  "ureq",
+]
+
+[[package]]
+name = "amb-ops"
+version = "0.1.0"
+dependencies = [
+ "amb-engine",
+ "amb-export",
+ "amb-gpu",
+ "amb-lens",
+ "amb-library",
+ "amb-presets",
+ "amb-protocol",
+ "amb-testkit",
+ "image",
+ "rayon",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

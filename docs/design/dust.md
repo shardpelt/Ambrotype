@@ -1,6 +1,6 @@
 # Dust and hairs on film scans
 
-Status: v1 built 2026-10-29, with a line tool for straight scratches. Code: `crates/amb-engine/src/dust.rs` (the search), `crates/amb-library/src/dust.rs` (defects to spots), `amb dust` (`--line` for a scratch), and the spot tool: the **Find dust** button, and Shift-drag for a scratch.
+Status: v1 built 2026-10-29, with a line tool for straight scratches. Code: `crates/amb-engine/src/dust.rs` (the search), `crates/amb-ops/src/dust.rs` (defects to spots), `amb dust` (`--line` for a scratch), and the spot tool: the **Find dust** button, and Shift-drag for a scratch.
 
 ## What it does
 

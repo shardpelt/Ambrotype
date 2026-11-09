@@ -1,7 +1,7 @@
 [package]
 name = "amb-library"
 version = "0.1.0"
-description = "Photo library operations on folders and sidecars: import with copy and rename, collections, HDR merge"
+description = "Photo library operations on folders and sidecars: import with copy and rename, collections"
 edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
@@ -11,7 +11,6 @@ repository.workspace = true
 [dependencies]
 amb-engine = { path = "../amb-engine" }
 amb-export = { path = "../amb-export" }
-amb-gpu = { path = "../amb-gpu" }
 amb-lens = { path = "../amb-lens" }
 amb-presets = { path = "../amb-presets" }
 amb-protocol = { path = "../amb-protocol" }

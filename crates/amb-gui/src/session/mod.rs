@@ -79,7 +79,7 @@ pub struct Session {
     saved: BTreeMap<String, Value>,
     saved_snapshots: Vec<amb_protocol::Snapshot>,
     /// Select Object: the object last selected, for its actions.
-    pub selection: Option<amb_library::object::Selection>,
+    pub selection: Option<amb_ops::object::Selection>,
 }
 
 /// Full-resolution upright sRGB renders for the 100% view: the parts

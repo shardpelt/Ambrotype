@@ -177,7 +177,7 @@ pub(crate) async fn share_compare(
 }
 
 /// "Export Edit Replay…": a video of the open photo's edit from its
-/// History (`amb_library::replay`), saved where the user picks; `None` when
+/// History (`amb_ops::replay`), saved where the user picks; `None` when
 /// they cancel. Progress goes out as "replay-progress" [done, total].
 #[tauri::command]
 pub(crate) async fn export_replay(
@@ -185,7 +185,7 @@ pub(crate) async fn export_replay(
     dir: Option<String>,
     long_edge: Option<usize>,
     state: tauri::State<'_, AppState>,
-) -> Res<Option<amb_library::replay::Replay>> {
+) -> Res<Option<amb_ops::replay::Replay>> {
     let photo = {
         let guard = state.session.lock().map_err(|e| e.to_string())?;
         guard.as_ref().ok_or("open a photo first")?.path.clone()
@@ -216,7 +216,7 @@ pub(crate) async fn export_replay(
     };
     tauri::async_runtime::spawn_blocking(move || {
         use tauri::Emitter;
-        let o = amb_library::replay::ReplayOptions {
+        let o = amb_ops::replay::ReplayOptions {
             long_edge: long_edge.unwrap_or(1080).clamp(240, 4096),
             ..Default::default()
         };
@@ -228,7 +228,7 @@ pub(crate) async fn export_replay(
                 let _ = app.emit("replay-progress", [done, total]);
             }
         };
-        amb_library::replay::replay(&photo, &out, &o, amb_gpu::full::shared(), &progress).map(
+        amb_ops::replay::replay(&photo, &out, &o, amb_gpu::full::shared(), &progress).map(
             |mut r| {
                 r.path = Some(out.display().to_string());
                 Some(r)

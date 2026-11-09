@@ -41,7 +41,8 @@ Counted with `python3 tools/code-metrics.py`. Production lines leave out `#[cfg(
 |---|---|---|---|
 | `amb-engine` | 32,872 | color, lens, presets | Raw decode and the develop pipeline |
 | `amb-gui` | 17,991 | all but cli | The editor (Tauri 2) |
-| `amb-library` | 9,575 | engine, export, gpu, lens, presets, protocol | Catalogue, folders, import, Lightroom, and batch operations |
+| `amb-library` | 9,575 | engine, export, lens, presets, protocol | Catalogue, folders, import, Lightroom, files, search |
+| `amb-ops` | 0 | engine, export, gpu, lens, library, presets, protocol | Batch operations that render photos |
 | `amb-protocol` | 8,246 | presets | Undoable edit commands, sidecars, history |
 | `amb-export` | 7,067 | color, engine | Files out |
 | `amb-cli` | 6,859 | all but gui | The `amb` tool and the MCP server |
@@ -82,7 +83,7 @@ Rust, production lines over 900:
 | `amb-gui/src/commands/photo.rs` | 956 | 37 Tauri commands about the open photo |
 | `amb-protocol/src/sidecar.rs` | 937 | Sidecar merge, info |
 | `amb-export/src/embed.rs` | 932 | Metadata into finished files |
-| `amb-library/src/object.rs` | 919 | Select object, select in words, move, remove |
+| `amb-ops/src/object.rs` | 919 | Select object, select in words, move, remove |
 | `amb-engine/src/matching.rs` | 908 | Match look |
 | `amb-engine/src/pipeline/settings.rs` | 906 | `DevelopSettings` read from the settings map |
 

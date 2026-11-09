@@ -439,7 +439,7 @@ pub(crate) fn merge_hdr(
     options: &BTreeMap<&str, &str>,
     json: bool,
 ) -> Result<(), String> {
-    use amb_library::merge::{self, Deghost, HdrOptions};
+    use amb_ops::merge::{self, Deghost, HdrOptions};
     let deghost = match options.get("--deghost") {
         Some(d) => Deghost::parse(d)
             .ok_or_else(|| format!("bad --deghost {d:?} (off, low, medium or high)"))?,
@@ -488,7 +488,7 @@ pub(crate) fn merge_pano(
     options: &BTreeMap<&str, &str>,
     json: bool,
 ) -> Result<(), String> {
-    use amb_library::merge::{self, Lenses, PanoOptions, Projection};
+    use amb_ops::merge::{self, Lenses, PanoOptions, Projection};
     let projection = match options.get("--projection") {
         Some(p) => Projection::parse(p).ok_or_else(|| {
             format!("bad --projection {p:?} (auto, spherical, cylindrical or perspective)")

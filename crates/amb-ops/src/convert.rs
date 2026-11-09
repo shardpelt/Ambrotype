@@ -26,7 +26,7 @@ use amb_engine::matching::{self, LookStats, MatchOptions};
 use amb_engine::pipeline;
 use amb_protocol::DevelopState;
 
-use crate::look;
+use amb_library::look;
 
 /// The camera's own JPEG is used as it is when it is (about) full size:
 /// from this long side up, and at least `FULL_SIZE` of the raw's. A smaller
@@ -200,23 +200,26 @@ impl Job<'_> {
 }
 
 /// `photos` with only the best of each burst (and one of identical files),
-/// as the duplicates finder ranks them ([`crate::duplicates`]), in their
+/// as the duplicates finder ranks them ([`amb_library::duplicates`]), in their
 /// order; and how many were left out.
 pub fn best_of_bursts(
-    catalog: &crate::catalog::Catalog,
+    catalog: &amb_library::catalog::Catalog,
     photos: &[PathBuf],
 ) -> (Vec<PathBuf>, usize) {
-    let options = crate::duplicates::Options {
+    let options = amb_library::duplicates::Options {
         max_bits: 0,
         ..Default::default()
     };
     let thumb = |p: &Path| amb_engine::raw::embedded_thumbnail(p, 256).ok().flatten();
-    let groups = crate::duplicates::find(catalog, photos, options, &thumb, &|_, _| {});
+    let groups = amb_library::duplicates::find(catalog, photos, options, &thumb, &|_, _| {});
     keep_best(photos, &groups)
 }
 
 /// `photos` without all but the first (best) of each group.
-fn keep_best(photos: &[PathBuf], groups: &[crate::duplicates::Group]) -> (Vec<PathBuf>, usize) {
+fn keep_best(
+    photos: &[PathBuf],
+    groups: &[amb_library::duplicates::Group],
+) -> (Vec<PathBuf>, usize) {
     let left_out: std::collections::HashSet<&PathBuf> = groups
         .iter()
         .flat_map(|g| g.photos.iter().skip(1))
@@ -362,7 +365,7 @@ mod tests {
 
     #[test]
     fn only_the_best_of_a_burst_is_kept() {
-        use crate::duplicates::{Group, Kind};
+        use amb_library::duplicates::{Group, Kind};
         let p = |s: &str| PathBuf::from(s);
         let photos = [p("a"), p("b1"), p("b2"), p("b3"), p("c")];
         let burst = Group {

@@ -72,7 +72,7 @@ pub(crate) fn negative_analyze(
         }
         frames.push(a);
     }
-    let mut settings = amb_library::negative::frozen(&frames);
+    let mut settings = amb_ops::negative::frozen(&frames);
     if slides {
         settings.insert(
             "amb:NegativeType".into(),
@@ -123,7 +123,7 @@ pub(crate) fn negative_sync(
     options: &BTreeMap<&str, &str>,
     json: bool,
 ) -> Result<(), String> {
-    use amb_library::negative::{RollOptions, analyze_files, commands, roll};
+    use amb_ops::negative::{RollOptions, analyze_files, commands, roll};
     let paths: Vec<&Path> = photos.iter().map(Path::new).collect();
     let baseline = match options.get("--baseline") {
         Some(b) => Some(

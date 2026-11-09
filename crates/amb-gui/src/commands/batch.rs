@@ -72,7 +72,7 @@ pub(crate) struct Bursts {
 
 /// Best in each burst: the bursts among `paths` (photos from one camera
 /// each within `burst_seconds` of the one before), each ranked by focus and
-/// open eyes (amb_library::burst), best first ("bursts-progress").
+/// open eyes (amb_ops::burst), best first ("bursts-progress").
 #[tauri::command]
 pub(crate) async fn library_best_in_bursts(
     paths: Vec<String>,
@@ -114,23 +114,23 @@ pub(crate) async fn library_best_in_bursts(
         let bursts = groups
             .into_iter()
             .map(|g| {
-                let looks: Vec<amb_library::burst::Look> = g
+                let looks: Vec<amb_ops::burst::Look> = g
                     .par_iter()
                     .map(|p| {
                         let look = thumb(p, 1600).map_or(
-                            amb_library::burst::Look {
+                            amb_ops::burst::Look {
                                 sharp: 0.0,
                                 eyes: None,
                                 faces: 0,
                             },
-                            |img| amb_library::burst::look(&img),
+                            |img| amb_ops::burst::look(&img),
                         );
                         let n = done.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
                         let _ = app.emit("bursts-progress", [n, total]);
                         look
                     })
                     .collect();
-                amb_library::burst::rank(&looks)
+                amb_ops::burst::rank(&looks)
                     .into_iter()
                     .map(|r| BurstPhoto {
                         path: g[r.index].clone(),
@@ -158,18 +158,18 @@ pub(crate) struct RollSync {
 
 /// Give a roll of negatives one conversion: each frame is analysed, and
 /// its scene's baseline (the median, or a chosen frame) is stored on it
-/// with Auto off; odd frames keep their own (`amb_library::negative::roll`).
+/// with Auto off; odd frames keep their own (`amb_ops::negative::roll`).
 #[tauri::command]
 pub(crate) async fn negative_sync(
     paths: Vec<String>,
-    options: Option<amb_library::negative::RollOptions>,
+    options: Option<amb_ops::negative::RollOptions>,
     state: tauri::State<'_, AppState>,
 ) -> Res<RollSync> {
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let photos: Vec<&Path> = paths.iter().map(Path::new).collect();
-        let frames = amb_library::negative::analyze_files(&photos)?;
-        let plan = amb_library::negative::roll(&frames, &options.unwrap_or_default());
+        let frames = amb_ops::negative::analyze_files(&photos)?;
+        let plan = amb_ops::negative::roll(&frames, &options.unwrap_or_default());
         let mut out = RollSync {
             changed: Vec::new(),
             errors: Vec::new(),
@@ -178,7 +178,7 @@ pub(crate) async fn negative_sync(
             odd: plan.iter().filter(|f| f.odd).count(),
         };
         for (path, frame) in paths.iter().zip(&plan) {
-            let cmds = amb_library::negative::commands(&frame.settings);
+            let cmds = amb_ops::negative::commands(&frame.settings);
             let mut guard = slot.lock().map_err(|e| e.to_string())?;
             let result = match guard.as_mut().filter(|s| s.path == Path::new(path)) {
                 Some(s) => s
@@ -326,8 +326,8 @@ pub(crate) async fn merge_hdr(
     align: bool,
     deghost: String,
     auto_tone: bool,
-) -> Res<amb_library::merge::HdrReport> {
-    use amb_library::merge::{self, Deghost, HdrOptions};
+) -> Res<amb_ops::merge::HdrReport> {
+    use amb_ops::merge::{self, Deghost, HdrOptions};
     tauri::async_runtime::spawn_blocking(move || {
         let opts = HdrOptions {
             align,
@@ -355,8 +355,8 @@ pub(crate) async fn merge_pano(
     lens_corrections: bool,
     auto_tone: bool,
     state: tauri::State<'_, AppState>,
-) -> Res<amb_library::merge::PanoReport> {
-    use amb_library::merge::{self, Lenses, PanoOptions, Projection};
+) -> Res<amb_ops::merge::PanoReport> {
+    use amb_ops::merge::{self, Lenses, PanoOptions, Projection};
     let lens = state.lens.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let opts = PanoOptions {
@@ -473,15 +473,15 @@ pub(crate) struct ConvertOptions {
     best_of_bursts: bool,
 }
 
-/// Raws to JPEGs (`amb_library::convert`) in a folder the user picks; what
+/// Raws to JPEGs (`amb_ops::convert`) in a folder the user picks; what
 /// was done, `None` when they cancel. "convert-progress" tells how far.
 #[tauri::command]
 pub(crate) async fn convert_raws(
     app: tauri::AppHandle,
     paths: Vec<String>,
     options: ConvertOptions,
-) -> Res<Option<amb_library::convert::Converted>> {
-    use amb_library::convert::{self, Look};
+) -> Res<Option<amb_ops::convert::Converted>> {
+    use amb_ops::convert::{self, Look};
     let look = match options.look.as_str() {
         "camera" => Look::Camera,
         "auto" => Look::Auto,

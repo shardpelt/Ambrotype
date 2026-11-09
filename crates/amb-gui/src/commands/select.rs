@@ -68,7 +68,7 @@ pub(crate) async fn remove_object(
     part: Option<bool>,
     state: tauri::State<'_, AppState>,
 ) -> Res<Executed> {
-    use amb_library::object::Target;
+    use amb_ops::object::Target;
     let target = match (point, rect) {
         (Some(p), _) if part == Some(true) => Target::Part(p),
         (Some(p), _) => Target::Click(p),
@@ -117,7 +117,7 @@ pub(crate) struct Selected {
 }
 
 impl Selected {
-    fn of(sel: &amb_library::object::Selection) -> Self {
+    fn of(sel: &amb_ops::object::Selection) -> Self {
         Selected {
             dabs: sel.mask_dabs(),
             share: sel.share,
@@ -140,7 +140,7 @@ pub(crate) async fn select_object(
     shadow: Option<bool>,
     state: tauri::State<'_, AppState>,
 ) -> Res<Selected> {
-    use amb_library::object::Target;
+    use amb_ops::object::Target;
     let target = match (rect, clicks.as_slice()) {
         (Some(r), _) => Target::Box(r),
         (None, [one]) if part == Some(true) => Target::Part([one[0], one[1]]),
@@ -161,7 +161,7 @@ pub(crate) async fn select_object(
 
 /// Select Object by words ("car", "the boat"): the thing in the photo the
 /// search model finds most like them, outlined by the object selector
-/// (amb_library::object::select_words). Kept for `selection_apply`.
+/// (amb_ops::object::select_words). Kept for `selection_apply`.
 #[tauri::command]
 pub(crate) async fn select_words(
     words: String,

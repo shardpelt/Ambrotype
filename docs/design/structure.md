@@ -101,9 +101,9 @@ JS: 30 of 964 functions are over 80 lines. The longest: `crop.js` `create` (408)
 
 ### Copies
 
-- `smoothstep`: 8 copies in the engine (two with a guard for equal edges, which is the safe form; every call passes ordered edges).
+- `smoothstep`: 8 copies in the engine (two with a guard for equal edges, which is the safe form; every call passes ordered edges). One since 2026-11-09 (S1).
 - `percentile`: 3 in the engine, but they differ (nearest rank or interpolated; a fraction or a percent), so they aren't copies.
-- `file_stamp`: `amb-presets` `linked.rs` and `amb-library` `catalog.rs` (the same function).
+- `file_stamp`: `amb-presets` `linked.rs` and `amb-library` `catalog.rs` (the same function). One since 2026-11-09 (S2).
 - `luma`: 3 in the plugins (fine: plugins are separate crates).
 - JS: a file's name from its path, written out 9 times in 6 files (and `fileName` in `collage.js`, `dirOf` in `filmstrip.js`); an element builder (`el`) only in `masks.js`.
 - JS idioms:

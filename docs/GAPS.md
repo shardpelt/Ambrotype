@@ -303,7 +303,7 @@ From the structure review of 2026-11-09 ([design/structure.md](design/structure.
 | The UI's 63 scripts share one global scope (1,085 top-level names), and the helpers they all use live in `app.js`, which loads last | Limit | Load order matters in ways nothing states | [cleanup.md](cleanup.md) S3, R3 |
 | `AppState` (`crates/amb-gui/src/main.rs`) has 29 fields, 27 behind their own lock, and the saved settings are copied field by field into `Config` | Limit | A new saved setting touches four places | [cleanup.md](cleanup.md) R2 |
 | `amb-library` holds both the library and the operations that render photos (convert, replay, merge, object, burst, dust, negative, look), so it depends on `amb-gpu` and `amb-export` | Limit | Slower builds, and no clear home for a new operation | [cleanup.md](cleanup.md) R1 |
-| Small helpers are copied between files: `smoothstep` 8 times in the engine, getting a file's name from its path 9 times in the UI | Limit | Copies drift (two `smoothstep`s already differ at equal edges) | [cleanup.md](cleanup.md) S1, S3 |
+| Small helpers are copied between UI scripts: getting a file's name from its path 9 times (the engine's 8 `smoothstep`s became one on 2026-11-09) | Limit | Copies drift | [cleanup.md](cleanup.md) S3 |
 | `NEXT.md`'s "Built" list repeats `FEATURES.md` and `ARCHITECTURE.md` | Limit | A fact goes stale in one place | [cleanup.md](cleanup.md) R4 |
 
 ## Top 10 to close next

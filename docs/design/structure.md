@@ -41,8 +41,8 @@ Counted with `python3 tools/code-metrics.py`. Production lines leave out `#[cfg(
 |---|---|---|---|
 | `amb-engine` | 32,872 | color, lens, presets | Raw decode and the develop pipeline |
 | `amb-gui` | 17,991 | all but cli | The editor (Tauri 2) |
-| `amb-library` | 9,575 | engine, export, lens, presets, protocol | Catalogue, folders, import, Lightroom, files, search |
-| `amb-ops` | 0 | engine, export, gpu, lens, library, presets, protocol | Batch operations that render photos |
+| `amb-library` | 6,350 | engine, export, lens, presets, protocol | Catalogue, folders, import, Lightroom, files, search |
+| `amb-ops` | 3,221 | engine, export, gpu, lens, library, presets, protocol | Batch operations that render photos (since R1) |
 | `amb-protocol` | 8,246 | presets | Undoable edit commands, sidecars, history |
 | `amb-export` | 7,067 | color, engine | Files out |
 | `amb-cli` | 6,859 | all but gui | The `amb` tool and the MCP server |
@@ -121,6 +121,7 @@ JS: 30 of 964 functions are over 80 lines. The longest: `crop.js` `create` (408)
   - the library: catalogue, folders, import, collections, files, Lightroom, search index;
   - photo operations that render: `convert`, `replay`, `merge`, `object`/`snap`, `burst`, `dust`, `negative`, `look`, `contact`.
   - Only the operations need `amb-gpu` and `amb-export`.
+  - Since 2026-11-09 (R1) the operations are the `amb-ops` crate, except `look` and `contact`, which search needs; `amb-library` no longer uses `amb-gpu`.
 
 ### Hygiene
 
@@ -168,7 +169,7 @@ JS: 30 of 964 functions are over 80 lines. The longest: `crop.js` `create` (408)
 
 - **Size budget:** a production file of at most about 800 lines (Rust) or 700 (JS), and a function of at most 150, except tables, dispatch and ported algorithms. A test holds it (task G2), with today's big files listed until they are split.
 - **Rust:** a module past the budget becomes a folder with one file per concern. Its public paths stay the same (`mod.rs` re-exports).
-- **Crates:** `amb-library` keeps the library; a new `amb-ops` takes the batch operations (task R1).
+- **Crates:** `amb-library` keeps the library; `amb-ops` has the batch operations (task R1, done 2026-11-09).
 - **Editor state:** one `Prefs` lock for the saved settings, which is the `Config` that's saved (task R2).
 - **UI:**
   - `core.js` loads first, with `$`, `invoke`, `toast`, `askYes`, a `store` for localStorage and the path helpers;

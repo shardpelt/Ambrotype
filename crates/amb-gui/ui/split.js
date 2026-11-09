@@ -2,7 +2,7 @@
 // Before / after split (Y, or Before / After with the bar starting near the
 // right edge): the photo before its edits on the left of a bar, after on
 // the right; drag the bar to move it. "Before" keeps the crop and
-// geometry (src/session.rs `effective_settings`), so both halves line up.
+// geometry (src/session/render.rs `effective_settings`), so both halves line up.
 "use strict";
 
 // Where the bar is, 0..1 across the photo; remembered on this computer.

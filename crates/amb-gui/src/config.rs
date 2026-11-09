@@ -196,7 +196,7 @@ pub(crate) fn save_config(state: &AppState) {
         .map(|d| d.clone())
         .unwrap_or_default();
     // Lightroom's own folders are found automatically; store only added ones.
-    let defaults = session::default_preset_dirs();
+    let defaults = preset_files::default_preset_dirs();
     let config = Config {
         preset_dirs: dirs.into_iter().filter(|d| !defaults.contains(d)).collect(),
         size_presets: state

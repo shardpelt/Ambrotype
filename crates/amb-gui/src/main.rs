@@ -20,6 +20,7 @@ mod library;
 mod looks;
 mod monitor;
 mod plugins;
+mod preset_files;
 mod schema;
 mod session;
 mod sizes;
@@ -33,8 +34,9 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use amb_presets::Value;
 use amb_protocol::Command;
+use preset_files::PresetEntry;
 use serde::{Deserialize, Serialize};
-use session::{CropRect, CropState, LensSources, PresetEntry, Session};
+use session::{CropRect, CropState, LensSources, Session};
 use sizes::SizePreset;
 use tauri::Manager;
 use tauri::ipc::Response;
@@ -117,7 +119,7 @@ fn main() {
         *slideshow::PENDING.lock().expect("fresh mutex") = Some(show);
     }
     let state = AppState::default();
-    *state.preset_dirs.lock().expect("fresh mutex") = session::default_preset_dirs();
+    *state.preset_dirs.lock().expect("fresh mutex") = preset_files::default_preset_dirs();
     // Lens profile sources can take a moment (thousands of files): load them in
     // the background; previews use them once ready.
     let lens = state.lens.clone();

@@ -197,7 +197,7 @@ async function sharePresetToHub(p) {
   }
 }
 
-// The open photo's edit as a one-click preset (src/session.rs `save_preset`).
+// The open photo's edit as a one-click preset (src/preset_files.rs `save_preset`).
 async function savePresetFlow(name = "") {
   if (!ui.info) return toast("Open a photo first.", true);
   const dlg = $("save-preset-dialog");

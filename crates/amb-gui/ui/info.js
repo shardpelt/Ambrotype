@@ -2,7 +2,7 @@
 // Rating, colour label, flag and keywords for the open photo. They're
 // written to the photo's XMP sidecar as soon as they change (xmp:Rating,
 // xmp:Label and dc:subject, where Lightroom keeps them, and our amblib:Flag;
-// src/session.rs `set_info`), and embedded in exports. Keys 1–5 rate, 0
+// src/session/mod.rs `set_info`), and embedded in exports. Keys 1–5 rate, 0
 // clears, 6–9 label, P/X/U flag (keys.js); the keyword field takes Enter or
 // commas.
 "use strict";

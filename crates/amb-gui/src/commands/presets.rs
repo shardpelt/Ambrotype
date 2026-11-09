@@ -220,7 +220,7 @@ pub(crate) async fn presets(state: tauri::State<'_, AppState>) -> Res<Vec<Preset
     if let Some(own) = own_presets_dir(state.inner()).filter(|d| d.is_dir() && !dirs.contains(d)) {
         dirs.push(own);
     }
-    tauri::async_runtime::spawn_blocking(move || session::scan_presets(&dirs))
+    tauri::async_runtime::spawn_blocking(move || preset_files::scan_presets(&dirs))
         .await
         .map_err(|e| e.to_string())
 }
@@ -249,7 +249,7 @@ pub(crate) async fn save_preset(
             .clone()
     };
     tauri::async_runtime::spawn_blocking(move || {
-        session::save_preset(&dir, &name, &group, &settings, true)
+        preset_files::save_preset(&dir, &name, &group, &settings, true)
     })
     .await
     .map_err(|e| e.to_string())??;
@@ -286,7 +286,7 @@ pub(crate) async fn fuji_recipe(
             .filter(|n| !n.is_empty())
             .or(made.recipe.name.clone())
             .unwrap_or_else(|| "Fuji recipe".into());
-        let path = session::save_preset(&dir, &name, "Fuji", &made.settings, true)?;
+        let path = preset_files::save_preset(&dir, &name, "Fuji", &made.settings, true)?;
         Ok::<_, String>((
             name,
             made.recipe.sensor.name().to_string(),
@@ -342,7 +342,7 @@ pub(crate) async fn save_preset_to(
     };
     let target = folder.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        session::save_preset(&target, &name, &group, &settings, false)
+        preset_files::save_preset(&target, &name, &group, &settings, false)
     })
     .await
     .map_err(|e| e.to_string())??;

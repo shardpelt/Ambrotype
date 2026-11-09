@@ -309,7 +309,7 @@ Why: `main` was 460 lines: startup, then the list of 232 Tauri commands. The sav
 
 Commit: `editor: main.rs split into config, state and the handler list`. Why: "main was 460 lines, most of it the command list and the saved settings."
 
-### ☐ F2. amb-gui `session.rs` → `session/`
+### ☑ F2. amb-gui `session.rs` → `session/` (2026-11-09)
 
 Why: 1,855 lines, the largest file. The open photo's rendering, tools, retouch and AI contexts are separate concerns, and the presets list isn't about the session at all.
 

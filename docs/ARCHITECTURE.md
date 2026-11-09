@@ -235,7 +235,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 
 - **Shell:** Tauri 2, with the system webview (WebView2, WKWebView, WebKitGTK). The UI in `crates/amb-gui/ui/` is plain HTML/CSS/JS with no build step or npm. The window opens where and as big as it was left (`tauri-plugin-window-state`).
 - **Where things are:**
-  - Rust: `src/main.rs` holds startup; the app state is in `src/state.rs` and the saved settings in `src/config.rs`. Every command is registered in `handler` in `src/commands/mod.rs`. The Tauri commands themselves are in `src/commands/`, one file per area: `appearance`, `assistant`, `catalog`, `collage`, `connect`, `export`, `features`, `files`, `hub`, `library`, `menu`, `models`, `photo`, `places`, `plugins`, `presets`, `preview`, `sample`, `settings` (plus `mod.rs`). The logic they call is in the other `src/` files (`session.rs`, `looks.rs`, `hub.rs`, …).
+  - Rust: `src/main.rs` holds startup; the app state is in `src/state.rs` and the saved settings in `src/config.rs`. Every command is registered in `handler` in `src/commands/mod.rs`. The Tauri commands themselves are in `src/commands/`, one file per area: `appearance`, `assistant`, `catalog`, `collage`, `connect`, `export`, `features`, `files`, `hub`, `library`, `menu`, `models`, `photo`, `places`, `plugins`, `presets`, `preview`, `sample`, `settings` (plus `mod.rs`). The logic they call is in the other `src/` files (`session/`, `preset_files.rs`, `looks.rs`, `hub.rs`, …).
   - JS: `ui/core.js` (loaded first) holds the shared helpers: `invoke`, `$`, the shared state (`ui`), `toast`, `status`, `askYes`, `el` and the path helpers. `ui/app.js` holds the slider rows and `init`, which wires the buttons. The preview loop and 1:1 view are in `preview.js`, the crop panel in `croptool.js`, the Presets panel in `presets.js` and the Export dialog in `export.js`; the other panels and dialogs each have their own file.
   - Monitor colour: `src/monitor.rs` keeps the profile in use (Settings → General: Automatic, Off or a file); the editor's session converts its JPEGs to it as they are encoded (`Session::on_screen`; thumbnails and the assistant's pictures stay sRGB). Linux only: macOS and Windows webviews match colours themselves.
   - UI tests: `ambrotype --ui-test SCRIPT.js` (`src/uitest.rs`) puts the script into the page, where `ui/uitest.js` runs it with its helpers and reports back; exports skip the save dialog. Scripts are in `tests/ui/`.
@@ -339,7 +339,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - Recipes (named parameter sets) come from the manifest or are saved in the app's config.
     - `amb_plugin::fuji` reads a pasted Fujifilm-style recipe into Film recipe's parameters, kept to its sensor generation's settings, and runs it on an empty edit for a preset (Presets → Fuji recipe…, `fuji_recipe` in `src/commands/presets.rs`; `amb fuji`).
     - `amb plugin` in the CLI makes, builds, checks and runs them.
-  - save as preset (`session::save_preset`):
+  - save as preset (`preset_files::save_preset`):
     - The open photo's settings minus the photo-specific groups (crop, local, retouch, transform, metadata, lens blur), written as a Lightroom-style `.xmp` preset into `<config>/presets/<group>/`, which the presets list always includes.
     - Save to… writes it anywhere (`save_preset_to`).
     - Share to the hub opens a pre-filled submission (`preset_submit`).

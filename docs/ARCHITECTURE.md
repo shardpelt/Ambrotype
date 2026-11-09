@@ -250,7 +250,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - Only the tiles (256 px) the view needs are rendered (`render_region`), and kept until the committed settings change, so panning back is instant.
     - White-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels.
     - Crop and straighten tool: draw a crop corner to corner like a screenshot, then adjust; aspect lock, size presets.
-    - Mask tool (`ui/masks.js`): linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map ([design/masks.md](design/masks.md)).
+    - Mask tool (`ui/masks.js`, `ui/mask-draw.js`, `ui/mask-panel.js`): linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map ([design/masks.md](design/masks.md)).
     - Spot removal (`ui/spots.js`): heal and clone spots with a suggested donor, and Remove spots filled by AI Remove (`spot_source`). Find dust adds a heal spot per speck and hair (`find_dust`). [design/spot-removal.md](design/spot-removal.md), [design/dust.md](design/dust.md).
   - film base picker (`pick_film_base`: Pick base in the Negative panel; a click on clear film between frames sets `FilmBase*`, Alt-click forgets it; the WB picker shares `Session::shown_patch`, which follows the crop)
   - crop Level (the angle from the photo's long lines, `guide_lines`), guide lines the rotation snaps to, and crop to the view when zoomed in (`ui/croptool.js`)

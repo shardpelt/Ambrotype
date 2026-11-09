@@ -26,7 +26,6 @@ const OVER_BUDGET: &[(&str, usize)] = &[
     ("crates/amb-engine/src/pipeline/settings.rs", 1100),
     ("crates/amb-gpu/src/nn.rs", 1000),
     ("crates/amb-ai/src/lib.rs", 1000),
-    ("crates/amb-gui/ui/masks.js", 1200),
     ("crates/amb-gui/ui/layout.js", 1200),
     ("crates/amb-gui/ui/editor.js", 1100),
 ];

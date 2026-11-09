@@ -468,7 +468,7 @@ Why: 1,188 lines (less after S3): slider rows, History, opening and saving photo
 
 Commit: `editor: app.js split into rows, history and photo`. Why: "The slider rows, History and opening photos had grown into the start-up file."
 
-### ☐ F12. `masks.js`
+### ☑ F12. `masks.js` (2026-11-09)
 
 Why: 1,082 lines: the masks' state, geometry, drawing, panel, drafts, tools.
 

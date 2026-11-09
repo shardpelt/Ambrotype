@@ -2,7 +2,7 @@
 
 Status: implemented 2026-10-08. Linear and radial gradients, brush, luminance range and colour range masks, combined by add, subtract and intersect, each mask with its own local sliders. They are read and written as Lightroom's own tags, so masks round-trip with Lightroom Classic 11+ and Camera Raw 14+. The fall-off shapes and slider strengths are ours and wait for the Lightroom trial.
 
-Code: `crates/amb-presets/src/masks.rs` (the shared model: tags, slider units, parts), `crates/amb-engine/src/mask/` (drawing and rendering), `crates/amb-protocol/src/masks.rs` (commands), `crates/amb-gui/ui/masks.js` (the tool).
+Code: `crates/amb-presets/src/masks.rs` (the shared model: tags, slider units, parts), `crates/amb-engine/src/mask/` (drawing and rendering), `crates/amb-protocol/src/masks.rs` (commands), `crates/amb-gui/ui/masks.js`, `mask-draw.js` and `mask-panel.js` (the tool).
 
 ## Lightroom's format
 

@@ -6,7 +6,7 @@
 // a donor (spot_source) that you can drag elsewhere. Drag a spot to move it;
 // the wheel or [ ] resize the selected spot (or the next one). While a spot or
 // its source is dragged, the preview renders an edited copy of the tag.
-// Coordinates go through the mask tool's map (mask_frame, masks.js helpers).
+// Coordinates go through the mask tool's map (mask_frame, masks.js and mask-draw.js helpers).
 "use strict";
 
 const SPOT_TAG = "RetouchAreas";

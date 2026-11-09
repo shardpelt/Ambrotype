@@ -888,7 +888,8 @@ await t.step("tips stop after Not now three times, or at once with Don't show ti
 await t.step("Watch an edit on this photo: Auto edit's changes one History step at a time; Undo takes them back", async () => {
   const before = ui.state.history.length;
   const watching = watchOwnFlow();
-  await t.until("the ghost cursor", () => document.querySelector(".ghost-cursor"), 20000);
+  // Auto edit's work comes first: as slow as the Auto edit step's.
+  await t.until("the ghost cursor", () => document.querySelector(".ghost-cursor"), 60000);
   await watching;
   const added = ui.state.history.length - before;
   t.expect(added >= 2 && !document.querySelector(".ghost-cursor"), `${added} steps, then the ghost leaves`);

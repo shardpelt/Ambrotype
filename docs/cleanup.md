@@ -168,7 +168,7 @@ Why: eight copies of one function, two with a guard for equal edges and six with
 
 Commit: `engine: one smoothstep`. Why: "Eight copies of it, two guarding equal edges; now one, guarded."
 
-### ☐ S2. One `file_stamp`
+### ☑ S2. One `file_stamp` (2026-11-09)
 
 Why: `amb-library`'s `catalog.rs` has a private copy of `amb_presets::linked::file_stamp`, the same function.
 

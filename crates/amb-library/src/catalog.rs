@@ -13,6 +13,7 @@
 //!
 //! One SQLite file in the editor's config folder (`catalog.sqlite`).
 
+use amb_presets::linked::file_stamp;
 use amb_protocol::sidecar::{self, PhotoInfo};
 use rayon::prelude::*;
 use rusqlite::{Connection, OptionalExtension, params};
@@ -62,17 +63,6 @@ pub struct Stamp {
     pub modified: i64,
     pub sidecar_size: i64,
     pub sidecar_modified: i64,
-}
-
-fn file_stamp(path: &Path) -> Option<(i64, i64)> {
-    let m = std::fs::metadata(path).ok()?;
-    let modified = m
-        .modified()
-        .ok()?
-        .duration_since(std::time::UNIX_EPOCH)
-        .ok()?
-        .as_nanos();
-    Some((m.len() as i64, modified as i64))
 }
 
 fn stamp(photo: &Path) -> Option<Stamp> {

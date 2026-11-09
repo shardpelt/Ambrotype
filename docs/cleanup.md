@@ -512,7 +512,7 @@ Why: 1,141 lines: the helpers that read and write a mask's fields, the mask comm
 
 Commit: `protocol: masks.rs split into fields, commands and describing`. Why: "1,141 lines; reading and writing a mask's fields and describing masks now have their own files."
 
-### ☐ F15. amb-ai `net.rs` → `net/`
+### ☑ F15. amb-ai `net.rs` → `net/` (2026-11-09)
 
 Why: 1,122 lines: a model on the CPU or GPU, planning its GPU steps from the graph, and running them.
 

@@ -18,7 +18,7 @@ About 104,000 lines of Rust, 735 Rust tests and 3 UI test scripts (89 steps). fm
 | `amb-color` | Colour science | Temperature/Tint ↔ xy, matrices, Bradford adaptation, output colour spaces and generated ICC profiles, reading matrix ICC profiles, sRGB → monitor conversion (`display.rs`) |
 | `amb-lens` | Lens profiles | lensfun and Adobe LCP readers, lens matching, interpolation, correction geometry |
 | `amb-engine` | Raw decode and develop | The pipeline below; every model constant is in `Calibration` (JSON, fitted later against Lightroom) |
-| `amb-ai` | Local AI models | `faces.rs`, `search.rs`, `net.rs`, `objects.rs`, `remove.rs`, `data/models.json` |
+| `amb-ai` | Local AI models | `faces.rs`, `search.rs`, `net/`, `objects.rs`, `remove.rs`, `data/models.json` |
 | `amb-gpu` | GPU preview and AI kernels | The pipeline's stages as wgpu compute shaders; `nn.rs` |
 | `amb-export` | Files out | `dng.rs`, `compare.rs`, `contact.rs`, `video.rs`, `embed.rs`, `border.rs`, `collage.rs`, `watermark.rs`, `fonts.rs` |
 | `amb-library` | Library operations on folders and sidecars | `catalog.rs`, `folder.rs`, `lrcat.rs`, `lightroom.rs`, `files.rs`, `convert.rs`, `object.rs`, `merge.rs` |
@@ -56,7 +56,7 @@ About 104,000 lines of Rust, 735 Rust tests and 3 UI test scripts (89 steps). fm
   - Photos and words become unit vectors.
 - Subject, Background and People masks:
   - A list of freely licensed models to install (`data/models.json`), the user's choice per task, and their own ONNX models.
-  - Run on the GPU (`net.rs`): tract's simplified graph is walked layer by layer, each layer with a kernel in `amb_gpu::nn` on the GPU and the rest with tract on the CPU.
+  - Run on the GPU (`net/`): tract's simplified graph is walked layer by layer, each layer with a kernel in `amb_gpu::nn` on the GPU and the rest with tract on the CPU.
   - Small models, and all models when there is no GPU, run with `tract` on all cores.
   - Downloaded from their authors and checked by sha256. Results are kept per photo fingerprint.
   - Registered with `amb_engine::subject` by the editor and `amb` ([design/masks.md](design/masks.md)).

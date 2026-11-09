@@ -76,6 +76,17 @@ async function askYes(message) {
   }
 }
 
+// A change to photos' info (rating, label, flag, keywords, …), sent one at
+// a time in the order made: each answer carries the photos' whole info, so a
+// slower answer landing after a newer one would show older values (two keys
+// pressed quickly). Resolves to library_set_info's answer.
+let infoWrites = Promise.resolve();
+function setInfo(paths, change) {
+  const write = infoWrites.then(() => invoke("library_set_info", { paths, change }));
+  infoWrites = write.catch(() => {});
+  return write;
+}
+
 // The page's own storage (localStorage), which can be missing or full:
 // reads give `fallback` when there's nothing or it can't be read, and
 // failed writes are dropped. get/set store JSON; text/setText plain text.

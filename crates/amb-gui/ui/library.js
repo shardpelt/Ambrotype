@@ -281,7 +281,7 @@ async function setStacks([tops, rest], id) {
   for (const [paths, top] of [[tops, true], [rest, false]]) {
     if (!paths.length) continue;
     try {
-      const updates = await invoke("library_set_info", { paths, change: { stack: { id, top: id ? top : false } } });
+      const updates = await setInfo(paths, { stack: { id, top: id ? top : false } });
       for (const u of updates) {
         const p = libPhoto(u.path);
         if (p) p.stack = u.info.stack ?? null;
@@ -725,7 +725,7 @@ async function libraryChange(change) {
   const paths = libraryTargets().map((p) => p.path);
   if (!paths.length) return;
   try {
-    const updates = await invoke("library_set_info", { paths, change });
+    const updates = await setInfo(paths, change);
     for (const u of updates) {
       const p = libPhoto(u.path);
       if (!p) continue;

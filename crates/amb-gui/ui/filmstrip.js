@@ -177,7 +177,7 @@ async function rateFromStrip(p, k) {
   const rating = (p.rating ?? 0) === k ? 0 : k;
   if (p.path === ui.info?.path) return setRating(rating);
   try {
-    const [u] = await invoke("library_set_info", { paths: [p.path], change: { rating } });
+    const [u] = await setInfo([p.path], { rating });
     stripUpdate(p.path, { rating: u?.info.rating ?? (rating || null) });
     status(rating ? `Rated ${p.name} ${"★".repeat(rating)}` : `Rating cleared: ${p.name}`);
   } catch (e) {

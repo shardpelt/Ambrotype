@@ -529,7 +529,7 @@ function mapPlaceAt(el, cx, cy) {
 async function placePhotos(paths, gps) {
   if (!paths.length) return;
   try {
-    const updates = await invoke("library_set_info", { paths, change: { gps } });
+    const updates = await setInfo(paths, { gps });
     takePlaces(updates);
     status(gps ? `Placed ${updates.length} photo${updates.length === 1 ? "" : "s"} at ${gps}` : `Place removed from ${updates.length} photo${updates.length === 1 ? "" : "s"}`);
     renderBrowse();

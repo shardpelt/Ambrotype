@@ -96,7 +96,7 @@ async function cullReject() {
   const rest = bcull.bursts.flatMap((b) => b.slice(1));
   for (const [paths, flag] of [[keep, "pick"], [rest, "reject"]]) {
     try {
-      const updates = await invoke("library_set_info", { paths, change: { flag } });
+      const updates = await setInfo(paths, { flag });
       for (const u of updates) {
         const p = libPhoto(u.path);
         if (p) p.flag = u.info.flag ?? null;

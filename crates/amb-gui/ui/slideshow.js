@@ -212,7 +212,7 @@ function showWhere() {
 async function viewerChange(change) {
   const p = slides.list[slides.at];
   try {
-    const [u] = await invoke("library_set_info", { paths: [p.path], change });
+    const [u] = await setInfo([p.path], change);
     const info = u?.info ?? {};
     const fields = { rating: info.rating ?? null, label: info.label ?? null, flag: info.flag ?? null, keywords: info.keywords ?? [] };
     for (const list of [slides.list, lib.photos, strip.photos]) {

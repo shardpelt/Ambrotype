@@ -16,7 +16,7 @@ const SPECS = "{camera} · {exposure}";
 const FRAME_FIELDS = { color: "frame-color", width: "frame-width", bottom: "frame-bottom", text: "frame-text", font: "frame-font",
   place: "frame-place", size: "frame-size", textColor: "frame-text-color", specs: "frame-specs" };
 const framed = (() => {
-  try { return JSON.parse(localStorage.getItem("frames")) ?? {}; } catch { return {}; }
+  return store.get("frames") ?? {};
 })();
 
 function rememberFrame() {
@@ -24,7 +24,7 @@ function rememberFrame() {
   if (!path) return;
   if (fr.on) framed[path] = Object.fromEntries(Object.keys(FRAME_FIELDS).map((k) => [k, fr[k]]));
   else delete framed[path];
-  try { localStorage.setItem("frames", JSON.stringify(framed)); } catch {}
+  store.set("frames", framed);
 }
 
 // The same frame (these settings) on every photo in the folder, or none.
@@ -35,7 +35,7 @@ function frameOnFolder(on) {
     if (on) framed[path] = { ...settings };
     else delete framed[path];
   }
-  try { localStorage.setItem("frames", JSON.stringify(framed)); } catch {}
+  store.set("frames", framed);
   fr.on = on;
   $("btn-frame")?.classList.toggle("active", on);
   if (!on) $("frame-panel").hidden = true;

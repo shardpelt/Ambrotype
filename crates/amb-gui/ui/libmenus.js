@@ -5,7 +5,7 @@
 "use strict";
 
 const libFolded = (() => {
-  try { return JSON.parse(localStorage.getItem("amb.lib.folded")) ?? {}; } catch { return {}; }
+  return store.get("amb.lib.folded") ?? {};
 })();
 
 function applyLibraryFolds() {
@@ -24,7 +24,7 @@ function applyLibraryFolds() {
 
 function toggleLibrarySide(side) {
   libFolded[side] = !libFolded[side];
-  try { localStorage.setItem("amb.lib.folded", JSON.stringify(libFolded)); } catch { /* not kept */ }
+  store.set("amb.lib.folded", libFolded);
   applyLibraryFolds();
 }
 

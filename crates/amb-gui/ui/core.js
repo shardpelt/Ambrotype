@@ -76,6 +76,32 @@ async function askYes(message) {
   }
 }
 
+// The page's own storage (localStorage), which can be missing or full:
+// reads give `fallback` when there's nothing or it can't be read, and
+// failed writes are dropped. get/set store JSON; text/setText plain text.
+const store = {
+  get(key, fallback = null) {
+    try {
+      const text = localStorage.getItem(key);
+      return text === null ? fallback : JSON.parse(text);
+    } catch {
+      return fallback;
+    }
+  },
+  set(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  },
+  text(key, fallback = null) {
+    try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
+  },
+  setText(key, text) {
+    try { localStorage.setItem(key, text); } catch {}
+  },
+  remove(key) {
+    try { localStorage.removeItem(key); } catch {}
+  },
+};
+
 function el(tag, attrs = {}, ...children) {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {

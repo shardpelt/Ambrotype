@@ -72,7 +72,7 @@ function foldToolBlock(name, folded) {
   if (!block) return;
   block.classList.toggle("folded", folded);
   block.querySelector(".fold-head")?.setAttribute("aria-expanded", String(!folded));
-  try { localStorage.setItem(`amb.fold.${name}`, folded ? "1" : "0"); } catch { /* not kept */ }
+  store.setText(`amb.fold.${name}`, folded ? "1" : "0");
 }
 
 function wireToolBlocks() {
@@ -84,7 +84,7 @@ function wireToolBlocks() {
     h.replaceChildren(head);
     head.addEventListener("click", () => foldToolBlock(name, !$(`block-${name}`).classList.contains("folded")));
     let folded = false;
-    try { folded = localStorage.getItem(`amb.fold.${name}`) === "1"; } catch { /* not kept */ }
+    folded = store.text(`amb.fold.${name}`) === "1";
     foldToolBlock(name, folded);
   }
   for (const [name, tools] of Object.entries(TOOL_BLOCKS)) {

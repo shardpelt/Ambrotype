@@ -27,9 +27,9 @@ async function applyPreset(p) {
 
 function wirePresetOriginal() {
   const box = $("preset-from-original");
-  try { box.checked = localStorage.getItem("amb.presetsFromOriginal") === "1"; } catch { /* default: on top */ }
+  box.checked = store.text("amb.presetsFromOriginal") === "1";
   box.addEventListener("change", () => {
-    try { localStorage.setItem("amb.presetsFromOriginal", box.checked ? "1" : ""); } catch { /* not kept */ }
+    store.setText("amb.presetsFromOriginal", box.checked ? "1" : "");
   });
 }
 
@@ -211,12 +211,12 @@ async function savePresetFlow(name = "") {
     if (choice === "to") {
       // Into a folder of the user's (a synced one): it joins the preset folders.
       let last = null;
-      try { last = localStorage.getItem("amb.presetSaveDir"); } catch { /* none */ }
+      last = store.text("amb.presetSaveDir");
       const list = await invoke("save_preset_to", { name: f.preset_name.value, group: f.preset_group.value, dir: last });
       if (!list) return;
       ui.presets = list;
       const saved = ui.presets.find((p) => p.name === f.preset_name.value.trim());
-      if (saved) try { localStorage.setItem("amb.presetSaveDir", dirOf(saved.path)); } catch { /* not kept */ }
+      if (saved) store.setText("amb.presetSaveDir", dirOf(saved.path));
       renderPresets();
       toast(`Saved the preset “${f.preset_name.value.trim()}”${saved ? ` in ${dirOf(saved.path)}` : ""}`);
       return;

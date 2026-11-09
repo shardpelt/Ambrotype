@@ -784,7 +784,7 @@ function flagKey(flag) {
 // keyboard, go to the next, to cull a card quickly. Not with several
 // selected, nor in compare or survey.
 function autoAdvanceOn() {
-  try { return localStorage.getItem("amb.autoAdvance") === "1"; } catch { return false; }
+  return store.text("amb.autoAdvance") === "1";
 }
 
 function advancing(change) {
@@ -1240,7 +1240,7 @@ function libraryExport() {
       try {
         const r = await invoke("export_photos", { paths: sel.map((p) => p.path), options, dir: lastExportDir() });
         if (!r) return;
-        if (r.written.length) try { localStorage.setItem("amb.exportDir", dirOf(r.written[0])); } catch { /* not kept */ }
+        if (r.written.length) store.setText("amb.exportDir", dirOf(r.written[0]));
         const failed = r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : "";
         toast(`Exported ${r.written.length} photo${r.written.length === 1 ? "" : "s"}${failed}`, r.errors.length > 0);
         if (r.written.length) status(`Exported ${r.written.length} photos to ${dirOf(r.written[0])}`);
@@ -1333,7 +1333,7 @@ function wireLibrary() {
   const advance = $("settings-auto-advance");
   advance.checked = autoAdvanceOn();
   advance.addEventListener("change", () => {
-    try { localStorage.setItem("amb.autoAdvance", advance.checked ? "1" : "0"); } catch { /* not kept */ }
+    store.setText("amb.autoAdvance", advance.checked ? "1" : "0");
   });
   if (lib.wired) return;
   lib.wired = true;

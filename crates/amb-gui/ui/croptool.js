@@ -128,7 +128,7 @@ function setCropMode(on) {
 // Settings → General: the crop tool opened while zoomed in starts with what
 // the view shows.
 function cropToView() {
-  try { return localStorage.getItem("amb.cropToView") !== "0"; } catch { return true; }
+  return store.text("amb.cropToView") !== "0";
 }
 
 // The part of the photo the zoomed view shows, as a crop rectangle over the
@@ -314,7 +314,7 @@ function wireCrop() {
   const view = $("settings-crop-view");
   view.checked = cropToView();
   view.addEventListener("change", () => {
-    try { localStorage.setItem("amb.cropToView", view.checked ? "1" : "0"); } catch { /* not kept */ }
+    store.setText("amb.cropToView", view.checked ? "1" : "0");
   });
   const angle = $("crop-angle");
   angle.addEventListener("input", () => ui.crop.tool.setAngle(Number(angle.value)));

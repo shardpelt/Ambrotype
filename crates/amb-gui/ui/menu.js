@@ -137,7 +137,7 @@ function runMenuItem(id) {
 
 // Windows and Linux: the Settings switch, kept in this computer's browser storage.
 function menuWanted() {
-  try { return localStorage.getItem("amb.menuBar") === "1"; } catch { return false; }
+  return store.text("amb.menuBar") === "1";
 }
 
 function wireMenu() {
@@ -145,7 +145,7 @@ function wireMenu() {
   $("settings-menu-row").hidden = IS_MAC;
   $("settings-menu-bar").checked = menuWanted();
   $("settings-menu-bar").addEventListener("change", () => {
-    try { localStorage.setItem("amb.menuBar", $("settings-menu-bar").checked ? "1" : ""); } catch { /* not kept */ }
+    store.setText("amb.menuBar", $("settings-menu-bar").checked ? "1" : "");
     buildMenu();
   });
   tauri.event.listen("menu", (e) => runMenuItem(e.payload));

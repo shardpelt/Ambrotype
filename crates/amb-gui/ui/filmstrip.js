@@ -107,11 +107,11 @@ function wirePreferJpeg() {
   const inLib = $("lib-prefer-jpeg");
   const inStrip = $("strip-prefer-jpeg");
   let on = false;
-  try { on = localStorage.getItem("amb.preferJpeg") === "1"; } catch { /* no storage */ }
+  on = store.text("amb.preferJpeg") === "1";
   inLib.checked = inStrip.checked = on;
   const changed = (from) => {
     inLib.checked = inStrip.checked = from.checked;
-    try { localStorage.setItem("amb.preferJpeg", from.checked ? "1" : "0"); } catch { /* no storage */ }
+    store.setText("amb.preferJpeg", from.checked ? "1" : "0");
     if (libraryOn()) renderLibrary();
     if (ui.info?.path) loadFolder(ui.info.path, true);
   };
@@ -154,7 +154,7 @@ function starText(n) {
 // Settings → General: a filmstrip photo's stars can be clicked to rate it
 // (hovering shows the missing ones in grey); on unless turned off.
 function stripStarsClickable() {
-  try { return localStorage.getItem("amb.stripStars") !== "0"; } catch { return true; }
+  return store.text("amb.stripStars") !== "0";
 }
 
 function renderStars(el, rating) {
@@ -446,7 +446,7 @@ function wireFilmstrip() {
   const pref = $("settings-strip-stars");
   pref.checked = stripStarsClickable();
   pref.addEventListener("change", () => {
-    try { localStorage.setItem("amb.stripStars", pref.checked ? "1" : "0"); } catch { /* not kept */ }
+    store.setText("amb.stripStars", pref.checked ? "1" : "0");
     for (const p of strip.photos) {
       const el = strip.cells.get(p.path)?.querySelector(".film-stars");
       if (el) renderStars(el, p.rating);

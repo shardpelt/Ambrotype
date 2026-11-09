@@ -73,9 +73,9 @@ function wireAssistant() {
   for (const id of ["assistant-url", "assistant-model", "assistant-key"]) $(id).addEventListener("keydown", (e) => e.stopPropagation());
   // Remembered on this computer; off until the user ticks it.
   const see = $("assistant-see");
-  try { see.checked = localStorage.getItem("amb.assistant.see") === "1"; } catch { /* off */ }
+  see.checked = store.text("amb.assistant.see") === "1";
   see.addEventListener("change", () => {
-    try { localStorage.setItem("amb.assistant.see", see.checked ? "1" : ""); } catch { /* not kept */ }
+    store.setText("amb.assistant.see", see.checked ? "1" : "");
   });
 }
 

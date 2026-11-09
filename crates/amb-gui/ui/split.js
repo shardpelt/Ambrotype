@@ -7,7 +7,7 @@
 
 // Where the bar is, 0..1 across the photo; remembered on this computer.
 let splitAt = (() => {
-  try { return Number(localStorage.getItem("amb.splitAt")) || 0.5; } catch { return 0.5; }
+  return Number(store.text("amb.splitAt")) || 0.5;
 })();
 
 function toggleSplit() {
@@ -68,7 +68,7 @@ function wireSplit() {
     const up = () => {
       bar.classList.remove("dragging");
       bar.removeEventListener("pointermove", move);
-      try { localStorage.setItem("amb.splitAt", String(splitAt)); } catch { /* not kept */ }
+      store.setText("amb.splitAt", String(splitAt));
     };
     bar.addEventListener("pointermove", move);
     bar.addEventListener("pointerup", up, { once: true });

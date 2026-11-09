@@ -10,7 +10,7 @@
 const qz = { box: null, pan: null, loupe: null, mag: 1, timer: null, busy: false, at: null };
 
 function boxZoomWanted() {
-  try { return localStorage.getItem("amb.boxZoom") !== "0"; } catch { return true; }
+  return store.text("amb.boxZoom") !== "0";
 }
 
 // Fractions (u, v) of the upright photo under a point, clamped to it.
@@ -86,13 +86,13 @@ function wireBoxZoom() {
   const steps = $("settings-wheel-photos");
   steps.checked = wheelSteps();
   steps.addEventListener("change", () => {
-    try { localStorage.setItem("amb.wheelPhotos", steps.checked ? "1" : "0"); } catch { /* not kept */ }
+    store.setText("amb.wheelPhotos", steps.checked ? "1" : "0");
   });
   const pref = $("settings-box-zoom");
   if (pref) {
     pref.checked = boxZoomWanted();
     pref.addEventListener("change", () => {
-      try { localStorage.setItem("amb.boxZoom", pref.checked ? "1" : "0"); } catch { /* not kept */ }
+      store.setText("amb.boxZoom", pref.checked ? "1" : "0");
     });
   }
 }

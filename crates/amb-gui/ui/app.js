@@ -9,13 +9,13 @@
 function setStatusBar(show) {
   document.body.classList.toggle("status-off", !show);
   $("settings-statusbar").checked = show;
-  try { localStorage.setItem("amb.statusbar", show ? "1" : "0"); } catch { /* not kept */ }
+  store.setText("amb.statusbar", show ? "1" : "0");
   if (ui.info) requestPreview(false);
 }
 
 function wireStatusBar() {
   let show = false;
-  try { show = localStorage.getItem("amb.statusbar") === "1"; } catch { /* hidden */ }
+  show = store.text("amb.statusbar") === "1";
   setStatusBar(show);
   $("settings-statusbar").addEventListener("change", (e) => setStatusBar(e.target.checked));
 }
@@ -840,11 +840,7 @@ let lensDbOffered = false;
 async function offerLensDb() {
   if (lensDbOffered) return;
   lensDbOffered = true;
-  try {
-    if (localStorage.getItem("lensDbOffered")) return;
-  } catch {
-    // No storage: once per session.
-  }
+  if (store.text("lensDbOffered")) return;
   // The profiles load in the background at start.
   let st = null;
   for (let i = 0; i < 30; i++) {
@@ -857,11 +853,7 @@ async function offerLensDb() {
     await new Promise((r) => setTimeout(r, 1000));
   }
   if (!st || st.lenses !== 0 || st.testing) return;
-  try {
-    localStorage.setItem("lensDbOffered", "1");
-  } catch {
-    // Once per session at worst.
-  }
+  store.setText("lensDbOffered", "1");
   try {
     const r = await invoke("fetch_lens_db");
     if (r.lenses) {

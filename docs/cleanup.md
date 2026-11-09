@@ -213,7 +213,7 @@ Why: the helpers every file uses lived in `app.js`, the last file to load. A few
 
 Commit: `editor: core.js, the shared helpers, loaded first`. Why: "They lived in app.js, which loads last, and small path helpers were copied between files."
 
-### ☐ S4. `store`: localStorage in one place
+### ☑ S4. `store`: localStorage in one place (2026-11-09)
 
 Why: 69 reads and writes of localStorage, most in their own `try` with `JSON.parse`.
 

@@ -212,7 +212,7 @@ function wireScrubber() {
 
 const TILE = 256;
 const mapTilesWanted = () => {
-  try { return localStorage.getItem("amb.mapTiles") === "1"; } catch { return false; }
+  return store.text("amb.mapTiles") === "1";
 };
 
 // Web Mercator: degrees to world pixels at zoom `z`, and back.
@@ -576,7 +576,7 @@ async function matchGpx() {
 }
 
 function setMapTiles(on) {
-  try { localStorage.setItem("amb.mapTiles", on ? "1" : "0"); } catch { /* not kept */ }
+  store.setText("amb.mapTiles", on ? "1" : "0");
   if (browseOn() && cull.view === "map") renderBrowse();
 }
 

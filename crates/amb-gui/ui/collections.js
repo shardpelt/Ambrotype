@@ -213,10 +213,10 @@ function wireCollections() {
   $("lib-coll-delete").addEventListener("click", deleteCollection);
   $("lib-smart-edit").addEventListener("click", () => editSmartCollection(lib.smart));
   $("lib-subfolders").addEventListener("change", () => {
-    try { localStorage.setItem("amb.lib.subfolders", $("lib-subfolders").checked ? "1" : ""); } catch { /* not kept */ }
+    store.setText("amb.lib.subfolders", $("lib-subfolders").checked ? "1" : "");
     if (lib.dir && !lib.collection) loadLibrary(lib.dir);
   });
-  try { $("lib-subfolders").checked = localStorage.getItem("amb.lib.subfolders") === "1"; } catch { /* default off */ }
+  $("lib-subfolders").checked = store.text("amb.lib.subfolders") === "1";
   loadCollections();
 }
 

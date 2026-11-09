@@ -1229,7 +1229,7 @@ async function exportBatch() {
       dir: lastExportDir(),
     });
     // The pages' folder: next time's start.
-    if (written?.length) try { localStorage.setItem("amb.exportDir", dirOf(written[0])); } catch { /* not kept */ }
+    if (written?.length) store.setText("amb.exportDir", dirOf(written[0]));
     if (written) {
       toast(`Wrote ${written.length} pages`);
       status(`Wrote ${written.length} collage pages to ${dirOf(written[0] ?? "")}`);

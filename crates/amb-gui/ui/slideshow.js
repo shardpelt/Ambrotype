@@ -54,7 +54,7 @@ function slideshowFlow() {
 // `done(photo)`: called with the photo shown last when it ends.
 async function startSlideshow(photos, settings, { remember = true, done = null, start = 0 } = {}) {
   if (remember) {
-    try { localStorage.setItem("amb.slideshow", JSON.stringify(settings)); } catch { /* not kept */ }
+    store.set("amb.slideshow", settings);
   }
   slides.done = done;
   slides.settings = settings;
@@ -105,7 +105,7 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
   }
   if (viewer) {
     let open = false;
-    try { open = localStorage.getItem("amb.viewerInfo") === "1"; } catch { /* not kept */ }
+    open = store.text("amb.viewerInfo") === "1";
     if (open) el.querySelector(".ss-info").hidden = false;
   }
   // Steps taken while the window went full screen count.
@@ -235,7 +235,7 @@ function toggleViewerInfo(on) {
   const panel = slides.el?.querySelector(".ss-info");
   if (!panel) return;
   panel.hidden = on === undefined ? !panel.hidden : !on;
-  try { localStorage.setItem("amb.viewerInfo", panel.hidden ? "0" : "1"); } catch { /* not kept */ }
+  store.setText("amb.viewerInfo", panel.hidden ? "0" : "1");
   renderViewerInfo();
 }
 

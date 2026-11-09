@@ -90,12 +90,12 @@ async function replayFlow() {
 // The folder the last export went to, on this computer: the save dialogs
 // start there (else next to the photo).
 function lastExportDir() {
-  try { return localStorage.getItem("amb.exportDir") || null; } catch { return null; }
+  return store.text("amb.exportDir") || null;
 }
 
 function rememberExportDir(path) {
   if (!path) return;
-  try { localStorage.setItem("amb.exportDir", dirOf(path)); } catch { /* not kept */ }
+  store.setText("amb.exportDir", dirOf(path));
 }
 
 const DEPTHS = { jpeg: [8], png: [8, 16], tiff: [16, 8, 32], webp: [8], avif: [8], exr: [32], jxl: [8, 16] };

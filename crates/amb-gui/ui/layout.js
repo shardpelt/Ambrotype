@@ -27,7 +27,7 @@ function fallbackLayout() {
 // A side column can be folded away (the arrow on the photo's edge, or
 // Ctrl+[ and Ctrl+]) and back; remembered on this computer.
 const folded = (() => {
-  try { return JSON.parse(localStorage.getItem("folded-columns")) ?? {}; } catch { return {}; }
+  return store.get("folded-columns") ?? {};
 })();
 
 // A side panel (Preset library, Frame) takes the left column's place while
@@ -37,12 +37,12 @@ const sidePanelOpen = () => [...document.querySelectorAll(".viewer > .preset-lib
 // Column widths dragged outside editor mode, per layout, on this computer:
 // a layout's own width is only where it starts.
 const colWidths = (() => {
-  try { return JSON.parse(localStorage.getItem("amb.colWidths")) ?? {}; } catch { return {}; }
+  return store.get("amb.colWidths") ?? {};
 })();
 const COL_MIN = 140, COL_MAX = 800;
 
 function saveColWidths() {
-  try { localStorage.setItem("amb.colWidths", JSON.stringify(colWidths)); } catch { /* not kept */ }
+  store.set("amb.colWidths", colWidths);
 }
 
 // A handle on each shown column's inner edge: drag to resize, double-click
@@ -138,7 +138,7 @@ function applySideCollapse() {
 // Section heights in a column, set by dragging the line between two
 // sections; remembered on this computer. The presets list fills what's left.
 const sectionHeights = (() => {
-  try { return JSON.parse(localStorage.getItem("section-heights")) ?? {}; } catch { return {}; }
+  return store.get("section-heights") ?? {};
 })();
 
 function addSectionDividers(col) {
@@ -170,7 +170,7 @@ function addSectionDividers(col) {
       };
       const up = () => {
         grip.removeEventListener("pointermove", move);
-        try { localStorage.setItem("section-heights", JSON.stringify(sectionHeights)); } catch {}
+        store.set("section-heights", sectionHeights);
       };
       grip.addEventListener("pointermove", move);
       grip.addEventListener("pointerup", up, { once: true });
@@ -179,7 +179,7 @@ function addSectionDividers(col) {
       delete sectionHeights[target.id];
       target.style.height = "";
       target.classList.remove("sized");
-      try { localStorage.setItem("section-heights", JSON.stringify(sectionHeights)); } catch {}
+      store.set("section-heights", sectionHeights);
     });
   }
 }
@@ -191,7 +191,7 @@ function toggleColumn(side) {
   // With the chrome hidden the keys slide the column in and out.
   if (chromeHidden()) return peekColumn(side, !document.body.classList.contains(`peek-${side}`));
   folded[side] = !folded[side];
-  try { localStorage.setItem("folded-columns", JSON.stringify(folded)); } catch {}
+  store.set("folded-columns", folded);
   applySideCollapse();
   requestPreview(false);
 }
@@ -204,14 +204,14 @@ function setTopbar(show) {
   $("topbar-edge").hidden = show;
   const pref = $("settings-topbar");
   if (pref) pref.checked = show;
-  try { localStorage.setItem("amb.topbar", show ? "1" : "0"); } catch { /* not kept */ }
+  store.setText("amb.topbar", show ? "1" : "0");
   requestPreview(false);
   return true;
 }
 
 function wireTopbar() {
   let shown = true;
-  try { shown = localStorage.getItem("amb.topbar") !== "0"; } catch { /* shown */ }
+  shown = store.text("amb.topbar") !== "0";
   const bar = document.querySelector(".topbar");
   let leave = 0;
   $("topbar-edge").addEventListener("mouseenter", () => {
@@ -246,7 +246,7 @@ function applyChrome() {
   } else if (!on && was) {
     document.body.classList.remove("peek-left", "peek-right");
     let shown = true;
-    try { shown = localStorage.getItem("amb.topbar") !== "0"; } catch { /* shown */ }
+    shown = store.text("amb.topbar") !== "0";
     document.body.classList.toggle("topbar-off", !shown);
     $("topbar-edge").hidden = shown;
   }

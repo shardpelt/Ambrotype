@@ -77,12 +77,12 @@ function renderTaskTools() {
 }
 
 const taskState = (() => {
-  try { return JSON.parse(localStorage.getItem("amb.tasks")) ?? {}; } catch { return {}; }
+  return store.get("amb.tasks") ?? {};
 })();
 taskState.layouts ??= {};
 
 function saveTasks() {
-  try { localStorage.setItem("amb.tasks", JSON.stringify(taskState)); } catch { /* not kept */ }
+  store.set("amb.tasks", taskState);
 }
 
 function taskLayout(t) {

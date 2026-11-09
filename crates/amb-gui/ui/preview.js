@@ -408,7 +408,7 @@ function toggleClipping() {
 
 // Settings → General: scrolling on the whole photo steps through the folder.
 function wheelSteps() {
-  try { return localStorage.getItem("amb.wheelPhotos") === "1"; } catch { return false; }
+  return store.text("amb.wheelPhotos") === "1";
 }
 
 // After a drag of (dx, dy) screen pixels at 100%: move the centre by it

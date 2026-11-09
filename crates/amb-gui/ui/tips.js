@@ -15,29 +15,17 @@
 const tips = { last: 0, timer: 0, hideTimer: 0, used: new Set() };
 
 function tipsOn(kind) {
-  try {
-    return localStorage.getItem(kind === "wait" ? "amb.tipsWait" : "amb.tipsBoxes") !== "0";
-  } catch {
-    return true;
-  }
+  return store.text(kind === "wait" ? "amb.tipsWait" : "amb.tipsBoxes") !== "0";
 }
 
 function setTipsOn(kind, on) {
-  try {
-    localStorage.setItem(kind === "wait" ? "amb.tipsWait" : "amb.tipsBoxes", on ? "1" : "0");
-  } catch {
-    // Not kept.
-  }
+  store.setText(kind === "wait" ? "amb.tipsWait" : "amb.tipsBoxes", on ? "1" : "0");
 }
 
 function markUsed(key) {
   if (tips.used.has(key)) return;
   tips.used.add(key);
-  try {
-    localStorage.setItem("amb.used", JSON.stringify([...tips.used].slice(-400)));
-  } catch {
-    // Not kept.
-  }
+  store.set("amb.used", [...tips.used].slice(-400));
 }
 
 // A feature to show, with what its Try button does: one whose commands
@@ -73,19 +61,11 @@ function showTip(tip = pickTip()) {
 
 // How many tips in a row were put away with Not now.
 function dismissed() {
-  try {
-    return Number(localStorage.getItem("amb.tipsDismissed") ?? 0) || 0;
-  } catch {
-    return 0;
-  }
+  return Number(store.text("amb.tipsDismissed") ?? 0) || 0;
 }
 
 function setDismissed(n) {
-  try {
-    localStorage.setItem("amb.tipsDismissed", String(n));
-  } catch {
-    // Not kept.
-  }
+  store.setText("amb.tipsDismissed", String(n));
 }
 
 // No more tips, either kind; Settings → General shows them off.

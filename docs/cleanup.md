@@ -499,10 +499,47 @@ Why: 1,009 and 989 lines.
 
 Commit: `editor: layout.js and editor.js split`. Why: "About 1,000 lines each; the columns, the Appearance dialog, editor mode's keys and its inspector now have their own files."
 
-Later, when the budget asks:
-- `amb-ai` `net.rs`: each layer kind's step in its own file;
-- `amb-protocol` `masks.rs`: parts and painting;
-- `amb-engine` `lens.rs`: the camera-space and output-space steps.
+### ☐ F14. amb-protocol `masks.rs` → `masks/`
+
+Why: 1,141 lines: the helpers that read and write a mask's fields, the mask commands, and describing masks.
+
+1. `git mv crates/amb-protocol/src/masks.rs crates/amb-protocol/src/masks/mod.rs`.
+2. `masks/fields.rs`: everything from `fn invalid` to the line before the `// ---- commands` marker (`invalid`, `corrections`, `store`, `correction_mut`, `components_mut`, `part_range`, `new_correction`, `parse_mode`, `set_combination`, `set_brush_combination`, `new_component`, `number_arg`, `bool_arg`, `clamp`, `slider_for`, `MASK_KEYS`, `PART_KEYS`, `set_correction_values`, `set_component_values`, `range_struct`, `lum_range_arg`, `points_arg`).
+3. `masks/describe.rs`: the `// ---- list_masks` section (`describe`, `describe_correction`, `describe_part`).
+4. `masks/tests.rs`: the tests block.
+5. `mod.rs` keeps the top (`Fields`, `ADD_KINDS`, `MAX_DABS`) and the `commands` section (`add`, `count`, `set`, `Stroke`, `dabs_along`, `paint`, `remove`, `duplicate`, `move_to`, `move_part`, `merge`). Re-export what other files use (`pub use describe::describe;` and so on), as the compiler asks.
+6. Take `masks.rs` off `OVER_BUDGET`. Then the Rust checks.
+
+Commit: `protocol: masks.rs split into fields, commands and describing`. Why: "1,141 lines; reading and writing a mask's fields and describing masks now have their own files."
+
+### ☐ F15. amb-ai `net.rs` → `net/`
+
+Why: 1,122 lines: a model on the CPU or GPU, planning its GPU steps from the graph, and running them.
+
+1. `git mv crates/amb-ai/src/net.rs crates/amb-ai/src/net/mod.rs`.
+2. `net/plan.rs`, turning the graph into GPU steps: `OnGpu`'s method `plan`, in an `impl OnGpu { … }` of its own (today `plan` and `run` share one `impl` block, from line ~209), then `step`, `bias`, `conv_spec`, `Ax` with its `impl` (`strides`) and `matmul`.
+3. `net/run.rs`, running the steps: `OnGpu`'s method `run` (in its own `impl OnGpu { … }`) and the `impl OnGpu` block with `check`, then `gpu_value`, `cpu_value`, `run_step`, `channels_first`, `channels_back`.
+4. `net/tests.rs`: the tests block.
+5. `mod.rs` keeps the rest: `WORTH_IT`, `FAILED`, `gpu_off`, `runs_on`, `Net`, `build`, `impl Net`, the types (`Step`, `MatMulPlan`, `OnGpu`, `Value`) and the small helpers (`err`, `floats`, `shape_of`, `is_f32`, `konst`).
+6. Take `net.rs` off `OVER_BUDGET`. Then the Rust checks.
+
+Commit: `ai: net.rs split into planning and running`. Why: "1,122 lines; planning a model's GPU steps and running them now have their own files."
+
+### ☐ F16. amb-engine `lens.rs` → `lens/`
+
+Why: 1,009 lines: the lens settings, the camera-space corrections, measuring chromatic aberration and defringing.
+
+1. `git mv crates/amb-engine/src/lens.rs crates/amb-engine/src/lens/mod.rs`.
+2. `lens/camera.rs`: `apply_camera`, `apply_camera_cropped`, `apply_camera_window`, `fill_zoom`, `catmull_rom`, `sample_bicubic`, `sample_bicubic_rgb`, `sample_bilinear`, and `fill_blank` from the end of the file.
+3. `lens/ca.rs`: `estimate_ca`, `radial_shift`, `robust_fit`.
+4. `lens/defringe.rs`: from `defringe_radius` to `local_range` (`apply_defringe`, `apply_defringe_in`, `AUTO_FRINGE_AMOUNT`, `FRINGE_HUES`, `apply_auto_defringe_in`, `apply_defringe_weighted`).
+5. `lens/tests.rs`: the tests block.
+6. `mod.rs` keeps the types and their defaults (`LensStrengths` … `RadialShift`) and `centre`. Re-export what other files use, so `crate::lens::apply_defringe_in` and the others still work (`pub use defringe::{…};`, `pub(crate) use camera::sample_bicubic_rgb;`), as the compiler asks.
+7. Take `lens.rs` off `OVER_BUDGET`. Then the Rust checks.
+
+Commit: `engine: lens.rs split into camera corrections, CA and defringe`. Why: "1,009 lines; the camera-space corrections, measuring CA and defringing now have their own files."
+
+The other files past the budget (all under 1,000 lines) stay pinned at their size by the test until one needs to grow; split it then, along the same lines.
 
 ## Phase 3: structure
 

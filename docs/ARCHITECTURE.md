@@ -139,7 +139,7 @@ Operations on photos:
 - Dust and hairs to heal spots (`dust.rs`, over `amb_engine::dust`):
   - `amb dust`, the Spot panel's Find dust.
   - [design/dust.md](design/dust.md).
-- Film negative rolls (`negative.rs`):
+- Film negative rolls (`negative/`):
   - The analysis is frozen into settings, for one frame, or a roll is grouped into scenes by light with odd frames kept (`roll`), through `pipeline::negative_analysis`.
   - `amb negative analyze` and `amb negative sync`, the library's Sync negative roll….
 - Look matching on files (`look.rs`; `amb match`).

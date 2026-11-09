@@ -416,7 +416,7 @@ Why: 1,497 lines: the mask model, the sky, drawing shapes and applying local adj
 
 Commit: `engine: mask.rs split along its sections`. Why: "1,497 lines: the model, the sky, geometry and applying now have their own files."
 
-### ☐ F8. amb-engine `negative.rs` → `negative/`
+### ☑ F8. amb-engine `negative.rs` → `negative/` (2026-11-09)
 
 Why: 1,254 lines: settings, the analysis of a scan, colour casts, finding the frame and the conversion.
 

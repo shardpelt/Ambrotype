@@ -209,7 +209,7 @@ The library's Folders panel → **Lightroom +** (or From Lightroom… → **Open
 
 - `crates/amb-library/src/folder.rs`: which files in a folder are photos, in order; `catalog.rs`: the catalogue.
 - `crates/amb-gui/src/library.rs`: listing, batch info changes, paste commands, batch export.
-- `crates/amb-gui/ui/library.js`: the grid, selection, panel and keys.
+- `crates/amb-gui/ui/library.js`, `library-grid.js` and `library-actions.js`: the grid, selection, panel and keys.
 - `crates/amb-gui/ui/cull.js`: loupe, compare and survey.
 - `crates/amb-library/src/lrcat.rs` and `crates/amb-gui/ui/lrcat.js`: moving from Lightroom Classic; `crates/amb-library/src/lightroom.rs`, `crates/amb-presets/src/linked.rs` and `crates/amb-gui/ui/lightroom.js`: a catalogue in place.
 - Labels and flags in `amb_protocol::sidecar::PhotoInfo` (`xmp:Label`, `amblib:Flag`); labels are exported as XMP (`amb_export::exif::Tags::label`), flags are not.

@@ -431,7 +431,7 @@ Why: 1,254 lines: settings, the analysis of a scan, colour casts, finding the fr
 
 Commit: `engine: negative.rs split by concern`. Why: "1,254 lines; the analysis, casts and finding the frame now have their own files."
 
-### ☐ F9. `library.js`
+### ☑ F9. `library.js` (2026-11-09)
 
 Why: 1,488 lines: the library's state, grid, thumbnails, selection, panel, batch actions and wiring.
 

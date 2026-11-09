@@ -342,7 +342,7 @@
     <div id="block-store" hidden></div>
   </main>
 
-  <!-- The library grid (library.js); replaces the workspace while shown. -->
+  <!-- The library grid (library-grid.js); replaces the workspace while shown. -->
   <section id="library" class="library" hidden aria-label="Library">
     <div class="library-bar">
       <span id="lib-task-slot" class="lib-task-slot"></span>
@@ -584,7 +584,7 @@
     </form>
   </dialog>
 
-  <!-- Sync negative roll (library.js). -->
+  <!-- Sync negative roll (library-actions.js). -->
   <dialog id="roll-dialog">
     <form method="dialog">
       <h2>Sync negative roll</h2>
@@ -600,7 +600,7 @@
     </form>
   </dialog>
 
-  <!-- A preset onto the selected photos (library.js presetsOnPhotos). -->
+  <!-- A preset onto the selected photos (library-actions.js presetsOnPhotos). -->
   <dialog id="preset-pick-dialog">
     <form method="dialog">
       <h2 id="preset-pick-title">Apply a preset</h2>
@@ -612,7 +612,7 @@
     </form>
   </dialog>
 
-  <!-- Raws to JPEGs (library.js convertRawsFlow). -->
+  <!-- Raws to JPEGs (library-actions.js convertRawsFlow). -->
   <dialog id="convert-dialog">
     <form method="dialog">
       <h2>Convert raws to JPEGs</h2>
@@ -635,7 +635,7 @@
     </form>
   </dialog>
 
-  <!-- Contact sheets (library.js contactSheetFlow). -->
+  <!-- Contact sheets (library-actions.js contactSheetFlow). -->
   <dialog id="contact-dialog">
     <form method="dialog">
       <h2>Contact sheet</h2>
@@ -656,7 +656,7 @@
     </form>
   </dialog>
 
-  <!-- Photo Merge > HDR (library.js). -->
+  <!-- Photo Merge > HDR (library-actions.js). -->
   <dialog id="hdr-dialog">
     <form method="dialog">
       <h2>Merge to HDR</h2>
@@ -679,7 +679,7 @@
     </form>
   </dialog>
 
-  <!-- Photo Merge > Panorama (library.js). -->
+  <!-- Photo Merge > Panorama (library-actions.js). -->
   <dialog id="pano-dialog">
     <form method="dialog">
       <h2>Merge to Panorama</h2>
@@ -1742,6 +1742,8 @@
   <script src="filmstrip.js"></script>
   <script src="collage.js"></script>
   <script src="library.js"></script>
+  <script src="library-grid.js"></script>
+  <script src="library-actions.js"></script>
   <script src="cull.js"></script>
   <script src="browse.js"></script>
   <script src="duplicates.js"></script>

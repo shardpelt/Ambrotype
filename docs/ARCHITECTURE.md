@@ -345,7 +345,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - Share to the hub opens a pre-filled submission (`preset_submit`).
     - Show file reveals it (`reveal_file`).
     - The presets list skips a photo's own sidecar in a preset folder (`is_photo_sidecar`).
-  - library (`ui/library.js`, `src/library.rs`; [design/library.md](design/library.md)):
+  - library (`ui/library.js`, `ui/library-grid.js`, `ui/library-actions.js`, `src/library.rs`; [design/library.md](design/library.md)):
     - The Folders panel (`ui/folders.js`): library folders from `amb-library::roots`, indexed in the background by `commands/catalog.rs`; offline folders listed from the catalogue.
     - A folder as a grid, with loupe, compare and survey views for culling (`ui/cull.js`).
     - File care (`ui/organise.js`, `commands/files.rs`, `amb-library::files`): moves and renames with companions, the trash, finding moved photos, keywords and metadata templates.

@@ -1398,7 +1398,7 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 /* Touch (touch.js). */
 .viewer.touching img#preview { cursor: ns-resize; }
 .touch-bar button.active { background: var(--accent); color: var(--accent-ink); }
-/* Preset picker for the library's selection (library.js presetsOnPhotos). */
+/* Preset picker for the library's selection (library-actions.js presetsOnPhotos). */
 .preset-pick-list { display: flex; flex-wrap: wrap; gap: 4px; max-height: 50vh; overflow: auto; margin: 8px 0; min-width: 360px; max-width: 560px; }
 
 /* Search → How to: where a feature is */

@@ -202,7 +202,7 @@
         <button type="button" class="small" data-touch="luminance" title="The brightness of the colour under the pointer (the B&amp;W mix for a black-and-white photo)">Luminance</button>
         <button type="button" class="small" id="touch-close" title="Stop (T or Esc)">×</button>
       </div>
-      <!-- Soft proofing (S): the space to see the photo in (app.js toggleProof). -->
+      <!-- Soft proofing (S): the space to see the photo in (preview.js toggleProof). -->
       <div class="proof-bar" id="proof-bar" hidden>
         <span>Proof preview</span>
         <select id="proof-space" title="The colour space the photo will be exported in">
@@ -764,7 +764,7 @@
     </form>
   </dialog>
 
-  <!-- Surprise me: random looks as thumbnails (app.js surpriseFlow). -->
+  <!-- Surprise me: random looks as thumbnails (presets.js surpriseFlow). -->
   <dialog id="surprise-dialog">
     <form method="dialog">
       <h2>Surprise me</h2>
@@ -818,7 +818,7 @@
     <button type="button" id="assistant-log-open" class="small" title="Every edit the assistant asked for, with the photo, your request and what happened (a local file)">Log of its edits</button>
   </dialog>
 
-  <!-- Match look: settings found from reference photos (app.js matchFlow). -->
+  <!-- Match look: settings found from reference photos (presets.js matchFlow). -->
   <dialog id="match-dialog">
     <form method="dialog">
       <h2>Match look</h2>

@@ -32,6 +32,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-09: the cleanup's first two phases ([cleanup.md](cleanup.md)), each step by a smaller model and reviewed: one `smoothstep` and one `file_stamp`; the UI's shared helpers in `core.js`, which loads first, and its storage through `store`; 15 big files split along their sections (the editor's `main.rs`, `session.rs`, photo and library commands, `looks.rs` and `hub.rs`; the protocol's `state.rs`; the engine's `mask.rs` and `negative.rs`; six UI scripts). Nothing the app does changed. Found on the way: two quick keys in the viewer could show old values (info changes now go one at a time), and three tests that failed now and then
 - 2026-11-09: a structure review of the whole codebase ([design/structure.md](design/structure.md)): no rewrite needed; the big files, the UI's shared names and copied helpers are cleaned up in exact steps for smaller models ([cleanup.md](cleanup.md)). Guard rails first: a size budget test, the UI-script tests reading subfolders and checking every script loads, and `tools/code-metrics.py`
 
 - 2026-11-09: tabs are Library · Develop · Film · Collage ([design/tabs.md](design/tabs.md)): Color became Develop's Colour tab, Retouch its Retouch tools under Quick fixes (blocks fold), and the Collage tab opens the collage maker itself

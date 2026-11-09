@@ -530,4 +530,5 @@ These change how the code is organised, not only where it sits. The owner says g
 
 Bugs or oddities noticed during a task, to look at separately:
 
-- (none yet)
+- Fixed 2026-11-09: two quick rating or flag keys in the viewer could show the older values (each answer carries the photo's whole info); every info write now goes through `setInfo` in `core.js`, one at a time.
+- Fixed 2026-11-09: tests that failed now and then: two export tests wrote the same JPEG XL files at once; two UI steps waited less than the work before them (Watch an edit's ghost cursor, the photo's fit after a resize).

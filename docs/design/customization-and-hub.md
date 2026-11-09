@@ -14,7 +14,7 @@ Everything a user can make and share is a small file: a **layout**, a **theme**,
 
 *Built as a slightly simpler v1 than sketched below: two side columns (`left`, `right`) with blocks and panels instead of a free split tree, and per-panel `columns` for knob grids. Tabs and free splits can come with editor mode. The exact format is in [ui-layouts.md](../ai/ui-layouts.md).*
 
-Today `buildPanels()` in `crates/amb-gui/ui/app.js` builds the right-hand panels straight from the settings registry. Instead, the UI is rendered from a **layout file**: a tree that the registry fills in.
+Before layouts, `buildPanels()` in `crates/amb-gui/ui/app.js` built the right-hand panels straight from the settings registry. Now the UI is rendered from a **layout file** (`crates/amb-gui/ui/layout.js`): a tree that the registry fills in.
 
 ```jsonc
 {

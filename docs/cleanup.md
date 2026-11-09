@@ -183,7 +183,7 @@ Commit: `library: one file_stamp`. Why: "The catalogue had its own copy of amb_p
 
 Why: the helpers every file uses lived in `app.js`, the last file to load. A few small helpers were copied between files.
 
-1. Create `crates/amb-gui/ui/core.js` with the SPDX line and this header:
+1. Create `crates/amb-gui/ui/core/core.js` with the SPDX line and this header:
    ```js
    // The editor's shared helpers, loaded before every other script: the
    // backend (`invoke`), elements by id (`$`), the shared state (`ui`), notes
@@ -439,7 +439,7 @@ Why: 1,488 lines: the library's state, grid, thumbnails, selection, panel, batch
 2. `library-actions.js`: the section `open, copy and paste, export, collage`.
 3. `library.js` keeps the rest: its state, `show, load`, `selection`, `the panel`, `wiring`.
 4. In `index.html`, add `library-grid.js` and `library-actions.js`, in that order, right after `library.js`.
-5. `docs/recipes.md` names `VIEWER_BUTTONS` in `crates/amb-gui/ui/library.js`; it stays there. Take `library.js` off `OVER_BUDGET`. Then the Rust checks and the UI tests.
+5. `docs/recipes.md` names `VIEWER_BUTTONS` in `crates/amb-gui/ui/library/library.js`; it stays there. Take `library.js` off `OVER_BUDGET`. Then the Rust checks and the UI tests.
 
 Commit: `editor: library.js split into grid and actions`. Why: "1,488 lines; the grid and thumbnails, and the actions on many photos, now have their own files."
 
@@ -464,7 +464,7 @@ Why: 1,188 lines (less after S3): slider rows, History, opening and saving photo
 3. `photo.js`: the section `photo` (opening, the folder's photos, the film base, the lens database, saving, before and after).
 4. `app.js` keeps the rest: what S3 left of the helpers, `state & commands`, `the selected slider`, `feedback`, `wiring` with `init`.
 5. In `index.html`, add `rows.js`, `history.js` and `photo.js`, in that order, **just before** `app.js`. `app.js` must stay the last script: its last line starts the app. Their top-level lines may only use names from earlier files (after S3, `ui` and the helpers are in `core.js`).
-6. Update the docs that place these in `app.js` (`grep -rn "app.js" docs`). `docs/recipes.md` says a toolbar button's click handler goes "in `init`" in `crates/amb-gui/ui/app.js`; `init` stays there. Take `app.js` off `OVER_BUDGET` if it's under 700 lines. Then the Rust checks and the UI tests.
+6. Update the docs that place these in `app.js` (`grep -rn "app.js" docs`). `docs/recipes.md` says a toolbar button's click handler goes "in `init`" in `crates/amb-gui/ui/core/app.js`; `init` stays there. Take `app.js` off `OVER_BUDGET` if it's under 700 lines. Then the Rust checks and the UI tests.
 
 Commit: `editor: app.js split into rows, history and photo`. Why: "The slider rows, History and opening photos had grown into the start-up file."
 
@@ -603,7 +603,7 @@ Why: `AppState` held 18 saved settings each behind its own `Mutex`; `save_config
 
 Commit: `editor: the saved settings behind one lock`. Why: "18 settings each had a lock and two copies; now Config is the state, and a new setting is one field."
 
-### ☐ R3. UI folders
+### ☑ R3. UI folders (2026-11-09)
 
 Why: 78 scripts in one folder. Grouped by what they belong to, the folder says where a feature lives. Only paths change: the scripts keep their names and their load order.
 

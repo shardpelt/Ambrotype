@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Connect an AI app: where this computer's `amb` is, for any MCP app or
-//! command-line agent, and a terminal to run one in (`ui/connect.js`;
+//! command-line agent, and a terminal to run one in (`ui/dialogs/connect.js`;
 //! docs/ai/mcp.md). Nothing here is tied to one AI maker.
 
 use crate::*;

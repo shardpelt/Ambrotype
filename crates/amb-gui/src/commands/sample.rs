@@ -2,7 +2,7 @@
 //! The sample photo: a Nikon D750 raw from raw.pixls.us (CC0; NOTICE),
 //! downloaded when asked for, since raw files aren't kept in the repo. It
 //! comes with an edit already made, one History step per slider, so stepping
-//! through History shows what each one does (`ui/teach.js`).
+//! through History shows what each one does (`ui/help/teach.js`).
 
 use crate::*;
 

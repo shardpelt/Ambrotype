@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! The menu bar. The UI sends its menus (`ui/menu.js`: the keyboard actions
+//! The menu bar. The UI sends its menus (`ui/core/menu.js`: the keyboard actions
 //! by name, with their keys), so changed shortcuts show in them; choosing an
 //! item sends its action id back as a `menu` event (`main`). On macOS it is
 //! the system's menu bar; Windows and Linux show it in the window when the
@@ -245,13 +245,13 @@ fn about() -> AboutMetadata<'static> {
 
 #[cfg(test)]
 mod tests {
-    /// Every item in `MENU_BAR` (ui/menu.js) is a keyboard action, one of
+    /// Every item in `MENU_BAR` (ui/core/menu.js) is a keyboard action, one of
     /// the menu's own extras, or a system item `native` knows.
     #[test]
     fn menu_bar_names_only_known_actions() {
         let ui = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("ui");
-        let menu = std::fs::read_to_string(ui.join("menu.js")).unwrap();
-        let keys = std::fs::read_to_string(ui.join("keys.js")).unwrap();
+        let menu = std::fs::read_to_string(ui.join("core/menu.js")).unwrap();
+        let keys = std::fs::read_to_string(ui.join("core/keys.js")).unwrap();
         let bar = menu
             .split("const MENU_BAR = [")
             .nth(1)

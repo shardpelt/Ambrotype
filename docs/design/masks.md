@@ -2,7 +2,7 @@
 
 Status: implemented 2026-10-08. Linear and radial gradients, brush, luminance range and colour range masks, combined by add, subtract and intersect, each mask with its own local sliders. They are read and written as Lightroom's own tags, so masks round-trip with Lightroom Classic 11+ and Camera Raw 14+. The fall-off shapes and slider strengths are ours and wait for the Lightroom trial.
 
-Code: `crates/amb-presets/src/masks.rs` (the shared model: tags, slider units, parts), `crates/amb-engine/src/mask/` (drawing and rendering), `crates/amb-protocol/src/masks/` (commands), `crates/amb-gui/ui/masks.js`, `mask-draw.js` and `mask-panel.js` (the tool).
+Code: `crates/amb-presets/src/masks.rs` (the shared model: tags, slider units, parts), `crates/amb-engine/src/mask/` (drawing and rendering), `crates/amb-protocol/src/masks/` (commands), `crates/amb-gui/ui/tools/masks.js`, `mask-draw.js` and `mask-panel.js` (the tool).
 
 ## Lightroom's format
 
@@ -94,7 +94,7 @@ Applying a preset with masks *adds* them to the photo's own (replacing one with 
 
 ## The editor
 
-`ui/masks.js`, opened with the Masks button or M. The panel sits with the crop panel; a canvas over the photo draws the handles. `mask_frame` gives the affine map from the shown (upright, cropped) preview to mask coordinates, so the tool works in every orientation and crop.
+`ui/tools/masks.js`, opened with the Masks button or M. The panel sits with the crop panel; a canvas over the photo draws the handles. `mask_frame` gives the affine map from the shown (upright, cropped) preview to mask coordinates, so the tool works in every orientation and crop.
 
 - New mask: Linear (L), Radial (Shift+R), Brush (B), Luminance, Color. Then draw: a linear from where it is full to where it ends; a radial from the centre out; a brush stroke (Alt erases; [ and ] or the wheel change the size); a colour by clicking it (Shift-click adds samples).
 - The selected mask lists its parts, each with its mode (add, subtract, intersect), invert and delete; the same buttons add a part to it. Under them: the part's settings (radial Feather and Angle; luminance From, To and Smoothness; colour Refine and samples; brush stroke count) and the mask's Amount and local sliders, grouped like Lightroom's.

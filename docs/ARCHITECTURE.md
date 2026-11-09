@@ -108,7 +108,7 @@ The library:
 - A catalogue opened in place (`lightroom.rs`):
   - The catalogues are listed, and each is read again when its file changes.
   - It answers `amb_presets::linked` for every sidecar read.
-  - `amb lrcat open`, the Folders panel's Lightroom section, `ui/lightroom.js`.
+  - `amb lrcat open`, the Folders panel's Lightroom section, `ui/library/lightroom.js`.
 - Places from GPX tracks (`gpx.rs`).
 - Duplicates and bursts (`duplicates.rs`), its measurements kept in the catalogue.
 - Moving, renaming and deleting photos with their companions, the trash, and finding photos moved outside the app (`files.rs`).
@@ -131,7 +131,7 @@ Operations on photos:
     - Each thing found is scored by the search model with what's round it greyed (`amb_ai::search::Words`: the words against what else a photo might be, as a softmax).
     - A smaller thing inside the best one is preferred, and as-good ones apart from it are added.
   - `remove`, `move_by` (a clone, then a Remove spot that leaves it alone) and `mask_dabs` (a distance transform's dabs for a brush mask).
-  - Select object in `ui/select.js`.
+  - Select object in `ui/tools/select.js`.
 - An object in a box to one Remove spot (`object.rs`):
   - A click or a box is asked of the object selector (`amb_engine::subject::select`, SAM 2.1 tiny in `amb-ai/src/objects.rs`: the encoder once per photo, the decoder per click).
   - For a box without it, the Subject model on just the box.
@@ -150,7 +150,7 @@ Operations on photos:
 - Best in a burst (`burst.rs`):
   - Each photo's sharpness on its faces or its sharpest part, and how open the eyes are, from faces found by `amb_engine::subject::faces` (YuNet in `amb-ai/src/faces.rs`).
   - Then ranked against the burst's other photos.
-  - The library's Best in each burst, `ui/bursts.js`.
+  - The library's Best in each burst, `ui/library/bursts.js`.
 - `replay.rs` and `contact.rs` fill `amb-export`'s video and contact sheets (see `amb-export` above).
 
 ### `amb-cli`
@@ -238,9 +238,9 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
 - **Shell:** Tauri 2, with the system webview (WebView2, WKWebView, WebKitGTK). The UI in `crates/amb-gui/ui/` is plain HTML/CSS/JS with no build step or npm. The window opens where and as big as it was left (`tauri-plugin-window-state`).
 - **Where things are:**
   - Rust: `src/main.rs` holds startup; the app state is in `src/state.rs` and the saved settings in `src/config.rs`. Every command is registered in `handler` in `src/commands/mod.rs`. The Tauri commands themselves are in `src/commands/`, one file per area: `appearance`, `assistant`, `batch`, `catalog`, `collage`, `connect`, `export`, `features`, `files`, `hub`, `library`, `menu`, `models`, `photo`, `places`, `plugins`, `presets`, `preview`, `sample`, `select`, `settings`, `tools` (plus `mod.rs`). The logic they call is in the other `src/` files (`session/`, `preset_files.rs`, `looks/`, `hub/`, …).
-  - JS: `ui/core.js` (loaded first) holds the shared helpers: `invoke`, `$`, the shared state (`ui`), `toast`, `status`, `askYes`, `el` and the path helpers. `ui/rows.js` holds the slider rows, `ui/history.js` History and snapshots, `ui/photo.js` opening and saving photos, and `ui/app.js` `init`, which wires the buttons. The preview loop and 1:1 view are in `preview.js`, the crop panel in `croptool.js`, the Presets panel in `presets.js` and the Export dialog in `export.js`; the other panels and dialogs each have their own file.
+  - JS: `ui/core/core.js` (loaded first) holds the shared helpers: `invoke`, `$`, the shared state (`ui`), `toast`, `status`, `askYes`, `el` and the path helpers. `ui/develop/rows.js` holds the slider rows, `ui/develop/history.js` History and snapshots, `ui/develop/photo.js` opening and saving photos, and `ui/core/app.js` `init`, which wires the buttons. The preview loop and 1:1 view are in `preview.js`, the crop panel in `croptool.js`, the Presets panel in `presets.js` and the Export dialog in `export.js`; the other panels and dialogs each have their own file.
   - Monitor colour: `src/monitor.rs` keeps the profile in use (Settings → General: Automatic, Off or a file); the editor's session converts its JPEGs to it as they are encoded (`Session::on_screen`; thumbnails and the assistant's pictures stay sRGB). Linux only: macOS and Windows webviews match colours themselves.
-  - UI tests: `ambrotype --ui-test SCRIPT.js` (`src/uitest.rs`) puts the script into the page, where `ui/uitest.js` runs it with its helpers and reports back; exports skip the save dialog. Scripts are in `tests/ui/`.
+  - UI tests: `ambrotype --ui-test SCRIPT.js` (`src/uitest.rs`) puts the script into the page, where `ui/core/uitest.js` runs it with its helpers and reports back; exports skip the save dialog. Scripts are in `tests/ui/`.
 - **One code path:** the UI only sends `amb-protocol` commands (`set_param`, `apply_preset`, `undo`, …), so it behaves exactly like the CLI and AI clients. Panels and sliders are generated from the settings registry, so they always match the engine.
 - **Preview:** rendered from an area-downscaled copy of the raw, at screen size, on the GPU when the edit is covered (`amb-gpu`), else on the CPU. Slider drags render with temporary overrides and don't touch history; release commits one undoable step. Requests are latest-wins, and a drag renders at 0.6× size.
 - **Features:**
@@ -252,28 +252,28 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - Only the tiles (256 px) the view needs are rendered (`render_region`), and kept until the committed settings change, so panning back is instant.
     - White-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels.
     - Crop and straighten tool: draw a crop corner to corner like a screenshot, then adjust; aspect lock, size presets ([design/crop.md](design/crop.md)).
-    - Mask tool (`ui/masks.js`, `ui/mask-draw.js`, `ui/mask-panel.js`): linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map ([design/masks.md](design/masks.md)).
-    - Spot removal (`ui/spots.js`): heal and clone spots with a suggested donor, and Remove spots filled by AI Remove (`spot_source`). Find dust adds a heal spot per speck and hair (`find_dust`). [design/spot-removal.md](design/spot-removal.md), [design/dust.md](design/dust.md).
+    - Mask tool (`ui/tools/masks.js`, `ui/tools/mask-draw.js`, `ui/tools/mask-panel.js`): linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map ([design/masks.md](design/masks.md)).
+    - Spot removal (`ui/tools/spots.js`): heal and clone spots with a suggested donor, and Remove spots filled by AI Remove (`spot_source`). Find dust adds a heal spot per speck and hair (`find_dust`). [design/spot-removal.md](design/spot-removal.md), [design/dust.md](design/dust.md).
   - Guided Upright: guides drawn on the photo, which the Transform sliders straighten ([design/transform.md](design/transform.md)).
   - film negatives ([design/film-negatives.md](design/film-negatives.md)): Pick base, the base measured on the whole scan, the levels inside the crop, Auto off (every frame printed alike on a fixed density range), Expired film and Cast removal along the greys.
   - film base picker (`pick_film_base`: Pick base in the Negative panel; a click on clear film between frames sets `FilmBase*`, Alt-click forgets it; the WB picker shares `Session::shown_patch`, which follows the crop)
-  - crop Level (the angle from the photo's long lines, `guide_lines`), guide lines the rotation snaps to, and crop to the view when zoomed in (`ui/croptool.js`)
+  - crop Level (the angle from the photo's long lines, `guide_lines`), guide lines the rotation snaps to, and crop to the view when zoomed in (`ui/tools/croptool.js`)
   - copy the photo to the clipboard (right-click on the photo: `copy_image`, an edited render through the clipboard plugin; `copy_text` for text)
-  - right-column tabs (`.column-tabs` in `ui/columns.js`, the chosen tab kept per layout in localStorage `amb.tabs`); the status bar is off unless Settings → General turns it on, and notes then show briefly over the photo (`#status-note`)
+  - right-column tabs (`.column-tabs` in `ui/looks/columns.js`, the chosen tab kept per layout in localStorage `amb.tabs`); the status bar is off unless Settings → General turns it on, and notes then show briefly over the photo (`#status-note`)
   - size presets (built-in for social sites and print, plus custom) for the crop aspect and exact-size export
   - **looks:** the toolbar, side columns and panels come from a layout file and the colours from a theme.
     - `src/looks/` validates (`check.rs`), stores and keeps setups (`setups.rs`) for them.
-    - `ui/layout.js` renders them (the columns, in `columns.js`; the Appearance dialog, in `looks-dialog.js`).
-    - `ui/controls.js` has the knob, bar, number, toggle and segmented controls.
-    - `ui/editor.js` (with `editor-keys.js` and `editor-inspector.js`) is editor mode, which edits a draft of the layout and re-renders it.
+    - `ui/looks/layout.js` renders them (the columns, in `columns.js`; the Appearance dialog, in `looks-dialog.js`).
+    - `ui/develop/controls.js` has the knob, bar, number, toggle and segmented controls.
+    - `ui/looks/editor.js` (with `editor-keys.js` and `editor-inspector.js`) is editor mode, which edits a draft of the layout and re-renders it.
     - `ambrotype --check-look FILE...` validates layout and theme files (what AI assistants use, [ai/ui-layouts.md](ai/ui-layouts.md)).
-    - Toolbar icons are our own line drawings (`ui/icons.js`); a layout with `"toolbar_style": "words"` (Beginner) shows words on every button.
-    - Side columns are resized by dragging their inner edge: widths are kept per layout in the page's local storage (`colWidths` in `ui/columns.js`).
-    - A layout with `"chrome": "hidden"` (Minimalism) hides the bars and slides the columns in over the photo from the window's edges (`applyChrome` in `ui/columns.js`).
-  - **slideshow:** `ui/slideshow.js`. Two image layers on black; each photo's large edited thumbnail (`bigImage`, cached with the library's), the next one fetched while the current shows; CSS classes give the change effect. Full screen through the `window_fullscreen` command
-  - **before / after split:** `ui/split.js`. The "before" half keeps the crop, geometry and lens corrections, so both halves line up.
+    - Toolbar icons are our own line drawings (`ui/core/icons.js`); a layout with `"toolbar_style": "words"` (Beginner) shows words on every button.
+    - Side columns are resized by dragging their inner edge: widths are kept per layout in the page's local storage (`colWidths` in `ui/looks/columns.js`).
+    - A layout with `"chrome": "hidden"` (Minimalism) hides the bars and slides the columns in over the photo from the window's edges (`applyChrome` in `ui/looks/columns.js`).
+  - **slideshow:** `ui/library/slideshow.js`. Two image layers on black; each photo's large edited thumbnail (`bigImage`, cached with the library's), the next one fetched while the current shows; CSS classes give the change effect. Full screen through the `window_fullscreen` command
+  - **before / after split:** `ui/develop/split.js`. The "before" half keeps the crop, geometry and lens corrections, so both halves line up.
   - **follows outside edits:** `sidecar_watch` (`notify`) watches the open photo's sidecar; a change by another app or an AI agent over MCP is loaded as one undo step.
-  - **tasks:** `ui/tasks.js` draws the task bar (Library, Develop, Film, Collage, then task plugins; what earns a tab: [design/tabs.md](design/tabs.md)).
+  - **tasks:** `ui/core/tasks.js` draws the task bar (Library, Develop, Film, Collage, then task plugins; what earns a tab: [design/tabs.md](design/tabs.md)).
     - Library opens the library, Collage the collage maker (back to the task you were in when it closes).
     - The others switch to a built-in layout, or the one the user picked in that task (localStorage `amb.tasks`).
     - Develop's Classic layout holds what were the Color and Retouch tabs: the Retouch tools under Quick fixes, a Colour tab of panels; tool blocks fold by their heading.
@@ -282,32 +282,32 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - Settings → General picks it: `set_interface` navigates the window and puts up a small menu with a way back. The open photo comes along through `take_initial_path`, and `open_photo` on the open photo keeps its session.
     - Installed ones live in `<config>/interfaces/`; `--builtin-ui` ignores the choice.
     - Guide: [ai/custom-interface.md](ai/custom-interface.md).
-  - **connect an AI app:** `ui/connect.js` (Help → Connect an AI App…) shows `amb mcp` with the path found by `commands/connect.rs` (next to the editor, else on the PATH) and the setup for the apps in `ui/ai-apps.json`; `open_terminal` opens the system's terminal in the open photo's folder with `amb` first on the PATH
-  - **quick zoom:** `ui/quickzoom.js`.
-    - A right-drag box sets `ui.zoom.box`; `zoomScale` in `ui/preview.js` turns it into a scale, and the zoomed view renders a region at 100% (at most 4096 px a side) that the page scales to fit.
+  - **connect an AI app:** `ui/dialogs/connect.js` (Help → Connect an AI App…) shows `amb mcp` with the path found by `commands/connect.rs` (next to the editor, else on the PATH) and the setup for the apps in `ui/ai-apps.json`; `open_terminal` opens the system's terminal in the open photo's folder with `amb` first on the PATH
+  - **quick zoom:** `ui/develop/quickzoom.js`.
+    - A right-drag box sets `ui.zoom.box`; `zoomScale` in `ui/develop/preview.js` turns it into a scale, and the zoomed view renders a region at 100% (at most 4096 px a side) that the page scales to fit.
     - The loupe asks `region` for a small square at 100% around the pointer, showing the preview enlarged until it arrives.
     - The box can be turned off in Settings (kept in the page's local storage, like the menu bar).
-  - **teaching by showing:** `ui/teach.js`.
+  - **teaching by showing:** `ui/help/teach.js`.
     - After an undo or redo (a History click, Ctrl+Z, or the arrow keys with History focused) the controls that step changed glow and slide to their value.
     - Help → Watch an edit replays the sample's History with a ghost cursor (`watchFlow`); any key or click stops it.
     - Holding Ctrl (⌘) shows each toolbar button's and task's key.
     - On a photo with no edit yet, Exposure, Highlights, Shadows, Temp and Vibrance glow faintly.
     - Help → Open the sample photo (or the empty screen's button) downloads a CC0 Nikon D750 raw from raw.pixls.us into `sample/` in the settings folder, checks its sha256, and adds an edit with one History step per slider (`commands/sample.rs`, `data/sample/d750.xmp`).
-    - Hovering a task shows a sketch of its layout (`ui/tasks.js`).
-    - A "?" by each setting (`ui/help.js`) shows its description on hover and, on click, a card with the `coach` text from `descriptions.json` (how it shows in a photo, when to raise or lower it), passed through `schema.rs`.
-      - Words in it that are terms in `ui/basics.json` link to Photography basics (`ui/basics.js`): hover for a line, click to open the guide.
-      - Tone and colour terms also light up their pixels on the preview (`ui/zones.js`, computed in the page from the preview JPEG).
-      - The guide's drawings are SVG from `ui/figures.js`.
-  - **yes-or-no questions:** `askYes` in `ui/core.js` (the dialog plugin's message box). The page's own `confirm()` can't be used: the dialog plugin replaces it with a call that fails, so it never asks (a test keeps it out)
+    - Hovering a task shows a sketch of its layout (`ui/core/tasks.js`).
+    - A "?" by each setting (`ui/help/help.js`) shows its description on hover and, on click, a card with the `coach` text from `descriptions.json` (how it shows in a photo, when to raise or lower it), passed through `schema.rs`.
+      - Words in it that are terms in `ui/basics.json` link to Photography basics (`ui/help/basics.js`): hover for a line, click to open the guide.
+      - Tone and colour terms also light up their pixels on the preview (`ui/develop/zones.js`, computed in the page from the preview JPEG).
+      - The guide's drawings are SVG from `ui/help/figures.js`.
+  - **yes-or-no questions:** `askYes` in `ui/core/core.js` (the dialog plugin's message box). The page's own `confirm()` can't be used: the dialog plugin replaces it with a call that fails, so it never asks (a test keeps it out)
   - **hub:**
     - `src/hub/` reads a hub's `index.json` (https, or file:// for testing), checks each look file against its sha256, validates it and saves it as one of the user's looks. A plugin's or interface's other files are listed with their own sha256, and an interface holds only web files.
     - It also builds the GitHub link for submitting a look.
-    - `ui/hub.js` is the Browse dialog, with previews drawn from the looks' own data.
+    - `ui/dialogs/hub.js` is the Browse dialog, with previews drawn from the looks' own data.
     - The hub repo is `Ambrotypehq/ambrotype-hub`. The app's built-in looks and starter presets are a copy of some of its items in `data/hub/` (`tools/sync-hub.py`), and the hub shows those as built in.
   - **settings and keyboard shortcuts:**
-    - `ui/keys.js` has one table of actions with default keys; it runs the shortcuts, writes the toolbar tooltips and drives the Settings dialog (keyboard map, rebinding, clash checks). Only the user's changes are stored (`src/keys.rs`, in the settings file).
-    - `ui/menu.js` builds the menu bar from the same table (`MENU_BAR`).
-    - `ui/search.js` (Ctrl+K) searches that table with the settings, panels, presets and looks.
+    - `ui/core/keys.js` has one table of actions with default keys; it runs the shortcuts, writes the toolbar tooltips and drives the Settings dialog (keyboard map, rebinding, clash checks). Only the user's changes are stored (`src/keys.rs`, in the settings file).
+    - `ui/core/menu.js` builds the menu bar from the same table (`MENU_BAR`).
+    - `ui/core/search.js` (Ctrl+K) searches that table with the settings, panels, presets and looks.
       - It sets a numeric setting from its name and a number ("exposure 0.7").
       - It finds what people want to do in docs/FEATURES.md (built in by `src/commands/features.rs`): a "How to" shows where it is, with buttons for the commands, panels, settings and buttons it names in bold.
     - `src/commands/menu.rs` puts the menu bar up (macOS always; Windows and Linux when Settings → General asks, kept in the webview's storage) and sends a chosen item back as a `menu` event.
@@ -317,11 +317,11 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - They are written to the sidecar at once (`amb_protocol::sidecar::with_info`: `xmp:Rating`, `dc:subject`, keeping `lr:hierarchicalSubject` paths in step).
     - They are embedded in exports: XMP in JPEG/PNG/TIFF/WebP and IPTC keywords in JPEG (`amb-export/src/embed.rs`, added to the finished file), plus EXIF Rating and XPKeywords.
     - `amb render --rating 4 --keywords "a, b"` does the same from the command line.
-  - filmstrip: the raws in the open photo's folder (`ui/filmstrip.js`).
+  - filmstrip: the raws in the open photo's folder (`ui/develop/filmstrip.js`).
     - `src/folder.rs`: natural name order, ratings and edit state from the sidecars.
     - Thumbnails come from the camera's embedded preview via `amb_engine::raw::embedded_thumbnail`, cached on disk in the app's cache folder.
     - Opening another photo saves unsaved edits of the current one first.
-  - long size lists (crop aspect, export size) use a drop-down with collapsible groups (`ui/picker.js`, layered over the native select): common sizes open, sites collapsed
+  - long size lists (crop aspect, export size) use a drop-down with collapsible groups (`ui/core/picker.js`, layered over the native select): common sizes open, sites collapsed
   - file names from a template for batch exports (Import's tokens: `{name}`, `{seq}`, the capture date, `{camera}`; `amb render --out-dir --name` too)
   - preset choice "Apply to the original, not on top" (`#preset-from-original`): on, a preset replaces the look (crop, spots, masks, geometry and a negative's conversion stay); off, presets add up.
   - presets: hover to preview, ☆ to star as a favourite (shown first), right-click to apply only some setting groups (`apply_preset` `include_groups`)
@@ -331,22 +331,22 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - Presets (built-in and yours) with width, a deeper bottom, colour or the photo's own colour, keyline, rounded corners, "whole photo inside" for exact sizes, and a caption line from the photo's metadata (`border::caption_text`).
     - A live preview in the export dialog.
     - Captions and text watermarks pick a font from `amb-export/src/fonts.rs` (the editor loads the same files, `font_data`).
-    - The editor's Frame panel (`ui/frame.js`) draws the border with CSS around the preview and the text as an overlay, outside the edit, and fills the export dialog's Border and Watermark from it.
+    - The editor's Frame panel (`ui/develop/frame.js`) draws the border with CSS around the preview and the text as an overlay, outside the edit, and fills the export dialog's Border and Watermark from it.
   - LUTs: Basic → Profile → LUT applies a `.cube` file with an amount (`amb:LUT`, `lut.rs`, [design/luts.md](design/luts.md)).
   - plugins:
     - `crates/amb-plugin` loads a plugin folder (`plugin.json` + `plugin.wasm`), checks it (no imports but the old `amb.log`, refused on Windows x64; log lines come back with the output), and runs it in the `wasmi` interpreter with an instruction budget and a 64 MB memory cap.
     - The input is JSON (settings, parameters, a seed, and with permission camera facts and statistics of a ~512 px render, `amb_plugin::photo`); the output is edit commands, limited to set/adjust/reset.
-    - The editor runs them as one undo step (`run_plugin` in `src/commands/plugins.rs`; the list, approvals per fingerprint, install and sharing are in `src/plugins.rs`; the dialog is `ui/plugins.js`).
+    - The editor runs them as one undo step (`run_plugin` in `src/commands/plugins.rs`; the list, approvals per fingerprint, install and sharing are in `src/plugins.rs`; the dialog is `ui/dialogs/plugins.js`).
     - Built-in plugins (Auto tone, Random look, Film recipe, Duotone, Light leak, Holographic, Hue trip, Paint, Tilt-shift, and the Trippy task) are embedded from `plugins/` (`amb_plugin::BUILTIN`). The built-in effects also run natively (`native.rs`: the same crates linked in, on all cores, only for the built-in module itself), a user's plugin always in the sandbox.
     - Effect plugins (`amb_plugin::effect`) export `amb_effect` instead:
       - The edit keeps them in `amb:Effects`.
       - The engine renders them after the LUT (`amb_engine::plugin_effects`, a CPU step in the GPU preview; an amount past 100 pushes the change further, and `where` (`Place`) keeps it to the highlights, midtones, shadows or a colour).
       - They go through a resolver the editor and `amb` register: colour effects as a 33³ table and pixel effects in strips.
-      - `ui/fx.js` draws them in the Effects panel.
-    - `ui/tips.js` shows tips from the features list (while busy, and as search and filter hints; used commands skipped).
-    - `ui/camsim.js` is Help → Camera simulator (a drawn scene through a pinhole camera; nothing edited).
-    - `ui/trip.js` has Trip me and the effect setter task tools use.
-    - Task plugins (`"kind": "task"`, no module: a layout and tools, [design/plugin-kinds.md](design/plugin-kinds.md)) join the task bar (`ui/tasks.js`; their layouts as `plugin:<id>`, checked by `looks::check_layout`). Trippy is one (`plugins/trippy`).
+      - `ui/develop/fx.js` draws them in the Effects panel.
+    - `ui/help/tips.js` shows tips from the features list (while busy, and as search and filter hints; used commands skipped).
+    - `ui/help/camsim.js` is Help → Camera simulator (a drawn scene through a pinhole camera; nothing edited).
+    - `ui/tools/trip.js` has Trip me and the effect setter task tools use.
+    - Task plugins (`"kind": "task"`, no module: a layout and tools, [design/plugin-kinds.md](design/plugin-kinds.md)) join the task bar (`ui/core/tasks.js`; their layouts as `plugin:<id>`, checked by `looks::check_layout`). Trippy is one (`plugins/trippy`).
     - Recipes (named parameter sets) come from the manifest or are saved in the app's config.
     - `amb_plugin::fuji` reads a pasted Fujifilm-style recipe into Film recipe's parameters, kept to its sensor generation's settings (the white balance shift is its own setting, `amb:WBShiftRed`/`Blue`), and runs it on an empty edit for a preset (Presets → Fuji recipe…, `fuji_recipe` in `src/commands/presets.rs`; `amb fuji`).
     - `amb plugin` in the CLI makes, builds, checks and runs them.
@@ -356,14 +356,14 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - Share to the hub opens a pre-filled submission (`preset_submit`).
     - Show file reveals it (`reveal_file`).
     - The presets list skips a photo's own sidecar in a preset folder (`is_photo_sidecar`).
-  - library (`ui/library.js`, `ui/library-grid.js`, `ui/library-actions.js`, `src/library.rs`; [design/library.md](design/library.md)):
-    - The Folders panel (`ui/folders.js`): library folders from `amb-library::roots`, indexed in the background by `commands/catalog.rs`; offline folders listed from the catalogue.
-    - A folder as a grid, with loupe, compare and survey views for culling (`ui/cull.js`).
-    - File care (`ui/organise.js`, `commands/files.rs`, `amb-library::files`): moves and renames with companions, the trash, finding moved photos, keywords and metadata templates.
-    - Duplicates and bursts (`ui/duplicates.js`, `amb-library::duplicates`, its measurements kept in the catalogue).
-    - Timeline and Map views (`ui/browse.js`; places from GPX tracks by `amb-library::gpx`, set by `commands/places.rs`).
-    - An Import dialog (`ui/import.js`, `amb-library::import`).
-    - Collections (`ui/collections.js`, `amb-library::collections`, kept in the config folder).
+  - library (`ui/library/library.js`, `ui/library/library-grid.js`, `ui/library/library-actions.js`, `src/library.rs`; [design/library.md](design/library.md)):
+    - The Folders panel (`ui/library/folders.js`): library folders from `amb-library::roots`, indexed in the background by `commands/catalog.rs`; offline folders listed from the catalogue.
+    - A folder as a grid, with loupe, compare and survey views for culling (`ui/library/cull.js`).
+    - File care (`ui/library/organise.js`, `commands/files.rs`, `amb-library::files`): moves and renames with companions, the trash, finding moved photos, keywords and metadata templates.
+    - Duplicates and bursts (`ui/library/duplicates.js`, `amb-library::duplicates`, its measurements kept in the catalogue).
+    - Timeline and Map views (`ui/library/browse.js`; places from GPX tracks by `amb-library::gpx`, set by `commands/places.rs`).
+    - An Import dialog (`ui/library/import.js`, `amb-library::import`).
+    - Collections (`ui/library/collections.js`, `amb-library::collections`, kept in the config folder).
     - Virtual copies (sidecars `IMG.copy-N.xmp`; `amb_engine::virtual_copy_of` / `source_path`).
     - Photos are read from the sidecars (ratings, `xmp:Label` colour labels, keywords) and the raw headers (capture time, camera, lens, exposure, in parallel) through the catalogue (`folder::catalog`), which also gives All photos (the Folders | All photos switch) and a Rated photos view.
     - A JPEG shot with a raw is one photo with the raw (`library_twin_jpegs`); Filter → File: JPEG only lists them.
@@ -373,7 +373,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - Paste settings as `reset_group` + `apply_preset` (the source sidecar, limited to the chosen groups), the open photo as one undo step.
     - Batch export through the export dialog.
     - Edited thumbnails are rendered and cached until the sidecar changes (`folder::edited_thumbnail`), also for the filmstrip.
-  - collage maker (`ui/collage.js` and `ui/collage-*.js`, a full-window dialog; [design/collage-and-borders.md](design/collage-and-borders.md)):
+  - collage maker (`ui/collage/collage.js` and `ui/collage-*.js`, a full-window dialog; [design/collage-and-borders.md](design/collage-and-borders.md)):
     - Free layouts (frames moved, resized, turned and stacked by hand) are composited with a turned, soft-edged resample over what is beneath.
     - Collages save as `.ambcollage` project files (`collages::save_project` / `open_project`: photo paths full and relative).
     - Layouts (`ambrotype-collage/1`) are validated, laid out and composited by `amb-export/src/collage.rs` (cover fit with pan, zoom and quarter turns, rounded corners, a page planner that matches photo shapes to cell shapes).

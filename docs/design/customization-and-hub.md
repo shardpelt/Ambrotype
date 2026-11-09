@@ -1,6 +1,6 @@
 # Customisable UI, themes, the hub and AI-made features
 
-Status: §1 layouts, the built-in looks and §2 themes are **built** (2026-10-07): `crates/amb-gui/src/looks/`, `ui/layout.js`, `ui/controls.js`, built-ins in `crates/amb-gui/data/hub/looks/`, a copy of the hub's (since 2026-10-15 the hub is where they are edited; `tools/sync-hub.py` copies the items listed in `data/hub/bundle.txt`). The format reference for people and AI assistants is [docs/ai/ui-layouts.md](../ai/ui-layouts.md). Editor mode (§3) and the hub (§4) are **built** too (`ui/editor.js`; `src/hub/`, `ui/hub.js`, and the [hub repo](https://github.com/Ambrotypehq/ambrotype-hub)). Plugins (§5) and the AI flows (§6) are next (UI track step 7 in [NEXT.md](../NEXT.md)).
+Status: §1 layouts, the built-in looks and §2 themes are **built** (2026-10-07): `crates/amb-gui/src/looks/`, `ui/looks/layout.js`, `ui/develop/controls.js`, built-ins in `crates/amb-gui/data/hub/looks/`, a copy of the hub's (since 2026-10-15 the hub is where they are edited; `tools/sync-hub.py` copies the items listed in `data/hub/bundle.txt`). The format reference for people and AI assistants is [docs/ai/ui-layouts.md](../ai/ui-layouts.md). Editor mode (§3) and the hub (§4) are **built** too (`ui/looks/editor.js`; `src/hub/`, `ui/dialogs/hub.js`, and the [hub repo](https://github.com/Ambrotypehq/ambrotype-hub)). Plugins (§5) and the AI flows (§6) are next (UI track step 7 in [NEXT.md](../NEXT.md)).
 
 ![The Studio layout (knobs and bars) with the Light theme](../images/looks-studio-light.png)
 
@@ -14,7 +14,7 @@ Everything a user can make and share is a small file: a **layout**, a **theme**,
 
 *Built as a slightly simpler v1 than sketched below: two side columns (`left`, `right`) with blocks and panels instead of a free split tree, and per-panel `columns` for knob grids. Tabs and free splits can come with editor mode. The exact format is in [ui-layouts.md](../ai/ui-layouts.md).*
 
-Before layouts, `buildPanels()` in `crates/amb-gui/ui/app.js` built the right-hand panels straight from the settings registry. Now the UI is rendered from a **layout file** (`crates/amb-gui/ui/layout.js`): a tree that the registry fills in.
+Before layouts, `buildPanels()` in `crates/amb-gui/ui/core/app.js` built the right-hand panels straight from the settings registry. Now the UI is rendered from a **layout file** (`crates/amb-gui/ui/looks/layout.js`): a tree that the registry fills in.
 
 ```jsonc
 {
@@ -114,7 +114,7 @@ We do the same, with a little more structure:
 
 *Built (2026-10-08): "action" plugins, sandboxed WebAssembly that turns settings (and, with permission, camera facts and photo statistics) into edit commands.*
 - *The host is `crates/amb-plugin`: the manifest, the `wasmi` sandbox with an instruction budget and a memory cap, and only `amb.log` as an import. Plugins are written with `crates/amb-plugin-sdk`. Auto tone and Random look are built in, from `plugins/`.*
-- *The editor has the Plugins dialog (`ui/plugins.js`, `src/plugins.rs`): run with generated parameter controls, a permission prompt per plugin fingerprint, install from a folder, remove, and Share as pull request.*
+- *The editor has the Plugins dialog (`ui/dialogs/plugins.js`, `src/plugins.rs`): run with generated parameter controls, a permission prompt per plugin fingerprint, install from a folder, remove, and Share as pull request.*
 - *The CLI has `amb plugin new/build/check/run`. Guide: [ai/plugins.md](../ai/plugins.md).*
 - *Changed from the plan: `wasmi` (a pure-Rust interpreter, small and fast to start) instead of `wasmtime`. There is no UI API yet; the dialog draws each plugin's parameters from its manifest.*
 

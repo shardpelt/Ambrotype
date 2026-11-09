@@ -4,7 +4,7 @@ What goes where in the editor, so it stays easy to find your way: what earns a t
 
 ## The kinds
 
-**A tab** (a task in the code: `ui/tasks.js`) is a job you settle into for a while, with its own arrangement of the screen.
+**A tab** (a task in the code: `ui/core/tasks.js`) is a job you settle into for a while, with its own arrangement of the screen.
 - It passes all four:
   1. It is a whole way of working, not one action ("edit a photo", "scan a roll"), and you stay in it for minutes.
   2. It needs different controls on screen than every other tab, so a layout of its own (panels, toolbar, its tools block).

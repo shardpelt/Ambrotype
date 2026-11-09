@@ -150,7 +150,7 @@ fn main() {
         .register_uri_scheme_protocol(interface::SCHEME, |_ctx, request| {
             interface::serve(request.uri().path())
         })
-        // The menu bar's items run their action in the UI (`ui/menu.js`).
+        // The menu bar's items run their action in the UI (`ui/core/menu.js`).
         .on_menu_event(|app, event| {
             use tauri::Emitter;
             // A way back that works whatever the custom interface does.

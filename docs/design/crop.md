@@ -41,7 +41,7 @@ Here sx and sy stretch the crop by less than half a pixel, so a whole number of 
 
 ## GUI crop tool
 
-- `crates/amb-gui/ui/crop.js` (Crop button or R). It previews the photo with `HasCrop` overridden off and draws the rectangle over it. The photo is drawn turned by the straighten angle, so the rectangle stays level on screen, as in Lightroom. Drag an edge or a corner to resize, drag inside to move, drag outside to straighten (or use the Angle slider). The rectangle stays inside the photo: drags stop at the edges, and straightening shrinks it about its centre.
+- `crates/amb-gui/ui/tools/crop.js` (Crop button or R). It previews the photo with `HasCrop` overridden off and draws the rectangle over it. The photo is drawn turned by the straighten angle, so the rectangle stays level on screen, as in Lightroom. Drag an edge or a corner to resize, drag inside to move, drag outside to straighten (or use the Angle slider). The rectangle stays inside the photo: drags stop at the edges, and straightening shrinks it about its centre.
 - The tool works upright, in full-size pixels of the uncropped photo. `amb_export::geometry::{upright_crop, stored_crop}` convert to and from the stored-orientation tags (exposed as the `crop_state` and `crop_commands` commands). A quarter-turn orientation swaps the sides. A mirrored one reverses the sense of the angle, so the slider shows `−CropAngle` for orientations 2, 4, 5 and 7. The `upright_crops_match_the_engine_crop_in_every_orientation` test checks this pixel by pixel through `Crop::geometry` for all 8 orientations.
 - Done (Enter) writes `HasCrop` and the five corner and angle tags as one undo step ("crop"). The whole photo with no angle writes `HasCrop` false and removes the others. Reset does the same at once, and Esc cancels.
 - Aspect locks: Original, Free, 1:1, 4:5, 2:3, 3:4, 16:9, 9:16, and every size preset (`crates/amb-gui/data/size-presets.json`, plus the user's own, kept in the app's `settings.json`). X swaps portrait and landscape. `CropWidth`, `CropHeight` and `CropUnits` are not written.
@@ -49,7 +49,7 @@ Here sx and sy stretch the crop by less than half a pixel, so a whole number of 
 
 ## Crop to the view
 
-The crop tool opened while zoomed in (Settings → General, on by default) starts with what the view shows: the view's centre and size in the developed photo's pixels, mapped into the current crop along its turned axes (`zoomViewRect` in `ui/croptool.js`). Done crops to it. Lens corrections and Transform bend the mapping a little; the rectangle can be adjusted before Done.
+The crop tool opened while zoomed in (Settings → General, on by default) starts with what the view shows: the view's centre and size in the developed photo's pixels, mapped into the current crop along its turned axes (`zoomViewRect` in `ui/tools/croptool.js`). Done crops to it. Lens corrections and Transform bend the mapping a little; the rectangle can be adjusted before Done.
 
 ## Guides and snapping
 

@@ -2,7 +2,7 @@
 
 Status: implemented 2026-10-10. Round heal and clone spots, read and written as Lightroom's own `RetouchAreas`; Lightroom's brushed spots, content-aware and generative fills, and the pre-2018 `RetouchInfo` are read and rendered. AI Remove (our own content-aware fill, Big-LaMa) added 2026-11-02. Red eye is not done yet.
 
-Code: `crates/amb-presets/src/retouch.rs` (the shared model), `crates/amb-engine/src/retouch.rs` (rendering and the donor search), `crates/amb-protocol/src/spots.rs` (commands), `crates/amb-gui/ui/spots.js` (the tool).
+Code: `crates/amb-presets/src/retouch.rs` (the shared model), `crates/amb-engine/src/retouch.rs` (rendering and the donor search), `crates/amb-protocol/src/spots.rs` (commands), `crates/amb-gui/ui/tools/spots.js` (the tool).
 
 ## Lightroom's format
 
@@ -38,7 +38,7 @@ Spots run in order on the scene-linear image at the end of the first pipeline st
 
 ## The editor
 
-`ui/spots.js`, opened with the Spots button or Q. Click a blemish: the backend's `spot_source` runs the donor search on a small render, and the spot is added with that donor (`sourceAutoComputed`), drawn as a dashed circle joined to the spot. Drag the spot (its donor moves with it) or the donor. The panel has Heal/Clone, Size (% of the width), Feather and Opacity, for the selected spot or the next one; [ and ] or the wheel resize; Delete removes the selected spot; Remove all is one undo step. Dragging on the photo paints a brushed spot instead (`add_spot` with `points`: one `Mask/Paint` stroke in the brush-mask dab format, the brush size and Feather from the panel); its donor is searched for the stroke's own shape (`spot_source` with `points`), and the stroke's centre copies from it, as the engine reads Lightroom's brushed spots. Brushed spots aren't drawn as circles and can't be moved yet.
+`ui/tools/spots.js`, opened with the Spots button or Q. Click a blemish: the backend's `spot_source` runs the donor search on a small render, and the spot is added with that donor (`sourceAutoComputed`), drawn as a dashed circle joined to the spot. Drag the spot (its donor moves with it) or the donor. The panel has Heal/Clone, Size (% of the width), Feather and Opacity, for the selected spot or the next one; [ and ] or the wheel resize; Delete removes the selected spot; Remove all is one undo step. Dragging on the photo paints a brushed spot instead (`add_spot` with `points`: one `Mask/Paint` stroke in the brush-mask dab format, the brush size and Feather from the panel); its donor is searched for the stroke's own shape (`spot_source` with `points`), and the stroke's centre copies from it, as the engine reads Lightroom's brushed spots. Brushed spots aren't drawn as circles and can't be moved yet.
 
 ## Open questions (for the Lightroom trial)
 

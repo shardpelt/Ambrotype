@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! `ambrotype --slideshow [--seconds N] [--effect E] [--shuffle] [--window]
 //! PHOTO|DIR...` (what `amb slideshow` runs): the editor opens straight into a
-//! slideshow of those photos (`ui/slideshow.js`).
+//! slideshow of those photos (`ui/library/slideshow.js`).
 
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;

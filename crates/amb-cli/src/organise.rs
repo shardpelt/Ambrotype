@@ -653,7 +653,7 @@ pub(crate) fn collection(args: &[&str], options: &Options, json: bool) -> Result
     }
 }
 
-/// The change effects a slideshow knows (the editor's `ui/slideshow.js`).
+/// The change effects a slideshow knows (the editor's `ui/library/slideshow.js`).
 pub(crate) const SLIDE_EFFECTS: [&str; 6] = ["none", "fade", "slide", "zoom", "black", "random"];
 
 /// `amb slideshow`: opens the editor straight into a slideshow of the photos

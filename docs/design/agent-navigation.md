@@ -151,7 +151,7 @@ Haiku's price applies to prompts up to 100K tokens. Above that it costs $0.50 an
    - keep the findings in this file's Results, and what helped in [recipes.md](../recipes.md) and AGENTS.md;
    - add tests that keep the recipes and file summaries current, as the settings reference has.
 6. Clean up the code, starting where agents struggled (planned in [structure.md](structure.md), the steps in [cleanup.md](../cleanup.md)):
-   - split `amb-gui/src/main.rs` and `ui/app.js` by concern;
+   - split `amb-gui/src/main.rs` and `ui/core/app.js` by concern;
    - use names that are easy to search for;
    - remove dead code.
 

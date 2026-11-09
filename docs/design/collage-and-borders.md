@@ -4,7 +4,7 @@ Status: borders built (2026-10-08), the collage maker built (2026-10-08); open i
 
 ## Borders
 
-*Built (2026-10-08): `crates/amb-export/src/border.rs` (layout, colours, compositing), border presets in the export dialog (`ui/borders.js`, built-ins in `crates/amb-gui/data/border-presets.json`, yours in the settings file), `amb render --border 5%,#fff` or `--border preset.json`, and batches with `amb render A.nef B.nef … --out-dir DIR`. Captions (2026-10-13): a line of text in the bottom band, from a template filled in with the photo's camera, lens, exposure, date, title or creator (`{camera} · {exposure}`); the export dialog's Caption field (previewed with the photo's own details) and `amb render --border-caption`. One line. Fonts (2026-10-15): Sans (FreeSans Bold), Handwritten (Caveat), Pen (Reenie Beanie), Marker (Permanent Marker), Typewriter (Special Elite) and Date stamp (DSEG7), for captions and text watermarks (`amb-export/src/fonts.rs`). The editor's Frame panel (Shift+B) previews a border and text around the photo, outside the edit; on export it becomes the Border ("Frame") and, for text on the photo, the watermark.*
+*Built (2026-10-08): `crates/amb-export/src/border.rs` (layout, colours, compositing), border presets in the export dialog (`ui/dialogs/borders.js`, built-ins in `crates/amb-gui/data/border-presets.json`, yours in the settings file), `amb render --border 5%,#fff` or `--border preset.json`, and batches with `amb render A.nef B.nef … --out-dir DIR`. Captions (2026-10-13): a line of text in the bottom band, from a template filled in with the photo's camera, lens, exposure, date, title or creator (`{camera} · {exposure}`); the export dialog's Caption field (previewed with the photo's own details) and `amb render --border-caption`. One line. Fonts (2026-10-15): Sans (FreeSans Bold), Handwritten (Caveat), Pen (Reenie Beanie), Marker (Permanent Marker), Typewriter (Special Elite) and Date stamp (DSEG7), for captions and text watermarks (`amb-export/src/fonts.rs`). The editor's Frame panel (Shift+B) previews a border and text around the photo, outside the edit; on export it becomes the Border ("Frame") and, for text on the photo, the watermark.*
 
 ![Export with a border: Instagram 4:5, the whole photo inside a Polaroid-style frame](../images/export-border.png)
 
@@ -35,7 +35,7 @@ Status: built 2026-10-12 (`crates/amb-export/src/watermark.rs`).
 - *the layout format, compositing and page planner: `crates/amb-export/src/collage.rs`*
 - *from the command line (2026-10-13): `amb collage <layout> <photos>... --out page.jpg` (a built-in by name or number, `amb collage list`, or a layout .json; `--size`, `--background`, `--gap`, `--margin` and the export options), pages when there are more photos than cells*
 - *rendering one collage or a batch of pages, and the layouts list: `crates/amb-gui/src/collages.rs`; built-in layouts in `crates/amb-export/data/collage-templates.json` (`collage::builtin_templates`), yours in the settings file*
-- *the editor screen: `crates/amb-gui/ui/collage.js` (the Collage button, or C)*
+- *the editor screen: `crates/amb-gui/ui/collage/collage.js` (the Collage button, or C)*
 
 ![The collage maker: layouts on the left, the canvas, canvas and cell settings on the right, and the photo tray below](../images/collage.png)
 

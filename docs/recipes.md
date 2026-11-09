@@ -23,7 +23,7 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
   amb testimage ramp /tmp/ui/more/other.dng      # browse.js shows a second folder too
   DISPLAY=:99 ambrotype --ui-test crates/amb-gui/tests/ui/smoke.js /tmp/ui/test.dng
   ```
-  It prints each step and exits 0 when all pass. A script is the body of an async function of `t` (`ui/uitest.js`): `t.step(name, fn)`, `t.setSlider("Exposure2012", 1)`, `t.key("Ctrl+Z")`, `t.click(selector)`, `t.until(what, () => cond)`, `t.expect(ok, what)`, `t.row(name)`, `t.setting(name)`, `t.visible(el)`. Save dialogs don't open: exports go to a temporary folder. A `console.error` or an uncaught error fails the run. Use a fresh config folder (`XDG_CONFIG_HOME`) so your own settings don't change the result. CI runs every script in that folder on Linux. A UI bug fix gets a step there.
+  It prints each step and exits 0 when all pass. A script is the body of an async function of `t` (`ui/core/uitest.js`): `t.step(name, fn)`, `t.setSlider("Exposure2012", 1)`, `t.key("Ctrl+Z")`, `t.click(selector)`, `t.until(what, () => cond)`, `t.expect(ok, what)`, `t.row(name)`, `t.setting(name)`, `t.visible(el)`. Save dialogs don't open: exports go to a temporary folder. A `console.error` or an uncaught error fails the run. Use a fresh config folder (`XDG_CONFIG_HOME`) so your own settings don't change the result. CI runs every script in that folder on Linux. A UI bug fix gets a step there.
 - **Built-in layouts, themes and presets:** never edit them in `crates/amb-gui/data/hub/`. They are copies, checked against `crates/amb-gui/data/hub/index.json`. Change them in the hub repo and run `tools/sync-hub.py`, or leave that step to the maintainer and say so.
 
 ## Add a develop setting (a slider, switch or choice)
@@ -45,14 +45,14 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
 ## Add a toolbar button
 
 1. `crates/amb-gui/ui/index.html`: a `<button id="btn-…" title="…">Word</button>` among the others in `topbar`.
-2. `crates/amb-gui/ui/layout.js`: `TOOLBAR_IDS` maps the layout name to the button's id.
+2. `crates/amb-gui/ui/looks/layout.js`: `TOOLBAR_IDS` maps the layout name to the button's id.
 3. `crates/amb-gui/src/looks/mod.rs`: `TOOLBAR` lists the names a layout may use; check the array's length.
-4. `crates/amb-gui/ui/app.js`: the click handler, with the others in `init`.
-5. `crates/amb-gui/ui/keys.js`: optionally a shortcut in `KEY_ACTIONS`, with `button:` set to the id so the tooltip shows the key.
-6. `crates/amb-gui/ui/menu.js`: with a shortcut, the action's id in `MENU_BAR` (the menu bar), and a title in `MENU_TITLES` if its label is a sentence; a test checks the ids.
-7. `crates/amb-gui/ui/editor.js`: its name in `TOOL_TITLES`, for editing layouts.
-8. `crates/amb-gui/ui/library.js`: if it acts on the photo, add its id to `VIEWER_BUTTONS` (hidden in the library).
-9. `crates/amb-gui/ui/icons.js`: an icon in `ICON_PATHS` and `TOOLBAR_ICONS`, only if the picture is obvious; otherwise it stays a word.
+4. `crates/amb-gui/ui/core/app.js`: the click handler, with the others in `init`.
+5. `crates/amb-gui/ui/core/keys.js`: optionally a shortcut in `KEY_ACTIONS`, with `button:` set to the id so the tooltip shows the key.
+6. `crates/amb-gui/ui/core/menu.js`: with a shortcut, the action's id in `MENU_BAR` (the menu bar), and a title in `MENU_TITLES` if its label is a sentence; a test checks the ids.
+7. `crates/amb-gui/ui/looks/editor.js`: its name in `TOOL_TITLES`, for editing layouts.
+8. `crates/amb-gui/ui/library/library.js`: if it acts on the photo, add its id to `VIEWER_BUTTONS` (hidden in the library).
+9. `crates/amb-gui/ui/core/icons.js`: an icon in `ICON_PATHS` and `TOOLBAR_ICONS`, only if the picture is obvious; otherwise it stays a word.
 10. `docs/ai/ui-layouts.md`: a row in the toolbar table, and in the example `toolbar`.
    - The test `format_reference_is_complete` checks every name is documented.
 11. Built-in layouts list their buttons. A new button shows in every layout that has no `toolbar` list; to add it to the built-in ones, see "Done means it works as asked" above.
@@ -89,5 +89,5 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
    - In `hub/kinds.rs`, an `install_…` function checks its sha256 and saves it.
 2. `crates/amb-gui/src/commands/mod.rs`: register the new Tauri command in `handler`.
    - The command itself goes in `crates/amb-gui/src/commands/hub.rs` and calls the install.
-3. `crates/amb-gui/ui/hub.js`: in `hubFlow`, a preview and the Install button's branch. `crates/amb-gui/ui/index.html`: a tab in `hub-tabs`.
+3. `crates/amb-gui/ui/dialogs/hub.js`: in `hubFlow`, a preview and the Install button's branch. `crates/amb-gui/ui/index.html`: a tab in `hub-tabs`.
 4. Docs: `docs/design/customization-and-hub.md`. In the hub repo (Ambrotypehq/ambrotype-hub), tools/build_index.py lists the folders it indexes.

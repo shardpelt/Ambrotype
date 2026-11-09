@@ -1,6 +1,6 @@
 # The assistant panel
 
-Presets → **Ask AI…** (or Ctrl+Shift+A) opens a small chat beside the photo. You ask in words ("warmer and a bit moodier"), and your own AI model edits the photo with the same settings you use. Code: `crates/amb-gui/src/assistant.rs` and `ui/assistant.js`.
+Presets → **Ask AI…** (or Ctrl+Shift+A) opens a small chat beside the photo. You ask in words ("warmer and a bit moodier"), and your own AI model edits the photo with the same settings you use. Code: `crates/amb-gui/src/assistant.rs` and `ui/dialogs/assistant.js`.
 
 ## Which model
 

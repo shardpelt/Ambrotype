@@ -69,7 +69,7 @@ Folders, or whole drives, that the catalogue keeps indexed (photo manager track,
 
 ## Timeline and map
 
-Other ways to browse what the library shows (a folder, a collection or All photos, after the filters), as views next to Grid, Loupe, Compare and Survey (2026-10-23; `ui/browse.js`).
+Other ways to browse what the library shows (a folder, a collection or All photos, after the filters), as views next to Grid, Loupe, Compare and Survey (2026-10-23; `ui/library/browse.js`).
 
 - **Timeline:** the years as bars, and the chosen year as twelve month calendars. A day with photos shows the first one's thumbnail and how many there are. Clicking a day or a month name shows just those photos in the grid, and a date chip in the bar (`14 July 2026 ×`) shows all dates again. Double-clicking a year, or **Show all of 2026**, shows the year.
 - **Scrubber:** sorted by capture time, the grid has a strip on its right edge with the years. Dragging along it jumps through the photos and says which month you're at.
@@ -81,7 +81,7 @@ Other ways to browse what the library shows (a folder, a collection or All photo
 
 ## File care
 
-**Organise** in the library bar (2026-10-23; `amb_library::files`, `ui/organise.js`). A photo's files move together: the raw, its same-name JPEG, its sidecar and its virtual copies, as Import groups them.
+**Organise** in the library bar (2026-10-23; `amb_library::files`, `ui/library/organise.js`). A photo's files move together: the raw, its same-name JPEG, its sidecar and its virtual copies, as Import groups them.
 
 - **Move to a folder…**, **Rename…** and **Sort into dated folders…** act on the selected photos (dated folders: all shown when none is selected). Each shows every new name first. Names come from Import's tokens (`{yyyy}`, `{seq}`, `{camera}`, …); a folder template's `/` makes subfolders. Nothing is overwritten: a taken name gets `-2`, `-3`. Across drives a file is copied, checked, then removed. If one of a photo's files can't move, the others go back.
 - **Undo the last move** puts the files of the last move or rename back.
@@ -101,7 +101,7 @@ From a terminal, `amb slideshow PHOTO|DIR... [--seconds N] [--shuffle] [--effect
 
 ## Duplicates and bursts
 
-**Organise → Duplicates and bursts…** looks among the photos shown, or the selected ones (2026-10-23; `amb_library::duplicates`, `ui/duplicates.js`).
+**Organise → Duplicates and bursts…** looks among the photos shown, or the selected ones (2026-10-23; `amb_library::duplicates`, `ui/library/duplicates.js`).
 
 - **Same file:** identical bytes, such as a card imported twice under other names. Only files of equal size are read whole and hashed (SHA-256), so this stays quick.
 - **Alike:** pictures whose fingerprints are close: a 64-bit difference hash of a small grey copy of the camera's preview. That finds the same shot resized or re-saved, and frames of one scene. *Nearly identical*, *Alike* and *Loosely alike* allow 3, 6 or 10 of 64 bits to differ.
@@ -127,7 +127,7 @@ Lightroom's Import "Copy", without a catalogue. The dialog (and `amb import SOUR
 - **Safe copies:** each file is copied to a hidden temporary name, checked for size, then renamed, and keeps its modified time.
 - After the import the library shows the first folder that got photos.
 
-Code: `crates/amb-library/src/import.rs` (plan and run), `amb import` in `crates/amb-cli`, `ui/import.js`.
+Code: `crates/amb-library/src/import.rs` (plan and run), `amb import` in `crates/amb-cli`, `ui/library/import.js`.
 
 ## Collections
 
@@ -141,7 +141,7 @@ Named lists of photos from any folders, like Lightroom's collections. With no ca
 - Edits, ratings and flags stay in each photo's own sidecar, so they are the same in the folder and every collection.
 - A photo moved or deleted outside Ambrotype is reported when the collection opens, and stays listed until removed.
 
-Code: `crates/amb-library/src/collections.rs`, `ui/collections.js`.
+Code: `crates/amb-library/src/collections.rs`, `ui/library/collections.js`.
 
 ## Virtual copies
 
@@ -209,9 +209,9 @@ The library's Folders panel → **Lightroom +** (or From Lightroom… → **Open
 
 - `crates/amb-library/src/folder.rs`: which files in a folder are photos, in order; `catalog.rs`: the catalogue.
 - `crates/amb-gui/src/library.rs`: listing, batch info changes, paste commands, batch export.
-- `crates/amb-gui/ui/library.js`, `library-grid.js` and `library-actions.js`: the grid, selection, panel and keys.
-- `crates/amb-gui/ui/cull.js`: loupe, compare and survey.
-- `crates/amb-library/src/lrcat.rs` and `crates/amb-gui/ui/lrcat.js`: moving from Lightroom Classic; `crates/amb-library/src/lightroom.rs`, `crates/amb-presets/src/linked.rs` and `crates/amb-gui/ui/lightroom.js`: a catalogue in place.
+- `crates/amb-gui/ui/library/library.js`, `library-grid.js` and `library-actions.js`: the grid, selection, panel and keys.
+- `crates/amb-gui/ui/library/cull.js`: loupe, compare and survey.
+- `crates/amb-library/src/lrcat.rs` and `crates/amb-gui/ui/library/lrcat.js`: moving from Lightroom Classic; `crates/amb-library/src/lightroom.rs`, `crates/amb-presets/src/linked.rs` and `crates/amb-gui/ui/library/lightroom.js`: a catalogue in place.
 - Labels and flags in `amb_protocol::sidecar::PhotoInfo` (`xmp:Label`, `amblib:Flag`); labels are exported as XMP (`amb_export::exif::Tags::label`), flags are not.
 
 ## Not yet

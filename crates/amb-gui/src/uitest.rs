@@ -2,7 +2,7 @@
 //! Scripted UI tests: `ambrotype --ui-test SCRIPT.js [PHOTO]`.
 //!
 //! The editor starts as usual, then the page runs the script with the helpers
-//! in `ui/uitest.js` (click, type, set a slider, wait for something) and
+//! in `ui/core/uitest.js` (click, type, set a slider, wait for something) and
 //! reports back here; the process exits 0 when every step passed. Save
 //! dialogs don't open: exports go to a folder of their own, printed at the
 //! start. A test that hangs is stopped after `LIMIT`. No driver or browser

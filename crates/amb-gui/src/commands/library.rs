@@ -30,7 +30,9 @@ pub(crate) async fn photo_details(path: String) -> Res<PhotoDetails> {
             .into_iter()
             .next()
             .ok_or_else(|| format!("{path}: not found"))?;
-        let bytes = std::fs::metadata(amb_engine::source_path(&p)).ok().map(|m| m.len());
+        let bytes = std::fs::metadata(amb_engine::source_path(&p))
+            .ok()
+            .map(|m| m.len());
         Ok(PhotoDetails { photo, bytes })
     })
     .await

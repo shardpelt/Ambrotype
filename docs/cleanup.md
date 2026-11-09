@@ -525,7 +525,7 @@ Why: 1,122 lines: a model on the CPU or GPU, planning its GPU steps from the gra
 
 Commit: `ai: net.rs split into planning and running`. Why: "1,122 lines; planning a model's GPU steps and running them now have their own files."
 
-### ☐ F16. amb-engine `lens.rs` → `lens/`
+### ☑ F16. amb-engine `lens.rs` → `lens/` (2026-11-09)
 
 Why: 1,009 lines: the lens settings, the camera-space corrections, measuring chromatic aberration and defringing.
 

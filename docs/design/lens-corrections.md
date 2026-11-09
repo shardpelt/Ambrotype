@@ -1,6 +1,6 @@
 # Lens Corrections
 
-Status: v1 implemented (`crates/amb-lens`, `crates/amb-engine/src/lens.rs`). Every constant is a first guess, to be fitted against Lightroom with the `lens` sweeps (docs/lightroom-trial-plan.md).
+Status: v1 implemented (`crates/amb-lens`, `crates/amb-engine/src/lens/`). Every constant is a first guess, to be fitted against Lightroom with the `lens` sweeps (docs/lightroom-trial-plan.md).
 
 ## What Lightroom's panel does, and what we render
 

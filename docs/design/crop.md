@@ -1,6 +1,6 @@
 # Crop and straighten
 
-Status: implemented (`crates/amb-engine/src/crop.rs`, folded into the lens resampling pass in `crates/amb-engine/src/lens.rs`). The coordinate frame and the angle's sign follow darktable's Lightroom importer. Neither has been checked against Lightroom renders yet.
+Status: implemented (`crates/amb-engine/src/crop.rs`, folded into the lens resampling pass in `crates/amb-engine/src/lens/`). The coordinate frame and the angle's sign follow darktable's Lightroom importer. Neither has been checked against Lightroom renders yet.
 
 ## Tags
 

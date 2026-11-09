@@ -2,7 +2,7 @@
 
 Status: implemented 2026-10-10. The manual sliders and Upright Auto, Level, Vertical and Full render. Guided (2026-10-12) works our own way; see below.
 
-Code: `crates/amb-engine/src/transform.rs` (the sliders' model), `crates/amb-engine/src/upright.rs` (finding the Upright correction), composed into the resampling pass in `crates/amb-engine/src/lens.rs`. The editor's Transform panel (an Upright choice and the sliders) is generated from the registry like the others.
+Code: `crates/amb-engine/src/transform.rs` (the sliders' model), `crates/amb-engine/src/upright.rs` (finding the Upright correction), composed into the resampling pass in `crates/amb-engine/src/lens/`. The editor's Transform panel (an Upright choice and the sliders) is generated from the registry like the others.
 
 ## Tags
 

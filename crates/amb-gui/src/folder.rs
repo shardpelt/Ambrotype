@@ -245,9 +245,12 @@ pub fn thumbnail(path: &Path, edge: u32, cache: Option<&Path>) -> Result<Vec<u8>
     // A virtual copy shows its photo's camera preview.
     let path = &amb_engine::source_path(path);
     let edge = edge.clamp(64, 2048);
+    // Turned in the library: a thumbnail of its own.
+    let turned =
+        amb_engine::orientation::from_sidecar(path).map_or(String::new(), |o| format!("-o{o}"));
     let key = cache
         .zip(cache_key(path, edge))
-        .map(|(dir, k)| dir.join(format!("{k}.jpg")));
+        .map(|(dir, k)| dir.join(format!("{k}{turned}.jpg")));
     if let Some(bytes) = key.as_ref().and_then(|k| read_cached(k)) {
         return Ok(bytes);
     }

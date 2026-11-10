@@ -213,12 +213,15 @@ USAGE:
     amb catalog relink <DIR>                Find them in DIR and its subfolders by name and size; the
                                             catalogue and collections follow them there
     amb info <PHOTO|DIR>... [--json]        What each photo's sidecar says: rating, label, flag,
-                                            keywords, title, caption, creator, copyright, place, stack
+                                            keywords, title, caption, creator, copyright, place, stack,
+                                            orientation
     amb tag <PHOTO|DIR>... [--rating 0-5] [--label Red|...|none] [--flag pick|reject|none]
             [--add \"a, b\"] [--remove \"c\"] [--title T] [--caption C] [--creator C]
-            [--copyright C] [--place LAT,LON|none] [--dry-run] [--json]
+            [--copyright C] [--place LAT,LON|none] [--rotate left|right|180]
+            [--flip horizontal] [--dry-run] [--json]
                                             One change to many photos at once, in their sidecars, as the
-                                            library does it (a place as Lightroom's map writes it)
+                                            library does it (a place as Lightroom's map writes it, a turn
+                                            as tiff:Orientation)
     amb place <PHOTO|DIR>... --gpx TRACK.gpx [--offset HOURS] [--replace] [--dry-run] [--json]
                                             Where photos were taken, from a GPS track: --offset is how
                                             many hours the camera's clock was ahead of UTC; photos with a
@@ -464,6 +467,8 @@ fn main() -> ExitCode {
             | "--creator"
             | "--copyright"
             | "--place"
+            | "--rotate"
+            | "--flip"
             | "--gpx"
             | "--offset"
             | "--alike"

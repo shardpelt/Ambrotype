@@ -104,6 +104,12 @@ pub struct PhotoInfo {
     /// Writing, `None` keeps what the file has and `""` removes it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub gps: Option<String>,
+    /// How the photo is turned (EXIF 1–8, `tiff:Orientation`, as Lightroom
+    /// writes a photo turned in its library); `None` when the sidecar
+    /// doesn't say, so the camera's holds. Writing, `None` keeps what the
+    /// file has.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub orientation: Option<u16>,
 }
 
 /// A photo's place in a stack: the stack's id, and whether it is the photo
@@ -153,6 +159,7 @@ impl PhotoInfo {
                 Some((lat, lon)) => format!("{lat:.6},{lon:.6}"),
                 None => String::new(),
             }),
+            orientation: self.orientation.filter(|o| (1..=8).contains(o)),
         }
     }
 
@@ -397,6 +404,7 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
     if let [Some(lat), Some(lon)] = gps {
         info.gps = Some(format!("{lat:.6},{lon:.6}"));
     }
+    info.orientation = amb_presets::xmp::tiff_orientation(text);
     if info.flag.is_none() && rated_reject {
         info.flag = Some(Flag::Reject);
     }
@@ -581,6 +589,21 @@ fn apply_info(foreign: &mut Foreign, info: &PhotoInfo) {
                 .attributes
                 .push((format!("{p}:GPSLongitude"), xmp_coordinate(lon, 'E', 'W')));
         }
+    }
+    if let Some(o) = info.orientation {
+        let tiff = amb_presets::xmp::TIFF_NS;
+        let ns = foreign.namespaces.clone();
+        foreign
+            .attributes
+            .retain(|(name, _)| resolve(name, &ns) != (Some(tiff), "Orientation"));
+        foreign.elements.retain(|e| {
+            let (uri, l) = element_ns(e, &ns);
+            !(uri.as_deref() == Some(tiff) && l == "Orientation")
+        });
+        let p = prefix_for(foreign, tiff, "tiff");
+        foreign
+            .attributes
+            .push((format!("{p}:Orientation"), o.to_string()));
     }
     if let Some(label) = &info.label {
         let p = prefix_for(foreign, XMP_NS, "xmp");
@@ -938,6 +961,39 @@ pub fn write_atomic(path: &Path, text: &str) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_orientation_is_written_where_lightroom_keeps_it() {
+        let turned = PhotoInfo {
+            orientation: Some(6),
+            ..read_info(SIDECAR)
+        };
+        let out = with_info(Some(SIDECAR), &turned).unwrap();
+        assert!(out.contains(r#"tiff:Orientation="6""#), "{out}");
+        assert_eq!(read_info(&out).orientation, Some(6));
+        // Turned again: one value, the new one; other info stays.
+        let again = with_info(
+            Some(&out),
+            &PhotoInfo {
+                orientation: Some(3),
+                ..read_info(&out)
+            },
+        )
+        .unwrap();
+        assert_eq!(again.matches("Orientation").count(), 1, "{again}");
+        assert_eq!(read_info(&again).orientation, Some(3));
+        assert_eq!(read_info(&again).rating, read_info(SIDECAR).rating);
+        // Not saying keeps it.
+        let kept = with_info(
+            Some(&again),
+            &PhotoInfo {
+                orientation: None,
+                ..read_info(&again)
+            },
+        )
+        .unwrap();
+        assert_eq!(read_info(&kept).orientation, Some(3));
+    }
 
     #[test]
     fn places_round_trip_in_lightrooms_form() {

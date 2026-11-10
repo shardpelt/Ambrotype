@@ -315,6 +315,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - rating (keys 1–5), pick/reject flags (P, X, U) and keywords:
     - Flags are `amblib:Flag`, plus `xmp:Rating="-1"` for an unrated reject.
     - They are written to the sidecar at once (`amb_protocol::sidecar::with_info`: `xmp:Rating`, `dc:subject`, keeping `lr:hierarchicalSubject` paths in step).
+  - rotate and flip (Ctrl+[ and Ctrl+], `ui/develop/info.js` `turnPhotos`): the turn is `tiff:Orientation` in the sidecar, as Lightroom writes it (`PhotoInfo::orientation`, through `library_set_info`'s `rotate`/`flip`). `amb_engine::orientation` composes turns and flips, and `raw::load` and the embedded previews apply the sidecar's orientation over the camera's, so everything that shows or exports a photo turns it. Pixels, crops, masks and spots stay in the stored orientation.
     - They are embedded in exports: XMP in JPEG/PNG/TIFF/WebP and IPTC keywords in JPEG (`amb-export/src/embed.rs`, added to the finished file), plus EXIF Rating and XPKeywords.
     - `amb render --rating 4 --keywords "a, b"` does the same from the command line.
   - filmstrip: the raws in the open photo's folder (`ui/develop/filmstrip.js`).

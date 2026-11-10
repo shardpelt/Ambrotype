@@ -4,7 +4,7 @@
 "use strict";
 
 // A side column can be folded away (the arrow on the photo's edge, or
-// Ctrl+[ and Ctrl+]) and back; remembered on this computer.
+// F7 and F8, as in Lightroom) and back; remembered on this computer.
 const folded = (() => {
   return store.get("folded-columns") ?? {};
 })();
@@ -211,7 +211,7 @@ function wireTopbar() {
 // A layout with `"chrome": "hidden"` (Minimalism) shows only the photo: no
 // top bar, status bar or filmstrip, and its side columns slide in over the
 // photo while the pointer is at the window's left or right edge (or with
-// Ctrl+[ and Ctrl+]). Shortcuts all work. Not while editing the layout.
+// F7 and F8). Shortcuts all work. Not while editing the layout.
 const chromeHidden = () => ui.layout?.chrome === "hidden" && !ui.edit;
 const peekTimers = {};
 

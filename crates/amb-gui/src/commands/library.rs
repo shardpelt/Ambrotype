@@ -220,7 +220,7 @@ pub(crate) fn change_one(
     let mut guard = slot.lock().map_err(|e| e.to_string())?;
     match guard.as_mut().filter(|s| s.path == Path::new(path)) {
         Some(s) => {
-            let new = change.apply(&s.info);
+            let new = change.apply(&change.base(s.info.clone(), Path::new(path))?);
             s.set_info(&new)
         }
         None => library::change_info(Path::new(path), change),

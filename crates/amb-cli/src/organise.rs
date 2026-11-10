@@ -145,13 +145,16 @@ pub(crate) fn info(args: &[&str], json: bool) -> Result<(), String> {
                 if s.top { " (top)" } else { "" }
             ));
         }
+        if let Some(o) = i.orientation {
+            parts.push(format!("orientation {o}"));
+        }
         println!("{}  {}", p.display(), parts.join("  "));
     }
     Ok(())
 }
 
 /// `amb tag`: one change to many photos' rating, label, flag, keywords,
-/// title, caption, creator, copyright and place.
+/// title, caption, creator, copyright, place and orientation.
 pub(crate) fn tag(
     args: &[&str],
     options: &Options,
@@ -192,6 +195,24 @@ pub(crate) fn tag(
                 .ok_or(format!("--place {p}: latitude,longitude or none")),
         })
         .transpose()?;
+    // Quarter turns clockwise, as the photo is seen.
+    let rotate = options
+        .get("--rotate")
+        .map(|r| match *r {
+            "left" => Ok(-1),
+            "right" => Ok(1),
+            "180" => Ok(2),
+            r => Err(format!("--rotate {r}: left, right or 180")),
+        })
+        .transpose()?;
+    let flip = options
+        .get("--flip")
+        .map(|f| match *f {
+            "horizontal" => Ok(true),
+            f => Err(format!("--flip {f}: horizontal")),
+        })
+        .transpose()?
+        .unwrap_or(false);
     let add = options.get("--add").map(|v| list(v)).unwrap_or_default();
     let remove: Vec<String> = options.get("--remove").map(|v| list(v)).unwrap_or_default();
     let changes = [
@@ -199,6 +220,8 @@ pub(crate) fn tag(
         label.is_some(),
         flag.is_some(),
         place.is_some(),
+        rotate.is_some(),
+        flip,
         !add.is_empty(),
         !remove.is_empty(),
     ]
@@ -208,7 +231,7 @@ pub(crate) fn tag(
             .iter()
             .any(|k| options.contains_key(k));
     if !changes {
-        return Err("nothing to change: give --rating, --label, --flag, --add, --remove, --title, --caption, --creator, --copyright or --place".into());
+        return Err("nothing to change: give --rating, --label, --flag, --add, --remove, --title, --caption, --creator, --copyright, --place, --rotate or --flip".into());
     }
     let mut out = Vec::new();
     for p in &photos {
@@ -224,6 +247,22 @@ pub(crate) fn tag(
         }
         if place.is_some() {
             i.gps = place.clone();
+        }
+        if rotate.is_some() || flip {
+            if amb_engine::virtual_copy_of(p).is_some() {
+                return Err(format!(
+                    "{}: a virtual copy turns with its photo: turn the photo itself",
+                    p.display()
+                ));
+            }
+            let base = i
+                .orientation
+                .unwrap_or_else(|| amb_engine::orientation::camera(p));
+            i.orientation = Some(amb_engine::orientation::turned(
+                base,
+                rotate.unwrap_or(0),
+                flip,
+            ));
         }
         let lower: Vec<String> = remove.iter().map(|k| k.to_lowercase()).collect();
         i.keywords.retain(|k| !lower.contains(&k.to_lowercase()));

@@ -18,7 +18,7 @@ const MENU_BAR = [
     ["Rating", ["rate-1", "rate-2", "rate-3", "rate-4", "rate-5", "|", "rate-0"]],
     ["Colour Label", ["label-red", "label-yellow", "label-green", "label-blue"]],
     ["Flag", ["flag-pick", "flag-reject", "flag-none"]],
-    "keywords", "|", "save-preset", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
+    "keywords", "|", "rotate-left", "rotate-right", "flip-horizontal", "|", "save-preset", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
   ]],
   ["Library", ["library", "|", "lib-loupe", "lib-compare", "lib-survey", "|", "slideshow", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
   ["View", ["before", "split", "touch", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],

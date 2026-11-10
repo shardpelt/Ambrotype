@@ -11,12 +11,11 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Up next (in this order)
 
-1. **Rotate a photo** (owner, 2026-11-09): a quarter turn left or right, and flip, as Lightroom's Rotate Left and Right (Ctrl+[ and Ctrl+]). In the library for the selection, and in Develop for the open photo; undoable, and in `amb`. Lightroom stores the result as `tiff:Orientation` in the sidecar. Crops and masks are in the stored orientation, so they stay put. Today only the crop tool straightens, and a collage cell turns its photo.
-2. **A paper curve in density** (Film lab item 9).
-3. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
-4. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
-5. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
-6. **From the competition:** raw AI Denoise (our own builds, after CalibRaw's ideas) ([research/17](research/17-competitors-2026.md)).
+1. **A paper curve in density** (Film lab item 9).
+2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
+3. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
+4. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
+5. **From the competition:** raw AI Denoise (our own builds, after CalibRaw's ideas) ([research/17](research/17-competitors-2026.md)).
 
 ## Ideas for later
 
@@ -32,6 +31,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-10: rotate and flip a photo: **Rotate left** (Ctrl+[), **Rotate right** (Ctrl+]) and **Flip horizontal** in the Photo menu, Ctrl+K or the keys, for the open photo or the library's selection; `amb tag --rotate left|right|180 --flip horizontal`. Written where Lightroom keeps it (`tiff:Orientation` in the sidecar); crops, masks and spots stay put on the photo, so they turn with it. Folding the side columns moved to F7 and F8, as in Lightroom
 - 2026-11-09: the cleanup's third phase ([cleanup.md](cleanup.md)): the operations that render photos are their own crate, `amb-ops`, so `amb-library` no longer needs the GPU crate; the editor's 18 saved settings are one `Config` behind one lock (`AppState::prefs`), so a new setting is one field; the UI's 78 scripts are in folders by part; and `NEXT.md`'s Built list became links to `FEATURES.md` and `ARCHITECTURE.md`. Found on the way: "Save to…" for a preset took two locks in the opposite order to saving the settings, which could freeze the editor
 - 2026-11-09: the cleanup's first two phases ([cleanup.md](cleanup.md)), each step by a smaller model and reviewed: one `smoothstep` and one `file_stamp`; the UI's shared helpers in `core.js`, which loads first, and its storage through `store`; 15 big files split along their sections (the editor's `main.rs`, `session.rs`, photo and library commands, `looks.rs` and `hub.rs`; the protocol's `state.rs`; the engine's `mask.rs` and `negative.rs`; six UI scripts). Nothing the app does changed. Found on the way: two quick keys in the viewer could show old values (info changes now go one at a time), and three tests that failed now and then
 - 2026-11-09: a structure review of the whole codebase ([design/structure.md](design/structure.md)): no rewrite needed; the big files, the UI's shared names and copied helpers are cleaned up in exact steps for smaller models ([cleanup.md](cleanup.md)). Guard rails first: a size budget test, the UI-script tests reading subfolders and checking every script loads, and `tools/code-metrics.py`

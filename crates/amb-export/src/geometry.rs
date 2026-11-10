@@ -406,6 +406,20 @@ mod tests {
     }
 
     #[test]
+    fn turning_an_orientation_turns_the_photo_as_seen() {
+        let img = Image::from_fn(3, 2, |x, y| [x as f32, y as f32, 0.5]);
+        for o in 1..=8 {
+            let shown = orient(&img, o);
+            let right = orient(&img, amb_engine::orientation::turned(o, 1, false));
+            assert_eq!(right.rgb, orient(&shown, 6).rgb, "{o} turned right");
+            let left = orient(&img, amb_engine::orientation::turned(o, -1, false));
+            assert_eq!(left.rgb, orient(&shown, 8).rgb, "{o} turned left");
+            let flipped = orient(&img, amb_engine::orientation::turned(o, 0, true));
+            assert_eq!(flipped.rgb, orient(&shown, 2).rgb, "{o} flipped");
+        }
+    }
+
+    #[test]
     fn orientations_put_the_top_left_pixel_where_exif_says() {
         let img = numbered(3, 2);
         // Orientation 6: the stored image must be rotated 90° clockwise; the

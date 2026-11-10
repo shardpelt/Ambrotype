@@ -432,6 +432,13 @@ function pumpLibraryThumbs() {
   }
 }
 
+// A photo was turned: its camera preview and its render both turn.
+function turnedThumb(path) {
+  for (const key of [...lib.urls.keys()]) if (key.startsWith(`${path}|`)) lib.urls.delete(key);
+  if (lib.cells.has(path)) lib.queue.unshift(path);
+  pumpLibraryThumbs();
+}
+
 // A photo's edit changed: show the new render when it comes.
 function refreshThumb(path) {
   for (const key of [...lib.urls.keys()]) if (key.startsWith(`${path}|`) && key.endsWith("|true")) lib.urls.delete(key);

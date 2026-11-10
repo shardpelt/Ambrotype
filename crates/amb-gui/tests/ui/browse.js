@@ -228,6 +228,17 @@ await t.step("View (V): the photos full screen, ← → and the screen's sides s
   await loadLibrary(dir, []);
 });
 
+await t.step("Rotate right in the library turns the selected photo, written in its sidecar; Rotate left turns it back", async () => {
+  const path = lib.shown[0].path;
+  select(path);
+  const orientation = async () => (await invoke("library_set_info", { paths: [path], change: {} }))[0].info.orientation ?? 1;
+  const start = await orientation();
+  t.key("Ctrl+]");
+  await t.until("turned", async () => (await orientation()) !== start, 20000);
+  t.key("Ctrl+[");
+  await t.until("back", async () => (await orientation()) === start, 20000);
+});
+
 await t.step("Sync negative roll asks how: scenes, odd frames, a baseline frame", async () => {
   const parent = `${lib.dir}${lib.dir.includes("\\") ? "\\" : "/"}more`;
   await toggleTreeFolder(parent);

@@ -145,8 +145,17 @@ fn color_matrix(raw: &rawler::RawImage) -> Result<Mat3, Error> {
 }
 
 /// Open a photo: a raw file, or a rendered image by its extension
-/// ([`crate::raster`]).
+/// ([`crate::raster`]), turned as its sidecar says when it was turned in the
+/// library ([`crate::orientation`]).
 pub fn load(path: &Path) -> Result<CameraImage, Error> {
+    let mut img = load_file(path)?;
+    if let Some(o) = crate::orientation::from_sidecar(path) {
+        img.metadata.orientation = o;
+    }
+    Ok(img)
+}
+
+fn load_file(path: &Path) -> Result<CameraImage, Error> {
     if crate::raster::is_raster(path) {
         return crate::raster::load(path);
     }
@@ -759,17 +768,20 @@ fn embedded_jpeg(path: &Path, largest: bool) -> Result<Option<image::DynamicImag
         .filter(|i| i.width() >= 32 && i.height() >= 32))
 }
 
-/// An embedded preview turned as the raw says it was held.
+/// An embedded preview turned as the raw says it was held, or as its
+/// sidecar says once it was turned in the library.
 fn upright(path: &Path, small: image::RgbImage) -> image::RgbImage {
-    let orientation = read_metadata(path).map(|(_, m)| m.orientation).unwrap_or(1);
+    let orientation = crate::orientation::from_sidecar(path)
+        .unwrap_or_else(|| read_metadata(path).map(|(_, m)| m.orientation).unwrap_or(1));
     use image::imageops::{flip_horizontal, flip_vertical, rotate90, rotate180, rotate270};
     match orientation {
         2 => flip_horizontal(&small),
         3 => rotate180(&small),
         4 => flip_vertical(&small),
-        5 => rotate90(&flip_horizontal(&small)),
+        // As amb_export::geometry::orient: 5 mirrors then turns 270°, 7 90°.
+        5 => rotate270(&flip_horizontal(&small)),
         6 => rotate90(&small),
-        7 => rotate270(&flip_horizontal(&small)),
+        7 => rotate90(&flip_horizontal(&small)),
         8 => rotate270(&small),
         _ => small,
     }

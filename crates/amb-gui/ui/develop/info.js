@@ -172,3 +172,23 @@ function wireInfo() {
   $("tag-field").addEventListener("click", (e) => { if (e.target === $("tag-field")) input.focus(); });
   renderInfo();
 }
+
+// Rotate left or right, or flip: the library's selected photos, else the
+// open photo. Written where Lightroom keeps it (tiff:Orientation in the
+// sidecar); crops, masks and spots stay put on the photo, so they turn too.
+async function turnPhotos(change) {
+  const paths = libraryOn() ? libraryTargets().map((p) => p.path) : ui.info ? [ui.info.path] : [];
+  if (!paths.length) return toast("Open a photo, or select some in the library, to turn them.", true);
+  try {
+    await setInfo(paths, change);
+  } catch (e) {
+    return toast(String(e), true);
+  }
+  for (const path of paths) {
+    turnedThumb(path);
+    stripTurned(path);
+  }
+  if (ui.info && paths.includes(ui.info.path)) requestPreview(false);
+  const what = change.flip ? "Flipped" : change.rotate < 0 ? "Rotated left" : "Rotated right";
+  status(`${what}: ${paths.length} photo${paths.length === 1 ? "" : "s"}`);
+}

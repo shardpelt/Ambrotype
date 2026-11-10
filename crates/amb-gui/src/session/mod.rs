@@ -538,6 +538,25 @@ impl Session {
         sidecar::write_atomic(&self.sidecar, &text).map_err(|e| e.to_string())?;
         self.info = sidecar::read_info(&text);
         self.base_xmp = Some(text);
+        // Turned: what is shown and exported turns too; the pixels don't.
+        if let Some(o) = self
+            .info
+            .orientation
+            .filter(|&o| o != self.full.metadata.orientation)
+        {
+            self.full.metadata.orientation = o;
+            for img in [
+                self.preview_src.as_mut().map(|(_, i)| i),
+                self.globals_src.as_mut(),
+                self.draft_src.as_mut().map(|(_, i)| i),
+            ]
+            .into_iter()
+            .flatten()
+            {
+                img.metadata.orientation = o;
+            }
+            self.region_cache = None;
+        }
         Ok(self.info.clone())
     }
 

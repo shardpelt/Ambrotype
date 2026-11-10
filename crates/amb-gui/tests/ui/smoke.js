@@ -451,6 +451,22 @@ await t.step("a filmstrip photo's stars rate it", async () => {
   await t.until("cleared", () => !infoState.info.rating, 10000);
 });
 
+await t.step("Rotate right (Ctrl+]) turns the photo, its sidecar says so; Rotate left (Ctrl+[) turns it back", async () => {
+  // Shortcuts don't fire while a field has the focus.
+  document.activeElement?.blur?.();
+  const shape = () => Math.sign($("preview").naturalWidth - $("preview").naturalHeight);
+  // Read without writing: a write would wake the sidecar watcher.
+  const orientation = async () => (await invoke("photo_info")).info.orientation ?? 1;
+  const before = shape();
+  const start = await orientation();
+  t.key("Ctrl+]");
+  await t.until("the photo turned", () => shape() === -before, 60000);
+  t.expect((await orientation()) !== start, "written in the sidecar");
+  t.key("Ctrl+[");
+  await t.until("turned back", () => shape() === before, 60000);
+  t.expect((await orientation()) === start, "back as it was");
+});
+
 await t.step("the whole photo fills the viewer", async () => {
   const sizes = () => [$("preview").getBoundingClientRect(), $("viewer").getBoundingClientRect()];
   const fills = () => {
@@ -558,9 +574,9 @@ await t.step("Minimalism hides the chrome; the panels slide in from the edge", a
   const body = document.body.classList;
   t.expect(body.contains("chrome-hidden") && body.contains("topbar-off"), "the chrome hidden");
   t.expect(!$("edge-right").hidden && $("filmstrip").hidden, "a right edge strip, no filmstrip");
-  t.key("Ctrl+]");
-  t.expect(body.contains("peek-right"), "Ctrl+] slides the right column in");
-  t.key("Ctrl+]");
+  t.key("F8");
+  t.expect(body.contains("peek-right"), "F8 slides the right column in");
+  t.key("F8");
   t.expect(!body.contains("peek-right"), "and out");
   // The pointer leaving it hides it again, even with a panel open.
   peekColumn("right", true);

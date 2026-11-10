@@ -80,6 +80,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **See only the raws, or only the JPEGs, when browsing** → library → **Filter ▾** → **File**: Raw only, or JPEG only (a raw shot with a JPEG shows its JPEG then; normally they're one photo, shown as the raw).
 - **Move from Lightroom Classic** → Import ▾ → from a Lightroom catalogue (edits, ratings, keywords, collections). `amb lrcat import CATALOG.lrcat`.
 - **Use my Lightroom catalogue as it is, without importing** → library → Folders panel → **Lightroom +** (or From Lightroom Classic… → **Open in place**): its folders and collections show there, its photos with their Lightroom edits, ratings, labels and keywords; nothing is written to the catalogue, and an edit here goes into the photo's sidecar. `amb lrcat open CATALOG.lrcat`.
+- **Turn a photo that's sideways, or mirror it** → **Rotate left** (Ctrl+[), **Rotate right** (Ctrl+]) or **Flip horizontal**, in the Photo menu: the open photo, or the photos selected in the library. Crops and masks turn with it, and Lightroom sees the turn too. `amb tag PHOTO --rotate left|right|180 --flip horizontal`.
 - **Rate, label, flag, keyword** → 1–5 rate, 6–9 colour labels, **Pick** (P), **Reject** (X), **Add Keywords** (K). `amb tag`.
 - **Pick the best shot of a burst (in focus, eyes open)** → library → Organise → **Best in each burst**: the best of each burst is marked with why, the rest dimmed with what's wrong (eyes closed, soft); then **Pick best, reject rest** or **Stack each**. A click on a dimmed photo's badge keeps it instead. Eyes need YuNet in **Settings** → AI models; without it, focus alone.
 - **Cull fast** → **Loupe** (E), **Compare** (C), **Survey** (N); auto-advance after a rating (**Settings** → General).
@@ -123,7 +124,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Words on every button, only the everyday tools** → the Beginner layout in **Appearance**.
 - **Use the menu bar** → on a Mac it's at the top of the screen; on Windows and Linux, **Settings** → General shows it in the window. Every command is there with its keys.
 - **Replace the whole window with my own interface** → **Settings** → General → Interface (a folder with an `index.html`, written by hand or by an AI; [ai/custom-interface.md](ai/custom-interface.md)); the menu bar's Interface → Back to the Built-in Interface, or `--builtin-ui`, always comes back.
-- **Hide everything but the photo** → the Minimalism layout in **Appearance**, or fold the **Left Column** (Ctrl+[), **Right Column** (Ctrl+]) and the top bar (Ctrl+Shift+T).
+- **Hide everything but the photo** → the Minimalism layout in **Appearance**, or fold the **Left Column** (F7), **Right Column** (F8) and the top bar (Ctrl+Shift+T).
 - **Small tools that edit for me** → **Plugins** (Ctrl+Shift+P); write your own ([ai/plugins.md](ai/plugins.md)).
 - **My own tab with my tools** → a task plugin: a layout and buttons in a `plugin.json`, no code; it joins the task bar ([ai/plugins.md](ai/plugins.md#task-plugins)). Trippy is one.
 - **Make AI tools faster (Select object, AI Remove, Describe it)** → they run on the GPU by themselves when the computer has one; **Settings** → AI models says where they run (`amb models` too; `AMB_AI_GPU=off` keeps them on the CPU).

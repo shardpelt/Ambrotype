@@ -254,6 +254,14 @@ function queueThumb(path) {
   pumpThumbs();
 }
 
+// A photo was turned: fetch its thumbnail again.
+function stripTurned(path) {
+  if (!strip.cells.has(path)) return;
+  strip.edited.delete(path);
+  strip.queue.unshift(path);
+  pumpThumbs();
+}
+
 function pumpThumbs() {
   while (strip.loading < 3 && strip.queue.length) {
     const path = strip.queue.shift();

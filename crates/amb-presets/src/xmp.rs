@@ -276,9 +276,71 @@ pub fn parse_crs(input: &str) -> Result<BTreeMap<String, Value>, Error> {
     Ok(settings)
 }
 
+/// The TIFF namespace, where Lightroom keeps a photo's orientation.
+pub const TIFF_NS: &str = "http://ns.adobe.com/tiff/1.0/";
+
+/// The photo's orientation (EXIF 1–8) when the packet says
+/// (`tiff:Orientation`, as an attribute or an element): Lightroom writes it
+/// for a photo turned in its library.
+pub fn tiff_orientation(xmp: &str) -> Option<u16> {
+    let mut reader = NsReader::from_str(xmp.trim_start_matches('\u{feff}'));
+    let mut inside = false;
+    loop {
+        match reader.read_resolved_event() {
+            Ok((ns, Event::Start(e))) => {
+                let tiff =
+                    matches!(ns, ResolveResult::Bound(n) if n.as_ref() == TIFF_NS.as_bytes());
+                if tiff && e.local_name().as_ref() == b"Orientation" {
+                    inside = true;
+                } else if let Some(o) = orientation_attribute(&reader, &e) {
+                    return Some(o);
+                }
+            }
+            Ok((_, Event::Empty(e))) => {
+                if let Some(o) = orientation_attribute(&reader, &e) {
+                    return Some(o);
+                }
+            }
+            Ok((_, Event::Text(t))) if inside => {
+                return t.unescape().ok().and_then(|v| orientation_code(&v));
+            }
+            Ok((_, Event::End(_))) => inside = false,
+            Ok((_, Event::Eof)) | Err(_) => return None,
+            _ => {}
+        }
+    }
+}
+
+fn orientation_attribute(reader: &NsReader<&[u8]>, e: &BytesStart) -> Option<u16> {
+    e.attributes().flatten().find_map(|a| {
+        let (ns, local) = reader.resolve_attribute(a.key);
+        let tiff = matches!(ns, ResolveResult::Bound(n) if n.as_ref() == TIFF_NS.as_bytes());
+        (tiff && local.as_ref() == b"Orientation")
+            .then(|| a.unescape_value().ok().and_then(|v| orientation_code(&v)))
+            .flatten()
+    })
+}
+
+fn orientation_code(v: &str) -> Option<u16> {
+    v.trim().parse::<u16>().ok().filter(|o| (1..=8).contains(o))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_orientation_lightroom_keeps_is_read() {
+        let attr = r#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:tiff="http://ns.adobe.com/tiff/1.0/" tiff:Orientation="6"/></rdf:RDF></x:xmpmeta>"#;
+        assert_eq!(tiff_orientation(attr), Some(6));
+        let element = attr.replace(
+            r#" tiff:Orientation="6"/>"#,
+            "><tiff:Orientation>8</tiff:Orientation></rdf:Description>",
+        );
+        assert_eq!(tiff_orientation(&element), Some(8));
+        assert_eq!(tiff_orientation(&attr.replace('6', "9")), None);
+        assert_eq!(tiff_orientation("<x/>"), None);
+    }
 
     #[test]
     fn attributes_elements_and_alt() {

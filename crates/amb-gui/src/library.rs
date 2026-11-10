@@ -209,11 +209,44 @@ pub struct InfoChange {
     /// Set where it was taken ("latitude,longitude"), or "" to clear it.
     #[serde(default)]
     pub gps: Option<String>,
+    /// Turn it this many quarter turns clockwise (negative: anticlockwise),
+    /// as it is seen.
+    #[serde(default)]
+    pub rotate: Option<i32>,
+    /// Mirror it left to right, as it is seen.
+    #[serde(default)]
+    pub flip: bool,
 }
 
 impl InfoChange {
+    /// Whether it turns or mirrors the photo.
+    pub fn turns(&self) -> bool {
+        self.rotate.is_some_and(|r| r.rem_euclid(4) != 0) || self.flip
+    }
+
+    /// `info` ready for [`InfoChange::apply`]: for a turn, with the
+    /// camera's orientation filled in when the sidecar doesn't say. A
+    /// virtual copy turns with its photo, so it can't turn alone.
+    pub fn base(&self, mut info: PhotoInfo, photo: &Path) -> Result<PhotoInfo, String> {
+        if self.turns() {
+            if amb_engine::virtual_copy_of(photo).is_some() {
+                return Err("A virtual copy turns with its photo: turn the photo itself.".into());
+            }
+            info.orientation
+                .get_or_insert_with(|| amb_engine::orientation::camera(photo));
+        }
+        Ok(info)
+    }
+
     pub fn apply(&self, info: &PhotoInfo) -> PhotoInfo {
         let mut out = info.clone();
+        if self.turns() {
+            out.orientation = Some(amb_engine::orientation::turned(
+                out.orientation.unwrap_or(1),
+                self.rotate.unwrap_or(0),
+                self.flip,
+            ));
+        }
         if let Some(r) = self.rating {
             out.rating = (1..=5).contains(&r).then_some(r);
         }
@@ -266,10 +299,13 @@ pub fn change_info(photo: &Path, change: &InfoChange) -> Result<PhotoInfo, Strin
     // From a Lightroom catalogue opened in place, when it knows the photo.
     let on_disk = amb_engine::sidecar_text(photo);
     let info = change.apply(
-        &on_disk
-            .as_deref()
-            .map(sidecar::read_info)
-            .unwrap_or_default(),
+        &change.base(
+            on_disk
+                .as_deref()
+                .map(sidecar::read_info)
+                .unwrap_or_default(),
+            photo,
+        )?,
     );
     let text = sidecar::with_info(on_disk.as_deref(), &info).map_err(|e| e.to_string())?;
     sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())?;

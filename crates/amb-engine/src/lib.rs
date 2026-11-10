@@ -31,6 +31,7 @@ pub mod matching;
 pub(crate) mod math;
 pub mod merge;
 pub mod negative;
+pub mod orientation;
 pub mod output;
 pub mod pano;
 pub mod pipeline;

@@ -245,6 +245,12 @@ pub(crate) fn set_photo_info(
     let saved = {
         let mut guard = state.session.lock().map_err(|e| e.to_string())?;
         let s = guard.as_mut().ok_or("no photo is open")?;
+        // Only Rotate and Flip turn a photo: a rating or keyword written
+        // with the info the page had keeps the turn made since.
+        let info = amb_protocol::sidecar::PhotoInfo {
+            orientation: s.info.orientation,
+            ..info
+        };
         s.set_info(&info)?
     };
     state.change_prefs(|p| {

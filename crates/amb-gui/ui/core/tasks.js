@@ -65,7 +65,7 @@ async function runTaskTool(tool) {
 function renderTaskTools() {
   const t = TASKS.find((x) => x.id === currentTask());
   const tools = t?.tools ?? [];
-  $("tools-title").textContent = t?.label ? `${t.label} tools` : "Tools";
+  ($("tools-title").querySelector(".fold-head") ?? $("tools-title")).textContent = t?.label ? `${t.label} tools` : "Tools";
   $("tools-task").replaceChildren(...tools.map((tool, i) => {
     const b = Object.assign(document.createElement("button"), { type: "button", className: `tool-tile${tool.big ? " big" : ""}`, title: tool.hint ?? "" });
     b.dataset.tool = String(i);

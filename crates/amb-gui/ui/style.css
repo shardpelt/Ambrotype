@@ -57,10 +57,10 @@ button.primary:hover:not(:disabled) { background: var(--accent); filter: brightn
 .camsim-controls label { display: grid; grid-template-columns: 7em 1fr 5.5em; align-items: center; gap: 6px; }
 .camsim-controls label.inline-check { display: flex; }
 /* Tool blocks: a task's own tools as big tiles, a name and what it does. */
-.tool-block .fold-head { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-.tool-block .fold-head::before { content: "▾"; font-size: 10px; opacity: .6; }
-.tool-block.folded .fold-head::before { content: "▸"; }
-.tool-block.folded .tool-tiles { display: none; }
+.side-section .fold-head { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.side-section .fold-head::before { content: "▾"; font-size: 10px; opacity: .6; }
+.side-section.folded .fold-head::before { content: "▸"; }
+.side-section.folded > :not(.side-head:first-child) { display: none; }
 .tool-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: auto; gap: 6px; padding: 4px 0 8px; }
 /* Block text, not a flex column: WebKit on macOS measured a flex <button>
    a line short, so the last line of a hint was cut off. */
@@ -137,7 +137,7 @@ input[type=search], input[type=number], select {
 .right { border-left: 1px solid var(--line); grid-column: 3; grid-row: 1 / 3; }
 .side-section { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; min-height: 0; }
 /* Presets fill the spare height of their column (and scroll inside it). */
-.column > .presets-block { flex: 1 0 220px; overflow-y: auto; }
+.column > .presets-block { flex: 1 0 auto; }
 .side-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; }
 .side-actions button { white-space: nowrap; }
 .amount { display: grid; grid-template-columns: auto minmax(0, 1fr) 32px; align-items: center; gap: 8px; color: var(--muted); }
@@ -153,7 +153,6 @@ input[type=search], input[type=number], select {
 .preset-star.on { color: var(--accent); }
 .preset { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 3px 4px 3px 16px; border-radius: 4px; color: var(--text); }
 .preset:hover { background: var(--panel-2); }
-.history { max-height: 40%; }
 .snapshot-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; max-height: 120px; flex-shrink: 0; font-size: 12px; }
 .snapshot-list:empty { display: none; }
 .snapshot-list li { display: flex; align-items: center; gap: 2px; border-radius: 3px; color: var(--muted); }
@@ -163,7 +162,7 @@ input[type=search], input[type=number], select {
 .snapshot-list .snap-act { visibility: hidden; padding: 0 4px; border: 0; background: none; color: var(--muted); font-size: 12px; line-height: 16px; }
 .snapshot-list li:hover .snap-act, .snapshot-list .snap-act:focus { visibility: visible; }
 .snapshot-list .snap-act:hover { color: var(--text); }
-.history-list { margin: 0; padding-left: 28px; overflow-y: auto; color: var(--muted); font-size: 12px; }
+.history-list { margin: 0; padding-left: 28px; max-height: 24em; overflow-y: auto; color: var(--muted); font-size: 12px; }
 .history-list li { padding: 1px 4px; border-radius: 3px; cursor: pointer; }
 .history-list li:hover { background: var(--tab-active); color: var(--text); }
 .history-list li.current { color: var(--text); font-weight: 600; cursor: default; }
@@ -1111,9 +1110,17 @@ button.tool-icon.active { color: var(--accent); }
 .fold.left { left: 6px; border-radius: var(--radius); }
 .fold.right { right: 6px; border-radius: var(--radius); }
 .fold[hidden] { display: none; }
-.section-resizer { flex: none; height: 6px; margin: -3px 0; position: relative; z-index: 2; cursor: row-resize; }
-.section-resizer:hover, .section-resizer:active { background: var(--accent); opacity: .5; }
-.side-section.sized { flex: none; overflow-y: auto; }
+/* One scroll per column: a block's heading sticks at the top while you're in
+   it (under the column's tabs), and the blocks further down are named in a
+   strip at the foot (columns.js). */
+.column > .side-section > .side-head:first-child { position: sticky; top: var(--col-tabs-h, 0px); z-index: 3; margin: -10px -12px 0; padding: 10px 12px 4px; background: var(--panel); }
+.column > details.panel > summary { position: sticky; top: var(--col-tabs-h, 0px); z-index: 3; background: var(--panel); }
+.col-strip { position: sticky; bottom: 0; z-index: 4; margin-top: auto; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px; background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -6px 12px rgba(0, 0, 0, .18); }
+.col-strip:empty { display: none; }
+.col-chip { padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel-2); color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.col-chip::after { content: " ↓"; opacity: .6; }
+.col-chip:hover { color: var(--text); border-color: var(--accent); }
+body.editing .col-strip { display: none; }
 /* The presets block's tools: a tidy grid of small buttons. */
 .preset-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 .preset-tools button { width: 100%; }

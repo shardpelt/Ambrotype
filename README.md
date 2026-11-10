@@ -2,7 +2,7 @@
 
 A free, open-source photo editor and organiser for Windows, macOS and Linux, in the spirit of Adobe Lightroom®. It opens your raws, edits them without touching the originals, and applies the Lightroom presets you already bought, faithfully.
 
-![The Ambrotype editor with a sample preset applied](docs/images/editor.png)
+![The Ambrotype editor: the sample photo with its edit, Develop's quick fixes and tools on the left](docs/images/editor.png)
 
 <sub>Photo: a Nikon D750 sample raw from [raw.pixls.us](https://raw.pixls.us/), shared under CC0 (public domain).</sub>
 

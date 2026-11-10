@@ -60,7 +60,7 @@ await t.step("Auto edit: the big button edits the whole photo, as one undo step"
 
 await t.step("tabs: Develop has Quick fixes and the Retouch tools, a Colour tab, and folds; no Color or Retouch tab", async () => {
   await switchTask("develop");
-  for (const name of ["quick", "retouch"]) if ($(`block-${name}`).classList.contains("folded")) foldToolBlock(name, false);
+  for (const name of ["quick", "retouch"]) if ($(`block-${name}`).classList.contains("folded")) foldBlock($(`block-${name}`), false);
   await t.until("Quick fixes and Retouch tools", () => t.visible("#block-quick") && t.visible("#block-retouch"));
   t.expect(document.body.dataset.task === "develop", `accent ${document.body.dataset.task}`);
   t.expect(!TASKS.some((x) => ["color", "retouch"].includes(x.id)) && TASKS.map((x) => x.id).slice(0, 4).join() === "library,develop,film,collage", TASKS.map((x) => x.id).join());
@@ -68,6 +68,21 @@ await t.step("tabs: Develop has Quick fixes and the Retouch tools, a Colour tab,
   $("block-retouch").querySelector(".fold-head").click();
   t.expect(!t.visible("#tools-retouch") && localStorage.getItem("amb.fold.retouch") === "1", "folded");
   $("block-retouch").querySelector(".fold-head").click();
+  // History sits below the tool blocks: the column's foot names it, and a
+  // click scrolls to it.
+  const col = $("block-history").parentElement;
+  col.scrollTop = 0;
+  const chip = () => [...col.querySelectorAll(".col-strip .col-chip")].find((c) => c.textContent === "History");
+  await t.until("History named at the column's foot", () => chip());
+  chip().click();
+  const inView = () => {
+    const h = $("block-history").getBoundingClientRect();
+    const c = col.getBoundingClientRect();
+    return h.top >= c.top - 1 && h.top < c.bottom - 40;
+  };
+  await t.until("History scrolled into view", inView);
+  await t.until("no longer named below", () => !chip());
+  col.scrollTop = 0;
   t.expect(t.visible("#tools-retouch"), "unfolded");
   const tiles = [...document.querySelectorAll("#tools-retouch .tool-tile")].map((b) => b.dataset.tool);
   t.expect(["select", "object", "remove", "subject", "people", "background", "sky", "dust"].every((x) => tiles.includes(x)), tiles.join(", "));

@@ -269,6 +269,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - `ambrotype --check-look FILE...` validates layout and theme files (what AI assistants use, [ai/ui-layouts.md](ai/ui-layouts.md)).
     - Toolbar icons are our own line drawings (`ui/core/icons.js`); a layout with `"toolbar_style": "words"` (Beginner) shows words on every button.
     - Side columns are resized by dragging their inner edge: widths are kept per layout in the page's local storage (`colWidths` in `ui/looks/columns.js`).
+    - A column scrolls as one: block headings stick and fold (`amb.fold.<block>`), and a strip at its foot names the blocks below the fold (`wireColumnBlocks` in `ui/looks/columns.js`).
     - A layout with `"chrome": "hidden"` (Minimalism) hides the bars and slides the columns in over the photo from the window's edges (`applyChrome` in `ui/looks/columns.js`).
   - **slideshow:** `ui/library/slideshow.js`. Two image layers on black; each photo's large edited thumbnail (`bigImage`, cached with the library's), the next one fetched while the current shows; CSS classes give the change effect. Full screen through the `window_fullscreen` command
   - **before / after split:** `ui/develop/split.js`. The "before" half keeps the crop, geometry and lens corrections, so both halves line up.

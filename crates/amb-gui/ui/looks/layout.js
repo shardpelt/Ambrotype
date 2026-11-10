@@ -113,7 +113,7 @@ function applyLayout(layout) {
   for (const side of ["left", "right"]) if (widths[side] && mine[side]) widths[side] = mine[side];
   ui.sideWidths = widths;
   applySideCollapse();
-  for (const side of ["left", "right"]) addSectionDividers($(`col-${side}`));
+  for (const side of ["left", "right"]) wireColumnBlocks($(`col-${side}`));
 
   // The crop panel goes to the top of the column with the most panels.
   const host = ["left", "right"]

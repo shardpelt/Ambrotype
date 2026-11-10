@@ -68,7 +68,7 @@ await t.step("Auto edit: the big button edits the whole photo, as one undo step"
   await t.until("all of it undone", () => !t.setting("Vibrance") && t.setting("Exposure2012") === 1);
 });
 
-await t.step("back to the task before: the arrow, and Alt+←", async () => {
+await t.step("back to the task before: the arrow, and Alt+←; Alt+→ forward again", async () => {
   await switchTask("develop");
   await switchTask("library");
   await t.until("the library", () => libraryOn());
@@ -77,12 +77,21 @@ await t.step("back to the task before: the arrow, and Alt+←", async () => {
   await t.until("back in Develop", () => !libraryOn() && currentTask() === "develop");
   await switchTask("library");
   await t.until("the library again", () => libraryOn());
+  t.expect(t.visible(".library-bar .brand"), "the app's name in the library's bar too");
   t.key("Alt+ArrowLeft");
   await t.until("back in Develop again", () => !libraryOn());
+  t.expect(t.visible(".topbar .brand"), "the name back in the top bar");
+  // Forward has no button, only Alt+→.
+  t.key("Alt+ArrowRight");
+  await t.until("forward to the library", () => libraryOn());
+  t.key("Alt+ArrowLeft");
+  await t.until("back in Develop once more", () => !libraryOn() && t.visible("#workspace"));
 });
 
 await t.step("tabs: Develop has Quick fixes and the Retouch tools, a Colour tab, and folds; no Color or Retouch tab", async () => {
   await switchTask("develop");
+  // The left column's Tools tab (the chosen tab is remembered).
+  showColumnTab("left", "Tools");
   for (const name of ["quick", "retouch"]) if ($(`block-${name}`).classList.contains("folded")) foldBlock($(`block-${name}`), false);
   await t.until("Quick fixes and Retouch tools", () => t.visible("#block-quick") && t.visible("#block-retouch"));
   t.expect(document.body.dataset.task === "develop", `accent ${document.body.dataset.task}`);

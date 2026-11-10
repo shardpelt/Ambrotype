@@ -57,10 +57,14 @@ async function toggleLibrary(on = !lib.on) {
   if (!on) setLibraryView("grid");
   lib.on = on;
   // The library is only about organising: the editor's top bar goes, and
-  // its task switcher comes into the library's own bar.
+  // its name and task switcher come into the library's own bar.
   const tasks = $("task-bar");
-  if (on) $("lib-task-slot").append(tasks);
-  else document.querySelector(".topbar .brand").after(tasks);
+  const brand = document.querySelector(".brand");
+  if (on) $("lib-task-slot").append(brand, tasks);
+  else {
+    document.querySelector(".topbar").prepend(brand);
+    brand.after(tasks);
+  }
   $("workspace").hidden = on;
   $("library").hidden = !on;
   document.body.classList.toggle("library-mode", on);

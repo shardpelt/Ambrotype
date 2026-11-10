@@ -1311,7 +1311,7 @@ body.library-mode { grid-template-rows: 0 1fr 26px; }
 body.library-mode .topbar { height: 0; padding: 0; border: 0; overflow: hidden; transform: none; }
 body.library-mode .topbar-edge { display: none; }
 .lib-task-slot:empty { display: none; }
-.lib-task-slot { margin-right: 6px; }
+.lib-task-slot { margin-right: 6px; display: flex; align-items: center; gap: 12px; }
 
 /* A layout with the chrome hidden (Minimalism, columns.js applyChrome): only
    the photo, edge to edge. The side columns slide in over it while the

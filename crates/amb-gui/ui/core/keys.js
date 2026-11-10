@@ -34,6 +34,7 @@ const KEY_ACTIONS = [
   { id: "undo-all", group: "Edit", label: "Undo all: back to the photo as it opened", hint: "Every step stays in History, so Redo brings them back.", keys: ["Ctrl+Alt+Z"], when: "any", button: "btn-undo-all", run: () => undoAll() },
   { id: "redo", group: "Edit", label: "Redo", keys: ["Ctrl+Shift+Z", "Ctrl+Y"], when: "any", button: "btn-redo", run: () => run([{ cmd: "redo" }]) },
   { id: "nav-back", group: "Tasks", label: "Back to the task before (Library, Develop, …)", keys: ["Alt+ArrowLeft"], when: "any", button: "btn-nav-back", run: () => navBack() },
+  { id: "nav-forward", group: "Tasks", label: "Forward again, after Back", keys: ["Alt+ArrowRight"], when: "any", run: () => navGo(1) },
   ...["library", "develop", "film", "collage", "trippy"].map((t, i) => ({ id: `task-${t}`, group: "Tasks", label: `${t[0].toUpperCase()}${t.slice(1)} task`, keys: [`Ctrl+Alt+${i + 1}`], when: "any", run: () => switchTask(t) })),
   // Installed task plugins after Trippy.
   ...[5, 6, 7, 8].map((n) => ({ id: `task-${n + 1}`, group: "Tasks", label: `Task ${n + 1} (an installed task plugin)`, keys: [`Ctrl+Alt+${n + 1}`], when: "any", run: () => TASKS[n] && switchTask(TASKS[n].id) })),

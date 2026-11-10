@@ -217,8 +217,9 @@ function wireTaskSketches() {
 
 // Back to the tasks you were in before (Library, Develop, Film, Collage,
 // …), as in a browser: the arrow at the task bar's start, Alt+←, or the
-// mouse's back button.
-const nav = { back: [], at: null, going: null };
+// mouse's back button. Forward has no button (room), only Alt+→ and the
+// mouse's forward button.
+const nav = { back: [], fwd: [], at: null, going: null };
 
 function navButtons() {
   const b = Object.assign(document.createElement("button"), { type: "button", id: "btn-nav-back", className: "task-nav", textContent: "‹", disabled: true });
@@ -234,24 +235,28 @@ function navNoteTask(now) {
   else if (nav.at) {
     nav.back.push(nav.at);
     if (nav.back.length > 50) nav.back.shift();
+    nav.fwd = [];
   }
   nav.at = now;
   const b = $("btn-nav-back");
   if (b) b.disabled = !nav.back.length;
 }
 
-async function navBack() {
-  const id = nav.back.pop();
+// -1 back, 1 forward.
+async function navGo(dir) {
+  const id = (dir < 0 ? nav.back : nav.fwd).pop();
   if (!id) return;
+  (dir < 0 ? nav.fwd : nav.back).push(nav.at);
   nav.going = id;
   await switchTask(id);
 }
+const navBack = () => navGo(-1);
 
 function wireNavMouse() {
-  // Button 3 is the mouse's back button.
+  // Buttons 3 and 4 are the mouse's back and forward.
   window.addEventListener("mouseup", (e) => {
-    if (e.button !== 3) return;
+    if (e.button !== 3 && e.button !== 4) return;
     e.preventDefault();
-    navBack();
+    navGo(e.button === 3 ? -1 : 1);
   });
 }

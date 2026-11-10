@@ -326,6 +326,25 @@ fn rating_and_keywords_are_written_at_once_without_unsaved_edits() {
 }
 
 #[test]
+fn a_turn_written_by_another_app_turns_the_open_photo() {
+    use amb_protocol::sidecar::{self, PhotoInfo};
+    let path = synthetic("ramp");
+    let mut s = Session::open(&path).unwrap();
+    let before = s.full.metadata.orientation;
+    // `amb tag --rotate right` while the photo is open.
+    let on_disk = std::fs::read_to_string(&s.sidecar).ok();
+    let info = PhotoInfo {
+        orientation: Some(6),
+        ..Default::default()
+    };
+    let text = sidecar::with_info(on_disk.as_deref(), &info).unwrap();
+    sidecar::write_atomic(&s.sidecar, &text).unwrap();
+    s.reload_sidecar().unwrap();
+    assert_ne!(before, 6);
+    assert_eq!(s.full.metadata.orientation, 6);
+}
+
+#[test]
 fn presets_are_found_with_names_and_groups() {
     let dir = std::env::temp_dir().join(format!("amb-gui-presets-{}", std::process::id()));
     std::fs::create_dir_all(dir.join("Warm")).unwrap();

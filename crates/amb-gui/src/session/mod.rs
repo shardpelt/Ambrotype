@@ -517,6 +517,8 @@ impl Session {
         self.info = amb_protocol::sidecar::read_info(&text);
         self.base_xmp = Some(text);
         self.saved = self.state.settings().clone();
+        // Turned by another writer (`amb tag --rotate`): shown turned too.
+        self.follow_orientation();
         Ok(Some(changes.len()))
     }
 
@@ -538,26 +540,32 @@ impl Session {
         sidecar::write_atomic(&self.sidecar, &text).map_err(|e| e.to_string())?;
         self.info = sidecar::read_info(&text);
         self.base_xmp = Some(text);
-        // Turned: what is shown and exported turns too; the pixels don't.
-        if let Some(o) = self
+        self.follow_orientation();
+        Ok(self.info.clone())
+    }
+
+    /// The sidecar's turn (`info.orientation`), on what is shown and
+    /// exported; the pixels don't change.
+    fn follow_orientation(&mut self) {
+        let Some(o) = self
             .info
             .orientation
             .filter(|&o| o != self.full.metadata.orientation)
+        else {
+            return;
+        };
+        self.full.metadata.orientation = o;
+        for img in [
+            self.preview_src.as_mut().map(|(_, i)| i),
+            self.globals_src.as_mut(),
+            self.draft_src.as_mut().map(|(_, i)| i),
+        ]
+        .into_iter()
+        .flatten()
         {
-            self.full.metadata.orientation = o;
-            for img in [
-                self.preview_src.as_mut().map(|(_, i)| i),
-                self.globals_src.as_mut(),
-                self.draft_src.as_mut().map(|(_, i)| i),
-            ]
-            .into_iter()
-            .flatten()
-            {
-                img.metadata.orientation = o;
-            }
-            self.region_cache = None;
+            img.metadata.orientation = o;
         }
-        Ok(self.info.clone())
+        self.region_cache = None;
     }
 
     /// Full-resolution render (on the GPU when there is one) and export.

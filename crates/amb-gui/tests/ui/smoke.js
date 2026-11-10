@@ -513,11 +513,21 @@ await t.step("Rotate right (Ctrl+]) turns the photo, its sidecar says so; Rotate
   const orientation = async () => (await invoke("photo_info")).info.orientation ?? 1;
   const before = shape();
   const start = await orientation();
+  // What was going on, if a turn doesn't show (it failed now and then on CI).
+  const why = async (what, wait) => {
+    try {
+      await wait;
+    } catch (e) {
+      const img = $("preview");
+      t.log(`${what}: orientation ${await orientation()} (start ${start}), preview ${img.naturalWidth}×${img.naturalHeight}, rendering ${ui.preview.inFlight}, dirty ${ui.preview.dirty}, zoom ${ui.zoom.on}, context ${keyContext()}, dialog ${document.querySelector("dialog[open]")?.id ?? "none"}, focus ${document.activeElement?.id || document.activeElement?.tagName}, status "${$("status")?.textContent ?? ""}"`);
+      throw e;
+    }
+  };
   t.key("Ctrl+]");
-  await t.until("the photo turned", () => shape() === -before, 60000);
+  await why("after Ctrl+]", t.until("the photo turned", () => shape() === -before, 60000));
   t.expect((await orientation()) !== start, "written in the sidecar");
   t.key("Ctrl+[");
-  await t.until("turned back", () => shape() === before, 60000);
+  await why("after Ctrl+[", t.until("turned back", () => shape() === before, 60000));
   t.expect((await orientation()) === start, "back as it was");
 });
 

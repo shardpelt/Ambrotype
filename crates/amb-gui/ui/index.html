@@ -72,6 +72,7 @@
           <button id="btn-assistant" class="small" title="Ask your own AI model to edit the photo (Ctrl+Shift+A)">Ask AI…</button>
           <button id="btn-match" class="small" title="Match the look of other photos: pick reference photos; finds the white balance, tone, colour and grading settings that give this photo their look" disabled>Match look…</button>
         </div>
+        <div id="preset-groups" class="preset-groups" hidden></div>
         <div id="preset-list" class="preset-list"><p class="hint">No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.</p></div>
       </section>
       <section class="side-section info-block" id="block-info">
@@ -229,7 +230,10 @@
         <span id="filmstrip-pos" class="hint"></span>
         <button type="button" id="filmstrip-next" class="small" title="Next photo (→)">›</button>
         <span id="strip-rating" class="strip-rating" role="radiogroup" aria-label="Rating of this photo"><button type="button" data-stars="1" title="1 star (1)">★</button><button type="button" data-stars="2" title="2 stars (2)">★</button><button type="button" data-stars="3" title="3 stars (3)">★</button><button type="button" data-stars="4" title="4 stars (4)">★</button><button type="button" data-stars="5" title="5 stars (5)">★</button></span>
-        <button type="button" id="strip-view" class="small" title="View these photos full screen, as an image viewer: ← → or a click on the left or right steps, Esc ends (V)">⛶ View</button>
+        <span class="strip-views">
+          <button type="button" id="strip-view" class="small" title="View these photos full screen, as an image viewer: ← → or a click on the left or right steps, Esc ends (V)">⛶ View</button>
+          <button type="button" id="strip-slideshow" class="small" title="Slideshow of the filmstrip's photos: how long each stays, shuffle and the change effect">▶ Slideshow</button>
+        </span>
         <label class="hint strip-jpeg" title="A raw shot with a JPEG shows as its JPEG, so ← → go through the JPEGs (the same switch as the library's)"><input type="checkbox" id="strip-prefer-jpeg"> JPEG if there is one</label>
         <span id="filmstrip-count" class="hint"></span>
       </div>
@@ -419,7 +423,7 @@
           <label>Reverse order <input id="lib-reverse" type="checkbox"></label>
         </div>
       </details>
-      <button type="button" id="lib-view" class="small" title="View the photos full screen, as an image viewer: ← → or a click on the left or right steps, Esc ends (V)">⛶ View</button>
+      <button type="button" id="lib-view" class="small" title="View the photos full screen, as an image viewer: ← → or a click on the left or right steps, Esc ends (V or F)">⛶ View</button>
       <button type="button" id="lib-slideshow" class="small" title="Slideshow of the photos shown, or the selected ones (Ctrl+Enter)">▶ Slideshow</button>
       <button type="button" id="lib-settings" class="small" title="Settings (Ctrl+,)" aria-label="Settings">⚙</button>
       <input id="lib-size" type="range" min="100" max="320" value="160" title="Thumbnail size" aria-label="Thumbnail size">
@@ -1342,6 +1346,7 @@
           <small class="hint" id="settings-monitor-note"></small>
         </label>
         <label class="check"><input type="checkbox" id="settings-map-tiles"> Map images from OpenStreetMap in the library's Map (off: the map is a plain grid; on, it asks openstreetmap.org for the area shown)</label>
+        <label class="check"><input type="checkbox" id="settings-columns"> Each block in the side columns scrolls on its own (drag the lines between them). Off, a column scrolls as one and its foot names the blocks further down</label>
         <label class="check"><input type="checkbox" id="settings-topbar"> Show the top bar (Ctrl+Shift+T). Hidden, it comes back while the pointer is at the window's top edge</label>
         <label class="check" id="settings-menu-row"><input type="checkbox" id="settings-menu-bar"> Show the menu bar in the window (every command by name, with its keys)</label>
         <div class="crop-line">
@@ -1726,6 +1731,7 @@
   <script src="develop/controls.js"></script>
   <script src="looks/layout.js"></script>
   <script src="looks/columns.js"></script>
+  <script src="looks/blocks.js"></script>
   <script src="looks/looks-dialog.js"></script>
   <script src="looks/editor.js"></script>
   <script src="looks/editor-keys.js"></script>
@@ -1786,6 +1792,7 @@
   <script src="develop/preview.js"></script>
   <script src="tools/croptool.js"></script>
   <script src="develop/presets.js"></script>
+  <script src="develop/preset-grid.js"></script>
   <script src="dialogs/export.js"></script>
   <script src="core/uitest.js"></script>
   <script src="develop/rows.js"></script>

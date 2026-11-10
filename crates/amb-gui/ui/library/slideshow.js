@@ -31,21 +31,23 @@ function slideshowSettings() {
 }
 
 // The library's selected photos (two or more), else all it shows.
+// In Develop, the filmstrip's.
 function slideshowPhotos() {
+  if (!libraryOn()) return strip.photos;
   const sel = selectedPhotos();
   return sel.length > 1 ? sel : lib.shown;
 }
 
 function slideshowFlow() {
   const photos = slideshowPhotos();
-  if (!photos.length) return toast("No photos shown in the library.", true);
+  if (!photos.length) return toast(libraryOn() ? "No photos shown in the library." : "Open a photo first.", true);
   const s = slideshowSettings();
   const f = $("slideshow-form");
   f.elements.seconds.value = s.seconds;
   f.elements.shuffle.checked = s.shuffle;
   f.elements.fullscreen.checked = s.fullscreen;
   f.elements.effect.value = s.effect;
-  $("slideshow-count").textContent = `${photos.length} photo${photos.length === 1 ? "" : "s"}${selectedPhotos().length > 1 ? " selected" : ""}`;
+  $("slideshow-count").textContent = `${photos.length} photo${photos.length === 1 ? "" : "s"}${libraryOn() && selectedPhotos().length > 1 ? " selected" : ""}`;
   $("slideshow-dialog").showModal();
   return true;
 }
@@ -390,6 +392,7 @@ function wireSlideshow() {
   $("lib-slideshow").addEventListener("click", slideshowFlow);
   $("lib-view").addEventListener("click", viewerFlow);
   $("strip-view").addEventListener("click", viewerFlow);
+  $("strip-slideshow").addEventListener("click", slideshowFlow);
   // Its own keys while it runs; nothing else hears them.
   window.addEventListener("keydown", (e) => {
     if (!slides.on) return;

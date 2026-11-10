@@ -11,7 +11,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **I'm new to editing** → the empty window's **Try a sample photo** (a nine-step edit to step through in History) and **Watch an edit** (a cursor replays it). On your own photo: Help → **Watch an edit on this photo** (Auto edit's changes made one slider at a time, each a History step). Help → **Learn** (F1) has short lessons, Help → **Photography basics** (Shift+F1) explains exposure, tones and colour on your own photo, and every setting has a **?** to hover or click.
 - **Learn what shutter speed, aperture, ISO and focal length do** → Help → **Camera simulator**: change them on a drawn scene and see the blur, depth of field, grain and zoom, with a line on what each did; **Auto exposure** sets the shutter.
 - **Open a photo or a folder** → **Open a photo** (Ctrl+O), **Open a folder** (Ctrl+Shift+O), or drop it on the window. Raws (NEF, CR2/CR3, ARW, RAF, DNG, …), JPEG, PNG, TIFF and WebP.
-- **Switch between library and editing** → **Library Grid** (G), or the task bar at the top: **Library**, **Develop**, **Film**, **Collage**, **Trippy** (Ctrl+Alt+1–5). Develop opens on **Quick fixes** and the **Retouch tools**, with Presets and History below them (a click on any heading folds it; the column's foot names what's further down, a click goes there), with its panels in four tabs on the right: Tone, **Colour** (grading wheels and mixer), Detail & lens, More. Collage opens the collage maker.
+- **Switch between library and editing** → **Library Grid** (G), or the task bar at the top: **Library**, **Develop**, **Film**, **Collage**, **Trippy** (Ctrl+Alt+1–5). Develop opens on **Quick fixes** and the **Retouch tools**, with Presets and History below them (a click on any heading folds it; the column's foot names what's further down, a click goes there; or View → **Columns: each block scrolls on its own**, also in Settings → General, to keep each block to its share of the height and drag the lines between them), with its panels in four tabs on the right: Tone, **Colour** (grading wheels and mixer), Detail & lens, More. Collage opens the collage maker.
 - **Find a command or setting I can't see** → **Search Everything** (Ctrl+K, or the magnifier in the toolbar): type its name, or a setting and a number ("exposure 0.7").
 - **See everything the app can do** → Help → **What Ambrotype Can Do** (this list, with a filter).
 - **Tips, or no tips** → a tip's **Don't show tips** (or **Not now** three times in a row) turns them off; **Settings** (Ctrl+,) → General: Tips while waiting, Tips in menus and empty boxes (both on) turns them on again.
@@ -57,7 +57,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 
 ## Presets
 
-- **Use my Lightroom presets** → Lightroom's preset folder is found by itself; **Add folder…** adds others. `.xmp` and `.lrtemplate` work, with an Amount slider.
+- **Use my Lightroom presets** → Lightroom's preset folder is found by itself; **Add folder…** adds others. `.xmp` and `.lrtemplate` work, with an Amount slider. They show as a grid of small previews of your photo with each one on, picked by group (All, ★ Favourites, each folder's group); hover to see it big, click to apply.
 - **Save my own preset** → **New Preset from This Photo** (Ctrl+Shift+N, or **+ New preset…** in Presets). It works in Lightroom too.
 - **What's inside a preset, and what don't you support yet** → `amb preset inspect PRESET.xmp`.
 - **Find presets, layouts and themes others made** → **Browse the Hub** (Ctrl+Shift+H).
@@ -95,7 +95,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Browse by date** → the library's Timeline view.
 - **Whole drives, also unplugged** → Folders → add a drive. `amb catalog add DIR`.
 - **Subfolders** → they're the first tiles in the grid; double-click a folder in the tree to open or close it.
-- **Slideshow** → **Slideshow** (Ctrl+Enter in the library). `amb slideshow DIR`.
+- **Slideshow** → **Slideshow** (Ctrl+Enter in the library), or **▶ Slideshow** beside **⛶ View** in the filmstrip's bar for the filmstrip's photos. The full-screen viewer is V, or F in the library. `amb slideshow DIR`.
 
 ## Getting photos out
 

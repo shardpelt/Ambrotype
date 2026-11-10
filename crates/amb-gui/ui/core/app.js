@@ -399,6 +399,8 @@ async function init() {
   }
   $("preset-filter").addEventListener("input", renderPresets);
   $("preset-amount").addEventListener("input", (e) => ($("preset-amount-out").textContent = e.target.value));
+  // The previews show the preset at this amount.
+  $("preset-amount").addEventListener("change", () => renderPresets());
   const f = $("export-form");
   f.format.addEventListener("change", updateExportForm);
   f.quality.addEventListener("input", () => (f.quality_out.value = f.quality.value));

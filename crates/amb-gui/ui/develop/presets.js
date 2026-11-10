@@ -33,68 +33,6 @@ function wirePresetOriginal() {
   });
 }
 
-function renderPresets() {
-  const list = $("preset-list");
-  const filter = $("preset-filter").value.trim().toLowerCase();
-  const shown = ui.presets.filter((p) => !filter || (p.name + " " + p.group).toLowerCase().includes(filter));
-  list.innerHTML = "";
-  if (!shown.length) {
-    list.innerHTML = `<p class="hint">${ui.presets.length ? "No match." : "No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder."}</p>`;
-    return;
-  }
-  // Starred presets first, in their own group (they stay in theirs too).
-  const favs = ui.presetFavourites ?? new Set();
-  const groups = new Map();
-  const starred = shown.filter((p) => favs.has(p.path));
-  if (starred.length) groups.set("★ Favourites", starred);
-  for (const p of shown) {
-    if (!groups.has(p.group)) groups.set(p.group, []);
-    groups.get(p.group).push(p);
-  }
-  for (const [group, items] of groups) {
-    const d = document.createElement("details");
-    d.className = "preset-group";
-    d.open = groups.size < 6 || Boolean(filter) || group === "★ Favourites";
-    const s = document.createElement("summary");
-    s.textContent = `${group || "Presets"} (${items.length})`;
-    d.append(s);
-    for (const p of items) {
-      const row = document.createElement("div");
-      row.className = "preset-row";
-      const b = document.createElement("button");
-      b.className = "preset";
-      b.textContent = p.name;
-      b.addEventListener("click", () => {
-        presetHover(null);
-        applyPreset(p);
-      });
-      b.addEventListener("contextmenu", (e) => {
-        presetHover(null);
-        const n = folderPhotos().length;
-        contextMenu(e, [
-          ["Apply", () => applyPreset(p)],
-          ["Apply some of its settings…", () => applyPresetPartly(p)],
-          ui.info && n > 1 ? [`Apply to all ${n} photos in the folder`, () => applyPresetToFolder(p)] : null,
-          ["Show the file", () => invoke("reveal_file", { path: p.path }).catch((err) => toast(String(err), true))],
-          ["Share to the hub…", () => sharePresetToHub(p)],
-        ].filter(Boolean));
-      });
-      b.addEventListener("mouseenter", () => presetHover(p));
-      b.addEventListener("mouseleave", () => presetHover(null));
-      const star = document.createElement("button");
-      star.type = "button";
-      star.className = "preset-star";
-      star.classList.toggle("on", favs.has(p.path));
-      star.textContent = favs.has(p.path) ? "★" : "☆";
-      star.title = favs.has(p.path) ? "Remove from favourites" : "Add to favourites";
-      star.addEventListener("click", () => togglePresetFavourite(p));
-      row.append(b, star);
-      d.append(row);
-    }
-    list.append(d);
-  }
-}
-
 async function loadPresetFavourites() {
   try {
     ui.presetFavourites = new Set(await invoke("preset_favourites"));

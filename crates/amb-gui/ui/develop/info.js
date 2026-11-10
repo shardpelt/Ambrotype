@@ -67,6 +67,7 @@ async function loadInfo() {
     toast(String(e), true);
   }
   renderInfo();
+  presetsPhotoChanged();
 }
 
 // Changes are written one after another, so a fast 3-then-4 ends as 4.

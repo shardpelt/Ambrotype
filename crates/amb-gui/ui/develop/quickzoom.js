@@ -109,7 +109,7 @@ function toggleLoupe(on = !qz.loupe) {
     return true;
   }
   if (!ui.info) return false;
-  const el = Object.assign(document.createElement("div"), { className: "loupe", hidden: true });
+  const el = Object.assign(document.createElement("div"), { className: "viewer-loupe", hidden: true });
   el.append(document.createElement("img"), Object.assign(document.createElement("span"), { className: "loupe-mag" }));
   $("viewer").append(el);
   $("viewer").classList.add("loupe-on");

@@ -453,6 +453,11 @@ await t.step("Develop opens the library's photo, from another folder too", async
   await libraryOpen(first);
   await t.until("the first photo again", () => ui.info?.path === first, 60000);
   await switchTask("library");
+  // Loupe: one photo filling the view (the editor's magnifier, also
+  // "loupe", once shrank it to a 220px circle).
+  setLibraryView("loupe");
+  const lv = $("library-view").getBoundingClientRect(), lg = $("library").getBoundingClientRect();
+  t.expect(lv.width > lg.width / 2 && getComputedStyle($("library-view")).position !== "absolute", `the loupe ${Math.round(lv.width)}px wide`);
   // Survey: ↓ goes a row down, ↑ back up (one column here).
   setLibraryView("survey");
   cull.survey = lib.shown.slice(0, 2).map((p) => p.path);

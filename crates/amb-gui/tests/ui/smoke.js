@@ -82,6 +82,9 @@ await t.step("tabs: Develop has Quick fixes and the Retouch tools, a Colour tab,
   };
   await t.until("History scrolled into view", inView);
   await t.until("no longer named below", () => !chip());
+  // Its scroll bar shows while it scrolls, then hides again.
+  t.expect(col.classList.contains("scrolling") && getComputedStyle(col).getPropertyValue("--sb-thumb").trim() !== "transparent", "the scroll bar shown while scrolling");
+  await t.until("the scroll bar hidden again", () => !col.classList.contains("scrolling"), 3000);
   col.scrollTop = 0;
   t.expect(t.visible("#tools-retouch"), "unfolded");
   const tiles = [...document.querySelectorAll("#tools-retouch .tool-tile")].map((b) => b.dataset.tool);

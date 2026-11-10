@@ -25,6 +25,16 @@
 }
 
 * { box-sizing: border-box; }
+/* Thin scroll bars that show only while the pointer is over what scrolls,
+   or while it scrolls (core/core.js adds .scrolling for a moment). */
+::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+/* WebKit repaints a scroll bar when its box's own style changes, not when
+   a :hover rule on the bar does: so the box carries the thumb's colour. */
+::-webkit-scrollbar-thumb { background: var(--sb-thumb); border-radius: 3px; }
+* { --sb-thumb: transparent; }
+:hover, .scrolling { --sb-thumb: var(--faint); }
+::-webkit-scrollbar-thumb:hover, ::-webkit-scrollbar-thumb:active { background: var(--muted); }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); }
 body { display: grid; grid-template-rows: 44px 1fr 26px; grid-template-columns: minmax(0, 1fr); }
 /* An app, not a page: a click or drag never selects the photo or labels in

@@ -408,7 +408,8 @@ function wireLibrary() {
   const grid = $("library-grid");
   // Rows come and go as the grid scrolls or changes width.
   grid.addEventListener("scroll", () => requestAnimationFrame(() => renderRange()), { passive: true });
-  new ResizeObserver(() => renderRange()).observe(grid);
+  // A frame later: a scroll bar coming or going changes the width again.
+  new ResizeObserver(() => requestAnimationFrame(() => renderRange())).observe(grid);
   grid.addEventListener("click", (e) => {
     const cell = e.target.closest(".lib-cell");
     if (!cell) {

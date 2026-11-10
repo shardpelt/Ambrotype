@@ -48,8 +48,10 @@ await t.step("dragging the grid moves through it; a drag doesn't select", async 
   revealPhoto(lib.shown[0].path);
   // The grid redraws its rows after a change; add room to scroll after that.
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-  const spacer = Object.assign(document.createElement("div"), { style: "height: 4000px; grid-column: 1 / -1" });
-  grid.append(spacer);
+  // (Padding, not a child: the grid redraws its rows once its scroll bar
+  // shows, which would take a child away.)
+  grid.style.paddingBottom = "4000px";
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   const start = grid.scrollTop;
   const cell = grid.querySelector(".lib-cell:not(.lib-dir)");
   const at = cell.getBoundingClientRect();
@@ -61,7 +63,7 @@ await t.step("dragging the grid moves through it; a drag doesn't select", async 
   cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   await new Promise((r) => setTimeout(r, 50));
   const moved = grid.scrollTop - start;
-  spacer.remove();
+  grid.style.paddingBottom = "";
   t.expect(moved > 100, `moved down: ${moved}`);
   t.expect(lib.selected.size === 0, "nothing selected");
 });

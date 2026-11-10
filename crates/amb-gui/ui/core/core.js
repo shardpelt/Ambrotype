@@ -129,3 +129,14 @@ const fileName = (p) => p.replace(/^.*[\\/]/, "");
 const dirOf = (p) => p.replace(/[\\/][^\\/]*$/, "");
 // A folder's own name, also when the path ends with a slash.
 const folderName = (p) => p.split(/[\\/]/).filter(Boolean).pop();
+
+// A scroll bar shows for a moment while its box scrolls (style.css), also
+// with the wheel when the pointer isn't over the bar's box any more.
+const scrollTimers = new WeakMap();
+document.addEventListener("scroll", (e) => {
+  const box = e.target === document ? document.documentElement : e.target;
+  if (!(box instanceof Element)) return;
+  box.classList.add("scrolling");
+  clearTimeout(scrollTimers.get(box));
+  scrollTimers.set(box, setTimeout(() => box.classList.remove("scrolling"), 800));
+}, { capture: true, passive: true });

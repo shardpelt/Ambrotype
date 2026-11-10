@@ -27,10 +27,12 @@ A short running list, kept up to date as work lands. Newest decisions first. The
   - **One answer leads to more:** a How to shows two or three related features ("also: Keep under N MB, Also a smaller copy"), and the features list can be followed from one to the next.
   - Tips come from [FEATURES.md](FEATURES.md), skip features already used, and are rare enough not to nag.
   - Two switches in Settings → General, both on by default: "Tips while waiting" and "Tips in menus and empty boxes".
+- **A glass theme** (owner, 2026-11-10): a light, Apple-like look with frosted, see-through panels (`backdrop-filter: blur`) over the photo, soft shadows and rounded corners. Themes live in the hub repo, so it's made there and synced in; check that the blur stays smooth on WebKitGTK and on older Windows machines.
 - **More trippy** (owner, 2026-11-04): done 2026-11-05 (Edges and Neon, Where with its hover view, amounts to 200 %). Still to do: Basic's own sliders past their ranges in Trippy (Lightroom's ranges are kept in the sidecar, so it would be our own extra settings).
 
 ## Recently done
 
+- 2026-11-10: thin scroll bars that show only while the pointer is over what scrolls, or while it scrolls
 - 2026-11-10: presets as a grid of small previews of the open photo, by group; a switch between columns that scroll as one and blocks that each scroll on their own (View menu, Settings → General) to try both; F opens the full-screen viewer in the library; the filmstrip's bar has View and Slideshow in its middle
 - 2026-11-10: side columns scroll as one: each block's heading stays at the top while you're in it and folds the block when clicked, and the column's foot names the blocks further down (History, Presets, …), a click goes there. The drag lines between blocks are gone; History had slipped out of sight below Develop's tool tiles. README screenshots retaken
 - 2026-11-10: rotate and flip a photo: **Rotate left** (Ctrl+[), **Rotate right** (Ctrl+]) and **Flip horizontal** in the Photo menu, Ctrl+K or the keys, for the open photo, the library's selection or the photo in the full-screen viewer; `amb tag --rotate left|right|180 --flip horizontal`. Written where Lightroom keeps it (`tiff:Orientation` in the sidecar); crops, masks and spots stay put on the photo, so they turn with it. Folding the side columns moved to F7 and F8, as in Lightroom

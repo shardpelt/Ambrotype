@@ -221,6 +221,19 @@ await t.step("View (V): the photos full screen, ← → and the screen's sides s
   await t.until("back as it was", () => !shown.rating && !shown.flag);
   key("i");
   t.expect(document.querySelector(".ss-info").hidden, "I hides the panel");
+  // Turning: the bar's button, then Ctrl+[ back; written in the sidecar.
+  const orientation = async () => (await invoke("library_set_info", { paths: [shown.path], change: {} }))[0].info.orientation ?? 1;
+  const before = await orientation();
+  const src = () => document.querySelector(".slideshow .ss-img.shown")?.src;
+  const was = src();
+  document.querySelector('.slideshow [data-do="right"]').click();
+  await t.until("shown turned", () => src() && src() !== was, 20000);
+  t.expect((await orientation()) !== before, "rotated right");
+  t.expect(slides.at === 1, "still on the same photo");
+  const turned = src();
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "[", ctrlKey: true, bubbles: true }));
+  await t.until("shown back", () => src() && src() !== turned, 20000);
+  t.expect((await orientation()) === before, "Ctrl+[ turns it back");
   const at = slides.list[1].path;
   key("Escape");
   await t.until("the viewer gone", () => !slides.on && !document.querySelector(".slideshow"));

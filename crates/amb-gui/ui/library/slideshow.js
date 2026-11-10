@@ -64,7 +64,9 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
   slides.on = true;
   const viewer = Boolean(settings.viewer);
   const el = Object.assign(document.createElement("div"), { className: `slideshow${viewer ? " viewer" : ""}`, tabIndex: -1 });
-  const pause = viewer ? "" : '<button type="button" data-do="pause" title="Pause (Space)">❚❚</button>';
+  const pause = viewer
+    ? '<button type="button" data-do="left" title="Rotate left (Ctrl+[)">⟲</button><button type="button" data-do="right" title="Rotate right (Ctrl+])">⟳</button>'
+    : '<button type="button" data-do="pause" title="Pause (Space)">❚❚</button>';
   const info = viewer ? '<aside class="ss-info" hidden></aside>' : "";
   el.innerHTML = `<img class="ss-img" alt=""><img class="ss-img" alt="">${info}<div class="ss-bar" hidden><button type="button" data-do="prev" title="Previous (←)">‹</button>${pause}<button type="button" data-do="next" title="Next (→)">›</button><span class="ss-where"></span><button type="button" data-do="end" title="End (Esc)">✕</button></div>`;
   document.body.append(el);
@@ -84,7 +86,7 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
     const b = e.target.closest("[data-do]");
     if (b) {
       e.stopPropagation();
-      ({ prev: () => stepSlide(-1), next: () => stepSlide(1), pause: togglePause, end: endSlideshow })[b.dataset.do]();
+      ({ prev: () => stepSlide(-1), next: () => stepSlide(1), pause: togglePause, end: endSlideshow, left: () => viewerTurn({ rotate: -1 }), right: () => viewerTurn({ rotate: 1 }) })[b.dataset.do]();
       return;
     }
     if (!viewer) return endSlideshow();
@@ -231,6 +233,30 @@ async function viewerChange(change) {
   }
 }
 
+// Turn the photo on screen (rotate or flip), as Photo → Rotate does, and
+// show it again turned.
+async function viewerTurn(change) {
+  const p = slides.list[slides.at];
+  try {
+    await setInfo([p.path], change);
+  } catch (e) {
+    return toast(String(e), true);
+  }
+  turnedThumb(p.path);
+  stripTurned(p.path);
+  if (p.path === ui.info?.path) requestPreview(false);
+  if (slides.on && slides.list[slides.at] === p) await showSlide(slides.at);
+}
+
+// The viewer's own copy of the Photo menu's turn keys (nothing else hears
+// keys while it runs).
+function viewerTurnKey(e) {
+  const combo = comboOf(e);
+  const turns = { "rotate-left": { rotate: -1 }, "rotate-right": { rotate: 1 }, "flip-horizontal": { flip: true } };
+  const a = KEY_ACTIONS.find((x) => turns[x.id] && keysFor(x).includes(combo));
+  return a ? turns[a.id] : null;
+}
+
 function toggleViewerInfo(on) {
   const panel = slides.el?.querySelector(".ss-info");
   if (!panel) return;
@@ -294,7 +320,7 @@ async function renderViewerInfo() {
     el("h4", { textContent: "Label" }), labels,
     el("h4", { textContent: "Flag" }), flags,
     el("h4", { textContent: "Keywords" }), keywords, add,
-    el("p", { className: "ss-info-hint", textContent: "I or right-click hides this · 0–5 rate · P X U flag · 6–9 label" }),
+    el("p", { className: "ss-info-hint", textContent: "I or right-click hides this · 0–5 rate · P X U flag · 6–9 label · Ctrl+[ ] turn" }),
   );
 }
 
@@ -383,6 +409,8 @@ function wireSlideshow() {
     e.stopImmediatePropagation();
     const viewing = slides.settings.viewer;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const turn = viewing && viewerTurnKey(e);
+    if (turn) return viewerTurn(turn);
     if (viewing && !e.ctrlKey && !e.metaKey && !e.altKey) {
       if (/^[0-5]$/.test(k)) return viewerChange({ rating: Number(k) });
       if (/^[6-9]$/.test(k)) {

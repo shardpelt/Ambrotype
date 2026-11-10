@@ -205,6 +205,9 @@ function renderLibrary() {
   lib.cells.clear();
   lib.rangeKey = null;
   $("library-empty").hidden = Boolean(lib.dir || lib.collection);
+  // Timeline, Map or a cull view has nothing to show over it either.
+  if (!$("library-empty").hidden) $("library-view").hidden = true;
+  else $("library-view").hidden = cull.view === "grid";
   // What just scrolled into view loads first: after a fast scroll the photos
   // passed on the way wait behind the ones on screen.
   lib.observer = new IntersectionObserver((entries) => {

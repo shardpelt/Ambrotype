@@ -453,6 +453,17 @@ await t.step("Develop opens the library's photo, from another folder too", async
   await libraryOpen(first);
   await t.until("the first photo again", () => ui.info?.path === first, 60000);
   await switchTask("library");
+  // Survey: ↓ goes a row down, ↑ back up (one column here).
+  setLibraryView("survey");
+  cull.survey = lib.shown.slice(0, 2).map((p) => p.path);
+  cull.active = cull.survey[0];
+  renderCull();
+  $("library-view").style.setProperty("--cols", "1");
+  t.key("ArrowDown");
+  t.expect(cull.active === cull.survey[1], "↓ in the survey");
+  t.key("ArrowUp");
+  t.expect(cull.active === cull.survey[0], "↑ in the survey");
+  setLibraryView("grid");
   if (lib.more.includes(parent)) await toggleTreeFolder(parent);
   t.expect(libraryOn() && !lib.more.length, "back in the library, one folder");
 });

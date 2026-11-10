@@ -45,7 +45,8 @@ function setLibraryView(view) {
     cull.active = cull.survey.includes(focus) ? focus : cull.survey[0];
   }
   cull.view = view;
-  $("library-view").hidden = view === "grid";
+  // Not over the empty library's "Drop a folder" (no folder yet).
+  $("library-view").hidden = view === "grid" || !$("library-empty").hidden;
   $("library-grid").hidden = view !== "grid";
   for (const b of document.querySelectorAll("#lib-views button")) b.classList.toggle("on", b.dataset.view === view);
   if (view === "grid") {
@@ -218,9 +219,14 @@ function cullArrow(key) {
       compareMakeSelect();
       return;
     }
-  } else if (cull.view === "survey" && step) {
+  } else if (cull.view === "survey") {
+    // ↑ and ↓ a row of the survey's grid.
+    const cols = Number($("library-view").style.getPropertyValue("--cols")) || 1;
+    const by = step || (key === "ArrowDown" ? cols : key === "ArrowUp" ? -cols : 0);
     const i = cull.survey.indexOf(cull.active);
-    cull.active = cull.survey[Math.min(cull.survey.length - 1, Math.max(0, i + step))];
+    const to = i + by;
+    if (!by || to < 0 || to >= cull.survey.length) return;
+    cull.active = cull.survey[to];
     for (const t of $("library-view").children) t.classList.toggle("active", t.dataset.path === cull.active);
     renderPanel();
     return;

@@ -32,6 +32,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-10: **Undo all** beside Undo (Ctrl+Alt+Z; Redo brings the steps back); History docked at the foot of its column, always in sight, with Presets' list capped to scroll inside; a **‹** back button at the task bar's start (Alt+←, the mouse's back button) to the task you were in before
 - 2026-11-10: thin scroll bars that show only while the pointer is over what scrolls, or while it scrolls
 - 2026-11-10: presets as a grid of small previews of the open photo, by group; a switch between columns that scroll as one and blocks that each scroll on their own (View menu, Settings → General) to try both; F opens the full-screen viewer in the library; the filmstrip's bar has View and Slideshow in its middle
 - 2026-11-10: side columns scroll as one: each block's heading stays at the top while you're in it and folds the block when clicked, and the column's foot names the blocks further down (History, Presets, …), a click goes there. The drag lines between blocks are gone; History had slipped out of sight below Develop's tool tiles. README screenshots retaken

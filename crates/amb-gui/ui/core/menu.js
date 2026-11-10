@@ -12,7 +12,7 @@
 const MENU_BAR = [
   ["Ambrotype", ["#about", "|", "settings", "|", "#services", "|", "#hide", "#hide_others", "#show_all", "|", "#quit"], "mac"],
   ["File", ["open", "open-folder", "import", "|", "save", "export", "convert-raws", "share-compare", "replay", "edit-in", "|", "collage", "|", "~settings", "|", "#close_window", "~#quit"]],
-  ["Edit", ["undo", "redo", "|", "#cut", "#copy", "#paste", "lib-all", "lib-none", "|", "lib-copy", "lib-paste"]],
+  ["Edit", ["undo", "undo-all", "redo", "|", "#cut", "#copy", "#paste", "lib-all", "lib-none", "|", "lib-copy", "lib-paste"]],
   ["Photo", [
     "crop", "masks", "spots", "wb", "|",
     ["Rating", ["rate-1", "rate-2", "rate-3", "rate-4", "rate-5", "|", "rate-0"]],

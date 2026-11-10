@@ -450,7 +450,7 @@ function wireLibrary() {
   });
   document.addEventListener("keydown", (e) => {
     if (!lib.on || document.querySelector("dialog[open]") || e.target.matches("input, select, textarea")) return;
-    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key) && !e.ctrlKey && !e.metaKey) {
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key) && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       e.stopPropagation();
       if (cullOn()) cullArrow(e.key);

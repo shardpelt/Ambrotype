@@ -338,6 +338,7 @@ async function init() {
   // Not the click event as an argument: exportFlow(batch) would take it for a batch.
   $("btn-export").addEventListener("click", () => exportFlow());
   $("btn-undo").addEventListener("click", () => run([{ cmd: "undo" }]));
+  $("btn-undo-all").addEventListener("click", undoAll);
   $("snapshot-add").addEventListener("click", addSnapshot);
   $("btn-redo").addEventListener("click", () => run([{ cmd: "redo" }]));
   $("btn-before").addEventListener("click", toggleBefore);

@@ -75,6 +75,7 @@ function syncControls() {
   }
   $("btn-undo").disabled = !ui.state?.can_undo;
   $("btn-redo").disabled = !ui.state?.can_redo;
+  $("btn-undo-all").disabled = !ui.state?.can_undo;
   renderSnapshots();
   renderHistory();
   if (ui.curve) for (const tag of AmbCurve.TAGS) ui.curve.set(tag, currentValue(tag));
@@ -202,6 +203,14 @@ async function historyGo(n) {
   } finally {
     ui.historyBusy = false;
   }
+}
+
+// Back to the photo as it opened, as History's first step: every step
+// stays in History, so Redo (or a click there) brings them back.
+function undoAll() {
+  const n = ui.state?.history?.length ?? 0;
+  if (!n) return;
+  historyGo(-n).then(() => status(`Undid all ${n} step${n === 1 ? "" : "s"}; Redo brings them back`));
 }
 
 // With History focused (clicked, or Tab), the arrows step through it one

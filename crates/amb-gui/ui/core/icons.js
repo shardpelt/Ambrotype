@@ -17,6 +17,8 @@ const ICON_PATHS = {
   // Two photos laid on top of each other at angles, as on a collage.
   collage: '<g transform="rotate(-10 8.5 8.5)"><rect x="2.5" y="3.5" width="12" height="10" rx=".8"/><path d="m4.5 11.5 3-3 2.5 2.5"/></g><g transform="rotate(9 15 15.5)"><rect class="cover" x="8.8" y="10.5" width="12.4" height="10" rx=".8"/><circle cx="17.8" cy="13.8" r="1.2"/><path d="m10.8 18.5 3-3 3.5 3.5"/></g>',
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H10"/>',
+  // Skip back to the start, as on a player: not a curved arrow like Undo's.
+  undoall: '<path d="M6 5v14"/><path d="M18.5 5.5 9.5 12l9 6.5Z"/>',
   redo: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H14"/>',
   // Half before, half after.
   before: '<rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><path d="M12 2.5v19"/><path d="M12 4.5h7a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5h-7Z" fill="currentColor" stroke="none" opacity=".45"/>',
@@ -59,7 +61,7 @@ const ICON_PATHS = {
 // rest keep their word, so the bar stays easy to read.
 // Spots, Clipping and Appearance have no picture that says it.
 const TOOLBAR_ICONS = new Set([
-  "open", "library", "save", "export", "collage", "undo", "redo", "before", "crop", "masks", "zoom", "wb",
+  "open", "library", "save", "export", "collage", "undo", "undoall", "redo", "before", "crop", "masks", "zoom", "wb",
   "frame", "auto", "select", "search", "keys", "plugins", "edit", "settings", "feedback",
 ]);
 

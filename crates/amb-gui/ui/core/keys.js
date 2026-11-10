@@ -31,7 +31,9 @@ const KEY_ACTIONS = [
   { id: "edit-in", group: "File", label: "Edit in another app", hint: "The photo, as edited, goes to your image editor as a TIFF next to it (set the app in Settings → General).", keys: ["Ctrl+Alt+E"], when: "any", photo: true, run: () => editInFlow() },
     { id: "collage", group: "File", label: "Collage maker", hint: "Several photos on one canvas.", keys: ["C"], when: "main", button: "btn-collage", run: () => collageFlow() },
   { id: "undo", group: "Edit", label: "Undo", keys: ["Ctrl+Z"], when: "any", button: "btn-undo", run: () => run([{ cmd: "undo" }]) },
+  { id: "undo-all", group: "Edit", label: "Undo all: back to the photo as it opened", hint: "Every step stays in History, so Redo brings them back.", keys: ["Ctrl+Alt+Z"], when: "any", button: "btn-undo-all", run: () => undoAll() },
   { id: "redo", group: "Edit", label: "Redo", keys: ["Ctrl+Shift+Z", "Ctrl+Y"], when: "any", button: "btn-redo", run: () => run([{ cmd: "redo" }]) },
+  { id: "nav-back", group: "Tasks", label: "Back to the task before (Library, Develop, …)", keys: ["Alt+ArrowLeft"], when: "any", button: "btn-nav-back", run: () => navBack() },
   ...["library", "develop", "film", "collage", "trippy"].map((t, i) => ({ id: `task-${t}`, group: "Tasks", label: `${t[0].toUpperCase()}${t.slice(1)} task`, keys: [`Ctrl+Alt+${i + 1}`], when: "any", run: () => switchTask(t) })),
   // Installed task plugins after Trippy.
   ...[5, 6, 7, 8].map((n) => ({ id: `task-${n + 1}`, group: "Tasks", label: `Task ${n + 1} (an installed task plugin)`, keys: [`Ctrl+Alt+${n + 1}`], when: "any", run: () => TASKS[n] && switchTask(TASKS[n].id) })),

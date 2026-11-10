@@ -7,7 +7,7 @@
 "use strict";
 
 const TOOLBAR_IDS = {
-  open: "btn-open", library: "btn-library", save: "btn-save", export: "btn-export", collage: "btn-collage", undo: "btn-undo", redo: "btn-redo", auto: "btn-auto", select: "btn-select", search: "btn-search",
+  open: "btn-open", library: "btn-library", save: "btn-save", export: "btn-export", collage: "btn-collage", undo: "btn-undo", undoall: "btn-undo-all", redo: "btn-redo", auto: "btn-auto", select: "btn-select", search: "btn-search",
   before: "btn-before", crop: "btn-crop", masks: "btn-masks", spots: "btn-spots", zoom: "btn-zoom", wb: "btn-wb", clip: "btn-clip", frame: "btn-frame", keys: "btn-keys",
   hub: "btn-hub", plugins: "btn-plugins", looks: "btn-looks", edit: "btn-edit-layout", settings: "btn-settings", feedback: "btn-feedback",
 };
@@ -153,6 +153,11 @@ function buildToolbar(order) {
     } else if (TOOLBAR_IDS[name] && !placed.has(name)) {
       placed.add(name);
       nodes.push(tagged($(TOOLBAR_IDS[name]), name, i));
+      // Undo all sits beside Undo, unless the layout places it itself.
+      if (name === "undo" && !order?.includes?.("undoall")) {
+        placed.add("undoall");
+        nodes.push(tagged($("btn-undo-all"), "undoall", i));
+      }
     }
   });
   // Appearance is always there, so a layout can't lock you out of changing it.

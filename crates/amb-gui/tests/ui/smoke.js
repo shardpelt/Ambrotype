@@ -32,6 +32,16 @@ await t.step("Ctrl+Z undoes and Ctrl+Shift+Z redoes", async () => {
   await t.until("Exposure +1 again", () => t.setting("Exposure2012") === 1);
 });
 
+await t.step("Undo all, beside Undo, goes back to the photo as it opened; Redo brings the steps back", async () => {
+  const steps = ui.state.history.length;
+  t.expect(steps > 0 && t.visible("#btn-undo-all") && $("btn-undo").nextElementSibling === $("btn-undo-all"), "Undo all after Undo");
+  t.click("#btn-undo-all");
+  await t.until("nothing left to undo", () => !ui.state.can_undo);
+  t.expect((t.setting("Exposure2012") ?? 0) === before && $("btn-undo-all").disabled, "back as it opened");
+  await historyGo(steps);
+  await t.until("Exposure +1 again", () => t.setting("Exposure2012") === 1);
+});
+
 await t.step("search: the Search button opens it; a setting's name and a number sets it", async () => {
   t.expect(t.visible("#btn-search"), "a Search button in the toolbar");
   t.click("#btn-search");
@@ -58,6 +68,19 @@ await t.step("Auto edit: the big button edits the whole photo, as one undo step"
   await t.until("all of it undone", () => !t.setting("Vibrance") && t.setting("Exposure2012") === 1);
 });
 
+await t.step("back to the task before: the arrow, and Alt+←", async () => {
+  await switchTask("develop");
+  await switchTask("library");
+  await t.until("the library", () => libraryOn());
+  t.expect(!$("btn-nav-back").disabled, "back is on");
+  t.click("#btn-nav-back");
+  await t.until("back in Develop", () => !libraryOn() && currentTask() === "develop");
+  await switchTask("library");
+  await t.until("the library again", () => libraryOn());
+  t.key("Alt+ArrowLeft");
+  await t.until("back in Develop again", () => !libraryOn());
+});
+
 await t.step("tabs: Develop has Quick fixes and the Retouch tools, a Colour tab, and folds; no Color or Retouch tab", async () => {
   await switchTask("develop");
   for (const name of ["quick", "retouch"]) if ($(`block-${name}`).classList.contains("folded")) foldBlock($(`block-${name}`), false);
@@ -68,22 +91,22 @@ await t.step("tabs: Develop has Quick fixes and the Retouch tools, a Colour tab,
   $("block-retouch").querySelector(".fold-head").click();
   t.expect(!t.visible("#tools-retouch") && localStorage.getItem("amb.fold.retouch") === "1", "folded");
   $("block-retouch").querySelector(".fold-head").click();
-  // History sits below the tool blocks: the column's foot names it, and a
-  // click scrolls to it.
+  // History stays docked at the column's foot, in sight however far the
+  // column scrolls, so the foot strip doesn't name it.
   const col = $("block-history").parentElement;
-  col.scrollTop = 0;
-  const chip = () => [...col.querySelectorAll(".col-strip .col-chip")].find((c) => c.textContent === "History");
-  await t.until("History named at the column's foot", () => chip());
-  chip().click();
-  const inView = () => {
+  const docked = () => {
     const h = $("block-history").getBoundingClientRect();
     const c = col.getBoundingClientRect();
-    return h.top >= c.top - 1 && h.top < c.bottom - 40;
+    return h.top >= c.top && h.top < c.bottom - 40 && h.bottom <= c.bottom + 1;
   };
-  await t.until("History scrolled into view", inView);
-  await t.until("no longer named below", () => !chip());
+  const named = () => [...col.querySelectorAll(".col-strip .col-chip")].some((c) => c.textContent === "History");
+  col.scrollTop = 0;
+  await t.until("History docked at the foot", docked);
+  t.expect(!named(), "History not named in the foot strip");
+  col.scrollTop = 150;
   // Its scroll bar shows while it scrolls, then hides again.
-  t.expect(col.classList.contains("scrolling") && getComputedStyle(col).getPropertyValue("--sb-thumb").trim() !== "transparent", "the scroll bar shown while scrolling");
+  await t.until("the scroll bar shown while scrolling", () => col.classList.contains("scrolling") && getComputedStyle(col).getPropertyValue("--sb-thumb").trim() !== "transparent", 3000);
+  t.expect(docked(), "History still docked after scrolling");
   await t.until("the scroll bar hidden again", () => !col.classList.contains("scrolling"), 3000);
   col.scrollTop = 0;
   t.expect(t.visible("#tools-retouch"), "unfolded");

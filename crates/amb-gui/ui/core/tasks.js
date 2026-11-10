@@ -132,7 +132,8 @@ function renderTasks() {
   // Each task has its own accent (style.css), so you can see where you are.
   document.body.dataset.task = now;
   renderTaskTools();
-  for (const b of $("task-bar").children) {
+  navNoteTask(now);
+  for (const b of $("task-bar").querySelectorAll("[data-task]")) {
     const on = b.dataset.task === now;
     b.classList.toggle("on", on);
     b.setAttribute("aria-selected", String(on));
@@ -157,7 +158,7 @@ function wireTasks() {
   // The collage maker's tab is lit while it's open.
   for (const ev of ["close", "cancel"]) $("collage-dialog").addEventListener(ev, () => setTimeout(renderTasks));
   const bar = $("task-bar");
-  bar.replaceChildren(...TASKS.map((t, i) => {
+  bar.replaceChildren(navButtons(), ...TASKS.map((t, i) => {
     const b = Object.assign(document.createElement("button"), { type: "button", textContent: t.label, role: "tab" });
     b.dataset.task = t.id;
     b.setAttribute("aria-label", i < 9 ? `${t.label}: ${t.hint} (${keyLabel(`Ctrl+Alt+${i + 1}`)})` : `${t.label}: ${t.hint}`);
@@ -165,6 +166,7 @@ function wireTasks() {
     return b;
   }));
   wireTaskSketches();
+  wireNavMouse();
   renderTasks();
 }
 
@@ -196,7 +198,7 @@ function wireTaskSketches() {
     clearTimeout(timer);
     document.querySelector(".task-sketch")?.remove();
   };
-  for (const b of $("task-bar").children) {
+  for (const b of $("task-bar").querySelectorAll("[data-task]")) {
     const t = TASKS.find((x) => x.id === b.dataset.task);
     b.addEventListener("mouseenter", () => {
       hide();
@@ -211,4 +213,45 @@ function wireTaskSketches() {
     b.addEventListener("mouseleave", hide);
     b.addEventListener("click", hide);
   }
+}
+
+// Back to the tasks you were in before (Library, Develop, Film, Collage,
+// …), as in a browser: the arrow at the task bar's start, Alt+←, or the
+// mouse's back button.
+const nav = { back: [], at: null, going: null };
+
+function navButtons() {
+  const b = Object.assign(document.createElement("button"), { type: "button", id: "btn-nav-back", className: "task-nav", textContent: "‹", disabled: true });
+  b.addEventListener("click", navBack);
+  return b;
+}
+
+// Called whenever the task on screen may have changed (renderTasks).
+function navNoteTask(now) {
+  if (now === nav.at) return;
+  // Arriving where Back was going isn't a step to come back from.
+  if (now === nav.going) nav.going = null;
+  else if (nav.at) {
+    nav.back.push(nav.at);
+    if (nav.back.length > 50) nav.back.shift();
+  }
+  nav.at = now;
+  const b = $("btn-nav-back");
+  if (b) b.disabled = !nav.back.length;
+}
+
+async function navBack() {
+  const id = nav.back.pop();
+  if (!id) return;
+  nav.going = id;
+  await switchTask(id);
+}
+
+function wireNavMouse() {
+  // Button 3 is the mouse's back button.
+  window.addEventListener("mouseup", (e) => {
+    if (e.button !== 3) return;
+    e.preventDefault();
+    navBack();
+  });
 }

@@ -84,9 +84,14 @@ function updateColumnStrip(col) {
   if (!strip) return;
   const tabs = col.querySelector(":scope > .column-tabs");
   col.style.setProperty("--col-tabs-h", `${tabs?.offsetHeight ?? 0}px`);
+  const stripH = strip.childElementCount ? strip.offsetHeight : 0;
+  col.style.setProperty("--col-strip-h", `${stripH}px`);
   const box = col.getBoundingClientRect();
-  const foot = box.bottom - (strip.childElementCount ? strip.offsetHeight : 0);
-  const below = columnBlocks(col).filter((el) => el.offsetParent && el.getBoundingClientRect().top >= foot - 8);
+  // History docked at the foot (style.css) is always in sight, and covers
+  // what scrolls behind it.
+  const dock = [...col.querySelectorAll(":scope > .side-section.history")].find((el) => getComputedStyle(el).position === "sticky");
+  const foot = dock ? dock.getBoundingClientRect().top : box.bottom - stripH;
+  const below = columnBlocks(col).filter((el) => el !== dock && el.offsetParent && el.getBoundingClientRect().top >= foot - 8);
   const names = below.map(blockName).filter(Boolean);
   if (strip.dataset.names === names.join("\n")) return;
   strip.dataset.names = names.join("\n");

@@ -2,8 +2,9 @@
 // Select Object (O): click a person, a car, the sky; the object selection
 // model (SAM 2.1, Settings → AI models) outlines it, and the panel's
 // buttons act on it: Adjust (a mask of it, its sliders in Masks), Brighten,
-// Darken, Soften the background, Remove (one AI Remove spot) or Move (drag
-// it: a clone at the new place, removed where it was). Shift-click adds
+// Darken, Soften the background, Remove (one AI Remove spot), Move (drag
+// it: a clone at the new place, removed where it was) or Copy (the clone
+// alone, so it's in both places). Shift-click adds
 // more of it, Alt-click takes a part away; a drag draws a box round it.
 // A shadow it casts shows in blue, and "Its shadow too" takes it along.
 // Everything it makes is an ordinary mask or spot, one undo step each.
@@ -18,7 +19,7 @@ const sl = {
   shadow: false,   // take its shadow too (kept for the next selection)
   busy: false,
   drag: null,      // { start, path, box } while the pointer is down
-  moving: false,   // Move: the next drag moves the outline
+  moving: false,   // "move" or "copy": the next drag places the outline
   offset: [0, 0],  // the outline's offset while it is dragged (pixels)
 };
 
@@ -118,7 +119,10 @@ function placeSelectBar() {
 function renderSelectPanel() {
   const have = Boolean(sl.dabs);
   for (const b of document.querySelectorAll("#select-bar button")) b.disabled = sl.busy;
-  $("select-bar").querySelector('[data-bar="move"]').classList.toggle("active", sl.moving);
+  for (const mode of ["move", "copy"]) {
+    $("select-bar").querySelector(`[data-bar="${mode}"]`).classList.toggle("active", sl.moving === mode);
+    $(`select-${mode}`).classList.toggle("active", sl.moving === mode);
+  }
   const shadowBox = $("select-bar").querySelector('[data-bar="shadow"]');
   shadowBox.hidden = !sl.shadowDabs.length;
   shadowBox.querySelector("input").checked = sl.shadow;
@@ -127,9 +131,8 @@ function renderSelectPanel() {
   $("select-shadow-row").hidden = !have || !sl.shadowDabs.length;
   $("select-shadow").checked = sl.shadow;
   $("select-shadow").disabled = sl.busy;
-  $("select-move").classList.toggle("active", sl.moving);
   $("select-hint").textContent = sl.moving
-    ? "Drag the outline to where it should go."
+    ? sl.moving === "copy" ? "Drag the outline to where the copy should go." : "Drag the outline to where it should go."
     : have
       ? sl.shadowDabs.length && !sl.shadow
         ? "Its shadow is in blue: tick “Its shadow too” to take it along. Shift-click adds more, Alt-click takes a part away."
@@ -334,9 +337,10 @@ function wireSelect() {
     const p = at(e);
     if (sl.moving) {
       const [a, b] = [slFrame(...d.start), slFrame(...p)];
+      const mode = sl.moving;
       sl.moving = false;
       sl.offset = [0, 0];
-      if (Math.hypot(p[0] - d.start[0], p[1] - d.start[1]) > 4) selectApply("move", [b[0] - a[0], b[1] - a[1]]);
+      if (Math.hypot(p[0] - d.start[0], p[1] - d.start[1]) > 4) selectApply(mode, [b[0] - a[0], b[1] - a[1]]);
       else renderSelectPanel();
       return;
     }
@@ -359,14 +363,14 @@ function wireSelect() {
   for (const b of document.querySelectorAll("#select-actions button[data-action]")) {
     b.addEventListener("click", () => selectApply(b.dataset.action));
   }
-  const toggleMove = () => {
-    sl.moving = !sl.moving;
+  const toggleMode = (mode) => {
+    sl.moving = sl.moving === mode ? false : mode;
     renderSelectPanel();
   };
-  $("select-move").addEventListener("click", toggleMove);
+  for (const mode of ["move", "copy"]) $(`select-${mode}`).addEventListener("click", () => toggleMode(mode));
   const bar = $("select-bar");
   for (const b of bar.querySelectorAll("button[data-action]")) b.addEventListener("click", () => selectApply(b.dataset.action));
-  bar.querySelector('[data-bar="move"]').addEventListener("click", toggleMove);
+  for (const mode of ["move", "copy"]) bar.querySelector(`[data-bar="${mode}"]`).addEventListener("click", () => toggleMode(mode));
   const barShadow = bar.querySelector('[data-bar="shadow"] input');
   barShadow.addEventListener("change", () => setSelectShadow(barShadow.checked));
   $("select-clear").addEventListener("click", selectClear);

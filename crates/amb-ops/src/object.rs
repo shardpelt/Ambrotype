@@ -622,6 +622,12 @@ impl Selection {
     /// one Remove spot where it was (in this order, so the clone copies
     /// the object, not the fill), leaving out what the clone now covers
     /// (spots apply one after another, so it would wipe the clone).
+    /// A copy of it `by` (fractions of the width and height) away, as one
+    /// clone spot: Move without filling where it was.
+    pub fn copy_by(&self, by: [f64; 2]) -> Vec<Command> {
+        self.move_by(by).into_iter().take(1).collect()
+    }
+
     pub fn move_by(&self, by: [f64; 2]) -> Vec<Command> {
         let (wf, hf) = (self.width as f64, self.height as f64);
         let r = (0.02 * self.size()).max(MIN_WIDEN);
@@ -950,6 +956,37 @@ mod tests {
             dabs.iter().all(|&(x, _)| !(45.0..75.0).contains(&x)),
             "{dabs:?}"
         );
+    }
+
+    #[test]
+    fn copy_is_moves_clone_alone_and_leaves_the_object() {
+        let (w, h) = (200, 120);
+        let mut mask = vec![false; w * h];
+        for y in 40..80 {
+            for x in 30..70 {
+                mask[y * w + x] = true;
+            }
+        }
+        let sel = Selection {
+            mask: mask.clone(),
+            width: w,
+            height: h,
+            share: 1.0,
+            selected: true,
+            lo: (30, 40),
+            hi: (69, 79),
+            object: mask,
+            shadow: Vec::new(),
+            with_shadow: false,
+        };
+        let by = [0.5, 0.0];
+        let moved = sel.move_by(by);
+        let copied = sel.copy_by(by);
+        // Move clones it there and removes it here; Copy only clones.
+        assert_eq!(moved.len(), 2);
+        assert_eq!(copied.len(), 1);
+        assert!(matches!(&copied[0], Command::AddSpot { kind: Some(k), .. } if k == "clone"));
+        assert_eq!(format!("{:?}", copied[0]), format!("{:?}", moved[0]));
     }
 
     #[test]

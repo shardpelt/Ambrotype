@@ -264,6 +264,14 @@ pub(crate) async fn selection_apply(
                     "Moved it: copied to the new place, removed where it was.".into(),
                 )
             }
+            "copy" => {
+                let by = by.ok_or("where to: drag the outline")?;
+                (
+                    sel.copy_by(by),
+                    "copy object",
+                    "Copied it to the new place; it stays where it was too.".into(),
+                )
+            }
             "adjust" => (
                 mask_of("Object", serde_json::json!({}), false),
                 "object mask",

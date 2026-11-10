@@ -144,6 +144,10 @@ await t.step("tabs: Develop has Quick fixes and the Retouch tools, a Colour tab,
   t.expect(sl.moving, "the bar's Move");
   $("select-bar").querySelector('[data-bar="move"]').click();
   t.expect(!sl.moving, "and again stops it");
+  $("select-bar").querySelector('[data-bar="copy"]').click();
+  t.expect(sl.moving === "copy" && $("select-hint").textContent.includes("copy"), "the bar's Copy waits for a drag");
+  t.click("#select-copy");
+  t.expect(!sl.moving, "Copy again stops it");
   t.click("#select-move");
   t.expect(sl.moving && $("select-hint").textContent.startsWith("Drag"), "Move waits for a drag");
   t.key("Escape");

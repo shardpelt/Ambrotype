@@ -32,6 +32,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-10: Select object's **Copy**: drag a copy of it elsewhere, and it stays where it was too (Move's clone without the fill)
 - 2026-11-10: Develop's left column in two tabs, **Tools** and **Presets**, with History docked under both; the switch to try blocks that each scroll on their own is gone (one scroll won)
 - 2026-11-10: **Undo all** beside Undo (Ctrl+Alt+Z; Redo brings the steps back); History docked at the foot of its column, always in sight, with Presets' list capped to scroll inside; a **‹** back button at the task bar's start (Alt+←, the mouse's back button) to the task you were in before
 - 2026-11-10: thin scroll bars that show only while the pointer is over what scrolls, or while it scrolls

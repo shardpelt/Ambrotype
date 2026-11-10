@@ -1,38 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The blocks in a side column, and the two ways a column scrolls (View menu,
-// Settings → General):
-// - as one: a block's heading sticks at the top while you're in it, and the
-//   blocks further down are named in a strip at the column's foot, a click
-//   scrolls there;
-// - contained: the column keeps to the window's height, each block scrolls
-//   on its own, and the line between two blocks drags to share the height
-//   out (remembered on this computer). Presets fill what's left.
-// Either way a block's heading folds it (remembered).
+// The blocks in a side column. The column scrolls as one: a block's
+// heading sticks at the top while you're in it, the blocks further down are
+// named in a strip at the column's foot (a click scrolls there), History
+// stays docked at the foot (style.css), and a block's heading folds it
+// (remembered).
 
 const columnWatch = new WeakMap();
-const columnsContained = () => store.text("amb.columns") === "contained";
-
-function setColumnsContained(on) {
-  store.setText("amb.columns", on ? "contained" : "one");
-  const box = $("settings-columns");
-  if (box) box.checked = on;
-  applyActiveLooks();
-  status(on ? "Columns: each block scrolls on its own; drag the lines between them" : "Columns: one scroll, the blocks further down named at the foot");
-  return true;
-}
 
 function wireColumnBlocks(col) {
-  const contained = columnsContained();
-  document.body.classList.toggle("cols-contained", contained);
   for (const s of col.querySelectorAll(":scope > .side-section")) foldableBlock(s);
-  if (contained) {
-    col.style.removeProperty("--col-tabs-h");
-    return addBlockDividers(col);
-  }
-  for (const el of columnBlocks(col)) {
-    el.style.height = "";
-    el.classList.remove("sized");
-  }
   const strip = Object.assign(document.createElement("nav"), { className: "col-strip", ariaLabel: "Further down this column" });
   col.append(strip);
   let w = columnWatch.get(col);
@@ -110,50 +86,4 @@ function updateColumnStrip(col) {
     });
     return b;
   }));
-}
-
-// Contained: block heights set by dragging the line between two blocks.
-const blockHeights = store.get("section-heights") ?? {};
-
-function addBlockDividers(col) {
-  const blocks = columnBlocks(col);
-  for (const b of blocks) {
-    const h = b.id && blockHeights[b.id];
-    b.style.height = h && !b.classList.contains("presets-block") ? `${h}px` : "";
-    b.classList.toggle("sized", Boolean(b.style.height));
-  }
-  for (let i = 1; i < blocks.length; i++) {
-    const above = blocks[i - 1];
-    const below = blocks[i];
-    // Resize the block that doesn't fill the spare height.
-    const target = below.classList.contains("presets-block") || !below.id ? above : below;
-    if (!target.id) continue;
-    const sign = target === above ? 1 : -1;
-    const grip = Object.assign(document.createElement("div"), { className: "section-resizer", title: "Drag to resize; double-click to reset" });
-    below.before(grip);
-    grip.addEventListener("pointerdown", (e) => {
-      if (document.body.classList.contains("editing")) return;
-      e.preventDefault();
-      grip.setPointerCapture(e.pointerId);
-      const y0 = e.clientY;
-      const h0 = target.getBoundingClientRect().height;
-      const move = (ev) => {
-        const h = Math.max(40, Math.round(h0 + sign * (ev.clientY - y0)));
-        target.style.height = `${h}px`;
-        target.classList.add("sized");
-        blockHeights[target.id] = h;
-      };
-      grip.addEventListener("pointermove", move);
-      grip.addEventListener("pointerup", () => {
-        grip.removeEventListener("pointermove", move);
-        store.set("section-heights", blockHeights);
-      }, { once: true });
-    });
-    grip.addEventListener("dblclick", () => {
-      delete blockHeights[target.id];
-      target.style.height = "";
-      target.classList.remove("sized");
-      store.set("section-heights", blockHeights);
-    });
-  }
 }

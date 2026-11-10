@@ -153,7 +153,8 @@ input[type=search], input[type=number], select {
 .amount { display: grid; grid-template-columns: auto minmax(0, 1fr) 32px; align-items: center; gap: 8px; color: var(--muted); }
 .amount input[type=range] { min-width: 0; width: 100%; }
 .preset-list { overflow-y: auto; flex: 1; min-height: 80px; max-height: 40vh; }
-.cols-contained .preset-list { max-height: none; }
+/* In a tab of its own the grid takes the column's height. */
+.presets-block[data-tab] .preset-list { max-height: none; overflow: visible; }
 /* Groups to pick from, over a grid of tiles: a small preview and the name (preset-grid.js). */
 .preset-groups { display: flex; flex-wrap: wrap; gap: 4px; }
 .preset-groups[hidden] { display: none; }
@@ -1141,30 +1142,15 @@ button.tool-icon.active { color: var(--accent); }
 .col-chip::after { content: " ↓"; opacity: .6; }
 .col-chip:hover { color: var(--text); border-color: var(--accent); }
 body.editing .col-strip { display: none; }
-/* Contained (blocks.js): the column keeps to its height and each block
-   scrolls on its own; the line between two blocks drags. */
-.cols-contained .col-strip { display: none; }
 /* History stays docked at the column's foot, last in its column, while
    the rest scrolls above it (looks/blocks.js leaves it out of the foot
    strip). */
-body:not(.cols-contained):not(.editing) .column > .col-strip { order: 2; }
-body:not(.cols-contained):not(.editing) .column > .side-section.history { order: 1; position: sticky; bottom: var(--col-strip-h, 0px); z-index: 4; max-height: 38%; background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -6px 12px rgba(0, 0, 0, .18); }
-body:not(.cols-contained):not(.editing) .column > .side-section.history .history-list { flex: 1 1 auto; min-height: 3em; max-height: none; }
-body:not(.cols-contained):not(.editing) .column > .side-section.history .snapshot-list { max-height: 6em; overflow-y: auto; }
+body:not(.editing) .column > .col-strip { order: 2; }
+body:not(.editing) .column > .side-section.history { order: 1; position: sticky; bottom: var(--col-strip-h, 0px); z-index: 4; max-height: 38%; background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -6px 12px rgba(0, 0, 0, .18); }
+body:not(.editing) .column > .side-section.history .history-list { flex: 1 1 auto; min-height: 3em; max-height: none; }
+body:not(.editing) .column > .side-section.history .snapshot-list { max-height: 6em; overflow-y: auto; }
 .task-bar .task-nav { padding: 2px 8px; font-size: 16px; line-height: 1; }
 .task-bar .task-nav:disabled { opacity: .3; background: none; }
-.cols-contained .column > .side-section, .cols-contained .column > details.panel { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
-.cols-contained .column > .side-section:not(.folded), .cols-contained .column > details.panel[open] { min-height: 72px; }
-.cols-contained .column > .sized { flex: none; }
-.cols-contained .column > .side-section:not(.presets-block):not(.sized) { max-height: 22%; }
-/* The presets' grid scrolls under its fixed controls. */
-.cols-contained .column > .presets-block { overflow: hidden; }
-.cols-contained .presets-block .preset-list { flex: 1 1 0; min-height: 90px; }
-.cols-contained .column > .presets-block:not(.folded) { flex: 1 1 0; min-height: 200px; }
-.cols-contained .history-list { max-height: none; }
-.section-resizer { flex: none; height: 12px; margin: -6px 0; position: relative; z-index: 5; cursor: row-resize; }
-.section-resizer::after { content: ""; position: absolute; left: 50%; top: 4px; width: 36px; height: 4px; margin-left: -18px; border-radius: 2px; background: var(--faint); opacity: .7; }
-.section-resizer:hover::after, .section-resizer:active::after { background: var(--accent); opacity: 1; }
 /* The presets block's tools: a tidy grid of small buttons. */
 .preset-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 .preset-tools button { width: 100%; }

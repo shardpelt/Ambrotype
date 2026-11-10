@@ -155,11 +155,6 @@ function wireTopbar() {
     leave = setTimeout(() => document.body.classList.remove("topbar-peek"), 400);
   });
   $("settings-topbar")?.addEventListener("change", (e) => setTopbar(e.target.checked));
-  const cols = $("settings-columns");
-  if (cols) {
-    cols.checked = columnsContained();
-    cols.addEventListener("change", () => setColumnsContained(cols.checked));
-  }
   if (!shown) setTopbar(false);
   else if ($("settings-topbar")) $("settings-topbar").checked = true;
 }

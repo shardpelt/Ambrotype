@@ -99,7 +99,8 @@ function applyLayout(layout) {
       if (!el) return;
       // Where it is in the layout file, for editor mode (editor.js).
       el.dataset.item = `${side}:${i}`;
-      if (tab) el.dataset.tab = tab;
+      // History shows whichever tab is chosen, docked at the column's foot.
+      if (tab && item !== "history") el.dataset.tab = tab;
       else delete el.dataset.tab;
       col.append(el);
     });

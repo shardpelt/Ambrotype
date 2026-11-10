@@ -5,7 +5,7 @@
   "author": "Ambrotype",
   "density": "normal",
   "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "select", "search", "|", "before", "|", "crop", "masks", "spots", "zoom", "wb", "clip", "frame", "|", "hub", "plugins", "|", "looks", "settings", "feedback"],
-  "left": { "width": 260, "items": ["quick", "retouch", "presets", "history"] },
+  "left": { "width": 260, "items": [{ "tab": "Tools" }, "quick", "retouch", { "tab": "Presets" }, "presets", "history"] },
   "right": {
     "width": 330,
     "items": [

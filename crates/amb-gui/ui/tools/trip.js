@@ -36,14 +36,22 @@ function tripRecipe(plugin, name) {
 // An effect plugin on the photo with `params` (or a recipe's), `where`
 // (only the highlights, the blues…) and `amount` (to 200), in place of the
 // one of that plugin already there; one undo step.
-async function setEffect(plugin, { recipe = "", params = {}, where = null, amount = 100 } = {}, what = null) {
+async function setEffect(plugin, opts = {}, what = null) {
   if (!ui.info) return toast("Open a photo first.", true);
+  const commands = await effectCommands(plugin, opts);
+  if (!commands) return toast(`The effect ${plugin} isn't installed.`, true);
+  await run(commands, what ?? (opts.recipe || plugin));
+}
+
+// The commands setEffect runs (null when the plugin isn't installed). A
+// `seed` keeps a hover preview and the click that follows it the same.
+async function effectCommands(plugin, { recipe = "", params = {}, where = null, amount = 100, seed = tripSeed() } = {}) {
   if (!fx.plugins.length) await loadEffectPlugins();
-  if (!fx.plugins.some((p) => p.id === plugin)) return toast(`The effect ${plugin} isn't installed.`, true);
+  if (!fx.plugins.some((p) => p.id === plugin)) return null;
   const values = { ...(recipe ? tripRecipe(plugin, recipe) : {}), ...params };
-  const entry = { plugin, params: values, amount, seed: tripSeed(), ...(where ? { where } : {}) };
+  const entry = { plugin, params: values, amount: amount ?? 100, seed, ...(where ? { where } : {}) };
   const list = [...tripEffects().filter((e) => e.plugin !== plugin), entry];
-  await run([{ cmd: "set_param", name: "amb:Effects", value: JSON.stringify(list) }], what ?? (recipe || plugin));
+  return [{ cmd: "set_param", name: "amb:Effects", value: JSON.stringify(list) }];
 }
 
 // A random number in [lo, hi], rounded to `step`.

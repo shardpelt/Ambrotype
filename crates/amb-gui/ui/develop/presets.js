@@ -98,9 +98,15 @@ async function applyPresetPartly(p) {
 // nothing is applied until it's clicked.
 let hoverPreset = { timer: 0, shown: false, token: 0 };
 function presetHover(p) {
+  hoverPreview(p && (() => presetCommands(p.path)));
+}
+
+// The photo as `commands()` would make it, after a moment's hover; null
+// takes the preview off. Also the Trippy task's effect buttons (tasks.js).
+function hoverPreview(commands) {
   clearTimeout(hoverPreset.timer);
   const token = ++hoverPreset.token;
-  if (!p) {
+  if (!commands) {
     if (hoverPreset.shown) {
       hoverPreset.shown = false;
       ui.overrides = {};
@@ -111,13 +117,13 @@ function presetHover(p) {
   if (!ui.info || ui.active || ui.crop.on) return;
   hoverPreset.timer = setTimeout(async () => {
     try {
-      const overrides = await invoke("trial_overrides", { commands: await presetCommands(p.path) });
+      const overrides = await invoke("trial_overrides", { commands: await commands() });
       if (token !== hoverPreset.token) return;
       ui.overrides = overrides;
       hoverPreset.shown = true;
       requestPreview(false);
     } catch {
-      // A preset that can't be read just isn't previewed.
+      // A preset (or effect) that can't be read just isn't previewed.
     }
   }, 180);
 }

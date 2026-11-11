@@ -116,6 +116,15 @@ await t.step("tabs: Develop has Quick fixes and the Retouch tools, a Colour tab,
   // Its scroll bar shows while it scrolls, then hides again.
   await t.until("the scroll bar shown while scrolling", () => col.classList.contains("scrolling") && getComputedStyle(col).getPropertyValue("--sb-thumb").trim() !== "transparent", 3000);
   t.expect(docked(), "History still docked after scrolling");
+  // Its top edge drags it taller (a double-click puts it back).
+  const hist = $("block-history"), grip = hist.querySelector('.dock-grip[data-grip="history"]');
+  const h0 = hist.getBoundingClientRect().height, gy = grip.getBoundingClientRect().top + 3;
+  grip.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientY: gy, pointerId: 1 }));
+  grip.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientY: gy - 60, pointerId: 1 }));
+  grip.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientY: gy - 60, pointerId: 1 }));
+  t.expect(hist.getBoundingClientRect().height > h0 + 30, `History dragged taller: ${Math.round(h0)} → ${Math.round(hist.getBoundingClientRect().height)}`);
+  grip.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+  t.expect(!hist.classList.contains("sized"), "back to the usual size");
   await t.until("the scroll bar hidden again", () => !col.classList.contains("scrolling"), 3000);
   col.scrollTop = 0;
   t.expect(t.visible("#tools-retouch"), "unfolded");
@@ -279,6 +288,13 @@ await t.step("Trippy, a task plugin: its tools put effects on and take them off"
   t.expect([...document.querySelectorAll(".fx-effect input[type=range]")][0].max === "200", "Amount to 200 in Trippy");
   t.click(tile("Back to normal"));
   await t.until("no trip", () => fxOn().length === 0);
+  // Hovering an effect button shows the photo with it, as presets do; nothing is applied.
+  const before = t.historyLength();
+  tile("Foil sticker").dispatchEvent(new MouseEvent("mouseenter"));
+  await t.until("the hover preview", () => Object.keys(ui.overrides ?? {}).includes("amb:Effects"), 5000);
+  tile("Foil sticker").dispatchEvent(new MouseEvent("mouseleave"));
+  await t.until("the preview off again", () => !Object.keys(ui.overrides ?? {}).length, 3000);
+  t.expect(t.historyLength() === before && fxOn().length === 0, "nothing applied");
   // Back to where the edit was, for the steps after this one.
   for (let i = 0; i < 5; i++) await run([{ cmd: "undo" }]);
   await t.until("back at the Exposure step", () => document.querySelector("#history-list li.current .history-values")?.textContent.endsWith("→ +1.00"));

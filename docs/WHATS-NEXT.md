@@ -33,7 +33,6 @@ A short running list, kept up to date as work lands. Newest decisions first. The
   - **Clean-up organiser:** find what to delete (blurry, out of focus, duplicates, closed eyes, near-identical bursts), then one confirm window to page through them all before they go to the trash.
   - **Agent docs in the app:** the AGENTS/docs for AI agents baked into the app (an exe has no .md files), reachable from a menu and `amb`; and an option to start an agent in a terminal to edit photos or the editor itself.
   - **More trippy:** kaleidoscopes (mirror slices, fractal kaleidoscopes), a heat-camera look (false colour by brightness), as Trippy effects; and Trippy looks shareable (as presets with their effects, to the hub).
-  - **Trippy tools preview on hover**, as presets do (asked; doing now).
 - **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): face-part masks.
 - **Teach by showing** (owner, 2026-11-03): the app should teach its features by showing them, not by manuals, and one question should open up many related features. Ideas:
   - Done 2026-11-05: tips while waiting and in the search box and preset filter, from FEATURES.md, used features skipped, both switches in Settings → General; each How to lists two or three related features to follow.
@@ -46,6 +45,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-11: the Trippy task's effect buttons show the photo with the effect while hovered, as presets do (the click gives what the hover showed); History's top edge and the line under Snapshots drag to size them again (double-click: usual size)
 - 2026-11-11: Back (‹, Alt+←) steps through the library's views and an Insights bar's filter, not only the tabs; Survey taken out of the library (compare and the grid do its job); Compare splits side by side or above and below, the candidate either way round; Grid comes back from Map and Timeline; presets apply to the original by default
 - 2026-11-11: **Glass Light** and **Glass Dark** themes (Appearance): frosted, see-through panels over a soft wash of colour (a theme's new `glass` token, the blur in px); still to check that the blur stays smooth on older Windows machines. Eight new presets (Blue Hour, Cinematic, Crisp Morning, Desert Dust, Matte Portrait, Noir, Sunset Duotone, Vaporwave) and four new Surprise me styles (Cinematic, Dreamy, Vintage, Punchy)
 - 2026-11-11: **Insights** (library view, Shift+I): how the photos shown were shot: a chart each for aperture, focal length, shutter speed, ISO, time of day, lens and camera, with the kept ones (picked, or 3 stars and up) as the bar's darker part, and the settings used most together; camera chips narrow it, a click on a bar shows those photos. `amb insights DIR`. Next: plain-words analysis (what the numbers suggest: a lens unused, a zoom at its end), Split by camera, lens or year, then challenges (your anti-style)

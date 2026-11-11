@@ -216,6 +216,48 @@ function undoAll() {
 // With History focused (clicked, or Tab), the arrows step through it one
 // step at a time and Home/End go to the first and last; the photo's own
 // arrow keys wait until it loses focus.
+// Drag History's top edge, or the line under the snapshots, to size them;
+// kept on this computer. A double-click goes back to the usual size.
+function wireDockGrips() {
+  const block = $("block-history");
+  const sizes = store.get("amb.historyDock") ?? {};
+  const apply = () => {
+    block.classList.toggle("sized", sizes.history != null);
+    block.style.setProperty("--history-h", sizes.history != null ? `${sizes.history}px` : "");
+    block.style.setProperty("--snap-h", sizes.snapshots != null ? `${sizes.snapshots}px` : "");
+  };
+  apply();
+  for (const grip of block.querySelectorAll(".dock-grip")) {
+    const which = grip.dataset.grip;
+    grip.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      grip.setPointerCapture(e.pointerId);
+      grip.classList.add("dragging");
+      const start = e.clientY;
+      const from = which === "history" ? block.getBoundingClientRect().height : $("snapshot-list").getBoundingClientRect().height;
+      const move = (m) => {
+        // History grows upwards from its top edge; the snapshots downwards.
+        const d = which === "history" ? start - m.clientY : m.clientY - start;
+        sizes[which] = Math.round(Math.max(which === "history" ? 90 : 24, from + d));
+        apply();
+      };
+      const up = () => {
+        grip.classList.remove("dragging");
+        grip.removeEventListener("pointermove", move);
+        store.set("amb.historyDock", sizes);
+      };
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up, { once: true });
+      grip.addEventListener("pointercancel", up, { once: true });
+    });
+    grip.addEventListener("dblclick", () => {
+      delete sizes[which];
+      apply();
+      store.set("amb.historyDock", sizes);
+    });
+  }
+}
+
 function wireHistoryKeys() {
   const hist = $("history-list");
   hist.addEventListener("keydown", (e) => {

@@ -54,11 +54,18 @@ async function runTaskTool(tool) {
     return a.run();
   }
   if (!ui.info) return toast("Open a photo first.", true);
-  if (tool.effect) return setEffect(tool.effect, { recipe: tool.recipe, params: tool.params, where: tool.where, amount: tool.amount }, tool.label);
+  if (tool.effect) return setEffect(tool.effect, toolEffect(tool), tool.label);
   const r = await invoke("run_plugin", { id: tool.plugin, params: tool.params ?? {} });
   setState(r.state);
   requestPreview(false);
   if (r.message) toast(`${tool.label}: ${r.message}`);
+}
+
+// An effect button's options; the seed stays for the tile's life, so the
+// hover preview is what a click gives.
+function toolEffect(tool) {
+  tool.seed ??= tripSeed();
+  return { recipe: tool.recipe, params: tool.params, where: tool.where, amount: tool.amount, seed: tool.seed };
 }
 
 // The tools block: the task on screen's buttons.
@@ -71,7 +78,15 @@ function renderTaskTools() {
     b.dataset.tool = String(i);
     b.append(Object.assign(document.createElement("strong"), { textContent: tool.label }));
     if (tool.hint) b.append(Object.assign(document.createElement("span"), { textContent: tool.hint }));
-    b.addEventListener("click", () => Promise.resolve(runTaskTool(tool)).catch((e) => toast(String(e), true)));
+    b.addEventListener("click", () => {
+      hoverPreview(null);
+      Promise.resolve(runTaskTool(tool)).then(() => { delete tool.seed; }).catch((e) => toast(String(e), true));
+    });
+    // An effect button shows the photo with it while hovered, as presets do.
+    if (tool.effect) {
+      b.addEventListener("mouseenter", () => ui.info && hoverPreview(() => effectCommands(tool.effect, toolEffect(tool))));
+      b.addEventListener("mouseleave", () => hoverPreview(null));
+    }
     return b;
   }));
 }

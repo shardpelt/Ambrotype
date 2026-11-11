@@ -327,6 +327,7 @@ async function init() {
   $("btn-sample-empty").addEventListener("click", () => sampleFlow());
   $("btn-watch-empty").addEventListener("click", () => watchFlow());
   wireHistoryKeys();
+  wireDockGrips();
   wireHelpCards();
   wireTerms();
   wireZones();

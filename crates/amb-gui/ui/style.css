@@ -1152,7 +1152,15 @@ body.editing .col-strip { display: none; }
 body:not(.editing) .column > .col-strip { order: 2; }
 body:not(.editing) .column > .side-section.history { order: 1; position: sticky; bottom: var(--col-strip-h, 0px); z-index: 4; max-height: 38%; background: var(--panel); border-top: 1px solid var(--line); box-shadow: 0 -6px 12px rgba(0, 0, 0, .18); }
 body:not(.editing) .column > .side-section.history .history-list { flex: 1 1 auto; min-height: 3em; max-height: none; }
-body:not(.editing) .column > .side-section.history .snapshot-list { max-height: 6em; overflow-y: auto; }
+body:not(.editing) .column > .side-section.history .snapshot-list { max-height: var(--snap-h, 6em); overflow-y: auto; }
+body:not(.editing) .column > .side-section.history.sized { height: var(--history-h); max-height: 80%; }
+/* Drag lines: History's top edge, and under the snapshots (history.js). */
+.dock-grip { height: 7px; margin: -3px 0; cursor: ns-resize; flex: none; position: relative; z-index: 1; }
+.dock-grip::after { content: ""; position: absolute; left: 40%; right: 40%; top: 2px; height: 3px; border-radius: 2px; background: var(--line); opacity: 0; transition: opacity .15s; }
+.dock-grip:hover::after, .dock-grip.dragging::after { opacity: 1; background: var(--accent); }
+.side-section.history:hover .dock-grip::after { opacity: 1; }
+.dock-top { margin: -10px 0 0; }
+body.editing .dock-grip { display: none; }
 .task-bar .task-nav { padding: 2px 8px; font-size: 16px; line-height: 1; }
 .task-bar .task-nav:disabled { opacity: .3; background: none; }
 /* The presets block's tools: a tidy grid of small buttons. */

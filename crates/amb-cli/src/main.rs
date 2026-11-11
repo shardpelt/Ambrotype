@@ -8,6 +8,7 @@ use std::process::ExitCode;
 mod cleanup;
 mod contact;
 mod convert;
+mod docs;
 mod dust;
 mod edit;
 mod fuji;
@@ -310,6 +311,9 @@ USAGE:
                                             syntax and the most used settings), or one group's settings
                                             one line each
     amb settings reference [--json]         Print the settings reference (docs/ai/settings-reference.md)
+    amb docs [NAME...] [--to DIR]           The guides for AI agents, built in: the list, one guide
+                                            (guide, core, features, settings, mcp, layouts, plugins, …),
+                                            or all written to DIR with their links working
     amb man                                 Print this help as a manual page (man amb; docs/man/amb.1)
     amb plugin new <DIR> [--name \"My plugin\"]
                                             Start a plugin project (Rust, built to WebAssembly;
@@ -756,6 +760,7 @@ fn main() -> ExitCode {
                     .join(", ")
             )),
         },
+        ["docs", names @ ..] => docs::docs(names, &options),
         ["man"] => {
             print!("{}", man::page(USAGE));
             Ok(())

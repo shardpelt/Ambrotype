@@ -30,6 +30,7 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
+- Added a guide under `docs/ai/`? List it in `crates/amb-protocol/src/guides.rs`, so `amb docs`, the MCP server and the editor have it (a test checks).
 - Changed `amb`'s help text? Regenerate the man page with `cargo run -p amb-cli -- man > docs/man/amb.1` (a test checks it).
 - Changed a tag's range, default or description? Regenerate the AI settings reference with `cargo run -p amb-cli -- settings reference > docs/ai/settings-reference.md` and the core card with `cargo run -p amb-cli -- ref > docs/ai/core.md` (tests check both are current).
 - GUI changes: run the editor (`cargo run --release -p amb-gui -- photo.nef`) and try the change by hand. Without a screen (a cloud session), use Xvfb: [docs/recipes.md](docs/recipes.md).

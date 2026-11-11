@@ -777,8 +777,20 @@
       <p id="connect-where" class="hint"></p>
       <pre id="connect-snippet" class="connect-snippet"></pre>
       <div class="crop-line"><button type="button" class="small" id="connect-copy">Copy</button></div>
-      <p class="hint">Or work in a terminal: any command-line agent (or you) can run <code>amb</code> on the photos there, such as <code>amb do photo.nef "exp=+0.3"</code>. It opens in <code id="connect-folder"></code>.</p>
-      <menu><button type="button" id="connect-terminal">Open a terminal here</button><span class="grow"></span><button value="ok" class="primary">Done</button></menu>
+      <p class="hint">Or work in a terminal: any command-line agent (or you) can run <code>amb</code> on the photos there, such as <code>amb do photo.nef "exp=+0.3"</code>. It opens in <code id="connect-folder"></code>. <span id="connect-agent-hint">Start the agent there and it's told where Ambrotype's guides are.</span></p>
+      <label class="hub-url">Guides for AI agents (built in; <code>amb docs</code> in a terminal)
+        <span class="folder-row"><select id="connect-guide"></select><button type="button" class="small" id="connect-read">Read</button></span>
+      </label>
+      <menu><button type="button" id="connect-terminal">Open a terminal here</button><button type="button" id="connect-agent" hidden></button><span class="grow"></span><button value="ok" class="primary">Done</button></menu>
+    </form>
+  </dialog>
+
+  <!-- A built-in guide for AI agents (dialogs/connect.js). -->
+  <dialog id="guide-dialog" class="guide-dialog">
+    <form method="dialog">
+      <h2 id="guide-title">Guide</h2>
+      <pre id="guide-text" class="guide-text"></pre>
+      <menu><button type="button" id="guide-copy">Copy</button><span class="grow"></span><button value="ok" class="primary">Close</button></menu>
     </form>
   </dialog>
 

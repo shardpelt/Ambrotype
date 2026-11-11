@@ -41,7 +41,7 @@ Other clients: run `amb mcp` as a stdio server. Lens profiles (`AMB_LENSFUN_DB`,
 | `set_photo_info` | Rating, colour label, pick/reject flag and keywords, written where Lightroom reads them. |
 | `settings_reference` | The setting groups, or one group's settings with ranges, defaults and meanings. |
 
-Resources: `ambrotype://core-card` (the [core card](core.md): the compact syntax and the most used settings, a few hundred tokens), `ambrotype://ai-guide` (the [AI guide](README.md): the editing loop, commands, masks, spots and intent-to-settings recipes) and `ambrotype://settings-reference`.
+Resources: `ambrotype://core-card` (the [core card](core.md): the compact syntax and the most used settings, a few hundred tokens), `ambrotype://ai-guide` (the [AI guide](README.md): the editing loop, commands, masks, spots and intent-to-settings recipes) `ambrotype://settings-reference`, and the other built-in guides as `ambrotype://docs/NAME` (`features`, `layouts`, `plugins`, …; the list is `amb docs`).
 
 The commands and queries are the same as `amb edit` and `amb query`; `amb protocol schema` prints their JSON Schema.
 

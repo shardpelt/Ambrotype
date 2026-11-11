@@ -51,6 +51,8 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         settings::open_interfaces_folder,
         connect::ai_connect_info,
         connect::open_terminal,
+        connect::ai_guides,
+        connect::ai_guide,
         sample::sample_photo,
         settings::interface_share_plan,
         settings::share_interface,

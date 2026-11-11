@@ -2,7 +2,9 @@
 // Connect an AI app (Help menu, Ctrl+K): any app that runs MCP servers
 // gets Ambrotype's tools from `amb mcp`, on the user's own AI plan; any
 // command-line agent can run `amb` in a terminal. The apps listed are data
-// (ai-apps.json), not a choice of maker. Rust side: src/commands/connect.rs.
+// (ai-apps.json), not a choice of maker. A command-line agent can be
+// started in that terminal, told where the built-in guides are; the
+// guides (amb docs) can be read here too. Rust side: src/commands/connect.rs.
 "use strict";
 
 const connect = { apps: null, amb: null };
@@ -24,6 +26,22 @@ function renderConnect() {
   const app = connect.apps[Number($("connect-app").value)] ?? connect.apps[0];
   $("connect-where").textContent = app.where;
   $("connect-snippet").textContent = connect.amb ? connectSnippet(app) : "";
+  $("connect-agent").hidden = !app.agent;
+  $("connect-agent").textContent = `Start ${app.name.replace(/ \(.*\)$/, "")} here`;
+  $("connect-agent").title = app.agent ? `Opens a terminal in the folder and runs ${app.agent.replace(" {prompt}", "")}, told where Ambrotype's guides are` : "";
+  $("connect-agent-hint").hidden = !app.agent;
+}
+
+async function readGuide(name) {
+  try {
+    const text = await invoke("ai_guide", { name });
+    $("guide-title").textContent = text.split("\n", 1)[0].replace(/^#\s*/, "");
+    $("guide-text").textContent = text;
+    $("guide-dialog").showModal();
+    $("guide-text").scrollTop = 0;
+  } catch (e) {
+    toast(String(e), true);
+  }
 }
 
 async function copyText(text, what) {
@@ -44,6 +62,8 @@ async function connectFlow() {
   for (const id of ["connect-copy-command", "connect-copy"]) $(id).disabled = !info.amb;
   $("connect-folder").textContent = info.folder;
   $("connect-app").replaceChildren(...connect.apps.map((a, i) => Object.assign(document.createElement("option"), { value: i, textContent: a.name })));
+  const guides = await invoke("ai_guides");
+  $("connect-guide").replaceChildren(...guides.map((g) => Object.assign(document.createElement("option"), { value: g.name, textContent: `${g.name}: ${g.about}` })));
   renderConnect();
   $("connect-dialog").showModal();
 }
@@ -53,5 +73,11 @@ function wireConnect() {
   $("connect-copy-command").addEventListener("click", () => copyText($("connect-command").value, "The command"));
   $("connect-copy").addEventListener("click", () => copyText($("connect-snippet").textContent, "The setup"));
   $("assistant-connect").addEventListener("click", () => connectFlow().catch((e) => toast(String(e), true)));
-  $("connect-terminal").addEventListener("click", () => invoke("open_terminal").catch((e) => toast(String(e), true)));
+  $("connect-terminal").addEventListener("click", () => invoke("open_terminal", { agent: null }).catch((e) => toast(String(e), true)));
+  $("connect-agent").addEventListener("click", () => {
+    const app = connect.apps[Number($("connect-app").value)];
+    invoke("open_terminal", { agent: app?.agent ?? null }).catch((e) => toast(String(e), true));
+  });
+  $("connect-read").addEventListener("click", () => readGuide($("connect-guide").value));
+  $("guide-copy").addEventListener("click", () => copyText($("guide-text").textContent, "The guide"));
 }

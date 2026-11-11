@@ -28,8 +28,6 @@ resource ambrotype://core-card first (the compact syntax and common settings); \
 ambrotype://ai-guide and the settings_reference tool have the rest, with intent-to-settings \
 recipes.";
 
-const AI_GUIDE: &str = include_str!("../../../docs/ai/README.md");
-
 /// Run the server until stdin closes.
 pub fn serve() -> Result<(), String> {
     let stdin = std::io::stdin();
@@ -104,23 +102,41 @@ pub fn handle(msg: &Value) -> Option<Value> {
             };
             ok(id, result)
         }
-        "resources/list" => ok(
-            id,
-            json!({ "resources": [
-                { "uri": "ambrotype://core-card", "name": "Core card", "mimeType": "text/markdown",
-                  "description": "The compact edit syntax and the most used settings with ranges, in a few hundred tokens." },
-                { "uri": "ambrotype://ai-guide", "name": "AI guide", "mimeType": "text/markdown",
-                  "description": "How to edit with Ambrotype: the loop, commands, masks, spots, intent-to-settings recipes." },
-                { "uri": "ambrotype://settings-reference", "name": "Settings reference", "mimeType": "text/markdown",
-                  "description": "Every setting's name, range, default and meaning." },
-            ]}),
-        ),
+        "resources/list" => {
+            let mut resources = vec![
+                json!({ "uri": "ambrotype://core-card", "name": "Core card", "mimeType": "text/markdown",
+                  "description": "The compact edit syntax and the most used settings with ranges, in a few hundred tokens." }),
+                json!({ "uri": "ambrotype://ai-guide", "name": "AI guide", "mimeType": "text/markdown",
+                  "description": "How to edit with Ambrotype: the loop, commands, masks, spots, intent-to-settings recipes." }),
+                json!({ "uri": "ambrotype://settings-reference", "name": "Settings reference", "mimeType": "text/markdown",
+                  "description": "Every setting's name, range, default and meaning." }),
+            ];
+            // The other built-in guides (amb docs), each by its name.
+            resources.extend(
+                amb_protocol::guides::GUIDES
+                    .iter()
+                    .filter(|g| !matches!(g.name, "guide" | "core" | "settings"))
+                    .map(|g| {
+                        json!({ "uri": format!("ambrotype://docs/{}", g.name), "name": g.name,
+                          "mimeType": "text/markdown", "description": g.about })
+                    }),
+            );
+            ok(id, json!({ "resources": resources }))
+        }
         "resources/read" => {
             let uri = params.get("uri").and_then(Value::as_str).unwrap_or("");
             let body = match uri {
                 "ambrotype://core-card" => amb_protocol::card::core(),
-                "ambrotype://ai-guide" => AI_GUIDE.to_string(),
+                "ambrotype://ai-guide" => amb_protocol::guides::GUIDES[0].text.to_string(),
                 "ambrotype://settings-reference" => amb_protocol::reference::markdown(),
+                _ if uri.starts_with("ambrotype://docs/") => {
+                    match amb_protocol::guides::find(&uri["ambrotype://docs/".len()..]) {
+                        Some(g) => g.text.to_string(),
+                        None => {
+                            return Some(error(id, -32602, &format!("unknown resource {uri:?}")));
+                        }
+                    }
+                }
                 _ => return Some(error(id, -32602, &format!("unknown resource {uri:?}"))),
             };
             ok(

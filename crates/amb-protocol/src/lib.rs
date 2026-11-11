@@ -26,6 +26,7 @@ pub mod command;
 pub mod compact;
 pub mod convert;
 pub mod edit;
+pub mod guides;
 pub mod masks;
 pub mod reference;
 pub mod schema;

@@ -1297,6 +1297,10 @@ body.editing .dock-grip { display: none; }
 .map-thumb { flex: none; height: 64px; width: 64px; object-fit: cover; border-radius: 4px; border: 2px solid transparent; background: var(--panel); cursor: grab; }
 .map-thumb.selected { border-color: var(--accent); }
 
+/* A built-in guide for AI agents (connect.js) */
+.guide-dialog { width: 860px; max-width: calc(100vw - 32px); }
+.guide-text { max-height: 66vh; overflow: auto; white-space: pre-wrap; font-size: 12px; background: var(--bg-deep); padding: 10px; border-radius: var(--radius); }
+
 /* Clean up (cleanup.js) */
 .clean-dialog { width: 900px; max-width: calc(100vw - 32px); }
 .clean-tests { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; margin: 8px 0; }

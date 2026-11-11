@@ -140,5 +140,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Every `amb` command** → `man amb` (installed with the Linux packages; `amb man` prints it anywhere, and `docs/man/amb.1` is a copy), or `amb` alone for the short help.
 - **Script edits** → `amb do PHOTO "exp=+0.5 con+=10"`, or `amb edit` with protocol commands ([ai/README.md](ai/README.md)).
 - **Let my AI assistant edit and organise** → **Connect an AI App** (Help menu; `amb mcp`) ([ai/mcp.md](ai/mcp.md)).
+- **Start an AI agent on my photos in a terminal** → **Connect an AI App** → choose Claude Code, Codex or Gemini CLI → **Start … here**: a terminal in the photo's folder with `amb` ready, the agent told where Ambrotype's guides are.
+- **The guides for AI agents, in an installed app** → **Connect an AI App** → Guides for AI agents → **Read** (or **Guides for AI agents** in search); `amb docs`, `amb docs NAME`, `amb docs --to DIR`.
 - **Every setting, its range and meaning** → [ai/settings-reference.md](ai/settings-reference.md), `amb settings reference`.
 - **Something's missing or not like Lightroom** → [GAPS.md](GAPS.md) lists what's approximate or not built yet; **Send Feedback** (Help menu).

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Library → Organise: rename the open photo (it reopens under its new
 // name), undo, Clean up, and the duplicates, keywords and missing-photo
-// dialogs.
+// dialogs; then Connect an AI app's guides and agent button.
 // Run: ambrotype --ui-test crates/amb-gui/tests/ui/organise.js photo.dng
 
 const first = await t.until("the photo", () => ui.info?.path, 60000);
@@ -85,4 +85,21 @@ await t.step("the top bar hides and comes back at the top edge", async () => {
   t.key("Ctrl+Shift+T");
   await t.until("back", () => !document.body.classList.contains("topbar-off"));
   t.expect($("settings-topbar").checked, "Settings to say it shows");
+});
+
+await t.step("Connect an AI app has the built-in guides and starts an agent", async () => {
+  await connectFlow();
+  t.expect($("connect-guide").options.length >= 10 && $("connect-guide").value === "guide", "the guides, the one to read first first");
+  const claude = connect.apps.findIndex((a) => a.agent?.startsWith("claude"));
+  $("connect-app").value = String(claude);
+  $("connect-app").dispatchEvent(new Event("change"));
+  t.expect(!$("connect-agent").hidden && $("connect-agent").textContent === "Start Claude Code here", `the agent button: ${$("connect-agent").textContent}`);
+  $("connect-app").value = "0";
+  $("connect-app").dispatchEvent(new Event("change"));
+  t.expect($("connect-agent").hidden, "no agent button for an MCP app");
+  t.click("#connect-read");
+  await t.until("the guide", () => $("guide-dialog").open);
+  t.expect($("guide-text").textContent.startsWith("# Driving Ambrotype"), "the guide's text");
+  $("guide-dialog").close();
+  $("connect-dialog").close();
 });

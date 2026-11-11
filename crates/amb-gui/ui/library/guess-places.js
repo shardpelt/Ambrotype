@@ -53,6 +53,8 @@ async function guessPlacesFlow() {
   dlg.showModal();
   await roll();
   const answer = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
+  // Its boxes keep the focus once closed, and would take the keys.
+  if (dlg.contains(document.activeElement)) document.activeElement.blur();
   if (answer !== "ok") return;
   const chosen = [...list.querySelectorAll("input:checked")].map((b) => guesses[Number(b.dataset.i)]);
   if (!chosen.length) return;

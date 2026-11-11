@@ -277,6 +277,7 @@ function renderPanel() {
     b.addEventListener("click", () => libraryChange({ add_keywords: [k] }));
     return b;
   }));
+  renderPlaceField(sel);
   // Title and the like: the shared text, or empty with "(mixed)".
   for (const f of $("lib-meta").querySelectorAll("[data-meta]")) {
     const v = same((p) => p[f.dataset.meta] ?? "");
@@ -407,6 +408,7 @@ function wireLibrary() {
   $("lib-stack").addEventListener("click", stackSelection);
   $("lib-unstack").addEventListener("click", unstackSelection);
   $("lib-autostack").addEventListener("click", autoStack);
+  wirePlaceField();
   for (const f of $("lib-meta").querySelectorAll("[data-meta]")) {
     f.addEventListener("change", () => libraryChange({ [f.dataset.meta]: f.value.trim() }));
     f.addEventListener("keydown", (e) => e.stopPropagation());

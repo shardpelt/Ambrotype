@@ -39,6 +39,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-11: a **Place** for each photo by hand: the library panel (for the selection) and the viewer's info panel take coordinates, degrees or a pasted Google Maps, OpenStreetMap or Apple Maps link; Map shows it, × clears it
 - 2026-11-11: **Guess places** (Map view, `amb place --guess`): photos without a place get one from those that have one, taken within 30 minutes (between two, on the line between them; a clock difference can be given) or looking the same (photos Smart search indexed); listed with why, confirmed before anything is written (`amb-library::places`)
 - 2026-11-11: **Zoom as in other apps**: the mouse wheel and a trackpad pinch zoom at the pointer (Ctrl+wheel on Linux and Windows, WebKit's gesture events on a Mac), smoothly from the whole photo to 800 %, two fingers move a zoomed photo, Ctrl + − 0; the same in the library's viewer (and a click in its middle, a right-drag box). **F** in Develop: just the photo, full screen (the filmstrip moved to F6). Peek on hover stays the loupe (I) for now
 - 2026-11-11: Insights finished: **What it suggests** (a fast lens kept stopped down, a zoom often at its end, dark scenes and shake, midday light, the focal length you live at, where the keepers come from; each with its number), **Try this week** (challenges: the far side of your focal length, aperture and time of day), and **Split by** camera, lens or year (up to three side by side, as shares). Also in `amb insights`

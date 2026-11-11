@@ -1554,3 +1554,6 @@ body.photo-only .viewer { grid-column: 1 / -1; }
 .guess-row img { width: 64px; height: 44px; object-fit: cover; border-radius: 3px; background: var(--bg-deep); }
 .guess-row b { color: var(--text); font-weight: 600; }
 .guess-dialog menu { display: flex; gap: 8px; padding: 0; margin: 0; }
+.lib-place-row { display: flex; gap: 4px; align-items: center; }
+.lib-place-row input { flex: 1; min-width: 0; font-size: 12px; }
+#lib-place.bad, .ss-info input.bad { border-color: var(--danger); }

@@ -226,7 +226,8 @@ async function viewerChange(change) {
   try {
     const [u] = await setInfo([p.path], change);
     const info = u?.info ?? {};
-    const fields = { rating: info.rating ?? null, label: info.label ?? null, flag: info.flag ?? null, keywords: info.keywords ?? [] };
+    const at = info.gps?.split(",").map(Number);
+    const fields = { rating: info.rating ?? null, label: info.label ?? null, flag: info.flag ?? null, keywords: info.keywords ?? [], gps: at?.length === 2 && at.every(Number.isFinite) ? at : null };
     for (const list of [slides.list, lib.photos, strip.photos]) {
       for (const x of list) if (x.path === p.path) Object.assign(x, fields);
     }
@@ -330,6 +331,7 @@ async function renderViewerInfo() {
     el("h4", { textContent: "Label" }), labels,
     el("h4", { textContent: "Flag" }), flags,
     el("h4", { textContent: "Keywords" }), keywords, add,
+    el("h4", { textContent: "Place" }), viewerPlaceRow(d, el),
     el("p", { className: "ss-info-hint", textContent: "I or right-click hides this · 0–5 rate · P X U flag · 6–9 label · Ctrl+[ ] turn" }),
   );
 }

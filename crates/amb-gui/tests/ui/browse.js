@@ -91,6 +91,28 @@ await t.step("Remove place takes it out again", async () => {
   t.expect(getComputedStyle($("library-view")).display === "none", "the map gone from the screen");
 });
 
+await t.step("a place typed or pasted for a photo: numbers, degrees, map links", async () => {
+  const cases = [
+    ["52.3731, 4.8922", "52.373100,4.892200"],
+    ["52°22'23\"N 4°53'32\"E", "52.373056,4.892222"],
+    ["https://www.google.com/maps/place/Dam/@52.3731,4.8922,17z", "52.373100,4.892200"],
+    ["https://www.openstreetmap.org/?mlat=-33.8568&mlon=151.2153#map=17/-33.8568/151.2153", "-33.856800,151.215300"],
+    ["https://maps.apple.com/?ll=40.7484,-73.9857&q=Empire", "40.748400,-73.985700"],
+    ["hello", null],
+    ["95, 10", null],
+  ];
+  for (const [text, want] of cases) t.expect(parsePlace(text) === want, `${text} → ${parsePlace(text)}`);
+  select(ui.info.path, "only");
+  setLibraryView("grid");
+  renderPanel();
+  const input = $("lib-place");
+  input.value = "https://www.google.com/maps/@48.8584,2.2945,15z";
+  input.dispatchEvent(new Event("change"));
+  await t.until("the place set", () => libPhoto(ui.info.path).gps?.[0] === 48.8584);
+  t.click("#lib-place-clear");
+  await t.until("and cleared", () => !libPhoto(ui.info.path).gps);
+});
+
 await t.step("dragging the grid moves through it; a drag doesn't select", async () => {
   const grid = $("library-grid");
   grid.scrollTop = 0;

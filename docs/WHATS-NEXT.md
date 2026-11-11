@@ -24,7 +24,6 @@ A short running list, kept up to date as work lands. Newest decisions first. The
   - **README screenshots again**, with the library (grid and Insights) and a Trippy edit among them; after the sample photos above.
   - **Scan competitors and Reddit again** ([research/watchlist.md](research/watchlist.md)): what changed, ideas, complaints, and more projects to track; r/fuckadobe often has people's own projects.
   - **Collage for every photo in the folder:** one layout applied to all the photos shown, as pages.
-  - **Places by smart match:** photos without GPS get a place from photos taken around the same time, or that look the same (the search model), that have one; shown to confirm before writing.
   - **Clean-up organiser:** find what to delete (blurry, out of focus, duplicates, closed eyes, near-identical bursts), then one confirm window to page through them all before they go to the trash.
   - **Agent docs in the app:** the AGENTS/docs for AI agents baked into the app (an exe has no .md files), reachable from a menu and `amb`; and an option to start an agent in a terminal to edit photos or the editor itself.
   - **More trippy:** kaleidoscopes (mirror slices, fractal kaleidoscopes), a heat-camera look (false colour by brightness), as Trippy effects; and Trippy looks shareable (as presets with their effects, to the hub).
@@ -40,6 +39,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-11: **Guess places** (Map view, `amb place --guess`): photos without a place get one from those that have one, taken within 30 minutes (between two, on the line between them; a clock difference can be given) or looking the same (photos Smart search indexed); listed with why, confirmed before anything is written (`amb-library::places`)
 - 2026-11-11: **Zoom as in other apps**: the mouse wheel and a trackpad pinch zoom at the pointer (Ctrl+wheel on Linux and Windows, WebKit's gesture events on a Mac), smoothly from the whole photo to 800 %, two fingers move a zoomed photo, Ctrl + − 0; the same in the library's viewer (and a click in its middle, a right-drag box). **F** in Develop: just the photo, full screen (the filmstrip moved to F6). Peek on hover stays the loupe (I) for now
 - 2026-11-11: Insights finished: **What it suggests** (a fast lens kept stopped down, a zoom often at its end, dark scenes and shake, midday light, the focal length you live at, where the keepers come from; each with its number), **Try this week** (challenges: the far side of your focal length, aperture and time of day), and **Split by** camera, lens or year (up to three side by side, as shares). Also in `amb insights`
 - 2026-11-11: the Trippy task's effect buttons show the photo with the effect while hovered, as presets do (the click gives what the hover showed); History's top edge and the line under Snapshots drag to size them again (double-click: usual size)

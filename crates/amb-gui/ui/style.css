@@ -1545,3 +1545,12 @@ body.photo-only .viewer { grid-column: 1 / -1; }
 .slideshow.viewer.zoomed .ss-img.shown { transition: none; cursor: grab; }
 .slideshow.viewer.zoomed.pointer.at-left, .slideshow.viewer.zoomed.pointer.at-right { cursor: grab; }
 .slideshow .zoom-box { position: fixed; z-index: 3; }
+.guess-dialog { width: 640px; }
+.guess-opts { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; }
+.guess-opts input { width: 64px; }
+.guess-list { display: flex; flex-direction: column; gap: 4px; max-height: 50vh; overflow-y: auto; margin: 8px 0; }
+.guess-row { display: grid; grid-template-columns: auto 64px 1fr; align-items: center; gap: 10px; padding: 4px; border-radius: var(--radius); font-size: 12px; color: var(--muted); }
+.guess-row:hover { background: var(--hover); }
+.guess-row img { width: 64px; height: 44px; object-fit: cover; border-radius: 3px; background: var(--bg-deep); }
+.guess-row b { color: var(--text); font-weight: 600; }
+.guess-dialog menu { display: flex; gap: 8px; padding: 0; margin: 0; }

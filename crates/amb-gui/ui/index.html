@@ -945,6 +945,25 @@
     </menu>
   </dialog>
 
+  <!-- Guess places (library/guess-places.js): guesses to confirm. -->
+  <dialog id="guess-dialog" class="guess-dialog">
+    <form method="dialog">
+      <h2>Guess places</h2>
+      <p class="hint">For photos without a place, from the photos that have one: taken around the same time, or looking the same (photos Smart search has indexed). Untick any that look wrong.</p>
+      <div class="guess-opts">
+        <label>Within <input id="guess-within" type="number" min="1" max="720" step="1" value="30"> minutes</label>
+        <label title="When the camera without GPS kept another clock than the phone (another time zone): how many hours it was behind">Clock behind by <input id="guess-clock" type="number" min="-14" max="14" step="0.5" value="0"> hours</label>
+      </div>
+      <p id="guess-count" class="hint"></p>
+      <div id="guess-list" class="guess-list"></div>
+      <menu>
+        <button type="button" id="guess-all" class="small">Tick all</button>
+        <span class="grow"></span>
+        <button value="cancel">Cancel</button>
+        <button value="ok" id="guess-ok" class="primary">Place the ticked photos</button>
+      </menu>
+    </form>
+  </dialog>
   <dialog id="slideshow-dialog" class="slideshow-dialog">
     <form id="slideshow-form" method="dialog">
       <h2>Slideshow</h2>
@@ -1767,6 +1786,7 @@
   <script src="library/library-actions.js"></script>
   <script src="library/cull.js"></script>
   <script src="library/browse.js"></script>
+  <script src="library/guess-places.js"></script>
   <script src="library/insights.js"></script>
   <script src="library/duplicates.js"></script>
   <script src="library/bursts.js"></script>

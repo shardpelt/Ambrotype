@@ -17,6 +17,7 @@ mod mcp;
 mod models;
 mod negative;
 mod organise;
+mod places;
 mod plugin;
 mod presets;
 mod render;
@@ -226,6 +227,12 @@ USAGE:
                                             Where photos were taken, from a GPS track: --offset is how
                                             many hours the camera's clock was ahead of UTC; photos with a
                                             place (or the camera's GPS) keep it unless --replace
+    amb place <PHOTO|DIR>... --guess [--within MINUTES] [--clock HOURS] [--dry-run] [--json]
+                                            Guess places for photos without one from the photos that have
+                                            one: taken within MINUTES (default 30; between two placed
+                                            photos, on the line between them), or looking the same (photos
+                                            Smart search has indexed). --clock: hours the unplaced photos'
+                                            clock was behind the placed ones'
     amb insights <PHOTO|DIR>... [--by aperture,focal,shutter,iso,hour,camera,lens] [--json]
                                             How the photos were shot: how often each aperture, focal
                                             length, shutter speed, ISO, hour, camera and lens comes up,
@@ -373,9 +380,9 @@ fn main() -> ExitCode {
             "--progressive" | "--enlarge" | "--slides" | "--force" | "--no-subfolders"
             | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb"
             | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert"
-            | "--replace" | "--stack" | "--reject" | "--shuffle" | "--window" | "--subfolders"
-            | "--no-scenes" | "--no-odd" | "--own-midtone" | "--landscape" | "--no-edits"
-            | "--best-of-bursts" | "--no-captions" => {
+            | "--replace" | "--guess" | "--stack" | "--reject" | "--shuffle" | "--window"
+            | "--subfolders" | "--no-scenes" | "--no-odd" | "--own-midtone" | "--landscape"
+            | "--no-edits" | "--best-of-bursts" | "--no-captions" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -479,6 +486,8 @@ fn main() -> ExitCode {
             | "--alike"
             | "--burst"
             | "--by"
+            | "--within"
+            | "--clock"
             | "--seconds"
             | "--effect" => match iter.next() {
                 Some(value) => {
@@ -543,7 +552,7 @@ fn main() -> ExitCode {
             organise::tag(photos, &options, dry_run, json)
         }
         ["place", photos @ ..] if !photos.is_empty() => {
-            organise::place(photos, &options, dry_run, json)
+            places::place(photos, &options, dry_run, json)
         }
         ["insights", places @ ..] if !places.is_empty() => {
             library::insights(places, &options, json)

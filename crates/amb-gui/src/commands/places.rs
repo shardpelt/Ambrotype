@@ -83,6 +83,41 @@ pub(crate) async fn library_match_gpx(
     .map_err(|e| e.to_string())?
 }
 
+/// Guess places for those of `paths` without one, from those with one:
+/// taken within `within` minutes (the unplaced photos' clocks moved by
+/// `offset` minutes first), or looking the same (photos the search model
+/// has indexed). Nothing is written; the editor shows them to confirm.
+#[tauri::command]
+pub(crate) async fn library_guess_places(
+    paths: Vec<String>,
+    within: f64,
+    offset: f64,
+    state: tauri::State<'_, AppState>,
+) -> Res<Vec<amb_library::places::Guess>> {
+    let model = crate::commands::models::models_dir(state.inner())
+        .ok()
+        .and_then(|d| amb_ai::chosen(&d, "search").ok())
+        .map(|s| s.id);
+    tauri::async_runtime::spawn_blocking(move || {
+        let paths: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
+        let cat = folder::catalog();
+        let records = cat.records(&paths);
+        let vectors = match &model {
+            Some(m) => cat.vectors(m, &paths),
+            None => vec![None; paths.len()],
+        };
+        let photos: Vec<_> = paths
+            .into_iter()
+            .zip(records)
+            .zip(vectors)
+            .map(|((p, r), v)| (p, r, v))
+            .collect();
+        Ok(amb_library::places::guess(&photos, within, offset))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// UTC seconds as "YYYY-MM-DD HH:MM".
 fn utc_text(secs: i64) -> String {
     let days = secs.div_euclid(86400);

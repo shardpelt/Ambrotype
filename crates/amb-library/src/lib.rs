@@ -16,6 +16,7 @@ pub mod lensdb;
 pub mod lightroom;
 pub mod look;
 pub mod lrcat;
+pub mod places;
 pub mod roots;
 pub mod search;
 pub mod smart;

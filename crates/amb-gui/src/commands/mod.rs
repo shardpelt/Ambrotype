@@ -246,6 +246,7 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         places::pick_gpx,
         places::open_osm_copyright,
         places::library_match_gpx,
+        places::library_guess_places,
         batch::paste_groups,
         batch::paste_settings,
         batch::export_photos,

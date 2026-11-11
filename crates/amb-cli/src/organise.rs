@@ -16,7 +16,7 @@ use amb_protocol::sidecar::{self, Flag, PhotoInfo};
 
 use crate::print_json;
 
-type Options<'a> = BTreeMap<&'a str, &'a str>;
+pub(crate) type Options<'a> = BTreeMap<&'a str, &'a str>;
 
 /// As [`photos`], folders with all their subfolders' photos too.
 fn photos_deep(args: &[&str]) -> Result<Vec<PathBuf>, String> {
@@ -72,14 +72,14 @@ fn collections_dir(options: &Options) -> Result<PathBuf, String> {
     }
 }
 
-fn read_info(photo: &Path) -> PhotoInfo {
+pub(crate) fn read_info(photo: &Path) -> PhotoInfo {
     amb_engine::sidecar_text(photo)
         .as_deref()
         .map(sidecar::read_info)
         .unwrap_or_default()
 }
 
-fn write_info(photo: &Path, info: &PhotoInfo) -> Result<PhotoInfo, String> {
+pub(crate) fn write_info(photo: &Path, info: &PhotoInfo) -> Result<PhotoInfo, String> {
     let path = amb_engine::sidecar_path(photo);
     // From a Lightroom catalogue opened in place, when it knows the photo.
     let on_disk = amb_engine::sidecar_text(photo);
@@ -295,72 +295,6 @@ pub(crate) fn tag(
         "{} {}",
         if dry_run { "Would change" } else { "Changed" },
         photos_n(photos.len())
-    );
-    Ok(())
-}
-
-/// `amb place --gpx`: where photos were taken, from a GPS track.
-pub(crate) fn place(
-    args: &[&str],
-    options: &Options,
-    dry_run: bool,
-    json: bool,
-) -> Result<(), String> {
-    let photos = photos(args)?;
-    let gpx = options.get("--gpx").ok_or("place needs --gpx TRACK.gpx")?;
-    let text = std::fs::read_to_string(gpx).map_err(|e| format!("{gpx}: {e}"))?;
-    let track = amb_library::gpx::parse(&text)?;
-    let hours: f64 = match options.get("--offset") {
-        Some(o) => o
-            .trim_start_matches('+')
-            .parse()
-            .map_err(|_| format!("--offset {o}: hours, e.g. 2 or -5"))?,
-        None => 0.0,
-    };
-    let replace = options.contains_key("--replace");
-    let mut placed = Vec::new();
-    let (mut kept, mut unplaced) = (0, 0);
-    for p in &photos {
-        let mut info = read_info(p);
-        let camera = amb_engine::raw::read_metadata(&amb_engine::source_path(p)).ok();
-        let camera_gps = camera.as_ref().is_some_and(|(_, m)| m.gps.is_some());
-        if !replace && (info.place().is_some() || camera_gps) {
-            kept += 1;
-            continue;
-        }
-        let captured = camera.and_then(|(_, m)| m.date_time_original).map(|t| {
-            let (d, rest) = t.split_once(' ').unwrap_or((&t, ""));
-            format!("{} {rest}", d.replace(':', "-"))
-        });
-        let Some((lat, lon)) =
-            captured.and_then(|c| track.place(&c, (hours * 60.0).round() as i64))
-        else {
-            unplaced += 1;
-            continue;
-        };
-        info.gps = Some(format!("{lat:.6},{lon:.6}"));
-        if !dry_run {
-            write_info(p, &info)?;
-        }
-        placed.push(serde_json::json!({ "path": p, "lat": lat, "lon": lon }));
-    }
-    if json {
-        return print_json(
-            &serde_json::json!({ "placed": placed, "kept": kept, "unplaced": unplaced }),
-        );
-    }
-    for p in &placed {
-        println!(
-            "{}  {:.5},{:.5}",
-            p["path"].as_str().unwrap_or(""),
-            p["lat"],
-            p["lon"]
-        );
-    }
-    eprintln!(
-        "{} {} · {kept} already had a place (--replace to redo) · {unplaced} taken while the track wasn't recording",
-        if dry_run { "Would place" } else { "Placed" },
-        placed.len()
     );
     Ok(())
 }

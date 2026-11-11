@@ -8,8 +8,8 @@
 // - The grid's scrubber: sorted by capture time, a strip at the grid's right
 //   edge with the years; drag along it to jump through them.
 // - Map: the photos with a place, as pins (grouped when close together).
-//   Photos without one can be dragged onto the map, or placed from a GPX
-//   track; the place goes into their sidecars as Lightroom writes it.
+//   Photos without one can be dragged onto the map, placed from a GPX
+//   track, or guessed from the placed ones (guess-places.js); the place goes into their sidecars as Lightroom writes it.
 //   Map images come from OpenStreetMap only when turned on (Settings →
 //   General), since fetching them tells openstreetmap.org which area you
 //   look at; off, the map is a plain grid of latitudes and longitudes.
@@ -259,6 +259,7 @@ function renderMap(box) {
     renderMap(box);
   });
   button("Match GPX track…", "Place photos from a GPS track recorded while shooting (the selected ones, or all shown)", matchGpx);
+  button("Guess places…", "Photos without a place get one from photos taken around the same time, or that look the same; you confirm each", guessPlacesFlow);
   const clear = button("Remove place", "Take the place out of the selected photos' sidecars (a camera's own GPS stays)", () => placePhotos(selectedPhotos().map((p) => p.path), ""));
   clear.hidden = !selectedPhotos().some((p) => p.gps);
   bar.append(Object.assign(document.createElement("span"), { className: "hint", textContent: `${placed.length} placed${unplaced.length ? ` · ${unplaced.length} without a place` : ""}` }));

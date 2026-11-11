@@ -72,6 +72,16 @@ await t.step("a photo dropped on the map gets a place", async () => {
   t.expect(listed.find((q) => q.path === p.path)?.gps?.[0] === 48.8584, "the place in the sidecar");
 });
 
+await t.step("Guess places lists guesses to confirm, writing nothing until then", async () => {
+  const flow = guessPlacesFlow();
+  await t.until("the guesses", () => $("guess-dialog").open && !$("guess-count").textContent.startsWith("Guessing"));
+  t.log($("guess-count").textContent);
+  const before = lib.shown.filter((p) => p.gps).length;
+  $("guess-dialog").close("cancel");
+  await flow;
+  t.expect(lib.shown.filter((p) => p.gps).length === before, "nothing written on Cancel");
+});
+
 await t.step("Remove place takes it out again", async () => {
   select(ui.info.path, "only");
   await placePhotos([ui.info.path], "");

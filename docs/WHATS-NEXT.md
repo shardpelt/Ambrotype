@@ -20,9 +20,9 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Ideas for later
 
+- **From the 2026-11-11 recheck** ([research/17](research/17-competitors-2026.md), items 21–26): Speed Edit (hold a key, drag anywhere to change one setting), .cube LUTs as looks, MIDI controllers, a second window for the photo, Fade Restoration for faded prints and slides, and a published speed number for big libraries. New to watch: RAWmakase (MIT, Rust, .lrcat import, MCP, closest to us). Reddit is blocked for our tools now: paste threads by hand.
 - **From the owner, 2026-11-11:**
   - **README screenshots again**, with the library (grid and Insights) and a Trippy edit among them; after the sample photos above.
-  - **Scan competitors and Reddit again** ([research/watchlist.md](research/watchlist.md)): what changed, ideas, complaints, and more projects to track; r/fuckadobe often has people's own projects.
   - **Collage for every photo in the folder:** one layout applied to all the photos shown, as pages.
   - **Clean-up organiser:** find what to delete (blurry, out of focus, duplicates, closed eyes, near-identical bursts), then one confirm window to page through them all before they go to the trash.
   - **Agent docs in the app:** the AGENTS/docs for AI agents baked into the app (an exe has no .md files), reachable from a menu and `amb`; and an option to start an agent in a terminal to edit photos or the editor itself.

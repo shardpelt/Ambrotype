@@ -1,6 +1,6 @@
 # Competitors in 2026: what they do, what to take, and our niche
 
-Read 2026-10-30 from each project's README or website, not their code. Numbers (stars, prices) are as of that day.
+Read 2026-10-30 from each project's README or website, not their code (rechecked 2026-11-04 and 2026-11-11). Numbers (stars, prices) are as of the first day.
 
 ## The field
 
@@ -135,6 +135,17 @@ Sizes: S a day or two, M a week, L more.
 Photon is a free, closed RAW editor from Aftershoot (the paid culling and editing app), for macOS and Windows, offline, launched in September 2026. Its editing is the usual set (Basic, curves, HSL, sharpening, noise, crop), simplified. What's different is the **AI Coach**: pick one of a few suggested styles, and it says in plain words what could be better, which slider to move, and what that does to the photo. Reviewers found it sensible but limited (three options) and slow to make a lesson. Read from its site and a review ([ProVideo Coalition](https://www.provideocoalition.com/aftershoot-photon-a-free-raw-editor-with-an-ai-coach/)), not its code.
 
 20. **Explain an edit:** our Auto, Match look and the Assistant could say why each change helps ("Shadows +30: the faces were in shade"), on the photo, as a lesson. It fits "teach by showing" (WHATS-NEXT, Ideas for later); our Photography basics and the **?** by each setting already explain the sliders. M.
+
+**From the 2026-11-11 recheck**
+
+New: **RAWmakase** (MIT, Rust, Sep 2026) is the project closest to ours in shape: Lightroom-style controls, .lrcat import without writing to it, Lightroom XMP presets, DCP/XMP profiles, .cube LUTs, a GPU preview, a command line and an MCP server, and MIDI control. RapidRAW 1.6.9 (7 Nov) added a Black & White mode, Motion Blur, Speed Edit (hold W and drag on the photo to change the setting last used) and a second-window viewer; CalibRaw 1.4.1 (9 Nov) colour calibration and AI denoise; NegPy 0.68 Fade Restoration for faded prints and slides. The free-exit article at [PhotoWorkout](https://www.photoworkout.com/free-adobe-exit-stack/) lists why leaving Adobe is still hard: catalogues don't move cleanly, sidecars lose some history, free tools don't fit together, muscle memory, and free browsers stall on big libraries.
+
+21. **MIDI controllers** for sliders (RAWmakase; Loupedeck-style consoles). M.
+22. **Speed Edit:** hold a key and drag anywhere on the photo to change one setting (RapidRAW). We have Touch (T) for the area under the pointer; this is the whole-photo version. S.
+23. **A second window** for the photo (RapidRAW): the viewer on a second screen while editing on the first. M.
+24. **Fade Restoration** for faded prints and slides, in the Film tab (NegPy). M.
+25. **.cube LUTs** as a look (RAWmakase). We read none yet. S–M.
+26. **Large libraries stay fast:** the complaint about free browsers; our catalogue is built for this, worth a published number (100k photos). S.
 
 ## Merging projects
 

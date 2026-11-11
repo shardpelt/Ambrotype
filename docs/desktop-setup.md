@@ -76,7 +76,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 
   ![Plugins](images/plugins.png)
 - **Library:** the Library task (or G) shows the photo's folder as a grid, without the editor's tools. Develop (or G, or Esc) opens the photo you chose there. Sort, filter and search it; click, Shift-click and Ctrl/⌘-click to select many; then press 1–5 to rate them, 6–9 for a colour label, P or X to flag them as picks or rejects, or add keywords in the panel (several at once with commas, or one click on a recent one). **Copy settings** on one photo and **Paste settings** onto others to give a whole series the same edit, or right-click the selection for **Apply a preset to N photos…** (pick one, set its Amount), **Export…** the selection with the usual export choices, or **Make a collage** with it. Everything is saved to the photos' `.xmp` files, where Lightroom reads it. Enter or a double-click opens a photo. **Smart search:** type what to look for (a dog on a beach, snowy mountains) and press **Smart** or Enter: the library shows the photos with it in them, best first, until you click the chip to clear it; right-click a photo for **Find similar photos**. It needs a search model from Settings → AI models → Search: CLIP (156 MB), CLIP fast (418 MB, about 4× quicker to index a big library) or SigLIP 2 (690 MB, better at harder searches). The first search reads each photo once (under a second each) and keeps the result.
-  - **Views:** Loupe (E), Compare (C) and Survey (N) for culling; **Timeline** (years and month calendars) and **Map** (photos by place; place others from a GPX track or by dropping them on the map).
+  - **Views:** Loupe (E) and Compare (C) for culling; **Timeline** (years and month calendars) and **Map** (photos by place; place others from a GPX track or by dropping them on the map).
   - **Organise ▾:** find duplicates and bursts and keep the best; move, rename or sort photos into dated folders with their sidecars; delete to the trash; rename keywords everywhere; metadata templates; find photos moved outside the app ([design/library.md](design/library.md)).
   - **Folders** (left): add whole drives to keep them indexed, also while unplugged. **Import ▾** copies from a card, or moves you from a Lightroom Classic catalogue.
 
@@ -126,7 +126,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | P, X, U | Pick, reject, remove the flag |
   | K | Jump to the keyword field |
   | G | Library grid / editor |
-  | E, C, N | In the library: loupe, compare, survey |
+  | E, C | In the library: loupe, compare |
   | Ctrl+A, Ctrl+D | In the library: select all, none |
   | Ctrl+G, Ctrl+Shift+G | Stack, unstack |
   | Ctrl+Shift+C / Ctrl+Shift+V | Copy one photo's settings / paste them onto the selection |

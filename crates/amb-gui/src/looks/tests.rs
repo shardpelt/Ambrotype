@@ -36,6 +36,8 @@ fn builtins_are_clean() {
             .iter()
             .copied()
             .chain(NUMBER_TOKENS.iter().map(|t| t.0))
+            // Glass is a choice, off when left out.
+            .filter(|t| *t != "glass")
         {
             assert!(tokens.contains_key(t), "{} misses {t}", theme.id);
         }

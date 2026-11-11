@@ -195,6 +195,7 @@ A widget of the wrong type (for example `toggle` on Exposure) is an error. An un
 - **`scheme`:** `dark` or `light`; when missing, it follows the background's brightness; it sets the colour of native controls such as scrollbars and drop-downs.
 - **Colour token values:** hex colours (`#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`).
 - **`radius`:** the corner rounding in px, 0–16.
+- **`glass`** (optional, default 0): frosted panels, blurring what is behind them by this many px, 0–40 (Glass Light and Glass Dark use 24). Give panel colours some see-through (`#rrggbbaa`) so it shows.
 - **Missing tokens** are worked out from `bg`, `text` and `accent` (those three come from Dark, or Light for a light theme, when missing too).
 - **What each token colours:**
 

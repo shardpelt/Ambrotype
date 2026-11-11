@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The library's culling views, as in Lightroom: loupe (E, one photo large),
-// compare (C, the select beside a candidate) and survey (N, the selection
-// tiled to fit). G or Esc goes back to the grid.
+// The library's culling views, as in Lightroom: loupe (E, one photo large)
+// and compare (C, the select beside a candidate, split left and right or
+// top and bottom, either way round). G or Esc goes back to the grid.
 //
-// In compare and survey, rating, label and flag keys act on the active photo
-// (the one with the accent frame), not on the whole selection.
+// In compare, rating, label and flag keys act on the active photo (the one
+// with the accent frame), not on the whole selection.
 "use strict";
 
 const cull = {
-  view: "grid",     // "grid", "loupe", "compare", "survey", browse.js's "timeline" or "map", or "insights"
+  view: "grid",     // "grid", "loupe", "compare", browse.js's "timeline" or "map", or "insights"
   active: null,     // the photo keys act on
   select: null,     // compare: the left photo
   candidate: null,  // compare: the right photo
-  survey: [],       // survey: the photos shown
+  // compare: where the candidate is, beside the select: "right", "left",
+  // "down" or "up". Kept on this computer.
+  split: ["right", "left", "down", "up"].includes(store.text("amb.compareSplit")) ? store.text("amb.compareSplit") : "right",
   loads: new Map(), // `${path}|${edge}|${edited}` -> Promise<url>
 };
 
-const cullOn = () => lib.on && ["loupe", "compare", "survey"].includes(cull.view);
+const cullOn = () => lib.on && ["loupe", "compare"].includes(cull.view);
 
 // The photos the panel and the rating keys act on.
 function libraryTargets() {
@@ -40,9 +42,6 @@ function setLibraryView(view) {
     const after = order[order.indexOf(cull.select) + 1] ?? order[order.indexOf(cull.select) - 1];
     cull.candidate = sel.find((p) => p !== cull.select) ?? after ?? cull.select;
     cull.active = cull.candidate;
-  } else if (view === "survey") {
-    cull.survey = sel.length > 1 ? sel : order.slice(Math.max(0, order.indexOf(focus)), order.indexOf(focus) + 12);
-    cull.active = cull.survey.includes(focus) ? focus : cull.survey[0];
   }
   cull.view = view;
   navNote();
@@ -74,13 +73,10 @@ function renderCull() {
   if (cull.view === "loupe") {
     box.replaceChildren(cullTile(cull.active, { big: true }));
   } else if (cull.view === "compare") {
-    box.replaceChildren(
-      cullTile(cull.select, { tag: "Select" }),
-      cullTile(cull.candidate, { tag: "Candidate" }),
-    );
-  } else if (cull.view === "survey") {
-    box.replaceChildren(...cull.survey.map((p) => cullTile(p, { removable: true })));
-    layoutSurvey();
+    const tiles = [cullTile(cull.select, { tag: "Select" }), cullTile(cull.candidate, { tag: "Candidate" })];
+    if (cull.split === "left" || cull.split === "up") tiles.reverse();
+    box.dataset.split = cull.split;
+    box.replaceChildren(...tiles, compareSplitBar());
   }
   // Keep the grid's selection and focus on what's being looked at.
   if (cull.view === "loupe") {
@@ -92,7 +88,31 @@ function renderCull() {
   $("library-view").focus({ preventScroll: true });
 }
 
-function cullTile(path, { tag, big, removable } = {}) {
+// Which way compare splits: the candidate right, left, below or above.
+const COMPARE_SPLITS = [["right", "◧", "Side by side, the candidate on the right"], ["left", "◨", "Side by side, the candidate on the left"], ["down", "⬒", "Above and below, the candidate below"], ["up", "⬓", "Above and below, the candidate above"]];
+
+function compareSplitBar() {
+  const bar = Object.assign(document.createElement("div"), { className: "compare-split", role: "group", ariaLabel: "Split" });
+  for (const [split, icon, title] of COMPARE_SPLITS) {
+    const b = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: icon, title });
+    b.dataset.split = split;
+    b.classList.toggle("on", split === cull.split);
+    b.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setCompareSplit(split);
+    });
+    bar.append(b);
+  }
+  return bar;
+}
+
+function setCompareSplit(split) {
+  cull.split = split;
+  store.setText("amb.compareSplit", split);
+  if (cull.view === "compare") renderCull();
+}
+
+function cullTile(path, { tag, big } = {}) {
   const p = libPhoto(path);
   const tile = Object.assign(document.createElement("figure"), { className: "cull-tile" });
   if (!p) return tile;
@@ -112,18 +132,10 @@ function cullTile(path, { tag, big, removable } = {}) {
   if (p.label) label.style.background = LABEL_COLOURS[p.label] ?? "var(--muted)";
   const name = Object.assign(document.createElement("span"), { className: "cull-name", textContent: [tag, p.name].filter(Boolean).join(": ") });
   cap.append(flag, stars, label, name);
-  if (removable) {
-    const x = Object.assign(document.createElement("button"), { type: "button", className: "cull-remove", textContent: "×", title: "Take out of the survey" });
-    x.addEventListener("click", (e) => {
-      e.stopPropagation();
-      surveyRemove(path);
-    });
-    cap.append(x);
-  }
   tile.append(frame, cap);
   tile.addEventListener("click", () => {
     cull.active = path;
-    for (const t of $("library-view").children) t.classList.toggle("active", t.dataset.path === path);
+    for (const t of $("library-view").querySelectorAll(".cull-tile")) t.classList.toggle("active", t.dataset.path === path);
     renderPanel();
   });
   tile.addEventListener("dblclick", () => libraryOpen(path));
@@ -165,28 +177,9 @@ function bigImage(p, edge, edited) {
   return cull.loads.get(key);
 }
 
-// As many columns as make the tiles largest.
-function layoutSurvey() {
-  const box = $("library-view");
-  const n = Math.max(1, cull.survey.length);
-  const w = box.clientWidth - 24;
-  const h = box.clientHeight - 24;
-  let best = { cols: 1, size: 0 };
-  for (let cols = 1; cols <= n; cols++) {
-    const rows = Math.ceil(n / cols);
-    // Tiles hold a 3:2 photo plus a caption line.
-    const tw = (w - (cols - 1) * 10) / cols;
-    const th = (h - (rows - 1) * 10) / rows - 24;
-    const size = Math.min(tw, th * 1.5);
-    if (size > best.size) best = { cols, size };
-  }
-  box.style.setProperty("--cols", best.cols);
-  box.style.setProperty("--rows", Math.ceil(n / best.cols));
-}
-
 function updateCullTile(path) {
   if (!cullOn()) return;
-  const tile = [...$("library-view").children].find((t) => t.dataset.path === path);
+  const tile = [...$("library-view").querySelectorAll(".cull-tile")].find((t) => t.dataset.path === path);
   if (!tile) return;
   const p = libPhoto(path);
   showFlag(tile.querySelector(".lib-flag"), p.flag);
@@ -220,17 +213,6 @@ function cullArrow(key) {
       compareMakeSelect();
       return;
     }
-  } else if (cull.view === "survey") {
-    // ↑ and ↓ a row of the survey's grid.
-    const cols = Number($("library-view").style.getPropertyValue("--cols")) || 1;
-    const by = step || (key === "ArrowDown" ? cols : key === "ArrowUp" ? -cols : 0);
-    const i = cull.survey.indexOf(cull.active);
-    const to = i + by;
-    if (!by || to < 0 || to >= cull.survey.length) return;
-    cull.active = cull.survey[to];
-    for (const t of $("library-view").children) t.classList.toggle("active", t.dataset.path === cull.active);
-    renderPanel();
-    return;
   } else {
     return;
   }
@@ -248,14 +230,6 @@ function compareMakeSelect() {
   renderCull();
 }
 
-function surveyRemove(path) {
-  cull.survey = cull.survey.filter((p) => p !== path);
-  lib.selected.delete(path);
-  if (!cull.survey.length) return setLibraryView("grid");
-  if (cull.active === path) cull.active = cull.survey[0];
-  renderCull();
-}
-
 // Esc and G: back to the grid first.
 function cullLeave() {
   return lib.on && cull.view !== "grid" ? setLibraryView("grid") : false;
@@ -263,5 +237,4 @@ function cullLeave() {
 
 function wireCull() {
   for (const b of document.querySelectorAll("#lib-views button")) b.addEventListener("click", () => setLibraryView(b.dataset.view));
-  new ResizeObserver(() => cull.view === "survey" && layoutSurvey()).observe($("library-view"));
 }

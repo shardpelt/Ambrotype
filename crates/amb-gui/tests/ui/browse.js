@@ -481,16 +481,16 @@ await t.step("Develop opens the library's photo, from another folder too", async
   setLibraryView("loupe");
   const lv = $("library-view").getBoundingClientRect(), lg = $("library").getBoundingClientRect();
   t.expect(lv.width > lg.width / 2 && getComputedStyle($("library-view")).position !== "absolute", `the loupe ${Math.round(lv.width)}px wide`);
-  // Survey: ↓ goes a row down, ↑ back up (one column here).
-  setLibraryView("survey");
-  cull.survey = lib.shown.slice(0, 2).map((p) => p.path);
-  cull.active = cull.survey[0];
-  renderCull();
-  $("library-view").style.setProperty("--cols", "1");
-  t.key("ArrowDown");
-  t.expect(cull.active === cull.survey[1], "↓ in the survey");
-  t.key("ArrowUp");
-  t.expect(cull.active === cull.survey[0], "↑ in the survey");
+  // Compare splits either way: the candidate below puts the tiles in one column.
+  setLibraryView("compare");
+  const was = cull.split;
+  document.querySelector('.compare-split [data-split="down"]').click();
+  const [a, b] = [...$("library-view").querySelectorAll(".cull-tile")].map((x) => x.getBoundingClientRect());
+  t.expect(b.top >= a.bottom - 4 && Math.abs(a.left - b.left) < 4, "the candidate below the select");
+  document.querySelector('.compare-split [data-split="left"]').click();
+  const tiles = [...$("library-view").querySelectorAll(".cull-tile")];
+  t.expect(tiles[0].dataset.path === cull.candidate && tiles[0].getBoundingClientRect().left < tiles[1].getBoundingClientRect().left, "the candidate on the left");
+  setCompareSplit(was);
   setLibraryView("grid");
   if (lib.more.includes(parent)) await toggleTreeFolder(parent);
   t.expect(libraryOn() && !lib.more.length, "back in the library, one folder");

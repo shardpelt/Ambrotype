@@ -30,8 +30,8 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 - **Look closer** (Lightroom's culling views, buttons in the bar):
   - **Loupe** (E): one photo large; ← → step through the shown photos.
   - **Compare** (C): the select on the left, a candidate on the right (the first two selected, or the photo after the select). ← → change the candidate, ↓ swaps the two, ↑ makes the candidate the select and brings the next photo in.
-  - **Survey** (N): the selected photos tiled as large as they fit (or the next twelve when one is selected). Click one to make it active; × takes it out of the survey and the selection.
-  - In compare and survey, rating, label and flag keys and the panel act on the active photo, framed in the accent colour, as in Lightroom. Enter or a double-click opens it in the editor; G or Esc goes back to the grid.
+  - Compare splits side by side or above and below, the candidate either way round (the buttons at its top; kept on this computer). Survey (the selection tiled) was taken out on 2026-11-11: compare and the grid did its job.
+  - In compare, rating, label and flag keys and the panel act on the active photo, framed in the accent colour, as in Lightroom. Enter or a double-click opens it in the editor; G or Esc goes back to the grid.
   - Large previews are the camera's embedded preview at 1024 or 2048 pixels, then the edit's render for edited photos (both cached).
 - **Virtual copies** (Ctrl+', or Make a virtual copy in the panel): a second edit of the same photo, listed right after it as "IMG_0001.nef · Copy 2" (below).
 - **Copy and paste an edit** (Lightroom's Sync): Copy settings on one photo (Ctrl+Shift+C), select others, Paste settings (Ctrl+Shift+V).
@@ -69,7 +69,7 @@ Folders, or whole drives, that the catalogue keeps indexed (photo manager track,
 
 ## Timeline and map
 
-Other ways to browse what the library shows (a folder, a collection or All photos, after the filters), as views next to Grid, Loupe, Compare and Survey (2026-10-23; `ui/library/browse.js`).
+Other ways to browse what the library shows (a folder, a collection or All photos, after the filters), as views next to Grid, Loupe and Compare (2026-10-23; `ui/library/browse.js`).
 
 - **Timeline:** the years as bars, and the chosen year as twelve month calendars. A day with photos shows the first one's thumbnail and how many there are. Clicking a day or a month name shows just those photos in the grid, and a date chip in the bar (`14 July 2026 ×`) shows all dates again. Double-clicking a year, or **Show all of 2026**, shows the year.
 - **Scrubber:** sorted by capture time, the grid has a strip on its right edge with the years. Dragging along it jumps through the photos and says which month you're at.
@@ -210,7 +210,7 @@ The library's Folders panel → **Lightroom +** (or From Lightroom… → **Open
 - `crates/amb-library/src/folder.rs`: which files in a folder are photos, in order; `catalog.rs`: the catalogue.
 - `crates/amb-gui/src/library.rs`: listing, batch info changes, paste commands, batch export.
 - `crates/amb-gui/ui/library/library.js`, `library-grid.js` and `library-actions.js`: the grid, selection, panel and keys.
-- `crates/amb-gui/ui/library/cull.js`: loupe, compare and survey.
+- `crates/amb-gui/ui/library/cull.js`: loupe and compare.
 - `crates/amb-library/src/lrcat.rs` and `crates/amb-gui/ui/library/lrcat.js`: moving from Lightroom Classic; `crates/amb-library/src/lightroom.rs`, `crates/amb-presets/src/linked.rs` and `crates/amb-gui/ui/library/lightroom.js`: a catalogue in place.
 - Labels and flags in `amb_protocol::sidecar::PhotoInfo` (`xmp:Label`, `amblib:Flag`); labels are exported as XMP (`amb_export::exif::Tags::label`), flags are not.
 

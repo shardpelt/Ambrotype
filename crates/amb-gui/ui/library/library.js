@@ -221,7 +221,7 @@ function moveFocus(key, extend) {
 // ---------------------------------------------------------------- the panel: rate, label, keywords
 
 function renderPanel() {
-  // In compare and survey the panel is about the active photo.
+  // In compare the panel is about the active photo.
   const sel = libraryTargets();
   const n = sel.length;
   const active = cullOn() && cull.view !== "loupe";
@@ -352,7 +352,7 @@ function flagKey(flag) {
 
 // Auto-advance (Settings → General): after rating one photo from the
 // keyboard, go to the next, to cull a card quickly. Not with several
-// selected, nor in compare or survey.
+// selected, nor in compare.
 function autoAdvanceOn() {
   return store.text("amb.autoAdvance") === "1";
 }

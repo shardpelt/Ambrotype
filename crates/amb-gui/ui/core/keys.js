@@ -109,7 +109,6 @@ const KEY_ACTIONS = [
   { id: "view-library", group: "Library", label: "View full screen (F in the library)", hint: "The same viewer as V, on the F key as in other photo apps.", keys: ["F"], when: "library", run: () => viewerFlow() },
   { id: "slideshow", group: "Library", label: "Slideshow", hint: "The photos shown (or the selected ones), full screen; choose how long each stays, shuffle and the change effect. Space pauses, ← → step, Esc ends.", keys: ["Ctrl+Enter"], when: "library", button: "lib-slideshow", run: () => slideshowFlow() },
   { id: "lib-insights", group: "Library", label: "Insights: how you shoot", hint: "How often each aperture, focal length, shutter speed, ISO, camera and lens comes up in the photos shown, and how many were kept. Click a bar to show those photos.", keys: ["Shift+I"], when: "library", run: () => setLibraryView("insights") },
-  { id: "lib-survey", group: "Library", label: "Survey the selection", hint: "Click to make a photo active; × takes it out.", keys: ["N"], when: "library", run: () => setLibraryView("survey") },
   { id: "lib-open", group: "Library", label: "Open the photo in the editor", keys: ["Enter"], when: "library", run: (e) => (e.target.matches("button, select") ? false : libraryOpenFocused()) },
   { id: "lib-all", group: "Library", label: "Select all shown", keys: ["Ctrl+A"], when: "library", run: () => librarySelectAll() },
   { id: "lib-none", group: "Library", label: "Select none", keys: ["Ctrl+D"], when: "library", run: () => librarySelectNone() },

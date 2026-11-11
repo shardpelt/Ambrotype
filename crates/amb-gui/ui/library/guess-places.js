@@ -41,8 +41,19 @@ async function guessPlacesFlow() {
       if (url) img.src = url;
       const text = Object.assign(document.createElement("span"), { className: "guess-text" });
       text.append(Object.assign(document.createElement("b"), { textContent: p?.name ?? fileName(g.path) }), document.createElement("br"),
-        `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)} · ${g.by === "look" ? "by look" : "by time"}: ${g.why}`);
-      row.append(box, img, text);
+        document.createTextNode(`${g.lat.toFixed(5)}, ${g.lon.toFixed(5)} · ${g.by === "look" ? "by look" : "by time"}: ${g.why}`));
+      const change = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "Change…", title: "Put this one somewhere else: on a map, or by name" });
+      change.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const gps = await pickPlace([g.lat, g.lon], `Where ${p?.name ?? fileName(g.path)} was taken`);
+        if (!gps) return;
+        [g.lat, g.lon] = gps.split(",").map(Number);
+        g.by = "you";
+        g.why = "chosen by you";
+        box.checked = true;
+        text.lastChild.textContent = `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)} · chosen by you`;
+      });
+      row.append(box, img, text, change);
       return row;
     }));
     $("guess-ok").disabled = !guesses.length;

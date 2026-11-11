@@ -69,6 +69,7 @@ function renderPlaceField(sel) {
   const cam = n === 1 && !sel[0].gps && sel[0].camera_gps;
   input.placeholder = n > 1 && one === undefined ? "(mixed)" : cam ? `Camera: ${cam.map((v) => v.toFixed(5)).join(", ")}` : "52.3731, 4.8922 or a map link";
   input.disabled = !n;
+  $("lib-place-pick").disabled = !n;
   $("lib-place-map").disabled = !(one || cam);
   $("lib-place-clear").disabled = !sel.some((p) => p.gps);
   input.classList.remove("bad");
@@ -96,6 +97,13 @@ function wirePlaceField() {
   });
   // A pasted link is taken at once.
   input.addEventListener("paste", () => setTimeout(() => parsePlace(input.value) && input.blur(), 0));
+  $("lib-place-pick").addEventListener("click", async () => {
+    const sel = selectedPhotos();
+    if (!sel.length) return;
+    const at = sel.map((p) => p.gps ?? p.camera_gps).find(Boolean) ?? null;
+    const gps = await pickPlace(at, sel.length > 1 ? `Where the ${sel.length} photos were taken` : `Where ${sel[0].name} was taken`);
+    if (gps) placePhotos(sel.map((p) => p.path), gps).then(() => renderPanel());
+  });
   $("lib-place-clear").addEventListener("click", () => placePhotos(selectedPhotos().map((p) => p.path), "").then(() => renderPanel()));
   $("lib-place-map").addEventListener("click", () => {
     const p = selectedPhotos()[0];
@@ -116,5 +124,11 @@ function viewerPlaceRow(d, el) {
       viewerChange({ gps });
     }
   });
-  return input;
+  const pick = el("button", { type: "button", className: "small", textContent: "Pick…", title: "Choose it on a map, or find an address or place by name" });
+  pick.addEventListener("click", async () => {
+    const gps = await pickPlace(at ?? cam ?? null, `Where ${d.name ?? fileName(d.path)} was taken`);
+    if (gps) viewerChange({ gps });
+    slides.el?.focus();
+  });
+  return el("div", { className: "ss-place" }, input, pick);
 }

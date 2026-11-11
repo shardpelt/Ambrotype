@@ -111,6 +111,19 @@ await t.step("a place typed or pasted for a photo: numbers, degrees, map links",
   await t.until("the place set", () => libPhoto(ui.info.path).gps?.[0] === 48.8584);
   t.click("#lib-place-clear");
   await t.until("and cleared", () => !libPhoto(ui.info.path).gps);
+  // Pick…: a map to click, or a search (coordinates here, so nothing is asked online).
+  const pick = pickPlace(null, "test");
+  await t.until("the picker", () => $("pick-dialog").open && $("pick-map").clientWidth > 0);
+  t.expect($("pick-ok").disabled, "nothing to use yet");
+  const r = $("pick-map").getBoundingClientRect();
+  $("pick-map").dispatchEvent(new PointerEvent("pointerdown", { clientX: r.left + 100, clientY: r.top + 100, button: 0, pointerId: 1, bubbles: true }));
+  $("pick-map").dispatchEvent(new PointerEvent("pointerup", { clientX: r.left + 100, clientY: r.top + 100, button: 0, pointerId: 1, bubbles: true }));
+  t.expect(picker.pin && !$("pick-ok").disabled && !document.querySelector(".pick-pin").hidden, "a click puts the pin");
+  $("pick-search").value = "48.8584, 2.2945";
+  await searchPlace();
+  t.expect(Math.abs(picker.pin[0] - 48.8584) < 1e-6, "coordinates typed in the search go there");
+  $("pick-dialog").close("ok");
+  t.expect((await pick) === "48.858400,2.294500", "the place chosen comes back");
 });
 
 await t.step("dragging the grid moves through it; a drag doesn't select", async () => {

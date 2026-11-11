@@ -118,6 +118,61 @@ pub(crate) async fn library_guess_places(
     .map_err(|e| e.to_string())?
 }
 
+/// A place found by name or address.
+#[derive(Serialize)]
+pub(crate) struct Found {
+    name: String,
+    lat: f64,
+    lon: f64,
+}
+
+/// Places matching `query` ("Dam Square, Amsterdam"), from OpenStreetMap's
+/// Nominatim; asked only when someone searches (it tells openstreetmap.org
+/// what was searched), at most eight.
+#[tauri::command]
+pub(crate) async fn geocode(query: String) -> Res<Vec<Found>> {
+    let query = query.trim().to_string();
+    if query.is_empty() {
+        return Ok(Vec::new());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let agent = ureq::AgentBuilder::new()
+            .timeout_connect(std::time::Duration::from_secs(10))
+            .timeout(std::time::Duration::from_secs(20))
+            .try_proxy_from_env(true)
+            // Nominatim's policy asks for an application name.
+            .user_agent(concat!(
+                "Ambrotype/",
+                env!("CARGO_PKG_VERSION"),
+                " (photo editor; place search)"
+            ))
+            .build();
+        let r = agent
+            .get("https://nominatim.openstreetmap.org/search")
+            .query("q", &query)
+            .query("format", "jsonv2")
+            .query("limit", "8")
+            .call()
+            .map_err(|e| format!("Place search: {e}"))?;
+        let text = r.into_string().map_err(|e| format!("Place search: {e}"))?;
+        let rows: Vec<serde_json::Value> =
+            serde_json::from_str(&text).map_err(|e| format!("Place search: {e}"))?;
+        Ok(rows
+            .iter()
+            .filter_map(|v| {
+                let num = |k: &str| v.get(k)?.as_str()?.parse::<f64>().ok();
+                Some(Found {
+                    name: v.get("display_name")?.as_str()?.to_string(),
+                    lat: num("lat")?,
+                    lon: num("lon")?,
+                })
+            })
+            .collect())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// UTC seconds as "YYYY-MM-DD HH:MM".
 fn utc_text(secs: i64) -> String {
     let days = secs.div_euclid(86400);

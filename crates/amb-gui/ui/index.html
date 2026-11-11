@@ -491,6 +491,7 @@
         <h3>Place</h3>
         <div class="lib-place-row">
           <input id="lib-place" type="text" spellcheck="false" aria-label="Where the selection was taken" title="Latitude, longitude (52.3731, 4.8922), degrees (52°22'N 4°53'E) or a link from Google Maps, OpenStreetMap or Apple Maps; Enter sets it for the selection">
+          <button type="button" id="lib-place-pick" class="small" title="Choose it on a map, or find an address or place by name">Pick…</button>
           <button type="button" id="lib-place-map" class="small" title="Show it on the Map view">Map</button>
           <button type="button" id="lib-place-clear" class="small" title="Take the place out (a camera's own GPS stays)">×</button>
         </div>
@@ -951,6 +952,28 @@
     </menu>
   </dialog>
 
+  <!-- Choose a place on a map or by name (library/place-picker.js). -->
+  <dialog id="pick-dialog" class="pick-dialog">
+    <form method="dialog">
+      <h2 id="pick-title">Choose the place</h2>
+      <div class="pick-search-row">
+        <input id="pick-search" type="search" spellcheck="false" placeholder="An address, a place, or coordinates" aria-label="Search for a place">
+        <button type="button" id="pick-search-go" class="small" title="Search OpenStreetMap for it (tells openstreetmap.org what you searched)">Search</button>
+      </div>
+      <div id="pick-results" class="pick-results"></div>
+      <div id="pick-map" class="map pick-map">
+        <div class="map-tiles"></div>
+        <div class="pick-pin" hidden></div>
+        <div class="pick-zoom"><button type="button" id="pick-zoom-in" class="small" title="Zoom in">+</button><button type="button" id="pick-zoom-out" class="small" title="Zoom out">−</button></div>
+      </div>
+      <p class="hint pick-foot"><span id="pick-at"></span><span class="grow"></span><span>Search and map images: © OpenStreetMap contributors</span></p>
+      <menu>
+        <span class="grow"></span>
+        <button value="cancel">Cancel</button>
+        <button value="ok" id="pick-ok" class="primary">Use this place</button>
+      </menu>
+    </form>
+  </dialog>
   <!-- Guess places (library/guess-places.js): guesses to confirm. -->
   <dialog id="guess-dialog" class="guess-dialog">
     <form method="dialog">
@@ -1794,6 +1817,7 @@
   <script src="library/browse.js"></script>
   <script src="library/guess-places.js"></script>
   <script src="library/place-field.js"></script>
+  <script src="library/place-picker.js"></script>
   <script src="library/insights.js"></script>
   <script src="library/duplicates.js"></script>
   <script src="library/bursts.js"></script>

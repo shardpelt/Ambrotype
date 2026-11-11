@@ -1549,7 +1549,7 @@ body.photo-only .viewer { grid-column: 1 / -1; }
 .guess-opts { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; }
 .guess-opts input { width: 64px; }
 .guess-list { display: flex; flex-direction: column; gap: 4px; max-height: 50vh; overflow-y: auto; margin: 8px 0; }
-.guess-row { display: grid; grid-template-columns: auto 64px 1fr; align-items: center; gap: 10px; padding: 4px; border-radius: var(--radius); font-size: 12px; color: var(--muted); }
+.guess-row { display: grid; grid-template-columns: auto 64px 1fr auto; align-items: center; gap: 10px; padding: 4px; border-radius: var(--radius); font-size: 12px; color: var(--muted); }
 .guess-row:hover { background: var(--hover); }
 .guess-row img { width: 64px; height: 44px; object-fit: cover; border-radius: 3px; background: var(--bg-deep); }
 .guess-row b { color: var(--text); font-weight: 600; }
@@ -1557,3 +1557,16 @@ body.photo-only .viewer { grid-column: 1 / -1; }
 .lib-place-row { display: flex; gap: 4px; align-items: center; }
 .lib-place-row input { flex: 1; min-width: 0; font-size: 12px; }
 #lib-place.bad, .ss-info input.bad { border-color: var(--danger); }
+.pick-dialog { width: min(760px, 92vw); }
+.pick-search-row { display: flex; gap: 6px; }
+.pick-search-row input { flex: 1; }
+.pick-results { display: flex; flex-direction: column; gap: 2px; max-height: 120px; overflow-y: auto; margin: 6px 0; }
+.pick-result { text-align: left; font-size: 12px; padding: 3px 6px; background: none; border-color: transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pick-result:hover, .pick-result.on { background: var(--hover); border-color: var(--line); }
+.pick-map { height: 360px; min-height: 0; flex: none; cursor: crosshair; }
+.pick-pin { position: absolute; width: 18px; height: 18px; margin: -18px 0 0 -9px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); pointer-events: none; }
+.pick-zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 2px; }
+.pick-dialog menu { display: flex; gap: 8px; padding: 0; margin: 0; }
+.ss-place { display: flex; gap: 4px; }
+.ss-place input { flex: 1; min-width: 0; }
+.pick-foot { display: flex; gap: 8px; font-size: 11px; }

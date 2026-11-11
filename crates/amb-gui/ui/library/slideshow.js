@@ -407,6 +407,8 @@ function wireSlideshow() {
   // Its own keys while it runs; nothing else hears them.
   window.addEventListener("keydown", (e) => {
     if (!slides.on) return;
+    // A dialog over it (choosing a place) has its own keys.
+    if (e.target.closest?.("dialog[open]")) return;
     // Typing keywords in the viewer's info panel: the box has the keys
     // (Esc leaves it).
     if (e.target.closest?.(".ss-info") && e.target.matches("input")) {

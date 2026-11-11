@@ -409,6 +409,7 @@ function wireLibrary() {
   $("lib-unstack").addEventListener("click", unstackSelection);
   $("lib-autostack").addEventListener("click", autoStack);
   wirePlaceField();
+  wirePlacePicker();
   for (const f of $("lib-meta").querySelectorAll("[data-meta]")) {
     f.addEventListener("change", () => libraryChange({ [f.dataset.meta]: f.value.trim() }));
     f.addEventListener("keydown", (e) => e.stopPropagation());

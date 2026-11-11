@@ -134,7 +134,9 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
   | B | Add to the last collection used (in masks: a brush) |
   | Ctrl+Shift+I | Import from a card or folder |
   | C | Collage maker |
-  | F | Filmstrip |
+  | F | Just the photo, full screen (F or Esc back) |
+  | F6 | Filmstrip |
+  | Wheel, pinch, Ctrl + − 0 | Zoom at the pointer; Ctrl 0 fits |
   | Ctrl+[ , Ctrl+], Ctrl+Shift+T | Left column, right column, top bar |
   | Ctrl+Enter | In the library: slideshow (Space pauses, ← → step, Esc ends) |
   | Ctrl+Alt+1–6 | Tasks |

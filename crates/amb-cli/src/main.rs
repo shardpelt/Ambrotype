@@ -229,7 +229,8 @@ USAGE:
     amb insights <PHOTO|DIR>... [--by aperture,focal,shutter,iso,hour,camera,lens] [--json]
                                             How the photos were shot: how often each aperture, focal
                                             length, shutter speed, ISO, hour, camera and lens comes up,
-                                            and how many of each were kept (picked or 3 stars and up)
+                                            and how many of each were kept (picked or 3 stars and up);
+                                            then what the numbers suggest and challenges to try
     amb duplicates <PHOTO|DIR>... [--alike 0-20] [--burst SECONDS] [--stack] [--reject] [--json]
                                             Same files, alike pictures (--alike bits of 64 may differ,
                                             default 6; 0: same files only) and bursts (default 2 s),

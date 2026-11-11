@@ -153,6 +153,46 @@ pub(crate) fn insights_fields() -> Vec<amb_library::insights::Field> {
     amb_library::insights::fields()
 }
 
+/// A photo as the Insights view sends it: the shot and its rating and flag.
+#[derive(Deserialize)]
+pub(crate) struct InsightPhoto {
+    #[serde(flatten)]
+    shot: amb_library::catalog::Shot,
+    rating: Option<u8>,
+    flag: Option<amb_protocol::sidecar::Flag>,
+}
+
+#[derive(Serialize)]
+pub(crate) struct InsightNotes {
+    advice: Vec<amb_library::insights::Note>,
+    challenges: Vec<amb_library::insights::Note>,
+}
+
+/// What the Insights view's numbers suggest, and challenges to try.
+#[tauri::command]
+pub(crate) async fn insights_advice(photos: Vec<InsightPhoto>) -> Res<InsightNotes> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let records: Vec<amb_library::catalog::Record> = photos
+            .into_iter()
+            .map(|p| {
+                let mut r = amb_library::catalog::Record {
+                    shot: p.shot,
+                    ..Default::default()
+                };
+                r.info.rating = p.rating;
+                r.info.flag = p.flag;
+                r
+            })
+            .collect();
+        InsightNotes {
+            advice: amb_library::insights::advice(&records),
+            challenges: amb_library::insights::challenges(&records),
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
 /// Forget the catalogue's photos in `folder` (the files stay). They come
 /// back when the folder is shown again.
 #[tauri::command]

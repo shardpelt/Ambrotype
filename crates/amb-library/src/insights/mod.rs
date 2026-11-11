@@ -8,6 +8,9 @@
 //! 35 mm. The buckets are shared with the editor's Insights view (it gets
 //! them from here), so `amb insights` and the view always agree.
 
+mod advice;
+pub use advice::{Note, advice, challenges};
+
 use crate::catalog::Record;
 use amb_protocol::sidecar::Flag;
 use serde::Serialize;

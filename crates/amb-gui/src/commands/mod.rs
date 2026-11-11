@@ -209,6 +209,7 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         catalog::smart_photos,
         catalog::catalog_photos,
         catalog::insights_fields,
+        catalog::insights_advice,
         catalog::catalog_forget,
         catalog::library_folders,
         catalog::add_library_folder,

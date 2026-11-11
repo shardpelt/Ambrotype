@@ -1241,6 +1241,17 @@ body.editing .dock-grip { display: none; }
 .in-row .in-fill { display: block; height: 100%; background: var(--track); border-radius: 2px; overflow: hidden; }
 .in-row .in-kept { display: block; height: 100%; background: var(--accent); opacity: .85; }
 .in-n { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.in-split { font-size: 12px; color: var(--muted); }
+.in-split select { padding: 2px 4px; font-size: 12px; }
+.in-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; width: 100%; font-size: 12px; }
+.in-key::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 2px; background: var(--c); vertical-align: -1px; }
+.in-group .in-sub { flex: 1; display: flex; align-items: flex-end; gap: 1px; min-height: 0; }
+.in-group .in-fill { flex: 1 1 0; min-width: 0; padding: 0; border: none; border-radius: 2px 2px 0 0; min-height: 1px; }
+.in-group .in-fill:not(:disabled):hover { filter: brightness(1.25); }
+.in-notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; flex: none; }
+.in-advice p { margin: 0 0 8px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.in-advice p b { color: var(--text); font-weight: 600; }
+.in-try { border-color: var(--accent); }
 .in-unknown { margin: 6px 0 0; font-size: 11px; }
 .tl-years { display: flex; align-items: flex-end; gap: 4px; height: 74px; flex: none; overflow-x: auto; }
 .tl-year { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; height: 100%; min-width: 44px; padding: 2px 4px; font-size: 11px; background: none; border-color: transparent; }

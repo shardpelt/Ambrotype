@@ -28,6 +28,24 @@ await t.step("Insights counts the photos shown; a bar shows just those", async (
   const n = (lib.beforePick ?? lib.shown).length;
   t.expect(document.querySelector(".in-head b").textContent === `${n} photos`, "the count");
   t.expect(document.querySelectorAll(".in-card").length >= 5, "a chart per field");
+  await t.until("advice or why not", () => document.querySelector(".in-notes")?.textContent);
+  // The advice itself, from 40 made-up shots of a fast lens kept stopped down.
+  const shots = Array.from({ length: 40 }, (_, i) => ({ lens: "35mm F1.4", aperture: i ? 4 : 1.4, focal: 35, iso: 200, shutter: 0.002, captured: "2026-05-04 12:00:00", rating: null, flag: null }));
+  const notes = await t.invoke("insights_advice", { photos: shots });
+  t.expect(notes.advice.some((n) => n.title.includes("rarely wide open")) && notes.challenges.length >= 2, JSON.stringify(notes).slice(0, 200));
+  // Split by: two groups side by side (two made-up years).
+  const ps = lib.beforePick ?? lib.shown;
+  if (ps.length >= 2) {
+    const was = ps.map((p) => p.captured);
+    ps[0].captured = "2024-05-04 12:00:00";
+    ps[1].captured = "2025-05-04 12:00:00";
+    insights.split = "year";
+    await renderInsights($("library-view"));
+    t.expect(document.querySelectorAll(".in-key").length === 2 && document.querySelector(".in-group"), "two years side by side");
+    insights.split = null;
+    ps.forEach((p, i) => { p.captured = was[i]; });
+    await renderInsights($("library-view"));
+  }
   const bar = document.querySelector(".in-bar:not(:disabled)");
   t.log(document.querySelector(".in-usual")?.textContent ?? "no usual settings");
   if (bar) {

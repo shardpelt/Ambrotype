@@ -34,6 +34,11 @@ await t.step("Insights counts the photos shown; a bar shows just those", async (
     bar.click();
     await t.until("the grid with the bar's photos", () => cull.view === "grid" && t.visible("#lib-pick"));
     t.expect(lib.shown.length >= 1 && lib.shown.length <= n, "a part of them");
+    // Back returns to Insights, in the library, without the filter.
+    navBack();
+    await t.until("Insights again", () => cull.view === "insights" && !lib.pick && libraryOn());
+    navGo(1);
+    await t.until("the bar's photos again", () => cull.view === "grid" && lib.pick);
     t.click("#lib-pick");
     await t.until("all again", () => !lib.pick && $("lib-pick").hidden);
   }

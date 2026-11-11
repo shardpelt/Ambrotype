@@ -45,6 +45,7 @@ function setLibraryView(view) {
     cull.active = cull.survey.includes(focus) ? focus : cull.survey[0];
   }
   cull.view = view;
+  navNote();
   // Not over the empty library's "Drop a folder" (no folder yet).
   $("library-view").hidden = view === "grid" || !$("library-empty").hidden;
   $("library-grid").hidden = view !== "grid";

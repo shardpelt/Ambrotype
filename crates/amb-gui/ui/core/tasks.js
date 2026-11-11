@@ -110,6 +110,18 @@ async function switchTask(id) {
     return;
   }
   if ($("collage-dialog")?.open) closeCollage();
+  // One step for Back: the views the library passes through on the way don't count.
+  const held = nav.hold;
+  nav.hold = true;
+  try {
+    await enterTask(t, id);
+  } finally {
+    nav.hold = held;
+  }
+  renderTasks();
+}
+
+async function enterTask(t, id) {
   // The layout chosen in the task being left is that task's from now on.
   const from = TASKS.find((x) => x.id === currentTask());
   if (from?.layout && ui.looks?.active_layout && !libraryOn()) taskState.layouts[from.id] = ui.looks.active_layout;
@@ -124,7 +136,6 @@ async function switchTask(id) {
     const layout = taskLayout(t);
     if (ui.looks && layout !== ui.looks.active_layout && findLook("layout", layout)?.usable) switchLook("layout", layout);
   }
-  renderTasks();
 }
 
 function renderTasks() {
@@ -132,7 +143,7 @@ function renderTasks() {
   // Each task has its own accent (style.css), so you can see where you are.
   document.body.dataset.task = now;
   renderTaskTools();
-  navNoteTask(now);
+  navNote();
   for (const b of $("task-bar").querySelectorAll("[data-task]")) {
     const on = b.dataset.task === now;
     b.classList.toggle("on", on);
@@ -215,11 +226,12 @@ function wireTaskSketches() {
   }
 }
 
-// Back to the tasks you were in before (Library, Develop, Film, Collage,
-// …), as in a browser: the arrow at the task bar's start, Alt+←, or the
-// mouse's back button. Forward has no button (room), only Alt+→ and the
-// mouse's forward button.
-const nav = { back: [], fwd: [], at: null, going: null };
+// Back to where you were before, as in a browser: the task (Library,
+// Develop, Film, Collage, …) and, in the library, its view (Grid,
+// Insights, Map…) and an Insights bar's filter. The arrow at the task
+// bar's start, Alt+←, or the mouse's back button. Forward has no button
+// (room), only Alt+→ and the mouse's forward button.
+const nav = { back: [], fwd: [], at: null, hold: false };
 
 function navButtons() {
   const b = Object.assign(document.createElement("button"), { type: "button", id: "btn-nav-back", className: "task-nav", textContent: "‹", disabled: true });
@@ -227,12 +239,22 @@ function navButtons() {
   return b;
 }
 
-// Called whenever the task on screen may have changed (renderTasks).
-function navNoteTask(now) {
-  if (now === nav.at) return;
-  // Arriving where Back was going isn't a step to come back from.
-  if (now === nav.going) nav.going = null;
-  else if (nav.at) {
+// Where you are now.
+function navPlace() {
+  const task = currentTask();
+  const inLib = task === "library" && typeof lib !== "undefined" && lib.on;
+  const place = { task, view: inLib ? cull.view : null, pick: inLib ? lib.pick : null };
+  place.key = `${task}|${place.view ?? ""}|${place.pick?.words ?? ""}`;
+  return place;
+}
+
+// Called whenever the place on screen may have changed: the task
+// (renderTasks), the library's view or its Insights filter.
+function navNote() {
+  if (nav.hold) return;
+  const now = navPlace();
+  if (now.key === nav.at?.key) return;
+  if (nav.at) {
     nav.back.push(nav.at);
     if (nav.back.length > 50) nav.back.shift();
     nav.fwd = [];
@@ -244,11 +266,22 @@ function navNoteTask(now) {
 
 // -1 back, 1 forward.
 async function navGo(dir) {
-  const id = (dir < 0 ? nav.back : nav.fwd).pop();
-  if (!id) return;
+  const to = (dir < 0 ? nav.back : nav.fwd).pop();
+  if (!to) return;
   (dir < 0 ? nav.fwd : nav.back).push(nav.at);
-  nav.going = id;
-  await switchTask(id);
+  nav.hold = true;
+  try {
+    if (to.task !== currentTask()) await switchTask(to.task);
+    if (to.task === "library" && lib.on) {
+      if (lib.pick !== to.pick) setInsightFilter(to.pick, false);
+      if (to.view && cull.view !== to.view) setLibraryView(to.view);
+    }
+  } finally {
+    nav.hold = false;
+  }
+  // Arrived; anything done meanwhile (a quick click elsewhere) is a step on.
+  nav.at = to;
+  navNote();
 }
 const navBack = () => navGo(-1);
 

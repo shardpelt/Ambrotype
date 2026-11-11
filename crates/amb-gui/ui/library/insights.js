@@ -31,13 +31,22 @@ function insightBucket(field, v) {
 }
 
 // Show only the photos in one bar, in the grid; null shows them all again.
-function setInsightFilter(pick) {
+// `toGrid` false keeps the view (Back uses it).
+function setInsightFilter(pick, toGrid = true) {
   lib.pick = pick;
   const chip = $("lib-pick");
   chip.hidden = !pick;
   chip.textContent = pick ? `${pick.words} ×` : "";
-  renderLibrary();
-  if (pick) setLibraryView("grid");
+  // One step for Back, not one for the filter and one for the view.
+  const held = nav.hold;
+  nav.hold = true;
+  try {
+    renderLibrary();
+    if (pick && toGrid) setLibraryView("grid");
+  } finally {
+    nav.hold = held;
+  }
+  navNote();
 }
 
 // The filter for one bar: a number field's bucket, or a camera or lens.

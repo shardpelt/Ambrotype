@@ -65,6 +65,8 @@ function applyView() {
   }
   lib.beforeDate = shown;
   if (lib.date) shown = shown.filter((p) => p.captured?.startsWith(lib.date));
+  lib.beforePick = shown;
+  if (lib.pick) shown = shown.filter(lib.pick.test);
   const sort = $("lib-sort").value;
   // In the listing's order; a JPEG twin (not in it) by its name.
   const at = new Map(lib.photos.map((p, i) => [p, i]));

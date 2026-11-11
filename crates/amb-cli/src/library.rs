@@ -612,3 +612,69 @@ pub(crate) fn lrcat_in_place(what: &str, catalog: Option<&Path>, json: bool) -> 
     }
     Ok(())
 }
+
+/// `amb insights`: how the photos named were shot (amb_library::insights):
+/// a bar per aperture, focal length, shutter speed, ISO, hour, camera and
+/// lens, with how many of each were kept (picked or 3 stars and up).
+pub(crate) fn insights(
+    places: &[&str],
+    options: &BTreeMap<&str, &str>,
+    json: bool,
+) -> Result<(), String> {
+    use amb_library::insights;
+    let photos = crate::organise::photos(places)?;
+    let records = match options.get("--catalog") {
+        Some(p) => amb_library::catalog::Catalog::open(Path::new(p))?.records(&photos),
+        None => match amb_library::catalog::default_path() {
+            Some(p) => amb_library::catalog::Catalog::open(&p)?.records(&photos),
+            None => photos
+                .iter()
+                .map(|p| amb_library::catalog::read(p))
+                .collect(),
+        },
+    };
+    let keys: Vec<&str> = match options.get("--by") {
+        Some(by) => by.split(',').map(str::trim).collect(),
+        None => insights::KEYS.to_vec(),
+    };
+    let mut tallies = Vec::new();
+    for k in keys {
+        tallies.push(
+            insights::tally(k, &records)
+                .ok_or_else(|| format!("--by {k}: one of {}", insights::KEYS.join(", ")))?,
+        );
+    }
+    if json {
+        return print_json(&serde_json::json!({ "photos": records.len(), "tallies": tallies }));
+    }
+    println!("{} photos", records.len());
+    for t in &tallies {
+        let most = t.bars.iter().map(|b| b.count).max().unwrap_or(0).max(1);
+        let width = t
+            .bars
+            .iter()
+            .map(|b| b.label.chars().count())
+            .max()
+            .unwrap_or(0);
+        println!("\n{}", t.name);
+        for b in t
+            .bars
+            .iter()
+            .filter(|b| b.count > 0 || t.key == "aperture" || t.key == "focal")
+        {
+            let pct = 100.0 * b.count as f64 / records.len().max(1) as f64;
+            println!(
+                "  {:<width$}  {:<30} {:>5}  {:>3.0}%  {} kept",
+                b.label,
+                "█".repeat((b.count * 30).div_ceil(most)),
+                b.count,
+                pct,
+                b.kept,
+            );
+        }
+        if t.unknown > 0 {
+            println!("  ({} without)", t.unknown);
+        }
+    }
+    Ok(())
+}

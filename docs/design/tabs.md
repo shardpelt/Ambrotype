@@ -19,7 +19,7 @@ What goes where in the editor, so it stays easy to find your way: what earns a t
 
 **A view** is another way of showing the same thing, inside a tab.
 - Switching views never changes what is selected or open.
-- Today: the library's grid, loupe, compare and survey (G, E, C, N), Timeline, Map; All photos.
+- Today: the library's grid, loupe, compare and survey (G, E, C, N), Timeline, Map, Insights (Shift+I); All photos.
 
 **A tool** is one action, or a panel within a tab's layout: Auto edit, Remove object, Find dust, Match look, a preset.
 

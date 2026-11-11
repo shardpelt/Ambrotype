@@ -226,6 +226,10 @@ USAGE:
                                             Where photos were taken, from a GPS track: --offset is how
                                             many hours the camera's clock was ahead of UTC; photos with a
                                             place (or the camera's GPS) keep it unless --replace
+    amb insights <PHOTO|DIR>... [--by aperture,focal,shutter,iso,hour,camera,lens] [--json]
+                                            How the photos were shot: how often each aperture, focal
+                                            length, shutter speed, ISO, hour, camera and lens comes up,
+                                            and how many of each were kept (picked or 3 stars and up)
     amb duplicates <PHOTO|DIR>... [--alike 0-20] [--burst SECONDS] [--stack] [--reject] [--json]
                                             Same files, alike pictures (--alike bits of 64 may differ,
                                             default 6; 0: same files only) and bursts (default 2 s),
@@ -539,6 +543,9 @@ fn main() -> ExitCode {
         }
         ["place", photos @ ..] if !photos.is_empty() => {
             organise::place(photos, &options, dry_run, json)
+        }
+        ["insights", places @ ..] if !places.is_empty() => {
+            library::insights(places, &options, json)
         }
         ["duplicates", photos @ ..] if !photos.is_empty() => {
             organise::duplicates(photos, &options, json)

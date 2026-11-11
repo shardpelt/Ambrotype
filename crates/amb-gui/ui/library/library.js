@@ -32,6 +32,8 @@ const lib = {
   stackSizes: new Map(), // stack id -> photos in it
   copied: null,        // the photo "Copy settings" took its edit from
   groups: null,        // setting groups for Paste settings
+  pick: null,          // only the photos in one Insights bar: { words, test } (insights.js)
+  beforePick: null,    // what the filters show before it
   date: null,          // only photos taken then: "2026", "2026-07" or "2026-07-14" (browse.js)
   beforeDate: null,    // what the filters show before the date filter
   wired: false,

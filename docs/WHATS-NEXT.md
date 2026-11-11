@@ -11,6 +11,11 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Up next (in this order)
 
+0. **Zoom everywhere, as in other apps** (owner, 2026-11-11):
+   - Scroll wheel and trackpad pinch zoom the photo in every view: Develop, the library's loupe and the viewer. On a Mac, pinch reaches WebKit as Ctrl+wheel (or gesture events), so it should zoom, not scroll.
+   - The library's viewer (V/F) zooms like Develop: click and right-click, the wheel or trackpad, Ctrl+ and Ctrl−.
+   - In Develop, F toggles the photo full screen alone, to check it; F again comes back.
+   - Peek: the area round the pointer magnified. Either after hovering still for a moment, or a toggle (the loupe, I, already does this as a mode); to decide.
 1. **A paper curve in density** (Film lab item 9).
 2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
 3. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
@@ -32,6 +37,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-11: **Insights** (library view, Shift+I): how the photos shown were shot: a chart each for aperture, focal length, shutter speed, ISO, time of day, lens and camera, with the kept ones (picked, or 3 stars and up) as the bar's darker part, and the settings used most together; camera chips narrow it, a click on a bar shows those photos. `amb insights DIR`. Next: plain-words analysis (what the numbers suggest: a lens unused, a zoom at its end), Split by camera, lens or year, then challenges (your anti-style)
 - 2026-11-10: Select object's **Copy**: drag a copy of it elsewhere, and it stays where it was too (Move's clone without the fill)
 - 2026-11-10: Develop's left column in two tabs, **Tools** and **Presets**, with History docked under both; the switch to try blocks that each scroll on their own is gone (one scroll won)
 - 2026-11-10: **Undo all** beside Undo (Ctrl+Alt+Z; Redo brings the steps back); History docked at the foot of its column, always in sight, with Presets' list capped to scroll inside; a **‹** back button at the task bar's start (Alt+←, the mouse's back button) to the task you were in before

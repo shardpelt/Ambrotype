@@ -3,8 +3,8 @@
 // preset, Auto, Surprise me and Match look.
 "use strict";
 
-// One choice for every preset: on top of the edit (they chain, as in
-// Lightroom), or from the original. "The original" resets the look groups
+// One choice for every preset: from the original (the default), or on top
+// of the edit (they chain, as in Lightroom). "The original" resets the look groups
 // first and keeps what belongs to this photo: crop, spots, masks, geometry
 // and a film negative's conversion. Kept on this computer.
 function presetsFromOriginal() {
@@ -27,9 +27,10 @@ async function applyPreset(p) {
 
 function wirePresetOriginal() {
   const box = $("preset-from-original");
-  box.checked = store.text("amb.presetsFromOriginal") === "1";
+  // On unless turned off (a new key: before, off was the default).
+  box.checked = store.text("amb.presetsOnTop") !== "1";
   box.addEventListener("change", () => {
-    store.setText("amb.presetsFromOriginal", box.checked ? "1" : "");
+    store.setText("amb.presetsOnTop", box.checked ? "" : "1");
   });
 }
 

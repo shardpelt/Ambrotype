@@ -62,7 +62,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **What's inside a preset, and what don't you support yet** → `amb preset inspect PRESET.xmp`.
 - **Find presets, layouts and themes others made** → **Browse the Hub** (Ctrl+Shift+H).
 - **Ready-made looks to start from** → Presets → **Preset library…**: 21 free presets by style (film, B&W, moody, bright, vivid, portrait, landscape); hover to preview, **Apply**, or **Add to your presets**.
-- **A preset that replaces my edit, or adds to it** → Presets → **Apply to the original, not on top**: on, a preset replaces the look (crop, spots, masks and geometry stay); off, presets add up as in Lightroom.
+- **A preset that replaces my edit, or adds to it** → Presets → **Apply to the original, not on top**: on (the default), a preset replaces the look (crop, spots, masks and geometry stay); off, presets add up as in Lightroom.
 
 ## Film negatives and scans
 
@@ -93,6 +93,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Groups of photos** → collections and smart collections; **Stack** (Ctrl+G); **Make a Virtual Copy** (Ctrl+').
 - **Where was this taken** → the library's Map view; place photos from a GPX track or by dropping them on the map. `amb place DIR --gpx TRACK.gpx`.
 - **Browse by date** → the library's Timeline view.
+- **How do I shoot? (which apertures, focal lengths, lenses I really use)** → the library's **Insights** view (Shift+I): a chart per setting for the photos shown, the kept ones darker; camera chips narrow it, a click on a bar shows those photos. `amb insights DIR`.
 - **Whole drives, also unplugged** → Folders → add a drive. `amb catalog add DIR`.
 - **Subfolders** → they're the first tiles in the grid; double-click a folder in the tree to open or close it.
 - **Slideshow** → **Slideshow** (Ctrl+Enter in the library), or **▶ Slideshow** beside **⛶ View** in the filmstrip's bar for the filmstrip's photos. The full-screen viewer is V, or F in the library. `amb slideshow DIR`.

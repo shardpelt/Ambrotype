@@ -22,6 +22,23 @@ await t.step("Timeline opens", async () => {
   t.log(document.querySelector(".tl-head b")?.textContent ?? "no dates");
 });
 
+await t.step("Insights counts the photos shown; a bar shows just those", async () => {
+  t.click('#lib-views [data-view="insights"]');
+  await t.until("the charts", () => document.querySelector(".in-charts"));
+  const n = (lib.beforePick ?? lib.shown).length;
+  t.expect(document.querySelector(".in-head b").textContent === `${n} photos`, "the count");
+  t.expect(document.querySelectorAll(".in-card").length >= 5, "a chart per field");
+  const bar = document.querySelector(".in-bar:not(:disabled)");
+  t.log(document.querySelector(".in-usual")?.textContent ?? "no usual settings");
+  if (bar) {
+    bar.click();
+    await t.until("the grid with the bar's photos", () => cull.view === "grid" && t.visible("#lib-pick"));
+    t.expect(lib.shown.length >= 1 && lib.shown.length <= n, "a part of them");
+    t.click("#lib-pick");
+    await t.until("all again", () => !lib.pick && $("lib-pick").hidden);
+  }
+});
+
 await t.step("a photo dropped on the map gets a place", async () => {
   t.click('#lib-views [data-view="map"]');
   await t.until("the map", () => document.querySelector("#library-view .map"));
@@ -38,6 +55,7 @@ await t.step("Remove place takes it out again", async () => {
   t.expect(!libPhoto(ui.info.path).gps, "no place");
   t.key("Escape");
   await t.until("the grid", () => cull.view === "grid");
+  t.expect(getComputedStyle($("library-view")).display === "none", "the map gone from the screen");
 });
 
 await t.step("dragging the grid moves through it; a drag doesn't select", async () => {

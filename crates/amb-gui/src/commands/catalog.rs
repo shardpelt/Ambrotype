@@ -147,6 +147,12 @@ pub(crate) async fn catalog_photos() -> Res<CollectionView> {
     .map_err(|e| e.to_string())
 }
 
+/// The Insights view's buckets (the last bucket's `max` is null: no end).
+#[tauri::command]
+pub(crate) fn insights_fields() -> Vec<amb_library::insights::Field> {
+    amb_library::insights::fields()
+}
+
 /// Forget the catalogue's photos in `folder` (the files stay). They come
 /// back when the folder is shown again.
 #[tauri::command]

@@ -8,7 +8,7 @@
 "use strict";
 
 const cull = {
-  view: "grid",     // "grid", "loupe", "compare", "survey", or browse.js's "timeline" or "map"
+  view: "grid",     // "grid", "loupe", "compare", "survey", browse.js's "timeline" or "map", or "insights"
   active: null,     // the photo keys act on
   select: null,     // compare: the left photo
   candidate: null,  // compare: the right photo

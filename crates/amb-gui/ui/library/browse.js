@@ -15,7 +15,7 @@
 //   look at; off, the map is a plain grid of latitudes and longitudes.
 "use strict";
 
-const BROWSE_VIEWS = ["timeline", "map"];
+const BROWSE_VIEWS = ["timeline", "map", "insights"];
 const browseOn = () => lib.on && BROWSE_VIEWS.includes(cull.view);
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -29,6 +29,7 @@ function renderBrowse() {
   const box = $("library-view");
   box.className = `library-view browse ${cull.view}`;
   if (cull.view === "timeline") renderTimeline(box);
+  else if (cull.view === "insights") renderInsights(box);
   else renderMap(box);
   renderCounts();
   renderPanel();
@@ -582,6 +583,7 @@ function setMapTiles(on) {
 
 function wireBrowse() {
   wireScrubber();
+  wireInsights();
   $("lib-date").addEventListener("click", () => setDateFilter(null));
   const pref = $("settings-map-tiles");
   pref.checked = mapTilesWanted();

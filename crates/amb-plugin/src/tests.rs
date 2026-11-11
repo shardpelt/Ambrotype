@@ -287,6 +287,11 @@ fn effects_reach_the_engine_through_the_resolver() {
         resolve(&entry("light-leak")),
         Ok(Resolved::Pixels(_))
     ));
+    // A kaleidoscope reads the whole photo: the engine renders all of it.
+    assert!(matches!(
+        resolve(&entry("kaleidoscope")),
+        Ok(Resolved::Whole(_))
+    ));
     assert!(resolve(&entry("auto-tone")).is_err());
     assert!(resolve(&entry("not-installed")).is_err());
     // In the settings: rendered, or noted when unknown.
@@ -388,5 +393,44 @@ fn built_in_effects_run_natively_as_they_do_in_the_sandbox() {
                 .fold(0.0, f32::max);
             assert!(most < 1e-4, "{id}: {most}");
         }
+    }
+}
+
+#[test]
+fn a_whole_photo_effect_gets_the_whole_photo_in_the_sandbox_too() {
+    // Taller than one strip, so a strip at a time would break the mirror.
+    let builtin = crate::builtin("kaleidoscope").unwrap();
+    let plugin = crate::Plugin::from_parts(
+        &serde_json::to_string(&builtin.manifest)
+            .unwrap()
+            .replace("\"id\":\"kaleidoscope\"", "\"id\":\"my-kaleidoscope\""),
+        &builtin.wasm,
+    )
+    .unwrap();
+    assert!(plugin.manifest.whole && crate::native::of(&plugin).is_none());
+    let (w, h) = (24, 400);
+    let mut rgb: Vec<f32> = (0..w * h)
+        .flat_map(|i| [(i / w) as f32 / h as f32, 0.3, 0.6])
+        .collect();
+    let mut params = Map::new();
+    params.insert("slices".into(), 2.into());
+    let region = crate::effect::Region {
+        x: 0,
+        y: 0,
+        full_width: w,
+        full_height: h,
+    };
+    plugin
+        .apply_pixels(&params, 1, &mut rgb, w, h, region)
+        .unwrap();
+    // Two slices mirror top and bottom round the middle.
+    let red = |y: usize| rgb[(y * w + w / 2) * 3];
+    for y in [5, 60, 150] {
+        assert!(
+            (red(y) - red(h - 1 - y)).abs() < 0.02,
+            "row {y}: {} vs {}",
+            red(y),
+            red(h - 1 - y)
+        );
     }
 }

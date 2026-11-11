@@ -24,7 +24,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **From the owner, 2026-11-11:**
   - **README screenshots again**, with the library (grid and Insights) and a Trippy edit among them; after the sample photos above.
   - **Collage for every photo in the folder:** one layout applied to all the photos shown, as pages.
-  - **More trippy:** kaleidoscopes (mirror slices, fractal kaleidoscopes), a heat-camera look (false colour by brightness), as Trippy effects; and Trippy looks shareable (as presets with their effects, to the hub).
+  - **Shareable Trippy looks:** as presets with their effects, to the hub.
 - **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): face-part masks.
 - **Teach by showing** (owner, 2026-11-03): the app should teach its features by showing them, not by manuals, and one question should open up many related features. Ideas:
   - Done 2026-11-05: tips while waiting and in the search box and preset filter, from FEATURES.md, used features skipped, both switches in Settings → General; each How to lists two or three related features to follow.
@@ -37,6 +37,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-11: **Kaleidoscope** and **Heat camera** effects, in the Trippy tab (Kaleidoscope, Mandala, Fractal, Heat camera, Contours) and Trip me: mirrored slices or a fractal fold, false colour by brightness (Ironbow, Rainbow, White hot, Black hot, Arctic, with repeating bands). Effect plugins can now ask for the whole photo at once (`"whole": true`), which a kaleidoscope needs
 - 2026-11-11: **the guides for AI agents, built in**: `amb docs` (list, one, or all written out with their links working), MCP resources for each, and Read in Connect an AI app; **Start Claude Code / Codex / Gemini CLI here** opens a terminal in the photo's folder with `amb` ready and starts the agent, told where the guides are (the command for each is data, in `ai-apps.json`)
 - 2026-11-11: **Clean up** (library → Organise ▾ → Clean up…): finds the photos you may not want (copies and alike pictures, the weaker frames of bursts, blurry, eyes closed, nearly black or blown out, rejected), each with why, and pages through them all marked to go; K keeps, D lets go, then the trash or Reject them. Picked or rated photos are left out. `amb cleanup DIR [--trash|--reject]`
 - 2026-11-11: a **man page** for `amb` (`amb man`, `docs/man/amb.1`), made from its help text, a test keeps it current; every idea in one ordered list, quick wins first, then the big things ([GAPS.md](GAPS.md) §0)

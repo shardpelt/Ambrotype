@@ -264,8 +264,10 @@ dependencies = [
  "amb-engine",
  "amb-export",
  "amb-plugin-duotone",
+ "amb-plugin-heat-camera",
  "amb-plugin-holographic",
  "amb-plugin-hue-trip",
+ "amb-plugin-kaleidoscope",
  "amb-plugin-light-leak",
  "amb-plugin-paint",
  "amb-plugin-sdk",
@@ -305,6 +307,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "amb-plugin-heat-camera"
+version = "1.0.0"
+dependencies = [
+ "amb-plugin-sdk",
+ "serde_json",
+]
+
+[[package]]
 name = "amb-plugin-holographic"
 version = "1.0.0"
 dependencies = [
@@ -314,6 +324,14 @@ dependencies = [
 
 [[package]]
 name = "amb-plugin-hue-trip"
+version = "1.0.0"
+dependencies = [
+ "amb-plugin-sdk",
+ "serde_json",
+]
+
+[[package]]
+name = "amb-plugin-kaleidoscope"
 version = "1.0.0"
 dependencies = [
  "amb-plugin-sdk",

@@ -4,11 +4,11 @@
   "name": "Trippy",
   "version": "1.0.0",
   "author": "Ambrotype",
-  "description": "A task for playing: psychedelic colour, rainbow foil, glowing edges and light leaks in one click, with the Effects panel open to tune them (each kept to the highlights, the shadows or a colour if you like, and pushed to 200 %). A task plugin: a tab with its own layout and buttons, and no code.",
+  "description": "A task for playing: psychedelic colour, rainbow foil, glowing edges, light leaks, kaleidoscopes and heat-camera colour in one click, with the Effects panel open to tune them (each kept to the highlights, the shadows or a colour if you like, and pushed to 200 %). A task plugin: a tab with its own layout and buttons, and no code.",
   "kind": "task",
   "task": {
     "label": "Trippy",
-    "hint": "Playful looks: psychedelic colour, rainbow foil, light leaks",
+    "hint": "Playful looks: psychedelic colour, rainbow foil, kaleidoscopes, heat camera",
     "layout": {
       "format": "ambrotype-layout/1",
       "name": "Trippy",
@@ -41,6 +41,11 @@
       { "label": "Light leak", "hint": "A warm glow from the edge", "effect": "light-leak" },
       { "label": "Edges", "hint": "Glowing edges on black, as Visualise shows them", "effect": "paint", "recipe": "Edges" },
       { "label": "Neon", "hint": "The edges glowing in their own colours", "effect": "paint", "recipe": "Neon" },
+      { "label": "Kaleidoscope", "hint": "Mirrored slices round the middle", "effect": "kaleidoscope", "recipe": "Six mirrors" },
+      { "label": "Mandala", "hint": "Twelve slices, closer in", "effect": "kaleidoscope", "recipe": "Mandala" },
+      { "label": "Fractal", "hint": "The photo folded into itself again and again", "effect": "kaleidoscope", "recipe": "Deep fractal" },
+      { "label": "Heat camera", "hint": "False colour by brightness, as a thermal camera sees", "effect": "heat-camera", "recipe": "Ironbow" },
+      { "label": "Contours", "hint": "Rainbow rings by brightness, like a contour map", "effect": "heat-camera", "recipe": "Contours" },
       { "label": "Acid highlights", "hint": "The bright parts only, pushed past full", "effect": "hue-trip", "recipe": "Acid", "where": "highlights", "amount": 160 },
       { "label": "Foil shadows", "hint": "Rainbow foil in the dark parts", "effect": "holographic", "recipe": "Foil sticker", "where": "shadows", "amount": 140 },
       { "label": "Back to normal", "hint": "The trip's effects off again", "command": "trip-clear" }

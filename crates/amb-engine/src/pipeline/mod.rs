@@ -359,6 +359,15 @@ fn early_reach(s: &DevelopSettings, full: (usize, usize)) -> usize {
 /// clamped to the output and aligned.
 fn plan(img: &CameraImage, s: &DevelopSettings, window: Rect, reach: usize) -> Rect {
     let (w, h) = output_size(img, s);
+    // An effect that reads the whole photo (a kaleidoscope) needs all of it.
+    if s.effects.iter().any(|e| e.whole()) {
+        return Rect {
+            x: 0,
+            y: 0,
+            width: w,
+            height: h,
+        };
+    }
     let early = early_reach(s, (w, h));
     let grow = |r: [f64; 4], by: f64| -> [f64; 4] { [r[0] - by, r[1] - by, r[2] + by, r[3] + by] };
     let mut area = grow(

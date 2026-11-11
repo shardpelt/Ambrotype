@@ -297,6 +297,14 @@ await t.step("Trippy, a task plugin: its tools put effects on and take them off"
   // Visualise's view as a look: Neon (Paint's edges glowing on black).
   t.click(tile("Neon"));
   await t.until("Neon", () => effectsOf(currentValue("amb:Effects")).find((e) => e.plugin === "paint")?.params.style === "Neon");
+  // A kaleidoscope (it reads the whole photo) and heat-camera colour,
+  // each rendered: the photo's warnings don't say "not rendered".
+  t.click(tile("Fractal"));
+  await t.until("Fractal", () => effectsOf(currentValue("amb:Effects")).find((e) => e.plugin === "kaleidoscope")?.params.style === "Fractal");
+  t.click(tile("Heat camera"));
+  await t.until("Heat camera", () => effectsOf(currentValue("amb:Effects")).some((e) => e.plugin === "heat-camera"));
+  await t.until("the preview", () => $("preview").complete && $("preview").naturalWidth > 0);
+  t.expect(!(ui.state?.not_rendered ?? []).some((u) => /kaleidoscope|heat-camera/.test(u)), `rendered: ${ui.state?.not_rendered}`);
   // Kept to the highlights and pushed past full; the Effects panel says
   // where, and hovering it shows where on the photo.
   t.click(tile("Acid highlights"));
@@ -320,7 +328,7 @@ await t.step("Trippy, a task plugin: its tools put effects on and take them off"
   await t.until("the preview off again", () => !Object.keys(ui.overrides ?? {}).length, 3000);
   t.expect(t.historyLength() === before && fxOn().length === 0, "nothing applied");
   // Back to where the edit was, for the steps after this one.
-  for (let i = 0; i < 5; i++) await run([{ cmd: "undo" }]);
+  for (let i = 0; i < 7; i++) await run([{ cmd: "undo" }]);
   await t.until("back at the Exposure step", () => document.querySelector("#history-list li.current .history-values")?.textContent.endsWith("→ +1.00"));
   // Not in the Appearance list: it is the task's.
   t.expect(TASK_LAYOUTS.has("plugin:trippy"), "kept out of Appearance");

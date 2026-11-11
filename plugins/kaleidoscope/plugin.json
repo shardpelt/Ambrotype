@@ -1,0 +1,28 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "kaleidoscope",
+  "name": "Kaleidoscope",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "The photo through a kaleidoscope: mirrored slices round a centre, like the toy, or a fractal that folds the photo into itself again and again. It reads the whole photo at once.",
+  "kind": "effect",
+  "effect": "pixels",
+  "whole": true,
+  "params": [
+    { "name": "style", "label": "Style", "type": "choice", "options": ["Mirrors", "Fractal"], "default": "Mirrors", "description": "Mirrors: slices round a centre. Fractal: folded into itself, again and again." },
+    { "name": "slices", "label": "Slices", "type": "number", "min": 2, "max": 32, "default": 6, "step": 1, "description": "How many mirrored slices go round." },
+    { "name": "turn", "label": "Turn", "type": "number", "min": 0, "max": 360, "default": 0, "step": 1, "description": "Which part of the photo the slices show, in degrees." },
+    { "name": "zoom", "label": "Zoom", "type": "number", "min": 25, "max": 400, "default": 100, "step": 1 },
+    { "name": "x", "label": "Centre across", "type": "number", "min": 0, "max": 100, "default": 50, "step": 1 },
+    { "name": "y", "label": "Centre down", "type": "number", "min": 0, "max": 100, "default": 50, "step": 1 },
+    { "name": "depth", "label": "Depth", "type": "number", "min": 1, "max": 8, "default": 4, "step": 1, "description": "Fractal: how many times it folds." },
+    { "name": "twist", "label": "Twist", "type": "number", "min": 0, "max": 180, "default": 20, "step": 1, "description": "Fractal: how much each fold turns, in degrees." }
+  ],
+  "recipes": [
+    { "name": "Six mirrors", "params": { "style": "Mirrors", "slices": 6, "zoom": 100 } },
+    { "name": "Mandala", "params": { "style": "Mirrors", "slices": 12, "zoom": 140, "turn": 30 } },
+    { "name": "Fractal", "params": { "style": "Fractal", "slices": 6, "depth": 4, "twist": 20 } },
+    { "name": "Deep fractal", "params": { "style": "Fractal", "slices": 8, "depth": 7, "twist": 35, "zoom": 80 } }
+  ],
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/kaleidoscope"
+}

@@ -44,6 +44,10 @@ pub struct Manifest {
     /// at neighbours, so strips it gets overlap by that much (0–256).
     #[serde(default, skip_serializing_if = "is_zero")]
     pub margin: u32,
+    /// For a pixel effect that reads pixels from anywhere in the photo (a
+    /// kaleidoscope): it gets the whole photo at once, not strips.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub whole: bool,
     #[serde(default)]
     pub permissions: Vec<Permission>,
     #[serde(default)]
@@ -235,8 +239,8 @@ impl Manifest {
         }
         match (self.kind.as_str(), self.effect.as_str()) {
             ("action", "") => {
-                if self.margin != 0 {
-                    return Err("\"margin\" is for pixel effects".into());
+                if self.margin != 0 || self.whole {
+                    return Err("\"margin\" and \"whole\" are for pixel effects".into());
                 }
             }
             ("action", _) => return Err("\"effect\" is for effect plugins".into()),
@@ -248,6 +252,9 @@ impl Manifest {
                 if self.margin > 256 || (self.effect == "color" && self.margin != 0) {
                     return Err("\"margin\" must be 0–256, and only for pixel effects".into());
                 }
+                if self.whole && self.effect == "color" {
+                    return Err("\"whole\" is for pixel effects".into());
+                }
             }
             ("effect", other) => {
                 return Err(format!(
@@ -255,7 +262,11 @@ impl Manifest {
                 ));
             }
             ("task", "") => {
-                if !self.permissions.is_empty() || !self.params.is_empty() || self.margin != 0 {
+                if !self.permissions.is_empty()
+                    || !self.params.is_empty()
+                    || self.margin != 0
+                    || self.whole
+                {
                     return Err(
                         "a task has no permissions, parameters or margin: its tools have them"
                             .into(),

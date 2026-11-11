@@ -17,7 +17,9 @@
 //! The engine doesn't run plugins itself (they live in `amb-plugin`, which
 //! builds on the engine): the app registers a [`Resolver`] that turns an
 //! entry into a colour table or a pixel function. Where none is registered,
-//! or a plugin isn't installed, the effect is listed as not rendered.
+//! or a plugin isn't installed, the effect is listed as not rendered. A pixel
+//! effect that reads the whole photo ([`Resolved::Whole`]) makes a render of
+//! part of the photo render all of it.
 
 use crate::buffer::{Image, Tile};
 use crate::lut::CubeLut;
@@ -127,6 +129,10 @@ pub enum Resolved {
     /// A colour table over sRGB-encoded values.
     Color(Arc<CubeLut>),
     Pixels(Arc<PixelFn>),
+    /// A pixel effect that needs the whole photo at once (a kaleidoscope
+    /// reads pixels from anywhere): a render of part of the photo renders
+    /// all of it while the edit has one.
+    Whole(Arc<PixelFn>),
 }
 
 /// Turns an entry into something to render, or says why it can't.
@@ -157,11 +163,19 @@ pub struct ActiveEffect {
     pub place: Option<Place>,
 }
 
+impl ActiveEffect {
+    /// It needs the whole photo at once.
+    pub fn whole(&self) -> bool {
+        matches!(self.what, Resolved::Whole(_))
+    }
+}
+
 impl std::fmt::Debug for ActiveEffect {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let kind = match self.what {
             Resolved::Color(_) => "color",
             Resolved::Pixels(_) => "pixels",
+            Resolved::Whole(_) => "whole",
         };
         f.debug_struct("ActiveEffect")
             .field("plugin", &self.plugin)
@@ -218,7 +232,7 @@ pub(crate) fn apply(out: &mut Image, e: &ActiveEffect, tile: &Tile) {
                 amount: f64::from(e.amount.min(1.0)),
             },
         ),
-        Resolved::Pixels(run) => {
+        Resolved::Pixels(run) | Resolved::Whole(run) => {
             let linear: Vec<f32> = out
                 .rgb
                 .chunks_exact(3)

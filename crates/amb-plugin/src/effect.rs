@@ -111,8 +111,33 @@ impl Plugin {
         }
         let margin = self.manifest.margin as usize;
         let base = self.effect_info(params, seed)?;
+        // The whole photo at once: one strip as tall as the photo.
+        let margin = if self.manifest.whole { height } else { margin };
         if let Some(crate::native::Native::Pixels(f)) = crate::native::of(self) {
             return native_pixels(f, &base, rgb, width, height, region, margin);
+        }
+        if self.manifest.whole {
+            let mut info = base.clone();
+            info["x"] = region.x.into();
+            info["y"] = region.y.into();
+            info["width"] = width.into();
+            info["height"] = height.into();
+            info["full_width"] = region.full_width.into();
+            info["full_height"] = region.full_height.into();
+            call(
+                self,
+                &info,
+                rgb,
+                FUEL + FUEL_PER_PIXEL * (width * height) as u64,
+            )?;
+            for v in rgb.iter_mut() {
+                *v = if v.is_finite() {
+                    v.clamp(0.0, 1.0)
+                } else {
+                    0.0
+                };
+            }
+            return Ok(());
         }
         let rows = (STRIP_FLOATS / (width * 3))
             .saturating_sub(2 * margin)
@@ -164,8 +189,13 @@ fn native_pixels(
     e.x = region.x as u32;
     e.full_width = region.full_width as u32;
     e.full_height = region.full_height as u32;
-    // Strips tall enough that the overlap stays a small part of the work.
-    let rows = (4 * margin).max(128);
+    // Strips tall enough that the overlap stays a small part of the work
+    // (one strip for an effect that needs the whole photo).
+    let rows = if margin >= height {
+        height
+    } else {
+        (4 * margin).max(128)
+    };
     let starts: Vec<usize> = (0..height).step_by(rows).collect();
     let src: &[f32] = rgb;
     let done: Vec<Result<Vec<f32>, String>> = starts
@@ -291,7 +321,8 @@ pub fn resolver(
         // Checked now, so a bad parameter shows as "not rendered".
         plugin.manifest.resolve_params(&e.params)?;
         let (params, seed) = (e.params.clone(), e.seed);
-        Ok(Resolved::Pixels(Arc::new(move |rgb, w, h, tile| {
+        let whole = plugin.manifest.whole;
+        let run: Arc<amb_engine::plugin_effects::PixelFn> = Arc::new(move |rgb, w, h, tile| {
             let region = Region {
                 x: tile.x,
                 y: tile.y,
@@ -299,6 +330,11 @@ pub fn resolver(
                 full_height: tile.full_height,
             };
             plugin.apply_pixels(&params, seed, rgb, w, h, region)
-        })))
+        });
+        Ok(if whole {
+            Resolved::Whole(run)
+        } else {
+            Resolved::Pixels(run)
+        })
     })
 }

@@ -47,7 +47,7 @@ const MAX_LOG_LINES: usize = 200;
 const LOG_IMPORT_CRASHES: bool = cfg!(all(windows, target_arch = "x86_64"));
 
 /// The plugins that come with Ambrotype: manifest, id and module.
-pub const BUILTIN: [(&str, &str, &[u8]); 10] = [
+pub const BUILTIN: [(&str, &str, &[u8]); 12] = [
     (
         include_str!("../../../plugins/auto-tone/plugin.json"),
         "auto-tone",
@@ -92,6 +92,16 @@ pub const BUILTIN: [(&str, &str, &[u8]); 10] = [
         include_str!("../../../plugins/tilt-shift/plugin.json"),
         "tilt-shift",
         include_bytes!("../../../plugins/tilt-shift/plugin.wasm"),
+    ),
+    (
+        include_str!("../../../plugins/kaleidoscope/plugin.json"),
+        "kaleidoscope",
+        include_bytes!("../../../plugins/kaleidoscope/plugin.wasm"),
+    ),
+    (
+        include_str!("../../../plugins/heat-camera/plugin.json"),
+        "heat-camera",
+        include_bytes!("../../../plugins/heat-camera/plugin.wasm"),
     ),
     // A task: a layout and buttons, no module.
     (

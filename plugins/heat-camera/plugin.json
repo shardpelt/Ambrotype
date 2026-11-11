@@ -1,0 +1,24 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "heat-camera",
+  "name": "Heat camera",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "False colour by brightness, as a thermal camera shows heat: dark is cold, bright is hot. Ironbow, rainbow, white hot, black hot or arctic. A colour effect, so it is as quick as a LUT.",
+  "kind": "effect",
+  "effect": "color",
+  "params": [
+    { "name": "palette", "label": "Palette", "type": "choice", "options": ["Ironbow", "Rainbow", "White hot", "Black hot", "Arctic"], "default": "Ironbow" },
+    { "name": "contrast", "label": "Contrast", "type": "number", "min": 0, "max": 200, "default": 100, "step": 1, "description": "How fast it goes from cold to hot." },
+    { "name": "shift", "label": "Warmer", "type": "number", "min": -50, "max": 50, "default": 0, "step": 1, "description": "Moves everything hotter or colder." },
+    { "name": "cycles", "label": "Bands", "type": "number", "min": 1, "max": 6, "default": 1, "step": 0.5, "description": "Past 1, the palette repeats: rings like a contour map." }
+  ],
+  "recipes": [
+    { "name": "Ironbow", "params": { "palette": "Ironbow" } },
+    { "name": "Rainbow", "params": { "palette": "Rainbow" } },
+    { "name": "White hot", "params": { "palette": "White hot", "contrast": 120 } },
+    { "name": "Arctic", "params": { "palette": "Arctic" } },
+    { "name": "Contours", "params": { "palette": "Rainbow", "cycles": 4 } }
+  ],
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/heat-camera"
+}

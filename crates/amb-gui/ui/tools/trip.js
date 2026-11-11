@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Trip me and Back to normal, the Trippy task's commands (the task itself
 // is a task plugin, plugins/trippy): a new random mix of psychedelic
-// colour, rainbow foil and light leaks each click, or the trip taken off.
+// colour, rainbow foil, heat-camera colour, light leaks and kaleidoscopes
+// each click, or the trip taken off.
 // They are ordinary effects (amb:Effects), so the Effects panel tunes them
 // and Undo takes each click back. Also task tools' effect buttons
 // (`setEffect`), for any task plugin.
 "use strict";
 
 // The plugins a trip is made of.
-const TRIP_PLUGINS = ["hue-trip", "holographic", "light-leak", "duotone", "paint"];
+const TRIP_PLUGINS = ["hue-trip", "holographic", "light-leak", "duotone", "paint", "kaleidoscope", "heat-camera"];
 
 function tripEffects() {
   return effectsOf(currentValue("amb:Effects"));
@@ -59,11 +60,14 @@ function tripRoll(lo, hi, step = 1) {
   return Math.round((lo + Math.random() * (hi - lo)) / step) * step;
 }
 
-// Trip me: psychedelic colour or foil (or both), now and then a light leak.
+// Trip me: psychedelic colour or foil (or both), or now and then heat-camera
+// colour; sometimes a light leak, sometimes a kaleidoscope.
 function tripMix() {
   const out = [];
   const pick = Math.random();
-  if (pick < 0.7) {
+  if (Math.random() < 0.12) {
+    out.push({ plugin: "heat-camera", params: { palette: ["Ironbow", "Rainbow", "Arctic"][tripRoll(0, 2)], contrast: tripRoll(80, 150), shift: tripRoll(-15, 15), cycles: Math.random() < 0.4 ? tripRoll(2, 5, 0.5) : 1 } });
+  } else if (pick < 0.7) {
     out.push({ plugin: "hue-trip", params: { turn: tripRoll(0, 360), cycles: tripRoll(0.3, 3, 0.1), colour: tripRoll(120, 260), bands: Math.random() < 0.25 ? tripRoll(3, 6) : 0, paint: tripRoll(20, 70) } });
   }
   if (pick > 0.4) {
@@ -71,6 +75,10 @@ function tripMix() {
   }
   if (Math.random() < 0.3) {
     out.push({ plugin: "light-leak", params: { strength: tripRoll(40, 80), size: tripRoll(25, 60), edge: ["Left", "Right", "Top", "Bottom"][tripRoll(0, 3)], colour: ["Amber", "Red", "Pink", "Gold"][tripRoll(0, 3)], variation: tripRoll(0, 99) } });
+  }
+  if (Math.random() < 0.2) {
+    const fractal = Math.random() < 0.4;
+    out.push({ plugin: "kaleidoscope", params: { style: fractal ? "Fractal" : "Mirrors", slices: tripRoll(3, 12), turn: tripRoll(0, 360), zoom: tripRoll(70, 160), x: 50, y: 50, depth: tripRoll(3, 7), twist: tripRoll(0, 60) } });
   }
   return out.map((e) => ({ ...e, amount: 100, seed: tripSeed() }));
 }

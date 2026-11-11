@@ -4,6 +4,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Waiting on the owner
 
+0. **Sample photos from your Fujifilm** (owner, 2026-11-11): a few raws if you have them, JPEGs are fine too (JPEGs show the library, Insights and the look presets well; raws are needed only for the raw pipeline and Convert raws). For the README screenshots and the sample photo.
 1. **v0.1.0:** try the editor on a Mac and once on Windows (the list is in NEXT.md's v0.1 checklist), then say go: tag, check the draft release, publish, and point the README at it.
 2. **Auto Density and Auto Grade on real negatives:** try both switches (Negative panel, beside Auto) on a roll. If they look right, they become Auto's default.
 3. **GPU speed:** export a 24 MP raw on the Mac with and without `AMB_GPU=off` (both are tiled or whole as the GPU's memory allows). And AI on the GPU: time Select object's first click and an AI Remove with and without `AMB_AI_GPU=off` (Settings → AI models says where they run).
@@ -24,6 +25,15 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Ideas for later
 
+- **From the owner, 2026-11-11:**
+  - **README screenshots again**, with the library (grid and Insights) and a Trippy edit among them; after the sample photos above.
+  - **Scan competitors and Reddit again** ([research/watchlist.md](research/watchlist.md)): what changed, ideas, complaints, and more projects to track; r/fuckadobe often has people's own projects.
+  - **Collage for every photo in the folder:** one layout applied to all the photos shown, as pages.
+  - **Places by smart match:** photos without GPS get a place from photos taken around the same time, or that look the same (the search model), that have one; shown to confirm before writing.
+  - **Clean-up organiser:** find what to delete (blurry, out of focus, duplicates, closed eyes, near-identical bursts), then one confirm window to page through them all before they go to the trash.
+  - **Agent docs in the app:** the AGENTS/docs for AI agents baked into the app (an exe has no .md files), reachable from a menu and `amb`; and an option to start an agent in a terminal to edit photos or the editor itself.
+  - **More trippy:** kaleidoscopes (mirror slices, fractal kaleidoscopes), a heat-camera look (false colour by brightness), as Trippy effects; and Trippy looks shareable (as presets with their effects, to the hub).
+  - **Trippy tools preview on hover**, as presets do (asked; doing now).
 - **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): face-part masks.
 - **Teach by showing** (owner, 2026-11-03): the app should teach its features by showing them, not by manuals, and one question should open up many related features. Ideas:
   - Done 2026-11-05: tips while waiting and in the search box and preset filter, from FEATURES.md, used features skipped, both switches in Settings → General; each How to lists two or three related features to follow.

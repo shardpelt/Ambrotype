@@ -1,0 +1,27 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Glass Dark",
+  "description": "Smoked, see-through panels floating over a dim wash of colour, with rounded corners and soft shadows; the photo stays the brightest thing on screen. The blur needs a reasonably recent graphics driver to stay smooth.",
+  "author": "Ambrotype",
+  "scheme": "dark",
+  "tokens": {
+    "bg": "#14161b",
+    "bg-deep": "#1e2026a6",
+    "viewer": "#101215",
+    "panel": "#26282fa8",
+    "panel-2": "#30333bd0",
+    "line": "#ffffff1f",
+    "hover": "#ffffff1a",
+    "tab-active": "#ffffff2b",
+    "text": "#f2f2f5",
+    "muted": "#b0b2b8",
+    "faint": "#74767d",
+    "accent": "#3a9bff",
+    "accent-ink": "#ffffff",
+    "danger": "#ff5a50",
+    "thumb": "#e8e8ea",
+    "track": "#ffffff26",
+    "radius": 10,
+    "glass": 24
+  }
+}

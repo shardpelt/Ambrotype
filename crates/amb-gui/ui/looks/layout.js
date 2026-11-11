@@ -33,6 +33,7 @@ function applyTheme(theme) {
     root.style.setProperty(`--${k}`, typeof v === "number" ? `${v}px` : v);
   }
   root.style.colorScheme = theme?.scheme === "light" ? "light" : "dark";
+  document.body.classList.toggle("glass", (theme?.tokens?.glass ?? 0) > 0);
   // Canvases read the tokens when they draw.
   requestAnimationFrame(redrawCanvases);
 }

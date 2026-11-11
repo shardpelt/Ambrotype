@@ -96,7 +96,7 @@ const BUILTIN_LAYOUTS: [(&str, &str); 15] = [
         include_str!("../../data/hub/looks/layouts/minimalism.json"),
     ),
 ];
-const BUILTIN_THEMES: [(&str, &str); 11] = [
+const BUILTIN_THEMES: [(&str, &str); 13] = [
     (
         "dark",
         include_str!("../../data/hub/looks/themes/dark.json"),
@@ -141,6 +141,14 @@ const BUILTIN_THEMES: [(&str, &str); 11] = [
         "minimalism",
         include_str!("../../data/hub/looks/themes/minimalism.json"),
     ),
+    (
+        "glass-light",
+        include_str!("../../data/hub/looks/themes/glass-light.json"),
+    ),
+    (
+        "glass-dark",
+        include_str!("../../data/hub/looks/themes/glass-dark.json"),
+    ),
 ];
 
 /// Toolbar buttons a layout can place; "|" is a separator. "looks" is always
@@ -182,8 +190,10 @@ pub const COLOR_TOKENS: [&str; 16] = [
     "thumb",
     "track",
 ];
-/// Number tokens (in px) with their allowed range.
-pub const NUMBER_TOKENS: [(&str, f64, f64); 1] = [("radius", 0.0, 16.0)];
+/// Number tokens (in px) with their allowed range. `glass` above 0 makes
+/// panels frosted glass, blurring what's behind them by that much; their
+/// colours then want some see-through (`#rrggbbaa`).
+pub const NUMBER_TOKENS: [(&str, f64, f64); 2] = [("radius", 0.0, 16.0), ("glass", 0.0, 40.0)];
 /// The widest a side column may be, in px.
 const MAX_WIDTH: f64 = 800.0;
 

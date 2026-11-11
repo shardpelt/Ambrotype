@@ -612,6 +612,114 @@
       "license": "CC0-1.0",
       "path": "presets/pop-art.xmp",
       "sha256": "c426bd1f94053cf0365f35e5bd50231db7dd6658431438d6eaad3941a577718c"
+    },
+    {
+      "id": "theme-glass-light",
+      "kind": "theme",
+      "name": "Glass Light",
+      "author": "Ambrotype",
+      "description": "Frosted, see-through panels floating over a soft wash of colour, with rounded corners and gentle shadows. Light and airy; the blur needs a reasonably recent graphics driver to stay smooth.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/glass-light.json",
+      "sha256": "36b2b825c35e35e47af701390549de6ebf3b4880870a9b7a7fee646601d8b00c"
+    },
+    {
+      "id": "theme-glass-dark",
+      "kind": "theme",
+      "name": "Glass Dark",
+      "author": "Ambrotype",
+      "description": "Smoked, see-through panels floating over a dim wash of colour, with rounded corners and soft shadows; the photo stays the brightest thing on screen. The blur needs a reasonably recent graphics driver to stay smooth.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/glass-dark.json",
+      "sha256": "13a47d738b9f937286dd997e7134e2cfc567437ee911583c21d092ec5dd5f67d"
+    },
+    {
+      "id": "preset-blue-hour",
+      "kind": "preset",
+      "name": "Blue Hour",
+      "group": "Film & mood",
+      "author": "Ambrotype",
+      "description": "Cool evening blues with warm lights kept glowing.",
+      "license": "CC0-1.0",
+      "path": "presets/blue-hour.xmp",
+      "sha256": "45e2a6bb7e43c1a4e7b2b08e48709668f7c258721b1c5467afc151f6a3c63b62"
+    },
+    {
+      "id": "preset-cinematic",
+      "kind": "preset",
+      "name": "Cinematic",
+      "group": "Film & mood",
+      "author": "Ambrotype",
+      "description": "Teal shadows, warm skin and a soft film curve, like a movie still.",
+      "license": "CC0-1.0",
+      "path": "presets/cinematic.xmp",
+      "sha256": "f66f835c7a7704fc37000dba511a1ce514319b00374dfb17e3b110332006da82"
+    },
+    {
+      "id": "preset-crisp-morning",
+      "kind": "preset",
+      "name": "Crisp Morning",
+      "group": "Everyday",
+      "author": "Ambrotype",
+      "description": "Clean, bright and a little cool, with clear detail.",
+      "license": "CC0-1.0",
+      "path": "presets/crisp-morning.xmp",
+      "sha256": "7e0c797a0d0d89916bf3840b4577fa27cca4400eeb7ab5dde090dab334b9b5f5"
+    },
+    {
+      "id": "preset-desert-dust",
+      "kind": "preset",
+      "name": "Desert Dust",
+      "group": "Film & mood",
+      "author": "Ambrotype",
+      "description": "Warm, dusty and faded, like sun-bleached prints.",
+      "license": "CC0-1.0",
+      "path": "presets/desert-dust.xmp",
+      "sha256": "25264c2e3d434a69f750d341079a74ab37a75f35c36a3083a1c91351c0133241"
+    },
+    {
+      "id": "preset-matte-portrait",
+      "kind": "preset",
+      "name": "Matte Portrait",
+      "group": "Everyday",
+      "author": "Ambrotype",
+      "description": "Soft skin, lifted blacks and gentle warmth for portraits.",
+      "license": "CC0-1.0",
+      "path": "presets/matte-portrait.xmp",
+      "sha256": "6f8f0ec0d3b80bdf452ba2619e686c9bffd72b6503fd4f64c1b2e94733064abf"
+    },
+    {
+      "id": "preset-noir",
+      "kind": "preset",
+      "name": "Noir",
+      "group": "Black & white",
+      "author": "Ambrotype",
+      "description": "Deep blacks and bright highlights, a hard-boiled black and white.",
+      "license": "CC0-1.0",
+      "path": "presets/noir.xmp",
+      "sha256": "c232cd5a6874f54ba483474a4bb88778663e92b028773bc1212bee15b469db5d"
+    },
+    {
+      "id": "preset-sunset-duotone",
+      "kind": "preset",
+      "name": "Sunset Duotone",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "Two inks, deep purple and gold, like a gig poster.",
+      "license": "CC0-1.0",
+      "path": "presets/sunset-duotone.xmp",
+      "sha256": "194ff25d31c79249a39ab250c72125edac8d46132c18093c3b793dc7ae01051a"
+    },
+    {
+      "id": "preset-vaporwave",
+      "kind": "preset",
+      "name": "Vaporwave",
+      "group": "Wild",
+      "author": "Ambrotype",
+      "description": "Pink and cyan, soft and dreamy, straight from a retro screen.",
+      "license": "CC0-1.0",
+      "path": "presets/vaporwave.xmp",
+      "sha256": "20dd28151be0a3028bebfebaa66d19f2fffee96c837d9c8aa522c6123e3b619e"
     }
   ]
 }

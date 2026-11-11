@@ -88,6 +88,60 @@ const MUTED: Style = Style {
     grain: (0.0, 15.0),
 };
 
+const CINEMATIC: Style = Style {
+    contrast: (10.0, 35.0),
+    highlights: (-50.0, -20.0),
+    shadows: (0.0, 30.0),
+    blacks: (-20.0, 10.0),
+    vibrance: (0.0, 25.0),
+    saturation: (-20.0, 0.0),
+    clarity: (0.0, 20.0),
+    // Teal shadows, so warm skin-toned highlights.
+    shadow_hues: &[190.0, 200.0, 210.0],
+    tint: (20.0, 45.0),
+    vignette: (-30.0, -10.0),
+    grain: (0.0, 15.0),
+};
+const DREAMY: Style = Style {
+    contrast: (-35.0, -10.0),
+    highlights: (-20.0, 10.0),
+    shadows: (25.0, 60.0),
+    blacks: (20.0, 50.0),
+    vibrance: (-10.0, 20.0),
+    saturation: (-25.0, 0.0),
+    clarity: (-45.0, -15.0),
+    shadow_hues: &[280.0, 300.0, 330.0, 200.0],
+    tint: (12.0, 35.0),
+    vignette: (-10.0, 10.0),
+    grain: (0.0, 10.0),
+};
+const VINTAGE: Style = Style {
+    contrast: (-20.0, 10.0),
+    highlights: (-40.0, -10.0),
+    shadows: (15.0, 40.0),
+    blacks: (25.0, 60.0),
+    vibrance: (-35.0, -10.0),
+    saturation: (-30.0, -5.0),
+    clarity: (-20.0, 0.0),
+    shadow_hues: &[160.0, 170.0, 230.0],
+    tint: (15.0, 40.0),
+    vignette: (-40.0, -15.0),
+    grain: (25.0, 55.0),
+};
+const PUNCHY: Style = Style {
+    contrast: (25.0, 55.0),
+    highlights: (-40.0, -10.0),
+    shadows: (10.0, 40.0),
+    blacks: (-35.0, -10.0),
+    vibrance: (25.0, 60.0),
+    saturation: (5.0, 25.0),
+    clarity: (15.0, 40.0),
+    shadow_hues: &[220.0, 240.0, 30.0, 160.0],
+    tint: (5.0, 25.0),
+    vignette: (-25.0, -5.0),
+    grain: (0.0, 0.0),
+};
+
 fn pick(rng: &mut Rng, (lo, hi): (f64, f64), strength: f64) -> f64 {
     (rng.range(lo, hi) * strength).round()
 }
@@ -98,6 +152,10 @@ pub fn run(input: Input) -> Result<Output, String> {
         "Moody" => ("Moody", MOODY),
         "Bright" => ("Bright", BRIGHT),
         "Muted" => ("Muted", MUTED),
+        "Cinematic" => ("Cinematic", CINEMATIC),
+        "Dreamy" => ("Dreamy", DREAMY),
+        "Vintage" => ("Vintage", VINTAGE),
+        "Punchy" => ("Punchy", PUNCHY),
         _ => ("Anything", ANYTHING),
     };
     let strength = input.number("strength") / 100.0;
@@ -165,7 +223,17 @@ mod tests {
     #[test]
     fn values_stay_in_range() {
         for seed in 0..200 {
-            for style in ["Anything", "Film", "Moody", "Bright", "Muted"] {
+            for style in [
+                "Anything",
+                "Film",
+                "Moody",
+                "Bright",
+                "Muted",
+                "Cinematic",
+                "Dreamy",
+                "Vintage",
+                "Punchy",
+            ] {
                 for c in run(input(seed, style)).unwrap().commands {
                     let v = c["value"].as_f64().unwrap();
                     let max = if c["name"].as_str().unwrap().ends_with("Hue") {

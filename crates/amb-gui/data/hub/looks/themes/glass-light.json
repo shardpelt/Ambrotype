@@ -1,0 +1,27 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Glass Light",
+  "description": "Frosted, see-through panels floating over a soft wash of colour, with rounded corners and gentle shadows. Light and airy; the blur needs a reasonably recent graphics driver to stay smooth.",
+  "author": "Ambrotype",
+  "scheme": "light",
+  "tokens": {
+    "bg": "#e8ecf4",
+    "bg-deep": "#ffffff8c",
+    "viewer": "#dfe3eb",
+    "panel": "#ffffffa8",
+    "panel-2": "#ffffffd0",
+    "line": "#1c1c1e24",
+    "hover": "#ffffffe0",
+    "tab-active": "#ffffffee",
+    "text": "#1d1d1f",
+    "muted": "#55575c",
+    "faint": "#8a8c92",
+    "accent": "#0a7cff",
+    "accent-ink": "#ffffff",
+    "danger": "#e5372d",
+    "thumb": "#ffffff",
+    "track": "#1c1c1e26",
+    "radius": 10,
+    "glass": 24
+  }
+}

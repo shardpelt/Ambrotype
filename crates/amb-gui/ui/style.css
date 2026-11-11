@@ -1481,3 +1481,34 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 .feature-row:hover, .feature-row:focus-visible { background: var(--panel-2); }
 .feature-want { color: var(--text); font-weight: 600; }
 .feature-how { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+/* Glass themes (a theme's "glass" token): frosted, see-through panels that
+   float over a soft wash of colour, and blur what scrolls under them. */
+body.glass {
+  background:
+    radial-gradient(60% 50% at 12% 8%, rgba(120, 170, 255, .45), transparent 70%),
+    radial-gradient(50% 45% at 88% 12%, rgba(255, 150, 200, .35), transparent 70%),
+    radial-gradient(60% 55% at 70% 95%, rgba(140, 230, 210, .35), transparent 70%),
+    var(--bg);
+}
+body.glass .topbar, body.glass .statusbar, body.glass .column, body.glass .filmstrip,
+body.glass .library-bar, body.glass .library, body.glass dialog, body.glass .ctx-menu,
+body.glass .toolbar-menu, body.glass .lib-menu > div, body.glass .task-bar {
+  -webkit-backdrop-filter: blur(var(--glass)) saturate(1.8);
+  backdrop-filter: blur(var(--glass)) saturate(1.8);
+}
+body.glass .topbar, body.glass .statusbar { background: var(--bg-deep); border-color: transparent; }
+body.glass .column, body.glass .filmstrip, body.glass .library {
+  margin: 6px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .28);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .12), inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+body.glass .library-bar { position: sticky; top: 0; z-index: 3; border-radius: 14px 14px 0 0; }
+body.glass .viewer { margin: 6px 0; border-radius: 14px; }
+body.glass .side-section { border-bottom-color: rgba(127, 127, 127, .18); }
+body.glass dialog, body.glass .ctx-menu {
+  border: 1px solid rgba(255, 255, 255, .3);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .25), inset 0 1px 0 rgba(255, 255, 255, .4);
+}
+body.glass dialog { border-radius: 18px; }
+body.glass .task-bar { border-radius: 999px; background: rgba(127, 127, 127, .14); }
+body.glass .task-bar button { border-radius: 999px; }

@@ -1,0 +1,21 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Written for the Ambrotype hub. CC0-1.0: free for anyone, any use. -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4" crs:Author="Ambrotype" crs:License="CC0-1.0"
+    crs:Temperature="-12"
+    crs:Contrast2012="+10"
+    crs:Highlights2012="-30"
+    crs:Shadows2012="+15"
+    crs:Vibrance="+15"
+    crs:ColorGradeShadowHue="220"
+    crs:ColorGradeShadowSat="25"
+    crs:ColorGradeHighlightHue="40"
+    crs:ColorGradeHighlightSat="15"
+    crs:PostCropVignetteAmount="-15">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Blue Hour</rdf:li></rdf:Alt></crs:Name>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Film &amp; mood</rdf:li></rdf:Alt></crs:Group>
+   <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Cool evening blues with warm lights kept glowing.</rdf:li></rdf:Alt></crs:Description>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

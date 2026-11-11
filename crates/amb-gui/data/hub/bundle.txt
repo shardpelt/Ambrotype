@@ -57,3 +57,13 @@ preset-oil-painting
 preset-cartoon
 preset-poster
 preset-pop-art
+theme-glass-light
+theme-glass-dark
+preset-blue-hour
+preset-cinematic
+preset-crisp-morning
+preset-desert-dust
+preset-matte-portrait
+preset-noir
+preset-sunset-duotone
+preset-vaporwave

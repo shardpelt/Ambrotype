@@ -161,6 +161,9 @@ Guess places for photos without one from the photos that have one: taken within 
 .B amb insights <PHOTO|DIR>... [\-\-by aperture,focal,shutter,iso,hour,camera,lens] [\-\-json]
 How the photos were shot: how often each aperture, focal length, shutter speed, ISO, hour, camera and lens comes up, and how many of each were kept (picked or 3 stars and up); then what the numbers suggest and challenges to try
 .TP
+.B amb cleanup <PHOTO|DIR>... [\-\-skip dupes,bursts,blurry,eyes,exposure,rejected] [\-\-alike 0\-20] [\-\-burst SECONDS] [\-\-trash|\-\-reject] [\-\-dry\-run] [\-\-json]
+The photos you may not want, each with why: copies and alike pictures (all but the best), the weaker frames of bursts, blurry, eyes closed, nearly black or blown out, rejected; photos picked or rated are left out. \-\-trash moves them to the trash, \-\-reject rejects them
+.TP
 .B amb duplicates <PHOTO|DIR>... [\-\-alike 0\-20] [\-\-burst SECONDS] [\-\-stack] [\-\-reject] [\-\-json]
 Same files, alike pictures (\-\-alike bits of 64 may differ, default 6; 0: same files only) and bursts (default 2 s), best first; \-\-stack stacks each group with the best on top, \-\-reject picks the best and rejects the rest
 .TP

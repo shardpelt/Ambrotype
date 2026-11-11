@@ -40,25 +40,24 @@ Every idea we have, in one place, from [WHATS-NEXT.md](WHATS-NEXT.md), the compe
 
 | # | Idea | Size | Why | From |
 |---|---|---|---|---|
-| 12 | **Clean-up organiser:** find what to delete (blurry, out of focus, duplicates, closed eyes, near-identical bursts; we have each test already), then one window to page through them all before they go to the trash | M | The most-asked library chore; it ties duplicates, Best in each burst and the trash together | Owner, 2026-11-11 |
-| 13 | **Agent docs in the app, and an agent in a terminal:** the AGENTS/docs for AI agents built into the binary (an exe has none), in a menu and `amb docs`; a button to start an agent in a terminal to edit photos or the editor | M | Our MCP and CLI are only useful when an agent knows them | Owner, 2026-11-11 |
-| 14 | **Kaleidoscope and heat-camera Trippy effects:** mirror slices, fractal kaleidoscopes, false colour by brightness | M | The playful side people share | Owner, 2026-11-11 (an iPad camera app) |
-| 15 | **Raw AI Denoise** (our own build, an open model) | L | The most-wanted AI tool after masks | WHATS-NEXT Up next 5; CalibRaw, LightCraft |
-| 16 | **Film lab:** a paper curve in density, film looks tied to stocks (halation, bloom, grain), the dust rectangle and a heal brush that searches its stroke, darkroom aids (density under the cursor, test strip, ring-around) | M each | Our niche: film shooters | WHATS-NEXT Up next 1–4 |
-| 17 | **Fade Restoration** for faded prints and slides, in the Film tab | M | Fits the film niche | NegPy 0.68 |
-| 18 | **Explain an edit:** Auto, Match look and the Assistant say why each change helps, on the photo | M | Teach by showing; Photon's AI Coach is its whole pitch | [research/17](research/17-competitors-2026.md) item 20 |
-| 19 | **Contact sheets as PDF, print layouts, film strips with edge print** | M | Print is a Lightroom module people miss | [research/17](research/17-competitors-2026.md) item 3 |
-| 20 | **Agents driving the whole UI**, not only edits (menus, tools, brush strokes), with undo | M | What LightCraft's MCP does | [research/17](research/17-competitors-2026.md) item 14 |
-| 21 | **A second window** for the photo (the viewer on a second screen) | M | Two-screen setups | RapidRAW 1.6.9 |
-| 22 | **MIDI controllers** for sliders | M | Hardware consoles (Loupedeck-style) | RAWmakase |
-| 23 | **Face-part masks** (eyes, lips, skin) | M | Portrait retouching | RapidRAW |
-| 24 | **Chromatic aberration removal without a lens profile** | M | Old and adapted lenses | CalibRaw ([research/17](research/17-competitors-2026.md) item 19) |
-| 25 | **Teach by showing, the rest:** a before/after strip per slider for this photo; a Lightroom switchers' lesson | M | Makes the app approachable | [design/future-ideas.md](design/future-ideas.md) |
-| 26 | **Surprise me with locks** (keep white balance and exposure), scope to one panel, "mutate" | S–M | Exploring around a look | [design/future-ideas.md](design/future-ideas.md) |
-| 27 | **Usage insights** (opt-in, local), and sending feedback straight from the app | M | Decide from real use | [design/future-ideas.md](design/future-ideas.md) |
-| 28 | **Focus stacking** (after HDR and panorama, as a merge) | L | Macro and product shots | Redlamp, RapidRAW |
-| 29 | **Generative fill and expand, relight, face reshaping** | L | Large models, outside our niche for now | Rembrandt, RapidRAW, Lightroom |
-| 30 | **A web build or a self-hosted browser library** | L | Reach without installing | LightCraft, Rembrandt |
+| 12 | **Agent docs in the app, and an agent in a terminal:** the AGENTS/docs for AI agents built into the binary (an exe has none), in a menu and `amb docs`; a button to start an agent in a terminal to edit photos or the editor | M | Our MCP and CLI are only useful when an agent knows them | Owner, 2026-11-11 |
+| 13 | **Kaleidoscope and heat-camera Trippy effects:** mirror slices, fractal kaleidoscopes, false colour by brightness | M | The playful side people share | Owner, 2026-11-11 (an iPad camera app) |
+| 14 | **Raw AI Denoise** (our own build, an open model) | L | The most-wanted AI tool after masks | WHATS-NEXT Up next 5; CalibRaw, LightCraft |
+| 15 | **Film lab:** a paper curve in density, film looks tied to stocks (halation, bloom, grain), the dust rectangle and a heal brush that searches its stroke, darkroom aids (density under the cursor, test strip, ring-around) | M each | Our niche: film shooters | WHATS-NEXT Up next 1–4 |
+| 16 | **Fade Restoration** for faded prints and slides, in the Film tab | M | Fits the film niche | NegPy 0.68 |
+| 17 | **Explain an edit:** Auto, Match look and the Assistant say why each change helps, on the photo | M | Teach by showing; Photon's AI Coach is its whole pitch | [research/17](research/17-competitors-2026.md) item 20 |
+| 18 | **Contact sheets as PDF, print layouts, film strips with edge print** | M | Print is a Lightroom module people miss | [research/17](research/17-competitors-2026.md) item 3 |
+| 19 | **Agents driving the whole UI**, not only edits (menus, tools, brush strokes), with undo | M | What LightCraft's MCP does | [research/17](research/17-competitors-2026.md) item 14 |
+| 20 | **A second window** for the photo (the viewer on a second screen) | M | Two-screen setups | RapidRAW 1.6.9 |
+| 21 | **MIDI controllers** for sliders | M | Hardware consoles (Loupedeck-style) | RAWmakase |
+| 22 | **Face-part masks** (eyes, lips, skin) | M | Portrait retouching | RapidRAW |
+| 23 | **Chromatic aberration removal without a lens profile** | M | Old and adapted lenses | CalibRaw ([research/17](research/17-competitors-2026.md) item 19) |
+| 24 | **Teach by showing, the rest:** a before/after strip per slider for this photo; a Lightroom switchers' lesson | M | Makes the app approachable | [design/future-ideas.md](design/future-ideas.md) |
+| 25 | **Surprise me with locks** (keep white balance and exposure), scope to one panel, "mutate" | S–M | Exploring around a look | [design/future-ideas.md](design/future-ideas.md) |
+| 26 | **Usage insights** (opt-in, local), and sending feedback straight from the app | M | Decide from real use | [design/future-ideas.md](design/future-ideas.md) |
+| 27 | **Focus stacking** (after HDR and panorama, as a merge) | L | Macro and product shots | Redlamp, RapidRAW |
+| 28 | **Generative fill and expand, relight, face reshaping** | L | Large models, outside our niche for now | Rembrandt, RapidRAW, Lightroom |
+| 29 | **A web build or a self-hosted browser library** | L | Reach without installing | LightCraft, Rembrandt |
 
 ## 1. Product, legal and process
 

@@ -371,6 +371,7 @@
       </details>
       <details id="lib-organise-menu" class="lib-menu"><summary title="Tidy up the photos shown (or the selected ones)">Organise ▾</summary>
         <div class="lib-menu-pop" id="lib-organise-pop">
+          <button type="button" id="lib-cleanup" class="small" title="Find photos you may not want (blurry, copies, weaker burst frames, eyes closed, black frames) and page through them before they go to the trash">Clean up…</button>
           <button type="button" id="lib-bursts" class="small" title="In each burst, mark the photo in focus with eyes open and dim the rest; then pick it and reject the rest, or stack them">Best in each burst</button>
           <button type="button" id="lib-duplicates" class="small" title="Find copies of the same photo, alike pictures and bursts; keep the best">Duplicates and bursts…</button>
           <hr>
@@ -930,6 +931,37 @@
       <button type="button" id="meta-save">Save template</button>
       <button type="button" id="meta-close">Close</button>
       <button type="button" id="meta-apply" class="primary">Apply</button>
+    </menu>
+  </dialog>
+
+  <!-- Clean up (library/cleanup.js). -->
+  <dialog id="clean-dialog" class="clean-dialog">
+    <h2>Clean up</h2>
+    <div id="clean-setup">
+      <p id="clean-scope" class="hint"></p>
+      <div id="clean-tests" class="clean-tests"></div>
+      <p><button type="button" id="clean-find" class="primary">Find</button> <span id="clean-status" class="hint"></span></p>
+    </div>
+    <div id="clean-review" class="clean-review" hidden>
+      <div class="clean-main">
+        <button type="button" id="clean-prev" class="small" title="The one before (←)">‹</button>
+        <figure class="clean-photo"><img id="clean-img" alt=""><figcaption><span id="clean-name"></span> · <b id="clean-mark"></b></figcaption></figure>
+        <button type="button" id="clean-next" class="small" title="The next one (→)">›</button>
+      </div>
+      <div class="clean-row">
+        <div id="clean-why" class="clean-why"></div>
+        <button type="button" id="clean-instead" class="clean-instead" title="The photo kept instead" hidden><img id="clean-instead-img" alt=""><span>Kept instead: <span id="clean-instead-name"></span></span></button>
+        <span class="grow"></span>
+        <button type="button" id="clean-keep" title="Keep this one (K)">Keep</button>
+        <button type="button" id="clean-delete" class="danger" title="Let this one go (D)">Delete</button>
+      </div>
+      <div id="clean-strip" class="clean-strip"></div>
+      <p class="hint"><span id="clean-count"></span>. K keeps, D lets go, ← → step; nothing goes until you say.</p>
+    </div>
+    <menu>
+      <button type="button" id="clean-reject" title="Flag them as rejected instead of deleting">Reject them</button>
+      <button type="button" id="clean-trash" class="danger">Move to the trash</button>
+      <button type="button" id="clean-close">Close</button>
     </menu>
   </dialog>
 
@@ -1820,6 +1852,7 @@
   <script src="library/place-picker.js"></script>
   <script src="library/insights.js"></script>
   <script src="library/duplicates.js"></script>
+  <script src="library/cleanup.js"></script>
   <script src="library/bursts.js"></script>
   <script src="library/organise.js"></script>
   <script src="library/import.js"></script>

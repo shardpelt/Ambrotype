@@ -401,6 +401,7 @@ function wireLibrary() {
   lib.wired = true;
   wireBrowse();
   wireDuplicates();
+  wireCleanup();
   wireBursts();
   wireOrganise();
   $("lib-settings").addEventListener("click", () => $("btn-settings").click());

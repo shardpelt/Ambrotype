@@ -146,6 +146,62 @@ pub(crate) async fn library_best_in_bursts(
     .map_err(|e| e.to_string())?
 }
 
+/// Clean up (library → Organise): the photos among `paths` that may go,
+/// each with why (amb_ops::cleanup). `skip` names tests to leave out.
+#[tauri::command]
+pub(crate) async fn library_cleanup(
+    paths: Vec<String>,
+    skip: Vec<String>,
+    app: tauri::AppHandle,
+) -> Res<Vec<amb_ops::cleanup::Suspect>> {
+    use tauri::Emitter;
+    let cache = app
+        .path()
+        .app_cache_dir()
+        .ok()
+        .map(|d| d.join("thumbnails"));
+    tauri::async_runtime::spawn_blocking(move || {
+        let photos: Vec<PathBuf> = paths.iter().map(PathBuf::from).collect();
+        let thumb = |p: &Path, edge: u32| {
+            amb_engine::raw::embedded_thumbnail(p, edge)
+                .ok()
+                .flatten()
+                .or_else(|| {
+                    let jpeg = folder::thumbnail(p, edge, cache.as_deref()).ok()?;
+                    amb_library::duplicates::decode_jpeg(&jpeg)
+                })
+        };
+        let on = |t: &str| !skip.iter().any(|s| s == t);
+        let options = amb_ops::cleanup::Options {
+            duplicates: on("dupes"),
+            burst_seconds: if on("bursts") { 2.0 } else { 0.0 },
+            blurry: on("blurry"),
+            eyes: on("eyes"),
+            exposure: on("exposure"),
+            rejected: on("rejected"),
+            ..Default::default()
+        };
+        let last = std::sync::Mutex::new(std::time::Instant::now());
+        let progress = |done: usize, total: usize| {
+            let mut last = last.lock().unwrap_or_else(|e| e.into_inner());
+            if done == total || last.elapsed().as_millis() > 200 {
+                *last = std::time::Instant::now();
+                let _ = app.emit("cleanup-progress", [done, total]);
+            }
+        };
+        Ok(amb_ops::cleanup::find(
+            folder::catalog(),
+            &photos,
+            options,
+            &|p| thumb(p, 256),
+            &|p| thumb(p, 1280),
+            &progress,
+        ))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[derive(Serialize)]
 pub(crate) struct RollSync {
     pub(crate) changed: Vec<String>,

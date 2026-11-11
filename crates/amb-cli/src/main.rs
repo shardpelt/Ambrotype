@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+mod cleanup;
 mod contact;
 mod convert;
 mod dust;
@@ -239,6 +240,13 @@ USAGE:
                                             length, shutter speed, ISO, hour, camera and lens comes up,
                                             and how many of each were kept (picked or 3 stars and up);
                                             then what the numbers suggest and challenges to try
+    amb cleanup <PHOTO|DIR>... [--skip dupes,bursts,blurry,eyes,exposure,rejected] [--alike 0-20]
+                [--burst SECONDS] [--trash|--reject] [--dry-run] [--json]
+                                            The photos you may not want, each with why: copies and alike
+                                            pictures (all but the best), the weaker frames of bursts,
+                                            blurry, eyes closed, nearly black or blown out, rejected;
+                                            photos picked or rated are left out. --trash moves them to
+                                            the trash, --reject rejects them
     amb duplicates <PHOTO|DIR>... [--alike 0-20] [--burst SECONDS] [--stack] [--reject] [--json]
                                             Same files, alike pictures (--alike bits of 64 may differ,
                                             default 6; 0: same files only) and bursts (default 2 s),
@@ -384,7 +392,7 @@ fn main() -> ExitCode {
             | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert"
             | "--replace" | "--guess" | "--stack" | "--reject" | "--shuffle" | "--window"
             | "--subfolders" | "--no-scenes" | "--no-odd" | "--own-midtone" | "--landscape"
-            | "--no-edits" | "--best-of-bursts" | "--no-captions" => {
+            | "--no-edits" | "--best-of-bursts" | "--no-captions" | "--trash" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -489,6 +497,7 @@ fn main() -> ExitCode {
             | "--burst"
             | "--by"
             | "--within"
+            | "--skip"
             | "--clock"
             | "--seconds"
             | "--effect" => match iter.next() {
@@ -558,6 +567,9 @@ fn main() -> ExitCode {
         }
         ["insights", places @ ..] if !places.is_empty() => {
             library::insights(places, &options, json)
+        }
+        ["cleanup", photos @ ..] if !photos.is_empty() => {
+            cleanup::cleanup(photos, &options, dry_run, json)
         }
         ["duplicates", photos @ ..] if !photos.is_empty() => {
             organise::duplicates(photos, &options, json)

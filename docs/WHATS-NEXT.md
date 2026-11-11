@@ -24,7 +24,6 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - **From the owner, 2026-11-11:**
   - **README screenshots again**, with the library (grid and Insights) and a Trippy edit among them; after the sample photos above.
   - **Collage for every photo in the folder:** one layout applied to all the photos shown, as pages.
-  - **Clean-up organiser:** find what to delete (blurry, out of focus, duplicates, closed eyes, near-identical bursts), then one confirm window to page through them all before they go to the trash.
   - **Agent docs in the app:** the AGENTS/docs for AI agents baked into the app (an exe has no .md files), reachable from a menu and `amb`; and an option to start an agent in a terminal to edit photos or the editor itself.
   - **More trippy:** kaleidoscopes (mirror slices, fractal kaleidoscopes), a heat-camera look (false colour by brightness), as Trippy effects; and Trippy looks shareable (as presets with their effects, to the hub).
 - **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): face-part masks.
@@ -39,6 +38,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-11: **Clean up** (library → Organise ▾ → Clean up…): finds the photos you may not want (copies and alike pictures, the weaker frames of bursts, blurry, eyes closed, nearly black or blown out, rejected), each with why, and pages through them all marked to go; K keeps, D lets go, then the trash or Reject them. Picked or rated photos are left out. `amb cleanup DIR [--trash|--reject]`
 - 2026-11-11: a **man page** for `amb` (`amb man`, `docs/man/amb.1`), made from its help text, a test keeps it current; every idea in one ordered list, quick wins first, then the big things ([GAPS.md](GAPS.md) §0)
 - 2026-11-11: **Pick…** a place on a map or by address or name (OpenStreetMap's Nominatim, asked only on a search): from the library panel's Place, the viewer's info panel and each guess in Guess places
 - 2026-11-11: a **Place** for each photo by hand: the library panel (for the selection) and the viewer's info panel take coordinates, degrees or a pasted Google Maps, OpenStreetMap or Apple Maps link; Map shows it, × clears it

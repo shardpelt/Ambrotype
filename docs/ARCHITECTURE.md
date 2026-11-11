@@ -22,7 +22,7 @@ About 104,000 lines of Rust, 735 Rust tests and 3 UI test scripts (89 steps). fm
 | `amb-gpu` | GPU preview and AI kernels | The pipeline's stages as wgpu compute shaders; `nn.rs` |
 | `amb-export` | Files out | `dng.rs`, `compare.rs`, `contact.rs`, `video.rs`, `embed.rs`, `border.rs`, `collage.rs`, `watermark.rs`, `fonts.rs` |
 | `amb-library` | Library operations on folders and sidecars | `catalog.rs`, `folder.rs`, `lrcat.rs`, `lightroom.rs`, `files.rs` |
-| `amb-ops` | Operations that render photos | `convert.rs`, `replay.rs`, `merge.rs`, `object.rs`, `snap.rs`, `burst.rs`, `dust.rs`, `negative.rs` |
+| `amb-ops` | Operations that render photos | `convert.rs`, `replay.rs`, `merge.rs`, `object.rs`, `snap.rs`, `burst.rs`, `cleanup.rs`, `dust.rs`, `negative.rs` |
 | `amb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
 | `amb-cli` | The `amb` tool | `src/mcp.rs`, `src/organise.rs` |
 | `amb-gui` | Desktop editor (Tauri 2) | Rust `Session` (open raw, undoable edits via `amb-protocol`, downscaled preview + histogram, sidecar save, export) behind Tauri commands; plain HTML/CSS/JS UI generated from the settings registry |
@@ -151,6 +151,7 @@ Operations on photos:
   - Each photo's sharpness on its faces or its sharpest part, and how open the eyes are, from faces found by `amb_engine::subject::faces` (YuNet in `amb-ai/src/faces.rs`).
   - Then ranked against the burst's other photos.
   - The library's Best in each burst, `ui/library/bursts.js`.
+- Clean up (`cleanup.rs`): duplicates and bursts from `amb_library::duplicates`, bursts ranked by `burst.rs`, then blurry (against a floor and the shoot's middle sharpness), eyes closed and black or white frames; photos picked or rated are left out. `amb cleanup`, the library's Clean up…, `ui/library/cleanup.js`.
 - `replay.rs` and `contact.rs` fill `amb-export`'s video and contact sheets (see `amb-export` above).
 
 ### `amb-cli`

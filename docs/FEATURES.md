@@ -86,6 +86,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Cull fast** → **Loupe** (E), **Compare** (C, side by side or above and below, either way round); auto-advance after a rating (**Settings** → General).
 - **Find a photo by what's in it ("dog on a beach")** → the library's Smart search, or right-click → Find similar photos. `amb search "dog on a beach" DIR`.
 - **Find photos by camera, lens, date, rating** → the library's filters and search. `amb catalog find`.
+- **Find what to delete (blurry, copies, eyes closed, black frames)** → library → Organise ▾ → **Clean up…**: choose the tests, **Find**, then page through each photo with why it may go (and the one kept instead); all are marked to go, **K** keeps one, **D** lets it go, ← → step; then **Move to the trash** or **Reject them**. Photos you picked or rated are left out. `amb cleanup DIR [--skip eyes,…] [--trash|--reject]`.
 - **Duplicates and bursts, keep the best** → Organise ▾ → duplicates and bursts. `amb duplicates DIR`.
 - **Sort into dated folders, move, rename** → Organise ▾ (sidecars go along). `amb sort`, `amb move`, `amb rename`.
 - **Delete** → to the system trash, with all its files. `amb trash`.

@@ -1297,6 +1297,32 @@ body.editing .dock-grip { display: none; }
 .map-thumb { flex: none; height: 64px; width: 64px; object-fit: cover; border-radius: 4px; border: 2px solid transparent; background: var(--panel); cursor: grab; }
 .map-thumb.selected { border-color: var(--accent); }
 
+/* Clean up (cleanup.js) */
+.clean-dialog { width: 900px; max-width: calc(100vw - 32px); }
+.clean-tests { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; margin: 8px 0; }
+.clean-tests label { margin: 0; }
+.clean-main { display: flex; align-items: center; gap: 8px; }
+.clean-photo { flex: 1; margin: 0; text-align: center; }
+.clean-photo img { width: 100%; height: 48vh; object-fit: contain; background: var(--bg-deep); display: block; border: 2px solid var(--danger); border-radius: 4px; }
+.clean-photo img:not([src]) { visibility: hidden; }
+.clean-photo figcaption { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.clean-photo b { color: var(--danger); font-weight: 600; }
+.clean-review.kept .clean-photo img { border-color: var(--accent); }
+.clean-review.kept .clean-photo b { color: var(--accent); }
+.clean-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+.clean-row .grow { flex: 1; }
+.clean-why { display: flex; gap: 6px; flex-wrap: wrap; }
+.clean-chip { font-size: 12px; padding: 2px 8px; border-radius: 9px; background: color-mix(in srgb, var(--danger) 30%, var(--panel)); }
+.clean-chip.same, .clean-chip.alike, .clean-chip.burst { background: color-mix(in srgb, var(--accent) 30%, var(--panel)); }
+.clean-instead { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 6px; }
+.clean-instead img { width: 48px; height: 36px; object-fit: contain; background: var(--bg-deep); }
+.clean-strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.clean-thumb { margin: 0; flex: none; width: 76px; cursor: pointer; border: 2px solid transparent; border-radius: 4px; position: relative; }
+.clean-thumb img { width: 100%; height: 54px; object-fit: contain; background: var(--bg-deep); display: block; opacity: .55; }
+.clean-thumb.kept img { opacity: 1; }
+.clean-thumb:not(.kept)::after { content: "✕"; position: absolute; top: 1px; right: 4px; color: var(--danger); font-size: 12px; text-shadow: 0 0 2px #000; }
+.clean-thumb.at { border-color: var(--text); }
+
 /* Duplicates and bursts (duplicates.js) */
 .dupes-dialog { width: 860px; max-width: calc(100vw - 32px); }
 .dupes-options { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

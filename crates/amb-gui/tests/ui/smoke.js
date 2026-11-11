@@ -42,6 +42,30 @@ await t.step("Undo all, beside Undo, goes back to the photo as it opened; Redo b
   await t.until("Exposure +1 again", () => t.setting("Exposure2012") === 1);
 });
 
+await t.step("zoom: a wheel or pinch zooms at the pointer, Ctrl − and 0; F is just the photo", async () => {
+  const v = $("viewer").getBoundingClientRect();
+  const wheel = (o) => $("viewer").dispatchEvent(new WheelEvent("wheel", { clientX: v.left + v.width / 2, clientY: v.top + v.height / 2, bubbles: true, cancelable: true, ...o }));
+  setZoom(false);
+  wheel({ deltaY: -100 });
+  t.expect(ui.zoom.on && ui.zoom.box, "a wheel notch zooms in");
+  const s1 = zoomScale();
+  wheel({ deltaY: -20, ctrlKey: true });
+  t.expect(zoomScale() > s1, `a pinch zooms further: ${s1} → ${zoomScale()}`);
+  t.key("Ctrl+-");
+  t.expect(zoomScale() < s1 * 1.3, "Ctrl − steps out");
+  t.key("Ctrl+0");
+  t.expect(!ui.zoom.on, "Ctrl 0 fits");
+  // Two fingers on a trackpad (small, sideways steps) don't zoom.
+  wheel({ deltaY: 3.5, deltaX: 1 });
+  t.expect(!ui.zoom.on, "a trackpad scroll doesn't zoom");
+  t.key("F");
+  await t.until("just the photo", () => document.body.classList.contains("photo-only"));
+  t.expect(!t.visible("#col-left") && t.visible("#viewer"), "the panels gone, the photo there");
+  t.key("Escape");
+  await t.until("back", () => !document.body.classList.contains("photo-only"));
+  await t.until("the preview again", () => !ui.busy, 20000).catch(() => {});
+});
+
 await t.step("search: the Search button opens it; a setting's name and a number sets it", async () => {
   t.expect(t.visible("#btn-search"), "a Search button in the toolbar");
   t.click("#btn-search");

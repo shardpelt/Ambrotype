@@ -42,7 +42,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Remove a spot, a blemish, a wire** → **Spot Removal** (Q): click it or brush over it; Heal, Clone or Remove (AI Remove fills it with what belongs there, once its model is installed in **Settings** → AI models: Big-LaMa for the best fills, MI-GAN for five times the speed).
 - **Undo, or go back to an earlier version** → **Undo** (Ctrl+Z); **Undo all** beside it (Ctrl+Alt+Z) goes back to the photo as it opened, and Redo brings the steps back; the History panel (click any step); Snapshots (+ keeps the edit under a name).
 - **See before and after** → **Before / after** (`\`): the photo as it was, with a bar at the side to drag in and see the edit; **Before / after split** (Y) puts the bar where you left it.
-- **Check focus and detail** → **Fit / 100%** (Z or Space, or Ctrl+scroll at the pointer), **Loupe** (I), or right-drag a box to zoom to it. Zoomed in, the arrow keys or a right-drag move the photo; all of these also work with Spot Removal or Masks open.
+- **Check focus and detail** → the mouse wheel or a trackpad pinch zooms at the pointer (Ctrl + and −, Ctrl 0 fits); **Fit / 100%** (Z or Space, or a click), **Loupe** (I), or right-drag a box to zoom to it. **F** shows just the photo, filling the screen (F or Esc comes back; the filmstrip is F6). Zoomed in, the arrow keys or a right-drag move the photo; all of these also work with Spot Removal or Masks open.
 - **Clipped whites or blacks** → **Clipping Overlay** (J).
 - **Will it print or look right elsewhere** → **Soft Proofing** (S) shows the export's colour space.
 - **Make the same edit on many photos** → **Copy Settings** (Ctrl+Shift+C) and **Paste Settings** on a selection (Ctrl+Shift+V), or **New Preset from This Photo** (Ctrl+Shift+N) and apply it.
@@ -96,7 +96,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **How do I shoot? (which apertures, focal lengths, lenses I really use)** → the library's **Insights** view (Shift+I): a chart per setting for the photos shown, the kept ones darker; camera chips narrow it, a click on a bar shows those photos; Split by camera, lens or year compares them. Above the charts, what the numbers suggest (a lens rarely used wide open, a zoom stuck at its end, shake) and challenges to try. `amb insights DIR`.
 - **Whole drives, also unplugged** → Folders → add a drive. `amb catalog add DIR`.
 - **Subfolders** → they're the first tiles in the grid; double-click a folder in the tree to open or close it.
-- **Slideshow** → **Slideshow** (Ctrl+Enter in the library), or **▶ Slideshow** beside **⛶ View** in the filmstrip's bar for the filmstrip's photos. The full-screen viewer is V, or F in the library. `amb slideshow DIR`.
+- **Slideshow** → **Slideshow** (Ctrl+Enter in the library), or **▶ Slideshow** beside **⛶ View** in the filmstrip's bar for the filmstrip's photos. The full-screen viewer is V, or F in the library; it zooms as Develop does (wheel, pinch, a click in the middle, a right-drag box, Ctrl + − 0). `amb slideshow DIR`.
 
 ## Getting photos out
 

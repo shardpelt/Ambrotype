@@ -12,11 +12,6 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Up next (in this order)
 
-0. **Zoom everywhere, as in other apps** (owner, 2026-11-11):
-   - Scroll wheel and trackpad pinch zoom the photo in every view: Develop, the library's loupe and the viewer. On a Mac, pinch reaches WebKit as Ctrl+wheel (or gesture events), so it should zoom, not scroll.
-   - The library's viewer (V/F) zooms like Develop: click and right-click, the wheel or trackpad, Ctrl+ and Ctrl−.
-   - In Develop, F toggles the photo full screen alone, to check it; F again comes back.
-   - Peek: the area round the pointer magnified. Either after hovering still for a moment, or a toggle (the loupe, I, already does this as a mode); to decide.
 1. **A paper curve in density** (Film lab item 9).
 2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
 3. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
@@ -45,6 +40,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-11: **Zoom as in other apps**: the mouse wheel and a trackpad pinch zoom at the pointer (Ctrl+wheel on Linux and Windows, WebKit's gesture events on a Mac), smoothly from the whole photo to 800 %, two fingers move a zoomed photo, Ctrl + − 0; the same in the library's viewer (and a click in its middle, a right-drag box). **F** in Develop: just the photo, full screen (the filmstrip moved to F6). Peek on hover stays the loupe (I) for now
 - 2026-11-11: Insights finished: **What it suggests** (a fast lens kept stopped down, a zoom often at its end, dark scenes and shake, midday light, the focal length you live at, where the keepers come from; each with its number), **Try this week** (challenges: the far side of your focal length, aperture and time of day), and **Split by** camera, lens or year (up to three side by side, as shares). Also in `amb insights`
 - 2026-11-11: the Trippy task's effect buttons show the photo with the effect while hovered, as presets do (the click gives what the hover showed); History's top edge and the line under Snapshots drag to size them again (double-click: usual size)
 - 2026-11-11: Back (‹, Alt+←) steps through the library's views and an Insights bar's filter, not only the tabs; Survey taken out of the library (compare and the grid do its job); Compare splits side by side or above and below, the candidate either way round; Grid comes back from Map and Timeline; presets apply to the original by default

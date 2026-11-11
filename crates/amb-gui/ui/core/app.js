@@ -333,6 +333,7 @@ async function init() {
   wireZones();
   wireBoxZoom();
   wireLoupe();
+  wirePeek();
   initLearn();
   wireKeyBadges();
   $("btn-save").addEventListener("click", save);

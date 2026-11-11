@@ -235,8 +235,19 @@ await t.step("View (V): the photos full screen, ← → and the screen's sides s
   const el = document.querySelector(".slideshow.viewer");
   el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth * 0.1, clientY: innerHeight / 2, bubbles: true }));
   await t.until("back by the left side", () => slides.at === 0);
+  await t.until("the picture", () => vzShown());
   el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth / 2, clientY: innerHeight / 2, bubbles: true }));
   t.expect(slides.on, "a click in the middle doesn't end it");
+  // It zooms in there, as Develop does; a wheel and Ctrl − zoom too; a click goes back.
+  t.expect(vz.s > 1 && el.classList.contains("zoomed"), `zoomed by a click: ${vz.s}`);
+  el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth / 2, clientY: innerHeight / 2, bubbles: true }));
+  t.expect(vz.s === 1, "back to the whole photo");
+  el.dispatchEvent(new WheelEvent("wheel", { deltaY: -100, deltaMode: 0, clientX: innerWidth / 3, clientY: innerHeight / 3, bubbles: true, cancelable: true }));
+  t.expect(Math.abs(vz.s - 1.25) < 0.01, `a wheel notch zooms: ${vz.s}`);
+  el.dispatchEvent(new WheelEvent("wheel", { deltaY: -10, ctrlKey: true, clientX: innerWidth / 2, clientY: innerHeight / 2, bubbles: true, cancelable: true }));
+  t.expect(vz.s > 1.3, `a pinch zooms: ${vz.s}`);
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "0", ctrlKey: true, bubbles: true }));
+  t.expect(vz.s === 1, "Ctrl 0 fits");
   el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth * 0.9, clientY: innerHeight / 2, bubbles: true }));
   await t.until("on by the right side", () => slides.at === 1);
   // Rating, flag and keywords while viewing; the info panel shows the shot.

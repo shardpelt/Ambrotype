@@ -1535,3 +1535,13 @@ body.glass dialog, body.glass .ctx-menu {
 body.glass dialog { border-radius: 18px; }
 body.glass .task-bar { border-radius: 999px; background: rgba(127, 127, 127, .14); }
 body.glass .task-bar button { border-radius: 999px; }
+
+/* F in Develop: just the photo (quickzoom.js togglePeek). */
+body.photo-only { grid-template-rows: 0 1fr 0 !important; }
+body.photo-only .topbar, body.photo-only .statusbar { visibility: hidden; border: 0; }
+body.photo-only .workspace { grid-template-columns: 0 minmax(0, 1fr) 0 !important; grid-template-rows: minmax(0, 1fr) 0 !important; }
+body.photo-only .column, body.photo-only .filmstrip, body.photo-only .side-edge, body.photo-only .topbar-edge, body.photo-only .toolbar-float { display: none !important; }
+body.photo-only .viewer { grid-column: 1 / -1; }
+.slideshow.viewer.zoomed .ss-img.shown { transition: none; cursor: grab; }
+.slideshow.viewer.zoomed.pointer.at-left, .slideshow.viewer.zoomed.pointer.at-right { cursor: grab; }
+.slideshow .zoom-box { position: fixed; z-index: 3; }

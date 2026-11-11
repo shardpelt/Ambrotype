@@ -287,7 +287,8 @@ function placeRegion(dx = pan.dx, dy = pan.dy) {
 
 // `box` (fractions of the photo's width and height) zooms to fit that area;
 // without it, 100%.
-function setZoom(on, u = 0.5, v = 0.5, box = null) {
+// `quiet`: show it at once but let the caller ask for the sharp render.
+function setZoom(on, u = 0.5, v = 0.5, box = null, quiet = false) {
   ui.zoom.on = on;
   ui.zoom.box = on ? box : null;
   ui.zoom.meta = null;
@@ -311,7 +312,44 @@ function setZoom(on, u = 0.5, v = 0.5, box = null) {
   }
   $("btn-zoom").classList.toggle("active", on);
   if (!on) for (const k of ["width", "height", "left", "top"]) img.style[k] = "";
-  requestPreview(false);
+  if (!quiet) requestPreview(false);
+}
+
+// Zoom by `factor` keeping the point under (x, y) where it is: a wheel,
+// a pinch, Ctrl + and −. From the whole photo up to 800 %; back at the
+// whole photo it fits again. The picture follows at once (the enlarged
+// preview), the sharp render once zooming stops.
+const zoomStep = { timer: null };
+function zoomBy(factor, x, y) {
+  if (!ui.info) return;
+  const v = $("viewer");
+  const r = v.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const known = ui.zoom.full?.path === ui.info.path ? ui.zoom.full : null;
+  const fw = ui.zoom.meta?.full_width ?? known?.w ?? ui.info.width ?? 1;
+  const fh = ui.zoom.meta?.full_height ?? known?.h ?? ui.info.height ?? 1;
+  const fit = Math.min((r.width * dpr) / fw, (r.height * dpr) / fh);
+  const s = ui.zoom.on ? zoomScale() : fit;
+  const s2 = Math.min(8, s * factor);
+  if (s2 <= fit * 1.02) {
+    if (ui.zoom.on) setZoom(false);
+    return;
+  }
+  // From the view's centre to the pointer, in screen pixels.
+  const dx = (x - (r.left + r.width / 2)) * dpr;
+  const dy = (y - (r.top + r.height / 2)) * dpr;
+  const [pu, pv] = ui.zoom.on ? [ui.zoom.cx + dx / (s * fw), ui.zoom.cy + dy / (s * fh)] : photoAt(x, y);
+  const box = { w: (r.width * dpr * 0.96) / (s2 * fw), h: (r.height * dpr * 0.96) / (s2 * fh) };
+  setZoom(true, pu - dx / (s2 * fw), pv - dy / (s2 * fh), box, true);
+  clearTimeout(zoomStep.timer);
+  zoomStep.timer = setTimeout(() => requestPreview(false), 160);
+  status(`Zoom ${zoomLabel()}`, true);
+}
+
+// Ctrl + and Ctrl − at the middle of the photo.
+function zoomKey(dir) {
+  const r = $("viewer").getBoundingClientRect();
+  zoomBy(dir > 0 ? 1.5 : 1 / 1.5, r.left + r.width / 2, r.top + r.height / 2);
 }
 
 // Move the 1:1 view by a share of the viewer's size (arrow keys), or by
@@ -435,37 +473,32 @@ function wireViewer() {
     // click that doesn't drag shows the menu (quickzoom.js).
     if (ui.info && (e.target === img || e.target === $("viewer")) && !boxZoomWanted()) photoMenu(e);
   });
-  // Scrolling (a mouse wheel or two fingers on a trackpad) moves the 1:1 view;
-  // on the whole photo, if Settings asks, it goes to the next or previous one.
+  // A mouse wheel or a pinch zooms at the pointer (core/pinch.js); two
+  // fingers on a trackpad move the zoomed view. On the whole photo, if
+  // Settings asks, scrolling goes to the next or previous photo instead.
   const wheel = { sum: 0, at: 0 };
-  $("viewer").addEventListener("wheel", (e) => {
-    // Ctrl (⌘) + scroll, or a pinch: zoom in at the pointer, or back out.
-    if ((e.ctrlKey || e.metaKey) && ui.info) {
-      e.preventDefault();
-      if (e.deltaY < 0 && !ui.zoom.on) {
-        const [u, v] = photoPoint(e);
-        setZoom(true, u, v);
-      } else if (e.deltaY > 0 && ui.zoom.on) {
-        setZoom(false);
-      }
-      return;
+  const stepping = (e) => {
+    if (ui.zoom.on || !wheelSteps() || keyContext() !== "main" || !ui.info) return false;
+    // One photo per notch, or per good swipe on a trackpad.
+    wheel.sum += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    if (Math.abs(wheel.sum) >= 50 && Date.now() - wheel.at > 250) {
+      wheel.at = Date.now();
+      stepPhoto(Math.sign(wheel.sum));
+      wheel.sum = 0;
     }
-    if (!ui.zoom.on && !e.ctrlKey && wheelSteps() && keyContext() === "main" && ui.info) {
-      e.preventDefault();
-      // One photo per notch, or per good swipe on a trackpad.
-      wheel.sum += e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-      if (Math.abs(wheel.sum) >= 50 && Date.now() - wheel.at > 250) {
-        wheel.at = Date.now();
-        stepPhoto(Math.sign(wheel.sum));
-        wheel.sum = 0;
-      }
-      return;
-    }
-    if (!ui.zoom.on || e.ctrlKey) return;
-    e.preventDefault();
-    const k = e.deltaMode === 1 ? 16 : 1;
-    panPixels(e.deltaX * k, e.deltaY * k);
-  }, { passive: false });
+    return true;
+  };
+  wirePinchZoom($("viewer"), {
+    active: () => Boolean(ui.info) && !qz.loupe,
+    zoom: zoomBy,
+    wheel: stepping,
+    scroll: (dx, dy, e) => {
+      if (stepping(e)) return true;
+      if (!ui.zoom.on) return false;
+      panPixels(dx, dy);
+      return true;
+    },
+  });
   img.addEventListener("mousedown", (e) => {
     if (e.button !== 0 || !ui.info) return;
     e.preventDefault();

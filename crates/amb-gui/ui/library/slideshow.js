@@ -11,7 +11,7 @@
 // The viewer (V, ⛶ View in the library bar or the filmstrip's) is the same
 // screen as an image viewer: no timer, starting at the photo you're on;
 // ← → (or Space, Home, End) and a click on the left or right of the screen
-// step; Esc ends it on the photo you got to (selected in the library,
+// step; it zooms as Develop does (library/viewer-zoom.js); Esc ends it on the photo you got to (selected in the library,
 // open in Develop). 0–5 rate, P X U flag, 6–9 label, as in the library;
 // I or a right-click opens the info panel: the shot (camera, lens,
 // exposure, date, size) and the rating, label, flag and keywords, to
@@ -81,8 +81,11 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
   };
   el.addEventListener("contextmenu", (e) => {
     e.preventDefault();
+    // A right-drag zoomed to a box (viewer-zoom.js); a right click opens the panel.
+    if (el.dataset.boxed) return delete el.dataset.boxed;
     if (viewer) toggleViewerInfo();
   });
+  if (viewer) wireViewerZoom(el);
   el.addEventListener("click", (e) => {
     if (e.target.closest(".ss-info")) return;
     const b = e.target.closest("[data-do]");
@@ -92,9 +95,14 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
       return;
     }
     if (!viewer) return endSlideshow();
-    const d = side(e);
+    // The end of a drag round a zoomed photo isn't a click.
+    if (el.dataset.dragged) return delete el.dataset.dragged;
+    const d = vz.s > 1 ? 0 : side(e);
     if (d) stepSlide(d);
-    else showSlideBar();
+    else {
+      vzClick(e);
+      showSlideBar();
+    }
   });
   el.addEventListener("mousemove", (e) => {
     showSlideBar();
@@ -336,6 +344,7 @@ function schedule() {
 }
 
 async function stepSlide(d) {
+  vzReset();
   await showSlide(slides.at + d);
   schedule();
 }
@@ -412,6 +421,7 @@ function wireSlideshow() {
     e.stopImmediatePropagation();
     const viewing = slides.settings.viewer;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (viewing && vzKey(e)) return;
     const turn = viewing && viewerTurnKey(e);
     if (turn) return viewerTurn(turn);
     if (viewing && !e.ctrlKey && !e.metaKey && !e.altKey) {

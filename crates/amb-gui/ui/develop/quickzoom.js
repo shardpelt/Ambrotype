@@ -186,3 +186,28 @@ function wireLoupe() {
     }
   }, true);
 }
+
+// F: just the photo, filling the screen, to look at it without the panels;
+// F again or Esc comes back. Zooming and moving round it work as usual.
+const peek = { on: false, wasFullscreen: true };
+async function togglePeek(on = !peek.on) {
+  if (on && !ui.info) return;
+  peek.on = on;
+  document.body.classList.toggle("photo-only", on);
+  if (on) {
+    peek.wasFullscreen = await invoke("window_fullscreen", { on: true }).catch(() => true);
+    status("Just the photo: F or Esc comes back", true);
+  } else if (!peek.wasFullscreen) {
+    invoke("window_fullscreen", { on: false }).catch(() => {});
+  }
+}
+
+function wirePeek() {
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && peek.on && !document.querySelector("dialog[open]")) {
+      e.stopPropagation();
+      e.preventDefault();
+      togglePeek(false);
+    }
+  }, true);
+}

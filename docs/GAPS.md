@@ -16,6 +16,50 @@ Each row has an item (area plus a one-line description), a tag, why it matters, 
 
 Project goal for ranking: faithful Lightroom preset compatibility, free, on Windows, macOS and Linux. The "Top 10 to close next" list at the end is ordered by impact on that goal.
 
+## 0. Ideas, in order: quick wins first, then the big things
+
+Every idea we have, in one place, from [WHATS-NEXT.md](WHATS-NEXT.md), the competitor surveys ([research/17](research/17-competitors-2026.md)) and the owner. Sizes: **S** a day or two, **M** about a week, **L** more. The sections below list what is missing or approximate in what already exists; this list is what doesn't exist yet. Done items move to WHATS-NEXT's "Recently done" and leave this list.
+
+**Quick wins (S), fastest first**
+
+| # | Idea | Size | Why | From |
+|---|---|---|---|---|
+| 1 | **Speed Edit:** hold a key and drag anywhere on the photo to change the setting last used | S | Faster than reaching for a slider; Touch (T) already does the area version | RapidRAW 1.6.9 |
+| 2 | **.cube LUTs as looks** (read and apply; we parse `.cube` already for the robustness tests) | S–M | Many free looks are LUTs | RAWmakase |
+| 3 | **A shareable before/after page** (one HTML file with a slider) | S | Easy to post; shows what the app does | [research/17](research/17-competitors-2026.md) item 2 |
+| 4 | **A published speed number for big libraries** (100k photos: open, filter, search) | S | "Free browsers stall on big libraries" is a top switching complaint | PhotoWorkout, 2026-11 |
+| 5 | **Collage for every photo shown:** one layout over all of them, as pages | S | Batch prints and sheets | Owner, 2026-11-11 |
+| 6 | **Trippy looks shareable:** a Trippy edit saved as a preset with its effects, and shared to the hub | S | Effects already live in `amb:Effects`; presets carry them | Owner, 2026-11-11 |
+| 7 | **README screenshots again**, with the library (grid, Insights) and a Trippy edit (after the owner's sample photos) | S | The first thing people see | Owner, 2026-11-11 |
+| 8 | **A blank-canvas layout editor:** start a layout from nothing | S | Custom layouts for the hub | [research/17](research/17-competitors-2026.md) item 8 |
+| 9 | **Basic's sliders past their ranges in Trippy** (our own extra settings) | S–M | More extreme playful looks | Owner, 2026-11-04 |
+| 10 | **Peek on hover:** the area round the pointer magnified after a moment still (the loupe, I, does it as a mode now) | S | Checking detail without zooming | Owner, 2026-11-11 |
+| 11 | **Reverse geocoding:** city and country names for placed photos (Lightroom fills these in) | S | Search and captions by place; the place search exists now | GAPS §3 (Map) |
+
+**The big things, most important first**
+
+| # | Idea | Size | Why | From |
+|---|---|---|---|---|
+| 12 | **Clean-up organiser:** find what to delete (blurry, out of focus, duplicates, closed eyes, near-identical bursts; we have each test already), then one window to page through them all before they go to the trash | M | The most-asked library chore; it ties duplicates, Best in each burst and the trash together | Owner, 2026-11-11 |
+| 13 | **Agent docs in the app, and an agent in a terminal:** the AGENTS/docs for AI agents built into the binary (an exe has none), in a menu and `amb docs`; a button to start an agent in a terminal to edit photos or the editor | M | Our MCP and CLI are only useful when an agent knows them | Owner, 2026-11-11 |
+| 14 | **Kaleidoscope and heat-camera Trippy effects:** mirror slices, fractal kaleidoscopes, false colour by brightness | M | The playful side people share | Owner, 2026-11-11 (an iPad camera app) |
+| 15 | **Raw AI Denoise** (our own build, an open model) | L | The most-wanted AI tool after masks | WHATS-NEXT Up next 5; CalibRaw, LightCraft |
+| 16 | **Film lab:** a paper curve in density, film looks tied to stocks (halation, bloom, grain), the dust rectangle and a heal brush that searches its stroke, darkroom aids (density under the cursor, test strip, ring-around) | M each | Our niche: film shooters | WHATS-NEXT Up next 1–4 |
+| 17 | **Fade Restoration** for faded prints and slides, in the Film tab | M | Fits the film niche | NegPy 0.68 |
+| 18 | **Explain an edit:** Auto, Match look and the Assistant say why each change helps, on the photo | M | Teach by showing; Photon's AI Coach is its whole pitch | [research/17](research/17-competitors-2026.md) item 20 |
+| 19 | **Contact sheets as PDF, print layouts, film strips with edge print** | M | Print is a Lightroom module people miss | [research/17](research/17-competitors-2026.md) item 3 |
+| 20 | **Agents driving the whole UI**, not only edits (menus, tools, brush strokes), with undo | M | What LightCraft's MCP does | [research/17](research/17-competitors-2026.md) item 14 |
+| 21 | **A second window** for the photo (the viewer on a second screen) | M | Two-screen setups | RapidRAW 1.6.9 |
+| 22 | **MIDI controllers** for sliders | M | Hardware consoles (Loupedeck-style) | RAWmakase |
+| 23 | **Face-part masks** (eyes, lips, skin) | M | Portrait retouching | RapidRAW |
+| 24 | **Chromatic aberration removal without a lens profile** | M | Old and adapted lenses | CalibRaw ([research/17](research/17-competitors-2026.md) item 19) |
+| 25 | **Teach by showing, the rest:** a before/after strip per slider for this photo; a Lightroom switchers' lesson | M | Makes the app approachable | [design/future-ideas.md](design/future-ideas.md) |
+| 26 | **Surprise me with locks** (keep white balance and exposure), scope to one panel, "mutate" | S–M | Exploring around a look | [design/future-ideas.md](design/future-ideas.md) |
+| 27 | **Usage insights** (opt-in, local), and sending feedback straight from the app | M | Decide from real use | [design/future-ideas.md](design/future-ideas.md) |
+| 28 | **Focus stacking** (after HDR and panorama, as a merge) | L | Macro and product shots | Redlamp, RapidRAW |
+| 29 | **Generative fill and expand, relight, face reshaping** | L | Large models, outside our niche for now | Rembrandt, RapidRAW, Lightroom |
+| 30 | **A web build or a self-hosted browser library** | L | Reach without installing | LightCraft, Rembrandt |
+
 ## 1. Product, legal and process
 
 | Item | Tag | Impact | Source |

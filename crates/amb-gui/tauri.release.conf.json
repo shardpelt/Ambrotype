@@ -21,6 +21,18 @@
     "homepage": "https://github.com/shardpelt/Ambrotype",
     "macOS": {
       "minimumSystemVersion": "11.0"
+    },
+    "linux": {
+      "deb": {
+        "files": {
+          "/usr/share/man/man1/amb.1": "../../docs/man/amb.1"
+        }
+      },
+      "rpm": {
+        "files": {
+          "/usr/share/man/man1/amb.1": "../../docs/man/amb.1"
+        }
+      }
     }
   }
 }

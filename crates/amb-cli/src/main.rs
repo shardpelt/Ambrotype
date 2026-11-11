@@ -13,6 +13,7 @@ mod fuji;
 mod lens;
 mod library;
 mod look;
+mod man;
 mod mcp;
 mod models;
 mod negative;
@@ -301,6 +302,7 @@ USAGE:
                                             syntax and the most used settings), or one group's settings
                                             one line each
     amb settings reference [--json]         Print the settings reference (docs/ai/settings-reference.md)
+    amb man                                 Print this help as a manual page (man amb; docs/man/amb.1)
     amb plugin new <DIR> [--name \"My plugin\"]
                                             Start a plugin project (Rust, built to WebAssembly;
                                             docs/ai/plugins.md)
@@ -742,6 +744,10 @@ fn main() -> ExitCode {
                     .join(", ")
             )),
         },
+        ["man"] => {
+            print!("{}", man::page(USAGE));
+            Ok(())
+        }
         ["settings", "reference"] => {
             if json {
                 print_json(&amb_protocol::reference::json())

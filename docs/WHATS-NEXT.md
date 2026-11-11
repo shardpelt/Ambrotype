@@ -39,6 +39,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-11: a **man page** for `amb` (`amb man`, `docs/man/amb.1`), made from its help text, a test keeps it current; every idea in one ordered list, quick wins first, then the big things ([GAPS.md](GAPS.md) §0)
 - 2026-11-11: **Pick…** a place on a map or by address or name (OpenStreetMap's Nominatim, asked only on a search): from the library panel's Place, the viewer's info panel and each guess in Guess places
 - 2026-11-11: a **Place** for each photo by hand: the library panel (for the selection) and the viewer's info panel take coordinates, degrees or a pasted Google Maps, OpenStreetMap or Apple Maps link; Map shows it, × clears it
 - 2026-11-11: **Guess places** (Map view, `amb place --guess`): photos without a place get one from those that have one, taken within 30 minutes (between two, on the line between them; a clock difference can be given) or looking the same (photos Smart search indexed); listed with why, confirmed before anything is written (`amb-library::places`)

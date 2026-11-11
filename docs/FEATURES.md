@@ -136,6 +136,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 
 ## Scripts and AI
 
+- **Every `amb` command** → `man amb` (installed with the Linux packages; `amb man` prints it anywhere, and `docs/man/amb.1` is a copy), or `amb` alone for the short help.
 - **Script edits** → `amb do PHOTO "exp=+0.5 con+=10"`, or `amb edit` with protocol commands ([ai/README.md](ai/README.md)).
 - **Let my AI assistant edit and organise** → **Connect an AI App** (Help menu; `amb mcp`) ([ai/mcp.md](ai/mcp.md)).
 - **Every setting, its range and meaning** → [ai/settings-reference.md](ai/settings-reference.md), `amb settings reference`.

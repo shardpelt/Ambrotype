@@ -443,22 +443,7 @@ pub(crate) fn headroom_limit(l: f32, d: f32) -> f32 {
     }
 }
 
-pub(crate) fn srgb_encode(v: f32) -> f32 {
-    if v <= 0.003_130_8 {
-        v * 12.92
-    } else {
-        1.055 * v.powf(1.0 / 2.4) - 0.055
-    }
-}
-
-pub(crate) fn srgb_decode(v: f32) -> f32 {
-    if v <= 0.040_45 {
-        v / 12.92
-    } else {
-        ((v + 0.055) / 1.055).powf(2.4)
-    }
-}
-
+pub(crate) use crate::math::{srgb_decode, srgb_encode};
 /// `(4 x (1 - x))^power` on 0..1 as a table: 1 at mid-grey, 0 at black and white.
 fn midtone_weight_lut(power: f32) -> Vec<f32> {
     let power = power.max(0.0);

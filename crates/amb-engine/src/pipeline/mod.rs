@@ -62,22 +62,7 @@ mod settings;
 pub use camera::*;
 pub use settings::*;
 
-pub(crate) fn srgb_encode(v: f32) -> f32 {
-    if v <= 0.003_130_8 {
-        v * 12.92
-    } else {
-        1.055 * v.powf(1.0 / 2.4) - 0.055
-    }
-}
-
-pub(crate) fn srgb_decode(v: f32) -> f32 {
-    if v <= 0.040_45 {
-        v / 12.92
-    } else {
-        ((v + 0.055) / 1.055).powf(2.4)
-    }
-}
-
+pub(crate) use crate::math::{srgb_decode, srgb_encode};
 pub(crate) const LUT: usize = 4096;
 
 fn lookup(lut: &[f32], v: f32) -> f32 {

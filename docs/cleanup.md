@@ -127,25 +127,6 @@ Do the groups in order, or any card whose "Precondition" line is met. Ids are st
 
 Work that was planned and not finished. Do these before the groups below.
 
-### 0a. One `srgb_encode` and one `lerp_position` in the engine
-Tier: medium        Risk: low
-Why: `srgb_encode` has four identical copies and `srgb_decode` three; `lerp_position` has two. A fix in one leaves the others behind.
-Files: `crates/amb-engine/src/math.rs`, `crates/amb-engine/src/detail/util.rs`, `crates/amb-engine/src/detail/color_nr.rs`, `crates/amb-engine/src/profile.rs`, `crates/amb-engine/src/local.rs`, `crates/amb-engine/src/pipeline/mod.rs`, `crates/amb-engine/src/dehaze.rs`.
-Steps:
-1. In `crates/amb-engine/src/math.rs` add, with a doc comment each, the bodies as they are in `pipeline/mod.rs` (`srgb_encode`: `if v <= 0.003_130_8 { v * 12.92 } else { 1.055 * v.powf(1.0 / 2.4) - 0.055 }`; `srgb_decode`: `if v <= 0.040_45 { v / 12.92 } else { ((v + 0.055) / 1.055).powf(2.4) }`), as `pub(crate) fn srgb_encode(v: f32) -> f32` and `pub(crate) fn srgb_decode(v: f32) -> f32`.
-2. Also move `lerp_position(i: usize, f: usize, n: usize) -> (usize, usize, f32)` into `math.rs` as `pub(crate)`, with its doc comment (copy from `crates/amb-engine/src/detail/util.rs`, where it is `pub(super)`). Its body is the same in `dehaze.rs`.
-3. Delete the copies: `srgb_encode` in `detail/util.rs`, `profile.rs`, `local.rs`, `pipeline/mod.rs`; `srgb_decode` in `detail/util.rs`, `local.rs`, `pipeline/mod.rs`; `lerp_position` in `detail/util.rs` and `dehaze.rs`. Leave `lerp_position_f` in `dehaze.rs` (a different function).
-4. Keep every old path working by re-exporting, not by editing callers:
-   - `detail/util.rs`: `pub(super) use crate::math::{lerp_position, srgb_decode, srgb_encode};`
-   - `local.rs` and `pipeline/mod.rs`: `pub(crate) use crate::math::{srgb_decode, srgb_encode};` (other files call `local::srgb_encode`, `crate::pipeline::srgb_encode`, `local::srgb_decode`).
-   - `profile.rs`: `use crate::math::srgb_encode;`
-   - `dehaze.rs`: `use crate::math::lerp_position;`
-5. Do not touch the GPU's WGSL copies (`crates/amb-gpu/src/shaders/common.wgsl`): the GPU tests check them against these.
-Don't: change a number; change visibility of any other item.
-Checks: the three cargo commands of "Checks"; `cargo test -p amb-engine -p amb-gpu` (the GPU tests compare against the CPU stages, and skip without an adapter).
-Done when: `grep -rn "fn srgb_encode\|fn srgb_decode\|fn lerp_position(" crates/amb-engine/src` prints only `math.rs`.
-Commit: `engine: one srgb_encode, srgb_decode and lerp_position`. Why: "They were pasted into four files."
-
 ### 0b. Drop the unused `serde` from `amb-lens`
 Tier: small        Risk: low
 Why: nothing in `crates/amb-lens/src` uses it.

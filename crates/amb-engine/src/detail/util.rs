@@ -189,13 +189,7 @@ pub(super) fn downscale(img: &Image, f: usize) -> (Vec<f32>, usize, usize) {
     (out, sw, sh)
 }
 
-/// Bilinear source position of full-resolution index `i` in a grid downscaled
-/// by `f` with `n` cells (cell centres aligned): (lower, upper, weight of upper).
-pub(super) fn lerp_position(i: usize, f: usize, n: usize) -> (usize, usize, f32) {
-    let s = ((i as f32 + 0.5) / f as f32 - 0.5).clamp(0.0, (n - 1) as f32);
-    let lo = (s.floor() as usize).min(n - 1);
-    (lo, (lo + 1).min(n - 1), s - lo as f32)
-}
+pub(super) use crate::math::{lerp_position, srgb_decode, srgb_encode};
 
 /// Change a pixel's linear luminance from `y` to `y_new` keeping its
 /// chromaticity: scale RGB by the ratio, capped at `max_ratio`; any further
@@ -284,22 +278,6 @@ impl Lut {
 
     pub(super) fn max(&self) -> f32 {
         self.0.iter().copied().fold(f32::NEG_INFINITY, f32::max)
-    }
-}
-
-pub(super) fn srgb_encode(v: f32) -> f32 {
-    if v <= 0.003_130_8 {
-        v * 12.92
-    } else {
-        1.055 * v.powf(1.0 / 2.4) - 0.055
-    }
-}
-
-pub(super) fn srgb_decode(v: f32) -> f32 {
-    if v <= 0.040_45 {
-        v / 12.92
-    } else {
-        ((v + 0.055) / 1.055).powf(2.4)
     }
 }
 

@@ -661,13 +661,7 @@ fn lerp_position_f(i: usize, f: f64, n: usize) -> (usize, usize, f32) {
     (lo, (lo + 1).min(n - 1), (s - lo as f64) as f32)
 }
 
-/// Bilinear source position of full-resolution index `i` in a grid downscaled
-/// by `f` with `n` cells (cell centres aligned): (lower, upper, weight of upper).
-fn lerp_position(i: usize, f: usize, n: usize) -> (usize, usize, f32) {
-    let s = ((i as f32 + 0.5) / f as f32 - 0.5).clamp(0.0, (n - 1) as f32);
-    let lo = (s.floor() as usize).min(n - 1);
-    (lo, (lo + 1).min(n - 1), s - lo as f32)
-}
+use crate::math::lerp_position;
 
 /// Transpose a `w × h` plane into `h × w`.
 fn transpose(src: &[f32], w: usize, h: usize) -> Vec<f32> {

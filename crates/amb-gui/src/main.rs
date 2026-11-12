@@ -9,6 +9,8 @@
 
 mod assistant;
 mod borders;
+#[cfg(test)]
+mod checks;
 mod collages;
 mod commands;
 mod config;

@@ -193,6 +193,7 @@ function wireTasks() {
   }));
   wireTaskSketches();
   wireNavMouse();
+  navWatchScroll();
   renderTasks();
 }
 
@@ -242,11 +243,12 @@ function wireTaskSketches() {
 }
 
 // Back to where you were before, as in a browser: the task (Library,
-// Develop, Film, Collage, …) and, in the library, its view (Grid,
-// Insights, Map…) and an Insights bar's filter. The arrow at the task
+// Develop, Film, Collage, …) and, in the library, the folder or collection
+// shown (with the grid's scroll), its view (Grid, Insights, Map…) and an
+// Insights bar's filter. The arrow at the task
 // bar's start, Alt+←, or the mouse's back button. Forward has no button
 // (room), only Alt+→ and the mouse's forward button.
-const nav = { back: [], fwd: [], at: null, hold: false };
+const nav = { back: [], fwd: [], at: null, hold: false, chain: Promise.resolve() };
 
 function navButtons() {
   const b = Object.assign(document.createElement("button"), { type: "button", id: "btn-nav-back", className: "task-nav", textContent: "‹", disabled: true });
@@ -258,10 +260,13 @@ function navButtons() {
 function navPlace() {
   const task = currentTask();
   const inLib = task === "library" && typeof lib !== "undefined" && lib.on;
-  const place = { task, view: inLib ? cull.view : null, pick: inLib ? lib.pick : null };
-  place.key = `${task}|${place.view ?? ""}|${place.pick?.words ?? ""}`;
+  const place = { task, view: inLib ? cull.view : null, pick: inLib ? lib.pick : null, scroll: 0 };
+  if (inLib) place.source = { dir: lib.dir, more: [...lib.more], collection: lib.collection, smart: lib.smart };
+  place.key = `${task}|${place.view ?? ""}|${place.pick?.words ?? ""}|${navSourceKey(place.source)}`;
   return place;
 }
+
+const navSourceKey = (s) => (s ? `${s.dir}|${s.more.join(",")}|${s.collection}|${s.smart}` : "");
 
 // Called whenever the place on screen may have changed: the task
 // (renderTasks), the library's view or its Insights filter.
@@ -275,12 +280,50 @@ function navNote() {
     nav.fwd = [];
   }
   nav.at = now;
+  navSetBack();
+}
+
+function navSetBack() {
   const b = $("btn-nav-back");
   if (b) b.disabled = !nav.back.length;
 }
 
-// -1 back, 1 forward.
-async function navGo(dir) {
+// Run `fn` without noting steps (the library loads its folder while it
+// opens); the place it ends in is noted once, after.
+async function navQuiet(fn) {
+  const was = nav.hold;
+  nav.hold = true;
+  try {
+    return await fn();
+  } finally {
+    nav.hold = was;
+    navNote();
+  }
+}
+
+// The grid's scroll, kept on the place shown so Back can return to it.
+function navWatchScroll() {
+  $("library-grid").addEventListener("scroll", (e) => {
+    if (nav.at && !nav.hold) nav.at.scroll = e.target.scrollTop;
+  }, { passive: true });
+}
+
+// Show the folder or collection of a place the library is not at.
+async function navShowSource(s) {
+  if (s.smart) await showSmartCollection(s.smart);
+  else if (s.collection) await showCollection(s.collection);
+  else if (s.dir) await loadLibrary(s.dir, s.more);
+  else return;
+  renderFolderTree();
+}
+
+// -1 back, 1 forward. One step at a time: a second press waits for the first.
+function navGo(dir) {
+  nav.chain = nav.chain.then(() => navStep(dir), () => navStep(dir));
+  return nav.chain;
+}
+
+async function navStep(dir) {
   const to = (dir < 0 ? nav.back : nav.fwd).pop();
   if (!to) return;
   (dir < 0 ? nav.fwd : nav.back).push(nav.at);
@@ -288,8 +331,11 @@ async function navGo(dir) {
   try {
     if (to.task !== currentTask()) await switchTask(to.task);
     if (to.task === "library" && lib.on) {
+      const s = to.source;
+      if (s && navSourceKey(s) !== navSourceKey(navPlace().source)) await navShowSource(s);
       if (lib.pick !== to.pick) setInsightFilter(to.pick, false);
       if (to.view && cull.view !== to.view) setLibraryView(to.view);
+      if (to.scroll) $("library-grid").scrollTop = to.scroll;
     }
   } finally {
     nav.hold = false;

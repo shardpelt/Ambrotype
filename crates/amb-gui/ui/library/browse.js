@@ -331,18 +331,9 @@ function fitMap(placed, box) {
 }
 
 function zoomMap(step, at = null) {
-  const m = browse.map;
   const el = document.querySelector("#library-view .map");
   if (!el) return;
-  const z = Math.min(18, Math.max(1, m.z + step));
-  if (z === m.z) return;
-  // Keep the point under `at` (or the middle) where it is.
-  const r = el.getBoundingClientRect();
-  const [ox, oy] = at ? [at[0] - r.left - r.width / 2, at[1] - r.top - r.height / 2] : [0, 0];
-  const k = 2 ** (z - m.z);
-  m.x = (m.x + ox) * k - ox;
-  m.y = (m.y + oy) * k - oy;
-  m.z = z;
+  mapZoomAt(browse.map, el, 2 ** step, ...(at ?? []));
   drawMap();
 }
 
@@ -351,27 +342,10 @@ function drawMap() {
   if (!el) return;
   const m = browse.map;
   const W = el.clientWidth, H = el.clientHeight;
+  mapClamp(m, H);
   const world = TILE * 2 ** m.z;
-  m.y = Math.min(world - H / 2, Math.max(H / 2, m.y));
-  if (world < H) m.y = world / 2;
   const left = m.x - W / 2, top = m.y - H / 2;
-  const tiles = el.querySelector(".map-tiles");
-  tiles.replaceChildren();
-  if (mapTilesWanted()) {
-    const n = 2 ** m.z;
-    for (let ty = Math.floor(top / TILE); ty * TILE < top + H; ty++) {
-      if (ty < 0 || ty >= n) continue;
-      for (let tx = Math.floor(left / TILE); tx * TILE < left + W; tx++) {
-        const img = Object.assign(document.createElement("img"), { alt: "", draggable: false });
-        img.src = `https://tile.openstreetmap.org/${m.z}/${((tx % n) + n) % n}/${ty}.png`;
-        img.style.left = `${tx * TILE - left}px`;
-        img.style.top = `${ty * TILE - top}px`;
-        tiles.append(img);
-      }
-    }
-  } else {
-    tiles.append(graticule(left, top, W, H, m.z));
-  }
+  mapTiles(el.querySelector(".map-tiles"), m, W, H);
   // Pins, grouped when closer than about a pin's width.
   const cell = 44;
   const groups = new Map();
@@ -439,7 +413,7 @@ function graticule(left, top, W, H, z) {
   svg.setAttribute("class", "map-grid");
   svg.setAttribute("width", W);
   svg.setAttribute("height", H);
-  const step = [30, 30, 20, 10, 5, 2, 1, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, 0.001, 0.0005][z] ?? 0.001;
+  const step = [30, 30, 20, 10, 5, 2, 1, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, 0.001, 0.0005][Math.round(z)] ?? 0.001;
   // Longitudes not wrapped, so a view across the date line still counts up.
   const world = TILE * 2 ** z;
   const lonLeft = (left / world) * 360 - 180, lonRight = ((left + W) / world) * 360 - 180;
@@ -478,27 +452,7 @@ function showPinPeek(pin, p) {
 const hidePinPeek = () => pinPeek?.remove();
 
 function wireMap(el) {
-  const m = browse.map;
-  let drag = null;
-  el.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || e.target.closest(".map-pin, .map-credit")) return;
-    drag = { x: e.clientX, y: e.clientY, mx: m.x, my: m.y };
-    el.setPointerCapture(e.pointerId);
-  });
-  el.addEventListener("pointermove", (e) => {
-    if (!drag) return;
-    m.x = drag.mx - (e.clientX - drag.x);
-    m.y = drag.my - (e.clientY - drag.y);
-    drawMap();
-  });
-  el.addEventListener("pointerup", () => { drag = null; });
-  el.addEventListener("wheel", (e) => {
-    e.preventDefault();
-    zoomMap(e.deltaY < 0 ? 1 : -1, [e.clientX, e.clientY]);
-  }, { passive: false });
-  el.addEventListener("dblclick", (e) => {
-    if (!e.target.closest(".map-pin")) zoomMap(1, [e.clientX, e.clientY]);
-  });
+  mapAttach(el, browse.map, { redraw: drawMap });
   // Dropped photos are placed where they land.
   el.addEventListener("dragover", (e) => {
     if (e.dataTransfer.types.includes("text/x-amb-photo")) e.preventDefault();

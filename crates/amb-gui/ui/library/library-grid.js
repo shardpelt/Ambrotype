@@ -199,6 +199,8 @@ function makeDirCell(d) {
 
 function renderLibrary() {
   applyView();
+  // A folder or collection shown is a step for Back.
+  navNote();
   if (lib.collection || lib.smart) lib.dirs = [];
   const grid = $("library-grid");
   lib.observer?.disconnect();

@@ -72,6 +72,41 @@ await t.step("a photo dropped on the map gets a place", async () => {
   t.expect(listed.find((q) => q.path === p.path)?.gps?.[0] === 48.8584, "the place in the sidecar");
 });
 
+await t.step("the Map moves with a drag, zooms with the wheel, and a short press does nothing", async () => {
+  const map = document.querySelector("#library-view .map");
+  const m = browse.map;
+  const r = map.getBoundingClientRect();
+  const at = (dx, dy) => ({ clientX: r.left + 40 + dx, clientY: r.top + 40 + dy, button: 0, pointerId: 7, bubbles: true });
+  const press = (dx, dy) => {
+    map.dispatchEvent(new PointerEvent("pointerdown", at(0, 0)));
+    map.dispatchEvent(new PointerEvent("pointermove", at(dx, dy)));
+    map.dispatchEvent(new PointerEvent("pointerup", at(dx, dy)));
+  };
+  const before = { z: m.z, x: m.x, y: m.y };
+  press(2, 1);
+  t.expect(m.z === before.z && m.x === before.x && m.y === before.y, "a press under 4 px changes nothing");
+  press(100, 0);
+  t.expect(Math.abs(m.x - (before.x - 100)) < 1, `dragged 100 px: ${before.x} to ${m.x}`);
+  const z0 = m.z;
+  const wheel = (init) => map.dispatchEvent(new WheelEvent("wheel", { clientX: r.left + 40, clientY: r.top + 40, bubbles: true, cancelable: true, ...init }));
+  const e = new WheelEvent("wheel", { deltaY: -100, clientX: r.left + 40, clientY: r.top + 40, bubbles: true, cancelable: true });
+  map.dispatchEvent(e);
+  t.expect(m.z > z0 && e.defaultPrevented, `the wheel zooms in: ${z0} to ${m.z}`);
+  const x0 = m.x;
+  wheel({ deltaX: 30, deltaY: 7.5 });
+  t.expect(m.x === x0 + 30, "two fingers on a trackpad move the map");
+  m.z = MAP_MAX_Z;
+  wheel({ deltaY: -100 });
+  t.expect(m.z <= MAP_MAX_Z, "zoom stops at the tile source's last level");
+  for (let i = 0; i < 40; i++) wheel({ deltaY: 100 });
+  t.expect(m.z >= MAP_MIN_Z && m.y >= map.clientHeight / 2 - 1 && m.y <= TILE * 2 ** m.z - map.clientHeight / 2 + 1, `zoomed out to the limit: ${m.z}`);
+  const z1 = m.z;
+  map.dispatchEvent(new MouseEvent("dblclick", { clientX: r.left + 40, clientY: r.top + 40, bubbles: true }));
+  t.expect(m.z > z1, "double-click zooms in");
+  t.key("Ctrl+=");
+  t.expect(m.z > z1 + 1, "Ctrl + zooms the Map");
+});
+
 await t.step("Guess places lists guesses to confirm, writing nothing until then", async () => {
   const flow = guessPlacesFlow();
   await t.until("the guesses", () => $("guess-dialog").open && !$("guess-count").textContent.startsWith("Guessing"));
@@ -167,6 +202,21 @@ await t.step("the grid shows the folders inside this one first, as tiles; a clic
   t.click(tile(".. (up)").querySelector(".lib-frame"));
   await t.until("back up", () => lib.dir.replace(/[\\/]+$/, "") === dir.replace(/[\\/]+$/, ""));
   await t.until("the more tile again", () => tile("more"));
+});
+
+await t.step("Back in the library returns to the folder before; Forward mirrors it", async () => {
+  const dir = lib.dir;
+  const same = (a, b) => a.replace(/[\\/]+$/, "") === b.replace(/[\\/]+$/, "");
+  const tile = (name) => [...$("library-grid").querySelectorAll(".lib-dir")].find((c) => c.querySelector(".lib-name").textContent === name);
+  t.click(tile("more").querySelector(".lib-frame"));
+  await t.until("the folder more", () => lib.dir.endsWith("more") && lib.photos.length === 1);
+  t.key("Alt+ArrowLeft");
+  await t.until(`the first folder again (${nav.back.length} back, at ${lib.dir})`, () => same(lib.dir, dir) && lib.photos.length > 0);
+  t.expect(libraryOn() && currentTask() === "library", "still the Library");
+  t.key("Alt+ArrowRight");
+  await t.until("the subfolder again", () => lib.dir.endsWith("more") && lib.photos.length === 1);
+  t.key("Alt+ArrowLeft");
+  await t.until("the first folder, as the next steps expect", () => same(lib.dir, dir) && tile("more"));
 });
 
 await t.step("double-click a folder in the tree: it closes, and opens again", async () => {

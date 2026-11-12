@@ -55,7 +55,7 @@ button.primary:hover:not(:disabled) { background: var(--accent); filter: brightn
 /* Remove object: the Spot panel's first button; the canvas draws a box. */
 .spot-object { width: 100%; margin: 2px 0 8px; padding: 8px; font-weight: 600; border-color: var(--accent); color: var(--accent); }
 .spot-object.active, .spot-object:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
-#spot-canvas.boxing { cursor: crosshair; }
+#spot-canvas.boxing { }
 /* A tip over the photo while something takes a moment (tips.js). */
 .tip-card { position: absolute; left: 16px; bottom: 16px; z-index: 30; max-width: 340px; padding: 10px 12px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--border); box-shadow: 0 6px 24px rgba(0,0,0,.35); }
 .tip-card p { margin: 0 0 4px; }
@@ -270,7 +270,7 @@ dialog menu button { white-space: nowrap; }
 .viewer.actual { place-items: start; }
 .viewer.actual img { max-width: none; max-height: none; position: absolute; left: 0; top: 0; cursor: grab; }
 .viewer.actual img.panning { cursor: grabbing; }
-.viewer.picking img { cursor: crosshair; }
+.viewer.picking img { }
 dialog label.wide { margin-top: 12px; }
 dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-top: 10px; color: var(--text); }
 .match-button { width: 100%; margin: 4px 0 6px; }
@@ -1024,7 +1024,7 @@ dialog .plugin-recipes label { flex-direction: row; align-items: center; gap: 8p
 .mask-panel .section-label { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #8a8f98); margin-top: 6px; }
 
 /* Spot removal (spots.js). */
-.spot-canvas { cursor: crosshair; }
+.spot-canvas { }
 .segmented button.active { background: var(--accent); color: var(--bg-deep, #111); }
 body.editing .column [data-item]:focus, body.editing .column [data-unit]:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
 .selected-setting { outline: 1px solid var(--accent); outline-offset: 1px; border-radius: 4px; }
@@ -1108,7 +1108,7 @@ button.tool-icon.active { color: var(--accent); }
 .viewer-loupe { position: absolute; z-index: 7; width: 220px; height: 220px; border-radius: 50%; overflow: hidden; pointer-events: none; border: 2px solid #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.5), 0 6px 20px rgb(0 0 0 / 0.5); background: #000 no-repeat; }
 .viewer-loupe img { position: absolute; max-width: none; max-height: none; box-shadow: none; }
 .loupe-mag { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; background: rgb(0 0 0 / 0.6); color: #fff; }
-.viewer.loupe-on img#preview { cursor: crosshair; }
+.viewer.loupe-on img#preview { }
 .zone-overlay { position: absolute; pointer-events: none; z-index: 5; }
 .zone-badge { position: absolute; z-index: 6; pointer-events: none; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 4px rgb(0 0 0 / 0.4); }
 .basics-dialog { width: min(820px, 94vw); }
@@ -1277,10 +1277,10 @@ body.editing .dock-grip { display: none; }
 .scrub-mark { position: absolute; right: 4px; font-size: 10px; color: var(--faint); transform: translateY(-1px); pointer-events: none; }
 .lib-scrubber:hover .scrub-mark { color: var(--muted); }
 .scrub-tip { position: absolute; right: 38px; transform: translateY(-50%); padding: 3px 8px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--accent); font-size: 12px; white-space: nowrap; pointer-events: none; }
-.library-view.map { overflow: hidden; }
+.library-view.map { overflow: hidden; overscroll-behavior: contain; }
 .map-bar { display: flex; align-items: center; gap: 6px; flex: none; }
-.map { position: relative; flex: 1; min-height: 200px; overflow: hidden; border-radius: var(--radius); background: var(--bg-deep); cursor: grab; outline: none; touch-action: none; }
-.map:active { cursor: grabbing; }
+.map { position: relative; flex: 1; min-height: 200px; overflow: hidden; border-radius: var(--radius); background: var(--bg-deep); cursor: grab; outline: none; touch-action: none; overscroll-behavior: contain; }
+.map.panning { cursor: grabbing; }
 .map-tiles, .map-pins { position: absolute; inset: 0; }
 .map-tiles img { position: absolute; width: 256px; height: 256px; user-select: none; }
 .map-grid line { stroke: var(--line); stroke-width: 1; }
@@ -1593,7 +1593,7 @@ body.photo-only .viewer { grid-column: 1 / -1; }
 .pick-results { display: flex; flex-direction: column; gap: 2px; max-height: 120px; overflow-y: auto; margin: 6px 0; }
 .pick-result { text-align: left; font-size: 12px; padding: 3px 6px; background: none; border-color: transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pick-result:hover, .pick-result.on { background: var(--hover); border-color: var(--line); }
-.pick-map { height: 360px; min-height: 0; flex: none; cursor: crosshair; }
+.pick-map { height: 360px; min-height: 0; flex: none; }
 .pick-pin { position: absolute; width: 18px; height: 18px; margin: -18px 0 0 -9px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); pointer-events: none; }
 .pick-zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 2px; }
 .pick-dialog menu { display: flex; gap: 8px; padding: 0; margin: 0; }

@@ -51,6 +51,11 @@ const VIEWER_BUTTONS = ["btn-before", "btn-crop", "btn-masks", "btn-spots", "btn
 async function toggleLibrary(on = !lib.on) {
   wireLibrary();
   if (on === lib.on) return;
+  // One step for Back, not one for the task and one for the folder loaded.
+  return navQuiet(() => showLibraryTask(on));
+}
+
+async function showLibraryTask(on) {
   if (on && ui.crop.on) await exitCrop(true);
   if (on) {
     exitMasks();

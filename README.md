@@ -51,6 +51,7 @@ All rendering models are our own ("ours, not Adobe's"): they're built by black-b
 | `amb-protocol` | Typed, undoable edit commands. Every edit from the editor, the CLI or an AI goes through them. |
 | `amb-export` | File writing, colour spaces with ICC profiles, resizing, sharpening, borders and watermarks. |
 | `amb-library` | Folders and sidecars: the catalogue cache, import, collections, places from GPX tracks, duplicates, moving and renaming with companions, Lightroom catalogue import. |
+| `amb-ops` | Operations that render photos: convert raws, edit replay, merges, objects, bursts, dust, negatives. |
 | `amb-ai` | Local AI models for masks: the list of freely licensed models, the user's choice per task, and their own models. |
 | `amb-lens` | Lens profiles from lensfun and the `.lcp` files you have. |
 | `amb-color` | Colour science: Temperature/Tint, colour spaces, ICC profiles, monitor colour. |

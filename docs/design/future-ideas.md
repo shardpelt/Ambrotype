@@ -1,38 +1,23 @@
 # Future ideas (backlog)
 
-Ideas for later, written down so they aren't lost. None of them are built. Each must go through `amb-protocol` commands like every other edit, so it is undoable and works the same from the GUI, CLI and AI.
+Ideas for later, written down so they aren't lost. Sections marked Built keep only what is still open. The order of work is in [ROADMAP.md](../ROADMAP.md). Each must go through `amb-protocol` commands like every other edit, so it is undoable and works the same from the GUI, CLI and AI.
 
 ## Auto button
 
-*Built 2026-10-12* (`amb_engine::matching::auto`, `amb auto`, Basic → Tone → Auto, WB → Auto): the tone sliders start from zero and the match solver stretches the photo's own tones so its black point, middle and white point move part of the way to L* 2, 46 and 95; white balance takes 60% of the cast out of the near-grey midtones, only when near-grey covers at least 15% of the photo (otherwise it keeps the camera's: in a scene with a little near-grey, water, dry grass or a metal ball, its colour says more about the object than the light). Not yet: Vibrance/Saturation, Shift-click per slider, calibration against Lightroom's Auto in the trial.
+*Built 2026-10-12:* see [FEATURES.md](../FEATURES.md).
 
-One click for a good starting point, like Lightroom's Auto.
-
-- **Auto (Basic):** set Exposure, Contrast, Highlights, Shadows, Whites, Blacks, Vibrance and Saturation from image statistics: histogram percentiles, mid-grey placement, clipping, and saturation of the brightest colours.
-  - Shift-click per slider: auto that slider only, like Lightroom's Shift+double-click.
-- **Auto white balance:** grey-world or white-patch estimate, written as Temperature/Tint.
-- **Per-panel autos:**
-  - Upright: auto, with the transform.
-  - Film negative: already exists, as `amb:NegativeAuto`.
-  - Lens profile: auto, already exists.
-- **How:**
-  - Output is ordinary slider values, so the user can see and tweak them.
-  - Deterministic: same photo, same result.
-  - Calibrate it against Lightroom's Auto with the trial-month data (record Lightroom's Auto values per test raw).
-- **AI variant (optional, bring-your-own-AI):** "Auto in the style of …" using the `amb match` look-matching solver.
+- Shift-click per slider: auto that slider only, like Lightroom's Shift+double-click.
+- Calibrate it against Lightroom's Auto with the trial-month data (record Lightroom's Auto values per test raw).
 
 ## Randomize button ("Surprise me")
 
-*Built 2026-10-12* (Presets → Surprise me…): six looks from the built-in Random look plugin, with consecutive seeds, rendered small without being applied; Style, Strength and Change colours re-roll them, More gives six new ones, and a click applies one as a single undo step named with its seed. Not yet: locks, scope per panel, "mutate" around the current look, film stocks, entering a seed.
+*Built 2026-10-12:* see [FEATURES.md](../FEATURES.md).
 
-Play with settings and discover looks you wouldn't have tried.
-
-- Pick random values within **sensible ranges** per slider. Use narrower ranges and a bias towards subtle values, not uniform over −100..100, so most results are usable.
-- **Scope:** all panels, or only the open panel. **Lock** sliders or groups so they're never changed (e.g. keep white balance and exposure).
-- **Strength slider:** subtle ↔ wild. **Seeded,** so a result can be reproduced and shared ("seed 4821").
-- **One undo step.** "Again" re-rolls, and "Save as preset" keeps a look you like.
-- **Variants:** "randomize colour only", "randomize film stock" (with negatives), or "mutate": small random changes around the current look, for iterative exploring.
-- Show a few random variants side by side as thumbnails, and click one to apply it.
+- Lock sliders or groups, so they're never changed (e.g. keep white balance and exposure).
+- Scope to the open panel only.
+- "Mutate": small random changes around the current look, for iterative exploring.
+- Film stocks, with negatives.
+- Enter a seed to reproduce a look.
 
 ## Tutorial mode
 

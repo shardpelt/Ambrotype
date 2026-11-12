@@ -1,5 +1,7 @@
 # 11 - Architecture Lessons from Large Open-Source Projects
 
+> Dated 2026-10-03 and kept as written. For what is current, see [ARCHITECTURE.md](../ARCHITECTURE.md).
+
 Status: research draft, 2026-10-03. Companion to [06](06-tech-stack-options.md) (stack options), [08](08-cross-platform-and-mobile.md) (platforms, licensing) and [SCOPE](../SCOPE.md) §5, §6, §9. The project owner asked: *how are big projects like this structured; what is best for frameworks and pipelines; what languages; VLC is a major efficient project to look towards; do we write in Rust?*
 
 > **Lead reviewer's note (2026-10-03).** This study was written while SCOPE still planned a future iOS app and an MPL-2.0 core with "gpl-pack" desktop crates. The owner has since **dropped mobile** and SCOPE now recommends **plain GPL-3.0-or-later**. So:

@@ -14,47 +14,11 @@ Each row has an item (area plus a one-line description), a tag, why it matters, 
 | **Question** | Needs a Lightroom measurement or a project decision before we can settle it. |
 | **Legal** | A legal, licensing or naming item. |
 
-Project goal for ranking: faithful Lightroom preset compatibility, free, on Windows, macOS and Linux. The "Top 10 to close next" list at the end is ordered by impact on that goal.
+Project goal for ranking: faithful Lightroom preset compatibility, free, on Windows, macOS and Linux. The order of work is in [ROADMAP.md](ROADMAP.md).
 
 ## 0. Ideas, in order: quick wins first, then the big things
 
-Every idea we have, in one place, from [WHATS-NEXT.md](WHATS-NEXT.md), the competitor surveys ([research/17](research/17-competitors-2026.md)) and the owner. Sizes: **S** a day or two, **M** about a week, **L** more. The sections below list what is missing or approximate in what already exists; this list is what doesn't exist yet. Done items move to WHATS-NEXT's "Recently done" and leave this list.
-
-**Quick wins (S), fastest first**
-
-| # | Idea | Size | Why | From |
-|---|---|---|---|---|
-| 1 | **Speed Edit:** hold a key and drag anywhere on the photo to change the setting last used | S | Faster than reaching for a slider; Touch (T) already does the area version | RapidRAW 1.6.9 |
-| 2 | **.cube LUTs as looks** (read and apply; we parse `.cube` already for the robustness tests) | S–M | Many free looks are LUTs | RAWmakase |
-| 3 | **A shareable before/after page** (one HTML file with a slider) | S | Easy to post; shows what the app does | [research/17](research/17-competitors-2026.md) item 2 |
-| 4 | **A published speed number for big libraries** (100k photos: open, filter, search) | S | "Free browsers stall on big libraries" is a top switching complaint | PhotoWorkout, 2026-11 |
-| 5 | **Collage for every photo shown:** one layout over all of them, as pages | S | Batch prints and sheets | Owner, 2026-11-11 |
-| 6 | **Trippy looks shareable:** a Trippy edit saved as a preset with its effects, and shared to the hub | S | Effects already live in `amb:Effects`; presets carry them | Owner, 2026-11-11 |
-| 7 | **README screenshots again**, with the library (grid, Insights) and a Trippy edit (after the owner's sample photos) | S | The first thing people see | Owner, 2026-11-11 |
-| 8 | **A blank-canvas layout editor:** start a layout from nothing | S | Custom layouts for the hub | [research/17](research/17-competitors-2026.md) item 8 |
-| 9 | **Basic's sliders past their ranges in Trippy** (our own extra settings) | S–M | More extreme playful looks | Owner, 2026-11-04 |
-| 10 | **Peek on hover:** the area round the pointer magnified after a moment still (the loupe, I, does it as a mode now) | S | Checking detail without zooming | Owner, 2026-11-11 |
-| 11 | **Reverse geocoding:** city and country names for placed photos (Lightroom fills these in) | S | Search and captions by place; the place search exists now | GAPS §3 (Map) |
-
-**The big things, most important first**
-
-| # | Idea | Size | Why | From |
-|---|---|---|---|---|
-| 12 | **Film lab:** a paper curve in density, film looks tied to stocks (halation, bloom, grain), the dust rectangle and a heal brush that searches its stroke, darkroom aids (density under the cursor, test strip, ring-around) | M each | Our niche: film shooters | WHATS-NEXT Up next 1–4 |
-| 13 | **Fade Restoration** for faded prints and slides, in the Film tab | M | Fits the film niche | NegPy 0.68 |
-| 14 | **Explain an edit:** Auto, Match look and the Assistant say why each change helps, on the photo | M | Teach by showing; Photon's AI Coach is its whole pitch | [research/17](research/17-competitors-2026.md) item 20 |
-| 15 | **Contact sheets as PDF, print layouts, film strips with edge print** | M | Print is a Lightroom module people miss | [research/17](research/17-competitors-2026.md) item 3 |
-| 16 | **Agents driving the whole UI**, not only edits (menus, tools, brush strokes), with undo | M | What LightCraft's MCP does | [research/17](research/17-competitors-2026.md) item 14 |
-| 17 | **A second window** for the photo (the viewer on a second screen) | M | Two-screen setups | RapidRAW 1.6.9 |
-| 18 | **MIDI controllers** for sliders | M | Hardware consoles (Loupedeck-style) | RAWmakase |
-| 19 | **Face-part masks** (eyes, lips, skin) | M | Portrait retouching | RapidRAW |
-| 20 | **Chromatic aberration removal without a lens profile** | M | Old and adapted lenses | CalibRaw ([research/17](research/17-competitors-2026.md) item 19) |
-| 21 | **Teach by showing, the rest:** a before/after strip per slider for this photo; a Lightroom switchers' lesson | M | Makes the app approachable | [design/future-ideas.md](design/future-ideas.md) |
-| 22 | **Surprise me with locks** (keep white balance and exposure), scope to one panel, "mutate" | S–M | Exploring around a look | [design/future-ideas.md](design/future-ideas.md) |
-| 23 | **Usage insights** (opt-in, local), and sending feedback straight from the app | M | Decide from real use | [design/future-ideas.md](design/future-ideas.md) |
-| 24 | **Focus stacking** (after HDR and panorama, as a merge) | L | Macro and product shots | Redlamp, RapidRAW |
-| 25 | **Generative fill and expand, relight, face reshaping** | L | Large models, outside our niche for now | Rembrandt, RapidRAW, Lightroom |
-| 26 | **A web build or a self-hosted browser library** | L | Reach without installing | LightCraft, Rembrandt |
+The ordered list of ideas moved to [ROADMAP.md](ROADMAP.md) on 2026-11-12: one table, each row with a size, who can build it and whether it is ready. This file keeps what is missing or approximate in what already exists.
 
 ## 1. Product, legal and process
 
@@ -102,7 +66,7 @@ Every idea we have, in one place, from [WHATS-NEXT.md](WHATS-NEXT.md), the compe
 |---|---|---|---|
 | File care (2026-10-23): the trash is tried on Linux only (macOS goes through the Finder, which asks once for permission; Windows through PowerShell). The keyword list is flat: Lightroom's keyword hierarchies (`lr:hierarchicalSubject`) are kept but not edited. Only the last move can be undone, and only while the app runs; photos can't be dragged onto a folder | Partial | Photo managers are expected to rename, reorganise and clean up safely | `crates/amb-library/src/files.rs`, `crates/amb-gui/ui/library/organise.js` |
 | Duplicates and bursts (2026-10-23): the fingerprint is a difference hash of the camera's preview, so it misses a heavily cropped or edited copy, and a photo without a preview needs a render first (slow the first time). Sharpness here is a whole-picture measure. Since 2026-11-05 Best in each burst ranks a burst by focus (sharpness on the faces, or the sharpest part) and open eyes (YuNet); there is no exposure score yet (culling help) | Partial | Bursts and re-imported cards are the bulk of a big library's clutter | `crates/amb-library/src/duplicates.rs` |
-| Timeline and Map (2026-10-23): no search for a place by name and no city or country names from places (reverse geocoding); pins can't be dragged to move them (place again instead). Map images need the network and OpenStreetMap's servers (turned on in Settings); off, the map is a grid | Partial | Lightroom's Map module finds places by name and fills in location metadata | `crates/amb-gui/ui/library/browse.js`, `crates/amb-library/src/gpx.rs` |
+| Timeline and Map (2026-10-23): no city or country names from places (reverse geocoding); pins can't be dragged to move them (place again instead). Map images need the network and OpenStreetMap's servers (turned on in Settings); off, the map is a grid | Partial | Lightroom's Map module finds places by name and fills in location metadata | `crates/amb-gui/ui/library/browse.js`, `crates/amb-library/src/gpx.rs` |
 | The catalogue (2026-10-15) is an index, not the library: the sidecars stay the truth, and smart collections still check every file when shown, while All photos trusts what was read last time (2026-10-19), so another app's sidecar change shows only once its folder is shown or indexed again. It knows only folders shown, scanned or added as library folders (the editor indexes them at start and when a drive comes back, not while running; offline photos show the thumbnails cached before); second-resolution file times (FAT/exFAT) can hide two quick same-size sidecar changes | Limit | Very large libraries open slower than Lightroom's | [design/library.md](design/library.md); `crates/amb-library/src/catalog.rs` |
 | Full-text search (FTS5) and queries straight from the catalogue, import by move or add, keyword hierarchy and synonyms, preview pyramid. Import by copy, collections, smart collections, stacks and virtual copies exist without a catalogue (files in folders; [design/library.md](design/library.md)) | Missing | Phase 3 scope | [SCOPE.md](SCOPE.md):321, 326 |
 | `.lrcat` migration exists (2026-10-13: `amb lrcat import`, the library's From Lightroom…; [design/library.md](design/library.md)), but is tested only on synthetic catalogues in the documented layout: it needs a run on real Lightroom Classic catalogues of several versions. Smart collections are named, not converted; publish services, edit history and snapshots, face regions and location are not moved; keyword hierarchies come as plain keywords. Opened in place (2026-11-06) it is read, never written: changes made here reach Lightroom only through sidecars (Read Metadata from Files), virtual copies aren't shown, moved photos aren't remapped, and while Lightroom has it open, changes it hasn't saved into the file aren't seen | Partial | The main thing holding people in Lightroom | [SCOPE.md](SCOPE.md):313, 322; [research/06](research/06-tech-stack-options.md):425 |
@@ -342,18 +306,3 @@ From the structure review of 2026-11-09 ([design/structure.md](design/structure.
 |---|---|---|---|
 | Some files are past the size budget (800 production lines for Rust, 700 for a UI script); `OVER_BUDGET` in `crates/amb-cli/tests/code_size.rs` lists them, each held at its size until it is split | Limit | People and agents read far more than they change; merge conflicts gather there | [cleanup.md](cleanup.md), phase 2 |
 | The UI's 78 scripts (in folders by part since 2026-11-09) share one global scope, so the order `index.html` loads them in matters; the helpers they all use are in `ui/core/core.js`, which loads first. Two tests check that each script loads once and each top-level name is declared once | Limit | A script's top-level code may only use names from scripts loaded before it | [design/structure.md](design/structure.md), "Not now" |
-
-## Top 10 to close next
-
-Chosen by impact on the main goal: faithful Lightroom preset compatibility, free, cross-platform.
-
-1. **Run the Lightroom measurement month and fit the `Calibration` constants.** Every one of the 157 rendered Camera Raw tags is "approx"; nothing has been fitted, so no fidelity claim can be made. Finish the prerequisites first (interaction sidecars, run sheet, CC0 raws, `dng_validate` check).
-2. **Replace the placeholder base look and add camera profiles.** Every preset renders through the profile, and the placeholder ACES-fit curve is not Adobe's; read the user's own DCPs in place, fit substitute profiles, and decode `Look` LUTs.
-3. ~~**Local, edge-aware Highlights and Shadows.**~~ Done 2026-10-08; their strengths still need fitting (item 1).
-4. ~~**Masks and local adjustments (linear, radial, brush, range).**~~ Done 2026-10-08; their fall-offs and strengths still need fitting (item 1).
-5. ~~**Transform and Upright**~~ (done 2026-10-10). Guided Upright done our way (2026-10-12). Left: verifying the crop, Transform and Upright against Lightroom.
-6. **Finish the single-photo GUI editor.** Zoom/1:1, point curve, colour wheels, WB picker, clipping, the crop tool, layouts/themes and editor mode are done; installers are built by the Release workflow (2026-10-10, see section 15). What remains is trying the editor on a Mac and on Windows before v0.1.0 ([WHATS-NEXT.md](WHATS-NEXT.md), "Waiting on the owner").
-7. **Fix the preset path: measure Amount, ~~honour `Enable*` toggles~~ (2026-10-12), ~~read PV2003/PV2010 tags~~ (approximately, 2026-10-12).** These decide whether purchased presets apply correctly; run `amb preset census` on real collections to rank what else matters.
-8. ~~**Calibration panel**~~ (done 2026-10-10, unfitted). Left: **Point Color**, which waits for a Lightroom sample of `PointColors`.
-9. ~~**Clear the pre-public checklist: add `LICENSE`, keep notes on Adobe sources in our own words, pick the name.**~~ Done 2026-10-11 ([legal.md](legal.md)). Left: re-run the copy check before each release, and the counsel review before 1.0.
-10. **A GPU backend with tiling and caching for an interactive preview path.** A full render is 3.5-4 s on 4 cores; the GUI needs interactive latency, which is Lightroom's top complaint. Previews and full-size exports now run on the GPU (`amb-gpu`), exports in tiles (2026-11-02), and the 100% view renders only the tiles it shows (on the CPU, `render_region`). Still missing: caching per stage, and GPU versions of the steps that run on the CPU inside the GPU preview ([ARCHITECTURE.md](ARCHITECTURE.md), "What does not exist yet").

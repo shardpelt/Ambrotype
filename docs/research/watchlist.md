@@ -7,6 +7,8 @@ Projects we surveyed, with where they stood when we last looked, so we can check
 2. Add anything new worth taking to that project's survey, and to [WHATS-NEXT.md](../WHATS-NEXT.md) if it's worth doing soon.
 3. Add a new project here when a survey brings one in.
 
+Each recheck also looks for projects we don't track yet (new open-source raw editors and Lightroom alternatives named in the places we read) and adds them to the list.
+
 Reddit can't be read by our tools (blocked for automated readers since 2026-11); ideas from there come by hand (paste a thread) or via pixls.us, Hacker News and articles that quote it.
 
 ## Open source

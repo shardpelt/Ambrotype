@@ -9,7 +9,7 @@ The target architecture is in [SCOPE.md §9](SCOPE.md). This page describes what
 
 ## Crates
 
-About 104,000 lines of Rust, 735 Rust tests and 3 UI test scripts (89 steps). fmt, clippy and tests run in CI on Linux, Windows, macOS and Windows on ARM; the UI scripts on Linux. Sizes, the crate graph and the size budget: [design/structure.md](design/structure.md).
+For the size of the code, run `python3 tools/code-metrics.py`. fmt, clippy and tests run in CI on Linux, Windows, macOS and Windows on ARM; the UI scripts on Linux. Sizes, the crate graph and the size budget: [design/structure.md](design/structure.md).
 
 | Crate | Role | Main modules |
 |---|---|---|
@@ -23,6 +23,8 @@ About 104,000 lines of Rust, 735 Rust tests and 3 UI test scripts (89 steps). fm
 | `amb-export` | Files out | `dng.rs`, `compare.rs`, `contact.rs`, `video.rs`, `embed.rs`, `border.rs`, `collage.rs`, `watermark.rs`, `fonts.rs` |
 | `amb-library` | Library operations on folders and sidecars | `catalog.rs`, `folder.rs`, `lrcat.rs`, `lightroom.rs`, `files.rs` |
 | `amb-ops` | Operations that render photos | `convert.rs`, `replay.rs`, `merge.rs`, `object.rs`, `snap.rs`, `burst.rs`, `cleanup.rs`, `dust.rs`, `negative.rs` |
+| `amb-plugin` | The sandboxed plugin host | `manifest.rs`, `effect.rs`, `photo.rs`, `native.rs`, `fuji.rs` |
+| `amb-plugin-sdk` | What plugins are written with; MIT OR Apache-2.0 | `lib.rs` |
 | `amb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |
 | `amb-cli` | The `amb` tool | `src/mcp.rs`, `src/organise.rs` |
 | `amb-gui` | Desktop editor (Tauri 2) | Rust `Session` (open raw, undoable edits via `amb-protocol`, downscaled preview + histogram, sidecar save, export) behind Tauri commands; plain HTML/CSS/JS UI generated from the settings registry |

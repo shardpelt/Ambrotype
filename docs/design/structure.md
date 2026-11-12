@@ -1,5 +1,7 @@
 # Structure review (2026-11-09)
 
+> Dated 2026-11-09 and kept as written: the sizes below are from before the cleanup it planned, which is done. The standing rules are in [codestyle.md](../codestyle.md).
+
 A look at the whole codebase: its size, its shape, what holds up and what has grown too big. The tasks that follow from it, in exact steps for any coding agent, are in [cleanup.md](../cleanup.md).
 
 ## Short version
@@ -200,7 +202,4 @@ The phases and their tasks are in [cleanup.md](../cleanup.md), each with its fil
 
 ## Rules that keep it lean
 
-- New code goes in the file that owns its concern. If none does, make one; don't grow `app.js`, `library.js`, `session.rs` or `main.rs`.
-- A helper used by two files goes in `core.js` (UI), `math.rs` (engine) or the crate that owns the data. Never copy it.
-- A new top-level JS name is specific (`maskDrawRadial`, not `draw`), so it's easy to search for and can't clash.
-- Re-measure with `tools/code-metrics.py` after a large feature. If a file passes the budget, split it along its sections in the next commit.
+They are in [codestyle.md](../codestyle.md).

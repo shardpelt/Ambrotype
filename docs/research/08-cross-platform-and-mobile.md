@@ -1,5 +1,7 @@
 # 08 - Cross-Platform Parity and a Future Mobile Version
 
+> Dated 2026-10-03 and kept as written. For what is current, see [ARCHITECTURE.md](../ARCHITECTURE.md).
+
 Status: research draft, 2026-10-03. Scope: (a) what "first-class on Windows/macOS/Linux" requires; (b) what a future iOS + Android app needs, so today's choices (Phases 0-2) do not close the door; (c) licensing and app-store consequences of the earlier GPL-3.0-or-later recommendation ([SCOPE §6](../SCOPE.md), [06 §8.5](06-tech-stack-options.md)). Companion to [06](06-tech-stack-options.md); read its §0, §3, §8 first.
 
 **Evidence labels.** `[verified: URL]` = seen in a source during this pass (several are search-result summaries, noted as "secondary"). `[code]` = read in the RapidRAW clone (`scratchpad/RapidRAW`, AGPL, commit as cloned 2026-10). `[background]` = engineering knowledge, re-check before relying on it. `[unverified]` = could not confirm, or an estimate/proposal of ours. **Nothing here is legal advice; section 5 needs counsel before the first iOS submission.**

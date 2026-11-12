@@ -310,8 +310,32 @@ fn luminance_range_selects_bright_pixels() {
     assert!(a[4] < 1e-6 && a[6] > 0.99, "{a:?}");
 }
 
+/// The registered finder is one per process, and tests run side by side:
+/// a test that needs it set, or unset, holds this for its whole run.
+static FINDER_TEST: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// Holds [`FINDER_TEST`]; on drop (even in a failed test) the finder is removed.
+struct FinderTest {
+    _lock: std::sync::MutexGuard<'static, ()>,
+}
+
+impl FinderTest {
+    fn hold() -> Self {
+        FinderTest {
+            _lock: FINDER_TEST.lock().unwrap_or_else(|e| e.into_inner()),
+        }
+    }
+}
+
+impl Drop for FinderTest {
+    fn drop(&mut self) {
+        crate::subject::clear_finder();
+    }
+}
+
 #[test]
 fn ai_masks_select_nothing_and_are_reported() {
+    let _no_finder = FinderTest::hold();
     let ai = st(&[("What", text("Mask/Image")), ("MaskSubType", text("1"))]);
     let s = settings(vec![correction(vec![ai])]);
     let (m, notes) = Masks::from_settings(&s);
@@ -377,6 +401,7 @@ fn select_sky_finds_the_sky_joined_to_the_top() {
 #[test]
 fn model_masks_ask_for_their_kind_and_background_is_the_subject_inverted() {
     use crate::subject::{Map, MapKind};
+    let _finder = FinderTest::hold();
     // A stand-in model: the subject is the left half, the people the top.
     crate::subject::set_finder(std::sync::Arc::new(
         |kind: MapKind, _: &[f32], _: usize, _: usize| {

@@ -48,6 +48,12 @@ pub fn set_finder(f: Arc<Finder>) {
     *FINDER.write().unwrap_or_else(|e| e.into_inner()) = Some(f);
 }
 
+/// Takes the registered finder away again (tests that install a stand-in).
+#[cfg(test)]
+pub(crate) fn clear_finder() {
+    *FINDER.write().unwrap_or_else(|e| e.into_inner()) = None;
+}
+
 /// Can model masks be drawn here?
 pub fn available() -> bool {
     FINDER.read().unwrap_or_else(|e| e.into_inner()).is_some()

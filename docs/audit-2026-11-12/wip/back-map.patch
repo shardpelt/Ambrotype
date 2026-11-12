@@ -1,0 +1,627 @@
+diff --git a/crates/amb-gui/tests/ui/browse.js b/crates/amb-gui/tests/ui/browse.js
+index 4f096d6..da814b9 100644
+--- a/crates/amb-gui/tests/ui/browse.js
++++ b/crates/amb-gui/tests/ui/browse.js
+@@ -72,6 +72,41 @@ await t.step("a photo dropped on the map gets a place", async () => {
+   t.expect(listed.find((q) => q.path === p.path)?.gps?.[0] === 48.8584, "the place in the sidecar");
+ });
+ 
++await t.step("the Map moves with a drag, zooms with the wheel, and a short press does nothing", async () => {
++  const map = document.querySelector("#library-view .map");
++  const m = browse.map;
++  const r = map.getBoundingClientRect();
++  const at = (dx, dy) => ({ clientX: r.left + 40 + dx, clientY: r.top + 40 + dy, button: 0, pointerId: 7, bubbles: true });
++  const press = (dx, dy) => {
++    map.dispatchEvent(new PointerEvent("pointerdown", at(0, 0)));
++    map.dispatchEvent(new PointerEvent("pointermove", at(dx, dy)));
++    map.dispatchEvent(new PointerEvent("pointerup", at(dx, dy)));
++  };
++  const before = { z: m.z, x: m.x, y: m.y };
++  press(2, 1);
++  t.expect(m.z === before.z && m.x === before.x && m.y === before.y, "a press under 4 px changes nothing");
++  press(100, 0);
++  t.expect(Math.abs(m.x - (before.x - 100)) < 1, `dragged 100 px: ${before.x} to ${m.x}`);
++  const z0 = m.z;
++  const wheel = (init) => map.dispatchEvent(new WheelEvent("wheel", { clientX: r.left + 40, clientY: r.top + 40, bubbles: true, cancelable: true, ...init }));
++  const e = new WheelEvent("wheel", { deltaY: -100, clientX: r.left + 40, clientY: r.top + 40, bubbles: true, cancelable: true });
++  map.dispatchEvent(e);
++  t.expect(m.z > z0 && e.defaultPrevented, `the wheel zooms in: ${z0} to ${m.z}`);
++  const x0 = m.x;
++  wheel({ deltaX: 30, deltaY: 7.5 });
++  t.expect(m.x === x0 + 30, "two fingers on a trackpad move the map");
++  m.z = MAP_MAX_Z;
++  wheel({ deltaY: -100 });
++  t.expect(m.z <= MAP_MAX_Z, "zoom stops at the tile source's last level");
++  for (let i = 0; i < 40; i++) wheel({ deltaY: 100 });
++  t.expect(m.z >= MAP_MIN_Z && m.y >= map.clientHeight / 2 - 1 && m.y <= TILE * 2 ** m.z - map.clientHeight / 2 + 1, `zoomed out to the limit: ${m.z}`);
++  const z1 = m.z;
++  map.dispatchEvent(new MouseEvent("dblclick", { clientX: r.left + 40, clientY: r.top + 40, bubbles: true }));
++  t.expect(m.z > z1, "double-click zooms in");
++  t.key("Ctrl+=");
++  t.expect(m.z > z1 + 1, "Ctrl + zooms the Map");
++});
++
+ await t.step("Guess places lists guesses to confirm, writing nothing until then", async () => {
+   const flow = guessPlacesFlow();
+   await t.until("the guesses", () => $("guess-dialog").open && !$("guess-count").textContent.startsWith("Guessing"));
+@@ -169,6 +204,21 @@ await t.step("the grid shows the folders inside this one first, as tiles; a clic
+   await t.until("the more tile again", () => tile("more"));
+ });
+ 
++await t.step("Back in the library returns to the folder before; Forward mirrors it", async () => {
++  const dir = lib.dir;
++  const same = (a, b) => a.replace(/[\\/]+$/, "") === b.replace(/[\\/]+$/, "");
++  const tile = (name) => [...$("library-grid").querySelectorAll(".lib-dir")].find((c) => c.querySelector(".lib-name").textContent === name);
++  t.click(tile("more").querySelector(".lib-frame"));
++  await t.until("the folder more", () => lib.dir.endsWith("more") && lib.photos.length === 1);
++  t.key("Alt+ArrowLeft");
++  await t.until(`the first folder again (${nav.back.length} back, at ${lib.dir})`, () => same(lib.dir, dir) && lib.photos.length > 0);
++  t.expect(libraryOn() && currentTask() === "library", "still the Library");
++  t.key("Alt+ArrowRight");
++  await t.until("the subfolder again", () => lib.dir.endsWith("more") && lib.photos.length === 1);
++  t.key("Alt+ArrowLeft");
++  await t.until("the first folder, as the next steps expect", () => same(lib.dir, dir) && tile("more"));
++});
++
+ await t.step("double-click a folder in the tree: it closes, and opens again", async () => {
+   // A stand-in library folder with one folder inside.
+   const saved = { roots: tree.roots, folders: tree.folders, open: new Set(tree.open) };
+diff --git a/crates/amb-gui/ui/core/keys.js b/crates/amb-gui/ui/core/keys.js
+index 0d68cb1..4d145b0 100644
+--- a/crates/amb-gui/ui/core/keys.js
++++ b/crates/amb-gui/ui/core/keys.js
+@@ -135,8 +135,8 @@ const KEY_ACTIONS = [
+   { id: "fold-left", group: "Window", label: "Hide or show the left column", keys: ["F7"], when: "any", run: () => toggleColumn("left") },
+   { id: "fold-right", group: "Window", label: "Hide or show the right column", keys: ["F8"], when: "any", run: () => toggleColumn("right") },
+   { id: "topbar", group: "Window", label: "Hide or show the top bar", hint: "Hidden, it comes back while the pointer is at the window's top edge.", keys: ["Ctrl+Shift+T"], when: "any", run: () => setTopbar(document.body.classList.contains("topbar-off")) },
+-  { id: "zoom-in", group: "View", label: "Zoom in", hint: "Also the mouse wheel or a pinch, at the pointer.", keys: ["Ctrl+=", "Ctrl+Shift++", "Ctrl++"], when: ["main", "masks", "spots", "select"], photo: true, run: () => zoomKey(1) },
+-  { id: "zoom-out", group: "View", label: "Zoom out", keys: ["Ctrl+-"], when: ["main", "masks", "spots", "select"], photo: true, run: () => zoomKey(-1) },
++  { id: "zoom-in", group: "View", label: "Zoom in", hint: "Also the mouse wheel or a pinch, at the pointer. In the library: the Map view.", keys: ["Ctrl+=", "Ctrl+Shift++", "Ctrl++"], when: ["main", "masks", "spots", "select", "library"], photo: true, run: () => (libraryOn() ? mapKeyZoom(1) : zoomKey(1)) },
++  { id: "zoom-out", group: "View", label: "Zoom out", keys: ["Ctrl+-"], when: ["main", "masks", "spots", "select", "library"], photo: true, run: () => (libraryOn() ? mapKeyZoom(-1) : zoomKey(-1)) },
+   { id: "zoom-fit", group: "View", label: "Fit the whole photo", keys: ["Ctrl+0"], when: ["main", "masks", "spots", "select"], photo: true, run: () => setZoom(false) },
+   { id: "peek", group: "View", label: "Just the photo, filling the screen", hint: "F again (or Esc) comes back. Zoom and move round it as usual.", keys: ["F"], when: ["main", "masks", "spots", "select"], photo: true, run: () => togglePeek() },
+   { id: "filmstrip", group: "Photos", label: "Show or hide the filmstrip", keys: ["F6"], when: ["main", "masks", "spots", "select", "crop"], run: () => toggleFilmstrip() },
+diff --git a/crates/amb-gui/ui/core/tasks.js b/crates/amb-gui/ui/core/tasks.js
+index 0a0b1bc..c304d81 100644
+--- a/crates/amb-gui/ui/core/tasks.js
++++ b/crates/amb-gui/ui/core/tasks.js
+@@ -193,6 +193,7 @@ function wireTasks() {
+   }));
+   wireTaskSketches();
+   wireNavMouse();
++  navWatchScroll();
+   renderTasks();
+ }
+ 
+@@ -242,11 +243,12 @@ function wireTaskSketches() {
+ }
+ 
+ // Back to where you were before, as in a browser: the task (Library,
+-// Develop, Film, Collage, …) and, in the library, its view (Grid,
+-// Insights, Map…) and an Insights bar's filter. The arrow at the task
++// Develop, Film, Collage, …) and, in the library, the folder or collection
++// shown (with the grid's scroll), its view (Grid, Insights, Map…) and an
++// Insights bar's filter. The arrow at the task
+ // bar's start, Alt+←, or the mouse's back button. Forward has no button
+ // (room), only Alt+→ and the mouse's forward button.
+-const nav = { back: [], fwd: [], at: null, hold: false };
++const nav = { back: [], fwd: [], at: null, hold: false, chain: Promise.resolve() };
+ 
+ function navButtons() {
+   const b = Object.assign(document.createElement("button"), { type: "button", id: "btn-nav-back", className: "task-nav", textContent: "‹", disabled: true });
+@@ -258,11 +260,14 @@ function navButtons() {
+ function navPlace() {
+   const task = currentTask();
+   const inLib = task === "library" && typeof lib !== "undefined" && lib.on;
+-  const place = { task, view: inLib ? cull.view : null, pick: inLib ? lib.pick : null };
+-  place.key = `${task}|${place.view ?? ""}|${place.pick?.words ?? ""}`;
++  const place = { task, view: inLib ? cull.view : null, pick: inLib ? lib.pick : null, scroll: 0 };
++  if (inLib) place.source = { dir: lib.dir, more: [...lib.more], collection: lib.collection, smart: lib.smart };
++  place.key = `${task}|${place.view ?? ""}|${place.pick?.words ?? ""}|${navSourceKey(place.source)}`;
+   return place;
+ }
+ 
++const navSourceKey = (s) => (s ? `${s.dir}|${s.more.join(",")}|${s.collection}|${s.smart}` : "");
++
+ // Called whenever the place on screen may have changed: the task
+ // (renderTasks), the library's view or its Insights filter.
+ function navNote() {
+@@ -275,12 +280,50 @@ function navNote() {
+     nav.fwd = [];
+   }
+   nav.at = now;
++  navSetBack();
++}
++
++function navSetBack() {
+   const b = $("btn-nav-back");
+   if (b) b.disabled = !nav.back.length;
+ }
+ 
+-// -1 back, 1 forward.
+-async function navGo(dir) {
++// Run `fn` without noting steps (the library loads its folder while it
++// opens); the place it ends in is noted once, after.
++async function navQuiet(fn) {
++  const was = nav.hold;
++  nav.hold = true;
++  try {
++    return await fn();
++  } finally {
++    nav.hold = was;
++    navNote();
++  }
++}
++
++// The grid's scroll, kept on the place shown so Back can return to it.
++function navWatchScroll() {
++  $("library-grid").addEventListener("scroll", (e) => {
++    if (nav.at && !nav.hold) nav.at.scroll = e.target.scrollTop;
++  }, { passive: true });
++}
++
++// Show the folder or collection of a place the library is not at.
++async function navShowSource(s) {
++  if (s.smart) await showSmartCollection(s.smart);
++  else if (s.collection) await showCollection(s.collection);
++  else if (s.dir) await loadLibrary(s.dir, s.more);
++  else return;
++  renderFolderTree();
++}
++
++// -1 back, 1 forward. One step at a time: a second press waits for the first.
++function navGo(dir) {
++  nav.chain = nav.chain.then(() => navStep(dir), () => navStep(dir));
++  return nav.chain;
++}
++
++async function navStep(dir) {
+   const to = (dir < 0 ? nav.back : nav.fwd).pop();
+   if (!to) return;
+   (dir < 0 ? nav.fwd : nav.back).push(nav.at);
+@@ -288,8 +331,11 @@ async function navGo(dir) {
+   try {
+     if (to.task !== currentTask()) await switchTask(to.task);
+     if (to.task === "library" && lib.on) {
++      const s = to.source;
++      if (s && navSourceKey(s) !== navSourceKey(navPlace().source)) await navShowSource(s);
+       if (lib.pick !== to.pick) setInsightFilter(to.pick, false);
+       if (to.view && cull.view !== to.view) setLibraryView(to.view);
++      if (to.scroll) $("library-grid").scrollTop = to.scroll;
+     }
+   } finally {
+     nav.hold = false;
+diff --git a/crates/amb-gui/ui/index.html b/crates/amb-gui/ui/index.html
+index e3a717f..251d8f9 100644
+--- a/crates/amb-gui/ui/index.html
++++ b/crates/amb-gui/ui/index.html
+@@ -1874,6 +1874,7 @@
+   <script src="library/library-grid.js"></script>
+   <script src="library/library-actions.js"></script>
+   <script src="library/cull.js"></script>
++  <script src="library/map-touch.js"></script>
+   <script src="library/browse.js"></script>
+   <script src="library/guess-places.js"></script>
+   <script src="library/place-field.js"></script>
+diff --git a/crates/amb-gui/ui/library/browse.js b/crates/amb-gui/ui/library/browse.js
+index ce5feae..e639f1e 100644
+--- a/crates/amb-gui/ui/library/browse.js
++++ b/crates/amb-gui/ui/library/browse.js
+@@ -331,18 +331,9 @@ function fitMap(placed, box) {
+ }
+ 
+ function zoomMap(step, at = null) {
+-  const m = browse.map;
+   const el = document.querySelector("#library-view .map");
+   if (!el) return;
+-  const z = Math.min(18, Math.max(1, m.z + step));
+-  if (z === m.z) return;
+-  // Keep the point under `at` (or the middle) where it is.
+-  const r = el.getBoundingClientRect();
+-  const [ox, oy] = at ? [at[0] - r.left - r.width / 2, at[1] - r.top - r.height / 2] : [0, 0];
+-  const k = 2 ** (z - m.z);
+-  m.x = (m.x + ox) * k - ox;
+-  m.y = (m.y + oy) * k - oy;
+-  m.z = z;
++  mapZoomAt(browse.map, el, 2 ** step, ...(at ?? []));
+   drawMap();
+ }
+ 
+@@ -351,27 +342,10 @@ function drawMap() {
+   if (!el) return;
+   const m = browse.map;
+   const W = el.clientWidth, H = el.clientHeight;
++  mapClamp(m, H);
+   const world = TILE * 2 ** m.z;
+-  m.y = Math.min(world - H / 2, Math.max(H / 2, m.y));
+-  if (world < H) m.y = world / 2;
+   const left = m.x - W / 2, top = m.y - H / 2;
+-  const tiles = el.querySelector(".map-tiles");
+-  tiles.replaceChildren();
+-  if (mapTilesWanted()) {
+-    const n = 2 ** m.z;
+-    for (let ty = Math.floor(top / TILE); ty * TILE < top + H; ty++) {
+-      if (ty < 0 || ty >= n) continue;
+-      for (let tx = Math.floor(left / TILE); tx * TILE < left + W; tx++) {
+-        const img = Object.assign(document.createElement("img"), { alt: "", draggable: false });
+-        img.src = `https://tile.openstreetmap.org/${m.z}/${((tx % n) + n) % n}/${ty}.png`;
+-        img.style.left = `${tx * TILE - left}px`;
+-        img.style.top = `${ty * TILE - top}px`;
+-        tiles.append(img);
+-      }
+-    }
+-  } else {
+-    tiles.append(graticule(left, top, W, H, m.z));
+-  }
++  mapTiles(el.querySelector(".map-tiles"), m, W, H);
+   // Pins, grouped when closer than about a pin's width.
+   const cell = 44;
+   const groups = new Map();
+@@ -439,7 +413,7 @@ function graticule(left, top, W, H, z) {
+   svg.setAttribute("class", "map-grid");
+   svg.setAttribute("width", W);
+   svg.setAttribute("height", H);
+-  const step = [30, 30, 20, 10, 5, 2, 1, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, 0.001, 0.0005][z] ?? 0.001;
++  const step = [30, 30, 20, 10, 5, 2, 1, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001, 0.001, 0.0005][Math.round(z)] ?? 0.001;
+   // Longitudes not wrapped, so a view across the date line still counts up.
+   const world = TILE * 2 ** z;
+   const lonLeft = (left / world) * 360 - 180, lonRight = ((left + W) / world) * 360 - 180;
+@@ -478,27 +452,7 @@ function showPinPeek(pin, p) {
+ const hidePinPeek = () => pinPeek?.remove();
+ 
+ function wireMap(el) {
+-  const m = browse.map;
+-  let drag = null;
+-  el.addEventListener("pointerdown", (e) => {
+-    if (e.button !== 0 || e.target.closest(".map-pin, .map-credit")) return;
+-    drag = { x: e.clientX, y: e.clientY, mx: m.x, my: m.y };
+-    el.setPointerCapture(e.pointerId);
+-  });
+-  el.addEventListener("pointermove", (e) => {
+-    if (!drag) return;
+-    m.x = drag.mx - (e.clientX - drag.x);
+-    m.y = drag.my - (e.clientY - drag.y);
+-    drawMap();
+-  });
+-  el.addEventListener("pointerup", () => { drag = null; });
+-  el.addEventListener("wheel", (e) => {
+-    e.preventDefault();
+-    zoomMap(e.deltaY < 0 ? 1 : -1, [e.clientX, e.clientY]);
+-  }, { passive: false });
+-  el.addEventListener("dblclick", (e) => {
+-    if (!e.target.closest(".map-pin")) zoomMap(1, [e.clientX, e.clientY]);
+-  });
++  mapAttach(el, browse.map, { redraw: drawMap });
+   // Dropped photos are placed where they land.
+   el.addEventListener("dragover", (e) => {
+     if (e.dataTransfer.types.includes("text/x-amb-photo")) e.preventDefault();
+diff --git a/crates/amb-gui/ui/library/library-grid.js b/crates/amb-gui/ui/library/library-grid.js
+index b20d8c5..7ca420c 100644
+--- a/crates/amb-gui/ui/library/library-grid.js
++++ b/crates/amb-gui/ui/library/library-grid.js
+@@ -199,6 +199,8 @@ function makeDirCell(d) {
+ 
+ function renderLibrary() {
+   applyView();
++  // A folder or collection shown is a step for Back.
++  navNote();
+   if (lib.collection || lib.smart) lib.dirs = [];
+   const grid = $("library-grid");
+   lib.observer?.disconnect();
+diff --git a/crates/amb-gui/ui/library/library.js b/crates/amb-gui/ui/library/library.js
+index aecad9a..5b76219 100644
+--- a/crates/amb-gui/ui/library/library.js
++++ b/crates/amb-gui/ui/library/library.js
+@@ -51,6 +51,11 @@ const VIEWER_BUTTONS = ["btn-before", "btn-crop", "btn-masks", "btn-spots", "btn
+ async function toggleLibrary(on = !lib.on) {
+   wireLibrary();
+   if (on === lib.on) return;
++  // One step for Back, not one for the task and one for the folder loaded.
++  return navQuiet(() => showLibraryTask(on));
++}
++
++async function showLibraryTask(on) {
+   if (on && ui.crop.on) await exitCrop(true);
+   if (on) {
+     exitMasks();
+diff --git a/crates/amb-gui/ui/library/map-touch.js b/crates/amb-gui/ui/library/map-touch.js
+new file mode 100644
+index 0000000..73197cb
+--- /dev/null
++++ b/crates/amb-gui/ui/library/map-touch.js
+@@ -0,0 +1,116 @@
++// SPDX-License-Identifier: GPL-3.0-or-later
++// What the library's Map view and the place picker's map share: the zoom
++// limits, drawing the tiles (or the grid of latitudes and longitudes) at any
++// zoom, and the gestures. They are the photo's (core/pinch.js): press and
++// drag moves the map, the wheel and a pinch zoom at the pointer, two fingers
++// on a trackpad move it, a double-click zooms in. Nothing else scrolls
++// while the pointer is over a map.
++"use strict";
++
++const MAP_MIN_Z = 1;
++// OpenStreetMap's tiles go to 19; 18 is plenty for finding a street.
++const MAP_MAX_Z = 18;
++// A press that moves less than this is a click (a pin, a place).
++const MAP_DRAG_PX = 4;
++
++// The view `st` is { z, x, y }: zoom (any number), and the centre in world
++// pixels at that zoom.
++// The least zoom, where the world still fills the map's height.
++const mapMinZoom = (H) => Math.max(MAP_MIN_Z, Math.log2(H / TILE) || 0);
++
++// Keep the view in the world: sideways it wraps round, up and down it ends.
++function mapClamp(st, H) {
++  st.z = Math.min(MAP_MAX_Z, Math.max(mapMinZoom(H), st.z));
++  st.y = Math.min(TILE * 2 ** st.z - H / 2, Math.max(H / 2, st.y));
++}
++
++// Zoom by `factor` keeping the point under client (cx, cy), or the middle.
++function mapZoomAt(st, el, factor, cx = null, cy = null) {
++  const r = el.getBoundingClientRect();
++  const px = cx == null ? 0 : cx - r.left - r.width / 2;
++  const py = cy == null ? 0 : cy - r.top - r.height / 2;
++  const z = Math.min(MAP_MAX_Z, Math.max(mapMinZoom(r.height), st.z + Math.log2(factor)));
++  const k = 2 ** (z - st.z);
++  st.x = (st.x + px) * k - px;
++  st.y = (st.y + py) * k - py;
++  st.z = z;
++}
++
++// Fill `box` with the map images (when turned on) or the grid. Images come
++// at the whole zoom nearest, scaled to fit the zoom between.
++function mapTiles(box, st, W, H) {
++  const left = st.x - W / 2, top = st.y - H / 2;
++  box.replaceChildren();
++  if (!mapTilesWanted()) {
++    box.append(graticule(left, top, W, H, st.z));
++    return;
++  }
++  const tz = Math.min(MAP_MAX_Z, Math.max(0, Math.round(st.z)));
++  const n = 2 ** tz;
++  const size = TILE * 2 ** (st.z - tz);
++  for (let ty = Math.floor(top / size); ty * size < top + H; ty++) {
++    if (ty < 0 || ty >= n) continue;
++    for (let tx = Math.floor(left / size); tx * size < left + W; tx++) {
++      const img = el("img", { alt: "", draggable: "false" });
++      img.src = `https://tile.openstreetmap.org/${tz}/${((tx % n) + n) % n}/${ty}.png`;
++      img.style.left = `${tx * size - left}px`;
++      img.style.top = `${ty * size - top}px`;
++      img.style.width = img.style.height = `${size}px`;
++      box.append(img);
++    }
++  }
++}
++
++// Wire the gestures on `el` for the view `st`. `redraw()` draws it; `skip`
++// is what a press on doesn't start a drag; `click(e)` gets a press that
++// didn't move.
++function mapAttach(el, st, { redraw, skip = ".map-pin, .map-credit", click = null }) {
++  let drag = null;
++  el.addEventListener("pointerdown", (e) => {
++    if (e.button !== 0 || e.target.closest(skip)) return;
++    drag = { x: e.clientX, y: e.clientY, ox: st.x, oy: st.y, moved: false };
++    try {
++      el.setPointerCapture(e.pointerId);
++    } catch { /* no such pointer: a script's */ }
++  });
++  el.addEventListener("pointermove", (e) => {
++    if (!drag || (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < MAP_DRAG_PX)) return;
++    drag.moved = true;
++    el.classList.add("panning");
++    st.x = drag.ox - (e.clientX - drag.x);
++    st.y = drag.oy - (e.clientY - drag.y);
++    redraw();
++  });
++  const end = (e) => {
++    const d = drag;
++    drag = null;
++    el.classList.remove("panning");
++    if (d && !d.moved && e.type === "pointerup") click?.(e);
++  };
++  el.addEventListener("pointerup", end);
++  el.addEventListener("pointercancel", end);
++  wirePinchZoom(el, {
++    zoom: (f, x, y) => {
++      mapZoomAt(st, el, f, x, y);
++      redraw();
++    },
++    scroll: (dx, dy) => {
++      st.x += dx;
++      st.y += dy;
++      redraw();
++      return true;
++    },
++  });
++  el.addEventListener("dblclick", (e) => {
++    if (e.target.closest(skip)) return;
++    mapZoomAt(st, el, 2, e.clientX, e.clientY);
++    redraw();
++  });
++}
++
++// Ctrl + and Ctrl − (the zoom actions) in the library: the Map view's.
++function mapKeyZoom(dir) {
++  if (!(libraryOn() && cull.view === "map")) return false;
++  zoomMap(dir);
++  return true;
++}
+diff --git a/crates/amb-gui/ui/library/place-picker.js b/crates/amb-gui/ui/library/place-picker.js
+index e366986..f209c15 100644
+--- a/crates/amb-gui/ui/library/place-picker.js
++++ b/crates/amb-gui/ui/library/place-picker.js
+@@ -1,13 +1,13 @@
+ // SPDX-License-Identifier: GPL-3.0-or-later
+ // Choose a place on a map or by name: from the library panel's Place row,
+ // the viewer's info panel and each guess in Guess places. Drag to move the
+-// map, the wheel or + − to zoom, a click puts the pin; the search box finds
++// map, the wheel, a pinch or + − to zoom (library/map-touch.js), a click puts the pin; the search box finds
+ // an address or a place by name (OpenStreetMap's Nominatim, asked only when
+ // you search, since it tells openstreetmap.org what was searched). Map
+ // images follow Settings → General, as the Map view does.
+ "use strict";
+ 
+-const picker = { z: 3, x: 0, y: 0, pin: null, drag: null };
++const picker = { z: 3, x: 0, y: 0, pin: null };
+ 
+ // Ask for a place, starting at `start` ([lat, lon]) if given; resolves to
+ // "lat,lon", or null when cancelled.
+@@ -38,27 +38,10 @@ function drawPicker() {
+   const el = $("pick-map");
+   const W = el.clientWidth, H = el.clientHeight;
+   if (!W) return;
++  mapClamp(picker, H);
+   const world = TILE * 2 ** picker.z;
+-  picker.y = Math.min(world - H / 2, Math.max(H / 2, picker.y));
+-  if (world < H) picker.y = world / 2;
+   const left = picker.x - W / 2, top = picker.y - H / 2;
+-  const tiles = el.querySelector(".map-tiles");
+-  tiles.replaceChildren();
+-  if (mapTilesWanted()) {
+-    const n = 2 ** picker.z;
+-    for (let ty = Math.floor(top / TILE); ty * TILE < top + H; ty++) {
+-      if (ty < 0 || ty >= n) continue;
+-      for (let tx = Math.floor(left / TILE); tx * TILE < left + W; tx++) {
+-        const img = Object.assign(document.createElement("img"), { alt: "", draggable: false });
+-        img.src = `https://tile.openstreetmap.org/${picker.z}/${((tx % n) + n) % n}/${ty}.png`;
+-        img.style.left = `${tx * TILE - left}px`;
+-        img.style.top = `${ty * TILE - top}px`;
+-        tiles.append(img);
+-      }
+-    }
+-  } else {
+-    tiles.append(graticule(left, top, W, H, picker.z));
+-  }
++  mapTiles(el.querySelector(".map-tiles"), picker, W, H);
+   const pin = el.querySelector(".pick-pin");
+   pin.hidden = !picker.pin;
+   if (picker.pin) {
+@@ -71,17 +54,7 @@ function drawPicker() {
+ }
+ 
+ function zoomPicker(d, cx = null, cy = null) {
+-  const el = $("pick-map");
+-  const r = el.getBoundingClientRect();
+-  const z = Math.min(18, Math.max(1, picker.z + d));
+-  if (z === picker.z) return;
+-  // Keep the point under the pointer (or the middle) where it is.
+-  const px = cx == null ? 0 : cx - (r.left + r.width / 2);
+-  const py = cy == null ? 0 : cy - (r.top + r.height / 2);
+-  const [lat, lon] = unproject(picker.x + px, picker.y + py, picker.z);
+-  picker.z = z;
+-  const [x, y] = project(lat, lon, z);
+-  [picker.x, picker.y] = [x - px, y - py];
++  mapZoomAt(picker, $("pick-map"), 2 ** d, cx, cy);
+   drawPicker();
+ }
+ 
+@@ -118,35 +91,18 @@ function goPicked(at, name) {
+ 
+ function wirePlacePicker() {
+   const el = $("pick-map");
+-  el.addEventListener("pointerdown", (e) => {
+-    if (e.button !== 0) return;
+-    el.setPointerCapture(e.pointerId);
+-    picker.drag = { x: e.clientX, y: e.clientY, ox: picker.x, oy: picker.y, moved: false };
+-  });
+-  el.addEventListener("pointermove", (e) => {
+-    const d = picker.drag;
+-    if (!d) return;
+-    if (Math.abs(e.clientX - d.x) + Math.abs(e.clientY - d.y) > 4) d.moved = true;
+-    if (!d.moved) return;
+-    picker.x = d.ox - (e.clientX - d.x);
+-    picker.y = d.oy - (e.clientY - d.y);
+-    drawPicker();
+-  });
+-  el.addEventListener("pointerup", (e) => {
+-    const d = picker.drag;
+-    picker.drag = null;
+-    if (!d || d.moved) return;
+-    // A click puts the pin.
+-    const r = el.getBoundingClientRect();
+-    const [lat, lon] = unproject(picker.x - r.width / 2 + (e.clientX - r.left), picker.y - r.height / 2 + (e.clientY - r.top), picker.z);
+-    picker.pin = [lat, lon];
+-    drawPicker();
+-    showPickedPlace();
++  // A click puts the pin.
++  mapAttach(el, picker, {
++    redraw: drawPicker,
++    skip: ".pick-pin",
++    click: (e) => {
++      const r = el.getBoundingClientRect();
++      const [lat, lon] = unproject(picker.x - r.width / 2 + (e.clientX - r.left), picker.y - r.height / 2 + (e.clientY - r.top), picker.z);
++      picker.pin = [lat, lon];
++      drawPicker();
++      showPickedPlace();
++    },
+   });
+-  el.addEventListener("wheel", (e) => {
+-    e.preventDefault();
+-    zoomPicker(e.deltaY < 0 ? 1 : -1, e.clientX, e.clientY);
+-  }, { passive: false });
+   $("pick-zoom-in").addEventListener("click", () => zoomPicker(1));
+   $("pick-zoom-out").addEventListener("click", () => zoomPicker(-1));
+   $("pick-search").addEventListener("keydown", (e) => {
+diff --git a/crates/amb-gui/ui/style.css b/crates/amb-gui/ui/style.css
+index 64928be..77ab2b0 100644
+--- a/crates/amb-gui/ui/style.css
++++ b/crates/amb-gui/ui/style.css
+@@ -55,7 +55,7 @@ button.primary:hover:not(:disabled) { background: var(--accent); filter: brightn
+ /* Remove object: the Spot panel's first button; the canvas draws a box. */
+ .spot-object { width: 100%; margin: 2px 0 8px; padding: 8px; font-weight: 600; border-color: var(--accent); color: var(--accent); }
+ .spot-object.active, .spot-object:hover:not(:disabled) { background: var(--accent); color: var(--accent-ink); }
+-#spot-canvas.boxing { cursor: crosshair; }
++#spot-canvas.boxing { }
+ /* A tip over the photo while something takes a moment (tips.js). */
+ .tip-card { position: absolute; left: 16px; bottom: 16px; z-index: 30; max-width: 340px; padding: 10px 12px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--border); box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+ .tip-card p { margin: 0 0 4px; }
+@@ -270,7 +270,7 @@ dialog menu button { white-space: nowrap; }
+ .viewer.actual { place-items: start; }
+ .viewer.actual img { max-width: none; max-height: none; position: absolute; left: 0; top: 0; cursor: grab; }
+ .viewer.actual img.panning { cursor: grabbing; }
+-.viewer.picking img { cursor: crosshair; }
++.viewer.picking img { }
+ dialog label.wide { margin-top: 12px; }
+ dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-top: 10px; color: var(--text); }
+ .match-button { width: 100%; margin: 4px 0 6px; }
+@@ -1024,7 +1024,7 @@ dialog .plugin-recipes label { flex-direction: row; align-items: center; gap: 8p
+ .mask-panel .section-label { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #8a8f98); margin-top: 6px; }
+ 
+ /* Spot removal (spots.js). */
+-.spot-canvas { cursor: crosshair; }
++.spot-canvas { }
+ .segmented button.active { background: var(--accent); color: var(--bg-deep, #111); }
+ body.editing .column [data-item]:focus, body.editing .column [data-unit]:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+ .selected-setting { outline: 1px solid var(--accent); outline-offset: 1px; border-radius: 4px; }
+@@ -1108,7 +1108,7 @@ button.tool-icon.active { color: var(--accent); }
+ .viewer-loupe { position: absolute; z-index: 7; width: 220px; height: 220px; border-radius: 50%; overflow: hidden; pointer-events: none; border: 2px solid #fff; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.5), 0 6px 20px rgb(0 0 0 / 0.5); background: #000 no-repeat; }
+ .viewer-loupe img { position: absolute; max-width: none; max-height: none; box-shadow: none; }
+ .loupe-mag { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; background: rgb(0 0 0 / 0.6); color: #fff; }
+-.viewer.loupe-on img#preview { cursor: crosshair; }
++.viewer.loupe-on img#preview { }
+ .zone-overlay { position: absolute; pointer-events: none; z-index: 5; }
+ .zone-badge { position: absolute; z-index: 6; pointer-events: none; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 4px rgb(0 0 0 / 0.4); }
+ .basics-dialog { width: min(820px, 94vw); }
+@@ -1277,10 +1277,10 @@ body.editing .dock-grip { display: none; }
+ .scrub-mark { position: absolute; right: 4px; font-size: 10px; color: var(--faint); transform: translateY(-1px); pointer-events: none; }
+ .lib-scrubber:hover .scrub-mark { color: var(--muted); }
+ .scrub-tip { position: absolute; right: 38px; transform: translateY(-50%); padding: 3px 8px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--accent); font-size: 12px; white-space: nowrap; pointer-events: none; }
+-.library-view.map { overflow: hidden; }
++.library-view.map { overflow: hidden; overscroll-behavior: contain; }
+ .map-bar { display: flex; align-items: center; gap: 6px; flex: none; }
+-.map { position: relative; flex: 1; min-height: 200px; overflow: hidden; border-radius: var(--radius); background: var(--bg-deep); cursor: grab; outline: none; touch-action: none; }
+-.map:active { cursor: grabbing; }
++.map { position: relative; flex: 1; min-height: 200px; overflow: hidden; border-radius: var(--radius); background: var(--bg-deep); cursor: grab; outline: none; touch-action: none; overscroll-behavior: contain; }
++.map.panning { cursor: grabbing; }
+ .map-tiles, .map-pins { position: absolute; inset: 0; }
+ .map-tiles img { position: absolute; width: 256px; height: 256px; user-select: none; }
+ .map-grid line { stroke: var(--line); stroke-width: 1; }
+@@ -1593,7 +1593,7 @@ body.photo-only .viewer { grid-column: 1 / -1; }
+ .pick-results { display: flex; flex-direction: column; gap: 2px; max-height: 120px; overflow-y: auto; margin: 6px 0; }
+ .pick-result { text-align: left; font-size: 12px; padding: 3px 6px; background: none; border-color: transparent; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+ .pick-result:hover, .pick-result.on { background: var(--hover); border-color: var(--line); }
+-.pick-map { height: 360px; min-height: 0; flex: none; cursor: crosshair; }
++.pick-map { height: 360px; min-height: 0; flex: none; }
+ .pick-pin { position: absolute; width: 18px; height: 18px; margin: -18px 0 0 -9px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--accent); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .5); pointer-events: none; }
+ .pick-zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 2px; }
+ .pick-dialog menu { display: flex; gap: 8px; padding: 0; margin: 0; }

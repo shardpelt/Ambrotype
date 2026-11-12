@@ -1,6 +1,6 @@
 # Notes for AI coding agents (Claude Code, Codex, …)
 
-Ambrotype is a free, open-source Lightroom alternative in Rust. Start with [docs/WHATS-NEXT.md](docs/WHATS-NEXT.md) (the running short list) and [docs/ROADMAP.md](docs/ROADMAP.md) (everything planned, in order), then [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Ambrotype is a free, open-source Lightroom alternative in Rust. Start with [docs/WHATS-NEXT.md](docs/WHATS-NEXT.md) (the running short list) and [docs/ROADMAP.md](docs/ROADMAP.md) (everything planned, in order), then [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Before changing code, read [docs/codestyle.md](docs/codestyle.md): where each part of a feature goes, the lists a feature is added to, and the checks that hold the rules. [docs/README.md](docs/README.md) says which doc holds what; [docs/delegation.md](docs/delegation.md) which tier of model does which work and how a task is handed over.
 
 ## Layout
 - `crates/amb-presets`: Lightroom XMP/preset reader and the tag registry (`data/tags.json`).
@@ -22,7 +22,7 @@ Ambrotype is a free, open-source Lightroom alternative in Rust. Start with [docs
 ## Common changes
 [docs/recipes.md](docs/recipes.md) lists, step by step, what adding a setting, a toolbar button, a CLI or protocol command, or a hub item kind touches. **Done means the commands the request names work as written: run them.**
 
-Keeping it lean: [docs/design/structure.md](docs/design/structure.md) is the codebase's shape and size budget, and [docs/cleanup.md](docs/cleanup.md) the cleanup tasks, in exact steps. A test (`crates/amb-cli/tests/code_size.rs`) fails when a file passes the budget: split it along its sections rather than raising the limit. `python3 tools/code-metrics.py` measures.
+Keeping it lean: [docs/codestyle.md](docs/codestyle.md) has the size budget and the standing rules, and [docs/cleanup.md](docs/cleanup.md) the open cleanup tasks as cards, in exact steps. A test (`crates/amb-cli/tests/code_size.rs`) fails when a file passes the budget: split it along its sections rather than raising the limit. `python3 tools/code-metrics.py` measures.
 
 ## Before you commit
 ```sh

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Teaching by showing (docs/NEXT.md, "teach by showing"): stepping through
+// Teaching by showing: stepping through
 // History lights up the controls each step changed and moves them to their
 // value; holding Ctrl (⌘ on a Mac) shows every shortcut on the buttons; on a
 // photo not yet edited the most useful sliders glow faintly until first used;

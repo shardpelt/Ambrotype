@@ -324,6 +324,7 @@ function navGo(dir) {
 }
 
 async function navStep(dir) {
+  await lib.loadChain.catch(() => {});
   const to = (dir < 0 ? nav.back : nav.fwd).pop();
   if (!to) return;
   (dir < 0 ? nav.fwd : nav.back).push(nav.at);

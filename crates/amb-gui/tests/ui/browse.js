@@ -95,6 +95,7 @@ await t.step("the Map moves with a drag, zooms with the wheel, and a short press
   const x0 = m.x;
   wheel({ deltaX: 30, deltaY: 7.5 });
   t.expect(m.x === x0 + 30, "two fingers on a trackpad move the map");
+  t.expect(map.closest("#library-view").scrollLeft === 0 && $("library-grid").scrollLeft === 0 && document.scrollingElement.scrollLeft === 0, "the page doesn't scroll sideways");
   m.z = MAP_MAX_Z;
   wheel({ deltaY: -100 });
   t.expect(m.z <= MAP_MAX_Z, "zoom stops at the tile source's last level");
@@ -211,7 +212,7 @@ await t.step("Back in the library returns to the folder before; Forward mirrors 
   t.click(tile("more").querySelector(".lib-frame"));
   await t.until("the folder more", () => lib.dir.endsWith("more") && lib.photos.length === 1);
   t.key("Alt+ArrowLeft");
-  await t.until(`the first folder again (${nav.back.length} back, at ${lib.dir})`, () => same(lib.dir, dir) && lib.photos.length > 0);
+  await t.until("the first folder again", () => same(lib.dir, dir) && lib.photos.length > 0);
   t.expect(libraryOn() && currentTask() === "library", "still the Library");
   t.key("Alt+ArrowRight");
   await t.until("the subfolder again", () => lib.dir.endsWith("more") && lib.photos.length === 1);

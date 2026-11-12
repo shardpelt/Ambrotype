@@ -12,6 +12,7 @@ const lib = {
   dirs: [], // folder tiles shown before the photos (renderSubfolders)
   on: false,
   dir: null,
+  loadChain: Promise.resolve(), // the folder load in progress; the next waits for it
   more: [],            // other folders shown with it
   photos: [],          // [{ path, name, rating, label, keywords, flag, edited, captured }]
   shown: [],           // after filter and sort
@@ -129,7 +130,14 @@ function saveMore(dir, more) {
 
 // Show a folder; `more` folders are shown with it (kept on a reload of the
 // same folder, and the ones shown with it last time otherwise, unless given).
-async function loadLibrary(dir, more = dir === lib.dir ? lib.more : savedMore(dir)) {
+// One at a time, so a quick second change (or Back) can't land before the
+// first has finished.
+function loadLibrary(dir, more) {
+  lib.loadChain = lib.loadChain.then(() => loadLibraryNow(dir, more), () => loadLibraryNow(dir, more));
+  return lib.loadChain;
+}
+
+async function loadLibraryNow(dir, more = dir === lib.dir ? lib.more : savedMore(dir)) {
   lib.dir = dir;
   lib.more = more.filter((d) => d !== dir);
   if (dir) saveMore(dir, lib.more);

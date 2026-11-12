@@ -2,6 +2,8 @@
 
 What landed, newest first. The newest 15 entries are in WHATS-NEXT.md's Recently done; they move here as newer ones arrive.
 
+- 2026-11-11: **Insights** (library view, Shift+I): how the photos shown were shot: a chart each for aperture, focal length, shutter speed, ISO, time of day, lens and camera, with the kept ones (picked, or 3 stars and up) as the bar's darker part, and the settings used most together; camera chips narrow it, a click on a bar shows those photos. `amb insights DIR`
+- 2026-11-10: Select object's **Copy**: drag a copy of it elsewhere, and it stays where it was too (Move's clone without the fill)
 - 2026-11-10: Develop's left column in two tabs, **Tools** and **Presets**, with History docked under both; the switch to try blocks that each scroll on their own is gone (one scroll won)
 - 2026-11-10: **Undo all** beside Undo (Ctrl+Alt+Z; Redo brings the steps back); History docked at the foot of its column, always in sight, with Presets' list capped to scroll inside; a **‹** back button at the task bar's start (Alt+←, the mouse's back button) to the task you were in before
 - 2026-11-10: thin scroll bars that show only while the pointer is over what scrolls, or while it scrolls

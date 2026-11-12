@@ -536,6 +536,7 @@
           <div class="col-line">
           <button type="button" id="lib-negative-sync" class="small" data-needs="many" title="Film negatives: analyse each selected frame and give the roll one conversion (Auto off): frames in different light get their own, odd frames keep theirs">Sync negative roll…</button>
           <button type="button" id="lib-plugin" class="small" data-needs="any" title="Run a plugin on each selected photo, with its own settings">Run a plugin…</button>
+          <button type="button" id="lib-denoise" class="small" data-needs="any" title="Take the noise out of the selected raws with an AI model on your computer: each becomes a new DNG beside it">AI Denoise…</button>
           <button type="button" id="lib-hdr" class="small" data-needs="many" title="Merge bracketed raws of one scene into one HDR photo (a DNG next to them)">Merge to HDR…</button>
           <button type="button" id="lib-pano" class="small" data-needs="many" title="Stitch overlapping raws into one panorama (a DNG next to them)">Merge to Panorama…</button>
           </div>
@@ -672,6 +673,21 @@
         <button value="ok" class="primary">Make sheet…</button>
       </menu>
     </form>
+  </dialog>
+
+  <!-- AI Denoise (library/denoise.js). -->
+  <dialog id="denoise-dialog">
+    <h2>AI Denoise</h2>
+    <p id="denoise-what" class="hint"></p>
+    <label>Amount <input id="denoise-amount" type="range" min="0" max="100" value="70"> <span id="denoise-amount-value">70</span></label>
+    <p class="hint">Less keeps more of the photo as it was: fine texture, and some grain. It works on the raw's own data, so it does most for high-ISO shots; about a minute for a 24 MP photo.</p>
+    <p id="denoise-model" class="hint"></p>
+    <p id="denoise-status" class="hint"></p>
+    <menu>
+      <button type="button" id="denoise-install"></button>
+      <button type="button" id="denoise-close">Close</button>
+      <button type="button" id="denoise-go" class="primary">Denoise</button>
+    </menu>
   </dialog>
 
   <!-- Photo Merge > HDR (library-actions.js). -->
@@ -1865,6 +1881,7 @@
   <script src="library/insights.js"></script>
   <script src="library/duplicates.js"></script>
   <script src="library/cleanup.js"></script>
+  <script src="library/denoise.js"></script>
   <script src="library/bursts.js"></script>
   <script src="library/organise.js"></script>
   <script src="library/import.js"></script>

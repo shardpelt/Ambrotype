@@ -186,6 +186,10 @@ fn main() {
                     amb_engine::subject::set_selector(amb_ai::objects::selector(models.clone()));
                     amb_engine::subject::set_face_finder(amb_ai::faces::finder(models.clone()));
                     amb_engine::retouch::set_inpainter(amb_ai::remove::inpainter(models.clone()));
+                    amb_engine::raw_denoise::set_raw_denoiser(
+                        std::sync::Arc::new(amb_ai::denoise::Denoiser::new(models.clone()))
+                            .engine(),
+                    );
                     // Fetched in the background at the first start, so the
                     // first subject mask doesn't wait for it.
                     std::thread::spawn(move || {

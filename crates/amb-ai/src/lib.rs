@@ -30,6 +30,8 @@ use amb_engine::subject::{Map, MapKind};
 use serde::{Deserialize, Serialize};
 use tract_onnx::prelude::*;
 
+mod archive;
+pub mod denoise;
 pub mod faces;
 mod net;
 pub use net::runs_on;
@@ -38,7 +40,7 @@ pub mod remove;
 pub mod search;
 
 /// The tasks a model can do, with what they're for.
-pub const TASKS: [(&str, &str); 6] = [
+pub const TASKS: [(&str, &str); 7] = [
     ("subject", "Select Subject and Select Background"),
     ("people", "Select People (everyone, as one mask)"),
     (
@@ -56,6 +58,10 @@ pub const TASKS: [(&str, &str); 6] = [
     (
         "faces",
         "Find faces and eyes: Best in each burst picks the shot with eyes open",
+    ),
+    (
+        "denoise",
+        "AI Denoise: a raw without its noise, as a new DNG",
     ),
 ];
 
@@ -182,6 +188,10 @@ pub struct ModelSpec {
     /// For a search model: how it reads text and photos.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub search: Option<search::SearchSpec>,
+    /// Published only inside a zip: that is downloaded, and the files taken
+    /// out of it by name (each still checked against its own sha256).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub archive: Option<archive::Archive>,
 }
 
 /// One more file of a model.
@@ -190,7 +200,11 @@ pub struct ModelFile {
     pub name: String,
     pub bytes: u64,
     pub sha256: String,
+    #[serde(default)]
     pub urls: Vec<String>,
+    /// Its name inside the model's archive, when it has one.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub member: String,
 }
 
 impl ModelSpec {
@@ -267,7 +281,7 @@ fn known_task(task: &str) -> Result<(), String> {
     }
 }
 
-fn file_of(dir: &Path, id: &str) -> PathBuf {
+pub(crate) fn file_of(dir: &Path, id: &str) -> PathBuf {
     dir.join(format!("{id}.onnx"))
 }
 
@@ -406,6 +420,31 @@ pub fn install(dir: &Path, id: &str, progress: &dyn Fn(u64, u64)) -> Result<Mode
         return Err(format!("{}'s file is missing; add it again", spec.name));
     }
     std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+    if let Some(a) = &spec.archive {
+        let zip = dir.join(format!("{id}.zip"));
+        download(&zip, a.bytes, &a.sha256, &a.urls, &|done| {
+            progress(done, a.bytes)
+        })
+        .map_err(|e| format!("couldn't download {} ({e})", spec.name))?;
+        let mut parts = vec![(
+            file_of(dir, id),
+            a.member.clone(),
+            spec.bytes,
+            spec.sha256.clone(),
+        )];
+        for f in &spec.files {
+            parts.push((
+                dir.join(format!("{id}.{}", f.name)),
+                f.member.clone(),
+                f.bytes,
+                f.sha256.clone(),
+            ));
+        }
+        let got = archive::unpack(&zip, &parts);
+        let _ = std::fs::remove_file(&zip);
+        got.map_err(|e| format!("couldn't install {} ({e})", spec.name))?;
+        return Ok(spec);
+    }
     // Every file, one after the other; progress counts them all.
     let total = spec.total_bytes();
     let mut before = 0;
@@ -547,6 +586,7 @@ pub fn add_custom(dir: &Path, file: &Path, m: CustomModel) -> Result<ModelSpec, 
         detail: 0,
         files: Vec::new(),
         search: None,
+        archive: None,
         input: Input {
             size: m.size,
             mean: m.mean,
@@ -885,12 +925,17 @@ mod tests {
         for s in &all {
             known_task(&s.task).unwrap();
             assert!(
-                ["Apache-2.0", "MIT", "BSD-3-Clause"].contains(&s.licence.as_str()),
+                // GPL-3.0 fits a GPL-3.0 app (the denoiser, also CC BY 4.0).
+                ["Apache-2.0", "MIT", "BSD-3-Clause", "GPL-3.0 or CC BY 4.0"]
+                    .contains(&s.licence.as_str()),
                 "{}",
                 s.id
             );
             assert!(
-                s.bytes > 0 && s.sha256.len() == 64 && !s.urls.is_empty(),
+                s.bytes > 0
+                    && s.sha256.len() == 64
+                    && (!s.urls.is_empty()
+                        || s.archive.as_ref().is_some_and(|a| !a.urls.is_empty())),
                 "{}",
                 s.id
             );
@@ -909,6 +954,15 @@ mod tests {
             } else if s.task == "objects" {
                 // Select Object models: their decoder too.
                 assert!(s.files.iter().any(|f| f.name == "decoder.onnx"), "{}", s.id);
+            } else if s.task == "denoise" {
+                // The Bayer network, and the linear one, from one archive.
+                let a = s.archive.as_ref().expect("an archive");
+                assert!(a.bytes > 0 && a.sha256.len() == 64 && !a.member.is_empty());
+                assert!(
+                    s.files
+                        .iter()
+                        .any(|f| f.name == "linear.onnx" && !f.member.is_empty())
+                );
             } else if s.task != "remove" && s.task != "faces" {
                 // Masks: how much edge detail they keep.
                 assert!((1..=5).contains(&s.detail), "{}", s.id);

@@ -441,6 +441,7 @@ async function init() {
   wireTasks();
   wireInterfaces();
   wireConnect();
+  wireDenoise();
   wireMonitor();
   wireTopbar();
   wireStatusBar();

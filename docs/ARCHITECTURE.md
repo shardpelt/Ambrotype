@@ -18,7 +18,7 @@ About 104,000 lines of Rust, 735 Rust tests and 3 UI test scripts (89 steps). fm
 | `amb-color` | Colour science | Temperature/Tint ↔ xy, matrices, Bradford adaptation, output colour spaces and generated ICC profiles, reading matrix ICC profiles, sRGB → monitor conversion (`display.rs`) |
 | `amb-lens` | Lens profiles | lensfun and Adobe LCP readers, lens matching, interpolation, correction geometry |
 | `amb-engine` | Raw decode and develop | The pipeline below; every model constant is in `Calibration` (JSON, fitted later against Lightroom) |
-| `amb-ai` | Local AI models | `faces.rs`, `search.rs`, `net/`, `objects.rs`, `remove.rs`, `data/models.json` |
+| `amb-ai` | Local AI models | `faces.rs`, `search.rs`, `net/`, `objects.rs`, `remove.rs`, `denoise.rs`, `archive.rs`, `data/models.json` |
 | `amb-gpu` | GPU preview and AI kernels | The pipeline's stages as wgpu compute shaders; `nn.rs` |
 | `amb-export` | Files out | `dng.rs`, `compare.rs`, `contact.rs`, `video.rs`, `embed.rs`, `border.rs`, `collage.rs`, `watermark.rs`, `fonts.rs` |
 | `amb-library` | Library operations on folders and sidecars | `catalog.rs`, `folder.rs`, `lrcat.rs`, `lightroom.rs`, `files.rs` |
@@ -65,6 +65,11 @@ About 104,000 lines of Rust, 735 Rust tests and 3 UI test scripts (89 steps). fm
   - Big-LaMa, or MI-GAN for speed (its pixels are bytes, `input.pixels`).
   - Fills content-aware spots.
   - Registered with `amb_engine::retouch::set_inpainter` ([design/spot-removal.md](design/spot-removal.md)).
+- AI Denoise (`denoise.rs`):
+  - RawNIND's UtNet2 networks (GPL-3.0 or CC BY 4.0), from darktable-ai's model archive (`archive.rs` takes the files out of the zip).
+  - Bayer: the sensor's samples, packed R, G, G, B at half size, in place of our demosaic; others (X-Trans): linear Rec.2020 after it.
+  - 512-pixel tiles overlapping by 64, each scaled back to its input's brightness, blended with a feather.
+  - Registered with `amb_engine::raw_denoise::set_raw_denoiser`; `amb_ops::denoise` writes the result as `<name>-Denoised.dng` with the photo's edit. `amb denoise`, the library's AI Denoise….
 
 ### `amb-gpu`
 

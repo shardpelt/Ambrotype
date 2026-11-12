@@ -468,6 +468,53 @@
         "mean": [0.0, 0.0, 0.0],
         "std": [1.0, 1.0, 1.0]
       }
+    },
+    {
+      "id": "rawnind",
+      "task": "denoise",
+      "name": "RawNIND UtNet2",
+      "default": true,
+      "about": "Takes the noise out of a raw before it is developed, and writes the result as a new DNG beside it. Bayer sensors (most cameras) go straight from the sensor's data; X-Trans (Fujifilm) and others after our own demosaic. About a minute and a half for a 24 MP photo on a 4-core laptop.",
+      "licence": "GPL-3.0 or CC BY 4.0",
+      "by": "Benoit Brummer and Christophe De Vleeschouwer (UCLouvain); ONNX by the darktable-ai project (GPL-3.0)",
+      "source": "https://github.com/trougnouf/rawnind_jddc",
+      "notes": "Trained on the Raw Natural Image Noise Dataset (CC BY 4.0 and CC0). Downloaded as darktable-ai's model archive, and both networks taken out of it.",
+      "bytes": 31056425,
+      "sha256": "da27509dab6a2915da67e988acd86cf71f9d5bbc8d1aa0ed32933578a887b901",
+      "seconds": 90.0,
+      "detail": 0,
+      "input": {
+        "size": 512,
+        "mean": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "std": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "output": {
+        "activation": "none"
+      },
+      "files": [
+        {
+          "name": "linear.onnx",
+          "bytes": 31053823,
+          "sha256": "df957efadcc152c007d5d3b0917bdff9e41c0d4a0efe56584ef30b36393cd181",
+          "member": "rawdenoise-nind/model_linear.onnx"
+        }
+      ],
+      "archive": {
+        "bytes": 57700134,
+        "sha256": "d71b5f1e727c85a359e6f74dca9e2016c9d8fc3e2f7ac3e9b347d80ceca969af",
+        "urls": [
+          "https://github.com/darktable-org/darktable-ai/releases/download/release-5.6.0/rawdenoise-nind.dtmodel"
+        ],
+        "member": "rawdenoise-nind/model_bayer.onnx"
+      }
     }
   ]
 }

@@ -237,6 +237,7 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         batch::library_find_duplicates,
         batch::library_best_in_bursts,
         batch::library_cleanup,
+        batch::photo_denoise,
         files::files_plan,
         files::files_apply,
         files::files_trash,

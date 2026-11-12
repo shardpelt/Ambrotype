@@ -16,7 +16,6 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
 3. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
 4. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
-5. **From the competition:** raw AI Denoise (our own builds, after CalibRaw's ideas) ([research/17](research/17-competitors-2026.md)).
 
 ## Ideas for later
 
@@ -37,6 +36,7 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 
 ## Recently done
 
+- 2026-11-11: **AI Denoise** on the raw (library → More → AI Denoise…, or search; `amb denoise RAW [--amount]`): RawNIND's networks (GPL-3.0 or CC BY 4.0) take the noise out before the photo is developed, into a new `-Denoised.dng` beside it with its edit, as Lightroom does. Bayer sensors from the sensor's data, X-Trans and others after our demosaic; Amount mixes back the photo as it was. An optional 58 MB download in Settings → AI models (darktable-ai's archive); about 50 s for a 24 MP photo on 4 cores
 - 2026-11-11: **Kaleidoscope** and **Heat camera** effects, in the Trippy tab (Kaleidoscope, Mandala, Fractal, Heat camera, Contours) and Trip me: mirrored slices or a fractal fold, false colour by brightness (Ironbow, Rainbow, White hot, Black hot, Arctic, with repeating bands). Effect plugins can now ask for the whole photo at once (`"whole": true`), which a kaleidoscope needs
 - 2026-11-11: **the guides for AI agents, built in**: `amb docs` (list, one, or all written out with their links working), MCP resources for each, and Read in Connect an AI app; **Start Claude Code / Codex / Gemini CLI here** opens a terminal in the photo's folder with `amb` ready and starts the agent, told where the guides are (the command for each is data, in `ai-apps.json`)
 - 2026-11-11: **Clean up** (library → Organise ▾ → Clean up…): finds the photos you may not want (copies and alike pictures, the weaker frames of bursts, blurry, eyes closed, nearly black or blown out, rejected), each with why, and pages through them all marked to go; K keeps, D lets go, then the trash or Reject them. Picked or rated photos are left out. `amb cleanup DIR [--trash|--reject]`

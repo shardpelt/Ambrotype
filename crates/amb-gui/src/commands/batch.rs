@@ -400,6 +400,36 @@ pub(crate) async fn merge_hdr(
     .map_err(|e| e.to_string())?
 }
 
+/// AI Denoise: each raw into a new DNG beside it (amb_ops::denoise),
+/// `amount` (0–100) of it; "denoise-progress" says [photo, photos, tiles
+/// done, tiles] as it goes.
+#[tauri::command]
+pub(crate) async fn photo_denoise(
+    paths: Vec<String>,
+    amount: f32,
+    app: tauri::AppHandle,
+) -> Res<Vec<amb_ops::denoise::Report>> {
+    use tauri::Emitter;
+    tauri::async_runtime::spawn_blocking(move || {
+        let n = paths.len();
+        let mut out = Vec::new();
+        for (i, p) in paths.iter().enumerate() {
+            let progress = |done: usize, total: usize| {
+                let _ = app.emit("denoise-progress", [i + 1, n, done, total]);
+            };
+            out.push(amb_ops::denoise::denoise(
+                Path::new(p),
+                None,
+                amount,
+                &progress,
+            )?);
+        }
+        Ok(out)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 /// Photo Merge > Panorama: stitch the photos into a DNG next to them, each
 /// corrected with its lens profile first when `lens_corrections` is on, and
 /// with `auto_tone` give it the built-in Auto tone.

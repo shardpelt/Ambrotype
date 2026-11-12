@@ -148,14 +148,17 @@ fn color_matrix(raw: &rawler::RawImage) -> Result<Mat3, Error> {
 /// ([`crate::raster`]), turned as its sidecar says when it was turned in the
 /// library ([`crate::orientation`]).
 pub fn load(path: &Path) -> Result<CameraImage, Error> {
-    let mut img = load_file(path)?;
+    let mut img = load_file(path, None)?;
     if let Some(o) = crate::orientation::from_sidecar(path) {
         img.metadata.orientation = o;
     }
     Ok(img)
 }
 
-fn load_file(path: &Path) -> Result<CameraImage, Error> {
+pub(crate) fn load_file(
+    path: &Path,
+    denoise: Option<&crate::raw_denoise::Denoise<'_>>,
+) -> Result<CameraImage, Error> {
     if crate::raster::is_raster(path) {
         return crate::raster::load(path);
     }
@@ -177,7 +180,7 @@ fn load_file(path: &Path) -> Result<CameraImage, Error> {
     ]);
     let developed = match develop_xtrans(&raw)? {
         Some(xtrans) => xtrans,
-        None => match develop_bayer(&raw)? {
+        None => match develop_bayer(&raw, denoise)? {
             Some(bayer) => bayer,
             None => developed(
                 develop
@@ -419,7 +422,10 @@ fn develop_xtrans(raw: &rawler::RawImage) -> Result<Option<Developed>, Error> {
 
 /// Bayer sensors: RCD instead of rawler's PPG, worked at the as-shot white
 /// balance, then the same default crop rawler would apply.
-fn develop_bayer(raw: &rawler::RawImage) -> Result<Option<Developed>, Error> {
+fn develop_bayer(
+    raw: &rawler::RawImage,
+    denoise: Option<&crate::raw_denoise::Denoise<'_>>,
+) -> Result<Option<Developed>, Error> {
     let Some((samples, w, h, cfa)) = mosaic(raw, rawler::imgop::sensor::SensorType::Bayer)? else {
         return Ok(None);
     };
@@ -432,7 +438,10 @@ fn develop_bayer(raw: &rawler::RawImage) -> Result<Option<Developed>, Error> {
     } else {
         [1.0; 3]
     };
-    let rgb = crate::rcd::demosaic(&samples, w, h, &pattern, wb);
+    let rgb = match denoise {
+        Some(d) => d.bayer(&samples, (w, h), pattern, wb)?,
+        None => crate::rcd::demosaic(&samples, w, h, &pattern, wb),
+    };
     drop(samples);
     Ok(Some(crop_default(raw, w, h, rgb)))
 }

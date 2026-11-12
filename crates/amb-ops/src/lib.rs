@@ -4,6 +4,7 @@
 pub mod burst;
 pub mod cleanup;
 pub mod convert;
+pub mod denoise;
 pub mod dust;
 pub mod merge;
 pub mod negative;

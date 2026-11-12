@@ -197,6 +197,9 @@ A small catalogue in Lightroom's layout of these photos (rated 4, Red, picked, E
 .B amb lrcat import <CATALOG.lrcat> [\-\-apply] [\-\-remap OLD=NEW] [\-\-collections DIR] [\-\-json]
 Move from Lightroom Classic: each photo's develop settings, rating, label, flag, keywords, stack, title and caption go into its XMP sidecar, virtual copies become ours, and collections (in their sets) the editor's. Shows the plan; \-\-apply writes it. The catalogue is only read (close Lightroom first); sidecars already there are kept. \-\-remap /Volumes/Photos/=/mnt/photos/ finds photos that have moved
 .TP
+.B amb denoise <RAW>... [\-\-amount 0\-100] [\-\-out OUT.dng] [\-\-json]
+AI Denoise: each raw without its noise, as a new DNG beside it (<name>\-Denoised.dng) with the photo's edit; \-\-amount mixes in the photo as it was (default 70) to keep texture; needs the denoise model (amb models install rawnind)
+.TP
 .B amb merge hdr <RAW>... [\-\-out OUT.dng] [\-\-no\-align] [\-\-deghost low|medium|high] [\-\-json]
 Merge bracketed raws of one scene into a floating\-point DNG (default: <first>\-HDR.dng next to them) that opens and edits like a raw, here and in Lightroom; Auto Tone it with amb plugin run plugins/auto\-tone OUT.dng
 .TP

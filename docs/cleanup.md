@@ -127,31 +127,6 @@ Do the groups in order, or any card whose "Precondition" line is met. Ids are st
 
 Work that was planned and not finished. Do these before the groups below.
 
-### 0e. The guard tests the code style names
-Tier: medium        Risk: low
-Why: `docs/codestyle.md` lists these tests as holding its rules; they do not exist yet, and the UI's old idioms grew in three days although a helper existed. Three files, one commit each.
-Files: `crates/amb-gui/src/checks.rs` (new), `crates/amb-gui/src/main.rs`, `crates/amb-cli/tests/code_health.rs` (new), `crates/amb-cli/tests/docs_health.rs` (new).
-Steps, first commit (`crates/amb-gui/src/checks.rs`):
-1. In `main.rs`, below `mod uitest;`, add `#[cfg(test)] mod checks;`. In `checks.rs`: the SPDX line, a `//!` line ("Guard tests: the lists a feature is added to, and the old idioms whose counts may only fall (docs/codestyle.md)"), and its own helpers: `ui_text(ext)` returning every file under `crates/amb-gui/ui/` (all subfolders) with that extension, as `(path from ui/, text)`, and `src_text()` for every `.rs` under `crates/amb-gui/src/`. The helpers in `main.rs`'s `tests` module are private to it; do not move them.
-2. Test `every_tauri_command_is_in_the_handler`: take each name after `#[tauri::command]` (the next `fn` or `async fn`, past other attribute and `///` lines) in `src_text()`; take the entries of `tauri::generate_handler![ ... ]` in `crates/amb-gui/src/commands/mod.rs` (the last `::` part of each, before the comma). The two sets must be equal. They are equal today (240 each).
-3. Test `the_ui_calls_only_registered_commands`: every `invoke("name"` in the UI's `.js` files and in `crates/amb-gui/tests/ui/*.js` is in that handler list. True today (232 names).
-4. Test `every_wire_function_is_called`: every top-level `function wireX(` (also `async function`) in the UI has its name somewhere else in the UI's scripts, as a call or as `addEventListener("DOMContentLoaded", wireX)`. `wirePreferJpeg` (`crates/amb-gui/ui/develop/filmstrip.js`) and `wireToolbarOverflow` (`crates/amb-gui/ui/core/toolbar.js`) are started that way: they pass.
-5. Test `old_idioms_may_only_fall`: count over the UI's `.js` files (and for the last, `index.html`) and assert `count <= LIMIT`, each limit a `const` at the top with a comment "lower it when you remove some": `Object.assign(document.createElement(` 381; `innerHTML` 15; `style="` in `ui/index.html` 17; top-level `let` (lines starting `let `) 7; `toast(String(` 176; `localStorage` outside `crates/amb-gui/ui/core/core.js` 8. The failure message says which idiom and which helper replaces it (`el`, `textContent` or `el` children, `class` in the stylesheet, a `const` state object, `showError`, `store`).
-6. Run the UI tests too (`main.rs` is not changed, but the build is).
-Steps, second commit (`crates/amb-cli/tests/code_health.rs`):
-7. New file with the SPDX line and a `//!` line. Helper `root()` as in `crates/amb-cli/tests/recipes.rs`.
-8. Test `every_usage_command_has_an_arm`: take each `amb NAME` that starts a line (after four spaces) in the `USAGE` text of `crates/amb-cli/src/usage.rs`; `crates/amb-cli/src/main.rs` must contain `"NAME"` in a match pattern. True today for every name (`preset`, `render`, `do`, `edit`, ...).
-9. Test `every_features_command_is_in_usage`: each `` `amb NAME `` in `docs/FEATURES.md` has NAME among the usage names. True today.
-10. Test `counts_may_only_fall`: count `#[allow(` and `#![allow(` in `crates/*/src` and `plugins/*/src` before each file's first `#[cfg(test)]` line (the `code_size.rs` rule; skip `/tests/` and `tests.rs`): at most 16. Count bare `.unwrap()` the same way: at most 1 today (`crates/amb-engine/src/raw.rs`); another card may lower it first, so measure with the same awk or loop and use the number you get.
-Steps, third commit (`crates/amb-cli/tests/docs_health.rs`):
-11. New file. Test `every_doc_is_in_the_map`: every `docs/**/*.md` is linked from `docs/README.md`, except `docs/research/NN-*.md` (numbered, dated), `docs/release-notes/*`, `docs/audit-2026-11-12/*` while it exists, and `docs/README.md` itself.
-12. Test `relative_links_resolve`: every `](path)` or `](path#anchor)` in `README.md`, `AGENTS.md`, `CONTRIBUTING.md` and `docs/**/*.md` that is not a URL names a file that exists (relative to that file). Skip anchors (an anchor check is a later card).
-13. Test `every_crate_is_named`: each folder in `crates/` is named (as `` `crates/NAME` `` or `NAME`) in `AGENTS.md`, `README.md` and `docs/ARCHITECTURE.md`. It fails today where the docs lack a crate (`amb-ops` in `README.md`; `amb-plugin` and `amb-plugin-sdk` in `docs/ARCHITECTURE.md`): add the missing rows to those docs in this commit.
-Don't: change what a test counts afterwards without lowering; add a dependency (read files with `std::fs`).
-Checks: the three cargo commands; `cargo test -p amb-gui checks`, `cargo test -p amb-cli --test code_health --test docs_health`.
-Done when: each test fails when you add one violation (try it once, then undo).
-Commits: `gui: tests for the handler list, the wire calls and the old idioms`; `cli: tests for usage against dispatch, and the counts that may only fall`; `docs: tests for the map, links and crates`.
-
 ### 0f. UI helpers `showError` and `plural`, and the rest of the `store` move
 Tier: medium        Risk: low
 Why: 176 `toast(String(e), true)` and about 130 hand-made plurals; 8 `localStorage` uses left outside `core.js`.

@@ -11,6 +11,7 @@ mod convert;
 mod docs;
 mod dust;
 mod edit;
+mod export_batch;
 mod fuji;
 mod lens;
 mod library;
@@ -123,7 +124,8 @@ fn main() -> ExitCode {
             | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert"
             | "--replace" | "--guess" | "--stack" | "--reject" | "--shuffle" | "--window"
             | "--subfolders" | "--no-scenes" | "--no-odd" | "--own-midtone" | "--landscape"
-            | "--no-edits" | "--best-of-bursts" | "--no-captions" | "--trash" => {
+            | "--no-edits" | "--best-of-bursts" | "--no-captions" | "--trash" | "--recursive"
+            | "--flat" | "--skip-existing" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -328,7 +330,13 @@ fn main() -> ExitCode {
             Ok(())
         }
         ["render", inputs @ ..] if !inputs.is_empty() && options.contains_key("--out-dir") => {
-            render_many(inputs, Path::new(options["--out-dir"]), &options)
+            export_batch::render_dir(
+                inputs,
+                Path::new(options["--out-dir"]),
+                &options,
+                dry_run,
+                json,
+            )
         }
         ["render", input, out] => render(
             Path::new(input),

@@ -107,6 +107,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 
 - **Export** → **Export** (Ctrl+E): JPEG, PNG, TIFF, WebP, AVIF, OpenEXR or JPEG XL; size, sharpening, metadata, colour space, border, watermark. `amb render PHOTO OUT.jpg`.
 - **Many photos at once** → select them in the library (or the filmstrip) and **Export**. `amb render PHOTOS… --out-dir DIR`.
+- **Make lots of photos in subfolders smaller** → the library's **Batch export…** (File menu, or search "batch", "resize", "smaller"): a folder and its subfolders, long edge in pixels, format and quality, into another folder with the same structure; Skip files that exist lets a stopped run carry on. `amb render DIR --out-dir OUT --recursive --long-edge 2048`.
 - **Name batch files by a template** → **Export** → file name ({name}, {seq}, the date, {camera}). `amb render PHOTOS… --out-dir DIR --name TEMPLATE`.
 - **JPEG chroma subsampling, progressive JPEG** → **Export**; AVIF has a speed.
 - **File too big to send (WhatsApp, email)** → **Export** → Keep under (MB); 16 MB is WhatsApp's maximum. `amb render … --max-size 16M`.

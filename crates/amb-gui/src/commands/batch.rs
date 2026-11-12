@@ -618,3 +618,136 @@ pub(crate) async fn convert_raws(
     .await
     .map_err(|e| e.to_string())?
 }
+
+/// Set by Stop in the Batch export dialog; read between photos.
+static BATCH_STOP: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// What a batch export of a folder would do, for the dialog's count line.
+#[derive(Serialize)]
+pub(crate) struct BatchPlan {
+    photos: usize,
+    folders: usize,
+    /// Each photo's folder below the source, in order, for "212 of 1,240 · day 2".
+    dirs: Vec<String>,
+}
+
+/// The folder to put a batch export in; a UI test gets one of its own.
+#[tauri::command]
+pub(crate) async fn batch_export_pick(
+    app: tauri::AppHandle,
+    dir: Option<String>,
+) -> Option<String> {
+    if let Some(t) = crate::uitest::current() {
+        return Some(t.out_dir.join("batch").display().to_string());
+    }
+    let mut dialog = app.dialog().file().set_title("Put the smaller copies in…");
+    if let Some(d) = dir.filter(|d| Path::new(d).is_dir()) {
+        dialog = dialog.set_directory(d);
+    }
+    dialog
+        .blocking_pick_folder()
+        .and_then(|p| p.into_path().ok())
+        .map(|p| p.display().to_string())
+}
+
+/// How many photos, in how many folders, a batch export of `from` would write.
+#[tauri::command]
+pub(crate) async fn batch_export_plan(
+    from: String,
+    to: Option<String>,
+    recursive: bool,
+    keep_structure: bool,
+) -> Res<BatchPlan> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let options = amb_ops::export_batch::Options {
+            recursive,
+            keep_structure,
+            ..Default::default()
+        };
+        let to = to.map(PathBuf::from).unwrap_or_default();
+        let jobs = amb_ops::export_batch::plan(&[PathBuf::from(from)], &to, &options)?;
+        let folders: std::collections::HashSet<&str> =
+            jobs.iter().map(|j| j.folder.as_str()).collect();
+        Ok(BatchPlan {
+            photos: jobs.len(),
+            folders: folders.len(),
+            dirs: jobs.iter().map(|j| j.folder.clone()).collect(),
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[derive(Deserialize)]
+pub(crate) struct BatchExportOptions {
+    from: String,
+    to: String,
+    recursive: bool,
+    keep_structure: bool,
+    skip_existing: bool,
+    export: ExportOptions,
+}
+
+/// Library → Batch export…: `amb_ops::export_batch` on a folder, each photo
+/// with its own edit, rating and keywords. "batch-export-progress" tells
+/// [done, total]; `batch_export_stop` ends it after the photos under way.
+#[tauri::command]
+pub(crate) async fn batch_export(
+    app: tauri::AppHandle,
+    options: BatchExportOptions,
+    state: tauri::State<'_, AppState>,
+) -> Res<amb_ops::export_batch::Report> {
+    use std::sync::atomic::Ordering;
+    use tauri::Emitter;
+    let slot = state.session.clone();
+    let lens = state.lens.clone();
+    BATCH_STOP.store(false, Ordering::Relaxed);
+    tauri::async_runtime::spawn_blocking(move || {
+        save_open_edits(&slot)?;
+        let export = export_settings(&options.export)?;
+        let batch = amb_ops::export_batch::Options {
+            recursive: options.recursive,
+            keep_structure: options.keep_structure,
+            skip_existing: options.skip_existing,
+            export,
+        };
+        let to = PathBuf::from(&options.to);
+        let jobs = amb_ops::export_batch::plan(&[PathBuf::from(&options.from)], &to, &batch)?;
+        let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let tags = options.export.include_tags;
+        let render = |photo: &Path, out: &Path, settings: &amb_export::ExportSettings| {
+            let mut s = crate::session::Session::open(photo)?;
+            let mut settings = settings.clone();
+            if tags {
+                settings.tags = amb_export::exif::Tags {
+                    rating: s.info.rating,
+                    keywords: s.info.keywords.clone(),
+                    label: s.info.label.clone(),
+                    title: s.info.title.clone(),
+                    caption: s.info.caption.clone(),
+                    creator: s.info.creator.clone(),
+                    copyright: s.info.copyright.clone(),
+                    place: s.info.place(),
+                };
+            }
+            s.export(out, &settings, lens).map(|_| ())
+        };
+        let progress = |done: usize, total: usize| {
+            let _ = app.emit("batch-export-progress", [done, total]);
+        };
+        Ok(amb_ops::export_batch::run(
+            &jobs,
+            &batch,
+            &render,
+            &progress,
+            &BATCH_STOP,
+        ))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+pub(crate) fn batch_export_stop() {
+    BATCH_STOP.store(true, std::sync::atomic::Ordering::Relaxed);
+}

@@ -2,6 +2,7 @@
 
 What landed, newest first. The newest 15 entries are in WHATS-NEXT.md's Recently done; they move here as newer ones arrive.
 
+- 2026-11-11: Back (‹, Alt+←) steps through the library's views and an Insights bar's filter, not only the tabs; Survey taken out of the library (compare and the grid do its job); Compare splits side by side or above and below, the candidate either way round; Grid comes back from Map and Timeline; presets apply to the original by default
 - 2026-11-11: **Glass Light** and **Glass Dark** themes (Appearance): frosted, see-through panels over a soft wash of colour (a theme's new `glass` token, the blur in px); still to check that the blur stays smooth on older Windows machines. Eight new presets (Blue Hour, Cinematic, Crisp Morning, Desert Dust, Matte Portrait, Noir, Sunset Duotone, Vaporwave) and four new Surprise me styles (Cinematic, Dreamy, Vintage, Punchy)
 - 2026-11-11: **Insights** (library view, Shift+I): how the photos shown were shot: a chart each for aperture, focal length, shutter speed, ISO, time of day, lens and camera, with the kept ones (picked, or 3 stars and up) as the bar's darker part, and the settings used most together; camera chips narrow it, a click on a bar shows those photos. `amb insights DIR`
 - 2026-11-10: Select object's **Copy**: drag a copy of it elsewhere, and it stays where it was too (Move's clone without the fill)

@@ -6,6 +6,7 @@ pub mod cleanup;
 pub mod convert;
 pub mod denoise;
 pub mod dust;
+pub mod export_batch;
 pub mod merge;
 pub mod negative;
 pub mod object;

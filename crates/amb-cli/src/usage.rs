@@ -29,6 +29,15 @@ USAGE:
                                             same preset and export options; one failure doesn't stop the rest.
                                             --name names the files as Import does: {name} {yyyy} {mm} {dd}
                                             {hh} {min} {ss} {seq} {camera}, e.g. trip_{seq}
+    amb render <PHOTO|DIR>... --out-dir DIR [--recursive] [--flat] [--skip-existing] [--dry-run] [--json]
+                                            [export options]
+                                            Smaller copies of folders full of photos (raws, JPEGs, ...):
+                                            with --recursive the subfolders' too, in the same folders under
+                                            DIR (--flat: all in DIR; clashing names get -2, -3). A raw with a
+                                            JPEG of the same name counts once, as the raw. A few at a time;
+                                            --skip-existing leaves files that are newer than their photo and
+                                            its edit, so a stopped run carries on (change DIR when you change
+                                            the size). Ends with a summary; --dry-run lists the files
     amb do <PHOTO|SIDECAR.xmp> \"<EDITS>\" [--dry-run] [--json]
                                             Edit in the compact syntax as one undoable step and print
                                             only what changed, e.g. \"exp=+0.5 con+=10 hl=-40 reset:hsl

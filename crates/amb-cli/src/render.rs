@@ -131,6 +131,35 @@ pub(crate) fn render(
     Ok(())
 }
 
+/// One photo with its own edit (or `--preset`) into `out`, quietly, for the
+/// batch export (`export_batch.rs`).
+pub(crate) fn render_quiet(
+    input: &Path,
+    out: &Path,
+    export: &amb_export::ExportSettings,
+    options: &BTreeMap<&str, &str>,
+) -> Result<(), String> {
+    let source = amb_engine::source_path(input);
+    let mut img =
+        amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
+    let sidecar = amb_engine::sidecar_path(input);
+    let known = sidecar.is_file() || amb_presets::linked::get(&sidecar).is_some();
+    let preset = options.get("--preset").map(|p| p.to_string());
+    let own = (preset.is_none() && known).then(|| sidecar.display().to_string());
+    let (develop, _, _) = develop_settings(
+        &mut img,
+        preset.as_deref().or(own.as_deref()),
+        options.get("--amount").copied(),
+        options.get("--look").copied(),
+        options.get("--calibration").copied(),
+        options,
+    )?;
+    let (developed, _) = amb_gpu::full::render(amb_gpu::full::shared(), &img, &develop);
+    amb_export::export(&developed, &img.metadata, export, out)
+        .map(|_| ())
+        .map_err(|e| format!("{}: {e}", out.display()))
+}
+
 /// The develop settings for `img` from a preset or sidecar (at `amount`),
 /// with its lens and camera profiles found; what wasn't rendered, and notes
 /// on what was used.

@@ -415,6 +415,7 @@ function wireLibrary() {
   wireBrowse();
   wireDuplicates();
   wireCleanup();
+  wireBatchExport();
   wireBursts();
   wireOrganise();
   $("lib-settings").addEventListener("click", () => $("btn-settings").click());

@@ -1603,3 +1603,12 @@ body.photo-only .viewer { grid-column: 1 / -1; }
 .ss-place { display: flex; gap: 4px; }
 .ss-place input { flex: 1; min-width: 0; }
 .pick-foot { display: flex; gap: 8px; font-size: 11px; }
+
+.batch-dialog { width: 620px; max-width: calc(100vw - 32px); }
+.batch-dialog h3 { margin: 12px 0 6px; }
+.batch-path { margin: 0; overflow-wrap: anywhere; color: var(--text); font-size: 12px; }
+.batch-row { display: flex; align-items: center; gap: 10px; }
+.batch-row .batch-path { flex: 1; }
+.batch-dialog progress { width: 100%; }
+.batch-summary { margin-top: 10px; font-size: 12px; }
+.batch-summary .fail { color: var(--danger); margin: 2px 0; overflow-wrap: anywhere; }

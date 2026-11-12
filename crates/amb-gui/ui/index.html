@@ -529,6 +529,7 @@
           <button type="button" id="lib-export" class="small primary" data-needs="any" title="Export the selection with the same choices, one file each (Ctrl+E)">Export…</button>
           <button type="button" id="lib-collage" class="small" data-needs="any" title="Start a collage with the selected photos">Make a collage</button>
           <button type="button" id="lib-convert" class="small" data-needs="any" title="Raws to JPEGs in one go (a card shot in RAW by mistake): as the camera would have saved them, each on Auto, or all like one you edited">Convert raws…</button>
+          <button type="button" id="lib-batch" class="small" title="Resize and export a whole folder, subfolders too, into another folder with the same structure: smaller copies of lots of photos">Batch export…</button>
           <button type="button" id="lib-contact" class="small" data-needs="any" title="Contact sheets to print: the selected photos small on pages, as strips of film or a plain grid">Contact sheet…</button>
         </div>
         <details class="lib-more">
@@ -652,6 +653,42 @@
         <button value="ok" class="primary">Choose folder and convert…</button>
       </menu>
     </form>
+  </dialog>
+
+  <!-- Batch export of a folder and its subfolders, smaller (library/batch-export.js). -->
+  <dialog id="batch-dialog" class="batch-dialog">
+    <h2>Batch export</h2>
+    <div id="batch-setup">
+      <h3>From</h3>
+      <p id="batch-from" class="batch-path"></p>
+      <label class="inline-check"><input id="batch-sub" type="checkbox" checked><span>Include subfolders</span></label>
+      <p id="batch-count" class="hint"></p>
+      <h3>To</h3>
+      <div class="batch-row"><span id="batch-to" class="batch-path"></span><button type="button" id="batch-pick" class="small">Choose folder…</button></div>
+      <label class="inline-check"><input id="batch-keep" type="checkbox" checked><span>Keep the folder structure</span></label>
+      <h3>Size and format</h3>
+      <div class="grid">
+        <label>Resize
+          <span class="pair"><select id="batch-mode"><option value="long">Long edge (px)</option><option value="percent">Percent</option><option value="">Full size</option></select><input id="batch-value" type="number" min="1" step="any" value="2048"></span>
+        </label>
+        <label>Keep under (MB, JPEG) <input id="batch-mb" type="number" min="0.01" step="0.5" placeholder="No limit"></label>
+        <label>Format <select id="batch-format"><option value="jpeg">JPEG</option><option value="png">PNG</option><option value="webp">WebP (lossless)</option><option value="tiff">TIFF</option></select></label>
+        <label>Quality <input id="batch-quality" type="number" min="1" max="100" value="90"></label>
+      </div>
+      <label class="inline-check"><input id="batch-skip" type="checkbox" checked><span>Skip files that exist</span></label>
+      <p class="hint">Each photo keeps its own edit. The photos stay as they are. Stop at any time and start again: finished ones are skipped.</p>
+    </div>
+    <div id="batch-run" hidden>
+      <progress id="batch-bar" value="0" max="1"></progress>
+      <p id="batch-now" class="hint"></p>
+    </div>
+    <div id="batch-summary" class="batch-summary" hidden></div>
+    <menu>
+      <button type="button" id="batch-open" hidden>Open the folder</button>
+      <button type="button" id="batch-stop" hidden>Stop</button>
+      <button type="button" id="batch-close">Close</button>
+      <button type="button" id="batch-start" class="primary">Start</button>
+    </menu>
   </dialog>
 
   <!-- Contact sheets (library-actions.js contactSheetFlow). -->
@@ -1882,6 +1919,7 @@
   <script src="library/insights.js"></script>
   <script src="library/duplicates.js"></script>
   <script src="library/cleanup.js"></script>
+  <script src="library/batch-export.js"></script>
   <script src="library/denoise.js"></script>
   <script src="library/bursts.js"></script>
   <script src="library/organise.js"></script>

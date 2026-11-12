@@ -38,6 +38,9 @@ Develop a raw with its own sidecar (or \-\-preset, a preset or another sidecar),
 .B amb render <RAW>... \-\-out\-dir DIR [\-\-format jpeg|...] [\-\-name TEMPLATE] [same options]
 The same for many raws (e.g. a folder: photos/*.NEF), with the same preset and export options; one failure doesn't stop the rest. \-\-name names the files as Import does: {name} {yyyy} {mm} {dd} {hh} {min} {ss} {seq} {camera}, e.g. trip_{seq}
 .TP
+.B amb render <PHOTO|DIR>... \-\-out\-dir DIR [\-\-recursive] [\-\-flat] [\-\-skip\-existing] [\-\-dry\-run] [\-\-json] [export options]
+Smaller copies of folders full of photos (raws, JPEGs, ...): with \-\-recursive the subfolders' too, in the same folders under DIR (\-\-flat: all in DIR; clashing names get \-2, \-3). A raw with a JPEG of the same name counts once, as the raw. A few at a time; \-\-skip\-existing leaves files that are newer than their photo and its edit, so a stopped run carries on (change DIR when you change the size). Ends with a summary; \-\-dry\-run lists the files
+.TP
 .B amb do <PHOTO|SIDECAR.xmp> \(dq<EDITS>\(dq [\-\-dry\-run] [\-\-json]
 Edit in the compact syntax as one undoable step and print only what changed, e.g. \(dqexp=+0.5 con+=10 hl=\-40 reset:hsl preset:film.xmp@50\(dq (Name=v, Name+=d, Name\-=d, reset:X, preset:P[@amount], snap:N, load:N, undo, redo; short names temp tint exp con hl sh wh bl tex cla deh vib sat sharp nr cnr vig grain; docs/ai/core.md)
 .TP

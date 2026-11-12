@@ -22,7 +22,7 @@ For the size of the code, run `python3 tools/code-metrics.py`. fmt, clippy and t
 | `amb-gpu` | GPU preview and AI kernels | The pipeline's stages as wgpu compute shaders; `nn.rs` |
 | `amb-export` | Files out | `dng.rs`, `compare.rs`, `contact.rs`, `video.rs`, `embed.rs`, `border.rs`, `collage.rs`, `watermark.rs`, `fonts.rs` |
 | `amb-library` | Library operations on folders and sidecars | `catalog.rs`, `folder.rs`, `lrcat.rs`, `lightroom.rs`, `files.rs` |
-| `amb-ops` | Operations that render photos | `convert.rs`, `replay.rs`, `merge.rs`, `object.rs`, `snap.rs`, `burst.rs`, `cleanup.rs`, `dust.rs`, `negative.rs` |
+| `amb-ops` | Operations that render photos | `convert.rs`, `replay.rs`, `merge.rs`, `object.rs`, `snap.rs`, `burst.rs`, `cleanup.rs`, `dust.rs`, `negative.rs`, `export_batch.rs` (a folder tree to smaller copies, same structure; `amb render --recursive` and the editor's Batch export) |
 | `amb-plugin` | The sandboxed plugin host | `manifest.rs`, `effect.rs`, `photo.rs`, `native.rs`, `fuji.rs` |
 | `amb-plugin-sdk` | What plugins are written with; MIT OR Apache-2.0 | `lib.rs` |
 | `amb-testkit` | Calibration tooling | Synthetic DNG targets (incl. a scanned negative), the Lightroom slider-sweep kit |

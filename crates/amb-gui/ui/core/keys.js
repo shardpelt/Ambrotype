@@ -99,6 +99,7 @@ const KEY_ACTIONS = [
   { id: "flag-none", group: "Rating", label: "Remove the flag", keys: ["U"], when: FLAG_CONTEXTS, run: () => flagKey("") },
   { id: "library", group: "Library", label: "Library grid / editor", hint: "All the photos in the folder, to rate, label, tag and export many at once.", keys: ["G"], when: "any", button: "btn-library", run: () => cullLeave() || libraryToggle() },
   { id: "import", group: "Library", label: "Import photos from a card or folder", hint: "Copied into dated folders, renamed if you like.", keys: ["Ctrl+Shift+I"], when: "any", run: () => importFlow() },
+  { id: "batch-export", group: "File", label: "Batch export: resize a folder and its subfolders to smaller copies in another folder", hint: "Make lots of photos smaller at once, keeping the folder structure; stop and run again any time.", keys: [], when: "any", run: () => openBatchExport() },
   { id: "convert-raws", group: "File", label: "Convert raws to JPEGs: the library's selection, or the open photo's folder", keys: [], when: "any", run: () => convertRawsFlow() },
   { id: "save-preset", group: "Edit", label: "Make a preset from this photo's edit", hint: "Its settings, without the crop, as a one-click preset.", keys: ["Ctrl+Shift+N"], when: "any", photo: true, button: "btn-save-preset", run: () => savePresetFlow() },
   { id: "show-hidden-presets", group: "Edit", label: "Show hidden presets: hide, unhide or remove presets", hint: "Hidden presets come back dimmed in the Presets tab, to unhide.", keys: [], when: "any", run: () => presetToggleShowHidden() },

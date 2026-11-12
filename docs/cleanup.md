@@ -123,10 +123,6 @@ The editor's scripts are plain `<script>` files sharing one global scope, loaded
 
 Do the groups in order, or any card whose "Precondition" line is met. Ids are stable: other docs and commit messages name them. A card is ready when a model that has never seen the repo can do it; if one turns out not to be, stop and write the question under "Needs a brief" ([delegation.md](delegation.md), "When to stop and hand up").
 
-### Group 0: finish first
-
-Work that was planned and not finished. Do these before the groups below.
-
 ### Group A: small
 
 ### A1. Shared dependencies declared once
@@ -710,3 +706,4 @@ Bugs or oddities noticed during a task, to look at separately:
 - Fixed 2026-11-09: two quick rating or flag keys in the viewer could show the older values (each answer carries the photo's whole info); every info write now goes through `setInfo` in `core.js`, one at a time.
 - Fixed 2026-11-09: tests that failed now and then: two export tests wrote the same JPEG XL files at once; two UI steps waited less than the work before them (Watch an edit's ghost cursor, the photo's fit after a resize).
 - Fixed 2026-11-09: "Save to…" for a preset held `preset_dirs` while reading the settings path, the opposite order to `save_config`; two threads could each wait for the other. It reads the path first now.
+- Fixed 2026-11-12: `amb-engine`'s test `mask::tests::ai_masks_select_nothing_and_are_reported` failed once in a full run and passed on two reruns. Cause: `model_masks_ask_for_their_kind_and_background_is_the_subject_inverted` installs a stand-in with `subject::set_finder`, which is process-wide and stayed set, so when it ran first the other test found a model and no note. Both tests now hold a lock, and the finder is removed when the installing test ends.

@@ -101,10 +101,7 @@ fn every_doc_is_in_the_map() {
         let numbered_research = rel
             .strip_prefix("research/")
             .is_some_and(|r| r.chars().next().is_some_and(|c| c.is_ascii_digit()));
-        if numbered_research
-            || rel.starts_with("release-notes/")
-            || rel.starts_with("audit-2026-11-12/")
-        {
+        if numbered_research || rel.starts_with("release-notes/") {
             continue;
         }
         if !reachable.contains(&file) {

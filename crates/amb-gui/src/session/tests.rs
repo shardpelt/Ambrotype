@@ -33,7 +33,7 @@ fn photo_sidecars_are_not_presets() {
     // A JPEG's sidecar keeps the photo's whole name.
     std::fs::write(dir.join("Look/DSCF9692.JPG"), b"x").unwrap();
     std::fs::write(dir.join("Look/DSCF9692.JPG.xmp"), packet("")).unwrap();
-    let found: Vec<String> = scan_presets(std::slice::from_ref(&dir))
+    let found: Vec<String> = scan_presets(std::slice::from_ref(&dir), None)
         .into_iter()
         .map(|p| p.name)
         .collect();
@@ -354,7 +354,7 @@ fn presets_are_found_with_names_and_groups() {
     )
     .unwrap();
     std::fs::write(dir.join("notes.txt"), "not a preset").unwrap();
-    let found = scan_presets(std::slice::from_ref(&dir));
+    let found = scan_presets(std::slice::from_ref(&dir), None);
     assert_eq!(found.len(), 1);
     assert_eq!(found[0].name, "sunny");
     assert_eq!(found[0].group, "Warm");
@@ -380,7 +380,7 @@ fn saves_a_preset_without_the_crop() {
     assert!(preset.settings.contains_key("GrainAmount"));
     assert!(!preset.settings.contains_key("CropTop") && !preset.settings.contains_key("HasCrop"));
     // It shows up in the presets list, in its group.
-    let found = scan_presets(std::slice::from_ref(&dir));
+    let found = scan_presets(std::slice::from_ref(&dir), None);
     assert_eq!(
         (found[0].name.as_str(), found[0].group.as_str()),
         ("Faded street", "Yours")

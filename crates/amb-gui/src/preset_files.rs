@@ -13,6 +13,25 @@ pub struct PresetEntry {
     pub name: String,
     pub group: String,
     pub path: String,
+    /// A file in the app's own presets folder: it can be moved to the trash.
+    pub deletable: bool,
+}
+
+/// Whether a path is a preset file the app may delete: a real file with a
+/// preset extension inside `own`, the app's own presets folder. Presets in
+/// folders the user added, or in Lightroom's, belong to other programs too.
+/// `..` and symlinks are resolved first, so they can't lead out.
+pub fn preset_deletable(path: &Path, own: &Path) -> bool {
+    let (Ok(real), Ok(root)) = (std::fs::canonicalize(path), std::fs::canonicalize(own)) else {
+        return false;
+    };
+    real.is_file() && is_preset_extension(&real) && real.starts_with(root)
+}
+
+fn is_preset_extension(p: &Path) -> bool {
+    p.extension()
+        .and_then(|x| x.to_str())
+        .is_some_and(|x| x.eq_ignore_ascii_case("xmp") || x.eq_ignore_ascii_case("lrtemplate"))
 }
 
 /// Settings groups a saved preset leaves out: they belong to one photo.
@@ -117,7 +136,8 @@ pub fn default_preset_dirs() -> Vec<PathBuf> {
 }
 
 /// All presets (.xmp, .lrtemplate) under `dirs`, sorted by group and name.
-pub fn scan_presets(dirs: &[PathBuf]) -> Vec<PresetEntry> {
+/// `own` is the app's presets folder: only files in it are `deletable`.
+pub fn scan_presets(dirs: &[PathBuf], own: Option<&Path>) -> Vec<PresetEntry> {
     fn walk(dir: &Path, out: &mut Vec<PathBuf>, depth: usize) {
         let Ok(entries) = std::fs::read_dir(dir) else {
             return;
@@ -126,10 +146,7 @@ pub fn scan_presets(dirs: &[PathBuf]) -> Vec<PresetEntry> {
             let p = e.path();
             if p.is_dir() && depth < 6 {
                 walk(&p, out, depth + 1);
-            } else if p.extension().and_then(|x| x.to_str()).is_some_and(|x| {
-                x.eq_ignore_ascii_case("xmp") || x.eq_ignore_ascii_case("lrtemplate")
-            }) && !is_photo_sidecar(&p)
-            {
+            } else if is_preset_extension(&p) && !is_photo_sidecar(&p) {
                 out.push(p);
             }
         }
@@ -177,6 +194,7 @@ pub fn scan_presets(dirs: &[PathBuf]) -> Vec<PresetEntry> {
                 name: preset.name().map(str::to_string).unwrap_or(stem),
                 group: preset.group().map(str::to_string).unwrap_or(parent),
                 path: p.display().to_string(),
+                deletable: own.is_some_and(|o| preset_deletable(p, o)),
             })
         })
         .collect();
@@ -185,4 +203,60 @@ pub fn scan_presets(dirs: &[PathBuf]) -> Vec<PresetEntry> {
             .cmp(&(b.group.to_lowercase(), b.name.to_lowercase()))
     });
     presets
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn tmp(name: &str) -> PathBuf {
+        let d = std::env::temp_dir().join(format!("amb-preset-del-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&d);
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    #[test]
+    fn deletable_only_inside_the_own_folder() {
+        let base = tmp("roots");
+        let own = base.join("own");
+        let added = base.join("added");
+        std::fs::create_dir_all(own.join("Group")).unwrap();
+        std::fs::create_dir_all(&added).unwrap();
+        let inside = own.join("Group/a.xmp");
+        let in_added = added.join("b.xmp");
+        let text = own.join("Group/notes.txt");
+        for f in [&inside, &in_added, &text] {
+            std::fs::write(f, "x").unwrap();
+        }
+        assert!(preset_deletable(&inside, &own), "a file in the own folder");
+        assert!(
+            !preset_deletable(&in_added, &own),
+            "a file in an added folder"
+        );
+        let tricky = own.join("Group/../../added/b.xmp");
+        assert!(!preset_deletable(&tricky, &own), ".. leads out");
+        assert!(!preset_deletable(&text, &own), "not a preset extension");
+        assert!(!preset_deletable(&own.join("Group"), &own), "a folder");
+        assert!(!preset_deletable(&own.join("gone.xmp"), &own), "missing");
+        assert!(
+            !preset_deletable(&inside, &base.join("nope")),
+            "no own folder"
+        );
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_link_out_of_the_folder_is_refused() {
+        let base = tmp("link");
+        let own = base.join("own");
+        std::fs::create_dir_all(&own).unwrap();
+        let target = base.join("elsewhere.xmp");
+        std::fs::write(&target, "x").unwrap();
+        let link = own.join("l.xmp");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+        assert!(!preset_deletable(&link, &own));
+        let _ = std::fs::remove_dir_all(&base);
+    }
 }

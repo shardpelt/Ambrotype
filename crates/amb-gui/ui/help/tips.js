@@ -141,7 +141,7 @@ function wireTips() {
   // The preset filter suggests a group or a preset to type.
   $("preset-filter").addEventListener("focus", () => {
     const f = $("preset-filter");
-    const names = [...new Set((ui.presets ?? []).flatMap((p) => [p.group, p.name]).filter(Boolean))];
+    const names = [...new Set(presetsShown().flatMap((p) => [p.group, p.name]).filter(Boolean))];
     f.placeholder = !f.value && tipsOn("boxes") && names.length && Math.random() < 0.5
       ? `Filter presets… try “${names[Math.floor(Math.random() * names.length)].toLowerCase()}”`
       : "Filter presets";

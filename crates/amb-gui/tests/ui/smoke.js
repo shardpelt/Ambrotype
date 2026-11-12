@@ -751,6 +751,65 @@ await t.step("applying a preset shows no note, and its button no tooltip", async
   t.key("Ctrl+Z");
 });
 
+await t.step("a preset can be hidden and brought back, and the foot says how many", async () => {
+  const tiles = () => [...document.querySelectorAll("#preset-list .preset-tile")];
+  const tile = () => tiles().find((x) => x.dataset.path === p.path);
+  const foot = () => $("preset-list").querySelector(".preset-hidden-foot");
+  const p = ui.presets.find((x) => x.name === "Shared look");
+  t.expect(p && tile() && !foot(), "the saved preset shown, nothing hidden");
+  const before = tiles().length;
+  // The tile's menu offers Hide.
+  tile().querySelector(".preset").dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 50, clientY: 50 }));
+  const items = [...document.querySelectorAll(".ctx-menu button")].map((b) => b.textContent);
+  t.expect(items.includes("Hide") && !items.includes("Delete…"), `Hide, but no Delete in a folder you chose: ${items.join(", ")}`);
+  document.querySelector(".ctx-menu")?.remove();
+  await presetSetHidden(p, true);
+  t.expect(!tile() && tiles().length === before - 1, "the hidden tile is gone");
+  t.expect(foot()?.textContent.startsWith("1 hidden"), foot()?.textContent);
+  t.expect(!presetsShown().includes(p), "no list reads it");
+  // Show brings it back, dimmed, and the menu now says Unhide.
+  $("preset-hidden-show").click();
+  t.expect(tile()?.classList.contains("preset-dim") && $("preset-hidden-show").textContent === "Done", "shown dimmed");
+  tile().querySelector(".preset").dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 50, clientY: 50 }));
+  t.expect([...document.querySelectorAll(".ctx-menu button")].some((b) => b.textContent === "Unhide"), "Unhide in the menu");
+  document.querySelector(".ctx-menu")?.remove();
+  // A whole group.
+  await presetSetGroupHidden(presetGroupOf(p), true);
+  t.expect(presetHide.groups.has(presetGroupOf(p)) && !presetsShown().includes(p), "the group is hidden");
+  $("preset-hidden-all").click();
+  await t.until("everything unhidden", () => !foot() && !presetHiddenCount());
+  t.expect(tile() && !tile().classList.contains("preset-dim") && presetsShown().includes(p), "back as it was");
+  t.expect(KEY_ACTIONS.some((a) => a.id === "show-hidden-presets"), "a key action to find it");
+});
+
+await t.step("only a preset saved in the app can be deleted, to the trash", async () => {
+  const shared = ui.presets.find((x) => x.name === "Shared look");
+  t.expect(shared && !shared.deletable, "a preset in a folder you chose can only be hidden");
+  let refused = "";
+  try {
+    await t.invoke("delete_preset", { path: shared.path });
+  } catch (e) {
+    refused = String(e);
+  }
+  t.expect(refused.includes("Hide it instead"), `refused: ${refused}`);
+  ui.presets = await t.invoke("save_preset", { name: "Own look", group: "Tests" });
+  renderPresets();
+  const p = ui.presets.find((x) => x.name === "Own look");
+  t.expect(p?.deletable, "a preset saved in the app can be deleted");
+  const real = window.askYes;
+  const asked = [];
+  window.askYes = async (m) => { asked.push(m); return true; };
+  try {
+    await presetDelete(p);
+  } finally {
+    window.askYes = real;
+  }
+  t.expect(asked.length === 1 && asked[0].includes("Own look"), asked.join());
+  t.expect(!ui.presets.some((x) => x.path === p.path), "gone from the list");
+  t.expect(![...document.querySelectorAll("#preset-list .preset-tile")].some((x) => x.dataset.path === p.path), "gone from the tab");
+  t.expect(ui.presets.some((x) => x.path === shared.path), "the other preset is untouched");
+});
+
 await t.step("Fuji recipe: a pasted recipe becomes a preset in the Fuji group, put on the photo", async () => {
   const flow = fujiRecipeFlow();
   await t.until("the dialog", () => $("fuji-dialog").open);

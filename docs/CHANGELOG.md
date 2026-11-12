@@ -2,6 +2,7 @@
 
 What landed, newest first. The newest 15 entries are in WHATS-NEXT.md's Recently done; they move here as newer ones arrive.
 
+- 2026-11-11: **Glass Light** and **Glass Dark** themes (Appearance): frosted, see-through panels over a soft wash of colour (a theme's new `glass` token, the blur in px); still to check that the blur stays smooth on older Windows machines. Eight new presets (Blue Hour, Cinematic, Crisp Morning, Desert Dust, Matte Portrait, Noir, Sunset Duotone, Vaporwave) and four new Surprise me styles (Cinematic, Dreamy, Vintage, Punchy)
 - 2026-11-11: **Insights** (library view, Shift+I): how the photos shown were shot: a chart each for aperture, focal length, shutter speed, ISO, time of day, lens and camera, with the kept ones (picked, or 3 stars and up) as the bar's darker part, and the settings used most together; camera chips narrow it, a click on a bar shows those photos. `amb insights DIR`
 - 2026-11-10: Select object's **Copy**: drag a copy of it elsewhere, and it stays where it was too (Move's clone without the fill)
 - 2026-11-10: Develop's left column in two tabs, **Tools** and **Presets**, with History docked under both; the switch to try blocks that each scroll on their own is gone (one scroll won)

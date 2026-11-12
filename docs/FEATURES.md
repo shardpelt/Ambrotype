@@ -59,6 +59,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 ## Presets
 
 - **Use my Lightroom presets** → Lightroom's preset folder is found by itself; **Add folder…** adds others. `.xmp` and `.lrtemplate` work, with an Amount slider. They show as a grid of small previews of your photo with each one on, picked by group (All, ★ Favourites, each folder's group); hover to see it big, click to apply.
+- **Hide a preset or a group, or delete my own** → Presets → right-click a preset: **Hide** (any preset; nothing is deleted) or **Delete…** (only one saved in Ambrotype; it goes to the trash); right-click a group's name: **Hide this group**. **N hidden** at the foot has **Show** (dimmed, to unhide) and **Unhide all**. Hidden presets are left out of every preset list.
 - **Save my own preset** → **New Preset from This Photo** (Ctrl+Shift+N, or **+ New preset…** in Presets). It works in Lightroom too.
 - **What's inside a preset, and what don't you support yet** → `amb preset inspect PRESET.xmp`.
 - **Find presets, layouts and themes others made** → **Browse the Hub** (Ctrl+Shift+H).

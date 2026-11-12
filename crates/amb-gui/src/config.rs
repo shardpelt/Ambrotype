@@ -78,6 +78,12 @@ pub(crate) struct Config {
     pub(crate) export_presets: Vec<ExportPreset>,
     #[serde(default)]
     pub(crate) preset_favourites: Vec<String>,
+    /// Presets the user hid (paths); nothing is deleted.
+    #[serde(default)]
+    pub(crate) preset_hidden: Vec<String>,
+    /// Preset groups the user hid (the names the Presets tab groups by).
+    #[serde(default)]
+    pub(crate) preset_hidden_groups: Vec<String>,
     /// The user's own mask effects (the built-ins are added when listing).
     #[serde(default)]
     pub(crate) mask_effects: Vec<MaskEffect>,
@@ -163,5 +169,18 @@ pub(crate) fn save_config(state: &AppState) {
     }
     if let Ok(text) = text {
         let _ = std::fs::write(path, text);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A settings file from before presets could be hidden still loads.
+    #[test]
+    fn an_old_settings_file_has_nothing_hidden() {
+        let c: Config = serde_json::from_str(r#"{"preset_favourites":["a.xmp"]}"#).unwrap();
+        assert_eq!(c.preset_favourites, ["a.xmp"]);
+        assert!(c.preset_hidden.is_empty() && c.preset_hidden_groups.is_empty());
     }
 }

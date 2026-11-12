@@ -319,7 +319,7 @@ async function presetsOnPhotos(paths) {
   let chosen = null;
   const render = () => {
     const q = filter.value.trim().toLowerCase();
-    const shown = (ui.presets ?? []).filter((p) => !q || `${p.group} ${p.name}`.toLowerCase().includes(q));
+    const shown = presetsShown().filter((p) => !q || `${p.group} ${p.name}`.toLowerCase().includes(q));
     $("preset-pick-list").replaceChildren(...shown.map((p) => {
       const b = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: p.name, title: p.group });
       b.addEventListener("click", () => { chosen = p; dlg.close("ok"); });

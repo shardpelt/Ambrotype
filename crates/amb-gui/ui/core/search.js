@@ -36,7 +36,7 @@ function searchItems() {
   for (const s of document.querySelectorAll("#workspace details.panel > summary > span:first-child")) {
     items.push({ kind: "Panel", title: s.textContent, also: "", enabled: true, run: () => revealPanel(s.closest("details")) });
   }
-  for (const p of ui.presets ?? []) {
+  for (const p of presetsShown()) {
     items.push({
       kind: "Preset", title: p.name, also: p.group ?? "", enabled: Boolean(ui.info),
       run: () => applyPreset(p),

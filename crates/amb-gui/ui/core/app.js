@@ -438,6 +438,7 @@ async function init() {
   wireLibraryMenus();
   wireSearch();
   wirePresetOriginal();
+  wirePresetHide();
   wireTasks();
   wireInterfaces();
   wireConnect();

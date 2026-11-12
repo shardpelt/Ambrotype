@@ -230,8 +230,9 @@ pub fn trash(photos: &[PathBuf]) -> Result<usize, String> {
     Ok(files.len())
 }
 
+/// Move exactly these files to the system's trash.
 #[cfg(target_os = "linux")]
-fn trash_files(files: &[PathBuf]) -> Result<(), String> {
+pub fn trash_files(files: &[PathBuf]) -> Result<(), String> {
     let home = std::env::var_os("XDG_DATA_HOME")
         .map(PathBuf::from)
         .filter(|p| p.is_absolute())
@@ -343,7 +344,7 @@ fn iso_time(secs: i64) -> String {
 
 /// The Finder's trash, so "Put Back" works.
 #[cfg(target_os = "macos")]
-fn trash_files(files: &[PathBuf]) -> Result<(), String> {
+pub fn trash_files(files: &[PathBuf]) -> Result<(), String> {
     let list: Vec<String> = files
         .iter()
         .map(|f| {
@@ -372,7 +373,7 @@ fn trash_files(files: &[PathBuf]) -> Result<(), String> {
 
 /// The Recycle Bin.
 #[cfg(target_os = "windows")]
-fn trash_files(files: &[PathBuf]) -> Result<(), String> {
+pub fn trash_files(files: &[PathBuf]) -> Result<(), String> {
     let list: Vec<String> = files
         .iter()
         .map(|f| format!("'{}'", f.display().to_string().replace('\'', "''")))
@@ -393,7 +394,7 @@ fn trash_files(files: &[PathBuf]) -> Result<(), String> {
 }
 
 #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
-fn trash_files(_files: &[PathBuf]) -> Result<(), String> {
+pub fn trash_files(_files: &[PathBuf]) -> Result<(), String> {
     Err("there is no trash on this system".into())
 }
 

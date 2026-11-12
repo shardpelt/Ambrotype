@@ -145,6 +145,77 @@ pub(crate) fn set_preset_favourite(
 }
 
 #[derive(Serialize)]
+pub(crate) struct HiddenPresets {
+    pub(crate) presets: Vec<String>,
+    pub(crate) groups: Vec<String>,
+}
+
+/// The presets and groups the user hid.
+#[tauri::command]
+pub(crate) fn preset_hidden(state: tauri::State<'_, AppState>) -> Res<HiddenPresets> {
+    state.prefs(|p| HiddenPresets {
+        presets: p.preset_hidden.clone(),
+        groups: p.preset_hidden_groups.clone(),
+    })
+}
+
+/// Hide or unhide one preset.
+#[tauri::command]
+pub(crate) fn set_preset_hidden(
+    path: String,
+    on: bool,
+    state: tauri::State<'_, AppState>,
+) -> Res<()> {
+    state.change_prefs(|p| {
+        p.preset_hidden.retain(|x| *x != path);
+        if on {
+            p.preset_hidden.push(path);
+        }
+    })
+}
+
+/// Hide or unhide a whole group.
+#[tauri::command]
+pub(crate) fn set_preset_group_hidden(
+    group: String,
+    on: bool,
+    state: tauri::State<'_, AppState>,
+) -> Res<()> {
+    state.change_prefs(|p| {
+        p.preset_hidden_groups.retain(|x| *x != group);
+        if on {
+            p.preset_hidden_groups.push(group);
+        }
+    })
+}
+
+/// Bring every hidden preset and group back.
+#[tauri::command]
+pub(crate) fn unhide_all_presets(state: tauri::State<'_, AppState>) -> Res<()> {
+    state.change_prefs(|p| {
+        p.preset_hidden.clear();
+        p.preset_hidden_groups.clear();
+    })
+}
+
+/// Move a preset saved in the app to the trash. Refused for anything outside
+/// the app's own presets folder: other folders' files belong to other programs.
+#[tauri::command]
+pub(crate) fn delete_preset(path: String, state: tauri::State<'_, AppState>) -> Res<()> {
+    let file = PathBuf::from(&path);
+    let own = own_presets_dir(state.inner());
+    if !own.is_some_and(|o| preset_files::preset_deletable(&file, &o)) {
+        return Err("Only presets saved in Ambrotype can be deleted here. Hide it instead.".into());
+    }
+    let real = std::fs::canonicalize(&file).map_err(|e| e.to_string())?;
+    amb_library::files::trash_files(&[real])?;
+    state.change_prefs(|p| {
+        p.preset_favourites.retain(|x| *x != path);
+        p.preset_hidden.retain(|x| *x != path);
+    })
+}
+
+#[derive(Serialize)]
 pub(crate) struct MaskEffects {
     pub(crate) builtin: Vec<MaskEffect>,
     pub(crate) mine: Vec<MaskEffect>,
@@ -199,14 +270,21 @@ pub(crate) fn delete_mask_effect(
 
 #[tauri::command]
 pub(crate) async fn presets(state: tauri::State<'_, AppState>) -> Res<Vec<PresetEntry>> {
-    let mut dirs = state.preset_dirs.lock().map_err(|e| e.to_string())?.clone();
-    // Presets saved in the app ("Save as preset…").
-    if let Some(own) = own_presets_dir(state.inner()).filter(|d| d.is_dir() && !dirs.contains(d)) {
-        dirs.push(own);
-    }
-    tauri::async_runtime::spawn_blocking(move || preset_files::scan_presets(&dirs))
+    let dirs = preset_folders(state.inner())?;
+    let own = own_presets_dir(state.inner());
+    tauri::async_runtime::spawn_blocking(move || preset_files::scan_presets(&dirs, own.as_deref()))
         .await
         .map_err(|e| e.to_string())
+}
+
+/// The folders presets are read from: the ones added, and the app's own
+/// ("Save as preset…") when it exists.
+fn preset_folders(state: &AppState) -> Res<Vec<PathBuf>> {
+    let mut dirs = state.preset_dirs.lock().map_err(|e| e.to_string())?.clone();
+    if let Some(own) = own_presets_dir(state).filter(|d| d.is_dir() && !dirs.contains(d)) {
+        dirs.push(own);
+    }
+    Ok(dirs)
 }
 
 pub(crate) fn own_presets_dir(state: &AppState) -> Option<PathBuf> {

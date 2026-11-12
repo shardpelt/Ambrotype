@@ -392,6 +392,7 @@ async function loadPresets(add = false) {
   try {
     ui.presets = await invoke(add ? "add_preset_folder" : "presets");
     if (!ui.presetFavourites) await loadPresetFavourites();
+    await loadPresetHidden();
     renderPresets();
   } catch (e) {
     toast(String(e), true);

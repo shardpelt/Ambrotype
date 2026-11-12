@@ -134,14 +134,14 @@ async function importFlow() {
   // The develop presets, by group; the last one chosen if it's still there.
   if (!ui.presets?.length) ui.presets = await invoke("presets").catch(() => []);
   const groups = new Map();
-  for (const p of ui.presets) groups.set(p.group || "Presets", [...(groups.get(p.group || "Presets") ?? []), p]);
+  for (const p of presetsShown()) groups.set(p.group || "Presets", [...(groups.get(p.group || "Presets") ?? []), p]);
   f.preset.replaceChildren(Object.assign(document.createElement("option"), { value: "", textContent: "None" }),
     ...[...groups].map(([group, list]) => {
       const g = Object.assign(document.createElement("optgroup"), { label: group });
       g.append(...list.map((p) => Object.assign(document.createElement("option"), { value: p.path, textContent: p.name })));
       return g;
     }));
-  f.preset.value = ui.presets.some((p) => p.path === d.options.preset) ? d.options.preset : "";
+  f.preset.value = presetsShown().some((p) => p.path === d.options.preset) ? d.options.preset : "";
   f.backup.value = d.options.backup ?? "";
   $("import-tokens").textContent = `In your own templates: ${d.tokens.map(([t, what]) => `${t} ${what}`).join(", ")}. A / makes a subfolder.`;
   const dlg = $("import-dialog");

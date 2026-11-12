@@ -127,19 +127,6 @@ Do the groups in order, or any card whose "Precondition" line is met. Ids are st
 
 Work that was planned and not finished. Do these before the groups below.
 
-### 0d. The agent primer points at the other guides
-Tier: medium        Risk: low
-Why: an agent started from Connect an AI app is told about photos only, not about making layouts, themes, plugins or an interface.
-Files: `crates/amb-protocol/src/guides.rs` (`primer`), `crates/amb-gui/src/commands/connect.rs` (`agent_line`, `sh_quote`; read only).
-Steps:
-1. In `primer`, add one sentence to the `format!` string, before `{open}`: `Other guides: amb docs make-it-yours (layouts, themes and the hub, for people), amb docs layouts, amb docs plugins and amb docs interface (making them).` Keep it a plain sentence.
-2. The primer reaches the shell through `agent_line` in `connect.rs`: on Windows it removes every `"` and `%`, elsewhere it is wrapped by `sh_quote` (single quotes, `'` escaped). The new sentence has none of `"`, `'`, `%` and no backtick or `$`, so the quoting holds. Keep it that way.
-3. Add a test in `guides.rs`'s `tests` module: `primer(Path::new("/g"), None)` contains each of `amb docs make-it-yours`, `amb docs layouts`, `amb docs plugins`, `amb docs interface`, and contains none of `"`, `'`, `%`, `` ` ``, `$`. Each of those four names must be found by `find(...)`: `make-it-yours`, `layouts`, `plugins`, `interface` are guide names in `GUIDES`.
-Don't: change `GUIDES`, the guides' text or `agent_line`.
-Checks: the three cargo commands; `cargo test -p amb-protocol -p amb-gui`.
-Done when: the primer names the four guides and the test passes.
-Commit: `ai: the agent primer points at the layout, theme, plugin and interface guides`. Why: "An agent started from Connect was told about photos only."
-
 ### 0e. The guard tests the code style names
 Tier: medium        Risk: low
 Why: `docs/codestyle.md` lists these tests as holding its rules; they do not exist yet, and the UI's old idioms grew in three days although a helper existed. Three files, one commit each.

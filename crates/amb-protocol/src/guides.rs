@@ -110,7 +110,9 @@ pub fn primer(guides: &std::path::Path, photo: Option<&std::path::Path>) -> Stri
         "You are helping with photos in Ambrotype, a raw photo editor. Its amb command edits, \
          previews, organises and exports them; every edit is undoable and shows in the editor at \
          once. First read the guide in {} (or run: amb docs guide), then amb docs features for \
-         what the app can do.{open} Show me what you plan before changing photos.",
+         what the app can do. Other guides: amb docs make-it-yours (layouts, themes and the hub, \
+         for people), amb docs layouts, amb docs plugins and amb docs interface (making them).\
+         {open} Show me what you plan before changing photos.",
         guides.join("ai").join("README.md").display()
     )
 }
@@ -118,6 +120,24 @@ pub fn primer(guides: &std::path::Path, photo: Option<&std::path::Path>) -> Stri
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_primer_names_the_other_guides_and_survives_shell_quoting() {
+        let p = primer(std::path::Path::new("/g"), None);
+        for name in ["make-it-yours", "layouts", "plugins", "interface"] {
+            assert!(find(name).is_some(), "{name} is a guide");
+            assert!(
+                p.contains(&format!("amb docs {name}")),
+                "{name} in the primer"
+            );
+        }
+        for c in ['"', '\'', '%', '`', '$'] {
+            assert!(
+                !p.contains(c),
+                "the primer has {c}, which the shell line can't carry"
+            );
+        }
+    }
 
     #[test]
     fn every_guide_is_found_by_name_and_has_text() {

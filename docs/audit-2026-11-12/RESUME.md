@@ -6,7 +6,7 @@ Start a **new session** (not the old one: its long history costs a full re-read)
 ## State
 
 - `main` is green and holds everything finished: the code style (`docs/codestyle.md`), the docs map (`docs/README.md`), delegation (`docs/delegation.md`), the roadmap by tier (`docs/ROADMAP.md`), every cleanup task as a card (`docs/cleanup.md`), the docs leftovers.
-- The work branch `claude/lightroom-alternative-scope-xlnf0p` is `main` plus unfinished work, each in its own commit (see "Unfinished" below). **Do not push the work branch to `main` until that work passes its checks.**
+- The work branch `claude/lightroom-alternative-scope-xlnf0p` is `main` plus one commit, `wip: library Back and Map gestures` (the same as `back-map.patch` below; it fails a test). **Never push that commit to `main`.** Simplest: start from `main` and use the patches.
 - Push finished work with: `git push origin HEAD:claude/lightroom-alternative-scope-xlnf0p && git push origin HEAD:main`.
 - Commit trailer: `Co-Authored-By: Claude <noreply@anthropic.com>` and the session line. No model names.
 - Cargo: always `--release` (there is no debug cache). One cargo owner per checkout.

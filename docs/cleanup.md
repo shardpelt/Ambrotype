@@ -201,7 +201,7 @@ Commit: `tests: UI steps per feature`. Why: "Two files held every feature's step
 ### A4. `el()` instead of `Object.assign(document.createElement(...))`
 Tier: small        Risk: low
 Why: 381 sites build elements the old way although `el` is in `crates/amb-gui/ui/core/core.js`; the count grows (316 to 381 in three days). Repeat this card once per file.
-Files: one UI script per commit, in this order (sites on 2026-11-12): `crates/amb-gui/ui/library/insights.js` 39, `crates/amb-gui/ui/library/browse.js` 32, `crates/amb-gui/ui/library/organise.js` 22, `crates/amb-gui/ui/dialogs/hub.js` 21, `crates/amb-gui/ui/library/library-grid.js` 15, `crates/amb-gui/ui/dialogs/plugins.js` 14, `crates/amb-gui/ui/core/search.js` 13, `crates/amb-gui/ui/core/tasks.js` 12, `crates/amb-gui/ui/collage/collage-tray.js` 11, `crates/amb-gui/ui/library/duplicates.js` 10, `crates/amb-gui/ui/library/cull.js` 10, `crates/amb-gui/ui/help/basics.js` 10, `crates/amb-gui/ui/develop/fx.js` 10, `crates/amb-gui/ui/develop/frame.js` 9, `crates/amb-gui/ui/core/keys.js` 9. Then the rest, by `grep -rc "Object.assign(document.createElement(" crates/amb-gui/ui | sort -t: -k2 -nr`. Also `crates/amb-gui/src/checks.rs` (the limit; card 0e must be done first).
+Files: one UI script per commit, in this order (sites on 2026-11-12): `crates/amb-gui/ui/library/insights.js` 39, `crates/amb-gui/ui/library/browse.js` 32, `crates/amb-gui/ui/library/organise.js` 22, `crates/amb-gui/ui/dialogs/hub.js` 21, `crates/amb-gui/ui/library/library-grid.js` 15, `crates/amb-gui/ui/dialogs/plugins.js` 14, `crates/amb-gui/ui/core/search.js` 13, `crates/amb-gui/ui/core/tasks.js` 12, `crates/amb-gui/ui/collage/collage-tray.js` 11, `crates/amb-gui/ui/library/duplicates.js` 10, `crates/amb-gui/ui/library/cull.js` 10, `crates/amb-gui/ui/help/basics.js` 10, `crates/amb-gui/ui/develop/fx.js` 10, `crates/amb-gui/ui/develop/frame.js` 9, `crates/amb-gui/ui/core/keys.js` 9. Then the rest, by `grep -rc "Object.assign(document.createElement(" crates/amb-gui/ui | sort -t: -k2 -nr`. Also `crates/amb-gui/src/checks.rs` (the limit).
 How `el` works: `el(tag, attrs = {}, ...children)`. `class` sets the class; a key starting with `on` adds that listener (`onclick`, `onchange`, `oninput`); `true` sets the attribute empty; `false`, `null` and `undefined` skip it; anything else is set with `setAttribute`; children are nodes or strings (`null` skipped).
 Conversion rules, for each `Object.assign(document.createElement("tag"), { ... })`:
 1. `className: X` becomes `class: X`.
@@ -229,7 +229,7 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - `git mv OLD.rs OLD/mod.rs` first, unless the card says the new files sit beside the old one.
 - The file's `#[cfg(test)] mod tests { ... }` block moves to `OLD/tests.rs` without its wrapper; `mod.rs` gets `#[cfg(test)] mod tests;`. If the tests then need private items from a new file, add `use` lines in `tests.rs`, not new `pub`.
 - Every item that was `pub` and is used outside the folder is re-exported from `mod.rs` with `pub use <part>::{Name, ...};` (list them with `grep -n "^pub " NEWFILE`). An item that was private and is now used by a sibling file becomes `pub(super)`.
-- Take the file off `OVER_BUDGET` in `crates/amb-cli/tests/code_size.rs` (the test says so when it must go); a card 0c done earlier may have changed its number.
+- Take the file off `OVER_BUDGET` in `crates/amb-cli/tests/code_size.rs` (the test says so when it must go); read its number from the file, it may have changed.
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
@@ -385,7 +385,7 @@ Commit: `library: split catalog.rs into query and prints`. Why: "It was 9 lines 
 Tier: medium        Risk: low
 Why: 788 production lines, 12 under the budget; 200 of them are filter helpers.
 Files: `crates/amb-engine/src/dehaze.rs` to `crates/amb-engine/src/dehaze/{mod,filters,tests}.rs`.
-Precondition: card 0a is done (then `lerp_position` is in `math.rs` and not here).
+Note: `lerp_position` is in `crates/amb-engine/src/math.rs`, not here.
 Steps:
 1. `git mv crates/amb-engine/src/dehaze.rs crates/amb-engine/src/dehaze/mod.rs`; its `mod tests` block to `tests.rs`.
 2. `filters.rs`: `downscale`, `resample`, `lerp_position_f`, `transpose`, `min_filter`, `min_filter_rows`, `min_row`, `guided_coefficients`, `deterministic_mean`. They are used by `mod.rs`: `pub(super)`. Add `use super::*;` and `use rayon::prelude::*;`.
@@ -516,7 +516,7 @@ Commit: `ops: the editor and amb render export many photos through export_batch`
 ### B13. Mask sliders from the schema
 Tier: medium        Risk: medium
 Why: the ranges of the mask panel's sliders are typed in `crates/amb-gui/ui/tools/mask-panel.js` and again, as `clamp` literals, in `crates/amb-protocol/src/masks/fields.rs` and `crates/amb-protocol/src/masks/mod.rs`: two copies free to drift (`docs/codestyle.md`: no range or label typed in a script).
-Files: `crates/amb-protocol/src/masks/fields.rs`, `crates/amb-protocol/src/masks/mod.rs`, `crates/amb-gui/src/commands/tools.rs` (where `mask_sliders` is), `crates/amb-gui/src/commands/mod.rs` (the handler list), `crates/amb-gui/ui/tools/mask-panel.js`, `crates/amb-gui/ui/tools/masks.js` (loads `mk.sliders` from `mask_sliders`, near line 452), `crates/amb-gui/src/checks.rs` (if card 0e is done).
+Files: `crates/amb-protocol/src/masks/fields.rs`, `crates/amb-protocol/src/masks/mod.rs`, `crates/amb-gui/src/commands/tools.rs` (where `mask_sliders` is), `crates/amb-gui/src/commands/mod.rs` (the handler list), `crates/amb-gui/ui/tools/mask-panel.js`, `crates/amb-gui/ui/tools/masks.js` (loads `mk.sliders` from `mask_sliders`, near line 452), `crates/amb-gui/src/checks.rs`.
 Steps:
 1. In `fields.rs` add `pub struct FieldRange { pub key: &'static str, pub label: &'static str, pub min: f64, pub max: f64, pub step: f64, pub default: f64 }` (`Serialize`) and `pub const FIELD_RANGES: &[FieldRange]` with exactly these rows, which are the ranges in use today:
    - `Feather` 0 to 100, step 1, default 50 (a radial part and a brush: `fields.rs` clamps `Feather` to 0..100; `paint_mask` clamps `feather` to 0..100);
@@ -557,7 +557,7 @@ Why: `max-width: calc(100vw - 32px)` is typed on 10 dialog rules, and four libra
 Files: `crates/amb-gui/ui/style.css`, `crates/amb-gui/ui/core/core.js`, `crates/amb-gui/ui/library/denoise.js`, `crates/amb-gui/ui/library/cleanup.js`, `crates/amb-gui/ui/library/duplicates.js`.
 Steps:
 1. `style.css`: the base rule `dialog { ... width: 560px; }` (line 256) gets `max-width: calc(100vw - 32px);`. Delete ` max-width: calc(100vw - 32px);` from the ten rules that repeat it: `#looks-dialog`, `#hub-dialog`, `#export-dialog`, `dialog.plugins-dialog`, `#import-dialog, #lrcat-dialog`, `.search-dialog`, `.guide-dialog`, `.clean-dialog`, `.dupes-dialog`, `.files-dialog` (their `width` stays). `.connect-dialog` uses `min(560px, calc(100vw - 32px))`: leave it.
-2. `core.js`, after `showError` (card 0f; if it is not done yet, after `toast`), add:
+2. `core.js`, after `showError`, add:
    ```js
    // Run `fn` with `button` disabled; an error shows in `line` (the dialog's status line).
    // Gives true when `fn` finished, false when it threw.
@@ -666,7 +666,7 @@ Commit: `tests: every dialog opens and closes`. Why: "18 dialogs had no UI step.
 ### B18. More guard tests
 Tier: medium        Risk: low
 Why: three lists are held by review only: the buttons that `docs/FEATURES.md` names, the MCP server's tool list against its tool calls, and the built-in plugins.
-Files: `crates/amb-gui/src/checks.rs` (card 0e must be done), `crates/amb-cli/src/mcp.rs` (its `mod tests`), `crates/amb-plugin/tests/builtin.rs` (new), `docs/FEATURES.md`.
+Files: `crates/amb-gui/src/checks.rs`, `crates/amb-cli/src/mcp.rs` (its `mod tests`), `crates/amb-plugin/tests/builtin.rs` (new), `docs/FEATURES.md`.
 Steps (three commits):
 1. FEATURES names a real label. In `checks.rs` add `features_name_things_the_app_has`: for each line of `docs/FEATURES.md` that starts with `- **` and holds a `→`, take the text right of the first `→` up to the first `` `amb `` and every `**bold**` in it; lower-case it and drop a trailing `…`, `.` or `:`; it must occur (lower-cased) in the text of the files under `crates/amb-gui/ui/` (`.js`, `.html`, `.json`), `crates/amb-gui/src/**/*.rs`, `crates/amb-presets/data/*.json`, `crates/amb-gui/data/**/*.json` or `plugins/*/plugin.json`. 215 names are checked and 9 fail today: `Neon`, `Mandala`, `Heat camera`, `Contours`, `Acid highlights`, `Foil shadows` (task tiles in `plugins/trippy/plugin.json`: include that file's text so they pass), `Add to your presets`, `Lightroom +`, `Start … here`. For each that still fails, correct the name in `docs/FEATURES.md` to the label the app shows (look it up in the UI), not the other way round; list any you cannot match in an `ALLOWED` array with a comment saying why.
 2. MCP. In the `tests` module of `crates/amb-cli/src/mcp.rs` add `every_listed_tool_has_a_call_and_back`: the names in `tools()` (each element's `"name"`) equal the string patterns that start a line with eight spaces in `fn call` (lines like `        "describe_photo" =>` up to the next top-level `fn`: read the file with `include_str!("mcp.rs")` and cut it from `fn call(` to the next `\nfn `). Both sets have 11 names today.

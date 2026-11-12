@@ -214,7 +214,6 @@ name = "amb-lens"
 version = "0.1.0"
 dependencies = [
  "quick-xml 0.37.5",
- "serde",
  "thiserror 2.0.21",
 ]
 

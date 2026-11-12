@@ -127,19 +127,6 @@ Do the groups in order, or any card whose "Precondition" line is met. Ids are st
 
 Work that was planned and not finished. Do these before the groups below.
 
-### 0b. Drop the unused `serde` from `amb-lens`
-Tier: small        Risk: low
-Why: nothing in `crates/amb-lens/src` uses it.
-Files: `crates/amb-lens/Cargo.toml`, `Cargo.lock`.
-Steps:
-1. `grep -rn serde crates/amb-lens/src` prints nothing: confirm.
-2. In `crates/amb-lens/Cargo.toml` delete the line `serde.workspace = true`.
-3. `cargo build -p amb-lens --all-targets`. If it fails, put the line back and say what needed it.
-Don't: touch other crates' dependencies.
-Checks: `cargo check --workspace --all-targets`; `cargo test -p amb-lens`; `git diff Cargo.lock` shows only the `serde` line gone from `amb-lens`'s entry.
-Done when: `grep -n serde crates/amb-lens/Cargo.toml` prints nothing.
-Commit: `lens: drop the unused serde dependency`. Why: "Nothing in the crate uses it."
-
 ### 0c. Tighten the `OVER_BUDGET` limits
 Tier: small        Risk: low
 Why: each limit is far above the file's size, so a file can grow 100 to 250 lines without a test failing.

@@ -127,20 +127,6 @@ Do the groups in order, or any card whose "Precondition" line is met. Ids are st
 
 Work that was planned and not finished. Do these before the groups below.
 
-### 0c. Tighten the `OVER_BUDGET` limits
-Tier: small        Risk: low
-Why: each limit is far above the file's size, so a file can grow 100 to 250 lines without a test failing.
-Files: `crates/amb-cli/tests/code_size.rs`.
-Steps:
-1. For each of the 8 files on `OVER_BUDGET`, count its production lines the way the test does (the lines before the first line that starts with `#[cfg(test)]`): `awk '/^#\[cfg\(test\)\]/{exit} {n++} END{print n}' FILE`. Measure again when you do the card: other work changes them. On 2026-11-12 they were: `retouch.rs` 979, `sidecar.rs` 960, `embed.rs` 932, `object.rs` 925, `matching.rs` 908, `pipeline/settings.rs` 905, `amb-gpu/src/nn.rs` 847, `amb-ai/src/lib.rs` 886.
-2. Set each limit to that size rounded up to the next multiple of 50 (on those sizes: 1000, 1000, 950, 950, 950, 950, 850, 900).
-3. Change the doc comment above `OVER_BUDGET`: the limit is the file's size rounded up to the next 50 on the day it was set, and a file that grows past it is split (docs/cleanup.md), not given a bigger number.
-4. A file that a card B1 to B8 has already split is no longer on the list: leave it off.
-Don't: raise any limit; touch `RUST_BUDGET` or `JS_BUDGET`.
-Checks: `cargo test -p amb-cli --test code_size`.
-Done when: no limit on the list is more than 49 above its file's size.
-Commit: `test: size limits just above each big file's size`. Why: "They allowed 100 to 250 lines of silent growth."
-
 ### 0d. The agent primer points at the other guides
 Tier: medium        Risk: low
 Why: an agent started from Connect an AI app is told about photos only, not about making layouts, themes, plugins or an interface.

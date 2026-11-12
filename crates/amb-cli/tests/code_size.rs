@@ -9,20 +9,19 @@ use std::path::{Path, PathBuf};
 const RUST_BUDGET: usize = 800;
 const JS_BUDGET: usize = 700;
 
-/// Files past the budget, with the most lines each may have: its size on
-/// 2026-11-09 rounded up to the next hundred, plus a hundred. Splitting a
-/// file takes it off this list. A file that would grow past its number is
-/// split instead (docs/cleanup.md says how), or its number is raised in the
-/// same commit, saying why in the commit message.
+/// Files past the budget, with the most lines each may have: its size on the
+/// day the limit was set (2026-11-12) rounded up to the next 50. Splitting a
+/// file takes it off this list. A file that grows past its number is split
+/// (docs/cleanup.md says how), not given a bigger number.
 const OVER_BUDGET: &[(&str, usize)] = &[
-    ("crates/amb-engine/src/retouch.rs", 1100),
-    ("crates/amb-protocol/src/sidecar.rs", 1100),
-    ("crates/amb-export/src/embed.rs", 1100),
-    ("crates/amb-ops/src/object.rs", 1100),
-    ("crates/amb-engine/src/matching.rs", 1100),
-    ("crates/amb-engine/src/pipeline/settings.rs", 1100),
-    ("crates/amb-gpu/src/nn.rs", 1000),
-    ("crates/amb-ai/src/lib.rs", 1000),
+    ("crates/amb-engine/src/retouch.rs", 1000),
+    ("crates/amb-protocol/src/sidecar.rs", 1000),
+    ("crates/amb-export/src/embed.rs", 950),
+    ("crates/amb-ops/src/object.rs", 950),
+    ("crates/amb-engine/src/matching.rs", 950),
+    ("crates/amb-engine/src/pipeline/settings.rs", 950),
+    ("crates/amb-gpu/src/nn.rs", 850),
+    ("crates/amb-ai/src/lib.rs", 900),
 ];
 
 fn root() -> PathBuf {

@@ -1,38 +1,24 @@
 # What's next
 
-A short running list, kept up to date as work lands. Newest decisions first. The full roadmap and its tracks are in [NEXT.md](NEXT.md); what's missing is in [GAPS.md](GAPS.md). Projects we researched, and when we last checked them, are in [research/watchlist.md](research/watchlist.md).
+A short running list, kept up to date as work lands. Newest decisions first. Everything planned, in order, is in [ROADMAP.md](ROADMAP.md); what's missing is in [GAPS.md](GAPS.md). Projects we researched, and when we last checked them, are in [research/watchlist.md](research/watchlist.md).
 
 ## Waiting on the owner
 
 0. **Sample photos from your Fujifilm** (owner, 2026-11-11): a few raws if you have them, JPEGs are fine too (JPEGs show the library, Insights and the look presets well; raws are needed only for the raw pipeline and Convert raws). For the README screenshots and the sample photo.
-1. **v0.1.0:** try the editor on a Mac and once on Windows (the list is in NEXT.md's v0.1 checklist), then say go: tag, check the draft release, publish, and point the README at it.
+1. **v0.1.0:** try the editor on a Mac and once on Windows (the list is in ROADMAP.md's v0.1 checklist), then say go: tag, check the draft release, publish, and point the README at it.
 2. **Auto Density and Auto Grade on real negatives:** try both switches (Negative panel, beside Auto) on a roll. If they look right, they become Auto's default.
 3. **GPU speed:** export a 24 MP raw on the Mac with and without `AMB_GPU=off` (both are tiled or whole as the GPU's memory allows). And AI on the GPU: time Select object's first click and an AI Remove with and without `AMB_AI_GPU=off` (Settings → AI models says where they run).
 4. **Your sample raw** to replace the stand-in sample photo, after the release.
 
-## Up next (in this order)
+## Up next
 
-1. **A paper curve in density** (Film lab item 9).
-2. **Film looks tied to stocks:** halation, bloom and grain amounts per film stock, so picking a stock brings its glow and grain.
-3. **Dust:** the guided rectangle and a heal brush that searches its stroke (Film lab item 5).
-4. **Darkroom aids:** density and zone under the cursor, test strip, ring-around (Film lab item 7).
+The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
-## Ideas for later
-
-- **From the 2026-11-11 recheck** ([research/17](research/17-competitors-2026.md), items 21–26): Speed Edit (hold a key, drag anywhere to change one setting), .cube LUTs as looks, MIDI controllers, a second window for the photo, Fade Restoration for faded prints and slides, and a published speed number for big libraries. New to watch: RAWmakase (MIT, Rust, .lrcat import, MCP, closest to us). Reddit is blocked for our tools now: paste threads by hand.
-- **From the owner, 2026-11-11:**
-  - **README screenshots again**, with the library (grid and Insights) and a Trippy edit among them; after the sample photos above.
-  - **Collage for every photo in the folder:** one layout applied to all the photos shown, as pages.
-  - **Shareable Trippy looks:** as presets with their effects, to the hub.
-- **From the 2026-11-04 recheck** ([research/watchlist.md](research/watchlist.md)): face-part masks.
-- **Teach by showing** (owner, 2026-11-03): the app should teach its features by showing them, not by manuals, and one question should open up many related features. Ideas:
-  - Done 2026-11-05: tips while waiting and in the search box and preset filter, from FEATURES.md, used features skipped, both switches in Settings → General; each How to lists two or three related features to follow.
-  - **Tips while waiting:** while something loads or runs (opening a raw, an export, Convert raws, AI Remove), one short tip about a feature, with a button to try it.
-  - **Tips where text normally is:** now and then, a tip as the placeholder of a search or filter box, or in an empty menu or panel area; gone once you click or type there.
-  - **One answer leads to more:** a How to shows two or three related features ("also: Keep under N MB, Also a smaller copy"), and the features list can be followed from one to the next.
-  - Tips come from [FEATURES.md](FEATURES.md), skip features already used, and are rare enough not to nag.
-  - Two switches in Settings → General, both on by default: "Tips while waiting" and "Tips in menus and empty boxes".
-- **More trippy** (owner, 2026-11-04): done 2026-11-05 (Edges and Neon, Where with its hover view, amounts to 200 %). Still to do: Basic's own sliders past their ranges in Trippy (Lightroom's ranges are kept in the sidecar, so it would be our own extra settings).
+- **A paper curve in density** (`film-paper-curve`)
+- **Film looks tied to stocks** (`film-stock-looks`)
+- **Dust: the guided rectangle and a heal brush that searches its stroke** (`film-dust-guided`)
+- **Darkroom aids** (`film-darkroom-aids`)
+- **Fade Restoration** (`film-fade-restoration`)
 
 ## Recently done
 
@@ -51,110 +37,3 @@ A short running list, kept up to date as work lands. Newest decisions first. The
 - 2026-11-11: **Glass Light** and **Glass Dark** themes (Appearance): frosted, see-through panels over a soft wash of colour (a theme's new `glass` token, the blur in px); still to check that the blur stays smooth on older Windows machines. Eight new presets (Blue Hour, Cinematic, Crisp Morning, Desert Dust, Matte Portrait, Noir, Sunset Duotone, Vaporwave) and four new Surprise me styles (Cinematic, Dreamy, Vintage, Punchy)
 - 2026-11-11: **Insights** (library view, Shift+I): how the photos shown were shot: a chart each for aperture, focal length, shutter speed, ISO, time of day, lens and camera, with the kept ones (picked, or 3 stars and up) as the bar's darker part, and the settings used most together; camera chips narrow it, a click on a bar shows those photos. `amb insights DIR`
 - 2026-11-10: Select object's **Copy**: drag a copy of it elsewhere, and it stays where it was too (Move's clone without the fill)
-- 2026-11-10: Develop's left column in two tabs, **Tools** and **Presets**, with History docked under both; the switch to try blocks that each scroll on their own is gone (one scroll won)
-- 2026-11-10: **Undo all** beside Undo (Ctrl+Alt+Z; Redo brings the steps back); History docked at the foot of its column, always in sight, with Presets' list capped to scroll inside; a **‹** back button at the task bar's start (Alt+←, the mouse's back button) to the task you were in before
-- 2026-11-10: thin scroll bars that show only while the pointer is over what scrolls, or while it scrolls
-- 2026-11-10: presets as a grid of small previews of the open photo, by group; a switch between columns that scroll as one and blocks that each scroll on their own (View menu, Settings → General) to try both; F opens the full-screen viewer in the library; the filmstrip's bar has View and Slideshow in its middle
-- 2026-11-10: side columns scroll as one: each block's heading stays at the top while you're in it and folds the block when clicked, and the column's foot names the blocks further down (History, Presets, …), a click goes there. The drag lines between blocks are gone; History had slipped out of sight below Develop's tool tiles. README screenshots retaken
-- 2026-11-10: rotate and flip a photo: **Rotate left** (Ctrl+[), **Rotate right** (Ctrl+]) and **Flip horizontal** in the Photo menu, Ctrl+K or the keys, for the open photo, the library's selection or the photo in the full-screen viewer; `amb tag --rotate left|right|180 --flip horizontal`. Written where Lightroom keeps it (`tiff:Orientation` in the sidecar); crops, masks and spots stay put on the photo, so they turn with it. Folding the side columns moved to F7 and F8, as in Lightroom
-- 2026-11-09: the cleanup's third phase ([cleanup.md](cleanup.md)): the operations that render photos are their own crate, `amb-ops`, so `amb-library` no longer needs the GPU crate; the editor's 18 saved settings are one `Config` behind one lock (`AppState::prefs`), so a new setting is one field; the UI's 78 scripts are in folders by part; and `NEXT.md`'s Built list became links to `FEATURES.md` and `ARCHITECTURE.md`. Found on the way: "Save to…" for a preset took two locks in the opposite order to saving the settings, which could freeze the editor
-- 2026-11-09: the cleanup's first two phases ([cleanup.md](cleanup.md)), each step by a smaller model and reviewed: one `smoothstep` and one `file_stamp`; the UI's shared helpers in `core.js`, which loads first, and its storage through `store`; 15 big files split along their sections (the editor's `main.rs`, `session.rs`, photo and library commands, `looks.rs` and `hub.rs`; the protocol's `state.rs`; the engine's `mask.rs` and `negative.rs`; six UI scripts). Nothing the app does changed. Found on the way: two quick keys in the viewer could show old values (info changes now go one at a time), and three tests that failed now and then
-- 2026-11-09: a structure review of the whole codebase ([design/structure.md](design/structure.md)): no rewrite needed; the big files, the UI's shared names and copied helpers are cleaned up in exact steps for smaller models ([cleanup.md](cleanup.md)). Guard rails first: a size budget test, the UI-script tests reading subfolders and checking every script loads, and `tools/code-metrics.py`
-
-- 2026-11-09: tabs are Library · Develop · Film · Collage ([design/tabs.md](design/tabs.md)): Color became Develop's Colour tab, Retouch its Retouch tools under Quick fixes (blocks fold), and the Collage tab opens the collage maker itself
-
-- 2026-11-09: the viewer rates, flags and labels with the library's keys, and its info panel (I or right-click) shows the shot and edits rating, label, flag and keywords
-
-- 2026-11-08: the viewer (V, ⛶ View): photos full screen as an image viewer, ← → or the screen's sides to step, Esc ends on the photo got to; and [design/tabs.md](design/tabs.md), what makes a tab, a mode, a view, a tool or a dialog
-
-- 2026-11-07: tips stop after Not now three times in a row, or at once with the card's Don't show tips (Settings → General turns them on again)
-
-- 2026-11-07: library Filter → File: Raw only, or JPEG only (a raw's JPEG twin in its place); and JPEG if there is one, in the library bar and Develop's filmstrip (← → go through the JPEGs)
-
-- 2026-11-06: fixes from trying it on a Mac: toolbar buttons that don't fit go under ⋯ (the top bar ran off the window); Appearance opens on the Trippy tab; no blue selection from stray drags; a note with its seconds while Remove object works; Presets head and tool tiles fit; the sample photo downloads on slow connections; Help → Watch an edit on this photo
-
-- 2026-11-06: a Lightroom Classic catalogue opened in place (library → Folders panel → Lightroom +, From Lightroom… → Open in place, `amb lrcat open`): its folders and collections in the Folders panel, its photos with their Lightroom edits, ratings, labels, flags and keywords, read from the catalogue through every sidecar read (`amb_presets::linked`) with nothing imported or written; the newer of sidecar and catalogue wins, so editing here or in Lightroom keeps them in step. `amb lrcat sample` makes a small catalogue to try it
-
-- 2026-11-06: AI models on the GPU, with our own kernels (`amb-gpu`'s `nn`: convolutions, matrix products, the element-wise and shape layers): SAM 2.1, Big-LaMa, MI-GAN, YuNet and full-precision search models run there when the computer has a GPU, each layer we have no kernel for on the CPU in between, and the whole model on the CPU if a run fails; on a software GPU each matches the CPU (LaMa and SAM within 1e-5). Settings → AI models and `amb models` say where they run; `AMB_AI_GPU=off` keeps them on the CPU
-
-- 2026-11-05: more trippy: any effect can be kept to part of the photo (Effects → Where: highlights, midtones, shadows, or a colour; amb:Effects `where`, judged from the photo before it), and hovering Where tints where on the photo; in Trippy an effect's amount goes to 200 % (the change pushed further than the effect makes it); Trippy tools Acid highlights and Foil shadows
-
-- 2026-11-05: masks asked in words: Masks → Describe it, and Select object's Or type what ("cow", "the water"): sky, people, subject and background straight away; anything else by the search model choosing among what SAM finds (the photo's best windows, refined, and a coarse grid), with what's round each thing greyed, so it's a selection like a click (Adjust, Remove, Move…)
-
-- 2026-11-05: Convert raws' Like … shows the edited photos among them to pick which one to match (it took the focused photo only)
-
-- 2026-11-05: Best in each burst (library → Organise): bursts among the photos shown, each ranked by focus (sharpness on the faces, or the sharpest part) and open eyes (YuNet, MIT, 0.2 MB, an optional install in Settings → AI models; how open, against the burst's other frames); in the grid the best is marked with why, the rest dimmed with what's wrong; Pick best, reject rest, or Stack each
-
-- 2026-11-05: Select object is easier to find and use: **Select** in every built-in layout's toolbar (with its word, beside Auto), and once something is selected its actions (Adjust, Brighten, Darken, Move, Remove, Soften background, Shadow) sit on a bar right under it on the photo. Visualise's edge view is a Trippy look: Paint's new Edges and Neon styles (Trippy tools Edges and Neon)
-
-- 2026-11-05: Select object follows the photo's edges (a colour guided filter redraws SAM's coarse map from the photo, so the outline no longer steps or leaves holes) and offers the shadow it casts (shown in blue; Its shadow too takes it along, so Move and Remove take it with the object). Each How to now ends with two or three related features (same bold names, words or section), each opening its own How to
-
-- 2026-11-05: Select object (O): click a thing (Shift adds, Alt takes away, or a box) and SAM outlines it; then Adjust (a brush mask covering it: big dabs inside, small at the edge, Lightroom's own format), Brighten, Darken, Soften background, Remove, or Move (a clone at the new place, then a Remove spot where it was, leaving the clone alone). A fill's grain is now the median of the ring's detail, so an object next to a hole doesn't make the fill noisy
-
-- 2026-11-05: Before / after (\\) shows the split with its bar at the side, to drag in; Z, Space and the 100% button zoom with Spot Removal or Masks open, and opening them keeps the zoom
-
-- 2026-11-05: Convert raws on Canon and Fujifilm: Canon raws (CR2 and CR3: 5D IV, 6D II, 90D, R6, R10) already gave the camera's full-size JPEG; Fujifilm keeps a smaller one (4416 px for a 7728 px X-T5, 4000 for an 11648 px GFX100S), which was used as it was, so its raws are now developed at full size and matched to it. The JPEG is used as it is only when it is at least 85 % of the raw's size
-
-- 2026-11-05: tips: while something takes a moment, a card with one feature to try (from FEATURES.md, at most every 90 s, features already used skipped); the search box and preset filter now and then suggest what to type; two switches in Settings → General
-
-- 2026-11-05: the first start asks nothing: with no lens profiles, lensfun's database (0.5 MB) downloads quietly instead of a dialog over the app
-
-- 2026-11-05: eleven Wild presets (Toy camera, Miniature, Infrared, Cross-process, Dreamland, Acid, Hologram, Oil painting, Cartoon, Poster, Pop art) over two new built-in effects, Paint (Oil, Cartoon, Poster: a Kuwahara filter, ink lines, flat tones) and Tilt-shift; the starter presets in four groups instead of eight (Everyday, Film & mood, Black & white, Wild); built-in effects now run natively on all cores (Paint on a 24 MP photo: 335 s in the sandbox, 9.5 s natively)
-
-- 2026-11-04: tasks as plugins: a third plugin kind, `task` (a tab with its own layout and tool buttons that run commands, effects or action plugins; no code), and the kinds written down ([design/plugin-kinds.md](design/plugin-kinds.md): action, effect, task; exporters, importers and panels later). Trippy is now a built-in task plugin
-
-- 2026-11-04: Help → Camera simulator: a drawn scene (sky, hills, trees, a person, a rolling ball, grass) through a pinhole camera on a 36 mm sensor; shutter speed, aperture, ISO, focal length and the light change exposure, depth of field (blur circles per layer), motion blur and camera shake, and grain; Walk back as you zoom shows compression; notes say what each setting did
-
-- 2026-11-04: click to select: Remove object takes a click (SAM 2.1 tiny, Apache-2.0, a 130 MB install in Settings → AI models; about 9 s the first time on a photo, then under a second); a click takes the whole object, Alt-click a part; boxes use SAM too when installed
-
-- 2026-11-04: MI-GAN (MIT, 30 MB) as AI Remove's fast choice in Settings → AI models: about five times faster than Big-LaMa
-
-- 2026-11-04: tasks that differ: Develop opens on Quick fixes (Auto edit, Auto tone and WB, Level, lens fixes, Surprise me), Retouch on Retouch tools (Remove object, AI Remove, Heal, Find dust, Subject, People, Background and Sky masks, Brush), Color shows only Basic's colour; each task has its own accent colour
-
-- 2026-11-04: watchlist recheck: every project checked again, five new ones listed (Safelight, LightZone, Retoucan, LrGeniusAI, Lightroom AI Bridge)
-
-- 2026-11-04: Remove object (Shift+Q, the Spot panel's first button): drag a box round something; the Subject model outlines it on just that box, and one Remove spot of dabs covers the outline, widened a little, so AI Remove fills all of it at once (`add_spot` `separate`)
-
-- 2026-11-04: the Trippy task (Ctrl+Alt+7): a Trip block with Trip me (a random mix each click) and recipe buttons, over two new built-in effects, Hue trip (psychedelic colour: turned by brightness, posterised, painted) and Holographic (rainbow foil that bends with the light); History names effects instead of showing their JSON
-
-- 2026-11-04: Auto edit: a big Auto button (wand, Ctrl+U) in every built-in layout's toolbar: Auto tone and white balance, lens profile, colour fringes, Vibrance +15 and Level (cropped to fit, when there's no crop yet), one undo step; the toast says what it did
-
-- 2026-11-04: brushed spots resize (Size) and move (`set_spot`); Ctrl+scroll zooms at the pointer (not the brush size); zoomed in, the arrows and a right-drag move the photo with a tool open; not zoomed in, a right-drag on a tool draws a zoom box
-
-- 2026-11-04: AI Remove sees the photo at its own scale (at least 512 px of context, averaged down, never blown up); the Spot panel's Size follows the slider as it moves, up to 25 % of the width
-
-- 2026-11-03: a Search button (magnifier) in the toolbar of every built-in layout
-
-- 2026-11-03: Help → What Ambrotype Can Do: the features list in the app, by section, with a filter; each opens its How to, and search's How to and "nothing found" link to it
-
-- 2026-11-03: Search Everything (Ctrl+K) finds what you want to do ("whatsapp", "raw by mistake") from FEATURES.md, shows where it is, with buttons for what it names
-
-- 2026-11-03: [FEATURES.md](FEATURES.md), what the app can do by what you want to do, with where each thing is and its `amb` command (linked from the README, llms.txt and the AI guide)
-
-- 2026-11-03: exports, Convert raws and collages default to quality 100 (was 90); Convert raws falls back to Auto when a raw's preview can't be read
-- 2026-11-03: Export: Keep under N MB (JPEG; sizes to pick, 16 MB being WhatsApp's max), and Also a smaller copy, up to N MB (NAME-small.jpg beside the export, for social media; `amb render --small-copy 3M`)
-
-- 2026-11-03: Sony raws: Convert raws uses the camera's full-size JPEG where the ARW has one (A7 IV, A7R V; it was matching the raw to the small preview), and the camera's own distortion correction is read and applied (an A6400's kit zoom now frames like its JPEG). Tried on six Sony raws
-
-- 2026-11-03: a watchlist of the projects we researched, with when we last checked each ([research/watchlist.md](research/watchlist.md))
-
-- 2026-11-02: AI Remove: the Spot panel's Remove fills a spot with what belongs there (Big-LaMa, Apache-2.0, an optional 208 MB download in Settings → AI models; CPU, about 10 s a spot). Lightroom's content-aware and generative spots are filled the same way
-
-- 2026-11-02: Edit Replay: File → Export Edit Replay…, `amb replay`: an AV1 MP4 of the edit from its History, steps easing in and named (a 6 s, 1080 px replay takes about 30 s on 4 cores)
-
-- 2026-11-02: Highlight roll-off (Effects → Film finish): highlights ease into white keeping their hue, fading like paper near the top
-
-- 2026-11-02: Defringe → Auto: finds and removes purple, blue, green and cyan fringes by itself (with Remove Chromatic Aberration, which already measured CA without a lens profile)
-
-- 2026-11-02: GPU exports in tiles for any size, sized from the free memory the driver reports (Vulkan, Direct3D 12, Metal)
-
-- 2026-10-31: grain that follows density (Effects → Grain → Film response)
-- 2026-10-31: filmstrip multi-select: Ctrl/Shift-click, right-click for preset, paste, export, convert
-- 2026-10-31: Auto Density and Auto Grade for negatives (off by default)
-- 2026-10-31: subfolders as the first tiles of the library grid; double-click opens or closes a tree folder
-- 2026-10-31: Convert raws from the editor; New preset from this photo (Ctrl+Shift+N)
-- 2026-10-31: halation and bloom (Effects → Glow)
-- 2026-10-31: hub CI installs every submission with the app's own checks (`ambrotype --check-hub`)
-- 2026-10-31: Convert raws: three at a time, best of each burst
-- 2026-10-31: History values, "exposure 0.7" in Search, auto-advance after rating
-- 2026-10-31: full-size exports on the GPU, with the CPU as fallback

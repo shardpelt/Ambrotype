@@ -1,12 +1,172 @@
-# Where we are
+# Roadmap
 
-A short "start here" for contributors and for the next work session. The running short list of what comes next, and what waits on the owner, is [WHATS-NEXT.md](WHATS-NEXT.md). Details are in [ARCHITECTURE.md](ARCHITECTURE.md) (what exists) and [GAPS.md](GAPS.md) (everything missing). New to the repo, or an AI agent? Read [AGENTS.md](../AGENTS.md) first.
+Everything planned, in the order we mean to do it. What to do right now is in [WHATS-NEXT.md](WHATS-NEXT.md); what is missing or approximate in what already exists is in [GAPS.md](GAPS.md); small code cleanups are cards in [cleanup.md](cleanup.md).
+
+## How to read it
+
+Each section is a table: **Id**, **What**, **Size**, **Tier**, **Ready**, **Notes**.
+
+- **Size:** S a day or two, M about a week, L more.
+- **Tier:** who can build it, see [delegation.md](delegation.md): small, medium, large or top.
+- **Ready:**
+  - `ready`: a recipe ([recipes.md](recipes.md)) or a design doc covers it, so a medium model can start.
+  - `brief`: a large model must write a brief first. Notes say what has to be decided.
+  - `owner`: waits on the owner. Notes say for what.
+- Ids never change and rows are not numbered, so adding a row touches one line.
+- Done rows are deleted. The feature goes to [FEATURES.md](FEATURES.md) and one line to WHATS-NEXT's "Recently done".
 
 ## State
 
-- **Branch:** `main`. About 735 Rust tests and 3 UI test scripts (89 steps) are green.
+- **Branch:** `main`. Checks and test runs: [AGENTS.md](../AGENTS.md).
 - **Name:** **Ambrotype**. The GitHub repo is `shardpelt/Ambrotype`.
-- **Built:** what people can do is in [FEATURES.md](FEATURES.md), how it is built in [ARCHITECTURE.md](ARCHITECTURE.md), and what's missing in [GAPS.md](GAPS.md).
+- **Built:** what people can do is in [FEATURES.md](FEATURES.md), how it is built in [ARCHITECTURE.md](ARCHITECTURE.md), and what's missing in [GAPS.md](GAPS.md). Size of the code: run `python3 tools/code-metrics.py`.
+
+## 1. First release (v0.1)
+
+The repo is public, CI is green on every platform, and the `Release` workflow has run by hand ([releasing.md](releasing.md)). Left:
+
+- [ ] Try the editor on the Mac: menu bar (and Interface → Back to the Built-in Interface), library, a custom interface, Connect an AI App… → Open a terminal here, export
+- [ ] Try it once on Windows (same list; the terminal opens with `cmd`)
+- [ ] Read `docs/release-notes/v0.1.0.md`, tag `v0.1.0`, check the draft release, publish
+- [ ] After publishing: README's "no installers yet" becomes a link to the release
+
+After the release: the owner's sample raw replaces the stand-in sample photo (see `sample-raw` in section 5).
+
+## 2. Quick wins
+
+Fastest first.
+
+| Id | What | Size | Tier | Ready | Notes |
+|---|---|---|---|---|---|
+| `speed-edit` | **Speed Edit:** hold a key and drag anywhere on the photo to change the setting last used | S | medium | brief | Decide: which key, what counts as "last used", how it differs from Touch (T). Source: RapidRAW 1.6.9 ([research/17](research/17-competitors-2026.md) item 21) |
+| `jpeg-twin-on-open` | **"JPEG if there is one" also when a raw is opened directly** (Open…, drop, command line), not only from the filmstrip | S | medium | ready | `openPath` in `crates/amb-gui/ui/develop/filmstrip.js` already swaps twins when stepping; say so in the status line. Source: owner, 2026-11 |
+| `tips-more-places` | **Tips in more empty places:** the other search and filter boxes (library filter, Settings search, hub search) and the empty History and Snapshots lists | S | medium | ready | `boxTip` in `crates/amb-gui/ui/core/search.js` is used on two boxes only. Source: owner, 2026-11-05 |
+| `agent-editor-primer` | **Start an AI agent to change the editor itself**, not only to edit photos: a second primer and a choice in Connect an AI app | S | medium | ready | `primer` in `crates/amb-protocol/src/guides.rs`; the layout, theme and plugin guides are already built in ([ai/README.md](ai/README.md)). Source: owner, 2026-11-11 |
+| `film-metering-region` | **Draw the negative's metering region by hand** (today the levels are measured inside the crop) | S | medium | ready | [design/film-negatives.md](design/film-negatives.md) "Settings". Source: Film lab track, owner 2026-10-28 |
+| `filmstrip-run-action` | **Run an action plugin on the filmstrip selection** (right-click menu) | S | medium | ready | Same list as the Photo menu; `crates/amb-gui/ui/develop/filmstrip.js`. Source: owner, 2026-10-31 |
+| `library-view-centred` | **Centre the library bar's View and Slideshow buttons** like the filmstrip's | S | small | ready | `crates/amb-gui/ui/style.css` (`.strip-views`). Source: owner, 2026-11-10 |
+| `drag-to-folder` | **Drag photos onto a folder** in the Folders panel to move them | S | medium | ready | [design/library.md](design/library.md) "File care"; sidecars go along. Source: Photo manager track, owner 2026-10-19 |
+| `trippy-share-presets` | **Trippy looks shareable:** a Trippy edit saved as a preset with its effects, and shared to the hub | S | medium | ready | Effects live in `amb:Effects`, so New preset from this photo may carry them already: check first, then the hub item kind steps in [recipes.md](recipes.md). Source: owner, 2026-11-11 |
+| `collage-all-photos` | **Collage for every photo shown:** one layout over all of them, as pages | S | medium | ready | Batch pages already exist ([design/collage-and-borders.md](design/collage-and-borders.md)). Source: owner, 2026-11-11 |
+| `library-speed-number` | **A published speed number for big libraries** (100k photos: open, filter, search) | S | medium | brief | Decide: how the synthetic library is made, what is timed, where it is written down. "Free browsers stall on big libraries" is a top switching complaint. Source: PhotoWorkout, 2026-11 |
+| `peek-on-hover` | **Peek on hover:** the area round the pointer magnified after a moment still (the loupe, I, does it as a mode) | S | medium | brief | Decide: delay, size, how it ends. Source: owner, 2026-11-11 |
+| `readme-screenshots` | **README screenshots again**, with the library (grid, Insights) and a Trippy edit | S | small | owner | Needs the owner's Fujifilm sample photos ([WHATS-NEXT.md](WHATS-NEXT.md)). Source: owner, 2026-11-11 |
+| `trippy-past-range` | **Basic's sliders past their ranges in Trippy** (our own extra settings; Lightroom's ranges stay in the sidecar) | S–M | medium | brief | Decide: which sliders, how far, how they are stored. Source: owner, 2026-11-04 |
+| `reverse-geocode` | **Reverse geocoding:** city and country names for placed photos, for search and captions | S | large | brief | Decide: online (Nominatim, as the place search) or offline data, and which sidecar fields hold it. [design/library.md](design/library.md) "Timeline and map". Source: GAPS §3 |
+| `library-loupe-zoom` | **Zoom in the library's Loupe and Compare** like in Develop and the viewer | M | medium | ready | Wire `wirePinchZoom` (`crates/amb-gui/ui/core/pinch.js`) to `crates/amb-gui/ui/library/cull.js`, sharing the helper in `crates/amb-gui/ui/library/viewer-zoom.js`. Source: owner, 2026-11-11 |
+| `insights-style-summary` | **Insights: an overall style summary** ("what kind of photographer the numbers say you are") | M | medium | brief | Decide: what it says and from which medians. `crates/amb-library/src/insights/advice.rs`. Source: owner, 2026-11-11 |
+| `insights-gear` | **Insights: gear suggestions** tied to a stated shortfall (a faster lens for dark scenes, a wider zoom) | M | medium | brief | Decide: the rules and the wording. `crates/amb-library/src/insights/advice.rs`. Source: owner, 2026-11-11 |
+| `insights-adjacent-styles` | **Insights: styles next to yours to try**, not only the far side | M | medium | brief | Decide: one step either side of the usual focal length and aperture, or other rules. Source: owner, 2026-11-11 |
+
+## 3. Big things
+
+Most important first. The first four are the Film lab, in the order WHATS-NEXT lists them.
+
+| Id | What | Size | Tier | Ready | Notes |
+|---|---|---|---|---|---|
+| `film-paper-curve` | **A paper curve in density:** toe, straight line and shoulder, ISO-R grades, split grade, preflash, B&W papers fitted from public datasheets | L | large | brief | Candidate for negative model v2 ([design/film-negatives.md](design/film-negatives.md)). Decide: stage, settings, tags. Source: Film lab track item 9, owner 2026-10-28 ([research/16](research/16-film-scan-apps-survey.md)) |
+| `film-stock-looks` | **Film looks tied to stocks:** halation, bloom and grain amounts per stock, so picking a stock brings its glow and grain | M | large | brief | [design/film-negatives.md](design/film-negatives.md) "Film stocks"; today they are the same for every photo. Decide: which settings a stock sets. Source: Film lab track, owner 2026-10-28 |
+| `film-dust-guided` | **Dust: the guided rectangle and a heal brush that searches its stroke** | M | large | brief | [design/dust.md](design/dust.md) "Not yet". Decide: the search method. Source: Film lab track item 5 |
+| `film-darkroom-aids` | **Darkroom aids:** density and zone under the cursor, zone overlay, placing a spot in a zone, step wedge, negative range and scan-clip readouts, test strip, ring-around, peek at the negative; Pick Better | M | large | brief | Decide: which first, and where they live (tool, view or dialog: [design/tabs.md](design/tabs.md)). Source: Film lab track item 7 |
+| `film-fade-restoration` | **Fade Restoration** for faded prints and slides, in the Film tab | M | large | brief | Decide: the model. Source: NegPy 0.68 ([research/16](research/16-film-scan-apps-survey.md)) |
+| `explain-edit` | **Explain an edit:** Auto, Match look and the Assistant say why each change helps, on the photo | M | large | brief | Decide: where the words come from and how they show. Photon's AI Coach is its whole pitch. Source: [research/17](research/17-competitors-2026.md) item 20 |
+| `print-layouts` | **Print layouts and paper sizes; contact sheets as PDF; a flat 16-bit master** | M | large | brief | Contact sheets as pages already exist (`amb contact`). Decide: layout format and PDF writer. Source: [research/17](research/17-competitors-2026.md) item 3; Film lab track item 10 |
+| `agent-drives-ui` | **Agents driving the whole UI**, not only edits (menus, tools, brush strokes), with undo | M | large | brief | Decide: protocol commands for UI actions ([design/ai-control.md](design/ai-control.md)). What LightCraft's MCP does. Source: [research/17](research/17-competitors-2026.md) item 14 |
+| `second-window` | **A second window** for the photo (the viewer on a second screen) | M | medium | brief | Decide: how the two windows share state (Tauri). Source: RapidRAW 1.6.9 |
+| `midi-controllers` | **MIDI controllers** for sliders | M | large | brief | Decide: the crate, the mapping file. Hardware consoles (Loupedeck-style). Source: RAWmakase |
+| `face-part-masks` | **Face-part masks** (eyes, lips, skin) | M | large | brief | A new AI model: licence check ([own-models.md](own-models.md), `crates/amb-ai/data/models.json`). [design/masks.md](design/masks.md). Source: RapidRAW, watchlist 2026-11-04 |
+| `teach-before-after-strip` | **Teach by showing, the rest:** a before/after strip per slider for this photo, on hover | M | medium | brief | [design/future-ideas.md](design/future-ideas.md#tutorial-mode) |
+| `help-more-terms` | **More photography terms** in the "?" cards, terms in Learn's lessons, and translations | M | medium | ready | Text in `crates/amb-gui/ui/basics.json` and `crates/amb-gui/ui/lessons.json`. Source: owner, 2026-10-20 |
+| `ai-coach` | **An optional AI coach** (bring-your-own-AI): explains why a preset looks the way it does, or suggests the next step, with only commands a user can use | M | large | brief | [design/future-ideas.md](design/future-ideas.md#tutorial-mode). Overlaps `explain-edit`: brief them together |
+| `surprise-locks` | **Surprise me with locks** (keep white balance and exposure), scope to one panel, "mutate" around the current look, film stocks, entering a seed | S–M | medium | brief | [design/future-ideas.md](design/future-ideas.md#randomize-button-surprise-me) |
+| `auto-per-slider` | **Auto: Shift-click per slider**, Auto for Vibrance and Saturation, and "Auto in the style of …" via `amb match` | M | large | brief | [design/future-ideas.md](design/future-ideas.md#auto-button). Calibration against Lightroom's Auto is `fit-auto` in section 5 |
+| `usage-insights` | **Usage insights** (opt-in, local counters of panels used, settings not rendered, timings, crashes) and "share usage report" | M | large | brief | [design/future-ideas.md](design/future-ideas.md#feedback-button-and-usage-insights). Decide: the counter file and what is shown before sending |
+| `feedback-relay` | **Send feedback straight from the app** (a relay that files the issue) and `amb feedback`; a feedback label set and a monthly triage | M | large | brief | [design/future-ideas.md](design/future-ideas.md#feedback-button-and-usage-insights). Decide: who runs the relay |
+| `film-scans-in` | **Scans in:** flat-field from a shot of the bare light, a channel-bleed matrix per film type or from a colour chart, half-frame split, a strip split into frames, stitching a large negative | M each | large | brief | Split into five rows when briefed. Source: Film lab track item 8 |
+| `film-bw-processes` | **B&W processes and finishing:** lith, cyanotype, Sabattier, chemical toners, edge burn, filed carrier, chroma denoise that keeps edges, a skin chroma ceiling | S–M each | medium | brief | Some as effect plugins ([design/plugin-kinds.md](design/plugin-kinds.md)). Source: Film lab track item 11 |
+| `film-metadata` | **Film metadata:** stock, camera and development per roll, search terms such as `film:… iso:>=400`, and a hot folder | M | large | brief | Touches the sidecar: decide the tags. Source: Film lab track item 12 |
+| `film-print-proof` | **Printer and paper soft proof**, applied once to the composed page | M | large | owner | Needs the user's printer and paper ICC profiles. Source: Film lab track item 10 |
+| `library-background-index` | **Index whole drives in the background** while the editor runs, with a preview cache for very large libraries | M | large | brief | [design/library.md](design/library.md) "Not yet". Source: Photo manager track item 1, owner 2026-10-19 |
+| `catalog-queries` | **Queries and full-text search straight from the catalogue** (FTS5); smart collections and All photos without checking every file | M | large | brief | [design/library.md](design/library.md) "Not yet"; [GAPS.md](GAPS.md#3-library-and-catalog) |
+| `keyword-hierarchies` | **Keyword hierarchies and synonyms** (read, edit, write `lr:hierarchicalSubject`) | M | large | brief | Touches the sidecar. [design/library.md](design/library.md) "Not yet" |
+| `import-more` | **Import:** move instead of copy, eject the card, pick single photos, resumable import | M | medium | ready | [design/library.md](design/library.md) "Import". Source: [SCOPE.md](SCOPE.md) §8 |
+| `library-safety` | **Safety:** checksums in the catalogue to catch silent corruption, a backup check, space per folder, year and camera; automatic catalogue backups | M | large | brief | Source: Photo manager track item 7, owner 2026-10-19 |
+| `library-several-computers` | **A library on a NAS or synced folder** used from more than one machine, each with its own catalogue cache | L | large | brief | Source: Photo manager track item 8 |
+| `library-videos` | **Videos:** list and play the clips next to the photos, with ratings and keywords | L | large | brief | Source: Photo manager track item 10 |
+| `face-grouping` | **Local face grouping** (people by name), optional, off by default, never uploaded | L | large | brief | Model licence check first. Left out on purpose for now ([GAPS.md](GAPS.md#3-library-and-catalog)). Source: Photo manager track item 5 |
+| `share-gallery-export` | **A slideshow as a video or web page, and a static web gallery** from a collection, with music | M | large | owner | [SCOPE.md](SCOPE.md) calls web gallery modules a non-goal for v1: the owner decides. Source: Photo manager track item 9 |
+| `tethering` | **Tethered shooting** (libgphoto2) | L | large | brief | Phase 4 item in [SCOPE.md](SCOPE.md) §8; decide the crate and the platform story |
+| `focus-stacking` | **Focus stacking** (after HDR and panorama, as a merge) | L | large | brief | [design/hdr-merge.md](design/hdr-merge.md) and [design/panorama.md](design/panorama.md) are the pattern. Source: Redlamp, RapidRAW |
+| `plugin-panels` | **Free-form plugin panels and dialogs** (effects get controls from their manifest only), and a JIT for pixel effects | L | large | brief | [design/plugin-kinds.md](design/plugin-kinds.md); [ai/plugins.md](ai/plugins.md) |
+| `plugin-data-kinds` | **Data plugins** (presets, LUTs, profiles); recipes shared through the hub; CI that rebuilds hub plugins from source | M | large | brief | [design/plugin-kinds.md](design/plugin-kinds.md); [GAPS.md](GAPS.md#15-platforms-and-packaging) |
+| `hub-ratings` | **Hub: ratings and screenshots**, very large layouts without a hand step | M | medium | brief | [design/customization-and-hub.md](design/customization-and-hub.md) §4 |
+| `ui-tests-more` | **More UI test scripts** (masks, crop, develop panels) and the same scripts on macOS and Windows | M | medium | ready | [recipes.md](recipes.md) (UI tests); `crates/amb-gui/tests/ui/`. Source: owner, 2026-10-22 |
+| `generative-tools` | **Generative fill and expand, relight, face reshaping** | L | large | owner | Large models, outside our niche for now; [SCOPE.md](SCOPE.md) says "not planned" for relight. Owner decides. Source: Rembrandt, RapidRAW, Lightroom |
+| `web-build` | **A web build or a self-hosted browser library** | L | top | brief | An architecture decision (engine in WebAssembly, library server). Source: LightCraft, Rembrandt |
+| `android-app` | **An Android app** (iOS is effectively impossible under the GPL) | L | top | owner | [research/08](research/08-cross-platform-and-mobile.md); [SCOPE.md](SCOPE.md) §8. Owner decides if and when |
+
+## 4. Gaps worth closing
+
+What is missing or approximate in what exists, most important first. Each Notes cell links its section of [GAPS.md](GAPS.md).
+
+| Id | What | Size | Tier | Ready | Notes |
+|---|---|---|---|---|---|
+| `trial-interaction-sidecars` | **Add the interaction pairs to the trial's sweep plan** (Highlights × Whites, Shadows × Blacks, Contrast × Exposure, Vibrance × Saturation, Texture × Clarity) before the Lightroom month | M | medium | ready | [lightroom-trial-plan.md](lightroom-trial-plan.md); [GAPS §14](GAPS.md#14-testing-and-calibration) |
+| `gpu-preview-cpu-steps` | **GPU versions of the steps that still run on the CPU inside the GPU preview:** camera profile tables, defringe, spots, masks, LUTs, blank-edge fill | L | large | brief | [design/gpu.md](design/gpu.md); [GAPS §13](GAPS.md#13-performance-and-gpu). Decide the order by measured cost |
+| `gpu-stage-cache` | **Caching per stage** in the GPU preview, and region renders that take their globals from the whole photo, not a 1600 px copy | L | large | brief | [design/gpu.md](design/gpu.md); [GAPS §13](GAPS.md#13-performance-and-gpu) |
+| `lens-warp-gpu` | **Lens warp and defringe on the GPU** (about 1.5 s per 24 MP on the CPU) | M | large | brief | [GAPS §13](GAPS.md#13-performance-and-gpu); [design/lens-corrections.md](design/lens-corrections.md) |
+| `native-gpu-viewport` | **A native GPU viewport** instead of JPEG previews in the webview | L | top | brief | An architecture decision; wry `build_as_child` is X11-only on Linux. [GAPS §2](GAPS.md#2-ui); [research/08](research/08-cross-platform-and-mobile.md) |
+| `gpu-precision` | **fp16 against fp32, storage-texture formats and buffer limits** measured on Intel, AMD, NVIDIA and Apple GPUs | M | large | owner | Needs several GPUs. [GAPS §13](GAPS.md#13-performance-and-gpu) |
+| `perf-budgets` | **Benchmark CI and performance budgets** (slider latency, import, export, mask count, catalogue size) | M | large | brief | [GAPS §13](GAPS.md#13-performance-and-gpu); [SCOPE.md](SCOPE.md) §7 |
+| `demosaic-choice` | **Demosaic choice** (AMaZE, LMMSE), X-Trans 3-pass, highlight rebuild past two clipped channels, capture sharpening | L | large | brief | [GAPS §4](GAPS.md#4-raw-decoding-and-colour) |
+| `raw-support-gaps` | **4-colour CFA sensors, cameras without a colour matrix, a LibRaw fallback in a sandboxed helper**, and a camera-support process (fitted fallback profiles, sample submissions) | L | large | brief | [GAPS §4](GAPS.md#4-raw-decoding-and-colour); [GAPS §1](GAPS.md#1-product-legal-and-process) |
+| `input-formats` | **HEIC, AVIF and PSD input**, LUT-based ICC profiles, a raw and its JPEG as two separate photos | M | large | brief | [GAPS §4](GAPS.md#4-raw-decoding-and-colour) |
+| `adobe-raw-xmp-profiles` | **Read Adobe Raw `.xmp` profiles** (Adobe Color, the default) and decode Creative profiles (`Look`, `RGBTable`) | L | large | owner | Needs the two facts in Help wanted. [GAPS §10](GAPS.md#10-presets-and-compatibility); [design/camera-profiles.md](design/camera-profiles.md) |
+| `base-look` | **Replace the placeholder base look** with fitted per-camera base looks | L | large | owner | Needs trial data (`lightroom-trial`). [design/camera-profiles.md](design/camera-profiles.md); [GAPS §4](GAPS.md#4-raw-decoding-and-colour) |
+| `tone-equaliser` | **Tone equaliser and a native scene-referred mode** (filmic, sigmoid, AgX) | L | large | brief | [GAPS §5](GAPS.md#5-tone-and-colour-models); [SCOPE.md](SCOPE.md) §3 |
+| `legacy-tone-tags` | **Render the legacy tone-curve tags, custom white balance without Temperature, and the HDR editing tags** | M | large | brief | Touches presets. [GAPS §4](GAPS.md#4-raw-decoding-and-colour); [GAPS §10](GAPS.md#10-presets-and-compatibility) |
+| `masks-polygon-auto` | **Polygon lasso and an edge-aware auto-mask brush** | M | large | brief | [design/masks.md](design/masks.md); [GAPS §6](GAPS.md#6-local-adjustments-and-retouch) |
+| `masks-unrendered` | **Render Moire, LocalHue, LocalGrain and LocalPointColors inside masks; depth-range masks** | M | large | brief | [GAPS §6](GAPS.md#6-local-adjustments-and-retouch) |
+| `masks-ai-quality` | **Better Select Sky (sunset, storm), Select People as separate people, landscape parts** | M | large | brief | [design/masks.md](design/masks.md); [GAPS §6](GAPS.md#6-local-adjustments-and-retouch) |
+| `blemish-heal` | **Blemish removal with the heal brush** good enough on real portraits | M | large | brief | A soft edge still mixes some blemish texture. [design/spot-removal.md](design/spot-removal.md); owner, 2026-10-19 |
+| `spot-drag` | **Move brushed spots by dragging** in the editor | S | medium | ready | Resize and `set_spot` exist. [design/spot-removal.md](design/spot-removal.md) |
+| `ai-models-gaps` | **Super Resolution, Raw Details and Lens Blur (depth)** as local models, and a permissive-only model manifest with a CI gate | L | large | brief | Licence first: no non-commercial models. [GAPS §6](GAPS.md#6-local-adjustments-and-retouch); [GAPS §7](GAPS.md#7-detail-and-effects) |
+| `lens-profiles-more` | **Built-in lens profiles in maker notes** (MFT, Fujifilm X, many compacts), Sony vignetting and CA tags, fisheye profiles | M | large | brief | [design/lens-corrections.md](design/lens-corrections.md); [GAPS §8](GAPS.md#8-lens-and-geometry) |
+| `merge-gaps` | **HDR and panorama merge:** rotation and scale in alignment, JPEG brackets, Create stack, Boundary Warp, Fill Edges | L | large | brief | [design/hdr-merge.md](design/hdr-merge.md); [design/panorama.md](design/panorama.md) |
+| `export-formats` | **Export gaps:** lossy WebP and JPEG XL, ICC and 10-bit AVIF, DNG of the developed image, HDR AVIF and JXL, gamut mapping, OpenEXR metadata | L | large | brief | [GAPS §11](GAPS.md#11-export); [ARCHITECTURE.md](ARCHITECTURE.md) "Export" |
+| `ai-control-gaps` | **AI control gaps:** `--json` on every command, protocol `list_presets`, Assistant placing masks, crops and spots, a pending diff to Accept, `amb match` with tone curve and texture, Learn-my-style | L | large | brief | [design/ai-control.md](design/ai-control.md); [GAPS §12](GAPS.md#12-ai-control) |
+| `wayland-colour` | **Wayland monitor profiles** (colord), LUT-based monitor profiles, thumbnails in the monitor's profile | M | large | brief | [GAPS §15](GAPS.md#15-platforms-and-packaging); [research/08](research/08-cross-platform-and-mobile.md) |
+| `fuzz-and-fidelity-ci` | **Coverage-guided fuzzing** (cargo-fuzz), ICC and raw decoding fuzzed, a pinned `rust-toolchain.toml`, fidelity metrics in CI | M | large | brief | [GAPS §1](GAPS.md#1-product-legal-and-process); [GAPS §14](GAPS.md#14-testing-and-calibration) |
+| `governance-docs` | **Governance:** contributor AI-use policy, a no-rug-pull charter, data-safety invariants, a decisions record (`docs/decisions/`) | S | medium | brief | [GAPS §1](GAPS.md#1-product-legal-and-process); [SCOPE.md](SCOPE.md) §10. The owner decides the policy |
+| `code-over-budget` | **Split the files past the size budget** and keep the UI scripts' load order checked | M | medium | ready | `OVER_BUDGET` in `crates/amb-cli/tests/code_size.rs`; [cleanup.md](cleanup.md); [GAPS §16](GAPS.md#16-code-health) |
+| `agent-measurement` | **Measure whether the agent maps help:** fresh agents on a fixed task set with and without recipes (rounds A1 and B1 are done) | M | large | brief | [design/agent-navigation.md](design/agent-navigation.md) |
+
+## 5. Waiting on something outside
+
+| Id | What | Size | Tier | Ready | Notes |
+|---|---|---|---|---|---|
+| `lightroom-trial` | **Run the Lightroom Classic measurement month:** build the kit first, shoot the own photos, run the sweeps and batches, run the plug-in in Lightroom, finish and copy out | L | large | owner | Needs a Lightroom Classic subscription. [lightroom-trial-plan.md](lightroom-trial-plan.md); [design/calibration.md](design/calibration.md) |
+| `fit-model-constants` | **Fit the model constants to the trial renders:** every `Calibration` section, Highlights/Shadows, tone, HSL, Texture, Clarity, Dehaze, sharpening, noise reduction, grain, vignette, masks, lens, Amount | L | large | owner | Waits on `lightroom-trial` output. Only fitted numbers go in the repo. [GAPS §14](GAPS.md#14-testing-and-calibration) |
+| `fit-transform-crop` | **Check the crop's angle sign and corner semantics, Transform signs and strengths, and Upright against Lightroom** | M | large | owner | Waits on `lightroom-trial`. [design/crop.md](design/crop.md); [design/transform.md](design/transform.md) |
+| `point-color` | **Point Color** (`PointColors`) and the B&W mixer fit | M | large | owner | Needs a Lightroom sample of `PointColors`. [GAPS §4](GAPS.md#4-raw-decoding-and-colour) |
+| `fit-preset-amount` | **Measure Preset Amount and profile Amount**, and the tag registry's ranges, defaults and steps | M | large | owner | Waits on `lightroom-trial`. [GAPS §10](GAPS.md#10-presets-and-compatibility) |
+| `fit-auto` | **Calibrate Auto against Lightroom's Auto** (record what it writes) | M | large | owner | Waits on `lightroom-trial`. [design/future-ideas.md](design/future-ideas.md#auto-button) |
+| `red-eye` | **Red eye and pet eye** | M | large | owner | Needs a Lightroom sidecar with red eye: the `RedEyeInfo` format is not documented. [design/spot-removal.md](design/spot-removal.md) |
+| `preset-corpus` | **Apply every preset the owner has to the ten raws** (an end-to-end preset test) and run `amb preset census` | M | medium | owner | The owner's preset collections are never committed |
+| `color-chart-capture` | **A real ColorChecker capture** for colour fitting | S | small | owner | The synthetic chart is approximate. [GAPS §14](GAPS.md#14-testing-and-calibration) |
+| `fujifilm-looks-fit` | **Fit the Film recipe looks** to in-camera re-renders of each film simulation | M | large | owner | Needs the owner's Fujifilm camera. [design/film-look-measurement.md](design/film-look-measurement.md) |
+| `film-stock-profiles` | **Measured film stock profiles** from scans of real film shot with a reference target, and a way to share them as data | L | large | owner | Needs real film scans. [design/film-negatives.md](design/film-negatives.md) |
+| `auto-density-default` | **Make Auto Density and Auto Grade the default** if they look right on a real roll | S | small | owner | The owner tries both switches ([WHATS-NEXT.md](WHATS-NEXT.md)) |
+| `dust-infrared` | **Dust from a scanner's infrared channel** (a fourth channel or an `_ir` file) | M | large | owner | Parked until there is a scan with one. [design/dust.md](design/dust.md) |
+| `mac-windows-check` | **Try the things only tried on Linux** on a Mac and on Windows: menu bar, trash, custom interfaces, release-build preview times (`AMB_TIMING=1`), GPU export and AI speed (`AMB_GPU=off`, `AMB_AI_GPU=off`) | M | medium | owner | Needs the owner's Macs and Windows machine. [GAPS §2](GAPS.md#2-ui); [GAPS §13](GAPS.md#13-performance-and-gpu) |
+| `packaging-rest` | **Windows signing (SignPath), Apple signing secrets, Flatpak, MSIX, a universal DMG, auto-update** | M | medium | owner | Needs the owner's signing accounts and secrets. [releasing.md](releasing.md); [GAPS §15](GAPS.md#15-platforms-and-packaging) |
+| `lrcat-real-catalogues` | **Try `.lrcat` import and opening in place on real Lightroom Classic catalogues** of several versions; convert smart collections | M | large | owner | Needs real catalogues. [design/library.md](design/library.md); [GAPS §3](GAPS.md#3-library-and-catalog) |
+| `sample-raw` | **The owner's sample raw** replaces the stand-in sample photo | S | small | owner | After v0.1. Spec: a bright sky and deep shadows about 1 stop under, a colour cast with a grey in it, muted and saturated colours, a slightly tilted horizon, no people or private places, GPS stripped, CC0 or CC BY, DNG preferred, under 30 MB. URL and checksum in `crates/amb-gui/src/commands/sample.rs` |
+| `counsel-review` | **A lawyer's review before 1.0** (or before donations at scale): purchased-preset seller licences, the DNG SDK licence against the GPL, the patent notes | S | small | owner | Needs counsel. [legal.md](legal.md); [GAPS §1](GAPS.md#1-product-legal-and-process) |
+| `trademark-search` | **Trademark searches** (TMview, WIPO, USPTO, EUIPO) for Ambrotype, and own the `amb:` namespace domain | S | small | owner | [SCOPE.md](SCOPE.md) "Name"; [legal.md](legal.md) |
+| `owner-decisions` | **Decisions only the owner can make:** the funding model, the fidelity target that defines "compatible" (proposal: median dE00 < 2, p95 < 5 over the top 20 tags), who holds the Lightroom subscription, contacting RapidRAW's maintainer, a usability test with Lightroom switchers, the cloud Lightroom API or computer use for the trial's part 4 | S | small | owner | [GAPS §1](GAPS.md#1-product-legal-and-process); [SCOPE.md](SCOPE.md) §12; [lightroom-trial-plan.md](lightroom-trial-plan.md) |
+| `scroll-mode-choice` | **Confirm the side columns scroll as one**, or bring back the switch between one scroll and blocks that each scroll | S | small | owner | The switch was built and removed on 2026-11-10 ("one scroll won"); not recorded as the owner's choice. Source: owner, 2026-11-10 |
+| `reddit-threads` | **Paste Reddit threads by hand** for the recheck (our tools cannot read Reddit) | S | small | owner | [research/watchlist.md](research/watchlist.md) |
 
 ## Help wanted
 
@@ -18,156 +178,7 @@ Things anyone with the right kit can do; open an issue first so two people don't
 - **Film simulation references:** raws plus in-camera re-renders with each film simulation, so the Film recipe looks can be fitted ([design/film-look-measurement.md](design/film-look-measurement.md)).
 - **Creative and Adobe Raw profiles** (`Look`, `RGBTable`) need two facts: the 85-character alphabet the DNG SDK uses for `Table_<md5>` text, and the names of the `crs:` properties that hold table fingerprints in an Adobe Raw profile `.xmp`. Facts only; copy no table data.
 
-## Next steps
-
-### Convert raws (2026-10-31)
-
-For a card shot in RAW by mistake (a friend's niece's camera): the library's **Convert raws…** (in the editor: File → Convert Raws to JPEGs…, or right-click the photo, for its folder) and `amb convert` make JPEGs as the camera would have saved them, on Auto, or like one edited photo; photos already edited keep their edit, and a stopped run carries on. Also: right-click a library selection to apply a preset to all of it. Exports, Convert raws and `amb render` develop on the GPU when there is one, in tiles when the photo is too large for it at once (sized from the free memory the driver reports), and Convert raws does three photos at a time, or only the best of each burst ([design/gpu.md](design/gpu.md)). Small wins: History shows each step's values ("0.00 → +0.70", every change in its tooltip); Search (Ctrl+K) sets a setting from its name and a number ("exposure 0.7"); Settings → General can go to the next photo after a rating, flag or label from the keyboard. The library's grid starts with the folders inside the one shown, as tiles with their photo counts (and ↑ for the folder above); a click opens one. Double-click a folder in the Folders tree to open or close it. In the editor, Ctrl- or Shift-click photos in the filmstrip to select them; right-click applies a preset, pastes settings (Ctrl+Shift+C copies the open photo's), exports or converts them all. File → Export Edit Replay… (`amb replay`) makes a short AV1 MP4 of the edit from its History, for Reels and Shorts. AI models (Select object's SAM 2.1, AI Remove's Big-LaMa and MI-GAN, YuNet, search) run on the GPU with our own kernels when there is one (2026-11-06; [design/gpu.md](design/gpu.md)). The hub's CI now builds the app and installs every item with `ambrotype --check-hub HUB_FOLDER`, so a submission the app would refuse fails its pull request.
-
-### From the competition (2026-10-30)
-
-LightCraft, Rembrandt, Redlamp, FlashView and Tenzen, what to take from each, why people pay for Tenzen, and our niche: [research/17](research/17-competitors-2026.md). In work, in this order: ~~before/after split~~ (done), ~~a blank-canvas layout editor~~ (done: Appearance → Start from scratch…), ~~a shareable before/after page~~ (done: File → Share Before and After…, `amb share`), ~~contact sheets~~ (done: the library's Contact sheet…, `amb contact`: film strips with holes, frame numbers and edge print, or a plain grid; 300 dpi pages), ~~Touch~~ (done: T, drag on the photo for the tone region or the colour under it, `ui/develop/touch.js`), ~~smart search~~ (done: CLIP or SigLIP 2, the user's choice in Settings → AI models; the library's Smart, Find similar photos, `amb search`).
-
-### Pinned: teach by showing, not by cards (owner, 2026-10-20)
-
-Card tips get skipped. Learn's lessons stay in Help → Learn, but first-run teaching should show, not tell. Done on 2026-10-22 (`ui/help/teach.js`):
-
-1. ~~**A sample photo that teaches through its History.**~~ The empty screen's **Try a sample photo** (and Help → Open the sample photo) downloads a stand-in raw (the CC0 D750 still life from raw.pixls.us, 18 MB, checked) with a nine-step edit. Clicking a History step (or Ctrl+Z) lights up the controls it changed and slides them to their value. With History focused (clicked, or Tab) the arrow keys step through it and Home/End go to the ends. Left: swap in the owner's photo below (a new `data/sample/` sidecar, URL and checksum in `commands/sample.rs`).
-2. ~~**Hold ⌘/Ctrl to see every shortcut**~~ on the toolbar buttons and tasks (not on sliders: they have no keys).
-3. ~~**Empty states that teach:**~~ the library says "drop a folder here", and a folder dropped anywhere opens in it; on an unedited photo Exposure, Highlights, Shadows, Temp and Vibrance glow faintly until the first edit.
-4. ~~**Task bar hover previews:**~~ a sketch of the task's columns and panels (open ones highlighted), with its key.
-5. ~~**Watch mode:**~~ Help → Watch an edit (or the empty screen's button) opens the sample afresh, goes back to Original, and a ghost cursor replays its nine steps in about 20 seconds, each named beside it. Any key, click or scroll stops it; the rest stays in History.
-6. ~~**A "?" by every setting**~~ (`ui/help/help.js`): hover for a line on what it does, click for a card: how it shows in a photo, when to raise it, when to lower it, its range and start value. The longer text (`coach` in `crates/amb-protocol/data/descriptions.json`) is written for every setting in the panels (101, and the 32 colour-band sliders from templates).
-7. ~~**Photography basics**~~ (Help → Photography basics, Shift+F1; `ui/help/basics.js`, text in `ui/basics.json`): an eight-step guide to how a photo is made and edited, and 26 terms. In a "?" card, terms such as *midtones* or *clipping* are underlined faintly: hover for a line, click to open the guide there. Nothing shows unless asked for, so it stays out of a pro's way. Tone and colour terms show **on your own photo** (`ui/develop/zones.js`): hovering *midtones*, *shadows*, *highlights*, *clipping* or *saturation*, or the "?" of Highlights, Shadows, Whites, Blacks, Saturation or Vibrance, lights up those pixels on the preview, dims the rest and says what share of the photo they are. Drawings (`ui/help/figures.js`, SVG in the theme's colours) show what a photo can't: aperture sizes, depth of field, shutter blur, ISO noise, stops, the histogram's zones, clipping, contrast, dynamic range, the kelvin scale, saturation, hue, luminance, halos, vignettes and crop shapes; six of the eight chapters have one. Left: more terms, terms in Learn's lessons, translations.
-8. ~~**UI tests**~~ (`ambrotype --ui-test SCRIPT.js photo.dng`; [recipes.md](recipes.md)): the editor runs a script that acts like a person (sliders, keys, clicks) and checks what the page shows, then exits with the result. CI runs `crates/amb-gui/tests/ui/` on Linux. The first script opens a photo, edits, undoes and redoes, opens every panel, checks the Color Mixer tabs and a help card, and exports. Left: more scripts (masks, crop, library), and macOS and Windows.
-9. ~~**Monitor colour**~~ (Settings → General): on Linux the preview is converted to the monitor's profile, from the desktop (X11, per monitor) or a chosen file; macOS and Windows webviews do it themselves. Left: Wayland (colord), LUT profiles, thumbnails; check by hand on a Mac and on Windows.
-
-There was no automatic "Getting around" card to retire: Learn only opens on F1 or the empty screen's button.
-
-**The sample raw (the owner can provide it).** One photo that needs every basic slider:
-- a bright sky and deep shadows in one frame, about 1 stop under (Exposure, Highlights, Shadows, Whites/Blacks)
-- a visible colour cast to fix: warm indoor light, or blue shade (Temp/Tint), with something white or grey in it
-- muted and saturated colours side by side (Vibrance vs Saturation), e.g. foliage and a painted door
-- a slightly tilted horizon or vertical (Crop/Straighten); a dust spot is a bonus (Spot removal)
-- no identifiable people, logos or private places; GPS stripped
-- your own shot, shared as CC0 (or CC BY); DNG preferred (NEF/CR3/ARW fine), under 30 MB
-
-### First release (v0.1) checklist
-
-State on 2026-10-20 (evening): the repo is public and CI runs. Linux, macOS and the licence check are green. Windows found two real bugs, both fixed: NaN pixels in the GPU colour stage (`b0d17dd`), and CRLF checkouts breaking the hub checksums (`.gitattributes`, `2e61191`). That last fix still needs a green Windows run.
-
-- [x] Make `shardpelt/Ambrotype` public
-- [x] CI green on Windows (x64, ARM): green since `74d455d` (2026-10-22): plugins no longer call into the app (it crashed on x64), and the GPU tests take turns (ARM)
-- [x] Run the `Release` workflow by hand once: green on every platform since `2bf5a58` (2026-10-22; Macs unsigned, Intel Macs built on Apple Silicon). Installing each one is the hand tests below
-- [x] `strip = true` in `[profile.release]` (about 60 MB smaller installs; downloads shrink less)
-- [ ] Try the editor on the Mac: menu bar (and Interface → Back to the Built-in Interface), library, a custom interface, Connect an AI App… → Open a terminal here, export
-- [ ] Try it once on Windows (same list; the terminal opens with `cmd`)
-- [x] ~~Hub history clean-up~~: dropped (owner, 2026-10-23). Older commits in both repos keep their trailers; new ones name no model
-- [x] Release notes: `docs/release-notes/v0.1.0.md` (the draft release starts with it). Read it before publishing
-- [ ] After publishing: README's "no installers yet" becomes a link to the release
-- [ ] Tag `v0.1.0`, check the draft release, publish
-
-After the release: the owner's sample raw (spec above) replaces the stand-in.
-
-~~Hub repo to-do: index `borders/`~~ (done 2026-10-23: White, White with a black line and Polaroid are in the hub).
-
-There are two tracks that can run in parallel: the UI track is what users see and share, and the fidelity track depends on the Lightroom trial data.
-
-### UI and sharing track (agreed 2026-10-07, in this order)
-
-1. ~~Crop tool and size presets~~ (done 2026-10-07). Small follow-ups are in [GAPS.md](GAPS.md).
-2. ~~Layout files, built-in looks and themes~~ (done 2026-10-07; [design/customization-and-hub.md](design/customization-and-hub.md), [ai/ui-layouts.md](ai/ui-layouts.md)).
-3. ~~Editor mode~~ (done 2026-10-07): **Edit layout** moves panels, settings and toolbar buttons by drag and drop, changes control types, labels, titles and columns, splits and merges panels, adds from a list of what isn't shown, and resizes columns. Colours are edited in the Appearance dialog. Since 2026-10-15 it starts from Appearance → Edit layout… (or Ctrl+Shift+L); the built-in toolbars no longer have their own button for it.
-4. ~~Hub~~ (done 2026-10-07, for layouts and themes; needs the hub repo, see Owner to-dos): Omarchy-style. Items are git repos, and one index repo takes submissions as pull requests. The in-app browser covers layouts, themes, presets, collage templates and size profiles.
-5. ~~Borders~~ (done 2026-10-08): border presets in the export dialog and `amb render --border`, batch with `amb render A B ... --out-dir`. Was: width, colour, caption; border presets; fit to a size preset; batch.
-6. ~~Collage maker~~ (done 2026-10-08): shareable layouts (size, background, gap, outer border, rounded corners, cells you can split and remove), per-photo move/zoom/rotate and "Edit photo" in the editor, batch pages for big folders (optionally only rated photos). Follow-ups (resizing cells by their edges, saving a collage to reopen, per-cell edits) are in [design/collage-and-borders.md](design/collage-and-borders.md).
-7. ~~Plugins and AI-made features~~ (done 2026-10-08): WASM-sandboxed "action" plugins with permissions, "Make one with AI…" instructions for the user's own assistant, Share as pull request to the hub. ~~Batch runs~~ (from the library, 2026-10-12). ~~Pipeline effects with their own controls~~ (2026-10-15: effect plugins, colour or pixels, in the Effects panel; Duotone and Light leak built in; Holographic and Hue trip 2026-11-04, for the Trippy task). Next for plugins: free-form plugin panels, ~~the hub listing plugins in the app~~ (2026-10-12; [GAPS.md](GAPS.md)).
-
-The agreed UI track is done, and the library view after it (2026-10-08; [design/library.md](design/library.md)). Next is the parity track below.
-
-### Parity track (agreed 2026-10-08)
-
-Another open-source Lightroom alternative, [LightCraft](https://github.com/storytold/lightcraft) (MIT/Apache, egui, its own catalogue), appeared with much more breadth. We keep our own direction (faithful Lightroom presets and sidecar round trip, customising and sharing, plugins) and build towards what it has, in this order:
-
-1. ~~**Fujifilm raws:** proper X-Trans demosaic, neutral blown highlights~~ (done 2026-10-08).
-2. ~~**JPEG, PNG, TIFF and WebP input**, with a raw and its same-name JPEG shown as one photo (as Lightroom does), and Lightroom's relative white balance for non-raw files~~ (done 2026-10-08).
-3. ~~**Local Highlights and Shadows** (edge-aware tone mapping), the biggest fidelity gap (fidelity track 3)~~ (done 2026-10-08).
-4. ~~**Masks:** linear, radial, brush, luminance and colour range, add/subtract/intersect; read and write Lightroom's mask tags~~ (done 2026-10-08; [design/masks.md](design/masks.md)). ~~Select Subject~~ (2026-10-15: U²-Net small, run locally, downloaded on first use). ~~Sharper subject edges~~ (2026-10-15). ~~Background and People (everyone), with the model chosen per task and the user's own ONNX models~~ (2026-10-17: Settings → AI models, `amb models`, MCP `ai_models`). Next for masks: fitting in the trial month, people and objects. ~~Reordering and duplicating masks~~ (2026-10-12).
-5. ~~**Spot removal:** heal and clone~~ (done 2026-10-10; [design/spot-removal.md](design/spot-removal.md)). **To do (owner, 2026-10-19): blemish removal with the brush isn't good enough yet;** see GAPS. Red eye waits for a Lightroom sidecar: the `RedEyeInfo` format isn't documented anywhere we can read, and a guess could break Lightroom's files.
-6. ~~**Transform and Upright**~~ (done 2026-10-10: the sliders, and Upright Auto, Level, Vertical and Full from the photo's lines; [design/transform.md](design/transform.md)). ~~Guided Upright~~ (2026-10-12, as Transform sliders). Next for it: fitting in the trial.
-7. ~~**Library:** pick/reject flags, loupe, compare and survey views, import with copy and rename, collections, virtual copies~~ (done 2026-10-10; [design/library.md](design/library.md)). ~~Subfolders, smart collections~~ (done 2026-10-12). ~~Metadata panel~~ (title, caption, creator, copyright; 2026-10-12). ~~Stacks, several folders at once, collection sets~~ (2026-10-12). ~~Moving from a Lightroom Classic catalogue~~ (2026-10-13: `amb lrcat import`, From Lightroom…; to try on real catalogues). ~~Opening one in place~~ (2026-11-06: the Folders panel's Lightroom section, `amb lrcat open`). ~~The catalogue~~ (2026-10-15: a SQLite index of what was read from the sidecars and raw headers, so big folders open about 50× faster once seen; All photos; camera, lens, ISO and focal length in search and smart collections; `amb catalog`). Next for it: smart collections and All photos straight from the index without checking every file.
-8. **Profiles, Calibration panel and Point Color** (fidelity track 4–5). ~~Calibration panel~~ (done 2026-10-10; [design/calibration.md](design/calibration.md)). Point Color waits for a Lightroom sample of `PointColors` (the trial keeps one). ~~Reading the user's own camera profiles (`.dcp`) in place~~ (done 2026-10-10; [design/camera-profiles.md](design/camera-profiles.md)). Next for profiles: Adobe Raw `.xmp` profiles, and fitted base looks of our own from the trial.
-9. ~~**MCP server** for AI agents~~ (done 2026-10-10: `amb mcp`, [ai/mcp.md](ai/mcp.md)), ~~look matching~~ (done 2026-10-12: `amb match`), ~~the in-app assistant panel~~ (done 2026-10-12: [ai/assistant.md](ai/assistant.md)). ~~Showing it the photo~~ (opt-in, 2026-10-12). ~~Sky masks from the assistant~~ (2026-10-12: `sky:exp=-0.5` in the compact syntax). ~~Subject masks~~ (2026-10-15).
-10. **Speed and reach:** ~~installers per OS~~ (the `Release` workflow, 2026-10-10; [releasing.md](releasing.md); to run on GitHub, then signing), ~~tiled 100% view~~ (2026-10-11), ~~HDR merge~~ (2026-10-11: library Merge to HDR… and `amb merge hdr`, a floating-point DNG; [design/hdr-merge.md](design/hdr-merge.md)), ~~panorama merge~~ (2026-10-11: library Merge to Panorama… and `amb merge pano`; [design/panorama.md](design/panorama.md)), GPU preview (2026-10-11: `amb-gpu`, used by the editor's preview; every stage after Lens Corrections, Transform and crop runs on the GPU; [design/gpu.md](design/gpu.md); every edit, with masks, spots, LUTs and camera profiles as CPU steps inside it, since 2026-10-12. Next: measure on the Mac).
-
-### Fidelity and engine track
-
-1. **Lightroom trial month:** capture the sweeps, then fit the model constants ([lightroom-trial-plan.md](lightroom-trial-plan.md)). Check the crop's angle sign and corner semantics there ([design/crop.md](design/crop.md) open questions).
-2. ~~**Transform/Upright**~~ (done 2026-10-10); their signs, strengths and Upright's results to be checked in the trial.
-3. ~~**Local Highlights/Shadows** (edge-aware)~~ (done 2026-10-08), then ~~**masks** (linear/radial/brush/range)~~ (done 2026-10-08).
-4. **Camera profiles:** ~~read the user's DCPs in place~~ (done 2026-10-10; two maps blended and Exposure placed as in the DNG reference render, 2026-10-11); decode `Table_` look and RGB tables once the two facts in the owner to-dos are in; fitted base looks once trial data exists.
-5. ~~**Calibration panel**~~ (done 2026-10-10), **Point Color** (the B&W mixer renders since 2026-10-08; fitting both is part of the trial). Fit the Film recipe looks to the owner's Fujifilm shots ([design/film-look-measurement.md](design/film-look-measurement.md)).
-6. ~~**Token-efficient AI layer**~~ (done 2026-10-11: the core card [ai/core.md](ai/core.md) and `amb ref`, `amb do` compact syntax with net-change output, `amb edit --brief`, `amb stats`, MCP `do` and `photo_stats`; ~~the MCP server~~ 2026-10-10). ~~Look matching~~ (done 2026-10-12: `amb match`, MCP `match_look`; [design/ai-control.md](design/ai-control.md)). ~~Match look in the editor~~ (done 2026-10-12). ~~HSL in matching~~ (done 2026-10-12). ~~Assistant panel~~ (done 2026-10-12, with an opt-in picture of the photo). ~~Sky masks from the assistant~~ (2026-10-12). ~~Subject masks~~ (2026-10-15).
-7. ~~**Auto**~~ (done 2026-10-12: Basic → Tone → Auto, WB → Auto, `amb auto`), ~~**Randomize**~~ (done 2026-10-12: Presets → Surprise me…), ~~**Tutorial mode**~~ (v1 done 2026-10-12: Learn, F1) ([design/future-ideas.md](design/future-ideas.md)).
-8. **Performance:** measure release-build preview and 1:1 times on the Mac (`AMB_TIMING=1` prints each render stage's time). On 4 Linux cores a 24 MP render of a typical edit takes about 3.5 s: Texture/Clarity 0.75 s, colour 0.7 s, noise reduction 0.65 s, Highlights/Shadows 0.4 s, Dehaze 0.4 s. The editor's screen-size preview (860 × 570) takes about 70 ms. ~~Tiled 1:1 render~~ (done 2026-10-11: the 100% view renders only its tiles, `pipeline::render_region`; about 10× faster than the full render it replaced). ~~GPU preview~~ (done 2026-10-11: every stage after stage 0 on the GPU; [design/gpu.md](design/gpu.md)). Next: measure on the Mac.
-9. ~~**Installers** per OS~~ (the `Release` workflow, 2026-10-10). Left: run it on GitHub, Windows signing (SignPath) and Apple signing secrets.
-
-### Photo manager track (owner, 2026-10-19)
-
-Make Ambrotype a great place to browse, sort and manage a very large photo collection, not only to edit. It builds on the library ([design/library.md](design/library.md)): sidecars stay the source of truth and the catalogue stays a cache that can be thrown away. Ideas, roughly in order:
-
-1. **Scale** (started 2026-10-19: library folders, `amb catalog add`/`index`/`folders`; 2026-10-20: the editor's Folders panel with counts, background index, offline photos listed in grey with their thumbnails. the grid draws only what's on screen, and the thumbnail cache stays within 2 GB): index whole drives in the background (hundreds of thousands of photos), with a preview cache, a grid that only draws what's on screen, and a folder tree with counts. Photos on drives that aren't plugged in stay listed, with their thumbnails, and come back when the drive does.
-2. ~~**Ways to browse:** a timeline (years, months, days, with a scrubber), a calendar, and a map from GPS tags (photos without GPS can be placed from a GPX track or by dragging)~~ (2026-10-23: Timeline and Map views, [design/library.md](design/library.md)). Left: a place search (by name), reverse geocoding (city and country as metadata).
-3. ~~**Duplicates and bursts:** exact duplicates by file hash, near-duplicates and bursts by a picture fingerprint, grouped into stacks, with "keep the best, reject the rest"~~ (2026-10-23: Organise → Duplicates and bursts…, [design/library.md](design/library.md)). Left: deleting the extra copies (to the trash) from the dialog.
-4. **Culling help:** score sharpness, closed eyes and exposure, so the best of a burst comes first. Local models only.
-5. **Search by what's in the photo:** a local image-and-text model ("dog on a beach at sunset") and optional local face grouping, both off by default and never uploaded. Models must have a licence we can use (AI models list).
-6. ~~**File care:** move, rename and delete with sidecars and JPEG pairs kept together (to the system trash), batch rename, reorganise into dated folders, a keyword tree manager, metadata templates, and "find missing photos" after files moved outside the app~~ (2026-10-23: library → Organise, [design/library.md](design/library.md)). Left: keyword hierarchies (the list is flat), drag photos onto a folder in the Folders panel, and trying the trash on a Mac and on Windows.
-7. **Safety:** checksums kept in the catalogue to catch silent file corruption, a backup check (is every photo also on the backup drive?), and how much space each folder, year and camera takes.
-8. **Several computers:** a library on a NAS or synced folder used from more than one machine, each with its own catalogue cache.
-9. **Sharing:** export a static web gallery and a slideshow from a collection. (2026-10-23: a slideshow in the app, Ctrl+Enter. Left: exporting one as a video or a web page, and music.)
-10. **Videos:** list and play the clips next to the photos, with ratings and keywords, so a card's whole import lives in one place.
-
-### Film lab track (owner, 2026-10-28)
-
-Ideas from two film-scan apps, negaflow (Apache-2.0) and NegPy (GPL-3), rebuilt in our own code from their docs and public sources. None of these needs their authors' permission or their code. The comparison, what we don't take, and the patent check are in [research/16](research/16-film-scan-apps-survey.md). Sizes are S (a day or two), M (a week) and L (more). Roughly in this order:
-
-1. ~~**Quick conversion wins**~~ (done 2026-10-28):
-   - ~~a fixed density range when Auto is off~~ (`amb:NegativeRange`)
-   - ~~a film base eyedropper~~ (Pick base) and ~~a roll base~~ (pick on one frame, then Paste settings → Film negative); ~~a base that isn't bare light~~ (holes or gaps around the film)
-   - ~~a metering region~~: the levels are measured inside the crop, the base on the whole scan. Left: drawing a region by hand
-   - ~~an expired-film target~~ (`amb:NegativeExpired`: matches red and blue to green from shadows to highlights)
-   - Tried on eight real scans from the BlueNeg dataset (2026-10-28), which fixed Auto off and Expired film ([design/film-negatives.md](design/film-negatives.md))
-2. ~~**Cast removal along the greys**~~ (done 2026-10-29: `amb:NegativeCastRemoval`, red and blue matched to the line of greys from shadows to highlights; tried on a synthetic sunset and two real frames, [design/film-negatives.md](design/film-negatives.md)).
-3. ~~**Auto Density and Auto Grade**~~ (2026-10-31: switches beside Auto, off by default; try them on real scans before making them the default), metered only on parts with detail, with highlight and shadow holds (M). The patents behind them have expired (the 2002 one on 2024-08-03, checked 2026-10-31).
-4. ~~**Roll baseline**~~ (done 2026-10-30: Sync negative roll… asks for scenes grouped by light, odd frames kept, a baseline frame and own brightness; `amb negative sync`; [design/film-negatives.md](design/film-negatives.md)).
-5. **Dust and scratches:** automatic, a guided rectangle, a heal brush that searches its stroke, a line tool, infrared from a fourth channel or an `_ir` file, a check that keeps wires and lettering, grain kept, repairs as layers in the sidecar (L). Test bench: FILM-R v2, downloaded, never committed.
-   - ~~Automatic specks and hairs, grain kept, a check that keeps wires and lettering, the FILM-R bench~~ (done 2026-10-29: Find dust in the Spot panel and `amb dust`, as heal spots; [design/dust.md](design/dust.md)). ~~The line tool~~ (2026-10-29: Shift-drag in the spot tool, `amb dust --line`). Left: the guided rectangle and a heal brush that searches its stroke. Infrared parked until there is a scan with an infrared channel ([GAPS.md](GAPS.md) §9).
-6. **Film look on digital photos:** ~~halation in linear light~~ (Effects → Glow: Halation and Bloom, 2026-10-31), ~~grain that follows density~~ (Grain → Film response, 2026-10-31), ~~a paper-like roll-off~~ (Effects → Film finish → Highlight roll-off, 2026-11-02) (M).
-7. **Darkroom aids:** density and zone under the cursor, zone overlay, placing a spot in a zone, step wedge, negative range and scan-clip readouts, test strip, ring-around, peek at the negative (M); Pick Better, choosing between two versions to tune one setting at a time (M).
-8. **Scans in:** flat-field from a shot of the bare light, a channel-bleed matrix per film type or from a colour chart, half-frame split, a strip split into frames, stitching a large negative (M each).
-9. **A paper curve in density:** toe, straight line and shoulder, ISO-R grades, split grade, preflash, B&W papers fitted from public datasheets (L). Candidate for negative model v2.
-10. **Print and output:**
-    - a contact sheet as film strips, with a straight proof (M)
-    - print layouts and paper sizes (M)
-    - printer and paper soft proof, applied once to the composed page (M)
-    - a flat 16-bit master (S)
-11. **B&W processes and finishing:** lith, cyanotype, Sabattier, chemical toners, edge burn, filed carrier, chroma denoise that keeps edges, a skin chroma ceiling (S–M each; some as effect plugins).
-12. **Film metadata:** stock, camera and development per roll, search terms such as `film:… iso:>=400`, and a hot folder (M).
-
-Not taken: NegPy's print tables (made from Fujifilm printer software and profiles), negaflow's lab-scanner profiles named after the machines, and CC BY-SA data NegPy carries (spektrafilm dye curves, DX codes) unless the owner says yes.
-
-### Codebase track
-
-The structure review of 2026-11-09 ([design/structure.md](design/structure.md)) found no need for a rewrite. Its cleanup is in [cleanup.md](cleanup.md), in exact steps for smaller models: guard rails, small merges, splitting the big files and the structural steps (`amb-ops`, the saved settings behind one lock, the UI's scripts in folders, docs with one home per fact) are all done (2026-11-09).
-
-
-0. **First, measure what helps** (plan: [design/agent-navigation.md](design/agent-navigation.md)): fresh agents on a fixed task set, with and without recipes and on-demand maps. Rounds A1 and B1 are done: with the recipes, Sonnet passed all 12 tasks at the same cost. The steps below follow from it.
-1. **A map for agents** (largely done: [recipes.md](recipes.md), checked by a test; [ARCHITECTURE.md](ARCHITECTURE.md); [design/structure.md](design/structure.md)): a detailed map of the code (per crate and per UI file: what it owns, its main types and functions, how data flows from a slider to the render and to the sidecar) with recipes for common changes ("add a setting", "add a panel", "add a toolbar button", "add a mask kind", "add a hub item kind"). Builds on [ARCHITECTURE.md](ARCHITECTURE.md) and AGENTS.md; checked by a test where it can be (like the settings reference).
-2. **A cleanup pass to match it** ([cleanup.md](cleanup.md)): ~~split the largest files~~ (2026-10-16: `amb-gui/src/commands/`; `ui/core/app.js` into preview, crop, presets and export files; the CLI by area; the engine's `pipeline/` and `detail/` as folders; 2026-11-09: the cleanup's phases 1 and 2, 15 more files split and shared helpers merged), one clear home per concern, consistent names, dead code out. Behaviour unchanged; the tests and a by-hand run of the editor confirm it.
-
 ## Working notes
 
-- This repo was built with Claude Code. Large text sweeps went to smaller models, and parallel work to worktree agents that were then merged.
-- **Parallel agents** need separate `CARGO_TARGET_DIR`s, or they overwrite each other's binaries. A debug `target/` grows to about 20 GB.
+- Parallel agents, the checks to run and the Linux packages the editor needs: [AGENTS.md](../AGENTS.md) and [desktop-setup.md](desktop-setup.md). A debug `target/` grows to about 20 GB.
 - Workflows (multi-agent orchestration) need explicit opt-in per session.
-- Check with `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace`. On Linux the GUI needs the WebKitGTK dev packages (see desktop-setup.md).

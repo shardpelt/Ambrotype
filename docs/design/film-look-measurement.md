@@ -1,6 +1,6 @@
 # Measuring Fujifilm's film simulations
 
-Status: planned (2026-10-08). Pasted Fuji recipes (2026-10-30, [ai/film-recipes.md](../ai/film-recipes.md)) use the looks as they are until this is done. It needs someone with a Fujifilm camera to make the shots (see Help wanted in [NEXT.md](../NEXT.md)).
+Status: planned (2026-10-08). Pasted Fuji recipes (2026-10-30, [ai/film-recipes.md](../ai/film-recipes.md)) use the looks as they are until this is done. It needs someone with a Fujifilm camera to make the shots (see Help wanted in [ROADMAP.md](../ROADMAP.md)).
 
 ## Goal
 

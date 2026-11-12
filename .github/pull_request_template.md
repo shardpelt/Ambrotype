@@ -6,7 +6,7 @@
 
 - [ ] `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` pass
 - [ ] Editor changes: tried by hand (a screenshot helps)
-- [ ] Docs updated where the change affects them (`docs/NEXT.md`, `docs/GAPS.md`, `docs/ARCHITECTURE.md`, `docs/design/`)
+- [ ] Docs updated where the change affects them (`docs/ROADMAP.md`, `docs/GAPS.md`, `docs/ARCHITECTURE.md`, `docs/design/`)
 
 ## Licence
 

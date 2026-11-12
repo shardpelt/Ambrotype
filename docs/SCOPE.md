@@ -2,7 +2,7 @@
 
 *A free, open-source Lightroom alternative that renders purchased Lightroom presets faithfully.*
 
-Status: the scoping draft of 2026-10-03, kept for its reasoning; [NEXT.md](NEXT.md) says where the project is now. This document synthesises the research in [`docs/research/`](research/) and the maintainers' notes from Adobe's official help. Where it states a fact, the linked doc gives the source. Where it gives an estimate or recommendation, it says so.
+Status: the scoping draft of 2026-10-03, kept for its reasoning; [ROADMAP.md](ROADMAP.md) says where the project is now. This document synthesises the research in [`docs/research/`](research/) and the maintainers' notes from Adobe's official help. Where it states a fact, the linked doc gives the source. Where it gives an estimate or recommendation, it says so.
 
 ---
 

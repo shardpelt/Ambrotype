@@ -162,7 +162,7 @@ cargo run --release -p amb-gui -- photo.nef       # opens a photo straight away
 
 ## Working with an AI agent locally
 
-The cloud sessions on claude.ai/code run in a container that can't see your drives, Lightroom or your photos. For anything that touches them (the sweep kit, the Lightroom batches, comparing renders), run the agent on your own Mac. The repo itself is the hand-off: [AGENTS.md](../AGENTS.md) (also read as `CLAUDE.md`) and [NEXT.md](NEXT.md) tell a fresh session where things stand.
+The cloud sessions on claude.ai/code run in a container that can't see your drives, Lightroom or your photos. For anything that touches them (the sweep kit, the Lightroom batches, comparing renders), run the agent on your own Mac. The repo itself is the hand-off: [AGENTS.md](../AGENTS.md) (also read as `CLAUDE.md`) and [WHATS-NEXT.md](WHATS-NEXT.md) tell a fresh session where things stand.
 
 1. **Install Claude Code** (see <https://code.claude.com/docs> for the current installer), or use the Code tab of the Claude desktop app and pick the repo folder on the SSD.
 2. **Start it in the repo:**

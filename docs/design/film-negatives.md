@@ -95,7 +95,7 @@ amb negative stocks                                  # list the looks
 
 ## Next
 
-The Film lab track in [NEXT.md](../NEXT.md) has the order. In short:
+The Film lab track in [ROADMAP.md](../ROADMAP.md) has the order. In short:
 
 - Per-film layer shares for Auto off (now one set for every colour film).
 - Scan quality helpers: straight scratches and an infrared channel for dust (specks and hairs are found since 2026-10-29: [dust.md](dust.md)).

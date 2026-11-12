@@ -1,6 +1,6 @@
 # Borders and the collage maker
 
-Status: borders built (2026-10-08), the collage maker built (2026-10-08); open items are listed under each. Steps 5–6 of the UI track in [NEXT.md](../NEXT.md). Both use the size presets (Instagram, Snapchat, print, custom) from the crop tool.
+Status: borders built (2026-10-08), the collage maker built (2026-10-08); open items are listed under each. Steps 5–6 of the UI track in [ROADMAP.md](../ROADMAP.md). Both use the size presets (Instagram, Snapchat, print, custom) from the crop tool.
 
 ## Borders
 

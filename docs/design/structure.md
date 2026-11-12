@@ -162,7 +162,7 @@ JS: 30 of 964 functions are over 80 lines. The longest: `crop.js` `create` (408)
 5. **The GUI's `main`.** Its 250-line handler list belongs with the commands it lists.
 6. **Copies of helpers.** Small, but each copy can drift (two `smoothstep`s already differ at equal edges).
 7. **Docs repeat each other:**
-   - `NEXT.md`'s "Built" list repeats `FEATURES.md` and `ARCHITECTURE.md`;
+   - the roadmap's "Built" list repeated `FEATURES.md` and `ARCHITECTURE.md`;
    - `ARCHITECTURE.md` had table cells of up to 4,100 characters (restructured on 2026-11-09).
 
 ## Target shape
@@ -179,7 +179,7 @@ JS: 30 of 964 functions are over 80 lines. The longest: `crop.js` `create` (408)
   - what the app does: `FEATURES.md`;
   - how the code is built: `ARCHITECTURE.md`;
   - the design of one feature: its design doc;
-  - what's next: `WHATS-NEXT.md`, then `NEXT.md` for the tracks;
+  - what's next: `WHATS-NEXT.md`, then `ROADMAP.md` for everything planned;
   - what's missing: `GAPS.md`.
 
 ## The plan

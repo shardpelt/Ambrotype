@@ -10,6 +10,7 @@ One home per fact. If something is written in two places, one of them goes out o
 | What to do now, and what waits on the owner | [WHATS-NEXT.md](WHATS-NEXT.md) | every session |
 | Everything planned, in order, with who can do it | [ROADMAP.md](ROADMAP.md) | an item is added, readied or done |
 | What is missing or approximate in what exists | [GAPS.md](GAPS.md) | a gap closes or is found |
+| What landed, and when | [CHANGELOG.md](CHANGELOG.md); the newest 15 are in WHATS-NEXT's "Recently done" | lines move there from WHATS-NEXT |
 | What the app can do, where it is, its `amb` command | [FEATURES.md](FEATURES.md) | a feature people use lands |
 | How the code is built: crates, the pipeline, each part's files | [ARCHITECTURE.md](ARCHITECTURE.md) | what exists changes |
 | How code is written here, and the checks that hold it | [codestyle.md](codestyle.md) | a rule changes |

@@ -6,7 +6,7 @@ Snapshot taken 2026-10-28:
 
 Method: I read each project's README, its docs (negaflow's `docs/product` and `docs/reference`; NegPy's `docs/PIPELINE.md` and `docs/USER_GUIDE.md`), its NOTICE file and negaflow's screenshots. I did not read their source code; it was used only to count files. Everything below comes from their docs, so treat each claim as theirs.
 
-The owner pointed at both on 2026-10-26. The question was which of their ideas we can build ourselves, without contacting their authors. The answer, and the backlog it led to, is in §3 and §6. The track itself is in [NEXT.md](../NEXT.md) under "Film lab track".
+The owner pointed at both on 2026-10-26. The question was which of their ideas we can build ourselves, without contacting their authors. The answer, and the backlog it led to, is in §3 and §6. The track itself is in [ROADMAP.md](../ROADMAP.md) under "Film lab track".
 
 ## 1. Project facts
 

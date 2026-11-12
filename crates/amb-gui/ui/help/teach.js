@@ -265,7 +265,7 @@ async function watchOwnFlow() {
       }
     }
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     return;
   } finally {
     $("busy").hidden = true;

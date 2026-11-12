@@ -114,11 +114,7 @@ function boxTip(input, plain) {
 }
 
 function wireTips() {
-  try {
-    for (const k of JSON.parse(localStorage.getItem("amb.used") ?? "[]")) tips.used.add(k);
-  } catch {
-    // Nothing kept yet.
-  }
+  for (const k of store.get("amb.used", [])) tips.used.add(k);
   // Commands run count as used, however they were started.
   for (const a of KEY_ACTIONS) {
     const run = a.run;

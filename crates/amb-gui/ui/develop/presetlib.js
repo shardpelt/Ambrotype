@@ -91,7 +91,7 @@ function renderPresetLibrary() {
         renderPresetLibrary();
         status(`Added "${p.name}" to your presets.`);
       } catch (e) {
-        toast(String(e), true);
+        showError(e);
       }
     });
     row.append(thumb, text, apply, add);

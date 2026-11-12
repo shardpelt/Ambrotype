@@ -341,7 +341,7 @@ function switchLook(kind, id) {
   const theme = kind === "layout" && findLook("layout", id)?.data?.theme;
   if (theme && findLook("theme", theme)?.usable) ui.looks.active_theme = theme;
   applyActiveLooks();
-  invoke("set_active_look", { layout: ui.looks.active_layout, theme: ui.looks.active_theme }).catch((e) => toast(String(e), true));
+  invoke("set_active_look", { layout: ui.looks.active_layout, theme: ui.looks.active_theme }).catch(showError);
 }
 
 function wireSearch() {

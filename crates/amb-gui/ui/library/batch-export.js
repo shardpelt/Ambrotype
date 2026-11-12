@@ -147,7 +147,7 @@ function wireBatchExport() {
     invoke("batch_export_stop").catch(() => {});
   });
   $("batch-close").addEventListener("click", () => $("batch-dialog").close());
-  $("batch-open").addEventListener("click", () => invoke("reveal_file", { path: batch.to }).catch((e) => toast(String(e), true)));
+  $("batch-open").addEventListener("click", () => invoke("reveal_file", { path: batch.to }).catch(showError));
   tauri.event.listen("batch-export-progress", (e) => {
     const [done, total] = e.payload;
     $("batch-bar").max = total;

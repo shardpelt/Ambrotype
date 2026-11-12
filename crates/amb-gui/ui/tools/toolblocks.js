@@ -19,7 +19,7 @@ async function levelFlow() {
     await run(await invoke("crop_commands", { rect }), "Level");
     toast(`Levelled by ${a > 0 ? "+" : ""}${a.toFixed(1)}°.`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -75,7 +75,7 @@ function wireToolBlocks() {
       b.append(Object.assign(document.createElement("strong"), { textContent: t.label }), Object.assign(document.createElement("span"), { textContent: t.hint }));
       b.addEventListener("click", () => {
         if (!ui.info) return toast("Open a photo first.", true);
-        Promise.resolve(t.run()).catch((e) => toast(String(e), true));
+        Promise.resolve(t.run()).catch(showError);
       });
       return b;
     }));

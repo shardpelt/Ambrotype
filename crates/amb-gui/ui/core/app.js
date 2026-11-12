@@ -163,7 +163,7 @@ async function run(commands, group = null, { quiet = false } = {}) {
     $("status").title = r.notes.join("\n");
     requestPreview(false);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     ui.overrides = {};
     syncControls();
   }
@@ -242,7 +242,7 @@ function fillLutOptions(select, current) {
 async function commitLut(value) {
   if (value === LUT_FOLDER) {
     syncControls();
-    await invoke("open_luts_folder").catch((e) => toast(String(e), true));
+    await invoke("open_luts_folder").catch(showError);
     return;
   }
   if (value === LUT_PICK) {
@@ -289,7 +289,7 @@ async function feedbackFlow() {
     await invoke("open_feedback", { kind: f.kind.value, title, body: f.preview.value, email });
     toast(email ? "Opened your mail app with the report. Thank you!" : "Opened GitHub in your browser. Thank you!");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -351,9 +351,9 @@ async function init() {
   $("proof-warn").addEventListener("change", applyProof);
   $("btn-feedback").addEventListener("click", feedbackFlow);
   $("btn-collage").addEventListener("click", collageFlow);
-  $("btn-hub").addEventListener("click", () => browseFlow().catch((e) => toast(String(e), true)));
-  $("btn-plugins").addEventListener("click", () => pluginsFlow().catch((e) => toast(String(e), true)));
-  $("btn-looks").addEventListener("click", () => looksFlow().catch((e) => toast(String(e), true)));
+  $("btn-hub").addEventListener("click", () => browseFlow().catch(showError));
+  $("btn-plugins").addEventListener("click", () => pluginsFlow().catch(showError));
+  $("btn-looks").addEventListener("click", () => looksFlow().catch(showError));
   wireEditor();
   wireBorders();
   AmbPicker.enhance($("crop-aspect"), { open: ["Common ratios"] });
@@ -365,7 +365,7 @@ async function init() {
   wireFeatures();
   wireTips();
   wireWatermark();
-  $("btn-settings").addEventListener("click", () => settingsFlow().catch((e) => toast(String(e), true)));
+  $("btn-settings").addEventListener("click", () => settingsFlow().catch(showError));
   wireViewer();
   wireCrop();
   wireMasks();
@@ -388,9 +388,9 @@ async function init() {
   $("btn-select").addEventListener("click", () => toggleSelect());
   wireToolBlocks();
   $("btn-save-preset").addEventListener("click", () => savePresetFlow());
-  $("btn-match").addEventListener("click", () => matchFlow().catch((e) => toast(String(e), true)));
-  $("btn-assistant").addEventListener("click", () => assistantFlow().catch((e) => toast(String(e), true)));
-  $("btn-surprise").addEventListener("click", () => surpriseFlow().catch((e) => toast(String(e), true)));
+  $("btn-match").addEventListener("click", () => matchFlow().catch(showError));
+  $("btn-assistant").addEventListener("click", () => assistantFlow().catch(showError));
+  $("btn-surprise").addEventListener("click", () => surpriseFlow().catch(showError));
   // Enter in a dialog's text box means its main button, not the first one (Cancel).
   for (const form of document.querySelectorAll('dialog form[method="dialog"]')) {
     form.addEventListener("keydown", (e) => {
@@ -478,4 +478,4 @@ async function init() {
   if (test) runUiTest(test);
 }
 
-init().catch((e) => toast(String(e), true));
+init().catch(showError);

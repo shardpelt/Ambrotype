@@ -49,7 +49,7 @@ async function togglePresetFavourite(p) {
     await loadPresetFavourites();
     renderPresets();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -64,7 +64,7 @@ async function applyPresetToFolder(p) {
   if (r.state) setState(r.state);
   requestPreview(false);
   loadFolder(ui.info.path, true);
-  toast(`"${p.name}" applied to ${r.changed.length} photo${r.changed.length === 1 ? "" : "s"}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
+  toast(`"${p.name}" applied to ${plural(r.changed.length, "photo")}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
 }
 
 // Apply a preset's settings from some groups only (Lightroom's "Apply
@@ -138,7 +138,7 @@ async function sharePresetToHub(p) {
       ? "GitHub is open with the preset filled in: press Commit changes, then Create pull request."
       : "The preset is too big for a link: GitHub is open on the hub's upload page, and the file is shown in its folder. Drag it in, then Propose changes.");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -170,7 +170,7 @@ async function savePresetFlow(name = "") {
     renderPresets();
     toast(`Saved the preset “${f.preset_name.value.trim()}” (in ${f.preset_group.value.trim() || "Yours"})`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -201,7 +201,7 @@ async function fujiRecipeFlow() {
     f.fuji_text.value = "";
     f.fuji_name.value = "";
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -220,7 +220,7 @@ async function autoFlow(tone, white) {
     }
     await run(commands, tone ? "Auto" : "Auto white balance");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
     status("");
@@ -263,7 +263,7 @@ async function autoEditFlow() {
     await run(commands, "Auto edit");
     toast(`Auto edit: ${did.join(", ")}. A starting point to adjust; Undo (Ctrl+Z) takes it all back.`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
     if (btn) btn.disabled = !ui.info;
@@ -395,6 +395,6 @@ async function loadPresets(add = false) {
     await loadPresetHidden();
     renderPresets();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }

@@ -32,8 +32,6 @@ function planLrcat(delay = 0) {
   lrc.timer = setTimeout(runLrcatPlan, delay);
 }
 
-const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-
 async function runLrcatPlan() {
   const go = $("lrcat-go");
   go.disabled = true;
@@ -97,7 +95,7 @@ async function lrcatFlow() {
     await loadCollections();
     $("lib-reload").click();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
   }

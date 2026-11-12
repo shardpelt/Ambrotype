@@ -438,7 +438,7 @@ async function loadMaskFrame() {
     mk.frame = await invoke("mask_frame");
   } catch (e) {
     mk.frame = null;
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -453,7 +453,7 @@ async function enterMasks() {
     try {
       mk.sliders = await invoke("mask_sliders");
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   }
   if (!mk.effects) mk.effects = await invoke("mask_effects").catch(() => ({ builtin: [], mine: [] }));

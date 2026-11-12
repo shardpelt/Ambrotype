@@ -211,7 +211,7 @@ function wireChrome() {
 
 // The chosen tab of a column, per layout, on this computer.
 function columnTab(side) {
-  try { return JSON.parse(localStorage.getItem("amb.tabs") ?? "{}")[`${ui.looks?.active_layout}:${side}`] ?? null; } catch { return null; }
+  return store.get("amb.tabs", {})[`${ui.looks?.active_layout}:${side}`] ?? null;
 }
 
 function showColumnTab(side, name) {
@@ -225,11 +225,9 @@ function showColumnTab(side, name) {
   }
   // Editor mode shows every tab's panels, to move them between tabs.
   for (const el of col.querySelectorAll(":scope > [data-tab]")) el.classList.toggle("tab-off", !ui.edit && el.dataset.tab !== name);
-  try {
-    const all = JSON.parse(localStorage.getItem("amb.tabs") ?? "{}");
-    all[`${ui.looks?.active_layout}:${side}`] = name;
-    localStorage.setItem("amb.tabs", JSON.stringify(all));
-  } catch { /* not kept */ }
+  const all = store.get("amb.tabs", {});
+  all[`${ui.looks?.active_layout}:${side}`] = name;
+  store.set("amb.tabs", all);
   requestAnimationFrame(redrawCanvases);
 }
 

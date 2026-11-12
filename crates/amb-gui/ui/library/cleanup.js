@@ -146,16 +146,16 @@ async function cleanTrash() {
   const paths = cleanGoing();
   if (!paths.length) return;
   const n = paths.length;
-  if (!(await askYes(`Move ${n} photo${n === 1 ? "" : "s"} to the trash, with ${n === 1 ? "its" : "their"} sidecars, JPEG twins and virtual copies?\n\nThe trash can give them back.`))) return;
+  if (!(await askYes(`Move ${plural(n, "photo")} to the trash, with ${n === 1 ? "its" : "their"} sidecars, JPEG twins and virtual copies?\n\nThe trash can give them back.`))) return;
   try {
     const [files, closed] = await invoke("files_trash", { paths });
     if (closed) photoGone();
     lib.selected.clear();
     $("clean-dialog").close();
-    status(`Moved ${n} photo${n === 1 ? "" : "s"} (${files} files) to the trash`);
+    status(`Moved ${plural(n, "photo")} (${files} files) to the trash`);
     await reloadLibraryView();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -167,10 +167,10 @@ async function cleanReject() {
       if (p) p.flag = u.info.flag ?? null;
     }
   } catch (e) {
-    return toast(String(e), true);
+    return showError(e);
   }
   $("clean-dialog").close();
-  status(`Rejected ${paths.length} photo${paths.length === 1 ? "" : "s"} (Filter → Rejected shows them; Delete… sends them to the trash)`);
+  status(`Rejected ${plural(paths.length, "photo")} (Filter → Rejected shows them; Delete… sends them to the trash)`);
   renderLibrary();
 }
 

@@ -127,36 +127,6 @@ Do the groups in order, or any card whose "Precondition" line is met. Ids are st
 
 Work that was planned and not finished. Do these before the groups below.
 
-### 0f. UI helpers `showError` and `plural`, and the rest of the `store` move
-Tier: medium        Risk: low
-Why: 176 `toast(String(e), true)` and about 130 hand-made plurals; 8 `localStorage` uses left outside `core.js`.
-Files: `crates/amb-gui/ui/core/core.js`, `crates/amb-gui/src/checks.rs` (limits), `crates/amb-gui/ui/looks/columns.js`, `crates/amb-gui/ui/library/slideshow.js`, `crates/amb-gui/ui/library/library.js`, `crates/amb-gui/ui/help/tips.js`, every `.js` that `grep -rln "toast(String(" crates/amb-gui/ui` lists.
-Steps:
-1. In `core.js`, after `toast`, add:
-   ```js
-   // An error from a command, as a red toast.
-   function showError(e) {
-     toast(String(e), true);
-   }
-
-   // "1 photo", "3 photos": `many` defaults to `one` + "s".
-   function plural(n, one, many = `${one}s`) {
-     return `${n} ${n === 1 ? one : many}`;
-   }
-   ```
-2. Replace each `toast(String(e), true)` and `toast(String(err), true)`: a statement `toast(String(e), true);` becomes `showError(e);`; `.catch((e) => toast(String(e), true))` becomes `.catch(showError)`; `return toast(String(e), true);` becomes `return showError(e);`. A `catch` whose parameter is then unused is `catch {` only if it is not used elsewhere. Leave toasts with their own text (a message with the error in it, such as the one in `crates/amb-gui/ui/looks/editor.js` that starts "Not saved").
-3. Replace the plurals that match exactly `${N} WORD${N === 1 ? "" : "s"}` (N a name or a short expression like `r.errors.length`, WORD one word) by `${plural(N, "WORD")}`. Leave the ones that do not match this shape. Example: `crates/amb-gui/ui/library/import.js` line 103, `crates/amb-gui/ui/library/library-grid.js` line 195.
-4. `store` (it exists in `core.js`: `get`, `set`, `text`, `setText`, `remove`). Keep every key and the JSON shape:
-   - `crates/amb-gui/ui/looks/columns.js` `columnTab(side)` and `showColumnTab`: `store.get("amb.tabs", {})` and `store.set("amb.tabs", all)`.
-   - `crates/amb-gui/ui/library/slideshow.js` `slideshowSettings`: `{ ...d, ...store.get("amb.slideshow", {}) }`.
-   - `crates/amb-gui/ui/library/library.js` `savedMore` and `saveMore` (key `SAVED_MORE`): `store.get(SAVED_MORE, {})` and `store.set(SAVED_MORE, all)`.
-   - `crates/amb-gui/ui/help/tips.js` `wireTips`: `store.get("amb.used", [])`.
-5. In `checks.rs` lower the limits for `toast(String(` and `localStorage` outside `crates/amb-gui/ui/core/core.js` to what remains (0 if you did all).
-Don't: rename a key; change a message; touch the plural sites that differ in shape.
-Checks: the UI checks of "Checks" (`cargo build -p amb-gui -p amb-cli`, all three UI scripts); `cargo test -p amb-gui`.
-Done when: `grep -rn "localStorage" crates/amb-gui/ui` shows only `crates/amb-gui/ui/core/core.js`, and `grep -rn "toast(String(" crates/amb-gui/ui` prints nothing.
-Commit: `ui: showError and plural helpers; localStorage only in store`. Why: "The old idioms were growing."
-
 ### Group A: small
 
 ### A1. Shared dependencies declared once

@@ -88,7 +88,7 @@ async function exportCollage() {
     // The collage file next to the image, to reopen and edit it later.
     if ($("col-with-project").checked) await saveProject(false, path.replace(/\.[^.\\/]+$/, "") + ".ambcollage");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     setBusy(false);
   }
@@ -131,7 +131,7 @@ async function exportBatch() {
       status(`Wrote ${written.length} collage pages to ${dirOf(written[0] ?? "")}`);
     }
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     setBusy(false);
   }
@@ -169,7 +169,7 @@ async function saveProject(as = false, path = null) {
     toast(`Saved ${fileName(saved)}`);
     return true;
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     return false;
   }
 }
@@ -206,7 +206,7 @@ async function openProject(path = null) {
       toast(`${o.missing.length} photo${o.missing.length === 1 ? " wasn't" : "s weren't"} found: ${o.missing.map(fileName).join(", ")}`, true);
     }
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -341,6 +341,6 @@ async function collageFlow() {
     if (typeof renderTasks === "function") renderTasks();
     requestAnimationFrame(renderStage);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }

@@ -141,7 +141,7 @@ function monthCalendar(year, month, days) {
     if (ps) {
       cell.type = "button";
       cell.classList.add("has");
-      cell.title = `${dateWords(date)}: ${ps.length} photo${ps.length === 1 ? "" : "s"}`;
+      cell.title = `${dateWords(date)}: ${plural(ps.length, "photo")}`;
       cell.append(Object.assign(document.createElement("span"), { className: "tl-count", textContent: ps.length }));
       cell.dataset.path = ps[0].path;
       browse.observer.observe(cell);
@@ -267,7 +267,7 @@ function renderMap(box) {
   if (mapTilesWanted()) {
     credit.textContent = "© OpenStreetMap contributors";
     credit.title = "Map data and images: OpenStreetMap (open the copyright page)";
-    credit.addEventListener("click", () => invoke("open_osm_copyright").catch((e) => toast(String(e), true)));
+    credit.addEventListener("click", () => invoke("open_osm_copyright").catch(showError));
   } else {
     credit.textContent = "No map images · turn them on";
     credit.title = "Show OpenStreetMap's map images behind the pins. The map then asks openstreetmap.org for the area shown.";
@@ -396,7 +396,7 @@ function drawMap() {
       renderPanel();
       renderCounts();
       drawMap();
-      status(`${n} photo${n === 1 ? "" : "s"} here selected · double-click a pin to ${n > 1 ? "zoom in" : "open it"}`);
+      status(`${plural(n, "photo")} here selected · double-click a pin to ${n > 1 ? "zoom in" : "open it"}`);
     });
     pin.addEventListener("dblclick", (e) => {
       e.stopPropagation();
@@ -487,10 +487,10 @@ async function placePhotos(paths, gps) {
   try {
     const updates = await setInfo(paths, { gps });
     takePlaces(updates);
-    status(gps ? `Placed ${updates.length} photo${updates.length === 1 ? "" : "s"} at ${gps}` : `Place removed from ${updates.length} photo${updates.length === 1 ? "" : "s"}`);
+    status(gps ? `Placed ${plural(updates.length, "photo")} at ${gps}` : `Place removed from ${plural(updates.length, "photo")}`);
     renderBrowse();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -520,14 +520,14 @@ async function matchGpx() {
   try {
     const r = await invoke("library_match_gpx", { gpx, paths: targets.map((p) => p.path), offsetMinutes: Math.round(hours * 60), replace: false });
     takePlaces(r.updates);
-    const parts = [`Placed ${r.updates.length} photo${r.updates.length === 1 ? "" : "s"}`];
+    const parts = [`Placed ${plural(r.updates.length, "photo")}`];
     if (r.kept) parts.push(`${r.kept} already had a place`);
     if (r.unplaced) parts.push(`${r.unplaced} taken while the track wasn't recording (it runs ${r.track[0]} to ${r.track[1]} UTC)`);
     toast(parts.join(" · "), !r.updates.length);
     browse.map.fitted = false;
     renderBrowse();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 

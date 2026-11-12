@@ -47,7 +47,7 @@ async function openPath(path) {
     offerLensDb();
     return true;
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     status("Ready");
     return false;
   } finally {
@@ -86,7 +86,7 @@ function contextMenu(e, items) {
     if (!item) { menu.append(document.createElement("hr")); continue; }
     const [label, action] = item;
     const b = Object.assign(document.createElement("button"), { type: "button", textContent: label, role: "menuitem" });
-    b.addEventListener("click", () => { close(); Promise.resolve(action()).catch((err) => toast(String(err), true)); });
+    b.addEventListener("click", () => { close(); Promise.resolve(action()).catch(showError); });
     menu.append(b);
   }
   document.body.append(menu);
@@ -108,7 +108,7 @@ async function freezeNegative() {
   try {
     run(await invoke("negative_freeze"), "Freeze negative analysis");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -130,7 +130,7 @@ async function cropToFrame() {
     if (!cmds) return toast("No film border found around the photo.");
     run(cmds, "Crop to frame");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -174,7 +174,7 @@ async function lensDbFlow() {
   try {
     st = await invoke("lens_db_state");
   } catch (e) {
-    return toast(String(e), true);
+    return showError(e);
   }
   const when = st.timestamp ? new Date(st.timestamp * 1000).toLocaleDateString() : null;
   const have = st.lenses === null ? "The lens profiles are still loading." : `${st.lenses} lens profiles are loaded.`;
@@ -194,7 +194,7 @@ async function lensDbFetch() {
     status("Lens database ready");
     requestPreview(false);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
   }
@@ -206,7 +206,7 @@ async function save() {
     const path = await invoke("save_sidecar");
     toast(`Saved to ${path}`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 

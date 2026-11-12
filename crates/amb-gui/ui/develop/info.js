@@ -64,7 +64,7 @@ async function loadInfo() {
     infoState.info = r.info;
     infoState.recent = r.recent;
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
   renderInfo();
   presetsPhotoChanged();
@@ -183,7 +183,7 @@ async function turnPhotos(change) {
   try {
     await setInfo(paths, change);
   } catch (e) {
-    return toast(String(e), true);
+    return showError(e);
   }
   for (const path of paths) {
     turnedThumb(path);
@@ -191,5 +191,5 @@ async function turnPhotos(change) {
   }
   if (ui.info && paths.includes(ui.info.path)) requestPreview(false);
   const what = change.flip ? "Flipped" : change.rotate < 0 ? "Rotated left" : "Rotated right";
-  status(`${what}: ${paths.length} photo${paths.length === 1 ? "" : "s"}`);
+  status(`${what}: ${plural(paths.length, "photo")}`);
 }

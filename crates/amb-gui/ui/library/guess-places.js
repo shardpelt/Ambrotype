@@ -72,10 +72,10 @@ async function guessPlacesFlow() {
   try {
     // One write per photo: each has its own place.
     for (const g of chosen) takePlaces(await setInfo([g.path], { gps: `${g.lat.toFixed(6)},${g.lon.toFixed(6)}` }));
-    toast(`Placed ${chosen.length} photo${chosen.length === 1 ? "" : "s"} by guess`);
+    toast(`Placed ${plural(chosen.length, "photo")} by guess`);
     browse.map.fitted = false;
     if (browseOn()) renderBrowse();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }

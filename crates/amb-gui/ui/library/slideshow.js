@@ -23,11 +23,7 @@ const slides = { on: false, list: [], at: 0, timer: 0, paused: false, hideBar: 0
 
 function slideshowSettings() {
   const d = { seconds: 4, shuffle: false, fullscreen: true, effect: "fade" };
-  try {
-    return { ...d, ...JSON.parse(localStorage.getItem("amb.slideshow") || "{}") };
-  } catch {
-    return d;
-  }
+  return { ...d, ...store.get("amb.slideshow", {}) };
 }
 
 // The library's selected photos (two or more), else all it shows.
@@ -47,7 +43,7 @@ function slideshowFlow() {
   f.elements.shuffle.checked = s.shuffle;
   f.elements.fullscreen.checked = s.fullscreen;
   f.elements.effect.value = s.effect;
-  $("slideshow-count").textContent = `${photos.length} photo${photos.length === 1 ? "" : "s"}${libraryOn() && selectedPhotos().length > 1 ? " selected" : ""}`;
+  $("slideshow-count").textContent = `${plural(photos.length, "photo")}${libraryOn() && selectedPhotos().length > 1 ? " selected" : ""}`;
   $("slideshow-dialog").showModal();
   return true;
 }
@@ -240,7 +236,7 @@ async function viewerChange(change) {
       showSlideBar();
     }
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -251,7 +247,7 @@ async function viewerTurn(change) {
   try {
     await setInfo([p.path], change);
   } catch (e) {
-    return toast(String(e), true);
+    return showError(e);
   }
   turnedThumb(p.path);
   stripTurned(p.path);
@@ -305,7 +301,7 @@ async function renderViewerInfo() {
     return n;
   };
   const stars = el("div", { className: "ss-stars" }, ...[1, 2, 3, 4, 5].map((k) => el("button", {
-    type: "button", textContent: "★", title: `${k} star${k === 1 ? "" : "s"} (${k})`, className: k <= (d.rating ?? 0) ? "on" : "",
+    type: "button", textContent: "★", title: `${plural(k, "star")} (${k})`, className: k <= (d.rating ?? 0) ? "on" : "",
     onclick: () => viewerChange({ rating: (d.rating ?? 0) === k ? 0 : k }),
   })));
   const labels = el("div", { className: "ss-labels" }, ...Object.keys(LABEL_COLOURS).map((l, i) => {

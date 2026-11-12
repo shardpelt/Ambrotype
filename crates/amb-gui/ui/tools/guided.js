@@ -148,7 +148,7 @@ async function applyGuided() {
       toast(`The guides don't all fit one correction; the worst is still ${r.worst_degrees.toFixed(1)}° off.`, true);
     }
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 

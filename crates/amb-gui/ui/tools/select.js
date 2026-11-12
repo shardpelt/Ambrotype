@@ -153,7 +153,7 @@ async function selectAsk({ rect = null, part = false } = {}) {
     gotSelection(r);
     status(`Selected (${Math.round(r.share * 1000) / 10} % of the ${rect ? "box" : "photo"})`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     if (!sl.dabs) sl.clicks = [];
   } finally {
     done();
@@ -177,7 +177,7 @@ async function setSelectShadow(on) {
   try {
     gotSelection(await invoke("selection_shadow", { on }));
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     sl.busy = false;
     renderSelectPanel();
@@ -209,7 +209,7 @@ async function selectWords(words) {
     status(`Selected “${words.trim()}”`);
     return true;
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     return false;
   } finally {
     sl.busy = false;
@@ -260,7 +260,7 @@ async function selectApply(action, by = null) {
     }
     selectClear();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     done();
     sl.busy = false;
@@ -277,7 +277,7 @@ async function enterSelect() {
   try {
     sl.frame = await invoke("mask_frame");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     return;
   }
   sl.on = true;

@@ -100,7 +100,7 @@ async function runPlan() {
     const fresh = plan.filter((p) => !p.skip).length;
     const skipped = plan.length - fresh;
     $("import-summary").textContent = !plan.length ? "No photos found there."
-      : `${fresh} photo${fresh === 1 ? "" : "s"} to import${skipped ? `, ${skipped} already there (skipped)` : ""}.`
+      : `${plural(fresh, "photo")} to import${skipped ? `, ${skipped} already there (skipped)` : ""}.`
         + (plan.length > IMPORT_SHOWN ? ` The first ${IMPORT_SHOWN} are listed.` : "");
     $("import-list").replaceChildren(...plan.slice(0, IMPORT_SHOWN).map((p) => {
       const li = document.createElement("li");
@@ -156,9 +156,9 @@ async function importFlow() {
   $("busy").hidden = false;
   try {
     const r = await invoke("import_run", { source: f.source.value, dest: f.dest.value, options: importOptions() });
-    const failed = r.errors.length ? `; ${r.errors.length} problem${r.errors.length === 1 ? "" : "s"}: ${r.errors[0]}` : "";
-    toast(`Imported ${r.imported} photo${r.imported === 1 ? "" : "s"}${r.skipped ? `, skipped ${r.skipped} already there` : ""}${failed}`, r.errors.length > 0);
-    status(r.folders.length ? `Imported into ${r.folders.length} folder${r.folders.length === 1 ? "" : "s"}` : "Nothing imported");
+    const failed = r.errors.length ? `; ${plural(r.errors.length, "problem")}: ${r.errors[0]}` : "";
+    toast(`Imported ${plural(r.imported, "photo")}${r.skipped ? `, skipped ${r.skipped} already there` : ""}${failed}`, r.errors.length > 0);
+    status(r.folders.length ? `Imported into ${plural(r.folders.length, "folder")}` : "Nothing imported");
     // Show the new photos.
     if (r.folders.length) {
       await toggleLibrary(true);
@@ -166,7 +166,7 @@ async function importFlow() {
       await loadLibrary(r.folders[0], r.folders.slice(1));
     }
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     off();
     $("busy").hidden = true;

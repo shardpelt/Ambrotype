@@ -40,7 +40,7 @@ async function readGuide(name) {
     $("guide-dialog").showModal();
     $("guide-text").scrollTop = 0;
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -49,7 +49,7 @@ async function copyText(text, what) {
     await navigator.clipboard.writeText(text);
     toast(`${what} copied`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -72,11 +72,11 @@ function wireConnect() {
   $("connect-app").addEventListener("change", renderConnect);
   $("connect-copy-command").addEventListener("click", () => copyText($("connect-command").value, "The command"));
   $("connect-copy").addEventListener("click", () => copyText($("connect-snippet").textContent, "The setup"));
-  $("assistant-connect").addEventListener("click", () => connectFlow().catch((e) => toast(String(e), true)));
-  $("connect-terminal").addEventListener("click", () => invoke("open_terminal", { agent: null }).catch((e) => toast(String(e), true)));
+  $("assistant-connect").addEventListener("click", () => connectFlow().catch(showError));
+  $("connect-terminal").addEventListener("click", () => invoke("open_terminal", { agent: null }).catch(showError));
   $("connect-agent").addEventListener("click", () => {
     const app = connect.apps[Number($("connect-app").value)];
-    invoke("open_terminal", { agent: app?.agent ?? null }).catch((e) => toast(String(e), true));
+    invoke("open_terminal", { agent: app?.agent ?? null }).catch(showError);
   });
   $("connect-read").addEventListener("click", () => readGuide($("connect-guide").value));
   $("guide-copy").addEventListener("click", () => copyText($("guide-text").textContent, "The guide"));

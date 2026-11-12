@@ -80,7 +80,7 @@ function renderTaskTools() {
     if (tool.hint) b.append(Object.assign(document.createElement("span"), { textContent: tool.hint }));
     b.addEventListener("click", () => {
       hoverPreview(null);
-      Promise.resolve(runTaskTool(tool)).then(() => { delete tool.seed; }).catch((e) => toast(String(e), true));
+      Promise.resolve(runTaskTool(tool)).then(() => { delete tool.seed; }).catch(showError);
     });
     // An effect button shows the photo with it while hovered, as presets do.
     if (tool.effect) {

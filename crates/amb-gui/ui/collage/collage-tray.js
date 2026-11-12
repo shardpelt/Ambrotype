@@ -100,7 +100,7 @@ async function saveTemplate() {
     updateTitle();
     toast(`Saved the layout “${name}”`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -113,7 +113,7 @@ async function deleteTemplate() {
     $("col-delete").disabled = true;
     renderTemplates();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -123,7 +123,7 @@ async function shareTemplate() {
     const path = await invoke("share_collage_template", { template: { ...collage.t, name } });
     if (path) toast(`Saved ${path}`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -137,7 +137,7 @@ async function importCollageTemplate() {
     if (entry) applyTemplate(entry);
     toast(`Added the layout “${entry?.name ?? t.name}”`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -255,7 +255,7 @@ async function groupTray() {
     collage.groups = groups;
     renderTray();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     updateTrayCount();
   } finally {
     $("col-group").disabled = false;
@@ -374,7 +374,7 @@ function batchPhotos() {
 }
 
 function updateTrayCount() {
-  const groups = collage.groups ? `, ${collage.groups.length} group${collage.groups.length === 1 ? "" : "s"}` : "";
+  const groups = collage.groups ? `, ${plural(collage.groups.length, "group")}` : "";
   $("col-tray-count").textContent = collage.tray.length ? `${collage.tray.length} photos${groups}` : "Empty: add photos or a folder";
   $("col-group").textContent = collage.groups ? "Ungroup" : "Group alike";
   $("col-batch-groups-row").hidden = !collage.groups;
@@ -396,14 +396,14 @@ function updateBatchNote() {
   if (groups) {
     const pages = groups.filter((g) => g.length >= per).length;
     const small = groups.length - pages;
-    $("col-batch-note").textContent = `${pages} page${pages === 1 ? "" : "s"}, one per group: its best ${per}.`
+    $("col-batch-note").textContent = `${plural(pages, "page")}, one per group: its best ${per}.`
       + (small ? ` ${small} group${small === 1 ? " has" : "s have"} fewer than ${per} photos and ${small === 1 ? "is" : "are"} left out.` : "");
     $("col-batch").disabled = !pages || collage.busy;
     return;
   }
   const pages = Math.ceil(n / per);
   $("col-batch-note").textContent = n
-    ? `${n} photo${n === 1 ? "" : "s"} → ${pages} page${pages === 1 ? "" : "s"} of ${per} cells.`
+    ? `${plural(n, "photo")} → ${plural(pages, "page")} of ${per} cells.`
     : "No photos to batch.";
   $("col-batch").disabled = !n || collage.busy;
 }
@@ -424,6 +424,6 @@ async function addPhotos(folder) {
     if (photos?.length) setTray(photos, true);
     else if (photos) toast("No photos there.", true);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }

@@ -210,7 +210,7 @@ async function historyGo(n) {
 function undoAll() {
   const n = ui.state?.history?.length ?? 0;
   if (!n) return;
-  historyGo(-n).then(() => status(`Undid all ${n} step${n === 1 ? "" : "s"}; Redo brings them back`));
+  historyGo(-n).then(() => status(`Undid all ${plural(n, "step")}; Redo brings them back`));
 }
 
 // With History focused (clicked, or Tab), the arrows step through it one

@@ -151,7 +151,7 @@ async function addLibraryRoot() {
     tree.open.add(dir);
     await loadFolderTree();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -161,7 +161,7 @@ async function removeLibraryFolder(path) {
     await invoke("remove_library_folder", { path, forget: true });
     await loadFolderTree();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 

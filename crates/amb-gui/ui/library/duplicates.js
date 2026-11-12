@@ -36,7 +36,7 @@ async function findDuplicates() {
     });
     const n = dupes.groups.reduce((k, g) => k + g.photos.length - 1, 0);
     $("dupes-status").textContent = dupes.groups.length
-      ? `${dupes.groups.length} group${dupes.groups.length === 1 ? "" : "s"}: ${n} photo${n === 1 ? "" : "s"} you may not need`
+      ? `${plural(dupes.groups.length, "group")}: ${plural(n, "photo")} you may not need`
       : "Nothing alike found.";
   } catch (e) {
     $("dupes-status").textContent = String(e);
@@ -104,7 +104,7 @@ async function dupesStack(indices) {
     await setStacks([[g.photos[0]], g.photos.slice(1)], id);
     g.done = "stacked";
   }
-  status(`Stacked ${indices.length} group${indices.length === 1 ? "" : "s"}`);
+  status(`Stacked ${plural(indices.length, "group")}`);
   renderLibrary();
   renderDupes();
 }
@@ -120,7 +120,7 @@ async function dupesReject(indices) {
         if (p) p.flag = u.info.flag ?? null;
       }
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
       return;
     }
   }

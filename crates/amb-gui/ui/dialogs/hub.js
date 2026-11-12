@@ -101,7 +101,7 @@ function interfacePreview(data) {
   const files = data?.files ?? [];
   box.append(
     Object.assign(document.createElement("b"), { textContent: "A whole other interface: code with the app's full reach" }),
-    Object.assign(document.createElement("span"), { textContent: `${files.length} file${files.length === 1 ? "" : "s"}: ${files.slice(0, 4).join(", ")}${files.length > 4 ? ", …" : ""}` }),
+    Object.assign(document.createElement("span"), { textContent: `${plural(files.length, "file")}: ${files.slice(0, 4).join(", ")}${files.length > 4 ? ", …" : ""}` }),
     Object.assign(document.createElement("span"), { textContent: "Read its files in the hub repo before installing" }),
   );
   return box;
@@ -166,7 +166,7 @@ function sizesPreview(data) {
   const box = document.createElement("div");
   box.className = "hub-preview sizes";
   const sizes = data?.sizes ?? [];
-  box.append(Object.assign(document.createElement("b"), { textContent: `${sizes.length} size${sizes.length === 1 ? "" : "s"}` }));
+  box.append(Object.assign(document.createElement("b"), { textContent: `${plural(sizes.length, "size")}` }));
   for (const s of sizes.slice(0, 4)) {
     box.append(Object.assign(document.createElement("span"), { textContent: `${s.name}: ${s.width} × ${s.height}` }));
   }
@@ -280,7 +280,7 @@ async function hubFlow(initial = "all") {
             const field = e.kind === "layout" ? "active_layout" : "active_theme";
             ui.looks[field] = e.installed;
             applyActiveLooks();
-            invoke("set_active_look", { layout: ui.looks.active_layout, theme: ui.looks.active_theme }).catch((err) => toast(String(err), true));
+            invoke("set_active_look", { layout: ui.looks.active_layout, theme: ui.looks.active_theme }).catch(showError);
             status(`Using "${e.name}".`);
           });
           actions.append(use);

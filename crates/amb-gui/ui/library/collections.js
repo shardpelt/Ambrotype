@@ -39,7 +39,7 @@ async function loadCollections() {
   } catch (e) {
     coll.list = [];
     coll.smart = [];
-    toast(String(e), true);
+    showError(e);
   }
   if (coll.target && !coll.list.some((c) => c.name === coll.target)) coll.target = null;
   renderCollectionControls();
@@ -111,7 +111,7 @@ async function showCollection(name) {
     if (view.missing.length) toast(`${view.missing.length} photo${view.missing.length === 1 ? " in it was" : "s in it were"} moved or deleted: ${fileName(view.missing[0])}${view.missing.length > 1 ? "…" : ""}`, true);
     renderLibrary();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
   renderCollectionControls();
 }
@@ -126,11 +126,11 @@ async function addToCollection(paths, name = $("lib-add-to").value) {
   try {
     const c = await invoke("collection_add", { name, paths });
     coll.target = c.name;
-    status(`Added ${paths.length} photo${paths.length === 1 ? "" : "s"} to “${c.name}” (${c.count} in it)`);
+    status(`Added ${plural(paths.length, "photo")} to “${c.name}” (${c.count} in it)`);
     await loadCollections();
     if (lib.collection === c.name) await showCollection(c.name);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
   return true;
 }
@@ -147,12 +147,12 @@ async function removeFromCollection() {
   if (!lib.collection || !paths.length) return;
   try {
     await invoke("collection_remove", { name: lib.collection, paths });
-    status(`Removed ${paths.length} photo${paths.length === 1 ? "" : "s"} from “${lib.collection}” (the files stay)`);
+    status(`Removed ${plural(paths.length, "photo")} from “${lib.collection}” (the files stay)`);
     lib.selected.clear();
     await loadCollections();
     await showCollection(lib.collection);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -168,7 +168,7 @@ async function renameCollection() {
     $("library-folder").textContent = "";
     $("lib-drop-folders").hidden = true;
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -184,7 +184,7 @@ async function moveCollectionToSet() {
     await invoke("collection_set", { name: lib.collection, set });
     await loadCollections();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -197,7 +197,7 @@ async function deleteCollection() {
     await loadCollections();
     await showCollection("");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -237,7 +237,7 @@ async function showSmartCollection(name) {
     $("lib-drop-folders").hidden = true;
     renderLibrary();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
   renderCollectionControls();
 }

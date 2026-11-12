@@ -40,7 +40,7 @@ async function presetSetHidden(p, on) {
     renderPresets();
     if (on) toast("Hidden");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -52,7 +52,7 @@ async function presetSetGroupHidden(group, on) {
     renderPresets();
     if (on) toast("Hidden");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -63,7 +63,7 @@ async function presetUnhideAll() {
     presetHide.showing = false;
     renderPresets();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -95,7 +95,7 @@ async function presetDelete(p) {
     renderPresets();
     toast("Moved to the trash");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 

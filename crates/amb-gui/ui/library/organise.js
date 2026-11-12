@@ -39,7 +39,7 @@ async function organiseFlow(mode) {
   org.plan = [];
   const dlg = $("files-dialog");
   const title = { move: "Move to a folder", rename: "Rename", dated: "Sort into dated folders" }[mode];
-  $("files-title").textContent = `${title}: ${photos.length} photo${photos.length === 1 ? "" : "s"}`;
+  $("files-title").textContent = `${title}: ${plural(photos.length, "photo")}`;
   const opts = $("files-options");
   opts.replaceChildren();
   if (mode === "move" || mode === "dated") {
@@ -107,7 +107,7 @@ async function planFiles() {
   const files = org.plan.reduce((n, p) => n + p.files.length, 0);
   const same = org.paths.length - org.plan.length;
   $("files-summary").textContent = org.plan.length
-    ? `${org.plan.length} photo${org.plan.length === 1 ? "" : "s"}, ${files} file${files === 1 ? "" : "s"} with their sidecars and companions${same > 0 ? ` · ${same} already there` : ""}. Nothing is overwritten.`
+    ? `${plural(org.plan.length, "photo")}, ${plural(files, "file")} with their sidecars and companions${same > 0 ? ` · ${same} already there` : ""}. Nothing is overwritten.`
     : "They are already there.";
   const base = (p) => fileName(p);
   const rel = (p) => (org.mode === "rename" ? base(p) : p);
@@ -134,14 +134,14 @@ async function applyFiles(plan, undo = false) {
       org.last = null;
       $("lib-undo-move").hidden = true;
     }
-    status(`${undo ? "Moved back" : "Moved"} ${r.photos} photo${r.photos === 1 ? "" : "s"} (${r.files} files)${undo ? "" : " · Organise → Undo puts them back"}`);
+    status(`${undo ? "Moved back" : "Moved"} ${plural(r.photos, "photo")} (${r.files} files)${undo ? "" : " · Organise → Undo puts them back"}`);
     // The selection follows the photos.
     const moved = new Map(r.moves);
     lib.selected = new Set([...lib.selected].map((p) => moved.get(p) ?? p));
     if (r.reopen) await openPath(r.reopen);
     await reloadLibraryView();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -165,16 +165,16 @@ async function deleteFlow() {
   const photos = organiseTargets();
   if (!photos.length) return toast("Select the photos to delete first.", true);
   const n = photos.length;
-  const ok = await askYes(`Move ${n} photo${n === 1 ? "" : "s"} to the trash, with ${n === 1 ? "its" : "their"} sidecars, JPEG twins and virtual copies?\n\nThe trash can give them back.`);
+  const ok = await askYes(`Move ${plural(n, "photo")} to the trash, with ${n === 1 ? "its" : "their"} sidecars, JPEG twins and virtual copies?\n\nThe trash can give them back.`);
   if (!ok) return;
   try {
     const [files, closed] = await invoke("files_trash", { paths: photos.map((p) => p.path) });
     if (closed) photoGone();
     lib.selected.clear();
-    status(`Moved ${n} photo${n === 1 ? "" : "s"} (${files} files) to the trash`);
+    status(`Moved ${plural(n, "photo")} (${files} files) to the trash`);
     await reloadLibraryView();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -214,11 +214,11 @@ async function lookForMissing() {
   $("missing-status").textContent = `Looking in ${folder}…`;
   try {
     const found = await invoke("files_find_moved", { folder });
-    toast(found.length ? `Found ${found.length} photo${found.length === 1 ? "" : "s"}` : "None of them is in that folder", !found.length);
+    toast(found.length ? `Found ${plural(found.length, "photo")}` : "None of them is in that folder", !found.length);
     await missingFlow();
     await reloadLibraryView();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -233,7 +233,7 @@ async function keywordsFlow() {
 async function renderKeywordList() {
   const list = $("keywords-list");
   list.replaceChildren(Object.assign(document.createElement("p"), { className: "hint", textContent: "Reading the catalogue…" }));
-  const all = await invoke("keywords_all").catch((e) => (toast(String(e), true), []));
+  const all = await invoke("keywords_all").catch((e) => (showError(e), []));
   const filter = $("keywords-filter").value.trim().toLowerCase();
   list.replaceChildren(...all.filter(([k]) => !filter || k.toLowerCase().includes(filter)).map(([k, n]) => {
     const row = Object.assign(document.createElement("label"), { className: "keyword-row" });
@@ -270,12 +270,12 @@ async function changeKeywords(remove) {
   }
   try {
     const n = await invoke("keywords_change", { from, to });
-    status(`${remove ? "Removed" : "Changed"} on ${n} photo${n === 1 ? "" : "s"}`);
+    status(`${remove ? "Removed" : "Changed"} on ${plural(n, "photo")}`);
     await renderKeywordList();
     await reloadLibraryView();
     if (ui.info) loadInfo();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -324,7 +324,7 @@ async function saveMetaTemplate(remove = false) {
     renderMetaTemplates();
     status(remove ? `Deleted “${t.name}”` : `Saved “${t.name}”`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 

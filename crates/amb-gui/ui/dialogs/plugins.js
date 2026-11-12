@@ -138,7 +138,7 @@ function renderPluginDetail() {
   const effect = m?.kind === "effect";
   $("plugin-run").disabled = Boolean(p.error) || !ui.info || (effect && Boolean(pluginUi.batch));
   $("plugin-as-preset").disabled = !ui.info;
-  $("plugin-run").textContent = effect ? "Add to photo" : pluginUi.batch ? `Run on ${pluginUi.batch.length} photo${pluginUi.batch.length === 1 ? "" : "s"}` : "Run";
+  $("plugin-run").textContent = effect ? "Add to photo" : pluginUi.batch ? `Run on ${plural(pluginUi.batch.length, "photo")}` : "Run";
   $("plugin-run").title = !ui.info ? "Open a photo first"
     : effect ? "An effect is kept in the edit and rendered with the photo; change or remove it in the Effects panel"
     : "Run it on the open photo (Undo takes it back)";
@@ -193,7 +193,7 @@ async function saveRecipe() {
     renderPluginDetail();
     toast(`Saved the recipe “${name}”`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -207,7 +207,7 @@ async function deleteRecipe() {
     $("plugin-recipe-name").value = "";
     renderPluginDetail();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -250,7 +250,7 @@ async function runPluginBatch(p) {
       requestPreview(false);
     }
     const failed = r.errors.length ? ` · ${r.errors.length} failed: ${r.errors[0]}` : "";
-    const note = `Changed ${r.changed.length} of ${paths.length} photo${paths.length === 1 ? "" : "s"}${failed}`;
+    const note = `Changed ${r.changed.length} of ${plural(paths.length, "photo")}${failed}`;
     $("plugin-result").textContent = [r.message, note].filter(Boolean).join(" · ");
     toast(`${p.manifest.name}: ${note}`, r.errors.length > 0);
   } finally {
@@ -303,7 +303,7 @@ async function allowSelectedPlugin() {
     renderPlugins();
     await runSelectedPlugin();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -316,7 +316,7 @@ async function installPlugin() {
     renderPlugins();
     toast(`Installed ${pluginById(pluginUi.selected)?.manifest?.name ?? pluginUi.selected}`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -329,7 +329,7 @@ async function removeSelectedPlugin() {
     pluginUi.selected = pluginUi.list[0]?.id ?? null;
     renderPlugins();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -352,7 +352,7 @@ async function shareSelectedPlugin() {
       ? "The GitHub CLI on this computer sends it with your own login: it forks the hub, adds the files in one commit and opens the pull request."
       : "In the browser: GitHub's upload page opens with the plugin's folder next to it. Drag the files in and choose “Propose changes”. (Or install the GitHub CLI and run `gh auth login` to send it from here.)";
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -407,7 +407,7 @@ function wirePlugins() {
   });
   $("plugin-allow").addEventListener("click", allowSelectedPlugin);
   $("plugin-deny").addEventListener("click", () => ($("plugin-approve").hidden = true));
-  $("plugin-folder").addEventListener("click", () => invoke("open_plugins_folder", { id: pluginUi.selected }).catch((e) => toast(String(e), true)));
+  $("plugin-folder").addEventListener("click", () => invoke("open_plugins_folder", { id: pluginUi.selected }).catch(showError));
   $("plugin-remove").addEventListener("click", removeSelectedPlugin);
   $("plugin-share").addEventListener("click", shareSelectedPlugin);
   $("share-gh").addEventListener("click", () => sendShare(false));
@@ -419,7 +419,7 @@ function wirePlugins() {
     await loadPlugins();
     renderPlugins();
   });
-  $("plugins-open").addEventListener("click", () => invoke("open_plugins_folder", { id: null }).catch((e) => toast(String(e), true)));
+  $("plugins-open").addEventListener("click", () => invoke("open_plugins_folder", { id: null }).catch(showError));
   $("plugins-reload").addEventListener("click", async () => {
     await loadPlugins();
     renderPlugins();
@@ -450,7 +450,7 @@ async function pluginsFlow() {
   // From the library, a plugin runs on the selected photos.
   const sel = libraryOn() ? selectedPhotos().map((p) => p.path) : [];
   pluginUi.batch = sel.length ? sel : null;
-  $("plugin-run").textContent = pluginUi.batch ? `Run on ${sel.length} photo${sel.length === 1 ? "" : "s"}` : "Run";
+  $("plugin-run").textContent = pluginUi.batch ? `Run on ${plural(sel.length, "photo")}` : "Run";
   await loadPlugins();
   showPluginPanel("detail");
   renderPlugins();

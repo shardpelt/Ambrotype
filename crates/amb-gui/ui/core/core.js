@@ -50,6 +50,16 @@ function toast(text, error = false) {
   toast.timer = setTimeout(() => (t.hidden = true), error ? 6000 : 3000);
 }
 
+// An error from a command, as a red toast.
+function showError(e) {
+  toast(`${e}`, true);
+}
+
+// "1 photo", "3 photos": `many` defaults to `one` + "s".
+function plural(n, one, many = `${one}s`) {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
 // The status bar's text. With the bar hidden (Settings → General), a
 // message shows briefly over the photo instead, unless it's `routine`
 // (preview sizes and times).
@@ -71,7 +81,7 @@ async function askYes(message) {
   try {
     return await window.__TAURI__.dialog.ask(message, { title: "Ambrotype", kind: "warning" });
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     return false;
   }
 }

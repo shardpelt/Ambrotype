@@ -280,13 +280,13 @@ function effectRow(m) {
       toast(`Saved effect "${name}"`);
       renderMaskPanel();
     } catch (err) {
-      toast(String(err), true);
+      showError(err);
     }
   });
   const mine = select.value.startsWith("u:");
   const del = el("button", { type: "button", class: "small", title: mine ? "Delete this effect of yours" : "Pick one of your own effects to delete it", disabled: !mine }, "Delete");
   del.addEventListener("click", async () => {
-    mk.effects = await invoke("delete_mask_effect", { name: select.value.slice(2) }).catch((err) => (toast(String(err), true), mk.effects));
+    mk.effects = await invoke("delete_mask_effect", { name: select.value.slice(2) }).catch((err) => (showError(err), mk.effects));
     mk.effect = "";
     renderMaskPanel();
   });

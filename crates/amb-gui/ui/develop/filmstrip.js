@@ -165,7 +165,7 @@ function renderStars(el, rating) {
     return;
   }
   el.replaceChildren(...[1, 2, 3, 4, 5].map((k) => {
-    const s = Object.assign(document.createElement("span"), { textContent: "★", title: `${k} star${k === 1 ? "" : "s"}` });
+    const s = Object.assign(document.createElement("span"), { textContent: "★", title: `${plural(k, "star")}` });
     s.dataset.stars = k;
     s.classList.toggle("on", k <= n);
     return s;
@@ -181,7 +181,7 @@ async function rateFromStrip(p, k) {
     stripUpdate(p.path, { rating: u?.info.rating ?? (rating || null) });
     status(rating ? `Rated ${p.name} ${"★".repeat(rating)}` : `Rating cleared: ${p.name}`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 

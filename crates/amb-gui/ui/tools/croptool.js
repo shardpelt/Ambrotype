@@ -101,7 +101,7 @@ async function loadSizes() {
   try {
     ui.sizes = await invoke("size_presets");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
   fillSizeSelects();
 }
@@ -159,7 +159,7 @@ async function enterCrop() {
   try {
     st = await invoke("crop_state");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     return;
   }
   ui.crop.start = st.rect;
@@ -192,7 +192,7 @@ async function reloadCrop() {
     ui.crop.tool.setRatio(lockedRatio());
     ui.crop.tool.setRect(st.rect);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -216,7 +216,7 @@ async function exitCrop(commit) {
       await run(commands, "crop");
       return;
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   }
   requestPreview(false);
@@ -240,7 +240,7 @@ async function levelCrop() {
     ui.crop.tool.endAngle();
     status(a === 0 ? "Already level" : `Levelled by ${a > 0 ? "+" : ""}${a.toFixed(2)}°`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     b.disabled = false;
   }
@@ -259,7 +259,7 @@ async function resetCrop() {
       // reloadCrop (via setState) then picks up the cleared crop.
       await run(await invoke("crop_commands", { rect: full }), "reset crop");
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   } else {
     ui.crop.start = full;
@@ -382,7 +382,7 @@ async function sizesFlow() {
             fillSizeSelects();
             list();
           } catch (e) {
-            toast(String(e), true);
+            showError(e);
           }
         });
       }
@@ -405,7 +405,7 @@ async function sizesFlow() {
       toast(`Saved size "${preset.name.trim()}"`);
       fill(null, "");
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   };
   f.onsubmit = (e) => {

@@ -54,7 +54,7 @@ async function makeVirtualCopy(path) {
     status(`Made a virtual copy of ${fileName(path)}`);
     return copy;
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     return null;
   }
 }
@@ -95,7 +95,7 @@ async function libraryDeleteCopies() {
       await invoke("delete_virtual_copy", { path: p.path });
     } catch (e) {
       failed++;
-      toast(String(e), true);
+      showError(e);
     }
   }
   status(`Deleted ${copies.length - failed} virtual cop${copies.length - failed === 1 ? "y" : "ies"}`);
@@ -113,7 +113,7 @@ async function contactSheetFlow() {
   const paths = selectedPhotos().map((p) => p.path);
   if (!paths.length) return toast("Select the photos for the sheet.", true);
   const dlg = $("contact-dialog");
-  $("contact-what").textContent = `${paths.length} photo${paths.length === 1 ? "" : "s"}, in the order shown.`;
+  $("contact-what").textContent = `${plural(paths.length, "photo")}, in the order shown.`;
   const style = $("contact-style");
   style.onchange = () => { $("contact-columns").value = style.value === "film" ? 6 : 5; };
   dlg.showModal();
@@ -136,7 +136,7 @@ async function contactSheetFlow() {
       toast(pages.length === 1 ? `Saved the contact sheet: ${pages[0]}` : `Saved ${pages.length} pages of contact sheets in ${dirOf(pages[0])}`);
     }
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
     status("Ready");
@@ -164,7 +164,7 @@ async function smartSearch(like = null) {
     renderLibrary();
     status(`${r.found.length} found with ${r.model}${r.indexed ? ` (${r.indexed} photos indexed first)` : ""}`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
   }
@@ -214,10 +214,10 @@ async function syncNegativeRoll() {
     const parts = [];
     if (r.scenes > 1) parts.push(`${r.scenes} scenes`);
     if (r.odd > 0) parts.push(`${r.odd} odd frame${r.odd === 1 ? "" : "s"} kept their own`);
-    toast(`Synced ${r.changed.length} negative${r.changed.length === 1 ? "" : "s"}${parts.length ? ` (${parts.join(", ")})` : ""}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
+    toast(`Synced ${plural(r.changed.length, "negative")}${parts.length ? ` (${parts.join(", ")})` : ""}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
     status(`One conversion for ${r.changed.length} frames`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
   }
@@ -245,7 +245,7 @@ async function convertRawsFlow() {
   if (!paths.length) return;
   const dlg = $("convert-dialog");
   const f = dlg.querySelector("form");
-  $("convert-what").textContent = `${paths.length} photo${paths.length === 1 ? "" : "s"}${what}.`;
+  $("convert-what").textContent = `${plural(paths.length, "photo")}${what}.`;
   // Which photo to match: the edited ones among them (the focused or open
   // one first), to pick from.
   const info = (path) => (lib.on ? libPhoto(path) : strip.photos?.find((p) => p.path === path)) ?? { path };
@@ -291,14 +291,14 @@ async function convertRawsFlow() {
     const r = await invoke("convert_raws", { paths, options });
     if (!r) return;
     for (const path of paths) refreshThumb(path);
-    const parts = [`${r.written.length} JPEG${r.written.length === 1 ? "" : "s"} written`];
+    const parts = [`${plural(r.written.length, "JPEG")} written`];
     if (r.camera_jpegs) parts.push(`${r.camera_jpegs} as the camera saved ${r.camera_jpegs === 1 ? "it" : "them"}`);
     if (r.skipped) parts.push(`${r.skipped} already there`);
     if (r.left_out) parts.push(`${r.left_out} left out (not the best of their burst)`);
     if (r.errors.length) parts.push(`${r.errors.length} failed: ${r.errors[0]}`);
     toast(parts.join("; "), r.errors.length > 0);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
     status("Ready");
@@ -355,9 +355,9 @@ async function presetsOnPhotos(paths) {
       setState(r.state);
       requestPreview(false);
     }
-    toast(`"${chosen.name}" applied to ${r.changed.length} photo${r.changed.length === 1 ? "" : "s"}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
+    toast(`"${chosen.name}" applied to ${plural(r.changed.length, "photo")}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
     status("Ready");
@@ -370,7 +370,7 @@ async function libraryPasteSettings() {
   if (!targets.length) return toast("Select the photos to paste onto.", true);
   if (!lib.groups) lib.groups = await invoke("paste_groups");
   const dlg = $("paste-dialog");
-  $("paste-what").textContent = `From ${fileName(lib.copied)} to ${targets.length} photo${targets.length === 1 ? "" : "s"}. Ticked groups are made the same as the source (settings it doesn't have go back to their defaults); the rest stay as they are.`;
+  $("paste-what").textContent = `From ${fileName(lib.copied)} to ${plural(targets.length, "photo")}. Ticked groups are made the same as the source (settings it doesn't have go back to their defaults); the rest stay as they are.`;
   const list = $("paste-groups");
   list.replaceChildren(...lib.groups.map((g) => {
     const row = Object.assign(document.createElement("label"), { className: "inline-check" });
@@ -400,10 +400,10 @@ async function libraryPasteSettings() {
       setState(r.state);
       requestPreview(false);
     }
-    toast(`Pasted onto ${r.pasted} photo${r.pasted === 1 ? "" : "s"}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
+    toast(`Pasted onto ${plural(r.pasted, "photo")}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
     status(`Pasted settings onto ${r.pasted} photos`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -427,7 +427,7 @@ function libraryExport() {
         if (!r) return;
         if (r.written.length) store.setText("amb.exportDir", dirOf(r.written[0]));
         const failed = r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : "";
-        toast(`Exported ${r.written.length} photo${r.written.length === 1 ? "" : "s"}${failed}`, r.errors.length > 0);
+        toast(`Exported ${plural(r.written.length, "photo")}${failed}`, r.errors.length > 0);
         if (r.written.length) status(`Exported ${r.written.length} photos to ${dirOf(r.written[0])}`);
         await afterExport(r.written, after);
       } finally {
@@ -462,7 +462,7 @@ async function libraryMergeHdr() {
     else await loadLibrary(lib.dir);
     await libraryOpen(r.output);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     status("HDR merge failed");
   } finally {
     $("busy").hidden = true;
@@ -497,7 +497,7 @@ async function libraryMergePano() {
     else await loadLibrary(lib.dir);
     await libraryOpen(r.output);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     status("Panorama merge failed");
   } finally {
     $("busy").hidden = true;

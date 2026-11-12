@@ -30,7 +30,7 @@ async function assistantFlow() {
   try {
     asst.settings = await invoke("assistant_settings");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
   const ready = asst.settings?.provider.model && (asst.settings.has_key || asst.settings.provider.kind !== "anthropic");
   fillAssistantSettings();
@@ -43,7 +43,7 @@ function wireAssistant() {
   if (asst.wired) return;
   asst.wired = true;
   $("assistant-close").addEventListener("click", () => $("assistant-dialog").close());
-  $("assistant-log-open").addEventListener("click", () => invoke("open_assistant_log").catch((e) => toast(String(e), true)));
+  $("assistant-log-open").addEventListener("click", () => invoke("open_assistant_log").catch(showError));
   $("assistant-gear").addEventListener("click", () => {
     fillAssistantSettings();
     $("assistant-settings").hidden = !$("assistant-settings").hidden;
@@ -110,7 +110,7 @@ async function saveAssistantSettings() {
     $("assistant-settings").hidden = true;
     $("assistant-input").focus();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 

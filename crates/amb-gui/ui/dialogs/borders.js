@@ -280,7 +280,7 @@ function wireBorders() {
       $("border-delete").disabled = false;
       toast(`Saved border "${border.name}"`);
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   });
   $("border-share").addEventListener("click", async () => {
@@ -288,7 +288,7 @@ function wireBorders() {
       const path = await invoke("share_border_preset", { border: readBorder() });
       if (path) toast(`Saved ${path}: send it to someone, or add it to the hub as a pull request.`);
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   });
   $("border-open").addEventListener("click", async () => {
@@ -296,7 +296,7 @@ function wireBorders() {
       const border = await invoke("import_border_preset");
       if (border) await addBorder(border);
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   });
   $("border-delete").addEventListener("click", async () => {
@@ -308,7 +308,7 @@ function wireBorders() {
       drawBorderPreview();
       updateExportSize();
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   });
 }

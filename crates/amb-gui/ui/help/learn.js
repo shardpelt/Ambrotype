@@ -129,5 +129,5 @@ function initLearn() {
   $("lesson-next").addEventListener("click", nextStep);
   $("lesson-back").addEventListener("click", () => learn.lesson && learn.step > 0 && showStep(learn.step - 1));
   $("lesson-close").addEventListener("click", endLesson);
-  $("btn-learn-empty").addEventListener("click", () => learnFlow().catch((e) => toast(String(e), true)));
+  $("btn-learn-empty").addEventListener("click", () => learnFlow().catch(showError));
 }

@@ -90,7 +90,7 @@ function presetTile(p, favs) {
       ["Apply", () => applyPreset(p)],
       ["Apply some of its settings…", () => applyPresetPartly(p)],
       ui.info && n > 1 ? [`Apply to all ${n} photos in the folder`, () => applyPresetToFolder(p)] : null,
-      ["Show the file", () => invoke("reveal_file", { path: p.path }).catch((err) => toast(String(err), true))],
+      ["Show the file", () => invoke("reveal_file", { path: p.path }).catch(showError)],
       ["Share to the hub…", () => sharePresetToHub(p)],
       ...presetHideItems(p),
     ].filter(Boolean));

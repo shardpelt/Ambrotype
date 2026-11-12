@@ -286,7 +286,7 @@ async function addSpotAt(pt) {
     if (spotList().length > before) sp.selected = spotList()[spotList().length - 1].index;
     renderSpotPanel();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     sp.busy = false;
   }
@@ -311,7 +311,7 @@ async function addBrushedSpot(points) {
     if (spotList().length > before) sp.selected = spotList()[spotList().length - 1].index;
     renderSpotPanel();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     sp.busy = false;
   }
@@ -457,7 +457,7 @@ async function healLine(from, to) {
     requestPreview(false);
     drawSpots();
   } catch (err) {
-    toast(String(err), true);
+    showError(err);
   }
 }
 
@@ -490,7 +490,7 @@ async function removeObject(target) {
     requestPreview(false);
     renderSpotPanel();
   } catch (err) {
-    toast(String(err), true);
+    showError(err);
   } finally {
     done();
     sp.busy = false;
@@ -511,7 +511,7 @@ async function findDust() {
     requestPreview(false);
     drawSpots();
   } catch (err) {
-    toast(String(err), true);
+    showError(err);
   } finally {
     b.disabled = false;
   }
@@ -536,7 +536,7 @@ async function enterSpots() {
   try {
     sp.frame = await invoke("mask_frame");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     return;
   }
   sp.on = true;

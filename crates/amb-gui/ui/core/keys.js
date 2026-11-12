@@ -42,7 +42,7 @@ const KEY_ACTIONS = [
   { id: "trip-clear", group: "Effects", label: "Trip: back to normal (the trip's effects off)", keys: [], when: "main", photo: true, run: () => tripClear() },
   { id: "auto-edit", group: "Edit", label: "Auto edit: tone, white balance, lens corrections, vibrance and a level horizon", hint: "A starting point for the whole photo, in one undo step.", keys: ["Ctrl+U"], when: "main", button: "btn-auto", run: () => autoEditFlow() },
   { id: "search", group: "Help", label: "Search everything: commands, settings, panels, presets, layouts", keys: ["Ctrl+K"], when: "any", button: "btn-search", run: () => searchFlow() },
-  { id: "connect-ai", group: "Help", label: "Connect an AI app", hint: "Any AI app that runs MCP servers, or a command-line agent started in a terminal, told where the guides are.", keys: [], when: "any", run: () => connectFlow().catch((e) => toast(String(e), true)) },
+  { id: "connect-ai", group: "Help", label: "Connect an AI app", hint: "Any AI app that runs MCP servers, or a command-line agent started in a terminal, told where the guides are.", keys: [], when: "any", run: () => connectFlow().catch(showError) },
   { id: "ai-guides", group: "Help", label: "Guides for AI agents", hint: "Built in: how an AI drives Ambrotype, every setting, layouts, plugins. amb docs in a terminal.", keys: [], when: "any", run: () => readGuide("guide") },
   { id: "sample", group: "Help", label: "Open the sample photo", hint: "A raw with an edit already made: step through its History to see what each slider does.", keys: [], when: "any", run: () => sampleFlow() },
   { id: "watch", group: "Help", label: "Watch an edit", hint: "A ghost cursor edits the sample photo in about 20 seconds; any key or click stops it. Starts the sample's edit afresh.", keys: [], when: "any", run: () => watchFlow() },
@@ -105,7 +105,7 @@ const KEY_ACTIONS = [
   { id: "show-hidden-presets", group: "Edit", label: "Show hidden presets: hide, unhide or remove presets", hint: "Hidden presets come back dimmed in the Presets tab, to unhide.", keys: [], when: "any", run: () => presetToggleShowHidden() },
   { id: "virtual-copy", group: "Library", label: "Make a virtual copy", hint: "A second edit of the photo, kept as its own sidecar.", keys: ["Ctrl+'"], when: ["main", "library"], run: () => virtualCopyKey() },
   { id: "quick-collection", group: "Library", label: "Add to the last collection used", hint: "The selection, or the open photo.", keys: ["B"], when: ["main", "library"], run: () => quickCollectionKey() },
-  { id: "ai-denoise", group: "Photo", label: "AI Denoise: take the noise out of a raw", hint: "The selected raws (or the open one), each into a new DNG beside it, with an AI model on your computer.", keys: [], when: "any", run: () => denoiseFlow().catch((e) => toast(String(e), true)) },
+  { id: "ai-denoise", group: "Photo", label: "AI Denoise: take the noise out of a raw", hint: "The selected raws (or the open one), each into a new DNG beside it, with an AI model on your computer.", keys: [], when: "any", run: () => denoiseFlow().catch(showError) },
   { id: "cleanup", group: "Library", label: "Clean up: find photos to delete (blurry, copies, eyes closed, black frames…)", hint: "Pages through them all, marked to go; keep any, then they go to the trash together.", keys: [], when: "library", run: () => openCleanup() },
   { id: "best-in-bursts", group: "Library", label: "Best in each burst: the shot in focus with eyes open", hint: "Marks the best of each burst and dims the rest; then pick it and reject the rest, or stack them.", keys: [], when: "library", run: () => bestInBursts() },
   { id: "lib-loupe", group: "Library", label: "Loupe: one photo large", hint: "← → step through the photos.", keys: ["E"], when: "library", run: () => setLibraryView("loupe") },
@@ -243,7 +243,7 @@ async function saveKeybindings() {
   try {
     await invoke("set_keybindings", { bindings: ui.keybindings });
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -409,7 +409,7 @@ async function settingsFlow() {
     $("settings-about").hidden = name !== "about";
     $("settings-models").hidden = name !== "models";
     $("keys-reset-all").hidden = name !== "keys";
-    if (name === "models") modelsTab().catch((e) => toast(String(e), true));
+    if (name === "models") modelsTab().catch(showError);
   };
   const onTab = (e) => showTab(e.currentTarget.dataset.tab);
   const resetAll = () => {
@@ -420,12 +420,12 @@ async function settingsFlow() {
     render();
   };
   const onFilter = () => renderList();
-  const openFolder = () => invoke("open_settings_folder").catch((e) => toast(String(e), true));
+  const openFolder = () => invoke("open_settings_folder").catch(showError);
   const setHub = async (url) => {
     try {
       $("settings-hub").value = await invoke("set_hub_url", { url });
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   };
   const onHub = () => setHub($("settings-hub").value);
@@ -445,7 +445,7 @@ async function settingsFlow() {
         },
       }));
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   };
   const pickEditApp = async () => {
@@ -455,7 +455,7 @@ async function settingsFlow() {
   const editDefault = () => saveEditIn(null);
   const onEditFormat = () => saveEditIn();
   const hubDefault = () => setHub(null);
-  const openLooks = () => { dlg.close(); setTimeout(() => looksFlow().catch((e) => toast(String(e), true))); };
+  const openLooks = () => { dlg.close(); setTimeout(() => looksFlow().catch(showError)); };
   const showText = (which) => async () => {
     try {
       const pre = $("about-text");
@@ -463,12 +463,12 @@ async function settingsFlow() {
       pre.hidden = false;
       pre.scrollTop = 0;
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   };
   const onLicence = showText("licence");
   const onNotice = showText("notice");
-  const onSource = () => invoke("open_source_page").catch((e) => toast(String(e), true));
+  const onSource = () => invoke("open_source_page").catch(showError);
 
   window.addEventListener("keydown", onKey, true);
   dlg.addEventListener("cancel", onCancel);

@@ -32,7 +32,7 @@ async function denoiseFlow() {
   denoise.photos = denoiseTargets();
   if (!denoise.photos.length) return toast("Select the raws to denoise first (or open one).", true);
   const n = denoise.photos.length;
-  $("denoise-what").textContent = `${n} photo${n === 1 ? "" : "s"}: ${denoise.photos.map(fileName).slice(0, 4).join(", ")}${n > 4 ? "…" : ""}. Each becomes a new DNG beside it (name-Denoised.dng), with its edit; the raw stays as it is.`;
+  $("denoise-what").textContent = `${plural(n, "photo")}: ${denoise.photos.map(fileName).slice(0, 4).join(", ")}${n > 4 ? "…" : ""}. Each becomes a new DNG beside it (name-Denoised.dng), with its edit; the raw stays as it is.`;
   $("denoise-status").textContent = "";
   denoise.model = await denoiseModel().catch(() => null);
   renderDenoise();
@@ -64,7 +64,7 @@ async function runDenoise() {
     const reports = await invoke("photo_denoise", { paths: denoise.photos, amount: Number($("denoise-amount").value) });
     $("denoise-dialog").close();
     const first = reports[0]?.output;
-    status(`Denoised ${reports.length} photo${reports.length === 1 ? "" : "s"}${first ? `: ${fileName(first)}` : ""} (${Math.round(reports.reduce((s, r) => s + r.seconds, 0))} s)`);
+    status(`Denoised ${plural(reports.length, "photo")}${first ? `: ${fileName(first)}` : ""} (${Math.round(reports.reduce((s, r) => s + r.seconds, 0))} s)`);
     if (libraryOn()) {
       if (lib.collection) await addToCollection(reports.map((r) => r.output), lib.collection);
       else if (lib.dir) await loadLibrary(lib.dir);
@@ -78,7 +78,7 @@ async function runDenoise() {
 }
 
 function wireDenoise() {
-  $("lib-denoise").addEventListener("click", () => denoiseFlow().catch((e) => toast(String(e), true)));
+  $("lib-denoise").addEventListener("click", () => denoiseFlow().catch(showError));
   $("denoise-install").addEventListener("click", installDenoiseModel);
   $("denoise-go").addEventListener("click", runDenoise);
   $("denoise-close").addEventListener("click", () => $("denoise-dialog").close());

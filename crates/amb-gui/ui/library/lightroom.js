@@ -96,10 +96,10 @@ async function openLightroomCatalogue(path = null) {
   try {
     const c = await invoke("lightroom_open", { path });
     await loadLightroom();
-    toast(`${c.name} is open in place: ${c.photos.toLocaleString()} photos in ${c.folders.length} folder${c.folders.length === 1 ? "" : "s"}, ${c.collections.length} collection${c.collections.length === 1 ? "" : "s"}. Nothing was imported or written; edits you make here go into the photos' sidecars.${c.warnings.length ? ` ${c.warnings.join(". ")}.` : ""}`);
+    toast(`${c.name} is open in place: ${c.photos.toLocaleString()} photos in ${plural(c.folders.length, "folder")}, ${plural(c.collections.length, "collection")}. Nothing was imported or written; edits you make here go into the photos' sidecars.${c.warnings.length ? ` ${c.warnings.join(". ")}.` : ""}`);
     if (c.folders.length) await showTreeFolder(c.folders[0].path);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
   }
@@ -113,7 +113,7 @@ async function closeLightroomCatalogue(c) {
     await loadLightroom();
     $("lib-reload").click();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -134,7 +134,7 @@ async function showLightroomCollection(c, name) {
     renderLightroom();
     if (typeof renderCollectionControls === "function") renderCollectionControls();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 

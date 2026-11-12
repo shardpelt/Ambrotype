@@ -18,7 +18,7 @@ async function chooseMonitor(choice) {
     showMonitorStatus(s);
     requestPreview(false);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 

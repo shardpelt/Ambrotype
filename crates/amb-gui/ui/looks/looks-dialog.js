@@ -72,12 +72,12 @@ async function looksFlow() {
           render();
           toast(`"${s.name}" is back: Done keeps it`);
         } catch (e) {
-          toast(String(e), true);
+          showError(e);
         }
       });
       const del = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "×", title: "Forget this setup (its layout and theme stay)" });
       del.addEventListener("click", async () => {
-        setups = await invoke("setup_delete", { name: s.name }).catch((e) => { toast(String(e), true); return setups; });
+        setups = await invoke("setup_delete", { name: s.name }).catch((e) => { showError(e); return setups; });
         renderSetups();
       });
       row.append(name, what, use, del);
@@ -93,7 +93,7 @@ async function looksFlow() {
       renderSetups();
       toast(`Saved the setup "${name}"`);
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   };
   $("looks-keep").onclick = keepSetup;
@@ -158,7 +158,7 @@ async function looksFlow() {
     const save = async () => {
       try {
         saved(await invoke("save_look", { kind: "theme", id: look.id, data }));
-      } catch (e) { toast(String(e), true); }
+      } catch (e) { showError(e); }
     };
     const rows = Object.keys(fallback).map((token) => {
       const label = document.createElement("label");
@@ -254,7 +254,7 @@ async function looksFlow() {
     },
   };
   const wired = Object.entries(handlers).map(([id, fn]) => {
-    const h = () => fn().catch((e) => toast(String(e), true));
+    const h = () => fn().catch(showError);
     $(id).addEventListener("click", h);
     return [id, h];
   });
@@ -264,7 +264,7 @@ async function looksFlow() {
     if (!look || look.builtin || !name || name === look.name) return render();
     try {
       saved(await invoke("save_look", { kind: view.kind, id: look.id, data: { ...look.data, name } }));
-    } catch (e) { toast(String(e), true); }
+    } catch (e) { showError(e); }
   };
   $("looks-name").addEventListener("change", rename);
   // Enter would submit the form (as Cancel); make it confirm the name instead.
@@ -286,7 +286,7 @@ async function looksFlow() {
     }
     ui.looks.active_layout = sel.layout;
     ui.looks.active_theme = sel.theme;
-    invoke("set_active_look", { layout: sel.layout, theme: sel.theme }).catch((e) => toast(String(e), true));
+    invoke("set_active_look", { layout: sel.layout, theme: sel.theme }).catch(showError);
   } else {
     ui.looks.active_layout = before.layout;
     ui.looks.active_theme = before.theme;

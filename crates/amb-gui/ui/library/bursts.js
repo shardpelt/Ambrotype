@@ -28,7 +28,7 @@ async function bestInBursts() {
     bcull.notes = new Map(r.bursts.flat().map((x) => [x.path, x.note]));
     setCull(true);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
     status("Ready");
@@ -52,7 +52,7 @@ function renderCullBar() {
   if (!bcull.on) return;
   const n = bcull.bursts.length;
   const rest = bcull.bursts.reduce((k, b) => k + b.length - 1, 0);
-  $("cull-text").textContent = `${n} burst${n === 1 ? "" : "s"}: the best of each is marked, the other ${rest} dimmed.${bcull.faces ? "" : " Focus only: install YuNet (Settings → AI models) to check eyes too."}`;
+  $("cull-text").textContent = `${plural(n, "burst")}: the best of each is marked, the other ${rest} dimmed.${bcull.faces ? "" : " Focus only: install YuNet (Settings → AI models) to check eyes too."}`;
 }
 
 // A cell's look while culling: the best marked with why, the rest dimmed.
@@ -102,7 +102,7 @@ async function cullReject() {
         if (p) p.flag = u.info.flag ?? null;
       }
     } catch (e) {
-      return toast(String(e), true);
+      return showError(e);
     }
   }
   status(`Picked ${keep.length}, rejected ${rest.length} (Filter → Rejected shows them; X and U change a flag)`);
@@ -115,7 +115,7 @@ async function cullStack() {
     const id = libPhoto(b[0])?.stack?.id ?? `s${Date.now().toString(36)}b${i}`;
     await setStacks([[b[0]], b.slice(1)], id);
   }
-  status(`Stacked ${bcull.bursts.length} burst${bcull.bursts.length === 1 ? "" : "s"}, the best on top`);
+  status(`Stacked ${plural(bcull.bursts.length, "burst")}, the best on top`);
   setCull(false);
   renderLibrary();
 }

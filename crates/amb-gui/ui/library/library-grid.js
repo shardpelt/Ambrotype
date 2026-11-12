@@ -131,7 +131,7 @@ async function setStacks([tops, rest], id) {
         if (p) p.stack = u.info.stack ?? null;
       }
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   }
 }
@@ -153,7 +153,7 @@ async function autoStack() {
   for (const [i, g] of stacks.entries()) {
     await setStacks([[g[0].path], g.slice(1).map((p) => p.path)], `s${Date.now().toString(36)}${i}`);
   }
-  status(stacks.length ? `Made ${stacks.length} stack${stacks.length === 1 ? "" : "s"} of ${stacks.reduce((n, g) => n + g.length, 0)} photos` : "No photos close enough in time to stack");
+  status(stacks.length ? `Made ${plural(stacks.length, "stack")} of ${stacks.reduce((n, g) => n + g.length, 0)} photos` : "No photos close enough in time to stack");
   renderLibrary();
 }
 
@@ -188,11 +188,11 @@ async function renderSubfolders() {
 function makeDirCell(d) {
   const cell = Object.assign(document.createElement("div"), { className: "lib-cell lib-dir" });
   cell.dataset.dir = d.path;
-  cell.title = d.up ? `Up to ${d.path}` : `${d.path}\n${d.photos} photo${d.photos === 1 ? "" : "s"}${d.folders ? ", and folders" : ""}: click to open`;
+  cell.title = d.up ? `Up to ${d.path}` : `${d.path}\n${plural(d.photos, "photo")}${d.folders ? ", and folders" : ""}: click to open`;
   const frame = Object.assign(document.createElement("div"), { className: "lib-frame" });
   frame.append(Object.assign(document.createElement("span"), { className: "lib-dir-icon", textContent: d.up ? "↑" : "📁" }));
   const meta = Object.assign(document.createElement("div"), { className: "lib-meta" });
-  if (!d.up) meta.append(Object.assign(document.createElement("span"), { className: "lib-dir-count", textContent: `${d.photos} photo${d.photos === 1 ? "" : "s"}${d.folders ? " +" : ""}` }));
+  if (!d.up) meta.append(Object.assign(document.createElement("span"), { className: "lib-dir-count", textContent: `${plural(d.photos, "photo")}${d.folders ? " +" : ""}` }));
   cell.append(frame, meta, Object.assign(document.createElement("div"), { className: "lib-name", textContent: d.up ? ".. (up)" : d.name }));
   return cell;
 }
@@ -370,7 +370,7 @@ function renderCounts() {
   const shown = lib.shown.length;
   const sel = selectedPhotos().length;
   $("library-count").textContent = !lib.dir && !lib.collection ? "" : [
-    `${n} photo${n === 1 ? "" : "s"}`,
+    `${plural(n, "photo")}`,
     shown !== n ? `${shown} shown` : "",
     sel ? `${sel} selected` : "",
   ].filter(Boolean).join(" · ");

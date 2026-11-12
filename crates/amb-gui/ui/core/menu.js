@@ -46,7 +46,7 @@ const MENU_TITLES = {
 };
 
 // Items that aren't keyboard actions.
-const MENU_EXTRA = { source: () => invoke("open_source_page").catch((e) => toast(String(e), true)) };
+const MENU_EXTRA = { source: () => invoke("open_source_page").catch(showError) };
 
 const menuState = { shown: false, enabled: {} };
 

@@ -107,25 +107,17 @@ async function showLibraryTask(on) {
 const SAVED_MORE = "amb.lib.more";
 
 function savedMore(dir) {
-  try {
-    return JSON.parse(localStorage.getItem(SAVED_MORE) || "{}")[dir] ?? [];
-  } catch {
-    return [];
-  }
+  return store.get(SAVED_MORE, {})[dir] ?? [];
 }
 
 function saveMore(dir, more) {
-  try {
-    const all = JSON.parse(localStorage.getItem(SAVED_MORE) || "{}");
-    delete all[dir];
-    if (more.length) all[dir] = more;
-    // The most recent few dozen folders.
-    const keys = Object.keys(all);
-    for (const k of keys.slice(0, Math.max(0, keys.length - 40))) delete all[k];
-    localStorage.setItem(SAVED_MORE, JSON.stringify(all));
-  } catch {
-    /* not kept */
-  }
+  const all = store.get(SAVED_MORE, {});
+  delete all[dir];
+  if (more.length) all[dir] = more;
+  // The most recent few dozen folders.
+  const keys = Object.keys(all);
+  for (const k of keys.slice(0, Math.max(0, keys.length - 40))) delete all[k];
+  store.set(SAVED_MORE, all);
 }
 
 // Show a folder; `more` folders are shown with it (kept on a reload of the
@@ -239,7 +231,7 @@ function renderPanel() {
   const n = sel.length;
   const active = cullOn() && cull.view !== "loupe";
   $("lib-sel-count").textContent = active ? (sel[0] ? `${sel[0].name} (active)` : "No active photo")
-    : n ? `${n} photo${n === 1 ? "" : "s"} selected` : "Nothing selected";
+    : n ? `${plural(n, "photo")} selected` : "Nothing selected";
   $("lib-hint").textContent = active
     ? "Changes go to the active photo (the framed one). Click a photo to make it active; G or Esc goes back to the grid."
     : "Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.";
@@ -329,10 +321,10 @@ async function libraryChange(change) {
       : change.flag !== undefined ? FLAG_DONE[change.flag]
       : change.add_keywords || change.remove_keywords ? "Keywords changed"
       : "Saved";
-    status(`${what}: ${updates.length} photo${updates.length === 1 ? "" : "s"}`);
+    status(`${what}: ${plural(updates.length, "photo")}`);
     applyViewKeepingCells();
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -459,7 +451,7 @@ function wireLibrary() {
     contextMenu(e, [
       ["Copy image", () => copyImage(path)],
       [sel.length > 1 ? `Copy ${sel.length} file paths` : "Copy file path", () => copyPath(sel.map((p) => p.path))],
-      ["Show in folder", () => invoke("reveal_file", { path }).catch((err) => toast(String(err), true))],
+      ["Show in folder", () => invoke("reveal_file", { path }).catch(showError)],
       ["Open in the editor", () => libraryOpen(path)],
       ["Find similar photos", () => smartSearch(path)],
       null,
@@ -555,7 +547,7 @@ function wireLibrary() {
     const [done, total] = e.payload;
     status(`Indexing photos for smart search (once): ${done} of ${total}…`, true);
   });
-  $("lib-plugin").addEventListener("click", () => pluginsFlow().catch((e) => toast(String(e), true)));
+  $("lib-plugin").addEventListener("click", () => pluginsFlow().catch(showError));
   $("lib-vcopy").addEventListener("click", virtualCopyKey);
   $("lib-vcopy-delete").addEventListener("click", libraryDeleteCopies);
   $("lib-export").addEventListener("click", libraryExport);

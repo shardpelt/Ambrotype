@@ -15,7 +15,7 @@ async function renderInterfaces() {
     sel.value = info.active ?? "";
     $("settings-interface-share").disabled = !info.active;
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -31,7 +31,7 @@ async function useInterface(path) {
   try {
     await invoke("set_interface", { path: path || null });
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
     renderInterfaces();
   }
 }
@@ -51,7 +51,7 @@ async function shareInterface() {
     const url = await invoke("share_interface", { path, browser: !plan.gh_user });
     toast(plan.gh_user ? `Pull request: ${url}` : "GitHub's upload page is open in your browser");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -62,5 +62,5 @@ function wireInterfaces() {
     const path = await invoke("pick_interface_folder");
     if (path) useInterface(path);
   });
-  $("settings-interface-folder").addEventListener("click", () => invoke("open_interfaces_folder").catch((e) => toast(String(e), true)));
+  $("settings-interface-folder").addEventListener("click", () => invoke("open_interfaces_folder").catch(showError));
 }

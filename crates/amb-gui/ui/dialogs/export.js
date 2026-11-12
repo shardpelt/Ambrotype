@@ -12,7 +12,7 @@ async function copyImage(path) {
     toast(`Copied the photo (${w} × ${h}): paste it anywhere`);
     status("Copied the photo");
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -21,7 +21,7 @@ async function copyPath(paths) {
     await invoke("copy_text", { text: paths.join("\n") });
     toast(paths.length === 1 ? "Copied the file's path" : `Copied ${paths.length} paths`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -32,7 +32,7 @@ function photoMenu(e) {
   contextMenu(e, [
     ["Copy image", () => copyImage(path)],
     ["Copy file path", () => copyPath([path])],
-    ["Show in folder", () => invoke("reveal_file", { path }).catch((err) => toast(String(err), true))],
+    ["Show in folder", () => invoke("reveal_file", { path }).catch(showError)],
     ["Export…", () => exportFlow()],
     ["Share before and after…", () => shareCompareFlow()],
     ["Export Edit Replay (video)…", () => replayFlow()],
@@ -54,7 +54,7 @@ async function shareCompareFlow() {
       toast(`Saved the before/after page: ${path}`);
     }
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
     status("Ready");
@@ -79,7 +79,7 @@ async function replayFlow() {
       toast(`Saved the Edit Replay (${r.steps} steps, ${r.seconds.toFixed(1)} s): ${r.path}`);
     }
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     off();
     $("busy").hidden = true;
@@ -314,7 +314,7 @@ function wireExportPresets() {
       await fillExportPresets(name);
       toast(`Saved the export preset “${name}”`);
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   });
   $("export-preset-delete").addEventListener("click", async () => {
@@ -324,7 +324,7 @@ function wireExportPresets() {
       await invoke("delete_export_preset", { name });
       await fillExportPresets();
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   });
 }
@@ -343,7 +343,7 @@ async function editInFlow() {
     status(`Opened ${fileName(path)} in the other app`);
     toast(`Wrote ${fileName(path)} next to the photo and opened it. Save it there; it shows in the folder.`);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
   }
@@ -356,7 +356,7 @@ async function afterExport(paths, action) {
   try {
     await invoke("after_export", { paths, action });
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -367,7 +367,7 @@ async function exportFlow(batch = null) {
   if (ui.crop.on) await exitCrop(true);
   const dlg = $("export-dialog");
   updateExportForm();
-  dlg.querySelector("h2").textContent = batch ? `Export ${batch.paths.length} photo${batch.paths.length === 1 ? "" : "s"}` : "Export";
+  dlg.querySelector("h2").textContent = batch ? `Export ${plural(batch.paths.length, "photo")}` : "Export";
   $("export-go").textContent = batch ? "Choose a folder…" : "Export…";
   // Names from a template only for a batch (one photo is named in the save dialog).
   $("export-form").querySelector(".batch-name").hidden = !batch;
@@ -436,7 +436,7 @@ async function exportFlow(batch = null) {
     status(`Exported ${r.path}`);
     await afterExport([r.path], after);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   } finally {
     $("busy").hidden = true;
   }

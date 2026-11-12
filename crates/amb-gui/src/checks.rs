@@ -171,8 +171,8 @@ const OBJECT_ASSIGN_LIMIT: usize = 381;
 const INNER_HTML_LIMIT: usize = 15;
 const INLINE_STYLE_LIMIT: usize = 17;
 const TOP_LEVEL_LET_LIMIT: usize = 7;
-const TOAST_STRING_LIMIT: usize = 181;
-const LOCAL_STORAGE_LIMIT: usize = 8;
+const TOAST_STRING_LIMIT: usize = 0;
+const LOCAL_STORAGE_LIMIT: usize = 0;
 
 #[test]
 fn old_idioms_may_only_fall() {

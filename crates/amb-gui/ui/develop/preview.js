@@ -104,7 +104,7 @@ async function renderLoop() {
       $("status").title = meta.gpu ? `Developed on ${meta.gpu}` :
         meta.cpu_reason ? `Developed on the CPU: ${meta.cpu_reason}` : "Developed on the CPU (no GPU found)";
     } catch (e) {
-      toast(String(e), true);
+      showError(e);
     }
   }
   $("busy").hidden = true;
@@ -401,7 +401,7 @@ async function pickAt(u, v) {
     toast(r.notes.join(" "));
     requestPreview(false);
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
 }
 
@@ -432,7 +432,7 @@ async function applyProof() {
       warn: $("proof-warn").checked,
     });
   } catch (e) {
-    toast(String(e), true);
+    showError(e);
   }
   requestPreview(false);
 }

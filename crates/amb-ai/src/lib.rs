@@ -33,6 +33,7 @@ use tract_onnx::prelude::*;
 mod archive;
 pub mod denoise;
 pub mod faces;
+pub mod hooks;
 mod net;
 pub use net::runs_on;
 pub mod objects;

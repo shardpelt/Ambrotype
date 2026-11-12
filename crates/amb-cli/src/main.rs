@@ -93,13 +93,7 @@ fn main() -> ExitCode {
     let plugins =
         amb_library::collections::editor_dir().and_then(|d| Some(d.parent()?.join("plugins")));
     if let Some(models) = amb_ai::default_dir() {
-        amb_engine::subject::set_finder(amb_ai::finder(models.clone()));
-        amb_engine::subject::set_selector(amb_ai::objects::selector(models.clone()));
-        amb_engine::subject::set_face_finder(amb_ai::faces::finder(models.clone()));
-        amb_engine::retouch::set_inpainter(amb_ai::remove::inpainter(models.clone()));
-        amb_engine::raw_denoise::set_raw_denoiser(
-            std::sync::Arc::new(amb_ai::denoise::Denoiser::new(models)).engine(),
-        );
+        amb_ai::hooks::install(&models);
     }
     // Lightroom catalogues opened in place: their photos' edits are read
     // from them, as in the editor.

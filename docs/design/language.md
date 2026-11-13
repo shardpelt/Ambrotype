@@ -48,7 +48,7 @@ A made-up language `zz` turns every text in the table into `⟦text⟧`. A UI te
 ## Words that come from Rust
 
 - **Settings' labels and descriptions:** a `descriptions.<code>.json` beside the English one.
-- **Errors and reports from editor commands** are English sentences today. First, `showError` passes them through `t()`: a fixed sentence translates, one with a file name in it does not. After card B11 in [cleanup.md](../cleanup.md) (one error type), an error carries a code and its values, and translates whole.
+- **Errors and reports from editor commands** are English sentences today. First, `showError` passes them through `t()`: a fixed sentence translates, one with a file name in it does not. Editor commands return one error type (`CmdError`); once it carries a code and its values, and translates whole.
 - **`amb`** stays English.
 
 ## Not translated

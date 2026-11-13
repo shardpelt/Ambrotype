@@ -211,13 +211,9 @@ pub(crate) fn catalog(
             }
             let mut out = Vec::new();
             for f in &folders {
-                let r = cat.index(f, &|done, total| {
-                    if !json {
-                        eprint!("\r{}: {done}/{total}", f.display());
-                    }
-                })?;
+                let progress = crate::progress::line(json, |done, total| format!("{}: {done}/{total}", f.display()));
+                let r = cat.index(f, &progress)?;
                 if !json {
-                    eprintln!();
                     if r.offline {
                         println!("{}: can't be reached; its photos stay listed, offline", f.display());
                     } else {

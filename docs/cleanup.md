@@ -551,51 +551,6 @@ Checks: the three cargo commands; the UI checks (`smoke.js` has the Trippy step:
 Done when: `grep -rn "PLUGINS_ELSEWHERE\|TRIP_PLUGINS" crates` prints nothing.
 Commit: `plugins: the editor reads where a built-in plugin lives from its manifest`. Why: "Two lists of ids were copied by hand."
 
-### B16. One progress helper for the editor and one for `amb`
-Tier: medium        Risk: low
-Why: the editor throttles progress events by hand three times, and `amb` prints progress with six hand-rolled `\r` loops.
-Files: `crates/amb-gui/src/progress.rs` (new), `crates/amb-gui/src/main.rs`, `crates/amb-gui/src/commands/batch.rs`, `crates/amb-gui/src/commands/export.rs`, `crates/amb-cli/src/progress.rs` (new), `crates/amb-cli/src/main.rs`, `crates/amb-cli/src/cleanup.rs`, `crates/amb-cli/src/convert.rs`, `crates/amb-cli/src/library.rs`, `crates/amb-cli/src/search.rs`.
-Steps, editor (one commit):
-1. New `crates/amb-gui/src/progress.rs` (`mod progress;` in `main.rs`):
-   ```rust
-   /// A progress callback that sends `[done, total]` to the page as `event`, at most every 200 ms (and always at the end).
-   pub(crate) fn throttled(app: &tauri::AppHandle, event: &'static str) -> impl Fn(usize, usize) + Send + Sync + 'static {
-       use tauri::Emitter;
-       let app = app.clone();
-       let last = std::sync::Mutex::new(std::time::Instant::now());
-       move |done, total| {
-           let mut last = last.lock().unwrap_or_else(|e| e.into_inner());
-           if done == total || last.elapsed().as_millis() > 200 {
-               *last = std::time::Instant::now();
-               let _ = app.emit(event, [done, total]);
-           }
-       }
-   }
-   ```
-2. Replace the three copies: in `commands/batch.rs` `library_find_duplicates` (event `duplicates-progress`) and `library_cleanup` (`cleanup-progress`), and in `commands/export.rs` the replay export (`replay-progress`): delete the `let last = ...; let progress = |done, total| { ... };` lines and write `let progress = crate::progress::throttled(&app, "duplicates-progress");` (the matching event). Pass `&progress` as before.
-3. Leave `bursts-progress`, `denoise-progress` and `convert-progress` as they are: their events have another shape or are not throttled (bursts and convert emit every step; denoise sends four numbers).
-Steps, `amb` (one commit):
-4. New `crates/amb-cli/src/progress.rs` (`mod progress;` in `main.rs`):
-   ```rust
-   /// A progress callback that rewrites one line on stderr: `text(done, total)` is the line. Silent with `--json` (`quiet`). A newline at the end.
-   pub(crate) fn line(quiet: bool, text: impl Fn(usize, usize) -> String + Sync) -> impl Fn(usize, usize) + Sync {
-       move |done, total| {
-           if quiet {
-               return;
-           }
-           eprint!("\r{}", text(done, total));
-           if done == total {
-               eprintln!();
-           }
-       }
-   }
-   ```
-5. Replace the loops, keeping each line's text: `cleanup.rs` (`"Looking… {done} of {total}"`, `quiet` is `json`; keep its `done % 50 == 0` as `if done % 50 == 0 || done == total` inside the text closure's caller: simplest is to keep that test in `cleanup.rs` around the call), `convert.rs` (`"{n}/{total}"`), `library.rs` (`"{}: {done}/{total}"`), `main.rs` twice (`"{raw}: {done} of {total} tiles"` and `"{n}/{total} frames"`), `search.rs` (`"indexing {done}/{total} with {}"`). A site whose old code did not print the newline at the end keeps working with it. A site that printed with `print!` to stdout keeps stdout: leave it and say so.
-Don't: change a message; make a progress line appear with `--json` where it did not.
-Checks: the three cargo commands; `cargo test -p amb-gui -p amb-cli`; the UI tests (Clean up and duplicates show progress).
-Done when: `grep -rn "elapsed().as_millis() > 200" crates/amb-gui/src/commands` prints nothing and `grep -rn 'eprint!("\\r' crates/amb-cli/src` prints only `progress.rs`.
-Commits: `gui: one throttled progress emitter`; `cli: one progress line helper`.
-
 ### B17. UI test steps for the dialogs no script opens
 Tier: medium        Risk: low
 Why: 18 of the 43 dialogs in `crates/amb-gui/ui/index.html` have no id in any script of `crates/amb-gui/tests/ui/` (checked 2026-11-12), so a broken open goes unseen. A step that opens each one and closes it catches that.

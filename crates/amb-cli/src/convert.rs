@@ -47,11 +47,8 @@ pub(crate) fn convert(
         &to,
         !options.contains_key("--no-edits"),
         amb_gpu::full::shared(),
-        &|n, total| {
-            eprint!("\r{n}/{total}");
-        },
+        &crate::progress::line(false, |n, total| format!("{n}/{total}")),
     );
-    eprintln!();
     done.left_out = left_out;
     if json {
         return serde_json::to_string_pretty(&done).map_err(|e| e.to_string());

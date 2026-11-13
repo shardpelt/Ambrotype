@@ -24,6 +24,7 @@ mod organise;
 mod places;
 mod plugin;
 mod presets;
+mod progress;
 mod render;
 mod search;
 mod share;
@@ -63,14 +64,11 @@ fn denoise(raws: &[&str], options: &BTreeMap<&str, &str>, json: bool) -> Result<
     }
     let mut reports = Vec::new();
     for raw in raws {
-        let progress = |done: usize, total: usize| {
-            if !json {
-                eprint!("\r{raw}: {done} of {total} tiles");
-            }
-        };
+        let progress = crate::progress::line(json, |done, total| {
+            format!("{raw}: {done} of {total} tiles")
+        });
         let r = amb_ops::denoise::denoise(Path::new(raw), out, amount, &progress)?;
         if !json {
-            eprintln!();
             println!(
                 "{} ({}×{}, {:.0} s)",
                 r.output.display(),
@@ -398,9 +396,8 @@ fn main() -> ExitCode {
                     Path::new(out),
                     &o,
                     amb_gpu::full::shared(),
-                    &|n, total| eprint!("\r{n}/{total} frames"),
+                    &crate::progress::line(false, |n, total| format!("{n}/{total} frames")),
                 )?;
-                eprintln!();
                 if json {
                     println!(
                         "{}",

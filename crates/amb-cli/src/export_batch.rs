@@ -57,11 +57,7 @@ pub(crate) fn render_dir(
     let render = |photo: &Path, out: &Path, export: &amb_export::ExportSettings| {
         render_quiet(photo, out, export, options)
     };
-    let progress = |done: usize, total: usize| {
-        if !json {
-            eprint!("\r[{done}/{total}]");
-        }
-    };
+    let progress = crate::progress::line(json, |done, total| format!("[{done}/{total}]"));
     let report = export_batch::run(
         &jobs,
         &batch_options,
@@ -69,9 +65,6 @@ pub(crate) fn render_dir(
         &progress,
         &AtomicBool::new(false),
     );
-    if !json {
-        eprintln!();
-    }
     if json {
         println!(
             "{}",

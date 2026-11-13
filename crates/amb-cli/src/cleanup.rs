@@ -47,12 +47,10 @@ pub(crate) fn cleanup(
     };
     let small = |p: &Path| amb_engine::raw::embedded_thumbnail(p, 256).ok().flatten();
     let big = |p: &Path| amb_engine::raw::embedded_thumbnail(p, 1280).ok().flatten();
+    let line = crate::progress::line(json, |done, total| format!("Looking… {done} of {total}"));
     let found = cleanup::find(&cat, &photos, find, &small, &big, &|done, total| {
-        if !json && (done % 50 == 0 || done == total) {
-            eprint!("\rLooking… {done} of {total}");
-            if done == total {
-                eprintln!();
-            }
+        if done % 50 == 0 || done == total {
+            line(done, total);
         }
     });
     let paths: Vec<_> = found.iter().map(|s| s.path.clone()).collect();

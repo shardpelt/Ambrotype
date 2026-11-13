@@ -50,12 +50,10 @@ pub(crate) fn search(
             all.push(l);
         }
     }
-    let new = amb_library::search::index(&cat, &spec.id, &all, &embed, &|done, total| {
-        eprint!("\rindexing {done}/{total} with {}", spec.name);
+    let progress = crate::progress::line(false, |done, total| {
+        format!("indexing {done}/{total} with {}", spec.name)
     });
-    if new > 0 {
-        eprintln!();
-    }
+    let new = amb_library::search::index(&cat, &spec.id, &all, &embed, &progress);
     let target = match (&like, query) {
         (Some(l), _) => {
             let l = std::path::absolute(l).map_err(|e| e.to_string())?;

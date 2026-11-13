@@ -572,6 +572,31 @@
     </form>
   </dialog>
 
+  <dialog id="preset-edit-dialog">
+    <form method="dialog">
+      <h2>Edit preset</h2>
+      <div class="grid">
+        <label>Name <input id="preset-edit-name" type="text" spellcheck="false" required></label>
+        <label>Group <input id="preset-edit-group" type="text" spellcheck="false" list="preset-edit-groups" placeholder="Yours"></label>
+      </div>
+      <datalist id="preset-edit-groups"></datalist>
+      <fieldset class="preset-edit-values">
+        <legend>Values</legend>
+        <label class="inline-check"><input id="preset-edit-keep" type="radio" name="preset_edit_values" value="keep" checked><span>Keep its values</span></label>
+        <label class="inline-check"><input id="preset-edit-photo" type="radio" name="preset_edit_values" value="photo"><span>Take the values from this photo</span></label>
+      </fieldset>
+      <p class="hint" id="preset-edit-hint">To change a value: apply the preset, adjust the sliders, then choose Take the values from this photo.</p>
+      <p class="hint" id="preset-edit-nophoto" hidden>Open a photo to take its values.</p>
+      <h3>Settings it holds</h3>
+      <div id="preset-edit-list" class="preset-edit-list"></div>
+      <p class="hint" id="preset-edit-error" role="alert" hidden></p>
+      <menu>
+        <button value="cancel" formnovalidate>Cancel</button>
+        <button value="ok" id="preset-edit-save" class="primary">Save</button>
+      </menu>
+    </form>
+  </dialog>
+
   <dialog id="fuji-dialog">
     <form method="dialog">
       <h2>Fuji recipe</h2>
@@ -1955,6 +1980,7 @@
   <script src="develop/presets.js"></script>
   <script src="develop/preset-grid.js"></script>
   <script src="develop/preset-hide.js"></script>
+  <script src="develop/preset-edit.js"></script>
   <script src="dialogs/export.js"></script>
   <script src="core/uitest.js"></script>
   <script src="develop/rows.js"></script>

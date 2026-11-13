@@ -18,6 +18,7 @@ pub(crate) mod models;
 pub(crate) mod photo;
 pub(crate) mod places;
 pub(crate) mod plugins;
+pub(crate) mod preset_edit;
 pub(crate) mod presets;
 pub(crate) mod preview;
 pub(crate) mod sample;
@@ -91,6 +92,9 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         models::smart_search,
         export::export,
         presets::presets,
+        preset_edit::duplicate_preset,
+        preset_edit::preset_contents,
+        preset_edit::update_preset,
         presets::add_preset_folder,
         tools::crop_state,
         export::caption_preview,

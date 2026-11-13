@@ -439,6 +439,7 @@ async function init() {
   wireSearch();
   wirePresetOriginal();
   wirePresetHide();
+  wirePresetEdit();
   wireTasks();
   wireInterfaces();
   wireConnect();

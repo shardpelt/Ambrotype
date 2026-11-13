@@ -1612,3 +1612,11 @@ body.photo-only .viewer { grid-column: 1 / -1; }
 .batch-dialog progress { width: 100%; }
 .batch-summary { margin-top: 10px; font-size: 12px; }
 .batch-summary .fail { color: var(--danger); margin: 2px 0; overflow-wrap: anywhere; }
+
+/* Edit preset (develop/preset-edit.js) */
+.preset-edit-values { border: 0; padding: 0; margin: 10px 0 0; display: grid; gap: 4px; }
+.preset-edit-list { max-height: 40vh; overflow: auto; display: grid; gap: 4px; margin: 6px 0; }
+.preset-edit-list .preset-edit-item { margin-left: 22px; }
+.preset-edit-list .preset-edit-item[hidden] { display: none; }
+.preset-edit-list .preset-edit-group { font-weight: 600; margin-top: 6px; }
+#preset-edit-error { color: var(--danger, var(--text)); }

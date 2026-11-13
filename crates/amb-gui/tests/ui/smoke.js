@@ -810,6 +810,50 @@ await t.step("only a preset saved in the app can be deleted, to the trash", asyn
   t.expect(ui.presets.some((x) => x.path === shared.path), "the other preset is untouched");
 });
 
+await t.step("a preset can be duplicated, and the copy edited; others offer Duplicate only", async () => {
+  const menu = (p) => {
+    const tile = [...document.querySelectorAll("#preset-list .preset-tile")].find((x) => x.dataset.path === p.path);
+    tile.querySelector(".preset").dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 50, clientY: 50 }));
+    const items = [...document.querySelectorAll(".ctx-menu button")].map((b) => b.textContent);
+    document.querySelector(".ctx-menu")?.remove();
+    return items;
+  };
+  const holds = async (p) => (await t.invoke("preset_contents", { path: p.path })).held.map((h) => h.name);
+  const shared = ui.presets.find((x) => x.name === "Shared look");
+  const items = menu(shared);
+  t.expect(items.includes("Duplicate") && !items.includes("Edit…"), `Duplicate only: ${items.join(", ")}`);
+  await presetDuplicate(shared);
+  const copy = ui.presets.find((x) => x.name === "Shared look copy");
+  t.expect(copy?.deletable && copy.group === shared.group, `a copy that is yours: ${JSON.stringify(copy)}`);
+  t.expect((await holds(copy)).includes("Exposure2012"), "it holds what the original holds");
+  const own = menu(copy);
+  t.expect(own.indexOf("Edit…") > 0 && own.indexOf("Edit…") < own.indexOf("Duplicate"), `Edit… before Duplicate: ${own.join(", ")}`);
+  // Edit: rename, take Contrast from the photo, let Exposure go.
+  t.setSlider("Contrast2012", 20);
+  await presetEdit(copy);
+  t.expect($("preset-edit-dialog").open && $("preset-edit-name").value === "Shared look copy", "the dialog is open on it");
+  const box = (name) => document.querySelector(`#preset-edit-list input[value="${name}"]`);
+  t.expect(box("Exposure2012")?.checked, "a held setting is ticked");
+  t.expect(!box("Contrast2012") || box("Contrast2012").closest("label").hidden, "the photo's settings wait for its values");
+  $("preset-edit-photo").checked = true;
+  $("preset-edit-photo").dispatchEvent(new Event("change"));
+  t.expect(box("Contrast2012") && !box("Contrast2012").checked, "now offered, unticked");
+  box("Contrast2012").checked = true;
+  box("Exposure2012").checked = false;
+  $("preset-edit-name").value = "Edited look";
+  $("preset-edit-save").click();
+  await t.until("the dialog closed", () => !$("preset-edit-dialog").open);
+  const edited = ui.presets.find((x) => x.name === "Edited look");
+  t.expect(edited && !ui.presets.some((x) => x.name === "Shared look copy"), "renamed in the list");
+  const now = await holds(edited);
+  t.expect(!now.includes("Exposure2012") && now.includes("Contrast2012"), `holds ${now.join(", ")}`);
+  t.expect(ui.presets.some((x) => x.path === shared.path), "the original is untouched");
+  await t.invoke("delete_preset", { path: edited.path });
+  ui.presets = await t.invoke("presets");
+  renderPresets();
+  t.key("Ctrl+Z");
+});
+
 await t.step("Fuji recipe: a pasted recipe becomes a preset in the Fuji group, put on the photo", async () => {
   const flow = fujiRecipeFlow();
   await t.until("the dialog", () => $("fuji-dialog").open);

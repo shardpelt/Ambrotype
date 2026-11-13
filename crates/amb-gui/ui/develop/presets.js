@@ -67,6 +67,12 @@ async function applyPresetToFolder(p) {
   toast(`"${p.name}" applied to ${plural(r.changed.length, "photo")}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
 }
 
+// One tickable row for a settings group: the list of "Apply some of its
+// settings…" and the groups of the Edit dialog (preset-edit.js).
+function presetGroupRow(g, checked) {
+  return el("label", { class: "inline-check" }, el("input", { type: "checkbox", value: g.name, checked }), el("span", {}, g.label));
+}
+
 // Apply a preset's settings from some groups only (Lightroom's "Apply
 // preset settings: …"); the other groups stay as they are.
 async function applyPresetPartly(p) {
@@ -77,12 +83,7 @@ async function applyPresetPartly(p) {
   dlg.querySelector("button.primary").textContent = "Apply";
   $("paste-what").textContent = "Only the ticked groups' settings come from the preset; the rest of the edit stays as it is.";
   const list = $("paste-groups");
-  list.replaceChildren(...ui.pasteGroups.map((g) => {
-    const row = Object.assign(document.createElement("label"), { className: "inline-check" });
-    const box = Object.assign(document.createElement("input"), { type: "checkbox", value: g.name, checked: ui.presetGroups?.has(g.name) ?? true });
-    row.append(box, Object.assign(document.createElement("span"), { textContent: g.label }));
-    return row;
-  }));
+  list.replaceChildren(...ui.pasteGroups.map((g) => presetGroupRow(g, ui.presetGroups?.has(g.name) ?? true)));
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   dlg.querySelector("h2").textContent = "Paste settings";

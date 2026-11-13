@@ -237,3 +237,51 @@ fn old_idioms_may_only_fall() {
     }
     assert!(problems.is_empty(), "\n{}\n", problems.join("\n"));
 }
+
+// Copies of shared parts, as they stand. Lower a limit when you remove some,
+// never raise it: use the part named in the message.
+const INTERSECTION_OBSERVER_LIMIT: usize = 0;
+const OVERFLOW_ROW_LIMIT: usize = 2;
+
+#[test]
+fn copies_of_shared_parts_may_only_fall() {
+    let observers: usize = ui_text("js")
+        .iter()
+        .filter(|(f, _)| f != "core/lazy.js")
+        .map(|(_, t)| t.matches("new IntersectionObserver(").count())
+        .sum();
+    // Rules with a sideways scroll whose selector is not `.photo-row`.
+    let css = std::fs::read_to_string(gui_root().join("ui/style.css")).unwrap();
+    let rows = css
+        .split('}')
+        .filter_map(|chunk| chunk.rsplit_once('{'))
+        .filter(|(head, body)| {
+            let after_brace = head.rsplit('{').next().unwrap_or_default();
+            let selector = after_brace.rsplit("*/").next().unwrap_or_default().trim();
+            body.contains("overflow-x: auto") && selector != ".photo-row"
+        })
+        .count();
+    let checks = [
+        (
+            "new IntersectionObserver( outside core/lazy.js",
+            observers,
+            INTERSECTION_OBSERVER_LIMIT,
+            "`nearView` or `loadQueue` from core/lazy.js",
+        ),
+        (
+            "overflow-x: auto in a rule other than .photo-row",
+            rows,
+            OVERFLOW_ROW_LIMIT,
+            "`photoRow` from core/photo-row.js",
+        ),
+    ];
+    let mut problems = Vec::new();
+    for (copy, now, limit, part) in checks {
+        if now > limit {
+            problems.push(format!(
+                "{copy}: {now} found, limit {limit}. Use {part} instead; the count may only fall"
+            ));
+        }
+    }
+    assert!(problems.is_empty(), "\n{}\n", problems.join("\n"));
+}

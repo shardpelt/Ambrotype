@@ -209,7 +209,7 @@ function renderLibrary() {
   lib.waiting = [];
   lib.cells.clear();
   lib.rangeKey = null;
-  $("library-empty").hidden = Boolean(lib.dir || lib.collection);
+  $("library-empty").hidden = Boolean(lib.dir || lib.collection || lib.reading);
   // Timeline, Map or a cull view has nothing to show over it either.
   if (!$("library-empty").hidden) $("library-view").hidden = true;
   else $("library-view").hidden = cull.view === "grid";

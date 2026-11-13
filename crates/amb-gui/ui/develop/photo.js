@@ -6,12 +6,33 @@
 // ---------------------------------------------------------------- photo
 
 // A folder of photos opens in the library (chosen, or dropped on the window).
+// One at a time: a slow folder (a memory card) can take a while to answer,
+// and a second click meanwhile would only ask again.
 async function openFolder(dir) {
-  if (!dir) dir = await invoke("library_pick_folder");
-  if (!dir) return false;
-  if (!libraryOn()) await switchTask("library");
-  await loadLibrary(dir, []);
-  return true;
+  if (ui.openingFolder) {
+    toast("Still opening the folder…");
+    return false;
+  }
+  ui.openingFolder = true;
+  $("btn-open-folder-empty").disabled = true;
+  $("busy").hidden = false;
+  try {
+    if (!dir) {
+      status("Choosing a folder…", true);
+      dir = await invoke("library_pick_folder");
+    }
+    if (!dir) return false;
+    status(`Opening ${dir}…`, true);
+    showReading(dir);
+    if (!libraryOn()) await switchTask("library");
+    await loadLibrary(dir, []);
+    return true;
+  } finally {
+    ui.openingFolder = false;
+    $("btn-open-folder-empty").disabled = false;
+    $("busy").hidden = true;
+    status("Ready", true);
+  }
 }
 
 async function openPath(path) {

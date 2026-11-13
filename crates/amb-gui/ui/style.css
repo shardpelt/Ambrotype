@@ -210,6 +210,7 @@ input[type=search], input[type=number], select {
 .strip-jpeg { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; white-space: nowrap; cursor: pointer; }
 .busy { position: absolute; top: 14px; right: 14px; width: 14px; height: 14px; border: 2px solid var(--faint); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.busy-inline { width: 22px; height: 22px; border: 2px solid var(--faint); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 
 /* Right panels */
 .histogram-wrap { padding: 10px 12px 8px; border-bottom: 1px solid var(--line); background: var(--bg-deep); }

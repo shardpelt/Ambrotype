@@ -2,6 +2,7 @@
 
 What landed, newest first. The newest 15 entries are in WHATS-NEXT.md's Recently done; they move here as newer ones arrive.
 
+- 2026-11-11: Insights finished: **What it suggests** (a fast lens kept stopped down, a zoom often at its end, dark scenes and shake, midday light, the focal length you live at, where the keepers come from; each with its number), **Try this week** (challenges: the far side of your focal length, aperture and time of day), and **Split by** camera, lens or year (up to three side by side, as shares). Also in `amb insights`
 - 2026-11-11: the Trippy task's effect buttons show the photo with the effect while hovered, as presets do (the click gives what the hover showed); History's top edge and the line under Snapshots drag to size them again (double-click: usual size)
 - 2026-11-11: Back (‹, Alt+←) steps through the library's views and an Insights bar's filter, not only the tabs; Survey taken out of the library (compare and the grid do its job); Compare splits side by side or above and below, the candidate either way round; Grid comes back from Map and Timeline; presets apply to the original by default
 - 2026-11-11: **Glass Light** and **Glass Dark** themes (Appearance): frosted, see-through panels over a soft wash of colour (a theme's new `glass` token, the blur in px); still to check that the blur stays smooth on older Windows machines. Eight new presets (Blue Hour, Cinematic, Crisp Morning, Desert Dust, Matte Portrait, Noir, Sunset Duotone, Vaporwave) and four new Surprise me styles (Cinematic, Dreamy, Vintage, Punchy)

@@ -17,7 +17,8 @@ const strip = {
   queue: [],
   editedQueue: [],     // edited photos whose render replaces the camera preview
   loading: 0,
-  observer: null,
+  row: null,           // the photoRow (core/photo-row.js), made by wireFilmstrip
+  current: null,       // the open photo's path in the strip
   hidden: false,
   selected: new Set(), // paths picked with Ctrl- or Shift-click
   anchor: null,        // where a Shift-click range starts
@@ -47,7 +48,7 @@ function stripClearSelection() {
 }
 
 function markSelected() {
-  for (const [path, cell] of strip.cells) cell.classList.toggle("selected", strip.selected.has(path));
+  stripMark();
   const n = strip.selected.size;
   $("filmstrip-count").textContent = n ? `${n} selected` : strip.photos.length ? `${strip.photos.length} photos` : "";
 }
@@ -157,15 +158,15 @@ function stripStarsClickable() {
   return store.text("amb.stripStars") !== "0";
 }
 
-function renderStars(el, rating) {
+function renderStars(box, rating) {
   const n = rating ?? 0;
-  el.classList.toggle("editable", stripStarsClickable());
+  box.classList.toggle("editable", stripStarsClickable());
   if (!stripStarsClickable()) {
-    el.textContent = starText(n);
+    box.textContent = starText(n);
     return;
   }
-  el.replaceChildren(...[1, 2, 3, 4, 5].map((k) => {
-    const s = Object.assign(document.createElement("span"), { textContent: "★", title: `${plural(k, "star")}` });
+  box.replaceChildren(...[1, 2, 3, 4, 5].map((k) => {
+    const s = el("span", { title: plural(k, "star") }, "★");
     s.dataset.stars = k;
     s.classList.toggle("on", k <= n);
     return s;
@@ -185,63 +186,44 @@ async function rateFromStrip(p, k) {
   }
 }
 
+// One photo's cell: preview, flag, stars, label, "edited" dot and name.
+function stripCell(p) {
+  const stars = el("span", { class: "film-stars" });
+  renderStars(stars, p.rating);
+  stars.addEventListener("click", (e) => {
+    const k = Number(e.target.dataset?.stars);
+    if (!k) return;
+    e.stopPropagation();
+    rateFromStrip(p, k);
+  });
+  const label = el("span", { class: "film-label", hidden: !p.label, title: p.label ? `${p.label} label` : "" });
+  if (p.label) label.style.background = LABEL_COLOURS[p.label] ?? "var(--muted)";
+  const flag = el("span", { class: "film-flag" });
+  showFlag(flag, p.flag);
+  const img = el("img", { alt: "", draggable: "false" });
+  if (strip.edited.has(p.path)) img.src = strip.edited.get(p.path);
+  const cell = el("button", { type: "button", class: "film-cell", title: p.name },
+    img,
+    el("span", { class: "film-meta" }, flag, stars, label, el("span", { class: "film-edited", title: "Has edits", hidden: !p.edited })),
+    el("span", { class: "film-name" }, p.name));
+  cell.classList.toggle("rejected", p.flag === "reject");
+  return cell;
+}
+
+// A click on a photo opens it (the selection ends); one that won't open is marked.
+async function stripOpen(p) {
+  if (strip.selected.size) stripClearSelection();
+  if (p.path === ui.info?.path) return;
+  if (!(await openPath(p.path))) {
+    p.broken = true;
+    strip.cells.get(p.path)?.classList.add("broken");
+  }
+}
+
 function renderStrip() {
-  const list = $("filmstrip-list");
-  strip.observer?.disconnect();
   strip.queue = [];
   strip.editedQueue = [];
-  strip.cells.clear();
-  list.replaceChildren();
-  strip.observer = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      strip.observer.unobserve(e.target);
-      queueThumb(e.target.dataset.path);
-    }
-  }, { root: list, rootMargin: "0px 400px" });
-  for (const p of strip.photos) {
-    const cell = document.createElement("button");
-    cell.type = "button";
-    cell.className = "film-cell";
-    cell.dataset.path = p.path;
-    cell.title = p.name;
-    const img = document.createElement("img");
-    img.alt = "";
-    img.draggable = false;
-    const meta = document.createElement("span");
-    meta.className = "film-meta";
-    const stars = Object.assign(document.createElement("span"), { className: "film-stars" });
-    renderStars(stars, p.rating);
-    stars.addEventListener("click", (e) => {
-      const k = Number(e.target.dataset?.stars);
-      if (!k) return;
-      e.stopPropagation();
-      rateFromStrip(p, k);
-    });
-    const dot = Object.assign(document.createElement("span"), { className: "film-edited", title: "Has edits", hidden: !p.edited });
-    const label = Object.assign(document.createElement("span"), { className: "film-label", hidden: !p.label, title: p.label ? `${p.label} label` : "" });
-    if (p.label) label.style.background = LABEL_COLOURS[p.label] ?? "var(--muted)";
-    const flag = Object.assign(document.createElement("span"), { className: "film-flag" });
-    showFlag(flag, p.flag);
-    cell.classList.toggle("rejected", p.flag === "reject");
-    meta.append(flag, stars, label, dot);
-    const name = Object.assign(document.createElement("span"), { className: "film-name", textContent: p.name });
-    cell.append(img, meta, name);
-    cell.addEventListener("click", async (e) => {
-      if (e.ctrlKey || e.metaKey || e.shiftKey) return stripSelect(p.path, e.shiftKey ? "range" : "toggle");
-      if (strip.selected.size) stripClearSelection();
-      if (p.path === ui.info?.path) return;
-      if (!(await openPath(p.path))) {
-        p.broken = true;
-        cell.classList.add("broken");
-      }
-    });
-    cell.addEventListener("contextmenu", (e) => stripMenu(e, p));
-    if (strip.edited.has(p.path)) img.src = strip.edited.get(p.path);
-    else strip.observer.observe(cell);
-    strip.cells.set(p.path, cell);
-    list.append(cell);
-  }
+  strip.row.set(strip.photos);
   // A new folder starts with nothing selected.
   for (const path of strip.selected) if (!strip.cells.has(path)) strip.selected.delete(path);
   markSelected();
@@ -308,15 +290,16 @@ function stripIndexOf(path) {
   return strip.photos.findIndex((p) => p.copy == null && p.path.replace(/\.[^./\\]+$/, "").toLowerCase() === stem);
 }
 
+// The row's "selected" and "current" classes, from the two sets of state.
+function stripMark() {
+  strip.current = strip.photos[stripIndexOf(ui.info?.path)]?.path;
+  strip.row.mark();
+}
+
 function markCurrent() {
-  const current = strip.photos[stripIndexOf(ui.info?.path)]?.path;
-  for (const [path, cell] of strip.cells) {
-    const on = path === current;
-    cell.classList.toggle("current", on);
-    cell.setAttribute("aria-current", on ? "true" : "false");
-    if (on) cell.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }
-  const i = stripIndexOf(current);
+  stripMark();
+  if (strip.current) strip.row.reveal(strip.current);
+  const i = stripIndexOf(strip.current);
   $("filmstrip-pos").textContent = i >= 0 ? `${i + 1} / ${strip.photos.length}` : "";
 }
 
@@ -392,64 +375,6 @@ function toggleFilmstrip() {
   requestPreview(false);
 }
 
-// Press and drag a list to move along it, as on a touch screen; let go
-// while moving and it glides to a stop. A click that didn't drag still
-// works. `axis` is "x" (the filmstrip) or "y" (the library grid); `when`
-// says whether a press may start a drag (Shift- and Ctrl-clicks select).
-function dragToScroll(list, axis = "x", when = () => true) {
-  const along = axis === "x" ? "clientX" : "clientY";
-  const scroll = axis === "x" ? "scrollLeft" : "scrollTop";
-  let drag = null;
-  let glide = 0;
-  list.addEventListener("dragstart", (e) => e.preventDefault());
-  list.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || e.pointerType === "touch" || e.shiftKey || e.ctrlKey || e.metaKey || !when(e)) return;
-    cancelAnimationFrame(glide);
-    list.classList.remove("dragging");
-    drag = { at: e[along], start: list[scroll], moved: false, id: e.pointerId, v: 0, t: performance.now(), last: e[along] };
-  });
-  list.addEventListener("pointermove", (e) => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const d = e[along] - drag.at;
-    if (!drag.moved && Math.abs(d) < 5) return;
-    if (!drag.moved) {
-      drag.moved = true;
-      try { list.setPointerCapture(e.pointerId); } catch { /* a pointer the page made up (tests) */ }
-      list.classList.add("dragging");
-    }
-    list[scroll] = drag.start - d;
-    const now = performance.now();
-    if (now > drag.t) drag.v = 0.8 * drag.v + 0.2 * ((drag.last - e[along]) / (now - drag.t));
-    drag.t = now;
-    drag.last = e[along];
-  });
-  const end = (e) => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const d = drag;
-    drag = null;
-    if (!d.moved) return;
-    // The click this release makes isn't a choice of photo.
-    const eat = (c) => { c.stopPropagation(); c.preventDefault(); };
-    list.addEventListener("click", eat, { capture: true, once: true });
-    setTimeout(() => list.removeEventListener("click", eat, { capture: true }), 0);
-    // ("dragging" also turns smooth scrolling off for the glide.)
-    let v = performance.now() - d.t > 80 ? 0 : d.v; // pixels per ms
-    let prev = performance.now();
-    const step = (now) => {
-      const dt = now - prev;
-      prev = now;
-      list[scroll] += v * dt;
-      v *= Math.pow(0.995, dt);
-      if (Math.abs(v) > 0.02) glide = requestAnimationFrame(step);
-      else list.classList.remove("dragging");
-    };
-    if (Math.abs(v) > 0.1) glide = requestAnimationFrame(step);
-    else list.classList.remove("dragging");
-  };
-  list.addEventListener("pointerup", end);
-  list.addEventListener("pointercancel", end);
-}
-
 function wireFilmstrip() {
   const pref = $("settings-strip-stars");
   pref.checked = stripStarsClickable();
@@ -460,15 +385,16 @@ function wireFilmstrip() {
       if (el) renderStars(el, p.rating);
     }
   });
-  // A vertical wheel scrolls the strip sideways.
-  const list = $("filmstrip-list");
-  list.addEventListener("wheel", (e) => {
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      e.preventDefault();
-      list.scrollLeft += e.deltaY;
-    }
-  }, { passive: false });
-  dragToScroll(list, "x");
+  strip.row = photoRow($("filmstrip-list"), {
+    cell: stripCell,
+    thumb: (p) => { if (!strip.edited.has(p.path)) queueThumb(p.path); },
+    open: stripOpen,
+    select: (p, how) => stripSelect(p.path, how),
+    isSelected: (p) => strip.selected.has(p.path),
+    isCurrent: (p) => p.path === strip.current,
+    menu: stripMenu,
+  });
+  strip.cells = strip.row.cells;
   $("filmstrip-prev").addEventListener("click", () => stepPhoto(-1));
   $("filmstrip-next").addEventListener("click", () => stepPhoto(1));
   $("preview").addEventListener("load", () => {

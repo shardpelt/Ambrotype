@@ -167,7 +167,7 @@ fn word_count(text: &str, word: &str) -> usize {
 
 // The old idioms, as they stand. Lower a limit when you remove some, never
 // raise it: the helper in the message does the same job.
-const OBJECT_ASSIGN_LIMIT: usize = 381;
+const OBJECT_ASSIGN_LIMIT: usize = 372;
 const INNER_HTML_LIMIT: usize = 15;
 const INLINE_STYLE_LIMIT: usize = 17;
 const TOP_LEVEL_LET_LIMIT: usize = 7;

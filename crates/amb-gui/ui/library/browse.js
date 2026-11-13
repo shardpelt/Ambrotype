@@ -23,11 +23,14 @@ const browse = {
   year: null,
   map: { z: 2, x: 512, y: 512, fitted: false }, // zoom, and the centre in world pixels at that zoom
   observer: null,
+  tray: null, // the Map's photoRow of photos without a place
 };
 
 function renderBrowse() {
   const box = $("library-view");
   box.className = `library-view browse ${cull.view}`;
+  browse.tray?.destroy();
+  browse.tray = null;
   if (cull.view === "timeline") renderTimeline(box);
   else if (cull.view === "insights") renderInsights(box);
   else renderMap(box);
@@ -278,35 +281,31 @@ function renderMap(box) {
   }
   map.append(credit);
   // Photos without a place: drag them onto the map.
-  const tray = Object.assign(document.createElement("div"), { className: "map-tray" });
+  const tray = el("div", { class: "map-tray" });
   if (unplaced.length) {
-    tray.append(Object.assign(document.createElement("span"), { className: "hint", textContent: "Drag onto the map to place (the selection moves together):" }));
-    browse.observer = new IntersectionObserver((entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        browse.observer.unobserve(e.target);
-        const p = libPhoto(e.target.dataset.path);
-        if (p) bigImage(p, 256, false).then((u) => { e.target.src = u; }).catch(() => {});
-      }
-    }, { root: tray, rootMargin: "300px" });
-    for (const p of unplaced.slice(0, 500)) {
-      const img = Object.assign(document.createElement("img"), { className: "map-thumb", alt: p.name, title: p.name, draggable: true });
-      img.dataset.path = p.path;
-      img.classList.toggle("selected", lib.selected.has(p.path));
-      img.addEventListener("dragstart", (e) => e.dataTransfer.setData("text/x-amb-photo", p.path));
-      img.addEventListener("click", (e) => {
-        select(p.path, e.shiftKey ? "range" : e.ctrlKey || e.metaKey ? "toggle" : "only");
-        for (const t of tray.querySelectorAll(".map-thumb")) t.classList.toggle("selected", lib.selected.has(t.dataset.path));
-        renderPanel();
-      });
-      browse.observer.observe(img);
-      tray.append(img);
-    }
+    tray.append(el("span", { class: "hint" }, "Drag onto the map to place (the selection moves together):"));
+    const row = photoRow(tray, {
+      cell: (p) => el("img", { class: "map-thumb", alt: p.name, title: p.name }),
+      thumb: (p, img) => bigImage(p, 256, false).then((u) => { img.src = u; }).catch(() => {}),
+      open: (p) => pickFromTray(p, "only", row),
+      select: (p, how) => pickFromTray(p, how, row),
+      isSelected: (p) => lib.selected.has(p.path),
+      dragOut: (p, e) => e.dataTransfer.setData("text/x-amb-photo", p.path),
+    });
+    browse.tray = row;
+    row.set(unplaced.slice(0, 500));
   }
   box.replaceChildren(bar, map, tray);
   tray.hidden = !unplaced.length;
   wireMap(map);
   drawMap();
+}
+
+// A click on a tray photo selects it, as in the grid.
+function pickFromTray(p, how, row) {
+  select(p.path, how);
+  row.mark();
+  renderPanel();
 }
 
 // Zoom and centre to show every placed photo.

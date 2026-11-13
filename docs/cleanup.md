@@ -551,39 +551,6 @@ Checks: the three cargo commands; the UI checks (`smoke.js` has the Trippy step:
 Done when: `grep -rn "PLUGINS_ELSEWHERE\|TRIP_PLUGINS" crates` prints nothing.
 Commit: `plugins: the editor reads where a built-in plugin lives from its manifest`. Why: "Two lists of ids were copied by hand."
 
-### B15. Dialog helpers: one width rule and `withBusy`
-Tier: medium        Risk: low
-Why: `max-width: calc(100vw - 32px)` is typed on 10 dialog rules, and four library handlers repeat "disable the button, run, re-enable, show the error in the dialog's status line".
-Files: `crates/amb-gui/ui/style.css`, `crates/amb-gui/ui/core/core.js`, `crates/amb-gui/ui/library/denoise.js`, `crates/amb-gui/ui/library/cleanup.js`, `crates/amb-gui/ui/library/duplicates.js`.
-Steps:
-1. `style.css`: the base rule `dialog { ... width: 560px; }` (line 256) gets `max-width: calc(100vw - 32px);`. Delete ` max-width: calc(100vw - 32px);` from the ten rules that repeat it: `#looks-dialog`, `#hub-dialog`, `#export-dialog`, `dialog.plugins-dialog`, `#import-dialog, #lrcat-dialog`, `.search-dialog`, `.guide-dialog`, `.clean-dialog`, `.dupes-dialog`, `.files-dialog` (their `width` stays). `.connect-dialog` uses `min(560px, calc(100vw - 32px))`: leave it.
-2. `core.js`, after `showError`, add:
-   ```js
-   // Run `fn` with `button` disabled; an error shows in `line` (the dialog's status line).
-   // Gives true when `fn` finished, false when it threw.
-   async function withBusy(button, line, fn) {
-     button.disabled = true;
-     try {
-       await fn();
-       return true;
-     } catch (e) {
-       line.textContent = String(e);
-       return false;
-     } finally {
-       button.disabled = false;
-     }
-   }
-   ```
-3. Convert the four handlers that have exactly this shape; each keeps its own "Starting…" or "Looking…" text set before the call:
-   - `installDenoiseModel` and `runDenoise` in `crates/amb-gui/ui/library/denoise.js` (`$("denoise-install")` and `$("denoise-go")` with `$("denoise-status")`; `renderDenoise()` stays after the call, as the old `finally` ran it).
-   - `findCleanup` in `crates/amb-gui/ui/library/cleanup.js` (`$("clean-find")`, `$("clean-status")`; a `false` result returns, as the old `catch` did).
-   - `findDuplicates` in `crates/amb-gui/ui/library/duplicates.js` (`$("dupes-find")`, `$("dupes-status")`; `renderDupes()` stays after).
-4. `crates/amb-gui/ui/library/guess-places.js` (`roll` keeps its button disabled on an error), `crates/amb-gui/ui/library/bursts.js` and `crates/amb-gui/ui/library/place-picker.js` have other shapes: leave them.
-Don't: change a message, an id or the order of what happens on screen.
-Checks: the UI checks of "Checks" (`organise.js` or the scripts card A3 makes cover Clean up, duplicates and AI Denoise); open each of the three dialogs by hand and trigger an error if you can (Denoise without its model installed).
-Done when: `grep -c "max-width: calc(100vw - 32px)" crates/amb-gui/ui/style.css` prints 1 (the base rule; `.connect-dialog`'s `min(...)` line is not `max-width:`).
-Commit: `ui: one dialog width rule and a withBusy helper`. Why: "Ten copies of a width and four copies of a try-finally."
-
 ### B16. One progress helper for the editor and one for `amb`
 Tier: medium        Risk: low
 Why: the editor throttles progress events by hand three times, and `amb` prints progress with six hand-rolled `\r` loops.

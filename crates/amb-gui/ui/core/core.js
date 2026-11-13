@@ -55,6 +55,21 @@ function showError(e) {
   toast(`${e}`, true);
 }
 
+// Run `fn` with `button` disabled; an error shows in `line` (the dialog's status line).
+// Gives true when `fn` finished, false when it threw.
+async function withBusy(button, line, fn) {
+  button.disabled = true;
+  try {
+    await fn();
+    return true;
+  } catch (e) {
+    line.textContent = String(e);
+    return false;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 // "1 photo", "3 photos": `many` defaults to `one` + "s".
 function plural(n, one, many = `${one}s`) {
   return `${n} ${n === 1 ? one : many}`;

@@ -25,10 +25,8 @@ function openDuplicates() {
 }
 
 async function findDuplicates() {
-  const find = $("dupes-find");
-  find.disabled = true;
   $("dupes-status").textContent = "Looking…";
-  try {
+  await withBusy($("dupes-find"), $("dupes-status"), async () => {
     dupes.groups = await invoke("library_find_duplicates", {
       paths: dupes.scope,
       burstSeconds: Number($("dupes-burst").value) || 0,
@@ -38,11 +36,7 @@ async function findDuplicates() {
     $("dupes-status").textContent = dupes.groups.length
       ? `${plural(dupes.groups.length, "group")}: ${plural(n, "photo")} you may not need`
       : "Nothing alike found.";
-  } catch (e) {
-    $("dupes-status").textContent = String(e);
-  } finally {
-    find.disabled = false;
-  }
+  });
   renderDupes();
 }
 

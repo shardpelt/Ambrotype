@@ -53,16 +53,11 @@ function cleanStage(stage) {
 
 async function findCleanup() {
   const skip = [...$("clean-tests").querySelectorAll("input:not(:checked)")].map((b) => b.value);
-  $("clean-find").disabled = true;
   $("clean-status").textContent = "Looking…";
-  try {
+  const ok = await withBusy($("clean-find"), $("clean-status"), async () => {
     clean.found = await invoke("library_cleanup", { paths: clean.scope, skip });
-  } catch (e) {
-    $("clean-status").textContent = String(e);
-    return;
-  } finally {
-    $("clean-find").disabled = false;
-  }
+  });
+  if (!ok) return;
   if (!clean.found.length) {
     $("clean-status").textContent = "Nothing to clean up here.";
     return;

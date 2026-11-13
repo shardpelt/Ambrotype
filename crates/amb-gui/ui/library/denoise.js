@@ -42,25 +42,18 @@ async function denoiseFlow() {
 async function installDenoiseModel() {
   const m = denoise.model;
   if (!m) return;
-  $("denoise-install").disabled = true;
   $("denoise-status").textContent = "Downloading…";
-  try {
+  await withBusy($("denoise-install"), $("denoise-status"), async () => {
     await invoke("ai_model_install", { id: m.id });
     denoise.model = await denoiseModel();
     $("denoise-status").textContent = "";
-  } catch (e) {
-    $("denoise-status").textContent = String(e);
-  } finally {
-    $("denoise-install").disabled = false;
-    renderDenoise();
-  }
+  });
+  renderDenoise();
 }
 
 async function runDenoise() {
-  const go = $("denoise-go");
-  go.disabled = true;
   $("denoise-status").textContent = "Starting…";
-  try {
+  await withBusy($("denoise-go"), $("denoise-status"), async () => {
     const reports = await invoke("photo_denoise", { paths: denoise.photos, amount: Number($("denoise-amount").value) });
     $("denoise-dialog").close();
     const first = reports[0]?.output;
@@ -70,11 +63,7 @@ async function runDenoise() {
       else if (lib.dir) await loadLibrary(lib.dir);
     }
     if (reports.length === 1) await libraryOpen(first);
-  } catch (e) {
-    $("denoise-status").textContent = String(e);
-  } finally {
-    go.disabled = false;
-  }
+  });
 }
 
 function wireDenoise() {

@@ -466,6 +466,11 @@
         <p class="hint">Or choose one, or open a photo: the library shows its folder.</p>
         <button type="button" id="lib-choose-empty" class="primary">Choose folder…</button>
       </div>
+      <div id="library-reading" class="library-empty" role="status" aria-live="polite" hidden>
+        <span class="busy-inline"></span>
+        <p class="empty-title">Reading the folder…</p>
+        <p class="hint"><span id="library-reading-dir"></span><br>A memory card or a network drive can take a minute.</p>
+      </div>
       <button type="button" id="lib-fold-left" class="fold left lib-fold" title="Hide the folders (F7)">‹</button>
       <button type="button" id="lib-fold-right" class="fold right lib-fold" title="Hide the panel (F8)">›</button>
       <aside id="library-panel" class="library-panel">

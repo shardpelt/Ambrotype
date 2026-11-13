@@ -37,6 +37,7 @@ const lib = {
   beforePick: null,    // what the filters show before it
   date: null,          // only photos taken then: "2026", "2026-07" or "2026-07-14" (browse.js)
   beforeDate: null,    // what the filters show before the date filter
+  reading: null,       // the folder being read (a memory card can take a minute)
   wired: false,
 };
 
@@ -129,7 +130,17 @@ function loadLibrary(dir, more) {
   return lib.loadChain;
 }
 
+// While a folder is read the library says so, in place of its "Choose
+// folder" prompt (which would only start another read).
+function showReading(dir) {
+  lib.reading = dir;
+  $("library-reading").hidden = !dir;
+  $("library-reading-dir").textContent = dir ?? "";
+  if (dir) $("library-empty").hidden = true;
+}
+
 async function loadLibraryNow(dir, more = dir === lib.dir ? lib.more : savedMore(dir)) {
+  showReading(dir);
   lib.dir = dir;
   lib.more = more.filter((d) => d !== dir);
   if (dir) saveMore(dir, lib.more);
@@ -147,6 +158,8 @@ async function loadLibraryNow(dir, more = dir === lib.dir ? lib.more : savedMore
   } catch (e) {
     lib.photos = [];
     toast(`Couldn't read the folder: ${e}`, true);
+  } finally {
+    showReading(null);
   }
   const keep = new Set(lib.photos.map((p) => p.path));
   lib.selected = new Set([...lib.selected].filter((p) => keep.has(p)));

@@ -11,6 +11,14 @@ await t.step("Open folder shows a folder in the library", async () => {
   await t.until("the grid", () => libraryOn() && lib.photos.length > 0);
 });
 
+await t.step("a second Open folder while one is reading doesn't ask again", async () => {
+  const first = openFolder(lib.dir);
+  t.expect(t.visible("#library-reading") && !t.visible("#library-empty"), "says it's reading, no Choose folder");
+  t.expect((await openFolder(lib.dir)) === false, "the second is turned away");
+  t.expect(await first, "the first opens");
+  t.expect(!t.visible("#library-reading") && lib.photos.length > 0, "done reading");
+});
+
 await t.step("the library has no editor top bar, but keeps the tasks", async () => {
   t.expect(document.querySelector(".topbar").getBoundingClientRect().height === 0, "the top bar gone");
   t.expect($("lib-task-slot").contains($("task-bar")) && t.visible("#task-bar"), "the tasks in the library bar");

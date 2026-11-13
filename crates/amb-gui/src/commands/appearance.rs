@@ -32,7 +32,9 @@ pub(crate) struct SavedLook {
 }
 
 pub(crate) fn need_looks_dir(state: &AppState) -> Res<PathBuf> {
-    looks_dir(state).ok_or_else(|| "the app's settings folder isn't available".to_string())
+    looks_dir(state)
+        .ok_or_else(|| "the app's settings folder isn't available".to_string())
+        .map_err(Into::into)
 }
 
 /// Save a user look (a clone, a rename, an edited theme). `id` updates an
@@ -186,10 +188,9 @@ pub(crate) fn open_looks_folder(
 ) -> Res<String> {
     let dir = need_looks_dir(state.inner())?;
     for kind in ["layouts", "themes"] {
-        std::fs::create_dir_all(dir.join(kind)).map_err(|e| e.to_string())?;
+        std::fs::create_dir_all(dir.join(kind))?;
     }
     app.opener()
-        .open_path(dir.display().to_string(), None::<&str>)
-        .map_err(|e| e.to_string())?;
+        .open_path(dir.display().to_string(), None::<&str>)?;
     Ok(dir.display().to_string())
 }

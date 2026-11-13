@@ -16,7 +16,7 @@ pub(crate) async fn spot_source(
 ) -> Res<[f64; 2]> {
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let guard = slot.lock().map_err(|e| e.to_string())?;
+        let guard = slot.lock()?;
         let session = guard.as_ref().ok_or("no photo open")?;
         // A brushed spot: searched for the stroke's own shape.
         let (sx, sy) = match &points {
@@ -25,8 +25,7 @@ pub(crate) async fn spot_source(
         };
         Ok([sx, sy])
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Find dust and hairs on the scan and heal them, as one undoable step.
@@ -34,7 +33,7 @@ pub(crate) async fn spot_source(
 pub(crate) async fn find_dust(state: tauri::State<'_, AppState>) -> Res<Executed> {
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let found = s.find_dust();
         if !found.commands.is_empty() {
@@ -55,7 +54,7 @@ pub(crate) async fn find_dust(state: tauri::State<'_, AppState>) -> Res<Executed
         })
     })
     .await
-    .map_err(|e| e.to_string())?
+    ?
 }
 
 /// Remove object: the object at `point` ([x, y]) or in `rect` ([x0, y0,
@@ -77,7 +76,7 @@ pub(crate) async fn remove_object(
     };
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let found = s.remove_object(target.clone())?;
         s.execute(&[found.command], Some("remove object"))?;
@@ -98,7 +97,7 @@ pub(crate) async fn remove_object(
         })
     })
     .await
-    .map_err(|e| e.to_string())?
+    ?
 }
 
 /// What Select Object found: dabs to draw its outline with (`[x, y,
@@ -149,14 +148,13 @@ pub(crate) async fn select_object(
     };
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         Ok(Selected::of(
             s.select_object(&target, shadow == Some(true))?,
         ))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Select Object by words ("car", "the boat"): the thing in the photo the
@@ -177,12 +175,11 @@ pub(crate) async fn select_words(
         let found = model.words(&words)?;
         let like =
             |rgb: &[f32], w: usize, h: usize| model.image(rgb, w, h).map(|v| found.score(&v));
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         Ok(Selected::of(s.select_words(&like)?))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Take the selected object's shadow with it, or not.
@@ -190,14 +187,13 @@ pub(crate) async fn select_words(
 pub(crate) async fn selection_shadow(on: bool, state: tauri::State<'_, AppState>) -> Res<Selected> {
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let sel = s.selection.as_mut().ok_or("select an object first")?;
         sel.set_shadow(on);
         Ok(Selected::of(sel))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Do something with the selected object, as one step: `remove` it (one
@@ -312,8 +308,8 @@ pub(crate) async fn selection_apply(
             notes: vec![note],
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
+    .map_err(Into::into)
 }
 
 /// Heal a straight scratch along a line drawn on the photo, as one step.
@@ -325,7 +321,7 @@ pub(crate) async fn heal_line(
 ) -> Res<Executed> {
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let cmds = s.scratch_spots(from, to);
         s.execute(&cmds, Some("scratch"))?;
@@ -334,6 +330,5 @@ pub(crate) async fn heal_line(
             notes: Vec::new(),
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }

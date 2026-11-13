@@ -16,6 +16,7 @@ pub(crate) fn models_dir(state: &AppState) -> Res<PathBuf> {
         })
         .or_else(amb_ai::default_dir)
         .ok_or_else(|| "no settings folder".to_string())
+        .map_err(Into::into)
 }
 
 #[derive(Serialize)]
@@ -73,8 +74,7 @@ pub(crate) async fn ai_model_install(
             }
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
     .map_err(|e| format!("{shown}: {e}"))?;
     list(&state)
 }
@@ -112,10 +112,9 @@ pub(crate) async fn ai_model_add(
     state: tauri::State<'_, AppState>,
 ) -> Res<ModelsList> {
     let dir = models_dir(&state)?;
-    let m: amb_ai::CustomModel = serde_json::from_value(model).map_err(|e| e.to_string())?;
+    let m: amb_ai::CustomModel = serde_json::from_value(model)?;
     tauri::async_runtime::spawn_blocking(move || amb_ai::add_custom(&dir, Path::new(&file), m))
-        .await
-        .map_err(|e| e.to_string())??;
+        .await??;
     list(&state)
 }
 
@@ -201,6 +200,5 @@ pub(crate) async fn smart_search(
             indexed,
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }

@@ -63,19 +63,18 @@ pub(crate) fn set_menu(
     wanted: bool,
 ) -> Res<bool> {
     if !shown(wanted) {
-        app.remove_menu().map_err(|e| e.to_string())?;
+        app.remove_menu()?;
         if let Ok(mut m) = state.menu_items.lock() {
             m.clear();
         }
         return Ok(false);
     }
     let mut items = HashMap::new();
-    let menu = Menu::new(&app).map_err(|e| e.to_string())?;
+    let menu = Menu::new(&app)?;
     for entry in &menus {
-        menu.append(&build(&app, entry, &mut items)?)
-            .map_err(|e| e.to_string())?;
+        menu.append(&build(&app, entry, &mut items)?)?;
     }
-    app.set_menu(menu).map_err(|e| e.to_string())?;
+    app.set_menu(menu)?;
     if let Ok(mut m) = state.menu_items.lock() {
         *m = items;
     }
@@ -121,12 +120,11 @@ pub(crate) fn interface_menu(app: &AppHandle) -> Res<()> {
         items: vec![back],
     });
     let mut items = HashMap::new();
-    let menu = Menu::new(app).map_err(|e| e.to_string())?;
+    let menu = Menu::new(app)?;
     for entry in &menus {
-        menu.append(&build(app, entry, &mut items)?)
-            .map_err(|e| e.to_string())?;
+        menu.append(&build(app, entry, &mut items)?)?;
     }
-    app.set_menu(menu).map_err(|e| e.to_string())?;
+    app.set_menu(menu)?;
     if let Ok(mut m) = app.state::<AppState>().menu_items.lock() {
         *m = items;
     }
@@ -140,10 +138,10 @@ pub(crate) fn menu_enable(
     state: tauri::State<'_, AppState>,
     enabled: HashMap<String, bool>,
 ) -> Res<()> {
-    let items = state.menu_items.lock().map_err(|e| e.to_string())?;
+    let items = state.menu_items.lock()?;
     for (id, on) in enabled {
         if let Some(item) = items.get(&id) {
-            item.set_enabled(on).map_err(|e| e.to_string())?;
+            item.set_enabled(on)?;
         }
     }
     Ok(())
@@ -210,7 +208,7 @@ const NATIVE: &[&str] = &[
 
 fn native(app: &AppHandle, name: &str) -> Res<PredefinedMenuItem<Wry>> {
     if !NATIVE.contains(&name) {
-        return Err(format!("no system menu item {name:?}"));
+        return Err(format!("no system menu item {name:?}").into());
     }
     let item = match name {
         "about" => PredefinedMenuItem::about(app, None, Some(about())),
@@ -227,9 +225,9 @@ fn native(app: &AppHandle, name: &str) -> Res<PredefinedMenuItem<Wry>> {
         "fullscreen" => PredefinedMenuItem::fullscreen(app, None),
         "close_window" => PredefinedMenuItem::close_window(app, None),
         "bring_all_to_front" => PredefinedMenuItem::bring_all_to_front(app, None),
-        _ => return Err(format!("no system menu item {name:?}")),
+        _ => return Err(format!("no system menu item {name:?}").into()),
     };
-    item.map_err(|e| e.to_string())
+    Ok(item?)
 }
 
 fn about() -> AboutMetadata<'static> {

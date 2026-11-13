@@ -8,7 +8,7 @@ pub(crate) fn collections_dir(app: &tauri::AppHandle) -> Res<PathBuf> {
     app.path()
         .app_config_dir()
         .map(|d| d.join("collections"))
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 #[tauri::command]
@@ -40,8 +40,7 @@ pub(crate) async fn collection_photos(app: tauri::AppHandle, name: String) -> Re
             missing,
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 pub(crate) fn summary(
@@ -57,7 +56,9 @@ pub(crate) fn collection_set(
     name: String,
     set: String,
 ) -> Res<amb_library::collections::Summary> {
-    amb_library::collections::move_to_set(&collections_dir(&app)?, &name, &set).map(summary)
+    amb_library::collections::move_to_set(&collections_dir(&app)?, &name, &set)
+        .map(summary)
+        .map_err(Into::into)
 }
 
 /// Add photos to a collection (made if it doesn't exist).
@@ -68,7 +69,9 @@ pub(crate) fn collection_add(
     paths: Vec<String>,
 ) -> Res<amb_library::collections::Summary> {
     let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
-    amb_library::collections::add(&collections_dir(&app)?, &name, &paths).map(summary)
+    amb_library::collections::add(&collections_dir(&app)?, &name, &paths)
+        .map(summary)
+        .map_err(Into::into)
 }
 
 #[tauri::command]
@@ -78,7 +81,9 @@ pub(crate) fn collection_remove(
     paths: Vec<String>,
 ) -> Res<amb_library::collections::Summary> {
     let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
-    amb_library::collections::remove(&collections_dir(&app)?, &name, &paths).map(summary)
+    amb_library::collections::remove(&collections_dir(&app)?, &name, &paths)
+        .map(summary)
+        .map_err(Into::into)
 }
 
 #[tauri::command]
@@ -87,12 +92,14 @@ pub(crate) fn collection_rename(
     from: String,
     to: String,
 ) -> Res<amb_library::collections::Summary> {
-    amb_library::collections::rename(&collections_dir(&app)?, &from, &to).map(summary)
+    amb_library::collections::rename(&collections_dir(&app)?, &from, &to)
+        .map(summary)
+        .map_err(Into::into)
 }
 
 #[tauri::command]
 pub(crate) fn collection_delete(app: tauri::AppHandle, name: String) -> Res<()> {
-    amb_library::collections::delete(&collections_dir(&app)?, &name)
+    amb_library::collections::delete(&collections_dir(&app)?, &name).map_err(Into::into)
 }
 
 #[tauri::command]
@@ -110,12 +117,12 @@ pub(crate) fn smart_save(
     let mut c = collection;
     c.format = amb_library::smart::FORMAT.into();
     c.name = c.name.trim().to_string();
-    amb_library::smart::save(&collections_dir(&app)?, &c, previous.as_deref())
+    amb_library::smart::save(&collections_dir(&app)?, &c, previous.as_deref()).map_err(Into::into)
 }
 
 #[tauri::command]
 pub(crate) fn smart_delete(app: tauri::AppHandle, name: String) -> Res<()> {
-    amb_library::smart::delete(&collections_dir(&app)?, &name)
+    amb_library::smart::delete(&collections_dir(&app)?, &name).map_err(Into::into)
 }
 
 /// A smart collection's photos, worked out now.
@@ -131,8 +138,7 @@ pub(crate) async fn smart_photos(app: tauri::AppHandle, name: String) -> Res<Col
             missing: Vec::new(),
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Every photo the catalogue knows, newest first.
@@ -144,7 +150,7 @@ pub(crate) async fn catalog_photos() -> Res<CollectionView> {
         missing: Vec::new(),
     })
     .await
-    .map_err(|e| e.to_string())
+    .map_err(Into::into)
 }
 
 /// The Insights view's buckets (the last bucket's `max` is null: no end).
@@ -190,7 +196,7 @@ pub(crate) async fn insights_advice(photos: Vec<InsightPhoto>) -> Res<InsightNot
         }
     })
     .await
-    .map_err(|e| e.to_string())
+    .map_err(Into::into)
 }
 
 /// Forget the catalogue's photos in `folder` (the files stay). They come
@@ -253,7 +259,7 @@ pub(crate) async fn lrcat_plan(
 ) -> Res<serde_json::Value> {
     tauri::async_runtime::spawn_blocking(move || {
         let plan = amb_library::lrcat::plan(Path::new(&catalog), &lrcat_options(&from, &to))?;
-        let mut v = serde_json::to_value(&plan).map_err(|e| e.to_string())?;
+        let mut v = serde_json::to_value(&plan)?;
         v["counts"] = serde_json::json!({
             "write": plan.count("write"),
             "keep": plan.count("keep"),
@@ -261,8 +267,7 @@ pub(crate) async fn lrcat_plan(
         });
         Ok(v)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Move from a Lightroom catalogue: sidecars next to the photos, and its
@@ -279,8 +284,7 @@ pub(crate) async fn lrcat_apply(
         let plan = amb_library::lrcat::plan(Path::new(&catalog), &lrcat_options(&from, &to))?;
         Ok(amb_library::lrcat::apply(&plan, &dir))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 #[derive(Serialize)]
@@ -313,8 +317,7 @@ pub(crate) async fn import_plan(
             })
             .collect())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Import: plan again (the card may have changed) and copy, with
@@ -351,8 +354,7 @@ pub(crate) async fn import_run(
             },
         ))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 // ---------------------------------------------------------------- library folders
@@ -362,7 +364,7 @@ fn roots_file(app: &tauri::AppHandle) -> Res<PathBuf> {
     app.path()
         .app_config_dir()
         .map(|d| d.join("library-folders.json"))
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 #[derive(Serialize)]
@@ -408,7 +410,7 @@ pub(crate) async fn library_folders(app: tauri::AppHandle) -> Res<LibraryFolders
         }
     })
     .await
-    .map_err(|e| e.to_string())
+    .map_err(Into::into)
 }
 
 /// Add a library folder (a whole drive is fine) and start indexing it.
@@ -506,7 +508,7 @@ pub(crate) fn lightroom_at(config_dir: &Path) -> &'static amb_library::lightroom
 }
 
 fn lightroom(app: &tauri::AppHandle) -> Res<&'static amb_library::lightroom::Catalogues> {
-    let dir = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    let dir = app.path().app_config_dir()?;
     Ok(lightroom_at(&dir))
 }
 
@@ -585,7 +587,7 @@ pub(crate) async fn lightroom_catalogues(app: tauri::AppHandle) -> Res<Vec<LrCat
             .collect()
     })
     .await
-    .map_err(|e| e.to_string())
+    .map_err(Into::into)
 }
 
 /// Open a catalogue in place: nothing is imported or written.
@@ -596,14 +598,15 @@ pub(crate) async fn lightroom_open(app: tauri::AppHandle, path: String) -> Res<L
         let opened = c.add(Path::new(&path))?;
         Ok(lr_view(opened.catalogue.clone(), Ok(opened)))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Stop showing a catalogue; sidecars written meanwhile stay.
 #[tauri::command]
 pub(crate) fn lightroom_close(app: tauri::AppHandle, path: String) -> Res<()> {
-    lightroom(&app)?.remove(Path::new(&path))
+    lightroom(&app)?
+        .remove(Path::new(&path))
+        .map_err(Into::into)
 }
 
 /// A catalogue's collection, shown like one of ours.
@@ -628,6 +631,5 @@ pub(crate) async fn lightroom_collection(
             missing,
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }

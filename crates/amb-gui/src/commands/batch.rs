@@ -43,8 +43,7 @@ pub(crate) async fn library_find_duplicates(
             &progress,
         ))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// One burst, best first: each photo with its score and what stands out.
@@ -134,8 +133,7 @@ pub(crate) async fn library_best_in_bursts(
             .collect();
         Ok(Bursts { bursts, faces })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Clean up (library → Organise): the photos among `paths` that may go,
@@ -182,8 +180,7 @@ pub(crate) async fn library_cleanup(
             &progress,
         ))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 #[derive(Serialize)]
@@ -219,7 +216,7 @@ pub(crate) async fn negative_sync(
         };
         for (path, frame) in paths.iter().zip(&plan) {
             let cmds = amb_ops::negative::commands(&frame.settings);
-            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            let mut guard = slot.lock()?;
             let result = match guard.as_mut().filter(|s| s.path == Path::new(path)) {
                 Some(s) => s
                     .execute(&cmds, Some("sync negative roll"))
@@ -233,8 +230,7 @@ pub(crate) async fn negative_sync(
         }
         Ok(out)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// The setting groups "Paste settings" offers.
@@ -272,7 +268,7 @@ pub(crate) async fn paste_settings(
             state: None,
         };
         for target in targets.iter().filter(|t| **t != source) {
-            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            let mut guard = slot.lock()?;
             let result = match guard.as_mut().filter(|s| s.path == Path::new(target)) {
                 Some(s) => s
                     .execute(&cmds, Some("paste settings"))
@@ -286,8 +282,7 @@ pub(crate) async fn paste_settings(
         }
         Ok(out)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 #[derive(Clone, Serialize)]
@@ -354,8 +349,7 @@ pub(crate) async fn export_photos(
         );
         Ok(Some(out))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Photo Merge > HDR: merge the photos into a DNG next to them, and with
@@ -380,8 +374,7 @@ pub(crate) async fn merge_hdr(
         }
         Ok(report)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// AI Denoise: each raw into a new DNG beside it (amb_ops::denoise),
@@ -410,8 +403,7 @@ pub(crate) async fn photo_denoise(
         }
         Ok(out)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Photo Merge > Panorama: stitch the photos into a DNG next to them, each
@@ -446,8 +438,7 @@ pub(crate) async fn merge_pano(
         }
         Ok(report)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Give a merged photo the built-in Auto tone, saved to its sidecar (the
@@ -523,8 +514,7 @@ pub(crate) async fn contact_sheet(
             pages.iter().map(|p| p.display().to_string()).collect(),
         ))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// The Convert raws dialog's choices.
@@ -558,7 +548,7 @@ pub(crate) async fn convert_raws(
         "like" => Look::Like(PathBuf::from(
             options.like.ok_or("pick the photo to match first")?,
         )),
-        other => return Err(format!("unknown look {other}")),
+        other => return Err(format!("unknown look {other}").into()),
     };
     let out = if let Some(t) = crate::uitest::current() {
         Some(t.out_dir.join("converted"))
@@ -599,8 +589,7 @@ pub(crate) async fn convert_raws(
         done.left_out = left_out;
         Ok(Some(done))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Set by Stop in the Batch export dialog; read between photos.
@@ -658,8 +647,7 @@ pub(crate) async fn batch_export_plan(
             dirs: jobs.iter().map(|j| j.folder.clone()).collect(),
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 #[derive(Deserialize)]
@@ -727,8 +715,7 @@ pub(crate) async fn batch_export(
             &BATCH_STOP,
         ))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 #[tauri::command]

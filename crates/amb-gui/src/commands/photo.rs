@@ -48,7 +48,7 @@ pub(crate) async fn pick_photos(app: tauri::AppHandle) -> Res<Vec<folder::Folder
         .collect();
     tauri::async_runtime::spawn_blocking(move || folder::describe(paths))
         .await
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 /// Pick a folder and list its raws (for the collage maker).
@@ -66,8 +66,8 @@ pub(crate) async fn pick_photo_folder(
         return Ok(None);
     };
     tauri::async_runtime::spawn_blocking(move || folder::list_dir(&dir).map(Some))
-        .await
-        .map_err(|e| e.to_string())?
+        .await?
+        .map_err(Into::into)
 }
 
 #[tauri::command]
@@ -77,7 +77,7 @@ pub(crate) async fn open_photo(
     state: tauri::State<'_, AppState>,
 ) -> Res<Opened> {
     let slot = state.session.clone();
-    let proof = *state.proof.lock().map_err(|e| e.to_string())?;
+    let proof = *state.proof.lock()?;
     let opened = tauri::async_runtime::spawn_blocking(move || {
         // The photo that's open already (another interface's page asking
         // again) keeps its edits and history.
@@ -110,10 +110,9 @@ pub(crate) async fn open_photo(
         *guard = Some(s);
         Ok::<_, String>((opened, sidecar))
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     let (opened, sidecar) = opened;
-    *state.sidecar_watch.lock().map_err(|e| e.to_string())? = watch_sidecar(app, &sidecar);
+    *state.sidecar_watch.lock()? = watch_sidecar(app, &sidecar);
     Ok(opened)
 }
 
@@ -165,7 +164,7 @@ pub(crate) struct Reloaded {
 /// changed it since we read or wrote it. `None` when it is as we left it.
 #[tauri::command]
 pub(crate) fn reload_sidecar(state: tauri::State<'_, AppState>) -> Res<Option<Reloaded>> {
-    let mut guard = state.session.lock().map_err(|e| e.to_string())?;
+    let mut guard = state.session.lock()?;
     let Some(s) = guard.as_mut() else {
         return Ok(None);
     };
@@ -187,7 +186,7 @@ pub(crate) fn execute(
     group: Option<String>,
     state: tauri::State<'_, AppState>,
 ) -> Res<Executed> {
-    let mut guard = state.session.lock().map_err(|e| e.to_string())?;
+    let mut guard = state.session.lock()?;
     let s = guard.as_mut().ok_or("no photo open")?;
     let outcomes = s.execute(&commands, group.as_deref())?;
     let notes = outcomes
@@ -207,8 +206,12 @@ pub(crate) fn execute(
 
 #[tauri::command]
 pub(crate) fn save_sidecar(state: tauri::State<'_, AppState>) -> Res<String> {
-    let mut guard = state.session.lock().map_err(|e| e.to_string())?;
-    guard.as_mut().ok_or("no photo open")?.save_sidecar()
+    let mut guard = state.session.lock()?;
+    guard
+        .as_mut()
+        .ok_or("no photo open")?
+        .save_sidecar()
+        .map_err(Into::into)
 }
 
 #[derive(Serialize)]
@@ -221,8 +224,7 @@ pub(crate) struct InfoState {
 pub(crate) fn info_state(state: &AppState) -> Res<InfoState> {
     let info = state
         .session
-        .lock()
-        .map_err(|e| e.to_string())?
+        .lock()?
         .as_ref()
         .map(|s| s.info.clone())
         .unwrap_or_default();
@@ -243,7 +245,7 @@ pub(crate) fn set_photo_info(
     state: tauri::State<'_, AppState>,
 ) -> Res<InfoState> {
     let saved = {
-        let mut guard = state.session.lock().map_err(|e| e.to_string())?;
+        let mut guard = state.session.lock()?;
         let s = guard.as_mut().ok_or("no photo is open")?;
         // Only Rotate and Flip turn a photo: a rating or keyword written
         // with the info the page had keeps the turn made since.
@@ -271,10 +273,10 @@ pub(crate) fn trial_overrides(
     commands: Vec<Command>,
     state: tauri::State<'_, AppState>,
 ) -> Res<serde_json::Map<String, serde_json::Value>> {
-    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    let guard = state.session.lock()?;
     let s = guard.as_ref().ok_or("no photo open")?;
     let mut trial = s.state.clone();
-    trial.execute_all(&commands).map_err(|e| e.to_string())?;
+    trial.execute_all(&commands)?;
     let before = s.state.to_json()["settings"].clone();
     let after = trial.to_json()["settings"].clone();
     let mut out: serde_json::Map<String, serde_json::Value> = after
@@ -337,8 +339,7 @@ pub(crate) async fn fetch_lens_db(state: tauri::State<'_, AppState>) -> Res<Lens
         let _ = lens.set(LensSources::load_default());
         Ok(())
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     Ok(lens_db_state(state))
 }
 
@@ -361,7 +362,7 @@ pub(crate) async fn copy_image(
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         let none = Default::default();
         let jpeg = {
-            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            let mut guard = slot.lock()?;
             match guard.as_mut().filter(|s| s.path == Path::new(&path)) {
                 Some(s) => {
                     // In sRGB, not the monitor's colours the preview is in.
@@ -380,9 +381,9 @@ pub(crate) async fn copy_image(
         };
         amb_library::duplicates::decode_jpeg(&jpeg)
             .ok_or_else(|| "couldn't render the photo".to_string())
+            .map_err(Into::into)
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     let (w, h) = rgb.dimensions();
     let rgba: Vec<u8> = rgb.pixels().flat_map(|p| [p[0], p[1], p[2], 255]).collect();
     app.clipboard()
@@ -395,7 +396,7 @@ pub(crate) async fn copy_image(
 #[tauri::command]
 pub(crate) fn copy_text(app: tauri::AppHandle, text: String) -> Res<()> {
     use tauri_plugin_clipboard_manager::ClipboardExt;
-    app.clipboard().write_text(text).map_err(|e| e.to_string())
+    app.clipboard().write_text(text).map_err(Into::into)
 }
 
 /// The camera profiles found for the open photo's camera; `None` while the
@@ -405,7 +406,7 @@ pub(crate) fn camera_profiles(state: tauri::State<'_, AppState>) -> Res<Option<V
     let Some(lens) = state.lens.get() else {
         return Ok(None);
     };
-    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    let guard = state.session.lock()?;
     Ok(Some(
         guard
             .as_ref()

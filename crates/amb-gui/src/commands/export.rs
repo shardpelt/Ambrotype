@@ -24,7 +24,7 @@ pub(crate) fn caption_preview(
     template: String,
     state: tauri::State<'_, AppState>,
 ) -> Res<(String, Vec<(String, String)>)> {
-    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    let guard = state.session.lock()?;
     let text = guard
         .as_ref()
         .map(|s| s.caption_text(&template))
@@ -94,7 +94,7 @@ impl ResizeChoice {
         use amb_export::Resize;
         let v = self.value;
         if !(v.is_finite() && v > 0.0) {
-            return Err(format!("resize: {v} isn't a size"));
+            return Err(format!("resize: {v} isn't a size").into());
         }
         let px = v.round().clamp(1.0, 65_535.0) as u32;
         Ok(match self.mode.as_str() {
@@ -104,7 +104,7 @@ impl ResizeChoice {
             "height" => Resize::Height(px),
             "mp" => Resize::Megapixels(v),
             "percent" => Resize::Percent(v),
-            other => return Err(format!("unknown resize {other:?}")),
+            other => return Err(format!("unknown resize {other:?}").into()),
         })
     }
 }
@@ -137,7 +137,7 @@ pub(crate) async fn share_compare(
     state: tauri::State<'_, AppState>,
 ) -> Res<Option<String>> {
     let stem = {
-        let guard = state.session.lock().map_err(|e| e.to_string())?;
+        let guard = state.session.lock()?;
         let s = guard.as_ref().ok_or("open a photo first")?;
         s.path
             .file_stem()
@@ -166,14 +166,13 @@ pub(crate) async fn share_compare(
     let slot = state.session.clone();
     let lens = state.lens.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         s.compare_page(&out, 2048, lens)?;
         Ok(Some(out.display().to_string()))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// "Export Edit Replay…": a video of the open photo's edit from its
@@ -187,7 +186,7 @@ pub(crate) async fn export_replay(
     state: tauri::State<'_, AppState>,
 ) -> Res<Option<amb_ops::replay::Replay>> {
     let photo = {
-        let guard = state.session.lock().map_err(|e| e.to_string())?;
+        let guard = state.session.lock()?;
         guard.as_ref().ok_or("open a photo first")?.path.clone()
     };
     // The History as it is now, with the photo's last change.
@@ -227,8 +226,8 @@ pub(crate) async fn export_replay(
             },
         )
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
+    .map_err(Into::into)
 }
 
 #[tauri::command]
@@ -290,7 +289,7 @@ pub(crate) async fn export(
                 };
             }
         }
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let session = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         let r = session.export(Path::new(&path), &s, lens)?;
@@ -303,8 +302,7 @@ pub(crate) async fn export(
             small: r.small.map(|c| (c.path.display().to_string(), c.bytes)),
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// The export dialog's choices as export settings (without the photo's tags).
@@ -344,7 +342,7 @@ pub(crate) fn export_settings(options: &ExportOptions) -> Res<amb_export::Export
             Some("444") => Some(amb_export::Subsampling::S444),
             Some("422") => Some(amb_export::Subsampling::S422),
             Some("420") => Some(amb_export::Subsampling::S420),
-            Some(other) => return Err(format!("unknown subsampling {other:?}")),
+            Some(other) => return Err(format!("unknown subsampling {other:?}").into()),
         };
         s.progressive = options.progressive;
         if let Some(speed) = options.avif_speed {
@@ -435,7 +433,7 @@ pub(crate) async fn share_border_preset(
     else {
         return Ok(None);
     };
-    let text = serde_json::to_string_pretty(&border).map_err(|e| e.to_string())? + "\n";
+    let text = serde_json::to_string_pretty(&border)? + "\n";
     std::fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
     Ok(Some(path.display().to_string()))
 }
@@ -459,6 +457,7 @@ pub(crate) async fn import_border_preset(
     amb_export::border::Border::from_json(&text)
         .map(Some)
         .map_err(|e| format!("{}: {e}", path.display()))
+        .map_err(Into::into)
 }
 
 /// A PNG logo for the export watermark.
@@ -525,10 +524,7 @@ pub(crate) fn after_export(
     }
     match action.as_str() {
         "" => Ok(()),
-        "reveal" => app
-            .opener()
-            .reveal_items_in_dir(&paths)
-            .map_err(|e| e.to_string()),
+        "reveal" => app.opener().reveal_items_in_dir(&paths).map_err(Into::into),
         "open" => {
             let with = state.prefs(|p| p.edit_in.app.clone()).ok().flatten();
             // A batch could start hundreds of windows: the first few.
@@ -539,7 +535,7 @@ pub(crate) fn after_export(
             }
             Ok(())
         }
-        other => Err(format!("unknown after-export action {other:?}")),
+        other => Err(format!("unknown after-export action {other:?}").into()),
     }
 }
 
@@ -561,7 +557,7 @@ pub(crate) async fn edit_in(
         s.color_space = amb_color::space::OutputSpace::from_id(&settings.color_space)
             .unwrap_or(amb_color::space::OutputSpace::ProPhoto);
         s.metadata = MetadataPolicy::All;
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let session = guard.as_mut().ok_or("no photo open")?;
         let i = &session.info;
         s.tags = amb_export::exif::Tags {
@@ -579,8 +575,7 @@ pub(crate) async fn edit_in(
         session.export(&out, &s, lens)?;
         Ok(out)
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     let with = state.prefs(|p| p.edit_in.app.clone()).ok().flatten();
     app.opener()
         .open_path(path.display().to_string(), with)

@@ -97,9 +97,9 @@ fn write_guides(dir: &Path) -> Res<()> {
     for g in amb_protocol::guides::GUIDES {
         let path = dir.join(g.path);
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+            std::fs::create_dir_all(parent)?;
         }
-        std::fs::write(&path, g.text).map_err(|e| e.to_string())?;
+        std::fs::write(&path, g.text)?;
     }
     Ok(())
 }
@@ -127,6 +127,7 @@ pub(crate) fn ai_guide(name: String) -> Res<String> {
     amb_protocol::guides::find(&name)
         .map(|g| g.text.to_string())
         .ok_or_else(|| format!("no guide {name}"))
+        .map_err(Into::into)
 }
 
 /// Open the system's own terminal in the photo's folder, with `amb` on the
@@ -144,11 +145,7 @@ pub(crate) fn open_terminal(
     let path = path_with(amb_dir.as_deref());
     let agent = match agent.filter(|a| !a.trim().is_empty()) {
         Some(template) => {
-            let guides = app
-                .path()
-                .app_data_dir()
-                .map_err(|e| e.to_string())?
-                .join("guides");
+            let guides = app.path().app_data_dir()?.join("guides");
             write_guides(&guides)?;
             let photo = state
                 .session
@@ -162,12 +159,11 @@ pub(crate) fn open_terminal(
     };
     let script = |ext: &str, text: String| -> Res<PathBuf> {
         let file = std::env::temp_dir().join(format!("ambrotype-terminal.{ext}"));
-        std::fs::write(&file, text).map_err(|e| e.to_string())?;
+        std::fs::write(&file, text)?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o755))
-                .map_err(|e| e.to_string())?;
+            std::fs::set_permissions(&file, std::fs::Permissions::from_mode(0o755))?;
         }
         Ok(file)
     };
@@ -234,6 +230,7 @@ pub(crate) fn open_terminal(
     cmd.spawn()
         .map(drop)
         .map_err(|e| format!("couldn't open a terminal: {e}"))
+        .map_err(Into::into)
 }
 
 fn which(name: &str, path: Option<&std::ffi::OsStr>) -> bool {

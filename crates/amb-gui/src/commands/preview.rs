@@ -33,7 +33,7 @@ pub(crate) async fn preview(
             .iter()
             .filter_map(|(k, v)| Some((k.clone(), to_value(v)?)))
             .collect();
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         let gpu = gpu.get().copied().flatten();
@@ -54,16 +54,14 @@ pub(crate) async fn preview(
             lens_profile: p.lens_profile,
             gpu: p.gpu.as_ref().and_then(|g| g.as_ref().ok().cloned()),
             cpu_reason: p.gpu.and_then(Result::err),
-        })
-        .map_err(|e| e.to_string())?;
+        })?;
         let mut out = Vec::with_capacity(4 + meta.len() + p.jpeg.len());
         out.extend_from_slice(&(meta.len() as u32).to_le_bytes());
         out.extend_from_slice(&meta);
         out.extend_from_slice(&p.jpeg);
         Ok(Response::new(out))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 #[derive(Serialize)]
@@ -95,14 +93,13 @@ pub(crate) async fn region_draft(
             .iter()
             .filter_map(|(k, v)| Some((k.clone(), to_value(v)?)))
             .collect();
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         let r = s.region_draft(cx, cy, width, height, &overrides, lens);
         framed_region(&r)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// A region as the page reads it: the length of its JSON facts, the facts,
@@ -116,8 +113,7 @@ pub(crate) fn framed_region(r: &session::Region) -> Res<Response> {
         full_width: r.full_width,
         full_height: r.full_height,
         millis: r.millis,
-    })
-    .map_err(|e| e.to_string())?;
+    })?;
     let mut out = Vec::with_capacity(4 + meta.len() + r.jpeg.len());
     out.extend_from_slice(&(meta.len() as u32).to_le_bytes());
     out.extend_from_slice(&meta);
@@ -139,14 +135,13 @@ pub(crate) async fn region(
     let slot = state.session.clone();
     let lens = state.lens.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         let r = s.region(cx, cy, width, height, before, clipping, lens);
         framed_region(&r)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Soft proofing: show the photo as it exports to `space` (an output space
@@ -165,8 +160,8 @@ pub(crate) fn set_proof(
         )),
         None => None,
     };
-    *state.proof.lock().map_err(|e| e.to_string())? = proof;
-    if let Some(s) = state.session.lock().map_err(|e| e.to_string())?.as_mut() {
+    *state.proof.lock()? = proof;
+    if let Some(s) = state.session.lock()?.as_mut() {
         s.set_proof(proof);
     }
     Ok(())

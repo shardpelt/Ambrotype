@@ -14,6 +14,7 @@ mod checks;
 mod collages;
 mod commands;
 mod config;
+mod error;
 mod folder;
 mod hub;
 mod interface;
@@ -60,7 +61,7 @@ use state::{AppState, empty_lens, save_open_edits};
 /// Recipes the user saved, per plugin id.
 type PluginRecipes = std::collections::BTreeMap<String, Vec<amb_plugin::Recipe>>;
 
-type Res<T> = Result<T, String>;
+pub(crate) use error::Res;
 
 fn to_value(v: &serde_json::Value) -> Option<Value> {
     Some(match v {
@@ -226,7 +227,7 @@ fn main() {
             if let tauri::RunEvent::ExitRequested { .. } = event {
                 let state = app.state::<AppState>();
                 if let Err(e) = save_open_edits(&state.session) {
-                    eprintln!("could not save the open photo's edits: {e}");
+                    eprintln!("could not save the open photo's edits: {}", e.text());
                 }
             }
             // Moved to another monitor: show the preview in its colours.

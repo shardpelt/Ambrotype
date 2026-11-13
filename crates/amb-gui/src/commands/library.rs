@@ -7,8 +7,8 @@ use crate::*;
 #[tauri::command]
 pub(crate) async fn folder_photos(path: String) -> Res<Vec<folder::FolderPhoto>> {
     tauri::async_runtime::spawn_blocking(move || folder::list(Path::new(&path)))
-        .await
-        .map_err(|e| e.to_string())?
+        .await?
+        .map_err(Into::into)
 }
 
 /// One photo as the viewer's info panel shows it: the library's record (its
@@ -35,8 +35,7 @@ pub(crate) async fn photo_details(path: String) -> Res<PhotoDetails> {
             .map(|m| m.len());
         Ok(PhotoDetails { photo, bytes })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// The JPEGs shot with these raws, which the library shows as one photo
@@ -48,7 +47,7 @@ pub(crate) async fn library_twin_jpegs(paths: Vec<String>) -> Res<Vec<library::L
         library::list_paths(&amb_library::folder::raw_twins(&raws)).0
     })
     .await
-    .map_err(|e| e.to_string())
+    .map_err(Into::into)
 }
 
 /// A small JPEG of a raw for the filmstrip (cached in the app's cache folder).
@@ -76,8 +75,8 @@ pub(crate) async fn thumbnail(
         }
         .map(Response::new)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
+    .map_err(Into::into)
 }
 
 /// Watch `dirs` (the library's folders and the filmstrip's) for photos
@@ -93,7 +92,7 @@ pub(crate) fn watch_folders(
 ) -> Res<()> {
     use notify::{EventKind, RecursiveMode, Watcher};
     use std::sync::atomic::{AtomicBool, Ordering};
-    let mut slot = state.folder_watch.lock().map_err(|e| e.to_string())?;
+    let mut slot = state.folder_watch.lock()?;
     *slot = None;
     if dirs.is_empty() {
         return Ok(());
@@ -121,8 +120,7 @@ pub(crate) fn watch_folders(
                 let _ = app.emit("folder-changed", ());
             });
         }
-    })
-    .map_err(|e| e.to_string())?;
+    })?;
     let mode = if recursive {
         RecursiveMode::Recursive
     } else {
@@ -151,8 +149,8 @@ pub(crate) async fn library_list(
             .collect();
         library::list_many(&dirs, subfolders.unwrap_or(false))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
+    .map_err(Into::into)
 }
 
 /// The folders inside `dir`, for the library's folder strip.
@@ -160,7 +158,7 @@ pub(crate) async fn library_list(
 pub(crate) async fn library_subfolders(dir: String) -> Res<Vec<amb_library::folder::Subfolder>> {
     tauri::async_runtime::spawn_blocking(move || amb_library::folder::subfolders(Path::new(&dir)))
         .await
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 /// Pick a folder for the library.
@@ -197,8 +195,7 @@ pub(crate) async fn library_set_info(
         }
         Ok(out)
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     state.change_prefs(|p| {
         let recent = &mut p.recent_keywords;
         for k in updates.iter().flat_map(|u| u.info.keywords.iter()).rev() {
@@ -217,13 +214,13 @@ pub(crate) fn change_one(
     path: &str,
     change: &library::InfoChange,
 ) -> Res<amb_protocol::sidecar::PhotoInfo> {
-    let mut guard = slot.lock().map_err(|e| e.to_string())?;
+    let mut guard = slot.lock()?;
     match guard.as_mut().filter(|s| s.path == Path::new(path)) {
         Some(s) => {
             let new = change.apply(&change.base(s.info.clone(), Path::new(path))?);
-            s.set_info(&new)
+            s.set_info(&new).map_err(Into::into)
         }
-        None => library::change_info(Path::new(path), change),
+        None => library::change_info(Path::new(path), change).map_err(Into::into),
     }
 }
 
@@ -262,8 +259,8 @@ pub(crate) async fn create_virtual_copy(
         };
         library::create_virtual_copy(&photo, &settings, keywords).map(|p| p.display().to_string())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
+    .map_err(Into::into)
 }
 
 /// Delete a virtual copy (not while it's open in the editor).
@@ -272,14 +269,13 @@ pub(crate) fn delete_virtual_copy(path: String, state: tauri::State<'_, AppState
     let copy = PathBuf::from(&path);
     let open = state
         .session
-        .lock()
-        .map_err(|e| e.to_string())?
+        .lock()?
         .as_ref()
         .is_some_and(|s| s.path == copy);
     if open {
         return Err("this copy is open in the editor; open another photo first".into());
     }
-    library::delete_virtual_copy(&copy)
+    library::delete_virtual_copy(&copy).map_err(Into::into)
 }
 
 /// Pick a folder (import source or destination).

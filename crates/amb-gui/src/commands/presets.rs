@@ -47,15 +47,14 @@ pub(crate) async fn auto_settings(
     let slot = state.session.clone();
     let lens = state.lens.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         Ok(amb_library::look::commands(
             &s.auto(tone, white, lens).changes,
         ))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Find the settings that make the open photo look like `references`.
@@ -76,7 +75,7 @@ pub(crate) async fn match_look(
         let paths: Vec<&Path> = references.iter().map(Path::new).collect();
         // The references are measured before the photo is locked.
         let target = amb_library::look::target_look(&paths)?;
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         let result = s.match_look(&target, parts, lens);
@@ -118,8 +117,7 @@ pub(crate) async fn match_look(
             renders: result.evaluations,
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// The presets starred as favourites (paths).
@@ -207,7 +205,7 @@ pub(crate) fn delete_preset(path: String, state: tauri::State<'_, AppState>) -> 
     if !own.is_some_and(|o| preset_files::preset_deletable(&file, &o)) {
         return Err("Only presets saved in Ambrotype can be deleted here. Hide it instead.".into());
     }
-    let real = std::fs::canonicalize(&file).map_err(|e| e.to_string())?;
+    let real = std::fs::canonicalize(&file)?;
     amb_library::files::trash_files(&[real])?;
     state.change_prefs(|p| {
         p.preset_favourites.retain(|x| *x != path);
@@ -228,7 +226,7 @@ pub(crate) fn mask_effects(state: tauri::State<'_, AppState>) -> Res<MaskEffects
     struct File {
         effects: Vec<MaskEffect>,
     }
-    let file: File = serde_json::from_str(BUILTIN_MASK_EFFECTS).map_err(|e| e.to_string())?;
+    let file: File = serde_json::from_str(BUILTIN_MASK_EFFECTS)?;
     Ok(MaskEffects {
         builtin: file.effects,
         mine: state.prefs(|p| p.mask_effects.clone())?,
@@ -274,13 +272,13 @@ pub(crate) async fn presets(state: tauri::State<'_, AppState>) -> Res<Vec<Preset
     let own = own_presets_dir(state.inner());
     tauri::async_runtime::spawn_blocking(move || preset_files::scan_presets(&dirs, own.as_deref()))
         .await
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 /// The folders presets are read from: the ones added, and the app's own
 /// ("Save as preset…") when it exists.
 fn preset_folders(state: &AppState) -> Res<Vec<PathBuf>> {
-    let mut dirs = state.preset_dirs.lock().map_err(|e| e.to_string())?.clone();
+    let mut dirs = state.preset_dirs.lock()?.clone();
     if let Some(own) = own_presets_dir(state).filter(|d| d.is_dir() && !dirs.contains(d)) {
         dirs.push(own);
     }
@@ -302,7 +300,7 @@ pub(crate) async fn save_preset(
 ) -> Res<Vec<PresetEntry>> {
     let dir = own_presets_dir(state.inner()).ok_or("the settings folder isn't available")?;
     let settings = {
-        let guard = state.session.lock().map_err(|e| e.to_string())?;
+        let guard = state.session.lock()?;
         guard
             .as_ref()
             .ok_or("open a photo first")?
@@ -313,8 +311,7 @@ pub(crate) async fn save_preset(
     tauri::async_runtime::spawn_blocking(move || {
         preset_files::save_preset(&dir, &name, &group, &settings, true)
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     presets(state).await
 }
 
@@ -356,8 +353,7 @@ pub(crate) async fn fuji_recipe(
             path.display().to_string(),
         ))
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     Ok(FujiPreset {
         name,
         sensor,
@@ -379,7 +375,7 @@ pub(crate) async fn save_preset_to(
     state: tauri::State<'_, AppState>,
 ) -> Res<Option<Vec<PresetEntry>>> {
     let settings = {
-        let guard = state.session.lock().map_err(|e| e.to_string())?;
+        let guard = state.session.lock()?;
         guard
             .as_ref()
             .ok_or("open a photo first")?
@@ -406,14 +402,13 @@ pub(crate) async fn save_preset_to(
     tauri::async_runtime::spawn_blocking(move || {
         preset_files::save_preset(&target, &name, &group, &settings, false)
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     // Listed from now on, unless a preset folder already holds it. The
     // settings path is read first: save_config takes it before preset_dirs,
     // so taking it while holding preset_dirs could deadlock.
     let own = own_presets_dir(state.inner());
     {
-        let mut dirs = state.preset_dirs.lock().map_err(|e| e.to_string())?;
+        let mut dirs = state.preset_dirs.lock()?;
         if !dirs.iter().chain(own.iter()).any(|d| folder.starts_with(d)) {
             dirs.push(folder);
         }
@@ -437,15 +432,11 @@ pub(crate) fn preset_submit(
     let index = crate::commands::hub::hub_index(state.inner());
     match crate::hub::submit_preset_url(&index, &name, &text)? {
         Ok(url) => {
-            app.opener()
-                .open_url(url, None::<&str>)
-                .map_err(|e| e.to_string())?;
+            app.opener().open_url(url, None::<&str>)?;
             Ok("link")
         }
         Err(upload) => {
-            app.opener()
-                .open_url(upload, None::<&str>)
-                .map_err(|e| e.to_string())?;
+            app.opener().open_url(upload, None::<&str>)?;
             let _ = app.opener().reveal_item_in_dir(&path);
             Ok("upload")
         }
@@ -456,9 +447,7 @@ pub(crate) fn preset_submit(
 #[tauri::command]
 pub(crate) fn reveal_file(app: tauri::AppHandle, path: String) -> Res<()> {
     use tauri_plugin_opener::OpenerExt;
-    app.opener()
-        .reveal_item_in_dir(&path)
-        .map_err(|e| e.to_string())
+    app.opener().reveal_item_in_dir(&path).map_err(Into::into)
 }
 
 #[tauri::command]
@@ -474,7 +463,7 @@ pub(crate) async fn add_preset_folder(
         .and_then(|p| p.into_path().ok())
     {
         {
-            let mut dirs = state.preset_dirs.lock().map_err(|e| e.to_string())?;
+            let mut dirs = state.preset_dirs.lock()?;
             if !dirs.contains(&dir) {
                 dirs.push(dir);
             }
@@ -573,10 +562,10 @@ pub(crate) fn open_luts_folder(
     state: tauri::State<'_, AppState>,
 ) -> Res<()> {
     let dir = luts_dir(&state).ok_or("the LUT folder isn't available")?;
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&dir)?;
     app.opener()
         .open_path(dir.display().to_string(), None::<&str>)
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 /// Run the same edit commands on several photos (a preset on the whole
@@ -599,7 +588,7 @@ pub(crate) async fn apply_to_photos(
             odd: 0,
         };
         for path in &paths {
-            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            let mut guard = slot.lock()?;
             let result = match guard.as_mut().filter(|s| s.path == Path::new(path)) {
                 Some(s) => s
                     .execute(&commands, Some(&label))
@@ -613,8 +602,7 @@ pub(crate) async fn apply_to_photos(
         }
         Ok(out)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 #[derive(Serialize)]
@@ -637,7 +625,7 @@ pub(crate) async fn preset_thumbnails(
     let slot = state.session.clone();
     let lens = state.lens.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("open a photo first")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         Ok(paths
@@ -666,8 +654,7 @@ pub(crate) async fn preset_thumbnails(
             })
             .collect())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Surprise me: `count` random looks from the built-in Random look plugin
@@ -684,7 +671,7 @@ pub(crate) async fn surprise(
     let slot = state.session.clone();
     let lens = state.lens.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("open a photo first")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         (0..count.min(12) as u64)
@@ -694,7 +681,7 @@ pub(crate) async fn surprise(
                 let commands = plugin.run(&ctx, &params)?.commands;
                 // The look on a copy of the edit, shown as overrides.
                 let mut trial = s.state.clone();
-                trial.execute_all(&commands).map_err(|e| e.to_string())?;
+                trial.execute_all(&commands)?;
                 let overrides: BTreeMap<String, Value> = trial
                     .settings()
                     .iter()
@@ -710,6 +697,5 @@ pub(crate) async fn surprise(
             })
             .collect()
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }

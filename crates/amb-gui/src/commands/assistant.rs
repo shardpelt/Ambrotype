@@ -15,15 +15,10 @@ pub(crate) async fn assistant_settings(
     state: tauri::State<'_, AppState>,
 ) -> Res<AssistantSettings> {
     let provider = state.prefs(|p| p.assistant.clone())?;
-    let session_key = state
-        .assistant_key
-        .lock()
-        .map_err(|e| e.to_string())?
-        .is_some();
+    let session_key = state.assistant_key.lock()?.is_some();
     let p = provider.clone();
-    let saved = tauri::async_runtime::spawn_blocking(move || assistant::load_key(&p).is_some())
-        .await
-        .map_err(|e| e.to_string())?;
+    let saved =
+        tauri::async_runtime::spawn_blocking(move || assistant::load_key(&p).is_some()).await?;
     Ok(AssistantSettings {
         provider,
         has_key: saved || session_key,
@@ -44,10 +39,8 @@ pub(crate) async fn assistant_save(
     };
     let p = provider.clone();
     let k = key.clone();
-    let stored = tauri::async_runtime::spawn_blocking(move || assistant::store_key(&p, &k))
-        .await
-        .map_err(|e| e.to_string())?;
-    let mut session_key = state.assistant_key.lock().map_err(|e| e.to_string())?;
+    let stored = tauri::async_runtime::spawn_blocking(move || assistant::store_key(&p, &k)).await?;
+    let mut session_key = state.assistant_key.lock()?;
     match stored {
         Ok(()) => {
             *session_key = None;
@@ -79,11 +72,7 @@ pub(crate) async fn assistant_ask(
     state: tauri::State<'_, AppState>,
 ) -> Res<AssistantAnswer> {
     let provider = state.prefs(|p| p.assistant.clone())?;
-    let session_key = state
-        .assistant_key
-        .lock()
-        .map_err(|e| e.to_string())?
-        .clone();
+    let session_key = state.assistant_key.lock()?.clone();
     let slot = state.session.clone();
     let lens = state.lens.clone();
     let log = assistant_log_path(&state);
@@ -92,7 +81,7 @@ pub(crate) async fn assistant_ask(
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         let photo = slot
             .lock()
-            .map_err(|e| e.to_string())?
+            ?
             .as_ref()
             .ok_or("no photo open")?
             .path
@@ -100,7 +89,7 @@ pub(crate) async fn assistant_ask(
         // The photo is locked only to look and to edit, not while the
         // model thinks; a request ends if another photo was opened.
         let with_photo = |f: &mut dyn FnMut(&mut Session) -> Res<String>| -> Res<String> {
-            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            let mut guard = slot.lock()?;
             match guard.as_mut() {
                 Some(s) if s.path == photo => f(s),
                 _ => Err("another photo was opened; the request stopped".into()),
@@ -116,14 +105,15 @@ pub(crate) async fn assistant_ask(
                 s.on_screen = on_screen;
                 Ok(plugins::base64(&p.jpeg))
             })
+            .map_err(String::from)
         };
         let outcome = assistant::converse(
             |messages| assistant::call(&provider, key.as_deref(), &system, messages),
             history,
             &request,
-            || with_photo(&mut |s| Ok(s.assistant_context(lens))),
+            || with_photo(&mut |s| Ok(s.assistant_context(lens))).map_err(Into::into),
             see.unwrap_or(false)
-                .then_some(&mut picture as &mut dyn FnMut() -> Res<String>),
+                .then_some(&mut picture as &mut dyn FnMut() -> Result<String, String>),
             |items| {
                 // Every edit the model asks for is logged, done or not.
                 let logged = |result: &Res<String>| {
@@ -133,14 +123,14 @@ pub(crate) async fn assistant_ask(
                             "photo": photo.display().to_string(),
                             "request": request,
                             "edits": items,
-                            "result": match result { Ok(r) => r.clone(), Err(e) => format!("error: {e}") },
+                            "result": match result { Ok(r) => r.clone(), Err(e) => format!("error: {}", e.text()) },
                         }),
                     );
                 };
                 let commands = match amb_protocol::compact::parse(items).map_err(|e| e.to_string()) {
                     Ok(c) => c,
                     Err(e) => {
-                        logged(&Err(e.clone()));
+                        logged(&Err(e.clone().into()));
                         return Err(e);
                     }
                 };
@@ -161,10 +151,10 @@ pub(crate) async fn assistant_ask(
                     Ok(report.to_brief())
                 });
                 logged(&done);
-                done
+                done.map_err(Into::into)
             },
         )?;
-        let guard = slot.lock().map_err(|e| e.to_string())?;
+        let guard = slot.lock()?;
         let s = guard.as_ref().ok_or("no photo open")?;
         Ok(AssistantAnswer {
             outcome,
@@ -172,7 +162,7 @@ pub(crate) async fn assistant_ask(
         })
     })
     .await
-    .map_err(|e| e.to_string())?
+    ?
 }
 
 /// The assistant's log: one JSON line per edit it asked for (the photo,
@@ -210,7 +200,7 @@ pub(crate) fn open_assistant_log(
     }
     app.opener()
         .open_path(path.display().to_string(), None::<&str>)
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 #[cfg(test)]

@@ -22,8 +22,7 @@ pub(crate) async fn duplicate_preset(
     let copy = tauri::async_runtime::spawn_blocking(move || {
         preset_files::duplicate_preset(Path::new(&path), &own)
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     Ok(DuplicatedPreset {
         presets: presets(state).await?,
         path: copy.display().to_string(),
@@ -43,11 +42,10 @@ pub(crate) fn preset_contents(
     path: String,
     state: tauri::State<'_, AppState>,
 ) -> Res<PresetContents> {
-    let preset = amb_presets::Preset::from_path(Path::new(&path)).map_err(|e| e.to_string())?;
+    let preset = amb_presets::Preset::from_path(Path::new(&path))?;
     let photo = state
         .session
-        .lock()
-        .map_err(|e| e.to_string())?
+        .lock()?
         .as_ref()
         .map(|s| preset_files::photo_additions(s.state.settings(), &preset.settings))
         .unwrap_or_default();
@@ -77,7 +75,7 @@ pub(crate) async fn update_preset(
         );
     };
     let photo = if from_photo {
-        let guard = state.session.lock().map_err(|e| e.to_string())?;
+        let guard = state.session.lock()?;
         Some(
             guard
                 .as_ref()
@@ -92,8 +90,7 @@ pub(crate) async fn update_preset(
     let moved = tauri::async_runtime::spawn_blocking(move || {
         preset_files::update_preset(&file, &own, &name, &group, &keep, photo.as_ref())
     })
-    .await
-    .map_err(|e| e.to_string())??
+    .await??
     .display()
     .to_string();
     if moved != path {

@@ -22,7 +22,7 @@ pub(crate) async fn pick_gpx(app: tauri::AppHandle) -> Option<String> {
 pub(crate) fn open_osm_copyright(app: tauri::AppHandle) -> Res<()> {
     app.opener()
         .open_url("https://www.openstreetmap.org/copyright", None::<&str>)
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 /// What matching a track did.
@@ -79,8 +79,7 @@ pub(crate) async fn library_match_gpx(
         }
         Ok(out)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Guess places for those of `paths` without one, from those with one:
@@ -114,8 +113,7 @@ pub(crate) async fn library_guess_places(
             .collect();
         Ok(amb_library::places::guess(&photos, within, offset))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// A place found by name or address.
@@ -169,8 +167,7 @@ pub(crate) async fn geocode(query: String) -> Res<Vec<Found>> {
             })
             .collect())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// UTC seconds as "YYYY-MM-DD HH:MM".

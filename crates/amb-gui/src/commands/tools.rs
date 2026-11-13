@@ -7,14 +7,14 @@ use commands::photo::Executed;
 /// The committed crop, upright on the uncropped photo (the crop tool's start).
 #[tauri::command]
 pub(crate) fn crop_state(state: tauri::State<'_, AppState>) -> Res<CropState> {
-    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    let guard = state.session.lock()?;
     Ok(guard.as_ref().ok_or("no photo open")?.crop_state())
 }
 
 /// The mask tool's map from the shown photo to mask coordinates.
 #[tauri::command]
 pub(crate) fn mask_frame(state: tauri::State<'_, AppState>) -> Res<session::MaskFrame> {
-    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    let guard = state.session.lock()?;
     Ok(guard.as_ref().ok_or("no photo open")?.mask_frame())
 }
 
@@ -53,7 +53,7 @@ pub(crate) fn crop_commands(
     rect: CropRect,
     state: tauri::State<'_, AppState>,
 ) -> Res<Vec<Command>> {
-    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    let guard = state.session.lock()?;
     Ok(guard.as_ref().ok_or("no photo open")?.crop_commands(&rect))
 }
 
@@ -61,7 +61,7 @@ pub(crate) fn crop_commands(
 /// picked Temperature/Tint (one undoable step).
 #[tauri::command]
 pub(crate) fn pick_white(u: f64, v: f64, state: tauri::State<'_, AppState>) -> Res<Executed> {
-    let mut guard = state.session.lock().map_err(|e| e.to_string())?;
+    let mut guard = state.session.lock()?;
     let s = guard.as_mut().ok_or("no photo open")?;
     let [(temp_name, t), (tint_name, tint)] = s
         .pick_white(u, v)
@@ -98,7 +98,7 @@ pub(crate) fn pick_white(u: f64, v: f64, state: tauri::State<'_, AppState>) -> R
 /// turns the conversion on) as one undoable step.
 #[tauri::command]
 pub(crate) fn pick_film_base(u: f64, v: f64, state: tauri::State<'_, AppState>) -> Res<Executed> {
-    let mut guard = state.session.lock().map_err(|e| e.to_string())?;
+    let mut guard = state.session.lock()?;
     let s = guard.as_mut().ok_or("no photo open")?;
     let (base, warning) = s
         .pick_film_base(u, v)
@@ -137,7 +137,7 @@ pub(crate) fn guided_upright(
     guides: Vec<[f64; 4]>,
     state: tauri::State<'_, AppState>,
 ) -> Res<Guided> {
-    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    let guard = state.session.lock()?;
     let s = guard.as_ref().ok_or("no photo open")?;
     let (commands, worst_degrees) = s.guided_upright(&guides)?;
     Ok(Guided {
@@ -149,7 +149,7 @@ pub(crate) fn guided_upright(
 /// The guides Guided Upright kept for the open photo.
 #[tauri::command]
 pub(crate) fn upright_guides(state: tauri::State<'_, AppState>) -> Res<Vec<[f64; 4]>> {
-    let guard = state.session.lock().map_err(|e| e.to_string())?;
+    let guard = state.session.lock()?;
     Ok(guard
         .as_ref()
         .map(Session::upright_guides)
@@ -162,13 +162,12 @@ pub(crate) fn upright_guides(state: tauri::State<'_, AppState>) -> Res<Vec<[f64;
 pub(crate) async fn negative_freeze(state: tauri::State<'_, AppState>) -> Res<Vec<Command>> {
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let guard = slot.lock().map_err(|e| e.to_string())?;
+        let guard = slot.lock()?;
         let s = guard.as_ref().ok_or("no photo open")?;
         let frozen = amb_ops::negative::frozen(&[s.negative_analysis()]);
         Ok(amb_ops::negative::commands(&frozen))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// The crop tool's Level: the straighten angle that levels the open photo;
@@ -178,13 +177,12 @@ pub(crate) async fn level_angle(state: tauri::State<'_, AppState>) -> Res<Option
     let slot = state.session.clone();
     let lens = state.lens.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         Ok(s.level_angle(lens))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// The open photo's long straight lines, for the crop tool's guides.
@@ -193,13 +191,12 @@ pub(crate) async fn guide_lines(state: tauri::State<'_, AppState>) -> Res<Vec<[f
     let slot = state.session.clone();
     let lens = state.lens.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         Ok(s.guide_lines(lens))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Crop the open scan to its frame; `None` when no border was found.
@@ -207,9 +204,8 @@ pub(crate) async fn guide_lines(state: tauri::State<'_, AppState>) -> Res<Vec<[f
 pub(crate) async fn negative_frame(state: tauri::State<'_, AppState>) -> Res<Option<Vec<Command>>> {
     let slot = state.session.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        let guard = slot.lock().map_err(|e| e.to_string())?;
+        let guard = slot.lock()?;
         Ok(guard.as_ref().ok_or("no photo open")?.negative_frame())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }

@@ -62,8 +62,7 @@ pub(crate) async fn hub_browse(state: tauri::State<'_, AppState>) -> Res<HubList
         };
         hub::browse(&u, mine)
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     Ok(HubList { url, entries })
 }
 
@@ -75,9 +74,7 @@ pub(crate) async fn hub_install_preset(
 ) -> Res<Vec<PresetEntry>> {
     let url = hub_index(state.inner());
     let dir = own_presets_dir(state.inner()).ok_or("the settings folder isn't available")?;
-    tauri::async_runtime::spawn_blocking(move || hub::install_preset(&dir, &url, &id))
-        .await
-        .map_err(|e| e.to_string())??;
+    tauri::async_runtime::spawn_blocking(move || hub::install_preset(&dir, &url, &id)).await??;
     presets(state).await
 }
 
@@ -103,7 +100,7 @@ pub(crate) async fn preset_library(
         hub::preset_library(&url, &cache, presets.as_deref())
     })
     .await
-    .map_err(|e| e.to_string())
+    .map_err(Into::into)
 }
 
 /// Add a Preset Library preset to the presets list; returns the list.
@@ -130,8 +127,7 @@ pub(crate) async fn hub_install_collage(
     let custom = tauri::async_runtime::spawn_blocking(move || {
         hub::install_collage(&mut custom, &url, &id).map(|_| custom)
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     state.change_prefs(|p| p.collage_templates = custom)?;
     collage_templates(state)
 }
@@ -147,8 +143,7 @@ pub(crate) async fn hub_install_sizes(
     let custom = tauri::async_runtime::spawn_blocking(move || {
         hub::install_sizes(&mut custom, &url, &id).map(|_| custom)
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     state.change_prefs(|p| p.size_presets = custom)?;
     size_presets(state)
 }
@@ -163,8 +158,8 @@ pub(crate) async fn hub_install_plugin(
     let url = hub_index(state.inner());
     let dir = plugins_dir(state.inner()).ok_or("the plugins folder isn't available")?;
     tauri::async_runtime::spawn_blocking(move || hub::install_plugin(&dir, &url, &id))
-        .await
-        .map_err(|e| e.to_string())?
+        .await?
+        .map_err(Into::into)
 }
 
 /// Install (or update) a custom interface from the hub; returns its folder.
@@ -177,8 +172,8 @@ pub(crate) async fn hub_install_interface(
     let url = hub_index(state.inner());
     let dir = super::settings::interfaces_dir(state.inner())?;
     tauri::async_runtime::spawn_blocking(move || hub::install_interface(&dir, &url, &id))
-        .await
-        .map_err(|e| e.to_string())?
+        .await?
+        .map_err(Into::into)
 }
 
 /// Install (or update) a look from the hub.
@@ -186,9 +181,8 @@ pub(crate) async fn hub_install_interface(
 pub(crate) async fn hub_install(id: String, state: tauri::State<'_, AppState>) -> Res<SavedLook> {
     let url = hub_index(state.inner());
     let dir = need_looks_dir(state.inner())?;
-    let (kind, id) = tauri::async_runtime::spawn_blocking(move || hub::install(&dir, &url, &id))
-        .await
-        .map_err(|e| e.to_string())??;
+    let (kind, id) =
+        tauri::async_runtime::spawn_blocking(move || hub::install(&dir, &url, &id)).await??;
     Ok(SavedLook {
         id,
         kind,
@@ -204,9 +198,8 @@ pub(crate) async fn hub_install_link(
     state: tauri::State<'_, AppState>,
 ) -> Res<SavedLook> {
     let dir = need_looks_dir(state.inner())?;
-    let (kind, id) = tauri::async_runtime::spawn_blocking(move || hub::install_link(&dir, &link))
-        .await
-        .map_err(|e| e.to_string())??;
+    let (kind, id) =
+        tauri::async_runtime::spawn_blocking(move || hub::install_link(&dir, &link)).await??;
     Ok(SavedLook {
         id,
         kind,
@@ -227,9 +220,7 @@ pub(crate) fn hub_submit(
         .find(|l| l.id == id && l.usable)
         .ok_or_else(|| format!("unknown layout or theme {id}"))?;
     let url = hub::submit_url(&hub_index(state.inner()), kind, &look.data)?;
-    app.opener()
-        .open_url(url.clone(), None::<&str>)
-        .map_err(|e| e.to_string())?;
+    app.opener().open_url(url.clone(), None::<&str>)?;
     Ok(url)
 }
 
@@ -244,8 +235,7 @@ pub(crate) async fn hub_install_border(
     let custom = tauri::async_runtime::spawn_blocking(move || {
         hub::install_border(&mut custom, &url, &id).map(|_| custom)
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     state.change_prefs(|p| p.border_presets = custom)?;
     state.prefs(|p| borders::all(&p.border_presets))
 }

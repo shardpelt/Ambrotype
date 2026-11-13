@@ -14,7 +14,7 @@ const SIDECAR: &str = include_str!("../../data/sample/d750.xmp");
 
 /// Where the sample is kept: `sample/` in the settings folder.
 fn sample_dir(state: &AppState) -> Res<PathBuf> {
-    let path = state.config_path.lock().map_err(|e| e.to_string())?;
+    let path = state.config_path.lock()?;
     path.as_ref()
         .and_then(|p| p.parent())
         .map(|d| d.join("sample"))
@@ -24,7 +24,7 @@ fn sample_dir(state: &AppState) -> Res<PathBuf> {
 /// The raw, downloaded and checked the first time; `fresh` puts the edit
 /// back as it came.
 fn sample_at(dir: &Path, fresh: bool, fetch: impl Fn() -> Res<Vec<u8>>) -> Res<PathBuf> {
-    std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(dir)?;
     let raw = dir.join("d750.nef");
     let have = std::fs::read(&raw).is_ok_and(|b| hub::sha256_hex(&b) == SHA256);
     if !have {
@@ -34,11 +34,11 @@ fn sample_at(dir: &Path, fresh: bool, fetch: impl Fn() -> Res<Vec<u8>>) -> Res<P
                 "the sample photo didn't download correctly (its checksum is wrong)".into(),
             );
         }
-        std::fs::write(&raw, bytes).map_err(|e| e.to_string())?;
+        std::fs::write(&raw, bytes)?;
     }
     let sidecar = dir.join("d750.xmp");
     if fresh || !sidecar.exists() {
-        std::fs::write(&sidecar, SIDECAR).map_err(|e| e.to_string())?;
+        std::fs::write(&sidecar, SIDECAR)?;
     }
     Ok(raw)
 }
@@ -49,10 +49,11 @@ fn sample_at(dir: &Path, fresh: bool, fetch: impl Fn() -> Res<Vec<u8>>) -> Res<P
 pub(crate) async fn sample_photo(state: tauri::State<'_, AppState>, fresh: bool) -> Res<PathBuf> {
     let dir = sample_dir(state.inner())?;
     tauri::async_runtime::spawn_blocking(move || {
-        sample_at(&dir, fresh, || hub::fetch_large(URL, SIZE))
+        sample_at(&dir, fresh, || {
+            hub::fetch_large(URL, SIZE).map_err(Into::into)
+        })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 #[cfg(test)]
@@ -64,7 +65,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("amb-sample-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let err = sample_at(&dir, false, || Ok(b"not the raw".to_vec())).unwrap_err();
-        assert!(err.contains("checksum"), "{err}");
+        assert!(err.text().contains("checksum"), "{}", err.text());
         assert!(!dir.join("d750.nef").exists());
         // The edit parses, and has one History step per setting.
         let s = amb_presets::xmp::parse_crs(SIDECAR).unwrap();

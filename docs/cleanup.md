@@ -411,55 +411,6 @@ Checks: the three cargo commands (unused-item warnings catch an item that was on
 Done when: `grep -rn "^pub \(fn\|const\) \(spots_for\|dhash\|is_raw\)" crates` prints nothing.
 Commit: `crates: pub(crate) for what only the crate uses`. Why: "Public items that nobody outside uses are API we must keep."
 
-### B11. One error type for editor commands
-Tier: medium        Risk: medium
-Why: 306 `.map_err(|e| e.to_string())` in `crates/amb-gui/src` (267 followed by `?`); with one error type `?` does it.
-Files: `crates/amb-gui/src/error.rs` (new), `crates/amb-gui/src/main.rs` (the alias `type Res<T> = Result<T, String>;`, line 60, and `mod error;`), and every file the compiler then flags in `crates/amb-gui/src`. Do it in one commit, when no other work is in flight in `amb-gui`.
-Steps:
-1. New `error.rs` (SPDX line, a `//!` line: "The error of an editor command: one type, so `?` converts what a library returns"):
-   ```rust
-   /// What an editor command returns on failure. The page receives it as the plain text.
-   pub(crate) struct CmdError(String);
-
-   // Not `Display` or `Error` itself: that is what lets every other error convert.
-   impl<E: std::fmt::Display> From<E> for CmdError {
-       fn from(e: E) -> Self {
-           CmdError(e.to_string())
-       }
-   }
-
-   impl serde::Serialize for CmdError {
-       fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-           s.serialize_str(&self.0)
-       }
-   }
-
-   // For the functions that still return `Result<_, String>`.
-   impl From<CmdError> for String {
-       fn from(e: CmdError) -> String {
-           e.0
-       }
-   }
-
-   impl CmdError {
-       pub(crate) fn text(&self) -> &str {
-           &self.0
-       }
-   }
-
-   pub(crate) type Res<T> = Result<T, CmdError>;
-   ```
-2. In `main.rs`: add `mod error;`, delete the old `type Res<T> = Result<T, String>;` and write `pub(crate) use error::{CmdError, Res};` (the files import `crate::Res` or get it from `use crate::*;`: they keep working).
-3. `cargo check -p amb-gui --all-targets`. The compiler flags, and you fix:
-   - `Err(msg)` where `msg: String`, `Err(format!(...))` and `Err("...".into())` in a function returning `Res`: they compile with `?`-style conversion only through `.into()`: write `Err(format!(...).into())`; for a `String` variable `Err(msg.into())`; a `&str` literal `Err("...".into())` works as it is.
-   - places that read the error's text (match arms, `format!("{e}")`, `e.contains(...)`, a `Res` value passed where `Result<_, String>` is wanted): use `e.text()`, or `.map_err(String::from)`.
-4. Delete the `.map_err(|e| e.to_string())` that is followed by `?`, in functions that return `Res`: `grep -rn "map_err(|e| e.to_string())?" crates/amb-gui/src`. Do it with one search-and-replace over the folder (`.map_err(|e| e.to_string())?` to `?`), then build. Where the compiler then says "the trait `From<X>` is not implemented for `String`" or similar, the function returns `Result<_, String>` explicitly (88 of them): put the `.map_err(|e| e.to_string())` back there. Functions that return `Result<_, String>` are not changed.
-5. `spawn_blocking(...).await.map_err(|e| e.to_string())??` loses its `map_err` the same way (`.await??`), when the function returns `Res`.
-Don't: change a message's text (the page still shows the same strings); change `Result<_, String>` functions' signatures; rename `Res`.
-Checks: the three cargo commands (and `grep -rc "map_err(|e| e.to_string())" crates/amb-gui/src` falls from 306); the UI checks of "Checks" (the page must still get plain strings: a UI step that triggers an error, such as opening a missing path, shows the same text).
-Done when: `grep -rn "map_err(|e| e.to_string())?" crates/amb-gui/src` is limited to functions that return `Result<_, String>`.
-Commit: `gui: one error type for editor commands`. Why: "Every command repeated map_err to turn an error into text."
-
 ### B12a. Best in bursts moves to `amb-ops`
 Tier: medium        Risk: low
 Why: the editor's `library_best_in_bursts` (`crates/amb-gui/src/commands/batch.rs`) groups the bursts, looks at each photo and ranks it: logic that `amb` cannot reach (`amb duplicates` lists bursts unranked), so the same feature differs by front end.

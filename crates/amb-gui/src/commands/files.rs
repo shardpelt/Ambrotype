@@ -17,8 +17,8 @@ pub(crate) async fn files_plan(paths: Vec<String>, target: Target) -> Res<Vec<Pl
             &target,
         )
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
+    .map_err(Into::into)
 }
 
 /// What moving did, and where the open photo is now, if it moved.
@@ -57,8 +57,7 @@ pub(crate) async fn files_apply(
         });
         Ok(Moved { done, reopen })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Move photos and all their files to the system's trash. Returns how many
@@ -77,8 +76,7 @@ pub(crate) async fn files_trash(
         folder::catalog().forget(&photos);
         Ok((n, closed))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Save and close the open photo when one of `files` is it (or its source
@@ -88,7 +86,7 @@ fn close_if_touched<'a>(
     files: impl Iterator<Item = &'a PathBuf>,
 ) -> Res<Option<PathBuf>> {
     let files: std::collections::HashSet<&PathBuf> = files.collect();
-    let mut guard = slot.lock().map_err(|e| e.to_string())?;
+    let mut guard = slot.lock()?;
     let touched = guard.as_ref().is_some_and(|s| {
         files.contains(&s.path) || files.contains(&amb_engine::source_path(&s.path))
     });
@@ -120,8 +118,7 @@ pub(crate) async fn files_missing() -> Res<Vec<String>> {
             .map(|(p, _)| p.display().to_string())
             .collect())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Look for the missing photos in `folder` (and its subfolders) by name
@@ -140,8 +137,7 @@ pub(crate) async fn files_find_moved(
         folder::catalog().records(&found.iter().map(|f| f.1.clone()).collect::<Vec<_>>());
         Ok(found)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Every keyword in the catalogue and how many photos have it, A to Z.
@@ -159,8 +155,7 @@ pub(crate) async fn keywords_all() -> Res<Vec<(String, usize)>> {
         }
         Ok(counts.into_values().collect())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Rename or merge keywords (`from` become `to`), or remove them (`to`
@@ -197,8 +192,7 @@ pub(crate) async fn keywords_change(
         }
         Ok(n)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// Every photo the catalogue knows that can be reached, with its record

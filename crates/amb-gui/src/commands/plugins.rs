@@ -35,9 +35,7 @@ pub(crate) async fn install_plugin(
     else {
         return Ok(None);
     };
-    let id = tauri::async_runtime::spawn_blocking(move || plugins::install(&dir, &src))
-        .await
-        .map_err(|e| e.to_string())??;
+    let id = tauri::async_runtime::spawn_blocking(move || plugins::install(&dir, &src)).await??;
     Ok(Some((plugins_state(state.inner())?, id)))
 }
 
@@ -100,14 +98,14 @@ pub(crate) async fn run_plugin(
             .map(|d| d.as_nanos() as u64)
             .unwrap_or(1);
         let ctx = {
-            let guard = slot.lock().map_err(|e| e.to_string())?;
+            let guard = slot.lock()?;
             guard
                 .as_ref()
                 .ok_or("open a photo first")?
                 .plugin_context(&plugin.manifest.permissions, seed)
         };
         let out = plugin.run(&ctx, &params)?;
-        let mut guard = slot.lock().map_err(|e| e.to_string())?;
+        let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let outcomes = if out.commands.is_empty() {
             Vec::new()
@@ -133,8 +131,7 @@ pub(crate) async fn run_plugin(
             edits: out.commands.len(),
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 #[derive(Serialize)]
@@ -197,7 +194,7 @@ pub(crate) async fn run_plugin_many(
             let seed = seed.wrapping_add(i as u64);
             let result = (|| -> Res<bool> {
                 let open = {
-                    let guard = slot.lock().map_err(|e| e.to_string())?;
+                    let guard = slot.lock()?;
                     guard
                         .as_ref()
                         .filter(|s| s.path == photo)
@@ -215,7 +212,7 @@ pub(crate) async fn run_plugin_many(
                     return Ok(false);
                 }
                 if open.is_some() {
-                    let mut guard = slot.lock().map_err(|e| e.to_string())?;
+                    let mut guard = slot.lock()?;
                     if let Some(s) = guard.as_mut().filter(|s| s.path == photo) {
                         s.execute(&run.commands, Some(&label))?;
                         out.state = Some(s.state_info());
@@ -228,7 +225,7 @@ pub(crate) async fn run_plugin_many(
             match result {
                 Ok(true) => out.changed.push(path.clone()),
                 Ok(false) => {}
-                Err(e) => out.errors.push(format!("{name}: {e}")),
+                Err(e) => out.errors.push(format!("{name}: {}", e.text())),
             }
         }
         let _ = app.emit(
@@ -241,8 +238,7 @@ pub(crate) async fn run_plugin_many(
         );
         Ok(out)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 /// The recipes the user saved, per plugin.
@@ -299,10 +295,10 @@ pub(crate) fn open_plugins_folder(
         Some(id) if plugins::builtin(&id).is_none() => dir.join(id),
         _ => dir,
     };
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&dir)?;
     app.opener()
         .open_path(dir.display().to_string(), None::<&str>)
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 /// What sharing a plugin would send, to show before sending.
@@ -314,8 +310,8 @@ pub(crate) async fn plugin_share_plan(
     let dir = plugins_dir(state.inner()).ok_or("the plugins folder isn't available")?;
     let index = hub_index(state.inner());
     tauri::async_runtime::spawn_blocking(move || plugins::share_plan(&dir, &id, &index))
-        .await
-        .map_err(|e| e.to_string())?
+        .await?
+        .map_err(Into::into)
 }
 
 /// Share a plugin as a pull request to the hub, with the GitHub CLI (gh), or
@@ -339,15 +335,12 @@ pub(crate) async fn share_plugin(
             plugins::share(&plan)
         }
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     if browser {
         let _ = app
             .opener()
             .open_path(folder.display().to_string(), None::<&str>);
     }
-    app.opener()
-        .open_url(url.clone(), None::<&str>)
-        .map_err(|e| e.to_string())?;
+    app.opener().open_url(url.clone(), None::<&str>)?;
     Ok(url)
 }

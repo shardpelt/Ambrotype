@@ -115,9 +115,7 @@ pub(crate) fn open_feedback(
     } else {
         feedback_url(&kind, &title, &shortened(body, 6000))
     };
-    app.opener()
-        .open_url(url, None::<&str>)
-        .map_err(|e| e.to_string())
+    app.opener().open_url(url, None::<&str>).map_err(Into::into)
 }
 
 /// The keyboard shortcuts the user changed (the UI knows the defaults).
@@ -166,7 +164,7 @@ pub(crate) fn about_text(which: String) -> Res<&'static str> {
     match which.as_str() {
         "licence" => Ok(include_str!("../../../../LICENSE")),
         "notice" => Ok(include_str!("../../../../NOTICE")),
-        _ => Err(format!("no text {which:?}")),
+        _ => Err(format!("no text {which:?}").into()),
     }
 }
 
@@ -174,7 +172,7 @@ pub(crate) fn about_text(which: String) -> Res<&'static str> {
 pub(crate) fn open_source_page(app: tauri::AppHandle) -> Res<()> {
     app.opener()
         .open_url(SOURCE_URL, None::<&str>)
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 #[tauri::command]
@@ -185,17 +183,17 @@ pub(crate) fn open_settings_folder(
     let folder = settings_info(state)
         .folder
         .ok_or("the settings folder isn't available")?;
-    std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&folder)?;
     app.opener()
         .open_path(folder, None::<&str>)
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 // ---------------------------------------------------------------- custom interfaces
 
 /// Where installed custom interfaces live: `interfaces/<name>/` in the settings folder.
 pub(crate) fn interfaces_dir(state: &AppState) -> Res<PathBuf> {
-    let path = state.config_path.lock().map_err(|e| e.to_string())?;
+    let path = state.config_path.lock()?;
     path.as_ref()
         .and_then(|p| p.parent())
         .map(|d| d.join("interfaces"))
@@ -251,7 +249,7 @@ pub(crate) fn set_interface(
     let dir = path.map(PathBuf::from);
     if let Some(d) = &dir {
         if !crate::interface::is_interface(d) {
-            return Err(format!("{} has no index.html", d.display()));
+            return Err(format!("{} has no index.html", d.display()).into());
         }
     }
     state.change_prefs(|p| p.interface = dir.clone())?;
@@ -284,7 +282,7 @@ pub(crate) fn show_interface(app: &tauri::AppHandle, dir: Option<PathBuf>) -> Re
     let window = app.get_webview_window("main").ok_or("no main window")?;
     window
         .navigate(url.parse().map_err(|e| format!("{e}"))?)
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 /// What sharing the interface in `path` to the hub would send.
@@ -297,8 +295,8 @@ pub(crate) async fn interface_share_plan(
     tauri::async_runtime::spawn_blocking(move || {
         crate::interface::share_plan(Path::new(&path), &index)
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
+    .map_err(Into::into)
 }
 
 /// Share an interface as a pull request to the hub, like a plugin: with the
@@ -320,14 +318,11 @@ pub(crate) async fn share_interface(
             crate::plugins::share(&plan)
         }
     })
-    .await
-    .map_err(|e| e.to_string())??;
+    .await??;
     if browser {
         let _ = app.opener().open_path(folder, None::<&str>);
     }
-    app.opener()
-        .open_url(url.clone(), None::<&str>)
-        .map_err(|e| e.to_string())?;
+    app.opener().open_url(url.clone(), None::<&str>)?;
     Ok(url)
 }
 
@@ -347,10 +342,10 @@ pub(crate) fn open_interfaces_folder(
     state: tauri::State<'_, AppState>,
 ) -> Res<()> {
     let folder = interfaces_dir(state.inner())?;
-    std::fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
+    std::fs::create_dir_all(&folder)?;
     app.opener()
         .open_path(folder.display().to_string(), None::<&str>)
-        .map_err(|e| e.to_string())
+        .map_err(Into::into)
 }
 
 /// Use the monitor profile chosen in Settings, reading the desktop's
@@ -387,14 +382,13 @@ async fn recheck_monitor_now(app: tauri::AppHandle) -> Res<monitor::Status> {
     let handle = app.clone();
     app.run_on_main_thread(move || {
         let _ = tx.send(recheck_monitor(&handle).0);
-    })
-    .map_err(|e| e.to_string())?;
+    })?;
     tauri::async_runtime::spawn_blocking(move || {
         rx.recv_timeout(std::time::Duration::from_secs(5))
             .map_err(|e| e.to_string())
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
+    .map_err(Into::into)
 }
 
 /// The monitor profile in use (Settings), found again.
@@ -479,7 +473,7 @@ mod tests {
 #[tauri::command]
 pub(crate) fn window_fullscreen(on: bool, app: tauri::AppHandle) -> Res<bool> {
     let window = app.get_webview_window("main").ok_or("no main window")?;
-    let was = window.is_fullscreen().map_err(|e| e.to_string())?;
-    window.set_fullscreen(on).map_err(|e| e.to_string())?;
+    let was = window.is_fullscreen()?;
+    window.set_fullscreen(on)?;
     Ok(was)
 }

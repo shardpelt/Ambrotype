@@ -32,7 +32,7 @@ pub(crate) struct AppState {
 impl AppState {
     /// Something read from the saved settings.
     pub(crate) fn prefs<T>(&self, read: impl FnOnce(&Config) -> T) -> Res<T> {
-        let prefs = self.prefs.lock().map_err(|e| e.to_string())?;
+        let prefs = self.prefs.lock()?;
         Ok(read(&prefs))
     }
 
@@ -42,7 +42,7 @@ impl AppState {
     /// would wait for this same lock forever.
     pub(crate) fn change_prefs<T>(&self, change: impl FnOnce(&mut Config) -> T) -> Res<T> {
         let out = {
-            let mut prefs = self.prefs.lock().map_err(|e| e.to_string())?;
+            let mut prefs = self.prefs.lock()?;
             change(&mut prefs)
         };
         save_config(self);
@@ -76,7 +76,7 @@ pub(crate) fn empty_lens() -> &'static LensSources {
 /// Collages read each photo's edits from its sidecar: write the open photo's
 /// unsaved edits there first.
 pub(crate) fn save_open_edits(slot: &Mutex<Option<Session>>) -> Res<()> {
-    let mut guard = slot.lock().map_err(|e| e.to_string())?;
+    let mut guard = slot.lock()?;
     if let Some(s) = guard.as_mut().filter(|s| s.has_unsaved_edits()) {
         s.save_sidecar()?;
     }

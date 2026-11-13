@@ -47,7 +47,7 @@ pub(crate) async fn share_collage_template(
     else {
         return Ok(None);
     };
-    let text = serde_json::to_string_pretty(&template).map_err(|e| e.to_string())? + "\n";
+    let text = serde_json::to_string_pretty(&template)? + "\n";
     std::fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
     Ok(Some(path.display().to_string()))
 }
@@ -89,8 +89,8 @@ pub(crate) async fn save_collage_project(
     tauri::async_runtime::spawn_blocking(move || {
         collages::save_project(&path, &project).map(|()| Some(path.display().to_string()))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
+    .map_err(Into::into)
 }
 
 /// Open a collage project file (given, or picked in a dialog).
@@ -116,8 +116,8 @@ pub(crate) async fn open_collage_project(
         }
     };
     tauri::async_runtime::spawn_blocking(move || collages::open_project(&path).map(Some))
-        .await
-        .map_err(|e| e.to_string())?
+        .await?
+        .map_err(Into::into)
 }
 
 /// Read a shared collage template file (picked in a dialog).
@@ -139,6 +139,7 @@ pub(crate) async fn import_collage_template(
     amb_export::collage::Template::from_json(&text)
         .map(Some)
         .map_err(|e| format!("{}: {e}", path.display()))
+        .map_err(Into::into)
 }
 
 /// A JPEG of a photo with its edits (crop included), for the collage canvas:
@@ -156,7 +157,7 @@ pub(crate) async fn edited_thumbnail(
         let edge = edge.unwrap_or(1024).clamp(64, 2048) as usize;
         let none = Default::default();
         {
-            let mut guard = slot.lock().map_err(|e| e.to_string())?;
+            let mut guard = slot.lock()?;
             if let Some(s) = guard.as_mut().filter(|s| s.path == Path::new(&path)) {
                 return Ok(Response::new(
                     s.preview(edge, &none, false, false, lens).jpeg,
@@ -169,8 +170,7 @@ pub(crate) async fn edited_thumbnail(
             s.preview(edge, &none, false, false, lens).jpeg,
         ))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 #[derive(Clone, Serialize)]
@@ -219,8 +219,7 @@ pub(crate) async fn export_collage(
             small: r.small.map(|c| (c.path.display().to_string(), c.bytes)),
         })
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }
 
 #[derive(Deserialize)]
@@ -284,6 +283,5 @@ pub(crate) async fn export_collage_batch(
         let written: Vec<String> = written.iter().map(|p| p.display().to_string()).collect();
         Ok(Some(written))
     })
-    .await
-    .map_err(|e| e.to_string())?
+    .await?
 }

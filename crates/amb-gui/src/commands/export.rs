@@ -215,19 +215,11 @@ pub(crate) async fn export_replay(
         return Ok(None);
     };
     tauri::async_runtime::spawn_blocking(move || {
-        use tauri::Emitter;
         let o = amb_ops::replay::ReplayOptions {
             long_edge: long_edge.unwrap_or(1080).clamp(240, 4096),
             ..Default::default()
         };
-        let last = std::sync::Mutex::new(std::time::Instant::now());
-        let progress = |done: usize, total: usize| {
-            let mut last = last.lock().unwrap_or_else(|e| e.into_inner());
-            if done == total || last.elapsed().as_millis() > 200 {
-                *last = std::time::Instant::now();
-                let _ = app.emit("replay-progress", [done, total]);
-            }
-        };
+        let progress = crate::progress::throttled(&app, "replay-progress");
         amb_ops::replay::replay(&photo, &out, &o, amb_gpu::full::shared(), &progress).map(
             |mut r| {
                 r.path = Some(out.display().to_string());

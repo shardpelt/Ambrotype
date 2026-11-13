@@ -13,7 +13,6 @@ pub(crate) async fn library_find_duplicates(
     max_bits: u32,
     app: tauri::AppHandle,
 ) -> Res<Vec<amb_library::duplicates::Group>> {
-    use tauri::Emitter;
     let cache = app
         .path()
         .app_cache_dir()
@@ -31,14 +30,7 @@ pub(crate) async fn library_find_duplicates(
                     amb_library::duplicates::decode_jpeg(&jpeg)
                 })
         };
-        let last = std::sync::Mutex::new(std::time::Instant::now());
-        let progress = |done: usize, total: usize| {
-            let mut last = last.lock().unwrap_or_else(|e| e.into_inner());
-            if done == total || last.elapsed().as_millis() > 200 {
-                *last = std::time::Instant::now();
-                let _ = app.emit("duplicates-progress", [done, total]);
-            }
-        };
+        let progress = crate::progress::throttled(&app, "duplicates-progress");
         let options = amb_library::duplicates::Options {
             burst_seconds,
             max_bits: max_bits.min(20),
@@ -154,7 +146,6 @@ pub(crate) async fn library_cleanup(
     skip: Vec<String>,
     app: tauri::AppHandle,
 ) -> Res<Vec<amb_ops::cleanup::Suspect>> {
-    use tauri::Emitter;
     let cache = app
         .path()
         .app_cache_dir()
@@ -181,14 +172,7 @@ pub(crate) async fn library_cleanup(
             rejected: on("rejected"),
             ..Default::default()
         };
-        let last = std::sync::Mutex::new(std::time::Instant::now());
-        let progress = |done: usize, total: usize| {
-            let mut last = last.lock().unwrap_or_else(|e| e.into_inner());
-            if done == total || last.elapsed().as_millis() > 200 {
-                *last = std::time::Instant::now();
-                let _ = app.emit("cleanup-progress", [done, total]);
-            }
-        };
+        let progress = crate::progress::throttled(&app, "cleanup-progress");
         Ok(amb_ops::cleanup::find(
             folder::catalog(),
             &photos,

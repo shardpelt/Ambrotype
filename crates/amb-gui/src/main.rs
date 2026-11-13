@@ -23,6 +23,7 @@ mod looks;
 mod monitor;
 mod plugins;
 mod preset_files;
+mod progress;
 mod schema;
 mod session;
 mod sizes;

@@ -1,0 +1,20 @@
+name: Staging build
+
+# Every push to `staging` builds the installers for every OS and keeps them
+# as downloadable build artifacts (Actions tab, the run's page), so the owner
+# can hand-test exactly what would ship. No release, no tag (docs/branches.md).
+# The steps are release.yml's, called as a reusable workflow: its release step
+# only runs on a version tag, so here it is skipped.
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  installers:
+    uses: ./.github/workflows/release.yml
+    secrets: inherit

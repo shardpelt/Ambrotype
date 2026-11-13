@@ -2,6 +2,8 @@
 
 The `Release` workflow (`.github/workflows/release.yml`) builds installers for every OS with Tauri's bundler.
 
+Which branch a release comes from, and how work reaches it: [branches.md](branches.md).
+
 ## Making a release
 
 1. Set the version in `crates/amb-gui/tauri.conf.json` and the crates' `Cargo.toml` (they share it).

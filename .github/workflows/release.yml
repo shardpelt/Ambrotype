@@ -4,11 +4,15 @@ name: Release
 # release to check and publish by hand; or by hand from the Actions tab,
 # as build artifacts. Signing secrets are used when they exist (see
 # docs/releasing.md); without them the installers are unsigned.
+# staging-build.yml calls this workflow on every push to `staging`: the
+# installers are kept as build artifacts, and since the ref is not a tag the
+# release step below is skipped (docs/branches.md).
 
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: write

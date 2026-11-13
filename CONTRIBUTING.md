@@ -19,7 +19,7 @@ Thanks for helping. Ambrotype is young, so small, focused changes are the easies
    ```
 4. For editor (GUI) changes, run the editor and try the change by hand (`cargo run --release -p amb-gui -- photo.nef`), and add a step to a script in `crates/amb-gui/tests/ui/` so the bug can't come back (`ambrotype --ui-test SCRIPT.js photo.dng`; CI runs them on Linux; [docs/recipes.md](docs/recipes.md)). A screenshot in the pull request helps.
 5. Update the docs the change affects: `docs/ROADMAP.md`, `docs/GAPS.md`, `docs/ARCHITECTURE.md` and the feature's note in `docs/design/`.
-6. Commit with a first line like `area: summary` (for example `engine: faster dehaze`), then say why. Open a pull request against `main`; the template asks a few questions.
+6. Commit with a first line like `area: summary` (for example `engine: faster dehaze`), then say why. Open a pull request against `main`; the template asks a few questions. After 0.1.0, pull requests go to `staging` instead ([docs/branches.md](docs/branches.md)).
 
 ## AI-assisted contributions
 

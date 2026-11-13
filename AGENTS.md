@@ -25,6 +25,8 @@ Ambrotype is a free, open-source Lightroom alternative in Rust. Start with [docs
 Keeping it lean: [docs/codestyle.md](docs/codestyle.md) has the size budget and the standing rules, and [docs/cleanup.md](docs/cleanup.md) the open cleanup tasks as cards, in exact steps. A test (`crates/amb-cli/tests/code_size.rs`) fails when a file passes the budget: split it along its sections rather than raising the limit. `python3 tools/code-metrics.py` measures.
 
 ## Before you commit
+Where to push: today, as now (checked work may go to `main`). After 0.1.0 it is `staging`, never `main`; the owner merges `staging` into `main` ([docs/branches.md](docs/branches.md)).
+
 ```sh
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings

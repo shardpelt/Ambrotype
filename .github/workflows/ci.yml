@@ -1,5 +1,8 @@
 name: CI
 
+# Runs on every push (work branches, `staging`, `main`) and on every pull
+# request, whatever its target, so `staging` and `main` are both covered
+# (docs/branches.md).
 on:
   push:
   pull_request:

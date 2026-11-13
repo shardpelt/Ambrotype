@@ -281,16 +281,10 @@ function groupGrid(paths) {
 
 function renderTray() {
   const list = $("col-tray");
-  collage.observer?.disconnect();
-  collage.queue = [];
+  collage.near?.stop();
+  collage.queue.clear();
   list.replaceChildren();
-  collage.observer = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      collage.observer.unobserve(e.target);
-      queueTrayThumb(e.target);
-    }
-  }, { root: list, rootMargin: "0px 400px" });
+  collage.near = nearView(list, "0px 400px", (item) => collage.queue.add(item));
   const groupOf = new Map((collage.groups ?? []).flatMap((g, n) => g.map((path) => [path, n])));
   let lastGroup = -1;
   for (const p of collage.tray) {
@@ -337,30 +331,17 @@ function renderTray() {
     });
     const small = collage.small.get(p.path);
     if (small) img.src = small.url;
-    else collage.observer.observe(item);
+    else collage.near.watch(item);
     list.append(item);
   }
   renderTrayMarks();
   updateTrayCount();
 }
 
-function queueTrayThumb(item) {
-  collage.queue.push(item);
-  pumpTray();
-}
-
-function pumpTray() {
-  while (collage.loading < 3 && collage.queue.length) {
-    const item = collage.queue.shift();
-    collage.loading++;
-    smallImage(item.dataset.path)
-      .then((r) => (item.querySelector("img").src = r.url))
-      .catch(() => item.classList.add("no-thumb"))
-      .finally(() => {
-        collage.loading--;
-        pumpTray();
-      });
-  }
+function trayLoadThumb(item) {
+  return smallImage(item.dataset.path)
+    .then((r) => (item.querySelector("img").src = r.url))
+    .catch(() => item.classList.add("no-thumb"));
 }
 
 function renderTrayMarks() {

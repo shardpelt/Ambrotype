@@ -22,7 +22,7 @@ const MONTHS = ["January", "February", "March", "April", "May", "June", "July", 
 const browse = {
   year: null,
   map: { z: 2, x: 512, y: 512, fitted: false }, // zoom, and the centre in world pixels at that zoom
-  observer: null,
+  near: null,
   tray: null, // the Map's photoRow of photos without a place
 };
 
@@ -75,7 +75,7 @@ function photosByDay(photos) {
 }
 
 function renderTimeline(box) {
-  browse.observer?.disconnect();
+  browse.near?.stop();
   const { days, undated } = photosByDay(lib.beforeDate ?? lib.shown);
   const years = new Map();
   for (const [d, ps] of days) years.set(d.slice(0, 4), (years.get(d.slice(0, 4)) ?? 0) + ps.length);
@@ -108,14 +108,10 @@ function renderTimeline(box) {
   if (undated) head.append(Object.assign(document.createElement("span"), { className: "hint", textContent: `${undated} without a date` }));
   // The year's months as calendars.
   const months = Object.assign(document.createElement("div"), { className: "tl-months" });
-  browse.observer = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      browse.observer.unobserve(e.target);
-      const p = libPhoto(e.target.dataset.path);
-      if (p) bigImage(p, 256, false).then((u) => { e.target.style.backgroundImage = `url(${u})`; }).catch(() => {});
-    }
-  }, { root: box, rootMargin: "200px" });
+  browse.near = nearView(box, "200px", (cell) => {
+    const p = libPhoto(cell.dataset.path);
+    if (p) bigImage(p, 256, false).then((u) => { cell.style.backgroundImage = `url(${u})`; }).catch(() => {});
+  });
   for (let m = 1; m <= 12; m++) months.append(monthCalendar(browse.year, m, days));
   box.replaceChildren(strip, head, months);
 }
@@ -147,7 +143,7 @@ function monthCalendar(year, month, days) {
       cell.title = `${dateWords(date)}: ${plural(ps.length, "photo")}`;
       cell.append(Object.assign(document.createElement("span"), { className: "tl-count", textContent: ps.length }));
       cell.dataset.path = ps[0].path;
-      browse.observer.observe(cell);
+      browse.near.watch(cell);
       cell.addEventListener("click", () => setDateFilter(date));
     }
     grid.append(cell);
@@ -239,7 +235,7 @@ function placeOf(p) {
 }
 
 function renderMap(box) {
-  browse.observer?.disconnect();
+  browse.near?.stop();
   const placed = lib.shown.filter((p) => placeOf(p));
   const unplaced = lib.shown.filter((p) => !placeOf(p));
   if (!browse.map.fitted) fitMap(placed, box);

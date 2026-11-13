@@ -676,20 +676,6 @@ Checks: the three cargo commands; `cargo test -p amb-gui checks`, `cargo test -p
 Done when: each test fails when you add one violation (try it once, then undo).
 Commits: `gui: a test that FEATURES names real buttons`; `cli: a test that the MCP tool list matches its calls`; `plugins: a test that the built-in list matches the plugins folder`.
 
-### B19. One lazy thumbnail loader
-Tier: medium        Risk: medium
-Why: five scripts each make an `IntersectionObserver` and most add a queue that runs three loads at a time (checked 2026-11-13): `crates/amb-gui/ui/library/library-grid.js` (`lib.observer`, `lib.queue`, `pumpLibraryThumbs`, newest scrolled-in first), `crates/amb-gui/ui/develop/filmstrip.js` (`strip.queue`, `strip.editedQueue`, `pumpThumbs`, the observer is `photoRow`'s), `crates/amb-gui/ui/collage/collage-tray.js` (`collage.observer`, `collage.queue`, `pumpTray`), `crates/amb-gui/ui/develop/preset-grid.js` (`presetGrid.seen`, `pumpPresetThumbs`) and `crates/amb-gui/ui/library/browse.js` (the Timeline's observer). A fix to one (a stuck load, a cancelled scroll) is not a fix to the others.
-Files: `crates/amb-gui/ui/core/lazy.js` (new), `crates/amb-gui/ui/index.html` (script tag after `core/photo-row.js`), `crates/amb-gui/ui/core/photo-row.js`, the five scripts above.
-Steps (one commit per script, each with its UI script run):
-1. `lazy.js`: `nearView(root, margin, fn)` returns `{ watch(el), stop() }`: `fn(el)` is called once when `el` first comes within `margin` of `root`, then it is unobserved; `stop()` disconnects. `loadQueue(limit, work, onIdle)` returns `{ add(item), front(items), clear() }`: `work(item)` returns a promise, at most `limit` run at once, `add` appends, `front` goes first, `onIdle()` runs when the queue and the running loads are empty. Per-instance state in the closures, no top-level `let`.
-2. `photo-row.js`: use `nearView(list, "300px", ...)` for its observer. Run `crates/amb-gui/tests/ui/photo-row.js`.
-3. `filmstrip.js`: `strip.queue` and `pumpThumbs` become `loadQueue(3, ...)`; the edited renders become a second `loadQueue(1, ...)` started from the first one's `onIdle`. Keep `stripTurned` (it uses `front`).
-4. `library-grid.js` (`front` for the newest scrolled in), `collage-tray.js`, `preset-grid.js` the same way; `browse.js` uses `nearView` only (it loads one at a time, with no queue).
-Don't: change a root margin, a limit of three, or the order thumbnails load in.
-Checks: the three cargo commands; every UI script (`smoke.js`, `organise.js`, `browse.js`, `photo-row.js`).
-Done when: `grep -rn "new IntersectionObserver" crates/amb-gui/ui` finds only `lazy.js`.
-Commit: `ui: one lazy thumbnail loader` (one per script). Why: "Five copies of the same loader."
-
 ### Needs a brief
 
 A large model answers each question and writes the cards, then moves them above. Each is here because a builder would have to choose.

@@ -122,20 +122,16 @@ function photoRow(list, o = {}) {
   const row = {
     cells,
     set(photos) {
-      observer?.disconnect();
+      observer?.stop();
       observer = null;
       for (const cell of cells.values()) cell.remove();
       cells.clear();
       byPath.clear();
       if (o.thumb) {
-        observer = new IntersectionObserver((entries) => {
-          for (const e of entries) {
-            if (!e.isIntersecting) continue;
-            observer.unobserve(e.target);
-            const p = byPath.get(e.target.dataset.path);
-            if (p) o.thumb(p, e.target);
-          }
-        }, { root: list, rootMargin: "300px" });
+        observer = nearView(list, "300px", (cell) => {
+          const p = byPath.get(cell.dataset.path);
+          if (p) o.thumb(p, cell);
+        });
       }
       for (const p of photos) {
         const cell = o.cell ? o.cell(p) : el("button", { type: "button", title: p.name });
@@ -144,7 +140,7 @@ function photoRow(list, o = {}) {
         cells.set(p.path, cell);
         byPath.set(p.path, p);
         list.append(cell);
-        observer?.observe(cell);
+        observer?.watch(cell);
       }
       row.mark();
     },
@@ -162,7 +158,7 @@ function photoRow(list, o = {}) {
       cells.get(path)?.scrollIntoView({ block: "nearest", inline: "nearest" });
     },
     destroy() {
-      observer?.disconnect();
+      observer?.stop();
       observer = null;
       cells.clear();
       byPath.clear();

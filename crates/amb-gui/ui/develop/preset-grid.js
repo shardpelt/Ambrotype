@@ -6,7 +6,7 @@
 // Previews are made as tiles come into sight, a few at a time, and kept per
 // photo and amount.
 
-const presetGrid = { urls: new Map(), queue: [], busy: false, seen: null, photo: null };
+const presetGrid = { urls: new Map(), queue: [], busy: false, near: null, photo: null };
 const ALL_PRESETS = "";
 const FAVOURITES = "★";
 
@@ -28,7 +28,7 @@ function renderPresets() {
     && (filter || chosen === ALL_PRESETS || (chosen === FAVOURITES ? favs.has(p.path) : (p.group || "Presets") === chosen)));
   // Favourites first.
   shown.sort((a, b) => Number(favs.has(b.path)) - Number(favs.has(a.path)));
-  presetGrid.seen?.disconnect();
+  presetGrid.near?.stop();
   presetGrid.queue = [];
   list.replaceChildren();
   if (!shown.length) {
@@ -37,14 +37,7 @@ function renderPresets() {
     return;
   }
   presetGrid.photo = ui.info?.path ?? null;
-  presetGrid.seen = new IntersectionObserver((entries) => {
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      presetGrid.seen.unobserve(e.target);
-      presetGrid.queue.push(e.target);
-    }
-    pumpPresetThumbs();
-  });
+  presetGrid.near = nearView(null, "0px", (tile) => presetGrid.queue.push(tile), pumpPresetThumbs);
   const grid = Object.assign(document.createElement("div"), { className: "preset-grid" });
   for (const p of shown) grid.append(presetTile(p, favs));
   list.append(grid, presetHiddenFoot() ?? "");
@@ -103,7 +96,7 @@ function presetTile(p, favs) {
   const star = Object.assign(document.createElement("button"), { type: "button", className: `preset-star${on ? " on" : ""}`, textContent: on ? "★" : "☆", title: on ? "Remove from favourites" : "Add to favourites" });
   star.addEventListener("click", () => togglePresetFavourite(p));
   tile.append(b, star);
-  if (!url && ui.info) presetGrid.seen.observe(tile);
+  if (!url && ui.info) presetGrid.near.watch(tile);
   return tile;
 }
 

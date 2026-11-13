@@ -14,9 +14,9 @@ const strip = {
   photos: [],          // [{ path, name, rating, edited }]
   cells: new Map(),    // path -> cell element
   edited: new Map(),   // path -> data URL of its last edited preview (this session)
-  queue: [],
-  editedQueue: [],     // edited photos whose render replaces the camera preview
-  loading: 0,
+  queue: null,         // loadQueue: camera previews, three at a time
+  editedQueue: null,   // loadQueue: renders of edits, one at a time, after the previews
+  waiting: [],         // edited photos whose render comes once the previews are done
   row: null,           // the photoRow (core/photo-row.js), made by wireFilmstrip
   current: null,       // the open photo's path in the strip
   hidden: false,
@@ -221,8 +221,9 @@ async function stripOpen(p) {
 }
 
 function renderStrip() {
-  strip.queue = [];
-  strip.editedQueue = [];
+  strip.queue.clear();
+  strip.editedQueue.clear();
+  strip.waiting = [];
   strip.row.set(strip.photos);
   // A new folder starts with nothing selected.
   for (const path of strip.selected) if (!strip.cells.has(path)) strip.selected.delete(path);
@@ -232,53 +233,37 @@ function renderStrip() {
 
 // At most three thumbnails at a time, nearest first.
 function queueThumb(path) {
-  strip.queue.push(path);
-  pumpThumbs();
+  strip.queue.add(path);
 }
 
 // A photo was turned: fetch its thumbnail again.
 function stripTurned(path) {
   if (!strip.cells.has(path)) return;
   strip.edited.delete(path);
-  strip.queue.unshift(path);
-  pumpThumbs();
+  strip.queue.front([path]);
 }
 
-function pumpThumbs() {
-  while (strip.loading < 3 && strip.queue.length) {
-    const path = strip.queue.shift();
-    const cell = strip.cells.get(path);
-    if (!cell || strip.edited.has(path)) continue;
-    strip.loading++;
-    invoke("thumbnail", { path })
-      .then((buf) => {
-        const img = cell.querySelector("img");
-        if (strip.edited.has(path)) return;
-        img.src = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
-        if (strip.photos.find((p) => p.path === path)?.edited) strip.editedQueue.push(path);
-      })
-      .catch(() => cell.classList.add("no-thumb"))
-      .finally(() => {
-        strip.loading--;
-        pumpThumbs();
-      });
-  }
-  // Renders of edits (slower: the raw is decoded) one at a time, after the previews.
-  if (!strip.queue.length && strip.loading === 0 && strip.editedQueue.length) {
-    const path = strip.editedQueue.shift();
-    const cell = strip.cells.get(path);
-    if (!cell || strip.edited.has(path) || path === ui.info?.path) return pumpThumbs();
-    strip.loading++;
-    invoke("thumbnail", { path, edited: true })
-      .then((buf) => {
-        if (!strip.edited.has(path)) cell.querySelector("img").src = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
-      })
-      .catch(() => {})
-      .finally(() => {
-        strip.loading--;
-        pumpThumbs();
-      });
-  }
+function stripLoadThumb(path) {
+  const cell = strip.cells.get(path);
+  if (!cell || strip.edited.has(path)) return;
+  return invoke("thumbnail", { path })
+    .then((buf) => {
+      const img = cell.querySelector("img");
+      if (strip.edited.has(path)) return;
+      img.src = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
+      if (strip.photos.find((p) => p.path === path)?.edited) strip.waiting.push(path);
+    })
+    .catch(() => cell.classList.add("no-thumb"));
+}
+
+// Renders of edits (slower: the raw is decoded) one at a time, after the previews.
+function stripLoadEdited(path) {
+  const cell = strip.cells.get(path);
+  if (!cell || strip.edited.has(path) || path === ui.info?.path) return;
+  return invoke("thumbnail", { path, edited: true })
+    .then((buf) => {
+      if (!strip.edited.has(path)) cell.querySelector("img").src = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
+    });
 }
 
 // Where the open photo is in the filmstrip: itself, or (a raw shown by its
@@ -384,6 +369,10 @@ function wireFilmstrip() {
       const el = strip.cells.get(p.path)?.querySelector(".film-stars");
       if (el) renderStars(el, p.rating);
     }
+  });
+  strip.editedQueue = loadQueue(1, stripLoadEdited);
+  strip.queue = loadQueue(3, stripLoadThumb, () => {
+    for (const path of strip.waiting.splice(0)) strip.editedQueue.add(path);
   });
   strip.row = photoRow($("filmstrip-list"), {
     cell: stripCell,

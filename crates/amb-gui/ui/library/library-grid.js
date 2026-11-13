@@ -203,9 +203,10 @@ function renderLibrary() {
   navNote();
   if (lib.collection || lib.smart) lib.dirs = [];
   const grid = $("library-grid");
-  lib.observer?.disconnect();
-  lib.queue = [];
-  lib.editedQueue = [];
+  lib.near?.stop();
+  lib.queue.clear();
+  lib.editedQueue.clear();
+  lib.waiting = [];
   lib.cells.clear();
   lib.rangeKey = null;
   $("library-empty").hidden = Boolean(lib.dir || lib.collection);
@@ -214,16 +215,8 @@ function renderLibrary() {
   else $("library-view").hidden = cull.view === "grid";
   // What just scrolled into view loads first: after a fast scroll the photos
   // passed on the way wait behind the ones on screen.
-  lib.observer = new IntersectionObserver((entries) => {
-    const seen = [];
-    for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      lib.observer.unobserve(e.target);
-      seen.push(e.target.dataset.path);
-    }
-    lib.queue = seen.concat(lib.queue);
-    pumpLibraryThumbs();
-  }, { root: grid, rootMargin: "300px 0px" });
+  let seen = [];
+  lib.near = nearView(grid, "300px 0px", (cell) => seen.push(cell.dataset.path), () => lib.queue.front(seen.splice(0)));
   lib.spacers = [0, 1].map(() => Object.assign(document.createElement("div"), { className: "lib-spacer" }));
   grid.replaceChildren(...lib.spacers);
   renderRange(true);
@@ -279,8 +272,8 @@ function renderRange(force = false) {
   }
   lib.cells = cells;
   grid.replaceChildren(top, ...cells.values(), bottom);
-  lib.observer.disconnect();
-  for (const cell of cells.values()) if (cell.querySelector("img") && !cell.querySelector("img").getAttribute("src")) lib.observer.observe(cell);
+  lib.near.stop();
+  for (const cell of cells.values()) if (cell.querySelector("img") && !cell.querySelector("img").getAttribute("src")) lib.near.watch(cell);
 }
 
 function makeCell(p) {
@@ -388,67 +381,57 @@ function cachedThumb(p) {
 }
 
 // Camera previews first (quick), then renders of edited photos one at a time.
-function pumpLibraryThumbs() {
+function libLoadThumb(path) {
   const edge = thumbEdge();
-  while (lib.loading < 4 && lib.queue.length) {
-    const path = lib.queue.shift();
-    const p = libPhoto(path);
-    const cell = lib.cells.get(path);
-    if (!p || !cell) continue;
-    if (p.edited && lib.urls.has(`${path}|${edge}|true`)) continue;
-    const key = `${path}|${edge}|false`;
-    if (lib.urls.has(key)) {
-      if (p.edited) lib.editedQueue.push(path);
-      continue;
-    }
-    lib.loading++;
-    invoke("thumbnail", { path, edge })
-      .then((buf) => {
-        const url = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
-        keepThumbUrl(key, url);
-        if (!lib.urls.has(`${path}|${edge}|true`)) cell.querySelector("img").src = url;
-        if (p.edited) lib.editedQueue.push(path);
-      })
-      .catch(() => cell.classList.add("no-thumb"))
-      .finally(() => {
-        lib.loading--;
-        pumpLibraryThumbs();
-      });
+  const p = libPhoto(path);
+  const cell = lib.cells.get(path);
+  if (!p || !cell) return;
+  if (p.edited && lib.urls.has(`${path}|${edge}|true`)) return;
+  const key = `${path}|${edge}|false`;
+  if (lib.urls.has(key)) {
+    if (p.edited) lib.waiting.push(path);
+    return;
   }
-  if (!lib.queue.length && lib.loading === 0 && lib.editedQueue.length) {
-    const path = lib.editedQueue.shift();
-    const key = `${path}|${edge}|true`;
-    const cell = lib.cells.get(path);
-    if (!cell || lib.urls.has(key)) return pumpLibraryThumbs();
-    lib.loading++;
-    // The open photo's current edit lives in its session.
-    const call = path === ui.info?.path
-      ? invoke("edited_thumbnail", { path, edge })
-      : invoke("thumbnail", { path, edge, edited: true });
-    call
-      .then((buf) => {
-        const url = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
-        keepThumbUrl(key, url);
-        cell.querySelector("img").src = url;
-      })
-      .catch(() => {})
-      .finally(() => {
-        lib.loading--;
-        pumpLibraryThumbs();
-      });
-  }
+  return invoke("thumbnail", { path, edge })
+    .then((buf) => {
+      const url = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
+      keepThumbUrl(key, url);
+      if (!lib.urls.has(`${path}|${edge}|true`)) cell.querySelector("img").src = url;
+      if (p.edited) lib.waiting.push(path);
+    })
+    .catch(() => cell.classList.add("no-thumb"));
+}
+
+function libLoadEdited(path) {
+  const edge = thumbEdge();
+  const key = `${path}|${edge}|true`;
+  const cell = lib.cells.get(path);
+  if (!cell || lib.urls.has(key)) return;
+  // The open photo's current edit lives in its session.
+  const call = path === ui.info?.path
+    ? invoke("edited_thumbnail", { path, edge })
+    : invoke("thumbnail", { path, edge, edited: true });
+  return call.then((buf) => {
+    const url = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
+    keepThumbUrl(key, url);
+    cell.querySelector("img").src = url;
+  });
+}
+
+// The previews are done: the renders of edits go next.
+function libDrainEdited() {
+  for (const path of lib.waiting.splice(0)) lib.editedQueue.add(path);
 }
 
 // A photo was turned: its camera preview and its render both turn.
 function turnedThumb(path) {
   for (const key of [...lib.urls.keys()]) if (key.startsWith(`${path}|`)) lib.urls.delete(key);
-  if (lib.cells.has(path)) lib.queue.unshift(path);
-  pumpLibraryThumbs();
+  if (lib.cells.has(path)) lib.queue.front([path]);
 }
 
 // A photo's edit changed: show the new render when it comes.
 function refreshThumb(path) {
   for (const key of [...lib.urls.keys()]) if (key.startsWith(`${path}|`) && key.endsWith("|true")) lib.urls.delete(key);
-  lib.editedQueue.push(path);
-  pumpLibraryThumbs();
+  lib.waiting.push(path);
+  if (lib.queue.idle()) libDrainEdited();
 }

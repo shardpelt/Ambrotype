@@ -21,10 +21,10 @@ const lib = {
   focus: null,         // the photo arrow keys move from
   cells: new Map(),    // path -> cell element
   urls: new Map(),     // `${path}|${edge}|${edited}` -> object URL
-  queue: [],
-  editedQueue: [],
-  loading: 0,
-  observer: null,
+  queue: null,         // loadQueue: camera previews, four at a time (library-grid.js)
+  editedQueue: null,   // loadQueue: renders of edited photos, one at a time, after the previews
+  waiting: [],         // edited photos whose render comes once the previews are done
+  near: null,          // nearView: loads the cells that scroll into view
   collection: null,    // the collection shown instead of the folder, by name
   smart: null,         // ... when it's a smart collection, its name too
   // A Lightroom catalogue's collection shown ({ catalogue, name }; lightroom.js).
@@ -397,6 +397,8 @@ function addLibraryTyped() {
 // ---------------------------------------------------------------- wiring
 
 function wireLibrary() {
+  lib.editedQueue = loadQueue(1, libLoadEdited);
+  lib.queue = loadQueue(4, libLoadThumb, libDrainEdited);
   const advance = $("settings-auto-advance");
   advance.checked = autoAdvanceOn();
   advance.addEventListener("change", () => {
@@ -487,9 +489,8 @@ function wireLibrary() {
       if (cell.dataset.dir) continue;
       const url = cachedThumb(libPhoto(cell.dataset.path));
       if (url) cell.querySelector("img").src = url;
-      else lib.queue.push(cell.dataset.path);
+      else lib.queue.add(cell.dataset.path);
     }
-    pumpLibraryThumbs();
   });
   $("lib-choose").addEventListener("click", chooseLibraryFolder);
   $("lib-choose-empty").addEventListener("click", chooseLibraryFolder);

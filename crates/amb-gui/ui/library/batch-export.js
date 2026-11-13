@@ -8,7 +8,7 @@
 // that reads the open photo, so it can't be reused for a folder.
 "use strict";
 
-const batch = { from: "", to: "", dirs: [], running: false, plan: 0 };
+const batch = { from: "", to: "", dirs: [], running: false, plan: 0, planned: 0 };
 
 const batchNumber = (n) => n.toLocaleString("en-US");
 const batchBytes = (b) => (b >= 1e9 ? `${(b / 1e9).toFixed(1)} GB` : `${(b / 1e6).toFixed(1)} MB`);
@@ -38,9 +38,11 @@ async function batchCount() {
       ? `${batchNumber(p.photos)} photo${p.photos === 1 ? "" : "s"} in ${batchNumber(p.folders)} folder${p.folders === 1 ? "" : "s"}`
       : "No photos in this folder";
     $("batch-start").disabled = !p.photos || !batch.to;
+    batch.planned = n;
   } catch (e) {
     if (n !== batch.plan) return;
     $("batch-count").textContent = String(e);
+    batch.planned = n;
   }
 }
 

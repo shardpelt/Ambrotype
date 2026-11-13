@@ -20,6 +20,7 @@ await t.step("the dialog counts the photos in the folder and its subfolders", as
 await t.step("exporting shows progress and a summary with the sizes", async () => {
   t.click("#batch-pick");
   await t.until("the folder", () => batch.to.endsWith("batch"));
+  await t.until("the plan", () => batch.planned === batch.plan);
   t.expect(!$("batch-start").disabled, "Start is on once there is a folder");
   $("batch-value").value = 256;
   t.click("#batch-start");

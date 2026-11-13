@@ -223,6 +223,9 @@ async function syncNegativeRoll() {
   }
 }
 
+// The "match to this photo" row in the convert dialog: made once, pointed at each run's choices.
+const convertLike = { row: null, pick: null, info: null, current: null };
+
 // Raws to JPEGs (src/commands/batch.rs `convert_raws`): in the library
 // the selection, or every photo shown when none is selected; in the editor
 // the open photo's folder (the filmstrip), like the open photo.
@@ -257,21 +260,22 @@ async function convertRawsFlow() {
     $("convert-like-label").innerHTML = like
       ? `<b>Like ${fileName(like)}</b>: every photo matched to it${choices.length > 1 ? " (pick another below)" : ""}`
       : "<b>Like one I edited</b>: edit one of them first";
-    for (const b of $("convert-like-pick").children) b.classList.toggle("on", b.dataset.path === like);
+    convertLike.row?.mark();
   };
-  $("convert-like-pick").replaceChildren(...(choices.length > 1 ? choices : []).map((path) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", title: `Match every photo to ${fileName(path)}` });
-    b.dataset.path = path;
-    const img = Object.assign(document.createElement("img"), { alt: fileName(path) });
-    bigImage(info(path), 128, true).then((u) => { img.src = u; }).catch(() => {});
-    b.append(img);
-    b.addEventListener("click", () => {
-      like = path;
-      f.convert_look.value = "like";
-      showLike();
-    });
-    return b;
-  }));
+  convertLike.pick = (path) => {
+    like = path;
+    f.convert_look.value = "like";
+    showLike();
+  };
+  convertLike.row ??= photoRow($("convert-like-pick"), {
+    cell: ({ path }) => el("button", { type: "button", title: `Match every photo to ${fileName(path)}` }, el("img", { alt: fileName(path) })),
+    thumb: ({ path }, b) => bigImage(convertLike.info(path), 128, true).then((u) => { b.firstChild.src = u; }).catch(() => {}),
+    open: ({ path }) => convertLike.pick(path),
+    isCurrent: ({ path }) => path === convertLike.current(),
+  });
+  convertLike.info = info;
+  convertLike.current = () => like;
+  convertLike.row.set((choices.length > 1 ? choices : []).map((path) => ({ path })));
   showLike();
   if (!like && f.convert_look.value === "like") f.convert_look.value = "camera";
   dlg.showModal();

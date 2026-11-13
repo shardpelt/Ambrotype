@@ -510,9 +510,9 @@ await t.step("Convert raws: Like … picks which edited photo to match", async (
   const flow = convertRawsFlow();
   await t.until("the dialog", () => $("convert-dialog").open);
   const picks = [...$("convert-like-pick").querySelectorAll("button")];
-  t.expect(picks.length === 2 && picks[0].classList.contains("on"), `${picks.length} to pick from`);
+  t.expect(picks.length === 2 && picks[0].classList.contains("current"), `${picks.length} to pick from`);
   picks[1].click();
-  t.expect($("convert-like-label").textContent.includes(fileName(b.path)) && picks[1].classList.contains("on"), $("convert-like-label").textContent);
+  t.expect($("convert-like-label").textContent.includes(fileName(b.path)) && picks[1].classList.contains("current"), $("convert-like-label").textContent);
   t.expect($("convert-dialog").querySelector("form").convert_look.value === "like", "picking one chooses Like");
   $("convert-dialog").querySelector("form").convert_look.value = "camera";
   $("convert-dialog").close("cancel");

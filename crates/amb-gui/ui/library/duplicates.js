@@ -70,26 +70,34 @@ function renderDupes() {
     });
     action("Stack", "Into one stack, the ★ one on top", () => dupesStack([gi]));
     action("Reject the rest", "Pick the ★ one, reject the others", () => dupesReject([gi]));
-    const strip = Object.assign(document.createElement("div"), { className: "dupes-photos" });
-    g.photos.forEach((path, i) => {
+    const strip = el("div", { class: "dupes-photos" });
+    const dupeCell = ({ path }) => {
+      const i = g.photos.indexOf(path);
       const p = libPhoto(path);
-      const fig = Object.assign(document.createElement("figure"), { className: "dupes-photo", title: `${p?.name ?? fileName(path)}${p?.captured ? `\n${p.captured}` : ""}${i ? "\nClick to keep this one instead" : ""}` });
+      const name = p?.name ?? fileName(path);
+      const fig = el("figure", { class: "dupes-photo", title: `${name}${p?.captured ? `\n${p.captured}` : ""}${i ? "\nClick to keep this one instead" : ""}` },
+        el("img", { alt: p?.name ?? "" }),
+        el("figcaption", {}, `${i === 0 ? "★ " : ""}${name}`));
       fig.classList.toggle("best", i === 0);
       fig.classList.toggle("rejected", p?.flag === "reject");
-      const img = Object.assign(document.createElement("img"), { alt: p?.name ?? "" });
-      if (p) bigImage(p, 256, p.edited).then((u) => { img.src = u; }).catch(() => {});
-      fig.append(img, Object.assign(document.createElement("figcaption"), { textContent: `${i === 0 ? "★ " : ""}${p?.name ?? fileName(path)}` }));
-      fig.addEventListener("click", () => {
-        g.photos.splice(i, 1);
-        g.photos.unshift(path);
-        renderDupes();
-      });
       fig.addEventListener("dblclick", () => {
         $("dupes-dialog").close();
         libraryOpen(path);
       });
-      strip.append(fig);
-    });
+      return fig;
+    };
+    photoRow(strip, {
+      cell: dupeCell,
+      thumb: ({ path }, fig) => {
+        const p = libPhoto(path);
+        if (p) bigImage(p, 256, p.edited).then((u) => { fig.querySelector("img").src = u; }).catch(() => {});
+      },
+      open: ({ path }) => {
+        g.photos.splice(g.photos.indexOf(path), 1);
+        g.photos.unshift(path);
+        renderDupes();
+      },
+    }).set(g.photos.map((path) => ({ path })));
     row.append(head, strip);
     return row;
   }));

@@ -6,7 +6,7 @@
 // or Delete (D) each, then they go to the trash together, or are rejected.
 "use strict";
 
-const clean = { scope: [], found: [], at: 0, keep: new Set() };
+const clean = { scope: [], found: [], at: 0, keep: new Set(), row: null }; // row: the photoRow under the photo, made by wireCleanup
 const CLEAN_TESTS = [
   ["dupes", "Copies and alike pictures"],
   ["bursts", "Weaker frames of bursts"],
@@ -102,11 +102,9 @@ function showCleanPhoto() {
   $("clean-mark").textContent = kept ? "Kept" : "Goes to the trash";
   $("clean-prev").disabled = clean.at === 0;
   $("clean-next").disabled = clean.at === clean.found.length - 1;
-  for (const [i, fig] of [...$("clean-strip").children].entries()) {
-    fig.classList.toggle("at", i === clean.at);
-    fig.classList.toggle("kept", clean.keep.has(clean.found[i].path));
-  }
-  $("clean-strip").children[clean.at]?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  for (const [path, fig] of clean.row.cells) fig.classList.toggle("kept", clean.keep.has(path));
+  clean.row.mark();
+  clean.row.reveal(clean.found[clean.at]?.path);
   const going = clean.found.length - clean.keep.size;
   $("clean-trash").textContent = `Move ${going} to the trash`;
   $("clean-trash").disabled = $("clean-reject").disabled = !going;
@@ -114,14 +112,7 @@ function showCleanPhoto() {
 }
 
 function renderCleanStrip() {
-  $("clean-strip").replaceChildren(...clean.found.map((s, i) => {
-    const fig = Object.assign(document.createElement("figure"), { className: "clean-thumb", title: s.reasons.map(cleanWhy).join(", ") });
-    const img = document.createElement("img");
-    cleanImage(img, s.path, 192);
-    fig.append(img);
-    fig.addEventListener("click", () => { clean.at = i; showCleanPhoto(); });
-    return fig;
-  }));
+  clean.row.set(clean.found);
 }
 
 function cleanMark(keep) {
@@ -192,6 +183,15 @@ function cleanKey(e) {
 }
 
 function wireCleanup() {
+  clean.row = photoRow($("clean-strip"), {
+    cell: (s) => el("figure", { class: "clean-thumb", title: s.reasons.map(cleanWhy).join(", ") }, el("img")),
+    thumb: (s, fig) => cleanImage(fig.firstChild, s.path, 192),
+    open: (s) => {
+      clean.at = clean.found.indexOf(s);
+      showCleanPhoto();
+    },
+    isCurrent: (s) => s === clean.found[clean.at],
+  });
   $("lib-cleanup").addEventListener("click", openCleanup);
   $("clean-find").addEventListener("click", findCleanup);
   $("clean-close").addEventListener("click", () => $("clean-dialog").close());

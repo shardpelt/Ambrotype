@@ -12,6 +12,7 @@ pub(crate) mod export;
 pub(crate) mod features;
 pub(crate) mod files;
 pub(crate) mod hub;
+pub(crate) mod language;
 pub(crate) mod library;
 pub(crate) mod menu;
 pub(crate) mod models;
@@ -41,6 +42,8 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         crate::uitest::ui_test,
         crate::uitest::ui_test_done,
         menu::set_menu,
+        language::language_list,
+        language::language_texts,
         features::features,
         settings::interfaces,
         settings::set_interface,

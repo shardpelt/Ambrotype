@@ -599,6 +599,7 @@ kbd { display: inline-flex; align-items: center; gap: 4px; font: inherit; font-s
 .hub-preview.layout .hp-col i.grid { background: repeating-linear-gradient(90deg, var(--panel-2) 0 10px, var(--tab-active) 10px 12px); color: var(--text); }
 label.hub-url { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 12px; margin: 10px 0 6px; }
 label.hub-url input { background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); padding: 4px 8px; color: var(--text); }
+label.hub-url[hidden] { display: none; }
 
 /* ---------------------------------------------------------------- borders in the export dialog (borders.js) */
 #export-dialog { width: 640px; }

@@ -19,6 +19,7 @@ mod folder;
 mod hub;
 mod interface;
 mod keys;
+mod lang;
 mod library;
 mod looks;
 mod monitor;

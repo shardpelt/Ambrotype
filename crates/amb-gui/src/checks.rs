@@ -285,3 +285,22 @@ fn copies_of_shared_parts_may_only_fall() {
     }
     assert!(problems.is_empty(), "\n{}\n", problems.join("\n"));
 }
+
+/// The table of the app's words is generated; a stale one fails here, as for the man page.
+#[test]
+fn language_table_is_current() {
+    let root = gui_root().join("../..");
+    let run = std::process::Command::new("python3")
+        .arg(root.join("tools/lang-table.py"))
+        .arg("--check")
+        .output();
+    let Ok(out) = run else {
+        eprintln!("python3 not found: the language table was not checked");
+        return;
+    };
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+}

@@ -305,6 +305,7 @@ window.addEventListener("error", (e) => {
 });
 
 async function init() {
+  await wireLanguage();
   applyToolbarIcons();
   ui.panels = await invoke("editor_schema");
   for (const p of ui.panels) for (const s of p.sections) for (const def of s.controls) ui.defs.set(def.name, def);

@@ -1,0 +1,3817 @@
+{
+ "+ New preset…": [
+  "index.html"
+ ],
+ "+ Rule": [
+  "index.html"
+ ],
+ "+0.5 EV on it": [
+  "index.html"
+ ],
+ ". It opens in": [
+  "index.html"
+ ],
+ ". K keeps, D lets go, ← → step; nothing goes until you say.": [
+  "index.html"
+ ],
+ "1 MB": [
+  "index.html"
+ ],
+ "1 star (1)": [
+  "index.html"
+ ],
+ "1080 px (small)": [
+  "index.html"
+ ],
+ "11 × 14 in": [
+  "index.html"
+ ],
+ "16 MB (WhatsApp's max)": [
+  "index.html"
+ ],
+ "16-bit": [
+  "index.html"
+ ],
+ "2 stars (2)": [
+  "index.html"
+ ],
+ "2048 px (sharing)": [
+  "index.html"
+ ],
+ "3 MB": [
+  "index.html"
+ ],
+ "3 stars (3)": [
+  "index.html"
+ ],
+ "3840 px (4K screens)": [
+  "index.html"
+ ],
+ "4 stars (4)": [
+  "index.html"
+ ],
+ "4:2:0 (smallest)": [
+  "index.html"
+ ],
+ "4:4:4 (all colour detail)": [
+  "index.html"
+ ],
+ "5 MB": [
+  "index.html"
+ ],
+ "5 stars (5)": [
+  "index.html"
+ ],
+ "8 MB": [
+  "index.html"
+ ],
+ "8 × 10 in": [
+  "index.html"
+ ],
+ "8-bit": [
+  "index.html"
+ ],
+ ": each photo's own Auto tone and white balance": [
+  "index.html"
+ ],
+ ": every photo matched to it": [
+  "index.html"
+ ],
+ ": its own JPEG inside each raw when that is full size, else the raw at full size matched to it (Fujifilm)": [
+  "index.html"
+ ],
+ ": nothing is written, and the library shows the catalogue's folders and collections as they are, in step with Lightroom.": [
+  "index.html"
+ ],
+ "A blank canvas: empty columns and toolbar, filled from Add.": [
+  "core/keys.js"
+ ],
+ "A bug, an idea, or a photo that looks different from Lightroom.": [
+  "core/keys.js"
+ ],
+ "A folder of photos, in the library (Ctrl+Shift+O)": [
+  "index.html"
+ ],
+ "A ghost cursor edits the sample photo in about 20 seconds; any key or click stops it": [
+  "index.html"
+ ],
+ "A ghost cursor edits the sample photo in about 20 seconds; any key or click stops it. Starts the sample's edit afresh.": [
+  "core/keys.js"
+ ],
+ "A ghost cursor makes Auto edit's changes to your photo one slider at a time; each is a History step, and any key or click stops it.": [
+  "core/keys.js"
+ ],
+ "A layout and theme together, exactly as they are, to come back to after trying others. The one before your last change is kept for you.": [
+  "index.html"
+ ],
+ "A line of text in the bottom of the frame": [
+  "index.html"
+ ],
+ "A look for every photo that doesn't bring its own edit": [
+  "index.html"
+ ],
+ "A map, used as it is": [
+  "index.html"
+ ],
+ "A mask of it, with its sliders": [
+  "index.html"
+ ],
+ "A mask of it, with sliders": [
+  "index.html"
+ ],
+ "A mask of what you name: sky, people, the subject or the background straight away; anything else with the search and object selection models (Settings → AI models)": [
+  "index.html"
+ ],
+ "A profile file": [
+  "index.html"
+ ],
+ "A random one each time": [
+  "index.html"
+ ],
+ "A raw photo with an edit already made: step through its History to see what each slider does (18 MB download the first time)": [
+  "index.html"
+ ],
+ "A raw shot with a JPEG shows as its JPEG (raws without one stay as they are)": [
+  "index.html"
+ ],
+ "A raw shot with a JPEG shows as its JPEG, so ← → go through the JPEGs (the same switch as the library's)": [
+  "index.html"
+ ],
+ "A raw with an edit already made: step through its History to see what each slider does.": [
+  "core/keys.js"
+ ],
+ "A second copy of the originals, as they are named on the card, in a dated folder": [
+  "index.html"
+ ],
+ "A second edit of the photo, kept as its own sidecar.": [
+  "core/keys.js"
+ ],
+ "A second edit of this photo, as its own sidecar (Ctrl+')": [
+  "index.html"
+ ],
+ "A starting point for the whole photo, in one undo step.": [
+  "core/keys.js"
+ ],
+ "A title, caption, creator, copyright and keywords to give many photos at once. Empty fields leave the photos' own; keywords are added.": [
+  "index.html"
+ ],
+ "A3": [
+  "index.html"
+ ],
+ "A4": [
+  "index.html"
+ ],
+ "AI Denoise": [
+  "index.html"
+ ],
+ "AI Denoise: take the noise out of a raw": [
+  "core/keys.js"
+ ],
+ "AI Denoise…": [
+  "index.html"
+ ],
+ "AI Remove: fill it with what belongs there (Settings → AI models; healed from a nearby area until its model is installed)": [
+  "index.html"
+ ],
+ "AI fills where it was": [
+  "index.html"
+ ],
+ "AI models": [
+  "index.html"
+ ],
+ "API key": [
+  "index.html"
+ ],
+ "AVIF": [
+  "index.html"
+ ],
+ "AVIF speed (1 slow – 10 fast)": [
+  "index.html"
+ ],
+ "About": [
+  "index.html"
+ ],
+ "Across": [
+  "index.html"
+ ],
+ "Add": [
+  "index.html"
+ ],
+ "Add a border someone shared with you (a .json file)": [
+  "index.html"
+ ],
+ "Add a folder of .xmp or .lrtemplate presets": [
+  "index.html"
+ ],
+ "Add a layout someone shared": [
+  "index.html"
+ ],
+ "Add a library folder: a folder or a whole drive, kept indexed so it can be browsed and searched, also while unplugged": [
+  "index.html"
+ ],
+ "Add a plugin from a folder with plugin.json and plugin.wasm": [
+  "index.html"
+ ],
+ "Add a shared layout or theme file": [
+  "index.html"
+ ],
+ "Add folder…": [
+  "index.html"
+ ],
+ "Add frame": [
+  "index.html"
+ ],
+ "Add keywords": [
+  "index.html"
+ ],
+ "Add keywords (jump to the keyword field)": [
+  "core/keys.js"
+ ],
+ "Add keywords to the selection": [
+  "index.html"
+ ],
+ "Add keywords…": [
+  "index.html"
+ ],
+ "Add photos…": [
+  "index.html"
+ ],
+ "Add the folders, or whole drives, where your photos are. They're indexed in the background; an unplugged drive's photos stay listed.": [
+  "index.html"
+ ],
+ "Add the photo's details (camera, mm, f-stop, shutter, ISO)": [
+  "index.html"
+ ],
+ "Add the selection to the collection (B adds to the last one used)": [
+  "index.html"
+ ],
+ "Add to the last collection used": [
+  "core/keys.js"
+ ],
+ "Add to the selection": [
+  "index.html"
+ ],
+ "Add to the selection (commas for several)…": [
+  "index.html"
+ ],
+ "Add your own model…": [
+  "index.html"
+ ],
+ "Add your own sizes": [
+  "index.html"
+ ],
+ "Address": [
+  "index.html"
+ ],
+ "Add…": [
+  "index.html"
+ ],
+ "Adjust": [
+  "index.html"
+ ],
+ "Adobe RGB (1998)-compatible": [
+  "index.html"
+ ],
+ "Adobe RGB (1998)-compatible (print)": [
+  "index.html"
+ ],
+ "After": [
+  "index.html"
+ ],
+ "After a rating, flag or label from the keyboard, go to the next photo": [
+  "index.html"
+ ],
+ "After export": [
+  "index.html"
+ ],
+ "Alike": [
+  "index.html"
+ ],
+ "All": [
+  "index.html"
+ ],
+ "All except location": [
+  "index.html"
+ ],
+ "All features…": [
+  "index.html"
+ ],
+ "All in the tray": [
+  "index.html"
+ ],
+ "All keyboard shortcuts (?)": [
+  "index.html"
+ ],
+ "All photos": [
+  "index.html"
+ ],
+ "All the photos in the folder, to rate, label, tag and export many at once.": [
+  "core/keys.js"
+ ],
+ "Allow and run": [
+  "index.html"
+ ],
+ "Also a smaller copy, up to": [
+  "index.html"
+ ],
+ "Also save the collage file next to it, to reopen and edit later": [
+  "index.html"
+ ],
+ "Also saves NAME-small.jpg beside the export, at most this size, for social media and messages: as sharp as fits, and smaller in pixels only when it must be": [
+  "index.html"
+ ],
+ "Also the mouse wheel or a pinch, at the pointer. In the library: the Map view.": [
+  "core/keys.js"
+ ],
+ "Also:": [
+  "index.html"
+ ],
+ "Ambrotype": [
+  "index.html"
+ ],
+ "Ambrotype is free software: you can share and change it under the terms of the GNU General Public License, version 3 or (at your option) any later version. It comes with ABSOLUTELY NO WARRANTY. The plugin SDK is MIT or Apache-2.0, so plugins may use any licence.": [
+  "index.html"
+ ],
+ "Amount": [
+  "index.html"
+ ],
+ "An MP4 (AV1) of the photo's History: before, each step easing in and named, after. For Reels, Shorts and before/after posts.": [
+  "core/keys.js"
+ ],
+ "An ONNX model that takes a square colour photo and gives a map of the same size (1 where the thing is), or one map per class. To use MediaPipe's people model (hair, skin, clothes), see the guide in the Ambrotype repository: docs/own-models.md.": [
+  "index.html"
+ ],
+ "An address, a place, or coordinates": [
+  "index.html"
+ ],
+ "An empty frame on top, in the middle": [
+  "index.html"
+ ],
+ "Angle": [
+  "index.html"
+ ],
+ "Anthropic (API key)": [
+  "index.html"
+ ],
+ "Any AI app that can run MCP servers (an open standard) can edit, preview and export your photos with Ambrotype's own commands, on your own AI plan. Every change is a normal edit you can undo, and shows here at once.": [
+  "index.html"
+ ],
+ "Any AI app that runs MCP servers, or a command-line agent started in a terminal, told where the guides are.": [
+  "core/keys.js"
+ ],
+ "Any color": [
+  "index.html"
+ ],
+ "Any colour": [
+  "index.html"
+ ],
+ "Any flag": [
+  "index.html"
+ ],
+ "Any rating": [
+  "index.html"
+ ],
+ "Anything": [
+  "index.html"
+ ],
+ "Aperture": [
+  "index.html"
+ ],
+ "Appearance": [
+  "index.html"
+ ],
+ "Appearance: layouts and themes": [
+  "core/keys.js"
+ ],
+ "Appearance: layouts and themes. Choose, clone, share": [
+  "index.html"
+ ],
+ "Apply": [
+  "index.html"
+ ],
+ "Apply a preset": [
+  "index.html"
+ ],
+ "Apply the crop": [
+  "core/keys.js"
+ ],
+ "Apply to the original, not on top": [
+  "index.html"
+ ],
+ "Arrange freely": [
+  "index.html"
+ ],
+ "Arrow keys nudge the frame (Shift: 10 px).": [
+  "index.html"
+ ],
+ "As in Lightroom; the selected one is outlined.": [
+  "core/keys.js"
+ ],
+ "As the camera would have saved them": [
+  "index.html"
+ ],
+ "Ask AI…": [
+  "index.html"
+ ],
+ "Ask your own AI model to edit the photo (Ctrl+Shift+A)": [
+  "index.html"
+ ],
+ "Aspect": [
+  "index.html"
+ ],
+ "Assistant": [
+  "index.html"
+ ],
+ "Assistant: your AI edits the photo": [
+  "core/keys.js"
+ ],
+ "At 300 dpi, each photo with its edit. More photos than fit make more pages.": [
+  "index.html"
+ ],
+ "Auto": [
+  "index.html"
+ ],
+ "Auto align (handheld brackets)": [
+  "index.html"
+ ],
+ "Auto crop": [
+  "index.html"
+ ],
+ "Auto edit: tone, white balance, lens corrections, vibrance and a level horizon": [
+  "core/keys.js"
+ ],
+ "Auto edit: tone, white balance, lens corrections, vibrance and a level horizon in one go, as a starting point (Ctrl+U)": [
+  "index.html"
+ ],
+ "Auto exposure": [
+  "index.html"
+ ],
+ "Auto picks Perspective for up to about 100° (straight lines stay straight), Cylindrical for wide rows and Spherical for the widest or taller ones. Shoot with about a third of each frame shared with the next, turning the camera about the lens. The result is a DNG that edits like a raw, here and in Lightroom.": [
+  "index.html"
+ ],
+ "Auto tone": [
+  "index.html"
+ ],
+ "Auto-stack…": [
+  "index.html"
+ ],
+ "Automatic: the desktop's profile": [
+  "index.html"
+ ],
+ "Back": [
+  "index.html"
+ ],
+ "Back to the collage, with this photo's edits": [
+  "index.html"
+ ],
+ "Back to the editor (Esc). The collage stays as it is.": [
+  "index.html"
+ ],
+ "Back to the grid, then the editor": [
+  "core/keys.js"
+ ],
+ "Back to the task before (Library, Develop, …)": [
+  "core/keys.js"
+ ],
+ "Background": [
+  "index.html"
+ ],
+ "Backup copy to": [
+  "index.html"
+ ],
+ "Batch": [
+  "index.html"
+ ],
+ "Batch export": [
+  "index.html"
+ ],
+ "Batch export: resize a folder and its subfolders to smaller copies in another folder": [
+  "core/keys.js"
+ ],
+ "Batch export…": [
+  "index.html"
+ ],
+ "Bayer": [
+  "index.html"
+ ],
+ "Before": [
+  "index.html"
+ ],
+ "Before / After": [
+  "index.html"
+ ],
+ "Before / after split": [
+  "core/keys.js"
+ ],
+ "Before / after: the photo as it was, with a bar to drag in": [
+  "core/keys.js"
+ ],
+ "Before on the left of a bar, after on the right; drag the bar.": [
+  "core/keys.js"
+ ],
+ "Best in each burst": [
+  "index.html"
+ ],
+ "Best in each burst: the shot in focus with eyes open": [
+  "core/keys.js"
+ ],
+ "Bigger brush": [
+  "core/keys.js"
+ ],
+ "Bigger spot": [
+  "core/keys.js"
+ ],
+ "Bit depth": [
+  "index.html"
+ ],
+ "Black": [
+  "index.html"
+ ],
+ "Blue": [
+  "index.html"
+ ],
+ "Border": [
+  "index.html"
+ ],
+ "Borders": [
+  "index.html"
+ ],
+ "Bottom": [
+  "index.html"
+ ],
+ "Bottom left": [
+  "index.html"
+ ],
+ "Bottom right": [
+  "index.html"
+ ],
+ "Bright": [
+  "index.html"
+ ],
+ "Brighten": [
+  "index.html"
+ ],
+ "Bring photos in": [
+  "index.html"
+ ],
+ "Bring to front (])": [
+  "index.html"
+ ],
+ "Browse": [
+  "index.html"
+ ],
+ "Browse all features…": [
+  "index.html"
+ ],
+ "Browse hub…": [
+  "index.html"
+ ],
+ "Browse layouts and themes other people made": [
+  "index.html"
+ ],
+ "Browse what other people shared: layouts, themes, presets, collages, plugins and interfaces (Ctrl+Shift+H)": [
+  "index.html"
+ ],
+ "Browse what others shared": [
+  "core/keys.js"
+ ],
+ "Bug": [
+  "index.html"
+ ],
+ "Built in: how an AI drives Ambrotype, every setting, layouts, plugins. amb docs in a terminal.": [
+  "core/keys.js"
+ ],
+ "Bursts within": [
+  "index.html"
+ ],
+ "By capture time": [
+  "index.html"
+ ],
+ "By date: 2026 / 2026-10-10": [
+  "index.html"
+ ],
+ "By month: 2026 / 2026-10": [
+  "index.html"
+ ],
+ "By name": [
+  "index.html"
+ ],
+ "By rating": [
+  "index.html"
+ ],
+ "Camera simulator": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Cancel": [
+  "index.html"
+ ],
+ "Cancel the crop": [
+  "core/keys.js"
+ ],
+ "Canvas": [
+  "index.html"
+ ],
+ "Caption": [
+  "index.html"
+ ],
+ "Catalogue": [
+  "index.html"
+ ],
+ "Cell": [
+  "index.html"
+ ],
+ "Centre": [
+  "index.html"
+ ],
+ "Change": [
+  "index.html"
+ ],
+ "Change colours": [
+  "index.html"
+ ],
+ "Change them in Settings (⚙). Press ? to see this again.": [
+  "index.html"
+ ],
+ "Choose Lightroom's catalogue (a .lrcat file).": [
+  "index.html"
+ ],
+ "Choose a folder; pages are named after the layout": [
+  "index.html"
+ ],
+ "Choose a profile…": [
+  "index.html"
+ ],
+ "Choose folder and convert…": [
+  "index.html"
+ ],
+ "Choose folder…": [
+  "index.html"
+ ],
+ "Choose it on a map, or find an address or place by name": [
+  "index.html"
+ ],
+ "Choose the .onnx file and add…": [
+  "index.html"
+ ],
+ "Choose the place": [
+  "index.html"
+ ],
+ "Choose where the photos are and where they go.": [
+  "index.html"
+ ],
+ "Choose…": [
+  "index.html"
+ ],
+ "Chroma subsampling": [
+  "index.html"
+ ],
+ "Cinematic": [
+  "index.html"
+ ],
+ "Clean up": [
+  "index.html"
+ ],
+ "Clean up: find photos to delete (blurry, copies, eyes closed, black frames…)": [
+  "core/keys.js"
+ ],
+ "Clean up…": [
+  "index.html"
+ ],
+ "Clear": [
+  "index.html"
+ ],
+ "Clear the rating": [
+  "core/keys.js"
+ ],
+ "Click a cell to change it.": [
+  "index.html"
+ ],
+ "Click a look to apply it. Each is an ordinary edit you can keep tweaking, and Undo takes it back.": [
+  "index.html"
+ ],
+ "Click a person, a bin, a car (or draw a box round it): its outline is found and AI Remove fills all of it in one spot (Shift+Q)": [
+  "index.html"
+ ],
+ "Click a person, a car, the sky: then adjust it with a mask, remove it, move it, or soften the background.": [
+  "core/keys.js"
+ ],
+ "Click the stars on the filmstrip's photos to rate them (hovering shows the missing stars in grey)": [
+  "index.html"
+ ],
+ "Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.": [
+  "index.html"
+ ],
+ "Clipping": [
+  "index.html"
+ ],
+ "Clipping overlay": [
+  "core/keys.js"
+ ],
+ "Clock behind by": [
+  "index.html"
+ ],
+ "Clone": [
+  "index.html"
+ ],
+ "Close": [
+  "index.html"
+ ],
+ "Close (Esc)": [
+  "index.html"
+ ],
+ "Close (the conversation is kept)": [
+  "index.html"
+ ],
+ "Close the settings; the frame stays": [
+  "index.html"
+ ],
+ "Cloudy": [
+  "index.html"
+ ],
+ "Collage": [
+  "index.html"
+ ],
+ "Collage maker": [
+  "core/keys.js"
+ ],
+ "Collage maker: several photos on one canvas": [
+  "index.html"
+ ],
+ "Collages": [
+  "index.html"
+ ],
+ "Collection set…": [
+  "index.html"
+ ],
+ "Collection to add to": [
+  "index.html"
+ ],
+ "Collections": [
+  "index.html"
+ ],
+ "Color": [
+  "index.html"
+ ],
+ "Color Grading": [
+  "index.html"
+ ],
+ "Color Mixer (HSL)": [
+  "index.html"
+ ],
+ "Color filter": [
+  "index.html"
+ ],
+ "Color label": [
+  "index.html"
+ ],
+ "Colour": [
+  "index.html"
+ ],
+ "Colour per pixel (TensorFlow, MediaPipe)": [
+  "index.html"
+ ],
+ "Colour planes first (PyTorch, most ONNX)": [
+  "index.html"
+ ],
+ "Colour space": [
+  "index.html"
+ ],
+ "Colours the space can't hold, in magenta": [
+  "index.html"
+ ],
+ "Common limits": [
+  "index.html"
+ ],
+ "Compact": [
+  "index.html"
+ ],
+ "Compare": [
+  "index.html"
+ ],
+ "Compare (C)": [
+  "index.html"
+ ],
+ "Compare two photos": [
+  "core/keys.js"
+ ],
+ "Connect an AI app": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Connect an AI app…": [
+  "index.html"
+ ],
+ "Contact sheet": [
+  "index.html"
+ ],
+ "Contact sheets to print: the selected photos small on pages, as strips of film or a plain grid": [
+  "index.html"
+ ],
+ "Contact sheet…": [
+  "index.html"
+ ],
+ "Convert raws to JPEGs": [
+  "index.html"
+ ],
+ "Convert raws to JPEGs: the library's selection, or the open photo's folder": [
+  "core/keys.js"
+ ],
+ "Convert raws…": [
+  "index.html"
+ ],
+ "Copied into dated folders, renamed if you like.": [
+  "core/keys.js"
+ ],
+ "Copy": [
+  "index.html"
+ ],
+ "Copy from the source as it is": [
+  "index.html"
+ ],
+ "Copy from the source, then match the surroundings": [
+  "index.html"
+ ],
+ "Copy instructions": [
+  "index.html"
+ ],
+ "Copy photos from a card or folder (Ctrl+Shift+I)": [
+  "index.html"
+ ],
+ "Copy report": [
+  "index.html"
+ ],
+ "Copy settings": [
+  "index.html"
+ ],
+ "Copy the report, to paste anywhere": [
+  "index.html"
+ ],
+ "Copy the selected photo's settings (in the editor: the open photo's)": [
+  "core/keys.js"
+ ],
+ "Copy this photo's develop settings (Ctrl+Shift+C)": [
+  "index.html"
+ ],
+ "Copyright": [
+  "index.html"
+ ],
+ "Copyright only": [
+  "index.html"
+ ],
+ "Copyright © 2026 The Ambrotype contributors": [
+  "index.html"
+ ],
+ "Cream": [
+  "index.html"
+ ],
+ "Creator": [
+  "index.html"
+ ],
+ "Credits and notices": [
+  "index.html"
+ ],
+ "Crop": [
+  "index.html"
+ ],
+ "Crop & straighten": [
+  "index.html"
+ ],
+ "Crop and straighten": [
+  "core/keys.js"
+ ],
+ "Crop and straighten (R)": [
+  "index.html"
+ ],
+ "Custom": [
+  "index.html"
+ ],
+ "Cylindrical": [
+  "index.html"
+ ],
+ "Dark grey": [
+  "index.html"
+ ],
+ "Darken": [
+  "index.html"
+ ],
+ "Date and camera name: 20261010_DSC_1234": [
+  "index.html"
+ ],
+ "Date and number: 20261010_0001": [
+  "index.html"
+ ],
+ "Default": [
+  "index.html"
+ ],
+ "Defaults": [
+  "index.html"
+ ],
+ "Deghost": [
+  "index.html"
+ ],
+ "Deghosting takes moving things (people, leaves, water) from one exposure. The result is a DNG that edits like a raw, here and in Lightroom.": [
+  "index.html"
+ ],
+ "Delete": [
+  "index.html"
+ ],
+ "Delete collection…": [
+  "index.html"
+ ],
+ "Delete copy": [
+  "index.html"
+ ],
+ "Delete spot": [
+  "index.html"
+ ],
+ "Delete the selected part (or mask)": [
+  "core/keys.js"
+ ],
+ "Delete the selected spot": [
+  "core/keys.js"
+ ],
+ "Delete the selected virtual copies (their photo stays)": [
+  "index.html"
+ ],
+ "Delete this layout or theme": [
+  "index.html"
+ ],
+ "Delete this recipe of yours": [
+  "index.html"
+ ],
+ "Delete…": [
+  "index.html"
+ ],
+ "Denoise": [
+  "index.html"
+ ],
+ "Density": [
+  "index.html"
+ ],
+ "Describe it: a car, the dog, sky…": [
+  "index.html"
+ ],
+ "Describe what it should do. This writes instructions for your own AI assistant (for example Claude Code on this computer): paste them there, and press Reload here when it's done.": [
+  "index.html"
+ ],
+ "Develop preset": [
+  "index.html"
+ ],
+ "Display P3": [
+  "index.html"
+ ],
+ "Display P3 (modern screens)": [
+  "index.html"
+ ],
+ "Do nothing": [
+  "index.html"
+ ],
+ "Don't show tips": [
+  "index.html"
+ ],
+ "Done": [
+  "index.html"
+ ],
+ "Drag a copy of it somewhere else; it stays where it was too": [
+  "index.html"
+ ],
+ "Drag a copy somewhere else": [
+  "index.html"
+ ],
+ "Drag into a panel, a column or the toolbar, or click to add. Drop something here to remove it.": [
+  "index.html"
+ ],
+ "Drag it somewhere else": [
+  "index.html"
+ ],
+ "Drag to jump through the years": [
+  "index.html"
+ ],
+ "Drag to make History taller or shorter": [
+  "index.html"
+ ],
+ "Drag to make Snapshots taller or shorter": [
+  "index.html"
+ ],
+ "Drag to move the split (Y turns it off)": [
+  "index.html"
+ ],
+ "Draw a box round it: the Subject model finds its outline, and AI Remove fills it in one spot.": [
+  "core/keys.js"
+ ],
+ "Draw a new crop (corner to corner)": [
+  "core/keys.js"
+ ],
+ "Draw a new crop: press at one corner and drag to the other (D)": [
+  "index.html"
+ ],
+ "Draw ⌖": [
+  "index.html"
+ ],
+ "Drawn around the photo, not part of the edit. While it shows, export adds it as its Border. These settings close when you click elsewhere; the frame stays. Click the frame, or right-click Frame, to open them again. The Frame button (Shift+B) turns it off and on.": [
+  "index.html"
+ ],
+ "Dreamy": [
+  "index.html"
+ ],
+ "Drop a folder of photos here": [
+  "index.html"
+ ],
+ "Drop a photo or a folder here, or press Ctrl+O (a folder: Ctrl+Shift+O). Lightroom presets and XMP sidecars work as they are.": [
+  "index.html"
+ ],
+ "Duplicates and bursts": [
+  "index.html"
+ ],
+ "Duplicates and bursts…": [
+  "index.html"
+ ],
+ "Dusk": [
+  "index.html"
+ ],
+ "Each burst into one stack, the best on top": [
+  "index.html"
+ ],
+ "Each frame keeps its own brightness (share only the base and levels)": [
+  "index.html"
+ ],
+ "Each group into a stack, the best on top": [
+  "index.html"
+ ],
+ "Each photo for": [
+  "index.html"
+ ],
+ "Each photo gets the preset on top of its own edit, as one undoable step per photo. Crop, masks and spots stay.": [
+  "index.html"
+ ],
+ "Each photo keeps its own edit. The photos stay as they are. Stop at any time and start again: finished ones are skipped.": [
+  "index.html"
+ ],
+ "Each photo's edit, rating, colour label, flag, keywords, stack, title and caption go into its XMP sidecar, where both Ambrotype and Lightroom read them. Virtual copies and collections come too. The catalogue is only read: close Lightroom first. Sidecars already there are kept. Or": [
+  "index.html"
+ ],
+ "Edit filter": [
+  "index.html"
+ ],
+ "Edit in another app": [
+  "core/keys.js"
+ ],
+ "Edit in another app (Ctrl+Alt+E): your image editor": [
+  "index.html"
+ ],
+ "Edit layout": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Edit layout…": [
+  "index.html"
+ ],
+ "Edit photo": [
+  "index.html"
+ ],
+ "Edit preset": [
+  "index.html"
+ ],
+ "Edit rules…": [
+  "index.html"
+ ],
+ "Edit this layout: move panels, controls and toolbar buttons": [
+  "index.html"
+ ],
+ "Edited": [
+  "index.html"
+ ],
+ "Edited first": [
+  "index.html"
+ ],
+ "Edited or not": [
+  "index.html"
+ ],
+ "Editing": [
+  "index.html"
+ ],
+ "Edits": [
+  "index.html"
+ ],
+ "Empty": [
+  "index.html"
+ ],
+ "Empty the tray (cells keep their photos)": [
+  "index.html"
+ ],
+ "End the lesson": [
+  "index.html"
+ ],
+ "English": [
+  "index.html"
+ ],
+ "Enter": [
+  "index.html"
+ ],
+ "Esc": [
+  "index.html"
+ ],
+ "Every edit the assistant asked for, with the photo, your request and what happened (a local file)": [
+  "index.html"
+ ],
+ "Every feature, by what you want to do. Click one to see where it is.": [
+  "index.html"
+ ],
+ "Every keyword in the library, and how many photos have it. Tick some to give them to the selected photos, rename them, merge them into one, or remove them everywhere: each photo's sidecar changes.": [
+  "index.html"
+ ],
+ "Every keyword in the library: rename, merge or remove them everywhere": [
+  "index.html"
+ ],
+ "Every photo in the library folders, newest first, as one timeline": [
+  "index.html"
+ ],
+ "Every step stays in History, so Redo brings them back.": [
+  "core/keys.js"
+ ],
+ "Everything else softer": [
+  "index.html"
+ ],
+ "Exact size (px, cropped to fit)": [
+  "index.html"
+ ],
+ "Export": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Export (Ctrl+E)": [
+  "index.html"
+ ],
+ "Export Edit Replay: a video of the edit, step by step": [
+  "core/keys.js"
+ ],
+ "Export pages…": [
+  "index.html"
+ ],
+ "Export preset": [
+  "index.html"
+ ],
+ "Export the selection with the same choices, one file each (Ctrl+E)": [
+  "index.html"
+ ],
+ "Export…": [
+  "index.html"
+ ],
+ "Extra tools that make edits; run, install and share them.": [
+  "core/keys.js"
+ ],
+ "F again (or Esc) comes back. Zoom and move round it as usual.": [
+  "core/keys.js"
+ ],
+ "Fade": [
+  "index.html"
+ ],
+ "Feather": [
+  "index.html"
+ ],
+ "Feedback": [
+  "index.html"
+ ],
+ "File": [
+  "index.html"
+ ],
+ "File names": [
+  "index.html"
+ ],
+ "File this collection under a collection set": [
+  "index.html"
+ ],
+ "File type filter": [
+  "index.html"
+ ],
+ "Fill empty cells": [
+  "index.html"
+ ],
+ "Fill in from the first selected photo": [
+  "index.html"
+ ],
+ "Film": [
+  "index.html"
+ ],
+ "Film Simulation: Classic Chrome Dynamic Range: DR400 Highlight: -1 Shadow: +1 Grain Effect: Weak, Small White Balance: Auto, +2 Red & -4 Blue": [
+  "index.html"
+ ],
+ "Film negatives: analyse each selected frame and give the roll one conversion (Auto off): frames in different light get their own, odd frames keep theirs": [
+  "index.html"
+ ],
+ "Film strips": [
+  "index.html"
+ ],
+ "Filter": [
+  "index.html"
+ ],
+ "Filter and sort": [
+  "index.html"
+ ],
+ "Filter keywords": [
+  "index.html"
+ ],
+ "Filter presets": [
+  "index.html"
+ ],
+ "Filter ▾": [
+  "index.html"
+ ],
+ "Filter: e.g. dust, whatsapp, horizon": [
+  "index.html"
+ ],
+ "Find": [
+  "index.html"
+ ],
+ "Find copies of the same photo, alike pictures and bursts; keep the best": [
+  "index.html"
+ ],
+ "Find dust": [
+  "index.html"
+ ],
+ "Find dust and hairs on the scan and heal each with a spot": [
+  "index.html"
+ ],
+ "Find missing photos": [
+  "index.html"
+ ],
+ "Find missing photos…": [
+  "index.html"
+ ],
+ "Find photos you may not want (blurry, copies, weaker burst frames, eyes closed, black frames) and page through them before they go to the trash": [
+  "index.html"
+ ],
+ "Find settings": [
+  "index.html"
+ ],
+ "Finds copies of the same file, alike pictures (the same shot re-saved, or frames of one scene) and bursts. In each group the best comes first, marked ★: a pick, then the highest rating, an edit, the sharpest picture. Click another photo to make it the one kept.": [
+  "index.html"
+ ],
+ "First number": [
+  "index.html"
+ ],
+ "Fit": [
+  "index.html"
+ ],
+ "Fit / 100% (Z, or click the photo). Drag to pan at 100%.": [
+  "index.html"
+ ],
+ "Fit / 100% view": [
+  "core/keys.js"
+ ],
+ "Fit the photo to the cell again": [
+  "index.html"
+ ],
+ "Fit the whole photo": [
+  "core/keys.js"
+ ],
+ "Flag": [
+  "index.html"
+ ],
+ "Flag as a pick": [
+  "core/keys.js"
+ ],
+ "Flag as rejected": [
+  "core/keys.js"
+ ],
+ "Flag filter": [
+  "index.html"
+ ],
+ "Flag the best of each burst as a pick and the others as rejects": [
+  "index.html"
+ ],
+ "Flag the best of each group as a pick and the rest as rejects": [
+  "index.html"
+ ],
+ "Flag them as rejected instead of deleting": [
+  "index.html"
+ ],
+ "Flip horizontal": [
+  "core/keys.js"
+ ],
+ "Focal length": [
+  "index.html"
+ ],
+ "Folder": [
+  "index.html"
+ ],
+ "Folders": [
+  "index.html"
+ ],
+ "Folder…": [
+  "index.html"
+ ],
+ "Font": [
+  "index.html"
+ ],
+ "For": [
+  "index.html"
+ ],
+ "For \"looks different\": which settings or preset, and how it differs.": [
+  "index.html"
+ ],
+ "For photos without a place, from the photos that have one: taken around the same time, or looking the same (photos Smart search has indexed). Untick any that look wrong.": [
+  "index.html"
+ ],
+ "Format": [
+  "index.html"
+ ],
+ "Forward again, after Back": [
+  "core/keys.js"
+ ],
+ "Frame": [
+  "index.html"
+ ],
+ "Frame angle in degrees": [
+  "index.html"
+ ],
+ "Frame: a border and text around the photo (Shift+B)": [
+  "index.html"
+ ],
+ "Frame: border and text around the photo": [
+  "core/keys.js"
+ ],
+ "Frames in different light (daylight, lamps) get their own conversion": [
+  "index.html"
+ ],
+ "From": [
+  "index.html"
+ ],
+ "From (a card or folder)": [
+  "index.html"
+ ],
+ "From Lightroom Classic…": [
+  "index.html"
+ ],
+ "From a card or folder…": [
+  "index.html"
+ ],
+ "From the photo you're on: ← → (or Space, Home, End) or a click on the left or right of the screen step; Esc ends on the photo you got to. Follows JPEG if there is one.": [
+  "core/keys.js"
+ ],
+ "From the recipe": [
+  "index.html"
+ ],
+ "From the recipe (else X-Trans V)": [
+  "index.html"
+ ],
+ "From the selected photo": [
+  "index.html"
+ ],
+ "Fuji recipe": [
+  "index.html"
+ ],
+ "Fuji recipe: paste a Fujifilm camera recipe (film simulation, grain, white balance…) and get it as a preset": [
+  "index.html"
+ ],
+ "Fuji recipe…": [
+  "index.html"
+ ],
+ "Full screen": [
+  "index.html"
+ ],
+ "Full size": [
+  "index.html"
+ ],
+ "GFX": [
+  "index.html"
+ ],
+ "Gamut warning": [
+  "index.html"
+ ],
+ "Gap and outer border to 0: the photos meet edge to edge": [
+  "index.html"
+ ],
+ "Gap between photos": [
+  "index.html"
+ ],
+ "Gap, border and corners are % of the short edge, so they look the same at any size.": [
+  "index.html"
+ ],
+ "General": [
+  "index.html"
+ ],
+ "Give the selected photos new names from a template": [
+  "index.html"
+ ],
+ "Give the selected photos the copied settings (Ctrl+Shift+V)": [
+  "index.html"
+ ],
+ "Give the ticked keywords to every selected photo": [
+  "index.html"
+ ],
+ "Glossy paper": [
+  "index.html"
+ ],
+ "Gradients, brush and range masks with their own sliders.": [
+  "core/keys.js"
+ ],
+ "Green": [
+  "index.html"
+ ],
+ "Grey": [
+  "index.html"
+ ],
+ "Grid": [
+  "index.html"
+ ],
+ "Grid (G)": [
+  "index.html"
+ ],
+ "Group": [
+  "index.html"
+ ],
+ "Group alike": [
+  "index.html"
+ ],
+ "Group the selection into one stack, shown as its top photo (Ctrl+G)": [
+  "index.html"
+ ],
+ "Guess places": [
+  "index.html"
+ ],
+ "Guide": [
+  "index.html"
+ ],
+ "Guided Upright": [
+  "index.html"
+ ],
+ "Guides for AI agents": [
+  "core/keys.js"
+ ],
+ "Guides for AI agents (built in;": [
+  "index.html"
+ ],
+ "Heal": [
+  "index.html"
+ ],
+ "Heal or clone blemishes and distractions.": [
+  "core/keys.js"
+ ],
+ "Height": [
+  "index.html"
+ ],
+ "Height (px)": [
+  "index.html"
+ ],
+ "Hidden presets come back dimmed in the Presets tab, to unhide.": [
+  "core/keys.js"
+ ],
+ "Hidden, it comes back while the pointer is at the window's top edge.": [
+  "core/keys.js"
+ ],
+ "Hide or show the left column": [
+  "core/keys.js"
+ ],
+ "Hide or show the right column": [
+  "core/keys.js"
+ ],
+ "Hide or show the top bar": [
+  "core/keys.js"
+ ],
+ "Hide the folders (F7)": [
+  "index.html"
+ ],
+ "Hide the panel (F8)": [
+  "index.html"
+ ],
+ "High": [
+  "index.html"
+ ],
+ "Higher shows only stronger edges": [
+  "index.html"
+ ],
+ "History": [
+  "index.html"
+ ],
+ "History: the arrow keys step through it": [
+  "index.html"
+ ],
+ "Hold Alt to erase.": [
+  "core/keys.js"
+ ],
+ "Hover to see a preset on your photo. Free to use (CC0).": [
+  "index.html"
+ ],
+ "How a photo is made and edited, step by step, and what the terms mean.": [
+  "core/keys.js"
+ ],
+ "How much colour detail JPEG keeps: Auto keeps it all at quality 90 and above": [
+  "index.html"
+ ],
+ "How often each aperture, focal length, shutter speed, ISO, camera and lens comes up in the photos shown, and how many were kept. Click a bar to show those photos.": [
+  "core/keys.js"
+ ],
+ "Hub address (where Browse hub… looks)": [
+  "index.html"
+ ],
+ "Hub: what others shared": [
+  "index.html"
+ ],
+ "Hue": [
+  "index.html"
+ ],
+ "ISO": [
+  "index.html"
+ ],
+ "Idea": [
+  "index.html"
+ ],
+ "Import": [
+  "index.html"
+ ],
+ "Import photos": [
+  "index.html"
+ ],
+ "Import photos from a card or folder": [
+  "core/keys.js"
+ ],
+ "Import ▾": [
+  "index.html"
+ ],
+ "Import…": [
+  "index.html"
+ ],
+ "In each burst, mark the photo in focus with eyes open and dim the rest; then pick it and reject the rest, or stack them": [
+  "index.html"
+ ],
+ "In the frame, below the photo": [
+  "index.html"
+ ],
+ "Include app, system, camera, lens and the current settings (never the photo)": [
+  "index.html"
+ ],
+ "Include subfolders": [
+  "index.html"
+ ],
+ "Include subfolders (a card's DCIM folders)": [
+  "index.html"
+ ],
+ "Indoors": [
+  "index.html"
+ ],
+ "Input size (px)": [
+  "index.html"
+ ],
+ "Insights": [
+  "index.html"
+ ],
+ "Insights: how the photos shown were shot (apertures, focal lengths, cameras, lenses…); click a bar to show those photos": [
+  "index.html"
+ ],
+ "Insights: how you shoot": [
+  "core/keys.js"
+ ],
+ "Install": [
+  "index.html"
+ ],
+ "Install a layout or theme from a link": [
+  "index.html"
+ ],
+ "Install from folder…": [
+  "index.html"
+ ],
+ "Interface: the whole window, built in or one of your own (docs/ai/custom-interface.md)": [
+  "index.html"
+ ],
+ "Interfaces": [
+  "index.html"
+ ],
+ "Into": [
+  "index.html"
+ ],
+ "Invert (a background class gives everything else)": [
+  "index.html"
+ ],
+ "It still can't read your files or use the network: it can only change settings, and Undo takes them back. You're asked again if the plugin changes.": [
+  "index.html"
+ ],
+ "Its photos in the library.": [
+  "core/keys.js"
+ ],
+ "Its settings, without the crop, as a one-click preset.": [
+  "core/keys.js"
+ ],
+ "Its shadow too": [
+  "index.html"
+ ],
+ "Its shadow, shown in blue: Remove and Move take it with the object": [
+  "index.html"
+ ],
+ "JPEG": [
+  "index.html"
+ ],
+ "JPEG XL (lossless)": [
+  "index.html"
+ ],
+ "JPEG if there is one": [
+  "index.html"
+ ],
+ "JPEG only": [
+  "index.html"
+ ],
+ "JPEG: the quality comes down only as far as it must for the file to fit": [
+  "index.html"
+ ],
+ "Just the photo, filling the screen": [
+  "core/keys.js"
+ ],
+ "Keep": [
+  "index.html"
+ ],
+ "Keep its values": [
+  "index.html"
+ ],
+ "Keep the best, reject the rest": [
+  "index.html"
+ ],
+ "Keep the camera's names": [
+  "index.html"
+ ],
+ "Keep the chosen layout and theme, as they are now, under a name": [
+  "index.html"
+ ],
+ "Keep the edit as it is now under a name, to come back to (kept in the photo's .xmp)": [
+  "index.html"
+ ],
+ "Keep the folder structure": [
+  "index.html"
+ ],
+ "Keep the person the same size by walking back as you zoom in: the background grows": [
+  "index.html"
+ ],
+ "Keep the settings with the raws, to change and export again later": [
+  "index.html"
+ ],
+ "Keep these choices under a name": [
+  "index.html"
+ ],
+ "Keep these settings as a recipe of yours": [
+  "index.html"
+ ],
+ "Keep this one (K)": [
+  "index.html"
+ ],
+ "Keep this shape, size, gaps and background as your own layout": [
+  "index.html"
+ ],
+ "Keep under (MB, JPEG)": [
+  "index.html"
+ ],
+ "Kept instead:": [
+  "index.html"
+ ],
+ "Keyboard map": [
+  "index.html"
+ ],
+ "Keyboard shortcuts": [
+  "index.html"
+ ],
+ "Keyline around the photo": [
+  "index.html"
+ ],
+ "Keywords": [
+  "index.html"
+ ],
+ "Keywords for all": [
+  "index.html"
+ ],
+ "Keywords…": [
+  "index.html"
+ ],
+ "Kind": [
+  "index.html"
+ ],
+ "Landscape page": [
+  "index.html"
+ ],
+ "Language": [
+  "index.html"
+ ],
+ "Large": [
+  "index.html"
+ ],
+ "Latitude, longitude (52.3731, 4.8922), degrees (52°22'N 4°53'E) or a link from Google Maps, OpenStreetMap or Apple Maps; Enter sets it for the selection": [
+  "index.html"
+ ],
+ "Layout": [
+  "index.html"
+ ],
+ "Layout name": [
+  "index.html"
+ ],
+ "Layouts": [
+  "index.html"
+ ],
+ "Layouts and themes…": [
+  "index.html"
+ ],
+ "Layouts, themes, develop presets, collage templates, size profiles, borders, plugins and interfaces other people made, checked before they're installed. Most are small data files; plugins run sandboxed and ask before they see anything but the edit; an interface is a whole program, so the app asks first. From": [
+  "index.html"
+ ],
+ "Layouts, themes, presets, collages, plugins and interfaces from the hub.": [
+  "core/keys.js"
+ ],
+ "Learn": [
+  "index.html"
+ ],
+ "Learn the basics": [
+  "index.html"
+ ],
+ "Learn: short guided lessons": [
+  "core/keys.js"
+ ],
+ "Leave Select object": [
+  "core/keys.js"
+ ],
+ "Leave spot removal": [
+  "core/keys.js"
+ ],
+ "Leave the picker or Touch": [
+  "core/keys.js"
+ ],
+ "Left": [
+  "index.html"
+ ],
+ "Lens corrections first": [
+  "index.html"
+ ],
+ "Less keeps more of the photo as it was: fine texture, and some grain. It works on the raw's own data, so it does most for high-ISO shots; about a minute for a 24 MP photo.": [
+  "index.html"
+ ],
+ "Lessons are a data file (lessons.json), so anyone can write or translate one.": [
+  "index.html"
+ ],
+ "Let this one go (D)": [
+  "index.html"
+ ],
+ "Letter": [
+  "index.html"
+ ],
+ "Level the horizon": [
+  "core/keys.js"
+ ],
+ "Level the horizon: straighten the photo by its long lines, and crop to fit (L)": [
+  "index.html"
+ ],
+ "Level ⟂": [
+  "index.html"
+ ],
+ "Library": [
+  "index.html"
+ ],
+ "Library folders": [
+  "index.html"
+ ],
+ "Library grid / editor": [
+  "core/keys.js"
+ ],
+ "Library: all the photos in the folder, to rate, label, tag and export many at once": [
+  "index.html"
+ ],
+ "Library…": [
+  "index.html"
+ ],
+ "Licence": [
+  "index.html"
+ ],
+ "Light": [
+  "index.html"
+ ],
+ "Light grey": [
+  "index.html"
+ ],
+ "Lightroom": [
+  "index.html"
+ ],
+ "Lightroom, Camera Raw and Adobe are trademarks of Adobe Inc.; Fujifilm's film simulation names are trademarks of FUJIFILM Corporation. Ambrotype is not affiliated with or endorsed by either.": [
+  "index.html"
+ ],
+ "Like one I edited": [
+  "index.html"
+ ],
+ "Loading…": [
+  "index.html"
+ ],
+ "Log": [
+  "index.html"
+ ],
+ "Log of its edits": [
+  "index.html"
+ ],
+ "Logo…": [
+  "index.html"
+ ],
+ "Long edge (px)": [
+  "index.html"
+ ],
+ "Look in (with subfolders)": [
+  "index.html"
+ ],
+ "Look in a folder…": [
+  "index.html"
+ ],
+ "Looks different from Lightroom": [
+  "index.html"
+ ],
+ "Loosely alike": [
+  "index.html"
+ ],
+ "Loupe": [
+  "index.html"
+ ],
+ "Loupe (E)": [
+  "index.html"
+ ],
+ "Loupe: one photo large": [
+  "core/keys.js"
+ ],
+ "Loupe: see the part under the pointer at 100%": [
+  "core/keys.js"
+ ],
+ "Low": [
+  "index.html"
+ ],
+ "Lower the selected slider a step": [
+  "core/keys.js"
+ ],
+ "Lower the selected slider ten steps": [
+  "core/keys.js"
+ ],
+ "Luminance": [
+  "index.html"
+ ],
+ "M or Esc": [
+  "index.html"
+ ],
+ "MB": [
+  "index.html"
+ ],
+ "Make a collage": [
+  "index.html"
+ ],
+ "Make a plugin with your AI": [
+  "index.html"
+ ],
+ "Make a preset from this photo's edit": [
+  "core/keys.js"
+ ],
+ "Make a preset from this photo's edit (not the crop)": [
+  "index.html"
+ ],
+ "Make a virtual copy": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Make an editable copy": [
+  "index.html"
+ ],
+ "Make lots of photos smaller at once, keeping the folder structure; stop and run again any time.": [
+  "core/keys.js"
+ ],
+ "Make one with AI…": [
+  "index.html"
+ ],
+ "Make preset": [
+  "index.html"
+ ],
+ "Make sheet…": [
+  "index.html"
+ ],
+ "Map": [
+  "index.html"
+ ],
+ "Map images from OpenStreetMap in the library's Map (off: the map is a plain grid; on, it asks openstreetmap.org for the area shown)": [
+  "index.html"
+ ],
+ "Map to use, if it gives several": [
+  "index.html"
+ ],
+ "Map: the photos shown by where they were taken": [
+  "index.html"
+ ],
+ "Marks the best of each burst and dims the rest; then pick it and reject the rest, or stack them.": [
+  "core/keys.js"
+ ],
+ "Masks": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Masks (M)": [
+  "index.html"
+ ],
+ "Match look": [
+  "index.html"
+ ],
+ "Match look…": [
+  "index.html"
+ ],
+ "Match the look of other photos: pick reference photos; finds the white balance, tone, colour and grading settings that give this photo their look": [
+  "index.html"
+ ],
+ "Matte paper": [
+  "index.html"
+ ],
+ "Mean": [
+  "index.html"
+ ],
+ "Measures how light, warm and colourful the references are, then finds the settings that give this photo the same. The photo shows the result before you apply it.": [
+  "index.html"
+ ],
+ "Medium": [
+  "index.html"
+ ],
+ "Megapixels": [
+  "index.html"
+ ],
+ "Merge": [
+  "index.html"
+ ],
+ "Merge bracketed raws of one scene into one HDR photo (a DNG next to them)": [
+  "index.html"
+ ],
+ "Merge to HDR": [
+  "index.html"
+ ],
+ "Merge to HDR…": [
+  "index.html"
+ ],
+ "Merge to Panorama": [
+  "index.html"
+ ],
+ "Merge to Panorama…": [
+  "index.html"
+ ],
+ "Metadata": [
+  "index.html"
+ ],
+ "Metadata templates": [
+  "index.html"
+ ],
+ "Metadata templates…": [
+  "index.html"
+ ],
+ "Mirror the photo left to right (in the library, the selected photos).": [
+  "core/keys.js"
+ ],
+ "Model": [
+  "index.html"
+ ],
+ "Model and API key": [
+  "index.html"
+ ],
+ "Model from": [
+  "index.html"
+ ],
+ "Monitor colour: show the preview in your monitor's own colours (for a wide-gamut or calibrated screen)": [
+  "index.html"
+ ],
+ "Moody": [
+  "index.html"
+ ],
+ "More": [
+  "index.html"
+ ],
+ "More: the toolbar buttons that don't fit": [
+  "index.html"
+ ],
+ "Move": [
+  "index.html"
+ ],
+ "Move down the zoomed-in photo": [
+  "core/keys.js"
+ ],
+ "Move frames": [
+  "index.html"
+ ],
+ "Move from Lightroom Classic": [
+  "index.html"
+ ],
+ "Move from Lightroom Classic: its edits, ratings, keywords and collections, from its catalogue": [
+  "index.html"
+ ],
+ "Move panels, controls and toolbar buttons.": [
+  "core/keys.js"
+ ],
+ "Move photos inside": [
+  "index.html"
+ ],
+ "Move the selected photos (or all shown) into folders by capture date": [
+  "index.html"
+ ],
+ "Move the selected photos, with their sidecars and companions, to another folder": [
+  "index.html"
+ ],
+ "Move the selected photos, with their sidecars and companions, to the trash": [
+  "index.html"
+ ],
+ "Move to a folder…": [
+  "index.html"
+ ],
+ "Move to the trash": [
+  "index.html"
+ ],
+ "Move up the zoomed-in photo": [
+  "core/keys.js"
+ ],
+ "Moved to the trash": [
+  "core/core.js"
+ ],
+ "Moves on by itself when you've done it.": [
+  "index.html"
+ ],
+ "Muted": [
+  "index.html"
+ ],
+ "My model": [
+  "index.html"
+ ],
+ "Name": [
+  "index.html"
+ ],
+ "Name for these settings": [
+  "index.html"
+ ],
+ "Name, keyword, camera or lens": [
+  "index.html"
+ ],
+ "Name; another name": [
+  "index.html"
+ ],
+ "Nearly identical": [
+  "index.html"
+ ],
+ "Needs SAM 2.1 tiny (Settings → AI models) for clicks; a box works without it.": [
+  "index.html"
+ ],
+ "New": [
+  "index.html"
+ ],
+ "New brush mask": [
+  "core/keys.js"
+ ],
+ "New layout from scratch": [
+  "core/keys.js"
+ ],
+ "New linear gradient": [
+  "core/keys.js"
+ ],
+ "New radial gradient": [
+  "core/keys.js"
+ ],
+ "Next": [
+  "index.html"
+ ],
+ "Next photo (→)": [
+  "index.html"
+ ],
+ "Next photo in the folder": [
+  "core/keys.js"
+ ],
+ "No borders": [
+  "index.html"
+ ],
+ "No color": [
+  "index.html"
+ ],
+ "No flag (U)": [
+  "index.html"
+ ],
+ "No label": [
+  "index.html"
+ ],
+ "No limit": [
+  "index.html"
+ ],
+ "No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.": [
+  "index.html"
+ ],
+ "No rating (0)": [
+  "index.html"
+ ],
+ "No second copy": [
+  "index.html"
+ ],
+ "None": [
+  "index.html"
+ ],
+ "None (e.g. {camera} · {exposure})": [
+  "index.html"
+ ],
+ "None (e.g. © Your Name)": [
+  "index.html"
+ ],
+ "Normal": [
+  "index.html"
+ ],
+ "Not edited": [
+  "index.html"
+ ],
+ "Not now": [
+  "index.html"
+ ],
+ "Not rejected": [
+  "index.html"
+ ],
+ "Nothing found.": [
+  "index.html"
+ ],
+ "Nothing found. Search Everything (Ctrl+K) also finds commands and settings by name.": [
+  "index.html"
+ ],
+ "Nothing selected": [
+  "index.html"
+ ],
+ "O or Esc": [
+  "index.html"
+ ],
+ "OK": [
+  "index.html"
+ ],
+ "Odd frames (two stops or more off) keep their own": [
+  "index.html"
+ ],
+ "Off: plain sRGB": [
+  "index.html"
+ ],
+ "Offer it to the hub as a pull request, so others can install it": [
+  "index.html"
+ ],
+ "Offer the chosen interface to the hub as a pull request, so others can install it": [
+  "index.html"
+ ],
+ "On (the default): a preset replaces the look of the edit (crop, spots, masks and geometry stay). Off: presets add up, each on top of the last.": [
+  "index.html"
+ ],
+ "On the photo, bottom left": [
+  "index.html"
+ ],
+ "On the photo, bottom right": [
+  "index.html"
+ ],
+ "On the photo, top left": [
+  "index.html"
+ ],
+ "One folder at a time (Ctrl-click more to show them together)": [
+  "index.html"
+ ],
+ "One folder per day: 2026-10-10": [
+  "index.html"
+ ],
+ "One line": [
+  "index.html"
+ ],
+ "One page per group": [
+  "index.html"
+ ],
+ "One score per class (softmax)": [
+  "index.html"
+ ],
+ "One web page with the photo before and after its edit and a bar to drag; it works offline and on any web host.": [
+  "core/keys.js"
+ ],
+ "Only the best photo of each burst (the sharpest, or the one you rated highest)": [
+  "index.html"
+ ],
+ "Opacity": [
+  "index.html"
+ ],
+ "Open": [
+  "index.html"
+ ],
+ "Open GitHub in the browser": [
+  "index.html"
+ ],
+ "Open a Lightroom Classic catalogue in place: its folders, collections, edits, ratings and keywords show here, nothing imported; the catalogue is only read": [
+  "index.html"
+ ],
+ "Open a folder": [
+  "core/keys.js"
+ ],
+ "Open a photo": [
+  "core/keys.js"
+ ],
+ "Open a photo to start": [
+  "index.html"
+ ],
+ "Open a photo to take its values.": [
+  "index.html"
+ ],
+ "Open a photo: raw, JPEG, PNG, TIFF or WebP (Ctrl+O)": [
+  "index.html"
+ ],
+ "Open a saved collage (Ctrl+O)": [
+  "index.html"
+ ],
+ "Open a terminal here": [
+  "index.html"
+ ],
+ "Open folder": [
+  "index.html"
+ ],
+ "Open folder…": [
+  "index.html"
+ ],
+ "Open in editor": [
+  "index.html"
+ ],
+ "Open in place": [
+  "index.html"
+ ],
+ "Open in the Edit-in app (Settings → General)": [
+  "index.html"
+ ],
+ "Open in the editor (Enter, or double-click)": [
+  "index.html"
+ ],
+ "Open on GitHub…": [
+  "index.html"
+ ],
+ "Open photo…": [
+  "index.html"
+ ],
+ "Open plugins folder": [
+  "index.html"
+ ],
+ "Open the folder": [
+  "index.html"
+ ],
+ "Open the photo in the editor": [
+  "core/keys.js"
+ ],
+ "Open the sample photo": [
+  "core/keys.js"
+ ],
+ "Open the settings folder": [
+  "index.html"
+ ],
+ "Open this photo in the editor; Back to collage returns here": [
+  "index.html"
+ ],
+ "Open##verb": [
+  "core/core.js"
+ ],
+ "OpenAI-compatible: OpenAI, Ollama, llama.cpp": [
+  "index.html"
+ ],
+ "OpenEXR (linear float)": [
+  "index.html"
+ ],
+ "Opening the crop tool while zoomed in starts the crop from what you see": [
+  "index.html"
+ ],
+ "Opens a filled-in issue on GitHub (needs a free GitHub account)": [
+  "index.html"
+ ],
+ "Opens your mail app with the report filled in, to ambrotypeapp@gmail.com; no GitHub account needed": [
+  "index.html"
+ ],
+ "Open…": [
+  "index.html"
+ ],
+ "Or choose one, or open a photo: the library shows its folder.": [
+  "index.html"
+ ],
+ "Or click the photo; drag to pan at 100%. Right-drag a box to zoom to it.": [
+  "core/keys.js"
+ ],
+ "Or type what: a car, the dog, a boat…": [
+  "index.html"
+ ],
+ "Or work in a terminal: any command-line agent (or you) can run": [
+  "index.html"
+ ],
+ "Organise ▾": [
+  "index.html"
+ ],
+ "Our looks are ours, matched to Fujifilm's film simulations by name only, not measured yet. Fujifilm and its film simulation names are trademarks of FUJIFILM Corporation; Ambrotype is not affiliated with it.": [
+  "index.html"
+ ],
+ "Outer border": [
+  "index.html"
+ ],
+ "Output": [
+  "index.html"
+ ],
+ "Output sharpening": [
+  "index.html"
+ ],
+ "Overlay": [
+  "index.html"
+ ],
+ "PNG": [
+  "index.html"
+ ],
+ "Pages through them all, marked to go; keep any, then they go to the trash together.": [
+  "core/keys.js"
+ ],
+ "Panels, settings and buttons that aren't shown": [
+  "index.html"
+ ],
+ "Paper": [
+  "index.html"
+ ],
+ "Parts": [
+  "index.html"
+ ],
+ "Paste": [
+  "index.html"
+ ],
+ "Paste a recipe as it's written: one setting a line (Film Simulation, Dynamic Range, Highlight, Shadow, Color, Grain Effect, White Balance…). It becomes a preset in the Fuji group. The sensor decides which settings and ranges the camera has.": [
+  "index.html"
+ ],
+ "Paste settings": [
+  "index.html"
+ ],
+ "Paste settings onto the selection (in the editor: the filmstrip's)": [
+  "core/keys.js"
+ ],
+ "Paste settings…": [
+  "index.html"
+ ],
+ "Percent": [
+  "index.html"
+ ],
+ "Percent of the short edge, or pixels": [
+  "index.html"
+ ],
+ "Perspective": [
+  "index.html"
+ ],
+ "Photo layout": [
+  "index.html"
+ ],
+ "Photography basics": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Photos": [
+  "index.html"
+ ],
+ "Photos in this folder": [
+  "index.html"
+ ],
+ "Photos moved or deleted outside Ambrotype: find where they went": [
+  "index.html"
+ ],
+ "Photos that match": [
+  "index.html"
+ ],
+ "Pick (P)": [
+  "index.html"
+ ],
+ "Pick best, reject rest": [
+  "index.html"
+ ],
+ "Pick or reject flag": [
+  "index.html"
+ ],
+ "Picks": [
+  "index.html"
+ ],
+ "Pick…": [
+  "index.html"
+ ],
+ "Place": [
+  "index.html"
+ ],
+ "Place the ticked photos": [
+  "index.html"
+ ],
+ "Plain grid with names": [
+  "index.html"
+ ],
+ "Plugins": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Plugins other people shared, checked before they're installed": [
+  "index.html"
+ ],
+ "Plugins: extra tools that make edits for you": [
+  "index.html"
+ ],
+ "Preset library": [
+  "index.html"
+ ],
+ "Preset library: free presets, grouped by style; hover to see one on your photo": [
+  "index.html"
+ ],
+ "Preset name": [
+  "index.html"
+ ],
+ "Presets": [
+  "index.html"
+ ],
+ "Previous photo (←)": [
+  "index.html"
+ ],
+ "Previous photo in the folder": [
+  "core/keys.js"
+ ],
+ "ProPhoto RGB": [
+  "index.html"
+ ],
+ "ProPhoto RGB (editing)": [
+  "index.html"
+ ],
+ "ProPhoto RGB (keeps every colour; Lightroom's choice)": [
+  "index.html"
+ ],
+ "Progressive JPEG (shows blurry first while loading on the web)": [
+  "index.html"
+ ],
+ "Projection": [
+  "index.html"
+ ],
+ "Proof preview": [
+  "index.html"
+ ],
+ "Punchy": [
+  "index.html"
+ ],
+ "Purple": [
+  "index.html"
+ ],
+ "Put alike photos and bursts together, best first; each group gets a 2 × 2 button": [
+  "index.html"
+ ],
+ "Put every photo in the tray into pages of this layout, matched to the cells' shapes: one file per page.": [
+  "index.html"
+ ],
+ "Put every shortcut back to its default": [
+  "index.html"
+ ],
+ "Put the photos of the last move or rename back": [
+  "index.html"
+ ],
+ "Put the settings above back to the plugin's defaults": [
+  "index.html"
+ ],
+ "Put tray photos into the empty cells, in order": [
+  "index.html"
+ ],
+ "Q or Esc": [
+  "index.html"
+ ],
+ "Quality": [
+  "index.html"
+ ],
+ "Quick fixes": [
+  "index.html"
+ ],
+ "Radius, % of the photo's width ([ and ], or the wheel)": [
+  "index.html"
+ ],
+ "Raise the selected slider a step": [
+  "core/keys.js"
+ ],
+ "Raise the selected slider ten steps": [
+  "core/keys.js"
+ ],
+ "Rating": [
+  "index.html"
+ ],
+ "Rating & keywords": [
+  "index.html"
+ ],
+ "Rating filter": [
+  "index.html"
+ ],
+ "Rating of this photo": [
+  "index.html"
+ ],
+ "Raw and JPEG": [
+  "index.html"
+ ],
+ "Raw only": [
+  "index.html"
+ ],
+ "Raws to JPEGs in one go (a card shot in RAW by mistake): as the camera would have saved them, each on Auto, or all like one you edited": [
+  "index.html"
+ ],
+ "Raws, or JPEGs (a raw's JPEG twin too) and other image files": [
+  "index.html"
+ ],
+ "Read": [
+  "index.html"
+ ],
+ "Read the folder again": [
+  "index.html"
+ ],
+ "Read the folder again (after adding files by hand or by AI)": [
+  "index.html"
+ ],
+ "Ready": [
+  "index.html"
+ ],
+ "Rearrange the chosen layout on screen: move panels, sliders and toolbar buttons (Ctrl+Shift+L)": [
+  "index.html"
+ ],
+ "Rec. 2020": [
+  "index.html"
+ ],
+ "Recent keywords: click to add to the selection": [
+  "index.html"
+ ],
+ "Recipe": [
+  "index.html"
+ ],
+ "Recipe name": [
+  "index.html"
+ ],
+ "Red": [
+  "index.html"
+ ],
+ "Red: clipped highlights, blue: crushed shadows.": [
+  "core/keys.js"
+ ],
+ "Redo": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Redo (Ctrl+Shift+Z)": [
+  "index.html"
+ ],
+ "Reject (X)": [
+  "index.html"
+ ],
+ "Reject them": [
+  "index.html"
+ ],
+ "Rejected": [
+  "index.html"
+ ],
+ "Reload": [
+  "index.html"
+ ],
+ "Remove": [
+  "index.html"
+ ],
+ "Remove all": [
+  "index.html"
+ ],
+ "Remove cell": [
+  "index.html"
+ ],
+ "Remove frame": [
+  "index.html"
+ ],
+ "Remove from this collection": [
+  "index.html"
+ ],
+ "Remove object": [
+  "core/keys.js"
+ ],
+ "Remove object…": [
+  "index.html"
+ ],
+ "Remove the crop and straighten": [
+  "index.html"
+ ],
+ "Remove the flag": [
+  "core/keys.js"
+ ],
+ "Remove this cell from the layout": [
+  "index.html"
+ ],
+ "Rename collection…": [
+  "index.html"
+ ],
+ "Rename…": [
+  "index.html"
+ ],
+ "Repeat across the photo": [
+  "index.html"
+ ],
+ "Report a bug, an idea, or a photo that looks different from Lightroom": [
+  "index.html"
+ ],
+ "Reset": [
+  "index.html"
+ ],
+ "Reset all shortcuts": [
+  "index.html"
+ ],
+ "Resize": [
+  "index.html"
+ ],
+ "Resize and export a whole folder, subfolders too, into another folder with the same structure: smaller copies of lots of photos": [
+  "index.html"
+ ],
+ "Retouch tools": [
+  "index.html"
+ ],
+ "Reverse order": [
+  "index.html"
+ ],
+ "Right": [
+  "index.html"
+ ],
+ "Right-drag on the photo zooms to that box (Z or Space goes back); off, a right click exports": [
+  "index.html"
+ ],
+ "Roll 12 · Portra 400": [
+  "index.html"
+ ],
+ "Rotate (°)": [
+  "index.html"
+ ],
+ "Rotate left": [
+  "core/keys.js"
+ ],
+ "Rotate right": [
+  "core/keys.js"
+ ],
+ "Rotate ⟳": [
+  "index.html"
+ ],
+ "Rounded corners": [
+  "index.html"
+ ],
+ "Rounded corners (%)": [
+  "index.html"
+ ],
+ "Run": [
+  "index.html"
+ ],
+ "Run a plugin on each selected photo, with its own settings": [
+  "index.html"
+ ],
+ "Run a plugin…": [
+  "index.html"
+ ],
+ "Same as width": [
+  "index.html"
+ ],
+ "Same files only": [
+  "index.html"
+ ],
+ "Saturation": [
+  "index.html"
+ ],
+ "Save": [
+  "index.html"
+ ],
+ "Save as preset": [
+  "index.html"
+ ],
+ "Save as preset…": [
+  "index.html"
+ ],
+ "Save as…": [
+  "index.html"
+ ],
+ "Save it as a file to share": [
+  "index.html"
+ ],
+ "Save it in a folder you choose, such as one OneDrive, Dropbox or iCloud keeps in sync, so your other computers have it too; the folder joins your preset folders": [
+  "index.html"
+ ],
+ "Save layout": [
+  "index.html"
+ ],
+ "Save preset": [
+  "index.html"
+ ],
+ "Save recipe": [
+  "index.html"
+ ],
+ "Save size": [
+  "index.html"
+ ],
+ "Save template": [
+  "index.html"
+ ],
+ "Save the collage as a new file (Ctrl+Shift+S)": [
+  "index.html"
+ ],
+ "Save the collage to reopen and edit later: layout, photos and how they sit (Ctrl+S)": [
+  "index.html"
+ ],
+ "Save the edit to the photo's XMP sidecar (Ctrl+S)": [
+  "index.html"
+ ],
+ "Save the edit to the sidecar": [
+  "core/keys.js"
+ ],
+ "Save the layout as a file to send (photos aren't included)": [
+  "index.html"
+ ],
+ "Save the photo's edit as it is now as a one-click preset": [
+  "index.html"
+ ],
+ "Save this border as a file to send to someone, or to add to the hub": [
+  "index.html"
+ ],
+ "Save this collage as one image": [
+  "index.html"
+ ],
+ "Save this setup…": [
+  "index.html"
+ ],
+ "Save to…": [
+  "index.html"
+ ],
+ "Save under this name": [
+  "index.html"
+ ],
+ "Saved setups": [
+  "index.html"
+ ],
+ "Saved titles, captions, creator, copyright and keywords to give photos at once": [
+  "index.html"
+ ],
+ "Saved to the photo's .xmp straight away, where Lightroom reads them, and put in exports. Keys 1–5 rate, 0 clears, 6–9 set a colour label, P picks, X rejects, U unflags.": [
+  "index.html"
+ ],
+ "Scores (apply a sigmoid)": [
+  "index.html"
+ ],
+ "Screen": [
+  "index.html"
+ ],
+ "Scroll to magnify (100–400%). I or Esc closes it.": [
+  "core/keys.js"
+ ],
+ "Scrolling on the photo goes to the next or previous photo (zoomed in, it still moves the view)": [
+  "index.html"
+ ],
+ "Search": [
+  "index.html"
+ ],
+ "Search OpenStreetMap for it (tells openstreetmap.org what you searched)": [
+  "index.html"
+ ],
+ "Search actions or keys": [
+  "index.html"
+ ],
+ "Search and map images: © OpenStreetMap contributors": [
+  "index.html"
+ ],
+ "Search commands, settings, presets… or what you want to do": [
+  "index.html"
+ ],
+ "Search everything": [
+  "index.html"
+ ],
+ "Search everything: commands, settings, panels, presets, layouts": [
+  "core/keys.js"
+ ],
+ "Search everything: commands, settings, presets, and what you want to do": [
+  "index.html"
+ ],
+ "Search for a place": [
+  "index.html"
+ ],
+ "Search settings": [
+  "index.html"
+ ],
+ "Search the hub": [
+  "index.html"
+ ],
+ "Search: film, moody, portrait…": [
+  "index.html"
+ ],
+ "See the photo as it will export to sRGB, Adobe RGB, Display P3 or ProPhoto, and mark the colours that won't fit.": [
+  "core/keys.js"
+ ],
+ "Select": [
+  "index.html"
+ ],
+ "Select all shown": [
+  "core/keys.js"
+ ],
+ "Select none": [
+  "core/keys.js"
+ ],
+ "Select object": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Select object: click a thing in the photo, then adjust, move or remove it (O)": [
+  "index.html"
+ ],
+ "Select the next slider": [
+  "core/keys.js"
+ ],
+ "Select the previous slider": [
+  "core/keys.js"
+ ],
+ "Selects what you name (needs the search model and SAM 2.1 tiny, Settings → AI models)": [
+  "index.html"
+ ],
+ "Send": [
+  "index.html"
+ ],
+ "Send by email…": [
+  "index.html"
+ ],
+ "Send feedback": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Send it on GitHub (a free account) or by email to ambrotypeapp@gmail.com, from your browser or mail app, filled in; nothing is sent until you send it there, and you can change everything first. Or copy it to send any other way.": [
+  "index.html"
+ ],
+ "Send pull request": [
+  "index.html"
+ ],
+ "Send to back ([)": [
+  "index.html"
+ ],
+ "Sends a small JPEG (512 px) of the photo as edited to the model with each request; otherwise it gets only numbers": [
+  "index.html"
+ ],
+ "Sensor": [
+  "index.html"
+ ],
+ "Settings": [
+  "index.html"
+ ],
+ "Settings (Ctrl+,)": [
+  "index.html"
+ ],
+ "Settings and keyboard shortcuts": [
+  "core/keys.js"
+ ],
+ "Settings it holds": [
+  "index.html"
+ ],
+ "Settings → General turns them on again": [
+  "index.html"
+ ],
+ "Several photos on one canvas.": [
+  "core/keys.js"
+ ],
+ "Shadow": [
+  "index.html"
+ ],
+ "Share as a pull request": [
+  "index.html"
+ ],
+ "Share as pull request…": [
+  "index.html"
+ ],
+ "Share before and after": [
+  "core/keys.js"
+ ],
+ "Share it in the hub: opens GitHub with your file filled in, as a pull request": [
+  "index.html"
+ ],
+ "Share…": [
+  "index.html"
+ ],
+ "Short edge (px)": [
+  "index.html"
+ ],
+ "Short guided lessons (F1)": [
+  "index.html"
+ ],
+ "Shortcuts": [
+  "index.html"
+ ],
+ "Show": [
+  "index.html"
+ ],
+ "Show a folder or a collection": [
+  "index.html"
+ ],
+ "Show all keyboard shortcuts": [
+  "core/keys.js"
+ ],
+ "Show another folder": [
+  "index.html"
+ ],
+ "Show another folder with this one": [
+  "index.html"
+ ],
+ "Show clipped highlights (red) and shadows (blue) (J)": [
+  "index.html"
+ ],
+ "Show every date again": [
+  "index.html"
+ ],
+ "Show every photo again": [
+  "index.html"
+ ],
+ "Show folder": [
+  "index.html"
+ ],
+ "Show hidden presets: hide, unhide or remove presets": [
+  "core/keys.js"
+ ],
+ "Show in its folder": [
+  "index.html"
+ ],
+ "Show it on the Map view": [
+  "index.html"
+ ],
+ "Show it the photo": [
+  "index.html"
+ ],
+ "Show only the first folder": [
+  "index.html"
+ ],
+ "Show or hide the filmstrip": [
+  "core/keys.js"
+ ],
+ "Show or hide the mask overlay": [
+  "core/keys.js"
+ ],
+ "Show the catalogue's folders, collections and edits without writing anything (Folders panel → Lightroom)": [
+  "index.html"
+ ],
+ "Show the folder with your own layouts and themes": [
+  "index.html"
+ ],
+ "Show the menu bar in the window (every command by name, with its keys)": [
+  "index.html"
+ ],
+ "Show the photo as edges, white on black, so dust and specks stand out (A)": [
+  "index.html"
+ ],
+ "Show the photo before edits (\\); split before and after with Y": [
+  "index.html"
+ ],
+ "Show the photos in the folder's subfolders too": [
+  "index.html"
+ ],
+ "Show the selected mask in red (O)": [
+  "index.html"
+ ],
+ "Show the status bar under the photo (preview size and time; hidden, other messages show briefly over the photo)": [
+  "index.html"
+ ],
+ "Show the top bar (Ctrl+Shift+T). Hidden, it comes back while the pointer is at the window's top edge": [
+  "index.html"
+ ],
+ "Shuffle": [
+  "index.html"
+ ],
+ "Shutter speed": [
+  "index.html"
+ ],
+ "Size": [
+  "index.html"
+ ],
+ "Size (% of width)": [
+  "index.html"
+ ],
+ "Size and format": [
+  "index.html"
+ ],
+ "Size of text and controls": [
+  "index.html"
+ ],
+ "Size preset": [
+  "index.html"
+ ],
+ "Size presets": [
+  "index.html"
+ ],
+ "Size presets…": [
+  "index.html"
+ ],
+ "Sizes": [
+  "index.html"
+ ],
+ "Sizes for the crop tool (aspect) and export (exact pixels). Built-in sizes follow each site's current recommendation and cannot be changed here; clone one to adjust it.": [
+  "index.html"
+ ],
+ "Sizes…": [
+  "index.html"
+ ],
+ "Skip files that exist": [
+  "index.html"
+ ],
+ "Slide": [
+  "index.html"
+ ],
+ "Slideshow": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Slideshow of the filmstrip's photos: how long each stays, shuffle and the change effect": [
+  "index.html"
+ ],
+ "Slideshow of the photos shown, or the selected ones (Ctrl+Enter)": [
+  "index.html"
+ ],
+ "Slow": [
+  "index.html"
+ ],
+ "Slow zoom": [
+  "index.html"
+ ],
+ "Slower is smaller at the same quality": [
+  "index.html"
+ ],
+ "Small tools that make edits for you. They run in a sandbox: no files, no network, only settings you can see and undo.": [
+  "index.html"
+ ],
+ "Smaller brush": [
+  "core/keys.js"
+ ],
+ "Smaller spot": [
+  "core/keys.js"
+ ],
+ "Smart": [
+  "index.html"
+ ],
+ "Smart collection": [
+  "index.html"
+ ],
+ "Smart search (or Enter in the search box): find photos by what is in them (dog on a beach, snowy mountains), with the search model from Settings → AI models. Right-click a photo for Find similar photos.": [
+  "index.html"
+ ],
+ "Snapshots": [
+  "index.html"
+ ],
+ "Soft proofing": [
+  "core/keys.js"
+ ],
+ "Soften background": [
+  "index.html"
+ ],
+ "Sort": [
+  "index.html"
+ ],
+ "Sort by": [
+  "index.html"
+ ],
+ "Sort into dated folders…": [
+  "index.html"
+ ],
+ "Source code": [
+  "index.html"
+ ],
+ "Space pauses, ← → step, Esc ends.": [
+  "index.html"
+ ],
+ "Spherical": [
+  "index.html"
+ ],
+ "Split this cell into left and right": [
+  "index.html"
+ ],
+ "Split this cell into top and bottom": [
+  "index.html"
+ ],
+ "Split ⊟": [
+  "index.html"
+ ],
+ "Split ◫": [
+  "index.html"
+ ],
+ "Spot removal": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Spot removal (Q)": [
+  "index.html"
+ ],
+ "Spots": [
+  "index.html"
+ ],
+ "Stack": [
+  "index.html"
+ ],
+ "Stack all": [
+  "index.html"
+ ],
+ "Stack bursts and brackets: photos taken a few seconds apart": [
+  "index.html"
+ ],
+ "Stack each": [
+  "index.html"
+ ],
+ "Stack the selection": [
+  "core/keys.js"
+ ],
+ "Start": [
+  "index.html"
+ ],
+ "Start a collage with the selected photos": [
+  "index.html"
+ ],
+ "Start a new layout from a blank canvas: empty columns and toolbar, filled from Add": [
+  "index.html"
+ ],
+ "Start from": [
+  "index.html"
+ ],
+ "Start from scratch…": [
+  "index.html"
+ ],
+ "Start the agent there and it's told where Ambrotype's guides are.": [
+  "index.html"
+ ],
+ "Std": [
+  "index.html"
+ ],
+ "Stitch overlapping raws into one panorama (a DNG next to them)": [
+  "index.html"
+ ],
+ "Stop": [
+  "index.html"
+ ],
+ "Stop (T or Esc)": [
+  "index.html"
+ ],
+ "Stop drawing, then leave the masks": [
+  "core/keys.js"
+ ],
+ "Stop marking (nothing is changed)": [
+  "index.html"
+ ],
+ "Straight cut": [
+  "index.html"
+ ],
+ "Straight into the folder": [
+  "index.html"
+ ],
+ "Straighten by the photo's long lines, and crop to fit.": [
+  "core/keys.js"
+ ],
+ "Straighten the frame": [
+  "index.html"
+ ],
+ "Straighten. Double-click to reset.": [
+  "index.html"
+ ],
+ "Strength": [
+  "index.html"
+ ],
+ "Style": [
+  "index.html"
+ ],
+ "Subfolders": [
+  "index.html"
+ ],
+ "Submit to hub…": [
+  "index.html"
+ ],
+ "Sunny": [
+  "index.html"
+ ],
+ "Surprise me": [
+  "index.html"
+ ],
+ "Surprise me: random looks to try; pick one you like (one undo step)": [
+  "index.html"
+ ],
+ "Surprise me…": [
+  "index.html"
+ ],
+ "Swap portrait and landscape": [
+  "core/keys.js"
+ ],
+ "Swap portrait and landscape (X)": [
+  "index.html"
+ ],
+ "Swap width and height": [
+  "index.html"
+ ],
+ "Swap ⇄": [
+  "index.html"
+ ],
+ "Sync": [
+  "index.html"
+ ],
+ "Sync negative roll": [
+  "index.html"
+ ],
+ "Sync negative roll…": [
+  "index.html"
+ ],
+ "System": [
+  "index.html"
+ ],
+ "TIFF": [
+  "index.html"
+ ],
+ "Take its shadow (in blue) with it": [
+  "index.html"
+ ],
+ "Take the noise out of the selected raws with an AI model on your computer: each becomes a new DNG beside it": [
+  "index.html"
+ ],
+ "Take the photo out (Delete)": [
+  "index.html"
+ ],
+ "Take the place out (a camera's own GPS stays)": [
+  "index.html"
+ ],
+ "Take the selected photos' stacks apart (Ctrl+Shift+G)": [
+  "index.html"
+ ],
+ "Take the values from this photo": [
+  "index.html"
+ ],
+ "Task": [
+  "index.html"
+ ],
+ "Template": [
+  "index.html"
+ ],
+ "Text": [
+  "index.html"
+ ],
+ "Text colour": [
+  "index.html"
+ ],
+ "Text size": [
+  "index.html"
+ ],
+ "The Subject, Background and People masks come from AI models that run on this computer. Pick one for each: ●●●●● is the finest edge detail; bigger ones are finer but slower (times are for a 4-core laptop). Only models whose licence allows free use are listed, downloaded from their authors.": [
+  "index.html"
+ ],
+ "The amb program wasn't found next to Ambrotype. The installers include it; from the source, build it with": [
+  "index.html"
+ ],
+ "The brightness of the colour under the pointer (the B&W mix for a black-and-white photo)": [
+  "index.html"
+ ],
+ "The colour space the photo will be exported in": [
+  "index.html"
+ ],
+ "The command to give it": [
+  "index.html"
+ ],
+ "The editor's appearance is a layout (what goes where, and which kind of slider each setting uses) plus a theme (colours). Built-in ones 🔒 can't be changed: clone one to make it yours. Layouts and themes are small files you can share; your AI assistant can write them too (docs/ai/ui-layouts.md).": [
+  "index.html"
+ ],
+ "The file it gets: a TIFF next to the photo, IMG_0001-Edit.tif": [
+  "index.html"
+ ],
+ "The hue of the colour under the pointer": [
+  "index.html"
+ ],
+ "The key is kept in your system's keychain. The model gets numbers about the photo (brightness, clipping, colour cast) and its settings; it sees the photo itself only while \"Show it the photo\" is ticked. Your AI chat subscription can't be used here; to use it, connect your AI app instead:": [
+  "index.html"
+ ],
+ "The model's name, as your provider lists it": [
+  "index.html"
+ ],
+ "The next one (→)": [
+  "index.html"
+ ],
+ "The one before (←)": [
+  "index.html"
+ ],
+ "The photo kept instead": [
+  "index.html"
+ ],
+ "The photo to match": [
+  "index.html"
+ ],
+ "The photo's edit as it is now, as a one-click preset with an Amount slider. The crop, masks, retouching and geometry belong to this photo and are left out. It's a Lightroom-style .xmp file, so Lightroom can import it too.": [
+  "index.html"
+ ],
+ "The photo's own average colour": [
+  "index.html"
+ ],
+ "The photo, as edited, goes to your image editor as a TIFF next to it (set the app in Settings → General).": [
+  "core/keys.js"
+ ],
+ "The photos have moved since (another disk or computer)": [
+  "index.html"
+ ],
+ "The photos shown (or the selected ones), full screen; choose how long each stays, shuffle and the change effect. Space pauses, ← → step, Esc ends.": [
+  "core/keys.js"
+ ],
+ "The raws stay as they are. Photos you edited already keep their edit. JPEGs already in the folder are kept, so a stopped run carries on.": [
+  "index.html"
+ ],
+ "The same viewer as V, on the F key as in other photo apps.": [
+  "core/keys.js"
+ ],
+ "The saturation of the colour under the pointer": [
+  "index.html"
+ ],
+ "The selected raws (or the open one), each into a new DNG beside it, with an AI model on your computer.": [
+  "core/keys.js"
+ ],
+ "The selection, or the open photo.": [
+  "core/keys.js"
+ ],
+ "The shutter speed that exposes it well at this aperture and ISO": [
+  "index.html"
+ ],
+ "The system's default app for TIFF files": [
+  "index.html"
+ ],
+ "The tone curve's region for the brightness under the pointer": [
+  "index.html"
+ ],
+ "Theme": [
+  "index.html"
+ ],
+ "Themes": [
+  "index.html"
+ ],
+ "Then click something neutral grey or white.": [
+  "core/keys.js"
+ ],
+ "Three times in a row and tips stop (Settings → General turns them on again)": [
+  "index.html"
+ ],
+ "Through black": [
+  "index.html"
+ ],
+ "Thumbnail size": [
+  "index.html"
+ ],
+ "Tick all": [
+  "index.html"
+ ],
+ "Tidy up the photos shown (or the selected ones)": [
+  "index.html"
+ ],
+ "Timeline": [
+  "index.html"
+ ],
+ "Timeline: the photos shown by year, month and day": [
+  "index.html"
+ ],
+ "Tip:": [
+  "index.html"
+ ],
+ "Tips in menus and empty boxes: the search box and preset filter suggest something to type": [
+  "index.html"
+ ],
+ "Tips while waiting: one feature to try, now and then, while something loads or runs": [
+  "index.html"
+ ],
+ "Title": [
+  "index.html"
+ ],
+ "Title, caption & copyright": [
+  "index.html"
+ ],
+ "To": [
+  "index.html"
+ ],
+ "To back": [
+  "index.html"
+ ],
+ "To change a value: apply the preset, adjust the sliders, then choose Take the values from this photo.": [
+  "index.html"
+ ],
+ "To front": [
+  "index.html"
+ ],
+ "Tokens: {name} {yyyy} {yy} {mm} {dd} {hh} {min} {ss} {seq} {camera}, as in Import": [
+  "index.html"
+ ],
+ "Tone": [
+  "index.html"
+ ],
+ "Tools": [
+  "index.html"
+ ],
+ "Top": [
+  "index.html"
+ ],
+ "Top left": [
+  "index.html"
+ ],
+ "Top right": [
+  "index.html"
+ ],
+ "Touch: drag on the photo to change the tone or colour under the pointer": [
+  "core/keys.js"
+ ],
+ "Touch: drag up or down on the photo": [
+  "index.html"
+ ],
+ "Trip me: a random mix of psychedelic colour, foil and light leaks": [
+  "core/keys.js"
+ ],
+ "Trip: back to normal (the trip's effects off)": [
+  "core/keys.js"
+ ],
+ "Try a sample photo": [
+  "index.html"
+ ],
+ "Try it": [
+  "index.html"
+ ],
+ "Try shutter speed, aperture, ISO and focal length on a drawn scene and see what each does: blur, depth of field, grain, zoom.": [
+  "core/keys.js"
+ ],
+ "Turn the photo a quarter (R)": [
+  "index.html"
+ ],
+ "Turn the photo a quarter turn anticlockwise (in the library, the selected photos). Crops, masks and spots turn with it.": [
+  "core/keys.js"
+ ],
+ "Turn the photo a quarter turn clockwise (in the library, the selected photos). Crops, masks and spots turn with it.": [
+  "core/keys.js"
+ ],
+ "Underlined words open their meaning. The text is a data file (basics.json), so anyone can improve or translate it.": [
+  "index.html"
+ ],
+ "Undo": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Undo (Ctrl+Z)": [
+  "index.html"
+ ],
+ "Undo all": [
+  "index.html"
+ ],
+ "Undo all: back to the photo as it opened": [
+  "core/keys.js"
+ ],
+ "Undo all: back to the photo as it opened (Redo brings the steps back)": [
+  "index.html"
+ ],
+ "Undo the last move": [
+  "index.html"
+ ],
+ "Unflagged": [
+  "index.html"
+ ],
+ "Unrated": [
+  "index.html"
+ ],
+ "Unstack": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Up or down changes the tone curve's region, or the colour's hue, saturation or brightness.": [
+  "core/keys.js"
+ ],
+ "Use": [
+  "index.html"
+ ],
+ "Use a Lightroom Classic catalogue as it is: + opens it in place, without importing.": [
+  "index.html"
+ ],
+ "Use a PNG logo instead of text": [
+  "index.html"
+ ],
+ "Use a folder…": [
+  "index.html"
+ ],
+ "Use the default hub": [
+  "index.html"
+ ],
+ "Use the system's default app for TIFF files": [
+  "index.html"
+ ],
+ "Use this frame as the baseline": [
+  "index.html"
+ ],
+ "Use this place": [
+  "index.html"
+ ],
+ "Values": [
+  "index.html"
+ ],
+ "Vibrance & Saturation": [
+  "index.html"
+ ],
+ "View": [
+  "index.html"
+ ],
+ "View full screen (F in the library)": [
+  "core/keys.js"
+ ],
+ "View photos full screen, as an image viewer": [
+  "core/keys.js"
+ ],
+ "View the photos full screen, as an image viewer: ← → or a click on the left or right steps, Esc ends (V or F)": [
+  "index.html"
+ ],
+ "View these photos full screen, as an image viewer: ← → or a click on the left or right steps, Esc ends (V)": [
+  "index.html"
+ ],
+ "Vintage": [
+  "index.html"
+ ],
+ "Visualise": [
+  "index.html"
+ ],
+ "Visualise spots": [
+  "core/keys.js"
+ ],
+ "WB picker": [
+  "index.html"
+ ],
+ "Walk back as you zoom": [
+  "index.html"
+ ],
+ "Watch an edit": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Watch an edit on this photo": [
+  "core/keys.js"
+ ],
+ "Watermark": [
+  "index.html"
+ ],
+ "WebP (lossless)": [
+  "index.html"
+ ],
+ "What Ambrotype can do": [
+  "index.html"
+ ],
+ "What Ambrotype can do: every feature, by what you want to do": [
+  "core/keys.js"
+ ],
+ "What a drag on a photo moves (hold Alt for the other)": [
+  "index.html"
+ ],
+ "What happened, or what would you like?": [
+  "index.html"
+ ],
+ "What happens once the files are written": [
+  "index.html"
+ ],
+ "When the camera without GPS kept another clock than the phone (another time zone): how many hours it was behind": [
+  "index.html"
+ ],
+ "Where": [
+  "index.html"
+ ],
+ "Where Lightroom had them": [
+  "index.html"
+ ],
+ "Where installed interfaces are kept": [
+  "index.html"
+ ],
+ "Where the caption sits": [
+  "index.html"
+ ],
+ "Where the selection was taken": [
+  "index.html"
+ ],
+ "Where they are now": [
+  "index.html"
+ ],
+ "White": [
+  "index.html"
+ ],
+ "White balance": [
+  "index.html"
+ ],
+ "White balance picker: click a neutral grey or white spot (W)": [
+  "index.html"
+ ],
+ "White-balance picker": [
+  "core/keys.js"
+ ],
+ "Whole photo inside the frame (with an exact size, instead of cropping to fill)": [
+  "index.html"
+ ],
+ "Width": [
+  "index.html"
+ ],
+ "Width (px)": [
+  "index.html"
+ ],
+ "Will be sent": [
+  "index.html"
+ ],
+ "Within": [
+  "index.html"
+ ],
+ "X-Trans I": [
+  "index.html"
+ ],
+ "X-Trans II": [
+  "index.html"
+ ],
+ "X-Trans III": [
+  "index.html"
+ ],
+ "X-Trans IV": [
+  "index.html"
+ ],
+ "X-Trans V": [
+  "index.html"
+ ],
+ "Yellow": [
+  "index.html"
+ ],
+ "Your app": [
+  "index.html"
+ ],
+ "Your own…": [
+  "index.html"
+ ],
+ "Your saved export choices": [
+  "index.html"
+ ],
+ "Your settings, layouts and themes are kept in:": [
+  "index.html"
+ ],
+ "Yours": [
+  "index.html"
+ ],
+ "Zoom in": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Zoom out": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "a key on its own": [
+  "index.html"
+ ],
+ "all": [
+  "index.html"
+ ],
+ "any": [
+  "index.html"
+ ],
+ "asks to:": [
+  "index.html"
+ ],
+ "auto": [
+  "index.html"
+ ],
+ "e.g. /Volumes/Photos/": [
+  "index.html"
+ ],
+ "e.g. /home/me/Photos/": [
+  "index.html"
+ ],
+ "e.g. Blog header": [
+  "index.html"
+ ],
+ "e.g. MIT": [
+  "index.html"
+ ],
+ "e.g. Summer '26": [
+  "index.html"
+ ],
+ "e.g. a button that makes skin tones a little warmer and lifts the shadows": [
+  "index.html"
+ ],
+ "e.g. warmer and a bit moodier, keep the sky": [
+  "index.html"
+ ],
+ "e.g. wedding, Anna & Tom": [
+  "index.html"
+ ],
+ "hours": [
+  "index.html"
+ ],
+ "https://github.com/someone/their-theme": [
+  "index.html"
+ ],
+ "in a terminal)": [
+  "index.html"
+ ],
+ "minutes": [
+  "index.html"
+ ],
+ "of these rules": [
+  "index.html"
+ ],
+ "on the photos there, such as": [
+  "index.html"
+ ],
+ "px": [
+  "index.html"
+ ],
+ "s": [
+  "index.html"
+ ],
+ "sRGB": [
+  "index.html"
+ ],
+ "sRGB (web)": [
+  "index.html"
+ ],
+ "sRGB (web, most screens)": [
+  "index.html"
+ ],
+ "seconds": [
+  "index.html"
+ ],
+ "travel, Iceland": [
+  "index.html"
+ ],
+ "with Ctrl/⌘, Alt or Shift. Click a key to see what it does.": [
+  "index.html"
+ ],
+ "{name}": [
+  "index.html"
+ ],
+ "{n} JPEG|{n} JPEGs": [
+  "library/library-actions.js"
+ ],
+ "{n} burst|{n} bursts": [
+  "library/bursts.js"
+ ],
+ "{n} collection|{n} collections": [
+  "library/lightroom.js",
+  "library/lrcat.js"
+ ],
+ "{n} file|{n} files": [
+  "dialogs/hub.js",
+  "library/organise.js"
+ ],
+ "{n} folder|{n} folders": [
+  "library/import.js",
+  "library/lightroom.js"
+ ],
+ "{n} group|{n} groups": [
+  "collage/collage-tray.js",
+  "library/duplicates.js"
+ ],
+ "{n} negative|{n} negatives": [
+  "library/library-actions.js"
+ ],
+ "{n} page|{n} pages": [
+  "collage/collage-tray.js"
+ ],
+ "{n} photo|{n} photos": [
+  "collage/collage-tray.js",
+  "develop/info.js",
+  "develop/presets.js",
+  "dialogs/export.js",
+  "dialogs/plugins.js",
+  "library/browse.js",
+  "library/cleanup.js",
+  "library/collections.js",
+  "library/denoise.js",
+  "library/duplicates.js",
+  "library/guess-places.js",
+  "library/import.js",
+  "library/library-actions.js",
+  "library/library-grid.js",
+  "library/library.js",
+  "library/lrcat.js",
+  "library/organise.js",
+  "library/slideshow.js"
+ ],
+ "{n} problem|{n} problems": [
+  "library/import.js",
+  "library/lrcat.js"
+ ],
+ "{n} sidecar|{n} sidecars": [
+  "library/lrcat.js"
+ ],
+ "{n} size|{n} sizes": [
+  "dialogs/hub.js"
+ ],
+ "{n} stack|{n} stacks": [
+  "library/library-grid.js"
+ ],
+ "{n} star|{n} stars": [
+  "develop/filmstrip.js",
+  "library/slideshow.js"
+ ],
+ "{n} step|{n} steps": [
+  "develop/history.js"
+ ],
+ "© 2026 Your Name": [
+  "index.html"
+ ],
+ "← Back to collage": [
+  "index.html"
+ ],
+ "← → change the candidate, ↓ swaps, ↑ makes it the select.": [
+  "core/keys.js"
+ ],
+ "← → step through the photos.": [
+  "core/keys.js"
+ ],
+ "−0.5 EV on it": [
+  "index.html"
+ ],
+ "▶ Slideshow": [
+  "index.html"
+ ],
+ "★ and up": [
+  "index.html"
+ ],
+ "★★ and up": [
+  "index.html"
+ ],
+ "★★★ and up": [
+  "index.html"
+ ],
+ "★★★★ and up": [
+  "index.html"
+ ],
+ "⚑ Pick": [
+  "index.html"
+ ],
+ "⛶ View": [
+  "index.html"
+ ],
+ "✕ Reject": [
+  "index.html"
+ ]
+}

@@ -1514,6 +1514,9 @@
         <label class="check"><input type="checkbox" id="settings-tips-boxes"> Tips in menus and empty boxes: the search box and preset filter suggest something to type</label>
         <label class="check"><input type="checkbox" id="settings-auto-advance"> After a rating, flag or label from the keyboard, go to the next photo</label>
         <label class="check"><input type="checkbox" id="settings-wheel-photos"> Scrolling on the photo goes to the next or previous photo (zoomed in, it still moves the view)</label>
+        <label class="hub-url" id="settings-language-row" hidden>Language
+          <select id="settings-language"><option value="system">System</option><option value="en">English</option></select>
+        </label>
         <label class="check"><input type="checkbox" id="settings-statusbar"> Show the status bar under the photo (preview size and time; hidden, other messages show briefly over the photo)</label>
         <label class="check"><input type="checkbox" id="settings-crop-view"> Opening the crop tool while zoomed in starts the crop from what you see</label>
         <label class="check"><input type="checkbox" id="settings-box-zoom"> Right-drag on the photo zooms to that box (Z or Space goes back); off, a right click exports</label>
@@ -1895,6 +1898,7 @@
   </aside>
 
   <script src="core/core.js"></script>
+  <script src="core/lang.js"></script>
   <script src="core/pinch.js"></script>
   <script src="core/photo-row.js"></script>
   <script src="core/lazy.js"></script>

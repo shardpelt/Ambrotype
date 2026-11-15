@@ -70,9 +70,24 @@ async function withBusy(button, line, fn) {
   }
 }
 
-// "1 photo", "3 photos": `many` defaults to `one` + "s".
+// The app's words (docs/design/language.md): the English text is the key.
+// `t("Moved to the trash")` gives its translation in the chosen language, or
+// the text itself; `{name}` takes `vars.name`. `t("Open##verb")` tells two
+// meanings of one text apart: from `##` on is never shown. State: core/lang.js.
+function t(text, vars) {
+  let out = lang.texts?.[text] ?? text.split("##")[0];
+  if (vars) out = out.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+  return out;
+}
+
+// "1 photo", "3 photos": `many` defaults to `one` + "s". Looked up as
+// "{n} photo|{n} photos"; a language lists its forms split by "|", in the
+// order Intl.PluralRules names them for it.
 function plural(n, one, many = `${one}s`) {
-  return `${n} ${n === 1 ? one : many}`;
+  const forms = lang.texts?.[`{n} ${one}|{n} ${many}`]?.split("|");
+  if (!forms) return `${n} ${n === 1 ? one : many}`;
+  const i = lang.plurals.indexOf(lang.rules.select(n));
+  return forms[Math.min(Math.max(i, 0), forms.length - 1)].replace("{n}", n);
 }
 
 // The status bar's text. With the bar hidden (Settings → General), a

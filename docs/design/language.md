@@ -1,6 +1,6 @@
 # One table for the app's words
 
-Decided 2026-11-13, not built yet. The roadmap row is `language-table` in [ROADMAP.md](../ROADMAP.md).
+Decided 2026-11-13. Step 1 built 2026-11-15; steps 2 to 4 not yet. The roadmap row is `language-table` in [ROADMAP.md](../ROADMAP.md).
 
 ## Why
 
@@ -54,6 +54,14 @@ A made-up language `zz` turns every text in the table into `⟦text⟧`. A UI te
 ## Not translated
 
 File names, preset names, setting names (`Exposure2012`), `amb`'s output, the docs. Right-to-left languages: not now.
+
+## Built in step 1
+
+- `t` and `plural` are in `core.js`; the language, `translateDom` and the Language row are in `ui/core/lang.js`. The test's own `t` hides the app's, so `tests/ui/*.js` use `window.t`.
+- `zz` is made in Rust (`src/lang.rs`) from `keys.json`, so it is never a file. The language row (Settings → Appearance) stays hidden while no file besides English exists.
+- Markup text is matched per text node, whitespace folded; a title, placeholder or aria-label by its trimmed text. Scripts, styles, `textarea`, `code` and `kbd` are left alone.
+- The table reads `label:` and `hint:` in `core/keys.js` and `core/menu.js` as data lists (`t(action.label)` comes with the sweep).
+- The `zz` count is `UNMARKED_LIMIT` in `tests/ui/language.js` (not `checks.rs`: it needs the running editor). Fixing near-duplicates is not done yet; `python3 tools/lang-table.py` lists them.
 
 ## In four steps
 

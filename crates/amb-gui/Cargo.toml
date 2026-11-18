@@ -27,16 +27,16 @@ amb-ai = { path = "../amb-ai" }
 amb-plugin = { path = "../amb-plugin" }
 amb-presets = { path = "../amb-presets" }
 amb-protocol = { path = "../amb-protocol" }
-jpeg-encoder = "0.6"
-rayon = "1"
+jpeg-encoder.workspace = true
+rayon.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-clipboard-manager = "2"
-sha2 = "0.10"
-ureq = { version = "2", features = ["native-certs"] }
+sha2.workspace = true
+ureq.workspace = true
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust"] }
 tauri-plugin-window-state = "2"
 notify = "8"
@@ -48,4 +48,4 @@ gdk = "0.18"
 
 [dev-dependencies]
 amb-testkit = { path = "../amb-testkit" }
-image = { version = "0.25", default-features = false, features = ["png"] }
+image = { workspace = true, features = ["png"] }

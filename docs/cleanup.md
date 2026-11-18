@@ -125,37 +125,6 @@ Do the groups in order, or any card whose "Precondition" line is met. Ids are st
 
 ### Group A: small
 
-### A1. Shared dependencies declared once
-Tier: small        Risk: low
-Why: six dependencies are declared with their own version in several crates, so a bump takes 3 to 6 edits.
-Files: `Cargo.toml` (root), `crates/amb-ai/Cargo.toml`, `crates/amb-engine/Cargo.toml`, `crates/amb-export/Cargo.toml`, `crates/amb-gui/Cargo.toml`, `crates/amb-library/Cargo.toml`, `crates/amb-ops/Cargo.toml`, `crates/amb-plugin/Cargo.toml`.
-Steps:
-1. In root `Cargo.toml`, under `[workspace.dependencies]`, add:
-   ```toml
-   sha2 = "0.10"
-   ureq = { version = "2", features = ["native-certs"] }
-   rayon = "1"
-   flate2 = "1.1"
-   jpeg-encoder = "0.6"
-   image = { version = "0.25", default-features = false }
-   ```
-2. `sha2`: in amb-ai, amb-gui, amb-library, amb-plugin replace `sha2 = "0.10"` by `sha2.workspace = true`.
-3. `ureq`: in amb-ai, amb-gui, amb-library replace the `ureq = { version = "2", features = ["native-certs"] }` line by `ureq.workspace = true`.
-4. `rayon`: in amb-engine, amb-export, amb-gui, amb-library, amb-ops, amb-plugin replace `rayon = "1"` by `rayon.workspace = true`.
-5. `flate2`: in amb-ai and amb-export replace `flate2 = "1.1"` by `flate2.workspace = true`.
-6. `jpeg-encoder`: in amb-export and amb-gui replace `jpeg-encoder = "0.6"` by `jpeg-encoder.workspace = true`.
-7. `image` keeps its features at the use site, with the same feature lists as today:
-   - amb-engine: `image = { workspace = true, features = ["png", "tiff", "jpeg", "webp"] }`
-   - amb-export: `image = { workspace = true, features = ["png", "tiff", "webp", "avif", "exr", "rayon"] }`
-   - amb-library and amb-ops: `image = { workspace = true, features = ["jpeg"] }`
-   - amb-gui (dev-dependencies): `image = { workspace = true, features = ["png"] }`
-8. amb-ai: replace `serde = { version = "1", features = ["derive"] }` and `serde_json = "1"` by `serde.workspace = true` and `serde_json.workspace = true`.
-9. Look at `git diff Cargo.lock`.
-Don't: change any feature list; add or remove a dependency; run `cargo update`. amb-export asked for `image` 0.25.10: the lock already holds it, so it must not change.
-Checks: the three cargo commands of "Checks". `git diff Cargo.lock` is empty (or only reorders). `cargo tree -d` shows no new duplicate.
-Done when: `grep -n 'sha2 = \|ureq = \|rayon = \|flate2 = \|jpeg-encoder = ' crates/*/Cargo.toml` prints nothing.
-Commit: `build: declare shared dependencies once in the workspace`. Why: "A version bump was 3 to 6 edits."
-
 ### A2. Named constants for bare numbers in recent code
 Tier: small        Risk: low
 Why: thresholds typed inline can't be told apart or tuned, and the kaleidoscope's limits repeat its manifest.

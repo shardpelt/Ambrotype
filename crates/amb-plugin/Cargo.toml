@@ -16,8 +16,8 @@ amb-presets = { path = "../amb-presets" }
 amb-protocol = { path = "../amb-protocol" }
 serde.workspace = true
 serde_json.workspace = true
-sha2 = "0.10"
-rayon = "1"
+sha2.workspace = true
+rayon.workspace = true
 # The built-in effects, also run natively (the same code as their modules,
 # many times faster than in the sandbox): native.rs.
 amb-plugin-duotone = { path = "../../plugins/duotone" }

@@ -16,8 +16,8 @@ amb-lens = { path = "../amb-lens" }
 amb-library = { path = "../amb-library" }
 amb-presets = { path = "../amb-presets" }
 amb-protocol = { path = "../amb-protocol" }
-image = { version = "0.25", default-features = false, features = ["jpeg"] }
-rayon = "1"
+image = { workspace = true, features = ["jpeg"] }
+rayon.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 

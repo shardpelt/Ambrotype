@@ -140,7 +140,8 @@ function showReading(dir) {
 }
 
 async function loadLibraryNow(dir, more = dir === lib.dir ? lib.more : savedMore(dir)) {
-  showReading(dir);
+  // A reload of the folder shown (a file changed, a filter) keeps its grid.
+  if (dir !== lib.dir || !lib.photos.length) showReading(dir);
   lib.dir = dir;
   lib.more = more.filter((d) => d !== dir);
   if (dir) saveMore(dir, lib.more);

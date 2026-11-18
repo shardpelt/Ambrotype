@@ -125,25 +125,6 @@ Do the groups in order, or any card whose "Precondition" line is met. Ids are st
 
 ### Group A: small
 
-### A2. Named constants for bare numbers in recent code
-Tier: small        Risk: low
-Why: thresholds typed inline can't be told apart or tuned, and the kaleidoscope's limits repeat its manifest.
-Files: `crates/amb-ops/src/cleanup.rs`, `crates/amb-ai/src/denoise.rs`, `plugins/kaleidoscope/src/lib.rs` (and its `plugin.wasm`).
-Steps:
-1. `crates/amb-ops/src/cleanup.rs`, next to the other tuning constants (`BLURRY`, `SOFT_SHARE`, `SHOOT`), add, each with a one-line comment saying what it is:
-   - `const DARK_LEVEL: u8 = 16;` a channel value below this counts as black. Used in `see`: `v < 16` becomes `v < DARK_LEVEL`.
-   - `const BRIGHT_LEVEL: u8 = 245;` above this counts as blown out. `v > 245` becomes `v > BRIGHT_LEVEL`.
-   - `const DARK_SHARE: f32 = 0.9;` share of black pixels that makes a frame dark; `const BRIGHT_SHARE: f32 = 0.6;` same for blown out (lower because a blown sky still has some detail). In the line `let (dark, bright) = (s.black > 0.9, s.white > 0.6);` use them.
-   - `const BURST_SECONDS: f64 = 2.0;` and use it in `impl Default for Options` for `burst_seconds`.
-2. `crates/amb-ai/src/denoise.rs`: add `const MIN_WEIGHT: f32 = 1e-3;` (floor of the tile feather weight) for `w.clamp(1e-3, 1.0)`, and `const FLAT_MEAN: f64 = 1e-12;` for `mean.abs() > 1e-12`.
-3. `plugins/kaleidoscope/src/lib.rs`: add `SLICES: (f64, f64) = (2.0, 32.0)`, `ZOOM_MIN: f64 = 0.05`, `DEPTH: (f64, f64) = (1.0, 8.0)` for the `clamp(2.0, 32.0)`, `.max(0.05)` and `clamp(1.0, 8.0)` calls in `kaleidoscope`, and `FOLD_SCALE: f32 = 1.7`, `FOLD_SHIFT: f32 = 0.55` for `p[0] * 1.7 - 0.55` and `p[1] * 1.7`. Comment that the first three repeat the manifest's ranges.
-4. Rebuild the plugin: `cargo run -p amb-cli -- plugin build plugins/kaleidoscope`, and stage its `plugin.wasm` only if it changed.
-Don't: change a value; move code; touch other files.
-Checks: the three cargo commands; `cargo test -p amb-ops -p amb-plugin -p amb-ai`.
-Done when: none of the literals above remain in those lines.
-Commit: `ops: name the cleanup, denoise and kaleidoscope thresholds`. Why: "Tuning values were bare numbers; the plugin's limits copy its manifest."
-
-
 ### A3. UI test scripts per feature
 Tier: small        Risk: low
 Why: `crates/amb-gui/tests/ui/smoke.js` is 1,100 lines and `organise.js` grows with every library feature, so most feature commits touch them and agents working at once conflict. CI runs every script in the folder (`for t in crates/amb-gui/tests/ui/*.js`, `.github/workflows/ci.yml`), each in a fresh editor on a fresh photo, so a new script needs no other change.
@@ -604,7 +585,7 @@ Stop and report if: a vertical drag in the test also scrolls the row; the Map tr
 Report: at most 6 lines: the commit, each check's result, anything the card didn't decide.
 Commit: `collage: the tray is a photoRow`. Why: "The last sideways row of photos with its own scrolling; a sideways drag now scrolls it."
 
-B19 and B20 both change `core/core.js`, `library.js` and `filmstrip.js`: do B19 first, then B20. B21 shares no file with them and can run beside either.
+B20 and B21 share no file and can run at the same time.
 
 ### Needs a brief
 

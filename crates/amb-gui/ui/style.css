@@ -971,6 +971,7 @@ body.library-mode #workspace { display: none; }
 .lib-name { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .library-empty { position: absolute; inset: 0 var(--panel-w) 0 var(--tree-w); display: grid; place-content: center; justify-items: center; gap: 8px; text-align: center; }
 .library-empty[hidden] { display: none; }
+#library-reading { background: var(--bg); } /* covers the folder shown before */
 .library-empty.dragover { outline: 2px dashed var(--accent); outline-offset: -12px; }
 .library-panel { border-left: 1px solid var(--line); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; background: var(--panel); }
 .library-panel h2 { margin-bottom: 2px; }

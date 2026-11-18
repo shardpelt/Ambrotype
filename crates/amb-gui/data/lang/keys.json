@@ -122,6 +122,9 @@
  "A mask of what you name: sky, people, the subject or the background straight away; anything else with the search and object selection models (Settings → AI models)": [
   "index.html"
  ],
+ "A memory card or a network drive can take a minute.": [
+  "index.html"
+ ],
  "A profile file": [
   "index.html"
  ],
@@ -2501,6 +2504,9 @@
   "index.html"
  ],
  "Read the folder again (after adding files by hand or by AI)": [
+  "index.html"
+ ],
+ "Reading the folder…": [
   "index.html"
  ],
  "Ready": [

@@ -115,3 +115,41 @@ await t.step("filmstrip: Ctrl and Shift select, the open photo joins, a range ke
   strip.photos = was;
   renderStrip();
 });
+
+await t.step("Collage tray: a sideways drag scrolls, a drag up takes a photo out, a click fills a cell", async () => {
+  await collageFlow();
+  await t.until("the collage maker", () => $("collage-dialog").open && collage.templates.length);
+  const list = $("col-tray");
+  // The fourth is the real photo, so the cell it fills can draw it.
+  const paths = [1, 2, 3, 4, 5, 6].map((i) => (i === 4 ? ui.info.path : `${ui.info.path}#${i}`));
+  collage.tray = paths.map((path, i) => ({ path, name: `p${i + 1}` }));
+  collage.groups = null;
+  collage.cells = [];
+  renderTray();
+  narrow(list, 200);
+  const cellOf = (i) => collage.trayRow.cells.get(paths[i - 1]);
+  await drag(list, cellOf(2), -40);
+  t.expect(list.scrollLeft > 0, `a sideways drag scrolls the tray: ${list.scrollLeft}`);
+  t.expect(!collage.cells.some((c) => c?.path), "and fills nothing");
+  // A press that moves up: the collage's own drag, with its ghost.
+  const cell = cellOf(3);
+  const at = cell.getBoundingClientRect();
+  const ev = (type, dy) => cell.dispatchEvent(new PointerEvent(type, { bubbles: true, clientX: at.left + 20, clientY: at.top + 20 + dy, pointerId: 9, button: 0, buttons: type === "pointerup" ? 0 : 1, pointerType: "mouse" }));
+  const x0 = list.scrollLeft;
+  ev("pointerdown", 0);
+  ev("pointermove", -30);
+  ev("pointermove", -50);
+  t.expect(document.querySelector(".col-ghost") && list.scrollLeft === x0, "a drag up shows the ghost and doesn't scroll");
+  ev("pointerup", -50);
+  t.expect(!document.querySelector(".col-ghost"), "letting go ends it");
+  cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  t.expect(!collage.cells.some((c) => c?.path), "the click that ends a drag fills nothing");
+  const four = cellOf(4);
+  four.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, clientX: 1, clientY: 1, pointerId: 10, button: 0, buttons: 1, pointerType: "mouse" }));
+  four.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 1, clientY: 1, pointerId: 10, button: 0, pointerType: "mouse" }));
+  four.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  t.expect(collage.cells.some((c) => c?.path === ui.info.path), "a click fills a cell");
+  list.removeAttribute("style");
+  setTray([]);
+  closeCollage();
+});

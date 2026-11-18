@@ -499,49 +499,6 @@ Checks: the three cargo commands; `cargo test -p amb-gui checks`, `cargo test -p
 Done when: each test fails when you add one violation (try it once, then undo).
 Commits: `gui: a test that FEATURES names real buttons`; `cli: a test that the MCP tool list matches its calls`; `plugins: a test that the built-in list matches the plugins folder`.
 
-### B21. The collage tray on `photoRow`
-Tier: medium        Risk: medium
-Asked (verbatim): "/brief the three items under Needs a brief in docs/cleanup.md"
-Why: the collage tray (`renderTray` in `crates/amb-gui/ui/collage/collage-tray.js`) is the last sideways row of photos not built on `photoRow`: its own scrolling CSS, its own lazy loading, and no wheel or drag scrolling.
-Decided:
-- A sideways press scrolls the tray, as in every row. A press that first moves mostly up or down pulls the photo out into the collage's own pointer drag (`startDrag` in `collage/collage-free.js`), kept as it is: it shows a ghost, drops on a cell or on the free canvas at a point, and works with touch. A native drag (the Map's `dragOut`) can't do these, so it is not used.
-- `photoRow` gets two options: `pullOut(p, e)` for that, and `before(p, prev)` for the group heads, which go in the row between cells but are not cells.
-- A click on a tray photo goes through the row's `open` and fills a cell, as now. The fill moves out of `startDrag` into `fillFromTray(path)`.
-Read first: `crates/amb-gui/ui/core/photo-row.js` (all), `crates/amb-gui/ui/collage/collage-tray.js` (`renderTray`, `renderTrayMarks`, lines 280 to 350), `startDrag` in `crates/amb-gui/ui/collage/collage-free.js`. The example to copy: the Map's tray in `crates/amb-gui/ui/library/browse.js` (`photoRow(tray, { ... dragOut })`, near line 283) and its UI step in `crates/amb-gui/tests/ui/photo-row.js`.
-Files: `crates/amb-gui/ui/core/photo-row.js`, `crates/amb-gui/ui/collage/collage-tray.js`, `crates/amb-gui/ui/collage/collage-free.js`, `crates/amb-gui/ui/collage/collage.js`, `crates/amb-gui/ui/style.css`, `crates/amb-gui/src/checks.rs`, `crates/amb-gui/tests/ui/photo-row.js`, `docs/design/collage-and-borders.md`, `docs/cleanup.md`.
-Steps:
-1. `core/photo-row.js`, `dragToScroll`: add a fifth parameter `handOff = () => false` and say in the comment above: "`handOff(e)`, asked at a press's first move past 5 px, ends the press there when it returns true: no scroll (a cell pulled out of the row)". In the `pointermove` listener, as the first line inside `if (!drag.moved) {`, add `if (handOff(e)) { drag = null; return; }`. The library grid's call doesn't change.
-2. `photoRow`:
-   - Document the two options in the comment block: `pullOut(p, e)`: "cells can be pulled out by the pointer, for a drag the caller runs itself (the collage's tray). A press that first moves mostly up or down calls it once with that move; the row doesn't scroll for that press and ignores the click that ends it. For touch the caller's cells need `touch-action: pan-x`." And `before(p, prev) -> Element | null`: "an element put before p's cell, not a cell (a group head); prev is the photo before p, or null."
-   - `pressed` becomes `{ x, y, p: photoOf(e), done: false, pulled: false }` in the `pointerdown` listener. Add `pointerup` and `pointercancel` listeners on `list` that set `pressed.done = true` when `pressed` is set.
-   - Before the `dragToScroll(...)` call (the order matters: this listener must run first), when `o.pullOut` is given, add a `pointermove` listener. It returns when `!pressed?.p || pressed.done`, or when `e.pointerType !== "touch" && !(e.buttons & 1)`, or when the move from `pressed` is under 5 px (`Math.hypot`). Otherwise it sets `pressed.done = true`, and if `verticalDrag(e)` it sets `pressed.pulled = true` and calls `o.pullOut(pressed.p, e)`.
-   - Pass `() => Boolean(pressed?.pulled)` as `dragToScroll`'s fifth argument.
-   - In the `click` listener, after `if (!p) return;`, add `if (pressed?.pulled) return;`.
-   - `set(photos)`: keep a `const extras = [];` beside `cells`. At the start of `set`, remove each element in `extras` and empty it. In the loop, before each cell, `const head = o.before?.(p, prev); if (head) { extras.push(head); list.append(head); }`, with `prev` the photo before (null for the first).
-3. `collage/collage-free.js`: cut the block inside `if (!ghost) { ... }` that fills a cell (`if (fromCell < 0) { ... }`) into a new function above `startDrag`, `function fillFromTray(path)`, keeping its comment ("A click on a tray photo: into the selected cell, or the first empty one."). `if (!ghost) { ... }` becomes `if (!ghost) return;`.
-4. `collage/collage.js`, the `collage` state: delete `near` (no longer used). Add `trayRow: null, // the tray's photoRow, made by renderTray` and `trayGroupOf: new Map(), // path -> group number while grouped (renderTray)`.
-5. `collage/collage-tray.js`:
-   - Split the item-building part of `renderTray`'s loop into `function trayCell(p)`. It returns the `div.tray-item` with its class (from `collage.trayGroupOf.get(p.path) ?? -1`), title, img (its `src` from `collage.small` when there), stars, name, used mark and remove button. It sets no `data-path` (the row does) and adds no `pointerdown` listener. The remove button keeps `pointerdown` → `stopPropagation`. Its `click` also calls `e.stopPropagation()`, filters `collage.tray` and `collage.groups` as now, then always calls `renderTray()` (the `item.remove()` shortcut goes).
-   - Split the head-building part into `function trayGroupHead(p, prev)`. It returns null unless `collage.groups` is set and the group of `p` differs from that of `prev` (or `prev` is null). Otherwise it returns the same `div.tray-group` as now, for a group or for "Not grouped".
-   - `renderTray` becomes: `collage.queue.clear();` set `collage.trayGroupOf` from `collage.groups` (the Map built at its start today), `collage.trayRow ??= photoRow($("col-tray"), { cell: trayCell, thumb: (p, cell) => { if (!collage.small.has(p.path)) collage.queue.add(cell); }, open: (p) => fillFromTray(p.path), pullOut: (p, e) => startDrag(e, p.path), before: trayGroupHead });` then `collage.trayRow.set(collage.tray); renderTrayMarks(); updateTrayCount();`.
-   - `renderTrayMarks`: loop over `collage.trayRow?.cells ?? []` (`[path, item]`) instead of `$("col-tray").children`.
-6. `style.css`: `.col-tray` keeps only `padding: 0 12px 8px; flex: 1; align-items: stretch;` (`.photo-row` gives the flex, gap and scrolling). In `.tray-item`, `touch-action: none` becomes `touch-action: pan-x`.
-7. `crates/amb-gui/src/checks.rs`: `OVERFLOW_ROW_LIMIT` goes from 2 to 1 (the test says the count fell).
-8. UI test: a step at the end of `crates/amb-gui/tests/ui/photo-row.js`, "Collage tray: a sideways drag scrolls, a drag up takes a photo out, a click fills a cell". `await collageFlow();` then wait until `$("collage-dialog").open && collage.templates.length`. Fill the tray with six made-up photos (`{ path: `${ui.info.path}#${i}`, name: `p${i}` }`), call `renderTray()` and `narrow($("col-tray"), 200)`. Then:
-   - `drag(list, cell, -40)`: expect `scrollLeft > 0` and no cell filled (`!collage.cells.some((c) => c?.path)`).
-   - On a cell, dispatch `pointerdown` and then `pointermove` 30 px up, both with `buttons: 1, pointerType: "mouse", pointerId: 9`, then one more `pointermove` 20 px further up: expect `document.querySelector(".col-ghost")`. Dispatch `pointerup`: expect no `.col-ghost`.
-   - Click a cell: expect `collage.cells.some((c) => c?.path === thatPath)`.
-   - End with `setTray([]); closeCollage();` and remove the row's `style`.
-9. `docs/design/collage-and-borders.md`, the "**Photos** come from a tray" line: "Drag one into a cell" becomes "Drag one up into a cell (a sideways drag scrolls the tray)".
-10. Delete this card from `docs/cleanup.md`.
-Use: `photoRow`, `loadQueue` (`collage.queue`, as now). Don't add: a native drag (`draggable`, `dragOut`) for the tray; a second `nearView` in the collage.
-Don't: change `startDrag`'s drop handling, the ghost or the cell grip's drag (`startDrag(e, c.path, i)`); rename `renderTray`, `trayLoadThumb`, `renderTrayMarks`, the ids `col-tray`, or the classes `tray-item`, `tray-group`, `tray-remove`, `used`; change the filmstrip or the Map's tray (their UI steps must pass unchanged).
-Checks: the three cargo commands; `cargo test -p amb-gui` (the shared-parts test); the UI scripts `photo-row.js` and `smoke.js` (its "a group's 2 × 2" step reads `.tray-group button`), as in B19. Each must exit 0. By hand (Xvfb, docs/recipes.md): open the collage maker, scroll the tray with the wheel and with a sideways drag, drag a photo up into a cell, click one, group alike and press a group's 2 × 2, remove one with ×.
-Done when: `grep -n "nearView\|startDrag" crates/amb-gui/ui/collage/collage-tray.js` prints only the `pullOut` line, and `grep -n "overflow-x" crates/amb-gui/ui/style.css` no longer lists `.col-tray`.
-Stop and report if: a vertical drag in the test also scrolls the row; the Map tray or filmstrip step fails; `startDrag` has a caller other than the tray and the cell grip.
-Report: at most 6 lines: the commit, each check's result, anything the card didn't decide.
-Commit: `collage: the tray is a photoRow`. Why: "The last sideways row of photos with its own scrolling; a sideways drag now scrolls it."
-
 ### Needs a brief
 
 A large model answers each question and writes the cards, then moves them above. Each is here because a builder would have to choose.

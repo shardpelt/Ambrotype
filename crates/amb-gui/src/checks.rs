@@ -241,7 +241,7 @@ fn old_idioms_may_only_fall() {
 // Copies of shared parts, as they stand. Lower a limit when you remove some,
 // never raise it: use the part named in the message.
 const INTERSECTION_OBSERVER_LIMIT: usize = 0;
-const OVERFLOW_ROW_LIMIT: usize = 2;
+const OVERFLOW_ROW_LIMIT: usize = 1;
 
 #[test]
 fn copies_of_shared_parts_may_only_fall() {

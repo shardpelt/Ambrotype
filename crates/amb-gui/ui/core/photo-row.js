@@ -13,7 +13,9 @@
 // says whether a press may start a drag (Shift- and Ctrl-clicks select);
 // `native(e)` says whether a `dragstart` is left to the browser (a cell
 // that can be dragged out) instead of being cancelled so the list scrolls.
-function dragToScroll(list, axis = "x", when = () => true, native = () => false) {
+// `handOff(e)`, asked at a press's first move past 5 px, ends the press
+// there when it returns true: no scroll (a cell pulled out of the row).
+function dragToScroll(list, axis = "x", when = () => true, native = () => false, handOff = () => false) {
   const along = axis === "x" ? "clientX" : "clientY";
   const scroll = axis === "x" ? "scrollLeft" : "scrollTop";
   let drag = null;
@@ -32,6 +34,7 @@ function dragToScroll(list, axis = "x", when = () => true, native = () => false)
     const d = e[along] - drag.at;
     if (!drag.moved && Math.abs(d) < 5) return;
     if (!drag.moved) {
+      if (handOff(e)) { drag = null; return; }
       drag.moved = true;
       try { list.setPointerCapture(e.pointerId); } catch { /* a pointer the page made up (tests) */ }
       list.classList.add("dragging");
@@ -80,10 +83,21 @@ function dragToScroll(list, axis = "x", when = () => true, native = () => false)
 //   dragOut(p, e)            cells can be dragged out of the row; fills
 //                            e.dataTransfer. A mostly sideways drag still
 //                            scrolls, a mostly vertical one drags out.
+//   pullOut(p, e)            cells can be pulled out by the pointer, for a
+//                            drag the caller runs itself (the collage's
+//                            tray). A press that first moves mostly up or
+//                            down calls it once with that move; the row
+//                            doesn't scroll for that press and ignores the
+//                            click that ends it. For touch the caller's
+//                            cells need `touch-action: pan-x`.
+//   before(p, prev) -> Element | null   an element put before p's cell, not
+//                            a cell (a group head); prev is the photo
+//                            before p, or null.
 function photoRow(list, o = {}) {
   list.classList.add("photo-row");
   const cells = new Map(); // path -> cell
   const byPath = new Map(); // path -> photo
+  const extras = []; // what before(p, prev) put between the cells
   let observer = null;
   let pressed = null; // where the pointer went down, for dragstart
   const photoOf = (e) => {
@@ -100,9 +114,24 @@ function photoRow(list, o = {}) {
     list.scrollLeft += dy;
   }, { passive: false });
 
-  list.addEventListener("pointerdown", (e) => { pressed = { x: e.clientX, y: e.clientY }; });
+  list.addEventListener("pointerdown", (e) => { pressed = { x: e.clientX, y: e.clientY, p: photoOf(e), done: false, pulled: false }; });
+  const pressEnds = () => { if (pressed) pressed.done = true; };
+  list.addEventListener("pointerup", pressEnds);
+  list.addEventListener("pointercancel", pressEnds);
   const verticalDrag = (e) => !pressed || Math.abs(e.clientX - pressed.x) < Math.abs(e.clientY - pressed.y);
-  dragToScroll(list, "x", () => true, (e) => Boolean(o.dragOut) && verticalDrag(e));
+  // Before dragToScroll's own listener, so a pull is known when it asks.
+  if (o.pullOut) {
+    list.addEventListener("pointermove", (e) => {
+      if (!pressed?.p || pressed.done) return;
+      if (e.pointerType !== "touch" && !(e.buttons & 1)) return;
+      if (Math.hypot(e.clientX - pressed.x, e.clientY - pressed.y) < 5) return;
+      pressed.done = true;
+      if (!verticalDrag(e)) return;
+      pressed.pulled = true;
+      o.pullOut(pressed.p, e);
+    });
+  }
+  dragToScroll(list, "x", () => true, (e) => Boolean(o.dragOut) && verticalDrag(e), () => Boolean(pressed?.pulled));
   list.addEventListener("dragstart", (e) => {
     const p = o.dragOut && !e.defaultPrevented && photoOf(e);
     if (p) o.dragOut(p, e);
@@ -111,6 +140,7 @@ function photoRow(list, o = {}) {
   list.addEventListener("click", (e) => {
     const p = photoOf(e);
     if (!p) return;
+    if (pressed?.pulled) return;
     if ((e.ctrlKey || e.metaKey || e.shiftKey) && o.select) o.select(p, e.shiftKey ? "range" : "toggle");
     else o.open?.(p, e);
   });
@@ -125,6 +155,7 @@ function photoRow(list, o = {}) {
       observer?.stop();
       observer = null;
       for (const cell of cells.values()) cell.remove();
+      for (const x of extras.splice(0)) x.remove();
       cells.clear();
       byPath.clear();
       if (o.thumb) {
@@ -133,7 +164,14 @@ function photoRow(list, o = {}) {
           if (p) o.thumb(p, cell);
         });
       }
+      let prev = null;
       for (const p of photos) {
+        const head = o.before?.(p, prev);
+        if (head) {
+          extras.push(head);
+          list.append(head);
+        }
+        prev = p;
         const cell = o.cell ? o.cell(p) : el("button", { type: "button", title: p.name });
         cell.dataset.path = p.path;
         if (o.dragOut) cell.draggable = true;

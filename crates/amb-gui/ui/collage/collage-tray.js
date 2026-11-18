@@ -279,61 +279,62 @@ function groupGrid(paths) {
   status("Drag inside a square to line its photo up; scroll to zoom");
 }
 
-function renderTray() {
-  const list = $("col-tray");
-  collage.near?.stop();
-  collage.queue.clear();
-  list.replaceChildren();
-  collage.near = nearView(list, "0px 400px", (item) => collage.queue.add(item));
-  const groupOf = new Map((collage.groups ?? []).flatMap((g, n) => g.map((path) => [path, n])));
-  let lastGroup = -1;
-  for (const p of collage.tray) {
-    const n = groupOf.get(p.path) ?? -1;
-    if (collage.groups && n !== lastGroup) {
-      // A head before each group, and before the photos in none.
-      const head = Object.assign(document.createElement("div"), { className: "tray-group" });
-      if (n >= 0) {
-        const g = collage.groups[n];
-        head.append(Object.assign(document.createElement("span"), { textContent: `Group ${n + 1} · ${g.length}` }));
-        const make = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "2 × 2", title: "A square of this group's best four photos" });
-        make.addEventListener("click", () => groupGrid(g));
-        head.append(make);
-      } else {
-        head.append(Object.assign(document.createElement("span"), { textContent: "Not grouped" }));
-      }
-      list.append(head);
-      lastGroup = n;
-    }
-    const item = document.createElement("div");
-    item.className = n >= 0 ? `tray-item grouped g${n % 2}` : "tray-item";
-    item.dataset.path = p.path;
-    item.title = `${p.name}\nDrag into a cell, or click to fill the selected (or next empty) cell.`;
-    const img = Object.assign(document.createElement("img"), { alt: "", draggable: false });
-    const stars = Object.assign(document.createElement("span"), { className: "tray-stars", textContent: p.rating ? "★".repeat(p.rating) : "" });
-    const name = Object.assign(document.createElement("span"), { className: "tray-name", textContent: p.name });
-    const used = Object.assign(document.createElement("span"), { className: "tray-used", title: "In the collage" });
-    const remove = Object.assign(document.createElement("button"), { type: "button", className: "tray-remove", textContent: "×", title: "Take out of the tray" });
-    remove.addEventListener("pointerdown", (e) => e.stopPropagation());
-    remove.addEventListener("click", () => {
-      collage.tray = collage.tray.filter((x) => x.path !== p.path);
-      if (collage.groups) {
-        collage.groups = collage.groups.map((g) => g.filter((x) => x !== p.path)).filter((g) => g.length > 1);
-        return renderTray();
-      }
-      item.remove();
-      updateTrayCount();
-    });
-    item.append(img, stars, name, used, remove);
-    item.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0) return;
-      e.preventDefault();
-      startDrag(e, p.path);
-    });
-    const small = collage.small.get(p.path);
-    if (small) img.src = small.url;
-    else collage.near.watch(item);
-    list.append(item);
+// One tray photo: picture, stars, name, a mark when it is in the collage,
+// and × to take it out of the tray.
+function trayCell(p) {
+  const n = collage.trayGroupOf.get(p.path) ?? -1;
+  const item = document.createElement("div");
+  item.className = n >= 0 ? `tray-item grouped g${n % 2}` : "tray-item";
+  item.title = `${p.name}\nDrag up into a cell, or click to fill the selected (or next empty) cell.`;
+  const img = Object.assign(document.createElement("img"), { alt: "", draggable: false });
+  const stars = Object.assign(document.createElement("span"), { className: "tray-stars", textContent: p.rating ? "★".repeat(p.rating) : "" });
+  const name = Object.assign(document.createElement("span"), { className: "tray-name", textContent: p.name });
+  const used = Object.assign(document.createElement("span"), { className: "tray-used", title: "In the collage" });
+  const remove = Object.assign(document.createElement("button"), { type: "button", className: "tray-remove", textContent: "×", title: "Take out of the tray" });
+  remove.addEventListener("pointerdown", (e) => e.stopPropagation());
+  remove.addEventListener("click", (e) => {
+    e.stopPropagation();
+    collage.tray = collage.tray.filter((x) => x.path !== p.path);
+    if (collage.groups) collage.groups = collage.groups.map((g) => g.filter((x) => x !== p.path)).filter((g) => g.length > 1);
+    renderTray();
+  });
+  item.append(img, stars, name, used, remove);
+  const small = collage.small.get(p.path);
+  if (small) img.src = small.url;
+  return item;
+}
+
+// A head before each group, and before the photos in none, while grouped.
+function trayGroupHead(p, prev) {
+  if (!collage.groups) return null;
+  const n = collage.trayGroupOf.get(p.path) ?? -1;
+  if (prev && (collage.trayGroupOf.get(prev.path) ?? -1) === n) return null;
+  const head = Object.assign(document.createElement("div"), { className: "tray-group" });
+  if (n >= 0) {
+    const g = collage.groups[n];
+    head.append(Object.assign(document.createElement("span"), { textContent: `Group ${n + 1} · ${g.length}` }));
+    const make = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "2 × 2", title: "A square of this group's best four photos" });
+    make.addEventListener("click", () => groupGrid(g));
+    head.append(make);
+  } else {
+    head.append(Object.assign(document.createElement("span"), { textContent: "Not grouped" }));
   }
+  return head;
+}
+
+// The tray is a photoRow: a sideways drag scrolls it, a drag up takes a
+// photo into the collage (its own pointer drag), a click fills a cell.
+function renderTray() {
+  collage.queue.clear();
+  collage.trayGroupOf = new Map((collage.groups ?? []).flatMap((g, n) => g.map((path) => [path, n])));
+  collage.trayRow ??= photoRow($("col-tray"), {
+    cell: trayCell,
+    thumb: (p, cell) => { if (!collage.small.has(p.path)) collage.queue.add(cell); },
+    open: (p) => fillFromTray(p.path),
+    pullOut: (p, e) => startDrag(e, p.path),
+    before: trayGroupHead,
+  });
+  collage.trayRow.set(collage.tray);
   renderTrayMarks();
   updateTrayCount();
 }
@@ -346,7 +347,7 @@ function trayLoadThumb(item) {
 
 function renderTrayMarks() {
   const used = new Set(collage.cells.filter((c) => c?.path).map((c) => c.path));
-  for (const item of $("col-tray").children) item.classList.toggle("used", used.has(item.dataset.path));
+  for (const [path, item] of collage.trayRow?.cells ?? []) item.classList.toggle("used", used.has(path));
 }
 
 function batchPhotos() {

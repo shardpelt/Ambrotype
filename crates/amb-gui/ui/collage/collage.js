@@ -33,7 +33,8 @@ const collage = {
   dragMode: "frame",    // free layouts: a drag moves the "frame" or the "photo" inside it
   gridCells: null,      // the grid cells before "Arrange freely", to go back to
   busy: false,
-  near: null,          // nearView: loads the tray photos that scroll into view
+  trayRow: null,       // the tray's photoRow, made by renderTray
+  trayGroupOf: new Map(), // path -> group number while grouped (renderTray)
   queue: loadQueue(3, (item) => trayLoadThumb(item)),
   wired: false,
 };

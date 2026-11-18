@@ -747,8 +747,8 @@ dialog.collage-dialog[open] { display: grid; grid-template-rows: auto 1fr 150px;
 .col-ghost img { display: block; width: 100%; }
 .collage-tray { display: flex; flex-direction: column; min-height: 0; border-top: 1px solid var(--line); background: var(--bg-deep); }
 .tray-head { display: flex; align-items: center; gap: 8px; padding: 4px 12px; }
-.col-tray { display: flex; gap: 6px; overflow-x: auto; padding: 0 12px 8px; flex: 1; align-items: stretch; }
-.tray-item { position: relative; flex: none; width: 110px; display: flex; flex-direction: column; gap: 2px; padding: 3px; border: 1px solid transparent; border-radius: var(--radius); cursor: grab; touch-action: none; user-select: none; }
+.col-tray { padding: 0 12px 8px; flex: 1; align-items: stretch; }
+.tray-item { position: relative; flex: none; width: 110px; display: flex; flex-direction: column; gap: 2px; padding: 3px; border: 1px solid transparent; border-radius: var(--radius); cursor: grab; touch-action: pan-x; user-select: none; }
 .tray-item:hover { border-color: var(--line); background: var(--hover); }
 .tray-group { flex: none; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 0 6px 0 10px; border-left: 2px solid var(--accent); color: var(--muted); font-size: 12px; white-space: nowrap; }
 .tray-item.grouped.g1 { background: rgba(127, 127, 127, .08); }

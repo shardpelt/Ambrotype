@@ -40,7 +40,7 @@ Status: built 2026-10-12 (`crates/amb-export/src/watermark.rs`).
 ![The collage maker: layouts on the left, the canvas, canvas and cell settings on the right, and the photo tray below](../images/collage.png)
 
 How it works:
-- **Photos** come from a tray under the canvas: the open photo's folder, plus any photos or folders you add. Drag one into a cell, or click it to fill the selected (or next empty) cell. **Fill empty cells** puts tray photos in order. The ⠿ grip swaps two cells.
+- **Photos** come from a tray under the canvas: the open photo's folder, plus any photos or folders you add. Drag one up into a cell (a sideways drag scrolls the tray), or click it to fill the selected (or next empty) cell. **Fill empty cells** puts tray photos in order. The ⠿ grip swaps two cells.
 - **In a cell:** drag to move the photo, scroll to zoom (around the pointer), double-click to fit again. **Rotate** (R) turns it a quarter; **Empty** (Delete) takes it out.
 - **Edit photo** opens it in the editor with all its tools; **← Back to collage** returns, showing the new edit. The collage uses each photo's own edit (its sidecar), so there is one edit per photo, not one per collage.
 - **The shape:** pick a layout, then split or remove cells. A built-in layout changes only the shape; your own layouts bring their size, gaps and background too.

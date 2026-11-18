@@ -343,6 +343,13 @@ function removeCell(i) {
 }
 
 // A photo dragged from the tray, or a cell's grip, to a cell.
+// A click on a tray photo: into the selected cell, or the first empty one.
+function fillFromTray(path) {
+  let i = collage.selected >= 0 ? collage.selected : collage.cells.findIndex((c, n) => !c?.path && n < collage.t.cells.length);
+  if (i < 0 && collage.cells.length < collage.t.cells.length) i = collage.cells.length;
+  if (i >= 0) putPhoto(i, path);
+}
+
 function startDrag(e, path, fromCell = -1) {
   const dlg = $("collage-dialog");
   const start = { x: e.clientX, y: e.clientY };
@@ -376,15 +383,7 @@ function startDrag(e, path, fromCell = -1) {
     window.removeEventListener("pointerup", up);
     window.removeEventListener("pointercancel", up);
     target?.classList.remove("drop");
-    if (!ghost) {
-      // A click on a tray photo: into the selected cell, or the first empty one.
-      if (fromCell < 0) {
-        let i = collage.selected >= 0 ? collage.selected : collage.cells.findIndex((c, n) => !c?.path && n < collage.t.cells.length);
-        if (i < 0 && collage.cells.length < collage.t.cells.length) i = collage.cells.length;
-        if (i >= 0) putPhoto(i, path);
-      }
-      return;
-    }
+    if (!ghost) return;
     ghost.remove();
     if (!target) return;
     if (target.id === "col-stage") {

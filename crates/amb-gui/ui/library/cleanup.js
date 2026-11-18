@@ -149,8 +149,7 @@ async function cleanReject() {
   const paths = cleanGoing();
   try {
     for (const u of await setInfo(paths, { flag: "reject" })) {
-      const p = libPhoto(u.path);
-      if (p) p.flag = u.info.flag ?? null;
+      photoChanged(u.path, { flag: u.info.flag ?? null });
     }
   } catch (e) {
     return showError(e);

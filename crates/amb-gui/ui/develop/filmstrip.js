@@ -170,7 +170,7 @@ async function rateFromStrip(p, k) {
   if (p.path === ui.info?.path) return setRating(rating);
   try {
     const [u] = await setInfo([p.path], { rating });
-    stripUpdate(p.path, { rating: u?.info.rating ?? (rating || null) });
+    photoChanged(p.path, { rating: u?.info.rating ?? (rating || null) });
     status(rating ? `Rated ${p.name} ${"★".repeat(rating)}` : `Rating cleared: ${p.name}`);
   } catch (e) {
     showError(e);
@@ -294,12 +294,9 @@ function stripShowPreview(img) {
   cell.querySelector("img").src = url;
 }
 
-// Keep the strip's rating, label and "edited" marks in step with the open photo.
-function stripUpdateCurrent(changes = {}) {
-  if (ui.info) stripUpdate(ui.info.path, changes);
-}
-
-function stripUpdate(path, { rating, label, edited, keywords, flag } = {}) {
+// The strip's copy of a photo and its cell's marks, after a change (the
+// "photo-changed" event).
+function stripUpdate(path, { rating, label, edited, keywords, flag, gps } = {}) {
   const p = strip.photos.find((x) => x.path === path);
   const cell = p && strip.cells.get(p.path);
   if (!cell) return;
@@ -318,6 +315,7 @@ function stripUpdate(path, { rating, label, edited, keywords, flag } = {}) {
     cell.querySelector(".film-edited").hidden = !edited;
   }
   if (keywords !== undefined) p.keywords = keywords;
+  if (gps !== undefined) p.gps = gps;
   if (flag !== undefined) {
     p.flag = flag;
     showFlag(cell.querySelector(".film-flag"), flag);
@@ -375,6 +373,7 @@ function wireFilmstrip() {
     menu: stripMenu,
   });
   strip.cells = strip.row.cells;
+  document.addEventListener("photo-changed", (e) => stripUpdate(e.detail.path, e.detail.changes));
   $("filmstrip-prev").addEventListener("click", () => stepPhoto(-1));
   $("filmstrip-next").addEventListener("click", () => stepPhoto(1));
   $("preview").addEventListener("load", () => {

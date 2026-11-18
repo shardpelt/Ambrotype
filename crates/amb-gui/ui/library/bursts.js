@@ -98,8 +98,7 @@ async function cullReject() {
     try {
       const updates = await setInfo(paths, { flag });
       for (const u of updates) {
-        const p = libPhoto(u.path);
-        if (p) p.flag = u.info.flag ?? null;
+        photoChanged(u.path, { flag: u.info.flag ?? null });
       }
     } catch (e) {
       return showError(e);

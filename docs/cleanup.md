@@ -499,49 +499,6 @@ Checks: the three cargo commands; `cargo test -p amb-gui checks`, `cargo test -p
 Done when: each test fails when you add one violation (try it once, then undo).
 Commits: `gui: a test that FEATURES names real buttons`; `cli: a test that the MCP tool list matches its calls`; `plugins: a test that the built-in list matches the plugins folder`.
 
-### B20. Views told of a photo's change by one event
-Tier: medium        Risk: medium
-Asked (verbatim): "/brief the three items under Needs a brief in docs/cleanup.md"
-Why: after a rating, label, flag or edit, each caller updates the grid cell, the cull tile and the filmstrip by hand, and keeps the separate copies of the photo (`lib.photos`, `strip.photos`, the viewer's `slides.list`) in step itself. Some forget: Bursts, Duplicates and Clean up set flags that the filmstrip never sees.
-Decided: one event, `photo-changed` on `document`, with `detail: { path, changes }`, sent by a helper `photoChanged(path, changes)` in `core/core.js`. Each view listens and updates its own copy of the photo and its own cell. The sender doesn't touch any list. `changes` holds only the fields that changed (`rating`, `label`, `flag`, `keywords`, `edited`, `stack`, `title`, `caption`, `creator`, `copyright`, `gps`), with `null` for none. The info panel is not a listener: `loadInfo()` stays where it is (it would reload after its own saves).
-Read first: `crates/amb-gui/ui/library/library.js` (`libraryChange`, near line 300), `crates/amb-gui/ui/develop/filmstrip.js` (`stripUpdate`, near line 311), `crates/amb-gui/ui/library/library-grid.js` (`updateCell`), `crates/amb-gui/ui/library/cull.js` (`updateCullTile`), `crates/amb-gui/ui/library/slideshow.js` (`viewerChange`, near line 220). The example to copy: `setInfo` in `core/core.js` (a shared helper every caller goes through).
-Files: `crates/amb-gui/ui/core/core.js`, `crates/amb-gui/ui/core/app.js`, `crates/amb-gui/ui/library/library-grid.js`, `crates/amb-gui/ui/library/library.js`, `crates/amb-gui/ui/library/library-actions.js`, `crates/amb-gui/ui/library/slideshow.js`, `crates/amb-gui/ui/library/bursts.js`, `crates/amb-gui/ui/library/duplicates.js`, `crates/amb-gui/ui/library/cleanup.js`, `crates/amb-gui/ui/dialogs/plugins.js`, `crates/amb-gui/ui/develop/info.js`, `crates/amb-gui/ui/develop/filmstrip.js`, `crates/amb-gui/tests/ui/browse.js`, `docs/codestyle.md`, `docs/cleanup.md`.
-Steps:
-1. `core/core.js`, after `setInfo`:
-   ```js
-   // A photo's info or edit changed: every view that shows it (the library's
-   // grid and cull tiles, the filmstrip, the viewer) updates its own copy and
-   // cell. `changes` holds only the fields that changed; null means none.
-   function photoChanged(path, changes) {
-     document.dispatchEvent(new CustomEvent("photo-changed", { detail: { path, changes } }));
-   }
-   ```
-2. Listeners. Each goes in a wire function that `init` in `core/app.js` calls, so it is there before any folder is read (`wireLibrary` runs only when the library is first shown, so it is not used):
-   - `library/library-grid.js`: a new `function wireLibraryChanges()` at the end of the file, with a one-line comment. It adds a `photo-changed` listener: `const p = libPhoto(path); if (!p) return; Object.assign(p, changes); updateCell(p); updateCullTile(path);`. Call `wireLibraryChanges();` in `init` in `core/app.js`, on the line after `wireFilmstrip();`.
-   - `develop/filmstrip.js` `wireFilmstrip`: `document.addEventListener("photo-changed", (e) => stripUpdate(e.detail.path, e.detail.changes));`. `stripUpdate` already ignores fields it doesn't show; also make it copy `gps` when given (`if (gps !== undefined) p.gps = gps;`, `gps` added to its destructuring).
-   - `library/slideshow.js` `wireSlideshow`: a listener that does `for (const x of slides.list) if (x.path === e.detail.path) Object.assign(x, e.detail.changes);`.
-3. Senders. Replace each hand update with one `photoChanged` call:
-   - `library.js` `libraryChange`: the `const p = libPhoto(u.path); if (!p) continue; Object.assign(...); updateCell(p); updateCullTile(u.path); stripUpdate(...)` lines become `photoChanged(u.path, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag ?? null, stack: u.info.stack ?? null, title: u.info.title, caption: u.info.caption, creator: u.info.creator, copyright: u.info.copyright });`. The `loadInfo()` line after the loop stays.
-   - `library.js`, in `showLibraryTask` (near line 90): `open.edited = edited; updateCell(open);` becomes `photoChanged(open.path, { edited });`.
-   - `library-actions.js`, three places (after `invoke("negative_sync"`, `invoke("apply_to_photos"` and `invoke("paste_settings"`): the `const p = libPhoto(path); if (p) { p.edited = true; updateCell(p); stripUpdate(path, { edited: true }); }` block becomes `photoChanged(path, { edited: true });`. `refreshThumb(path);` after it stays.
-   - `dialogs/plugins.js` (near line 240): the same block, with `photo` for `p`, becomes `photoChanged(path, { edited: true });`.
-   - `slideshow.js` `viewerChange`: the `for (const list of [slides.list, lib.photos, strip.photos]) ...` loop, the `if (typeof updateCell ...)` line and `stripUpdate(p.path, fields);` become `photoChanged(p.path, fields);`. The rest of the function stays.
-   - `bursts.js` (near line 100), `duplicates.js` (near line 120), `cleanup.js` (`cleanReject`): `const p = libPhoto(u.path); if (p) p.flag = u.info.flag ?? null;` becomes `photoChanged(u.path, { flag: u.info.flag ?? null });`.
-   - `develop/info.js` `setRating`, `setLabel`, `setFlag`: `stripUpdateCurrent({ ... })` becomes `photoChanged(ui.info.path, { ... })` with the same object.
-   - `core/app.js` `setState`: `stripUpdateCurrent({ edited: ... });` becomes `if (ui.info) photoChanged(ui.info.path, { edited: Object.keys(ui.settings).length > 0 });`.
-   - `filmstrip.js` `rateFromStrip`: `stripUpdate(p.path, { rating: ... })` becomes `photoChanged(p.path, { rating: ... })` with the same value.
-4. Delete `stripUpdateCurrent` from `filmstrip.js` (no callers are left).
-5. UI test: a step at the end of `crates/amb-gui/tests/ui/browse.js`, "one change reaches the grid and the filmstrip": `await openFolder(dirOf(ui.info.path));` wait until `libraryOn() && lib.cells.has(ui.info.path)`. Keep `was = libPhoto(path).rating ?? null`. Call `photoChanged(path, { rating: 4 })`. Expect `libPhoto(path).rating === 4`, the cell's `.lib-stars` text to be `"★★★★"`, and `strip.photos.find((p) => p.path === path)?.rating === 4`. Then `photoChanged(path, { rating: was })`. It writes no sidecar.
-6. `docs/codestyle.md`, the "Shared parts, not copies" line: add `A change to a photo's info or edit reaches the views through photoChanged (core/core.js), never by calling a view's update.`
-7. Delete this card from `docs/cleanup.md`.
-Use: `photoChanged` for every view update. Don't add: a second event name, a listener that writes a sidecar, `typeof X === "function"` guards.
-Don't: rename `updateCell`, `updateCullTile`, `stripUpdate` (they stay as the listeners' bodies); change what `setInfo` writes; touch `bursts.js` line 46 and 90 (`updateCell` there redraws after grouping, not after a change); touch `collage/collage.js` (the collage's tray is its own copy).
-Checks: the three cargo commands; then the UI scripts as in B19, all five in `crates/amb-gui/tests/ui/` (`for t in crates/amb-gui/tests/ui/*.js; do xvfb-run -a -s "-screen 0 1600x1000x24" target/debug/ambrotype --ui-test "$t" /tmp/ui/test.dng || break; done`). Each must exit 0. By hand (Xvfb, docs/recipes.md): rate a photo in Develop and press G, and the grid cell shows the stars; rate in the grid and the filmstrip shows them.
-Done when: `grep -rn "stripUpdate\|updateCullTile(" crates/amb-gui/ui` prints only lines in `develop/filmstrip.js`, `library/cull.js` (its definition) and the listener in `library/library-grid.js`; and the new UI step passes.
-Stop and report if: a sender doesn't match the lines quoted; a UI script fails twice; a view turns out to read a photo object that none of the three listeners update.
-Report: at most 6 lines: the commit, each check's result, anything the card didn't decide.
-Commit: `ui: views hear of a photo's change through one event`. Why: "Each caller updated each view by hand, and some missed the filmstrip."
-
 ### B21. The collage tray on `photoRow`
 Tier: medium        Risk: medium
 Asked (verbatim): "/brief the three items under Needs a brief in docs/cleanup.md"
@@ -584,8 +541,6 @@ Done when: `grep -n "nearView\|startDrag" crates/amb-gui/ui/collage/collage-tray
 Stop and report if: a vertical drag in the test also scrolls the row; the Map tray or filmstrip step fails; `startDrag` has a caller other than the tray and the cell grip.
 Report: at most 6 lines: the commit, each check's result, anything the card didn't decide.
 Commit: `collage: the tray is a photoRow`. Why: "The last sideways row of photos with its own scrolling; a sideways drag now scrolls it."
-
-B20 and B21 share no file and can run at the same time.
 
 ### Needs a brief
 

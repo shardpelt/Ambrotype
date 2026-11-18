@@ -127,6 +127,13 @@ function setInfo(paths, change) {
   return write;
 }
 
+// A photo's info or edit changed: every view that shows it (the library's
+// grid and cull tiles, the filmstrip, the viewer) updates its own copy and
+// cell. `changes` holds only the fields that changed; null means none.
+function photoChanged(path, changes) {
+  document.dispatchEvent(new CustomEvent("photo-changed", { detail: { path, changes } }));
+}
+
 // Ctrl- and Shift-click selection over `order` (paths, as shown), on any
 // { selected: Set, anchor } (the library's `lib`, the filmstrip's `strip`).
 // how: "only" (a plain click), "toggle" (Ctrl/⌘), "range" (Shift: from the

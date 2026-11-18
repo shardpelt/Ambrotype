@@ -67,7 +67,7 @@ function setState(state) {
   ui.settings = state.settings ?? {};
   const held = ui.active && ui.active in ui.overrides ? { [ui.active]: ui.overrides[ui.active] } : {};
   ui.overrides = held;
-  stripUpdateCurrent({ edited: Object.keys(ui.settings).length > 0 });
+  if (ui.info) photoChanged(ui.info.path, { edited: Object.keys(ui.settings).length > 0 });
   syncControls();
   if (ui.crop.on && cropKey(ui.settings) !== crop) reloadCrop();
   masksStateChanged();
@@ -361,6 +361,7 @@ async function init() {
   AmbPicker.enhance($("export-form").size_preset, { open: ["Common"] });
   wireInfo();
   wireFilmstrip();
+  wireLibraryChanges();
   for (const n of ["resize_mode", "resize_value"]) $("export-form")[n].addEventListener("input", drawBorderPreview);
   wireExportPresets();
   wireFeatures();

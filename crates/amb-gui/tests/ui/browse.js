@@ -636,3 +636,15 @@ await t.step("the editor gets its top bar back", async () => {
   t.key("Ctrl+Enter");
   t.expect(!$("slideshow-dialog").open, "no slideshow in the editor");
 });
+
+await t.step("one change reaches the grid and the filmstrip", async () => {
+  await openFolder(dirOf(ui.info.path));
+  await t.until("the grid", () => libraryOn() && lib.cells.has(ui.info.path));
+  const path = ui.info.path;
+  const was = libPhoto(path).rating ?? null;
+  photoChanged(path, { rating: 4 });
+  t.expect(libPhoto(path).rating === 4, "the library's copy");
+  t.expect(lib.cells.get(path).querySelector(".lib-stars").textContent === "★★★★", "the grid cell");
+  t.expect(strip.photos.find((p) => p.path === path)?.rating === 4, "the filmstrip's copy");
+  photoChanged(path, { rating: was });
+});

@@ -91,7 +91,7 @@ function setRating(n) {
   if (!ui.info) return;
   const rating = n >= 1 && n <= 5 ? n : null;
   saveInfo({ ...infoState.info, rating });
-  stripUpdateCurrent({ rating });
+  photoChanged(ui.info.path, { rating });
   status(rating ? `Rated ${"★".repeat(rating)}` : "Rating cleared");
 }
 
@@ -100,7 +100,7 @@ function setLabel(label) {
   if (!ui.info) return;
   const next = infoState.info.label === label ? null : label;
   saveInfo({ ...infoState.info, label: next });
-  stripUpdateCurrent({ label: next });
+  photoChanged(ui.info.path, { label: next });
   status(next ? `${next} label` : "Label removed");
 }
 
@@ -108,7 +108,7 @@ function setLabel(label) {
 function setFlag(flag) {
   if (!ui.info) return;
   saveInfo({ ...infoState.info, flag: flag || null });
-  stripUpdateCurrent({ flag: flag || null });
+  photoChanged(ui.info.path, { flag: flag || null });
   status(FLAG_DONE[flag]);
 }
 

@@ -90,8 +90,7 @@ async function showLibraryTask(on) {
     if (open) {
       const edited = Object.keys(ui.settings).length > 0;
       if (edited || open.edited) refreshThumb(open.path);
-      open.edited = edited;
-      updateCell(open);
+      photoChanged(open.path, { edited });
     }
     if (ui.info && libPhoto(ui.info.path)) {
       if (!lib.selected.size) select(ui.info.path, "only");
@@ -306,13 +305,8 @@ async function libraryChange(change) {
   try {
     const updates = await setInfo(paths, change);
     for (const u of updates) {
-      const p = libPhoto(u.path);
-      if (!p) continue;
-      Object.assign(p, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag, stack: u.info.stack ?? null,
+      photoChanged(u.path, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag ?? null, stack: u.info.stack ?? null,
         title: u.info.title, caption: u.info.caption, creator: u.info.creator, copyright: u.info.copyright });
-      updateCell(p);
-      updateCullTile(u.path);
-      stripUpdate(u.path, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag ?? null });
     }
     if (ui.info && paths.includes(ui.info.path)) loadInfo();
     // Keywords just used come first among the recent ones.

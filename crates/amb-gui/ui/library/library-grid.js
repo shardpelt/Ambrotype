@@ -435,3 +435,15 @@ function refreshThumb(path) {
   lib.waiting.push(path);
   if (lib.queue.idle()) libDrainEdited();
 }
+
+// A photo changed elsewhere (core.js `photoChanged`): its library copy, cell
+// and cull tile. Wired at startup, before any folder is read.
+function wireLibraryChanges() {
+  document.addEventListener("photo-changed", ({ detail: { path, changes } }) => {
+    const p = libPhoto(path);
+    if (!p) return;
+    Object.assign(p, changes);
+    updateCell(p);
+    updateCullTile(path);
+  });
+}

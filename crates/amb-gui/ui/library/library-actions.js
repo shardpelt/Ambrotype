@@ -199,12 +199,7 @@ async function syncNegativeRoll() {
   try {
     const r = await invoke("negative_sync", { paths, options });
     for (const path of r.changed) {
-      const p = libPhoto(path);
-      if (p) {
-        p.edited = true;
-        updateCell(p);
-        stripUpdate(path, { edited: true });
-      }
+      photoChanged(path, { edited: true });
       refreshThumb(path);
     }
     if (r.state) {
@@ -347,12 +342,7 @@ async function presetsOnPhotos(paths) {
       commands: await presetCommands(chosen.path, { amount: Number(amount.value) }),
     });
     for (const path of r.changed) {
-      const p = libPhoto(path);
-      if (p) {
-        p.edited = true;
-        updateCell(p);
-        stripUpdate(path, { edited: true });
-      }
+      photoChanged(path, { edited: true });
       refreshThumb(path);
     }
     if (r.state) {
@@ -392,12 +382,7 @@ async function libraryPasteSettings() {
   try {
     const r = await invoke("paste_settings", { source: lib.copied, targets, groups });
     for (const path of targets) {
-      const p = libPhoto(path);
-      if (p) {
-        p.edited = true;
-        updateCell(p);
-        stripUpdate(path, { edited: true });
-      }
+      photoChanged(path, { edited: true });
       refreshThumb(path);
     }
     if (r.state) {

@@ -237,12 +237,7 @@ async function runPluginBatch(p) {
   try {
     const r = await invoke("run_plugin_many", { id: p.id, params: paramValues(p), paths });
     for (const path of r.changed) {
-      const photo = libPhoto(path);
-      if (photo) {
-        photo.edited = true;
-        updateCell(photo);
-        stripUpdate(path, { edited: true });
-      }
+      photoChanged(path, { edited: true });
       refreshThumb(path);
     }
     if (r.state) {

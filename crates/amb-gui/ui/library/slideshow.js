@@ -224,11 +224,7 @@ async function viewerChange(change) {
     const info = u?.info ?? {};
     const at = info.gps?.split(",").map(Number);
     const fields = { rating: info.rating ?? null, label: info.label ?? null, flag: info.flag ?? null, keywords: info.keywords ?? [], gps: at?.length === 2 && at.every(Number.isFinite) ? at : null };
-    for (const list of [slides.list, lib.photos, strip.photos]) {
-      for (const x of list) if (x.path === p.path) Object.assign(x, fields);
-    }
-    if (typeof updateCell === "function") updateCell(p);
-    stripUpdate(p.path, fields);
+    photoChanged(p.path, fields);
     if (p.path === ui.info?.path) slides.openChanged = true;
     if (slides.on && slides.list[slides.at] === p) {
       showWhere();
@@ -385,6 +381,9 @@ async function endSlideshow() {
 }
 
 function wireSlideshow() {
+  document.addEventListener("photo-changed", ({ detail: { path, changes } }) => {
+    for (const x of slides.list) if (x.path === path) Object.assign(x, changes);
+  });
   // Start, or Enter in the dialog.
   $("slideshow-form").addEventListener("submit", (e) => {
     e.preventDefault();

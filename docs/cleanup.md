@@ -549,50 +549,6 @@ Checks: the three cargo commands; `cargo test -p amb-gui checks`, `cargo test -p
 Done when: each test fails when you add one violation (try it once, then undo).
 Commits: `gui: a test that FEATURES names real buttons`; `cli: a test that the MCP tool list matches its calls`; `plugins: a test that the built-in list matches the plugins folder`.
 
-### B19. One selection rule for the library grid and the filmstrip
-Tier: medium        Risk: low
-Asked (verbatim): "/brief the three items under Needs a brief in docs/cleanup.md"
-Why: `select` in `crates/amb-gui/ui/library/library.js` and `stripSelect` in `crates/amb-gui/ui/develop/filmstrip.js` each do Ctrl and Shift ranges, written twice and already different.
-Decided: one function, `pickPath`, that both call. Each keeps its own selection (`lib.selected`, `strip.selected`): the strip lists the open photo's folder, the grid lists filtered photos across folders and collections, so one shared set would hold photos the other cannot show. A plain click on a filmstrip photo keeps opening it. The open photo still joins a new filmstrip selection.
-Read first: `crates/amb-gui/ui/library/library.js` (`select`, near line 178), `crates/amb-gui/ui/develop/filmstrip.js` (`stripSelect`, `stripMenu`, lines 27 to 70), `crates/amb-gui/ui/core/core.js`. The example to copy: `withBusy` in `core/core.js` (a small shared helper with a comment above it).
-Files: `crates/amb-gui/ui/core/core.js`, `crates/amb-gui/ui/library/library.js`, `crates/amb-gui/ui/develop/filmstrip.js`, `crates/amb-gui/tests/ui/photo-row.js`, `docs/codestyle.md`, `docs/cleanup.md`.
-Steps:
-1. In `core/core.js`, after `setInfo`, add:
-   ```js
-   // Ctrl- and Shift-click selection over `order` (paths, as shown), on any
-   // { selected: Set, anchor } (the library's `lib`, the filmstrip's `strip`).
-   // how: "only" (a plain click), "toggle" (Ctrl/⌘), "range" (Shift: from the
-   // anchor, or from `from` when there is none, to `path`; the anchor stays).
-   // A range with no start in `order` acts as "only".
-   function pickPath(state, order, path, how = "only", from = null) {
-     const start = order.indexOf(state.anchor ?? from);
-     const end = order.indexOf(path);
-     if (how === "range" && start >= 0 && end >= 0) {
-       for (const p of order.slice(Math.min(start, end), Math.max(start, end) + 1)) state.selected.add(p);
-       state.anchor ??= order[start];
-       return;
-     }
-     if (how === "toggle") {
-       if (state.selected.has(path)) state.selected.delete(path);
-       else state.selected.add(path);
-     } else state.selected = new Set([path]);
-     state.anchor = path;
-   }
-   ```
-2. `library.js` `select`: replace the `if (how === "range" ...) ... else { ... }` block (everything before `lib.focus = path;`) with `pickPath(lib, lib.shown.map((p) => p.path), path, how);`. Keep `lib.focus = path; renderSelection();` and the comment above the function.
-3. `filmstrip.js` `stripSelect`: keep its first line (the open photo joins a new selection) and its last (`markSelected();`); replace the lines between with `pickPath(strip, strip.photos.map((p) => p.path), path, how, ui.info?.path);`. Update the comment above it to: `// Ctrl-click toggles a photo, Shift-click picks the range from where the last range started (or the open photo); the open photo joins a new selection.`
-4. `filmstrip.js` `stripMenu`: the three lines inside `if (!strip.selected.has(p.path)) { ... }` become `pickPath(strip, strip.photos.map((x) => x.path), p.path, "only");`.
-5. UI test: add a step at the end of `crates/amb-gui/tests/ui/photo-row.js`, "filmstrip: Ctrl and Shift select, the open photo joins, a range keeps its start". Add two made-up photos as the step above does (`${ui.info.path}#2`, `#3`, then `renderStrip()`). Ctrl-click `#2` with `new MouseEvent("click", { bubbles: true, ctrlKey: true })`, then expect `strip.selected` to hold the open photo and `#2`. Shift-click `#3` and expect all three, with `strip.anchor === "${ui.info.path}#2"`. Then call `stripClearSelection()` and restore `strip.photos` and `renderStrip()`, as the step above does.
-6. `docs/codestyle.md`, the "Shared parts, not copies" line: after the `withBusy` sentence add `Ctrl- and Shift-click selection over a list is pickPath (core/core.js).`
-7. Delete this card from `docs/cleanup.md`.
-Don't: rename `select`, `stripSelect`, `lib.selected`, `lib.anchor`, `strip.selected` or `strip.anchor` (tests and other files read them); change `photo-row.js` (core); change what a plain click does anywhere.
-Behaviour that changes, on purpose (say so in the commit): in the filmstrip a second Shift-click extends from where the range started, as in the grid, not from the last photo clicked. In the grid, a Shift-click when the anchor is no longer shown now selects only the clicked photo (before: nothing happened).
-Checks: the three cargo commands (AGENTS.md); build the editor with `cargo build -p amb-gui`; make the test photos (`cargo run -p amb-cli -- testimage colorchecker /tmp/ui/test.dng` and `cargo run -p amb-cli -- testimage ramp /tmp/ui/more/other.dng`); then `xvfb-run -a -s "-screen 0 1600x1000x24" target/debug/ambrotype --ui-test crates/amb-gui/tests/ui/photo-row.js /tmp/ui/test.dng` and the same for `browse.js` and `organise.js`. Each must exit 0.
-Done when: `grep -n "anchor = path" crates/amb-gui/ui/library/library.js crates/amb-gui/ui/develop/filmstrip.js` prints nothing, and the new UI step passes.
-Stop and report if: `select` or `stripSelect` doesn't look like the lines quoted here; a UI script fails twice; another file writes `lib.anchor` or `strip.anchor`.
-Report: at most 6 lines: the commit, each check's result, anything the card didn't decide.
-Commit: `ui: one selection rule for the library grid and the filmstrip`. Why: "The same Ctrl and Shift logic was written twice and had drifted."
-
 ### B20. Views told of a photo's change by one event
 Tier: medium        Risk: medium
 Asked (verbatim): "/brief the three items under Needs a brief in docs/cleanup.md"

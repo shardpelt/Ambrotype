@@ -39,7 +39,7 @@ impl Default for Options {
         Options {
             duplicates: true,
             alike_bits: duplicates::Options::default().max_bits,
-            burst_seconds: 2.0,
+            burst_seconds: BURST_SECONDS,
             blurry: true,
             eyes: true,
             exposure: true,
@@ -112,6 +112,16 @@ const SHOOT: usize = 6;
 /// Below this sharpness (the variance of the Laplacian of a 1280-pixel
 /// preview, at its sharpest part) a photo is blurry whatever the rest.
 const BLURRY: f32 = 3.0e-4;
+/// A channel value below this counts as black.
+const DARK_LEVEL: u8 = 16;
+/// A channel value above this counts as blown out.
+const BRIGHT_LEVEL: u8 = 245;
+/// Share of black pixels that makes a frame dark.
+const DARK_SHARE: f32 = 0.9;
+/// Share of blown-out pixels that makes a frame bright (lower: a blown sky still has some detail).
+const BRIGHT_SHARE: f32 = 0.6;
+/// Photos taken this many seconds apart or less are one burst.
+const BURST_SECONDS: f64 = 2.0;
 /// Eyes less open than this (0–1) look closed in a photo on its own; in a
 /// burst the frames are compared instead.
 const CLOSED: f32 = 0.3;
@@ -131,9 +141,9 @@ pub fn see(rgb: &image::RgbImage) -> Seen {
     let n = (rgb.width() * rgb.height()).max(1) as f32;
     let (mut black, mut white) = (0usize, 0usize);
     for p in rgb.pixels() {
-        if p.0.iter().all(|&v| v < 16) {
+        if p.0.iter().all(|&v| v < DARK_LEVEL) {
             black += 1;
-        } else if p.0.iter().all(|&v| v > 245) {
+        } else if p.0.iter().all(|&v| v > BRIGHT_LEVEL) {
             white += 1;
         }
     }
@@ -250,7 +260,7 @@ pub fn find(
         let Some(s) = s else { continue };
         let mine = reasons.entry(&photos[i]).or_default();
         // A black or white frame has nothing to be sharp; that is said instead.
-        let (dark, bright) = (s.black > 0.9, s.white > 0.6);
+        let (dark, bright) = (s.black > DARK_SHARE, s.white > BRIGHT_SHARE);
         if options.exposure && dark {
             mine.push(Reason::Dark);
         } else if options.exposure && bright {

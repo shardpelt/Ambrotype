@@ -10,6 +10,14 @@
 use amb_plugin_sdk::{Effect, Pixels};
 use std::f32::consts::TAU;
 
+// The first three repeat the ranges in plugin.json.
+const SLICES: (f64, f64) = (2.0, 32.0);
+const ZOOM_MIN: f64 = 0.05;
+const DEPTH: (f64, f64) = (1.0, 8.0);
+/// Scale and shift of each fold step.
+const FOLD_SCALE: f32 = 1.7;
+const FOLD_SHIFT: f32 = 0.55;
+
 /// Fold `p` into the first slice of `n` round the origin, mirrored, so
 /// neighbouring slices meet as mirror images.
 fn fold(p: [f32; 2], n: f32) -> [f32; 2] {
@@ -34,10 +42,10 @@ pub fn kaleidoscope(e: &Effect, px: &mut Pixels) -> Result<(), String> {
         return Ok(());
     }
     let fractal = e.choice("style") == "Fractal";
-    let n = e.number("slices").clamp(2.0, 32.0).round() as f32;
+    let n = e.number("slices").clamp(SLICES.0, SLICES.1).round() as f32;
     let (ts, tc) = (e.number("turn") as f32).to_radians().sin_cos();
-    let zoom = (e.number("zoom") / 100.0).max(0.05) as f32;
-    let depth = e.number("depth").clamp(1.0, 8.0) as usize;
+    let zoom = (e.number("zoom") / 100.0).max(ZOOM_MIN) as f32;
+    let depth = e.number("depth").clamp(DEPTH.0, DEPTH.1) as usize;
     let twist = (e.number("twist") as f32).to_radians();
     // Positions in the whole photo's pixels, so a preview and an export
     // match; the buffer is the photo (or, at worst, the part we were given).
@@ -75,7 +83,7 @@ pub fn kaleidoscope(e: &Effect, px: &mut Pixels) -> Result<(), String> {
                 for &(s, c) in &folds {
                     p = fold(p, n);
                     p = [c * p[0] - s * p[1], s * p[0] + c * p[1]];
-                    p = [p[0] * 1.7 - 0.55, p[1] * 1.7];
+                    p = [p[0] * FOLD_SCALE - FOLD_SHIFT, p[1] * FOLD_SCALE];
                 }
                 p = fold(p, n);
             } else {

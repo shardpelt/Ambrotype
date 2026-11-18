@@ -24,6 +24,10 @@ use tract_onnx::prelude::*;
 pub const TILE: usize = 512;
 /// How much neighbouring tiles share, blended.
 const OVERLAP: usize = 64;
+/// Floor of the tile feather weight.
+const MIN_WEIGHT: f32 = 1e-3;
+/// A mean this close to zero counts as flat.
+const FLAT_MEAN: f64 = 1e-12;
 
 /// A loaded network.
 #[derive(Clone)]
@@ -91,7 +95,7 @@ fn feather(i: usize, at: usize, len: usize, scale: usize) -> f32 {
     if at + TILE < len {
         w = w.min((side - i) as f32 / ramp);
     }
-    w.clamp(1e-3, 1.0)
+    w.clamp(MIN_WEIGHT, 1.0)
 }
 
 /// Read `planes` (`c` planes of `w` × `h`) into a tile at (x0, y0),
@@ -152,7 +156,7 @@ fn run_tiles(
             for k in 0..3 {
                 let plane = &mut got[k * side * side..(k + 1) * side * side];
                 let mean = plane.iter().map(|v| f64::from(*v)).sum::<f64>() / plane.len() as f64;
-                let g = if mean.abs() > 1e-12 {
+                let g = if mean.abs() > FLAT_MEAN {
                     (f64::from(want[k]) / mean) as f32
                 } else {
                     0.0

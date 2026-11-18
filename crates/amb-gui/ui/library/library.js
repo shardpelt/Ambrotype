@@ -176,18 +176,7 @@ async function addLibraryFolder() {
 
 // how: "only" (a plain click), "toggle" (Ctrl/Cmd), "range" (Shift).
 function select(path, how = "only") {
-  if (how === "range" && lib.anchor) {
-    const order = lib.shown.map((p) => p.path);
-    const [a, b] = [order.indexOf(lib.anchor), order.indexOf(path)].sort((x, y) => x - y);
-    if (a >= 0 && b >= 0) for (const p of order.slice(a, b + 1)) lib.selected.add(p);
-  } else if (how === "toggle") {
-    if (lib.selected.has(path)) lib.selected.delete(path);
-    else lib.selected.add(path);
-    lib.anchor = path;
-  } else {
-    lib.selected = new Set([path]);
-    lib.anchor = path;
-  }
+  pickPath(lib, lib.shown.map((p) => p.path), path, how);
   lib.focus = path;
   renderSelection();
 }

@@ -26,18 +26,11 @@ const strip = {
 
 const stripSelected = () => strip.photos.filter((p) => strip.selected.has(p.path));
 
-// Ctrl-click toggles a photo, Shift-click picks the range from the last one;
-// the open photo joins a new selection.
+// Ctrl-click toggles a photo, Shift-click picks the range from where the last
+// range started (or the open photo); the open photo joins a new selection.
 function stripSelect(path, how) {
   if (!strip.selected.size && ui.info?.path && path !== ui.info.path) strip.selected.add(ui.info.path);
-  const order = strip.photos.map((p) => p.path);
-  if (how === "range") {
-    const from = Math.max(0, order.indexOf(strip.anchor ?? ui.info?.path));
-    const to = order.indexOf(path);
-    for (let i = Math.min(from, to); i <= Math.max(from, to); i++) strip.selected.add(order[i]);
-  } else if (strip.selected.has(path)) strip.selected.delete(path);
-  else strip.selected.add(path);
-  strip.anchor = path;
+  pickPath(strip, strip.photos.map((p) => p.path), path, how, ui.info?.path);
   markSelected();
 }
 
@@ -57,9 +50,7 @@ function markSelected() {
 function stripMenu(e, p) {
   e.preventDefault();
   if (!strip.selected.has(p.path)) {
-    strip.selected.clear();
-    strip.selected.add(p.path);
-    strip.anchor = p.path;
+    pickPath(strip, strip.photos.map((x) => x.path), p.path, "only");
     markSelected();
   }
   const paths = stripSelected().map((x) => x.path);

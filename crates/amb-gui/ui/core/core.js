@@ -127,6 +127,26 @@ function setInfo(paths, change) {
   return write;
 }
 
+// Ctrl- and Shift-click selection over `order` (paths, as shown), on any
+// { selected: Set, anchor } (the library's `lib`, the filmstrip's `strip`).
+// how: "only" (a plain click), "toggle" (Ctrl/⌘), "range" (Shift: from the
+// anchor, or from `from` when there is none, to `path`; the anchor stays).
+// A range with no start in `order` acts as "only".
+function pickPath(state, order, path, how = "only", from = null) {
+  const start = order.indexOf(state.anchor ?? from);
+  const end = order.indexOf(path);
+  if (how === "range" && start >= 0 && end >= 0) {
+    for (const p of order.slice(Math.min(start, end), Math.max(start, end) + 1)) state.selected.add(p);
+    state.anchor ??= order[start];
+    return;
+  }
+  if (how === "toggle") {
+    if (state.selected.has(path)) state.selected.delete(path);
+    else state.selected.add(path);
+  } else state.selected = new Set([path]);
+  state.anchor = path;
+}
+
 // The page's own storage (localStorage), which can be missing or full:
 // reads give `fallback` when there's nothing or it can't be read, and
 // failed writes are dropped. get/set store JSON; text/setText plain text.

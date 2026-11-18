@@ -99,3 +99,19 @@ await t.step("Map tray: the wheel and a drag scroll, a click selects, a drag up 
   t.expect(side.prevented && !side.got.length, "mostly sideways: the native drag is cancelled");
   tray.removeAttribute("style");
 });
+
+await t.step("filmstrip: Ctrl and Shift select, the open photo joins, a range keeps its start", async () => {
+  const was = strip.photos;
+  const [two, three] = [`${ui.info.path}#2`, `${ui.info.path}#3`];
+  strip.photos = [...was, { path: two, name: "second" }, { path: three, name: "third" }];
+  renderStrip();
+  const click = (path, mods) => strip.cells.get(path).dispatchEvent(new MouseEvent("click", { bubbles: true, ...mods }));
+  click(two, { ctrlKey: true });
+  t.expect(strip.selected.has(ui.info.path) && strip.selected.has(two) && strip.selected.size === 2, "the open photo joins the Ctrl-click");
+  click(three, { shiftKey: true });
+  t.expect(strip.selected.size === 3, `the range is picked: ${strip.selected.size}`);
+  t.expect(strip.anchor === two, `the range keeps its start: ${strip.anchor}`);
+  stripClearSelection();
+  strip.photos = was;
+  renderStrip();
+});

@@ -7,7 +7,7 @@
 
 // The test's own `t` hides the app's, so the app's is `tr` here.
 const tr = window.t;
-const UNMARKED_LIMIT = 659;
+const UNMARKED_LIMIT = 651;
 
 await t.step("t and plural give English with no language", async () => {
   t.expect(lang.code === "en" && lang.texts === null, "English to start");
@@ -24,12 +24,15 @@ await t.step("zz marks the markup, t and plural", async () => {
   t.expect(tr("Open a photo").startsWith("⟦") === (lang.texts["Open a photo"] !== undefined), "t marks what is in the table");
   const title = document.querySelector("#btn-open").title;
   t.expect(!before || title === `⟦${before}⟧` || title === before, `a title is marked or not in the table: ${title}`);
+  t.expect(plural(3, "photo") === "⟦3 photos⟧" && plural(1, "photo") === "⟦1 photo⟧", `each plural form is marked: ${plural(3, "photo")}`);
   const left = langUnmarked();
   console.log(`texts not through the table yet: ${left.length}`);
   t.expect(left.length <= UNMARKED_LIMIT, `${left.length} texts on screen are not through the table (limit ${UNMARKED_LIMIT}): ${left.slice(0, 5).join(" | ")}`);
 });
 
-await t.step("English again", async () => {
+await t.step("English again: the markup too", async () => {
   await langSet("en");
   t.expect(lang.texts === null && tr("Hello") === "Hello", "back to English");
+  t.expect(langUnmarked().length > 0 && !document.body.textContent.includes("⟦"), "no marked text left on screen");
+  t.expect(![...document.querySelectorAll("[title]")].some((e) => e.title.startsWith("⟦")), "no marked title left");
 });

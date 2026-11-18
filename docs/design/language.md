@@ -28,11 +28,11 @@ What it costs:
 ## The parts
 
 1. **`t(text, vars)`** in `crates/amb-gui/ui/core/core.js`. Looks the text up in the loaded language; puts `vars` in place of `{name}`; gives the text back when there is no translation. `t("Copied as “{name}”", { name })`.
-2. **`plural(n, one, many)`** (it exists) looks up `"{n} photo|{n} photos"`. A language with more forms lists them all, split by `|`, in the order `Intl.PluralRules` names them for that language.
+2. **`plural(n, one, many)`** (it exists) looks up `"{n} photo|{n} photos"`. A language with more forms lists them all, split by `|`, in the order zero, one, two, few, many, other, leaving out those the language lacks.
 3. **Markup needs no keys.** At startup, `translateDom(document.body)` swaps each piece of text, `title`, `placeholder` and `aria-label` whose text is in the table. In English it does nothing.
 4. **Words built in a script** are wrapped by whoever writes them: `t("…")`. Text from a file or a person (a file name, a preset's name, a keyword) is never looked up.
 5. **Lists of words that are data** (`KEY_ACTIONS` labels, the menu bar, the tips) are looked up where they are shown: `t(action.label)`.
-6. **Language files:** `crates/amb-gui/data/lang/<code>.json`, built in. Later a hub item kind, so translations are shared like themes ([recipes.md](../recipes.md), "a hub item kind"). Settings → Appearance → Language: System, English, and each language there is a file for.
+6. **Language files:** `crates/amb-gui/data/lang/<code>.json`, built in. Later a hub item kind, so translations are shared like themes ([recipes.md](../recipes.md), "a hub item kind"). Settings → General → Language: System, English, and each language there is a file for.
 7. **Dates and numbers** use `Intl` with the chosen language.
 
 ## The table
@@ -58,8 +58,10 @@ File names, preset names, setting names (`Exposure2012`), `amb`'s output, the do
 ## Built in step 1
 
 - `t` and `plural` are in `core.js`; the language, `translateDom` and the Language row are in `ui/core/lang.js`. The test's own `t` hides the app's, so `tests/ui/*.js` use `window.t`.
-- `zz` is made in Rust (`src/lang.rs`) from `keys.json`, so it is never a file. The language row (Settings → Appearance) stays hidden while no file besides English exists.
-- Markup text is matched per text node, whitespace folded; a title, placeholder or aria-label by its trimmed text. Scripts, styles, `textarea`, `code` and `kbd` are left alone.
+- `zz` is made in Rust (`src/lang.rs`) from `keys.json`, so it is never a file. The language row (Settings → General) stays hidden while no file besides English exists.
+- Markup text is matched per text node, a title, placeholder or aria-label by its text, whitespace folded. `translateDom` keeps what it showed, so a switch of language (or back to English) starts from the English; a text a script set since counts as the English.
+- Plural forms are listed in CLDR's order (zero, one, two, few, many, other), not the order `Intl` gives, which differs between webviews. In `zz` each form is marked on its own.
+- A language that fails to load leaves the app in English (`showError`); the editor still starts. Scripts, styles, `textarea`, `code` and `kbd` are left alone.
 - The table reads `label:` and `hint:` in `core/keys.js` and `core/menu.js` as data lists (`t(action.label)` comes with the sweep).
 - The `zz` count is `UNMARKED_LIMIT` in `tests/ui/language.js` (not `checks.rs`: it needs the running editor). Fixing near-duplicates is not done yet; `python3 tools/lang-table.py` lists them.
 

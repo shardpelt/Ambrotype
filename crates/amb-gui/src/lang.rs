@@ -47,6 +47,19 @@ fn shown(key: &str) -> &str {
     key.split("##").next().unwrap_or(key)
 }
 
+/// A text in `zz`: `⟦text⟧`, and each form of a plural (`{n} photo|{n} photos`)
+/// on its own, so the one `plural` picks is marked too.
+fn marked(key: &str) -> String {
+    let text = shown(key);
+    if !text.starts_with("{n} ") {
+        return format!("⟦{text}⟧");
+    }
+    text.split('|')
+        .map(|form| format!("⟦{form}⟧"))
+        .collect::<Vec<_>>()
+        .join("|")
+}
+
 /// The texts of a language; `zz` wraps every text of the table in `⟦ ⟧`.
 pub(crate) fn texts(code: &str) -> Result<Texts, String> {
     if code == MARKED {
@@ -55,8 +68,8 @@ pub(crate) fn texts(code: &str) -> Result<Texts, String> {
         return Ok(keys
             .into_keys()
             .map(|k| {
-                let marked = format!("⟦{}⟧", shown(&k));
-                (k, marked)
+                let text = marked(&k);
+                (k, text)
             })
             .collect());
     }
@@ -78,8 +91,12 @@ mod tests {
         let t = texts("zz").unwrap();
         assert!(!t.is_empty(), "the table is empty: run tools/lang-table.py");
         for (k, v) in &t {
-            assert_eq!(v, &format!("⟦{}⟧", k.split("##").next().unwrap()));
+            let text = k.split("##").next().unwrap();
+            if !text.starts_with("{n} ") {
+                assert_eq!(v, &format!("⟦{text}⟧"));
+            }
         }
+        assert_eq!(t["{n} photo|{n} photos"], "⟦{n} photo⟧|⟦{n} photos⟧");
     }
 
     #[test]

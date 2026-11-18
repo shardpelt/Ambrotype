@@ -82,7 +82,7 @@ function t(text, vars) {
 
 // "1 photo", "3 photos": `many` defaults to `one` + "s". Looked up as
 // "{n} photo|{n} photos"; a language lists its forms split by "|", in the
-// order Intl.PluralRules names them for it.
+// order zero, one, two, few, many, other, leaving out those it lacks.
 function plural(n, one, many = `${one}s`) {
   const forms = lang.texts?.[`{n} ${one}|{n} ${many}`]?.split("|");
   if (!forms) return `${n} ${n === 1 ? one : many}`;

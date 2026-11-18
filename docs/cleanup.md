@@ -518,6 +518,138 @@ Checks: the three cargo commands; `cargo test -p amb-gui checks`, `cargo test -p
 Done when: each test fails when you add one violation (try it once, then undo).
 Commits: `gui: a test that FEATURES names real buttons`; `cli: a test that the MCP tool list matches its calls`; `plugins: a test that the built-in list matches the plugins folder`.
 
+### B19. One selection rule for the library grid and the filmstrip
+Tier: medium        Risk: low
+Asked (verbatim): "/brief the three items under Needs a brief in docs/cleanup.md"
+Why: `select` in `crates/amb-gui/ui/library/library.js` and `stripSelect` in `crates/amb-gui/ui/develop/filmstrip.js` each do Ctrl and Shift ranges, written twice and already different.
+Decided: one function, `pickPath`, that both call. Each keeps its own selection (`lib.selected`, `strip.selected`): the strip lists the open photo's folder, the grid lists filtered photos across folders and collections, so one shared set would hold photos the other cannot show. A plain click on a filmstrip photo keeps opening it. The open photo still joins a new filmstrip selection.
+Read first: `crates/amb-gui/ui/library/library.js` (`select`, near line 178), `crates/amb-gui/ui/develop/filmstrip.js` (`stripSelect`, `stripMenu`, lines 27 to 70), `crates/amb-gui/ui/core/core.js`. The example to copy: `withBusy` in `core/core.js` (a small shared helper with a comment above it).
+Files: `crates/amb-gui/ui/core/core.js`, `crates/amb-gui/ui/library/library.js`, `crates/amb-gui/ui/develop/filmstrip.js`, `crates/amb-gui/tests/ui/photo-row.js`, `docs/codestyle.md`, `docs/cleanup.md`.
+Steps:
+1. In `core/core.js`, after `setInfo`, add:
+   ```js
+   // Ctrl- and Shift-click selection over `order` (paths, as shown), on any
+   // { selected: Set, anchor } (the library's `lib`, the filmstrip's `strip`).
+   // how: "only" (a plain click), "toggle" (Ctrl/⌘), "range" (Shift: from the
+   // anchor, or from `from` when there is none, to `path`; the anchor stays).
+   // A range with no start in `order` acts as "only".
+   function pickPath(state, order, path, how = "only", from = null) {
+     const start = order.indexOf(state.anchor ?? from);
+     const end = order.indexOf(path);
+     if (how === "range" && start >= 0 && end >= 0) {
+       for (const p of order.slice(Math.min(start, end), Math.max(start, end) + 1)) state.selected.add(p);
+       state.anchor ??= order[start];
+       return;
+     }
+     if (how === "toggle") {
+       if (state.selected.has(path)) state.selected.delete(path);
+       else state.selected.add(path);
+     } else state.selected = new Set([path]);
+     state.anchor = path;
+   }
+   ```
+2. `library.js` `select`: replace the `if (how === "range" ...) ... else { ... }` block (everything before `lib.focus = path;`) with `pickPath(lib, lib.shown.map((p) => p.path), path, how);`. Keep `lib.focus = path; renderSelection();` and the comment above the function.
+3. `filmstrip.js` `stripSelect`: keep its first line (the open photo joins a new selection) and its last (`markSelected();`); replace the lines between with `pickPath(strip, strip.photos.map((p) => p.path), path, how, ui.info?.path);`. Update the comment above it to: `// Ctrl-click toggles a photo, Shift-click picks the range from where the last range started (or the open photo); the open photo joins a new selection.`
+4. `filmstrip.js` `stripMenu`: the three lines inside `if (!strip.selected.has(p.path)) { ... }` become `pickPath(strip, strip.photos.map((x) => x.path), p.path, "only");`.
+5. UI test: add a step at the end of `crates/amb-gui/tests/ui/photo-row.js`, "filmstrip: Ctrl and Shift select, the open photo joins, a range keeps its start". Add two made-up photos as the step above does (`${ui.info.path}#2`, `#3`, then `renderStrip()`). Ctrl-click `#2` with `new MouseEvent("click", { bubbles: true, ctrlKey: true })`, then expect `strip.selected` to hold the open photo and `#2`. Shift-click `#3` and expect all three, with `strip.anchor === "${ui.info.path}#2"`. Then call `stripClearSelection()` and restore `strip.photos` and `renderStrip()`, as the step above does.
+6. `docs/codestyle.md`, the "Shared parts, not copies" line: after the `withBusy` sentence add `Ctrl- and Shift-click selection over a list is pickPath (core/core.js).`
+7. Delete this card from `docs/cleanup.md`.
+Don't: rename `select`, `stripSelect`, `lib.selected`, `lib.anchor`, `strip.selected` or `strip.anchor` (tests and other files read them); change `photo-row.js` (core); change what a plain click does anywhere.
+Behaviour that changes, on purpose (say so in the commit): in the filmstrip a second Shift-click extends from where the range started, as in the grid, not from the last photo clicked. In the grid, a Shift-click when the anchor is no longer shown now selects only the clicked photo (before: nothing happened).
+Checks: the three cargo commands (AGENTS.md); build the editor with `cargo build -p amb-gui`; make the test photos (`cargo run -p amb-cli -- testimage colorchecker /tmp/ui/test.dng` and `cargo run -p amb-cli -- testimage ramp /tmp/ui/more/other.dng`); then `xvfb-run -a -s "-screen 0 1600x1000x24" target/debug/ambrotype --ui-test crates/amb-gui/tests/ui/photo-row.js /tmp/ui/test.dng` and the same for `browse.js` and `organise.js`. Each must exit 0.
+Done when: `grep -n "anchor = path" crates/amb-gui/ui/library/library.js crates/amb-gui/ui/develop/filmstrip.js` prints nothing, and the new UI step passes.
+Stop and report if: `select` or `stripSelect` doesn't look like the lines quoted here; a UI script fails twice; another file writes `lib.anchor` or `strip.anchor`.
+Report: at most 6 lines: the commit, each check's result, anything the card didn't decide.
+Commit: `ui: one selection rule for the library grid and the filmstrip`. Why: "The same Ctrl and Shift logic was written twice and had drifted."
+
+### B20. Views told of a photo's change by one event
+Tier: medium        Risk: medium
+Asked (verbatim): "/brief the three items under Needs a brief in docs/cleanup.md"
+Why: after a rating, label, flag or edit, each caller updates the grid cell, the cull tile and the filmstrip by hand, and keeps the separate copies of the photo (`lib.photos`, `strip.photos`, the viewer's `slides.list`) in step itself. Some forget: Bursts, Duplicates and Clean up set flags that the filmstrip never sees.
+Decided: one event, `photo-changed` on `document`, with `detail: { path, changes }`, sent by a helper `photoChanged(path, changes)` in `core/core.js`. Each view listens and updates its own copy of the photo and its own cell. The sender doesn't touch any list. `changes` holds only the fields that changed (`rating`, `label`, `flag`, `keywords`, `edited`, `stack`, `title`, `caption`, `creator`, `copyright`, `gps`), with `null` for none. The info panel is not a listener: `loadInfo()` stays where it is (it would reload after its own saves).
+Read first: `crates/amb-gui/ui/library/library.js` (`libraryChange`, near line 300), `crates/amb-gui/ui/develop/filmstrip.js` (`stripUpdate`, near line 311), `crates/amb-gui/ui/library/library-grid.js` (`updateCell`), `crates/amb-gui/ui/library/cull.js` (`updateCullTile`), `crates/amb-gui/ui/library/slideshow.js` (`viewerChange`, near line 220). The example to copy: `setInfo` in `core/core.js` (a shared helper every caller goes through).
+Files: `crates/amb-gui/ui/core/core.js`, `crates/amb-gui/ui/core/app.js`, `crates/amb-gui/ui/library/library-grid.js`, `crates/amb-gui/ui/library/library.js`, `crates/amb-gui/ui/library/library-actions.js`, `crates/amb-gui/ui/library/slideshow.js`, `crates/amb-gui/ui/library/bursts.js`, `crates/amb-gui/ui/library/duplicates.js`, `crates/amb-gui/ui/library/cleanup.js`, `crates/amb-gui/ui/dialogs/plugins.js`, `crates/amb-gui/ui/develop/info.js`, `crates/amb-gui/ui/develop/filmstrip.js`, `crates/amb-gui/tests/ui/browse.js`, `docs/codestyle.md`, `docs/cleanup.md`.
+Steps:
+1. `core/core.js`, after `setInfo`:
+   ```js
+   // A photo's info or edit changed: every view that shows it (the library's
+   // grid and cull tiles, the filmstrip, the viewer) updates its own copy and
+   // cell. `changes` holds only the fields that changed; null means none.
+   function photoChanged(path, changes) {
+     document.dispatchEvent(new CustomEvent("photo-changed", { detail: { path, changes } }));
+   }
+   ```
+2. Listeners. Each goes in a wire function that `init` in `core/app.js` calls, so it is there before any folder is read (`wireLibrary` runs only when the library is first shown, so it is not used):
+   - `library/library-grid.js`: a new `function wireLibraryChanges()` at the end of the file, with a one-line comment. It adds a `photo-changed` listener: `const p = libPhoto(path); if (!p) return; Object.assign(p, changes); updateCell(p); updateCullTile(path);`. Call `wireLibraryChanges();` in `init` in `core/app.js`, on the line after `wireFilmstrip();`.
+   - `develop/filmstrip.js` `wireFilmstrip`: `document.addEventListener("photo-changed", (e) => stripUpdate(e.detail.path, e.detail.changes));`. `stripUpdate` already ignores fields it doesn't show; also make it copy `gps` when given (`if (gps !== undefined) p.gps = gps;`, `gps` added to its destructuring).
+   - `library/slideshow.js` `wireSlideshow`: a listener that does `for (const x of slides.list) if (x.path === e.detail.path) Object.assign(x, e.detail.changes);`.
+3. Senders. Replace each hand update with one `photoChanged` call:
+   - `library.js` `libraryChange`: the `const p = libPhoto(u.path); if (!p) continue; Object.assign(...); updateCell(p); updateCullTile(u.path); stripUpdate(...)` lines become `photoChanged(u.path, { rating: u.info.rating, label: u.info.label, keywords: u.info.keywords, flag: u.info.flag ?? null, stack: u.info.stack ?? null, title: u.info.title, caption: u.info.caption, creator: u.info.creator, copyright: u.info.copyright });`. The `loadInfo()` line after the loop stays.
+   - `library.js`, in `showLibraryTask` (near line 90): `open.edited = edited; updateCell(open);` becomes `photoChanged(open.path, { edited });`.
+   - `library-actions.js`, three places (after `invoke("negative_sync"`, `invoke("apply_to_photos"` and `invoke("paste_settings"`): the `const p = libPhoto(path); if (p) { p.edited = true; updateCell(p); stripUpdate(path, { edited: true }); }` block becomes `photoChanged(path, { edited: true });`. `refreshThumb(path);` after it stays.
+   - `dialogs/plugins.js` (near line 240): the same block, with `photo` for `p`, becomes `photoChanged(path, { edited: true });`.
+   - `slideshow.js` `viewerChange`: the `for (const list of [slides.list, lib.photos, strip.photos]) ...` loop, the `if (typeof updateCell ...)` line and `stripUpdate(p.path, fields);` become `photoChanged(p.path, fields);`. The rest of the function stays.
+   - `bursts.js` (near line 100), `duplicates.js` (near line 120), `cleanup.js` (`cleanReject`): `const p = libPhoto(u.path); if (p) p.flag = u.info.flag ?? null;` becomes `photoChanged(u.path, { flag: u.info.flag ?? null });`.
+   - `develop/info.js` `setRating`, `setLabel`, `setFlag`: `stripUpdateCurrent({ ... })` becomes `photoChanged(ui.info.path, { ... })` with the same object.
+   - `core/app.js` `setState`: `stripUpdateCurrent({ edited: ... });` becomes `if (ui.info) photoChanged(ui.info.path, { edited: Object.keys(ui.settings).length > 0 });`.
+   - `filmstrip.js` `rateFromStrip`: `stripUpdate(p.path, { rating: ... })` becomes `photoChanged(p.path, { rating: ... })` with the same value.
+4. Delete `stripUpdateCurrent` from `filmstrip.js` (no callers are left).
+5. UI test: a step at the end of `crates/amb-gui/tests/ui/browse.js`, "one change reaches the grid and the filmstrip": `await openFolder(dirOf(ui.info.path));` wait until `libraryOn() && lib.cells.has(ui.info.path)`. Keep `was = libPhoto(path).rating ?? null`. Call `photoChanged(path, { rating: 4 })`. Expect `libPhoto(path).rating === 4`, the cell's `.lib-stars` text to be `"★★★★"`, and `strip.photos.find((p) => p.path === path)?.rating === 4`. Then `photoChanged(path, { rating: was })`. It writes no sidecar.
+6. `docs/codestyle.md`, the "Shared parts, not copies" line: add `A change to a photo's info or edit reaches the views through photoChanged (core/core.js), never by calling a view's update.`
+7. Delete this card from `docs/cleanup.md`.
+Use: `photoChanged` for every view update. Don't add: a second event name, a listener that writes a sidecar, `typeof X === "function"` guards.
+Don't: rename `updateCell`, `updateCullTile`, `stripUpdate` (they stay as the listeners' bodies); change what `setInfo` writes; touch `bursts.js` line 46 and 90 (`updateCell` there redraws after grouping, not after a change); touch `collage/collage.js` (the collage's tray is its own copy).
+Checks: the three cargo commands; then the UI scripts as in B19, all five in `crates/amb-gui/tests/ui/` (`for t in crates/amb-gui/tests/ui/*.js; do xvfb-run -a -s "-screen 0 1600x1000x24" target/debug/ambrotype --ui-test "$t" /tmp/ui/test.dng || break; done`). Each must exit 0. By hand (Xvfb, docs/recipes.md): rate a photo in Develop and press G, and the grid cell shows the stars; rate in the grid and the filmstrip shows them.
+Done when: `grep -rn "stripUpdate\|updateCullTile(" crates/amb-gui/ui` prints only lines in `develop/filmstrip.js`, `library/cull.js` (its definition) and the listener in `library/library-grid.js`; and the new UI step passes.
+Stop and report if: a sender doesn't match the lines quoted; a UI script fails twice; a view turns out to read a photo object that none of the three listeners update.
+Report: at most 6 lines: the commit, each check's result, anything the card didn't decide.
+Commit: `ui: views hear of a photo's change through one event`. Why: "Each caller updated each view by hand, and some missed the filmstrip."
+
+### B21. The collage tray on `photoRow`
+Tier: medium        Risk: medium
+Asked (verbatim): "/brief the three items under Needs a brief in docs/cleanup.md"
+Why: the collage tray (`renderTray` in `crates/amb-gui/ui/collage/collage-tray.js`) is the last sideways row of photos not built on `photoRow`: its own scrolling CSS, its own lazy loading, and no wheel or drag scrolling.
+Decided:
+- A sideways press scrolls the tray, as in every row. A press that first moves mostly up or down pulls the photo out into the collage's own pointer drag (`startDrag` in `collage/collage-free.js`), kept as it is: it shows a ghost, drops on a cell or on the free canvas at a point, and works with touch. A native drag (the Map's `dragOut`) can't do these, so it is not used.
+- `photoRow` gets two options: `pullOut(p, e)` for that, and `before(p, prev)` for the group heads, which go in the row between cells but are not cells.
+- A click on a tray photo goes through the row's `open` and fills a cell, as now. The fill moves out of `startDrag` into `fillFromTray(path)`.
+Read first: `crates/amb-gui/ui/core/photo-row.js` (all), `crates/amb-gui/ui/collage/collage-tray.js` (`renderTray`, `renderTrayMarks`, lines 280 to 350), `startDrag` in `crates/amb-gui/ui/collage/collage-free.js`. The example to copy: the Map's tray in `crates/amb-gui/ui/library/browse.js` (`photoRow(tray, { ... dragOut })`, near line 283) and its UI step in `crates/amb-gui/tests/ui/photo-row.js`.
+Files: `crates/amb-gui/ui/core/photo-row.js`, `crates/amb-gui/ui/collage/collage-tray.js`, `crates/amb-gui/ui/collage/collage-free.js`, `crates/amb-gui/ui/collage/collage.js`, `crates/amb-gui/ui/style.css`, `crates/amb-gui/src/checks.rs`, `crates/amb-gui/tests/ui/photo-row.js`, `docs/design/collage-and-borders.md`, `docs/cleanup.md`.
+Steps:
+1. `core/photo-row.js`, `dragToScroll`: add a fifth parameter `handOff = () => false` and say in the comment above: "`handOff(e)`, asked at a press's first move past 5 px, ends the press there when it returns true: no scroll (a cell pulled out of the row)". In the `pointermove` listener, as the first line inside `if (!drag.moved) {`, add `if (handOff(e)) { drag = null; return; }`. The library grid's call doesn't change.
+2. `photoRow`:
+   - Document the two options in the comment block: `pullOut(p, e)`: "cells can be pulled out by the pointer, for a drag the caller runs itself (the collage's tray). A press that first moves mostly up or down calls it once with that move; the row doesn't scroll for that press and ignores the click that ends it. For touch the caller's cells need `touch-action: pan-x`." And `before(p, prev) -> Element | null`: "an element put before p's cell, not a cell (a group head); prev is the photo before p, or null."
+   - `pressed` becomes `{ x, y, p: photoOf(e), done: false, pulled: false }` in the `pointerdown` listener. Add `pointerup` and `pointercancel` listeners on `list` that set `pressed.done = true` when `pressed` is set.
+   - Before the `dragToScroll(...)` call (the order matters: this listener must run first), when `o.pullOut` is given, add a `pointermove` listener. It returns when `!pressed?.p || pressed.done`, or when `e.pointerType !== "touch" && !(e.buttons & 1)`, or when the move from `pressed` is under 5 px (`Math.hypot`). Otherwise it sets `pressed.done = true`, and if `verticalDrag(e)` it sets `pressed.pulled = true` and calls `o.pullOut(pressed.p, e)`.
+   - Pass `() => Boolean(pressed?.pulled)` as `dragToScroll`'s fifth argument.
+   - In the `click` listener, after `if (!p) return;`, add `if (pressed?.pulled) return;`.
+   - `set(photos)`: keep a `const extras = [];` beside `cells`. At the start of `set`, remove each element in `extras` and empty it. In the loop, before each cell, `const head = o.before?.(p, prev); if (head) { extras.push(head); list.append(head); }`, with `prev` the photo before (null for the first).
+3. `collage/collage-free.js`: cut the block inside `if (!ghost) { ... }` that fills a cell (`if (fromCell < 0) { ... }`) into a new function above `startDrag`, `function fillFromTray(path)`, keeping its comment ("A click on a tray photo: into the selected cell, or the first empty one."). `if (!ghost) { ... }` becomes `if (!ghost) return;`.
+4. `collage/collage.js`, the `collage` state: delete `near` (no longer used). Add `trayRow: null, // the tray's photoRow, made by renderTray` and `trayGroupOf: new Map(), // path -> group number while grouped (renderTray)`.
+5. `collage/collage-tray.js`:
+   - Split the item-building part of `renderTray`'s loop into `function trayCell(p)`. It returns the `div.tray-item` with its class (from `collage.trayGroupOf.get(p.path) ?? -1`), title, img (its `src` from `collage.small` when there), stars, name, used mark and remove button. It sets no `data-path` (the row does) and adds no `pointerdown` listener. The remove button keeps `pointerdown` → `stopPropagation`. Its `click` also calls `e.stopPropagation()`, filters `collage.tray` and `collage.groups` as now, then always calls `renderTray()` (the `item.remove()` shortcut goes).
+   - Split the head-building part into `function trayGroupHead(p, prev)`. It returns null unless `collage.groups` is set and the group of `p` differs from that of `prev` (or `prev` is null). Otherwise it returns the same `div.tray-group` as now, for a group or for "Not grouped".
+   - `renderTray` becomes: `collage.queue.clear();` set `collage.trayGroupOf` from `collage.groups` (the Map built at its start today), `collage.trayRow ??= photoRow($("col-tray"), { cell: trayCell, thumb: (p, cell) => { if (!collage.small.has(p.path)) collage.queue.add(cell); }, open: (p) => fillFromTray(p.path), pullOut: (p, e) => startDrag(e, p.path), before: trayGroupHead });` then `collage.trayRow.set(collage.tray); renderTrayMarks(); updateTrayCount();`.
+   - `renderTrayMarks`: loop over `collage.trayRow?.cells ?? []` (`[path, item]`) instead of `$("col-tray").children`.
+6. `style.css`: `.col-tray` keeps only `padding: 0 12px 8px; flex: 1; align-items: stretch;` (`.photo-row` gives the flex, gap and scrolling). In `.tray-item`, `touch-action: none` becomes `touch-action: pan-x`.
+7. `crates/amb-gui/src/checks.rs`: `OVERFLOW_ROW_LIMIT` goes from 2 to 1 (the test says the count fell).
+8. UI test: a step at the end of `crates/amb-gui/tests/ui/photo-row.js`, "Collage tray: a sideways drag scrolls, a drag up takes a photo out, a click fills a cell". `await collageFlow();` then wait until `$("collage-dialog").open && collage.templates.length`. Fill the tray with six made-up photos (`{ path: `${ui.info.path}#${i}`, name: `p${i}` }`), call `renderTray()` and `narrow($("col-tray"), 200)`. Then:
+   - `drag(list, cell, -40)`: expect `scrollLeft > 0` and no cell filled (`!collage.cells.some((c) => c?.path)`).
+   - On a cell, dispatch `pointerdown` and then `pointermove` 30 px up, both with `buttons: 1, pointerType: "mouse", pointerId: 9`, then one more `pointermove` 20 px further up: expect `document.querySelector(".col-ghost")`. Dispatch `pointerup`: expect no `.col-ghost`.
+   - Click a cell: expect `collage.cells.some((c) => c?.path === thatPath)`.
+   - End with `setTray([]); closeCollage();` and remove the row's `style`.
+9. `docs/design/collage-and-borders.md`, the "**Photos** come from a tray" line: "Drag one into a cell" becomes "Drag one up into a cell (a sideways drag scrolls the tray)".
+10. Delete this card from `docs/cleanup.md`.
+Use: `photoRow`, `loadQueue` (`collage.queue`, as now). Don't add: a native drag (`draggable`, `dragOut`) for the tray; a second `nearView` in the collage.
+Don't: change `startDrag`'s drop handling, the ghost or the cell grip's drag (`startDrag(e, c.path, i)`); rename `renderTray`, `trayLoadThumb`, `renderTrayMarks`, the ids `col-tray`, or the classes `tray-item`, `tray-group`, `tray-remove`, `used`; change the filmstrip or the Map's tray (their UI steps must pass unchanged).
+Checks: the three cargo commands; `cargo test -p amb-gui` (the shared-parts test); the UI scripts `photo-row.js` and `smoke.js` (its "a group's 2 × 2" step reads `.tray-group button`), as in B19. Each must exit 0. By hand (Xvfb, docs/recipes.md): open the collage maker, scroll the tray with the wheel and with a sideways drag, drag a photo up into a cell, click one, group alike and press a group's 2 × 2, remove one with ×.
+Done when: `grep -n "nearView\|startDrag" crates/amb-gui/ui/collage/collage-tray.js` prints only the `pullOut` line, and `grep -n "overflow-x" crates/amb-gui/ui/style.css` no longer lists `.col-tray`.
+Stop and report if: a vertical drag in the test also scrolls the row; the Map tray or filmstrip step fails; `startDrag` has a caller other than the tray and the cell grip.
+Report: at most 6 lines: the commit, each check's result, anything the card didn't decide.
+Commit: `collage: the tray is a photoRow`. Why: "The last sideways row of photos with its own scrolling; a sideways drag now scrolls it."
+
+B19 and B20 both change `core/core.js`, `library.js` and `filmstrip.js`: do B19 first, then B20. B21 shares no file with them and can run beside either.
+
 ### Needs a brief
 
 A large model answers each question and writes the cards, then moves them above. Each is here because a builder would have to choose.
@@ -525,9 +657,6 @@ A large model answers each question and writes the cards, then moves them above.
 - **The editor's small preview, shared with `amb` (was B12d).** `thumbnail` in `crates/amb-gui/src/folder.rs` returns the camera's embedded preview, or when the file has none renders a small picture through the editor's `Session`, and caches the JPEG in the app's cache folder. `amb cleanup`, `amb duplicates` and `amb convert` (`crates/amb-cli/src/cleanup.rs`, `organise.rs`, `convert.rs`) read the embedded preview only, so on JPEG, PNG and TIFF photos (no embedded preview) they skip the tests the editor runs: a behaviour difference to check first by running both on a folder of JPEGs. Questions: (1) Which render does the fallback use, given that `amb-library` cannot depend on the editor's `Session`: a new small-preview function in `amb-ops` or `amb-engine`, which is also the first step of R7? (2) Where does `amb` keep its cache (the editor uses Tauri's app cache folder), and with what key (the editor's key is path, size, mtime and orientation)? (3) Do `amb cleanup` and `amb duplicates` start rendering previews for photos that have none (slower, and they would then find things they did not before), or does the editor stop doing it?
 - **Tests for the largest files that have none.** `crates/amb-cli/src/organise.rs` (710 lines), `crates/amb-cli/src/render.rs` (542), `crates/amb-gui/src/commands/{presets,catalog,batch,export}.rs` (about 600 each) have no unit tests; the UI scripts cover only some of the commands. Questions: (1) In which order, and which behaviour of each is worth a test (the ones that lost data or looked wrong before: renaming and sorting in `organise.rs`, the export naming in `export.rs`)? (2) How is a photo faked: `amb_testkit::dng::write` with `amb_testkit::patterns::generate("ramp")` is what `crates/amb-library` and `crates/amb-gui/src/library.rs` tests use; is that enough, or does a test need a raw with a capture time or an embedded preview? (3) How is the editor's state faked: can `AppState` be built in a test, and can a command that takes a `tauri::AppHandle` be run with Tauri's mock runtime (`tauri::test`, which may need a feature and a dev-dependency: ask the owner), or must the logic move out of the command first (as B12a does)?
 - **Splitting the long functions.** `export_one` (275 lines, `crates/amb-export/src/lib.rs`), `schema::panels` (311, `crates/amb-gui/src/schema.rs`), `state::plan` (237, `crates/amb-protocol/src/state/plan.rs`), `net::step` (250, `crates/amb-ai/src/net/plan.rs`), and the UI factories `create` in `crates/amb-gui/ui/tools/crop.js` (408) and in `crates/amb-gui/ui/develop/curve.js` (364), then `looksFlow`, `settingsFlow`, `makeWheel`, `wireMasks`. These are long matches whose order matters (a mistake changes output silently) or closures that share local state. Questions: for each, where the case boundaries go (per format, per panel group, per command, per op; for a UI factory, which state becomes an explicit object), whether helper signatures stay private, and which test proves the output is byte-identical before and after (export tests compare bytes; the UI factories have no UI test for dragging a crop or a curve: write that first?).
-- **One selection for the library grid and the filmstrip.** `select` in `crates/amb-gui/ui/library/library.js` (`lib.selected`, `lib.anchor`, modes "only", "toggle", "range") and `stripSelect` in `crates/amb-gui/ui/develop/filmstrip.js` (`strip.selected`, `strip.anchor`, "toggle", "range") both do Ctrl and Shift ranges, over different lists. Differences a builder would have to choose between: the strip adds the open photo to a new selection, and a plain click there opens a photo instead of selecting; `selectedPhotos()` reads one or the other. Questions: (1) Is the filmstrip's selection the library's `lib.selected` (so the two always agree, and a selection survives going from the library to Develop), or a separate one built by a shared `selection(order)` factory? (2) Does a plain click on a filmstrip photo keep opening it?
-- **Views told of a photo's change by one event.** After a rating, label, flag or edit, each caller updates the views by hand: `stripUpdate` is called from `slideshow.js`, `library-actions.js` (three places), `library.js` `libraryChange`, `dialogs/plugins.js`, `develop/info.js` (through `stripUpdateCurrent`) and `core/app.js`, next to `updateCell`, `updateCullTile` and `loadInfo`; a new view means finding every caller. Questions: (1) One `photo-changed` event on `document` with `{ path, changes }`, each view (strip, grid cell, cull tile, panel) listening, or one `photoChanged(path, changes)` function that calls the views? (2) Who updates the shared photo object (`lib.photos` and `strip.photos` hold separate copies today): the sender, or one listener that all views read?
-- **The collage tray on `photoRow`.** `renderTray` in `crates/amb-gui/ui/collage/collage-tray.js` was not moved to `photoRow` (2026-11-13): a press on a tray photo calls `preventDefault` and starts the collage's own drag into a cell (`startDrag`), which would stop a sideways drag from scrolling; and the tray has group heads between photos and a remove button per photo. Questions: (1) Does a sideways press on the tray scroll it, while a press-and-hold or an upward move drags the photo out (as the Map's tray does with `dragOut`), and does `startDrag` become a native drag? (2) Do group heads go in the row as cells, or does the row take a list of groups?
 - **The Rust half of the built-in plugin table.** A built-in plugin is added in `BUILTIN` and `native.rs` (`crates/amb-plugin/src`), the workspace members in the root `Cargo.toml`, and the `amb-plugin` dependencies: eight edit points. Question: one macro table (`builtin_plugins! { "kaleidoscope" => amb_plugin_kaleidoscope::kaleidoscope, ... }`) that makes `BUILTIN` and the native dispatch, or keep them separate and rely on card B18's test that checks `BUILTIN` against the `plugins/` folder; and whether a test should check that each `plugin.wasm` is newer than its `src/`.
 
 ## Structural steps (the owner says go first)

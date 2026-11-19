@@ -320,11 +320,11 @@ async function presetsOnPhotos(paths) {
     const q = filter.value.trim().toLowerCase();
     const shown = presetsShown().filter((p) => !q || `${p.group} ${p.name}`.toLowerCase().includes(q));
     $("preset-pick-list").replaceChildren(...shown.map((p) => {
-      const b = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: p.name, title: p.group });
+      const b = el("button", { type: "button", class: "small", title: p.group }, p.name);
       b.addEventListener("click", () => { chosen = p; dlg.close("ok"); });
       return b;
     }));
-    if (!shown.length) $("preset-pick-list").append(Object.assign(document.createElement("p"), { className: "hint", textContent: "No presets match." }));
+    if (!shown.length) $("preset-pick-list").append(el("p", { class: "hint" }, "No presets match."));
   };
   filter.value = "";
   filter.oninput = render;
@@ -367,9 +367,9 @@ async function libraryPasteSettings() {
   $("paste-what").textContent = `From ${fileName(lib.copied)} to ${plural(targets.length, "photo")}. Ticked groups are made the same as the source (settings it doesn't have go back to their defaults); the rest stay as they are.`;
   const list = $("paste-groups");
   list.replaceChildren(...lib.groups.map((g) => {
-    const row = Object.assign(document.createElement("label"), { className: "inline-check" });
-    const box = Object.assign(document.createElement("input"), { type: "checkbox", value: g.name, checked: lib.pasteChoice?.has(g.name) ?? g.default });
-    row.append(box, Object.assign(document.createElement("span"), { textContent: g.label }));
+    const row = el("label", { class: "inline-check" });
+    const box = el("input", { type: "checkbox", value: g.name, checked: lib.pasteChoice?.has(g.name) ?? g.default });
+    row.append(box, el("span", {}, g.label));
     return row;
   }));
   dlg.showModal();

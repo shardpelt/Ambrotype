@@ -517,6 +517,21 @@ mod tests {
     }
 
     #[test]
+    fn a_saved_preset_keeps_the_effects() {
+        // A Trippy edit is its effects: they go into the preset as they are.
+        let dir = tmp("fx");
+        let fx = r#"[{"plugin":"hue-trip","params":{"turn":120},"amount":100,"seed":7}]"#;
+        let mut s = BTreeMap::new();
+        s.insert("amb:Effects".to_string(), Value::Text(fx.into()));
+        s.insert("CropTop".to_string(), Value::Text("0.1".into()));
+        let path = save_preset(&dir, "Acid", "Trippy", &s, true).unwrap();
+        let p = amb_presets::Preset::from_path(&path).unwrap();
+        assert_eq!(p.get("amb:Effects"), Some(&Value::Text(fx.into())));
+        assert_eq!(p.get("CropTop"), None, "the crop stays with the photo");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn a_copy_applies_as_the_original_does() {
         let base = tmp("dup");
         let own = base.join("own");

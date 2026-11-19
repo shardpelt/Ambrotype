@@ -153,3 +153,16 @@ await t.step("Collage tray: a sideways drag scrolls, a drag up takes a photo out
   setTray([]);
   closeCollage();
 });
+
+await t.step("Collage of every photo shown: the library's photos fill the tray, for Batch's pages", async () => {
+  const was = lib.shown;
+  lib.shown = [1, 2, 3, 4, 5].map((i) => ({ path: `${ui.info.path}#${i}`, name: `s${i}` }));
+  await libraryCollage(true);
+  await t.until("the collage maker", () => $("collage-dialog").open);
+  t.expect(collage.tray.length === 5, `every photo shown is in the tray: ${collage.tray.length}`);
+  t.expect(!$("col-batch").disabled, "Export pages… is ready");
+  t.expect(t.visible("#col-batch-shown"), "the Batch section offers it too");
+  lib.shown = was;
+  setTray([]);
+  closeCollage();
+});

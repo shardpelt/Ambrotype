@@ -143,12 +143,15 @@ async function sharePresetToHub(p) {
   }
 }
 
-// The open photo's edit as a one-click preset (src/preset_files.rs `save_preset`).
-async function savePresetFlow(name = "") {
+// The open photo's edit as a one-click preset (src/preset_files.rs `save_preset`),
+// effects (amb:Effects) included; `group` fills the dialog's Group. Returns the
+// saved preset's entry, when it went into the app's presets folder.
+async function savePresetFlow(name = "", group = null) {
   if (!ui.info) return toast("Open a photo first.", true);
   const dlg = $("save-preset-dialog");
   const f = dlg.querySelector("form");
   f.preset_name.value = name;
+  if (group != null) f.preset_group.value = group;
   dlg.showModal();
   f.preset_name.focus();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
@@ -170,6 +173,8 @@ async function savePresetFlow(name = "") {
     ui.presets = await invoke("save_preset", { name: f.preset_name.value, group: f.preset_group.value });
     renderPresets();
     toast(`Saved the preset “${f.preset_name.value.trim()}” (in ${f.preset_group.value.trim() || "Yours"})`);
+    const group = f.preset_group.value.trim() || "Yours";
+    return ui.presets.find((p) => p.name === f.preset_name.value.trim() && p.group === group) ?? null;
   } catch (e) {
     showError(e);
   }

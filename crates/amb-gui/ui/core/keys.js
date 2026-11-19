@@ -29,6 +29,7 @@ const KEY_ACTIONS = [
   { id: "replay", group: "File", label: "Export Edit Replay: a video of the edit, step by step", hint: "An MP4 (AV1) of the photo's History: before, each step easing in and named, after. For Reels, Shorts and before/after posts.", keys: [], when: "any", photo: true, run: () => replayFlow() },
   { id: "share-compare", group: "File", label: "Share before and after", hint: "One web page with the photo before and after its edit and a bar to drag; it works offline and on any web host.", keys: [], when: "any", photo: true, run: () => shareCompareFlow() },
   { id: "edit-in", group: "File", label: "Edit in another app", hint: "The photo, as edited, goes to your image editor as a TIFF next to it (set the app in Settings → General).", keys: ["Ctrl+Alt+E"], when: "any", photo: true, run: () => editInFlow() },
+  { id: "collage-shown", group: "File", label: "Collage of every photo shown in the library, as pages", hint: "One layout over all of them: the collage's Batch exports the pages.", keys: [], when: "any", run: () => libraryCollage(true) },
     { id: "collage", group: "File", label: "Collage maker", hint: "Several photos on one canvas.", keys: ["C"], when: "main", button: "btn-collage", run: () => collageFlow() },
   { id: "undo", group: "Edit", label: "Undo", keys: ["Ctrl+Z"], when: "any", button: "btn-undo", run: () => run([{ cmd: "undo" }]) },
   { id: "undo-all", group: "Edit", label: "Undo all: back to the photo as it opened", hint: "Every step stays in History, so Redo brings them back.", keys: ["Ctrl+Alt+Z"], when: "any", button: "btn-undo-all", run: () => undoAll() },
@@ -39,6 +40,7 @@ const KEY_ACTIONS = [
   // Installed task plugins after Trippy.
   ...[5, 6, 7, 8].map((n) => ({ id: `task-${n + 1}`, group: "Tasks", label: `Task ${n + 1} (an installed task plugin)`, keys: [`Ctrl+Alt+${n + 1}`], when: "any", run: () => TASKS[n] && switchTask(TASKS[n].id) })),
   { id: "trip-me", group: "Effects", label: "Trip me: a random mix of psychedelic colour, foil and light leaks", keys: [], when: "main", photo: true, run: () => tripMe() },
+  { id: "trip-save", group: "Effects", label: "Trip: save as a preset, effects included, and share it to the hub", keys: [], when: "main", photo: true, run: () => tripSave() },
   { id: "trip-clear", group: "Effects", label: "Trip: back to normal (the trip's effects off)", keys: [], when: "main", photo: true, run: () => tripClear() },
   { id: "auto-edit", group: "Edit", label: "Auto edit: tone, white balance, lens corrections, vibrance and a level horizon", hint: "A starting point for the whole photo, in one undo step.", keys: ["Ctrl+U"], when: "main", button: "btn-auto", run: () => autoEditFlow() },
   { id: "search", group: "Help", label: "Search everything: commands, settings, panels, presets, layouts", keys: ["Ctrl+K"], when: "any", button: "btn-search", run: () => searchFlow() },

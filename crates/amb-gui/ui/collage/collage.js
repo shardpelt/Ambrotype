@@ -252,6 +252,7 @@ function wireCollage() {
   $("col-fill").addEventListener("click", fillEmpty);
   $("col-group").addEventListener("click", groupTray);
   $("col-batch-groups").addEventListener("change", updateBatchNote);
+  $("col-batch-shown").addEventListener("click", () => libraryCollage(true));
   $("col-add").addEventListener("click", () => addPhotos(false));
   $("col-add-folder").addEventListener("click", () => addPhotos(true));
   $("col-tray-clear").addEventListener("click", () => setTray([]));

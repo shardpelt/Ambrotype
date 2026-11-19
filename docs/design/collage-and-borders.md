@@ -46,7 +46,7 @@ How it works:
 - **The shape:** pick a layout, then split or remove cells. A built-in layout changes only the shape; your own layouts bring their size, gaps and background too.
 - **Canvas:** size (any size preset, or your own width × height), background colour, gap between photos, outer border and rounded corners.
 - **Export** renders every photo from its raw at the size its cell needs, composites in linear light and exports through `amb-export`. JPEG, PNG, TIFF, WebP or AVIF, in sRGB, Display P3 or Adobe RGB.
-- **Batch** puts every tray photo (or only those with enough stars) into pages of the layout: `<layout name>-001.jpg`, `-002`, …. Landscape photos go to wide cells and portrait photos to tall cells where the layout has both; a short last page is filled in order.
+- **Batch** puts every tray photo (or only those with enough stars) into pages of the layout: `<layout name>-001.jpg`, `-002`, …. **Every photo shown in the library** (a button there, or the command "Collage of every photo shown") fills the tray with the library's photos after its filters, for one layout over all of them. Landscape photos go to wide cells and portrait photos to tall cells where the layout has both; a short last page is filled in order.
 - **Sharing:** Save layout keeps it in your list; Share… saves it as a small file (no photos); Import… adds one.
 - **Arrange freely** (built 2026-10-08) turns the layout into frames placed by hand, like layers in GIMP:
   - drag a frame to move it, its corners to resize it (Shift keeps the shape), and the round handle to turn it to any angle (Shift: 15° steps); or type the angle

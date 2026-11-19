@@ -29,6 +29,13 @@ pub(crate) struct MaskSlider {
     pub(crate) rendered: bool,
 }
 
+/// The ranges of the mask panel's own sliders (feather, angle, refine,
+/// the brush's flow and density, a mask's amount), as the commands clamp them.
+#[tauri::command]
+pub(crate) fn mask_field_ranges() -> Vec<amb_protocol::masks::FieldRange> {
+    amb_protocol::masks::FIELD_RANGES.to_vec()
+}
+
 /// The masks' local sliders, in panel order (UI units).
 #[tauri::command]
 pub(crate) fn mask_sliders() -> Vec<MaskSlider> {

@@ -34,6 +34,7 @@ const mk = {
   overlay: true,
   frame: null,          // mask_frame result
   sliders: [],          // mask_sliders result
+  ranges: [],           // mask_field_ranges result: the panel's own sliders
   effects: null,        // mask_effects result: { builtin, mine }
   drag: null,
   hover: null,          // canvas point (CSS px) for the brush cursor
@@ -452,6 +453,7 @@ async function enterMasks() {
   if (!mk.sliders.length) {
     try {
       mk.sliders = await invoke("mask_sliders");
+      mk.ranges = await invoke("mask_field_ranges");
     } catch (e) {
       showError(e);
     }

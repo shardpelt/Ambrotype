@@ -5,6 +5,14 @@
 
 // ---------------------------------------------------------------- panel
 
+// The label and range of one of the panel's own sliders, from the protocol's
+// table (mask_field_ranges), so the panel and the commands' clamps agree.
+function maskRange(key) {
+  const r = mk.ranges.find((x) => x.key === key);
+  return { label: r.label, min: r.min, max: r.max, step: r.step };
+}
+const maskDefault = (key) => mk.ranges.find((x) => x.key === key).default;
+
 function sliderRow({ label, min, max, step, value, title, onInput, onChange, disabled }) {
   const decimals = step < 1 ? 2 : 0;
   const show = (v) => (min < 0 && v > 0 ? "+" : "") + Number(v).toFixed(decimals);
@@ -185,8 +193,8 @@ function renderMaskDetail(m) {
   const setPart = (values) => run([{ cmd: "set_mask", mask: m.index, part: p.index, values }]);
   if (p?.kind === "radial") {
     box.append(
-      sliderRow({ label: "Feather", min: 0, max: 100, step: 1, value: p.Feather ?? 50, onInput: (v) => draftPart({ Feather: v }), onChange: (v) => setPart({ Feather: v }) }),
-      sliderRow({ label: "Angle", min: -180, max: 180, step: 1, value: p.Angle ?? 0, title: "Turns the ellipse", onInput: (v) => draftPart({ Angle: v }), onChange: (v) => setPart({ Angle: v }) }),
+      sliderRow({ ...maskRange("Feather"), value: p.Feather ?? maskDefault("Feather"), onInput: (v) => draftPart({ Feather: v }), onChange: (v) => setPart({ Feather: v }) }),
+      sliderRow({ ...maskRange("Angle"), value: p.Angle ?? maskDefault("Angle"), title: "Turns the ellipse", onInput: (v) => draftPart({ Angle: v }), onChange: (v) => setPart({ Angle: v }) }),
     );
   } else if (p?.kind === "luminance") {
     const r = p.LumRange ?? [0.5, 0.6, 1, 1];
@@ -203,13 +211,14 @@ function renderMaskDetail(m) {
     const draft = () => draftPart({ LumRange: range(cur.f, cur.t, cur.s) });
     const commit = () => setPart({ LumRange: range(cur.f, cur.t, cur.s) });
     box.append(
+      // From, To and Smoothness are typed here: a percent view of LumRange, not a protocol field range.
       sliderRow({ label: "From", min: 0, max: 100, step: 1, value: from, title: "Darkest brightness selected", onInput: (v) => { cur.f = v; draft(); }, onChange: (v) => { cur.f = v; commit(); } }),
       sliderRow({ label: "To", min: 0, max: 100, step: 1, value: to, title: "Brightest brightness selected", onInput: (v) => { cur.t = v; draft(); }, onChange: (v) => { cur.t = v; commit(); } }),
       sliderRow({ label: "Smoothness", min: 0, max: 50, step: 1, value: smooth, title: "How gradually the selection fades out", onInput: (v) => { cur.s = v; draft(); }, onChange: (v) => { cur.s = v; commit(); } }),
     );
   } else if (p?.kind === "color") {
     box.append(
-      sliderRow({ label: "Refine", min: 0, max: 100, step: 1, value: p.ColorAmount ?? 50, title: "Lower selects only colours close to the samples", onInput: (v) => draftPart({ ColorAmount: v }), onChange: (v) => setPart({ ColorAmount: v }) }),
+      sliderRow({ ...maskRange("ColorAmount"), value: p.ColorAmount ?? maskDefault("ColorAmount"), title: "Lower selects only colours close to the samples", onInput: (v) => draftPart({ ColorAmount: v }), onChange: (v) => setPart({ ColorAmount: v }) }),
       el("div", { class: "crop-line" },
         el("button", { type: "button", class: "small", onclick: () => startTool("color", false, true) }, "Add a sample"),
         el("button", { type: "button", class: "small", onclick: () => setPart({ ColorSamples: [] }) }, "Clear samples"),
@@ -225,7 +234,7 @@ function renderMaskDetail(m) {
   const sl = $("mask-sliders");
   sl.replaceChildren(effectRow(m));
   sl.append(sliderRow({
-    label: "Amount", min: 0, max: 100, step: 1, value: m.amount, title: "Scales all of this mask's sliders",
+    ...maskRange("amount"), value: m.amount, title: "Scales all of this mask's sliders",
     onInput: (v) => draftCorrection({ CorrectionAmount: fmt6(v / 100) }),
     onChange: (v) => run([{ cmd: "set_mask", mask: m.index, values: { amount: v } }]),
   }));
@@ -314,10 +323,11 @@ function renderToolOptions() {
   if (mk.tool !== "brush") return;
   const b = mk.brush;
   box.append(
+    // Size stays typed: narrower than the 0.1 to 50 the protocol accepts, on purpose.
     sliderRow({ label: "Size", min: 0.5, max: 25, step: 0.5, value: b.size, title: "Radius, % of the photo's width ([ and ])", onInput: (v) => { b.size = v; drawMasks(); }, onChange: (v) => { b.size = v; drawMasks(); } }),
-    sliderRow({ label: "Feather", min: 0, max: 100, step: 1, value: b.feather, onInput: (v) => { b.feather = v; drawMasks(); }, onChange: (v) => (b.feather = v) }),
-    sliderRow({ label: "Flow", min: 1, max: 100, step: 1, value: b.flow, title: "How fast paint builds up", onChange: (v) => (b.flow = v) }),
-    sliderRow({ label: "Density", min: 1, max: 100, step: 1, value: b.density, title: "Most strength the brush reaches", onChange: (v) => (b.density = v) }),
+    sliderRow({ ...maskRange("Feather"), value: b.feather, onInput: (v) => { b.feather = v; drawMasks(); }, onChange: (v) => (b.feather = v) }),
+    sliderRow({ ...maskRange("Flow"), value: b.flow, title: "How fast paint builds up", onChange: (v) => (b.flow = v) }),
+    sliderRow({ ...maskRange("Density"), value: b.density, title: "Most strength the brush reaches", onChange: (v) => (b.density = v) }),
   );
   const erase = el("input", { type: "checkbox", checked: b.erase });
   erase.addEventListener("change", () => (b.erase = erase.checked));

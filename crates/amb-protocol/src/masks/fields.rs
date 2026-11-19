@@ -263,6 +263,79 @@ pub(super) fn bool_arg(name: &str, v: &serde_json::Value) -> Result<bool, Error>
     }
 }
 
+/// A mask field's range, as the mask panel shows it and the commands clamp it.
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+pub struct FieldRange {
+    pub key: &'static str,
+    pub label: &'static str,
+    pub min: f64,
+    pub max: f64,
+    pub step: f64,
+    pub default: f64,
+}
+
+/// The ranges of the mask fields that the panel's sliders set: one table for
+/// the commands' clamps and the panel (`mask_field_ranges`).
+pub const FIELD_RANGES: &[FieldRange] = &[
+    FieldRange {
+        key: "Feather",
+        label: "Feather",
+        min: 0.0,
+        max: 100.0,
+        step: 1.0,
+        default: 50.0,
+    },
+    FieldRange {
+        key: "Angle",
+        label: "Angle",
+        min: -180.0,
+        max: 180.0,
+        step: 1.0,
+        default: 0.0,
+    },
+    FieldRange {
+        key: "ColorAmount",
+        label: "Refine",
+        min: 0.0,
+        max: 100.0,
+        step: 1.0,
+        default: 50.0,
+    },
+    FieldRange {
+        key: "Flow",
+        label: "Flow",
+        min: 1.0,
+        max: 100.0,
+        step: 1.0,
+        default: 100.0,
+    },
+    FieldRange {
+        key: "Density",
+        label: "Density",
+        min: 1.0,
+        max: 100.0,
+        step: 1.0,
+        default: 100.0,
+    },
+    FieldRange {
+        key: "amount",
+        label: "Amount",
+        min: 0.0,
+        max: 100.0,
+        step: 1.0,
+        default: 100.0,
+    },
+];
+
+/// `(min, max)` of a field in [`FIELD_RANGES`].
+pub(super) fn range(key: &str) -> (f64, f64) {
+    let r = FIELD_RANGES
+        .iter()
+        .find(|r| r.key == key)
+        .unwrap_or_else(|| panic!("{key} is not in FIELD_RANGES"));
+    (r.min, r.max)
+}
+
 pub(super) fn clamp(name: &str, v: f64, lo: f64, hi: f64, clamped: &mut Vec<Clamp>) -> f64 {
     let c = v.clamp(lo, hi);
     if c != v {
@@ -325,7 +398,8 @@ pub(super) fn set_correction_values(
                 c.insert("CorrectionActive".into(), boolean(bool_arg(&at, v)?));
             }
             "amount" => {
-                let a = clamp(&at, number_arg(&at, v)?, 0.0, 100.0, clamped);
+                let (lo, hi) = range("amount");
+                let a = clamp(&at, number_arg(&at, v)?, lo, hi, clamped);
                 c.insert("CorrectionAmount".into(), number(a / 100.0));
             }
             _ => {
@@ -406,12 +480,14 @@ pub(super) fn set_component_values(
             }
             "Angle" => {
                 geometry(&[MaskKind::Radial])?;
-                let a = clamp(&name, number_arg(&name, v)?, -180.0, 180.0, clamped);
+                let (lo, hi) = range("Angle");
+                let a = clamp(&name, number_arg(&name, v)?, lo, hi, clamped);
                 e.insert(key.clone(), number(a));
             }
             "Feather" => {
                 geometry(&[MaskKind::Radial])?;
-                let f = clamp(&name, number_arg(&name, v)?, 0.0, 100.0, clamped);
+                let (lo, hi) = range("Feather");
+                let f = clamp(&name, number_arg(&name, v)?, lo, hi, clamped);
                 e.insert(key.clone(), number(f));
             }
             "LumRange" => {
@@ -430,7 +506,8 @@ pub(super) fn set_component_values(
             }
             "ColorAmount" => {
                 geometry(&[MaskKind::Color])?;
-                let a = clamp(&name, number_arg(&name, v)?, 0.0, 100.0, clamped);
+                let (lo, hi) = range("ColorAmount");
+                let a = clamp(&name, number_arg(&name, v)?, lo, hi, clamped);
                 range_struct(e).insert(key.clone(), number(a / 100.0));
             }
             _ => {

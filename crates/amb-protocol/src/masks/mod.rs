@@ -23,6 +23,7 @@ use crate::convert::{Clamp, json_number};
 
 pub use describe::describe;
 use fields::*;
+pub use fields::{FIELD_RANGES, FieldRange};
 
 type Fields = BTreeMap<String, Value>;
 
@@ -250,9 +251,12 @@ pub fn paint(
         Some(d) => d[2].clamp(0.0005, 0.5),
         None => clamp("size", stroke.size, 0.001, 0.5, clamped),
     };
-    let feather = clamp("feather", stroke.feather, 0.0, 100.0, clamped);
-    let flow = clamp("flow", stroke.flow, 1.0, 100.0, clamped);
-    let density = clamp("density", stroke.density, 1.0, 100.0, clamped) / 100.0;
+    let (lo, hi) = fields::range("Feather");
+    let feather = clamp("feather", stroke.feather, lo, hi, clamped);
+    let (lo, hi) = fields::range("Flow");
+    let flow = clamp("flow", stroke.flow, lo, hi, clamped);
+    let (lo, hi) = fields::range("Density");
+    let density = clamp("density", stroke.density, lo, hi, clamped) / 100.0;
     let mode = mode.map(parse_mode).transpose()?;
     if part.is_some() && mode.is_some() {
         return Err(invalid("mode", "set an existing part's mode with set_mask"));

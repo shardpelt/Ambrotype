@@ -304,3 +304,25 @@ fn language_table_is_current() {
         String::from_utf8_lossy(&out.stderr)
     );
 }
+
+/// The mask panel's own sliders take their ranges from the protocol's table
+/// (`amb_protocol::masks::FIELD_RANGES` through `maskRange`), not from
+/// numbers typed in the script.
+#[test]
+fn mask_panel_ranges_come_from_the_protocol() {
+    let panel = std::fs::read_to_string(gui_root().join("ui/tools/mask-panel.js")).unwrap();
+    for r in amb_protocol::masks::FIELD_RANGES {
+        assert!(
+            panel.contains(&format!("maskRange(\"{}\")", r.key)),
+            "mask-panel.js builds no slider from maskRange(\"{}\")",
+            r.key
+        );
+        let typed = format!("label: \"{}\", min", r.label);
+        assert!(
+            !panel.contains(&typed),
+            "mask-panel.js types the range of {}: use maskRange(\"{}\")",
+            r.label,
+            r.key
+        );
+    }
+}

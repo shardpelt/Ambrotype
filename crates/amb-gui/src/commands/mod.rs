@@ -106,6 +106,7 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         tools::crop_commands,
         tools::mask_frame,
         tools::mask_sliders,
+        tools::mask_field_ranges,
         select::spot_source,
         select::find_dust,
         select::remove_object,

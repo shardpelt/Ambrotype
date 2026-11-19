@@ -138,28 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B13. Mask sliders from the schema
-Tier: medium        Risk: medium
-Why: the ranges of the mask panel's sliders are typed in `crates/amb-gui/ui/tools/mask-panel.js` and again, as `clamp` literals, in `crates/amb-protocol/src/masks/fields.rs` and `crates/amb-protocol/src/masks/mod.rs`: two copies free to drift (`docs/codestyle.md`: no range or label typed in a script).
-Files: `crates/amb-protocol/src/masks/fields.rs`, `crates/amb-protocol/src/masks/mod.rs`, `crates/amb-gui/src/commands/tools.rs` (where `mask_sliders` is), `crates/amb-gui/src/commands/mod.rs` (the handler list), `crates/amb-gui/ui/tools/mask-panel.js`, `crates/amb-gui/ui/tools/masks.js` (loads `mk.sliders` from `mask_sliders`, near line 452), `crates/amb-gui/src/checks.rs`.
-Steps:
-1. In `fields.rs` add `pub struct FieldRange { pub key: &'static str, pub label: &'static str, pub min: f64, pub max: f64, pub step: f64, pub default: f64 }` (`Serialize`) and `pub const FIELD_RANGES: &[FieldRange]` with exactly these rows, which are the ranges in use today:
-   - `Feather` 0 to 100, step 1, default 50 (a radial part and a brush: `fields.rs` clamps `Feather` to 0..100; `paint_mask` clamps `feather` to 0..100);
-   - `Angle` -180 to 180, step 1, default 0;
-   - `ColorAmount`, label `Refine`, 0 to 100, step 1, default 50;
-   - `Flow` 1 to 100, step 1, default 100;
-   - `Density` 1 to 100, step 1, default 100;
-   - `amount`, label `Amount`, 0 to 100, step 1, default 100.
-2. Use the same table in the clamps: replace the literals in the `"Angle"`, `"Feather"`, `"ColorAmount"` and `"amount"` arms of `fields.rs` and the `flow`, `density`, `feather` clamps in `masks/mod.rs` by `range("Angle")` and so on, a small function that returns `(min, max)` from `FIELD_RANGES`. Values must come out the same: the existing tests of `masks/` show it.
-3. In `commands/tools.rs` add `#[tauri::command] pub(crate) fn mask_field_ranges() -> Vec<amb_protocol::masks::fields::FieldRange>` (re-export `FieldRange` and `FIELD_RANGES` from `masks/mod.rs` if `fields` is private), list it in `handler` in `commands/mod.rs`.
-4. In `masks.js` load it where `mk.sliders` is loaded (`mk.ranges = await invoke("mask_field_ranges")`, a new field of `mk`), and in `mask-panel.js` build these `sliderRow`s from it with a small `maskRange(key)` that returns `{ min, max, step }` and the default: the radial `Feather` and `Angle` (lines 188 and 189), the color `Refine` (212), the brush `Feather`, `Flow`, `Density` (318 to 320) and the mask's `Amount` (228). Labels and `title`s that are not in the table stay in the script.
-5. These stay typed in `mask-panel.js` because they are not Rust field ranges: the luminance `From`, `To` (0 to 100, a percent view of `LumRange`), `Smoothness` (0 to 50), and the brush `Size` (0.5 to 25, narrower than the 0.1 to 50 that Rust accepts). Add a comment saying so above each.
-6. A test in `checks.rs` (or `main.rs`'s tests): every `FIELD_RANGES` key that `mask-panel.js` builds comes through `maskRange(`: `mask-panel.js` has no `min: 0, max: 100` for `Feather` (grep for `label: "Feather", min`).
-Don't: change a range or a default; change a sidecar value (the values written stay the same).
-Checks: the three cargo commands; `cargo test -p amb-protocol -p amb-gui`; the UI tests (`smoke.js` uses masks); then try the mask panel by hand: radial, luminance, color, brush.
-Done when: `grep -n 'label: "Feather", min' crates/amb-gui/ui/tools/mask-panel.js` prints nothing.
-Commit: `masks: the sliders' ranges come from the protocol`. Why: "The ranges were typed in two places."
-
 ### B14. Built-in plugin lists from the manifests (UI half)
 Tier: medium        Risk: low
 Why: `PLUGINS_ELSEWHERE` (`crates/amb-gui/ui/dialogs/plugins.js`, 10 ids) and `TRIP_PLUGINS` (`crates/amb-gui/ui/tools/trip.js`, 7 ids) are hand-copied; a new built-in plugin must be added to both or it shows twice or not as part of a trip.

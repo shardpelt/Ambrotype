@@ -23,8 +23,6 @@ use std::path::{Path, PathBuf};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use amb_protocol::sidecar;
-
 /// How to import.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
@@ -511,15 +509,9 @@ pub(crate) fn copy_file(from: &Path, to: &Path) -> Result<(), String> {
 
 /// Add `keywords` to the sidecar of `photo` (making one if needed).
 fn add_keywords(photo: &Path, keywords: &[String]) -> Result<(), String> {
-    let path = amb_engine::sidecar_path(photo);
-    let on_disk = std::fs::read_to_string(&path).ok();
-    let mut info = on_disk
-        .as_deref()
-        .map(sidecar::read_info)
-        .unwrap_or_default();
+    let mut info = crate::info::read_info(photo);
     info.keywords.extend(keywords.iter().cloned());
-    let text = sidecar::with_info(on_disk.as_deref(), &info).map_err(|e| e.to_string())?;
-    sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())
+    crate::info::write_info(photo, &info).map(|_| ())
 }
 
 /// Apply `preset` to `photo`'s edit, unless its sidecar already has
@@ -657,6 +649,7 @@ pub fn run(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use amb_protocol::sidecar;
 
     #[test]
     fn export_names_come_from_the_template() {

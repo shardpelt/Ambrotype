@@ -671,13 +671,8 @@ fn list_photos(dir: &Path) -> Result<Value, String> {
 }
 
 fn set_info(p: &Path, args: &Value) -> Result<Value, String> {
-    use amb_protocol::sidecar::{self, Flag};
-    let path = amb_engine::sidecar_path(p);
-    let on_disk = amb_presets::linked::text(&path);
-    let mut info = on_disk
-        .as_deref()
-        .map(sidecar::read_info)
-        .unwrap_or_default();
+    use amb_protocol::sidecar::Flag;
+    let mut info = amb_library::info::read_info(p);
     if let Some(r) = args.get("rating").and_then(Value::as_u64) {
         info.rating = (1..=5).contains(&r).then_some(r as u8);
     }
@@ -718,11 +713,9 @@ fn set_info(p: &Path, args: &Value) -> Result<Value, String> {
             *field = Some(v.trim().to_string());
         }
     }
-    let text = sidecar::with_info(on_disk.as_deref(), &info).map_err(|e| e.to_string())?;
-    sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())?;
-    let back = sidecar::read_info(&text);
+    let back = amb_library::info::write_info(p, &info)?;
     Ok(
-        json!({ "sidecar": path.display().to_string(), "rating": back.rating, "label": back.label,
+        json!({ "sidecar": amb_engine::sidecar_path(p).display().to_string(), "rating": back.rating, "label": back.label,
                "flag": back.flag, "keywords": back.keywords }),
     )
 }

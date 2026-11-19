@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use amb_library::catalog::{self, Catalog};
 use amb_library::collections;
 use amb_library::files::{self, Target};
-use amb_protocol::sidecar::{self, Flag, PhotoInfo};
+use amb_protocol::sidecar::{self, Flag};
 
 use crate::print_json;
 
@@ -72,21 +72,7 @@ fn collections_dir(options: &Options) -> Result<PathBuf, String> {
     }
 }
 
-pub(crate) fn read_info(photo: &Path) -> PhotoInfo {
-    amb_engine::sidecar_text(photo)
-        .as_deref()
-        .map(sidecar::read_info)
-        .unwrap_or_default()
-}
-
-pub(crate) fn write_info(photo: &Path, info: &PhotoInfo) -> Result<PhotoInfo, String> {
-    let path = amb_engine::sidecar_path(photo);
-    // From a Lightroom catalogue opened in place, when it knows the photo.
-    let on_disk = amb_engine::sidecar_text(photo);
-    let text = sidecar::with_info(on_disk.as_deref(), info).map_err(|e| e.to_string())?;
-    sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())?;
-    Ok(sidecar::read_info(&text))
-}
+pub(crate) use amb_library::info::{read_info, write_info};
 
 /// "1 photo", "2 photos".
 fn photos_n(n: usize) -> String {

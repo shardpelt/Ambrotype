@@ -138,29 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B12b. One read-change-write of a photo's info
-Tier: medium        Risk: medium
-Why: reading a sidecar's info, changing it and writing it back is written four times (`write_info` in `crates/amb-cli/src/organise.rs`, `change_info` in `crates/amb-gui/src/library.rs`, `set_info` in `crates/amb-cli/src/mcp.rs`, `Session::set_info` in `crates/amb-gui/src/session/mod.rs`), each with its own handling of a Lightroom catalogue opened in place.
-Files: `crates/amb-library/src/info.rs` (new), `crates/amb-library/src/lib.rs`, `crates/amb-gui/src/library.rs`, `crates/amb-cli/src/organise.rs`, `crates/amb-cli/src/mcp.rs`.
-Steps:
-1. New `crates/amb-library/src/info.rs` (`pub mod info;` in `lib.rs`), with a `//!` line "A photo's rating, label, flag, keywords and text, read from and written to its sidecar". Move into it, unchanged and with their doc comments, from `crates/amb-gui/src/library.rs`: `InfoChange` (with its `Deserialize` derive and `impl`: `turns`, `base`, `apply`) and `change_info`. Add:
-   ```rust
-   /// A photo's info as its sidecar says (the default when it has none).
-   pub fn read_info(photo: &Path) -> PhotoInfo { ... }  // the body of organise.rs read_info
-   /// Write `info` into the photo's sidecar, keeping everything else in it, and return what was written.
-   pub fn write_info(photo: &Path, info: &PhotoInfo) -> Result<PhotoInfo, String> { ... }  // the body of organise.rs write_info
-   ```
-   and make `change_info` call `read_info`/`write_info` instead of repeating their lines.
-2. `crates/amb-gui/src/library.rs`: delete the moved items and write `pub use amb_library::info::{InfoChange, change_info};` so `library::InfoChange` and `library::change_info` (used by `commands/library.rs`, `commands/places.rs`, `commands/files.rs`) keep working.
-3. `crates/amb-cli/src/organise.rs`: `read_info` and `write_info` become `pub(crate) use amb_library::info::{read_info, write_info};` (they are imported by `cleanup.rs`, `places.rs` and others from `organise`).
-4. `crates/amb-cli/src/mcp.rs` `set_info`: keep its argument parsing (it reports a bad flag, which `InfoChange` does not); replace its last lines (`sidecar::with_info`, `write_atomic`, `read_info` of the written text) by `let back = amb_library::info::write_info(p, &info)?;` and the `sidecar` path in the answer by `amb_engine::sidecar_path(p)`. Read the start of `set_info` the same way: `amb_library::info::read_info(p)`.
-5. `Session::set_info` (editor, the open photo) stays: it writes the session's own sidecar and keeps the session's state.
-6. A test in `info.rs`: write a rating and a keyword to a test photo's sidecar through `change_info`, read them back with `read_info`; a second `change_info` with `remove_keywords` takes the keyword out.
-Don't: change `InfoChange`'s fields or serde names (the page sends them); change what `amb tag` or `amb cleanup` write.
-Checks: the three cargo commands; `cargo test -p amb-library -p amb-gui -p amb-cli`; the UI tests (the library rates and flags).
-Done when: `with_info(` appears in `crates/amb-library/src/info.rs` and `crates/amb-gui/src/session/mod.rs` only (and tests).
-Commit: `library: one read and write of a photo's info`. Why: "Four copies of the same three lines, each handling catalogues its own way."
-
 ### B12c. Batch export through `amb_ops::export_batch`
 Tier: medium        Risk: medium
 Precondition: `crates/amb-ops/src/export_batch.rs` exists (another change adds it, used by `amb render`). If it does not, stop: do not write it here. Read its public function and its options and report type first.

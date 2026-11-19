@@ -10,7 +10,7 @@
 
 use crate::folder::{self, FolderPhoto};
 use amb_protocol::sidecar::{self, PhotoInfo};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::path::{Path, PathBuf};
 
 /// A photo in the grid: its folder entry and the shot (when it was taken,
@@ -177,140 +177,7 @@ fn with_times(photos: Vec<FolderPhoto>) -> Vec<LibraryPhoto> {
         .collect()
 }
 
-/// A change to many photos' rating, label and keywords. Fields left out
-/// stay as they are.
-#[derive(Debug, Clone, Default, Deserialize)]
-pub struct InfoChange {
-    /// 1–5, or 0 to clear.
-    #[serde(default)]
-    pub rating: Option<u8>,
-    /// A colour label, or "" to clear.
-    #[serde(default)]
-    pub label: Option<String>,
-    /// "pick", "reject", or "" to clear.
-    #[serde(default)]
-    pub flag: Option<String>,
-    #[serde(default)]
-    pub add_keywords: Vec<String>,
-    #[serde(default)]
-    pub remove_keywords: Vec<String>,
-    /// Title, caption, creator and copyright: the text, or "" to clear.
-    #[serde(default)]
-    pub title: Option<String>,
-    #[serde(default)]
-    pub caption: Option<String>,
-    #[serde(default)]
-    pub creator: Option<String>,
-    #[serde(default)]
-    pub copyright: Option<String>,
-    /// Put in a stack, or out of one (an empty id).
-    #[serde(default)]
-    pub stack: Option<sidecar::StackRef>,
-    /// Set where it was taken ("latitude,longitude"), or "" to clear it.
-    #[serde(default)]
-    pub gps: Option<String>,
-    /// Turn it this many quarter turns clockwise (negative: anticlockwise),
-    /// as it is seen.
-    #[serde(default)]
-    pub rotate: Option<i32>,
-    /// Mirror it left to right, as it is seen.
-    #[serde(default)]
-    pub flip: bool,
-}
-
-impl InfoChange {
-    /// Whether it turns or mirrors the photo.
-    pub fn turns(&self) -> bool {
-        self.rotate.is_some_and(|r| r.rem_euclid(4) != 0) || self.flip
-    }
-
-    /// `info` ready for [`InfoChange::apply`]: for a turn, with the
-    /// camera's orientation filled in when the sidecar doesn't say. A
-    /// virtual copy turns with its photo, so it can't turn alone.
-    pub fn base(&self, mut info: PhotoInfo, photo: &Path) -> Result<PhotoInfo, String> {
-        if self.turns() {
-            if amb_engine::virtual_copy_of(photo).is_some() {
-                return Err("A virtual copy turns with its photo: turn the photo itself.".into());
-            }
-            info.orientation
-                .get_or_insert_with(|| amb_engine::orientation::camera(photo));
-        }
-        Ok(info)
-    }
-
-    pub fn apply(&self, info: &PhotoInfo) -> PhotoInfo {
-        let mut out = info.clone();
-        if self.turns() {
-            out.orientation = Some(amb_engine::orientation::turned(
-                out.orientation.unwrap_or(1),
-                self.rotate.unwrap_or(0),
-                self.flip,
-            ));
-        }
-        if let Some(r) = self.rating {
-            out.rating = (1..=5).contains(&r).then_some(r);
-        }
-        if let Some(l) = &self.label {
-            out.label = Some(l.clone()).filter(|l| !l.trim().is_empty());
-        }
-        if let Some(f) = &self.flag {
-            out.flag = sidecar::Flag::parse(f);
-        }
-        if let Some(g) = &self.gps {
-            out.gps = Some(g.clone());
-        }
-        for (field, change) in [
-            (&mut out.title, &self.title),
-            (&mut out.caption, &self.caption),
-            (&mut out.creator, &self.creator),
-            (&mut out.copyright, &self.copyright),
-        ] {
-            if let Some(v) = change {
-                *field = Some(v.clone());
-            }
-        }
-        if let Some(s) = &self.stack {
-            out.stack = Some(s.clone());
-        }
-        let remove: Vec<String> = self
-            .remove_keywords
-            .iter()
-            .map(|k| k.trim().to_lowercase())
-            .collect();
-        out.keywords
-            .retain(|k| !remove.contains(&k.trim().to_lowercase()));
-        for k in &self.add_keywords {
-            if !out
-                .keywords
-                .iter()
-                .any(|x| x.eq_ignore_ascii_case(k.trim()))
-            {
-                out.keywords.push(k.trim().to_string());
-            }
-        }
-        out.cleaned()
-    }
-}
-
-/// Write a change to one photo's sidecar (not the open photo: the session
-/// owns that one). Returns the new info.
-pub fn change_info(photo: &Path, change: &InfoChange) -> Result<PhotoInfo, String> {
-    let path = crate::session::sidecar_path(photo);
-    // From a Lightroom catalogue opened in place, when it knows the photo.
-    let on_disk = amb_engine::sidecar_text(photo);
-    let info = change.apply(
-        &change.base(
-            on_disk
-                .as_deref()
-                .map(sidecar::read_info)
-                .unwrap_or_default(),
-            photo,
-        )?,
-    );
-    let text = sidecar::with_info(on_disk.as_deref(), &info).map_err(|e| e.to_string())?;
-    sidecar::write_atomic(&path, &text).map_err(|e| e.to_string())?;
-    Ok(sidecar::read_info(&text))
-}
+pub use amb_library::info::{InfoChange, change_info};
 
 /// Make a virtual copy of `photo` with `settings` (its edit as it is now)
 /// and its keywords, but not its rating, label or flag, as in Lightroom.

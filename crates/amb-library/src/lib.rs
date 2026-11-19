@@ -11,6 +11,7 @@ pub mod files;
 pub mod folder;
 pub mod gpx;
 pub mod import;
+pub mod info;
 pub mod insights;
 pub mod lensdb;
 pub mod lightroom;

@@ -748,6 +748,30 @@ fn base64(bytes: &[u8]) -> String {
 mod tests {
     use super::*;
 
+    #[test]
+    fn every_listed_tool_has_a_call_and_back() {
+        let listed: std::collections::BTreeSet<String> = tools()
+            .as_array()
+            .expect("a tools list")
+            .iter()
+            .map(|t| t["name"].as_str().unwrap().to_string())
+            .collect();
+        let src = include_str!("mcp.rs");
+        let start = src.find("\nfn call(").expect("fn call");
+        let body = &src[start + 1..];
+        let end = body[1..].find("\nfn ").map_or(body.len(), |e| e + 1);
+        let called: std::collections::BTreeSet<String> = body[..end]
+            .lines()
+            .filter_map(|l| l.strip_prefix("        \""))
+            .filter_map(|l| l.split('"').next())
+            .map(str::to_string)
+            .collect();
+        assert_eq!(
+            listed, called,
+            "tools() and fn call must name the same tools"
+        );
+    }
+
     fn req(id: u64, method: &str, params: Value) -> Value {
         json!({ "jsonrpc": "2.0", "id": id, "method": method, "params": params })
     }

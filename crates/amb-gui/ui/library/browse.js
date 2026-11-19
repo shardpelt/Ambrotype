@@ -81,19 +81,19 @@ function renderTimeline(box) {
   for (const [d, ps] of days) years.set(d.slice(0, 4), (years.get(d.slice(0, 4)) ?? 0) + ps.length);
   const yearList = [...years.keys()].sort();
   if (!yearList.length) {
-    box.replaceChildren(Object.assign(document.createElement("p"), { className: "hint browse-empty", textContent: "None of the photos shown has a capture date." }));
+    box.replaceChildren(el("p", { class: "hint browse-empty" }, "None of the photos shown has a capture date."));
     return;
   }
   if (!years.has(browse.year)) browse.year = lib.date?.slice(0, 4) ?? yearList[yearList.length - 1];
   // The years, as bars as tall as their share.
   const most = Math.max(...years.values());
-  const strip = Object.assign(document.createElement("div"), { className: "tl-years" });
+  const strip = el("div", { class: "tl-years" });
   for (const y of yearList) {
-    const b = Object.assign(document.createElement("button"), { type: "button", className: "tl-year", title: `${years.get(y)} photos in ${y}` });
+    const b = el("button", { type: "button", class: "tl-year", title: `${years.get(y)} photos in ${y}` });
     b.classList.toggle("on", y === browse.year);
-    const bar = Object.assign(document.createElement("span"), { className: "tl-bar" });
+    const bar = el("span", { class: "tl-bar" });
     bar.style.height = `${Math.max(8, (years.get(y) / most) * 100)}%`;
-    b.append(bar, Object.assign(document.createElement("span"), { textContent: y }));
+    b.append(bar, el("span", {}, y));
     b.addEventListener("click", () => {
       browse.year = y;
       renderTimeline(box);
@@ -101,13 +101,13 @@ function renderTimeline(box) {
     b.addEventListener("dblclick", () => setDateFilter(y));
     strip.append(b);
   }
-  const head = Object.assign(document.createElement("div"), { className: "tl-head" });
-  const all = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: `Show all of ${browse.year}` });
+  const head = el("div", { class: "tl-head" });
+  const all = el("button", { type: "button", class: "small" }, `Show all of ${browse.year}`);
   all.addEventListener("click", () => setDateFilter(browse.year));
-  head.append(Object.assign(document.createElement("b"), { textContent: `${browse.year} · ${years.get(browse.year)} photos` }), all);
-  if (undated) head.append(Object.assign(document.createElement("span"), { className: "hint", textContent: `${undated} without a date` }));
+  head.append(el("b", {}, `${browse.year} · ${years.get(browse.year)} photos`), all);
+  if (undated) head.append(el("span", { class: "hint" }, `${undated} without a date`));
   // The year's months as calendars.
-  const months = Object.assign(document.createElement("div"), { className: "tl-months" });
+  const months = el("div", { class: "tl-months" });
   browse.near = nearView(box, "200px", (cell) => {
     const p = libPhoto(cell.dataset.path);
     if (p) bigImage(p, 256, false).then((u) => { cell.style.backgroundImage = `url(${u})`; }).catch(() => {});
@@ -120,14 +120,14 @@ function monthCalendar(year, month, days) {
   const mm = String(month).padStart(2, "0");
   const prefix = `${year}-${mm}`;
   const count = [...days].filter(([d]) => d.startsWith(prefix)).reduce((n, [, ps]) => n + ps.length, 0);
-  const block = Object.assign(document.createElement("section"), { className: "tl-month" });
+  const block = el("section", { class: "tl-month" });
   block.classList.toggle("empty", !count);
-  const title = Object.assign(document.createElement("button"), { type: "button", className: "tl-month-title", disabled: !count });
-  title.append(Object.assign(document.createElement("b"), { textContent: MONTHS[month - 1] }), count ? ` ${count}` : "");
+  const title = el("button", { type: "button", class: "tl-month-title", disabled: !count });
+  title.append(el("b", {}, MONTHS[month - 1]), count ? ` ${count}` : "");
   title.title = count ? `Show the ${count} photos of ${MONTHS[month - 1]} ${year}` : "";
   title.addEventListener("click", () => setDateFilter(prefix));
-  const grid = Object.assign(document.createElement("div"), { className: "tl-days" });
-  for (const d of ["M", "T", "W", "T", "F", "S", "S"]) grid.append(Object.assign(document.createElement("span"), { className: "tl-dow", textContent: d }));
+  const grid = el("div", { class: "tl-days" });
+  for (const d of ["M", "T", "W", "T", "F", "S", "S"]) grid.append(el("span", { class: "tl-dow" }, d));
   // Monday first.
   const lead = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7;
   for (let i = 0; i < lead; i++) grid.append(document.createElement("span"));
@@ -135,13 +135,13 @@ function monthCalendar(year, month, days) {
   for (let day = 1; day <= length; day++) {
     const date = `${prefix}-${String(day).padStart(2, "0")}`;
     const ps = days.get(date);
-    const cell = Object.assign(document.createElement(ps ? "button" : "span"), { className: "tl-day" });
-    cell.append(Object.assign(document.createElement("span"), { className: "tl-num", textContent: day }));
+    const cell = el(ps ? "button" : "span", { class: "tl-day" });
+    cell.append(el("span", { class: "tl-num" }, day));
     if (ps) {
       cell.type = "button";
       cell.classList.add("has");
       cell.title = `${dateWords(date)}: ${plural(ps.length, "photo")}`;
-      cell.append(Object.assign(document.createElement("span"), { className: "tl-count", textContent: ps.length }));
+      cell.append(el("span", { class: "tl-count" }, ps.length));
       cell.dataset.path = ps[0].path;
       browse.near.watch(cell);
       cell.addEventListener("click", () => setDateFilter(date));
@@ -171,10 +171,10 @@ function renderScrubber() {
     }
   });
   strip.replaceChildren(...marks.map(([y, i]) => {
-    const m = Object.assign(document.createElement("span"), { className: "scrub-mark", textContent: y });
+    const m = el("span", { class: "scrub-mark" }, y);
     m.style.top = `${(i / photos.length) * 100}%`;
     return m;
-  }), Object.assign(document.createElement("span"), { className: "scrub-tip", hidden: true }));
+  }), el("span", { class: "scrub-tip", hidden: true }));
 }
 
 function wireScrubber() {
@@ -239,14 +239,14 @@ function renderMap(box) {
   const placed = lib.shown.filter((p) => placeOf(p));
   const unplaced = lib.shown.filter((p) => !placeOf(p));
   if (!browse.map.fitted) fitMap(placed, box);
-  const map = Object.assign(document.createElement("div"), { className: "map", tabIndex: 0 });
+  const map = el("div", { class: "map", tabindex: 0 });
   map.append(
-    Object.assign(document.createElement("div"), { className: "map-tiles" }),
-    Object.assign(document.createElement("div"), { className: "map-pins" }),
+    el("div", { class: "map-tiles" }),
+    el("div", { class: "map-pins" }),
   );
-  const bar = Object.assign(document.createElement("div"), { className: "map-bar" });
+  const bar = el("div", { class: "map-bar" });
   const button = (text, title, fn) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: text, title });
+    const b = el("button", { type: "button", class: "small", title: title }, text);
     b.addEventListener("click", fn);
     bar.append(b);
     return b;
@@ -261,8 +261,8 @@ function renderMap(box) {
   button("Guess places…", "Photos without a place get one from photos taken around the same time, or that look the same; you confirm each", guessPlacesFlow);
   const clear = button("Remove place", "Take the place out of the selected photos' sidecars (a camera's own GPS stays)", () => placePhotos(selectedPhotos().map((p) => p.path), ""));
   clear.hidden = !selectedPhotos().some((p) => p.gps);
-  bar.append(Object.assign(document.createElement("span"), { className: "hint", textContent: `${placed.length} placed${unplaced.length ? ` · ${unplaced.length} without a place` : ""}` }));
-  const credit = Object.assign(document.createElement("button"), { type: "button", className: "map-credit" });
+  bar.append(el("span", { class: "hint" }, `${placed.length} placed${unplaced.length ? ` · ${unplaced.length} without a place` : ""}`));
+  const credit = el("button", { type: "button", class: "map-credit" });
   if (mapTilesWanted()) {
     credit.textContent = "© OpenStreetMap contributors";
     credit.title = "Map data and images: OpenStreetMap (open the copyright page)";
@@ -437,7 +437,7 @@ function graticule(left, top, W, H, z) {
 
 let pinPeek = null;
 function showPinPeek(pin, p) {
-  pinPeek ??= Object.assign(document.createElement("img"), { className: "map-peek", alt: "" });
+  pinPeek ??= el("img", { class: "map-peek", alt: "" });
   pinPeek.removeAttribute("src");
   const r = pin.getBoundingClientRect();
   Object.assign(pinPeek.style, { left: `${r.left + r.width / 2}px`, top: `${r.top}px` });

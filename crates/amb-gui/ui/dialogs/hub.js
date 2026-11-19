@@ -319,6 +319,7 @@ async function hubFlow(initial = "all") {
   tabs.forEach((t) => t.addEventListener("click", onTab));
   $("hub-search").addEventListener("input", render);
   $("hub-search").value = "";
+  boxTip($("hub-search"));
   $("hub-grid").replaceChildren();
   status("Loading the hub…");
   dlg.showModal();

@@ -362,7 +362,6 @@ await t.step("filmstrip: Ctrl-click selects; right-click acts on the selection",
   [...document.querySelectorAll(".ctx-menu button")].find((b) => b.textContent === "Run a plugin…").click();
   await t.until("the Plugins dialog", () => $("plugins-dialog").open);
   $("plugins-dialog").close();
-  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
   document.querySelector(".ctx-menu")?.remove();
   cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   t.expect(strip.selected.size === 0 && !cell.classList.contains("selected"), "a plain click clears it");
@@ -382,6 +381,13 @@ await t.step("History shows the step's values before and after", async () => {
   const values = () => document.querySelector("#history-list li.current .history-values")?.textContent ?? "";
   await t.until("the values", () => values().endsWith("→ +1.00"));
   t.expect(document.querySelector("#history-list li.current").title.includes("Exposure: "), "the tooltip to name Exposure");
+});
+
+await t.step("tips in the library and hub boxes keep the plain hint text first", async () => {
+  for (const [id, plain] of [["lib-search", "Name, keyword, camera or lens"], ["hub-search", "Search the hub"]]) {
+    for (let i = 0; i < 20; i++) boxTip($(id));
+    t.expect($(id).placeholder.startsWith(plain), `${id}: ${$(id).placeholder}`);
+  }
 });
 
 await t.step("every panel opens", async () => {

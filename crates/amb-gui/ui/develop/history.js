@@ -94,6 +94,7 @@ function renderSnapshots() {
   const list = $("snapshot-list");
   list.innerHTML = "";
   $("snapshot-add").disabled = !ui.state;
+  if (ui.state && !ui.state.snapshots?.length) emptyTip(list, "No snapshots yet");
   for (const s of ui.state?.snapshots ?? []) {
     const li = document.createElement("li");
     li.classList.toggle("current", s.current);
@@ -182,6 +183,7 @@ function renderHistory() {
     if (lines.length) li.title = [li.title, ...lines].filter(Boolean).join("\n");
     hist.append(li);
   });
+  if (!done.length && !undone.length) emptyTip(hist, "No edits yet");
   // Keep the current step in view inside the list only: scrollIntoView would
   // also scroll the column, and the panels above History with it.
   const cur = hist.querySelector(".current");

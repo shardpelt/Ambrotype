@@ -102,15 +102,33 @@ function busyChanged() {
   }, 700);
 }
 
+// A feature's name as a short phrase: "dust (spots)" → "dust".
+const tipWords = (tip) => tip.f.want.replace(/\s*\(.*\)$/, "").toLowerCase();
+
 // Empty boxes: now and then, a suggestion where the hint text is (the
-// search box asks for it each time it opens).
-function boxTip(input, plain) {
+// search box and the library and hub filters ask for it each time
+// they open). Without `plain`, the box's own hint text is kept.
+function boxTip(input, plain = (input.dataset.plain ||= input.placeholder)) {
   if (!tipsOn("boxes") || Math.random() > 0.4 || !ui.features?.length) {
     input.placeholder = plain;
     return;
   }
   const tip = pickTip();
-  input.placeholder = tip ? `${plain}… try “${tip.f.want.replace(/\s*\(.*\)$/, "").toLowerCase()}”` : plain;
+  input.placeholder = tip ? `${plain}… try “${tipWords(tip)}”` : plain;
+}
+
+// An empty list's hint line: its plain text, and now and then a second line
+// with a suggestion, chosen once per list so it stays as the list is redrawn.
+function emptyTip(list, plain) {
+  list.dataset.tip ??= !tipsOn("boxes") || Math.random() > 0.4 || !ui.features?.length ? "" : (() => {
+    const tip = pickTip();
+    return tip ? `Try: ${tipWords(tip)}` : "";
+  })();
+  const li = document.createElement("li");
+  li.className = "hint";
+  li.textContent = plain;
+  if (list.dataset.tip) li.append(document.createElement("br"), list.dataset.tip);
+  list.append(li);
 }
 
 function wireTips() {

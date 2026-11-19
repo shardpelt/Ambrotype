@@ -82,6 +82,7 @@ async function showLibraryTask(on) {
   for (const id of VIEWER_BUTTONS) $(id).disabled = on || !ui.info;
   $("btn-export").disabled = !on && !ui.info;
   if (on) {
+    boxTip($("lib-search"));
     const dir = ui.info ? dirOf(ui.info.path) : lib.dir;
     if (!lib.collection && dir && ((dir !== lib.dir && !lib.more.includes(dir)) || !lib.photos.length)) await loadLibrary(dir);
     else renderLibrary();

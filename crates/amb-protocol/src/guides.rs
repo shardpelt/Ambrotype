@@ -99,22 +99,53 @@ pub fn find(name: &str) -> Option<&'static Guide> {
     })
 }
 
+/// What an agent started in a terminal is for.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PrimerAim {
+    /// Edit, organise and export photos.
+    Photos,
+    /// Change the editor itself: layouts, themes, panels, plugins.
+    Editor,
+}
+
+impl PrimerAim {
+    /// "editor" is the editor; anything else is photos.
+    pub fn parse(s: &str) -> Self {
+        if s == "editor" {
+            Self::Editor
+        } else {
+            Self::Photos
+        }
+    }
+}
+
 /// What an agent started in a terminal is told first: where the guides
 /// are and what they're for.
-pub fn primer(guides: &std::path::Path, photo: Option<&std::path::Path>) -> String {
+pub fn primer(guides: &std::path::Path, photo: Option<&std::path::Path>, aim: PrimerAim) -> String {
     let open = photo
         .and_then(|p| p.file_name())
         .map(|n| format!(" The photo open in the editor is {}.", n.to_string_lossy()))
         .unwrap_or_default();
-    format!(
-        "You are helping with photos in Ambrotype, a raw photo editor. Its amb command edits, \
-         previews, organises and exports them; every edit is undoable and shows in the editor at \
-         once. First read the guide in {} (or run: amb docs guide), then amb docs features for \
-         what the app can do. Other guides: amb docs make-it-yours (layouts, themes and the hub, \
-         for people), amb docs layouts, amb docs plugins and amb docs interface (making them).\
-         {open} Show me what you plan before changing photos.",
-        guides.join("ai").join("README.md").display()
-    )
+    match aim {
+        PrimerAim::Photos => format!(
+            "You are helping with photos in Ambrotype, a raw photo editor. Its amb command edits, \
+             previews, organises and exports them; every edit is undoable and shows in the editor at \
+             once. First read the guide in {} (or run: amb docs guide), then amb docs features for \
+             what the app can do. Other guides: amb docs make-it-yours (layouts, themes and the hub, \
+             for people), amb docs layouts, amb docs plugins and amb docs interface (making them).\
+             {open} Show me what you plan before changing photos.",
+            guides.join("ai").join("README.md").display()
+        ),
+        PrimerAim::Editor => format!(
+            "You are helping change Ambrotype, a raw photo editor, itself: its layout, theme, \
+             panels and toolbar, and plugins, made with what Ambrotype supports, not by editing \
+             its source. First run: amb docs make-it-yours (layouts, themes and the hub, for \
+             people). Then the guides for making them: amb docs layouts, amb docs interface and \
+             amb docs plugins; amb docs features says what the app can do. The guides are also \
+             written in {}.{open} Show me what you plan before changing anything.",
+            guides.join("ai").display()
+        ),
+    }
 }
 
 #[cfg(test)]
@@ -122,21 +153,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn the_primer_names_the_other_guides_and_survives_shell_quoting() {
-        let p = primer(std::path::Path::new("/g"), None);
-        for name in ["make-it-yours", "layouts", "plugins", "interface"] {
-            assert!(find(name).is_some(), "{name} is a guide");
-            assert!(
-                p.contains(&format!("amb docs {name}")),
-                "{name} in the primer"
-            );
+    fn the_primers_name_their_guides_and_survive_shell_quoting() {
+        for aim in [PrimerAim::Photos, PrimerAim::Editor] {
+            let p = primer(std::path::Path::new("/g"), None, aim);
+            for name in ["make-it-yours", "layouts", "plugins", "interface"] {
+                assert!(find(name).is_some(), "{name} is a guide");
+                assert!(
+                    p.contains(&format!("amb docs {name}")),
+                    "{name} in the {aim:?} primer"
+                );
+            }
+            for c in ['"', '\'', '%', '`', '$'] {
+                assert!(
+                    !p.contains(c),
+                    "the {aim:?} primer has {c}, which the shell line can't carry"
+                );
+            }
         }
-        for c in ['"', '\'', '%', '`', '$'] {
-            assert!(
-                !p.contains(c),
-                "the primer has {c}, which the shell line can't carry"
-            );
-        }
+        assert_eq!(PrimerAim::parse("editor"), PrimerAim::Editor);
+        assert_eq!(PrimerAim::parse("x"), PrimerAim::Photos);
     }
 
     #[test]

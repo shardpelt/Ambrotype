@@ -13,6 +13,7 @@ Related files (all built into `amb` too: `amb docs` lists them, `amb docs NAME` 
 - [custom-interface.md](custom-interface.md): writing a whole new front end for the user (HTML, CSS, JavaScript) that replaces the editor's window and calls the same commands.
 - [plugins.md](plugins.md): making a plugin for the user ("a button that warms skin tones"): sandboxed WebAssembly that returns these same commands.
 - [film-recipes.md](film-recipes.md): turning a camera film recipe the user found online into settings with the Film recipe plugin.
+- Connect an AI app can also start an agent to change the editor itself (layouts, themes, plugins) instead of editing photos: pick "to change the editor" beside its Start button.
 - [/llms.txt](../../llms.txt): index for language models.
 
 ## The short way (fewest tokens)

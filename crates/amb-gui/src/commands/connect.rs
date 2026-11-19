@@ -133,10 +133,12 @@ pub(crate) fn ai_guide(name: String) -> Res<String> {
 /// Open the system's own terminal in the photo's folder, with `amb` on the
 /// PATH, for any command-line AI agent (or by hand). With `agent` (a
 /// command line where `{prompt}` is where its first message goes, from
-/// ai-apps.json), the agent starts there, told where the guides are.
+/// ai-apps.json), the agent starts there, told where the guides are and
+/// what for: `aim` is "photos" (the default) or "editor".
 #[tauri::command]
 pub(crate) fn open_terminal(
     agent: Option<String>,
+    aim: Option<String>,
     state: tauri::State<'_, AppState>,
     app: tauri::AppHandle,
 ) -> Res<()> {
@@ -152,7 +154,11 @@ pub(crate) fn open_terminal(
                 .lock()
                 .ok()
                 .and_then(|s| s.as_ref().map(|s| s.path.clone()));
-            let primer = amb_protocol::guides::primer(&guides, photo.as_deref());
+            let primer = amb_protocol::guides::primer(
+                &guides,
+                photo.as_deref(),
+                amb_protocol::guides::PrimerAim::parse(aim.as_deref().unwrap_or_default()),
+            );
             Some(agent_line(&template, &primer))
         }
         None => None,

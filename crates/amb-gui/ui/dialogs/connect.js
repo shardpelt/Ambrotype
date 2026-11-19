@@ -28,7 +28,8 @@ function renderConnect() {
   $("connect-snippet").textContent = connect.amb ? connectSnippet(app) : "";
   $("connect-agent").hidden = !app.agent;
   $("connect-agent").textContent = `Start ${app.name.replace(/ \(.*\)$/, "")} here`;
-  $("connect-agent").title = app.agent ? `Opens a terminal in the folder and runs ${app.agent.replace(" {prompt}", "")}, told where Ambrotype's guides are` : "";
+  $("connect-agent").title = app.agent ? `Opens a terminal in the folder and runs ${app.agent.replace(" {prompt}", "")}, told where Ambrotype's guides are, to edit photos or to change the editor itself (see the choice beside it)` : "";
+  $("connect-aim").hidden = !app.agent;
   $("connect-agent-hint").hidden = !app.agent;
 }
 
@@ -73,10 +74,10 @@ function wireConnect() {
   $("connect-copy-command").addEventListener("click", () => copyText($("connect-command").value, "The command"));
   $("connect-copy").addEventListener("click", () => copyText($("connect-snippet").textContent, "The setup"));
   $("assistant-connect").addEventListener("click", () => connectFlow().catch(showError));
-  $("connect-terminal").addEventListener("click", () => invoke("open_terminal", { agent: null }).catch(showError));
+  $("connect-terminal").addEventListener("click", () => invoke("open_terminal", { agent: null, aim: null }).catch(showError));
   $("connect-agent").addEventListener("click", () => {
     const app = connect.apps[Number($("connect-app").value)];
-    invoke("open_terminal", { agent: app?.agent ?? null }).catch(showError);
+    invoke("open_terminal", { agent: app?.agent ?? null, aim: $("connect-aim").value }).catch(showError);
   });
   $("connect-read").addEventListener("click", () => readGuide($("connect-guide").value));
   $("guide-copy").addEventListener("click", () => copyText($("guide-text").textContent, "The guide"));

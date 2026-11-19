@@ -244,19 +244,6 @@ Checks: `cargo test -p amb-gui`; the three cargo commands; the UI scripts (`smok
 Done when: `panels` is under 30 lines and its JSON is byte-identical.
 Commit: `gui: one function per panel in the schema`. Why: "311 lines in one function."
 
-### B30. UI tests for dragging a crop and a curve point
-Tier: medium        Risk: low
-Why: the crop tool's and the tone curve's factories (`create` in `crates/amb-gui/ui/tools/crop.js`, 408 lines, and in `crates/amb-gui/ui/develop/curve.js`, 364) are to be split (B31), and no UI step drags either, so a split could break them unseen.
-Files: `crates/amb-gui/tests/ui/crop-curve.js` (new). Read: `crates/amb-gui/tests/ui/photo-row.js` (how a step sends pointer events: `PointerEvent` with `clientX`, `clientY`, `pointerId`, `buttons`), `crates/amb-gui/ui/tools/crop.js`, `crates/amb-gui/ui/develop/curve.js`.
-Steps:
-1. Script header as the others; first step: the photo opens (copy `smoke.js`'s first step).
-2. "dragging the crop's corner makes the crop smaller, as one step": open the crop tool (`t.key("R")`), find the bottom-right handle element in `crop.js`'s markup, drag it 100 px up and left with pointer events, leave the tool (`t.key("Enter")`), expect `t.setting("CropRight") < 1` and one more history step.
-3. "dragging a curve point changes the curve, as one step": open the Tone Curve panel's point curve, press on the curve's middle and drag 30 px up, expect the curve setting (read its name in `curve.js`: the parametric or point curve tag it writes) to differ from before and one more history step; then `t.key("Ctrl+Z")`.
-Don't: change `crop.js` or `curve.js`.
-Checks: the UI scripts (the new one passes alone).
-Done when: both steps pass, and fail when the drag is not sent (try it once, undo).
-Commit: `tests: dragging a crop and a curve point`. Why: "B31 needs these first."
-
 ### B31. The crop and curve factories as state and functions
 Tier: large        Risk: high
 Why: `create` in `crates/amb-gui/ui/tools/crop.js` (408 lines) and in `crates/amb-gui/ui/develop/curve.js` (364) are closures whose inner functions share local `let`s, so none can be read or tested alone.

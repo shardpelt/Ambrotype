@@ -74,10 +74,10 @@ function renderTaskTools() {
   const tools = t?.tools ?? [];
   ($("tools-title").querySelector(".fold-head") ?? $("tools-title")).textContent = t?.label ? `${t.label} tools` : "Tools";
   $("tools-task").replaceChildren(...tools.map((tool, i) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", className: `tool-tile${tool.big ? " big" : ""}`, title: tool.hint ?? "" });
+    const b = el("button", { type: "button", class: `tool-tile${tool.big ? " big" : ""}`, title: tool.hint ?? "" });
     b.dataset.tool = String(i);
-    b.append(Object.assign(document.createElement("strong"), { textContent: tool.label }));
-    if (tool.hint) b.append(Object.assign(document.createElement("span"), { textContent: tool.hint }));
+    b.append(el("strong", {}, tool.label));
+    if (tool.hint) b.append(el("span", {}, tool.hint));
     b.addEventListener("click", () => {
       hoverPreview(null);
       Promise.resolve(runTaskTool(tool)).then(() => { delete tool.seed; }).catch(showError);
@@ -185,7 +185,7 @@ function wireTasks() {
   for (const ev of ["close", "cancel"]) $("collage-dialog").addEventListener(ev, () => setTimeout(renderTasks));
   const bar = $("task-bar");
   bar.replaceChildren(navButtons(), ...TASKS.map((t, i) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", textContent: t.label, role: "tab" });
+    const b = el("button", { type: "button", role: "tab" }, t.label);
     b.dataset.task = t.id;
     b.setAttribute("aria-label", i < 9 ? `${t.label}: ${t.hint} (${keyLabel(`Ctrl+Alt+${i + 1}`)})` : `${t.label}: ${t.hint}`);
     b.addEventListener("click", () => switchTask(t.id));
@@ -200,21 +200,21 @@ function wireTasks() {
 // Hovering a task shows a sketch of its screen: the side columns with their
 // panels around the photo, so you see where it takes you before you go.
 function taskSketch(t) {
-  const box = Object.assign(document.createElement("div"), { className: "task-sketch" });
+  const box = el("div", { class: "task-sketch" });
   const key = keyLabel(`Ctrl+Alt+${TASKS.indexOf(t) + 1}`);
-  box.append(Object.assign(document.createElement("p"), { className: "task-sketch-hint", textContent: `${t.hint} · ${key}` }));
+  box.append(el("p", { class: "task-sketch-hint" }, `${t.hint} · ${key}`));
   const data = t.layout && findLook("layout", taskLayout(t))?.data;
-  const screen = Object.assign(document.createElement("div"), { className: "task-sketch-screen" });
+  const screen = el("div", { class: "task-sketch-screen" });
   const column = (side) => {
-    const col = Object.assign(document.createElement("div"), { className: `task-sketch-col ${side}` });
+    const col = el("div", { class: `task-sketch-col ${side}` });
     for (const item of data?.[side]?.items ?? []) {
       const name = typeof item === "string" ? BLOCK_TITLES[item] ?? item : panelTitle(item);
-      col.append(Object.assign(document.createElement("span"), { textContent: name, className: item.open ? "open" : "" }));
+      col.append(el("span", { class: item.open ? "open" : "" }, name));
     }
     return col;
   };
-  if (data) screen.append(column("left"), Object.assign(document.createElement("div"), { className: "task-sketch-photo" }), column("right"));
-  else screen.append(Object.assign(document.createElement("div"), { className: "task-sketch-grid" }));
+  if (data) screen.append(column("left"), el("div", { class: "task-sketch-photo" }), column("right"));
+  else screen.append(el("div", { class: "task-sketch-grid" }));
   box.append(screen);
   return box;
 }
@@ -251,7 +251,7 @@ function wireTaskSketches() {
 const nav = { back: [], fwd: [], at: null, hold: false, chain: Promise.resolve() };
 
 function navButtons() {
-  const b = Object.assign(document.createElement("button"), { type: "button", id: "btn-nav-back", className: "task-nav", textContent: "‹", disabled: true });
+  const b = el("button", { type: "button", id: "btn-nav-back", class: "task-nav", disabled: true }, "‹");
   b.addEventListener("click", navBack);
   return b;
 }

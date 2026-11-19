@@ -45,7 +45,9 @@ await t.step("dragging the crop's corner makes the crop smaller, as one step", a
 await t.step("dragging a curve point changes the curve, as one step", async () => {
   const tag = "ToneCurvePV2012";
   const canvas = ui.curve.element.querySelector("canvas");
-  // The panel's section may be closed: open it so the canvas has a size.
+  // Another tab of the column may be in front (an earlier script chose it), and
+  // the panel's section may be closed: show both so the canvas has a size.
+  revealInTab(canvas);
   canvas.closest("details")?.setAttribute("open", "");
   ui.curve.refresh();
   await t.until("the curve has a size", () => canvas.getBoundingClientRect().width > 50);

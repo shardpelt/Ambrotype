@@ -154,9 +154,10 @@ async function askAssistant() {
       // Undo takes back this request's edits, if nothing came after them.
       const steps = r.edits;
       const done = r.state.history.length;
-      const undo = Object.assign(document.createElement("button"), {
-        type: "button", className: "small", textContent: steps > 1 ? `Undo these ${steps} edits` : "Undo",
-      });
+      const undo = el("button", {
+        type: "button",
+        class: "small",
+      }, steps > 1 ? `Undo these ${steps} edits` : "Undo");
       undo.addEventListener("click", async () => {
         if (ui.state?.history.length !== done) return toast("Other edits came after these; use the History panel.", true);
         await run(Array.from({ length: steps }, () => ({ cmd: "undo" })));

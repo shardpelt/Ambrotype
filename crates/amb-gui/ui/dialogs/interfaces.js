@@ -11,7 +11,7 @@ async function renderInterfaces() {
     const name = (i) => i.name ?? fileName(i.path);
     const opts = [{ value: "", text: "Built-in" }, ...info.installed.map((i) => ({ value: i.path, text: name(i) }))];
     if (info.active && !info.installed.some((i) => i.path === info.active)) opts.push({ value: info.active, text: info.active });
-    sel.replaceChildren(...opts.map((o) => Object.assign(document.createElement("option"), { value: o.value, textContent: o.text })));
+    sel.replaceChildren(...opts.map((o) => el("option", { value: o.value }, o.text)));
     sel.value = info.active ?? "";
     $("settings-interface-share").disabled = !info.active;
   } catch (e) {

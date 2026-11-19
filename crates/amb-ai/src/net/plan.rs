@@ -98,22 +98,7 @@ fn step(model: &TypedModel, id: usize) -> Option<Step> {
     let op = &node.op;
 
     if let Some(a) = op.downcast_ref::<ops::change_axes::AxisOp>() {
-        if !first_f32 {
-            return None;
-        }
-        return Some(match a {
-            ops::change_axes::AxisOp::Move(from, to) => {
-                let s = nn::contiguous(&ins[0]);
-                let mut axes: Vec<usize> = (0..ins[0].len()).collect();
-                let ax = axes.remove(*from);
-                axes.insert(*to, ax);
-                Step::Copy(View::strided(
-                    0,
-                    &axes.iter().map(|&i| s[i]).collect::<Vec<_>>(),
-                ))
-            }
-            _ => Step::Alias,
-        });
+        return step_axis(a, first_f32, &ins);
     }
     if let Some(c) = op.downcast_ref::<ops::cast::Cast>() {
         return (c.to == DatumType::F32 && first_f32).then_some(Step::Alias);
@@ -127,24 +112,10 @@ fn step(model: &TypedModel, id: usize) -> Option<Step> {
         return Some(Step::Copy(View::strided(start * s[sl.axis] as usize, &s)));
     }
     if let Some(d) = op.downcast_ref::<ops::Downsample>() {
-        let mut s = nn::contiguous(&ins[0]);
-        let step = s[d.axis];
-        // A negative stride reads from the end backwards.
-        let first = if d.stride > 0 {
-            d.modulo
-        } else {
-            ins[0][d.axis].checked_sub(1)?
-        };
-        s[d.axis] *= d.stride;
-        return Some(Step::Copy(View::strided(first * step as usize, &s)));
+        return step_downsample(d, &ins);
     }
     if let Some(u) = op.downcast_ref::<ops::nn::NearestUpsample>() {
-        if u.scales.len() != ins[0].len() {
-            return None;
-        }
-        let mut v = View::strided(0, &nn::broadcast(&ins[0], &shape));
-        v.div = u.scales.to_vec();
-        return Some(Step::Copy(v));
+        return step_nearest_upsample(u, &ins, &shape);
     }
     if let Some(t) = op.downcast_ref::<ops::array::Tile>() {
         let _ = t;
@@ -165,112 +136,25 @@ fn step(model: &TypedModel, id: usize) -> Option<Step> {
         return Some(Step::Concat(c.axis));
     }
     if let Some(b) = op.downcast_ref::<ops::binary::TypedBinOp>() {
-        if b.1.is_some_and(|dt| dt != DatumType::F32)
-            || ins[0].len() != shape.len()
-            || ins[1].len() != shape.len()
-        {
-            return None;
-        }
-        let op = match b.0.name() {
-            "Add" => Binary::Add,
-            "Sub" => Binary::Sub,
-            "SubF" => Binary::SubFlipped,
-            "Mul" => Binary::Mul,
-            "Div" => Binary::Div,
-            "Max" => Binary::Max,
-            "Min" => Binary::Min,
-            "Pow" => Binary::Pow,
-            _ => return None,
-        };
-        return Some(Step::Binary(op));
+        return step_binary(b, &ins, &shape);
     }
     if let Some(e) = op.downcast_ref::<ops::element_wise::ElementWiseOp>() {
-        if e.1.is_some_and(|dt| dt != DatumType::F32) {
-            return None;
-        }
-        let mini = &e.0;
-        let op = if let Some(l) = mini.downcast_ref::<ops::nn::LeakyRelu>() {
-            Unary::LeakyRelu(l.alpha)
-        } else if let Some(p) = mini.downcast_ref::<ops::math::PowConst>() {
-            Unary::PowConst(p.exponent)
-        } else {
-            match mini.name().as_str() {
-                "Neg" => Unary::Neg,
-                "Sigmoid" => Unary::Sigmoid,
-                "Exp" => Unary::Exp,
-                "Ln" => Unary::Ln,
-                "Sqrt" => Unary::Sqrt,
-                "Rsqrt" => Unary::Rsqrt,
-                "Recip" => Unary::Recip,
-                "Abs" => Unary::Abs,
-                "Tanh" => Unary::Tanh,
-                "Erf" => Unary::Erf,
-                "GeluExact" => Unary::GeluExact,
-                "Square" => Unary::Square,
-                "RoundHalfToEven" => Unary::Round,
-                "Floor" => Unary::Floor,
-                "Ceil" => Unary::Ceil,
-                "Sin" => Unary::Sin,
-                "Cos" => Unary::Cos,
-                _ => return None,
-            }
-        };
-        return Some(Step::Unary(op));
+        return step_element_wise(e);
     }
     if let Some(p) = op.downcast_ref::<ops::array::Pad>() {
-        let mode = match &p.mode {
-            ops::array::PadMode::Constant(v) => PadMode::Constant(v.cast_to_scalar::<f32>().ok()?),
-            ops::array::PadMode::Reflect => PadMode::Reflect,
-            ops::array::PadMode::Edge => PadMode::Edge,
-        };
-        let (before, after) = p.pads.iter().copied().unzip();
-        return Some(Step::Pad(before, after, mode));
+        return step_pad(p);
     }
     if let Some(r) = op.downcast_ref::<ops::nn::Reduce>() {
-        use ops::nn::Reducer;
-        let mut axes = Vec::new();
-        for (k, &axis) in r.axes.iter().enumerate() {
-            let first = k == 0;
-            axes.push((
-                axis,
-                match (&r.reducer, first) {
-                    (Reducer::Sum, _) => nn::Reduce::Sum,
-                    (Reducer::Max, _) => nn::Reduce::Max,
-                    (Reducer::Min, _) => nn::Reduce::Min,
-                    (Reducer::Prod, _) => nn::Reduce::Product,
-                    (Reducer::MeanOfSquares, true) => nn::Reduce::MeanOfSquares,
-                    (Reducer::MeanOfSquares, false) => nn::Reduce::Mean,
-                    _ => return None,
-                },
-            ));
-        }
-        return Some(Step::Reduce(axes));
+        return step_reduce(r);
     }
     if let Some(sm) = op.downcast_ref::<ops::nn::Softmax>() {
-        if sm.axes.len() != 1 || sm.quant_output_dt.is_some() {
-            return None;
-        }
-        return Some(Step::Softmax(
-            sm.axes[0],
-            sm.kind == ops::nn::SoftmaxKind::LogSoftmax,
-        ));
+        return step_softmax(sm);
     }
     if let Some(r) = op.downcast_ref::<ops::nn::RmsNorm>() {
         return Some(Step::RmsNorm(r.axis, r.eps.cast_to_scalar::<f32>().ok()?));
     }
     if let Some(g) = op.downcast_ref::<ops::array::Gather>() {
-        let indices = konst(model, node.inputs[1])?;
-        if !first_f32 || g.output_type.is_some_and(|dt| dt != DatumType::F32) {
-            return None;
-        }
-        let indices = indices.cast_to::<i64>().ok()?;
-        let indices = indices
-            .to_plain_array_view::<i64>()
-            .ok()?
-            .iter()
-            .copied()
-            .collect();
-        return Some(Step::Gather(g.axis, indices));
+        return step_gather(g, model, node, first_f32);
     }
     if let Some(e) = op.downcast_ref::<ops::einsum::EinSum>() {
         if e.q_params.is_some() || e.operating_dt != DatumType::F32 || ins.len() != 2 {
@@ -279,54 +163,239 @@ fn step(model: &TypedModel, id: usize) -> Option<Step> {
         return matmul(e, &ins[0], &ins[1], &shape).map(|p| Step::MatMul(Box::new(p)));
     }
     if let Some(c) = op.downcast_ref::<TConv>() {
-        if c.q_params.is_some() || c.kernel_fmt != KernelFormat::OIHW {
-            return None;
-        }
-        let (spec, last) = conv_spec(&c.pool_spec, &ins[0], &shape, c.group, None)?;
-        if ins[1] != [spec.o, spec.c / spec.group, spec.kh, spec.kw]
-            && ins[1] != [spec.o, spec.c / spec.group, spec.kw]
-        {
-            return None;
-        }
-        let bias = bias(model, node.inputs.get(2).copied(), &ins, spec.o)?;
-        return Some(Step::Conv(spec, bias, last));
+        return step_conv(c, model, node, &ins, &shape);
     }
     if let Some(d) = op.downcast_ref::<TDeconv>() {
-        if d.kernel_format != KernelFormat::OIHW {
-            return None;
-        }
-        let (spec, last) = conv_spec(&d.pool_spec, &ins[0], &shape, d.group, Some(&d.adjustments))?;
-        if last {
-            return None;
-        }
-        let (og, cg) = (spec.o / spec.group, spec.c / spec.group);
-        // OIHW here is the ONNX layout: [input channels, outputs per group, h, w].
-        // Its kernel as [input channels, outputs per group, h, w], or (one
-        // group) as [outputs, inputs, h, w].
-        let k = &ins[1];
-        if k.len() != 4 || k[2] != spec.kh || k[3] != spec.kw {
-            return None;
-        }
-        let s = nn::contiguous(k);
-        let strides = if k[0] == spec.c && k[1] == og {
-            [s[0] as usize, s[1] as usize, s[2] as usize, s[3] as usize]
-        } else if spec.group == 1 && k[0] == spec.o && k[1] == cg {
-            [s[1] as usize, s[0] as usize, s[2] as usize, s[3] as usize]
-        } else {
-            return None;
-        };
-        let bias = bias(model, node.inputs.get(2).copied(), &ins, spec.o)?;
-        return Some(Step::Deconv(spec, strides, bias));
+        return step_deconv(d, model, node, &ins, &shape);
     }
     if let Some(m) = op.downcast_ref::<MaxPool>() {
-        if m.with_index_outputs.is_some() {
-            return None;
-        }
-        let (mut spec, last) = conv_spec(&m.pool_spec, &ins[0], &shape, 1, None)?;
-        spec.o = spec.c;
-        return Some(Step::MaxPool(spec, last));
+        return step_max_pool(m, &ins, &shape);
     }
     None
+}
+
+fn step_axis(a: &ops::change_axes::AxisOp, first_f32: bool, ins: &[Vec<usize>]) -> Option<Step> {
+    if !first_f32 {
+        return None;
+    }
+    Some(match a {
+        ops::change_axes::AxisOp::Move(from, to) => {
+            let s = nn::contiguous(&ins[0]);
+            let mut axes: Vec<usize> = (0..ins[0].len()).collect();
+            let ax = axes.remove(*from);
+            axes.insert(*to, ax);
+            Step::Copy(View::strided(
+                0,
+                &axes.iter().map(|&i| s[i]).collect::<Vec<_>>(),
+            ))
+        }
+        _ => Step::Alias,
+    })
+}
+
+fn step_downsample(d: &ops::Downsample, ins: &[Vec<usize>]) -> Option<Step> {
+    let mut s = nn::contiguous(&ins[0]);
+    let step = s[d.axis];
+    // A negative stride reads from the end backwards.
+    let first = if d.stride > 0 {
+        d.modulo
+    } else {
+        ins[0][d.axis].checked_sub(1)?
+    };
+    s[d.axis] *= d.stride;
+    Some(Step::Copy(View::strided(first * step as usize, &s)))
+}
+
+fn step_nearest_upsample(
+    u: &ops::nn::NearestUpsample,
+    ins: &[Vec<usize>],
+    shape: &[usize],
+) -> Option<Step> {
+    if u.scales.len() != ins[0].len() {
+        return None;
+    }
+    let mut v = View::strided(0, &nn::broadcast(&ins[0], shape));
+    v.div = u.scales.to_vec();
+    Some(Step::Copy(v))
+}
+
+fn step_binary(b: &ops::binary::TypedBinOp, ins: &[Vec<usize>], shape: &[usize]) -> Option<Step> {
+    if b.1.is_some_and(|dt| dt != DatumType::F32)
+        || ins[0].len() != shape.len()
+        || ins[1].len() != shape.len()
+    {
+        return None;
+    }
+    let op = match b.0.name() {
+        "Add" => Binary::Add,
+        "Sub" => Binary::Sub,
+        "SubF" => Binary::SubFlipped,
+        "Mul" => Binary::Mul,
+        "Div" => Binary::Div,
+        "Max" => Binary::Max,
+        "Min" => Binary::Min,
+        "Pow" => Binary::Pow,
+        _ => return None,
+    };
+    Some(Step::Binary(op))
+}
+
+fn step_element_wise(e: &ops::element_wise::ElementWiseOp) -> Option<Step> {
+    if e.1.is_some_and(|dt| dt != DatumType::F32) {
+        return None;
+    }
+    let mini = &e.0;
+    let op = if let Some(l) = mini.downcast_ref::<ops::nn::LeakyRelu>() {
+        Unary::LeakyRelu(l.alpha)
+    } else if let Some(p) = mini.downcast_ref::<ops::math::PowConst>() {
+        Unary::PowConst(p.exponent)
+    } else {
+        match mini.name().as_str() {
+            "Neg" => Unary::Neg,
+            "Sigmoid" => Unary::Sigmoid,
+            "Exp" => Unary::Exp,
+            "Ln" => Unary::Ln,
+            "Sqrt" => Unary::Sqrt,
+            "Rsqrt" => Unary::Rsqrt,
+            "Recip" => Unary::Recip,
+            "Abs" => Unary::Abs,
+            "Tanh" => Unary::Tanh,
+            "Erf" => Unary::Erf,
+            "GeluExact" => Unary::GeluExact,
+            "Square" => Unary::Square,
+            "RoundHalfToEven" => Unary::Round,
+            "Floor" => Unary::Floor,
+            "Ceil" => Unary::Ceil,
+            "Sin" => Unary::Sin,
+            "Cos" => Unary::Cos,
+            _ => return None,
+        }
+    };
+    Some(Step::Unary(op))
+}
+
+fn step_pad(p: &ops::array::Pad) -> Option<Step> {
+    let mode = match &p.mode {
+        ops::array::PadMode::Constant(v) => PadMode::Constant(v.cast_to_scalar::<f32>().ok()?),
+        ops::array::PadMode::Reflect => PadMode::Reflect,
+        ops::array::PadMode::Edge => PadMode::Edge,
+    };
+    let (before, after) = p.pads.iter().copied().unzip();
+    Some(Step::Pad(before, after, mode))
+}
+
+fn step_reduce(r: &ops::nn::Reduce) -> Option<Step> {
+    use ops::nn::Reducer;
+    let mut axes = Vec::new();
+    for (k, &axis) in r.axes.iter().enumerate() {
+        let first = k == 0;
+        axes.push((
+            axis,
+            match (&r.reducer, first) {
+                (Reducer::Sum, _) => nn::Reduce::Sum,
+                (Reducer::Max, _) => nn::Reduce::Max,
+                (Reducer::Min, _) => nn::Reduce::Min,
+                (Reducer::Prod, _) => nn::Reduce::Product,
+                (Reducer::MeanOfSquares, true) => nn::Reduce::MeanOfSquares,
+                (Reducer::MeanOfSquares, false) => nn::Reduce::Mean,
+                _ => return None,
+            },
+        ));
+    }
+    Some(Step::Reduce(axes))
+}
+
+fn step_softmax(sm: &ops::nn::Softmax) -> Option<Step> {
+    if sm.axes.len() != 1 || sm.quant_output_dt.is_some() {
+        return None;
+    }
+    Some(Step::Softmax(
+        sm.axes[0],
+        sm.kind == ops::nn::SoftmaxKind::LogSoftmax,
+    ))
+}
+
+fn step_gather(
+    g: &ops::array::Gather,
+    model: &TypedModel,
+    node: &TypedNode,
+    first_f32: bool,
+) -> Option<Step> {
+    let indices = konst(model, node.inputs[1])?;
+    if !first_f32 || g.output_type.is_some_and(|dt| dt != DatumType::F32) {
+        return None;
+    }
+    let indices = indices.cast_to::<i64>().ok()?;
+    let indices = indices
+        .to_plain_array_view::<i64>()
+        .ok()?
+        .iter()
+        .copied()
+        .collect();
+    Some(Step::Gather(g.axis, indices))
+}
+
+fn step_conv(
+    c: &TConv,
+    model: &TypedModel,
+    node: &TypedNode,
+    ins: &[Vec<usize>],
+    shape: &[usize],
+) -> Option<Step> {
+    if c.q_params.is_some() || c.kernel_fmt != KernelFormat::OIHW {
+        return None;
+    }
+    let (spec, last) = conv_spec(&c.pool_spec, &ins[0], shape, c.group, None)?;
+    if ins[1] != [spec.o, spec.c / spec.group, spec.kh, spec.kw]
+        && ins[1] != [spec.o, spec.c / spec.group, spec.kw]
+    {
+        return None;
+    }
+    let bias = bias(model, node.inputs.get(2).copied(), ins, spec.o)?;
+    Some(Step::Conv(spec, bias, last))
+}
+
+fn step_deconv(
+    d: &TDeconv,
+    model: &TypedModel,
+    node: &TypedNode,
+    ins: &[Vec<usize>],
+    shape: &[usize],
+) -> Option<Step> {
+    if d.kernel_format != KernelFormat::OIHW {
+        return None;
+    }
+    let (spec, last) = conv_spec(&d.pool_spec, &ins[0], shape, d.group, Some(&d.adjustments))?;
+    if last {
+        return None;
+    }
+    let (og, cg) = (spec.o / spec.group, spec.c / spec.group);
+    // OIHW here is the ONNX layout: [input channels, outputs per group, h, w].
+    // Its kernel as [input channels, outputs per group, h, w], or (one
+    // group) as [outputs, inputs, h, w].
+    let k = &ins[1];
+    if k.len() != 4 || k[2] != spec.kh || k[3] != spec.kw {
+        return None;
+    }
+    let s = nn::contiguous(k);
+    let strides = if k[0] == spec.c && k[1] == og {
+        [s[0] as usize, s[1] as usize, s[2] as usize, s[3] as usize]
+    } else if spec.group == 1 && k[0] == spec.o && k[1] == cg {
+        [s[1] as usize, s[0] as usize, s[2] as usize, s[3] as usize]
+    } else {
+        return None;
+    };
+    let bias = bias(model, node.inputs.get(2).copied(), ins, spec.o)?;
+    Some(Step::Deconv(spec, strides, bias))
+}
+
+fn step_max_pool(m: &MaxPool, ins: &[Vec<usize>], shape: &[usize]) -> Option<Step> {
+    if m.with_index_outputs.is_some() {
+        return None;
+    }
+    let (mut spec, last) = conv_spec(&m.pool_spec, &ins[0], shape, 1, None)?;
+    spec.o = spec.c;
+    Some(Step::MaxPool(spec, last))
 }
 
 /// Whether a convolution's bias input is used: `Some(false)` for none or

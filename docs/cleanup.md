@@ -244,15 +244,6 @@ Checks: `cargo test -p amb-gui`; the three cargo commands; the UI scripts (`smok
 Done when: `panels` is under 30 lines and its JSON is byte-identical.
 Commit: `gui: one function per panel in the schema`. Why: "311 lines in one function."
 
-### B29. `net::step` one function per operation
-Tier: medium        Risk: medium
-Why: `step` in `crates/amb-ai/src/net/plan.rs` is 250 lines: a chain of `if let Some(x) = op.downcast_ref::<T>() { … }` blocks, one per ONNX operation.
-Decided: each block longer than 15 lines moves to a private function `step_<op>` (`step_axis`, `step_slice`, `step_concat`, `step_binary`, `step_element_wise`, `step_reduce`, `step_einsum`, `step_conv`, `step_deconv`, …, named after the type it downcasts to) returning `Option<Step>`; in `step` the block becomes `if let Some(x) = op.downcast_ref::<T>() { return step_x(x, …); }`, in the same order (the order decides which matches first). Shorter blocks stay. Parameters: what the block reads (`model`, `node`, `ins`, `shape`, …; the compiler lists them).
-Files: `crates/amb-ai/src/net/plan.rs`.
-Checks: `cargo test -p amb-ai` (the net tests compare the GPU plan with tract's CPU run); the three cargo commands.
-Done when: `step` is under 100 lines.
-Commit: `ai: one function per operation in net::step`. Why: "250 lines in one function."
-
 ### B30. UI tests for dragging a crop and a curve point
 Tier: medium        Risk: low
 Why: the crop tool's and the tone curve's factories (`create` in `crates/amb-gui/ui/tools/crop.js`, 408 lines, and in `crates/amb-gui/ui/develop/curve.js`, 364) are to be split (B31), and no UI step drags either, so a split could break them unseen.

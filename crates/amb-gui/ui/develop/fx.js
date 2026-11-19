@@ -106,11 +106,11 @@ function makeEffectsControl(def) {
   const param = (e, p, name) => {
     const row = document.createElement("div");
     row.className = "row";
-    const label = Object.assign(document.createElement("label"), { textContent: p.label, title: p.description ?? "" });
+    const label = el("label", { title: p.description ?? "" }, p.label);
     const value = e.params?.[p.name] ?? p.default;
     let input;
     if (p.type === "number") {
-      input = Object.assign(document.createElement("input"), { type: "range", min: p.min, max: p.max, step: p.step ?? (p.max - p.min) / 100, value });
+      input = el("input", { type: "range", min: p.min, max: p.max, step: p.step ?? (p.max - p.min) / 100, value: value });
       const out = Object.assign(document.createElement("output"), { value: Math.round(value * 100) / 100 });
       input.addEventListener("input", () => {
         e.params = { ...e.params, [p.name]: Number(input.value) };
@@ -126,7 +126,7 @@ function makeEffectsControl(def) {
       for (const o of p.options) input.append(new Option(o, o));
       input.value = value;
     } else {
-      input = Object.assign(document.createElement("input"), { type: "checkbox", checked: Boolean(value) });
+      input = el("input", { type: "checkbox", checked: Boolean(value) });
     }
     input.addEventListener("change", () => {
       e.params = { ...e.params, [p.name]: p.type === "bool" ? input.checked : input.value };
@@ -144,21 +144,21 @@ function makeEffectsControl(def) {
       card.className = "fx-effect";
       const head = document.createElement("div");
       head.className = "fx-head";
-      const title = Object.assign(document.createElement("strong"), { textContent: name, title: m?.description ?? "" });
+      const title = el("strong", { title: m?.description ?? "" }, name);
       // In Trippy, Amount goes past 100: the change pushed further than
       // the effect makes it.
       const wild = currentTask() === "trippy";
-      const amount = Object.assign(document.createElement("input"), { type: "range", min: 0, max: wild ? 200 : 100, step: 1, value: e.amount ?? 100, title: wild ? "Amount (past 100: pushed further)" : "Amount" });
+      const amount = el("input", { type: "range", min: 0, max: wild ? 200 : 100, step: 1, value: e.amount ?? 100, title: wild ? "Amount (past 100: pushed further)" : "Amount" });
       amount.addEventListener("input", () => { e.amount = Number(amount.value); preview(); });
       amount.addEventListener("change", () => save(`${name}: amount`));
-      const up = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "↑", title: "Apply earlier", disabled: i === 0 });
+      const up = el("button", { type: "button", class: "small", title: "Apply earlier", disabled: i === 0 }, "↑");
       up.addEventListener("click", () => { [list[i - 1], list[i]] = [list[i], list[i - 1]]; save(`move ${name}`); });
-      const remove = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "×", title: `Remove ${name}` });
+      const remove = el("button", { type: "button", class: "small", title: `Remove ${name}` }, "×");
       remove.addEventListener("click", () => { list.splice(i, 1); save(`remove ${name}`); });
       head.append(title, amount, up, remove);
       card.append(head);
       if (!m) {
-        card.append(Object.assign(document.createElement("p"), { className: "hint", textContent: "This plugin isn't installed here, so the effect isn't shown. Install it to see it, or remove it." }));
+        card.append(el("p", { class: "hint" }, "This plugin isn't installed here, so the effect isn't shown. Install it to see it, or remove it."));
       } else {
         // Where: everywhere, or only the highlights, a colour…
         const where = document.createElement("div");
@@ -179,7 +179,7 @@ function makeEffectsControl(def) {
         where.addEventListener("mouseleave", hide);
         pick.addEventListener("focus", show);
         pick.addEventListener("blur", hide);
-        where.append(Object.assign(document.createElement("label"), { textContent: "Where" }), pick);
+        where.append(el("label", {}, "Where"), pick);
         card.append(where);
         for (const p of m.params ?? []) card.append(param(e, p, name));
       }

@@ -43,25 +43,25 @@ async function organiseFlow(mode) {
   const opts = $("files-options");
   opts.replaceChildren();
   if (mode === "move" || mode === "dated") {
-    const row = Object.assign(document.createElement("div"), { className: "folder-row" });
-    const label = Object.assign(document.createElement("span"), { id: "files-folder", className: "files-folder", textContent: lib.dir ?? "" });
-    const pick = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "Choose folder…" });
+    const row = el("div", { class: "folder-row" });
+    const label = el("span", { id: "files-folder", class: "files-folder" }, lib.dir ?? "");
+    const pick = el("button", { type: "button", class: "small" }, "Choose folder…");
     pick.addEventListener("click", async () => {
       const dir = await invoke("library_pick_folder");
       if (!dir) return;
       label.textContent = dir;
       planFiles();
     });
-    row.append(Object.assign(document.createElement("span"), { textContent: mode === "move" ? "Into" : "Under" }), label, pick);
+    row.append(el("span", {}, mode === "move" ? "Into" : "Under"), label, pick);
     opts.append(row);
     if (mode === "move") label.textContent = "";
   }
   if (mode === "rename" || mode === "dated") {
     const presets = mode === "rename" ? NAME_TEMPLATES : FOLDER_TEMPLATES;
-    const sel = Object.assign(document.createElement("select"), { id: "files-preset" });
-    sel.append(...presets.map(([v, t]) => Object.assign(document.createElement("option"), { value: v, textContent: t })),
-      Object.assign(document.createElement("option"), { value: "", textContent: "My own…" }));
-    const input = Object.assign(document.createElement("input"), { id: "files-template", type: "text", spellcheck: false, value: presets[0][0] });
+    const sel = el("select", { id: "files-preset" });
+    sel.append(...presets.map(([v, t]) => el("option", { value: v }, t)),
+      el("option", { value: "" }, "My own…"));
+    const input = el("input", { id: "files-template", type: "text", spellcheck: "false", value: presets[0][0] });
     sel.addEventListener("change", () => {
       if (sel.value) input.value = sel.value;
       input.focus();
@@ -72,8 +72,9 @@ async function organiseFlow(mode) {
       clearTimeout(org.timer);
       org.timer = setTimeout(planFiles, 250);
     });
-    const tokens = Object.assign(document.createElement("p"), { className: "hint",
-      textContent: "{name} the name now · {yyyy} {yy} {mm} {dd} {hh} {min} {ss} the capture time · {seq} a number in capture order · {camera}" + (mode === "dated" ? " · / makes a subfolder" : "") });
+    const tokens = el("p", {
+      class: "hint",
+    }, "{name} the name now · {yyyy} {yy} {mm} {dd} {hh} {min} {ss} the capture time · {seq} a number in capture order · {camera}" + (mode === "dated" ? " · / makes a subfolder" : ""));
     opts.append(sel, input, tokens);
   }
   $("files-list").replaceChildren();
@@ -112,14 +113,14 @@ async function planFiles() {
   const base = (p) => fileName(p);
   const rel = (p) => (org.mode === "rename" ? base(p) : p);
   $("files-list").replaceChildren(...org.plan.slice(0, 300).map((p) => {
-    const row = Object.assign(document.createElement("div"), { className: "files-row" });
+    const row = el("div", { class: "files-row" });
     row.append(
-      Object.assign(document.createElement("span"), { textContent: base(p.photo) }),
-      Object.assign(document.createElement("span"), { className: "files-arrow", textContent: "→" }),
-      Object.assign(document.createElement("span"), { textContent: rel(p.to), title: p.files.map((f) => base(f[1])).join("\n") }),
+      el("span", {}, base(p.photo)),
+      el("span", { class: "files-arrow" }, "→"),
+      el("span", { title: p.files.map((f) => base(f[1])).join("\n") }, rel(p.to)),
     );
     return row;
-  }), ...(org.plan.length > 300 ? [Object.assign(document.createElement("p"), { className: "hint", textContent: `and ${org.plan.length - 300} more` })] : []));
+  }), ...(org.plan.length > 300 ? [el("p", { class: "hint" }, `and ${org.plan.length - 300} more`)] : []));
   $("files-go").disabled = !org.plan.length;
 }
 
@@ -201,7 +202,7 @@ async function missingFlow() {
     $("missing-status").textContent = missing.length
       ? `${missing.length} photo${missing.length === 1 ? " isn't" : "s aren't"} where the library last saw ${missing.length === 1 ? "it" : "them"} (moved or deleted outside Ambrotype). Choose a folder to look in: photos found there by name and size are followed, in collections too.`
       : "Every photo the library knows is where it was. (Photos on drives that aren't plugged in don't count.)";
-    $("missing-list").replaceChildren(...missing.slice(0, 300).map((p) => Object.assign(document.createElement("div"), { className: "files-row", textContent: p })));
+    $("missing-list").replaceChildren(...missing.slice(0, 300).map((p) => el("div", { class: "files-row" }, p)));
     $("missing-look").disabled = !missing.length;
   } catch (e) {
     $("missing-status").textContent = String(e);
@@ -232,17 +233,17 @@ async function keywordsFlow() {
 
 async function renderKeywordList() {
   const list = $("keywords-list");
-  list.replaceChildren(Object.assign(document.createElement("p"), { className: "hint", textContent: "Reading the catalogue…" }));
+  list.replaceChildren(el("p", { class: "hint" }, "Reading the catalogue…"));
   const all = await invoke("keywords_all").catch((e) => (showError(e), []));
   const filter = $("keywords-filter").value.trim().toLowerCase();
   list.replaceChildren(...all.filter(([k]) => !filter || k.toLowerCase().includes(filter)).map(([k, n]) => {
-    const row = Object.assign(document.createElement("label"), { className: "keyword-row" });
-    const box = Object.assign(document.createElement("input"), { type: "checkbox", value: k });
+    const row = el("label", { class: "keyword-row" });
+    const box = el("input", { type: "checkbox", value: k });
     box.addEventListener("change", keywordButtons);
-    row.append(box, Object.assign(document.createElement("span"), { textContent: k }), Object.assign(document.createElement("span"), { className: "hint", textContent: n }));
+    row.append(box, el("span", {}, k), el("span", { class: "hint" }, n));
     return row;
   }));
-  if (!all.length) list.replaceChildren(Object.assign(document.createElement("p"), { className: "hint", textContent: "No keywords yet." }));
+  if (!all.length) list.replaceChildren(el("p", { class: "hint" }, "No keywords yet."));
   keywordButtons();
 }
 
@@ -291,8 +292,8 @@ async function metaTemplatesFlow() {
 function renderMetaTemplates() {
   const sel = $("meta-choose");
   const keep = sel.value;
-  sel.replaceChildren(Object.assign(document.createElement("option"), { value: "", textContent: "New template" }),
-    ...org.templates.map((t) => Object.assign(document.createElement("option"), { value: t.name, textContent: t.name })));
+  sel.replaceChildren(el("option", { value: "" }, "New template"),
+    ...org.templates.map((t) => el("option", { value: t.name }, t.name)));
   sel.value = org.templates.some((t) => t.name === keep) ? keep : "";
   fillMetaTemplate();
 }

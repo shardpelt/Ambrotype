@@ -28,6 +28,32 @@ await t.step("Undo puts the name back", async () => {
   await t.until("the old name", () => ui.info?.path === first);
 });
 
+await t.step("dragging a photo onto a folder moves it, Undo brings it back", async () => {
+  select(first, "only");
+  const dir = first.replace(/[\\/][^\\/]*$/, "");
+  const dest = `${dir}/more`;
+  // The panel lists the library folders, not a folder opened alone: show these.
+  const saved = { roots: tree.roots, folders: tree.folders, open: new Set(tree.open) };
+  tree.roots = [{ path: dir, offline: false }];
+  tree.folders = [{ folder: dest, photos: 1 }];
+  tree.open = new Set([dir]);
+  renderFolderTree();
+  const row = await t.until("the more folder row", () => [...$("tree-list").querySelectorAll(".tree-row")].find((r) => r.dataset.path === dest));
+  const data = new DataTransfer();
+  data.setData("text/x-amb-photo", first);
+  const over = new DragEvent("dragover", { dataTransfer: data, bubbles: true, cancelable: true });
+  row.dispatchEvent(over);
+  t.expect(over.defaultPrevented && row.classList.contains("drop-target"), "the row accepts the photo");
+  row.dispatchEvent(new DragEvent("drop", { dataTransfer: data, bubbles: true, cancelable: true }));
+  await t.until("the photo in more", () => ui.info?.path === `${dest}/test.dng` && !libPhoto(first));
+  t.expect(!row.classList.contains("drop-target"), "the highlight gone");
+  t.expect(org.last?.length >= 1 && org.last.every(([, to]) => to.startsWith(dest)) && !$("lib-undo-move").hidden, "every file of the photo moved, Undo offered");
+  await undoMove();
+  await t.until("the photo back", () => ui.info?.path === first && libPhoto(first));
+  Object.assign(tree, saved);
+  renderFolderTree();
+});
+
 await t.step("one photo has no duplicates", async () => {
   t.click("#lib-duplicates");
   t.click("#dupes-find");

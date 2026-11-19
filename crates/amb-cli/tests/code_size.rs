@@ -14,7 +14,6 @@ const JS_BUDGET: usize = 700;
 /// file takes it off this list. A file that grows past its number is split
 /// (docs/cleanup.md says how), not given a bigger number.
 const OVER_BUDGET: &[(&str, usize)] = &[
-    ("crates/amb-engine/src/retouch.rs", 1000),
     ("crates/amb-protocol/src/sidecar.rs", 1000),
     ("crates/amb-export/src/embed.rs", 950),
     ("crates/amb-ops/src/object.rs", 950),

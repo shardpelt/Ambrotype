@@ -2,7 +2,7 @@
 
 Status: implemented 2026-10-10. Round heal and clone spots, read and written as Lightroom's own `RetouchAreas`; Lightroom's brushed spots, content-aware and generative fills, and the pre-2018 `RetouchInfo` are read and rendered. AI Remove (our own content-aware fill, Big-LaMa) added 2026-11-02. Red eye is not done yet.
 
-Code: `crates/amb-presets/src/retouch.rs` (the shared model), `crates/amb-engine/src/retouch.rs` (rendering and the donor search), `crates/amb-protocol/src/spots.rs` (commands), `crates/amb-gui/ui/tools/spots.js` (the tool).
+Code: `crates/amb-presets/src/retouch.rs` (the shared model), `crates/amb-engine/src/retouch/` (rendering: `heal.rs`, `inpaint.rs`, and the donor search in `source.rs`), `crates/amb-protocol/src/spots.rs` (commands), `crates/amb-gui/ui/tools/spots.js` (the tool).
 
 ## Lightroom's format
 

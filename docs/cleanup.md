@@ -138,21 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B1. Split `crates/amb-engine/src/retouch.rs`
-Tier: medium        Risk: medium
-Why: 979 production lines, over the budget of 800; its parts (heal, AI fill, donor search) do not share state.
-Files: `crates/amb-engine/src/retouch.rs` to `crates/amb-engine/src/retouch/{mod,heal,inpaint,source,tests}.rs`; `crates/amb-cli/tests/code_size.rs`.
-Steps:
-1. `mod.rs` keeps: the module doc and `use` lines; `SpotShape`, `Spot`, `Spots`, `DEFAULT_FEATHER`, `impl Spots`, `Placed`, `place`, `sample`, `apply`, `apply_in`. It declares `mod heal; mod inpaint; mod source;` and re-exports `pub use inpaint::{INPAINT_SIZE, Inpainter, set_inpainter};` and `pub use source::{find_source, find_spot_source, footprints};`.
-2. `heal.rs` (the clone and heal maths): `search_offset`, `heal_one`, `correction`, `push_pull`. `search_offset` and `heal_one` are used by `apply_in` and `source.rs`: `pub(super)`.
-3. `inpaint.rs` (AI fill): `INPAINT_SIZE`, `Inpainter`, `INPAINTER`, `set_inpainter`, `inpainter`, `FILL_CONTEXT`, `FILL_MIN_HALF`, `fill_one`, `bilinear`, `ring_grain`, `gaussian`. `inpainter` and `fill_one` become `pub(super)`; `FILL_MIN_HALF` stays `pub(crate)` and is re-exported `pub(crate) use inpaint::FILL_MIN_HALF;` if the compiler says it is used outside.
-4. `source.rs` (the donor search for new spots and the footprints of a region render): `footprints`, `find_source`, `find_spot_source`.
-5. Tests to `tests.rs`.
-Don't: change any signature or any number.
-Checks: as above; `cargo test -p amb-engine`; and the UI tests (spots are used there).
-Done when: no file in `retouch/` has more than 800 production lines and `retouch.rs` is gone.
-Commit: `engine: split retouch.rs into heal, inpaint and source`. Why: "It was past the size budget."
-
 ### B2. Split `crates/amb-protocol/src/sidecar.rs`
 Tier: medium        Risk: medium
 Why: 960 production lines; reading a sidecar's info and writing it back are two jobs.

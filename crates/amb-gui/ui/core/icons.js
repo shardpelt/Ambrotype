@@ -96,7 +96,7 @@ function applyToolbarIcons(style = "icons") {
 // the system one doesn't show too. The empty screen's buttons too: there the
 // system tooltip would stay up after a click hides them (Watch an edit).
 function wireQuickTips() {
-  const tip = Object.assign(document.createElement("div"), { className: "quick-tip", role: "tooltip", hidden: true });
+  const tip = el("div", { class: "quick-tip", role: "tooltip", hidden: true });
   document.body.append(tip);
   let timer = null;
   let over = null;

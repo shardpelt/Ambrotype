@@ -43,7 +43,7 @@ function showZone(key) {
   const scale = Math.min(1, 640 / Math.max(img.naturalWidth, img.naturalHeight));
   const w = Math.max(1, Math.round(img.naturalWidth * scale));
   const h = Math.max(1, Math.round(img.naturalHeight * scale));
-  const c = zones.canvas ??= Object.assign(document.createElement("canvas"), { className: "zone-overlay" });
+  const c = zones.canvas ??= el("canvas", { class: "zone-overlay" });
   c.width = w;
   c.height = h;
   const ctx = c.getContext("2d", { willReadFrequently: true });
@@ -74,7 +74,7 @@ function showZone(key) {
   ctx.putImageData(data, 0, 0);
   Object.assign(c.style, { left: `${r.left - v.left}px`, top: `${r.top - v.top}px`, width: `${r.width}px`, height: `${r.height}px` });
   viewer.append(c);
-  const badge = zones.badge ??= Object.assign(document.createElement("div"), { className: "zone-badge" });
+  const badge = zones.badge ??= el("div", { class: "zone-badge" });
   const share = Math.round((hits / (w * h)) * 100);
   badge.textContent = `${zone.label}: ${share < 1 && hits ? "under 1" : share}% of this photo`;
   Object.assign(badge.style, { left: `${r.left - v.left + 10}px`, top: `${r.top - v.top + 10}px` });

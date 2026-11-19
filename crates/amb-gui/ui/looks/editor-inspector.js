@@ -135,7 +135,7 @@ function openInspector(what, x, y) {
     const h = document.createElement("h3");
     h.textContent = text;
     parts.push(h);
-    if (sub) parts.push(Object.assign(document.createElement("p"), { className: "hint", textContent: sub }));
+    if (sub) parts.push(el("p", { class: "hint" }, sub));
   };
   const field = (label, input) => {
     const l = document.createElement("label");
@@ -144,20 +144,20 @@ function openInspector(what, x, y) {
     return input;
   };
   const text = (value, onChange) => {
-    const t = Object.assign(document.createElement("input"), { type: "text", value: value ?? "", spellcheck: false });
+    const t = el("input", { type: "text", value: value ?? "", spellcheck: "false" });
     t.addEventListener("change", () => onChange(t.value.trim()));
     t.addEventListener("keydown", (e) => { if (e.key === "Enter") t.blur(); });
     return t;
   };
   const select = (options, value, onChange) => {
     const s = document.createElement("select");
-    for (const [v, label] of options) s.append(Object.assign(document.createElement("option"), { value: v, textContent: label, selected: v === value }));
+    for (const [v, label] of options) s.append(el("option", { value: v, selected: v === value }, label));
     s.addEventListener("change", () => onChange(s.value));
     return s;
   };
   const buttons = [];
   const button = (label, onClick, disabled = false) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", textContent: label, disabled });
+    const b = el("button", { type: "button", disabled: disabled }, label);
     b.addEventListener("click", onClick);
     buttons.push(b);
   };
@@ -187,7 +187,7 @@ function openInspector(what, x, y) {
           if (v === "1") delete it.columns; else it.columns = Number(v);
         })));
       }
-      const open = Object.assign(document.createElement("input"), { type: "checkbox", checked: Boolean(item.open) });
+      const open = el("input", { type: "checkbox", checked: Boolean(item.open) });
       open.addEventListener("change", () => edit((dd) => {
         const it = dd[what.side].items[what.i];
         if (open.checked) it.open = true; else delete it.open;
@@ -241,7 +241,7 @@ function openInspector(what, x, y) {
           if (!e) return;
           if (v && v !== def.label) e.label = v; else delete e.label;
         })));
-        if (builtin) parts.push(Object.assign(document.createElement("p"), { className: "hint", textContent: "Changing the label makes this panel your own." }));
+        if (builtin) parts.push(el("p", { class: "hint" }, "Changing the label makes this panel your own."));
       }
     } else if (item.include) {
       heading(itemTitle(item), `Group: ${item.include}`);
@@ -267,7 +267,7 @@ function openInspector(what, x, y) {
     button("Remove", () => removeThing(what));
   }
 
-  box.replaceChildren(...parts, Object.assign(document.createElement("div"), { className: "inspector-buttons" }));
+  box.replaceChildren(...parts, el("div", { class: "inspector-buttons" }));
   box.lastChild.append(...buttons);
   box.hidden = false;
   const r = box.getBoundingClientRect();

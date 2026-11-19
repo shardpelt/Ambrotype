@@ -138,21 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B5. Split `crates/amb-engine/src/matching.rs`
-Tier: medium        Risk: medium
-Why: 908 production lines: measuring a look, solving for it, and the one-click Auto.
-Files: `crates/amb-engine/src/matching.rs` to `crates/amb-engine/src/matching/{mod,stats,solve,auto,tests}.rs`; `crates/amb-cli/tests/code_size.rs`.
-Steps:
-1. `mod.rs` keeps the module doc, `use` lines, `Settings`, `Weights` with `impl Default`, `Part` with its `impl`, `MatchOptions` with `impl Default`, `MatchResult`, `develop_plain`. Declares `mod stats; mod solve; mod auto;` and re-exports every `pub` item of the three (`LookStats`, `look_stats`, `average`, `solve`, `auto`, ...: `grep -n "^pub " matching/*.rs`).
-2. `stats.rs`: `L_PERCENTILES`, `LookStats` with its `impl`, `NEUTRAL_CHROMA`, `MIN_NEUTRAL_SHARE`, `zone_weights`, `percentile`, `look_stats`, `average`, `MIN_BAND_SHARE`, `residuals`, `distance`, `distance_with`, `weighted_distance`.
-3. `solve.rs`: `Param`, `param`, `params`, `num`, `clamp_to_registry`, `Start`, `STAND_INS`, `impl Start`, `solve_linear`, `solve`, `solve_stage`, `MIN_MIXER_MOVE`, `PENALTY`.
-4. `auto.rs`: `AUTO_ANCHORS`, `AUTO_TONE_PULL`, `AUTO_WHITE_PULL`, `AUTO_WHITE_SHARE`, `auto_target`, `auto`.
-5. Tests to `tests.rs`.
-Don't: change a weight or a constant.
-Checks: as above; `cargo test -p amb-engine matching`; `cargo test -p amb-cli`.
-Done when: `matching.rs` is gone and no part passes 800.
-Commit: `engine: split matching.rs into stats, solve and auto`. Why: "It was past the size budget."
-
 ### B6. Split `crates/amb-engine/src/pipeline/settings.rs`
 Tier: medium        Risk: medium
 Why: 905 lines, of which the table of rendered tags is 180 and `from_settings` is 220.

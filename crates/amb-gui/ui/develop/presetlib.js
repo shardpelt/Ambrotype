@@ -53,7 +53,7 @@ function renderPresetLibrary() {
   const groups = [...new Set(plib.items.map((p) => p.group))];
   const chips = $("presetlib-groups");
   chips.replaceChildren(...["", ...groups].map((g) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: g || "All" });
+    const b = el("button", { type: "button", class: "small" }, g || "All");
     b.classList.toggle("active", g === plib.group);
     b.addEventListener("click", () => { plib.group = g; renderPresetLibrary(); });
     return b;
@@ -67,21 +67,24 @@ function renderPresetLibrary() {
     return;
   }
   list.replaceChildren(...shown.map((p) => {
-    const row = Object.assign(document.createElement("div"), { className: "presetlib-item" });
-    const thumb = Object.assign(document.createElement("img"), { className: "presetlib-thumb", alt: "" });
+    const row = el("div", { class: "presetlib-item" });
+    const thumb = el("img", { class: "presetlib-thumb", alt: "" });
     thumb.dataset.id = p.id;
     if (plib.thumbs.get(p.id)) thumb.src = plib.thumbs.get(p.id);
-    const text = Object.assign(document.createElement("div"), { className: "presetlib-text" });
-    text.append(Object.assign(document.createElement("strong"), { textContent: p.name }),
-      Object.assign(document.createElement("span"), { className: "hint", textContent: p.description || p.group }));
-    const apply = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "Apply" });
+    const text = el("div", { class: "presetlib-text" });
+    text.append(el("strong", {}, p.name),
+      el("span", { class: "hint" }, p.description || p.group));
+    const apply = el("button", { type: "button", class: "small" }, "Apply");
     apply.disabled = !ui.info;
     apply.addEventListener("click", () => {
       presetHover(null);
       applyPreset(p);
     });
-    const add = Object.assign(document.createElement("button"), { type: "button", className: "small",
-      textContent: p.installed ? "Added" : "Add", title: "Keep it in your presets list" });
+    const add = el("button", {
+      type: "button",
+      class: "small",
+      title: "Keep it in your presets list",
+    }, p.installed ? "Added" : "Add");
     add.disabled = p.installed;
     add.addEventListener("click", async () => {
       try {

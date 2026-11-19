@@ -138,18 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B25. Unit tests for the editor's export settings
-Tier: small        Risk: low
-Why: `export_settings` in `crates/amb-gui/src/commands/export.rs` turns the Export dialog's options into `amb_export::ExportSettings` and has no test; it is a plain function. The editor's other large command files are thin wrappers over `amb-library` and `amb-ops`, which have their own tests, and the UI scripts drive them.
-Decided (was part of "Tests for the largest files that have none"): no Tauri mock runtime and no `AppState` in tests: only plain functions get unit tests in the editor.
-Files: `crates/amb-gui/src/commands/export.rs`.
-Steps:
-1. Read `ExportOptions` (its fields and `Deserialize`) and `export_settings`.
-2. Add `#[cfg(test)] mod tests` at the end of the file with: a JPEG at quality 80 maps to `Format::Jpeg` and quality 80; a resize option maps to the `Resize` it names; an unknown format is an error. Build `ExportOptions` with `serde_json::from_value(json!({...}))` using the field names the page sends (read them in `crates/amb-gui/ui/dialogs/export.js`).
-Checks: `cargo test -p amb-gui export_settings`; the three cargo commands.
-Done when: the tests pass.
-Commit: `gui: tests for the export settings`. Why: "A plain function had no test."
-
 ### B26. `export_one` in steps
 Tier: medium        Risk: medium
 Why: `export_one` in `crates/amb-export/src/lib.rs` is 275 lines in one function: checks, the pixels, finishing touches, encoding, metadata.

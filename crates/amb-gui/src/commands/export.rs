@@ -582,3 +582,60 @@ pub(crate) async fn edit_in(
         .map_err(|e| format!("wrote {}, but couldn't open it: {e}", path.display()))?;
     Ok(path.display().to_string())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use amb_export::{Format, Resize};
+    use serde_json::json;
+
+    /// The options the dialog sends, with `extra` fields on top.
+    fn options(extra: serde_json::Value) -> ExportOptions {
+        let mut o = json!({
+            "format": "jpeg",
+            "quality": 80,
+            "bits": null,
+            "color_space": "srgb",
+            "exact": null,
+            "sharpen": null,
+            "metadata": "all-except-location",
+            "max_kb": null,
+        });
+        o.as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        serde_json::from_value(o).ok().unwrap()
+    }
+
+    #[test]
+    fn export_settings_a_jpeg_at_quality_80() {
+        let s = export_settings(&options(json!({}))).ok().unwrap();
+        assert_eq!(s.format, Format::Jpeg);
+        assert_eq!(s.quality, 80);
+        assert_eq!(s.resize, Resize::None);
+    }
+
+    #[test]
+    fn export_settings_resize_names_the_resize() {
+        let s = export_settings(&options(json!({"resize": {"mode": "short", "value": 800}})))
+            .ok()
+            .unwrap();
+        assert_eq!(s.resize, Resize::ShortEdge(800));
+        // An exact size wins over the rest.
+        let s = export_settings(&options(
+            json!({"exact": [1080, 1350], "long_edge": 500, "resize": {"mode": "mp", "value": 2}}),
+        ))
+        .ok()
+        .unwrap();
+        assert_eq!(s.resize, Resize::Exact(1080, 1350));
+    }
+
+    #[test]
+    fn export_settings_unknown_names_are_errors() {
+        assert!(export_settings(&options(json!({"format": "bmp2"}))).is_err());
+        assert!(export_settings(&options(json!({"color_space": "ntsc"}))).is_err());
+        assert!(
+            export_settings(&options(json!({"resize": {"mode": "inch", "value": 2}}))).is_err()
+        );
+    }
+}

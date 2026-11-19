@@ -63,7 +63,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Save my own preset** → **New Preset from This Photo** (Ctrl+Shift+N, or **+ New preset…** in Presets). It works in Lightroom too.
 - **What's inside a preset, and what don't you support yet** → `amb preset inspect PRESET.xmp`.
 - **Find presets, layouts and themes others made** → **Browse the Hub** (Ctrl+Shift+H).
-- **Ready-made looks to start from** → Presets → **Preset library…**: 21 free presets by style (film, B&W, moody, bright, vivid, portrait, landscape); hover to preview, **Apply**, or **Add to your presets**.
+- **Ready-made looks to start from** → Presets → **Preset library…**: 21 free presets by style (film, B&W, moody, bright, vivid, portrait, landscape); hover to preview, **Apply**, or **Add** (to your presets).
 - **A preset that replaces my edit, or adds to it** → Presets → **Apply to the original, not on top**: on (the default), a preset replaces the look (crop, spots, masks and geometry stay); off, presets add up as in Lightroom.
 
 ## Film negatives and scans
@@ -81,7 +81,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Go through the camera's JPEGs big, after a shoot** → **JPEG if there is one** (the library bar, or the filmstrip's bar in Develop): a raw shot with a JPEG shows as its JPEG, other raws stay, and ← → step through them. For the photo alone, big: the library's Loupe (E, ← → to step), or the buttons at the photo's top corners fold the side panels away.
 - **See only the raws, or only the JPEGs, when browsing** → library → **Filter ▾** → **File**: Raw only, or JPEG only (a raw shot with a JPEG shows its JPEG then; normally they're one photo, shown as the raw).
 - **Move from Lightroom Classic** → Import ▾ → from a Lightroom catalogue (edits, ratings, keywords, collections). `amb lrcat import CATALOG.lrcat`.
-- **Use my Lightroom catalogue as it is, without importing** → library → Folders panel → **Lightroom +** (or From Lightroom Classic… → **Open in place**): its folders and collections show there, its photos with their Lightroom edits, ratings, labels and keywords; nothing is written to the catalogue, and an edit here goes into the photo's sidecar. `amb lrcat open CATALOG.lrcat`.
+- **Use my Lightroom catalogue as it is, without importing** → library → Folders panel → **Lightroom** → **+** (or From Lightroom Classic… → **Open in place**): its folders and collections show there, its photos with their Lightroom edits, ratings, labels and keywords; nothing is written to the catalogue, and an edit here goes into the photo's sidecar. `amb lrcat open CATALOG.lrcat`.
 - **Turn a photo that's sideways, or mirror it** → **Rotate left** (Ctrl+[), **Rotate right** (Ctrl+]) or **Flip horizontal**, in the Photo menu: the open photo, or the photos selected in the library; in the full-screen viewer (V), the same keys or the ⟲ ⟳ buttons on its bar. Crops and masks turn with it, and Lightroom sees the turn too. `amb tag PHOTO --rotate left|right|180 --flip horizontal`.
 - **Rate, label, flag, keyword** → 1–5 rate, 6–9 colour labels, **Pick** (P), **Reject** (X), **Add Keywords** (K). `amb tag`.
 - **Pick the best shot of a burst (in focus, eyes open)** → library → Organise → **Best in each burst**: the best of each burst is marked with why, the rest dimmed with what's wrong (eyes closed, soft); then **Pick best, reject rest** or **Stack each**. A click on a dimmed photo's badge keeps it instead. Eyes need YuNet in **Settings** → AI models; without it, focus alone.

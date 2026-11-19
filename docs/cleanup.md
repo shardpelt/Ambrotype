@@ -138,19 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B18. More guard tests
-Tier: medium        Risk: low
-Why: three lists are held by review only: the buttons that `docs/FEATURES.md` names, the MCP server's tool list against its tool calls, and the built-in plugins.
-Files: `crates/amb-gui/src/checks.rs`, `crates/amb-cli/src/mcp.rs` (its `mod tests`), `crates/amb-plugin/tests/builtin.rs` (new), `docs/FEATURES.md`.
-Steps (three commits):
-1. FEATURES names a real label. In `checks.rs` add `features_name_things_the_app_has`: for each line of `docs/FEATURES.md` that starts with `- **` and holds a `→`, take the text right of the first `→` up to the first `` `amb `` and every `**bold**` in it; lower-case it and drop a trailing `…`, `.` or `:`; it must occur (lower-cased) in the text of the files under `crates/amb-gui/ui/` (`.js`, `.html`, `.json`), `crates/amb-gui/src/**/*.rs`, `crates/amb-presets/data/*.json`, `crates/amb-gui/data/**/*.json` or `plugins/*/plugin.json`. 215 names are checked and 9 fail today: `Neon`, `Mandala`, `Heat camera`, `Contours`, `Acid highlights`, `Foil shadows` (task tiles in `plugins/trippy/plugin.json`: include that file's text so they pass), `Add to your presets`, `Lightroom +`, `Start … here`. For each that still fails, correct the name in `docs/FEATURES.md` to the label the app shows (look it up in the UI), not the other way round; list any you cannot match in an `ALLOWED` array with a comment saying why.
-2. MCP. In the `tests` module of `crates/amb-cli/src/mcp.rs` add `every_listed_tool_has_a_call_and_back`: the names in `tools()` (each element's `"name"`) equal the string patterns that start a line with eight spaces in `fn call` (lines like `        "describe_photo" =>` up to the next top-level `fn`: read the file with `include_str!("mcp.rs")` and cut it from `fn call(` to the next `\nfn `). Both sets have 11 names today.
-3. Built-in plugins. New `crates/amb-plugin/tests/builtin.rs`: for each folder in `plugins/` (path from `CARGO_MANIFEST_DIR/../../plugins`) that has a `plugin.json`, its `"id"` is one of the ids in `amb_plugin::BUILTIN` (the second field of each tuple), and every id in `BUILTIN` has such a folder. Both are 12 today. A plugin kept as an example and not built in goes in an `EXAMPLES` const at the top of the test (empty today).
-Don't: change a label in the UI to match the doc.
-Checks: the three cargo commands; `cargo test -p amb-gui checks`, `cargo test -p amb-cli mcp`, `cargo test -p amb-plugin --test builtin`.
-Done when: each test fails when you add one violation (try it once, then undo).
-Commits: `gui: a test that FEATURES names real buttons`; `cli: a test that the MCP tool list matches its calls`; `plugins: a test that the built-in list matches the plugins folder`.
-
 ### Needs a brief
 
 A large model answers each question and writes the cards, then moves them above. Each is here because a builder would have to choose.

@@ -326,3 +326,67 @@ fn mask_panel_ranges_come_from_the_protocol() {
         );
     }
 }
+
+/// Names in `docs/FEATURES.md` that the app builds from parts, so no file
+/// holds them whole.
+const FEATURE_NAMES_ALLOWED: &[&str] = &[
+    // connect.js: `Start ${app.name} here`, with the agent's name.
+    "start … here",
+];
+
+/// Every **bold** name right of a `→` in `docs/FEATURES.md` (before its
+/// `amb` command) is something the app shows: a label in the UI's files,
+/// the editor's code, the settings registry, the hub copy or a plugin's
+/// manifest. A renamed button then fails here instead of in a reader's hands.
+#[test]
+fn features_name_things_the_app_has() {
+    let repo = gui_root().join("../..");
+    let mut corpus = String::new();
+    for ext in ["js", "html", "json"] {
+        for (_, t) in ui_text(ext) {
+            corpus.push_str(&t);
+        }
+    }
+    for (_, t) in src_text() {
+        corpus.push_str(&t);
+    }
+    for dir in ["crates/amb-presets/data", "crates/amb-gui/data"] {
+        for (_, t) in files_under(&repo.join(dir), "json") {
+            corpus.push_str(&t);
+        }
+    }
+    for entry in std::fs::read_dir(repo.join("plugins")).unwrap() {
+        if let Ok(t) = std::fs::read_to_string(entry.unwrap().path().join("plugin.json")) {
+            corpus.push_str(&t);
+        }
+    }
+    let corpus = corpus.to_lowercase();
+    let features = std::fs::read_to_string(repo.join("docs/FEATURES.md")).unwrap();
+    let mut missing = Vec::new();
+    let mut checked = 0;
+    for line in features.lines() {
+        if !line.starts_with("- **") {
+            continue;
+        }
+        let Some((_, right)) = line.split_once('→') else {
+            continue;
+        };
+        let right = right.split("`amb ").next().unwrap_or_default();
+        for bold in right.split("**").skip(1).step_by(2) {
+            let name = bold.to_lowercase();
+            let name = name.trim().trim_end_matches(['…', '.', ':']).trim();
+            checked += 1;
+            if !corpus.contains(name) && !FEATURE_NAMES_ALLOWED.contains(&name) {
+                missing.push(bold.to_string());
+            }
+        }
+    }
+    assert!(
+        checked > 200,
+        "only {checked} names found: has FEATURES.md changed shape?"
+    );
+    assert!(
+        missing.is_empty(),
+        "docs/FEATURES.md names what the app doesn't show (use the label the app shows): {missing:?}"
+    );
+}

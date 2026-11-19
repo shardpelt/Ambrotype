@@ -86,7 +86,7 @@ async function loadFonts() {
 
 function fillFontSelect(sel, value) {
   sel.replaceChildren(...(ui.fonts ?? [["sans", "Sans"]]).map(([id, name]) => {
-    const o = Object.assign(document.createElement("option"), { value: id, textContent: name });
+    const o = el("option", { value: id }, name);
     o.style.fontFamily = `amb-${id}`;
     return o;
   }));
@@ -124,8 +124,8 @@ async function showFrameSettings(open) {
     fillFontSelect($("frame-font"), fr.font);
     if (!ui.borders) await loadBorders();
     const sel = $("frame-preset");
-    sel.replaceChildren(Object.assign(document.createElement("option"), { value: "", textContent: "— a border preset —" }),
-      ...ui.borders.map((b) => Object.assign(document.createElement("option"), { value: b.id, textContent: b.name })));
+    sel.replaceChildren(el("option", { value: "" }, "— a border preset —"),
+      ...ui.borders.map((b) => el("option", { value: b.id }, b.name)));
     await refreshFrameSpecs();
   }
   drawFrame();
@@ -223,7 +223,7 @@ function frameToExport() {
   if (!fr.on) return;
   const f = $("export-form");
   const sel = f.border_preset;
-  sel.prepend(Object.assign(document.createElement("option"), { value: "frame", textContent: "Frame (as in the editor)" }));
+  sel.prepend(el("option", { value: "frame" }, "Frame (as in the editor)"));
   sel.value = "frame";
   writeBorder(frameBorder());
   const t = frameTemplate();
@@ -328,13 +328,13 @@ function showShortcuts() {
     groups.set(a.group, [...(groups.get(a.group) ?? []), [a.label, keys]]);
   }
   $("shortcuts-list").replaceChildren(...[...groups].map(([group, rows]) => {
-    const box = Object.assign(document.createElement("section"), { className: "shortcuts-group" });
-    box.append(Object.assign(document.createElement("h3"), { textContent: group }));
+    const box = el("section", { class: "shortcuts-group" });
+    box.append(el("h3", {}, group));
     for (const [label, keys] of rows) {
-      const row = Object.assign(document.createElement("div"), { className: "shortcuts-row" });
+      const row = el("div", { class: "shortcuts-row" });
       const k = document.createElement("span");
-      k.append(...keys.map((c) => Object.assign(document.createElement("kbd"), { textContent: keyLabel(c) })));
-      row.append(Object.assign(document.createElement("span"), { textContent: label }), k);
+      k.append(...keys.map((c) => el("kbd", {}, keyLabel(c))));
+      row.append(el("span", {}, label), k);
       box.append(row);
     }
     return box;

@@ -138,19 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B27. `schema::panels` one function per panel
-Tier: small        Risk: low
-Why: `panels` in `crates/amb-gui/src/schema.rs` is 311 lines: eleven `Panel { … }` literals in one `vec!`.
-Decided: one private function per panel, named after its `id`: `basic_panel`, `tone_curve_panel`, `color_mixer_panel`, `black_white_panel`, `color_grading_panel`, `detail_panel`, `lens_panel`, `transform_panel`, `effects_panel`, `calibration_panel`, `negative_panel`, each returning its `Panel` literal unchanged; `panels` becomes the `vec!` of their calls in the same order. A literal that uses a local of `panels` takes it as a parameter.
-Files: `crates/amb-gui/src/schema.rs`.
-Steps:
-1. Before changing anything, add a test that writes `serde_json::to_string_pretty(&panels())` to a temporary file, and run it once to keep that file (outside the repo).
-2. Make the split.
-3. Compare the new output with the kept file: identical. Then delete that test (it was only for this change).
-Checks: `cargo test -p amb-gui`; the three cargo commands; the UI scripts (`smoke.js` opens every panel).
-Done when: `panels` is under 30 lines and its JSON is byte-identical.
-Commit: `gui: one function per panel in the schema`. Why: "311 lines in one function."
-
 ### B28. The long arms of `state::plan`
 Tier: medium        Risk: medium
 Why: `plan` in `crates/amb-protocol/src/state/plan.rs` is 237 lines: a `match` on the command whose arms for `ApplyPreset` (about 85 lines), `AdjustParam` (about 33) and `AddSpot` (about 24) hold most of it.

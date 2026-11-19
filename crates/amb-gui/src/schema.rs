@@ -152,10 +152,124 @@ fn plain<'a>(names: &[&'a str]) -> Vec<(&'a str, Option<&'a str>)> {
 
 /// The full editor layout.
 pub fn panels() -> Vec<Panel> {
+    vec![
+        basic_panel(),
+        tone_curve_panel(),
+        color_mixer_panel(),
+        black_white_panel(),
+        color_grading_panel(),
+        detail_panel(),
+        lens_panel(),
+        transform_panel(),
+        effects_panel(),
+        calibration_panel(),
+        negative_panel(),
+    ]
+}
+
+fn basic_panel() -> Panel {
+    Panel {
+        id: "basic",
+        label: "Basic",
+        groups: vec!["white_balance", "tone", "presence"],
+        sections: vec![
+            section(
+                "Profile",
+                &[
+                    ("CameraProfile", Some("Profile")),
+                    ("amb:LUT", Some("LUT")),
+                    ("amb:LUTAmount", Some("LUT amount")),
+                ],
+            ),
+            section(
+                "White Balance",
+                &[
+                    ("WhiteBalance", Some("WB")),
+                    ("Temperature", Some("Temp")),
+                    ("Tint", None),
+                    ("amb:WBShiftRed", Some("Shift: red")),
+                    ("amb:WBShiftBlue", Some("Shift: blue")),
+                ],
+            ),
+            section(
+                "Tone",
+                &plain(&[
+                    "Exposure2012",
+                    "Contrast2012",
+                    "Highlights2012",
+                    "Shadows2012",
+                    "Whites2012",
+                    "Blacks2012",
+                ]),
+            ),
+            section(
+                "Presence",
+                &plain(&["Texture", "Clarity2012", "Dehaze", "Vibrance", "Saturation"]),
+            ),
+        ],
+    }
+}
+
+fn tone_curve_panel() -> Panel {
+    Panel {
+        id: "tone_curve",
+        label: "Tone Curve",
+        groups: vec!["tone_curve"],
+        sections: vec![section(
+            "Parametric",
+            &plain(&[
+                "ParametricHighlights",
+                "ParametricLights",
+                "ParametricDarks",
+                "ParametricShadows",
+                "ParametricShadowSplit",
+                "ParametricMidtoneSplit",
+                "ParametricHighlightSplit",
+            ]),
+        )],
+    }
+}
+
+fn color_mixer_panel() -> Panel {
     let hsl_names: Vec<String> = ["Hue", "Saturation", "Luminance"]
         .iter()
         .flat_map(|k| BANDS.iter().map(move |b| format!("{k}Adjustment{b}")))
         .collect();
+    Panel {
+        id: "color_mixer",
+        label: "Color Mixer",
+        groups: vec!["hsl"],
+        sections: vec![Section {
+            label: "HSL".into(),
+            layout: "hsl",
+            controls: hsl_names.iter().map(|n| control(n, None)).collect(),
+        }],
+    }
+}
+
+fn black_white_panel() -> Panel {
+    Panel {
+        id: "black_white",
+        label: "Black & White",
+        groups: vec!["bw_mixer"],
+        sections: vec![
+            section(
+                "Treatment",
+                &[("ConvertToGrayscale", Some("Black & white"))],
+            ),
+            Section {
+                label: "Mix".into(),
+                layout: "sliders",
+                controls: BANDS
+                    .iter()
+                    .map(|b| control(&format!("GrayMixer{b}"), Some(b)))
+                    .collect(),
+            },
+        ],
+    }
+}
+
+fn color_grading_panel() -> Panel {
     let grading = |region: &str| {
         let names = ["Hue", "Sat", "Lum"].map(|k| format!("ColorGrade{region}{k}"));
         section(
@@ -167,300 +281,230 @@ pub fn panels() -> Vec<Panel> {
             ],
         )
     };
-    vec![
-        Panel {
-            id: "basic",
-            label: "Basic",
-            groups: vec!["white_balance", "tone", "presence"],
-            sections: vec![
-                section(
-                    "Profile",
-                    &[
-                        ("CameraProfile", Some("Profile")),
-                        ("amb:LUT", Some("LUT")),
-                        ("amb:LUTAmount", Some("LUT amount")),
-                    ],
-                ),
-                section(
-                    "White Balance",
-                    &[
-                        ("WhiteBalance", Some("WB")),
-                        ("Temperature", Some("Temp")),
-                        ("Tint", None),
-                        ("amb:WBShiftRed", Some("Shift: red")),
-                        ("amb:WBShiftBlue", Some("Shift: blue")),
-                    ],
-                ),
-                section(
-                    "Tone",
-                    &plain(&[
-                        "Exposure2012",
-                        "Contrast2012",
-                        "Highlights2012",
-                        "Shadows2012",
-                        "Whites2012",
-                        "Blacks2012",
-                    ]),
-                ),
-                section(
-                    "Presence",
-                    &plain(&["Texture", "Clarity2012", "Dehaze", "Vibrance", "Saturation"]),
-                ),
-            ],
-        },
-        Panel {
-            id: "tone_curve",
-            label: "Tone Curve",
-            groups: vec!["tone_curve"],
-            sections: vec![section(
-                "Parametric",
-                &plain(&[
-                    "ParametricHighlights",
-                    "ParametricLights",
-                    "ParametricDarks",
-                    "ParametricShadows",
-                    "ParametricShadowSplit",
-                    "ParametricMidtoneSplit",
-                    "ParametricHighlightSplit",
-                ]),
-            )],
-        },
-        Panel {
-            id: "color_mixer",
-            label: "Color Mixer",
-            groups: vec!["hsl"],
-            sections: vec![Section {
-                label: "HSL".into(),
-                layout: "hsl",
-                controls: hsl_names.iter().map(|n| control(n, None)).collect(),
-            }],
-        },
-        Panel {
-            id: "black_white",
-            label: "Black & White",
-            groups: vec!["bw_mixer"],
-            sections: vec![
-                section(
-                    "Treatment",
-                    &[("ConvertToGrayscale", Some("Black & white"))],
-                ),
-                Section {
-                    label: "Mix".into(),
-                    layout: "sliders",
-                    controls: BANDS
-                        .iter()
-                        .map(|b| control(&format!("GrayMixer{b}"), Some(b)))
-                        .collect(),
-                },
-            ],
-        },
-        Panel {
-            id: "color_grading",
-            label: "Color Grading",
-            groups: vec!["color_grading", "split_toning"],
-            sections: vec![
-                grading("Shadow"),
-                grading("Midtone"),
-                grading("Highlight"),
-                grading("Global"),
-                section(
-                    "Mix",
-                    &[
-                        ("ColorGradeBlending", Some("Blending")),
-                        ("SplitToningBalance", Some("Balance")),
-                    ],
-                ),
-            ],
-        },
-        Panel {
-            id: "detail",
-            label: "Detail",
-            groups: vec!["detail"],
-            sections: vec![
-                section(
-                    "Sharpening",
-                    &[
-                        ("Sharpness", Some("Amount")),
-                        ("SharpenRadius", Some("Radius")),
-                        ("SharpenDetail", Some("Detail")),
-                        ("SharpenEdgeMasking", Some("Masking")),
-                    ],
-                ),
-                section(
-                    "Noise Reduction",
-                    &[
-                        ("LuminanceSmoothing", Some("Luminance")),
-                        ("LuminanceNoiseReductionDetail", Some("Detail")),
-                        ("LuminanceNoiseReductionContrast", Some("Contrast")),
-                        ("ColorNoiseReduction", Some("Color")),
-                        ("ColorNoiseReductionDetail", Some("Color Detail")),
-                        ("ColorNoiseReductionSmoothness", Some("Smoothness")),
-                    ],
-                ),
-            ],
-        },
-        Panel {
-            id: "lens",
-            label: "Lens Corrections",
-            groups: vec!["lens"],
-            sections: vec![
-                section(
-                    "Profile",
-                    &[
-                        ("LensProfileEnable", Some("Enable Profile Corrections")),
-                        ("AutoLateralCA", Some("Remove Chromatic Aberration")),
-                        ("LensProfileDistortionScale", Some("Distortion")),
-                        ("LensProfileVignettingScale", Some("Vignetting")),
-                    ],
-                ),
-                section(
-                    "Manual",
-                    &[
-                        ("LensManualDistortionAmount", Some("Distortion")),
-                        ("CropConstrainToWarp", Some("Constrain Crop")),
-                        ("VignetteAmount", Some("Vignetting")),
-                        ("VignetteMidpoint", Some("Midpoint")),
-                    ],
-                ),
-                section(
-                    "Defringe",
-                    &[
-                        ("amb:DefringeAuto", Some("Auto")),
-                        ("DefringePurpleAmount", Some("Purple Amount")),
-                        ("DefringePurpleHueLo", Some("Purple Hue (low)")),
-                        ("DefringePurpleHueHi", Some("Purple Hue (high)")),
-                        ("DefringeGreenAmount", Some("Green Amount")),
-                        ("DefringeGreenHueLo", Some("Green Hue (low)")),
-                        ("DefringeGreenHueHi", Some("Green Hue (high)")),
-                    ],
-                ),
-            ],
-        },
-        Panel {
-            id: "transform",
-            label: "Transform",
-            groups: vec!["transform"],
-            sections: vec![
-                section("Upright", &[("PerspectiveUpright", Some("Upright"))]),
-                section(
-                    "Transform",
-                    &[
-                        ("PerspectiveVertical", Some("Vertical")),
-                        ("PerspectiveHorizontal", Some("Horizontal")),
-                        ("PerspectiveRotate", Some("Rotate")),
-                        ("PerspectiveAspect", Some("Aspect")),
-                        ("PerspectiveScale", Some("Scale")),
-                        ("PerspectiveX", Some("Offset X")),
-                        ("PerspectiveY", Some("Offset Y")),
-                    ],
-                ),
-            ],
-        },
-        Panel {
-            id: "effects",
-            label: "Effects",
-            groups: vec!["effects"],
-            sections: vec![
-                section(
-                    "Post-Crop Vignetting",
-                    &[
-                        ("PostCropVignetteStyle", Some("Style")),
-                        ("PostCropVignetteAmount", Some("Amount")),
-                        ("PostCropVignetteMidpoint", Some("Midpoint")),
-                        ("PostCropVignetteRoundness", Some("Roundness")),
-                        ("PostCropVignetteFeather", Some("Feather")),
-                        ("PostCropVignetteHighlightContrast", Some("Highlights")),
-                    ],
-                ),
-                section(
-                    "Grain",
-                    &[
-                        ("GrainAmount", Some("Amount")),
-                        ("GrainSize", Some("Size")),
-                        ("GrainFrequency", Some("Roughness")),
-                        ("amb:GrainFilm", Some("Film response")),
-                    ],
-                ),
-                section(
-                    "Film finish",
-                    &[("amb:HighlightRolloff", Some("Highlight roll-off"))],
-                ),
-                section(
-                    "Glow",
-                    &[
-                        ("amb:Halation", Some("Halation")),
-                        ("amb:Bloom", Some("Bloom")),
-                        ("amb:GlowSize", Some("Size")),
-                    ],
-                ),
-                section("Plugin effects", &[("amb:Effects", Some("Effects"))]),
-            ],
-        },
-        Panel {
-            id: "calibration",
-            label: "Calibration",
-            groups: vec!["calibration"],
-            sections: vec![
-                section("Shadows", &[("ShadowTint", Some("Tint"))]),
-                section(
-                    "Red Primary",
-                    &[
-                        ("RedHue", Some("Hue")),
-                        ("RedSaturation", Some("Saturation")),
-                    ],
-                ),
-                section(
-                    "Green Primary",
-                    &[
-                        ("GreenHue", Some("Hue")),
-                        ("GreenSaturation", Some("Saturation")),
-                    ],
-                ),
-                section(
-                    "Blue Primary",
-                    &[
-                        ("BlueHue", Some("Hue")),
-                        ("BlueSaturation", Some("Saturation")),
-                    ],
-                ),
-            ],
-        },
-        Panel {
-            id: "negative",
-            label: "Film Negative",
-            groups: vec!["negative"],
-            sections: vec![
-                section(
-                    "Conversion",
-                    &[
-                        ("amb:NegativeConvert", Some("Convert negative")),
-                        ("amb:NegativeAuto", Some("Auto")),
-                        ("amb:NegativeAutoDensity", Some("Auto Density")),
-                        ("amb:NegativeAutoGrade", Some("Auto Grade")),
-                        ("amb:NegativeRange", Some("Fixed range")),
-                        ("amb:NegativeType", Some("Type")),
-                        ("amb:NegativeCastRemoval", Some("Cast removal")),
-                        ("amb:NegativeExpired", Some("Expired film")),
-                        ("amb:FilmStock", Some("Film stock")),
-                        ("amb:FilmStockAmount", Some("Stock amount")),
-                    ],
-                ),
-                section(
-                    "Print",
-                    &[
-                        ("amb:NegativeExposure", Some("Exposure")),
-                        ("amb:NegativeContrast", Some("Contrast")),
-                        ("amb:NegativeToe", Some("Toe")),
-                        ("amb:NegativeShoulder", Some("Shoulder")),
-                        ("amb:NegativeSaturation", Some("Saturation")),
-                        ("amb:NegativeCyanRed", Some("Cyan ↔ Red")),
-                        ("amb:NegativeMagentaGreen", Some("Magenta ↔ Green")),
-                        ("amb:NegativeYellowBlue", Some("Yellow ↔ Blue")),
-                    ],
-                ),
-            ],
-        },
-    ]
+    Panel {
+        id: "color_grading",
+        label: "Color Grading",
+        groups: vec!["color_grading", "split_toning"],
+        sections: vec![
+            grading("Shadow"),
+            grading("Midtone"),
+            grading("Highlight"),
+            grading("Global"),
+            section(
+                "Mix",
+                &[
+                    ("ColorGradeBlending", Some("Blending")),
+                    ("SplitToningBalance", Some("Balance")),
+                ],
+            ),
+        ],
+    }
+}
+
+fn detail_panel() -> Panel {
+    Panel {
+        id: "detail",
+        label: "Detail",
+        groups: vec!["detail"],
+        sections: vec![
+            section(
+                "Sharpening",
+                &[
+                    ("Sharpness", Some("Amount")),
+                    ("SharpenRadius", Some("Radius")),
+                    ("SharpenDetail", Some("Detail")),
+                    ("SharpenEdgeMasking", Some("Masking")),
+                ],
+            ),
+            section(
+                "Noise Reduction",
+                &[
+                    ("LuminanceSmoothing", Some("Luminance")),
+                    ("LuminanceNoiseReductionDetail", Some("Detail")),
+                    ("LuminanceNoiseReductionContrast", Some("Contrast")),
+                    ("ColorNoiseReduction", Some("Color")),
+                    ("ColorNoiseReductionDetail", Some("Color Detail")),
+                    ("ColorNoiseReductionSmoothness", Some("Smoothness")),
+                ],
+            ),
+        ],
+    }
+}
+
+fn lens_panel() -> Panel {
+    Panel {
+        id: "lens",
+        label: "Lens Corrections",
+        groups: vec!["lens"],
+        sections: vec![
+            section(
+                "Profile",
+                &[
+                    ("LensProfileEnable", Some("Enable Profile Corrections")),
+                    ("AutoLateralCA", Some("Remove Chromatic Aberration")),
+                    ("LensProfileDistortionScale", Some("Distortion")),
+                    ("LensProfileVignettingScale", Some("Vignetting")),
+                ],
+            ),
+            section(
+                "Manual",
+                &[
+                    ("LensManualDistortionAmount", Some("Distortion")),
+                    ("CropConstrainToWarp", Some("Constrain Crop")),
+                    ("VignetteAmount", Some("Vignetting")),
+                    ("VignetteMidpoint", Some("Midpoint")),
+                ],
+            ),
+            section(
+                "Defringe",
+                &[
+                    ("amb:DefringeAuto", Some("Auto")),
+                    ("DefringePurpleAmount", Some("Purple Amount")),
+                    ("DefringePurpleHueLo", Some("Purple Hue (low)")),
+                    ("DefringePurpleHueHi", Some("Purple Hue (high)")),
+                    ("DefringeGreenAmount", Some("Green Amount")),
+                    ("DefringeGreenHueLo", Some("Green Hue (low)")),
+                    ("DefringeGreenHueHi", Some("Green Hue (high)")),
+                ],
+            ),
+        ],
+    }
+}
+
+fn transform_panel() -> Panel {
+    Panel {
+        id: "transform",
+        label: "Transform",
+        groups: vec!["transform"],
+        sections: vec![
+            section("Upright", &[("PerspectiveUpright", Some("Upright"))]),
+            section(
+                "Transform",
+                &[
+                    ("PerspectiveVertical", Some("Vertical")),
+                    ("PerspectiveHorizontal", Some("Horizontal")),
+                    ("PerspectiveRotate", Some("Rotate")),
+                    ("PerspectiveAspect", Some("Aspect")),
+                    ("PerspectiveScale", Some("Scale")),
+                    ("PerspectiveX", Some("Offset X")),
+                    ("PerspectiveY", Some("Offset Y")),
+                ],
+            ),
+        ],
+    }
+}
+
+fn effects_panel() -> Panel {
+    Panel {
+        id: "effects",
+        label: "Effects",
+        groups: vec!["effects"],
+        sections: vec![
+            section(
+                "Post-Crop Vignetting",
+                &[
+                    ("PostCropVignetteStyle", Some("Style")),
+                    ("PostCropVignetteAmount", Some("Amount")),
+                    ("PostCropVignetteMidpoint", Some("Midpoint")),
+                    ("PostCropVignetteRoundness", Some("Roundness")),
+                    ("PostCropVignetteFeather", Some("Feather")),
+                    ("PostCropVignetteHighlightContrast", Some("Highlights")),
+                ],
+            ),
+            section(
+                "Grain",
+                &[
+                    ("GrainAmount", Some("Amount")),
+                    ("GrainSize", Some("Size")),
+                    ("GrainFrequency", Some("Roughness")),
+                    ("amb:GrainFilm", Some("Film response")),
+                ],
+            ),
+            section(
+                "Film finish",
+                &[("amb:HighlightRolloff", Some("Highlight roll-off"))],
+            ),
+            section(
+                "Glow",
+                &[
+                    ("amb:Halation", Some("Halation")),
+                    ("amb:Bloom", Some("Bloom")),
+                    ("amb:GlowSize", Some("Size")),
+                ],
+            ),
+            section("Plugin effects", &[("amb:Effects", Some("Effects"))]),
+        ],
+    }
+}
+
+fn calibration_panel() -> Panel {
+    Panel {
+        id: "calibration",
+        label: "Calibration",
+        groups: vec!["calibration"],
+        sections: vec![
+            section("Shadows", &[("ShadowTint", Some("Tint"))]),
+            section(
+                "Red Primary",
+                &[
+                    ("RedHue", Some("Hue")),
+                    ("RedSaturation", Some("Saturation")),
+                ],
+            ),
+            section(
+                "Green Primary",
+                &[
+                    ("GreenHue", Some("Hue")),
+                    ("GreenSaturation", Some("Saturation")),
+                ],
+            ),
+            section(
+                "Blue Primary",
+                &[
+                    ("BlueHue", Some("Hue")),
+                    ("BlueSaturation", Some("Saturation")),
+                ],
+            ),
+        ],
+    }
+}
+
+fn negative_panel() -> Panel {
+    Panel {
+        id: "negative",
+        label: "Film Negative",
+        groups: vec!["negative"],
+        sections: vec![
+            section(
+                "Conversion",
+                &[
+                    ("amb:NegativeConvert", Some("Convert negative")),
+                    ("amb:NegativeAuto", Some("Auto")),
+                    ("amb:NegativeAutoDensity", Some("Auto Density")),
+                    ("amb:NegativeAutoGrade", Some("Auto Grade")),
+                    ("amb:NegativeRange", Some("Fixed range")),
+                    ("amb:NegativeType", Some("Type")),
+                    ("amb:NegativeCastRemoval", Some("Cast removal")),
+                    ("amb:NegativeExpired", Some("Expired film")),
+                    ("amb:FilmStock", Some("Film stock")),
+                    ("amb:FilmStockAmount", Some("Stock amount")),
+                ],
+            ),
+            section(
+                "Print",
+                &[
+                    ("amb:NegativeExposure", Some("Exposure")),
+                    ("amb:NegativeContrast", Some("Contrast")),
+                    ("amb:NegativeToe", Some("Toe")),
+                    ("amb:NegativeShoulder", Some("Shoulder")),
+                    ("amb:NegativeSaturation", Some("Saturation")),
+                    ("amb:NegativeCyanRed", Some("Cyan ↔ Red")),
+                    ("amb:NegativeMagentaGreen", Some("Magenta ↔ Green")),
+                    ("amb:NegativeYellowBlue", Some("Yellow ↔ Blue")),
+                ],
+            ),
+        ],
+    }
 }
 
 #[cfg(test)]

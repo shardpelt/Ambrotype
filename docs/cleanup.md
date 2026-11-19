@@ -138,20 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B9b. Split `crates/amb-library/src/catalog.rs` before it passes 800
-Tier: medium        Risk: low
-Why: 791 production lines, 9 under the budget.
-Files: `crates/amb-library/src/catalog.rs` to `crates/amb-library/src/catalog/{mod,query,prints,tests}.rs`.
-Steps:
-1. `git mv crates/amb-library/src/catalog.rs crates/amb-library/src/catalog/mod.rs`; its `mod tests` block to `tests.rs`.
-2. `query.rs`: `Entry`, `Query`, `impl Query`. `mod.rs` declares `mod query;` and `pub use query::{Entry, Query};`.
-3. `prints.rs`: `Print`, and the two `impl Catalog` blocks after the main one (the one with `store_prints` and the one with `store_vectors`). `mod.rs`: `mod prints; pub use prints::Print;`. The methods that `mod.rs`'s code or other files call become `pub(super)` or stay `pub` as they were. `key` (the free function after them) stays in `mod.rs`; the children see it.
-4. Everything else (`VERSION`, `Shot`, `Record`, `Stamp`, `stamp`, `read`, `shot_of`, `impl Record`, `FolderCount`, `Indexed`, `INDEX_CHUNK`, `Stats`, `Catalog`, `default_path`, the main `impl Catalog`, `folder_and_prefix`, `reachable`) stays.
-Don't: change SQL or the schema `VERSION`.
-Checks: as the common checks of Group B; `cargo test -p amb-library`.
-Done when: `mod.rs` is under 700 production lines.
-Commit: `library: split catalog.rs into query and prints`. Why: "It was 9 lines under the size budget."
-
 ### B9c. Split `crates/amb-engine/src/dehaze.rs` before it passes 800
 Tier: medium        Risk: low
 Why: 788 production lines, 12 under the budget; 200 of them are filter helpers.

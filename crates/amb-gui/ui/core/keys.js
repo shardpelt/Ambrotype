@@ -307,7 +307,7 @@ async function settingsFlow() {
       if (filter && !`${a.label} ${a.group} ${keys.map(keyLabel).join(" ")}`.toLowerCase().includes(filter)) continue;
       if (a.group !== group) {
         group = a.group;
-        list.append(Object.assign(document.createElement("h3"), { textContent: group }));
+        list.append(el("h3", {}, group));
       }
       const row = document.createElement("div");
       row.className = "key-row";
@@ -323,7 +323,7 @@ async function settingsFlow() {
       for (const k of keys) {
         const kbd = document.createElement("kbd");
         kbd.textContent = keyLabel(k);
-        const x = Object.assign(document.createElement("button"), { type: "button", className: "kbd-remove", textContent: "×", title: `Remove ${keyLabel(k)}` });
+        const x = el("button", { type: "button", class: "kbd-remove", title: `Remove ${keyLabel(k)}` }, "×");
         x.addEventListener("click", () => {
           ui.keybindings[a.id] = keys.filter((y) => y !== k);
           saveKeybindings();
@@ -333,11 +333,11 @@ async function settingsFlow() {
         caps.append(kbd);
       }
       if (capturing === a.id) {
-        caps.append(Object.assign(document.createElement("span"), { className: "key-capture", textContent: "Press the new shortcut… (Esc cancels)" }));
+        caps.append(el("span", { class: "key-capture" }, "Press the new shortcut… (Esc cancels)"));
       } else if (!keys.length) {
-        caps.append(Object.assign(document.createElement("span"), { className: "hint", textContent: "none" }));
+        caps.append(el("span", { class: "hint" }, "none"));
       }
-      const add = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "Add key", disabled: keys.length >= 4 });
+      const add = el("button", { type: "button", class: "small", disabled: keys.length >= 4 }, "Add key");
       add.addEventListener("click", () => {
         capturing = a.id;
         pending = null;
@@ -345,7 +345,7 @@ async function settingsFlow() {
         render();
       });
       const changed = Boolean(ui.keybindings[a.id]);
-      const reset = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "Reset", disabled: !changed, title: `Back to ${a.keys.map(keyLabel).join(" or ") || "no key"}` });
+      const reset = el("button", { type: "button", class: "small", disabled: !changed, title: `Back to ${a.keys.map(keyLabel).join(" or ") || "no key"}` }, "Reset");
       reset.addEventListener("click", () => {
         delete ui.keybindings[a.id];
         saveKeybindings();
@@ -356,7 +356,7 @@ async function settingsFlow() {
       row.append(name, caps, add, reset);
       list.append(row);
     }
-    if (!list.children.length) list.append(Object.assign(document.createElement("p"), { className: "hint", textContent: "No shortcuts match." }));
+    if (!list.children.length) list.append(el("p", { class: "hint" }, "No shortcuts match."));
   }
 
   function render() {
@@ -377,9 +377,9 @@ async function settingsFlow() {
     if (!clashes.length) return add();
     pending = combo;
     capturing = null;
-    const use = Object.assign(document.createElement("button"), { type: "button", className: "small primary", textContent: "Use it here instead" });
+    const use = el("button", { type: "button", class: "small primary" }, "Use it here instead");
     use.addEventListener("click", add);
-    const keep = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "Keep it there" });
+    const keep = el("button", { type: "button", class: "small" }, "Keep it there");
     keep.addEventListener("click", () => { pending = null; message(""); render(); });
     message(`${keyLabel(combo)} already does "${clashes.map((b) => b.label).join('", "')}". `, [use, " ", keep]);
     render();

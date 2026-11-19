@@ -30,6 +30,7 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 - **Look closer** (Lightroom's culling views, buttons in the bar):
   - **Loupe** (E): one photo large; ← → step through the shown photos.
   - **Compare** (C): the select on the left, a candidate on the right (the first two selected, or the photo after the select). ← → change the candidate, ↓ swaps the two, ↑ makes the candidate the select and brings the next photo in.
+  - Loupe and Compare zoom as the viewer does: the wheel or a pinch at the pointer, a click for 100 % there and back, drag to move, Ctrl + − 0; ← → step and show the whole photo again. Compare's two photos zoom and move together.
   - Compare splits side by side or above and below, the candidate either way round (the buttons at its top; kept on this computer). Survey (the selection tiled) was taken out on 2026-11-11: compare and the grid did its job.
   - In compare, rating, label and flag keys and the panel act on the active photo, framed in the accent colour, as in Lightroom. Enter or a double-click opens it in the editor; G or Esc goes back to the grid.
   - Large previews are the camera's embedded preview at 1024 or 2048 pixels, then the edit's render for edited photos (both cached).

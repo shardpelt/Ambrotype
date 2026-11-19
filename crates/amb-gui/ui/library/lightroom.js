@@ -29,11 +29,11 @@ function lightroomFolderName(path) {
 }
 
 function lightroomRow(text, count, title, onclick) {
-  const row = Object.assign(document.createElement("div"), { className: "tree-row", title });
+  const row = el("div", { class: "tree-row", title: title });
   row.append(
-    Object.assign(document.createElement("span"), { className: "twist" }),
-    Object.assign(document.createElement("span"), { className: "tree-name", textContent: text }),
-    Object.assign(document.createElement("span"), { className: "tree-count", textContent: count == null ? "" : count.toLocaleString() }),
+    el("span", { class: "twist" }),
+    el("span", { class: "tree-name" }, text),
+    el("span", { class: "tree-count" }, count == null ? "" : count.toLocaleString()),
   );
   row.addEventListener("click", onclick);
   return row;
@@ -61,7 +61,7 @@ function renderLightroom() {
       else lrin.open.add(c.catalogue);
       renderLightroom();
     };
-    const close = Object.assign(document.createElement("button"), { type: "button", className: "small tree-remove", textContent: "×", title: "Close the catalogue (nothing is deleted)" });
+    const close = el("button", { type: "button", class: "small tree-remove", title: "Close the catalogue (nothing is deleted)" }, "×");
     close.addEventListener("click", (e) => {
       e.stopPropagation();
       closeLightroomCatalogue(c);

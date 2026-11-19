@@ -9,6 +9,7 @@ A short running list, kept up to date as work lands. Newest decisions first. Eve
 2. **Auto Density and Auto Grade on real negatives:** try both switches (Negative panel, beside Auto) on a roll. If they look right, they become Auto's default.
 3. **GPU speed:** export a 24 MP raw on the Mac with and without `AMB_GPU=off` (both are tiled or whole as the GPU's memory allows). And AI on the GPU: time Select object's first click and an AI Remove with and without `AMB_AI_GPU=off` (Settings → AI models says where they run).
 4. **Your sample raw** to replace the stand-in sample photo, after the release.
+5. **A Lightroom 16 preset with Glow** (2026-11-19): in the Lightroom trial, save a preset with Glow on (any style, Range and Warmth moved off their defaults), or one of Adobe's ten Glow presets, and send the `.xmp`. Its setting names let us read Lightroom 16's Glow (`glow-styles`).
 
 ## Up next
 
@@ -22,6 +23,7 @@ The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
 ## Recently done
 
+- 2026-11-19: **Competitor recheck**: Lightroom Classic 16's Glow (five styles, in masks) and vectorscope, RapidRAW 1.7, RAWmakase 0.6 and others in [research/17](research/17-competitors-2026.md) "Recheck 2026-11-19" and the [watchlist](research/watchlist.md); new roadmap rows `glow-styles` and `vectorscope`
 - 2026-11-15: **The base of the language table** (step 1 of [design/language.md](design/language.md)): `t()` and a plural lookup in `ui/core/core.js`, the markup translated at startup (`ui/core/lang.js`), language files in `data/lang/` (none yet, so Settings has no Language row), the generated table `data/lang/keys.json` (`tools/lang-table.py`, with a test that it is current) and the `zz` test language with its count of texts not through yet (`tests/ui/language.js`). Nothing changes on screen
 - 2026-11-13: **Open folder on a slow card shows it's working**: from the click to the grid a spinner and "Reading the folder…" (with the path) show, in place of the library's "Choose folder" prompt, and a second Open folder meanwhile says "Still opening the folder…" instead of asking again (`openFolder` in `ui/develop/photo.js`, `showReading` in `ui/library/library.js`)
 - 2026-11-13: **One sideways row of photos** (`photoRow` in `ui/core/photo-row.js`): the Develop filmstrip and the Map's tray of photos without a place share one row, so the tray also scrolls with the wheel and glides with a drag, and a photo dragged up still lands on the map; Clean up's strip, Duplicates' rows and the convert dialog's picks use it too

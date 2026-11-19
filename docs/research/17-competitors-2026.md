@@ -1,6 +1,6 @@
 # Competitors in 2026: what they do, what to take, and our niche
 
-Read 2026-10-30 from each project's README or website, not their code (rechecked 2026-11-04 and 2026-11-11). Numbers (stars, prices) are as of the first day.
+Read 2026-10-30 from each project's README or website, not their code (rechecked 2026-11-04, 2026-11-11 and 2026-11-19). Numbers (stars, prices) are as of the first day.
 
 ## The field
 
@@ -72,6 +72,26 @@ The new projects share our shape: XMP sidecars, Lightroom panel order, local AI,
 - "Blocks the network": a visible privacy promise.
 - A CLI and MCP server, like ours.
 
+## Recheck 2026-11-19
+
+Read from READMEs, release pages and reviews (Adobe's own pages give 403, so the Lightroom part comes from DPReview, presetpro.com and scottdavenportphoto.com).
+
+**Lightroom Classic 16 and Lightroom (10 Nov, Adobe MAX)**
+- **Glow** (Develop → Effects, under Grain; first in ACR 19). Five styles: Diffusion (overall soft luminosity), Bloom (neutral light spreading from bright areas), Halation (an orange-to-red rim round highlights), Motion (glow drawn out one way) and Streak (both ways along an angle). Sliders: Amount, Range (which tones glow: low only the brightest; Alt-drag shows where), Spread (how far), Warmth (orange to red on Halation), and Direction and Softness for Motion and Streak. In masks, only Amount is per mask: the style and the other sliders are shared with the global Glow. Ten Adobe presets (Sheer, Dream, Soft and Strong Bloom, Gentle and Amber Aura, Fast and Slow Motion, Cinematic Glow and Flare). No reviewer gave the sliders' ranges or the XMP names.
+- **Vectorscope** in the histogram panel (right-click): hue as angle, saturation as distance, a skin-tone line, a choice of colour space, and the colour under the pointer shown while masking.
+- **Colour grading per mask**; **Depth Range on any photo** (an AI depth map when the file has none); **AI blemish removal** (Blemishes and Natural marks sliders, per face); **focus points** in Loupe (Canon, Nikon, Sony raws); a **Projection** slider in Transform; **white balance down to 1,500 K**; a customisable Masking panel; history cleared in bulk.
+- ACR 19 also: up to three LUTs, virtual copies, burst stacks, Generative Remove across photos. Photoshop: a Light Leak filter (beta, no AI).
+
+Ours against it: we have Halation, Bloom and one Glow size (`amb:Halation`, `amb:Bloom`, `amb:GlowSize`), the same everywhere, not in masks, and a Light leak plugin. Missing: Diffusion, Motion and Streak, a Range and a Warmth slider, Glow in masks, and the crs names to read Lightroom 16 presets (roadmap `glow-styles`). A Lightroom 16 preset with Glow, or a Temperature under 2,000 K, is read today without its Glow and with the temperature clamped. Also new on the roadmap: `vectorscope`. Depth masks are in `masks-unrendered` and `ai-models-gaps` already.
+
+**Others since 2026-11-11**
+- RapidRAW 1.7.0: a new rendering engine (GPU demosaic, rebuilt tone sliders; old edits render differently), 2× AI super resolution, per-camera default adjustments.
+- RAWmakase 0.5 to 0.6.1: extensions (MCP, MIDI and AI masks became bundled extensions), HDR editing and HDR exports, an AI Retouch extension. The closest project to us in shape keeps moving fast.
+- LightCraft 0.21: Lightroom catalogue backups (.zip) import, Lens Blur with AI subject focus.
+- NegPy 0.69 (command-line export), negaflow 1.2.7 (Transform), LightZone 5.1 (no features), Capture One 16.9.1, PhotoLab 10.3, ON1 Photo RAW 2027 (2 Nov).
+- New: VSCO Studio Pro for Mac (film looks and film grain, a subscription), and on pixls.us Greycard and FerrumPix (open-source raw editors, not read yet).
+- Halation is now common: CalibRaw, Redlamp, negaflow, NegPy and RapidRAW have it, and Lightroom since 10 Nov. Redlamp ties it to film stocks, as our `film-stock-looks` plans.
+
 ## Why people pay for Tenzen
 
 Tenzen is not better at developing raws than the free projects. People pay for other things:
@@ -123,6 +143,8 @@ Sizes: S a day or two, M a week, L more.
 12. ~~Auto-advance after rating~~ (done 2026-10-31); speed budgets published like Redlamp's performance card (FlashView, Redlamp). S.
 13. ~~Bug reports without a GitHub account~~ (done 2026-10-31). S.
 14. Agents driving the whole UI, not only edits (LightCraft). M.
+20. Glow styles and Glow in masks, read from Lightroom 16 presets (Lightroom Classic 16; roadmap `glow-styles`). M.
+21. A vectorscope (Lightroom Classic 16; roadmap `vectorscope`). S.
 
 **Later or not ours**
 - Generative fill and expand, face reshaping, Relight: large models, outside our niche.

@@ -79,11 +79,165 @@
 
   // ------------------------------------------------------------ one wheel
 
+  // The functions below take one wheel's state and parts, `wh` (made in
+  // makeWheel): its `region`, `emit`, `value` ({ Hue, Sat, Lum }), `drag`
+  // ({ start, offset: [dx, dy] } while the puck is dragged), `diameter` (CSS px),
+  // and its elements.
+
+  const wheelTag = (wh, k) => `ColorGrade${wh.region.key}${k}`;
+
+  // A labelled range slider with a numeric readout; drag = input, release = commit,
+  // double-click = reset to 0.
+  function wheelSlider(wh, label, min, max, track) {
+    const row = document.createElement("label");
+    row.className = "amb-wheel-row";
+    const text = document.createElement("span");
+    text.textContent = label;
+    const input = document.createElement("input");
+    input.type = "range";
+    input.min = min; input.max = max; input.step = 1;
+    if (track) input.style.setProperty("--track", track);
+    const out = document.createElement("output");
+    row.append(text, input, out);
+    const key = { Hue: "Hue", Saturation: "Sat", Luminance: "Lum" }[label];
+    const value = wh.value;
+    let start = null;
+    input.addEventListener("pointerdown", () => (start = { ...value }));
+    input.addEventListener("input", () => {
+      if (!start) start = { ...value };
+      value[key] = Number(input.value);
+      wheelRender(wh);
+      wh.emit("input", { [wheelTag(wh, key)]: value[key] });
+    });
+    input.addEventListener("change", () => {
+      value[key] = Number(input.value);
+      wheelRender(wh);
+      if (!start || start[key] !== value[key]) wh.emit("commit", { [wheelTag(wh, key)]: value[key] });
+      start = null;
+    });
+    input.addEventListener("dblclick", () => {
+      if (value[key] === 0) return;
+      value[key] = 0;
+      wheelRender(wh);
+      wh.emit("commit", { [wheelTag(wh, key)]: 0 });
+    });
+    return { row, input, out };
+  }
+
+  // ---------------------------------------------------- drawing
+
+  function wheelResize(wh) {
+    const w = Math.floor(wh.disc.clientWidth);
+    if (!w) return;
+    const dpr = window.devicePixelRatio || 1;
+    wh.diameter = w;
+    wh.canvas.style.width = wh.canvas.style.height = w + "px";
+    wh.canvas.width = wh.canvas.height = Math.round(w * dpr);
+    wheelDraw(wh);
+  }
+
+  const wheelRadius = (wh) => wh.diameter / 2 - 1;
+  function wheelPuckPos(wh, hue = wh.value.Hue, sat = wh.value.Sat) {
+    const a = (hue * Math.PI) / 180;
+    const r = (sat / 100) * wheelRadius(wh);
+    return [wh.diameter / 2 + Math.cos(a) * r, wh.diameter / 2 - Math.sin(a) * r];
+  }
+
+  function wheelDraw(wh) {
+    const { canvas, g, diameter, value } = wh;
+    if (!diameter) return;
+    const dpr = canvas.width / diameter;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    const inset = Math.round(dpr); // keep the rim 1 CSS px inside the canvas
+    g.drawImage(wheelImage(canvas.width - 2 * inset), inset, inset);
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const c = diameter / 2;
+    // Centre mark, so "no tint" is easy to find.
+    g.strokeStyle = "rgba(0,0,0,0.35)";
+    g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(c - 4, c); g.lineTo(c + 4, c);
+    g.moveTo(c, c - 4); g.lineTo(c, c + 4);
+    g.stroke();
+    // Puck: the chosen colour, with a light ring and a dark halo for contrast.
+    const [px, py] = wheelPuckPos(wh);
+    const pr = diameter > 150 ? 7 : 5.5;
+    g.beginPath();
+    g.arc(px, py, pr + 1.5, 0, Math.PI * 2);
+    g.fillStyle = "rgba(0,0,0,0.55)";
+    g.fill();
+    g.beginPath();
+    g.arc(px, py, pr, 0, Math.PI * 2);
+    g.fillStyle = rgbCss(hsv(value.Hue, value.Sat / 100, WHEEL_VALUE));
+    g.fill();
+    g.lineWidth = 2;
+    g.strokeStyle = wh.drag ? "#fff" : "#e6e6e8";
+    g.stroke();
+  }
+
+  // Sync the sliders, readout and canvas with `value`.
+  function wheelRender(wh) {
+    const { rows, value } = wh;
+    for (const k of ["Hue", "Sat", "Lum"]) {
+      rows[k].input.value = value[k];
+      rows[k].out.textContent = k === "Lum" ? signed(value[k]) : String(value[k]);
+    }
+    rows.Sat.input.style.setProperty("--track",
+      `linear-gradient(90deg,#808080,${rgbCss(hsv(value.Hue, 1, 0.9))})`);
+    wh.readout.textContent = `H ${value.Hue} · S ${value.Sat}`;
+    wh.name.classList.toggle("changed", value.Sat !== 0 || value.Lum !== 0);
+    wheelDraw(wh);
+  }
+
+  // ---------------------------------------------------- interaction
+
+  // Move the puck to a canvas position. Shift keeps the hue (Lightroom), changing
+  // saturation only.
+  function wheelMoveTo(wh, x, y, keepHue) {
+    const { value } = wh;
+    const dx = x - wh.diameter / 2;
+    const dy = wh.diameter / 2 - y;
+    const sat = Math.min(100, Math.round((Math.hypot(dx, dy) / wheelRadius(wh)) * 100));
+    const hue = keepHue ? value.Hue : Math.round((Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360) % 360;
+    if (hue === value.Hue && sat === value.Sat) return false;
+    value.Hue = hue;
+    value.Sat = sat;
+    return true;
+  }
+
+  const wheelHueSat = (wh) => ({ [wheelTag(wh, "Hue")]: wh.value.Hue, [wheelTag(wh, "Sat")]: wh.value.Sat });
+
+  // A press at canvas (x, y): on the wheel or the puck it starts a drag (the puck
+  // keeps its offset so it does not jump; elsewhere it jumps to the pointer).
+  // False when the press missed.
+  function wheelPress(wh, x, y, keepHue) {
+    const [px, py] = wheelPuckPos(wh);
+    const c = wh.diameter / 2;
+    if (Math.hypot(x - c, y - c) > wheelRadius(wh) + GRAB && Math.hypot(x - px, y - py) > GRAB) return false;
+    const onPuck = Math.hypot(x - px, y - py) <= GRAB;
+    wh.drag = { start: { ...wh.value }, offset: onPuck ? [px - x, py - y] : [0, 0] };
+    wh.el.classList.add("dragging");
+    if (!onPuck && wheelMoveTo(wh, x, y, keepHue)) { wheelRender(wh); wh.emit("input", wheelHueSat(wh)); } else wheelDraw(wh);
+    return true;
+  }
+
+  function wheelEndDrag(wh) {
+    if (!wh.drag) return;
+    const { start } = wh.drag;
+    wh.drag = null;
+    wh.el.classList.remove("dragging");
+    wheelDraw(wh);
+    const changes = {};
+    if (start.Hue !== wh.value.Hue) changes[wheelTag(wh, "Hue")] = wh.value.Hue;
+    if (start.Sat !== wh.value.Sat) changes[wheelTag(wh, "Sat")] = wh.value.Sat;
+    if (Object.keys(changes).length) wh.emit("commit", changes);
+  }
+
   function makeWheel(region, emit) {
-    const tag = (k) => `ColorGrade${region.key}${k}`;
-    const value = { Hue: 0, Sat: 0, Lum: 0 };
-    let drag = null; // { start, offset: [dx, dy] | null }
-    let diameter = 0;
+    const wh = { region, emit, value: { Hue: 0, Sat: 0, Lum: 0 }, drag: null, diameter: 0 };
+    const { value } = wh;
+    const tag = (k) => wheelTag(wh, k);
 
     const el = document.createElement("div");
     el.className = "amb-wheel";
@@ -102,177 +256,42 @@
     const canvas = document.createElement("canvas");
     canvas.title = "Drag to set hue and saturation · Shift-drag: saturation only · double-click to reset";
     disc.append(canvas);
-    const g = canvas.getContext("2d");
+    Object.assign(wh, { el, name, readout, disc, canvas, g: canvas.getContext("2d") });
 
-    const rows = {
-      Hue: slider("Hue", 0, 359, RAINBOW),
-      Sat: slider("Saturation", 0, 100, null),
-      Lum: slider("Luminance", -100, 100, LUM_TRACK),
+    wh.rows = {
+      Hue: wheelSlider(wh, "Hue", 0, 359, RAINBOW),
+      Sat: wheelSlider(wh, "Saturation", 0, 100, null),
+      Lum: wheelSlider(wh, "Luminance", -100, 100, LUM_TRACK),
     };
+    const { rows } = wh;
     rows.Hue.row.classList.add("amb-detail");
     rows.Sat.row.classList.add("amb-detail");
     el.append(head, disc, rows.Hue.row, rows.Sat.row, rows.Lum.row);
-
-    // A labelled range slider with a numeric readout; drag = input, release = commit,
-    // double-click = reset to 0.
-    function slider(label, min, max, track) {
-      const row = document.createElement("label");
-      row.className = "amb-wheel-row";
-      const text = document.createElement("span");
-      text.textContent = label;
-      const input = document.createElement("input");
-      input.type = "range";
-      input.min = min; input.max = max; input.step = 1;
-      if (track) input.style.setProperty("--track", track);
-      const out = document.createElement("output");
-      row.append(text, input, out);
-      const key = { Hue: "Hue", Saturation: "Sat", Luminance: "Lum" }[label];
-      let start = null;
-      input.addEventListener("pointerdown", () => (start = { ...value }));
-      input.addEventListener("input", () => {
-        if (!start) start = { ...value };
-        value[key] = Number(input.value);
-        render();
-        emit("input", { [tag(key)]: value[key] });
-      });
-      input.addEventListener("change", () => {
-        value[key] = Number(input.value);
-        render();
-        if (!start || start[key] !== value[key]) emit("commit", { [tag(key)]: value[key] });
-        start = null;
-      });
-      input.addEventListener("dblclick", () => {
-        if (value[key] === 0) return;
-        value[key] = 0;
-        render();
-        emit("commit", { [tag(key)]: 0 });
-      });
-      return { row, input, out };
-    }
-
-    // ---------------------------------------------------- drawing
-
-    function resize() {
-      const w = Math.floor(disc.clientWidth);
-      if (!w) return;
-      const dpr = window.devicePixelRatio || 1;
-      diameter = w;
-      canvas.style.width = canvas.style.height = w + "px";
-      canvas.width = canvas.height = Math.round(w * dpr);
-      draw();
-    }
-
-    const radius = () => diameter / 2 - 1;
-    function puckPos(hue = value.Hue, sat = value.Sat) {
-      const a = (hue * Math.PI) / 180;
-      const r = (sat / 100) * radius();
-      return [diameter / 2 + Math.cos(a) * r, diameter / 2 - Math.sin(a) * r];
-    }
-
-    function draw() {
-      if (!diameter) return;
-      const dpr = canvas.width / diameter;
-      g.setTransform(1, 0, 0, 1, 0, 0);
-      g.clearRect(0, 0, canvas.width, canvas.height);
-      const inset = Math.round(dpr); // keep the rim 1 CSS px inside the canvas
-      g.drawImage(wheelImage(canvas.width - 2 * inset), inset, inset);
-      g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const c = diameter / 2;
-      // Centre mark, so "no tint" is easy to find.
-      g.strokeStyle = "rgba(0,0,0,0.35)";
-      g.lineWidth = 1;
-      g.beginPath();
-      g.moveTo(c - 4, c); g.lineTo(c + 4, c);
-      g.moveTo(c, c - 4); g.lineTo(c, c + 4);
-      g.stroke();
-      // Puck: the chosen colour, with a light ring and a dark halo for contrast.
-      const [px, py] = puckPos();
-      const pr = diameter > 150 ? 7 : 5.5;
-      g.beginPath();
-      g.arc(px, py, pr + 1.5, 0, Math.PI * 2);
-      g.fillStyle = "rgba(0,0,0,0.55)";
-      g.fill();
-      g.beginPath();
-      g.arc(px, py, pr, 0, Math.PI * 2);
-      g.fillStyle = rgbCss(hsv(value.Hue, value.Sat / 100, WHEEL_VALUE));
-      g.fill();
-      g.lineWidth = 2;
-      g.strokeStyle = drag ? "#fff" : "#e6e6e8";
-      g.stroke();
-    }
-
-    // Sync the sliders, readout and canvas with `value`.
-    function render() {
-      for (const k of ["Hue", "Sat", "Lum"]) {
-        rows[k].input.value = value[k];
-        rows[k].out.textContent = k === "Lum" ? signed(value[k]) : String(value[k]);
-      }
-      rows.Sat.input.style.setProperty("--track",
-        `linear-gradient(90deg,#808080,${rgbCss(hsv(value.Hue, 1, 0.9))})`);
-      readout.textContent = `H ${value.Hue} · S ${value.Sat}`;
-      name.classList.toggle("changed", value.Sat !== 0 || value.Lum !== 0);
-      draw();
-    }
-
-    // ---------------------------------------------------- interaction
 
     function local(e) {
       const r = canvas.getBoundingClientRect();
       return [e.clientX - r.left, e.clientY - r.top];
     }
 
-    // Move the puck to a canvas position. Shift keeps the hue (Lightroom), changing
-    // saturation only.
-    function moveTo(x, y, keepHue) {
-      const dx = x - diameter / 2;
-      const dy = diameter / 2 - y;
-      const sat = Math.min(100, Math.round((Math.hypot(dx, dy) / radius()) * 100));
-      const hue = keepHue ? value.Hue : Math.round((Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360) % 360;
-      if (hue === value.Hue && sat === value.Sat) return false;
-      value.Hue = hue;
-      value.Sat = sat;
-      return true;
-    }
-
-    const hueSat = () => ({ [tag("Hue")]: value.Hue, [tag("Sat")]: value.Sat });
-
     canvas.addEventListener("pointerdown", (e) => {
-      if (e.button !== 0 || !diameter) return;
+      if (e.button !== 0 || !wh.diameter) return;
       const [x, y] = local(e);
-      const [px, py] = puckPos();
-      const c = diameter / 2;
-      if (Math.hypot(x - c, y - c) > radius() + GRAB && Math.hypot(x - px, y - py) > GRAB) return;
-      // Grabbing the puck keeps its offset so it does not jump; elsewhere it jumps to the pointer.
-      const onPuck = Math.hypot(x - px, y - py) <= GRAB;
-      drag = { start: { ...value }, offset: onPuck ? [px - x, py - y] : [0, 0] };
+      if (!wheelPress(wh, x, y, e.shiftKey)) return;
       canvas.setPointerCapture(e.pointerId);
-      el.classList.add("dragging");
-      if (!onPuck && moveTo(x, y, e.shiftKey)) { render(); emit("input", hueSat()); } else draw();
       e.preventDefault();
     });
 
     canvas.addEventListener("pointermove", (e) => {
-      if (!drag) return;
+      if (!wh.drag) return;
       const [x, y] = local(e);
-      if (moveTo(x + drag.offset[0], y + drag.offset[1], e.shiftKey)) {
-        render();
-        emit("input", hueSat());
+      if (wheelMoveTo(wh, x + wh.drag.offset[0], y + wh.drag.offset[1], e.shiftKey)) {
+        wheelRender(wh);
+        emit("input", wheelHueSat(wh));
       }
     });
 
-    function endDrag() {
-      if (!drag) return;
-      const { start } = drag;
-      drag = null;
-      el.classList.remove("dragging");
-      draw();
-      const changes = {};
-      if (start.Hue !== value.Hue) changes[tag("Hue")] = value.Hue;
-      if (start.Sat !== value.Sat) changes[tag("Sat")] = value.Sat;
-      if (Object.keys(changes).length) emit("commit", changes);
-    }
-    canvas.addEventListener("pointerup", endDrag);
-    canvas.addEventListener("pointercancel", endDrag);
+    canvas.addEventListener("pointerup", () => wheelEndDrag(wh));
+    canvas.addEventListener("pointercancel", () => wheelEndDrag(wh));
 
     canvas.addEventListener("dblclick", () => {
       if (value.Hue === 0 && value.Sat === 0) return;
@@ -281,23 +300,24 @@
       if (value.Sat !== 0) changes[tag("Sat")] = 0;
       value.Hue = 0;
       value.Sat = 0;
-      render();
+      wheelRender(wh);
       emit("commit", changes);
     });
 
     // Next frame: resizing the canvas inside the callback loops the observer.
+    const resize = () => wheelResize(wh);
     const observer = new ResizeObserver(() => requestAnimationFrame(resize));
     observer.observe(disc);
-    render();
+    wheelRender(wh);
 
     return {
       el,
       region: region.key,
-      dragging: () => Boolean(drag),
+      dragging: () => Boolean(wh.drag),
       set(values) {
         for (const k of ["Hue", "Sat", "Lum"]) value[k] = Math.round(num(values ? values[tag(k)] : 0));
         value.Hue = ((value.Hue % 360) + 360) % 360;
-        render();
+        wheelRender(wh);
       },
       get: () => ({ [tag("Hue")]: value.Hue, [tag("Sat")]: value.Sat, [tag("Lum")]: value.Lum }),
       refresh: resize,

@@ -186,14 +186,14 @@ async function renderSubfolders() {
 }
 
 function makeDirCell(d) {
-  const cell = Object.assign(document.createElement("div"), { className: "lib-cell lib-dir" });
+  const cell = el("div", { class: "lib-cell lib-dir" });
   cell.dataset.dir = d.path;
   cell.title = d.up ? `Up to ${d.path}` : `${d.path}\n${plural(d.photos, "photo")}${d.folders ? ", and folders" : ""}: click to open`;
-  const frame = Object.assign(document.createElement("div"), { className: "lib-frame" });
-  frame.append(Object.assign(document.createElement("span"), { className: "lib-dir-icon", textContent: d.up ? "↑" : "📁" }));
-  const meta = Object.assign(document.createElement("div"), { className: "lib-meta" });
-  if (!d.up) meta.append(Object.assign(document.createElement("span"), { className: "lib-dir-count", textContent: `${plural(d.photos, "photo")}${d.folders ? " +" : ""}` }));
-  cell.append(frame, meta, Object.assign(document.createElement("div"), { className: "lib-name", textContent: d.up ? ".. (up)" : d.name }));
+  const frame = el("div", { class: "lib-frame" });
+  frame.append(el("span", { class: "lib-dir-icon" }, d.up ? "↑" : "📁"));
+  const meta = el("div", { class: "lib-meta" });
+  if (!d.up) meta.append(el("span", { class: "lib-dir-count" }, `${plural(d.photos, "photo")}${d.folders ? " +" : ""}`));
+  cell.append(frame, meta, el("div", { class: "lib-name" }, d.up ? ".. (up)" : d.name));
   return cell;
 }
 
@@ -217,7 +217,7 @@ function renderLibrary() {
   // passed on the way wait behind the ones on screen.
   let seen = [];
   lib.near = nearView(grid, "300px 0px", (cell) => seen.push(cell.dataset.path), () => lib.queue.front(seen.splice(0)));
-  lib.spacers = [0, 1].map(() => Object.assign(document.createElement("div"), { className: "lib-spacer" }));
+  lib.spacers = [0, 1].map(() => el("div", { class: "lib-spacer" }));
   grid.replaceChildren(...lib.spacers);
   renderRange(true);
   // The caption's height, measured once, places every row.
@@ -282,24 +282,23 @@ function makeCell(p) {
   cell.dataset.path = p.path;
   cell.title = [p.name, p.captured, p.keywords.join(", "), p.offline && "Offline: its drive isn't plugged in"].filter(Boolean).join("\n");
   cell.classList.toggle("offline", Boolean(p.offline));
-  const frame = Object.assign(document.createElement("div"), { className: "lib-frame" });
-  frame.append(Object.assign(document.createElement("img"), { alt: "", draggable: false }));
-  const meta = Object.assign(document.createElement("div"), { className: "lib-meta" });
+  const frame = el("div", { class: "lib-frame" });
+  frame.append(el("img", { alt: "", draggable: "false" }));
+  const meta = el("div", { class: "lib-meta" });
   meta.append(
-    Object.assign(document.createElement("span"), { className: "lib-flag" }),
-    Object.assign(document.createElement("span"), { className: "lib-stars" }),
-    Object.assign(document.createElement("span"), { className: "lib-edited", title: "Has edits" }),
+    el("span", { class: "lib-flag" }),
+    el("span", { class: "lib-stars" }),
+    el("span", { class: "lib-edited", title: "Has edits" }),
   );
-  const name = Object.assign(document.createElement("div"), { className: "lib-name", textContent: p.name });
+  const name = el("div", { class: "lib-name" }, p.name);
   cell.append(frame, meta, name);
   if (p.stack) {
     const open = lib.expanded.has(p.stack.id);
-    const badge = Object.assign(document.createElement("button"), {
+    const badge = el("button", {
       type: "button",
-      className: `lib-stack${open ? " open" : ""}${p.stack.top ? " top" : ""}`,
-      textContent: `⧉ ${lib.stackSizes.get(p.stack.id) ?? 1}`,
+      class: `lib-stack${open ? " open" : ""}${p.stack.top ? " top" : ""}`,
       title: open ? "Close this stack" : "Open this stack",
-    });
+    }, `⧉ ${lib.stackSizes.get(p.stack.id) ?? 1}`);
     badge.addEventListener("click", (e) => {
       e.stopPropagation();
       toggleStack(p.stack.id);

@@ -234,7 +234,7 @@ function fillLutOptions(select, current) {
   options.push([LUT_PICK, "Choose a .cube file…"], [LUT_FOLDER, "Open the LUT folder…"]);
   const want = options.map(([v, t]) => `${v}\u0001${t}`).join("\n");
   if (select.dataset.options !== want) {
-    select.replaceChildren(...options.map(([v, t]) => Object.assign(document.createElement("option"), { value: JSON.stringify(v), textContent: t })));
+    select.replaceChildren(...options.map(([v, t]) => el("option", { value: JSON.stringify(v) }, t)));
     select.dataset.options = want;
   }
 }
@@ -261,7 +261,7 @@ function fillProfileOptions(select, current) {
   if (current && !names.some((n) => n.toLowerCase() === String(current).toLowerCase())) options.push([current, `${current} (not found)`]);
   const want = options.map(([v, t]) => `${v}\u0000${t}`).join("\n");
   if (select.dataset.options !== want) {
-    select.replaceChildren(...options.map(([v, t]) => Object.assign(document.createElement("option"), { value: JSON.stringify(v), textContent: t })));
+    select.replaceChildren(...options.map(([v, t]) => el("option", { value: JSON.stringify(v) }, t)));
     select.dataset.options = want;
   }
 }

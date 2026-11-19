@@ -38,11 +38,10 @@ function renderPluginList() {
     b.setAttribute("role", "option");
     b.classList.toggle("on", p.id === pluginUi.selected);
     b.classList.toggle("broken", Boolean(p.error));
-    const name = Object.assign(document.createElement("span"), { textContent: p.manifest?.name ?? p.id });
-    const tag = Object.assign(document.createElement("span"), {
-      className: "plugin-tag",
-      textContent: p.error ? "can't load" : p.builtin ? "built-in" : "yours",
-    });
+    const name = el("span", {}, p.manifest?.name ?? p.id);
+    const tag = el("span", {
+      class: "plugin-tag",
+    }, p.error ? "can't load" : p.builtin ? "built-in" : "yours");
     b.append(name, tag);
     b.addEventListener("click", () => {
       pluginUi.selected = p.id;
@@ -51,7 +50,7 @@ function renderPluginList() {
     });
     list.append(b);
   }
-  if (!pluginUi.list.length) list.append(Object.assign(document.createElement("p"), { className: "hint", textContent: "No plugins." }));
+  if (!pluginUi.list.length) list.append(el("p", { class: "hint" }, "No plugins."));
 }
 
 function paramValues(p) {
@@ -72,11 +71,11 @@ function renderPluginParams(p) {
     const row = document.createElement("label");
     row.className = "plugin-param";
     row.title = def.description || "";
-    const label = Object.assign(document.createElement("span"), { textContent: def.label });
+    const label = el("span", {}, def.label);
     row.append(label);
     if (def.type === "number") {
-      const range = Object.assign(document.createElement("input"), { type: "range", min: def.min, max: def.max, step: def.step ?? "any", value: values[def.name] });
-      const out = Object.assign(document.createElement("output"), { textContent: values[def.name] });
+      const range = el("input", { type: "range", min: def.min, max: def.max, step: def.step ?? "any", value: values[def.name] });
+      const out = el("output", {}, values[def.name]);
       range.addEventListener("input", () => {
         chosen[def.name] = Number(range.value);
         out.textContent = range.value;
@@ -87,12 +86,12 @@ function renderPluginParams(p) {
         range.value = def.default;
         out.textContent = def.default;
       });
-      const pair = Object.assign(document.createElement("span"), { className: "plugin-range" });
+      const pair = el("span", { class: "plugin-range" });
       pair.append(range, out);
       row.append(pair);
     } else if (def.type === "choice") {
       const sel = document.createElement("select");
-      for (const o of def.options) sel.append(Object.assign(document.createElement("option"), { value: o, textContent: o }));
+      for (const o of def.options) sel.append(el("option", { value: o }, o));
       sel.value = values[def.name];
       sel.addEventListener("change", () => {
         chosen[def.name] = sel.value;
@@ -101,7 +100,7 @@ function renderPluginParams(p) {
       row.append(sel);
     } else {
       row.classList.add("check");
-      const box2 = Object.assign(document.createElement("input"), { type: "checkbox", checked: Boolean(values[def.name]) });
+      const box2 = el("input", { type: "checkbox", checked: Boolean(values[def.name]) });
       box2.addEventListener("change", () => {
         chosen[def.name] = box2.checked;
         detachRecipe(p);
@@ -153,11 +152,11 @@ function renderRecipes(p) {
   const sel = $("plugin-recipe");
   const builtIn = p.manifest?.recipes ?? [];
   const yours = pluginUi.recipes[p.id] ?? [];
-  sel.replaceChildren(Object.assign(document.createElement("option"), { value: "", textContent: "— the settings below —" }));
+  sel.replaceChildren(el("option", { value: "" }, "— the settings below —"));
   for (const [label, list, tag] of [["Ready-made", builtIn, "b"], ["Yours", yours, "u"]]) {
     if (!list.length) continue;
-    const og = Object.assign(document.createElement("optgroup"), { label });
-    for (const r of list) og.append(Object.assign(document.createElement("option"), { value: `${tag}:${r.name}`, textContent: r.name }));
+    const og = el("optgroup", { label: label });
+    for (const r of list) og.append(el("option", { value: `${tag}:${r.name}` }, r.name));
     sel.append(og);
   }
   sel.value = pluginUi.recipe.get(p.id) ?? "";
@@ -279,7 +278,7 @@ async function runSelectedPlugin() {
     if (String(e) === "needs-approval") {
       $("plugin-result").textContent = "";
       $("plugin-approve-name").textContent = p.manifest.name;
-      $("plugin-approve-list").replaceChildren(...p.permissions.map((t) => Object.assign(document.createElement("li"), { textContent: t })));
+      $("plugin-approve-list").replaceChildren(...p.permissions.map((t) => el("li", {}, t)));
       $("plugin-approve").hidden = false;
       $("plugin-approve").scrollIntoView({ block: "nearest" });
     } else {
@@ -336,9 +335,7 @@ async function shareSelectedPlugin() {
     const plan = await invoke("plugin_share_plan", { id: p.id });
     showPluginPanel("share");
     $("share-what").textContent = `These files go to ${plan.target} in ${plan.repo}, as a pull request from your GitHub account. The hub's reviewers check it before anyone can install it.`;
-    $("share-files").replaceChildren(...plan.files.map((f) => Object.assign(document.createElement("li"), {
-      textContent: `${f.path}  (${f.bytes < 1000 ? f.bytes + " B" : Math.round(f.bytes / 1000) + " KB"})`,
-    })));
+    $("share-files").replaceChildren(...plan.files.map((f) => el("li", {}, `${f.path}  (${f.bytes < 1000 ? f.bytes + " B" : Math.round(f.bytes / 1000) + " KB"})`)));
     $("share-warn").hidden = plan.has_source;
     $("share-warn").textContent = "There is no source code in the folder. Reviewers need it to check and rebuild plugin.wasm; add the plugin's src/ and Cargo.toml.";
     $("share-gh").hidden = !plan.gh_user;

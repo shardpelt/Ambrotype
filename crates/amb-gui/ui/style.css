@@ -921,6 +921,7 @@ body.library-mode #workspace { display: none; }
 .tree-row .tree-count { color: var(--muted); font-variant-numeric: tabular-nums; }
 .tree-row .tree-remove { visibility: hidden; padding: 0 4px; }
 .tree-row:hover .tree-remove { visibility: visible; }
+.tree-row.drop-target { outline: 2px solid var(--accent); outline-offset: -2px; }
 .tree-row.offline { opacity: .55; }
 .tree-row.offline .tree-name::after { content: " · offline"; color: var(--muted); }
 .tree-progress { margin: 0; }
@@ -945,7 +946,8 @@ body.library-mode #workspace { display: none; }
 .cull-tile { margin: 0; display: flex; flex-direction: column; min-height: 0; min-width: 0; padding: 4px; border: 2px solid transparent; border-radius: var(--radius); background: var(--panel); }
 .cull-tile.active { border-color: var(--accent); }
 .library-view.loupe .cull-tile { border-color: transparent; background: none; }
-.cull-frame { position: relative; flex: 1; min-height: 0; }
+.cull-frame { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.library-view.zoomed .cull-frame { cursor: grab; }
 .cull-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .cull-frame img:not([src]) { visibility: hidden; }
 .cull-tile.rejected .cull-frame img { opacity: .35; }

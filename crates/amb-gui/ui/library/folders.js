@@ -6,7 +6,7 @@
 // stay, greyed out; showing one lists its photos as they were last read.
 "use strict";
 
-const tree = { roots: [], folders: [], open: new Set(), offline: new Set(), loaded: false };
+const tree = { roots: [], folders: [], open: new Set(), offline: new Set(), loaded: false, dropTimer: 0 };
 
 // How often to look for a library drive that was plugged back in.
 const DRIVE_CHECK_MS = 30000;
@@ -92,6 +92,7 @@ function folderTreeItem(node) {
   }
   // Ctrl (⌘)-click: show this folder too, or not any more.
   row.addEventListener("click", (e) => (e.ctrlKey || e.metaKey ? toggleTreeFolder(node.path) : showTreeFolder(node.path)));
+  if (!node.offline) wireFolderDrop(row, node, kids.length > 0 && !open);
   li.append(row);
   if (open && kids.length) {
     const ul = document.createElement("ul");
@@ -99,6 +100,39 @@ function folderTreeItem(node) {
     li.append(ul);
   }
   return li;
+}
+
+// Photos dragged here move into the folder; hovering a closed one opens it.
+const DROP_OPEN_MS = 800;
+
+function wireFolderDrop(row, node, closed) {
+  const leave = () => {
+    row.classList.remove("drop-target");
+    clearTimeout(tree.dropTimer);
+  };
+  row.addEventListener("dragover", (e) => {
+    if (!e.dataTransfer.types.includes("text/x-amb-photo")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (row.classList.contains("drop-target")) return;
+    row.classList.add("drop-target");
+    clearTimeout(tree.dropTimer);
+    if (closed) {
+      tree.dropTimer = setTimeout(() => {
+        tree.open.add(node.path);
+        renderFolderTree();
+      }, DROP_OPEN_MS);
+    }
+  });
+  row.addEventListener("dragleave", leave);
+  row.addEventListener("drop", (e) => {
+    const path = e.dataTransfer.getData("text/x-amb-photo");
+    leave();
+    if (!path) return;
+    e.preventDefault();
+    // The selection moves together.
+    movePhotosTo(lib.selected.has(path) ? [...lib.selected] : [path], node.path);
+  });
 }
 
 async function showTreeFolder(path) {

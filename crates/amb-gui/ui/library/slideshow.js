@@ -93,10 +93,10 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
     if (!viewer) return endSlideshow();
     // The end of a drag round a zoomed photo isn't a click.
     if (el.dataset.dragged) return delete el.dataset.dragged;
-    const d = vz.s > 1 ? 0 : side(e);
+    const d = vz.z?.s > 1 ? 0 : side(e);
     if (d) stepSlide(d);
     else {
-      vzClick(e);
+      vz.z.toggleFull(e.clientX, e.clientY);
       showSlideBar();
     }
   });
@@ -338,7 +338,7 @@ function schedule() {
 }
 
 async function stepSlide(d) {
-  vzReset();
+  vz.z?.reset();
   await showSlide(slides.at + d);
   schedule();
 }
@@ -420,7 +420,7 @@ function wireSlideshow() {
     e.stopImmediatePropagation();
     const viewing = slides.settings.viewer;
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    if (viewing && vzKey(e)) return;
+    if (viewing && vz.z.key(e)) return;
     const turn = viewing && viewerTurnKey(e);
     if (turn) return viewerTurn(turn);
     if (viewing && !e.ctrlKey && !e.metaKey && !e.altKey) {

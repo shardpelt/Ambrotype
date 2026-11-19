@@ -76,14 +76,19 @@ async function openPath(path) {
   }
 }
 
-// A photo, or a saved collage (.ambcollage).
-function openAny(path) {
-  return /\.ambcollage$/i.test(path) ? openCollageFile(path) : openPath(path);
+// A photo, or a saved collage (.ambcollage). A raw opened directly (Open…,
+// a drop, the command line) shows its JPEG twin when "JPEG if there is one"
+// is on, as the filmstrip does.
+async function openAny(path) {
+  if (/\.ambcollage$/i.test(path)) return openCollageFile(path);
+  const [twin] = await stripPhotos([{ path, name: fileName(path) }]);
+  if (twin.path !== path) toast(`Showing the JPEG of ${fileName(path)} (JPEG if there is one is on)`);
+  return openPath(twin.path);
 }
 
 async function openDialog() {
   const path = await invoke("pick_photo");
-  if (path) openPath(path);
+  if (path) openAny(path);
 }
 
 // A small right-click menu: items are [label, action] (null for a line).

@@ -436,10 +436,11 @@ function wirePlugins() {
   });
 }
 
-async function pluginsFlow() {
+// `paths` (the filmstrip's selection) is the batch; else, from the library,
+// the selected photos.
+async function pluginsFlow(paths) {
   wirePlugins();
-  // From the library, a plugin runs on the selected photos.
-  const sel = libraryOn() ? selectedPhotos().map((p) => p.path) : [];
+  const sel = paths?.length ? paths : libraryOn() ? selectedPhotos().map((p) => p.path) : [];
   pluginUi.batch = sel.length ? sel : null;
   $("plugin-run").textContent = pluginUi.batch ? `Run on ${plural(sel.length, "photo")}` : "Run";
   await loadPlugins();

@@ -6,7 +6,7 @@
 // of the edit (cached until the sidecar changes); the open photo's own cell
 // shows its current edit. Ctrl- (⌘-) and Shift-click select photos instead of
 // opening one; right-click then applies a preset, pastes settings, exports or
-// converts them all.
+// converts them all, or runs a plugin on them.
 "use strict";
 
 const strip = {
@@ -62,10 +62,18 @@ function stripMenu(e, p) {
     lib.copied && [many("Paste settings…", "Paste settings onto N photos…"), () => libraryPasteSettings()],
     [many("Export…", "Export N photos…"), () => libraryExport()],
     [many("Convert to JPEG…", "Convert N raws to JPEGs…"), () => convertRawsFlow()],
+    [many("Run a plugin…", "Run a plugin on N photos…"), () => stripPlugins(p, paths)],
     null,
     ["Copy the open photo's settings", () => libraryCopySettings()],
     n > 1 && ["Clear the selection", () => stripClearSelection()],
   ].filter((x) => x !== false && x !== undefined));
+}
+
+// One photo: open it, so effect plugins can add to it; several: a batch.
+async function stripPlugins(p, paths) {
+  if (paths.length > 1) return pluginsFlow(paths).catch(showError);
+  if (p.path !== ui.info?.path && !(await openPath(p.path))) return;
+  pluginsFlow().catch(showError);
 }
 
 function stripVisible() {

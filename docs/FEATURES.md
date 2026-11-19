@@ -132,7 +132,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Use the menu bar** → on a Mac it's at the top of the screen; on Windows and Linux, **Settings** → General shows it in the window. Every command is there with its keys.
 - **Replace the whole window with my own interface** → **Settings** → General → Interface (a folder with an `index.html`, written by hand or by an AI; [ai/custom-interface.md](ai/custom-interface.md)); the menu bar's Interface → Back to the Built-in Interface, or `--builtin-ui`, always comes back.
 - **Hide everything but the photo** → the Minimalism layout in **Appearance**, or fold the **Left Column** (F7), **Right Column** (F8) and the top bar (Ctrl+Shift+T).
-- **Small tools that edit for me** → **Plugins** (Ctrl+Shift+P); write your own ([ai/plugins.md](ai/plugins.md)).
+- **Small tools that edit for me** → **Plugins** (Ctrl+Shift+P), or right-click the filmstrip's selection → **Run a plugin…**; write your own ([ai/plugins.md](ai/plugins.md)).
 - **My own tab with my tools** → a task plugin: a layout and buttons in a `plugin.json`, no code; it joins the task bar ([ai/plugins.md](ai/plugins.md#task-plugins)). Trippy is one.
 - **Make AI tools faster (Select object, AI Remove, Describe it)** → they run on the GPU by themselves when the computer has one; **Settings** → AI models says where they run (`amb models` too; `AMB_AI_GPU=off` keeps them on the CPU).
 - **Use my own AI model for masks** → **Settings** → AI models → add an ONNX model ([own-models.md](own-models.md)).

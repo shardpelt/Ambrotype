@@ -358,7 +358,10 @@ await t.step("filmstrip: Ctrl-click selects; right-click acts on the selection",
   t.expect(selectedPhotos().length === 1, "actions see it");
   cell.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 300, clientY: 700 }));
   const items = [...document.querySelectorAll(".ctx-menu button")].map((b) => b.textContent);
-  t.expect(["Apply a preset…", "Export…", "Convert to JPEG…"].every((x) => items.includes(x)), items.join(", "));
+  t.expect(["Apply a preset…", "Export…", "Convert to JPEG…", "Run a plugin…"].every((x) => items.includes(x)), items.join(", "));
+  [...document.querySelectorAll(".ctx-menu button")].find((b) => b.textContent === "Run a plugin…").click();
+  await t.until("the Plugins dialog", () => $("plugins-dialog").open);
+  $("plugins-dialog").close();
   document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
   document.querySelector(".ctx-menu")?.remove();
   cell.dispatchEvent(new MouseEvent("click", { bubbles: true }));

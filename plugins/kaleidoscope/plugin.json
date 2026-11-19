@@ -1,6 +1,7 @@
 {
   "format": "ambrotype-plugin/1",
   "id": "kaleidoscope",
+  "home": "trip",
   "name": "Kaleidoscope",
   "version": "1.0.0",
   "author": "Ambrotype",

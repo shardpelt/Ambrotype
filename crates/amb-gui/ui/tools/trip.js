@@ -8,8 +8,8 @@
 // (`setEffect`), for any task plugin.
 "use strict";
 
-// The plugins a trip is made of.
-const TRIP_PLUGINS = ["hue-trip", "holographic", "light-leak", "duotone", "paint", "kaleidoscope", "heat-camera"];
+// A built-in plugin that is part of a trip (its manifest's "home").
+const isTripPlugin = (id) => fx.plugins.find((p) => p.id === id)?.manifest?.home === "trip";
 
 function tripEffects() {
   return effectsOf(currentValue("amb:Effects"));
@@ -22,7 +22,7 @@ function tripSeed() {
 // Put `effects` on the photo in place of the trip's own (other effects stay).
 async function setTrip(effects, what) {
   if (!ui.info) return toast("Open a photo first.", true);
-  const kept = tripEffects().filter((e) => !TRIP_PLUGINS.includes(e.plugin));
+  const kept = tripEffects().filter((e) => !isTripPlugin(e.plugin));
   const list = [...kept, ...effects];
   await run(list.length
     ? [{ cmd: "set_param", name: "amb:Effects", value: JSON.stringify(list) }]

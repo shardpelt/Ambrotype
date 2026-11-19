@@ -1,6 +1,7 @@
 {
   "format": "ambrotype-plugin/1",
   "id": "heat-camera",
+  "home": "trip",
   "name": "Heat camera",
   "version": "1.0.0",
   "author": "Ambrotype",

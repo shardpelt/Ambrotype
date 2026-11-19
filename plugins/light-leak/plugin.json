@@ -1,6 +1,7 @@
 {
   "format": "ambrotype-plugin/1",
   "id": "light-leak",
+  "home": "trip",
   "name": "Light leak",
   "version": "1.0.0",
   "author": "Ambrotype",

@@ -1,6 +1,7 @@
 {
   "format": "ambrotype-plugin/1",
   "id": "random-look",
+  "home": "editor",
   "name": "Random look",
   "version": "1.1.0",
   "author": "Ambrotype",

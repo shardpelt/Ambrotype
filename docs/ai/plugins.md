@@ -93,6 +93,7 @@ amb_plugin_sdk::export_plugin!(run);
 - **`wasm`:** the module file, default `plugin.wasm`. `source`: where the code lives, optional.
 - **`kind`:** `"action"` (a plugin you run that makes edits, the default) or `"effect"` (see [Effect plugins](#effect-plugins)).
 - **`recipes`:** optional ready-made parameter sets, shown in the dialog's Recipe list (see below).
+- **`home`:** for a built-in plugin, where the editor already shows it: `"editor"` (its own place, such as Surprise me or a task tab) or `"trip"` (part of a trip in the Trippy task, also in the Effects panel). Leave it out for your own plugins: they show in the Plugins dialog.
 
 ## Recipes
 

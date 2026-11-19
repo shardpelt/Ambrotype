@@ -64,6 +64,12 @@ pub struct Manifest {
     /// For a task: its tab.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub task: Option<Task>,
+    /// Where the editor already shows this plugin: "editor" (its own
+    /// place: Surprise me, a task tab) or "trip" (part of a trip in the
+    /// Trippy task, also in the Effects panel). Empty: only the Plugins
+    /// dialog.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub home: String,
 }
 
 /// A task plugin's tab: its name in the task bar, the layout it opens, and
@@ -236,6 +242,12 @@ impl Manifest {
         }
         if self.version.trim().is_empty() {
             return Err("give a version, e.g. \"1.0.0\"".into());
+        }
+        if !["", "editor", "trip"].contains(&self.home.as_str()) {
+            return Err(format!(
+                "bad home {:?}: leave it out, or use \"editor\" or \"trip\"",
+                self.home
+            ));
         }
         match (self.kind.as_str(), self.effect.as_str()) {
             ("action", "") => {

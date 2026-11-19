@@ -138,22 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B14. Built-in plugin lists from the manifests (UI half)
-Tier: medium        Risk: low
-Why: `PLUGINS_ELSEWHERE` (`crates/amb-gui/ui/dialogs/plugins.js`, 10 ids) and `TRIP_PLUGINS` (`crates/amb-gui/ui/tools/trip.js`, 7 ids) are hand-copied; a new built-in plugin must be added to both or it shows twice or not as part of a trip.
-Files: `crates/amb-plugin/src/manifest.rs`, the `plugin.json` of the 10 plugins below, `docs/ai/plugins.md`, `crates/amb-gui/ui/dialogs/plugins.js`, `crates/amb-gui/ui/tools/trip.js`.
-Steps:
-1. `manifest.rs`: the struct `Manifest` denies unknown fields. Add `#[serde(default, skip_serializing_if = "String::is_empty")] pub home: String,` with the doc comment: where the editor already shows this plugin: "editor" (its own place: Surprise me, a task tab) or "trip" (part of a trip in the Trippy task, also in the Effects panel). Empty: only the Plugins dialog. `validate` accepts the empty string, `editor` and `trip` and rejects any other value with a message that lists them.
-2. Add `"home": "trip"` to `plugins/hue-trip/plugin.json`, `plugins/holographic/plugin.json`, `plugins/light-leak/plugin.json`, `plugins/duotone/plugin.json`, `plugins/paint/plugin.json`, `plugins/kaleidoscope/plugin.json`, `plugins/heat-camera/plugin.json` (the ids in `TRIP_PLUGINS`), and `"home": "editor"` to `plugins/random-look/plugin.json`, `plugins/tilt-shift/plugin.json`, `plugins/trippy/plugin.json` (the other three ids in `PLUGINS_ELSEWHERE`).
-3. `docs/ai/plugins.md`: add `home` to the manifest's field list, next to `recipes` (line about "`recipes`: optional ready-made parameter sets").
-4. `plugins.js`: delete `PLUGINS_ELSEWHERE`; the filter becomes `.filter((p) => !(p.builtin && p.manifest?.home))`.
-5. `trip.js`: delete `TRIP_PLUGINS`; add `const isTripPlugin = (id) => fx.plugins.find((p) => p.id === id)?.manifest?.home === "trip";` and use it where the list was used (`!TRIP_PLUGINS.includes(e.plugin)` becomes `!isTripPlugin(e.plugin)`). `fx.plugins` is the effect plugins from `plugins_list` (`crates/amb-gui/ui/develop/fx.js`).
-6. Run `cargo test -p amb-plugin` (the manifests are built in with `include_str!`; the native-against-wasm test must pass; the `plugin.wasm` files do not change).
-Don't: change the Rust table `BUILTIN` or `native.rs` (that is under "Needs a brief"); change a plugin's id.
-Checks: the three cargo commands; the UI checks (`smoke.js` has the Trippy step: card A3 moves it to `trippy.js`).
-Done when: `grep -rn "PLUGINS_ELSEWHERE\|TRIP_PLUGINS" crates` prints nothing.
-Commit: `plugins: the editor reads where a built-in plugin lives from its manifest`. Why: "Two lists of ids were copied by hand."
-
 ### B17. UI test steps for the dialogs no script opens
 Tier: medium        Risk: low
 Why: 18 of the 43 dialogs in `crates/amb-gui/ui/index.html` have no id in any script of `crates/amb-gui/tests/ui/` (checked 2026-11-12), so a broken open goes unseen. A step that opens each one and closes it catches that.

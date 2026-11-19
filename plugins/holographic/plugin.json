@@ -1,6 +1,7 @@
 {
   "format": "ambrotype-plugin/1",
   "id": "holographic",
+  "home": "trip",
   "name": "Holographic",
   "version": "1.0.0",
   "author": "Ambrotype",

@@ -1,6 +1,7 @@
 {
   "format": "ambrotype-plugin/1",
   "id": "paint",
+  "home": "trip",
   "name": "Paint",
   "version": "1.0.0",
   "author": "Ambrotype",

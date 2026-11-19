@@ -1,6 +1,7 @@
 {
   "format": "ambrotype-plugin/1",
   "id": "trippy",
+  "home": "editor",
   "name": "Trippy",
   "version": "1.0.0",
   "author": "Ambrotype",

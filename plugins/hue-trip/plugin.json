@@ -1,6 +1,7 @@
 {
   "format": "ambrotype-plugin/1",
   "id": "hue-trip",
+  "home": "trip",
   "name": "Hue trip",
   "version": "1.0.0",
   "author": "Ambrotype",

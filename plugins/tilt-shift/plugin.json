@@ -1,6 +1,7 @@
 {
   "format": "ambrotype-plugin/1",
   "id": "tilt-shift",
+  "home": "editor",
   "name": "Tilt-shift",
   "version": "1.0.0",
   "author": "Ambrotype",

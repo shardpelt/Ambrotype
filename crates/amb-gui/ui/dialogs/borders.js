@@ -18,12 +18,12 @@ async function loadBorders() {
 
 function fillBorderSelect(selected = ui.borderChoice ?? "") {
   const sel = $("export-form").border_preset;
-  sel.replaceChildren(Object.assign(document.createElement("option"), { value: "", textContent: "None" }));
+  sel.replaceChildren(el("option", { value: "" }, "None"));
   for (const [label, builtin] of [["Built-in", true], ["Yours", false]]) {
     const items = ui.borders.filter((b) => b.builtin === builtin);
     if (!items.length) continue;
-    const group = Object.assign(document.createElement("optgroup"), { label });
-    for (const b of items) group.append(Object.assign(document.createElement("option"), { value: b.id, textContent: b.name }));
+    const group = el("optgroup", { label: label });
+    for (const b of items) group.append(el("option", { value: b.id }, b.name));
     sel.append(group);
   }
   sel.value = ui.borders.some((b) => b.id === selected) ? selected : "";

@@ -291,3 +291,14 @@ fn raws_without_a_preview_are_compared_by_their_picture() {
     assert_eq!(found.as_array().unwrap().len(), 1, "{found}");
     assert_eq!(found[0]["reasons"][0]["kind"], "alike");
 }
+
+#[test]
+fn move_takes_the_sidecar_along() {
+    let lib = Lib::new("move");
+    lib.amb(&["tag", "p/IMG_2.dng", "--rating", "3"]);
+    assert!(lib.has("p/IMG_2.xmp"));
+    lib.amb(&["move", "p/IMG_2.dng", "--to", "q"]);
+    assert!(lib.has("q/IMG_2.dng") && lib.has("q/IMG_2.xmp"));
+    assert!(!lib.has("p/IMG_2.dng") && !lib.has("p/IMG_2.xmp"));
+    assert_eq!(lib.json(&["info", "q/IMG_2.dng"])[0]["info"]["rating"], 3);
+}

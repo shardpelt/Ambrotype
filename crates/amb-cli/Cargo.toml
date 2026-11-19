@@ -26,3 +26,6 @@ amb-ai = { path = "../amb-ai" }
 amb-plugin = { path = "../amb-plugin" }
 amb-protocol = { path = "../amb-protocol" }
 serde_json.workspace = true
+
+[dev-dependencies]
+image = { workspace = true, features = ["jpeg"] }

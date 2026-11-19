@@ -138,22 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B24. `amb` tests for move and batch render
-Tier: medium        Risk: low
-Why: of the largest files without unit tests, `crates/amb-cli/src/organise.rs` is mostly covered end to end (`crates/amb-cli/tests/library.rs`: tag, duplicates, rename, sort, trash, keywords, collections, missing). Not covered: `amb move`, and in `crates/amb-cli/src/render.rs` the batch naming (`render_many`, `--name`) and the export options (`export_settings`).
-Decided (was part of "Tests for the largest files that have none"): test through the `amb` binary, as `library.rs` does, on `amb testimage` DNGs (no capture time or embedded preview needed); no unit tests of private functions.
-Read first: `crates/amb-cli/tests/library.rs` (the `Lib` helper, `duplicates_rename_sort_and_trash`), `render_many` and `export_settings` in `crates/amb-cli/src/render.rs`, `amb help render` (`cargo run -p amb-cli -- help render`).
-Files: `crates/amb-cli/tests/library.rs`, `crates/amb-cli/tests/render.rs` (new; copy `Lib`'s `amb` runner into it, it is ten lines).
-Steps:
-1. `library.rs`: `move_takes_the_sidecar_along`: tag `p/IMG_2.dng` with a rating (so it has a sidecar), `amb move p/IMG_2.dng --to q`, then `q/IMG_2.dng` and its sidecar exist, `p/IMG_2.dng` does not, and `amb info q/IMG_2.dng --json` shows the rating.
-2. `render.rs`: `a_batch_names_each_photo_once`: three copies of a test DNG; `amb render a.dng b.dng c.dng --out-dir out --name shot` writes `shot.jpg`, `shot-2.jpg`, `shot-3.jpg` (read the template rules in `amb help render` first; use a template without `{name}` or `{seq}`), and stdout holds `[1/3]` to `[3/3]`.
-3. `render.rs`: `export_options_shape_the_file`: `amb render a.dng out.jpg --long-edge 400` gives a JPEG whose long side is 400 (read it with `image::image_dimensions`); `--quality 40` gives a smaller file than `--quality 95`.
-4. Don't write tests for the editor's commands here: see B25.
-Don't: change `amb`'s output or flags.
-Checks: the three cargo commands; `cargo test -p amb-cli --test library --test render`.
-Done when: the three tests pass, and each fails when its check is broken once by hand (try it, undo).
-Commit: `cli: tests for move and batch render`. Why: "Two commands had no test."
-
 ### B25. Unit tests for the editor's export settings
 Tier: small        Risk: low
 Why: `export_settings` in `crates/amb-gui/src/commands/export.rs` turns the Export dialog's options into `amb_export::ExportSettings` and has no test; it is a plain function. The editor's other large command files are thin wrappers over `amb-library` and `amb-ops`, which have their own tests, and the UI scripts drive them.

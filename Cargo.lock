@@ -114,6 +114,7 @@ dependencies = [
  "amb-presets",
  "amb-protocol",
  "amb-testkit",
+ "image",
  "serde_json",
 ]
 

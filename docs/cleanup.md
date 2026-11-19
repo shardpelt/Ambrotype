@@ -138,23 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B31. The crop and curve factories as state and functions
-Tier: large        Risk: high
-Why: `create` in `crates/amb-gui/ui/tools/crop.js` (408 lines) and in `crates/amb-gui/ui/develop/curve.js` (364) are closures whose inner functions share local `let`s, so none can be read or tested alone.
-Decided: after B30. Per factory, its mutable locals become one state object at its top (`const cs = { … }` in crop.js, `const cv = { … }` in curve.js; every read and write of a local becomes `cs.x`). Then inner functions that touch only that object and their arguments move out of `create` to top-level functions named with the file's prefix (`cropHandleAt(cs, x, y)`, `curvePointNear(cv, x, y)`), taking the object. Event wiring stays in `create`. Two commits per file: the state object, then the moves. Judgement left to the builder: which helpers move (only those whose behaviour B30 or an existing UI step exercises).
-Files: `crates/amb-gui/ui/tools/crop.js`, `crates/amb-gui/ui/develop/curve.js`.
-Checks: the UI scripts after each commit (`crop-curve.js`, `smoke.js`); by hand: crop, straighten, aspect, curve points and channels.
-Done when: each `create` is under 150 lines.
-Commits: `ui: crop.js state in one object`; `ui: crop.js helpers out of create`; the same for curve.js.
-
-### B32. `looksFlow`, `settingsFlow`, `makeWheel` and `wireMasks` in parts
-Tier: large        Risk: medium
-Why: the next longest UI functions after B31, each a closure over its dialog's or widget's state.
-Decided: the B31 method, one function per commit, in this order (no drag needed, so existing UI steps are the proof): `settingsFlow` (`crates/amb-gui/ui/core/keys.js`; `dialogs.js` opens it), `looksFlow` (Appearance; `smoke.js` opens it on every task), `wireMasks` (`smoke.js` uses masks), `makeWheel` (colour grading wheels; add a step that drags a wheel's point first, as B30 does).
-Checks: the UI scripts after each commit.
-Done when: each is under 150 lines.
-Commits: `ui: <name> in parts`, one per function.
-
 ### Needs a brief
 
 A large model answers each question and writes the cards, then moves them above. Each is here because a builder would have to choose.
@@ -179,6 +162,7 @@ Still not now ([design/structure.md](design/structure.md) says why). Trigger: th
 
 Bugs or oddities noticed during a task, to look at separately:
 
+- Open 2026-11-19: CI's UI step has failed on `main` since at least afdaf9e, at its first script: `batch-export.js` "again with skip on does nothing new" exports 1 photo where 2 should be skipped. CI stops there, so the scripts after it have not run in CI. Run in the same order with one settings folder (as CI does), `language.js` also fails: 655 texts on screen not through the table (limit 651), among them "Trippy" and "Auto edit"; alone it passes.
 - Fixed 2026-11-09: two quick rating or flag keys in the viewer could show the older values (each answer carries the photo's whole info); every info write now goes through `setInfo` in `core.js`, one at a time.
 - Fixed 2026-11-09: tests that failed now and then: two export tests wrote the same JPEG XL files at once; two UI steps waited less than the work before them (Watch an edit's ghost cursor, the photo's fit after a resize).
 - Fixed 2026-11-09: "Save to…" for a preset held `preset_dirs` while reading the settings path, the opposite order to `save_config`; two threads could each wait for the other. It reads the path first now.

@@ -146,7 +146,7 @@ function buildToolbar(order) {
     el.dataset.toolIndex = i;
     return el;
   };
-  const sep = () => Object.assign(document.createElement("span"), { className: "sep" });
+  const sep = () => el("span", { class: "sep" });
   const nodes = [];
   const placed = new Set();
   (Array.isArray(order) ? order : Object.keys(TOOLBAR_IDS)).forEach((name, i) => {
@@ -300,7 +300,7 @@ function buildPanel(item) {
     if (e.type === "label") {
       const l = document.createElement("div");
       l.className = "section-label";
-      l.append(Object.assign(document.createElement("span"), { className: "section-name", textContent: e.text }));
+      l.append(el("span", { class: "section-name" }, e.text));
       if (e.text === "Tone") {
         // Lightroom's Auto, beside the tone sliders.
         const auto = document.createElement("button");

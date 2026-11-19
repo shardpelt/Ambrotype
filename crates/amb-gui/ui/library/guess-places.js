@@ -33,16 +33,16 @@ async function guessPlacesFlow() {
       : `No guesses for the ${without} without a place: none was taken near a placed one (try more minutes, or the clock), or looks the same.`;
     list.replaceChildren(...guesses.map((g, i) => {
       const p = libPhoto(g.path);
-      const row = Object.assign(document.createElement("label"), { className: "guess-row" });
-      const box = Object.assign(document.createElement("input"), { type: "checkbox", checked: true });
+      const row = el("label", { class: "guess-row" });
+      const box = el("input", { type: "checkbox", checked: true });
       box.dataset.i = String(i);
-      const img = Object.assign(document.createElement("img"), { alt: "", loading: "lazy" });
+      const img = el("img", { alt: "", loading: "lazy" });
       const url = p && cachedThumb(p);
       if (url) img.src = url;
-      const text = Object.assign(document.createElement("span"), { className: "guess-text" });
-      text.append(Object.assign(document.createElement("b"), { textContent: p?.name ?? fileName(g.path) }), document.createElement("br"),
+      const text = el("span", { class: "guess-text" });
+      text.append(el("b", {}, p?.name ?? fileName(g.path)), document.createElement("br"),
         document.createTextNode(`${g.lat.toFixed(5)}, ${g.lon.toFixed(5)} · ${g.by === "look" ? "by look" : "by time"}: ${g.why}`));
-      const change = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "Change…", title: "Put this one somewhere else: on a map, or by name" });
+      const change = el("button", { type: "button", class: "small", title: "Put this one somewhere else: on a map, or by name" }, "Change…");
       change.addEventListener("click", async (e) => {
         e.preventDefault();
         const gps = await pickPlace([g.lat, g.lon], `Where ${p?.name ?? fileName(g.path)} was taken`);

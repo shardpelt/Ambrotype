@@ -345,8 +345,8 @@ function buildPanel(item) {
         base.addEventListener("click", (ev) => pickBaseFlow(ev.altKey));
         const meter = document.createElement("button");
         meter.className = "small section-action pick-meter";
-        meter.textContent = "Meter area";
-        meter.title = "Drag a box round the part Auto measures, to leave out a sky, a light leak or a holder's edge; the crop stays. Alt-click to meter the whole crop again";
+        meter.textContent = t("Meter area");
+        meter.title = t("Drag a box round the part Auto measures, to leave out a sky, a light leak or a holder's edge; the crop stays. Alt-click to meter the whole crop again");
         meter.addEventListener("click", (ev) => meterAreaFlow(ev.altKey));
         l.append(base, meter, frame, freeze);
       }

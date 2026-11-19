@@ -497,7 +497,7 @@ async function libraryMergePano() {
 // the collage's Batch then lays out as pages of one layout.
 async function libraryCollage(all = false) {
   const photos = all ? lib.shown : selectedPhotos();
-  if (!photos.length) return toast(all ? "No photos shown in the library." : "Select the photos first.", true);
+  if (!photos.length) return toast(all ? t("No photos shown in the library.") : t("Select the photos first."), true);
   await collageFlow();
   setTray(photos.map((p) => ({ ...p })));
   fillEmpty();

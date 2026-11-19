@@ -1014,6 +1014,9 @@
  "Done": [
   "index.html"
  ],
+ "Drag a box round the part Auto measures, to leave out a sky, a light leak or a holder's edge; the crop stays. Alt-click to meter the whole crop again": [
+  "looks/layout.js"
+ ],
  "Drag a copy of it somewhere else; it stays where it was too": [
   "index.html"
  ],
@@ -2021,6 +2024,9 @@
  "Metadata templates…": [
   "index.html"
  ],
+ "Meter area": [
+  "looks/layout.js"
+ ],
  "Mirror the photo left to right (in the library, the selected photos).": [
   "core/keys.js"
  ],
@@ -2152,6 +2158,9 @@
  ],
  "No limit": [
   "index.html"
+ ],
+ "No photos shown in the library.": [
+  "library/library-actions.js"
  ],
  "No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.": [
   "index.html"
@@ -2896,6 +2905,9 @@
  ],
  "Select the next slider": [
   "core/keys.js"
+ ],
+ "Select the photos first.": [
+  "library/library-actions.js"
  ],
  "Select the previous slider": [
   "core/keys.js"

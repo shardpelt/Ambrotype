@@ -38,7 +38,7 @@ function renderPresets() {
   }
   presetGrid.photo = ui.info?.path ?? null;
   presetGrid.near = nearView(null, "0px", (tile) => presetGrid.queue.push(tile), pumpPresetThumbs);
-  const grid = Object.assign(document.createElement("div"), { className: "preset-grid" });
+  const grid = el("div", { class: "preset-grid" });
   for (const p of shown) grid.append(presetTile(p, favs));
   list.append(grid, presetHiddenFoot() ?? "");
 }
@@ -51,7 +51,7 @@ function renderPresetGroups(all, groups, chosen, favs) {
   for (const g of groups) chips.push([g, g]);
   box.hidden = chips.length < 3;
   box.replaceChildren(...chips.map(([value, text]) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", className: "preset-chip", textContent: text });
+    const b = el("button", { type: "button", class: "preset-chip" }, text);
     b.classList.toggle("on", value === chosen);
     b.classList.toggle("preset-dim", presetHide.groups.has(value));
     if (value !== ALL_PRESETS && value !== FAVOURITES) b.addEventListener("contextmenu", (e) => presetGroupMenu(e, value));
@@ -64,14 +64,14 @@ function renderPresetGroups(all, groups, chosen, favs) {
 }
 
 function presetTile(p, favs) {
-  const tile = Object.assign(document.createElement("div"), { className: "preset-tile" });
+  const tile = el("div", { class: "preset-tile" });
   tile.dataset.path = p.path;
   tile.classList.toggle("preset-dim", presetIsHidden(p));
-  const b = Object.assign(document.createElement("button"), { type: "button", className: "preset", title: p.group ? `${p.name} (${p.group})` : p.name });
-  const img = Object.assign(document.createElement("img"), { alt: "", draggable: false });
+  const b = el("button", { type: "button", class: "preset", title: p.group ? `${p.name} (${p.group})` : p.name });
+  const img = el("img", { alt: "", draggable: "false" });
   const url = presetGrid.urls.get(presetThumbKey(p.path));
   if (url) img.src = url;
-  b.append(img, Object.assign(document.createElement("span"), { className: "preset-name", textContent: p.name }));
+  b.append(img, el("span", { class: "preset-name" }, p.name));
   b.addEventListener("click", () => {
     presetHover(null);
     applyPreset(p);
@@ -93,7 +93,7 @@ function presetTile(p, favs) {
   b.addEventListener("mouseenter", () => presetHover(p));
   b.addEventListener("mouseleave", () => presetHover(null));
   const on = favs.has(p.path);
-  const star = Object.assign(document.createElement("button"), { type: "button", className: `preset-star${on ? " on" : ""}`, textContent: on ? "★" : "☆", title: on ? "Remove from favourites" : "Add to favourites" });
+  const star = el("button", { type: "button", class: `preset-star${on ? " on" : ""}`, title: on ? "Remove from favourites" : "Add to favourites" }, on ? "★" : "☆");
   star.addEventListener("click", () => togglePresetFavourite(p));
   tile.append(b, star);
   if (!url && ui.info) presetGrid.near.watch(tile);

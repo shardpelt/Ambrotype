@@ -46,21 +46,20 @@ async function looksFlow() {
   function renderSetups() {
     const list = $("looks-setups-list");
     if (!setups.length) {
-      list.replaceChildren(Object.assign(document.createElement("p"), { className: "hint", textContent: "None yet." }));
+      list.replaceChildren(el("p", { class: "hint" }, "None yet."));
       return;
     }
     list.replaceChildren(...setups.map((s) => {
       const row = document.createElement("div");
       row.className = "looks-setup";
       const when = new Date(s.saved * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-      const name = Object.assign(document.createElement("span"), {
-        textContent: s.name,
+      const name = el("span", {
         title: `${s.layout.data?.name ?? s.layout.id} + ${s.theme.data?.name ?? s.theme.id}, kept ${when}`,
-      });
-      const what = Object.assign(document.createElement("span"), {
-        className: "hint", textContent: `${s.layout.data?.name ?? "?"} · ${s.theme.data?.name ?? "?"}`,
-      });
-      const use = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "Use" });
+      }, s.name);
+      const what = el("span", {
+        class: "hint",
+      }, `${s.layout.data?.name ?? "?"} · ${s.theme.data?.name ?? "?"}`);
+      const use = el("button", { type: "button", class: "small" }, "Use");
       use.addEventListener("click", async () => {
         try {
           const r = await invoke("setup_restore", { name: s.name });
@@ -75,7 +74,7 @@ async function looksFlow() {
           showError(e);
         }
       });
-      const del = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "×", title: "Forget this setup (its layout and theme stay)" });
+      const del = el("button", { type: "button", class: "small", title: "Forget this setup (its layout and theme stay)" }, "×");
       del.addEventListener("click", async () => {
         setups = await invoke("setup_delete", { name: s.name }).catch((e) => { showError(e); return setups; });
         renderSetups();
@@ -166,9 +165,9 @@ async function looksFlow() {
       const value = data.tokens[token] ?? fallback[token];
       let input;
       if (typeof fallback[token] === "number") {
-        input = Object.assign(document.createElement("input"), { type: "range", min: 0, max: 16, step: 1, value });
+        input = el("input", { type: "range", min: 0, max: 16, step: 1, value: value });
       } else {
-        input = Object.assign(document.createElement("input"), { type: "color", value: toHex6(value) });
+        input = el("input", { type: "color", value: toHex6(value) });
       }
       input.addEventListener("input", () => {
         data.tokens[token] = input.type === "range" ? Number(input.value) : input.value;

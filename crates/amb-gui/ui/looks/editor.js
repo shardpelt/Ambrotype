@@ -63,7 +63,7 @@ function startEditing(blank = false) {
   $("edit-name").placeholder = blank ? "New layout" : "";
   $("edit-density").value = ["compact", "large"].includes(draft.density) ? draft.density : "normal";
   $("edit-theme").replaceChildren(...(ui.looks?.themes ?? []).filter((t) => t.usable).map((t) =>
-    Object.assign(document.createElement("option"), { value: t.id, textContent: t.name, selected: t.id === ui.edit.theme })));
+    el("option", { value: t.id, selected: t.id === ui.edit.theme }, t.name)));
   updateEditBar();
   applyLayout(draft);
   if (blank) {

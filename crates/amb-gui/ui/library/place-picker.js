@@ -65,18 +65,18 @@ async function searchPlace() {
   const typed = parsePlace(q);
   if (typed) return goPicked(typed.split(",").map(Number), q);
   const list = $("pick-results");
-  list.replaceChildren(Object.assign(document.createElement("p"), { className: "hint", textContent: "Searching OpenStreetMap…" }));
+  list.replaceChildren(el("p", { class: "hint" }, "Searching OpenStreetMap…"));
   try {
     const found = await invoke("geocode", { query: q });
     list.replaceChildren(...found.map((f) => {
-      const b = Object.assign(document.createElement("button"), { type: "button", className: "pick-result", textContent: f.name });
+      const b = el("button", { type: "button", class: "pick-result" }, f.name);
       b.addEventListener("click", () => goPicked([f.lat, f.lon], f.name));
       return b;
     }));
-    if (!found.length) list.append(Object.assign(document.createElement("p"), { className: "hint", textContent: "Nothing found. Try a town or a street with its town." }));
+    if (!found.length) list.append(el("p", { class: "hint" }, "Nothing found. Try a town or a street with its town."));
     else if (found.length === 1) goPicked([found[0].lat, found[0].lon], found[0].name);
   } catch (e) {
-    list.replaceChildren(Object.assign(document.createElement("p"), { className: "hint", textContent: `${e} (offline?)` }));
+    list.replaceChildren(el("p", { class: "hint" }, `${e} (offline?)`));
   }
 }
 

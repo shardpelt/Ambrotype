@@ -125,29 +125,6 @@ Do the groups in order, or any card whose "Precondition" line is met. Ids are st
 
 ### Group A: small
 
-### A3. UI test scripts per feature
-Tier: small        Risk: low
-Why: `crates/amb-gui/tests/ui/smoke.js` is 1,100 lines and `organise.js` grows with every library feature, so most feature commits touch them and agents working at once conflict. CI runs every script in the folder (`for t in crates/amb-gui/tests/ui/*.js`, `.github/workflows/ci.yml`), each in a fresh editor on a fresh photo, so a new script needs no other change.
-Files: `crates/amb-gui/tests/ui/smoke.js`, `crates/amb-gui/tests/ui/organise.js`, new scripts in the same folder. The helpers are in `crates/amb-gui/ui/core/uitest.js` (`t.step`, `t.until`, `t.click`, `t.key`, `t.expect`, `t.historyLength`, `t.setting`).
-Steps:
-1. Each new script starts with the SPDX line, two comment lines (what it tests; `// Run: ambrotype --ui-test crates/amb-gui/tests/ui/NAME.js photo.dng`), then the steps moved from the old script, unchanged, in their old order. A moved step that depends on state an earlier smoke step made fails in the new script: add the line it needs at the top of its script (a `t.until` for the photo, `await toggleLibrary(true)`, `await switchTask("develop")`) and nothing else. Run each new script alone.
-2. From `smoke.js` into `trippy.js`: the step "Trippy, a task plugin: its tools put effects on and take them off". Begin the script with the first step of `smoke.js` ("the photo opens and a preview shows"), copied. In the moved step, replace the end that returns to the Exposure step (the line `for (let i = 0; i < 7; i++) await run([{ cmd: "undo" }]);` and the `t.until("back at the Exposure step", ...)` below it) by:
-   ```js
-   while (ui.state.can_undo) await run([{ cmd: "undo" }]);
-   await t.until("History is empty", () => t.historyLength() === 0);
-   ```
-   This is the "hard-coded undo count": the 7 was the number of steps the trip tiles made.
-3. From `smoke.js` into `retouch.js` (same first step): "Spot panel: Find dust finds none on a clean chart; Shift-drag heals a line as one step" and "Remove object: Shift+Q opens the tool; a box sends its corners, a click its point; Esc cancels".
-4. From `smoke.js` into `negative.js` (same first step): "Negative: Auto Density and Auto Grade are switches beside Auto" and "Pick base: a click on the photo stores the film base; Alt-click forgets it".
-5. From `organise.js` into `cleanup.js`: "Clean up finds a rejected photo; K keeps it, D lets it go". Its start is the first two steps of `organise.js` (the photo, "the library shows the photo"), copied.
-6. From `organise.js` into `connect.js`: "Connect an AI app has the built-in guides and starts an agent" (first step: the photo only).
-7. From `organise.js` into `denoise.js`: "AI Denoise offers its model, then a new DNG per raw" (it begins with `await toggleLibrary(true); select(first, "only");`, so give the script `const first = await t.until("the photo", () => ui.info?.path, 60000);` first).
-8. Update the two old files' header comments so they no longer list what moved.
-Don't: change a step's checks; rename a step; leave a step in both files.
-Checks: the UI checks of "Checks" (all scripts, each prints its steps and how many passed, no `FAILED` line); the new scripts' step counts plus the old ones' equal the old total.
-Done when: `smoke.js` has no `< 7` loop of undos; each moved step passes in its new script.
-Commit: `tests: UI steps per feature`. Why: "Two files held every feature's steps, and agents conflicted in them."
-
 ### A4. `el()` instead of `Object.assign(document.createElement(...))`
 Tier: small        Risk: low
 Why: 381 sites build elements the old way although `el` is in `crates/amb-gui/ui/core/core.js`; the count grows (316 to 381 in three days). Repeat this card once per file.

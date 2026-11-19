@@ -257,217 +257,225 @@ const KEYBOARD_ROWS = [
   ["Space"],
 ];
 
+// The Shortcuts tab's functions take its state `ks` (made in settingsFlow):
+// `capturing` is the action waiting for a new key, `pending` a key that clashes,
+// waiting for "use it here", `focusKey` a key picked on the keyboard map.
+const keysBase = (combo) => (combo.endsWith("++") ? "+" : combo.split("+").pop());
+
+function keysMessage(text, actions = []) {
+  const box = $("keys-message");
+  box.replaceChildren(document.createTextNode(text), ...actions);
+}
+
+function keysRenderMap(ks) {
+  const map = $("keyboard-map");
+  map.replaceChildren();
+  for (const row of KEYBOARD_ROWS) {
+    const r = document.createElement("div");
+    r.className = "kb-row";
+    for (const key of row) {
+      const users = KEY_ACTIONS.flatMap((a) => keysFor(a).filter((k) => keysBase(k) === key).map((k) => [k, a]));
+      const cap = document.createElement("button");
+      cap.type = "button";
+      cap.className = `kb-key kb-${key.length > 1 ? key.toLowerCase() : "char"}`;
+      cap.textContent = KEY_NAMES[key] ?? key;
+      cap.classList.toggle("bare", users.some(([k]) => k === key));
+      cap.classList.toggle("with-mod", users.some(([k]) => k !== key));
+      cap.classList.toggle("focus", ks.focusKey === key);
+      cap.title = users.length ? users.map(([k, a]) => `${keyLabel(k)}: ${a.label}`).join("\n") : `${KEY_NAMES[key] ?? key}: free`;
+      cap.addEventListener("click", () => {
+        ks.focusKey = ks.focusKey === key ? null : key;
+        keysRender(ks);
+      });
+      r.append(cap);
+    }
+    map.append(r);
+  }
+}
+
+function keysRenderList(ks) {
+  const filter = $("keys-filter").value.trim().toLowerCase();
+  const list = $("keys-list");
+  list.replaceChildren();
+  let group = null;
+  for (const a of KEY_ACTIONS) {
+    const keys = keysFor(a);
+    if (ks.focusKey && !keys.some((k) => keysBase(k) === ks.focusKey)) continue;
+    if (filter && !`${a.label} ${a.group} ${keys.map(keyLabel).join(" ")}`.toLowerCase().includes(filter)) continue;
+    if (a.group !== group) {
+      group = a.group;
+      list.append(el("h3", {}, group));
+    }
+    const row = document.createElement("div");
+    row.className = "key-row";
+    const name = document.createElement("span");
+    name.className = "key-action";
+    name.textContent = a.label;
+    if (a.when === "crop") name.title = "Only while the crop tool is open";
+    if (a.when === "masks") name.title = "Only while the masks are open";
+    if (a.when === "spots") name.title = "Only while spot removal is open";
+    if (a.when === "library") name.title = "Only in the library";
+    const caps = document.createElement("span");
+    caps.className = "key-caps";
+    for (const k of keys) {
+      const kbd = document.createElement("kbd");
+      kbd.textContent = keyLabel(k);
+      const x = el("button", { type: "button", class: "kbd-remove", title: `Remove ${keyLabel(k)}` }, "×");
+      x.addEventListener("click", () => {
+        ui.keybindings[a.id] = keys.filter((y) => y !== k);
+        saveKeybindings();
+        keysRender(ks);
+      });
+      kbd.append(x);
+      caps.append(kbd);
+    }
+    if (ks.capturing === a.id) {
+      caps.append(el("span", { class: "key-capture" }, "Press the new shortcut… (Esc cancels)"));
+    } else if (!keys.length) {
+      caps.append(el("span", { class: "hint" }, "none"));
+    }
+    const add = el("button", { type: "button", class: "small", disabled: keys.length >= 4 }, "Add key");
+    add.addEventListener("click", () => {
+      ks.capturing = a.id;
+      ks.pending = null;
+      keysMessage("");
+      keysRender(ks);
+    });
+    const changed = Boolean(ui.keybindings[a.id]);
+    const reset = el("button", { type: "button", class: "small", disabled: !changed, title: `Back to ${a.keys.map(keyLabel).join(" or ") || "no key"}` }, "Reset");
+    reset.addEventListener("click", () => {
+      delete ui.keybindings[a.id];
+      saveKeybindings();
+      keysRender(ks);
+    });
+    row.classList.toggle("changed", changed);
+    row.classList.toggle("capturing", ks.capturing === a.id);
+    row.append(name, caps, add, reset);
+    list.append(row);
+  }
+  if (!list.children.length) list.append(el("p", { class: "hint" }, "No shortcuts match."));
+}
+
+function keysRender(ks) {
+  keysRenderMap(ks);
+  keysRenderList(ks);
+}
+
+// Give `combo` to `action`; when another action has it, ask first.
+function keysAssign(ks, action, combo) {
+  const clashes = KEY_ACTIONS.filter((b) => b !== action && contextsOverlap(action, b) && keysFor(b).includes(combo));
+  const add = () => {
+    for (const b of clashes) ui.keybindings[b.id] = keysFor(b).filter((k) => k !== combo);
+    if (!keysFor(action).includes(combo)) ui.keybindings[action.id] = [...keysFor(action), combo];
+    ks.capturing = ks.pending = null;
+    keysMessage(`${keyLabel(combo)} now does "${action.label}".`);
+    saveKeybindings();
+    keysRender(ks);
+  };
+  if (!clashes.length) return add();
+  ks.pending = combo;
+  ks.capturing = null;
+  const use = el("button", { type: "button", class: "small primary" }, "Use it here instead");
+  use.addEventListener("click", add);
+  const keep = el("button", { type: "button", class: "small" }, "Keep it there");
+  keep.addEventListener("click", () => { ks.pending = null; keysMessage(""); keysRender(ks); });
+  keysMessage(`${keyLabel(combo)} already does "${clashes.map((b) => b.label).join('", "')}". `, [use, " ", keep]);
+  keysRender(ks);
+}
+
+function settingsShowTab(dlg, name) {
+  dlg.querySelectorAll(".settings-tabs button").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+  $("settings-keys").hidden = name !== "keys";
+  $("settings-general").hidden = name !== "general";
+  $("settings-about").hidden = name !== "about";
+  $("settings-models").hidden = name !== "models";
+  $("keys-reset-all").hidden = name !== "keys";
+  if (name === "models") modelsTab().catch(showError);
+}
+
+async function settingsSetHub(url) {
+  try {
+    $("settings-hub").value = await invoke("set_hub_url", { url });
+  } catch (e) {
+    showError(e);
+  }
+}
+
+// Edit in another app.
+function settingsShowEditIn(e) {
+  $("settings-edit-app").value = e.app ?? "";
+  $("settings-edit-space").value = e.color_space;
+  $("settings-edit-bits").value = String(e.bits);
+}
+
+async function settingsSaveEditIn(app) {
+  try {
+    settingsShowEditIn(await invoke("set_edit_in", {
+      settings: {
+        app: app === undefined ? $("settings-edit-app").value || null : app,
+        color_space: $("settings-edit-space").value,
+        bits: Number($("settings-edit-bits").value),
+      },
+    }));
+  } catch (e) {
+    showError(e);
+  }
+}
+
+// The licence or notice text, shown in the About tab.
+const settingsShowText = (which) => async () => {
+  try {
+    const pre = $("about-text");
+    pre.textContent = await invoke("about_text", { which });
+    pre.hidden = false;
+    pre.scrollTop = 0;
+  } catch (e) {
+    showError(e);
+  }
+};
+
 async function settingsFlow() {
   const dlg = $("settings-dialog");
-  let capturing = null; // the action waiting for a new key
-  let pending = null; // a key that clashes, waiting for "use it here"
-  let focusKey = null; // a key picked on the keyboard map
-
-  const baseKey = (combo) => (combo.endsWith("++") ? "+" : combo.split("+").pop());
-  const message = (text, actions = []) => {
-    const box = $("keys-message");
-    box.replaceChildren(document.createTextNode(text), ...actions);
-  };
-
-  function renderMap() {
-    const map = $("keyboard-map");
-    map.replaceChildren();
-    for (const row of KEYBOARD_ROWS) {
-      const r = document.createElement("div");
-      r.className = "kb-row";
-      for (const key of row) {
-        const users = KEY_ACTIONS.flatMap((a) => keysFor(a).filter((k) => baseKey(k) === key).map((k) => [k, a]));
-        const cap = document.createElement("button");
-        cap.type = "button";
-        cap.className = `kb-key kb-${key.length > 1 ? key.toLowerCase() : "char"}`;
-        cap.textContent = KEY_NAMES[key] ?? key;
-        cap.classList.toggle("bare", users.some(([k]) => k === key));
-        cap.classList.toggle("with-mod", users.some(([k]) => k !== key));
-        cap.classList.toggle("focus", focusKey === key);
-        cap.title = users.length ? users.map(([k, a]) => `${keyLabel(k)}: ${a.label}`).join("\n") : `${KEY_NAMES[key] ?? key}: free`;
-        cap.addEventListener("click", () => {
-          focusKey = focusKey === key ? null : key;
-          renderMap();
-          renderList();
-        });
-        r.append(cap);
-      }
-      map.append(r);
-    }
-  }
-
-  function renderList() {
-    const filter = $("keys-filter").value.trim().toLowerCase();
-    const list = $("keys-list");
-    list.replaceChildren();
-    let group = null;
-    for (const a of KEY_ACTIONS) {
-      const keys = keysFor(a);
-      if (focusKey && !keys.some((k) => baseKey(k) === focusKey)) continue;
-      if (filter && !`${a.label} ${a.group} ${keys.map(keyLabel).join(" ")}`.toLowerCase().includes(filter)) continue;
-      if (a.group !== group) {
-        group = a.group;
-        list.append(el("h3", {}, group));
-      }
-      const row = document.createElement("div");
-      row.className = "key-row";
-      const name = document.createElement("span");
-      name.className = "key-action";
-      name.textContent = a.label;
-      if (a.when === "crop") name.title = "Only while the crop tool is open";
-      if (a.when === "masks") name.title = "Only while the masks are open";
-      if (a.when === "spots") name.title = "Only while spot removal is open";
-      if (a.when === "library") name.title = "Only in the library";
-      const caps = document.createElement("span");
-      caps.className = "key-caps";
-      for (const k of keys) {
-        const kbd = document.createElement("kbd");
-        kbd.textContent = keyLabel(k);
-        const x = el("button", { type: "button", class: "kbd-remove", title: `Remove ${keyLabel(k)}` }, "×");
-        x.addEventListener("click", () => {
-          ui.keybindings[a.id] = keys.filter((y) => y !== k);
-          saveKeybindings();
-          render();
-        });
-        kbd.append(x);
-        caps.append(kbd);
-      }
-      if (capturing === a.id) {
-        caps.append(el("span", { class: "key-capture" }, "Press the new shortcut… (Esc cancels)"));
-      } else if (!keys.length) {
-        caps.append(el("span", { class: "hint" }, "none"));
-      }
-      const add = el("button", { type: "button", class: "small", disabled: keys.length >= 4 }, "Add key");
-      add.addEventListener("click", () => {
-        capturing = a.id;
-        pending = null;
-        message("");
-        render();
-      });
-      const changed = Boolean(ui.keybindings[a.id]);
-      const reset = el("button", { type: "button", class: "small", disabled: !changed, title: `Back to ${a.keys.map(keyLabel).join(" or ") || "no key"}` }, "Reset");
-      reset.addEventListener("click", () => {
-        delete ui.keybindings[a.id];
-        saveKeybindings();
-        render();
-      });
-      row.classList.toggle("changed", changed);
-      row.classList.toggle("capturing", capturing === a.id);
-      row.append(name, caps, add, reset);
-      list.append(row);
-    }
-    if (!list.children.length) list.append(el("p", { class: "hint" }, "No shortcuts match."));
-  }
-
-  function render() {
-    renderMap();
-    renderList();
-  }
-
-  function assign(action, combo) {
-    const clashes = KEY_ACTIONS.filter((b) => b !== action && contextsOverlap(action, b) && keysFor(b).includes(combo));
-    const add = () => {
-      for (const b of clashes) ui.keybindings[b.id] = keysFor(b).filter((k) => k !== combo);
-      if (!keysFor(action).includes(combo)) ui.keybindings[action.id] = [...keysFor(action), combo];
-      capturing = pending = null;
-      message(`${keyLabel(combo)} now does "${action.label}".`);
-      saveKeybindings();
-      render();
-    };
-    if (!clashes.length) return add();
-    pending = combo;
-    capturing = null;
-    const use = el("button", { type: "button", class: "small primary" }, "Use it here instead");
-    use.addEventListener("click", add);
-    const keep = el("button", { type: "button", class: "small" }, "Keep it there");
-    keep.addEventListener("click", () => { pending = null; message(""); render(); });
-    message(`${keyLabel(combo)} already does "${clashes.map((b) => b.label).join('", "')}". `, [use, " ", keep]);
-    render();
-  }
+  const ks = { capturing: null, pending: null, focusKey: null };
 
   // While waiting for a new key, every key goes to the dialog.
   const onKey = (e) => {
-    if (!capturing) return;
+    if (!ks.capturing) return;
     e.preventDefault();
     e.stopPropagation();
     const combo = comboOf(e);
     if (!combo) return;
     if (combo === "Escape") {
-      capturing = null;
-      return render();
+      ks.capturing = null;
+      return keysRender(ks);
     }
-    if (["Tab", "Shift+Tab"].includes(combo)) return message("Tab moves between controls, so it can't be a shortcut.");
-    const action = KEY_ACTIONS.find((a) => a.id === capturing);
-    assign(action, combo);
+    if (["Tab", "Shift+Tab"].includes(combo)) return keysMessage("Tab moves between controls, so it can't be a shortcut.");
+    const action = KEY_ACTIONS.find((a) => a.id === ks.capturing);
+    keysAssign(ks, action, combo);
   };
-  const onCancel = (e) => { if (capturing) e.preventDefault(); };
+  const onCancel = (e) => { if (ks.capturing) e.preventDefault(); };
   const tabs = [...dlg.querySelectorAll(".settings-tabs button")];
-  const showTab = (name) => {
-    tabs.forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
-    $("settings-keys").hidden = name !== "keys";
-    $("settings-general").hidden = name !== "general";
-    $("settings-about").hidden = name !== "about";
-    $("settings-models").hidden = name !== "models";
-    $("keys-reset-all").hidden = name !== "keys";
-    if (name === "models") modelsTab().catch(showError);
-  };
-  const onTab = (e) => showTab(e.currentTarget.dataset.tab);
+  const onTab = (e) => settingsShowTab(dlg, e.currentTarget.dataset.tab);
   const resetAll = () => {
     ui.keybindings = {};
-    capturing = pending = null;
-    message("All shortcuts are back to their defaults.");
+    ks.capturing = ks.pending = null;
+    keysMessage("All shortcuts are back to their defaults.");
     saveKeybindings();
-    render();
+    keysRender(ks);
   };
-  const onFilter = () => renderList();
+  const onFilter = () => keysRenderList(ks);
   const openFolder = () => invoke("open_settings_folder").catch(showError);
-  const setHub = async (url) => {
-    try {
-      $("settings-hub").value = await invoke("set_hub_url", { url });
-    } catch (e) {
-      showError(e);
-    }
-  };
-  const onHub = () => setHub($("settings-hub").value);
-  // Edit in another app.
-  const showEditIn = (e) => {
-    $("settings-edit-app").value = e.app ?? "";
-    $("settings-edit-space").value = e.color_space;
-    $("settings-edit-bits").value = String(e.bits);
-  };
-  const saveEditIn = async (app) => {
-    try {
-      showEditIn(await invoke("set_edit_in", {
-        settings: {
-          app: app === undefined ? $("settings-edit-app").value || null : app,
-          color_space: $("settings-edit-space").value,
-          bits: Number($("settings-edit-bits").value),
-        },
-      }));
-    } catch (e) {
-      showError(e);
-    }
-  };
+  const onHub = () => settingsSetHub($("settings-hub").value);
   const pickEditApp = async () => {
     const app = await invoke("pick_edit_app");
-    if (app) saveEditIn(app);
+    if (app) settingsSaveEditIn(app);
   };
-  const editDefault = () => saveEditIn(null);
-  const onEditFormat = () => saveEditIn();
-  const hubDefault = () => setHub(null);
+  const editDefault = () => settingsSaveEditIn(null);
+  const onEditFormat = () => settingsSaveEditIn();
+  const hubDefault = () => settingsSetHub(null);
   const openLooks = () => { dlg.close(); setTimeout(() => looksFlow().catch(showError)); };
-  const showText = (which) => async () => {
-    try {
-      const pre = $("about-text");
-      pre.textContent = await invoke("about_text", { which });
-      pre.hidden = false;
-      pre.scrollTop = 0;
-    } catch (e) {
-      showError(e);
-    }
-  };
-  const onLicence = showText("licence");
-  const onNotice = showText("notice");
+  const onLicence = settingsShowText("licence");
+  const onNotice = settingsShowText("notice");
   const onSource = () => invoke("open_source_page").catch(showError);
 
   window.addEventListener("keydown", onKey, true);
@@ -488,7 +496,7 @@ async function settingsFlow() {
   $("about-source").addEventListener("click", onSource);
   $("about-text").hidden = true;
   invoke("hub_url").then((u) => ($("settings-hub").value = u)).catch(() => {});
-  invoke("edit_in_settings").then(showEditIn).catch(() => {});
+  invoke("edit_in_settings").then(settingsShowEditIn).catch(() => {});
   renderInterfaces();
 
   try {
@@ -498,9 +506,9 @@ async function settingsFlow() {
     $("settings-path").textContent = info.folder ?? "";
   } catch { /* the General tab just shows less */ }
   $("keys-filter").value = "";
-  message("");
-  showTab("keys");
-  render();
+  keysMessage("");
+  settingsShowTab(dlg, "keys");
+  keysRender(ks);
   dlg.showModal();
   await new Promise((resolve) => dlg.addEventListener("close", resolve, { once: true }));
 

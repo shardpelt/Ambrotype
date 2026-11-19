@@ -247,7 +247,7 @@ async function fillExportPresets(selected = null) {
   } catch {
     ui.exportPresets = [];
   }
-  const option = (value, text) => Object.assign(document.createElement("option"), { value, textContent: text });
+  const option = (value, text) => el("option", { value: value }, text);
   f.export_preset.replaceChildren(option("", ui.exportPresets.length ? "— choose —" : "None saved yet"),
     ...ui.exportPresets.map((p) => option(p.name, p.name)));
   f.export_preset.value = selected ?? "";

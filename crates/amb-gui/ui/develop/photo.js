@@ -90,7 +90,7 @@ async function openDialog() {
 function contextMenu(e, items) {
   e.preventDefault();
   document.querySelector(".ctx-menu")?.remove();
-  const menu = Object.assign(document.createElement("div"), { className: "ctx-menu", role: "menu" });
+  const menu = el("div", { class: "ctx-menu", role: "menu" });
   // The button's tooltip would cover the menu.
   const owner = e.currentTarget instanceof Element ? e.currentTarget : null;
   const title = owner?.getAttribute("title");
@@ -106,7 +106,7 @@ function contextMenu(e, items) {
   for (const item of items) {
     if (!item) { menu.append(document.createElement("hr")); continue; }
     const [label, action] = item;
-    const b = Object.assign(document.createElement("button"), { type: "button", textContent: label, role: "menuitem" });
+    const b = el("button", { type: "button", role: "menuitem" }, label);
     b.addEventListener("click", () => { close(); Promise.resolve(action()).catch(showError); });
     menu.append(b);
   }

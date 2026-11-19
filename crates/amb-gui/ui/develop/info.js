@@ -42,8 +42,8 @@ function renderInfo() {
   }
   const chips = $("tag-chips");
   chips.replaceChildren(...infoState.info.keywords.map((k) => {
-    const chip = Object.assign(document.createElement("span"), { className: "tag-chip", textContent: k });
-    const x = Object.assign(document.createElement("button"), { type: "button", textContent: "×", title: `Remove "${k}"` });
+    const chip = el("span", { class: "tag-chip" }, k);
+    const x = el("button", { type: "button", title: `Remove "${k}"` }, "×");
     x.addEventListener("click", () => setKeywords(infoState.info.keywords.filter((y) => y !== k)));
     chip.append(x);
     return chip;
@@ -55,7 +55,7 @@ function renderInfo() {
   }
   const have = new Set(infoState.info.keywords.map((k) => k.toLowerCase()));
   $("tag-suggest").replaceChildren(...infoState.recent.filter((k) => !have.has(k.toLowerCase())).slice(0, 50)
-    .map((k) => Object.assign(document.createElement("option"), { value: k })));
+    .map((k) => el("option", { value: k })));
 }
 
 async function loadInfo() {
@@ -135,7 +135,7 @@ function wireInfo() {
   }
   $("rating-clear").addEventListener("click", () => setRating(0));
   for (const l of LABELS) {
-    const b = Object.assign(document.createElement("button"), { type: "button", title: `${l} label (${LABELS.indexOf(l) < 4 ? 6 + LABELS.indexOf(l) : "no key"})` });
+    const b = el("button", { type: "button", title: `${l} label (${LABELS.indexOf(l) < 4 ? 6 + LABELS.indexOf(l) : "no key"})` });
     b.dataset.label = l;
     b.style.setProperty("--swatch", LABEL_COLOURS[l]);
     b.addEventListener("click", () => setLabel(l));

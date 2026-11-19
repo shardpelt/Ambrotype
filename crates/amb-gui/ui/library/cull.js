@@ -92,9 +92,9 @@ function renderCull() {
 const COMPARE_SPLITS = [["right", "◧", "Side by side, the candidate on the right"], ["left", "◨", "Side by side, the candidate on the left"], ["down", "⬒", "Above and below, the candidate below"], ["up", "⬓", "Above and below, the candidate above"]];
 
 function compareSplitBar() {
-  const bar = Object.assign(document.createElement("div"), { className: "compare-split", role: "group", ariaLabel: "Split" });
+  const bar = el("div", { class: "compare-split", role: "group", "aria-label": "Split" });
   for (const [split, icon, title] of COMPARE_SPLITS) {
-    const b = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: icon, title });
+    const b = el("button", { type: "button", class: "small", title: title }, icon);
     b.dataset.split = split;
     b.classList.toggle("on", split === cull.split);
     b.addEventListener("click", (e) => {
@@ -114,23 +114,23 @@ function setCompareSplit(split) {
 
 function cullTile(path, { tag, big } = {}) {
   const p = libPhoto(path);
-  const tile = Object.assign(document.createElement("figure"), { className: "cull-tile" });
+  const tile = el("figure", { class: "cull-tile" });
   if (!p) return tile;
   tile.dataset.path = path;
   tile.classList.toggle("active", path === cull.active);
   tile.classList.toggle("rejected", p.flag === "reject");
-  const frame = Object.assign(document.createElement("div"), { className: "cull-frame" });
-  const img = Object.assign(document.createElement("img"), { alt: p.name, draggable: false });
+  const frame = el("div", { class: "cull-frame" });
+  const img = el("img", { alt: p.name, draggable: "false" });
   const url = cachedThumb(p);
   if (url) img.src = url;
   frame.append(img);
-  const cap = Object.assign(document.createElement("figcaption"), { className: "cull-caption" });
-  const flag = Object.assign(document.createElement("span"), { className: "lib-flag" });
+  const cap = el("figcaption", { class: "cull-caption" });
+  const flag = el("span", { class: "lib-flag" });
   showFlag(flag, p.flag);
-  const stars = Object.assign(document.createElement("span"), { className: "lib-stars", textContent: p.rating ? "★".repeat(p.rating) : "" });
-  const label = Object.assign(document.createElement("span"), { className: "film-label", hidden: !p.label });
+  const stars = el("span", { class: "lib-stars" }, p.rating ? "★".repeat(p.rating) : "");
+  const label = el("span", { class: "film-label", hidden: !p.label });
   if (p.label) label.style.background = LABEL_COLOURS[p.label] ?? "var(--muted)";
-  const name = Object.assign(document.createElement("span"), { className: "cull-name", textContent: [tag, p.name].filter(Boolean).join(": ") });
+  const name = el("span", { class: "cull-name" }, [tag, p.name].filter(Boolean).join(": "));
   cap.append(flag, stars, label, name);
   tile.append(frame, cap);
   tile.addEventListener("click", () => {

@@ -63,7 +63,7 @@ function layoutPreview(data) {
       if (typeof item === "string") bar.classList.add("block");
       col.append(bar);
     }
-    if (items.length > 9) col.append(Object.assign(document.createElement("i"), { textContent: `+${items.length - 9} more` }));
+    if (items.length > 9) col.append(el("i", {}, `+${items.length - 9} more`));
     return col;
   };
   const view = document.createElement("div");
@@ -81,14 +81,10 @@ function pluginPreview(data) {
   const box = document.createElement("div");
   box.className = "hub-preview plugin";
   const perms = (data?.permissions ?? []).map((p) => PLUGIN_PERMISSIONS[p] ?? p);
-  const sees = Object.assign(document.createElement("span"), {
-    textContent: perms.length ? `Asks to see ${perms.join(" and ")}` : "Sees only the edit's settings",
-  });
+  const sees = el("span", {}, perms.length ? `Asks to see ${perms.join(" and ")}` : "Sees only the edit's settings");
   const params = (data?.params ?? []).map((p) => p.label ?? p.name).filter(Boolean);
-  const offers = Object.assign(document.createElement("span"), {
-    textContent: params.length ? `Options: ${params.slice(0, 4).join(", ")}${params.length > 4 ? ", …" : ""}` : "No options",
-  });
-  const sandbox = Object.assign(document.createElement("b"), { textContent: "Runs sandboxed; its edits are undoable" });
+  const offers = el("span", {}, params.length ? `Options: ${params.slice(0, 4).join(", ")}${params.length > 4 ? ", …" : ""}` : "No options");
+  const sandbox = el("b", {}, "Runs sandboxed; its edits are undoable");
   box.append(sandbox, sees, offers);
   return box;
 }
@@ -100,9 +96,9 @@ function interfacePreview(data) {
   box.className = "hub-preview interface";
   const files = data?.files ?? [];
   box.append(
-    Object.assign(document.createElement("b"), { textContent: "A whole other interface: code with the app's full reach" }),
-    Object.assign(document.createElement("span"), { textContent: `${plural(files.length, "file")}: ${files.slice(0, 4).join(", ")}${files.length > 4 ? ", …" : ""}` }),
-    Object.assign(document.createElement("span"), { textContent: "Read its files in the hub repo before installing" }),
+    el("b", {}, "A whole other interface: code with the app's full reach"),
+    el("span", {}, `${plural(files.length, "file")}: ${files.slice(0, 4).join(", ")}${files.length > 4 ? ", …" : ""}`),
+    el("span", {}, "Read its files in the hub repo before installing"),
   );
   return box;
 }
@@ -111,12 +107,10 @@ function interfacePreview(data) {
 function presetPreview(data) {
   const box = document.createElement("div");
   box.className = "hub-preview preset";
-  const count = Object.assign(document.createElement("b"), {
-    textContent: `${data?.settings ?? 0} setting${data?.settings === 1 ? "" : "s"}`,
-  });
-  const groups = Object.assign(document.createElement("span"), { textContent: (data?.groups ?? []).join(", ") });
+  const count = el("b", {}, `${data?.settings ?? 0} setting${data?.settings === 1 ? "" : "s"}`);
+  const groups = el("span", {}, (data?.groups ?? []).join(", "));
   box.append(count, groups);
-  if (data?.group) box.append(Object.assign(document.createElement("span"), { textContent: `In “${data.group}”` }));
+  if (data?.group) box.append(el("span", {}, `In “${data.group}”`));
   return box;
 }
 
@@ -166,11 +160,11 @@ function sizesPreview(data) {
   const box = document.createElement("div");
   box.className = "hub-preview sizes";
   const sizes = data?.sizes ?? [];
-  box.append(Object.assign(document.createElement("b"), { textContent: `${plural(sizes.length, "size")}` }));
+  box.append(el("b", {}, `${plural(sizes.length, "size")}`));
   for (const s of sizes.slice(0, 4)) {
-    box.append(Object.assign(document.createElement("span"), { textContent: `${s.name}: ${s.width} × ${s.height}` }));
+    box.append(el("span", {}, `${s.name}: ${s.width} × ${s.height}`));
   }
-  if (sizes.length > 4) box.append(Object.assign(document.createElement("span"), { textContent: "…" }));
+  if (sizes.length > 4) box.append(el("span", {}, "…"));
   return box;
 }
 
@@ -202,17 +196,17 @@ async function hubFlow(initial = "all") {
       }
       const title = document.createElement("h3");
       title.textContent = e.name;
-      const kindTag = Object.assign(document.createElement("span"), { className: "hub-kind", textContent: e.kind });
+      const kindTag = el("span", { class: "hub-kind" }, e.kind);
       title.append(kindTag);
-      const by = Object.assign(document.createElement("p"), { className: "hint", textContent: [e.author && `by ${e.author}`, e.license].filter(Boolean).join(" · ") });
-      const about = Object.assign(document.createElement("p"), { className: "hub-about", textContent: e.description });
+      const by = el("p", { class: "hint" }, [e.author && `by ${e.author}`, e.license].filter(Boolean).join(" · "));
+      const about = el("p", { class: "hub-about" }, e.description);
       card.append(title, by, about);
       if (e.error) {
-        card.append(Object.assign(document.createElement("p"), { className: "hub-error", textContent: `Can't be installed: ${e.error}` }));
+        card.append(el("p", { class: "hub-error" }, `Can't be installed: ${e.error}`));
       } else {
         const actions = document.createElement("div");
         actions.className = "hub-actions";
-        const install = Object.assign(document.createElement("button"), { type: "button" });
+        const install = el("button", { type: "button" });
         if (e.installed && !e.update) {
           install.textContent = e.installed.startsWith("builtin:") ? "Built in ✓" : "Installed ✓";
           install.disabled = true;
@@ -265,7 +259,7 @@ async function hubFlow(initial = "all") {
         }
         actions.append(install);
         if (e.installed && e.kind === "interface") {
-          const use = Object.assign(document.createElement("button"), { type: "button", textContent: "Use now" });
+          const use = el("button", { type: "button" }, "Use now");
           // Installed shows the folder's name; switching wants its path.
           use.addEventListener("click", async () => {
             const { installed } = await invoke("interfaces");
@@ -275,7 +269,7 @@ async function hubFlow(initial = "all") {
           actions.append(use);
         }
         if (e.installed && (e.kind === "layout" || e.kind === "theme")) {
-          const use = Object.assign(document.createElement("button"), { type: "button", textContent: "Use now" });
+          const use = el("button", { type: "button" }, "Use now");
           use.addEventListener("click", () => {
             const field = e.kind === "layout" ? "active_layout" : "active_theme";
             ui.looks[field] = e.installed;
@@ -289,7 +283,7 @@ async function hubFlow(initial = "all") {
       }
       grid.append(card);
     }
-    if (!shown.length) grid.append(Object.assign(document.createElement("p"), { className: "hint", textContent: "Nothing matches." }));
+    if (!shown.length) grid.append(el("p", { class: "hint" }, "Nothing matches."));
   }
 
   // A look shared by link (a file, or a GitHub repo with theme.json or layout.json).

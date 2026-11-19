@@ -87,7 +87,7 @@ Rust, production lines over 900:
 | `amb-export/src/embed.rs` | 932 | Metadata into finished files (split 2026-11-19 into `embed/`: bmff, avif, jxl) |
 | `amb-ops/src/object.rs` | 919 | Select object, select in words, move, remove (split 2026-11-19 into `object/`) |
 | `amb-engine/src/matching.rs` | 908 | Match look (split 2026-11-19 into `matching/`: stats, solve, auto) |
-| `amb-engine/src/pipeline/settings.rs` | 906 | `DevelopSettings` read from the settings map |
+| `amb-engine/src/pipeline/settings.rs` | 906 | `DevelopSettings` read from the settings map (split 2026-11-19 into `settings/`: tags, from_settings) |
 
 UI scripts over 900 lines: `library.js` 1,488, `collage.js` 1,452, `app.js` 1,188, `masks.js` 1,082, `layout.js` 1,009, `editor.js` 989. And `index.html` 1,781 (every dialog's markup), `style.css` 1,423: both stay whole, since splitting them needs a build step or a change in what the cascade sees.
 

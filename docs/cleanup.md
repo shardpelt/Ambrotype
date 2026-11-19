@@ -138,21 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B6. Split `crates/amb-engine/src/pipeline/settings.rs`
-Tier: medium        Risk: medium
-Why: 905 lines, of which the table of rendered tags is 180 and `from_settings` is 220.
-Files: `crates/amb-engine/src/pipeline/settings.rs` to `crates/amb-engine/src/pipeline/settings/{mod,tags,from_settings}.rs`; `docs/recipes.md` (line 35 names it, and a test checks that); `crates/amb-cli/tests/code_size.rs`. Its tests are already in `pipeline/tests.rs`.
-Steps:
-1. `mod.rs` keeps the module doc and `use super::*;`, `WhiteBalance`, `UnsetDetail` with `impl Default`, `RENDERED_DEFAULTS`, `IncrementalWhiteBalance`, `BaseLook` with `impl`, `Base` with `impl`, `LookLut`, `DevelopSettings` with `impl Default`, the helpers `num`, `wheel`, `spline_of`, and the small `impl DevelopSettings` that holds `profile_note`. It declares `mod tags; mod from_settings;` and re-exports `pub use tags::{RENDERED_TAGS, is_rendered};` (as they were `pub`).
-2. `tags.rs`: `RENDERED_TAGS`, `is_rendered`, `PANEL_SWITCHES`, `without_switched_off`, `LEGACY_TONE`, `with_legacy_tone`.
-3. `from_settings.rs`: the large `impl DevelopSettings` (with `from_settings`), `flag`, `text`, `lens_corrections`, `transform_settings`, `calibration_settings`, `crop_settings`, `rgb_triple`, `crossover_tags`, `negative_settings`.
-4. `num`, `wheel` and `spline_of` are used by the new files: they are `pub(super)` already, which now means "in `settings`": the new files see them through `use super::*;`. Items that `pipeline/mod.rs` or `camera.rs` used with `pub(super)` need `pub(super) use from_settings::NAME;` in `settings/mod.rs` (the compiler lists them).
-5. `docs/recipes.md` line 35: the path becomes `crates/amb-engine/src/pipeline/settings/mod.rs` and the sentence says the field is read in `from_settings` (in `settings/from_settings.rs`); run `cargo test -p amb-cli --test recipes`.
-Don't: change what `from_settings` reads.
-Checks: as above; `cargo test -p amb-engine`; `cargo test -p amb-cli --test recipes`.
-Done when: `pipeline/settings.rs` is gone and no part passes 800.
-Commit: `engine: split settings.rs into tags and from_settings`. Why: "It was past the size budget."
-
 ### B7. Split `crates/amb-ai/src/lib.rs`
 Tier: medium        Risk: medium
 Why: 886 production lines: what a model is, which are installed and chosen, and running one.

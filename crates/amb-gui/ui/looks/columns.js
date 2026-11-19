@@ -32,7 +32,7 @@ function addColumnGrips(shown) {
   if (ui.edit) return;
   for (const side of ["left", "right"]) {
     if (!shown[side]) continue;
-    const grip = Object.assign(document.createElement("div"), { className: "col-resizer", title: "Drag to resize; double-click for the layout's width" });
+    const grip = el("div", { class: "col-resizer", title: "Drag to resize; double-click for the layout's width" });
     grip.style[side] = `${shown[side] - 4}px`;
     grip.addEventListener("pointerdown", (ev) => dragColumn(ev, side, grip, shown));
     grip.addEventListener("dblclick", () => {

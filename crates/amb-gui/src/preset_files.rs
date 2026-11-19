@@ -44,6 +44,12 @@ const PHOTO_SPECIFIC_GROUPS: [&str; 6] = [
     "lens_blur",
 ];
 
+/// Settings that belong to one photo: whole groups, and the negative's
+/// metering box (drawn on this photo's crop).
+fn photo_specific(tag: &amb_presets::registry::TagInfo) -> bool {
+    PHOTO_SPECIFIC_GROUPS.contains(&tag.group.as_str()) || tag.name.starts_with("amb:NegativeMeter")
+}
+
 /// A name made safe for a file or folder name.
 fn safe_file_name(s: &str) -> String {
     s.chars()
@@ -98,11 +104,7 @@ pub fn save_preset(
     let catalog = amb_protocol::catalog::Catalog::builtin();
     let mut out: BTreeMap<String, Value> = settings
         .iter()
-        .filter(|(k, _)| {
-            catalog
-                .lookup(k)
-                .is_none_or(|t| !PHOTO_SPECIFIC_GROUPS.contains(&t.group.as_str()))
-        })
+        .filter(|(k, _)| catalog.lookup(k).is_none_or(|t| !photo_specific(&t)))
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
     if out.is_empty() {
@@ -193,7 +195,7 @@ pub fn photo_additions(
 fn is_photo_specific(name: &str) -> bool {
     amb_presets::registry::Registry::builtin()
         .lookup(name)
-        .is_some_and(|i| PHOTO_SPECIFIC_GROUPS.contains(&i.group.as_str()))
+        .is_some_and(|i| photo_specific(&i))
 }
 
 /// `folder/<base>.xmp`, or `<base> 2`, `<base> 3`, … when that file exists.

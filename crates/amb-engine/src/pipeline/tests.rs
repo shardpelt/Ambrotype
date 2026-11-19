@@ -1046,3 +1046,18 @@ fn settings_parse_and_report() {
     assert_eq!(missing.len(), 1);
     assert!(missing[0].starts_with("HighlightRecovery ("), "{missing:?}");
 }
+
+#[test]
+fn the_negative_metering_box_parses_and_defaults_to_the_whole_crop() {
+    let (s, _) = DevelopSettings::from_settings(&map(&[("amb:NegativeConvert", "True")]));
+    assert_eq!(s.negative.meter, [0.0, 0.0, 1.0, 1.0]);
+    let (s, missing) = DevelopSettings::from_settings(&map(&[
+        ("amb:NegativeConvert", "True"),
+        ("amb:NegativeMeterLeft", "0.1"),
+        ("amb:NegativeMeterTop", "0.2"),
+        ("amb:NegativeMeterRight", "0.8"),
+        ("amb:NegativeMeterBottom", "0.9"),
+    ]));
+    assert!(missing.is_empty(), "{missing:?}");
+    assert_eq!(s.negative.meter, [0.1, 0.2, 0.8, 0.9]);
+}

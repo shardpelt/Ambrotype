@@ -10,7 +10,7 @@ Lightroom has no negative conversion; photographers buy the Negative Lab Pro plu
 |---|---|
 | `amb:NegativeConvert` | Turn the conversion on. |
 | `amb:NegativeType` | `color` (default), `bw`, or `positive` for slide film: the same model on log transmittance instead of density, so nothing is inverted; there is no film base, and the levels take out the light's colour (`amb negative analyze --slides`). |
-| `amb:NegativeAuto` | **Auto** (default True) measures the levels and midtone for every photo, inside its crop. False uses the stored levels and midtone; missing ones come from the fixed density range below, so every frame of a roll is printed the same way (a frame exposed a stop more prints a stop brighter). |
+| `amb:NegativeAuto` | **Auto** (default True) measures the levels and midtone for every photo, inside its crop, or the metering area if one is drawn. False uses the stored levels and midtone; missing ones come from the fixed density range below, so every frame of a roll is printed the same way (a frame exposed a stop more prints a stop brighter). |
 | `amb:NegativeAutoDensity`, `amb:NegativeAutoGrade` | With Auto (2026-10-31, off by default): **Auto Density** meters the print's brightness only on the parts with detail and pulls it part-way to a typical print; **Auto Grade** measures the contrast there and pulls it part-way to the film's usual range (`amb:NegativeRange`), never narrower than the detail (holds) nor more than twice as wide. See below. |
 | `amb:NegativeRange` | With Auto off and no stored levels: green's density range above the base that spans the print (default 1.0, ours). Red and blue keep the share of it measured on the photo. Slides, which have no base, measure their levels instead. |
 | `amb:NegativeCastRemoval` | **Cast removal**, 0–100 (default 0): moves the measured levels of red and blue so the frame's greys come out grey, read at five levels instead of assumed at the ends. Stored levels already have it (Freeze, Sync). Does nothing on black-and-white film. |
@@ -18,6 +18,7 @@ Lightroom has no negative conversion; photographers buy the Negative Lab Pro plu
 | `amb:FilmStock`, `amb:FilmStockAmount` | The look and its strength (0–100). `amb negative stocks` lists them. |
 | `amb:FilmBaseRed/Green/Blue` | Film base (orange mask) transmittance. Picked on the photo (**Pick base**), stored by Freeze, or measured from the whole scan when missing, with Auto on or off. |
 | `amb:NegativeDensityLow*/High*` | Per-channel shadow and highlight densities above the base (the levels). |
+| `amb:NegativeMeterLeft/Top/Right/Bottom` | The part of the crop Auto measures, as fractions (0 to 1, default the whole crop) of the cropped photo; drawn with **Meter area** in the Film Negative panel (Alt-click: the whole crop again). Only measuring uses it, so it does nothing with Auto off or stored levels. The film base is still measured on the whole scan. It is an axis-aligned box in the photo as shown, so after a rotation or perspective correction it is the box of the straightened photo, not of the raw frame. Like the crop, it belongs to one photo and is left out of saved presets. |
 | `amb:NegativeMidtone` | Which point of the range becomes 18 % grey. |
 | `amb:NegativeExposure` | Print exposure in EV. |
 | `amb:NegativeContrast` | Paper grade, ±100. |

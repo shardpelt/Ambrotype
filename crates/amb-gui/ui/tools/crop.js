@@ -26,6 +26,7 @@
   const EDGE = 8;      // edge grab distance, CSS px
   const PAD = 28;      // CSS px around the turned photo
   const MAX_ANGLE = 45;
+  const SNAP = 0.6;    // degrees
   const SHADE = "rgba(10,10,12,0.62)";
   const CURSORS = {
     n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize",
@@ -119,6 +120,269 @@
     return { cx: s.cx + mx * c - my * sn, cy: s.cy + mx * sn + my * c, width: r - l, height: b - t, angle: s.angle };
   }
 
+  // ------------------------------------------------------------ view and drag
+
+  // The angle that makes guide `l` level (or upright, when it's steep).
+  function cropLevelling(cs, l) {
+    const phi = (Math.atan2(l[3] - l[1], l[2] - l[0]) * 180) / Math.PI;
+    let a = ((phi + 90) % 180 + 180) % 180 - 90; // the line's slant, −90..90
+    if (a > 45) a -= 90;
+    else if (a < -45) a += 90;
+    return a / cs.sign;
+  }
+
+  function cropSnapped(cs, angle, free) {
+    if (free || !cs.snaps.length) return angle;
+    let best = null;
+    for (const s of cs.snaps) if (Math.abs(s - angle) < SNAP && (best == null || Math.abs(s - angle) < Math.abs(best - angle))) best = s;
+    return best ?? angle;
+  }
+
+  // View: the photo turned by −θ about its centre (so the crop is level),
+  // fitted to the canvas.
+  function cropLayout(cs, canvas) {
+    const t = (cs.sign * (cs.rect ? cs.rect.angle : 0) * Math.PI) / 180;
+    const c = Math.cos(t);
+    const s = Math.sin(t);
+    const bw = cs.W * Math.abs(c) + cs.H * Math.abs(s);
+    const bh = cs.W * Math.abs(s) + cs.H * Math.abs(c);
+    const vw = canvas.clientWidth;
+    const vh = canvas.clientHeight;
+    const S = Math.max(1e-6, Math.min((vw - 2 * PAD) / bw, (vh - 2 * PAD) / bh));
+    return { t, c, s, S, vx: vw / 2, vy: vh / 2 };
+  }
+
+  function cropToView(cs, L, x, y) {
+    const dx = x - cs.W / 2;
+    const dy = y - cs.H / 2;
+    return [L.vx + L.S * (dx * L.c + dy * L.s), L.vy + L.S * (-dx * L.s + dy * L.c)];
+  }
+
+  // Screen point -> photo pixels (the inverse of toView).
+  function cropFromView(cs, L, X, Y) {
+    const u = (X - L.vx) / L.S;
+    const v = (Y - L.vy) / L.S;
+    return [cs.W / 2 + u * L.c - v * L.s, cs.H / 2 + u * L.s + v * L.c];
+  }
+
+  // The crop rectangle on screen (level): x0, y0, x1, y1 in CSS px.
+  function cropViewRect(cs, L) {
+    const [X, Y] = cropToView(cs, L, cs.rect.cx, cs.rect.cy);
+    const hw = (L.S * cs.rect.width) / 2;
+    const hh = (L.S * cs.rect.height) / 2;
+    return { x0: X - hw, y0: Y - hh, x1: X + hw, y1: Y + hh };
+  }
+
+  function cropDraw(cs, canvas, g, img) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+    }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+    if (!cs.rect) return;
+    const L = cropLayout(cs, canvas);
+    g.save();
+    g.translate(L.vx, L.vy);
+    g.scale(L.S, L.S);
+    g.rotate(-L.t);
+    g.translate(-cs.W / 2, -cs.H / 2);
+    if (img) {
+      g.imageSmoothingQuality = "high";
+      g.drawImage(img, 0, 0, cs.W, cs.H);
+    } else {
+      g.fillStyle = "#2a2c31";
+      g.fillRect(0, 0, cs.W, cs.H);
+    }
+    // The straight lines while straightening; the ones level now stand out.
+    if (cs.guides.length && ((cs.drag && cs.drag.kind === "rotate") || cs.angleBase)) {
+      for (const l of cs.guides) {
+        const on = Math.abs(cropLevelling(cs, l) - cs.rect.angle) < 0.05;
+        g.strokeStyle = on ? "rgba(120, 230, 140, 0.95)" : "rgba(255, 210, 90, 0.55)";
+        g.lineWidth = (on ? 2.5 : 1.5) / L.S;
+        g.beginPath();
+        g.moveTo(l[0], l[1]);
+        g.lineTo(l[2], l[3]);
+        g.stroke();
+      }
+    }
+    g.restore();
+
+    // Draw mode, before the first drag: just the photo, waiting for the cross.
+    if (cs.drawing && !(cs.drag && cs.drag.kind === "draw" && cs.drag.moved)) return;
+    const v = cropViewRect(cs, L);
+    g.fillStyle = SHADE;
+    g.beginPath();
+    g.rect(0, 0, w, h);
+    g.rect(v.x0, v.y0, v.x1 - v.x0, v.y1 - v.y0);
+    g.fill("evenodd");
+
+    // Rule of thirds while dragging; a finer grid while straightening.
+    if (cs.drag) {
+      const n = cs.drag.kind === "rotate" ? 8 : 3;
+      g.strokeStyle = "rgba(255,255,255,0.45)";
+      g.lineWidth = 1;
+      g.beginPath();
+      for (let i = 1; i < n; i++) {
+        const x = Math.round(v.x0 + ((v.x1 - v.x0) * i) / n) + 0.5;
+        const y = Math.round(v.y0 + ((v.y1 - v.y0) * i) / n) + 0.5;
+        g.moveTo(x, v.y0);
+        g.lineTo(x, v.y1);
+        g.moveTo(v.x0, y);
+        g.lineTo(v.x1, y);
+      }
+      g.stroke();
+    }
+    g.strokeStyle = "rgba(255,255,255,0.9)";
+    g.lineWidth = 1;
+    g.strokeRect(v.x0, v.y0, v.x1 - v.x0, v.y1 - v.y0);
+    // Corner and edge handles.
+    const len = Math.min(20, (v.x1 - v.x0) / 3, (v.y1 - v.y0) / 3);
+    g.lineWidth = 3;
+    g.strokeStyle = "#fff";
+    g.beginPath();
+    for (const [x, y, dx, dy] of [[v.x0, v.y0, 1, 1], [v.x1, v.y0, -1, 1], [v.x1, v.y1, -1, -1], [v.x0, v.y1, 1, -1]]) {
+      g.moveTo(x + dx * len, y);
+      g.lineTo(x, y);
+      g.lineTo(x, y + dy * len);
+    }
+    const mx = (v.x0 + v.x1) / 2;
+    const my = (v.y0 + v.y1) / 2;
+    g.moveTo(mx - len / 2, v.y0); g.lineTo(mx + len / 2, v.y0);
+    g.moveTo(mx - len / 2, v.y1); g.lineTo(mx + len / 2, v.y1);
+    g.moveTo(v.x0, my - len / 2); g.lineTo(v.x0, my + len / 2);
+    g.moveTo(v.x1, my - len / 2); g.lineTo(v.x1, my + len / 2);
+    g.stroke();
+    // The size next to the pointer while drawing or resizing, like a screenshot.
+    if (cs.drag && cs.drag.kind !== "move" && cs.drag.kind !== "rotate" && cs.drag.pointer) {
+      const text = `${Math.round(cs.rect.width)} × ${Math.round(cs.rect.height)}`;
+      g.font = "12px system-ui, sans-serif";
+      const tw = g.measureText(text).width;
+      const [px, py] = cs.drag.pointer;
+      // Beside the pointer, but never off the canvas (the pointer can be outside).
+      const bx = Math.max(4, Math.min(px + 14, w - tw - 14));
+      const by = Math.max(4, Math.min(py + 18, h - 24));
+      g.fillStyle = "rgba(0,0,0,0.7)";
+      g.fillRect(bx, by, tw + 10, 20);
+      g.fillStyle = "#fff";
+      g.fillText(text, bx + 5, by + 14);
+    }
+  }
+
+  function cropHit(cs, canvas, X, Y) {
+    const v = cropViewRect(cs, cropLayout(cs, canvas));
+    const nx0 = Math.abs(X - v.x0) <= HANDLE;
+    const nx1 = Math.abs(X - v.x1) <= HANDLE;
+    const ny0 = Math.abs(Y - v.y0) <= HANDLE;
+    const ny1 = Math.abs(Y - v.y1) <= HANDLE;
+    if ((nx0 || nx1) && (ny0 || ny1)) return (ny0 ? "n" : "s") + (nx0 ? "w" : "e");
+    const inX = X > v.x0 - EDGE && X < v.x1 + EDGE;
+    const inY = Y > v.y0 - EDGE && Y < v.y1 + EDGE;
+    if (inY && Math.abs(X - v.x0) <= EDGE) return "w";
+    if (inY && Math.abs(X - v.x1) <= EDGE) return "e";
+    if (inX && Math.abs(Y - v.y0) <= EDGE) return "n";
+    if (inX && Math.abs(Y - v.y1) <= EDGE) return "s";
+    if (X > v.x0 && X < v.x1 && Y > v.y0 && Y < v.y1) return "move";
+    return "rotate";
+  }
+
+  // Move edges `kind` (n, s, e, w or a corner) of `base` by (ux, uy) photo
+  // pixels along its own axes, keeping a minimum size and the locked ratio.
+  function cropResized(cs, base, kind, ux, uy, minSize) {
+    let l = -base.width / 2;
+    let r = base.width / 2;
+    let t = -base.height / 2;
+    let b = base.height / 2;
+    const hasW = kind.includes("w");
+    const hasE = kind.includes("e");
+    const hasN = kind.includes("n");
+    const hasS = kind.includes("s");
+    if (hasW) l = Math.min(l + ux, r - minSize);
+    if (hasE) r = Math.max(r + ux, l + minSize);
+    if (hasN) t = Math.min(t + uy, b - minSize);
+    if (hasS) b = Math.max(b + uy, t + minSize);
+    if (cs.ratio) {
+      let w = r - l;
+      let h = b - t;
+      if ((hasW || hasE) && (hasN || hasS)) {
+        // A corner: the side that moved further leads; the opposite corner stays.
+        if (w / h > cs.ratio) h = w / cs.ratio;
+        else w = h * cs.ratio;
+        if (hasW) l = r - w; else r = l + w;
+        if (hasN) t = b - h; else b = t + h;
+      } else if (hasW || hasE) {
+        h = w / cs.ratio;
+        const mid = (t + b) / 2;
+        t = mid - h / 2;
+        b = mid + h / 2;
+      } else {
+        w = h * cs.ratio;
+        const mid = (l + r) / 2;
+        l = mid - w / 2;
+        r = mid + w / 2;
+      }
+    }
+    return fromLocal(base, l, r, t, b, cs.sign);
+  }
+
+  function cropUpdate(cs, X, Y) {
+    const s = cs.drag.start;
+    const L = cs.drag.L;
+    const ux = (X - cs.drag.X) / L.S;
+    const uy = (Y - cs.drag.Y) / L.S;
+    const kind = cs.drag.kind;
+    if (kind === "draw") {
+      // A tiny rectangle at the anchor, grown towards the pointer through its
+      // far corner, so the corner logic (aspect lock, edges) applies as is.
+      const m = cs.drag.m;
+      const [AX, AY] = cropToView(cs, L, cs.drag.anchor[0], cs.drag.anchor[1]);
+      const sx = X < AX ? -1 : 1;
+      const sy = Y < AY ? -1 : 1;
+      const [c, sn] = axes(s.angle, cs.sign);
+      const hx = (sx * m) / 2;
+      const hy = (sy * m) / 2;
+      const tiny = { cx: cs.drag.anchor[0] + hx * c - hy * sn, cy: cs.drag.anchor[1] + hx * sn + hy * c, width: m, height: m, angle: s.angle };
+      const corner = (sy > 0 ? "s" : "n") + (sx > 0 ? "e" : "w");
+      const dx = (X - AX) / L.S - sx * m;
+      const dy = (Y - AY) / L.S - sy * m;
+      if (cs.ratio) {
+        cs.rect = towards(tiny, cropResized(cs, tiny, corner, dx, dy, m), cs.W, cs.H, cs.sign);
+      } else {
+        const a = towards(tiny, cropResized(cs, tiny, corner[1], dx, 0, m), cs.W, cs.H, cs.sign);
+        cs.rect = towards(a, cropResized(cs, a, corner[0], 0, dy, m), cs.W, cs.H, cs.sign);
+      }
+      return;
+    }
+    if (kind === "rotate") {
+      const [px, py] = cs.drag.centre;
+      let d = Math.atan2(Y - py, X - px) - Math.atan2(cs.drag.Y - py, cs.drag.X - px);
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      // The photo follows the pointer: a clockwise drag turns it clockwise.
+      const deg = s.angle - (d * 180) / Math.PI / cs.sign;
+      // Snaps to a line coming level; Alt turns freely.
+      const angle = cropSnapped(cs, Math.round(Math.min(MAX_ANGLE, Math.max(-MAX_ANGLE, deg)) * 100) / 100, cs.drag.free);
+      cs.rect = straighten(s, angle, cs.W, cs.H, cs.sign);
+    } else if (kind === "move") {
+      const [c, sn] = axes(s.angle, cs.sign);
+      // Slide along each axis separately so the rectangle runs along an edge.
+      const a = towards(s, { ...s, cx: s.cx + ux * c, cy: s.cy + ux * sn }, cs.W, cs.H, cs.sign);
+      cs.rect = towards(a, { ...a, cx: a.cx - uy * sn, cy: a.cy + uy * c }, cs.W, cs.H, cs.sign);
+    } else {
+      const minSize = Math.max(16 / L.S, 0.01 * Math.min(cs.W, cs.H));
+      if (cs.ratio || kind.length === 1) {
+        cs.rect = towards(s, cropResized(cs, s, kind, ux, uy, minSize), cs.W, cs.H, cs.sign);
+      } else {
+        // Free corner: width and height stop at the photo's edges separately.
+        const across = kind[1];
+        const a = towards(s, cropResized(cs, s, across, ux, 0, minSize), cs.W, cs.H, cs.sign);
+        cs.rect = towards(a, cropResized(cs, a, kind[0], 0, uy, minSize), cs.W, cs.H, cs.sign);
+      }
+    }
+  }
+
   // ------------------------------------------------------------ widget
 
   function create(canvas, opts = {}) {
@@ -137,269 +401,8 @@
       guides: [],
       snaps: [],         // the angles (degrees, the tool's) that level a guide
     };
-    const SNAP = 0.6;      // degrees
 
-    // The angle that makes guide `l` level (or upright, when it's steep).
-    function levelling(l) {
-      const phi = (Math.atan2(l[3] - l[1], l[2] - l[0]) * 180) / Math.PI;
-      let a = ((phi + 90) % 180 + 180) % 180 - 90; // the line's slant, −90..90
-      if (a > 45) a -= 90;
-      else if (a < -45) a += 90;
-      return a / cs.sign;
-    }
-
-    function snapped(angle, free) {
-      if (free || !cs.snaps.length) return angle;
-      let best = null;
-      for (const s of cs.snaps) if (Math.abs(s - angle) < SNAP && (best == null || Math.abs(s - angle) < Math.abs(best - angle))) best = s;
-      return best ?? angle;
-    }
-
-    // View: the photo turned by −θ about its centre (so the crop is level),
-    // fitted to the canvas.
-    function layout() {
-      const t = (cs.sign * (cs.rect ? cs.rect.angle : 0) * Math.PI) / 180;
-      const c = Math.cos(t);
-      const s = Math.sin(t);
-      const bw = cs.W * Math.abs(c) + cs.H * Math.abs(s);
-      const bh = cs.W * Math.abs(s) + cs.H * Math.abs(c);
-      const vw = canvas.clientWidth;
-      const vh = canvas.clientHeight;
-      const S = Math.max(1e-6, Math.min((vw - 2 * PAD) / bw, (vh - 2 * PAD) / bh));
-      return { t, c, s, S, vx: vw / 2, vy: vh / 2 };
-    }
-
-    function toView(L, x, y) {
-      const dx = x - cs.W / 2;
-      const dy = y - cs.H / 2;
-      return [L.vx + L.S * (dx * L.c + dy * L.s), L.vy + L.S * (-dx * L.s + dy * L.c)];
-    }
-
-    // Screen point -> photo pixels (the inverse of toView).
-    function fromView(L, X, Y) {
-      const u = (X - L.vx) / L.S;
-      const v = (Y - L.vy) / L.S;
-      return [cs.W / 2 + u * L.c - v * L.s, cs.H / 2 + u * L.s + v * L.c];
-    }
-
-    // The crop rectangle on screen (level): x0, y0, x1, y1 in CSS px.
-    function viewRect(L) {
-      const [X, Y] = toView(L, cs.rect.cx, cs.rect.cy);
-      const hw = (L.S * cs.rect.width) / 2;
-      const hh = (L.S * cs.rect.height) / 2;
-      return { x0: X - hw, y0: Y - hh, x1: X + hw, y1: Y + hh };
-    }
-
-    function draw() {
-      const dpr = window.devicePixelRatio || 1;
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
-        canvas.width = Math.round(w * dpr);
-        canvas.height = Math.round(h * dpr);
-      }
-      g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      g.clearRect(0, 0, w, h);
-      if (!cs.rect) return;
-      const L = layout();
-      const img = opts.image ? opts.image() : null;
-      g.save();
-      g.translate(L.vx, L.vy);
-      g.scale(L.S, L.S);
-      g.rotate(-L.t);
-      g.translate(-cs.W / 2, -cs.H / 2);
-      if (img) {
-        g.imageSmoothingQuality = "high";
-        g.drawImage(img, 0, 0, cs.W, cs.H);
-      } else {
-        g.fillStyle = "#2a2c31";
-        g.fillRect(0, 0, cs.W, cs.H);
-      }
-      // The straight lines while straightening; the ones level now stand out.
-      if (cs.guides.length && ((cs.drag && cs.drag.kind === "rotate") || cs.angleBase)) {
-        for (const l of cs.guides) {
-          const on = Math.abs(levelling(l) - cs.rect.angle) < 0.05;
-          g.strokeStyle = on ? "rgba(120, 230, 140, 0.95)" : "rgba(255, 210, 90, 0.55)";
-          g.lineWidth = (on ? 2.5 : 1.5) / L.S;
-          g.beginPath();
-          g.moveTo(l[0], l[1]);
-          g.lineTo(l[2], l[3]);
-          g.stroke();
-        }
-      }
-      g.restore();
-
-      // Draw mode, before the first drag: just the photo, waiting for the cross.
-      if (cs.drawing && !(cs.drag && cs.drag.kind === "draw" && cs.drag.moved)) return;
-      const v = viewRect(L);
-      g.fillStyle = SHADE;
-      g.beginPath();
-      g.rect(0, 0, w, h);
-      g.rect(v.x0, v.y0, v.x1 - v.x0, v.y1 - v.y0);
-      g.fill("evenodd");
-
-      // Rule of thirds while dragging; a finer grid while straightening.
-      if (cs.drag) {
-        const n = cs.drag.kind === "rotate" ? 8 : 3;
-        g.strokeStyle = "rgba(255,255,255,0.45)";
-        g.lineWidth = 1;
-        g.beginPath();
-        for (let i = 1; i < n; i++) {
-          const x = Math.round(v.x0 + ((v.x1 - v.x0) * i) / n) + 0.5;
-          const y = Math.round(v.y0 + ((v.y1 - v.y0) * i) / n) + 0.5;
-          g.moveTo(x, v.y0);
-          g.lineTo(x, v.y1);
-          g.moveTo(v.x0, y);
-          g.lineTo(v.x1, y);
-        }
-        g.stroke();
-      }
-      g.strokeStyle = "rgba(255,255,255,0.9)";
-      g.lineWidth = 1;
-      g.strokeRect(v.x0, v.y0, v.x1 - v.x0, v.y1 - v.y0);
-      // Corner and edge handles.
-      const len = Math.min(20, (v.x1 - v.x0) / 3, (v.y1 - v.y0) / 3);
-      g.lineWidth = 3;
-      g.strokeStyle = "#fff";
-      g.beginPath();
-      for (const [x, y, dx, dy] of [[v.x0, v.y0, 1, 1], [v.x1, v.y0, -1, 1], [v.x1, v.y1, -1, -1], [v.x0, v.y1, 1, -1]]) {
-        g.moveTo(x + dx * len, y);
-        g.lineTo(x, y);
-        g.lineTo(x, y + dy * len);
-      }
-      const mx = (v.x0 + v.x1) / 2;
-      const my = (v.y0 + v.y1) / 2;
-      g.moveTo(mx - len / 2, v.y0); g.lineTo(mx + len / 2, v.y0);
-      g.moveTo(mx - len / 2, v.y1); g.lineTo(mx + len / 2, v.y1);
-      g.moveTo(v.x0, my - len / 2); g.lineTo(v.x0, my + len / 2);
-      g.moveTo(v.x1, my - len / 2); g.lineTo(v.x1, my + len / 2);
-      g.stroke();
-      // The size next to the pointer while drawing or resizing, like a screenshot.
-      if (cs.drag && cs.drag.kind !== "move" && cs.drag.kind !== "rotate" && cs.drag.pointer) {
-        const text = `${Math.round(cs.rect.width)} × ${Math.round(cs.rect.height)}`;
-        g.font = "12px system-ui, sans-serif";
-        const tw = g.measureText(text).width;
-        const [px, py] = cs.drag.pointer;
-        // Beside the pointer, but never off the canvas (the pointer can be outside).
-        const bx = Math.max(4, Math.min(px + 14, w - tw - 14));
-        const by = Math.max(4, Math.min(py + 18, h - 24));
-        g.fillStyle = "rgba(0,0,0,0.7)";
-        g.fillRect(bx, by, tw + 10, 20);
-        g.fillStyle = "#fff";
-        g.fillText(text, bx + 5, by + 14);
-      }
-    }
-
-    function hit(X, Y) {
-      const v = viewRect(layout());
-      const nx0 = Math.abs(X - v.x0) <= HANDLE;
-      const nx1 = Math.abs(X - v.x1) <= HANDLE;
-      const ny0 = Math.abs(Y - v.y0) <= HANDLE;
-      const ny1 = Math.abs(Y - v.y1) <= HANDLE;
-      if ((nx0 || nx1) && (ny0 || ny1)) return (ny0 ? "n" : "s") + (nx0 ? "w" : "e");
-      const inX = X > v.x0 - EDGE && X < v.x1 + EDGE;
-      const inY = Y > v.y0 - EDGE && Y < v.y1 + EDGE;
-      if (inY && Math.abs(X - v.x0) <= EDGE) return "w";
-      if (inY && Math.abs(X - v.x1) <= EDGE) return "e";
-      if (inX && Math.abs(Y - v.y0) <= EDGE) return "n";
-      if (inX && Math.abs(Y - v.y1) <= EDGE) return "s";
-      if (X > v.x0 && X < v.x1 && Y > v.y0 && Y < v.y1) return "move";
-      return "rotate";
-    }
-
-    // Move edges `kind` (n, s, e, w or a corner) of `base` by (ux, uy) photo
-    // pixels along its own axes, keeping a minimum size and the locked ratio.
-    function resized(base, kind, ux, uy, minSize) {
-      let l = -base.width / 2;
-      let r = base.width / 2;
-      let t = -base.height / 2;
-      let b = base.height / 2;
-      const hasW = kind.includes("w");
-      const hasE = kind.includes("e");
-      const hasN = kind.includes("n");
-      const hasS = kind.includes("s");
-      if (hasW) l = Math.min(l + ux, r - minSize);
-      if (hasE) r = Math.max(r + ux, l + minSize);
-      if (hasN) t = Math.min(t + uy, b - minSize);
-      if (hasS) b = Math.max(b + uy, t + minSize);
-      if (cs.ratio) {
-        let w = r - l;
-        let h = b - t;
-        if ((hasW || hasE) && (hasN || hasS)) {
-          // A corner: the side that moved further leads; the opposite corner stays.
-          if (w / h > cs.ratio) h = w / cs.ratio;
-          else w = h * cs.ratio;
-          if (hasW) l = r - w; else r = l + w;
-          if (hasN) t = b - h; else b = t + h;
-        } else if (hasW || hasE) {
-          h = w / cs.ratio;
-          const mid = (t + b) / 2;
-          t = mid - h / 2;
-          b = mid + h / 2;
-        } else {
-          w = h * cs.ratio;
-          const mid = (l + r) / 2;
-          l = mid - w / 2;
-          r = mid + w / 2;
-        }
-      }
-      return fromLocal(base, l, r, t, b, cs.sign);
-    }
-
-    function update(X, Y) {
-      const s = cs.drag.start;
-      const L = cs.drag.L;
-      const ux = (X - cs.drag.X) / L.S;
-      const uy = (Y - cs.drag.Y) / L.S;
-      const kind = cs.drag.kind;
-      if (kind === "draw") {
-        // A tiny rectangle at the anchor, grown towards the pointer through its
-        // far corner, so the corner logic (aspect lock, edges) applies as is.
-        const m = cs.drag.m;
-        const [AX, AY] = toView(L, cs.drag.anchor[0], cs.drag.anchor[1]);
-        const sx = X < AX ? -1 : 1;
-        const sy = Y < AY ? -1 : 1;
-        const [c, sn] = axes(s.angle, cs.sign);
-        const hx = (sx * m) / 2;
-        const hy = (sy * m) / 2;
-        const tiny = { cx: cs.drag.anchor[0] + hx * c - hy * sn, cy: cs.drag.anchor[1] + hx * sn + hy * c, width: m, height: m, angle: s.angle };
-        const corner = (sy > 0 ? "s" : "n") + (sx > 0 ? "e" : "w");
-        const dx = (X - AX) / L.S - sx * m;
-        const dy = (Y - AY) / L.S - sy * m;
-        if (cs.ratio) {
-          cs.rect = towards(tiny, resized(tiny, corner, dx, dy, m), cs.W, cs.H, cs.sign);
-        } else {
-          const a = towards(tiny, resized(tiny, corner[1], dx, 0, m), cs.W, cs.H, cs.sign);
-          cs.rect = towards(a, resized(a, corner[0], 0, dy, m), cs.W, cs.H, cs.sign);
-        }
-        return;
-      }
-      if (kind === "rotate") {
-        const [px, py] = cs.drag.centre;
-        let d = Math.atan2(Y - py, X - px) - Math.atan2(cs.drag.Y - py, cs.drag.X - px);
-        d = Math.atan2(Math.sin(d), Math.cos(d));
-        // The photo follows the pointer: a clockwise drag turns it clockwise.
-        const deg = s.angle - (d * 180) / Math.PI / cs.sign;
-        // Snaps to a line coming level; Alt turns freely.
-        const angle = snapped(Math.round(Math.min(MAX_ANGLE, Math.max(-MAX_ANGLE, deg)) * 100) / 100, cs.drag.free);
-        cs.rect = straighten(s, angle, cs.W, cs.H, cs.sign);
-      } else if (kind === "move") {
-        const [c, sn] = axes(s.angle, cs.sign);
-        // Slide along each axis separately so the rectangle runs along an edge.
-        const a = towards(s, { ...s, cx: s.cx + ux * c, cy: s.cy + ux * sn }, cs.W, cs.H, cs.sign);
-        cs.rect = towards(a, { ...a, cx: a.cx - uy * sn, cy: a.cy + uy * c }, cs.W, cs.H, cs.sign);
-      } else {
-        const minSize = Math.max(16 / L.S, 0.01 * Math.min(cs.W, cs.H));
-        if (cs.ratio || kind.length === 1) {
-          cs.rect = towards(s, resized(s, kind, ux, uy, minSize), cs.W, cs.H, cs.sign);
-        } else {
-          // Free corner: width and height stop at the photo's edges separately.
-          const across = kind[1];
-          const a = towards(s, resized(s, across, ux, 0, minSize), cs.W, cs.H, cs.sign);
-          cs.rect = towards(a, resized(a, kind[0], 0, uy, minSize), cs.W, cs.H, cs.sign);
-        }
-      }
-    }
+    const draw = () => cropDraw(cs, canvas, g, opts.image ? opts.image() : null);
 
     function local(e) {
       const b = canvas.getBoundingClientRect();
@@ -415,18 +418,18 @@
       if (e.button !== 0 || !cs.rect) return;
       e.preventDefault();
       const [X, Y] = local(e);
-      const L = layout();
+      const L = cropLayout(cs, canvas);
       cs.angleBase = null;
       if (cs.drawing) {
         // The anchor is where the press was, kept a little inside the photo so
         // the first tiny rectangle fits whichever way the drag goes.
         const m = Math.max(16 / L.S, 0.01 * Math.min(cs.W, cs.H));
-        const [px, py] = fromView(L, X, Y);
+        const [px, py] = cropFromView(cs, L, X, Y);
         const inset = 1.5 * m;
         const anchor = [Math.min(cs.W - inset, Math.max(inset, px)), Math.min(cs.H - inset, Math.max(inset, py))];
         cs.drag = { kind: "draw", X, Y, L, m, anchor, start: { ...cs.rect }, moved: false, pointer: [X, Y] };
       } else {
-        cs.drag = { kind: hit(X, Y), X, Y, L, start: { ...cs.rect }, centre: toView(L, cs.rect.cx, cs.rect.cy), pointer: [X, Y] };
+        cs.drag = { kind: cropHit(cs, canvas, X, Y), X, Y, L, start: { ...cs.rect }, centre: cropToView(cs, L, cs.rect.cx, cs.rect.cy), pointer: [X, Y] };
       }
       if (cs.drag.kind === "rotate") canvas.style.cursor = "grabbing";
       try { canvas.setPointerCapture(e.pointerId); } catch { /* a pointer the page made up (tests) */ }
@@ -436,7 +439,7 @@
       if (!cs.rect) return;
       const [X, Y] = local(e);
       if (!cs.drag) {
-        canvas.style.cursor = cs.drawing ? "crosshair" : CURSORS[hit(X, Y)];
+        canvas.style.cursor = cs.drawing ? "crosshair" : CURSORS[cropHit(cs, canvas, X, Y)];
         return;
       }
       cs.drag.pointer = [X, Y];
@@ -446,7 +449,7 @@
         if (!cs.drag.moved && Math.hypot(X - cs.drag.X, Y - cs.drag.Y) < 4) return;
         cs.drag.moved = true;
       }
-      update(X, Y);
+      cropUpdate(cs, X, Y);
       changed(true);
     });
     const end = () => {
@@ -524,7 +527,7 @@
       /** The photo's straight lines to show and snap to while straightening. */
       setGuides(lines) {
         cs.guides = lines ?? [];
-        cs.snaps = [...new Set(cs.guides.map((l) => Math.round(levelling(l) * 100) / 100))].filter((a) => Math.abs(a) <= MAX_ANGLE);
+        cs.snaps = [...new Set(cs.guides.map((l) => Math.round(cropLevelling(cs, l) * 100) / 100))].filter((a) => Math.abs(a) <= MAX_ANGLE);
         draw();
       },
       draw,

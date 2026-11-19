@@ -773,6 +773,9 @@
  "Collage maker: several photos on one canvas": [
   "index.html"
  ],
+ "Collage of every photo shown in the library, as pages": [
+  "core/keys.js"
+ ],
  "Collages": [
   "index.html"
  ],
@@ -1168,6 +1171,9 @@
  "Every photo in the library folders, newest first, as one timeline": [
   "index.html"
  ],
+ "Every photo shown in the library": [
+  "index.html"
+ ],
  "Every step stays in History, so Redo brings them back.": [
   "core/keys.js"
  ],
@@ -1236,6 +1242,9 @@
   "index.html"
  ],
  "Fill in from the first selected photo": [
+  "index.html"
+ ],
+ "Fill the tray with every photo the library shows (after its filters)": [
   "index.html"
  ],
  "Film": [
@@ -2218,6 +2227,9 @@
  ],
  "One folder per day: 2026-10-10": [
   "index.html"
+ ],
+ "One layout over all of them: the collage's Batch exports the pages.": [
+  "core/keys.js"
  ],
  "One line": [
   "index.html"
@@ -3503,6 +3515,9 @@
   "core/keys.js"
  ],
  "Trip: back to normal (the trip's effects off)": [
+  "core/keys.js"
+ ],
+ "Trip: save as a preset, effects included, and share it to the hub": [
   "core/keys.js"
  ],
  "Try a sample photo": [

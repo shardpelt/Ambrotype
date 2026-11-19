@@ -68,7 +68,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 
 ## Film negatives and scans
 
-- **Turn a scanned negative into a positive** → the **Film** task → **Film Negative**; **Pick base** and click the clear film between frames.
+- **Turn a scanned negative into a positive** → the **Film** task → **Film Negative**; **Pick base** and click the clear film between frames. To measure the levels on part of the photo only (not a sky or a light leak), **Meter area** and drag a box (Alt-click: the whole crop again); `amb:NegativeMeterLeft/Top/Right/Bottom`.
 - **Make a whole roll look consistent** → in the library, **Sync negative roll…**, or Fixed range in **Film Negative**. `amb negative analyze`.
 - **Colour cast from a sky or lamp, faded expired film** → **Film Negative**: Cast removal, Expired film; Auto Density and Auto Grade.
 - **Dust and hairs on a scan** → **Spot Removal** → **Find dust**; Shift-drag along a straight scratch. `amb dust PHOTO --apply`.
@@ -85,12 +85,12 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Turn a photo that's sideways, or mirror it** → **Rotate left** (Ctrl+[), **Rotate right** (Ctrl+]) or **Flip horizontal**, in the Photo menu: the open photo, or the photos selected in the library; in the full-screen viewer (V), the same keys or the ⟲ ⟳ buttons on its bar. Crops and masks turn with it, and Lightroom sees the turn too. `amb tag PHOTO --rotate left|right|180 --flip horizontal`.
 - **Rate, label, flag, keyword** → 1–5 rate, 6–9 colour labels, **Pick** (P), **Reject** (X), **Add Keywords** (K). `amb tag`.
 - **Pick the best shot of a burst (in focus, eyes open)** → library → Organise → **Best in each burst**: the best of each burst is marked with why, the rest dimmed with what's wrong (eyes closed, soft); then **Pick best, reject rest** or **Stack each**. A click on a dimmed photo's badge keeps it instead. Eyes need YuNet in **Settings** → AI models; without it, focus alone.
-- **Cull fast** → **Loupe** (E), **Compare** (C, side by side or above and below, either way round); auto-advance after a rating (**Settings** → General).
+- **Cull fast** → **Loupe** (E), **Compare** (C, side by side or above and below, either way round), each zooming as the viewer does (wheel or pinch, a click for 100 %, drag to move; Compare's two together); auto-advance after a rating (**Settings** → General).
 - **Find a photo by what's in it ("dog on a beach")** → the library's Smart search, or right-click → Find similar photos. `amb search "dog on a beach" DIR`.
 - **Find photos by camera, lens, date, rating** → the library's filters and search. `amb catalog find`.
 - **Find what to delete (blurry, copies, eyes closed, black frames)** → library → Organise ▾ → **Clean up…**: choose the tests, **Find**, then page through each photo with why it may go (and the one kept instead); all are marked to go, **K** keeps one, **D** lets it go, ← → step; then **Move to the trash** or **Reject them**. Photos you picked or rated are left out. `amb cleanup DIR [--skip eyes,…] [--trash|--reject]`.
 - **Duplicates and bursts, keep the best** → Organise ▾ → duplicates and bursts. `amb duplicates DIR`.
-- **Sort into dated folders, move, rename** → Organise ▾ (sidecars go along). `amb sort`, `amb move`, `amb rename`.
+- **Sort into dated folders, move, rename** → Organise ▾ (sidecars go along), or drag photos (the selection goes together) onto a folder in the Folders panel to move them; Organise → Undo the last move puts them back. `amb sort`, `amb move`, `amb rename`.
 - **Delete** → to the system trash, with all its files. `amb trash`.
 - **Photos moved or renamed outside the app** → Organise ▾ → find moved photos. `amb catalog missing`, `amb catalog relink DIR`.
 - **Groups of photos** → collections and smart collections; **Stack** (Ctrl+G); **Make a Virtual Copy** (Ctrl+').

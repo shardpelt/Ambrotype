@@ -379,13 +379,8 @@ fn export_small(
     )))
 }
 
-fn export_one(
-    img: &Image,
-    meta: &PhotoMetadata,
-    s: &ExportSettings,
-    path: &Path,
-) -> Result<ExportReport, Error> {
-    let depth = s.bit_depth.unwrap_or(s.format.default_bit_depth());
+/// Refuses a format that can't hold this bit depth or colour space.
+fn check_supported(s: &ExportSettings, depth: BitDepth) -> Result<(), Error> {
     if !s.format.bit_depths().contains(&depth) {
         return Err(Error::Unsupported(format!(
             "{} does not support {} output",
@@ -411,62 +406,35 @@ fn export_one(
                 .into(),
         ));
     }
-    let mut upright = geometry::orient(img, meta.orientation);
-    let plan = s
-        .border
-        .as_ref()
-        .map(|b| border::plan(b, s.resize, s.enlarge, upright.width, upright.height));
-    let mut out = match &plan {
-        Some(p) => {
-            if let Some((x, y, w, h)) = p.crop {
-                upright = geometry::cut(&upright, x, y, w, h);
-            }
-            geometry::resize(&upright, p.photo.0, p.photo.1)
-        }
-        None => {
-            // An exact size with another aspect: keep the centre, then scale.
-            if let Some((x, y, w, h)) = s.resize.cover_window(upright.width, upright.height) {
-                upright = geometry::cut(&upright, x, y, w, h);
-            }
-            let (ow, oh) = s.resize.target(upright.width, upright.height, s.enlarge);
-            geometry::resize(&upright, ow, oh)
-        }
-    };
+    Ok(())
+}
 
-    // Working ProPhoto → output space; encoded unless EXR (linear).
-    let m = s.color_space.from_prophoto().map(|r| r.map(|v| v as f32));
-    let transfer = s.color_space.transfer();
-    let float = depth == BitDepth::Float32;
-    let linear_out = s.format == Format::Exr;
-    out.rgb.par_chunks_mut(3).for_each(|p| {
-        let v = [0, 1, 2].map(|i| m[i][0] * p[0] + m[i][1] * p[1] + m[i][2] * p[2]);
-        for (slot, x) in p.iter_mut().zip(v) {
-            // Integer formats clip to the gamut (hard clip; gamut mapping comes later).
-            let x = if float { x } else { x.clamp(0.0, 1.0) };
-            *slot = if linear_out {
-                x
-            } else {
-                transfer.encode(f64::from(x)) as f32
-            };
-        }
-    });
+/// Sharpening, the watermark and the frame, on the photo in the output space.
+fn finish(
+    out: &mut Image,
+    meta: &PhotoMetadata,
+    s: &ExportSettings,
+    plan: Option<&border::Plan>,
+    linear_out: bool,
+    float: bool,
+) -> Result<(), Error> {
     if let Some((media, amount)) = s.sharpen {
-        geometry::output_sharpen(&mut out, media, amount);
+        geometry::output_sharpen(out, media, amount);
     }
     // The watermark goes on the photo after sharpening, so it isn't sharpened.
     if let Some(w) = &s.watermark {
-        let text = frame_colour(&w.color, &out, s.color_space, linear_out, float);
+        let text = frame_colour(&w.color, out, s.color_space, linear_out, float);
         let to_output = |rgb: [f64; 3]| srgb_to_output(rgb, s.color_space, linear_out, float);
         // Text can carry the photo's details, as a border caption can.
         let mut w = w.clone();
         if w.text.contains('{') {
             w.text = border::caption_text(&w.text, meta, &s.tags);
         }
-        watermark::apply(&mut out, &w, &|_| text, &to_output).map_err(Error::Unsupported)?;
+        watermark::apply(out, &w, &|_| text, &to_output).map_err(Error::Unsupported)?;
     }
     // The frame goes on last, so its edge isn't sharpened.
-    if let (Some(b), Some(p)) = (&s.border, &plan) {
-        let colour = |text: &str| frame_colour(text, &out, s.color_space, linear_out, float);
+    if let (Some(b), Some(p)) = (&s.border, plan) {
+        let colour = |text: &str| frame_colour(text, out, s.color_space, linear_out, float);
         let line = b.keyline.as_ref().map_or([0.0; 3], |k| colour(&k.color));
         let frame = colour(&b.color);
         // A caption: dark on a light frame, light on a dark one, unless chosen.
@@ -478,59 +446,35 @@ fn export_one(
                     .unwrap_or(if light { "#3a3a3a" } else { "#e6e6e6" }),
             )
         });
-        out = border::compose(&out, p, frame, line);
+        *out = border::compose(out, p, frame, line);
         if let (Some(c), Some(ink)) = (&b.caption, ink) {
             let text = border::caption_text(&c.text, meta, &s.tags);
-            border::draw_caption(&mut out, p, c, &text, ink);
+            border::draw_caption(out, p, c, &text, ink);
         }
     }
+    Ok(())
+}
 
-    let icc = s.color_space.icc_profile();
+/// The bytes of the file in `s.format`, and the quality they were made at
+/// (lower than asked when `max_bytes` made it so).
+fn encode(
+    out: &Image,
+    meta: &PhotoMetadata,
+    s: &ExportSettings,
+    depth: BitDepth,
+    icc: &[u8],
+    exif: Option<Vec<u8>>,
+) -> Result<(Vec<u8>, u8), Error> {
     let (w, h) = (out.width as u32, out.height as u32);
-    let exif = exif::build_export(
-        meta,
-        s.metadata,
-        &s.tags,
-        Some(exif::Output {
-            width: w,
-            height: h,
-            srgb: s.color_space == OutputSpace::Srgb,
-            jpeg: s.format == Format::Jpeg,
-        }),
-    );
     let mut quality = s.quality.clamp(1, 100);
     let bytes = match (s.format, depth) {
         (Format::Jpeg, _) => {
             let data = to_u8(&out.rgb);
-            let mut encoded = encode_jpeg(&data, w, h, quality, s, &icc, exif.as_deref())?;
+            let mut encoded = encode_jpeg(&data, w, h, quality, s, icc, exif.as_deref())?;
             if let Some(limit) = s.max_bytes {
-                // Binary search for the highest quality that fits.
                 if encoded.len() as u64 > limit {
-                    let (mut lo, mut hi) = (1u8, quality - 1);
-                    let mut best = None;
-                    while lo <= hi {
-                        let q = lo + (hi - lo) / 2;
-                        let e = encode_jpeg(&data, w, h, q, s, &icc, exif.as_deref())?;
-                        if e.len() as u64 <= limit {
-                            best = Some((q, e));
-                            lo = q + 1;
-                        } else if q == 1 {
-                            break;
-                        } else {
-                            hi = q - 1;
-                        }
-                    }
-                    match best {
-                        Some((q, e)) => {
-                            quality = q;
-                            encoded = e;
-                        }
-                        None => {
-                            return Err(Error::Encode(format!(
-                                "cannot fit {w}x{h} into {limit} bytes even at quality 1; resize it"
-                            )));
-                        }
-                    }
+                    (quality, encoded) =
+                        jpeg_within(&data, (w, h), quality, s, icc, exif.as_deref(), limit)?;
                 }
             }
             encoded
@@ -558,11 +502,11 @@ fn export_one(
                     jpeg: false,
                 }),
             );
-            tiff_file::encode(&samples, w, h, &icc, dirs.as_ref()).map_err(Error::Encode)?
+            tiff_file::encode(&samples, w, h, icc, dirs.as_ref()).map_err(Error::Encode)?
         }
         (Format::Png, BitDepth::Sixteen) => {
             let data = to_u16_bytes(&out.rgb);
-            encode_image(s.format, &data, w, h, ExtendedColorType::Rgb16, &icc, exif)?
+            encode_image(s.format, &data, w, h, ExtendedColorType::Rgb16, icc, exif)?
         }
         (Format::Exr, _) => {
             let data: Vec<u8> = out.rgb.iter().flat_map(|v| v.to_ne_bytes()).collect();
@@ -627,9 +571,107 @@ fn export_one(
         }
         (format, _) => {
             let data = to_u8(&out.rgb);
-            encode_image(format, &data, w, h, ExtendedColorType::Rgb8, &icc, exif)?
+            encode_image(format, &data, w, h, ExtendedColorType::Rgb8, icc, exif)?
         }
     };
+    Ok((bytes, quality))
+}
+
+/// The JPEG at the highest quality below `quality` that fits in `limit`
+/// bytes, with that quality: a binary search.
+fn jpeg_within(
+    data: &[u8],
+    (w, h): (u32, u32),
+    quality: u8,
+    s: &ExportSettings,
+    icc: &[u8],
+    exif: Option<&[u8]>,
+    limit: u64,
+) -> Result<(u8, Vec<u8>), Error> {
+    let (mut lo, mut hi) = (1u8, quality - 1);
+    let mut best = None;
+    while lo <= hi {
+        let q = lo + (hi - lo) / 2;
+        let e = encode_jpeg(data, w, h, q, s, icc, exif)?;
+        if e.len() as u64 <= limit {
+            best = Some((q, e));
+            lo = q + 1;
+        } else if q == 1 {
+            break;
+        } else {
+            hi = q - 1;
+        }
+    }
+    best.ok_or_else(|| {
+        Error::Encode(format!(
+            "cannot fit {w}x{h} into {limit} bytes even at quality 1; resize it"
+        ))
+    })
+}
+
+fn export_one(
+    img: &Image,
+    meta: &PhotoMetadata,
+    s: &ExportSettings,
+    path: &Path,
+) -> Result<ExportReport, Error> {
+    let depth = s.bit_depth.unwrap_or(s.format.default_bit_depth());
+    check_supported(s, depth)?;
+    let mut upright = geometry::orient(img, meta.orientation);
+    let plan = s
+        .border
+        .as_ref()
+        .map(|b| border::plan(b, s.resize, s.enlarge, upright.width, upright.height));
+    let mut out = match &plan {
+        Some(p) => {
+            if let Some((x, y, w, h)) = p.crop {
+                upright = geometry::cut(&upright, x, y, w, h);
+            }
+            geometry::resize(&upright, p.photo.0, p.photo.1)
+        }
+        None => {
+            // An exact size with another aspect: keep the centre, then scale.
+            if let Some((x, y, w, h)) = s.resize.cover_window(upright.width, upright.height) {
+                upright = geometry::cut(&upright, x, y, w, h);
+            }
+            let (ow, oh) = s.resize.target(upright.width, upright.height, s.enlarge);
+            geometry::resize(&upright, ow, oh)
+        }
+    };
+
+    // Working ProPhoto → output space; encoded unless EXR (linear).
+    let m = s.color_space.from_prophoto().map(|r| r.map(|v| v as f32));
+    let transfer = s.color_space.transfer();
+    let float = depth == BitDepth::Float32;
+    let linear_out = s.format == Format::Exr;
+    out.rgb.par_chunks_mut(3).for_each(|p| {
+        let v = [0, 1, 2].map(|i| m[i][0] * p[0] + m[i][1] * p[1] + m[i][2] * p[2]);
+        for (slot, x) in p.iter_mut().zip(v) {
+            // Integer formats clip to the gamut (hard clip; gamut mapping comes later).
+            let x = if float { x } else { x.clamp(0.0, 1.0) };
+            *slot = if linear_out {
+                x
+            } else {
+                transfer.encode(f64::from(x)) as f32
+            };
+        }
+    });
+    finish(&mut out, meta, s, plan.as_ref(), linear_out, float)?;
+
+    let icc = s.color_space.icc_profile();
+    let (w, h) = (out.width as u32, out.height as u32);
+    let exif = exif::build_export(
+        meta,
+        s.metadata,
+        &s.tags,
+        Some(exif::Output {
+            width: w,
+            height: h,
+            srgb: s.color_space == OutputSpace::Srgb,
+            jpeg: s.format == Format::Jpeg,
+        }),
+    );
+    let (bytes, quality) = encode(&out, meta, s, depth, &icc, exif)?;
     // Rating and keywords as XMP (and IPTC in JPEGs), with the full metadata policies.
     let bytes = if matches!(
         s.metadata,

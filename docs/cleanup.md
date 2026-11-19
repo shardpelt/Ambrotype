@@ -138,22 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B26. `export_one` in steps
-Tier: medium        Risk: medium
-Why: `export_one` in `crates/amb-export/src/lib.rs` is 275 lines in one function: checks, the pixels, finishing touches, encoding, metadata.
-Decided (was part of "Splitting the long functions"): four private helpers in `lib.rs`, in this order, each with a one-line doc comment; `export_one` calls them in turn. Proof: the export tests compare the bytes written; their count and results don't change.
-Read first: `export_one` (find it with `grep -n "fn export_one" crates/amb-export/src/lib.rs`).
-Files: `crates/amb-export/src/lib.rs`.
-Steps:
-1. `fn check_supported(s: &ExportSettings, depth: BitDepth) -> Result<(), Error>`: the three checks at the top (bit depth, JPEG XL colour space, AVIF colour).
-2. `fn finish(out: &mut …, s: &ExportSettings, plan: …)`: the blocks after the colour conversion: sharpening, the watermark, the frame (the three blocks from `if let Some((media, amount)) = s.sharpen` to the end of the border block), unchanged and in that order. Its parameters are what those blocks read; the compiler lists them.
-3. `fn encode(…) -> Result<Vec<u8>, Error>`: the `let bytes = match (s.format, depth) { … }` match, unchanged. Inside it, the JPEG arm's binary search for `max_bytes` becomes `fn jpeg_within(data: &[u8], w: usize, h: usize, quality: u8, s: &ExportSettings, icc: &[u8], exif: Option<&[u8]>, limit: u64) -> Result<Vec<u8>, Error>`.
-4. What is left in `export_one` (the plan and pixels, the metadata and the write) stays there.
-Don't: change any value, order of operations or byte written.
-Checks: `cargo test -p amb-export` (same count, all pass); the three cargo commands; `cargo test -p amb-cli` (renders).
-Done when: `export_one` is under 150 lines.
-Commit: `export: export_one in steps`. Why: "275 lines in one function."
-
 ### B27. `schema::panels` one function per panel
 Tier: small        Risk: low
 Why: `panels` in `crates/amb-gui/src/schema.rs` is 311 lines: eleven `Panel { … }` literals in one `vec!`.

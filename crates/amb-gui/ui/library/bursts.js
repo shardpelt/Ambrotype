@@ -67,7 +67,7 @@ function cullCell(cell, p) {
     return;
   }
   if (!badge) {
-    badge = Object.assign(document.createElement("button"), { type: "button", className: "lib-cull" });
+    badge = el("button", { type: "button", class: "lib-cull" });
     badge.addEventListener("click", (e) => {
       e.stopPropagation();
       cullChoose(cell.dataset.path);

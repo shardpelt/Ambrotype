@@ -887,6 +887,11 @@ body.library-mode #workspace { display: none; }
 .library-bar input[type=search] { width: 130px; }
 .library-bar input[type=range] { width: 90px; }
 .library-bar .grow { flex: 1 1 0; }
+/* View and Slideshow centred in the gap, like the filmstrip's: they move up between the two
+   spacers (.grow and ::after), ahead of what follows the spacer in the markup. */
+.library-bar .grow ~ * { order: 2; }
+.library-bar #lib-view, .library-bar #lib-slideshow { order: 1; }
+.library-bar::after { content: ""; flex: 1 1 0; order: 1; }
 .library-body { --tree-w: 210px; --panel-w: 270px; position: relative; flex: 1; display: grid; grid-template-columns: var(--tree-w) minmax(0, 1fr) var(--panel-w); min-height: 0; }
 .library-body.tree-off { --tree-w: 0px; }
 .library-body.panel-off { --panel-w: 0px; }

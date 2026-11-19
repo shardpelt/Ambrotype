@@ -46,17 +46,17 @@ async function loadCollections() {
 }
 
 function renderCollectionControls() {
-  const option = (value, text) => Object.assign(document.createElement("option"), { value, textContent: text });
+  const option = (value, text) => el("option", { value: value }, text);
   const src = $("lib-source");
   const folder = lib.dir ? `Folder: ${fileName(lib.dir.replace(/[\\/]+$/, "")) || lib.dir}` : "Folder";
   // Collections not in a set first, then one group per collection set.
   const sets = [...new Set(coll.list.map((c) => c.set ?? ""))].sort((a, b) => (b === "") - (a === "") || a.localeCompare(b));
   const inSets = sets.map((set) => {
-    const g = Object.assign(document.createElement("optgroup"), { label: set ? `▸ ${set}` : "Collections" });
+    const g = el("optgroup", { label: set ? `▸ ${set}` : "Collections" });
     g.append(...coll.list.filter((c) => (c.set ?? "") === set).map((c) => option(c.name, `${c.name} (${c.count})`)));
     return g;
   });
-  const smart = Object.assign(document.createElement("optgroup"), { label: "Smart collections" });
+  const smart = el("optgroup", { label: "Smart collections" });
   smart.append(...coll.smart.map((c) => option(SMART + c.name, `⚙ ${c.name}`)), option(NEW_SMART, "New smart collection…"));
   src.replaceChildren(option("", folder), option(ALL_PHOTOS, "All photos"), option(RATED, "★ Rated photos, best first"), ...inSets, smart);
   const rated = lib.smart === ALL_PHOTOS && $("lib-filter-rating").value !== "0" && $("lib-filter-rating").value !== "unrated" && $("lib-sort").value === "rating";
@@ -266,7 +266,7 @@ function smartRuleRow(rule = { field: "rating", op: ">=", value: 3 }) {
   const op = document.createElement("select");
   const holder = document.createElement("span");
   holder.style.display = "contents";
-  const remove = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "×", title: "Remove this rule" });
+  const remove = el("button", { type: "button", class: "small", title: "Remove this rule" }, "×");
   remove.addEventListener("click", () => row.remove());
   let value = null;
   const build = (r) => {
@@ -305,8 +305,8 @@ function smartFolderRow(path) {
   const row = document.createElement("div");
   row.className = "smart-folder";
   row.dataset.path = path;
-  const code = Object.assign(document.createElement("code"), { textContent: path, title: path });
-  const remove = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "×", title: "Don't look here" });
+  const code = el("code", { title: path }, path);
+  const remove = el("button", { type: "button", class: "small", title: "Don't look here" }, "×");
   remove.addEventListener("click", () => row.remove());
   row.append(code, remove);
   return row;

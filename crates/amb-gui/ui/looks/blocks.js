@@ -9,7 +9,7 @@ const columnWatch = new WeakMap();
 
 function wireColumnBlocks(col) {
   for (const s of col.querySelectorAll(":scope > .side-section")) foldableBlock(s);
-  const strip = Object.assign(document.createElement("nav"), { className: "col-strip", ariaLabel: "Further down this column" });
+  const strip = el("nav", { class: "col-strip", "aria-label": "Further down this column" });
   col.append(strip);
   let w = columnWatch.get(col);
   if (!w) {
@@ -41,7 +41,7 @@ function foldableBlock(s) {
   if (!h || !s.id) return;
   const key = `amb.fold.${s.id.replace(/^block-/, "")}`;
   if (!h.querySelector(".fold-head")) {
-    const head = Object.assign(document.createElement("button"), { type: "button", className: "fold-head", title: "Fold or unfold" });
+    const head = el("button", { type: "button", class: "fold-head", title: "Fold or unfold" });
     head.append(...h.childNodes);
     h.replaceChildren(head);
     head.addEventListener("click", () => foldBlock(s, !s.classList.contains("folded")));

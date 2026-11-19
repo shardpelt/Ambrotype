@@ -89,9 +89,9 @@ const AmbPicker = (() => {
         head.className = "picker-group";
         head.setAttribute("aria-expanded", String(shown));
         head.append(
-          Object.assign(document.createElement("span"), { className: "caret", textContent: shown ? "▾" : "▸" }),
+          el("span", { class: "caret" }, shown ? "▾" : "▸"),
           document.createTextNode(name),
-          Object.assign(document.createElement("span"), { className: "count", textContent: options.length }),
+          el("span", { class: "count" }, options.length),
         );
         head.addEventListener("click", () => {
           if (shown) { openGroups.delete(name); closedGroups.add(name); }

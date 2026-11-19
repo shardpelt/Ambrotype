@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Dragging with the pointer: a crop's corner and a tone curve's point, each as one history step.
+// Dragging with the pointer: a crop's corner, a tone curve's point and a colour
+// grading wheel's puck, each as one history step.
 // Run: ambrotype --ui-test crates/amb-gui/tests/ui/crop-curve.js photo.dng
 
 await t.step("the photo opens and a preview shows", async () => {
@@ -61,4 +62,27 @@ await t.step("dragging a curve point changes the curve, as one step", async () =
   await t.until("a history step", () => t.historyLength() === steps + 1);
   t.key("Ctrl+Z");
   await t.until("undone", () => JSON.stringify(t.setting(tag) ?? null) === was && t.historyLength() === steps);
+});
+
+await t.step("dragging a colour wheel's puck sets hue and saturation, as one step", async () => {
+  const wheel = ui.wheels.element.querySelector('.amb-wheel[data-region="Midtone"]');
+  const canvas = wheel.querySelector("canvas");
+  // Colour grading may sit in another tab of the column, and its section be closed.
+  revealInTab(canvas);
+  canvas.closest("details")?.setAttribute("open", "");
+  ui.wheels.view("3way");
+  ui.wheels.refresh();
+  await t.until("the wheel has a size", () => canvas.getBoundingClientRect().width > 50);
+  canvas.setPointerCapture = () => {}; // the pointer is made up here
+  const steps = t.historyLength();
+  t.expect(!t.setting("ColorGradeMidtoneSat"), "no midtone tint to begin with");
+  const c = canvas.getBoundingClientRect();
+  const mid = [c.left + c.width / 2, c.top + c.height / 2];
+  // From the centre (the puck) half way to the rim, straight up: hue 90, saturation about 50.
+  await dragPointer(canvas, mid, [mid[0], mid[1] - c.height / 4]);
+  await t.until("a midtone tint", () => t.setting("ColorGradeMidtoneSat") > 30, 30000);
+  t.expect(Math.abs(t.setting("ColorGradeMidtoneHue") - 90) <= 2, `hue ${t.setting("ColorGradeMidtoneHue")}`);
+  await t.until("a history step", () => t.historyLength() === steps + 1);
+  t.key("Ctrl+Z");
+  await t.until("undone", () => !t.setting("ColorGradeMidtoneSat") && t.historyLength() === steps);
 });

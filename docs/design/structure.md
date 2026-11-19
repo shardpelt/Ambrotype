@@ -81,9 +81,9 @@ Rust, production lines over 900:
 | `amb-protocol/src/masks.rs` | 1,141 | Mask commands |
 | `amb-ai/src/net.rs` | 1,122 | Running a model's graph layer by layer on the GPU |
 | `amb-engine/src/lens.rs` | 1,013 | Lens corrections |
-| `amb-engine/src/retouch.rs` | 978 | Spots: heal, clone, AI Remove |
+| `amb-engine/src/retouch.rs` | 978 | Spots: heal, clone, AI Remove (split 2026-11-19 into `retouch/`) |
 | `amb-gui/src/commands/photo.rs` | 956 | 37 Tauri commands about the open photo |
-| `amb-protocol/src/sidecar.rs` | 937 | Sidecar merge, info |
+| `amb-protocol/src/sidecar.rs` | 937 | Sidecar merge, info (split 2026-11-19 into `sidecar/`: read, write) |
 | `amb-export/src/embed.rs` | 932 | Metadata into finished files |
 | `amb-ops/src/object.rs` | 919 | Select object, select in words, move, remove |
 | `amb-engine/src/matching.rs` | 908 | Match look |

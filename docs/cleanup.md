@@ -138,20 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B2. Split `crates/amb-protocol/src/sidecar.rs`
-Tier: medium        Risk: medium
-Why: 960 production lines; reading a sidecar's info and writing it back are two jobs.
-Files: `crates/amb-protocol/src/sidecar.rs` to `crates/amb-protocol/src/sidecar/{mod,read,write,tests}.rs`; `docs/design/structure.md` (names it); `crates/amb-cli/tests/code_size.rs`.
-Steps:
-1. `mod.rs` keeps the module doc, `use` lines, the namespace constants (`XMP_NS`, `DC_NS`, `LR_NS`, `EXIF_NS`, `LIBRARY_NS`), and the types and helpers both sides use: `Flag` with its `impl`, `PhotoInfo`, `StackRef`, `DC_TEXTS`, `impl PhotoInfo` (the first one, with `place`), `parse_place`, `parse_xmp_coordinate`, `xmp_coordinate`, `parse_rating`. It declares `mod read; mod write;` and re-exports `pub use read::{read_history, read_info, read_snapshots};` and `pub use write::{Stored, merge, merge_with_info, merge_with_stored, with_info, write_atomic};`.
-2. `read.rs`: `read_history`, `read_snapshots`, `read_library_text`, `read_info`, and the second `impl PhotoInfo` (with `cleaned_keeping_keywords`).
-3. `write.rs`: `escape_text`, `resolve`, `element_name`, `element_ns`, `list_items`, `apply_info`, `prefix_for`, `apply_library_text`, `Stored`, `Foreign`, `escape_attr`, `xml_err`, `collect_foreign`, `merge`, `merge_with_info`, `merge_with_stored`, `merge_parts`, `with_info`, `write_atomic`.
-4. Tests to `tests.rs`; where they name a private helper that moved, add a `use super::write::NAME;` there.
-Don't: change the XMP the code writes (the round-trip tests show it).
-Checks: as above; `cargo test -p amb-protocol` and `cargo test -p amb-cli --test library` (they read sidecars).
-Done when: `sidecar.rs` is gone and no part has more than 800 production lines.
-Commit: `protocol: split sidecar.rs into read and write`. Why: "It was past the size budget."
-
 ### B3. Split `crates/amb-export/src/embed.rs`
 Tier: medium        Risk: medium
 Why: 932 production lines; the AVIF and JPEG XL containers are 600 lines of box handling.

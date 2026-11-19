@@ -61,9 +61,9 @@ async function connectFlow() {
   $("connect-missing").hidden = Boolean(info.amb);
   for (const id of ["connect-copy-command", "connect-copy"]) $(id).disabled = !info.amb;
   $("connect-folder").textContent = info.folder;
-  $("connect-app").replaceChildren(...connect.apps.map((a, i) => Object.assign(document.createElement("option"), { value: i, textContent: a.name })));
+  $("connect-app").replaceChildren(...connect.apps.map((a, i) => el("option", { value: i }, a.name)));
   const guides = await invoke("ai_guides");
-  $("connect-guide").replaceChildren(...guides.map((g) => Object.assign(document.createElement("option"), { value: g.name, textContent: `${g.name}: ${g.about}` })));
+  $("connect-guide").replaceChildren(...guides.map((g) => el("option", { value: g.name }, `${g.name}: ${g.about}`)));
   renderConnect();
   $("connect-dialog").showModal();
 }

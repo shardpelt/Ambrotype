@@ -138,40 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B17. UI test steps for the dialogs no script opens
-Tier: medium        Risk: low
-Why: 18 of the 43 dialogs in `crates/amb-gui/ui/index.html` have no id in any script of `crates/amb-gui/tests/ui/` (checked 2026-11-12), so a broken open goes unseen. A step that opens each one and closes it catches that.
-Files: `crates/amb-gui/tests/ui/dialogs.js` (new). Read: `crates/amb-gui/ui/core/uitest.js` (the `t` helpers) and the files in the table.
-Steps:
-1. `dialogs.js` starts like the other scripts (SPDX line; comment: "Every dialog opens, shows its main button, and closes. Run: ambrotype --ui-test crates/amb-gui/tests/ui/dialogs.js photo.dng"), then `await t.until("the photo", () => ui.info?.path, 60000);` and, for the library ones, `await toggleLibrary(true);`.
-2. A helper at the top: `const opens = async (id, open, button) => t.step(`${id} opens and closes`, async () => { const p = open(); await t.until(id, () => $(id).open, 10000); if (button) t.expect(document.querySelector(button) && !document.querySelector(button).hidden, `${button} is there`); $(id).close(); await Promise.race([p, t.sleep(1000)]); t.expect(!$(id).open, `${id} closed`); });` (`open()` returns the flow's promise, which may wait for the dialog to close).
-3. One step per dialog, with these openers (all are global functions of the UI scripts; the file is where the function lives):
-   | Dialog | Open with | Main button | Needs |
-   |---|---|---|---|
-   | `paste-dialog` | `applyPresetPartly(ui.presets[0])` (`crates/amb-gui/ui/develop/presets.js`) | `#paste-dialog button.primary` | a preset: `ui.presets = await invoke("presets")` first |
-   | `surprise-dialog` | `surpriseFlow()` | `#surprise-more` | a photo |
-   | `match-dialog` | none: `matchFlow()` starts with `invoke("pick_references")`, a native file picker | | skip, and say so in the commit message |
-   | `shortcuts-dialog` | `showShortcuts()` (`crates/amb-gui/ui/develop/frame.js`) | `#shortcuts-dialog button.primary` | none |
-   | `settings-dialog` | `settingsFlow()` (`crates/amb-gui/ui/core/keys.js`) | `#settings-dialog [data-tab="keys"]` | none |
-   | `sizes-dialog` | `sizesFlow()` (`crates/amb-gui/ui/tools/croptool.js`) | `#sizes-new` | none |
-   | `basics-dialog` | `basicsFlow()` (`crates/amb-gui/ui/help/basics.js`) | none | none |
-   | `learn-dialog` | `learnFlow()` (`crates/amb-gui/ui/help/learn.js`) | none | none |
-   | `assistant-dialog` | `assistantFlow()` (`crates/amb-gui/ui/dialogs/assistant.js`) | `#assistant-send` | a photo |
-   | `plugins-dialog` | `pluginsFlow()` (`crates/amb-gui/ui/dialogs/plugins.js`) | `#plugin-run` | none |
-   | `hub-dialog` | `hubFlow()` (`crates/amb-gui/ui/dialogs/hub.js`) | `#hub-dialog [data-kind="all"]` | none; it asks the network: the step checks only that the dialog opens |
-   | `name-dialog` | `askName("Name")` (`crates/amb-gui/ui/library/collections.js`) | `#name-dialog button.primary` | none |
-   | `smart-dialog` | `editSmartCollection(null)` (`crates/amb-gui/ui/library/collections.js`) | `#smart-save` | none |
-   | `meta-dialog` | `metaTemplatesFlow()` (`crates/amb-gui/ui/library/organise.js`) | `#meta-apply` | library on, a photo selected (`select(first, "only")`) |
-   | `import-dialog` | `importFlow()` (`crates/amb-gui/ui/library/import.js`) | none | it may ask for a folder with a native picker first: if so skip the step and say so |
-   | `lrcat-dialog` | `lrcatFlow()` (`crates/amb-gui/ui/library/lrcat.js`) | `#lrcat-pick` | none |
-   | `hdr-dialog` | `libraryMergeHdr()` (`crates/amb-gui/ui/library/library-actions.js`) | `#hdr-dialog button.primary` | library on, two photos selected: the CI folder has `test.dng` only, so this step checks the toast "Select two or more raws" and that the dialog stays closed; say so in the step's name |
-   | `pano-dialog` | `libraryMergePano()` (same file) | `#pano-dialog button.primary` | same as `hdr-dialog` |
-4. For each, if the opener turns out to need something this table does not say, put the one line of set-up in the step and add the reason as a comment; if it needs a native file dialog, skip that dialog and list it in the commit message. Do not add a test hook to the app.
-Don't: change any dialog or flow function.
-Checks: the UI checks of "Checks" (the new script prints its steps and no `FAILED`).
-Done when: the script has a step for each row not skipped; the number skipped is in the commit message.
-Commit: `tests: every dialog opens and closes`. Why: "18 dialogs had no UI step."
-
 ### B18. More guard tests
 Tier: medium        Risk: low
 Why: three lists are held by review only: the buttons that `docs/FEATURES.md` names, the MCP server's tool list against its tool calls, and the built-in plugins.

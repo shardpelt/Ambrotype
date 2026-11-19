@@ -36,7 +36,7 @@ function openCleanup() {
   $("clean-scope").textContent = `Looks through the ${clean.scope.length} ${sel.length > 1 ? "selected" : "shown"} photo${clean.scope.length === 1 ? "" : "s"}. Photos you picked or rated are left out.`;
   $("clean-tests").replaceChildren(...CLEAN_TESTS.map(([id, label]) => {
     const l = document.createElement("label");
-    const box = Object.assign(document.createElement("input"), { type: "checkbox", checked: true, value: id });
+    const box = el("input", { type: "checkbox", checked: true, value: id });
     l.append(box, ` ${label}`);
     return l;
   }));
@@ -86,7 +86,7 @@ function showCleanPhoto() {
   const kept = clean.keep.has(s.path);
   cleanImage($("clean-img"), s.path, 1024);
   $("clean-name").textContent = `${clean.at + 1} of ${clean.found.length} · ${libPhoto(s.path)?.name ?? fileName(s.path)}`;
-  $("clean-why").replaceChildren(...s.reasons.map((r) => Object.assign(document.createElement("span"), { className: `clean-chip ${r.kind}`, textContent: cleanWhy(r) })));
+  $("clean-why").replaceChildren(...s.reasons.map((r) => el("span", { class: `clean-chip ${r.kind}` }, cleanWhy(r))));
   const keep = s.reasons.find((r) => r.keep)?.keep;
   $("clean-instead").hidden = !keep;
   if (keep) {

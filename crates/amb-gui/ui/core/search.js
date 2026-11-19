@@ -104,12 +104,12 @@ function renderSearch() {
   searchState.at = Math.min(searchState.at, Math.max(0, searchState.shown.length - 1));
   const list = $("search-results");
   list.replaceChildren(...searchState.shown.map((it, i) => {
-    const li = Object.assign(document.createElement("li"), { className: `search-row${i === searchState.at ? " on" : ""}${it.enabled ? "" : " off"}` });
+    const li = el("li", { class: `search-row${i === searchState.at ? " on" : ""}${it.enabled ? "" : " off"}` });
     li.append(
-      Object.assign(document.createElement("span"), { className: "search-title", textContent: it.title }),
-      Object.assign(document.createElement("span"), { className: "search-kind", textContent: it.note || it.kind }),
+      el("span", { class: "search-title" }, it.title),
+      el("span", { class: "search-kind" }, it.note || it.kind),
     );
-    if (it.keys) li.append(Object.assign(document.createElement("kbd"), { textContent: it.keys }));
+    if (it.keys) li.append(el("kbd", {}, it.keys));
     li.addEventListener("mousemove", () => {
       if (searchState.at === i) return;
       searchState.at = i;
@@ -171,12 +171,12 @@ function renderFeatures() {
   for (const f of hits) {
     if (f.section !== section) {
       section = f.section;
-      out.push(Object.assign(document.createElement("h3"), { textContent: section }));
+      out.push(el("h3", {}, section));
     }
-    const row = Object.assign(document.createElement("button"), { type: "button", className: "feature-row" });
+    const row = el("button", { type: "button", class: "feature-row" });
     row.append(
-      Object.assign(document.createElement("span"), { className: "feature-want", textContent: f.want }),
-      Object.assign(document.createElement("span"), { className: "feature-how", textContent: f.how }),
+      el("span", { class: "feature-want" }, f.want),
+      el("span", { class: "feature-how" }, f.how),
     );
     row.addEventListener("click", () => showHow(f));
     out.push(row);
@@ -224,13 +224,13 @@ function showHow(f) {
   $("how-section").textContent = f.section;
   $("how-want").textContent = f.want;
   $("how-text").replaceChildren(...f.parts.map(([code, t]) => (code
-    ? Object.assign(document.createElement("code"), { textContent: t })
+    ? el("code", {}, t)
     : document.createTextNode(t))));
   const buttons = [];
   for (const name of f.names) {
     const target = howTarget(name);
     if (!target || buttons.some((b) => b.dataset.key === target.key)) continue;
-    const b = Object.assign(document.createElement("button"), { type: "button", textContent: name.replace(/…$/, "") });
+    const b = el("button", { type: "button" }, name.replace(/…$/, ""));
     b.dataset.key = target.key;
     b.addEventListener("click", () => {
       $("how-dialog").close();
@@ -242,7 +242,7 @@ function showHow(f) {
   // Library work the editor's screen doesn't show: the library is a click away.
   const library = KEY_ACTIONS.find((x) => x.id === "library");
   if (!buttons.length && /library/i.test(f.how) && library && menuItemOn("library") && !$("library")?.offsetParent) {
-    const b = Object.assign(document.createElement("button"), { type: "button", textContent: "Open the library" });
+    const b = el("button", { type: "button" }, "Open the library");
     b.addEventListener("click", () => {
       $("how-dialog").close();
       requestAnimationFrame(() => runMenuItem("library"));
@@ -252,9 +252,9 @@ function showHow(f) {
   $("how-actions").replaceChildren(...buttons);
   const also = relatedFeatures(f);
   $("how-also").replaceChildren(
-    Object.assign(document.createElement("span"), { className: "hint", textContent: "Also:" }),
+    el("span", { class: "hint" }, "Also:"),
     ...also.map((o) => {
-      const b = Object.assign(document.createElement("button"), { type: "button", textContent: o.want });
+      const b = el("button", { type: "button" }, o.want);
       b.addEventListener("click", () => showHow(o));
       return b;
     }),

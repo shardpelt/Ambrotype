@@ -150,7 +150,7 @@ function renderStage() {
       img.alt = "";
       img.draggable = false;
       holder.append(img);
-      const grip = Object.assign(document.createElement("span"), { className: "col-grip", textContent: "⠿", title: "Drag to another cell to swap" });
+      const grip = el("span", { class: "col-grip", title: "Drag to another cell to swap" }, "⠿");
       cell.append(holder, grip);
       cell.classList.add("loading");
       collageImage(c.path).then((info) => {
@@ -163,7 +163,7 @@ function renderStage() {
         cell.classList.add("broken");
       });
     } else {
-      cell.append(Object.assign(document.createElement("span"), { className: "col-empty", textContent: "+" }));
+      cell.append(el("span", { class: "col-empty" }, "+"));
     }
     layer.append(cell);
   });
@@ -188,10 +188,10 @@ function renderHandles() {
     transform: r.angle ? `rotate(${r.angle}deg)` : "",
   });
   for (const h of ["nw", "ne", "sw", "se"]) {
-    box.append(Object.assign(document.createElement("span"), { className: `col-handle ${h}`, title: "Drag to resize (Shift keeps the shape)" }));
+    box.append(el("span", { class: `col-handle ${h}`, title: "Drag to resize (Shift keeps the shape)" }));
     box.lastChild.dataset.handle = h;
   }
-  const rot = Object.assign(document.createElement("span"), { className: "col-rot", title: "Drag to turn (Shift: 15° steps)" });
+  const rot = el("span", { class: "col-rot", title: "Drag to turn (Shift: 15° steps)" });
   rot.dataset.handle = "rotate";
   box.append(rot);
   $("col-stage").append(box);

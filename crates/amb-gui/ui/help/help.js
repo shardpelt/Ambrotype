@@ -11,7 +11,7 @@ const help = { tip: null, card: null, timer: null, open: null };
 function addHelpMark(entry, def) {
   const label = entry?.label;
   if (!label || !def?.description || label.querySelector(".help-mark")) return;
-  const mark = Object.assign(document.createElement("span"), { className: "help-mark", textContent: "?", tabIndex: 0 });
+  const mark = el("span", { class: "help-mark", tabindex: 0 }, "?");
   mark.setAttribute("role", "button");
   mark.setAttribute("aria-label", `About ${def.label}`);
   mark.dataset.setting = def.name;
@@ -62,10 +62,10 @@ function placeBeside(el, mark) {
 }
 
 function showHelpTip(mark, def) {
-  help.tip ??= Object.assign(document.createElement("div"), { className: "help-tip", role: "tooltip" });
+  help.tip ??= el("div", { class: "help-tip", role: "tooltip" });
   help.tip.textContent = def.description;
   const lit = ZONE_OF[def.name] && !$("preview").hidden ? "Lit up on your photo. " : "";
-  help.tip.append(Object.assign(document.createElement("small"), { textContent: `${lit}Click for more` }));
+  help.tip.append(el("small", {}, `${lit}Click for more`));
   document.body.append(help.tip);
   placeBeside(help.tip, mark);
 }
@@ -80,9 +80,9 @@ function toggleHelpCard(mark, def) {
   const again = help.open === mark;
   closeHelpCard();
   if (again) return;
-  const card = Object.assign(document.createElement("div"), { className: "help-card", role: "dialog" });
+  const card = el("div", { class: "help-card", role: "dialog" });
   card.setAttribute("aria-label", def.label);
-  const add = (tag, text, className = "") => card.appendChild(Object.assign(document.createElement(tag), { textContent: text, className }));
+  const add = (tag, text, className = "") => card.appendChild(el(tag, { class: className }, text));
   // Paragraphs with their photography terms linked (basics.js).
   const para = (text) => card.appendChild(document.createElement("p")).append(linkTerms(text, def.label));
   add("h4", def.label);
@@ -107,7 +107,7 @@ function toggleHelpCard(mark, def) {
   if (facts.length) add("p", facts.join(" · "), "help-facts");
   if (def.kind === "number") add("p", "Double-click the label to reset it.", "help-facts");
   const more = add("p", "", "help-facts");
-  const link = Object.assign(document.createElement("span"), { className: "term", textContent: "Photography basics", tabIndex: 0 });
+  const link = el("span", { class: "term", tabindex: 0 }, "Photography basics");
   link.dataset.term = "workflow";
   more.append("New to editing? ", link);
   document.body.append(card);

@@ -2485,6 +2485,42 @@
    "status": "exact"
   },
   {
+   "name": "amb:NegativeMeterLeft",
+   "group": "negative",
+   "kind": "number",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "status": "image-specific"
+  },
+  {
+   "name": "amb:NegativeMeterTop",
+   "group": "negative",
+   "kind": "number",
+   "min": 0,
+   "max": 1,
+   "default": 0,
+   "status": "image-specific"
+  },
+  {
+   "name": "amb:NegativeMeterRight",
+   "group": "negative",
+   "kind": "number",
+   "min": 0,
+   "max": 1,
+   "default": 1,
+   "status": "image-specific"
+  },
+  {
+   "name": "amb:NegativeMeterBottom",
+   "group": "negative",
+   "kind": "number",
+   "min": 0,
+   "max": 1,
+   "default": 1,
+   "status": "image-specific"
+  },
+  {
    "name": "amb:NegativeAutoDensity",
    "group": "negative",
    "kind": "bool",

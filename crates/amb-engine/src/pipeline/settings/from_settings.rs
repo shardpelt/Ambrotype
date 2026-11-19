@@ -376,6 +376,12 @@ pub(super) fn negative_settings(settings: &BTreeMap<String, Value>) -> Negative 
         cast_removal: num(settings, "amb:NegativeCastRemoval").unwrap_or(d.cast_removal),
         auto_density: flag(settings, "amb:NegativeAutoDensity"),
         auto_grade: flag(settings, "amb:NegativeAutoGrade"),
+        meter: [
+            num(settings, "amb:NegativeMeterLeft").unwrap_or(d.meter[0]),
+            num(settings, "amb:NegativeMeterTop").unwrap_or(d.meter[1]),
+            num(settings, "amb:NegativeMeterRight").unwrap_or(d.meter[2]),
+            num(settings, "amb:NegativeMeterBottom").unwrap_or(d.meter[3]),
+        ],
         exposure: num(settings, "amb:NegativeExposure").unwrap_or(0.0),
         contrast: num(settings, "amb:NegativeContrast").unwrap_or(0.0),
         balance: [

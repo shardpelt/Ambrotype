@@ -736,3 +736,32 @@ fn stocks_are_valid_and_black_and_white_is_grey() {
     assert_eq!(vivid(0.0), neutral);
     assert_ne!(vivid(100.0), neutral);
 }
+
+#[test]
+fn a_drawn_metering_box_measures_only_inside_it() {
+    let (w, h) = (240, 240);
+    // Bright sky over the top half, textured subject below.
+    let rgb = sky_scene(w, h, 0.5, 0.05);
+    let n = Negative {
+        enabled: true,
+        ..Default::default()
+    };
+    let whole = scan_of(&rgb, w, h);
+    let levels_of = |s: Scan| resolve(&n, whole, s, &K);
+    let all = levels_of(whole);
+
+    // The whole-frame box is no box: the same numbers as today.
+    assert!(sub_scan(whole, [0.0, 0.0, 1.0, 1.0]).is_none());
+    assert_eq!(n.meter, WHOLE);
+    // Invalid boxes (inside out, too thin) fall back to the whole frame.
+    assert!(sub_scan(whole, [0.6, 0.0, 0.4, 1.0]).is_none());
+    assert!(sub_scan(whole, [0.0, 0.5, 1.0, 0.51]).is_none());
+
+    // The bottom half is exactly the frame without the sky.
+    let (bottom, bw, bh) = sub_scan(whole, [0.0, 0.5, 1.0, 1.0]).unwrap();
+    assert_eq!((bw, bh), (w, h / 2));
+    let only_subject = levels_of(scan_of(&bottom, bw, bh));
+    assert_ne!(only_subject, all, "the sky no longer counts");
+    let sky_scan = sky_scene(w, h / 2, 0.0, 0.05);
+    assert_eq!(bottom, sky_scan, "the rows are copied as they are");
+}

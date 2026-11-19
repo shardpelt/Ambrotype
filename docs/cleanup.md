@@ -138,20 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B9c. Split `crates/amb-engine/src/dehaze.rs` before it passes 800
-Tier: medium        Risk: low
-Why: 788 production lines, 12 under the budget; 200 of them are filter helpers.
-Files: `crates/amb-engine/src/dehaze.rs` to `crates/amb-engine/src/dehaze/{mod,filters,tests}.rs`.
-Note: `lerp_position` is in `crates/amb-engine/src/math.rs`, not here.
-Steps:
-1. `git mv crates/amb-engine/src/dehaze.rs crates/amb-engine/src/dehaze/mod.rs`; its `mod tests` block to `tests.rs`.
-2. `filters.rs`: `downscale`, `resample`, `lerp_position_f`, `transpose`, `min_filter`, `min_filter_rows`, `min_row`, `guided_coefficients`, `deterministic_mean`. They are used by `mod.rs`: `pub(super)`. Add `use super::*;` and `use rayon::prelude::*;`.
-3. Everything else (`DehazeStrengths`, `apply`, `Haze`, `apply_haze`, `sanitise`, `apply_with`, `Estimate` and its `impl`, `estimate_factor`, `ApplyNumbers`, `apply_numbers`, `Recovery` and its `impl`, `fog_colour`, `dot`, `guide_value`, `airlight`, `cap_channels`) stays.
-Don't: change a constant in `DehazeStrengths`.
-Checks: as the common checks of Group B; `cargo test -p amb-engine dehaze`; `cargo test -p amb-gpu`.
-Done when: `mod.rs` is under 650 production lines.
-Commit: `engine: split dehaze.rs, filters out`. Why: "It was 12 lines under the size budget."
-
 ### B10. Narrow `pub` to `pub(crate)` where only the crate uses it
 Tier: medium        Risk: low
 Why: `docs/codestyle.md` says `pub(crate)` unless another crate uses it; 39 items in three crates are `pub` and used nowhere outside.

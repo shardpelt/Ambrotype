@@ -64,7 +64,7 @@ function renderFolderTree() {
 
 function folderTreeItem(node) {
   const li = document.createElement("li");
-  const row = Object.assign(document.createElement("div"), { className: "tree-row", title: node.path });
+  const row = el("div", { class: "tree-row", title: node.path });
   row.classList.toggle("offline", node.offline);
   const shown = !lib.collection && !lib.smart && !lib.lightroom && (lib.dir === node.path || lib.more.includes(node.path));
   row.classList.toggle("current", shown);
@@ -72,18 +72,18 @@ function folderTreeItem(node) {
   const open = tree.open.has(node.path);
   row.dataset.path = node.path;
   if (kids.length) row.dataset.kids = "1";
-  const twist = Object.assign(document.createElement("span"), { className: "twist", textContent: kids.length ? (open ? "▾" : "▸") : "" });
+  const twist = el("span", { class: "twist" }, kids.length ? (open ? "▾" : "▸") : "");
   twist.addEventListener("click", (e) => {
     e.stopPropagation();
     if (open) tree.open.delete(node.path);
     else tree.open.add(node.path);
     renderFolderTree();
   });
-  const name = Object.assign(document.createElement("span"), { className: "tree-name", textContent: node.root ? folderName(node.path) ?? node.path : node.name });
-  const count = Object.assign(document.createElement("span"), { className: "tree-count", textContent: folderTotal(node).toLocaleString() });
+  const name = el("span", { class: "tree-name" }, node.root ? folderName(node.path) ?? node.path : node.name);
+  const count = el("span", { class: "tree-count" }, folderTotal(node).toLocaleString());
   row.append(twist, name, count);
   if (node.root) {
-    const remove = Object.assign(document.createElement("button"), { type: "button", className: "small tree-remove", textContent: "×", title: "Remove from the library folders" });
+    const remove = el("button", { type: "button", class: "small tree-remove", title: "Remove from the library folders" }, "×");
     remove.addEventListener("click", (e) => {
       e.stopPropagation();
       removeLibraryFolder(node.path);

@@ -43,15 +43,15 @@ async function findDuplicates() {
 function renderDupes() {
   const list = $("dupes-list");
   list.replaceChildren(...dupes.groups.map((g, gi) => {
-    const row = Object.assign(document.createElement("div"), { className: "dupes-group" });
-    const head = Object.assign(document.createElement("div"), { className: "dupes-head" });
+    const row = el("div", { class: "dupes-group" });
+    const head = el("div", { class: "dupes-head" });
     head.append(
-      Object.assign(document.createElement("span"), { className: `dupes-kind ${g.kind}`, textContent: DUPE_KINDS[g.kind] }),
-      Object.assign(document.createElement("span"), { className: "hint", textContent: `${g.photos.length} photos${g.done ? ` · ${g.done}` : ""}` }),
-      Object.assign(document.createElement("span"), { className: "grow" }),
+      el("span", { class: `dupes-kind ${g.kind}` }, DUPE_KINDS[g.kind]),
+      el("span", { class: "hint" }, `${g.photos.length} photos${g.done ? ` · ${g.done}` : ""}`),
+      el("span", { class: "grow" }),
     );
     const action = (text, title, fn) => {
-      const b = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: text, title });
+      const b = el("button", { type: "button", class: "small", title: title }, text);
       b.addEventListener("click", fn);
       head.append(b);
     };

@@ -363,7 +363,7 @@ function startDrag(e, path, fromCell = -1) {
       ghost = document.createElement("div");
       ghost.className = "col-ghost";
       const small = collage.small.get(path);
-      if (small) ghost.append(Object.assign(document.createElement("img"), { src: small.url, alt: "" }));
+      if (small) ghost.append(el("img", { src: small.url, alt: "" }));
       else ghost.textContent = fileName(path);
       dlg.append(ghost);
     }

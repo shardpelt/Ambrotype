@@ -13,9 +13,7 @@ const JS_BUDGET: usize = 700;
 /// day the limit was set (2026-11-12) rounded up to the next 50. Splitting a
 /// file takes it off this list. A file that grows past its number is split
 /// (docs/cleanup.md says how), not given a bigger number.
-const OVER_BUDGET: &[(&str, usize)] = &[
-    ("crates/amb-gpu/src/nn.rs", 850),
-];
+const OVER_BUDGET: &[(&str, usize)] = &[];
 
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")

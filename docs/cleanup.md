@@ -138,21 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B8. Split `crates/amb-gpu/src/nn.rs`
-Tier: medium        Risk: medium
-Why: 847 production lines: tensor types, the kernel table, and 440 lines of one method per op.
-Files: `crates/amb-gpu/src/nn.rs` to `crates/amb-gpu/src/nn/{mod,ops,kernels,session,tests}.rs`; `docs/design/gpu.md` (names `src/nn.rs`); `crates/amb-cli/tests/code_size.rs`.
-Steps:
-1. `mod.rs` keeps the module doc and the `use` lines. It declares `mod ops; mod kernels; mod session;` and re-exports `pub use ops::*;` (`RANK`, `Tensor`, `Binary`, `Unary`, `Reduce`, `Pad`, `View`, `Operand`, `MatMul`, `Conv`, `contiguous`, `broadcast`), `pub use session::Session;` and `pub(crate) use kernels::Kernels;` (`device.rs` names `crate::nn::Kernels`).
-2. `ops.rs`: `RANK`, `Tensor` with `impl`, `Binary`, `Unary` with `impl`, `Reduce`, `Pad`, `View` with `impl`, `Operand`, `MatMul`, `Conv` with `impl`, `contiguous`, `broadcast`.
-3. `kernels.rs`: `Kernels`, `ENTRIES`, `impl Kernels`. The `include_str!("shaders/nn.wgsl")` in `Kernels::new` becomes `include_str!("../shaders/nn.wgsl")`. The fields of `Kernels` that `session.rs` reads become `pub(super)`.
-4. `session.rs`: `BATCH`, `Session`, `impl Gpu` (`nn`, `nn_max_floats`, `nn_kernels`), `size_class`, `impl Session<'_>`, `impl Drop for Session<'_>`.
-5. Tests to `tests.rs`.
-Don't: touch the WGSL.
-Checks: as above; `cargo test -p amb-gpu` (the GPU tests skip without an adapter: say so) and `cargo test -p amb-ai`.
-Done when: `nn.rs` is gone and no part passes 800.
-Commit: `gpu: split nn.rs into ops, kernels and session`. Why: "It was past the size budget."
-
 ### B9a. Split `crates/amb-engine/src/raw.rs` before it passes 800
 Tier: medium        Risk: low
 Why: 798 production lines, 2 under the budget: the next feature trips the size test. Its metadata reading and its embedded previews are separate jobs.

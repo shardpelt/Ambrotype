@@ -58,7 +58,7 @@ The editor's preview of the same edit was also compared both ways in the editor,
 
 ## AI models (2026-11-06)
 
-`amb-ai`'s models run on the GPU too, with our own kernels (`src/nn.rs`, `shaders/nn.wgsl`), not a vendor runtime:
+`amb-ai`'s models run on the GPU too, with our own kernels (`src/nn/`, `shaders/nn.wgsl`), not a vendor runtime:
 
 - **The graph:** `amb-ai/src/net/` loads a model with tract, simplifies it (tract's "decluttered" form) and walks it layer by layer. A layer with a kernel runs on the GPU; any other (shapes, integer maths, a cast from bytes) runs with tract's own code on the CPU, its inputs read back and its outputs sent again. Weights are sent once and kept.
 - **Which models:** only if every convolution and matrix product can run on the GPU, and only if the model has at least 2·10⁸ multiply-adds (smaller ones are quicker on the CPU). A run that fails (a wgpu error included) runs on the CPU, and the model stays there.

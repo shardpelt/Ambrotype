@@ -138,22 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B4. Split `crates/amb-ops/src/object.rs`
-Tier: medium        Risk: medium
-Why: 925 production lines: selecting an object, selecting by words, and turning a selection into a Remove spot.
-Files: `crates/amb-ops/src/object.rs` to `crates/amb-ops/src/object/{mod,select,words,geometry,remove,tests}.rs`; `crates/amb-cli/tests/code_size.rs`.
-Steps:
-1. `mod.rs` keeps the module doc, `use` lines, the constants `EDGE`, `CONTEXT`, `WIDEN`, `MIN_WIDEN`, `SNAP_RADIUS`, `SNAP_EPS`, the types `Target`, `Selection`, `Object`, `Like`, and `find`, `frame`. It declares the four parts and re-exports `pub use select::select;` and `pub use words::select_words;` (the editor calls `object::select`, `object::select_words`, `object::find`).
-2. `select.rs`: `select`.
-3. `words.rs`: `GRID`, `NEAR`, `ALSO`, `select_words`.
-4. `geometry.rs` (helpers used by selecting and by removing): `overlap`, `bounds`, `shadow_of`, `distance_inside`, `fill`, `fill_snapped`, `map_at`, `cover`.
-5. `remove.rs`: `impl Selection` (the block with `WIDEN` and `MIN_WIDEN`, turning a selection into a Remove spot) and `dabs_inside`.
-6. Tests to `tests.rs`.
-Don't: change a threshold or an item's name.
-Checks: as above; `cargo test -p amb-ops`.
-Done when: `object.rs` is gone and no part passes 800.
-Commit: `ops: split object.rs into select, words, geometry and remove`. Why: "It was past the size budget."
-
 ### B5. Split `crates/amb-engine/src/matching.rs`
 Tier: medium        Risk: medium
 Why: 908 production lines: measuring a look, solving for it, and the one-click Auto.

@@ -85,7 +85,7 @@ Rust, production lines over 900:
 | `amb-gui/src/commands/photo.rs` | 956 | 37 Tauri commands about the open photo |
 | `amb-protocol/src/sidecar.rs` | 937 | Sidecar merge, info (split 2026-11-19 into `sidecar/`: read, write) |
 | `amb-export/src/embed.rs` | 932 | Metadata into finished files (split 2026-11-19 into `embed/`: bmff, avif, jxl) |
-| `amb-ops/src/object.rs` | 919 | Select object, select in words, move, remove |
+| `amb-ops/src/object.rs` | 919 | Select object, select in words, move, remove (split 2026-11-19 into `object/`) |
 | `amb-engine/src/matching.rs` | 908 | Match look |
 | `amb-engine/src/pipeline/settings.rs` | 906 | `DevelopSettings` read from the settings map |
 

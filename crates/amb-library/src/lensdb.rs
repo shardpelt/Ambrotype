@@ -13,9 +13,9 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 /// lensfun's update server: `versions.json` and `version_<n>.tar.bz2`.
-pub const SERVER: &str = "https://lensfun.github.io/db/";
+pub(crate) const SERVER: &str = "https://lensfun.github.io/db/";
 /// The database format we read.
-pub const VERSION: u32 = 2;
+pub(crate) const VERSION: u32 = 2;
 /// Largest archive accepted (it is about 0.5 MB).
 const MAX_BYTES: u64 = 64 << 20;
 

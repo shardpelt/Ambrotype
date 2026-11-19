@@ -37,12 +37,12 @@ pub struct HdrReport {
 /// Where the merge of `photos` goes by default: `<first>-HDR.dng` next to
 /// the first photo (by name), or `-HDR-2`, `-HDR-3` ... when that, or its
 /// sidecar, is taken.
-pub fn default_output(photos: &[PathBuf]) -> Option<PathBuf> {
+pub(crate) fn default_output(photos: &[PathBuf]) -> Option<PathBuf> {
     output_named(photos, "HDR")
 }
 
 /// [`default_output`] for a panorama: `<first>-Pano.dng`.
-pub fn pano_output(photos: &[PathBuf]) -> Option<PathBuf> {
+pub(crate) fn pano_output(photos: &[PathBuf]) -> Option<PathBuf> {
     output_named(photos, "Pano")
 }
 

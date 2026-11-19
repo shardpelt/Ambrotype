@@ -33,12 +33,12 @@ use amb_library::look;
 /// one is only a guide to its colours: Fujifilm keeps a third to an eighth
 /// of the pixels (4416 px for a 7728 px X-T5), so its raw is developed at
 /// full size and matched to that JPEG.
-pub const CAMERA_JPEG_EDGE: u32 = 2000;
+pub(crate) const CAMERA_JPEG_EDGE: u32 = 2000;
 const FULL_SIZE: f64 = 0.85;
 
 /// Photos converted at once: enough to keep reading, developing and saving
 /// busy, few enough for the memory (each full-size photo is a few hundred MB).
-pub const AT_ONCE: usize = 3;
+pub(crate) const AT_ONCE: usize = 3;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Look {

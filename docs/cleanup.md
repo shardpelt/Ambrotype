@@ -138,22 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B10. Narrow `pub` to `pub(crate)` where only the crate uses it
-Tier: medium        Risk: low
-Why: `docs/codestyle.md` says `pub(crate)` unless another crate uses it; 39 items in three crates are `pub` and used nowhere outside.
-Files: `crates/amb-ops/src`, `crates/amb-ai/src`, `crates/amb-library/src`. Find each item by name: other cards move some of them (B7, B9b).
-Steps:
-1. Narrow these functions, constants and methods (verified on 2026-11-12: the word appears in no other crate under `crates/` or `plugins/`, and in no crate's own `tests/`):
-   - `amb-ops`: `dust::spots_for`, `dust::spot_command`, `merge::default_output`, `merge::pano_output`, `denoise::default_output`, `snap::box_mean`, `burst::openness`, `convert::CAMERA_JPEG_EDGE`, `convert::AT_ONCE`, `negative::analyze_file`, `negative::SCENE_GAP`, `negative::ODD_GAP`.
-   - `amb-ai`: `search::similarity`, `try_model`.
-   - `amb-library`: `gpx::MAX_GAP`, `Track::locate` (in `gpx.rs`), `folder::is_raw`, `duplicates::dhash`, `places::LOOK_ALIKE`, `lensdb::SERVER`, `lensdb::VERSION`, `Catalog::records_counted`, `Catalog::store_prints`, `Catalog::store_vectors`, `lrcat::plan_contents`, `insights::bucket_of`.
-2. Build after each crate (`cargo check -p CRATE --all-targets`). Re-grep an item first if the build says it is used elsewhere; put it back to `pub` then and say so in the commit.
-3. Then try the types: `cleanup::Reason`, `cleanup::Seen`, `burst::Ranked`, `negative::RollFrame`, `search::SearchSpec`, `ModelSpec`, `ModelFile`, `gpx::Track`, `lrcat::LrCollection`, `lrcat::Contents`, `lrcat::PlannedPhoto`, `lrcat::PlannedCollection`, `insights::Tally`. A type that appears in the signature of a `pub` item must stay `pub` (the compiler warns "private type in public interface", and clippy with `-D warnings` fails): put it back. Narrow the rest.
-Don't: change anything else; make an item `pub` that was not.
-Checks: the three cargo commands (unused-item warnings catch an item that was only `pub` to hide that nothing used it: if so delete nothing, make it `pub(crate)` and add `#[cfg(test)]` only when tests alone use it, and say so).
-Done when: `grep -rn "^pub \(fn\|const\) \(spots_for\|dhash\|is_raw\)" crates` prints nothing.
-Commit: `crates: pub(crate) for what only the crate uses`. Why: "Public items that nobody outside uses are API we must keep."
-
 ### B12a. Best in bursts moves to `amb-ops`
 Tier: medium        Risk: low
 Why: the editor's `library_best_in_bursts` (`crates/amb-gui/src/commands/batch.rs`) groups the bursts, looks at each photo and ranks it: logic that `amb` cannot reach (`amb duplicates` lists bursts unranked), so the same feature differs by front end.

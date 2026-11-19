@@ -275,7 +275,7 @@ fn better(
 
 /// 64-bit difference hash: a 9×8 greyscale copy, each bit whether a pixel
 /// is brighter than its right neighbour.
-pub fn dhash(grey: &image::GrayImage) -> u64 {
+pub(crate) fn dhash(grey: &image::GrayImage) -> u64 {
     let small = image::imageops::resize(grey, 9, 8, image::imageops::FilterType::Triangle);
     let mut h = 0u64;
     for y in 0..8 {

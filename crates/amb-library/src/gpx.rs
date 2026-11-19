@@ -13,7 +13,7 @@ use quick_xml::reader::Reader;
 
 /// How far (seconds) from the nearest track point a photo may be taken
 /// and still be placed.
-pub const MAX_GAP: i64 = 300;
+pub(crate) const MAX_GAP: i64 = 300;
 
 /// A track's points: UTC seconds, latitude, longitude; in time order.
 #[derive(Debug, Clone, Default, PartialEq)]
@@ -72,7 +72,7 @@ pub fn parse(text: &str) -> Result<Track, String> {
 
 impl Track {
     /// The place at `utc` seconds, if the track was recording then.
-    pub fn locate(&self, utc: i64) -> Option<(f64, f64)> {
+    pub(crate) fn locate(&self, utc: i64) -> Option<(f64, f64)> {
         let p = &self.points;
         let i = p.partition_point(|q| q.0 <= utc);
         let before = i.checked_sub(1).map(|j| p[j]);

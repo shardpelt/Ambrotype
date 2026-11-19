@@ -54,7 +54,7 @@ impl Catalog {
     }
 
     /// Keep `prints` for their photos' files as they are now.
-    pub fn store_prints(&self, prints: &[(PathBuf, Print)]) {
+    pub(crate) fn store_prints(&self, prints: &[(PathBuf, Print)]) {
         let mut db = self.db.lock().unwrap_or_else(|e| e.into_inner());
         let Ok(tx) = db.transaction() else { return };
         {
@@ -110,7 +110,7 @@ impl Catalog {
     }
 
     /// Keep the vectors of photos from search model `model`.
-    pub fn store_vectors(&self, model: &str, vectors: &[(PathBuf, Vec<f32>)]) {
+    pub(crate) fn store_vectors(&self, model: &str, vectors: &[(PathBuf, Vec<f32>)]) {
         let mut db = self.db.lock().unwrap_or_else(|e| e.into_inner());
         let Ok(tx) = db.transaction() else { return };
         {

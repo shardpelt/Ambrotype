@@ -14,7 +14,7 @@ use rayon::prelude::*;
 
 /// Analyse one photo's raw as Auto would now, with its edit: the film type,
 /// a picked film base and the crop (levels are measured inside it).
-pub fn analyze_file(photo: &Path) -> Result<Analysis, String> {
+pub(crate) fn analyze_file(photo: &Path) -> Result<Analysis, String> {
     let source = amb_engine::source_path(photo);
     let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
     let settings = amb_engine::sidecar_text(photo)
@@ -147,10 +147,10 @@ impl Default for RollOptions {
 /// blue's highlight density to green's) are different scenes. **Ours:** on
 /// two BlueNeg rolls it keeps a daylight roll together and puts its night
 /// frames apart.
-pub const SCENE_GAP: f64 = 0.2;
+pub(crate) const SCENE_GAP: f64 = 0.2;
 /// A frame whose levels sit further than this (density) from its group's
 /// baseline is odd: about two stops on colour negative film. **Ours.**
-pub const ODD_GAP: f64 = 0.35;
+pub(crate) const ODD_GAP: f64 = 0.35;
 
 /// One frame's place in the roll.
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]

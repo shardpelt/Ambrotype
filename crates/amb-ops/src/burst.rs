@@ -158,7 +158,7 @@ pub fn rank(looks: &[Look]) -> Vec<Ranked> {
 /// open eye is a round iris between whites: across it the brightness
 /// changes as much as up and down, and there is white beside it. A closed
 /// one is lashes and skin: one dark line, nearly all change up and down.
-pub fn openness(rgb: &image::RgbImage, at: [f32; 2], d: f32) -> f32 {
+pub(crate) fn openness(rgb: &image::RgbImage, at: [f32; 2], d: f32) -> f32 {
     const W: usize = 56;
     const H: usize = 32;
     let (iw, ih) = (rgb.width() as f32, rgb.height() as f32);

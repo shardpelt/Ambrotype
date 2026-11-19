@@ -81,7 +81,7 @@ pub fn guided(p: &[f32], rgb: &[f32], w: usize, h: usize, r: usize, eps: f32) ->
 
 /// The mean of `v` over a (2r + 1)² window round each pixel, the window
 /// cut at the picture's edge (running sums, so any `r` costs the same).
-pub fn box_mean(v: &[f32], w: usize, h: usize, r: usize) -> Vec<f32> {
+pub(crate) fn box_mean(v: &[f32], w: usize, h: usize, r: usize) -> Vec<f32> {
     let mut rows = vec![0f32; w * h];
     let mut sums = vec![0f64; w.max(h) + 1];
     for y in 0..h {

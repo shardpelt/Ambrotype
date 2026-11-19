@@ -49,7 +49,7 @@ pub fn find_image(img: &CameraImage, settings: &BTreeMap<String, Value>) -> Foun
 
 /// `add_spot` commands for `defects` (pixels of a `w`×`h` image), leaving out
 /// those an existing spot in `settings` covers.
-pub fn spots_for(
+pub(crate) fn spots_for(
     defects: &[Defect],
     w: usize,
     h: usize,
@@ -96,7 +96,7 @@ pub fn spots_for(
 
 /// The heal spot for one defect (pixels of a `w`×`h` image): round for a
 /// speck, brushed along a hair or a line.
-pub fn spot_command(d: &Defect, w: usize, h: usize) -> Command {
+pub(crate) fn spot_command(d: &Defect, w: usize, h: usize) -> Command {
     let (wf, hf) = (w as f64, h as f64);
     let radius = (d.radius + MARGIN) / wf;
     let frac = |p: (f64, f64)| [(p.0 + 0.5) / wf, (p.1 + 0.5) / hf];

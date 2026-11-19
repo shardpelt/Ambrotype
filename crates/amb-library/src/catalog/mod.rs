@@ -272,7 +272,7 @@ impl Catalog {
     }
 
     /// As [`Catalog::records`], and how many were read from their files.
-    pub fn records_counted(&self, photos: &[PathBuf]) -> (Vec<Record>, usize) {
+    pub(crate) fn records_counted(&self, photos: &[PathBuf]) -> (Vec<Record>, usize) {
         let stamps: Vec<Option<Stamp>> = photos.par_iter().map(|p| stamp(p)).collect();
         let known = self.lookup(photos);
         let mut out: Vec<Option<Record>> = photos

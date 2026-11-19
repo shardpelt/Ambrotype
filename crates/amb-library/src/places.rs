@@ -35,7 +35,7 @@ pub struct Guess {
 
 /// Likeness from which a placed photo lends its place by look (cosine of
 /// the search model's vectors; the same scene is usually above 0.9).
-pub const LOOK_ALIKE: f32 = 0.9;
+pub(crate) const LOOK_ALIKE: f32 = 0.9;
 
 fn name(p: &std::path::Path) -> String {
     p.file_name()

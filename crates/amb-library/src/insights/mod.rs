@@ -114,7 +114,7 @@ pub fn value(key: &str, r: &Record) -> Option<f64> {
 }
 
 /// Which bucket `v` goes in.
-pub fn bucket_of(field: &Field, v: f64) -> usize {
+pub(crate) fn bucket_of(field: &Field, v: f64) -> usize {
     field
         .buckets
         .iter()

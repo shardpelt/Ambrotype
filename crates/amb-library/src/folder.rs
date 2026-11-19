@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 pub use amb_engine::raw::RAW_EXTENSIONS;
 
-pub fn is_raw(path: &Path) -> bool {
+pub(crate) fn is_raw(path: &Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
         .is_some_and(|e| RAW_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))

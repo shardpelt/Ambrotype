@@ -412,7 +412,7 @@ pub fn plan(catalog: &Path, options: &Options) -> Result<Plan, String> {
     Ok(plan_contents(read(catalog)?, options))
 }
 
-pub fn plan_contents(contents: Contents, options: &Options) -> Plan {
+pub(crate) fn plan_contents(contents: Contents, options: &Options) -> Plan {
     let remap = |p: &str| -> PathBuf {
         for (from, to) in &options.remap {
             if let Some(rest) = p.strip_prefix(from.as_str()) {

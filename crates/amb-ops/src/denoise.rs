@@ -10,7 +10,7 @@ use amb_presets::Value;
 
 /// Where the denoised copy of `photo` goes: `<name>-Denoised.dng` beside
 /// it, or `-Denoised-2` … when that (or its sidecar) is taken.
-pub fn default_output(photo: &Path) -> Option<PathBuf> {
+pub(crate) fn default_output(photo: &Path) -> Option<PathBuf> {
     let dir = photo.parent().unwrap_or(Path::new("."));
     let stem = photo.file_stem()?.to_string_lossy();
     (1..)

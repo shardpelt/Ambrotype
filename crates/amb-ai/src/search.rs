@@ -174,7 +174,7 @@ fn with_article(words: &str) -> String {
 }
 
 /// How alike two vectors from [`Embedder`] are: −1 to 1 (they're unit length).
-pub fn similarity(a: &[f32], b: &[f32]) -> f32 {
+pub(crate) fn similarity(a: &[f32], b: &[f32]) -> f32 {
     a.iter().zip(b).map(|(x, y)| x * y).sum()
 }
 

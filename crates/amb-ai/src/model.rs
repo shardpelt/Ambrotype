@@ -2,7 +2,9 @@
 //! Loading a model and running it on a photo.
 
 use super::spec::{Activation, Layout, ModelSpec};
-use super::store::{chosen, file_of, find_spec, install, is_installed};
+#[cfg(test)]
+use super::store::find_spec;
+use super::store::{chosen, file_of, install, is_installed};
 use crate::AUTO_INSTALL_BYTES;
 use amb_engine::subject::{Map, MapKind};
 use std::collections::HashMap;
@@ -222,9 +224,11 @@ pub fn finder(dir: PathBuf) -> Arc<amb_engine::subject::Finder> {
     )
 }
 
-/// Run model `id` on a photo's sRGB (`w`×`h`) once, for trying a model
-/// (`amb models try`): its map and how long it took.
-pub fn try_model(
+/// Run model `id` on a photo's sRGB (`w`×`h`) once, for trying a model:
+/// its map and how long it took. Only the tests use it now (no `amb models
+/// try` command exists).
+#[cfg(test)]
+pub(crate) fn try_model(
     dir: &Path,
     id: &str,
     rgb: &[f32],

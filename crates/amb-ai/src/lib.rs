@@ -36,7 +36,7 @@ mod store;
 #[cfg(test)]
 mod tests;
 
-pub use model::{finder, try_model};
+pub use model::finder;
 pub use spec::{
     Activation, CustomModel, Input, Layout, ModelFile, ModelSpec, ModelState, Output, Pixels,
     catalogue,

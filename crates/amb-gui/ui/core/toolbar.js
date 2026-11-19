@@ -50,10 +50,10 @@ function openToolbarMenu() {
   const menu = $("toolbar-menu");
   const entries = overflowedButtons().map((b) => {
     // Its picture (or room for one) and its name, so the list lines up.
-    const item = Object.assign(document.createElement("button"), { type: "button", disabled: b.disabled });
+    const item = el("button", { type: "button", disabled: b.disabled });
     item.setAttribute("role", "menuitem");
     const svg = b.querySelector("svg.tool-svg");
-    item.append(svg ? svg.cloneNode(true) : Object.assign(document.createElement("span"), { className: "menu-icon-space" }));
+    item.append(svg ? svg.cloneNode(true) : el("span", { class: "menu-icon-space" }));
     const name = (b.dataset.label || b.getAttribute("aria-label") || b.textContent || "").trim();
     item.append(document.createTextNode(name));
     const tip = b.title || b.dataset.tip;

@@ -109,9 +109,9 @@ async function runPlan() {
       const to = p.skip ? p.skip : p.dest.slice(f.dest.value.length).replace(/^[\\/]/, "");
       li.title = `${p.source}\n${p.captured}${p.skip ? `\n${p.skip}` : `\n→ ${p.dest}`}`;
       li.append(
-        Object.assign(document.createElement("span"), { textContent: from }),
-        Object.assign(document.createElement("span"), { className: "arrow", textContent: p.skip ? "skip" : "→" }),
-        Object.assign(document.createElement("span"), { textContent: to }),
+        el("span", {}, from),
+        el("span", { class: "arrow" }, p.skip ? "skip" : "→"),
+        el("span", {}, to),
       );
       return li;
     }));
@@ -135,10 +135,10 @@ async function importFlow() {
   if (!ui.presets?.length) ui.presets = await invoke("presets").catch(() => []);
   const groups = new Map();
   for (const p of presetsShown()) groups.set(p.group || "Presets", [...(groups.get(p.group || "Presets") ?? []), p]);
-  f.preset.replaceChildren(Object.assign(document.createElement("option"), { value: "", textContent: "None" }),
+  f.preset.replaceChildren(el("option", { value: "" }, "None"),
     ...[...groups].map(([group, list]) => {
-      const g = Object.assign(document.createElement("optgroup"), { label: group });
-      g.append(...list.map((p) => Object.assign(document.createElement("option"), { value: p.path, textContent: p.name })));
+      const g = el("optgroup", { label: group });
+      g.append(...list.map((p) => el("option", { value: p.path }, p.name)));
       return g;
     }));
   f.preset.value = presetsShown().some((p) => p.path === d.options.preset) ? d.options.preset : "";

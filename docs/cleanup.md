@@ -126,29 +126,7 @@ Do the groups in order, or any card whose "Precondition" line is met. Ids are st
 ### Group A: small
 
 ### A4. `el()` instead of `Object.assign(document.createElement(...))`
-Tier: small        Risk: low
-Why: 381 sites build elements the old way although `el` is in `crates/amb-gui/ui/core/core.js`; the count grows (316 to 381 in three days). Repeat this card once per file.
-Files: one UI script per commit, in this order (sites on 2026-11-12): `crates/amb-gui/ui/library/insights.js` 39, `crates/amb-gui/ui/library/browse.js` 32, `crates/amb-gui/ui/library/organise.js` 22, `crates/amb-gui/ui/dialogs/hub.js` 21, `crates/amb-gui/ui/library/library-grid.js` 15, `crates/amb-gui/ui/dialogs/plugins.js` 14, `crates/amb-gui/ui/core/search.js` 13, `crates/amb-gui/ui/core/tasks.js` 12, `crates/amb-gui/ui/collage/collage-tray.js` 11, `crates/amb-gui/ui/library/duplicates.js` 10, `crates/amb-gui/ui/library/cull.js` 10, `crates/amb-gui/ui/help/basics.js` 10, `crates/amb-gui/ui/develop/fx.js` 10, `crates/amb-gui/ui/develop/frame.js` 9, `crates/amb-gui/ui/core/keys.js` 9. Then the rest, by `grep -rc "Object.assign(document.createElement(" crates/amb-gui/ui | sort -t: -k2 -nr`. Also `crates/amb-gui/src/checks.rs` (the limit).
-How `el` works: `el(tag, attrs = {}, ...children)`. `class` sets the class; a key starting with `on` adds that listener (`onclick`, `onchange`, `oninput`); `true` sets the attribute empty; `false`, `null` and `undefined` skip it; anything else is set with `setAttribute`; children are nodes or strings (`null` skipped).
-Conversion rules, for each `Object.assign(document.createElement("tag"), { ... })`:
-1. `className: X` becomes `class: X`.
-2. `textContent: X` is removed from the object and `X` becomes a child: `el("span", { class: "a" }, X)`.
-3. Properties that are attributes stay as keys: `type`, `title`, `value` (on a new element), `alt`, `role`, `id`, `min`, `max`, `step`, `label`, `src`, `loading`, `hidden`, `disabled`, `checked`, `selected`.
-4. Rename to the attribute's name: `tabIndex` becomes `tabindex`, `ariaLabel` becomes `"aria-label"`.
-5. `draggable: true` becomes `draggable: "true"` and `spellcheck: false` becomes `spellcheck: "false"` (an empty `draggable` attribute does not make an element draggable; an omitted `spellcheck` does not turn it off).
-6. Event properties (`onclick = fn`, `{ onclick: fn }`) become `onclick: fn` keys (the listener is added, not assigned; code that assigns twice to replace a handler must keep its plain assignment).
-7. These stay plain statements after the `el(...)`: `dataset.x = ...`, `style.x = ...`, `.value = ...` on an input that is already in the page, `.checked = ...` set later, `.innerHTML` (not to be added), `.append` of more children later.
-8. A site with a computed tag (`document.createElement(ps ? "button" : "span")`) becomes `el(ps ? "button" : "span", {...})`.
-9. `Object.assign(document.createElement(tag), attrs)` with attrs a variable (`crates/amb-gui/ui/library/slideshow.js`, its local `el` at line 302): leave it, and leave the local `el` there: it shadows the shared one inside its function. Move on.
-10. Do not change what the element is, its order among siblings, or its text.
-Steps for each file:
-1. Convert every site in the file by the rules. Also convert the `document.createElement("x")` + separate property lines next to them only if they are the same element built in the same statement block; leave other code.
-2. Count what is left: `grep -c "Object.assign(document.createElement(" FILE`.
-3. In `crates/amb-gui/src/checks.rs`, lower the limit for `Object.assign(document.createElement(` by the number of sites you converted.
-Don't: do two files in one commit; rename a CSS class or id; change a message.
-Checks: the UI checks of "Checks" (build, all UI scripts, no `FAILED`); `cargo test -p amb-gui`; then open the dialog or panel you converted once by hand (`cargo run --release -p amb-gui`, docs/recipes.md for Xvfb) when no UI script covers it.
-Done when: the file has no `Object.assign(document.createElement(` (except rule 9) and the limit equals the new total.
-Commit: `ui: FILE uses el()`, with the file's name. Why: "One way to build an element."
+Done 2026-11-19 for every site it can be (card in git history). 15 sites remain on purpose: where a local `el` (a parameter, a loop variable or slideshow.js's own `el`) would shadow the shared one, and `fx.js`'s `<output>` with a `value`. Converting one of those means renaming the local first. The limit in `crates/amb-gui/src/checks.rs` is the count left.
 
 ### Group B: medium
 

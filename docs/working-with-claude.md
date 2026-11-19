@@ -6,10 +6,10 @@ One page, things to do. Which model does which work, in full, is in [delegation.
 
 | Situation | Model | What to type |
 |---|---|---|
-| A routine card or a small fix | Medium (Sonnet) | "do the next card in docs/cleanup.md" |
+| A routine card or a small fix | Medium (Sonnet) | "do the next ready row in docs/ROADMAP.md" |
 | A new feature idea, or a decision to make | Large (Opus), one short chat | "I want X. Ask me what you need, then write the card or brief into docs/." Then a new medium chat: "build the card for X" |
 | Reading, summaries, a docs row, Life-OS style upkeep | Small (Haiku) | "read docs/WHATS-NEXT.md and tell me in five lines what is waiting on me" |
-| An audit of everything, or many briefs at once | Top (the newest model), rarely | "audit the codebase for X and write the findings as cards in docs/cleanup.md" |
+| An audit of everything, or many briefs at once | Top (the newest model), rarely | "audit the codebase for X and write the findings as rows in docs/ROADMAP.md" |
 
 If unsure, start medium. If it gets stuck on a choice, it says so; take that to a large chat.
 
@@ -23,7 +23,7 @@ If unsure, start medium. If it gets stuck on a choice, it says so; take that to 
 
 ## 3. Before you leave a chat
 
-If the state is in the repo (`docs/WHATS-NEXT.md`, `docs/cleanup.md`, `docs/ROADMAP.md`), there is nothing to summarise. Just leave.
+If the state is in the repo (`docs/WHATS-NEXT.md`, `docs/ROADMAP.md`), there is nothing to summarise. Just leave.
 
 If something lives only in the chat, say "write what is not in the repo yet into docs/WHATS-NEXT.md", then start fresh.
 

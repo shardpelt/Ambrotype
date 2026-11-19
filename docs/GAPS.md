@@ -300,9 +300,9 @@ Items that can only be settled with a Lightroom subscription. They are batched i
 
 ## 16. Code health
 
-From the structure review of 2026-11-09 ([design/structure.md](design/structure.md)); the fixes are tasks in [cleanup.md](cleanup.md).
+From the structure review of 2026-11-09 ([design/structure.md](design/structure.md)); the fixes are done; how to split a file is in [codestyle.md](codestyle.md) §11.
 
 | Item | Tag | Impact | Source |
 |---|---|---|---|
-| Some files are past the size budget (800 production lines for Rust, 700 for a UI script); `OVER_BUDGET` in `crates/amb-cli/tests/code_size.rs` lists them, each held at its size until it is split | Limit | People and agents read far more than they change; merge conflicts gather there | [cleanup.md](cleanup.md), phase 2 |
+| Some files are past the size budget (800 production lines for Rust, 700 for a UI script); `OVER_BUDGET` in `crates/amb-cli/tests/code_size.rs` lists them, each held at its size until it is split | Limit | People and agents read far more than they change; merge conflicts gather there | [codestyle.md](codestyle.md) §11 |
 | The UI's 78 scripts (in folders by part since 2026-11-09) share one global scope, so the order `index.html` loads them in matters; the helpers they all use are in `ui/core/core.js`, which loads first. Two tests check that each script loads once and each top-level name is declared once | Limit | A script's top-level code may only use names from scripts loaded before it | [design/structure.md](design/structure.md), "Not now" |

@@ -43,7 +43,7 @@ Most bugs in a new feature are a list someone forgot. These are all of them. Whe
 
 ## 3. Size and shape
 
-- A source file has at most 800 lines (Rust, before its tests) or 700 (UI script). **(test: `crates/amb-cli/tests/code_size.rs`)** A file about to pass it is split along its sections in the same commit; the limit is not raised.
+- A source file has at most 800 lines (Rust, before its tests) or 700 (UI script). **(test: `crates/amb-cli/tests/code_size.rs`)** A file about to pass it is split along its sections in the same commit (section 11 says how); the limit is not raised.
 - A split module becomes a folder with one file per concern; `mod.rs` re-exports, so public paths don't change.
 - A function has at most 150 lines, except tables, dispatch and ported algorithms. **(review; `python3 tools/code-metrics.py` lists the longest)**
 - New code goes in the file that owns its concern. If none does, make a file. Don't grow `main.rs`, `app.js`, `index.html`'s scripts or a file near its limit.
@@ -68,7 +68,7 @@ Plain scripts in one shared scope, no build step. That only works with disciplin
 
 - **One file per feature,** in its part's folder, starting with a comment that says what it holds. Its state is one object (`const clean = { … }`), not loose `let`s. Its functions carry the feature's name (`cleanMark`, not `mark`). **(test: top-level names are unique; the count of top-level `let` may only fall)**
 - **It ends with one `wire…` function** that attaches its listeners. **(test: it is called)**
-- **Use the helpers in `core.js`:** `$`, `invoke`, `el` (builds an element), `store` (saved values), `toast`, `showError`, `status`, `askYes`, `plural`, `setInfo` (rating, flag, label), `fileName`, `dirOf`. The older idioms they replace (`Object.assign(document.createElement(…))`, `toast(String(e), true)`, `localStorage` directly, `innerHTML`) are counted, and the counts may only fall. **(test)** Touching old code? Convert what you touch and lower the count.
+- **Use the helpers in `core.js`:** `$`, `invoke`, `el` (builds an element), `store` (saved values), `toast`, `showError`, `status`, `askYes`, `plural`, `setInfo` (rating, flag, label), `fileName`, `dirOf`. The older idioms they replace (`Object.assign(document.createElement(…))`, `toast(String(e), true)`, `localStorage` directly, `innerHTML`) are counted, and the counts may only fall. **(test)** Touching old code? Convert what you touch and lower the count. The `el` count left (15) is on purpose: each is where a local `el` would shadow the shared one, or `fx.js`'s `<output>` with a `value`; rename the local first.
 - **Shared parts, not copies:** a sideways row of photos is `photoRow` (`crates/amb-gui/ui/core/photo-row.js`); a map is `crates/amb-gui/ui/library/map-touch.js`; the photo's gestures are `crates/amb-gui/ui/core/pinch.js`. Loading pictures as they come near the view is `nearView` and `loadQueue` (`crates/amb-gui/ui/core/lazy.js`). A button that is off while its work runs is `withBusy` (`crates/amb-gui/ui/core/core.js`). Ctrl- and Shift-click selection over a list is `pickPath` (`core/core.js`). A change to a photo's info or edit reaches the views through `photoChanged` (`core/core.js`), never by calling a view's update. Progress from Rust is `throttled` (`crates/amb-gui/src/progress.rs`) in the editor and `line` (`crates/amb-cli/src/progress.rs`) in `amb`. A second copy of a part that exists is a bug: use the part, or extend it. **(review; a test counts two of them: `new IntersectionObserver(` outside `lazy.js` and a sideways-scrolling rule other than `.photo-row`, and the counts may only fall)**
 - **Words built in a script go through `t()`** (`t("Moved to the trash")`, `plural(n, "photo")`): the English text is the key, and nothing is added to a language file by hand ([design/language.md](design/language.md)). After adding one, run `python3 tools/lang-table.py`, which updates the table of words. **(test: the table is current)**
 - **Text from a file or a person** goes in with `textContent` or as a child of `el`, never through `innerHTML`.
@@ -119,3 +119,48 @@ One home per fact ([docs/README.md](README.md)). Plain, short sentences. No mode
 4. Are there tests where section 7 asks for them, and did the request's own commands run?
 5. Are the docs in section 8 updated, each fact in one place?
 6. `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`.
+
+## 11. Splitting a file
+
+When a file passes its size (section 3), split it in its own commit, and change nothing the app does.
+
+- **Move, don't rewrite.** Cut and paste whole items unchanged, with their doc comments, attributes and the comment lines above them. The only edits: `mod` and `use` lines; visibility (`pub(super)` or `pub(crate)` where the compiler asks, never plain `pub` unless the item already was); `include_str!` and `include_bytes!` paths; the Tauri handler list; `<script>` tags in `index.html`.
+- **Names stay:** public items, Tauri commands, setting names, localStorage keys, CSS classes, element ids, event names and file formats. Sidecars, saved settings, plugins, hub items and tests depend on them.
+- **Fix what names the moved code:** `grep -rn "old/path.rs" docs AGENTS.md README.md crates tools` and correct each mention (`docs/recipes.md` is checked by a test). Take a split file off `OVER_BUDGET` in `crates/amb-cli/tests/code_size.rs`; the test says when.
+- **Tests unchanged in count:** compare `cargo test -p CRATE`'s "N passed" before and after.
+
+### Rust
+
+**A file into a folder:**
+- `git mv src/foo.rs src/foo/mod.rs` first, so git keeps its history.
+- Then cut each part into `src/foo/<part>.rs`, and add `mod <part>;` near the top of `mod.rs`.
+- Paths from outside stay the same: in `mod.rs`, `pub use <part>::{Name, …};` for each item other files use. Add the re-export where the compiler says an item isn't found; don't change the callers.
+- A new file starts with `// SPDX-License-Identifier: GPL-3.0-or-later`, then a `//!` line or two saying what it holds, then `use super::*;` (and any `use` lines the compiler asks for).
+
+**Methods of one type can live in several files.**
+- Each file gets its own `impl Type { … }` block.
+- Child modules see their parent's private fields and functions, so nothing needs to become public for that.
+- A private helper used by two of the new files moves to `mod.rs` as `pub(super)`.
+
+**Tests:**
+- A `#[cfg(test)] mod tests { … }` block moves to `foo/tests.rs`, without the `mod tests {` wrapper.
+- In `mod.rs`, write `#[cfg(test)] mod tests;`. In `tests.rs`, `use super::*;` still works.
+
+**Data files:** `include_str!("../data/x.json")` in `src/foo.rs` becomes `include_str!("../../data/x.json")` in `src/foo/mod.rs`.
+
+### UI
+
+The editor's scripts are plain `<script>` files sharing one global scope, loaded in the order of `index.html`.
+
+- **Where a new file loads:** add its `<script src="…">` tag right after the file it came from. Two exceptions:
+  - `core.js` loads first;
+  - `app.js` stays last, because its last line starts the app, so files split out of `app.js` load just before it.
+- **What runs while loading:** code outside functions (a top-level `const x = …` or a call) runs when its file loads. It may only use names from files loaded before it.
+  - When you move a section, check its top-level lines.
+  - If one uses a name from a file that loads later, or if the file it came from uses one of the section's names in its own top-level lines, keep that line where it was.
+- **Each top-level name is declared once** across all files; a test checks.
+- A new file starts like the others:
+  - `// SPDX-License-Identifier: GPL-3.0-or-later`;
+  - two to four comment lines saying what it holds;
+  - `"use strict";`.
+- Cut whole sections, from one `// ---------------------------------------------------------------- name` line to the next, with the marker line.

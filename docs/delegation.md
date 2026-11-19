@@ -25,7 +25,7 @@ Each item in [ROADMAP.md](ROADMAP.md) carries its tier and whether it is ready.
 
 ## A task card
 
-Written so the reader needs nothing else. [cleanup.md](cleanup.md) is a list of these.
+Written so the reader needs nothing else. A card goes with the work: in the brief handed to a session, or in the design doc a [ROADMAP.md](ROADMAP.md) row links.
 
 ```
 ### ID. Title
@@ -43,7 +43,7 @@ A card is ready when a model that has never seen the repo could do it. If a step
 
 ## When to stop and hand up
 
-A builder stops, writes down the question (in the card, or under "Found while working" in cleanup.md) and leaves the tree clean when:
+A builder stops, writes down the question (in the card, or as a row in [GAPS.md](GAPS.md)) and leaves the tree clean when:
 
 - the card doesn't say which of two ways to go;
 - a check fails and two tries don't fix it;

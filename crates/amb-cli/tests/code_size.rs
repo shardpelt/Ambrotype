@@ -2,7 +2,7 @@
 //! The size budget (docs/design/structure.md): a Rust file of at most 800
 //! production lines (the lines before its `#[cfg(test)]` part), a UI script
 //! of at most 700. Test files don't count. Files already past it are listed
-//! with their own limit until they are split (docs/cleanup.md, phase 2).
+//! with their own limit until they are split (docs/codestyle.md §11).
 
 use std::path::{Path, PathBuf};
 
@@ -12,7 +12,7 @@ const JS_BUDGET: usize = 700;
 /// Files past the budget, with the most lines each may have: its size on the
 /// day the limit was set (2026-11-12) rounded up to the next 50. Splitting a
 /// file takes it off this list. A file that grows past its number is split
-/// (docs/cleanup.md says how), not given a bigger number.
+/// (docs/codestyle.md §11 says how), not given a bigger number.
 const OVER_BUDGET: &[(&str, usize)] = &[];
 
 fn root() -> PathBuf {
@@ -79,13 +79,13 @@ fn files_stay_within_the_size_budget() {
     for (lines, budget, rel) in &sizes {
         match OVER_BUDGET.iter().find(|(f, _)| f == rel) {
             Some((_, limit)) if lines > limit => problems.push(format!(
-                "{rel}: {lines} lines, past its limit of {limit}: split it (docs/cleanup.md), or raise its number in OVER_BUDGET and say why"
+                "{rel}: {lines} lines, past its limit of {limit}: split it (docs/codestyle.md §11), or raise its number in OVER_BUDGET and say why"
             )),
             Some(_) if lines <= budget => problems.push(format!(
                 "{rel}: {lines} lines, within the budget of {budget} now: take it off OVER_BUDGET"
             )),
             None if lines > budget => problems.push(format!(
-                "{rel}: {lines} lines, past the budget of {budget}: split it along its sections (docs/cleanup.md)"
+                "{rel}: {lines} lines, past the budget of {budget}: split it along its sections (docs/codestyle.md §11)"
             )),
             _ => {}
         }

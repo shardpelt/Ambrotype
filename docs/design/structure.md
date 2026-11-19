@@ -2,7 +2,7 @@
 
 > Dated 2026-11-09 and kept as written: the sizes below are from before the cleanup it planned, which is done. The standing rules are in [codestyle.md](../codestyle.md).
 
-A look at the whole codebase: its size, its shape, what holds up and what has grown too big. The tasks that follow from it, in exact steps for any coding agent, are in [cleanup.md](../cleanup.md).
+A look at the whole codebase: its size, its shape, what holds up and what has grown too big. The tasks that followed from it are done (in git history: `git log -- docs/cleanup.md`); how to split a file is in [codestyle.md](../codestyle.md) §11.
 
 ## Short version
 
@@ -186,7 +186,7 @@ JS: 30 of 964 functions are over 80 lines. The longest: `crop.js` `create` (408)
 
 ## The plan
 
-The phases and their tasks are in [cleanup.md](../cleanup.md), each with its files, steps, checks and commit message.
+The phases' task cards are in git history (`git log -- docs/cleanup.md`).
 
 | Phase | What | Who | Risk |
 |---|---|---|---|
@@ -199,6 +199,8 @@ The phases and their tasks are in [cleanup.md](../cleanup.md), each with its fil
 - **ES modules for the UI:** the webviews support them without a build step. But the UI tests and the menu call globals, and 1,085 names would need imports. Do it only if the global scope keeps causing bugs after `core.js` and the splits.
 - **A JS framework:** it would bring a build step, against the "no npm" rule.
 - **A rewrite of `Session` or the protocol:** both are sound; they only need splitting.
+- **A macro for the built-in plugin table:** `BUILTIN`, `native.rs` and the workspace members stay hand-written; a macro would hide the native fast paths, which only some effect plugins have. `crates/amb-plugin/tests/builtin.rs` catches a plugin folder missing from `BUILTIN`.
+- **A test that `plugin.wasm` is newer than its `src/`:** git sets every file's time at checkout, so it would pass or fail by chance.
 
 ## Rules that keep it lean
 

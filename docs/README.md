@@ -15,7 +15,6 @@ One home per fact. If something is written in two places, one of them goes out o
 | How the code is built: crates, the pipeline, each part's files | [ARCHITECTURE.md](ARCHITECTURE.md) | what exists changes |
 | How code is written here, and the checks that hold it | [codestyle.md](codestyle.md) | a rule changes |
 | The steps of a common change (a setting, a command, a button) | [recipes.md](recipes.md) | the places a change touches move (a test checks) |
-| Small cleanup tasks, ready for any model | [cleanup.md](cleanup.md) | a task is added or done |
 | Which model does which work; how to write a task | [delegation.md](delegation.md) | the models or the loop change |
 | What to type, and when to start a new chat (for the owner) | [working-with-claude.md](working-with-claude.md) | how we work changes |
 | Where changes land: work branches, `staging`, `main` | [branches.md](branches.md) | the flow changes; the day we switch |

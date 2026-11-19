@@ -23,7 +23,19 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
   amb testimage ramp /tmp/ui/more/other.dng      # browse.js shows a second folder too
   DISPLAY=:99 ambrotype --ui-test crates/amb-gui/tests/ui/smoke.js /tmp/ui/test.dng
   ```
-  It prints each step and exits 0 when all pass. A script is the body of an async function of `t` (`ui/core/uitest.js`): `t.step(name, fn)`, `t.setSlider("Exposure2012", 1)`, `t.key("Ctrl+Z")`, `t.click(selector)`, `t.until(what, () => cond)`, `t.expect(ok, what)`, `t.row(name)`, `t.setting(name)`, `t.visible(el)`. Save dialogs don't open: exports go to a temporary folder. A `console.error` or an uncaught error fails the run. Use a fresh config folder (`XDG_CONFIG_HOME`) so your own settings don't change the result. CI runs every script in that folder on Linux. A UI bug fix gets a step there.
+  It prints each step and exits 0 when all pass. A script is the body of an async function of `t` (`ui/core/uitest.js`): `t.step(name, fn)`, `t.setSlider("Exposure2012", 1)`, `t.key("Ctrl+Z")`, `t.click(selector)`, `t.until(what, () => cond)`, `t.expect(ok, what)`, `t.row(name)`, `t.setting(name)`, `t.visible(el)`. Save dialogs don't open: exports go to a temporary folder. A `console.error` or an uncaught error fails the run. Use a fresh config folder (`XDG_CONFIG_HOME`) so your own settings don't change the result. CI runs every script in that folder on Linux, in order, with one settings folder; run them the same way before pushing a UI change (the UI is built into the binary, so build first):
+  ```sh
+  cargo build -p amb-gui -p amb-cli
+  T=/tmp/ui-check && rm -rf $T && mkdir -p $T/more
+  target/debug/amb testimage colorchecker $T/test.dng
+  target/debug/amb testimage ramp $T/more/other.dng
+  target/debug/amb lrcat sample $T/more/Sample.lrcat $T/more/other.dng
+  export XDG_CONFIG_HOME=$T/.cfg XDG_CACHE_HOME=$T/.cache XDG_DATA_HOME=$T/.data
+  for t in crates/amb-gui/tests/ui/*.js; do
+    xvfb-run -a -s "-screen 0 1600x1000x24" target/debug/ambrotype --ui-test "$t" $T/test.dng || echo "FAILED: $t"
+  done
+  ```
+  The settings folders are hidden so the app's own thumbnails aren't photos of the folder. A change to `amb-gui` alone (no other crate depends on it) may run `cargo clippy -p amb-gui --all-targets -- -D warnings`, `cargo test -p amb-gui` and `cargo test -p amb-cli --test code_size --test recipes` instead of the whole workspace's; whoever pushes runs the whole workspace's. A debug build folder takes about 13 GB: on "No space left on device", `rm -rf target/debug/incremental target/release`. A UI bug fix gets a step there.
 - **Built-in layouts, themes and presets:** never edit them in `crates/amb-gui/data/hub/`. They are copies, checked against `crates/amb-gui/data/hub/index.json`. Change them in the hub repo and run `tools/sync-hub.py`, or leave that step to the maintainer and say so.
 
 ## Add a develop setting (a slider, switch or choice)

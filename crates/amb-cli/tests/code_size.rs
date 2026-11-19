@@ -15,7 +15,6 @@ const JS_BUDGET: usize = 700;
 /// (docs/cleanup.md says how), not given a bigger number.
 const OVER_BUDGET: &[(&str, usize)] = &[
     ("crates/amb-gpu/src/nn.rs", 850),
-    ("crates/amb-ai/src/lib.rs", 900),
 ];
 
 fn root() -> PathBuf {

@@ -138,21 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B7. Split `crates/amb-ai/src/lib.rs`
-Tier: medium        Risk: medium
-Why: 886 production lines: what a model is, which are installed and chosen, and running one.
-Files: `crates/amb-ai/src/lib.rs` and new `crates/amb-ai/src/spec.rs`, `store.rs`, `model.rs`, `tests.rs`; `crates/amb-cli/tests/code_size.rs`. The three files sit beside `lib.rs` (it is the crate root: no folder).
-Steps:
-1. `lib.rs` keeps the crate doc, `mod` lines (`archive`, `net`, the public ones, and the new three), `TASKS`, `AUTO_INSTALL_BYTES`, `default_dir`, and re-exports `pub use spec::*; pub use store::*; pub use model::*;` (every item that was `pub` in `lib.rs` keeps its path `amb_ai::NAME`).
-2. `spec.rs`: `Input`, `Pixels` with `impl`, `Layout` with `impl`, `Activation`, `Output`, `ModelSpec`, `ModelFile`, `impl ModelSpec`, `ModelState`, `CustomModel`, `imagenet_mean`, `imagenet_std`, `Catalogue`, `catalogue`. The `include_str!("../data/models.json")` in `catalogue` keeps its path (the file is still in `src/`).
-3. `store.rs` (installed models and the user's choice): `known_task`, `file_of`, `is_installed`, `custom_specs`, `all_specs`, `find_spec`, `choices`, `write_choices`, `chosen`, `list`, `choose`, `sha256_file`, `install`, `download`, `remove`, `add_custom`, `ensure_model`.
-4. `model.rs` (loading and running): `Model`, `load`, `run`, `fingerprint`, `finder`, `try_model`.
-5. Tests to `tests.rs` (`#[cfg(test)] mod tests;` in `lib.rs`).
-Don't: change a public name or the models list.
-Checks: as above; `cargo test -p amb-ai`; `cargo clippy -p amb-cli -p amb-gui --all-targets -- -D warnings` (they use the crate).
-Done when: `lib.rs` is under 200 lines and no part passes 800.
-Commit: `ai: split lib.rs into spec, store and model`. Why: "It was past the size budget."
-
 ### B8. Split `crates/amb-gpu/src/nn.rs`
 Tier: medium        Risk: medium
 Why: 847 production lines: tensor types, the kernel table, and 440 lines of one method per op.

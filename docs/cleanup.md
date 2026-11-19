@@ -138,37 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B28. The long arms of `state::plan`
-Tier: medium        Risk: medium
-Why: `plan` in `crates/amb-protocol/src/state/plan.rs` is 237 lines: a `match` on the command whose arms for `ApplyPreset` (about 85 lines), `AdjustParam` (about 33) and `AddSpot` (about 24) hold most of it.
-Decided: those three arms move to private functions in the same file, `plan_preset`, `plan_adjust` and `plan_add_spot`; the arm becomes one call. Each takes the arm's bindings and the locals it uses (the compiler lists them) and returns what the arm evaluated to (`Result<…>` with `?` inside as now). The other arms stay.
-Files: `crates/amb-protocol/src/state/plan.rs`.
-Checks: `cargo test -p amb-protocol` (same count); the three cargo commands; `cargo test -p amb-cli` (edits through commands).
-Done when: `plan` is under 120 lines.
-Commit: `protocol: the long arms of plan in their own functions`. Why: "237 lines in one function."
-
-### B29. `net::step` one function per operation
-Tier: medium        Risk: medium
-Why: `step` in `crates/amb-ai/src/net/plan.rs` is 250 lines: a chain of `if let Some(x) = op.downcast_ref::<T>() { … }` blocks, one per ONNX operation.
-Decided: each block longer than 15 lines moves to a private function `step_<op>` (`step_axis`, `step_slice`, `step_concat`, `step_binary`, `step_element_wise`, `step_reduce`, `step_einsum`, `step_conv`, `step_deconv`, …, named after the type it downcasts to) returning `Option<Step>`; in `step` the block becomes `if let Some(x) = op.downcast_ref::<T>() { return step_x(x, …); }`, in the same order (the order decides which matches first). Shorter blocks stay. Parameters: what the block reads (`model`, `node`, `ins`, `shape`, …; the compiler lists them).
-Files: `crates/amb-ai/src/net/plan.rs`.
-Checks: `cargo test -p amb-ai` (the net tests compare the GPU plan with tract's CPU run); the three cargo commands.
-Done when: `step` is under 100 lines.
-Commit: `ai: one function per operation in net::step`. Why: "250 lines in one function."
-
-### B30. UI tests for dragging a crop and a curve point
-Tier: medium        Risk: low
-Why: the crop tool's and the tone curve's factories (`create` in `crates/amb-gui/ui/tools/crop.js`, 408 lines, and in `crates/amb-gui/ui/develop/curve.js`, 364) are to be split (B31), and no UI step drags either, so a split could break them unseen.
-Files: `crates/amb-gui/tests/ui/crop-curve.js` (new). Read: `crates/amb-gui/tests/ui/photo-row.js` (how a step sends pointer events: `PointerEvent` with `clientX`, `clientY`, `pointerId`, `buttons`), `crates/amb-gui/ui/tools/crop.js`, `crates/amb-gui/ui/develop/curve.js`.
-Steps:
-1. Script header as the others; first step: the photo opens (copy `smoke.js`'s first step).
-2. "dragging the crop's corner makes the crop smaller, as one step": open the crop tool (`t.key("R")`), find the bottom-right handle element in `crop.js`'s markup, drag it 100 px up and left with pointer events, leave the tool (`t.key("Enter")`), expect `t.setting("CropRight") < 1` and one more history step.
-3. "dragging a curve point changes the curve, as one step": open the Tone Curve panel's point curve, press on the curve's middle and drag 30 px up, expect the curve setting (read its name in `curve.js`: the parametric or point curve tag it writes) to differ from before and one more history step; then `t.key("Ctrl+Z")`.
-Don't: change `crop.js` or `curve.js`.
-Checks: the UI scripts (the new one passes alone).
-Done when: both steps pass, and fail when the drag is not sent (try it once, undo).
-Commit: `tests: dragging a crop and a curve point`. Why: "B31 needs these first."
-
 ### B31. The crop and curve factories as state and functions
 Tier: large        Risk: high
 Why: `create` in `crates/amb-gui/ui/tools/crop.js` (408 lines) and in `crates/amb-gui/ui/develop/curve.js` (364) are closures whose inner functions share local `let`s, so none can be read or tested alone.

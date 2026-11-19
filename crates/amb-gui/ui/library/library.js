@@ -265,13 +265,13 @@ function renderPanel() {
   const chips = $("lib-keywords");
   chips.replaceChildren(...[...counts.values()].sort((a, b) => b.n - a.n || a.name.localeCompare(b.name)).map(({ name, n: count }) => {
     const all = count === n;
-    const chip = Object.assign(document.createElement("span"), { className: `tag-chip${all ? "" : " partial"}`, textContent: name, title: all ? "On every selected photo" : `On ${count} of ${n}` });
+    const chip = el("span", { class: `tag-chip${all ? "" : " partial"}`, title: all ? "On every selected photo" : `On ${count} of ${n}` }, name);
     if (!all) {
-      const add = Object.assign(document.createElement("button"), { type: "button", textContent: "+", title: `Add "${name}" to all ${n}` });
+      const add = el("button", { type: "button", title: `Add "${name}" to all ${n}` }, "+");
       add.addEventListener("click", () => libraryChange({ add_keywords: [name] }));
       chip.append(add);
     }
-    const x = Object.assign(document.createElement("button"), { type: "button", textContent: "×", title: `Remove "${name}" from the selection` });
+    const x = el("button", { type: "button", title: `Remove "${name}" from the selection` }, "×");
     x.addEventListener("click", () => libraryChange({ remove_keywords: [name] }));
     chip.append(x);
     return chip;
@@ -280,7 +280,7 @@ function renderPanel() {
   // Recent keywords not on every selected photo yet: one click adds.
   const recent = n ? infoState.recent.filter((k) => counts.get(k.toLowerCase())?.n !== n).slice(0, 12) : [];
   $("lib-tag-recent").replaceChildren(...recent.map((k) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", className: "tag-recent", textContent: `+ ${k}`, title: `Add "${k}" to the ${n} selected` });
+    const b = el("button", { type: "button", class: "tag-recent", title: `Add "${k}" to the ${n} selected` }, `+ ${k}`);
     b.addEventListener("click", () => libraryChange({ add_keywords: [k] }));
     return b;
   }));
@@ -291,7 +291,7 @@ function renderPanel() {
     if (document.activeElement !== f) f.value = v ?? "";
     f.placeholder = n > 1 && v === undefined ? "(mixed)" : "";
   }
-  $("lib-tag-suggest").replaceChildren(...infoState.recent.slice(0, 60).map((k) => Object.assign(document.createElement("option"), { value: k })));
+  $("lib-tag-suggest").replaceChildren(...infoState.recent.slice(0, 60).map((k) => el("option", { value: k })));
   $("lib-copied").textContent = lib.copied ? `Copied from ${fileName(lib.copied)}` : "";
   $("lib-export").textContent = n > 1 ? `Export ${n} photos…` : "Export…";
   $("lib-vcopy-delete").hidden = !(n && sel.every((p) => p.copy));
@@ -505,7 +505,7 @@ function wireLibrary() {
   }
   $("lib-rating-clear").addEventListener("click", () => libraryChange({ rating: 0 }));
   for (const l of LABELS) {
-    const b = Object.assign(document.createElement("button"), { type: "button", title: `${l} label${LABELS.indexOf(l) < 4 ? ` (${6 + LABELS.indexOf(l)})` : ""}` });
+    const b = el("button", { type: "button", title: `${l} label${LABELS.indexOf(l) < 4 ? ` (${6 + LABELS.indexOf(l)})` : ""}` });
     b.dataset.label = l;
     b.style.setProperty("--swatch", LABEL_COLOURS[l]);
     b.addEventListener("click", () => labelKey(l));

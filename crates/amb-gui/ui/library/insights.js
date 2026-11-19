@@ -103,11 +103,11 @@ function insightTally(key, photos) {
 
 async function renderInsights(box) {
   if (!insights.fields) {
-    box.replaceChildren(Object.assign(document.createElement("p"), { className: "hint browse-empty", textContent: "Counting…" }));
+    box.replaceChildren(el("p", { class: "hint browse-empty" }, "Counting…"));
     try {
       insights.fields = await invoke("insights_fields");
     } catch (e) {
-      box.replaceChildren(Object.assign(document.createElement("p"), { className: "hint browse-empty", textContent: String(e) }));
+      box.replaceChildren(el("p", { class: "hint browse-empty" }, String(e)));
       return;
     }
     if (cull.view !== "insights") return;
@@ -117,20 +117,20 @@ async function renderInsights(box) {
   if (insights.camera && !cameras.some((c) => c.label === insights.camera)) insights.camera = null;
   const photos = insights.camera ? all.filter((p) => p.camera === insights.camera) : all;
   if (!photos.length) {
-    box.replaceChildren(Object.assign(document.createElement("p"), { className: "hint browse-empty", textContent: "No photos shown to count." }));
+    box.replaceChildren(el("p", { class: "hint browse-empty" }, "No photos shown to count."));
     return;
   }
   // Head: how many, the most used settings, and the camera chips.
-  const head = Object.assign(document.createElement("div"), { className: "in-head" });
+  const head = el("div", { class: "in-head" });
   const kept = photos.filter(insightKept).length;
-  head.append(Object.assign(document.createElement("b"), { textContent: `${photos.length} photos` }),
-    Object.assign(document.createElement("span"), { className: "hint", textContent: `${kept} kept (${Math.round((100 * kept) / photos.length)} %): picked, or 3 stars and up` }));
+  head.append(el("b", {}, `${photos.length} photos`),
+    el("span", { class: "hint" }, `${kept} kept (${Math.round((100 * kept) / photos.length)} %): picked, or 3 stars and up`));
   const usual = insightUsual(photos);
-  if (usual) head.append(Object.assign(document.createElement("span"), { className: "in-usual", textContent: `Most often: ${usual}`, title: "The settings you shoot with most, together" }));
+  if (usual) head.append(el("span", { class: "in-usual", title: "The settings you shoot with most, together" }, `Most often: ${usual}`));
   if (cameras.length > 1) {
-    const chips = Object.assign(document.createElement("div"), { className: "in-chips", role: "group", ariaLabel: "Camera" });
+    const chips = el("div", { class: "in-chips", role: "group", "aria-label": "Camera" });
     for (const c of [{ label: null, count: all.length }, ...cameras]) {
-      const b = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: `${c.label ?? "All cameras"} ${c.count}` });
+      const b = el("button", { type: "button", class: "small" }, `${c.label ?? "All cameras"} ${c.count}`);
       b.classList.toggle("on", c.label === insights.camera);
       b.addEventListener("click", () => {
         insights.camera = c.label;
@@ -141,7 +141,7 @@ async function renderInsights(box) {
     head.append(chips);
   }
   // Split by: the three biggest groups side by side.
-  const split = Object.assign(document.createElement("label"), { className: "in-split", textContent: "Split by " });
+  const split = el("label", { class: "in-split" }, "Split by ");
   const pick = document.createElement("select");
   for (const [v, w] of [["", "nothing"], ["camera", "camera"], ["lens", "lens"], ["year", "year"]]) pick.append(new Option(w, v, false, v === (insights.split ?? "")));
   pick.addEventListener("change", () => {
@@ -152,18 +152,18 @@ async function renderInsights(box) {
   head.append(split);
   const series = insightSeries(photos);
   if (series) {
-    const legend = Object.assign(document.createElement("div"), { className: "in-legend" });
+    const legend = el("div", { class: "in-legend" });
     for (const s of series) {
-      const k = Object.assign(document.createElement("span"), { className: "in-key" });
+      const k = el("span", { class: "in-key" });
       k.style.setProperty("--c", s.colour);
       k.textContent = `${s.name} (${s.photos.length})`;
       legend.append(k);
     }
     head.append(legend);
   }
-  const notes = Object.assign(document.createElement("div"), { className: "in-notes" });
+  const notes = el("div", { class: "in-notes" });
   insightNotes(photos, notes);
-  const charts = Object.assign(document.createElement("div"), { className: "in-charts" });
+  const charts = el("div", { class: "in-charts" });
   for (const f of insights.fields) {
     charts.append(series ? insightSplitChart(f.key, series) : insightChart(insightTally(f.key, photos), photos.length));
   }
@@ -199,21 +199,21 @@ function insightSplitChart(key, series) {
   const shown = key === "hour" ? labels : labels.slice(labels.indexOf(used[0]), labels.indexOf(used.at(-1)) + 1);
   const share = (t, s, l) => (t.bars.find((b) => b.label === l)?.count ?? 0) / Math.max(1, s.photos.length);
   const most = Math.max(0.0001, ...shown.flatMap((l) => tallies.map((t, i) => share(t, series[i], l))));
-  const bars = Object.assign(document.createElement("div"), { className: "in-bars" });
+  const bars = el("div", { class: "in-bars" });
   for (const l of shown) {
-    const col = Object.assign(document.createElement("div"), { className: "in-bar in-group" });
-    const row = Object.assign(document.createElement("span"), { className: "in-sub" });
+    const col = el("div", { class: "in-bar in-group" });
+    const row = el("span", { class: "in-sub" });
     tallies.forEach((t, i) => {
       const s = series[i];
       const bar = t.bars.find((b) => b.label === l);
-      const b = Object.assign(document.createElement("button"), { type: "button", className: "in-fill", disabled: !bar?.count });
+      const b = el("button", { type: "button", class: "in-fill", disabled: !bar?.count });
       b.style.height = `${(share(t, s, l) / most) * 100}%`;
       b.style.background = s.colour;
       b.title = `${s.name}, ${l}: ${bar?.count ?? 0} of ${s.photos.length} (${Math.round(share(t, s, l) * 100)} %)`;
       if (bar?.count) b.addEventListener("click", () => setInsightFilter({ words: `${l} · ${s.name}`, test: (q) => s.test(q) && bar.test(q) }));
       row.append(b);
     });
-    col.append(row, Object.assign(document.createElement("span"), { className: "in-label", textContent: l }));
+    col.append(row, el("span", { class: "in-label" }, l));
     bars.append(col);
   }
   card.append(bars);
@@ -239,17 +239,17 @@ async function insightNotes(photos, box) {
   if (!n) return;
   const part = (title, list, cls) => {
     if (!list.length) return null;
-    const sec = Object.assign(document.createElement("section"), { className: `in-card in-advice ${cls}` });
-    sec.append(Object.assign(document.createElement("h4"), { textContent: title }));
+    const sec = el("section", { class: `in-card in-advice ${cls}` });
+    sec.append(el("h4", {}, title));
     for (const x of list) {
       const p = document.createElement("p");
-      p.append(Object.assign(document.createElement("b"), { textContent: x.title }), document.createElement("br"), x.text);
+      p.append(el("b", {}, x.title), document.createElement("br"), x.text);
       sec.append(p);
     }
     return sec;
   };
   box.replaceChildren(...[part("What it suggests", n.advice, "in-suggest"), part("Try this week", n.challenges, "in-try")].filter(Boolean));
-  if (!box.children.length) box.append(Object.assign(document.createElement("p"), { className: "hint", textContent: n.error ?? "Advice and challenges come with 20 or more photos that say how they were shot." }));
+  if (!box.children.length) box.append(el("p", { class: "hint" }, n.error ?? "Advice and challenges come with 20 or more photos that say how they were shot."));
 }
 
 // The most common aperture, focal length, shutter and ISO, together.
@@ -272,31 +272,31 @@ function insightUsual(photos) {
 }
 
 function insightCard(t) {
-  const card = Object.assign(document.createElement("section"), { className: `in-card in-${t.key}` });
-  card.append(Object.assign(document.createElement("h4"), { textContent: t.name }));
+  const card = el("section", { class: `in-card in-${t.key}` });
+  card.append(el("h4", {}, t.name));
   return card;
 }
 
 function insightFoot(card, t) {
-  if (t.unknown) card.append(Object.assign(document.createElement("p"), { className: "hint in-unknown", textContent: `${t.unknown} without` }));
+  if (t.unknown) card.append(el("p", { class: "hint in-unknown" }, `${t.unknown} without`));
 }
 
 // A number field as upright bars.
 function insightChart(t, total) {
   const card = insightCard(t);
   const most = Math.max(1, ...t.bars.map((b) => b.count));
-  const bars = Object.assign(document.createElement("div"), { className: "in-bars" });
+  const bars = el("div", { class: "in-bars" });
   for (const b of t.bars) {
     const pct = Math.round((100 * b.count) / total);
-    const col = Object.assign(document.createElement("button"), { type: "button", className: "in-bar", disabled: !b.count });
+    const col = el("button", { type: "button", class: "in-bar", disabled: !b.count });
     col.title = b.count ? `${b.label}: ${b.count} photos (${pct} %), ${b.kept} kept. Click to show them.` : `${b.label}: none`;
-    const fill = Object.assign(document.createElement("span"), { className: "in-fill" });
+    const fill = el("span", { class: "in-fill" });
     fill.style.height = `${(b.count / most) * 100}%`;
-    const keep = Object.assign(document.createElement("span"), { className: "in-kept" });
+    const keep = el("span", { class: "in-kept" });
     keep.style.height = b.count ? `${(b.kept / b.count) * 100}%` : "0";
     fill.append(keep);
     const label = t.key === "iso" ? `ISO ${b.label}` : t.key === "hour" ? `${b.label}:00` : b.label;
-    col.append(fill, Object.assign(document.createElement("span"), { className: "in-label", textContent: b.label }));
+    col.append(fill, el("span", { class: "in-label" }, b.label));
     if (b.count) col.addEventListener("click", () => setInsightFilter(insightPick(t.key, label, b.test)));
     bars.append(col);
   }
@@ -309,23 +309,23 @@ function insightChart(t, total) {
 function insightList(t, total) {
   const card = insightCard(t);
   const most = Math.max(1, ...t.bars.map((b) => b.count));
-  const list = Object.assign(document.createElement("div"), { className: "in-list" });
+  const list = el("div", { class: "in-list" });
   for (const b of t.bars.slice(0, 12)) {
-    const row = Object.assign(document.createElement("button"), { type: "button", className: "in-row" });
+    const row = el("button", { type: "button", class: "in-row" });
     row.title = `${b.count} photos (${Math.round((100 * b.count) / total)} %), ${b.kept} kept. Click to show them.`;
-    const track = Object.assign(document.createElement("span"), { className: "in-track" });
-    const fill = Object.assign(document.createElement("span"), { className: "in-fill" });
+    const track = el("span", { class: "in-track" });
+    const fill = el("span", { class: "in-fill" });
     fill.style.width = `${(b.count / most) * 100}%`;
-    const keep = Object.assign(document.createElement("span"), { className: "in-kept" });
+    const keep = el("span", { class: "in-kept" });
     keep.style.width = `${(b.kept / b.count) * 100}%`;
     fill.append(keep);
     track.append(fill);
-    row.append(Object.assign(document.createElement("span"), { className: "in-name", textContent: b.label }), track,
-      Object.assign(document.createElement("span"), { className: "in-n", textContent: b.count }));
+    row.append(el("span", { class: "in-name" }, b.label), track,
+      el("span", { class: "in-n" }, b.count));
     row.addEventListener("click", () => setInsightFilter(insightPick(t.key, b.label, b.test)));
     list.append(row);
   }
-  if (t.bars.length > 12) list.append(Object.assign(document.createElement("p"), { className: "hint", textContent: `and ${t.bars.length - 12} more` }));
+  if (t.bars.length > 12) list.append(el("p", { class: "hint" }, `and ${t.bars.length - 12} more`));
   card.append(list);
   insightFoot(card, t);
   return card;

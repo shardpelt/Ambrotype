@@ -314,7 +314,7 @@ pub(crate) fn render_many(
         amb_library::import::check_template(t)?;
     }
     let mut failed = Vec::new();
-    let mut taken: Vec<String> = Vec::new();
+    let mut taken = std::collections::HashSet::new();
     for (i, input) in inputs.iter().enumerate() {
         let input = Path::new(input);
         let stem = match template {
@@ -326,14 +326,7 @@ pub(crate) fn render_many(
                 .to_string(),
         };
         // Two photos with one name (a template without {name} or {seq}) both stay.
-        let mut name = stem.clone();
-        let mut n = 2;
-        while taken.contains(&name) {
-            name = format!("{stem}-{n}");
-            n += 1;
-        }
-        taken.push(name.clone());
-        let out = dir.join(format!("{name}.{ext}"));
+        let out = amb_ops::export_batch::unique_name(dir, &stem, ext, &mut taken, false);
         print!("[{}/{}] ", i + 1, inputs.len());
         let result = render(
             input,

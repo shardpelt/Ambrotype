@@ -138,31 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B22. One naming rule function for batch exports
-Tier: medium        Risk: low
-Why: three loops name the files of a batch export, each its own way: `unique_path` in `crates/amb-gui/src/library.rs` (skips names in the batch and on disk), `render_many` in `crates/amb-cli/src/render.rs` (names in the batch only) and `plan` in `crates/amb-ops/src/export_batch.rs` (names in the batch only, compared without case).
-Decided (was "Batch export through `export_batch`" under Needs a brief): the two front ends keep their own loops (`render_many` keeps printing `[i/n]` one photo at a time, which the tests read); they share one function for the name. Case is ignored everywhere, as `plan` does: today two photos whose names differ only by case (`A.nef`, `a.nef`) write one file over the other on a Mac or Windows. That is the only name that changes.
-Read first: `crates/amb-ops/src/export_batch.rs` (`plan`, the `taken` loop at its end), `unique_path` and `export_many` in `crates/amb-gui/src/library.rs`, `render_many` in `crates/amb-cli/src/render.rs`.
-Files: `crates/amb-ops/src/export_batch.rs`, `crates/amb-gui/src/library.rs`, `crates/amb-cli/src/render.rs`.
-Steps:
-1. In `export_batch.rs` add, after `plan`:
-   ```rust
-   /// `dir/<stem>.<ext>`, or `<stem>-2.<ext>`, `-3`, … when that name is
-   /// taken: by an earlier one of this batch (`taken`, compared without
-   /// case, so names stay apart on a Mac or Windows too) or, with
-   /// `on_disk`, by a file that is already there.
-   pub fn unique_name(dir: &Path, stem: &str, ext: &str, taken: &mut HashSet<String>, on_disk: bool) -> PathBuf
-   ```
-   It tries `n = 1, 2, …`; the key in `taken` is the path's `to_string_lossy().to_lowercase()`; it inserts the key it returns.
-2. `plan`: replace its `taken: HashMap<String, usize>` loop with one `HashSet` and `unique_name(dir, stem, ext, &mut taken, false)` per job, where `dir` and `stem` are the job's `out` parent and file stem. The names it gives must stay the same (its tests show it).
-3. Editor: delete `unique_path`; `export_many` keeps `let mut taken = HashSet::new();` and calls `amb_ops::export_batch::unique_name(dir, &stem, settings.format.extension(), &mut taken, true)`. Check first with `grep -rn unique_path crates` that nothing else calls it.
-4. `render_many`: replace its `taken: Vec<String>` and `while taken.contains(&name)` loop with `unique_name(dir, &stem, ext, &mut taken, false)`; `out` is what it returns.
-5. Tests in `export_batch.rs`: `unique_name` gives `x.jpg`, then `x-2.jpg` for `X` in the same batch, and with `on_disk` skips a file that exists.
-Don't: change the order photos are exported in or what `render_many` prints; change `ExportedMany`.
-Checks: the three cargo commands; `cargo test -p amb-ops -p amb-gui -p amb-cli`; the UI scripts (`browse.js` exports a selection).
-Done when: `grep -rn "fn unique_path\|while taken.contains" crates` prints nothing.
-Commit: `ops: one naming rule function for batch exports`. Why: "Three batch exporters named files by their own loops."
-
 ### B23. A small preview for photos without one, in `amb` too
 Tier: medium        Risk: low
 Why: `amb cleanup` and `amb duplicates` look at a photo through `amb_engine::raw::embedded_thumbnail`, which decodes JPEG, PNG and TIFF small and takes a raw's embedded preview. A raw with no preview (some DNGs, every DNG `amb testimage` writes) is skipped there, while the editor renders it small (`thumbnail` in `crates/amb-gui/src/folder.rs`). So the two find different things in the same folder.

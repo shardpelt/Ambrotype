@@ -16,7 +16,7 @@
 //! each develop a photo with their own lens and profile sources, and the
 //! editor's session keeps more (Upright, masks) than a bare file does.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -136,7 +136,7 @@ pub fn plan(sources: &[PathBuf], out_dir: &Path, options: &Options) -> Result<Ve
             return Err(format!("{}: no such file or folder", source.display()));
         }
     }
-    let mut taken: HashMap<String, usize> = HashMap::new();
+    let mut taken = HashSet::new();
     for j in &mut jobs {
         if same_file(&j.source, &j.out) {
             return Err(format!(
@@ -144,16 +144,39 @@ pub fn plan(sources: &[PathBuf], out_dir: &Path, options: &Options) -> Result<Ve
                 j.source.display()
             ));
         }
-        // Case-insensitive, so the names stay apart on a Mac or Windows too.
-        let key = j.out.to_string_lossy().to_lowercase();
-        let n = taken.entry(key).or_insert(0);
-        *n += 1;
-        if *n > 1 {
-            let stem = j.out.file_stem().unwrap_or_default().to_string_lossy();
-            j.out = j.out.with_file_name(format!("{stem}-{n}.{ext}"));
-        }
+        let dir = j.out.parent().unwrap_or(Path::new("")).to_path_buf();
+        let stem = j.out.file_stem().unwrap_or_default().to_string_lossy();
+        j.out = unique_name(&dir, &stem, ext, &mut taken, false);
     }
     Ok(jobs)
+}
+
+/// `dir/<stem>.<ext>`, or `<stem>-2.<ext>`, `-3`, … when that name is
+/// taken: by an earlier one of this batch (`taken`, compared without
+/// case, so names stay apart on a Mac or Windows too) or, with
+/// `on_disk`, by a file that is already there.
+pub fn unique_name(
+    dir: &Path,
+    stem: &str,
+    ext: &str,
+    taken: &mut HashSet<String>,
+    on_disk: bool,
+) -> PathBuf {
+    let mut n = 1;
+    loop {
+        let name = if n == 1 {
+            format!("{stem}.{ext}")
+        } else {
+            format!("{stem}-{n}.{ext}")
+        };
+        let p = dir.join(name);
+        let key = p.to_string_lossy().to_lowercase();
+        if !taken.contains(&key) && !(on_disk && p.exists()) {
+            taken.insert(key);
+            return p;
+        }
+        n += 1;
+    }
 }
 
 fn job(source: PathBuf, dir: PathBuf, ext: &str, folder: String) -> Job {
@@ -320,6 +343,28 @@ fn up_to_date(job: &Job) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn unique_name_keeps_names_apart() {
+        let dir = std::env::temp_dir().join(format!("amb-unique-name-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut taken = HashSet::new();
+        assert_eq!(
+            unique_name(&dir, "x", "jpg", &mut taken, false),
+            dir.join("x.jpg")
+        );
+        assert_eq!(
+            unique_name(&dir, "X", "jpg", &mut taken, false),
+            dir.join("X-2.jpg")
+        );
+        std::fs::write(dir.join("y.jpg"), "x").unwrap();
+        assert_eq!(
+            unique_name(&dir, "y", "jpg", &mut taken, true),
+            dir.join("y-2.jpg")
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     fn temp(name: &str) -> PathBuf {
         let d = std::env::temp_dir().join(format!("amb-batch-{name}-{}", std::process::id()));

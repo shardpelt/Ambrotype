@@ -261,25 +261,6 @@ pub fn paste_to_file(photo: &Path, commands: &[amb_protocol::Command]) -> Result
     .map_err(|e| format!("{}: {e}", photo.display()))
 }
 
-/// `dir/<name>.<ext>`, or `<name>-2.<ext>`, ... when that's taken (by an
-/// earlier file or one written in this batch).
-pub fn unique_path(dir: &Path, stem: &str, ext: &str, taken: &mut Vec<PathBuf>) -> PathBuf {
-    let mut n = 1;
-    loop {
-        let name = if n == 1 {
-            format!("{stem}.{ext}")
-        } else {
-            format!("{stem}-{n}.{ext}")
-        };
-        let p = dir.join(name);
-        if !p.exists() && !taken.contains(&p) {
-            taken.push(p.clone());
-            return p;
-        }
-        n += 1;
-    }
-}
-
 /// What a batch export did.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct ExportedMany {
@@ -299,7 +280,7 @@ pub fn export_many(
     lens: &crate::LensSources,
     progress: &mut dyn FnMut(usize, usize, &str),
 ) -> ExportedMany {
-    let mut taken = Vec::new();
+    let mut taken = std::collections::HashSet::new();
     let mut out = ExportedMany::default();
     for (i, path) in paths.iter().enumerate() {
         let p = Path::new(path);
@@ -319,7 +300,13 @@ pub fn export_many(
             Some(t) => amb_library::import::file_name(t, p, i as u32 + 1).unwrap_or_else(|_| own()),
             None => own(),
         };
-        let dest = unique_path(dir, &stem, settings.format.extension(), &mut taken);
+        let dest = amb_ops::export_batch::unique_name(
+            dir,
+            &stem,
+            settings.format.extension(),
+            &mut taken,
+            true,
+        );
         let result = crate::session::Session::open(p).and_then(|mut s| {
             let mut settings = settings.clone();
             if include_tags {
@@ -520,23 +507,6 @@ mod tests {
                 .iter()
                 .any(|g| g.name == "crop" && !g.default)
         );
-        let _ = std::fs::remove_dir_all(&dir);
-    }
-
-    #[test]
-    fn unique_names() {
-        let dir = temp("names");
-        std::fs::write(dir.join("a.jpg"), "x").unwrap();
-        let mut taken = Vec::new();
-        assert_eq!(
-            unique_path(&dir, "a", "jpg", &mut taken),
-            dir.join("a-2.jpg")
-        );
-        assert_eq!(
-            unique_path(&dir, "a", "jpg", &mut taken),
-            dir.join("a-3.jpg")
-        );
-        assert_eq!(unique_path(&dir, "b", "jpg", &mut taken), dir.join("b.jpg"));
         let _ = std::fs::remove_dir_all(&dir);
     }
 

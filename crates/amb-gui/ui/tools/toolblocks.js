@@ -69,13 +69,13 @@ function wireToolBlocks() {
   for (const [name, tools] of Object.entries(TOOL_BLOCKS)) {
     const box = $(`tools-${name}`);
     if (!box) continue;
-    box.replaceChildren(...tools.map((t) => {
-      const b = el("button", { type: "button", class: `tool-tile${t.big ? " big" : ""}`, title: t.hint });
-      b.dataset.tool = t.id;
-      b.append(el("strong", {}, t.label), el("span", {}, t.hint));
+    box.replaceChildren(...tools.map((tool) => {
+      const b = el("button", { type: "button", class: `tool-tile${tool.big ? " big" : ""}`, title: t(tool.hint) });
+      b.dataset.tool = tool.id;
+      b.append(el("strong", {}, t(tool.label)), el("span", {}, t(tool.hint)));
       b.addEventListener("click", () => {
-        if (!ui.info) return toast("Open a photo first.", true);
-        Promise.resolve(t.run()).catch(showError);
+        if (!ui.info) return toast(t("Open a photo first."), true);
+        Promise.resolve(tool.run()).catch(showError);
       });
       return b;
     }));

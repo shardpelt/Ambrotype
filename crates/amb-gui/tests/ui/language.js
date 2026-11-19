@@ -7,7 +7,7 @@
 
 // The test's own `t` hides the app's, so the app's is `tr` here.
 const tr = window.t;
-const UNMARKED_LIMIT = 651;
+const UNMARKED_LIMIT = 603;
 
 await t.step("t and plural give English with no language", async () => {
   t.expect(lang.code === "en" && lang.texts === null, "English to start");

@@ -70,14 +70,14 @@ function toolEffect(tool) {
 
 // The tools block: the task on screen's buttons.
 function renderTaskTools() {
-  const t = TASKS.find((x) => x.id === currentTask());
-  const tools = t?.tools ?? [];
-  ($("tools-title").querySelector(".fold-head") ?? $("tools-title")).textContent = t?.label ? `${t.label} tools` : "Tools";
+  const task = TASKS.find((x) => x.id === currentTask());
+  const tools = task?.tools ?? [];
+  ($("tools-title").querySelector(".fold-head") ?? $("tools-title")).textContent = task?.label ? t("{task} tools", { task: t(task.label) }) : t("Tools");
   $("tools-task").replaceChildren(...tools.map((tool, i) => {
-    const b = el("button", { type: "button", class: `tool-tile${tool.big ? " big" : ""}`, title: tool.hint ?? "" });
+    const b = el("button", { type: "button", class: `tool-tile${tool.big ? " big" : ""}`, title: tool.hint ? t(tool.hint) : "" });
     b.dataset.tool = String(i);
-    b.append(el("strong", {}, tool.label));
-    if (tool.hint) b.append(el("span", {}, tool.hint));
+    b.append(el("strong", {}, t(tool.label)));
+    if (tool.hint) b.append(el("span", {}, t(tool.hint)));
     b.addEventListener("click", () => {
       hoverPreview(null);
       Promise.resolve(runTaskTool(tool)).then(() => { delete tool.seed; }).catch(showError);
@@ -184,11 +184,12 @@ function wireTasks() {
   // The collage maker's tab is lit while it's open.
   for (const ev of ["close", "cancel"]) $("collage-dialog").addEventListener(ev, () => setTimeout(renderTasks));
   const bar = $("task-bar");
-  bar.replaceChildren(navButtons(), ...TASKS.map((t, i) => {
-    const b = el("button", { type: "button", role: "tab" }, t.label);
-    b.dataset.task = t.id;
-    b.setAttribute("aria-label", i < 9 ? `${t.label}: ${t.hint} (${keyLabel(`Ctrl+Alt+${i + 1}`)})` : `${t.label}: ${t.hint}`);
-    b.addEventListener("click", () => switchTask(t.id));
+  bar.replaceChildren(navButtons(), ...TASKS.map((task, i) => {
+    const b = el("button", { type: "button", role: "tab" }, t(task.label));
+    b.dataset.task = task.id;
+    const about = `${t(task.label)}: ${t(task.hint)}`;
+    b.setAttribute("aria-label", i < 9 ? `${about} (${keyLabel(`Ctrl+Alt+${i + 1}`)})` : about);
+    b.addEventListener("click", () => switchTask(task.id));
     return b;
   }));
   wireTaskSketches();

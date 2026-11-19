@@ -73,7 +73,7 @@ T=/tmp/ui-check && rm -rf $T && mkdir -p $T/more
 target/debug/amb testimage colorchecker $T/test.dng
 target/debug/amb testimage ramp $T/more/other.dng
 target/debug/amb lrcat sample $T/more/Sample.lrcat $T/more/other.dng
-export XDG_CONFIG_HOME=$T/cfg XDG_CACHE_HOME=$T/cache XDG_DATA_HOME=$T/data
+export XDG_CONFIG_HOME=$T/.cfg XDG_CACHE_HOME=$T/.cache XDG_DATA_HOME=$T/.data
 for t in crates/amb-gui/tests/ui/*.js; do
   xvfb-run -a -s "-screen 0 1600x1000x24" target/debug/ambrotype --ui-test "$t" $T/test.dng || echo "FAILED: $t"
 done
@@ -162,7 +162,7 @@ Still not now ([design/structure.md](design/structure.md) says why). Trigger: th
 
 Bugs or oddities noticed during a task, to look at separately:
 
-- Open 2026-11-19: CI's UI step has failed on `main` since at least afdaf9e, at its first script: `batch-export.js` "again with skip on does nothing new" exports 1 photo where 2 should be skipped. CI stops there, so the scripts after it have not run in CI. Run in the same order with one settings folder (as CI does), `language.js` also fails: 655 texts on screen not through the table (limit 651), among them "Trippy" and "Auto edit"; alone it passes.
+- Fixed 2026-11-19: CI's UI step failed on `main` from afdaf9e at `batch-export.js` "again with skip on": the config, cache and data folders sat inside the test photo's folder, so the thumbnail made in the first run was a new photo in the second. They are hidden folders now (`.cfg`, `.cache`, `.data`), which folder walks skip. Then `language.js`, run after the others, counted the task tabs and tool tiles, which were not through `t()`; they are now (limit 603).
 - Fixed 2026-11-09: two quick rating or flag keys in the viewer could show the older values (each answer carries the photo's whole info); every info write now goes through `setInfo` in `core.js`, one at a time.
 - Fixed 2026-11-09: tests that failed now and then: two export tests wrote the same JPEG XL files at once; two UI steps waited less than the work before them (Watch an edit's ghost cursor, the photo's fit after a resize).
 - Fixed 2026-11-09: "Save to…" for a preset held `preset_dirs` while reading the settings path, the opposite order to `save_config`; two threads could each wait for the other. It reads the path first now.

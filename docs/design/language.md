@@ -62,7 +62,7 @@ File names, preset names, setting names (`Exposure2012`), `amb`'s output, the do
 - Markup text is matched per text node, a title, placeholder or aria-label by its text, whitespace folded. `translateDom` keeps what it showed, so a switch of language (or back to English) starts from the English; a text a script set since counts as the English.
 - Plural forms are listed in CLDR's order (zero, one, two, few, many, other), not the order `Intl` gives, which differs between webviews. In `zz` each form is marked on its own.
 - A language that fails to load leaves the app in English (`showError`); the editor still starts. Scripts, styles, `textarea`, `code` and `kbd` are left alone.
-- The table reads `label:` and `hint:` in `core/keys.js` and `core/menu.js` as data lists (`t(action.label)` comes with the sweep).
+- The table reads `label:` and `hint:` in `core/keys.js`, `core/menu.js`, `core/tasks.js` and `tools/toolblocks.js` as data lists (`t(action.label)` comes with the sweep).
 - The `zz` count is `UNMARKED_LIMIT` in `tests/ui/language.js` (not `checks.rs`: it needs the running editor). Fixing near-duplicates is not done yet; `python3 tools/lang-table.py` lists them.
 
 ## In four steps

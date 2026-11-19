@@ -21,7 +21,7 @@ UI = os.path.join(ROOT, "crates/amb-gui/ui")
 OUT = os.path.join(ROOT, "crates/amb-gui/data/lang/keys.json")
 
 # Scripts whose lists of words are data: `label: "…"` and `hint: "…"` there are shown through t().
-LIST_FILES = {"core/keys.js", "core/menu.js"}
+LIST_FILES = {"core/keys.js", "core/menu.js", "core/tasks.js", "tools/toolblocks.js"}
 LIST_FIELDS = ("label", "hint")
 
 STRING = r'"((?:\\.|[^"\\\n])*)"|\'((?:\\.|[^\'\\\n])*)\'|`((?:\\.|[^`\\$])*)`'

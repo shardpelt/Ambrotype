@@ -45,7 +45,7 @@ function linkTerms(text, skip = "") {
     if (!t || seen.has(t.id) || seen.has(t.term.toLowerCase())) continue;
     seen.add(t.id);
     out.append(text.slice(at, m.index));
-    const a = Object.assign(document.createElement("span"), { className: "term", textContent: m[0], tabIndex: 0 });
+    const a = el("span", { class: "term", tabindex: 0 }, m[0]);
     a.dataset.term = t.id;
     a.setAttribute("role", "link");
     out.append(a);
@@ -114,7 +114,7 @@ async function basicsFlow(at = null) {
     const term = !chapter && d.byId.get(id);
     page.replaceChildren();
     if (chapter) {
-      page.append(Object.assign(document.createElement("h3"), { textContent: chapter.title }));
+      page.append(el("h3", {}, chapter.title));
       const fig = chapter.figure && figure(chapter.figure);
       if (fig) page.append(fig);
       for (const text of chapter.body) {
@@ -125,13 +125,13 @@ async function basicsFlow(at = null) {
       const i = d.guide.indexOf(chapter);
       const next = d.guide[i + 1];
       if (next) {
-        const b = Object.assign(document.createElement("button"), { type: "button", textContent: `Next: ${next.title.replace(/^\d+\.\s*/, "")} →` });
+        const b = el("button", { type: "button" }, `Next: ${next.title.replace(/^\d+\.\s*/, "")} →`);
         b.addEventListener("click", () => show(next.id));
         page.append(b);
       }
     } else if (term) {
-      page.append(Object.assign(document.createElement("h3"), { textContent: term.term }));
-      const short = Object.assign(document.createElement("p"), { className: "basics-short" });
+      page.append(el("h3", {}, term.term));
+      const short = el("p", { class: "basics-short" });
       short.append(linkTerms(term.short, term.term));
       const body = document.createElement("p");
       body.append(linkTerms(term.body, term.term));
@@ -146,9 +146,9 @@ async function basicsFlow(at = null) {
   };
   nav.replaceChildren();
   const section = (title, items) => {
-    nav.append(Object.assign(document.createElement("h4"), { textContent: title }));
+    nav.append(el("h4", {}, title));
     for (const [id, text] of items) {
-      const b = Object.assign(document.createElement("button"), { type: "button", textContent: text });
+      const b = el("button", { type: "button" }, text);
       b.dataset.id = id;
       b.addEventListener("click", () => show(id));
       nav.append(b);

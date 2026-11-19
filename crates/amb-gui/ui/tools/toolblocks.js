@@ -70,9 +70,9 @@ function wireToolBlocks() {
     const box = $(`tools-${name}`);
     if (!box) continue;
     box.replaceChildren(...tools.map((t) => {
-      const b = Object.assign(document.createElement("button"), { type: "button", className: `tool-tile${t.big ? " big" : ""}`, title: t.hint });
+      const b = el("button", { type: "button", class: `tool-tile${t.big ? " big" : ""}`, title: t.hint });
       b.dataset.tool = t.id;
-      b.append(Object.assign(document.createElement("strong"), { textContent: t.label }), Object.assign(document.createElement("span"), { textContent: t.hint }));
+      b.append(el("strong", {}, t.label), el("span", {}, t.hint));
       b.addEventListener("click", () => {
         if (!ui.info) return toast("Open a photo first.", true);
         Promise.resolve(t.run()).catch(showError);

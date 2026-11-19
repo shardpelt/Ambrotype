@@ -138,15 +138,165 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
+### B22. One naming rule function for batch exports
+Tier: medium        Risk: low
+Why: three loops name the files of a batch export, each its own way: `unique_path` in `crates/amb-gui/src/library.rs` (skips names in the batch and on disk), `render_many` in `crates/amb-cli/src/render.rs` (names in the batch only) and `plan` in `crates/amb-ops/src/export_batch.rs` (names in the batch only, compared without case).
+Decided (was "Batch export through `export_batch`" under Needs a brief): the two front ends keep their own loops (`render_many` keeps printing `[i/n]` one photo at a time, which the tests read); they share one function for the name. Case is ignored everywhere, as `plan` does: today two photos whose names differ only by case (`A.nef`, `a.nef`) write one file over the other on a Mac or Windows. That is the only name that changes.
+Read first: `crates/amb-ops/src/export_batch.rs` (`plan`, the `taken` loop at its end), `unique_path` and `export_many` in `crates/amb-gui/src/library.rs`, `render_many` in `crates/amb-cli/src/render.rs`.
+Files: `crates/amb-ops/src/export_batch.rs`, `crates/amb-gui/src/library.rs`, `crates/amb-cli/src/render.rs`.
+Steps:
+1. In `export_batch.rs` add, after `plan`:
+   ```rust
+   /// `dir/<stem>.<ext>`, or `<stem>-2.<ext>`, `-3`, … when that name is
+   /// taken: by an earlier one of this batch (`taken`, compared without
+   /// case, so names stay apart on a Mac or Windows too) or, with
+   /// `on_disk`, by a file that is already there.
+   pub fn unique_name(dir: &Path, stem: &str, ext: &str, taken: &mut HashSet<String>, on_disk: bool) -> PathBuf
+   ```
+   It tries `n = 1, 2, …`; the key in `taken` is the path's `to_string_lossy().to_lowercase()`; it inserts the key it returns.
+2. `plan`: replace its `taken: HashMap<String, usize>` loop with one `HashSet` and `unique_name(dir, stem, ext, &mut taken, false)` per job, where `dir` and `stem` are the job's `out` parent and file stem. The names it gives must stay the same (its tests show it).
+3. Editor: delete `unique_path`; `export_many` keeps `let mut taken = HashSet::new();` and calls `amb_ops::export_batch::unique_name(dir, &stem, settings.format.extension(), &mut taken, true)`. Check first with `grep -rn unique_path crates` that nothing else calls it.
+4. `render_many`: replace its `taken: Vec<String>` and `while taken.contains(&name)` loop with `unique_name(dir, &stem, ext, &mut taken, false)`; `out` is what it returns.
+5. Tests in `export_batch.rs`: `unique_name` gives `x.jpg`, then `x-2.jpg` for `X` in the same batch, and with `on_disk` skips a file that exists.
+Don't: change the order photos are exported in or what `render_many` prints; change `ExportedMany`.
+Checks: the three cargo commands; `cargo test -p amb-ops -p amb-gui -p amb-cli`; the UI scripts (`browse.js` exports a selection).
+Done when: `grep -rn "fn unique_path\|while taken.contains" crates` prints nothing.
+Commit: `ops: one naming rule function for batch exports`. Why: "Three batch exporters named files by their own loops."
+
+### B23. A small preview for photos without one, in `amb` too
+Tier: medium        Risk: low
+Why: `amb cleanup` and `amb duplicates` look at a photo through `amb_engine::raw::embedded_thumbnail`, which decodes JPEG, PNG and TIFF small and takes a raw's embedded preview. A raw with no preview (some DNGs, every DNG `amb testimage` writes) is skipped there, while the editor renders it small (`thumbnail` in `crates/amb-gui/src/folder.rs`). So the two find different things in the same folder.
+Decided (was "The editor's small preview, shared with `amb`" under Needs a brief): the fallback is `amb_library::contact::small` (a photo developed small with its own edit), which `amb-library` already has; `amb` keeps no cache (the case is rare, and every run decodes only those raws); the editor's `thumbnail` stays as it is (it caches the JPEGs it shows). JPEG, PNG and TIFF photos behave the same in both today: no change there.
+Read first: `crates/amb-library/src/contact.rs` (`small`), `crates/amb-cli/src/cleanup.rs` (lines 45 to 55), `crates/amb-cli/src/organise.rs` (`duplicates`, the `thumb` closure), `crates/amb-ops/src/object/mod.rs` (`frame`: `to_srgb` of a render).
+Files: `crates/amb-library/src/contact.rs`, `crates/amb-cli/src/cleanup.rs`, `crates/amb-cli/src/organise.rs`, `crates/amb-cli/tests/library.rs`.
+Steps:
+1. In `contact.rs`, after `small`:
+   ```rust
+   /// A preview of `photo` about `edge` pixels on its long side, upright, in
+   /// sRGB: the camera's embedded one (a rendered image decoded small), or
+   /// when the file has none, the photo developed small with its edit
+   /// ([`small`]). `None` when neither can be read.
+   pub fn preview(photo: &Path, edge: u32) -> Option<image::RgbImage>
+   ```
+   Body: `embedded_thumbnail(photo, edge).ok().flatten()` or else `small(photo, edge as usize)`, converted with `amb_engine::output::to_srgb` to `u8` (`(v * 255.0).round().clamp(0.0, 255.0) as u8`) into `RgbImage::from_raw(w, h, bytes)`.
+2. `cleanup.rs`: `small` and `big` call `amb_library::contact::preview(p, 256)` and `(p, 1280)`.
+3. `organise.rs` `duplicates`: `thumb` calls `amb_library::contact::preview(p, 256)`.
+4. A test in `crates/amb-cli/tests/library.rs`, with the `Lib` helper there (its three DNGs have no embedded preview): `amb cleanup p --json` lists them with what it found about them (today it skips them). Read the JSON fields `amb cleanup --json` prints in `crates/amb-cli/src/cleanup.rs` and assert the three photos are looked at (not in a "no preview" list or count).
+Don't: change the editor's `folder::thumbnail`; add a cache to `amb`.
+Checks: the three cargo commands; `cargo test -p amb-library -p amb-cli`.
+Done when: `grep -n "embedded_thumbnail" crates/amb-cli/src/cleanup.rs crates/amb-cli/src/organise.rs` prints nothing.
+Commit: `cli: cleanup and duplicates see raws without a preview too`. Why: "amb skipped what the editor looked at."
+
+### B24. `amb` tests for move and batch render
+Tier: medium        Risk: low
+Why: of the largest files without unit tests, `crates/amb-cli/src/organise.rs` is mostly covered end to end (`crates/amb-cli/tests/library.rs`: tag, duplicates, rename, sort, trash, keywords, collections, missing). Not covered: `amb move`, and in `crates/amb-cli/src/render.rs` the batch naming (`render_many`, `--name`) and the export options (`export_settings`).
+Decided (was part of "Tests for the largest files that have none"): test through the `amb` binary, as `library.rs` does, on `amb testimage` DNGs (no capture time or embedded preview needed); no unit tests of private functions.
+Read first: `crates/amb-cli/tests/library.rs` (the `Lib` helper, `duplicates_rename_sort_and_trash`), `render_many` and `export_settings` in `crates/amb-cli/src/render.rs`, `amb help render` (`cargo run -p amb-cli -- help render`).
+Files: `crates/amb-cli/tests/library.rs`, `crates/amb-cli/tests/render.rs` (new; copy `Lib`'s `amb` runner into it, it is ten lines).
+Steps:
+1. `library.rs`: `move_takes_the_sidecar_along`: tag `p/IMG_2.dng` with a rating (so it has a sidecar), `amb move p/IMG_2.dng --to q`, then `q/IMG_2.dng` and its sidecar exist, `p/IMG_2.dng` does not, and `amb info q/IMG_2.dng --json` shows the rating.
+2. `render.rs`: `a_batch_names_each_photo_once`: three copies of a test DNG; `amb render a.dng b.dng c.dng --out-dir out --name shot` writes `shot.jpg`, `shot-2.jpg`, `shot-3.jpg` (read the template rules in `amb help render` first; use a template without `{name}` or `{seq}`), and stdout holds `[1/3]` to `[3/3]`.
+3. `render.rs`: `export_options_shape_the_file`: `amb render a.dng out.jpg --long-edge 400` gives a JPEG whose long side is 400 (read it with `image::image_dimensions`); `--quality 40` gives a smaller file than `--quality 95`.
+4. Don't write tests for the editor's commands here: see B25.
+Don't: change `amb`'s output or flags.
+Checks: the three cargo commands; `cargo test -p amb-cli --test library --test render`.
+Done when: the three tests pass, and each fails when its check is broken once by hand (try it, undo).
+Commit: `cli: tests for move and batch render`. Why: "Two commands had no test."
+
+### B25. Unit tests for the editor's export settings
+Tier: small        Risk: low
+Why: `export_settings` in `crates/amb-gui/src/commands/export.rs` turns the Export dialog's options into `amb_export::ExportSettings` and has no test; it is a plain function. The editor's other large command files are thin wrappers over `amb-library` and `amb-ops`, which have their own tests, and the UI scripts drive them.
+Decided (was part of "Tests for the largest files that have none"): no Tauri mock runtime and no `AppState` in tests: only plain functions get unit tests in the editor.
+Files: `crates/amb-gui/src/commands/export.rs`.
+Steps:
+1. Read `ExportOptions` (its fields and `Deserialize`) and `export_settings`.
+2. Add `#[cfg(test)] mod tests` at the end of the file with: a JPEG at quality 80 maps to `Format::Jpeg` and quality 80; a resize option maps to the `Resize` it names; an unknown format is an error. Build `ExportOptions` with `serde_json::from_value(json!({...}))` using the field names the page sends (read them in `crates/amb-gui/ui/dialogs/export.js`).
+Checks: `cargo test -p amb-gui export_settings`; the three cargo commands.
+Done when: the tests pass.
+Commit: `gui: tests for the export settings`. Why: "A plain function had no test."
+
+### B26. `export_one` in steps
+Tier: medium        Risk: medium
+Why: `export_one` in `crates/amb-export/src/lib.rs` is 275 lines in one function: checks, the pixels, finishing touches, encoding, metadata.
+Decided (was part of "Splitting the long functions"): four private helpers in `lib.rs`, in this order, each with a one-line doc comment; `export_one` calls them in turn. Proof: the export tests compare the bytes written; their count and results don't change.
+Read first: `export_one` (find it with `grep -n "fn export_one" crates/amb-export/src/lib.rs`).
+Files: `crates/amb-export/src/lib.rs`.
+Steps:
+1. `fn check_supported(s: &ExportSettings, depth: BitDepth) -> Result<(), Error>`: the three checks at the top (bit depth, JPEG XL colour space, AVIF colour).
+2. `fn finish(out: &mut …, s: &ExportSettings, plan: …)`: the blocks after the colour conversion: sharpening, the watermark, the frame (the three blocks from `if let Some((media, amount)) = s.sharpen` to the end of the border block), unchanged and in that order. Its parameters are what those blocks read; the compiler lists them.
+3. `fn encode(…) -> Result<Vec<u8>, Error>`: the `let bytes = match (s.format, depth) { … }` match, unchanged. Inside it, the JPEG arm's binary search for `max_bytes` becomes `fn jpeg_within(data: &[u8], w: usize, h: usize, quality: u8, s: &ExportSettings, icc: &[u8], exif: Option<&[u8]>, limit: u64) -> Result<Vec<u8>, Error>`.
+4. What is left in `export_one` (the plan and pixels, the metadata and the write) stays there.
+Don't: change any value, order of operations or byte written.
+Checks: `cargo test -p amb-export` (same count, all pass); the three cargo commands; `cargo test -p amb-cli` (renders).
+Done when: `export_one` is under 150 lines.
+Commit: `export: export_one in steps`. Why: "275 lines in one function."
+
+### B27. `schema::panels` one function per panel
+Tier: small        Risk: low
+Why: `panels` in `crates/amb-gui/src/schema.rs` is 311 lines: eleven `Panel { … }` literals in one `vec!`.
+Decided: one private function per panel, named after its `id`: `basic_panel`, `tone_curve_panel`, `color_mixer_panel`, `black_white_panel`, `color_grading_panel`, `detail_panel`, `lens_panel`, `transform_panel`, `effects_panel`, `calibration_panel`, `negative_panel`, each returning its `Panel` literal unchanged; `panels` becomes the `vec!` of their calls in the same order. A literal that uses a local of `panels` takes it as a parameter.
+Files: `crates/amb-gui/src/schema.rs`.
+Steps:
+1. Before changing anything, add a test that writes `serde_json::to_string_pretty(&panels())` to a temporary file, and run it once to keep that file (outside the repo).
+2. Make the split.
+3. Compare the new output with the kept file: identical. Then delete that test (it was only for this change).
+Checks: `cargo test -p amb-gui`; the three cargo commands; the UI scripts (`smoke.js` opens every panel).
+Done when: `panels` is under 30 lines and its JSON is byte-identical.
+Commit: `gui: one function per panel in the schema`. Why: "311 lines in one function."
+
+### B28. The long arms of `state::plan`
+Tier: medium        Risk: medium
+Why: `plan` in `crates/amb-protocol/src/state/plan.rs` is 237 lines: a `match` on the command whose arms for `ApplyPreset` (about 85 lines), `AdjustParam` (about 33) and `AddSpot` (about 24) hold most of it.
+Decided: those three arms move to private functions in the same file, `plan_preset`, `plan_adjust` and `plan_add_spot`; the arm becomes one call. Each takes the arm's bindings and the locals it uses (the compiler lists them) and returns what the arm evaluated to (`Result<…>` with `?` inside as now). The other arms stay.
+Files: `crates/amb-protocol/src/state/plan.rs`.
+Checks: `cargo test -p amb-protocol` (same count); the three cargo commands; `cargo test -p amb-cli` (edits through commands).
+Done when: `plan` is under 120 lines.
+Commit: `protocol: the long arms of plan in their own functions`. Why: "237 lines in one function."
+
+### B29. `net::step` one function per operation
+Tier: medium        Risk: medium
+Why: `step` in `crates/amb-ai/src/net/plan.rs` is 250 lines: a chain of `if let Some(x) = op.downcast_ref::<T>() { … }` blocks, one per ONNX operation.
+Decided: each block longer than 15 lines moves to a private function `step_<op>` (`step_axis`, `step_slice`, `step_concat`, `step_binary`, `step_element_wise`, `step_reduce`, `step_einsum`, `step_conv`, `step_deconv`, …, named after the type it downcasts to) returning `Option<Step>`; in `step` the block becomes `if let Some(x) = op.downcast_ref::<T>() { return step_x(x, …); }`, in the same order (the order decides which matches first). Shorter blocks stay. Parameters: what the block reads (`model`, `node`, `ins`, `shape`, …; the compiler lists them).
+Files: `crates/amb-ai/src/net/plan.rs`.
+Checks: `cargo test -p amb-ai` (the net tests compare the GPU plan with tract's CPU run); the three cargo commands.
+Done when: `step` is under 100 lines.
+Commit: `ai: one function per operation in net::step`. Why: "250 lines in one function."
+
+### B30. UI tests for dragging a crop and a curve point
+Tier: medium        Risk: low
+Why: the crop tool's and the tone curve's factories (`create` in `crates/amb-gui/ui/tools/crop.js`, 408 lines, and in `crates/amb-gui/ui/develop/curve.js`, 364) are to be split (B31), and no UI step drags either, so a split could break them unseen.
+Files: `crates/amb-gui/tests/ui/crop-curve.js` (new). Read: `crates/amb-gui/tests/ui/photo-row.js` (how a step sends pointer events: `PointerEvent` with `clientX`, `clientY`, `pointerId`, `buttons`), `crates/amb-gui/ui/tools/crop.js`, `crates/amb-gui/ui/develop/curve.js`.
+Steps:
+1. Script header as the others; first step: the photo opens (copy `smoke.js`'s first step).
+2. "dragging the crop's corner makes the crop smaller, as one step": open the crop tool (`t.key("R")`), find the bottom-right handle element in `crop.js`'s markup, drag it 100 px up and left with pointer events, leave the tool (`t.key("Enter")`), expect `t.setting("CropRight") < 1` and one more history step.
+3. "dragging a curve point changes the curve, as one step": open the Tone Curve panel's point curve, press on the curve's middle and drag 30 px up, expect the curve setting (read its name in `curve.js`: the parametric or point curve tag it writes) to differ from before and one more history step; then `t.key("Ctrl+Z")`.
+Don't: change `crop.js` or `curve.js`.
+Checks: the UI scripts (the new one passes alone).
+Done when: both steps pass, and fail when the drag is not sent (try it once, undo).
+Commit: `tests: dragging a crop and a curve point`. Why: "B31 needs these first."
+
+### B31. The crop and curve factories as state and functions
+Tier: large        Risk: high
+Why: `create` in `crates/amb-gui/ui/tools/crop.js` (408 lines) and in `crates/amb-gui/ui/develop/curve.js` (364) are closures whose inner functions share local `let`s, so none can be read or tested alone.
+Decided: after B30. Per factory, its mutable locals become one state object at its top (`const cs = { … }` in crop.js, `const cv = { … }` in curve.js; every read and write of a local becomes `cs.x`). Then inner functions that touch only that object and their arguments move out of `create` to top-level functions named with the file's prefix (`cropHandleAt(cs, x, y)`, `curvePointNear(cv, x, y)`), taking the object. Event wiring stays in `create`. Two commits per file: the state object, then the moves. Judgement left to the builder: which helpers move (only those whose behaviour B30 or an existing UI step exercises).
+Files: `crates/amb-gui/ui/tools/crop.js`, `crates/amb-gui/ui/develop/curve.js`.
+Checks: the UI scripts after each commit (`crop-curve.js`, `smoke.js`); by hand: crop, straighten, aspect, curve points and channels.
+Done when: each `create` is under 150 lines.
+Commits: `ui: crop.js state in one object`; `ui: crop.js helpers out of create`; the same for curve.js.
+
+### B32. `looksFlow`, `settingsFlow`, `makeWheel` and `wireMasks` in parts
+Tier: large        Risk: medium
+Why: the next longest UI functions after B31, each a closure over its dialog's or widget's state.
+Decided: the B31 method, one function per commit, in this order (no drag needed, so existing UI steps are the proof): `settingsFlow` (`crates/amb-gui/ui/core/keys.js`; `dialogs.js` opens it), `looksFlow` (Appearance; `smoke.js` opens it on every task), `wireMasks` (`smoke.js` uses masks), `makeWheel` (colour grading wheels; add a step that drags a wheel's point first, as B30 does).
+Checks: the UI scripts after each commit.
+Done when: each is under 150 lines.
+Commits: `ui: <name> in parts`, one per function.
+
 ### Needs a brief
 
 A large model answers each question and writes the cards, then moves them above. Each is here because a builder would have to choose.
 
-- **The editor's small preview, shared with `amb` (was B12d).** `thumbnail` in `crates/amb-gui/src/folder.rs` returns the camera's embedded preview, or when the file has none renders a small picture through the editor's `Session`, and caches the JPEG in the app's cache folder. `amb cleanup`, `amb duplicates` and `amb convert` (`crates/amb-cli/src/cleanup.rs`, `organise.rs`, `convert.rs`) read the embedded preview only, so on JPEG, PNG and TIFF photos (no embedded preview) they skip the tests the editor runs: a behaviour difference to check first by running both on a folder of JPEGs. Questions: (1) Which render does the fallback use, given that `amb-library` cannot depend on the editor's `Session`: a new small-preview function in `amb-ops` or `amb-engine`, which is also the first step of R7? (2) Where does `amb` keep its cache (the editor uses Tauri's app cache folder), and with what key (the editor's key is path, size, mtime and orientation)? (3) Do `amb cleanup` and `amb duplicates` start rendering previews for photos that have none (slower, and they would then find things they did not before), or does the editor stop doing it?
-- **Tests for the largest files that have none.** `crates/amb-cli/src/organise.rs` (710 lines), `crates/amb-cli/src/render.rs` (542), `crates/amb-gui/src/commands/{presets,catalog,batch,export}.rs` (about 600 each) have no unit tests; the UI scripts cover only some of the commands. Questions: (1) In which order, and which behaviour of each is worth a test (the ones that lost data or looked wrong before: renaming and sorting in `organise.rs`, the export naming in `export.rs`)? (2) How is a photo faked: `amb_testkit::dng::write` with `amb_testkit::patterns::generate("ramp")` is what `crates/amb-library` and `crates/amb-gui/src/library.rs` tests use; is that enough, or does a test need a raw with a capture time or an embedded preview? (3) How is the editor's state faked: can `AppState` be built in a test, and can a command that takes a `tauri::AppHandle` be run with Tauri's mock runtime (`tauri::test`, which may need a feature and a dev-dependency: ask the owner), or must the logic move out of the command first (as B12a does)?
-- **Splitting the long functions.** `export_one` (275 lines, `crates/amb-export/src/lib.rs`), `schema::panels` (311, `crates/amb-gui/src/schema.rs`), `state::plan` (237, `crates/amb-protocol/src/state/plan.rs`), `net::step` (250, `crates/amb-ai/src/net/plan.rs`), and the UI factories `create` in `crates/amb-gui/ui/tools/crop.js` (408) and in `crates/amb-gui/ui/develop/curve.js` (364), then `looksFlow`, `settingsFlow`, `makeWheel`, `wireMasks`. These are long matches whose order matters (a mistake changes output silently) or closures that share local state. Questions: for each, where the case boundaries go (per format, per panel group, per command, per op; for a UI factory, which state becomes an explicit object), whether helper signatures stay private, and which test proves the output is byte-identical before and after (export tests compare bytes; the UI factories have no UI test for dragging a crop or a curve: write that first?).
-- **Batch export through `amb_ops::export_batch` (was B12c, stopped 2026-11-19).** The editor's `export_many` (`crates/amb-gui/src/library.rs`) and `amb render`'s `render_many` (`crates/amb-cli/src/render.rs`) each name and loop. `export_batch::plan` has neither a name template (both take one: the editor's `name_template`, `amb render --name`) nor the editor's rule of skipping names that already exist on disk (it only numbers names taken within the batch), and `run` exports three at a time where `render_many` prints `[i/n]` lines in order, which `crates/amb-cli/tests/` check. Questions: (1) Does `export_batch::Options` gain `name: Option<String>` (an `import::file_name` template) and `unique_on_disk: bool`, or do the two front ends keep their loops and share only a `unique_name` helper? (2) May `amb render` print its lines as photos finish (three at a time), or must it keep one at a time?
-- **The Rust half of the built-in plugin table.** A built-in plugin is added in `BUILTIN` and `native.rs` (`crates/amb-plugin/src`), the workspace members in the root `Cargo.toml`, and the `amb-plugin` dependencies: eight edit points. Question: one macro table (`builtin_plugins! { "kaleidoscope" => amb_plugin_kaleidoscope::kaleidoscope, ... }`) that makes `BUILTIN` and the native dispatch, or keep them separate and rely on card B18's test that checks `BUILTIN` against the `plugins/` folder; and whether a test should check that each `plugin.wasm` is newer than its `src/`.
+Nothing open (2026-11-19). Decided without a card: the Rust half of the built-in plugin table stays as it is (`BUILTIN`, `native.rs` and the workspace members): a macro would hide the native fast paths, which only some effect plugins have, and `crates/amb-plugin/tests/builtin.rs` now catches a plugin folder missing from `BUILTIN`. No test that `plugin.wasm` is newer than its `src/`: git sets every file's time at checkout, so it would pass or fail by chance.
 
 ## Structural steps (the owner says go first)
 

@@ -138,21 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B3. Split `crates/amb-export/src/embed.rs`
-Tier: medium        Risk: medium
-Why: 932 production lines; the AVIF and JPEG XL containers are 600 lines of box handling.
-Files: `crates/amb-export/src/embed.rs` to `crates/amb-export/src/embed/{mod,bmff,avif,jxl,tests}.rs`; `crates/amb-cli/tests/code_size.rs`.
-Steps:
-1. `mod.rs` keeps the module doc and `use crate::Format; use crate::exif::Tags;`, then `escape`, `xmp_packet`, `iptc_app13`, `jpeg_segment`, `embed_jpeg`, `crc32`, `embed_png`, `embed_tiff`, `tiff_with_entries`, `embed_webp` and `embed` (the dispatcher). Declares `mod bmff; mod avif; mod jxl;`.
-2. `bmff.rs` (the box format AVIF and JPEG XL share): `Bmff`, `boxes`, `read_be`, `push_be`, `make_box`. All `pub(super)`.
-3. `avif.rs`: `grown_iloc`, `Meta` and its `impl`, `embed_avif`, `Bits` and its `impl`, `av1_colour_bits`, `av1_set_colour`, `item_extents`, `avif_set_colour`, `avif_colour_box`. `embed_avif` is `pub(super)`; the others private to the file (the compiler says if not).
-4. `jxl.rs`: `JXL_SIGNATURE`, `jxl_with_boxes` (`pub(super)`).
-5. Tests to `tests.rs`.
-Don't: change bytes written.
-Checks: as above; `cargo test -p amb-export` (every container has a test).
-Done when: `embed.rs` is gone and no part passes 800.
-Commit: `export: split embed.rs by container`. Why: "It was past the size budget."
-
 ### B4. Split `crates/amb-ops/src/object.rs`
 Tier: medium        Risk: medium
 Why: 925 production lines: selecting an object, selecting by words, and turning a selection into a Remove spot.

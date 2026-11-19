@@ -64,9 +64,9 @@ async function runLrcatPlan() {
       li.classList.toggle("skip", p.action !== "write");
       li.title = `${p.photo}\n${p.sidecar}${p.problem ? `\n${p.problem}` : ""}`;
       li.append(
-        Object.assign(document.createElement("span"), { textContent: fileName(p.photo) }),
-        Object.assign(document.createElement("span"), { className: "arrow", textContent: label[p.action] }),
-        Object.assign(document.createElement("span"), { textContent: fileName(p.sidecar) + (p.problem ? " ⚠" : "") }),
+        el("span", {}, fileName(p.photo)),
+        el("span", { class: "arrow" }, label[p.action]),
+        el("span", {}, fileName(p.sidecar) + (p.problem ? " ⚠" : "")),
       );
       return li;
     }));

@@ -44,7 +44,7 @@ function renderTemplates() {
     b.className = "col-template";
     b.classList.toggle("on", entry.id === collage.base?.id);
     b.title = entry.builtin ? `${entry.name} (only the shape is used)` : `${entry.name}: your layout (${entry.width} × ${entry.height})`;
-    b.append(layoutIcon(entry), Object.assign(document.createElement("span"), { textContent: entry.name }));
+    b.append(layoutIcon(entry), el("span", {}, entry.name));
     if (!entry.builtin) b.classList.add("own");
     b.addEventListener("click", () => applyTemplate(entry));
     list.append(b);
@@ -146,7 +146,7 @@ async function importCollageTemplate() {
 function fillSizeSelect() {
   const sel = $("col-size");
   sel.replaceChildren();
-  const option = (parent, value, text) => parent.append(Object.assign(document.createElement("option"), { value, textContent: text }));
+  const option = (parent, value, text) => parent.append(el("option", { value: value }, text));
   option(sel, "custom", "Custom size");
   const groups = new Map();
   for (const p of ui.sizes) {
@@ -286,11 +286,11 @@ function trayCell(p) {
   const item = document.createElement("div");
   item.className = n >= 0 ? `tray-item grouped g${n % 2}` : "tray-item";
   item.title = `${p.name}\nDrag up into a cell, or click to fill the selected (or next empty) cell.`;
-  const img = Object.assign(document.createElement("img"), { alt: "", draggable: false });
-  const stars = Object.assign(document.createElement("span"), { className: "tray-stars", textContent: p.rating ? "★".repeat(p.rating) : "" });
-  const name = Object.assign(document.createElement("span"), { className: "tray-name", textContent: p.name });
-  const used = Object.assign(document.createElement("span"), { className: "tray-used", title: "In the collage" });
-  const remove = Object.assign(document.createElement("button"), { type: "button", className: "tray-remove", textContent: "×", title: "Take out of the tray" });
+  const img = el("img", { alt: "", draggable: "false" });
+  const stars = el("span", { class: "tray-stars" }, p.rating ? "★".repeat(p.rating) : "");
+  const name = el("span", { class: "tray-name" }, p.name);
+  const used = el("span", { class: "tray-used", title: "In the collage" });
+  const remove = el("button", { type: "button", class: "tray-remove", title: "Take out of the tray" }, "×");
   remove.addEventListener("pointerdown", (e) => e.stopPropagation());
   remove.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -309,15 +309,15 @@ function trayGroupHead(p, prev) {
   if (!collage.groups) return null;
   const n = collage.trayGroupOf.get(p.path) ?? -1;
   if (prev && (collage.trayGroupOf.get(prev.path) ?? -1) === n) return null;
-  const head = Object.assign(document.createElement("div"), { className: "tray-group" });
+  const head = el("div", { class: "tray-group" });
   if (n >= 0) {
     const g = collage.groups[n];
-    head.append(Object.assign(document.createElement("span"), { textContent: `Group ${n + 1} · ${g.length}` }));
-    const make = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "2 × 2", title: "A square of this group's best four photos" });
+    head.append(el("span", {}, `Group ${n + 1} · ${g.length}`));
+    const make = el("button", { type: "button", class: "small", title: "A square of this group's best four photos" }, "2 × 2");
     make.addEventListener("click", () => groupGrid(g));
     head.append(make);
   } else {
-    head.append(Object.assign(document.createElement("span"), { textContent: "Not grouped" }));
+    head.append(el("span", {}, "Not grouped"));
   }
   return head;
 }

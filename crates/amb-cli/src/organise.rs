@@ -300,7 +300,7 @@ pub(crate) fn duplicates(args: &[&str], options: &Options, json: bool) -> Result
             None => Find::default().burst_seconds,
         },
     };
-    let thumb = |p: &Path| amb_engine::raw::embedded_thumbnail(p, 256).ok().flatten();
+    let thumb = |p: &Path| amb_library::contact::preview(p, 256);
     let groups = duplicates::find(&cat, &photos, find, &thumb, &|_, _| {});
     let (stack, reject) = (
         options.contains_key("--stack"),

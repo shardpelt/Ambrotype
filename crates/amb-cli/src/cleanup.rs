@@ -45,8 +45,8 @@ pub(crate) fn cleanup(
         exposure: on("exposure"),
         rejected: on("rejected"),
     };
-    let small = |p: &Path| amb_engine::raw::embedded_thumbnail(p, 256).ok().flatten();
-    let big = |p: &Path| amb_engine::raw::embedded_thumbnail(p, 1280).ok().flatten();
+    let small = |p: &Path| amb_library::contact::preview(p, 256);
+    let big = |p: &Path| amb_library::contact::preview(p, 1280);
     let line = crate::progress::line(json, |done, total| format!("Looking… {done} of {total}"));
     let found = cleanup::find(&cat, &photos, find, &small, &big, &|done, total| {
         if done % 50 == 0 || done == total {

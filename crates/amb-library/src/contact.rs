@@ -22,6 +22,25 @@ pub fn small(photo: &Path, long_edge: usize) -> Result<amb_engine::buffer::Image
     ))
 }
 
+/// A preview of `photo` about `edge` pixels on its long side, upright, in
+/// sRGB: the camera's embedded one (a rendered image decoded small), or
+/// when the file has none, the photo developed small with its edit
+/// ([`small`]). `None` when neither can be read.
+pub fn preview(photo: &Path, edge: u32) -> Option<image::RgbImage> {
+    if let Some(img) = amb_engine::raw::embedded_thumbnail(photo, edge)
+        .ok()
+        .flatten()
+    {
+        return Some(img);
+    }
+    let img = small(photo, edge as usize).ok()?;
+    let bytes = amb_engine::output::to_srgb(&img)
+        .iter()
+        .map(|v| (v * 255.0).round().clamp(0.0, 255.0) as u8)
+        .collect();
+    image::RgbImage::from_raw(img.width as u32, img.height as u32, bytes)
+}
+
 /// Write the sheets for `photos` to `out` (`name-001.jpg`, … when there is
 /// more than one page) with `export`; the pages written.
 pub fn write(

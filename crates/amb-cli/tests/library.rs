@@ -274,3 +274,20 @@ fn slideshow_starts_the_editor_with_its_options() {
         "{said} {cmd}"
     );
 }
+
+#[test]
+fn raws_without_a_preview_are_compared_by_their_picture() {
+    let lib = Lib::new("nopreview");
+    // The DNGs carry no embedded preview, so they are developed small. One
+    // copy gets a byte more: not the same file, but the same picture.
+    let mut bytes = std::fs::read(lib.dir.join("p/IMG_2.dng")).unwrap();
+    bytes.push(0);
+    std::fs::write(lib.dir.join("p/IMG_2.dng"), bytes).unwrap();
+    std::fs::remove_file(lib.dir.join("p/IMG_3.dng")).unwrap();
+    let groups = lib.json(&["duplicates", "p"]);
+    assert_eq!(groups.as_array().unwrap().len(), 1, "{groups}");
+    assert_eq!(groups[0]["kind"], "similar");
+    let found = lib.json(&["cleanup", "p"]);
+    assert_eq!(found.as_array().unwrap().len(), 1, "{found}");
+    assert_eq!(found[0]["reasons"][0]["kind"], "alike");
+}

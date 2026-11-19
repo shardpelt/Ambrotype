@@ -138,30 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B23. A small preview for photos without one, in `amb` too
-Tier: medium        Risk: low
-Why: `amb cleanup` and `amb duplicates` look at a photo through `amb_engine::raw::embedded_thumbnail`, which decodes JPEG, PNG and TIFF small and takes a raw's embedded preview. A raw with no preview (some DNGs, every DNG `amb testimage` writes) is skipped there, while the editor renders it small (`thumbnail` in `crates/amb-gui/src/folder.rs`). So the two find different things in the same folder.
-Decided (was "The editor's small preview, shared with `amb`" under Needs a brief): the fallback is `amb_library::contact::small` (a photo developed small with its own edit), which `amb-library` already has; `amb` keeps no cache (the case is rare, and every run decodes only those raws); the editor's `thumbnail` stays as it is (it caches the JPEGs it shows). JPEG, PNG and TIFF photos behave the same in both today: no change there.
-Read first: `crates/amb-library/src/contact.rs` (`small`), `crates/amb-cli/src/cleanup.rs` (lines 45 to 55), `crates/amb-cli/src/organise.rs` (`duplicates`, the `thumb` closure), `crates/amb-ops/src/object/mod.rs` (`frame`: `to_srgb` of a render).
-Files: `crates/amb-library/src/contact.rs`, `crates/amb-cli/src/cleanup.rs`, `crates/amb-cli/src/organise.rs`, `crates/amb-cli/tests/library.rs`.
-Steps:
-1. In `contact.rs`, after `small`:
-   ```rust
-   /// A preview of `photo` about `edge` pixels on its long side, upright, in
-   /// sRGB: the camera's embedded one (a rendered image decoded small), or
-   /// when the file has none, the photo developed small with its edit
-   /// ([`small`]). `None` when neither can be read.
-   pub fn preview(photo: &Path, edge: u32) -> Option<image::RgbImage>
-   ```
-   Body: `embedded_thumbnail(photo, edge).ok().flatten()` or else `small(photo, edge as usize)`, converted with `amb_engine::output::to_srgb` to `u8` (`(v * 255.0).round().clamp(0.0, 255.0) as u8`) into `RgbImage::from_raw(w, h, bytes)`.
-2. `cleanup.rs`: `small` and `big` call `amb_library::contact::preview(p, 256)` and `(p, 1280)`.
-3. `organise.rs` `duplicates`: `thumb` calls `amb_library::contact::preview(p, 256)`.
-4. A test in `crates/amb-cli/tests/library.rs`, with the `Lib` helper there (its three DNGs have no embedded preview): `amb cleanup p --json` lists them with what it found about them (today it skips them). Read the JSON fields `amb cleanup --json` prints in `crates/amb-cli/src/cleanup.rs` and assert the three photos are looked at (not in a "no preview" list or count).
-Don't: change the editor's `folder::thumbnail`; add a cache to `amb`.
-Checks: the three cargo commands; `cargo test -p amb-library -p amb-cli`.
-Done when: `grep -n "embedded_thumbnail" crates/amb-cli/src/cleanup.rs crates/amb-cli/src/organise.rs` prints nothing.
-Commit: `cli: cleanup and duplicates see raws without a preview too`. Why: "amb skipped what the editor looked at."
-
 ### B24. `amb` tests for move and batch render
 Tier: medium        Risk: low
 Why: of the largest files without unit tests, `crates/amb-cli/src/organise.rs` is mostly covered end to end (`crates/amb-cli/tests/library.rs`: tag, duplicates, rename, sort, trash, keywords, collections, missing). Not covered: `amb move`, and in `crates/amb-cli/src/render.rs` the batch naming (`render_many`, `--name`) and the export options (`export_settings`).

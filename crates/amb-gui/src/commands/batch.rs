@@ -46,21 +46,6 @@ pub(crate) async fn library_find_duplicates(
     .await?
 }
 
-/// One burst, best first: each photo with its score and what stands out.
-#[derive(serde::Serialize)]
-pub(crate) struct BurstPhoto {
-    path: PathBuf,
-    score: f32,
-    note: String,
-}
-
-#[derive(serde::Serialize)]
-pub(crate) struct Bursts {
-    bursts: Vec<Vec<BurstPhoto>>,
-    /// The face finder is installed (else only focus counts).
-    faces: bool,
-}
-
 /// Best in each burst: the bursts among `paths` (photos from one camera
 /// each within `burst_seconds` of the one before), each ranked by focus and
 /// open eyes (amb_ops::burst), best first ("bursts-progress").
@@ -69,8 +54,7 @@ pub(crate) async fn library_best_in_bursts(
     paths: Vec<String>,
     burst_seconds: f64,
     app: tauri::AppHandle,
-) -> Res<Bursts> {
-    use rayon::prelude::*;
+) -> Res<amb_ops::burst::Bursts> {
     use tauri::Emitter;
     let cache = app
         .path()
@@ -88,50 +72,15 @@ pub(crate) async fn library_best_in_bursts(
                     amb_library::duplicates::decode_jpeg(&jpeg)
                 })
         };
-        let small = |p: &Path| thumb(p, 256);
-        let options = amb_library::duplicates::Options {
-            burst_seconds: burst_seconds.max(0.1),
-            max_bits: 0,
-        };
-        let groups: Vec<Vec<PathBuf>> =
-            amb_library::duplicates::find(folder::catalog(), &photos, options, &small, &|_, _| {})
-                .into_iter()
-                .filter(|g| g.kind == amb_library::duplicates::Kind::Burst)
-                .map(|g| g.photos)
-                .collect();
-        let faces = amb_engine::subject::faces(&[0.0; 8 * 8 * 3], 8, 8).is_ok();
-        let total: usize = groups.iter().map(Vec::len).sum();
-        let done = std::sync::atomic::AtomicUsize::new(0);
-        let bursts = groups
-            .into_iter()
-            .map(|g| {
-                let looks: Vec<amb_ops::burst::Look> = g
-                    .par_iter()
-                    .map(|p| {
-                        let look = thumb(p, 1600).map_or(
-                            amb_ops::burst::Look {
-                                sharp: 0.0,
-                                eyes: None,
-                                faces: 0,
-                            },
-                            |img| amb_ops::burst::look(&img),
-                        );
-                        let n = done.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
-                        let _ = app.emit("bursts-progress", [n, total]);
-                        look
-                    })
-                    .collect();
-                amb_ops::burst::rank(&looks)
-                    .into_iter()
-                    .map(|r| BurstPhoto {
-                        path: g[r.index].clone(),
-                        score: r.score,
-                        note: r.note,
-                    })
-                    .collect()
-            })
-            .collect();
-        Ok(Bursts { bursts, faces })
+        Ok(amb_ops::burst::best_in_bursts(
+            folder::catalog(),
+            &photos,
+            burst_seconds,
+            &thumb,
+            &|done, total| {
+                let _ = app.emit("bursts-progress", [done, total]);
+            },
+        ))
     })
     .await?
 }

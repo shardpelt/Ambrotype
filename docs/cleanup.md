@@ -138,21 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B12a. Best in bursts moves to `amb-ops`
-Tier: medium        Risk: low
-Why: the editor's `library_best_in_bursts` (`crates/amb-gui/src/commands/batch.rs`) groups the bursts, looks at each photo and ranks it: logic that `amb` cannot reach (`amb duplicates` lists bursts unranked), so the same feature differs by front end.
-Files: `crates/amb-ops/src/burst.rs`, `crates/amb-gui/src/commands/batch.rs`.
-Steps:
-1. In `burst.rs` add (with `use amb_library::catalog::Catalog; use amb_library::duplicates::{self, Kind}; use rayon::prelude::*; use std::path::{Path, PathBuf}; use std::sync::atomic::{AtomicUsize, Ordering};`):
-   - `#[derive(Debug, Clone, Serialize)] pub struct BurstPhoto { pub path: PathBuf, pub score: f32, pub note: String }` and `#[derive(Debug, Clone, Serialize)] pub struct Bursts { pub bursts: Vec<Vec<BurstPhoto>>, pub faces: bool }`: the same fields as the editor's `BurstPhoto` and `Bursts`, so the JSON the page gets does not change.
-   - `pub fn best_in_bursts(catalog: &Catalog, photos: &[PathBuf], burst_seconds: f64, thumb: &(dyn Fn(&Path, u32) -> Option<image::RgbImage> + Sync), progress: &(dyn Fn(usize, usize) + Sync)) -> Bursts`. Its body is the closure body of `library_best_in_bursts`, unchanged except: the grouping call uses `&|p| thumb(p, 256)` as its `Thumb`; the options are `duplicates::Options { burst_seconds: burst_seconds.max(0.1), max_bits: 0 }`; the groups are those whose `kind == Kind::Burst`; each photo is looked at from `thumb(p, 1600)` (a missing preview gives `Look { sharp: 0.0, eyes: None, faces: 0 }`); the `faces` flag is `amb_engine::subject::faces(&[0.0; 8 * 8 * 3], 8, 8).is_ok()`; where the editor emitted `bursts-progress`, call `progress(n, total)`.
-2. In `batch.rs`, `library_best_in_bursts` keeps its signature and doc: it builds `cache`, the `thumb` closure (embedded preview, then `folder::thumbnail`, then `decode_jpeg`: as now), then calls `amb_ops::burst::best_in_bursts(folder::catalog(), &photos, burst_seconds, &thumb, &|done, total| { let _ = app.emit("bursts-progress", [done, total]); })` and returns the result. Delete the editor's `BurstPhoto` and `Bursts` structs and use the ops ones as the return type.
-3. A test in `burst.rs`: `best_in_bursts` over no photos (a `Catalog::in_memory()`, `&[]`, a `thumb` that returns `None`) gives no bursts. The behaviour with photos is covered by the UI test that calls `library_best_in_bursts` (`crates/amb-gui/tests/ui/browse.js`).
-Don't: change the event name `bursts-progress` or the JSON fields (`bursts`, `faces`, `path`, `score`, `note`).
-Checks: the three cargo commands; `cargo test -p amb-ops -p amb-gui`; the UI tests (`browse.js` calls `library_best_in_bursts`).
-Done when: `library_best_in_bursts` has no ranking code of its own.
-Commit: `ops: best in bursts moves out of the editor`. Why: "The logic belongs where `amb` can use it too."
-
 ### B12b. One read-change-write of a photo's info
 Tier: medium        Risk: medium
 Why: reading a sidecar's info, changing it and writing it back is written four times (`write_info` in `crates/amb-cli/src/organise.rs`, `change_info` in `crates/amb-gui/src/library.rs`, `set_info` in `crates/amb-cli/src/mcp.rs`, `Session::set_info` in `crates/amb-gui/src/session/mod.rs`), each with its own handling of a Lightroom catalogue opened in place.

@@ -11,7 +11,12 @@
 //! same people a moment apart, so an eye much less open than in the other
 //! frames is a blink, where no fixed line would tell.
 
+use amb_library::catalog::Catalog;
+use amb_library::duplicates::{self, Kind};
+use rayon::prelude::*;
 use serde::Serialize;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 /// What one photo looks like, for ranking it among its burst.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize)]
@@ -259,6 +264,78 @@ fn sharpest_part(grey: &[f32], w: usize, h: usize) -> f32 {
     tiles[..3].iter().sum::<f32>() / 3.0
 }
 
+/// One photo of a burst, best first: its score and what stands out.
+#[derive(Debug, Clone, Serialize)]
+pub struct BurstPhoto {
+    pub path: PathBuf,
+    pub score: f32,
+    pub note: String,
+}
+
+/// The bursts among some photos, each ranked.
+#[derive(Debug, Clone, Serialize)]
+pub struct Bursts {
+    pub bursts: Vec<Vec<BurstPhoto>>,
+    /// The face finder is installed (else only focus counts).
+    pub faces: bool,
+}
+
+/// Best in each burst: the bursts among `photos` (photos from one camera
+/// each within `burst_seconds` of the one before), each ranked by focus and
+/// open eyes, best first. `thumb(photo, edge)` gives a preview about `edge`
+/// pixels wide; `progress(done, total)` counts the photos looked at.
+pub fn best_in_bursts(
+    catalog: &Catalog,
+    photos: &[PathBuf],
+    burst_seconds: f64,
+    thumb: &(dyn Fn(&Path, u32) -> Option<image::RgbImage> + Sync),
+    progress: &(dyn Fn(usize, usize) + Sync),
+) -> Bursts {
+    let small = |p: &Path| thumb(p, 256);
+    let options = duplicates::Options {
+        burst_seconds: burst_seconds.max(0.1),
+        max_bits: 0,
+    };
+    let groups: Vec<Vec<PathBuf>> = duplicates::find(catalog, photos, options, &small, &|_, _| {})
+        .into_iter()
+        .filter(|g| g.kind == Kind::Burst)
+        .map(|g| g.photos)
+        .collect();
+    let faces = amb_engine::subject::faces(&[0.0; 8 * 8 * 3], 8, 8).is_ok();
+    let total: usize = groups.iter().map(Vec::len).sum();
+    let done = AtomicUsize::new(0);
+    let bursts = groups
+        .into_iter()
+        .map(|g| {
+            let looks: Vec<Look> = g
+                .par_iter()
+                .map(|p| {
+                    let look = thumb(p, 1600).map_or(
+                        Look {
+                            sharp: 0.0,
+                            eyes: None,
+                            faces: 0,
+                        },
+                        |img| look(&img),
+                    );
+                    let n = done.fetch_add(1, Ordering::Relaxed) + 1;
+                    progress(n, total);
+                    look
+                })
+                .collect();
+            rank(&looks)
+                .into_iter()
+                .map(|r| BurstPhoto {
+                    path: g[r.index].clone(),
+                    score: r.score,
+                    note: r.note,
+                })
+                .collect()
+        })
+        .collect();
+    Bursts { bursts, faces }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -355,5 +432,12 @@ mod tests {
         });
         let soft = image::imageops::blur(&sharp, 3.0);
         assert!(look(&sharp).sharp > look(&soft).sharp * 3.0);
+    }
+
+    #[test]
+    fn no_photos_no_bursts() {
+        let catalog = Catalog::in_memory();
+        let got = best_in_bursts(&catalog, &[], 2.0, &|_, _| None, &|_, _| {});
+        assert!(got.bursts.is_empty());
     }
 }

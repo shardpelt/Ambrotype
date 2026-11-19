@@ -19,37 +19,7 @@ impl DevelopState {
                 after_set(name, next, notes)?;
             }
             Command::AdjustParam { name, delta } => {
-                let info = known(name)?;
-                if info.kind != "number" {
-                    return Err(Error::WrongKind {
-                        name: name.clone(),
-                        expected: "a numeric setting for adjust_param".into(),
-                        got: format!("a {} setting", info.kind),
-                    });
-                }
-                if !delta.is_finite() {
-                    return Err(Error::InvalidValue {
-                        name: name.clone(),
-                        reason: "delta must be a finite number".into(),
-                    });
-                }
-                // A non-numeric or non-finite stored value ("NaN") counts as unset.
-                let base = match self.settings.get(name).and_then(convert::finite) {
-                    Some(v) => v,
-                    None => Registry::builtin()
-                        .numeric_default(name)
-                        .ok_or_else(|| Error::NoBase { name: name.clone() })?,
-                };
-                let sum = base + delta;
-                if !sum.is_finite() {
-                    return Err(Error::InvalidValue {
-                        name: name.clone(),
-                        reason: format!("{base} + {delta} is not a finite number"),
-                    });
-                }
-                let v = convert::clamp_number(&info, sum, clamped);
-                next.insert(name.clone(), Value::Number(v));
-                after_set(name, next, notes)?;
+                self.plan_adjust(name, delta, next, clamped, notes)?;
             }
             Command::ResetParam { name } => {
                 if !self.settings.contains_key(name) {
@@ -64,92 +34,7 @@ impl DevelopState {
             Command::ApplySnapshot { name } => {
                 *next = self.snapshot(name)?.settings.clone();
             }
-            Command::ApplyPreset {
-                path,
-                amount,
-                include_groups,
-                exclude_groups,
-            } => {
-                if !amount.is_finite() || !(0.0..=200.0).contains(amount) {
-                    return Err(Error::InvalidValue {
-                        name: "amount".into(),
-                        reason: format!("{amount} is outside 0-200 (percent)"),
-                    });
-                }
-                for g in include_groups.iter().chain(exclude_groups).flatten() {
-                    known_group(g)?;
-                }
-                let preset = Preset::from_path(Path::new(path))
-                    .map_err(|e| Error::Load(format!("{path}: {e}")))?;
-                if *amount != 100.0 && !preset.supports_amount() {
-                    notes.push(format!(
-                        "preset does not declare SupportsAmount; applied at {amount}% anyway"
-                    ));
-                }
-                let mut filtered = BTreeMap::new();
-                let mut unknown = Vec::new();
-                let mut rejected = Vec::new();
-                for (name, value) in &preset.settings {
-                    let group = group_of(name);
-                    let keep = match group.as_deref() {
-                        Some(g) if PRESET_SKIPPED_GROUPS.contains(&g) => false,
-                        Some("process") => PRESET_PROCESS_TAGS.contains(&name.as_str()),
-                        _ => true,
-                    };
-                    let included = match (include_groups, group.as_deref()) {
-                        (Some(inc), Some(g)) => inc.iter().any(|i| i == g),
-                        (Some(_), None) => false,
-                        (None, _) => true,
-                    };
-                    let excluded = exclude_groups.as_ref().is_some_and(|ex| {
-                        group.as_deref().is_some_and(|g| ex.iter().any(|e| e == g))
-                    });
-                    if !(keep && included && !excluded) {
-                        continue;
-                    }
-                    let value = convert::normalise(name, value.clone());
-                    match Registry::builtin().lookup(name) {
-                        None => {
-                            unknown.push(name.clone());
-                            filtered.insert(name.clone(), value);
-                        }
-                        // Same kind checks and range clamping as set_param.
-                        Some(info) => match preset_value(&info, value, clamped) {
-                            Ok(v) => {
-                                filtered.insert(name.clone(), v);
-                            }
-                            Err(e) => rejected.push(e.to_string()),
-                        },
-                    }
-                }
-                if !unknown.is_empty() {
-                    notes.push(format!(
-                        "copied {} setting(s) unknown to the registry without validation: {}",
-                        unknown.len(),
-                        unknown.join(", ")
-                    ));
-                }
-                // Masks join the photo's own, as in Lightroom.
-                if let Some(incoming) = filtered.remove(amb_presets::masks::MASK_TAG) {
-                    masks::merge(next, &incoming, amount / 100.0);
-                }
-                let unscaled =
-                    apply_amount(next, &filtered, amount / 100.0, clamped, &mut rejected);
-                if !rejected.is_empty() {
-                    notes.push(format!(
-                        "skipped {} invalid preset value(s): {}",
-                        rejected.len(),
-                        rejected.join("; ")
-                    ));
-                }
-                if !unscaled.is_empty() {
-                    notes.push(format!(
-                        "copied {} unscaled at {amount}%: no current value or fixed default to \
-                         scale from (white balance depends on the image)",
-                        unscaled.join(", ")
-                    ));
-                }
-            }
+            Command::ApplyPreset { .. } => plan_preset(cmd, next, clamped, notes)?,
             Command::AddMask {
                 kind,
                 mask,
@@ -207,30 +92,7 @@ impl DevelopState {
                 part: Some(part),
                 to,
             } => masks::move_part(next, *mask, *part, *to)?,
-            Command::AddSpot {
-                at,
-                radius,
-                kind,
-                source,
-                source_auto,
-                feather,
-                opacity,
-                points,
-                separate,
-            } => {
-                let spot = spots::NewSpot {
-                    points: points.as_deref(),
-                    separate: *separate,
-                    kind: kind.as_deref(),
-                    at: *at,
-                    radius: *radius,
-                    source: *source,
-                    source_auto: *source_auto,
-                    feather: *feather,
-                    opacity: *opacity,
-                };
-                spots::add(next, &spot, clamped)?;
-            }
+            Command::AddSpot { .. } => plan_add_spot(cmd, next, clamped)?,
             Command::SetSpot { spot, values } => spots::set(next, *spot, values, clamped)?,
             Command::RemoveSpot { spot } => spots::remove(next, *spot)?,
             Command::Undo
@@ -241,6 +103,179 @@ impl DevelopState {
         }
         Ok(())
     }
+
+    fn plan_adjust(
+        &self,
+        name: &String,
+        delta: &f64,
+        next: &mut BTreeMap<String, Value>,
+        clamped: &mut Vec<Clamp>,
+        notes: &mut Vec<String>,
+    ) -> Result<(), Error> {
+        let info = known(name)?;
+        if info.kind != "number" {
+            return Err(Error::WrongKind {
+                name: name.clone(),
+                expected: "a numeric setting for adjust_param".into(),
+                got: format!("a {} setting", info.kind),
+            });
+        }
+        if !delta.is_finite() {
+            return Err(Error::InvalidValue {
+                name: name.clone(),
+                reason: "delta must be a finite number".into(),
+            });
+        }
+        // A non-numeric or non-finite stored value ("NaN") counts as unset.
+        let base = match self.settings.get(name).and_then(convert::finite) {
+            Some(v) => v,
+            None => Registry::builtin()
+                .numeric_default(name)
+                .ok_or_else(|| Error::NoBase { name: name.clone() })?,
+        };
+        let sum = base + delta;
+        if !sum.is_finite() {
+            return Err(Error::InvalidValue {
+                name: name.clone(),
+                reason: format!("{base} + {delta} is not a finite number"),
+            });
+        }
+        let v = convert::clamp_number(&info, sum, clamped);
+        next.insert(name.clone(), Value::Number(v));
+        after_set(name, next, notes)?;
+        Ok(())
+    }
+}
+
+/// `ApplyPreset`: the preset file's settings at `amount` percent, by group.
+fn plan_preset(
+    cmd: &Command,
+    next: &mut BTreeMap<String, Value>,
+    clamped: &mut Vec<Clamp>,
+    notes: &mut Vec<String>,
+) -> Result<(), Error> {
+    let Command::ApplyPreset {
+        path,
+        amount,
+        include_groups,
+        exclude_groups,
+    } = cmd
+    else {
+        unreachable!("plan matches ApplyPreset")
+    };
+    if !amount.is_finite() || !(0.0..=200.0).contains(amount) {
+        return Err(Error::InvalidValue {
+            name: "amount".into(),
+            reason: format!("{amount} is outside 0-200 (percent)"),
+        });
+    }
+    for g in include_groups.iter().chain(exclude_groups).flatten() {
+        known_group(g)?;
+    }
+    let preset =
+        Preset::from_path(Path::new(path)).map_err(|e| Error::Load(format!("{path}: {e}")))?;
+    if *amount != 100.0 && !preset.supports_amount() {
+        notes.push(format!(
+            "preset does not declare SupportsAmount; applied at {amount}% anyway"
+        ));
+    }
+    let mut filtered = BTreeMap::new();
+    let mut unknown = Vec::new();
+    let mut rejected = Vec::new();
+    for (name, value) in &preset.settings {
+        let group = group_of(name);
+        let keep = match group.as_deref() {
+            Some(g) if PRESET_SKIPPED_GROUPS.contains(&g) => false,
+            Some("process") => PRESET_PROCESS_TAGS.contains(&name.as_str()),
+            _ => true,
+        };
+        let included = match (include_groups, group.as_deref()) {
+            (Some(inc), Some(g)) => inc.iter().any(|i| i == g),
+            (Some(_), None) => false,
+            (None, _) => true,
+        };
+        let excluded = exclude_groups
+            .as_ref()
+            .is_some_and(|ex| group.as_deref().is_some_and(|g| ex.iter().any(|e| e == g)));
+        if !(keep && included && !excluded) {
+            continue;
+        }
+        let value = convert::normalise(name, value.clone());
+        match Registry::builtin().lookup(name) {
+            None => {
+                unknown.push(name.clone());
+                filtered.insert(name.clone(), value);
+            }
+            // Same kind checks and range clamping as set_param.
+            Some(info) => match preset_value(&info, value, clamped) {
+                Ok(v) => {
+                    filtered.insert(name.clone(), v);
+                }
+                Err(e) => rejected.push(e.to_string()),
+            },
+        }
+    }
+    if !unknown.is_empty() {
+        notes.push(format!(
+            "copied {} setting(s) unknown to the registry without validation: {}",
+            unknown.len(),
+            unknown.join(", ")
+        ));
+    }
+    // Masks join the photo's own, as in Lightroom.
+    if let Some(incoming) = filtered.remove(amb_presets::masks::MASK_TAG) {
+        masks::merge(next, &incoming, amount / 100.0);
+    }
+    let unscaled = apply_amount(next, &filtered, amount / 100.0, clamped, &mut rejected);
+    if !rejected.is_empty() {
+        notes.push(format!(
+            "skipped {} invalid preset value(s): {}",
+            rejected.len(),
+            rejected.join("; ")
+        ));
+    }
+    if !unscaled.is_empty() {
+        notes.push(format!(
+            "copied {} unscaled at {amount}%: no current value or fixed default to \
+                 scale from (white balance depends on the image)",
+            unscaled.join(", ")
+        ));
+    }
+    Ok(())
+}
+
+/// `AddSpot`: a new heal or clone spot.
+fn plan_add_spot(
+    cmd: &Command,
+    next: &mut BTreeMap<String, Value>,
+    clamped: &mut Vec<Clamp>,
+) -> Result<(), Error> {
+    let Command::AddSpot {
+        at,
+        radius,
+        kind,
+        source,
+        source_auto,
+        feather,
+        opacity,
+        points,
+        separate,
+    } = cmd
+    else {
+        unreachable!("plan matches AddSpot")
+    };
+    let spot = spots::NewSpot {
+        points: points.as_deref(),
+        separate: *separate,
+        kind: kind.as_deref(),
+        at: *at,
+        radius: *radius,
+        source: *source,
+        source_auto: *source_auto,
+        feather: *feather,
+        opacity: *opacity,
+    };
+    spots::add(next, &spot, clamped)
 }
 
 /// Validate a (normalised) preset value for a registry tag the way set_param

@@ -244,15 +244,6 @@ Checks: `cargo test -p amb-gui`; the three cargo commands; the UI scripts (`smok
 Done when: `panels` is under 30 lines and its JSON is byte-identical.
 Commit: `gui: one function per panel in the schema`. Why: "311 lines in one function."
 
-### B28. The long arms of `state::plan`
-Tier: medium        Risk: medium
-Why: `plan` in `crates/amb-protocol/src/state/plan.rs` is 237 lines: a `match` on the command whose arms for `ApplyPreset` (about 85 lines), `AdjustParam` (about 33) and `AddSpot` (about 24) hold most of it.
-Decided: those three arms move to private functions in the same file, `plan_preset`, `plan_adjust` and `plan_add_spot`; the arm becomes one call. Each takes the arm's bindings and the locals it uses (the compiler lists them) and returns what the arm evaluated to (`Result<…>` with `?` inside as now). The other arms stay.
-Files: `crates/amb-protocol/src/state/plan.rs`.
-Checks: `cargo test -p amb-protocol` (same count); the three cargo commands; `cargo test -p amb-cli` (edits through commands).
-Done when: `plan` is under 120 lines.
-Commit: `protocol: the long arms of plan in their own functions`. Why: "237 lines in one function."
-
 ### B29. `net::step` one function per operation
 Tier: medium        Risk: medium
 Why: `step` in `crates/amb-ai/src/net/plan.rs` is 250 lines: a chain of `if let Some(x) = op.downcast_ref::<T>() { … }` blocks, one per ONNX operation.

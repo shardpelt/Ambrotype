@@ -215,196 +215,220 @@ function hitHandle(px, py) {
   return null;
 }
 
-function wireMasks() {
-  const c = $("mask-canvas");
-  c.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0 || !mk.frame) return;
-    e.preventDefault();
-    c.setPointerCapture(e.pointerId);
-    const r = c.getBoundingClientRect();
-    const px = e.clientX - r.left;
-    const py = e.clientY - r.top;
-    const pt = toFrame(px, py);
-    if (mk.tool === "brush") {
-      mk.stroke = { points: [pt], erase: mk.brush.erase || e.altKey };
-      drawMasks();
-      return;
-    }
-    if (mk.tool === "color") {
-      const p = selectedPart();
-      if (!mk.creatingNew && p?.kind === "color" && (mk.continuePart || e.shiftKey)) {
-        run([{ cmd: "set_mask", mask: mk.selected, part: p.index, values: { ColorSamples: [...(p.ColorSamples ?? []), pt] } }]);
-        if (!e.shiftKey) stopTool();
-      } else {
-        const cmd = { cmd: "add_mask", kind: "color", values: { ColorSamples: [pt] } };
-        if (!mk.creatingNew) Object.assign(cmd, { mask: mk.selected, mode: mk.addMode });
-        const fresh = mk.creatingNew;
-        stopTool(false);
-        created(cmd, fresh);
-      }
-      return;
-    }
-    if (mk.tool === "linear") {
-      mk.drag = { kind: "new-linear", start: pt, part: null };
-      return;
-    }
-    if (mk.tool === "radial") {
-      mk.drag = { kind: "new-radial", start: pt, startPx: [px, py], part: null };
-      return;
-    }
-    const handle = hitHandle(px, py);
-    if (handle) {
-      const p = selectedPart();
-      mk.drag = { kind: "handle", handle, start: pt, orig: { ...p }, part: { ...p } };
-    }
-  });
-  c.addEventListener("pointermove", (e) => {
-    const r = c.getBoundingClientRect();
-    const px = e.clientX - r.left;
-    const py = e.clientY - r.top;
-    if (mk.tool === "brush") {
-      mk.hover = [px, py];
-      mk.hover.alt = e.altKey;
-    }
-    if (!mk.frame) return;
-    const pt = toFrame(px, py);
-    if (mk.stroke) {
-      mk.stroke.points.push(pt);
-      drawMasks();
-      return;
-    }
-    const d = mk.drag;
-    if (!d) {
-      c.style.cursor = mk.tool ? "crosshair" : hitHandle(px, py) ? "move" : "default";
-      if (mk.tool === "brush") drawMasks();
-      return;
-    }
-    if (d.kind === "new-linear") {
-      // Full where the drag started, none where it ends.
-      d.part = { kind: "linear", FullX: d.start[0], FullY: d.start[1], ZeroX: pt[0], ZeroY: pt[1] };
-    } else if (d.kind === "new-radial") {
-      // Centre at the start; the box is the drag's extent on screen.
-      const [sx, sy] = d.startPx;
-      const corner = toFrame(sx + Math.abs(px - sx), sy + Math.abs(py - sy));
-      const hx = Math.abs(corner[0] - d.start[0]);
-      const hy = Math.abs(corner[1] - d.start[1]);
-      const [ox, oy] = toFrame(sx + Math.abs(px - sx), sy - Math.abs(py - sy));
-      const hx2 = Math.max(hx, Math.abs(ox - d.start[0]));
-      const hy2 = Math.max(hy, Math.abs(oy - d.start[1]));
-      d.part = { kind: "radial", Left: d.start[0] - hx2, Right: d.start[0] + hx2, Top: d.start[1] - hy2, Bottom: d.start[1] + hy2, Angle: 0, Feather: 50 };
-    } else if (d.kind === "handle") {
-      const o = d.orig;
-      const dx = pt[0] - d.start[0];
-      const dy = pt[1] - d.start[1];
-      const p = { ...o };
-      if (o.kind === "linear") {
-        if (d.handle !== "zero") { p.FullX = o.FullX + dx; p.FullY = o.FullY + dy; }
-        if (d.handle !== "full") { p.ZeroX = o.ZeroX + dx; p.ZeroY = o.ZeroY + dy; }
-      } else if (d.handle === "move") {
-        p.Left = o.Left + dx; p.Right = o.Right + dx; p.Top = o.Top + dy; p.Bottom = o.Bottom + dy;
-      } else {
-        // An axis handle: that half-axis follows the pointer, measured along it.
-        const W = mk.frame.frame_width;
-        const H = mk.frame.frame_height;
-        const cx = (o.Left + o.Right) / 2;
-        const cy = (o.Top + o.Bottom) / 2;
-        const t = ((o.Angle ?? 0) * Math.PI) / 180;
-        const qx = (pt[0] - cx) * W;
-        const qy = (pt[1] - cy) * H;
-        const u = qx * Math.cos(t) - qy * Math.sin(t);
-        const v = qx * Math.sin(t) + qy * Math.cos(t);
-        if (d.handle === "a" || d.handle === "a2") {
-          const a = Math.max(4, Math.abs(u)) / W;
-          p.Left = cx - a; p.Right = cx + a;
-        } else {
-          const b = Math.max(4, Math.abs(v)) / H;
-          p.Top = cy - b; p.Bottom = cy + b;
-        }
-      }
-      d.part = p;
-      const keys = o.kind === "linear" ? ["ZeroX", "ZeroY", "FullX", "FullY"] : ["Left", "Right", "Top", "Bottom"];
-      const cs = mk.draft ?? correctionsCopy();
-      const [entry] = partEntries(cs, mk.selected, o.index);
-      if (entry) {
-        for (const k of keys) entry[k] = fmt6(p[k]);
-        previewDraft(cs);
-      }
-    }
+// A pointer event's place on the mask canvas, in CSS px.
+function maskPoint(c, e) {
+  const r = c.getBoundingClientRect();
+  return [e.clientX - r.left, e.clientY - r.top];
+}
+
+// A press on the photo: a brush stroke, a colour sample, a new linear or radial
+// part, or a handle of the selected part.
+function maskPress(c, e) {
+  if (e.button !== 0 || !mk.frame) return;
+  e.preventDefault();
+  c.setPointerCapture(e.pointerId);
+  const [px, py] = maskPoint(c, e);
+  const pt = toFrame(px, py);
+  if (mk.tool === "brush") {
+    mk.stroke = { points: [pt], erase: mk.brush.erase || e.altKey };
     drawMasks();
-  });
-  c.addEventListener("pointerleave", () => {
-    mk.hover = null;
-    drawMasks();
-  });
-  const finish = () => {
-    if (mk.stroke) {
-      const s = mk.stroke;
-      mk.stroke = null;
-      const p = selectedPart();
-      const cmd = {
-        cmd: "paint_mask",
-        points: s.points,
-        size: mk.brush.size / 100,
-        feather: mk.brush.feather,
-        flow: mk.brush.flow,
-        density: mk.brush.density,
-      };
-      if (s.erase) cmd.erase = true;
-      if (!mk.creatingNew && mk.selected != null) {
-        cmd.mask = mk.selected;
-        // Keep painting into the brush part being painted.
-        if (p?.kind === "brush" && (mk.continuePart || mk.paintedPart === p.index)) cmd.part = p.index;
-        else if (s.erase) {
-          toast("Pick a brush part to erase from", true);
-          drawMasks();
-          return;
-        } else cmd.mode = mk.addMode;
-      } else if (s.erase) {
-        toast("Paint something first, then erase", true);
-        drawMasks();
-        return;
-      }
-      const fresh = mk.creatingNew || mk.selected == null;
-      const hadPart = cmd.part != null;
-      created(cmd, fresh).then(() => {
-        // Later strokes go into the same brush part.
-        mk.creatingNew = false;
-        mk.continuePart = true;
-        if (!hadPart) mk.paintedPart = mk.part;
-        renderMaskPanel();
-      });
-      return;
-    }
-    const d = mk.drag;
-    mk.drag = null;
-    if (!d) return;
-    if (d.kind === "new-linear" || d.kind === "new-radial") {
-      const p = d.part;
-      if (!p) return;
-      const values = d.kind === "new-linear"
-        ? { ZeroX: p.ZeroX, ZeroY: p.ZeroY, FullX: p.FullX, FullY: p.FullY }
-        : { Top: p.Top, Left: p.Left, Bottom: p.Bottom, Right: p.Right };
-      const tiny = d.kind === "new-linear"
-        ? Math.hypot(p.ZeroX - p.FullX, p.ZeroY - p.FullY) < 0.005
-        : p.Right - p.Left < 0.005 || p.Bottom - p.Top < 0.005;
-      if (tiny) {
-        drawMasks();
-        return;
-      }
-      const cmd = { cmd: "add_mask", kind: d.kind === "new-linear" ? "linear" : "radial", values };
+    return;
+  }
+  if (mk.tool === "color") {
+    const p = selectedPart();
+    if (!mk.creatingNew && p?.kind === "color" && (mk.continuePart || e.shiftKey)) {
+      run([{ cmd: "set_mask", mask: mk.selected, part: p.index, values: { ColorSamples: [...(p.ColorSamples ?? []), pt] } }]);
+      if (!e.shiftKey) stopTool();
+    } else {
+      const cmd = { cmd: "add_mask", kind: "color", values: { ColorSamples: [pt] } };
       if (!mk.creatingNew) Object.assign(cmd, { mask: mk.selected, mode: mk.addMode });
       const fresh = mk.creatingNew;
       stopTool(false);
       created(cmd, fresh);
-    } else if (d.kind === "handle") {
-      const p = d.part;
-      const keys = p.kind === "linear" ? ["ZeroX", "ZeroY", "FullX", "FullY"] : ["Left", "Right", "Top", "Bottom"];
-      const values = Object.fromEntries(keys.map((k) => [k, p[k]]));
-      endDraft();
-      run([{ cmd: "set_mask", mask: mk.selected, part: p.index, values }]);
     }
+    return;
+  }
+  if (mk.tool === "linear") {
+    mk.drag = { kind: "new-linear", start: pt, part: null };
+    return;
+  }
+  if (mk.tool === "radial") {
+    mk.drag = { kind: "new-radial", start: pt, startPx: [px, py], part: null };
+    return;
+  }
+  const handle = hitHandle(px, py);
+  if (handle) {
+    const p = selectedPart();
+    mk.drag = { kind: "handle", handle, start: pt, orig: { ...p }, part: { ...p } };
+  }
+}
+
+// The pointer moves: the brush's ring, the stroke, the part being drawn or the
+// handle being dragged.
+function maskMove(c, e) {
+  const [px, py] = maskPoint(c, e);
+  if (mk.tool === "brush") {
+    mk.hover = [px, py];
+    mk.hover.alt = e.altKey;
+  }
+  if (!mk.frame) return;
+  const pt = toFrame(px, py);
+  if (mk.stroke) {
+    mk.stroke.points.push(pt);
+    drawMasks();
+    return;
+  }
+  const d = mk.drag;
+  if (!d) {
+    c.style.cursor = mk.tool ? "crosshair" : hitHandle(px, py) ? "move" : "default";
+    if (mk.tool === "brush") drawMasks();
+    return;
+  }
+  if (d.kind === "new-linear") {
+    // Full where the drag started, none where it ends.
+    d.part = { kind: "linear", FullX: d.start[0], FullY: d.start[1], ZeroX: pt[0], ZeroY: pt[1] };
+  } else if (d.kind === "new-radial") {
+    d.part = maskNewRadial(d, px, py);
+  } else if (d.kind === "handle") {
+    maskDragHandle(d, pt);
+  }
+  drawMasks();
+}
+
+// The radial part a drag from d.start to (px, py) on screen draws: centred at
+// the start, the box the drag's extent.
+function maskNewRadial(d, px, py) {
+  const [sx, sy] = d.startPx;
+  const corner = toFrame(sx + Math.abs(px - sx), sy + Math.abs(py - sy));
+  const hx = Math.abs(corner[0] - d.start[0]);
+  const hy = Math.abs(corner[1] - d.start[1]);
+  const [ox, oy] = toFrame(sx + Math.abs(px - sx), sy - Math.abs(py - sy));
+  const hx2 = Math.max(hx, Math.abs(ox - d.start[0]));
+  const hy2 = Math.max(hy, Math.abs(oy - d.start[1]));
+  return { kind: "radial", Left: d.start[0] - hx2, Right: d.start[0] + hx2, Top: d.start[1] - hy2, Bottom: d.start[1] + hy2, Angle: 0, Feather: 50 };
+}
+
+// Drag a handle of the selected part to `pt`: d.part follows, and the preview
+// shows it as a draft.
+function maskDragHandle(d, pt) {
+  const o = d.orig;
+  const dx = pt[0] - d.start[0];
+  const dy = pt[1] - d.start[1];
+  const p = { ...o };
+  if (o.kind === "linear") {
+    if (d.handle !== "zero") { p.FullX = o.FullX + dx; p.FullY = o.FullY + dy; }
+    if (d.handle !== "full") { p.ZeroX = o.ZeroX + dx; p.ZeroY = o.ZeroY + dy; }
+  } else if (d.handle === "move") {
+    p.Left = o.Left + dx; p.Right = o.Right + dx; p.Top = o.Top + dy; p.Bottom = o.Bottom + dy;
+  } else {
+    // An axis handle: that half-axis follows the pointer, measured along it.
+    const W = mk.frame.frame_width;
+    const H = mk.frame.frame_height;
+    const cx = (o.Left + o.Right) / 2;
+    const cy = (o.Top + o.Bottom) / 2;
+    const t = ((o.Angle ?? 0) * Math.PI) / 180;
+    const qx = (pt[0] - cx) * W;
+    const qy = (pt[1] - cy) * H;
+    const u = qx * Math.cos(t) - qy * Math.sin(t);
+    const v = qx * Math.sin(t) + qy * Math.cos(t);
+    if (d.handle === "a" || d.handle === "a2") {
+      const a = Math.max(4, Math.abs(u)) / W;
+      p.Left = cx - a; p.Right = cx + a;
+    } else {
+      const b = Math.max(4, Math.abs(v)) / H;
+      p.Top = cy - b; p.Bottom = cy + b;
+    }
+  }
+  d.part = p;
+  const keys = o.kind === "linear" ? ["ZeroX", "ZeroY", "FullX", "FullY"] : ["Left", "Right", "Top", "Bottom"];
+  const cs = mk.draft ?? correctionsCopy();
+  const [entry] = partEntries(cs, mk.selected, o.index);
+  if (entry) {
+    for (const k of keys) entry[k] = fmt6(p[k]);
+    previewDraft(cs);
+  }
+}
+
+// A brush stroke ends: paint it into a new mask, or the brush part being painted.
+function maskEndStroke() {
+  const s = mk.stroke;
+  mk.stroke = null;
+  const p = selectedPart();
+  const cmd = {
+    cmd: "paint_mask",
+    points: s.points,
+    size: mk.brush.size / 100,
+    feather: mk.brush.feather,
+    flow: mk.brush.flow,
+    density: mk.brush.density,
   };
-  c.addEventListener("pointerup", finish);
+  if (s.erase) cmd.erase = true;
+  if (!mk.creatingNew && mk.selected != null) {
+    cmd.mask = mk.selected;
+    // Keep painting into the brush part being painted.
+    if (p?.kind === "brush" && (mk.continuePart || mk.paintedPart === p.index)) cmd.part = p.index;
+    else if (s.erase) {
+      toast("Pick a brush part to erase from", true);
+      drawMasks();
+      return;
+    } else cmd.mode = mk.addMode;
+  } else if (s.erase) {
+    toast("Paint something first, then erase", true);
+    drawMasks();
+    return;
+  }
+  const fresh = mk.creatingNew || mk.selected == null;
+  const hadPart = cmd.part != null;
+  created(cmd, fresh).then(() => {
+    // Later strokes go into the same brush part.
+    mk.creatingNew = false;
+    mk.continuePart = true;
+    if (!hadPart) mk.paintedPart = mk.part;
+    renderMaskPanel();
+  });
+}
+
+// A drag ends: add the linear or radial part it drew, or set the moved handle.
+function maskEndDrag() {
+  const d = mk.drag;
+  mk.drag = null;
+  if (!d) return;
+  if (d.kind === "new-linear" || d.kind === "new-radial") {
+    const p = d.part;
+    if (!p) return;
+    const values = d.kind === "new-linear"
+      ? { ZeroX: p.ZeroX, ZeroY: p.ZeroY, FullX: p.FullX, FullY: p.FullY }
+      : { Top: p.Top, Left: p.Left, Bottom: p.Bottom, Right: p.Right };
+    const tiny = d.kind === "new-linear"
+      ? Math.hypot(p.ZeroX - p.FullX, p.ZeroY - p.FullY) < 0.005
+      : p.Right - p.Left < 0.005 || p.Bottom - p.Top < 0.005;
+    if (tiny) {
+      drawMasks();
+      return;
+    }
+    const cmd = { cmd: "add_mask", kind: d.kind === "new-linear" ? "linear" : "radial", values };
+    if (!mk.creatingNew) Object.assign(cmd, { mask: mk.selected, mode: mk.addMode });
+    const fresh = mk.creatingNew;
+    stopTool(false);
+    created(cmd, fresh);
+  } else if (d.kind === "handle") {
+    const p = d.part;
+    const keys = p.kind === "linear" ? ["ZeroX", "ZeroY", "FullX", "FullY"] : ["Left", "Right", "Top", "Bottom"];
+    const values = Object.fromEntries(keys.map((k) => [k, p[k]]));
+    endDraft();
+    run([{ cmd: "set_mask", mask: mk.selected, part: p.index, values }]);
+  }
+}
+
+function wireMasks() {
+  const c = $("mask-canvas");
+  c.addEventListener("pointerdown", (e) => maskPress(c, e));
+  c.addEventListener("pointermove", (e) => maskMove(c, e));
+  c.addEventListener("pointerleave", () => {
+    mk.hover = null;
+    drawMasks();
+  });
+  c.addEventListener("pointerup", () => (mk.stroke ? maskEndStroke() : maskEndDrag()));
   c.addEventListener("pointercancel", () => {
     mk.drag = mk.stroke = null;
     endDraft();

@@ -119,21 +119,213 @@
     return v || fallback;
   }
 
-  // ------------------------------------------------------------ widget
+  // ------------------------------------------------------------ geometry
 
-  function create(container, options = {}) {
-    const onInput = options.onInput || (() => {});
-    const onCommit = options.onCommit || (() => {});
-    const cv = {
-      curves: Object.fromEntries(TAGS.map((t) => [t, copy(IDENTITY)])),
-      active: TAGS.includes(options.channel) ? options.channel : TAGS[0],
-      histogram: null,
-      hover: null,   // { index } over a point, or { x } over the plot
-      drag: null,    // { tag, index, start, removing, changed }
-      size: 0,       // plot side incl. padding, CSS px
-    };
+  // The functions below take the widget's state (`cv`, see create) and, to
+  // draw, its canvas context.
 
-    // DOM: channel tabs, square canvas, readout line.
+  const curvePlot = (cv) => cv.size - 2 * PAD;
+  const curveToPx = (cv, x, y) => [PAD + (x / 255) * curvePlot(cv), PAD + (1 - y / 255) * curvePlot(cv)];
+  const curveFromPx = (cv, px, py) => [((px - PAD) / curvePlot(cv)) * 255, (1 - (py - PAD) / curvePlot(cv)) * 255];
+
+  // The active channel's point within grab distance of (px, py), or −1.
+  function curvePointNear(cv, px, py) {
+    let best = -1;
+    let bestD = HIT;
+    cv.curves[cv.active].forEach(([x, y], i) => {
+      const [qx, qy] = curveToPx(cv, x, y);
+      const d = Math.hypot(qx - px, qy - py);
+      if (d <= bestD) { best = i; bestD = d; }
+    });
+    return best;
+  }
+
+  // Points as currently shown: while an inner point is dragged out of the plot it
+  // is hidden (and removed on release), like Lightroom.
+  function curveShown(cv, tag) {
+    const pts = cv.curves[tag];
+    return cv.drag && cv.drag.tag === tag && cv.drag.removing ? pts.filter((_, i) => i !== cv.drag.index) : pts;
+  }
+
+  // ------------------------------------------------------------ drawing
+
+  function curveDraw(cv, g, root) {
+    if (!cv.size) return;
+    const dpr = g.canvas.width / cv.size;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, cv.size, cv.size);
+    const p = curvePlot(cv);
+    const line = cssVar(root, "--line", "#34363c");
+    const faint = cssVar(root, "--faint", "#6c6f77");
+
+    g.fillStyle = cssVar(root, "--bg-deep", "#111214");
+    g.fillRect(PAD, PAD, p, p);
+    curveDrawHistogram(cv, g, p);
+
+    // 4×4 grid and frame, on half pixels so 1px lines stay crisp.
+    g.lineWidth = 1;
+    g.strokeStyle = line;
+    g.beginPath();
+    for (let i = 1; i < 4; i++) {
+      const v = Math.round(PAD + (i * p) / 4) + 0.5;
+      g.moveTo(v, PAD); g.lineTo(v, PAD + p);
+      g.moveTo(PAD, v); g.lineTo(PAD + p, v);
+    }
+    g.stroke();
+    g.strokeRect(PAD + 0.5, PAD + 0.5, p - 1, p - 1);
+
+    // Identity diagonal.
+    g.setLineDash([3, 4]);
+    g.strokeStyle = faint;
+    g.beginPath();
+    g.moveTo(PAD, PAD + p);
+    g.lineTo(PAD + p, PAD);
+    g.stroke();
+    g.setLineDash([]);
+
+    // The RGB curve is drawn in the theme's text colour, so it shows on light themes too.
+    const colourOf = (c) => (c.tag === TAGS[0] ? cssVar(root, "--text", c.colour) : c.colour);
+    // Other channels faintly, so a colour curve is not forgotten.
+    for (const ch of CHANNELS) {
+      if (ch.tag === cv.active || isIdentity(cv.curves[ch.tag])) continue;
+      g.globalAlpha = 0.35;
+      curveStroke(cv, g, curveShown(cv, ch.tag), colourOf(ch), 1.25);
+      g.globalAlpha = 1;
+    }
+
+    const ch = CHANNELS.find((c) => c.tag === cv.active);
+    const pts = curveShown(cv, cv.active);
+    const colour = colourOf(ch);
+    curveStroke(cv, g, pts, colour, 2);
+    pts.forEach(([x, y], i) => {
+      const [qx, qy] = curveToPx(cv, x, y);
+      const hot = (cv.drag && cv.drag.tag === cv.active && !cv.drag.removing && cv.drag.index === i) ||
+        (!cv.drag && cv.hover && cv.hover.index === i);
+      g.beginPath();
+      g.arc(qx, qy, hot ? 5 : 4, 0, Math.PI * 2);
+      g.fillStyle = hot ? colour : cssVar(root, "--bg-deep", "#111214");
+      g.fill();
+      g.lineWidth = 1.5;
+      g.strokeStyle = colour;
+      g.stroke();
+    });
+  }
+
+  function curveStroke(cv, g, points, colour, width) {
+    const f = spline(points);
+    if (!f) return;
+    const p = curvePlot(cv);
+    const steps = Math.max(64, Math.ceil(p));
+    g.beginPath();
+    for (let s = 0; s <= steps; s++) {
+      const x = (s / steps) * 255;
+      const [qx, qy] = curveToPx(cv, x, f(x));
+      if (s === 0) g.moveTo(qx, qy); else g.lineTo(qx, qy);
+    }
+    g.lineWidth = width;
+    g.strokeStyle = colour;
+    g.lineJoin = "round";
+    g.stroke();
+  }
+
+  function curveDrawHistogram(cv, g, p) {
+    if (!cv.histogram) return;
+    const ch = CHANNELS.find((c) => c.tag === cv.active);
+    const max = Math.max(1, ...ch.hist.flatMap((i) => Array.from(cv.histogram[i] || []).slice(2, 254)));
+    g.save();
+    g.beginPath();
+    g.rect(PAD, PAD, p, p);
+    g.clip();
+    g.globalCompositeOperation = "lighter";
+    for (const i of ch.hist) {
+      const counts = cv.histogram[i];
+      if (!counts || !counts.length) continue;
+      g.fillStyle = HIST_FILL[i];
+      g.beginPath();
+      g.moveTo(PAD, PAD + p);
+      for (let x = 0; x < counts.length; x++) {
+        const h = Math.min(1, counts[x] / max) * p * 0.9;
+        g.lineTo(PAD + (x / (counts.length - 1)) * p, PAD + p - h);
+      }
+      g.lineTo(PAD + p, PAD + p);
+      g.fill();
+    }
+    g.restore();
+  }
+
+  const fmt = ([x, y]) => `${x} → ${y}`;
+
+  // The line under the curve (the point under the pointer, or what a click does),
+  // the Reset button and which channel tabs have a curve.
+  function curveReadout(cv, dom) {
+    const pts = cv.curves[cv.active];
+    let text = "";
+    if (cv.drag && cv.drag.tag === cv.active) {
+      text = cv.drag.removing ? "Release to remove point" : fmt(pts[cv.drag.index]);
+    } else if (cv.hover && cv.hover.index !== undefined) {
+      text = fmt(pts[cv.hover.index]);
+    } else if (cv.hover && cv.hover.x !== undefined) {
+      const x = clampByte(cv.hover.x);
+      text = fmt([x, Math.round(spline(pts)(x))]);
+    }
+    dom.readout.textContent = text || "Click adds · double-click removes";
+    dom.readout.classList.toggle("idle", !text);
+    dom.resetBtn.disabled = isIdentity(pts);
+    for (const [t, b] of dom.tabButtons) b.classList.toggle("changed", !isIdentity(cv.curves[t]));
+  }
+
+  // ------------------------------------------------------------ interaction
+
+  // A press at (px, py): the point it grabs, adding one when it is between the
+  // end points and on no point. Sets cv.drag; false when it grabs nothing.
+  function curvePress(cv, px, py) {
+    const pts = cv.curves[cv.active];
+    let index = curvePointNear(cv, px, py);
+    const start = copy(pts);
+    if (index < 0) {
+      const [vx, vy] = curveFromPx(cv, px, py);
+      const x = clampByte(vx);
+      if (x <= pts[0][0] || x >= pts[pts.length - 1][0]) return false; // outside the end points
+      const existing = pts.findIndex((q) => q[0] === x);
+      if (existing >= 0) {
+        index = existing;
+      } else {
+        // Near the curve: add on it (shape unchanged until dragged); elsewhere add at the click.
+        const onCurve = spline(pts)(x);
+        const [, cy] = curveToPx(cv, x, onCurve);
+        const y = Math.abs(cy - py) <= SNAP ? Math.round(onCurve) : clampByte(vy);
+        pts.push([x, y]);
+        pts.sort((a, b) => a[0] - b[0]);
+        index = pts.findIndex((q) => q[0] === x);
+      }
+    }
+    cv.drag = { tag: cv.active, index, start, removing: false };
+    return true;
+  }
+
+  // The dragged point to (px, py), or marked for removal when far outside the
+  // plot. True when the points shown changed.
+  function curveDragTo(cv, px, py) {
+    const pts = cv.curves[cv.drag.tag];
+    const i = cv.drag.index;
+    const last = pts.length - 1;
+    const outside = px < -REMOVE_OUTSIDE || py < -REMOVE_OUTSIDE ||
+      px > cv.size + REMOVE_OUTSIDE || py > cv.size + REMOVE_OUTSIDE;
+    const removing = i > 0 && i < last && outside;
+    const before = copy(curveShown(cv, cv.drag.tag));
+    cv.drag.removing = removing;
+    if (!removing) {
+      const [vx, vy] = curveFromPx(cv, px, py);
+      // Keep inputs strictly increasing: a point cannot pass its neighbours.
+      const lo = i === 0 ? 0 : pts[i - 1][0] + 1;
+      const hi = i === last ? 255 : pts[i + 1][0] - 1;
+      pts[i] = [Math.min(hi, Math.max(lo, Math.round(vx))), clampByte(vy)];
+    }
+    return !same(before, curveShown(cv, cv.drag.tag));
+  }
+
+  // DOM: channel tabs, square canvas, readout line.
+  function curveDom(onTab, onReset) {
     const root = document.createElement("div");
     root.className = "amb-curve";
     const tabs = document.createElement("div");
@@ -148,7 +340,7 @@
       dot.className = "amb-dot";
       dot.style.background = ch.colour;
       b.append(dot, document.createTextNode(ch.label));
-      b.addEventListener("click", () => channel(ch.tag));
+      b.addEventListener("click", () => onTab(ch.tag));
       tabButtons.set(ch.tag, b);
       tabs.append(b);
     }
@@ -166,47 +358,42 @@
     resetBtn.className = "amb-link";
     resetBtn.textContent = "Reset channel";
     resetBtn.title = "Reset the active channel to a straight line";
-    resetBtn.addEventListener("click", () => {
+    resetBtn.addEventListener("click", onReset);
+    foot.append(readout, resetBtn);
+    root.append(tabs, wrap, foot);
+    return { root, tabButtons, wrap, canvas, readout, resetBtn };
+  }
+
+  // ------------------------------------------------------------ widget
+
+  function create(container, options = {}) {
+    const onInput = options.onInput || (() => {});
+    const onCommit = options.onCommit || (() => {});
+    const cv = {
+      curves: Object.fromEntries(TAGS.map((t) => [t, copy(IDENTITY)])),
+      active: TAGS.includes(options.channel) ? options.channel : TAGS[0],
+      histogram: null,
+      hover: null,   // { index } over a point, or { x } over the plot
+      drag: null,    // { tag, index, start, removing, changed }
+      size: 0,       // plot side incl. padding, CSS px
+    };
+
+    const dom = curveDom((tag) => channel(tag), () => {
       if (isIdentity(cv.curves[cv.active])) return;
       cv.curves[cv.active] = copy(IDENTITY);
       draw();
       onCommit(cv.active, copy(IDENTITY));
     });
-    foot.append(readout, resetBtn);
-    root.append(tabs, wrap, foot);
+    const { root, wrap, canvas } = dom;
     container.append(root);
     const g = canvas.getContext("2d");
-
-    // ---------------------------------------------------- geometry
-
-    const plot = () => cv.size - 2 * PAD;
-    const toPx = (x, y) => [PAD + (x / 255) * plot(), PAD + (1 - y / 255) * plot()];
-    const fromPx = (px, py) => [((px - PAD) / plot()) * 255, (1 - (py - PAD) / plot()) * 255];
+    const draw = () => curveDraw(cv, g, root);
+    const updateReadout = () => curveReadout(cv, dom);
 
     function pointerPos(e) {
       const r = canvas.getBoundingClientRect();
       return [e.clientX - r.left, e.clientY - r.top];
     }
-
-    function hitPoint(px, py) {
-      let best = -1;
-      let bestD = HIT;
-      cv.curves[cv.active].forEach(([x, y], i) => {
-        const [qx, qy] = toPx(x, y);
-        const d = Math.hypot(qx - px, qy - py);
-        if (d <= bestD) { best = i; bestD = d; }
-      });
-      return best;
-    }
-
-    // Points as currently shown: while an inner point is dragged out of the plot it
-    // is hidden (and removed on release), like Lightroom.
-    function shown(tag) {
-      const pts = cv.curves[tag];
-      return cv.drag && cv.drag.tag === tag && cv.drag.removing ? pts.filter((_, i) => i !== cv.drag.index) : pts;
-    }
-
-    // ---------------------------------------------------- drawing
 
     function resize() {
       const w = Math.floor(wrap.clientWidth);
@@ -219,158 +406,14 @@
       draw();
     }
 
-    function draw() {
-      if (!cv.size) return;
-      const dpr = canvas.width / cv.size;
-      g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      g.clearRect(0, 0, cv.size, cv.size);
-      const p = plot();
-      const line = cssVar(root, "--line", "#34363c");
-      const faint = cssVar(root, "--faint", "#6c6f77");
-
-      g.fillStyle = cssVar(root, "--bg-deep", "#111214");
-      g.fillRect(PAD, PAD, p, p);
-      drawHistogram(p);
-
-      // 4×4 grid and frame, on half pixels so 1px lines stay crisp.
-      g.lineWidth = 1;
-      g.strokeStyle = line;
-      g.beginPath();
-      for (let i = 1; i < 4; i++) {
-        const v = Math.round(PAD + (i * p) / 4) + 0.5;
-        g.moveTo(v, PAD); g.lineTo(v, PAD + p);
-        g.moveTo(PAD, v); g.lineTo(PAD + p, v);
-      }
-      g.stroke();
-      g.strokeRect(PAD + 0.5, PAD + 0.5, p - 1, p - 1);
-
-      // Identity diagonal.
-      g.setLineDash([3, 4]);
-      g.strokeStyle = faint;
-      g.beginPath();
-      g.moveTo(PAD, PAD + p);
-      g.lineTo(PAD + p, PAD);
-      g.stroke();
-      g.setLineDash([]);
-
-      // The RGB curve is drawn in the theme's text colour, so it shows on light themes too.
-      const colourOf = (c) => (c.tag === TAGS[0] ? cssVar(root, "--text", c.colour) : c.colour);
-      // Other channels faintly, so a colour curve is not forgotten.
-      for (const ch of CHANNELS) {
-        if (ch.tag === cv.active || isIdentity(cv.curves[ch.tag])) continue;
-        g.globalAlpha = 0.35;
-        strokeCurve(shown(ch.tag), colourOf(ch), 1.25);
-        g.globalAlpha = 1;
-      }
-
-      const ch = CHANNELS.find((c) => c.tag === cv.active);
-      const pts = shown(cv.active);
-      const colour = colourOf(ch);
-      strokeCurve(pts, colour, 2);
-      pts.forEach(([x, y], i) => {
-        const [qx, qy] = toPx(x, y);
-        const hot = (cv.drag && cv.drag.tag === cv.active && !cv.drag.removing && cv.drag.index === i) ||
-          (!cv.drag && cv.hover && cv.hover.index === i);
-        g.beginPath();
-        g.arc(qx, qy, hot ? 5 : 4, 0, Math.PI * 2);
-        g.fillStyle = hot ? colour : cssVar(root, "--bg-deep", "#111214");
-        g.fill();
-        g.lineWidth = 1.5;
-        g.strokeStyle = colour;
-        g.stroke();
-      });
-    }
-
-    function strokeCurve(points, colour, width) {
-      const f = spline(points);
-      if (!f) return;
-      const p = plot();
-      const steps = Math.max(64, Math.ceil(p));
-      g.beginPath();
-      for (let s = 0; s <= steps; s++) {
-        const x = (s / steps) * 255;
-        const [qx, qy] = toPx(x, f(x));
-        if (s === 0) g.moveTo(qx, qy); else g.lineTo(qx, qy);
-      }
-      g.lineWidth = width;
-      g.strokeStyle = colour;
-      g.lineJoin = "round";
-      g.stroke();
-    }
-
-    function drawHistogram(p) {
-      if (!cv.histogram) return;
-      const ch = CHANNELS.find((c) => c.tag === cv.active);
-      const max = Math.max(1, ...ch.hist.flatMap((i) => Array.from(cv.histogram[i] || []).slice(2, 254)));
-      g.save();
-      g.beginPath();
-      g.rect(PAD, PAD, p, p);
-      g.clip();
-      g.globalCompositeOperation = "lighter";
-      for (const i of ch.hist) {
-        const counts = cv.histogram[i];
-        if (!counts || !counts.length) continue;
-        g.fillStyle = HIST_FILL[i];
-        g.beginPath();
-        g.moveTo(PAD, PAD + p);
-        for (let x = 0; x < counts.length; x++) {
-          const h = Math.min(1, counts[x] / max) * p * 0.9;
-          g.lineTo(PAD + (x / (counts.length - 1)) * p, PAD + p - h);
-        }
-        g.lineTo(PAD + p, PAD + p);
-        g.fill();
-      }
-      g.restore();
-    }
-
-    function updateReadout() {
-      const pts = cv.curves[cv.active];
-      let text = "";
-      if (cv.drag && cv.drag.tag === cv.active) {
-        text = cv.drag.removing ? "Release to remove point" : fmt(pts[cv.drag.index]);
-      } else if (cv.hover && cv.hover.index !== undefined) {
-        text = fmt(pts[cv.hover.index]);
-      } else if (cv.hover && cv.hover.x !== undefined) {
-        const x = clampByte(cv.hover.x);
-        text = fmt([x, Math.round(spline(pts)(x))]);
-      }
-      readout.textContent = text || "Click adds · double-click removes";
-      readout.classList.toggle("idle", !text);
-      resetBtn.disabled = isIdentity(pts);
-      for (const [t, b] of tabButtons) b.classList.toggle("changed", !isIdentity(cv.curves[t]));
-    }
-
-    const fmt = ([x, y]) => `${x} → ${y}`;
-
-    // ---------------------------------------------------- interaction
-
     canvas.addEventListener("pointerdown", (e) => {
       if (e.button !== 0 || !cv.size) return;
       const [px, py] = pointerPos(e);
-      const pts = cv.curves[cv.active];
-      let index = hitPoint(px, py);
-      const start = copy(pts);
-      if (index < 0) {
-        const [vx, vy] = fromPx(px, py);
-        const x = clampByte(vx);
-        if (x <= pts[0][0] || x >= pts[pts.length - 1][0]) return; // outside the end points
-        const existing = pts.findIndex((q) => q[0] === x);
-        if (existing >= 0) {
-          index = existing;
-        } else {
-          // Near the curve: add on it (shape unchanged until dragged); elsewhere add at the click.
-          const onCurve = spline(pts)(x);
-          const [, cy] = toPx(x, onCurve);
-          const y = Math.abs(cy - py) <= SNAP ? Math.round(onCurve) : clampByte(vy);
-          pts.push([x, y]);
-          pts.sort((a, b) => a[0] - b[0]);
-          index = pts.findIndex((q) => q[0] === x);
-        }
-      }
-      cv.drag = { tag: cv.active, index, start, removing: false };
+      if (!curvePress(cv, px, py)) return;
       canvas.setPointerCapture(e.pointerId);
       canvas.classList.add("dragging");
-      if (!same(start, pts)) onInput(cv.active, copy(pts));
+      const pts = cv.curves[cv.active];
+      if (!same(cv.drag.start, pts)) onInput(cv.active, copy(pts));
       draw();
       updateReadout();
       e.preventDefault();
@@ -379,32 +422,13 @@
     canvas.addEventListener("pointermove", (e) => {
       const [px, py] = pointerPos(e);
       if (!cv.drag) {
-        const index = hitPoint(px, py);
+        const index = curvePointNear(cv, px, py);
         const inside = px >= PAD && px <= cv.size - PAD && py >= PAD && py <= cv.size - PAD;
-        const next = index >= 0 ? { index } : inside ? { x: fromPx(px, py)[0] } : null;
-        cv.hover = next;
+        cv.hover = index >= 0 ? { index } : inside ? { x: curveFromPx(cv, px, py)[0] } : null;
         canvas.style.cursor = index >= 0 ? "grab" : "crosshair";
-        draw();
-        updateReadout();
-        return;
+      } else if (curveDragTo(cv, px, py)) {
+        onInput(cv.drag.tag, copy(curveShown(cv, cv.drag.tag)));
       }
-      const pts = cv.curves[cv.drag.tag];
-      const i = cv.drag.index;
-      const last = pts.length - 1;
-      const outside = px < -REMOVE_OUTSIDE || py < -REMOVE_OUTSIDE ||
-        px > cv.size + REMOVE_OUTSIDE || py > cv.size + REMOVE_OUTSIDE;
-      const removing = i > 0 && i < last && outside;
-      const before = copy(shown(cv.drag.tag));
-      cv.drag.removing = removing;
-      if (!removing) {
-        const [vx, vy] = fromPx(px, py);
-        // Keep inputs strictly increasing: a point cannot pass its neighbours.
-        const lo = i === 0 ? 0 : pts[i - 1][0] + 1;
-        const hi = i === last ? 255 : pts[i + 1][0] - 1;
-        pts[i] = [Math.min(hi, Math.max(lo, Math.round(vx))), clampByte(vy)];
-      }
-      const now = shown(cv.drag.tag);
-      if (!same(before, now)) onInput(cv.drag.tag, copy(now));
       draw();
       updateReadout();
     });
@@ -431,7 +455,7 @@
     canvas.addEventListener("dblclick", (e) => {
       const [px, py] = pointerPos(e);
       const pts = cv.curves[cv.active];
-      const index = hitPoint(px, py);
+      const index = curvePointNear(cv, px, py);
       if (index <= 0 || index >= pts.length - 1) return; // end points stay
       pts.splice(index, 1);
       cv.hover = null;
@@ -446,7 +470,7 @@
       if (tag === undefined) return cv.active;
       if (!TAGS.includes(tag)) throw new Error(`AmbCurve: unknown channel ${tag}`);
       cv.active = tag;
-      for (const [t, b] of tabButtons) b.classList.toggle("active", t === tag);
+      for (const [t, b] of dom.tabButtons) b.classList.toggle("active", t === tag);
       root.dataset.channel = tag;
       cv.hover = null;
       draw();

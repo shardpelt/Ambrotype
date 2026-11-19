@@ -10,10 +10,16 @@ use std::path::Path;
 
 use amb_color::matrix::{Mat3, apply3, invert3, xy_to_xyz};
 use rawler::imgop::develop::{Intermediate, ProcessingStep, RawDevelop};
-use rawler::imgop::xyz::Illuminant;
 use rayon::prelude::*;
 
 use crate::{Error, dng_opcodes};
+
+mod metadata;
+mod preview;
+
+pub use metadata::{Gps, PhotoMetadata, Ratio, read_metadata, read_shot};
+use metadata::{calibration_matrices, color_matrix};
+pub use preview::{embedded_preview, embedded_thumbnail, raw_size};
 
 /// Linear camera-space image, scaled so the sensor white level is 1.0.
 pub struct CameraImage {
@@ -46,20 +52,6 @@ pub struct CameraImage {
     pub metadata: PhotoMetadata,
 }
 
-/// A rational number as stored in EXIF.
-pub type Ratio = (u32, u32);
-
-/// GPS position from the raw's EXIF.
-#[derive(Debug, Clone, Default, PartialEq)]
-pub struct Gps {
-    /// "N"/"S" and degrees, minutes, seconds.
-    pub latitude: (String, [Ratio; 3]),
-    /// "E"/"W" and degrees, minutes, seconds.
-    pub longitude: (String, [Ratio; 3]),
-    /// 0 = above sea level, 1 = below; metres.
-    pub altitude: Option<(u8, Ratio)>,
-}
-
 /// Photo metadata for exports. Values keep their EXIF form.
 /// Raw file extensions we open (lower case).
 pub const RAW_EXTENSIONS: [&str; 21] = [
@@ -72,76 +64,6 @@ pub fn is_raw_path(path: &Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
         .is_some_and(|e| RAW_EXTENSIONS.contains(&e.to_ascii_lowercase().as_str()))
-}
-
-#[derive(Debug, Clone, Default, PartialEq)]
-pub struct PhotoMetadata {
-    pub make: String,
-    pub model: String,
-    pub lens_make: Option<String>,
-    pub lens_model: Option<String>,
-    pub exposure_time: Option<Ratio>,
-    pub fnumber: Option<Ratio>,
-    pub focal_length: Option<Ratio>,
-    pub iso: Option<u32>,
-    pub exposure_bias: Option<(i32, i32)>,
-    /// "YYYY:MM:DD HH:MM:SS"
-    pub date_time_original: Option<String>,
-    pub offset_time_original: Option<String>,
-    pub artist: Option<String>,
-    pub copyright: Option<String>,
-    /// EXIF orientation 1..8 (1 = as stored). Pixels are kept in sensor order;
-    /// exports rotate them.
-    pub orientation: u16,
-    pub gps: Option<Gps>,
-}
-
-/// Every colour matrix rawler has for the camera with its illuminant's
-/// temperature, coolest first.
-fn calibration_matrices(raw: &rawler::RawImage) -> Vec<(f64, Mat3)> {
-    let mut out: Vec<(f64, Mat3)> = raw
-        .color_matrix
-        .iter()
-        .filter_map(|(illuminant, flat)| {
-            let temp = crate::profile::illuminant_temperature(*illuminant as u16)?;
-            if flat.len() < 9 || flat.iter().any(|v| !v.is_finite()) {
-                return None;
-            }
-            let m: Mat3 =
-                std::array::from_fn(|r| std::array::from_fn(|c| f64::from(flat[r * 3 + c])));
-            let det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1])
-                - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
-                + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
-            (det.abs() > 1e-9).then_some((temp, m))
-        })
-        .collect();
-    out.sort_by(|a, b| a.0.total_cmp(&b.0));
-    out.dedup_by(|a, b| a.0 == b.0);
-    out
-}
-
-fn color_matrix(raw: &rawler::RawImage) -> Result<Mat3, Error> {
-    let (_, flat) = raw
-        .color_matrix_find_first([
-            Illuminant::D65,
-            Illuminant::D50,
-            Illuminant::D55,
-            Illuminant::A,
-        ])
-        .or_else(|| raw.color_matrix.iter().next().map(|(k, v)| (*k, v.clone())))
-        .ok_or_else(|| Error::Unsupported("no colour matrix for this camera".into()))?;
-    if flat.len() < 9 {
-        return Err(Error::Unsupported(
-            "colour matrix has fewer than 9 entries".into(),
-        ));
-    }
-    let mut m = [[0.0; 3]; 3];
-    for (i, row) in m.iter_mut().enumerate() {
-        for (j, cell) in row.iter_mut().enumerate() {
-            *cell = f64::from(flat[i * 3 + j]);
-        }
-    }
-    Ok(m)
 }
 
 /// Open a photo: a raw file, or a rendered image by its extension
@@ -549,87 +471,6 @@ fn orientation_code(o: rawler::decoders::Orientation) -> u16 {
     }
 }
 
-/// Camera and lens metadata of a raw file, without decoding the image.
-/// Missing fields stay `None`.
-pub fn read_shot(path: &Path) -> Result<amb_lens::ShotInfo, Error> {
-    read_metadata(path).map(|(shot, _)| shot)
-}
-
-/// Lens-matching info and export metadata of a raw file, without decoding the image.
-pub fn read_metadata(path: &Path) -> Result<(amb_lens::ShotInfo, PhotoMetadata), Error> {
-    use rawler::formats::tiff::Rational;
-    if crate::raster::is_raster(path) {
-        return crate::raster::read_metadata(path);
-    }
-    let src = rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
-    let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
-    let md = decoder
-        .raw_metadata(&src, &rawler::decoders::RawDecodeParams::default())
-        .map_err(|e| Error::Decode(e.to_string()))?;
-    let ratio = |r: Option<Rational>| {
-        r.filter(|r| r.d != 0)
-            .map(|r| f64::from(r.n) / f64::from(r.d))
-            .filter(|v| v.is_finite() && *v > 0.0)
-    };
-    let raw_ratio = |r: Option<Rational>| r.filter(|r| r.d != 0).map(|r| (r.n, r.d));
-    let non_empty = |s: &Option<String>| {
-        s.as_ref()
-            .map(|s| s.trim_matches(char::from(0)).trim().to_string())
-            .filter(|s| !s.is_empty())
-    };
-    let (lens_make, lens_model) = match &md.lens {
-        Some(lens) => (Some(lens.lens_make.clone()), Some(lens.lens_model.clone())),
-        None => (
-            non_empty(&md.exif.lens_make),
-            non_empty(&md.exif.lens_model),
-        ),
-    };
-    let e = &md.exif;
-    let dms = |v: &Option<[Rational; 3]>| v.map(|a| a.map(|r| (r.n, r.d)));
-    let gps = e.gps.as_ref().and_then(|g| {
-        Some(Gps {
-            latitude: (g.gps_latitude_ref.clone()?, dms(&g.gps_latitude)?),
-            longitude: (g.gps_longitude_ref.clone()?, dms(&g.gps_longitude)?),
-            altitude: g
-                .gps_altitude
-                .map(|a| (g.gps_altitude_ref.unwrap_or(0), (a.n, a.d))),
-        })
-    });
-    let metadata = PhotoMetadata {
-        make: md.make.clone(),
-        model: md.model.clone(),
-        lens_make: lens_make.clone(),
-        lens_model: lens_model.clone(),
-        exposure_time: raw_ratio(e.exposure_time),
-        fnumber: raw_ratio(e.fnumber),
-        focal_length: raw_ratio(e.focal_length),
-        iso: e
-            .iso_speed_ratings
-            .map(u32::from)
-            .or(e.iso_speed)
-            .or(e.recommended_exposure_index),
-        exposure_bias: e.exposure_bias.filter(|r| r.d != 0).map(|r| (r.n, r.d)),
-        date_time_original: non_empty(&e.date_time_original),
-        offset_time_original: non_empty(&e.offset_time_original),
-        artist: non_empty(&e.artist),
-        copyright: non_empty(&e.copyright),
-        orientation: e.orientation.filter(|o| (1..=8).contains(o)).unwrap_or(1),
-        gps,
-    };
-    let shot = amb_lens::ShotInfo {
-        camera_make: md.make.clone(),
-        camera_model: md.model.clone(),
-        lens_make,
-        lens_model,
-        focal_mm: ratio(e.focal_length),
-        aperture: ratio(e.fnumber),
-        distance_m: ratio(e.subject_distance),
-        crop_factor: None,
-        embedded: None,
-    };
-    Ok((shot, metadata))
-}
-
 /// Camera RGB of a white with chromaticity (x, y), green normalised to 1.
 impl CameraImage {
     /// XYZ → camera for a white of `temp` kelvin: the two calibration
@@ -708,91 +549,6 @@ impl CfaExt for rawler::RawImage {
             }
             _ => false,
         }
-    }
-}
-
-/// A small thumbnail from the preview the camera embedded in the raw (no raw
-/// decoding, so it's quick), upright and at most `max_edge` pixels on its long
-/// side. `None` when the file has no usable preview. It shows the camera's
-/// own JPEG rendering, not the edit. A JPEG, PNG, TIFF or WebP is decoded
-/// small instead ([`crate::raster::quick_image`]).
-pub fn embedded_thumbnail(path: &Path, max_edge: u32) -> Result<Option<image::RgbImage>, Error> {
-    // A rendered image is its own preview, decoded small.
-    let small = if crate::raster::is_raster(path) {
-        crate::raster::quick_image(path, max_edge.max(16))?
-    } else {
-        let Some(img) = embedded_jpeg(path, false)? else {
-            return Ok(None);
-        };
-        img.thumbnail(max_edge.max(16), max_edge.max(16)).to_rgb8()
-    };
-    Ok(Some(upright(path, small)))
-}
-
-/// The camera's own JPEG inside a raw, as large as it stores one, upright:
-/// what the camera would have saved had it been set to JPEG (often full
-/// size; on some cameras smaller). `None` when it keeps none.
-/// The raw's sensor size in pixels, read without decoding it (None for a
-/// raster file or what can't be read).
-pub fn raw_size(path: &Path) -> Option<(usize, usize)> {
-    if crate::raster::is_raster(path) {
-        return None;
-    }
-    let src = rawler::rawsource::RawSource::new(path).ok()?;
-    let decoder = rawler::get_decoder(&src).ok()?;
-    let img = decoder
-        .raw_image(&src, &rawler::decoders::RawDecodeParams::default(), true)
-        .ok()?;
-    Some((img.width, img.height))
-}
-
-pub fn embedded_preview(path: &Path) -> Result<Option<image::RgbImage>, Error> {
-    Ok(embedded_jpeg(path, true)?.map(|img| upright(path, img.to_rgb8())))
-}
-
-/// The larger preview a raw keeps (sharper when scaled down), else its small thumbnail.
-/// `largest` also looks for a full-size JPEG rawler doesn't offer (slow to
-/// decode: not for thumbnails).
-fn embedded_jpeg(path: &Path, largest: bool) -> Result<Option<image::DynamicImage>, Error> {
-    let src = rawler::rawsource::RawSource::new(path).map_err(|e| Error::Decode(e.to_string()))?;
-    let decoder = rawler::get_decoder(&src).map_err(|e| Error::Decode(e.to_string()))?;
-    let params = rawler::decoders::RawDecodeParams::default();
-    let found = match decoder.preview_image(&src, &params) {
-        Ok(Some(img)) => Some(img),
-        _ => decoder.thumbnail_image(&src, &params).ok().flatten(),
-    };
-    // A larger JPEG in the file's IFDs (Sony's full-size one).
-    let larger = largest
-        .then(|| crate::sony::largest_jpeg(path))
-        .flatten()
-        .and_then(|b| image::load_from_memory_with_format(&b, image::ImageFormat::Jpeg).ok())
-        .filter(|j| {
-            found.as_ref().is_none_or(|f| {
-                u64::from(j.width()) * u64::from(j.height())
-                    > u64::from(f.width()) * u64::from(f.height())
-            })
-        });
-    Ok(larger
-        .or(found)
-        .filter(|i| i.width() >= 32 && i.height() >= 32))
-}
-
-/// An embedded preview turned as the raw says it was held, or as its
-/// sidecar says once it was turned in the library.
-fn upright(path: &Path, small: image::RgbImage) -> image::RgbImage {
-    let orientation = crate::orientation::from_sidecar(path)
-        .unwrap_or_else(|| read_metadata(path).map(|(_, m)| m.orientation).unwrap_or(1));
-    use image::imageops::{flip_horizontal, flip_vertical, rotate90, rotate180, rotate270};
-    match orientation {
-        2 => flip_horizontal(&small),
-        3 => rotate180(&small),
-        4 => flip_vertical(&small),
-        // As amb_export::geometry::orient: 5 mirrors then turns 270°, 7 90°.
-        5 => rotate270(&flip_horizontal(&small)),
-        6 => rotate90(&small),
-        7 => rotate90(&flip_horizontal(&small)),
-        8 => rotate270(&small),
-        _ => small,
     }
 }
 

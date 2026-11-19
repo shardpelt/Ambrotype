@@ -138,20 +138,6 @@ How the splits below work. Each follows "Moving Rust code" and the rules above (
 - Fix mentions of the old path (rule 7 above). `docs/ARCHITECTURE.md` and `docs/design/structure.md` name several of these files.
 Checks for all of them: the three cargo commands, with the crate's own tests unchanged in count (`cargo test -p CRATE`, compare the "N passed" before and after).
 
-### B9a. Split `crates/amb-engine/src/raw.rs` before it passes 800
-Tier: medium        Risk: low
-Why: 798 production lines, 2 under the budget: the next feature trips the size test. Its metadata reading and its embedded previews are separate jobs.
-Files: `crates/amb-engine/src/raw.rs` to `crates/amb-engine/src/raw/{mod,metadata,preview}.rs`.
-Steps:
-1. `git mv crates/amb-engine/src/raw.rs crates/amb-engine/src/raw/mod.rs`. Its two test modules (`thumbnail_tests`, `matrix_tests`, after the production code) stay in `mod.rs` as they are; do not make a `tests.rs`.
-2. `metadata.rs`: `Ratio`, `Gps`, `PhotoMetadata`, `calibration_matrices`, `color_matrix`, `read_shot`, `read_metadata`. `mod.rs` declares `mod metadata;` and re-exports `pub use metadata::{Gps, PhotoMetadata, Ratio, read_metadata, read_shot};` (add `calibration_matrices`, `color_matrix` as `pub(super)` or `pub(crate)` as the compiler asks: `load_file` uses them).
-3. `preview.rs`: `embedded_thumbnail`, `raw_size`, `embedded_preview`, `embedded_jpeg`, `upright`. `mod.rs` declares `mod preview;` and re-exports `pub use preview::{embedded_preview, embedded_thumbnail, raw_size};`. `upright` is also used by `impl CfaExt for rawler::RawImage` (which stays in `mod.rs`): `pub(super)`.
-4. The rest (`CameraImage`, `RAW_EXTENSIONS`, `is_raw_path`, `load`, `load_file`, the demosaic helpers, `downscale`, `clip_levels`, `orientation_code`, both `impl CameraImage`, `CfaExt`) stays.
-Don't: change a public path (`amb_engine::raw::load`, `raw::PhotoMetadata`, `raw::embedded_thumbnail` are used in 7 crates).
-Checks: as the common checks of Group B; `cargo test -p amb-engine`; `cargo clippy --workspace --all-targets -- -D warnings`.
-Done when: `mod.rs` is under 650 production lines.
-Commit: `engine: split raw.rs into metadata and previews`. Why: "It was 2 lines under the size budget."
-
 ### B9b. Split `crates/amb-library/src/catalog.rs` before it passes 800
 Tier: medium        Risk: low
 Why: 791 production lines, 9 under the budget.

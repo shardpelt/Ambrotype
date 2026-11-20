@@ -3,7 +3,9 @@
 //! language files, and `zz`, the made-up language that marks every text in
 //! the table, so a test can count what is not through `t()` yet.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
+#[cfg(test)]
+use std::collections::BTreeSet;
 
 use serde::Serialize;
 
@@ -93,7 +95,9 @@ pub(crate) fn texts(code: &str) -> Result<Texts, String> {
 /// and section's label; each setting's label, help, "?" card and choices (the
 /// registry and amb-protocol's `descriptions.json`); the mask fields' labels;
 /// the built-in size presets' groups and names (`data/size-presets.json`).
-pub(crate) fn built_in_texts() -> BTreeSet<String> {
+/// Only the test that writes `built-in.json` calls it.
+#[cfg(test)]
+fn built_in_texts() -> BTreeSet<String> {
     fn control(c: &crate::schema::Control, out: &mut BTreeSet<String>) {
         out.insert(c.label.clone());
         out.insert(c.description.clone());

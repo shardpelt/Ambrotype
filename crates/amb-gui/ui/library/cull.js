@@ -263,15 +263,8 @@ async function cullSharper(img) {
   img.dataset.sharp = "1";
   const p = libPhoto(img.closest(".cull-tile")?.dataset.path);
   if (!p) return;
-  try {
-    const url = await bigImage(p, 6144, Boolean(p.edited)).catch(() => bigImage(p, 6144, false));
-    const probe = new Image();
-    probe.src = url;
-    await probe.decode();
-    if (img.isConnected && probe.naturalWidth > img.naturalWidth) img.src = url;
-  } catch {
-    /* the smaller picture stays */
-  }
+  const url = await zoomBigger(p, img);
+  if (url && img.isConnected) img.src = url;
 }
 
 // Wheel, pinch, drag and keys zoom loupe's photo, or compare's two together.

@@ -155,6 +155,24 @@ function makeZoom({ host, images, all = images, frame, sharper = () => {}, activ
   return z;
 }
 
+// The long edge of the bigger picture fetched once zoomed past the first one's
+// detail (px): about a 24 MP photo whole.
+const ZOOM_BIG_EDGE = 6144;
+
+// A bigger picture of photo `p` than `img` shows (its edit's render when it
+// has one), decoded and ready; null when there is none.
+async function zoomBigger(p, img) {
+  try {
+    const url = await bigImage(p, ZOOM_BIG_EDGE, Boolean(p.edited)).catch(() => bigImage(p, ZOOM_BIG_EDGE, false));
+    const probe = new Image();
+    probe.src = url;
+    await probe.decode();
+    return probe.naturalWidth > img.naturalWidth ? url : null;
+  } catch {
+    return null; // the smaller picture stays
+  }
+}
+
 // ---------------------------------------------------------------- the viewer
 
 // The viewer's zoom, made when it opens.
@@ -180,17 +198,9 @@ async function viewerSharper(img) {
   const p = slides.list[slides.at];
   if (!p || vz.z.big === p.path) return;
   vz.z.big = p.path;
-  try {
-    const url = await bigImage(p, 6144, Boolean(p.edited)).catch(() => bigImage(p, 6144, false));
-    if (slides.list[slides.at] !== p) return;
-    const probe = new Image();
-    probe.src = url;
-    await probe.decode();
-    if (slides.list[slides.at] !== p || probe.naturalWidth <= img.naturalWidth) return;
-    // Same fitted size, so the zoom stays put.
-    img.src = url;
-    await img.decode().catch(() => {});
-  } catch {
-    /* the smaller picture stays */
-  }
+  const url = await zoomBigger(p, img);
+  if (!url || slides.list[slides.at] !== p) return;
+  // Same fitted size, so the zoom stays put.
+  img.src = url;
+  await img.decode().catch(() => {});
 }

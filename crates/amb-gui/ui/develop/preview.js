@@ -467,6 +467,7 @@ function wireViewer() {
   let drag = null;
   // After layout, so resizing the photo doesn't loop the observer.
   new ResizeObserver(() => requestAnimationFrame(fitPreview)).observe($("viewer"));
+  wireMeterArea();
   // The webview's own menu can't save the photo (and would copy the small
   // preview): right-click shows the photo's menu instead (Copy image, Export…).
   $("viewer").addEventListener("contextmenu", (e) => {

@@ -59,8 +59,16 @@ await t.step("Meter area: a drag stores the box (one step); Alt-click meters the
   // Open again (from its key action, as search does): the stored box shows where it was drawn.
   KEY_ACTIONS.find((a) => a.id === "meter-area").run();
   await t.until("the stored box", () => ui.picking === "meter" && t.visible("#meter-box"));
-  const b = $("meter-box").getBoundingClientRect();
-  t.expect(Math.abs((b.left - r.left) / r.width - 0.2) < 0.02 && Math.abs((b.bottom - r.top) / r.height - 0.9) < 0.02, "the box where it was drawn");
+  // Over the photo once its new render has settled (the box follows it).
+  const boxAt = () => {
+    const p = $("preview").getBoundingClientRect();
+    const b = $("meter-box").getBoundingClientRect();
+    return [(b.left - p.left) / p.width, (b.bottom - p.top) / p.height];
+  };
+  await t.until("the box where it was drawn", () => {
+    const [left, bottom] = boxAt();
+    return Math.abs(left - 0.2) < 0.02 && Math.abs(bottom - 0.9) < 0.02;
+  });
   t.click(meter);
   t.expect(!ui.picking && !t.visible("#meter-box"), "closed again");
   meter.dispatchEvent(new MouseEvent("click", { altKey: true, bubbles: true }));

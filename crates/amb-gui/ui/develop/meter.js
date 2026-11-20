@@ -55,3 +55,11 @@ function showMeterBox(drag = null, e = null) {
   }
   Object.assign(box.style, { left: `${x0}px`, top: `${y0}px`, width: `${x1 - x0}px`, height: `${y1 - y0}px` });
 }
+
+// The box follows the photo as it renders again or the window changes, as the
+// mask and spot tools' drawings do: a frame later, once fitPreview has placed it.
+function wireMeterArea() {
+  const follow = () => requestAnimationFrame(() => showMeterBox());
+  $("preview").addEventListener("load", follow);
+  new ResizeObserver(follow).observe($("viewer"));
+}

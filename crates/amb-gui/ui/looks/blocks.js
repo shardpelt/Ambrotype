@@ -4,6 +4,7 @@
 // named in a strip at the column's foot (a click scrolls there), History
 // stays docked at the foot (style.css), and a block's heading folds it
 // (remembered).
+"use strict";
 
 const columnWatch = new WeakMap();
 

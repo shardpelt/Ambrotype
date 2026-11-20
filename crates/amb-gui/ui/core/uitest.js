@@ -3,6 +3,7 @@
 // The script is the body of an async function given `t`, the helpers below;
 // it acts like a person would (clicks, keys, sliders) and checks what the
 // page shows. Any uncaught error or console.error fails the run.
+"use strict";
 
 function uiTestHelpers(log) {
   const t = {

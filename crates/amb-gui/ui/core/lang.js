@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The chosen language (docs/design/language.md): loading its texts, and
 // swapping the markup's text for them. `t` and `plural` are in core.js.
+"use strict";
 
 const lang = {
   code: "en",       // the language shown ("en" has no file: the text is English)

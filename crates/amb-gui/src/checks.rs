@@ -173,6 +173,7 @@ const INLINE_STYLE_LIMIT: usize = 17;
 const TOP_LEVEL_LET_LIMIT: usize = 7;
 const TOAST_STRING_LIMIT: usize = 0;
 const LOCAL_STORAGE_LIMIT: usize = 0;
+const CREATE_ELEMENT_LIMIT: usize = 207;
 
 #[test]
 fn old_idioms_may_only_fall() {
@@ -226,6 +227,12 @@ fn old_idioms_may_only_fall() {
             LOCAL_STORAGE_LIMIT,
             "`store`",
         ),
+        (
+            "document.createElement( outside core/core.js",
+            count("document.createElement(", "core/core.js"),
+            CREATE_ELEMENT_LIMIT,
+            "`el` from core.js",
+        ),
     ];
     let mut problems = Vec::new();
     for (idiom, now, limit, helper) in checks {
@@ -236,6 +243,22 @@ fn old_idioms_may_only_fall() {
         }
     }
     assert!(problems.is_empty(), "\n{}\n", problems.join("\n"));
+}
+
+/// Every script runs in strict mode, so a typo makes an error, not a global
+/// (docs/codestyle.md §11: SPDX line, what it holds, then "use strict").
+#[test]
+fn every_script_is_strict() {
+    let loose: Vec<String> = ui_text("js")
+        .into_iter()
+        .filter(|(_, t)| !t.lines().any(|l| l == "\"use strict\";"))
+        .map(|(f, _)| f)
+        .collect();
+    assert!(
+        loose.is_empty(),
+        "add \"use strict\"; after the header comment of: {}",
+        loose.join(", ")
+    );
 }
 
 // Copies of shared parts, as they stand. Lower a limit when you remove some,

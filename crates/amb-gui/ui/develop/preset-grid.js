@@ -5,6 +5,7 @@
 // shows it on the photo, a click applies it, right-click has the rest.
 // Previews are made as tiles come into sight, a few at a time, and kept per
 // photo and amount.
+"use strict";
 
 const presetGrid = { urls: new Map(), queue: [], busy: false, near: null, photo: null };
 const ALL_PRESETS = "";

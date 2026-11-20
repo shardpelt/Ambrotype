@@ -1,6 +1,6 @@
 # One table for the app's words
 
-Decided 2026-11-13. Step 1 built 2026-11-15; steps 2 to 4 not yet. The roadmap row is `language-table` in [ROADMAP.md](../ROADMAP.md).
+Decided 2026-11-13. Step 1 built 2026-11-15, step 2 (the sweep) and the settings' words 2026-11-20; steps 3 (errors) and 4 not yet. The roadmap row is `language-table` in [ROADMAP.md](../ROADMAP.md).
 
 ## Why
 
@@ -31,7 +31,7 @@ What it costs:
 2. **`plural(n, one, many)`** (it exists) looks up `"{n} photo|{n} photos"`. A language with more forms lists them all, split by `|`, in the order zero, one, two, few, many, other, leaving out those the language lacks.
 3. **Markup needs no keys.** At startup, `translateDom(document.body)` swaps each piece of text, `title`, `placeholder` and `aria-label` whose text is in the table. In English it does nothing.
 4. **Words built in a script** are wrapped by whoever writes them: `t("…")`. Text from a file or a person (a file name, a preset's name, a keyword) is never looked up.
-5. **Lists of words that are data** (`KEY_ACTIONS` labels, the menu bar, the tips) are looked up where they are shown: `t(action.label)`.
+5. **Lists of words that are data** (`KEY_ACTIONS` labels, the menu bar, an export size list) are looked up where they are shown: `t(action.label)`. A list the table tool doesn't read writes its labels `tKey("Square")`: it gives the text back and puts it in the table.
 6. **Language files:** `crates/amb-gui/data/lang/<code>.json`, built in. Later a hub item kind, so translations are shared like themes ([recipes.md](../recipes.md), "a hub item kind"). Settings → General → Language: System, English, and each language there is a file for.
 7. **Dates and numbers** use `Intl` with the chosen language.
 
@@ -47,7 +47,7 @@ A made-up language `zz` turns every text in the table into `⟦text⟧`. A UI te
 
 ## Words that come from Rust
 
-- **Settings' labels and descriptions:** a `descriptions.<code>.json` beside the English one.
+- **Settings' words** (labels, help, "?" cards, choices, panel and section names) are in the same table: `data/lang/settings.json`, written from the registry and `descriptions.json` by a test (`AMB_UPDATE_DOCS=1 cargo test -p amb-gui lang`; `settings_texts` in `src/lang.rs`). The panels show them through `t()`.
 - **Errors and reports from editor commands** are English sentences today. First, `showError` passes them through `t()`: a fixed sentence translates, one with a file name in it does not. Editor commands return one error type (`CmdError`); once it carries a code and its values, and translates whole.
 - **`amb`** stays English.
 
@@ -64,6 +64,11 @@ File names, preset names, setting names (`Exposure2012`), `amb`'s output, the do
 - A language that fails to load leaves the app in English (`showError`); the editor still starts. Scripts, styles, `textarea`, `code` and `kbd` are left alone.
 - The table reads `label:` and `hint:` in `core/keys.js`, `core/menu.js`, `core/tasks.js` and `tools/toolblocks.js` as data lists (`t(action.label)` comes with the sweep).
 - The `zz` count is `UNMARKED_LIMIT` in `tests/ui/language.js` (not `checks.rs`: it needs the running editor), measured in CI's order. People's own words (preset names and groups) are in `translate="no"`: no language changes them and the count leaves them out (`langOwn` in `ui/core/lang.js`). Fixing near-duplicates is not done yet; `python3 tools/lang-table.py` lists them.
+
+## Built with step 2
+
+- `t` and `plural` remember what they gave (`LANG_MADE` in `ui/core/lang.js`, the latest 5000), so `translateDom` makes a text a script built again in the new language: no panel needs drawing again after a switch. A text glued from pieces isn't found, so one sentence is one `t()`.
+- `tKey` for data lists; `settings.json` for the settings' words; `zz` marks both.
 
 ## In four steps
 

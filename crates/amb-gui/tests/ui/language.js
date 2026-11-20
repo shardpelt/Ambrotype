@@ -32,6 +32,17 @@ await t.step("zz marks the markup, t and plural", async () => {
   t.expect(left.length <= UNMARKED_LIMIT, `${left.length} texts on screen are not through the table (limit ${UNMARKED_LIMIT}): ${left.slice(0, 5).join(" | ")}`);
 });
 
+await t.step("a text a script built switches language too", async () => {
+  const chip = el("button", { title: tr("All {n}", { n: 3 }) }, tr("All {n}", { n: 3 }));
+  document.body.append(chip);
+  await langSet("zz");
+  t.expect(chip.textContent === "⟦All 3⟧" && chip.title === "⟦All 3⟧", `made again in zz: ${chip.textContent} / ${chip.title}`);
+  await langSet("en");
+  t.expect(chip.textContent === "All 3" && chip.title === "All 3", `and back in English: ${chip.textContent}`);
+  chip.remove();
+  await langSet("zz");
+});
+
 await t.step("English again: the markup too", async () => {
   await langSet("en");
   t.expect(lang.texts === null && tr("Hello") === "Hello", "back to English");

@@ -10,6 +10,8 @@ const tree = { roots: [], folders: [], open: new Set(), offline: new Set(), load
 
 // How often to look for a library drive that was plugged back in.
 const DRIVE_CHECK_MS = 30000;
+// How long photos dragged over a closed folder wait before it opens.
+const DROP_OPEN_MS = 800;
 
 async function loadFolderTree() {
   try {
@@ -103,8 +105,6 @@ function folderTreeItem(node) {
 }
 
 // Photos dragged here move into the folder; hovering a closed one opens it.
-const DROP_OPEN_MS = 800;
-
 function wireFolderDrop(row, node, closed) {
   const leave = () => {
     row.classList.remove("drop-target");

@@ -255,6 +255,26 @@ function buildHsl(section, hide) {
   return [tabs, holder];
 }
 
+// Buttons beside a section's name in the panels: the section, the panel when
+// the name alone is ambiguous, and what each does (`run` gets the click).
+const SECTION_ACTIONS = [
+  // Lightroom's Auto, beside the tone sliders.
+  { section: "Tone", label: tKey("Auto"), title: tKey("Set Exposure, Contrast, Highlights, Shadows, Whites and Blacks for this photo (one undo step)"), run: () => autoFlow(true, false) },
+  { section: "Profile", panel: "lens", label: tKey("Lens database…"), title: tKey("Download or update lensfun's lens profiles (about 0.5 MB), used when there is no profile of your own"), run: () => lensDbFlow() },
+  { section: "Upright", label: tKey("Guided…"), title: tKey("Draw lines that should be vertical or horizontal; the Transform sliders straighten them"), run: () => enterGuided() },
+  { section: "Conversion", cls: "pick-base", label: tKey("Pick base"), title: tKey("Click the clear film between frames to set the film base (before Crop to frame, or with the crop off). Alt-click to measure it from the scan again"), run: (ev) => pickBaseFlow(ev.altKey) },
+  { section: "Conversion", cls: "pick-meter", label: tKey("Meter area"), title: tKey("Drag a box round the part Auto measures, to leave out a sky, a light leak or a holder's edge; the crop stays. Alt-click to meter the whole crop again"), run: (ev) => meterAreaFlow(ev.altKey) },
+  { section: "Conversion", label: tKey("Crop to frame"), title: tKey("Crop away the film rebate and the scanner holder's edges (one undo step)"), run: () => cropToFrame() },
+  // Keep this frame's film base and levels, so later edits don't move them.
+  { section: "Conversion", label: tKey("Freeze"), title: tKey("Store the film base and levels this photo shows now and turn Auto off (one undo step). For a whole roll: Sync negative roll in the library"), run: () => freezeNegative() },
+];
+
+// The buttons SECTION_ACTIONS gives `section` of `panel`.
+function sectionActions(section, panel) {
+  return SECTION_ACTIONS.filter((a) => a.section === section && (!a.panel || a.panel === panel)).map((a) =>
+    el("button", { class: `small section-action ${a.cls ?? ""}`.trim(), title: t(a.title), onclick: a.run }, t(a.label)));
+}
+
 function buildPanel(item) {
   let title, entries, groups = null;
   if (typeof item.panel === "string") {
@@ -310,55 +330,7 @@ function buildPanel(item) {
       const l = document.createElement("div");
       l.className = "section-label";
       l.append(e.own ? el("span", { class: "section-name", translate: "no" }, e.text) : el("span", { class: "section-name" }, t(e.text)));
-      if (e.text === "Tone") {
-        // Lightroom's Auto, beside the tone sliders.
-        const auto = document.createElement("button");
-        auto.className = "small section-action";
-        auto.textContent = t("Auto");
-        auto.title = t("Set Exposure, Contrast, Highlights, Shadows, Whites and Blacks for this photo (one undo step)");
-        auto.addEventListener("click", () => autoFlow(true, false));
-        l.append(auto);
-      }
-      if (e.text === "Profile" && item.panel === "lens") {
-        const fetch = document.createElement("button");
-        fetch.className = "small section-action";
-        fetch.textContent = t("Lens database…");
-        fetch.title = t("Download or update lensfun's lens profiles (about 0.5 MB), used when there is no profile of your own");
-        fetch.addEventListener("click", () => lensDbFlow());
-        l.append(fetch);
-      }
-      if (e.text === "Upright") {
-        const guided = document.createElement("button");
-        guided.className = "small section-action";
-        guided.textContent = t("Guided…");
-        guided.title = t("Draw lines that should be vertical or horizontal; the Transform sliders straighten them");
-        guided.addEventListener("click", () => enterGuided());
-        l.append(guided);
-      }
-      if (e.text === "Conversion") {
-        // Keep this frame's film base and levels, so later edits don't move them.
-        const freeze = document.createElement("button");
-        freeze.className = "small section-action";
-        freeze.textContent = t("Freeze");
-        freeze.title = t("Store the film base and levels this photo shows now and turn Auto off (one undo step). For a whole roll: Sync negative roll in the library");
-        freeze.addEventListener("click", () => freezeNegative());
-        const frame = document.createElement("button");
-        frame.className = "small section-action";
-        frame.textContent = t("Crop to frame");
-        frame.title = t("Crop away the film rebate and the scanner holder's edges (one undo step)");
-        frame.addEventListener("click", () => cropToFrame());
-        const base = document.createElement("button");
-        base.className = "small section-action pick-base";
-        base.textContent = t("Pick base");
-        base.title = t("Click the clear film between frames to set the film base (before Crop to frame, or with the crop off). Alt-click to measure it from the scan again");
-        base.addEventListener("click", (ev) => pickBaseFlow(ev.altKey));
-        const meter = document.createElement("button");
-        meter.className = "small section-action pick-meter";
-        meter.textContent = t("Meter area");
-        meter.title = t("Drag a box round the part Auto measures, to leave out a sky, a light leak or a holder's edge; the crop stays. Alt-click to meter the whole crop again");
-        meter.addEventListener("click", (ev) => meterAreaFlow(ev.altKey));
-        l.append(base, meter, frame, freeze);
-      }
+      l.append(...sectionActions(e.text, item.panel));
       body.append(l);
     } else if (e.type === "control") {
       const def = e.def ?? ui.defs.get(e.name);

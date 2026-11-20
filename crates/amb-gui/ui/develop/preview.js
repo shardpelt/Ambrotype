@@ -77,14 +77,15 @@ async function renderLoop() {
       });
       const { meta, jpeg } = splitFramed(buf);
       // A draft is smaller than the viewer; keep the image at its settled size
-      // so the photo doesn't shrink while dragging.
+      // so the photo doesn't shrink while dragging. A settled render keeps the
+      // old size too until its picture loads and fitPreview sizes it: cleared,
+      // the old picture showed at its own size for a moment, and a click or
+      // drag then landed on the wrong part of the photo.
       const img = $("preview");
       if (draft && !img.hidden && !img.style.width) {
         const r = img.getBoundingClientRect();
         img.style.width = `${r.width}px`;
         img.style.height = `${r.height}px`;
-      } else if (!draft && !sbs.layout) {
-        img.style.width = img.style.height = "";
       }
       showJpeg(jpeg);
       requestAnimationFrame(placeSplit);

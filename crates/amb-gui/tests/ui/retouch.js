@@ -103,8 +103,11 @@ await t.step("a brushed spot is drawn along its stroke and moves by dragging it"
   const s = spotList().at(-1);
   t.expect(s.shape === "brush" && s.at && s.strokes?.[0]?.length > 1, `listed with its stroke: ${JSON.stringify(s).slice(0, 200)}`);
   const steps = t.historyLength();
-  // Grab it on its stroke and move it down by a tenth of the photo.
-  drag([[0.35, 0.3], [0.35, 0.35], [0.35, 0.4]]);
+  // Grab it on its stroke where it is drawn now (the photo may have moved
+  // since it was painted, as the panel settled) and move it down by a tenth.
+  const [gx, gy] = sCanvas(...s.strokes[0][1]);
+  const [fx, fy] = [gx / c.width, gy / c.height];
+  drag([[fx, fy], [fx, fy + 0.05], [fx, fy + 0.1]]);
   await t.until("moved", () => t.historyLength() === steps + 1, 30000);
   const m = spotList().find((x) => x.index === s.index);
   t.expect(spotList().length === before + 1, "no new spot from the drag");

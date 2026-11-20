@@ -23,6 +23,7 @@ The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
 ## Recently done
 
+- 2026-11-20: **Before and after side by side** (right-click Before / after, or search "side by side"): each whole side by side, each filling its half (a drag moves both), or above and below; zoom, the wheel, panning and the zoom box keep both halves on the same part (`ui/develop/side-by-side.js`)
 - 2026-11-20: **Styles** (Presets → Styles…, Match look → Save as style…, `amb style`): a saved look, not saved moves; a style keeps what Match look aims at, and applying it solves each photo's own settings to reach it (one photo +1 Exposure, another +5), with an Amount and a tone or colour focus, to the open photo or the library's selection (`amb_library::styles`, `amb_ops::style`)
 - 2026-11-20: **Match look moves the tone curve and Clarity/Texture** (`amb match --parts curve,detail`, the editor's Presets → Match look of other photos…): the parametric curve's four regions, and Clarity and Texture through a new local-contrast measure at their two scales; a `Focus` (all, tone, colour) for the Styles to come (`amb_engine::matching`)
 - 2026-11-20: **Seasons presets** (Presets → Preset library…, group Seasons): Autumn Pop, Spring Bloom, Summer Glow and Winter Frost make each season's colours stand out; colour, grading and light contrast moves only, so they suit any photo (hub `presets/`, synced in)

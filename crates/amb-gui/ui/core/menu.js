@@ -21,7 +21,7 @@ const MENU_BAR = [
     "keywords", "|", "rotate-left", "rotate-right", "flip-horizontal", "|", "save-preset", "styles", "style-new", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
   ]],
   [tKey("Library"), ["library", "|", "lib-loupe", "lib-compare", "|", "slideshow", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
-  [tKey("View"), ["before", "split", "touch", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
+  [tKey("View"), ["before", "split", "side-by-side", "side-by-side-fill", "above-below", "touch", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
   [tKey("Window"), ["#minimize", "#maximize", "|", [tKey("Task"), ["task-library", "task-develop", "task-film", "task-collage"]], "|", "looks", "edit-layout", "blank-layout", "|", "hub", "|", "#bring_all_to_front"], "window"],
   [tKey("Help"), ["search", "|", "connect-ai", "|", "features", "learn", "basics", "camsim", "sample", "watch", "shortcuts", "|", "feedback", "source"], "help"],
 ];

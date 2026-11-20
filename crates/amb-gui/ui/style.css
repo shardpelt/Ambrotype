@@ -17,6 +17,7 @@
   --thumb: #d8d9dc;
   --track: #4a4d55;
   --radius: 6px;
+  --sbs-gap: 6px;
   font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
   font-size: 13px;
   color: var(--text);
@@ -1527,6 +1528,13 @@ body.status-off .statusbar { visibility: hidden; border: 0; }
 .split-label { position: absolute; top: 10px; padding: 3px 9px; border-radius: 10px; background: rgb(0 0 0 / 0.6); color: #fff; font-size: 12px; white-space: nowrap; pointer-events: none; }
 .split-label.before { right: 20px; }
 .split-label.after { left: 20px; }
+/* Side by side (side-by-side.js): both photos placed by the script; the
+   cover keeps After to its half, Before is clipped to its own. */
+.viewer.sbs img#preview { position: absolute; max-width: none; max-height: none; }
+.viewer.sbs img.split-before { pointer-events: auto; }
+.viewer.sbs-fill:not(.actual) img#preview, .viewer.sbs-fill:not(.actual) img.split-before { cursor: grab; }
+.sbs-cover { position: absolute; z-index: 1; background: var(--viewer); }
+.badge.sbs-label { z-index: 3; margin: 14px 0 0 44px; pointer-events: none; }
 /* Touch (touch.js). */
 .viewer.touching img#preview { cursor: ns-resize; }
 .touch-bar button.active { background: var(--accent); color: var(--accent-ink); }

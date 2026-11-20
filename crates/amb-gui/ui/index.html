@@ -142,6 +142,10 @@
       <!-- Before / after split (split.js): the before photo over the left part, and the bar. -->
       <img id="preview-before" class="split-before" alt="" hidden>
       <div id="split-bar" class="split-bar" hidden title="Drag to move the split (Y turns it off)"><span class="split-label before">Before</span><span class="split-label after">After</span><span class="split-handle"></span></div>
+      <!-- Side by side (side-by-side.js): a cover over Before's half that keeps After in its own, and the labels. -->
+      <div id="sbs-cover" class="sbs-cover" hidden></div>
+      <div class="badge sbs-label" id="sbs-before-label" hidden>Before</div>
+      <div class="badge sbs-label" id="sbs-after-label" hidden>After</div>
       <canvas id="crop-canvas" class="crop-canvas" hidden></canvas>
       <canvas id="mask-canvas" class="crop-canvas mask-canvas" hidden></canvas>
       <canvas id="spot-canvas" class="crop-canvas spot-canvas" hidden></canvas>
@@ -2007,6 +2011,7 @@
   <script src="library/slideshow.js"></script>
   <script src="library/viewer-zoom.js"></script>
   <script src="develop/split.js"></script>
+  <script src="develop/side-by-side.js"></script>
   <script src="develop/touch.js"></script>
   <script src="dialogs/assistant.js"></script>
   <script src="tools/guided.js"></script>

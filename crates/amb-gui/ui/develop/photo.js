@@ -240,9 +240,10 @@ async function save() {
 // Before / after (\\): the split with its bar near the right edge, so the
 // photo shows as it was and the bar drags in to show the edit; again to
 // leave. Zoomed in or cropping, where the split can't show, the whole
-// photo as it was instead.
+// photo as it was instead. Side by side, back to one photo.
 function toggleBefore() {
   if (!ui.info) return;
+  if (sbs.layout) return sbsSet(null);
   if (ui.before) {
     ui.before = false;
   } else if (ui.split) {

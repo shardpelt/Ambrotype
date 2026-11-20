@@ -5,7 +5,8 @@
 
 function previewSize(draft) {
   const v = $("viewer");
-  const px = Math.max(v.clientWidth, v.clientHeight) * (window.devicePixelRatio || 1);
+  // Side by side, what one half needs (side-by-side.js).
+  const px = sbs.layout ? sbsEdge() : Math.max(v.clientWidth, v.clientHeight) * (window.devicePixelRatio || 1);
   const full = Math.min(2560, Math.max(512, Math.ceil(px)));
   return draft ? Math.max(512, Math.round(full * 0.6)) : full;
 }
@@ -82,7 +83,7 @@ async function renderLoop() {
         const r = img.getBoundingClientRect();
         img.style.width = `${r.width}px`;
         img.style.height = `${r.height}px`;
-      } else if (!draft) {
+      } else if (!draft && !sbs.layout) {
         img.style.width = img.style.height = "";
       }
       showJpeg(jpeg);
@@ -95,7 +96,7 @@ async function renderLoop() {
         ui.preview.fitUrl = URL.createObjectURL(new Blob([jpeg], { type: "image/jpeg" }));
         ui.preview.fitPath = ui.info.path;
       }
-      if (ui.split && !draft) await renderSplitBefore(previewSize(false));
+      if ((ui.split || sbs.layout) && !draft) await renderBefore(previewSize(false));
       drawHistogram(meta.histogram);
       ui.curve?.setHistogram(meta.histogram);
       const made = meta.gpu ? t("{w}×{h} preview in {ms} ms on the GPU", { w: meta.width, h: meta.height, ms: meta.millis }) : t("{w}×{h} preview in {ms} ms", { w: meta.width, h: meta.height, ms: meta.millis });
@@ -147,6 +148,7 @@ function splitFramed(buf) {
 // preview smaller than the screen), keeping its shape.
 function fitPreview() {
   const img = $("preview");
+  if (sbs.layout) return ui.zoom.on ? placeRegion() : placeSideBySide();
   if (ui.zoom.on || !img.naturalWidth) return placeSplit();
   const v = $("viewer");
   const s = Math.min(v.clientWidth / img.naturalWidth, v.clientHeight / img.naturalHeight);
@@ -171,8 +173,9 @@ function showJpeg(jpeg) {
 async function renderRegion() {
   status(t("Rendering {zoom}…", { zoom: zoomLabel() }), true);
   const [width, height] = regionSize();
+  const at = { cx: ui.zoom.cx, cy: ui.zoom.cy, width, height };
   const { meta, jpeg } = splitFramed(await invoke("region", {
-    cx: ui.zoom.cx, cy: ui.zoom.cy, width, height,
+    ...at,
     before: ui.before,
     clipping: ui.clipping,
   }));
@@ -192,6 +195,8 @@ async function renderRegion() {
   showJpeg(jpeg);
   $("viewer").classList.add("actual");
   placeRegion();
+  // Side by side: the before photo's same crop, beside it.
+  if (sbs.layout && !moved) await renderBefore(0, at);
   if (moved) requestPreview(false);
   status(t("{zoom}: {w}×{h} in {ms} ms", { zoom: zoomLabel(), w: meta.full_width, h: meta.full_height, ms: meta.millis }), true);
 }
@@ -217,11 +222,11 @@ async function renderRegionDraft() {
 function zoomScale(m = ui.zoom.meta) {
   const box = ui.zoom.box;
   if (!box) return 1;
-  const v = $("viewer");
+  const v = photoArea();
   const dpr = window.devicePixelRatio || 1;
   const fw = m?.full_width ?? ui.info?.width ?? 1;
   const fh = m?.full_height ?? ui.info?.height ?? 1;
-  const s = Math.min((v.clientWidth * dpr) / (box.w * fw), (v.clientHeight * dpr) / (box.h * fh)) * 0.96;
+  const s = Math.min((v.w * dpr) / (box.w * fw), (v.h * dpr) / (box.h * fh)) * 0.96;
   return Math.min(8, Math.max(0.05, s));
 }
 
@@ -230,22 +235,22 @@ const zoomLabel = () => `${Math.round(zoomScale() * 100)}%`;
 // The full-size area to render: 1.5× what the viewer shows, so a short pan
 // doesn't show empty space; at most 4096 pixels a side.
 function regionSize() {
-  const v = $("viewer");
+  const v = photoArea();
   const dpr = window.devicePixelRatio || 1;
   const s = zoomScale();
-  return [v.clientWidth, v.clientHeight].map((n) => Math.min(4096, Math.round((n * dpr * 1.5) / s)));
+  return [v.w, v.h].map((n) => Math.min(4096, Math.round((n * dpr * 1.5) / s)));
 }
 
 // The view's centre (fractions of the photo) kept where the view stays on
 // the photo: near an edge it stops at the edge, and a side smaller than the
 // viewer stays centred. `m` gives the full size (else the photo's own).
 function clampZoomCentre(u, v, m = ui.zoom.meta) {
-  const view = $("viewer");
+  const view = photoArea();
   const k = zoomScale(m) / (window.devicePixelRatio || 1);
   const fw = m?.full_width ?? ui.info?.width ?? 1;
   const fh = m?.full_height ?? ui.info?.height ?? 1;
   const clamp = (c, half) => (half >= 0.5 ? 0.5 : Math.min(1 - half, Math.max(half, c)));
-  return [clamp(u, view.clientWidth / 2 / k / fw), clamp(v, view.clientHeight / 2 / k / fh)];
+  return [clamp(u, view.w / 2 / k / fw), clamp(v, view.h / 2 / k / fh)];
 }
 
 // The whole photo enlarged under the 100% view: shown the moment you zoom in,
@@ -253,35 +258,53 @@ function clampZoomCentre(u, v, m = ui.zoom.meta) {
 function placeUnder(dx = 0, dy = 0) {
   const under = $("zoom-under");
   if (under.hidden || !under.naturalWidth) return;
-  const m = ui.zoom.meta;
-  const known = ui.zoom.full?.path === ui.info?.path ? ui.zoom.full : null;
-  const fw = m?.full_width ?? known?.w ?? ui.info.width;
-  const fh = m?.full_height ?? known?.h ?? fw * (under.naturalHeight / under.naturalWidth);
-  const fake = { full_width: fw, full_height: fh };
-  const k = zoomScale(m ?? fake) / (window.devicePixelRatio || 1);
-  const v = $("viewer");
-  const [u, w] = clampZoomCentre(ui.zoom.cx - dx / k / fw, ui.zoom.cy - dy / k / fh, m ?? fake);
+  const f = zoomFull(under);
+  const [fw, fh] = [f.full_width, f.full_height];
+  const k = zoomScale(f) / (window.devicePixelRatio || 1);
+  const v = photoArea();
+  const [u, w] = clampZoomCentre(ui.zoom.cx - dx / k / fw, ui.zoom.cy - dy / k / fh, f);
   under.style.width = `${fw * k}px`;
   under.style.height = `${fh * k}px`;
-  under.style.left = `${v.clientWidth / 2 - u * fw * k}px`;
-  under.style.top = `${v.clientHeight / 2 - w * fh * k}px`;
+  under.style.left = `${v.x + v.w / 2 - u * fw * k}px`;
+  under.style.top = `${v.y + v.h / 2 - w * fh * k}px`;
+}
+
+// The full size the zoomed view works in: the last crop's, else the photo's
+// known size, else its width and the shape of `img` (a whole-photo render).
+function zoomFull(img) {
+  if (ui.zoom.meta) return ui.zoom.meta;
+  const known = ui.zoom.full?.path === ui.info?.path ? ui.zoom.full : null;
+  const fw = known?.w ?? ui.info.width;
+  return { full_width: fw, full_height: known?.h ?? fw * (img.naturalHeight / img.naturalWidth) };
+}
+
+// The part of the viewer the photo fills: all of it, or After's half side
+// by side (side-by-side.js). In pixels from the viewer's corner, or with
+// `client` in the window's.
+function photoArea(client = false) {
+  const v = $("viewer");
+  const a = sbs.layout ? sbsPanes().after : { x: 0, y: 0, w: v.clientWidth, h: v.clientHeight };
+  if (!client) return a;
+  const r = v.getBoundingClientRect();
+  return { left: r.left + a.x, top: r.top + a.y, width: a.w, height: a.h };
 }
 
 // Position the crop so (cx, cy) sits in the viewport centre, moved by
 // (dx, dy) screen pixels while dragging, never past the photo's edges.
 function placeRegion(dx = pan.dx, dy = pan.dy) {
   placeUnder(dx, dy);
+  placeSideBySide(dx, dy);
   const m = ui.zoom.meta;
   if (!m) return;
-  const v = $("viewer");
+  const v = photoArea();
   const dpr = window.devicePixelRatio || 1;
   const k = zoomScale(m) / dpr;
   const img = $("preview");
   img.style.width = `${m.width * k}px`;
   img.style.height = `${m.height * k}px`;
   const [u, w] = clampZoomCentre(ui.zoom.cx - dx / k / m.full_width, ui.zoom.cy - dy / k / m.full_height, m);
-  img.style.left = `${v.clientWidth / 2 - (u * m.full_width - m.x) * k}px`;
-  img.style.top = `${v.clientHeight / 2 - (w * m.full_height - m.y) * k}px`;
+  img.style.left = `${v.x + v.w / 2 - (u * m.full_width - m.x) * k}px`;
+  img.style.top = `${v.y + v.h / 2 - (w * m.full_height - m.y) * k}px`;
 }
 
 // `box` (fractions of the photo's width and height) zooms to fit that area;
@@ -311,6 +334,7 @@ function setZoom(on, u = 0.5, v = 0.5, box = null, quiet = false) {
   }
   $("btn-zoom").classList.toggle("active", on);
   if (!on) for (const k of ["width", "height", "left", "top"]) img.style[k] = "";
+  placeSideBySide();
   if (!quiet) requestPreview(false);
 }
 
@@ -321,13 +345,15 @@ function setZoom(on, u = 0.5, v = 0.5, box = null, quiet = false) {
 const zoomStep = { timer: null };
 function zoomBy(factor, x, y) {
   if (!ui.info) return;
-  const v = $("viewer");
-  const r = v.getBoundingClientRect();
+  // Side by side, a point on Before zooms at the same point of the photo.
+  [x, y] = sbsToAfter(x, y);
+  const r = photoArea(true);
   const dpr = window.devicePixelRatio || 1;
   const known = ui.zoom.full?.path === ui.info.path ? ui.zoom.full : null;
   const fw = ui.zoom.meta?.full_width ?? known?.w ?? ui.info.width ?? 1;
   const fh = ui.zoom.meta?.full_height ?? known?.h ?? ui.info.height ?? 1;
-  const fit = Math.min((r.width * dpr) / fw, (r.height * dpr) / fh);
+  // The whole photo's scale: fitted (side by side filled: covering its half).
+  const fit = (sbs.layout === "fill" ? Math.max : Math.min)((r.width * dpr) / fw, (r.height * dpr) / fh);
   const s = ui.zoom.on ? zoomScale() : fit;
   const s2 = Math.min(8, s * factor);
   if (s2 <= fit * 1.02) {
@@ -347,7 +373,7 @@ function zoomBy(factor, x, y) {
 
 // Ctrl + and Ctrl − at the middle of the photo.
 function zoomKey(dir) {
-  const r = $("viewer").getBoundingClientRect();
+  const r = photoArea(true);
   zoomBy(dir > 0 ? 1.5 : 1 / 1.5, r.left + r.width / 2, r.top + r.height / 2);
 }
 
@@ -373,8 +399,8 @@ function panPixels(dx, dy) {
 }
 
 function panZoom(fx, fy) {
-  const v = $("viewer");
-  panPixels(fx * v.clientWidth, fy * v.clientHeight);
+  const v = photoArea();
+  panPixels(fx * v.w, fy * v.h);
 }
 
 // Where a click lands, as fractions (u, v) of the upright photo.
@@ -407,6 +433,8 @@ async function pickAt(u, v) {
 // `what`: "white" (the white-balance picker), "base" (a negative's film
 // base), "meter" (the box a negative is measured in), or false to stop picking.
 function setPicking(what) {
+  // A picker, or a tool (each starts by stopping the picker), ends side by side.
+  sbsSet(null);
   ui.picking = Boolean(ui.info) && what ? (what === true ? "white" : what) : false;
   $("viewer").classList.toggle("picking", Boolean(ui.picking));
   $("btn-wb").classList.toggle("active", ui.picking === "white");
@@ -468,6 +496,7 @@ function wireViewer() {
   // After layout, so resizing the photo doesn't loop the observer.
   new ResizeObserver(() => requestAnimationFrame(fitPreview)).observe($("viewer"));
   wireMeterArea();
+  wireSideBySide();
   // The webview's own menu can't save the photo (and would copy the small
   // preview): right-click shows the photo's menu instead (Copy image, Export…).
   $("viewer").addEventListener("contextmenu", (e) => {

@@ -296,6 +296,10 @@
  "About {name}": [
   "help/help.js"
  ],
+ "Above and below": [
+  "core/keys.js",
+  "develop/side-by-side.js"
+ ],
  "Above and below, the candidate above": [
   "library/cull.js"
  ],
@@ -801,6 +805,9 @@
  "Back to a grid layout": [
   "collage/collage-canvas.js"
  ],
+ "Back to one photo": [
+  "develop/side-by-side.js"
+ ],
  "Back to the collage, with this photo's edits": [
   "index.html"
  ],
@@ -863,7 +870,13 @@
  "Before / after: the photo as it was, with a bar to drag in": [
   "core/keys.js"
  ],
+ "Before above, after below, each whole; zooming and panning move both.": [
+  "core/keys.js"
+ ],
  "Before on the left of a bar, after on the right; drag the bar.": [
+  "core/keys.js"
+ ],
+ "Before on the left, after on the right, each whole; zooming and panning move both. Or right-click Before / after.": [
   "core/keys.js"
  ],
  "Best in each burst": [
@@ -1991,6 +2004,9 @@
  ],
  "Each group into a stack, the best on top": [
   "index.html"
+ ],
+ "Each half filled by the photo, the same part in both; drag to move both.": [
+  "core/keys.js"
  ],
  "Each photo for": [
   "index.html"
@@ -3352,7 +3368,7 @@
  "Leave spot removal": [
   "core/keys.js"
  ],
- "Leave the picker or Touch": [
+ "Leave the picker, Touch or side by side": [
   "core/keys.js"
  ],
  "Left": [
@@ -6022,6 +6038,14 @@
  ],
  "Shutter speed": [
   "index.html"
+ ],
+ "Side by side": [
+  "core/keys.js",
+  "develop/side-by-side.js"
+ ],
+ "Side by side, filling the view": [
+  "core/keys.js",
+  "develop/side-by-side.js"
  ],
  "Side by side, the candidate on the left": [
   "library/cull.js"

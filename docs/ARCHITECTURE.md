@@ -284,6 +284,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - A layout with `"chrome": "hidden"` (Minimalism) hides the bars and slides the columns in over the photo from the window's edges (`applyChrome` in `ui/looks/columns.js`).
   - **slideshow:** `ui/library/slideshow.js`. Two image layers on black; each photo's large edited thumbnail (`bigImage`, cached with the library's), the next one fetched while the current shows; CSS classes give the change effect. Full screen through the `window_fullscreen` command
   - **before / after split:** `ui/develop/split.js`. The "before" half keeps the crop, geometry and lens corrections, so both halves line up.
+  - **side by side:** `ui/develop/side-by-side.js` (side, filled, or above and below). The zoomed view fills After's half (`photoArea` in `ui/develop/preview.js`); each After crop is followed by a Before crop at the same place, and Before is placed by what it shows (`sbs.before`), so the halves stay matched while it renders.
   - **follows outside edits:** `sidecar_watch` (`notify`) watches the open photo's sidecar; a change by another app or an AI agent over MCP is loaded as one undo step.
   - **tasks:** `ui/core/tasks.js` draws the task bar (Library, Develop, Film, Collage, then task plugins; what earns a tab: [design/tabs.md](design/tabs.md)).
     - Library opens the library, Collage the collage maker (back to the task you were in when it closes).

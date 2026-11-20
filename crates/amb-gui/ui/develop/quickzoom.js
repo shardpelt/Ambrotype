@@ -13,8 +13,10 @@ function boxZoomWanted() {
   return store.text("amb.boxZoom") !== "0";
 }
 
-// Fractions (u, v) of the upright photo under a point, clamped to it.
+// Fractions (u, v) of the upright photo under a point, clamped to it (side
+// by side, a point on Before is the same point on After: side-by-side.js).
 function photoAt(x, y) {
+  [x, y] = sbsToAfter(x, y);
   const r = $("preview").getBoundingClientRect();
   const fx = Math.min(1, Math.max(0, (x - r.left) / r.width));
   const fy = Math.min(1, Math.max(0, (y - r.top) / r.height));
@@ -24,8 +26,8 @@ function photoAt(x, y) {
 function wireBoxZoom() {
   const viewer = $("viewer");
   const img = $("preview");
-  // On the photo, or on a tool's canvas over it (spots, masks, crop).
-  const onPhoto = (e) => e.target === img || (e.target.tagName === "CANVAS" && viewer.contains(e.target));
+  // On the photo (or Before side by side), or on a tool's canvas over it (spots, masks, crop).
+  const onPhoto = (e) => e.target === img || e.target.id === "preview-before" || (e.target.tagName === "CANVAS" && viewer.contains(e.target));
   viewer.addEventListener("mousedown", (e) => {
     if (e.button !== 2 || !ui.info || ui.picking || !onPhoto(e)) return;
     // Zoomed in, a right-drag moves the photo, also with a tool open.

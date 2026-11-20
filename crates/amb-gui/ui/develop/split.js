@@ -12,6 +12,7 @@ let splitAt = (() => {
 
 function toggleSplit() {
   if (!ui.info) return;
+  if (sbs.layout) sbsSet(null);
   ui.split = !ui.split;
   if (ui.split && ui.before) {
     ui.before = false;
@@ -27,19 +28,30 @@ function toggleSplit() {
   if (ui.split) requestPreview(false);
 }
 
-// The "before" half, rendered at the same size as the photo on screen.
-async function renderSplitBefore(maxEdge) {
-  const { jpeg } = splitFramed(await invoke("preview", { maxEdge, overrides: {}, before: true, clipping: false, maskOverlay: null }));
-  if (!ui.split) return;
+// The before photo, rendered at the same size as the photo on screen: the
+// whole photo (the split; side by side), or with `region` the same crop as
+// the zoomed view's (side by side, preview.js renderRegion). As it shows,
+// side by side learns what it shows (`sbs.before`).
+async function renderBefore(maxEdge, region = null) {
+  const path = ui.info.path;
+  const { meta, jpeg } = splitFramed(await (region
+    ? invoke("region", { ...region, before: true, clipping: false })
+    : invoke("preview", { maxEdge, overrides: {}, before: true, clipping: false, maskOverlay: null })));
+  if (!ui.split && !sbs.layout) return;
   const img = $("preview-before");
   const old = img.src;
-  img.onload = placeSplit;
+  img.onload = () => {
+    sbs.before = { path, meta: region ? meta : null };
+    placeSplit();
+  };
   img.src = URL.createObjectURL(new Blob([jpeg], { type: "image/jpeg" }));
   if (old) URL.revokeObjectURL(old);
 }
 
-// Lay the before image, the bar and the labels over the shown photo.
+// Lay the before image, the bar and the labels over the shown photo (side
+// by side lays out its own: side-by-side.js).
 function placeSplit() {
+  if (sbs.layout) return placeSideBySide();
   const before = $("preview-before");
   const bar = $("split-bar");
   const photo = $("preview");

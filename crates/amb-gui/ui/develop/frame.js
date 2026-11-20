@@ -117,6 +117,7 @@ async function toggleFrame(on = !fr.on) {
 }
 
 async function showFrameSettings(open) {
+  if (open) sbsSet(null);
   $("frame-panel").hidden = !open;
   if (open) {
     $("preset-library").hidden = true;
@@ -140,7 +141,7 @@ async function refreshFrameSpecs() {
 }
 
 // Tools that line their canvases up with the photo, and the 100% view.
-const frameBlocked = () => ui.crop.on || mk.on || sp.on || ui.zoom.on || (typeof gu !== "undefined" && gu.on);
+const frameBlocked = () => ui.crop.on || mk.on || sp.on || ui.zoom.on || Boolean(sbs.layout) || (typeof gu !== "undefined" && gu.on);
 
 function drawFrame() {
   const img = $("preview");

@@ -9,8 +9,9 @@
 const touchState = { on: false, mode: "tone", drag: null, pixels: null, pixelsOf: null };
 
 // Colour Mixer bands and their hues (degrees), in order round the wheel.
-const TOUCH_BANDS = [["Red", 0], ["Orange", 30], ["Yellow", 60], ["Green", 120], ["Aqua", 180], ["Blue", 240], ["Purple", 270], ["Magenta", 300]];
-const TOUCH_REGIONS = [["ParametricShadows", "Shadows"], ["ParametricDarks", "Darks"], ["ParametricLights", "Lights"], ["ParametricHighlights", "Highlights"]];
+const TOUCH_BANDS = [[tKey("Red"), 0], [tKey("Orange"), 30], [tKey("Yellow"), 60], [tKey("Green"), 120], [tKey("Aqua"), 180], [tKey("Blue"), 240], [tKey("Purple"), 270], [tKey("Magenta"), 300]];
+const TOUCH_MODES = { hue: tKey("hue"), saturation: tKey("saturation"), luminance: tKey("luminance") };
+const TOUCH_REGIONS = [["ParametricShadows", tKey("Shadows")], ["ParametricDarks", tKey("Darks")], ["ParametricLights", tKey("Lights")], ["ParametricHighlights", tKey("Highlights")]];
 // Slider units per pixel dragged: the full range of 200 in about 400 px.
 const TOUCH_GAIN = 0.5;
 
@@ -22,9 +23,9 @@ function toggleTouch(on = !touchState.on) {
   if (on) {
     if (ui.zoom.on) setZoom(false);
     setPicking(false);
-    status("Touch: drag up or down on the photo (T or Esc to stop)");
+    status(t("Touch: drag up or down on the photo (T or Esc to stop)"));
   } else {
-    status("Ready");
+    status(t("Ready"));
   }
   syncTouchBar();
 }
@@ -65,7 +66,7 @@ function touchTargets(rgb, mode = touchState.mode) {
   if (mode === "tone") {
     const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
     const [name, label] = TOUCH_REGIONS[Math.min(3, Math.floor(l * 4))];
-    return { targets: [[name, 1]], label };
+    return { targets: [[name, 1]], label: t(label) };
   }
   // The hue, then the two bands either side of it, weighted by nearness.
   const max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -80,11 +81,12 @@ function touchTargets(rgb, mode = touchState.mode) {
   const [a, from] = TOUCH_BANDS[i];
   const [bName, to] = TOUCH_BANDS[(i + 1) % TOUCH_BANDS.length];
   const span = ((to - from + 360) % 360) || 360;
-  const t = ((h - from + 360) % 360) / span;
+  const near = ((h - from + 360) % 360) / span;
   const mono = Boolean(currentValue("ConvertToGrayscale"));
   const kind = mono ? "GrayMixer" : { hue: "HueAdjustment", saturation: "SaturationAdjustment", luminance: "LuminanceAdjustment" }[mode];
-  const pairs = [[`${kind}${a}`, 1 - t], [`${kind}${bName}`, t]].filter(([, w]) => w > 0.05);
-  const label = `${pairs.map(([n]) => n.replace(kind, "")).join(" & ")} ${mono ? "in the B&W mix" : mode}`;
+  const pairs = [[`${kind}${a}`, 1 - near], [`${kind}${bName}`, near]].filter(([, w]) => w > 0.05);
+  const bands = pairs.map(([n]) => t(n.replace(kind, ""))).join(" & ");
+  const label = mono ? t("{bands} in the B&W mix", { bands }) : t("{bands} {mode}", { bands, mode: t(TOUCH_MODES[mode]) });
   return { targets: pairs, label };
 }
 
@@ -108,7 +110,7 @@ function wireTouch() {
   viewer.addEventListener("mousemove", (e) => {
     if (!touchState.on || touchState.drag || e.target !== $("preview")) return;
     const rgb = touchPixel(e);
-    if (rgb) status(`Touch: drag up or down for ${touchTargets(rgb).label}`, true);
+    if (rgb) status(t("Touch: drag up or down for {label}", { label: touchTargets(rgb).label }), true);
   });
   window.addEventListener("mousemove", (e) => {
     const d = touchState.drag;
@@ -120,7 +122,7 @@ function wireTouch() {
       ui.overrides[name] = v;
       d.changed[name] = v;
     }
-    status(`Touch: ${d.label} ${delta >= 0 ? "+" : ""}${Math.round(delta)}`, true);
+    status(t("Touch: {label} {change}", { label: d.label, change: `${delta >= 0 ? "+" : ""}${Math.round(delta)}` }), true);
     requestPreview(true);
   });
   window.addEventListener("mouseup", () => {
@@ -131,7 +133,7 @@ function wireTouch() {
       .filter(([n, v]) => v !== d.start[n])
       .map(([name, value]) => ({ cmd: "set_param", name, value }));
     for (const n of Object.keys(d.changed)) delete ui.overrides[n];
-    if (cmds.length) run(cmds, `Touch: ${d.label}`);
+    if (cmds.length) run(cmds, t("Touch: {label}", { label: d.label }));
     else requestPreview(false);
   });
 }

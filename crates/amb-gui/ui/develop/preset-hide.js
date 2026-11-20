@@ -38,7 +38,7 @@ async function presetSetHidden(p, on) {
     await invoke("set_preset_hidden", { path: p.path, on });
     await loadPresetHidden();
     renderPresets();
-    if (on) toast("Hidden");
+    if (on) toast(t("Hidden"));
   } catch (e) {
     showError(e);
   }
@@ -50,7 +50,7 @@ async function presetSetGroupHidden(group, on) {
     await loadPresetHidden();
     if (!presetHiddenCount()) presetHide.showing = false;
     renderPresets();
-    if (on) toast("Hidden");
+    if (on) toast(t("Hidden"));
   } catch (e) {
     showError(e);
   }
@@ -69,7 +69,7 @@ async function presetUnhideAll() {
 
 function presetToggleShowHidden() {
   if (!presetHiddenCount() && !presetHide.showing) {
-    toast("No presets are hidden");
+    toast(t("No presets are hidden"));
     return;
   }
   presetHide.showing = !presetHide.showing;
@@ -79,21 +79,21 @@ function presetToggleShowHidden() {
 // The tile menu's items for hiding and deleting.
 function presetHideItems(p) {
   const items = [];
-  if (presetHide.presets.has(p.path)) items.push(["Unhide", () => presetSetHidden(p, false)]);
-  else if (!presetHide.groups.has(presetGroupOf(p))) items.push(["Hide", () => presetSetHidden(p, true)]);
-  if (p.deletable) items.push(["Delete…", () => presetDelete(p)]);
+  if (presetHide.presets.has(p.path)) items.push([t("Unhide"), () => presetSetHidden(p, false)]);
+  else if (!presetHide.groups.has(presetGroupOf(p))) items.push([t("Hide"), () => presetSetHidden(p, true)]);
+  if (p.deletable) items.push([t("Delete…"), () => presetDelete(p)]);
   return items;
 }
 
 async function presetDelete(p) {
-  if (!(await askYes(`Move “${p.name}” to the trash?`))) return;
+  if (!(await askYes(t("Move “{name}” to the trash?", { name: p.name })))) return;
   try {
     await invoke("delete_preset", { path: p.path });
     ui.presets = await invoke("presets");
     await loadPresetFavourites();
     await loadPresetHidden();
     renderPresets();
-    toast("Moved to the trash");
+    toast(t("Moved to the trash"));
   } catch (e) {
     showError(e);
   }
@@ -105,17 +105,17 @@ function presetHiddenFoot() {
   const n = presetHiddenCount();
   if (!n && !presetHide.groups.size) return null;
   return el("div", { class: "preset-hidden-foot" },
-    el("span", { class: "hint" }, `${n} hidden`),
-    el("button", { type: "button", class: "small", id: "preset-hidden-show", onclick: presetToggleShowHidden }, presetHide.showing ? "Done" : "Show"),
-    el("button", { type: "button", class: "small", id: "preset-hidden-all", onclick: presetUnhideAll }, "Unhide all"));
+    el("span", { class: "hint" }, t("{n} hidden", { n })),
+    el("button", { type: "button", class: "small", id: "preset-hidden-show", onclick: presetToggleShowHidden }, presetHide.showing ? t("Done") : t("Show")),
+    el("button", { type: "button", class: "small", id: "preset-hidden-all", onclick: presetUnhideAll }, t("Unhide all")));
 }
 
 // A group chip's right-click menu.
 function presetGroupMenu(e, group) {
   const hidden = presetHide.groups.has(group);
   contextMenu(e, [hidden
-    ? ["Unhide this group", () => presetSetGroupHidden(group, false)]
-    : ["Hide this group", () => presetSetGroupHidden(group, true)]]);
+    ? [t("Unhide this group"), () => presetSetGroupHidden(group, false)]
+    : [t("Hide this group"), () => presetSetGroupHidden(group, true)]]);
 }
 
 function wirePresetHide() {

@@ -13,17 +13,17 @@
 
 (function () {
   const REGIONS = [
-    { key: "Midtone", label: "Midtones", short: "Mid" },
-    { key: "Shadow", label: "Shadows", short: "Shadows" },
-    { key: "Highlight", label: "Highlights", short: "Highs" },
-    { key: "Global", label: "Global", short: "Global" },
+    { key: "Midtone", label: tKey("Midtones"), short: "Mid" },
+    { key: "Shadow", label: tKey("Shadows"), short: "Shadows" },
+    { key: "Highlight", label: tKey("Highlights"), short: "Highs" },
+    { key: "Global", label: tKey("Global"), short: "Global" },
   ];
   const VIEWS = [
-    { key: "3way", label: "3-Way", title: "Shadows, midtones and highlights together" },
-    { key: "Shadow", label: "Shadows", title: "Shadows" },
-    { key: "Midtone", label: "Mid", title: "Midtones" },
-    { key: "Highlight", label: "Highs", title: "Highlights" },
-    { key: "Global", label: "Global", title: "Global" },
+    { key: "3way", label: tKey("3-Way"), title: tKey("Shadows, midtones and highlights together") },
+    { key: "Shadow", label: tKey("Shadows"), title: tKey("Shadows") },
+    { key: "Midtone", label: tKey("Mid"), title: tKey("Midtones") },
+    { key: "Highlight", label: tKey("Highs"), title: tKey("Highlights") },
+    { key: "Global", label: tKey("Global"), title: tKey("Global") },
   ];
   const TAGS = REGIONS.flatMap((r) => ["Hue", "Sat", "Lum"].map((k) => `ColorGrade${r.key}${k}`));
   const RAINBOW = "linear-gradient(90deg,#e04848,#e6d33a,#4fbf4f,#3fc6c6,#4170e0,#d64fb5,#e04848)";
@@ -92,7 +92,7 @@
     const row = document.createElement("label");
     row.className = "amb-wheel-row";
     const text = document.createElement("span");
-    text.textContent = label;
+    text.textContent = t(label);
     const input = document.createElement("input");
     input.type = "range";
     input.min = min; input.max = max; input.step = 1;
@@ -246,7 +246,7 @@
     head.className = "amb-wheel-head";
     const name = document.createElement("span");
     name.className = "amb-wheel-name";
-    name.textContent = region.label;
+    name.textContent = t(region.label);
     const readout = document.createElement("span");
     readout.className = "amb-wheel-val";
     head.append(name, readout);
@@ -254,14 +254,14 @@
     const disc = document.createElement("div");
     disc.className = "amb-wheel-disc";
     const canvas = document.createElement("canvas");
-    canvas.title = "Drag to set hue and saturation · Shift-drag: saturation only · double-click to reset";
+    canvas.title = t("Drag to set hue and saturation · Shift-drag: saturation only · double-click to reset");
     disc.append(canvas);
     Object.assign(wh, { el, name, readout, disc, canvas, g: canvas.getContext("2d") });
 
     wh.rows = {
-      Hue: wheelSlider(wh, "Hue", 0, 359, RAINBOW),
-      Sat: wheelSlider(wh, "Saturation", 0, 100, null),
-      Lum: wheelSlider(wh, "Luminance", -100, 100, LUM_TRACK),
+      Hue: wheelSlider(wh, tKey("Hue"), 0, 359, RAINBOW),
+      Sat: wheelSlider(wh, tKey("Saturation"), 0, 100, null),
+      Lum: wheelSlider(wh, tKey("Luminance"), -100, 100, LUM_TRACK),
     };
     const { rows } = wh;
     rows.Hue.row.classList.add("amb-detail");
@@ -344,8 +344,8 @@
     for (const v of VIEWS) {
       const b = document.createElement("button");
       b.type = "button";
-      b.textContent = v.label;
-      b.title = v.title;
+      b.textContent = t(v.label);
+      b.title = t(v.title);
       b.addEventListener("click", () => view(v.key));
       tabButtons.set(v.key, b);
       tabs.append(b);

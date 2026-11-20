@@ -10,7 +10,7 @@
 // and a second click meanwhile would only ask again.
 async function openFolder(dir) {
   if (ui.openingFolder) {
-    toast("Still opening the folder…");
+    toast(t("Still opening the folder…"));
     return false;
   }
   ui.openingFolder = true;
@@ -18,11 +18,11 @@ async function openFolder(dir) {
   $("busy").hidden = false;
   try {
     if (!dir) {
-      status("Choosing a folder…", true);
+      status(t("Choosing a folder…"), true);
       dir = await invoke("library_pick_folder");
     }
     if (!dir) return false;
-    status(`Opening ${dir}…`, true);
+    status(t("Opening {name}…", { name: dir }), true);
     showReading(dir);
     if (!libraryOn()) await switchTask("library");
     await loadLibrary(dir, []);
@@ -31,12 +31,12 @@ async function openFolder(dir) {
     ui.openingFolder = false;
     $("btn-open-folder-empty").disabled = false;
     $("busy").hidden = true;
-    status("Ready", true);
+    status(t("Ready"), true);
   }
 }
 
 async function openPath(path) {
-  status(`Opening ${path}…`, true);
+  status(t("Opening {name}…", { name: path }), true);
   $("busy").hidden = false;
   try {
     const r = await invoke("open_photo", { path });
@@ -54,13 +54,14 @@ async function openPath(path) {
     // Raw and JPEG have different white balance sliders.
     if (wasRendered !== !!r.info.rendered && ui.layout) applyLayout(ui.layout);
     $("empty").hidden = true;
+    $("photo-title").setAttribute("translate", "no");
     $("photo-title").textContent = `${r.info.name}  —  ${r.info.camera}${r.info.lens ? "  ·  " + r.info.lens : ""}`;
     $("exif").textContent = [r.info.exposure, `${r.info.width} × ${r.info.height}`,
-      r.info.sidecar_loaded ? "edits loaded from sidecar" : ""].filter(Boolean).join("  ·  ");
+      r.info.sidecar_loaded ? t("edits loaded from sidecar") : ""].filter(Boolean).join("  ·  ");
     for (const id of ["btn-save", "btn-export", "btn-before", "btn-crop", "btn-masks", "btn-spots", "btn-zoom", "btn-wb", "btn-clip", "btn-frame", "btn-auto", "btn-select", "btn-save-preset", "btn-match", "btn-surprise"]) $(id).disabled = false;
     if (ui.zoom.on) setZoom(false);
     setState(r.state);
-    if (r.saved_previous) toast(`Saved your edits to ${fileName(r.saved_previous)}`);
+    if (r.saved_previous) toast(t("Saved your edits to {name}", { name: fileName(r.saved_previous) }));
     applyStripVisibility();
     loadFolder(r.info.path);
     requestPreview(false);
@@ -69,7 +70,7 @@ async function openPath(path) {
     return true;
   } catch (e) {
     showError(e);
-    status("Ready");
+    status(t("Ready"));
     return false;
   } finally {
     $("busy").hidden = true;
@@ -82,7 +83,7 @@ async function openPath(path) {
 async function openAny(path) {
   if (/\.ambcollage$/i.test(path)) return openCollageFile(path);
   const [twin] = await stripPhotos([{ path, name: fileName(path) }]);
-  if (twin.path !== path) toast(`Showing the JPEG of ${fileName(path)} (JPEG if there is one is on)`);
+  if (twin.path !== path) toast(t("Showing the JPEG of {name} (JPEG if there is one is on)", { name: fileName(path) }));
   return openPath(twin.path);
 }
 
@@ -153,7 +154,7 @@ async function cropToFrame() {
   if (!ui.info) return;
   try {
     const cmds = await invoke("negative_frame");
-    if (!cmds) return toast("No film border found around the photo.");
+    if (!cmds) return toast(t("No film border found around the photo."));
     run(cmds, "Crop to frame");
   } catch (e) {
     showError(e);
@@ -186,7 +187,7 @@ async function offerLensDb() {
   try {
     const r = await invoke("fetch_lens_db");
     if (r.lenses) {
-      toast(`Downloaded lens profiles (lensfun, ${r.lenses} lenses): Lens Corrections can now fix distortion and vignetting.`);
+      toast(t("Downloaded lens profiles (lensfun, {n} lenses): Lens Corrections can now fix distortion and vignetting.", { n: r.lenses }));
       requestPreview(false);
     }
   } catch {
@@ -203,21 +204,21 @@ async function lensDbFlow() {
     return showError(e);
   }
   const when = st.timestamp ? new Date(st.timestamp * 1000).toLocaleDateString() : null;
-  const have = st.lenses === null ? "The lens profiles are still loading." : `${st.lenses} lens profiles are loaded.`;
+  const have = st.lenses === null ? t("The lens profiles are still loading.") : t("{n} lens profiles are loaded.", { n: st.lenses });
   const ask = when
-    ? `${have} The downloaded database is from ${when}. Check for a newer one?`
-    : `${have} Download lensfun's lens database (about 0.5 MB, CC BY-SA 3.0) into ${st.dir}?`;
+    ? t("{have} The downloaded database is from {when}. Check for a newer one?", { have, when })
+    : t("{have} Download lensfun's lens database (about 0.5 MB, CC BY-SA 3.0) into {dir}?", { have, dir: st.dir });
   if (!await askYes(ask)) return;
   lensDbFetch();
 }
 
 async function lensDbFetch() {
-  status("Downloading the lens database…");
+  status(t("Downloading the lens database…"));
   $("busy").hidden = false;
   try {
     const r = await invoke("fetch_lens_db");
-    toast(`Lens database ready: ${r.lenses ?? 0} lens profiles`);
-    status("Lens database ready");
+    toast(t("Lens database ready: {n} lens profiles", { n: r.lenses ?? 0 }));
+    status(t("Lens database ready"));
     requestPreview(false);
   } catch (e) {
     showError(e);
@@ -230,7 +231,7 @@ async function save() {
   if (!ui.info) return;
   try {
     const path = await invoke("save_sidecar");
-    toast(`Saved to ${path}`);
+    toast(t("Saved to {path}", { path }));
   } catch (e) {
     showError(e);
   }

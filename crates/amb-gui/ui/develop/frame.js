@@ -40,7 +40,7 @@ function frameOnFolder(on) {
   $("btn-frame")?.classList.toggle("active", on);
   if (!on) $("frame-panel").hidden = true;
   drawFrame();
-  toast(on ? `Frame on all ${paths.length} photos in the folder` : `Frame removed from all ${paths.length} photos`);
+  toast(on ? t("Frame on all {n} photos in the folder", { n: paths.length }) : t("Frame removed from all {n} photos", { n: paths.length }));
 }
 
 // Another photo is open: show its frame, or none.
@@ -80,7 +80,7 @@ async function loadFonts() {
       ui.fontProblems = [...(ui.fontProblems ?? []), `${id}: ${e}`];
     }
   }));
-  if (ui.fontProblems?.length) status(`Fonts not loaded for the preview: ${ui.fontProblems.join("; ")}`);
+  if (ui.fontProblems?.length) status(t("Fonts not loaded for the preview: {why}", { why: ui.fontProblems.join("; ") }));
   return ui.fonts;
 }
 
@@ -101,8 +101,8 @@ function frameTemplate() {
 // The Border the export uses.
 function frameBorder() {
   const b = { format: BORDER_FORMAT, name: "Frame", width: fr.width, bottom: fr.bottom, unit: "percent", color: fr.color, radius: 0, fit: false };
-  const t = frameTemplate();
-  if (t && fr.place === "frame") b.caption = { text: t, size: fr.size, align: "center", color: fr.textColor, font: fr.font };
+  const text = frameTemplate();
+  if (text && fr.place === "frame") b.caption = { text, size: fr.size, align: "center", color: fr.textColor, font: fr.font };
   return b;
 }
 
@@ -124,8 +124,8 @@ async function showFrameSettings(open) {
     fillFontSelect($("frame-font"), fr.font);
     if (!ui.borders) await loadBorders();
     const sel = $("frame-preset");
-    sel.replaceChildren(el("option", { value: "" }, "— a border preset —"),
-      ...ui.borders.map((b) => el("option", { value: b.id }, b.name)));
+    sel.replaceChildren(el("option", { value: "" }, t("— a border preset —")),
+      ...ui.borders.map((b) => el("option", { value: b.id, translate: "no" }, b.name)));
     await refreshFrameSpecs();
   }
   drawFrame();
@@ -223,12 +223,12 @@ function frameToExport() {
   if (!fr.on) return;
   const f = $("export-form");
   const sel = f.border_preset;
-  sel.prepend(el("option", { value: "frame" }, "Frame (as in the editor)"));
+  sel.prepend(el("option", { value: "frame" }, t("Frame (as in the editor)")));
   sel.value = "frame";
   writeBorder(frameBorder());
-  const t = frameTemplate();
-  if (t && fr.place !== "frame") {
-    f.wm_text.value = t;
+  const caption = frameTemplate();
+  if (caption && fr.place !== "frame") {
+    f.wm_text.value = caption;
     f.wm_image.value = "";
     f.wm_font.value = fr.font;
     f.wm_color.value = fr.textColor;
@@ -308,10 +308,10 @@ function wireFrame() {
     if (!ui.info) return;
     const n = folderPhotos().length;
     contextMenu(e, [
-      [fr.on ? "Turn the frame off" : "Turn the frame on", () => toggleFrame()],
-      fr.on ? ["Frame settings…", () => showFrameSettings(true)] : null,
-      [`Use ${fr.on ? "this" : "a"} frame on all ${n} photos in the folder`, () => frameOnFolder(true)],
-      [`Remove the frame from all ${n} photos`, () => frameOnFolder(false)],
+      [fr.on ? t("Turn the frame off") : t("Turn the frame on"), () => toggleFrame()],
+      fr.on ? [t("Frame settings…"), () => showFrameSettings(true)] : null,
+      [fr.on ? t("Use this frame on all {n} photos in the folder", { n }) : t("Use a frame on all {n} photos in the folder", { n }), () => frameOnFolder(true)],
+      [t("Remove the frame from all {n} photos", { n }), () => frameOnFolder(false)],
     ].filter(Boolean));
   });
   $("preview").addEventListener("load", drawFrame);
@@ -325,11 +325,11 @@ function showShortcuts() {
   for (const a of KEY_ACTIONS) {
     const keys = keysFor(a);
     if (!keys.length) continue;
-    groups.set(a.group, [...(groups.get(a.group) ?? []), [a.label, keys]]);
+    groups.set(a.group, [...(groups.get(a.group) ?? []), [actionLabel(a), keys]]);
   }
   $("shortcuts-list").replaceChildren(...[...groups].map(([group, rows]) => {
     const box = el("section", { class: "shortcuts-group" });
-    box.append(el("h3", {}, group));
+    box.append(el("h3", {}, t(group)));
     for (const [label, keys] of rows) {
       const row = el("div", { class: "shortcuts-row" });
       const k = document.createElement("span");

@@ -12,7 +12,7 @@ async function presetDuplicate(p) {
     const r = await invoke("duplicate_preset", { path: p.path });
     ui.presets = r.presets;
     renderPresets();
-    toast(`Copied as “${ui.presets.find((x) => x.path === r.path)?.name ?? `${p.name} copy`}”`);
+    toast(t("Copied as “{name}”", { name: ui.presets.find((x) => x.path === r.path)?.name ?? `${p.name} copy` }));
   } catch (e) {
     showError(e);
   }
@@ -52,14 +52,14 @@ function presetEditError(text) {
 function presetEditList(contents) {
   const items = [...contents.held.map((h) => [h, false]), ...contents.photo.map((h) => [h, true])];
   const rows = [];
-  for (const g of [...ui.pasteGroups, { name: "", label: "Other" }]) {
+  for (const g of [...ui.pasteGroups, { name: "", label: tKey("Other") }]) {
     const mine = items.filter(([h]) => h.group === g.name);
     if (!mine.length) continue;
     const head = presetGroupRow(g, mine.some(([, extra]) => !extra));
     head.classList.add("preset-edit-group");
     if (mine.every(([, extra]) => extra)) head.dataset.extra = "1";
     const boxes = mine.map(([h, extra]) => {
-      const row = el("label", { class: "inline-check preset-edit-item" }, el("input", { type: "checkbox", value: h.name, checked: !extra }), el("span", {}, h.label));
+      const row = el("label", { class: "inline-check preset-edit-item" }, el("input", { type: "checkbox", value: h.name, checked: !extra }), el("span", {}, t(h.label)));
       if (extra) row.dataset.extra = "1";
       return row;
     });
@@ -99,7 +99,7 @@ async function presetEditSave(e) {
   await loadPresetFavourites();
   await loadPresetHidden();
   renderPresets();
-  toast(`Saved “${$("preset-edit-name").value.trim()}”`);
+  toast(t("Saved “{name}”", { name: $("preset-edit-name").value.trim() }));
 }
 
 function wirePresetEdit() {

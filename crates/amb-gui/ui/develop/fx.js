@@ -28,7 +28,7 @@ function effectsOf(v) {
 
 // Where an effect can be kept to (amb:Effects `where`, the engine's
 // plugin_effects::Place), and how much of it a colour (sRGB 0–1) gets.
-const FX_PLACES = ["Highlights", "Midtones", "Shadows", "Reds", "Oranges", "Yellows", "Greens", "Aquas", "Blues", "Purples", "Magentas"];
+const FX_PLACES = [tKey("Highlights"), tKey("Midtones"), tKey("Shadows"), tKey("Reds"), tKey("Oranges"), tKey("Yellows"), tKey("Greens"), tKey("Aquas"), tKey("Blues"), tKey("Purples"), tKey("Magentas")];
 const FX_HUES = { reds: 0, oranges: 30, yellows: 60, greens: 120, aquas: 180, blues: 225, purples: 270, magentas: 315 };
 
 function placeWeight(place, [r, g, b]) {
@@ -106,7 +106,7 @@ function makeEffectsControl(def) {
   const param = (e, p, name) => {
     const row = document.createElement("div");
     row.className = "row";
-    const label = el("label", { title: p.description ?? "" }, p.label);
+    const label = el("label", { title: p.description ?? "", translate: "no" }, p.label);
     const value = e.params?.[p.name] ?? p.default;
     let input;
     if (p.type === "number") {
@@ -144,29 +144,29 @@ function makeEffectsControl(def) {
       card.className = "fx-effect";
       const head = document.createElement("div");
       head.className = "fx-head";
-      const title = el("strong", { title: m?.description ?? "" }, name);
+      const title = el("strong", { title: m?.description ?? "", translate: "no" }, name);
       // In Trippy, Amount goes past 100: the change pushed further than
       // the effect makes it.
       const wild = currentTask() === "trippy";
-      const amount = el("input", { type: "range", min: 0, max: wild ? 200 : 100, step: 1, value: e.amount ?? 100, title: wild ? "Amount (past 100: pushed further)" : "Amount" });
+      const amount = el("input", { type: "range", min: 0, max: wild ? 200 : 100, step: 1, value: e.amount ?? 100, title: wild ? t("Amount (past 100: pushed further)") : t("Amount") });
       amount.addEventListener("input", () => { e.amount = Number(amount.value); preview(); });
       amount.addEventListener("change", () => save(`${name}: amount`));
-      const up = el("button", { type: "button", class: "small", title: "Apply earlier", disabled: i === 0 }, "↑");
+      const up = el("button", { type: "button", class: "small", title: t("Apply earlier"), disabled: i === 0 }, "↑");
       up.addEventListener("click", () => { [list[i - 1], list[i]] = [list[i], list[i - 1]]; save(`move ${name}`); });
-      const remove = el("button", { type: "button", class: "small", title: `Remove ${name}` }, "×");
+      const remove = el("button", { type: "button", class: "small", title: t("Remove {name}", { name }) }, "×");
       remove.addEventListener("click", () => { list.splice(i, 1); save(`remove ${name}`); });
       head.append(title, amount, up, remove);
       card.append(head);
       if (!m) {
-        card.append(el("p", { class: "hint" }, "This plugin isn't installed here, so the effect isn't shown. Install it to see it, or remove it."));
+        card.append(el("p", { class: "hint" }, t("This plugin isn't installed here, so the effect isn't shown. Install it to see it, or remove it.")));
       } else {
         // Where: everywhere, or only the highlights, a colour…
         const where = document.createElement("div");
         where.className = "row fx-where";
         const pick = document.createElement("select");
-        pick.append(new Option("Everywhere", ""), ...FX_PLACES.map((x) => new Option(x, x.toLowerCase())));
+        pick.append(new Option(t("Everywhere"), ""), ...FX_PLACES.map((x) => new Option(t(x), x.toLowerCase())));
         pick.value = e.where ?? "";
-        pick.title = "Only on part of the photo: hover to see where";
+        pick.title = t("Only on part of the photo: hover to see where");
         pick.addEventListener("change", () => {
           if (pick.value) e.where = pick.value;
           else delete e.where;
@@ -179,7 +179,7 @@ function makeEffectsControl(def) {
         where.addEventListener("mouseleave", hide);
         pick.addEventListener("focus", show);
         pick.addEventListener("blur", hide);
-        where.append(el("label", {}, "Where"), pick);
+        where.append(el("label", {}, t("Where")), pick);
         card.append(where);
         for (const p of m.params ?? []) card.append(param(e, p, name));
       }
@@ -187,10 +187,10 @@ function makeEffectsControl(def) {
     });
     const add = document.createElement("select");
     add.className = "fx-add";
-    add.append(new Option(fx.plugins.length ? "Add an effect…" : "No effect plugins installed", ""));
-    for (const p of fx.plugins) add.append(new Option(p.manifest.name, p.id));
+    add.append(new Option(fx.plugins.length ? t("Add an effect…") : t("No effect plugins installed"), ""));
+    for (const p of fx.plugins) add.append(Object.assign(new Option(p.manifest.name, p.id), { translate: false }));
     add.disabled = !fx.plugins.length;
-    add.title = "Effects from plugins, rendered with the photo after the colour and curves (Plugins → Browse hub… has more)";
+    add.title = t("Effects from plugins, rendered with the photo after the colour and curves (Plugins → Browse hub… has more)");
     add.addEventListener("change", () => {
       const id = add.value;
       if (!id) return;

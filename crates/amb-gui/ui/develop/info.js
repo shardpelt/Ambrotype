@@ -9,13 +9,13 @@
 
 const infoState = { info: { rating: null, keywords: [], label: null, flag: null }, recent: [], busy: Promise.resolve() };
 
-const FLAG_DONE = { pick: "Flagged as a pick", reject: "Flagged as rejected", "": "Flag removed" };
+const FLAG_DONE = { pick: tKey("Flagged as a pick"), reject: tKey("Flagged as rejected"), "": tKey("Flag removed") };
 
 // A flag mark: a white flag for a pick, a crossed one for a reject.
 function showFlag(el, flag) {
   el.textContent = flag === "pick" ? "⚑" : flag === "reject" ? "✕" : "";
   el.className = `${el.className.split(" ")[0]}${flag ? ` ${flag}` : ""}`;
-  el.title = flag === "pick" ? "Pick (P)" : flag === "reject" ? "Rejected (X)" : "";
+  el.title = flag === "pick" ? t("Pick (P)") : flag === "reject" ? t("Rejected (X)") : "";
 }
 
 function renderInfo() {
@@ -42,8 +42,8 @@ function renderInfo() {
   }
   const chips = $("tag-chips");
   chips.replaceChildren(...infoState.info.keywords.map((k) => {
-    const chip = el("span", { class: "tag-chip" }, k);
-    const x = el("button", { type: "button", title: `Remove "${k}"` }, "×");
+    const chip = el("span", { class: "tag-chip", translate: "no" }, k);
+    const x = el("button", { type: "button", title: t("Remove \"{name}\"", { name: k }) }, "×");
     x.addEventListener("click", () => setKeywords(infoState.info.keywords.filter((y) => y !== k)));
     chip.append(x);
     return chip;
@@ -80,7 +80,7 @@ function saveInfo(info) {
       infoState.recent = r.recent;
       if (infoState.info === info) infoState.info = r.info;
     } catch (e) {
-      toast(`Couldn't save the rating and keywords: ${e}`, true);
+      toast(t("Couldn't save the rating and keywords: {why}", { why: e }), true);
     }
     renderInfo();
   });
@@ -92,7 +92,7 @@ function setRating(n) {
   const rating = n >= 1 && n <= 5 ? n : null;
   saveInfo({ ...infoState.info, rating });
   photoChanged(ui.info.path, { rating });
-  status(rating ? `Rated ${"★".repeat(rating)}` : "Rating cleared");
+  status(rating ? t("Rated {stars}", { stars: "★".repeat(rating) }) : t("Rating cleared"));
 }
 
 // The same label again removes it.
@@ -101,7 +101,7 @@ function setLabel(label) {
   const next = infoState.info.label === label ? null : label;
   saveInfo({ ...infoState.info, label: next });
   photoChanged(ui.info.path, { label: next });
-  status(next ? `${next} label` : "Label removed");
+  status(next ? t("{colour} label", { colour: t(next) }) : t("Label removed"));
 }
 
 // "pick", "reject", or "" for none.
@@ -109,7 +109,7 @@ function setFlag(flag) {
   if (!ui.info) return;
   saveInfo({ ...infoState.info, flag: flag || null });
   photoChanged(ui.info.path, { flag: flag || null });
-  status(FLAG_DONE[flag]);
+  status(t(FLAG_DONE[flag]));
 }
 
 function setKeywords(keywords) {
@@ -135,7 +135,7 @@ function wireInfo() {
   }
   $("rating-clear").addEventListener("click", () => setRating(0));
   for (const l of LABELS) {
-    const b = el("button", { type: "button", title: `${l} label (${LABELS.indexOf(l) < 4 ? 6 + LABELS.indexOf(l) : "no key"})` });
+    const b = el("button", { type: "button", title: LABELS.indexOf(l) < 4 ? t("{colour} label ({key})", { colour: t(l), key: 6 + LABELS.indexOf(l) }) : t("{colour} label (no key)", { colour: t(l) }) });
     b.dataset.label = l;
     b.style.setProperty("--swatch", LABEL_COLOURS[l]);
     b.addEventListener("click", () => setLabel(l));
@@ -147,7 +147,7 @@ function wireInfo() {
     f.addEventListener("change", () => {
       if (!ui.info) return;
       saveInfo({ ...infoState.info, [f.dataset.meta]: f.value.trim() });
-      status(`${f.closest("label").firstChild.textContent.trim()} saved`);
+      status(t("{field} saved", { field: f.closest("label").firstChild.textContent.trim() }));
     });
     // Typing in them isn't a shortcut.
     f.addEventListener("keydown", (e) => e.stopPropagation());
@@ -179,7 +179,7 @@ function wireInfo() {
 // sidecar); crops, masks and spots stay put on the photo, so they turn too.
 async function turnPhotos(change) {
   const paths = libraryOn() ? libraryTargets().map((p) => p.path) : ui.info ? [ui.info.path] : [];
-  if (!paths.length) return toast("Open a photo, or select some in the library, to turn them.", true);
+  if (!paths.length) return toast(t("Open a photo, or select some in the library, to turn them."), true);
   try {
     await setInfo(paths, change);
   } catch (e) {
@@ -190,6 +190,6 @@ async function turnPhotos(change) {
     stripTurned(path);
   }
   if (ui.info && paths.includes(ui.info.path)) requestPreview(false);
-  const what = change.flip ? "Flipped" : change.rotate < 0 ? "Rotated left" : "Rotated right";
-  status(`${what}: ${plural(paths.length, "photo")}`);
+  const photos = plural(paths.length, "photo");
+  status(change.flip ? t("Flipped: {photos}", { photos }) : change.rotate < 0 ? t("Rotated left: {photos}", { photos }) : t("Rotated right: {photos}", { photos }));
 }

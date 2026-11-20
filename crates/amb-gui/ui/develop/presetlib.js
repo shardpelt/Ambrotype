@@ -14,7 +14,7 @@ async function openPresetLibrary() {
     plib.items = await invoke("preset_library");
   } catch (e) {
     plib.items = [];
-    toast(`Couldn't load the preset library: ${e}`, true);
+    toast(t("Couldn't load the preset library: {why}", { why: e }), true);
   }
   // Thumbnails show the photo as it is now.
   plib.thumbs.clear();
@@ -53,7 +53,7 @@ function renderPresetLibrary() {
   const groups = [...new Set(plib.items.map((p) => p.group))];
   const chips = $("presetlib-groups");
   chips.replaceChildren(...["", ...groups].map((g) => {
-    const b = el("button", { type: "button", class: "small" }, g || "All");
+    const b = el("button", { type: "button", class: "small", translate: g ? "no" : null }, g || t("All"));
     b.classList.toggle("active", g === plib.group);
     b.addEventListener("click", () => { plib.group = g; renderPresetLibrary(); });
     return b;
@@ -63,7 +63,7 @@ function renderPresetLibrary() {
     && (!q || `${p.name} ${p.group} ${p.description}`.toLowerCase().includes(q)));
   const list = $("presetlib-list");
   if (!shown.length) {
-    list.innerHTML = `<p class="hint">${plib.items.length ? "No match." : "No presets found."}</p>`;
+    list.replaceChildren(el("p", { class: "hint" }, plib.items.length ? t("No match.") : t("No presets found.")));
     return;
   }
   list.replaceChildren(...shown.map((p) => {
@@ -72,9 +72,9 @@ function renderPresetLibrary() {
     thumb.dataset.id = p.id;
     if (plib.thumbs.get(p.id)) thumb.src = plib.thumbs.get(p.id);
     const text = el("div", { class: "presetlib-text" });
-    text.append(el("strong", {}, p.name),
-      el("span", { class: "hint" }, p.description || p.group));
-    const apply = el("button", { type: "button", class: "small" }, "Apply");
+    text.append(el("strong", { translate: "no" }, p.name),
+      el("span", { class: "hint", translate: "no" }, p.description || p.group));
+    const apply = el("button", { type: "button", class: "small" }, t("Apply"));
     apply.disabled = !ui.info;
     apply.addEventListener("click", () => {
       presetHover(null);
@@ -83,8 +83,8 @@ function renderPresetLibrary() {
     const add = el("button", {
       type: "button",
       class: "small",
-      title: "Keep it in your presets list",
-    }, p.installed ? "Added" : "Add");
+      title: t("Keep it in your presets list"),
+    }, p.installed ? t("Added") : t("Add"));
     add.disabled = p.installed;
     add.addEventListener("click", async () => {
       try {
@@ -92,7 +92,7 @@ function renderPresetLibrary() {
         p.installed = true;
         renderPresets();
         renderPresetLibrary();
-        status(`Added "${p.name}" to your presets.`);
+        status(t("Added \"{name}\" to your presets.", { name: p.name }));
       } catch (e) {
         showError(e);
       }

@@ -56,7 +56,7 @@ async function togglePresetFavourite(p) {
 async function applyPresetToFolder(p) {
   const paths = folderPhotos();
   if (!paths.length) return;
-  status(`Applying "${p.name}" to ${paths.length} photos…`);
+  status(t("Applying \"{name}\" to {n} photos…", { name: p.name, n: paths.length }));
   const r = await invoke("apply_to_photos", {
     paths, label: `preset ${p.name} on the folder`,
     commands: await presetCommands(p.path),
@@ -64,13 +64,14 @@ async function applyPresetToFolder(p) {
   if (r.state) setState(r.state);
   requestPreview(false);
   loadFolder(ui.info.path, true);
-  toast(`"${p.name}" applied to ${plural(r.changed.length, "photo")}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
+  const photos = plural(r.changed.length, "photo");
+  toast(r.errors.length ? t("\"{name}\" applied to {photos}; {n} failed: {why}", { name: p.name, photos, n: r.errors.length, why: r.errors[0] }) : t("\"{name}\" applied to {photos}", { name: p.name, photos }), r.errors.length > 0);
 }
 
 // One tickable row for a settings group: the list of "Apply some of its
 // settings…" and the groups of the Edit dialog (preset-edit.js).
 function presetGroupRow(g, checked) {
-  return el("label", { class: "inline-check" }, el("input", { type: "checkbox", value: g.name, checked }), el("span", {}, g.label));
+  return el("label", { class: "inline-check" }, el("input", { type: "checkbox", value: g.name, checked }), el("span", {}, t(g.label)));
 }
 
 // Apply a preset's settings from some groups only (Lightroom's "Apply
@@ -79,15 +80,15 @@ async function applyPresetPartly(p) {
   if (!ui.info) return;
   if (!ui.pasteGroups) ui.pasteGroups = await invoke("paste_groups");
   const dlg = $("paste-dialog");
-  dlg.querySelector("h2").textContent = `Apply “${p.name}”`;
-  dlg.querySelector("button.primary").textContent = "Apply";
-  $("paste-what").textContent = "Only the ticked groups' settings come from the preset; the rest of the edit stays as it is.";
+  dlg.querySelector("h2").textContent = t("Apply “{name}”", { name: p.name });
+  dlg.querySelector("button.primary").textContent = t("Apply");
+  $("paste-what").textContent = t("Only the ticked groups' settings come from the preset; the rest of the edit stays as it is.");
   const list = $("paste-groups");
   list.replaceChildren(...ui.pasteGroups.map((g) => presetGroupRow(g, ui.presetGroups?.has(g.name) ?? true)));
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
-  dlg.querySelector("h2").textContent = "Paste settings";
-  dlg.querySelector("button.primary").textContent = "Paste";
+  dlg.querySelector("h2").textContent = t("Paste settings");
+  dlg.querySelector("button.primary").textContent = t("Paste");
   if (choice !== "ok") return;
   const groups = [...list.querySelectorAll("input:checked")].map((b) => b.value);
   ui.presetGroups = new Set(groups);
@@ -132,12 +133,12 @@ function hoverPreview(commands) {
 // Offer a preset to the hub as a pull request on GitHub (a GitHub account is
 // needed there). Only for presets you made: bought ones aren't yours to share.
 async function sharePresetToHub(p) {
-  if (!(await askYes(`Share “${p.name}” with everyone on the Ambrotype hub? Only share presets you made yourself: bought or downloaded ones usually may not be passed on. GitHub opens; you need an account there.`))) return;
+  if (!(await askYes(t("Share “{name}” with everyone on the Ambrotype hub? Only share presets you made yourself: bought or downloaded ones usually may not be passed on. GitHub opens; you need an account there.", { name: p.name })))) return;
   try {
     const how = await invoke("preset_submit", { path: p.path, name: p.name });
     toast(how === "link"
-      ? "GitHub is open with the preset filled in: press Commit changes, then Create pull request."
-      : "The preset is too big for a link: GitHub is open on the hub's upload page, and the file is shown in its folder. Drag it in, then Propose changes.");
+      ? t("GitHub is open with the preset filled in: press Commit changes, then Create pull request.")
+      : t("The preset is too big for a link: GitHub is open on the hub's upload page, and the file is shown in its folder. Drag it in, then Propose changes."));
   } catch (e) {
     showError(e);
   }
@@ -147,7 +148,7 @@ async function sharePresetToHub(p) {
 // effects (amb:Effects) included; `group` fills the dialog's Group. Returns the
 // saved preset's entry, when it went into the app's presets folder.
 async function savePresetFlow(name = "", group = null) {
-  if (!ui.info) return toast("Open a photo first.", true);
+  if (!ui.info) return toast(t("Open a photo first."), true);
   const dlg = $("save-preset-dialog");
   const f = dlg.querySelector("form");
   f.preset_name.value = name;
@@ -167,12 +168,13 @@ async function savePresetFlow(name = "", group = null) {
       const saved = ui.presets.find((p) => p.name === f.preset_name.value.trim());
       if (saved) store.setText("amb.presetSaveDir", dirOf(saved.path));
       renderPresets();
-      toast(`Saved the preset “${f.preset_name.value.trim()}”${saved ? ` in ${dirOf(saved.path)}` : ""}`);
+      const name = f.preset_name.value.trim();
+      toast(saved ? t("Saved the preset “{name}” in {dir}", { name, dir: dirOf(saved.path) }) : t("Saved the preset “{name}”", { name }));
       return;
     }
     ui.presets = await invoke("save_preset", { name: f.preset_name.value, group: f.preset_group.value });
     renderPresets();
-    toast(`Saved the preset “${f.preset_name.value.trim()}” (in ${f.preset_group.value.trim() || "Yours"})`);
+    toast(t("Saved the preset “{name}” (in {group})", { name: f.preset_name.value.trim(), group: f.preset_group.value.trim() || t("Yours") }));
     const group = f.preset_group.value.trim() || "Yours";
     return ui.presets.find((p) => p.name === f.preset_name.value.trim() && p.group === group) ?? null;
   } catch (e) {
@@ -201,7 +203,7 @@ async function fujiRecipeFlow() {
     ui.presets = r.presets;
     renderPresets();
     const notes = r.notes.length ? ` ${r.notes.join(". ")}.` : "";
-    toast(`Made the preset “${r.name}” (Fuji, ${r.sensor}).${notes}`);
+    toast(t("Made the preset “{name}” (Fuji, {sensor}).{notes}", { name: r.name, sensor: r.sensor, notes }));
     const made = ui.presets.find((p) => p.path === r.path);
     if (made && ui.info) await applyPreset(made);
     f.fuji_text.value = "";
@@ -215,14 +217,14 @@ async function fujiRecipeFlow() {
 // white balance (WB: Auto), worked out on a small copy, one undo step.
 async function autoFlow(tone, white) {
   if (!ui.info) return;
-  status(tone ? "Auto tone…" : "Auto white balance…");
+  status(tone ? t("Auto tone…") : t("Auto white balance…"));
   $("busy").hidden = false;
   try {
     const commands = await invoke("auto_settings", { tone, white });
     if (white && !commands.some((c) => c.name === "Temperature" || c.name === "IncrementalTemperature")) {
       // Too little grey to judge the light by: keep the camera's.
       commands.push({ cmd: "set_param", name: "WhiteBalance", value: "Auto" });
-      if (!tone) toast("Too little grey in this photo to judge the light by, so Auto keeps the camera's white balance.");
+      if (!tone) toast(t("Too little grey in this photo to judge the light by, so Auto keeps the camera's white balance."));
     }
     await run(commands, tone ? "Auto" : "Auto white balance");
   } catch (e) {
@@ -238,36 +240,36 @@ async function autoFlow(tone, white) {
 // vibrance, and a crooked horizon levelled (cropped to fit) when the photo
 // has clear lines and no crop yet. The toast says what it did.
 async function autoEditFlow() {
-  if (!ui.info) return toast("Open a photo first.", true);
+  if (!ui.info) return toast(t("Open a photo first."), true);
   if (ui.crop.on) await exitCrop(true);
-  status("Auto edit…");
+  status(t("Auto edit…"));
   $("busy").hidden = false;
   const btn = $("btn-auto");
   if (btn) btn.disabled = true;
   try {
     const did = [];
     const commands = await invoke("auto_settings", { tone: true, white: true });
-    if (commands.some((c) => /Exposure|Contrast|Highlights|Shadows|Whites|Blacks/.test(c.name))) did.push("tone");
-    if (commands.some((c) => c.name === "Temperature" || c.name === "IncrementalTemperature")) did.push("white balance");
+    if (commands.some((c) => /Exposure|Contrast|Highlights|Shadows|Whites|Blacks/.test(c.name))) did.push(t("tone"));
+    if (commands.some((c) => c.name === "Temperature" || c.name === "IncrementalTemperature")) did.push(t("white balance"));
     const set = (name, value) => commands.push({ cmd: "set_param", name, value });
     if (!currentValue("LensProfileEnable")) set("LensProfileEnable", true);
     if (!currentValue("AutoLateralCA")) set("AutoLateralCA", true);
     if (!currentValue("Vibrance")) {
       set("Vibrance", 15);
-      did.push("vibrance");
+      did.push(t("vibrance"));
     }
-    did.push("lens corrections");
+    did.push(t("lens corrections"));
     if (!currentValue("HasCrop")) {
       const a = await invoke("level_angle").catch(() => null);
       if (a != null && Math.abs(a) >= 0.2) {
         const st = await invoke("crop_state");
         const rect = AmbCrop.straighten(st.rect, Math.max(-45, Math.min(45, a)), ui.info.width, ui.info.height, st.angle_sign);
         commands.push(...(await invoke("crop_commands", { rect })));
-        did.push(`levelled ${a > 0 ? "+" : ""}${a.toFixed(1)}°`);
+        did.push(t("levelled {angle}°", { angle: `${a > 0 ? "+" : ""}${a.toFixed(1)}` }));
       }
     }
     await run(commands, "Auto edit");
-    toast(`Auto edit: ${did.join(", ")}. A starting point to adjust; Undo (Ctrl+Z) takes it all back.`);
+    toast(t("Auto edit: {did}. A starting point to adjust; Undo (Ctrl+Z) takes it all back.", { did: did.join(", ") }));
   } catch (e) {
     showError(e);
   } finally {
@@ -281,7 +283,7 @@ async function autoEditFlow() {
 // thumbnails; clicking one applies it (one undo step). Seeds are shown so
 // a look can be found again.
 async function surpriseFlow() {
-  if (!ui.info) return toast("Open a photo first.", true);
+  if (!ui.info) return toast(t("Open a photo first."), true);
   const dlg = $("surprise-dialog");
   const grid = $("surprise-grid");
   let seed = Math.floor(Math.random() * 1e9);
@@ -290,7 +292,7 @@ async function surpriseFlow() {
     if (busy) return;
     busy = true;
     $("surprise-more").disabled = true;
-    $("surprise-status").textContent = "Making looks…";
+    $("surprise-status").textContent = t("Making looks…");
     try {
       const variants = await invoke("surprise", {
         seed,
@@ -305,12 +307,12 @@ async function surpriseFlow() {
       grid.replaceChildren(...variants.map((v) => {
         const b = document.createElement("button");
         b.type = "button";
-        b.title = "Apply this look";
+        b.title = t("Apply this look");
         const img = document.createElement("img");
         img.src = v.image;
-        img.alt = `Look ${v.seed}`;
+        img.alt = t("Look {seed}", { seed: v.seed });
         const label = document.createElement("span");
-        label.textContent = `seed ${v.seed}`;
+        label.textContent = t("seed {seed}", { seed: v.seed });
         b.append(img, label);
         b.addEventListener("click", async () => {
           dlg.close("cancel");
@@ -318,9 +320,9 @@ async function surpriseFlow() {
         });
         return b;
       }));
-      $("surprise-status").textContent = "Click a look to apply it. Each is an ordinary edit you can keep tweaking, and Undo takes it back.";
+      $("surprise-status").textContent = t("Click a look to apply it. Each is an ordinary edit you can keep tweaking, and Undo takes it back.");
     } catch (e) {
-      $("surprise-status").textContent = String(e);
+      $("surprise-status").textContent = t(String(e));
     } finally {
       busy = false;
       $("surprise-more").disabled = false;
@@ -337,18 +339,18 @@ async function surpriseFlow() {
 // Match look: pick reference photos, find settings for their look, show
 // them on the photo, and apply them as one undo step.
 async function matchFlow() {
-  if (!ui.info) return toast("Open a photo first.", true);
+  if (!ui.info) return toast(t("Open a photo first."), true);
   const refs = await invoke("pick_references");
   if (!refs.length) return;
   const dlg = $("match-dialog");
   const names = refs.map(fileName);
-  $("match-refs").textContent = `${refs.length} reference${refs.length > 1 ? "s" : ""}: ${names.join(", ")}`;
+  $("match-refs").textContent = t("{refs}: {names}", { refs: plural(refs.length, "reference"), names: names.join(", ") });
   const table = $("match-lines");
   table.hidden = true;
   table.replaceChildren();
   $("match-apply").disabled = true;
   $("match-find").disabled = false;
-  $("match-status").textContent = "Measures how light, warm and colourful the references are, then finds the settings that give this photo the same. The photo shows the result before you apply it.";
+  $("match-status").textContent = t("Measures how light, warm and colourful the references are, then finds the settings that give this photo the same. The photo shows the result before you apply it.");
   let proposal = null;
   const preview = (commands) => {
     ui.overrides = {};
@@ -357,17 +359,17 @@ async function matchFlow() {
   };
   const find = async () => {
     const parts = [...dlg.querySelectorAll(".match-parts input:checked")].map((i) => i.value);
-    if (!parts.length) return toast("Choose at least one part to match.", true);
+    if (!parts.length) return toast(t("Choose at least one part to match."), true);
     $("match-find").disabled = true;
     $("match-apply").disabled = true;
-    $("match-status").textContent = "Finding settings…";
+    $("match-status").textContent = t("Finding settings…");
     try {
       proposal = await invoke("match_look", { references: refs, parts });
       table.replaceChildren(...proposal.lines.map((l) => {
         const tr = document.createElement("tr");
-        for (const t of [l.label, l.before, "→", l.after]) {
+        for (const cell of [t(l.label), l.before, "→", l.after]) {
           const td = document.createElement("td");
-          td.textContent = t;
+          td.textContent = cell;
           tr.append(td);
         }
         return tr;
@@ -375,12 +377,12 @@ async function matchFlow() {
       table.hidden = !proposal.lines.length;
       const closer = proposal.before > 0 ? Math.round(100 * (1 - proposal.after / proposal.before)) : 0;
       $("match-status").textContent = proposal.lines.length
-        ? `${proposal.lines.length} setting${proposal.lines.length > 1 ? "s" : ""}; the look is ${closer}% closer (${proposal.renders} test renders).`
-        : "The photo already matches: nothing to change.";
+        ? t("{settings}; the look is {closer}% closer ({renders} test renders).", { settings: plural(proposal.lines.length, "setting"), closer, renders: proposal.renders })
+        : t("The photo already matches: nothing to change.");
       $("match-apply").disabled = !proposal.commands.length;
       preview(proposal.commands);
     } catch (e) {
-      $("match-status").textContent = String(e);
+      $("match-status").textContent = t(String(e));
     } finally {
       $("match-find").disabled = false;
     }

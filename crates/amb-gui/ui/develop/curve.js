@@ -13,10 +13,10 @@
 (function () {
   const TAGS = ["ToneCurvePV2012", "ToneCurvePV2012Red", "ToneCurvePV2012Green", "ToneCurvePV2012Blue"];
   const CHANNELS = [
-    { tag: TAGS[0], label: "RGB", colour: "#e6e6e8", hist: [0, 1, 2] },
-    { tag: TAGS[1], label: "Red", colour: "#e04848", hist: [0] },
-    { tag: TAGS[2], label: "Green", colour: "#4fbf4f", hist: [1] },
-    { tag: TAGS[3], label: "Blue", colour: "#4170e0", hist: [2] },
+    { tag: TAGS[0], label: tKey("RGB"), colour: "#e6e6e8", hist: [0, 1, 2] },
+    { tag: TAGS[1], label: tKey("Red"), colour: "#e04848", hist: [0] },
+    { tag: TAGS[2], label: tKey("Green"), colour: "#4fbf4f", hist: [1] },
+    { tag: TAGS[3], label: tKey("Blue"), colour: "#4170e0", hist: [2] },
   ];
   const HIST_FILL = ["rgba(230,70,70,0.22)", "rgba(80,200,90,0.22)", "rgba(80,120,240,0.22)"];
   const IDENTITY = [[0, 0], [255, 255]];
@@ -261,17 +261,17 @@
     const pts = cv.curves[cv.active];
     let text = "";
     if (cv.drag && cv.drag.tag === cv.active) {
-      text = cv.drag.removing ? "Release to remove point" : fmt(pts[cv.drag.index]);
+      text = cv.drag.removing ? t("Release to remove point") : fmt(pts[cv.drag.index]);
     } else if (cv.hover && cv.hover.index !== undefined) {
       text = fmt(pts[cv.hover.index]);
     } else if (cv.hover && cv.hover.x !== undefined) {
       const x = clampByte(cv.hover.x);
       text = fmt([x, Math.round(spline(pts)(x))]);
     }
-    dom.readout.textContent = text || "Click adds · double-click removes";
+    dom.readout.textContent = text || t("Click adds · double-click removes");
     dom.readout.classList.toggle("idle", !text);
     dom.resetBtn.disabled = isIdentity(pts);
-    for (const [t, b] of dom.tabButtons) b.classList.toggle("changed", !isIdentity(cv.curves[t]));
+    for (const [tag, b] of dom.tabButtons) b.classList.toggle("changed", !isIdentity(cv.curves[tag]));
   }
 
   // ------------------------------------------------------------ interaction
@@ -335,11 +335,11 @@
       const b = document.createElement("button");
       b.type = "button";
       b.dataset.tag = ch.tag;
-      b.title = `${ch.label} channel (${ch.tag})`;
+      b.title = t("{channel} channel ({tag})", { channel: t(ch.label), tag: ch.tag });
       const dot = document.createElement("span");
       dot.className = "amb-dot";
       dot.style.background = ch.colour;
-      b.append(dot, document.createTextNode(ch.label));
+      b.append(dot, document.createTextNode(t(ch.label)));
       b.addEventListener("click", () => onTab(ch.tag));
       tabButtons.set(ch.tag, b);
       tabs.append(b);
@@ -347,7 +347,7 @@
     const wrap = document.createElement("div");
     wrap.className = "amb-curve-plot";
     const canvas = document.createElement("canvas");
-    canvas.title = "Click to add a point · drag to move · double-click or drag out of the graph to remove";
+    canvas.title = t("Click to add a point · drag to move · double-click or drag out of the graph to remove");
     wrap.append(canvas);
     const foot = document.createElement("div");
     foot.className = "amb-curve-foot";
@@ -356,8 +356,8 @@
     const resetBtn = document.createElement("button");
     resetBtn.type = "button";
     resetBtn.className = "amb-link";
-    resetBtn.textContent = "Reset channel";
-    resetBtn.title = "Reset the active channel to a straight line";
+    resetBtn.textContent = t("Reset channel");
+    resetBtn.title = t("Reset the active channel to a straight line");
     resetBtn.addEventListener("click", onReset);
     foot.append(readout, resetBtn);
     root.append(tabs, wrap, foot);
@@ -470,7 +470,7 @@
       if (tag === undefined) return cv.active;
       if (!TAGS.includes(tag)) throw new Error(`AmbCurve: unknown channel ${tag}`);
       cv.active = tag;
-      for (const [t, b] of dom.tabButtons) b.classList.toggle("active", t === tag);
+      for (const [name, b] of dom.tabButtons) b.classList.toggle("active", name === tag);
       root.dataset.channel = tag;
       cv.hover = null;
       draw();

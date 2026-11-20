@@ -32,7 +32,7 @@ function renderPresets() {
   presetGrid.queue = [];
   list.replaceChildren();
   if (!shown.length) {
-    list.innerHTML = `<p class="hint">${ui.presets.length ? "No match." : "No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder."}</p>`;
+    list.append(el("p", { class: "hint" }, ui.presets.length ? t("No match.") : t("No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.")));
     list.append(presetHiddenFoot() ?? "");
     return;
   }
@@ -82,20 +82,20 @@ function presetTile(p, favs) {
     presetHover(null);
     const n = folderPhotos().length;
     contextMenu(e, [
-      ["Apply", () => applyPreset(p)],
-      ["Apply some of its settings…", () => applyPresetPartly(p)],
-      ui.info && n > 1 ? [`Apply to all ${n} photos in the folder`, () => applyPresetToFolder(p)] : null,
-      p.deletable ? ["Edit…", () => presetEdit(p)] : null,
-      ["Duplicate", () => presetDuplicate(p)],
-      ["Show the file", () => invoke("reveal_file", { path: p.path }).catch(showError)],
-      ["Share to the hub…", () => sharePresetToHub(p)],
+      [t("Apply"), () => applyPreset(p)],
+      [t("Apply some of its settings…"), () => applyPresetPartly(p)],
+      ui.info && n > 1 ? [t("Apply to all {n} photos in the folder", { n }), () => applyPresetToFolder(p)] : null,
+      p.deletable ? [t("Edit…"), () => presetEdit(p)] : null,
+      [t("Duplicate"), () => presetDuplicate(p)],
+      [t("Show the file"), () => invoke("reveal_file", { path: p.path }).catch(showError)],
+      [t("Share to the hub…"), () => sharePresetToHub(p)],
       ...presetHideItems(p),
     ].filter(Boolean));
   });
   b.addEventListener("mouseenter", () => presetHover(p));
   b.addEventListener("mouseleave", () => presetHover(null));
   const on = favs.has(p.path);
-  const star = el("button", { type: "button", class: `preset-star${on ? " on" : ""}`, title: on ? "Remove from favourites" : "Add to favourites" }, on ? "★" : "☆");
+  const star = el("button", { type: "button", class: `preset-star${on ? " on" : ""}`, title: on ? t("Remove from favourites") : t("Add to favourites") }, on ? "★" : "☆");
   star.addEventListener("click", () => togglePresetFavourite(p));
   tile.append(b, star);
   if (!url && ui.info) presetGrid.near.watch(tile);

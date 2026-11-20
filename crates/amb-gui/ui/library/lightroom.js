@@ -32,7 +32,7 @@ function lightroomRow(text, count, title, onclick) {
   const row = el("div", { class: "tree-row", title: title });
   row.append(
     el("span", { class: "twist" }),
-    el("span", { class: "tree-name" }, text),
+    el("span", { class: "tree-name", translate: "no" }, text),
     el("span", { class: "tree-count" }, count == null ? "" : count.toLocaleString()),
   );
   row.addEventListener("click", onclick);
@@ -50,9 +50,12 @@ function renderLightroom() {
   list.replaceChildren(...lrin.list.map((c) => {
     const li = document.createElement("li");
     const open = lrin.open.has(c.catalogue);
+    const opened = c.missing
+      ? t("Opened in place: {n} photos, {missing} not found. Read from the catalogue, never written.", { n: c.photos.toLocaleString(), missing: c.missing })
+      : t("Opened in place: {n} photos. Read from the catalogue, never written.", { n: c.photos.toLocaleString() });
     const about = c.error
-      ? `${c.catalogue}\nCan't be read now: ${c.error}`
-      : `${c.catalogue}\nOpened in place: ${c.photos.toLocaleString()} photos${c.missing ? `, ${c.missing} not found` : ""}. Read from the catalogue, never written.${c.warnings.length ? `\n${c.warnings.join("\n")}` : ""}`;
+      ? `${c.catalogue}\n${t("Can't be read now: {error}", { error: c.error })}`
+      : `${c.catalogue}\n${opened}${c.warnings.length ? `\n${c.warnings.join("\n")}` : ""}`;
     const row = lightroomRow(c.name, c.photos, about, () => toggle());
     row.classList.toggle("offline", !!c.error);
     row.querySelector(".twist").textContent = open ? "▾" : "▸";
@@ -61,7 +64,7 @@ function renderLightroom() {
       else lrin.open.add(c.catalogue);
       renderLightroom();
     };
-    const close = el("button", { type: "button", class: "small tree-remove", title: "Close the catalogue (nothing is deleted)" }, "×");
+    const close = el("button", { type: "button", class: "small tree-remove", title: t("Close the catalogue (nothing is deleted)") }, "×");
     close.addEventListener("click", (e) => {
       e.stopPropagation();
       closeLightroomCatalogue(c);
@@ -77,7 +80,7 @@ function renderLightroom() {
       }
       for (const k of c.collections) {
         const label = `▤ ${k.set ? `${k.set} / ` : ""}${k.name}`;
-        const r = lightroomRow(label, k.photos, `Lightroom collection: ${k.name}`, () => showLightroomCollection(c, k.name));
+        const r = lightroomRow(label, k.photos, t("Lightroom collection: {name}", { name: k.name }), () => showLightroomCollection(c, k.name));
         r.classList.toggle("current", lib.lightroom?.catalogue === c.catalogue && lib.lightroom?.name === k.name);
         ul.append(lightroomItem(r));
       }
@@ -96,7 +99,10 @@ async function openLightroomCatalogue(path = null) {
   try {
     const c = await invoke("lightroom_open", { path });
     await loadLightroom();
-    toast(`${c.name} is open in place: ${c.photos.toLocaleString()} photos in ${plural(c.folders.length, "folder")}, ${plural(c.collections.length, "collection")}. Nothing was imported or written; edits you make here go into the photos' sidecars.${c.warnings.length ? ` ${c.warnings.join(". ")}.` : ""}`);
+    const opened = t("{name} is open in place: {n} photos in {folders}, {collections}. Nothing was imported or written; edits you make here go into the photos' sidecars.", {
+      name: c.name, n: c.photos.toLocaleString(), folders: plural(c.folders.length, "folder"), collections: plural(c.collections.length, "collection"),
+    });
+    toast(`${opened}${c.warnings.length ? ` ${c.warnings.join(". ")}.` : ""}`);
     if (c.folders.length) await showTreeFolder(c.folders[0].path);
   } catch (e) {
     showError(e);
@@ -106,7 +112,7 @@ async function openLightroomCatalogue(path = null) {
 }
 
 async function closeLightroomCatalogue(c) {
-  if (!await askYes(`Close “${c.name}”? Its photos stay where they are, and so do sidecars written here.`)) return;
+  if (!await askYes(t("Close “{name}”? Its photos stay where they are, and so do sidecars written here.", { name: c.name }))) return;
   try {
     await invoke("lightroom_close", { path: c.catalogue });
     if (lib.lightroom?.catalogue === c.catalogue) await showCollection("");
@@ -127,9 +133,14 @@ async function showLightroomCollection(c, name) {
     lib.photos = view.photos;
     const keep = new Set(lib.photos.map((p) => p.path));
     lib.selected = new Set([...lib.selected].filter((p) => keep.has(p)));
-    $("library-folder").textContent = `Lightroom: ${name}`;
+    $("library-folder").textContent = t("Lightroom: {name}", { name });
     $("lib-drop-folders").hidden = true;
-    if (view.missing.length) toast(`${view.missing.length} of its photos weren't found where the catalogue says: ${fileName(view.missing[0])}${view.missing.length > 1 ? "…" : ""}`, true);
+    if (view.missing.length) {
+      const vars = { n: view.missing.length, name: fileName(view.missing[0]) };
+      toast(view.missing.length > 1
+        ? t("{n} of its photos weren't found where the catalogue says: {name}…", vars)
+        : t("{n} of its photos weren't found where the catalogue says: {name}", vars), true);
+    }
     renderLibrary();
     renderLightroom();
     if (typeof renderCollectionControls === "function") renderCollectionControls();

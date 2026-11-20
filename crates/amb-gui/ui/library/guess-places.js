@@ -9,13 +9,13 @@
 async function guessPlacesFlow() {
   const targets = selectedPhotos().length > 1 ? selectedPhotos() : lib.shown;
   if (!targets.some((p) => p.gps || p.camera_gps)) {
-    return toast("None of these photos has a place to guess from. Place one first (drag it onto the map, or a GPX track).", true);
+    return toast(t("None of these photos has a place to guess from. Place one first (drag it onto the map, or a GPX track)."), true);
   }
   const dlg = $("guess-dialog");
   const list = $("guess-list");
   let guesses = [];
   const roll = async () => {
-    $("guess-count").textContent = "Guessing…";
+    $("guess-count").textContent = t("Guessing…");
     $("guess-ok").disabled = true;
     try {
       guesses = await invoke("library_guess_places", {
@@ -29,8 +29,8 @@ async function guessPlacesFlow() {
     }
     const without = targets.filter((p) => !(p.gps || p.camera_gps)).length;
     $("guess-count").textContent = guesses.length
-      ? `${guesses.length} of the ${without} without a place have a guess.`
-      : `No guesses for the ${without} without a place: none was taken near a placed one (try more minutes, or the clock), or looks the same.`;
+      ? t("{n} of the {without} without a place have a guess.", { n: guesses.length, without })
+      : t("No guesses for the {without} without a place: none was taken near a placed one (try more minutes, or the clock), or looks the same.", { without });
     list.replaceChildren(...guesses.map((g, i) => {
       const p = libPhoto(g.path);
       const row = el("label", { class: "guess-row" });
@@ -41,17 +41,17 @@ async function guessPlacesFlow() {
       if (url) img.src = url;
       const text = el("span", { class: "guess-text" });
       text.append(el("b", {}, p?.name ?? fileName(g.path)), document.createElement("br"),
-        document.createTextNode(`${g.lat.toFixed(5)}, ${g.lon.toFixed(5)} · ${g.by === "look" ? "by look" : "by time"}: ${g.why}`));
-      const change = el("button", { type: "button", class: "small", title: "Put this one somewhere else: on a map, or by name" }, "Change…");
+        document.createTextNode((g.by === "look" ? t("{coords} · by look: {why}", { coords: `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}`, why: g.why }) : t("{coords} · by time: {why}", { coords: `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}`, why: g.why }))));
+      const change = el("button", { type: "button", class: "small", title: t("Put this one somewhere else: on a map, or by name") }, t("Change…"));
       change.addEventListener("click", async (e) => {
         e.preventDefault();
-        const gps = await pickPlace([g.lat, g.lon], `Where ${p?.name ?? fileName(g.path)} was taken`);
+        const gps = await pickPlace([g.lat, g.lon], t("Where {name} was taken", { name: p?.name ?? fileName(g.path) }));
         if (!gps) return;
         [g.lat, g.lon] = gps.split(",").map(Number);
         g.by = "you";
         g.why = "chosen by you";
         box.checked = true;
-        text.lastChild.textContent = `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)} · chosen by you`;
+        text.lastChild.textContent = t("{coords} · chosen by you", { coords: `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}` });
       });
       row.append(box, img, text, change);
       return row;
@@ -72,7 +72,7 @@ async function guessPlacesFlow() {
   try {
     // One write per photo: each has its own place.
     for (const g of chosen) takePlaces(await setInfo([g.path], { gps: `${g.lat.toFixed(6)},${g.lon.toFixed(6)}` }));
-    toast(`Placed ${plural(chosen.length, "photo")} by guess`);
+    toast(t("Placed {photos} by guess", { photos: plural(chosen.length, "photo") }));
     browse.map.fitted = false;
     if (browseOn()) renderBrowse();
   } catch (e) {

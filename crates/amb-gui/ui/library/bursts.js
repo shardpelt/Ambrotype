@@ -14,13 +14,13 @@ async function bestInBursts() {
   if (!libraryOn()) return;
   $("lib-organise-menu").open = false;
   const scope = (selectedPhotos().length > 1 ? selectedPhotos() : lib.shown).map((p) => p.path);
-  if (scope.length < 2) return toast("Show (or select) a few photos first.", true);
+  if (scope.length < 2) return toast(t("Show (or select) a few photos first."), true);
   $("busy").hidden = false;
-  status("Looking at the bursts…");
+  status(t("Looking at the bursts…"));
   try {
     const r = await invoke("library_best_in_bursts", { paths: scope, burstSeconds: 2 });
     if (!r.bursts.length) {
-      toast("No bursts here: no photos taken within 2 seconds of each other.");
+      toast(t("No bursts here: no photos taken within 2 seconds of each other."));
       return;
     }
     bcull.bursts = r.bursts.map((b) => b.map((x) => x.path));
@@ -31,7 +31,7 @@ async function bestInBursts() {
     showError(e);
   } finally {
     $("busy").hidden = true;
-    status("Ready");
+    status(t("Ready"));
   }
 }
 
@@ -52,7 +52,8 @@ function renderCullBar() {
   if (!bcull.on) return;
   const n = bcull.bursts.length;
   const rest = bcull.bursts.reduce((k, b) => k + b.length - 1, 0);
-  $("cull-text").textContent = `${plural(n, "burst")}: the best of each is marked, the other ${rest} dimmed.${bcull.faces ? "" : " Focus only: install YuNet (Settings → AI models) to check eyes too."}`;
+  const text = t("{bursts}: the best of each is marked, the other {rest} dimmed.", { bursts: plural(n, "burst"), rest });
+  $("cull-text").textContent = bcull.faces ? text : t("{text} Focus only: install YuNet (Settings → AI models) to check eyes too.", { text });
 }
 
 // A cell's look while culling: the best marked with why, the rest dimmed.
@@ -74,8 +75,8 @@ function cullCell(cell, p) {
     });
     cell.querySelector(".lib-frame").append(badge);
   }
-  badge.textContent = best ? `★ Best${note ? `: ${note}` : ""}` : note || "not the best";
-  badge.title = best ? "The best of its burst" : "Click to keep this one instead";
+  badge.textContent = best ? (note ? t("★ Best: {note}", { note }) : t("★ Best")) : note || t("not the best");
+  badge.title = best ? t("The best of its burst") : t("Click to keep this one instead");
 }
 
 // Keep `path` instead of its burst's best.
@@ -104,7 +105,7 @@ async function cullReject() {
       return showError(e);
     }
   }
-  status(`Picked ${keep.length}, rejected ${rest.length} (Filter → Rejected shows them; X and U change a flag)`);
+  status(t("Picked {picked}, rejected {rejected} (Filter → Rejected shows them; X and U change a flag)", { picked: keep.length, rejected: rest.length }));
   setCull(false);
   renderLibrary();
 }
@@ -114,7 +115,7 @@ async function cullStack() {
     const id = libPhoto(b[0])?.stack?.id ?? `s${Date.now().toString(36)}b${i}`;
     await setStacks([[b[0]], b.slice(1)], id);
   }
-  status(`Stacked ${plural(bcull.bursts.length, "burst")}, the best on top`);
+  status(t("Stacked {bursts}, the best on top", { bursts: plural(bcull.bursts.length, "burst") }));
   setCull(false);
   renderLibrary();
 }
@@ -126,6 +127,6 @@ function wireBursts() {
   $("cull-done").addEventListener("click", () => setCull(false));
   tauri.event.listen("bursts-progress", (e) => {
     const [done, total] = e.payload;
-    if (total) status(`Looking at the bursts… ${done} of ${total}`);
+    if (total) status(t("Looking at the bursts… {done} of {total}", { done, total }));
   });
 }

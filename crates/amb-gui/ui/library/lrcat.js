@@ -41,39 +41,39 @@ async function runLrcatPlan() {
   const args = lrcatArgs();
   if (!args.catalog) return;
   const seq = ++lrc.seq;
-  $("lrcat-summary").textContent = "Reading the catalogue…";
+  $("lrcat-summary").textContent = t("Reading the catalogue…");
   try {
     const plan = await invoke("lrcat_plan", args);
     if (seq !== lrc.seq) return;
     lrc.plan = plan;
     const c = plan.counts;
-    const parts = [`${plural(c.write, "sidecar")} to write`];
-    if (c.keep) parts.push(`${c.keep} already there (kept)`);
-    if (c.missing) parts.push(`${plural(c.missing, "photo")} not found${args.from ? "" : " (moved? see above)"}`);
+    const parts = [t("{sidecars} to write", { sidecars: plural(c.write, "sidecar") })];
+    if (c.keep) parts.push(t("{n} already there (kept)", { n: c.keep }));
+    if (c.missing) parts.push(args.from ? t("{photos} not found", { photos: plural(c.missing, "photo") }) : t("{photos} not found (moved? see above)", { photos: plural(c.missing, "photo") }));
     parts.push(plural(plan.collections.length, "collection"));
     let text = `${parts.join(", ")}.`;
     if (plan.smart_collections.length) {
-      text += ` Smart collections aren't moved (make them again here): ${plan.smart_collections.join(", ")}.`;
+      text += ` ${t("Smart collections aren't moved (make them again here): {names}.", { names: plan.smart_collections.join(", ") })}`;
     }
     for (const w of plan.warnings) text += ` ${w}.`;
-    if (plan.photos.length > LRCAT_SHOWN) text += ` The first ${LRCAT_SHOWN} photos are listed.`;
+    if (plan.photos.length > LRCAT_SHOWN) text += ` ${t("The first {n} photos are listed.", { n: LRCAT_SHOWN })}`;
     $("lrcat-summary").textContent = text;
-    const label = { write: "→", keep: "kept", missing: "not found" };
+    const label = { write: "→", keep: tKey("kept"), missing: tKey("not found") };
     $("lrcat-list").replaceChildren(...plan.photos.slice(0, LRCAT_SHOWN).map((p) => {
       const li = document.createElement("li");
       li.classList.toggle("skip", p.action !== "write");
       li.title = `${p.photo}\n${p.sidecar}${p.problem ? `\n${p.problem}` : ""}`;
       li.append(
-        el("span", {}, fileName(p.photo)),
-        el("span", { class: "arrow" }, label[p.action]),
-        el("span", {}, fileName(p.sidecar) + (p.problem ? " ⚠" : "")),
+        el("span", { translate: "no" }, fileName(p.photo)),
+        el("span", { class: "arrow" }, t(label[p.action])),
+        el("span", { translate: "no" }, fileName(p.sidecar) + (p.problem ? " ⚠" : "")),
       );
       return li;
     }));
     $("lrcat-inplace").disabled = false;
     const work = c.write + plan.collections.length;
     go.disabled = work === 0;
-    go.textContent = c.write ? `Write ${plural(c.write, "sidecar")}` : "Move";
+    go.textContent = c.write ? t("Write {sidecars}", { sidecars: plural(c.write, "sidecar") }) : t("Move");
   } catch (e) {
     if (seq === lrc.seq) $("lrcat-summary").textContent = String(e);
   }
@@ -90,8 +90,11 @@ async function lrcatFlow() {
   $("busy").hidden = false;
   try {
     const r = await invoke("lrcat_apply", lrcatArgs());
-    const failed = r.errors.length ? `; ${plural(r.errors.length, "problem")}: ${r.errors[0]}` : "";
-    toast(`Wrote ${plural(r.written, "sidecar")}, made ${plural(r.collections, "collection")}${r.kept ? `, kept ${r.kept}` : ""}${r.missing ? `, ${r.missing} not found` : ""}${failed}`, r.errors.length > 0);
+    const done = [t("Wrote {sidecars}, made {collections}", { sidecars: plural(r.written, "sidecar"), collections: plural(r.collections, "collection") })];
+    if (r.kept) done.push(t("kept {n}", { n: r.kept }));
+    if (r.missing) done.push(t("{n} not found", { n: r.missing }));
+    const text = done.join(", ");
+    toast(r.errors.length ? t("{text}; {problems}: {error}", { text, problems: plural(r.errors.length, "problem"), error: r.errors[0] }) : text, r.errors.length > 0);
     await loadCollections();
     $("lib-reload").click();
   } catch (e) {

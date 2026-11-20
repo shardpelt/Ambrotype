@@ -67,7 +67,7 @@ function renderPlaceField(sel) {
   const one = set.size === 1 ? [...set][0] : undefined;
   if (document.activeElement !== input) input.value = one ?? "";
   const cam = n === 1 && !sel[0].gps && sel[0].camera_gps;
-  input.placeholder = n > 1 && one === undefined ? "(mixed)" : cam ? `Camera: ${cam.map((v) => v.toFixed(5)).join(", ")}` : "52.3731, 4.8922 or a map link";
+  input.placeholder = n > 1 && one === undefined ? t("(mixed)") : cam ? t("Camera: {coords}", { coords: cam.map((v) => v.toFixed(5)).join(", ") }) : t("52.3731, 4.8922 or a map link");
   input.disabled = !n;
   $("lib-place-pick").disabled = !n;
   $("lib-place-map").disabled = !(one || cam);
@@ -85,7 +85,7 @@ function wirePlaceField() {
     const gps = parsePlace(text);
     if (!gps) {
       input.classList.add("bad");
-      return toast("Not a place: type latitude, longitude (52.3731, 4.8922), or paste a map link.", true);
+      return toast(t("Not a place: type latitude, longitude (52.3731, 4.8922), or paste a map link."), true);
     }
     input.classList.remove("bad");
     placePhotos(sel.map((p) => p.path), gps).then(() => renderPanel());
@@ -101,7 +101,7 @@ function wirePlaceField() {
     const sel = selectedPhotos();
     if (!sel.length) return;
     const at = sel.map((p) => p.gps ?? p.camera_gps).find(Boolean) ?? null;
-    const gps = await pickPlace(at, sel.length > 1 ? `Where the ${sel.length} photos were taken` : `Where ${sel[0].name} was taken`);
+    const gps = await pickPlace(at, sel.length > 1 ? t("Where the {n} photos were taken", { n: sel.length }) : t("Where {name} was taken", { name: sel[0].name }));
     if (gps) placePhotos(sel.map((p) => p.path), gps).then(() => renderPanel());
   });
   $("lib-place-clear").addEventListener("click", () => placePhotos(selectedPhotos().map((p) => p.path), "").then(() => renderPanel()));
@@ -116,17 +116,17 @@ function wirePlaceField() {
 function viewerPlaceRow(d, el) {
   const at = d.gps ?? null;
   const cam = !at && d.camera_gps;
-  const input = el("input", { type: "text", spellcheck: false, value: at ? at.map((v) => v.toFixed(6)).join(", ") : "", placeholder: cam ? `Camera: ${cam.map((v) => v.toFixed(5)).join(", ")}` : "52.3731, 4.8922 or a map link" });
+  const input = el("input", { type: "text", spellcheck: false, value: at ? at.map((v) => v.toFixed(6)).join(", ") : "", placeholder: cam ? t("Camera: {coords}", { coords: cam.map((v) => v.toFixed(5)).join(", ") }) : t("52.3731, 4.8922 or a map link") });
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       const gps = input.value.trim() ? parsePlace(input.value) : "";
-      if (gps === null) return toast("Not a place: type latitude, longitude, or paste a map link.", true);
+      if (gps === null) return toast(t("Not a place: type latitude, longitude, or paste a map link."), true);
       viewerChange({ gps });
     }
   });
-  const pick = el("button", { type: "button", className: "small", textContent: "Pick…", title: "Choose it on a map, or find an address or place by name" });
+  const pick = el("button", { type: "button", className: "small", textContent: t("Pick…"), title: t("Choose it on a map, or find an address or place by name") });
   pick.addEventListener("click", async () => {
-    const gps = await pickPlace(at ?? cam ?? null, `Where ${d.name ?? fileName(d.path)} was taken`);
+    const gps = await pickPlace(at ?? cam ?? null, t("Where {name} was taken", { name: d.name ?? fileName(d.path) }));
     if (gps) viewerChange({ gps });
     slides.el?.focus();
   });

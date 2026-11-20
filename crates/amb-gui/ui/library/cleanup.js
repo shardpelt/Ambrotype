@@ -8,22 +8,22 @@
 
 const clean = { scope: [], found: [], at: 0, keep: new Set(), row: null }; // row: the photoRow under the photo, made by wireCleanup
 const CLEAN_TESTS = [
-  ["dupes", "Copies and alike pictures"],
-  ["bursts", "Weaker frames of bursts"],
-  ["blurry", "Blurry"],
-  ["eyes", "Eyes closed"],
-  ["exposure", "Nearly black or blown out"],
-  ["rejected", "Already rejected"],
+  ["dupes", tKey("Copies and alike pictures")],
+  ["bursts", tKey("Weaker frames of bursts")],
+  ["blurry", tKey("Blurry")],
+  ["eyes", tKey("Eyes closed")],
+  ["exposure", tKey("Nearly black or blown out")],
+  ["rejected", tKey("Already rejected")],
 ];
 const CLEAN_WHY = {
-  same: "a copy of the same file",
-  alike: "alike a sharper photo",
-  burst: "not the best of its burst",
-  blurry: "blurry",
-  eyes: "eyes closed",
-  dark: "nearly black",
-  bright: "blown out",
-  rejected: "rejected",
+  same: tKey("a copy of the same file"),
+  alike: tKey("alike a sharper photo"),
+  burst: tKey("not the best of its burst"),
+  blurry: tKey("blurry"),
+  eyes: tKey("eyes closed"),
+  dark: tKey("nearly black"),
+  bright: tKey("blown out"),
+  rejected: tKey("rejected"),
 };
 
 function openCleanup() {
@@ -31,13 +31,18 @@ function openCleanup() {
   $("lib-organise-menu").open = false;
   const sel = selectedPhotos();
   clean.scope = (sel.length > 1 ? sel : lib.shown).map((p) => p.path);
-  if (!clean.scope.length) return toast("Open a folder first.", true);
+  if (!clean.scope.length) return toast(t("Open a folder first."), true);
   clean.found = [];
-  $("clean-scope").textContent = `Looks through the ${clean.scope.length} ${sel.length > 1 ? "selected" : "shown"} photo${clean.scope.length === 1 ? "" : "s"}. Photos you picked or rated are left out.`;
+  const n = clean.scope.length;
+  $("clean-scope").textContent = sel.length > 1
+    ? t("Looks through the {n} selected photos. Photos you picked or rated are left out.", { n })
+    : n === 1
+      ? t("Looks through the {n} shown photo. Photos you picked or rated are left out.", { n })
+      : t("Looks through the {n} shown photos. Photos you picked or rated are left out.", { n });
   $("clean-tests").replaceChildren(...CLEAN_TESTS.map(([id, label]) => {
     const l = document.createElement("label");
     const box = el("input", { type: "checkbox", checked: true, value: id });
-    l.append(box, ` ${label}`);
+    l.append(box, ` ${t(label)}`);
     return l;
   }));
   $("clean-status").textContent = "";
@@ -53,13 +58,13 @@ function cleanStage(stage) {
 
 async function findCleanup() {
   const skip = [...$("clean-tests").querySelectorAll("input:not(:checked)")].map((b) => b.value);
-  $("clean-status").textContent = "Looking…";
+  $("clean-status").textContent = t("Looking…");
   const ok = await withBusy($("clean-find"), $("clean-status"), async () => {
     clean.found = await invoke("library_cleanup", { paths: clean.scope, skip });
   });
   if (!ok) return;
   if (!clean.found.length) {
-    $("clean-status").textContent = "Nothing to clean up here.";
+    $("clean-status").textContent = t("Nothing to clean up here.");
     return;
   }
   clean.at = 0;
@@ -70,7 +75,8 @@ async function findCleanup() {
 }
 
 function cleanWhy(r) {
-  return r.kind === "burst" && r.note ? `${CLEAN_WHY.burst} (${r.note})` : CLEAN_WHY[r.kind] ?? r.kind;
+  if (r.kind === "burst" && r.note) return t("not the best of its burst ({note})", { note: r.note });
+  return CLEAN_WHY[r.kind] ? t(CLEAN_WHY[r.kind]) : r.kind;
 }
 
 function cleanImage(img, path, edge) {
@@ -85,7 +91,7 @@ function showCleanPhoto() {
   if (!s) return;
   const kept = clean.keep.has(s.path);
   cleanImage($("clean-img"), s.path, 1024);
-  $("clean-name").textContent = `${clean.at + 1} of ${clean.found.length} · ${libPhoto(s.path)?.name ?? fileName(s.path)}`;
+  $("clean-name").textContent = t("{n} of {total} · {name}", { n: clean.at + 1, total: clean.found.length, name: libPhoto(s.path)?.name ?? fileName(s.path) });
   $("clean-why").replaceChildren(...s.reasons.map((r) => el("span", { class: `clean-chip ${r.kind}` }, cleanWhy(r))));
   const keep = s.reasons.find((r) => r.keep)?.keep;
   $("clean-instead").hidden = !keep;
@@ -94,16 +100,16 @@ function showCleanPhoto() {
     $("clean-instead-name").textContent = libPhoto(keep)?.name ?? fileName(keep);
   }
   $("clean-review").classList.toggle("kept", kept);
-  $("clean-mark").textContent = kept ? "Kept" : "Goes to the trash";
+  $("clean-mark").textContent = kept ? t("Kept") : t("Goes to the trash");
   $("clean-prev").disabled = clean.at === 0;
   $("clean-next").disabled = clean.at === clean.found.length - 1;
   for (const [path, fig] of clean.row.cells) fig.classList.toggle("kept", clean.keep.has(path));
   clean.row.mark();
   clean.row.reveal(clean.found[clean.at]?.path);
   const going = clean.found.length - clean.keep.size;
-  $("clean-trash").textContent = `Move ${going} to the trash`;
+  $("clean-trash").textContent = t("Move {n} to the trash", { n: going });
   $("clean-trash").disabled = $("clean-reject").disabled = !going;
-  $("clean-count").textContent = `${going} of ${clean.found.length} marked to go`;
+  $("clean-count").textContent = t("{n} of {total} marked to go", { n: going, total: clean.found.length });
 }
 
 function renderCleanStrip() {
@@ -132,13 +138,16 @@ async function cleanTrash() {
   const paths = cleanGoing();
   if (!paths.length) return;
   const n = paths.length;
-  if (!(await askYes(`Move ${plural(n, "photo")} to the trash, with ${n === 1 ? "its" : "their"} sidecars, JPEG twins and virtual copies?\n\nThe trash can give them back.`))) return;
+  const ask = n === 1
+    ? t("Move {photos} to the trash, with its sidecars, JPEG twins and virtual copies?\n\nThe trash can give them back.", { photos: plural(n, "photo") })
+    : t("Move {photos} to the trash, with their sidecars, JPEG twins and virtual copies?\n\nThe trash can give them back.", { photos: plural(n, "photo") });
+  if (!(await askYes(ask))) return;
   try {
     const [files, closed] = await invoke("files_trash", { paths });
     if (closed) photoGone();
     lib.selected.clear();
     $("clean-dialog").close();
-    status(`Moved ${plural(n, "photo")} (${files} files) to the trash`);
+    status(t("Moved {photos} ({files} files) to the trash", { photos: plural(n, "photo"), files }));
     await reloadLibraryView();
   } catch (e) {
     showError(e);
@@ -155,7 +164,7 @@ async function cleanReject() {
     return showError(e);
   }
   $("clean-dialog").close();
-  status(`Rejected ${plural(paths.length, "photo")} (Filter → Rejected shows them; Delete… sends them to the trash)`);
+  status(t("Rejected {photos} (Filter → Rejected shows them; Delete… sends them to the trash)", { photos: plural(paths.length, "photo") }));
   renderLibrary();
 }
 
@@ -203,6 +212,6 @@ function wireCleanup() {
   $("clean-dialog").addEventListener("keydown", cleanKey);
   tauri.event.listen("cleanup-progress", (e) => {
     const [done, total] = e.payload;
-    if ($("clean-dialog").open && total) $("clean-status").textContent = `Looking at the pictures… ${done} of ${total}`;
+    if ($("clean-dialog").open && total) $("clean-status").textContent = t("Looking at the pictures… {done} of {total}", { done, total });
   });
 }

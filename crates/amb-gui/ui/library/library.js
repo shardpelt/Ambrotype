@@ -152,13 +152,13 @@ async function loadLibraryNow(dir, more = dir === lib.dir ? lib.more : savedMore
   folder.textContent = dir ?? "";
   folder.title = [dir, ...lib.more].filter(Boolean).join("\n");
   $("lib-drop-folders").hidden = !lib.more.length;
-  $("lib-drop-folders").textContent = `${lib.more.length} more ×`;
-  $("library-count").textContent = "Reading the folder…";
+  $("lib-drop-folders").textContent = t("{n} more ×", { n: lib.more.length });
+  $("library-count").textContent = t("Reading the folder…");
   try {
     lib.photos = await invoke("library_list", { dir, more: lib.more, subfolders: $("lib-subfolders").checked });
   } catch (e) {
     lib.photos = [];
-    toast(`Couldn't read the folder: ${e}`, true);
+    toast(t("Couldn't read the folder: {error}", { error: e }), true);
   } finally {
     showReading(null);
   }
@@ -233,11 +233,11 @@ function renderPanel() {
   const sel = libraryTargets();
   const n = sel.length;
   const active = cullOn() && cull.view !== "loupe";
-  $("lib-sel-count").textContent = active ? (sel[0] ? `${sel[0].name} (active)` : "No active photo")
-    : n ? `${plural(n, "photo")} selected` : "Nothing selected";
+  $("lib-sel-count").textContent = active ? (sel[0] ? t("{name} (active)", { name: sel[0].name }) : t("No active photo"))
+    : n ? t("{photos} selected", { photos: plural(n, "photo") }) : t("Nothing selected");
   $("lib-hint").textContent = active
-    ? "Changes go to the active photo (the framed one). Click a photo to make it active; G or Esc goes back to the grid."
-    : "Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.";
+    ? t("Changes go to the active photo (the framed one). Click a photo to make it active; G or Esc goes back to the grid.")
+    : t("Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.");
   // What can't be done for this selection is left out rather than greyed.
   for (const el of $("library-panel").querySelectorAll("[data-needs]")) {
     const need = el.dataset.needs;
@@ -266,13 +266,13 @@ function renderPanel() {
   const chips = $("lib-keywords");
   chips.replaceChildren(...[...counts.values()].sort((a, b) => b.n - a.n || a.name.localeCompare(b.name)).map(({ name, n: count }) => {
     const all = count === n;
-    const chip = el("span", { class: `tag-chip${all ? "" : " partial"}`, title: all ? "On every selected photo" : `On ${count} of ${n}` }, name);
+    const chip = el("span", { class: `tag-chip${all ? "" : " partial"}`, translate: "no", title: all ? t("On every selected photo") : t("On {n} of {total}", { n: count, total: n }) }, name);
     if (!all) {
-      const add = el("button", { type: "button", title: `Add "${name}" to all ${n}` }, "+");
+      const add = el("button", { type: "button", title: t("Add \"{name}\" to all {n}", { name, n }) }, "+");
       add.addEventListener("click", () => libraryChange({ add_keywords: [name] }));
       chip.append(add);
     }
-    const x = el("button", { type: "button", title: `Remove "${name}" from the selection` }, "×");
+    const x = el("button", { type: "button", title: t("Remove \"{name}\" from the selection", { name }) }, "×");
     x.addEventListener("click", () => libraryChange({ remove_keywords: [name] }));
     chip.append(x);
     return chip;
@@ -281,7 +281,7 @@ function renderPanel() {
   // Recent keywords not on every selected photo yet: one click adds.
   const recent = n ? infoState.recent.filter((k) => counts.get(k.toLowerCase())?.n !== n).slice(0, 12) : [];
   $("lib-tag-recent").replaceChildren(...recent.map((k) => {
-    const b = el("button", { type: "button", class: "tag-recent", title: `Add "${k}" to the ${n} selected` }, `+ ${k}`);
+    const b = el("button", { type: "button", class: "tag-recent", translate: "no", title: t("Add \"{name}\" to the {n} selected", { name: k, n }) }, `+ ${k}`);
     b.addEventListener("click", () => libraryChange({ add_keywords: [k] }));
     return b;
   }));
@@ -290,13 +290,13 @@ function renderPanel() {
   for (const f of $("lib-meta").querySelectorAll("[data-meta]")) {
     const v = same((p) => p[f.dataset.meta] ?? "");
     if (document.activeElement !== f) f.value = v ?? "";
-    f.placeholder = n > 1 && v === undefined ? "(mixed)" : "";
+    f.placeholder = n > 1 && v === undefined ? t("(mixed)") : "";
   }
   $("lib-tag-suggest").replaceChildren(...infoState.recent.slice(0, 60).map((k) => el("option", { value: k })));
-  $("lib-copied").textContent = lib.copied ? `Copied from ${fileName(lib.copied)}` : "";
-  $("lib-export").textContent = n > 1 ? `Export ${n} photos…` : "Export…";
+  $("lib-copied").textContent = lib.copied ? t("Copied from {name}", { name: fileName(lib.copied) }) : "";
+  $("lib-export").textContent = n > 1 ? t("Export {n} photos…", { n }) : t("Export…");
   $("lib-vcopy-delete").hidden = !(n && sel.every((p) => p.copy));
-  $("lib-paste").textContent = n ? `Paste settings to ${sel.filter((p) => p.path !== lib.copied).length}…` : "Paste settings…";
+  $("lib-paste").textContent = n ? t("Paste settings to {n}…", { n: sel.filter((p) => p.path !== lib.copied).length }) : t("Paste settings…");
 }
 
 // Rate, label or keyword the whole selection.
@@ -314,12 +314,12 @@ async function libraryChange(change) {
     for (const k of [...(change.add_keywords ?? [])].reverse()) {
       infoState.recent = [k, ...infoState.recent.filter((r) => r.toLowerCase() !== k.toLowerCase())];
     }
-    const what = change.rating !== undefined ? (change.rating ? `Rated ${"★".repeat(change.rating)}` : "Rating cleared")
-      : change.label !== undefined ? (change.label ? `${change.label} label` : "Label removed")
-      : change.flag !== undefined ? FLAG_DONE[change.flag]
-      : change.add_keywords || change.remove_keywords ? "Keywords changed"
-      : "Saved";
-    status(`${what}: ${plural(updates.length, "photo")}`);
+    const what = change.rating !== undefined ? (change.rating ? t("Rated {stars}", { stars: "★".repeat(change.rating) }) : t("Rating cleared"))
+      : change.label !== undefined ? (change.label ? t("{label} label", { label: t(change.label) }) : t("Label removed"))
+      : change.flag !== undefined ? t(FLAG_DONE[change.flag])
+      : change.add_keywords || change.remove_keywords ? t("Keywords changed")
+      : t("Saved");
+    status(t("{what}: {photos}", { what, photos: plural(updates.length, "photo") }));
     applyViewKeepingCells();
   } catch (e) {
     showError(e);
@@ -449,15 +449,15 @@ function wireLibrary() {
     if (!lib.selected.has(path)) select(path, "only");
     const sel = selectedPhotos();
     contextMenu(e, [
-      ["Copy image", () => copyImage(path)],
-      [sel.length > 1 ? `Copy ${sel.length} file paths` : "Copy file path", () => copyPath(sel.map((p) => p.path))],
-      ["Show in folder", () => invoke("reveal_file", { path }).catch(showError)],
-      ["Open in the editor", () => libraryOpen(path)],
-      ["Find similar photos", () => smartSearch(path)],
+      [t("Copy image"), () => copyImage(path)],
+      [sel.length > 1 ? t("Copy {n} file paths", { n: sel.length }) : t("Copy file path"), () => copyPath(sel.map((p) => p.path))],
+      [t("Show in folder"), () => invoke("reveal_file", { path }).catch(showError)],
+      [t("Open in the editor"), () => libraryOpen(path)],
+      [t("Find similar photos"), () => smartSearch(path)],
       null,
-      [sel.length > 1 ? `Apply a preset to ${sel.length} photos…` : "Apply a preset…", () => presetsOnPhotos(sel.map((p) => p.path))],
-      lib.copied ? [sel.length > 1 ? `Paste settings onto ${sel.length} photos…` : "Paste settings…", () => libraryPasteSettings()] : false,
-      [sel.length > 1 ? `Export ${sel.length} photos…` : "Export…", () => libraryExport()],
+      [sel.length > 1 ? t("Apply a preset to {n} photos…", { n: sel.length }) : t("Apply a preset…"), () => presetsOnPhotos(sel.map((p) => p.path))],
+      lib.copied ? [sel.length > 1 ? t("Paste settings onto {n} photos…", { n: sel.length }) : t("Paste settings…"), () => libraryPasteSettings()] : false,
+      [sel.length > 1 ? t("Export {n} photos…", { n: sel.length }) : t("Export…"), () => libraryExport()],
     ].filter((x) => x !== false));
   });
   grid.addEventListener("dblclick", (e) => {
@@ -506,7 +506,8 @@ function wireLibrary() {
   }
   $("lib-rating-clear").addEventListener("click", () => libraryChange({ rating: 0 }));
   for (const l of LABELS) {
-    const b = el("button", { type: "button", title: `${l} label${LABELS.indexOf(l) < 4 ? ` (${6 + LABELS.indexOf(l)})` : ""}` });
+    const at = LABELS.indexOf(l);
+    const b = el("button", { type: "button", title: at < 4 ? t("{label} label ({key})", { label: t(l), key: 6 + at }) : t("{label} label", { label: t(l) }) });
     b.dataset.label = l;
     b.style.setProperty("--swatch", LABEL_COLOURS[l]);
     b.addEventListener("click", () => labelKey(l));
@@ -534,7 +535,7 @@ function wireLibrary() {
   $("lib-convert").addEventListener("click", () => convertRawsFlow());
   tauri.event.listen("convert-progress", (e) => {
     const [done, total] = e.payload;
-    status(`Converting: ${done} of ${total}…`, true);
+    status(t("Converting: {done} of {total}…", { done, total }), true);
   });
   $("lib-smart").addEventListener("click", () => smartSearch());
   $("lib-smart-chip").addEventListener("click", clearSmartSearch);
@@ -544,7 +545,7 @@ function wireLibrary() {
   });
   tauri.event.listen("smart-progress", (e) => {
     const [done, total] = e.payload;
-    status(`Indexing photos for smart search (once): ${done} of ${total}…`, true);
+    status(t("Indexing photos for smart search (once): {done} of {total}…", { done, total }), true);
   });
   $("lib-plugin").addEventListener("click", () => pluginsFlow().catch(showError));
   $("lib-vcopy").addEventListener("click", virtualCopyKey);

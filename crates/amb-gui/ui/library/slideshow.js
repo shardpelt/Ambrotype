@@ -36,14 +36,14 @@ function slideshowPhotos() {
 
 function slideshowFlow() {
   const photos = slideshowPhotos();
-  if (!photos.length) return toast(libraryOn() ? "No photos shown in the library." : "Open a photo first.", true);
+  if (!photos.length) return toast(libraryOn() ? t("No photos shown in the library.") : t("Open a photo first."), true);
   const s = slideshowSettings();
   const f = $("slideshow-form");
   f.elements.seconds.value = s.seconds;
   f.elements.shuffle.checked = s.shuffle;
   f.elements.fullscreen.checked = s.fullscreen;
   f.elements.effect.value = s.effect;
-  $("slideshow-count").textContent = `${plural(photos.length, "photo")}${libraryOn() && selectedPhotos().length > 1 ? " selected" : ""}`;
+  $("slideshow-count").textContent = libraryOn() && selectedPhotos().length > 1 ? t("{photos} selected", { photos: plural(photos.length, "photo") }) : plural(photos.length, "photo");
   $("slideshow-dialog").showModal();
   return true;
 }
@@ -63,10 +63,12 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
   const viewer = Boolean(settings.viewer);
   const el = Object.assign(document.createElement("div"), { className: `slideshow${viewer ? " viewer" : ""}`, tabIndex: -1 });
   const pause = viewer
-    ? '<button type="button" data-do="left" title="Rotate left (Ctrl+[)">⟲</button><button type="button" data-do="right" title="Rotate right (Ctrl+])">⟳</button>'
-    : '<button type="button" data-do="pause" title="Pause (Space)">❚❚</button>';
+    ? '<button type="button" data-do="left">⟲</button><button type="button" data-do="right">⟳</button>'
+    : '<button type="button" data-do="pause">❚❚</button>';
   const info = viewer ? '<aside class="ss-info" hidden></aside>' : "";
-  el.innerHTML = `<img class="ss-img" alt=""><img class="ss-img" alt="">${info}<div class="ss-bar" hidden><button type="button" data-do="prev" title="Previous (←)">‹</button>${pause}<button type="button" data-do="next" title="Next (→)">›</button><span class="ss-where"></span><button type="button" data-do="end" title="End (Esc)">✕</button></div>`;
+  el.innerHTML = `<img class="ss-img" alt=""><img class="ss-img" alt="">${info}<div class="ss-bar" hidden><button type="button" data-do="prev">‹</button>${pause}<button type="button" data-do="next">›</button><span class="ss-where"></span><button type="button" data-do="end">✕</button></div>`;
+  const barTitles = { left: t("Rotate left (Ctrl+[)"), right: t("Rotate right (Ctrl+])"), pause: t("Pause (Space)"), prev: t("Previous (←)"), next: t("Next (→)"), end: t("End (Esc)") };
+  for (const [what, title] of Object.entries(barTitles)) el.querySelector(`[data-do="${what}"]`)?.setAttribute("title", title);
   document.body.append(el);
   slides.el = el;
   // The viewer's thirds: left steps back, right on, the middle only shows
@@ -142,7 +144,7 @@ function viewerFlow() {
       if (p && strip.photos[stripIndexOf(ui.info?.path)]?.path !== p.path) openPath(p.path);
     };
   }
-  if (!list.length) return toast(libraryOn() ? "No photos shown in the library." : "Open a photo first.", true);
+  if (!list.length) return toast(libraryOn() ? t("No photos shown in the library.") : t("Open a photo first."), true);
   return startSlideshow(list, { seconds: 0, shuffle: false, fullscreen: true, effect: "none", viewer: true }, { remember: false, done, start });
 }
 
@@ -208,8 +210,8 @@ function showWhere() {
   const parts = [`${slides.at + 1} / ${n}`, p.name ?? fileName(p.path)];
   if (slides.settings.viewer) {
     if (p.rating) parts.push("★".repeat(p.rating));
-    if (p.label) parts.push(p.label);
-    if (p.flag) parts.push(p.flag === "pick" ? "⚑ Pick" : "✕ Rejected");
+    if (p.label) parts.push(t(p.label));
+    if (p.flag) parts.push(p.flag === "pick" ? t("⚑ Pick") : t("✕ Rejected"));
   }
   slides.el.querySelector(".ss-where").textContent = parts.join(" · ");
 }
@@ -281,15 +283,15 @@ async function renderViewerInfo() {
   if (seq !== slides.infoSeq || !slides.on) return;
   const shutter = (s) => (s >= 1 ? `${Math.round(s * 10) / 10} s` : `1/${Math.round(1 / s)} s`);
   const rows = [
-    ["File", d.name ?? fileName(d.path)],
-    ["Taken", d.captured],
-    ["Camera", d.camera],
-    ["Lens", d.lens],
-    ["Exposure", [d.shutter && shutter(d.shutter), d.aperture && `f/${Math.round(d.aperture * 10) / 10}`, d.iso && `ISO ${d.iso}`].filter(Boolean).join("  ·  ")],
-    ["Focal length", d.focal && `${Math.round(d.focal)} mm`],
-    ["Size", d.bytes && `${(d.bytes / 1e6).toFixed(1)} MB`],
-    ["Title", d.title],
-    ["Folder", dirOf(d.path)],
+    [tKey("File"), d.name ?? fileName(d.path)],
+    [tKey("Taken"), d.captured],
+    [tKey("Camera"), d.camera],
+    [tKey("Lens"), d.lens],
+    [tKey("Exposure"), [d.shutter && shutter(d.shutter), d.aperture && `f/${Math.round(d.aperture * 10) / 10}`, d.iso && `ISO ${d.iso}`].filter(Boolean).join("  ·  ")],
+    [tKey("Focal length"), d.focal && `${Math.round(d.focal)} mm`],
+    [tKey("Size"), d.bytes && `${(d.bytes / 1e6).toFixed(1)} MB`],
+    [tKey("Title"), d.title],
+    [tKey("Folder"), dirOf(d.path)],
   ].filter(([, v]) => v);
   const el = (tag, attrs = {}, ...kids) => {
     const n = Object.assign(document.createElement(tag), attrs);
@@ -297,20 +299,20 @@ async function renderViewerInfo() {
     return n;
   };
   const stars = el("div", { className: "ss-stars" }, ...[1, 2, 3, 4, 5].map((k) => el("button", {
-    type: "button", textContent: "★", title: `${plural(k, "star")} (${k})`, className: k <= (d.rating ?? 0) ? "on" : "",
+    type: "button", textContent: "★", title: t("{stars} ({n})", { stars: plural(k, "star"), n: k }), className: k <= (d.rating ?? 0) ? "on" : "",
     onclick: () => viewerChange({ rating: (d.rating ?? 0) === k ? 0 : k }),
   })));
   const labels = el("div", { className: "ss-labels" }, ...Object.keys(LABEL_COLOURS).map((l, i) => {
-    const b = el("button", { type: "button", title: `${l}${i < 4 ? ` (${6 + i})` : ""}`, className: d.label === l ? "on" : "", onclick: () => viewerChange({ label: d.label === l ? "" : l }) });
+    const b = el("button", { type: "button", title: i < 4 ? t("{label} ({key})", { label: t(l), key: 6 + i }) : t(l), className: d.label === l ? "on" : "", onclick: () => viewerChange({ label: d.label === l ? "" : l }) });
     b.style.setProperty("--swatch", LABEL_COLOURS[l]);
     return b;
   }));
-  const flag = (f, text, key) => el("button", { type: "button", textContent: text, title: `${text} (${key})`, className: (d.flag ?? "") === f ? "on" : "", onclick: () => viewerChange({ flag: f }) });
-  const flags = el("div", { className: "ss-flags" }, flag("pick", "Pick", "P"), flag("reject", "Reject", "X"), flag("", "Neither", "U"));
-  const keywords = el("div", { className: "ss-keywords" }, ...(d.keywords ?? []).map((k) => el("span", { className: "ss-chip" }, k, el("button", {
-    type: "button", textContent: "×", title: `Remove ${k}`, onclick: () => viewerChange({ remove_keywords: [k] }),
+  const flag = (f, text, key) => el("button", { type: "button", textContent: t(text), title: t("{flag} ({key})", { flag: t(text), key }), className: (d.flag ?? "") === f ? "on" : "", onclick: () => viewerChange({ flag: f }) });
+  const flags = el("div", { className: "ss-flags" }, flag("pick", tKey("Pick"), "P"), flag("reject", tKey("Reject"), "X"), flag("", tKey("Neither"), "U"));
+  const keywords = el("div", { className: "ss-keywords" }, ...(d.keywords ?? []).map((k) => el("span", { className: "ss-chip", translate: false }, k, el("button", {
+    type: "button", textContent: "×", title: t("Remove {name}", { name: k }), onclick: () => viewerChange({ remove_keywords: [k] }),
   }))));
-  const add = el("input", { type: "text", placeholder: "Add keywords (Enter; commas between)", spellcheck: false });
+  const add = el("input", { type: "text", placeholder: t("Add keywords (Enter; commas between)"), spellcheck: false });
   add.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && add.value.trim()) {
       viewerChange({ add_keywords: add.value.split(",").map((k) => k.trim()).filter(Boolean) });
@@ -318,13 +320,13 @@ async function renderViewerInfo() {
     }
   });
   panel.replaceChildren(
-    el("dl", {}, ...rows.flatMap(([k, v]) => [el("dt", { textContent: k }), el("dd", { textContent: v, title: v })])),
-    el("h4", { textContent: "Rating" }), stars,
-    el("h4", { textContent: "Label" }), labels,
-    el("h4", { textContent: "Flag" }), flags,
-    el("h4", { textContent: "Keywords" }), keywords, add,
-    el("h4", { textContent: "Place" }), viewerPlaceRow(d, el),
-    el("p", { className: "ss-info-hint", textContent: "I or right-click hides this · 0–5 rate · P X U flag · 6–9 label · Ctrl+[ ] turn" }),
+    el("dl", {}, ...rows.flatMap(([k, v]) => [el("dt", { textContent: t(k) }), el("dd", { textContent: v, title: v, translate: false })])),
+    el("h4", { textContent: t("Rating") }), stars,
+    el("h4", { textContent: t("Label") }), labels,
+    el("h4", { textContent: t("Flag") }), flags,
+    el("h4", { textContent: t("Keywords") }), keywords, add,
+    el("h4", { textContent: t("Place") }), viewerPlaceRow(d, el),
+    el("p", { className: "ss-info-hint", textContent: t("I or right-click hides this · 0–5 rate · P X U flag · 6–9 label · Ctrl+[ ] turn") }),
   );
 }
 

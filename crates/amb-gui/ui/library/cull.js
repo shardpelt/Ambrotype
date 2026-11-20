@@ -75,7 +75,7 @@ function renderCull() {
   if (cull.view === "loupe") {
     box.replaceChildren(cullTile(cull.active, { big: true }));
   } else if (cull.view === "compare") {
-    const tiles = [cullTile(cull.select, { tag: "Select" }), cullTile(cull.candidate, { tag: "Candidate" })];
+    const tiles = [cullTile(cull.select, { tag: tKey("Select") }), cullTile(cull.candidate, { tag: tKey("Candidate") })];
     if (cull.split === "left" || cull.split === "up") tiles.reverse();
     box.dataset.split = cull.split;
     box.replaceChildren(...tiles, compareSplitBar());
@@ -91,12 +91,17 @@ function renderCull() {
 }
 
 // Which way compare splits: the candidate right, left, below or above.
-const COMPARE_SPLITS = [["right", "◧", "Side by side, the candidate on the right"], ["left", "◨", "Side by side, the candidate on the left"], ["down", "⬒", "Above and below, the candidate below"], ["up", "⬓", "Above and below, the candidate above"]];
+const COMPARE_SPLITS = [
+  ["right", "◧", tKey("Side by side, the candidate on the right")],
+  ["left", "◨", tKey("Side by side, the candidate on the left")],
+  ["down", "⬒", tKey("Above and below, the candidate below")],
+  ["up", "⬓", tKey("Above and below, the candidate above")],
+];
 
 function compareSplitBar() {
-  const bar = el("div", { class: "compare-split", role: "group", "aria-label": "Split" });
+  const bar = el("div", { class: "compare-split", role: "group", "aria-label": t("Split") });
   for (const [split, icon, title] of COMPARE_SPLITS) {
-    const b = el("button", { type: "button", class: "small", title: title }, icon);
+    const b = el("button", { type: "button", class: "small", title: t(title) }, icon);
     b.dataset.split = split;
     b.classList.toggle("on", split === cull.split);
     b.addEventListener("click", (e) => {
@@ -132,7 +137,7 @@ function cullTile(path, { tag, big } = {}) {
   const stars = el("span", { class: "lib-stars" }, p.rating ? "★".repeat(p.rating) : "");
   const label = el("span", { class: "film-label", hidden: !p.label });
   if (p.label) label.style.background = LABEL_COLOURS[p.label] ?? "var(--muted)";
-  const name = el("span", { class: "cull-name" }, [tag, p.name].filter(Boolean).join(": "));
+  const name = el("span", { class: "cull-name", translate: tag ? null : "no" }, tag ? t("{tag}: {name}", { tag: t(tag), name: p.name }) : p.name);
   cap.append(flag, stars, label, name);
   tile.append(frame, cap);
   tile.addEventListener("click", (e) => {
@@ -140,7 +145,7 @@ function cullTile(path, { tag, big } = {}) {
     if ($("library-view").dataset.dragged) return delete $("library-view").dataset.dragged;
     const was = cull.active === path;
     cull.active = path;
-    for (const t of $("library-view").querySelectorAll(".cull-tile")) t.classList.toggle("active", t.dataset.path === path);
+    for (const other of $("library-view").querySelectorAll(".cull-tile")) other.classList.toggle("active", other.dataset.path === path);
     renderPanel();
     // A click on the photo: 100 % there and back (in compare, once it's the active one).
     if ((big || was) && e.target.closest(".cull-frame")) cull.zoom?.toggleFull(e.clientX, e.clientY);

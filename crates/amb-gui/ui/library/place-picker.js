@@ -11,7 +11,7 @@ const picker = { z: 3, x: 0, y: 0, pin: null };
 
 // Ask for a place, starting at `start` ([lat, lon]) if given; resolves to
 // "lat,lon", or null when cancelled.
-async function pickPlace(start = null, title = "Choose the place") {
+async function pickPlace(start = null, title = t("Choose the place")) {
   const dlg = $("pick-dialog");
   $("pick-title").textContent = title;
   $("pick-results").replaceChildren();
@@ -30,7 +30,7 @@ async function pickPlace(start = null, title = "Choose the place") {
 }
 
 function showPickedPlace() {
-  $("pick-at").textContent = picker.pin ? `${picker.pin[0].toFixed(5)}, ${picker.pin[1].toFixed(5)}` : "Click the map, or search, to put the pin.";
+  $("pick-at").textContent = picker.pin ? `${picker.pin[0].toFixed(5)}, ${picker.pin[1].toFixed(5)}` : t("Click the map, or search, to put the pin.");
   $("pick-ok").disabled = !picker.pin;
 }
 
@@ -65,18 +65,18 @@ async function searchPlace() {
   const typed = parsePlace(q);
   if (typed) return goPicked(typed.split(",").map(Number), q);
   const list = $("pick-results");
-  list.replaceChildren(el("p", { class: "hint" }, "Searching OpenStreetMap…"));
+  list.replaceChildren(el("p", { class: "hint" }, t("Searching OpenStreetMap…")));
   try {
     const found = await invoke("geocode", { query: q });
     list.replaceChildren(...found.map((f) => {
-      const b = el("button", { type: "button", class: "pick-result" }, f.name);
+      const b = el("button", { type: "button", class: "pick-result", translate: "no" }, f.name);
       b.addEventListener("click", () => goPicked([f.lat, f.lon], f.name));
       return b;
     }));
-    if (!found.length) list.append(el("p", { class: "hint" }, "Nothing found. Try a town or a street with its town."));
+    if (!found.length) list.append(el("p", { class: "hint" }, t("Nothing found. Try a town or a street with its town.")));
     else if (found.length === 1) goPicked([found[0].lat, found[0].lon], found[0].name);
   } catch (e) {
-    list.replaceChildren(el("p", { class: "hint" }, `${e} (offline?)`));
+    list.replaceChildren(el("p", { class: "hint" }, t("{error} (offline?)", { error: e })));
   }
 }
 

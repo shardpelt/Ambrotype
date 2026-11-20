@@ -18,7 +18,9 @@ function applyLibraryFolds() {
     const open = !libFolded[side];
     const b = $(`lib-fold-${side}`);
     b.innerHTML = sidebarIcon(side, open);
-    b.title = `${open ? "Hide" : "Show"} the ${side === "left" ? "folders" : "panel"} (Ctrl+${side === "left" ? "[" : "]"})`;
+    b.title = side === "left"
+      ? open ? t("Hide the folders (Ctrl+[)") : t("Show the folders (Ctrl+[)")
+      : open ? t("Hide the panel (Ctrl+])") : t("Show the panel (Ctrl+])");
   }
 }
 
@@ -37,7 +39,7 @@ function updateFilterSummary() {
     $("lib-filter-edited").value !== "all",
     $("lib-filter-file").value !== "all",
   ].filter(Boolean).length;
-  $("lib-filter-summary").textContent = on ? `Filter · ${on} ▾` : "Filter ▾";
+  $("lib-filter-summary").textContent = on ? t("Filter · {n} ▾", { n: on }) : t("Filter ▾");
   $("lib-filter-menu").classList.toggle("active", on > 0);
 }
 

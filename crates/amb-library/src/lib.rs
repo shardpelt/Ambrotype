@@ -43,3 +43,19 @@ pub fn editor_config_dir() -> Option<PathBuf> {
     };
     Some(config.join("org.ambrotype.editor"))
 }
+
+/// A file name made from a name people typed: lower case, letters and
+/// digits, dashes between words, at most 60 characters; `fallback` when
+/// nothing is left. Saved styles and the editor's looks use it.
+pub fn slug(name: &str, fallback: &str) -> String {
+    let mut s = String::new();
+    for c in name.trim().chars().flat_map(char::to_lowercase) {
+        if c.is_alphanumeric() {
+            s.push(c);
+        } else if !s.ends_with('-') && !s.is_empty() {
+            s.push('-');
+        }
+    }
+    let s = s.trim_end_matches('-').chars().take(60).collect::<String>();
+    if s.is_empty() { fallback.into() } else { s }
+}

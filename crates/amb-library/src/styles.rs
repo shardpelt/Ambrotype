@@ -57,16 +57,7 @@ pub fn from_photos(name: &str, refs: &[&Path], focus: Focus) -> Result<Style, St
 
 /// A file name from a style's name: lower case, letters, digits and dashes.
 fn slug(name: &str) -> String {
-    let mut s = String::new();
-    for c in name.trim().chars().flat_map(char::to_lowercase) {
-        if c.is_alphanumeric() {
-            s.push(c);
-        } else if !s.ends_with('-') && !s.is_empty() {
-            s.push('-');
-        }
-    }
-    let s = s.trim_end_matches('-').chars().take(60).collect::<String>();
-    if s.is_empty() { "style".into() } else { s }
+    crate::slug(name, "style")
 }
 
 /// Write the style as `<dir>/<slug>.json`, replacing one of the same name.

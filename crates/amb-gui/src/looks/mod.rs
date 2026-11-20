@@ -375,16 +375,7 @@ pub fn list(dir: Option<&Path>, active_layout: Option<&str>, active_theme: Optio
 
 /// A file name from a look's name: lower case, letters, digits and dashes.
 fn slug(name: &str) -> String {
-    let mut s = String::new();
-    for c in name.trim().chars().flat_map(char::to_lowercase) {
-        if c.is_alphanumeric() {
-            s.push(c);
-        } else if !s.ends_with('-') && !s.is_empty() {
-            s.push('-');
-        }
-    }
-    let s = s.trim_end_matches('-').chars().take(60).collect::<String>();
-    if s.is_empty() { "look".into() } else { s }
+    amb_library::slug(name, "look")
 }
 
 fn user_path(dir: &Path, kind: Kind, id: &str) -> Option<PathBuf> {

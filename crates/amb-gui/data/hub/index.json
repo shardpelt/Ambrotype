@@ -720,6 +720,50 @@
       "license": "CC0-1.0",
       "path": "presets/vaporwave.xmp",
       "sha256": "20dd28151be0a3028bebfebaa66d19f2fffee96c837d9c8aa522c6123e3b619e"
+    },
+    {
+      "id": "preset-autumn-pop",
+      "kind": "preset",
+      "name": "Autumn Pop",
+      "group": "Seasons",
+      "author": "Ambrotype",
+      "description": "Leaves glow: oranges, reds and yellows richer, leftover greens turned gold, a warm light.",
+      "license": "CC0-1.0",
+      "path": "presets/autumn-pop.xmp",
+      "sha256": "4876732ce146fde16016db0f3b09c3faa999d9f96355a6e94c7993e589a34df3"
+    },
+    {
+      "id": "preset-spring-bloom",
+      "kind": "preset",
+      "name": "Spring Bloom",
+      "group": "Seasons",
+      "author": "Ambrotype",
+      "description": "Fresh and airy: young greens brighter, blossoms pinker, soft light in the shadows.",
+      "license": "CC0-1.0",
+      "path": "presets/spring-bloom.xmp",
+      "sha256": "226c60e47670c0023ededbd21e8365091392b4983e4e2ae33fbf942c17296746"
+    },
+    {
+      "id": "preset-summer-glow",
+      "kind": "preset",
+      "name": "Summer Glow",
+      "group": "Seasons",
+      "author": "Ambrotype",
+      "description": "Bright and warm: deep blue sky, clear water, golden light, a little more punch.",
+      "license": "CC0-1.0",
+      "path": "presets/summer-glow.xmp",
+      "sha256": "dfaa3912ae5208d8af0f68e13f70b47841d8f23ba7a6e632c1f61d6304b64b77"
+    },
+    {
+      "id": "preset-winter-frost",
+      "kind": "preset",
+      "name": "Winter Frost",
+      "group": "Seasons",
+      "author": "Ambrotype",
+      "description": "Cold and crisp: icy blues, bright snow, warm colours quieted.",
+      "license": "CC0-1.0",
+      "path": "presets/winter-frost.xmp",
+      "sha256": "7284f960fa55d5e91697d0e8d0d54d30fa669c28cda21a39040a5ece1e3e1733"
     }
   ]
 }

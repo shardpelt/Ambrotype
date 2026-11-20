@@ -63,7 +63,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Save my own preset** → **New Preset from This Photo** (Ctrl+Shift+N, or **+ New preset…** in Presets). It works in Lightroom too.
 - **What's inside a preset, and what don't you support yet** → `amb preset inspect PRESET.xmp`.
 - **Find presets, layouts and themes others made** → **Browse the Hub** (Ctrl+Shift+H).
-- **Ready-made looks to start from** → Presets → **Preset library…**: 21 free presets by style (film, B&W, moody, bright, vivid, portrait, landscape); hover to preview, **Apply**, or **Add** (to your presets).
+- **Ready-made looks to start from** → Presets → **Preset library…**: 44 free presets by style (film, B&W, moody, bright, vivid, portrait, landscape, and Seasons: Autumn Pop, Spring Bloom, Summer Glow, Winter Frost); hover to preview, **Apply**, or **Add** (to your presets).
 - **A preset that replaces my edit, or adds to it** → Presets → **Apply to the original, not on top**: on (the default), a preset replaces the look (crop, spots, masks and geometry stay); off, presets add up as in Lightroom.
 
 ## Film negatives and scans

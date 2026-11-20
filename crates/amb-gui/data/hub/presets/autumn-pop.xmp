@@ -1,0 +1,28 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Written for the Ambrotype hub. CC0-1.0: free for anyone, any use. -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4" crs:Author="Ambrotype" crs:License="CC0-1.0"
+    crs:Contrast2012="+10"
+    crs:Clarity2012="+8"
+    crs:Vibrance="+15"
+    crs:HueAdjustmentYellow="-15"
+    crs:HueAdjustmentGreen="-35"
+    crs:SaturationAdjustmentRed="+20"
+    crs:SaturationAdjustmentOrange="+30"
+    crs:SaturationAdjustmentYellow="+20"
+    crs:SaturationAdjustmentGreen="-25"
+    crs:LuminanceAdjustmentOrange="-5"
+    crs:LuminanceAdjustmentYellow="-10"
+    crs:LuminanceAdjustmentBlue="-10"
+    crs:ColorGradeHighlightHue="40"
+    crs:ColorGradeHighlightSat="15"
+    crs:ColorGradeShadowHue="25"
+    crs:ColorGradeShadowSat="8"
+    crs:ColorGradeBlending="60">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Autumn Pop</rdf:li></rdf:Alt></crs:Name>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Seasons</rdf:li></rdf:Alt></crs:Group>
+   <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Leaves glow: oranges, reds and yellows richer, leftover greens turned gold, a warm light.</rdf:li></rdf:Alt></crs:Description>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

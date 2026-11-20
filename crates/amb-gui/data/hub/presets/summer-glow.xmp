@@ -1,0 +1,28 @@
+<x:xmpmeta xmlns:x="adobe:ns:meta/">
+ <!-- Written for the Ambrotype hub. CC0-1.0: free for anyone, any use. -->
+ <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/"
+    crs:PresetType="Normal" crs:SupportsAmount="True" crs:ProcessVersion="15.4" crs:Author="Ambrotype" crs:License="CC0-1.0"
+    crs:Contrast2012="+15"
+    crs:Highlights2012="-20"
+    crs:Whites2012="+10"
+    crs:Dehaze="+5"
+    crs:Vibrance="+20"
+    crs:HueAdjustmentGreen="-10"
+    crs:HueAdjustmentAqua="+10"
+    crs:SaturationAdjustmentOrange="+10"
+    crs:SaturationAdjustmentYellow="+15"
+    crs:SaturationAdjustmentAqua="+30"
+    crs:SaturationAdjustmentBlue="+25"
+    crs:LuminanceAdjustmentBlue="-15"
+    crs:ColorGradeHighlightHue="45"
+    crs:ColorGradeHighlightSat="18"
+    crs:ColorGradeShadowHue="200"
+    crs:ColorGradeShadowSat="8"
+    crs:ColorGradeBlending="60">
+   <crs:Name><rdf:Alt><rdf:li xml:lang="x-default">Summer Glow</rdf:li></rdf:Alt></crs:Name>
+   <crs:Group><rdf:Alt><rdf:li xml:lang="x-default">Seasons</rdf:li></rdf:Alt></crs:Group>
+   <crs:Description><rdf:Alt><rdf:li xml:lang="x-default">Bright and warm: deep blue sky, clear water, golden light, a little more punch.</rdf:li></rdf:Alt></crs:Description>
+  </rdf:Description>
+ </rdf:RDF>
+</x:xmpmeta>

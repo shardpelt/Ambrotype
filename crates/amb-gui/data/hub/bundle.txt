@@ -67,3 +67,7 @@ preset-matte-portrait
 preset-noir
 preset-sunset-duotone
 preset-vaporwave
+preset-autumn-pop
+preset-spring-bloom
+preset-summer-glow
+preset-winter-frost

@@ -39,14 +39,14 @@ function renderPalette() {
     for (const s of p.sections) {
       const names = s.controls.map((c) => c.name);
       if (p.sections.length > 1 && !names.some((n) => shown.settings.has(n)) && matches(t(p.label), t(s.label))) {
-        sections.push(item(`${t(p.label)} › ${t(s.label)}`, { add: "include", include: `${p.id}/${s.label}` }, t("group")));
+        sections.push(item(t("{panel} › {section}", { panel: t(p.label), section: t(s.label) }), { add: "include", include: `${p.id}/${s.label}` }, t("group")));
       }
       if (s.layout === "hsl" && !names.some((n) => shown.settings.has(n)) && matches("hsl", t(s.label))) {
         sections.push(item(t("HSL tabs"), { add: "include", include: `${p.id}/${s.label}` }, t("group")));
       }
       for (const c of s.controls) {
         if (!shown.settings.has(c.name) && matches(t(c.label), c.name, t(s.label), t(p.label))) {
-          settings.push(item(t(c.label), { add: "setting", name: c.name }, `${t(p.label)} › ${t(s.label)}`));
+          settings.push(item(t(c.label), { add: "setting", name: c.name }, t("{panel} › {section}", { panel: t(p.label), section: t(s.label) })));
         }
       }
     }

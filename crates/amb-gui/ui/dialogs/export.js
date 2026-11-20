@@ -148,7 +148,7 @@ function updateExportSize() {
       : crop
         ? t("Exactly {w} × {h} px. The crop is {a} and this size is {b}, so the top and bottom edges are trimmed (centred).", v)
         : t("Exactly {w} × {h} px. The photo is {a} and this size is {b}, so the top and bottom edges are trimmed (centred).", v);
-    note.textContent = `${sides} ${t("To choose what is kept, crop with this size preset first.")}`;
+    note.textContent = t("{sides} To choose what is kept, crop with this size preset first.", { sides });
   } else {
     note.textContent = t("Exactly {w} × {h} px; the crop already has this shape.", { w, h });
   }

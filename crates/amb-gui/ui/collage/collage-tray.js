@@ -285,7 +285,7 @@ function trayCell(p) {
   const n = collage.trayGroupOf.get(p.path) ?? -1;
   const item = document.createElement("div");
   item.className = n >= 0 ? `tray-item grouped g${n % 2}` : "tray-item";
-  item.title = `${p.name}\n${t("Drag up into a cell, or click to fill the selected (or next empty) cell.")}`;
+  item.title = t("{name}\nDrag up into a cell, or click to fill the selected (or next empty) cell.", { name: p.name });
   const img = el("img", { alt: "", draggable: "false" });
   const stars = el("span", { class: "tray-stars" }, p.rating ? "★".repeat(p.rating) : "");
   const name = el("span", { class: "tray-name", translate: "no" }, p.name);

@@ -1833,9 +1833,6 @@
  "Drag a frame to move it, its corners to resize, the round handle to turn it. Drop a photo on empty canvas for a new frame.": [
   "collage/collage-canvas.js"
  ],
- "Drag across (Shift: fine). Double-click to reset.": [
-  "develop/controls.js"
- ],
  "Drag along a line that should be vertical (a wall, a door frame) or horizontal (a horizon). Two verticals fix converging verticals; two horizontals fix the horizontal perspective.": [
   "tools/guided.js"
  ],
@@ -1872,9 +1869,6 @@
  "Drag the outline to where the copy should go.": [
   "tools/select.js"
  ],
- "Drag the slider (Shift: fine). Double-click to reset.": [
-  "develop/rows.js"
- ],
  "Drag the spot or its source to move them. Delete removes it; click elsewhere for a new one.": [
   "tools/spots.js"
  ],
@@ -1907,9 +1901,6 @@
  ],
  "Drag to turn (Shift: 15° steps)": [
   "collage/collage-canvas.js"
- ],
- "Drag up into a cell, or click to fill the selected (or next empty) cell.": [
-  "collage/collage-tray.js"
  ],
  "Draw a box round it: the Subject model finds its outline, and AI Remove fills it in one spot.": [
   "core/keys.js"
@@ -2738,6 +2729,9 @@
  ],
  "Guides for AI agents (built in;": [
   "index.html"
+ ],
+ "H {hue} · S {sat}": [
+  "develop/wheels.js"
  ],
  "HDR merge failed": [
   "library/library-actions.js"
@@ -4766,9 +4760,6 @@
  "Plugins…": [
   "core/menu.js"
  ],
- "Point and drag round the dial (Shift: fine, drag up or down). Double-click to reset.": [
-  "develop/controls.js"
- ],
  "Point curve": [
   "looks/editor.js"
  ],
@@ -6677,9 +6668,6 @@
  "To change a value: apply the preset, adjust the sliders, then choose Take the values from this photo.": [
   "index.html"
  ],
- "To choose what is kept, crop with this size preset first.": [
-  "dialogs/export.js"
- ],
  "To front": [
   "index.html"
  ],
@@ -6786,9 +6774,6 @@
  ],
  "Turns the ellipse": [
   "tools/mask-panel.js"
- ],
- "Type a value, or drag this label sideways. Double-click to reset.": [
-  "develop/controls.js"
  ],
  "Type what to look for, then press Smart (a dog on a beach, snowy mountains).": [
   "library/library-actions.js"
@@ -7697,6 +7682,9 @@
  "{a} or {b}": [
   "core/keys.js"
  ],
+ "{a}: {b}": [
+  "core/core.js"
+ ],
  "{bands} in the B&W mix": [
   "develop/touch.js"
  ],
@@ -7779,6 +7767,9 @@
  "{have} The downloaded database is from {when}. Check for a newer one?": [
   "develop/photo.js"
  ],
+ "{hint} · {keys}": [
+  "core/tasks.js"
+ ],
  "{jpegs} written": [
   "library/library-actions.js"
  ],
@@ -7792,6 +7783,9 @@
   "core/keys.js"
  ],
  "{key}: free": [
+  "core/keys.js"
+ ],
+ "{key}: {action}": [
   "core/keys.js"
  ],
  "{kinds}. Drag to reorder.": [
@@ -7856,6 +7850,9 @@
  ],
  "{name}": [
   "index.html"
+ ],
+ "{name}\nDrag up into a cell, or click to fill the selected (or next empty) cell.": [
+  "collage/collage-tray.js"
  ],
  "{name} (active)": [
   "library/library.js"
@@ -8195,6 +8192,9 @@
  "{pages}, one per group: its best {per}.": [
   "collage/collage-tray.js"
  ],
+ "{panel} › {section}": [
+  "looks/editor-inspector.js"
+ ],
  "{parts}, in {seconds} s.": [
   "library/batch-export.js"
  ],
@@ -8283,6 +8283,9 @@
  "{sidecars} to write": [
   "library/lrcat.js"
  ],
+ "{sides} To choose what is kept, crop with this size preset first.": [
+  "dialogs/export.js"
+ ],
  "{stars} ({n})": [
   "library/slideshow.js"
  ],
@@ -8300,6 +8303,31 @@
  ],
  "{task}: {about}": [
   "dialogs/models.js"
+ ],
+ "{task}: {hint}": [
+  "core/tasks.js"
+ ],
+ "{text}\nDrag across (Shift: fine). Double-click to reset.": [
+  "develop/controls.js"
+ ],
+ "{text}\nDrag the slider (Shift: fine). Double-click to reset.": [
+  "develop/rows.js"
+ ],
+ "{text}\nPoint and drag round the dial (Shift: fine, drag up or down). Double-click to reset.": [
+  "develop/controls.js"
+ ],
+ "{text}\nType a value, or drag this label sideways. Double-click to reset.": [
+  "develop/controls.js"
+ ],
+ "{text}\n{hint}": [
+  "core/keys.js"
+ ],
+ "{text} ({keys})": [
+  "core/keys.js",
+  "core/tasks.js"
+ ],
+ "{text} ({units})": [
+  "develop/rows.js"
  ],
  "{text} Focus only: install YuNet (Settings → AI models) to check eyes too.": [
   "library/bursts.js"

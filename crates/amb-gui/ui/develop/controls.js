@@ -71,7 +71,7 @@ const AmbControls = (() => {
     const span = hi - lo || 1;
     const cell = document.createElement("div");
     cell.className = "knob";
-    cell.title = `${t(def.description)}\n${t("Point and drag round the dial (Shift: fine, drag up or down). Double-click to reset.")}`;
+    cell.title = t("{text}\nPoint and drag round the dial (Shift: fine, drag up or down). Double-click to reset.", { text: t(def.description) });
     const NS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", "0 0 40 40");
@@ -161,7 +161,7 @@ const AmbControls = (() => {
     const span = hi - lo || 1;
     const el = document.createElement("div");
     el.className = "bar";
-    el.title = `${t(def.description)}\n${t("Drag across (Shift: fine). Double-click to reset.")}`;
+    el.title = t("{text}\nDrag across (Shift: fine). Double-click to reset.", { text: t(def.description) });
     const fill = document.createElement("div");
     fill.className = "bar-fill";
     const label = document.createElement("span");
@@ -219,7 +219,7 @@ const AmbControls = (() => {
     const label = document.createElement("label");
     label.className = "scrub";
     label.textContent = t(labelText);
-    label.title = `${t(def.description)}\n${t("Type a value, or drag this label sideways. Double-click to reset.")}`;
+    label.title = t("{text}\nType a value, or drag this label sideways. Double-click to reset.", { text: t(def.description) });
     const box = document.createElement("input");
     box.type = "text";
     box.inputMode = "decimal";

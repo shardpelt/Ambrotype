@@ -60,6 +60,12 @@ function langMade(text, again) {
   if (LANG_MADE.size > LANG_MADE_MAX) LANG_MADE.delete(LANG_MADE.keys().next().value);
 }
 
+// A text's values made again in the language now: those `t` made change,
+// others (a file name) stay.
+function langAgainAll(vars) {
+  return Object.fromEntries(Object.entries(vars).map(([k, v]) => [k, (typeof v === "string" && LANG_MADE.get(v)?.()) || v]));
+}
+
 // What translateDom showed, to change back: text node -> { en, shown };
 // element -> { [attribute]: { en, shown } }.
 const LANG_SHOWN = new WeakMap();

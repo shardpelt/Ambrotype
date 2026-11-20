@@ -34,7 +34,7 @@ await t.step("Insights counts the photos shown; a bar shows just those", async (
   t.click('#lib-views [data-view="insights"]');
   await t.until("the charts", () => document.querySelector(".in-charts"));
   const n = (lib.beforePick ?? lib.shown).length;
-  t.expect(document.querySelector(".in-head b").textContent === `${n} photos`, "the count");
+  t.expect(document.querySelector(".in-head b").textContent === plural(n, "photo"), "the count (1 photo, 3 photos)");
   t.expect(document.querySelectorAll(".in-card").length >= 5, "a chart per field");
   await t.until("advice or why not", () => document.querySelector(".in-notes")?.textContent);
   // The advice itself, from 40 made-up shots of a fast lens kept stopped down.

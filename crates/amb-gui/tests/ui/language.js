@@ -4,12 +4,13 @@
 // through the table. The texts on screen without the marks are not through yet;
 // that count may only fall (UNMARKED_LIMIT: lower it when you wrap texts).
 // It is measured after the scripts before this one, in CI's order (panels
-// they opened count); people's own preset names and groups never count.
+// they opened count); people's own words never count. The one left is the
+// monitor note, a sentence from Rust (step 3 of the design).
 // Run: ambrotype --ui-test crates/amb-gui/tests/ui/language.js photo.dng
 
 // The test's own `t` hides the app's, so the app's is `tr` here.
 const tr = window.t;
-const UNMARKED_LIMIT = 610;
+const UNMARKED_LIMIT = 1;
 
 await t.step("t and plural give English with no language", async () => {
   t.expect(lang.code === "en" && lang.texts === null, "English to start");
@@ -25,7 +26,7 @@ await t.step("zz marks the markup, t and plural", async () => {
   t.expect(lang.code === "zz", "zz is on");
   t.expect(tr("Open a photo").startsWith("⟦") === (lang.texts["Open a photo"] !== undefined), "t marks what is in the table");
   const title = document.querySelector("#btn-open").title;
-  t.expect(!before || title === `⟦${before}⟧` || title === before, `a title is marked or not in the table: ${title}`);
+  t.expect(!before || title.startsWith("⟦") || title === before, `a title is marked or not in the table: ${title}`);
   t.expect(plural(3, "photo") === "⟦3 photos⟧" && plural(1, "photo") === "⟦1 photo⟧", `each plural form is marked: ${plural(3, "photo")}`);
   const left = langUnmarked();
   console.log(`texts not through the table yet: ${left.length}`);
@@ -33,12 +34,14 @@ await t.step("zz marks the markup, t and plural", async () => {
 });
 
 await t.step("a text a script built switches language too", async () => {
-  const chip = el("button", { title: tr("All {n}", { n: 3 }) }, tr("All {n}", { n: 3 }));
+  // The title holds a text t made: it is made again too.
+  const title = tr("{text} ({keys})", { text: tr("All {n}", { n: 3 }), keys: "Ctrl+A" });
+  const chip = el("button", { title }, tr("All {n}", { n: 3 }));
   document.body.append(chip);
   await langSet("zz");
-  t.expect(chip.textContent === "⟦All 3⟧" && chip.title === "⟦All 3⟧", `made again in zz: ${chip.textContent} / ${chip.title}`);
+  t.expect(chip.textContent === "⟦All 3⟧" && chip.title === "⟦⟦All 3⟧ (Ctrl+A)⟧", `made again in zz: ${chip.textContent} / ${chip.title}`);
   await langSet("en");
-  t.expect(chip.textContent === "All 3" && chip.title === "All 3", `and back in English: ${chip.textContent}`);
+  t.expect(chip.textContent === "All 3" && chip.title === "All 3 (Ctrl+A)", `and back in English: ${chip.textContent} / ${chip.title}`);
   chip.remove();
   await langSet("zz");
 });

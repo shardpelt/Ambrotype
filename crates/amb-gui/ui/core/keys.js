@@ -228,7 +228,8 @@ function updateKeyHints() {
     const b = a.button && $(a.button);
     if (!b) continue;
     const keys = keysFor(a).map(keyLabel);
-    b.title = `${actionLabel(a)}${keys.length ? ` (${keysOr(keys)})` : ""}${a.hint ? `\n${t(a.hint)}` : ""}`;
+    const named = keys.length ? t("{text} ({keys})", { text: actionLabel(a), keys: keysOr(keys) }) : actionLabel(a);
+    b.title = a.hint ? t("{text}\n{hint}", { text: named, hint: t(a.hint) }) : named;
   }
   buildMenu();
 }
@@ -292,7 +293,7 @@ function keysRenderMap(ks) {
       cap.classList.toggle("bare", users.some(([k]) => k === key));
       cap.classList.toggle("with-mod", users.some(([k]) => k !== key));
       cap.classList.toggle("focus", ks.focusKey === key);
-      cap.title = users.length ? users.map(([k, a]) => `${keyLabel(k)}: ${actionLabel(a)}`).join("\n") : t("{key}: free", { key: KEY_NAMES[key] ?? key });
+      cap.title = users.length ? users.map(([k, a]) => t("{key}: {action}", { key: keyLabel(k), action: actionLabel(a) })).join("\n") : t("{key}: free", { key: KEY_NAMES[key] ?? key });
       cap.addEventListener("click", () => {
         ks.focusKey = ks.focusKey === key ? null : key;
         keysRender(ks);

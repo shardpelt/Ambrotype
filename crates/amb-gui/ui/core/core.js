@@ -74,11 +74,12 @@ async function withBusy(button, line, fn) {
 // `t("Moved to the trash")` gives its translation in the chosen language, or
 // the text itself; `{name}` takes `vars.name`. `t("Open##verb")` tells two
 // meanings of one text apart: from `##` on is never shown. State: core/lang.js.
-// What it gives is remembered, so a switch of language changes it on screen too.
+// What it gives is remembered, so a switch of language changes it on screen
+// too, with the values `t` made in them (`t("{a}: {b}", { a: t("…") })`).
 function t(text, vars) {
   let out = lang.texts?.[text] ?? text.split("##")[0];
   if (vars) out = out.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
-  langMade(out, () => t(text, vars));
+  langMade(out, () => t(text, vars && langAgainAll(vars)));
   return out;
 }
 

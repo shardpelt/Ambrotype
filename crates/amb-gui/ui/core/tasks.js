@@ -185,10 +185,12 @@ function wireTasks() {
   for (const ev of ["close", "cancel"]) $("collage-dialog").addEventListener(ev, () => setTimeout(renderTasks));
   const bar = $("task-bar");
   bar.replaceChildren(navButtons(), ...TASKS.map((task, i) => {
-    const b = el("button", { type: "button", role: "tab" }, t(task.label));
+    // A task plugin's name and hint are its maker's words.
+    const words = (text) => (task.plugin ? text : t(text));
+    const b = el("button", { type: "button", role: "tab", translate: task.plugin ? "no" : null }, words(task.label));
     b.dataset.task = task.id;
-    const about = `${t(task.label)}: ${t(task.hint)}`;
-    b.setAttribute("aria-label", i < 9 ? `${about} (${keyLabel(`Ctrl+Alt+${i + 1}`)})` : about);
+    const about = t("{task}: {hint}", { task: words(task.label), hint: words(task.hint) });
+    b.setAttribute("aria-label", i < 9 ? t("{text} ({keys})", { text: about, keys: keyLabel(`Ctrl+Alt+${i + 1}`) }) : about);
     b.addEventListener("click", () => switchTask(task.id));
     return b;
   }));
@@ -203,7 +205,7 @@ function wireTasks() {
 function taskSketch(task) {
   const box = el("div", { class: "task-sketch" });
   const key = keyLabel(`Ctrl+Alt+${TASKS.indexOf(task) + 1}`);
-  box.append(el("p", { class: "task-sketch-hint" }, `${t(task.hint)} · ${key}`));
+  box.append(el("p", { class: "task-sketch-hint" }, t("{hint} · {keys}", { hint: t(task.hint), keys: key })));
   const data = task.layout && findLook("layout", taskLayout(task))?.data;
   const screen = el("div", { class: "task-sketch-screen" });
   const column = (side) => {

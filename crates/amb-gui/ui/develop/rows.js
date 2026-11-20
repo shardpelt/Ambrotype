@@ -151,7 +151,8 @@ function makeRow(def) {
     row.className = "row";
     const label = document.createElement("label");
     label.textContent = t(def.label);
-    label.title = t(def.description) + (def.units ? ` (${def.units})` : "") + "\n" + t("Drag the slider (Shift: fine). Double-click to reset.");
+    const about = def.units ? t("{text} ({units})", { text: t(def.description), units: def.units }) : t(def.description);
+    label.title = t("{text}\nDrag the slider (Shift: fine). Double-click to reset.", { text: about });
     const input = document.createElement("input");
     input.type = "range";
     if (isLog(def)) { input.min = 0; input.max = 1000; input.step = 1; }

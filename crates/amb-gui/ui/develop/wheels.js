@@ -185,7 +185,7 @@
     }
     rows.Sat.input.style.setProperty("--track",
       `linear-gradient(90deg,#808080,${rgbCss(hsv(value.Hue, 1, 0.9))})`);
-    wh.readout.textContent = `H ${value.Hue} · S ${value.Sat}`;
+    wh.readout.textContent = t("H {hue} · S {sat}", { hue: value.Hue, sat: value.Sat });
     wh.name.classList.toggle("changed", value.Sat !== 0 || value.Lum !== 0);
     wheelDraw(wh);
   }

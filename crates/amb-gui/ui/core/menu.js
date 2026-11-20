@@ -98,7 +98,7 @@ async function buildMenu() {
 function menuItemOn(id) {
   if (MENU_EXTRA[id] || ["undo", "redo", "lib-all"].includes(id)) return true;
   const a = KEY_ACTIONS.find((x) => x.id === id);
-  return Boolean(a) && (a.when === "any" || contextsOf(a).includes(keyContext())) && (!a.photo || Boolean(ui.info));
+  return Boolean(a) && (a.when === "any" || contextsOf(a).includes(keyContext())) && (!needsPhoto(a) || Boolean(ui.info));
 }
 
 // Greys out what can't run now; only changes go to the app.

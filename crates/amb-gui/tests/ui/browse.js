@@ -627,6 +627,8 @@ await t.step("Develop opens the library's photo, from another folder too", async
   t.key("Ctrl+=");
   t.key("Ctrl+0");
   t.expect(cull.zoom.s === 1 && !shownImgs()[0].style.transform, "Ctrl 0 fits");
+  // In the library the zoom keys don't wait for a photo open in Develop.
+  t.expect(["zoom-in", "zoom-out", "zoom-fit"].every((id) => !needsPhoto(KEY_ACTIONS.find((a) => a.id === id))), "zoom keys need no open photo in the library");
   // Compare splits either way: the candidate below puts the tiles in one column.
   setLibraryView("compare");
   await t.until("both pictures", () => shownImgs().length === 2 && shownImgs().every((i) => i.naturalWidth));

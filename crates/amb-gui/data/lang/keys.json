@@ -320,6 +320,9 @@
  "All the photos in the folder, to rate, label, tag and export many at once.": [
   "core/keys.js"
  ],
+ "All {n}": [
+  "develop/preset-grid.js"
+ ],
  "Allow and run": [
   "index.html"
  ],
@@ -3943,6 +3946,9 @@
  ],
  "▶ Slideshow": [
   "index.html"
+ ],
+ "★ Favourites": [
+  "develop/preset-grid.js"
  ],
  "★ and up": [
   "index.html"

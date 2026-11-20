@@ -46,15 +46,17 @@ function renderPresets() {
 function renderPresetGroups(all, groups, chosen, favs) {
   const box = $("preset-groups");
   if (!box) return;
-  const chips = [[ALL_PRESETS, `All ${all.length}`]];
-  if (all.some((p) => favs.has(p.path))) chips.push([FAVOURITES, "★ Favourites"]);
+  const chips = [[ALL_PRESETS, t("All {n}", { n: all.length })]];
+  if (all.some((p) => favs.has(p.path))) chips.push([FAVOURITES, t("★ Favourites")]);
   for (const g of groups) chips.push([g, g]);
   box.hidden = chips.length < 3;
   box.replaceChildren(...chips.map(([value, text]) => {
-    const b = el("button", { type: "button", class: "preset-chip" }, text);
+    // A group's name is its maker's words, not the app's.
+    const own = value !== ALL_PRESETS && value !== FAVOURITES;
+    const b = el("button", { type: "button", class: "preset-chip", translate: own ? "no" : null }, text);
     b.classList.toggle("on", value === chosen);
     b.classList.toggle("preset-dim", presetHide.groups.has(value));
-    if (value !== ALL_PRESETS && value !== FAVOURITES) b.addEventListener("contextmenu", (e) => presetGroupMenu(e, value));
+    if (own) b.addEventListener("contextmenu", (e) => presetGroupMenu(e, value));
     b.addEventListener("click", () => {
       store.setText("amb.presetGroup", value);
       renderPresets();
@@ -67,7 +69,7 @@ function presetTile(p, favs) {
   const tile = el("div", { class: "preset-tile" });
   tile.dataset.path = p.path;
   tile.classList.toggle("preset-dim", presetIsHidden(p));
-  const b = el("button", { type: "button", class: "preset", title: p.group ? `${p.name} (${p.group})` : p.name });
+  const b = el("button", { type: "button", class: "preset", translate: "no", title: p.group ? `${p.name} (${p.group})` : p.name });
   const img = el("img", { alt: "", draggable: "false" });
   const url = presetGrid.urls.get(presetThumbKey(p.path));
   if (url) img.src = url;

@@ -44,6 +44,9 @@ async function langSet(code) {
 // Texts of the markup that no language changes: scripts, styles, typed text.
 const LANG_SKIP = new Set(["SCRIPT", "STYLE", "TEXTAREA", "CODE", "KBD"]);
 const LANG_ATTRS = ["title", "placeholder", "aria-label"];
+// People's own words (preset names and groups) sit in translate="no":
+// no language changes them, and the count of texts left leaves them out.
+const langOwn = (e) => Boolean(e?.closest('[translate="no"]'));
 
 // What translateDom showed, to change back: text node -> { en, shown };
 // element -> { [attribute]: { en, shown } }.
@@ -67,7 +70,7 @@ function translateDom(root) {
   };
   const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-    if (LANG_SKIP.has(n.parentElement?.tagName)) continue;
+    if (LANG_SKIP.has(n.parentElement?.tagName) || langOwn(n.parentElement)) continue;
     const en = langEnglish(n.nodeValue, LANG_SHOWN.get(n));
     const out = look(en);
     const value = out ? en.replace(/\S(?:[\s\S]*\S)?/, () => out) : en;
@@ -76,6 +79,7 @@ function translateDom(root) {
     else LANG_SHOWN.delete(n);
   }
   for (const e of root.querySelectorAll("[title],[placeholder],[aria-label]")) {
+    if (langOwn(e)) continue;
     const saved = LANG_SHOWN.get(e) ?? {};
     for (const a of LANG_ATTRS) {
       if (!e.hasAttribute(a)) continue;
@@ -98,11 +102,12 @@ function langUnmarked(root = document.body) {
   const found = [];
   const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   for (let n = walk.nextNode(); n; n = walk.nextNode()) {
-    if (LANG_SKIP.has(n.parentElement?.tagName)) continue;
+    if (LANG_SKIP.has(n.parentElement?.tagName) || langOwn(n.parentElement)) continue;
     const text = n.nodeValue.trim();
     if (/\p{L}/u.test(text) && !text.startsWith("⟦")) found.push(text);
   }
   for (const e of root.querySelectorAll("[title],[placeholder],[aria-label]")) {
+    if (langOwn(e)) continue;
     for (const a of LANG_ATTRS) {
       const text = e.getAttribute(a)?.trim();
       if (text && /\p{L}/u.test(text) && !text.startsWith("⟦")) found.push(text);

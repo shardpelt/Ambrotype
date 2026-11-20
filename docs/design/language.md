@@ -63,7 +63,7 @@ File names, preset names, setting names (`Exposure2012`), `amb`'s output, the do
 - Plural forms are listed in CLDR's order (zero, one, two, few, many, other), not the order `Intl` gives, which differs between webviews. In `zz` each form is marked on its own.
 - A language that fails to load leaves the app in English (`showError`); the editor still starts. Scripts, styles, `textarea`, `code` and `kbd` are left alone.
 - The table reads `label:` and `hint:` in `core/keys.js`, `core/menu.js`, `core/tasks.js` and `tools/toolblocks.js` as data lists (`t(action.label)` comes with the sweep).
-- The `zz` count is `UNMARKED_LIMIT` in `tests/ui/language.js` (not `checks.rs`: it needs the running editor). Fixing near-duplicates is not done yet; `python3 tools/lang-table.py` lists them.
+- The `zz` count is `UNMARKED_LIMIT` in `tests/ui/language.js` (not `checks.rs`: it needs the running editor), measured in CI's order. People's own words (preset names and groups) are in `translate="no"`: no language changes them and the count leaves them out (`langOwn` in `ui/core/lang.js`). Fixing near-duplicates is not done yet; `python3 tools/lang-table.py` lists them.
 
 ## In four steps
 

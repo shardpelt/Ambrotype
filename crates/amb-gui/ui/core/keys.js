@@ -139,9 +139,9 @@ const KEY_ACTIONS = [
   { id: "fold-left", group: "Window", label: "Hide or show the left column", keys: ["F7"], when: "any", run: () => toggleColumn("left") },
   { id: "fold-right", group: "Window", label: "Hide or show the right column", keys: ["F8"], when: "any", run: () => toggleColumn("right") },
   { id: "topbar", group: "Window", label: "Hide or show the top bar", hint: "Hidden, it comes back while the pointer is at the window's top edge.", keys: ["Ctrl+Shift+T"], when: "any", run: () => setTopbar(document.body.classList.contains("topbar-off")) },
-  { id: "zoom-in", group: "View", label: "Zoom in", hint: "Also the mouse wheel or a pinch, at the pointer. In the library: the Map view.", keys: ["Ctrl+=", "Ctrl+Shift++", "Ctrl++"], when: ["main", "masks", "spots", "select", "library"], photo: true, run: () => (libraryOn() ? mapKeyZoom(1) || cullZoomKey(1) : zoomKey(1)) },
-  { id: "zoom-out", group: "View", label: "Zoom out", keys: ["Ctrl+-"], when: ["main", "masks", "spots", "select", "library"], photo: true, run: () => (libraryOn() ? mapKeyZoom(-1) || cullZoomKey(-1) : zoomKey(-1)) },
-  { id: "zoom-fit", group: "View", label: "Fit the whole photo", keys: ["Ctrl+0"], when: ["main", "masks", "spots", "select", "library"], photo: true, run: () => (libraryOn() ? cullZoomKey(0) : setZoom(false)) },
+  { id: "zoom-in", group: "View", label: "Zoom in", hint: "Also the mouse wheel or a pinch, at the pointer. In the library: the Map view.", keys: ["Ctrl+=", "Ctrl+Shift++", "Ctrl++"], when: ["main", "masks", "spots", "select", "library"], photo: () => !libraryOn(), run: () => (libraryOn() ? mapKeyZoom(1) || cullZoomKey(1) : zoomKey(1)) },
+  { id: "zoom-out", group: "View", label: "Zoom out", keys: ["Ctrl+-"], when: ["main", "masks", "spots", "select", "library"], photo: () => !libraryOn(), run: () => (libraryOn() ? mapKeyZoom(-1) || cullZoomKey(-1) : zoomKey(-1)) },
+  { id: "zoom-fit", group: "View", label: "Fit the whole photo", keys: ["Ctrl+0"], when: ["main", "masks", "spots", "select", "library"], photo: () => !libraryOn(), run: () => (libraryOn() ? cullZoomKey(0) : setZoom(false)) },
   { id: "peek", group: "View", label: "Just the photo, filling the screen", hint: "F again (or Esc) comes back. Zoom and move round it as usual.", keys: ["F"], when: ["main", "masks", "spots", "select"], photo: true, run: () => togglePeek() },
   { id: "filmstrip", group: "Photos", label: "Show or hide the filmstrip", keys: ["F6"], when: ["main", "masks", "spots", "select", "crop"], run: () => toggleFilmstrip() },
   { id: "assistant", group: "Tools", label: "Assistant: your AI edits the photo", keys: ["Ctrl+Shift+A"], when: "any", photo: true, run: () => assistantFlow() },
@@ -196,6 +196,10 @@ const keyContext = () => (libraryOn() ? "library" : ui.crop.on ? "crop" : mk.on 
 // doesn't run it again (menu.js).
 const keyRunAt = {};
 
+// Whether an action waits for an open photo: `photo` is true, or a function
+// (the zoom keys need one outside the library only).
+const needsPhoto = (a) => (typeof a.photo === "function" ? a.photo() : Boolean(a.photo));
+
 function dispatchKey(e) {
   if (e.target.matches("input[type=number], input[type=search], input[type=text], textarea, input.value")) return;
   // Keys belong to an open dialog.
@@ -206,7 +210,7 @@ function dispatchKey(e) {
   for (const a of KEY_ACTIONS) {
     if (!keysFor(a).includes(combo)) continue;
     if (a.when !== "any" && !contextsOf(a).includes(ctx)) continue;
-    if (a.photo && !ui.info) continue;
+    if (needsPhoto(a) && !ui.info) continue;
     if (a.run(e) === false) continue;
     keyRunAt[a.id] = Date.now();
     e.preventDefault();

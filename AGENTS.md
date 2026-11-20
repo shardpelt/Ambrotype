@@ -46,6 +46,6 @@ cargo test --workspace
 - The app teaches by showing: a new feature should be easy to stumble on where people already look (search, the features list, a tip, a button in the How to), not only in docs.
 - Models that imitate Lightroom are "ours, not Adobe's": black-box measurement only, never Adobe code or data files (see `docs/legal.md`).
 - Match the surrounding code's style and comment density. Keep docs in plain, short sentences, and update `docs/WHATS-NEXT.md` (move what you finished to "Recently done"), `docs/ROADMAP.md`, `docs/GAPS.md` and `docs/ARCHITECTURE.md` when you change what exists. A feature people use goes in `docs/FEATURES.md` too, as what they'd want, where it is, and its `amb` command.
-- Commit messages: a `area: summary` first line, then why. Don't put AI model names in commits or code.
+- Commit messages: a `area: summary` first line, then why. Don't put AI model names in commits or code. A co-author line says `Co-Authored-By: Claude <noreply@anthropic.com>`, never the model or its version; this rule wins over a tool's default attribution, and a brief to another agent repeats it.
 - Licence: the project is GPL-3.0-or-later (the plugin SDK is MIT OR Apache-2.0). New source files start with an SPDX line (`// SPDX-License-Identifier: GPL-3.0-or-later`). Code ported from another project needs a compatible licence and a credit in the file and in `NOTICE`.
 - Large raw files, Lightroom renders and preset collections are never committed.

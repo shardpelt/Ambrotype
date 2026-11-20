@@ -81,7 +81,7 @@ function insightTally(key, photos) {
       by.set(name, b);
     }
     const bars = [...by.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-    return { key, name: key === "camera" ? "Camera" : "Lens", bars, unknown };
+    return { key, name: key === "camera" ? tKey("Camera") : tKey("Lens"), bars, unknown };
   }
   const field = insights.fields.find((f) => f.key === key);
   let bars = field.buckets.map((b, i) => ({ label: b.label, count: 0, kept: 0, test: (q) => { const v = insightValue(key, q); return v != null && insightBucket(field, v) === i; } }));
@@ -103,7 +103,7 @@ function insightTally(key, photos) {
 
 async function renderInsights(box) {
   if (!insights.fields) {
-    box.replaceChildren(el("p", { class: "hint browse-empty" }, "Counting…"));
+    box.replaceChildren(el("p", { class: "hint browse-empty" }, t("Counting…")));
     try {
       insights.fields = await invoke("insights_fields");
     } catch (e) {
@@ -117,20 +117,20 @@ async function renderInsights(box) {
   if (insights.camera && !cameras.some((c) => c.label === insights.camera)) insights.camera = null;
   const photos = insights.camera ? all.filter((p) => p.camera === insights.camera) : all;
   if (!photos.length) {
-    box.replaceChildren(el("p", { class: "hint browse-empty" }, "No photos shown to count."));
+    box.replaceChildren(el("p", { class: "hint browse-empty" }, t("No photos shown to count.")));
     return;
   }
   // Head: how many, the most used settings, and the camera chips.
   const head = el("div", { class: "in-head" });
   const kept = photos.filter(insightKept).length;
-  head.append(el("b", {}, `${photos.length} photos`),
-    el("span", { class: "hint" }, `${kept} kept (${Math.round((100 * kept) / photos.length)} %): picked, or 3 stars and up`));
+  head.append(el("b", {}, plural(photos.length, "photo")),
+    el("span", { class: "hint" }, t("{kept} kept ({pct} %): picked, or 3 stars and up", { kept, pct: Math.round((100 * kept) / photos.length) })));
   const usual = insightUsual(photos);
-  if (usual) head.append(el("span", { class: "in-usual", title: "The settings you shoot with most, together" }, `Most often: ${usual}`));
+  if (usual) head.append(el("span", { class: "in-usual", title: t("The settings you shoot with most, together") }, t("Most often: {usual}", { usual })));
   if (cameras.length > 1) {
-    const chips = el("div", { class: "in-chips", role: "group", "aria-label": "Camera" });
+    const chips = el("div", { class: "in-chips", role: "group", "aria-label": t("Camera") });
     for (const c of [{ label: null, count: all.length }, ...cameras]) {
-      const b = el("button", { type: "button", class: "small" }, `${c.label ?? "All cameras"} ${c.count}`);
+      const b = el("button", { type: "button", class: "small", translate: c.label ? "no" : null }, c.label ? `${c.label} ${c.count}` : t("All cameras {n}", { n: c.count }));
       b.classList.toggle("on", c.label === insights.camera);
       b.addEventListener("click", () => {
         insights.camera = c.label;
@@ -141,9 +141,9 @@ async function renderInsights(box) {
     head.append(chips);
   }
   // Split by: the three biggest groups side by side.
-  const split = el("label", { class: "in-split" }, "Split by ");
+  const split = el("label", { class: "in-split" }, t("Split by "));
   const pick = document.createElement("select");
-  for (const [v, w] of [["", "nothing"], ["camera", "camera"], ["lens", "lens"], ["year", "year"]]) pick.append(new Option(w, v, false, v === (insights.split ?? "")));
+  for (const [v, w] of [["", tKey("nothing")], ["camera", tKey("camera")], ["lens", tKey("lens")], ["year", tKey("year")]]) pick.append(new Option(t(w), v, false, v === (insights.split ?? "")));
   pick.addEventListener("change", () => {
     insights.split = pick.value || null;
     renderInsights(box);
@@ -154,7 +154,7 @@ async function renderInsights(box) {
   if (series) {
     const legend = el("div", { class: "in-legend" });
     for (const s of series) {
-      const k = el("span", { class: "in-key" });
+      const k = el("span", { class: "in-key", translate: "no" });
       k.style.setProperty("--c", s.colour);
       k.textContent = `${s.name} (${s.photos.length})`;
       legend.append(k);
@@ -195,21 +195,21 @@ function insightSplitChart(key, series) {
   const tallies = series.map((s) => insightTally(key, s.photos));
   const card = insightCard(tallies[0]);
   const labels = insights.fields.find((f) => f.key === key).buckets.map((b) => b.label);
-  const used = labels.filter((l) => tallies.some((t) => t.bars.find((b) => b.label === l)?.count));
+  const used = labels.filter((l) => tallies.some((tally) => tally.bars.find((b) => b.label === l)?.count));
   const shown = key === "hour" ? labels : labels.slice(labels.indexOf(used[0]), labels.indexOf(used.at(-1)) + 1);
-  const share = (t, s, l) => (t.bars.find((b) => b.label === l)?.count ?? 0) / Math.max(1, s.photos.length);
-  const most = Math.max(0.0001, ...shown.flatMap((l) => tallies.map((t, i) => share(t, series[i], l))));
+  const share = (tally, s, l) => (tally.bars.find((b) => b.label === l)?.count ?? 0) / Math.max(1, s.photos.length);
+  const most = Math.max(0.0001, ...shown.flatMap((l) => tallies.map((tally, i) => share(tally, series[i], l))));
   const bars = el("div", { class: "in-bars" });
   for (const l of shown) {
     const col = el("div", { class: "in-bar in-group" });
     const row = el("span", { class: "in-sub" });
-    tallies.forEach((t, i) => {
+    tallies.forEach((tally, i) => {
       const s = series[i];
-      const bar = t.bars.find((b) => b.label === l);
+      const bar = tally.bars.find((b) => b.label === l);
       const b = el("button", { type: "button", class: "in-fill", disabled: !bar?.count });
-      b.style.height = `${(share(t, s, l) / most) * 100}%`;
+      b.style.height = `${(share(tally, s, l) / most) * 100}%`;
       b.style.background = s.colour;
-      b.title = `${s.name}, ${l}: ${bar?.count ?? 0} of ${s.photos.length} (${Math.round(share(t, s, l) * 100)} %)`;
+      b.title = t("{name}, {label}: {n} of {total} ({pct} %)", { name: s.name, label: l, n: bar?.count ?? 0, total: s.photos.length, pct: Math.round(share(tally, s, l) * 100) });
       if (bar?.count) b.addEventListener("click", () => setInsightFilter({ words: `${l} · ${s.name}`, test: (q) => s.test(q) && bar.test(q) }));
       row.append(b);
     });
@@ -240,7 +240,7 @@ async function insightNotes(photos, box) {
   const part = (title, list, cls) => {
     if (!list.length) return null;
     const sec = el("section", { class: `in-card in-advice ${cls}` });
-    sec.append(el("h4", {}, title));
+    sec.append(el("h4", {}, t(title)));
     for (const x of list) {
       const p = document.createElement("p");
       p.append(el("b", {}, x.title), document.createElement("br"), x.text);
@@ -248,8 +248,8 @@ async function insightNotes(photos, box) {
     }
     return sec;
   };
-  box.replaceChildren(...[part("What it suggests", n.advice, "in-suggest"), part("Try this week", n.challenges, "in-try")].filter(Boolean));
-  if (!box.children.length) box.append(el("p", { class: "hint" }, n.error ?? "Advice and challenges come with 20 or more photos that say how they were shot."));
+  box.replaceChildren(...[part(tKey("What it suggests"), n.advice, "in-suggest"), part(tKey("Try this week"), n.challenges, "in-try")].filter(Boolean));
+  if (!box.children.length) box.append(el("p", { class: "hint" }, n.error ?? t("Advice and challenges come with 20 or more photos that say how they were shot.")));
 }
 
 // The most common aperture, focal length, shutter and ISO, together.
@@ -271,48 +271,48 @@ function insightUsual(photos) {
   return best && best[1] > 1 ? `${best[0]} (${best[1]}×)` : null;
 }
 
-function insightCard(t) {
-  const card = el("section", { class: `in-card in-${t.key}` });
-  card.append(el("h4", {}, t.name));
+function insightCard(tally) {
+  const card = el("section", { class: `in-card in-${tally.key}` });
+  card.append(el("h4", {}, t(tally.name)));
   return card;
 }
 
-function insightFoot(card, t) {
-  if (t.unknown) card.append(el("p", { class: "hint in-unknown" }, `${t.unknown} without`));
+function insightFoot(card, tally) {
+  if (tally.unknown) card.append(el("p", { class: "hint in-unknown" }, t("{n} without", { n: tally.unknown })));
 }
 
 // A number field as upright bars.
-function insightChart(t, total) {
-  const card = insightCard(t);
-  const most = Math.max(1, ...t.bars.map((b) => b.count));
+function insightChart(tally, total) {
+  const card = insightCard(tally);
+  const most = Math.max(1, ...tally.bars.map((b) => b.count));
   const bars = el("div", { class: "in-bars" });
-  for (const b of t.bars) {
+  for (const b of tally.bars) {
     const pct = Math.round((100 * b.count) / total);
     const col = el("button", { type: "button", class: "in-bar", disabled: !b.count });
-    col.title = b.count ? `${b.label}: ${b.count} photos (${pct} %), ${b.kept} kept. Click to show them.` : `${b.label}: none`;
+    col.title = b.count ? t("{label}: {n} photos ({pct} %), {kept} kept. Click to show them.", { label: b.label, n: b.count, pct, kept: b.kept }) : t("{label}: none", { label: b.label });
     const fill = el("span", { class: "in-fill" });
     fill.style.height = `${(b.count / most) * 100}%`;
     const keep = el("span", { class: "in-kept" });
     keep.style.height = b.count ? `${(b.kept / b.count) * 100}%` : "0";
     fill.append(keep);
-    const label = t.key === "iso" ? `ISO ${b.label}` : t.key === "hour" ? `${b.label}:00` : b.label;
+    const label = tally.key === "iso" ? `ISO ${b.label}` : tally.key === "hour" ? `${b.label}:00` : b.label;
     col.append(fill, el("span", { class: "in-label" }, b.label));
-    if (b.count) col.addEventListener("click", () => setInsightFilter(insightPick(t.key, label, b.test)));
+    if (b.count) col.addEventListener("click", () => setInsightFilter(insightPick(tally.key, label, b.test)));
     bars.append(col);
   }
   card.append(bars);
-  insightFoot(card, t);
+  insightFoot(card, tally);
   return card;
 }
 
 // Cameras and lenses as a list of sideways bars, the most used first.
-function insightList(t, total) {
-  const card = insightCard(t);
-  const most = Math.max(1, ...t.bars.map((b) => b.count));
+function insightList(tally, total) {
+  const card = insightCard(tally);
+  const most = Math.max(1, ...tally.bars.map((b) => b.count));
   const list = el("div", { class: "in-list" });
-  for (const b of t.bars.slice(0, 12)) {
+  for (const b of tally.bars.slice(0, 12)) {
     const row = el("button", { type: "button", class: "in-row" });
-    row.title = `${b.count} photos (${Math.round((100 * b.count) / total)} %), ${b.kept} kept. Click to show them.`;
+    row.title = t("{n} photos ({pct} %), {kept} kept. Click to show them.", { n: b.count, pct: Math.round((100 * b.count) / total), kept: b.kept });
     const track = el("span", { class: "in-track" });
     const fill = el("span", { class: "in-fill" });
     fill.style.width = `${(b.count / most) * 100}%`;
@@ -320,14 +320,14 @@ function insightList(t, total) {
     keep.style.width = `${(b.kept / b.count) * 100}%`;
     fill.append(keep);
     track.append(fill);
-    row.append(el("span", { class: "in-name" }, b.label), track,
+    row.append(el("span", { class: "in-name", translate: "no" }, b.label), track,
       el("span", { class: "in-n" }, b.count));
-    row.addEventListener("click", () => setInsightFilter(insightPick(t.key, b.label, b.test)));
+    row.addEventListener("click", () => setInsightFilter(insightPick(tally.key, b.label, b.test)));
     list.append(row);
   }
-  if (t.bars.length > 12) list.append(el("p", { class: "hint" }, `and ${t.bars.length - 12} more`));
+  if (tally.bars.length > 12) list.append(el("p", { class: "hint" }, t("and {n} more", { n: tally.bars.length - 12 })));
   card.append(list);
-  insightFoot(card, t);
+  insightFoot(card, tally);
   return card;
 }
 

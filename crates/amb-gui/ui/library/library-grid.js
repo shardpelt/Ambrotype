@@ -101,22 +101,22 @@ function toggleStack(id) {
 // Selected photos into one stack, the first (or the focused) on top.
 async function stackSelection() {
   const sel = libraryTargets();
-  if (sel.length < 2) return toast("Select two or more photos to stack.", true);
+  if (sel.length < 2) return toast(t("Select two or more photos to stack."), true);
   const top = sel.find((p) => p.path === lib.focus) ?? sel[0];
   const id = `s${Date.now().toString(36)}`;
   await setStacks([[top.path], sel.filter((p) => p !== top).map((p) => p.path)], id);
   lib.expanded.delete(id);
-  status(`Stacked ${sel.length} photos`);
+  status(t("Stacked {n} photos", { n: sel.length }));
   renderLibrary();
 }
 
 // Take the selected photos out of their stacks (all of a closed stack).
 async function unstackSelection() {
   const ids = new Set(libraryTargets().map((p) => p.stack?.id).filter(Boolean));
-  if (!ids.size) return toast("None of the selected photos is in a stack.", true);
+  if (!ids.size) return toast(t("None of the selected photos is in a stack."), true);
   const paths = lib.photos.filter((p) => p.stack && ids.has(p.stack.id)).map((p) => p.path);
   await setStacks([[], paths], "");
-  status(`Unstacked ${paths.length} photos`);
+  status(t("Unstacked {n} photos", { n: paths.length }));
   renderLibrary();
 }
 
@@ -138,7 +138,7 @@ async function setStacks([tops, rest], id) {
 
 // Stack the shown photos taken within `seconds` of the one before, by capture time.
 async function autoStack() {
-  const answer = await askName("Auto-stack by capture time", "Photos taken within this many seconds of the one before go into one stack (bursts, brackets). Photos already in a stack are left alone.", "5");
+  const answer = await askName(t("Auto-stack by capture time"), t("Photos taken within this many seconds of the one before go into one stack (bursts, brackets). Photos already in a stack are left alone."), "5");
   const gap = Number(answer);
   if (answer === null || !(gap > 0)) return;
   const time = (p) => (p.captured ? Date.parse(p.captured.replace(" ", "T")) : NaN);
@@ -153,7 +153,7 @@ async function autoStack() {
   for (const [i, g] of stacks.entries()) {
     await setStacks([[g[0].path], g.slice(1).map((p) => p.path)], `s${Date.now().toString(36)}${i}`);
   }
-  status(stacks.length ? `Made ${plural(stacks.length, "stack")} of ${stacks.reduce((n, g) => n + g.length, 0)} photos` : "No photos close enough in time to stack");
+  status(stacks.length ? t("Made {stacks} of {n} photos", { stacks: plural(stacks.length, "stack"), n: stacks.reduce((n, g) => n + g.length, 0) }) : t("No photos close enough in time to stack"));
   renderLibrary();
 }
 
@@ -188,12 +188,13 @@ async function renderSubfolders() {
 function makeDirCell(d) {
   const cell = el("div", { class: "lib-cell lib-dir" });
   cell.dataset.dir = d.path;
-  cell.title = d.up ? `Up to ${d.path}` : `${d.path}\n${plural(d.photos, "photo")}${d.folders ? ", and folders" : ""}: click to open`;
+  cell.title = d.up ? t("Up to {path}", { path: d.path })
+    : `${d.path}\n${d.folders ? t("{photos}, and folders: click to open", { photos: plural(d.photos, "photo") }) : t("{photos}: click to open", { photos: plural(d.photos, "photo") })}`;
   const frame = el("div", { class: "lib-frame" });
   frame.append(el("span", { class: "lib-dir-icon" }, d.up ? "↑" : "📁"));
   const meta = el("div", { class: "lib-meta" });
   if (!d.up) meta.append(el("span", { class: "lib-dir-count" }, `${plural(d.photos, "photo")}${d.folders ? " +" : ""}`));
-  cell.append(frame, meta, el("div", { class: "lib-name" }, d.up ? ".. (up)" : d.name));
+  cell.append(frame, meta, el("div", { class: "lib-name", translate: d.up ? null : "no" }, d.up ? t(".. (up)") : d.name));
   return cell;
 }
 
@@ -280,7 +281,7 @@ function makeCell(p) {
   const cell = document.createElement("div");
   cell.className = "lib-cell";
   cell.dataset.path = p.path;
-  cell.title = [p.name, p.captured, p.keywords.join(", "), p.offline && "Offline: its drive isn't plugged in"].filter(Boolean).join("\n");
+  cell.title = [p.name, p.captured, p.keywords.join(", "), p.offline && t("Offline: its drive isn't plugged in")].filter(Boolean).join("\n");
   cell.classList.toggle("offline", Boolean(p.offline));
   // Dragged onto a folder in the Folders panel it moves, onto the map it is placed.
   cell.draggable = !p.offline;
@@ -294,16 +295,16 @@ function makeCell(p) {
   meta.append(
     el("span", { class: "lib-flag" }),
     el("span", { class: "lib-stars" }),
-    el("span", { class: "lib-edited", title: "Has edits" }),
+    el("span", { class: "lib-edited", title: t("Has edits") }),
   );
-  const name = el("div", { class: "lib-name" }, p.name);
+  const name = el("div", { class: "lib-name", translate: "no" }, p.name);
   cell.append(frame, meta, name);
   if (p.stack) {
     const open = lib.expanded.has(p.stack.id);
     const badge = el("button", {
       type: "button",
       class: `lib-stack${open ? " open" : ""}${p.stack.top ? " top" : ""}`,
-      title: open ? "Close this stack" : "Open this stack",
+      title: open ? t("Close this stack") : t("Open this stack"),
     }, `⧉ ${lib.stackSizes.get(p.stack.id) ?? 1}`);
     badge.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -368,9 +369,9 @@ function renderCounts() {
   const shown = lib.shown.length;
   const sel = selectedPhotos().length;
   $("library-count").textContent = !lib.dir && !lib.collection ? "" : [
-    `${plural(n, "photo")}`,
-    shown !== n ? `${shown} shown` : "",
-    sel ? `${sel} selected` : "",
+    plural(n, "photo"),
+    shown !== n ? t("{n} shown", { n: shown }) : "",
+    sel ? t("{n} selected", { n: sel }) : "",
   ].filter(Boolean).join(" · ");
 }
 

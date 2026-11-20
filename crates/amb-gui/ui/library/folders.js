@@ -79,11 +79,11 @@ function folderTreeItem(node) {
     else tree.open.add(node.path);
     renderFolderTree();
   });
-  const name = el("span", { class: "tree-name" }, node.root ? folderName(node.path) ?? node.path : node.name);
+  const name = el("span", { class: "tree-name", translate: "no" }, node.root ? folderName(node.path) ?? node.path : node.name);
   const count = el("span", { class: "tree-count" }, folderTotal(node).toLocaleString());
   row.append(twist, name, count);
   if (node.root) {
-    const remove = el("button", { type: "button", class: "small tree-remove", title: "Remove from the library folders" }, "×");
+    const remove = el("button", { type: "button", class: "small tree-remove", title: t("Remove from the library folders") }, "×");
     remove.addEventListener("click", (e) => {
       e.stopPropagation();
       removeLibraryFolder(node.path);
@@ -190,7 +190,7 @@ async function addLibraryRoot() {
 }
 
 async function removeLibraryFolder(path) {
-  if (!await askYes(`Remove “${path}” from the library folders? Its photos leave the catalogue; the files stay where they are.`)) return;
+  if (!await askYes(t("Remove “{path}” from the library folders? Its photos leave the catalogue; the files stay where they are.", { path }))) return;
   try {
     await invoke("remove_library_folder", { path, forget: true });
     await loadFolderTree();
@@ -218,7 +218,7 @@ function wireFolderTree() {
   tauri.event.listen("index-progress", (e) => {
     const { folder, done, total } = e.payload;
     progress.hidden = false;
-    progress.textContent = `Indexing ${folderName(folder) ?? folder}: ${done.toLocaleString()} of ${total.toLocaleString()} photos`;
+    progress.textContent = t("Indexing {name}: {done} of {total} photos", { name: folderName(folder) ?? folder, done: done.toLocaleString(), total: total.toLocaleString() });
   });
   tauri.event.listen("index-done", () => loadFolderTree());
   tauri.event.listen("index-finished", () => {

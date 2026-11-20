@@ -7,7 +7,7 @@
 
 async function libraryOpen(path) {
   if (!path) return;
-  if (libPhoto(path)?.offline) return toast("This photo's drive isn't plugged in. Plug it in to open the photo.", true);
+  if (libPhoto(path)?.offline) return toast(t("This photo's drive isn't plugged in. Plug it in to open the photo."), true);
   await toggleLibrary(false);
   if (path !== ui.info?.path) await openPath(path);
 }
@@ -38,12 +38,12 @@ async function libraryCopySettings() {
     if (!ui.info) return;
     await invoke("save_sidecar").catch(() => {});
     lib.copied = ui.info.path;
-    return toast(`Copied the settings of ${fileName(ui.info.path)}: select photos in the filmstrip (Ctrl- or Shift-click), then Paste settings`);
+    return toast(t("Copied the settings of {name}: select photos in the filmstrip (Ctrl- or Shift-click), then Paste settings", { name: fileName(ui.info.path) }));
   }
   const sel = selectedPhotos();
-  if (sel.length !== 1) return toast("Select the one photo to copy the settings from.", true);
+  if (sel.length !== 1) return toast(t("Select the one photo to copy the settings from."), true);
   lib.copied = sel[0].path;
-  toast(`Copied the settings of ${sel[0].name}`);
+  toast(t("Copied the settings of {name}", { name: sel[0].name }));
   renderPanel();
 }
 
@@ -51,7 +51,7 @@ async function libraryCopySettings() {
 async function makeVirtualCopy(path) {
   try {
     const copy = await invoke("create_virtual_copy", { path });
-    status(`Made a virtual copy of ${fileName(path)}`);
+    status(t("Made a virtual copy of {name}", { name: fileName(path) }));
     return copy;
   } catch (e) {
     showError(e);
@@ -64,7 +64,7 @@ async function makeVirtualCopy(path) {
 async function virtualCopyKey() {
   if (lib.on) {
     const sel = libraryTargets();
-    if (sel.length !== 1) return toast("Select the one photo to make a virtual copy of.", true);
+    if (sel.length !== 1) return toast(t("Select the one photo to make a virtual copy of."), true);
     const copy = await makeVirtualCopy(sel[0].path);
     if (!copy) return;
     if (lib.collection) await addToCollection([copy], lib.collection);
@@ -81,8 +81,10 @@ async function virtualCopyKey() {
 async function libraryDeleteCopies() {
   const copies = libraryTargets().filter((p) => p.copy);
   if (!copies.length) return;
-  const what = copies.length === 1 ? copies[0].name : `${copies.length} virtual copies`;
-  if (!await askYes(`Delete ${what}? Only the copy's edit goes; the photo stays.`)) return;
+  const ask = copies.length === 1
+    ? t("Delete {name}? Only the copy's edit goes; the photo stays.", { name: copies[0].name })
+    : t("Delete {n} virtual copies? Only the copy's edit goes; the photo stays.", { n: copies.length });
+  if (!await askYes(ask)) return;
   // The editor can't keep a deleted copy open: switch to its photo first.
   const open = copies.find((p) => p.path === ui.info?.path);
   if (open) {
@@ -98,7 +100,7 @@ async function libraryDeleteCopies() {
       showError(e);
     }
   }
-  status(`Deleted ${copies.length - failed} virtual cop${copies.length - failed === 1 ? "y" : "ies"}`);
+  status(t("Deleted {copies}", { copies: plural(copies.length - failed, "virtual copy", "virtual copies") }));
   lib.selected.clear();
   if (lib.smart) await showSmartCollection(lib.smart);
   else if (lib.collection) await showCollection(lib.collection);
@@ -111,9 +113,9 @@ async function libraryDeleteCopies() {
 // (src/commands/batch.rs `contact_sheet`).
 async function contactSheetFlow() {
   const paths = selectedPhotos().map((p) => p.path);
-  if (!paths.length) return toast("Select the photos for the sheet.", true);
+  if (!paths.length) return toast(t("Select the photos for the sheet."), true);
   const dlg = $("contact-dialog");
-  $("contact-what").textContent = `${plural(paths.length, "photo")}, in the order shown.`;
+  $("contact-what").textContent = t("{photos}, in the order shown.", { photos: plural(paths.length, "photo") });
   const style = $("contact-style");
   style.onchange = () => { $("contact-columns").value = style.value === "film" ? 6 : 5; };
   dlg.showModal();
@@ -127,19 +129,19 @@ async function contactSheetFlow() {
     title: $("contact-title").value,
     format: $("contact-format").value,
   };
-  status(`Making a contact sheet of ${paths.length} photos…`);
+  status(t("Making a contact sheet of {n} photos…", { n: paths.length }));
   $("busy").hidden = false;
   try {
     const pages = await invoke("contact_sheet", { paths, options, dir: lastExportDir() });
     if (pages?.length) {
       rememberExportDir(pages[0]);
-      toast(pages.length === 1 ? `Saved the contact sheet: ${pages[0]}` : `Saved ${pages.length} pages of contact sheets in ${dirOf(pages[0])}`);
+      toast(pages.length === 1 ? t("Saved the contact sheet: {path}", { path: pages[0] }) : t("Saved {n} pages of contact sheets in {dir}", { n: pages.length, dir: dirOf(pages[0]) }));
     }
   } catch (e) {
     showError(e);
   } finally {
     $("busy").hidden = true;
-    status("Ready");
+    status(t("Ready"));
   }
 }
 
@@ -147,22 +149,24 @@ async function contactSheetFlow() {
 // words, or (`like`) for photos like one (src/commands/models.rs `smart_search`).
 async function smartSearch(like = null) {
   const query = $("lib-search").value.trim();
-  if (!like && !query) return toast("Type what to look for, then press Smart (a dog on a beach, snowy mountains).", true);
+  if (!like && !query) return toast(t("Type what to look for, then press Smart (a dog on a beach, snowy mountains)."), true);
   const paths = lib.photos.map((p) => p.path);
-  status(like ? "Looking for photos like it…" : `Looking for “${query}”…`);
+  status(like ? t("Looking for photos like it…") : t("Looking for “{query}”…", { query }));
   $("busy").hidden = false;
   try {
     const r = await invoke("smart_search", { paths, query: like ? null : query, like });
     lib.found = {
       of: lib.photos,
       rank: new Map(r.found.map(([p], i) => [p, i])),
-      label: like ? `Like ${fileName(like)}` : `“${query}”`,
+      label: like ? t("Like {name}", { name: fileName(like) }) : `“${query}”`,
     };
     const chip = $("lib-smart-chip");
-    chip.textContent = `${lib.found.label}: ${r.found.length} found ×`;
+    chip.textContent = t("{label}: {n} found ×", { label: lib.found.label, n: r.found.length });
     chip.hidden = false;
     renderLibrary();
-    status(`${r.found.length} found with ${r.model}${r.indexed ? ` (${r.indexed} photos indexed first)` : ""}`);
+    status(r.indexed
+      ? t("{n} found with {model} ({indexed} photos indexed first)", { n: r.found.length, model: r.model, indexed: r.indexed })
+      : t("{n} found with {model}", { n: r.found.length, model: r.model }));
   } catch (e) {
     showError(e);
   } finally {
@@ -178,13 +182,13 @@ function clearSmartSearch() {
 
 async function syncNegativeRoll() {
   const paths = selectedPhotos().map((p) => p.path);
-  if (paths.length < 2) return toast("Select the frames of the roll.", true);
+  if (paths.length < 2) return toast(t("Select the frames of the roll."), true);
   const dlg = $("roll-dialog");
   const focus = paths.includes(lib.focus) ? lib.focus : null;
-  $("roll-what").textContent = `${paths.length} frames. Each is analysed; the roll then shares one film base and levels, with Auto off, so a frame exposed a stop more prints a stop brighter.`;
+  $("roll-what").textContent = t("{n} frames. Each is analysed; the roll then shares one film base and levels, with Auto off, so a frame exposed a stop more prints a stop brighter.", { n: paths.length });
   $("roll-baseline").disabled = !focus;
   $("roll-baseline").checked = false;
-  $("roll-baseline-label").textContent = focus ? `Use ${fileName(focus)} as the baseline` : "Use this frame as the baseline (click one first)";
+  $("roll-baseline-label").textContent = focus ? t("Use {name} as the baseline", { name: fileName(focus) }) : t("Use this frame as the baseline (click one first)");
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   if (choice !== "ok") return;
@@ -194,7 +198,7 @@ async function syncNegativeRoll() {
     own_midtone: $("roll-own-midtone").checked,
     baseline: $("roll-baseline").checked && focus ? paths.indexOf(focus) : null,
   };
-  status(`Analysing ${paths.length} negatives…`);
+  status(t("Analysing {n} negatives…", { n: paths.length }));
   $("busy").hidden = false;
   try {
     const r = await invoke("negative_sync", { paths, options });
@@ -207,10 +211,12 @@ async function syncNegativeRoll() {
       requestPreview(false);
     }
     const parts = [];
-    if (r.scenes > 1) parts.push(`${r.scenes} scenes`);
-    if (r.odd > 0) parts.push(`${r.odd} odd frame${r.odd === 1 ? "" : "s"} kept their own`);
-    toast(`Synced ${plural(r.changed.length, "negative")}${parts.length ? ` (${parts.join(", ")})` : ""}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
-    status(`One conversion for ${r.changed.length} frames`);
+    if (r.scenes > 1) parts.push(t("{n} scenes", { n: r.scenes }));
+    if (r.odd > 0) parts.push(t("{frames} kept their own", { frames: plural(r.odd, "odd frame") }));
+    const negatives = plural(r.changed.length, "negative");
+    const synced = parts.length ? t("Synced {negatives} ({parts})", { negatives, parts: parts.join(", ") }) : t("Synced {negatives}", { negatives });
+    toast(r.errors.length ? t("{text}; {n} failed: {error}", { text: synced, n: r.errors.length, error: r.errors[0] }) : synced, r.errors.length > 0);
+    status(t("One conversion for {n} frames", { n: r.changed.length }));
   } catch (e) {
     showError(e);
   } finally {
@@ -229,21 +235,25 @@ async function convertRawsFlow() {
   if (lib.on) {
     const sel = selectedPhotos();
     paths = (sel.length ? sel : lib.shown).map((p) => p.path);
-    what = sel.length ? " selected" : " shown";
+    what = sel.length ? "selected" : "shown";
     like = lib.focus && paths.includes(lib.focus) ? lib.focus : null;
   } else {
-    if (!ui.info) return toast("Open a photo first.", true);
+    if (!ui.info) return toast(t("Open a photo first."), true);
     // Its edit as it is now, for "like this photo" and for itself.
     await invoke("save_sidecar").catch(() => {});
     const picked = stripSelected();
     paths = (picked.length ? picked : strip.photos?.length ? strip.photos : [{ path: ui.info.path }]).map((p) => p.path);
-    what = picked.length ? " selected in the filmstrip" : " in this folder";
+    what = picked.length ? "strip" : "folder";
     like = ui.info.path;
   }
   if (!paths.length) return;
   const dlg = $("convert-dialog");
   const f = dlg.querySelector("form");
-  $("convert-what").textContent = `${plural(paths.length, "photo")}${what}.`;
+  const photos = plural(paths.length, "photo");
+  $("convert-what").textContent = what === "selected" ? t("{photos} selected.", { photos })
+    : what === "shown" ? t("{photos} shown.", { photos })
+      : what === "strip" ? t("{photos} selected in the filmstrip.", { photos })
+        : t("{photos} in this folder.", { photos });
   // Which photo to match: the edited ones among them (the focused or open
   // one first), to pick from.
   const info = (path) => (lib.on ? libPhoto(path) : strip.photos?.find((p) => p.path === path)) ?? { path };
@@ -252,9 +262,9 @@ async function convertRawsFlow() {
   if (!like && choices.length) like = choices[0];
   const showLike = () => {
     $("convert-like").disabled = !like;
-    $("convert-like-label").innerHTML = like
-      ? `<b>Like ${fileName(like)}</b>: every photo matched to it${choices.length > 1 ? " (pick another below)" : ""}`
-      : "<b>Like one I edited</b>: edit one of them first";
+    $("convert-like-label").replaceChildren(...(like
+      ? [el("b", {}, t("Like {name}", { name: fileName(like) })), choices.length > 1 ? t(": every photo matched to it (pick another below)") : t(": every photo matched to it")]
+      : [el("b", {}, t("Like one I edited")), t(": edit one of them first")]));
     convertLike.row?.mark();
   };
   convertLike.pick = (path) => {
@@ -263,7 +273,7 @@ async function convertRawsFlow() {
     showLike();
   };
   convertLike.row ??= photoRow($("convert-like-pick"), {
-    cell: ({ path }) => el("button", { type: "button", title: `Match every photo to ${fileName(path)}` }, el("img", { alt: fileName(path) })),
+    cell: ({ path }) => el("button", { type: "button", title: t("Match every photo to {name}", { name: fileName(path) }) }, el("img", { alt: fileName(path) })),
     thumb: ({ path }, b) => bigImage(convertLike.info(path), 128, true).then((u) => { b.firstChild.src = u; }).catch(() => {}),
     open: ({ path }) => convertLike.pick(path),
     isCurrent: ({ path }) => path === convertLike.current(),
@@ -284,23 +294,23 @@ async function convertRawsFlow() {
     edits: $("convert-edits").checked,
     best_of_bursts: $("convert-bursts").checked,
   };
-  status(`Converting ${paths.length} raws…`);
+  status(t("Converting {n} raws…", { n: paths.length }));
   $("busy").hidden = false;
   try {
     const r = await invoke("convert_raws", { paths, options });
     if (!r) return;
     for (const path of paths) refreshThumb(path);
-    const parts = [`${plural(r.written.length, "JPEG")} written`];
-    if (r.camera_jpegs) parts.push(`${r.camera_jpegs} as the camera saved ${r.camera_jpegs === 1 ? "it" : "them"}`);
-    if (r.skipped) parts.push(`${r.skipped} already there`);
-    if (r.left_out) parts.push(`${r.left_out} left out (not the best of their burst)`);
-    if (r.errors.length) parts.push(`${r.errors.length} failed: ${r.errors[0]}`);
+    const parts = [t("{jpegs} written", { jpegs: plural(r.written.length, "JPEG") })];
+    if (r.camera_jpegs) parts.push(r.camera_jpegs === 1 ? t("{n} as the camera saved it", { n: r.camera_jpegs }) : t("{n} as the camera saved them", { n: r.camera_jpegs }));
+    if (r.skipped) parts.push(t("{n} already there", { n: r.skipped }));
+    if (r.left_out) parts.push(t("{n} left out (not the best of their burst)", { n: r.left_out }));
+    if (r.errors.length) parts.push(t("{n} failed: {error}", { n: r.errors.length, error: r.errors[0] }));
     toast(parts.join("; "), r.errors.length > 0);
   } catch (e) {
     showError(e);
   } finally {
     $("busy").hidden = true;
-    status("Ready");
+    status(t("Ready"));
   }
 }
 
@@ -312,7 +322,7 @@ async function presetsOnPhotos(paths) {
   const dlg = $("preset-pick-dialog");
   const filter = $("preset-pick-filter");
   const amount = $("preset-pick-amount");
-  $("preset-pick-title").textContent = paths.length > 1 ? `Apply a preset to ${paths.length} photos` : `Apply a preset to ${fileName(paths[0])}`;
+  $("preset-pick-title").textContent = paths.length > 1 ? t("Apply a preset to {n} photos", { n: paths.length }) : t("Apply a preset to {name}", { name: fileName(paths[0]) });
   amount.oninput = () => { $("preset-pick-amount-out").value = amount.value; };
   amount.oninput();
   let chosen = null;
@@ -320,11 +330,11 @@ async function presetsOnPhotos(paths) {
     const q = filter.value.trim().toLowerCase();
     const shown = presetsShown().filter((p) => !q || `${p.group} ${p.name}`.toLowerCase().includes(q));
     $("preset-pick-list").replaceChildren(...shown.map((p) => {
-      const b = el("button", { type: "button", class: "small", title: p.group }, p.name);
+      const b = el("button", { type: "button", class: "small", title: p.group, translate: "no" }, p.name);
       b.addEventListener("click", () => { chosen = p; dlg.close("ok"); });
       return b;
     }));
-    if (!shown.length) $("preset-pick-list").append(el("p", { class: "hint" }, "No presets match."));
+    if (!shown.length) $("preset-pick-list").append(el("p", { class: "hint" }, t("No presets match.")));
   };
   filter.value = "";
   filter.oninput = render;
@@ -333,7 +343,7 @@ async function presetsOnPhotos(paths) {
   filter.focus();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   if (choice !== "ok" || !chosen) return;
-  status(`Applying "${chosen.name}" to ${paths.length} photos…`);
+  status(t("Applying \"{name}\" to {n} photos…", { name: chosen.name, n: paths.length }));
   $("busy").hidden = false;
   try {
     const r = await invoke("apply_to_photos", {
@@ -349,27 +359,28 @@ async function presetsOnPhotos(paths) {
       setState(r.state);
       requestPreview(false);
     }
-    toast(`"${chosen.name}" applied to ${plural(r.changed.length, "photo")}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
+    const applied = t("\"{name}\" applied to {photos}", { name: chosen.name, photos: plural(r.changed.length, "photo") });
+    toast(r.errors.length ? t("{text}; {n} failed: {error}", { text: applied, n: r.errors.length, error: r.errors[0] }) : applied, r.errors.length > 0);
   } catch (e) {
     showError(e);
   } finally {
     $("busy").hidden = true;
-    status("Ready");
+    status(t("Ready"));
   }
 }
 
 async function libraryPasteSettings() {
-  if (!lib.copied) return toast("First copy the settings of one photo (Ctrl+Shift+C).", true);
+  if (!lib.copied) return toast(t("First copy the settings of one photo (Ctrl+Shift+C)."), true);
   const targets = selectedPhotos().map((p) => p.path).filter((p) => p !== lib.copied);
-  if (!targets.length) return toast("Select the photos to paste onto.", true);
+  if (!targets.length) return toast(t("Select the photos to paste onto."), true);
   if (!lib.groups) lib.groups = await invoke("paste_groups");
   const dlg = $("paste-dialog");
-  $("paste-what").textContent = `From ${fileName(lib.copied)} to ${plural(targets.length, "photo")}. Ticked groups are made the same as the source (settings it doesn't have go back to their defaults); the rest stay as they are.`;
+  $("paste-what").textContent = t("From {name} to {photos}. Ticked groups are made the same as the source (settings it doesn't have go back to their defaults); the rest stay as they are.", { name: fileName(lib.copied), photos: plural(targets.length, "photo") });
   const list = $("paste-groups");
   list.replaceChildren(...lib.groups.map((g) => {
     const row = el("label", { class: "inline-check" });
     const box = el("input", { type: "checkbox", value: g.name, checked: lib.pasteChoice?.has(g.name) ?? g.default });
-    row.append(box, el("span", {}, g.label));
+    row.append(box, el("span", {}, t(g.label)));
     return row;
   }));
   dlg.showModal();
@@ -378,7 +389,7 @@ async function libraryPasteSettings() {
   const groups = [...list.querySelectorAll("input:checked")].map((b) => b.value);
   lib.pasteChoice = new Set(groups);
   if (!groups.length) return;
-  status(`Pasting settings onto ${targets.length} photos…`);
+  status(t("Pasting settings onto {n} photos…", { n: targets.length }));
   try {
     const r = await invoke("paste_settings", { source: lib.copied, targets, groups });
     for (const path of targets) {
@@ -389,8 +400,9 @@ async function libraryPasteSettings() {
       setState(r.state);
       requestPreview(false);
     }
-    toast(`Pasted onto ${plural(r.pasted, "photo")}${r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : ""}`, r.errors.length > 0);
-    status(`Pasted settings onto ${r.pasted} photos`);
+    const pasted = t("Pasted onto {photos}", { photos: plural(r.pasted, "photo") });
+    toast(r.errors.length ? t("{text}; {n} failed: {error}", { text: pasted, n: r.errors.length, error: r.errors[0] }) : pasted, r.errors.length > 0);
+    status(t("Pasted settings onto {n} photos", { n: r.pasted }));
   } catch (e) {
     showError(e);
   }
@@ -399,7 +411,7 @@ async function libraryPasteSettings() {
 // The export dialog, for many photos: same choices, one file each.
 function libraryExport() {
   const sel = selectedPhotos();
-  if (!sel.length) return toast("Select the photos to export.", true);
+  if (!sel.length) return toast(t("Select the photos to export."), true);
   const img = lib.cells.get(sel[0].path)?.querySelector("img");
   const aspect = img?.naturalWidth ? img.naturalWidth / img.naturalHeight : 1.5;
   return exportFlow({
@@ -408,16 +420,16 @@ function libraryExport() {
     run: async (options, after) => {
       const off = await tauri.event.listen("library-progress", (e) => {
         const p = e.payload;
-        status(p.done < p.total ? `Exporting ${p.done + 1} of ${p.total}: ${p.name}` : "Exported");
+        status(p.done < p.total ? t("Exporting {n} of {total}: {name}", { n: p.done + 1, total: p.total, name: p.name }) : t("Exported"));
       });
       $("busy").hidden = false;
       try {
         const r = await invoke("export_photos", { paths: sel.map((p) => p.path), options, dir: lastExportDir() });
         if (!r) return;
         if (r.written.length) store.setText("amb.exportDir", dirOf(r.written[0]));
-        const failed = r.errors.length ? `; ${r.errors.length} failed: ${r.errors[0]}` : "";
-        toast(`Exported ${plural(r.written.length, "photo")}${failed}`, r.errors.length > 0);
-        if (r.written.length) status(`Exported ${r.written.length} photos to ${dirOf(r.written[0])}`);
+        const exported = t("Exported {photos}", { photos: plural(r.written.length, "photo") });
+        toast(r.errors.length ? t("{text}; {n} failed: {error}", { text: exported, n: r.errors.length, error: r.errors[0] }) : exported, r.errors.length > 0);
+        if (r.written.length) status(t("Exported {n} photos to {dir}", { n: r.written.length, dir: dirOf(r.written[0]) }));
         await afterExport(r.written, after);
       } finally {
         off();
@@ -430,13 +442,13 @@ function libraryExport() {
 // Photo Merge > HDR: the selected brackets into one DNG, which then opens.
 async function libraryMergeHdr() {
   const sel = selectedPhotos().filter((p) => !p.copy);
-  if (sel.length < 2) return toast("Select two or more raws of one scene, shot at different exposures.", true);
+  if (sel.length < 2) return toast(t("Select two or more raws of one scene, shot at different exposures."), true);
   const dlg = $("hdr-dialog");
-  $("hdr-what").textContent = `${sel.length} photos: ${sel.map((p) => p.name).join(", ")}`;
+  $("hdr-what").textContent = t("{n} photos: {names}", { n: sel.length, names: sel.map((p) => p.name).join(", ") });
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   if (choice !== "ok") return;
-  status(`Merging ${sel.length} photos to HDR…`);
+  status(t("Merging {n} photos to HDR…", { n: sel.length }));
   $("busy").hidden = false;
   try {
     const r = await invoke("merge_hdr", {
@@ -446,13 +458,13 @@ async function libraryMergeHdr() {
       autoTone: $("hdr-tone").checked,
     });
     const stops = r.stops.map((s) => `${s >= 0 ? "+" : ""}${s.toFixed(1)}`).join(", ");
-    status(`Merged into ${fileName(r.output)} (exposures ${stops} EV)`);
+    status(t("Merged into {name} (exposures {stops} EV)", { name: fileName(r.output), stops }));
     if (lib.collection) await addToCollection([r.output], lib.collection);
     else await loadLibrary(lib.dir);
     await libraryOpen(r.output);
   } catch (e) {
     showError(e);
-    status("HDR merge failed");
+    status(t("HDR merge failed"));
   } finally {
     $("busy").hidden = true;
   }
@@ -461,13 +473,13 @@ async function libraryMergeHdr() {
 // Photo Merge > Panorama: the selected frames into one DNG, which then opens.
 async function libraryMergePano() {
   const sel = selectedPhotos().filter((p) => !p.copy);
-  if (sel.length < 2) return toast("Select two or more overlapping raws.", true);
+  if (sel.length < 2) return toast(t("Select two or more overlapping raws."), true);
   const dlg = $("pano-dialog");
-  $("pano-what").textContent = `${sel.length} photos: ${sel.map((p) => p.name).join(", ")}`;
+  $("pano-what").textContent = t("{n} photos: {names}", { n: sel.length, names: sel.map((p) => p.name).join(", ") });
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   if (choice !== "ok") return;
-  status(`Stitching ${sel.length} photos into a panorama…`);
+  status(t("Stitching {n} photos into a panorama…", { n: sel.length }));
   $("busy").hidden = false;
   try {
     const r = await invoke("merge_pano", {
@@ -478,16 +490,16 @@ async function libraryMergePano() {
       autoTone: $("pano-tone").checked,
     });
     const corrected = r.lens_profiles.filter(Boolean).length;
-    const lens = $("pano-lens").checked && corrected < r.lens_profiles.length
-      ? `; no lens profile for ${r.lens_profiles.length - corrected} of them`
-      : "";
-    status(`Stitched into ${fileName(r.output)} (${r.projection}, ${Math.round(r.field[0])}° across${lens})`);
+    const vars = { name: fileName(r.output), projection: r.projection, degrees: Math.round(r.field[0]), n: r.lens_profiles.length - corrected };
+    status($("pano-lens").checked && corrected < r.lens_profiles.length
+      ? t("Stitched into {name} ({projection}, {degrees}° across; no lens profile for {n} of them)", vars)
+      : t("Stitched into {name} ({projection}, {degrees}° across)", vars));
     if (lib.collection) await addToCollection([r.output], lib.collection);
     else await loadLibrary(lib.dir);
     await libraryOpen(r.output);
   } catch (e) {
     showError(e);
-    status("Panorama merge failed");
+    status(t("Panorama merge failed"));
   } finally {
     $("busy").hidden = true;
   }
@@ -503,6 +515,6 @@ async function libraryCollage(all = false) {
   fillEmpty();
   if (all) {
     $("col-batch").scrollIntoView({ block: "center" });
-    status(`${plural(photos.length, "photo")} in the tray: Batch → Export pages… makes them pages of this layout`);
+    status(t("{photos} in the tray: Batch → Export pages… makes them pages of this layout", { photos: plural(photos.length, "photo") }));
   }
 }

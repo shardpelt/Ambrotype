@@ -76,12 +76,12 @@ function stopTips(why) {
     setTipsOn(kind, false);
     $(id).checked = false;
   }
-  toast(`${why} Settings → General turns them on again.`);
+  toast(t("{why} Settings → General turns them on again.", { why }));
 }
 
 function tipNotNow() {
   const n = dismissed() + 1;
-  if (n >= 3) return stopTips("No more tips.");
+  if (n >= 3) return stopTips(t("No more tips."));
   setDismissed(n);
   hideTip();
 }
@@ -110,11 +110,11 @@ const tipWords = (tip) => tip.f.want.replace(/\s*\(.*\)$/, "").toLowerCase();
 // they open). Without `plain`, the box's own hint text is kept.
 function boxTip(input, plain = (input.dataset.plain ||= input.placeholder)) {
   if (!tipsOn("boxes") || Math.random() > 0.4 || !ui.features?.length) {
-    input.placeholder = plain;
+    input.placeholder = t(plain);
     return;
   }
   const tip = pickTip();
-  input.placeholder = tip ? `${plain}… try “${tipWords(tip)}”` : plain;
+  input.placeholder = tip ? t("{text}… try “{feature}”", { text: t(plain), feature: tipWords(tip) }) : t(plain);
 }
 
 // An empty list's hint line: its plain text, and now and then a second line
@@ -122,11 +122,11 @@ function boxTip(input, plain = (input.dataset.plain ||= input.placeholder)) {
 function emptyTip(list, plain) {
   list.dataset.tip ??= !tipsOn("boxes") || Math.random() > 0.4 || !ui.features?.length ? "" : (() => {
     const tip = pickTip();
-    return tip ? `Try: ${tipWords(tip)}` : "";
+    return tip ? t("Try: {feature}", { feature: tipWords(tip) }) : "";
   })();
   const li = document.createElement("li");
   li.className = "hint";
-  li.textContent = plain;
+  li.textContent = t(plain);
   if (list.dataset.tip) li.append(document.createElement("br"), list.dataset.tip);
   list.append(li);
 }
@@ -143,7 +143,7 @@ function wireTips() {
   }
   new MutationObserver(busyChanged).observe($("busy"), { attributes: true, attributeFilter: ["hidden"] });
   $("tip-close").addEventListener("click", tipNotNow);
-  $("tip-never").addEventListener("click", () => stopTips("Tips are off."));
+  $("tip-never").addEventListener("click", () => stopTips(t("Tips are off.")));
   for (const [id, kind] of [["settings-tips-wait", "wait"], ["settings-tips-boxes", "boxes"]]) {
     const box = $(id);
     box.checked = tipsOn(kind);
@@ -157,8 +157,8 @@ function wireTips() {
     const f = $("preset-filter");
     const names = [...new Set(presetsShown().flatMap((p) => [p.group, p.name]).filter(Boolean))];
     f.placeholder = !f.value && tipsOn("boxes") && names.length && Math.random() < 0.5
-      ? `Filter presets… try “${names[Math.floor(Math.random() * names.length)].toLowerCase()}”`
-      : "Filter presets";
+      ? t("Filter presets… try “{name}”", { name: names[Math.floor(Math.random() * names.length)].toLowerCase() })
+      : t("Filter presets");
   });
   loadFeatures();
 }

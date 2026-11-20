@@ -26,7 +26,7 @@ async function learnFlow() {
     const title = document.createElement("strong");
     title.textContent = l.title;
     const summary = document.createElement("span");
-    summary.textContent = l.summary + (l.needs_photo && !ui.info ? " (Open a photo first.)" : "");
+    summary.textContent = l.needs_photo && !ui.info ? `${l.summary} ${t("(Open a photo first.)")}` : l.summary;
     b.append(title, summary);
     b.disabled = l.needs_photo && !ui.info;
     b.addEventListener("click", () => {
@@ -84,11 +84,11 @@ async function showStep(i) {
     target.scrollIntoView({ block: "nearest", behavior: "smooth" });
     learn.target = target;
   }
-  $("lesson-title").textContent = `${l.title} · ${i + 1} of ${l.steps.length}`;
+  $("lesson-title").textContent = t("{title} · {n} of {total}", { title: l.title, n: i + 1, total: l.steps.length });
   $("lesson-text").textContent = step.text;
   $("lesson-goal").hidden = !step.goal;
   $("lesson-back").disabled = i === 0;
-  $("lesson-next").textContent = i + 1 === l.steps.length ? "Finish" : step.goal ? "Skip" : "Next";
+  $("lesson-next").textContent = i + 1 === l.steps.length ? t("Finish") : step.goal ? t("Skip") : t("Next");
   $("lesson-card").hidden = false;
 }
 

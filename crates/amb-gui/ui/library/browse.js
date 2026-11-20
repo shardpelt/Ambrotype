@@ -17,7 +17,9 @@
 
 const BROWSE_VIEWS = ["timeline", "map", "insights"];
 const browseOn = () => lib.on && BROWSE_VIEWS.includes(cull.view);
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+const MONTHS = [tKey("January"), tKey("February"), tKey("March"), tKey("April"), tKey("May"), tKey("June"), tKey("July"), tKey("August"), tKey("September"), tKey("October"), tKey("November"), tKey("December")];
+// The calendar's day letters, each told apart for a translation.
+const WEEKDAYS = [tKey("M##Monday"), tKey("T##Tuesday"), tKey("W##Wednesday"), tKey("T##Thursday"), tKey("F##Friday"), tKey("S##Saturday"), tKey("S##Sunday")];
 
 const browse = {
   year: null,
@@ -44,7 +46,8 @@ function renderBrowse() {
 function dateWords(d) {
   const [y, m, day] = d.split("-");
   if (!m) return y;
-  return day ? `${Number(day)} ${MONTHS[m - 1]} ${y}` : `${MONTHS[m - 1]} ${y}`;
+  const vars = { day: Number(day), month: t(MONTHS[m - 1]), year: y };
+  return day ? t("{day} {month} {year}", vars) : t("{month} {year}", vars);
 }
 
 // Show only the photos taken on `date` (a prefix), in the grid.
@@ -81,7 +84,7 @@ function renderTimeline(box) {
   for (const [d, ps] of days) years.set(d.slice(0, 4), (years.get(d.slice(0, 4)) ?? 0) + ps.length);
   const yearList = [...years.keys()].sort();
   if (!yearList.length) {
-    box.replaceChildren(el("p", { class: "hint browse-empty" }, "None of the photos shown has a capture date."));
+    box.replaceChildren(el("p", { class: "hint browse-empty" }, t("None of the photos shown has a capture date.")));
     return;
   }
   if (!years.has(browse.year)) browse.year = lib.date?.slice(0, 4) ?? yearList[yearList.length - 1];
@@ -89,7 +92,7 @@ function renderTimeline(box) {
   const most = Math.max(...years.values());
   const strip = el("div", { class: "tl-years" });
   for (const y of yearList) {
-    const b = el("button", { type: "button", class: "tl-year", title: `${years.get(y)} photos in ${y}` });
+    const b = el("button", { type: "button", class: "tl-year", title: t("{n} photos in {year}", { n: years.get(y), year: y }) });
     b.classList.toggle("on", y === browse.year);
     const bar = el("span", { class: "tl-bar" });
     bar.style.height = `${Math.max(8, (years.get(y) / most) * 100)}%`;
@@ -102,10 +105,10 @@ function renderTimeline(box) {
     strip.append(b);
   }
   const head = el("div", { class: "tl-head" });
-  const all = el("button", { type: "button", class: "small" }, `Show all of ${browse.year}`);
+  const all = el("button", { type: "button", class: "small" }, t("Show all of {year}", { year: browse.year }));
   all.addEventListener("click", () => setDateFilter(browse.year));
-  head.append(el("b", {}, `${browse.year} · ${years.get(browse.year)} photos`), all);
-  if (undated) head.append(el("span", { class: "hint" }, `${undated} without a date`));
+  head.append(el("b", {}, t("{year} · {n} photos", { year: browse.year, n: years.get(browse.year) })), all);
+  if (undated) head.append(el("span", { class: "hint" }, t("{n} without a date", { n: undated })));
   // The year's months as calendars.
   const months = el("div", { class: "tl-months" });
   browse.near = nearView(box, "200px", (cell) => {
@@ -123,11 +126,11 @@ function monthCalendar(year, month, days) {
   const block = el("section", { class: "tl-month" });
   block.classList.toggle("empty", !count);
   const title = el("button", { type: "button", class: "tl-month-title", disabled: !count });
-  title.append(el("b", {}, MONTHS[month - 1]), count ? ` ${count}` : "");
-  title.title = count ? `Show the ${count} photos of ${MONTHS[month - 1]} ${year}` : "";
+  title.append(el("b", {}, t(MONTHS[month - 1])), count ? ` ${count}` : "");
+  title.title = count ? t("Show the {n} photos of {month} {year}", { n: count, month: t(MONTHS[month - 1]), year }) : "";
   title.addEventListener("click", () => setDateFilter(prefix));
   const grid = el("div", { class: "tl-days" });
-  for (const d of ["M", "T", "W", "T", "F", "S", "S"]) grid.append(el("span", { class: "tl-dow" }, d));
+  for (const d of WEEKDAYS) grid.append(el("span", { class: "tl-dow" }, t(d)));
   // Monday first.
   const lead = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7;
   for (let i = 0; i < lead; i++) grid.append(document.createElement("span"));
@@ -140,7 +143,7 @@ function monthCalendar(year, month, days) {
     if (ps) {
       cell.type = "button";
       cell.classList.add("has");
-      cell.title = `${dateWords(date)}: ${plural(ps.length, "photo")}`;
+      cell.title = t("{date}: {photos}", { date: dateWords(date), photos: plural(ps.length, "photo") });
       cell.append(el("span", { class: "tl-count" }, ps.length));
       cell.dataset.path = ps[0].path;
       browse.near.watch(cell);
@@ -251,25 +254,27 @@ function renderMap(box) {
     bar.append(b);
     return b;
   };
-  button("+", "Zoom in", () => zoomMap(1));
-  button("−", "Zoom out", () => zoomMap(-1));
-  button("Fit", "Show every placed photo", () => {
+  button("+", t("Zoom in"), () => zoomMap(1));
+  button("−", t("Zoom out"), () => zoomMap(-1));
+  button(t("Fit"), t("Show every placed photo"), () => {
     browse.map.fitted = false;
     renderMap(box);
   });
-  button("Match GPX track…", "Place photos from a GPS track recorded while shooting (the selected ones, or all shown)", matchGpx);
-  button("Guess places…", "Photos without a place get one from photos taken around the same time, or that look the same; you confirm each", guessPlacesFlow);
-  const clear = button("Remove place", "Take the place out of the selected photos' sidecars (a camera's own GPS stays)", () => placePhotos(selectedPhotos().map((p) => p.path), ""));
+  button(t("Match GPX track…"), t("Place photos from a GPS track recorded while shooting (the selected ones, or all shown)"), matchGpx);
+  button(t("Guess places…"), t("Photos without a place get one from photos taken around the same time, or that look the same; you confirm each"), guessPlacesFlow);
+  const clear = button(t("Remove place"), t("Take the place out of the selected photos' sidecars (a camera's own GPS stays)"), () => placePhotos(selectedPhotos().map((p) => p.path), ""));
   clear.hidden = !selectedPhotos().some((p) => p.gps);
-  bar.append(el("span", { class: "hint" }, `${placed.length} placed${unplaced.length ? ` · ${unplaced.length} without a place` : ""}`));
+  bar.append(el("span", { class: "hint" }, unplaced.length
+    ? t("{n} placed · {m} without a place", { n: placed.length, m: unplaced.length })
+    : t("{n} placed", { n: placed.length })));
   const credit = el("button", { type: "button", class: "map-credit" });
   if (mapTilesWanted()) {
-    credit.textContent = "© OpenStreetMap contributors";
-    credit.title = "Map data and images: OpenStreetMap (open the copyright page)";
+    credit.textContent = t("© OpenStreetMap contributors");
+    credit.title = t("Map data and images: OpenStreetMap (open the copyright page)");
     credit.addEventListener("click", () => invoke("open_osm_copyright").catch(showError));
   } else {
-    credit.textContent = "No map images · turn them on";
-    credit.title = "Show OpenStreetMap's map images behind the pins. The map then asks openstreetmap.org for the area shown.";
+    credit.textContent = t("No map images · turn them on");
+    credit.title = t("Show OpenStreetMap's map images behind the pins. The map then asks openstreetmap.org for the area shown.");
     credit.addEventListener("click", () => {
       $("settings-map-tiles").checked = true;
       setMapTiles(true);
@@ -279,7 +284,7 @@ function renderMap(box) {
   // Photos without a place: drag them onto the map.
   const tray = el("div", { class: "map-tray" });
   if (unplaced.length) {
-    tray.append(el("span", { class: "hint" }, "Drag onto the map to place (the selection moves together):"));
+    tray.append(el("span", { class: "hint" }, t("Drag onto the map to place (the selection moves together):")));
     const row = photoRow(tray, {
       cell: (p) => el("img", { class: "map-thumb", alt: p.name, title: p.name }),
       thumb: (p, img) => bigImage(p, 256, false).then((u) => { img.src = u; }).catch(() => {}),
@@ -380,7 +385,7 @@ function drawMap() {
     pin.style.top = `${g.y / n}px`;
     pin.classList.toggle("selected", g.photos.some((p) => lib.selected.has(p.path)));
     pin.classList.toggle("one", n === 1);
-    pin.title = n === 1 ? g.photos[0].name : `${n} photos: ${g.photos.slice(0, 3).map((p) => p.name).join(", ")}${n > 3 ? "…" : ""}`;
+    pin.title = n === 1 ? g.photos[0].name : t("{n} photos: {names}", { n, names: g.photos.slice(0, 3).map((p) => p.name).join(", ") + (n > 3 ? "…" : "") });
     pin.addEventListener("pointerenter", () => showPinPeek(pin, g.photos[0]));
     pin.addEventListener("pointerleave", hidePinPeek);
     pin.addEventListener("click", (e) => {
@@ -391,7 +396,9 @@ function drawMap() {
       renderPanel();
       renderCounts();
       drawMap();
-      status(`${plural(n, "photo")} here selected · double-click a pin to ${n > 1 ? "zoom in" : "open it"}`);
+      status(n > 1
+        ? t("{photos} here selected · double-click a pin to zoom in", { photos: plural(n, "photo") })
+        : t("{photos} here selected · double-click a pin to open it", { photos: plural(n, "photo") }));
     });
     pin.addEventListener("dblclick", (e) => {
       e.stopPropagation();
@@ -463,7 +470,7 @@ function wireMap(el) {
   el.addEventListener("contextmenu", (e) => {
     e.preventDefault();
     const sel = selectedPhotos();
-    if (!sel.length) return status("Select photos first, then right-click where they were taken");
+    if (!sel.length) return status(t("Select photos first, then right-click where they were taken"));
     placePhotos(sel.map((p) => p.path), mapPlaceAt(el, e.clientX, e.clientY));
   });
 }
@@ -482,7 +489,7 @@ async function placePhotos(paths, gps) {
   try {
     const updates = await setInfo(paths, { gps });
     takePlaces(updates);
-    status(gps ? `Placed ${plural(updates.length, "photo")} at ${gps}` : `Place removed from ${plural(updates.length, "photo")}`);
+    status(gps ? t("Placed {photos} at {gps}", { photos: plural(updates.length, "photo"), gps }) : t("Place removed from {photos}", { photos: plural(updates.length, "photo") }));
     renderBrowse();
   } catch (e) {
     showError(e);
@@ -505,19 +512,19 @@ async function matchGpx() {
   // The camera's clock was most likely on this computer's time zone then.
   const first = targets.find((p) => p.captured)?.captured;
   const guess = first ? -new Date(first.replace(" ", "T")).getTimezoneOffset() / 60 : -new Date().getTimezoneOffset() / 60;
-  const answer = await askName("Camera clock",
-    "How many hours the camera's clock was ahead of UTC (GPS tracks keep UTC): 2 for Amsterdam in summer, −5 for New York in winter, 0 if the camera was set to UTC.",
+  const answer = await askName(t("Camera clock"),
+    t("How many hours the camera's clock was ahead of UTC (GPS tracks keep UTC): 2 for Amsterdam in summer, −5 for New York in winter, 0 if the camera was set to UTC."),
     String(guess));
   if (answer === null) return;
   const hours = Number(answer.replace("−", "-").replace(",", "."));
-  if (!Number.isFinite(hours) || Math.abs(hours) > 14) return toast("That isn't a number of hours", true);
-  status("Matching the track…");
+  if (!Number.isFinite(hours) || Math.abs(hours) > 14) return toast(t("That isn't a number of hours"), true);
+  status(t("Matching the track…"));
   try {
     const r = await invoke("library_match_gpx", { gpx, paths: targets.map((p) => p.path), offsetMinutes: Math.round(hours * 60), replace: false });
     takePlaces(r.updates);
-    const parts = [`Placed ${plural(r.updates.length, "photo")}`];
-    if (r.kept) parts.push(`${r.kept} already had a place`);
-    if (r.unplaced) parts.push(`${r.unplaced} taken while the track wasn't recording (it runs ${r.track[0]} to ${r.track[1]} UTC)`);
+    const parts = [t("Placed {photos}", { photos: plural(r.updates.length, "photo") })];
+    if (r.kept) parts.push(t("{n} already had a place", { n: r.kept }));
+    if (r.unplaced) parts.push(t("{n} taken while the track wasn't recording (it runs {from} to {to} UTC)", { n: r.unplaced, from: r.track[0], to: r.track[1] }));
     toast(parts.join(" · "), !r.updates.length);
     browse.map.fitted = false;
     renderBrowse();

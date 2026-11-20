@@ -46,23 +46,23 @@ async function loadCollections() {
 }
 
 function renderCollectionControls() {
-  const option = (value, text) => el("option", { value: value }, text);
+  const option = (value, text, own = false) => el("option", { value: value, translate: own ? "no" : null }, text);
   const src = $("lib-source");
-  const folder = lib.dir ? `Folder: ${fileName(lib.dir.replace(/[\\/]+$/, "")) || lib.dir}` : "Folder";
+  const folder = lib.dir ? t("Folder: {name}", { name: fileName(lib.dir.replace(/[\\/]+$/, "")) || lib.dir }) : t("Folder");
   // Collections not in a set first, then one group per collection set.
   const sets = [...new Set(coll.list.map((c) => c.set ?? ""))].sort((a, b) => (b === "") - (a === "") || a.localeCompare(b));
   const inSets = sets.map((set) => {
-    const g = el("optgroup", { label: set ? `▸ ${set}` : "Collections" });
-    g.append(...coll.list.filter((c) => (c.set ?? "") === set).map((c) => option(c.name, `${c.name} (${c.count})`)));
+    const g = el("optgroup", { label: set ? `▸ ${set}` : t("Collections"), translate: set ? "no" : null });
+    g.append(...coll.list.filter((c) => (c.set ?? "") === set).map((c) => option(c.name, `${c.name} (${c.count})`, true)));
     return g;
   });
-  const smart = el("optgroup", { label: "Smart collections" });
-  smart.append(...coll.smart.map((c) => option(SMART + c.name, `⚙ ${c.name}`)), option(NEW_SMART, "New smart collection…"));
-  src.replaceChildren(option("", folder), option(ALL_PHOTOS, "All photos"), option(RATED, "★ Rated photos, best first"), ...inSets, smart);
+  const smart = el("optgroup", { label: t("Smart collections") });
+  smart.append(...coll.smart.map((c) => option(SMART + c.name, `⚙ ${c.name}`, true)), option(NEW_SMART, t("New smart collection…")));
+  src.replaceChildren(option("", folder), option(ALL_PHOTOS, t("All photos")), option(RATED, t("★ Rated photos, best first")), ...inSets, smart);
   const rated = lib.smart === ALL_PHOTOS && $("lib-filter-rating").value !== "0" && $("lib-filter-rating").value !== "unrated" && $("lib-sort").value === "rating";
   src.value = rated ? RATED : lib.smart === ALL_PHOTOS ? ALL_PHOTOS : lib.smart ? SMART + lib.smart : lib.collection ?? "";
   const add = $("lib-add-to");
-  add.replaceChildren(...coll.list.map((c) => option(c.name, c.name)), option(NEW_COLLECTION, "New collection…"));
+  add.replaceChildren(...coll.list.map((c) => option(c.name, c.name, true)), option(NEW_COLLECTION, t("New collection…")));
   add.value = coll.target ?? coll.list[0]?.name ?? NEW_COLLECTION;
   const viewing = Boolean(lib.collection) && !lib.smart;
   for (const id of ["lib-remove-from", "lib-coll-rename", "lib-coll-set"]) $(id).hidden = !viewing;
@@ -70,7 +70,7 @@ function renderCollectionControls() {
   $("lib-coll-delete").hidden = !viewing && !ownSmart;
   $("lib-smart-edit").hidden = !ownSmart;
   $("lib-subfolders").disabled = Boolean(lib.collection || lib.smart);
-  if (viewing) $("lib-remove-from").textContent = `Remove from “${lib.collection}”`;
+  if (viewing) $("lib-remove-from").textContent = t("Remove from “{name}”", { name: lib.collection });
 }
 
 // Show a collection in the library ("" for the folder).
@@ -108,7 +108,12 @@ async function showCollection(name) {
     lib.selected = new Set([...lib.selected].filter((p) => keep.has(p)));
     $("library-folder").textContent = "";
     $("lib-drop-folders").hidden = true;
-    if (view.missing.length) toast(`${view.missing.length} photo${view.missing.length === 1 ? " in it was" : "s in it were"} moved or deleted: ${fileName(view.missing[0])}${view.missing.length > 1 ? "…" : ""}`, true);
+    if (view.missing.length) {
+      const name = fileName(view.missing[0]);
+      toast(view.missing.length === 1
+        ? t("{n} photo in it was moved or deleted: {name}", { n: 1, name })
+        : t("{n} photos in it were moved or deleted: {name}…", { n: view.missing.length, name }), true);
+    }
     renderLibrary();
   } catch (e) {
     showError(e);
@@ -120,13 +125,13 @@ async function showCollection(name) {
 async function addToCollection(paths, name = $("lib-add-to").value) {
   if (!paths.length) return false;
   if (!name || name === NEW_COLLECTION) {
-    name = await askName("New collection", "Collections hold photos from any folders. They are kept in Ambrotype's settings folder, not next to the photos.");
+    name = await askName(t("New collection"), t("Collections hold photos from any folders. They are kept in Ambrotype's settings folder, not next to the photos."));
     if (!name) return true;
   }
   try {
     const c = await invoke("collection_add", { name, paths });
     coll.target = c.name;
-    status(`Added ${plural(paths.length, "photo")} to “${c.name}” (${c.count} in it)`);
+    status(t("Added {photos} to “{name}” ({count} in it)", { photos: plural(paths.length, "photo"), name: c.name, count: c.count }));
     await loadCollections();
     if (lib.collection === c.name) await showCollection(c.name);
   } catch (e) {
@@ -147,7 +152,7 @@ async function removeFromCollection() {
   if (!lib.collection || !paths.length) return;
   try {
     await invoke("collection_remove", { name: lib.collection, paths });
-    status(`Removed ${plural(paths.length, "photo")} from “${lib.collection}” (the files stay)`);
+    status(t("Removed {photos} from “{name}” (the files stay)", { photos: plural(paths.length, "photo"), name: lib.collection }));
     lib.selected.clear();
     await loadCollections();
     await showCollection(lib.collection);
@@ -158,7 +163,7 @@ async function removeFromCollection() {
 
 async function renameCollection() {
   if (!lib.collection) return;
-  const to = await askName("Rename collection", "", lib.collection);
+  const to = await askName(t("Rename collection"), "", lib.collection);
   if (!to || to === lib.collection) return;
   try {
     const c = await invoke("collection_rename", { from: lib.collection, to });
@@ -177,8 +182,10 @@ async function moveCollectionToSet() {
   if (!lib.collection) return;
   const current = coll.list.find((c) => c.name === lib.collection)?.set ?? "";
   const names = [...new Set(coll.list.map((c) => c.set).filter(Boolean))];
-  const hint = `Sets group collections in the Show menu. ${names.length ? `Sets so far: ${names.join(", ")}. ` : ""}Leave empty to take it out of its set.`;
-  const set = await askName("Collection set", hint, current, true);
+  const hint = names.length
+    ? t("Sets group collections in the Show menu. Sets so far: {names}. Leave empty to take it out of its set.", { names: names.join(", ") })
+    : t("Sets group collections in the Show menu. Leave empty to take it out of its set.");
+  const set = await askName(t("Collection set"), hint, current, true);
   if (set === null || set === undefined || set === current) return;
   try {
     await invoke("collection_set", { name: lib.collection, set });
@@ -189,11 +196,11 @@ async function moveCollectionToSet() {
 }
 
 async function deleteCollection() {
-  if (!lib.collection || !await askYes(`Delete the collection “${lib.collection}”? Its photos stay where they are.`)) return;
+  if (!lib.collection || !await askYes(t("Delete the collection “{name}”? Its photos stay where they are.", { name: lib.collection }))) return;
   try {
     if (lib.smart) await invoke("smart_delete", { name: lib.smart });
     else await invoke("collection_delete", { name: lib.collection });
-    status(`Deleted the collection “${lib.collection}”`);
+    status(t("Deleted the collection “{name}”", { name: lib.collection }));
     await loadCollections();
     await showCollection("");
   } catch (e) {
@@ -225,7 +232,7 @@ function wireCollections() {
 // Worked out when shown: the photos under its folders that meet its rules.
 async function showSmartCollection(name) {
   const all = name === ALL_PHOTOS;
-  $("library-count").textContent = all ? "Reading the catalogue…" : "Looking through the folders…";
+  $("library-count").textContent = all ? t("Reading the catalogue…") : t("Looking through the folders…");
   try {
     const view = all ? await invoke("catalog_photos") : await invoke("smart_photos", { name });
     lib.smart = all ? ALL_PHOTOS : view.name;
@@ -243,39 +250,42 @@ async function showSmartCollection(name) {
 }
 
 // What each field can test, and how its value is entered.
+const SMART_IS = [["=", tKey("is")], ["!=", tKey("is not")]];
+const SMART_HAS = [["contains", tKey("contains")], ["!contains", tKey("doesn't contain")]];
+const SMART_RANGE = [[">=", tKey("is at least")], ["<=", tKey("is at most")]];
 const SMART_FIELDS = {
-  rating: { label: "Rating", ops: [[">=", "is at least"], ["<=", "is at most"], ["=", "is"], ["!=", "is not"]],
-    values: [0, 1, 2, 3, 4, 5].map((v) => [v, v ? "★".repeat(v) : "unrated"]) },
-  label: { label: "Colour label", ops: [["=", "is"], ["!=", "is not"]], values: [["", "none"], ...LABELS.map((l) => [l, l])] },
-  flag: { label: "Flag", ops: [["=", "is"], ["!=", "is not"]], values: [["pick", "pick"], ["reject", "reject"], ["", "none"]] },
-  keyword: { label: "Keyword", ops: [["contains", "contains"], ["!contains", "doesn't contain"]], text: true },
-  name: { label: "File name", ops: [["contains", "contains"], ["!contains", "doesn't contain"]], text: true },
-  edited: { label: "Edited", ops: [["=", "is"]], values: [[true, "yes"], [false, "no"]] },
-  captured: { label: "Capture date", ops: [["after", "is on or after"], ["before", "is before"]], date: true },
-  camera: { label: "Camera", ops: [["contains", "contains"], ["!contains", "doesn't contain"]], text: true },
-  lens: { label: "Lens", ops: [["contains", "contains"], ["!contains", "doesn't contain"]], text: true },
-  iso: { label: "ISO", ops: [[">=", "is at least"], ["<=", "is at most"]], number: true },
-  focal: { label: "Focal length (mm)", ops: [[">=", "is at least"], ["<=", "is at most"]], number: true },
+  rating: { label: tKey("Rating"), ops: [[">=", tKey("is at least")], ["<=", tKey("is at most")], ...SMART_IS],
+    values: [0, 1, 2, 3, 4, 5].map((v) => [v, v ? "★".repeat(v) : tKey("unrated")]) },
+  label: { label: tKey("Colour label"), ops: SMART_IS, values: [["", tKey("none")], ...LABELS.map((l) => [l, l])] },
+  flag: { label: tKey("Flag"), ops: SMART_IS, values: [["pick", tKey("pick")], ["reject", tKey("reject")], ["", tKey("none")]] },
+  keyword: { label: tKey("Keyword"), ops: SMART_HAS, text: true },
+  name: { label: tKey("File name"), ops: SMART_HAS, text: true },
+  edited: { label: tKey("Edited"), ops: [["=", tKey("is")]], values: [[true, tKey("yes")], [false, tKey("no")]] },
+  captured: { label: tKey("Capture date"), ops: [["after", tKey("is on or after")], ["before", tKey("is before")]], date: true },
+  camera: { label: tKey("Camera"), ops: SMART_HAS, text: true },
+  lens: { label: tKey("Lens"), ops: SMART_HAS, text: true },
+  iso: { label: tKey("ISO"), ops: SMART_RANGE, number: true },
+  focal: { label: tKey("Focal length (mm)"), ops: SMART_RANGE, number: true },
 };
 
 function smartRuleRow(rule = { field: "rating", op: ">=", value: 3 }) {
   const row = document.createElement("div");
   row.className = "smart-rule";
   const field = document.createElement("select");
-  for (const [k, f] of Object.entries(SMART_FIELDS)) field.append(new Option(f.label, k));
+  for (const [k, f] of Object.entries(SMART_FIELDS)) field.append(new Option(t(f.label), k));
   const op = document.createElement("select");
   const holder = document.createElement("span");
   holder.style.display = "contents";
-  const remove = el("button", { type: "button", class: "small", title: "Remove this rule" }, "×");
+  const remove = el("button", { type: "button", class: "small", title: t("Remove this rule") }, "×");
   remove.addEventListener("click", () => row.remove());
   let value = null;
   const build = (r) => {
     const f = SMART_FIELDS[field.value];
-    op.replaceChildren(...f.ops.map(([v, t]) => new Option(t, v)));
+    op.replaceChildren(...f.ops.map(([v, text]) => new Option(t(text), v)));
     if (f.ops.some(([v]) => v === r.op)) op.value = r.op;
     if (f.values) {
       value = document.createElement("select");
-      f.values.forEach(([v, t], i) => value.append(new Option(t, String(i))));
+      f.values.forEach(([v, text], i) => value.append(new Option(t(text), String(i))));
       const at = f.values.findIndex(([v]) => v === r.value);
       value.value = String(Math.max(0, at));
       value.read = () => f.values[Number(value.value)][0];
@@ -305,8 +315,8 @@ function smartFolderRow(path) {
   const row = document.createElement("div");
   row.className = "smart-folder";
   row.dataset.path = path;
-  const code = el("code", { title: path }, path);
-  const remove = el("button", { type: "button", class: "small", title: "Don't look here" }, "×");
+  const code = el("code", { title: path, translate: "no" }, path);
+  const remove = el("button", { type: "button", class: "small", title: t("Don't look here") }, "×");
   remove.addEventListener("click", () => row.remove());
   row.append(code, remove);
   return row;
@@ -317,12 +327,12 @@ async function editSmartCollection(name) {
   const existing = name ? coll.smart.find((c) => c.name === name) : null;
   const c = existing ?? { name: "", folders: lib.dir ? [lib.dir] : [], match: "all", rules: [{ field: "rating", op: ">=", value: 3 }] };
   const dlg = $("smart-dialog");
-  $("smart-title").textContent = existing ? `Edit “${existing.name}”` : "New smart collection";
+  $("smart-title").textContent = existing ? t("Edit “{name}”", { name: existing.name }) : t("New smart collection");
   $("smart-name").value = c.name;
   $("smart-match").value = c.match ?? "all";
   $("smart-folders").replaceChildren(...c.folders.map(smartFolderRow));
   $("smart-rules").replaceChildren(...c.rules.map(smartRuleRow));
-  $("smart-error").textContent = "Photos are found by these rules each time the collection is shown, in the folders above and their subfolders.";
+  $("smart-error").textContent = t("Photos are found by these rules each time the collection is shown, in the folders above and their subfolders.");
   $("smart-add-folder").onclick = async () => {
     const dir = await invoke("library_pick_folder");
     if (dir) $("smart-folders").append(smartFolderRow(dir));

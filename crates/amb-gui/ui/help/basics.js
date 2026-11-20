@@ -56,12 +56,13 @@ function linkTerms(text, skip = "") {
 }
 
 function showTermTip(el) {
-  const t = basics.data?.byId.get(el.dataset.term);
-  if (!t) return;
+  const term = basics.data?.byId.get(el.dataset.term);
+  if (!term) return;
   basics.tip ??= Object.assign(document.createElement("div"), { className: "help-tip term-tip", role: "tooltip" });
-  basics.tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: t.term }), ` ${t.short}`,
+  const lit = ZONE_OF[term.id] && !$("preview").hidden && !el.closest("dialog");
+  basics.tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: term.term }), ` ${term.short}`,
     Object.assign(document.createElement("small"), {
-      textContent: `${ZONE_OF[t.id] && !$("preview").hidden && !el.closest("dialog") ? "Lit up on your photo. " : ""}Click to read more in Photography basics`,
+      textContent: lit ? t("Lit up on your photo. Click to read more in Photography basics") : t("Click to read more in Photography basics"),
     }));
   document.body.append(basics.tip);
   const r = el.getBoundingClientRect();
@@ -103,7 +104,7 @@ function wireTerms() {
 async function basicsFlow(at = null) {
   const d = await loadBasics();
   if (!d) {
-    toast("Couldn't load Photography basics", true);
+    toast(t("Couldn't load Photography basics"), true);
     return;
   }
   const dlg = $("basics-dialog");
@@ -125,7 +126,7 @@ async function basicsFlow(at = null) {
       const i = d.guide.indexOf(chapter);
       const next = d.guide[i + 1];
       if (next) {
-        const b = el("button", { type: "button" }, `Next: ${next.title.replace(/^\d+\.\s*/, "")} →`);
+        const b = el("button", { type: "button" }, t("Next: {title} →", { title: next.title.replace(/^\d+\.\s*/, "") }));
         b.addEventListener("click", () => show(next.id));
         page.append(b);
       }
@@ -154,8 +155,8 @@ async function basicsFlow(at = null) {
       nav.append(b);
     }
   };
-  section("How photography works", d.guide.map((c) => [c.id, c.title]));
-  section("Terms", [...d.terms].sort((a, b) => a.term.localeCompare(b.term)).map((t) => [t.id, t.term]));
+  section(t("How photography works"), d.guide.map((c) => [c.id, c.title]));
+  section(t("Terms"), [...d.terms].sort((a, b) => a.term.localeCompare(b.term)).map((x) => [x.id, x.term]));
   if (!dlg.open) dlg.showModal();
   show(at && (d.byId.has(at) || d.guide.some((c) => c.id === at)) ? at : d.guide[0].id);
   page.focus({ preventScroll: true });

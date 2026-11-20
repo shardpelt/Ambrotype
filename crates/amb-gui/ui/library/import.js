@@ -50,8 +50,8 @@ function wireImport() {
   for (const b of $("import-form").querySelectorAll("[data-pick]")) {
     b.addEventListener("click", async () => {
       const which = b.dataset.pick;
-      const titles = { source: "Import photos from…", dest: "Import photos into…", backup: "Keep a second copy in…" };
-      const dir = await invoke("pick_folder", { title: titles[which] });
+      const titles = { source: tKey("Import photos from…"), dest: tKey("Import photos into…"), backup: tKey("Keep a second copy in…") };
+      const dir = await invoke("pick_folder", { title: t(titles[which]) });
       if (dir) {
         f[which].value = dir;
         planImport();
@@ -88,20 +88,22 @@ async function runPlan() {
   imp.plan = [];
   $("import-list").replaceChildren();
   if (!f.source.value || !f.dest.value) {
-    $("import-summary").textContent = "Choose where the photos are and where they go.";
+    $("import-summary").textContent = t("Choose where the photos are and where they go.");
     return;
   }
   const seq = ++imp.seq;
-  $("import-summary").textContent = "Looking at the photos…";
+  $("import-summary").textContent = t("Looking at the photos…");
   try {
     const plan = await invoke("import_plan", { source: f.source.value, dest: f.dest.value, options: importOptions() });
     if (seq !== imp.seq) return;
     imp.plan = plan;
     const fresh = plan.filter((p) => !p.skip).length;
     const skipped = plan.length - fresh;
-    $("import-summary").textContent = !plan.length ? "No photos found there."
-      : `${plural(fresh, "photo")} to import${skipped ? `, ${skipped} already there (skipped)` : ""}.`
-        + (plan.length > IMPORT_SHOWN ? ` The first ${IMPORT_SHOWN} are listed.` : "");
+    const base = skipped
+      ? t("{photos} to import, {skipped} already there (skipped).", { photos: plural(fresh, "photo"), skipped })
+      : t("{photos} to import.", { photos: plural(fresh, "photo") });
+    $("import-summary").textContent = !plan.length ? t("No photos found there.")
+      : plan.length > IMPORT_SHOWN ? t("{text} The first {n} are listed.", { text: base, n: IMPORT_SHOWN }) : base;
     $("import-list").replaceChildren(...plan.slice(0, IMPORT_SHOWN).map((p) => {
       const li = document.createElement("li");
       li.classList.toggle("skip", Boolean(p.skip));
@@ -109,14 +111,14 @@ async function runPlan() {
       const to = p.skip ? p.skip : p.dest.slice(f.dest.value.length).replace(/^[\\/]/, "");
       li.title = `${p.source}\n${p.captured}${p.skip ? `\n${p.skip}` : `\n→ ${p.dest}`}`;
       li.append(
-        el("span", {}, from),
-        el("span", { class: "arrow" }, p.skip ? "skip" : "→"),
-        el("span", {}, to),
+        el("span", { translate: "no" }, from),
+        el("span", { class: "arrow" }, p.skip ? t("skip") : "→"),
+        el("span", { translate: p.skip ? null : "no" }, to),
       );
       return li;
     }));
     go.disabled = fresh === 0;
-    go.textContent = fresh ? `Import ${fresh}` : "Import";
+    go.textContent = fresh ? t("Import {n}", { n: fresh }) : t("Import");
   } catch (e) {
     if (seq === imp.seq) $("import-summary").textContent = String(e);
   }
@@ -135,15 +137,15 @@ async function importFlow() {
   if (!ui.presets?.length) ui.presets = await invoke("presets").catch(() => []);
   const groups = new Map();
   for (const p of presetsShown()) groups.set(p.group || "Presets", [...(groups.get(p.group || "Presets") ?? []), p]);
-  f.preset.replaceChildren(el("option", { value: "" }, "None"),
+  f.preset.replaceChildren(el("option", { value: "" }, t("None")),
     ...[...groups].map(([group, list]) => {
-      const g = el("optgroup", { label: group });
-      g.append(...list.map((p) => el("option", { value: p.path }, p.name)));
+      const g = el("optgroup", { label: group === "Presets" ? t("Presets") : group, translate: group === "Presets" ? null : "no" });
+      g.append(...list.map((p) => el("option", { value: p.path, translate: "no" }, p.name)));
       return g;
     }));
   f.preset.value = presetsShown().some((p) => p.path === d.options.preset) ? d.options.preset : "";
   f.backup.value = d.options.backup ?? "";
-  $("import-tokens").textContent = `In your own templates: ${d.tokens.map(([t, what]) => `${t} ${what}`).join(", ")}. A / makes a subfolder.`;
+  $("import-tokens").textContent = t("In your own templates: {tokens}. A / makes a subfolder.", { tokens: d.tokens.map(([token, what]) => `${token} ${what}`).join(", ") });
   const dlg = $("import-dialog");
   dlg.showModal();
   planImport();
@@ -151,14 +153,16 @@ async function importFlow() {
   if (choice !== "ok" || !imp.plan.some((p) => !p.skip)) return;
   const off = await tauri.event.listen("import-progress", (e) => {
     const p = e.payload;
-    status(p.done < p.total ? `Importing ${p.done + 1} of ${p.total}: ${p.name}` : "Imported");
+    status(p.done < p.total ? t("Importing {n} of {total}: {name}", { n: p.done + 1, total: p.total, name: p.name }) : t("Imported"));
   });
   $("busy").hidden = false;
   try {
     const r = await invoke("import_run", { source: f.source.value, dest: f.dest.value, options: importOptions() });
-    const failed = r.errors.length ? `; ${plural(r.errors.length, "problem")}: ${r.errors[0]}` : "";
-    toast(`Imported ${plural(r.imported, "photo")}${r.skipped ? `, skipped ${r.skipped} already there` : ""}${failed}`, r.errors.length > 0);
-    status(r.folders.length ? `Imported into ${plural(r.folders.length, "folder")}` : "Nothing imported");
+    const done = r.skipped
+      ? t("Imported {photos}, skipped {skipped} already there", { photos: plural(r.imported, "photo"), skipped: r.skipped })
+      : t("Imported {photos}", { photos: plural(r.imported, "photo") });
+    toast(r.errors.length ? t("{text}; {problems}: {error}", { text: done, problems: plural(r.errors.length, "problem"), error: r.errors[0] }) : done, r.errors.length > 0);
+    status(r.folders.length ? t("Imported into {folders}", { folders: plural(r.folders.length, "folder") }) : t("Nothing imported"));
     // Show the new photos.
     if (r.folders.length) {
       await toggleLibrary(true);

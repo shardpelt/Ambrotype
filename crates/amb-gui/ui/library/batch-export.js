@@ -11,6 +11,7 @@
 const batch = { from: "", to: "", dirs: [], running: false, plan: 0, planned: 0 };
 
 const batchNumber = (n) => n.toLocaleString("en-US");
+const batchPlural = (n, one) => plural(n, one).replace(String(n), batchNumber(n));
 const batchBytes = (b) => (b >= 1e9 ? `${(b / 1e9).toFixed(1)} GB` : `${(b / 1e6).toFixed(1)} MB`);
 
 function batchShow(part) {
@@ -18,7 +19,7 @@ function batchShow(part) {
   $("batch-run").hidden = part !== "run";
   $("batch-summary").hidden = part !== "done";
   $("batch-start").hidden = part === "run";
-  $("batch-start").textContent = part === "done" ? "Again" : "Start";
+  $("batch-start").textContent = part === "done" ? t("Again") : t("Start");
   $("batch-stop").hidden = part !== "run";
   $("batch-close").disabled = part === "run";
   if (part !== "done") $("batch-open").hidden = true;
@@ -35,8 +36,8 @@ async function batchCount() {
     if (n !== batch.plan) return;
     batch.dirs = p.dirs;
     $("batch-count").textContent = p.photos
-      ? `${batchNumber(p.photos)} photo${p.photos === 1 ? "" : "s"} in ${batchNumber(p.folders)} folder${p.folders === 1 ? "" : "s"}`
-      : "No photos in this folder";
+      ? t("{photos} in {folders}", { photos: batchPlural(p.photos, "photo"), folders: batchPlural(p.folders, "folder") })
+      : t("No photos in this folder");
     $("batch-start").disabled = !p.photos || !batch.to;
     batch.planned = n;
   } catch (e) {
@@ -48,13 +49,13 @@ async function batchCount() {
 
 function batchTo(path) {
   batch.to = path ?? "";
-  $("batch-to").textContent = batch.to || "Not chosen yet";
+  $("batch-to").textContent = batch.to || t("Not chosen yet");
   batchCount();
 }
 
 function openBatchExport() {
   const from = lib.on ? lib.dir : ui.info ? dirOf(ui.info.path) : null;
-  if (!from) return toast("Open a folder first.", true);
+  if (!from) return toast(t("Open a folder first."), true);
   batch.from = from;
   $("batch-from").textContent = from;
   batchShow("setup");
@@ -95,7 +96,7 @@ async function batchStart() {
   batch.running = true;
   batchShow("run");
   $("batch-bar").value = 0;
-  $("batch-now").textContent = "Starting…";
+  $("batch-now").textContent = t("Starting…");
   try {
     const r = await invoke("batch_export", { options });
     batchDone(r);
@@ -110,19 +111,19 @@ async function batchStart() {
 
 function batchDone(r) {
   const gb = `${batchBytes(r.bytes_in)} → ${batchBytes(r.bytes_out)}`;
-  const parts = [`${batchNumber(r.done)} photo${r.done === 1 ? "" : "s"} exported, ${gb}`];
-  if (r.skipped) parts.push(`${batchNumber(r.skipped)} skipped (already there)`);
-  if (r.failed.length) parts.push(`${r.failed.length} failed`);
-  if (r.stopped) parts.push("stopped: Start again to carry on");
+  const parts = [t("{photos} exported, {sizes}", { photos: batchPlural(r.done, "photo"), sizes: gb })];
+  if (r.skipped) parts.push(t("{n} skipped (already there)", { n: batchNumber(r.skipped) }));
+  if (r.failed.length) parts.push(t("{n} failed", { n: r.failed.length }));
+  if (r.stopped) parts.push(t("stopped: Start again to carry on"));
   $("batch-summary").replaceChildren(
-    el("p", {}, `${parts.join(", ")}, in ${Math.round(r.seconds)} s.`),
+    el("p", {}, t("{parts}, in {seconds} s.", { parts: parts.join(", "), seconds: Math.round(r.seconds) })),
     ...r.failed.slice(0, 50).map(([path, why]) => el("p", { class: "fail" }, `${fileName(path)}: ${why}`)),
-    r.failed.length > 50 ? el("p", { class: "hint" }, `…and ${r.failed.length - 50} more`) : null,
+    r.failed.length > 50 ? el("p", { class: "hint" }, t("…and {n} more", { n: r.failed.length - 50 })) : null,
   );
   batchShow("done");
   $("batch-open").hidden = false;
   store.setText("amb.batchTo", batch.to);
-  toast(`Batch export: ${parts[0]}`, r.failed.length > 0);
+  toast(t("Batch export: {summary}", { summary: parts[0] }), r.failed.length > 0);
 }
 
 function wireBatchExport() {
@@ -145,7 +146,7 @@ function wireBatchExport() {
   });
   $("batch-start").addEventListener("click", batchStart);
   $("batch-stop").addEventListener("click", () => {
-    $("batch-now").textContent = "Stopping after the photos under way…";
+    $("batch-now").textContent = t("Stopping after the photos under way…");
     invoke("batch_export_stop").catch(() => {});
   });
   $("batch-close").addEventListener("click", () => $("batch-dialog").close());
@@ -155,6 +156,7 @@ function wireBatchExport() {
     $("batch-bar").max = total;
     $("batch-bar").value = done;
     const folder = batch.dirs[Math.min(done, batch.dirs.length - 1)];
-    $("batch-now").textContent = `${batchNumber(done)} of ${batchNumber(total)}${folder ? ` · ${folder}` : ""}`;
+    const vars = { done: batchNumber(done), total: batchNumber(total), folder };
+    $("batch-now").textContent = folder ? t("{done} of {total} · {folder}", vars) : t("{done} of {total}", vars);
   });
 }

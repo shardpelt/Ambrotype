@@ -13,10 +13,10 @@ function addHelpMark(entry, def) {
   if (!label || !def?.description || label.querySelector(".help-mark")) return;
   const mark = el("span", { class: "help-mark", tabindex: 0 }, "?");
   mark.setAttribute("role", "button");
-  mark.setAttribute("aria-label", `About ${def.label}`);
+  mark.setAttribute("aria-label", t("About {name}", { name: t(def.label) }));
   mark.dataset.setting = def.name;
   // The label is a drag and double-click target; the mark is only for help.
-  for (const t of ["pointerdown", "mousedown", "dblclick"]) mark.addEventListener(t, (e) => e.stopPropagation());
+  for (const ev of ["pointerdown", "mousedown", "dblclick"]) mark.addEventListener(ev, (e) => e.stopPropagation());
   mark.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -63,9 +63,9 @@ function placeBeside(el, mark) {
 
 function showHelpTip(mark, def) {
   help.tip ??= el("div", { class: "help-tip", role: "tooltip" });
-  help.tip.textContent = def.description;
-  const lit = ZONE_OF[def.name] && !$("preview").hidden ? "Lit up on your photo. " : "";
-  help.tip.append(el("small", {}, `${lit}Click for more`));
+  help.tip.textContent = t(def.description);
+  const lit = ZONE_OF[def.name] && !$("preview").hidden;
+  help.tip.append(el("small", {}, lit ? t("Lit up on your photo. Click for more") : t("Click for more")));
   document.body.append(help.tip);
   placeBeside(help.tip, mark);
 }
@@ -81,35 +81,35 @@ function toggleHelpCard(mark, def) {
   closeHelpCard();
   if (again) return;
   const card = el("div", { class: "help-card", role: "dialog" });
-  card.setAttribute("aria-label", def.label);
+  card.setAttribute("aria-label", t(def.label));
   const add = (tag, text, className = "") => card.appendChild(el(tag, { class: className }, text));
   // Paragraphs with their photography terms linked (basics.js).
   const para = (text) => card.appendChild(document.createElement("p")).append(linkTerms(text, def.label));
-  add("h4", def.label);
-  para(def.description);
+  add("h4", t(def.label));
+  para(t(def.description));
   const c = def.coach;
   if (c) {
-    add("h5", "In a photo");
-    para(c.looks);
+    add("h5", t("In a photo"));
+    para(t(c.looks));
     if (c.more) {
-      add("h5", def.kind === "number" ? "Raise it when" : "Use it when");
-      para(c.more);
+      add("h5", def.kind === "number" ? t("Raise it when") : t("Use it when"));
+      para(t(c.more));
     }
     if (c.less) {
-      add("h5", "Lower it when");
-      para(c.less);
+      add("h5", t("Lower it when"));
+      para(t(c.less));
     }
   }
   const facts = [];
-  if (def.kind === "number" && def.min != null && def.max != null) facts.push(`${format(def, def.min)} to ${format(def, def.max)}`);
-  if (def.default != null) facts.push(`starts at ${def.kind === "number" ? format(def, def.default) : def.default}`);
+  if (def.kind === "number" && def.min != null && def.max != null) facts.push(t("{min} to {max}", { min: format(def, def.min), max: format(def, def.max) }));
+  if (def.default != null) facts.push(t("starts at {value}", { value: def.kind === "number" ? format(def, def.default) : def.default }));
   if (def.units) facts.push(def.units);
   if (facts.length) add("p", facts.join(" · "), "help-facts");
-  if (def.kind === "number") add("p", "Double-click the label to reset it.", "help-facts");
+  if (def.kind === "number") add("p", t("Double-click the label to reset it."), "help-facts");
   const more = add("p", "", "help-facts");
-  const link = el("span", { class: "term", tabindex: 0 }, "Photography basics");
+  const link = el("span", { class: "term", tabindex: 0 }, t("Photography basics"));
   link.dataset.term = "workflow";
-  more.append("New to editing? ", link);
+  more.append(t("New to editing?"), " ", link);
   document.body.append(card);
   placeBeside(card, mark);
   help.card = card;

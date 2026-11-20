@@ -176,20 +176,20 @@ function glowUnused() {
 // The sample photo with its edit (src/commands/sample.rs): the History steps
 // pulse until one is clicked, then each click shows what that slider did.
 async function sampleFlow() {
-  status("Getting the sample photo (18 MB the first time)…");
+  status(t("Getting the sample photo (18 MB the first time)…"));
   $("busy").hidden = false;
   let path;
   try {
     path = await invoke("sample_photo", { fresh: false });
   } catch (e) {
-    toast(`Couldn't get the sample photo: ${e}`, true);
-    status("Ready");
+    toast(t("Couldn't get the sample photo: {error}", { error: e }), true);
+    status(t("Ready"));
     return;
   } finally {
     $("busy").hidden = true;
   }
   if (!await openPath(path)) return;
-  status("Click the steps in History to see what each one did");
+  status(t("Click the steps in History to see what each one did"));
   const hist = $("history-list");
   hist.classList.add("try-me");
   hist.addEventListener("click", () => hist.classList.remove("try-me"), { once: true });
@@ -202,17 +202,17 @@ async function sampleFlow() {
 // of the steps stay in History to click through.
 async function watchFlow() {
   if (teach.watching) return;
-  status("Getting the sample photo (18 MB the first time)…");
+  status(t("Getting the sample photo (18 MB the first time)…"));
   $("busy").hidden = false;
   let path;
   try {
     path = await invoke("sample_photo", { fresh: true });
   } catch (e) {
     $("busy").hidden = true;
-    status("Ready");
+    status(t("Ready"));
     // Your own photo will do instead.
-    if (ui.info && await askYes(`Couldn't get the sample photo (${e}). Watch an edit on the photo you have open instead? It makes Auto edit's changes one at a time, as History steps you can undo.`)) return watchOwnFlow();
-    toast(`Couldn't get the sample photo: ${e}. Open a photo of yours, then Help → Watch an edit on this photo.`, true);
+    if (ui.info && await askYes(t("Couldn't get the sample photo ({error}). Watch an edit on the photo you have open instead? It makes Auto edit's changes one at a time, as History steps you can undo.", { error: e }))) return watchOwnFlow();
+    toast(t("Couldn't get the sample photo: {error}. Open a photo of yours, then Help → Watch an edit on this photo.", { error: e }), true);
     return;
   } finally {
     $("busy").hidden = true;
@@ -244,9 +244,9 @@ async function watchFlow() {
 // ghost cursor, each its own History step.
 async function watchOwnFlow() {
   if (teach.watching) return;
-  if (!ui.info) return toast("Open a photo first, then watch an edit on it.", true);
+  if (!ui.info) return toast(t("Open a photo first, then watch an edit on it."), true);
   if (ui.crop.on) await exitCrop(true);
-  status("Working out an edit for this photo…");
+  status(t("Working out an edit for this photo…"));
   $("busy").hidden = false;
   const steps = [];
   try {
@@ -261,7 +261,7 @@ async function watchOwnFlow() {
       if (a != null && Math.abs(a) >= 0.2) {
         const st = await invoke("crop_state");
         const rect = AmbCrop.straighten(st.rect, Math.max(-45, Math.min(45, a)), ui.info.width, ui.info.height, st.angle_sign);
-        steps.push({ caption: `Level the horizon (${a > 0 ? "+" : ""}${a.toFixed(1)}°)`, commands: await invoke("crop_commands", { rect }) });
+        steps.push({ caption: t("Level the horizon ({angle}°)", { angle: `${a > 0 ? "+" : ""}${a.toFixed(1)}` }), commands: await invoke("crop_commands", { rect }) });
       }
     }
   } catch (e) {
@@ -271,7 +271,7 @@ async function watchOwnFlow() {
     $("busy").hidden = true;
     status("");
   }
-  if (!steps.length) return toast("This photo needs nothing from Auto edit: there's nothing to watch.");
+  if (!steps.length) return toast(t("This photo needs nothing from Auto edit: there's nothing to watch."));
   await ghostReplay(() => {
     const step = steps.shift();
     if (!step) return null;
@@ -301,7 +301,7 @@ async function ghostReplay(next) {
     w.wake?.();
   };
   const events = ["keydown", "pointerdown", "wheel"];
-  for (const t of events) window.addEventListener(t, stop, true);
+  for (const ev of events) window.addEventListener(ev, stop, true);
   const wait = (ms) => new Promise((done) => {
     w.wake = done;
     w.timer = setTimeout(done, ms);
@@ -316,7 +316,7 @@ async function ghostReplay(next) {
     return wait(ms);
   };
   ghost.style.transform = `translate(${at.x}px, ${at.y}px)`;
-  status("Watching an edit: any key or click stops it");
+  status(t("Watching an edit: any key or click stops it"));
 
   try {
     await wait(400);
@@ -341,11 +341,11 @@ async function ghostReplay(next) {
       await wait(900);
     }
   } finally {
-    for (const t of events) window.removeEventListener(t, stop, true);
+    for (const ev of events) window.removeEventListener(ev, stop, true);
     ghost.remove();
     teach.watching = null;
   }
-  status(w.stopped ? "Stopped. What was done is in History: click a step to go back to it" : "That's the edit. Click a History step to see it again");
+  status(w.stopped ? t("Stopped. What was done is in History: click a step to go back to it") : t("That's the edit. Click a History step to see it again"));
 }
 
 // Where a hand would grab a control: a slider's thumb, else its middle.

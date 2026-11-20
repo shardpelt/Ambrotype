@@ -230,15 +230,17 @@ function camDraw() {
   $("camsim-iso-v").textContent = `ISO ${m.iso}`;
   $("camsim-focal-v").textContent = `${m.f} mm`;
   const stops = Math.round(m.off * 3) / 3;
-  const meter = Math.abs(stops) < 0.34 ? "well exposed" : stops > 0 ? `${stops.toFixed(1)} stops too bright` : `${(-stops).toFixed(1)} stops too dark`;
-  const notes = [`Exposure: ${meter}.`];
-  if (m.motion > 3) notes.push(`The ball moves ${Math.round(m.motion)} px while the shutter is open: motion blur. A faster shutter freezes it.`);
-  else notes.push("The ball is frozen by the shutter.");
-  if (m.shake > 0.5) notes.push(`Slower than 1/${m.f} s at ${m.f} mm: camera shake blurs everything. Faster shutter, wider lens, or a tripod.`);
+  const meter = Math.abs(stops) < 0.34 ? t("well exposed") : stops > 0 ? t("{n} stops too bright", { n: stops.toFixed(1) }) : t("{n} stops too dark", { n: (-stops).toFixed(1) });
+  const notes = [t("Exposure: {meter}.", { meter })];
+  if (m.motion > 3) notes.push(t("The ball moves {n} px while the shutter is open: motion blur. A faster shutter freezes it.", { n: Math.round(m.motion) }));
+  else notes.push(t("The ball is frozen by the shutter."));
+  if (m.shake > 0.5) notes.push(t("Slower than 1/{f} s at {f} mm: camera shake blurs everything. Faster shutter, wider lens, or a tripod.", { f: m.f }));
   const bg = m.coc(40);
-  notes.push(bg > 4 ? `f/${m.N} at ${m.f} mm: shallow depth of field, the trees are soft (${bg.toFixed(0)} px).` : `f/${m.N}: deep depth of field, the trees are sharp too.`);
-  if (m.iso >= 1600) notes.push(`ISO ${m.iso}: visible grain (noise); it lets you use a faster shutter or a smaller aperture.`);
-  if (cam.walk) notes.push(`Walked back to ${m.subject.toFixed(1)} m: the person stays the same size, the background grows (compression).`);
+  notes.push(bg > 4
+    ? t("f/{n} at {f} mm: shallow depth of field, the trees are soft ({px} px).", { n: m.N, f: m.f, px: bg.toFixed(0) })
+    : t("f/{n}: deep depth of field, the trees are sharp too.", { n: m.N }));
+  if (m.iso >= 1600) notes.push(t("ISO {iso}: visible grain (noise); it lets you use a faster shutter or a smaller aperture.", { iso: m.iso }));
+  if (cam.walk) notes.push(t("Walked back to {m} m: the person stays the same size, the background grows (compression).", { m: m.subject.toFixed(1) }));
   $("camsim-notes").textContent = notes.join(" ");
 }
 

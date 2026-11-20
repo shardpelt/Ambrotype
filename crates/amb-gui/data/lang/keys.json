@@ -1160,7 +1160,7 @@
  "Clear the selection": [
   "develop/filmstrip.js"
  ],
- "Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag the dashed source circle to pick where it copies from. [ and ] or the wheel change the size.": [
+ "Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag a spot to move it, or its dashed source to pick where it copies from. [ and ] or the wheel change the size.": [
   "tools/spots.js"
  ],
  "Click a cell to change it.": [

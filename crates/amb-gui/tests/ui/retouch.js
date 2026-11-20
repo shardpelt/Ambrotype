@@ -87,6 +87,35 @@ await t.step("Spot panel: Find dust finds none on a clean chart; Shift-drag heal
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("a brushed spot is drawn along its stroke and moves by dragging it", async () => {
+  t.key("Q");
+  await t.until("the spot tool", () => sp.on);
+  const before = spotList().length;
+  const c = $("spot-canvas").getBoundingClientRect();
+  const pt = (fx, fy) => ({ clientX: c.left + c.width * fx, clientY: c.top + c.height * fy, button: 0, bubbles: true, pointerId: 1 });
+  const drag = (path) => {
+    $("spot-canvas").dispatchEvent(new PointerEvent("pointerdown", pt(...path[0])));
+    for (const p of path.slice(1)) $("spot-canvas").dispatchEvent(new PointerEvent("pointermove", pt(...p)));
+    $("spot-canvas").dispatchEvent(new PointerEvent("pointerup", pt(...path.at(-1))));
+  };
+  drag([[0.3, 0.3], [0.35, 0.3], [0.4, 0.32], [0.45, 0.33]]);
+  await t.until("the brushed spot", () => spotList().length > before, 30000);
+  const s = spotList().at(-1);
+  t.expect(s.shape === "brush" && s.at && s.strokes?.[0]?.length > 1, `listed with its stroke: ${JSON.stringify(s).slice(0, 200)}`);
+  const steps = t.historyLength();
+  // Grab it on its stroke and move it down by a tenth of the photo.
+  drag([[0.35, 0.3], [0.35, 0.35], [0.35, 0.4]]);
+  await t.until("moved", () => t.historyLength() === steps + 1, 30000);
+  const m = spotList().find((x) => x.index === s.index);
+  t.expect(spotList().length === before + 1, "no new spot from the drag");
+  t.expect(m.at[1] > s.at[1] + 0.03 && Math.abs(m.at[0] - s.at[0]) < 0.01, `moved from ${s.at} to ${m.at}`);
+  t.key("Ctrl+Z");
+  t.key("Ctrl+Z");
+  await t.until("undone", () => spotList().length === before);
+  t.click("#spot-done");
+  await t.until("the spot tool closed", () => !sp.on);
+});
+
 await t.step("Remove object: Shift+Q opens the tool; a box sends its corners, a click its point; Esc cancels", async () => {
   t.key("Shift+Q");
   await t.until("box mode", () => sp.on && sp.object && $("spot-object").classList.contains("active"));

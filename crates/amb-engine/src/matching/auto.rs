@@ -109,6 +109,7 @@ pub fn auto(
             cast: 0.0,
             colour: 0.0,
             neutral: if white { 1.0 } else { 0.0 },
+            detail: 0.0,
             bands: false,
         },
     };

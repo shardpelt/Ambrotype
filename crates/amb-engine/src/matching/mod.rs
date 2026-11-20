@@ -4,21 +4,23 @@
 //!
 //! The references and the photo are measured the same way ([`LookStats`]):
 //! the spread of CIE L* (percentiles), the mean colour of the shadows,
-//! midtones and highlights, and how colourful they are (chroma
-//! percentiles). These describe a look without depending much on what is
-//! in the picture, and the spread of a* and b* tells saturation apart from a
-//! white balance shift. The photo is then developed small again and again
-//! while a least-squares solver (Levenberg–Marquardt) moves its settings
-//! together: white balance, tone (Exposure, Contrast, Highlights, Shadows,
-//! Whites, Blacks), colour (Vibrance, Saturation) and Color Grading's
-//! shadow and highlight tints. Each try costs one small render. A small
-//! penalty on every change keeps the answer to the smallest moves that
-//! reach the look.
+//! midtones and highlights, how colourful they are (chroma percentiles),
+//! and local contrast at Texture's and Clarity's scales. These describe a
+//! look without depending much on what is in the picture, and the spread of
+//! a* and b* tells saturation apart from a white balance shift. The photo is
+//! then developed small again and again while a least-squares solver
+//! (Levenberg–Marquardt) moves its settings together: white balance, tone
+//! (Exposure, Contrast, Highlights, Shadows, Whites, Blacks), the tone
+//! curve (the parametric curve's four regions, not free points, so the
+//! answer stays unique), Clarity and Texture, colour (Vibrance,
+//! Saturation), Color Grading's shadow and highlight tints and the Color
+//! Mixer. Each try costs one small render. A small penalty on every change
+//! keeps the answer to the smallest moves that reach the look.
 
 use std::collections::BTreeMap;
 
 use amb_presets::Value;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::pipeline::DevelopSettings;
 
@@ -48,6 +50,8 @@ pub struct Weights {
     pub colour: f64,
     /// The near-grey midtones' cast.
     pub neutral: f64,
+    /// Local contrast at Texture's and Clarity's scales.
+    pub detail: f64,
     /// The HSL bands' colours.
     pub bands: bool,
 }
@@ -59,6 +63,7 @@ impl Default for Weights {
             cast: 1.0,
             colour: 1.0,
             neutral: 1.0,
+            detail: 1.0,
             bands: false,
         }
     }
@@ -70,6 +75,10 @@ impl Default for Weights {
 pub enum Part {
     WhiteBalance,
     Tone,
+    /// The parametric tone curve: Shadows, Darks, Lights and Highlights.
+    Curve,
+    /// Clarity and Texture.
+    Detail,
     Color,
     Grading,
     /// The Color Mixer: hue, saturation and luminance per colour band.
@@ -77,9 +86,11 @@ pub enum Part {
 }
 
 impl Part {
-    pub const ALL: [Part; 5] = [
+    pub const ALL: [Part; 7] = [
         Part::WhiteBalance,
         Part::Tone,
+        Part::Curve,
+        Part::Detail,
         Part::Color,
         Part::Grading,
         Part::Hsl,
@@ -89,10 +100,64 @@ impl Part {
         match s {
             "wb" | "white_balance" => Some(Part::WhiteBalance),
             "tone" => Some(Part::Tone),
+            "curve" | "tone_curve" => Some(Part::Curve),
+            "detail" | "clarity" | "texture" => Some(Part::Detail),
             "color" | "colour" => Some(Part::Color),
             "grading" | "color_grading" => Some(Part::Grading),
             "hsl" | "mixer" | "color_mixer" => Some(Part::Hsl),
             _ => None,
+        }
+    }
+}
+
+/// What of a look to take: all of it, only its tones (light, curve and
+/// local contrast) or only its colours. For saved looks ("Styles") that
+/// carry one half of a look onto any photo.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Focus {
+    All,
+    Tone,
+    Colour,
+}
+
+impl Focus {
+    pub fn parse(s: &str) -> Option<Focus> {
+        match s {
+            "all" => Some(Focus::All),
+            "tone" => Some(Focus::Tone),
+            "colour" | "color" => Some(Focus::Colour),
+            _ => None,
+        }
+    }
+
+    /// The parts it lets the solver change.
+    pub fn parts(self) -> Vec<Part> {
+        match self {
+            Focus::All => Part::ALL.to_vec(),
+            Focus::Tone => vec![Part::Tone, Part::Curve, Part::Detail],
+            Focus::Colour => vec![Part::WhiteBalance, Part::Color, Part::Grading, Part::Hsl],
+        }
+    }
+
+    /// What counts in the distance: only what its parts can change, so the
+    /// other half of the photo's look stays as it is.
+    pub fn weights(self) -> Weights {
+        match self {
+            Focus::All => Weights::default(),
+            Focus::Tone => Weights {
+                tone: 1.0,
+                detail: 1.0,
+                cast: 0.0,
+                colour: 0.0,
+                neutral: 0.0,
+                bands: false,
+            },
+            Focus::Colour => Weights {
+                tone: 0.0,
+                detail: 0.0,
+                ..Weights::default()
+            },
         }
     }
 }
@@ -102,7 +167,8 @@ pub struct MatchOptions {
     pub parts: Vec<Part>,
     /// Most renders to try.
     pub max_evaluations: usize,
-    /// What counts in the distance (the bands are added with [`Part::Hsl`]).
+    /// What counts in the distance (the bands only with [`Part::Hsl`], local
+    /// contrast only with [`Part::Detail`]).
     pub weights: Weights,
 }
 

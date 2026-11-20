@@ -176,3 +176,114 @@ fn grading_tints_the_shadows() {
     let hue = num(&got, "ColorGradeShadowHue").unwrap_or(0.0);
     assert!((hue - 220.0).abs() < 40.0, "{r:?}");
 }
+
+#[test]
+fn finds_clarity_again() {
+    // At the matcher's size, where Clarity's and Texture's scales differ.
+    let img = photo(256, 171);
+    let edit = settings(&[("Clarity2012", 50.0)]);
+    let target = look_stats(&pipeline::render(&img, &develop_plain(&edit)));
+    let opts = MatchOptions {
+        parts: vec![Part::Detail],
+        max_evaluations: 150,
+        ..Default::default()
+    };
+    let r = solve(&img, &Settings::new(), &target, &opts, &develop_plain);
+    assert!(r.after < r.before / 5.0, "{r:?}");
+    let got: Settings = r.changes.iter().cloned().collect();
+    let clarity = num(&got, "Clarity2012").unwrap_or(0.0);
+    assert!((clarity - 50.0).abs() <= 15.0, "{r:?}");
+}
+
+#[test]
+fn finds_a_parametric_curve_again() {
+    let img = photo(48, 32);
+    let edit = settings(&[("ParametricShadows", 40.0)]);
+    let target = look_stats(&pipeline::render(&img, &develop_plain(&edit)));
+    let opts = MatchOptions {
+        parts: vec![Part::Curve],
+        max_evaluations: 200,
+        ..Default::default()
+    };
+    let r = solve(&img, &Settings::new(), &target, &opts, &develop_plain);
+    assert!(r.after < r.before / 5.0, "{r:?}");
+    let got: Settings = r.changes.iter().cloned().collect();
+    let n = |k: &str| num(&got, k).unwrap_or(0.0);
+    assert!(
+        n("ParametricShadows").max(n("ParametricDarks")) > 10.0,
+        "{r:?}"
+    );
+}
+
+#[test]
+fn detail_is_higher_for_a_sharper_photo() {
+    let sharp = pipeline::render(&photo(256, 171), &develop_plain(&Settings::new()));
+    let (w, h) = (sharp.width, sharp.height);
+    let channels: Vec<Vec<f32>> = (0..3)
+        .map(|c| {
+            let plane: Vec<f32> = sharp.rgb.iter().skip(c).step_by(3).copied().collect();
+            crate::filters::gaussian_blur(&plane, w, h, 1.5)
+        })
+        .collect();
+    let mut soft = sharp.clone();
+    for (i, px) in soft.rgb.chunks_exact_mut(3).enumerate() {
+        for (c, v) in px.iter_mut().enumerate() {
+            *v = channels[c][i];
+        }
+    }
+    let (a, b) = (look_stats(&sharp), look_stats(&soft));
+    assert!(
+        a.detail[0] > b.detail[0] && a.detail[1] > b.detail[1],
+        "{a:?} {b:?}"
+    );
+    // The medium scale sees more of the picture's structure than the fine one.
+    assert!(a.detail[1] > a.detail[0], "{a:?}");
+}
+
+#[test]
+fn focus_parses_and_picks_parts() {
+    assert_eq!(Focus::parse("all"), Some(Focus::All));
+    assert_eq!(Focus::parse("tone"), Some(Focus::Tone));
+    assert_eq!(Focus::parse("colour"), Some(Focus::Colour));
+    assert_eq!(Focus::parse("color"), Some(Focus::Colour));
+    assert_eq!(Focus::parse("detail"), None);
+    assert_eq!(Focus::All.parts(), Part::ALL.to_vec());
+    assert_eq!(
+        Focus::Tone.parts(),
+        vec![Part::Tone, Part::Curve, Part::Detail]
+    );
+    assert_eq!(
+        Focus::Colour.parts(),
+        vec![Part::WhiteBalance, Part::Color, Part::Grading, Part::Hsl]
+    );
+    assert_eq!(Focus::All.weights(), Weights::default());
+    let tone = Focus::Tone.weights();
+    assert_eq!((tone.tone, tone.detail), (1.0, 1.0));
+    assert_eq!((tone.cast, tone.colour, tone.neutral), (0.0, 0.0, 0.0));
+    let colour = Focus::Colour.weights();
+    assert_eq!((colour.tone, colour.detail), (0.0, 0.0));
+    assert_eq!(
+        (colour.cast, colour.colour, colour.neutral),
+        (1.0, 1.0, 1.0)
+    );
+    assert_eq!(serde_json::to_string(&Focus::Colour).unwrap(), "\"colour\"");
+    assert_eq!(Part::parse("tone_curve"), Some(Part::Curve));
+    assert_eq!(Part::parse("clarity"), Some(Part::Detail));
+    assert_eq!(Part::parse("texture"), Some(Part::Detail));
+}
+
+#[test]
+fn look_stats_round_trip_through_json() {
+    let s = look_stats(&pipeline::render(
+        &photo(48, 32),
+        &develop_plain(&Settings::new()),
+    ));
+    let text = serde_json::to_string(&s).unwrap();
+    assert_eq!(serde_json::from_str::<LookStats>(&text).unwrap(), s);
+    // Saved before local contrast was measured: it reads as none.
+    let mut old = serde_json::to_value(&s).unwrap();
+    old.as_object_mut().unwrap().remove("detail");
+    let read: LookStats = serde_json::from_value(old).unwrap();
+    assert_eq!(read.detail, [0.0; 2]);
+    assert_eq!(read.lightness, s.lightness);
+}

@@ -51,12 +51,12 @@ USAGE:
                                             remove_mask, duplicate_mask, move_mask, add_spot, set_spot, remove_spot, undo, redo)
                                             as one transaction,
                                             print the diff and write the sidecar (other XMP metadata kept)
-    amb match <PHOTO> <REF>... [--apply] [--parts wb,tone,color,grading,hsl] [--out PRESET.xmp] [--json]
+    amb match <PHOTO> <REF>... [--apply] [--parts wb,tone,curve,detail,color,grading,hsl] [--out PRESET.xmp] [--json]
                                             Find the settings that make the photo look like the reference
                                             images (JPEGs, or raws with their edits): white balance, tone,
-                                            Vibrance/Saturation, Color Grading tints and the Color Mixer
-                                            (HSL per colour), solved on small
-                                            renders. Shows the changes; --apply makes them one undoable
+                                            the tone curve, Clarity/Texture, Vibrance/Saturation, Color
+                                            Grading tints and the Color Mixer (HSL per colour), solved on
+                                            small renders. Shows the changes; --apply makes them one undoable
                                             step, --out also writes them as a preset
     amb auto <PHOTO> [--tone] [--wb] [--apply] [--out PRESET.xmp] [--json]
                                             Lightroom-style Auto: the tone sliders (and Vibrance for dull

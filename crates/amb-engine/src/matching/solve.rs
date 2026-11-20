@@ -45,6 +45,21 @@ fn params(part: Part) -> Vec<Param> {
             }
             p
         }
+        // Twice the tone sliders' typical move: the curve's regions overlap
+        // with Shadows and Highlights, so the sliders go first.
+        Part::Curve => [
+            "ParametricShadows",
+            "ParametricDarks",
+            "ParametricLights",
+            "ParametricHighlights",
+        ]
+        .iter()
+        .map(|k| param(k, 100.0, 100.0))
+        .collect(),
+        Part::Detail => vec![
+            param("Clarity2012", 100.0, 50.0),
+            param("Texture", 100.0, 50.0),
+        ],
         Part::Color => vec![
             param("Vibrance", 100.0, 50.0),
             param("Saturation", 100.0, 50.0),
@@ -204,9 +219,9 @@ fn solve_linear(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Option<Vec<f64>> {
 /// to `target`. `develop` turns settings into what the pipeline renders (the
 /// caller adds lens and camera profiles).
 ///
-/// White balance, tone, colour and grading are solved together first; the
-/// Color Mixer after them, from that result, for the bands whose colours
-/// both looks have.
+/// White balance, tone, the curve, Clarity and Texture, colour and grading
+/// are solved together first; the Color Mixer after them, from that result,
+/// for the bands whose colours both looks have.
 pub fn solve(
     img: &CameraImage,
     base: &Settings,
@@ -221,8 +236,16 @@ pub fn solve(
     };
     let with_hsl = opts.parts.contains(&Part::Hsl);
     let start_look = look(base);
+    // Local contrast counts only when Clarity and Texture may move: it
+    // depends on what is in the picture, and the tone sliders shouldn't
+    // bend to it.
     let final_weights = Weights {
         bands: with_hsl,
+        detail: if opts.parts.contains(&Part::Detail) {
+            opts.weights.detail
+        } else {
+            0.0
+        },
         ..opts.weights
     };
     let before = weighted_distance(&start_look, target, &final_weights);

@@ -2,15 +2,29 @@
 //! A look's statistics, and how far two looks are apart.
 
 use super::Weights;
+use crate::filters::gaussian_blur;
 use crate::pipeline::ProPhotoImage;
 use crate::stats::lab;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// The percentiles of L* in [`LookStats::lightness`].
 pub const L_PERCENTILES: [f32; 9] = [1.0, 5.0, 10.0, 25.0, 50.0, 75.0, 90.0, 95.0, 99.0];
 
+/// Blur of [`LookStats::detail`]'s fine scale, a Gaussian sigma in pixels:
+/// Texture's. Its 10 px box at 24 MP comes out below the engine's smallest
+/// box at the matcher's 256 px, so there it works on that one (radius 0.5 px,
+/// `MIN_BOX_RADIUS` in `local.rs`), which spreads like a sigma of 0.7 px.
+const FINE_SIGMA_PX: f32 = 0.7;
+
+/// Blur of the medium scale, a Gaussian sigma as a share of the image
+/// diagonal: Clarity's. At 256 px the engine's Clarity box has a radius of
+/// 4.1 px (`scaled_radius` of `clarity_radius_frac` 0.015 at 24 MP, in
+/// `local.rs`) in a 308 px diagonal, and spreads like a sigma of 2.7 px.
+/// Never below [`FINE_SIGMA_PX`], as the engine's boxes never shrink below theirs.
+const MEDIUM_SIGMA_FRAC: f32 = 0.0087;
+
 /// A look as numbers.
-#[derive(Debug, Clone, PartialEq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LookStats {
     /// CIE L* at [`L_PERCENTILES`].
     pub lightness: [f32; 9],
@@ -31,6 +45,11 @@ pub struct LookStats {
     /// [`NEUTRAL_CHROMA`]) and their share of the photo: the white balance,
     /// read where the scene is probably grey.
     pub neutral: [f32; 3],
+    /// Local contrast in L*, at Texture's scale and at Clarity's: the mean
+    /// absolute difference between L* and L* blurred at [`FINE_SIGMA_PX`]
+    /// and at [`MEDIUM_SIGMA_FRAC`] of the diagonal.
+    #[serde(default)]
+    pub detail: [f32; 2],
 }
 
 /// Chroma (C*ab) under which a midtone counts as near grey for [`LookStats::neutral`].
@@ -47,6 +66,23 @@ fn zone_weights(l: f64) -> [f64; 3] {
     let highlight = ((l - 45.0) / 40.0).clamp(0.0, 1.0);
     let mid = (1.0 - (l - 50.0).abs() / 35.0).clamp(0.0, 1.0);
     [shadow, mid, highlight]
+}
+
+/// [`LookStats::detail`] of a `w × h` plane of L*.
+fn local_contrast(l: &[f32], w: usize, h: usize) -> [f32; 2] {
+    if l.is_empty() || l.len() != w * h {
+        return [0.0; 2];
+    }
+    let medium = (MEDIUM_SIGMA_FRAC * (w as f32).hypot(h as f32)).max(FINE_SIGMA_PX);
+    [FINE_SIGMA_PX, medium].map(|sigma| {
+        let blurred = gaussian_blur(l, w, h, sigma);
+        let sum: f64 = l
+            .iter()
+            .zip(&blurred)
+            .map(|(a, b)| (a - b).abs() as f64)
+            .sum();
+        (sum / l.len() as f64) as f32
+    })
 }
 
 fn percentile(sorted: &[f32], q: f32) -> f32 {
@@ -106,6 +142,7 @@ pub fn look_stats(img: &ProPhotoImage) -> LookStats {
             sum[2] += w;
         }
     }
+    let detail = local_contrast(&ls, img.width, img.height);
     ls.sort_by(f32::total_cmp);
     cs.sort_by(f32::total_cmp);
     let k = n.max(1) as f64;
@@ -148,6 +185,7 @@ pub fn look_stats(img: &ProPhotoImage) -> LookStats {
                 [0.0; 4]
             }
         }),
+        detail,
     }
 }
 
@@ -178,18 +216,28 @@ pub fn average(looks: &[LookStats]) -> Option<LookStats> {
     for c in 0..3 {
         out.neutral[c] = looks.iter().map(|s| s.neutral[c]).sum::<f32>() / n;
     }
+    for c in 0..2 {
+        out.detail[c] = looks.iter().map(|s| s.detail[c]).sum::<f32>() / n;
+    }
     Some(out)
 }
 
 /// Least share of the photo, in both looks, for a band's colours to count.
 pub(super) const MIN_BAND_SHARE: f32 = 0.01;
 
+/// Weight of a difference in [`LookStats::detail`] (L*) against the other
+/// residuals. Chosen so that Clarity +50 and Exposure +0.3 move the
+/// matcher's test photo at 256 px about as far (the root of the distance
+/// about 13 for each): Clarity changes the mean local contrast by under one
+/// L*, while Exposure moves every percentile of L* by several.
+const DETAIL_SCALE: f64 = 13.0;
+
 /// The differences between two looks, weighted so their squares add up to
 /// [`distance`]; with `bands`, also each HSL band's colours where both
 /// looks have them (in OkLCh, times 100 to be near Lab units, weighted by
 /// how much of the photos they cover).
 pub(super) fn residuals(a: &LookStats, b: &LookStats, k: &Weights) -> Vec<f64> {
-    let mut r = Vec::with_capacity(9 + 6 + 2 + 3 + 2);
+    let mut r = Vec::with_capacity(9 + 6 + 2 + 3 + 2 + 2);
     let tone = k.tone * (1.0 / a.lightness.len() as f64).sqrt();
     r.extend(
         a.lightness
@@ -221,6 +269,12 @@ pub(super) fn residuals(a: &LookStats, b: &LookStats, k: &Weights) -> Vec<f64> {
     };
     r.push(w * (a.neutral[0] - b.neutral[0]) as f64);
     r.push(w * (a.neutral[1] - b.neutral[1]) as f64);
+    r.extend(
+        a.detail
+            .iter()
+            .zip(&b.detail)
+            .map(|(x, y)| k.detail * DETAIL_SCALE * (x - y) as f64),
+    );
     if k.bands {
         for (x, y) in a.bands.iter().zip(&b.bands) {
             let share = x[0].min(y[0]);
@@ -238,7 +292,8 @@ pub(super) fn residuals(a: &LookStats, b: &LookStats, k: &Weights) -> Vec<f64> {
 }
 
 /// How far apart two looks are, in squared Lab units: the tone (L*
-/// percentiles), the zone casts, chroma and spread.
+/// percentiles), the zone casts, chroma, spread, the near-grey cast and
+/// local contrast.
 pub fn distance(a: &LookStats, b: &LookStats) -> f64 {
     distance_with(a, b, false)
 }

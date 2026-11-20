@@ -23,6 +23,7 @@ The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
 ## Recently done
 
+- 2026-11-20: **Match look moves the tone curve and Clarity/Texture** (`amb match --parts curve,detail`, the editor's Presets → Match look of other photos…): the parametric curve's four regions, and Clarity and Texture through a new local-contrast measure at their two scales; a `Focus` (all, tone, colour) for the Styles to come (`amb_engine::matching`)
 - 2026-11-20: **Seasons presets** (Presets → Preset library…, group Seasons): Autumn Pop, Spring Bloom, Summer Glow and Winter Frost make each season's colours stand out; colour, grading and light contrast moves only, so they suit any photo (hub `presets/`, synced in)
 - 2026-11-20: **Code style in every chat, and three rules held by tests**: `CLAUDE.md` loads [codestyle.md](codestyle.md), so a new chat has the rules without being told; a function of at most 150 lines (`crates/amb-cli/tests/code_size.rs`: today's longer ones held to their length, dispatch and ported algorithms listed with why), every UI script strict, and `document.createElement(` counted, the count may only fall (`crates/amb-gui/src/checks.rs`)
 - 2026-11-20: **Brushed spots move by dragging** (`spot-drag`): Spot Removal draws a brushed spot along its stroke, its source dashed, and a drag anywhere on the stroke moves it, previewed as it goes; `list_spots` gives a brushed spot's `at` and `strokes` (`ui/tools/spots.js`, `amb-protocol`'s `spots.rs`)

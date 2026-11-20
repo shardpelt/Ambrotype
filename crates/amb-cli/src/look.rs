@@ -53,8 +53,9 @@ pub(crate) fn match_look(
         Some(list) => list
             .split(',')
             .map(|p| {
-                Part::parse(p.trim())
-                    .ok_or_else(|| format!("unknown part {p:?} (wb, tone, color, grading, hsl)"))
+                Part::parse(p.trim()).ok_or_else(|| {
+                    format!("unknown part {p:?} (wb, tone, curve, detail, color, grading, hsl)")
+                })
             })
             .collect::<Result<Vec<_>, _>>()?,
         None => Part::ALL.to_vec(),

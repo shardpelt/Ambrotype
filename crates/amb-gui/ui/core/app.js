@@ -282,7 +282,7 @@ async function feedbackFlow() {
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   const title = f.title.value || f.kind.value;
-  if (choice === "copy") return copyText(`[${f.kind.value}] ${title}\n\n${f.preview.value}`, t("The report"));
+  if (choice === "copy") return copyText(`[${f.kind.value}] ${title}\n\n${f.preview.value}`, tKey("The report"));
   if (choice !== "ok" && choice !== "email") return;
   const email = choice === "email";
   try {

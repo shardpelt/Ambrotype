@@ -47,7 +47,7 @@ A made-up language `zz` turns every text in the table into `⟦text⟧`. A UI te
 
 ## Words that come from Rust
 
-- **Settings' words** (labels, help, "?" cards, choices, panel and section names) are in the same table: `data/lang/settings.json`, written from the registry and `descriptions.json` by a test (`AMB_UPDATE_DOCS=1 cargo test -p amb-gui lang`; `settings_texts` in `src/lang.rs`). The panels show them through `t()`.
+- **Settings' words** (labels, help, "?" cards, choices, panel and section names), the mask fields' labels and the built-in size presets are in the same table: `data/lang/built-in.json`, written from Rust's tables by a test (`AMB_UPDATE_DOCS=1 cargo test -p amb-gui lang`; `built_in_texts` in `src/lang.rs`). The UI shows them through `t()`.
 - **Errors and reports from editor commands** are English sentences today. First, `showError` passes them through `t()`: a fixed sentence translates, one with a file name in it does not. Editor commands return one error type (`CmdError`); once it carries a code and its values, and translates whole.
 - **`amb`** stays English.
 
@@ -68,7 +68,7 @@ File names, preset names, setting names (`Exposure2012`), `amb`'s output, the do
 ## Built with step 2
 
 - `t` and `plural` remember what they gave (`LANG_MADE` in `ui/core/lang.js`, the latest 5000), so `translateDom` makes a text a script built again in the new language: no panel needs drawing again after a switch. A text glued from pieces isn't found, so one sentence is one `t()`.
-- `tKey` for data lists; `settings.json` for the settings' words; `zz` marks both.
+- `tKey` for data lists; `built-in.json` for the words of Rust's tables; `zz` marks both.
 
 ## In four steps
 

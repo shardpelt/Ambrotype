@@ -1,4 +1,13 @@
 {
+ "\"{name}\" applied to {photos}": [
+  "develop/presets.js"
+ ],
+ "\"{name}\" applied to {photos}; {n} failed: {why}": [
+  "develop/presets.js"
+ ],
+ "\"{name}\" is back: Done keeps it": [
+  "looks/looks-dialog.js"
+ ],
  "+ New preset…": [
   "index.html"
  ],
@@ -8,14 +17,26 @@
  "+0.5 EV on it": [
   "index.html"
  ],
+ "+{n} more": [
+  "dialogs/hub.js"
+ ],
  ". It opens in": [
   "index.html"
  ],
  ". K keeps, D lets go, ← → step; nothing goes until you say.": [
   "index.html"
  ],
+ "1 (rows)": [
+  "looks/editor-inspector.js"
+ ],
  "1 MB": [
   "index.html"
+ ],
+ "1 group has fewer than {per} photos and is left out.": [
+  "collage/collage-tray.js"
+ ],
+ "1 photo wasn't found: {names}": [
+  "collage/collage.js"
  ],
  "1 star (1)": [
   "index.html"
@@ -43,6 +64,12 @@
  ],
  "3 stars (3)": [
   "index.html"
+ ],
+ "3-Way": [
+  "develop/wheels.js"
+ ],
+ "32-bit float": [
+  "dialogs/export.js"
  ],
  "3840 px (4K screens)": [
   "index.html"
@@ -85,6 +112,9 @@
  ],
  "A blank canvas: empty columns and toolbar, filled from Add.": [
   "core/keys.js"
+ ],
+ "A blank layout: drag panels, blocks and buttons from Add into the columns and the toolbar": [
+  "looks/editor.js"
  ],
  "A bug, an idea, or a photo that looks different from Lightroom.": [
   "core/keys.js"
@@ -152,11 +182,17 @@
  "A second edit of this photo, as its own sidecar (Ctrl+')": [
   "index.html"
  ],
+ "A square of this group's best four photos": [
+  "collage/collage-tray.js"
+ ],
  "A starting point for the whole photo, in one undo step.": [
   "core/keys.js"
  ],
  "A title, caption, creator, copyright and keywords to give many photos at once. Empty fields leave the photos' own; keywords are added.": [
   "index.html"
+ ],
+ "A whole other interface: code with the app's full reach": [
+  "dialogs/hub.js"
  ],
  "A3": [
   "index.html"
@@ -175,6 +211,9 @@
  ],
  "AI Remove": [
   "tools/toolblocks.js"
+ ],
+ "AI Remove now uses {name}.": [
+  "dialogs/models.js"
  ],
  "AI Remove: fill it with what belongs there (Settings → AI models; healed from a nearby area until its model is installed)": [
   "index.html"
@@ -207,7 +246,12 @@
   "index.html"
  ],
  "Add": [
-  "index.html"
+  "develop/presetlib.js",
+  "index.html",
+  "tools/mask-panel.js"
+ ],
+ "Add Keywords": [
+  "core/menu.js"
  ],
  "Add a border someone shared with you (a .json file)": [
   "index.html"
@@ -224,14 +268,26 @@
  "Add a plugin from a folder with plugin.json and plugin.wasm": [
   "index.html"
  ],
+ "Add a sample": [
+  "tools/mask-panel.js"
+ ],
  "Add a shared layout or theme file": [
   "index.html"
+ ],
+ "Add an effect…": [
+  "develop/fx.js"
+ ],
+ "Add another guide, or drag a guide's end to adjust it. Right-click a guide's end to remove it.": [
+  "tools/guided.js"
  ],
  "Add folder…": [
   "index.html"
  ],
  "Add frame": [
   "index.html"
+ ],
+ "Add key": [
+  "core/keys.js"
  ],
  "Add keywords": [
   "index.html"
@@ -248,6 +304,9 @@
  "Add photos…": [
   "index.html"
  ],
+ "Add some photos to the tray first.": [
+  "collage/collage-tray.js"
+ ],
  "Add the folders, or whole drives, where your photos are. They're indexed in the background; an unplugged drive's photos stay listed.": [
   "index.html"
  ],
@@ -256,6 +315,15 @@
  ],
  "Add the selection to the collection (B adds to the last one used)": [
   "index.html"
+ ],
+ "Add to favourites": [
+  "develop/preset-grid.js"
+ ],
+ "Add to photo": [
+  "dialogs/plugins.js"
+ ],
+ "Add to the Last Collection": [
+  "core/menu.js"
  ],
  "Add to the last collection used": [
   "core/keys.js"
@@ -271,6 +339,24 @@
  ],
  "Add your own sizes": [
   "index.html"
+ ],
+ "Added": [
+  "develop/presetlib.js"
+ ],
+ "Added \"{name}\" to your presets.": [
+  "develop/presetlib.js"
+ ],
+ "Added border \"{name}\"": [
+  "dialogs/borders.js"
+ ],
+ "Added the layout “{name}”": [
+  "collage/collage-tray.js"
+ ],
+ "Added {name}. Click Use to use it.": [
+  "dialogs/models.js"
+ ],
+ "Added. Change it or take it off in Develop → Effects.": [
+  "dialogs/plugins.js"
  ],
  "Address": [
   "index.html"
@@ -300,6 +386,7 @@
   "index.html"
  ],
  "All": [
+  "develop/presetlib.js",
   "index.html"
  ],
  "All except location": [
@@ -317,6 +404,9 @@
  "All photos": [
   "index.html"
  ],
+ "All shortcuts are back to their defaults.": [
+  "core/keys.js"
+ ],
  "All the photos in the folder, to rate, label, tag and export many at once.": [
   "core/keys.js"
  ],
@@ -325,6 +415,12 @@
  ],
  "Allow and run": [
   "index.html"
+ ],
+ "Already level": [
+  "tools/croptool.js"
+ ],
+ "Already level.": [
+  "tools/toolblocks.js"
  ],
  "Also a smaller copy, up to": [
   "index.html"
@@ -339,6 +435,7 @@
   "core/keys.js"
  ],
  "Also:": [
+  "core/search.js",
   "index.html"
  ],
  "Ambrotype": [
@@ -347,8 +444,15 @@
  "Ambrotype is free software: you can share and change it under the terms of the GNU General Public License, version 3 or (at your option) any later version. It comes with ABSOLUTELY NO WARRANTY. The plugin SDK is MIT or Apache-2.0, so plugins may use any licence.": [
   "index.html"
  ],
+ "Ambrotype on GitHub": [
+  "core/menu.js"
+ ],
  "Amount": [
+  "develop/fx.js",
   "index.html"
+ ],
+ "Amount (past 100: pushed further)": [
+  "develop/fx.js"
  ],
  "An MP4 (AV1) of the photo's History: before, each step easing in and named, after. For Reels, Shorts and before/after posts.": [
   "core/keys.js"
@@ -358,6 +462,9 @@
  ],
  "An address, a place, or coordinates": [
   "index.html"
+ ],
+ "An effect is kept in the edit and rendered with the photo; change or remove it in the Effects panel": [
+  "dialogs/plugins.js"
  ],
  "An empty frame on top, in the middle": [
   "index.html"
@@ -393,7 +500,11 @@
   "index.html"
  ],
  "Appearance": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
+ ],
+ "Appearance always stays, so you can get back to your layouts": [
+  "looks/editor-keys.js"
  ],
  "Appearance: layouts and themes": [
   "core/keys.js"
@@ -401,23 +512,67 @@
  "Appearance: layouts and themes. Choose, clone, share": [
   "index.html"
  ],
+ "Appearance…": [
+  "core/menu.js"
+ ],
  "Apply": [
+  "develop/preset-grid.js",
+  "develop/presetlib.js",
+  "develop/presets.js",
   "index.html"
  ],
  "Apply a preset": [
   "index.html"
  ],
+ "Apply a preset to {n} photos…": [
+  "develop/filmstrip.js"
+ ],
+ "Apply a preset…": [
+  "develop/filmstrip.js"
+ ],
+ "Apply earlier": [
+  "develop/fx.js"
+ ],
+ "Apply some of its settings…": [
+  "develop/preset-grid.js"
+ ],
  "Apply the crop": [
   "core/keys.js"
+ ],
+ "Apply this look": [
+  "develop/presets.js"
+ ],
+ "Apply this snapshot (undoable)": [
+  "develop/history.js"
+ ],
+ "Apply to all {n} photos in the folder": [
+  "develop/preset-grid.js"
  ],
  "Apply to the original, not on top": [
   "index.html"
  ],
+ "Apply “{name}”": [
+  "develop/presets.js"
+ ],
+ "Applying \"{name}\" to {n} photos…": [
+  "develop/presets.js"
+ ],
+ "Aqua": [
+  "develop/touch.js",
+  "looks/layout.js"
+ ],
+ "Aquas": [
+  "develop/fx.js"
+ ],
  "Arrange freely": [
+  "collage/collage-canvas.js",
   "index.html"
  ],
  "Arrow keys nudge the frame (Shift: 10 px).": [
   "index.html"
+ ],
+ "As Shot": [
+  "develop/history.js"
  ],
  "As in Lightroom; the selected one is outlined.": [
   "core/keys.js"
@@ -431,6 +586,18 @@
  "Ask your own AI model to edit the photo (Ctrl+Shift+A)": [
   "index.html"
  ],
+ "Asks for no permissions: it sees only the photo's settings.": [
+  "dialogs/plugins.js"
+ ],
+ "Asks to see {what}": [
+  "dialogs/hub.js"
+ ],
+ "Asks to: {list}.": [
+  "dialogs/plugins.js"
+ ],
+ "Asks to: {list}. (Allowed.)": [
+  "dialogs/plugins.js"
+ ],
  "Aspect": [
   "index.html"
  ],
@@ -440,11 +607,15 @@
  "Assistant: your AI edits the photo": [
   "core/keys.js"
  ],
+ "Assistant…": [
+  "core/menu.js"
+ ],
  "At 300 dpi, each photo with its edit. More photos than fit make more pages.": [
   "index.html"
  ],
  "Auto": [
-  "index.html"
+  "index.html",
+  "looks/layout.js"
  ],
  "Auto align (handheld brackets)": [
   "index.html"
@@ -453,6 +624,7 @@
   "index.html"
  ],
  "Auto edit": [
+  "looks/editor.js",
   "tools/toolblocks.js"
  ],
  "Auto edit: tone, white balance, lens corrections, vibrance and a level horizon": [
@@ -460,6 +632,12 @@
  ],
  "Auto edit: tone, white balance, lens corrections, vibrance and a level horizon in one go, as a starting point (Ctrl+U)": [
   "index.html"
+ ],
+ "Auto edit: {did}. A starting point to adjust; Undo (Ctrl+Z) takes it all back.": [
+  "develop/presets.js"
+ ],
+ "Auto edit…": [
+  "develop/presets.js"
  ],
  "Auto exposure": [
   "index.html"
@@ -471,8 +649,14 @@
   "index.html",
   "tools/toolblocks.js"
  ],
+ "Auto tone…": [
+  "develop/presets.js"
+ ],
  "Auto white balance": [
   "tools/toolblocks.js"
+ ],
+ "Auto white balance…": [
+  "develop/presets.js"
  ],
  "Auto-stack…": [
   "index.html"
@@ -482,6 +666,9 @@
  ],
  "Back": [
   "index.html"
+ ],
+ "Back to a grid layout": [
+  "collage/collage-canvas.js"
  ],
  "Back to the collage, with this photo's edits": [
   "index.html"
@@ -495,14 +682,27 @@
  "Back to the task before (Library, Develop, …)": [
   "core/keys.js"
  ],
+ "Back to {keys}": [
+  "core/keys.js"
+ ],
  "Background": [
-  "index.html"
+  "index.html",
+  "tools/masks.js"
  ],
  "Backup copy to": [
   "index.html"
  ],
+ "Bar": [
+  "looks/editor-inspector.js"
+ ],
+ "Based on {name}.": [
+  "looks/looks-dialog.js"
+ ],
  "Batch": [
   "index.html"
+ ],
+ "Batch Export…": [
+  "core/menu.js"
  ],
  "Batch export": [
   "index.html"
@@ -520,7 +720,8 @@
   "index.html"
  ],
  "Before / After": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "Before / after split": [
   "core/keys.js"
@@ -549,11 +750,28 @@
  "Black": [
   "index.html"
  ],
+ "Blacks": [
+  "develop/zones.js"
+ ],
  "Blemishes and specks": [
   "tools/toolblocks.js"
  ],
+ "Block": [
+  "looks/editor-inspector.js"
+ ],
+ "Blocks": [
+  "looks/editor-inspector.js"
+ ],
  "Blue": [
-  "index.html"
+  "core/keys.js",
+  "core/menu.js",
+  "develop/curve.js",
+  "develop/touch.js",
+  "index.html",
+  "looks/layout.js"
+ ],
+ "Blues": [
+  "develop/fx.js"
  ],
  "Border": [
   "index.html"
@@ -576,6 +794,9 @@
  "Brighten": [
   "index.html"
  ],
+ "Brightest brightness selected": [
+  "tools/mask-panel.js"
+ ],
  "Bring photos in": [
   "index.html"
  ],
@@ -583,7 +804,8 @@
   "index.html"
  ],
  "Browse": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "Browse all features…": [
   "index.html"
@@ -594,6 +816,9 @@
  "Browse layouts and themes other people made": [
   "index.html"
  ],
+ "Browse the Hub…": [
+  "core/menu.js"
+ ],
  "Browse what other people shared: layouts, themes, presets, collages, plugins and interfaces (Ctrl+Shift+H)": [
   "index.html"
  ],
@@ -601,16 +826,33 @@
   "core/keys.js"
  ],
  "Brush": [
+  "tools/masks.js",
   "tools/toolblocks.js"
  ],
  "Bug": [
   "index.html"
  ],
+ "Built in ✓": [
+  "dialogs/hub.js"
+ ],
+ "Built in: clone it to make changes": [
+  "looks/looks-dialog.js"
+ ],
  "Built in: how an AI drives Ambrotype, every setting, layouts, plugins. amb docs in a terminal.": [
   "core/keys.js"
  ],
+ "Built-in": [
+  "dialogs/borders.js",
+  "dialogs/interfaces.js"
+ ],
+ "Built-in panel: it gains new settings as Ambrotype adds them. Reordering its contents makes it your own panel.": [
+  "looks/editor-inspector.js"
+ ],
  "Bursts within": [
   "index.html"
+ ],
+ "Buttons": [
+  "looks/editor-inspector.js"
  ],
  "By capture time": [
   "index.html"
@@ -631,6 +873,12 @@
   "core/keys.js",
   "index.html"
  ],
+ "Can't be installed: {error}": [
+  "dialogs/hub.js"
+ ],
+ "Can't be used: see the problems below": [
+  "looks/looks-dialog.js"
+ ],
  "Cancel": [
   "index.html"
  ],
@@ -649,6 +897,12 @@
  "Cell": [
   "index.html"
  ],
+ "Cell {n} (empty)": [
+  "collage/collage-canvas.js"
+ ],
+ "Cell {n}: {name}": [
+  "collage/collage-canvas.js"
+ ],
  "Centre": [
   "index.html"
  ],
@@ -661,14 +915,42 @@
  "Change them in Settings (⚙). Press ? to see this again.": [
   "index.html"
  ],
+ "Change this size": [
+  "tools/croptool.js"
+ ],
+ "Changed {n} of {photos}": [
+  "dialogs/plugins.js"
+ ],
+ "Changed {n} of {photos} · {failed} failed: {error}": [
+  "dialogs/plugins.js"
+ ],
+ "Changing the label makes this panel your own.": [
+  "looks/editor-inspector.js"
+ ],
+ "Checkbox": [
+  "looks/editor-inspector.js"
+ ],
+ "Checking that it runs…": [
+  "dialogs/models.js"
+ ],
  "Choose Lightroom's catalogue (a .lrcat file).": [
   "index.html"
+ ],
+ "Choose a .cube file…": [
+  "core/app.js"
  ],
  "Choose a folder; pages are named after the layout": [
   "index.html"
  ],
+ "Choose a folder…": [
+  "collage/collage.js",
+  "dialogs/export.js"
+ ],
  "Choose a profile…": [
   "index.html"
+ ],
+ "Choose at least one part to match.": [
+  "develop/presets.js"
  ],
  "Choose folder and convert…": [
   "index.html"
@@ -691,6 +973,9 @@
  "Choose…": [
   "index.html"
  ],
+ "Choosing a folder…": [
+  "develop/photo.js"
+ ],
  "Chroma subsampling": [
   "index.html"
  ],
@@ -709,20 +994,43 @@
  "Clear": [
   "index.html"
  ],
+ "Clear samples": [
+  "tools/mask-panel.js"
+ ],
  "Clear the rating": [
   "core/keys.js"
  ],
+ "Clear the selection": [
+  "develop/filmstrip.js"
+ ],
+ "Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag the dashed source circle to pick where it copies from. [ and ] or the wheel change the size.": [
+  "tools/spots.js"
+ ],
  "Click a cell to change it.": [
+  "collage/collage-canvas.js",
   "index.html"
  ],
+ "Click a colour in the photo; Shift-click to add more.": [
+  "tools/masks.js"
+ ],
  "Click a look to apply it. Each is an ordinary edit you can keep tweaking, and Undo takes it back.": [
+  "develop/presets.js",
   "index.html"
+ ],
+ "Click a mask to edit it; drag its handles on the photo. O shows or hides the overlay.": [
+  "tools/mask-panel.js"
+ ],
+ "Click a neutral grey or white spot (Esc to cancel)": [
+  "develop/preview.js"
  ],
  "Click a person, a bin, a car (or draw a box round it): its outline is found and AI Remove fills all of it in one spot (Shift+Q)": [
   "index.html"
  ],
  "Click a person, a car, the sky: then adjust it with a mask, remove it, move it, or soften the background.": [
   "core/keys.js"
+ ],
+ "Click adds · double-click removes": [
+  "develop/curve.js"
  ],
  "Click it or box it; AI removes all of it": [
   "tools/toolblocks.js"
@@ -733,14 +1041,36 @@
  "Click or brush over something": [
   "tools/toolblocks.js"
  ],
+ "Click the clear film between frames (Esc to cancel)": [
+  "develop/preview.js"
+ ],
+ "Click the clear film between frames to set the film base (before Crop to frame, or with the crop off). Alt-click to measure it from the scan again": [
+  "looks/layout.js"
+ ],
+ "Click the object (Alt-click for just a part), or drag a box round it: its outline is found (SAM 2.1 for a click, Settings → AI models), and AI Remove fills all of it in one spot.": [
+  "tools/spots.js"
+ ],
+ "Click the object to select it, or drag a box round it. Shift-click adds, Alt-click takes away.": [
+  "tools/select.js"
+ ],
  "Click the stars on the filmstrip's photos to rate them (hovering shows the missing stars in grey)": [
   "index.html"
+ ],
+ "Click to add a point · drag to move · double-click or drag out of the graph to remove": [
+  "develop/curve.js"
  ],
  "Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.": [
   "index.html"
  ],
+ "Clipped": [
+  "develop/zones.js"
+ ],
  "Clipping": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
+ ],
+ "Clipping Overlay": [
+  "core/menu.js"
  ],
  "Clipping overlay": [
   "core/keys.js"
@@ -749,7 +1079,14 @@
   "index.html"
  ],
  "Clone": [
-  "index.html"
+  "index.html",
+  "tools/croptool.js"
+ ],
+ "Clone brush": [
+  "develop/history.js"
+ ],
+ "Clone spot": [
+  "develop/history.js"
  ],
  "Close": [
   "index.html"
@@ -767,8 +1104,13 @@
   "index.html"
  ],
  "Collage": [
+  "core/menu.js",
   "core/tasks.js",
-  "index.html"
+  "index.html",
+  "looks/editor.js"
+ ],
+ "Collage Maker…": [
+  "core/menu.js"
  ],
  "Collage maker": [
   "core/keys.js"
@@ -777,6 +1119,9 @@
   "index.html"
  ],
  "Collage of every photo shown in the library, as pages": [
+  "core/keys.js"
+ ],
+ "Collage task": [
   "core/keys.js"
  ],
  "Collages": [
@@ -792,7 +1137,8 @@
   "index.html"
  ],
  "Color": [
-  "index.html"
+  "index.html",
+  "tools/masks.js"
  ],
  "Color Grading": [
   "index.html"
@@ -809,6 +1155,9 @@
  "Colour": [
   "index.html"
  ],
+ "Colour Label": [
+  "core/menu.js"
+ ],
  "Colour per pixel (TensorFlow, MediaPipe)": [
   "index.html"
  ],
@@ -818,16 +1167,29 @@
  "Colour space": [
   "index.html"
  ],
+ "Colour wheels": [
+  "looks/editor.js"
+ ],
  "Colours the space can't hold, in magenta": [
   "index.html"
  ],
+ "Columns": [
+  "looks/editor-inspector.js"
+ ],
+ "Command": [
+  "core/search.js"
+ ],
  "Common limits": [
   "index.html"
+ ],
+ "Common ratios": [
+  "tools/croptool.js"
  ],
  "Compact": [
   "index.html"
  ],
  "Compare": [
+  "core/menu.js",
   "index.html"
  ],
  "Compare (C)": [
@@ -835,6 +1197,9 @@
  ],
  "Compare two photos": [
   "core/keys.js"
+ ],
+ "Connect an AI App…": [
+  "core/menu.js"
  ],
  "Connect an AI app": [
   "core/keys.js",
@@ -852,6 +1217,12 @@
  "Contact sheet…": [
   "index.html"
  ],
+ "Control": [
+  "looks/editor-inspector.js"
+ ],
+ "Convert Raws to JPEGs…": [
+  "core/menu.js"
+ ],
  "Convert raws to JPEGs": [
   "index.html"
  ],
@@ -861,17 +1232,53 @@
  "Convert raws…": [
   "index.html"
  ],
+ "Convert this folder's raws to JPEGs…": [
+  "dialogs/export.js"
+ ],
+ "Convert to JPEG…": [
+  "develop/filmstrip.js"
+ ],
+ "Convert {n} raws to JPEGs…": [
+  "develop/filmstrip.js"
+ ],
+ "Copied as “{name}”": [
+  "develop/preset-edit.js"
+ ],
  "Copied into dated folders, renamed if you like.": [
   "core/keys.js"
  ],
+ "Copied the file's path": [
+  "dialogs/export.js"
+ ],
+ "Copied the photo": [
+  "dialogs/export.js"
+ ],
+ "Copied the photo ({w} × {h}): paste it anywhere": [
+  "dialogs/export.js"
+ ],
+ "Copied {n} paths": [
+  "dialogs/export.js"
+ ],
+ "Copied: paste it into your AI assistant": [
+  "dialogs/plugins.js"
+ ],
  "Copy": [
   "index.html"
+ ],
+ "Copy Settings": [
+  "core/menu.js"
+ ],
+ "Copy file path": [
+  "dialogs/export.js"
  ],
  "Copy from the source as it is": [
   "index.html"
  ],
  "Copy from the source, then match the surroundings": [
   "index.html"
+ ],
+ "Copy image": [
+  "dialogs/export.js"
  ],
  "Copy instructions": [
   "index.html"
@@ -885,14 +1292,23 @@
  "Copy settings": [
   "index.html"
  ],
+ "Copy the open photo's settings": [
+  "develop/filmstrip.js"
+ ],
  "Copy the report, to paste anywhere": [
   "index.html"
  ],
  "Copy the selected photo's settings (in the editor: the open photo's)": [
   "core/keys.js"
  ],
+ "Copy this mask, sliders and all": [
+  "tools/mask-panel.js"
+ ],
  "Copy this photo's develop settings (Ctrl+Shift+C)": [
   "index.html"
+ ],
+ "Copying the photo…": [
+  "dialogs/export.js"
  ],
  "Copyright": [
   "index.html"
@@ -902,6 +1318,24 @@
  ],
  "Copyright © 2026 The Ambrotype contributors": [
   "index.html"
+ ],
+ "Couldn't list the folder: {why}": [
+  "develop/filmstrip.js"
+ ],
+ "Couldn't load border presets: {error}": [
+  "dialogs/borders.js"
+ ],
+ "Couldn't load layouts and themes: {error}": [
+  "looks/layout.js"
+ ],
+ "Couldn't load the preset library: {why}": [
+  "develop/presetlib.js"
+ ],
+ "Couldn't read the changed sidecar: {why}": [
+  "core/app.js"
+ ],
+ "Couldn't save the rating and keywords: {why}": [
+  "develop/info.js"
  ],
  "Cream": [
   "index.html"
@@ -913,10 +1347,14 @@
   "index.html"
  ],
  "Crop": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "Crop & straighten": [
   "index.html"
+ ],
+ "Crop and Straighten": [
+  "core/menu.js"
  ],
  "Crop and straighten": [
   "core/keys.js"
@@ -924,8 +1362,27 @@
  "Crop and straighten (R)": [
   "index.html"
  ],
+ "Crop away the film rebate and the scanner holder's edges (one undo step)": [
+  "looks/layout.js"
+ ],
+ "Crop to frame": [
+  "looks/layout.js"
+ ],
+ "Crop tool": [
+  "core/keys.js"
+ ],
+ "Crop: adjust the frame; Enter applies, Esc cancels": [
+  "tools/croptool.js"
+ ],
+ "Crop: drag from one corner to the other": [
+  "tools/croptool.js"
+ ],
  "Custom": [
   "index.html"
+ ],
+ "Custom size": [
+  "collage/collage-tray.js",
+  "tools/croptool.js"
  ],
  "Cylindrical": [
   "index.html"
@@ -936,6 +1393,12 @@
  "Darken": [
   "index.html"
  ],
+ "Darkest brightness selected": [
+  "tools/mask-panel.js"
+ ],
+ "Darks": [
+  "develop/touch.js"
+ ],
  "Date and camera name: 20261010_DSC_1234": [
   "index.html"
  ],
@@ -944,6 +1407,9 @@
  ],
  "Default": [
   "index.html"
+ ],
+ "Default (Ambrotype)": [
+  "core/app.js"
  ],
  "Defaults": [
   "index.html"
@@ -955,7 +1421,11 @@
   "index.html"
  ],
  "Delete": [
-  "index.html"
+  "develop/history.js",
+  "index.html",
+  "looks/looks-dialog.js",
+  "tools/croptool.js",
+  "tools/mask-panel.js"
  ],
  "Delete collection…": [
   "index.html"
@@ -963,8 +1433,14 @@
  "Delete copy": [
   "index.html"
  ],
+ "Delete mask {n}": [
+  "develop/history.js"
+ ],
  "Delete spot": [
   "index.html"
+ ],
+ "Delete spot {n}": [
+  "develop/history.js"
  ],
  "Delete the selected part (or mask)": [
   "core/keys.js"
@@ -975,13 +1451,29 @@
  "Delete the selected virtual copies (their photo stays)": [
   "index.html"
  ],
+ "Delete the snapshot “{name}”? The photo's edit stays as it is.": [
+  "develop/history.js"
+ ],
+ "Delete this effect of yours": [
+  "tools/mask-panel.js"
+ ],
  "Delete this layout or theme": [
   "index.html"
+ ],
+ "Delete this mask": [
+  "tools/mask-panel.js"
  ],
  "Delete this recipe of yours": [
   "index.html"
  ],
+ "Delete this size": [
+  "tools/croptool.js"
+ ],
+ "Deleted “{name}”": [
+  "collage/collage-tray.js"
+ ],
  "Delete…": [
+  "develop/preset-hide.js",
   "index.html"
  ],
  "Denoise": [
@@ -997,10 +1489,23 @@
   "index.html"
  ],
  "Develop": [
+  "core/menu.js",
   "core/tasks.js"
  ],
  "Develop preset": [
   "index.html"
+ ],
+ "Develop task": [
+  "core/keys.js"
+ ],
+ "Developed on the CPU (no GPU found)": [
+  "develop/preview.js"
+ ],
+ "Developed on the CPU: {why}": [
+  "develop/preview.js"
+ ],
+ "Developed on {gpu}": [
+  "develop/preview.js"
  ],
  "Display P3": [
   "index.html"
@@ -1015,10 +1520,32 @@
   "index.html"
  ],
  "Done": [
+  "develop/preset-hide.js",
   "index.html"
+ ],
+ "Double-click to rename": [
+  "tools/mask-panel.js"
+ ],
+ "Download or update lensfun's lens profiles (about 0.5 MB), used when there is no profile of your own": [
+  "looks/layout.js"
+ ],
+ "Downloaded lens profiles (lensfun, {n} lenses): Lens Corrections can now fix distortion and vignetting.": [
+  "develop/photo.js"
+ ],
+ "Downloading the lens database…": [
+  "develop/photo.js"
+ ],
+ "Downloading {name} ({size})…": [
+  "dialogs/models.js"
+ ],
+ "Downloading… {percent}%": [
+  "dialogs/models.js"
  ],
  "Drag a box round the part Auto measures, to leave out a sky, a light leak or a holder's edge; the crop stays. Alt-click to meter the whole crop again": [
   "looks/layout.js"
+ ],
+ "Drag a box round the part to measure (Esc to cancel)": [
+  "develop/preview.js"
  ],
  "Drag a copy of it somewhere else; it stays where it was too": [
   "index.html"
@@ -1026,11 +1553,53 @@
  "Drag a copy somewhere else": [
   "index.html"
  ],
+ "Drag a frame to move it, its corners to resize, the round handle to turn it. Drop a photo on empty canvas for a new frame.": [
+  "collage/collage-canvas.js"
+ ],
+ "Drag across (Shift: fine). Double-click to reset.": [
+  "develop/controls.js"
+ ],
+ "Drag along a line that should be vertical (a wall, a door frame) or horizontal (a horizon). Two verticals fix converging verticals; two horizontals fix the horizontal perspective.": [
+  "tools/guided.js"
+ ],
+ "Drag from the centre outwards.": [
+  "tools/masks.js"
+ ],
+ "Drag from where the effect is full to where it ends.": [
+  "tools/masks.js"
+ ],
+ "Drag inside a square to line its photo up; scroll to zoom": [
+  "collage/collage-tray.js"
+ ],
  "Drag into a panel, a column or the toolbar, or click to add. Drop something here to remove it.": [
   "index.html"
  ],
+ "Drag into place, or click to add": [
+  "looks/editor-inspector.js"
+ ],
  "Drag it somewhere else": [
   "index.html"
+ ],
+ "Drag photos from below into the cells. In a cell: drag to move the photo, scroll to zoom, double-click to fit.": [
+  "collage/collage-canvas.js"
+ ],
+ "Drag the edges or corners, inside to move, outside the frame to turn: the photo's straight lines show, and it snaps when one comes level (hold Alt to turn freely). Draw ⌖ (D) starts a new one. Enter applies, Esc cancels.": [
+  "tools/croptool.js"
+ ],
+ "Drag the outline to where it should go.": [
+  "tools/select.js"
+ ],
+ "Drag the outline to where the copy should go.": [
+  "tools/select.js"
+ ],
+ "Drag the slider (Shift: fine). Double-click to reset.": [
+  "develop/rows.js"
+ ],
+ "Drag the spot or its source to move them. Delete removes it; click elsewhere for a new one.": [
+  "tools/spots.js"
+ ],
+ "Drag to another cell to swap": [
+  "collage/collage-canvas.js"
  ],
  "Drag to jump through the years": [
   "index.html"
@@ -1044,6 +1613,24 @@
  "Drag to move the split (Y turns it off)": [
   "index.html"
  ],
+ "Drag to resize (Shift keeps the shape)": [
+  "collage/collage-canvas.js"
+ ],
+ "Drag to resize this column": [
+  "looks/editor.js"
+ ],
+ "Drag to resize; double-click for the layout's width": [
+  "looks/columns.js"
+ ],
+ "Drag to set hue and saturation · Shift-drag: saturation only · double-click to reset": [
+  "develop/wheels.js"
+ ],
+ "Drag to turn (Shift: 15° steps)": [
+  "collage/collage-canvas.js"
+ ],
+ "Drag up into a cell, or click to fill the selected (or next empty) cell.": [
+  "collage/collage-tray.js"
+ ],
  "Draw a box round it: the Subject model finds its outline, and AI Remove fills it in one spot.": [
   "core/keys.js"
  ],
@@ -1052,6 +1639,9 @@
  ],
  "Draw a new crop: press at one corner and drag to the other (D)": [
   "index.html"
+ ],
+ "Draw lines that should be vertical or horizontal; the Transform sliders straighten them": [
+  "looks/layout.js"
  ],
  "Draw ⌖": [
   "index.html"
@@ -1067,6 +1657,19 @@
  ],
  "Drop a photo or a folder here, or press Ctrl+O (a folder: Ctrl+Shift+O). Lightroom presets and XMP sidecars work as they are.": [
   "index.html"
+ ],
+ "Drop here": [
+  "looks/editor.js"
+ ],
+ "Drop-down": [
+  "looks/editor-inspector.js"
+ ],
+ "Duplicate": [
+  "develop/preset-grid.js",
+  "tools/mask-panel.js"
+ ],
+ "Duplicate mask {n}": [
+  "develop/history.js"
  ],
  "Duplicates and bursts": [
   "index.html"
@@ -1098,8 +1701,25 @@
  "Each photo's edit, rating, colour label, flag, keywords, stack, title and caption go into its XMP sidecar, where both Ambrotype and Lightroom read them. Virtual copies and collections come too. The catalogue is only read: close Lightroom first. Sidecars already there are kept. Or": [
   "index.html"
  ],
+ "Earlier edits": [
+  "develop/history.js"
+ ],
+ "Edge detail {n} of 5": [
+  "dialogs/models.js"
+ ],
+ "Edit": [
+  "core/keys.js",
+  "core/menu.js",
+  "tools/croptool.js"
+ ],
+ "Edit Layout": [
+  "core/menu.js"
+ ],
  "Edit filter": [
   "index.html"
+ ],
+ "Edit in Another App": [
+  "core/menu.js"
  ],
  "Edit in another app": [
   "core/keys.js"
@@ -1109,7 +1729,8 @@
  ],
  "Edit layout": [
   "core/keys.js",
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "Edit layout…": [
   "index.html"
@@ -1141,14 +1762,38 @@
  "Editing": [
   "index.html"
  ],
+ "Editing \"{name}\"": [
+  "tools/croptool.js"
+ ],
+ "Editing the layout: drag things to move them, click one to change it": [
+  "looks/editor.js"
+ ],
  "Edits": [
   "index.html"
+ ],
+ "Edit…": [
+  "develop/preset-grid.js"
+ ],
+ "Effects": [
+  "core/keys.js"
+ ],
+ "Effects from plugins, rendered with the photo after the colour and curves (Plugins → Browse hub… has more)": [
+  "develop/fx.js"
+ ],
+ "Effect…": [
+  "tools/mask-panel.js"
  ],
  "Empty": [
   "index.html"
  ],
+ "Empty panel": [
+  "looks/editor-inspector.js"
+ ],
  "Empty the tray (cells keep their photos)": [
   "index.html"
+ ],
+ "Empty: add photos or a folder": [
+  "collage/collage-tray.js"
  ],
  "End the lesson": [
   "index.html"
@@ -1158,6 +1803,12 @@
  ],
  "Enter": [
   "index.html"
+ ],
+ "Erase": [
+  "tools/mask-panel.js"
+ ],
+ "Error: {message}": [
+  "looks/looks-dialog.js"
  ],
  "Esc": [
   "index.html"
@@ -1189,18 +1840,50 @@
  "Everything else softer": [
   "index.html"
  ],
+ "Everywhere": [
+  "develop/fx.js"
+ ],
  "Exact size (px, cropped to fit)": [
   "index.html"
  ],
+ "Exactly {w} × {h} px, with the whole crop inside the frame.": [
+  "dialogs/export.js"
+ ],
+ "Exactly {w} × {h} px, with the whole photo inside the frame.": [
+  "dialogs/export.js"
+ ],
+ "Exactly {w} × {h} px. The crop is {a} and this size is {b}, so the left and right edges are trimmed (centred).": [
+  "dialogs/export.js"
+ ],
+ "Exactly {w} × {h} px. The crop is {a} and this size is {b}, so the top and bottom edges are trimmed (centred).": [
+  "dialogs/export.js"
+ ],
+ "Exactly {w} × {h} px. The photo is {a} and this size is {b}, so the left and right edges are trimmed (centred).": [
+  "dialogs/export.js"
+ ],
+ "Exactly {w} × {h} px. The photo is {a} and this size is {b}, so the top and bottom edges are trimmed (centred).": [
+  "dialogs/export.js"
+ ],
+ "Exactly {w} × {h} px; the crop already has this shape.": [
+  "dialogs/export.js"
+ ],
  "Export": [
   "core/keys.js",
-  "index.html"
+  "dialogs/export.js",
+  "index.html",
+  "looks/editor.js"
  ],
  "Export (Ctrl+E)": [
   "index.html"
  ],
+ "Export Edit Replay (video)…": [
+  "dialogs/export.js"
+ ],
  "Export Edit Replay: a video of the edit, step by step": [
   "core/keys.js"
+ ],
+ "Export Edit Replay…": [
+  "core/menu.js"
  ],
  "Export pages…": [
   "index.html"
@@ -1211,7 +1894,38 @@
  "Export the selection with the same choices, one file each (Ctrl+E)": [
   "index.html"
  ],
+ "Export {n} photos…": [
+  "develop/filmstrip.js"
+ ],
+ "Export {photos}": [
+  "dialogs/export.js"
+ ],
+ "Exported the collage, {w}×{h}, {mb} MB": [
+  "collage/collage.js"
+ ],
+ "Exported {path}": [
+  "collage/collage.js",
+  "dialogs/export.js"
+ ],
+ "Exported {size}, {mb} MB": [
+  "dialogs/export.js"
+ ],
+ "Exported {size}, {mb} MB, and a {smallMb} MB copy ({name})": [
+  "dialogs/export.js"
+ ],
+ "Exported {size}, {mb} MB, quality {quality}": [
+  "dialogs/export.js"
+ ],
+ "Exported {size}, {mb} MB, quality {quality}, and a {smallMb} MB copy ({name})": [
+  "dialogs/export.js"
+ ],
+ "Exporting {path}…": [
+  "dialogs/export.js"
+ ],
  "Export…": [
+  "core/menu.js",
+  "develop/filmstrip.js",
+  "dialogs/export.js",
   "index.html"
  ],
  "Exposure, contrast, highlights, shadows": [
@@ -1230,9 +1944,12 @@
   "index.html"
  ],
  "Feedback": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "File": [
+  "core/keys.js",
+  "core/menu.js",
   "index.html"
  ],
  "File names": [
@@ -1253,7 +1970,14 @@
  "Fill the tray with every photo the library shows (after its filters)": [
   "index.html"
  ],
+ "Filling in what you removed…": [
+  "develop/preview.js"
+ ],
+ "Fills in: {tokens}": [
+  "dialogs/borders.js"
+ ],
  "Film": [
+  "core/menu.js",
   "core/tasks.js",
   "index.html"
  ],
@@ -1265,6 +1989,12 @@
  ],
  "Film strips": [
   "index.html"
+ ],
+ "Film task": [
+  "core/keys.js"
+ ],
+ "Filmstrip": [
+  "core/menu.js"
  ],
  "Filter": [
   "index.html"
@@ -1312,6 +2042,19 @@
  "Find, rate, sort and tag photos": [
   "core/tasks.js"
  ],
+ "Finding settings…": [
+  "develop/presets.js"
+ ],
+ "Finding the object to remove…": [
+  "tools/spots.js"
+ ],
+ "Finding the object…": [
+  "tools/select.js",
+  "tools/spots.js"
+ ],
+ "Finding the object… (the first click on a photo takes longer)": [
+  "tools/select.js"
+ ],
  "Finds copies of the same file, alike pictures (the same shot re-saved, or frames of one scene) and bursts. In each group the best comes first, marked ★: a pick, then the highest rating, an edit, the sharpest picture. Click another photo to make it the one kept.": [
   "index.html"
  ],
@@ -1320,6 +2063,9 @@
  ],
  "Fit": [
   "index.html"
+ ],
+ "Fit / 100%": [
+  "core/menu.js"
  ],
  "Fit / 100% (Z, or click the photo). Drag to pan at 100%.": [
   "index.html"
@@ -1334,6 +2080,7 @@
   "core/keys.js"
  ],
  "Flag": [
+  "core/menu.js",
   "index.html"
  ],
  "Flag as a pick": [
@@ -1345,6 +2092,9 @@
  "Flag filter": [
   "index.html"
  ],
+ "Flag removed": [
+  "develop/info.js"
+ ],
  "Flag the best of each burst as a pick and the others as rejects": [
   "index.html"
  ],
@@ -1354,11 +2104,23 @@
  "Flag them as rejected instead of deleting": [
   "index.html"
  ],
+ "Flagged as a pick": [
+  "develop/info.js"
+ ],
+ "Flagged as rejected": [
+  "develop/info.js"
+ ],
  "Flip horizontal": [
   "core/keys.js"
  ],
+ "Flipped: {photos}": [
+  "develop/info.js"
+ ],
  "Focal length": [
   "index.html"
+ ],
+ "Fold or unfold": [
+  "looks/blocks.js"
  ],
  "Folder": [
   "index.html"
@@ -1372,6 +2134,9 @@
  "Font": [
   "index.html"
  ],
+ "Fonts not loaded for the preview: {why}": [
+  "develop/frame.js"
+ ],
  "For": [
   "index.html"
  ],
@@ -1381,6 +2146,9 @@
  "For photos without a place, from the photos that have one: taken around the same time, or looking the same (photos Smart search has indexed). Untick any that look wrong.": [
   "index.html"
  ],
+ "Forget this setup (its layout and theme stay)": [
+  "looks/looks-dialog.js"
+ ],
  "Format": [
   "index.html"
  ],
@@ -1388,10 +2156,24 @@
   "core/keys.js"
  ],
  "Frame": [
-  "index.html"
+  "core/menu.js",
+  "index.html",
+  "looks/editor.js"
+ ],
+ "Frame (as in the editor)": [
+  "develop/frame.js"
  ],
  "Frame angle in degrees": [
   "index.html"
+ ],
+ "Frame on all {n} photos in the folder": [
+  "develop/frame.js"
+ ],
+ "Frame removed from all {n} photos": [
+  "develop/frame.js"
+ ],
+ "Frame settings…": [
+  "develop/frame.js"
  ],
  "Frame: a border and text around the photo (Shift+B)": [
   "index.html"
@@ -1402,8 +2184,15 @@
  "Frames in different light (daylight, lamps) get their own conversion": [
   "index.html"
  ],
+ "Free": [
+  "tools/croptool.js"
+ ],
+ "Freeze": [
+  "looks/layout.js"
+ ],
  "From": [
-  "index.html"
+  "index.html",
+  "tools/mask-panel.js"
  ],
  "From (a card or folder)": [
   "index.html"
@@ -1441,6 +2230,9 @@
  "Full size": [
   "index.html"
  ],
+ "Further down this column": [
+  "looks/blocks.js"
+ ],
  "GFX": [
   "index.html"
  ],
@@ -1459,6 +2251,31 @@
  "General": [
   "index.html"
  ],
+ "GitHub is open with the preset filled in: press Commit changes, then Create pull request.": [
+  "develop/presets.js"
+ ],
+ "GitHub is open with your layout filled in: press Propose changes, then Create pull request.": [
+  "looks/looks-dialog.js"
+ ],
+ "GitHub is open with your theme filled in: press Propose changes, then Create pull request.": [
+  "looks/looks-dialog.js"
+ ],
+ "GitHub's upload page is open in your browser": [
+  "dialogs/interfaces.js",
+  "dialogs/plugins.js"
+ ],
+ "Give both a width and a height for an exact size.": [
+  "dialogs/export.js"
+ ],
+ "Give the layout a name first.": [
+  "collage/collage-tray.js"
+ ],
+ "Give the model a name first.": [
+  "dialogs/models.js"
+ ],
+ "Give the recipe a name first.": [
+  "dialogs/plugins.js"
+ ],
  "Give the selected photos new names from a template": [
   "index.html"
  ],
@@ -1468,14 +2285,31 @@
  "Give the ticked keywords to every selected photo": [
   "index.html"
  ],
+ "Global": [
+  "develop/wheels.js"
+ ],
  "Glossy paper": [
   "index.html"
+ ],
+ "Go back to this step": [
+  "develop/history.js"
+ ],
+ "Go forward to this step": [
+  "develop/history.js"
  ],
  "Gradients, brush and range masks with their own sliders.": [
   "core/keys.js"
  ],
  "Green": [
-  "index.html"
+  "core/keys.js",
+  "core/menu.js",
+  "develop/curve.js",
+  "develop/touch.js",
+  "index.html",
+  "looks/layout.js"
+ ],
+ "Greens": [
+  "develop/fx.js"
  ],
  "Grey": [
   "index.html"
@@ -1490,10 +2324,23 @@
   "index.html"
  ],
  "Group alike": [
+  "collage/collage-tray.js",
   "index.html"
  ],
  "Group the selection into one stack, shown as its top photo (Ctrl+G)": [
   "index.html"
+ ],
+ "Group {n} · {count}": [
+  "collage/collage-tray.js"
+ ],
+ "Group: {name}": [
+  "looks/editor-inspector.js"
+ ],
+ "Grouping…": [
+  "collage/collage-tray.js"
+ ],
+ "Groups": [
+  "looks/editor-inspector.js"
  ],
  "Guess places": [
   "index.html"
@@ -1504,18 +2351,39 @@
  "Guided Upright": [
   "index.html"
  ],
+ "Guided Upright: draw lines that should be straight": [
+  "tools/guided.js"
+ ],
+ "Guided…": [
+  "looks/layout.js"
+ ],
  "Guides for AI agents": [
   "core/keys.js"
  ],
  "Guides for AI agents (built in;": [
   "index.html"
  ],
+ "HSL tabs": [
+  "looks/editor-inspector.js"
+ ],
+ "Has edits": [
+  "develop/filmstrip.js"
+ ],
+ "Heading": [
+  "looks/editor-inspector.js"
+ ],
  "Heal": [
   "index.html",
   "tools/toolblocks.js"
  ],
+ "Heal brush": [
+  "develop/history.js"
+ ],
  "Heal or clone blemishes and distractions.": [
   "core/keys.js"
+ ],
+ "Heal spot": [
+  "develop/history.js"
  ],
  "Height": [
   "index.html"
@@ -1523,11 +2391,21 @@
  "Height (px)": [
   "index.html"
  ],
+ "Help": [
+  "core/keys.js",
+  "core/menu.js"
+ ],
+ "Hidden": [
+  "develop/preset-hide.js"
+ ],
  "Hidden presets come back dimmed in the Presets tab, to unhide.": [
   "core/keys.js"
  ],
  "Hidden, it comes back while the pointer is at the window's top edge.": [
   "core/keys.js"
+ ],
+ "Hide": [
+  "develop/preset-hide.js"
  ],
  "Hide or show the left column": [
   "core/keys.js"
@@ -1541,8 +2419,17 @@
  "Hide the folders (F7)": [
   "index.html"
  ],
+ "Hide the left column (Ctrl+[)": [
+  "looks/columns.js"
+ ],
  "Hide the panel (F8)": [
   "index.html"
+ ],
+ "Hide the right column (Ctrl+])": [
+  "looks/columns.js"
+ ],
+ "Hide this group": [
+  "develop/preset-hide.js"
  ],
  "High": [
   "index.html"
@@ -1550,8 +2437,21 @@
  "Higher shows only stronger edges": [
   "index.html"
  ],
+ "Highlights": [
+  "develop/fx.js",
+  "develop/touch.js",
+  "develop/wheels.js",
+  "develop/zones.js"
+ ],
+ "Highs": [
+  "develop/wheels.js"
+ ],
+ "Histogram": [
+  "looks/editor.js"
+ ],
  "History": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "History: the arrow keys step through it": [
   "index.html"
@@ -1565,11 +2465,29 @@
  "How a photo is made and edited, step by step, and what the terms mean.": [
   "core/keys.js"
  ],
+ "How fast paint builds up": [
+  "tools/mask-panel.js"
+ ],
+ "How gradually the selection fades out": [
+  "tools/mask-panel.js"
+ ],
  "How much colour detail JPEG keeps: Auto keeps it all at quality 90 and above": [
   "index.html"
  ],
  "How often each aperture, focal length, shutter speed, ISO, camera and lens comes up in the photos shown, and how many were kept. Click a bar to show those photos.": [
   "core/keys.js"
+ ],
+ "How the new part joins this mask": [
+  "tools/mask-panel.js"
+ ],
+ "How this part joins the ones above it": [
+  "tools/mask-panel.js"
+ ],
+ "How to": [
+  "core/search.js"
+ ],
+ "How to · {section}": [
+  "core/search.js"
  ],
  "Hub address (where Browse hub… looks)": [
   "index.html"
@@ -1578,7 +2496,9 @@
   "index.html"
  ],
  "Hue": [
-  "index.html"
+  "develop/wheels.js",
+  "index.html",
+  "looks/layout.js"
  ],
  "ISO": [
   "index.html"
@@ -1589,6 +2509,9 @@
  "Import": [
   "index.html"
  ],
+ "Import Photos…": [
+  "core/menu.js"
+ ],
  "Import photos": [
   "index.html"
  ],
@@ -1598,14 +2521,29 @@
  "Import ▾": [
   "index.html"
  ],
+ "Imported \"{name}\"": [
+  "looks/looks-dialog.js"
+ ],
  "Import…": [
   "index.html"
  ],
  "In each burst, mark the photo in focus with eyes open and dim the rest; then pick it and reject the rest, or stack them": [
   "index.html"
  ],
+ "In the browser: GitHub's upload page opens with the plugin's folder next to it. Drag the files in and choose “Propose changes”. (Or install the GitHub CLI and run `gh auth login` to send it from here.)": [
+  "dialogs/plugins.js"
+ ],
+ "In the collage": [
+  "collage/collage-tray.js"
+ ],
  "In the frame, below the photo": [
   "index.html"
+ ],
+ "In use": [
+  "dialogs/models.js"
+ ],
+ "In “{group}”": [
+  "dialogs/hub.js"
  ],
  "Include app, system, camera, lens and the current settings (never the photo)": [
   "index.html"
@@ -1632,7 +2570,11 @@
   "core/keys.js"
  ],
  "Install": [
+  "dialogs/hub.js",
   "index.html"
+ ],
+ "Install ({size})": [
+  "dialogs/models.js"
  ],
  "Install a layout or theme from a link": [
   "index.html"
@@ -1640,26 +2582,86 @@
  "Install from folder…": [
   "index.html"
  ],
+ "Install the interface \"{name}\"?\n\nIt's a program with the app's full reach (your photos, edits and settings), not a sandboxed plugin. Install it only if you trust its author or have read its files on the hub.": [
+  "dialogs/hub.js"
+ ],
+ "Installed \"{name}\".": [
+  "dialogs/hub.js"
+ ],
+ "Installed \"{name}\": choose it in Settings → General → Interface, or press Use now.": [
+  "dialogs/hub.js"
+ ],
+ "Installed \"{name}\": it's in the Plugins dialog (Ctrl+Shift+P), and asks before it first runs.": [
+  "dialogs/hub.js"
+ ],
+ "Installed \"{name}\": it's with the borders in the export dialog and the Frame panel.": [
+  "dialogs/hub.js"
+ ],
+ "Installed \"{name}\": it's with the presets on the left.": [
+  "dialogs/hub.js"
+ ],
+ "Installed \"{name}\": it's with the templates in the collage maker.": [
+  "dialogs/hub.js"
+ ],
+ "Installed \"{name}\": its sizes are in the crop tool and the export dialog.": [
+  "dialogs/hub.js"
+ ],
+ "Installed and using \"{name}\". Appearance (Ctrl+L) switches back.": [
+  "dialogs/hub.js"
+ ],
+ "Installed {name}": [
+  "dialogs/plugins.js"
+ ],
+ "Installed ✓": [
+  "dialogs/hub.js"
+ ],
+ "Installing from the link…": [
+  "dialogs/hub.js"
+ ],
+ "Installing…": [
+  "dialogs/hub.js"
+ ],
  "Interface: the whole window, built in or one of your own (docs/ai/custom-interface.md)": [
   "index.html"
  ],
  "Interfaces": [
   "index.html"
  ],
+ "Intersect": [
+  "tools/mask-panel.js"
+ ],
  "Into": [
   "index.html"
+ ],
+ "Inv": [
+  "tools/mask-panel.js"
+ ],
+ "Invert": [
+  "tools/mask-panel.js"
  ],
  "Invert (a background class gives everything else)": [
   "index.html"
  ],
+ "Invert this part": [
+  "tools/mask-panel.js"
+ ],
+ "It downloads by itself the first time a mask needs it.": [
+  "dialogs/models.js"
+ ],
  "It still can't read your files or use the network: it can only change settings, and Undo takes them back. You're asked again if the plugin changes.": [
   "index.html"
+ ],
+ "Item": [
+  "looks/editor-keys.js"
  ],
  "Its photos in the library.": [
   "core/keys.js"
  ],
  "Its settings, without the crop, as a one-click preset.": [
   "core/keys.js"
+ ],
+ "Its shadow is in blue: tick “Its shadow too” to take it along. Shift-click adds more, Alt-click takes a part away.": [
+  "tools/select.js"
  ],
  "Its shadow too": [
   "index.html"
@@ -1685,8 +2687,17 @@
  "Just the photo, filling the screen": [
   "core/keys.js"
  ],
+ "Just the photo: F or Esc comes back": [
+  "develop/quickzoom.js"
+ ],
  "Keep": [
   "index.html"
+ ],
+ "Keep it in your presets list": [
+  "develop/presetlib.js"
+ ],
+ "Keep it there": [
+  "core/keys.js"
  ],
  "Keep its values": [
   "index.html"
@@ -1718,6 +2729,9 @@
  "Keep these settings as a recipe of yours": [
   "index.html"
  ],
+ "Keep this mask's sliders as an effect of your own": [
+  "tools/mask-panel.js"
+ ],
  "Keep this one (K)": [
   "index.html"
  ],
@@ -1727,8 +2741,14 @@
  "Keep under (MB, JPEG)": [
   "index.html"
  ],
+ "Keeps the format, size, sharpening, metadata and border choices.": [
+  "dialogs/export.js"
+ ],
  "Kept instead:": [
   "index.html"
+ ],
+ "Keyboard Shortcuts": [
+  "core/menu.js"
  ],
  "Keyboard map": [
   "index.html"
@@ -1751,6 +2771,15 @@
  "Kind": [
   "index.html"
  ],
+ "Knob": [
+  "looks/editor-inspector.js"
+ ],
+ "Label": [
+  "looks/editor-inspector.js"
+ ],
+ "Label removed": [
+  "develop/info.js"
+ ],
  "Landscape page": [
   "index.html"
  ],
@@ -1764,13 +2793,19 @@
   "index.html"
  ],
  "Layout": [
-  "index.html"
+  "core/search.js",
+  "index.html",
+  "looks/editor.js",
+  "looks/looks-dialog.js"
  ],
  "Layout name": [
   "index.html"
  ],
  "Layouts": [
   "index.html"
+ ],
+ "Layouts and themes aren't available": [
+  "looks/looks-dialog.js"
  ],
  "Layouts and themes…": [
   "index.html"
@@ -1783,6 +2818,9 @@
  ],
  "Learn": [
   "index.html"
+ ],
+ "Learn the Basics": [
+  "core/menu.js"
  ],
  "Learn the basics": [
   "index.html"
@@ -1802,8 +2840,20 @@
  "Left": [
   "index.html"
  ],
+ "Left Column": [
+  "core/menu.js"
+ ],
  "Lens corrections first": [
   "index.html"
+ ],
+ "Lens database ready": [
+  "develop/photo.js"
+ ],
+ "Lens database ready: {n} lens profiles": [
+  "develop/photo.js"
+ ],
+ "Lens database…": [
+  "looks/layout.js"
  ],
  "Lens fixes": [
   "tools/toolblocks.js"
@@ -1832,14 +2882,29 @@
  "Level ⟂": [
   "index.html"
  ],
+ "Levelled by {angle}°": [
+  "tools/croptool.js"
+ ],
+ "Levelled by {angle}°.": [
+  "tools/toolblocks.js"
+ ],
  "Library": [
+  "core/keys.js",
+  "core/menu.js",
   "core/tasks.js",
-  "index.html"
+  "index.html",
+  "looks/editor.js"
+ ],
+ "Library Grid": [
+  "core/menu.js"
  ],
  "Library folders": [
   "index.html"
  ],
  "Library grid / editor": [
+  "core/keys.js"
+ ],
+ "Library task": [
   "core/keys.js"
  ],
  "Library: all the photos in the folder, to rate, label, tag and export many at once": [
@@ -1863,8 +2928,17 @@
  "Lightroom, Camera Raw and Adobe are trademarks of Adobe Inc.; Fujifilm's film simulation names are trademarks of FUJIFILM Corporation. Ambrotype is not affiliated with or endorsed by either.": [
   "index.html"
  ],
+ "Lights": [
+  "develop/touch.js"
+ ],
  "Like one I edited": [
   "index.html"
+ ],
+ "Linear": [
+  "tools/masks.js"
+ ],
+ "Loading the hub…": [
+  "dialogs/hub.js"
  ],
  "Loading…": [
   "index.html"
@@ -1876,6 +2950,7 @@
   "index.html"
  ],
  "Logo…": [
+  "dialogs/export.js",
   "index.html"
  ],
  "Long edge (px)": [
@@ -1887,6 +2962,12 @@
  "Look in a folder…": [
   "index.html"
  ],
+ "Look {seed}": [
+  "develop/presets.js"
+ ],
+ "Looking for “{words}”…": [
+  "tools/select.js"
+ ],
  "Looks different from Lightroom": [
   "index.html"
  ],
@@ -1894,6 +2975,7 @@
   "index.html"
  ],
  "Loupe": [
+  "core/menu.js",
   "index.html"
  ],
  "Loupe (E)": [
@@ -1902,11 +2984,17 @@
  "Loupe: one photo large": [
   "core/keys.js"
  ],
+ "Loupe: point at the photo to see it at 100% · scroll to magnify · I or Esc closes": [
+  "develop/quickzoom.js"
+ ],
  "Loupe: see the part under the pointer at 100%": [
   "core/keys.js"
  ],
  "Low": [
   "index.html"
+ ],
+ "Lower selects only colours close to the samples": [
+  "tools/mask-panel.js"
  ],
  "Lower the selected slider a step": [
   "core/keys.js"
@@ -1914,8 +3002,14 @@
  "Lower the selected slider ten steps": [
   "core/keys.js"
  ],
+ "Lowered only as far as it must for the file to stay under {mb} MB": [
+  "dialogs/export.js"
+ ],
  "Luminance": [
-  "index.html"
+  "develop/wheels.js",
+  "index.html",
+  "looks/layout.js",
+  "tools/masks.js"
  ],
  "M or Esc": [
   "index.html"
@@ -1923,11 +3017,27 @@
  "MB": [
   "index.html"
  ],
+ "Made the preset “{name}” (Fuji, {sensor}).{notes}": [
+  "develop/presets.js"
+ ],
+ "Magenta": [
+  "develop/touch.js",
+  "looks/layout.js"
+ ],
+ "Magentas": [
+  "develop/fx.js"
+ ],
+ "Make a Virtual Copy": [
+  "core/menu.js"
+ ],
  "Make a collage": [
   "index.html"
  ],
  "Make a plugin with your AI": [
   "index.html"
+ ],
+ "Make a preset from this edit…": [
+  "dialogs/export.js"
  ],
  "Make a preset from this photo's edit": [
   "core/keys.js"
@@ -1954,6 +3064,18 @@
  "Make sheet…": [
   "index.html"
  ],
+ "Making looks…": [
+  "develop/presets.js"
+ ],
+ "Making the Edit Replay: frame {done} of {total}": [
+  "dialogs/export.js"
+ ],
+ "Making the Edit Replay…": [
+  "dialogs/export.js"
+ ],
+ "Making the before/after page…": [
+  "dialogs/export.js"
+ ],
  "Map": [
   "index.html"
  ],
@@ -1969,12 +3091,19 @@
  "Marks the best of each burst and dims the rest; then pick it and reject the rest, or stack them.": [
   "core/keys.js"
  ],
+ "Mask {n}": [
+  "develop/history.js"
+ ],
  "Masks": [
   "core/keys.js",
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "Masks (M)": [
   "index.html"
+ ],
+ "Masks: {hint}": [
+  "tools/masks.js"
  ],
  "Match look": [
   "index.html"
@@ -1992,7 +3121,14 @@
   "index.html"
  ],
  "Measures how light, warm and colourful the references are, then finds the settings that give this photo the same. The photo shows the result before you apply it.": [
+  "develop/presets.js",
   "index.html"
+ ],
+ "Measuring photos…": [
+  "collage/collage.js"
+ ],
+ "Measuring photos… {done} / {total}": [
+  "collage/collage.js"
  ],
  "Medium": [
   "index.html"
@@ -2018,6 +3154,9 @@
  "Merge to Panorama…": [
   "index.html"
  ],
+ "Merge with the next panel": [
+  "looks/editor-inspector.js"
+ ],
  "Metadata": [
   "index.html"
  ],
@@ -2029,6 +3168,14 @@
  ],
  "Meter area": [
   "looks/layout.js"
+ ],
+ "Mid": [
+  "develop/wheels.js"
+ ],
+ "Midtones": [
+  "develop/fx.js",
+  "develop/wheels.js",
+  "develop/zones.js"
  ],
  "Mirror the photo left to right (in the library, the selected photos).": [
   "core/keys.js"
@@ -2042,6 +3189,9 @@
  "Model from": [
   "index.html"
  ],
+ "Models run {where}. Small ones stay on the CPU, where they are quicker.": [
+  "dialogs/models.js"
+ ],
  "Monitor colour: show the preview in your monitor's own colours (for a wide-gamut or calibrated screen)": [
   "index.html"
  ],
@@ -2054,8 +3204,14 @@
  "More: the toolbar buttons that don't fit": [
   "index.html"
  ],
+ "Most strength the brush reaches": [
+  "tools/mask-panel.js"
+ ],
  "Move": [
   "index.html"
+ ],
+ "Move down the list": [
+  "tools/mask-panel.js"
  ],
  "Move down the zoomed-in photo": [
   "core/keys.js"
@@ -2068,6 +3224,9 @@
  ],
  "Move from Lightroom Classic: its edits, ratings, keywords and collections, from its catalogue": [
   "index.html"
+ ],
+ "Move mask {n} to {to}": [
+  "develop/history.js"
  ],
  "Move panels, controls and toolbar buttons.": [
   "core/keys.js"
@@ -2084,23 +3243,48 @@
  "Move the selected photos, with their sidecars and companions, to the trash": [
   "index.html"
  ],
+ "Move this part down": [
+  "tools/mask-panel.js"
+ ],
+ "Move this part up": [
+  "tools/mask-panel.js"
+ ],
  "Move to a folder…": [
   "index.html"
  ],
  "Move to the trash": [
   "index.html"
  ],
+ "Move up the list": [
+  "tools/mask-panel.js"
+ ],
  "Move up the zoomed-in photo": [
   "core/keys.js"
  ],
+ "Move “{name}” to the trash?": [
+  "develop/preset-hide.js"
+ ],
+ "Move, resize, turn and overlap the photos by hand, like layers": [
+  "collage/collage-canvas.js"
+ ],
+ "Moved it": [
+  "looks/editor-keys.js"
+ ],
  "Moved to the trash": [
-  "core/core.js"
+  "core/core.js",
+  "develop/preset-hide.js"
+ ],
+ "Moved {name}": [
+  "looks/editor-keys.js"
  ],
  "Moves on by itself when you've done it.": [
   "index.html"
  ],
  "Muted": [
   "index.html"
+ ],
+ "Muted colours": [
+  "develop/zones.js"
  ],
  "My model": [
   "index.html"
@@ -2124,10 +3308,21 @@
   "index.html"
  ],
  "New": [
-  "index.html"
+  "index.html",
+  "looks/editor-inspector.js"
+ ],
+ "New Layout from Scratch": [
+  "core/menu.js"
+ ],
+ "New Preset from This Photo…": [
+  "core/menu.js"
  ],
  "New brush mask": [
-  "core/keys.js"
+  "core/keys.js",
+  "develop/history.js"
+ ],
+ "New layout": [
+  "looks/editor.js"
  ],
  "New layout from scratch": [
   "core/keys.js"
@@ -2138,8 +3333,29 @@
  "New radial gradient": [
   "core/keys.js"
  ],
+ "New size": [
+  "tools/croptool.js"
+ ],
+ "New size from \"{name}\"": [
+  "tools/croptool.js"
+ ],
+ "New snapshot": [
+  "develop/history.js"
+ ],
+ "New {kind} mask": [
+  "develop/history.js"
+ ],
+ "New {kind} mask ({key}). {hint}": [
+  "tools/mask-panel.js"
+ ],
+ "New {kind} mask. {hint}": [
+  "tools/mask-panel.js"
+ ],
  "Next": [
   "index.html"
+ ],
+ "Next Photo": [
+  "core/menu.js"
  ],
  "Next photo (→)": [
   "index.html"
@@ -2147,11 +3363,47 @@
  "Next photo in the folder": [
   "core/keys.js"
  ],
+ "No Flag": [
+  "core/menu.js"
+ ],
+ "No Rating": [
+  "core/menu.js"
+ ],
+ "No alike photos or bursts in the tray.": [
+  "collage/collage-tray.js"
+ ],
+ "No answer.": [
+  "dialogs/assistant.js"
+ ],
  "No borders": [
   "index.html"
  ],
+ "No change": [
+  "core/app.js"
+ ],
+ "No changes": [
+  "dialogs/plugins.js"
+ ],
+ "No clear horizon or straight lines to level by: drag outside the frame, or use Angle.": [
+  "tools/croptool.js"
+ ],
+ "No clear horizon or straight lines to level by: try Crop (R) and turn it by hand.": [
+  "tools/toolblocks.js"
+ ],
  "No color": [
   "index.html"
+ ],
+ "No command {name}.": [
+  "core/tasks.js"
+ ],
+ "No edits yet": [
+  "develop/history.js"
+ ],
+ "No effect plugins installed": [
+  "develop/fx.js"
+ ],
+ "No film border found around the photo.": [
+  "develop/photo.js"
  ],
  "No flag (U)": [
   "index.html"
@@ -2162,10 +3414,39 @@
  "No limit": [
   "index.html"
  ],
+ "No logo": [
+  "dialogs/export.js"
+ ],
+ "No masks yet. Pick a kind above, then draw on the photo.": [
+  "tools/mask-panel.js"
+ ],
+ "No match.": [
+  "develop/preset-grid.js",
+  "develop/presetlib.js"
+ ],
+ "No options": [
+  "dialogs/hub.js"
+ ],
  "No photos shown in the library.": [
   "library/library-actions.js"
  ],
+ "No photos there.": [
+  "collage/collage-tray.js"
+ ],
+ "No photos to batch.": [
+  "collage/collage-tray.js"
+ ],
+ "No plugins.": [
+  "dialogs/plugins.js"
+ ],
+ "No presets are hidden": [
+  "develop/preset-hide.js"
+ ],
+ "No presets found.": [
+  "develop/presetlib.js"
+ ],
  "No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.": [
+  "develop/preset-grid.js",
   "index.html"
  ],
  "No rating (0)": [
@@ -2174,14 +3455,30 @@
  "No second copy": [
   "index.html"
  ],
+ "No shortcuts match.": [
+  "core/keys.js"
+ ],
+ "No snapshots yet": [
+  "develop/history.js"
+ ],
  "None": [
-  "index.html"
+  "core/app.js",
+  "dialogs/borders.js",
+  "index.html",
+  "tools/croptool.js"
  ],
  "None (e.g. {camera} · {exposure})": [
   "index.html"
  ],
  "None (e.g. © Your Name)": [
+  "dialogs/export.js",
   "index.html"
+ ],
+ "None saved yet": [
+  "dialogs/export.js"
+ ],
+ "None yet.": [
+  "looks/looks-dialog.js"
  ],
  "Normal": [
   "index.html"
@@ -2189,11 +3486,26 @@
  "Not edited": [
   "index.html"
  ],
+ "Not grouped": [
+  "collage/collage-tray.js"
+ ],
  "Not now": [
   "index.html"
  ],
  "Not rejected": [
   "index.html"
+ ],
+ "Not rendered yet: {n} setting(s)": [
+  "develop/history.js"
+ ],
+ "Not saved": [
+  "collage/collage-canvas.js"
+ ],
+ "Not saved: {error}": [
+  "looks/editor.js"
+ ],
+ "Note: {notes}": [
+  "dialogs/models.js"
  ],
  "Nothing found.": [
   "index.html"
@@ -2201,8 +3513,14 @@
  "Nothing found. Search Everything (Ctrl+K) also finds commands and settings by name.": [
   "index.html"
  ],
+ "Nothing matches.": [
+  "dialogs/hub.js"
+ ],
  "Nothing selected": [
   "index.html"
+ ],
+ "Number box": [
+  "looks/editor-inspector.js"
  ],
  "O or Esc": [
   "index.html"
@@ -2255,14 +3573,40 @@
  "One web page with the photo before and after its edit and a bar to drag; it works offline and on any web host.": [
   "core/keys.js"
  ],
+ "Only if the server needs one": [
+  "dialogs/assistant.js"
+ ],
+ "Only in the library": [
+  "core/keys.js"
+ ],
+ "Only on part of the photo: hover to see where": [
+  "develop/fx.js"
+ ],
  "Only the best photo of each burst (the sharpest, or the one you rated highest)": [
   "index.html"
+ ],
+ "Only the ticked groups' settings come from the preset; the rest of the edit stays as it is.": [
+  "develop/presets.js"
+ ],
+ "Only while spot removal is open": [
+  "core/keys.js"
+ ],
+ "Only while the crop tool is open": [
+  "core/keys.js"
+ ],
+ "Only while the masks are open": [
+  "core/keys.js"
  ],
  "Opacity": [
   "index.html"
  ],
  "Open": [
-  "index.html"
+  "develop/filmstrip.js",
+  "index.html",
+  "looks/editor.js"
+ ],
+ "Open Folder…": [
+  "core/menu.js"
  ],
  "Open GitHub in the browser": [
   "index.html"
@@ -2276,14 +3620,24 @@
  "Open a photo": [
   "core/keys.js"
  ],
+ "Open a photo first": [
+  "dialogs/plugins.js"
+ ],
  "Open a photo first.": [
-  "tools/toolblocks.js"
+  "core/tasks.js",
+  "develop/presets.js",
+  "dialogs/assistant.js",
+  "tools/toolblocks.js",
+  "tools/trip.js"
  ],
  "Open a photo to start": [
   "index.html"
  ],
  "Open a photo to take its values.": [
   "index.html"
+ ],
+ "Open a photo, or select some in the library, to turn them.": [
+  "develop/info.js"
  ],
  "Open a photo: raw, JPEG, PNG, TIFF or WebP (Ctrl+O)": [
   "index.html"
@@ -2321,8 +3675,14 @@
  "Open plugins folder": [
   "index.html"
  ],
+ "Open the LUT folder…": [
+  "core/app.js"
+ ],
  "Open the folder": [
   "index.html"
+ ],
+ "Open the library": [
+  "core/search.js"
  ],
  "Open the photo in the editor": [
   "core/keys.js"
@@ -2336,6 +3696,9 @@
  "Open this photo in the editor; Back to collage returns here": [
   "index.html"
  ],
+ "Open when the app starts": [
+  "looks/editor-inspector.js"
+ ],
  "Open##verb": [
   "core/core.js"
  ],
@@ -2345,17 +3708,42 @@
  "OpenEXR (linear float)": [
   "index.html"
  ],
+ "Opened GitHub in your browser. Thank you!": [
+  "core/app.js"
+ ],
+ "Opened your mail app with the report. Thank you!": [
+  "core/app.js"
+ ],
+ "Opened {name} in the other app": [
+  "dialogs/export.js"
+ ],
+ "Opened {url}": [
+  "dialogs/plugins.js"
+ ],
+ "Opening GitHub…": [
+  "dialogs/plugins.js"
+ ],
  "Opening the crop tool while zoomed in starts the crop from what you see": [
   "index.html"
  ],
+ "Opening {name}…": [
+  "develop/photo.js"
+ ],
  "Opens a filled-in issue on GitHub (needs a free GitHub account)": [
   "index.html"
+ ],
+ "Opens a terminal in the folder and runs {command}, told where Ambrotype's guides are, to edit photos or to change the editor itself (see the choice beside it)": [
+  "dialogs/connect.js"
  ],
  "Opens your mail app with the report filled in, to ambrotypeapp@gmail.com; no GitHub account needed": [
   "index.html"
  ],
  "Open…": [
+  "core/menu.js",
   "index.html"
+ ],
+ "Options: {list}": [
+  "dialogs/hub.js"
  ],
  "Or choose one, or open a photo: the library shows its folder.": [
   "index.html"
@@ -2363,14 +3751,34 @@
  "Or click the photo; drag to pan at 100%. Right-drag a box to zoom to it.": [
   "core/keys.js"
  ],
+ "Or hold Alt while painting": [
+  "tools/mask-panel.js"
+ ],
  "Or type what: a car, the dog, a boat…": [
   "index.html"
  ],
  "Or work in a terminal: any command-line agent (or you) can run": [
   "index.html"
  ],
+ "Orange": [
+  "develop/touch.js",
+  "looks/layout.js"
+ ],
+ "Oranges": [
+  "develop/fx.js"
+ ],
  "Organise ▾": [
   "index.html"
+ ],
+ "Original": [
+  "develop/history.js",
+  "tools/croptool.js"
+ ],
+ "Other": [
+  "develop/preset-edit.js"
+ ],
+ "Other edits came after these; use the History panel.": [
+  "dialogs/assistant.js"
  ],
  "Our looks are ours, matched to Fujifilm's film simulations by name only, not measured yet. Fujifilm and its film simulation names are trademarks of FUJIFILM Corporation; Ambrotype is not affiliated with it.": [
   "index.html"
@@ -2390,11 +3798,30 @@
  "PNG": [
   "index.html"
  ],
+ "Page {page} of {pages} · photo {done} of {total}": [
+  "collage/collage.js"
+ ],
  "Pages through them all, marked to go; keep any, then they go to the trash together.": [
   "core/keys.js"
  ],
+ "Paint more": [
+  "tools/mask-panel.js"
+ ],
+ "Paint on the photo. Hold Alt to erase; [ and ] change the size.": [
+  "tools/masks.js"
+ ],
+ "Paint something first, then erase": [
+  "tools/masks.js"
+ ],
  "Paint where to change": [
   "tools/toolblocks.js"
+ ],
+ "Panel": [
+  "core/search.js",
+  "looks/editor.js"
+ ],
+ "Panels": [
+  "looks/editor-inspector.js"
  ],
  "Panels, settings and buttons that aren't shown": [
   "index.html"
@@ -2406,19 +3833,31 @@
   "index.html"
  ],
  "Paste": [
+  "develop/presets.js",
   "index.html"
+ ],
+ "Paste Settings": [
+  "core/menu.js"
  ],
  "Paste a recipe as it's written: one setting a line (Film Simulation, Dynamic Range, Highlight, Shadow, Color, Grain Effect, White Balance…). It becomes a preset in the Fuji group. The sensor decides which settings and ranges the camera has.": [
   "index.html"
  ],
  "Paste settings": [
+  "develop/presets.js",
   "index.html"
  ],
  "Paste settings onto the selection (in the editor: the filmstrip's)": [
   "core/keys.js"
  ],
+ "Paste settings onto {n} photos…": [
+  "develop/filmstrip.js"
+ ],
  "Paste settings…": [
+  "develop/filmstrip.js",
   "index.html"
+ ],
+ "People": [
+  "tools/masks.js"
  ],
  "Percent": [
   "index.html"
@@ -2429,14 +3868,22 @@
  "Perspective": [
   "index.html"
  ],
+ "Photo": [
+  "core/keys.js",
+  "core/menu.js"
+ ],
  "Photo layout": [
   "index.html"
+ ],
+ "Photo {done} of {total}": [
+  "collage/collage.js"
  ],
  "Photography basics": [
   "core/keys.js",
   "index.html"
  ],
  "Photos": [
+  "core/keys.js",
   "index.html"
  ],
  "Photos in this folder": [
@@ -2448,11 +3895,24 @@
  "Photos that match": [
   "index.html"
  ],
+ "Pick": [
+  "core/menu.js"
+ ],
  "Pick (P)": [
+  "develop/info.js",
   "index.html"
+ ],
+ "Pick a brush part to erase from": [
+  "tools/masks.js"
+ ],
+ "Pick base": [
+  "looks/layout.js"
  ],
  "Pick best, reject rest": [
   "index.html"
+ ],
+ "Pick one of your own effects to delete it": [
+  "tools/mask-panel.js"
  ],
  "Pick or reject flag": [
   "index.html"
@@ -2474,13 +3934,26 @@
  ],
  "Plugins": [
   "core/keys.js",
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "Plugins other people shared, checked before they're installed": [
   "index.html"
  ],
  "Plugins: extra tools that make edits for you": [
   "index.html"
+ ],
+ "Plugins…": [
+  "core/menu.js"
+ ],
+ "Point and drag round the dial (Shift: fine, drag up or down). Double-click to reset.": [
+  "develop/controls.js"
+ ],
+ "Point curve": [
+  "looks/editor.js"
+ ],
+ "Preset": [
+  "core/search.js"
  ],
  "Preset library": [
   "index.html"
@@ -2492,7 +3965,17 @@
   "index.html"
  ],
  "Presets": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
+ ],
+ "Press at one corner of the crop and drag to the opposite corner. Or adjust the frame with the controls here.": [
+  "tools/croptool.js"
+ ],
+ "Press the new shortcut… (Esc cancels)": [
+  "core/keys.js"
+ ],
+ "Previous Photo": [
+  "core/menu.js"
  ],
  "Previous photo (←)": [
   "index.html"
@@ -2521,11 +4004,24 @@
  "Proof preview": [
   "index.html"
  ],
+ "Pull request opened": [
+  "dialogs/plugins.js"
+ ],
+ "Pull request: {url}": [
+  "dialogs/interfaces.js",
+  "dialogs/plugins.js"
+ ],
  "Punchy": [
   "index.html"
  ],
  "Purple": [
-  "index.html"
+  "core/keys.js",
+  "develop/touch.js",
+  "index.html",
+  "looks/layout.js"
+ ],
+ "Purples": [
+  "develop/fx.js"
  ],
  "Put alike photos and bursts together, best first; each group gets a 2 × 2 button": [
   "index.html"
@@ -2535,6 +4031,12 @@
  ],
  "Put every shortcut back to its default": [
   "index.html"
+ ],
+ "Put some photos in the cells first.": [
+  "collage/collage.js"
+ ],
+ "Put the photos back into the layout's grid (turns and free positions are dropped)": [
+  "collage/collage-canvas.js"
  ],
  "Put the photos of the last move or rename back": [
   "index.html"
@@ -2549,10 +4051,24 @@
   "index.html"
  ],
  "Quality": [
+  "dialogs/export.js",
   "index.html"
  ],
+ "Quality (at most)": [
+  "dialogs/export.js"
+ ],
  "Quick fixes": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
+ ],
+ "RGB": [
+  "develop/curve.js"
+ ],
+ "Radial": [
+  "tools/masks.js"
+ ],
+ "Radius, % of the photo's width ([ and ])": [
+  "tools/mask-panel.js"
  ],
  "Radius, % of the photo's width ([ and ], or the wheel)": [
   "index.html"
@@ -2563,11 +4079,29 @@
  "Raise the selected slider ten steps": [
   "core/keys.js"
  ],
+ "Rate {stars}": [
+  "core/keys.js"
+ ],
+ "Rated {name} {stars}": [
+  "develop/filmstrip.js"
+ ],
+ "Rated {stars}": [
+  "develop/info.js"
+ ],
  "Rating": [
+  "core/keys.js",
+  "core/menu.js",
   "index.html"
  ],
  "Rating & keywords": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
+ ],
+ "Rating cleared": [
+  "develop/info.js"
+ ],
+ "Rating cleared: {name}": [
+  "develop/filmstrip.js"
  ],
  "Rating filter": [
   "index.html"
@@ -2590,6 +4124,9 @@
  "Read": [
   "index.html"
  ],
+ "Read its files in the hub repo before installing": [
+  "dialogs/hub.js"
+ ],
  "Read the folder again": [
   "index.html"
  ],
@@ -2600,7 +4137,23 @@
   "index.html"
  ],
  "Ready": [
-  "index.html"
+  "develop/photo.js",
+  "develop/quickzoom.js",
+  "develop/touch.js",
+  "dialogs/export.js",
+  "index.html",
+  "looks/editor.js",
+  "tools/croptool.js",
+  "tools/guided.js",
+  "tools/masks.js",
+  "tools/select.js",
+  "tools/spots.js"
+ ],
+ "Ready-made": [
+  "dialogs/plugins.js"
+ ],
+ "Really delete?": [
+  "looks/looks-dialog.js"
  ],
  "Rearrange the chosen layout on screen: move panels, sliders and toolbar buttons (Ctrl+Shift+L)": [
   "index.html"
@@ -2618,17 +4171,29 @@
   "index.html"
  ],
  "Red": [
-  "index.html"
+  "core/keys.js",
+  "core/menu.js",
+  "develop/curve.js",
+  "develop/touch.js",
+  "index.html",
+  "looks/layout.js"
  ],
  "Red: clipped highlights, blue: crushed shadows.": [
   "core/keys.js"
  ],
  "Redo": [
   "core/keys.js",
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "Redo (Ctrl+Shift+Z)": [
   "index.html"
+ ],
+ "Reds": [
+  "develop/fx.js"
+ ],
+ "Reject": [
+  "core/menu.js"
  ],
  "Reject (X)": [
   "index.html"
@@ -2639,11 +4204,22 @@
  "Rejected": [
   "index.html"
  ],
+ "Rejected (X)": [
+  "develop/info.js"
+ ],
+ "Release to remove point": [
+  "develop/curve.js"
+ ],
  "Reload": [
   "index.html"
  ],
  "Remove": [
-  "index.html"
+  "dialogs/models.js",
+  "index.html",
+  "looks/editor-inspector.js"
+ ],
+ "Remove \"{name}\"": [
+  "develop/info.js"
  ],
  "Remove all": [
   "index.html"
@@ -2651,18 +4227,36 @@
  "Remove cell": [
   "index.html"
  ],
+ "Remove fills it with what belongs there (AI Remove, Settings → AI models); until its model is installed, it is healed from a nearby area.": [
+  "tools/spots.js"
+ ],
  "Remove frame": [
   "index.html"
  ],
+ "Remove from favourites": [
+  "develop/preset-grid.js"
+ ],
  "Remove from this collection": [
   "index.html"
+ ],
+ "Remove from toolbar": [
+  "looks/editor-inspector.js"
  ],
  "Remove object": [
   "core/keys.js",
   "tools/toolblocks.js"
  ],
+ "Remove object now selects with {name}.": [
+  "dialogs/models.js"
+ ],
+ "Remove object: click it, or drag a box round it": [
+  "tools/spots.js"
+ ],
  "Remove object…": [
   "index.html"
+ ],
+ "Remove panel": [
+  "looks/editor-inspector.js"
  ],
  "Remove the crop and straighten": [
   "index.html"
@@ -2670,26 +4264,75 @@
  "Remove the flag": [
   "core/keys.js"
  ],
+ "Remove the frame from all {n} photos": [
+  "develop/frame.js"
+ ],
  "Remove this cell from the layout": [
   "index.html"
+ ],
+ "Remove this part": [
+  "tools/mask-panel.js"
+ ],
+ "Remove {key}": [
+  "core/keys.js"
+ ],
+ "Remove {name}": [
+  "develop/fx.js"
+ ],
+ "Remove {name}? Its folder is deleted.": [
+  "dialogs/plugins.js"
+ ],
+ "Removed {name}.": [
+  "dialogs/models.js"
+ ],
+ "Removing…": [
+  "tools/select.js"
+ ],
+ "Rename": [
+  "develop/history.js"
  ],
  "Rename collection…": [
   "index.html"
  ],
+ "Rename snapshot": [
+  "develop/history.js"
+ ],
  "Rename…": [
   "index.html"
  ],
+ "Rendering {zoom}…": [
+  "develop/preview.js"
+ ],
+ "Rendering…": [
+  "collage/collage.js",
+  "develop/preview.js"
+ ],
  "Repeat across the photo": [
   "index.html"
+ ],
+ "Replace the snapshot “{name}” with the edit as it is now?": [
+  "develop/history.js"
  ],
  "Report a bug, an idea, or a photo that looks different from Lightroom": [
   "index.html"
  ],
  "Reset": [
-  "index.html"
+  "core/keys.js",
+  "index.html",
+  "looks/layout.js"
  ],
  "Reset all shortcuts": [
   "index.html"
+ ],
+ "Reset channel": [
+  "develop/curve.js"
+ ],
+ "Reset the active channel to a straight line": [
+  "develop/curve.js"
+ ],
+ "Reset {name}": [
+  "develop/history.js",
+  "looks/layout.js"
  ],
  "Resize": [
   "index.html"
@@ -2698,13 +4341,17 @@
   "index.html"
  ],
  "Retouch tools": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "Reverse order": [
   "index.html"
  ],
  "Right": [
   "index.html"
+ ],
+ "Right Column": [
+  "core/menu.js"
  ],
  "Right-drag on the photo zooms to that box (Z or Space goes back); off, a right click exports": [
   "index.html"
@@ -2724,6 +4371,12 @@
  "Rotate ⟳": [
   "index.html"
  ],
+ "Rotated left: {photos}": [
+  "develop/info.js"
+ ],
+ "Rotated right: {photos}": [
+  "develop/info.js"
+ ],
  "Rounded corners": [
   "index.html"
  ],
@@ -2731,13 +4384,33 @@
   "index.html"
  ],
  "Run": [
+  "dialogs/plugins.js",
   "index.html"
  ],
  "Run a plugin on each selected photo, with its own settings": [
   "index.html"
  ],
+ "Run a plugin on {n} photos…": [
+  "develop/filmstrip.js"
+ ],
  "Run a plugin…": [
+  "develop/filmstrip.js",
   "index.html"
+ ],
+ "Run it on the open photo (Undo takes it back)": [
+  "dialogs/plugins.js"
+ ],
+ "Run on {photos}": [
+  "dialogs/plugins.js"
+ ],
+ "Running on {n} of {total}: {name}": [
+  "dialogs/plugins.js"
+ ],
+ "Running…": [
+  "dialogs/plugins.js"
+ ],
+ "Runs sandboxed; its edits are undoable": [
+  "dialogs/hub.js"
  ],
  "Same as width": [
   "index.html"
@@ -2746,10 +4419,17 @@
   "index.html"
  ],
  "Saturation": [
-  "index.html"
+  "develop/wheels.js",
+  "index.html",
+  "looks/layout.js"
  ],
  "Save": [
-  "index.html"
+  "core/menu.js",
+  "index.html",
+  "looks/editor.js"
+ ],
+ "Save as an effect": [
+  "tools/mask-panel.js"
  ],
  "Save as preset": [
   "index.html"
@@ -2759,6 +4439,9 @@
  ],
  "Save as…": [
   "index.html"
+ ],
+ "Save export preset": [
+  "dialogs/export.js"
  ],
  "Save it as a file to share": [
   "index.html"
@@ -2805,6 +4488,9 @@
  "Save this collage as one image": [
   "index.html"
  ],
+ "Save this setup": [
+  "looks/looks-dialog.js"
+ ],
  "Save this setup…": [
   "index.html"
  ],
@@ -2814,14 +4500,81 @@
  "Save under this name": [
   "index.html"
  ],
+ "Saved (type a new one to replace it)": [
+  "dialogs/assistant.js"
+ ],
+ "Saved border \"{name}\"": [
+  "dialogs/borders.js"
+ ],
+ "Saved effect \"{name}\"": [
+  "tools/mask-panel.js"
+ ],
+ "Saved layout \"{name}\"": [
+  "looks/editor.js"
+ ],
  "Saved setups": [
   "index.html"
+ ],
+ "Saved size \"{name}\"": [
+  "tools/croptool.js"
+ ],
+ "Saved the Edit Replay ({steps} steps, {seconds} s): {path}": [
+  "dialogs/export.js"
+ ],
+ "Saved the before/after page: {path}": [
+  "dialogs/export.js"
+ ],
+ "Saved the export preset “{name}”": [
+  "dialogs/export.js"
+ ],
+ "Saved the layout “{name}”": [
+  "collage/collage-tray.js"
+ ],
+ "Saved the preset “{name}”": [
+  "develop/presets.js"
+ ],
+ "Saved the preset “{name}” (in {group})": [
+  "develop/presets.js"
+ ],
+ "Saved the preset “{name}” in {dir}": [
+  "develop/presets.js"
+ ],
+ "Saved the recipe “{name}”": [
+  "dialogs/plugins.js"
+ ],
+ "Saved the setup \"{name}\"": [
+  "looks/looks-dialog.js"
  ],
  "Saved titles, captions, creator, copyright and keywords to give photos at once": [
   "index.html"
  ],
  "Saved to the photo's .xmp straight away, where Lightroom reads them, and put in exports. Keys 1–5 rate, 0 clears, 6–9 set a colour label, P picks, X rejects, U unflags.": [
   "index.html"
+ ],
+ "Saved to {path}": [
+  "develop/photo.js"
+ ],
+ "Saved your edits to {name}": [
+  "develop/photo.js"
+ ],
+ "Saved {name}": [
+  "collage/collage-tray.js",
+  "collage/collage.js"
+ ],
+ "Saved {path}": [
+  "looks/looks-dialog.js"
+ ],
+ "Saved {path}: send it to someone, or add it to the hub as a pull request.": [
+  "dialogs/borders.js"
+ ],
+ "Saved “{name}”": [
+  "develop/preset-edit.js"
+ ],
+ "Save…": [
+  "tools/mask-panel.js"
+ ],
+ "Scales all of this mask's sliders": [
+  "tools/mask-panel.js"
  ],
  "Scanned film negatives": [
   "core/tasks.js"
@@ -2832,6 +4585,9 @@
  "Screen": [
   "index.html"
  ],
+ "Scroll down to {name}": [
+  "looks/blocks.js"
+ ],
  "Scroll to magnify (100–400%). I or Esc closes it.": [
   "core/keys.js"
  ],
@@ -2839,7 +4595,11 @@
   "index.html"
  ],
  "Search": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
+ ],
+ "Search Everything…": [
+  "core/menu.js"
  ],
  "Search OpenStreetMap for it (tells openstreetmap.org what you searched)": [
   "index.html"
@@ -2851,6 +4611,7 @@
   "index.html"
  ],
  "Search commands, settings, presets… or what you want to do": [
+  "core/search.js",
   "index.html"
  ],
  "Search everything": [
@@ -2877,8 +4638,21 @@
  "See the photo as it will export to sRGB, Adobe RGB, Display P3 or ProPhoto, and mark the colours that won't fit.": [
   "core/keys.js"
  ],
+ "Sees only the edit's settings": [
+  "dialogs/hub.js"
+ ],
  "Select": [
+  "core/icons.js",
   "index.html"
+ ],
+ "Select All": [
+  "core/menu.js"
+ ],
+ "Select None": [
+  "core/menu.js"
+ ],
+ "Select all and copy (Ctrl+C)": [
+  "dialogs/plugins.js"
  ],
  "Select all shown": [
   "core/keys.js"
@@ -2892,10 +4666,14 @@
  "Select object": [
   "core/keys.js",
   "index.html",
+  "looks/editor.js",
   "tools/toolblocks.js"
  ],
  "Select object: click a thing in the photo, then adjust, move or remove it (O)": [
   "index.html"
+ ],
+ "Select object: click it": [
+  "tools/select.js"
  ],
  "Select people": [
   "tools/toolblocks.js"
@@ -2915,11 +4693,38 @@
  "Select the previous slider": [
   "core/keys.js"
  ],
+ "Selected ({pct} % of the box)": [
+  "tools/select.js"
+ ],
+ "Selected ({pct} % of the photo)": [
+  "tools/select.js"
+ ],
+ "Selected “{words}”": [
+  "tools/select.js"
+ ],
+ "Selects by brightness; set the range below.": [
+  "tools/masks.js"
+ ],
+ "Selects everyone in the photo, found by an AI model on this computer (install one in Settings → AI models, about 180 MB).": [
+  "tools/masks.js"
+ ],
+ "Selects everything but the main subject (the subject mask, inverted).": [
+  "tools/masks.js"
+ ],
+ "Selects the main subject, found by an AI model on this computer (Settings → AI models picks which; the small default downloads by itself, about 5 MB).": [
+  "tools/masks.js"
+ ],
+ "Selects the sky: bright blue or grey areas joined to the top edge (our own rules, not Adobe's AI).": [
+  "tools/masks.js"
+ ],
  "Selects what you name (needs the search model and SAM 2.1 tiny, Settings → AI models)": [
   "index.html"
  ],
  "Send": [
   "index.html"
+ ],
+ "Send Feedback…": [
+  "core/menu.js"
  ],
  "Send by email…": [
   "index.html"
@@ -2934,8 +4739,17 @@
  "Send pull request": [
   "index.html"
  ],
+ "Send pull request as @{user}": [
+  "dialogs/plugins.js"
+ ],
  "Send to back ([)": [
   "index.html"
+ ],
+ "Send {n} files to {target} in {repo}, {how}?\n\n{list}\n\nThe hub's reviewers read it before anyone can install it.": [
+  "dialogs/interfaces.js"
+ ],
+ "Sending…": [
+  "dialogs/plugins.js"
  ],
  "Sends a small JPEG (512 px) of the photo as edited to the model with each request; otherwise it gets only numbers": [
   "index.html"
@@ -2943,8 +4757,34 @@
  "Sensor": [
   "index.html"
  ],
+ "Separator": [
+  "looks/editor.js"
+ ],
+ "Set": [
+  "core/search.js"
+ ],
+ "Set Exposure, Contrast, Highlights, Shadows, Whites and Blacks for this photo (one undo step)": [
+  "looks/layout.js"
+ ],
+ "Set this mask's sliders from a saved effect": [
+  "tools/mask-panel.js"
+ ],
+ "Set {setting} to {value}": [
+  "core/search.js"
+ ],
+ "Set · {min} to {max}": [
+  "core/search.js"
+ ],
+ "Setting": [
+  "core/search.js"
+ ],
+ "Setting · {panel}": [
+  "core/search.js"
+ ],
  "Settings": [
-  "index.html"
+  "index.html",
+  "looks/editor-inspector.js",
+  "looks/editor.js"
  ],
  "Settings (Ctrl+,)": [
   "index.html"
@@ -2958,6 +4798,9 @@
  "Settings → General turns them on again": [
   "index.html"
  ],
+ "Settings…": [
+  "core/menu.js"
+ ],
  "Several photos on one canvas.": [
   "core/keys.js"
  ],
@@ -2966,6 +4809,18 @@
  ],
  "Shadow": [
   "index.html"
+ ],
+ "Shadows": [
+  "develop/fx.js",
+  "develop/touch.js",
+  "develop/wheels.js",
+  "develop/zones.js"
+ ],
+ "Shadows, midtones and highlights together": [
+  "develop/wheels.js"
+ ],
+ "Share Before and After…": [
+  "core/menu.js"
  ],
  "Share as a pull request": [
   "index.html"
@@ -2976,11 +4831,26 @@
  "Share before and after": [
   "core/keys.js"
  ],
+ "Share before and after…": [
+  "dialogs/export.js"
+ ],
  "Share it in the hub: opens GitHub with your file filled in, as a pull request": [
   "index.html"
  ],
+ "Share to the hub…": [
+  "develop/preset-grid.js"
+ ],
+ "Share “{name}” to the hub too?": [
+  "tools/trip.js"
+ ],
+ "Share “{name}” with everyone on the Ambrotype hub? Only share presets you made yourself: bought or downloaded ones usually may not be passed on. GitHub opens; you need an account there.": [
+  "develop/presets.js"
+ ],
  "Share…": [
   "index.html"
+ ],
+ "Shift-click adds more of it, Alt-click takes a part away. Then pick what to do with it.": [
+  "tools/select.js"
  ],
  "Short edge (px)": [
   "index.html"
@@ -2989,9 +4859,11 @@
   "index.html"
  ],
  "Shortcuts": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "Show": [
+  "develop/preset-hide.js",
   "index.html"
  ],
  "Show a folder or a collection": [
@@ -3021,6 +4893,9 @@
  "Show hidden presets: hide, unhide or remove presets": [
   "core/keys.js"
  ],
+ "Show in folder": [
+  "dialogs/export.js"
+ ],
  "Show in its folder": [
   "index.html"
  ],
@@ -3042,8 +4917,14 @@
  "Show the catalogue's folders, collections and edits without writing anything (Folders panel → Lightroom)": [
   "index.html"
  ],
+ "Show the file": [
+  "develop/preset-grid.js"
+ ],
  "Show the folder with your own layouts and themes": [
   "index.html"
+ ],
+ "Show the left column (Ctrl+[)": [
+  "looks/columns.js"
  ],
  "Show the menu bar in the window (every command by name, with its keys)": [
   "index.html"
@@ -3057,6 +4938,9 @@
  "Show the photos in the folder's subfolders too": [
   "index.html"
  ],
+ "Show the right column (Ctrl+])": [
+  "looks/columns.js"
+ ],
  "Show the selected mask in red (O)": [
   "index.html"
  ],
@@ -3065,6 +4949,15 @@
  ],
  "Show the top bar (Ctrl+Shift+T). Hidden, it comes back while the pointer is at the window's top edge": [
   "index.html"
+ ],
+ "Show this interface instead of the built-in one?\n\n": [
+  "dialogs/interfaces.js"
+ ],
+ "Show this mask's effect": [
+  "tools/mask-panel.js"
+ ],
+ "Showing the JPEG of {name} (JPEG if there is one is on)": [
+  "develop/photo.js"
  ],
  "Shuffle": [
   "index.html"
@@ -3076,7 +4969,8 @@
   "tools/toolblocks.js"
  ],
  "Size": [
-  "index.html"
+  "index.html",
+  "tools/mask-panel.js"
  ],
  "Size (% of width)": [
   "index.html"
@@ -3108,8 +5002,17 @@
  "Skip files that exist": [
   "index.html"
  ],
+ "Sky": [
+  "tools/masks.js"
+ ],
  "Slide": [
   "index.html"
+ ],
+ "Slider": [
+  "looks/editor-inspector.js"
+ ],
+ "Sliders": [
+  "core/keys.js"
  ],
  "Slideshow": [
   "core/keys.js",
@@ -3120,6 +5023,9 @@
  ],
  "Slideshow of the photos shown, or the selected ones (Ctrl+Enter)": [
   "index.html"
+ ],
+ "Slideshow…": [
+  "core/menu.js"
  ],
  "Slow": [
   "index.html"
@@ -3148,14 +5054,29 @@
  "Smart search (or Enter in the search box): find photos by what is in them (dog on a beach, snowy mountains), with the search model from Settings → AI models. Right-click a photo for Find similar photos.": [
   "index.html"
  ],
+ "Smart search now uses {name}.": [
+  "dialogs/models.js"
+ ],
+ "Smoothness": [
+  "tools/mask-panel.js"
+ ],
+ "Snapshot: {name}": [
+  "develop/history.js"
+ ],
  "Snapshots": [
   "index.html"
+ ],
+ "Soft Proofing": [
+  "core/menu.js"
  ],
  "Soft proofing": [
   "core/keys.js"
  ],
  "Soften background": [
   "index.html"
+ ],
+ "Something went wrong: {why}": [
+  "core/app.js"
  ],
  "Sort": [
   "index.html"
@@ -3178,6 +5099,9 @@
  "Spherical": [
   "index.html"
  ],
+ "Split the panel here": [
+  "looks/editor-inspector.js"
+ ],
  "Split this cell into left and right": [
   "index.html"
  ],
@@ -3190,6 +5114,9 @@
  "Split ◫": [
   "index.html"
  ],
+ "Spot Removal": [
+  "core/menu.js"
+ ],
  "Spot removal": [
   "core/keys.js",
   "index.html"
@@ -3197,13 +5124,21 @@
  "Spot removal (Q)": [
   "index.html"
  ],
+ "Spot removal: click a blemish": [
+  "tools/spots.js"
+ ],
+ "Spot {n}": [
+  "develop/history.js"
+ ],
  "Spots": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "Square": [
   "core/core.js"
  ],
  "Stack": [
+  "core/menu.js",
   "index.html"
  ],
  "Stack all": [
@@ -3227,6 +5162,9 @@
  "Start a new layout from a blank canvas: empty columns and toolbar, filled from Add": [
   "index.html"
  ],
+ "Start a new size from this one": [
+  "tools/croptool.js"
+ ],
  "Start from": [
   "index.html"
  ],
@@ -3236,8 +5174,14 @@
  "Start the agent there and it's told where Ambrotype's guides are.": [
   "index.html"
  ],
+ "Start {name} here": [
+  "dialogs/connect.js"
+ ],
  "Std": [
   "index.html"
+ ],
+ "Still opening the folder…": [
+  "develop/photo.js"
  ],
  "Stitch overlapping raws into one panorama (a DNG next to them)": [
   "index.html"
@@ -3253,6 +5197,9 @@
  ],
  "Stop marking (nothing is changed)": [
   "index.html"
+ ],
+ "Store the film base and levels this photo shows now and turn Auto off (one undo step). For a whole roll: Sync negative roll in the library": [
+  "looks/layout.js"
  ],
  "Straight cut": [
   "index.html"
@@ -3275,14 +5222,23 @@
  "Strength": [
   "index.html"
  ],
+ "Strong colours": [
+  "develop/zones.js"
+ ],
  "Style": [
   "index.html"
  ],
  "Subfolders": [
   "index.html"
  ],
+ "Subject": [
+  "tools/masks.js"
+ ],
  "Submit to hub…": [
   "index.html"
+ ],
+ "Subtract": [
+  "tools/mask-panel.js"
  ],
  "Sunny": [
   "index.html"
@@ -3309,6 +5265,9 @@
  "Swap ⇄": [
   "index.html"
  ],
+ "Switch": [
+  "looks/editor-inspector.js"
+ ],
  "Sync": [
   "index.html"
  ],
@@ -3324,8 +5283,14 @@
  "TIFF": [
   "index.html"
  ],
+ "Tab moves between controls, so it can't be a shortcut.": [
+  "core/keys.js"
+ ],
  "Take its shadow (in blue) with it": [
   "index.html"
+ ],
+ "Take out of the tray": [
+  "collage/collage-tray.js"
  ],
  "Take the noise out of the selected raws with an AI model on your computer: each becomes a new DNG beside it": [
   "index.html"
@@ -3346,19 +5311,43 @@
   "tools/toolblocks.js"
  ],
  "Task": [
+  "core/menu.js",
+  "core/search.js",
   "index.html"
+ ],
+ "Task tools": [
+  "looks/editor.js"
+ ],
+ "Task {n} (an installed task plugin)": [
+  "core/keys.js"
+ ],
+ "Tasks": [
+  "core/keys.js"
  ],
  "Template": [
   "index.html"
  ],
  "Text": [
-  "index.html"
+  "index.html",
+  "looks/editor-inspector.js"
  ],
  "Text colour": [
   "index.html"
  ],
  "Text size": [
   "index.html"
+ ],
+ "That box is too small to measure.": [
+  "develop/meter.js"
+ ],
+ "That's the most guides. Drag an end to adjust, right-click it to remove.": [
+  "tools/guided.js"
+ ],
+ "The 2 × 2 grid layout is missing.": [
+  "collage/collage-tray.js"
+ ],
+ "The GitHub CLI on this computer sends it with your own login: it forks the hub, adds the files in one commit and opens the pull request.": [
+  "dialogs/plugins.js"
  ],
  "The Subject, Background and People masks come from AI models that run on this computer. Pick one for each: ●●●●● is the finest edge detail; bigger ones are finer but slower (times are for a 4-core laptop). Only models whose licence allows free use are listed, downloaded from their authors.": [
   "index.html"
@@ -3369,23 +5358,62 @@
  "The brightness of the colour under the pointer (the B&W mix for a black-and-white photo)": [
   "index.html"
  ],
+ "The chosen layout and theme, exactly as they are now.": [
+  "looks/looks-dialog.js"
+ ],
  "The colour space the photo will be exported in": [
   "index.html"
+ ],
+ "The command": [
+  "dialogs/connect.js"
  ],
  "The command to give it": [
   "index.html"
  ],
+ "The crop starts from the zoomed view: adjust it, then Done": [
+  "tools/croptool.js"
+ ],
+ "The edit as it is now, under a name, to come back to. Kept in the photo's .xmp.": [
+  "develop/history.js"
+ ],
+ "The edit is this snapshot": [
+  "develop/history.js"
+ ],
  "The editor's appearance is a layout (what goes where, and which kind of slider each setting uses) plus a theme (colours). Built-in ones 🔒 can't be changed: clone one to make it yours. Layouts and themes are small files you can share; your AI assistant can write them too (docs/ai/ui-layouts.md).": [
   "index.html"
  ],
+ "The edits were changed outside Ambrotype and are shown now (Undo goes back).": [
+  "core/app.js"
+ ],
+ "The effect {plugin} isn't installed.": [
+  "tools/trip.js"
+ ],
  "The file it gets: a TIFF next to the photo, IMG_0001-Edit.tif": [
   "index.html"
+ ],
+ "The first part has to add; change its mode first": [
+  "tools/masks.js"
+ ],
+ "The guide": [
+  "dialogs/connect.js"
+ ],
+ "The guides don't all fit one correction; the worst is still {deg}° off.": [
+  "tools/guided.js"
+ ],
+ "The hub can't be reached: {error}. Check your connection, or the hub address in Settings → General.": [
+  "dialogs/hub.js"
+ ],
+ "The hub is empty so far.": [
+  "dialogs/hub.js"
  ],
  "The hue of the colour under the pointer": [
   "index.html"
  ],
  "The key is kept in your system's keychain. The model gets numbers about the photo (brightness, clipping, colour cast) and its settings; it sees the photo itself only while \"Show it the photo\" is ticked. Your AI chat subscription can't be used here; to use it, connect your AI app instead:": [
   "index.html"
+ ],
+ "The lens profiles are still loading.": [
+  "develop/photo.js"
  ],
  "The model's name, as your provider lists it": [
   "index.html"
@@ -3395,6 +5423,9 @@
  ],
  "The one before (←)": [
   "index.html"
+ ],
+ "The photo already matches: nothing to change.": [
+  "develop/presets.js"
  ],
  "The photo kept instead": [
   "index.html"
@@ -3417,8 +5448,14 @@
  "The photos shown (or the selected ones), full screen; choose how long each stays, shuffle and the change effect. Space pauses, ← → step, Esc ends.": [
   "core/keys.js"
  ],
+ "The preset is too big for a link: GitHub is open on the hub's upload page, and the file is shown in its folder. Drag it in, then Propose changes.": [
+  "develop/presets.js"
+ ],
  "The raws stay as they are. Photos you edited already keep their edit. JPEGs already in the folder are kept, so a stopped run carries on.": [
   "index.html"
+ ],
+ "The report": [
+  "core/app.js"
  ],
  "The same viewer as V, on the F key as in other photo apps.": [
   "core/keys.js"
@@ -3431,6 +5468,9 @@
  ],
  "The selection, or the open photo.": [
   "core/keys.js"
+ ],
+ "The setup": [
+  "dialogs/connect.js"
  ],
  "The shutter speed that exposes it well at this aperture and ISO": [
   "index.html"
@@ -3445,6 +5485,7 @@
   "index.html"
  ],
  "Theme": [
+  "core/search.js",
   "index.html"
  ],
  "Themes": [
@@ -3452,6 +5493,30 @@
  ],
  "Then click something neutral grey or white.": [
   "core/keys.js"
+ ],
+ "There is no source code in the folder. Reviewers need it to check and rebuild plugin.wasm; add the plugin's src/ and Cargo.toml.": [
+  "dialogs/plugins.js"
+ ],
+ "These files go to {target} in {repo}, as a pull request from your GitHub account. The hub's reviewers check it before anyone can install it.": [
+  "dialogs/plugins.js"
+ ],
+ "Thinking…": [
+  "dialogs/assistant.js"
+ ],
+ "This collage has changes that aren't saved. Open another one anyway?": [
+  "collage/collage.js"
+ ],
+ "This mask's sliders, to use on other masks.": [
+  "tools/mask-panel.js"
+ ],
+ "This photo also has older Lightroom masks. They are shown in the photo, but can't be edited here yet.": [
+  "tools/mask-panel.js"
+ ],
+ "This photo has no History to replay yet: edit it first.": [
+  "dialogs/export.js"
+ ],
+ "This plugin isn't installed here, so the effect isn't shown. Install it to see it, or remove it.": [
+  "develop/fx.js"
  ],
  "Three times in a row and tips stop (Settings → General turns them on again)": [
   "index.html"
@@ -3484,19 +5549,24 @@
   "index.html"
  ],
  "Title": [
-  "index.html"
+  "index.html",
+  "looks/editor-inspector.js"
  ],
  "Title, caption & copyright": [
   "index.html"
  ],
  "To": [
-  "index.html"
+  "index.html",
+  "tools/mask-panel.js"
  ],
  "To back": [
   "index.html"
  ],
  "To change a value: apply the preset, adjust the sliders, then choose Take the values from this photo.": [
   "index.html"
+ ],
+ "To choose what is kept, crop with this size preset first.": [
+  "dialogs/export.js"
  ],
  "To front": [
   "index.html"
@@ -3510,7 +5580,20 @@
  "Tone, white balance, lens and a level horizon": [
   "tools/toolblocks.js"
  ],
+ "Too little grey in this photo to judge the light by, so Auto keeps the camera's white balance.": [
+  "develop/presets.js"
+ ],
+ "Toolbar": [
+  "looks/editor-inspector.js"
+ ],
+ "Toolbar buttons": [
+  "looks/editor-inspector.js"
+ ],
+ "Toolbar separator": [
+  "looks/editor-inspector.js"
+ ],
  "Tools": [
+  "core/keys.js",
   "core/tasks.js",
   "index.html"
  ],
@@ -3523,11 +5606,29 @@
  "Top right": [
   "index.html"
  ],
+ "Touch: Drag on the Photo": [
+  "core/menu.js"
+ ],
  "Touch: drag on the photo to change the tone or colour under the pointer": [
   "core/keys.js"
  ],
+ "Touch: drag up or down for {label}": [
+  "develop/touch.js"
+ ],
  "Touch: drag up or down on the photo": [
   "index.html"
+ ],
+ "Touch: drag up or down on the photo (T or Esc to stop)": [
+  "develop/touch.js"
+ ],
+ "Touch: {label}": [
+  "develop/touch.js"
+ ],
+ "Touch: {label} {change}": [
+  "develop/touch.js"
+ ],
+ "Trip first: this photo has no effects to save.": [
+  "tools/trip.js"
  ],
  "Trip me: a random mix of psychedelic colour, foil and light leaks": [
   "core/keys.js"
@@ -3536,6 +5637,9 @@
   "core/keys.js"
  ],
  "Trip: save as a preset, effects included, and share it to the hub": [
+  "core/keys.js"
+ ],
+ "Trippy task": [
   "core/keys.js"
  ],
  "Try a sample photo": [
@@ -3547,6 +5651,12 @@
  "Try shutter speed, aperture, ISO and focal length on a drawn scene and see what each does: blur, depth of field, grain, zoom.": [
   "core/keys.js"
  ],
+ "Turn the frame off": [
+  "develop/frame.js"
+ ],
+ "Turn the frame on": [
+  "develop/frame.js"
+ ],
  "Turn the photo a quarter (R)": [
   "index.html"
  ],
@@ -3556,12 +5666,23 @@
  "Turn the photo a quarter turn clockwise (in the library, the selected photos). Crops, masks and spots turn with it.": [
   "core/keys.js"
  ],
+ "Turns the ellipse": [
+  "tools/mask-panel.js"
+ ],
+ "Type a value, or drag this label sideways. Double-click to reset.": [
+  "develop/controls.js"
+ ],
  "Underlined words open their meaning. The text is a data file (basics.json), so anyone can improve or translate it.": [
   "index.html"
  ],
+ "Undid all {steps}; Redo brings them back": [
+  "develop/history.js"
+ ],
  "Undo": [
   "core/keys.js",
-  "index.html"
+  "dialogs/assistant.js",
+  "index.html",
+  "looks/editor.js"
  ],
  "Undo (Ctrl+Z)": [
   "index.html"
@@ -3578,21 +5699,57 @@
  "Undo the last move": [
   "index.html"
  ],
+ "Undo these {n} edits": [
+  "dialogs/assistant.js"
+ ],
+ "Undone": [
+  "dialogs/assistant.js"
+ ],
  "Unflagged": [
   "index.html"
+ ],
+ "Ungroup": [
+  "collage/collage-tray.js"
+ ],
+ "Unhide": [
+  "develop/preset-hide.js"
+ ],
+ "Unhide all": [
+  "develop/preset-hide.js"
+ ],
+ "Unhide this group": [
+  "develop/preset-hide.js"
+ ],
+ "Unknown setting: {name}": [
+  "looks/layout.js"
+ ],
+ "Unpack into separate settings": [
+  "looks/editor-inspector.js"
  ],
  "Unrated": [
   "index.html"
  ],
  "Unstack": [
   "core/keys.js",
+  "core/menu.js",
   "index.html"
+ ],
+ "Untitled": [
+  "collage/collage-canvas.js"
  ],
  "Up or down changes the tone curve's region, or the colour's hue, saturation or brightness.": [
   "core/keys.js"
  ],
+ "Update": [
+  "dialogs/hub.js"
+ ],
+ "Update with the current settings": [
+  "develop/history.js"
+ ],
  "Use": [
-  "index.html"
+  "dialogs/models.js",
+  "index.html",
+  "looks/looks-dialog.js"
  ],
  "Use a Lightroom Classic catalogue as it is: + opens it in place, without importing.": [
   "index.html"
@@ -3603,6 +5760,15 @@
  "Use a folder…": [
   "index.html"
  ],
+ "Use a frame on all {n} photos in the folder": [
+  "develop/frame.js"
+ ],
+ "Use it here instead": [
+  "core/keys.js"
+ ],
+ "Use now": [
+  "dialogs/hub.js"
+ ],
  "Use the default hub": [
   "index.html"
  ],
@@ -3612,8 +5778,17 @@
  "Use this frame as the baseline": [
   "index.html"
  ],
+ "Use this frame on all {n} photos in the folder": [
+  "develop/frame.js"
+ ],
  "Use this place": [
   "index.html"
+ ],
+ "Using \"{name}\".": [
+  "dialogs/hub.js"
+ ],
+ "Using a logo": [
+  "dialogs/export.js"
  ],
  "Values": [
   "index.html"
@@ -3622,6 +5797,8 @@
   "index.html"
  ],
  "View": [
+  "core/keys.js",
+  "core/menu.js",
   "index.html"
  ],
  "View full screen (F in the library)": [
@@ -3646,10 +5823,14 @@
   "core/keys.js"
  ],
  "WB picker": [
-  "index.html"
+  "index.html",
+  "looks/editor.js"
  ],
  "Walk back as you zoom": [
   "index.html"
+ ],
+ "Warning: {message}": [
+  "looks/looks-dialog.js"
  ],
  "Watch an edit": [
   "core/keys.js",
@@ -3663,6 +5844,9 @@
  ],
  "WebP (lossless)": [
   "index.html"
+ ],
+ "What Ambrotype Can Do…": [
+  "core/menu.js"
  ],
  "What Ambrotype can do": [
   "index.html"
@@ -3686,6 +5870,7 @@
   "index.html"
  ],
  "Where": [
+  "develop/fx.js",
   "index.html"
  ],
  "Where Lightroom had them": [
@@ -3706,6 +5891,9 @@
  "White": [
   "index.html"
  ],
+ "White Balance Picker": [
+  "core/menu.js"
+ ],
  "White balance": [
   "index.html"
  ],
@@ -3715,8 +5903,17 @@
  "White-balance picker": [
   "core/keys.js"
  ],
+ "Whites": [
+  "develop/zones.js"
+ ],
  "Whole photo inside the frame (with an exact size, instead of cropping to fill)": [
   "index.html"
+ ],
+ "Widget": [
+  "looks/editor-inspector.js"
+ ],
+ "Widgets": [
+  "looks/editor-inspector.js"
  ],
  "Width": [
   "index.html"
@@ -3727,8 +5924,27 @@
  "Will be sent": [
   "index.html"
  ],
+ "Window": [
+  "core/keys.js",
+  "core/menu.js"
+ ],
  "Within": [
   "index.html"
+ ],
+ "Working…": [
+  "tools/select.js"
+ ],
+ "Writing the TIFF for the other app…": [
+  "dialogs/export.js"
+ ],
+ "Wrote {name} next to the photo and opened it. Save it there; it shows in the folder.": [
+  "dialogs/export.js"
+ ],
+ "Wrote {n} collage pages to {dir}": [
+  "collage/collage.js"
+ ],
+ "Wrote {n} pages": [
+  "collage/collage.js"
  ],
  "X-Trans I": [
   "index.html"
@@ -3746,13 +5962,32 @@
   "index.html"
  ],
  "Yellow": [
-  "index.html"
+  "core/keys.js",
+  "core/menu.js",
+  "develop/touch.js",
+  "index.html",
+  "looks/layout.js"
+ ],
+ "Yellows": [
+  "develop/fx.js"
+ ],
+ "Your API key": [
+  "dialogs/assistant.js"
  ],
  "Your app": [
   "index.html"
  ],
+ "Your layout: a file in your own folder (Open folder).": [
+  "looks/looks-dialog.js"
+ ],
+ "Your looks: {path}": [
+  "looks/looks-dialog.js"
+ ],
  "Your own…": [
   "index.html"
+ ],
+ "Your panel": [
+  "looks/editor-inspector.js"
  ],
  "Your saved export choices": [
   "index.html"
@@ -3760,8 +5995,17 @@
  "Your settings, layouts and themes are kept in:": [
   "index.html"
  ],
+ "Your theme: a file in your own folder (Open folder).": [
+  "looks/looks-dialog.js"
+ ],
  "Yours": [
-  "index.html"
+  "collage/collage-tray.js",
+  "develop/presets.js",
+  "dialogs/borders.js",
+  "dialogs/plugins.js",
+  "index.html",
+  "tools/croptool.js",
+  "tools/mask-panel.js"
  ],
  "Zoom in": [
   "core/keys.js",
@@ -3771,20 +6015,57 @@
   "core/keys.js",
   "index.html"
  ],
+ "Zoom {zoom}": [
+  "develop/preview.js"
+ ],
  "a key on its own": [
   "index.html"
+ ],
+ "about {n} min a photo": [
+  "dialogs/models.js"
+ ],
+ "about {n} s a photo": [
+  "dialogs/models.js"
  ],
  "all": [
   "index.html"
  ],
+ "and {n} more": [
+  "develop/history.js"
+ ],
  "any": [
   "index.html"
+ ],
+ "as a pull request from @{user} (the GitHub CLI on this computer)": [
+  "dialogs/interfaces.js"
  ],
  "asks to:": [
   "index.html"
  ],
  "auto": [
   "index.html"
+ ],
+ "border": [
+  "dialogs/hub.js"
+ ],
+ "built in": [
+  "dialogs/plugins.js"
+ ],
+ "built-in": [
+  "dialogs/plugins.js"
+ ],
+ "built-in panel": [
+  "looks/editor-inspector.js"
+ ],
+ "by {author}": [
+  "dialogs/hub.js",
+  "dialogs/plugins.js"
+ ],
+ "can't load": [
+  "dialogs/plugins.js"
+ ],
+ "collage": [
+  "dialogs/hub.js"
  ],
  "e.g. /Volumes/Photos/": [
   "index.html"
@@ -3810,23 +6091,75 @@
  "e.g. wedding, Anna & Tom": [
   "index.html"
  ],
+ "edits loaded from sidecar": [
+  "develop/photo.js"
+ ],
+ "group": [
+  "looks/editor-inspector.js"
+ ],
+ "horizontal": [
+  "tools/guided.js"
+ ],
  "hours": [
   "index.html"
  ],
  "https://github.com/someone/their-theme": [
   "index.html"
  ],
+ "hue": [
+  "develop/touch.js"
+ ],
  "in a terminal)": [
   "index.html"
+ ],
+ "interface": [
+  "dialogs/hub.js"
+ ],
+ "layout": [
+  "dialogs/hub.js"
+ ],
+ "lens corrections": [
+  "develop/presets.js"
+ ],
+ "levelled {angle}°": [
+  "develop/presets.js"
+ ],
+ "luminance": [
+  "develop/touch.js"
  ],
  "minutes": [
   "index.html"
  ],
+ "no key": [
+  "core/keys.js"
+ ],
+ "none": [
+  "core/keys.js",
+  "develop/history.js"
+ ],
+ "not in this layout": [
+  "core/search.js"
+ ],
  "of these rules": [
   "index.html"
  ],
+ "off": [
+  "develop/history.js"
+ ],
+ "on": [
+  "develop/history.js"
+ ],
  "on the photos there, such as": [
   "index.html"
+ ],
+ "plugin": [
+  "dialogs/hub.js"
+ ],
+ "preset": [
+  "dialogs/hub.js"
+ ],
+ "preset {name}": [
+  "develop/history.js"
  ],
  "px": [
   "index.html"
@@ -3843,8 +6176,30 @@
  "sRGB (web, most screens)": [
   "index.html"
  ],
+ "saturation": [
+  "develop/touch.js"
+ ],
  "seconds": [
   "index.html"
+ ],
+ "seed {seed}": [
+  "develop/presets.js"
+ ],
+ "sizes": [
+  "dialogs/hub.js"
+ ],
+ "the camera, lens and exposure": [
+  "dialogs/hub.js"
+ ],
+ "the photo's histogram": [
+  "dialogs/hub.js"
+ ],
+ "theme": [
+  "dialogs/hub.js",
+  "looks/looks-dialog.js"
+ ],
+ "through GitHub's upload page in your browser (drag the files from the folder that opens, then “Propose changes”)": [
+  "dialogs/interfaces.js"
  ],
  "to change the editor": [
   "index.html"
@@ -3852,20 +6207,189 @@
  "to edit photos": [
   "index.html"
  ],
+ "tone": [
+  "develop/presets.js"
+ ],
+ "toolbar": [
+  "looks/editor-inspector.js"
+ ],
  "travel, Iceland": [
   "index.html"
+ ],
+ "under a second a photo": [
+  "dialogs/models.js"
+ ],
+ "vertical": [
+  "tools/guided.js"
+ ],
+ "vibrance": [
+  "develop/presets.js"
+ ],
+ "white balance": [
+  "develop/presets.js"
  ],
  "with Ctrl/⌘, Alt or Shift. Click a key to see what it does.": [
   "index.html"
  ],
+ "yours": [
+  "dialogs/plugins.js"
+ ],
+ "{a} and {b}": [
+  "dialogs/hub.js"
+ ],
+ "{a} or {b}": [
+  "core/keys.js"
+ ],
+ "{bands} in the B&W mix": [
+  "develop/touch.js"
+ ],
+ "{bands} {mode}": [
+  "develop/touch.js"
+ ],
+ "{channel} channel ({tag})": [
+  "develop/curve.js"
+ ],
+ "{colour} label": [
+  "develop/filmstrip.js",
+  "develop/info.js"
+ ],
+ "{colour} label (again to remove)": [
+  "core/keys.js"
+ ],
+ "{colour} label (no key)": [
+  "develop/info.js"
+ ],
+ "{colour} label ({key})": [
+  "develop/info.js"
+ ],
+ "{doc} · {layout} · {w} × {h} px · {n} cells": [
+  "collage/collage-canvas.js"
+ ],
+ "{doc} · {layout} · {w} × {h} px · {n} frames": [
+  "collage/collage-canvas.js"
+ ],
+ "{field} saved": [
+  "develop/info.js"
+ ],
+ "{field}: three numbers, like 0.5,0.5,0.5": [
+  "dialogs/models.js"
+ ],
+ "{files}: {list}": [
+  "dialogs/hub.js"
+ ],
+ "{group} (yours)": [
+  "tools/croptool.js"
+ ],
+ "{have} Download lensfun's lens database (about 0.5 MB, CC BY-SA 3.0) into {dir}?": [
+  "develop/photo.js"
+ ],
+ "{have} The downloaded database is from {when}. Check for a newer one?": [
+  "develop/photo.js"
+ ],
+ "{key} already does \"{actions}\". ": [
+  "core/keys.js"
+ ],
+ "{key} now does \"{action}\".": [
+  "core/keys.js"
+ ],
+ "{key}: free": [
+  "core/keys.js"
+ ],
+ "{kinds}. Drag to reorder.": [
+  "tools/mask-panel.js"
+ ],
+ "{label} (not rendered yet)": [
+  "tools/mask-panel.js"
+ ],
+ "{label} as a new part of this mask. {hint}": [
+  "tools/mask-panel.js"
+ ],
+ "{label}: {hint} Esc stops.": [
+  "tools/mask-panel.js"
+ ],
+ "{layout} + {theme}": [
+  "looks/looks-dialog.js"
+ ],
+ "{layout} + {theme}, kept {when}": [
+  "looks/looks-dialog.js"
+ ],
+ "{made}  ·  Lens: {lens}": [
+  "develop/preview.js"
+ ],
+ "{mask}: add {kind}": [
+  "develop/history.js"
+ ],
+ "{mask}: brush": [
+  "develop/history.js"
+ ],
+ "{mask}: edit part {part}": [
+  "develop/history.js"
+ ],
+ "{mask}: erase": [
+  "develop/history.js"
+ ],
+ "{mask}: remove part {part}": [
+  "develop/history.js"
+ ],
  "{name}": [
   "index.html"
+ ],
+ "{name} (changed)": [
+  "collage/collage-canvas.js"
+ ],
+ "{name} (copy)": [
+  "tools/croptool.js"
+ ],
+ "{name} (mine)": [
+  "looks/editor.js"
+ ],
+ "{name} (not found)": [
+  "core/app.js"
+ ],
+ "{name} (only the shape is used)": [
+  "collage/collage-tray.js"
+ ],
+ "{name} ({width} × {height})": [
+  "tools/croptool.js"
+ ],
+ "{name} copy": [
+  "looks/looks-dialog.js"
+ ],
+ "{name} copy {n}": [
+  "looks/looks-dialog.js"
+ ],
+ "{name} is in use for {task} masks.": [
+  "dialogs/models.js"
+ ],
+ "{name} is installed. Click Use to use it for {task} masks.": [
+  "dialogs/models.js"
+ ],
+ "{name} is shown elsewhere": [
+  "looks/layout.js"
+ ],
+ "{name} selected: = and - change it": [
+  "core/app.js"
+ ],
+ "{name}: your layout ({w} × {h})": [
+  "collage/collage-tray.js"
+ ],
+ "{name}: {note}": [
+  "dialogs/plugins.js"
  ],
  "{n} JPEG|{n} JPEGs": [
   "library/library-actions.js"
  ],
+ "{n} border|{n} borders": [
+  "dialogs/hub.js"
+ ],
  "{n} burst|{n} bursts": [
   "library/bursts.js"
+ ],
+ "{n} change(s)": [
+  "dialogs/plugins.js"
+ ],
+ "{n} collage template|{n} collage templates": [
+  "dialogs/hub.js"
  ],
  "{n} collection|{n} collections": [
   "library/lightroom.js",
@@ -3879,14 +6403,42 @@
   "library/import.js",
   "library/lightroom.js"
  ],
+ "{n} groups have fewer than {per} photos and are left out.": [
+  "collage/collage-tray.js"
+ ],
  "{n} group|{n} groups": [
   "collage/collage-tray.js",
   "library/duplicates.js"
  ],
+ "{n} hidden": [
+  "develop/preset-hide.js"
+ ],
+ "{n} interface|{n} interfaces": [
+  "dialogs/hub.js"
+ ],
+ "{n} layout|{n} layouts": [
+  "dialogs/hub.js"
+ ],
+ "{n} lens profiles are loaded.": [
+  "develop/photo.js"
+ ],
  "{n} negative|{n} negatives": [
   "library/library-actions.js"
  ],
+ "{n} of {max}": [
+  "tools/guided.js"
+ ],
  "{n} page|{n} pages": [
+  "collage/collage-tray.js"
+ ],
+ "{n} photos": [
+  "collage/collage-tray.js",
+  "develop/filmstrip.js"
+ ],
+ "{n} photos weren't found: {names}": [
+  "collage/collage.js"
+ ],
+ "{n} photos, {groups}": [
   "collage/collage-tray.js"
  ],
  "{n} photo|{n} photos": [
@@ -3909,15 +6461,46 @@
   "library/organise.js",
   "library/slideshow.js"
  ],
+ "{n} plugin|{n} plugins": [
+  "dialogs/hub.js"
+ ],
+ "{n} preset|{n} presets": [
+  "dialogs/hub.js"
+ ],
  "{n} problem|{n} problems": [
   "library/import.js",
   "library/lrcat.js"
  ],
+ "{n} reference|{n} references": [
+  "develop/presets.js"
+ ],
+ "{n} sample(s)": [
+  "tools/mask-panel.js"
+ ],
+ "{n} selected": [
+  "develop/filmstrip.js"
+ ],
+ "{n} setting|{n} settings": [
+  "develop/presets.js",
+  "dialogs/hub.js"
+ ],
  "{n} sidecar|{n} sidecars": [
   "library/lrcat.js"
  ],
+ "{n} size profile|{n} size profiles": [
+  "dialogs/hub.js"
+ ],
  "{n} size|{n} sizes": [
   "dialogs/hub.js"
+ ],
+ "{n} spot(s)": [
+  "tools/spots.js"
+ ],
+ "{n} spot(s) were filled by Lightroom's Generative Remove; AI Remove fills them here.": [
+  "tools/spots.js"
+ ],
+ "{n} spot(s), {legacy} older": [
+  "tools/spots.js"
  ],
  "{n} stack|{n} stacks": [
   "library/library-grid.js"
@@ -3929,11 +6512,95 @@
  "{n} step|{n} steps": [
   "develop/history.js"
  ],
+ "{n} stroke(s)": [
+  "tools/mask-panel.js"
+ ],
+ "{n} theme|{n} themes": [
+  "dialogs/hub.js"
+ ],
+ "{n} values out of range, skipped": [
+  "core/app.js"
+ ],
+ "{n}-bit": [
+  "dialogs/export.js"
+ ],
+ "{pages}, one per group: its best {per}.": [
+  "collage/collage-tray.js"
+ ],
+ "{photos} → {pages} of {per} cells.": [
+  "collage/collage-tray.js"
+ ],
+ "{refs}: {names}": [
+  "develop/presets.js"
+ ],
+ "{section}: {name}": [
+  "core/app.js"
+ ],
+ "{settings}; the look is {closer}% closer ({renders} test renders).": [
+  "develop/presets.js"
+ ],
+ "{setting} · choice": [
+  "looks/editor-inspector.js"
+ ],
+ "{setting} · number": [
+  "looks/editor-inspector.js"
+ ],
+ "{setting} · on/off": [
+  "looks/editor-inspector.js"
+ ],
+ "{tag}: kept in the file, not rendered yet": [
+  "tools/mask-panel.js"
+ ],
+ "{task} ({about})": [
+  "dialogs/models.js"
+ ],
  "{task} tools": [
   "core/tasks.js"
  ],
+ "{task}: {about}": [
+  "dialogs/models.js"
+ ],
+ "{text} {s} s": [
+  "develop/preview.js"
+ ],
+ "{total} tokens so far ({in} in, {out} out).": [
+  "dialogs/assistant.js"
+ ],
+ "{what} copied": [
+  "dialogs/connect.js"
+ ],
+ "{w}×{h} preview in {ms} ms": [
+  "develop/preview.js"
+ ],
+ "{w}×{h} preview in {ms} ms on the GPU": [
+  "develop/preview.js"
+ ],
+ "{zone}: under 1% of this photo": [
+  "develop/zones.js"
+ ],
+ "{zone}: {share}% of this photo": [
+  "develop/zones.js"
+ ],
+ "{zoom} draft in {ms} ms (full detail when the slider is released)": [
+  "develop/preview.js"
+ ],
+ "{zoom}: {w}×{h} in {ms} ms": [
+  "develop/preview.js"
+ ],
  "© 2026 Your Name": [
   "index.html"
+ ],
+ "— a border preset —": [
+  "develop/frame.js"
+ ],
+ "— choose —": [
+  "dialogs/export.js"
+ ],
+ "— the settings below —": [
+  "dialogs/plugins.js"
+ ],
+ "… {n} more": [
+  "dialogs/interfaces.js"
  ],
  "← Back to collage": [
   "index.html"

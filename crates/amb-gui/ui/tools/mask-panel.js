@@ -9,9 +9,12 @@
 // table (mask_field_ranges), so the panel and the commands' clamps agree.
 function maskRange(key) {
   const r = mk.ranges.find((x) => x.key === key);
-  return { label: r.label, min: r.min, max: r.max, step: r.step };
+  return { label: t(r.label), min: r.min, max: r.max, step: r.step };
 }
 const maskDefault = (key) => mk.ranges.find((x) => x.key === key).default;
+
+// How a part joins the ones above it: the command's word and its label.
+const MASK_MODES = [["add", tKey("Add")], ["subtract", tKey("Subtract")], ["intersect", tKey("Intersect")]];
 
 function sliderRow({ label, min, max, step, value, title, onInput, onChange, disabled }) {
   const decimals = step < 1 ? 2 : 0;
@@ -58,17 +61,19 @@ function renderMaskPanel() {
     return el("button", {
       type: "button",
       class: "small" + (active ? " active" : ""),
-      title: `New ${k.label.toLowerCase()} mask${k.key ? ` (${k.key})` : ""}. ${k.hint}`,
+      title: k.key
+        ? t("New {kind} mask ({key}). {hint}", { kind: t(k.label).toLowerCase(), key: k.key, hint: t(k.hint) })
+        : t("New {kind} mask. {hint}", { kind: t(k.label).toLowerCase(), hint: t(k.hint) }),
       onclick: () => startTool(k.kind, true),
-    }, k.label);
+    }, t(k.label));
   }));
 
   // The mask list.
   const rows = list.map((mask) => {
     const sel = mask.index === mk.selected;
-    const eye = el("input", { type: "checkbox", title: "Show this mask's effect", checked: mask.active });
+    const eye = el("input", { type: "checkbox", title: t("Show this mask's effect"), checked: mask.active });
     eye.addEventListener("change", () => run([{ cmd: "set_mask", mask: mask.index, values: { active: eye.checked } }]));
-    const name = el("span", { class: "mask-name", title: "Double-click to rename" }, mask.name);
+    const name = el("span", { class: "mask-name", title: t("Double-click to rename"), translate: "no" }, mask.name);
     name.addEventListener("dblclick", (e) => {
       e.stopPropagation();
       const input = el("input", { type: "text", value: mask.name, spellcheck: "false" });
@@ -87,13 +92,13 @@ function renderMaskPanel() {
       });
       input.addEventListener("blur", () => done(true));
     });
-    const del = el("button", { type: "button", class: "small icon-x", title: "Delete this mask" }, "×");
+    const del = el("button", { type: "button", class: "small icon-x", title: t("Delete this mask") }, "×");
     del.addEventListener("click", (e) => {
       e.stopPropagation();
       run([{ cmd: "remove_mask", mask: mask.index }]);
     });
-    const kinds = [...new Set(mask.parts.map((p) => p.label))].join(", ");
-    const row = el("div", { class: "mask-row" + (sel ? " selected" : ""), title: `${kinds}. Drag to reorder.`, draggable: "true" },
+    const kinds = [...new Set(mask.parts.map((p) => t(p.label)))].join(", ");
+    const row = el("div", { class: "mask-row" + (sel ? " selected" : ""), title: t("{kinds}. Drag to reorder.", { kinds }), draggable: "true" },
       eye, name, el("span", { class: "hint mask-kinds" }, kinds), del);
     row.addEventListener("click", () => selectMask(mask.index));
     // Drag a row onto another to move it there.
@@ -116,10 +121,10 @@ function renderMaskPanel() {
     return row;
   });
   $("mask-list").replaceChildren(...rows);
-  if (!list.length) $("mask-list").append(el("p", { class: "hint" }, "No masks yet. Pick a kind above, then draw on the photo."));
+  if (!list.length) $("mask-list").append(el("p", { class: "hint" }, t("No masks yet. Pick a kind above, then draw on the photo.")));
   if (ui.state?.masks?.legacy) {
     $("mask-list").append(el("p", { class: "hint" },
-      "This photo also has older Lightroom masks. They are shown in the photo, but can't be edited here yet."));
+      t("This photo also has older Lightroom masks. They are shown in the photo, but can't be edited here yet.")));
   }
 
   const detail = $("mask-detail");
@@ -134,29 +139,29 @@ function renderMaskDetail(m) {
   const count = maskList().length;
   const action = (text, title, disabled, onclick) => el("button", { type: "button", class: "small", title, disabled, onclick }, text);
   $("mask-actions").replaceChildren(
-    action("Duplicate", "Copy this mask, sliders and all", false, () => duplicateMask(m.index)),
-    action("↑", "Move up the list", m.index === 0, () => moveMask(m.index, m.index - 1)),
-    action("↓", "Move down the list", m.index >= count - 1, () => moveMask(m.index, m.index + 1)),
+    action(t("Duplicate"), t("Copy this mask, sliders and all"), false, () => duplicateMask(m.index)),
+    action("↑", t("Move up the list"), m.index === 0, () => moveMask(m.index, m.index - 1)),
+    action("↓", t("Move down the list"), m.index >= count - 1, () => moveMask(m.index, m.index + 1)),
   );
   // Parts.
   const parts = m.parts.map((p) => {
     const sel = p.index === mk.part;
-    const mode = el("select", { title: "How this part joins the ones above it", disabled: p.index === 0 && p.mode === "add" });
-    for (const v of ["add", "subtract", "intersect"]) mode.append(el("option", { value: v }, v[0].toUpperCase() + v.slice(1)));
+    const mode = el("select", { title: t("How this part joins the ones above it"), disabled: p.index === 0 && p.mode === "add" });
+    for (const [v, text] of MASK_MODES) mode.append(el("option", { value: v }, t(text)));
     mode.value = p.mode;
     mode.addEventListener("click", (e) => e.stopPropagation());
     mode.addEventListener("change", () => run([{ cmd: "set_mask", mask: m.index, part: p.index, values: { mode: mode.value } }]));
-    const inv = el("input", { type: "checkbox", title: "Invert this part", checked: p.invert });
+    const inv = el("input", { type: "checkbox", title: t("Invert this part"), checked: p.invert });
     inv.addEventListener("click", (e) => e.stopPropagation());
     inv.addEventListener("change", () => run([{ cmd: "set_mask", mask: m.index, part: p.index, values: { invert: inv.checked } }]));
-    const del = el("button", { type: "button", class: "small icon-x", title: "Remove this part" }, "×");
+    const del = el("button", { type: "button", class: "small icon-x", title: t("Remove this part") }, "×");
     del.addEventListener("click", (e) => {
       e.stopPropagation();
       run([{ cmd: "remove_mask", mask: m.index, part: p.index }]);
     });
     // Parts combine in order: move one up or down.
     const move = (dir) => {
-      const b = el("button", { type: "button", class: "small", title: dir < 0 ? "Move this part up" : "Move this part down",
+      const b = el("button", { type: "button", class: "small", title: dir < 0 ? t("Move this part up") : t("Move this part down"),
         disabled: m.parts.length < 2 || (dir < 0 ? p.index === 0 : p.index === m.parts.length - 1) }, dir < 0 ? "↑" : "↓");
       b.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -164,9 +169,9 @@ function renderMaskDetail(m) {
       });
       return b;
     };
-    const label = p.label + (p.rendered ? "" : " (not rendered yet)");
+    const label = p.rendered ? t(p.label) : t("{label} (not rendered yet)", { label: t(p.label) });
     const row = el("div", { class: "mask-part" + (sel ? " selected" : "") },
-      el("span", { class: "mask-name" }, label), mode, el("label", { class: "inline-check", title: "Invert" }, inv, "Inv"),
+      el("span", { class: "mask-name" }, label), mode, el("label", { class: "inline-check", title: t("Invert") }, inv, t("Inv")),
       move(-1), move(1), del);
     row.addEventListener("click", () => selectPart(p.index));
     return row;
@@ -175,16 +180,16 @@ function renderMaskDetail(m) {
 
   // Add a part.
   const addRow = $("mask-add");
-  const modeSel = el("select", { title: "How the new part joins this mask" });
-  for (const v of ["add", "subtract", "intersect"]) modeSel.append(el("option", { value: v }, v[0].toUpperCase() + v.slice(1)));
+  const modeSel = el("select", { title: t("How the new part joins this mask") });
+  for (const [v, text] of MASK_MODES) modeSel.append(el("option", { value: v }, t(text)));
   modeSel.value = mk.addMode;
   modeSel.addEventListener("change", () => (mk.addMode = modeSel.value));
   addRow.replaceChildren(modeSel, ...NEW_KINDS.map((k) => el("button", {
     type: "button",
     class: "small" + (mk.tool === k.kind && !mk.creatingNew ? " active" : ""),
-    title: `${k.label} as a new part of this mask. ${k.hint}`,
+    title: t("{label} as a new part of this mask. {hint}", { label: t(k.label), hint: t(k.hint) }),
     onclick: () => startTool(k.kind, false),
-  }, k.label)));
+  }, t(k.label))));
 
   // Part settings.
   const p = selectedPart();
@@ -194,7 +199,7 @@ function renderMaskDetail(m) {
   if (p?.kind === "radial") {
     box.append(
       sliderRow({ ...maskRange("Feather"), value: p.Feather ?? maskDefault("Feather"), onInput: (v) => draftPart({ Feather: v }), onChange: (v) => setPart({ Feather: v }) }),
-      sliderRow({ ...maskRange("Angle"), value: p.Angle ?? maskDefault("Angle"), title: "Turns the ellipse", onInput: (v) => draftPart({ Angle: v }), onChange: (v) => setPart({ Angle: v }) }),
+      sliderRow({ ...maskRange("Angle"), value: p.Angle ?? maskDefault("Angle"), title: t("Turns the ellipse"), onInput: (v) => draftPart({ Angle: v }), onChange: (v) => setPart({ Angle: v }) }),
     );
   } else if (p?.kind === "luminance") {
     const r = p.LumRange ?? [0.5, 0.6, 1, 1];
@@ -212,29 +217,29 @@ function renderMaskDetail(m) {
     const commit = () => setPart({ LumRange: range(cur.f, cur.t, cur.s) });
     box.append(
       // From, To and Smoothness are typed here: a percent view of LumRange, not a protocol field range.
-      sliderRow({ label: "From", min: 0, max: 100, step: 1, value: from, title: "Darkest brightness selected", onInput: (v) => { cur.f = v; draft(); }, onChange: (v) => { cur.f = v; commit(); } }),
-      sliderRow({ label: "To", min: 0, max: 100, step: 1, value: to, title: "Brightest brightness selected", onInput: (v) => { cur.t = v; draft(); }, onChange: (v) => { cur.t = v; commit(); } }),
-      sliderRow({ label: "Smoothness", min: 0, max: 50, step: 1, value: smooth, title: "How gradually the selection fades out", onInput: (v) => { cur.s = v; draft(); }, onChange: (v) => { cur.s = v; commit(); } }),
+      sliderRow({ label: t("From"), min: 0, max: 100, step: 1, value: from, title: t("Darkest brightness selected"), onInput: (v) => { cur.f = v; draft(); }, onChange: (v) => { cur.f = v; commit(); } }),
+      sliderRow({ label: t("To"), min: 0, max: 100, step: 1, value: to, title: t("Brightest brightness selected"), onInput: (v) => { cur.t = v; draft(); }, onChange: (v) => { cur.t = v; commit(); } }),
+      sliderRow({ label: t("Smoothness"), min: 0, max: 50, step: 1, value: smooth, title: t("How gradually the selection fades out"), onInput: (v) => { cur.s = v; draft(); }, onChange: (v) => { cur.s = v; commit(); } }),
     );
   } else if (p?.kind === "color") {
     box.append(
-      sliderRow({ ...maskRange("ColorAmount"), value: p.ColorAmount ?? maskDefault("ColorAmount"), title: "Lower selects only colours close to the samples", onInput: (v) => draftPart({ ColorAmount: v }), onChange: (v) => setPart({ ColorAmount: v }) }),
+      sliderRow({ ...maskRange("ColorAmount"), value: p.ColorAmount ?? maskDefault("ColorAmount"), title: t("Lower selects only colours close to the samples"), onInput: (v) => draftPart({ ColorAmount: v }), onChange: (v) => setPart({ ColorAmount: v }) }),
       el("div", { class: "crop-line" },
-        el("button", { type: "button", class: "small", onclick: () => startTool("color", false, true) }, "Add a sample"),
-        el("button", { type: "button", class: "small", onclick: () => setPart({ ColorSamples: [] }) }, "Clear samples"),
-        el("span", { class: "hint" }, `${(p.ColorSamples ?? []).length} sample(s)`)),
+        el("button", { type: "button", class: "small", onclick: () => startTool("color", false, true) }, t("Add a sample")),
+        el("button", { type: "button", class: "small", onclick: () => setPart({ ColorSamples: [] }) }, t("Clear samples")),
+        el("span", { class: "hint" }, t("{n} sample(s)", { n: (p.ColorSamples ?? []).length }))),
     );
   } else if (p?.kind === "brush") {
     box.append(el("div", { class: "crop-line" },
-      el("button", { type: "button", class: "small" + (mk.tool === "brush" && mk.continuePart ? " active" : ""), onclick: () => startTool("brush", false, true) }, "Paint more"),
-      el("span", { class: "hint" }, `${p.strokes} stroke(s)`)));
+      el("button", { type: "button", class: "small" + (mk.tool === "brush" && mk.continuePart ? " active" : ""), onclick: () => startTool("brush", false, true) }, t("Paint more")),
+      el("span", { class: "hint" }, t("{n} stroke(s)", { n: p.strokes }))));
   }
 
   // The mask's sliders, and the Effect menu that sets them all at once.
   const sl = $("mask-sliders");
   sl.replaceChildren(effectRow(m));
   sl.append(sliderRow({
-    ...maskRange("amount"), value: m.amount, title: "Scales all of this mask's sliders",
+    ...maskRange("amount"), value: m.amount, title: t("Scales all of this mask's sliders"),
     onInput: (v) => draftCorrection({ CorrectionAmount: fmt6(v / 100) }),
     onChange: (v) => run([{ cmd: "set_mask", mask: m.index, values: { amount: v } }]),
   }));
@@ -242,13 +247,13 @@ function renderMaskDetail(m) {
   for (const s of mk.sliders) {
     if (s.section !== section) {
       section = s.section;
-      sl.append(el("div", { class: "section-label" }, section));
+      sl.append(el("div", { class: "section-label" }, t(section)));
     }
     const value = m.sliders[s.tag] ?? (s.tag === "LocalToningHue" ? 0 : 0);
     const scale = s.tag === "LocalExposure2012" ? 4 : s.tag === "LocalToningHue" ? 1 : 100;
     sl.append(sliderRow({
-      label: s.label, min: s.min, max: s.max, step: s.step, value,
-      title: s.rendered ? s.tag : `${s.tag}: kept in the file, not rendered yet`,
+      label: t(s.label), min: s.min, max: s.max, step: s.step, value,
+      title: s.rendered ? s.tag : t("{tag}: kept in the file, not rendered yet", { tag: s.tag }),
       disabled: !s.rendered && !value,
       onInput: (v) => draftCorrection({ [s.tag]: fmt6(v / scale) }),
       onChange: (v) => run([{ cmd: "set_mask", mask: m.index, values: { [s.tag]: v } }]),
@@ -260,16 +265,16 @@ function renderMaskDetail(m) {
 // slider (the ones it doesn't name go to 0), as Lightroom's Effect menu does.
 function effectRow(m) {
   const fx = mk.effects ?? { builtin: [], mine: [] };
-  const select = el("select", { title: "Set this mask's sliders from a saved effect" });
-  select.append(el("option", { value: "" }, "Effect…"));
+  const select = el("select", { title: t("Set this mask's sliders from a saved effect") });
+  select.append(el("option", { value: "" }, t("Effect…")));
   const group = (label, list, prefix) => {
     if (!list.length) return;
     const g = el("optgroup", { label });
-    for (const e of list) g.append(el("option", { value: prefix + e.name }, e.name));
+    for (const e of list) g.append(el("option", { value: prefix + e.name, translate: prefix === "u:" ? "no" : null }, prefix === "b:" ? t(e.name) : e.name));
     select.append(g);
   };
   group("Ambrotype", fx.builtin, "b:");
-  group("Yours", fx.mine, "u:");
+  group(t("Yours"), fx.mine, "u:");
   // The last one picked stays shown, so it can be deleted.
   if ([...select.options].some((o) => o.value === mk.effect)) select.value = mk.effect;
   select.addEventListener("change", () => {
@@ -278,22 +283,22 @@ function effectRow(m) {
     const e = (v.startsWith("b:") ? fx.builtin : fx.mine).find((x) => x.name === v.slice(2));
     if (e) applyEffect(m, e);
   });
-  const save = el("button", { type: "button", class: "small", title: "Keep this mask's sliders as an effect of your own" }, "Save…");
+  const save = el("button", { type: "button", class: "small", title: t("Keep this mask's sliders as an effect of your own") }, t("Save…"));
   save.addEventListener("click", async () => {
-    const name = await askName("Save as an effect", "This mask's sliders, to use on other masks.");
+    const name = await askName(t("Save as an effect"), t("This mask's sliders, to use on other masks."));
     if (!name) return;
     const values = Object.fromEntries(Object.entries(m.sliders).filter(([, v]) => Number(v) !== 0));
     try {
       mk.effects = await invoke("save_mask_effect", { name, values });
       mk.effect = `u:${name}`;
-      toast(`Saved effect "${name}"`);
+      toast(t('Saved effect "{name}"', { name }));
       renderMaskPanel();
     } catch (err) {
       showError(err);
     }
   });
   const mine = select.value.startsWith("u:");
-  const del = el("button", { type: "button", class: "small", title: mine ? "Delete this effect of yours" : "Pick one of your own effects to delete it", disabled: !mine }, "Delete");
+  const del = el("button", { type: "button", class: "small", title: mine ? t("Delete this effect of yours") : t("Pick one of your own effects to delete it"), disabled: !mine }, t("Delete"));
   del.addEventListener("click", async () => {
     mk.effects = await invoke("delete_mask_effect", { name: select.value.slice(2) }).catch((err) => (showError(err), mk.effects));
     mk.effect = "";
@@ -316,22 +321,22 @@ function renderToolOptions() {
   box.replaceChildren();
   const k = NEW_KINDS.find((n) => n.kind === mk.tool);
   $("mask-hint").textContent = k
-    ? `${k.label}: ${k.hint} Esc stops.`
+    ? t("{label}: {hint} Esc stops.", { label: t(k.label), hint: t(k.hint) })
     : maskList().length
-      ? "Click a mask to edit it; drag its handles on the photo. O shows or hides the overlay."
+      ? t("Click a mask to edit it; drag its handles on the photo. O shows or hides the overlay.")
       : "";
   if (mk.tool !== "brush") return;
   const b = mk.brush;
   box.append(
     // Size stays typed: narrower than the 0.1 to 50 the protocol accepts, on purpose.
-    sliderRow({ label: "Size", min: 0.5, max: 25, step: 0.5, value: b.size, title: "Radius, % of the photo's width ([ and ])", onInput: (v) => { b.size = v; drawMasks(); }, onChange: (v) => { b.size = v; drawMasks(); } }),
+    sliderRow({ label: t("Size"), min: 0.5, max: 25, step: 0.5, value: b.size, title: t("Radius, % of the photo's width ([ and ])"), onInput: (v) => { b.size = v; drawMasks(); }, onChange: (v) => { b.size = v; drawMasks(); } }),
     sliderRow({ ...maskRange("Feather"), value: b.feather, onInput: (v) => { b.feather = v; drawMasks(); }, onChange: (v) => (b.feather = v) }),
-    sliderRow({ ...maskRange("Flow"), value: b.flow, title: "How fast paint builds up", onChange: (v) => (b.flow = v) }),
-    sliderRow({ ...maskRange("Density"), value: b.density, title: "Most strength the brush reaches", onChange: (v) => (b.density = v) }),
+    sliderRow({ ...maskRange("Flow"), value: b.flow, title: t("How fast paint builds up"), onChange: (v) => (b.flow = v) }),
+    sliderRow({ ...maskRange("Density"), value: b.density, title: t("Most strength the brush reaches"), onChange: (v) => (b.density = v) }),
   );
   const erase = el("input", { type: "checkbox", checked: b.erase });
   erase.addEventListener("change", () => (b.erase = erase.checked));
-  box.append(el("label", { class: "inline-check", title: "Or hold Alt while painting" }, erase, "Erase"));
+  box.append(el("label", { class: "inline-check", title: t("Or hold Alt while painting") }, erase, t("Erase")));
 }
 
 // ---------------------------------------------------------------- drafts

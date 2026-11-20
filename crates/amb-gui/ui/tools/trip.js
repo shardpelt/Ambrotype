@@ -21,7 +21,7 @@ function tripSeed() {
 
 // Put `effects` on the photo in place of the trip's own (other effects stay).
 async function setTrip(effects, what) {
-  if (!ui.info) return toast("Open a photo first.", true);
+  if (!ui.info) return toast(t("Open a photo first."), true);
   const kept = tripEffects().filter((e) => !isTripPlugin(e.plugin));
   const list = [...kept, ...effects];
   await run(list.length
@@ -38,9 +38,9 @@ function tripRecipe(plugin, name) {
 // (only the highlights, the blues…) and `amount` (to 200), in place of the
 // one of that plugin already there; one undo step.
 async function setEffect(plugin, opts = {}, what = null) {
-  if (!ui.info) return toast("Open a photo first.", true);
+  if (!ui.info) return toast(t("Open a photo first."), true);
   const commands = await effectCommands(plugin, opts);
-  if (!commands) return toast(`The effect ${plugin} isn't installed.`, true);
+  if (!commands) return toast(t("The effect {plugin} isn't installed.", { plugin }), true);
   await run(commands, what ?? (opts.recipe || plugin));
 }
 
@@ -89,7 +89,7 @@ const tripClear = () => setTrip([], "Trip: back to normal");
 // The trip as a preset in the Trippy group, its effects included, and
 // offered to the hub (presets.js `sharePresetToHub`).
 async function tripSave() {
-  if (!tripEffects().length) return toast("Trip first: this photo has no effects to save.", true);
+  if (!tripEffects().length) return toast(t("Trip first: this photo has no effects to save."), true);
   const saved = await savePresetFlow("", "Trippy");
-  if (saved && (await askYes(`Share “${saved.name}” to the hub too?`))) sharePresetToHub(saved);
+  if (saved && (await askYes(t("Share “{name}” to the hub too?", { name: saved.name })))) sharePresetToHub(saved);
 }

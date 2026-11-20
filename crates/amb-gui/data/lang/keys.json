@@ -1,12 +1,20 @@
 {
  "\"{name}\" applied to {photos}": [
-  "develop/presets.js"
+  "develop/presets.js",
+  "library/library-actions.js"
  ],
  "\"{name}\" applied to {photos}; {n} failed: {why}": [
   "develop/presets.js"
  ],
  "\"{name}\" is back: Done keeps it": [
   "looks/looks-dialog.js"
+ ],
+ "(Open a photo first.)": [
+  "help/learn.js"
+ ],
+ "(mixed)": [
+  "library/library.js",
+  "library/place-field.js"
  ],
  "+ New preset…": [
   "index.html"
@@ -20,11 +28,17 @@
  "+{n} more": [
   "dialogs/hub.js"
  ],
+ "+{stops}": [
+  "help/figures.js"
+ ],
  ". It opens in": [
   "index.html"
  ],
  ". K keeps, D lets go, ← → step; nothing goes until you say.": [
   "index.html"
+ ],
+ ".. (up)": [
+  "library/library-grid.js"
  ],
  "1 (rows)": [
   "looks/editor-inspector.js"
@@ -41,6 +55,12 @@
  "1 star (1)": [
   "index.html"
  ],
+ "1/1000 s: frozen": [
+  "help/figures.js"
+ ],
+ "1/15 s: movement blurs": [
+  "help/figures.js"
+ ],
  "1080 px (small)": [
   "index.html"
  ],
@@ -52,6 +72,12 @@
  ],
  "16-bit": [
   "index.html"
+ ],
+ "16:9 screen": [
+  "help/figures.js"
+ ],
+ "1:1 square": [
+  "help/figures.js"
  ],
  "2 stars (2)": [
   "index.html"
@@ -74,6 +100,9 @@
  "3840 px (4K screens)": [
   "index.html"
  ],
+ "3:2 camera": [
+  "help/figures.js"
+ ],
  "4 stars (4)": [
   "index.html"
  ],
@@ -83,11 +112,17 @@
  "4:4:4 (all colour detail)": [
   "index.html"
  ],
+ "4:5 Instagram": [
+  "help/figures.js"
+ ],
  "5 MB": [
   "index.html"
  ],
  "5 stars (5)": [
   "index.html"
+ ],
+ "52.3731, 4.8922 or a map link": [
+  "library/place-field.js"
  ],
  "8 MB": [
   "index.html"
@@ -101,8 +136,15 @@
  ": each photo's own Auto tone and white balance": [
   "index.html"
  ],
+ ": edit one of them first": [
+  "library/library-actions.js"
+ ],
  ": every photo matched to it": [
-  "index.html"
+  "index.html",
+  "library/library-actions.js"
+ ],
+ ": every photo matched to it (pick another below)": [
+  "library/library-actions.js"
  ],
  ": its own JPEG inside each raw when that is full size, else the raw at full size matched to it (Fujifilm)": [
   "index.html"
@@ -242,6 +284,15 @@
  "About": [
   "index.html"
  ],
+ "About {name}": [
+  "help/help.js"
+ ],
+ "Above and below, the candidate above": [
+  "library/cull.js"
+ ],
+ "Above and below, the candidate below": [
+  "library/cull.js"
+ ],
  "Across": [
   "index.html"
  ],
@@ -249,6 +300,12 @@
   "develop/presetlib.js",
   "index.html",
   "tools/mask-panel.js"
+ ],
+ "Add \"{name}\" to all {n}": [
+  "library/library.js"
+ ],
+ "Add \"{name}\" to the {n} selected": [
+  "library/library.js"
  ],
  "Add Keywords": [
   "core/menu.js"
@@ -292,6 +349,9 @@
  "Add keywords": [
   "index.html"
  ],
+ "Add keywords (Enter; commas between)": [
+  "library/slideshow.js"
+ ],
  "Add keywords (jump to the keyword field)": [
   "core/keys.js"
  ],
@@ -329,10 +389,14 @@
   "core/keys.js"
  ],
  "Add to the selection": [
-  "index.html"
+  "index.html",
+  "library/organise.js"
  ],
  "Add to the selection (commas for several)…": [
   "index.html"
+ ],
+ "Add to {n} selected": [
+  "library/organise.js"
  ],
  "Add your own model…": [
   "index.html"
@@ -355,6 +419,9 @@
  "Added {name}. Click Use to use it.": [
   "dialogs/models.js"
  ],
+ "Added {photos} to “{name}” ({count} in it)": [
+  "library/collections.js"
+ ],
  "Added. Change it or take it off in Develop → Effects.": [
   "dialogs/plugins.js"
  ],
@@ -373,6 +440,9 @@
  "Adobe RGB (1998)-compatible (print)": [
   "index.html"
  ],
+ "Advice and challenges come with 20 or more photos that say how they were shot.": [
+  "library/insights.js"
+ ],
  "After": [
   "index.html"
  ],
@@ -382,12 +452,19 @@
  "After export": [
   "index.html"
  ],
+ "Again": [
+  "library/batch-export.js"
+ ],
  "Alike": [
-  "index.html"
+  "index.html",
+  "library/duplicates.js"
  ],
  "All": [
   "develop/presetlib.js",
   "index.html"
+ ],
+ "All cameras {n}": [
+  "library/insights.js"
  ],
  "All except location": [
   "index.html"
@@ -402,7 +479,8 @@
   "index.html"
  ],
  "All photos": [
-  "index.html"
+  "index.html",
+  "library/collections.js"
  ],
  "All shortcuts are back to their defaults.": [
   "core/keys.js"
@@ -421,6 +499,9 @@
  ],
  "Already level.": [
   "tools/toolblocks.js"
+ ],
+ "Already rejected": [
+  "library/cleanup.js"
  ],
  "Also a smaller copy, up to": [
   "index.html"
@@ -469,6 +550,9 @@
  "An empty frame on top, in the middle": [
   "index.html"
  ],
+ "Analysing {n} negatives…": [
+  "library/library-actions.js"
+ ],
  "Angle": [
   "index.html"
  ],
@@ -497,6 +581,7 @@
   "index.html"
  ],
  "Aperture": [
+  "help/figures.js",
   "index.html"
  ],
  "Appearance": [
@@ -521,14 +606,25 @@
   "develop/presets.js",
   "index.html"
  ],
+ "Apply (select photos first)": [
+  "library/organise.js"
+ ],
  "Apply a preset": [
   "index.html"
  ],
+ "Apply a preset to {name}": [
+  "library/library-actions.js"
+ ],
+ "Apply a preset to {n} photos": [
+  "library/library-actions.js"
+ ],
  "Apply a preset to {n} photos…": [
-  "develop/filmstrip.js"
+  "develop/filmstrip.js",
+  "library/library.js"
  ],
  "Apply a preset…": [
-  "develop/filmstrip.js"
+  "develop/filmstrip.js",
+  "library/library.js"
  ],
  "Apply earlier": [
   "develop/fx.js"
@@ -551,11 +647,18 @@
  "Apply to the original, not on top": [
   "index.html"
  ],
+ "Apply to {n} selected": [
+  "library/organise.js"
+ ],
  "Apply “{name}”": [
   "develop/presets.js"
  ],
  "Applying \"{name}\" to {n} photos…": [
-  "develop/presets.js"
+  "develop/presets.js",
+  "library/library-actions.js"
+ ],
+ "April": [
+  "library/browse.js"
  ],
  "Aqua": [
   "develop/touch.js",
@@ -613,6 +716,9 @@
  "At 300 dpi, each photo with its edit. More photos than fit make more pages.": [
   "index.html"
  ],
+ "August": [
+  "library/browse.js"
+ ],
  "Auto": [
   "index.html",
   "looks/layout.js"
@@ -657,6 +763,9 @@
  ],
  "Auto white balance…": [
   "develop/presets.js"
+ ],
+ "Auto-stack by capture time": [
+  "library/library-grid.js"
  ],
  "Auto-stack…": [
   "index.html"
@@ -709,6 +818,9 @@
  ],
  "Batch export: resize a folder and its subfolders to smaller copies in another folder": [
   "core/keys.js"
+ ],
+ "Batch export: {summary}": [
+  "library/batch-export.js"
  ],
  "Batch export…": [
   "index.html"
@@ -772,6 +884,9 @@
  ],
  "Blues": [
   "develop/fx.js"
+ ],
+ "Blurry": [
+  "library/cleanup.js"
  ],
  "Border": [
   "index.html"
@@ -848,6 +963,9 @@
  "Built-in panel: it gains new settings as Ambrotype adds them. Reordering its contents makes it your own panel.": [
   "looks/editor-inspector.js"
  ],
+ "Burst": [
+  "library/duplicates.js"
+ ],
  "Bursts within": [
   "index.html"
  ],
@@ -869,12 +987,29 @@
  "By rating": [
   "index.html"
  ],
+ "Camera": [
+  "library/collections.js",
+  "library/insights.js",
+  "library/slideshow.js"
+ ],
+ "Camera and number: Z6_0001": [
+  "library/organise.js"
+ ],
+ "Camera clock": [
+  "library/browse.js"
+ ],
  "Camera simulator": [
   "core/keys.js",
   "index.html"
  ],
+ "Camera: {coords}": [
+  "library/place-field.js"
+ ],
  "Can't be installed: {error}": [
   "dialogs/hub.js"
+ ],
+ "Can't be read now: {error}": [
+  "library/lightroom.js"
  ],
  "Can't be used: see the problems below": [
   "looks/looks-dialog.js"
@@ -885,11 +1020,17 @@
  "Cancel the crop": [
   "core/keys.js"
  ],
+ "Candidate": [
+  "library/cull.js"
+ ],
  "Canvas": [
   "index.html"
  ],
  "Caption": [
   "index.html"
+ ],
+ "Capture date": [
+  "library/collections.js"
  ],
  "Catalogue": [
   "index.html"
@@ -918,11 +1059,20 @@
  "Change this size": [
   "tools/croptool.js"
  ],
+ "Changed on {photos}": [
+  "library/organise.js"
+ ],
  "Changed {n} of {photos}": [
   "dialogs/plugins.js"
  ],
  "Changed {n} of {photos} · {failed} failed: {error}": [
   "dialogs/plugins.js"
+ ],
+ "Changes go to the active photo (the framed one). Click a photo to make it active; G or Esc goes back to the grid.": [
+  "library/library.js"
+ ],
+ "Change…": [
+  "library/guess-places.js"
  ],
  "Changing the label makes this panel your own.": [
   "looks/editor-inspector.js"
@@ -956,19 +1106,26 @@
   "index.html"
  ],
  "Choose folder…": [
-  "index.html"
+  "index.html",
+  "library/organise.js"
  ],
  "Choose it on a map, or find an address or place by name": [
-  "index.html"
+  "index.html",
+  "library/place-field.js"
  ],
  "Choose the .onnx file and add…": [
   "index.html"
  ],
+ "Choose the folder they go into.": [
+  "library/organise.js"
+ ],
  "Choose the place": [
-  "index.html"
+  "index.html",
+  "library/place-picker.js"
  ],
  "Choose where the photos are and where they go.": [
-  "index.html"
+  "index.html",
+  "library/import.js"
  ],
  "Choose…": [
   "index.html"
@@ -1032,6 +1189,9 @@
  "Click adds · double-click removes": [
   "develop/curve.js"
  ],
+ "Click for more": [
+  "help/help.js"
+ ],
  "Click it or box it; AI removes all of it": [
   "tools/toolblocks.js"
  ],
@@ -1047,6 +1207,9 @@
  "Click the clear film between frames to set the film base (before Crop to frame, or with the crop off). Alt-click to measure it from the scan again": [
   "looks/layout.js"
  ],
+ "Click the map, or search, to put the pin.": [
+  "library/place-picker.js"
+ ],
  "Click the object (Alt-click for just a part), or drag a box round it: its outline is found (SAM 2.1 for a click, Settings → AI models), and AI Remove fills all of it in one spot.": [
   "tools/spots.js"
  ],
@@ -1056,11 +1219,22 @@
  "Click the stars on the filmstrip's photos to rate them (hovering shows the missing stars in grey)": [
   "index.html"
  ],
+ "Click the steps in History to see what each one did": [
+  "help/teach.js"
+ ],
  "Click to add a point · drag to move · double-click or drag out of the graph to remove": [
   "develop/curve.js"
  ],
+ "Click to keep this one instead": [
+  "library/bursts.js",
+  "library/duplicates.js"
+ ],
+ "Click to read more in Photography basics": [
+  "help/basics.js"
+ ],
  "Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.": [
-  "index.html"
+  "index.html",
+  "library/library.js"
  ],
  "Clipped": [
   "develop/zones.js"
@@ -1097,8 +1271,17 @@
  "Close (the conversation is kept)": [
   "index.html"
  ],
+ "Close the catalogue (nothing is deleted)": [
+  "library/lightroom.js"
+ ],
  "Close the settings; the frame stays": [
   "index.html"
+ ],
+ "Close this stack": [
+  "library/library-grid.js"
+ ],
+ "Close “{name}”? Its photos stay where they are, and so do sidecars written here.": [
+  "library/lightroom.js"
  ],
  "Cloudy": [
   "index.html"
@@ -1127,6 +1310,9 @@
  "Collages": [
   "index.html"
  ],
+ "Collection set": [
+  "library/collections.js"
+ ],
  "Collection set…": [
   "index.html"
  ],
@@ -1134,7 +1320,11 @@
   "index.html"
  ],
  "Collections": [
-  "index.html"
+  "index.html",
+  "library/collections.js"
+ ],
+ "Collections hold photos from any folders. They are kept in Ambrotype's settings folder, not next to the photos.": [
+  "library/collections.js"
  ],
  "Color": [
   "index.html",
@@ -1157,6 +1347,9 @@
  ],
  "Colour Label": [
   "core/menu.js"
+ ],
+ "Colour label": [
+  "library/collections.js"
  ],
  "Colour per pixel (TensorFlow, MediaPipe)": [
   "index.html"
@@ -1241,8 +1434,17 @@
  "Convert {n} raws to JPEGs…": [
   "develop/filmstrip.js"
  ],
+ "Converting {n} raws…": [
+  "library/library-actions.js"
+ ],
+ "Converting: {done} of {total}…": [
+  "library/library.js"
+ ],
  "Copied as “{name}”": [
   "develop/preset-edit.js"
+ ],
+ "Copied from {name}": [
+  "library/library.js"
  ],
  "Copied into dated folders, renamed if you like.": [
   "core/keys.js"
@@ -1256,11 +1458,20 @@
  "Copied the photo ({w} × {h}): paste it anywhere": [
   "dialogs/export.js"
  ],
+ "Copied the settings of {name}": [
+  "library/library-actions.js"
+ ],
+ "Copied the settings of {name}: select photos in the filmstrip (Ctrl- or Shift-click), then Paste settings": [
+  "library/library-actions.js"
+ ],
  "Copied {n} paths": [
   "dialogs/export.js"
  ],
  "Copied: paste it into your AI assistant": [
   "dialogs/plugins.js"
+ ],
+ "Copies and alike pictures": [
+  "library/cleanup.js"
  ],
  "Copy": [
   "index.html"
@@ -1269,7 +1480,8 @@
   "core/menu.js"
  ],
  "Copy file path": [
-  "dialogs/export.js"
+  "dialogs/export.js",
+  "library/library.js"
  ],
  "Copy from the source as it is": [
   "index.html"
@@ -1278,7 +1490,8 @@
   "index.html"
  ],
  "Copy image": [
-  "dialogs/export.js"
+  "dialogs/export.js",
+  "library/library.js"
  ],
  "Copy instructions": [
   "index.html"
@@ -1307,6 +1520,9 @@
  "Copy this photo's develop settings (Ctrl+Shift+C)": [
   "index.html"
  ],
+ "Copy {n} file paths": [
+  "library/library.js"
+ ],
  "Copying the photo…": [
   "dialogs/export.js"
  ],
@@ -1319,8 +1535,20 @@
  "Copyright © 2026 The Ambrotype contributors": [
   "index.html"
  ],
+ "Couldn't get the sample photo ({error}). Watch an edit on the photo you have open instead? It makes Auto edit's changes one at a time, as History steps you can undo.": [
+  "help/teach.js"
+ ],
+ "Couldn't get the sample photo: {error}": [
+  "help/teach.js"
+ ],
+ "Couldn't get the sample photo: {error}. Open a photo of yours, then Help → Watch an edit on this photo.": [
+  "help/teach.js"
+ ],
  "Couldn't list the folder: {why}": [
   "develop/filmstrip.js"
+ ],
+ "Couldn't load Photography basics": [
+  "help/basics.js"
  ],
  "Couldn't load border presets: {error}": [
   "dialogs/borders.js"
@@ -1334,8 +1562,14 @@
  "Couldn't read the changed sidecar: {why}": [
   "core/app.js"
  ],
+ "Couldn't read the folder: {error}": [
+  "library/library.js"
+ ],
  "Couldn't save the rating and keywords: {why}": [
   "develop/info.js"
+ ],
+ "Counting…": [
+  "library/insights.js"
  ],
  "Cream": [
   "index.html"
@@ -1402,8 +1636,17 @@
  "Date and camera name: 20261010_DSC_1234": [
   "index.html"
  ],
+ "Date and name: 2026-07-14_IMG_1234": [
+  "library/organise.js"
+ ],
+ "Date and number: 20260714_0001": [
+  "library/organise.js"
+ ],
  "Date and number: 20261010_0001": [
   "index.html"
+ ],
+ "December": [
+  "library/browse.js"
  ],
  "Default": [
   "index.html"
@@ -1442,6 +1685,9 @@
  "Delete spot {n}": [
   "develop/history.js"
  ],
+ "Delete the collection “{name}”? Its photos stay where they are.": [
+  "library/collections.js"
+ ],
  "Delete the selected part (or mask)": [
   "core/keys.js"
  ],
@@ -1469,8 +1715,21 @@
  "Delete this size": [
   "tools/croptool.js"
  ],
+ "Delete {name}? Only the copy's edit goes; the photo stays.": [
+  "library/library-actions.js"
+ ],
+ "Delete {n} virtual copies? Only the copy's edit goes; the photo stays.": [
+  "library/library-actions.js"
+ ],
+ "Deleted the collection “{name}”": [
+  "library/collections.js"
+ ],
+ "Deleted {copies}": [
+  "library/library-actions.js"
+ ],
  "Deleted “{name}”": [
-  "collage/collage-tray.js"
+  "collage/collage-tray.js",
+  "library/organise.js"
  ],
  "Delete…": [
   "develop/preset-hide.js",
@@ -1478,6 +1737,12 @@
  ],
  "Denoise": [
   "index.html"
+ ],
+ "Denoised {photos} ({seconds} s)": [
+  "library/denoise.js"
+ ],
+ "Denoised {photos}: {name} ({seconds} s)": [
+  "library/denoise.js"
  ],
  "Density": [
   "index.html"
@@ -1516,12 +1781,18 @@
  "Do nothing": [
   "index.html"
  ],
+ "Don't look here": [
+  "library/collections.js"
+ ],
  "Don't show tips": [
   "index.html"
  ],
  "Done": [
   "develop/preset-hide.js",
   "index.html"
+ ],
+ "Double-click the label to reset it.": [
+  "help/help.js"
  ],
  "Double-click to rename": [
   "tools/mask-panel.js"
@@ -1537,6 +1808,12 @@
  ],
  "Downloading {name} ({size})…": [
   "dialogs/models.js"
+ ],
+ "Downloading…": [
+  "library/denoise.js"
+ ],
+ "Downloading… {percent} %": [
+  "library/denoise.js"
  ],
  "Downloading… {percent}%": [
   "dialogs/models.js"
@@ -1579,6 +1856,9 @@
  ],
  "Drag it somewhere else": [
   "index.html"
+ ],
+ "Drag onto the map to place (the selection moves together):": [
+  "library/browse.js"
  ],
  "Drag photos from below into the cells. In a cell: drag to move the photo, scroll to zoom, double-click to fit.": [
   "collage/collage-canvas.js"
@@ -1750,8 +2030,12 @@
  "Edit this layout: move panels, controls and toolbar buttons": [
   "index.html"
  ],
+ "Edit “{name}”": [
+  "library/collections.js"
+ ],
  "Edited": [
-  "index.html"
+  "index.html",
+  "library/collections.js"
  ],
  "Edited first": [
   "index.html"
@@ -1795,6 +2079,9 @@
  "Empty: add photos or a folder": [
   "collage/collage-tray.js"
  ],
+ "End (Esc)": [
+  "library/slideshow.js"
+ ],
  "End the lesson": [
   "index.html"
  ],
@@ -1830,6 +2117,12 @@
  ],
  "Every photo shown in the library": [
   "index.html"
+ ],
+ "Every photo the library knows is where it was. (Photos on drives that aren't plugged in don't count.)": [
+  "library/organise.js"
+ ],
+ "Every photo with {keywords} gets this keyword instead, in its sidecar.": [
+  "library/organise.js"
  ],
  "Every step stays in History, so Redo brings them back.": [
   "core/keys.js"
@@ -1895,17 +2188,27 @@
   "index.html"
  ],
  "Export {n} photos…": [
-  "develop/filmstrip.js"
+  "develop/filmstrip.js",
+  "library/library.js"
  ],
  "Export {photos}": [
   "dialogs/export.js"
  ],
+ "Exported": [
+  "library/library-actions.js"
+ ],
  "Exported the collage, {w}×{h}, {mb} MB": [
   "collage/collage.js"
+ ],
+ "Exported {n} photos to {dir}": [
+  "library/library-actions.js"
  ],
  "Exported {path}": [
   "collage/collage.js",
   "dialogs/export.js"
+ ],
+ "Exported {photos}": [
+  "library/library-actions.js"
  ],
  "Exported {size}, {mb} MB": [
   "dialogs/export.js"
@@ -1919,6 +2222,9 @@
  "Exported {size}, {mb} MB, quality {quality}, and a {smallMb} MB copy ({name})": [
   "dialogs/export.js"
  ],
+ "Exporting {n} of {total}: {name}": [
+  "library/library-actions.js"
+ ],
  "Exporting {path}…": [
   "dialogs/export.js"
  ],
@@ -1926,22 +2232,38 @@
   "core/menu.js",
   "develop/filmstrip.js",
   "dialogs/export.js",
-  "index.html"
+  "index.html",
+  "library/library.js"
+ ],
+ "Exposure": [
+  "library/slideshow.js"
  ],
  "Exposure, contrast, highlights, shadows": [
   "tools/toolblocks.js"
  ],
+ "Exposure: {meter}.": [
+  "help/camsim.js"
+ ],
  "Extra tools that make edits; run, install and share them.": [
   "core/keys.js"
  ],
+ "Eyes closed": [
+  "library/cleanup.js"
+ ],
  "F again (or Esc) comes back. Zoom and move round it as usual.": [
   "core/keys.js"
+ ],
+ "F##Friday": [
+  "library/browse.js"
  ],
  "Fade": [
   "index.html"
  ],
  "Feather": [
   "index.html"
+ ],
+ "February": [
+  "library/browse.js"
  ],
  "Feedback": [
   "index.html",
@@ -1950,7 +2272,11 @@
  "File": [
   "core/keys.js",
   "core/menu.js",
-  "index.html"
+  "index.html",
+  "library/slideshow.js"
+ ],
+ "File name": [
+  "library/collections.js"
  ],
  "File names": [
   "index.html"
@@ -2006,10 +2332,18 @@
   "index.html"
  ],
  "Filter presets": [
+  "help/tips.js",
   "index.html"
  ],
+ "Filter presets… try “{name}”": [
+  "help/tips.js"
+ ],
+ "Filter · {n} ▾": [
+  "library/libmenus.js"
+ ],
  "Filter ▾": [
-  "index.html"
+  "index.html",
+  "library/libmenus.js"
  ],
  "Filter: e.g. dust, whatsapp, horizon": [
   "index.html"
@@ -2039,6 +2373,9 @@
  "Find settings": [
   "index.html"
  ],
+ "Find similar photos": [
+  "library/library.js"
+ ],
  "Find, rate, sort and tag photos": [
   "core/tasks.js"
  ],
@@ -2058,11 +2395,18 @@
  "Finds copies of the same file, alike pictures (the same shot re-saved, or frames of one scene) and bursts. In each group the best comes first, marked ★: a pick, then the highest rating, an edit, the sharpest picture. Click another photo to make it the one kept.": [
   "index.html"
  ],
+ "Finish": [
+  "help/learn.js"
+ ],
+ "First copy the settings of one photo (Ctrl+Shift+C).": [
+  "library/library-actions.js"
+ ],
  "First number": [
   "index.html"
  ],
  "Fit": [
-  "index.html"
+  "index.html",
+  "library/browse.js"
  ],
  "Fit / 100%": [
   "core/menu.js"
@@ -2081,7 +2425,9 @@
  ],
  "Flag": [
   "core/menu.js",
-  "index.html"
+  "index.html",
+  "library/collections.js",
+  "library/slideshow.js"
  ],
  "Flag as a pick": [
   "core/keys.js"
@@ -2117,13 +2463,22 @@
   "develop/info.js"
  ],
  "Focal length": [
-  "index.html"
+  "index.html",
+  "library/slideshow.js"
+ ],
+ "Focal length (mm)": [
+  "library/collections.js"
  ],
  "Fold or unfold": [
   "looks/blocks.js"
  ],
  "Folder": [
-  "index.html"
+  "index.html",
+  "library/collections.js",
+  "library/slideshow.js"
+ ],
+ "Folder: {name}": [
+  "library/collections.js"
  ],
  "Folders": [
   "index.html"
@@ -2154,6 +2509,9 @@
  ],
  "Forward again, after Back": [
   "core/keys.js"
+ ],
+ "Found {photos}": [
+  "library/organise.js"
  ],
  "Frame": [
   "core/menu.js",
@@ -2215,6 +2573,9 @@
  "From the selected photo": [
   "index.html"
  ],
+ "From {name} to {photos}. Ticked groups are made the same as the source (settings it doesn't have go back to their defaults); the rest stay as they are.": [
+  "library/library-actions.js"
+ ],
  "Fuji recipe": [
   "index.html"
  ],
@@ -2251,6 +2612,9 @@
  "General": [
   "index.html"
  ],
+ "Getting the sample photo (18 MB the first time)…": [
+  "help/teach.js"
+ ],
  "GitHub is open with the preset filled in: press Commit changes, then Create pull request.": [
   "develop/presets.js"
  ],
@@ -2282,6 +2646,9 @@
  "Give the selected photos the copied settings (Ctrl+Shift+V)": [
   "index.html"
  ],
+ "Give the template a name.": [
+  "library/organise.js"
+ ],
  "Give the ticked keywords to every selected photo": [
   "index.html"
  ],
@@ -2296,6 +2663,9 @@
  ],
  "Go forward to this step": [
   "develop/history.js"
+ ],
+ "Goes to the trash": [
+  "library/cleanup.js"
  ],
  "Gradients, brush and range masks with their own sliders.": [
   "core/keys.js"
@@ -2345,6 +2715,12 @@
  "Guess places": [
   "index.html"
  ],
+ "Guess places…": [
+  "library/browse.js"
+ ],
+ "Guessing…": [
+  "library/guess-places.js"
+ ],
  "Guide": [
   "index.html"
  ],
@@ -2363,11 +2739,15 @@
  "Guides for AI agents (built in;": [
   "index.html"
  ],
+ "HDR merge failed": [
+  "library/library-actions.js"
+ ],
  "HSL tabs": [
   "looks/editor-inspector.js"
  ],
  "Has edits": [
-  "develop/filmstrip.js"
+  "develop/filmstrip.js",
+  "library/library-grid.js"
  ],
  "Heading": [
   "looks/editor-inspector.js"
@@ -2416,11 +2796,17 @@
  "Hide or show the top bar": [
   "core/keys.js"
  ],
+ "Hide the folders (Ctrl+[)": [
+  "library/libmenus.js"
+ ],
  "Hide the folders (F7)": [
   "index.html"
  ],
  "Hide the left column (Ctrl+[)": [
   "looks/columns.js"
+ ],
+ "Hide the panel (Ctrl+])": [
+  "library/libmenus.js"
  ],
  "Hide the panel (F8)": [
   "index.html"
@@ -2471,11 +2857,17 @@
  "How gradually the selection fades out": [
   "tools/mask-panel.js"
  ],
+ "How many hours the camera's clock was ahead of UTC (GPS tracks keep UTC): 2 for Amsterdam in summer, −5 for New York in winter, 0 if the camera was set to UTC.": [
+  "library/browse.js"
+ ],
  "How much colour detail JPEG keeps: Auto keeps it all at quality 90 and above": [
   "index.html"
  ],
  "How often each aperture, focal length, shutter speed, ISO, camera and lens comes up in the photos shown, and how many were kept. Click a bar to show those photos.": [
   "core/keys.js"
+ ],
+ "How photography works": [
+  "help/basics.js"
  ],
  "How the new part joins this mask": [
   "tools/mask-panel.js"
@@ -2500,14 +2892,29 @@
   "index.html",
   "looks/layout.js"
  ],
+ "I or right-click hides this · 0–5 rate · P X U flag · 6–9 label · Ctrl+[ ] turn": [
+  "library/slideshow.js"
+ ],
  "ISO": [
-  "index.html"
+  "help/figures.js",
+  "index.html",
+  "library/collections.js"
+ ],
+ "ISO 100: smooth": [
+  "help/figures.js"
+ ],
+ "ISO 12800: noisy": [
+  "help/figures.js"
+ ],
+ "ISO {iso}: visible grain (noise); it lets you use a faster shutter or a smaller aperture.": [
+  "help/camsim.js"
  ],
  "Idea": [
   "index.html"
  ],
  "Import": [
-  "index.html"
+  "index.html",
+  "library/import.js"
  ],
  "Import Photos…": [
   "core/menu.js"
@@ -2518,14 +2925,41 @@
  "Import photos from a card or folder": [
   "core/keys.js"
  ],
+ "Import photos from…": [
+  "library/import.js"
+ ],
+ "Import photos into…": [
+  "library/import.js"
+ ],
+ "Import {n}": [
+  "library/import.js"
+ ],
  "Import ▾": [
   "index.html"
+ ],
+ "Imported": [
+  "library/import.js"
  ],
  "Imported \"{name}\"": [
   "looks/looks-dialog.js"
  ],
+ "Imported into {folders}": [
+  "library/import.js"
+ ],
+ "Imported {photos}": [
+  "library/import.js"
+ ],
+ "Imported {photos}, skipped {skipped} already there": [
+  "library/import.js"
+ ],
+ "Importing {n} of {total}: {name}": [
+  "library/import.js"
+ ],
  "Import…": [
   "index.html"
+ ],
+ "In a photo": [
+  "help/help.js"
  ],
  "In each burst, mark the photo in focus with eyes open and dim the rest; then pick it and reject the rest, or stack them": [
   "index.html"
@@ -2542,6 +2976,9 @@
  "In use": [
   "dialogs/models.js"
  ],
+ "In your own templates: {tokens}. A / makes a subfolder.": [
+  "library/import.js"
+ ],
  "In “{group}”": [
   "dialogs/hub.js"
  ],
@@ -2553,6 +2990,12 @@
  ],
  "Include subfolders (a card's DCIM folders)": [
   "index.html"
+ ],
+ "Indexing photos for smart search (once): {done} of {total}…": [
+  "library/library.js"
+ ],
+ "Indexing {name}: {done} of {total} photos": [
+  "library/folders.js"
  ],
  "Indoors": [
   "index.html"
@@ -2584,6 +3027,9 @@
  ],
  "Install the interface \"{name}\"?\n\nIt's a program with the app's full reach (your photos, edits and settings), not a sandboxed plugin. Install it only if you trust its author or have read its files on the hub.": [
   "dialogs/hub.js"
+ ],
+ "Install {name} ({size} MB)": [
+  "library/denoise.js"
  ],
  "Installed \"{name}\".": [
   "dialogs/hub.js"
@@ -2631,7 +3077,11 @@
   "tools/mask-panel.js"
  ],
  "Into": [
-  "index.html"
+  "index.html",
+  "library/organise.js"
+ ],
+ "Into one stack, the ★ one on top": [
+  "library/duplicates.js"
  ],
  "Inv": [
   "tools/mask-panel.js"
@@ -2684,6 +3134,15 @@
  "JPEG: the quality comes down only as far as it must for the file to fit": [
   "index.html"
  ],
+ "January": [
+  "library/browse.js"
+ ],
+ "July": [
+  "library/browse.js"
+ ],
+ "June": [
+  "library/browse.js"
+ ],
  "Just the photo, filling the screen": [
   "core/keys.js"
  ],
@@ -2692,6 +3151,9 @@
  ],
  "Keep": [
   "index.html"
+ ],
+ "Keep a second copy in…": [
+  "library/import.js"
  ],
  "Keep it in your presets list": [
   "develop/presetlib.js"
@@ -2716,6 +3178,9 @@
  ],
  "Keep the folder structure": [
   "index.html"
+ ],
+ "Keep the names": [
+  "library/organise.js"
  ],
  "Keep the person the same size by walking back as you zoom in: the background grows": [
   "index.html"
@@ -2744,6 +3209,9 @@
  "Keeps the format, size, sharpening, metadata and border choices.": [
   "dialogs/export.js"
  ],
+ "Kept": [
+  "library/cleanup.js"
+ ],
  "Kept instead:": [
   "index.html"
  ],
@@ -2759,8 +3227,15 @@
  "Keyline around the photo": [
   "index.html"
  ],
+ "Keyword": [
+  "library/collections.js"
+ ],
  "Keywords": [
-  "index.html"
+  "index.html",
+  "library/slideshow.js"
+ ],
+ "Keywords changed": [
+  "library/library.js"
  ],
  "Keywords for all": [
   "index.html"
@@ -2775,10 +3250,12 @@
   "looks/editor-inspector.js"
  ],
  "Label": [
+  "library/slideshow.js",
   "looks/editor-inspector.js"
  ],
  "Label removed": [
-  "develop/info.js"
+  "develop/info.js",
+  "library/library.js"
  ],
  "Landscape page": [
   "index.html"
@@ -2843,6 +3320,11 @@
  "Left Column": [
   "core/menu.js"
  ],
+ "Lens": [
+  "library/collections.js",
+  "library/insights.js",
+  "library/slideshow.js"
+ ],
  "Lens corrections first": [
   "index.html"
  ],
@@ -2875,6 +3357,9 @@
  ],
  "Level the horizon": [
   "core/keys.js"
+ ],
+ "Level the horizon ({angle}°)": [
+  "help/teach.js"
  ],
  "Level the horizon: straighten the photo by its long lines, and crop to fit (L)": [
   "index.html"
@@ -2925,17 +3410,33 @@
  "Lightroom": [
   "index.html"
  ],
+ "Lightroom collection: {name}": [
+  "library/lightroom.js"
+ ],
  "Lightroom, Camera Raw and Adobe are trademarks of Adobe Inc.; Fujifilm's film simulation names are trademarks of FUJIFILM Corporation. Ambrotype is not affiliated with or endorsed by either.": [
   "index.html"
+ ],
+ "Lightroom: {name}": [
+  "library/lightroom.js"
  ],
  "Lights": [
   "develop/touch.js"
  ],
  "Like one I edited": [
-  "index.html"
+  "index.html",
+  "library/library-actions.js"
+ ],
+ "Like {name}": [
+  "library/library-actions.js"
  ],
  "Linear": [
   "tools/masks.js"
+ ],
+ "Lit up on your photo. Click for more": [
+  "help/help.js"
+ ],
+ "Lit up on your photo. Click to read more in Photography basics": [
+  "help/basics.js"
  ],
  "Loading the hub…": [
   "dialogs/hub.js"
@@ -2965,11 +3466,50 @@
  "Look {seed}": [
   "develop/presets.js"
  ],
+ "Looking at the bursts…": [
+  "library/bursts.js"
+ ],
+ "Looking at the bursts… {done} of {total}": [
+  "library/bursts.js"
+ ],
+ "Looking at the photos…": [
+  "library/import.js"
+ ],
+ "Looking at the pictures… {done} of {total}": [
+  "library/cleanup.js",
+  "library/duplicates.js"
+ ],
+ "Looking for photos like it…": [
+  "library/library-actions.js"
+ ],
+ "Looking for “{query}”…": [
+  "library/library-actions.js"
+ ],
  "Looking for “{words}”…": [
   "tools/select.js"
  ],
+ "Looking in {folder}…": [
+  "library/organise.js"
+ ],
+ "Looking through the folders…": [
+  "library/collections.js"
+ ],
+ "Looking…": [
+  "library/cleanup.js",
+  "library/duplicates.js",
+  "library/organise.js"
+ ],
  "Looks different from Lightroom": [
   "index.html"
+ ],
+ "Looks through the {n} selected photos. Photos you picked or rated are left out.": [
+  "library/cleanup.js"
+ ],
+ "Looks through the {n} shown photo. Photos you picked or rated are left out.": [
+  "library/cleanup.js"
+ ],
+ "Looks through the {n} shown photos. Photos you picked or rated are left out.": [
+  "library/cleanup.js"
  ],
  "Loosely alike": [
   "index.html"
@@ -2993,6 +3533,9 @@
  "Low": [
   "index.html"
  ],
+ "Lower it when": [
+  "help/help.js"
+ ],
  "Lower selects only colours close to the samples": [
   "tools/mask-panel.js"
  ],
@@ -3014,11 +3557,20 @@
  "M or Esc": [
   "index.html"
  ],
+ "M##Monday": [
+  "library/browse.js"
+ ],
  "MB": [
   "index.html"
  ],
+ "Made a virtual copy of {name}": [
+  "library/library-actions.js"
+ ],
  "Made the preset “{name}” (Fuji, {sensor}).{notes}": [
   "develop/presets.js"
+ ],
+ "Made {stacks} of {n} photos": [
+  "library/library-grid.js"
  ],
  "Magenta": [
   "develop/touch.js",
@@ -3064,6 +3616,9 @@
  "Make sheet…": [
   "index.html"
  ],
+ "Making a contact sheet of {n} photos…": [
+  "library/library-actions.js"
+ ],
  "Making looks…": [
   "develop/presets.js"
  ],
@@ -3079,6 +3634,9 @@
  "Map": [
   "index.html"
  ],
+ "Map data and images: OpenStreetMap (open the copyright page)": [
+  "library/browse.js"
+ ],
  "Map images from OpenStreetMap in the library's Map (off: the map is a plain grid; on, it asks openstreetmap.org for the area shown)": [
   "index.html"
  ],
@@ -3087,6 +3645,9 @@
  ],
  "Map: the photos shown by where they were taken": [
   "index.html"
+ ],
+ "March": [
+  "library/browse.js"
  ],
  "Marks the best of each burst and dims the rest; then pick it and reject the rest, or stack them.": [
   "core/keys.js"
@@ -3105,6 +3666,12 @@
  "Masks: {hint}": [
   "tools/masks.js"
  ],
+ "Match GPX track…": [
+  "library/browse.js"
+ ],
+ "Match every photo to {name}": [
+  "library/library-actions.js"
+ ],
  "Match look": [
   "index.html"
  ],
@@ -3114,8 +3681,14 @@
  "Match the look of other photos: pick reference photos; finds the white balance, tone, colour and grading settings that give this photo their look": [
   "index.html"
  ],
+ "Matching the track…": [
+  "library/browse.js"
+ ],
  "Matte paper": [
   "index.html"
+ ],
+ "May": [
+  "library/browse.js"
  ],
  "Mean": [
   "index.html"
@@ -3142,6 +3715,9 @@
  "Merge bracketed raws of one scene into one HDR photo (a DNG next to them)": [
   "index.html"
  ],
+ "Merge keywords": [
+  "library/organise.js"
+ ],
  "Merge to HDR": [
   "index.html"
  ],
@@ -3156,6 +3732,15 @@
  ],
  "Merge with the next panel": [
   "looks/editor-inspector.js"
+ ],
+ "Merge {n} into…": [
+  "library/organise.js"
+ ],
+ "Merged into {name} (exposures {stops} EV)": [
+  "library/library-actions.js"
+ ],
+ "Merging {n} photos to HDR…": [
+  "library/library-actions.js"
  ],
  "Metadata": [
   "index.html"
@@ -3204,11 +3789,16 @@
  "More: the toolbar buttons that don't fit": [
   "index.html"
  ],
+ "Most often: {usual}": [
+  "library/insights.js"
+ ],
  "Most strength the brush reaches": [
   "tools/mask-panel.js"
  ],
  "Move": [
-  "index.html"
+  "index.html",
+  "library/lrcat.js",
+  "library/organise.js"
  ],
  "Move down the list": [
   "tools/mask-panel.js"
@@ -3249,6 +3839,9 @@
  "Move this part up": [
   "tools/mask-panel.js"
  ],
+ "Move to a folder": [
+  "library/organise.js"
+ ],
  "Move to a folder…": [
   "index.html"
  ],
@@ -3261,11 +3854,25 @@
  "Move up the zoomed-in photo": [
   "core/keys.js"
  ],
+ "Move {n} to the trash": [
+  "library/cleanup.js"
+ ],
+ "Move {photos} to the trash, with its sidecars, JPEG twins and virtual copies?\n\nThe trash can give them back.": [
+  "library/cleanup.js",
+  "library/organise.js"
+ ],
+ "Move {photos} to the trash, with their sidecars, JPEG twins and virtual copies?\n\nThe trash can give them back.": [
+  "library/cleanup.js",
+  "library/organise.js"
+ ],
  "Move “{name}” to the trash?": [
   "develop/preset-hide.js"
  ],
  "Move, resize, turn and overlap the photos by hand, like layers": [
   "collage/collage-canvas.js"
+ ],
+ "Moved back {photos} ({files} files)": [
+  "library/organise.js"
  ],
  "Moved it": [
   "looks/editor-keys.js"
@@ -3276,6 +3883,13 @@
  ],
  "Moved {name}": [
   "looks/editor-keys.js"
+ ],
+ "Moved {photos} ({files} files) to the trash": [
+  "library/cleanup.js",
+  "library/organise.js"
+ ],
+ "Moved {photos} ({files} files) · Organise → Undo puts them back": [
+  "library/organise.js"
  ],
  "Moves on by itself when you've done it.": [
   "index.html"
@@ -3289,6 +3903,9 @@
  "My model": [
   "index.html"
  ],
+ "My own…": [
+  "library/organise.js"
+ ],
  "Name": [
   "index.html"
  ],
@@ -3301,11 +3918,17 @@
  "Name; another name": [
   "index.html"
  ],
+ "Nearly black or blown out": [
+  "library/cleanup.js"
+ ],
  "Nearly identical": [
   "index.html"
  ],
  "Needs SAM 2.1 tiny (Settings → AI models) for clicks; a box works without it.": [
   "index.html"
+ ],
+ "Neither": [
+  "library/slideshow.js"
  ],
  "New": [
   "index.html",
@@ -3320,6 +3943,12 @@
  "New brush mask": [
   "core/keys.js",
   "develop/history.js"
+ ],
+ "New collection": [
+  "library/collections.js"
+ ],
+ "New collection…": [
+  "library/collections.js"
  ],
  "New layout": [
   "looks/editor.js"
@@ -3339,8 +3968,20 @@
  "New size from \"{name}\"": [
   "tools/croptool.js"
  ],
+ "New smart collection": [
+  "library/collections.js"
+ ],
+ "New smart collection…": [
+  "library/collections.js"
+ ],
  "New snapshot": [
   "develop/history.js"
+ ],
+ "New template": [
+  "library/organise.js"
+ ],
+ "New to editing?": [
+  "help/help.js"
  ],
  "New {kind} mask": [
   "develop/history.js"
@@ -3352,7 +3993,11 @@
   "tools/mask-panel.js"
  ],
  "Next": [
+  "help/learn.js",
   "index.html"
+ ],
+ "Next (→)": [
+  "library/slideshow.js"
  ],
  "Next Photo": [
   "core/menu.js"
@@ -3363,11 +4008,17 @@
  "Next photo in the folder": [
   "core/keys.js"
  ],
+ "Next: {title} →": [
+  "help/basics.js"
+ ],
  "No Flag": [
   "core/menu.js"
  ],
  "No Rating": [
   "core/menu.js"
+ ],
+ "No active photo": [
+  "library/library.js"
  ],
  "No alike photos or bursts in the tray.": [
   "collage/collage-tray.js"
@@ -3377,6 +4028,9 @@
  ],
  "No borders": [
   "index.html"
+ ],
+ "No bursts here: no photos taken within 2 seconds of each other.": [
+  "library/bursts.js"
  ],
  "No change": [
   "core/app.js"
@@ -3408,6 +4062,12 @@
  "No flag (U)": [
   "index.html"
  ],
+ "No guesses for the {without} without a place: none was taken near a placed one (try more minutes, or the clock), or looks the same.": [
+  "library/guess-places.js"
+ ],
+ "No keywords yet.": [
+  "library/organise.js"
+ ],
  "No label": [
   "index.html"
  ],
@@ -3417,6 +4077,9 @@
  "No logo": [
   "dialogs/export.js"
  ],
+ "No map images · turn them on": [
+  "library/browse.js"
+ ],
  "No masks yet. Pick a kind above, then draw on the photo.": [
   "tools/mask-panel.js"
  ],
@@ -3424,11 +4087,30 @@
   "develop/preset-grid.js",
   "develop/presetlib.js"
  ],
+ "No model": [
+  "library/denoise.js"
+ ],
+ "No more tips.": [
+  "help/tips.js"
+ ],
  "No options": [
   "dialogs/hub.js"
  ],
+ "No photos close enough in time to stack": [
+  "library/library-grid.js"
+ ],
+ "No photos found there.": [
+  "library/import.js"
+ ],
+ "No photos in this folder": [
+  "library/batch-export.js"
+ ],
  "No photos shown in the library.": [
-  "library/library-actions.js"
+  "library/library-actions.js",
+  "library/slideshow.js"
+ ],
+ "No photos shown to count.": [
+  "library/insights.js"
  ],
  "No photos there.": [
   "collage/collage-tray.js"
@@ -3444,6 +4126,9 @@
  ],
  "No presets found.": [
   "develop/presetlib.js"
+ ],
+ "No presets match.": [
+  "library/library-actions.js"
  ],
  "No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.": [
   "develop/preset-grid.js",
@@ -3465,6 +4150,7 @@
   "core/app.js",
   "dialogs/borders.js",
   "index.html",
+  "library/import.js",
   "tools/croptool.js"
  ],
  "None (e.g. {camera} · {exposure})": [
@@ -3474,6 +4160,18 @@
   "dialogs/export.js",
   "index.html"
  ],
+ "None of the photos shown has a capture date.": [
+  "library/browse.js"
+ ],
+ "None of the selected photos is in a stack.": [
+  "library/library-grid.js"
+ ],
+ "None of them is in that folder": [
+  "library/organise.js"
+ ],
+ "None of these photos has a place to guess from. Place one first (drag it onto the map, or a GPX track).": [
+  "library/guess-places.js"
+ ],
  "None saved yet": [
   "dialogs/export.js"
  ],
@@ -3482,6 +4180,15 @@
  ],
  "Normal": [
   "index.html"
+ ],
+ "Not a place: type latitude, longitude (52.3731, 4.8922), or paste a map link.": [
+  "library/place-field.js"
+ ],
+ "Not a place: type latitude, longitude, or paste a map link.": [
+  "library/place-field.js"
+ ],
+ "Not chosen yet": [
+  "library/batch-export.js"
  ],
  "Not edited": [
   "index.html"
@@ -3507,17 +4214,33 @@
  "Note: {notes}": [
   "dialogs/models.js"
  ],
+ "Nothing alike found.": [
+  "library/duplicates.js"
+ ],
  "Nothing found.": [
   "index.html"
  ],
  "Nothing found. Search Everything (Ctrl+K) also finds commands and settings by name.": [
   "index.html"
  ],
+ "Nothing found. Try a town or a street with its town.": [
+  "library/place-picker.js"
+ ],
+ "Nothing imported": [
+  "library/import.js"
+ ],
  "Nothing matches.": [
   "dialogs/hub.js"
  ],
  "Nothing selected": [
-  "index.html"
+  "index.html",
+  "library/library.js"
+ ],
+ "Nothing to clean up here.": [
+  "library/cleanup.js"
+ ],
+ "November": [
+  "library/browse.js"
  ],
  "Number box": [
   "looks/editor-inspector.js"
@@ -3527,6 +4250,9 @@
  ],
  "OK": [
   "index.html"
+ ],
+ "October": [
+  "library/browse.js"
  ],
  "Odd frames (two stops or more off) keep their own": [
   "index.html"
@@ -3540,8 +4266,14 @@
  "Offer the chosen interface to the hub as a pull request, so others can install it": [
   "index.html"
  ],
+ "Offline: its drive isn't plugged in": [
+  "library/library-grid.js"
+ ],
  "On (the default): a preset replaces the look of the edit (crop, spots, masks and geometry stay). Off: presets add up, each on top of the last.": [
   "index.html"
+ ],
+ "On every selected photo": [
+  "library/library.js"
  ],
  "On the photo, bottom left": [
   "index.html"
@@ -3551,6 +4283,15 @@
  ],
  "On the photo, top left": [
   "index.html"
+ ],
+ "On {n} of {total}": [
+  "library/library.js"
+ ],
+ "One conversion for {n} frames": [
+  "library/library-actions.js"
+ ],
+ "One folder a day: 2026-07-14": [
+  "library/organise.js"
  ],
  "One folder at a time (Ctrl-click more to show them together)": [
   "index.html"
@@ -3617,16 +4358,25 @@
  "Open a folder": [
   "core/keys.js"
  ],
+ "Open a folder first.": [
+  "library/batch-export.js",
+  "library/cleanup.js"
+ ],
  "Open a photo": [
   "core/keys.js"
  ],
  "Open a photo first": [
   "dialogs/plugins.js"
  ],
+ "Open a photo first, then watch an edit on it.": [
+  "help/teach.js"
+ ],
  "Open a photo first.": [
   "core/tasks.js",
   "develop/presets.js",
   "dialogs/assistant.js",
+  "library/library-actions.js",
+  "library/slideshow.js",
   "tools/toolblocks.js",
   "tools/trip.js"
  ],
@@ -3663,6 +4413,9 @@
  "Open in the Edit-in app (Settings → General)": [
   "index.html"
  ],
+ "Open in the editor": [
+  "library/library.js"
+ ],
  "Open in the editor (Enter, or double-click)": [
   "index.html"
  ],
@@ -3696,6 +4449,9 @@
  "Open this photo in the editor; Back to collage returns here": [
   "index.html"
  ],
+ "Open this stack": [
+  "library/library-grid.js"
+ ],
  "Open when the app starts": [
   "looks/editor-inspector.js"
  ],
@@ -3710,6 +4466,12 @@
  ],
  "Opened GitHub in your browser. Thank you!": [
   "core/app.js"
+ ],
+ "Opened in place: {n} photos, {missing} not found. Read from the catalogue, never written.": [
+  "library/lightroom.js"
+ ],
+ "Opened in place: {n} photos. Read from the catalogue, never written.": [
+  "library/lightroom.js"
  ],
  "Opened your mail app with the report. Thank you!": [
   "core/app.js"
@@ -3826,6 +4588,9 @@
  "Panels, settings and buttons that aren't shown": [
   "index.html"
  ],
+ "Panorama merge failed": [
+  "library/library-actions.js"
+ ],
  "Paper": [
   "index.html"
  ],
@@ -3850,11 +4615,28 @@
   "core/keys.js"
  ],
  "Paste settings onto {n} photos…": [
-  "develop/filmstrip.js"
+  "develop/filmstrip.js",
+  "library/library.js"
+ ],
+ "Paste settings to {n}…": [
+  "library/library.js"
  ],
  "Paste settings…": [
   "develop/filmstrip.js",
-  "index.html"
+  "index.html",
+  "library/library.js"
+ ],
+ "Pasted onto {photos}": [
+  "library/library-actions.js"
+ ],
+ "Pasted settings onto {n} photos": [
+  "library/library-actions.js"
+ ],
+ "Pasting settings onto {n} photos…": [
+  "library/library-actions.js"
+ ],
+ "Pause (Space)": [
+  "library/slideshow.js"
  ],
  "People": [
   "tools/masks.js"
@@ -3878,13 +4660,20 @@
  "Photo {done} of {total}": [
   "collage/collage.js"
  ],
+ "Photo {i} of {n}: {percent} %": [
+  "library/denoise.js"
+ ],
  "Photography basics": [
   "core/keys.js",
+  "help/help.js",
   "index.html"
  ],
  "Photos": [
   "core/keys.js",
   "index.html"
+ ],
+ "Photos are found by these rules each time the collection is shown, in the folders above and their subfolders.": [
+  "library/collections.js"
  ],
  "Photos in this folder": [
   "index.html"
@@ -3892,11 +4681,18 @@
  "Photos moved or deleted outside Ambrotype: find where they went": [
   "index.html"
  ],
+ "Photos taken within this many seconds of the one before go into one stack (bursts, brackets). Photos already in a stack are left alone.": [
+  "library/library-grid.js"
+ ],
  "Photos that match": [
   "index.html"
  ],
+ "Photos without a place get one from photos taken around the same time, or that look the same; you confirm each": [
+  "library/browse.js"
+ ],
  "Pick": [
-  "core/menu.js"
+  "core/menu.js",
+  "library/slideshow.js"
  ],
  "Pick (P)": [
   "develop/info.js",
@@ -3917,17 +4713,41 @@
  "Pick or reject flag": [
   "index.html"
  ],
+ "Pick the ★ one, reject the others": [
+  "library/duplicates.js"
+ ],
+ "Picked {picked}, rejected {rejected} (Filter → Rejected shows them; X and U change a flag)": [
+  "library/bursts.js",
+  "library/duplicates.js"
+ ],
  "Picks": [
   "index.html"
  ],
  "Pick…": [
-  "index.html"
+  "index.html",
+  "library/place-field.js"
  ],
  "Place": [
-  "index.html"
+  "index.html",
+  "library/slideshow.js"
+ ],
+ "Place photos from a GPS track recorded while shooting (the selected ones, or all shown)": [
+  "library/browse.js"
+ ],
+ "Place removed from {photos}": [
+  "library/browse.js"
  ],
  "Place the ticked photos": [
   "index.html"
+ ],
+ "Placed {photos}": [
+  "library/browse.js"
+ ],
+ "Placed {photos} at {gps}": [
+  "library/browse.js"
+ ],
+ "Placed {photos} by guess": [
+  "library/guess-places.js"
  ],
  "Plain grid with names": [
   "index.html"
@@ -3966,6 +4786,7 @@
  ],
  "Presets": [
   "index.html",
+  "library/import.js",
   "looks/editor.js"
  ],
  "Press at one corner of the crop and drag to the opposite corner. Or adjust the frame with the controls here.": [
@@ -3973,6 +4794,9 @@
  ],
  "Press the new shortcut… (Esc cancels)": [
   "core/keys.js"
+ ],
+ "Previous (←)": [
+  "library/slideshow.js"
  ],
  "Previous Photo": [
   "core/menu.js"
@@ -4044,6 +4868,9 @@
  "Put the settings above back to the plugin's defaults": [
   "index.html"
  ],
+ "Put this one somewhere else: on a map, or by name": [
+  "library/guess-places.js"
+ ],
  "Put tray photos into the empty cells, in order": [
   "index.html"
  ],
@@ -4073,6 +4900,9 @@
  "Radius, % of the photo's width ([ and ], or the wheel)": [
   "index.html"
  ],
+ "Raise it when": [
+  "help/help.js"
+ ],
  "Raise the selected slider a step": [
   "core/keys.js"
  ],
@@ -4086,19 +4916,23 @@
   "develop/filmstrip.js"
  ],
  "Rated {stars}": [
-  "develop/info.js"
+  "develop/info.js",
+  "library/library.js"
  ],
  "Rating": [
   "core/keys.js",
   "core/menu.js",
-  "index.html"
+  "index.html",
+  "library/collections.js",
+  "library/slideshow.js"
  ],
  "Rating & keywords": [
   "index.html",
   "looks/editor.js"
  ],
  "Rating cleared": [
-  "develop/info.js"
+  "develop/info.js",
+  "library/library.js"
  ],
  "Rating cleared: {name}": [
   "develop/filmstrip.js"
@@ -4133,15 +4967,24 @@
  "Read the folder again (after adding files by hand or by AI)": [
   "index.html"
  ],
+ "Reading the catalogue…": [
+  "library/collections.js",
+  "library/lrcat.js",
+  "library/organise.js"
+ ],
  "Reading the folder…": [
-  "index.html"
+  "index.html",
+  "library/library.js"
  ],
  "Ready": [
   "develop/photo.js",
   "develop/quickzoom.js",
   "develop/touch.js",
   "dialogs/export.js",
+  "help/teach.js",
   "index.html",
+  "library/bursts.js",
+  "library/library-actions.js",
   "looks/editor.js",
   "tools/croptool.js",
   "tools/guided.js",
@@ -4193,10 +5036,14 @@
   "develop/fx.js"
  ],
  "Reject": [
-  "core/menu.js"
+  "core/menu.js",
+  "library/slideshow.js"
  ],
  "Reject (X)": [
   "index.html"
+ ],
+ "Reject the rest": [
+  "library/duplicates.js"
  ],
  "Reject them": [
   "index.html"
@@ -4206,6 +5053,9 @@
  ],
  "Rejected (X)": [
   "develop/info.js"
+ ],
+ "Rejected {photos} (Filter → Rejected shows them; Delete… sends them to the trash)": [
+  "library/cleanup.js"
  ],
  "Release to remove point": [
   "develop/curve.js"
@@ -4220,6 +5070,9 @@
  ],
  "Remove \"{name}\"": [
   "develop/info.js"
+ ],
+ "Remove \"{name}\" from the selection": [
+  "library/library.js"
  ],
  "Remove all": [
   "index.html"
@@ -4236,11 +5089,17 @@
  "Remove from favourites": [
   "develop/preset-grid.js"
  ],
+ "Remove from the library folders": [
+  "library/folders.js"
+ ],
  "Remove from this collection": [
   "index.html"
  ],
  "Remove from toolbar": [
   "looks/editor-inspector.js"
+ ],
+ "Remove from “{name}”": [
+  "library/collections.js"
  ],
  "Remove object": [
   "core/keys.js",
@@ -4258,6 +5117,9 @@
  "Remove panel": [
   "looks/editor-inspector.js"
  ],
+ "Remove place": [
+  "library/browse.js"
+ ],
  "Remove the crop and straighten": [
   "index.html"
  ],
@@ -4273,32 +5135,59 @@
  "Remove this part": [
   "tools/mask-panel.js"
  ],
+ "Remove this rule": [
+  "library/collections.js"
+ ],
+ "Remove {keywords} from every photo that has it?": [
+  "library/organise.js"
+ ],
+ "Remove {keywords} from every photo that has them?": [
+  "library/organise.js"
+ ],
  "Remove {key}": [
   "core/keys.js"
  ],
  "Remove {name}": [
-  "develop/fx.js"
+  "develop/fx.js",
+  "library/slideshow.js"
  ],
  "Remove {name}? Its folder is deleted.": [
   "dialogs/plugins.js"
  ],
+ "Remove “{path}” from the library folders? Its photos leave the catalogue; the files stay where they are.": [
+  "library/folders.js"
+ ],
+ "Removed on {photos}": [
+  "library/organise.js"
+ ],
  "Removed {name}.": [
   "dialogs/models.js"
+ ],
+ "Removed {photos} from “{name}” (the files stay)": [
+  "library/collections.js"
  ],
  "Removing…": [
   "tools/select.js"
  ],
  "Rename": [
-  "develop/history.js"
+  "develop/history.js",
+  "library/organise.js"
+ ],
+ "Rename collection": [
+  "library/collections.js"
  ],
  "Rename collection…": [
   "index.html"
+ ],
+ "Rename keyword": [
+  "library/organise.js"
  ],
  "Rename snapshot": [
   "develop/history.js"
  ],
  "Rename…": [
-  "index.html"
+  "index.html",
+  "library/organise.js"
  ],
  "Rendering {zoom}…": [
   "develop/preview.js"
@@ -4365,8 +5254,14 @@
  "Rotate left": [
   "core/keys.js"
  ],
+ "Rotate left (Ctrl+[)": [
+  "library/slideshow.js"
+ ],
  "Rotate right": [
   "core/keys.js"
+ ],
+ "Rotate right (Ctrl+])": [
+  "library/slideshow.js"
  ],
  "Rotate ⟳": [
   "index.html"
@@ -4412,8 +5307,17 @@
  "Runs sandboxed; its edits are undoable": [
   "dialogs/hub.js"
  ],
+ "S##Saturday": [
+  "library/browse.js"
+ ],
+ "S##Sunday": [
+  "library/browse.js"
+ ],
  "Same as width": [
   "index.html"
+ ],
+ "Same file": [
+  "library/duplicates.js"
  ],
  "Same files only": [
   "index.html"
@@ -4500,6 +5404,9 @@
  "Save under this name": [
   "index.html"
  ],
+ "Saved": [
+  "library/library.js"
+ ],
  "Saved (type a new one to replace it)": [
   "dialogs/assistant.js"
  ],
@@ -4523,6 +5430,9 @@
  ],
  "Saved the before/after page: {path}": [
   "dialogs/export.js"
+ ],
+ "Saved the contact sheet: {path}": [
+  "library/library-actions.js"
  ],
  "Saved the export preset “{name}”": [
   "dialogs/export.js"
@@ -4561,6 +5471,9 @@
   "collage/collage-tray.js",
   "collage/collage.js"
  ],
+ "Saved {n} pages of contact sheets in {dir}": [
+  "library/library-actions.js"
+ ],
  "Saved {path}": [
   "looks/looks-dialog.js"
  ],
@@ -4568,7 +5481,8 @@
   "dialogs/borders.js"
  ],
  "Saved “{name}”": [
-  "develop/preset-edit.js"
+  "develop/preset-edit.js",
+  "library/organise.js"
  ],
  "Save…": [
   "tools/mask-panel.js"
@@ -4635,6 +5549,9 @@
  "Search: film, moody, portrait…": [
   "index.html"
  ],
+ "Searching OpenStreetMap…": [
+  "library/place-picker.js"
+ ],
  "See the photo as it will export to sRGB, Adobe RGB, Display P3 or ProPhoto, and mark the colours that won't fit.": [
   "core/keys.js"
  ],
@@ -4643,13 +5560,17 @@
  ],
  "Select": [
   "core/icons.js",
-  "index.html"
+  "index.html",
+  "library/cull.js"
  ],
  "Select All": [
   "core/menu.js"
  ],
  "Select None": [
   "core/menu.js"
+ ],
+ "Select a photo first.": [
+  "library/organise.js"
  ],
  "Select all and copy (Ctrl+C)": [
   "dialogs/plugins.js"
@@ -4678,20 +5599,60 @@
  "Select people": [
   "tools/toolblocks.js"
  ],
+ "Select photos first, then right-click where they were taken": [
+  "library/browse.js"
+ ],
  "Select sky": [
   "tools/toolblocks.js"
  ],
  "Select subject": [
   "tools/toolblocks.js"
  ],
+ "Select the frames of the roll.": [
+  "library/library-actions.js"
+ ],
  "Select the next slider": [
   "core/keys.js"
  ],
+ "Select the one photo to copy the settings from.": [
+  "library/library-actions.js"
+ ],
+ "Select the one photo to make a virtual copy of.": [
+  "library/library-actions.js"
+ ],
  "Select the photos first.": [
+  "library/library-actions.js",
+  "library/organise.js"
+ ],
+ "Select the photos for the sheet.": [
+  "library/library-actions.js"
+ ],
+ "Select the photos to delete first.": [
+  "library/organise.js"
+ ],
+ "Select the photos to export.": [
+  "library/library-actions.js"
+ ],
+ "Select the photos to paste onto.": [
   "library/library-actions.js"
  ],
  "Select the previous slider": [
   "core/keys.js"
+ ],
+ "Select the raws to denoise first (or open one).": [
+  "library/denoise.js"
+ ],
+ "Select these in the library": [
+  "library/duplicates.js"
+ ],
+ "Select two or more overlapping raws.": [
+  "library/library-actions.js"
+ ],
+ "Select two or more photos to stack.": [
+  "library/library-grid.js"
+ ],
+ "Select two or more raws of one scene, shot at different exposures.": [
+  "library/library-actions.js"
  ],
  "Selected ({pct} % of the box)": [
   "tools/select.js"
@@ -4760,6 +5721,9 @@
  "Separator": [
   "looks/editor.js"
  ],
+ "September": [
+  "library/browse.js"
+ ],
  "Set": [
   "core/search.js"
  ],
@@ -4774,6 +5738,12 @@
  ],
  "Set · {min} to {max}": [
   "core/search.js"
+ ],
+ "Sets group collections in the Show menu. Leave empty to take it out of its set.": [
+  "library/collections.js"
+ ],
+ "Sets group collections in the Show menu. Sets so far: {names}. Leave empty to take it out of its set.": [
+  "library/collections.js"
  ],
  "Setting": [
   "core/search.js"
@@ -4864,13 +5834,23 @@
  ],
  "Show": [
   "develop/preset-hide.js",
-  "index.html"
+  "index.html",
+  "library/duplicates.js"
+ ],
+ "Show (or select) a few photos first.": [
+  "library/bursts.js"
+ ],
+ "Show OpenStreetMap's map images behind the pins. The map then asks openstreetmap.org for the area shown.": [
+  "library/browse.js"
  ],
  "Show a folder or a collection": [
   "index.html"
  ],
  "Show all keyboard shortcuts": [
   "core/keys.js"
+ ],
+ "Show all of {year}": [
+  "library/browse.js"
  ],
  "Show another folder": [
   "index.html"
@@ -4887,6 +5867,9 @@
  "Show every photo again": [
   "index.html"
  ],
+ "Show every placed photo": [
+  "library/browse.js"
+ ],
  "Show folder": [
   "index.html"
  ],
@@ -4894,7 +5877,8 @@
   "core/keys.js"
  ],
  "Show in folder": [
-  "dialogs/export.js"
+  "dialogs/export.js",
+  "library/library.js"
  ],
  "Show in its folder": [
   "index.html"
@@ -4923,11 +5907,17 @@
  "Show the folder with your own layouts and themes": [
   "index.html"
  ],
+ "Show the folders (Ctrl+[)": [
+  "library/libmenus.js"
+ ],
  "Show the left column (Ctrl+[)": [
   "looks/columns.js"
  ],
  "Show the menu bar in the window (every command by name, with its keys)": [
   "index.html"
+ ],
+ "Show the panel (Ctrl+])": [
+  "library/libmenus.js"
  ],
  "Show the photo as edges, white on black, so dust and specks stand out (A)": [
   "index.html"
@@ -4950,6 +5940,9 @@
  "Show the top bar (Ctrl+Shift+T). Hidden, it comes back while the pointer is at the window's top edge": [
   "index.html"
  ],
+ "Show the {n} photos of {month} {year}": [
+  "library/browse.js"
+ ],
  "Show this interface instead of the built-in one?\n\n": [
   "dialogs/interfaces.js"
  ],
@@ -4962,14 +5955,24 @@
  "Shuffle": [
   "index.html"
  ],
+ "Shutter": [
+  "help/figures.js"
+ ],
  "Shutter speed": [
   "index.html"
+ ],
+ "Side by side, the candidate on the left": [
+  "library/cull.js"
+ ],
+ "Side by side, the candidate on the right": [
+  "library/cull.js"
  ],
  "Six random looks to pick from": [
   "tools/toolblocks.js"
  ],
  "Size": [
   "index.html",
+  "library/slideshow.js",
   "tools/mask-panel.js"
  ],
  "Size (% of width)": [
@@ -4998,6 +6001,9 @@
  ],
  "Sizes…": [
   "index.html"
+ ],
+ "Skip": [
+  "help/learn.js"
  ],
  "Skip files that exist": [
   "index.html"
@@ -5036,6 +6042,9 @@
  "Slower is smaller at the same quality": [
   "index.html"
  ],
+ "Slower than 1/{f} s at {f} mm: camera shake blurs everything. Faster shutter, wider lens, or a tripod.": [
+  "help/camsim.js"
+ ],
  "Small tools that make edits for you. They run in a sandbox: no files, no network, only settings you can see and undo.": [
   "index.html"
  ],
@@ -5050,6 +6059,12 @@
  ],
  "Smart collection": [
   "index.html"
+ ],
+ "Smart collections": [
+  "library/collections.js"
+ ],
+ "Smart collections aren't moved (make them again here): {names}.": [
+  "library/lrcat.js"
  ],
  "Smart search (or Enter in the search box): find photos by what is in them (dog on a beach, snowy mountains), with the search model from Settings → AI models. Right-click a photo for Find similar photos.": [
   "index.html"
@@ -5084,6 +6099,9 @@
  "Sort by": [
   "index.html"
  ],
+ "Sort into dated folders": [
+  "library/organise.js"
+ ],
  "Sort into dated folders…": [
   "index.html"
  ],
@@ -5098,6 +6116,12 @@
  ],
  "Spherical": [
   "index.html"
+ ],
+ "Split": [
+  "library/cull.js"
+ ],
+ "Split by ": [
+  "library/insights.js"
  ],
  "Split the panel here": [
   "looks/editor-inspector.js"
@@ -5139,7 +6163,8 @@
  ],
  "Stack": [
   "core/menu.js",
-  "index.html"
+  "index.html",
+  "library/duplicates.js"
  ],
  "Stack all": [
   "index.html"
@@ -5153,8 +6178,18 @@
  "Stack the selection": [
   "core/keys.js"
  ],
+ "Stacked {bursts}, the best on top": [
+  "library/bursts.js"
+ ],
+ "Stacked {groups}": [
+  "library/duplicates.js"
+ ],
+ "Stacked {n} photos": [
+  "library/library-grid.js"
+ ],
  "Start": [
-  "index.html"
+  "index.html",
+  "library/batch-export.js"
  ],
  "Start a collage with the selected photos": [
   "index.html"
@@ -5177,6 +6212,10 @@
  "Start {name} here": [
   "dialogs/connect.js"
  ],
+ "Starting…": [
+  "library/batch-export.js",
+  "library/denoise.js"
+ ],
  "Std": [
   "index.html"
  ],
@@ -5185,6 +6224,15 @@
  ],
  "Stitch overlapping raws into one panorama (a DNG next to them)": [
   "index.html"
+ ],
+ "Stitched into {name} ({projection}, {degrees}° across)": [
+  "library/library-actions.js"
+ ],
+ "Stitched into {name} ({projection}, {degrees}° across; no lens profile for {n} of them)": [
+  "library/library-actions.js"
+ ],
+ "Stitching {n} photos into a panorama…": [
+  "library/library-actions.js"
  ],
  "Stop": [
   "index.html"
@@ -5197,6 +6245,12 @@
  ],
  "Stop marking (nothing is changed)": [
   "index.html"
+ ],
+ "Stopped. What was done is in History: click a step to go back to it": [
+  "help/teach.js"
+ ],
+ "Stopping after the photos under way…": [
+  "library/batch-export.js"
  ],
  "Store the film base and levels this photo shows now and turn Auto off (one undo step). For a whole roll: Sync negative roll in the library": [
   "looks/layout.js"
@@ -5277,8 +6331,20 @@
  "Sync negative roll…": [
   "index.html"
  ],
+ "Synced {negatives}": [
+  "library/library-actions.js"
+ ],
+ "Synced {negatives} ({parts})": [
+  "library/library-actions.js"
+ ],
  "System": [
   "index.html"
+ ],
+ "T##Thursday": [
+  "library/browse.js"
+ ],
+ "T##Tuesday": [
+  "library/browse.js"
  ],
  "TIFF": [
   "index.html"
@@ -5301,11 +6367,17 @@
  "Take the place out (a camera's own GPS stays)": [
   "index.html"
  ],
+ "Take the place out of the selected photos' sidecars (a camera's own GPS stays)": [
+  "library/browse.js"
+ ],
  "Take the selected photos' stacks apart (Ctrl+Shift+G)": [
   "index.html"
  ],
  "Take the values from this photo": [
   "index.html"
+ ],
+ "Taken": [
+  "library/slideshow.js"
  ],
  "Takes out a colour cast": [
   "tools/toolblocks.js"
@@ -5327,6 +6399,9 @@
  "Template": [
   "index.html"
  ],
+ "Terms": [
+  "help/basics.js"
+ ],
  "Text": [
   "index.html",
   "looks/editor-inspector.js"
@@ -5339,6 +6414,12 @@
  ],
  "That box is too small to measure.": [
   "develop/meter.js"
+ ],
+ "That isn't a number of hours": [
+  "library/browse.js"
+ ],
+ "That's the edit. Click a History step to see it again": [
+  "help/teach.js"
  ],
  "That's the most guides. Drag an end to adjust, right-click it to remove.": [
   "tools/guided.js"
@@ -5354,6 +6435,15 @@
  ],
  "The amb program wasn't found next to Ambrotype. The installers include it; from the source, build it with": [
   "index.html"
+ ],
+ "The ball is frozen by the shutter.": [
+  "help/camsim.js"
+ ],
+ "The ball moves {n} px while the shutter is open: motion blur. A faster shutter freezes it.": [
+  "help/camsim.js"
+ ],
+ "The best of its burst": [
+  "library/bursts.js"
  ],
  "The brightness of the colour under the pointer (the B&W mix for a black-and-white photo)": [
   "index.html"
@@ -5393,6 +6483,9 @@
  ],
  "The first part has to add; change its mode first": [
   "tools/masks.js"
+ ],
+ "The first {n} photos are listed.": [
+  "library/lrcat.js"
  ],
  "The guide": [
   "dialogs/connect.js"
@@ -5469,6 +6562,9 @@
  "The selection, or the open photo.": [
   "core/keys.js"
  ],
+ "The settings you shoot with most, together": [
+  "library/insights.js"
+ ],
  "The setup": [
   "dialogs/connect.js"
  ],
@@ -5500,6 +6596,12 @@
  "These files go to {target} in {repo}, as a pull request from your GitHub account. The hub's reviewers check it before anyone can install it.": [
   "dialogs/plugins.js"
  ],
+ "They are already there": [
+  "library/organise.js"
+ ],
+ "They are already there.": [
+  "library/organise.js"
+ ],
  "Thinking…": [
   "dialogs/assistant.js"
  ],
@@ -5514,6 +6616,12 @@
  ],
  "This photo has no History to replay yet: edit it first.": [
   "dialogs/export.js"
+ ],
+ "This photo needs nothing from Auto edit: there's nothing to watch.": [
+  "help/teach.js"
+ ],
+ "This photo's drive isn't plugged in. Plug it in to open the photo.": [
+  "library/library-actions.js"
  ],
  "This plugin isn't installed here, so the effect isn't shown. Install it to see it, or remove it.": [
   "develop/fx.js"
@@ -5542,6 +6650,9 @@
  "Tip:": [
   "index.html"
  ],
+ "Tips are off.": [
+  "help/tips.js"
+ ],
  "Tips in menus and empty boxes: the search box and preset filter suggest something to type": [
   "index.html"
  ],
@@ -5550,6 +6661,7 @@
  ],
  "Title": [
   "index.html",
+  "library/slideshow.js",
   "looks/editor-inspector.js"
  ],
  "Title, caption & copyright": [
@@ -5651,6 +6763,12 @@
  "Try shutter speed, aperture, ISO and focal length on a drawn scene and see what each does: blur, depth of field, grain, zoom.": [
   "core/keys.js"
  ],
+ "Try this week": [
+  "library/insights.js"
+ ],
+ "Try: {feature}": [
+  "help/tips.js"
+ ],
  "Turn the frame off": [
   "develop/frame.js"
  ],
@@ -5671,6 +6789,12 @@
  ],
  "Type a value, or drag this label sideways. Double-click to reset.": [
   "develop/controls.js"
+ ],
+ "Type what to look for, then press Smart (a dog on a beach, snowy mountains).": [
+  "library/library-actions.js"
+ ],
+ "Under": [
+  "library/organise.js"
  ],
  "Underlined words open their meaning. The text is a data file (basics.json), so anyone can improve or translate it.": [
   "index.html"
@@ -5734,11 +6858,17 @@
   "core/menu.js",
   "index.html"
  ],
+ "Unstacked {n} photos": [
+  "library/library-grid.js"
+ ],
  "Untitled": [
   "collage/collage-canvas.js"
  ],
  "Up or down changes the tone curve's region, or the colour's hue, saturation or brightness.": [
   "core/keys.js"
+ ],
+ "Up to {path}": [
+  "library/library-grid.js"
  ],
  "Update": [
   "dialogs/hub.js"
@@ -5766,6 +6896,9 @@
  "Use it here instead": [
   "core/keys.js"
  ],
+ "Use it when": [
+  "help/help.js"
+ ],
  "Use now": [
   "dialogs/hub.js"
  ],
@@ -5778,11 +6911,17 @@
  "Use this frame as the baseline": [
   "index.html"
  ],
+ "Use this frame as the baseline (click one first)": [
+  "library/library-actions.js"
+ ],
  "Use this frame on all {n} photos in the folder": [
   "develop/frame.js"
  ],
  "Use this place": [
   "index.html"
+ ],
+ "Use {name} as the baseline": [
+  "library/library-actions.js"
  ],
  "Using \"{name}\".": [
   "dialogs/hub.js"
@@ -5822,12 +6961,18 @@
  "Visualise spots": [
   "core/keys.js"
  ],
+ "W##Wednesday": [
+  "library/browse.js"
+ ],
  "WB picker": [
   "index.html",
   "looks/editor.js"
  ],
  "Walk back as you zoom": [
   "index.html"
+ ],
+ "Walked back to {m} m: the person stays the same size, the background grows (compression).": [
+  "help/camsim.js"
  ],
  "Warning: {message}": [
   "looks/looks-dialog.js"
@@ -5839,8 +6984,14 @@
  "Watch an edit on this photo": [
   "core/keys.js"
  ],
+ "Watching an edit: any key or click stops it": [
+  "help/teach.js"
+ ],
  "Watermark": [
   "index.html"
+ ],
+ "Weaker frames of bursts": [
+  "library/cleanup.js"
  ],
  "WebP (lossless)": [
   "index.html"
@@ -5862,6 +7013,9 @@
  ],
  "What happens once the files are written": [
   "index.html"
+ ],
+ "What it suggests": [
+  "library/insights.js"
  ],
  "What the agent is for": [
   "index.html"
@@ -5885,8 +7039,15 @@
  "Where the selection was taken": [
   "index.html"
  ],
+ "Where the {n} photos were taken": [
+  "library/place-field.js"
+ ],
  "Where they are now": [
   "index.html"
+ ],
+ "Where {name} was taken": [
+  "library/guess-places.js",
+  "library/place-field.js"
  ],
  "White": [
   "index.html"
@@ -5931,8 +7092,14 @@
  "Within": [
   "index.html"
  ],
+ "Working out an edit for this photo…": [
+  "help/teach.js"
+ ],
  "Working…": [
   "tools/select.js"
+ ],
+ "Write {sidecars}": [
+  "library/lrcat.js"
  ],
  "Writing the TIFF for the other app…": [
   "dialogs/export.js"
@@ -5945,6 +7112,9 @@
  ],
  "Wrote {n} pages": [
   "collage/collage.js"
+ ],
+ "Wrote {sidecars}, made {collections}": [
+  "library/lrcat.js"
  ],
  "X-Trans I": [
   "index.html"
@@ -5960,6 +7130,12 @@
  ],
  "X-Trans V": [
   "index.html"
+ ],
+ "Year, then day: 2026/2026-07-14": [
+  "library/organise.js"
+ ],
+ "Year, then month: 2026/07": [
+  "library/organise.js"
  ],
  "Yellow": [
   "core/keys.js",
@@ -6009,17 +7185,28 @@
  ],
  "Zoom in": [
   "core/keys.js",
-  "index.html"
+  "index.html",
+  "library/browse.js"
  ],
  "Zoom out": [
   "core/keys.js",
-  "index.html"
+  "index.html",
+  "library/browse.js"
  ],
  "Zoom {zoom}": [
   "develop/preview.js"
  ],
+ "a bright rim along the edge: too much Clarity or sharpening": [
+  "help/figures.js"
+ ],
+ "a copy of the same file": [
+  "library/cleanup.js"
+ ],
  "a key on its own": [
   "index.html"
+ ],
+ "a lot of light": [
+  "help/figures.js"
  ],
  "about {n} min a photo": [
   "dialogs/models.js"
@@ -6027,14 +7214,25 @@
  "about {n} s a photo": [
   "dialogs/models.js"
  ],
+ "alike a sharper photo": [
+  "library/cleanup.js"
+ ],
  "all": [
   "index.html"
  ],
+ "all pure white: no detail left": [
+  "help/figures.js"
+ ],
  "and {n} more": [
-  "develop/history.js"
+  "develop/history.js",
+  "library/insights.js",
+  "library/organise.js"
  ],
  "any": [
   "index.html"
+ ],
+ "aqua": [
+  "help/figures.js"
  ],
  "as a pull request from @{user} (the GitHub CLI on this computer)": [
   "dialogs/interfaces.js"
@@ -6045,8 +7243,29 @@
  "auto": [
   "index.html"
  ],
+ "best picked, rest rejected": [
+  "library/duplicates.js"
+ ],
+ "black": [
+  "help/figures.js"
+ ],
+ "blacks": [
+  "help/figures.js"
+ ],
+ "blown out": [
+  "library/cleanup.js"
+ ],
+ "blue": [
+  "help/figures.js"
+ ],
+ "blurry": [
+  "library/cleanup.js"
+ ],
  "border": [
   "dialogs/hub.js"
+ ],
+ "brighter": [
+  "help/figures.js"
  ],
  "built in": [
   "dialogs/plugins.js"
@@ -6057,15 +7276,39 @@
  "built-in panel": [
   "looks/editor-inspector.js"
  ],
+ "bulb": [
+  "help/figures.js"
+ ],
  "by {author}": [
   "dialogs/hub.js",
   "dialogs/plugins.js"
  ],
+ "camera": [
+  "library/insights.js"
+ ],
  "can't load": [
   "dialogs/plugins.js"
  ],
+ "candle": [
+  "help/figures.js"
+ ],
+ "clipped": [
+  "help/figures.js"
+ ],
  "collage": [
   "dialogs/hub.js"
+ ],
+ "contains": [
+  "library/collections.js"
+ ],
+ "darker corners lead the eye to the middle": [
+  "help/figures.js"
+ ],
+ "daylight": [
+  "help/figures.js"
+ ],
+ "doesn't contain": [
+  "library/collections.js"
  ],
  "e.g. /Volumes/Photos/": [
   "index.html"
@@ -6091,11 +7334,47 @@
  "e.g. wedding, Anna & Tom": [
   "index.html"
  ],
+ "each one: one stop more light, and its price": [
+  "help/figures.js"
+ ],
+ "each stop doubles the light": [
+  "help/figures.js"
+ ],
  "edits loaded from sidecar": [
   "develop/photo.js"
  ],
+ "eyes closed": [
+  "library/cleanup.js"
+ ],
+ "f/1.8: shallow": [
+  "help/figures.js"
+ ],
+ "f/11: deep": [
+  "help/figures.js"
+ ],
+ "f/{n} at {f} mm: shallow depth of field, the trees are soft ({px} px).": [
+  "help/camsim.js"
+ ],
+ "f/{n}: deep depth of field, the trees are sharp too.": [
+  "help/camsim.js"
+ ],
+ "front to back sharp": [
+  "help/figures.js"
+ ],
+ "green": [
+  "help/figures.js"
+ ],
+ "grey": [
+  "help/figures.js"
+ ],
  "group": [
   "looks/editor-inspector.js"
+ ],
+ "high contrast: deep blacks, bright whites": [
+  "help/figures.js"
+ ],
+ "highlights": [
+  "help/figures.js"
  ],
  "horizontal": [
   "tools/guided.js"
@@ -6103,42 +7382,136 @@
  "hours": [
   "index.html"
  ],
+ "how many pixels at each brightness, dark → bright": [
+  "help/figures.js"
+ ],
  "https://github.com/someone/their-theme": [
   "index.html"
  ],
  "hue": [
   "develop/touch.js"
  ],
+ "hue is which colour; the HSL panel moves each one": [
+  "help/figures.js"
+ ],
  "in a terminal)": [
   "index.html"
+ ],
+ "in all {n} selected photos": [
+  "library/duplicates.js"
+ ],
+ "in all {n} shown photos": [
+  "library/duplicates.js"
+ ],
+ "in the {n} selected photos": [
+  "library/duplicates.js"
+ ],
+ "in the {n} shown photos": [
+  "library/duplicates.js"
  ],
  "interface": [
   "dialogs/hub.js"
  ],
+ "is": [
+  "library/collections.js"
+ ],
+ "is at least": [
+  "library/collections.js"
+ ],
+ "is at most": [
+  "library/collections.js"
+ ],
+ "is before": [
+  "library/collections.js"
+ ],
+ "is not": [
+  "library/collections.js"
+ ],
+ "is on or after": [
+  "library/collections.js"
+ ],
+ "kept": [
+  "library/lrcat.js"
+ ],
+ "kept {n}": [
+  "library/lrcat.js"
+ ],
  "layout": [
   "dialogs/hub.js"
+ ],
+ "lens": [
+  "library/insights.js"
  ],
  "lens corrections": [
   "develop/presets.js"
  ],
+ "less": [
+  "help/figures.js"
+ ],
+ "less in focus": [
+  "help/figures.js"
+ ],
  "levelled {angle}°": [
   "develop/presets.js"
+ ],
+ "little light": [
+  "help/figures.js"
+ ],
+ "low contrast: soft, grey, calm": [
+  "help/figures.js"
  ],
  "luminance": [
   "develop/touch.js"
  ],
+ "magenta": [
+  "help/figures.js"
+ ],
+ "midtones": [
+  "help/figures.js"
+ ],
  "minutes": [
   "index.html"
+ ],
+ "more blur": [
+  "help/figures.js"
+ ],
+ "more light": [
+  "help/figures.js"
+ ],
+ "more noise": [
+  "help/figures.js"
+ ],
+ "nearly black": [
+  "library/cleanup.js"
+ ],
+ "no": [
+  "library/collections.js"
  ],
  "no key": [
   "core/keys.js"
  ],
  "none": [
   "core/keys.js",
-  "develop/history.js"
+  "develop/history.js",
+  "library/collections.js"
+ ],
+ "not found": [
+  "library/lrcat.js"
  ],
  "not in this layout": [
   "core/search.js"
+ ],
+ "not the best": [
+  "library/bursts.js"
+ ],
+ "not the best of its burst": [
+  "library/cleanup.js"
+ ],
+ "not the best of its burst ({note})": [
+  "library/cleanup.js"
+ ],
+ "nothing": [
+  "library/insights.js"
  ],
  "of these rules": [
   "index.html"
@@ -6152,6 +7525,21 @@
  "on the photos there, such as": [
   "index.html"
  ],
+ "one blue, darker to lighter: its luminance": [
+  "help/figures.js"
+ ],
+ "only the subject sharp": [
+  "help/figures.js"
+ ],
+ "orange": [
+  "help/figures.js"
+ ],
+ "outside the range, detail clips": [
+  "help/figures.js"
+ ],
+ "pick": [
+  "library/collections.js"
+ ],
  "plugin": [
   "dialogs/hub.js"
  ],
@@ -6161,8 +7549,20 @@
  "preset {name}": [
   "develop/history.js"
  ],
+ "purple": [
+  "help/figures.js"
+ ],
  "px": [
   "index.html"
+ ],
+ "red": [
+  "help/figures.js"
+ ],
+ "reject": [
+  "library/collections.js"
+ ],
+ "rejected": [
+  "library/cleanup.js"
  ],
  "s": [
   "index.html"
@@ -6185,14 +7585,44 @@
  "seed {seed}": [
   "develop/presets.js"
  ],
+ "shade": [
+  "help/figures.js"
+ ],
+ "shadows": [
+  "help/figures.js"
+ ],
  "sizes": [
   "dialogs/hub.js"
+ ],
+ "skip": [
+  "library/import.js"
+ ],
+ "stacked": [
+  "library/duplicates.js"
+ ],
+ "start": [
+  "help/figures.js"
+ ],
+ "starts at {value}": [
+  "help/help.js"
+ ],
+ "stopped: Start again to carry on": [
+  "library/batch-export.js"
  ],
  "the camera, lens and exposure": [
   "dialogs/hub.js"
  ],
+ "the colour of the light; white balance takes it out": [
+  "help/figures.js"
+ ],
  "the photo's histogram": [
   "dialogs/hub.js"
+ ],
+ "the same colour, more and more saturated": [
+  "help/figures.js"
+ ],
+ "the scene: deep shade to bright sky": [
+  "help/figures.js"
  ],
  "theme": [
   "dialogs/hub.js",
@@ -6219,17 +7649,44 @@
  "under a second a photo": [
   "dialogs/models.js"
  ],
+ "unrated": [
+  "library/collections.js"
+ ],
  "vertical": [
   "tools/guided.js"
  ],
  "vibrance": [
   "develop/presets.js"
  ],
+ "vivid": [
+  "help/figures.js"
+ ],
+ "well exposed": [
+  "help/camsim.js"
+ ],
+ "what one shot holds": [
+  "help/figures.js"
+ ],
+ "white": [
+  "help/figures.js"
+ ],
  "white balance": [
   "develop/presets.js"
  ],
+ "whites": [
+  "help/figures.js"
+ ],
  "with Ctrl/⌘, Alt or Shift. Click a key to see what it does.": [
   "index.html"
+ ],
+ "year": [
+  "library/insights.js"
+ ],
+ "yellow": [
+  "help/figures.js"
+ ],
+ "yes": [
+  "library/collections.js"
  ],
  "yours": [
   "dialogs/plugins.js"
@@ -6245,6 +7702,9 @@
  ],
  "{bands} {mode}": [
   "develop/touch.js"
+ ],
+ "{bursts}: the best of each is marked, the other {rest} dimmed.": [
+  "library/bursts.js"
  ],
  "{channel} channel ({tag})": [
   "develop/curve.js"
@@ -6262,11 +7722,35 @@
  "{colour} label ({key})": [
   "develop/info.js"
  ],
+ "{coords} · by look: {why}": [
+  "library/guess-places.js"
+ ],
+ "{coords} · by time: {why}": [
+  "library/guess-places.js"
+ ],
+ "{coords} · chosen by you": [
+  "library/guess-places.js"
+ ],
+ "{date}: {photos}": [
+  "library/browse.js"
+ ],
+ "{day} {month} {year}": [
+  "library/browse.js"
+ ],
  "{doc} · {layout} · {w} × {h} px · {n} cells": [
   "collage/collage-canvas.js"
  ],
  "{doc} · {layout} · {w} × {h} px · {n} frames": [
   "collage/collage-canvas.js"
+ ],
+ "{done} of {total}": [
+  "library/batch-export.js"
+ ],
+ "{done} of {total} · {folder}": [
+  "library/batch-export.js"
+ ],
+ "{error} (offline?)": [
+  "library/place-picker.js"
  ],
  "{field} saved": [
   "develop/info.js"
@@ -6277,6 +7761,15 @@
  "{files}: {list}": [
   "dialogs/hub.js"
  ],
+ "{flag} ({key})": [
+  "library/slideshow.js"
+ ],
+ "{frames} kept their own": [
+  "library/library-actions.js"
+ ],
+ "{groups}: {photos} you may not need": [
+  "library/duplicates.js"
+ ],
  "{group} (yours)": [
   "tools/croptool.js"
  ],
@@ -6285,6 +7778,12 @@
  ],
  "{have} The downloaded database is from {when}. Check for a newer one?": [
   "develop/photo.js"
+ ],
+ "{jpegs} written": [
+  "library/library-actions.js"
+ ],
+ "{kept} kept ({pct} %): picked, or 3 stars and up": [
+  "library/insights.js"
  ],
  "{key} already does \"{actions}\". ": [
   "core/keys.js"
@@ -6301,11 +7800,29 @@
  "{label} (not rendered yet)": [
   "tools/mask-panel.js"
  ],
+ "{label} ({key})": [
+  "library/slideshow.js"
+ ],
  "{label} as a new part of this mask. {hint}": [
   "tools/mask-panel.js"
  ],
+ "{label} label": [
+  "library/library.js"
+ ],
+ "{label} label ({key})": [
+  "library/library.js"
+ ],
+ "{label}: none": [
+  "library/insights.js"
+ ],
  "{label}: {hint} Esc stops.": [
   "tools/mask-panel.js"
+ ],
+ "{label}: {n} found ×": [
+  "library/library-actions.js"
+ ],
+ "{label}: {n} photos ({pct} %), {kept} kept. Click to show them.": [
+  "library/insights.js"
  ],
  "{layout} + {theme}": [
   "looks/looks-dialog.js"
@@ -6331,8 +7848,17 @@
  "{mask}: remove part {part}": [
   "develop/history.js"
  ],
+ "{min} to {max}": [
+  "help/help.js"
+ ],
+ "{month} {year}": [
+  "library/browse.js"
+ ],
  "{name}": [
   "index.html"
+ ],
+ "{name} (active)": [
+  "library/library.js"
  ],
  "{name} (changed)": [
   "collage/collage-canvas.js"
@@ -6349,6 +7875,12 @@
  "{name} (only the shape is used)": [
   "collage/collage-tray.js"
  ],
+ "{name} ({licence}), on your computer.": [
+  "library/denoise.js"
+ ],
+ "{name} ({licence}), on your computer. Download it once to start.": [
+  "library/denoise.js"
+ ],
  "{name} ({width} × {height})": [
   "tools/croptool.js"
  ],
@@ -6364,11 +7896,23 @@
  "{name} is installed. Click Use to use it for {task} masks.": [
   "dialogs/models.js"
  ],
+ "{name} is open in place: {n} photos in {folders}, {collections}. Nothing was imported or written; edits you make here go into the photos' sidecars.": [
+  "library/lightroom.js"
+ ],
  "{name} is shown elsewhere": [
   "looks/layout.js"
  ],
  "{name} selected: = and - change it": [
   "core/app.js"
+ ],
+ "{name} the name now · {yyyy} {yy} {mm} {dd} {hh} {min} {ss} the capture time · {seq} a number in capture order · {camera}": [
+  "library/organise.js"
+ ],
+ "{name} the name now · {yyyy} {yy} {mm} {dd} {hh} {min} {ss} the capture time · {seq} a number in capture order · {camera} · / makes a subfolder": [
+  "library/organise.js"
+ ],
+ "{name}, {label}: {n} of {total} ({pct} %)": [
+  "library/insights.js"
  ],
  "{name}: your layout ({w} × {h})": [
   "collage/collage-tray.js"
@@ -6377,6 +7921,21 @@
   "dialogs/plugins.js"
  ],
  "{n} JPEG|{n} JPEGs": [
+  "library/library-actions.js"
+ ],
+ "{n} already had a place": [
+  "library/browse.js"
+ ],
+ "{n} already there": [
+  "library/library-actions.js"
+ ],
+ "{n} already there (kept)": [
+  "library/lrcat.js"
+ ],
+ "{n} as the camera saved it": [
+  "library/library-actions.js"
+ ],
+ "{n} as the camera saved them": [
   "library/library-actions.js"
  ],
  "{n} border|{n} borders": [
@@ -6395,6 +7954,15 @@
   "library/lightroom.js",
   "library/lrcat.js"
  ],
+ "{n} couldn't be moved: {error}": [
+  "library/organise.js"
+ ],
+ "{n} failed": [
+  "library/batch-export.js"
+ ],
+ "{n} failed: {error}": [
+  "library/library-actions.js"
+ ],
  "{n} file|{n} files": [
   "dialogs/hub.js",
   "library/organise.js"
@@ -6402,6 +7970,15 @@
  "{n} folder|{n} folders": [
   "library/import.js",
   "library/lightroom.js"
+ ],
+ "{n} found with {model}": [
+  "library/library-actions.js"
+ ],
+ "{n} found with {model} ({indexed} photos indexed first)": [
+  "library/library-actions.js"
+ ],
+ "{n} frames. Each is analysed; the roll then shares one film base and levels, with Auto off, so a frame exposed a stop more prints a stop brighter.": [
+  "library/library-actions.js"
  ],
  "{n} groups have fewer than {per} photos and are left out.": [
   "collage/collage-tray.js"
@@ -6419,27 +7996,80 @@
  "{n} layout|{n} layouts": [
   "dialogs/hub.js"
  ],
+ "{n} left out (not the best of their burst)": [
+  "library/library-actions.js"
+ ],
  "{n} lens profiles are loaded.": [
   "develop/photo.js"
+ ],
+ "{n} more ×": [
+  "library/library.js"
  ],
  "{n} negative|{n} negatives": [
   "library/library-actions.js"
  ],
+ "{n} not found": [
+  "library/lrcat.js"
+ ],
+ "{n} odd frame|{n} odd frames": [
+  "library/library-actions.js"
+ ],
+ "{n} of its photos weren't found where the catalogue says: {name}": [
+  "library/lightroom.js"
+ ],
+ "{n} of its photos weren't found where the catalogue says: {name}…": [
+  "library/lightroom.js"
+ ],
+ "{n} of the {without} without a place have a guess.": [
+  "library/guess-places.js"
+ ],
  "{n} of {max}": [
   "tools/guided.js"
+ ],
+ "{n} of {total} marked to go": [
+  "library/cleanup.js"
+ ],
+ "{n} of {total} · {name}": [
+  "library/cleanup.js"
  ],
  "{n} page|{n} pages": [
   "collage/collage-tray.js"
  ],
+ "{n} photo in it was moved or deleted: {name}": [
+  "library/collections.js"
+ ],
+ "{n} photo isn't where the library last saw it (moved or deleted outside Ambrotype). Choose a folder to look in: photos found there by name and size are followed, in collections too.": [
+  "library/organise.js"
+ ],
  "{n} photos": [
   "collage/collage-tray.js",
-  "develop/filmstrip.js"
+  "develop/filmstrip.js",
+  "library/duplicates.js"
+ ],
+ "{n} photos ({pct} %), {kept} kept. Click to show them.": [
+  "library/insights.js"
+ ],
+ "{n} photos aren't where the library last saw them (moved or deleted outside Ambrotype). Choose a folder to look in: photos found there by name and size are followed, in collections too.": [
+  "library/organise.js"
+ ],
+ "{n} photos in it were moved or deleted: {name}…": [
+  "library/collections.js"
+ ],
+ "{n} photos in {year}": [
+  "library/browse.js"
  ],
  "{n} photos weren't found: {names}": [
   "collage/collage.js"
  ],
+ "{n} photos · {done}": [
+  "library/duplicates.js"
+ ],
  "{n} photos, {groups}": [
   "collage/collage-tray.js"
+ ],
+ "{n} photos: {names}": [
+  "library/browse.js",
+  "library/library-actions.js"
  ],
  "{n} photo|{n} photos": [
   "collage/collage-tray.js",
@@ -6454,12 +8084,19 @@
   "library/duplicates.js",
   "library/guess-places.js",
   "library/import.js",
+  "library/insights.js",
   "library/library-actions.js",
   "library/library-grid.js",
   "library/library.js",
   "library/lrcat.js",
   "library/organise.js",
   "library/slideshow.js"
+ ],
+ "{n} placed": [
+  "library/browse.js"
+ ],
+ "{n} placed · {m} without a place": [
+  "library/browse.js"
  ],
  "{n} plugin|{n} plugins": [
   "dialogs/hub.js"
@@ -6477,12 +8114,19 @@
  "{n} sample(s)": [
   "tools/mask-panel.js"
  ],
+ "{n} scenes": [
+  "library/library-actions.js"
+ ],
  "{n} selected": [
-  "develop/filmstrip.js"
+  "develop/filmstrip.js",
+  "library/library-grid.js"
  ],
  "{n} setting|{n} settings": [
   "develop/presets.js",
   "dialogs/hub.js"
+ ],
+ "{n} shown": [
+  "library/library-grid.js"
  ],
  "{n} sidecar|{n} sidecars": [
   "library/lrcat.js"
@@ -6492,6 +8136,9 @@
  ],
  "{n} size|{n} sizes": [
   "dialogs/hub.js"
+ ],
+ "{n} skipped (already there)": [
+  "library/batch-export.js"
  ],
  "{n} spot(s)": [
   "tools/spots.js"
@@ -6512,8 +8159,20 @@
  "{n} step|{n} steps": [
   "develop/history.js"
  ],
+ "{n} stops too bright": [
+  "help/camsim.js"
+ ],
+ "{n} stops too dark": [
+  "help/camsim.js"
+ ],
+ "{n} stop|{n} stops": [
+  "help/figures.js"
+ ],
  "{n} stroke(s)": [
   "tools/mask-panel.js"
+ ],
+ "{n} taken while the track wasn't recording (it runs {from} to {to} UTC)": [
+  "library/browse.js"
  ],
  "{n} theme|{n} themes": [
   "dialogs/hub.js"
@@ -6521,14 +8180,87 @@
  "{n} values out of range, skipped": [
   "core/app.js"
  ],
+ "{n} virtual copy|{n} virtual copies": [
+  "library/library-actions.js"
+ ],
+ "{n} without": [
+  "library/insights.js"
+ ],
+ "{n} without a date": [
+  "library/browse.js"
+ ],
  "{n}-bit": [
   "dialogs/export.js"
  ],
  "{pages}, one per group: its best {per}.": [
   "collage/collage-tray.js"
  ],
+ "{parts}, in {seconds} s.": [
+  "library/batch-export.js"
+ ],
+ "{photos} exported, {sizes}": [
+  "library/batch-export.js"
+ ],
+ "{photos} here selected · double-click a pin to open it": [
+  "library/browse.js"
+ ],
+ "{photos} here selected · double-click a pin to zoom in": [
+  "library/browse.js"
+ ],
+ "{photos} in the tray: Batch → Export pages… makes them pages of this layout": [
+  "library/library-actions.js"
+ ],
+ "{photos} in this folder.": [
+  "library/library-actions.js"
+ ],
+ "{photos} in {folders}": [
+  "library/batch-export.js"
+ ],
+ "{photos} not found": [
+  "library/lrcat.js"
+ ],
+ "{photos} not found (moved? see above)": [
+  "library/lrcat.js"
+ ],
+ "{photos} selected": [
+  "library/library.js",
+  "library/slideshow.js"
+ ],
+ "{photos} selected in the filmstrip.": [
+  "library/library-actions.js"
+ ],
+ "{photos} selected.": [
+  "library/library-actions.js"
+ ],
+ "{photos} shown.": [
+  "library/library-actions.js"
+ ],
+ "{photos} to import, {skipped} already there (skipped).": [
+  "library/import.js"
+ ],
+ "{photos} to import.": [
+  "library/import.js"
+ ],
  "{photos} → {pages} of {per} cells.": [
   "collage/collage-tray.js"
+ ],
+ "{photos}, and folders: click to open": [
+  "library/library-grid.js"
+ ],
+ "{photos}, in the order shown.": [
+  "library/library-actions.js"
+ ],
+ "{photos}, {files} with their sidecars and companions · {same} already there. Nothing is overwritten.": [
+  "library/organise.js"
+ ],
+ "{photos}, {files} with their sidecars and companions. Nothing is overwritten.": [
+  "library/organise.js"
+ ],
+ "{photos}: click to open": [
+  "library/library-grid.js"
+ ],
+ "{photos}: {names}. Each becomes a new DNG beside it (name-Denoised.dng), with its edit; the raw stays as it is.": [
+  "library/denoise.js"
  ],
  "{refs}: {names}": [
   "develop/presets.js"
@@ -6548,8 +8280,17 @@
  "{setting} · on/off": [
   "looks/editor-inspector.js"
  ],
+ "{sidecars} to write": [
+  "library/lrcat.js"
+ ],
+ "{stars} ({n})": [
+  "library/slideshow.js"
+ ],
  "{tag}: kept in the file, not rendered yet": [
   "tools/mask-panel.js"
+ ],
+ "{tag}: {name}": [
+  "library/cull.js"
  ],
  "{task} ({about})": [
   "dialogs/models.js"
@@ -6560,8 +8301,30 @@
  "{task}: {about}": [
   "dialogs/models.js"
  ],
+ "{text} Focus only: install YuNet (Settings → AI models) to check eyes too.": [
+  "library/bursts.js"
+ ],
+ "{text} The first {n} are listed.": [
+  "library/import.js"
+ ],
  "{text} {s} s": [
   "develop/preview.js"
+ ],
+ "{text}; {n} failed: {error}": [
+  "library/library-actions.js"
+ ],
+ "{text}; {problems}: {error}": [
+  "library/import.js",
+  "library/lrcat.js"
+ ],
+ "{text}… try “{feature}”": [
+  "help/tips.js"
+ ],
+ "{title} · {n} of {total}": [
+  "help/learn.js"
+ ],
+ "{title}: {photos}": [
+  "library/organise.js"
  ],
  "{total} tokens so far ({in} in, {out} out).": [
   "dialogs/assistant.js"
@@ -6569,11 +8332,20 @@
  "{what} copied": [
   "dialogs/connect.js"
  ],
+ "{what}: {photos}": [
+  "library/library.js"
+ ],
+ "{why} Settings → General turns them on again.": [
+  "help/tips.js"
+ ],
  "{w}×{h} preview in {ms} ms": [
   "develop/preview.js"
  ],
  "{w}×{h} preview in {ms} ms on the GPU": [
   "develop/preview.js"
+ ],
+ "{year} · {n} photos": [
+  "library/browse.js"
  ],
  "{zone}: under 1% of this photo": [
   "develop/zones.js"
@@ -6590,6 +8362,9 @@
  "© 2026 Your Name": [
   "index.html"
  ],
+ "© OpenStreetMap contributors": [
+  "library/browse.js"
+ ],
  "— a border preset —": [
   "develop/frame.js"
  ],
@@ -6602,6 +8377,9 @@
  "… {n} more": [
   "dialogs/interfaces.js"
  ],
+ "…and {n} more": [
+  "library/batch-export.js"
+ ],
  "← Back to collage": [
   "index.html"
  ],
@@ -6611,14 +8389,29 @@
  "← → step through the photos.": [
   "core/keys.js"
  ],
+ "→ black": [
+  "help/figures.js"
+ ],
+ "→ white": [
+  "help/figures.js"
+ ],
  "−0.5 EV on it": [
   "index.html"
  ],
  "▶ Slideshow": [
   "index.html"
  ],
+ "★ Best": [
+  "library/bursts.js"
+ ],
+ "★ Best: {note}": [
+  "library/bursts.js"
+ ],
  "★ Favourites": [
   "develop/preset-grid.js"
+ ],
+ "★ Rated photos, best first": [
+  "library/collections.js"
  ],
  "★ and up": [
   "index.html"
@@ -6633,12 +8426,16 @@
   "index.html"
  ],
  "⚑ Pick": [
-  "index.html"
+  "index.html",
+  "library/slideshow.js"
  ],
  "⛶ View": [
   "index.html"
  ],
  "✕ Reject": [
   "index.html"
+ ],
+ "✕ Rejected": [
+  "library/slideshow.js"
  ]
 }

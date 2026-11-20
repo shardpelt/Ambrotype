@@ -25,6 +25,7 @@ pub(crate) mod preview;
 pub(crate) mod sample;
 pub(crate) mod select;
 pub(crate) mod settings;
+pub(crate) mod styles;
 pub(crate) mod tools;
 
 /// Every command the web UI can call.
@@ -65,6 +66,11 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         photo::pick_photo,
         presets::pick_references,
         presets::match_look,
+        styles::styles_list,
+        styles::style_save,
+        styles::style_delete,
+        styles::style_apply,
+        styles::styles_apply_batch,
         presets::auto_settings,
         presets::surprise,
         photo::open_photo,

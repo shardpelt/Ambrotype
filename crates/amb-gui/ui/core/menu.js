@@ -18,7 +18,7 @@ const MENU_BAR = [
     [tKey("Rating"), ["rate-1", "rate-2", "rate-3", "rate-4", "rate-5", "|", "rate-0"]],
     [tKey("Colour Label"), ["label-red", "label-yellow", "label-green", "label-blue"]],
     [tKey("Flag"), ["flag-pick", "flag-reject", "flag-none"]],
-    "keywords", "|", "rotate-left", "rotate-right", "flip-horizontal", "|", "save-preset", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
+    "keywords", "|", "rotate-left", "rotate-right", "flip-horizontal", "|", "save-preset", "styles", "style-new", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
   ]],
   [tKey("Library"), ["library", "|", "lib-loupe", "lib-compare", "|", "slideshow", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
   [tKey("View"), ["before", "split", "touch", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
@@ -32,7 +32,7 @@ const MENU_MAC_ONLY = new Set(["#services", "#hide", "#hide_others", "#show_all"
 const MENU_TITLES = {
   open: tKey("Open…"), "open-folder": tKey("Open Folder…"), slideshow: tKey("Slideshow…"), import: tKey("Import Photos…"), save: tKey("Save"), export: tKey("Export…"), "edit-in": tKey("Edit in Another App"), "share-compare": tKey("Share Before and After…"), touch: tKey("Touch: Drag on the Photo"),
   collage: tKey("Collage Maker…"), "lib-all": tKey("Select All"), "lib-none": tKey("Select None"), "lib-copy": tKey("Copy Settings"),
-  "lib-paste": tKey("Paste Settings"), "save-preset": tKey("New Preset from This Photo…"), "convert-raws": tKey("Convert Raws to JPEGs…"), "batch-export": tKey("Batch Export…"), replay: tKey("Export Edit Replay…"), crop: tKey("Crop and Straighten"), spots: tKey("Spot Removal"), wb: tKey("White Balance Picker"),
+  "lib-paste": tKey("Paste Settings"), "save-preset": tKey("New Preset from This Photo…"), "convert-raws": tKey("Convert Raws to JPEGs…"), styles: tKey("Styles…"), "style-new": tKey("New Style from Photos…"), "batch-export": tKey("Batch Export…"), replay: tKey("Export Edit Replay…"), crop: tKey("Crop and Straighten"), spots: tKey("Spot Removal"), wb: tKey("White Balance Picker"),
   "rate-0": tKey("No Rating"), "label-red": tKey("Red"), "label-yellow": tKey("Yellow"), "label-green": tKey("Green"), "label-blue": tKey("Blue"),
   "flag-pick": tKey("Pick"), "flag-reject": tKey("Reject"), "flag-none": tKey("No Flag"), keywords: tKey("Add Keywords"),
   "virtual-copy": tKey("Make a Virtual Copy"), "quick-collection": tKey("Add to the Last Collection"), assistant: tKey("Assistant…"),

@@ -48,7 +48,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Will it print or look right elsewhere** → **Soft Proofing** (S) shows the export's colour space.
 - **Make the same edit on many photos** → **Copy Settings** (Ctrl+Shift+C) and **Paste Settings** on a selection (Ctrl+Shift+V), or **New Preset from This Photo** (Ctrl+Shift+N) and apply it.
 - **Match the look of another photo** → Presets → **Match look…**. `amb match PHOTO REFERENCE`.
-- **A look that fits each photo, not the same moves on all** (one photo +1 Exposure, another +5) → a **style**: a saved look you apply with an Amount, to the whole look, tone only or colour only. `amb style save NAME REFERENCE...`, `amb style apply NAME PHOTO...`, `amb style list`, `amb style delete NAME`.
+- **A look that fits each photo, not the same moves on all** (one photo +1 Exposure, another +5) → a **style**: a saved look you apply with an Amount, to the whole look, tone only or colour only. Presets → **Styles…** (New from photos…, Apply to this photo or to the selected photos, an Amount), or Match look → **Save as style…**; search "style". `amb style save NAME REFERENCE...`, `amb style apply NAME PHOTO...`, `amb style list`, `amb style delete NAME`.
 - **A wild look: toy camera, miniature (tilt-shift), infrared, cartoon, oil painting** → Presets → **Wild** (Toy camera, Miniature, Infrared, Cross-process, Dreamland, Acid, Hologram, Oil painting, Cartoon, Poster, Pop art); tune them in **Effects** → Plugin effects (Paint, Tilt-shift).
 - **Surprise me with a look** → Presets → **Surprise me…**, or **Plugins** → Random look.
 - **Let an AI edit the photo** → **Assistant** (Ctrl+Shift+A), or **Connect an AI App** (Help menu; `amb mcp`).

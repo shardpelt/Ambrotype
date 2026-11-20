@@ -78,7 +78,11 @@ pub(crate) async fn match_look(
         let mut guard = slot.lock()?;
         let s = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
-        let result = s.match_look(&target, parts, lens);
+        let opts = amb_engine::matching::MatchOptions {
+            parts,
+            ..Default::default()
+        };
+        let result = s.match_look(&target, opts, lens);
         let current = s.state.settings();
         let shot = s.info();
         let catalog = amb_protocol::catalog::Catalog::builtin();

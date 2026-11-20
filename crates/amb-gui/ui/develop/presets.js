@@ -343,6 +343,7 @@ async function matchFlow() {
   const refs = await invoke("pick_references");
   if (!refs.length) return;
   const dlg = $("match-dialog");
+  styles.matchRefs = refs;
   const names = refs.map(fileName);
   $("match-refs").textContent = t("{refs}: {names}", { refs: plural(refs.length, "reference"), names: names.join(", ") });
   const table = $("match-lines");

@@ -36,7 +36,7 @@ The Color Mixer (added the same day) needs colour per band: each of the eight HS
 
 The tone curve and Clarity/Texture came on 2026-11-20. The curve is Lightroom's parametric curve: its four regions (Shadows, Darks, Lights, Highlights) at the default splits, not free points, so the answer stays unique; they cost twice what a tone slider costs, since they overlap with Shadows and Highlights. Clarity and Texture need a measure of local contrast: the mean absolute difference between L* and L* blurred at two scales, matching the engine's Texture box (0.5 px at 256 px) and Clarity box (4.1 px at 256 px). It counts only when Clarity and Texture may move, so the tone sliders don't bend to it. On the synthetic test photo it finds Clarity +47 for a reference made with +50, and Parametric Shadows +37 for +40. A `Focus` (all, tone, colour) picks the parts and weights for saved looks that carry only one half of a look.
 
-Not yet: free points on the tone curve, an explanation in words, an Amount, per-photo adaptation in batches.
+Per-photo adaptation is **Styles** (2026-11-20): a style keeps the references' measured look (`amb_library::styles`), and applying it solves each photo's own settings to reach it, at an Amount, to one photo or a selection (`amb style`, the editor's Presets → Styles…, Match look's Save as style…). Not yet: free points on the tone curve, an explanation in words, an Amount for Match look itself.
 
 Prior art shows demand. Imagen and Aftershoot sell AI "personal profiles" that learn a photographer's style from past Lightroom edits ([research/09](../research/09-market-commercial-alternatives.md)).
 
@@ -73,4 +73,4 @@ Later we can also learn a style from the user's own edit history (Imagen-style),
   - ~~the in-app assistant panel (BYO API key / local model)~~ (done 2026-10-12; [ai/assistant.md](../ai/assistant.md))
   - a vision refinement loop
   - match with masks (sky, subject)
-- **Later:** learn-my-style from edit history; batch "apply my look to this shoot" with per-photo adaptation.
+- **Later:** learn-my-style from edit history; styles shared through the hub.

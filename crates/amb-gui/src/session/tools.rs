@@ -391,7 +391,7 @@ impl Session {
     pub fn match_look(
         &mut self,
         target: &amb_engine::matching::LookStats,
-        parts: Vec<amb_engine::matching::Part>,
+        opts: amb_engine::matching::MatchOptions,
         lens: &LensSources,
     ) -> amb_engine::matching::MatchResult {
         use amb_engine::matching;
@@ -404,10 +404,6 @@ impl Session {
             d.camera_profile = base_dev.camera_profile.clone();
             d.transform.upright = base_dev.transform.upright;
             d
-        };
-        let opts = matching::MatchOptions {
-            parts,
-            ..Default::default()
         };
         matching::solve(&small, &base, target, &opts, &develop)
     }

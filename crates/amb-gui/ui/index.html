@@ -72,6 +72,7 @@
           <button id="btn-surprise" class="small" title="Surprise me: random looks to try; pick one you like (one undo step)" disabled>Surprise me…</button>
           <button id="btn-assistant" class="small" title="Ask your own AI model to edit the photo (Ctrl+Shift+A)">Ask AI…</button>
           <button id="btn-match" class="small" title="Match the look of other photos: pick reference photos; finds the white balance, tone, colour and grading settings that give this photo their look" disabled>Match look…</button>
+          <button id="btn-styles" class="small" title="Styles: saved looks that fit themselves to each photo (not fixed moves), applied at an Amount to this photo or the selection">Styles…</button>
         </div>
         <div id="preset-groups" class="preset-groups" hidden></div>
         <div id="preset-list" class="preset-list"><p class="hint">No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.</p></div>
@@ -949,8 +950,34 @@
       <table id="match-lines" class="match-lines" hidden></table>
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
+        <button id="match-save-style" type="button" title="Keep this look as a style that fits itself to any photo (Presets → Styles…)">Save as style…</button>
         <button id="match-find" type="button">Find settings</button>
         <button id="match-apply" value="ok" class="primary" disabled>Apply</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Styles: saved looks applied to this photo or the selection (develop/styles.js). -->
+  <dialog id="styles-dialog">
+    <form method="dialog">
+      <h2>Styles</h2>
+      <p id="styles-empty" class="hint">A style is a look, not fixed moves: it finds each photo's own settings to reach it. Make one from photos whose look you like.</p>
+      <div id="styles-list" class="styles-list"></div>
+      <label>Amount <input id="styles-amount" type="range" min="0" max="150" value="100"> <span id="styles-amount-value">100</span>%</label>
+      <div class="crop-line">
+        <button type="button" id="styles-new" class="small">New from photos…</button>
+        <select id="styles-focus" title="What of the references' look the style takes">
+          <option value="all">Whole look</option>
+          <option value="tone">Tone only</option>
+          <option value="colour">Colour only</option>
+        </select>
+      </div>
+      <p id="styles-status" class="hint" role="status"></p>
+      <menu>
+        <button type="button" id="styles-delete">Delete…</button>
+        <button type="button" id="styles-close">Close</button>
+        <button type="button" id="styles-apply-many">Apply to selected photos</button>
+        <button type="button" id="styles-apply-one" class="primary">Apply to this photo</button>
       </menu>
     </form>
   </dialog>
@@ -1991,6 +2018,7 @@
   <script src="develop/preview.js"></script>
   <script src="tools/croptool.js"></script>
   <script src="develop/presets.js"></script>
+  <script src="develop/styles.js"></script>
   <script src="develop/preset-grid.js"></script>
   <script src="develop/preset-hide.js"></script>
   <script src="develop/preset-edit.js"></script>

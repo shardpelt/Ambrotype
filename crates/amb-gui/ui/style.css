@@ -356,6 +356,10 @@ dialog label.check { flex-direction: row; align-items: center; gap: 8px; margin-
 .assistant-form { display: flex; gap: 6px; align-items: flex-end; }
 .assistant-form textarea { flex: 1; resize: vertical; font: inherit; }
 .match-parts { display: grid; grid-template-columns: 1fr 1fr; }
+.styles-list { display: flex; flex-direction: column; gap: 4px; max-height: 240px; overflow-y: auto; margin: 8px 0; }
+.styles-item { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; text-align: left; padding: 6px 10px; background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); }
+.styles-item:hover { background: var(--hover); }
+.styles-item.active { border-color: var(--accent); }
 .match-lines { width: 100%; margin-top: 12px; border-collapse: collapse; font-size: 12px; }
 .match-lines td { padding: 3px 6px; border-bottom: 1px solid var(--line); }
 .match-lines td:nth-child(n+2) { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }

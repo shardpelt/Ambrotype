@@ -363,6 +363,58 @@ pub fn remove(next: &mut BTreeMap<String, Value>, spot: usize) -> Result<(), Err
     Ok(())
 }
 
+/// A brushed spot's strokes as lines of dab centres, thinned to about half
+/// the brush radius apart, so the editor can draw and pick them.
+fn stroke_lines(a: &Fields, r: f64) -> Vec<Vec<[f64; 2]>> {
+    let gap = (r * 0.5).max(1e-4);
+    retouch::shape_components(a)
+        .iter()
+        .filter(|c| masks::text(c, "What").as_deref() == Some("Mask/Paint"))
+        .filter_map(|c| match c.get("Dabs") {
+            Some(Value::Seq(d)) => Some(d),
+            _ => None,
+        })
+        .map(|dabs| {
+            let all: Vec<[f64; 2]> = dabs
+                .iter()
+                .filter_map(|v| v.as_str().and_then(masks::parse_dab))
+                .map(|(x, y)| [x, y])
+                .collect();
+            let mut line: Vec<[f64; 2]> = Vec::new();
+            for (i, p) in all.iter().enumerate() {
+                let far = line
+                    .last()
+                    .is_none_or(|q| (p[0] - q[0]).hypot(p[1] - q[1]) >= gap);
+                if far || i + 1 == all.len() {
+                    line.push(*p);
+                }
+            }
+            line
+        })
+        .filter(|l| !l.is_empty())
+        .collect()
+}
+
+/// The middle of the lines' bounds: where `set_spot`'s `at` puts a brushed
+/// spot ([`move_strokes`]).
+fn middle(lines: &[Vec<[f64; 2]>]) -> Option<[f64; 2]> {
+    let mut b = [
+        f64::INFINITY,
+        f64::INFINITY,
+        f64::NEG_INFINITY,
+        f64::NEG_INFINITY,
+    ];
+    for p in lines.iter().flatten() {
+        b = [
+            b[0].min(p[0]),
+            b[1].min(p[1]),
+            b[2].max(p[0]),
+            b[3].max(p[1]),
+        ];
+    }
+    (b[0] <= b[2]).then(|| [(b[0] + b[2]) / 2.0, (b[1] + b[3]) / 2.0])
+}
+
 /// The spots of `settings` as the editor and AI clients see them.
 pub fn describe(settings: &BTreeMap<String, Value>) -> serde_json::Value {
     let spots: Vec<serde_json::Value> = retouch::areas(settings)
@@ -399,6 +451,11 @@ pub fn describe(settings: &BTreeMap<String, Value>) -> serde_json::Value {
                         .and_then(|c| masks::num(c, "Radius"));
                     if let Some(r) = r {
                         d["radius"] = json!(r);
+                    }
+                    let lines = stroke_lines(a, r.unwrap_or(0.02));
+                    if let Some(at) = middle(&lines) {
+                        d["at"] = json!(at);
+                        d["strokes"] = json!(lines);
                     }
                 }
             }
@@ -452,6 +509,11 @@ mod tests {
         let d = describe(&next);
         assert_eq!(d["spots"][0]["shape"], "brush");
         assert_eq!(d["spots"][0]["radius"], 0.02);
+        // Its middle and its stroke, for the editor to draw and drag.
+        let at = &d["spots"][0]["at"];
+        assert!((at[0].as_f64().unwrap() - 0.3).abs() < 1e-5, "{at}");
+        let line = d["spots"][0]["strokes"][0].as_array().unwrap();
+        assert!(line.len() >= 10 && line.len() < 30, "{}", line.len());
         set(
             &mut next,
             0,

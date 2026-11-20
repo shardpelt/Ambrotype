@@ -4,7 +4,8 @@
 // Every change is a protocol command (add_spot, set_spot, remove_spot) on
 // Lightroom's RetouchAreas. Click the photo to add a spot: the engine suggests
 // a donor (spot_source) that you can drag elsewhere. Drag a spot to move it;
-// the wheel or [ ] resize the selected spot (or the next one). While a spot or
+// the wheel or [ ] resize the selected spot (or the next one). A brushed
+// spot is drawn along its strokes and moves the same way. While a spot or
 // its source is dragged, the preview renders an edited copy of the tag.
 // Coordinates go through the mask tool's map (mask_frame, masks.js and mask-draw.js helpers).
 "use strict";
@@ -65,6 +66,38 @@ function drawSpots() {
     g.stroke();
     g.setLineDash([]);
   };
+  // A brushed spot: its strokes, and the selected one's source as the same
+  // strokes, dashed, where they copy from.
+  const lines = (pts) => {
+    g.beginPath();
+    for (const line of pts) {
+      const [first, ...rest] = line.map(([x, y]) => sCanvas(x, y));
+      g.moveTo(...first);
+      for (const p of rest) g.lineTo(...p);
+      if (!rest.length) g.lineTo(first[0] + 0.1, first[1]);
+    }
+  };
+  const brush = (pts, r, colour, dash = []) => {
+    lines(pts);
+    g.lineCap = g.lineJoin = "round";
+    g.setLineDash([]);
+    g.lineWidth = 2 * r;
+    g.strokeStyle = dash.length ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.18)";
+    g.stroke();
+    g.setLineDash(dash);
+    g.lineWidth = 1.5;
+    g.strokeStyle = colour;
+    g.stroke();
+    g.setLineDash([]);
+  };
+  for (const s of shownSpots()) {
+    if (s.shape !== "brush" || !s.active || !s.strokes) continue;
+    const sel = s.index === sp.selected;
+    const r = spotRadiusPx(s.radius ?? sp.size / 100);
+    const colour = sel ? accent : "rgba(255,255,255,0.8)";
+    if (s.source && sel) brush(sourceStrokes(s), r, colour, [5, 4]);
+    brush(s.strokes, r, colour);
+  }
   for (const s of shownSpots()) {
     if (s.shape !== "round" || !s.active) continue;
     const sel = s.index === sp.selected;
@@ -158,12 +191,21 @@ function setVisualise(on) {
   drawSpots();
 }
 
-// The spots with a drag applied, so the circles follow the pointer.
+// The spots with a drag applied, so the circles and strokes follow the pointer.
 function shownSpots() {
   const d = sp.drag;
   if (!d?.moved) return spotList();
-  return spotList().map((s) => (s.index !== d.spot ? s : { ...s, ...d.patch }));
+  return spotList().map((s) => {
+    if (s.index !== d.spot) return s;
+    const moved = { ...s, ...d.patch };
+    if (s.strokes && d.patch.at) moved.strokes = shiftStrokes(s.strokes, d.patch.at[0] - s.at[0], d.patch.at[1] - s.at[1]);
+    return moved;
+  });
 }
+
+const shiftStrokes = (strokes, dx, dy) => strokes.map((line) => line.map(([x, y]) => [x + dx, y + dy]));
+// A brushed spot's strokes moved to where they copy from.
+const sourceStrokes = (s) => shiftStrokes(s.strokes, s.source[0] - s.at[0], s.source[1] - s.at[1]);
 
 // ---------------------------------------------------------------- panel
 
@@ -193,7 +235,7 @@ function renderSpotPanel() {
     : s
     ? [s.note && `${s.note}.`, t("Drag the spot or its source to move them. Delete removes it; click elsewhere for a new one.")].filter(Boolean).join(" ")
     : [
-      t("Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag the dashed source circle to pick where it copies from. [ and ] or the wheel change the size."),
+      t("Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag a spot to move it, or its dashed source to pick where it copies from. [ and ] or the wheel change the size."),
       sp.kind === "remove" && t("Remove fills it with what belongs there (AI Remove, Settings → AI models); until its model is installed, it is healed from a nearby area."),
       made && t("{n} spot(s) were filled by Lightroom's Generative Remove; AI Remove fills them here.", { n: made }),
     ].filter(Boolean).join(" ");
@@ -236,16 +278,25 @@ function spotSize(dir) {
 // ---------------------------------------------------------------- pointer
 
 function hitSpot(px, py) {
-  // The selected spot's source first, then any spot's circle (topmost last).
+  // Within a spot's radius (8 px at least) of its centre, or of a brushed
+  // spot's strokes.
+  const near = (t, pts) => {
+    const r = Math.max(8, spotRadiusPx(t.radius ?? sp.size / 100));
+    return pts.some(([fx, fy]) => {
+      const [x, y] = sCanvas(fx, fy);
+      return Math.hypot(px - x, py - y) <= r;
+    });
+  };
+  const points = (t, source) => {
+    if (t.shape === "round") return [source ? t.source : t.at];
+    if (!t.strokes) return [];
+    return (source ? sourceStrokes(t) : t.strokes).flat();
+  };
+  // The selected spot's source first, then any spot (topmost last).
   const s = selectedSpot();
-  if (s?.source && s.shape === "round") {
-    const [x, y] = sCanvas(s.source[0], s.source[1]);
-    if (Math.hypot(px - x, py - y) <= Math.max(8, spotRadiusPx(s.radius))) return { spot: s.index, part: "source" };
-  }
+  if (s?.source && s.at && near(s, points(s, true))) return { spot: s.index, part: "source" };
   for (const t of [...spotList()].reverse()) {
-    if (t.shape !== "round") continue;
-    const [x, y] = sCanvas(t.at[0], t.at[1]);
-    if (Math.hypot(px - x, py - y) <= Math.max(8, spotRadiusPx(t.radius))) return { spot: t.index, part: "at" };
+    if (t.at && near(t, points(t, false))) return { spot: t.index, part: "at" };
   }
   return null;
 }
@@ -260,10 +311,21 @@ function previewSpotDrag(d) {
     a.SourceX = f6(d.patch.source[0]);
     a.OffsetY = f6(d.patch.source[1]);
   } else {
-    const e = (a.Masks ?? []).find((m) => m.What === "Mask/Ellipse");
-    if (!e) return;
-    e.X = f6(d.patch.at[0]);
-    e.Y = f6(d.patch.at[1]);
+    const e = [].concat(a.Masks ?? []).find((m) => m.What === "Mask/Ellipse");
+    if (e) {
+      e.X = f6(d.patch.at[0]);
+      e.Y = f6(d.patch.at[1]);
+    } else {
+      // A brushed spot: every dab of its strokes moves by the drag.
+      const [dx, dy] = [d.patch.at[0] - d.orig.at[0], d.patch.at[1] - d.orig.at[1]];
+      for (const m of [].concat(a.Masks ?? [])) {
+        if (m.What !== "Mask/Paint" || !Array.isArray(m.Dabs)) continue;
+        m.Dabs = m.Dabs.map((t) => {
+          const [k, x, y] = String(t).trim().split(/\s+/);
+          return k === "d" ? `d ${(Number(x) + dx).toFixed(6)} ${(Number(y) + dy).toFixed(6)}` : t;
+        });
+      }
+    }
     if (d.patch.source) {
       a.SourceX = f6(d.patch.source[0]);
       a.OffsetY = f6(d.patch.source[1]);

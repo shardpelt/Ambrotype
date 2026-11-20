@@ -34,11 +34,11 @@ Spots run in order on the scene-linear image at the end of the first pipeline st
 
 - `add_spot {at, radius?, kind?, source?, source_auto?, feather?, opacity?}`: a round spot; `kind` heal (default) or clone, `radius` a fraction of the width (default 0.02), `source` the donor centre (searched for at render time when absent), `feather` and `opacity` 0–100.
 - `set_spot {spot, values}`: `at`, `radius` (round spots), `source` (`null` to search again), `kind`, `feather`, `opacity`, `active`.
-- `remove_spot {spot}`; query `list_spots`.
+- `remove_spot {spot}`; query `list_spots` (a brushed spot lists its `at`, the middle of its strokes as `set_spot` moves it, and `strokes`, its dab centres thinned to half the brush radius apart).
 
 ## The editor
 
-`ui/tools/spots.js`, opened with the Spots button or Q. Click a blemish: the backend's `spot_source` runs the donor search on a small render, and the spot is added with that donor (`sourceAutoComputed`), drawn as a dashed circle joined to the spot. Drag the spot (its donor moves with it) or the donor. The panel has Heal/Clone, Size (% of the width), Feather and Opacity, for the selected spot or the next one; [ and ] or the wheel resize; Delete removes the selected spot; Remove all is one undo step. Dragging on the photo paints a brushed spot instead (`add_spot` with `points`: one `Mask/Paint` stroke in the brush-mask dab format, the brush size and Feather from the panel); its donor is searched for the stroke's own shape (`spot_source` with `points`), and the stroke's centre copies from it, as the engine reads Lightroom's brushed spots. Brushed spots aren't drawn as circles and can't be moved yet.
+`ui/tools/spots.js`, opened with the Spots button or Q. Click a blemish: the backend's `spot_source` runs the donor search on a small render, and the spot is added with that donor (`sourceAutoComputed`), drawn as a dashed circle joined to the spot. Drag the spot (its donor moves with it) or the donor. The panel has Heal/Clone, Size (% of the width), Feather and Opacity, for the selected spot or the next one; [ and ] or the wheel resize; Delete removes the selected spot; Remove all is one undo step. Dragging on the photo paints a brushed spot instead (`add_spot` with `points`: one `Mask/Paint` stroke in the brush-mask dab format, the brush size and Feather from the panel); its donor is searched for the stroke's own shape (`spot_source` with `points`), and the stroke's centre copies from it, as the engine reads Lightroom's brushed spots. A brushed spot is drawn along its strokes (its source as the same strokes, dashed) and is dragged like a round one: grab it anywhere on its stroke, and its dabs move (`set_spot` with `at`).
 
 ## Open questions (for the Lightroom trial)
 

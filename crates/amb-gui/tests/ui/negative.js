@@ -56,6 +56,13 @@ await t.step("Meter area: a drag stores the box (one step); Alt-click meters the
   t.expect(t.setting("amb:NegativeConvert") === true, "the conversion on");
   t.expect(!ui.picking && !t.visible("#meter-box"), "drawing over");
   t.expect(t.historyLength() === steps + 1, "one history step");
+  // Open again (from its key action, as search does): the stored box shows where it was drawn.
+  KEY_ACTIONS.find((a) => a.id === "meter-area").run();
+  await t.until("the stored box", () => ui.picking === "meter" && t.visible("#meter-box"));
+  const b = $("meter-box").getBoundingClientRect();
+  t.expect(Math.abs((b.left - r.left) / r.width - 0.2) < 0.02 && Math.abs((b.bottom - r.top) / r.height - 0.9) < 0.02, "the box where it was drawn");
+  t.click(meter);
+  t.expect(!ui.picking && !t.visible("#meter-box"), "closed again");
   meter.dispatchEvent(new MouseEvent("click", { altKey: true, bubbles: true }));
   await t.until("the whole crop again", () => t.setting("amb:NegativeMeterLeft") == null && t.setting("amb:NegativeMeterBottom") == null);
   t.click(meter);

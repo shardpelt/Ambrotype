@@ -198,6 +198,32 @@ fn region_pick_white_and_clipping() {
 }
 
 #[test]
+fn the_metering_box_is_kept_in_the_stored_orientation() {
+    let path = synthetic("colorchecker");
+    let mut s = Session::open(&path).unwrap();
+    assert_eq!(s.meter_box_shown(), [0.0, 0.0, 1.0, 1.0], "the whole crop");
+    // Seen turned a quarter clockwise: the top half as shown is the stored left half.
+    s.full.metadata.orientation = 6;
+    let stored = s.meter_box_stored([1.0, 0.5, 0.0, 0.0]).expect("a big box");
+    assert_eq!(stored, [0.0, 0.0, 0.5, 1.0]);
+    let edit: Vec<_> = ["Left", "Top", "Right", "Bottom"]
+        .iter()
+        .zip(stored)
+        .map(|(n, v)| Command::SetParam {
+            name: format!("amb:NegativeMeter{n}"),
+            value: v.into(),
+        })
+        .collect();
+    s.execute(&edit, None).unwrap();
+    assert_eq!(s.meter_box_shown(), [0.0, 0.0, 1.0, 0.5]);
+    assert!(
+        s.meter_box_stored([0.2, 0.2, 0.21, 0.9]).is_none(),
+        "too thin"
+    );
+    assert!(s.meter_box_stored([f64::NAN, 0.0, 1.0, 1.0]).is_none());
+}
+
+#[test]
 fn region_tiles_match_the_full_render_in_any_orientation() {
     let path = synthetic("colorchecker");
     let lens = LensSources::default();

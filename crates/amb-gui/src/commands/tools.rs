@@ -130,6 +130,45 @@ pub(crate) fn pick_film_base(u: f64, v: f64, state: tauri::State<'_, AppState>) 
     })
 }
 
+/// The negative's metering box on the photo as shown, for Meter area to
+/// draw while it is active.
+#[tauri::command]
+pub(crate) fn meter_area_shown(state: tauri::State<'_, AppState>) -> Res<[f64; 4]> {
+    let guard = state.session.lock()?;
+    Ok(guard.as_ref().ok_or("no photo open")?.meter_box_shown())
+}
+
+/// A metering box dragged on the photo as shown (`shown`: two corners as
+/// fractions): kept in the stored orientation like the crop, with the
+/// conversion on, as one undoable step.
+#[tauri::command]
+pub(crate) fn meter_area(shown: [f64; 4], state: tauri::State<'_, AppState>) -> Res<Executed> {
+    let mut guard = state.session.lock()?;
+    let s = guard.as_mut().ok_or("no photo open")?;
+    let stored = s
+        .meter_box_stored(shown)
+        .ok_or("That box is too small to measure: drag a bigger one.")?;
+    let round = |v: f64| (v * 10_000.0).round() / 10_000.0;
+    let mut cmds = vec![Command::SetParam {
+        name: "amb:NegativeConvert".into(),
+        value: serde_json::json!(true),
+    }];
+    for (edge, v) in ["Left", "Top", "Right", "Bottom"].iter().zip(stored) {
+        cmds.push(Command::SetParam {
+            name: format!("amb:NegativeMeter{edge}"),
+            value: serde_json::json!(round(v)),
+        });
+    }
+    s.execute(&cmds, Some("Meter area"))?;
+    Ok(Executed {
+        state: s.state_info(),
+        notes: vec![
+            "Auto measures inside the box. Alt-click Meter area to measure the whole crop again."
+                .into(),
+        ],
+    })
+}
+
 #[derive(Serialize)]
 pub(crate) struct Guided {
     pub(crate) commands: Vec<Command>,

@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! The part of the crop Auto measures, drawn by hand (`amb:NegativeMeter*`).
+//! Like the crop, the box is kept in the photo's stored (sensor)
+//! orientation; the editor turns it to and from the photo as shown.
 
 use super::*;
 
-/// The least a metering box may span, in each direction, as a fraction.
-const MIN_SPAN: f64 = 0.02;
+/// The least a metering box may span, in each direction, as a fraction of
+/// the crop (ours: a smaller box is a slip of the mouse, not a choice).
+pub const METER_MIN_SPAN: f64 = 0.02;
 
 /// The pixels of `scan` inside `meter` (left, top, right, bottom as
 /// fractions), with their size. `None` when the box is the whole frame or
 /// not valid (empty, inside out, under 2 % either way): then the whole scan
 /// is measured, as without a box.
-pub fn sub_scan(scan: Scan, meter: [f64; 4]) -> Option<(Vec<f32>, usize, usize)> {
+pub(crate) fn sub_scan(scan: Scan, meter: [f64; 4]) -> Option<(Vec<f32>, usize, usize)> {
     let [l, t, r, b] = meter.map(|v| {
         if v.is_finite() {
             v.clamp(0.0, 1.0)
@@ -21,7 +24,7 @@ pub fn sub_scan(scan: Scan, meter: [f64; 4]) -> Option<(Vec<f32>, usize, usize)>
     if l.is_nan() || t.is_nan() || r.is_nan() || b.is_nan() {
         return None;
     }
-    if (l, t, r, b) == (0.0, 0.0, 1.0, 1.0) || r - l < MIN_SPAN || b - t < MIN_SPAN {
+    if [l, t, r, b] == WHOLE || r - l < METER_MIN_SPAN || b - t < METER_MIN_SPAN {
         return None;
     }
     let (w, h) = (scan.width as f64, scan.height as f64);

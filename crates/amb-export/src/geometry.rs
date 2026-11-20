@@ -80,6 +80,27 @@ pub fn upright_fraction(orientation: u16, x: f64, y: f64) -> (f64, f64) {
     }
 }
 
+/// A box (left, top, right, bottom as fractions) of the upright image, in
+/// the stored one: its corners through [`stored_fraction`], sorted again.
+pub fn stored_box(orientation: u16, b: [f64; 4]) -> [f64; 4] {
+    sorted_box(
+        stored_fraction(orientation, b[0], b[1]),
+        stored_fraction(orientation, b[2], b[3]),
+    )
+}
+
+/// [`stored_box`] the other way: a box of the stored image, upright.
+pub fn upright_box(orientation: u16, b: [f64; 4]) -> [f64; 4] {
+    sorted_box(
+        upright_fraction(orientation, b[0], b[1]),
+        upright_fraction(orientation, b[2], b[3]),
+    )
+}
+
+fn sorted_box((x0, y0): (f64, f64), (x1, y1): (f64, f64)) -> [f64; 4] {
+    [x0.min(x1), y0.min(y1), x0.max(x1), y0.max(y1)]
+}
+
 /// Orientations that mirror the image (a flip, possibly with a turn).
 fn mirrored(orientation: u16) -> bool {
     matches!(orientation, 2 | 4 | 5 | 7)
@@ -514,6 +535,26 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn boxes_turn_both_ways_in_every_orientation() {
+        let shown = [0.1, 0.0, 0.7, 0.5];
+        for o in 1..=8u16 {
+            let stored = stored_box(o, shown);
+            assert!(
+                stored[0] < stored[2] && stored[1] < stored[3],
+                "{o}: {stored:?}"
+            );
+            let back = upright_box(o, stored);
+            assert!(
+                back.iter().zip(shown).all(|(a, b)| (a - b).abs() < 1e-12),
+                "{o}"
+            );
+        }
+        // Turned a quarter clockwise to be seen (6): the top half as shown is
+        // the stored image's left half.
+        assert_eq!(stored_box(6, [0.0, 0.0, 1.0, 0.5]), [0.0, 0.0, 0.5, 1.0]);
     }
 
     /// The crop tool's upright rectangle, turned into tags, makes the engine

@@ -36,7 +36,8 @@ pub use analysis::{analyze, analyze_as, estimate_base, stock};
 use analysis::{auto_density_grade, levels, log_exposure, samples_grid};
 use cast::{crossover, remove_cast, uncross};
 pub use frame::detect_frame;
-pub use meter::sub_scan;
+pub use meter::METER_MIN_SPAN;
+pub(crate) use meter::sub_scan;
 
 use rayon::prelude::*;
 
@@ -190,7 +191,8 @@ pub struct Negative {
     /// (Auto only).
     pub auto_grade: bool,
     /// The part of the crop Auto measures: left, top, right, bottom as
-    /// fractions of the cropped photo. The whole crop by default.
+    /// fractions of the cropped photo in its stored orientation, as the crop
+    /// is kept. The whole crop by default.
     pub meter: [f64; 4],
     /// Print exposure in EV.
     pub exposure: f64,
@@ -233,7 +235,7 @@ impl Default for Negative {
 }
 
 /// The metering box that covers the whole crop.
-pub const WHOLE: [f64; 4] = [0.0, 0.0, 1.0, 1.0];
+pub(crate) const WHOLE: [f64; 4] = [0.0, 0.0, 1.0, 1.0];
 
 /// `amb:NegativeRange`'s default: the green layer's density range in a
 /// normally exposed negative of an ordinary scene (ours; about the median of

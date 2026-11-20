@@ -2301,6 +2301,12 @@
  "Film Simulation: Classic Chrome Dynamic Range: DR400 Highlight: -1 Shadow: +1 Grain Effect: Weak, Small White Balance: Auto, +2 Red & -4 Blue": [
   "index.html"
  ],
+ "Film negative: meter area, the part Auto measures": [
+  "core/keys.js"
+ ],
+ "Film negative: pick the film base": [
+  "core/keys.js"
+ ],
  "Film negatives: analyse each selected frame and give the roll one conversion (Auto off): frames in different light get their own, odd frames keep theirs": [
   "index.html"
  ],
@@ -6403,9 +6409,6 @@
  "Text size": [
   "index.html"
  ],
- "That box is too small to measure.": [
-  "develop/meter.js"
- ],
  "That isn't a number of hours": [
   "library/browse.js"
  ],
@@ -6579,6 +6582,12 @@
   "index.html"
  ],
  "Then click something neutral grey or white.": [
+  "core/keys.js"
+ ],
+ "Then click the clear film between frames. In the Film Negative panel, Alt-click Pick base to measure it from the scan again.": [
+  "core/keys.js"
+ ],
+ "Then drag a box round it, to leave out a sky, a light leak or a holder's edge. In the Film Negative panel, Alt-click Meter area to meter the whole crop again.": [
   "core/keys.js"
  ],
  "There is no source code in the folder. Reviewers need it to check and rebuild plugin.wasm; add the plugin's src/ and Cargo.toml.": [

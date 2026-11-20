@@ -190,6 +190,26 @@ impl Session {
         Some((base, warning))
     }
 
+    /// The negative's metering box (`amb:NegativeMeter*`, kept in the stored
+    /// orientation like the crop) as fractions of the cropped photo as shown.
+    pub fn meter_box_shown(&self) -> [f64; 4] {
+        let (develop, _) = DevelopSettings::from_settings(self.state.settings());
+        amb_export::geometry::upright_box(self.full.metadata.orientation, develop.negative.meter)
+    }
+
+    /// A metering box drawn on the cropped photo as shown (left, top, right,
+    /// bottom as fractions, in any order), as it is kept: in the stored
+    /// orientation. `None` when it is too small to measure.
+    pub fn meter_box_stored(&self, shown: [f64; 4]) -> Option<[f64; 4]> {
+        if !shown.iter().all(|v| v.is_finite()) {
+            return None;
+        }
+        let clamped = shown.map(|v| v.clamp(0.0, 1.0));
+        let b = amb_export::geometry::stored_box(self.full.metadata.orientation, clamped);
+        let span = amb_engine::negative::METER_MIN_SPAN;
+        (b[2] - b[0] >= span && b[3] - b[1] >= span).then_some(b)
+    }
+
     /// The white balance settings that make the spot at (`u`, `v`) of the
     /// photo as shown neutral: Temperature and Tint on a raw, their relative
     /// versions on a rendered image.

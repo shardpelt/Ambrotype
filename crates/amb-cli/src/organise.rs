@@ -19,7 +19,7 @@ use crate::print_json;
 pub(crate) type Options<'a> = BTreeMap<&'a str, &'a str>;
 
 /// As [`photos`], folders with all their subfolders' photos too.
-fn photos_deep(args: &[&str]) -> Result<Vec<PathBuf>, String> {
+pub(crate) fn photos_deep(args: &[&str]) -> Result<Vec<PathBuf>, String> {
     let mut out = Vec::new();
     for a in args {
         let p = std::path::absolute(a).map_err(|e| format!("{a}: {e}"))?;

@@ -12,3 +12,4 @@ pub mod negative;
 pub mod object;
 pub mod replay;
 pub mod snap;
+pub mod style;

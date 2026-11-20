@@ -208,6 +208,17 @@ USAGE:
                                             length, shutter speed, ISO, hour, camera and lens comes up,
                                             and how many of each were kept (picked or 3 stars and up);
                                             then what the numbers suggest and challenges to try
+    amb style list [--json]
+    amb style save <NAME> <REF>... [--focus all|tone|colour] [--json]
+    amb style apply <STYLE> <PHOTO|DIR>... [--amount 0-150] [--recursive] [--json]
+    amb style delete <NAME>
+                                            Styles: a saved look, not saved moves. save measures the
+                                            reference photos' look (as match does) and keeps it; apply
+                                            solves each photo's own settings to reach it (+1 Exposure on
+                                            one, +5 on another), one undoable step per photo. --focus:
+                                            the whole look, tone only or colour only. STYLE is a saved
+                                            style's name or a .json file; --amount in percent (default
+                                            100); the styles live in the editor's config folder
     amb cleanup <PHOTO|DIR>... [--skip dupes,bursts,blurry,eyes,exposure,rejected] [--alike 0-20]
                 [--burst SECONDS] [--trash|--reject] [--dry-run] [--json]
                                             The photos you may not want, each with why: copies and alike

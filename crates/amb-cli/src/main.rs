@@ -28,6 +28,7 @@ mod progress;
 mod render;
 mod search;
 mod share;
+mod style;
 mod sweep;
 mod usage;
 
@@ -198,6 +199,7 @@ fn main() -> ExitCode {
             | "--lens"
             | "--keyword"
             | "--text"
+            | "--focus"
             | "--until"
             | "--catalog"
             | "--like"
@@ -299,6 +301,7 @@ fn main() -> ExitCode {
         ["insights", places @ ..] if !places.is_empty() => {
             library::insights(places, &options, json)
         }
+        ["style", rest @ ..] => style::style(rest, &options, json),
         ["cleanup", photos @ ..] if !photos.is_empty() => {
             cleanup::cleanup(photos, &options, dry_run, json)
         }

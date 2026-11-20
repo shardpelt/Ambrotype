@@ -50,10 +50,10 @@ async function loadTaskPlugins() {
 async function runTaskTool(tool) {
   if (tool.command) {
     const a = KEY_ACTIONS.find((x) => x.id === tool.command);
-    if (!a) return toast(`No command ${tool.command}.`, true);
+    if (!a) return toast(t("No command {name}.", { name: tool.command }), true);
     return a.run();
   }
-  if (!ui.info) return toast("Open a photo first.", true);
+  if (!ui.info) return toast(t("Open a photo first."), true);
   if (tool.effect) return setEffect(tool.effect, toolEffect(tool), tool.label);
   const r = await invoke("run_plugin", { id: tool.plugin, params: tool.params ?? {} });
   setState(r.state);
@@ -200,16 +200,16 @@ function wireTasks() {
 
 // Hovering a task shows a sketch of its screen: the side columns with their
 // panels around the photo, so you see where it takes you before you go.
-function taskSketch(t) {
+function taskSketch(task) {
   const box = el("div", { class: "task-sketch" });
-  const key = keyLabel(`Ctrl+Alt+${TASKS.indexOf(t) + 1}`);
-  box.append(el("p", { class: "task-sketch-hint" }, `${t.hint} · ${key}`));
-  const data = t.layout && findLook("layout", taskLayout(t))?.data;
+  const key = keyLabel(`Ctrl+Alt+${TASKS.indexOf(task) + 1}`);
+  box.append(el("p", { class: "task-sketch-hint" }, `${t(task.hint)} · ${key}`));
+  const data = task.layout && findLook("layout", taskLayout(task))?.data;
   const screen = el("div", { class: "task-sketch-screen" });
   const column = (side) => {
     const col = el("div", { class: `task-sketch-col ${side}` });
     for (const item of data?.[side]?.items ?? []) {
-      const name = typeof item === "string" ? BLOCK_TITLES[item] ?? item : panelTitle(item);
+      const name = t(typeof item === "string" ? BLOCK_TITLES[item] ?? item : panelTitle(item));
       col.append(el("span", { class: item.open ? "open" : "" }, name));
     }
     return col;
@@ -227,11 +227,11 @@ function wireTaskSketches() {
     document.querySelector(".task-sketch")?.remove();
   };
   for (const b of $("task-bar").querySelectorAll("[data-task]")) {
-    const t = TASKS.find((x) => x.id === b.dataset.task);
+    const task = TASKS.find((x) => x.id === b.dataset.task);
     b.addEventListener("mouseenter", () => {
       hide();
       timer = setTimeout(() => {
-        const s = taskSketch(t);
+        const s = taskSketch(task);
         const r = b.getBoundingClientRect();
         s.style.left = `${Math.round(r.left)}px`;
         s.style.top = `${Math.round(r.bottom + 6)}px`;

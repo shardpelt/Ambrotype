@@ -15,7 +15,7 @@ function searchItems() {
     if (a.id === "search") continue;
     const combo = keysFor(a)[0];
     items.push({
-      kind: "Command", title: MENU_TITLES[a.id]?.replace(/…$/, "") ?? a.label, also: `${a.label} ${a.group}`,
+      kind: tKey("Command"), title: MENU_TITLES[a.id] ? t(MENU_TITLES[a.id]).replace(/…$/, "") : actionLabel(a), also: `${actionLabel(a)} ${t(a.group)}`,
       keys: combo ? keyLabel(combo) : "", enabled: menuItemOn(a.id), run: () => runMenuItem(a.id),
     });
   }
@@ -28,28 +28,28 @@ function searchItems() {
     if (!shown && onScreen.has(c.def.label)) continue;
     const panel = c.label?.closest?.("details.panel")?.querySelector("summary > span")?.textContent;
     items.push({
-      kind: "Setting", title: c.def.label, also: `${name} ${panel ?? ""}`, enabled: shown && Boolean(ui.info),
-      note: shown ? (panel ? `Setting · ${panel}` : "") : "not in this layout", run: () => revealSetting(name),
+      kind: tKey("Setting"), title: t(c.def.label), also: `${name} ${panel ?? ""}`, enabled: shown && Boolean(ui.info),
+      note: shown ? (panel ? t("Setting · {panel}", { panel }) : "") : t("not in this layout"), run: () => revealSetting(name),
       number: c.input && typeof c.def.min === "number" && typeof c.def.max === "number" ? name : null,
     });
   }
   for (const s of document.querySelectorAll("#workspace details.panel > summary > span:first-child")) {
-    items.push({ kind: "Panel", title: s.textContent, also: "", enabled: true, run: () => revealPanel(s.closest("details")) });
+    items.push({ kind: tKey("Panel"), title: s.textContent, also: "", enabled: true, run: () => revealPanel(s.closest("details")) });
   }
   for (const p of presetsShown()) {
     items.push({
-      kind: "Preset", title: p.name, also: p.group ?? "", enabled: Boolean(ui.info),
+      kind: tKey("Preset"), title: p.name, also: p.group ?? "", enabled: Boolean(ui.info),
       run: () => applyPreset(p),
     });
   }
   for (const f of ui.features ?? []) {
-    items.push({ kind: "How to", title: f.want, also: `${f.how} ${f.section}`, note: `How to · ${f.section}`, enabled: true, run: () => showHow(f) });
+    items.push({ kind: tKey("How to"), title: f.want, also: `${f.how} ${f.section}`, note: t("How to · {section}", { section: f.section }), enabled: true, run: () => showHow(f) });
   }
-  for (const t of TASKS) items.push({ kind: "Task", title: t.label, also: t.hint, enabled: true, run: () => switchTask(t.id) });
+  for (const task of TASKS) items.push({ kind: tKey("Task"), title: t(task.label), also: t(task.hint), enabled: true, run: () => switchTask(task.id) });
   for (const kind of ["layout", "theme"]) {
     for (const l of ui.looks?.[`${kind}s`] ?? []) {
       if (!l.usable || TASK_LAYOUTS.has(l.id)) continue;
-      items.push({ kind: kind === "layout" ? "Layout" : "Theme", title: l.name ?? l.data?.name ?? l.id, also: l.id, enabled: true, run: () => switchLook(kind, l.id) });
+      items.push({ kind: kind === "layout" ? tKey("Layout") : tKey("Theme"), title: l.name ?? l.data?.name ?? l.id, also: l.id, enabled: true, run: () => switchLook(kind, l.id) });
     }
   }
   return items;
@@ -86,8 +86,8 @@ function searchValues(words) {
       const def = ui.controls.get(it.number).def;
       const v = Math.min(def.max, Math.max(def.min, value));
       return {
-        kind: "Set", title: `Set ${it.title} to ${format(def, v)}`, also: "", enabled: true,
-        note: v === value ? "Set" : `Set · ${def.min} to ${def.max}`,
+        kind: tKey("Set"), title: t("Set {setting} to {value}", { setting: it.title, value: format(def, v) }), also: "", enabled: true,
+        note: v === value ? t("Set") : t("Set · {min} to {max}", { min: def.min, max: def.max }),
         run: () => run([{ cmd: "set_param", name: it.number, value: v }]),
       };
     });
@@ -106,8 +106,8 @@ function renderSearch() {
   list.replaceChildren(...searchState.shown.map((it, i) => {
     const li = el("li", { class: `search-row${i === searchState.at ? " on" : ""}${it.enabled ? "" : " off"}` });
     li.append(
-      el("span", { class: "search-title" }, it.title),
-      el("span", { class: "search-kind" }, it.note || it.kind),
+      el("span", { class: "search-title", translate: ["Preset", "Layout", "Theme"].includes(it.kind) ? "no" : null }, it.title),
+      el("span", { class: "search-kind" }, it.note || t(it.kind)),
     );
     if (it.keys) li.append(el("kbd", {}, it.keys));
     li.addEventListener("mousemove", () => {
@@ -242,7 +242,7 @@ function showHow(f) {
   // Library work the editor's screen doesn't show: the library is a click away.
   const library = KEY_ACTIONS.find((x) => x.id === "library");
   if (!buttons.length && /library/i.test(f.how) && library && menuItemOn("library") && !$("library")?.offsetParent) {
-    const b = el("button", { type: "button" }, "Open the library");
+    const b = el("button", { type: "button" }, t("Open the library"));
     b.addEventListener("click", () => {
       $("how-dialog").close();
       requestAnimationFrame(() => runMenuItem("library"));
@@ -252,7 +252,7 @@ function showHow(f) {
   $("how-actions").replaceChildren(...buttons);
   const also = relatedFeatures(f);
   $("how-also").replaceChildren(
-    el("span", { class: "hint" }, "Also:"),
+    el("span", { class: "hint" }, t("Also:")),
     ...also.map((o) => {
       const b = el("button", { type: "button" }, o.want);
       b.addEventListener("click", () => showHow(o));
@@ -311,7 +311,7 @@ function searchFlow() {
   searchState.items = searchItems();
   searchState.at = 0;
   $("search-input").value = "";
-  boxTip($("search-input"), "Search commands, settings, presets… or what you want to do");
+  boxTip($("search-input"), t("Search commands, settings, presets… or what you want to do"));
   renderSearch();
   dlg.showModal();
   $("search-input").focus();

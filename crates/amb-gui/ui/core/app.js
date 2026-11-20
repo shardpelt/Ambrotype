@@ -86,9 +86,9 @@ async function sidecarChanged() {
     setState(r.state);
     requestPreview(false);
     loadInfo();
-    if (r.changes) toast("The edits were changed outside Ambrotype and are shown now (Undo goes back).");
+    if (r.changes) t("The edits were changed outside Ambrotype and are shown now (Undo goes back).");
   } catch (e) {
-    toast(`Couldn't read the changed sidecar: ${e}`, true);
+    toast(t("Couldn't read the changed sidecar: {why}", { why: e }), true);
   }
 }
 
@@ -122,7 +122,7 @@ function stepSlider(dir) {
   const next = at < 0 ? (dir > 0 ? 0 : list.length - 1) : (at + dir + list.length) % list.length;
   ui.selectedSlider = list[next][0];
   showSelectedSlider();
-  status(`${list[next][1].def.label} selected: = and - change it`);
+  status(t("{name} selected: = and - change it", { name: t(list[next][1].def.label) }));
 }
 
 function nudgeSlider(steps) {
@@ -144,8 +144,8 @@ function notesForPeople(notes) {
   const out = [];
   for (const n of notes) {
     let m;
-    if ((m = n.match(/^skipped (\d+) invalid preset value/))) out.push(`${m[1]} values out of range, skipped`);
-    else if (n === "no change") out.push("No change");
+    if ((m = n.match(/^skipped (\d+) invalid preset value/))) out.push(t("{n} values out of range, skipped", { n: m[1] }));
+    else if (n === "no change") out.push(t("No change"));
   }
   return out.join(" · ");
 }
@@ -229,12 +229,12 @@ async function refreshLuts() {
 
 function fillLutOptions(select, current) {
   const luts = ui.luts ?? [];
-  const options = [["", "None"], ...luts.map((l) => [l.path, l.name])];
-  if (current && !luts.some((l) => l.path === current)) options.push([current, fileName(String(current)).replace(/\.cube$/i, "")]);
-  options.push([LUT_PICK, "Choose a .cube file…"], [LUT_FOLDER, "Open the LUT folder…"]);
-  const want = options.map(([v, t]) => `${v}\u0001${t}`).join("\n");
+  const options = [["", t("None")], ...luts.map((l) => [l.path, l.name, true])];
+  if (current && !luts.some((l) => l.path === current)) options.push([current, fileName(String(current)).replace(/\.cube$/i, ""), true]);
+  options.push([LUT_PICK, t("Choose a .cube file…")], [LUT_FOLDER, t("Open the LUT folder…")]);
+  const want = options.map(([v, text]) => `${v}\u0001${text}`).join("\n");
   if (select.dataset.options !== want) {
-    select.replaceChildren(...options.map(([v, t]) => el("option", { value: JSON.stringify(v) }, t)));
+    select.replaceChildren(...options.map(([v, text, own]) => el("option", { value: JSON.stringify(v), translate: own ? "no" : null }, text)));
     select.dataset.options = want;
   }
 }
@@ -257,11 +257,11 @@ async function commitLut(value) {
 
 function fillProfileOptions(select, current) {
   const names = [...(ui.profiles ?? [])];
-  const options = [["", "Default (Ambrotype)"], ...names.map((n) => [n, n])];
-  if (current && !names.some((n) => n.toLowerCase() === String(current).toLowerCase())) options.push([current, `${current} (not found)`]);
-  const want = options.map(([v, t]) => `${v}\u0000${t}`).join("\n");
+  const options = [["", t("Default (Ambrotype)")], ...names.map((n) => [n, n, true])];
+  if (current && !names.some((n) => n.toLowerCase() === String(current).toLowerCase())) options.push([current, t("{name} (not found)", { name: current })]);
+  const want = options.map(([v, text]) => `${v}\u0000${text}`).join("\n");
   if (select.dataset.options !== want) {
-    select.replaceChildren(...options.map(([v, t]) => el("option", { value: JSON.stringify(v) }, t)));
+    select.replaceChildren(...options.map(([v, text, own]) => el("option", { value: JSON.stringify(v), translate: own ? "no" : null }, text)));
     select.dataset.options = want;
   }
 }
@@ -282,12 +282,12 @@ async function feedbackFlow() {
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   const title = f.title.value || f.kind.value;
-  if (choice === "copy") return copyText(`[${f.kind.value}] ${title}\n\n${f.preview.value}`, "The report");
+  if (choice === "copy") return copyText(`[${f.kind.value}] ${title}\n\n${f.preview.value}`, t("The report"));
   if (choice !== "ok" && choice !== "email") return;
   const email = choice === "email";
   try {
     await invoke("open_feedback", { kind: f.kind.value, title, body: f.preview.value, email });
-    toast(email ? "Opened your mail app with the report. Thank you!" : "Opened GitHub in your browser. Thank you!");
+    toast(email ? t("Opened your mail app with the report. Thank you!") : t("Opened GitHub in your browser. Thank you!"));
   } catch (e) {
     showError(e);
   }
@@ -298,10 +298,10 @@ async function feedbackFlow() {
 // A button whose handler fails says so, rather than seeming to do nothing.
 window.addEventListener("unhandledrejection", (e) => {
   console.error(e.reason);
-  toast(`Something went wrong: ${e.reason?.message ?? e.reason}`, true);
+  toast(t("Something went wrong: {why}", { why: e.reason?.message ?? e.reason }), true);
 });
 window.addEventListener("error", (e) => {
-  toast(`Something went wrong: ${e.message}`, true);
+  toast(t("Something went wrong: {why}", { why: e.message }), true);
 });
 
 async function init() {
@@ -313,7 +313,7 @@ async function init() {
   const seen = new Map();
   for (const p of ui.panels) for (const s of p.sections) for (const def of s.controls) seen.set(def.label, (seen.get(def.label) ?? 0) + 1);
   for (const p of ui.panels) for (const s of p.sections) for (const def of s.controls) {
-    if (seen.get(def.label) > 1 && s.label) ui.historyNames.set(def.name, `${s.label}: ${def.label}`);
+    if (seen.get(def.label) > 1 && s.label) ui.historyNames.set(def.name, t("{section}: {name}", { section: t(s.label), name: t(def.label) }));
   }
   await loadLooks();
   // Task plugins bring their tabs and layouts.

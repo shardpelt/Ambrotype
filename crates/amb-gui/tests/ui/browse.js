@@ -339,19 +339,19 @@ await t.step("View (V): the photos full screen, ← → and the screen's sides s
   const el = document.querySelector(".slideshow.viewer");
   el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth * 0.1, clientY: innerHeight / 2, bubbles: true }));
   await t.until("back by the left side", () => slides.at === 0);
-  await t.until("the picture", () => vzShown());
+  await t.until("the picture", () => vz.z.fitted());
   el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth / 2, clientY: innerHeight / 2, bubbles: true }));
   t.expect(slides.on, "a click in the middle doesn't end it");
   // It zooms in there, as Develop does; a wheel and Ctrl − zoom too; a click goes back.
-  t.expect(vz.s > 1 && el.classList.contains("zoomed"), `zoomed by a click: ${vz.s}`);
+  t.expect(vz.z.s > 1 && el.classList.contains("zoomed"), `zoomed by a click: ${vz.z.s}`);
   el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth / 2, clientY: innerHeight / 2, bubbles: true }));
-  t.expect(vz.s === 1, "back to the whole photo");
+  t.expect(vz.z.s === 1, "back to the whole photo");
   el.dispatchEvent(new WheelEvent("wheel", { deltaY: -100, deltaMode: 0, clientX: innerWidth / 3, clientY: innerHeight / 3, bubbles: true, cancelable: true }));
-  t.expect(Math.abs(vz.s - 1.25) < 0.01, `a wheel notch zooms: ${vz.s}`);
+  t.expect(Math.abs(vz.z.s - 1.25) < 0.01, `a wheel notch zooms: ${vz.z.s}`);
   el.dispatchEvent(new WheelEvent("wheel", { deltaY: -10, ctrlKey: true, clientX: innerWidth / 2, clientY: innerHeight / 2, bubbles: true, cancelable: true }));
-  t.expect(vz.s > 1.3, `a pinch zooms: ${vz.s}`);
+  t.expect(vz.z.s > 1.3, `a pinch zooms: ${vz.z.s}`);
   window.dispatchEvent(new KeyboardEvent("keydown", { key: "0", ctrlKey: true, bubbles: true }));
-  t.expect(vz.s === 1, "Ctrl 0 fits");
+  t.expect(vz.z.s === 1, "Ctrl 0 fits");
   el.dispatchEvent(new MouseEvent("click", { clientX: innerWidth * 0.9, clientY: innerHeight / 2, bubbles: true }));
   await t.until("on by the right side", () => slides.at === 1);
   // Rating, flag and keywords while viewing; the info panel shows the shot.
@@ -614,8 +614,26 @@ await t.step("Develop opens the library's photo, from another folder too", async
   setLibraryView("loupe");
   const lv = $("library-view").getBoundingClientRect(), lg = $("library").getBoundingClientRect();
   t.expect(lv.width > lg.width / 2 && getComputedStyle($("library-view")).position !== "absolute", `the loupe ${Math.round(lv.width)}px wide`);
+  // Zoom in the loupe, as in the viewer: a wheel notch, Ctrl +, and → steps and fits again.
+  const shownImgs = () => [...$("library-view").querySelectorAll(".cull-frame img")];
+  await t.until("the loupe's picture", () => shownImgs()[0]?.naturalWidth);
+  const scaleOf = (img) => Number(/scale\(([\d.]+)\)/.exec(img.style.transform)?.[1] ?? 1);
+  $("library-view").dispatchEvent(new WheelEvent("wheel", { deltaY: -100, deltaMode: 0, clientX: lv.left + lv.width / 2, clientY: lv.top + lv.height / 2, bubbles: true, cancelable: true }));
+  t.expect(Math.abs(scaleOf(shownImgs()[0]) - 1.25) < 0.01, `a wheel notch zooms the loupe: ${shownImgs()[0].style.transform}`);
+  t.key("Ctrl+=");
+  t.expect(scaleOf(shownImgs()[0]) > 1.5, `Ctrl + zooms on: ${shownImgs()[0].style.transform}`);
+  $("library-view").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+  await t.until("the next photo, whole", () => shownImgs()[0] && !shownImgs()[0].style.transform && cull.zoom.s === 1);
+  t.key("Ctrl+=");
+  t.key("Ctrl+0");
+  t.expect(cull.zoom.s === 1 && !shownImgs()[0].style.transform, "Ctrl 0 fits");
   // Compare splits either way: the candidate below puts the tiles in one column.
   setLibraryView("compare");
+  await t.until("both pictures", () => shownImgs().length === 2 && shownImgs().every((i) => i.naturalWidth));
+  $("library-view").dispatchEvent(new WheelEvent("wheel", { deltaY: -100, deltaMode: 0, clientX: lv.left + 40, clientY: lv.top + 40, bubbles: true, cancelable: true }));
+  const [za, zb] = shownImgs();
+  t.expect(scaleOf(za) > 1 && za.style.transform === zb.style.transform, `compare zooms both together: ${za.style.transform} | ${zb.style.transform}`);
+  cull.zoom.reset();
   const was = cull.split;
   document.querySelector('.compare-split [data-split="down"]').click();
   const [a, b] = [...$("library-view").querySelectorAll(".cull-tile")].map((x) => x.getBoundingClientRect());

@@ -63,3 +63,26 @@ await t.step("Trippy, a task plugin: its tools put effects on and take them off"
   t.expect(TASK_LAYOUTS.has("plugin:trippy"), "kept out of Appearance");
   await switchTask("develop");
 });
+
+await t.step("Save as preset keeps the trip's effects, in the Trippy group", async () => {
+  await switchTask("trippy");
+  await t.until("its tools", () => t.visible("#block-tools") && $("tools-title").textContent === "Trippy tools");
+  const tile = (label) => [...document.querySelectorAll("#tools-task .tool-tile")].find((b) => b.querySelector("strong").textContent === label);
+  t.click(tile("Acid"));
+  await t.until("Acid", () => effectsOf(currentValue("amb:Effects")).some((e) => e.plugin === "hue-trip"));
+  // The share question is the system's dialog: answered No here.
+  const ask = askYes;
+  askYes = async () => false;
+  t.click(tile("Save as preset"));
+  const dlg = $("save-preset-dialog");
+  await t.until("the save dialog", () => dlg.open);
+  t.expect(dlg.querySelector("form").preset_group.value === "Trippy", "the Trippy group");
+  dlg.querySelector("form").preset_name.value = "UI test trip";
+  dlg.close("ok");
+  await t.until("the preset", () => ui.presets.some((p) => p.name === "UI test trip" && p.group === "Trippy"));
+  askYes = ask;
+  const p = ui.presets.find((x) => x.name === "UI test trip");
+  await t.invoke("delete_preset", { path: p.path });
+  while (ui.state.can_undo) await run([{ cmd: "undo" }]);
+  await switchTask("develop");
+});

@@ -27,7 +27,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Black and white** → the **Black & White** panel; it sets how bright each colour becomes in grey.
 - **A film look, a tint, sepia** → **Color Grading**, a LUT (in **Basic**), or a preset; for scanned negatives, the film stocks in **Film Negative**.
 - **Fuji film recipe from the internet** → Presets → **Fuji recipe…** (paste it), or **Plugins** → Film recipe. `amb fuji RECIPE.txt PHOTO`.
-- **Something wild: psychedelic colour, rainbow foil, a hologram look** → the **Trippy** task (Ctrl+Alt+5): **Trip me** (a new random mix each click), Acid, Pop art, Dream, Foil sticker, Oil slick, Prism, **Edges** and **Neon** (the edges glowing on black, as Visualise shows them), **Kaleidoscope**, **Mandala** and **Fractal** (the photo in mirrored slices, or folded into itself), **Heat camera** and **Contours** (false colour by brightness, as a thermal camera sees), **Acid highlights**, **Foil shadows**; in **Effects** each effect's **Where** keeps it to the highlights, midtones, shadows or a colour (hover it to see where), and in Trippy its amount goes to 200 %; tune them in **Effects** → Plugin effects (Hue trip, Holographic, Kaleidoscope, Heat camera). `amb plugin run plugins/hue-trip PHOTO --params turn=120`, `amb plugin run plugins/kaleidoscope PHOTO --params style=Fractal`.
+- **Something wild: psychedelic colour, rainbow foil, a hologram look** → the **Trippy** task (Ctrl+Alt+5): **Trip me** (a new random mix each click), Acid, Pop art, Dream, Foil sticker, Oil slick, Prism, **Edges** and **Neon** (the edges glowing on black, as Visualise shows them), **Kaleidoscope**, **Mandala** and **Fractal** (the photo in mirrored slices, or folded into itself), **Heat camera** and **Contours** (false colour by brightness, as a thermal camera sees), **Acid highlights**, **Foil shadows**, and **Save as preset** (the trip, effects and all, in the Trippy group, then offered to the hub); in **Effects** each effect's **Where** keeps it to the highlights, midtones, shadows or a colour (hover it to see where), and in Trippy its amount goes to 200 %; tune them in **Effects** → Plugin effects (Hue trip, Holographic, Kaleidoscope, Heat camera). `amb plugin run plugins/hue-trip PHOTO --params turn=120`, `amb plugin run plugins/kaleidoscope PHOTO --params style=Fractal`.
 - **Film grain, halation, bloom, highlights that fade like a print** → **Effects**: Grain (with Film response), Glow, Highlight roll-off.
 - **Sharper, less noise** → **Detail**: Sharpening, Noise Reduction.
 - **Take the noise out of a high-ISO raw, as Lightroom's Denoise does** → library → More → **AI Denoise…** (or search "denoise"): an AI model on your computer, a new `name-Denoised.dng` beside the raw with its edit; **Amount** keeps some of the photo as it was. The model is a one-time download the dialog offers (or Settings → AI models). `amb denoise RAW [--amount 70]`.
@@ -68,7 +68,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 
 ## Film negatives and scans
 
-- **Turn a scanned negative into a positive** → the **Film** task → **Film Negative**; **Pick base** and click the clear film between frames.
+- **Turn a scanned negative into a positive** → the **Film** task → **Film Negative**; **Pick base** and click the clear film between frames. To measure the levels on part of the photo only (not a sky or a light leak), **Meter area** and drag a box (Alt-click: the whole crop again); `amb:NegativeMeterLeft/Top/Right/Bottom`.
 - **Make a whole roll look consistent** → in the library, **Sync negative roll…**, or Fixed range in **Film Negative**. `amb negative analyze`.
 - **Colour cast from a sky or lamp, faded expired film** → **Film Negative**: Cast removal, Expired film; Auto Density and Auto Grade.
 - **Dust and hairs on a scan** → **Spot Removal** → **Find dust**; Shift-drag along a straight scratch. `amb dust PHOTO --apply`.
@@ -85,12 +85,12 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Turn a photo that's sideways, or mirror it** → **Rotate left** (Ctrl+[), **Rotate right** (Ctrl+]) or **Flip horizontal**, in the Photo menu: the open photo, or the photos selected in the library; in the full-screen viewer (V), the same keys or the ⟲ ⟳ buttons on its bar. Crops and masks turn with it, and Lightroom sees the turn too. `amb tag PHOTO --rotate left|right|180 --flip horizontal`.
 - **Rate, label, flag, keyword** → 1–5 rate, 6–9 colour labels, **Pick** (P), **Reject** (X), **Add Keywords** (K). `amb tag`.
 - **Pick the best shot of a burst (in focus, eyes open)** → library → Organise → **Best in each burst**: the best of each burst is marked with why, the rest dimmed with what's wrong (eyes closed, soft); then **Pick best, reject rest** or **Stack each**. A click on a dimmed photo's badge keeps it instead. Eyes need YuNet in **Settings** → AI models; without it, focus alone.
-- **Cull fast** → **Loupe** (E), **Compare** (C, side by side or above and below, either way round); auto-advance after a rating (**Settings** → General).
+- **Cull fast** → **Loupe** (E), **Compare** (C, side by side or above and below, either way round), each zooming as the viewer does (wheel or pinch, a click for 100 %, drag to move; Compare's two together); auto-advance after a rating (**Settings** → General).
 - **Find a photo by what's in it ("dog on a beach")** → the library's Smart search, or right-click → Find similar photos. `amb search "dog on a beach" DIR`.
 - **Find photos by camera, lens, date, rating** → the library's filters and search. `amb catalog find`.
 - **Find what to delete (blurry, copies, eyes closed, black frames)** → library → Organise ▾ → **Clean up…**: choose the tests, **Find**, then page through each photo with why it may go (and the one kept instead); all are marked to go, **K** keeps one, **D** lets it go, ← → step; then **Move to the trash** or **Reject them**. Photos you picked or rated are left out. `amb cleanup DIR [--skip eyes,…] [--trash|--reject]`.
 - **Duplicates and bursts, keep the best** → Organise ▾ → duplicates and bursts. `amb duplicates DIR`.
-- **Sort into dated folders, move, rename** → Organise ▾ (sidecars go along). `amb sort`, `amb move`, `amb rename`.
+- **Sort into dated folders, move, rename** → Organise ▾ (sidecars go along), or drag photos (the selection goes together) onto a folder in the Folders panel to move them; Organise → Undo the last move puts them back. `amb sort`, `amb move`, `amb rename`.
 - **Delete** → to the system trash, with all its files. `amb trash`.
 - **Photos moved or renamed outside the app** → Organise ▾ → find moved photos. `amb catalog missing`, `amb catalog relink DIR`.
 - **Groups of photos** → collections and smart collections; **Stack** (Ctrl+G); **Make a Virtual Copy** (Ctrl+').
@@ -120,6 +120,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Show before and after online** → **Share Before and After** (File menu; one web page with a slider). `amb share PHOTO --out page.html`.
 - **A video of my edit for Reels or Shorts** → **Export Edit Replay** (File menu). `amb replay PHOTO --out edit.mp4`.
 - **Collage** → the **Collage** tab, or **Collage Maker** (C): layouts, drag photos in, export pages. `amb collage`.
+- **One collage layout over every photo shown, as pages** → Collage → Batch → **Every photo shown in the library**, then **Export pages…** (or search "Collage of every photo shown"). `amb collage <layout> <photos>... --out page.jpg` makes pages too.
 - **Merge brackets into HDR, or photos into a panorama** → the library's Merge to HDR… / Merge to Panorama…. `amb merge hdr`, `amb merge pano`.
 - **Keep my export choices** → **Export** → Save as preset….
 

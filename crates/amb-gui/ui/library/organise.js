@@ -124,6 +124,19 @@ async function planFiles() {
   $("files-go").disabled = !org.plan.length;
 }
 
+// Photos dragged onto a folder in the Folders panel: moved with their files,
+// no dialog (Organise → Undo the last move puts them back).
+async function movePhotosTo(paths, folder) {
+  try {
+    const plan = await invoke("files_plan", { paths, target: { kind: "move", folder } });
+    if (!plan.length) return status("They are already there");
+    await applyFiles(plan);
+    await loadFolderTree();
+  } catch (e) {
+    showError(e);
+  }
+}
+
 async function applyFiles(plan, undo = false) {
   try {
     const r = await invoke("files_apply", { plan });

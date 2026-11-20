@@ -16,6 +16,7 @@ const cull = {
   // "down" or "up". Kept on this computer.
   split: ["right", "left", "down", "up"].includes(store.text("amb.compareSplit")) ? store.text("amb.compareSplit") : "right",
   loads: new Map(), // `${path}|${edge}|${edited}` -> Promise<url>
+  zoom: null,       // the zoom of loupe and compare's photos (viewer-zoom.js's makeZoom), made once in wireCull
 };
 
 const cullOn = () => lib.on && ["loupe", "compare"].includes(cull.view);
@@ -69,6 +70,7 @@ function setLibraryView(view) {
 
 function renderCull() {
   const box = $("library-view");
+  cull.zoom?.reset();
   box.className = `library-view ${cull.view}`;
   if (cull.view === "loupe") {
     box.replaceChildren(cullTile(cull.active, { big: true }));
@@ -133,22 +135,27 @@ function cullTile(path, { tag, big } = {}) {
   const name = el("span", { class: "cull-name" }, [tag, p.name].filter(Boolean).join(": "));
   cap.append(flag, stars, label, name);
   tile.append(frame, cap);
-  tile.addEventListener("click", () => {
+  tile.addEventListener("click", (e) => {
+    // The end of a drag round a zoomed photo isn't a click.
+    if ($("library-view").dataset.dragged) return delete $("library-view").dataset.dragged;
+    const was = cull.active === path;
     cull.active = path;
     for (const t of $("library-view").querySelectorAll(".cull-tile")) t.classList.toggle("active", t.dataset.path === path);
     renderPanel();
+    // A click on the photo: 100 % there and back (in compare, once it's the active one).
+    if ((big || was) && e.target.closest(".cull-frame")) cull.zoom?.toggleFull(e.clientX, e.clientY);
   });
   tile.addEventListener("dblclick", () => libraryOpen(path));
   // A large camera preview, then the edit's render when the photo has one.
   const edge = cullEdge(big);
   let rendered = false;
   bigImage(p, edge, false).then((u) => {
-    if (!rendered) img.src = u;
+    if (!rendered && !img.dataset.sharp) img.src = u;
   }).catch(() => {});
   if (p.edited) {
     bigImage(p, edge, true).then((u) => {
       rendered = true;
-      img.src = u;
+      if (!img.dataset.sharp) img.src = u;
     }).catch(() => {});
   }
   return tile;
@@ -193,6 +200,7 @@ function updateCullTile(path) {
 // ---------------------------------------------------------------- moving
 
 function cullArrow(key) {
+  cull.zoom?.reset();
   const order = lib.shown.map((p) => p.path);
   const step = key === "ArrowLeft" ? -1 : key === "ArrowRight" ? 1 : 0;
   if (cull.view === "loupe" && step) {
@@ -232,9 +240,49 @@ function compareMakeSelect() {
 
 // Esc and G: back to the grid first.
 function cullLeave() {
+  cull.zoom?.reset();
   return lib.on && cull.view !== "grid" ? setLibraryView("grid") : false;
 }
 
+// Ctrl + − 0 in loupe and compare (true when they were the ones to use it).
+function cullZoomKey(dir) {
+  if (!cullOn() || !cull.zoom) return false;
+  if (dir) cull.zoom.step(dir);
+  else cull.zoom.reset();
+  return true;
+}
+
+// Zoomed past the picture's detail: fetch the photo larger, once.
+async function cullSharper(img) {
+  if (img.dataset.sharp) return;
+  img.dataset.sharp = "1";
+  const p = libPhoto(img.closest(".cull-tile")?.dataset.path);
+  if (!p) return;
+  try {
+    const url = await bigImage(p, 6144, Boolean(p.edited)).catch(() => bigImage(p, 6144, false));
+    const probe = new Image();
+    probe.src = url;
+    await probe.decode();
+    if (img.isConnected && probe.naturalWidth > img.naturalWidth) img.src = url;
+  } catch {
+    /* the smaller picture stays */
+  }
+}
+
+// Wheel, pinch, drag and keys zoom loupe's photo, or compare's two together.
 function wireCull() {
+  const box = $("library-view");
+  cull.zoom = makeZoom({
+    host: box,
+    images: () => [...box.querySelectorAll(".cull-frame img")],
+    // The photo's box: the one under the point (compare has two), else the first.
+    frame: (cx, cy) => {
+      const frames = [...box.querySelectorAll(".cull-frame")].map((f) => f.getBoundingClientRect());
+      return frames.find((r) => cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) ?? frames[0] ?? { left: 0, top: 0, width: 1, height: 1 };
+    },
+    sharper: cullSharper,
+    active: (e) => cullOn() && !e.target.closest(".compare-split, .cull-caption"),
+  });
+  cull.zoom.wire();
   for (const b of document.querySelectorAll("#lib-views button")) b.addEventListener("click", () => setLibraryView(b.dataset.view));
 }

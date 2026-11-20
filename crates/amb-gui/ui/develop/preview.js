@@ -406,14 +406,17 @@ async function pickAt(u, v) {
 }
 
 // `what`: "white" (the white-balance picker), "base" (a negative's film
-// base), or false to stop picking.
+// base), "meter" (the box a negative is measured in), or false to stop picking.
 function setPicking(what) {
   ui.picking = Boolean(ui.info) && what ? (what === true ? "white" : what) : false;
   $("viewer").classList.toggle("picking", Boolean(ui.picking));
   $("btn-wb").classList.toggle("active", ui.picking === "white");
   document.querySelectorAll(".pick-base").forEach((b) => b.classList.toggle("active", ui.picking === "base"));
+  document.querySelectorAll(".pick-meter").forEach((b) => b.classList.toggle("active", ui.picking === "meter"));
+  showMeterBox();
   if (ui.picking === "white") status("Click a neutral grey or white spot (Esc to cancel)");
   if (ui.picking === "base") status("Click the clear film between frames (Esc to cancel)");
+  if (ui.picking === "meter") status("Drag a box round the part to measure (Esc to cancel)");
 }
 
 // Soft proofing: the photo as it will export to a colour space (colours
@@ -502,13 +505,14 @@ function wireViewer() {
   img.addEventListener("mousedown", (e) => {
     if (e.button !== 0 || !ui.info) return;
     e.preventDefault();
-    drag = { x: e.clientX, y: e.clientY, moved: false };
+    drag = { x: e.clientX, y: e.clientY, moved: false, from: ui.picking === "meter" ? photoPoint(e) : null };
   });
   window.addEventListener("mousemove", (e) => {
     if (!drag) return;
     const dx = e.clientX - drag.x;
     const dy = e.clientY - drag.y;
     if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+    if (drag.from && ui.picking === "meter") return drag.moved && showMeterBox(drag, e);
     if (ui.zoom.on && drag.moved) {
       img.classList.add("panning");
       placeRegion(dx, dy);
@@ -519,6 +523,7 @@ function wireViewer() {
     const d = drag;
     drag = null;
     img.classList.remove("panning");
+    if (d.from && ui.picking === "meter") return d.moved ? meterAreaDrawn(d.from, photoPoint(e)) : setPicking(false);
     if (ui.zoom.on && d.moved && ui.zoom.meta) {
       panBy(e.clientX - d.x, e.clientY - d.y);
       return;

@@ -773,6 +773,9 @@
  "Collage maker: several photos on one canvas": [
   "index.html"
  ],
+ "Collage of every photo shown in the library, as pages": [
+  "core/keys.js"
+ ],
  "Collages": [
   "index.html"
  ],
@@ -1011,6 +1014,9 @@
  "Done": [
   "index.html"
  ],
+ "Drag a box round the part Auto measures, to leave out a sky, a light leak or a holder's edge; the crop stays. Alt-click to meter the whole crop again": [
+  "looks/layout.js"
+ ],
  "Drag a copy of it somewhere else; it stays where it was too": [
   "index.html"
  ],
@@ -1168,6 +1174,9 @@
  "Every photo in the library folders, newest first, as one timeline": [
   "index.html"
  ],
+ "Every photo shown in the library": [
+  "index.html"
+ ],
  "Every step stays in History, so Redo brings them back.": [
   "core/keys.js"
  ],
@@ -1236,6 +1245,9 @@
   "index.html"
  ],
  "Fill in from the first selected photo": [
+  "index.html"
+ ],
+ "Fill the tray with every photo the library shows (after its filters)": [
   "index.html"
  ],
  "Film": [
@@ -2012,6 +2024,9 @@
  "Metadata templates…": [
   "index.html"
  ],
+ "Meter area": [
+  "looks/layout.js"
+ ],
  "Mirror the photo left to right (in the library, the selected photos).": [
   "core/keys.js"
  ],
@@ -2144,6 +2159,9 @@
  "No limit": [
   "index.html"
  ],
+ "No photos shown in the library.": [
+  "library/library-actions.js"
+ ],
  "No presets yet. Lightroom's preset folder is used automatically when it exists; or add a folder.": [
   "index.html"
  ],
@@ -2218,6 +2236,9 @@
  ],
  "One folder per day: 2026-10-10": [
   "index.html"
+ ],
+ "One layout over all of them: the collage's Batch exports the pages.": [
+  "core/keys.js"
  ],
  "One line": [
   "index.html"
@@ -2885,6 +2906,9 @@
  "Select the next slider": [
   "core/keys.js"
  ],
+ "Select the photos first.": [
+  "library/library-actions.js"
+ ],
  "Select the previous slider": [
   "core/keys.js"
  ],
@@ -3503,6 +3527,9 @@
   "core/keys.js"
  ],
  "Trip: back to normal (the trip's effects off)": [
+  "core/keys.js"
+ ],
+ "Trip: save as a preset, effects included, and share it to the hub": [
   "core/keys.js"
  ],
  "Try a sample photo": [

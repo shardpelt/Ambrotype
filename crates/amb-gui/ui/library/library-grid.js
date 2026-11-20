@@ -282,6 +282,12 @@ function makeCell(p) {
   cell.dataset.path = p.path;
   cell.title = [p.name, p.captured, p.keywords.join(", "), p.offline && "Offline: its drive isn't plugged in"].filter(Boolean).join("\n");
   cell.classList.toggle("offline", Boolean(p.offline));
+  // Dragged onto a folder in the Folders panel it moves, onto the map it is placed.
+  cell.draggable = !p.offline;
+  cell.addEventListener("dragstart", (e) => {
+    e.dataTransfer.setData("text/x-amb-photo", p.path);
+    e.dataTransfer.effectAllowed = "move";
+  });
   const frame = el("div", { class: "lib-frame" });
   frame.append(el("img", { alt: "", draggable: "false" }));
   const meta = el("div", { class: "lib-meta" });

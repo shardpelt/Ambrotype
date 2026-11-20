@@ -343,7 +343,12 @@ function buildPanel(item) {
         base.textContent = "Pick base";
         base.title = "Click the clear film between frames to set the film base (before Crop to frame, or with the crop off). Alt-click to measure it from the scan again";
         base.addEventListener("click", (ev) => pickBaseFlow(ev.altKey));
-        l.append(base, frame, freeze);
+        const meter = document.createElement("button");
+        meter.className = "small section-action pick-meter";
+        meter.textContent = t("Meter area");
+        meter.title = t("Drag a box round the part Auto measures, to leave out a sky, a light leak or a holder's edge; the crop stays. Alt-click to meter the whole crop again");
+        meter.addEventListener("click", (ev) => meterAreaFlow(ev.altKey));
+        l.append(base, meter, frame, freeze);
       }
       body.append(l);
     } else if (e.type === "control") {

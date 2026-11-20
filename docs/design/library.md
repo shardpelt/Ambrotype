@@ -30,6 +30,7 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
 - **Look closer** (Lightroom's culling views, buttons in the bar):
   - **Loupe** (E): one photo large; ← → step through the shown photos.
   - **Compare** (C): the select on the left, a candidate on the right (the first two selected, or the photo after the select). ← → change the candidate, ↓ swaps the two, ↑ makes the candidate the select and brings the next photo in.
+  - Loupe and Compare zoom as the viewer does: the wheel or a pinch at the pointer, a click for 100 % there and back, drag to move, Ctrl + − 0; ← → step and show the whole photo again. Compare's two photos zoom and move together.
   - Compare splits side by side or above and below, the candidate either way round (the buttons at its top; kept on this computer). Survey (the selection tiled) was taken out on 2026-11-11: compare and the grid did its job.
   - In compare, rating, label and flag keys and the panel act on the active photo, framed in the accent colour, as in Lightroom. Enter or a double-click opens it in the editor; G or Esc goes back to the grid.
   - Large previews are the camera's embedded preview at 1024 or 2048 pixels, then the edit's render for edited photos (both cached).
@@ -84,6 +85,7 @@ Other ways to browse what the library shows (a folder, a collection or All photo
 **Organise** in the library bar (2026-10-23; `amb_library::files`, `ui/library/organise.js`). A photo's files move together: the raw, its same-name JPEG, its sidecar and its virtual copies, as Import groups them.
 
 - **Move to a folder…**, **Rename…** and **Sort into dated folders…** act on the selected photos (dated folders: all shown when none is selected). Each shows every new name first. Names come from Import's tokens (`{yyyy}`, `{seq}`, `{camera}`, …); a folder template's `/` makes subfolders. Nothing is overwritten: a taken name gets `-2`, `-3`. Across drives a file is copied, checked, then removed. If one of a photo's files can't move, the others go back.
+- **Drag photos onto a folder** in the Folders panel (the selection goes together) to move them with their sidecars, JPEG twins and virtual copies. Hovering a closed folder opens it. No dialog: Undo the last move puts them back.
 - **Undo the last move** puts the files of the last move or rename back.
 - **Delete…** moves the selected photos with all their files to the system's trash: the freedesktop.org trash on Linux (the drive's own `.Trash-<uid>` for other drives), the Finder's on macOS, the Recycle Bin on Windows.
 - The open photo is saved first, and reopened from its new place. The catalogue and every collection follow the moves.

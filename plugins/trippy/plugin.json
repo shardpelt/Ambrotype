@@ -49,7 +49,8 @@
       { "label": "Contours", "hint": "Rainbow rings by brightness, like a contour map", "effect": "heat-camera", "recipe": "Contours" },
       { "label": "Acid highlights", "hint": "The bright parts only, pushed past full", "effect": "hue-trip", "recipe": "Acid", "where": "highlights", "amount": 160 },
       { "label": "Foil shadows", "hint": "Rainbow foil in the dark parts", "effect": "holographic", "recipe": "Foil sticker", "where": "shadows", "amount": 140 },
-      { "label": "Back to normal", "hint": "The trip's effects off again", "command": "trip-clear" }
+      { "label": "Back to normal", "hint": "The trip's effects off again", "command": "trip-clear" },
+      { "label": "Save as preset", "hint": "This trip, effects and all, as a preset to use again or share to the hub", "command": "trip-save" }
     ]
   },
   "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/trippy"

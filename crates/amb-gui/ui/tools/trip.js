@@ -2,7 +2,7 @@
 // Trip me and Back to normal, the Trippy task's commands (the task itself
 // is a task plugin, plugins/trippy): a new random mix of psychedelic
 // colour, rainbow foil, heat-camera colour, light leaks and kaleidoscopes
-// each click, or the trip taken off.
+// each click, the trip taken off, or saved as a preset to share.
 // They are ordinary effects (amb:Effects), so the Effects panel tunes them
 // and Undo takes each click back. Also task tools' effect buttons
 // (`setEffect`), for any task plugin.
@@ -85,3 +85,11 @@ function tripMix() {
 
 const tripMe = () => setTrip(tripMix(), "Trip me");
 const tripClear = () => setTrip([], "Trip: back to normal");
+
+// The trip as a preset in the Trippy group, its effects included, and
+// offered to the hub (presets.js `sharePresetToHub`).
+async function tripSave() {
+  if (!tripEffects().length) return toast("Trip first: this photo has no effects to save.", true);
+  const saved = await savePresetFlow("", "Trippy");
+  if (saved && (await askYes(`Share “${saved.name}” to the hub too?`))) sharePresetToHub(saved);
+}

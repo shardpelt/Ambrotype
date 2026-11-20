@@ -493,10 +493,16 @@ async function libraryMergePano() {
   }
 }
 
-async function libraryCollage() {
-  const sel = selectedPhotos();
-  if (!sel.length) return;
+// A collage of the selected photos, or (`all`) of every photo shown, which
+// the collage's Batch then lays out as pages of one layout.
+async function libraryCollage(all = false) {
+  const photos = all ? lib.shown : selectedPhotos();
+  if (!photos.length) return toast(all ? t("No photos shown in the library.") : t("Select the photos first."), true);
   await collageFlow();
-  setTray(sel.map((p) => ({ ...p })));
+  setTray(photos.map((p) => ({ ...p })));
   fillEmpty();
+  if (all) {
+    $("col-batch").scrollIntoView({ block: "center" });
+    status(`${plural(photos.length, "photo")} in the tray: Batch → Export pages… makes them pages of this layout`);
+  }
 }

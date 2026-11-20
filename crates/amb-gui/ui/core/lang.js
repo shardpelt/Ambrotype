@@ -48,6 +48,18 @@ const LANG_ATTRS = ["title", "placeholder", "aria-label"];
 // no language changes them, and the count of texts left leaves them out.
 const langOwn = (e) => Boolean(e?.closest('[translate="no"]'));
 
+// What `t` and `plural` gave: text -> how to make it again, so a switch of
+// language changes words a script built too (the "All 12" chip). The latest
+// LANG_MADE_MAX are kept; one text made by two keys keeps the latest.
+const LANG_MADE = new Map();
+const LANG_MADE_MAX = 5000;
+function langMade(text, again) {
+  if (!/\p{L}/u.test(text)) return;
+  LANG_MADE.delete(text);
+  LANG_MADE.set(text, again);
+  if (LANG_MADE.size > LANG_MADE_MAX) LANG_MADE.delete(LANG_MADE.keys().next().value);
+}
+
 // What translateDom showed, to change back: text node -> { en, shown };
 // element -> { [attribute]: { en, shown } }.
 const LANG_SHOWN = new WeakMap();
@@ -60,8 +72,9 @@ function langEnglish(now, saved) {
 
 // Swap the text, `title`, `placeholder` and `aria-label` under `root` for the
 // language's, when its text is in the table, and back to English for a text
-// it isn't in (after a switch of language). Whitespace round the text stays.
-// In English, with nothing swapped before, it does nothing.
+// it isn't in (after a switch of language). A text `t` made is made again in
+// the new language. Whitespace round the text stays. In English, with
+// nothing swapped before, it does nothing.
 function translateDom(root) {
   if (!lang.texts && !lang.swapped) return;
   const look = (en) => {
@@ -71,6 +84,12 @@ function translateDom(root) {
   const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   for (let n = walk.nextNode(); n; n = walk.nextNode()) {
     if (LANG_SKIP.has(n.parentElement?.tagName) || langOwn(n.parentElement)) continue;
+    const again = !LANG_SHOWN.has(n) && LANG_MADE.get(n.nodeValue.trim());
+    if (again) {
+      const value = n.nodeValue.replace(/\S(?:[\s\S]*\S)?/, () => again());
+      if (value !== n.nodeValue) n.nodeValue = value;
+      continue;
+    }
     const en = langEnglish(n.nodeValue, LANG_SHOWN.get(n));
     const out = look(en);
     const value = out ? en.replace(/\S(?:[\s\S]*\S)?/, () => out) : en;
@@ -83,6 +102,11 @@ function translateDom(root) {
     const saved = LANG_SHOWN.get(e) ?? {};
     for (const a of LANG_ATTRS) {
       if (!e.hasAttribute(a)) continue;
+      const again = !saved[a] && LANG_MADE.get(e.getAttribute(a).trim());
+      if (again) {
+        e.setAttribute(a, again());
+        continue;
+      }
       const en = langEnglish(e.getAttribute(a), saved[a]);
       const out = look(en);
       const value = out ?? en;

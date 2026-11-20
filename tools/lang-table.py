@@ -5,7 +5,7 @@
     python3 tools/lang-table.py          write crates/amb-gui/data/lang/keys.json
     python3 tools/lang-table.py --check  fail when keys.json is stale (a test runs this)
 
-Reads `t("…")`, `plural(n, "one", "many")` and the labels of the data lists in
+Reads `t("…")`, `tKey("…")`, `plural(n, "one", "many")` and the labels of the data lists in
 the scripts, and the text, `title`, `placeholder` and `aria-label` of
 `index.html`. Writes each text with the files that use it, and prints texts
 that differ only by case, a trailing full stop or `...` against `…`.
@@ -25,7 +25,7 @@ LIST_FILES = {"core/keys.js", "core/menu.js", "core/tasks.js", "tools/toolblocks
 LIST_FIELDS = ("label", "hint")
 
 STRING = r'"((?:\\.|[^"\\\n])*)"|\'((?:\\.|[^\'\\\n])*)\'|`((?:\\.|[^`\\$])*)`'
-T_CALL = re.compile(r"(?<![\w.$])t\(\s*(?:" + STRING + r")")
+T_CALL = re.compile(r"(?<![\w.$])(?:t|tKey)\(\s*(?:" + STRING + r")")
 PLURAL_CALL = re.compile(
     r"(?<![\w.$])plural\([^,()]+,\s*(?:\"([^\"\\\n]*)\"|'([^'\\\n]*)')(?:\s*,\s*(?:\"([^\"\\\n]*)\"|'([^'\\\n]*)'))?"
 )

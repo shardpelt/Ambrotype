@@ -74,20 +74,27 @@ async function withBusy(button, line, fn) {
 // `t("Moved to the trash")` gives its translation in the chosen language, or
 // the text itself; `{name}` takes `vars.name`. `t("Open##verb")` tells two
 // meanings of one text apart: from `##` on is never shown. State: core/lang.js.
+// What it gives is remembered, so a switch of language changes it on screen too.
 function t(text, vars) {
   let out = lang.texts?.[text] ?? text.split("##")[0];
   if (vars) out = out.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+  langMade(out, () => t(text, vars));
   return out;
 }
+
+// A text kept in a data list and shown later through `t(item.label)`:
+// `tKey("Square")` puts it in the table and gives it back unchanged.
+const tKey = (text) => text;
 
 // "1 photo", "3 photos": `many` defaults to `one` + "s". Looked up as
 // "{n} photo|{n} photos"; a language lists its forms split by "|", in the
 // order zero, one, two, few, many, other, leaving out those it lacks.
 function plural(n, one, many = `${one}s`) {
   const forms = lang.texts?.[`{n} ${one}|{n} ${many}`]?.split("|");
-  if (!forms) return `${n} ${n === 1 ? one : many}`;
-  const i = lang.plurals.indexOf(lang.rules.select(n));
-  return forms[Math.min(Math.max(i, 0), forms.length - 1)].replace("{n}", n);
+  const i = forms ? lang.plurals.indexOf(lang.rules.select(n)) : 0;
+  const out = forms ? forms[Math.min(Math.max(i, 0), forms.length - 1)].replace("{n}", n) : `${n} ${n === 1 ? one : many}`;
+  langMade(out, () => plural(n, one, many));
+  return out;
 }
 
 // The status bar's text. With the bar hidden (Settings → General), a

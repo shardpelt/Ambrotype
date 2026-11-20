@@ -3200,6 +3200,9 @@
  "Spots": [
   "index.html"
  ],
+ "Square": [
+  "core/core.js"
+ ],
  "Stack": [
   "index.html"
  ],

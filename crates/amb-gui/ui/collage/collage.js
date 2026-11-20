@@ -73,18 +73,18 @@ function setBusy(on, text = "") {
 }
 
 async function exportCollage() {
-  if (!collage.cells.some((c) => c?.path)) return toast("Put some photos in the cells first.", true);
-  const t = templateForExport();
+  if (!collage.cells.some((c) => c?.path)) return toast(t("Put some photos in the cells first."), true);
+  const tpl = templateForExport();
   const options = exportOptions();
   const path = await invoke("pick_export_path", { suggested: suggestedName(), format: options.format, dir: lastExportDir() });
   if (!path) return;
   rememberExportDir(path);
-  setBusy(true, "Rendering…");
+  setBusy(true, t("Rendering…"));
   try {
-    const cells = t.cells.map((_, i) => ({ path: collage.cells[i]?.path ?? null, placement: collage.cells[i]?.placement ?? defaultPlacement() }));
-    const r = await invoke("export_collage", { template: t, cells, path, options });
-    toast(`Exported the collage, ${r.width}×${r.height}, ${(r.bytes / 1e6).toFixed(1)} MB`);
-    status(`Exported ${r.path}`);
+    const cells = tpl.cells.map((_, i) => ({ path: collage.cells[i]?.path ?? null, placement: collage.cells[i]?.placement ?? defaultPlacement() }));
+    const r = await invoke("export_collage", { template: tpl, cells, path, options });
+    toast(t("Exported the collage, {w}×{h}, {mb} MB", { w: r.width, h: r.height, mb: (r.bytes / 1e6).toFixed(1) }));
+    status(t("Exported {path}", { path: r.path }));
     // The collage file next to the image, to reopen and edit it later.
     if ($("col-with-project").checked) await saveProject(false, path.replace(/\.[^.\\/]+$/, "") + ".ambcollage");
   } catch (e) {
@@ -97,7 +97,7 @@ async function exportCollage() {
 async function exportBatch() {
   const photos = batchPhotos();
   if (!photos.length) return;
-  setBusy(true, "Measuring photos…");
+  setBusy(true, t("Measuring photos…"));
   try {
     // The page planner matches photo shapes to cell shapes.
     let done = 0;
@@ -112,11 +112,11 @@ async function exportBatch() {
         } catch {
           shapes[i] = 1.5;
         }
-        $("col-progress").textContent = `Measuring photos… ${++done} / ${photos.length}`;
+        $("col-progress").textContent = t("Measuring photos… {done} / {total}", { done: ++done, total: photos.length });
       }
     };
     await Promise.all([worker(), worker(), worker(), worker()]);
-    $("col-progress").textContent = "Choose a folder…";
+    $("col-progress").textContent = t("Choose a folder…");
     const written = await invoke("export_collage_batch", {
       template: templateForExport(),
       photos: photos.map((p, i) => ({ path: p.path, aspect: shapes[i] })),
@@ -127,8 +127,8 @@ async function exportBatch() {
     // The pages' folder: next time's start.
     if (written?.length) store.setText("amb.exportDir", dirOf(written[0]));
     if (written) {
-      toast(`Wrote ${written.length} pages`);
-      status(`Wrote ${written.length} collage pages to ${dirOf(written[0] ?? "")}`);
+      toast(t("Wrote {n} pages", { n: written.length }));
+      status(t("Wrote {n} collage pages to {dir}", { n: written.length, dir: dirOf(written[0] ?? "") }));
     }
   } catch (e) {
     showError(e);
@@ -166,7 +166,7 @@ async function saveProject(as = false, path = null) {
     if (!path || !collage.docPath) collage.docPath = saved;
     if (saved === collage.docPath) collage.dirty = false;
     updateTitle();
-    toast(`Saved ${fileName(saved)}`);
+    toast(t("Saved {name}", { name: fileName(saved) }));
     return true;
   } catch (e) {
     showError(e);
@@ -175,7 +175,7 @@ async function saveProject(as = false, path = null) {
 }
 
 async function openProject(path = null) {
-  if (collage.dirty && collage.cells.some((c) => c?.path) && !await askYes("This collage has changes that aren't saved. Open another one anyway?")) return;
+  if (collage.dirty && collage.cells.some((c) => c?.path) && !await askYes(t("This collage has changes that aren't saved. Open another one anyway?"))) return;
   try {
     const o = await invoke("open_collage_project", { path });
     if (!o) return;
@@ -203,7 +203,8 @@ async function openProject(path = null) {
     renderTemplates();
     renderStage();
     if (o.missing.length) {
-      toast(`${o.missing.length} photo${o.missing.length === 1 ? " wasn't" : "s weren't"} found: ${o.missing.map(fileName).join(", ")}`, true);
+      const names = o.missing.map(fileName).join(", ");
+      toast(o.missing.length === 1 ? t("1 photo wasn't found: {names}", { names }) : t("{n} photos weren't found: {names}", { n: o.missing.length, names }), true);
     }
   } catch (e) {
     showError(e);
@@ -306,8 +307,8 @@ function wireCollage() {
     const p = e.payload;
     if (!collage.busy) return;
     $("col-progress").textContent = p.pages > 1
-      ? `Page ${p.page} of ${p.pages} · photo ${p.done} of ${p.total}`
-      : `Photo ${p.done} of ${p.total}`;
+      ? t("Page {page} of {pages} · photo {done} of {total}", { page: p.page, pages: p.pages, done: p.done, total: p.total })
+      : t("Photo {done} of {total}", { done: p.done, total: p.total });
   });
   syncExportForm();
 }

@@ -90,7 +90,7 @@ const AmbPicker = (() => {
         head.setAttribute("aria-expanded", String(shown));
         head.append(
           el("span", { class: "caret" }, shown ? "▾" : "▸"),
-          document.createTextNode(name),
+          document.createTextNode(t(name)),
           el("span", { class: "count" }, options.length),
         );
         head.addEventListener("click", () => {

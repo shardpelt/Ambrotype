@@ -11,38 +11,38 @@
 // Windows and Linux list there (macOS has it in the app's own menu).
 const MENU_BAR = [
   ["Ambrotype", ["#about", "|", "settings", "|", "#services", "|", "#hide", "#hide_others", "#show_all", "|", "#quit"], "mac"],
-  ["File", ["open", "open-folder", "import", "|", "save", "export", "convert-raws", "batch-export", "share-compare", "replay", "edit-in", "|", "collage", "|", "~settings", "|", "#close_window", "~#quit"]],
-  ["Edit", ["undo", "undo-all", "redo", "|", "#cut", "#copy", "#paste", "lib-all", "lib-none", "|", "lib-copy", "lib-paste"]],
-  ["Photo", [
+  [tKey("File"), ["open", "open-folder", "import", "|", "save", "export", "convert-raws", "batch-export", "share-compare", "replay", "edit-in", "|", "collage", "|", "~settings", "|", "#close_window", "~#quit"]],
+  [tKey("Edit"), ["undo", "undo-all", "redo", "|", "#cut", "#copy", "#paste", "lib-all", "lib-none", "|", "lib-copy", "lib-paste"]],
+  [tKey("Photo"), [
     "crop", "masks", "spots", "wb", "|",
-    ["Rating", ["rate-1", "rate-2", "rate-3", "rate-4", "rate-5", "|", "rate-0"]],
-    ["Colour Label", ["label-red", "label-yellow", "label-green", "label-blue"]],
-    ["Flag", ["flag-pick", "flag-reject", "flag-none"]],
+    [tKey("Rating"), ["rate-1", "rate-2", "rate-3", "rate-4", "rate-5", "|", "rate-0"]],
+    [tKey("Colour Label"), ["label-red", "label-yellow", "label-green", "label-blue"]],
+    [tKey("Flag"), ["flag-pick", "flag-reject", "flag-none"]],
     "keywords", "|", "rotate-left", "rotate-right", "flip-horizontal", "|", "save-preset", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
   ]],
-  ["Library", ["library", "|", "lib-loupe", "lib-compare", "|", "slideshow", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
-  ["View", ["before", "split", "touch", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
-  ["Window", ["#minimize", "#maximize", "|", ["Task", ["task-library", "task-develop", "task-film", "task-collage"]], "|", "looks", "edit-layout", "blank-layout", "|", "hub", "|", "#bring_all_to_front"], "window"],
-  ["Help", ["search", "|", "connect-ai", "|", "features", "learn", "basics", "camsim", "sample", "watch", "shortcuts", "|", "feedback", "source"], "help"],
+  [tKey("Library"), ["library", "|", "lib-loupe", "lib-compare", "|", "slideshow", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
+  [tKey("View"), ["before", "split", "touch", "zoom", "loupe", "proof", "clipping", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
+  [tKey("Window"), ["#minimize", "#maximize", "|", [tKey("Task"), ["task-library", "task-develop", "task-film", "task-collage"]], "|", "looks", "edit-layout", "blank-layout", "|", "hub", "|", "#bring_all_to_front"], "window"],
+  [tKey("Help"), ["search", "|", "connect-ai", "|", "features", "learn", "basics", "camsim", "sample", "watch", "shortcuts", "|", "feedback", "source"], "help"],
 ];
 // Only on macOS: the rest have them in the window's title bar, or no Edit menu.
 const MENU_MAC_ONLY = new Set(["#services", "#hide", "#hide_others", "#show_all", "#cut", "#copy", "#paste", "#fullscreen", "#minimize", "#maximize", "#bring_all_to_front"]);
 
 // Menu titles, where the action's own label (keys.js) is a sentence.
 const MENU_TITLES = {
-  open: "Open…", "open-folder": "Open Folder…", slideshow: "Slideshow…", import: "Import Photos…", save: "Save", export: "Export…", "edit-in": "Edit in Another App", "share-compare": "Share Before and After…", touch: "Touch: Drag on the Photo",
-  collage: "Collage Maker…", "lib-all": "Select All", "lib-none": "Select None", "lib-copy": "Copy Settings",
-  "lib-paste": "Paste Settings", "save-preset": "New Preset from This Photo…", "convert-raws": "Convert Raws to JPEGs…", "batch-export": "Batch Export…", replay: "Export Edit Replay…", crop: "Crop and Straighten", spots: "Spot Removal", wb: "White Balance Picker",
-  "rate-0": "No Rating", "label-red": "Red", "label-yellow": "Yellow", "label-green": "Green", "label-blue": "Blue",
-  "flag-pick": "Pick", "flag-reject": "Reject", "flag-none": "No Flag", keywords: "Add Keywords",
-  "virtual-copy": "Make a Virtual Copy", "quick-collection": "Add to the Last Collection", assistant: "Assistant…",
-  plugins: "Plugins…", library: "Library Grid", "lib-loupe": "Loupe", "lib-compare": "Compare",
-  "lib-stack": "Stack", "lib-unstack": "Unstack", "prev-photo": "Previous Photo", "next-photo": "Next Photo",
-  zoom: "Fit / 100%", proof: "Soft Proofing", clipping: "Clipping Overlay", frame: "Frame", filmstrip: "Filmstrip",
-  "fold-left": "Left Column", "fold-right": "Right Column", looks: "Appearance…", "edit-layout": "Edit Layout", "blank-layout": "New Layout from Scratch",
-  hub: "Browse the Hub…", settings: "Settings…", learn: "Learn the Basics", features: "What Ambrotype Can Do…", shortcuts: "Keyboard Shortcuts",
-  feedback: "Send Feedback…", source: "Ambrotype on GitHub", search: "Search Everything…", "connect-ai": "Connect an AI App…",
-  "task-library": "Library", "task-develop": "Develop", "task-film": "Film", "task-collage": "Collage",
+  open: tKey("Open…"), "open-folder": tKey("Open Folder…"), slideshow: tKey("Slideshow…"), import: tKey("Import Photos…"), save: tKey("Save"), export: tKey("Export…"), "edit-in": tKey("Edit in Another App"), "share-compare": tKey("Share Before and After…"), touch: tKey("Touch: Drag on the Photo"),
+  collage: tKey("Collage Maker…"), "lib-all": tKey("Select All"), "lib-none": tKey("Select None"), "lib-copy": tKey("Copy Settings"),
+  "lib-paste": tKey("Paste Settings"), "save-preset": tKey("New Preset from This Photo…"), "convert-raws": tKey("Convert Raws to JPEGs…"), "batch-export": tKey("Batch Export…"), replay: tKey("Export Edit Replay…"), crop: tKey("Crop and Straighten"), spots: tKey("Spot Removal"), wb: tKey("White Balance Picker"),
+  "rate-0": tKey("No Rating"), "label-red": tKey("Red"), "label-yellow": tKey("Yellow"), "label-green": tKey("Green"), "label-blue": tKey("Blue"),
+  "flag-pick": tKey("Pick"), "flag-reject": tKey("Reject"), "flag-none": tKey("No Flag"), keywords: tKey("Add Keywords"),
+  "virtual-copy": tKey("Make a Virtual Copy"), "quick-collection": tKey("Add to the Last Collection"), assistant: tKey("Assistant…"),
+  plugins: tKey("Plugins…"), library: tKey("Library Grid"), "lib-loupe": tKey("Loupe"), "lib-compare": tKey("Compare"),
+  "lib-stack": tKey("Stack"), "lib-unstack": tKey("Unstack"), "prev-photo": tKey("Previous Photo"), "next-photo": tKey("Next Photo"),
+  zoom: tKey("Fit / 100%"), proof: tKey("Soft Proofing"), clipping: tKey("Clipping Overlay"), frame: tKey("Frame"), filmstrip: tKey("Filmstrip"),
+  "fold-left": tKey("Left Column"), "fold-right": tKey("Right Column"), looks: tKey("Appearance…"), "edit-layout": tKey("Edit Layout"), "blank-layout": tKey("New Layout from Scratch"),
+  hub: tKey("Browse the Hub…"), settings: tKey("Settings…"), learn: tKey("Learn the Basics"), features: tKey("What Ambrotype Can Do…"), shortcuts: tKey("Keyboard Shortcuts"),
+  feedback: tKey("Send Feedback…"), source: tKey("Ambrotype on GitHub"), search: tKey("Search Everything…"), "connect-ai": tKey("Connect an AI App…"),
+  "task-library": tKey("Library"), "task-develop": tKey("Develop"), "task-film": tKey("Film"), "task-collage": tKey("Collage"),
 };
 
 // Items that aren't keyboard actions.
@@ -60,10 +60,10 @@ function menuAccelerator(combo) {
 
 function menuEntry(name, mac) {
   if (name === "|") return { kind: "separator" };
-  if (Array.isArray(name)) return { kind: "submenu", text: name[0], items: menuEntries(name[1], mac) };
+  if (Array.isArray(name)) return { kind: "submenu", text: t(name[0]), items: menuEntries(name[1], mac) };
   if (name.startsWith("#")) return { kind: "native", name: name.slice(1) };
   const a = KEY_ACTIONS.find((x) => x.id === name);
-  let text = MENU_TITLES[name] ?? a?.label.replace(/^Rate /, "") ?? name;
+  let text = MENU_TITLES[name] ? t(MENU_TITLES[name]) : a?.vars?.stars ?? (a ? actionLabel(a) : name);
   const combo = a ? keysFor(a)[0] : null;
   const keys = combo ? menuAccelerator(combo) : null;
   if (combo && !keys) text += `  (${keyLabel(combo)})`;
@@ -82,7 +82,7 @@ function menuEntries(names, mac) {
 async function buildMenu() {
   const menus = MENU_BAR.filter(([, , role]) => IS_MAC || role !== "mac").map(([text, names, role]) => ({
     kind: "submenu",
-    text,
+    text: t(text),
     role: role === "mac" ? null : role ?? null,
     items: menuEntries(names, IS_MAC),
   }));

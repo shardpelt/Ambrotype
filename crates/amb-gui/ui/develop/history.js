@@ -6,45 +6,50 @@
 // History entries in words: "set_param Exposure2012" → "Exposure" (the
 // slider's label), "add_mask linear to mask 0" → "Mask 1: add linear".
 function historyLabel(label) {
-  const n = (i) => `Mask ${Number(i) + 1}`;
-  const named = (tag) => ui.historyNames.get(tag) ?? ui.defs.get(tag)?.label ?? tag;
+  const n = (i) => t("Mask {n}", { n: Number(i) + 1 });
   return label
-    .replace(/^set_param (\S+)$/, (_, t) => named(t))
-    .replace(/^reset_param (\S+)$/, (_, t) => `Reset ${named(t)}`)
-    .replace(/^adjust_param (\S+) (\S+)$/, (_, t, d) => `${named(t)} ${d}`)
-    .replace(/^apply_preset .*[\\/]/, "preset ")
-    .replace(/^add_mask (\w+) to mask (\d+)$/, (_, k, m) => `${n(m)}: add ${k}`)
-    .replace(/^add_mask (\w+)$/, (_, k) => `New ${k} mask`)
-    .replace(/^set_mask (\d+) part (\d+)$/, (_, m, p) => `${n(m)}: edit part ${Number(p) + 1}`)
+    .replace(/^set_param (\S+)$/, (_, tag) => historyName(tag))
+    .replace(/^reset_param (\S+)$/, (_, tag) => t("Reset {name}", { name: historyName(tag) }))
+    .replace(/^adjust_param (\S+) (\S+)$/, (_, tag, d) => `${historyName(tag)} ${d}`)
+    .replace(/^apply_preset .*[\\/](.*)$/, (_, name) => t("preset {name}", { name }))
+    .replace(/^add_mask (\w+) to mask (\d+)$/, (_, k, m) => t("{mask}: add {kind}", { mask: n(m), kind: t(k) }))
+    .replace(/^add_mask (\w+)$/, (_, k) => t("New {kind} mask", { kind: t(k) }))
+    .replace(/^set_mask (\d+) part (\d+)$/, (_, m, p) => t("{mask}: edit part {part}", { mask: n(m), part: Number(p) + 1 }))
     .replace(/^set_mask (\d+)$/, (_, m) => n(m))
-    .replace(/^paint_mask new$/, "New brush mask")
-    .replace(/^(paint|erase)_mask (\d+)$/, (_, v, m) => `${n(m)}: ${v === "paint" ? "brush" : "erase"}`)
-    .replace(/^remove_mask (\d+) part (\d+)$/, (_, m, p) => `${n(m)}: remove part ${Number(p) + 1}`)
-    .replace(/^remove_mask (\d+)$/, (_, m) => `Delete ${n(m).toLowerCase()}`)
-    .replace(/^duplicate_mask (\d+)$/, (_, m) => `Duplicate ${n(m).toLowerCase()}`)
-    .replace(/^move_mask (\d+) to (\d+)$/, (_, m, t) => `Move ${n(m).toLowerCase()} to ${Number(t) + 1}`)
-    .replace(/^add_spot (\w+)$/, (_, k) => `${k === "clone" ? "Clone" : "Heal"} spot`)
-    .replace(/^add_spot (\w+) \(brushed\)$/, (_, k) => `${k === "clone" ? "Clone" : "Heal"} brush`)
-    .replace(/^set_spot (\d+)$/, (_, s) => `Spot ${Number(s) + 1}`)
-    .replace(/^remove_spot (\d+)$/, (_, s) => `Delete spot ${Number(s) + 1}`);
+    .replace(/^paint_mask new$/, () => t("New brush mask"))
+    .replace(/^(paint|erase)_mask (\d+)$/, (_, v, m) => (v === "paint" ? t("{mask}: brush", { mask: n(m) }) : t("{mask}: erase", { mask: n(m) })))
+    .replace(/^remove_mask (\d+) part (\d+)$/, (_, m, p) => t("{mask}: remove part {part}", { mask: n(m), part: Number(p) + 1 }))
+    .replace(/^remove_mask (\d+)$/, (_, m) => t("Delete mask {n}", { n: Number(m) + 1 }))
+    .replace(/^duplicate_mask (\d+)$/, (_, m) => t("Duplicate mask {n}", { n: Number(m) + 1 }))
+    .replace(/^move_mask (\d+) to (\d+)$/, (_, m, to) => t("Move mask {n} to {to}", { n: Number(m) + 1, to: Number(to) + 1 }))
+    .replace(/^add_spot (\w+)$/, (_, k) => (k === "clone" ? t("Clone spot") : t("Heal spot")))
+    .replace(/^add_spot (\w+) \(brushed\)$/, (_, k) => (k === "clone" ? t("Clone brush") : t("Heal brush")))
+    .replace(/^set_spot (\d+)$/, (_, s) => t("Spot {n}", { n: Number(s) + 1 }))
+    .replace(/^remove_spot (\d+)$/, (_, s) => t("Delete spot {n}", { n: Number(s) + 1 }));
+}
+
+// A setting's name in History: its label, with its section where the label alone is ambiguous.
+function historyName(tag) {
+  const def = ui.defs.get(tag);
+  return ui.historyNames.get(tag) ?? (def?.label ? t(def.label) : tag);
 }
 
 // A History value in the slider's own format; unset is the default.
 function historyValue(tag, v) {
   if (v == null) {
     if (ui.info?.defaults && tag in ui.info.defaults) v = ui.info.defaults[tag];
-    else if (tag === "Temperature" || tag === "Tint") return "As Shot";
+    else if (tag === "Temperature" || tag === "Tint") return t("As Shot");
     else v = ui.defs.get(tag)?.default ?? 0;
   }
   // Plugin effects: their names, not the JSON they're kept as.
   if (tag === "amb:Effects") {
     const names = effectsOf(v).map((e) => fx.plugins.find((p) => p.id === e.plugin)?.manifest?.name ?? e.plugin);
-    return names.join(", ") || "none";
+    return names.join(", ") || t("none");
   }
   const def = ui.defs.get(tag);
   if (typeof v === "number") return def ? format(def, v) || String(v) : String(Math.round(v * 100) / 100);
-  if (typeof v === "boolean") return v ? "on" : "off";
-  return String(v) || "none";
+  if (typeof v === "boolean") return v ? t("on") : t("off");
+  return String(v) || t("none");
 }
 
 // "0.00 → +0.70" for a step's changes (Redlamp shows them too).
@@ -81,7 +86,7 @@ function syncControls() {
   if (ui.curve) for (const tag of AmbCurve.TAGS) ui.curve.set(tag, currentValue(tag));
   if (ui.wheels) ui.wheels.set(Object.fromEntries(AmbWheels.TAGS.map((t) => [t, currentValue(t)])));
   const nr = ui.state?.not_rendered ?? [];
-  $("status-right").textContent = nr.length ? `Not rendered yet: ${nr.length} setting(s)` : "";
+  $("status-right").textContent = nr.length ? t("Not rendered yet: {n} setting(s)", { n: nr.length }) : "";
   $("status-right").title = nr.join(", ");
   syncMenu();
   glowUnused();
@@ -94,16 +99,17 @@ function renderSnapshots() {
   const list = $("snapshot-list");
   list.innerHTML = "";
   $("snapshot-add").disabled = !ui.state;
-  if (ui.state && !ui.state.snapshots?.length) emptyTip(list, "No snapshots yet");
+  if (ui.state && !ui.state.snapshots?.length) emptyTip(list, t("No snapshots yet"));
   for (const s of ui.state?.snapshots ?? []) {
     const li = document.createElement("li");
     li.classList.toggle("current", s.current);
     const name = document.createElement("span");
     name.className = "snap-name";
     name.textContent = s.name;
-    name.title = s.current ? "The edit is this snapshot" : "Apply this snapshot (undoable)";
+    name.setAttribute("translate", "no");
+    name.title = s.current ? t("The edit is this snapshot") : t("Apply this snapshot (undoable)");
     name.addEventListener("click", () => {
-      if (!s.current) run([{ cmd: "apply_snapshot", name: s.name }], `Snapshot: ${s.name}`);
+      if (!s.current) run([{ cmd: "apply_snapshot", name: s.name }], t("Snapshot: {name}", { name: s.name }));
     });
     const act = (text, title, fn) => {
       const b = document.createElement("button");
@@ -116,13 +122,13 @@ function renderSnapshots() {
     };
     li.append(
       name,
-      act("↻", "Update with the current settings", () => run([{ cmd: "save_snapshot", name: s.name }])),
-      act("✎", "Rename", async () => {
-        const to = await askName("Rename snapshot", "", s.name);
+      act("↻", t("Update with the current settings"), () => run([{ cmd: "save_snapshot", name: s.name }])),
+      act("✎", t("Rename"), async () => {
+        const to = await askName(t("Rename snapshot"), "", s.name);
         if (to && to !== s.name) run([{ cmd: "rename_snapshot", name: s.name, to }]);
       }),
-      act("×", "Delete", async () => {
-        if (await askYes(`Delete the snapshot “${s.name}”? The photo's edit stays as it is.`)) {
+      act("×", t("Delete"), async () => {
+        if (await askYes(t("Delete the snapshot “{name}”? The photo's edit stays as it is.", { name: s.name }))) {
           run([{ cmd: "delete_snapshot", name: s.name }]);
         }
       }),
@@ -136,10 +142,10 @@ async function addSnapshot() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  const name = await askName("New snapshot", "The edit as it is now, under a name, to come back to. Kept in the photo's .xmp.", stamp);
+  const name = await askName(t("New snapshot"), t("The edit as it is now, under a name, to come back to. Kept in the photo's .xmp."), stamp);
   if (!name) return;
   const taken = (ui.state.snapshots ?? []).some((s) => s.name === name);
-  if (taken && !await askYes(`Replace the snapshot “${name}” with the edit as it is now?`)) return;
+  if (taken && !await askYes(t("Replace the snapshot “{name}” with the edit as it is now?", { name }))) return;
   run([{ cmd: "save_snapshot", name }]);
 }
 
@@ -154,7 +160,7 @@ function renderHistory() {
   if (!ui.state) return;
   const done = ui.state.history ?? [];
   const undone = ui.state.redo_history ?? [];
-  const first = ui.state.history_trimmed ? "Earlier edits" : "Original";
+  const first = ui.state.history_trimmed ? t("Earlier edits") : t("Original");
   const steps = [first, ...done.map(historyLabel), ...undone.map(historyLabel)];
   hist.start = 0;
   const changes = ui.state.history_changes ?? [];
@@ -165,8 +171,8 @@ function renderHistory() {
     li.classList.toggle("undone", i > done.length);
     // Its values: one change on the line, every change in the tooltip.
     const step = i > 0 ? changes[i - 1] : null;
-    const lines = (step?.shown ?? []).map((c) => `${ui.historyNames.get(c.name) ?? ui.defs.get(c.name)?.label ?? c.name}: ${historyChange(c)}`);
-    if (step?.more) lines.push(`and ${step.more} more`);
+    const lines = (step?.shown ?? []).map((c) => `${historyName(c.name)}: ${historyChange(c)}`);
+    if (step?.more) lines.push(t("and {n} more", { n: step.more }));
     if (step?.shown.length === 1 && !step.more) {
       const v = document.createElement("span");
       v.className = "history-values";
@@ -174,7 +180,7 @@ function renderHistory() {
       li.append(" ", v);
     }
     if (i !== done.length) {
-      li.title = i < done.length ? "Go back to this step" : "Go forward to this step";
+      li.title = i < done.length ? t("Go back to this step") : t("Go forward to this step");
       li.addEventListener("click", () => {
         hist.focus({ preventScroll: true });
         historyGo(i - done.length);
@@ -183,7 +189,7 @@ function renderHistory() {
     if (lines.length) li.title = [li.title, ...lines].filter(Boolean).join("\n");
     hist.append(li);
   });
-  if (!done.length && !undone.length) emptyTip(hist, "No edits yet");
+  if (!done.length && !undone.length) emptyTip(hist, t("No edits yet"));
   // Keep the current step in view inside the list only: scrollIntoView would
   // also scroll the column, and the panels above History with it.
   const cur = hist.querySelector(".current");
@@ -212,7 +218,7 @@ async function historyGo(n) {
 function undoAll() {
   const n = ui.state?.history?.length ?? 0;
   if (!n) return;
-  historyGo(-n).then(() => status(`Undid all ${plural(n, "step")}; Redo brings them back`));
+  historyGo(-n).then(() => status(t("Undid all {steps}; Redo brings them back", { steps: plural(n, "step") })));
 }
 
 // With History focused (clicked, or Tab), the arrows step through it one

@@ -13,6 +13,10 @@ const TOOLBAR_IDS = {
 };
 const BLOCK_IDS = { presets: "block-presets", info: "block-info", history: "block-history", histogram: "block-histogram", tools: "block-tools", quick: "block-quick", retouch: "block-retouch" };
 const WHEEL_SECTIONS = ["Shadow", "Midtone", "Highlight", "Global"];
+// The colour bands of the HSL tabs, named by the tags' ends.
+const HSL_BANDS = [
+  tKey("Red"), tKey("Orange"), tKey("Yellow"), tKey("Green"), tKey("Aqua"), tKey("Blue"), tKey("Purple"), tKey("Magenta"),
+];
 const DEFAULT_WIDTH = { left: 250, right: 330 };
 
 // Used only if the backend can't list looks: everything in the classic places.
@@ -89,6 +93,8 @@ function applyLayout(layout) {
           col.append(bar);
         }
         const b = Object.assign(document.createElement("button"), { type: "button", className: "column-tab", textContent: tab, role: "tab" });
+        // A tab is named by the layout's author.
+        b.setAttribute("translate", "no");
         b.dataset.tab = tab;
         b.addEventListener("click", () => showColumnTab(side, b.dataset.tab));
         bar.append(b);
@@ -209,7 +215,7 @@ function makeControl(def, widget, labelText) {
   if (def.name === "amb:Effects") return makeEffectsControl(def);
   // On a JPEG and the like, Temp and Tint drive Lightroom's relative settings.
   if (ui.info?.rendered && def.rendered) def = { ...def.rendered, label: def.label };
-  const label = labelText ?? def.label;
+  const label = labelText ?? t(def.label);
   const allowed = AmbControls.WIDGETS[def.kind] ?? AmbControls.WIDGETS.number;
   const maker = AmbControls.MAKERS[widget];
   if (maker && allowed.includes(widget)) {
@@ -230,13 +236,13 @@ function buildHsl(section, hide) {
     if (hide.includes(def.name)) continue;
     const kind = def.name.match(/^(Hue|Saturation|Luminance)/)[1];
     const band = def.name.replace(/^(Hue|Saturation|Luminance)Adjustment/, "");
-    (rows[kind] ||= []).push(makeRow({ ...def, label: band }));
+    (rows[kind] ||= []).push(makeRow({ ...def, label: HSL_BANDS.includes(band) ? t(band) : band }));
   }
   const kinds = ["Hue", "Saturation", "Luminance"].filter((k) => rows[k]);
   if (!kinds.includes(ui.hslTab)) ui.hslTab = kinds[0];
   for (const kind of kinds) {
     const b = document.createElement("button");
-    b.textContent = kind;
+    b.textContent = kind === "Hue" ? t("Hue") : kind === "Saturation" ? t("Saturation") : t("Luminance");
     b.addEventListener("click", () => {
       ui.hslTab = kind;
       for (const [k, rs] of Object.entries(rows)) rs.forEach((r) => (r.hidden = k !== kind));
@@ -271,7 +277,7 @@ function buildPanel(item) {
         if (p) entries.push(...panelEntries(p, section).map((x) => ({ ...x, key })));
       } else if (e.widget === "point-curve") entries.push({ type: "curve", key });
       else if (e.widget === "color-wheels") entries.push({ type: "wheels", key });
-      else if (typeof e.label === "string") entries.push({ type: "label", text: e.label, key });
+      else if (typeof e.label === "string") entries.push({ type: "label", text: e.label, own: true, key });
     });
   }
 
@@ -281,11 +287,14 @@ function buildPanel(item) {
   details.open = Boolean(item.open) || Boolean(ui.edit);
   const summary = document.createElement("summary");
   const name = document.createElement("span");
-  name.textContent = title;
+  // A title the layout gives is its author's word; a built-in panel's name is ours.
+  const shownTitle = item.title ?? t(title);
+  name.textContent = shownTitle;
+  if (item.title) name.setAttribute("translate", "no");
   const reset = document.createElement("button");
   reset.className = "small reset";
-  reset.textContent = "Reset";
-  reset.title = `Reset ${title}`;
+  reset.textContent = t("Reset");
+  reset.title = t("Reset {name}", { name: shownTitle });
   summary.append(name, reset);
   const body = document.createElement("div");
   body.className = "panel-body";
@@ -300,29 +309,29 @@ function buildPanel(item) {
     if (e.type === "label") {
       const l = document.createElement("div");
       l.className = "section-label";
-      l.append(el("span", { class: "section-name" }, e.text));
+      l.append(e.own ? el("span", { class: "section-name", translate: "no" }, e.text) : el("span", { class: "section-name" }, t(e.text)));
       if (e.text === "Tone") {
         // Lightroom's Auto, beside the tone sliders.
         const auto = document.createElement("button");
         auto.className = "small section-action";
-        auto.textContent = "Auto";
-        auto.title = "Set Exposure, Contrast, Highlights, Shadows, Whites and Blacks for this photo (one undo step)";
+        auto.textContent = t("Auto");
+        auto.title = t("Set Exposure, Contrast, Highlights, Shadows, Whites and Blacks for this photo (one undo step)");
         auto.addEventListener("click", () => autoFlow(true, false));
         l.append(auto);
       }
       if (e.text === "Profile" && item.panel === "lens") {
         const fetch = document.createElement("button");
         fetch.className = "small section-action";
-        fetch.textContent = "Lens database…";
-        fetch.title = "Download or update lensfun's lens profiles (about 0.5 MB), used when there is no profile of your own";
+        fetch.textContent = t("Lens database…");
+        fetch.title = t("Download or update lensfun's lens profiles (about 0.5 MB), used when there is no profile of your own");
         fetch.addEventListener("click", () => lensDbFlow());
         l.append(fetch);
       }
       if (e.text === "Upright") {
         const guided = document.createElement("button");
         guided.className = "small section-action";
-        guided.textContent = "Guided…";
-        guided.title = "Draw lines that should be vertical or horizontal; the Transform sliders straighten them";
+        guided.textContent = t("Guided…");
+        guided.title = t("Draw lines that should be vertical or horizontal; the Transform sliders straighten them");
         guided.addEventListener("click", () => enterGuided());
         l.append(guided);
       }
@@ -330,18 +339,18 @@ function buildPanel(item) {
         // Keep this frame's film base and levels, so later edits don't move them.
         const freeze = document.createElement("button");
         freeze.className = "small section-action";
-        freeze.textContent = "Freeze";
-        freeze.title = "Store the film base and levels this photo shows now and turn Auto off (one undo step). For a whole roll: Sync negative roll in the library";
+        freeze.textContent = t("Freeze");
+        freeze.title = t("Store the film base and levels this photo shows now and turn Auto off (one undo step). For a whole roll: Sync negative roll in the library");
         freeze.addEventListener("click", () => freezeNegative());
         const frame = document.createElement("button");
         frame.className = "small section-action";
-        frame.textContent = "Crop to frame";
-        frame.title = "Crop away the film rebate and the scanner holder's edges (one undo step)";
+        frame.textContent = t("Crop to frame");
+        frame.title = t("Crop away the film rebate and the scanner holder's edges (one undo step)");
         frame.addEventListener("click", () => cropToFrame());
         const base = document.createElement("button");
         base.className = "small section-action pick-base";
-        base.textContent = "Pick base";
-        base.title = "Click the clear film between frames to set the film base (before Crop to frame, or with the crop off). Alt-click to measure it from the scan again";
+        base.textContent = t("Pick base");
+        base.title = t("Click the clear film between frames to set the film base (before Crop to frame, or with the crop off). Alt-click to measure it from the scan again");
         base.addEventListener("click", (ev) => pickBaseFlow(ev.altKey));
         const meter = document.createElement("button");
         meter.className = "small section-action pick-meter";
@@ -356,7 +365,7 @@ function buildPanel(item) {
       if (!def || ui.controls.has(def.name)) {
         const missing = document.createElement("div");
         missing.className = "row placeholder";
-        missing.textContent = def ? `${def.label} is shown elsewhere` : `Unknown setting: ${e.name}`;
+        missing.textContent = def ? t("{name} is shown elsewhere", { name: t(def.label) }) : t("Unknown setting: {name}", { name: e.name });
         body.append(missing);
         return;
       }
@@ -431,7 +440,7 @@ async function loadLooks() {
     ui.looks = await invoke("looks");
   } catch (e) {
     ui.looks = null;
-    toast(`Couldn't load layouts and themes: ${e}`, true);
+    toast(t("Couldn't load layouts and themes: {error}", { error: e }), true);
   }
   applyActiveLooks();
 }

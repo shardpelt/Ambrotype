@@ -27,8 +27,8 @@ function renderConnect() {
   $("connect-where").textContent = app.where;
   $("connect-snippet").textContent = connect.amb ? connectSnippet(app) : "";
   $("connect-agent").hidden = !app.agent;
-  $("connect-agent").textContent = `Start ${app.name.replace(/ \(.*\)$/, "")} here`;
-  $("connect-agent").title = app.agent ? `Opens a terminal in the folder and runs ${app.agent.replace(" {prompt}", "")}, told where Ambrotype's guides are, to edit photos or to change the editor itself (see the choice beside it)` : "";
+  $("connect-agent").textContent = t("Start {name} here", { name: app.name.replace(/ \(.*\)$/, "") });
+  $("connect-agent").title = app.agent ? t("Opens a terminal in the folder and runs {command}, told where Ambrotype's guides are, to edit photos or to change the editor itself (see the choice beside it)", { command: app.agent.replace(" {prompt}", "") }) : "";
   $("connect-aim").hidden = !app.agent;
   $("connect-agent-hint").hidden = !app.agent;
 }
@@ -45,10 +45,11 @@ async function readGuide(name) {
   }
 }
 
+// `what` names what was copied ("The guide"): through t() here, so callers mark it with tKey().
 async function copyText(text, what) {
   try {
     await navigator.clipboard.writeText(text);
-    toast(`${what} copied`);
+    toast(t("{what} copied", { what: t(what) }));
   } catch (e) {
     showError(e);
   }
@@ -71,8 +72,8 @@ async function connectFlow() {
 
 function wireConnect() {
   $("connect-app").addEventListener("change", renderConnect);
-  $("connect-copy-command").addEventListener("click", () => copyText($("connect-command").value, "The command"));
-  $("connect-copy").addEventListener("click", () => copyText($("connect-snippet").textContent, "The setup"));
+  $("connect-copy-command").addEventListener("click", () => copyText($("connect-command").value, tKey("The command")));
+  $("connect-copy").addEventListener("click", () => copyText($("connect-snippet").textContent, tKey("The setup")));
   $("assistant-connect").addEventListener("click", () => connectFlow().catch(showError));
   $("connect-terminal").addEventListener("click", () => invoke("open_terminal", { agent: null, aim: null }).catch(showError));
   $("connect-agent").addEventListener("click", () => {
@@ -80,5 +81,5 @@ function wireConnect() {
     invoke("open_terminal", { agent: app?.agent ?? null, aim: $("connect-aim").value }).catch(showError);
   });
   $("connect-read").addEventListener("click", () => readGuide($("connect-guide").value));
-  $("guide-copy").addEventListener("click", () => copyText($("guide-text").textContent, "The guide"));
+  $("guide-copy").addEventListener("click", () => copyText($("guide-text").textContent, tKey("The guide")));
 }

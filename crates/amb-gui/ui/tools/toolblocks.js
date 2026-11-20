@@ -8,16 +8,16 @@
 
 // Level the horizon (cropped to fit), as the crop tool's Level, one step.
 async function levelFlow() {
-  if (!ui.info) return toast("Open a photo first.", true);
+  if (!ui.info) return toast(t("Open a photo first."), true);
   if (ui.crop.on) await exitCrop(true);
   try {
     const a = await invoke("level_angle");
-    if (a == null) return toast("No clear horizon or straight lines to level by: try Crop (R) and turn it by hand.", true);
-    if (Math.abs(a) < 0.05) return toast("Already level.");
+    if (a == null) return toast(t("No clear horizon or straight lines to level by: try Crop (R) and turn it by hand."), true);
+    if (Math.abs(a) < 0.05) return toast(t("Already level."));
     const st = await invoke("crop_state");
     const rect = AmbCrop.straighten(st.rect, Math.max(-45, Math.min(45, a)), ui.info.width, ui.info.height, st.angle_sign);
     await run(await invoke("crop_commands", { rect }), "Level");
-    toast(`Levelled by ${a > 0 ? "+" : ""}${a.toFixed(1)}°.`);
+    toast(t("Levelled by {angle}°.", { angle: `${a > 0 ? "+" : ""}${a.toFixed(1)}` }));
   } catch (e) {
     showError(e);
   }
@@ -25,13 +25,13 @@ async function levelFlow() {
 
 // A new AI or range mask of `kind`, opening Masks for it.
 async function maskFlow(kind) {
-  if (!ui.info) return toast("Open a photo first.", true);
+  if (!ui.info) return toast(t("Open a photo first."), true);
   await enterMasks();
   if (mk.on) startTool(kind, true);
 }
 
 async function spotFlow(kind) {
-  if (!ui.info) return toast("Open a photo first.", true);
+  if (!ui.info) return toast(t("Open a photo first."), true);
   await enterSpots();
   if (sp.on) setSpotKind(kind);
 }

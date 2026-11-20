@@ -14,15 +14,15 @@
 
 const MASK_TAG = "MaskGroupBasedCorrections";
 const NEW_KINDS = [
-  { kind: "linear", label: "Linear", key: "L", hint: "Drag from where the effect is full to where it ends." },
-  { kind: "radial", label: "Radial", key: "Shift+R", hint: "Drag from the centre outwards." },
-  { kind: "brush", label: "Brush", key: "B", hint: "Paint on the photo. Hold Alt to erase; [ and ] change the size." },
-  { kind: "luminance", label: "Luminance", key: "", hint: "Selects by brightness; set the range below." },
-  { kind: "subject", label: "Subject", key: "", hint: "Selects the main subject, found by an AI model on this computer (Settings → AI models picks which; the small default downloads by itself, about 5 MB)." },
-  { kind: "background", label: "Background", key: "", hint: "Selects everything but the main subject (the subject mask, inverted)." },
-  { kind: "people", label: "People", key: "", hint: "Selects everyone in the photo, found by an AI model on this computer (install one in Settings → AI models, about 180 MB)." },
-  { kind: "sky", label: "Sky", key: "", hint: "Selects the sky: bright blue or grey areas joined to the top edge (our own rules, not Adobe's AI)." },
-  { kind: "color", label: "Color", key: "", hint: "Click a colour in the photo; Shift-click to add more." },
+  { kind: "linear", label: tKey("Linear"), key: "L", hint: tKey("Drag from where the effect is full to where it ends.") },
+  { kind: "radial", label: tKey("Radial"), key: "Shift+R", hint: tKey("Drag from the centre outwards.") },
+  { kind: "brush", label: tKey("Brush"), key: "B", hint: tKey("Paint on the photo. Hold Alt to erase; [ and ] change the size.") },
+  { kind: "luminance", label: tKey("Luminance"), key: "", hint: tKey("Selects by brightness; set the range below.") },
+  { kind: "subject", label: tKey("Subject"), key: "", hint: tKey("Selects the main subject, found by an AI model on this computer (Settings → AI models picks which; the small default downloads by itself, about 5 MB).") },
+  { kind: "background", label: tKey("Background"), key: "", hint: tKey("Selects everything but the main subject (the subject mask, inverted).") },
+  { kind: "people", label: tKey("People"), key: "", hint: tKey("Selects everyone in the photo, found by an AI model on this computer (install one in Settings → AI models, about 180 MB).") },
+  { kind: "sky", label: tKey("Sky"), key: "", hint: tKey("Selects the sky: bright blue or grey areas joined to the top edge (our own rules, not Adobe's AI).") },
+  { kind: "color", label: tKey("Color"), key: "", hint: tKey("Click a colour in the photo; Shift-click to add more.") },
 ];
 
 const mk = {
@@ -107,7 +107,7 @@ async function duplicateMask(i) {
 async function movePart(m, from, to) {
   // The first part has to add: subtract and intersect act on the ones before.
   const first = to === 0 ? m.parts[from] : from === 0 ? m.parts[1] : null;
-  if (first && first.mode !== "add") return toast("The first part has to add; change its mode first", true);
+  if (first && first.mode !== "add") return toast(t("The first part has to add; change its mode first"), true);
   const sel = mk.part;
   await run([{ cmd: "move_mask", mask: m.index, part: from, to }]);
   // The selected part stays selected.
@@ -160,7 +160,7 @@ function startTool(kind, fresh, continuePart = false) {
   mk.continuePart = continuePart;
   $("mask-canvas").classList.toggle("painting", kind === "brush");
   renderMaskPanel();
-  status(`Masks: ${NEW_KINDS.find((n) => n.kind === kind).hint}`);
+  status(t("Masks: {hint}", { hint: t(NEW_KINDS.find((n) => n.kind === kind).hint) }));
 }
 
 function stopTool(redraw = true) {
@@ -368,12 +368,12 @@ function maskEndStroke() {
     // Keep painting into the brush part being painted.
     if (p?.kind === "brush" && (mk.continuePart || mk.paintedPart === p.index)) cmd.part = p.index;
     else if (s.erase) {
-      toast("Pick a brush part to erase from", true);
+      toast(t("Pick a brush part to erase from"), true);
       drawMasks();
       return;
     } else cmd.mode = mk.addMode;
   } else if (s.erase) {
-    toast("Paint something first, then erase", true);
+    toast(t("Paint something first, then erase"), true);
     drawMasks();
     return;
   }
@@ -506,7 +506,7 @@ function exitMasks() {
   $("mask-panel").hidden = true;
   $("btn-masks").classList.toggle("active", false);
   $("btn-wb").disabled = !ui.info;
-  status("Ready");
+  status(t("Ready"));
   requestPreview(false);
 }
 

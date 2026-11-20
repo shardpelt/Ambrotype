@@ -12,18 +12,18 @@ async function loadBorders() {
     ui.borders = await invoke("border_presets");
   } catch (e) {
     ui.borders = [];
-    toast(`Couldn't load border presets: ${e}`, true);
+    toast(t("Couldn't load border presets: {error}", { error: e }), true);
   }
 }
 
 function fillBorderSelect(selected = ui.borderChoice ?? "") {
   const sel = $("export-form").border_preset;
-  sel.replaceChildren(el("option", { value: "" }, "None"));
-  for (const [label, builtin] of [["Built-in", true], ["Yours", false]]) {
+  sel.replaceChildren(el("option", { value: "" }, t("None")));
+  for (const [label, builtin] of [[tKey("Built-in"), true], [tKey("Yours"), false]]) {
     const items = ui.borders.filter((b) => b.builtin === builtin);
     if (!items.length) continue;
-    const group = el("optgroup", { label: label });
-    for (const b of items) group.append(el("option", { value: b.id }, b.name));
+    const group = el("optgroup", { label: t(label) });
+    for (const b of items) group.append(el("option", { value: b.id, translate: "no" }, b.name));
     sel.append(group);
   }
   sel.value = ui.borders.some((b) => b.id === selected) ? selected : "";
@@ -86,8 +86,8 @@ async function refreshCaption() {
     const [text, tokens] = await invoke("caption_preview", { template });
     ui.captionPreview = { template, text };
     const hint = $("border-caption-tokens");
-    hint.textContent = `Fills in: ${tokens.map(([t]) => t).join(" ")}`;
-    hint.title = tokens.map(([t, what]) => `${t}: ${what}`).join("\n");
+    hint.textContent = t("Fills in: {tokens}", { tokens: tokens.map(([tok]) => tok).join(" ") });
+    hint.title = tokens.map(([tok, what]) => `${tok}: ${what}`).join("\n");
     hint.hidden = false;
   } catch {
     ui.captionPreview = null;
@@ -278,7 +278,7 @@ function wireBorders() {
       ui.borderChoice = saved;
       fillBorderSelect(saved);
       $("border-delete").disabled = false;
-      toast(`Saved border "${border.name}"`);
+      toast(t('Saved border "{name}"', { name: border.name }));
     } catch (e) {
       showError(e);
     }
@@ -286,7 +286,7 @@ function wireBorders() {
   $("border-share").addEventListener("click", async () => {
     try {
       const path = await invoke("share_border_preset", { border: readBorder() });
-      if (path) toast(`Saved ${path}: send it to someone, or add it to the hub as a pull request.`);
+      if (path) toast(t("Saved {path}: send it to someone, or add it to the hub as a pull request.", { path }));
     } catch (e) {
       showError(e);
     }
@@ -323,5 +323,5 @@ async function addBorder(border) {
   $("border-delete").disabled = false;
   updateExportSize();
   drawBorderPreview();
-  toast(`Added border "${border.name}"`);
+  toast(t('Added border "{name}"', { name: border.name }));
 }

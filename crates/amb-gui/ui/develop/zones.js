@@ -7,14 +7,14 @@
 
 // Brightness is the preview's own (display-encoded) luma, 0..1.
 const ZONES = {
-  blacks: { label: "Blacks", test: (l) => l < 0.06 },
-  shadows: { label: "Shadows", test: (l) => l >= 0.06 && l < 0.3 },
-  midtones: { label: "Midtones", test: (l) => l >= 0.3 && l < 0.7 },
-  highlights: { label: "Highlights", test: (l) => l >= 0.7 && l < 0.94 },
-  whites: { label: "Whites", test: (l) => l >= 0.94 },
-  clipping: { label: "Clipped", test: (l, r, g, b) => Math.max(r, g, b) >= 254 || Math.max(r, g, b) <= 1 },
-  saturated: { label: "Strong colours", test: (_l, r, g, b) => sat(r, g, b) > 0.55 },
-  muted: { label: "Muted colours", test: (_l, r, g, b) => { const s = sat(r, g, b); return s > 0.08 && s < 0.35; } },
+  blacks: { label: tKey("Blacks"), test: (l) => l < 0.06 },
+  shadows: { label: tKey("Shadows"), test: (l) => l >= 0.06 && l < 0.3 },
+  midtones: { label: tKey("Midtones"), test: (l) => l >= 0.3 && l < 0.7 },
+  highlights: { label: tKey("Highlights"), test: (l) => l >= 0.7 && l < 0.94 },
+  whites: { label: tKey("Whites"), test: (l) => l >= 0.94 },
+  clipping: { label: tKey("Clipped"), test: (l, r, g, b) => Math.max(r, g, b) >= 254 || Math.max(r, g, b) <= 1 },
+  saturated: { label: tKey("Strong colours"), test: (_l, r, g, b) => sat(r, g, b) > 0.55 },
+  muted: { label: tKey("Muted colours"), test: (_l, r, g, b) => { const s = sat(r, g, b); return s > 0.08 && s < 0.35; } },
 };
 
 // Which zone a term or a setting's "?" shows.
@@ -76,7 +76,7 @@ function showZone(key) {
   viewer.append(c);
   const badge = zones.badge ??= el("div", { class: "zone-badge" });
   const share = Math.round((hits / (w * h)) * 100);
-  badge.textContent = `${zone.label}: ${share < 1 && hits ? "under 1" : share}% of this photo`;
+  badge.textContent = share < 1 && hits ? t("{zone}: under 1% of this photo", { zone: t(zone.label) }) : t("{zone}: {share}% of this photo", { zone: t(zone.label), share });
   Object.assign(badge.style, { left: `${r.left - v.left + 10}px`, top: `${r.top - v.top + 10}px` });
   viewer.append(badge);
   zones.shown = key;

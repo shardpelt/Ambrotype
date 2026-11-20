@@ -52,7 +52,7 @@ function toast(text, error = false) {
 
 // An error from a command, as a red toast.
 function showError(e) {
-  toast(`${e}`, true);
+  toast(t(String(e)), true);
 }
 
 // Run `fn` with `button` disabled; an error shows in `line` (the dialog's status line).
@@ -63,7 +63,7 @@ async function withBusy(button, line, fn) {
     await fn();
     return true;
   } catch (e) {
-    line.textContent = String(e);
+    line.textContent = t(String(e));
     return false;
   } finally {
     button.disabled = false;

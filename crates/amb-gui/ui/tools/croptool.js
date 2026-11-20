@@ -70,17 +70,19 @@ function fillSizeSelects() {
     for (const [group, items] of groups) {
       if (skip.includes(group)) continue;
       const og = document.createElement("optgroup");
-      og.label = group || "Yours";
-      for (const p of items) option(og, `size:${p.id}`, `${p.name} (${p.width} × ${p.height})`);
+      og.label = !group ? t("Yours") : items[0].builtin ? t(group) : group;
+      for (const p of items) {
+        option(og, `size:${p.id}`, t("{name} ({width} × {height})", { name: p.builtin ? t(p.name) : p.name, width: p.width, height: p.height }));
+      }
       sel.append(og);
     }
   };
   const crop = $("crop-aspect");
   crop.innerHTML = "";
-  option(crop, "original", "Original");
-  option(crop, "free", "Free");
+  option(crop, "original", t("Original"));
+  option(crop, "free", t("Free"));
   const ratios = document.createElement("optgroup");
-  ratios.label = "Common ratios";
+  ratios.label = t("Common ratios");
   for (const r of ASPECTS) option(ratios, r, r.replace(":", " : "));
   crop.append(ratios);
   // The crop's own ratio list covers the common sizes.
@@ -91,8 +93,8 @@ function fillSizeSelects() {
   const sel = $("export-form").size_preset;
   const keep = sel.value;
   sel.innerHTML = "";
-  option(sel, "", "None");
-  option(sel, "custom", "Custom size");
+  option(sel, "", t("None"));
+  option(sel, "custom", t("Custom size"));
   addSizes(sel);
   sel.value = [...sel.options].some((o) => o.value === keep) ? keep : "";
 }
@@ -175,7 +177,7 @@ async function enterCrop() {
   ui.crop.tool.setRatio(lockedRatio());
   ui.crop.tool.start({ width: ui.info.width, height: ui.info.height, angleSign: st.angle_sign, rect, draw: !st.enabled && !view });
   syncCropPanel(rect);
-  if (view) status("The crop starts from the zoomed view: adjust it, then Done");
+  if (view) status(t("The crop starts from the zoomed view: adjust it, then Done"));
   // The photo's straight lines, to show and snap to while straightening.
   invoke("guide_lines").then((lines) => ui.crop.on && ui.crop.tool.setGuides(lines)).catch(() => {});
   requestPreview(false);
@@ -209,7 +211,7 @@ async function exitCrop(commit) {
   const rect = ui.crop.tool.rect();
   setCropMode(false);
   ui.crop.tool.stop();
-  status("Ready");
+  status(t("Ready"));
   if (commit && cropChanged(rect)) {
     try {
       const commands = await invoke("crop_commands", { rect });
@@ -235,10 +237,10 @@ async function levelCrop() {
   b.disabled = true;
   try {
     const a = await invoke("level_angle");
-    if (a == null) return toast("No clear horizon or straight lines to level by: drag outside the frame, or use Angle.", true);
+    if (a == null) return toast(t("No clear horizon or straight lines to level by: drag outside the frame, or use Angle."), true);
     ui.crop.tool.setAngle(Math.max(-45, Math.min(45, a)));
     ui.crop.tool.endAngle();
-    status(a === 0 ? "Already level" : `Levelled by ${a > 0 ? "+" : ""}${a.toFixed(2)}°`);
+    status(a === 0 ? t("Already level") : t("Levelled by {angle}°", { angle: `${a > 0 ? "+" : ""}${a.toFixed(2)}` }));
   } catch (e) {
     showError(e);
   } finally {
@@ -289,10 +291,10 @@ function wireCrop() {
     onDrawMode: (on) => {
       $("crop-draw").classList.toggle("active", on);
       const hint = on
-        ? "Press at one corner of the crop and drag to the opposite corner. Or adjust the frame with the controls here."
-        : "Drag the edges or corners, inside to move, outside the frame to turn: the photo's straight lines show, and it snaps when one comes level (hold Alt to turn freely). Draw ⌖ (D) starts a new one. Enter applies, Esc cancels.";
+        ? t("Press at one corner of the crop and drag to the opposite corner. Or adjust the frame with the controls here.")
+        : t("Drag the edges or corners, inside to move, outside the frame to turn: the photo's straight lines show, and it snaps when one comes level (hold Alt to turn freely). Draw ⌖ (D) starts a new one. Enter applies, Esc cancels.");
       $("crop-hint").textContent = hint;
-      if (ui.crop.on) status(on ? "Crop: drag from one corner to the other" : "Crop: adjust the frame; Enter applies, Esc cancels");
+      if (ui.crop.on) status(on ? t("Crop: drag from one corner to the other") : t("Crop: adjust the frame; Enter applies, Esc cancels"));
     },
   });
   $("crop-draw").addEventListener("click", () => ui.crop.tool.setDrawMode(!ui.crop.tool.drawMode()));
@@ -336,11 +338,11 @@ async function sizesFlow() {
   let editing = "";  // id of the user preset being edited; "" adds a new one
   const fill = (p, id) => {
     editing = id;
-    f.name.value = p ? (id ? p.name : `${p.name} (copy)`) : "";
+    f.name.value = p ? (id ? p.name : t("{name} (copy)", { name: p.name })) : "";
     f.group.value = p ? p.group : "";
     f.width.value = p ? p.width : "";
     f.height.value = p ? p.height : "";
-    $("sizes-editing").textContent = id ? `Editing "${p.name}"` : p ? `New size from "${p.name}"` : "New size";
+    $("sizes-editing").textContent = id ? t('Editing "{name}"', { name: p.name }) : p ? t('New size from "{name}"', { name: p.name }) : t("New size");
   };
   const list = () => {
     const root = $("sizes-list");
@@ -351,13 +353,15 @@ async function sizesFlow() {
         group = p.group;
         const h = document.createElement("div");
         h.className = "size-group";
-        h.textContent = group + (p.builtin ? "" : " (yours)");
+        h.textContent = p.builtin ? t(group) : t("{group} (yours)", { group });
+        if (!p.builtin) h.setAttribute("translate", "no");
         root.append(h);
       }
       const row = document.createElement("div");
       row.className = "size-row";
       const name = document.createElement("span");
-      name.textContent = p.name;
+      name.textContent = p.builtin ? t(p.name) : p.name;
+      if (!p.builtin) name.setAttribute("translate", "no");
       const dims = document.createElement("span");
       dims.className = "dims";
       dims.textContent = `${p.width} × ${p.height}`;
@@ -372,10 +376,10 @@ async function sizesFlow() {
         b.addEventListener("click", action);
         buttons.append(b);
       };
-      button("Clone", "Start a new size from this one", () => fill(p, ""));
+      button(t("Clone"), t("Start a new size from this one"), () => fill(p, ""));
       if (!p.builtin) {
-        button("Edit", "Change this size", () => fill(p, p.id));
-        button("Delete", "Delete this size", async () => {
+        button(t("Edit"), t("Change this size"), () => fill(p, p.id));
+        button(t("Delete"), t("Delete this size"), async () => {
           try {
             ui.sizes = await invoke("delete_size_preset", { id: p.id });
             if (editing === p.id) fill(null, "");
@@ -402,7 +406,7 @@ async function sizesFlow() {
       ui.sizes = await invoke("save_size_preset", { preset });
       fillSizeSelects();
       list();
-      toast(`Saved size "${preset.name.trim()}"`);
+      toast(t('Saved size "{name}"', { name: preset.name.trim() }));
       fill(null, "");
     } catch (e) {
       showError(e);

@@ -19,10 +19,10 @@ function meterAreaDrawn(from, to) {
   setPicking(false);
   const c = (v) => Math.round(Math.min(1, Math.max(0, v)) * 10000) / 10000;
   const [l, r] = [c(Math.min(from[0], to[0])), c(Math.max(from[0], to[0]))];
-  const [t, b] = [c(Math.min(from[1], to[1])), c(Math.max(from[1], to[1]))];
-  if (r - l < 0.02 || b - t < 0.02) return toast("That box is too small to measure.");
+  const [top, b] = [c(Math.min(from[1], to[1])), c(Math.max(from[1], to[1]))];
+  if (r - l < 0.02 || b - top < 0.02) return toast(t("That box is too small to measure."));
   const set = (name, value) => ({ cmd: "set_param", name, value });
-  run([...[l, t, r, b].map((v, i) => set(METER_TAGS[i], v)), set("amb:NegativeConvert", true)], "Meter area");
+  run([...[l, top, r, b].map((v, i) => set(METER_TAGS[i], v)), set("amb:NegativeConvert", true)], "Meter area");
 }
 
 // While the tool is active: the stored box, or the one being dragged (`drag`

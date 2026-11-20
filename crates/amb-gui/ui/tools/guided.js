@@ -75,7 +75,7 @@ function drawGuides() {
     }
     g.fillStyle = accent;
     g.font = "11px system-ui, sans-serif";
-    g.fillText(vertical ? "vertical" : "horizontal", (a[0] + b[0]) / 2 + 8, (a[1] + b[1]) / 2);
+    g.fillText(vertical ? t("vertical") : t("horizontal"), (a[0] + b[0]) / 2 + 8, (a[1] + b[1]) / 2);
   });
 }
 
@@ -93,14 +93,14 @@ function hitGuideEnd(px, py) {
 
 function renderGuidedPanel() {
   const n = gu.guides.length;
-  $("guided-count").textContent = `${n} of ${GUIDE_MAX}`;
+  $("guided-count").textContent = t("{n} of {max}", { n, max: GUIDE_MAX });
   $("guided-apply").disabled = n === 0;
   $("guided-clear").disabled = n === 0;
   $("guided-hint").textContent = n === 0
-    ? "Drag along a line that should be vertical (a wall, a door frame) or horizontal (a horizon). Two verticals fix converging verticals; two horizontals fix the horizontal perspective."
+    ? t("Drag along a line that should be vertical (a wall, a door frame) or horizontal (a horizon). Two verticals fix converging verticals; two horizontals fix the horizontal perspective.")
     : n < GUIDE_MAX
-      ? "Add another guide, or drag a guide's end to adjust it. Right-click a guide's end to remove it."
-      : "That's the most guides. Drag an end to adjust, right-click it to remove.";
+      ? t("Add another guide, or drag a guide's end to adjust it. Right-click a guide's end to remove it.")
+      : t("That's the most guides. Drag an end to adjust, right-click it to remove.");
   drawGuides();
 }
 
@@ -120,7 +120,7 @@ async function enterGuided() {
   $("guide-canvas").hidden = false;
   $("guided-panel").hidden = false;
   for (const id of ["btn-zoom", "btn-wb"]) $(id).disabled = true;
-  status("Guided Upright: draw lines that should be straight");
+  status(t("Guided Upright: draw lines that should be straight"));
   renderGuidedPanel();
   requestPreview(false);
 }
@@ -132,7 +132,7 @@ function exitGuided() {
   $("guide-canvas").hidden = true;
   $("guided-panel").hidden = true;
   for (const id of ["btn-zoom", "btn-wb"]) $(id).disabled = !ui.info;
-  status("Ready");
+  status(t("Ready"));
   requestPreview(false);
 }
 
@@ -145,7 +145,7 @@ async function applyGuided() {
     exitGuided();
     await run([...r.commands, ...crop], "Guided Upright");
     if (r.worst_degrees > 0.5) {
-      toast(`The guides don't all fit one correction; the worst is still ${r.worst_degrees.toFixed(1)}° off.`, true);
+      toast(t("The guides don't all fit one correction; the worst is still {deg}° off.", { deg: r.worst_degrees.toFixed(1) }), true);
     }
   } catch (e) {
     showError(e);

@@ -5,6 +5,12 @@
 // screenshots and nothing is loaded from other sites into the page.
 "use strict";
 
+// What the card's tag says (the kinds are ids from the hub's index).
+const HUB_KINDS = {
+  layout: tKey("layout"), theme: tKey("theme"), preset: tKey("preset"), collage: tKey("collage"), sizes: tKey("sizes"),
+  border: tKey("border"), plugin: tKey("plugin"), interface: tKey("interface"),
+};
+
 // A tiny mock of the editor in a theme's colours. The colours were checked
 // to be plain hex values before they got here.
 function themePreview(data) {
@@ -45,8 +51,9 @@ function layoutPreview(data) {
   const box = document.createElement("div");
   box.className = "hub-preview layout";
   const name = (item) => {
-    if (typeof item === "string") return BLOCK_TITLES[item] ?? item;
-    return item.title ?? schemaPanel(item.panel)?.label ?? "Panel";
+    if (typeof item === "string") return t(BLOCK_TITLES[item] ?? item);
+    // A layout's own title is its author's word; a panel's name is ours.
+    return item.title ?? t(schemaPanel(item.panel)?.label ?? "Panel");
   };
   const column = (side) => {
     const spec = data?.[side] ?? {};
@@ -63,7 +70,7 @@ function layoutPreview(data) {
       if (typeof item === "string") bar.classList.add("block");
       col.append(bar);
     }
-    if (items.length > 9) col.append(el("i", {}, `+${items.length - 9} more`));
+    if (items.length > 9) col.append(el("i", {}, t("+{n} more", { n: items.length - 9 })));
     return col;
   };
   const view = document.createElement("div");
@@ -74,17 +81,17 @@ function layoutPreview(data) {
 
 // What a plugin asks for and what it offers, from its manifest.
 const PLUGIN_PERMISSIONS = {
-  "photo-info": "the camera, lens and exposure",
-  "photo-stats": "the photo's histogram",
+  "photo-info": tKey("the camera, lens and exposure"),
+  "photo-stats": tKey("the photo's histogram"),
 };
 function pluginPreview(data) {
   const box = document.createElement("div");
   box.className = "hub-preview plugin";
-  const perms = (data?.permissions ?? []).map((p) => PLUGIN_PERMISSIONS[p] ?? p);
-  const sees = el("span", {}, perms.length ? `Asks to see ${perms.join(" and ")}` : "Sees only the edit's settings");
+  const perms = (data?.permissions ?? []).map((p) => t(PLUGIN_PERMISSIONS[p] ?? p));
+  const sees = el("span", {}, perms.length ? t("Asks to see {what}", { what: perms.reduce((a, b) => t("{a} and {b}", { a, b })) }) : t("Sees only the edit's settings"));
   const params = (data?.params ?? []).map((p) => p.label ?? p.name).filter(Boolean);
-  const offers = el("span", {}, params.length ? `Options: ${params.slice(0, 4).join(", ")}${params.length > 4 ? ", …" : ""}` : "No options");
-  const sandbox = el("b", {}, "Runs sandboxed; its edits are undoable");
+  const offers = el("span", {}, params.length ? t("Options: {list}", { list: `${params.slice(0, 4).join(", ")}${params.length > 4 ? ", …" : ""}` }) : t("No options"));
+  const sandbox = el("b", {}, t("Runs sandboxed; its edits are undoable"));
   box.append(sandbox, sees, offers);
   return box;
 }
@@ -96,9 +103,9 @@ function interfacePreview(data) {
   box.className = "hub-preview interface";
   const files = data?.files ?? [];
   box.append(
-    el("b", {}, "A whole other interface: code with the app's full reach"),
-    el("span", {}, `${plural(files.length, "file")}: ${files.slice(0, 4).join(", ")}${files.length > 4 ? ", …" : ""}`),
-    el("span", {}, "Read its files in the hub repo before installing"),
+    el("b", {}, t("A whole other interface: code with the app's full reach")),
+    el("span", {}, t("{files}: {list}", { files: plural(files.length, "file"), list: `${files.slice(0, 4).join(", ")}${files.length > 4 ? ", …" : ""}` })),
+    el("span", {}, t("Read its files in the hub repo before installing")),
   );
   return box;
 }
@@ -107,10 +114,10 @@ function interfacePreview(data) {
 function presetPreview(data) {
   const box = document.createElement("div");
   box.className = "hub-preview preset";
-  const count = el("b", {}, `${data?.settings ?? 0} setting${data?.settings === 1 ? "" : "s"}`);
-  const groups = el("span", {}, (data?.groups ?? []).join(", "));
+  const count = el("b", {}, plural(data?.settings ?? 0, "setting"));
+  const groups = el("span", { translate: "no" }, (data?.groups ?? []).join(", "));
   box.append(count, groups);
-  if (data?.group) box.append(el("span", {}, `In “${data.group}”`));
+  if (data?.group) box.append(el("span", {}, t("In “{group}”", { group: data.group })));
   return box;
 }
 
@@ -160,9 +167,9 @@ function sizesPreview(data) {
   const box = document.createElement("div");
   box.className = "hub-preview sizes";
   const sizes = data?.sizes ?? [];
-  box.append(el("b", {}, `${plural(sizes.length, "size")}`));
+  box.append(el("b", {}, plural(sizes.length, "size")));
   for (const s of sizes.slice(0, 4)) {
-    box.append(el("span", {}, `${s.name}: ${s.width} × ${s.height}`));
+    box.append(el("span", { translate: "no" }, `${s.name}: ${s.width} × ${s.height}`));
   }
   if (sizes.length > 4) box.append(el("span", {}, "…"));
   return box;
@@ -194,61 +201,59 @@ async function hubFlow(initial = "all") {
         }[e.kind];
         if (preview) card.append(preview(e.data));
       }
-      const title = document.createElement("h3");
-      title.textContent = e.name;
-      const kindTag = el("span", { class: "hub-kind" }, e.kind);
-      title.append(kindTag);
-      const by = el("p", { class: "hint" }, [e.author && `by ${e.author}`, e.license].filter(Boolean).join(" · "));
-      const about = el("p", { class: "hub-about" }, e.description);
+      const kindTag = el("span", { class: "hub-kind" }, t(HUB_KINDS[e.kind] ?? e.kind));
+      const title = el("h3", {}, el("span", { translate: "no" }, e.name), kindTag);
+      const by = el("p", { class: "hint" }, [e.author && t("by {author}", { author: e.author }), e.license].filter(Boolean).join(" · "));
+      const about = el("p", { class: "hub-about", translate: "no" }, e.description);
       card.append(title, by, about);
       if (e.error) {
-        card.append(el("p", { class: "hub-error" }, `Can't be installed: ${e.error}`));
+        card.append(el("p", { class: "hub-error" }, t("Can't be installed: {error}", { error: e.error })));
       } else {
         const actions = document.createElement("div");
         actions.className = "hub-actions";
         const install = el("button", { type: "button" });
         if (e.installed && !e.update) {
-          install.textContent = e.installed.startsWith("builtin:") ? "Built in ✓" : "Installed ✓";
+          install.textContent = e.installed.startsWith("builtin:") ? t("Built in ✓") : t("Installed ✓");
           install.disabled = true;
         } else {
-          install.textContent = e.update ? "Update" : "Install";
+          install.textContent = e.update ? t("Update") : t("Install");
           install.className = "primary";
           install.addEventListener("click", async () => {
             install.disabled = true;
-            install.textContent = "Installing…";
+            install.textContent = t("Installing…");
             try {
               if (e.kind === "collage") {
                 await invoke("hub_install_collage", { id: e.id });
                 e.installed = e.id;
-                status(`Installed "${e.name}": it's with the templates in the collage maker.`);
+                status(t('Installed "{name}": it\'s with the templates in the collage maker.', { name: e.name }));
               } else if (e.kind === "border") {
                 ui.borders = await invoke("hub_install_border", { id: e.id });
                 e.installed = e.id;
-                status(`Installed "${e.name}": it's with the borders in the export dialog and the Frame panel.`);
+                status(t('Installed "{name}": it\'s with the borders in the export dialog and the Frame panel.', { name: e.name }));
               } else if (e.kind === "sizes") {
                 ui.sizes = await invoke("hub_install_sizes", { id: e.id });
                 e.installed = e.id;
-                status(`Installed "${e.name}": its sizes are in the crop tool and the export dialog.`);
+                status(t('Installed "{name}": its sizes are in the crop tool and the export dialog.', { name: e.name }));
               } else if (e.kind === "preset") {
                 ui.presets = await invoke("hub_install_preset", { id: e.id });
                 renderPresets();
                 e.installed = e.id;
-                status(`Installed "${e.name}": it's with the presets on the left.`);
+                status(t('Installed "{name}": it\'s with the presets on the left.', { name: e.name }));
               } else if (e.kind === "interface") {
-                if (!await askYes(`Install the interface "${e.name}"?\n\nIt's a program with the app's full reach (your photos, edits and settings), not a sandboxed plugin. Install it only if you trust its author or have read its files on the hub.`)) {
+                if (!await askYes(t('Install the interface "{name}"?\n\nIt\'s a program with the app\'s full reach (your photos, edits and settings), not a sandboxed plugin. Install it only if you trust its author or have read its files on the hub.', { name: e.name }))) {
                   render();
                   return;
                 }
                 e.installed = await invoke("hub_install_interface", { id: e.id });
-                status(`Installed "${e.name}": choose it in Settings → General → Interface, or press Use now.`);
+                status(t('Installed "{name}": choose it in Settings → General → Interface, or press Use now.', { name: e.name }));
               } else if (e.kind === "plugin") {
                 e.installed = await invoke("hub_install_plugin", { id: e.id });
-                status(`Installed "${e.name}": it's in the Plugins dialog (Ctrl+Shift+P), and asks before it first runs.`);
+                status(t('Installed "{name}": it\'s in the Plugins dialog (Ctrl+Shift+P), and asks before it first runs.', { name: e.name }));
               } else {
                 const r = await invoke("hub_install", { id: e.id });
                 ui.looks = r.looks;
                 e.installed = r.id;
-                status(`Installed "${e.name}".`);
+                status(t('Installed "{name}".', { name: e.name }));
               }
               e.update = false;
             } catch (err) {
@@ -259,7 +264,7 @@ async function hubFlow(initial = "all") {
         }
         actions.append(install);
         if (e.installed && e.kind === "interface") {
-          const use = el("button", { type: "button" }, "Use now");
+          const use = el("button", { type: "button" }, t("Use now"));
           // Installed shows the folder's name; switching wants its path.
           use.addEventListener("click", async () => {
             const { installed } = await invoke("interfaces");
@@ -269,13 +274,13 @@ async function hubFlow(initial = "all") {
           actions.append(use);
         }
         if (e.installed && (e.kind === "layout" || e.kind === "theme")) {
-          const use = el("button", { type: "button" }, "Use now");
+          const use = el("button", { type: "button" }, t("Use now"));
           use.addEventListener("click", () => {
             const field = e.kind === "layout" ? "active_layout" : "active_theme";
             ui.looks[field] = e.installed;
             applyActiveLooks();
             invoke("set_active_look", { layout: ui.looks.active_layout, theme: ui.looks.active_theme }).catch(showError);
-            status(`Using "${e.name}".`);
+            status(t('Using "{name}".', { name: e.name }));
           });
           actions.append(use);
         }
@@ -283,7 +288,7 @@ async function hubFlow(initial = "all") {
       }
       grid.append(card);
     }
-    if (!shown.length) grid.append(el("p", { class: "hint" }, "Nothing matches."));
+    if (!shown.length) grid.append(el("p", { class: "hint" }, t("Nothing matches.")));
   }
 
   // A look shared by link (a file, or a GitHub repo with theme.json or layout.json).
@@ -291,7 +296,7 @@ async function hubFlow(initial = "all") {
     const link = $("hub-link").value.trim();
     if (!link) return $("hub-link").focus();
     $("hub-link-install").disabled = true;
-    status("Installing from the link…");
+    status(t("Installing from the link…"));
     try {
       const r = await invoke("hub_install_link", { link });
       ui.looks = r.looks;
@@ -299,7 +304,7 @@ async function hubFlow(initial = "all") {
       applyActiveLooks();
       await invoke("set_active_look", { layout: ui.looks.active_layout, theme: ui.looks.active_theme });
       $("hub-link").value = "";
-      status(`Installed and using "${findLook(r.kind, r.id)?.name ?? r.id}". Appearance (Ctrl+L) switches back.`);
+      status(t('Installed and using "{name}". Appearance (Ctrl+L) switches back.', { name: findLook(r.kind, r.id)?.name ?? r.id }));
     } catch (err) {
       status(String(err), true);
     }
@@ -312,35 +317,37 @@ async function hubFlow(initial = "all") {
   const tabs = [...dlg.querySelectorAll(".hub-tabs button")];
   const onTab = (ev) => {
     kind = ev.currentTarget.dataset.kind;
-    tabs.forEach((t) => t.classList.toggle("active", t === ev.currentTarget));
+    tabs.forEach((tab) => tab.classList.toggle("active", tab === ev.currentTarget));
     render();
   };
-  tabs.forEach((t) => t.classList.toggle("active", t.dataset.kind === kind));
-  tabs.forEach((t) => t.addEventListener("click", onTab));
+  tabs.forEach((tab) => tab.classList.toggle("active", tab.dataset.kind === kind));
+  tabs.forEach((tab) => tab.addEventListener("click", onTab));
   $("hub-search").addEventListener("input", render);
   $("hub-search").value = "";
   boxTip($("hub-search"));
   $("hub-grid").replaceChildren();
-  status("Loading the hub…");
+  status(t("Loading the hub…"));
   dlg.showModal();
   invoke("hub_browse")
     .then((r) => {
       list = r;
       $("hub-address").textContent = r.url;
       const count = (k) => r.entries.filter((e) => e.kind === k).length;
-      const parts = [[count("layout"), "layout"], [count("theme"), "theme"], [count("preset"), "preset"],
-        [count("collage"), "collage template"], [count("sizes"), "size profile"], [count("border"), "border"], [count("plugin"), "plugin"],
-        [count("interface"), "interface"]]
-        .filter(([n]) => n).map(([n, w]) => `${n} ${w}${n === 1 ? "" : "s"}`);
-      status(parts.length ? `${parts.join(", ")}.` : "The hub is empty so far.");
+      const has = (k, say) => (count(k) ? say(count(k)) : null);
+      const parts = [
+        has("layout", (n) => plural(n, "layout")), has("theme", (n) => plural(n, "theme")), has("preset", (n) => plural(n, "preset")),
+        has("collage", (n) => plural(n, "collage template")), has("sizes", (n) => plural(n, "size profile")),
+        has("border", (n) => plural(n, "border")), has("plugin", (n) => plural(n, "plugin")), has("interface", (n) => plural(n, "interface")),
+      ].filter(Boolean);
+      status(parts.length ? `${parts.join(", ")}.` : t("The hub is empty so far."));
       render();
     })
     .catch(async (err) => {
       $("hub-address").textContent = await invoke("hub_url").catch(() => "");
-      status(`The hub can't be reached: ${err}. Check your connection, or the hub address in Settings → General.`, true);
+      status(t("The hub can't be reached: {error}. Check your connection, or the hub address in Settings → General.", { error: err }), true);
     });
   await new Promise((resolve) => dlg.addEventListener("close", resolve, { once: true }));
-  tabs.forEach((t) => t.removeEventListener("click", onTab));
+  tabs.forEach((tab) => tab.removeEventListener("click", onTab));
   $("hub-search").removeEventListener("input", render);
   $("hub-link-install").removeEventListener("click", onLink);
   $("hub-link").removeEventListener("keydown", onLinkKey);

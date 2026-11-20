@@ -22,7 +22,7 @@ function showWorking(text, after = 800) {
   clearInterval(workingNote.tick);
   const draw = () => {
     const s = Math.round((performance.now() - start) / 1000);
-    el.textContent = s >= 2 ? `${text} ${s} s` : text;
+    el.textContent = s >= 2 ? t("{text} {s} s", { text, s }) : text;
   };
   workingNote.timer = setTimeout(() => {
     draw();
@@ -49,7 +49,7 @@ async function renderLoop() {
   ui.preview.inFlight = true;
   $("busy").hidden = false;
   // A render that fills an AI Remove spot can take a while.
-  const done = showWorking(ui.preview.filling ? "Filling in what you removed…" : "Rendering…", ui.preview.filling ? 300 : 2000);
+  const done = showWorking(ui.preview.filling ? t("Filling in what you removed…") : t("Rendering…"), ui.preview.filling ? 300 : 2000);
   while (ui.preview.dirty) {
     ui.preview.dirty = false;
     const draft = ui.preview.draft;
@@ -98,11 +98,10 @@ async function renderLoop() {
       if (ui.split && !draft) await renderSplitBefore(previewSize(false));
       drawHistogram(meta.histogram);
       ui.curve?.setHistogram(meta.histogram);
-      status(`${meta.width}×${meta.height} preview in ${meta.millis} ms` +
-        (meta.gpu ? " on the GPU" : "") +
-        (meta.lens_profile ? `  ·  Lens: ${meta.lens_profile}` : ""), true);
-      $("status").title = meta.gpu ? `Developed on ${meta.gpu}` :
-        meta.cpu_reason ? `Developed on the CPU: ${meta.cpu_reason}` : "Developed on the CPU (no GPU found)";
+      const made = meta.gpu ? t("{w}×{h} preview in {ms} ms on the GPU", { w: meta.width, h: meta.height, ms: meta.millis }) : t("{w}×{h} preview in {ms} ms", { w: meta.width, h: meta.height, ms: meta.millis });
+      status(meta.lens_profile ? t("{made}  ·  Lens: {lens}", { made, lens: meta.lens_profile }) : made, true);
+      $("status").title = meta.gpu ? t("Developed on {gpu}", { gpu: meta.gpu }) :
+        meta.cpu_reason ? t("Developed on the CPU: {why}", { why: meta.cpu_reason }) : t("Developed on the CPU (no GPU found)");
     } catch (e) {
       showError(e);
     }
@@ -170,7 +169,7 @@ function showJpeg(jpeg) {
 // A crop of the full-size render around (cx, cy), at 100% or a zoom box's
 // scale (regionSize).
 async function renderRegion() {
-  status(`Rendering ${zoomLabel()}…`, true);
+  status(t("Rendering {zoom}…", { zoom: zoomLabel() }), true);
   const [width, height] = regionSize();
   const { meta, jpeg } = splitFramed(await invoke("region", {
     cx: ui.zoom.cx, cy: ui.zoom.cy, width, height,
@@ -194,7 +193,7 @@ async function renderRegion() {
   $("viewer").classList.add("actual");
   placeRegion();
   if (moved) requestPreview(false);
-  status(`${zoomLabel()}: ${meta.full_width}×${meta.full_height} in ${meta.millis} ms`, true);
+  status(t("{zoom}: {w}×{h} in {ms} ms", { zoom: zoomLabel(), w: meta.full_width, h: meta.full_height, ms: meta.millis }), true);
 }
 
 // The zoomed crop with the slider being dragged, from a reduced copy.
@@ -209,7 +208,7 @@ async function renderRegionDraft() {
   ui.zoom.meta = meta;
   showJpeg(jpeg);
   placeRegion();
-  status(`${zoomLabel()} draft in ${meta.millis} ms (full detail when the slider is released)`, true);
+  status(t("{zoom} draft in {ms} ms (full detail when the slider is released)", { zoom: zoomLabel(), ms: meta.millis }), true);
 }
 
 // Screen pixels per full-size pixel: 1 at 100%; a zoom box (right-drag)
@@ -343,7 +342,7 @@ function zoomBy(factor, x, y) {
   setZoom(true, pu - dx / (s2 * fw), pv - dy / (s2 * fh), box, true);
   clearTimeout(zoomStep.timer);
   zoomStep.timer = setTimeout(() => requestPreview(false), 160);
-  status(`Zoom ${zoomLabel()}`, true);
+  status(t("Zoom {zoom}", { zoom: zoomLabel() }), true);
 }
 
 // Ctrl + and Ctrl − at the middle of the photo.
@@ -414,9 +413,9 @@ function setPicking(what) {
   document.querySelectorAll(".pick-base").forEach((b) => b.classList.toggle("active", ui.picking === "base"));
   document.querySelectorAll(".pick-meter").forEach((b) => b.classList.toggle("active", ui.picking === "meter"));
   showMeterBox();
-  if (ui.picking === "white") status("Click a neutral grey or white spot (Esc to cancel)");
-  if (ui.picking === "base") status("Click the clear film between frames (Esc to cancel)");
-  if (ui.picking === "meter") status("Drag a box round the part to measure (Esc to cancel)");
+  if (ui.picking === "white") status(t("Click a neutral grey or white spot (Esc to cancel)"));
+  if (ui.picking === "base") status(t("Click the clear film between frames (Esc to cancel)"));
+  if (ui.picking === "meter") status(t("Drag a box round the part to measure (Esc to cancel)"));
 }
 
 // Soft proofing: the photo as it will export to a colour space (colours

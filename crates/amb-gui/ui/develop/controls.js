@@ -71,7 +71,7 @@ const AmbControls = (() => {
     const span = hi - lo || 1;
     const cell = document.createElement("div");
     cell.className = "knob";
-    cell.title = `${def.description}\nPoint and drag round the dial (Shift: fine, drag up or down). Double-click to reset.`;
+    cell.title = `${t(def.description)}\n${t("Point and drag round the dial (Shift: fine, drag up or down). Double-click to reset.")}`;
     const NS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", "0 0 40 40");
@@ -84,7 +84,7 @@ const AmbControls = (() => {
     const track = path("knob-track"), fill = path("knob-fill"), tick = path("knob-tick");
     const label = document.createElement("div");
     label.className = "knob-label";
-    label.textContent = labelText;
+    label.textContent = t(labelText);
     const value = document.createElement("div");
     value.className = "knob-value";
     cell.append(svg, label, value);
@@ -161,12 +161,12 @@ const AmbControls = (() => {
     const span = hi - lo || 1;
     const el = document.createElement("div");
     el.className = "bar";
-    el.title = `${def.description}\nDrag across (Shift: fine). Double-click to reset.`;
+    el.title = `${t(def.description)}\n${t("Drag across (Shift: fine). Double-click to reset.")}`;
     const fill = document.createElement("div");
     fill.className = "bar-fill";
     const label = document.createElement("span");
     label.className = "bar-label";
-    label.textContent = labelText;
+    label.textContent = t(labelText);
     const value = document.createElement("span");
     value.className = "bar-value";
     el.append(fill, label, value);
@@ -218,8 +218,8 @@ const AmbControls = (() => {
     row.className = "row number-row";
     const label = document.createElement("label");
     label.className = "scrub";
-    label.textContent = labelText;
-    label.title = `${def.description}\nType a value, or drag this label sideways. Double-click to reset.`;
+    label.textContent = t(labelText);
+    label.title = `${t(def.description)}\n${t("Type a value, or drag this label sideways. Double-click to reset.")}`;
     const box = document.createElement("input");
     box.type = "text";
     box.inputMode = "decimal";
@@ -255,12 +255,12 @@ const AmbControls = (() => {
     row.className = "row check";
     const label = document.createElement("label");
     label.className = "toggle";
-    label.title = def.description;
+    label.title = t(def.description);
     const check = document.createElement("input");
     check.type = "checkbox";
     check.setAttribute("role", "switch");
     check.addEventListener("change", () => commit(def.name, check.checked));
-    label.append(document.createTextNode(labelText), check);
+    label.append(document.createTextNode(t(labelText)), check);
     row.append(label);
     return { el: row, entry: { def, check, label } };
   }
@@ -269,15 +269,15 @@ const AmbControls = (() => {
     const row = document.createElement("div");
     row.className = "row segmented-row";
     const label = document.createElement("label");
-    label.textContent = labelText;
-    label.title = def.description;
+    label.textContent = t(labelText);
+    label.title = t(def.description);
     const group = document.createElement("div");
     group.className = "segmented";
     group.setAttribute("role", "radiogroup");
     const buttons = def.options.map(([value, text]) => {
       const b = document.createElement("button");
       b.type = "button";
-      b.textContent = text;
+      b.textContent = t(text);
       b.setAttribute("role", "radio");
       b.addEventListener("click", () => commit(def.name, value));
       group.append(b);

@@ -105,7 +105,7 @@ function toggleLoupe(on = !qz.loupe) {
     qz.loupe = null;
     clearTimeout(qz.timer);
     $("viewer").classList.remove("loupe-on");
-    status("Ready");
+    status(t("Ready"));
     return true;
   }
   if (!ui.info) return false;
@@ -114,7 +114,7 @@ function toggleLoupe(on = !qz.loupe) {
   $("viewer").append(el);
   $("viewer").classList.add("loupe-on");
   qz.loupe = el;
-  status("Loupe: point at the photo to see it at 100% · scroll to magnify · I or Esc closes");
+  status(t("Loupe: point at the photo to see it at 100% · scroll to magnify · I or Esc closes"));
   return true;
 }
 
@@ -196,7 +196,7 @@ async function togglePeek(on = !peek.on) {
   document.body.classList.toggle("photo-only", on);
   if (on) {
     peek.wasFullscreen = await invoke("window_fullscreen", { on: true }).catch(() => true);
-    status("Just the photo: F or Esc comes back", true);
+    status(t("Just the photo: F or Esc comes back"), true);
   } else if (!peek.wasFullscreen) {
     invoke("window_fullscreen", { on: false }).catch(() => {});
   }

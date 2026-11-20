@@ -132,12 +132,12 @@ function renderSelectPanel() {
   $("select-shadow").checked = sl.shadow;
   $("select-shadow").disabled = sl.busy;
   $("select-hint").textContent = sl.moving
-    ? sl.moving === "copy" ? "Drag the outline to where the copy should go." : "Drag the outline to where it should go."
+    ? sl.moving === "copy" ? t("Drag the outline to where the copy should go.") : t("Drag the outline to where it should go.")
     : have
       ? sl.shadowDabs.length && !sl.shadow
-        ? "Its shadow is in blue: tick “Its shadow too” to take it along. Shift-click adds more, Alt-click takes a part away."
-        : "Shift-click adds more of it, Alt-click takes a part away. Then pick what to do with it."
-      : "Click the object to select it, or drag a box round it. Shift-click adds, Alt-click takes away.";
+        ? t("Its shadow is in blue: tick “Its shadow too” to take it along. Shift-click adds more, Alt-click takes a part away.")
+        : t("Shift-click adds more of it, Alt-click takes a part away. Then pick what to do with it.")
+      : t("Click the object to select it, or drag a box round it. Shift-click adds, Alt-click takes away.");
   drawSelect();
 }
 
@@ -145,13 +145,14 @@ function renderSelectPanel() {
 async function selectAsk({ rect = null, part = false } = {}) {
   sl.busy = true;
   $("busy").hidden = false;
-  status("Finding the object…");
+  status(t("Finding the object…"));
   renderSelectPanel();
-  const done = showWorking("Finding the object… (the first click on a photo takes longer)");
+  const done = showWorking(t("Finding the object… (the first click on a photo takes longer)"));
   try {
     const r = await invoke("select_object", { clicks: sl.clicks, part, rect, shadow: sl.shadow });
     gotSelection(r);
-    status(`Selected (${Math.round(r.share * 1000) / 10} % of the ${rect ? "box" : "photo"})`);
+    const pct = Math.round(r.share * 1000) / 10;
+    status(rect ? t("Selected ({pct} % of the box)", { pct }) : t("Selected ({pct} % of the photo)", { pct }));
   } catch (e) {
     showError(e);
     if (!sl.dabs) sl.clicks = [];
@@ -201,12 +202,12 @@ async function selectWords(words) {
   if (!words.trim() || sl.busy) return false;
   sl.busy = true;
   $("busy").hidden = false;
-  status(`Looking for “${words.trim()}”…`);
+  status(t("Looking for “{words}”…", { words: words.trim() }));
   renderSelectPanel();
   try {
     gotSelection(await invoke("select_words", { words }));
     sl.clicks = [];
-    status(`Selected “${words.trim()}”`);
+    status(t("Selected “{words}”", { words: words.trim() }));
     return true;
   } catch (e) {
     showError(e);
@@ -243,7 +244,7 @@ async function selectApply(action, by = null) {
   sl.busy = true;
   renderSelectPanel();
   const filling = ["remove", "move"].includes(action);
-  const done = showWorking(filling ? "Removing…" : "Working…");
+  const done = showWorking(filling ? t("Removing…") : t("Working…"));
   try {
     const r = await invoke("selection_apply", { action, by });
     setState(r.state);
@@ -284,7 +285,7 @@ async function enterSelect() {
   $("select-canvas").hidden = false;
   $("select-panel").hidden = false;
   $("btn-wb").disabled = true;
-  status("Select object: click it");
+  status(t("Select object: click it"));
   selectClear();
 }
 
@@ -296,7 +297,7 @@ function exitSelect() {
   $("select-panel").hidden = true;
   $("select-bar").hidden = true;
   $("btn-wb").disabled = !ui.info;
-  status("Ready");
+  status(t("Ready"));
 }
 
 function toggleSelect() {

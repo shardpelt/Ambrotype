@@ -187,14 +187,16 @@ function renderSpotPanel() {
   $("spot-clear").disabled = !list.length;
   const legacy = ui.state?.spots?.legacy;
   const made = list.filter((x) => x.kind === "generative").length;
-  $("spot-count").textContent = `${list.length} spot(s)` + (legacy ? `, ${legacy} older` : "");
+  $("spot-count").textContent = legacy ? t("{n} spot(s), {legacy} older", { n: list.length, legacy }) : t("{n} spot(s)", { n: list.length });
   $("spot-hint").textContent = sp.object
-    ? "Click the object (Alt-click for just a part), or drag a box round it: its outline is found (SAM 2.1 for a click, Settings → AI models), and AI Remove fills all of it in one spot."
+    ? t("Click the object (Alt-click for just a part), or drag a box round it: its outline is found (SAM 2.1 for a click, Settings → AI models), and AI Remove fills all of it in one spot.")
     : s
-    ? (s.note ? `${s.note}. ` : "") + "Drag the spot or its source to move them. Delete removes it; click elsewhere for a new one."
-    : "Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag the dashed source circle to pick where it copies from. [ and ] or the wheel change the size."
-      + (sp.kind === "remove" ? " Remove fills it with what belongs there (AI Remove, Settings → AI models); until its model is installed, it is healed from a nearby area." : "")
-      + (made ? ` ${made} spot(s) were filled by Lightroom's Generative Remove; AI Remove fills them here.` : "");
+    ? [s.note && `${s.note}.`, t("Drag the spot or its source to move them. Delete removes it; click elsewhere for a new one.")].filter(Boolean).join(" ")
+    : [
+      t("Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag the dashed source circle to pick where it copies from. [ and ] or the wheel change the size."),
+      sp.kind === "remove" && t("Remove fills it with what belongs there (AI Remove, Settings → AI models); until its model is installed, it is healed from a nearby area."),
+      made && t("{n} spot(s) were filled by Lightroom's Generative Remove; AI Remove fills them here.", { n: made }),
+    ].filter(Boolean).join(" ");
   drawSpots();
 }
 
@@ -466,7 +468,7 @@ function setObjectMode(on) {
   sp.object = on;
   $("spot-object").classList.toggle("active", on);
   $("spot-canvas").classList.toggle("boxing", on);
-  status(on ? "Remove object: click it, or drag a box round it" : "Spot removal: click a blemish");
+  status(on ? t("Remove object: click it, or drag a box round it") : t("Spot removal: click a blemish"));
   renderSpotPanel();
 }
 
@@ -476,9 +478,9 @@ function setObjectMode(on) {
 async function removeObject(target) {
   setObjectMode(false);
   sp.busy = true;
-  status("Finding the object…");
+  status(t("Finding the object…"));
   $("busy").hidden = false;
-  const done = showWorking("Finding the object to remove…");
+  const done = showWorking(t("Finding the object to remove…"));
   try {
     const before = spotList().length;
     const r = await invoke("remove_object", target);
@@ -545,7 +547,7 @@ async function enterSpots() {
   $("btn-spots").classList.add("active");
   // Zoom stays: retouching wants a close look.
   $("btn-wb").disabled = true;
-  status("Spot removal: click a blemish");
+  status(t("Spot removal: click a blemish"));
   renderSpotPanel();
 }
 
@@ -559,7 +561,7 @@ function exitSpots() {
   $("spot-panel").hidden = true;
   $("btn-spots").classList.remove("active");
   $("btn-wb").disabled = !ui.info;
-  status("Ready");
+  status(t("Ready"));
   requestPreview(false);
 }
 

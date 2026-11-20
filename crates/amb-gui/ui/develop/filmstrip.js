@@ -43,7 +43,7 @@ function stripClearSelection() {
 function markSelected() {
   stripMark();
   const n = strip.selected.size;
-  $("filmstrip-count").textContent = n ? `${n} selected` : strip.photos.length ? `${strip.photos.length} photos` : "";
+  $("filmstrip-count").textContent = n ? t("{n} selected", { n }) : strip.photos.length ? t("{n} photos", { n: strip.photos.length }) : "";
 }
 
 // Right-click a filmstrip photo: actions for the selection (or that photo).
@@ -55,17 +55,17 @@ function stripMenu(e, p) {
   }
   const paths = stripSelected().map((x) => x.path);
   const n = paths.length;
-  const many = (one, more) => (n > 1 ? more.replace("N", n) : one);
+  const many = (one, more) => (n > 1 ? t(more, { n }) : t(one));
   contextMenu(e, [
-    p.path !== ui.info?.path && ["Open", () => openPath(p.path)],
-    [many("Apply a preset…", "Apply a preset to N photos…"), () => presetsOnPhotos(paths)],
-    lib.copied && [many("Paste settings…", "Paste settings onto N photos…"), () => libraryPasteSettings()],
-    [many("Export…", "Export N photos…"), () => libraryExport()],
-    [many("Convert to JPEG…", "Convert N raws to JPEGs…"), () => convertRawsFlow()],
-    [many("Run a plugin…", "Run a plugin on N photos…"), () => stripPlugins(p, paths)],
+    p.path !== ui.info?.path && [t("Open"), () => openPath(p.path)],
+    [many(tKey("Apply a preset…"), tKey("Apply a preset to {n} photos…")), () => presetsOnPhotos(paths)],
+    lib.copied && [many(tKey("Paste settings…"), tKey("Paste settings onto {n} photos…")), () => libraryPasteSettings()],
+    [many(tKey("Export…"), tKey("Export {n} photos…")), () => libraryExport()],
+    [many(tKey("Convert to JPEG…"), tKey("Convert {n} raws to JPEGs…")), () => convertRawsFlow()],
+    [many(tKey("Run a plugin…"), tKey("Run a plugin on {n} photos…")), () => stripPlugins(p, paths)],
     null,
-    ["Copy the open photo's settings", () => libraryCopySettings()],
-    n > 1 && ["Clear the selection", () => stripClearSelection()],
+    [t("Copy the open photo's settings"), () => libraryCopySettings()],
+    n > 1 && [t("Clear the selection"), () => stripClearSelection()],
   ].filter((x) => x !== false && x !== undefined));
 }
 
@@ -129,7 +129,7 @@ async function loadFolder(path, force = false) {
     strip.photos = await stripPhotos(await invoke("folder_photos", { path }));
   } catch (e) {
     strip.photos = [];
-    toast(`Couldn't list the folder: ${e}`, true);
+    toast(t("Couldn't list the folder: {why}", { why: e }), true);
   }
   renderStrip();
   watchShownFolders();
@@ -179,7 +179,7 @@ async function rateFromStrip(p, k) {
   try {
     const [u] = await setInfo([p.path], { rating });
     photoChanged(p.path, { rating: u?.info.rating ?? (rating || null) });
-    status(rating ? `Rated ${p.name} ${"★".repeat(rating)}` : `Rating cleared: ${p.name}`);
+    status(rating ? t("Rated {name} {stars}", { name: p.name, stars: "★".repeat(rating) }) : t("Rating cleared: {name}", { name: p.name }));
   } catch (e) {
     showError(e);
   }
@@ -195,7 +195,7 @@ function stripCell(p) {
     e.stopPropagation();
     rateFromStrip(p, k);
   });
-  const label = el("span", { class: "film-label", hidden: !p.label, title: p.label ? `${p.label} label` : "" });
+  const label = el("span", { class: "film-label", hidden: !p.label, title: p.label ? t("{colour} label", { colour: t(p.label) }) : "" });
   if (p.label) label.style.background = LABEL_COLOURS[p.label] ?? "var(--muted)";
   const flag = el("span", { class: "film-flag" });
   showFlag(flag, p.flag);
@@ -203,8 +203,8 @@ function stripCell(p) {
   if (strip.edited.has(p.path)) img.src = strip.edited.get(p.path);
   const cell = el("button", { type: "button", class: "film-cell", title: p.name },
     img,
-    el("span", { class: "film-meta" }, flag, stars, label, el("span", { class: "film-edited", title: "Has edits", hidden: !p.edited })),
-    el("span", { class: "film-name" }, p.name));
+    el("span", { class: "film-meta" }, flag, stars, label, el("span", { class: "film-edited", title: t("Has edits"), hidden: !p.edited })),
+    el("span", { class: "film-name", translate: "no" }, p.name));
   cell.classList.toggle("rejected", p.flag === "reject");
   return cell;
 }

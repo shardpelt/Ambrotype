@@ -9,9 +9,9 @@ async function renderInterfaces() {
   try {
     const info = await invoke("interfaces");
     const name = (i) => i.name ?? fileName(i.path);
-    const opts = [{ value: "", text: "Built-in" }, ...info.installed.map((i) => ({ value: i.path, text: name(i) }))];
-    if (info.active && !info.installed.some((i) => i.path === info.active)) opts.push({ value: info.active, text: info.active });
-    sel.replaceChildren(...opts.map((o) => el("option", { value: o.value }, o.text)));
+    const opts = [{ value: "", text: t("Built-in") }, ...info.installed.map((i) => ({ value: i.path, text: name(i), own: true }))];
+    if (info.active && !info.installed.some((i) => i.path === info.active)) opts.push({ value: info.active, text: info.active, own: true });
+    sel.replaceChildren(...opts.map((o) => el("option", { value: o.value, translate: o.own ? "no" : null }, o.text)));
     sel.value = info.active ?? "";
     $("settings-interface-share").disabled = !info.active;
   } catch (e) {
@@ -21,9 +21,9 @@ async function renderInterfaces() {
 
 async function useInterface(path) {
   if (path && !await askYes(
-    "Show this interface instead of the built-in one?\n\n"
+    t("Show this interface instead of the built-in one?\n\n"
     + "It's a program with the app's full reach (your photos, edits and settings): use your own, or one you have read.\n\n"
-    + "To come back: its own way back, the menu bar's Interface → Back to the Built-in Interface, or start Ambrotype with --builtin-ui.",
+    + "To come back: its own way back, the menu bar's Interface → Back to the Built-in Interface, or start Ambrotype with --builtin-ui."),
   )) {
     renderInterfaces();
     return;
@@ -44,12 +44,12 @@ async function shareInterface() {
   try {
     const plan = await invoke("interface_share_plan", { path });
     const how = plan.gh_user
-      ? `as a pull request from @${plan.gh_user} (the GitHub CLI on this computer)`
-      : "through GitHub's upload page in your browser (drag the files from the folder that opens, then “Propose changes”)";
-    const list = plan.files.slice(0, 12).map((f) => `  ${f.path}`).join("\n") + (plan.files.length > 12 ? `\n  … ${plan.files.length - 12} more` : "");
-    if (!await askYes(`Send ${plan.files.length} files to ${plan.target} in ${plan.repo}, ${how}?\n\n${list}\n\nThe hub's reviewers read it before anyone can install it.`)) return;
+      ? t("as a pull request from @{user} (the GitHub CLI on this computer)", { user: plan.gh_user })
+      : t("through GitHub's upload page in your browser (drag the files from the folder that opens, then “Propose changes”)");
+    const list = plan.files.slice(0, 12).map((f) => `  ${f.path}`).join("\n") + (plan.files.length > 12 ? `\n  ${t("… {n} more", { n: plan.files.length - 12 })}` : "");
+    if (!await askYes(t("Send {n} files to {target} in {repo}, {how}?\n\n{list}\n\nThe hub's reviewers read it before anyone can install it.", { n: plan.files.length, target: plan.target, repo: plan.repo, how, list }))) return;
     const url = await invoke("share_interface", { path, browser: !plan.gh_user });
-    toast(plan.gh_user ? `Pull request: ${url}` : "GitHub's upload page is open in your browser");
+    toast(plan.gh_user ? t("Pull request: {url}", { url }) : t("GitHub's upload page is open in your browser"));
   } catch (e) {
     showError(e);
   }

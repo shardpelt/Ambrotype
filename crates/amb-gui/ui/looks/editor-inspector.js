@@ -21,42 +21,43 @@ function renderPalette() {
   const shown = shownInDraft(d);
   const groups = [];
   const item = (label, payload, hint = "") => ({ label, payload, hint });
-  const matches = (...texts) => !filter || texts.some((t) => String(t).toLowerCase().includes(filter));
+  const matches = (...texts) => !filter || texts.some((text) => String(text).toLowerCase().includes(filter));
 
-  groups.push(["New", [item("Empty panel", { add: "newpanel" }), item("Heading", { add: "label" }), item("Toolbar separator", { add: "tool", name: "|" })]]);
-  const blocks = Object.keys(BLOCK_TITLES).filter((b) => !shown.blocks.has(b)).map((b) => item(BLOCK_TITLES[b], { add: "block", name: b }));
-  const tools = Object.keys(TOOLBAR_IDS).filter((t) => !(Array.isArray(d.toolbar) ? d.toolbar : Object.keys(TOOLBAR_IDS)).includes(t) && t !== "looks")
-    .map((t) => item(TOOL_TITLES[t], { add: "tool", name: t }, "toolbar"));
-  const composites = Object.keys(COMPOSITE_TITLES).filter((c) => !shown.widgets.has(c)).map((c) => item(COMPOSITE_TITLES[c], { add: "composite", name: c }));
+  groups.push(["new", t("New"), [item(t("Empty panel"), { add: "newpanel" }), item(t("Heading"), { add: "label" }), item(t("Toolbar separator"), { add: "tool", name: "|" })]]);
+  const blocks = Object.keys(BLOCK_TITLES).filter((b) => !shown.blocks.has(b)).map((b) => item(blockTitle(b), { add: "block", name: b }));
+  const tools = Object.keys(TOOLBAR_IDS).filter((id) => !(Array.isArray(d.toolbar) ? d.toolbar : Object.keys(TOOLBAR_IDS)).includes(id) && id !== "looks")
+    .map((id) => item(toolTitle(id), { add: "tool", name: id }, t("toolbar")));
+  const composites = Object.keys(COMPOSITE_TITLES).filter((c) => !shown.widgets.has(c)).map((c) => item(t(COMPOSITE_TITLES[c]), { add: "composite", name: c }));
   // Whole panels and sections only when none of their settings are on screen (each shows once).
   const panels = [], sections = [], settings = [];
   for (const p of ui.panels) {
     const all = p.sections.flatMap((s) => s.controls.map((c) => c.name));
     const composite = p.id === "tone_curve" ? "point-curve" : p.id === "color_grading" ? "color-wheels" : null;
-    if (!all.some((n) => shown.settings.has(n)) && !(composite && shown.widgets.has(composite)) && matches(p.label)) {
-      panels.push(item(p.label, { add: "panel", id: p.id }, "built-in panel"));
+    if (!all.some((n) => shown.settings.has(n)) && !(composite && shown.widgets.has(composite)) && matches(t(p.label))) {
+      panels.push(item(t(p.label), { add: "panel", id: p.id }, t("built-in panel")));
     }
     for (const s of p.sections) {
       const names = s.controls.map((c) => c.name);
-      if (p.sections.length > 1 && !names.some((n) => shown.settings.has(n)) && matches(p.label, s.label)) {
-        sections.push(item(`${p.label} › ${s.label}`, { add: "include", include: `${p.id}/${s.label}` }, "group"));
+      if (p.sections.length > 1 && !names.some((n) => shown.settings.has(n)) && matches(t(p.label), t(s.label))) {
+        sections.push(item(`${t(p.label)} › ${t(s.label)}`, { add: "include", include: `${p.id}/${s.label}` }, t("group")));
       }
-      if (s.layout === "hsl" && !names.some((n) => shown.settings.has(n)) && matches("hsl", s.label)) {
-        sections.push(item("HSL tabs", { add: "include", include: `${p.id}/${s.label}` }, "group"));
+      if (s.layout === "hsl" && !names.some((n) => shown.settings.has(n)) && matches("hsl", t(s.label))) {
+        sections.push(item(t("HSL tabs"), { add: "include", include: `${p.id}/${s.label}` }, t("group")));
       }
       for (const c of s.controls) {
-        if (!shown.settings.has(c.name) && matches(c.label, c.name, s.label, p.label)) {
-          settings.push(item(c.label, { add: "setting", name: c.name }, `${p.label} › ${s.label}`));
+        if (!shown.settings.has(c.name) && matches(t(c.label), c.name, t(s.label), t(p.label))) {
+          settings.push(item(t(c.label), { add: "setting", name: c.name }, `${t(p.label)} › ${t(s.label)}`));
         }
       }
     }
   }
-  groups.push(["Panels", panels], ["Blocks", blocks], ["Widgets", composites], ["Groups", sections], ["Settings", settings], ["Toolbar buttons", tools]);
+  groups.push(["panels", t("Panels"), panels], ["blocks", t("Blocks"), blocks], ["widgets", t("Widgets"), composites], ["groups", t("Groups"), sections],
+    ["settings", t("Settings"), settings], ["tools", t("Toolbar buttons"), tools]);
 
   const list = $("edit-palette-list");
   list.replaceChildren();
-  for (const [title, items] of groups) {
-    const shownItems = title === "New" ? items : items.filter((x) => matches(x.label, x.hint));
+  for (const [id, title, items] of groups) {
+    const shownItems = id === "new" ? items : items.filter((x) => matches(x.label, x.hint));
     if (!shownItems.length) continue;
     const h = document.createElement("h3");
     h.textContent = title;
@@ -64,11 +65,11 @@ function renderPalette() {
     for (const x of shownItems) {
       const row = document.createElement("div");
       row.className = "palette-item";
-      row.title = "Drag into place, or click to add";
+      row.title = t("Drag into place, or click to add");
       const name = document.createElement("span");
       name.textContent = x.label;
       row.append(name);
-      if (x.hint && title === "Settings") {
+      if (x.hint && id === "settings") {
         const hint = document.createElement("span");
         hint.className = "hint";
         hint.textContent = x.hint;
@@ -144,10 +145,10 @@ function openInspector(what, x, y) {
     return input;
   };
   const text = (value, onChange) => {
-    const t = el("input", { type: "text", value: value ?? "", spellcheck: "false" });
-    t.addEventListener("change", () => onChange(t.value.trim()));
-    t.addEventListener("keydown", (e) => { if (e.key === "Enter") t.blur(); });
-    return t;
+    const input = el("input", { type: "text", value: value ?? "", spellcheck: "false" });
+    input.addEventListener("change", () => onChange(input.value.trim()));
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+    return input;
   };
   const select = (options, value, onChange) => {
     const s = document.createElement("select");
@@ -163,26 +164,26 @@ function openInspector(what, x, y) {
   };
 
   if (what.kind === "tool") {
-    heading(TOOL_TITLES[what.name] ?? what.name, "Toolbar");
-    button("Remove from toolbar", () => removeThing(what), what.name === "looks" || what.index < 0);
+    heading(toolTitle(what.name), t("Toolbar"));
+    button(t("Remove from toolbar"), () => removeThing(what), what.name === "looks" || what.index < 0);
   } else if (what.kind === "item") {
     const item = d[what.side].items[what.i];
     if (typeof item === "string") {
-      heading(BLOCK_TITLES[item] ?? item, "Block");
-      button("Remove", () => removeThing(what));
+      heading(blockTitle(item), t("Block"));
+      button(t("Remove"), () => removeThing(what));
     } else {
       ui.edit.target = item;
       const builtin = typeof item.panel === "string";
-      heading(panelTitle(item), builtin ? "Built-in panel: it gains new settings as Ambrotype adds them. Reordering its contents makes it your own panel." : "Your panel");
-      field("Title", text(panelTitle(item), (v) => edit((dd) => {
+      heading(panelTitle(item), builtin ? t("Built-in panel: it gains new settings as Ambrotype adds them. Reordering its contents makes it your own panel.") : t("Your panel"));
+      field(t("Title"), text(panelTitle(item), (v) => edit((dd) => {
         const it = dd[what.side].items[what.i];
         // Built-in panels fall back to their own name; yours always need a title.
         if (!builtin) it.title = v || it.title;
-        else if (v && v !== schemaPanel(it.panel)?.label) it.title = v;
+        else if (v && v !== panelTitle({ panel: it.panel })) it.title = v;
         else delete it.title;
       })));
       if (!builtin) {
-        field("Columns", select([["1", "1 (rows)"], ["2", "2"], ["3", "3"], ["4", "4"]], String(item.columns ?? 1), (v) => edit((dd) => {
+        field(t("Columns"), select([["1", t("1 (rows)")], ["2", "2"], ["3", "3"], ["4", "4"]], String(item.columns ?? 1), (v) => edit((dd) => {
           const it = dd[what.side].items[what.i];
           if (v === "1") delete it.columns; else it.columns = Number(v);
         })));
@@ -192,16 +193,16 @@ function openInspector(what, x, y) {
         const it = dd[what.side].items[what.i];
         if (open.checked) it.open = true; else delete it.open;
       }));
-      field("Open when the app starts", open).parentElement.classList.add("check");
+      field(t("Open when the app starts"), open).parentElement.classList.add("check");
       const next = d[what.side].items[what.i + 1];
-      button("Merge with the next panel", () => edit((dd) => {
+      button(t("Merge with the next panel"), () => edit((dd) => {
         const cache = new Map();
         const a = resolvePanel(dd, what.side, what.i, cache).panel;
         const b = resolvePanel(dd, what.side, what.i + 1, cache).panel;
         a.items.push({ label: b.title ?? "Panel" }, ...b.items);
         removeItem(dd, b);
       }), !(next && typeof next === "object"));
-      button("Remove panel", () => removeThing(what));
+      button(t("Remove panel"), () => removeThing(what));
     }
   } else if (what.kind === "unit") {
     const item = unitItem(what.side, what.i, what.key);
@@ -219,11 +220,17 @@ function openInspector(what, x, y) {
     });
     if (item.setting) {
       const def = ui.defs.get(item.setting);
-      heading(itemTitle(item), def ? `${item.setting} · ${def.kind === "number" ? "number" : def.kind === "bool" ? "on/off" : "choice"}` : item.setting);
+      heading(itemTitle(item), !def ? item.setting
+        : def.kind === "number" ? t("{setting} · number", { setting: item.setting })
+        : def.kind === "bool" ? t("{setting} · on/off", { setting: item.setting })
+        : t("{setting} · choice", { setting: item.setting }));
       if (def) {
         const allowed = AmbControls.WIDGETS[def.kind] ?? AmbControls.WIDGETS.number;
-        const names = { slider: "Slider", knob: "Knob", bar: "Bar", number: "Number box", checkbox: "Checkbox", toggle: "Switch", select: "Drop-down", segmented: "Buttons" };
-        field("Control", select(allowed.map((w) => [w, names[w] ?? w]), item.widget ?? allowed[0], (w) => edit((dd) => {
+        const names = {
+          slider: tKey("Slider"), knob: tKey("Knob"), bar: tKey("Bar"), number: tKey("Number box"), checkbox: tKey("Checkbox"),
+          toggle: tKey("Switch"), select: tKey("Drop-down"), segmented: tKey("Buttons"),
+        };
+        field(t("Control"), select(allowed.map((w) => [w, names[w] ? t(names[w]) : w]), item.widget ?? allowed[0], (w) => edit((dd) => {
           const it = dd[what.side].items[what.i];
           const isDefault = w === allowed[0];
           if (typeof it.panel === "string") {
@@ -235,17 +242,17 @@ function openInspector(what, x, y) {
             if (isDefault) delete e.widget; else e.widget = w;
           }
         })));
-        field("Label", text(item.label ?? def.label, (v) => edit((dd) => {
+        field(t("Label"), text(item.label ?? def.label, (v) => edit((dd) => {
           const r = resolvePanel(dd, what.side, what.i, new Map());
           const e = entryAt(r, what.key);
           if (!e) return;
           if (v && v !== def.label) e.label = v; else delete e.label;
         })));
-        if (builtin) parts.push(el("p", { class: "hint" }, "Changing the label makes this panel your own."));
+        if (builtin) parts.push(el("p", { class: "hint" }, t("Changing the label makes this panel your own.")));
       }
     } else if (item.include) {
-      heading(itemTitle(item), `Group: ${item.include}`);
-      button("Unpack into separate settings", () => edit((dd) => {
+      heading(itemTitle(item), t("Group: {name}", { name: item.include }));
+      button(t("Unpack into separate settings"), () => edit((dd) => {
         const r = resolvePanel(dd, what.side, what.i, new Map());
         const e = entryAt(r, what.key);
         const [pid, section] = e.include.split("/");
@@ -254,17 +261,17 @@ function openInspector(what, x, y) {
         r.panel.items.splice(r.panel.items.indexOf(e), 1, ...items);
       }), builtin || item.include.endsWith("/HSL"));
     } else if (item.widget) {
-      heading(itemTitle(item), "Widget");
+      heading(itemTitle(item), t("Widget"));
     } else {
-      heading("Heading");
-      field("Text", text(item.label, (v) => edit((dd) => {
+      heading(t("Heading"));
+      field(t("Text"), text(item.label, (v) => edit((dd) => {
         const r = resolvePanel(dd, what.side, what.i, new Map());
         const e = entryAt(r, what.key);
         if (e && v) e.label = v;
       })));
     }
-    button("Split the panel here", split);
-    button("Remove", () => removeThing(what));
+    button(t("Split the panel here"), split);
+    button(t("Remove"), () => removeThing(what));
   }
 
   box.replaceChildren(...parts, el("div", { class: "inspector-buttons" }));

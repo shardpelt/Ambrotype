@@ -128,20 +128,20 @@ function makeRow(def) {
     const check = document.createElement("input");
     check.type = "checkbox";
     check.addEventListener("change", () => commit(def.name, check.checked));
-    label.append(check, document.createTextNode(def.label));
-    label.title = def.description;
+    label.append(check, document.createTextNode(t(def.label)));
+    label.title = t(def.description);
     row.append(label);
     Object.assign(entry, { check, label });
   } else if (def.kind === "choice") {
     row.className = "row";
     const label = document.createElement("label");
-    label.textContent = def.label;
-    label.title = def.description;
+    label.textContent = t(def.label);
+    label.title = t(def.description);
     const select = document.createElement("select");
     for (const [value, text] of def.options) {
       const o = document.createElement("option");
       o.value = JSON.stringify(value);
-      o.textContent = text;
+      o.textContent = t(text);
       select.append(o);
     }
     select.addEventListener("change", () => commit(def.name, JSON.parse(select.value)));
@@ -150,8 +150,8 @@ function makeRow(def) {
   } else {
     row.className = "row";
     const label = document.createElement("label");
-    label.textContent = def.label;
-    label.title = def.description + (def.units ? ` (${def.units})` : "") + "\nDrag the slider (Shift: fine). Double-click to reset.";
+    label.textContent = t(def.label);
+    label.title = t(def.description) + (def.units ? ` (${def.units})` : "") + "\n" + t("Drag the slider (Shift: fine). Double-click to reset.");
     const input = document.createElement("input");
     input.type = "range";
     if (isLog(def)) { input.min = 0; input.max = 1000; input.step = 1; }

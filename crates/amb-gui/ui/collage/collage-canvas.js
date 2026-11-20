@@ -104,33 +104,35 @@ function touch() {
 }
 
 function updateTitle() {
-  const t = collage.t;
-  const doc = collage.docPath ? `${fileName(collage.docPath)}${collage.dirty ? " •" : ""}` : "Not saved";
-  const layout = `${t?.name || "Untitled"}${collage.modified ? " (changed)" : ""}`;
-  $("col-title").textContent = `${doc} · ${layout} · ${t.width} × ${t.height} px · ${t.cells.length} ${t.free ? "frames" : "cells"}`;
+  const tpl = collage.t;
+  const doc = collage.docPath ? `${fileName(collage.docPath)}${collage.dirty ? " •" : ""}` : t("Not saved");
+  const name = tpl?.name || t("Untitled");
+  const layout = collage.modified ? t("{name} (changed)", { name }) : name;
+  const vars = { doc, layout, w: tpl.width, h: tpl.height, n: tpl.cells.length };
+  $("col-title").textContent = tpl.free ? t("{doc} · {layout} · {w} × {h} px · {n} frames", vars) : t("{doc} · {layout} · {w} × {h} px · {n} cells", vars);
 }
 
 function renderStage() {
-  const t = collage.t;
+  const tpl = collage.t;
   const wrap = $("col-stage-wrap");
   const stage = $("col-stage");
   const availW = Math.max(50, wrap.clientWidth - 32);
   // Room for the help line, and in free layouts the drag-mode buttons and turn handle.
-  const availH = Math.max(50, wrap.clientHeight - (t.free ? 110 : 56));
-  const scale = Math.min(availW / t.width, availH / t.height);
-  stage.style.width = `${Math.round(t.width * scale)}px`;
-  stage.style.height = `${Math.round(t.height * scale)}px`;
-  stage.style.background = t.background;
-  stage.classList.toggle("free", Boolean(t.free));
-  stage.classList.toggle("photo-mode", Boolean(t.free) && collage.dragMode === "photo");
+  const availH = Math.max(50, wrap.clientHeight - (tpl.free ? 110 : 56));
+  const scale = Math.min(availW / tpl.width, availH / tpl.height);
+  stage.style.width = `${Math.round(tpl.width * scale)}px`;
+  stage.style.height = `${Math.round(tpl.height * scale)}px`;
+  stage.style.background = tpl.background;
+  stage.classList.toggle("free", Boolean(tpl.free));
+  stage.classList.toggle("photo-mode", Boolean(tpl.free) && collage.dragMode === "photo");
   stage.dataset.scale = scale;
   stage.replaceChildren();
   // Frames are clipped to the canvas (as exported); their handles are not.
   const layer = document.createElement("div");
   layer.className = "col-clip";
   stage.append(layer);
-  const rects = cellRects(t);
-  const radius = ((t.radius / 100) * Math.min(t.width, t.height)) * scale;
+  const rects = cellRects(tpl);
+  const radius = ((tpl.radius / 100) * Math.min(tpl.width, tpl.height)) * scale;
   rects.forEach((r, i) => {
     const cell = document.createElement("div");
     cell.className = "col-cell";
@@ -150,7 +152,7 @@ function renderStage() {
       img.alt = "";
       img.draggable = false;
       holder.append(img);
-      const grip = el("span", { class: "col-grip", title: "Drag to another cell to swap" }, "⠿");
+      const grip = el("span", { class: "col-grip", title: t("Drag to another cell to swap") }, "⠿");
       cell.append(holder, grip);
       cell.classList.add("loading");
       collageImage(c.path).then((info) => {
@@ -176,11 +178,11 @@ function renderStage() {
 // (outside the frame, which clips its photo).
 function renderHandles() {
   $("col-stage").querySelector(".col-handles")?.remove();
-  const t = collage.t;
+  const tpl = collage.t;
   const i = collage.selected;
-  if (!t.free || i < 0 || i >= t.cells.length) return;
+  if (!tpl.free || i < 0 || i >= tpl.cells.length) return;
   const scale = Number($("col-stage").dataset.scale);
-  const r = cellRects(t)[i];
+  const r = cellRects(tpl)[i];
   const box = document.createElement("div");
   box.className = "col-handles";
   Object.assign(box.style, {
@@ -188,10 +190,10 @@ function renderHandles() {
     transform: r.angle ? `rotate(${r.angle}deg)` : "",
   });
   for (const h of ["nw", "ne", "sw", "se"]) {
-    box.append(el("span", { class: `col-handle ${h}`, title: "Drag to resize (Shift keeps the shape)" }));
+    box.append(el("span", { class: `col-handle ${h}`, title: t("Drag to resize (Shift keeps the shape)") }));
     box.lastChild.dataset.handle = h;
   }
-  const rot = el("span", { class: "col-rot", title: "Drag to turn (Shift: 15° steps)" });
+  const rot = el("span", { class: "col-rot", title: t("Drag to turn (Shift: 15° steps)") });
   rot.dataset.handle = "rotate";
   box.append(rot);
   $("col-stage").append(box);
@@ -254,17 +256,17 @@ function syncCellTools() {
   $("col-add-frame").disabled = collage.t.cells.length >= MAX_CELLS;
   if (document.activeElement !== $("col-angle")) $("col-angle").value = has ? Math.round(angle * 10) / 10 : "";
   for (const b of $("col-drag-mode").querySelectorAll("button")) b.classList.toggle("active", b.dataset.mode === collage.dragMode);
-  $("col-free").textContent = free ? "Back to a grid layout" : "Arrange freely";
+  $("col-free").textContent = free ? t("Back to a grid layout") : t("Arrange freely");
   $("col-free").title = free
-    ? "Put the photos back into the layout's grid (turns and free positions are dropped)"
-    : "Move, resize, turn and overlap the photos by hand, like layers";
+    ? t("Put the photos back into the layout's grid (turns and free positions are dropped)")
+    : t("Move, resize, turn and overlap the photos by hand, like layers");
   for (const k of ["gap", "margin"]) $(`col-${k}`).disabled = free;
   $("col-help").textContent = free
-    ? "Drag a frame to move it, its corners to resize, the round handle to turn it. Drop a photo on empty canvas for a new frame."
-    : "Drag photos from below into the cells. In a cell: drag to move the photo, scroll to zoom, double-click to fit.";
+    ? t("Drag a frame to move it, its corners to resize, the round handle to turn it. Drop a photo on empty canvas for a new frame.")
+    : t("Drag photos from below into the cells. In a cell: drag to move the photo, scroll to zoom, double-click to fit.");
   $("col-cell-hint").textContent = has
-    ? `Cell ${i + 1}${photo ? ": " + (trayPhoto(photo)?.name ?? fileName(photo)) : " (empty)"}`
-    : "Click a cell to change it.";
+    ? (photo ? t("Cell {n}: {name}", { n: i + 1, name: trayPhoto(photo)?.name ?? fileName(photo) }) : t("Cell {n} (empty)", { n: i + 1 }))
+    : t("Click a cell to change it.");
 }
 
 function putPhoto(i, path) {

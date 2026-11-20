@@ -43,8 +43,8 @@ function renderTemplates() {
     b.type = "button";
     b.className = "col-template";
     b.classList.toggle("on", entry.id === collage.base?.id);
-    b.title = entry.builtin ? `${entry.name} (only the shape is used)` : `${entry.name}: your layout (${entry.width} × ${entry.height})`;
-    b.append(layoutIcon(entry), el("span", {}, entry.name));
+    b.title = entry.builtin ? t("{name} (only the shape is used)", { name: entry.name }) : t("{name}: your layout ({w} × {h})", { name: entry.name, w: entry.width, h: entry.height });
+    b.append(layoutIcon(entry), el("span", { translate: entry.builtin ? null : "no" }, entry.name));
     if (!entry.builtin) b.classList.add("own");
     b.addEventListener("click", () => applyTemplate(entry));
     list.append(b);
@@ -85,7 +85,7 @@ async function saveTemplate() {
   const name = $("col-name").value.trim();
   if (!name) {
     $("col-name").focus();
-    return toast("Give the layout a name first.", true);
+    return toast(t("Give the layout a name first."), true);
   }
   // The same name as the layout of yours it came from updates that one.
   const id = collage.base && !collage.base.builtin && collage.base.name === name ? collage.base.id : "";
@@ -98,7 +98,7 @@ async function saveTemplate() {
     $("col-delete").disabled = !collage.base || collage.base.builtin;
     renderTemplates();
     updateTitle();
-    toast(`Saved the layout “${name}”`);
+    toast(t("Saved the layout “{name}”", { name }));
   } catch (e) {
     showError(e);
   }
@@ -108,7 +108,7 @@ async function deleteTemplate() {
   if (!collage.base || collage.base.builtin) return;
   try {
     collage.templates = await invoke("delete_collage_template", { id: collage.base.id });
-    toast(`Deleted “${collage.base.name}”`);
+    toast(t("Deleted “{name}”", { name: collage.base.name }));
     collage.base = null;
     $("col-delete").disabled = true;
     renderTemplates();
@@ -121,7 +121,7 @@ async function shareTemplate() {
   try {
     const name = $("col-name").value.trim() || collage.t.name || "Collage";
     const path = await invoke("share_collage_template", { template: { ...collage.t, name } });
-    if (path) toast(`Saved ${path}`);
+    if (path) toast(t("Saved {name}", { name: path }));
   } catch (e) {
     showError(e);
   }
@@ -129,13 +129,13 @@ async function shareTemplate() {
 
 async function importCollageTemplate() {
   try {
-    const t = await invoke("import_collage_template");
-    if (!t) return;
-    const [list, saved] = await invoke("save_collage_template", { template: { id: "", builtin: false, ...t, name: t.name || "Imported" } });
+    const imported = await invoke("import_collage_template");
+    if (!imported) return;
+    const [list, saved] = await invoke("save_collage_template", { template: { id: "", builtin: false, ...imported, name: imported.name || "Imported" } });
     collage.templates = list;
     const entry = list.find((e) => e.id === saved);
     if (entry) applyTemplate(entry);
-    toast(`Added the layout “${entry?.name ?? t.name}”`);
+    toast(t("Added the layout “{name}”", { name: entry?.name ?? imported.name }));
   } catch (e) {
     showError(e);
   }
@@ -147,7 +147,7 @@ function fillSizeSelect() {
   const sel = $("col-size");
   sel.replaceChildren();
   const option = (parent, value, text) => parent.append(el("option", { value: value }, text));
-  option(sel, "custom", "Custom size");
+  option(sel, "custom", t("Custom size"));
   const groups = new Map();
   for (const p of ui.sizes) {
     if (!groups.has(p.group)) groups.set(p.group, []);
@@ -155,7 +155,7 @@ function fillSizeSelect() {
   }
   for (const [group, items] of groups) {
     const og = document.createElement("optgroup");
-    og.label = group || "Yours";
+    og.label = group || tKey("Yours");
     for (const p of items) option(og, `size:${p.id}`, `${p.name} (${p.width} × ${p.height})`);
     sel.append(og);
   }
@@ -238,15 +238,15 @@ async function groupTray() {
     collage.groups = null;
     return renderTray();
   }
-  if (collage.tray.length < 2) return toast("Add some photos to the tray first.", true);
-  $("col-tray-count").textContent = "Grouping…";
+  if (collage.tray.length < 2) return toast(t("Add some photos to the tray first."), true);
+  $("col-tray-count").textContent = t("Grouping…");
   $("col-group").disabled = true;
   try {
     const found = await invoke("library_find_duplicates", { paths: collage.tray.map((p) => p.path), burstSeconds: 2, maxBits: 10 });
     // Exact copies aren't a group to lay out; one of each is in the others.
     const groups = found.filter((g) => g.kind !== "same").map((g) => g.photos);
     if (!groups.length) {
-      toast("No alike photos or bursts in the tray.");
+      toast(t("No alike photos or bursts in the tray."));
       return updateTrayCount();
     }
     const byPath = new Map(collage.tray.map((p) => [p.path, p]));
@@ -267,7 +267,7 @@ async function groupTray() {
 function groupGrid(paths) {
   const grid = collage.templates.find((e) => e.builtin && templateOf(e).cells.length === 4
     && templateOf(e).cells.every(([, , w, h]) => w === 0.5 && h === 0.5));
-  if (!grid) return toast("The 2 × 2 grid layout is missing.", true);
+  if (!grid) return toast(t("The 2 × 2 grid layout is missing."), true);
   applyTemplate(grid);
   const side = Math.max(collage.t.width, collage.t.height);
   setCanvas({ width: side, height: side });
@@ -276,7 +276,7 @@ function groupGrid(paths) {
   touch();
   renderStage();
   renderTrayMarks();
-  status("Drag inside a square to line its photo up; scroll to zoom");
+  status(t("Drag inside a square to line its photo up; scroll to zoom"));
 }
 
 // One tray photo: picture, stars, name, a mark when it is in the collage,
@@ -285,12 +285,12 @@ function trayCell(p) {
   const n = collage.trayGroupOf.get(p.path) ?? -1;
   const item = document.createElement("div");
   item.className = n >= 0 ? `tray-item grouped g${n % 2}` : "tray-item";
-  item.title = `${p.name}\nDrag up into a cell, or click to fill the selected (or next empty) cell.`;
+  item.title = `${p.name}\n${t("Drag up into a cell, or click to fill the selected (or next empty) cell.")}`;
   const img = el("img", { alt: "", draggable: "false" });
   const stars = el("span", { class: "tray-stars" }, p.rating ? "★".repeat(p.rating) : "");
-  const name = el("span", { class: "tray-name" }, p.name);
-  const used = el("span", { class: "tray-used", title: "In the collage" });
-  const remove = el("button", { type: "button", class: "tray-remove", title: "Take out of the tray" }, "×");
+  const name = el("span", { class: "tray-name", translate: "no" }, p.name);
+  const used = el("span", { class: "tray-used", title: t("In the collage") });
+  const remove = el("button", { type: "button", class: "tray-remove", title: t("Take out of the tray") }, "×");
   remove.addEventListener("pointerdown", (e) => e.stopPropagation());
   remove.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -312,12 +312,12 @@ function trayGroupHead(p, prev) {
   const head = el("div", { class: "tray-group" });
   if (n >= 0) {
     const g = collage.groups[n];
-    head.append(el("span", {}, `Group ${n + 1} · ${g.length}`));
-    const make = el("button", { type: "button", class: "small", title: "A square of this group's best four photos" }, "2 × 2");
+    head.append(el("span", {}, t("Group {n} · {count}", { n: n + 1, count: g.length })));
+    const make = el("button", { type: "button", class: "small", title: t("A square of this group's best four photos") }, "2 × 2");
     make.addEventListener("click", () => groupGrid(g));
     head.append(make);
   } else {
-    head.append(el("span", {}, "Not grouped"));
+    head.append(el("span", {}, t("Not grouped")));
   }
   return head;
 }
@@ -356,9 +356,9 @@ function batchPhotos() {
 }
 
 function updateTrayCount() {
-  const groups = collage.groups ? `, ${plural(collage.groups.length, "group")}` : "";
-  $("col-tray-count").textContent = collage.tray.length ? `${collage.tray.length} photos${groups}` : "Empty: add photos or a folder";
-  $("col-group").textContent = collage.groups ? "Ungroup" : "Group alike";
+  const n = collage.tray.length;
+  $("col-tray-count").textContent = !n ? t("Empty: add photos or a folder") : collage.groups ? t("{n} photos, {groups}", { n, groups: plural(collage.groups.length, "group") }) : t("{n} photos", { n });
+  $("col-group").textContent = collage.groups ? t("Ungroup") : t("Group alike");
   $("col-batch-groups-row").hidden = !collage.groups;
   updateBatchNote();
 }
@@ -378,15 +378,15 @@ function updateBatchNote() {
   if (groups) {
     const pages = groups.filter((g) => g.length >= per).length;
     const small = groups.length - pages;
-    $("col-batch-note").textContent = `${plural(pages, "page")}, one per group: its best ${per}.`
-      + (small ? ` ${small} group${small === 1 ? " has" : "s have"} fewer than ${per} photos and ${small === 1 ? "is" : "are"} left out.` : "");
+    const left = small === 1 ? t("1 group has fewer than {per} photos and is left out.", { per }) : t("{n} groups have fewer than {per} photos and are left out.", { n: small, per });
+    $("col-batch-note").textContent = t("{pages}, one per group: its best {per}.", { pages: plural(pages, "page"), per }) + (small ? ` ${left}` : "");
     $("col-batch").disabled = !pages || collage.busy;
     return;
   }
   const pages = Math.ceil(n / per);
   $("col-batch-note").textContent = n
-    ? `${plural(n, "photo")} → ${plural(pages, "page")} of ${per} cells.`
-    : "No photos to batch.";
+    ? t("{photos} → {pages} of {per} cells.", { photos: plural(n, "photo"), pages: plural(pages, "page"), per })
+    : t("No photos to batch.");
   $("col-batch").disabled = !n || collage.busy;
 }
 
@@ -404,7 +404,7 @@ async function addPhotos(folder) {
   try {
     const photos = await invoke(folder ? "pick_photo_folder" : "pick_photos");
     if (photos?.length) setTray(photos, true);
-    else if (photos) toast("No photos there.", true);
+    else if (photos) toast(t("No photos there."), true);
   } catch (e) {
     showError(e);
   }

@@ -9,7 +9,7 @@ const columnWatch = new WeakMap();
 
 function wireColumnBlocks(col) {
   for (const s of col.querySelectorAll(":scope > .side-section")) foldableBlock(s);
-  const strip = el("nav", { class: "col-strip", "aria-label": "Further down this column" });
+  const strip = el("nav", { class: "col-strip", "aria-label": t("Further down this column") });
   col.append(strip);
   let w = columnWatch.get(col);
   if (!w) {
@@ -41,7 +41,7 @@ function foldableBlock(s) {
   if (!h || !s.id) return;
   const key = `amb.fold.${s.id.replace(/^block-/, "")}`;
   if (!h.querySelector(".fold-head")) {
-    const head = el("button", { type: "button", class: "fold-head", title: "Fold or unfold" });
+    const head = el("button", { type: "button", class: "fold-head", title: t("Fold or unfold") });
     head.append(...h.childNodes);
     h.replaceChildren(head);
     head.addEventListener("click", () => foldBlock(s, !s.classList.contains("folded")));
@@ -77,7 +77,7 @@ function updateColumnStrip(col) {
   const chips = shown.map((el) => [el, blockName(el)]);
   if (named.length > shown.length) chips.push([named[shown.length], `+${named.length - shown.length}`]);
   strip.replaceChildren(...chips.map(([el, text]) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", className: "col-chip", textContent: text, title: `Scroll down to ${blockName(el)}` });
+    const b = Object.assign(document.createElement("button"), { type: "button", className: "col-chip", textContent: text, title: t("Scroll down to {name}", { name: blockName(el) }) });
     b.addEventListener("click", () => {
       if (el.classList.contains("folded")) foldBlock(el, false);
       if (el.matches("details")) el.open = true;

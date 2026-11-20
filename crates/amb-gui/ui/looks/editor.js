@@ -18,13 +18,22 @@
 "use strict";
 
 const EDIT_ZONES = ".column, .topbar .actions";
-const COMPOSITE_TITLES = { "point-curve": "Point curve", "color-wheels": "Colour wheels" };
-const BLOCK_TITLES = { presets: "Presets", info: "Rating & keywords", history: "History", histogram: "Histogram", tools: "Task tools", quick: "Quick fixes", retouch: "Retouch tools" };
-const TOOL_TITLES = {
-  open: "Open", library: "Library", save: "Save", export: "Export", collage: "Collage", undo: "Undo", redo: "Redo", before: "Before / After",
-  crop: "Crop", masks: "Masks", spots: "Spots", zoom: "100%", wb: "WB picker", clip: "Clipping", frame: "Frame", auto: "Auto edit", select: "Select object", search: "Search", keys: "Shortcuts", hub: "Browse", plugins: "Plugins", looks: "Appearance", edit: "Edit layout", settings: "Settings",
-  feedback: "Feedback", "|": "Separator",
+const COMPOSITE_TITLES = { "point-curve": tKey("Point curve"), "color-wheels": tKey("Colour wheels") };
+const BLOCK_TITLES = {
+  presets: tKey("Presets"), info: tKey("Rating & keywords"), history: tKey("History"), histogram: tKey("Histogram"),
+  tools: tKey("Task tools"), quick: tKey("Quick fixes"), retouch: tKey("Retouch tools"),
 };
+const TOOL_TITLES = {
+  open: tKey("Open"), library: tKey("Library"), save: tKey("Save"), export: tKey("Export"), collage: tKey("Collage"), undo: tKey("Undo"),
+  redo: tKey("Redo"), before: tKey("Before / After"), crop: tKey("Crop"), masks: tKey("Masks"), spots: tKey("Spots"), zoom: "100%",
+  wb: tKey("WB picker"), clip: tKey("Clipping"), frame: tKey("Frame"), auto: tKey("Auto edit"), select: tKey("Select object"),
+  search: tKey("Search"), keys: tKey("Shortcuts"), hub: tKey("Browse"), plugins: tKey("Plugins"), looks: tKey("Appearance"),
+  edit: tKey("Edit layout"), settings: tKey("Settings"), feedback: tKey("Feedback"), "|": tKey("Separator"),
+};
+
+// Names shown for a block, a toolbar button or a widget (what is not in the lists keeps its id).
+const blockTitle = (name) => (BLOCK_TITLES[name] ? t(BLOCK_TITLES[name]) : name);
+const toolTitle = (name) => (TOOL_TITLES[name] ? t(TOOL_TITLES[name]) : name);
 
 // ---------------------------------------------------------------- start, stop, undo
 
@@ -59,19 +68,19 @@ function startEditing(blank = false) {
   };
   document.body.classList.add("editing");
   $("edit-bar").hidden = false;
-  $("edit-name").value = blank ? "" : look && !look.builtin ? look.name : `${draft.name ?? "Layout"} (mine)`;
-  $("edit-name").placeholder = blank ? "New layout" : "";
+  $("edit-name").value = blank ? "" : look && !look.builtin ? look.name : t("{name} (mine)", { name: draft.name ?? t("Layout") });
+  $("edit-name").placeholder = blank ? t("New layout") : "";
   $("edit-density").value = ["compact", "large"].includes(draft.density) ? draft.density : "normal";
-  $("edit-theme").replaceChildren(...(ui.looks?.themes ?? []).filter((t) => t.usable).map((t) =>
-    el("option", { value: t.id, selected: t.id === ui.edit.theme }, t.name)));
+  $("edit-theme").replaceChildren(...(ui.looks?.themes ?? []).filter((theme) => theme.usable).map((theme) =>
+    el("option", { value: theme.id, selected: theme.id === ui.edit.theme, translate: "no" }, theme.name)));
   updateEditBar();
   applyLayout(draft);
   if (blank) {
     togglePalette(true);
-    status("A blank layout: drag panels, blocks and buttons from Add into the columns and the toolbar");
+    status(t("A blank layout: drag panels, blocks and buttons from Add into the columns and the toolbar"));
     return;
   }
-  status("Editing the layout: drag things to move them, click one to change it");
+  status(t("Editing the layout: drag things to move them, click one to change it"));
 }
 
 async function finishEditing(save) {
@@ -88,10 +97,10 @@ async function finishEditing(save) {
       ui.looks.active_layout = r.id;
       ui.looks.active_theme = e.theme;
       await invoke("set_active_look", { layout: r.id, theme: e.theme });
-      toast(`Saved layout "${name}"`);
+      toast(t('Saved layout "{name}"', { name }));
     } catch (err) {
       // Stay in editor mode so nothing is lost.
-      toast(`Not saved: ${err}`, true);
+      toast(t("Not saved: {error}", { error: err }), true);
       return;
     }
   }
@@ -107,7 +116,7 @@ async function finishEditing(save) {
     applyTheme(findLook("theme", ui.looks?.active_theme)?.data ?? null);
     applyLayout(e.original);
   }
-  status("Ready");
+  status(t("Ready"));
 }
 
 // One undoable change to the draft.
@@ -155,7 +164,7 @@ function decorateEditing() {
       c.hidden = false;
       const hint = document.createElement("div");
       hint.className = "drop-hint";
-      hint.textContent = "Drop here";
+      hint.textContent = t("Drop here");
       c.replaceChildren(hint);
       widths[side] = 64;
       continue;
@@ -166,7 +175,7 @@ function decorateEditing() {
     c.hidden = false;
     const grip = document.createElement("div");
     grip.className = "col-resizer";
-    grip.title = "Drag to resize this column";
+    grip.title = t("Drag to resize this column");
     grip.style[side] = `${widths[side] - 4}px`;
     grip.addEventListener("pointerdown", (ev) => resizeColumn(ev, side, grip));
     ws.append(grip);
@@ -278,13 +287,17 @@ function removeItem(d, obj) {
 }
 
 function itemTitle(item) {
-  if (item.setting) return item.label ?? ui.defs.get(item.setting)?.label ?? item.setting;
+  if (item.setting) {
+    const def = ui.defs.get(item.setting);
+    return item.label ?? (def ? t(def.label) : item.setting);
+  }
   if (item.include) {
     const [pid, section] = item.include.split("/");
-    return section ?? schemaPanel(pid)?.label ?? item.include;
+    const label = schemaPanel(pid)?.label;
+    return section ? t(section) : label ? t(label) : item.include;
   }
-  if (item.widget) return COMPOSITE_TITLES[item.widget] ?? item.widget;
-  return item.label ?? "Panel";
+  if (item.widget) return COMPOSITE_TITLES[item.widget] ? t(COMPOSITE_TITLES[item.widget]) : item.widget;
+  return item.label ?? t("Panel");
 }
 
 // Put a layout item (a setting, widget, include or label) where a drop says.
@@ -412,7 +425,7 @@ function shownInDraft(d) {
       }
     }
   }
-  if (widgets.has("color-wheels")) AmbWheels.TAGS.forEach((t) => settings.add(t));
+  if (widgets.has("color-wheels")) AmbWheels.TAGS.forEach((tag) => settings.add(tag));
   return { settings, widgets, blocks, panels };
 }
 
@@ -421,7 +434,7 @@ function shownInDraft(d) {
 function editTarget(el) {
   const tool = el.closest(".topbar .actions [data-tool]");
   if (tool) {
-    return { kind: "tool", name: tool.dataset.tool, index: Number(tool.dataset.toolIndex), el: tool, label: TOOL_TITLES[tool.dataset.tool] };
+    return { kind: "tool", name: tool.dataset.tool, index: Number(tool.dataset.toolIndex), el: tool, label: toolTitle(tool.dataset.tool) };
   }
   const unit = el.closest(".panel-body [data-unit]");
   const panel = el.closest(".column [data-item]");
@@ -431,11 +444,13 @@ function editTarget(el) {
     return { kind: "unit", side, i: Number(i), key: unit.dataset.unit, el: unit, label: unitLabel(side, Number(i), unit.dataset.unit) };
   }
   const item = ui.edit.draft[side]?.items?.[Number(i)];
-  return { kind: "item", side, i: Number(i), el: panel, label: typeof item === "string" ? BLOCK_TITLES[item] : panelTitle(item) };
+  return { kind: "item", side, i: Number(i), el: panel, label: typeof item === "string" ? blockTitle(item) : panelTitle(item) };
 }
 
 function panelTitle(item) {
-  return item?.title ?? schemaPanel(item?.panel)?.label ?? "Panel";
+  // A layout's own title is its author's word; a built-in panel's name is ours.
+  const label = schemaPanel(item?.panel)?.label;
+  return item?.title ?? (label ? t(label) : t("Panel"));
 }
 
 // The layout item a unit stands for (without converting anything).

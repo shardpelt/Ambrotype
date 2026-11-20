@@ -43,7 +43,7 @@ function looksSaved(lk, r) {
 function looksRenderSetups(lk) {
   const list = $("looks-setups-list");
   if (!lk.setups.length) {
-    list.replaceChildren(el("p", { class: "hint" }, "None yet."));
+    list.replaceChildren(el("p", { class: "hint" }, t("None yet.")));
     return;
   }
   list.replaceChildren(...lk.setups.map((s) => {
@@ -51,12 +51,14 @@ function looksRenderSetups(lk) {
     row.className = "looks-setup";
     const when = new Date(s.saved * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
     const name = el("span", {
-      title: `${s.layout.data?.name ?? s.layout.id} + ${s.theme.data?.name ?? s.theme.id}, kept ${when}`,
+      title: t("{layout} + {theme}, kept {when}", { layout: s.layout.data?.name ?? s.layout.id, theme: s.theme.data?.name ?? s.theme.id, when }),
+      translate: "no",
     }, s.name);
     const what = el("span", {
       class: "hint",
+      translate: "no",
     }, `${s.layout.data?.name ?? "?"} · ${s.theme.data?.name ?? "?"}`);
-    const use = el("button", { type: "button", class: "small" }, "Use");
+    const use = el("button", { type: "button", class: "small" }, t("Use"));
     use.addEventListener("click", async () => {
       try {
         const r = await invoke("setup_restore", { name: s.name });
@@ -66,12 +68,12 @@ function looksRenderSetups(lk) {
         lk.view = { kind: "layout", id: lk.sel.layout };
         looksApply(lk);
         looksRender(lk);
-        toast(`"${s.name}" is back: Done keeps it`);
+        toast(t('"{name}" is back: Done keeps it', { name: s.name }));
       } catch (e) {
         showError(e);
       }
     });
-    const del = el("button", { type: "button", class: "small", title: "Forget this setup (its layout and theme stay)" }, "×");
+    const del = el("button", { type: "button", class: "small", title: t("Forget this setup (its layout and theme stay)") }, "×");
     del.addEventListener("click", async () => {
       lk.setups = await invoke("setup_delete", { name: s.name }).catch((e) => { showError(e); return lk.setups; });
       looksRenderSetups(lk);
@@ -82,13 +84,14 @@ function looksRenderSetups(lk) {
 }
 
 async function looksKeepSetup(lk) {
-  const l = findLook("layout", lk.sel.layout), t = findLook("theme", lk.sel.theme);
-  const name = await askName("Save this setup", "The chosen layout and theme, exactly as they are now.", `${l?.name ?? "Layout"} + ${t?.name ?? "theme"}`);
+  const layout = findLook("layout", lk.sel.layout), theme = findLook("theme", lk.sel.theme);
+  const name = await askName(t("Save this setup"), t("The chosen layout and theme, exactly as they are now."),
+    t("{layout} + {theme}", { layout: layout?.name ?? t("Layout"), theme: theme?.name ?? t("theme") }));
   if (!name) return;
   try {
     lk.setups = await invoke("setup_save", { name, layout: lk.sel.layout, theme: lk.sel.theme });
     looksRenderSetups(lk);
-    toast(`Saved the setup "${name}"`);
+    toast(t('Saved the setup "{name}"', { name }));
   } catch (e) {
     showError(e);
   }
@@ -111,10 +114,11 @@ function looksRender(lk) {
       b.classList.toggle("broken", !look.usable);
       const name = document.createElement("span");
       name.textContent = look.name;
+      name.setAttribute("translate", "no");
       const marks = document.createElement("span");
       marks.className = "marks";
       marks.textContent = (look.problems?.length ? "⚠ " : "") + (look.builtin ? "🔒" : "");
-      b.title = look.builtin ? "Built in: clone it to make changes" : (look.usable ? "" : "Can't be used: see the problems below");
+      b.title = look.builtin ? t("Built in: clone it to make changes") : (look.usable ? "" : t("Can't be used: see the problems below"));
       b.append(name, marks);
       b.addEventListener("click", () => looksChoose(lk, kind, look));
       return b;
@@ -127,17 +131,17 @@ function looksRender(lk) {
   $("looks-share").disabled = !look?.usable;
   $("looks-delete").disabled = !look || look.builtin;
   $("looks-submit").disabled = !look || look.builtin || !look.usable;
-  $("looks-delete").textContent = lk.armedDelete === look?.id ? "Really delete?" : "Delete";
+  $("looks-delete").textContent = lk.armedDelete === look?.id ? t("Really delete?") : t("Delete");
   const about = [];
   if (look?.data?.description) about.push(look.data.description);
   const base = look?.based_on && findLook(view.kind, look.based_on);
-  if (look?.based_on) about.push(`Based on ${base?.name ?? look.based_on}.`);
-  if (look && !look.builtin) about.push(`Your ${view.kind}: a file in your own folder (Open folder).`);
+  if (look?.based_on) about.push(t("Based on {name}.", { name: base?.name ?? look.based_on }));
+  if (look && !look.builtin) about.push(view.kind === "layout" ? t("Your layout: a file in your own folder (Open folder).") : t("Your theme: a file in your own folder (Open folder)."));
   $("looks-about").textContent = about.join(" ");
   $("looks-problems").replaceChildren(...(look?.problems ?? []).map((p) => {
     const li = document.createElement("li");
     li.className = p.error ? "error" : "warning";
-    li.textContent = `${p.error ? "Error" : "Warning"}: ${p.message}`;
+    li.textContent = p.error ? t("Error: {message}", { message: p.message }) : t("Warning: {message}", { message: p.message });
     return li;
   }));
   looksThemeEditor(lk, view.kind === "theme" && look && !look.builtin && look.usable ? look : null);
@@ -179,7 +183,7 @@ function looksThemeEditor(lk, look) {
 
 async function looksFlow() {
   const dlg = $("looks-dialog");
-  if (!ui.looks) return toast("Layouts and themes aren't available", true);
+  if (!ui.looks) return toast(t("Layouts and themes aren't available"), true);
   const before = { layout: ui.looks.active_layout, theme: ui.looks.active_theme };
   const lk = { before, sel: { ...before }, view: { kind: "layout", id: before.layout }, armedDelete: null, setups: [] };
   const { sel } = lk;
@@ -199,8 +203,8 @@ async function looksFlow() {
       const look = viewed();
       const data = structuredClone(look.data);
       const names = new Set(ui.looks[`${lk.view.kind}s`].map((l) => l.name));
-      let name = `${look.name} copy`;
-      for (let n = 2; names.has(name); n++) name = `${look.name} copy ${n}`;
+      let name = t("{name} copy", { name: look.name });
+      for (let n = 2; names.has(name); n++) name = t("{name} copy {n}", { name: look.name, n });
       data.name = name;
       data.based_on = look.id;
       saved(await invoke("save_look", { kind: lk.view.kind, id: null, data }));
@@ -210,7 +214,7 @@ async function looksFlow() {
     "looks-share": async () => {
       const look = viewed();
       const path = await invoke("export_look", { kind: lk.view.kind, id: look.id, name: look.name });
-      if (path) toast(`Saved ${path}`);
+      if (path) toast(t("Saved {path}", { path }));
     },
     "looks-delete": async () => {
       const look = viewed();
@@ -230,9 +234,9 @@ async function looksFlow() {
     },
     "looks-import": async () => {
       const r = await invoke("import_look");
-      if (r) { saved(r); toast(`Imported "${findLook(r.kind, r.id)?.name}"`); }
+      if (r) { saved(r); toast(t('Imported "{name}"', { name: findLook(r.kind, r.id)?.name })); }
     },
-    "looks-folder": async () => toast(`Your looks: ${await invoke("open_looks_folder")}`),
+    "looks-folder": async () => toast(t("Your looks: {path}", { path: await invoke("open_looks_folder") })),
     "looks-hub": async () => {
       await hubFlow();
       // Something may have been installed (or switched to with "Use now").
@@ -245,7 +249,9 @@ async function looksFlow() {
     "looks-submit": async () => {
       const look = viewed();
       await invoke("hub_submit", { kind: lk.view.kind, id: look.id });
-      toast(`GitHub is open with your ${lk.view.kind} filled in: press Propose changes, then Create pull request.`);
+      toast(lk.view.kind === "layout"
+        ? t("GitHub is open with your layout filled in: press Propose changes, then Create pull request.")
+        : t("GitHub is open with your theme filled in: press Propose changes, then Create pull request."));
     },
     "looks-edit": async () => {
       // Keep the chosen look, then edit it.

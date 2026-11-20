@@ -32,7 +32,7 @@ function addColumnGrips(shown) {
   if (ui.edit) return;
   for (const side of ["left", "right"]) {
     if (!shown[side]) continue;
-    const grip = el("div", { class: "col-resizer", title: "Drag to resize; double-click for the layout's width" });
+    const grip = el("div", { class: "col-resizer", title: t("Drag to resize; double-click for the layout's width") });
     grip.style[side] = `${shown[side] - 4}px`;
     grip.addEventListener("pointerdown", (ev) => dragColumn(ev, side, grip, shown));
     grip.addEventListener("dblclick", () => {
@@ -104,11 +104,13 @@ function applySideCollapse() {
   for (const side of ["left", "right"]) {
     shown[side] = folded[side] || (side === "left" && sidePanelOpen()) ? 0 : widths[side];
     $(`col-${side}`).hidden = !shown[side];
-    const t = $(`fold-${side}`);
-    t.hidden = !widths[side];
+    const fold = $(`fold-${side}`);
+    fold.hidden = !widths[side];
     const open = Boolean(shown[side]);
-    t.innerHTML = sidebarIcon(side, open);
-    t.title = `${open ? "Hide" : "Show"} the ${side} column (Ctrl+${side === "left" ? "[" : "]"})`;
+    fold.innerHTML = sidebarIcon(side, open);
+    fold.title = side === "left"
+      ? open ? t("Hide the left column (Ctrl+[)") : t("Show the left column (Ctrl+[)")
+      : open ? t("Hide the right column (Ctrl+])") : t("Show the right column (Ctrl+])");
   }
   $("workspace").style.gridTemplateColumns = `${shown.left}px minmax(0, 1fr) ${shown.right}px`;
   addColumnGrips(shown);

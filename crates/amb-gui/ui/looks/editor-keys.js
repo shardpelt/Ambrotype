@@ -52,7 +52,7 @@ function keyboardEdit(e) {
     ui.edit.refocus = `.column [data-item="${what.side}:${what.i}"] [data-unit="j${at}"]`;
     edit((d) => moveUnit(d, what, { type: "panel", side: what.side, i: what.i, beforeKey }));
   }
-  status(`Moved ${what.label || "it"}`);
+  status(what.label ? t("Moved {name}", { name: what.label }) : t("Moved it"));
   return true;
 }
 
@@ -64,7 +64,7 @@ function beginDrag(e, what) {
     if (!ghost) {
       ghost = document.createElement("div");
       ghost.className = "edit-ghost";
-      ghost.textContent = what.label || "Item";
+      ghost.textContent = what.label || t("Item");
       document.body.append(ghost);
       document.body.classList.add("edit-dragging");
       what.el?.classList.add("edit-lifted");
@@ -190,7 +190,7 @@ function performDrop(what, drop) {
 
 function removeThing(what) {
   if (what.kind === "tool") {
-    if (what.name === "looks") return toast("Appearance always stays, so you can get back to your layouts");
+    if (what.name === "looks") return toast(t("Appearance always stays, so you can get back to your layouts"));
     if (what.index < 0) return;
     edit((d) => { toolbarList(d).splice(what.index, 1); });
   } else if (what.kind === "item") {

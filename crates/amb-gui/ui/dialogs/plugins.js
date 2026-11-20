@@ -37,10 +37,10 @@ function renderPluginList() {
     b.setAttribute("role", "option");
     b.classList.toggle("on", p.id === pluginUi.selected);
     b.classList.toggle("broken", Boolean(p.error));
-    const name = el("span", {}, p.manifest?.name ?? p.id);
+    const name = el("span", { translate: "no" }, p.manifest?.name ?? p.id);
     const tag = el("span", {
       class: "plugin-tag",
-    }, p.error ? "can't load" : p.builtin ? "built-in" : "yours");
+    }, p.error ? t("can't load") : p.builtin ? t("built-in") : t("yours"));
     b.append(name, tag);
     b.addEventListener("click", () => {
       pluginUi.selected = p.id;
@@ -49,7 +49,7 @@ function renderPluginList() {
     });
     list.append(b);
   }
-  if (!pluginUi.list.length) list.append(el("p", { class: "hint" }, "No plugins."));
+  if (!pluginUi.list.length) list.append(el("p", { class: "hint" }, t("No plugins.")));
 }
 
 function paramValues(p) {
@@ -69,6 +69,7 @@ function renderPluginParams(p) {
   for (const def of p.manifest?.params ?? []) {
     const row = document.createElement("label");
     row.className = "plugin-param";
+    row.setAttribute("translate", "no");
     row.title = def.description || "";
     const label = el("span", {}, def.label);
     row.append(label);
@@ -123,12 +124,16 @@ function renderPluginDetail() {
   $("plugin-detail").hidden = !p || !$("plugin-ai").hidden;
   if (!p) return;
   const m = p.manifest;
+  // The plugin's name and description are its author's words.
+  for (const id of ["plugin-name", "plugin-desc"]) $(id).setAttribute("translate", "no");
   $("plugin-name").textContent = m?.name ?? p.id;
-  $("plugin-meta").textContent = m ? [m.version && `v${m.version}`, m.author && `by ${m.author}`, p.builtin ? "built in" : "yours"].filter(Boolean).join(" · ") : "";
+  $("plugin-meta").textContent = m ? [m.version && `v${m.version}`, m.author && t("by {author}", { author: m.author }), p.builtin ? t("built in") : t("yours")].filter(Boolean).join(" · ") : "";
   $("plugin-desc").textContent = m?.description ?? "";
   $("plugin-perms").textContent = !m ? "" : p.permissions.length
-    ? `Asks to: ${p.permissions.join("; ")}.${p.approved ? " (Allowed.)" : ""}`
-    : "Asks for no permissions: it sees only the photo's settings.";
+    ? p.approved
+      ? t("Asks to: {list}. (Allowed.)", { list: p.permissions.join("; ") })
+      : t("Asks to: {list}.", { list: p.permissions.join("; ") })
+    : t("Asks for no permissions: it sees only the photo's settings.");
   $("plugin-error").hidden = !p.error;
   $("plugin-error").textContent = p.error ?? "";
   renderRecipes(p);
@@ -136,10 +141,10 @@ function renderPluginDetail() {
   const effect = m?.kind === "effect";
   $("plugin-run").disabled = Boolean(p.error) || !ui.info || (effect && Boolean(pluginUi.batch));
   $("plugin-as-preset").disabled = !ui.info;
-  $("plugin-run").textContent = effect ? "Add to photo" : pluginUi.batch ? `Run on ${plural(pluginUi.batch.length, "photo")}` : "Run";
-  $("plugin-run").title = !ui.info ? "Open a photo first"
-    : effect ? "An effect is kept in the edit and rendered with the photo; change or remove it in the Effects panel"
-    : "Run it on the open photo (Undo takes it back)";
+  $("plugin-run").textContent = effect ? t("Add to photo") : pluginUi.batch ? t("Run on {photos}", { photos: plural(pluginUi.batch.length, "photo") }) : t("Run");
+  $("plugin-run").title = !ui.info ? t("Open a photo first")
+    : effect ? t("An effect is kept in the edit and rendered with the photo; change or remove it in the Effects panel")
+    : t("Run it on the open photo (Undo takes it back)");
   $("plugin-defaults").hidden = !(m?.params?.length);
   $("plugin-own").hidden = p.builtin;
   $("plugin-share").disabled = Boolean(p.error);
@@ -151,11 +156,11 @@ function renderRecipes(p) {
   const sel = $("plugin-recipe");
   const builtIn = p.manifest?.recipes ?? [];
   const yours = pluginUi.recipes[p.id] ?? [];
-  sel.replaceChildren(el("option", { value: "" }, "— the settings below —"));
-  for (const [label, list, tag] of [["Ready-made", builtIn, "b"], ["Yours", yours, "u"]]) {
+  sel.replaceChildren(el("option", { value: "" }, t("— the settings below —")));
+  for (const [label, list, tag] of [[tKey("Ready-made"), builtIn, "b"], [tKey("Yours"), yours, "u"]]) {
     if (!list.length) continue;
-    const og = el("optgroup", { label: label });
-    for (const r of list) og.append(el("option", { value: `${tag}:${r.name}` }, r.name));
+    const og = el("optgroup", { label: t(label) });
+    for (const r of list) og.append(el("option", { value: `${tag}:${r.name}`, translate: "no" }, r.name));
     sel.append(og);
   }
   sel.value = pluginUi.recipe.get(p.id) ?? "";
@@ -183,13 +188,13 @@ async function saveRecipe() {
   const name = $("plugin-recipe-name").value.trim();
   if (!name) {
     $("plugin-recipe-name").focus();
-    return toast("Give the recipe a name first.", true);
+    return toast(t("Give the recipe a name first."), true);
   }
   try {
     pluginUi.recipes = await invoke("save_plugin_recipe", { id: p.id, name, params: paramValues(p) });
     pluginUi.recipe.set(p.id, `u:${name}`);
     renderPluginDetail();
-    toast(`Saved the recipe “${name}”`);
+    toast(t("Saved the recipe “{name}”", { name }));
   } catch (e) {
     showError(e);
   }
@@ -227,10 +232,10 @@ function showPluginPanel(which) {
 // Run on each photo selected in the library, with its own settings.
 async function runPluginBatch(p) {
   const paths = pluginUi.batch;
-  $("plugin-result").textContent = "Running…";
+  $("plugin-result").textContent = t("Running…");
   const off = await tauri.event.listen("library-progress", (e) => {
     const q = e.payload;
-    if (q.done < q.total) $("plugin-result").textContent = `Running on ${q.done + 1} of ${q.total}: ${q.name}`;
+    if (q.done < q.total) $("plugin-result").textContent = t("Running on {n} of {total}: {name}", { n: q.done + 1, total: q.total, name: q.name });
   });
   try {
     const r = await invoke("run_plugin_many", { id: p.id, params: paramValues(p), paths });
@@ -242,10 +247,10 @@ async function runPluginBatch(p) {
       setState(r.state);
       requestPreview(false);
     }
-    const failed = r.errors.length ? ` · ${r.errors.length} failed: ${r.errors[0]}` : "";
-    const note = `Changed ${r.changed.length} of ${plural(paths.length, "photo")}${failed}`;
+    const v = { n: r.changed.length, photos: plural(paths.length, "photo"), failed: r.errors.length, error: r.errors[0] };
+    const note = r.errors.length ? t("Changed {n} of {photos} · {failed} failed: {error}", v) : t("Changed {n} of {photos}", v);
     $("plugin-result").textContent = [r.message, note].filter(Boolean).join(" · ");
-    toast(`${p.manifest.name}: ${note}`, r.errors.length > 0);
+    toast(t("{name}: {note}", { name: p.manifest.name, note }), r.errors.length > 0);
   } finally {
     off();
   }
@@ -255,29 +260,29 @@ async function runSelectedPlugin() {
   const p = pluginById(pluginUi.selected);
   if (!p || (!ui.info && !pluginUi.batch)) return;
   $("plugin-run").disabled = true;
-  $("plugin-result").textContent = "Running…";
+  $("plugin-result").textContent = t("Running…");
   try {
     if (p.manifest.kind === "effect") {
       const list = effectsOf(currentValue("amb:Effects"));
       list.push({ plugin: p.id, params: paramValues(p), amount: 100, seed: Math.floor(Math.random() * 2 ** 31) });
       await run([{ cmd: "set_param", name: "amb:Effects", value: JSON.stringify(list) }], `add ${p.manifest.name}`);
-      $("plugin-result").textContent = "Added. Change it or take it off in Develop → Effects.";
+      $("plugin-result").textContent = t("Added. Change it or take it off in Develop → Effects.");
       return;
     }
     if (pluginUi.batch) return await runPluginBatch(p);
     const r = await invoke("run_plugin", { id: p.id, params: paramValues(p) });
     setState(r.state);
     requestPreview(false);
-    const note = r.message || (r.edits ? `${r.edits} change(s)` : "No changes");
+    const note = r.message || (r.edits ? t("{n} change(s)", { n: r.edits }) : t("No changes"));
     $("plugin-result").textContent = [note, ...r.notes].join(" · ");
-    toast(`${p.manifest.name}: ${note}`);
+    toast(t("{name}: {note}", { name: p.manifest.name, note }));
     $("plugin-log").hidden = !r.log.length;
     $("plugin-log").querySelector("pre").textContent = r.log.join("\n");
   } catch (e) {
     if (String(e) === "needs-approval") {
       $("plugin-result").textContent = "";
       $("plugin-approve-name").textContent = p.manifest.name;
-      $("plugin-approve-list").replaceChildren(...p.permissions.map((t) => el("li", {}, t)));
+      $("plugin-approve-list").replaceChildren(...p.permissions.map((perm) => el("li", {}, perm)));
       $("plugin-approve").hidden = false;
       $("plugin-approve").scrollIntoView({ block: "nearest" });
     } else {
@@ -307,7 +312,7 @@ async function installPlugin() {
     [pluginUi.list, pluginUi.selected] = r;
     showPluginPanel("detail");
     renderPlugins();
-    toast(`Installed ${pluginById(pluginUi.selected)?.manifest?.name ?? pluginUi.selected}`);
+    toast(t("Installed {name}", { name: pluginById(pluginUi.selected)?.manifest?.name ?? pluginUi.selected }));
   } catch (e) {
     showError(e);
   }
@@ -316,7 +321,7 @@ async function installPlugin() {
 async function removeSelectedPlugin() {
   const p = pluginById(pluginUi.selected);
   if (!p || p.builtin) return;
-  if (!await askYes(`Remove ${p.manifest?.name ?? p.id}? Its folder is deleted.`)) return;
+  if (!await askYes(t("Remove {name}? Its folder is deleted.", { name: p.manifest?.name ?? p.id }))) return;
   try {
     pluginUi.list = await invoke("remove_plugin", { id: p.id });
     pluginUi.selected = pluginUi.list[0]?.id ?? null;
@@ -333,15 +338,15 @@ async function shareSelectedPlugin() {
   try {
     const plan = await invoke("plugin_share_plan", { id: p.id });
     showPluginPanel("share");
-    $("share-what").textContent = `These files go to ${plan.target} in ${plan.repo}, as a pull request from your GitHub account. The hub's reviewers check it before anyone can install it.`;
+    $("share-what").textContent = t("These files go to {target} in {repo}, as a pull request from your GitHub account. The hub's reviewers check it before anyone can install it.", { target: plan.target, repo: plan.repo });
     $("share-files").replaceChildren(...plan.files.map((f) => el("li", {}, `${f.path}  (${f.bytes < 1000 ? f.bytes + " B" : Math.round(f.bytes / 1000) + " KB"})`)));
     $("share-warn").hidden = plan.has_source;
-    $("share-warn").textContent = "There is no source code in the folder. Reviewers need it to check and rebuild plugin.wasm; add the plugin's src/ and Cargo.toml.";
+    $("share-warn").textContent = t("There is no source code in the folder. Reviewers need it to check and rebuild plugin.wasm; add the plugin's src/ and Cargo.toml.");
     $("share-gh").hidden = !plan.gh_user;
-    $("share-gh").textContent = plan.gh_user ? `Send pull request as @${plan.gh_user}` : "";
+    $("share-gh").textContent = plan.gh_user ? t("Send pull request as @{user}", { user: plan.gh_user }) : "";
     $("share-how").textContent = plan.gh_user
-      ? "The GitHub CLI on this computer sends it with your own login: it forks the hub, adds the files in one commit and opens the pull request."
-      : "In the browser: GitHub's upload page opens with the plugin's folder next to it. Drag the files in and choose “Propose changes”. (Or install the GitHub CLI and run `gh auth login` to send it from here.)";
+      ? t("The GitHub CLI on this computer sends it with your own login: it forks the hub, adds the files in one commit and opens the pull request.")
+      : t("In the browser: GitHub's upload page opens with the plugin's folder next to it. Drag the files in and choose “Propose changes”. (Or install the GitHub CLI and run `gh auth login` to send it from here.)");
   } catch (e) {
     showError(e);
   }
@@ -350,11 +355,11 @@ async function shareSelectedPlugin() {
 async function sendShare(browser) {
   const p = pluginById(pluginUi.selected);
   if (!p) return;
-  $("share-how").textContent = browser ? "Opening GitHub…" : "Sending…";
+  $("share-how").textContent = browser ? t("Opening GitHub…") : t("Sending…");
   try {
     const url = await invoke("share_plugin", { id: p.id, browser });
-    toast(browser ? "GitHub's upload page is open in your browser" : "Pull request opened");
-    $("share-how").textContent = browser ? `Opened ${url}` : `Pull request: ${url}`;
+    toast(browser ? t("GitHub's upload page is open in your browser") : t("Pull request opened"));
+    $("share-how").textContent = browser ? t("Opened {url}", { url }) : t("Pull request: {url}", { url });
   } catch (e) {
     $("share-how").textContent = String(e);
   }
@@ -428,10 +433,10 @@ function wirePlugins() {
   $("ai-copy").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText($("ai-prompt").value);
-      toast("Copied: paste it into your AI assistant");
+      toast(t("Copied: paste it into your AI assistant"));
     } catch {
       $("ai-prompt").select();
-      toast("Select all and copy (Ctrl+C)", true);
+      toast(t("Select all and copy (Ctrl+C)"), true);
     }
   });
 }
@@ -442,7 +447,7 @@ async function pluginsFlow(paths) {
   wirePlugins();
   const sel = paths?.length ? paths : libraryOn() ? selectedPhotos().map((p) => p.path) : [];
   pluginUi.batch = sel.length ? sel : null;
-  $("plugin-run").textContent = pluginUi.batch ? `Run on ${plural(sel.length, "photo")}` : "Run";
+  $("plugin-run").textContent = pluginUi.batch ? t("Run on {photos}", { photos: plural(sel.length, "photo") }) : t("Run");
   await loadPlugins();
   showPluginPanel("detail");
   renderPlugins();

@@ -17,7 +17,7 @@ const asst = {
 const ASSISTANT_URLS = { anthropic: "https://api.anthropic.com", open_ai: "http://localhost:11434/v1" };
 
 async function assistantFlow() {
-  if (!ui.info) return toast("Open a photo first.", true);
+  if (!ui.info) return toast(t("Open a photo first."), true);
   wireAssistant();
   const dlg = $("assistant-dialog");
   if (asst.photo !== ui.info.path) {
@@ -92,8 +92,8 @@ function assistantPlaceholders() {
   const kind = $("assistant-kind").value;
   $("assistant-url").placeholder = ASSISTANT_URLS[kind];
   const saved = asst.settings?.has_key && asst.settings.provider.kind === kind;
-  $("assistant-key").placeholder = saved ? "Saved (type a new one to replace it)"
-    : kind === "anthropic" ? "Your API key" : "Only if the server needs one";
+  $("assistant-key").placeholder = saved ? t("Saved (type a new one to replace it)")
+    : kind === "anthropic" ? t("Your API key") : t("Only if the server needs one");
 }
 
 async function saveAssistantSettings() {
@@ -125,8 +125,10 @@ function assistantMessage(role, text) {
 }
 
 function assistantStatus(text) {
-  const t = asst.tokens;
-  const used = t.in || t.out ? `${t.in + t.out} tokens so far (${t.in} in, ${t.out} out).` : "";
+  const tokens = asst.tokens;
+  const used = tokens.in || tokens.out
+    ? t("{total} tokens so far ({in} in, {out} out).", { total: tokens.in + tokens.out, in: tokens.in, out: tokens.out })
+    : "";
   $("assistant-status").textContent = [text, used].filter(Boolean).join(" ");
 }
 
@@ -139,7 +141,7 @@ async function askAssistant() {
   $("assistant-send").disabled = true;
   input.value = "";
   assistantMessage("user", request);
-  assistantStatus("Thinking…");
+  assistantStatus(t("Thinking…"));
   try {
     const r = await invoke("assistant_ask", { history: asst.history, request, see: $("assistant-see").checked });
     asst.history = r.history;
@@ -147,7 +149,7 @@ async function askAssistant() {
     asst.tokens.out += r.tokens_out;
     let last = null;
     for (const m of r.shown) last = assistantMessage(m.role, m.text);
-    if (!r.shown.length) last = assistantMessage("app", "No answer.");
+    if (!r.shown.length) last = assistantMessage("app", t("No answer."));
     if (r.edits) {
       setState(r.state);
       requestPreview(false);
@@ -157,12 +159,12 @@ async function askAssistant() {
       const undo = el("button", {
         type: "button",
         class: "small",
-      }, steps > 1 ? `Undo these ${steps} edits` : "Undo");
+      }, steps > 1 ? t("Undo these {n} edits", { n: steps }) : t("Undo"));
       undo.addEventListener("click", async () => {
-        if (ui.state?.history.length !== done) return toast("Other edits came after these; use the History panel.", true);
+        if (ui.state?.history.length !== done) return toast(t("Other edits came after these; use the History panel."), true);
         await run(Array.from({ length: steps }, () => ({ cmd: "undo" })));
         undo.disabled = true;
-        undo.textContent = "Undone";
+        undo.textContent = t("Undone");
       });
       last.append(document.createElement("br"), undo);
     }

@@ -6,11 +6,11 @@
 // A photo on the clipboard, with its edit (3072 pixels on the long side),
 // to paste into a chat, mail or document.
 async function copyImage(path) {
-  status("Copying the photo…");
+  status(t("Copying the photo…"));
   try {
     const [w, h] = await invoke("copy_image", { path });
-    toast(`Copied the photo (${w} × ${h}): paste it anywhere`);
-    status("Copied the photo");
+    toast(t("Copied the photo ({w} × {h}): paste it anywhere", { w, h }));
+    status(t("Copied the photo"));
   } catch (e) {
     showError(e);
   }
@@ -19,7 +19,7 @@ async function copyImage(path) {
 async function copyPath(paths) {
   try {
     await invoke("copy_text", { text: paths.join("\n") });
-    toast(paths.length === 1 ? "Copied the file's path" : `Copied ${paths.length} paths`);
+    toast(paths.length === 1 ? t("Copied the file's path") : t("Copied {n} paths", { n: paths.length }));
   } catch (e) {
     showError(e);
   }
@@ -30,14 +30,14 @@ function photoMenu(e) {
   if (!ui.info) return;
   const path = ui.info.path;
   contextMenu(e, [
-    ["Copy image", () => copyImage(path)],
-    ["Copy file path", () => copyPath([path])],
-    ["Show in folder", () => invoke("reveal_file", { path }).catch(showError)],
-    ["Export…", () => exportFlow()],
-    ["Share before and after…", () => shareCompareFlow()],
-    ["Export Edit Replay (video)…", () => replayFlow()],
-    ["Make a preset from this edit…", () => savePresetFlow()],
-    ["Convert this folder's raws to JPEGs…", () => convertRawsFlow()],
+    [t("Copy image"), () => copyImage(path)],
+    [t("Copy file path"), () => copyPath([path])],
+    [t("Show in folder"), () => invoke("reveal_file", { path }).catch(showError)],
+    [t("Export…"), () => exportFlow()],
+    [t("Share before and after…"), () => shareCompareFlow()],
+    [t("Export Edit Replay (video)…"), () => replayFlow()],
+    [t("Make a preset from this edit…"), () => savePresetFlow()],
+    [t("Convert this folder's raws to JPEGs…"), () => convertRawsFlow()],
   ]);
 }
 
@@ -45,19 +45,19 @@ function photoMenu(e) {
 // `share_compare`).
 async function shareCompareFlow() {
   if (!ui.info) return;
-  status("Making the before/after page…");
+  status(t("Making the before/after page…"));
   $("busy").hidden = false;
   try {
     const path = await invoke("share_compare", { dir: lastExportDir() });
     if (path) {
       rememberExportDir(path);
-      toast(`Saved the before/after page: ${path}`);
+      toast(t("Saved the before/after page: {path}", { path }));
     }
   } catch (e) {
     showError(e);
   } finally {
     $("busy").hidden = true;
-    status("Ready");
+    status(t("Ready"));
   }
 }
 
@@ -65,25 +65,25 @@ async function shareCompareFlow() {
 // (src/commands/export.rs `export_replay`), with frames counted in the status.
 async function replayFlow() {
   if (!ui.info) return;
-  if (!(ui.state?.history ?? []).length) return toast("This photo has no History to replay yet: edit it first.", true);
-  status("Making the Edit Replay…");
+  if (!(ui.state?.history ?? []).length) return toast(t("This photo has no History to replay yet: edit it first."), true);
+  status(t("Making the Edit Replay…"));
   $("busy").hidden = false;
   const off = await tauri.event.listen("replay-progress", (e) => {
     const [done, total] = e.payload;
-    status(`Making the Edit Replay: frame ${done} of ${total}`);
+    status(t("Making the Edit Replay: frame {done} of {total}", { done, total }));
   });
   try {
     const r = await invoke("export_replay", { dir: lastExportDir() });
     if (r) {
       rememberExportDir(r.path);
-      toast(`Saved the Edit Replay (${r.steps} steps, ${r.seconds.toFixed(1)} s): ${r.path}`);
+      toast(t("Saved the Edit Replay ({steps} steps, {seconds} s): {path}", { steps: r.steps, seconds: r.seconds.toFixed(1), path: r.path }));
     }
   } catch (e) {
     showError(e);
   } finally {
     off();
     $("busy").hidden = true;
-    status("Ready");
+    status(t("Ready"));
   }
 }
 
@@ -103,7 +103,7 @@ const DEPTHS = { jpeg: [8], png: [8, 16], tiff: [16, 8, 32], webp: [8], avif: [8
 function updateExportForm() {
   const f = $("export-form");
   const format = f.format.value;
-  f.bits.innerHTML = DEPTHS[format].map((b) => `<option value="${b}">${b === 32 ? "32-bit float" : b + "-bit"}</option>`).join("");
+  f.bits.replaceChildren(...DEPTHS[format].map((b) => el("option", { value: b }, b === 32 ? t("32-bit float") : t("{n}-bit", { n: b }))));
   f.quality.closest("label").style.visibility = ["jpeg", "avif"].includes(format) ? "visible" : "hidden";
   f.max_mb.closest("label").style.visibility = format === "jpeg" ? "visible" : "hidden";
   for (const el of f.querySelectorAll(".jpeg-only")) el.hidden = format !== "jpeg";
@@ -128,20 +128,29 @@ function updateExportSize() {
   const note = $("export-size-note");
   note.classList.remove("warn");
   if (!exact) {
-    note.textContent = f.exact_w.value || f.exact_h.value ? "Give both a width and a height for an exact size." : "";
+    note.textContent = f.exact_w.value || f.exact_h.value ? t("Give both a width and a height for an exact size.") : "";
     return;
   }
   const a = ui.exportCropAspect;
-  const t = w / h;
+  const target = w / h;
+  const crop = ui.crop.enabled;
   if (borderOn() && f.b_fit.checked) {
-    note.textContent = `Exactly ${w} × ${h} px, with the whole ${ui.crop.enabled ? "crop" : "photo"} inside the frame.`;
-  } else if (Math.abs(Math.log(a / t)) > 0.005) {
+    note.textContent = crop
+      ? t("Exactly {w} × {h} px, with the whole crop inside the frame.", { w, h })
+      : t("Exactly {w} × {h} px, with the whole photo inside the frame.", { w, h });
+  } else if (Math.abs(Math.log(a / target)) > 0.005) {
     note.classList.add("warn");
-    note.textContent = `Exactly ${w} × ${h} px. The ${ui.crop.enabled ? "crop" : "photo"} is ${ratioText(a)} ` +
-      `and this size is ${ratioText(t)}, so the ${a > t ? "left and right" : "top and bottom"} edges are trimmed (centred). ` +
-      "To choose what is kept, crop with this size preset first.";
+    const v = { w, h, a: ratioText(a), b: ratioText(target) };
+    const sides = a > target
+      ? crop
+        ? t("Exactly {w} × {h} px. The crop is {a} and this size is {b}, so the left and right edges are trimmed (centred).", v)
+        : t("Exactly {w} × {h} px. The photo is {a} and this size is {b}, so the left and right edges are trimmed (centred).", v)
+      : crop
+        ? t("Exactly {w} × {h} px. The crop is {a} and this size is {b}, so the top and bottom edges are trimmed (centred).", v)
+        : t("Exactly {w} × {h} px. The photo is {a} and this size is {b}, so the top and bottom edges are trimmed (centred).", v);
+    note.textContent = `${sides} ${t("To choose what is kept, crop with this size preset first.")}`;
   } else {
-    note.textContent = `Exactly ${w} × ${h} px; the crop already has this shape.`;
+    note.textContent = t("Exactly {w} × {h} px; the crop already has this shape.", { w, h });
   }
 }
 
@@ -220,8 +229,8 @@ function updateWatermarkForm() {
   const f = $("export-form");
   const image = f.wm_image.value;
   f.wm_text.disabled = Boolean(image);
-  f.wm_text.placeholder = image ? "Using a logo" : "None (e.g. © Your Name)";
-  $("wm-logo").textContent = image ? "No logo" : "Logo…";
+  f.wm_text.placeholder = image ? t("Using a logo") : t("None (e.g. © Your Name)");
+  $("wm-logo").textContent = image ? t("No logo") : t("Logo…");
   $("wm-image-name").textContent = image ? fileName(image) : "";
   for (const c of document.querySelectorAll(".wm-color, .wm-shadow")) c.hidden = Boolean(image);
   document.querySelector(".watermark-section .wm-fields").hidden = !image && !f.wm_text.value.trim();
@@ -248,8 +257,8 @@ async function fillExportPresets(selected = null) {
     ui.exportPresets = [];
   }
   const option = (value, text) => el("option", { value: value }, text);
-  f.export_preset.replaceChildren(option("", ui.exportPresets.length ? "— choose —" : "None saved yet"),
-    ...ui.exportPresets.map((p) => option(p.name, p.name)));
+  f.export_preset.replaceChildren(option("", ui.exportPresets.length ? t("— choose —") : t("None saved yet")),
+    ...ui.exportPresets.map((p) => el("option", { value: p.name, translate: "no" }, p.name)));
   f.export_preset.value = selected ?? "";
   $("export-preset-delete").disabled = !f.export_preset.value;
 }
@@ -265,8 +274,8 @@ function updateQualityName() {
   const f = $("export-form");
   const limited = f.format.value === "jpeg" && Number(f.max_mb.value) > 0;
   const name = f.quality.closest("label").querySelector(".q-name");
-  name.textContent = limited ? "Quality (at most)" : "Quality";
-  name.title = limited ? `Lowered only as far as it must for the file to stay under ${f.max_mb.value} MB` : "";
+  name.textContent = limited ? t("Quality (at most)") : t("Quality");
+  name.title = limited ? t("Lowered only as far as it must for the file to stay under {mb} MB", { mb: f.max_mb.value }) : "";
 }
 
 function applyExportPreset(name) {
@@ -306,13 +315,13 @@ function wireExportPresets() {
   f.max_mb.addEventListener("input", updateQualityName);
   f.format.addEventListener("change", updateQualityName);
   $("export-preset-save").addEventListener("click", async () => {
-    const name = await askName("Save export preset", "Keeps the format, size, sharpening, metadata and border choices.", f.export_preset.value);
+    const name = await askName(t("Save export preset"), t("Keeps the format, size, sharpening, metadata and border choices."), f.export_preset.value);
     if (!name) return;
     const fields = Object.fromEntries(EXPORT_FIELDS.filter((n) => f[n]).map((n) => [n, fieldValue(f[n])]));
     try {
       await invoke("save_export_preset", { name, fields });
       await fillExportPresets(name);
-      toast(`Saved the export preset “${name}”`);
+      toast(t("Saved the export preset “{name}”", { name }));
     } catch (e) {
       showError(e);
     }
@@ -337,11 +346,11 @@ function wireExportPresets() {
 async function editInFlow() {
   if (!ui.info) return;
   $("busy").hidden = false;
-  status("Writing the TIFF for the other app…");
+  status(t("Writing the TIFF for the other app…"));
   try {
     const path = await invoke("edit_in");
-    status(`Opened ${fileName(path)} in the other app`);
-    toast(`Wrote ${fileName(path)} next to the photo and opened it. Save it there; it shows in the folder.`);
+    status(t("Opened {name} in the other app", { name: fileName(path) }));
+    toast(t("Wrote {name} next to the photo and opened it. Save it there; it shows in the folder.", { name: fileName(path) }));
   } catch (e) {
     showError(e);
   } finally {
@@ -367,8 +376,8 @@ async function exportFlow(batch = null) {
   if (ui.crop.on) await exitCrop(true);
   const dlg = $("export-dialog");
   updateExportForm();
-  dlg.querySelector("h2").textContent = batch ? `Export ${plural(batch.paths.length, "photo")}` : "Export";
-  $("export-go").textContent = batch ? "Choose a folder…" : "Export…";
+  dlg.querySelector("h2").textContent = batch ? t("Export {photos}", { photos: plural(batch.paths.length, "photo") }) : t("Export");
+  $("export-go").textContent = batch ? t("Choose a folder…") : t("Export…");
   // Names from a template only for a batch (one photo is named in the save dialog).
   $("export-form").querySelector(".batch-name").hidden = !batch;
   if (batch) {
@@ -427,13 +436,16 @@ async function exportFlow(batch = null) {
   const path = await invoke("pick_export_path", { suggested: base, format: f.format.value, dir: lastExportDir() ?? dirOf(ui.info.path) });
   if (!path) return;
   rememberExportDir(path);
-  status(`Exporting ${path}…`);
+  status(t("Exporting {path}…", { path }));
   $("busy").hidden = false;
   try {
     const r = await invoke("export", { path, options });
-    toast(`Exported ${r.width}×${r.height}, ${(r.bytes / 1e6).toFixed(1)} MB${options.format === "jpeg" ? `, quality ${r.quality}` : ""}`
-      + (r.small ? `, and a ${(r.small[1] / 1e6).toFixed(1)} MB copy (${fileName(r.small[0])})` : ""));
-    status(`Exported ${r.path}`);
+    const v = { size: `${r.width}×${r.height}`, mb: (r.bytes / 1e6).toFixed(1), quality: r.quality, smallMb: r.small ? (r.small[1] / 1e6).toFixed(1) : "", name: r.small ? fileName(r.small[0]) : "" };
+    const jpeg = options.format === "jpeg";
+    toast(jpeg
+      ? r.small ? t("Exported {size}, {mb} MB, quality {quality}, and a {smallMb} MB copy ({name})", v) : t("Exported {size}, {mb} MB, quality {quality}", v)
+      : r.small ? t("Exported {size}, {mb} MB, and a {smallMb} MB copy ({name})", v) : t("Exported {size}, {mb} MB", v));
+    status(t("Exported {path}", { path: r.path }));
     await afterExport([r.path], after);
   } catch (e) {
     showError(e);

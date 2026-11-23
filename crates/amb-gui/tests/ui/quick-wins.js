@@ -51,3 +51,27 @@ await t.step("a key press ends a peek, and Peek stays off while the loupe (I) is
   toggleLoupe(false);
   hoverPeekSet(false);
 });
+
+await t.step("Ctrl+drag on the photo with no slider moved yet only says how", async () => {
+  speed.last = null;
+  mouse("mousedown", 0, 0, { ctrlKey: true });
+  mouse("mouseup", 100, 0, { ctrlKey: true });
+  t.expect(!speed.drag, "no drag started");
+  t.expect(KEY_ACTIONS.some((a) => a.id === "speed-edit"), "the key action");
+});
+
+await t.step("Ctrl+drag right on the photo raises the last slider, as one undo step", async () => {
+  t.setSlider("Exposure2012", 0.5);
+  await t.until("Exposure 0.5", () => t.setting("Exposure2012") === 0.5);
+  const steps = t.historyLength();
+  mouse("mousedown", 0, 0, { ctrlKey: true });
+  window.dispatchEvent(new MouseEvent("mousemove", { clientX: rect().left + rect().width / 2 + 100, clientY: rect().top + 10, ctrlKey: true }));
+  const live = ui.overrides.Exposure2012;
+  t.expect(live > 0.5, `the preview value rose while dragging (${live})`);
+  window.dispatchEvent(new MouseEvent("mouseup", { button: 0, ctrlKey: true }));
+  await t.until("the setting rose", () => t.setting("Exposure2012") > 0.5);
+  await t.until("one history step", () => t.historyLength() === steps + 1);
+  t.expect(t.row("Exposure2012").querySelector(".value").value !== "+0.50", "the box shows the new value");
+  t.key("Ctrl+Z");
+  await t.until("undone", () => t.setting("Exposure2012") === 0.5);
+});

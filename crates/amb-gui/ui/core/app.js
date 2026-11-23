@@ -376,6 +376,7 @@ async function init() {
   wireSelect();
   wireSplit();
   wireTouch();
+  wireSpeedEdit();
   wireGuided();
   $("btn-add-presets").addEventListener("click", () => loadPresets(true));
   wirePresetLibrary();

@@ -23,7 +23,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Brighter, darker, more contrast, recover highlights or shadows** → the **Basic** panel: **Exposure**, **Contrast**, **Highlights**, **Shadows**, **Whites**, **Blacks**. Auto (in Tone) does it for you.
 - **Wrong colours, too blue or yellow** → white balance in **Basic**: As Shot, Auto, or the **White Balance Picker** (W) and a click on something grey or white.
 - **More or less colourful** → **Vibrance** and **Saturation**; one colour at a time in the **Color Mixer**.
-- **Drag on the photo instead of hunting for a slider** → **Touch** (T): drag up or down on a tone or a colour.
+- **Drag on the photo instead of hunting for a slider** → **Touch** (T): drag up or down on a tone or a colour. **Speed Edit**: hold Ctrl and drag left or right on the photo to change the slider you moved last (Shift: finer; editor only).
 - **Black and white** → the **Black & White** panel; it sets how bright each colour becomes in grey.
 - **A film look, a tint, sepia** → **Color Grading**, a LUT (in **Basic**), or a preset; for scanned negatives, the film stocks in **Film Negative**.
 - **Fuji film recipe from the internet** → Presets → **Fuji recipe…** (paste it), or **Plugins** → Film recipe. `amb fuji RECIPE.txt PHOTO`.

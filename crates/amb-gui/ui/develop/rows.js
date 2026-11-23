@@ -169,12 +169,15 @@ function makeRow(def) {
       const v = fromSlider(def, input.value);
       ui.overrides[def.name] = v;
       number.value = format(def, v);
+      speedNote(def.name);
       requestPreview(true);
     });
     input.addEventListener("change", () => commit(def.name, fromSlider(def, input.value)));
     number.addEventListener("change", () => {
       const v = Number(number.value);
-      if (!Number.isNaN(v)) commit(def.name, v);
+      if (Number.isNaN(v)) return;
+      speedNote(def.name);
+      commit(def.name, v);
     });
     selectOnFocus(number);
     const reset = () => run([{ cmd: "reset_param", name: def.name }]);

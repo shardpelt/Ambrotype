@@ -1899,6 +1899,9 @@
  "Drag photos from below into the cells. In a cell: drag to move the photo, scroll to zoom, double-click to fit.": [
   "collage/collage-canvas.js"
  ],
+ "Drag right for more, left for less (Shift: finer). Touch (T) picks the setting from what is under the pointer; this always changes the last slider.": [
+  "core/keys.js"
+ ],
  "Drag the edges or corners, inside to move, outside the frame to turn: the photo's straight lines show, and it snaps when one comes level (hold Alt to turn freely). Draw ⌖ (D) starts a new one. Enter applies, Esc cancels.": [
   "tools/croptool.js"
  ],
@@ -3866,6 +3869,9 @@
   "library/lrcat.js",
   "library/organise.js"
  ],
+ "Move a slider first; Ctrl+drag on the photo then changes it": [
+  "develop/speed-edit.js"
+ ],
  "Move down the list": [
   "tools/mask-panel.js"
  ],
@@ -5069,6 +5075,7 @@
  "Ready": [
   "develop/photo.js",
   "develop/quickzoom.js",
+  "develop/speed-edit.js",
   "develop/touch.js",
   "dialogs/export.js",
   "help/teach.js",
@@ -6223,6 +6230,9 @@
  ],
  "Specks and hairs on a scan": [
   "tools/toolblocks.js"
+ ],
+ "Speed Edit: Ctrl+drag on the photo changes the last slider you moved": [
+  "core/keys.js"
  ],
  "Spherical": [
   "index.html"
@@ -7969,6 +7979,9 @@
  ],
  "{label} label ({key})": [
   "library/library.js"
+ ],
+ "{label} {value}": [
+  "develop/speed-edit.js"
  ],
  "{label}: none": [
   "library/insights.js"

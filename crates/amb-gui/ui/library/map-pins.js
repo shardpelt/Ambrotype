@@ -47,7 +47,7 @@ async function pinDragDrop(d, e) {
   const r = map.getBoundingClientRect();
   const [lat, lon] = mapToLatLon(browse.map, e.clientX - r.left, e.clientY - r.top, map.clientWidth, map.clientHeight);
   await placePhotos([d.p.path], `${lat.toFixed(6)},${lon.toFixed(6)}`);
-  toast(`Moved the place of ${d.p.name}`);
+  toast(t("Moved the place of {name}", { name: d.p.name }));
 }
 
 function wireMapPins() {

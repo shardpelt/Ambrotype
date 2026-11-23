@@ -21,7 +21,7 @@ pub struct Entry {
 #[derive(Debug, Clone, Default, Deserialize)]
 #[serde(default)]
 pub struct Query {
-    /// In the file name, keywords, title or caption.
+    /// In the file name, keywords, title, caption, or the place's city, state or country.
     pub text: Option<String>,
     pub camera: Option<String>,
     pub lens: Option<String>,
@@ -47,10 +47,16 @@ impl Query {
             let name = e.path.file_name().unwrap_or_default().to_string_lossy();
             name.to_lowercase().contains(&t)
                 || info.keywords.iter().any(|k| k.to_lowercase().contains(&t))
-                || [&info.title, &info.caption]
-                    .into_iter()
-                    .flatten()
-                    .any(|v| v.to_lowercase().contains(&t))
+                || [
+                    &info.title,
+                    &info.caption,
+                    &info.city,
+                    &info.state,
+                    &info.country,
+                ]
+                .into_iter()
+                .flatten()
+                .any(|v| v.to_lowercase().contains(&t))
         });
         let keyword = self
             .keyword

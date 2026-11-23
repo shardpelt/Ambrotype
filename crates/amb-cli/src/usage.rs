@@ -203,6 +203,11 @@ USAGE:
                                             photos, on the line between them), or looking the same (photos
                                             Smart search has indexed). --clock: hours the unplaced photos'
                                             clock was behind the placed ones'
+    amb place <PHOTO|DIR>... --names [--replace] [--json]
+                                            Add the city, state and country of each photo's place to its
+                                            sidecar (photoshop:City, ...), looked up on OpenStreetMap (one
+                                            request a second; only when you run this). Photos with a City
+                                            or Country keep them unless --replace; Smart search finds them
     amb insights <PHOTO|DIR>... [--by aperture,focal,shutter,iso,hour,camera,lens] [--json]
                                             How the photos were shot: how often each aperture, focal
                                             length, shutter speed, ISO, hour, camera and lens comes up,

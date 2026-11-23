@@ -31,7 +31,7 @@ pub use prints::Print;
 pub use query::{Entry, Query};
 
 /// Bumped when what is stored changes; an older catalogue is emptied.
-const VERSION: i64 = 2;
+const VERSION: i64 = 3;
 
 /// What the raw's header says about the shot.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

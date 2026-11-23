@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! `amb place`: where photos were taken, from a GPS track (`--gpx`) or
-//! guessed from the photos that have a place (`--guess`).
+//! guessed from the photos that have a place (`--guess`), and the names of
+//! the places (`--names`, from OpenStreetMap, only when asked).
 
 use std::path::{Path, PathBuf};
 
@@ -18,9 +19,12 @@ pub(crate) fn place(
     if options.contains_key("--guess") {
         return guess_places(photos, options, dry_run, json);
     }
+    if options.contains_key("--names") {
+        return place_names(&photos, options.contains_key("--replace"), json);
+    }
     let gpx = options
         .get("--gpx")
-        .ok_or("place needs --gpx TRACK.gpx or --guess")?;
+        .ok_or("place needs --gpx TRACK.gpx, --guess or --names")?;
     let text = std::fs::read_to_string(gpx).map_err(|e| format!("{gpx}: {e}"))?;
     let track = amb_library::gpx::parse(&text)?;
     let hours: f64 = match options.get("--offset") {
@@ -136,6 +140,33 @@ fn guess_places(
         "{} {} of {without} without a place",
         if dry_run { "Would place" } else { "Placed" },
         guesses.len()
+    );
+    Ok(())
+}
+
+/// `amb place --names`: the city, state and country of each photo's place,
+/// from OpenStreetMap, written into its sidecar (see amb_library::places).
+fn place_names(photos: &[PathBuf], replace: bool, json: bool) -> Result<(), String> {
+    let line = crate::progress::line(json, |done, total| {
+        format!("Looking up names… {done} of {total}")
+    });
+    let report = amb_library::places::add_names(
+        photos,
+        &amb_library::places::NamesOptions { replace },
+        &line,
+    )?;
+    if json {
+        return print_json(&serde_json::to_value(&report).map_err(|e| e.to_string())?);
+    }
+    for (path, why) in &report.failed {
+        eprintln!("{}: {why}", path.display());
+    }
+    println!(
+        "{} named · {} without a place · {} already named (--replace to redo) · {} failed",
+        report.named,
+        report.skipped_no_place,
+        report.skipped_named,
+        report.failed.len()
     );
     Ok(())
 }

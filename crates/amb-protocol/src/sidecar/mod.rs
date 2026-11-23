@@ -107,6 +107,18 @@ pub struct PhotoInfo {
     /// file has.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub orientation: Option<u16>,
+    /// The place's names (`photoshop:City`, `photoshop:State`,
+    /// `photoshop:Country`, `Iptc4xmpCore:CountryCode`), as Lightroom and
+    /// the IPTC standard keep them. Writing, `None` keeps what the file has
+    /// and `""` removes it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub city: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub state: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub country: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub country_code: Option<String>,
 }
 
 /// A photo's place in a stack: the stack's id, and whether it is the photo
@@ -157,6 +169,10 @@ impl PhotoInfo {
                 None => String::new(),
             }),
             orientation: self.orientation.filter(|o| (1..=8).contains(o)),
+            city: self.city.as_deref().map(|t| t.trim().to_string()),
+            state: self.state.as_deref().map(|t| t.trim().to_string()),
+            country: self.country.as_deref().map(|t| t.trim().to_string()),
+            country_code: self.country_code.as_deref().map(|t| t.trim().to_string()),
         }
     }
 

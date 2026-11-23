@@ -29,3 +29,13 @@ await t.step("a pin dragged on the Map moves the photo's place and keeps it", as
   t.expect(Math.abs(saved[0] - lat) < 1e-5 && Math.abs(saved[1] - lon) < 1e-5, "the sidecar has it");
   await placePhotos([path], "");
 });
+
+await t.step("Add place names is a key action and a button on the Map; names show and are searchable", async () => {
+  t.expect(KEY_ACTIONS.some((a) => a.id === "place-names" && a.when === "library"), "the key action");
+  t.expect(document.querySelector(".map-bar [data-place-names]"), "the button on the Map's bar");
+  // No network: the names are put in as the lookup would leave them.
+  const p = libPhoto(ui.info.path);
+  photoChanged(p.path, { city: "Paris", state: null, country: "France" });
+  t.expect(placeNamesText(libPhoto(p.path)) === "Paris, France", "City, Country");
+  t.expect(libPhoto(p.path).city === "Paris", "the library copy has the city, which the grid's search reads");
+});

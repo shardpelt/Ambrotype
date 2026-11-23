@@ -262,6 +262,8 @@ function renderMap(box) {
   });
   button(t("Match GPX track…"), t("Place photos from a GPS track recorded while shooting (the selected ones, or all shown)"), matchGpx);
   button(t("Guess places…"), t("Photos without a place get one from photos taken around the same time, or that look the same; you confirm each"), guessPlacesFlow);
+  const names = button(t("Add place names"), t("Look up the city and country of each photo's place on OpenStreetMap and keep them in its sidecar (the selected photos, or all shown)"), placeNamesFlow);
+  names.dataset.placeNames = "1";
   const clear = button(t("Remove place"), t("Take the place out of the selected photos' sidecars (a camera's own GPS stays)"), () => placePhotos(selectedPhotos().map((p) => p.path), ""));
   clear.hidden = !selectedPhotos().some((p) => p.gps);
   bar.append(el("span", { class: "hint" }, unplaced.length

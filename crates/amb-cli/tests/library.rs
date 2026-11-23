@@ -134,6 +134,19 @@ fn places_come_from_a_gpx_track() {
 }
 
 #[test]
+fn place_names_skip_photos_without_a_place_and_ask_no_one() {
+    let lib = Lib::new("names");
+    // The synthetic DNGs have no place: nothing to look up, no network.
+    let r = lib.json(&["place", "p", "--names"]);
+    assert_eq!(
+        (r["named"].as_u64(), r["skipped_no_place"].as_u64()),
+        (Some(0), Some(3)),
+        "{r}"
+    );
+    assert!(lib.amb(&["place", "p", "--names"]).contains("0 named"));
+}
+
+#[test]
 fn duplicates_rename_sort_and_trash() {
     let lib = Lib::new("files");
     // Three copies of one file: one group of the same file.

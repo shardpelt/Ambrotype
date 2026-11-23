@@ -232,7 +232,7 @@ function renderPanel() {
   // In compare the panel is about the active photo.
   const sel = libraryTargets();
   const n = sel.length;
-  const active = cullOn() && cull.view !== "loupe";
+  const active = cullOn();
   $("lib-sel-count").textContent = active ? (sel[0] ? t("{name} (active)", { name: sel[0].name }) : t("No active photo"))
     : n ? t("{photos} selected", { photos: plural(n, "photo") }) : t("Nothing selected");
   $("lib-hint").textContent = active
@@ -365,7 +365,7 @@ function advancing(change) {
   if (!autoAdvanceOn()) return change;
   let next = null;
   if (!lib.on) next = "editor";
-  else if (!(cullOn() && cull.view !== "loupe") && libraryTargets().length === 1) {
+  else if (!cullOn() && libraryTargets().length === 1) {
     // Chosen before the change: a filter may hide the photo just rated.
     const order = lib.shown.map((p) => p.path);
     next = order[order.indexOf(lib.focus) + 1] ?? null;

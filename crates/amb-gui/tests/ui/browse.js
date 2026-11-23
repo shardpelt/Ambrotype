@@ -609,28 +609,17 @@ await t.step("Develop opens the library's photo, from another folder too", async
   await libraryOpen(first);
   await t.until("the first photo again", () => ui.info?.path === first, 60000);
   await switchTask("library");
-  // Loupe: one photo filling the view (the editor's magnifier, also
-  // "loupe", once shrank it to a 220px circle).
-  setLibraryView("loupe");
-  const lv = $("library-view").getBoundingClientRect(), lg = $("library").getBoundingClientRect();
-  t.expect(lv.width > lg.width / 2 && getComputedStyle($("library-view")).position !== "absolute", `the loupe ${Math.round(lv.width)}px wide`);
-  // Zoom in the loupe, as in the viewer: a wheel notch, Ctrl +, and → steps and fits again.
+  // The view bar: Grid, Insights, Timeline, Map, Compare; no Loupe (E zooms the grid to one photo).
+  const order = [...document.querySelectorAll("#lib-views button")].map((b) => b.dataset.view).join();
+  t.expect(order === "grid,insights,timeline,map,compare", `the view bar: ${order}`);
+  t.expect(!document.querySelector('#lib-views [data-view="loupe"]'), "no Loupe button");
+  setLibraryView("compare");
   const shownImgs = () => [...$("library-view").querySelectorAll(".cull-frame img")];
-  await t.until("the loupe's picture", () => shownImgs()[0]?.naturalWidth);
   const scaleOf = (img) => Number(/scale\(([\d.]+)\)/.exec(img.style.transform)?.[1] ?? 1);
-  $("library-view").dispatchEvent(new WheelEvent("wheel", { deltaY: -100, deltaMode: 0, clientX: lv.left + lv.width / 2, clientY: lv.top + lv.height / 2, bubbles: true, cancelable: true }));
-  t.expect(Math.abs(scaleOf(shownImgs()[0]) - 1.25) < 0.01, `a wheel notch zooms the loupe: ${shownImgs()[0].style.transform}`);
-  t.key("Ctrl+=");
-  t.expect(scaleOf(shownImgs()[0]) > 1.5, `Ctrl + zooms on: ${shownImgs()[0].style.transform}`);
-  $("library-view").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
-  await t.until("the next photo, whole", () => shownImgs()[0] && !shownImgs()[0].style.transform && cull.zoom.s === 1);
-  t.key("Ctrl+=");
-  t.key("Ctrl+0");
-  t.expect(cull.zoom.s === 1 && !shownImgs()[0].style.transform, "Ctrl 0 fits");
+  const lv = $("library-view").getBoundingClientRect();
   // In the library the zoom keys don't wait for a photo open in Develop.
   t.expect(["zoom-in", "zoom-out", "zoom-fit"].every((id) => !needsPhoto(KEY_ACTIONS.find((a) => a.id === id))), "zoom keys need no open photo in the library");
   // Compare splits either way: the candidate below puts the tiles in one column.
-  setLibraryView("compare");
   await t.until("both pictures", () => shownImgs().length === 2 && shownImgs().every((i) => i.naturalWidth));
   $("library-view").dispatchEvent(new WheelEvent("wheel", { deltaY: -100, deltaMode: 0, clientX: lv.left + 40, clientY: lv.top + 40, bubbles: true, cancelable: true }));
   const [za, zb] = shownImgs();

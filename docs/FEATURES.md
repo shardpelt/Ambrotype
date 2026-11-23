@@ -72,6 +72,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Turn a scanned negative into a positive** → the **Film** task → **Film Negative**; **Pick base** and click the clear film between frames. To measure the levels on part of the photo only (not a sky or a light leak), **Meter area** and drag a box (Alt-click: the whole crop again); `amb:NegativeMeterLeft/Top/Right/Bottom`.
 - **Make a whole roll look consistent** → in the library, **Sync negative roll…**, or Fixed range in **Film Negative**. `amb negative analyze`.
 - **A film stock with its grain and glow** → **Film Negative** → Film stock: picking one also sets its grain, halation and bloom (change them after). `amb negative stocks`; `amb edit '{"cmd":"set_film_stock","id":"cinema-500t"}'`.
+- **Print the negative as on darkroom paper** → **Film Negative** → Paper: Paper curve, then a paper, a grade (0-5), or Split grade with Soft and Hard exposure, and Preflash for detail in the lightest tones. `amb do neg.dng "amb:NegativeConvert=True amb:PaperCurve=True amb:PaperGrade=3"`.
 - **Colour cast from a sky or lamp, faded expired film** → **Film Negative**: Cast removal, Expired film; Auto Density and Auto Grade.
 - **Dust and hairs on a scan** → **Spot Removal** → **Find dust**; Shift-drag along a straight scratch. `amb dust PHOTO --apply`.
 - **Contact sheet of a roll** → in the library, **Contact sheet…** (film strips with frame numbers, or a plain grid). `amb contact`.

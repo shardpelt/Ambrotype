@@ -84,6 +84,10 @@ fn choice_options(name: &str) -> Vec<(serde_json::Value, String)> {
             .iter()
             .map(|s| (json!(s.id), s.name.to_string()))
             .collect(),
+        "amb:Paper" => amb_engine::negative::PAPERS
+            .iter()
+            .map(|p| (json!(p.id), p.name.to_string()))
+            .collect(),
         _ => Vec::new(),
     }
 }
@@ -501,6 +505,18 @@ fn negative_panel() -> Panel {
                     ("amb:NegativeCyanRed", Some("Cyan ↔ Red")),
                     ("amb:NegativeMagentaGreen", Some("Magenta ↔ Green")),
                     ("amb:NegativeYellowBlue", Some("Yellow ↔ Blue")),
+                ],
+            ),
+            section(
+                "Paper",
+                &[
+                    ("amb:PaperCurve", Some("Paper curve")),
+                    ("amb:Paper", Some("Paper")),
+                    ("amb:PaperGrade", Some("Grade")),
+                    ("amb:PaperSplitGrade", Some("Split grade")),
+                    ("amb:PaperSoftExposure", Some("Soft exposure")),
+                    ("amb:PaperHardExposure", Some("Hard exposure")),
+                    ("amb:PaperPreflash", Some("Preflash")),
                 ],
             ),
         ],

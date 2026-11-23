@@ -1,6 +1,6 @@
 # Film negatives
 
-Status: v1 implemented (`crates/amb-engine/src/negative/`). It turns a camera scan of a colour or black-and-white negative into a positive, with an auto mode, built-in film stock looks and full manual control. Everything is settable from presets and sidecars.
+Status: v1 implemented (`crates/amb-engine/src/negative/`), with the paper curve of model v2 (2026-11-23) as an option. It turns a camera scan of a colour or black-and-white negative into a positive, with an auto mode, built-in film stock looks and full manual control. Everything is settable from presets and sidecars.
 
 Lightroom has no negative conversion; photographers buy the Negative Lab Pro plug-in for it. So these settings live in **our own XMP namespace**: `amb:` = `http://ns.ambrotype.org/develop/1.0/`. The URI changes with the product name before the first public release (see legal.md). Lightroom ignores the tags. Whether it keeps them when it rewrites a sidecar (Save Metadata) is still to be checked in the Lightroom trial.
 
@@ -25,6 +25,11 @@ Lightroom has no negative conversion; photographers buy the Negative Lab Pro plu
 | `amb:NegativeCyanRed`, `amb:NegativeMagentaGreen`, `amb:NegativeYellowBlue` | Colour balance, ±100. |
 | `amb:NegativeToe`, `amb:NegativeShoulder` | Shadow and highlight roll-off, ±100. |
 | `amb:NegativeSaturation` | Saturation, ±100. |
+| `amb:PaperCurve` | Print on the paper curve (model v2, below) instead of step 4. Off by default, and off converts exactly as before. |
+| `amb:Paper` | `glossy-neutral` (default), `matte-neutral` or `warm-fibre`. |
+| `amb:PaperGrade` | Grade 0–5 (default 2), fractional allowed. Ignored with split grade. |
+| `amb:PaperSplitGrade`, `amb:PaperSoftExposure`, `amb:PaperHardExposure` | Split grade: a grade 0 and a grade 5 exposure, each −3..+3 EV (more = darker). |
+| `amb:PaperPreflash` | 0–100 % of the paper's threshold exposure, added everywhere. |
 
 After the conversion, every regular setting works on the **positive**. Temperature/Tint, Exposure, the tone curve, HSL and colour grading behave normally, which avoids the inverted-slider confusion of converting in Lightroom. White balance reads 5500 K / 0 for the balanced conversion and shifts relative to that.
 
@@ -53,6 +58,33 @@ On camera RGB, after Lens Corrections and before white balance:
 4. **Back to scene-linear:** the midtone lands on 18 % grey, over a scene range of 2.2 decades × contrast. Toe and shoulder compress the ends.
 
 Based on the published idea of darktable's `negadoctor` (density, Dmin, paper response), written from scratch. All constants are in the `negative` section of `amb calibration defaults`.
+
+## Paper curve (model v2, ours)
+
+With `amb:PaperCurve` on, step 4 prints on a modelled paper instead (`crates/amb-engine/src/negative/paper.rs`). Steps 1–3 are unchanged.
+
+1. **Print exposure.** Per channel, e = (v − midtone) × 1.0 decade × stock contrast × 2^(Contrast/100), with Toe and Shoulder bending it as in v1, plus Print exposure × log10 2. The paper's log exposure is x = x_mid − e: a brighter scene part lets less light through the negative. The 1.0 decade is ours, so a normal negative fits grade 2.
+2. **The paper's curve** is a logistic in density, a toe, a straight line and a shoulder:
+   D(x) = Dmin + (Dmax − Dmin) / (1 + e^(−g·x)).
+   The slope g is solved so the curve's **ISO R** is the grade's: 100 × the log-exposure range between Dmin + 0.04 (the threshold) and Dmin + 0.9 × (Dmax − Dmin). That gives g = (logit 0.9 − logit(0.04 / (Dmax − Dmin))) / (R / 100). x_mid is where the plain print has reflectance 0.18.
+3. **Output:** the print's reflectance against paper white, R = 10^−(D − Dmin): paper white is 1.0, the print's mid-grey 0.18, the deepest black 10^−(Dmax − Dmin).
+4. **Split grade:** two emulsions, grade 0 and grade 5, each shifted by its exposure (EV × log10 2). The density is their mean, so the print still reaches Dmax, and with both exposures at 0 its contrast lies between grade 0's and grade 5's. More soft exposure darkens mostly the highlights, more hard exposure the shadows.
+5. **Preflash:** H_total = H + p × H_threshold, per emulsion (H_threshold gives Dmin + 0.04). It adds tone to the lightest parts and leaves the shadows, where H is far larger, as they were.
+6. **Colour** uses the same curve per channel, as colour paper does. On black-and-white prints a paper's image tone adds density per channel, growing with density (warm fibre: red −0.02, green +0.01, blue +0.06 at Dmax).
+
+| Grade | 0 | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|---|
+| ISO R | 140 | 120 | 100 | 80 | 60 | 40 |
+
+| Paper | Dmax | Dmin | Image tone |
+|---|---|---|---|
+| `glossy-neutral` | 2.10 | 0.05 | neutral |
+| `matte-neutral` | 1.60 | 0.07 | neutral |
+| `warm-fibre` | 2.00 | 0.06 | warm (B&W only) |
+
+**No base look after a print.** Every other raw gets our base look (a filmic S) after the conversion. A print is already display-referred: its curve has its own toe and shoulder, and a second S on top would double them. So with the paper curve on, the base look is linear (`DevelopSettings::paper_print`, used by the CPU render and the GPU preview's plan alike). Exposure, the tone curve, HSL and the rest still work on the print's values.
+
+What is ours: the logistic form, the grade table (from the ranges paper datasheets commonly print), the 1.0-decade negative range, split grade as a mean of two emulsions, and the three papers, which are generic and match no product. Curves fitted from public datasheets are still to do ([GAPS.md](../GAPS.md)).
 
 ## Tried on real scans (2026-10-28)
 
@@ -103,3 +135,4 @@ The Film lab track in [ROADMAP.md](../ROADMAP.md) has the order. In short:
 - Per-film layer shares for Auto off (now one set for every colour film).
 - Scan quality helpers: straight scratches and an infrared channel for dust (specks and hairs are found since 2026-10-29: [dust.md](dust.md)).
 - Measured stock profiles, and a way for users to share them as data.
+- Paper curves fitted from public datasheets.

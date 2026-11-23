@@ -851,6 +851,20 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn film_negative_printed_on_paper() {
+        let on = Value::Bool(true);
+        same_as_cpu("film negative", &[("amb:NegativeConvert", on.clone())]);
+        same_as_cpu(
+            "film negative on paper",
+            &[
+                ("amb:NegativeConvert", on.clone()),
+                ("amb:PaperCurve", on.clone()),
+                ("amb:PaperGrade", n(3.5)),
+            ],
+        );
+    }
+
+    #[test]
     fn highlights_shadows_texture_and_clarity() {
         same_as_cpu(
             "highlights and shadows",

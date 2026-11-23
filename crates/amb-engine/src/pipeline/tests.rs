@@ -243,6 +243,22 @@ fn base_look_is_monotonic_and_bounded() {
     assert_eq!(BaseLook::Linear.apply(0.3), 0.3);
 }
 
+#[test]
+fn a_paper_print_gets_no_base_look() {
+    let mut s = DevelopSettings::default();
+    assert_eq!(s.base_look_for(false), BaseLook::Default);
+    assert_eq!(s.base_look_for(true), BaseLook::Linear);
+    s.negative.paper.enabled = true;
+    assert_eq!(
+        s.base_look_for(false),
+        BaseLook::Default,
+        "no negative, no print"
+    );
+    s.negative.enabled = true;
+    assert!(s.paper_print());
+    assert_eq!(s.base_look_for(false), BaseLook::Linear);
+}
+
 fn map(pairs: &[(&str, &str)]) -> BTreeMap<String, Value> {
     pairs
         .iter()

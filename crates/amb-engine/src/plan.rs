@@ -258,13 +258,9 @@ fn plan_with(img: &CameraImage, s: &DevelopSettings, pass: &Pass) -> Result<Plan
             shadow_tint,
         });
     }
-    // The base look, or the profile's tone curve standing in for the
-    // default one.
-    let look = if img.rendered {
-        BaseLook::Linear
-    } else {
-        s.base_look
-    };
+    // The base look (linear for rendered images and paper prints), or the
+    // profile's tone curve standing in for the default one.
+    let look = s.base_look_for(img.rendered);
     let curve = profile
         .filter(|_| look == BaseLook::Default)
         .and_then(|p| p.tone_curve.clone())

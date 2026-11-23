@@ -224,4 +224,19 @@ impl DevelopSettings {
             )
         })
     }
+    /// Whether a film negative is printed on the paper curve: the result is
+    /// then a print's reflectance (display-referred), so it gets no base look.
+    pub fn paper_print(&self) -> bool {
+        self.negative.enabled && self.negative.paper.enabled
+    }
+
+    /// The base look for a photo (`rendered`: a JPEG or the like, which has
+    /// its tone curve already): linear for those and for paper prints.
+    pub(crate) fn base_look_for(&self, rendered: bool) -> BaseLook {
+        if rendered || self.paper_print() {
+            BaseLook::Linear
+        } else {
+            self.base_look
+        }
+    }
 }

@@ -16,13 +16,13 @@ A short running list, kept up to date as work lands. Newest decisions first. Eve
 The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
 - **A paper curve in density** (`film-paper-curve`)
-- **Film looks tied to stocks** (`film-stock-looks`)
 - **Dust: the guided rectangle and a heal brush that searches its stroke** (`film-dust-guided`)
 - **Darkroom aids** (`film-darkroom-aids`)
 - **Fade Restoration** (`film-fade-restoration`)
 
 ## Recently done
 
+- 2026-11-23: **Film stocks bring their halation, bloom and grain**: picking a stock sets Halation, Bloom, Grain and Grain size in the same undo step (Neutral clears them; B&W has no halation, which is red); the stock amount still blends only the look. `Stock::glow` in `amb-engine`, `amb negative stocks` lists them. Step in `tests/ui/negative.js`.
 - 2026-11-23: **Library: sort in the bar, thumbnails sized by Ctrl+wheel, pinch, Ctrl+/-**: Sort (Date taken, File date, Name, File size, Rating, Edited first) and a ↑/↓ toggle sit in the bar, remembered; the grid's size (56-480 px, `libSetSize` in `ui/library/grid-zoom.js`) keeps the photo under the pointer in place and is remembered; listed photos carry `size` and `modified`. Step in `tests/ui/library-zoom.js`.
 - 2026-11-23: **Side by side at 100 % pans smoothly, and its menu ticks the layout that is on**: the before photo keeps its own 100 % tiles (`region_before` in `src/session`), so the halves no longer render each other's away; `contextMenu` items can be choices with a tick (`ui/develop/photo.js`)
 - 2026-11-20: **Before and after side by side** (right-click Before / after, or search "side by side"): each whole side by side, each filling its half (a drag moves both), or above and below; zoom, the wheel, panning and the zoom box keep both halves on the same part (`ui/develop/side-by-side.js`)

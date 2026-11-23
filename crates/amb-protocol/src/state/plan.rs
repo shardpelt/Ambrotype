@@ -345,6 +345,41 @@ fn apply_amount(
     unscaled
 }
 
+/// Picking a film stock also sets its halation, bloom and grain (one undo
+/// step, since this is part of the SetParam plan); the neutral stock clears
+/// them. An unknown id falls back to neutral, as the engine does.
+fn stock_brings(next: &mut BTreeMap<String, Value>, notes: &mut Vec<String>) {
+    const BROUGHT: [&str; 5] = [
+        "amb:Halation",
+        "amb:Bloom",
+        "GrainAmount",
+        "GrainSize",
+        "amb:GrainFilm",
+    ];
+    let id = next
+        .get("amb:FilmStock")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let stock = amb_engine::negative::stock(id);
+    let g = stock.glow;
+    if g.halation == 0.0 && g.bloom == 0.0 && g.grain == 0.0 {
+        for n in BROUGHT {
+            next.remove(n);
+        }
+        return;
+    }
+    for (n, v) in stock.glow_settings() {
+        next.insert(n.into(), Value::Number(v));
+    }
+    if g.grain > 0.0 {
+        next.insert("amb:GrainFilm".into(), Value::Bool(true));
+    }
+    notes.push(format!(
+        "Film stock \"{}\" brings Halation {}, Bloom {}, Grain {} (size {}); change them after if you like",
+        stock.name, g.halation, g.bloom, g.grain, g.grain_size
+    ));
+}
+
 /// Side effects Lightroom applies when a slider moves, plus guidance notes.
 ///
 /// Moving Temperature or Tint under As Shot/Auto switches WhiteBalance to
@@ -396,6 +431,9 @@ fn after_set(
                 );
             }
         }
+    }
+    if name == "amb:FilmStock" {
+        stock_brings(next, notes);
     }
     if group_of(name).as_deref() == Some("tone_legacy") {
         let modern = match name {

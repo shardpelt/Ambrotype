@@ -292,6 +292,32 @@ pub struct Stock {
     pub highlight_tint: [f64; 3],
     /// Black-and-white channel mix (sums to 1).
     pub mix: [f64; 3],
+    /// Halation, bloom and grain picking this stock sets. `FilmStockAmount`
+    /// blends only the tone and colour look; it does not scale these.
+    /// B&W stocks have halation 0 on purpose: the glow stage runs after the
+    /// conversion and halation is red, so it would tint a B&W print.
+    pub glow: StockGlow,
+}
+
+/// The glow and grain a stock brings when picked (slider units, 0..100).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct StockGlow {
+    pub halation: f64,
+    pub bloom: f64,
+    pub grain: f64,
+    pub grain_size: f64,
+}
+
+impl Stock {
+    /// The settings picking this stock sets: one home for which they are.
+    pub fn glow_settings(&self) -> [(&'static str, f64); 4] {
+        [
+            ("amb:Halation", self.glow.halation),
+            ("amb:Bloom", self.glow.bloom),
+            ("GrainAmount", self.glow.grain),
+            ("GrainSize", self.glow.grain_size),
+        ]
+    }
 }
 
 const IDENTITY: [[f64; 3]; 3] = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
@@ -311,6 +337,13 @@ const NEUTRAL: Stock = Stock {
     shadow_tint: [0.0; 3],
     highlight_tint: [0.0; 3],
     mix: NEUTRAL_MIX,
+    // 25 is GrainSize's registry default.
+    glow: StockGlow {
+        halation: 0.0,
+        bloom: 0.0,
+        grain: 0.0,
+        grain_size: 25.0,
+    },
 };
 
 /// Built-in film stock looks. Our own designs, described by character, not
@@ -329,6 +362,12 @@ pub const STOCKS: &[Stock] = &[
         crosstalk: [[0.95, 0.04, 0.01], [0.03, 0.94, 0.03], [0.01, 0.05, 0.94]],
         shadow_tint: [-0.01, 0.0, 0.008],
         highlight_tint: [0.015, 0.005, -0.015],
+        glow: StockGlow {
+            halation: 8.0,
+            bloom: 10.0,
+            grain: 18.0,
+            grain_size: 30.0,
+        },
         ..NEUTRAL
     },
     Stock {
@@ -342,6 +381,12 @@ pub const STOCKS: &[Stock] = &[
         crosstalk: [[0.94, 0.05, 0.01], [0.03, 0.94, 0.03], [0.01, 0.05, 0.94]],
         shadow_tint: [-0.006, 0.004, 0.004],
         highlight_tint: [0.01, 0.006, -0.008],
+        glow: StockGlow {
+            halation: 5.0,
+            bloom: 12.0,
+            grain: 10.0,
+            grain_size: 22.0,
+        },
         ..NEUTRAL
     },
     Stock {
@@ -353,6 +398,12 @@ pub const STOCKS: &[Stock] = &[
         shoulder: 0.15,
         saturation: 1.28,
         highlight_tint: [0.006, 0.0, -0.004],
+        glow: StockGlow {
+            halation: 4.0,
+            bloom: 4.0,
+            grain: 6.0,
+            grain_size: 15.0,
+        },
         ..NEUTRAL
     },
     Stock {
@@ -364,6 +415,12 @@ pub const STOCKS: &[Stock] = &[
         saturation: 1.12,
         shadow_tint: [0.005, 0.0, -0.01],
         highlight_tint: [0.02, 0.01, -0.02],
+        glow: StockGlow {
+            halation: 10.0,
+            bloom: 10.0,
+            grain: 14.0,
+            grain_size: 25.0,
+        },
         ..NEUTRAL
     },
     Stock {
@@ -376,6 +433,12 @@ pub const STOCKS: &[Stock] = &[
         saturation: 1.06,
         shadow_tint: [-0.01, 0.012, 0.004],
         highlight_tint: [0.0, 0.004, 0.004],
+        glow: StockGlow {
+            halation: 8.0,
+            bloom: 6.0,
+            grain: 22.0,
+            grain_size: 32.0,
+        },
         ..NEUTRAL
     },
     Stock {
@@ -389,6 +452,12 @@ pub const STOCKS: &[Stock] = &[
         crosstalk: [[0.96, 0.03, 0.01], [0.02, 0.96, 0.02], [0.01, 0.03, 0.96]],
         shadow_tint: [-0.015, 0.0, 0.015],
         highlight_tint: [0.01, 0.0, -0.004],
+        glow: StockGlow {
+            halation: 35.0,
+            bloom: 15.0,
+            grain: 20.0,
+            grain_size: 30.0,
+        },
         ..NEUTRAL
     },
     Stock {
@@ -399,6 +468,12 @@ pub const STOCKS: &[Stock] = &[
         shoulder: 0.25,
         saturation: 0.98,
         highlight_tint: [0.004, 0.002, -0.004],
+        glow: StockGlow {
+            halation: 20.0,
+            bloom: 8.0,
+            grain: 6.0,
+            grain_size: 15.0,
+        },
         ..NEUTRAL
     },
     Stock {
@@ -410,6 +485,12 @@ pub const STOCKS: &[Stock] = &[
         toe: 0.05,
         shoulder: 0.15,
         mix: [0.3, 0.52, 0.18],
+        glow: StockGlow {
+            halation: 0.0,
+            bloom: 6.0,
+            grain: 28.0,
+            grain_size: 35.0,
+        },
         ..NEUTRAL
     },
     Stock {
@@ -420,6 +501,12 @@ pub const STOCKS: &[Stock] = &[
         contrast: 1.0,
         shoulder: 0.25,
         mix: [0.27, 0.55, 0.18],
+        glow: StockGlow {
+            halation: 0.0,
+            bloom: 4.0,
+            grain: 8.0,
+            grain_size: 15.0,
+        },
         ..NEUTRAL
     },
     Stock {
@@ -431,6 +518,12 @@ pub const STOCKS: &[Stock] = &[
         toe: -0.05,
         shoulder: 0.1,
         mix: [0.3, 0.5, 0.2],
+        glow: StockGlow {
+            halation: 0.0,
+            bloom: 4.0,
+            grain: 30.0,
+            grain_size: 35.0,
+        },
         ..NEUTRAL
     },
     Stock {
@@ -441,6 +534,12 @@ pub const STOCKS: &[Stock] = &[
         contrast: 1.15,
         shoulder: 0.15,
         mix: [0.65, 0.3, 0.05],
+        glow: StockGlow {
+            halation: 0.0,
+            bloom: 4.0,
+            grain: 24.0,
+            grain_size: 30.0,
+        },
         ..NEUTRAL
     },
     Stock {
@@ -451,6 +550,12 @@ pub const STOCKS: &[Stock] = &[
         contrast: 1.1,
         shoulder: 0.15,
         mix: [0.0, 0.62, 0.38],
+        glow: StockGlow {
+            halation: 0.0,
+            bloom: 8.0,
+            grain: 20.0,
+            grain_size: 28.0,
+        },
         ..NEUTRAL
     },
 ];

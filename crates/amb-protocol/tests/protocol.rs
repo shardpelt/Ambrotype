@@ -207,6 +207,41 @@ fn temperature_switches_white_balance_to_custom() {
 }
 
 #[test]
+fn film_stock_brings_its_glow_and_grain_in_one_step() {
+    let mut s = DevelopState::new();
+    s.execute(&set("GrainAmount", json!(7))).unwrap();
+    let depth = s.undo_stack().len();
+    let o = s
+        .execute(&set("amb:FilmStock", json!("cinema-500t")))
+        .unwrap();
+    assert_eq!(s.undo_stack().len(), depth + 1);
+    assert_eq!(num(&s, "amb:Halation"), Some(35.0));
+    assert_eq!(num(&s, "amb:Bloom"), Some(15.0));
+    assert_eq!(num(&s, "GrainAmount"), Some(20.0));
+    assert_eq!(num(&s, "GrainSize"), Some(30.0));
+    assert_eq!(s.get("amb:GrainFilm"), Some(&Value::Bool(true)));
+    assert!(o.notes.iter().any(|n| n.contains("brings Halation 35")));
+    // Undo restores what was there before.
+    s.execute(&Command::Undo).unwrap();
+    assert_eq!(num(&s, "GrainAmount"), Some(7.0));
+    assert_eq!(s.get("amb:Halation"), None);
+    assert_eq!(s.get("amb:FilmStock"), None);
+    // The neutral stock clears them again.
+    s.execute(&set("amb:FilmStock", json!("cinema-500t")))
+        .unwrap();
+    s.execute(&set("amb:FilmStock", json!("neutral"))).unwrap();
+    for n in [
+        "amb:Halation",
+        "amb:Bloom",
+        "GrainAmount",
+        "GrainSize",
+        "amb:GrainFilm",
+    ] {
+        assert_eq!(s.get(n), None, "{n}");
+    }
+}
+
+#[test]
 fn legacy_tags_get_a_note() {
     let mut s = DevelopState::new();
     let o = s.execute(&set("Contrast", json!(20))).unwrap();

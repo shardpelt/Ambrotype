@@ -72,6 +72,23 @@ The stocks are our own looks:
 - **Colour:** Neutral, Warm Portrait 400, Pastel Portrait 160, Vivid 100, Golden 200, Everyday 400, Cinema Tungsten 500T, Cinema Daylight 50D.
 - **B&W:** Classic 400, Fine 100, High Contrast, Red Filter, Orthochromatic.
 
+Picking a stock also sets its **Halation, Bloom, Grain and Grain size** (and turns Film grain on), in the same undo step; change them after if you like, and Neutral clears them. `FilmStockAmount` blends only the tone and colour look; it does not scale glow or grain. B&W stocks have halation 0 on purpose: the glow stage runs after the conversion and halation is red, so it would tint a B&W print. A preset's own values win (Apply preset does not bring a stock's). The values live in `Stock::glow` (`crates/amb-engine/src/negative/mod.rs`), in slider units:
+
+| Stock | Halation | Bloom | Grain | Grain size |
+|---|---|---|---|---|
+| Warm Portrait 400 | 8 | 10 | 18 | 30 |
+| Pastel Portrait 160 | 5 | 12 | 10 | 22 |
+| Vivid 100 | 4 | 4 | 6 | 15 |
+| Golden 200 | 10 | 10 | 14 | 25 |
+| Everyday 400 | 8 | 6 | 22 | 32 |
+| Cinema Tungsten 500T | 35 | 15 | 20 | 30 |
+| Cinema Daylight 50D | 20 | 8 | 6 | 15 |
+| B&W Classic 400 | 0 | 6 | 28 | 35 |
+| B&W Fine 100 | 0 | 4 | 8 | 15 |
+| B&W High Contrast | 0 | 4 | 30 | 35 |
+| B&W Red Filter | 0 | 4 | 24 | 30 |
+| B&W Orthochromatic | 0 | 8 | 20 | 28 |
+
 They are described by character and **named generically on purpose**: no manufacturer trademarks, and no claim to match a specific film. Measured stock profiles (from scans of real film shot with a reference target) could be added later as data.
 
 ## Workflow

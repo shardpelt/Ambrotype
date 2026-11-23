@@ -83,3 +83,18 @@ await t.step("Meter area: a drag stores the box (one step); Alt-click meters the
   t.key("Ctrl+Z");
   await t.until("the photo as it was", () => !t.setting("amb:NegativeConvert"));
 });
+
+await t.step("Film stock: picking one brings its Halation, Bloom and Grain in one step; undo restores", async () => {
+  revealSetting("amb:FilmStock");
+  const select = t.row("amb:FilmStock").querySelector("select");
+  t.expect(select, "the Film stock control is a dropdown");
+  const steps = t.historyLength();
+  select.value = JSON.stringify("cinema-500t");
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+  await t.until("the stock's glow", () => t.setting("amb:Halation") === 35);
+  t.expect(t.setting("amb:Bloom") === 15 && t.setting("GrainAmount") === 20, "bloom and grain too");
+  t.expect(t.historyLength() === steps + 1, "one history step");
+  t.key("Ctrl+Z");
+  await t.until("the glow gone again", () => t.setting("amb:Halation") == null && t.setting("amb:FilmStock") == null);
+  t.expect(t.historyLength() === steps, "history as before");
+});

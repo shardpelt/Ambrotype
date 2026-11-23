@@ -9,6 +9,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+amb-engine = { path = "../amb-engine" }
 amb-presets = { path = "../amb-presets" }
 quick-xml.workspace = true
 serde.workspace = true

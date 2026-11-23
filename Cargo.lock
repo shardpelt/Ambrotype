@@ -393,6 +393,7 @@ dependencies = [
 name = "amb-protocol"
 version = "0.1.0"
 dependencies = [
+ "amb-engine",
  "amb-presets",
  "quick-xml 0.37.5",
  "serde",

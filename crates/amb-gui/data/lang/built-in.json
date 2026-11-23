@@ -255,7 +255,7 @@
   "Film saturation",
   "Film stock",
   "Film stock amount",
-  "Film stock look applied during the conversion: neutral, warm-portrait-400, pastel-portrait-160, vivid-100, golden-200, everyday-400, cinema-500t, cinema-50d, bw-classic-400, bw-fine-100, bw-high-contrast, bw-red-filter, bw-orthochromatic. Our own looks, named by character; unknown names fall back to neutral.",
+  "Film stock look applied during the conversion: neutral, warm-portrait-400, pastel-portrait-160, vivid-100, golden-200, everyday-400, cinema-500t, cinema-50d, bw-classic-400, bw-fine-100, bw-high-contrast, bw-red-filter, bw-orthochromatic. Our own looks, named by character; unknown names fall back to neutral. Picking one also sets its Halation, Bloom and Grain.",
   "Fixed range",
   "Flow",
   "For old or badly stored colour film, whose colour layers age unevenly: a grey then shows one colour in the shadows and another in the midtones. This matches the layers again from shadows to highlights.",

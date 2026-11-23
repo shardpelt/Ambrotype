@@ -765,3 +765,17 @@ fn a_drawn_metering_box_measures_only_inside_it() {
     let sky_scan = sky_scene(w, h / 2, 0.0, 0.05);
     assert_eq!(bottom, sky_scan, "the rows are copied as they are");
 }
+
+#[test]
+fn stock_glow_is_in_range_and_bw_has_no_halation() {
+    for s in STOCKS {
+        for (name, v) in s.glow_settings() {
+            assert!((0.0..=100.0).contains(&v), "{} {name} {v}", s.id);
+        }
+        if s.black_and_white {
+            assert_eq!(s.glow.halation, 0.0, "{} would tint red", s.id);
+        }
+    }
+    let n = stock("neutral").glow;
+    assert_eq!((n.halation, n.bloom, n.grain), (0.0, 0.0, 0.0));
+}

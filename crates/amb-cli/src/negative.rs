@@ -14,6 +14,10 @@ pub(crate) fn negative_stocks(json: bool) {
                     "name": s.name,
                     "black_and_white": s.black_and_white,
                     "description": s.description,
+                    "halation": s.glow.halation,
+                    "bloom": s.glow.bloom,
+                    "grain": s.glow.grain,
+                    "grain_size": s.glow.grain_size,
                 })
             })
             .collect();
@@ -25,11 +29,14 @@ pub(crate) fn negative_stocks(json: bool) {
     }
     for s in STOCKS {
         println!(
-            "{:<22} {:<22} {}{}",
+            "{:<22} {:<22} {}{} (glow {}, bloom {}, grain {})",
             s.id,
             s.name,
             if s.black_and_white { "[B&W] " } else { "" },
-            s.description
+            s.description,
+            s.glow.halation,
+            s.glow.bloom,
+            s.glow.grain
         );
     }
     println!(

@@ -5,16 +5,23 @@ use crate::*;
 
 pub(crate) fn negative_stocks(json: bool) {
     use amb_engine::negative::STOCKS;
+    use amb_presets::stocks::texture;
     if json {
         let list: Vec<serde_json::Value> = STOCKS
             .iter()
-            .map(|s| {
-                serde_json::json!({
+            .filter_map(|s| {
+                let t = texture(s.id)?;
+                Some(serde_json::json!({
                     "id": s.id,
                     "name": s.name,
                     "black_and_white": s.black_and_white,
                     "description": s.description,
-                })
+                    "grain_amount": t.grain_amount,
+                    "grain_size": t.grain_size,
+                    "grain_roughness": t.grain_roughness,
+                    "halation": t.halation,
+                    "bloom": t.bloom,
+                }))
             })
             .collect();
         println!(
@@ -24,12 +31,19 @@ pub(crate) fn negative_stocks(json: bool) {
         return;
     }
     for s in STOCKS {
+        let Some(t) = texture(s.id) else { continue };
         println!(
-            "{:<22} {:<22} {}{}",
+            "{:<22} {:<22} {}{}\n{:<45}grain {} (size {}, roughness {}), halation {}, bloom {}",
             s.id,
             s.name,
             if s.black_and_white { "[B&W] " } else { "" },
-            s.description
+            s.description,
+            "",
+            t.grain_amount,
+            t.grain_size,
+            t.grain_roughness,
+            t.halation,
+            t.bloom
         );
     }
     println!(

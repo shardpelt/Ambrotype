@@ -13,7 +13,7 @@ For the size of the code, run `python3 tools/code-metrics.py`. fmt, clippy and t
 
 | Crate | Role | Main modules |
 |---|---|---|
-| `amb-presets` | Read and write settings, and the tag registry | `masks.rs`, `retouch.rs`, `linked.rs`, `data/tags.json` |
+| `amb-presets` | Read and write settings, and the tag registry | `masks.rs`, `retouch.rs`, `stocks.rs`, `linked.rs`, `data/tags.json` |
 | `amb-protocol` | Typed edit commands for GUI, CLI and AI | commands, queries, `sidecar`, JSON Schema |
 | `amb-color` | Colour science | Temperature/Tint ↔ xy, matrices, Bradford adaptation, output colour spaces and generated ICC profiles, reading matrix ICC profiles, sRGB → monitor conversion (`display.rs`) |
 | `amb-lens` | Lens profiles | lensfun and Adobe LCP readers, lens matching, interpolation, correction geometry |
@@ -41,7 +41,7 @@ For the size of the code, run `python3 tools/code-metrics.py`. fmt, clippy and t
 ### `amb-protocol`
 
 - Edit commands:
-  - `set/adjust/reset_param`, `apply_preset`.
+  - `set/adjust/reset_param`, `apply_preset`, `set_film_stock` (a stock's id, grain and glow in one step; reads `amb_presets::stocks`).
   - Mask commands: `add/set/paint/remove/duplicate/move_mask`, `list_masks`.
   - Spot commands: `add/set/remove_spot`, `list_spots`.
   - Snapshots: `save/apply/rename/delete_snapshot`, `list_snapshots`.

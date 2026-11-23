@@ -13,6 +13,7 @@ pub mod masks;
 pub mod registry;
 pub mod report;
 pub mod retouch;
+pub mod stocks;
 pub mod value;
 pub mod xmp;
 pub mod xmp_writer;

@@ -965,3 +965,50 @@ fn compact_edit_with_a_brief_report() {
     let err = edit::run_compact(&req("exp+=lots", false)).unwrap_err();
     assert!(err.to_string().contains("not a number"), "{err}");
 }
+
+#[test]
+fn a_film_stock_brings_its_grain_and_glow_in_one_undo_step() {
+    for cmd in [
+        Command::SetFilmStock {
+            id: "cinema-500t".into(),
+        },
+        set("amb:FilmStock", json!("cinema-500t")),
+    ] {
+        let mut st = DevelopState::new();
+        let out = st.execute(&cmd).unwrap();
+        assert_eq!(out.command, "Film stock: cinema-500t");
+        assert_eq!(out.diff.len(), 7);
+        assert_eq!(num(&st, "amb:Halation"), Some(30.0));
+        assert_eq!(num(&st, "amb:Bloom"), Some(10.0));
+        assert_eq!(num(&st, "GrainAmount"), Some(28.0));
+        assert_eq!(num(&st, "GrainSize"), Some(34.0));
+        assert_eq!(num(&st, "GrainFrequency"), Some(55.0));
+        assert_eq!(st.settings().get("amb:GrainFilm"), Some(&Value::Bool(true)));
+        assert_eq!(
+            st.settings().get("amb:FilmStock"),
+            Some(&Value::Text("cinema-500t".into()))
+        );
+        st.execute(&Command::Undo).unwrap();
+        assert!(st.settings().is_empty());
+    }
+    // Neutral turns grain off.
+    let mut st = DevelopState::new();
+    st.execute(&Command::SetFilmStock {
+        id: "neutral".into(),
+    })
+    .unwrap();
+    assert_eq!(
+        st.settings().get("amb:GrainFilm"),
+        Some(&Value::Bool(false))
+    );
+}
+
+#[test]
+fn an_unknown_film_stock_is_an_error_naming_the_list() {
+    let mut st = DevelopState::new();
+    let err = st
+        .execute(&Command::SetFilmStock { id: "nope".into() })
+        .unwrap_err();
+    assert!(err.to_string().contains("amb negative stocks"), "{err}");
+    assert!(st.settings().is_empty());
+}

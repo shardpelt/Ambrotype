@@ -61,3 +61,20 @@ fn a_roll_gets_one_conversion() {
     }
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+#[test]
+fn stocks_show_their_grain_and_glow() {
+    let dir = std::env::temp_dir();
+    let text = amb(&dir, &["negative", "stocks"]);
+    assert!(text.contains("halation 30"), "{text}");
+    let json: serde_json::Value =
+        serde_json::from_str(&amb(&dir, &["negative", "stocks", "--json"])).unwrap();
+    let cinema = json
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["id"] == "cinema-500t")
+        .unwrap();
+    assert_eq!(cinema["halation"], 30.0);
+    assert_eq!(cinema["grain_amount"], 28.0);
+}

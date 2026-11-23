@@ -72,6 +72,8 @@ The stocks are our own looks:
 - **Colour:** Neutral, Warm Portrait 400, Pastel Portrait 160, Vivid 100, Golden 200, Everyday 400, Cinema Tungsten 500T, Cinema Daylight 50D.
 - **B&W:** Classic 400, Fine 100, High Contrast, Red Filter, Orthochromatic.
 
+Each stock brings its grain and glow: picking one (`set_film_stock`, or `set_param amb:FilmStock`) also sets `GrainAmount`, `GrainSize`, `GrainFrequency`, `amb:Halation`, `amb:Bloom` and `amb:GrainFilm` from its row in `TEXTURES` (`crates/amb-presets/src/stocks.rs`; `amb negative stocks` lists them). The values are ours, set by each stock's character. Cinema Tungsten 500T glows most (halation 30); the B&W stocks have no halation, which is the red-layer glow of colour film. Picking a stock replaces hand-set grain and glow. Presets and sidecars that store `amb:FilmStock` keep their own grain and glow.
+
 They are described by character and **named generically on purpose**: no manufacturer trademarks, and no claim to match a specific film. Measured stock profiles (from scans of real film shot with a reference target) could be added later as data.
 
 ## Workflow
@@ -100,5 +102,4 @@ The Film lab track in [ROADMAP.md](../ROADMAP.md) has the order. In short:
 
 - Per-film layer shares for Auto off (now one set for every colour film).
 - Scan quality helpers: straight scratches and an infrared channel for dust (specks and hairs are found since 2026-10-29: [dust.md](dust.md)).
-- Halation and grain matched to the stock.
 - Measured stock profiles, and a way for users to share them as data.

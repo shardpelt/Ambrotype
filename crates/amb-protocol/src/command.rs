@@ -39,6 +39,9 @@ pub enum Command {
         name: String,
         value: serde_json::Value,
     },
+    /// Pick a film stock (`amb negative stocks`): sets `amb:FilmStock` and the
+    /// stock's grain, halation and bloom, as one undo step.
+    SetFilmStock { id: String },
     /// Add `delta` to a numeric setting (from its current value, or its default).
     AdjustParam { name: String, delta: f64 },
     /// Remove a setting so it falls back to its default.
@@ -182,6 +185,7 @@ impl Command {
     pub fn label(&self) -> String {
         match self {
             Command::SetParam { name, .. } => format!("set_param {name}"),
+            Command::SetFilmStock { id } => format!("Film stock: {id}"),
             Command::AdjustParam { name, delta } => format!("adjust_param {name} {delta:+}"),
             Command::ResetParam { name } => format!("reset_param {name}"),
             Command::ResetGroup { group } => format!("reset_group {group}"),

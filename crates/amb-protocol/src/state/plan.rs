@@ -18,6 +18,7 @@ impl DevelopState {
                 next.insert(name.clone(), v);
                 after_set(name, next, notes)?;
             }
+            Command::SetFilmStock { id } => film_stock(id, next, notes)?,
             Command::AdjustParam { name, delta } => {
                 self.plan_adjust(name, delta, next, clamped, notes)?;
             }
@@ -343,6 +344,37 @@ fn apply_amount(
         next.insert(name.clone(), Value::Number(v));
     }
     unscaled
+}
+
+/// `set_film_stock`: the stock's id and its grain and glow, together.
+fn film_stock(
+    id: &str,
+    next: &mut BTreeMap<String, Value>,
+    notes: &mut Vec<String>,
+) -> Result<(), Error> {
+    let t = amb_presets::stocks::texture(id).ok_or_else(|| Error::InvalidValue {
+        name: "amb:FilmStock".into(),
+        reason: format!("no film stock {id:?}; `amb negative stocks` lists them"),
+    })?;
+    next.insert(
+        "amb:FilmStock".into(),
+        Value::Text(id.trim().to_ascii_lowercase()),
+    );
+    for (name, v) in [
+        ("GrainAmount", t.grain_amount),
+        ("GrainSize", t.grain_size),
+        ("GrainFrequency", t.grain_roughness),
+        ("amb:Halation", t.halation),
+        ("amb:Bloom", t.bloom),
+    ] {
+        next.insert(name.into(), Value::Number(v));
+    }
+    next.insert("amb:GrainFilm".into(), Value::Bool(t.grain_amount > 0.0));
+    notes.push(format!(
+        "{id} sets grain {}, halation {} and bloom {}; change them after",
+        t.grain_amount, t.halation, t.bloom
+    ));
+    Ok(())
 }
 
 /// Side effects Lightroom applies when a slider moves, plus guidance notes.

@@ -124,7 +124,7 @@ USAGE:
                                             Estimate film base, levels and midtone of scanned negatives
                                             (the median over all frames, for a consistent roll) and write
                                             them as a preset with Auto off; --slides for slide film
-    amb negative stocks [--json]            List the built-in film stock looks
+    amb negative stocks [--json]            List the film stock looks, with the grain and glow each brings
     amb lens info <RAW> [--lens-db DIR] [--lcp-dir DIR]
                                             Show a raw's lens metadata and the profile it gets
     amb lens match --camera-make X --camera-model Y --lens-model M [--lens-make L] [--focal F]

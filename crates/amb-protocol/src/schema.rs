@@ -99,6 +99,9 @@ pub fn command_schema() -> Value {
                     "type": ["number", "string", "boolean", "array", "object"]
                 }
             }), &["name", "value"]),
+            variant("cmd", "set_film_stock", "Pick a film stock (ids: `amb negative stocks`): sets amb:FilmStock and the stock's grain, halation and bloom in one undo step. set_param amb:FilmStock does the same.", json!({
+                "id": { "type": "string", "description": "A stock id, e.g. \"cinema-500t\"." }
+            }), &["id"]),
             variant("cmd", "adjust_param", "Add a delta to a numeric setting (starting from its current value, or its default when unset).", json!({
                 "name": name_prop(),
                 "delta": { "type": "number" }
@@ -395,6 +398,9 @@ mod tests {
             Command::SetParam {
                 name: "ToneCurvePV2012".into(),
                 value: json!([[0, 20], [255, 255]]),
+            },
+            Command::SetFilmStock {
+                id: "cinema-500t".into(),
             },
             Command::AdjustParam {
                 name: "Contrast2012".into(),

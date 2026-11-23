@@ -765,3 +765,13 @@ fn a_drawn_metering_box_measures_only_inside_it() {
     let sky_scan = sky_scene(w, h / 2, 0.0, 0.05);
     assert_eq!(bottom, sky_scan, "the rows are copied as they are");
 }
+
+#[test]
+fn every_stock_has_a_texture_and_the_other_way_round() {
+    for s in STOCKS {
+        assert!(amb_presets::stocks::texture(s.id).is_some(), "{}", s.id);
+    }
+    for (id, _) in amb_presets::stocks::TEXTURES {
+        assert!(STOCKS.iter().any(|s| s.id == *id), "{id}");
+    }
+}

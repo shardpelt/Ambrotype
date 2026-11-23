@@ -183,6 +183,7 @@ Every command returns a diff: a list of `{name, before, after}` where `null` mea
 | Command | Fields | Notes |
 |---|---|---|
 | `set_param` | `name`, `value` | Numbers are clamped to the range and the clamping is reported. Booleans for switches, strings for text/enum settings, `[[input, output], ...]` (0-255) for point curves. |
+| `set_film_stock` | `id` | Picks a film stock (`amb negative stocks`): sets `amb:FilmStock` and the stock's grain, halation and bloom, one undo step. `set_param amb:FilmStock` does the same. |
 | `adjust_param` | `name`, `delta` | Numeric settings only. Starts from the current value, or the default when unset. Temperature has no default, so set it absolutely. |
 | `reset_param` | `name` | Removes the setting so the default applies. |
 | `reset_group` | `group` | Removes every setting of a group, e.g. `"hsl"`. |

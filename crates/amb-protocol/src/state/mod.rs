@@ -141,6 +141,13 @@ impl DevelopState {
 
     /// Run one command. On error the state is unchanged.
     pub fn execute(&mut self, cmd: &Command) -> Result<Outcome, Error> {
+        // Setting the film stock by name brings the stock's grain and glow too.
+        if let Command::SetParam { name, value } = cmd
+            && name == "amb:FilmStock"
+            && let Some(id) = value.as_str()
+        {
+            return self.execute(&Command::SetFilmStock { id: id.into() });
+        }
         match cmd {
             Command::Undo => {
                 let entry = self.undo.pop().ok_or(Error::NothingToUndo)?;

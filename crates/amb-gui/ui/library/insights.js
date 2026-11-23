@@ -6,17 +6,20 @@
 //
 // - It counts whatever the library shows: a folder, several, a collection,
 //   All photos, the filters. Camera chips narrow it to one camera.
-// - Clicking a bar shows just those photos in the grid ("f/1.4 ×" in the
-//   bar takes it off again).
+// - Clicking a bar shows just those photos in the grid ("f/1.4 · Show all ×"
+//   in the bar, Back or Esc takes it off again).
 // - Split by camera, lens or year puts up to three side by side, each as a
 //   share of its own photos, so a small group compares fairly.
+// - A click on a chart's title or background shows that chart large, its
+//   bars still clickable; Esc, a click outside it or its × closes it.
+//   Ctrl + wheel, a pinch and Ctrl + / − / 0 scale the charts (browse-zoom.js).
 // - Above the charts, what the numbers suggest (a fast lens kept stopped
 //   down, a zoom at its end, shake, dark scenes, where the keepers come
 //   from) and challenges to try; both from amb_library::insights.
 // - The buckets come from amb_library::insights, so `amb insights` agrees.
 "use strict";
 
-const insights = { fields: null, camera: null, split: null, notes: null, notesOf: null };
+const insights = { fields: null, camera: null, split: null, notes: null, notesOf: null, big: null };
 
 // Split by: a group's name for a photo.
 const INSIGHT_SPLITS = { camera: (p) => p.camera, lens: (p) => p.lens, year: (p) => p.captured?.slice(0, 4) };
@@ -45,7 +48,7 @@ function setInsightFilter(pick, toGrid = true) {
   lib.pick = pick;
   const chip = $("lib-pick");
   chip.hidden = !pick;
-  chip.textContent = pick ? `${pick.words} ×` : "";
+  chip.textContent = pick ? filterChipWords(pick.words) : "";
   // One step for Back, not one for the filter and one for the view.
   const held = nav.hold;
   nav.hold = true;
@@ -171,7 +174,31 @@ async function renderInsights(box) {
     if (key === "camera" && (insights.camera || cameras.length < 2)) continue;
     charts.append(insightList(insightTally(key, photos), photos.length));
   }
-  box.replaceChildren(head, notes, charts);
+  // One chart large, if asked (and still there); else all of them.
+  const big = [...charts.children].find((c) => c.dataset.chart === insights.big);
+  if (big) {
+    charts.classList.add("big");
+    charts.replaceChildren(big);
+    // A click on the room round the chart closes it.
+    charts.addEventListener("click", (e) => { if (e.target === charts) insightEnlarge(null); });
+    box.replaceChildren(head, charts);
+  } else {
+    insights.big = null;
+    box.replaceChildren(head, notes, charts);
+  }
+}
+
+// Show one chart large (by its key), or all again with null.
+function insightEnlarge(key) {
+  insights.big = key;
+  renderInsights($("library-view"));
+}
+
+// Esc in Insights closes an enlarged chart first (true if it did).
+function insightsEscape() {
+  if (!lib.on || cull.view !== "insights" || !insights.big) return false;
+  insightEnlarge(null);
+  return true;
 }
 
 // The groups to split by: the three with the most photos, or null.
@@ -273,7 +300,18 @@ function insightUsual(photos) {
 
 function insightCard(tally) {
   const card = el("section", { class: `in-card in-${tally.key}` });
-  card.append(el("h4", {}, t(tally.name)));
+  card.dataset.chart = tally.key;
+  const title = el("h4", { title: insights.big ? t("Click to show all the charts") : t("Click to enlarge") }, t(tally.name));
+  if (insights.big) {
+    const close = el("button", { type: "button", class: "small in-close", "aria-label": t("Show all the charts"), title: t("Show all the charts (Esc)") }, "×");
+    close.addEventListener("click", () => insightEnlarge(null));
+    title.append(close);
+  }
+  card.append(title);
+  // A click on the title or the card's background (not a bar) toggles it.
+  card.addEventListener("click", (e) => {
+    if (!e.target.closest("button")) insightEnlarge(insights.big ? null : tally.key);
+  });
   return card;
 }
 
@@ -329,6 +367,16 @@ function insightList(tally, total) {
   card.append(list);
   insightFoot(card, tally);
   return card;
+}
+
+// Esc in the grid takes an Insights or date filter off (true if it did), so
+// the way back to the whole folder is not only the chip or Back.
+function libFilterEscape() {
+  if (!lib.on || cull.view !== "grid") return false;
+  if (lib.pick) setInsightFilter(null);
+  else if (lib.date) setDateFilter(null);
+  else return false;
+  return true;
 }
 
 function wireInsights() {

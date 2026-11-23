@@ -525,7 +525,7 @@
  "Also saves NAME-small.jpg beside the export, at most this size, for social media and messages: as sharp as fits, and smaller in pixels only when it must be": [
   "index.html"
  ],
- "Also the mouse wheel or a pinch, at the pointer. In the library it sizes the thumbnails (or zooms the Map and Compare).": [
+ "Also the mouse wheel or a pinch, at the pointer. In the library it sizes the thumbnails (or zooms the Map, Timeline, Insights and Compare).": [
   "core/keys.js"
  ],
  "Also:": [
@@ -1254,6 +1254,9 @@
  "Click to add a point · drag to move · double-click or drag out of the graph to remove": [
   "develop/curve.js"
  ],
+ "Click to enlarge": [
+  "library/insights.js"
+ ],
  "Click to keep this one instead": [
   "library/bursts.js",
   "library/duplicates.js"
@@ -1264,6 +1267,9 @@
  "Click to select, Shift for a range, Ctrl (⌘) for more. Changes go to every selected photo's .xmp at once.": [
   "index.html",
   "library/library.js"
+ ],
+ "Click to show all the charts": [
+  "library/insights.js"
  ],
  "Clipped": [
   "develop/zones.js"
@@ -3027,7 +3033,7 @@
  "In the frame, below the photo": [
   "index.html"
  ],
- "In the library: thumbnails back to their usual size.": [
+ "In the library: thumbnails (or Timeline and Insights) back to their usual size.": [
   "core/keys.js"
  ],
  "In use": [
@@ -5938,6 +5944,12 @@
  "Show all of {year}": [
   "library/browse.js"
  ],
+ "Show all the charts": [
+  "library/insights.js"
+ ],
+ "Show all the charts (Esc)": [
+  "library/insights.js"
+ ],
  "Show another folder": [
   "index.html"
  ],
@@ -8520,6 +8532,9 @@
  ],
  "{why} Settings → General turns them on again.": [
   "help/tips.js"
+ ],
+ "{words} · Show all ×": [
+  "library/browse.js"
  ],
  "{w}×{h} preview in {ms} ms": [
   "develop/preview.js"

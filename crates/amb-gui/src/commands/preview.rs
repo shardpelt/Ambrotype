@@ -8,6 +8,7 @@ pub(crate) struct PreviewMeta {
     pub(crate) width: usize,
     pub(crate) height: usize,
     pub(crate) histogram: [Vec<u32>; 3],
+    pub(crate) vectorscope: Vec<u32>,
     pub(crate) millis: u128,
     pub(crate) lens_profile: Option<String>,
     /// The GPU's name, or why this preview was rendered on the CPU.
@@ -50,6 +51,7 @@ pub(crate) async fn preview(
             width: p.width,
             height: p.height,
             histogram: p.histogram,
+            vectorscope: p.vectorscope,
             millis: p.millis,
             lens_profile: p.lens_profile,
             gpu: p.gpu.as_ref().and_then(|g| g.as_ref().ok().cloned()),

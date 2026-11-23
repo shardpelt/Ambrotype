@@ -131,12 +131,8 @@ impl Session {
         };
         let upright = amb_export::geometry::orient(&developed, self.full.metadata.orientation);
         let (mut bytes, gamut) = display(self.proof, &upright);
-        let mut histogram = [vec![0u32; 256], vec![0u32; 256], vec![0u32; 256]];
-        for p in bytes.chunks(3) {
-            for c in 0..3 {
-                histogram[c][p[c] as usize] += 1;
-            }
-        }
+        let histogram = amb_engine::scopes::histogram(&bytes);
+        let vectorscope = amb_engine::scopes::vectorscope(&bytes);
         if let Some(out) = &gamut {
             mark_gamut(&mut bytes, out);
         }
@@ -154,6 +150,7 @@ impl Session {
             width: upright.width,
             height: upright.height,
             histogram,
+            vectorscope,
             millis: start.elapsed().as_millis(),
             lens_profile,
             gpu,

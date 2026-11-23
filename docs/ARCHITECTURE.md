@@ -258,7 +258,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - open (dialog, drag-and-drop, command line)
   - Basic, Tone Curve (parametric), Color Mixer (HSL tabs), Black & White, Color Grading, Detail, Lens Corrections, Transform, Effects, Calibration and Film Negative panels
   - presets list (Lightroom's own folder when present, or added folders) with an Amount slider
-  - history, undo/redo (a drag of a curve point or colour wheel, or a WB pick, is one step), before/after, histogram
+  - history, undo/redo (a drag of a curve point or colour wheel, or a WB pick, is one step), before/after, histogram or vectorscope (a switch in the histogram panel; `amb_engine::scopes` counts both from the displayed pixels, `ui/develop/scope.js` draws it)
   - 1:1 view with panning, and the tools that work on the photo:
     - Only the tiles (256 px) the view needs are rendered (`render_region`), and kept until the committed settings change, so panning back is instant.
     - White-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels.

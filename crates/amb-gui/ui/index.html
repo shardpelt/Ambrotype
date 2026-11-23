@@ -427,18 +427,18 @@
       <select id="lib-filter-edited" aria-label="Edit filter" title="Edited or not">
             <option value="all">Edited or not</option><option value="edited">Edited</option><option value="unedited">Not edited</option>
           </select></label>
-          <label>Sort
-      <select id="lib-sort" aria-label="Sort" title="Sort by">
-            <option value="name">By name</option><option value="captured">By capture time</option>
-            <option value="rating">By rating</option><option value="edited">Edited first</option>
-          </select></label>
-          <label>Reverse order <input id="lib-reverse" type="checkbox"></label>
         </div>
       </details>
       <button type="button" id="lib-view" class="small" title="View the photos full screen, as an image viewer: ← → or a click on the left or right steps, Esc ends (V or F)">⛶ View</button>
       <button type="button" id="lib-slideshow" class="small" title="Slideshow of the photos shown, or the selected ones (Ctrl+Enter)">▶ Slideshow</button>
       <button type="button" id="lib-settings" class="small" title="Settings (Ctrl+,)" aria-label="Settings">⚙</button>
-      <input id="lib-size" type="range" min="100" max="320" value="160" title="Thumbnail size" aria-label="Thumbnail size">
+      <select id="lib-sort" aria-label="Sort" title="Sort by">
+        <option value="captured">Date taken</option><option value="modified">File date</option>
+        <option value="name" selected>Name</option><option value="size">File size</option>
+        <option value="rating">Rating</option><option value="edited">Edited first</option>
+      </select>
+      <label class="lib-sort-dir" title="Reverse the order"><input id="lib-reverse" type="checkbox" aria-label="Reverse the order"><span aria-hidden="true"></span></label>
+      <input id="lib-size" type="range" min="56" max="480" value="160" title="Thumbnail size" aria-label="Thumbnail size">
     </div>
     <div class="library-body">
       <aside id="library-tree" class="library-tree" aria-label="Library folders">
@@ -1979,6 +1979,7 @@
   <script src="collage/collage-tray.js"></script>
   <script src="library/library.js"></script>
   <script src="library/library-grid.js"></script>
+  <script src="library/grid-zoom.js"></script>
   <script src="library/library-actions.js"></script>
   <script src="library/cull.js"></script>
   <script src="library/map-touch.js"></script>

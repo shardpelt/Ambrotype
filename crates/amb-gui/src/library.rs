@@ -379,6 +379,25 @@ mod tests {
     }
 
     #[test]
+    fn listing_carries_file_size_and_modified_time() {
+        let dir = temp("facts");
+        let a = dng(&dir, "a.dng");
+        let listed = list_many(std::slice::from_ref(&dir), false).unwrap();
+        let meta = std::fs::metadata(&a).unwrap();
+        assert_eq!(listed[0].photo.size, Some(meta.len()));
+        let ms = meta
+            .modified()
+            .unwrap()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+        assert_eq!(listed[0].photo.modified, Some(ms));
+        let json = serde_json::to_value(&listed[0]).unwrap();
+        assert_eq!(json["size"], meta.len());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
     fn changes_many_photos_info() {
         let dir = temp("info");
         let (a, b) = (dng(&dir, "a.dng"), dng(&dir, "b.dng"));

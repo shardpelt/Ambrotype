@@ -39,6 +39,11 @@ pub struct FolderPhoto {
     /// Where it was taken (latitude, longitude), as set in the sidecar
     /// (the camera's own GPS is the shot's `camera_gps`).
     pub gps: Option<[f64; 2]>,
+    /// The file's size in bytes and when it was last changed (milliseconds
+    /// since 1970), for sorting; `None` when neither the catalogue nor the
+    /// disk knows it.
+    pub size: Option<u64>,
+    pub modified: Option<u64>,
 }
 
 pub use amb_library::folder::photo_extensions;
@@ -132,6 +137,7 @@ pub fn from_record(
 ) -> (FolderPhoto, amb_library::catalog::Shot) {
     let gps = r.info.place().map(|(a, b)| [a, b]);
     let info = r.info;
+    let (size, modified) = file_facts(p);
     let photo = FolderPhoto {
         gps,
         name: display_name(p),
@@ -147,8 +153,28 @@ pub fn from_record(
         creator: info.creator,
         copyright: info.copyright,
         stack: info.stack,
+        size,
+        modified,
     };
     (photo, r.shot)
+}
+
+/// A photo file's size (bytes) and modified time (milliseconds since 1970):
+/// the catalogue's stamp when it has one (no file is touched, and an
+/// unplugged drive still answers), else the file's own.
+fn file_facts(p: &Path) -> (Option<u64>, Option<u64>) {
+    const NANOS_PER_MS: i64 = 1_000_000;
+    let stamp = catalog()
+        .stamp_of(p)
+        .map(|s| (s.size, s.modified))
+        .or_else(|| amb_presets::linked::file_stamp(&amb_engine::source_path(p)));
+    match stamp {
+        Some((size, nanos)) => (
+            u64::try_from(size).ok(),
+            u64::try_from(nanos / NANOS_PER_MS).ok(),
+        ),
+        None => (None, None),
+    }
 }
 
 /// The file's size and modified time (nanoseconds), or while it can't be

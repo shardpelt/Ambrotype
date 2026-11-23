@@ -525,7 +525,7 @@
  "Also saves NAME-small.jpg beside the export, at most this size, for social media and messages: as sharp as fits, and smaller in pixels only when it must be": [
   "index.html"
  ],
- "Also the mouse wheel or a pinch, at the pointer. In the library: the Map view.": [
+ "Also the mouse wheel or a pinch, at the pointer. In the library it sizes the thumbnails (or zooms the Map, Loupe and Compare).": [
   "core/keys.js"
  ],
  "Also:": [
@@ -1007,19 +1007,10 @@
  "Buttons": [
   "looks/editor-inspector.js"
  ],
- "By capture time": [
-  "index.html"
- ],
  "By date: 2026 / 2026-10-10": [
   "index.html"
  ],
  "By month: 2026 / 2026-10": [
-  "index.html"
- ],
- "By name": [
-  "index.html"
- ],
- "By rating": [
   "index.html"
  ],
  "Camera": [
@@ -1687,6 +1678,9 @@
  "Date and number: 20261010_0001": [
   "index.html"
  ],
+ "Date taken": [
+  "index.html"
+ ],
  "December": [
   "library/browse.js"
  ],
@@ -2314,10 +2308,16 @@
   "index.html",
   "library/slideshow.js"
  ],
+ "File date": [
+  "index.html"
+ ],
  "File name": [
   "library/collections.js"
  ],
  "File names": [
+  "index.html"
+ ],
+ "File size": [
   "index.html"
  ],
  "File this collection under a collection set": [
@@ -2505,6 +2505,9 @@
   "develop/info.js"
  ],
  "Flip horizontal": [
+  "core/keys.js"
+ ],
+ "Flip the bar's sort between ↑ and ↓.": [
   "core/keys.js"
  ],
  "Flipped: {photos}": [
@@ -3023,6 +3026,9 @@
  ],
  "In the frame, below the photo": [
   "index.html"
+ ],
+ "In the library: thumbnails back to their usual size.": [
+  "core/keys.js"
  ],
  "In use": [
   "dialogs/models.js"
@@ -5302,8 +5308,11 @@
   "index.html",
   "looks/editor.js"
  ],
- "Reverse order": [
+ "Reverse the order": [
   "index.html"
+ ],
+ "Reverse the sort order": [
+  "core/keys.js"
  ],
  "Right": [
   "index.html"

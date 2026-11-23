@@ -74,10 +74,7 @@ function applyView() {
   const byName = twins
     ? (a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })
     : (a, b) => at.get(a) - at.get(b);
-  if (lib.found) { /* best first */ } else if (sort === "captured") shown.sort((a, b) => (a.captured ?? "~").localeCompare(b.captured ?? "~") || byName(a, b));
-  else if (sort === "rating") shown.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || byName(a, b));
-  else if (sort === "edited") shown.sort((a, b) => Number(b.edited) - Number(a.edited) || byName(a, b));
-  else if (twins) shown.sort(byName);
+  if (!lib.found) shown.sort(libSortCompare(sort, byName));
   if ($("lib-reverse").checked && !lib.found) shown.reverse();
   // A closed stack shows only its top photo (or its first one shown).
   lib.stackSizes = new Map();
@@ -89,6 +86,24 @@ function applyView() {
     if (!have || (p.stack.top && !have.stack.top)) shownTop.set(p.stack.id, p);
   }
   lib.shown = shown.filter((p) => !p.stack || lib.expanded.has(p.stack.id) || shownTop.get(p.stack.id) === p);
+}
+
+// How the bar's Sort orders two photos: `byName` breaks ties; what a photo
+// doesn't know (no capture time, an unreadable file) comes last.
+function libSortCompare(sort, byName) {
+  const last = (key) => (a, b) => (a[key] ?? Infinity) - (b[key] ?? Infinity) || byName(a, b);
+  const by = {
+    // "YYYY-MM-DD HH:MM:SS" sorts as text; "~" is past every digit (localeCompare puts it first).
+    captured: (a, b) => {
+      const [x, y] = [a.captured ?? "~", b.captured ?? "~"];
+      return (x < y ? -1 : x > y ? 1 : 0) || byName(a, b);
+    },
+    modified: last("modified"),
+    size: last("size"),
+    rating: (a, b) => (b.rating ?? 0) - (a.rating ?? 0) || byName(a, b),
+    edited: (a, b) => Number(b.edited) - Number(a.edited) || byName(a, b),
+  };
+  return by[sort] ?? byName;
 }
 
 // Open or close a stack in the grid.

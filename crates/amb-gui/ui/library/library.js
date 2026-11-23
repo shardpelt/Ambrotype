@@ -480,16 +480,6 @@ function wireLibrary() {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(renderLibrary, 150);
   });
-  $("lib-size").addEventListener("input", () => {
-    grid.style.setProperty("--thumb", `${$("lib-size").value}px`);
-    renderRange(true);
-    for (const cell of lib.cells.values()) {
-      if (cell.dataset.dir) continue;
-      const url = cachedThumb(libPhoto(cell.dataset.path));
-      if (url) cell.querySelector("img").src = url;
-      else lib.queue.add(cell.dataset.path);
-    }
-  });
   $("lib-choose").addEventListener("click", chooseLibraryFolder);
   $("lib-choose-empty").addEventListener("click", chooseLibraryFolder);
   $("lib-reload").addEventListener("click", () => {
@@ -554,7 +544,7 @@ function wireLibrary() {
   $("lib-collage").addEventListener("click", libraryCollage);
   $("lib-hdr").addEventListener("click", libraryMergeHdr);
   $("lib-pano").addEventListener("click", libraryMergePano);
-  grid.style.setProperty("--thumb", `${$("lib-size").value}px`);
+  wireLibraryZoom();
   wireCull();
   wireCollections();
 }

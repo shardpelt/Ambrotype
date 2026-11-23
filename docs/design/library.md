@@ -28,9 +28,9 @@ Status: built (2026-10-08). Asked for while preparing a 630-photo shoot: rate, l
   - P flags a pick, X a reject, U removes the flag (Lightroom's keys); rejected photos are dimmed
   - written to each photo's `.xmp` at once: `xmp:Rating`, `xmp:Label`, `dc:subject`, and the flag (below)
 - **Look closer** (Lightroom's culling views, buttons in the bar):
-  - **Loupe** (E): one photo large; ← → step through the shown photos.
+  - **One photo large** (E): the grid zoomed all the way in, one photo per row; press again to go back. ← → step through the shown photos.
   - **Compare** (C): the select on the left, a candidate on the right (the first two selected, or the photo after the select). ← → change the candidate, ↓ swaps the two, ↑ makes the candidate the select and brings the next photo in.
-  - Loupe and Compare zoom as the viewer does: the wheel or a pinch at the pointer, a click for 100 % there and back, drag to move, Ctrl + − 0; ← → step and show the whole photo again. Compare's two photos zoom and move together.
+  - Compare zooms as the viewer does: the wheel or a pinch at the pointer, a click for 100 % there and back, drag to move, Ctrl + − 0; ← → step and show the whole photo again. Compare's two photos zoom and move together.
   - Compare splits side by side or above and below, the candidate either way round (the buttons at its top; kept on this computer). Survey (the selection tiled) was taken out on 2026-11-11: compare and the grid did its job.
   - In compare, rating, label and flag keys and the panel act on the active photo, framed in the accent colour, as in Lightroom. Enter or a double-click opens it in the editor; G or Esc goes back to the grid.
   - Large previews are the camera's embedded preview at 1024 or 2048 pixels, then the edit's render for edited photos (both cached).
@@ -70,7 +70,7 @@ Folders, or whole drives, that the catalogue keeps indexed (photo manager track,
 
 ## Timeline and map
 
-Other ways to browse what the library shows (a folder, a collection or All photos, after the filters), as views next to Grid, Loupe and Compare (2026-10-23; `ui/library/browse.js`).
+Other ways to browse what the library shows (a folder, a collection or All photos, after the filters), as views next to Grid and Compare (2026-10-23; `ui/library/browse.js`).
 
 - **Timeline:** the years as bars, and the chosen year as twelve month calendars. A day with photos shows the first one's thumbnail and how many there are. Clicking a day or a month name shows just those photos in the grid, and a date chip in the bar (`14 July 2026 ×`) shows all dates again. Double-clicking a year, or **Show all of 2026**, shows the year.
 - **Scrubber:** sorted by capture time, the grid has a strip on its right edge with the years. Dragging along it jumps through the photos and says which month you're at.
@@ -212,7 +212,7 @@ The library's Folders panel → **Lightroom +** (or From Lightroom… → **Open
 - `crates/amb-library/src/folder.rs`: which files in a folder are photos, in order; `catalog.rs`: the catalogue.
 - `crates/amb-gui/src/library.rs`: listing, batch info changes, paste commands, batch export.
 - `crates/amb-gui/ui/library/library.js`, `library-grid.js` and `library-actions.js`: the grid, selection, panel and keys.
-- `crates/amb-gui/ui/library/cull.js`: loupe and compare.
+- `crates/amb-gui/ui/library/cull.js`: compare.
 - `crates/amb-library/src/lrcat.rs` and `crates/amb-gui/ui/library/lrcat.js`: moving from Lightroom Classic; `crates/amb-library/src/lightroom.rs`, `crates/amb-presets/src/linked.rs` and `crates/amb-gui/ui/library/lightroom.js`: a catalogue in place.
 - Labels and flags in `amb_protocol::sidecar::PhotoInfo` (`xmp:Label`, `amblib:Flag`); labels are exported as XMP (`amb_export::exif::Tags::label`), flags are not.
 
@@ -223,7 +223,7 @@ The library's Folders panel → **Lightroom +** (or From Lightroom… → **Open
 - Collections don't follow photos moved outside Ambrotype.
 - From Lightroom: smart collections, publish services, edit history and snapshots, face regions, keyword hierarchies (they come as plain keywords) and Lightroom's virtual copy names. One path replacement only.
 - Import: moving instead of copying, ejecting the card, picking single photos to import. (A develop preset and a second backup copy came 2026-10-13.)
-- Zooming in the loupe and compare views (open the photo in the editor for 100%).
+- Zooming in the compare view (open the photo in the editor for 100%).
 - The rest of Lightroom's metadata panel (location, IPTC contact fields, headline) and editing keyword hierarchies. Camera details are shown under the histogram, not in the panel.
 - Undo for library changes. Ratings, labels and keywords are written straight away; pasted edits can be undone per photo in the editor.
 - Background work: big pastes and exports run while you wait, with progress in the status bar.

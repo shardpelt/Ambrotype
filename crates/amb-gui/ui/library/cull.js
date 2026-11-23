@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The library's culling views, as in Lightroom: loupe (E, one photo large)
-// and compare (C, the select beside a candidate, split left and right or
-// top and bottom, either way round). G or Esc goes back to the grid.
+// The library's compare view (C): the select beside a candidate, split left
+// and right or top and bottom, either way round. G or Esc goes back to the
+// grid. (One photo large is the grid zoomed all the way in: grid-zoom.js.)
 //
 // In compare, rating, label and flag keys act on the active photo (the one
 // with the accent frame), not on the whole selection.
 "use strict";
 
 const cull = {
-  view: "grid",     // "grid", "loupe", "compare", browse.js's "timeline" or "map", or "insights"
+  view: "grid",     // "grid", "compare", browse.js's "timeline" or "map", or "insights"
   active: null,     // the photo keys act on
   select: null,     // compare: the left photo
   candidate: null,  // compare: the right photo
@@ -16,14 +16,14 @@ const cull = {
   // "down" or "up". Kept on this computer.
   split: ["right", "left", "down", "up"].includes(store.text("amb.compareSplit")) ? store.text("amb.compareSplit") : "right",
   loads: new Map(), // `${path}|${edge}|${edited}` -> Promise<url>
-  zoom: null,       // the zoom of loupe and compare's photos (viewer-zoom.js's makeZoom), made once in wireCull
+  zoom: null,       // the zoom of compare's photos (viewer-zoom.js's makeZoom), made once in wireCull
 };
 
-const cullOn = () => lib.on && ["loupe", "compare"].includes(cull.view);
+const cullOn = () => lib.on && cull.view === "compare";
 
 // The photos the panel and the rating keys act on.
 function libraryTargets() {
-  if (!cullOn() || cull.view === "loupe") return selectedPhotos();
+  if (!cullOn()) return selectedPhotos();
   const p = libPhoto(cull.active);
   return p ? [p] : [];
 }
@@ -36,9 +36,7 @@ function setLibraryView(view) {
   // Going from one view to another keeps the active photo.
   const focus = cullOn() && order.includes(cull.active) ? cull.active
     : lib.focus && order.includes(lib.focus) ? lib.focus : sel[0] ?? order[0];
-  if (view === "loupe") {
-    cull.active = focus;
-  } else if (view === "compare") {
+  if (view === "compare") {
     cull.select = sel[0] ?? focus;
     const after = order[order.indexOf(cull.select) + 1] ?? order[order.indexOf(cull.select) - 1];
     cull.candidate = sel.find((p) => p !== cull.select) ?? after ?? cull.select;
@@ -72,18 +70,11 @@ function renderCull() {
   const box = $("library-view");
   cull.zoom?.reset();
   box.className = `library-view ${cull.view}`;
-  if (cull.view === "loupe") {
-    box.replaceChildren(cullTile(cull.active, { big: true }));
-  } else if (cull.view === "compare") {
+  if (cull.view === "compare") {
     const tiles = [cullTile(cull.select, { tag: tKey("Select") }), cullTile(cull.candidate, { tag: tKey("Candidate") })];
     if (cull.split === "left" || cull.split === "up") tiles.reverse();
     box.dataset.split = cull.split;
     box.replaceChildren(...tiles, compareSplitBar());
-  }
-  // Keep the grid's selection and focus on what's being looked at.
-  if (cull.view === "loupe") {
-    lib.selected = new Set([cull.active]);
-    lib.focus = cull.active;
   }
   renderCounts();
   renderPanel();
@@ -119,7 +110,7 @@ function setCompareSplit(split) {
   if (cull.view === "compare") renderCull();
 }
 
-function cullTile(path, { tag, big } = {}) {
+function cullTile(path, { tag } = {}) {
   const p = libPhoto(path);
   const tile = el("figure", { class: "cull-tile" });
   if (!p) return tile;
@@ -147,12 +138,12 @@ function cullTile(path, { tag, big } = {}) {
     cull.active = path;
     for (const other of $("library-view").querySelectorAll(".cull-tile")) other.classList.toggle("active", other.dataset.path === path);
     renderPanel();
-    // A click on the photo: 100 % there and back (in compare, once it's the active one).
-    if ((big || was) && e.target.closest(".cull-frame")) cull.zoom?.toggleFull(e.clientX, e.clientY);
+    // A click on the photo: 100 % there and back (once it's the active one).
+    if (was && e.target.closest(".cull-frame")) cull.zoom?.toggleFull(e.clientX, e.clientY);
   });
   tile.addEventListener("dblclick", () => libraryOpen(path));
   // A large camera preview, then the edit's render when the photo has one.
-  const edge = cullEdge(big);
+  const edge = cullEdge();
   let rendered = false;
   bigImage(p, edge, false).then((u) => {
     if (!rendered && !img.dataset.sharp) img.src = u;
@@ -167,9 +158,9 @@ function cullTile(path, { tag, big } = {}) {
 }
 
 // Cached sizes: 1024 or 2048 pixels on the long edge.
-function cullEdge(big) {
+function cullEdge() {
   const box = $("library-view");
-  const want = (big ? Math.max(box.clientWidth, box.clientHeight) : Math.max(box.clientWidth / 2, box.clientHeight)) * (window.devicePixelRatio || 1);
+  const want = Math.max(box.clientWidth / 2, box.clientHeight) * (window.devicePixelRatio || 1);
   return want > 1100 ? 2048 : 1024;
 }
 
@@ -182,7 +173,7 @@ function bigImage(p, edge, edited) {
       : invoke("thumbnail", { path: p.path, edge, edited });
     cull.loads.set(key, call.then((buf) => {
       const url = URL.createObjectURL(new Blob([new Uint8Array(buf)], { type: "image/jpeg" }));
-      lib.urls.set(key, url);
+      keepThumbUrl(key, url);
       return url;
     }).finally(() => cull.loads.delete(key)));
   }
@@ -208,10 +199,7 @@ function cullArrow(key) {
   cull.zoom?.reset();
   const order = lib.shown.map((p) => p.path);
   const step = key === "ArrowLeft" ? -1 : key === "ArrowRight" ? 1 : 0;
-  if (cull.view === "loupe" && step) {
-    const i = order.indexOf(cull.active);
-    cull.active = order[Math.min(order.length - 1, Math.max(0, i + step))];
-  } else if (cull.view === "compare") {
+  if (cull.view === "compare") {
     if (step) {
       // The candidate steps through the shown photos, past the select.
       let i = order.indexOf(cull.candidate) + step;
@@ -249,7 +237,7 @@ function cullLeave() {
   return lib.on && cull.view !== "grid" ? setLibraryView("grid") : false;
 }
 
-// Ctrl + − 0 in loupe and compare (true when they were the ones to use it).
+// Ctrl + − 0 in compare (true when they were the ones to use it).
 function cullZoomKey(dir) {
   if (!cullOn() || !cull.zoom) return false;
   if (dir) cull.zoom.step(dir);
@@ -267,7 +255,7 @@ async function cullSharper(img) {
   if (url && img.isConnected) img.src = url;
 }
 
-// Wheel, pinch, drag and keys zoom loupe's photo, or compare's two together.
+// Wheel, pinch, drag and keys zoom compare's two photos together.
 function wireCull() {
   const box = $("library-view");
   cull.zoom = makeZoom({

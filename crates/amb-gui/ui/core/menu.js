@@ -36,7 +36,7 @@ const MENU_TITLES = {
   "rate-0": tKey("No Rating"), "label-red": tKey("Red"), "label-yellow": tKey("Yellow"), "label-green": tKey("Green"), "label-blue": tKey("Blue"),
   "flag-pick": tKey("Pick"), "flag-reject": tKey("Reject"), "flag-none": tKey("No Flag"), keywords: tKey("Add Keywords"),
   "virtual-copy": tKey("Make a Virtual Copy"), "quick-collection": tKey("Add to the Last Collection"), assistant: tKey("Assistant…"),
-  plugins: tKey("Plugins…"), library: tKey("Library Grid"), "lib-loupe": tKey("Loupe"), "lib-compare": tKey("Compare"),
+  plugins: tKey("Plugins…"), library: tKey("Library Grid"), "lib-loupe": tKey("One photo large"), "lib-compare": tKey("Compare"),
   "lib-stack": tKey("Stack"), "lib-unstack": tKey("Unstack"), "prev-photo": tKey("Previous Photo"), "next-photo": tKey("Next Photo"),
   zoom: tKey("Fit / 100%"), proof: tKey("Soft Proofing"), clipping: tKey("Clipping Overlay"), frame: tKey("Frame"), filmstrip: tKey("Filmstrip"),
   "fold-left": tKey("Left Column"), "fold-right": tKey("Right Column"), looks: tKey("Appearance…"), "edit-layout": tKey("Edit Layout"), "blank-layout": tKey("New Layout from Scratch"),

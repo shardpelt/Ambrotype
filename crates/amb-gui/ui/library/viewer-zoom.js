@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Zoom in the viewer (V, F in the library) and in the library's Loupe and
-// Compare, as in Develop: the mouse wheel or a pinch zooms at the pointer, a
+// Zoom in the viewer (V, F in the library) and in the library's Compare, as
+// in Develop: the mouse wheel or a pinch zooms at the pointer, a
 // click in the middle goes to 100 % there and back, Ctrl + and − step, Ctrl 0
 // fits. Zoomed in, dragging or two fingers on a trackpad move round the
 // photo, and ← → still step (back to the whole photo). A bigger picture is

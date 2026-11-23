@@ -950,10 +950,9 @@ body.library-mode #workspace { display: none; }
 .lib-views button:first-child { border-radius: var(--radius) 0 0 var(--radius); }
 .lib-views button:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
 .lib-views button.on { background: var(--tab-active); border-color: var(--accent); }
-/* Loupe and compare (cull.js) */
+/* Compare (cull.js) */
 .library-view { display: grid; gap: 10px; padding: 12px; min-height: 0; min-width: 0; overflow: hidden; outline: none; }
 .library-view[hidden], .library-view.browse[hidden] { display: none; }
-.library-view.loupe { grid-template-columns: minmax(0, 1fr); }
 .library-view.compare { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .library-view.compare { position: relative; }
 .library-view.compare[data-split=down], .library-view.compare[data-split=up] { grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(2, minmax(0, 1fr)); }
@@ -963,7 +962,6 @@ body.library-mode #workspace { display: none; }
 .compare-split button.on { border-color: var(--accent); color: var(--accent); }
 .cull-tile { margin: 0; display: flex; flex-direction: column; min-height: 0; min-width: 0; padding: 4px; border: 2px solid transparent; border-radius: var(--radius); background: var(--panel); }
 .cull-tile.active { border-color: var(--accent); }
-.library-view.loupe .cull-tile { border-color: transparent; background: none; }
 .cull-frame { position: relative; flex: 1; min-height: 0; overflow: hidden; }
 .library-view.zoomed .cull-frame { cursor: grab; }
 .cull-frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
@@ -981,6 +979,7 @@ body.library-mode #workspace { display: none; }
 .lib-spacer { grid-column: 1 / -1; }
 .lib-spacer[hidden] { display: none; }
 .lib-cell.open .lib-name::before { content: "● "; color: var(--accent); }
+.library-grid.one-photo .lib-frame { aspect-ratio: auto; height: var(--frame-h); }
 .lib-frame { aspect-ratio: 1; display: grid; place-items: center; background: var(--bg-deep); border-radius: 3px; overflow: hidden; }
 .lib-frame img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; }
 .lib-cell.no-thumb .lib-frame { background: repeating-linear-gradient(45deg, rgba(127,127,127,.2) 0 6px, transparent 6px 12px); }

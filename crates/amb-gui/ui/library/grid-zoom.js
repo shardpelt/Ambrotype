@@ -37,10 +37,36 @@ function libSizeNow() {
   return lib.sizeExact ?? Number($("lib-size").value);
 }
 
+// The biggest thumbnail: one photo across the grid's whole width.
+const LIB_SIZE_MIN = 56;
+const LIB_SIZE_HIDDEN_MAX = 480;  // px, while the grid is hidden (no width to measure)
+function libSizeMax() {
+  const w = $("library-grid").clientWidth;
+  if (!w) return Math.max(LIB_SIZE_HIDDEN_MAX, Number($("lib-size").max) || 0, lib.sizeExact ?? 0);
+  return Math.max(LIB_SIZE_MIN, Math.floor(w - 2 * GRID_PAD));
+}
+
+// The key action: one photo as large as the grid, and back to the size before.
+function libOneToggle() {
+  if (!libGridShowing()) setLibraryView("grid");
+  const max = libSizeMax();
+  const focus = lib.focus;
+  if (lib.oneBack && libSizeNow() >= max - 1) {
+    const back = lib.oneBack;
+    lib.oneBack = null;
+    libSetSize(back, focus);
+    return;
+  }
+  lib.oneBack = libSizeNow();
+  libSetSize(max, focus);
+  if (focus) revealPhoto(focus, "center");
+}
+
 // Size the thumbnails to `px` (within the slider's own limits), keeping the
 // photo `anchor` where it is on screen; remembered for next time.
 function libSetSize(px, anchor = null, force = false) {
   const range = $("lib-size");
+  range.max = String(libSizeMax());
   const wanted = Number.isFinite(px) ? px : LIB_SIZE_DEFAULT;
   lib.sizeExact = Math.min(Number(range.max), Math.max(Number(range.min), wanted));
   const size = Math.round(lib.sizeExact);
@@ -62,6 +88,8 @@ function libSetSize(px, anchor = null, force = false) {
     const url = cachedThumb(libPhoto(cell.dataset.path));
     if (url) cell.querySelector("img").src = url;
     else lib.queue.add(cell.dataset.path);
+    // A bigger tile needs a bigger picture than the one the img holds.
+    if (url && thumbEdge() > 512) cell.querySelector("img").src = url;
   }
 }
 
@@ -97,6 +125,13 @@ function wireLibraryZoom() {
   // Only the person's own choice is remembered, not what a view sets.
   $("lib-sort").addEventListener("change", () => store.setText("amb.libSort", $("lib-sort").value));
   $("lib-reverse").addEventListener("change", () => store.set("amb.libReverse", $("lib-reverse").checked));
+  // The widest the slider goes follows the grid's width.
+  new ResizeObserver(() => {
+    const atMax = libSizeNow() >= Number($("lib-size").max) - 1;
+    const max = libSizeMax();
+    $("lib-size").max = String(max);
+    if (atMax || libSizeNow() > max) libSetSize(max, libFirstInView());
+  }).observe(grid);
   $("lib-size").addEventListener("input", () => libSetSize(Number($("lib-size").value), libFirstInView()));
   // The photo under the pointer, else the first in view.
   const photoAt = (e) => {

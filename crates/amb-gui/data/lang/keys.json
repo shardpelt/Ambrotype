@@ -525,7 +525,7 @@
  "Also saves NAME-small.jpg beside the export, at most this size, for social media and messages: as sharp as fits, and smaller in pixels only when it must be": [
   "index.html"
  ],
- "Also the mouse wheel or a pinch, at the pointer. In the library it sizes the thumbnails (or zooms the Map, Loupe and Compare).": [
+ "Also the mouse wheel or a pinch, at the pointer. In the library it sizes the thumbnails (or zooms the Map and Compare).": [
   "core/keys.js"
  ],
  "Also:": [
@@ -3577,16 +3577,6 @@
  "Loosely alike": [
   "index.html"
  ],
- "Loupe": [
-  "core/menu.js",
-  "index.html"
- ],
- "Loupe (E)": [
-  "index.html"
- ],
- "Loupe: one photo large": [
-  "core/keys.js"
- ],
  "Loupe: point at the photo to see it at 100% · scroll to magnify · I or Esc closes": [
   "develop/quickzoom.js"
  ],
@@ -4386,6 +4376,12 @@
  "One page per group": [
   "index.html"
  ],
+ "One photo large": [
+  "core/menu.js"
+ ],
+ "One photo large (zoom the grid all the way in)": [
+  "core/keys.js"
+ ],
  "One score per class (softmax)": [
   "index.html"
  ],
@@ -4863,6 +4859,9 @@
   "index.html",
   "library/import.js",
   "looks/editor.js"
+ ],
+ "Press again to go back. ← → step through the photos.": [
+  "core/keys.js"
  ],
  "Press at one corner of the crop and drag to the opposite corner. Or adjust the frame with the controls here.": [
   "tools/croptool.js"
@@ -8568,9 +8567,6 @@
   "index.html"
  ],
  "← → change the candidate, ↓ swaps, ↑ makes it the select.": [
-  "core/keys.js"
- ],
- "← → step through the photos.": [
   "core/keys.js"
  ],
  "→ black": [

@@ -466,13 +466,21 @@ pub(crate) async fn contact_sheet(
     .await?
 }
 
+/// The most a style's Amount can be, in percent (as `amb style --amount`).
+const STYLE_MAX_PERCENT: f64 = 150.0;
+
 /// The Convert raws dialog's choices.
 #[derive(Debug, Deserialize)]
 pub(crate) struct ConvertOptions {
-    /// `camera`, `auto` or `like`.
+    /// `camera`, `auto`, `like` or `style`.
     look: String,
     /// For `like`: the photo to match.
     like: Option<String>,
+    /// For `style`: the saved style's name, and its Amount in percent (100 if none).
+    #[serde(default)]
+    style: Option<String>,
+    #[serde(default)]
+    amount: Option<f64>,
     /// Long side in pixels; 0 for full size.
     long_edge: u32,
     quality: u8,
@@ -497,6 +505,16 @@ pub(crate) async fn convert_raws(
         "like" => Look::Like(PathBuf::from(
             options.like.ok_or("pick the photo to match first")?,
         )),
+        "style" => {
+            let name = options.style.ok_or("pick the style first")?;
+            let dir = amb_library::styles::editor_dir().ok_or("no config folder for the styles")?;
+            let (_, style) = amb_library::styles::find(&dir, &name)?;
+            let percent = options.amount.unwrap_or(100.0);
+            Look::Style(
+                Box::new(style),
+                percent.clamp(0.0, STYLE_MAX_PERCENT) / 100.0,
+            )
+        }
         other => return Err(format!("unknown look {other}").into()),
     };
     let out = if let Some(t) = crate::uitest::current() {

@@ -227,6 +227,16 @@ async function syncNegativeRoll() {
 // The "match to this photo" row in the convert dialog: made once, pointed at each run's choices.
 const convertLike = { row: null, pick: null, info: null, current: null };
 
+// The saved styles for the convert dialog's "A style" choice; off with none.
+async function convertStyles(f) {
+  const all = await invoke("styles_list").catch(() => []);
+  const pick = $("convert-style-name");
+  pick.replaceChildren(...all.map((s) => el("option", { value: s.name, translate: "no" }, s.name)));
+  $("convert-style").disabled = pick.disabled = !all.length;
+  $("convert-style").parentElement.title = all.length ? "" : t("Save a style first (Presets → Styles…)");
+  if (!all.length && f.convert_look.value === "style") f.convert_look.value = "camera";
+}
+
 // Raws to JPEGs (src/commands/batch.rs `convert_raws`): in the library
 // the selection, or every photo shown when none is selected; in the editor
 // the open photo's folder (the filmstrip), like the open photo.
@@ -283,12 +293,15 @@ async function convertRawsFlow() {
   convertLike.row.set((choices.length > 1 ? choices : []).map((path) => ({ path })));
   showLike();
   if (!like && f.convert_look.value === "like") f.convert_look.value = "camera";
+  await convertStyles(f);
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   if (choice !== "ok") return;
   const options = {
     look: f.convert_look.value,
     like,
+    style: $("convert-style-name").value || null,
+    amount: Number($("convert-style-amount").value),
     long_edge: Number($("convert-size").value),
     quality: Number($("convert-quality").value) || 100,
     edits: $("convert-edits").checked,

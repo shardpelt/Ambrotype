@@ -28,7 +28,7 @@ pub struct Report {
 }
 
 /// One photo; whether its edit changed.
-fn apply_one(photo: &Path, style: &Style, amount: f64) -> Result<bool, String> {
+pub(crate) fn apply_one(photo: &Path, style: &Style, amount: f64) -> Result<bool, String> {
     let source = amb_engine::source_path(photo);
     let full = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
     let small = amb_engine::raw::downscale(&full, look::EDGE);

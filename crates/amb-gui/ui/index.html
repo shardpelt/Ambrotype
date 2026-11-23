@@ -676,6 +676,11 @@
       <label class="inline-check"><input type="radio" name="convert_look" value="auto"><span><b>Auto</b>: each photo's own Auto tone and white balance</span></label>
       <label class="inline-check"><input type="radio" name="convert_look" value="like" id="convert-like"><span id="convert-like-label"><b>Like one I edited</b>: every photo matched to it</span></label>
       <div id="convert-like-pick" class="convert-like-pick" aria-label="The photo to match"></div>
+      <label class="inline-check"><input type="radio" name="convert_look" value="style" id="convert-style"><span id="convert-style-label"><b>A style</b>: each photo fitted to it</span></label>
+      <div class="grid">
+        <label>Style <select id="convert-style-name"></select></label>
+        <label>Amount (%) <input id="convert-style-amount" type="number" min="0" max="150" value="100"></label>
+      </div>
       <div class="grid">
         <label>Size <select id="convert-size"><option value="0">Full size</option><option value="3840">3840 px (4K screens)</option><option value="2048">2048 px (sharing)</option><option value="1080">1080 px (small)</option></select></label>
         <label>Quality <input id="convert-quality" type="number" min="50" max="100" value="100"></label>

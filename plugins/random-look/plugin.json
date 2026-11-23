@@ -3,14 +3,16 @@
   "id": "random-look",
   "home": "editor",
   "name": "Random look",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "Ambrotype",
   "description": "A new look each time: tone, colour grading, vignette and (for Film and Vintage) grain, from a style. Every change is an ordinary setting you can keep tweaking, and Undo takes it back.",
   "permissions": [],
   "params": [
     { "name": "style", "label": "Style", "type": "choice", "options": ["Anything", "Film", "Moody", "Bright", "Muted", "Cinematic", "Dreamy", "Vintage", "Punchy"], "default": "Anything" },
     { "name": "strength", "label": "Strength", "type": "number", "min": 0, "max": 100, "default": 60, "step": 1 },
-    { "name": "colour", "label": "Change colours", "type": "bool", "default": true }
+    { "name": "colour", "label": "Change colours", "type": "bool", "default": true },
+    { "name": "tone", "label": "Change tone", "type": "bool", "default": true },
+    { "name": "finish", "label": "Change vignette and grain", "type": "bool", "default": true }
   ],
   "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/random-look"
 }

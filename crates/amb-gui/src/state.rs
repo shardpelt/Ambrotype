@@ -24,9 +24,8 @@ pub(crate) struct AppState {
     pub(crate) sidecar_watch: Mutex<Option<notify::RecommendedWatcher>>,
     /// The assistant's key for this run, when the keychain can't keep it.
     pub(crate) assistant_key: Mutex<Option<String>>,
-    /// The menu bar's items by action id, to grey them out.
-    pub(crate) menu_items:
-        Mutex<std::collections::HashMap<String, tauri::menu::MenuItem<tauri::Wry>>>,
+    /// The menu bar's items by action id, to grey them out and tick them.
+    pub(crate) menu_items: Mutex<std::collections::HashMap<String, crate::commands::menu::Handle>>,
 }
 
 impl AppState {

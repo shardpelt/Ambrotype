@@ -13,11 +13,11 @@ Ideas for later, written down so they aren't lost. Sections marked Built keep on
 
 *Built 2026-10-12:* see [FEATURES.md](../FEATURES.md).
 
-- Lock sliders or groups, so they're never changed (e.g. keep white balance and exposure).
+- Lock more groups. Done: tone, colours, and vignette and grain can each be kept (white balance and exposure are never touched).
 - Scope to the open panel only.
 - "Mutate": small random changes around the current look, for iterative exploring.
 - Film stocks, with negatives.
-- Enter a seed to reproduce a look.
+- (Done: enter a seed in the dialog to reproduce looks.)
 
 ## Tutorial mode
 

@@ -160,19 +160,47 @@ pub fn run(input: Input) -> Result<Output, String> {
     };
     let strength = input.number("strength") / 100.0;
     let mut rng = input.rng();
-    let mut out = Output::new()
-        .set("Contrast2012", pick(&mut rng, style.contrast, strength))
-        .set("Highlights2012", pick(&mut rng, style.highlights, strength))
-        .set("Shadows2012", pick(&mut rng, style.shadows, strength))
-        .set("Blacks2012", pick(&mut rng, style.blacks, strength))
-        .set("Clarity2012", pick(&mut rng, style.clarity, strength))
-        .set(
+    // Older callers know no tone or finish switch: those parts stay on.
+    let part = |name: &str| {
+        input
+            .params
+            .get(name)
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true)
+    };
+    let (tone, colour, finish) = (part("tone"), input.flag("colour"), part("finish"));
+    if !(tone || colour || finish) {
+        return Err("Turn on at least one of tone, colours, or vignette and grain".into());
+    }
+    // Every value is drawn whatever the switches say (then dropped), so a seed
+    // gives the same values for the parts that are on.
+    let tone_values = [
+        ("Contrast2012", pick(&mut rng, style.contrast, strength)),
+        ("Highlights2012", pick(&mut rng, style.highlights, strength)),
+        ("Shadows2012", pick(&mut rng, style.shadows, strength)),
+        ("Blacks2012", pick(&mut rng, style.blacks, strength)),
+        ("Clarity2012", pick(&mut rng, style.clarity, strength)),
+    ];
+    let finish_values = [
+        (
             "PostCropVignetteAmount",
             pick(&mut rng, style.vignette, strength),
-        )
-        .set("GrainAmount", pick(&mut rng, style.grain, strength));
+        ),
+        ("GrainAmount", pick(&mut rng, style.grain, strength)),
+    ];
+    let mut out = Output::new();
+    if tone {
+        for (n, v) in tone_values {
+            out = out.set(n, v);
+        }
+    }
+    if finish {
+        for (n, v) in finish_values {
+            out = out.set(n, v);
+        }
+    }
     let mut note = format!("{name} look");
-    if input.flag("colour") {
+    if colour {
         let hue = style.shadow_hues[(rng.next_u64() % style.shadow_hues.len() as u64) as usize];
         let shadow_hue = (hue + rng.range(-12.0, 12.0)).round().rem_euclid(360.0);
         let highlight_hue = (shadow_hue + 180.0 + rng.range(-25.0, 25.0))
@@ -202,10 +230,45 @@ mod tests {
     use super::*;
 
     fn input(seed: u64, style: &str) -> Input {
-        let mut i =
-            Input::for_test(serde_json::json!({ "style": style, "strength": 60, "colour": true }));
+        let mut i = Input::for_test(serde_json::json!({
+            "style": style, "strength": 60, "colour": true, "tone": true, "finish": true
+        }));
         i.seed = seed;
         i
+    }
+
+    fn names(out: &Output) -> Vec<String> {
+        out.commands
+            .iter()
+            .map(|c| c["name"].as_str().unwrap().to_string())
+            .collect()
+    }
+
+    #[test]
+    fn tone_off_leaves_tone_alone_and_keeps_the_other_values() {
+        let on = run(input(7, "Film")).unwrap();
+        let mut i = input(7, "Film");
+        i.params.insert("tone".into(), false.into());
+        let off = run(i).unwrap();
+        assert!(!names(&off).contains(&"Contrast2012".to_string()));
+        assert!(names(&on).contains(&"Contrast2012".to_string()));
+        for c in off.commands.iter() {
+            assert!(on.commands.contains(c), "{c} differs with tone off");
+        }
+        assert_eq!(off.commands.len(), on.commands.len() - 5);
+    }
+
+    #[test]
+    fn finish_off_drops_vignette_and_grain_and_none_on_is_an_error() {
+        let mut i = input(3, "Film");
+        i.params.insert("finish".into(), false.into());
+        let out = run(i).unwrap();
+        assert!(!names(&out).contains(&"GrainAmount".to_string()));
+        let mut none = input(3, "Film");
+        for p in ["tone", "colour", "finish"] {
+            none.params.insert(p.into(), false.into());
+        }
+        assert!(run(none).unwrap_err().contains("at least one"));
     }
 
     #[test]

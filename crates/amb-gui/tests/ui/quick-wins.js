@@ -75,3 +75,22 @@ await t.step("Ctrl+drag right on the photo raises the last slider, as one undo s
   t.key("Ctrl+Z");
   await t.until("undone", () => t.setting("Exposure2012") === 0.5);
 });
+
+await t.step("on/off menu items carry a tick that follows the toggle", async () => {
+  const clip = KEY_ACTIONS.find((a) => a.id === "clipping");
+  t.expect(typeof clip.isOn === "function", "Clipping overlay has isOn");
+  t.expect(menuEntry("clipping", false).checked === false, "the entry starts unticked");
+  t.expect(menuEntry("open", false).checked === undefined, "a plain action has no tick");
+  // The native menu can't be read here: pretend it is up, then see what is sent.
+  menuState.shown = true;
+  menuState.checked = {};
+  syncMenu();
+  t.expect(menuState.checked.clipping === false, "unticked is recorded");
+  clip.run({});
+  syncMenu();
+  t.expect(menuState.checked.clipping === true, "ticked after the toggle");
+  clip.run({});
+  syncMenu();
+  t.expect(menuState.checked.clipping === false, "unticked again");
+  menuState.shown = false;
+});

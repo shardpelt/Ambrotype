@@ -50,7 +50,7 @@ await t.step("Ctrl + wheel sizes the thumbnails, within the limits", async () =>
   wheel(-100);
   t.expect(size() > 56, `bigger again (${size()})`);
   for (let i = 0; i < 80; i++) wheel(-100);
-  t.expect(size() === 480, `stops at the largest (${size()})`);
+  t.expect(size() === Number($("lib-size").max) && size() > 480 - 1, `stops at the largest (${size()})`);
 });
 
 await t.step("a plain wheel leaves the size alone", async () => {
@@ -88,4 +88,20 @@ await t.step("File size and the direction re-sort and are remembered", async () 
   t.expect(!$("lib-reverse").checked && store.get("amb.libReverse") === false, "the key action flips it back");
   $("lib-sort").value = "name";
   $("lib-sort").dispatchEvent(new Event("change", { bubbles: true }));
+});
+
+await t.step("the largest size is one photo as big as the grid, and E toggles it", async () => {
+  t.key("Ctrl+0");
+  const grid = $("library-grid");
+  const max = Math.floor(grid.clientWidth - 24);
+  t.expect(Number($("lib-size").max) === max, `slider max ${$("lib-size").max} follows the grid width ${max}`);
+  libSetSize(max);
+  await t.until("one photo per row", () => grid.classList.contains("one-photo"));
+  const cell = grid.querySelector(".lib-cell").getBoundingClientRect();
+  t.expect(cell.height <= grid.clientHeight, `a tile ${Math.round(cell.height)}px fits the grid ${grid.clientHeight}px`);
+  libSetSize(160);
+  KEY_ACTIONS.find((a) => a.id === "lib-loupe").run();
+  t.expect(size() === Number($("lib-size").max), `E goes to one photo (${size()})`);
+  KEY_ACTIONS.find((a) => a.id === "lib-loupe").run();
+  t.expect(size() === 160, `E again goes back (${size()})`);
 });

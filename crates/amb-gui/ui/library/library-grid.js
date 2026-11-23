@@ -253,15 +253,20 @@ function gridMetrics() {
   const thumb = Number($("lib-size").value);
   const width = Math.max(thumb, grid.clientWidth - 2 * GRID_PAD);
   const cols = Math.max(1, Math.floor((width + GRID_GAP) / (thumb + GRID_GAP)));
-  const cellW = (width - (cols - 1) * GRID_GAP) / cols;
-  return { cols, rowH: cellW + (lib.cellExtra ?? 44) + GRID_GAP };
+  const extra = lib.cellExtra ?? 44;
+  let cellW = (width - (cols - 1) * GRID_GAP) / cols;
+  // One photo per row: no taller than the grid, so it shows whole.
+  if (cols === 1 && grid.clientHeight) cellW = Math.max(56, Math.min(cellW, grid.clientHeight - 2 * GRID_PAD - extra));
+  return { cols, rowH: cellW + extra + GRID_GAP, frameH: cellW };
 }
 
 // Draw the rows in view; cells already drawn are kept, with their pictures.
 function renderRange(force = false) {
   const grid = $("library-grid");
   if (!lib.spacers) return;
-  const { cols, rowH } = gridMetrics();
+  const { cols, rowH, frameH } = gridMetrics();
+  grid.classList.toggle("one-photo", cols === 1);
+  grid.style.setProperty("--frame-h", `${frameH}px`);
   // Folder tiles first, then the photos.
   const dirs = lib.dirs ?? [];
   const rows = Math.ceil((dirs.length + lib.shown.length) / cols);
@@ -393,7 +398,8 @@ function renderCounts() {
 // ---------------------------------------------------------------- thumbnails
 
 function thumbEdge() {
-  return Number($("lib-size").value) * (window.devicePixelRatio || 1) > 300 ? 512 : 256;
+  const px = Number($("lib-size").value) * (window.devicePixelRatio || 1);
+  return px > 1000 ? 2048 : px > 500 ? 1024 : px > 300 ? 512 : 256;
 }
 
 function cachedThumb(p) {

@@ -823,6 +823,9 @@
  "Back to the grid, then the editor": [
   "core/keys.js"
  ],
+ "Back to the histogram": [
+  "develop/scope.js"
+ ],
  "Back to the task before (Library, Develop, …)": [
   "core/keys.js"
  ],
@@ -2902,7 +2905,11 @@
   "develop/wheels.js"
  ],
  "Histogram": [
+  "develop/scope.js",
   "looks/editor.js"
+ ],
+ "Histogram or vectorscope": [
+  "core/keys.js"
  ],
  "History": [
   "index.html",
@@ -6034,6 +6041,9 @@
  "Show the catalogue's folders, collections and edits without writing anything (Folders panel → Lightroom)": [
   "index.html"
  ],
+ "Show the colours as a wheel: hue as the angle, saturation as the distance from the centre": [
+  "develop/scope.js"
+ ],
  "Show the file": [
   "develop/preset-grid.js"
  ],
@@ -6680,6 +6690,9 @@
  "The one before (←)": [
   "index.html"
  ],
+ "The panel above the sliders: brightness as a graph, or the photo's colours as a wheel, with a skin-tone line.": [
+  "core/keys.js"
+ ],
  "The photo already matches: nothing to change.": [
   "develop/presets.js"
  ],
@@ -7103,6 +7116,10 @@
   "dialogs/export.js"
  ],
  "Values": [
+  "index.html"
+ ],
+ "Vectorscope": [
+  "develop/scope.js",
   "index.html"
  ],
  "Vibrance & Saturation": [

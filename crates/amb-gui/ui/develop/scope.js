@@ -146,8 +146,8 @@ function scopeToggle(to = scope.mode === "vectorscope" ? "histogram" : "vectorsc
 function scopeSync() {
   const vec = scope.mode === "vectorscope";
   const b = $("scope-switch");
-  b.textContent = vec ? "Histogram" : "Vectorscope";
-  b.title = vec ? "Back to the histogram" : "Show the colours as a wheel: hue as the angle, saturation as the distance from the centre";
+  b.textContent = vec ? t("Histogram") : t("Vectorscope");
+  b.title = vec ? t("Back to the histogram") : t("Show the colours as a wheel: hue as the angle, saturation as the distance from the centre");
   b.setAttribute("aria-pressed", String(vec));
 }
 

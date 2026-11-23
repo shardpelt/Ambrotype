@@ -1255,10 +1255,16 @@ body.editing .dock-grip { display: none; }
 .in-usual { font-size: 12px; color: var(--muted); }
 .in-chips { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; }
 .in-chips button.on { border-color: var(--accent); color: var(--accent); }
-.in-charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.in-charts { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(320px * var(--browse-scale, 1)), 1fr)); gap: 14px; }
+.in-charts.big { grid-template-columns: 1fr; flex: 1 1 auto; min-height: 0; }
+.in-charts.big .in-card { display: flex; flex-direction: column; min-height: 0; overflow: auto; }
+.in-charts.big .in-bars { flex: 1 1 auto; height: auto; min-height: 220px; }
+.in-charts.big .in-list { flex: 1 1 auto; }
+.in-close { float: right; padding: 0 6px; line-height: 1.2; }
 .in-card { background: var(--bg-deep); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; min-width: 0; }
-.in-card h4 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--muted); }
-.in-bars { display: flex; align-items: flex-end; gap: 2px; height: 140px; }
+.in-card h4 { margin: 0 0 8px; font-size: 12px; font-weight: 600; color: var(--muted); cursor: zoom-in; }
+.in-charts.big .in-card h4 { cursor: zoom-out; }
+.in-bars { display: flex; align-items: flex-end; gap: 2px; height: calc(140px * var(--browse-scale, 1)); }
 .in-bar { flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; gap: 3px; padding: 0; background: none; border: none; border-radius: 0; }
 .in-bar .in-fill { position: relative; display: flex; flex-direction: column; justify-content: flex-end; min-height: 1px; background: var(--track); border-radius: 3px 3px 0 0; overflow: hidden; }
 .in-bar .in-kept { background: var(--accent); opacity: .85; }
@@ -1291,7 +1297,7 @@ body.editing .dock-grip { display: none; }
 .tl-year.on .tl-bar { background: var(--accent); }
 .tl-year.on { border-color: var(--line); }
 .tl-head { display: flex; align-items: center; gap: 12px; flex: none; }
-.tl-months { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
+.tl-months { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(230px * var(--browse-scale, 1)), 1fr)); gap: 14px; }
 .tl-month.empty { opacity: .45; }
 .tl-month-title { display: block; width: 100%; text-align: left; background: none; border: none; padding: 2px 0 6px; font-size: 13px; color: var(--muted); }
 .tl-month-title b { color: var(--text); }

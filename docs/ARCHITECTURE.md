@@ -296,7 +296,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - Installed ones live in `<config>/interfaces/`; `--builtin-ui` ignores the choice.
     - Guide: [ai/custom-interface.md](ai/custom-interface.md).
   - **connect an AI app:** `ui/dialogs/connect.js` (Help → Connect an AI App…) shows `amb mcp` with the path found by `commands/connect.rs` (next to the editor, else on the PATH) and the setup for the apps in `ui/ai-apps.json`; `open_terminal` opens the system's terminal in the open photo's folder with `amb` first on the PATH, and with an app's `agent` command starts that agent there, told where the built-in guides are (`amb_protocol::guides`, written to the app's data folder; also `amb docs` and the MCP resources)
-  - **quick zoom:** `ui/develop/quickzoom.js`.
+  - **quick zoom:** `ui/develop/quickzoom.js` (box zoom, the loupe, peek on hover).
     - A right-drag box sets `ui.zoom.box`; `zoomScale` in `ui/develop/preview.js` turns it into a scale, and the zoomed view renders a region at 100% (at most 4096 px a side) that the page scales to fit.
     - The loupe asks `region` for a small square at 100% around the pointer, showing the preview enlarged until it arrives.
     - The box can be turned off in Settings (kept in the page's local storage, like the menu bar).

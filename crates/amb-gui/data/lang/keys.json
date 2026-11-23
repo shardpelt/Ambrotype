@@ -4365,6 +4365,9 @@
  "On {n} of {total}": [
   "library/library.js"
  ],
+ "On, a pointer that rests on the photo shows the loupe by itself; moving away closes it. Off by default.": [
+  "core/keys.js"
+ ],
  "One conversion for {n} frames": [
   "library/library-actions.js"
  ],
@@ -4715,6 +4718,18 @@
  ],
  "Pause (Space)": [
   "library/slideshow.js"
+ ],
+ "Peek on hover: a pointer resting on the photo shows the part under it at 100%, as the loupe (I) does": [
+  "index.html"
+ ],
+ "Peek on hover: off": [
+  "develop/quickzoom.js"
+ ],
+ "Peek on hover: on": [
+  "develop/quickzoom.js"
+ ],
+ "Peek on hover: the part under a resting pointer at 100%": [
+  "core/keys.js"
  ],
  "People": [
   "tools/masks.js"

@@ -54,6 +54,7 @@ const KEY_ACTIONS = [
   { id: "learn", group: tKey("Help"), label: "Learn: short guided lessons", keys: ["F1"], when: "any", run: () => learnFlow() },
   { id: "features", group: tKey("Help"), label: "What Ambrotype can do: every feature, by what you want to do", keys: [], when: "any", run: () => featuresFlow() },
   { id: "before", group: tKey("View"), label: "Before / after: the photo as it was, with a bar to drag in", keys: ["\\"], when: "any", button: "btn-before", run: () => toggleBefore() },
+  { id: "peek-hover", group: tKey("Tools"), label: "Peek on hover: the part under a resting pointer at 100%", hint: "On, a pointer that rests on the photo shows the loupe by itself; moving away closes it. Off by default.", keys: [], when: "main", photo: true, run: () => hoverPeekSet() },
   { id: "touch", group: tKey("Tools"), label: "Touch: drag on the photo to change the tone or colour under the pointer", hint: "Up or down changes the tone curve's region, or the colour's hue, saturation or brightness.", keys: ["T"], when: "main", photo: true, run: () => toggleTouch() },
   { id: "split", group: tKey("View"), label: "Before / after split", hint: "Before on the left of a bar, after on the right; drag the bar.", keys: ["Y"], when: "main", photo: true, run: () => toggleSplit() },
   { id: "side-by-side", group: tKey("View"), label: "Side by side", hint: "Before on the left, after on the right, each whole; zooming and panning move both. Or right-click Before / after.", keys: [], when: "any", photo: true, run: () => sbsSet(sbs.layout === "side" ? null : "side") },

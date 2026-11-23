@@ -4,7 +4,8 @@
 // (Settings can turn the box off, and a right click then exports as before).
 // The loupe (I) shows the part under the pointer at 100% in a circle, so an
 // edit can be checked anywhere without zooming in; the wheel changes its
-// magnification.
+// magnification. Peek on hover (off by default) shows the same loupe by
+// itself when the pointer rests on the photo.
 "use strict";
 
 const qz = { box: null, pan: null, loupe: null, mag: 1, timer: null, busy: false, at: null };
@@ -187,6 +188,82 @@ function wireLoupe() {
       toggleLoupe(false);
     }
   }, true);
+}
+
+// ------------------------------------------------------------------ peek on hover
+
+// Rests still on the photo this long (ms) before the loupe shows.
+const PEEK_DELAY_MS = 700;
+// "Still": moved less than this many pixels from where it came to rest.
+const PEEK_STILL_PX = 4;
+// The peek ends when the pointer is this far (pixels) from where it appeared.
+const PEEK_END_PX = 12;
+
+const hoverPeek = { timer: 0, rest: null, shown: false };
+
+function hoverPeekWanted() {
+  return store.text("amb.peek") === "1";
+}
+
+function hoverPeekSet(on = !hoverPeekWanted()) {
+  store.setText("amb.peek", on ? "1" : "0");
+  const box = $("settings-peek");
+  if (box) box.checked = on;
+  if (!on) hoverPeekEnd();
+  toast(on ? t("Peek on hover: on") : t("Peek on hover: off"));
+}
+
+// Only on the photo itself (or Before side by side), never on a tool's canvas.
+function hoverPeekOnPhoto(target) {
+  return target === $("preview") || target?.id === "preview-before";
+}
+
+// Not while the loupe (I) is on, zoomed in, in Touch or picking.
+function hoverPeekAllowed(target) {
+  return hoverPeekWanted() && Boolean(ui.info) && hoverPeekOnPhoto(target) && !ui.zoom.on && !ui.picking
+    && !touchState.on && (!qz.loupe || hoverPeek.shown);
+}
+
+function hoverPeekEnd() {
+  clearTimeout(hoverPeek.timer);
+  hoverPeek.rest = null;
+  if (!hoverPeek.shown) return;
+  hoverPeek.shown = false;
+  toggleLoupe(false);
+}
+
+function hoverPeekMove(e) {
+  if (hoverPeek.shown) {
+    const r = hoverPeek.rest;
+    if (!hoverPeekOnPhoto(e.target) || Math.hypot(e.clientX - r.x, e.clientY - r.y) > PEEK_END_PX) hoverPeekEnd();
+    return;
+  }
+  if (!hoverPeekAllowed(e.target)) {
+    clearTimeout(hoverPeek.timer);
+    hoverPeek.rest = null;
+    return;
+  }
+  const r = hoverPeek.rest;
+  if (r && Math.hypot(e.clientX - r.x, e.clientY - r.y) < PEEK_STILL_PX) return;
+  hoverPeek.rest = { x: e.clientX, y: e.clientY, target: e.target };
+  clearTimeout(hoverPeek.timer);
+  hoverPeek.timer = setTimeout(hoverPeekShow, PEEK_DELAY_MS);
+}
+
+function hoverPeekShow() {
+  const r = hoverPeek.rest;
+  if (!r || !hoverPeekAllowed(r.target) || !toggleLoupe(true)) return;
+  hoverPeek.shown = true;
+  moveLoupe({ clientX: r.x, clientY: r.y });
+}
+
+function wireHoverPeek() {
+  window.addEventListener("mousemove", hoverPeekMove);
+  for (const type of ["mousedown", "keydown"]) window.addEventListener(type, hoverPeekEnd, true);
+  document.documentElement.addEventListener("mouseleave", hoverPeekEnd);
+  const pref = $("settings-peek");
+  pref.checked = hoverPeekWanted();
+  pref.addEventListener("change", () => hoverPeekSet(pref.checked));
 }
 
 // F: just the photo, filling the screen, to look at it without the panels;

@@ -23,6 +23,7 @@ The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
 ## Recently done
 
+- 2026-11-23: **Peek on hover** (Settings box, or search "peek"): the loupe shows by itself when the pointer rests 0.7 s on the photo and closes when it moves; off by default (`ui/develop/quickzoom.js`, step in `tests/ui/quick-wins.js`)
 - 2026-11-23: **Library: sort in the bar, thumbnails sized by Ctrl+wheel, pinch, Ctrl+/-**: Sort (Date taken, File date, Name, File size, Rating, Edited first) and a ↑/↓ toggle sit in the bar, remembered; the grid's size (56-480 px, `libSetSize` in `ui/library/grid-zoom.js`) keeps the photo under the pointer in place and is remembered; listed photos carry `size` and `modified`. Step in `tests/ui/library-zoom.js`.
 - 2026-11-23: **Side by side at 100 % pans smoothly, and its menu ticks the layout that is on**: the before photo keeps its own 100 % tiles (`region_before` in `src/session`), so the halves no longer render each other's away; `contextMenu` items can be choices with a tick (`ui/develop/photo.js`)
 - 2026-11-20: **Before and after side by side** (right-click Before / after, or search "side by side"): each whole side by side, each filling its half (a drag moves both), or above and below; zoom, the wheel, panning and the zoom box keep both halves on the same part (`ui/develop/side-by-side.js`)

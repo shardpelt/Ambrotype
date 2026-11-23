@@ -334,6 +334,7 @@ async function init() {
   wireZones();
   wireBoxZoom();
   wireLoupe();
+  wireHoverPeek();
   wirePeek();
   initLearn();
   wireKeyBadges();

@@ -24,6 +24,12 @@ function mapClamp(st, H) {
   st.y = Math.min(TILE * 2 ** st.z - H / 2, Math.max(H / 2, st.y));
 }
 
+// The latitude and longitude under (x, y) pixels from the map's top left,
+// the inverse of where drawMap puts a pin. The map is W by H.
+function mapToLatLon(st, x, y, W, H) {
+  return unproject(st.x - W / 2 + x, st.y - H / 2 + y, st.z);
+}
+
 // Zoom by `factor` keeping the point under client (cx, cy), or the middle.
 function mapZoomAt(st, el, factor, cx = null, cy = null) {
   const r = el.getBoundingClientRect();

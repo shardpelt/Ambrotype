@@ -559,7 +559,7 @@ mod tests {
         assert!(!validate(&doc, &doc, &json!({"query": "nope"})));
         assert_eq!(
             doc["$defs"]["Command"]["oneOf"].as_array().unwrap().len(),
-            20
+            21
         );
         assert_eq!(doc["$defs"]["Query"]["oneOf"].as_array().unwrap().len(), 7);
     }

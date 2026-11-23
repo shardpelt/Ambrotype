@@ -382,7 +382,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - File care (`ui/library/organise.js`, `commands/files.rs`, `amb-library::files`): moves and renames with companions, the trash, finding moved photos, keywords and metadata templates.
     - Duplicates and bursts (`ui/library/duplicates.js`, `amb-library::duplicates`, its measurements kept in the catalogue).
     - Timeline and Map views (`ui/library/browse.js`, the Map's drag and zoom in `ui/library/map-touch.js`, shared with the place picker; places from GPX tracks by `amb-library::gpx` and guessed from placed photos by `amb-library::places` (`ui/library/guess-places.js`), set by `commands/places.rs`; pins drag in `ui/library/map-pins.js`; place names (city, state, country: `PhotoInfo`'s fields, `sidecar/write/names.rs`) are looked up by `amb-library::places::add_names` (`ui/library/place-names.js`, `amb place --names`)).
-    - Insights view (`ui/library/insights.js`): how the photos shown were shot; its buckets come from `amb-library::insights`, which `amb insights` also uses.
+    - Insights view (`ui/library/insights.js`): how the photos shown were shot; its buckets come from `amb-library::insights`, which `amb insights` also uses. Timeline and Insights zoom through `ui/library/browse-zoom.js` (`wirePinchZoom`, a scale per view).
     - An Import dialog (`ui/library/import.js`, `amb-library::import`).
     - Collections (`ui/library/collections.js`, `amb-library::collections`, kept in the config folder).
     - Virtual copies (sidecars `IMG.copy-N.xmp`; `amb_engine::virtual_copy_of` / `source_path`).

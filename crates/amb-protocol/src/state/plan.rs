@@ -346,14 +346,6 @@ fn apply_amount(
     unscaled
 }
 
-/// Side effects Lightroom applies when a slider moves, plus guidance notes.
-///
-/// Moving Temperature or Tint under As Shot/Auto switches WhiteBalance to
-/// Custom. Lightroom keeps the as-shot value of the other slider, but that
-/// value lives in the raw file, not in the settings, so this layer cannot fill
-/// it in: a Custom white balance without Temperature is not rendered at all,
-/// and one without Tint renders with tint 0. Tint alone is therefore refused,
-/// and Temperature alone carries a warning.
 /// `set_film_stock`: the stock's id and its grain and glow, together.
 fn film_stock(
     id: &str,
@@ -385,6 +377,14 @@ fn film_stock(
     Ok(())
 }
 
+/// Side effects Lightroom applies when a slider moves, plus guidance notes.
+///
+/// Moving Temperature or Tint under As Shot/Auto switches WhiteBalance to
+/// Custom. Lightroom keeps the as-shot value of the other slider, but that
+/// value lives in the raw file, not in the settings, so this layer cannot fill
+/// it in: a Custom white balance without Temperature is not rendered at all,
+/// and one without Tint renders with tint 0. Tint alone is therefore refused,
+/// and Temperature alone carries a warning.
 fn after_set(
     name: &str,
     next: &mut BTreeMap<String, Value>,

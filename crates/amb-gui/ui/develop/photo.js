@@ -109,10 +109,15 @@ function contextMenu(e, items) {
   };
   const outside = (ev) => { if (!menu.contains(ev.target)) close(); };
   const esc = (ev) => { if (ev.key === "Escape") { ev.stopPropagation(); close(); } };
+  // An item's third value, true or false, makes it a choice: the menu then
+  // leaves room for a tick, shown on the one that is on.
+  menu.classList.toggle("ctx-choices", items.some((item) => item && item.length > 2));
   for (const item of items) {
-    if (!item) { menu.append(document.createElement("hr")); continue; }
-    const [label, action] = item;
-    const b = el("button", { type: "button", role: "menuitem" }, label);
+    if (!item) { menu.append(el("hr")); continue; }
+    const [label, action, on] = item;
+    const choice = item.length > 2;
+    const b = el("button", { type: "button", role: choice ? "menuitemradio" : "menuitem", class: on ? "on" : "" }, label);
+    if (choice) b.setAttribute("aria-checked", String(Boolean(on)));
     b.addEventListener("click", () => { close(); Promise.resolve(action()).catch(showError); });
     menu.append(b);
   }

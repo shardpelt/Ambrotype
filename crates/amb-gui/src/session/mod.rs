@@ -66,6 +66,9 @@ pub struct Session {
     profile_note: Option<String>,
     /// The 100% view's renders, tile by tile, for the committed settings.
     region_cache: Option<RegionCache>,
+    /// The same for the photo before its edits, kept apart so side by side
+    /// at 100% doesn't render one half again for each pan of the other.
+    region_before: Option<RegionCache>,
     /// Small copy of the photo the 100% view measures whole-photo
     /// statistics on ([`pipeline::measure_globals`]).
     globals_src: Option<CameraImage>,
@@ -342,6 +345,7 @@ impl Session {
             upright_cache: None,
             profile_note: None,
             region_cache: None,
+            region_before: None,
             globals_src: None,
             draft_src: None,
             selection: None,
@@ -351,7 +355,13 @@ impl Session {
     /// Drop the 100% view's kept pixels, after something outside the edit
     /// changed how it renders (another AI model chosen, say).
     pub fn forget_renders(&mut self) {
+        self.forget_regions();
+    }
+
+    /// Drop both 100% caches (after and before).
+    fn forget_regions(&mut self) {
         self.region_cache = None;
+        self.region_before = None;
     }
 
     /// Show the photo as it exports to `space` (soft proofing), marking the
@@ -360,7 +370,7 @@ impl Session {
         if self.proof != proof {
             self.proof = proof;
             // The 100% view keeps display pixels.
-            self.region_cache = None;
+            self.forget_regions();
         }
     }
 
@@ -565,7 +575,7 @@ impl Session {
         {
             img.metadata.orientation = o;
         }
-        self.region_cache = None;
+        self.forget_regions();
     }
 
     /// Full-resolution render (on the GPU when there is one) and export.

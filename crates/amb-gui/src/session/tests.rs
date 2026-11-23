@@ -224,6 +224,32 @@ fn the_metering_box_is_kept_in_the_stored_orientation() {
 }
 
 #[test]
+fn before_and_after_at_100_percent_keep_their_own_tiles() {
+    let path = synthetic("colorchecker");
+    let lens = LensSources::default();
+    let mut s = Session::open(&path).unwrap();
+    let edit = Command::SetParam {
+        name: "Exposure2012".into(),
+        value: 1.0.into(),
+    };
+    s.execute(&[edit], None).unwrap();
+    let done = |c: &Option<RegionCache>| {
+        c.as_ref()
+            .map_or(0, |c| c.done.iter().filter(|d| **d).count())
+    };
+    s.region(0.4, 0.4, 300, 200, false, false, &lens);
+    let after = done(&s.region_cache);
+    assert!(after > 0);
+    // Side by side renders the same window before its edits: the after
+    // tiles stay, so the next pan of the after half needs none again.
+    s.region(0.4, 0.4, 300, 200, true, false, &lens);
+    assert_eq!(done(&s.region_before), after);
+    assert_eq!(done(&s.region_cache), after);
+    s.forget_renders();
+    assert!(s.region_cache.is_none() && s.region_before.is_none());
+}
+
+#[test]
 fn region_tiles_match_the_full_render_in_any_orientation() {
     let path = synthetic("colorchecker");
     let lens = LensSources::default();

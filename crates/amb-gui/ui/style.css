@@ -1194,6 +1194,8 @@ body.editing .dock-grip { display: none; }
 .ctx-menu button { text-align: left; background: none; border: 0; padding: 5px 10px; border-radius: 4px; color: var(--text); }
 .ctx-menu button:hover { background: var(--hover); }
 .ctx-menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+.ctx-menu.ctx-choices button { position: relative; padding-left: 24px; }
+.ctx-menu button.on::before { content: "✓"; position: absolute; left: 8px; color: var(--accent); }
 
 /* Settings → AI models (models.js) */
 .models-list { max-height: 340px; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--radius); padding: 2px 10px 8px; }

@@ -173,7 +173,7 @@ const INLINE_STYLE_LIMIT: usize = 17;
 const TOP_LEVEL_LET_LIMIT: usize = 7;
 const TOAST_STRING_LIMIT: usize = 0;
 const LOCAL_STORAGE_LIMIT: usize = 0;
-const CREATE_ELEMENT_LIMIT: usize = 207;
+const CREATE_ELEMENT_LIMIT: usize = 206;
 
 #[test]
 fn old_idioms_may_only_fall() {

@@ -200,7 +200,7 @@ function wireSideBySide() {
   $("btn-before").addEventListener("contextmenu", (e) => {
     if (!ui.info) return;
     contextMenu(e, [
-      ...SBS_LAYOUTS.map(([layout, label]) => [t(label), () => sbsSet(layout)]),
+      ...SBS_LAYOUTS.map(([layout, label]) => [t(label), () => sbsSet(layout), sbs.layout === layout]),
       sbs.layout ? [t("Back to one photo"), () => sbsSet(null)] : null,
     ].filter(Boolean));
   });

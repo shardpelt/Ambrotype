@@ -212,7 +212,12 @@ impl Session {
         let orientation = self.full.metadata.orientation;
         let (sw, sh) = pipeline::output_size(&self.full, &develop);
         let (uw, uh) = amb_export::geometry::oriented_size(sw, sh, orientation);
-        if self.region_cache.as_ref().map(|c| &c.key) != Some(&key) {
+        let kept = if before {
+            &self.region_before
+        } else {
+            &self.region_cache
+        };
+        if kept.as_ref().map(|c| &c.key) != Some(&key) {
             let globals = if pipeline::needs_globals(&develop) {
                 let full = &self.full;
                 let small = self
@@ -223,15 +228,25 @@ impl Session {
                 pipeline::Globals::default()
             };
             let tiles = uw.div_ceil(REGION_TILE) * uh.div_ceil(REGION_TILE);
-            self.region_cache = Some(RegionCache {
+            let fresh = Some(RegionCache {
                 key,
                 srgb: vec![0; uw * uh * 3],
                 done: vec![false; tiles],
                 globals,
             });
+            if before {
+                self.region_before = fresh;
+            } else {
+                self.region_cache = fresh;
+            }
         }
         let proof = self.proof;
-        let cache = self.region_cache.as_mut().expect("set above");
+        let cache = if before {
+            self.region_before.as_mut()
+        } else {
+            self.region_cache.as_mut()
+        }
+        .expect("set above");
         let w = max_w.clamp(16, uw);
         let h = max_h.clamp(16, uh);
         let x = ((cx * uw as f64) as isize - w as isize / 2).clamp(0, (uw - w) as isize) as usize;

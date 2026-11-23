@@ -37,6 +37,13 @@ await t.step("Right-click Before / after: Side by side shows both whole, before 
   }, 30000);
   t.expect($("btn-before").classList.contains("active"), "Before / after shown as on");
   t.expect(!document.querySelector(".ctx-menu"), "the menu closed");
+  t.expect(!items.some((x) => x.classList.contains("on")), "no layout ticked while none is on");
+  // Opened again, the menu ticks the layout that is on.
+  b.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, button: 2, clientX: r.left + 4, clientY: r.top + 4 }));
+  const ticked = [...document.querySelectorAll(".ctx-menu button.on")].map((x) => x.textContent);
+  t.expect(ticked.length === 1 && ticked[0] === "Side by side" && document.querySelector(".ctx-menu button.on").getAttribute("aria-checked") === "true", `ticked: ${ticked}`);
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  t.expect(!document.querySelector(".ctx-menu") && sbs.layout === "side", "Esc closes the menu and keeps the layout");
 });
 
 await t.step("Side by side, filling the view: each half filled; a drag on Before moves both", async () => {

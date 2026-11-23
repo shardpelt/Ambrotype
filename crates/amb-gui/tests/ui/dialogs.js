@@ -21,13 +21,14 @@ ui.presets = await invoke("presets");
 await opens("paste-dialog", () => applyPresetPartly(ui.presets[0] ?? { name: "A preset" }), "#paste-dialog button.primary");
 await opens("surprise-dialog", () => surpriseFlow(), "#surprise-more");
 await t.step("Surprise me: tone off leaves tone alone, a typed seed is the first look's seed", async () => {
+  // The step before clicked More: its looks must land first, or they replace the seeded ones.
+  await t.until("the earlier looks", () => !$("surprise-more").disabled);
   surpriseFlow();
   await t.until("the looks", () => $("surprise-grid").children.length === 6);
   $("surprise-tone").checked = false;
   $("surprise-seed").value = "42";
   $("surprise-seed").dispatchEvent(new Event("change"));
-  await t.until("the seeded looks", () => $("surprise-grid").firstChild?.textContent === "seed 42");
-  t.expect($("surprise-grid").firstChild.title.includes("42"), "the tile's title has the seed");
+  await t.until("the seeded looks", () => $("surprise-grid").firstChild?.title === "Seed 42");
   const [v] = await invoke("surprise", { seed: 42, count: 1, params: { style: "Anything", strength: 80, colour: true, tone: false, finish: true } });
   t.expect(v.seed === 42, "seed 42");
   t.expect(!JSON.stringify(v.commands).includes("Contrast2012"), "no Contrast2012");

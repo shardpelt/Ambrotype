@@ -263,9 +263,9 @@ function navButtons() {
 function navPlace() {
   const task = currentTask();
   const inLib = task === "library" && typeof lib !== "undefined" && lib.on;
-  const place = { task, view: inLib ? cull.view : null, pick: inLib ? lib.pick : null, scroll: 0 };
+  const place = { task, view: inLib ? cull.view : null, pick: inLib ? lib.pick : null, date: inLib ? lib.date : null, scroll: 0 };
   if (inLib) place.source = { dir: lib.dir, more: [...lib.more], collection: lib.collection, smart: lib.smart };
-  place.key = `${task}|${place.view ?? ""}|${place.pick?.words ?? ""}|${navSourceKey(place.source)}`;
+  place.key = `${task}|${place.view ?? ""}|${place.pick?.words ?? ""}|${place.date ?? ""}|${navSourceKey(place.source)}`;
   return place;
 }
 
@@ -338,6 +338,7 @@ async function navStep(dir) {
       const s = to.source;
       if (s && navSourceKey(s) !== navSourceKey(navPlace().source)) await navShowSource(s);
       if (lib.pick !== to.pick) setInsightFilter(to.pick, false);
+      if ((lib.date ?? null) !== (to.date ?? null)) setDateFilter(to.date ?? null, false);
       if (to.view && cull.view !== to.view) setLibraryView(to.view);
       if (to.scroll) $("library-grid").scrollTop = to.scroll;
     }

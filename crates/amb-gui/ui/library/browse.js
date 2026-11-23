@@ -50,14 +50,26 @@ function dateWords(d) {
   return day ? t("{day} {month} {year}", vars) : t("{month} {year}", vars);
 }
 
-// Show only the photos taken on `date` (a prefix), in the grid.
-function setDateFilter(date) {
+// The bar's chip for a filter: what is shown, and how to see all again.
+const filterChipWords = (words) => t("{words} · Show all ×", { words });
+
+// Show only the photos taken on `date` (a prefix), in the grid; null shows
+// them all again. `toGrid` false keeps the view (Back uses it).
+function setDateFilter(date, toGrid = true) {
   lib.date = date;
   const chip = $("lib-date");
   chip.hidden = !date;
-  chip.textContent = date ? `${dateWords(date)} ×` : "";
-  renderLibrary();
-  if (date) setLibraryView("grid");
+  chip.textContent = date ? filterChipWords(dateWords(date)) : "";
+  // One step for Back, not one for the filter and one for the view.
+  const held = nav.hold;
+  nav.hold = true;
+  try {
+    renderLibrary();
+    if (date && toGrid) setLibraryView("grid");
+  } finally {
+    nav.hold = held;
+  }
+  navNote();
 }
 
 // ---------------------------------------------------------------- timeline

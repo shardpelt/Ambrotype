@@ -8818,6 +8818,9 @@
  "{why} Settings → General turns them on again.": [
   "help/tips.js"
  ],
+ "{words} · Show all ×": [
+  "library/browse.js"
+ ],
  "{w}×{h} preview in {ms} ms": [
   "develop/preview.js"
  ],

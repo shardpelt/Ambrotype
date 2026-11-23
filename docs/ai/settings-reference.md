@@ -39,7 +39,7 @@ How to read the tables:
 | [Enhance (AI)](#enhance) | `enhance` | 8 | Records of AI Denoise, Raw Details and Super Resolution. Not supported by Ambrotype. |
 | [Lens Blur (AI)](#lens-blur) | `lens_blur` | 1 | Depth-map based background blur with bokeh shapes. Not supported by Ambrotype. |
 | [HDR editing](#hdr) | `hdr` | 9 | HDR edit mode and the SDR rendition settings used when an HDR edit is saved without HDR output. Not supported by Ambrotype. |
-| [Film Negative (Ambrotype)](#negative) | `negative` | 34 | Turns a camera scan of a film negative into a positive: removes the orange film base, sets per-channel levels, and applies a film stock look. Our own feature (amb: namespace); Lightroom has no equivalent tags, so Lightroom ignores these. |
+| [Film Negative (Ambrotype)](#negative) | `negative` | 41 | Turns a camera scan of a film negative into a positive: removes the orange film base, sets per-channel levels, and applies a film stock look. Our own feature (amb: namespace); Lightroom has no equivalent tags, so Lightroom ignores these. |
 
 <a id="metadata"></a>
 
@@ -565,3 +565,10 @@ Turns a camera scan of a film negative into a positive: removes the orange film 
 | `amb:NegativeToe` | Toe | number | -100 to 100 | 0 | rendered (exact) | Shadow roll-off: positive lifts and softens the deepest shadows, negative makes them harder. |
 | `amb:NegativeShoulder` | Shoulder | number | -100 to 100 | 0 | rendered (exact) | Highlight roll-off: positive compresses bright highlights (more detail, softer), negative makes them harder. |
 | `amb:NegativeSaturation` | Film saturation | number | -100 to 100 | 0 | rendered (exact) | Colour saturation of the conversion, on top of the film stock's own. |
+| `amb:PaperCurve` | Paper curve | bool | true / false | false | rendered (exact) | True prints the converted negative on a modelled photographic paper (ours) instead of mapping it back to scene light: a toe, a straight line and a shoulder in density, with a paper grade, split grade and preflash. The result is the print's reflectance (paper white = 1), so no base tone curve is added after it. Toe and Shoulder still bend the exposure before the paper. False (the default) converts as before. |
+| `amb:Paper` | Paper | text |  | glossy-neutral | rendered (exact) | The paper the negative is printed on, with the paper curve: glossy-neutral (deep blacks, Dmax 2.10), matte-neutral (softer blacks, Dmax 1.60), warm-fibre (Dmax 2.00, a warm image tone on black-and-white prints). Our own papers, named generically. An unknown name prints on glossy-neutral. |
+| `amb:PaperGrade` | Paper grade | number | 0 to 5 | 2 | rendered (exact) | With the paper curve: the contrast grade, 0 (softest) to 5 (hardest), half grades allowed as with multigrade filters. Each grade has its ISO R range (140 at grade 0 to 40 at grade 5). Ignored with split grade. Print contrast still works on top. |
+| `amb:PaperSplitGrade` | Split grade | bool | true / false | false | rendered (exact) | With the paper curve: print with two exposures, one through the softest filter (grade 0) and one through the hardest (grade 5), set by Soft and Hard exposure. Paper grade is then ignored. |
+| `amb:PaperSoftExposure` | Soft exposure | number | -3 to 3 | 0 | rendered (exact) | With split grade: the soft (grade 0) exposure in stops (EV), −3 to +3. More exposure prints darker, mostly in the highlights and midtones. |
+| `amb:PaperHardExposure` | Hard exposure | number | -3 to 3 | 0 | rendered (exact) | With split grade: the hard (grade 5) exposure in stops (EV), −3 to +3. More exposure prints darker, mostly in the shadows, with more contrast. |
+| `amb:PaperPreflash` | Preflash | number | 0 to 100 | 0 | rendered (exact) | With the paper curve: a uniform extra exposure, 0 to 100 % of the paper's threshold exposure (the exposure where it starts to darken). It brings detail into the print's lightest tones and leaves the shadows as they were. |

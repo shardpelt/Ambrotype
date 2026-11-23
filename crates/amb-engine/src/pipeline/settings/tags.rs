@@ -186,6 +186,13 @@ pub const RENDERED_TAGS: &[&str] = &[
     "amb:NegativeToe",
     "amb:NegativeShoulder",
     "amb:NegativeSaturation",
+    "amb:PaperCurve",
+    "amb:Paper",
+    "amb:PaperGrade",
+    "amb:PaperSplitGrade",
+    "amb:PaperSoftExposure",
+    "amb:PaperHardExposure",
+    "amb:PaperPreflash",
 ];
 
 /// Whether `tag` is rendered by this pipeline version (fixed list plus the

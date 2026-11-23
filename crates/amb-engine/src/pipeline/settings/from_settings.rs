@@ -392,5 +392,20 @@ pub(super) fn negative_settings(settings: &BTreeMap<String, Value>) -> Negative 
         toe: num(settings, "amb:NegativeToe").unwrap_or(0.0),
         shoulder: num(settings, "amb:NegativeShoulder").unwrap_or(0.0),
         saturation: num(settings, "amb:NegativeSaturation").unwrap_or(0.0),
+        paper: paper_settings(settings),
+    }
+}
+
+/// The paper curve's settings (`amb:PaperCurve`, `amb:Paper*`).
+fn paper_settings(settings: &BTreeMap<String, Value>) -> negative::PaperPrint {
+    let d = negative::PaperPrint::default();
+    negative::PaperPrint {
+        enabled: flag(settings, "amb:PaperCurve"),
+        paper: text(settings, "amb:Paper").unwrap_or(d.paper),
+        grade: num(settings, "amb:PaperGrade").unwrap_or(d.grade),
+        split_grade: flag(settings, "amb:PaperSplitGrade"),
+        soft_exposure: num(settings, "amb:PaperSoftExposure").unwrap_or(d.soft_exposure),
+        hard_exposure: num(settings, "amb:PaperHardExposure").unwrap_or(d.hard_exposure),
+        preflash: num(settings, "amb:PaperPreflash").unwrap_or(d.preflash),
     }
 }

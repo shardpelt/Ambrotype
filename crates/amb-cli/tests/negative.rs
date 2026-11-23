@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! `amb negative sync` end to end: a roll of synthetic negatives gets one
-//! conversion, written to each sidecar with Auto off.
+//! `amb negative` end to end: a roll of synthetic negatives gets one
+//! conversion, written to each sidecar with Auto off; stocks list their grain;
+//! a harder paper grade prints more contrast.
 
 use std::process::Command;
 
@@ -77,4 +78,43 @@ fn stocks_show_their_grain_and_glow() {
         .unwrap();
     assert_eq!(cinema["halation"], 30.0);
     assert_eq!(cinema["grain_amount"], 28.0);
+}
+
+/// The spread (standard deviation) of a JPEG's grey values.
+fn spread(path: &std::path::Path) -> f64 {
+    let img = image::open(path).unwrap().to_luma8();
+    let n = img.pixels().len() as f64;
+    let mean = img.pixels().map(|p| f64::from(p[0])).sum::<f64>() / n;
+    (img.pixels()
+        .map(|p| (f64::from(p[0]) - mean).powi(2))
+        .sum::<f64>()
+        / n)
+        .sqrt()
+}
+
+#[test]
+fn a_harder_paper_grade_prints_more_contrast() {
+    let dir = std::env::temp_dir().join(format!("amb-cli-paper-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    amb(&dir, &["testimage", "negative", "neg.dng"]);
+    let mut spreads = Vec::new();
+    for grade in [1, 4] {
+        let preset = format!("grade{grade}.xmp");
+        std::fs::write(
+            dir.join(&preset),
+            format!(
+                r#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<rdf:Description rdf:about="" xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" xmlns:amb="http://ns.ambrotype.org/develop/1.0/"
+ crs:PresetType="Normal" amb:NegativeConvert="True" amb:PaperCurve="True" amb:PaperGrade="{grade}"/>
+</rdf:RDF></x:xmpmeta>"#
+            ),
+        )
+        .unwrap();
+        let out = format!("grade{grade}.jpg");
+        amb(&dir, &["render", "neg.dng", &out, "--preset", &preset]);
+        spreads.push(spread(&dir.join(&out)));
+    }
+    assert!(spreads[1] > spreads[0] * 1.1, "{spreads:?}");
+    std::fs::remove_dir_all(&dir).unwrap();
 }

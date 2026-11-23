@@ -18,7 +18,9 @@
 //!    black-and-white channel mix.
 //! 4. Back to scene-linear light around a midtone (which lands on 18% grey),
 //!    with contrast, toe and shoulder, so the rest of the pipeline (Exposure,
-//!    tone, colour, curves, ...) works on an ordinary positive.
+//!    tone, colour, curves, ...) works on an ordinary positive. With the
+//!    paper curve on (model v2, [`paper`]), printed on a modelled paper
+//!    instead: the result is the print's reflectance.
 //!
 //! The film base is a stored value (picked on the photo, or from Freeze or
 //! `amb negative analyze`) or estimated from the whole scan, where the rebate
@@ -31,6 +33,7 @@ mod analysis;
 mod cast;
 mod frame;
 mod meter;
+mod paper;
 
 pub use analysis::{analyze, analyze_as, estimate_base, stock};
 use analysis::{auto_density_grade, levels, log_exposure, samples_grid};
@@ -38,6 +41,8 @@ use cast::{crossover, remove_cast, uncross};
 pub use frame::detect_frame;
 pub use meter::METER_MIN_SPAN;
 pub(crate) use meter::sub_scan;
+use paper::{PAPER_NEGATIVE_RANGE, PaperCurve};
+pub use paper::{PAPERS, Paper, PaperPrint, paper};
 
 use rayon::prelude::*;
 
@@ -203,6 +208,8 @@ pub struct Negative {
     pub toe: f64,
     pub shoulder: f64,
     pub saturation: f64,
+    /// The paper curve (model v2): print on a modelled paper.
+    pub paper: PaperPrint,
 }
 
 impl Default for Negative {
@@ -230,6 +237,7 @@ impl Default for Negative {
             toe: 0.0,
             shoulder: 0.0,
             saturation: 0.0,
+            paper: PaperPrint::default(),
         }
     }
 }
@@ -544,6 +552,9 @@ pub struct Conversion {
     shoulder: f64,
     gain: f64,
     crossover_at: [f64; 3],
+    /// The paper print, and the print exposure in decades it is given.
+    paper: Option<PaperCurve>,
+    exposure: f64,
 }
 
 impl Conversion {
@@ -551,19 +562,32 @@ impl Conversion {
         let stock = *stock(&n.stock);
         let amount = (n.stock_amount / 100.0).clamp(0.0, 1.0);
         let blend = |neutral: f64, look: f64| neutral + (look - neutral) * amount;
+        let black_and_white = n.kind == NegativeType::BlackAndWhite || stock.black_and_white;
+        let paper = n
+            .paper
+            .enabled
+            .then(|| PaperCurve::new(&n.paper, k.midtone_grey, black_and_white));
+        // The levels span the scene's range, or a log exposure on the paper.
+        let span = if paper.is_some() {
+            PAPER_NEGATIVE_RANGE
+        } else {
+            k.scene_range
+        };
         Conversion {
             analysis: a,
             stock,
             amount,
-            black_and_white: n.kind == NegativeType::BlackAndWhite || stock.black_and_white,
+            black_and_white,
             positive: n.kind == NegativeType::Positive,
             balance: n.balance.map(|b| b / 100.0 * k.balance_range),
             saturation: blend(1.0, stock.saturation) * (1.0 + n.saturation / 100.0).max(0.0),
-            range: k.scene_range * blend(1.0, stock.contrast) * (n.contrast / 100.0).exp2(),
+            range: span * blend(1.0, stock.contrast) * (n.contrast / 100.0).exp2(),
             toe: blend(0.0, stock.toe) + n.toe / 100.0 * k.toe_range,
             shoulder: blend(0.0, stock.shoulder) + n.shoulder / 100.0 * k.shoulder_range,
             gain: k.midtone_grey * n.exposure.exp2(),
             crossover_at: k.crossover_at,
+            paper,
+            exposure: n.exposure * std::f64::consts::LOG10_2,
         }
     }
 
@@ -602,15 +626,18 @@ impl Conversion {
                 *v = y + (*v - y) * self.saturation;
             }
         }
-        l.map(|v| {
+        std::array::from_fn(|c| {
             // Log exposure relative to the midtone, with toe/shoulder compression.
-            let mut e = (v - m) * self.range;
+            let mut e = (l[c] - m) * self.range;
             if e > 0.0 {
                 e /= (1.0 + self.shoulder * e).max(0.2);
             } else {
                 e /= (1.0 - self.toe * e).max(0.2);
             }
-            (self.gain * 10f64.powf(e)) as f32
+            match &self.paper {
+                None => (self.gain * 10f64.powf(e)) as f32,
+                Some(paper) => paper.reflectance(e + self.exposure, c) as f32,
+            }
         })
     }
 }

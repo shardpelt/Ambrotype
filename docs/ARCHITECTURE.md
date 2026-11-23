@@ -189,7 +189,8 @@ preset/sidecar ──amb-presets──▶ settings map (crs:/amb: tags) ──�
 amb-engine pipeline (linear float RGB, rayon-parallel passes over one buffer):
   0  Lens Corrections (vignetting, CA, distortion), Upright + Transform, crop: one resampling pass
      (Upright found from the photo's lines on a ≤1024 px lens-corrected copy, upright.rs)
-     → film negative conversion (optional; the film base from the whole scan, the levels inside the crop)
+     → film negative conversion (optional; the film base from the whole scan, the levels inside the crop;
+       with the paper curve, negative/paper.rs, a print's reflectance, and no base look in step 3)
   1  clipped channels → neutral, white balance + camera matrix (× Calibration primaries) → linear ProPhoto
      (a camera profile, profile.rs: its matrices, hue/sat map, exposure offset, look table)
      → Exposure → Calibration shadow tint → Defringe
@@ -265,7 +266,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - Mask tool (`ui/tools/masks.js`, `ui/tools/mask-draw.js`, `ui/tools/mask-panel.js`): linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map ([design/masks.md](design/masks.md)).
     - Spot removal (`ui/tools/spots.js`): heal and clone spots with a suggested donor, and Remove spots filled by AI Remove (`spot_source`). Find dust adds a heal spot per speck and hair (`find_dust`). [design/spot-removal.md](design/spot-removal.md), [design/dust.md](design/dust.md).
   - Guided Upright: guides drawn on the photo, which the Transform sliders straighten ([design/transform.md](design/transform.md)).
-  - film negatives ([design/film-negatives.md](design/film-negatives.md)): Pick base, the base measured on the whole scan, the levels inside the crop, Auto off (every frame printed alike on a fixed density range), Expired film and Cast removal along the greys.
+  - film negatives ([design/film-negatives.md](design/film-negatives.md)): Pick base, the base measured on the whole scan, the levels inside the crop, Auto off (every frame printed alike on a fixed density range), Expired film and Cast removal along the greys, and the paper curve (grades, split grade, preflash).
   - film base picker (`pick_film_base`: Pick base in the Negative panel; a click on clear film between frames sets `FilmBase*`, Alt-click forgets it; the WB picker shares `Session::shown_patch`, which follows the crop)
   - metering box (`meter_area`, `meter_area_shown`: Meter area in the Negative panel, `ui/develop/meter.js`; a box dragged on the photo as shown is kept in the stored orientation like the crop, `amb_export::geometry::stored_box`)
   - crop Level (the angle from the photo's long lines, `guide_lines`), guide lines the rotation snaps to, and crop to the view when zoomed in (`ui/tools/croptool.js`)

@@ -2627,6 +2627,69 @@
    "max": 100,
    "default": 0,
    "status": "exact"
+  },
+  {
+   "name": "amb:PaperCurve",
+   "group": "negative",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": false,
+   "status": "exact"
+  },
+  {
+   "name": "amb:Paper",
+   "group": "negative",
+   "kind": "text",
+   "min": null,
+   "max": null,
+   "default": "glossy-neutral",
+   "status": "exact"
+  },
+  {
+   "name": "amb:PaperGrade",
+   "group": "negative",
+   "kind": "number",
+   "min": 0,
+   "max": 5,
+   "default": 2,
+   "status": "exact"
+  },
+  {
+   "name": "amb:PaperSplitGrade",
+   "group": "negative",
+   "kind": "bool",
+   "min": null,
+   "max": null,
+   "default": false,
+   "status": "exact"
+  },
+  {
+   "name": "amb:PaperSoftExposure",
+   "group": "negative",
+   "kind": "number",
+   "min": -3,
+   "max": 3,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "amb:PaperHardExposure",
+   "group": "negative",
+   "kind": "number",
+   "min": -3,
+   "max": 3,
+   "default": 0,
+   "status": "exact"
+  },
+  {
+   "name": "amb:PaperPreflash",
+   "group": "negative",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "exact"
   }
  ]
 }

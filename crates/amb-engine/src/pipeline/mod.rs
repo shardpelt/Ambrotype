@@ -527,14 +527,12 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
         &tile,
     );
     let base = match (
-        img.rendered,
-        s.base_look,
+        s.base_look_for(img.rendered),
         profile.and_then(|p| p.tone_curve.as_ref()),
     ) {
-        (true, _, _) => Base::Look(BaseLook::Linear),
         // A profile's tone curve stands in for our default base look.
-        (false, BaseLook::Default, Some(curve)) => Base::Curve(curve),
-        (false, look, _) => Base::Look(look),
+        (BaseLook::Default, Some(curve)) => Base::Curve(curve),
+        (look, _) => Base::Look(look),
     };
     let masks = (!s.masks.is_empty()).then(|| {
         mask::draw_in(

@@ -775,3 +775,84 @@ fn every_stock_has_a_texture_and_the_other_way_round() {
         assert!(STOCKS.iter().any(|s| s.id == *id), "{id}");
     }
 }
+
+/// The testkit's negative, converted with `n`.
+fn convert_testkit(n: &Negative) -> (Vec<f32>, usize, usize) {
+    let img = amb_testkit::patterns::negative();
+    let (w, h) = (img.width as usize, img.height as usize);
+    let a = resolve(n, scan_of(&img.data, w, h), scan_of(&img.data, w, h), &K);
+    let mut out = img.data.clone();
+    apply(&mut out, &Conversion::new(n, a, &K));
+    (out, w, h)
+}
+
+#[test]
+fn paper_curve_off_converts_as_before() {
+    let n = Negative {
+        enabled: true,
+        stock: "cinema-500t".into(),
+        contrast: 30.0,
+        toe: 20.0,
+        shoulder: -10.0,
+        exposure: 0.5,
+        ..Negative::default()
+    };
+    // Every paper setting changed, but the paper curve off: bit for bit the same.
+    let unused = Negative {
+        paper: PaperPrint {
+            enabled: false,
+            paper: "warm-fibre".into(),
+            grade: 5.0,
+            split_grade: true,
+            soft_exposure: 1.0,
+            hard_exposure: -2.0,
+            preflash: 50.0,
+        },
+        ..n.clone()
+    };
+    let (out, w, h) = convert_testkit(&n);
+    assert!(out == convert_testkit(&unused).0);
+    // Values the conversion gave before the paper curve existed.
+    let before: [((usize, usize), [f32; 3]); 5] = [
+        ((10, 100), [5.6612067e-2, 5.834589e-2, 6.065253e-2]),
+        ((w / 2, h - 120), [1.6629589e-1, 1.658906e-1, 1.6924e-1]),
+        ((w - 5, h - 120), [1.3890698, 1.339563, 1.3273412]),
+        ((5, h - 120), [2.6529362e-2, 2.7662639e-2, 2.8906072e-2]),
+        ((w / 4, h / 2), [2.4176277e-1, 4.2574736e-1, 1.657521e-1]),
+    ];
+    for ((x, y), want) in before {
+        let got = &out[(y * w + x) * 3..][..3];
+        for c in 0..3 {
+            assert!(
+                (got[c] - want[c]).abs() <= want[c] * 1e-5,
+                "({x}, {y}): {got:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn paper_curve_prints_a_reflectance() {
+    let paper = |grade: f64| Negative {
+        enabled: true,
+        paper: PaperPrint {
+            enabled: true,
+            grade,
+            ..PaperPrint::default()
+        },
+        ..Negative::default()
+    };
+    let (soft, w, h) = convert_testkit(&paper(1.0));
+    let (hard, ..) = convert_testkit(&paper(4.0));
+    // The grey ramp: never brighter than paper white, harder spans more.
+    let y = h - 120;
+    let at = |out: &[f32], x: usize| out[(y * w + x) * 3 + 1];
+    assert!(soft.iter().chain(&hard).all(|v| (0.0..=1.0).contains(v)));
+    let span = |out: &[f32]| at(out, w - 5) / at(out, 5);
+    assert!(
+        span(&hard) > span(&soft) * 1.5,
+        "{} {}",
+        span(&hard),
+        span(&soft)
+    );
+}

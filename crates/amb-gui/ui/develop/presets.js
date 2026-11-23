@@ -282,15 +282,21 @@ async function autoEditFlow() {
 // Surprise me: six random looks from the Random look plugin as
 // thumbnails; clicking one applies it (one undo step). Seeds are shown so
 // a look can be found again.
+// Each opening of the dialog counts up, so a roll still running from an
+// earlier opening drops its looks instead of replacing the new ones.
+const surprise = { opening: 0 };
+
 async function surpriseFlow() {
   if (!ui.info) return toast(t("Open a photo first."), true);
+  const opening = ++surprise.opening;
+  const current = () => opening === surprise.opening;
   const dlg = $("surprise-dialog");
   const grid = $("surprise-grid");
   let seed = Math.floor(Math.random() * 1e9);
   let busy = false;
   // A typed seed starts the looks again from it; "More" goes on from the last.
   const roll = async (fresh = true) => {
-    if (busy) return;
+    if (busy || !current()) return;
     const typed = $("surprise-seed").value.trim();
     if (fresh && typed !== "" && Number.isInteger(Number(typed)) && Number(typed) >= 0) seed = Number(typed);
     busy = true;
@@ -309,6 +315,7 @@ async function surpriseFlow() {
         },
       });
       seed += variants.length;
+      if (!current()) return;
       grid.replaceChildren(...variants.map((v) => {
         const b = document.createElement("button");
         b.type = "button";
@@ -327,10 +334,10 @@ async function surpriseFlow() {
       }));
       $("surprise-status").textContent = t("Click a look to apply it. Each is an ordinary edit you can keep tweaking, and Undo takes it back.");
     } catch (e) {
-      $("surprise-status").textContent = t(String(e));
+      if (current()) $("surprise-status").textContent = t(String(e));
     } finally {
       busy = false;
-      $("surprise-more").disabled = false;
+      if (current()) $("surprise-more").disabled = false;
     }
   };
   $("surprise-more").onclick = () => roll(false);

@@ -8,6 +8,8 @@ pub(crate) struct PreviewMeta {
     pub(crate) width: usize,
     pub(crate) height: usize,
     pub(crate) histogram: [Vec<u32>; 3],
+    /// Empty, and left out, unless the page asked for it (the vectorscope is shown).
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub(crate) vectorscope: Vec<u32>,
     pub(crate) millis: u128,
     pub(crate) lens_profile: Option<String>,
@@ -24,6 +26,7 @@ pub(crate) async fn preview(
     before: bool,
     clipping: bool,
     mask_overlay: Option<usize>,
+    vectorscope: Option<bool>,
     state: tauri::State<'_, AppState>,
 ) -> Res<Response> {
     let slot = state.session.clone();
@@ -51,7 +54,11 @@ pub(crate) async fn preview(
             width: p.width,
             height: p.height,
             histogram: p.histogram,
-            vectorscope: p.vectorscope,
+            vectorscope: if vectorscope == Some(true) {
+                p.vectorscope
+            } else {
+                Vec::new()
+            },
             millis: p.millis,
             lens_profile: p.lens_profile,
             gpu: p.gpu.as_ref().and_then(|g| g.as_ref().ok().cloned()),

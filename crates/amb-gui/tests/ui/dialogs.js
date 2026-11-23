@@ -21,8 +21,7 @@ ui.presets = await invoke("presets");
 await opens("paste-dialog", () => applyPresetPartly(ui.presets[0] ?? { name: "A preset" }), "#paste-dialog button.primary");
 await opens("surprise-dialog", () => surpriseFlow(), "#surprise-more");
 await t.step("Surprise me: tone off leaves tone alone, a typed seed is the first look's seed", async () => {
-  // The step before clicked More: its looks must land first, or they replace the seeded ones.
-  await t.until("the earlier looks", () => !$("surprise-more").disabled);
+  // The step before clicked More and left that roll running: its looks must not replace these.
   surpriseFlow();
   await t.until("the looks", () => $("surprise-grid").children.length === 6);
   $("surprise-tone").checked = false;

@@ -37,7 +37,8 @@ await t.step("the cloud grows when Saturation goes up", async () => {
   t.setSlider("Saturation", 80);
   await t.until("a new preview", () => $("preview").src !== src);
   await t.until("a wider cloud", () => scopeInk() > before, 30000);
-  t.expect(scope.data.reduce((s, n) => s + n, 0) === sum, "the same pixels, counted again");
+  // A draft render while the slider moves is smaller: wait for the settled one.
+  await t.until("the same pixels, counted again", () => scope.data.reduce((s, n) => s + n, 0) === sum, 30000);
 });
 
 await t.step("the colour under the pointer is a ring on the scope", async () => {

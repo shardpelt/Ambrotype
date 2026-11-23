@@ -74,6 +74,7 @@ async function renderLoop() {
         before: ui.before,
         clipping: ui.clipping,
         maskOverlay,
+        vectorscope: scope.mode === "vectorscope",
       });
       const { meta, jpeg } = splitFramed(buf);
       // A draft is smaller than the viewer; keep the image at its settled size

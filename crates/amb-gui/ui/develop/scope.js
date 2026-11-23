@@ -140,6 +140,8 @@ function scopeToggle(to = scope.mode === "vectorscope" ? "histogram" : "vectorsc
   scope.dot = null;
   scopeSync();
   if (ui.histogram) drawHistogram(ui.histogram);
+  // Previews carry the vectorscope only while it is shown: ask for one.
+  if (to === "vectorscope" && ui.info) requestPreview(false);
 }
 
 // The switch names the view it leads to.

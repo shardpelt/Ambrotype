@@ -9,6 +9,14 @@ await t.step("Open folder shows the photo in the library", async () => {
   await t.until("the grid", () => libraryOn() && lib.photos.length > 0);
 });
 
+// A bar to click: the test photo has no exposure info, so give it a made-up
+// aperture (as browse.js does) and draw the charts again.
+const aBar = async () => {
+  for (const p of lib.beforePick ?? lib.shown) p.aperture ??= 2.8;
+  await renderInsights($("library-view"));
+  return document.querySelector(".in-bar:not(:disabled), .in-row");
+};
+
 const showView = async (view, wait) => {
   t.click(`#lib-views [data-view="${view}"]`);
   await t.until(`the ${view}`, () => cull.view === view && document.querySelector(wait));
@@ -17,7 +25,7 @@ const showView = async (view, wait) => {
 await t.step("a bar's filter comes off with the chip, which says so", async () => {
   await showView("insights", ".in-charts");
   const all = lib.shown.length;
-  const bar = document.querySelector(".in-bar:not(:disabled), .in-row");
+  const bar = await aBar();
   t.expect(bar, "a bar to click");
   bar.click();
   await t.until("the grid with the filter", () => cull.view === "grid" && lib.pick);
@@ -29,7 +37,7 @@ await t.step("a bar's filter comes off with the chip, which says so", async () =
 
 await t.step("Back returns to Insights without the filter", async () => {
   await showView("insights", ".in-charts");
-  document.querySelector(".in-bar:not(:disabled), .in-row").click();
+  (await aBar()).click();
   await t.until("the grid with the filter", () => cull.view === "grid" && lib.pick);
   navBack();
   await t.until("Insights again", () => cull.view === "insights" && !lib.pick && libraryOn());
@@ -38,7 +46,7 @@ await t.step("Back returns to Insights without the filter", async () => {
 
 await t.step("Esc in the grid takes the filter off, and a second Esc leaves", async () => {
   await showView("insights", ".in-charts");
-  document.querySelector(".in-bar:not(:disabled), .in-row").click();
+  (await aBar()).click();
   await t.until("the grid with the filter", () => cull.view === "grid" && lib.pick);
   t.key("Escape");
   t.expect(!lib.pick && $("lib-pick").hidden && libraryOn(), "the filter is off, still in the library");

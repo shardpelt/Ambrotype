@@ -50,7 +50,7 @@ function applyView() {
     if (f.flag === "unflagged" ? p.flag : f.flag === "kept" ? p.flag === "reject" : f.flag !== "all" && p.flag !== f.flag) return false;
     if (f.edited === "edited" && !p.edited) return false;
     if (f.edited === "unedited" && p.edited) return false;
-    if (f.text && !lib.found && ![p.name, ...p.keywords, p.title, p.caption, p.camera, p.lens].some((t) => t?.toLowerCase().includes(f.text))) return false;
+    if (f.text && !lib.found && ![p.name, ...p.keywords, p.title, p.caption, p.city, p.state, p.country, p.camera, p.lens].some((t) => t?.toLowerCase().includes(f.text))) return false;
     return true;
   });
   // A smart search shows its finds, best first.

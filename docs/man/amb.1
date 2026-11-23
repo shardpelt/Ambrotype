@@ -161,6 +161,9 @@ Where photos were taken, from a GPS track: \-\-offset is how many hours the came
 .B amb place <PHOTO|DIR>... \-\-guess [\-\-within MINUTES] [\-\-clock HOURS] [\-\-dry\-run] [\-\-json]
 Guess places for photos without one from the photos that have one: taken within MINUTES (default 30; between two placed photos, on the line between them), or looking the same (photos Smart search has indexed). \-\-clock: hours the unplaced photos' clock was behind the placed ones'
 .TP
+.B amb place <PHOTO|DIR>... \-\-names [\-\-replace] [\-\-json]
+Add the city, state and country of each photo's place to its sidecar (photoshop:City, ...), looked up on OpenStreetMap (one request a second; only when you run this). Photos with a City or Country keep them unless \-\-replace; Smart search finds them
+.TP
 .B amb insights <PHOTO|DIR>... [\-\-by aperture,focal,shutter,iso,hour,camera,lens] [\-\-json]
 How the photos were shot: how often each aperture, focal length, shutter speed, ISO, hour, camera and lens comes up, and how many of each were kept (picked or 3 stars and up); then what the numbers suggest and challenges to try
 .TP

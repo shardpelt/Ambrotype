@@ -383,6 +383,10 @@
  "Add photos…": [
   "index.html"
  ],
+ "Add place names": [
+  "core/keys.js",
+  "library/browse.js"
+ ],
  "Add some photos to the tray first.": [
   "collage/collage-tray.js"
  ],
@@ -3548,6 +3552,12 @@
  "Look in a folder…": [
   "index.html"
  ],
+ "Look up the city and country of each photo's place on OpenStreetMap and keep them in its sidecar (the selected photos, or all shown)": [
+  "library/browse.js"
+ ],
+ "Look up town and country names for {photos} on OpenStreetMap?": [
+  "library/place-names.js"
+ ],
  "Look {seed}": [
   "develop/presets.js"
  ],
@@ -3579,6 +3589,9 @@
  "Looking through the folders…": [
   "library/collections.js"
  ],
+ "Looking up place names… {done} of {total}": [
+  "library/place-names.js"
+ ],
  "Looking…": [
   "library/cleanup.js",
   "library/duplicates.js",
@@ -3595,6 +3608,9 @@
  ],
  "Looks through the {n} shown photos. Photos you picked or rated are left out.": [
   "library/cleanup.js"
+ ],
+ "Looks up the city and country of the selected photos' places on OpenStreetMap and keeps them in the sidecars, so search finds them. Only when you ask.": [
+  "core/keys.js"
  ],
  "Loosely alike": [
   "index.html"
@@ -3968,6 +3984,9 @@
  "Moved it": [
   "looks/editor-keys.js"
  ],
+ "Moved the place of {name}": [
+  "library/map-pins.js"
+ ],
  "Moved to the trash": [
   "core/core.js",
   "develop/preset-hide.js"
@@ -4008,6 +4027,9 @@
  ],
  "Name; another name": [
   "index.html"
+ ],
+ "Named {n} places": [
+  "library/place-names.js"
  ],
  "Nearly black or blown out": [
   "library/cleanup.js"
@@ -4274,6 +4296,9 @@
  ],
  "None of these photos has a place to guess from. Place one first (drag it onto the map, or a GPX track).": [
   "library/guess-places.js"
+ ],
+ "None of these photos has a place. Place one first (drag it onto the map, or a GPX track).": [
+  "library/place-names.js"
  ],
  "None saved yet": [
   "dialogs/export.js"
@@ -8178,6 +8203,9 @@
  "{n} failed: {error}": [
   "library/library-actions.js"
  ],
+ "{n} failed: {why}": [
+  "library/place-names.js"
+ ],
  "{n} file|{n} files": [
   "dialogs/hub.js",
   "library/organise.js"
@@ -8306,6 +8334,7 @@
   "library/library.js",
   "library/lrcat.js",
   "library/organise.js",
+  "library/place-names.js",
   "library/slideshow.js"
  ],
  "{n} placed": [

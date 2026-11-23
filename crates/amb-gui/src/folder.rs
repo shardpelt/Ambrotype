@@ -44,6 +44,10 @@ pub struct FolderPhoto {
     /// disk knows it.
     pub size: Option<u64>,
     pub modified: Option<u64>,
+    /// The place's names, from the sidecar (`photoshop:City`, ...).
+    pub city: Option<String>,
+    pub state: Option<String>,
+    pub country: Option<String>,
 }
 
 pub use amb_library::folder::photo_extensions;
@@ -155,6 +159,9 @@ pub fn from_record(
         stack: info.stack,
         size,
         modified,
+        city: info.city,
+        state: info.state,
+        country: info.country,
     };
     (photo, r.shot)
 }

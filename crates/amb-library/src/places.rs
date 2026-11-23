@@ -13,11 +13,17 @@
 //! Nothing is written here: the guesses are shown to confirm first. Clocks
 //! of different cameras can be apart (time zones); `offset` minutes are
 //! added to the unplaced photos' times first.
+//!
+//! Names: [`names_at`] and [`add_names`] ask OpenStreetMap's Nominatim for a
+//! place's city, state and country and write them into the sidecars, as
+//! Lightroom keeps them; [`search`] finds a place by name. Only when asked.
 
 use crate::catalog::Record;
 use crate::gpx::local_seconds;
+use amb_protocol::sidecar;
 use serde::Serialize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
 /// Where a photo was most likely taken, and why.
 #[derive(Debug, Clone, Serialize)]
@@ -179,6 +185,258 @@ fn by_time(
     }
 }
 
+// ---------------------------------------------------------------- names
+
+/// Nominatim's usage policy: at most one request a second.
+const NOMINATIM_GAP: Duration = Duration::from_secs(1);
+/// Places this close (degrees, about 100 m) share one answer.
+const SAME_PLACE_DEG: f64 = 0.001;
+/// Requests that failed one after another before it stops: the network is
+/// most likely down, and each one waits for its timeout.
+const FAILURES_IN_A_ROW: usize = 3;
+/// How long a request may take (seconds to connect, seconds in all).
+const CONNECT_SECS: u64 = 10;
+const REQUEST_SECS: u64 = 20;
+/// The zoom Nominatim's reverse lookup answers at: 10 is a city.
+const REVERSE_ZOOM: &str = "10";
+
+/// A place found by name or address.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct Found {
+    pub name: String,
+    pub lat: f64,
+    pub lon: f64,
+}
+
+/// The names of a place, as OpenStreetMap gives them (in English).
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+pub struct PlaceNames {
+    /// The city, town, village or municipality, first one present.
+    pub city: Option<String>,
+    pub state: Option<String>,
+    pub country: Option<String>,
+    /// Two letters, upper case.
+    pub country_code: Option<String>,
+}
+
+impl PlaceNames {
+    fn is_empty(&self) -> bool {
+        self.city.is_none() && self.country.is_none()
+    }
+}
+
+/// A GET to OpenStreetMap's Nominatim, `path` being `search` or `reverse`.
+/// Asked only when someone asks (it tells openstreetmap.org what was
+/// searched, or where a photo was taken).
+fn nominatim_get(path: &str, query: &[(&str, &str)]) -> Result<String, String> {
+    let agent = ureq::AgentBuilder::new()
+        .timeout_connect(Duration::from_secs(CONNECT_SECS))
+        .timeout(Duration::from_secs(REQUEST_SECS))
+        .try_proxy_from_env(true)
+        // Nominatim's policy asks for an application name.
+        .user_agent(concat!(
+            "Ambrotype/",
+            env!("CARGO_PKG_VERSION"),
+            " (photo editor; place search)"
+        ))
+        .build();
+    let mut request = agent.get(&format!("https://nominatim.openstreetmap.org/{path}"));
+    for (k, v) in query {
+        request = request.query(k, v);
+    }
+    let response = request.call().map_err(|e| e.to_string())?;
+    response.into_string().map_err(|e| e.to_string())
+}
+
+/// Places matching `query` ("Dam Square, Amsterdam"), at most eight.
+pub fn search(query: &str) -> Result<Vec<Found>, String> {
+    let query = query.trim();
+    if query.is_empty() {
+        return Ok(Vec::new());
+    }
+    let text = nominatim_get(
+        "search",
+        &[("q", query), ("format", "jsonv2"), ("limit", "8")],
+    )
+    .map_err(|e| format!("Place search: {e}"))?;
+    let rows: Vec<serde_json::Value> =
+        serde_json::from_str(&text).map_err(|e| format!("Place search: {e}"))?;
+    Ok(rows
+        .iter()
+        .filter_map(|v| {
+            let num = |k: &str| v.get(k)?.as_str()?.parse::<f64>().ok();
+            Some(Found {
+                name: v.get("display_name")?.as_str()?.to_string(),
+                lat: num("lat")?,
+                lon: num("lon")?,
+            })
+        })
+        .collect())
+}
+
+/// The names in Nominatim's reverse answer (`format=jsonv2`,
+/// `addressdetails=1`). A place with no address (open sea) gives none.
+fn names_from_json(text: &str) -> Result<PlaceNames, String> {
+    let v: serde_json::Value = serde_json::from_str(text).map_err(|e| e.to_string())?;
+    let address = v.get("address");
+    let get = |k: &str| {
+        address?
+            .get(k)?
+            .as_str()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+    };
+    Ok(PlaceNames {
+        city: ["city", "town", "village", "municipality"]
+            .iter()
+            .find_map(|k| get(k)),
+        state: get("state"),
+        country: get("country"),
+        country_code: get("country_code").map(|c| c.to_uppercase()),
+    })
+}
+
+/// The city, state and country at a place, from OpenStreetMap.
+pub fn names_at(lat: f64, lon: f64) -> Result<PlaceNames, String> {
+    let (lat, lon) = (format!("{lat:.6}"), format!("{lon:.6}"));
+    let text = nominatim_get(
+        "reverse",
+        &[
+            ("lat", &lat),
+            ("lon", &lon),
+            ("format", "jsonv2"),
+            ("zoom", REVERSE_ZOOM),
+            ("addressdetails", "1"),
+            ("accept-language", "en"),
+        ],
+    )
+    .map_err(|e| format!("Place names: {e}"))?;
+    names_from_json(&text).map_err(|e| format!("Place names: {e}"))
+}
+
+/// What to do when adding names.
+#[derive(Debug, Clone, Default)]
+pub struct NamesOptions {
+    /// Look up photos that already have a City or Country too.
+    pub replace: bool,
+}
+
+/// What adding names did.
+#[derive(Debug, Default, Serialize)]
+pub struct NamesReport {
+    /// Photos whose sidecar now has names.
+    pub named: usize,
+    pub skipped_no_place: usize,
+    /// Had a City or Country, and `replace` wasn't asked for.
+    pub skipped_named: usize,
+    pub failed: Vec<(PathBuf, String)>,
+}
+
+/// Write the city, state, country and country code of each photo's place
+/// into its sidecar (`photoshop:City`, ...), from OpenStreetMap: one request
+/// a second at most, and none for a place within about 100 m of the last.
+/// `progress` gets (photos done, photos in all).
+pub fn add_names(
+    paths: &[PathBuf],
+    opts: &NamesOptions,
+    progress: &dyn Fn(usize, usize),
+) -> Result<NamesReport, String> {
+    let last = std::cell::Cell::new(None::<Instant>);
+    add_names_with(
+        paths,
+        opts,
+        progress,
+        &crate::catalog::read,
+        &mut |lat, lon| {
+            if let Some(at) = last.get() {
+                std::thread::sleep(NOMINATIM_GAP.saturating_sub(at.elapsed()));
+            }
+            let answer = names_at(lat, lon);
+            last.set(Some(Instant::now()));
+            answer
+        },
+    )
+}
+
+/// [`add_names`] with the reading of a photo and the lookup of a place as
+/// parameters, so tests need no files of photos and no network.
+fn add_names_with(
+    paths: &[PathBuf],
+    opts: &NamesOptions,
+    progress: &dyn Fn(usize, usize),
+    record: &dyn Fn(&Path) -> Record,
+    lookup: &mut dyn FnMut(f64, f64) -> Result<PlaceNames, String>,
+) -> Result<NamesReport, String> {
+    let mut report = NamesReport::default();
+    let mut known: Vec<([f64; 2], PlaceNames)> = Vec::new();
+    let mut failures = 0;
+    for (i, path) in paths.iter().enumerate() {
+        progress(i, paths.len());
+        let r = record(path);
+        let Some(at) = r.place() else {
+            report.skipped_no_place += 1;
+            continue;
+        };
+        if !opts.replace && (r.info.city.is_some() || r.info.country.is_some()) {
+            report.skipped_named += 1;
+            continue;
+        }
+        let near = known.iter().find(|(k, _)| {
+            (k[0] - at[0]).abs() < SAME_PLACE_DEG && (k[1] - at[1]).abs() < SAME_PLACE_DEG
+        });
+        let names = match near {
+            Some((_, n)) => n.clone(),
+            None => match lookup(at[0], at[1]) {
+                Ok(n) => {
+                    failures = 0;
+                    known.push((at, n.clone()));
+                    n
+                }
+                Err(e) => {
+                    report.failed.push((path.clone(), e));
+                    failures += 1;
+                    if failures >= FAILURES_IN_A_ROW {
+                        break;
+                    }
+                    continue;
+                }
+            },
+        };
+        if names.is_empty() {
+            report.failed.push((
+                path.clone(),
+                "OpenStreetMap has no name for this place".into(),
+            ));
+            continue;
+        }
+        match write_names(path, &names) {
+            Ok(()) => report.named += 1,
+            Err(e) => report.failed.push((path.clone(), e)),
+        }
+    }
+    progress(paths.len(), paths.len());
+    Ok(report)
+}
+
+/// Set the names in the photo's sidecar, keeping everything else in it.
+fn write_names(photo: &Path, names: &PlaceNames) -> Result<(), String> {
+    let on_disk = amb_engine::sidecar_text(photo);
+    let mut info = on_disk
+        .as_deref()
+        .map(sidecar::read_info)
+        .unwrap_or_default();
+    // What the place doesn't have is taken out, so a town's names don't
+    // keep an old state.
+    let text = |v: &Option<String>| Some(v.clone().unwrap_or_default());
+    info.city = text(&names.city);
+    info.state = text(&names.state);
+    info.country = text(&names.country);
+    info.country_code = text(&names.country_code);
+    let text = sidecar::with_info(on_disk.as_deref(), &info).map_err(|e| e.to_string())?;
+    sidecar::write_atomic(&amb_engine::sidecar_path(photo), &text).map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -254,5 +512,101 @@ mod tests {
                 .iter()
                 .all(|g| name(&g.path) != "cam1.raf" || g.by != "time" || g.why.contains("after"))
         );
+    }
+
+    // ---------------------------------------------------------- names
+
+    fn placed(lat: f64, lon: f64, city: Option<&str>) -> Record {
+        Record {
+            info: amb_protocol::sidecar::PhotoInfo {
+                gps: Some(format!("{lat:.6},{lon:.6}")),
+                city: city.map(str::to_string),
+                ..Default::default()
+            },
+            ..Record::default()
+        }
+    }
+
+    #[test]
+    fn reverse_answers_give_city_town_or_nothing() {
+        let city = r#"{"address":{"city":"Paris","state":"Île-de-France","country":"France","country_code":"fr"}}"#;
+        let n = names_from_json(city).unwrap();
+        assert_eq!(n.city.as_deref(), Some("Paris"));
+        assert_eq!(n.country_code.as_deref(), Some("FR"));
+        // A town when there is no city, and a village after that.
+        let town = r#"{"address":{"town":"Delft","village":"X","country":"Netherlands","country_code":"nl"}}"#;
+        assert_eq!(
+            names_from_json(town).unwrap().city.as_deref(),
+            Some("Delft")
+        );
+        // No city at all (a country's coast), and no address (the sea).
+        let none = r#"{"address":{"country":"Norway","country_code":"no"}}"#;
+        let n = names_from_json(none).unwrap();
+        assert_eq!((n.city, n.country.as_deref()), (None, Some("Norway")));
+        assert!(
+            names_from_json(r#"{"error":"Unable to geocode"}"#)
+                .unwrap()
+                .is_empty()
+        );
+        assert!(names_from_json("not json").is_err());
+    }
+
+    #[test]
+    fn names_skip_unplaced_and_named_photos_and_share_near_answers() {
+        let dir = std::env::temp_dir().join(format!("amb-names-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let p = |n: &str| dir.join(n);
+        let paths: Vec<PathBuf> = ["a.dng", "b.dng", "c.dng", "d.dng", "e.dng"]
+            .iter()
+            .map(|n| p(n))
+            .collect();
+        let record = |path: &Path| match path.file_name().unwrap().to_str().unwrap() {
+            "a.dng" => placed(48.8584, 2.2945, None),
+            // Within 100 m of a: no second request.
+            "b.dng" => placed(48.8588, 2.2949, None),
+            "c.dng" => Record::default(),
+            "d.dng" => placed(52.37, 4.89, Some("Amsterdam")),
+            _ => placed(35.0, 139.0, None),
+        };
+        let mut asked = Vec::new();
+        let names = |lat: f64, _: f64| {
+            asked.push(lat);
+            Ok(PlaceNames {
+                city: Some("Paris".into()),
+                country: Some("France".into()),
+                country_code: Some("FR".into()),
+                ..PlaceNames::default()
+            })
+        };
+        let mut lookup = names;
+        let report = add_names_with(
+            &paths,
+            &NamesOptions::default(),
+            &|_, _| {},
+            &record,
+            &mut lookup,
+        )
+        .unwrap();
+        assert_eq!(
+            (
+                report.named,
+                report.skipped_no_place,
+                report.skipped_named,
+                report.failed.len()
+            ),
+            (3, 1, 1, 0)
+        );
+        assert_eq!(asked.len(), 2, "a and b share an answer: {asked:?}");
+        let written =
+            amb_protocol::sidecar::read_info(&std::fs::read_to_string(p("b.xmp")).unwrap());
+        assert_eq!(written.city.as_deref(), Some("Paris"));
+        assert_eq!(written.country_code.as_deref(), Some("FR"));
+        assert!(!p("c.xmp").exists() && !p("d.xmp").exists());
+        // With replace, the named photo is looked up too; failures are listed.
+        let mut fail = |_: f64, _: f64| Err("offline".to_string());
+        let again = NamesOptions { replace: true };
+        let report = add_names_with(&paths[3..4], &again, &|_, _| {}, &record, &mut fail).unwrap();
+        assert_eq!((report.named, report.failed.len()), (0, 1));
+        std::fs::remove_dir_all(&dir).ok();
     }
 }

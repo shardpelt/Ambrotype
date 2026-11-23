@@ -6,6 +6,8 @@ use super::{
     xmp_coordinate,
 };
 use crate::Error;
+
+pub(super) mod names;
 use amb_presets::Value;
 use amb_presets::xmp::{AMB_NS, CRS_NS, RDF_NS};
 use quick_xml::NsReader;
@@ -457,6 +459,7 @@ fn merge_parts(
     };
     if let Some(info) = info {
         apply_info(&mut foreign, info);
+        names::write(&mut foreign, &info.cleaned());
     }
     if let Some(stored) = stored {
         apply_library_text(&mut foreign, "History", stored.history);

@@ -130,5 +130,7 @@ function viewerPlaceRow(d, el) {
     if (gps) viewerChange({ gps });
     slides.el?.focus();
   });
-  return el("div", { className: "ss-place" }, input, pick);
+  const row = el("div", { className: "ss-place" }, input, pick);
+  const names = placeNamesText(d);
+  return names ? el("div", {}, row, el("p", { className: "ss-info-hint", translate: "no", title: names }, names)) : row;
 }

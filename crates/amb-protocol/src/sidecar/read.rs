@@ -185,7 +185,7 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
     if let [Some(lat), Some(lon)] = gps {
         info.gps = Some(format!("{lat:.6},{lon:.6}"));
     }
-    info.orientation = amb_presets::xmp::tiff_orientation(text);
+    read_turn_and_names(text, &mut info);
     if info.flag.is_none() && rated_reject {
         info.flag = Some(Flag::Reject);
     }
@@ -194,6 +194,12 @@ pub fn read_info(xmp: &str) -> PhotoInfo {
         info.stack = None;
     }
     info.cleaned_keeping_keywords()
+}
+
+/// The orientation and the place's names, which have their own readers.
+fn read_turn_and_names(text: &str, info: &mut PhotoInfo) {
+    info.orientation = amb_presets::xmp::tiff_orientation(text);
+    super::write::names::read(text, info);
 }
 
 impl PhotoInfo {

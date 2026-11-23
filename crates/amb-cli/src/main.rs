@@ -121,10 +121,10 @@ fn main() -> ExitCode {
             "--progressive" | "--enlarge" | "--slides" | "--force" | "--no-subfolders"
             | "--no-align" | "--no-crop" | "--no-lens" | "--apply" | "--tone" | "--wb"
             | "--watermark-tile" | "--sigmoid" | "--softmax" | "--nhwc" | "--invert"
-            | "--replace" | "--guess" | "--stack" | "--reject" | "--shuffle" | "--window"
-            | "--subfolders" | "--no-scenes" | "--no-odd" | "--own-midtone" | "--landscape"
-            | "--no-edits" | "--best-of-bursts" | "--no-captions" | "--trash" | "--recursive"
-            | "--flat" | "--skip-existing" => {
+            | "--replace" | "--guess" | "--names" | "--stack" | "--reject" | "--shuffle"
+            | "--window" | "--subfolders" | "--no-scenes" | "--no-odd" | "--own-midtone"
+            | "--landscape" | "--no-edits" | "--best-of-bursts" | "--no-captions" | "--trash"
+            | "--recursive" | "--flat" | "--skip-existing" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"

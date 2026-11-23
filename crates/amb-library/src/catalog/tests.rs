@@ -23,6 +23,28 @@ fn info(rating: u8, keyword: &str) -> PhotoInfo {
 }
 
 #[test]
+fn text_search_finds_a_photo_by_its_place_names() {
+    let entry = Entry {
+        path: PathBuf::from("x/IMG_1.jpg"),
+        record: Record {
+            info: PhotoInfo {
+                city: Some("Lisbon".into()),
+                country: Some("Portugal".into()),
+                ..Default::default()
+            },
+            ..Record::default()
+        },
+        offline: false,
+    };
+    let q = |t: &str| Query {
+        text: Some(t.into()),
+        ..Query::default()
+    };
+    assert!(q("lisb").matches(&entry) && q("PORTUGAL").matches(&entry));
+    assert!(!q("madrid").matches(&entry));
+}
+
+#[test]
 fn records_follow_the_files() {
     let dir = temp_dir("follow");
     let photo = dir.join("a.jpg");

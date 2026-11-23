@@ -62,6 +62,7 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         settings::interface_share_plan,
         settings::share_interface,
         menu::menu_enable,
+        menu::menu_check,
         photo::editor_schema,
         photo::pick_photo,
         presets::pick_references,

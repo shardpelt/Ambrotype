@@ -8,8 +8,8 @@
 use std::collections::HashMap;
 
 use tauri::menu::{
-    AboutMetadata, HELP_SUBMENU_ID, Menu, MenuItem, MenuItemKind, PredefinedMenuItem, Submenu,
-    WINDOW_SUBMENU_ID,
+    AboutMetadata, CheckMenuItem, HELP_SUBMENU_ID, Menu, MenuItem, MenuItemKind,
+    PredefinedMenuItem, Submenu, WINDOW_SUBMENU_ID,
 };
 use tauri::{AppHandle, Wry};
 
@@ -28,6 +28,9 @@ pub(crate) enum Entry {
         keys: Option<String>,
         #[serde(default = "yes")]
         enabled: bool,
+        /// Present for an on/off item: whether it starts ticked.
+        #[serde(default)]
+        checked: Option<bool>,
     },
     Separator,
     /// `role` "window" or "help": macOS adds its window list or search there.
@@ -41,6 +44,21 @@ pub(crate) enum Entry {
     Native {
         name: String,
     },
+}
+
+/// A built menu item the UI can change later: a plain one, or one with a tick.
+pub(crate) enum Handle {
+    Plain(MenuItem<Wry>),
+    Check(CheckMenuItem<Wry>),
+}
+
+impl Handle {
+    fn set_enabled(&self, on: bool) -> tauri::Result<()> {
+        match self {
+            Handle::Plain(i) => i.set_enabled(on),
+            Handle::Check(i) => i.set_enabled(on),
+        }
+    }
 }
 
 fn yes() -> bool {
@@ -94,6 +112,7 @@ pub(crate) fn interface_menu(app: &AppHandle) -> Res<()> {
         text: "Back to the Built-in Interface".into(),
         keys: None,
         enabled: true,
+        checked: None,
     };
     let native = |n: &str| Entry::Native { name: n.into() };
     let mut menus = Vec::new();
@@ -131,6 +150,21 @@ pub(crate) fn interface_menu(app: &AppHandle) -> Res<()> {
     Ok(())
 }
 
+/// Ticks (or unticks) the on/off items to match what the page shows.
+#[tauri::command]
+pub(crate) fn menu_check(
+    state: tauri::State<'_, AppState>,
+    checked: HashMap<String, bool>,
+) -> Res<()> {
+    let items = state.menu_items.lock()?;
+    for (id, on) in checked {
+        if let Some(Handle::Check(item)) = items.get(&id) {
+            item.set_checked(on)?;
+        }
+    }
+    Ok(())
+}
+
 /// Greys out (or back) the items whose action can't run now: no photo open,
 /// or another tool's keys.
 #[tauri::command]
@@ -150,7 +184,7 @@ pub(crate) fn menu_enable(
 fn build(
     app: &AppHandle,
     entry: &Entry,
-    items: &mut HashMap<String, MenuItem<Wry>>,
+    items: &mut HashMap<String, Handle>,
 ) -> Res<MenuItemKind<Wry>> {
     let err = |e: tauri::Error| e.to_string();
     Ok(match entry {
@@ -159,12 +193,22 @@ fn build(
             text,
             keys,
             enabled,
-        } => {
-            let item = MenuItem::with_id(app, id.as_str(), text, *enabled, keys.as_deref())
-                .map_err(err)?;
-            items.insert(id.clone(), item.clone());
-            MenuItemKind::MenuItem(item)
-        }
+            checked,
+        } => match checked {
+            Some(on) => {
+                let item =
+                    CheckMenuItem::with_id(app, id.as_str(), text, *enabled, *on, keys.as_deref())
+                        .map_err(err)?;
+                items.insert(id.clone(), Handle::Check(item.clone()));
+                MenuItemKind::Check(item)
+            }
+            None => {
+                let item = MenuItem::with_id(app, id.as_str(), text, *enabled, keys.as_deref())
+                    .map_err(err)?;
+                items.insert(id.clone(), Handle::Plain(item.clone()));
+                MenuItemKind::MenuItem(item)
+            }
+        },
         Entry::Separator => {
             MenuItemKind::Predefined(PredefinedMenuItem::separator(app).map_err(err)?)
         }
@@ -243,6 +287,23 @@ fn about() -> AboutMetadata<'static> {
 
 #[cfg(test)]
 mod tests {
+    /// An item with `checked` becomes a tick item; one without stays plain.
+    #[test]
+    fn entry_reads_checked_when_given() {
+        let tick: super::Entry =
+            serde_json::from_str(r#"{"kind":"item","id":"a","text":"A","checked":true}"#).unwrap();
+        let plain: super::Entry =
+            serde_json::from_str(r#"{"kind":"item","id":"b","text":"B"}"#).unwrap();
+        assert!(matches!(
+            tick,
+            super::Entry::Item {
+                checked: Some(true),
+                ..
+            }
+        ));
+        assert!(matches!(plain, super::Entry::Item { checked: None, .. }));
+    }
+
     /// Every item in `MENU_BAR` (ui/core/menu.js) is a keyboard action, one of
     /// the menu's own extras, or a system item `native` knows.
     #[test]

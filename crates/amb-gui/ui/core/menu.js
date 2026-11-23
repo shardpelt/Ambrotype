@@ -48,7 +48,7 @@ const MENU_TITLES = {
 // Items that aren't keyboard actions.
 const MENU_EXTRA = { source: () => invoke("open_source_page").catch(showError) };
 
-const menuState = { shown: false, enabled: {} };
+const menuState = { shown: false, enabled: {}, checked: {} };
 
 // A key the menu can take itself: one with Ctrl (Cmd) or Alt, or F1 to F12.
 // Lone letters, digits and Shift+letter stay with the page, or typing in a
@@ -67,7 +67,9 @@ function menuEntry(name, mac) {
   const combo = a ? keysFor(a)[0] : null;
   const keys = combo ? menuAccelerator(combo) : null;
   if (combo && !keys) text += `  (${keyLabel(combo)})`;
-  return { kind: "item", id: name, text, keys, enabled: menuItemOn(name) };
+  const entry = { kind: "item", id: name, text, keys, enabled: menuItemOn(name) };
+  if (a?.isOn) entry.checked = menuItemTick(name);
+  return entry;
 }
 
 function menuEntries(names, mac) {
@@ -89,6 +91,7 @@ async function buildMenu() {
   try {
     menuState.shown = await invoke("set_menu", { menus, wanted: menuWanted() });
     menuState.enabled = {};
+    menuState.checked = {};
     syncMenu();
   } catch (e) {
     console.warn("menu bar:", e);
@@ -101,21 +104,36 @@ function menuItemOn(id) {
   return Boolean(a) && (a.when === "any" || contextsOf(a).includes(keyContext())) && (!needsPhoto(a) || Boolean(ui.info));
 }
 
-// Greys out what can't run now; only changes go to the app.
+// Whether an on/off action is on, for its tick; a state that can't be read yet is off.
+function menuItemTick(id) {
+  try {
+    return Boolean(KEY_ACTIONS.find((x) => x.id === id)?.isOn?.());
+  } catch {
+    return false;
+  }
+}
+
+// Greys out what can't run now and ticks what is on; only changes go to the app.
 function syncMenu() {
   if (!menuState.shown) return;
   const changes = {};
+  const ticks = {};
   const walk = (names) => {
     for (const n of names) {
       if (Array.isArray(n)) walk(n[1]);
       else if (n !== "|" && !n.startsWith("#")) {
         const on = menuItemOn(n);
         if (menuState.enabled[n] !== on) changes[n] = menuState.enabled[n] = on;
+        if (KEY_ACTIONS.find((x) => x.id === n)?.isOn) {
+          const tick = menuItemTick(n);
+          if (menuState.checked[n] !== tick) ticks[n] = menuState.checked[n] = tick;
+        }
       }
     }
   };
   for (const [, names] of MENU_BAR) walk(names);
   if (Object.keys(changes).length) invoke("menu_enable", { enabled: changes }).catch(() => {});
+  if (Object.keys(ticks).length) invoke("menu_check", { checked: ticks }).catch(() => {});
 }
 
 // A chosen item. Undo, Redo and Select All work on a text field while one

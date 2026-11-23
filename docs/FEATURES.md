@@ -21,6 +21,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 
 - **Edit it for me, as a start** → **Auto** (the wand in the toolbar, Ctrl+U): tone, white balance, lens corrections, a little vibrance, and a crooked horizon levelled, in one undo step.
 - **Brighter, darker, more contrast, recover highlights or shadows** → the **Basic** panel: **Exposure**, **Contrast**, **Highlights**, **Shadows**, **Whites**, **Blacks**. Auto (in Tone) does it for you.
+- **See the photo's colours as a wheel** → the **Vectorscope** switch above the sliders (or View → Histogram or vectorscope): hue as the angle, saturation as the distance, a skin-tone line, and a ring where the colour under the pointer lands.
 - **Wrong colours, too blue or yellow** → white balance in **Basic**: As Shot, Auto, or the **White Balance Picker** (W) and a click on something grey or white.
 - **More or less colourful** → **Vibrance** and **Saturation**; one colour at a time in the **Color Mixer**.
 - **Drag on the photo instead of hunting for a slider** → **Touch** (T): drag up or down on a tone or a colour. **Speed Edit**: hold Ctrl and drag left or right on the photo to change the slider you moved last (Shift: finer; editor only).
@@ -50,7 +51,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Match the look of another photo** → Presets → **Match look…**. `amb match PHOTO REFERENCE`.
 - **A look that fits each photo, not the same moves on all** (one photo +1 Exposure, another +5) → a **style**: a saved look you apply with an Amount, to the whole look, tone only or colour only. Presets → **Styles…** (New from photos…, Apply to this photo or to the selected photos, an Amount), or Match look → **Save as style…**; search "style". `amb style save NAME REFERENCE...`, `amb style apply NAME PHOTO...`, `amb style list`, `amb style delete NAME`.
 - **A wild look: toy camera, miniature (tilt-shift), infrared, cartoon, oil painting** → Presets → **Wild** (Toy camera, Miniature, Infrared, Cross-process, Dreamland, Acid, Hologram, Oil painting, Cartoon, Poster, Pop art); tune them in **Effects** → Plugin effects (Paint, Tilt-shift).
-- **Surprise me with a look** → Presets → **Surprise me…**, or **Plugins** → Random look.
+- **Surprise me with a look** → Presets → **Surprise me…**, or **Plugins** → Random look. Keep your tone, your colours, or your vignette and grain, and type a **Seed** to get the same looks again (`amb plugin run random-look` with `tone`, `colour`, `finish`).
 - **Let an AI edit the photo** → **Assistant** (Ctrl+Shift+A), or **Connect an AI App** (Help menu; `amb mcp`).
 - **Edit the open photo from another app or an AI at the same time** → the editor shows the change at once, as one undo step.
 - **Colours on my screen look off** → on Linux the preview is shown in the monitor's own profile (**Settings** → General: Automatic, Off or a file); macOS and Windows do it themselves.
@@ -99,6 +100,8 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Photos moved or renamed outside the app** → Organise ▾ → find moved photos. `amb catalog missing`, `amb catalog relink DIR`.
 - **Groups of photos** → collections and smart collections; **Stack** (Ctrl+G); **Make a Virtual Copy** (Ctrl+').
 - **Where was this taken** → the library's Map view (drag to move, wheel or pinch to zoom at the pointer, Ctrl+= and Ctrl+-); place photos from a GPX track or by dropping them on the map from the tray under it (the tray scrolls like the filmstrip: wheel, or drag along it). `amb place DIR --gpx TRACK.gpx`.
+- **Move a photo's place on the map** → the library's Map view: drag a pin of one photo where it belongs.
+- **City and country names for my photos** → Map view → **Add place names** (or search "place names"): looks up city, state and country on OpenStreetMap, only when asked, keeps them in the sidecar (`photoshop:City`, `State`, `Country`), and search finds them. `amb place PHOTO|DIR --names [--replace] [--json]`.
 - **Set where a photo was taken by hand** → the library panel's **Place** (for the selection) or the viewer's info panel: type latitude, longitude, degrees (52°22'N 4°53'E) or paste a link from Google Maps, OpenStreetMap or Apple Maps; **Pick…** chooses it on a map or finds an address or place by name (OpenStreetMap, asked only when you search), **Map** shows it, **×** takes it out. `amb tag PHOTO --place LAT,LON`.
 - **My camera has no GPS, my phone does** → Map view → **Guess places…**: photos without a place get one from photos taken around the same time (between two, on the line between them) or that look the same; each listed with why, to untick or move (**Change…**: a map or a name) before anything is written. `amb place DIR --guess`.
 - **Browse by date** → the library's Timeline view.
@@ -134,7 +137,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Wider or narrower side columns** → drag a column's inner edge (double-click for the layout's width); it's kept per layout.
 - **Keep a layout and theme together** → **Appearance** → **Save this setup…**; the one before your last change is kept by itself.
 - **Words on every button, only the everyday tools** → the Beginner layout in **Appearance**.
-- **Use the menu bar** → on a Mac it's at the top of the screen; on Windows and Linux, **Settings** → General shows it in the window. Every command is there with its keys.
+- **Use the menu bar** (on/off items show a tick) → on a Mac it's at the top of the screen; on Windows and Linux, **Settings** → General shows it in the window. Every command is there with its keys.
 - **Replace the whole window with my own interface** → **Settings** → General → Interface (a folder with an `index.html`, written by hand or by an AI; [ai/custom-interface.md](ai/custom-interface.md)); the menu bar's Interface → Back to the Built-in Interface, or `--builtin-ui`, always comes back.
 - **Hide everything but the photo** → the Minimalism layout in **Appearance**, or fold the **Left Column** (F7), **Right Column** (F8) and the top bar (Ctrl+Shift+T).
 - **Small tools that edit for me** → **Plugins** (Ctrl+Shift+P), or right-click the filmstrip's selection → **Run a plugin…**; write your own ([ai/plugins.md](ai/plugins.md)).

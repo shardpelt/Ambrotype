@@ -15,12 +15,16 @@ A short running list, kept up to date as work lands. Newest decisions first. Eve
 
 The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
-- **Dust: the guided rectangle and a heal brush that searches its stroke** (`film-dust-guided`)
+- **Dust: the guided rectangle and a heal brush that searches its stroke** (`film-dust-guided`, card ready)
 - **Darkroom aids** (`film-darkroom-aids`)
 - **Fade Restoration** (`film-fade-restoration`)
 
 ## Recently done
 
+- 2026-11-23: **Map pins drag, and place names**: drag a one-photo pin to move its place (`ui/library/map-pins.js`); Map → Add place names (`amb place --names`) writes city, state and country from OpenStreetMap into the sidecar, and search finds them (`amb_library::places::add_names`). Step in `tests/ui/map-place.js`
+- 2026-11-23: **A vectorscope** beside the histogram (the panel's switch, or View): hue as angle, saturation as distance, a skin-tone line, a ring for the colour under the pointer (`amb_engine::scopes`, `ui/develop/scope.js`, `tests/ui/vectorscope.js`)
+- 2026-11-23: **Menu bar ticks** on on/off items (native check items, `isOn` on a key action, `menu_check`); **Surprise me** keeps tone, colours or vignette and grain, and takes a seed (random-look 1.2.0)
+- 2026-11-23: **A card for `film-dust-guided`** in [design/dust.md](design/dust.md): ready for a medium model
 - 2026-11-23: **Speed Edit**: Ctrl+drag left or right on the photo changes the last slider you moved (Shift: a tenth as fast), one undo step per drag; Touch (T) still picks the setting from the colour under the pointer (`ui/develop/speed-edit.js`, step in `tests/ui/quick-wins.js`)
 - 2026-11-23: **Peek on hover** (Settings box, or search "peek"): the loupe shows by itself when the pointer rests 0.7 s on the photo and closes when it moves; off by default (`ui/develop/quickzoom.js`, step in `tests/ui/quick-wins.js`)
 - 2026-11-23: **Convert raws with a style as the look**: a fourth choice in the dialog (style and Amount), `amb convert --look style:NAME [--amount N]`; each photo gets the style's step in its sidecar (`Look::Style` in `amb_ops::convert`)

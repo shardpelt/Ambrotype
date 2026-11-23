@@ -660,9 +660,6 @@
  "Apply the crop": [
   "core/keys.js"
  ],
- "Apply this look": [
-  "develop/presets.js"
- ],
  "Apply this snapshot (undoable)": [
   "develop/history.js"
  ],
@@ -1093,6 +1090,12 @@
  ],
  "Change this size": [
   "tools/croptool.js"
+ ],
+ "Change tone": [
+  "index.html"
+ ],
+ "Change vignette and grain": [
+  "index.html"
  ],
  "Changed on {photos}": [
   "library/organise.js"
@@ -5014,6 +5017,9 @@
  "Raise the selected slider ten steps": [
   "core/keys.js"
  ],
+ "Random": [
+  "index.html"
+ ],
  "Rate {stars}": [
   "core/keys.js"
  ],
@@ -5675,6 +5681,12 @@
  ],
  "See the photo as it will export to sRGB, Adobe RGB, Display P3 or ProPhoto, and mark the colours that won't fit.": [
   "core/keys.js"
+ ],
+ "Seed": [
+  "index.html"
+ ],
+ "Seed {seed}": [
+  "develop/presets.js"
  ],
  "Sees only the edit's settings": [
   "dialogs/hub.js"

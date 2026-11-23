@@ -288,8 +288,11 @@ async function surpriseFlow() {
   const grid = $("surprise-grid");
   let seed = Math.floor(Math.random() * 1e9);
   let busy = false;
-  const roll = async () => {
+  // A typed seed starts the looks again from it; "More" goes on from the last.
+  const roll = async (fresh = true) => {
     if (busy) return;
+    const typed = $("surprise-seed").value.trim();
+    if (fresh && typed !== "" && Number.isInteger(Number(typed)) && Number(typed) >= 0) seed = Number(typed);
     busy = true;
     $("surprise-more").disabled = true;
     $("surprise-status").textContent = t("Making looks…");
@@ -301,13 +304,15 @@ async function surpriseFlow() {
           style: $("surprise-style").value,
           strength: Number($("surprise-strength").value),
           colour: $("surprise-colour").checked,
+          tone: $("surprise-tone").checked,
+          finish: $("surprise-finish").checked,
         },
       });
       seed += variants.length;
       grid.replaceChildren(...variants.map((v) => {
         const b = document.createElement("button");
         b.type = "button";
-        b.title = t("Apply this look");
+        b.title = t("Seed {seed}", { seed: v.seed });
         const img = document.createElement("img");
         img.src = v.image;
         img.alt = t("Look {seed}", { seed: v.seed });
@@ -328,9 +333,8 @@ async function surpriseFlow() {
       $("surprise-more").disabled = false;
     }
   };
-  $("surprise-more").onclick = roll;
-  for (const id of ["surprise-style", "surprise-colour"]) $(id).onchange = roll;
-  $("surprise-strength").onchange = roll;
+  $("surprise-more").onclick = () => roll(false);
+  for (const id of ["surprise-style", "surprise-colour", "surprise-tone", "surprise-finish", "surprise-seed", "surprise-strength"]) $(id).onchange = () => roll();
   grid.replaceChildren();
   dlg.showModal();
   roll();

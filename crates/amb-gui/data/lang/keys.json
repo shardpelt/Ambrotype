@@ -2370,9 +2370,6 @@
  "Filter": [
   "index.html"
  ],
- "Filter and sort": [
-  "index.html"
- ],
  "Filter keywords": [
   "index.html"
  ],
@@ -2382,6 +2379,9 @@
  ],
  "Filter presets… try “{name}”": [
   "help/tips.js"
+ ],
+ "Filter the photos shown": [
+  "index.html"
  ],
  "Filter · {n} ▾": [
   "library/libmenus.js"

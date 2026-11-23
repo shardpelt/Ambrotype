@@ -98,7 +98,7 @@ async function renderLoop() {
         ui.preview.fitPath = ui.info.path;
       }
       if ((ui.split || sbs.layout) && !draft) await renderBefore(previewSize(false));
-      drawHistogram(meta.histogram);
+      scopeShow(meta);
       ui.curve?.setHistogram(meta.histogram);
       const made = meta.gpu ? t("{w}×{h} preview in {ms} ms on the GPU", { w: meta.width, h: meta.height, ms: meta.millis }) : t("{w}×{h} preview in {ms} ms", { w: meta.width, h: meta.height, ms: meta.millis });
       status(meta.lens_profile ? t("{made}  ·  Lens: {lens}", { made, lens: meta.lens_profile }) : made, true);
@@ -116,6 +116,7 @@ async function renderLoop() {
 
 function drawHistogram(h) {
   ui.histogram = h;
+  if (scope.mode === "vectorscope") return scopeDraw();
   const c = $("histogram");
   const dpr = window.devicePixelRatio || 1;
   c.width = c.clientWidth * dpr;

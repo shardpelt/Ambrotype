@@ -245,6 +245,8 @@ pub struct Preview {
     pub height: usize,
     /// Per-channel 256-bin histogram of the displayed (sRGB) preview.
     pub histogram: [Vec<u32>; 3],
+    /// The vectorscope of the same pixels (`amb_engine::scopes`).
+    pub vectorscope: Vec<u32>,
     pub millis: u128,
     /// Lens profile used, if any.
     pub lens_profile: Option<String>,

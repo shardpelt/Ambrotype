@@ -56,7 +56,7 @@ Lightroom\-style Auto: the tone sliders (and Vibrance for dull colour) and the w
 .B amb fuji <RECIPE.txt|\-> [PHOTO] [\-\-sensor S] [\-\-name N] [\-\-out PRESET.xmp] [\-\-apply] [\-\-json]
 A Fujifilm\-style camera recipe, pasted as it's written (Film Simulation, Dynamic Range, Highlight, Shadow, Color, Grain Effect, White Balance with its shift…), recreated as develop settings through the Film recipe plugin. \-\-sensor (X\-Trans I to V, Bayer, GFX, or a camera model such as X\-T3) keeps the settings to what those cameras have, when the recipe doesn't say. \-\-out writes it as a preset in the Fuji group; with a PHOTO, \-\-apply puts it on the photo (one undoable step)
 .TP
-.B amb convert <PHOTO|DIR>... \-\-to FOLDER [\-\-look camera|auto|like:PHOTO] [\-\-no\-edits] [\-\-best\-of\-bursts] [export options]
+.B amb convert <PHOTO|DIR>... \-\-to FOLDER [\-\-look camera|auto|like:PHOTO|style:NAME] [\-\-amount PERCENT] [\-\-no\-edits] [\-\-best\-of\-bursts] [export options]
 Raws to JPEGs in one go (a card shot in RAW by mistake): camera, the default, gives what the camera would have saved (its own JPEG inside the raw when that is full size, else the raw matched to it); auto, each photo's Auto tone and white balance; like:PHOTO, each matched to the look of one you edited. Auto and like keep their settings in the raws' sidecars (not with \-\-no\-edits). JPEGs already there are kept, so a stopped run carries on. \-\-best\-of\-bursts converts only the best photo of each burst
 .TP
 .B amb replay <PHOTO> \-\-out REPLAY.mp4 [\-\-long\-edge N] [\-\-no\-captions]

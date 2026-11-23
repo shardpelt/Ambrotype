@@ -66,3 +66,50 @@ fn a_style_made_from_a_bright_photo_brightens_a_dark_one() {
     );
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn convert_with_a_style_look_records_the_style_step() {
+    let dir = std::env::temp_dir().join(format!("amb-cli-convstyle-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    amb(&dir, &["testimage", "colorchecker", "bright.dng"]);
+    amb(&dir, &["testimage", "colorchecker", "dark.dng"]);
+    amb(&dir, &["do", "bright.dng", "exp=+1.5"]);
+    amb(
+        &dir,
+        &["style", "save", "Bright", "bright.dng", "--focus", "tone"],
+    );
+    amb(
+        &dir,
+        &[
+            "convert",
+            "dark.dng",
+            "--to",
+            "out",
+            "--look",
+            "style:Bright",
+        ],
+    );
+    assert!(dir.join("out/dark.jpg").is_file());
+    let xmp = std::fs::read_to_string(dir.join("dark.xmp")).unwrap();
+    assert!(xmp.contains("Style: Bright"), "{xmp}");
+
+    let bad = Command::new(env!("CARGO_BIN_EXE_amb"))
+        .args([
+            "convert",
+            "dark.dng",
+            "--to",
+            "out2",
+            "--look",
+            "style:Nope",
+        ])
+        .current_dir(&dir)
+        .env("XDG_CONFIG_HOME", dir.join("config"))
+        .env("HOME", &dir)
+        .env("APPDATA", dir.join("config"))
+        .output()
+        .unwrap();
+    assert!(!bad.status.success());
+    assert!(String::from_utf8_lossy(&bad.stderr).contains("No style called"));
+    let _ = std::fs::remove_dir_all(&dir);
+}

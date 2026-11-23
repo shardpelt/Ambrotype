@@ -6,6 +6,27 @@ use std::path::{Path, PathBuf};
 
 use crate::render::export_settings;
 
+/// `--look style:NAME`: the saved style, at `--amount` percent (100 unless said).
+fn style_look(
+    name: &str,
+    options: &BTreeMap<&str, &str>,
+) -> Result<amb_ops::convert::Look, String> {
+    let dir = amb_library::styles::editor_dir().ok_or("no config folder (set HOME)")?;
+    let (_, style) = amb_library::styles::find(&dir, name)?;
+    let amount = match options.get("--amount") {
+        Some(a) => a
+            .parse::<f64>()
+            .ok()
+            .filter(|a| (0.0..=150.0).contains(a))
+            .ok_or_else(|| format!("--amount {a}: 0 to 150"))?,
+        None => 100.0,
+    };
+    Ok(amb_ops::convert::Look::Style(
+        Box::new(style),
+        amount / 100.0,
+    ))
+}
+
 /// Convert the photos named (folders: the photos in them) into `--to`.
 pub(crate) fn convert(
     args: &[&str],
@@ -19,9 +40,9 @@ pub(crate) fn convert(
             .ok_or("convert needs --to FOLDER for the JPEGs")?,
     );
     let look = match options.get("--look") {
-        Some(l) => {
-            Look::parse(l).ok_or_else(|| format!("bad --look {l:?} (camera, auto, like:PHOTO)"))?
-        }
+        Some(l) if l.starts_with("style:") => style_look(&l["style:".len()..], options)?,
+        Some(l) => Look::parse(l)
+            .ok_or_else(|| format!("bad --look {l:?} (camera, auto, like:PHOTO, style:NAME)"))?,
         None => Look::Camera,
     };
     if let Look::Like(p) = &look {

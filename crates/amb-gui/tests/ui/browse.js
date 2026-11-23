@@ -534,6 +534,7 @@ await t.step("Convert raws: the photos shown to JPEGs, on Auto", async () => {
   const flow = convertRawsFlow();
   await t.until("the dialog", () => $("convert-dialog").open);
   t.expect($("convert-like").disabled || lib.focus, "Like needs a photo picked first");
+  t.expect($("convert-style").disabled === !$("convert-style-name").options.length, "A style is offered only when styles are saved");
   $("convert-dialog").querySelector("form").convert_look.value = "auto";
   // The test photos' own edits stay as they are, for the later steps and scripts.
   $("convert-edits").checked = false;

@@ -128,7 +128,7 @@ The library:
 Operations on photos:
 
 - Raws to JPEGs (`convert.rs`):
-  - The camera's own JPEG inside the raw via `raw::embedded_preview`, or Auto, or Match look to an edited photo, solved small and exported full size.
+  - The camera's own JPEG inside the raw via `raw::embedded_preview`, or Auto, or Match look to an edited photo, or a saved style (`style::apply_one`), solved small and exported full size.
   - `amb convert`, the library's Convert raws….
 - An object selected (`object.rs`, `Selection`):
   - A mask on the frame from the object selector or the Subject model, its edge snapped to the photo's by a colour guided filter (`snap.rs`).

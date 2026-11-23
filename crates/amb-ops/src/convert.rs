@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Raws to JPEGs in one go (`amb convert`, the library's Convert raws…), for
-//! a card shot in RAW by mistake, with one of three looks:
+//! a card shot in RAW by mistake, with one of four looks:
 //!
 //! - **Camera:** what the camera would have saved as JPEG. Most raws keep
 //!   that JPEG inside; when it is full size it is used as it is, else (a
@@ -8,8 +8,9 @@
 //!   matched to it.
 //! - **Auto:** each photo's own Auto tone and white balance.
 //! - **Like:** each photo matched to the look of one the user edited.
+//! - **Style:** a saved style fitted to each photo ([`crate::style`]).
 //!
-//! Auto and Like write their settings into each raw's sidecar too, so a
+//! Auto, Like and Style write their settings into each raw's sidecar too, so a
 //! photo can be changed and exported again. A photo the user edited already
 //! keeps that edit with Camera and Auto. A JPEG already there is left
 //! alone, so a stopped run carries on where it was.
@@ -46,10 +47,13 @@ pub enum Look {
     Auto,
     /// Like this photo (its own edit).
     Like(PathBuf),
+    /// A saved style, blended at the Amount (1.0 is 100 %). The caller loads
+    /// it, as it needs the styles folder.
+    Style(Box<amb_library::styles::Style>, f64),
 }
 
 impl Look {
-    /// `camera`, `auto` or `like:PHOTO`.
+    /// `camera`, `auto` or `like:PHOTO` (a style is built by the caller).
     pub fn parse(text: &str) -> Option<Look> {
         match text {
             "camera" => Some(Look::Camera),
@@ -186,6 +190,12 @@ impl Job<'_> {
             Look::Auto => developed(edits, "Auto", &|img, base, d| {
                 matching::auto(img, base, true, true, d)
             }),
+            // The style is the edit, so its sidecar is written whatever `edits`
+            // says; the photo is then developed from it.
+            Look::Style(style, amount) => {
+                crate::style::apply_one(photo, style, *amount)?;
+                developed(false, "", &|_, _, _| no_change())
+            }
             Look::Like(reference) if reference == photo => {
                 developed(false, "", &|_, _, _| no_change())
             }
@@ -361,6 +371,43 @@ mod tests {
             Some(Look::Like(PathBuf::from("a.nef")))
         );
         assert_eq!(Look::parse("sepia"), None);
+    }
+
+    #[test]
+    fn a_style_look_leaves_the_style_step_in_the_sidecar() {
+        use amb_engine::matching::Focus;
+        let dir = std::env::temp_dir().join(format!("amb-ops-convstyle-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let img = amb_testkit::patterns::generate("colorchecker").unwrap();
+        let (bright, dark) = (dir.join("bright.dng"), dir.join("dark.dng"));
+        for p in [&bright, &dark] {
+            amb_testkit::dng::write(p, &img, &Default::default()).unwrap();
+        }
+        let mut state = DevelopState::new();
+        state
+            .execute(&amb_protocol::Command::SetParam {
+                name: "Exposure2012".into(),
+                value: serde_json::json!(1.5),
+            })
+            .unwrap();
+        state.save(&amb_engine::sidecar_path(&bright)).unwrap();
+        let style =
+            amb_library::styles::from_photos("Bright", &[bright.as_path()], Focus::Tone).unwrap();
+        let export = amb_export::ExportSettings::new(amb_export::Format::Jpeg);
+        let done = convert(
+            std::slice::from_ref(&dark),
+            &Look::Style(Box::new(style), 1.0),
+            &export,
+            &dir.join("out"),
+            true,
+            None,
+            &|_, _| {},
+        );
+        assert_eq!(done.written.len(), 1, "{:?}", done.errors);
+        let loaded = DevelopState::load(&amb_engine::sidecar_path(&dark)).unwrap();
+        assert!(format!("{:?}", loaded.undo_stack()).contains("Style: Bright"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

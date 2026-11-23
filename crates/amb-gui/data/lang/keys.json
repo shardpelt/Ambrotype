@@ -133,6 +133,9 @@
  "8-bit": [
   "index.html"
  ],
+ ": each photo fitted to it": [
+  "index.html"
+ ],
  ": each photo's own Auto tone and white balance": [
   "index.html"
  ],
@@ -229,6 +232,9 @@
  ],
  "A starting point for the whole photo, in one undo step.": [
   "core/keys.js"
+ ],
+ "A style": [
+  "index.html"
  ],
  "A style is a look, not fixed moves: it finds each photo's own settings to reach it.": [
   "core/keys.js"
@@ -543,6 +549,9 @@
  ],
  "Amount": [
   "develop/fx.js",
+  "index.html"
+ ],
+ "Amount (%)": [
   "index.html"
  ],
  "Amount (past 100: pushed further)": [
@@ -5431,6 +5440,9 @@
   "core/menu.js",
   "index.html",
   "looks/editor.js"
+ ],
+ "Save a style first (Presets → Styles…)": [
+  "library/library-actions.js"
  ],
  "Save as an effect": [
   "tools/mask-panel.js"

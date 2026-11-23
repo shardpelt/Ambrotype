@@ -72,7 +72,7 @@ USAGE:
                                             those cameras have, when the recipe doesn't say. --out writes it
                                             as a preset in the Fuji group; with a PHOTO, --apply puts it on
                                             the photo (one undoable step)
-    amb convert <PHOTO|DIR>... --to FOLDER [--look camera|auto|like:PHOTO] [--no-edits] [--best-of-bursts]
+    amb convert <PHOTO|DIR>... --to FOLDER [--look camera|auto|like:PHOTO|style:NAME] [--amount PERCENT] [--no-edits] [--best-of-bursts]
                 [export options]
                                             Raws to JPEGs in one go (a card shot in RAW by mistake): camera,
                                             the default, gives what the camera would have saved (its own

@@ -33,6 +33,7 @@ function renderBrowse() {
   box.className = `library-view browse ${cull.view}`;
   browse.tray?.destroy();
   browse.tray = null;
+  browseApplyScale();
   if (cull.view === "timeline") renderTimeline(box);
   else if (cull.view === "insights") renderInsights(box);
   else renderMap(box);
@@ -556,6 +557,7 @@ function setMapTiles(on) {
 function wireBrowse() {
   wireScrubber();
   wireInsights();
+  wireBrowseZoom();
   $("lib-date").addEventListener("click", () => setDateFilter(null));
   const pref = $("settings-map-tiles");
   pref.checked = mapTilesWanted();

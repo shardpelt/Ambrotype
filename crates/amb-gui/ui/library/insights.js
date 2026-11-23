@@ -6,8 +6,8 @@
 //
 // - It counts whatever the library shows: a folder, several, a collection,
 //   All photos, the filters. Camera chips narrow it to one camera.
-// - Clicking a bar shows just those photos in the grid ("f/1.4 ×" in the
-//   bar takes it off again).
+// - Clicking a bar shows just those photos in the grid ("f/1.4 · Show all ×"
+//   in the bar, Back or Esc takes it off again).
 // - Split by camera, lens or year puts up to three side by side, each as a
 //   share of its own photos, so a small group compares fairly.
 // - Above the charts, what the numbers suggest (a fast lens kept stopped
@@ -45,7 +45,7 @@ function setInsightFilter(pick, toGrid = true) {
   lib.pick = pick;
   const chip = $("lib-pick");
   chip.hidden = !pick;
-  chip.textContent = pick ? `${pick.words} ×` : "";
+  chip.textContent = pick ? filterChipWords(pick.words) : "";
   // One step for Back, not one for the filter and one for the view.
   const held = nav.hold;
   nav.hold = true;
@@ -329,6 +329,16 @@ function insightList(tally, total) {
   card.append(list);
   insightFoot(card, tally);
   return card;
+}
+
+// Esc in the grid takes an Insights or date filter off (true if it did), so
+// the way back to the whole folder is not only the chip or Back.
+function libFilterEscape() {
+  if (!lib.on || cull.view !== "grid") return false;
+  if (lib.pick) setInsightFilter(null);
+  else if (lib.date) setDateFilter(null);
+  else return false;
+  return true;
 }
 
 function wireInsights() {

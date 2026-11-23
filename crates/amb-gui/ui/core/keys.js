@@ -131,7 +131,7 @@ const KEY_ACTIONS = [
   { id: "lib-unstack", group: tKey("Library"), label: "Unstack", keys: ["Ctrl+Shift+G"], when: "library", run: () => unstackSelection() },
   { id: "lib-copy", group: tKey("Library"), label: "Copy the selected photo's settings (in the editor: the open photo's)", keys: ["Ctrl+Shift+C"], when: ["main", "library"], run: () => libraryCopySettings() },
   { id: "lib-paste", group: tKey("Library"), label: "Paste settings onto the selection (in the editor: the filmstrip's)", keys: ["Ctrl+Shift+V"], when: ["main", "library"], run: () => libraryPasteSettings() },
-  { id: "lib-leave", group: tKey("Library"), label: "Back to the grid, then the editor", keys: ["Escape"], when: "library", run: () => cullLeave() || leaveLibrary() },
+  { id: "lib-leave", group: tKey("Library"), label: "Back to the grid, then the editor", keys: ["Escape"], when: "library", run: () => cullLeave() || libFilterEscape() || leaveLibrary() },
   { id: "slider-next", group: tKey("Sliders"), label: "Select the next slider", hint: "As in Lightroom; the selected one is outlined.", keys: ["."], when: "main", photo: true, run: () => stepSlider(1) },
   { id: "slider-prev", group: tKey("Sliders"), label: "Select the previous slider", keys: [","], when: "main", photo: true, run: () => stepSlider(-1) },
   { id: "slider-up", group: tKey("Sliders"), label: "Raise the selected slider a step", keys: ["="], when: "main", photo: true, run: () => nudgeSlider(1) },

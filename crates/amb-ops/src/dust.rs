@@ -9,7 +9,7 @@
 use std::collections::BTreeMap;
 use std::path::Path;
 
-use amb_engine::dust::{self, DEFAULT_DUST, Defect};
+use amb_engine::dust::{self, DEFAULT_DUST, Defect, GUIDED_DUST};
 use amb_engine::raw::CameraImage;
 use amb_engine::retouch::{SpotShape, Spots};
 use amb_presets::Value;
@@ -154,6 +154,79 @@ pub fn line_file(photo: &Path, from: [f64; 2], to: [f64; 2]) -> Result<Vec<Comma
     let source = amb_engine::source_path(photo);
     let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
     Ok(line_image(&img, from, to))
+}
+
+/// Dust in a box `area` (`[x0, y0, x1, y1]`, fractions of the photo), looked
+/// for harder than on the whole photo ([`GUIDED_DUST`]): the person pointed
+/// at it. Spots under existing ones are left out, as in [`find_image`].
+pub fn area_image(img: &CameraImage, settings: &BTreeMap<String, Value>, area: [f64; 4]) -> Found {
+    let (wf, hf) = (img.width as f64, img.height as f64);
+    let edge = |a: f64, b: f64, size: f64| {
+        let (lo, hi) = (a.min(b), a.max(b));
+        (
+            (lo * size).floor().clamp(0.0, size) as usize,
+            (hi * size).ceil().clamp(0.0, size) as usize,
+        )
+    };
+    let (x0, x1) = edge(area[0], area[2], wf);
+    let (y0, y1) = edge(area[1], area[3], hf);
+    let defects = dust::find_in(
+        &img.rgb,
+        img.width,
+        img.height,
+        true,
+        &GUIDED_DUST,
+        (x0, y0, x1, y1),
+    );
+    spots_for(&defects, img.width, img.height, settings)
+}
+
+/// Dust along a brushed `stroke` (fractions of the photo), within `radius`
+/// of it (a fraction of the long side), looked for harder as in
+/// [`area_image`].
+pub fn along_image(
+    img: &CameraImage,
+    settings: &BTreeMap<String, Value>,
+    stroke: &[[f64; 2]],
+    radius: f64,
+) -> Found {
+    let (wf, hf) = (img.width as f64, img.height as f64);
+    let points: Vec<(f64, f64)> = stroke
+        .iter()
+        .map(|p| (p[0] * wf - 0.5, p[1] * hf - 0.5))
+        .collect();
+    let defects = dust::find_along(
+        &img.rgb,
+        img.width,
+        img.height,
+        true,
+        &GUIDED_DUST,
+        &points,
+        radius * wf.max(hf),
+    );
+    spots_for(&defects, img.width, img.height, settings)
+}
+
+/// A photo's raw and the settings of its edit, for the `_file` twins.
+fn load_with_settings(photo: &Path) -> Result<(CameraImage, BTreeMap<String, Value>), String> {
+    let source = amb_engine::source_path(photo);
+    let img = amb_engine::raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
+    let settings = amb_engine::sidecar_text(photo)
+        .and_then(|t| amb_presets::xmp::parse_crs(&t).ok())
+        .unwrap_or_default();
+    Ok((img, settings))
+}
+
+/// [`area_image`] on a photo's raw, with its edit's spots.
+pub fn area_file(photo: &Path, area: [f64; 4]) -> Result<Found, String> {
+    let (img, settings) = load_with_settings(photo)?;
+    Ok(area_image(&img, &settings, area))
+}
+
+/// [`along_image`] on a photo's raw, with its edit's spots.
+pub fn along_file(photo: &Path, stroke: &[[f64; 2]], radius: f64) -> Result<Found, String> {
+    let (img, settings) = load_with_settings(photo)?;
+    Ok(along_image(&img, &settings, stroke, radius))
 }
 
 #[cfg(test)]

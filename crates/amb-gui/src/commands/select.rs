@@ -57,6 +57,64 @@ pub(crate) async fn find_dust(state: tauri::State<'_, AppState>) -> Res<Executed
     ?
 }
 
+/// The spots for what a guided dust search found, as one undoable step
+/// named `label`, and a note saying what happened.
+fn heal_found(s: &mut Session, found: amb_ops::dust::Found, label: &str) -> Res<Executed> {
+    if !found.commands.is_empty() {
+        s.execute(&found.commands, Some(label))?;
+    }
+    let note = match (found.specks, found.hairs) {
+        (0, 0) if found.covered > 0 => {
+            "No new dust: spots already cover what was found.".to_string()
+        }
+        (0, 0) => "No dust found there. A plain spot heals it by hand.".to_string(),
+        (specks, hairs) => format!(
+            "Healed {specks} speck{} and {hairs} hair{}. Click a spot to change or delete it.",
+            if specks == 1 { "" } else { "s" },
+            if hairs == 1 { "" } else { "s" }
+        ),
+    };
+    Ok(Executed {
+        state: s.state_info(),
+        notes: vec![note],
+    })
+}
+
+/// Look harder for dust in a box `area` ([x0, y0, x1, y1]; frame
+/// fractions), healing what is found as one undoable step.
+#[tauri::command]
+pub(crate) async fn find_dust_in(
+    area: [f64; 4],
+    state: tauri::State<'_, AppState>,
+) -> Res<Executed> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock()?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let found = s.find_dust_in(area);
+        heal_found(s, found, "dust in an area")
+    })
+    .await?
+}
+
+/// Look harder for dust along a brushed stroke (`points`, frame fractions;
+/// `radius` the brush's, a fraction of the width), as one undoable step.
+#[tauri::command]
+pub(crate) async fn find_dust_along(
+    points: Vec<[f64; 2]>,
+    radius: f64,
+    state: tauri::State<'_, AppState>,
+) -> Res<Executed> {
+    let slot = state.session.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut guard = slot.lock()?;
+        let s = guard.as_mut().ok_or("no photo open")?;
+        let found = s.find_dust_along(&points, radius);
+        heal_found(s, found, "dust along a stroke")
+    })
+    .await?
+}
+
 /// Remove object: the object at `point` ([x, y]) or in `rect` ([x0, y0,
 /// x1, y1]; frame fractions, as spots are) is outlined, and one Remove
 /// spot covers all of it, as one step.

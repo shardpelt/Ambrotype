@@ -235,7 +235,7 @@ function renderSpotPanel() {
     : s
     ? [s.note && `${s.note}.`, t("Drag the spot or its source to move them. Delete removes it; click elsewhere for a new one.")].filter(Boolean).join(" ")
     : [
-      t("Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag a spot to move it, or its dashed source to pick where it copies from. [ and ] or the wheel change the size."),
+      t("Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch; Alt-drag a box to look harder for dust there. Drag a spot to move it, or its dashed source to pick where it copies from. [ and ] or the wheel change the size."),
       sp.kind === "remove" && t("Remove fills it with what belongs there (AI Remove, Settings → AI models); until its model is installed, it is healed from a nearby area."),
       made && t("{n} spot(s) were filled by Lightroom's Generative Remove; AI Remove fills them here.", { n: made }),
     ].filter(Boolean).join(" ");
@@ -400,6 +400,9 @@ function wireSpots() {
     const hit = sp.object ? null : hitSpot(px, py);
     if (sp.object) {
       sp.drag = { add: true, box: true, part: e.altKey, start: [px, py], path: [[px, py]] };
+    } else if (e.altKey && !hit) {
+      // Alt-drag: a box to look harder for dust in (spots-dust.js).
+      sp.drag = { add: true, box: true, area: true, start: [px, py], path: [[px, py]] };
     } else if (hit) {
       sp.selected = hit.spot;
       const s = selectedSpot();
@@ -444,6 +447,12 @@ function wireSpots() {
     if (d.box) {
       const [px, py] = at(e);
       const [a, b] = [sFrame(...d.start), sFrame(px, py)];
+      if (d.area) {
+        if (Math.hypot(px - d.start[0], py - d.start[1]) < 8) addSpotAt(b);
+        else dustFindIn(a, b);
+        drawSpots();
+        return;
+      }
       // A click selects the object under it (SAM); a drag, what is in the box.
       if (Math.hypot(px - d.start[0], py - d.start[1]) < 8) removeObject({ point: a, part: d.part });
       else removeObject({ rect: [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])] });
@@ -460,6 +469,7 @@ function wireSpots() {
       // A click adds a round spot; a drag paints a brushed one.
       if (d.line && far >= 6) healLine(sFrame(...d.start), sFrame(px, py));
       else if (far < 6) addSpotAt(sFrame(px, py));
+      else if (dustGuided.brush) dustFindAlong(d.path.map(([x, y]) => sFrame(x, y)));
       else addBrushedSpot(d.path.map(([x, y]) => sFrame(x, y)));
       drawSpots();
       return;

@@ -119,6 +119,45 @@ await t.step("a brushed spot is drawn along its stroke and moves by dragging it"
   await t.until("the spot tool closed", () => !sp.on);
 });
 
+await t.step("Guided dust: Alt-drag boxes an area; Find in stroke (D) searches along a brushed stroke; neither adds a spot on a clean chart", async () => {
+  t.key("Q");
+  await t.until("the spot tool", () => sp.on);
+  const before = spotList().length;
+  const steps = t.historyLength();
+  const c = $("spot-canvas").getBoundingClientRect();
+  const pt = (fx, fy, extra = {}) => ({ clientX: c.left + c.width * fx, clientY: c.top + c.height * fy, button: 0, bubbles: true, pointerId: 1, ...extra });
+  const alt = { altKey: true };
+  const drag = (path, extra = {}) => {
+    $("spot-canvas").dispatchEvent(new PointerEvent("pointerdown", pt(...path[0], extra)));
+    for (const p of path.slice(1)) $("spot-canvas").dispatchEvent(new PointerEvent("pointermove", pt(...p, extra)));
+    $("spot-canvas").dispatchEvent(new PointerEvent("pointerup", pt(...path.at(-1), extra)));
+  };
+  t.expect($("spot-hint").textContent.includes("Alt-drag a box"), $("spot-hint").textContent);
+  // The box's corners go to the search, in order, as frame fractions.
+  const asked = [];
+  const real = window.dustFindIn;
+  window.dustFindIn = (a, b) => { asked.push([a, b]); };
+  drag([[0.6, 0.6], [0.4, 0.5], [0.3, 0.3]], alt);
+  window.dustFindIn = real;
+  t.expect(asked.length === 1 && asked[0][0][0] > asked[0][1][0], `asked ${JSON.stringify(asked)}`);
+  // For real, on the clean chart: nothing is found, and no spot or step is added.
+  $("toast").hidden = true;
+  drag([[0.3, 0.3], [0.5, 0.45]], alt);
+  await t.until("its note", () => !$("toast").hidden && $("toast").textContent.startsWith("No dust found there"), 60000);
+  t.expect(spotList().length === before && t.historyLength() === steps, "nothing added");
+  // Find in stroke: a brushed stroke searches instead of becoming a spot.
+  t.key("D");
+  t.expect(dustGuided.brush && $("spot-dust-brush").checked, "Find in stroke on");
+  $("toast").hidden = true;
+  drag([[0.3, 0.3], [0.35, 0.3], [0.4, 0.32], [0.45, 0.33]]);
+  await t.until("its note", () => !$("toast").hidden && $("toast").textContent.startsWith("No dust found there"), 60000);
+  t.expect(spotList().length === before && t.historyLength() === steps, "no brushed spot");
+  t.key("D");
+  t.expect(!dustGuided.brush && !$("spot-dust-brush").checked, "Find in stroke off");
+  t.click("#spot-done");
+  await t.until("the spot tool closed", () => !sp.on);
+});
+
 await t.step("Remove object: Shift+Q opens the tool; a box sends its corners, a click its point; Esc cancels", async () => {
   t.key("Shift+Q");
   await t.until("box mode", () => sp.on && sp.object && $("spot-object").classList.contains("active"));

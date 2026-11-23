@@ -106,16 +106,44 @@ impl Defect {
     }
 }
 
+/// The search where the person points: looser than [`DEFAULT_DUST`], since
+/// the area was chosen. Starting values, to be benched on FILM-R.
+pub const GUIDED_DUST: DustStrengths = DustStrengths {
+    seed: 3.0,
+    significance: 9.0,
+    stand_out: 1.5,
+    faintest: 0.06,
+    most: 200,
+    ..DEFAULT_DUST
+};
+
+/// How big things are for an image of this size: smaller scans keep the
+/// sizes of a 2,000-pixel one, since a speck is never less than a pixel or
+/// two.
+fn scale_for(w: usize, h: usize) -> f64 {
+    (w.max(h) as f64 / 4000.0).max(0.5)
+}
+
 /// Defects on `rgb` (interleaved linear RGB, `w`×`h`). `dark`: they are
 /// darker than their surroundings (a scan); false looks for lighter ones
 /// (a negative already turned positive).
 pub fn find(rgb: &[f32], w: usize, h: usize, dark: bool, k: &DustStrengths) -> Vec<Defect> {
+    find_scaled(rgb, w, h, dark, k, scale_for(w, h))
+}
+
+/// [`find`] with the sizes of an image `scale` times a 4,000-pixel one, so
+/// a crop is searched with its whole image's sizes.
+fn find_scaled(
+    rgb: &[f32],
+    w: usize,
+    h: usize,
+    dark: bool,
+    k: &DustStrengths,
+    scale: f64,
+) -> Vec<Defect> {
     if w < 16 || h < 16 {
         return Vec::new();
     }
-    // Smaller scans keep the sizes of a 2,000-pixel one: a speck is never
-    // less than a pixel or two.
-    let scale = (w.max(h) as f64 / 4000.0).max(0.5);
     let px = |v: f64| (v * scale).max(1.0);
     let sign = if dark { -1.0 } else { 1.0 };
     let f: Vec<f32> = rgb
@@ -225,6 +253,85 @@ pub fn find(rgb: &[f32], w: usize, h: usize, dark: bool, k: &DustStrengths) -> V
         d.donor = donor(&ring, w, h, d, &taken);
     }
     defects
+}
+
+/// Defects whose centre lies in `area` (pixels `x0, y0, x1, y1`), found
+/// with `k` on the area and its surroundings (the grain's spread and the
+/// ring need them), at the sizes of the whole image. Coordinates are those
+/// of the whole image.
+pub fn find_in(
+    rgb: &[f32],
+    w: usize,
+    h: usize,
+    dark: bool,
+    k: &DustStrengths,
+    area: (usize, usize, usize, usize),
+) -> Vec<Defect> {
+    let (ax0, ay0) = (area.0.min(w), area.1.min(h));
+    let (ax1, ay1) = (area.2.min(w), area.3.min(h));
+    if ax0 >= ax1 || ay0 >= ay1 {
+        return Vec::new();
+    }
+    let scale = scale_for(w, h);
+    let grow = ((k.noise_window * scale).max(1.0) as usize).max(k.window as usize);
+    let (x0, y0) = (ax0.saturating_sub(grow), ay0.saturating_sub(grow));
+    let (x1, y1) = ((ax1 + grow).min(w), (ay1 + grow).min(h));
+    let (cw, ch) = (x1 - x0, y1 - y0);
+    let mut crop = Vec::with_capacity(cw * ch * 3);
+    for y in y0..y1 {
+        crop.extend_from_slice(&rgb[(y * w + x0) * 3..(y * w + x1) * 3]);
+    }
+    let (ox, oy) = (x0 as f64, y0 as f64);
+    let inside = |p: (f64, f64)| {
+        p.0 >= ax0 as f64 && p.0 < ax1 as f64 && p.1 >= ay0 as f64 && p.1 < ay1 as f64
+    };
+    find_scaled(&crop, cw, ch, dark, k, scale)
+        .into_iter()
+        .map(|mut d| {
+            d.centre = (d.centre.0 + ox, d.centre.1 + oy);
+            for p in &mut d.path {
+                *p = (p.0 + ox, p.1 + oy);
+            }
+            for i in &mut d.pixels {
+                *i = (*i / cw + y0) * w + *i % cw + x0;
+            }
+            d
+        })
+        .filter(|d| inside(d.centre))
+        .collect()
+}
+
+/// Defects within `radius` pixels of a brushed `stroke` (pixels): the box
+/// around it searched with [`find_in`], then cut to its band.
+pub fn find_along(
+    rgb: &[f32],
+    w: usize,
+    h: usize,
+    dark: bool,
+    k: &DustStrengths,
+    stroke: &[(f64, f64)],
+    radius: f64,
+) -> Vec<Defect> {
+    if stroke.is_empty() {
+        return Vec::new();
+    }
+    let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+    for p in stroke {
+        x0 = x0.min(p.0 - radius);
+        y0 = y0.min(p.1 - radius);
+        x1 = x1.max(p.0 + radius);
+        y1 = y1.max(p.1 + radius);
+    }
+    let area = (
+        x0.floor().max(0.0) as usize,
+        y0.floor().max(0.0) as usize,
+        x1.ceil().max(0.0) as usize + 1,
+        y1.ceil().max(0.0) as usize + 1,
+    );
+    find_in(rgb, w, h, dark, k, area)
+        .into_iter()
+        .filter(|d| distance_to_path(d.centre, stroke) <= radius)
+        .collect()
 }
 
 /// A part's shape, if it is a speck or a hair: its centre and either its
@@ -515,7 +622,7 @@ pub fn line(rgb: &[f32], w: usize, h: usize, a: (f64, f64), b: (f64, f64)) -> Ve
         .chunks_exact(3)
         .map(|p| ((p[0] + 2.0 * p[1] + p[2]) / 4.0).max(1e-4).ln())
         .collect();
-    let scale = (w.max(h) as f64 / 4000.0).max(0.5);
+    let scale = scale_for(w, h);
     let length = (b.0 - a.0).hypot(b.1 - a.1);
     let pieces = ((length / (160.0 * scale)).ceil() as usize).max(1);
     let mut out: Vec<Defect> = (0..pieces)
@@ -553,7 +660,7 @@ fn piece(f: &[f32], w: usize, h: usize, a: (f64, f64), b: (f64, f64)) -> Defect 
         (xi >= 0.0 && yi >= 0.0 && xi < w as f64 && yi < h as f64)
             .then(|| f[yi as usize * w + xi as usize])
     };
-    let scale = (w.max(h) as f64 / 4000.0).max(0.5);
+    let scale = scale_for(w, h);
     let reach = (12.0 * scale).round().max(8.0) as i64;
     let length = (b.0 - a.0).hypot(b.1 - a.1).max(1.0);
     let (ux, uy) = ((b.0 - a.0) / length, (b.1 - a.1) / length);
@@ -809,5 +916,56 @@ mod tests {
             (d[0].path[0], d[d.len() - 1].path[1]),
             ((60.0, 100.0), (540.0, 100.0))
         );
+    }
+
+    /// A round speck of `contrast` (log units) darker than the sky.
+    fn faint(rgb: &mut [f32], w: usize, cx: usize, cy: usize, contrast: f32) {
+        for y in cy - 3..=cy + 3 {
+            for x in cx - 3..=cx + 3 {
+                if (x as f64 - cx as f64).hypot(y as f64 - cy as f64) <= 3.0 {
+                    for c in 0..3 {
+                        rgb[(y * w + x) * 3 + c] *= (-contrast).exp();
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_box_looks_harder_than_the_whole_image() {
+        let (w, h) = (800, 600);
+        let mut rgb = sky(w, h);
+        faint(&mut rgb, w, 400, 300, 0.07);
+        let all = find(&rgb, w, h, true, &DEFAULT_DUST);
+        assert!(!near(&all, 400.0, 300.0, 3.0), "missed by default: {all:?}");
+        let area = (350, 250, 450, 350);
+        let found = find_in(&rgb, w, h, true, &GUIDED_DUST, area);
+        assert!(near(&found, 400.0, 300.0, 2.0), "{found:?}");
+        // In whole-image coordinates: the pixels are where the speck is.
+        let d = found
+            .iter()
+            .find(|d| near(std::slice::from_ref(d), 400.0, 300.0, 2.0))
+            .expect("the speck");
+        assert!(
+            d.pixels
+                .iter()
+                .all(|&i| (i % w).abs_diff(400) <= 3 && (i / w).abs_diff(300) <= 3),
+            "{d:?}"
+        );
+        // A box elsewhere finds nothing of it.
+        let away = find_in(&rgb, w, h, true, &GUIDED_DUST, (50, 50, 150, 150));
+        assert!(!near(&away, 400.0, 300.0, 5.0), "{away:?}");
+    }
+
+    #[test]
+    fn a_stroke_only_returns_dust_in_its_band() {
+        let (w, h) = (800, 600);
+        let mut rgb = sky(w, h);
+        faint(&mut rgb, w, 300, 300, 0.07);
+        faint(&mut rgb, w, 500, 450, 0.07);
+        let stroke = [(250.0, 300.0), (350.0, 300.0)];
+        let found = find_along(&rgb, w, h, true, &GUIDED_DUST, &stroke, 20.0);
+        assert!(near(&found, 300.0, 300.0, 2.0), "{found:?}");
+        assert!(!near(&found, 500.0, 450.0, 8.0), "{found:?}");
     }
 }

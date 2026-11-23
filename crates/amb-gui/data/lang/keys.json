@@ -161,6 +161,9 @@
  "A blank layout: drag panels, blocks and buttons from Add into the columns and the toolbar": [
   "looks/editor.js"
  ],
+ "A brushed stroke looks harder for faint dust along it, and heals what it finds, instead of becoming one brushed spot (D). Alt-drag a box does the same in an area.": [
+  "index.html"
+ ],
  "A bug, an idea, or a photo that looks different from Lightroom.": [
   "core/keys.js"
  ],
@@ -992,6 +995,9 @@
   "tools/masks.js",
   "tools/toolblocks.js"
  ],
+ "Brush over where dust is: it looks harder for faint dust along the stroke and heals what it finds. Alt-drag a box does the same in an area.": [
+  "core/keys.js"
+ ],
  "Bug": [
   "index.html"
  ],
@@ -1208,7 +1214,7 @@
  "Clear the selection": [
   "develop/filmstrip.js"
  ],
- "Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch. Drag a spot to move it, or its dashed source to pick where it copies from. [ and ] or the wheel change the size.": [
+ "Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch; Alt-drag a box to look harder for dust there. Drag a spot to move it, or its dashed source to pick where it copies from. [ and ] or the wheel change the size.": [
   "tools/spots.js"
  ],
  "Click a cell to change it.": [
@@ -2427,6 +2433,15 @@
  ],
  "Find dust and hairs on the scan and heal each with a spot": [
   "index.html"
+ ],
+ "Find dust in a brushed stroke": [
+  "core/keys.js"
+ ],
+ "Find in stroke": [
+  "index.html"
+ ],
+ "Find in stroke: brush over where dust is": [
+  "tools/spots-dust.js"
  ],
  "Find missing photos": [
   "index.html"
@@ -4174,6 +4189,9 @@
  ],
  "No command {name}.": [
   "core/tasks.js"
+ ],
+ "No dust found there. A plain spot heals it by hand.": [
+  "tools/spots-dust.js"
  ],
  "No edits yet": [
   "develop/history.js"
@@ -6328,6 +6346,7 @@
   "index.html"
  ],
  "Spot removal: click a blemish": [
+  "tools/spots-dust.js",
   "tools/spots.js"
  ],
  "Spot {n}": [

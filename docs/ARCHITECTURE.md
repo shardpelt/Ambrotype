@@ -146,6 +146,7 @@ Operations on photos:
   - The Spot panel's Remove object….
 - Dust and hairs to heal spots (`dust.rs`, over `amb_engine::dust`):
   - `amb dust`, the Spot panel's Find dust.
+  - `area_image` and `along_image` look harder in a box or along a stroke (`find_in`, `find_along`, `GUIDED_DUST`); `amb dust --area`, `--along`; the Spot panel's Alt-drag and Find in stroke.
   - [design/dust.md](design/dust.md).
 - Film negative rolls (`negative/`):
   - The analysis is frozen into settings, for one frame, or a roll is grouped into scenes by light with odd frames kept (`roll`), through `pipeline::negative_analysis`.
@@ -264,7 +265,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
     - White-balance picker, clipping overlay, point-curve editor (RGB and per channel), colour-grading wheels.
     - Crop and straighten tool: draw a crop corner to corner like a screenshot, then adjust; aspect lock, size presets ([design/crop.md](design/crop.md)).
     - Mask tool (`ui/tools/masks.js`, `ui/tools/mask-draw.js`, `ui/tools/mask-panel.js`): linear, radial, brush, luminance and colour range masks with add/subtract/intersect and local sliders, drawn on the photo through `mask_frame`'s map ([design/masks.md](design/masks.md)).
-    - Spot removal (`ui/tools/spots.js`): heal and clone spots with a suggested donor, and Remove spots filled by AI Remove (`spot_source`). Find dust adds a heal spot per speck and hair (`find_dust`). [design/spot-removal.md](design/spot-removal.md), [design/dust.md](design/dust.md).
+    - Spot removal (`ui/tools/spots.js`): heal and clone spots with a suggested donor, and Remove spots filled by AI Remove (`spot_source`). Find dust adds a heal spot per speck and hair (`find_dust`); Alt-drag a box and Find in stroke look harder where pointed (`find_dust_in`, `find_dust_along`, `ui/tools/spots-dust.js`). [design/spot-removal.md](design/spot-removal.md), [design/dust.md](design/dust.md).
   - Guided Upright: guides drawn on the photo, which the Transform sliders straighten ([design/transform.md](design/transform.md)).
   - film negatives ([design/film-negatives.md](design/film-negatives.md)): Pick base, the base measured on the whole scan, the levels inside the crop, Auto off (every frame printed alike on a fixed density range), Expired film and Cast removal along the greys, and the paper curve (grades, split grade, preflash).
   - film base picker (`pick_film_base`: Pick base in the Negative panel; a click on clear film between frames sets `FilmBase*`, Alt-click forgets it; the WB picker shares `Session::shown_patch`, which follows the crop)

@@ -96,6 +96,7 @@ const KEY_ACTIONS = [
   { id: "spot-bigger", group: tKey("Spot removal"), label: "Bigger spot", keys: ["]"], when: "spots", run: () => spotSize(1) },
   { id: "spot-delete", group: tKey("Spot removal"), label: "Delete the selected spot", keys: ["Delete", "Backspace"], when: "spots", run: (e) => (onControl(e) ? false : deleteSpot()) },
   { id: "spot-visualise", group: tKey("Spot removal"), label: "Visualise spots", keys: ["A"], when: "spots", run: () => setVisualise(!sp.visualise) },
+  { id: "dust-brush", group: tKey("Spot removal"), label: "Find dust in a brushed stroke", hint: "Brush over where dust is: it looks harder for faint dust along the stroke and heals what it finds. Alt-drag a box does the same in an area.", keys: ["D"], when: "spots", run: () => dustSetBrush(!dustGuided.brush) },
   { id: "spot-leave", group: tKey("Spot removal"), label: "Leave spot removal", keys: ["Escape"], when: "spots", run: () => (sp.object ? setObjectMode(false) : exitSpots()) },
   { id: "mask-leave", group: tKey("Masks"), label: "Stop drawing, then leave the masks", keys: ["Escape"], when: "masks", run: () => maskEscape() },
   // Rating, labels and keywords: the open photo, or in the library the selected photos.

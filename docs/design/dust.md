@@ -1,6 +1,6 @@
 # Dust and hairs on film scans
 
-Status: v1 built 2026-10-29, with a line tool for straight scratches. Code: `crates/amb-engine/src/dust.rs` (the search), `crates/amb-ops/src/dust.rs` (defects to spots), `amb dust` (`--line` for a scratch), and the spot tool: the **Find dust** button, and Shift-drag for a scratch.
+Status: v1 built 2026-10-29, with a line tool for straight scratches; a box and a stroke that look harder built 2026-11-23. Code: `crates/amb-engine/src/dust.rs` (the search), `crates/amb-ops/src/dust.rs` (defects to spots), `amb dust` (`--line` for a scratch), and the spot tool: the **Find dust** button, and Shift-drag for a scratch.
 
 ## What it does
 
@@ -45,6 +45,15 @@ In the spot tool, Shift-drag along a scratch (or `amb dust PHOTO --line X0,Y0,X1
 
 On the long scratch of the FILM-R Provia scan, drawn roughly along it, it follows the scratch over 1,600 pixels and takes it out; a second scratch beside it stays until it is drawn too. Faint seams can show where a piece crosses an edge of the picture.
 
+## Looking harder where you point
+
+Find dust leaves faint specks and dust on busy ground alone, to keep false finds low. Where the person points, it looks harder (`GUIDED_DUST`: seed 3 spreads, significance 9, stand-out 1.5, faintest 0.06, at most 200; starting values, to be benched on FILM-R).
+
+- **A box:** Alt-drag in the spot tool, or `amb dust PHOTO --area X0,Y0,X1,Y1`. `find_in` searches the box grown by the noise window on each side (so the grain's spread and the ring are measured as on the whole scan, at the whole scan's sizes) and keeps defects whose centre is in the box.
+- **A stroke:** switch on **Find in stroke** (key action `dust-brush`, D) and brush; a stroke searches instead of becoming one brushed spot. Or `amb dust PHOTO --along X,Y;X,Y;… --radius R` (R a fraction of the long side). `find_along` searches the stroke's box and keeps defects within the radius of the stroke; in the editor the radius is the brush's.
+- Both go through the same spot making as Find dust, so a defect under a spot already there is left out, and each is one undo step ("dust in an area", "dust along a stroke"). Nothing found: "No dust found there. A plain spot heals it by hand."
+- The Alt-drag box in the editor is tested on a clean chart only (nothing found, no step): the test scripts have no photo with dust on it, so finding is tested in `amb-engine` and with `amb dust --area` on the dusty slide.
+
 ## Strength
 
 Each repair is a spot, so its strength is the spot's Opacity, and it can be selected, moved or deleted in the spot tool. There are no separate repair layers.
@@ -67,31 +76,4 @@ On six of the scans (2026-10-29; three negatives, two slides, one Cinestill):
 ## Not yet
 
 - A scan's infrared channel (a fourth channel, or an `_ir` file), which shows dust directly: parked until there is a scan with one to test on ([GAPS.md](../GAPS.md) §9).
-- A guided rectangle that searches harder in one area, and a heal brush that searches along its stroke.
 - Light defects on a scan (emulsion scratches on a negative show light there, dark once inverted).
-
-## Card: the guided rectangle and a heal brush that searches its stroke (`film-dust-guided`)
-
-Tier: medium. Risk: low (adds spots only, one undo step each). Decided 2026-11-23.
-
-Why: Find dust misses faint specks and dust on busy ground, on purpose, to keep false finds low. Where the person points, it can look harder.
-
-Read first: `crates/amb-engine/src/dust.rs` (`find`, `DustStrengths`, `DEFAULT_DUST`, `distance_to_path`), `crates/amb-ops/src/dust.rs` (`find_image`, `spots_for`, `line_image`: the example to copy), `crates/amb-cli/src/dust.rs` (`--line`), `heal_line` and `find_dust` in `crates/amb-gui/src/commands/select.rs`, `crates/amb-gui/ui/tools/spots.js` (Shift-drag near line 409, `heal_line` near 519, Find dust near 572).
-
-Design:
-- Engine (`dust.rs`, stays under 800 lines before its tests):
-  - `pub const GUIDED_DUST: DustStrengths = DustStrengths { seed: 3.0, significance: 9.0, stand_out: 1.5, faintest: 0.06, most: 200, ..DEFAULT_DUST };` with a comment: looser, because the person pointed at the area; starting values, to be benched on FILM-R.
-  - `pub fn find_in(rgb, w, h, dark, k, area: (usize, usize, usize, usize)) -> Vec<Defect>`: crop the area grown by `k.noise_window` (scaled as `find` scales it) on each side, clamped; run `find` on the crop; shift `centre`, `path`, `donor` and re-index `pixels` back to the whole image; keep defects whose centre lies inside `area`.
-  - `pub fn find_along(rgb, w, h, dark, k, stroke: &[(f64, f64)], radius: f64) -> Vec<Defect>`: `find_in` over the stroke's bounding box grown by `radius`, then keep defects whose centre is within `radius` of the stroke (`distance_to_path`).
-- Ops (`amb-ops/src/dust.rs`): `pub fn area_image(img, settings, area: [f64; 4]) -> Found` and `pub fn along_image(img, settings, stroke: &[[f64; 2]], radius: f64) -> Found`, coordinates in fractions of the photo as `--line` takes them; both through `spots_for`, so spots under existing ones are left out; `_file` twins as `line_file` has.
-- `amb dust PHOTO --area X0,Y0,X1,Y1` and `amb dust PHOTO --along X,Y;X,Y;… --radius R` (fractions; R a fraction of the long side), as `--line`; `USAGE`, the man page.
-- Editor commands `find_dust_in(area)` and `find_dust_along(points, radius)` beside `find_dust` in `select.rs`, each one undo step named "dust in an area" / "dust along a stroke"; in `handler`.
-- Spot tool: **Alt-drag** draws a rectangle (dashed, as the zoom box) and runs `find_dust_in`. A **Find in stroke** switch in the tool's block (key action `dust-brush`): while on, a brushed stroke runs `find_dust_along` with the brush's radius instead of becoming one brushed spot. Nothing found: `toast(t("No dust found there. A plain spot heals it by hand."))`. The tool's hint text (line 238) gains "Alt-drag a box to look harder for dust there".
-
-Tests: in `dust.rs`, a synthetic grain field with a faint speck (contrast 0.07): `find` with `DEFAULT_DUST` misses it, `find_in` with `GUIDED_DUST` over it finds it at the right place (whole-image coordinates); a speck outside the stroke's band is not returned by `find_along`. A CLI test runs `amb dust --area` on a test photo. A UI step in `crates/amb-gui/tests/ui/retouch.js`: Alt-drag a box over a planted speck, one undo step added.
-
-Don't: change `find`, `DEFAULT_DUST`, the line tool or the spot format.
-
-Done when: the two commands and the two gestures add spots for faint dust where pointed, each one undo step; checks green. Then move "A guided rectangle…" out of "Not yet" above.
-
-Commit: `dust: look harder in a box or along a stroke`

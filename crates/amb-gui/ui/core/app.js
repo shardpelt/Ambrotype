@@ -373,6 +373,7 @@ async function init() {
   wireCrop();
   wireMasks();
   wireSpots();
+  wireDustGuided();
   wireSelect();
   wireSplit();
   wireTouch();

@@ -10,6 +10,19 @@ impl Session {
         amb_ops::dust::find_image(&self.full, self.state.settings())
     }
 
+    /// Dust looked for harder in a box (fractions of the photo).
+    pub fn find_dust_in(&self, area: [f64; 4]) -> amb_ops::dust::Found {
+        amb_ops::dust::area_image(&self.full, self.state.settings(), area)
+    }
+
+    /// Dust looked for harder along a stroke (fractions of the photo);
+    /// `radius` is the brush's, a fraction of the photo's width.
+    pub fn find_dust_along(&self, stroke: &[[f64; 2]], radius: f64) -> amb_ops::dust::Found {
+        let (w, h) = (self.full.width as f64, self.full.height as f64);
+        let long = radius * w / w.max(h);
+        amb_ops::dust::along_image(&self.full, self.state.settings(), stroke, long)
+    }
+
     /// Select Object: the object `target` points at, with its shadow if
     /// `shadow` (and one was found), kept for its actions.
     pub fn select_object(

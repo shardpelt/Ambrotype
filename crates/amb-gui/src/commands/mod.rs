@@ -118,6 +118,8 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         tools::mask_field_ranges,
         select::spot_source,
         select::find_dust,
+        select::find_dust_in,
+        select::find_dust_along,
         select::remove_object,
         select::select_object,
         select::selection_shadow,

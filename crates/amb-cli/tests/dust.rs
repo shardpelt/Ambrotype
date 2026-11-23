@@ -62,6 +62,47 @@ fn finds_dust_and_heals_it_once() {
 }
 
 #[test]
+fn an_area_or_a_stroke_looks_only_where_pointed() {
+    let dir = std::env::temp_dir().join(format!("amb-cli-dust-area-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    amb(&dir, &["testimage", "dust", "slide.dng"]);
+    // The speck at 250,500 of 1200x800, boxed with room round it; the wire
+    // (row 120) and the other specks are outside.
+    let area = "0.15,0.5,0.27,0.75";
+    let found: serde_json::Value =
+        serde_json::from_str(&amb(&dir, &["dust", "slide.dng", "--area", area, "--json"])).unwrap();
+    assert_eq!(found["specks"], 1, "{found}");
+    let spot = &found["spots"][0];
+    let (x, y) = (
+        spot["at"][0].as_f64().unwrap() * 1200.0,
+        spot["at"][1].as_f64().unwrap() * 800.0,
+    );
+    assert!((x - 250.0).abs() < 5.0 && (y - 500.0).abs() < 5.0, "{spot}");
+    // Along a stroke through the speck at 400,250, 2 % of the long side wide.
+    let found: serde_json::Value = serde_json::from_str(&amb(
+        &dir,
+        &[
+            "dust",
+            "slide.dng",
+            "--along",
+            "0.28,0.31;0.38,0.31",
+            "--radius",
+            "0.02",
+            "--json",
+        ],
+    ))
+    .unwrap();
+    assert_eq!(found["specks"], 1, "{found}");
+    // It adds them as one step.
+    let text = amb(&dir, &["dust", "slide.dng", "--area", area, "--apply"]);
+    assert!(text.contains("saved"), "{text}");
+    let sidecar = std::fs::read_to_string(dir.join("slide.xmp")).unwrap();
+    assert_eq!(sidecar.matches("crs:SpotType=\"heal\"").count(), 1);
+    std::fs::remove_dir_all(&dir).unwrap();
+}
+
+#[test]
 fn a_line_drawn_near_the_wire_moves_onto_it() {
     let dir = std::env::temp_dir().join(format!("amb-cli-dust-line-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);

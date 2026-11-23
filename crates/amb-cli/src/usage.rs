@@ -105,13 +105,17 @@ USAGE:
                                             edit is) and after, and a bar to drag between them; both
                                             photos are inside the file, so it works offline and on any
                                             web host
-    amb dust <PHOTO> [--line X0,Y0,X1,Y1] [--apply] [--json]
+    amb dust <PHOTO> [--line X0,Y0,X1,Y1 | --area X0,Y0,X1,Y1 | --along X,Y;X,Y;… --radius R]
+                     [--apply] [--json]
                                             Dust and hairs on a film scan (darker specks and short curved
                                             lines on smooth ground; not long straight scratches), each as a
                                             heal spot with its donor. Shows them; --apply adds them as one
                                             undoable step. Spots already there are kept, and a second run
                                             adds only new ones. --line heals a straight scratch along a line
-                                            (photo fractions, roughly drawn: it moves onto the scratch)
+                                            (photo fractions, roughly drawn: it moves onto the scratch).
+                                            --area looks harder for faint dust in a box (photo fractions);
+                                            --along does so along a stroke, within R of it (a fraction of
+                                            the long side, e.g. 0.01)
     amb stats <PHOTO> [--preset P] [--amount A] [--json]
                                             The photo developed small (with its edit, or a preset) as a
                                             few numbers instead of a picture: L* percentiles, clipped

@@ -129,6 +129,9 @@ fn main() -> ExitCode {
             }
             "--out"
             | "--line"
+            | "--area"
+            | "--along"
+            | "--radius"
             | "--baseline"
             | "--sensor"
             | "--groups"

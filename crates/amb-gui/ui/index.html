@@ -292,6 +292,7 @@
           <input id="spot-opacity-num" class="value" type="text" inputmode="decimal" spellcheck="false"></div>
         <div class="row"><label class="inline-check" title="Show the photo as edges, white on black, so dust and specks stand out (A)"><input id="spot-visualise" type="checkbox"><span>Visualise</span></label>
           <input id="spot-threshold" type="range" min="0" max="100" step="1" value="50" disabled title="Higher shows only stronger edges"></div>
+        <div class="row"><label class="inline-check" title="A brushed stroke looks harder for faint dust along it, and heals what it finds, instead of becoming one brushed spot (D). Alt-drag a box does the same in an area."><input id="spot-dust-brush" type="checkbox"><span>Find in stroke</span></label></div>
         <p class="hint" id="spot-hint"></p>
         <div class="crop-actions">
           <button type="button" id="spot-dust" title="Find dust and hairs on the scan and heal each with a spot">Find dust</button>
@@ -1957,6 +1958,7 @@
   <script src="tools/mask-draw.js"></script>
   <script src="tools/mask-panel.js"></script>
   <script src="tools/spots.js"></script>
+  <script src="tools/spots-dust.js"></script>
   <script src="tools/select.js"></script>
   <script src="develop/wheels.js"></script>
   <script src="develop/controls.js"></script>

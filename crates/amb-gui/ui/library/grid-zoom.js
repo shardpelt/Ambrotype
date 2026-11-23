@@ -5,9 +5,7 @@
 "use strict";
 
 const LIB_SIZE_DEFAULT = 160;     // px, the slider's start
-const LIB_ZOOM_PER_PIXEL = 0.002; // Ctrl + wheel: one mouse notch (100 px) is about ×1.2
 const LIB_ZOOM_STEP = 1.25;       // Ctrl + / −: one step
-const LIB_LINE_PX = 16;           // a wheel that reports lines: pixels per line
 
 // Is the grid (not the viewer, cull views or the map) what's showing?
 const libGridShowing = () => lib.on && cull.view === "grid";
@@ -100,20 +98,15 @@ function wireLibraryZoom() {
   $("lib-sort").addEventListener("change", () => store.setText("amb.libSort", $("lib-sort").value));
   $("lib-reverse").addEventListener("change", () => store.set("amb.libReverse", $("lib-reverse").checked));
   $("lib-size").addEventListener("input", () => libSetSize(Number($("lib-size").value), libFirstInView()));
-  // Ctrl + wheel, and a trackpad pinch on Linux and Windows. A plain wheel scrolls.
+  // The photo under the pointer, else the first in view.
   const photoAt = (e) => {
-    const path = e.target.closest?.(".lib-cell")?.dataset.path;
+    const path = e.target?.closest?.(".lib-cell")?.dataset.path;
     return path && libGridIndex(path) >= 0 ? path : libFirstInView();
   };
-  grid.addEventListener("wheel", (e) => {
-    if (!(e.ctrlKey || e.metaKey) || !libGridShowing()) return;
-    e.preventDefault();
-    const dy = e.deltaMode === 1 ? e.deltaY * LIB_LINE_PX : e.deltaY;
-    libSetSize(libSizeNow() * Math.exp(-dy * LIB_ZOOM_PER_PIXEL), photoAt(e));
-  }, { passive: false });
-  // macOS pinch: WebKit's gesture events (its wheel events are ours above).
+  // Ctrl + wheel and a pinch size the thumbnails; a plain wheel scrolls.
   wirePinchZoom(grid, {
-    active: (e) => e.type !== "wheel" && libGridShowing(),
+    wheelScrolls: true,
+    active: () => libGridShowing(),
     zoom: (factor, x, y) => libSetSize(libSizeNow() * factor, photoAt({ target: document.elementFromPoint(x, y) })),
   });
 }

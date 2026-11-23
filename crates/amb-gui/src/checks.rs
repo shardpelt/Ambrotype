@@ -265,6 +265,10 @@ fn every_script_is_strict() {
 // never raise it: use the part named in the message.
 const INTERSECTION_OBSERVER_LIMIT: usize = 0;
 const OVERFLOW_ROW_LIMIT: usize = 1;
+/// Wheel listeners of their own: the brush size in masks, select and spots,
+/// the loupe's magnification and the photo row's sideways scroll. A zoom
+/// goes through `wirePinchZoom`, so every zoom answers the same.
+const WHEEL_LISTENER_LIMIT: usize = 5;
 
 #[test]
 fn copies_of_shared_parts_may_only_fall() {
@@ -284,7 +288,18 @@ fn copies_of_shared_parts_may_only_fall() {
             body.contains("overflow-x: auto") && selector != ".photo-row"
         })
         .count();
+    let wheels: usize = ui_text("js")
+        .iter()
+        .filter(|(f, _)| f != "core/pinch.js")
+        .map(|(_, t)| t.matches(r#"addEventListener("wheel""#).count())
+        .sum();
     let checks = [
+        (
+            r#"addEventListener("wheel" outside core/pinch.js"#,
+            wheels,
+            WHEEL_LISTENER_LIMIT,
+            "`wirePinchZoom` from core/pinch.js",
+        ),
         (
             "new IntersectionObserver( outside core/lazy.js",
             observers,

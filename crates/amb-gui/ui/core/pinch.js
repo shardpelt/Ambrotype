@@ -19,8 +19,11 @@ function isMouseWheel(e) {
 // Wire `el`: `zoom(factor, x, y)` zooms by `factor` at client point (x, y);
 // `scroll(dx, dy, e)` gets a trackpad scroll (true if it used it);
 // `wheel(e)` may take a mouse wheel first (true if it used it: stepping
-// photos, say). Each returns quickly; zoom is called often.
-function wirePinchZoom(el, { zoom, scroll = () => false, wheel = () => false, active = () => true }) {
+// photos, say). Each returns quickly; zoom is called often. With
+// `wheelScrolls`, a plain wheel and a two-finger scroll are left to scroll
+// `el` (a list, as the library's grid); only a pinch or Ctrl + wheel zoom.
+// Every zoom in the app comes through here, so they all answer the same.
+function wirePinchZoom(el, { zoom, scroll = () => false, wheel = () => false, active = () => true, wheelScrolls = false }) {
   let gesture = null;
   el.addEventListener("wheel", (e) => {
     if (!active(e)) return;
@@ -32,6 +35,7 @@ function wirePinchZoom(el, { zoom, scroll = () => false, wheel = () => false, ac
       zoom(Math.exp(-d * 0.01), e.clientX, e.clientY);
       return;
     }
+    if (wheelScrolls) return;
     if (isMouseWheel(e)) {
       e.preventDefault();
       if (wheel(e)) return;

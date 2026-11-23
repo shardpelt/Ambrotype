@@ -149,6 +149,22 @@ await t.step("Collage tray: a sideways drag scrolls, a drag up takes a photo out
   four.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: 1, clientY: 1, pointerId: 10, button: 0, pointerType: "mouse" }));
   four.dispatchEvent(new MouseEvent("click", { bubbles: true }));
   t.expect(collage.cells.some((c) => c?.path === ui.info.path), "a click fills a cell");
+  // Its photo zooms as every view does (wirePinchZoom): a wheel notch in,
+  // a pinch (Ctrl + wheel) out again.
+  const i = collage.cells.findIndex((c) => c?.path === ui.info.path);
+  // The cell is looked up each time: the stage draws its cells again once
+  // the photo's larger copy arrives.
+  const filled = () => $("col-stage").querySelector(`.col-cell[data-index="${i}"]`);
+  await t.until("the filled cell drawn", filled, 30000);
+  const spin = (deltaY, ctrlKey) => {
+    const r = filled().getBoundingClientRect();
+    filled().dispatchEvent(new WheelEvent("wheel", { deltaY, ctrlKey, bubbles: true, cancelable: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 }));
+  };
+  spin(-100, false);
+  await t.until("a wheel notch zooms the photo in", () => collage.cells[i].placement.zoom > 1.2, 30000);
+  const zoomed = collage.cells[i].placement.zoom;
+  spin(40, true);
+  await t.until("a pinch zooms it out", () => collage.cells[i].placement.zoom < zoomed, 30000);
   list.removeAttribute("style");
   setTray([]);
   closeCollage();

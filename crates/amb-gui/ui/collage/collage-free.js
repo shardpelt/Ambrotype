@@ -260,38 +260,68 @@ function wireStage() {
     live.addEventListener("pointerup", up);
     live.addEventListener("pointercancel", up);
   });
-  // Scroll to zoom around the pointer.
-  stage.addEventListener("wheel", async (e) => {
-    const cell = e.target.closest(".col-cell");
+  // The wheel, a pinch or Ctrl + wheel zoom the photo around the pointer, as
+  // everywhere (core/pinch.js); two fingers on a trackpad move it.
+  // The filled cell an event is over; a pinch keeps the one it began on.
+  const cellOf = (target) => {
+    const cell = target?.closest?.(".col-cell");
     const i = Number(cell?.dataset.index);
-    const c = collage.cells[i];
-    if (!c?.path) return;
-    e.preventDefault();
-    const info = await collage.big.get(c.path);
-    if (!info) return;
-    // The pointer in the frame's own (unturned) coordinates.
-    const rect = cell.getBoundingClientRect();
-    const rad = ((collage.t.cells[i][4] ?? 0) * Math.PI) / 180;
-    const [dx, dy] = [e.clientX - (rect.left + rect.width / 2), e.clientY - (rect.top + rect.height / 2)];
-    const box = { width: cell.clientWidth, height: cell.clientHeight };
-    const fx = (dx * Math.cos(rad) + dy * Math.sin(rad)) / box.width + 0.5;
-    const fy = (-dx * Math.sin(rad) + dy * Math.cos(rad)) / box.height + 0.5;
-    const [pw, ph] = turnedSize(info, c.placement.turns);
-    const before = cropWindow(pw, ph, box.width, box.height, c.placement);
-    const px = before.x + fx * before.w;
-    const py = before.y + fy * before.h;
-    c.placement.zoom = round4(Math.min(20, Math.max(1, c.placement.zoom * Math.exp(-e.deltaY * 0.0015))));
-    const after = cropWindow(pw, ph, box.width, box.height, { ...c.placement, cx: 0.5, cy: 0.5 });
-    c.placement.cx = (px - fx * after.w + after.w / 2) / pw;
-    c.placement.cy = (py - fy * after.h + after.h / 2) / ph;
-    clampPlacement(c, info, box.width, box.height);
-    placeImage(cell, i, info);
-    touch();
-  }, { passive: false });
+    return collage.cells[i]?.path ? { cell, i, c: collage.cells[i] } : null;
+  };
+  let pinched = null;
+  wirePinchZoom(stage, {
+    active: (e) => Boolean((pinched = cellOf(e.target))),
+    zoom: (factor, x, y) => {
+      if (pinched) collageZoomCell(pinched, factor, x, y).catch(showError);
+    },
+    scroll: (dx, dy, e) => {
+      const at = cellOf(e.target);
+      if (at) collagePanCell(at, dx, dy).catch(showError);
+      return Boolean(at);
+    },
+  });
   stage.addEventListener("dblclick", (e) => {
     const i = Number(e.target.closest(".col-cell")?.dataset.index);
     if (collage.cells[i]?.path) fitCell(i);
   });
+}
+
+// Zoom a cell's photo by `factor` around client point (x, y).
+async function collageZoomCell({ cell, i, c }, factor, x, y) {
+  const info = await collage.big.get(c.path);
+  if (!info) return;
+  // The pointer in the frame's own (unturned) coordinates.
+  const rect = cell.getBoundingClientRect();
+  const rad = ((collage.t.cells[i][4] ?? 0) * Math.PI) / 180;
+  const [dx, dy] = [x - (rect.left + rect.width / 2), y - (rect.top + rect.height / 2)];
+  const box = { width: cell.clientWidth, height: cell.clientHeight };
+  const fx = (dx * Math.cos(rad) + dy * Math.sin(rad)) / box.width + 0.5;
+  const fy = (-dx * Math.sin(rad) + dy * Math.cos(rad)) / box.height + 0.5;
+  const [pw, ph] = turnedSize(info, c.placement.turns);
+  const before = cropWindow(pw, ph, box.width, box.height, c.placement);
+  const px = before.x + fx * before.w;
+  const py = before.y + fy * before.h;
+  c.placement.zoom = round4(Math.min(20, Math.max(1, c.placement.zoom * factor)));
+  const after = cropWindow(pw, ph, box.width, box.height, { ...c.placement, cx: 0.5, cy: 0.5 });
+  c.placement.cx = (px - fx * after.w + after.w / 2) / pw;
+  c.placement.cy = (py - fy * after.h + after.h / 2) / ph;
+  clampPlacement(c, info, box.width, box.height);
+  placeImage(cell, i, info);
+  touch();
+}
+
+// Move a cell's photo by a two-finger scroll of (dx, dy) screen pixels.
+async function collagePanCell({ cell, i, c }, dx, dy) {
+  const info = await collage.big.get(c.path);
+  if (!info) return;
+  const box = { width: cell.clientWidth, height: cell.clientHeight };
+  const [pw, ph] = turnedSize(info, c.placement.turns);
+  const win = cropWindow(pw, ph, box.width, box.height, c.placement);
+  c.placement.cx += (dx * win.w) / box.width / pw;
+  c.placement.cy += (dy * win.h) / box.height / ph;
+  clampPlacement(c, info, box.width, box.height);
+  placeImage(cell, i, info);
+  touch();
 }
 
 function fitCell(i) {

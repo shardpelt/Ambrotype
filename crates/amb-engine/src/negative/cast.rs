@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Removing a colour cast and the crossover of expired film.
 
-use super::analysis::{midtone, normalise, percentile};
+use super::analysis::{midtone, normalise};
 use super::*;
+use crate::math::percentile;
 
 /// Cast removal along the greys. **Ours.** The levels make each layer's
 /// ends meet, which takes a cast out only when the deepest shadow and the

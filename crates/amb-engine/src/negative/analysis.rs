@@ -2,6 +2,7 @@
 //! Analysing a scan: the film stock list lookup, the base, levels and midtone.
 
 use super::*;
+use crate::math::{downsample, percentile};
 
 /// Look up a stock by id (case-insensitive); unknown ids fall back to Neutral.
 pub fn stock(id: &str) -> &'static Stock {
@@ -9,44 +10,6 @@ pub fn stock(id: &str) -> &'static Stock {
         .iter()
         .find(|s| s.id.eq_ignore_ascii_case(id.trim()))
         .unwrap_or(&STOCKS[0])
-}
-
-/// Block-averaged copy of an interleaved RGB image (about `target` samples).
-pub(super) fn downsample(
-    rgb: &[f32],
-    w: usize,
-    h: usize,
-    target: usize,
-) -> (Vec<[f64; 3]>, usize, usize) {
-    let block = (((w * h) as f64 / target as f64).sqrt().round() as usize).max(1);
-    let (bw, bh) = ((w / block).max(1), (h / block).max(1));
-    let blocks: Vec<[f64; 3]> = (0..bw * bh)
-        .into_par_iter()
-        .map(|i| {
-            let (bx, by) = (i % bw, i / bw);
-            let mut acc = [0.0f64; 3];
-            let mut n = 0.0f64;
-            for y in by * block..((by + 1) * block).min(h) {
-                for x in bx * block..((bx + 1) * block).min(w) {
-                    let p = &rgb[(y * w + x) * 3..(y * w + x) * 3 + 3];
-                    for c in 0..3 {
-                        acc[c] += f64::from(p[c]);
-                    }
-                    n += 1.0;
-                }
-            }
-            acc.map(|v| v / n.max(1.0))
-        })
-        .collect();
-    (blocks, bw, bh)
-}
-
-pub(super) fn percentile(values: &mut [f64], q: f64) -> f64 {
-    if values.is_empty() {
-        return 0.0;
-    }
-    let i = ((values.len() - 1) as f64 * q.clamp(0.0, 1.0)).round() as usize;
-    *values.select_nth_unstable_by(i, f64::total_cmp).1
 }
 
 fn density(v: f64, base: f64) -> f64 {

@@ -7,12 +7,12 @@
 
 const pinDrag = { active: null, moved: false };
 
-// Make `pin` (one photo `p`) draggable.
-function pinDragAttach(pin, p) {
+// Make `pin` (the photos `photos`, one or several) draggable.
+function pinDragAttach(pin, photos) {
   pin.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
     pinDrag.moved = false;
-    pinDrag.active = { pin, p, x: e.clientX, y: e.clientY, left: parseFloat(pin.style.left), top: parseFloat(pin.style.top), moved: false };
+    pinDrag.active = { pin, photos, x: e.clientX, y: e.clientY, left: parseFloat(pin.style.left), top: parseFloat(pin.style.top), moved: false };
     try {
       pin.setPointerCapture(e.pointerId);
     } catch { /* no such pointer: a script's */ }
@@ -40,14 +40,16 @@ function pinDragAttach(pin, p) {
   pin.addEventListener("pointercancel", end);
 }
 
-// Save the place under where the pin was let go.
+// Save the place under where the pin was let go, for every photo of it.
 async function pinDragDrop(d, e) {
   const map = d.pin.closest(".map");
   if (!map) return;
   const r = map.getBoundingClientRect();
   const [lat, lon] = mapToLatLon(browse.map, e.clientX - r.left, e.clientY - r.top, map.clientWidth, map.clientHeight);
-  await placePhotos([d.p.path], `${lat.toFixed(6)},${lon.toFixed(6)}`);
-  toast(t("Moved the place of {name}", { name: d.p.name }));
+  await placePhotos(d.photos.map((q) => q.path), `${lat.toFixed(6)},${lon.toFixed(6)}`);
+  toast(d.photos.length === 1
+    ? t("Moved the place of {name}", { name: d.photos[0].name })
+    : t("Moved the place of {photos}", { photos: plural(d.photos.length, "photo") }));
 }
 
 function wireMapPins() {

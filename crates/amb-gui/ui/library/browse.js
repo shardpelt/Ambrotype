@@ -388,7 +388,7 @@ function drawMap() {
     pin.classList.toggle("selected", g.photos.some((p) => lib.selected.has(p.path)));
     pin.classList.toggle("one", n === 1);
     pin.title = n === 1 ? g.photos[0].name : t("{n} photos: {names}", { n, names: g.photos.slice(0, 3).map((p) => p.name).join(", ") + (n > 3 ? "…" : "") });
-    if (n === 1) pinDragAttach(pin, g.photos[0]);
+    pinDragAttach(pin, g.photos);
     pin.addEventListener("pointerenter", () => showPinPeek(pin, g.photos[0]));
     pin.addEventListener("pointerleave", hidePinPeek);
     pin.addEventListener("click", (e) => {

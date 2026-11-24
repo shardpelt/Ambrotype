@@ -30,6 +30,34 @@ await t.step("a pin dragged on the Map moves the photo's place and keeps it", as
   await placePhotos([path], "");
 });
 
+await t.step("a pin of several photos drags too, and every photo gets the new place", async () => {
+  const box = $("lib-subfolders");
+  box.checked = true;
+  box.dispatchEvent(new Event("change"));
+  await t.until("both folders' photos", () => lib.photos.length >= 2);
+  const paths = lib.photos.slice(0, 2).map((p) => p.path);
+  await placePhotos(paths, "48.858400,2.294500");
+  await t.until("a group pin", () => document.querySelector(".map-pin:not(.one)"));
+  const pin = document.querySelector(".map-pin:not(.one)");
+  const r = pin.getBoundingClientRect();
+  const at = (dx, dy) => ({ clientX: r.left + r.width / 2 + dx, clientY: r.top + r.height / 2 + dy, button: 0, pointerId: 9, bubbles: true });
+  pin.dispatchEvent(new PointerEvent("pointerdown", at(0, 0)));
+  pin.dispatchEvent(new PointerEvent("pointermove", at(60, 40)));
+  pin.dispatchEvent(new PointerEvent("pointerup", at(60, 40)));
+  await t.until("the places saved", () => paths.every((q) => Math.abs(libPhoto(q).gps[1] - 2.2945) > 1e-4));
+  const [a, b] = paths.map((q) => libPhoto(q).gps);
+  t.expect(Math.abs(a[0] - b[0]) < 1e-6 && Math.abs(a[1] - b[1]) < 1e-6 && a[1] > 2.2945, "both at the new place, right of the old");
+  const before = lib.selected.size;
+  // The pin is drawn again at its new place: the click lands on that one.
+  await t.until("the pin redrawn", () => document.querySelector(".map-pin:not(.one)"));
+  document.querySelector(".map-pin:not(.one)").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  t.expect(lib.selected.size === before, "the click that ends a drag is not a selection");
+  await placePhotos(paths, "");
+  box.checked = false;
+  box.dispatchEvent(new Event("change"));
+  await t.until("one folder again", () => lib.photos.length === 1 || !lib.photos.some((p) => p.path.includes("more")));
+});
+
 await t.step("Add place names is a key action and a button on the Map; names show and are searchable", async () => {
   t.expect(KEY_ACTIONS.some((a) => a.id === "place-names" && a.when === "library"), "the key action");
   t.expect(document.querySelector(".map-bar [data-place-names]"), "the button on the Map's bar");

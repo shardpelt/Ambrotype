@@ -4017,6 +4017,9 @@
  "Moved the place of {name}": [
   "library/map-pins.js"
  ],
+ "Moved the place of {photos}": [
+  "library/map-pins.js"
+ ],
  "Moved to the trash": [
   "core/core.js",
   "develop/preset-hide.js"
@@ -8435,6 +8438,7 @@
   "library/library-grid.js",
   "library/library.js",
   "library/lrcat.js",
+  "library/map-pins.js",
   "library/organise.js",
   "library/place-names.js",
   "library/slideshow.js"

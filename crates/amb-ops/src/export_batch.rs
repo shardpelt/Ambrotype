@@ -83,6 +83,9 @@ pub struct Report {
     pub seconds: f64,
     /// The run was stopped before the last photo.
     pub stopped: bool,
+    /// Things worth knowing that did not stop a photo: with AI-free mode
+    /// on, the AI parts of an edit that were left out of the file.
+    pub warnings: Vec<String>,
 }
 
 /// Renders one photo with its own edit into a file, with these settings.
@@ -262,6 +265,14 @@ pub fn run(
                         match result {
                             Outcome::Skipped => r.skipped += 1,
                             Outcome::Written(bytes_in, bytes_out) => {
+                                let left = amb_engine::ai_free::left_out_of(&job.source);
+                                if !left.is_empty() {
+                                    r.warnings.push(format!(
+                                        "{}: left out for AI-free mode: {}",
+                                        job.source.display(),
+                                        left.join(", ")
+                                    ));
+                                }
                                 r.done += 1;
                                 r.bytes_in += bytes_in;
                                 r.bytes_out += bytes_out;
@@ -277,6 +288,7 @@ pub fn run(
     let mut report = report.into_inner().unwrap_or_else(|e| e.into_inner());
     // In the photos' order, whichever finished first.
     report.failed.sort_by(|a, b| a.0.cmp(&b.0));
+    report.warnings.sort();
     report.stopped = finished.load(Ordering::Relaxed) < jobs.len();
     report.seconds = start.elapsed().as_secs_f64();
     report

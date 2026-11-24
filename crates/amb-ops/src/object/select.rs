@@ -14,6 +14,7 @@ pub fn select(
     settings: &BTreeMap<String, Value>,
     target: &Target,
 ) -> Result<Selection, String> {
+    amb_presets::ai_free::check()?;
     let (rgb, w, h) = frame(img, settings);
     let (wf, hf) = (w as f64, h as f64);
     let mut mask = vec![false; w * h];

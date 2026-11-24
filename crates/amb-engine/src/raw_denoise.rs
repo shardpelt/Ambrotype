@@ -68,6 +68,7 @@ impl Denoise<'_> {
         pattern: [[u8; 2]; 2],
         wb: [f32; 3],
     ) -> Result<Vec<f32>, Error> {
+        amb_presets::ai_free::check().map_err(Error::Unsupported)?;
         self.used.set(true);
         let mut rgb = (self.run)(
             DenoiseInput::Bayer {
@@ -104,6 +105,7 @@ pub fn load(
     amount: f32,
     progress: &dyn Fn(usize, usize),
 ) -> Result<CameraImage, Error> {
+    amb_presets::ai_free::check().map_err(Error::Unsupported)?;
     if crate::raster::is_raster(path) {
         return Err(Error::Unsupported(
             "AI Denoise works on raws, not on JPEG, TIFF or other rendered images".into(),

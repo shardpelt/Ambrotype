@@ -186,6 +186,8 @@ fn main() {
                     }
                 }
                 // Select Subject: the model in the models folder, fetched on first use.
+                // AI-free mode first: once it is on, no model runs.
+                amb_presets::ai_free::set(amb_library::ai_free::load());
                 if let Some(models) = path.parent().map(|d| d.join("models")) {
                     amb_ai::hooks::install(&models);
                     // Fetched in the background at the first start, so the

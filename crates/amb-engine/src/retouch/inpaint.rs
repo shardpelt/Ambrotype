@@ -21,7 +21,11 @@ pub fn set_inpainter(f: std::sync::Arc<Inpainter>) {
     *INPAINTER.write().unwrap_or_else(|e| e.into_inner()) = Some(f);
 }
 
+/// The registered inpainter; none while AI-free mode is on.
 pub(super) fn inpainter() -> Option<std::sync::Arc<Inpainter>> {
+    if amb_presets::ai_free::on() {
+        return None;
+    }
     INPAINTER.read().unwrap_or_else(|e| e.into_inner()).clone()
 }
 

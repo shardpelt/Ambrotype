@@ -83,6 +83,9 @@ pub enum Error {
     NothingToUndo,
     #[error("nothing to redo")]
     NothingToRedo,
+    /// AI-free mode refused the change ([`amb_presets::ai_free`]).
+    #[error("{0}")]
+    AiFree(String),
     #[error("{0}")]
     Load(String),
     #[error("{0}")]

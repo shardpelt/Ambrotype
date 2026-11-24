@@ -128,6 +128,9 @@ Your own ONNX model: a square RGB photo in, a map of the same side out (or one p
 .B amb models remove <ID>
 Delete it; its task goes back to its default
 .TP
+.B amb ai\-free [on|off] [\-\-json]
+AI\-free mode: with it on, no AI model runs on your photos by any route (masks, Remove, Denoise, search, bursts, the editor, `amb`, the MCP server); edits that hold AI parts render and export without them. No argument shows it.
+.TP
 .B amb import <SOURCE> <DEST> [\-\-into \(dq{yyyy}/{yyyy}\-{mm}\-{dd}\(dq] [\-\-rename \(dq{name}\(dq] [\-\-start 1] [\-\-keywords \(dqa, b\(dq] [\-\-preset LOOK.xmp] [\-\-backup DIR] [\-\-no\-subfolders] [\-\-dry\-run] [\-\-json]
 Copy photos from a card or folder into DEST, sorted into folders and renamed from templates ({name} {yyyy} {yy} {mm} {dd} {hh} {min} {ss} {seq} {camera}); a raw's JPEG and .xmp keep its new name; photos already there are skipped. \-\-preset gives photos without an edit of their own a look; \-\-backup also copies the originals to DIR/Imported on YYYY\-MM\-DD
 .TP

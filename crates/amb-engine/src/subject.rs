@@ -6,6 +6,8 @@
 //! The engine doesn't run models itself: the editor and `amb` register a
 //! [`Finder`] (`amb-ai`, which runs the model the user chose for each kind).
 //! Without one these masks select nothing and are listed as not rendered.
+//! With AI-free mode on ([`amb_presets::ai_free`]) every call here acts as if
+//! no hook were installed.
 
 use std::sync::{Arc, RwLock};
 
@@ -56,11 +58,12 @@ pub(crate) fn clear_finder() {
 
 /// Can model masks be drawn here?
 pub fn available() -> bool {
-    FINDER.read().unwrap_or_else(|e| e.into_inner()).is_some()
+    !amb_presets::ai_free::on() && FINDER.read().unwrap_or_else(|e| e.into_inner()).is_some()
 }
 
 /// The map `kind` asks for, from the registered finder.
 pub fn find(kind: MapKind, rgb: &[f32], w: usize, h: usize) -> Result<Map, String> {
+    amb_presets::ai_free::check()?;
     let f = FINDER.read().unwrap_or_else(|e| e.into_inner()).clone();
     match f {
         Some(f) => f(kind, rgb, w, h),
@@ -94,6 +97,7 @@ pub fn set_selector(f: Arc<Selector>) {
 
 /// The object `prompts` point at, from the registered selector.
 pub fn select(rgb: &[f32], w: usize, h: usize, prompts: &[Prompt]) -> Result<Map, String> {
+    amb_presets::ai_free::check()?;
     let f = SELECTOR.read().unwrap_or_else(|e| e.into_inner()).clone();
     match f {
         Some(f) => f(rgb, w, h, prompts),
@@ -126,6 +130,7 @@ pub fn set_face_finder(f: Arc<FaceFinder>) {
 
 /// The faces in the picture, from the registered finder.
 pub fn faces(rgb: &[f32], w: usize, h: usize) -> Result<Vec<Face>, String> {
+    amb_presets::ai_free::check()?;
     let f = FACES.read().unwrap_or_else(|e| e.into_inner()).clone();
     match f {
         Some(f) => f(rgb, w, h),

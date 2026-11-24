@@ -59,6 +59,7 @@ pub struct Net {
 
 /// Load a model with its inputs' sizes set.
 pub fn build(model: InferenceModel) -> TractResult<Arc<Net>> {
+    amb_presets::ai_free::check().map_err(err)?;
     let typed = model.into_typed()?.into_decluttered()?;
     let gpu = if gpu_off() {
         None
@@ -106,6 +107,7 @@ impl Net {
     }
 
     pub fn run(&self, inputs: TVec<TValue>) -> TractResult<TVec<TValue>> {
+        amb_presets::ai_free::check().map_err(err)?;
         if let Some(g) = &self.gpu {
             let failed = *g.failed.lock().unwrap_or_else(|e| e.into_inner());
             if !failed {

@@ -8,6 +8,19 @@
    "status": "planned"
   }
  ],
+ "ai_mask_kinds": [
+  "subject",
+  "background",
+  "people"
+ ],
+ "ai_mask_subtypes": [
+  "1",
+  "3"
+ ],
+ "ai_spot_kinds": [
+  "remove",
+  "content-aware"
+ ],
  "tags": [
   {
    "name": "Name",
@@ -2140,7 +2153,8 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "unsupported"
+   "status": "unsupported",
+   "ai": true
   },
   {
    "name": "EnhanceDenoiseVersion",
@@ -2149,7 +2163,8 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "unsupported"
+   "status": "unsupported",
+   "ai": true
   },
   {
    "name": "EnhanceDenoiseLumaAmount",
@@ -2158,7 +2173,8 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "unsupported"
+   "status": "unsupported",
+   "ai": true
   },
   {
    "name": "EnhanceDetailsAlreadyApplied",
@@ -2167,7 +2183,8 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "unsupported"
+   "status": "unsupported",
+   "ai": true
   },
   {
    "name": "EnhanceDetailsVersion",
@@ -2176,7 +2193,8 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "unsupported"
+   "status": "unsupported",
+   "ai": true
   },
   {
    "name": "EnhanceSuperResolutionAlreadyApplied",
@@ -2185,7 +2203,8 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "unsupported"
+   "status": "unsupported",
+   "ai": true
   },
   {
    "name": "EnhanceSuperResolutionVersion",
@@ -2194,7 +2213,8 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "unsupported"
+   "status": "unsupported",
+   "ai": true
   },
   {
    "name": "EnhanceSuperResolutionScale",
@@ -2203,7 +2223,8 @@
    "min": null,
    "max": null,
    "default": null,
-   "status": "unsupported"
+   "status": "unsupported",
+   "ai": true
   },
   {
    "name": "LensBlur",

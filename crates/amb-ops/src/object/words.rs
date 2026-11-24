@@ -30,11 +30,11 @@ pub fn select_words(
     settings: &BTreeMap<String, Value>,
     like: &Like<'_>,
 ) -> Result<Selection, String> {
+    amb_presets::ai_free::check()?;
     let (rgb, w, h) = frame(img, settings);
     let (wf, hf) = (w as f64, h as f64);
     // Where to look: a coarse grid for big things (sky, water), and the
-    // middles of the windows most like the words, at three sizes, for
-    // small ones (a cow on a far hillside).
+    // windows most like the words, at three sizes, for small ones (a cow).
     let mut points: Vec<(f64, f64)> = Vec::new();
     for j in 0..GRID.1 {
         for i in 0..GRID.0 {

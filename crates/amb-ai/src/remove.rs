@@ -38,6 +38,7 @@ pub fn inpainter(dir: PathBuf) -> Arc<Inpainter> {
     let kept: Mutex<VecDeque<(u64, Arc<Vec<f32>>)>> = Mutex::new(VecDeque::new());
     Arc::new(
         move |rgb: &[f32], mask: &[f32]| -> Result<Vec<f32>, String> {
+            amb_presets::ai_free::check()?;
             let n = INPAINT_SIZE;
             if rgb.len() != n * n * 3 || mask.len() != n * n {
                 return Err("wrong input size".into());
@@ -79,6 +80,7 @@ pub fn inpainter(dir: PathBuf) -> Arc<Inpainter> {
 
 /// A remove model with its two inputs fixed at the inpainter's size.
 pub fn load(path: &Path, pixels: Pixels) -> Result<Model, String> {
+    amb_presets::ai_free::check()?;
     let n = INPAINT_SIZE;
     let name = path.display();
     tract_linalg::multithread::set_default_executor(
@@ -101,6 +103,7 @@ pub fn load(path: &Path, pixels: Pixels) -> Result<Model, String> {
 
 /// Fill `rgb` (interleaved 0..1) where `mask` is set; interleaved 0..1 out.
 pub fn run(model: &Model, rgb: &[f32], mask: &[f32]) -> Result<Vec<f32>, String> {
+    amb_presets::ai_free::check()?;
     let n = INPAINT_SIZE;
     let planes: Vec<f32> = (0..3)
         .flat_map(|c| (0..n * n).map(move |i| rgb[i * 3 + c]))

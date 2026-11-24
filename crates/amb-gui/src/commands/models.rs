@@ -79,6 +79,22 @@ pub(crate) async fn ai_model_install(
     list(&state)
 }
 
+/// Is AI-free mode on? (`amb_presets::ai_free`, saved in the config folder.)
+#[tauri::command]
+pub(crate) fn ai_free_get() -> bool {
+    amb_presets::ai_free::on()
+}
+
+/// Turn AI-free mode on or off: saved, used at once, and renders made with
+/// the other setting are forgotten so the picture shows what it now holds.
+#[tauri::command]
+pub(crate) fn ai_free_set(on: bool, state: tauri::State<'_, AppState>) -> Res<bool> {
+    amb_library::ai_free::save(on)?;
+    amb_presets::ai_free::set(on);
+    forget_renders(&state);
+    Ok(on)
+}
+
 #[tauri::command]
 pub(crate) fn ai_model_use(id: String, state: tauri::State<'_, AppState>) -> Res<ModelsList> {
     amb_ai::choose(&models_dir(&state)?, &id)?;

@@ -148,6 +148,7 @@ fn sha256_file(path: &Path) -> Result<String, String> {
 /// Download model `id` (if it isn't there already) and check it.
 /// `progress` hears the bytes so far and the total.
 pub fn install(dir: &Path, id: &str, progress: &dyn Fn(u64, u64)) -> Result<ModelSpec, String> {
+    amb_presets::ai_free::check()?;
     // One download at a time (the start-up fetch and a first mask, say).
     static BUSY: Mutex<()> = Mutex::new(());
     let _one = BUSY.lock().unwrap_or_else(|p| p.into_inner());
@@ -223,6 +224,7 @@ pub(super) fn download(
     urls: &[String],
     progress: &dyn Fn(u64),
 ) -> Result<(), String> {
+    amb_presets::ai_free::check()?;
     let part = path.with_extension("part");
     let mut problems = Vec::new();
     for url in urls {
@@ -285,6 +287,7 @@ pub fn remove(dir: &Path, id: &str) -> Result<(), String> {
 /// Add the user's own ONNX model: copied into the models folder, checked
 /// that it loads and gives a map, and listed as `own-<name>`.
 pub fn add_custom(dir: &Path, file: &Path, m: CustomModel) -> Result<ModelSpec, String> {
+    amb_presets::ai_free::check()?;
     known_task(&m.task)?;
     if !(16..=4096).contains(&m.size) {
         return Err(format!("size {} should be 16 to 4096 pixels", m.size));
@@ -358,6 +361,7 @@ pub fn add_custom(dir: &Path, file: &Path, m: CustomModel) -> Result<ModelSpec, 
 /// The default subject model, downloaded if it isn't there (the editor
 /// fetches it in the background when it starts).
 pub fn ensure_model(dir: &Path) -> Result<PathBuf, String> {
+    amb_presets::ai_free::check()?;
     let spec = chosen(dir, "subject")?;
     install(dir, &spec.id, &|_, _| {})?;
     Ok(file_of(dir, &spec.id))

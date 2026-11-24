@@ -42,6 +42,7 @@ pub fn denoise(
     amount: f32,
     progress: &dyn Fn(usize, usize),
 ) -> Result<Report, String> {
+    amb_presets::ai_free::check()?;
     let start = std::time::Instant::now();
     let output = match output {
         Some(o) => o.to_path_buf(),

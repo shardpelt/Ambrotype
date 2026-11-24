@@ -150,6 +150,13 @@ impl DevelopState {
         }
         match cmd {
             Command::Undo => {
+                if let Some(entry) = self.undo.last() {
+                    let mut back = self.settings.clone();
+                    for c in &entry.changes {
+                        set_or_remove(&mut back, &c.name, c.before.clone());
+                    }
+                    refuse_ai(&self.settings, &back)?;
+                }
                 let entry = self.undo.pop().ok_or(Error::NothingToUndo)?;
                 for c in &entry.changes {
                     set_or_remove(&mut self.settings, &c.name, c.before.clone());
@@ -173,6 +180,13 @@ impl DevelopState {
                 Ok(outcome)
             }
             Command::Redo => {
+                if let Some(entry) = self.redo.last() {
+                    let mut again = self.settings.clone();
+                    for c in &entry.changes {
+                        set_or_remove(&mut again, &c.name, c.after.clone());
+                    }
+                    refuse_ai(&self.settings, &again)?;
+                }
                 let entry = self.redo.pop().ok_or(Error::NothingToRedo)?;
                 for c in &entry.changes {
                     set_or_remove(&mut self.settings, &c.name, c.after.clone());
@@ -202,6 +216,7 @@ impl DevelopState {
                 let mut clamped = Vec::new();
                 let mut notes = Vec::new();
                 self.plan(cmd, &mut next, &mut clamped, &mut notes)?;
+                refuse_ai(&self.settings, &next)?;
                 let diff = diff_maps(&self.settings, &next);
                 let label = cmd.label();
                 if diff.is_empty() {
@@ -332,6 +347,29 @@ pub(super) fn known_group(group: &str) -> Result<(), Error> {
 
 pub(super) fn group_of(name: &str) -> Option<String> {
     Registry::builtin().lookup(name).map(|i| i.group)
+}
+
+/// AI-free mode ([`amb_presets::ai_free`]): a change may not add an AI part
+/// (an AI setting, a mask that needs a model, an AI Remove spot). The one
+/// check every command passes, so the editor, `amb` and the MCP server hit
+/// it alike; it compares what the edit holds before and after, so a preset,
+/// a snapshot, an undo or a duplicated mask can't bring one in either.
+fn refuse_ai(
+    before: &BTreeMap<String, Value>,
+    after: &BTreeMap<String, Value>,
+) -> Result<(), Error> {
+    if !amb_presets::ai_free::on() {
+        return Ok(());
+    }
+    let added = amb_presets::ai_free::added(before, after);
+    if added.is_empty() {
+        return Ok(());
+    }
+    Err(Error::AiFree(format!(
+        "{} (not done: {})",
+        amb_presets::ai_free::MESSAGE,
+        added.join(", ")
+    )))
 }
 
 fn set_or_remove(map: &mut BTreeMap<String, Value>, name: &str, value: Option<Value>) {

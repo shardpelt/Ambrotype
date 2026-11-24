@@ -330,6 +330,18 @@ pub(super) fn draw_correction(
 ) -> Vec<f32> {
     let mut alpha = vec![0.0f32; r.width * r.height];
     for part in &c.parts {
+        // A part that can't be drawn selects nothing, inverted or not
+        // (Select Background is the subject, inverted: without the subject
+        // it must not become the whole photo). AI-free mode leaves model
+        // parts out the same way.
+        let left_out = match part.shape {
+            Shape::Unsupported => true,
+            Shape::Model(_) => amb_presets::ai_free::on(),
+            _ => false,
+        };
+        if left_out {
+            continue;
+        }
         let mut p = draw_shape(&part.shape, frame, r, targets);
         let (_, _, inverted) = part.combination.stored();
         if inverted {

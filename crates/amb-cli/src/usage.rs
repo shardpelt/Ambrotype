@@ -168,6 +168,10 @@ USAGE:
                                             TensorFlow/MediaPipe models); checked that it runs.
                                             Guide: docs/own-models.md
     amb models remove <ID>                  Delete it; its task goes back to its default
+    amb ai-free [on|off] [--json]           AI-free mode: with it on, no AI model runs on your photos by
+                                            any route (masks, Remove, Denoise, search, bursts, the
+                                            editor, `amb`, the MCP server); edits that hold AI parts
+                                            render and export without them. No argument shows it.
     amb import <SOURCE> <DEST> [--into \"{yyyy}/{yyyy}-{mm}-{dd}\"] [--rename \"{name}\"] [--start 1]
                [--keywords \"a, b\"] [--preset LOOK.xmp] [--backup DIR] [--no-subfolders] [--dry-run] [--json]
                                             Copy photos from a card or folder into DEST, sorted into

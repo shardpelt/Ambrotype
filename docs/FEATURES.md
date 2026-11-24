@@ -156,6 +156,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 
 ## Scripts and AI
 
+- **Keep every AI model off my photos (no AI label on social platforms)** → **Settings** (Ctrl+,) → AI models → **AI-free mode**: no model runs on your photos by any route (masks, Remove, Denoise, search, bursts, the editor, `amb`, the MCP server); an edit that already holds AI parts shows and exports without them, and the export names what was left out. An AI assistant may still drive the app's own commands. `amb ai-free on`, `amb ai-free off`.
 - **Every `amb` command** → `man amb` (installed with the Linux packages; `amb man` prints it anywhere, and `docs/man/amb.1` is a copy), or `amb` alone for the short help.
 - **Script edits** → `amb do PHOTO "exp=+0.5 con+=10"`, or `amb edit` with protocol commands ([ai/README.md](ai/README.md)).
 - **Let my AI assistant edit and organise** → **Connect an AI App** (Help menu; `amb mcp`) ([ai/mcp.md](ai/mcp.md)).

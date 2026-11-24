@@ -15,6 +15,7 @@ use tract_onnx::prelude::*;
 type Model = Arc<crate::net::Net>;
 
 pub(super) fn load(path: &Path, spec: &ModelSpec) -> Result<Model, String> {
+    amb_presets::ai_free::check()?;
     let s = spec.input.size;
     tract_onnx::onnx()
         .model_for_path(path)
@@ -31,6 +32,7 @@ pub(super) fn load(path: &Path, spec: &ModelSpec) -> Result<Model, String> {
 
 /// Run a model on `size`×`size` sRGB (0–1, interleaved): its map, 0–1.
 pub(super) fn run(model: &Model, spec: &ModelSpec, rgb: &[f32]) -> Result<Vec<f32>, String> {
+    amb_presets::ai_free::check()?;
     let (size, mean, std) = (spec.input.size, spec.input.mean, spec.input.std);
     let max = rgb.iter().copied().fold(1e-6f32, f32::max);
     let px = |y: usize, x: usize, c: usize| (rgb[(y * size + x) * 3 + c] / max - mean[c]) / std[c];
@@ -151,6 +153,7 @@ pub fn finder(dir: PathBuf) -> Arc<amb_engine::subject::Finder> {
     let kept: Mutex<Vec<Kept>> = Mutex::new(Vec::new());
     Arc::new(
         move |kind: MapKind, rgb: &[f32], w: usize, h: usize| -> Result<Map, String> {
+            amb_presets::ai_free::check()?;
             if rgb.len() != w * h * 3 || w == 0 || h == 0 {
                 return Err("wrong input size".into());
             }

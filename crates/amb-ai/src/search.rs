@@ -56,6 +56,7 @@ pub struct Embedder {
 impl Embedder {
     /// Load the installed model `spec` from `dir`.
     pub fn load(dir: &Path, spec: &ModelSpec) -> Result<Embedder, String> {
+        amb_presets::ai_free::check()?;
         let s = spec.search.as_ref().ok_or("not a search model")?;
         let size = spec.input.size;
         let named = |name: &str| dir.join(format!("{}.{name}", spec.id));
@@ -76,6 +77,7 @@ impl Embedder {
 
     /// The vector of a photo: `rgb`, sRGB 0–1 interleaved, `w` × `h`.
     pub fn image(&self, rgb: &[f32], w: usize, h: usize) -> Result<Vec<f32>, String> {
+        amb_presets::ai_free::check()?;
         let size = self.spec.input.size;
         let (mean, std) = (self.spec.input.mean, self.spec.input.std);
         let square = fit(rgb, w, h, size, self.search().fit == "crop");
@@ -91,6 +93,7 @@ impl Embedder {
 
     /// The vector of a search's words.
     pub fn text(&self, query: &str) -> Result<Vec<f32>, String> {
+        amb_presets::ai_free::check()?;
         let s = self.search();
         let ids = self.tokens.ids(query, s.lowercase, s.length);
         let input =
@@ -183,6 +186,7 @@ pub(crate) fn similarity(a: &[f32], b: &[f32]) -> f32 {
 /// can't be matched with fixed ones, so those are dropped and worked out
 /// again from the input.
 fn load_fixed(path: &Path, input: TypedFact) -> Result<Model, String> {
+    amb_presets::ai_free::check()?;
     let name = path.display();
     let mut model = tract_onnx::onnx()
         .model_for_path(path)

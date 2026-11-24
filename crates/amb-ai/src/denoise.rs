@@ -38,6 +38,7 @@ pub struct Model {
 
 /// Load a RawNIND network taking `channels` (4: Bayer, 3: linear) planes.
 pub fn load(path: &Path, channels: usize) -> Result<Model, String> {
+    amb_presets::ai_free::check()?;
     tract_linalg::multithread::set_default_executor(
         tract_linalg::multithread::Executor::RayonGlobal,
     );
@@ -206,6 +207,7 @@ pub fn bayer(
     pattern: [[u8; 2]; 2],
     progress: &dyn Fn(usize, usize),
 ) -> Result<Vec<f32>, String> {
+    amb_presets::ai_free::check()?;
     // Start where the pattern reads R, G / G, B.
     let (oy, ox) = (0..2)
         .flat_map(|y| (0..2).map(move |x| (y, x)))
@@ -267,6 +269,7 @@ pub fn linear(
     (w, h): (usize, usize),
     progress: &dyn Fn(usize, usize),
 ) -> Result<(), String> {
+    amb_presets::ai_free::check()?;
     let mut planes = vec![0.0f32; 3 * w * h];
     for (i, c) in rgb.chunks_exact(3).enumerate() {
         for k in 0..3 {
@@ -314,6 +317,7 @@ impl Denoiser {
     /// The chosen denoise model's (bayer, linear) networks, installing
     /// nothing: `Err` says to install it.
     fn models(&self) -> Result<(Option<Model>, Option<Model>), String> {
+        amb_presets::ai_free::check()?;
         let spec = crate::chosen(&self.dir, "denoise")?;
         if !crate::is_installed(&self.dir, &spec) {
             return Err(format!(

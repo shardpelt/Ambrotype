@@ -44,6 +44,7 @@ pub fn selector(dir: PathBuf) -> Arc<Selector> {
     let kept: Mutex<Vec<(u64, Features)>> = Mutex::new(Vec::new());
     Arc::new(
         move |rgb: &[f32], w: usize, h: usize, prompts: &[Prompt]| -> Result<Map, String> {
+            amb_presets::ai_free::check()?;
             if rgb.len() != w * h * 3 || w == 0 || h == 0 || prompts.is_empty() {
                 return Err("wrong input".into());
             }
@@ -184,6 +185,7 @@ fn load(
     points: Option<usize>,
     spec: &ModelSpec,
 ) -> Result<Runnable, String> {
+    amb_presets::ai_free::check()?;
     let s = spec.input.size;
     tract_linalg::multithread::set_default_executor(
         tract_linalg::multithread::Executor::RayonGlobal,

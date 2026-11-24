@@ -297,6 +297,11 @@ pub fn apply_in(
             continue;
         };
         if spot.kind.synthesised() && spot.source.is_none() {
+            // AI-free: an AI fill is left out, not healed from a donor (a
+            // different picture than the one the edit asks for).
+            if amb_presets::ai_free::on() {
+                continue;
+            }
             if let Some(fill) = inpainter() {
                 if fill_one(img, &p, &*fill).is_ok() {
                     continue;

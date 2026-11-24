@@ -105,5 +105,8 @@ fn summary(r: &export_batch::Report) -> String {
             .collect();
         text += &format!(", {} failed: {}", r.failed.len(), list.join("; "));
     }
+    if !r.warnings.is_empty() {
+        text += &format!(", warnings: {}", r.warnings.join("; "));
+    }
     format!("{text} in {:.0}s", r.seconds)
 }

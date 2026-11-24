@@ -6,6 +6,7 @@
 //! names, e.g. `Exposure2012`) to [`Value`]s. Absent keys mean "not touched by
 //! this preset", which is different from "set to the default".
 
+pub mod ai_free;
 pub mod amount;
 pub mod linked;
 pub mod lrtemplate;

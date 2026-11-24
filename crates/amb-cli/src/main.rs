@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+mod ai_free;
 mod cleanup;
 mod contact;
 mod convert;
@@ -92,6 +93,8 @@ fn main() -> ExitCode {
     // plugins folder.
     let plugins =
         amb_library::collections::editor_dir().and_then(|d| Some(d.parent()?.join("plugins")));
+    // AI-free mode first: nothing below may run a model once it is on.
+    amb_presets::ai_free::set(amb_library::ai_free::load());
     if let Some(models) = amb_ai::default_dir() {
         amb_ai::hooks::install(&models);
     }
@@ -483,6 +486,9 @@ fn main() -> ExitCode {
         ["models", "use", id] => models_use(id),
         ["models", "remove", id] => models_remove(id),
         ["models", "add", file] => models_add(Path::new(file), &options),
+        ["ai-free"] => ai_free::status(json),
+        ["ai-free", "on"] => ai_free::set(true, json),
+        ["ai-free", "off"] => ai_free::set(false, json),
         ["protocol", "schema"] => print_json(&amb_protocol::schema::protocol_schema()),
         ["protocol", "schema", "command"] => print_json(&amb_protocol::schema::command_schema()),
         ["protocol", "schema", "query"] => print_json(&amb_protocol::schema::query_schema()),

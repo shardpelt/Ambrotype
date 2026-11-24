@@ -29,6 +29,7 @@ pub fn finder(dir: PathBuf) -> Arc<FaceFinder> {
     let loaded: Mutex<Option<(String, Runnable)>> = Mutex::new(None);
     Arc::new(
         move |rgb: &[f32], w: usize, h: usize| -> Result<Vec<Face>, String> {
+            amb_presets::ai_free::check()?;
             if rgb.len() != w * h * 3 || w == 0 || h == 0 {
                 return Err("wrong input".into());
             }

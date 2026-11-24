@@ -36,6 +36,13 @@ pub struct TagInfo {
     pub max: Option<f64>,
     pub default: Option<serde_json::Value>,
     pub status: Status,
+    /// A non-default value needs a learned model (AI-free mode refuses it).
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub ai: bool,
+}
+
+fn is_false(b: &bool) -> bool {
+    !*b
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,11 +57,20 @@ struct PrefixRule {
 struct RegistryFile {
     prefix_rules: Vec<PrefixRule>,
     tags: Vec<TagInfo>,
+    /// `add_mask` kinds that need a model.
+    ai_mask_kinds: Vec<String>,
+    /// Lightroom `MaskSubType`s of `Mask/Image` that need a model.
+    ai_mask_subtypes: Vec<String>,
+    /// `add_spot` kinds that need a model.
+    ai_spot_kinds: Vec<String>,
 }
 
 pub struct Registry {
     tags: HashMap<String, TagInfo>,
     prefix_rules: Vec<PrefixRule>,
+    ai_mask_kinds: Vec<String>,
+    ai_mask_subtypes: Vec<String>,
+    ai_spot_kinds: Vec<String>,
 }
 
 impl Registry {
@@ -67,6 +83,9 @@ impl Registry {
             Registry {
                 tags: file.tags.into_iter().map(|t| (t.name.clone(), t)).collect(),
                 prefix_rules: file.prefix_rules,
+                ai_mask_kinds: file.ai_mask_kinds,
+                ai_mask_subtypes: file.ai_mask_subtypes,
+                ai_spot_kinds: file.ai_spot_kinds,
             }
         })
     }
@@ -87,7 +106,30 @@ impl Registry {
                 max: None,
                 default: None,
                 status: r.status,
+                ai: false,
             })
+    }
+
+    /// Does a non-default value of this setting need a learned model?
+    pub fn needs_ai(&self, name: &str) -> bool {
+        self.tags.get(name).is_some_and(|t| t.ai)
+    }
+
+    /// Does an `add_mask` kind (`subject`, `sky`, …) need a learned model?
+    pub fn mask_kind_needs_ai(&self, kind: &str) -> bool {
+        let kind = kind.trim().to_ascii_lowercase();
+        self.ai_mask_kinds.contains(&kind)
+    }
+
+    /// Does a Lightroom `Mask/Image` `MaskSubType` need a learned model?
+    pub fn mask_subtype_needs_ai(&self, sub: &str) -> bool {
+        self.ai_mask_subtypes.iter().any(|s| s == sub)
+    }
+
+    /// Does an `add_spot` kind (`remove`, …) need a learned model?
+    pub fn spot_kind_needs_ai(&self, kind: &str) -> bool {
+        let kind = kind.trim().to_ascii_lowercase();
+        self.ai_spot_kinds.contains(&kind)
     }
 
     pub fn len(&self) -> usize {
@@ -118,5 +160,10 @@ mod tests {
         assert_eq!(r.lookup("Table_0123ABCD").unwrap().group, "profile");
         assert!(r.lookup("NotARealTag").is_none());
         assert_eq!(r.numeric_default("ColorGradeBlending"), Some(50.0));
+        assert!(r.needs_ai("EnhanceDenoiseVersion"));
+        assert!(!r.needs_ai("Exposure2012"));
+        assert!(r.mask_kind_needs_ai("Subject") && !r.mask_kind_needs_ai("sky"));
+        assert!(r.mask_subtype_needs_ai("3") && !r.mask_subtype_needs_ai("2"));
+        assert!(r.spot_kind_needs_ai("remove") && !r.spot_kind_needs_ai("heal"));
     }
 }

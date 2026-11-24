@@ -50,7 +50,7 @@ pub struct Probe {
 pub fn scan_stats(metered: Scan, a: &Analysis) -> ScanStats {
     let range = std::array::from_fn(|c| a.density_high[c] - a.density_low[c]);
     let (blocks, ..) =
-        analysis::downsample(metered.rgb, metered.width, metered.height, CLIP_SAMPLES);
+        crate::math::downsample(metered.rgb, metered.width, metered.height, CLIP_SAMPLES);
     let clipped = blocks
         .iter()
         .filter(|p| p.iter().any(|v| *v >= SCAN_CLIP))

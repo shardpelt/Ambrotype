@@ -8,6 +8,7 @@ pub(crate) mod batch;
 pub(crate) mod catalog;
 pub(crate) mod collage;
 pub(crate) mod connect;
+pub(crate) mod darkroom;
 pub(crate) mod export;
 pub(crate) mod features;
 pub(crate) mod files;
@@ -84,6 +85,7 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         tools::meter_area,
         tools::meter_area_shown,
         tools::negative_readout,
+        darkroom::darkroom_aid,
         settings::feedback_body,
         settings::open_feedback,
         models::ai_models,

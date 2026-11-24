@@ -4,6 +4,7 @@
 pub mod burst;
 pub mod cleanup;
 pub mod convert;
+pub mod darkroom;
 pub mod denoise;
 pub mod dust;
 pub mod export_batch;

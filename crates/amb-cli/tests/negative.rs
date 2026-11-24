@@ -168,3 +168,64 @@ fn probe_reads_range_clipping_and_zone() {
     assert_eq!(j["frames"][0]["range"].as_array().unwrap().len(), 3);
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+#[test]
+fn strip_and_ring_write_a_sheet_and_name_each_cell() {
+    let dir = std::env::temp_dir().join(format!("amb-cli-aids-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    amb(&dir, &["testimage", "negative", "neg.dng"]);
+    std::fs::write(
+        dir.join("neg.xmp"),
+        r#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" xmlns:amb="http://ns.ambrotype.org/develop/1.0/" crs:PresetType="Normal" amb:NegativeConvert="True"/></rdf:RDF></x:xmpmeta>"#,
+    )
+    .unwrap();
+    let strip: serde_json::Value = serde_json::from_str(&amb(
+        &dir,
+        &[
+            "negative",
+            "strip",
+            "neg.dng",
+            "--out",
+            "strip.png",
+            "--size",
+            "200",
+            "--steps",
+            "5",
+            "--json",
+        ],
+    ))
+    .unwrap();
+    assert_eq!(strip["cells"].as_array().unwrap().len(), 5);
+    assert_eq!(strip["cells"][2]["label"], "As now");
+    assert!(dir.join("strip.png").metadata().unwrap().len() > 100);
+    let ring: serde_json::Value = serde_json::from_str(&amb(
+        &dir,
+        &[
+            "negative", "ring", "neg.dng", "--out", "ring.png", "--size", "100", "--json",
+        ],
+    ))
+    .unwrap();
+    assert_eq!(ring["cells"].as_array().unwrap().len(), 9);
+    assert!(dir.join("ring.png").metadata().unwrap().len() > 100);
+    let text = amb(
+        &dir,
+        &[
+            "negative", "ring", "neg.dng", "--out", "ring.png", "--size", "100",
+        ],
+    );
+    assert!(
+        text.contains("More red") && text.contains("amb:NegativeCyanRed="),
+        "{text}"
+    );
+    // Without the conversion on there is nothing to go round.
+    std::fs::remove_file(dir.join("neg.xmp")).unwrap();
+    let out = Command::new(env!("CARGO_BIN_EXE_amb"))
+        .args(["negative", "ring", "neg.dng", "--out", "x.png"])
+        .current_dir(&dir)
+        .output()
+        .unwrap();
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("switch on Film Negative"));
+    std::fs::remove_dir_all(&dir).unwrap();
+}

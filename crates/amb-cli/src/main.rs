@@ -195,6 +195,9 @@ fn main() -> ExitCode {
             | "--remap"
             | "--backup"
             | "--size"
+            | "--steps"
+            | "--step"
+            | "--setting"
             | "--background"
             | "--gap"
             | "--margin"
@@ -457,6 +460,12 @@ fn main() -> ExitCode {
         }
         ["negative", "probe", photo] => {
             negative_probe(Path::new(photo), &options, json).map(|t| println!("{t}"))
+        }
+        ["negative", "strip", photo] => {
+            negative_aid(false, Path::new(photo), &options, json).map(|t| println!("{t}"))
+        }
+        ["negative", "ring", photo] => {
+            negative_aid(true, Path::new(photo), &options, json).map(|t| println!("{t}"))
         }
         ["negative", "stocks"] => {
             negative_stocks(json);

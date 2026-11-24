@@ -131,6 +131,13 @@ USAGE:
     amb negative probe <PHOTO> --at X,Y [--preset FILE] [--json]
                                             A negative's range and clipping at the scan, and the zone and
                                             density at a point (fractions of the photo as shown)
+    amb negative strip <PHOTO> --out SHEET.png [--steps N] [--step STOPS] [--setting NAME] [--size PX] [--json]
+                                            A test strip: the photo in bands, each printed a step lighter
+                                            or darker (exposure by default), one cell per band
+    amb negative ring <PHOTO> --out SHEET.png [--step N] [--size PX] [--json]
+                                            A ring-around of a converted negative: nine prints, the middle
+                                            as now, the rest more red, yellow, green, cyan, blue, magenta,
+                                            lighter and darker
     amb negative stocks [--json]            List the film stock looks, with the grain and glow each brings
     amb lens info <RAW> [--lens-db DIR] [--lcp-dir DIR]
                                             Show a raw's lens metadata and the profile it gets

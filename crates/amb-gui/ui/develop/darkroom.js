@@ -52,7 +52,7 @@ function darkroomRow(section, panel) {
   darkroom.row = el("div", { id: "darkroom-readout", class: "darkroom-readout", hidden: true }, darkroom.range, darkroom.probe);
   // A new panel (a layout change) shows what the last render read once it is in the page.
   requestAnimationFrame(() => darkroomRefresh());
-  return darkroom.row;
+  return el("div", { class: "darkroom-block" }, darkroom.row, aidsButtons());
 }
 
 function darkroomConverting() {
@@ -62,6 +62,7 @@ function darkroomConverting() {
 // After each render: read the negative again (not for a draft, which moves while a slider does).
 async function darkroomRefresh(draft = false) {
   if (draft || !darkroom.row?.isConnected) return;
+  aidsSync();
   if (!darkroomConverting()) {
     darkroom.seq++;
     darkroom.row.hidden = true;

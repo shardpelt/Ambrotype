@@ -333,6 +333,7 @@ async function init() {
   wireTerms();
   wireZones();
   wireDarkroom();
+  wirePrintAids();
   wireBoxZoom();
   wireLoupe();
   wireHoverPeek();

@@ -284,3 +284,61 @@ fn parse_at(text: &str) -> Result<[f64; 2], String> {
     }
     Ok([x, y])
 }
+
+/// `amb negative strip` and `amb negative ring`: the photo printed several
+/// ways on one PNG (`amb_ops::darkroom`), one cell per line in the text.
+pub(crate) fn negative_aid(
+    ring: bool,
+    photo: &Path,
+    options: &BTreeMap<&str, &str>,
+    json: bool,
+) -> Result<String, String> {
+    use amb_ops::darkroom::{RingOptions, StripOptions, ring_around, sidecar_settings, test_strip};
+    let out = options
+        .get("--out")
+        .ok_or("this needs --out FILE.png (the sheet)")?;
+    let number = |name: &str| -> Result<Option<f64>, String> {
+        options
+            .get(name)
+            .map(|v| {
+                v.parse::<f64>()
+                    .map_err(|_| format!("{name} {v:?}: a number"))
+            })
+            .transpose()
+    };
+    let size = number("--size")?.map(|v| v as u32);
+    let settings = sidecar_settings(photo)?;
+    let progress = crate::progress::line(json, |n, total| format!("{n}/{total} prints"));
+    let aid = if ring {
+        let d = RingOptions::default();
+        let o = RingOptions {
+            step: number("--step")?.unwrap_or(d.step),
+            size: size.unwrap_or(d.size),
+            ..d
+        };
+        ring_around(photo, &settings, &o, &progress)?
+    } else {
+        let d = StripOptions::default();
+        let o = StripOptions {
+            steps: number("--steps")?.map_or(d.steps, |v| v as usize),
+            step: number("--step")?.unwrap_or(d.step),
+            setting: options.get("--setting").map(|s| s.to_string()),
+            size: size.unwrap_or(d.size),
+        };
+        test_strip(photo, &settings, &o, &progress)?
+    };
+    std::fs::write(out, aid.png()?).map_err(|e| format!("{out}: {e}"))?;
+    if json {
+        return serde_json::to_string_pretty(&aid).map_err(|e| e.to_string());
+    }
+    let mut lines = vec![format!("wrote {out} ({} x {} px)", aid.width, aid.height)];
+    for c in &aid.cells {
+        let changes: Vec<String> = c
+            .changes
+            .iter()
+            .map(|(k, v)| format!("{k}={v:.2}"))
+            .collect();
+        lines.push(format!("{:<14} {}", c.label, changes.join(" ")));
+    }
+    Ok(lines.join("\n"))
+}

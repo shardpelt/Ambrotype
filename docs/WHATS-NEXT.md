@@ -15,10 +15,11 @@ A short running list, kept up to date as work lands. Newest decisions first. Eve
 
 The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
-- **Darkroom aids, the rest** (`film-darkroom-aids`): step wedge, place a spot in a zone, test strip, ring-around, peek at the negative, Pick Better
+- **Darkroom aids, the rest** (`film-darkroom-aids`): step wedge, place a spot in a zone, peek at the negative, Pick Better
 
 ## Recently done
 
+- 2026-11-24: **Test strip and ring-around** (`film-darkroom-aids`): Film Negative → Test strip… prints the photo in seven bands a third of a stop apart; Ring-around… (converted negatives) prints it nine ways, a step more of each colour, lighter and darker; click a print to use it, one undo step. `amb negative strip` and `ring` write the sheet (`amb_ops::darkroom`, `ui/develop/print-aids.js`, steps in `tests/ui/darkroom.js`)
 - 2026-11-24: **Sage and Sage Light themes** (Appearance): deep sage green where other dark themes are black, and a light sage one (hub `looks/themes/`, synced in)
 - 2026-11-24: **Fade Restoration** (`film-fade-restoration`): Film Negative → Fade Restoration gives a faded print or slide back its blacks, contrast and colours, measured inside the crop (`amb:FadeRestore`; `amb_engine::fade`, model in [design/film-negatives.md](design/film-negatives.md))
 - 2026-11-24: **Darkroom aids, first part** (`film-darkroom-aids`): the Film Negative panel reads the negative's range and the scan's clipping, and the zone and density under the pointer; `amb negative probe` and `amb negative analyze` say the same; View → Zone overlay (Shift+Z) paints any photo by zone (`negative/readout.rs`, `negative_readout`, `ui/develop/darkroom.js`, `tests/ui/darkroom.js`)

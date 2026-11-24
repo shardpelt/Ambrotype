@@ -1240,6 +1240,9 @@
  "Click a person, a car, the sky: then adjust it with a mask, remove it, move it, or soften the background.": [
   "core/keys.js"
  ],
+ "Click a print to use it. Esc closes.": [
+  "index.html"
+ ],
  "Click adds · double-click removes": [
   "develop/curve.js"
  ],
@@ -3259,6 +3262,9 @@
  "Keep a second copy in…": [
   "library/import.js"
  ],
+ "Keep it as it is": [
+  "develop/print-aids.js"
+ ],
  "Keep it in your presets list": [
   "develop/presetlib.js"
  ],
@@ -3531,6 +3537,9 @@
  ],
  "Lights": [
   "develop/touch.js"
+ ],
+ "Like a strip of paper exposed in steps in the darkroom. Click the band you like to use its exposure.": [
+  "core/keys.js"
  ],
  "Like one I edited": [
   "index.html",
@@ -4532,6 +4541,7 @@
  "Open a photo first.": [
   "core/tasks.js",
   "develop/presets.js",
+  "develop/print-aids.js",
   "dialogs/assistant.js",
   "library/library-actions.js",
   "library/slideshow.js",
@@ -4973,6 +4983,21 @@
  ],
  "Previous photo in the folder": [
   "core/keys.js"
+ ],
+ "Print it like this": [
+  "develop/print-aids.js"
+ ],
+ "Print the photo in bands, each a step lighter or darker": [
+  "develop/print-aids.js"
+ ],
+ "Print the photo nine ways: a step more of each colour, lighter and darker": [
+  "develop/print-aids.js"
+ ],
+ "Printing {done} of {total}…": [
+  "develop/print-aids.js"
+ ],
+ "Printing…": [
+  "develop/print-aids.js"
  ],
  "ProPhoto RGB": [
   "index.html"
@@ -5424,6 +5449,18 @@
  ],
  "Right-drag on the photo zooms to that box (Z or Space goes back); off, a right click exports": [
   "index.html"
+ ],
+ "Ring-around": [
+  "develop/print-aids.js"
+ ],
+ "Ring-around works on a converted negative: switch on Film Negative first.": [
+  "develop/print-aids.js"
+ ],
+ "Ring-around: print a negative nine ways, a step more of each colour, lighter and darker": [
+  "core/keys.js"
+ ],
+ "Ring-around…": [
+  "develop/print-aids.js"
  ],
  "Roll 12 · Portra 400": [
   "index.html"
@@ -6637,6 +6674,16 @@
  "Terms": [
   "help/basics.js"
  ],
+ "Test strip": [
+  "develop/print-aids.js",
+  "index.html"
+ ],
+ "Test strip: print the photo in bands, each a step lighter or darker": [
+  "core/keys.js"
+ ],
+ "Test strip…": [
+  "develop/print-aids.js"
+ ],
  "Text": [
   "index.html",
   "looks/editor-inspector.js"
@@ -6739,6 +6786,9 @@
  ],
  "The lens profiles are still loading.": [
   "develop/photo.js"
+ ],
+ "The middle print is as it is now. Click another to use it. For a converted negative.": [
+  "core/keys.js"
  ],
  "The model's name, as your provider lists it": [
   "index.html"

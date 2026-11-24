@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Darkroom aids: the zone overlay (Shift+Z, View menu), and the Film Negative
-// panel's range, clipping and the zone and density under the pointer.
+// Darkroom aids: the zone overlay (Shift+Z, View menu), the Film Negative
+// panel's range, clipping and the zone and density under the pointer, and the
+// test strip and ring-around dialog.
 // Run: ambrotype --ui-test crates/amb-gui/tests/ui/darkroom.js photo.dng
 
 await t.step("the photo opens and a preview shows", async () => {
@@ -44,4 +45,28 @@ await t.step("Film Negative: with the conversion on, the range line has text", a
   await t.until("the range gone", () => $("darkroom-readout").hidden, 60000);
   t.key("Ctrl+Z");
   t.key("Ctrl+Z");
+});
+
+await t.step("Test strip: seven cells, one click sets the exposure as one undo step", async () => {
+  await run([{ cmd: "set_param", name: "amb:NegativeConvert", value: true }], "test");
+  const before = Number(currentValue("amb:NegativeExposure")) || 0;
+  const steps = t.historyLength();
+  aidsOpen("strip");
+  await t.until("the strip", () => t.visible("#aids-stage") && document.querySelectorAll("#aids-stage .aids-cell").length === 7, 120000);
+  const cell = document.querySelectorAll("#aids-stage .aids-cell")[6];
+  t.expect(cell.textContent === "+1", "the last band is a stop up");
+  cell.click();
+  await t.until("the dialog closed", () => !$("aids-dialog").open);
+  await t.until("the exposure set, in one step", () => Math.abs(Number(currentValue("amb:NegativeExposure")) - (before + 1)) < 1e-6 && t.historyLength() === steps + 1);
+  t.key("Ctrl+Z");
+  await t.until("one undo puts it back", () => Math.abs((Number(currentValue("amb:NegativeExposure")) || 0) - before) < 1e-6);
+});
+
+await t.step("Ring-around: nine cells on a converted negative; Esc closes", async () => {
+  aidsOpen("ring");
+  await t.until("the ring", () => t.visible("#aids-stage") && document.querySelectorAll("#aids-stage .aids-cell").length === 9, 120000);
+  t.expect([...document.querySelectorAll("#aids-stage .aids-cell")].some((c) => c.textContent === "More red"), "a More red cell");
+  $("aids-dialog").close();
+  t.expect(!$("aids-dialog").open, "closed");
+  await run([{ cmd: "set_param", name: "amb:NegativeConvert", value: false }], "test");
 });

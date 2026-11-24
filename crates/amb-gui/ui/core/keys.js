@@ -170,6 +170,7 @@ const KEY_ACTIONS = [
   { id: "looks", group: tKey("Window"), label: "Appearance: layouts and themes", keys: ["Ctrl+L"], when: "any", button: "btn-looks", run: () => looksFlow() },
   { id: "edit-layout", group: tKey("Window"), label: "Edit layout", hint: "Move panels, controls and toolbar buttons.", keys: ["Ctrl+Shift+L"], when: "any", button: "btn-edit-layout", run: () => startEditing() },
   { id: "blank-layout", group: tKey("Window"), label: "New layout from scratch", hint: "A blank canvas: empty columns and toolbar, filled from Add.", keys: [], when: "any", run: () => startEditing(true) },
+  { id: "ai-free-toggle", isOn: () => aiFree.on, group: tKey("Window"), label: "AI-free mode: keep every AI model off your photos", hint: "No AI model touches them: AI masks, Remove, Denoise, Select Object and search by meaning are off; for photos that must carry no AI label.", keys: [], when: "any", run: () => aiFreeToggle() },
   { id: "settings", group: tKey("Window"), label: "Settings and keyboard shortcuts", keys: ["Ctrl+,"], when: "any", button: "btn-settings", run: () => settingsFlow() },
   { id: "shortcuts-save", group: tKey("Window"), label: "Save shortcuts…", hint: "Your changed keyboard shortcuts, to a file you can share.", keys: [], when: "any", run: () => keysSave().catch(showError) },
   { id: "shortcuts-load", group: tKey("Window"), label: "Load shortcuts…", hint: "A shortcuts file someone shared: its shortcuts replace yours for the same actions.", keys: [], when: "any", run: () => keysLoad().catch(showError) },
@@ -503,7 +504,7 @@ const settingsShowText = (which) => async () => {
   }
 };
 
-async function settingsFlow() {
+async function settingsFlow(tab = "keys") {
   const dlg = $("settings-dialog");
   const ks = { capturing: null, pending: null, focusKey: null };
 
@@ -581,7 +582,7 @@ async function settingsFlow() {
   } catch { /* the General tab just shows less */ }
   $("keys-filter").value = "";
   keysMessage("");
-  settingsShowTab(dlg, "keys");
+  settingsShowTab(dlg, tab);
   keysRender(ks);
   dlg.showModal();
   await new Promise((resolve) => dlg.addEventListener("close", resolve, { once: true }));

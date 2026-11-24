@@ -52,8 +52,8 @@ const TOOL_BLOCKS = {
     { id: "surprise", label: "Surprise me", hint: "Six random looks to pick from", run: () => surpriseFlow() },
   ],
   retouch: [
-    { id: "select", label: "Select object", big: true, hint: "Click it: adjust, remove, move it", run: () => enterSelect() },
-    { id: "object", label: "Remove object", hint: "Click it or box it; AI removes all of it", run: async () => { await enterSpots(); if (sp.on) setObjectMode(true); } },
+    { id: "select", ai: true, label: "Select object", big: true, hint: "Click it: adjust, remove, move it", run: () => enterSelect() },
+    { id: "object", ai: true, label: "Remove object", hint: "Click it or box it; AI removes all of it", run: async () => { await enterSpots(); if (sp.on) setObjectMode(true); } },
     { id: "remove", label: "AI Remove", hint: "Click or brush over something", run: () => spotFlow("remove") },
     { id: "heal", label: "Heal", hint: "Blemishes and specks", run: () => spotFlow("heal") },
     { id: "dust", label: "Find dust", hint: "Specks and hairs on a scan", run: async () => { await enterSpots(); if (sp.on) findDust(); } },
@@ -72,6 +72,7 @@ function wireToolBlocks() {
     box.replaceChildren(...tools.map((tool) => {
       const b = el("button", { type: "button", class: `tool-tile${tool.big ? " big" : ""}`, title: t(tool.hint) });
       b.dataset.tool = tool.id;
+      if (tool.ai || aiFreeUses(tool.id)) b.dataset.ai = "";
       b.append(el("strong", {}, t(tool.label)), el("span", {}, t(tool.hint)));
       b.addEventListener("click", () => {
         if (!ui.info) return toast(t("Open a photo first."), true);

@@ -25,7 +25,7 @@
       <button id="btn-undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
       <button id="btn-undo-all" title="Undo all: back to the photo as it opened (Redo brings the steps back)" disabled>Undo all</button>
       <button id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
-      <button id="btn-select" class="auto-edit" title="Select object: click a thing in the photo, then adjust, move or remove it (O)" disabled>Select</button>
+      <button id="btn-select" data-ai class="auto-edit" title="Select object: click a thing in the photo, then adjust, move or remove it (O)" disabled>Select</button>
       <button id="btn-auto" class="auto-edit" title="Auto edit: tone, white balance, lens corrections, vibrance and a level horizon in one go, as a starting point (Ctrl+U)" disabled>Auto</button>
       <button id="btn-search" title="Search everything: commands, settings, presets, and what you want to do">Search</button>
       <span class="sep"></span>
@@ -49,6 +49,7 @@
       <button id="btn-feedback" title="Report a bug, an idea, or a photo that looks different from Lightroom">Feedback</button>
     </div>
     <button type="button" id="btn-toolbar-more" class="toolbar-more" title="More: the toolbar buttons that don't fit" aria-haspopup="menu" hidden>⋯</button>
+    <button type="button" id="ai-free-badge" class="ai-free-badge" title="AI-free mode is on: no AI model touches your photos. Click to change it in Settings." hidden>AI-free</button>
     <div class="photo-title" id="photo-title"></div>
   </header>
   <div id="toolbar-menu" class="toolbar-menu" role="menu" hidden></div>
@@ -254,12 +255,13 @@
         <button id="scope-switch" class="scope-switch" type="button">Vectorscope</button>
         <div class="exif" id="exif"></div>
       </div>
+      <p id="ai-free-note" class="hint ai-free-note" role="status" hidden></p>
       <section id="mask-panel" class="crop-panel mask-panel" hidden>
         <div class="side-head"><h2>Masks</h2>
           <label class="inline-check" title="Show the selected mask in red (O)"><input id="mask-overlay" type="checkbox" checked><span>Overlay</span></label>
         </div>
         <div class="crop-line mask-new" id="mask-new"></div>
-        <input id="mask-words" class="words-box" type="search" placeholder="Describe it: a car, the dog, sky…" title="A mask of what you name: sky, people, the subject or the background straight away; anything else with the search and object selection models (Settings → AI models)" spellcheck="false" autocomplete="off">
+        <input id="mask-words" data-ai class="words-box" type="search" placeholder="Describe it: a car, the dog, sky…" title="A mask of what you name: sky, people, the subject or the background straight away; anything else with the search and object selection models (Settings → AI models)" spellcheck="false" autocomplete="off">
         <div class="mask-list" id="mask-list"></div>
         <div id="mask-tool" class="mask-tool"></div>
         <div id="mask-detail" class="mask-detail" hidden>
@@ -275,7 +277,7 @@
       </section>
       <section id="spot-panel" class="crop-panel spot-panel" hidden>
         <div class="side-head"><h2>Spot removal</h2><span id="spot-count" class="hint"></span></div>
-        <button type="button" id="spot-object" class="spot-object" title="Click a person, a bin, a car (or draw a box round it): its outline is found and AI Remove fills all of it in one spot (Shift+Q)">Remove object…</button>
+        <button type="button" id="spot-object" data-ai class="spot-object" title="Click a person, a bin, a car (or draw a box round it): its outline is found and AI Remove fills all of it in one spot (Shift+Q)">Remove object…</button>
         <div class="crop-line segmented" id="spot-kind">
           <button type="button" class="small" data-kind="heal" title="Copy from the source, then match the surroundings">Heal</button>
           <button type="button" class="small" data-kind="clone" title="Copy from the source as it is">Clone</button>
@@ -305,11 +307,11 @@
       <section id="select-panel" class="crop-panel select-panel" hidden>
         <div class="side-head"><h2>Select object</h2></div>
         <p class="hint" id="select-hint"></p>
-        <input id="select-words" class="words-box" type="search" placeholder="Or type what: a car, the dog, a boat…" title="Selects what you name (needs the search model and SAM 2.1 tiny, Settings → AI models)" spellcheck="false" autocomplete="off">
+        <input id="select-words" data-ai class="words-box" type="search" placeholder="Or type what: a car, the dog, a boat…" title="Selects what you name (needs the search model and SAM 2.1 tiny, Settings → AI models)" spellcheck="false" autocomplete="off">
         <label class="inline-check" id="select-shadow-row" hidden title="Its shadow, shown in blue: Remove and Move take it with the object"><input id="select-shadow" type="checkbox"><span>Its shadow too</span></label>
         <div class="tool-tiles" id="select-actions">
           <button type="button" class="tool-tile" data-action="adjust"><strong>Adjust</strong><span>A mask of it, with sliders</span></button>
-          <button type="button" class="tool-tile" data-action="remove"><strong>Remove</strong><span>AI fills where it was</span></button>
+          <button type="button" class="tool-tile" data-action="remove" data-ai><strong>Remove</strong><span>AI fills where it was</span></button>
           <button type="button" class="tool-tile" id="select-move"><strong>Move</strong><span>Drag it somewhere else</span></button>
           <button type="button" class="tool-tile" id="select-copy"><strong>Copy</strong><span>Drag a copy somewhere else</span></button>
           <button type="button" class="tool-tile" data-action="background"><strong>Soften background</strong><span>Everything else softer</span></button>
@@ -402,7 +404,7 @@
       <span class="grow"></span>
       <button type="button" id="lib-smart-chip" class="small lib-date" title="Show every photo again" hidden></button>
       <input id="lib-search" type="search" placeholder="Name, keyword, camera or lens" spellcheck="false" aria-label="Search">
-      <button type="button" id="lib-smart" class="small" title="Smart search (or Enter in the search box): find photos by what is in them (dog on a beach, snowy mountains), with the search model from Settings → AI models. Right-click a photo for Find similar photos.">Smart</button>
+      <button type="button" id="lib-smart" data-ai class="small" title="Smart search (or Enter in the search box): find photos by what is in them (dog on a beach, snowy mountains), with the search model from Settings → AI models. Right-click a photo for Find similar photos.">Smart</button>
       <details id="lib-filter-menu" class="lib-menu"><summary id="lib-filter-summary" title="Filter the photos shown">Filter ▾</summary>
         <div class="lib-menu-pop lib-filter-pop">
           <label>Rating
@@ -549,7 +551,7 @@
           <div class="col-line">
           <button type="button" id="lib-negative-sync" class="small" data-needs="many" title="Film negatives: analyse each selected frame and give the roll one conversion (Auto off): frames in different light get their own, odd frames keep theirs">Sync negative roll…</button>
           <button type="button" id="lib-plugin" class="small" data-needs="any" title="Run a plugin on each selected photo, with its own settings">Run a plugin…</button>
-          <button type="button" id="lib-denoise" class="small" data-needs="any" title="Take the noise out of the selected raws with an AI model on your computer: each becomes a new DNG beside it">AI Denoise…</button>
+          <button type="button" id="lib-denoise" data-ai class="small" data-needs="any" title="Take the noise out of the selected raws with an AI model on your computer: each becomes a new DNG beside it">AI Denoise…</button>
           <button type="button" id="lib-hdr" class="small" data-needs="many" title="Merge bracketed raws of one scene into one HDR photo (a DNG next to them)">Merge to HDR…</button>
           <button type="button" id="lib-pano" class="small" data-needs="many" title="Stitch overlapping raws into one panorama (a DNG next to them)">Merge to Panorama…</button>
           </div>
@@ -1594,6 +1596,8 @@
         </div>
       </section>
       <section id="settings-models" hidden>
+        <label class="check"><input type="checkbox" id="ai-free-switch"> <strong>AI-free mode</strong></label>
+        <p class="hint">No AI model touches your photos: AI masks, Remove, Denoise and Enhance, Select Object and search by meaning are off. Your edits stay as they are; AI parts already in an edit are left out of the picture and exports.</p>
         <p class="hint">The Subject, Background and People masks come from AI models that run on this computer. Pick one for each: ●●●●● is the finest edge detail; bigger ones are finer but slower (times are for a 4-core laptop). Only models whose licence allows free use are listed, downloaded from their authors.</p>
         <p class="hint" id="models-runs-on"></p>
         <div id="models-list" class="models-list"></div>
@@ -2049,6 +2053,7 @@
   <script src="tools/guided.js"></script>
   <script src="develop/presetlib.js"></script>
   <script src="dialogs/models.js"></script>
+  <script src="dialogs/ai-free.js"></script>
   <script src="develop/frame.js"></script>
   <script src="develop/fx.js"></script>
   <script src="core/icons.js"></script>

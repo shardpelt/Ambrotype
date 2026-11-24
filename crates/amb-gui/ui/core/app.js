@@ -74,6 +74,7 @@ function setState(state) {
   spotsStateChanged();
   learnStateChanged();
   teachStateChanged(prev, shown);
+  aiFreeNote();
 }
 
 // Another app or an AI agent (over MCP) wrote the open photo's sidecar:
@@ -307,6 +308,7 @@ window.addEventListener("error", (e) => {
 async function init() {
   await wireLanguage();
   applyToolbarIcons();
+  await aiFreeLoad().catch(showError);
   ui.panels = await invoke("editor_schema");
   for (const p of ui.panels) for (const s of p.sections) for (const def of s.controls) ui.defs.set(def.name, def);
   // A label several settings share ("Amount") gets its section in History.
@@ -386,6 +388,7 @@ async function init() {
   wirePresetLibrary();
   wireFrame();
   wireQuickTips();
+  wireAiFree();
   $("fold-left").addEventListener("click", () => toggleColumn("left"));
   const panels = new MutationObserver(() => { applySideCollapse(); if (ui.info) requestPreview(false); });
   document.querySelectorAll(".viewer > .preset-library").forEach((p) => panels.observe(p, { attributes: true, attributeFilter: ["hidden"] }));

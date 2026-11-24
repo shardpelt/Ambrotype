@@ -28,6 +28,10 @@ pub struct Control {
     /// and the like): Temp and Tint become Lightroom's relative sliders.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rendered: Option<Box<Control>>,
+    /// A non-default value needs a learned model: AI-free mode turns the
+    /// control off (the registry's `ai` flag).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub ai: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -134,6 +138,7 @@ fn control(name: &str, label_override: Option<&str>) -> Control {
         description: text.map(|t| t.description.clone()).unwrap_or_default(),
         coach: text.and_then(|t| t.coach.clone()),
         options,
+        ai: registry.needs_ai(name),
         rendered: match name {
             "Temperature" => Some(Box::new(control("IncrementalTemperature", label_override))),
             "Tint" => Some(Box::new(control("IncrementalTint", label_override))),

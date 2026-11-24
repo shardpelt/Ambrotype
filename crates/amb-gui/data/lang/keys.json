@@ -296,6 +296,30 @@
  "AI models": [
   "index.html"
  ],
+ "AI-free": [
+  "index.html"
+ ],
+ "AI-free Mode": [
+  "core/menu.js"
+ ],
+ "AI-free mode": [
+  "index.html"
+ ],
+ "AI-free mode is off.": [
+  "dialogs/ai-free.js"
+ ],
+ "AI-free mode is on.": [
+  "dialogs/ai-free.js"
+ ],
+ "AI-free mode is on: no AI model touches your photos. Click to change it in Settings.": [
+  "index.html"
+ ],
+ "AI-free mode leaves out: {parts}.": [
+  "dialogs/ai-free.js"
+ ],
+ "AI-free mode: keep every AI model off your photos": [
+  "core/keys.js"
+ ],
  "API key": [
   "index.html"
  ],
@@ -4181,6 +4205,12 @@
  "Next: {title} →": [
   "help/basics.js"
  ],
+ "No AI model touches them: AI masks, Remove, Denoise, Select Object and search by meaning are off; for photos that must carry no AI label.": [
+  "core/keys.js"
+ ],
+ "No AI model touches your photos: AI masks, Remove, Denoise and Enhance, Select Object and search by meaning are off. Your edits stay as they are; AI parts already in an edit are left out of the picture and exports.": [
+  "index.html"
+ ],
  "No Flag": [
   "core/menu.js"
  ],
@@ -4432,6 +4462,9 @@
  ],
  "Odd frames (two stops or more off) keep their own": [
   "index.html"
+ ],
+ "Off while AI-free mode is on": [
+  "dialogs/ai-free.js"
  ],
  "Off: plain sRGB": [
   "index.html"

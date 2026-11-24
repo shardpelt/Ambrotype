@@ -93,6 +93,8 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         models::ai_model_install,
         models::ai_free_get,
         models::ai_free_set,
+        models::ai_free_info,
+        models::ai_free_left_out,
         models::ai_model_use,
         models::ai_model_remove,
         models::pick_model_file,

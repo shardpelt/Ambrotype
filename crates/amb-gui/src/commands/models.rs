@@ -95,6 +95,41 @@ pub(crate) fn ai_free_set(on: bool, state: tauri::State<'_, AppState>) -> Res<bo
     Ok(on)
 }
 
+/// What the editor needs to switch AI controls off, all from the registry
+/// (`data/tags.json`): the mode, and which mask and spot kinds use a model.
+#[derive(Serialize)]
+pub(crate) struct AiFreeInfo {
+    pub(crate) on: bool,
+    pub(crate) mask_kinds: Vec<String>,
+    pub(crate) mask_subtypes: Vec<String>,
+    pub(crate) spot_kinds: Vec<String>,
+}
+
+#[tauri::command]
+pub(crate) fn ai_free_info() -> AiFreeInfo {
+    let reg = amb_presets::registry::Registry::builtin();
+    AiFreeInfo {
+        on: amb_presets::ai_free::on(),
+        mask_kinds: reg.ai_mask_kinds().to_vec(),
+        mask_subtypes: reg.ai_mask_subtypes().to_vec(),
+        spot_kinds: reg.ai_spot_kinds().to_vec(),
+    }
+}
+
+/// The AI parts the open photo's edit holds, which AI-free mode leaves out
+/// of the picture and exports. Empty while the mode is off or no photo is open.
+#[tauri::command]
+pub(crate) fn ai_free_left_out(state: tauri::State<'_, AppState>) -> Vec<String> {
+    if !amb_presets::ai_free::on() {
+        return Vec::new();
+    }
+    let guard = state.session.lock().unwrap_or_else(|e| e.into_inner());
+    guard
+        .as_ref()
+        .map(|s| amb_engine::ai_free::left_out(s.state.settings()))
+        .unwrap_or_default()
+}
+
 #[tauri::command]
 pub(crate) fn ai_model_use(id: String, state: tauri::State<'_, AppState>) -> Res<ModelsList> {
     amb_ai::choose(&models_dir(&state)?, &id)?;

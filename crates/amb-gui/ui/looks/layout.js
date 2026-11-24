@@ -71,6 +71,7 @@ function applyLayout(layout) {
   store.append($("spot-panel"));
   store.append($("guided-panel"));
   store.append($("select-panel"));
+  store.append($("ai-free-note"));
   ui.curve?.destroy();
   ui.wheels?.destroy();
   ui.curve = ui.wheels = null;
@@ -136,6 +137,8 @@ function applyLayout(layout) {
     $("mask-panel").after($("spot-panel"));
     $("spot-panel").after($("guided-panel"));
     $("guided-panel").after($("select-panel"));
+    // AI-free mode's note of what it leaves out sits above the tool panels.
+    $("crop-panel").before($("ai-free-note"));
   }
   if (ui.edit) decorateEditing();
   syncControls();

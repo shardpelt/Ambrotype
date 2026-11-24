@@ -60,6 +60,7 @@ function renderMaskPanel() {
     const active = mk.tool === k.kind && mk.creatingNew;
     return el("button", {
       type: "button",
+      "data-ai": aiFreeUses(k.kind),
       class: "small" + (active ? " active" : ""),
       title: k.key
         ? t("New {kind} mask ({key}). {hint}", { kind: t(k.label).toLowerCase(), key: k.key, hint: t(k.hint) })
@@ -186,6 +187,7 @@ function renderMaskDetail(m) {
   modeSel.addEventListener("change", () => (mk.addMode = modeSel.value));
   addRow.replaceChildren(modeSel, ...NEW_KINDS.map((k) => el("button", {
     type: "button",
+    "data-ai": aiFreeUses(k.kind),
     class: "small" + (mk.tool === k.kind && !mk.creatingNew ? " active" : ""),
     title: t("{label} as a new part of this mask. {hint}", { label: t(k.label), hint: t(k.hint) }),
     onclick: () => startTool(k.kind, false),

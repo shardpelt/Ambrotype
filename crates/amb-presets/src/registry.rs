@@ -115,6 +115,21 @@ impl Registry {
         self.tags.get(name).is_some_and(|t| t.ai)
     }
 
+    /// The `add_mask` kinds that need a learned model (for the editor).
+    pub fn ai_mask_kinds(&self) -> &[String] {
+        &self.ai_mask_kinds
+    }
+
+    /// The Lightroom `MaskSubType`s that need a learned model.
+    pub fn ai_mask_subtypes(&self) -> &[String] {
+        &self.ai_mask_subtypes
+    }
+
+    /// The `add_spot` kinds that need a learned model (for the editor).
+    pub fn ai_spot_kinds(&self) -> &[String] {
+        &self.ai_spot_kinds
+    }
+
     /// Does an `add_mask` kind (`subject`, `sky`, …) need a learned model?
     pub fn mask_kind_needs_ai(&self, kind: &str) -> bool {
         let kind = kind.trim().to_ascii_lowercase();

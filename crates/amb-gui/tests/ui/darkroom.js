@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Darkroom aids: the Film Negative panel's range and clipping readout.
+// Darkroom aids: the Film Negative panel's range and clipping, and the zone
+// and density under the pointer.
 // Run: ambrotype --ui-test crates/amb-gui/tests/ui/darkroom.js photo.dng
 
 await t.step("the photo opens and a preview shows", async () => {
@@ -13,6 +14,16 @@ await t.step("Film Negative: with the conversion on, the range line has text", a
   await run([{ cmd: "set_param", name: "amb:NegativeConvert", value: true }], "test");
   await t.until("the range", () => /Range/.test($("darkroom-range")?.textContent ?? "") && !$("darkroom-readout").hidden, 60000);
   t.expect(/Clipped at scan/.test($("darkroom-range").textContent), "clipping shown");
+  // On the Film tab, a pointer resting on the photo reads the zone and density there.
+  await switchTask("film");
+  await t.until("the film tab", () => currentTask() === "film");
+  await t.until("the photo again", () => t.visible("#preview") && $("preview").naturalWidth > 0, 60000);
+  const r = $("preview").getBoundingClientRect();
+  $("viewer").dispatchEvent(new PointerEvent("pointermove", { clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true }));
+  await t.until("the zone and density", () => /Zone [0IVX]+ · D -?\d/.test($("darkroom-probe")?.textContent ?? ""), 30000);
+  $("viewer").dispatchEvent(new PointerEvent("pointerleave", { bubbles: true }));
+  t.expect($("darkroom-probe").textContent === "", "cleared when the pointer leaves");
+  await switchTask("develop");
   await run([{ cmd: "set_param", name: "amb:NegativeConvert", value: false }], "test");
   await t.until("the range gone", () => $("darkroom-readout").hidden, 60000);
   t.key("Ctrl+Z");

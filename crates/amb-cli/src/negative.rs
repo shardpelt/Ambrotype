@@ -226,3 +226,61 @@ pub(crate) fn negative_sync(
     );
     Ok(())
 }
+
+/// `amb negative probe`: the range and clipping of a negative as its edit
+/// converts it, and the density and zone at a point of the photo as shown
+/// (`--at X,Y`, fractions from the top left).
+pub(crate) fn negative_probe(
+    photo: &Path,
+    options: &BTreeMap<&str, &str>,
+    json: bool,
+) -> Result<String, String> {
+    use amb_engine::raw;
+    let at = parse_at(options.get("--at").ok_or("probe needs --at X,Y (0 to 1)")?)?;
+    let source = amb_engine::source_path(photo);
+    let img = raw::load(&source).map_err(|e| format!("{}: {e}", source.display()))?;
+    let orientation = img.metadata.orientation;
+    let mut img = raw::downscale(&img, PROBE_EDGE);
+    let sidecar = amb_engine::sidecar_path(photo);
+    let edit = options
+        .get("--preset")
+        .map(|p| p.to_string())
+        .or_else(|| sidecar.is_file().then(|| sidecar.display().to_string()));
+    let (develop, ..) = develop_settings(&mut img, edit.as_deref(), None, None, None, options)?;
+    let stored = amb_export::geometry::stored_fraction(orientation, at[0], at[1]);
+    let readout =
+        amb_engine::pipeline::negative_readout(&img, &develop, Some([stored.0, stored.1]))
+            .ok_or("The film negative conversion is off for this photo (amb:NegativeConvert).")?;
+    if json {
+        return serde_json::to_string_pretty(&readout).map_err(|e| e.to_string());
+    }
+    let (s, p) = (readout.stats, readout.probe.ok_or("no probe")?);
+    Ok(format!(
+        "range {:.2} {:.2} {:.2} D | clipped at scan {:.1} %\nat {:.3},{:.3}: zone {} | density {:.2} {:.2} {:.2}",
+        s.range[0],
+        s.range[1],
+        s.range[2],
+        s.clipped * 100.0,
+        at[0],
+        at[1],
+        amb_engine::negative::ZONE_NAMES[usize::from(p.zone)],
+        p.density[0],
+        p.density[1],
+        p.density[2]
+    ))
+}
+
+/// The long edge a probe develops the scan at: the editor's preview size.
+const PROBE_EDGE: usize = 1024;
+
+/// `X,Y` as two fractions of the photo.
+fn parse_at(text: &str) -> Result<[f64; 2], String> {
+    let bad = || format!("--at wants X,Y as fractions of the photo (0 to 1), not {text:?}");
+    let (x, y) = text.split_once(',').ok_or_else(bad)?;
+    let x: f64 = x.trim().parse().map_err(|_| bad())?;
+    let y: f64 = y.trim().parse().map_err(|_| bad())?;
+    if !(0.0..=1.0).contains(&x) || !(0.0..=1.0).contains(&y) {
+        return Err(bad());
+    }
+    Ok([x, y])
+}

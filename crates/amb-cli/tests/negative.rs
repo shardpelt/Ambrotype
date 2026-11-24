@@ -120,19 +120,51 @@ fn a_harder_paper_grade_prints_more_contrast() {
 }
 
 #[test]
-fn analyze_says_the_range_and_clipping_of_each_frame() {
-    let dir = std::env::temp_dir().join(format!("amb-cli-range-{}", std::process::id()));
+fn probe_reads_range_clipping_and_zone() {
+    let dir = std::env::temp_dir().join(format!("amb-cli-probe-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     amb(&dir, &["testimage", "negative", "neg.dng"]);
-    let text = amb(&dir, &["negative", "analyze", "neg.dng"]);
+    std::fs::write(
+        dir.join("on.xmp"),
+        r#"<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" xmlns:amb="http://ns.ambrotype.org/develop/1.0/" crs:PresetType="Normal" amb:NegativeConvert="True"/></rdf:RDF></x:xmpmeta>"#,
+    )
+    .unwrap();
+    let args = |extra: &[&'static str]| {
+        let mut a = vec!["negative", "probe", "neg.dng", "--preset", "on.xmp"];
+        a.extend_from_slice(extra);
+        a
+    };
+    let text = amb(&dir, &args(&["--at", "0.5,0.5"]));
     assert!(
-        text.contains("range ") && text.contains("clipped "),
+        text.contains("range ") && text.contains("clipped at scan"),
+        "{text}"
+    );
+    assert!(
+        text.contains("zone ") && text.contains("density "),
         "{text}"
     );
     let json: serde_json::Value =
+        serde_json::from_str(&amb(&dir, &args(&["--at", "0.5,0.5", "--json"]))).unwrap();
+    assert_eq!(json["stats"]["range"].as_array().unwrap().len(), 3);
+    assert!(json["stats"]["clipped"].as_f64().unwrap() >= 0.0);
+    assert!(json["probe"]["zone"].as_u64().unwrap() <= 10);
+    assert_eq!(json["probe"]["density"].as_array().unwrap().len(), 3);
+    // Without the conversion on there is nothing to read.
+    let out = Command::new(env!("CARGO_BIN_EXE_amb"))
+        .args(["negative", "probe", "neg.dng", "--at", "0.5,0.5"])
+        .current_dir(&dir)
+        .output()
+        .unwrap();
+    assert!(!out.status.success());
+    // Analyze says the same range and clipping per frame.
+    let analyze = amb(&dir, &["negative", "analyze", "neg.dng"]);
+    assert!(
+        analyze.contains("range ") && analyze.contains("clipped "),
+        "{analyze}"
+    );
+    let j: serde_json::Value =
         serde_json::from_str(&amb(&dir, &["negative", "analyze", "neg.dng", "--json"])).unwrap();
-    assert_eq!(json["frames"][0]["range"].as_array().unwrap().len(), 3);
-    assert!(json["frames"][0]["clipped"].as_f64().unwrap() >= 0.0);
+    assert_eq!(j["frames"][0]["range"].as_array().unwrap().len(), 3);
     std::fs::remove_dir_all(&dir).unwrap();
 }

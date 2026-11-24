@@ -131,6 +131,7 @@ fn main() -> ExitCode {
             | "--line"
             | "--area"
             | "--along"
+            | "--at"
             | "--radius"
             | "--baseline"
             | "--sensor"
@@ -453,6 +454,9 @@ fn main() -> ExitCode {
         ),
         ["negative", "sync", photos @ ..] if photos.len() >= 2 => {
             negative_sync(photos, &options, json)
+        }
+        ["negative", "probe", photo] => {
+            negative_probe(Path::new(photo), &options, json).map(|t| println!("{t}"))
         }
         ["negative", "stocks"] => {
             negative_stocks(json);

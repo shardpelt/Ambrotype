@@ -133,6 +133,7 @@ amb negative stocks                                  # list the looks
 Readouts that tell you what a scan holds, so you can fix the scan before the print (`negative/readout.rs`, `pipeline::negative_readout`; the editor's `negative_readout` reads the session's preview-size copy, never the full raw).
 
 - **Range and clipping** (2026-11-24): the Conversion section shows each layer's range, the levels' high minus low in density decades, and the share of the metered scan with any layer at 0.995 of the sensor's white (`SCAN_CLIP`). The share is counted on the scan block-averaged to about 250 000 samples, inside the metering box if one is drawn. Above 0.5 % it turns to the warning colour: rescan a stop darker, or lower the scanner's exposure. `amb negative analyze` prints both per frame.
+- **Density and zone under the pointer** (2026-11-24): density is the mean over a 5 × 5 block of −log10(T / base), per layer. The zone is the printed value's: the converted block's mean (the mean of its layers) in linear light, zone = clamp(round(log2(L / 0.18)) + 5, 0, 10). One stop per zone, V is 18 % grey (Ansel Adams' zone system). The editor asks when the pointer has rested 120 ms on the photo in the Film task; it does not while zoomed in, split or picking. `amb negative probe FILE --at X,Y` reads the sidecar and develops a 1024-pixel copy.
 
 ## Next
 

@@ -332,6 +332,7 @@ async function init() {
   wireHelpCards();
   wireTerms();
   wireZones();
+  wireDarkroom();
   wireBoxZoom();
   wireLoupe();
   wireHoverPeek();

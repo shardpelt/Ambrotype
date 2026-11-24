@@ -7041,6 +7041,9 @@
  "Under": [
   "library/organise.js"
  ],
+ "Under the pointer: Zone {zone} · D {r} / {g} / {b}": [
+  "develop/darkroom.js"
+ ],
  "Underlined words open their meaning. The text is a data file (basics.json), so anyone can improve or translate it.": [
   "index.html"
  ],

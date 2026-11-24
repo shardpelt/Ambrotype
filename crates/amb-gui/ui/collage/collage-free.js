@@ -108,14 +108,19 @@ function dragFrame(e, i, handle) {
     y: f0.cy - ux[1] * sx * f0.w / 2 - uy[1] * sy * f0.h / 2,
   };
   const minPx = 0.02 * Math.min(collage.t.width, collage.t.height);
-  stage.setPointerCapture(e.pointerId);
+  try {
+    stage.setPointerCapture(e.pointerId);
+  } catch { /* no such pointer: a script's */ }
   let moved = false;
   const move = (ev) => {
     const p = canvasPoint(ev);
     if (!moved && Math.hypot(p.x - start.x, p.y - start.y) * Number(stage.dataset.scale) < 2) return;
     moved = true;
     if (!handle) {
-      setFrame(i, f0.cx + p.x - start.x, f0.cy + p.y - start.y, f0.w, f0.h, f0.angle);
+      let [cx, cy] = [f0.cx + p.x - start.x, f0.cy + p.y - start.y];
+      if (ev.altKey) collageSnapClear();
+      else ({ cx, cy } = collageSnap(i, f0, cx, cy));
+      setFrame(i, cx, cy, f0.w, f0.h, f0.angle);
     } else if (handle === "rotate") {
       let a = (Math.atan2(p.y - f0.cy, p.x - f0.cx) * 180) / Math.PI + 90;
       if (ev.shiftKey) a = Math.round(a / 15) * 15;
@@ -138,6 +143,7 @@ function dragFrame(e, i, handle) {
     stage.removeEventListener("pointermove", move);
     stage.removeEventListener("pointerup", up);
     stage.removeEventListener("pointercancel", up);
+    collageSnapClear();
     if (moved) {
       markModified();
       renderStage();

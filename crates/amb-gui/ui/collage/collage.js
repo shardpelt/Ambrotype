@@ -32,6 +32,7 @@ const collage = {
   dirty: false,         // changed since it was opened or saved
   dragMode: "frame",    // free layouts: a drag moves the "frame" or the "photo" inside it
   gridCells: null,      // the grid cells before "Arrange freely", to go back to
+  snap: { x: null, y: null }, // the guide lines (canvas px) a dragged frame holds to
   busy: false,
   trayRow: null,       // the tray's photoRow, made by renderTray
   trayGroupOf: new Map(), // path -> group number while grouped (renderTray)

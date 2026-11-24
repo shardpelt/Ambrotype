@@ -132,7 +132,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **A watermark or logo** → **Export** → Watermark.
 - **Show before and after online** → **Share Before and After** (File menu; one web page with a slider). `amb share PHOTO --out page.html`.
 - **A video of my edit for Reels or Shorts** → **Export Edit Replay** (File menu). `amb replay PHOTO --out edit.mp4`.
-- **Collage** → the **Collage** tab, or **Collage Maker** (C): layouts, drag photos in, export pages. `amb collage`.
+- **Collage** → the **Collage** tab, or **Collage Maker** (C): layouts, drag photos in, export pages; **Arrange freely** frames snap to each other and the canvas (hold Alt to drag without snapping). `amb collage`.
 - **One collage layout over every photo shown, as pages** → Collage → Batch → **Every photo shown in the library**, then **Export pages…** (or search "Collage of every photo shown"). `amb collage <layout> <photos>... --out page.jpg` makes pages too.
 - **Merge brackets into HDR, or photos into a panorama** → the library's Merge to HDR… / Merge to Panorama…. `amb merge hdr`, `amb merge pano`.
 - **Keep my export choices** → **Export** → Save as preset….

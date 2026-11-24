@@ -1900,7 +1900,7 @@
  "Drag a copy somewhere else": [
   "index.html"
  ],
- "Drag a frame to move it, its corners to resize, the round handle to turn it. Drop a photo on empty canvas for a new frame.": [
+ "Drag a frame to move it, its corners to resize, the round handle to turn it. Frames snap to each other and the canvas (Alt held while dragging: no snapping). Drop a photo on empty canvas for a new frame.": [
   "collage/collage-canvas.js"
  ],
  "Drag along a line that should be vertical (a wall, a door frame) or horizontal (a horizon). Two verticals fix converging verticals; two horizontals fix the horizontal perspective.": [

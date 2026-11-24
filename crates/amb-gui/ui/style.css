@@ -812,6 +812,9 @@ dialog .plugin-param.check { display: flex; flex-direction: row; gap: 8px; }
 .col-drag-mode[hidden] { display: none; }
 .col-drag-mode button { flex: none; padding: 3px 12px; }
 .col-clip { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
+.col-guide { position: absolute; pointer-events: none; background: var(--accent); z-index: 5; }
+.col-guide.v { top: 0; bottom: 0; width: 1px; }
+.col-guide.h { left: 0; right: 0; height: 1px; }
 .col-stage.free .col-cell { cursor: move; }
 .col-stage.free.photo-mode .col-cell { cursor: grab; }
 .col-handles { position: absolute; pointer-events: none; z-index: 3; outline: 1px solid var(--accent); }

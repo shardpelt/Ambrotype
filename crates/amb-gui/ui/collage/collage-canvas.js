@@ -262,7 +262,7 @@ function syncCellTools() {
     : t("Move, resize, turn and overlap the photos by hand, like layers");
   for (const k of ["gap", "margin"]) $(`col-${k}`).disabled = free;
   $("col-help").textContent = free
-    ? t("Drag a frame to move it, its corners to resize, the round handle to turn it. Drop a photo on empty canvas for a new frame.")
+    ? t("Drag a frame to move it, its corners to resize, the round handle to turn it. Frames snap to each other and the canvas (Alt held while dragging: no snapping). Drop a photo on empty canvas for a new frame.")
     : t("Drag photos from below into the cells. In a cell: drag to move the photo, scroll to zoom, double-click to fit.");
   $("col-cell-hint").textContent = has
     ? (photo ? t("Cell {n}: {name}", { n: i + 1, name: trayPhoto(photo)?.name ?? fileName(photo) }) : t("Cell {n} (empty)", { n: i + 1 }))

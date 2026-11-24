@@ -229,3 +229,37 @@ fn strip_and_ring_write_a_sheet_and_name_each_cell() {
     assert!(String::from_utf8_lossy(&out.stderr).contains("switch on Film Negative"));
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+#[test]
+fn place_finds_the_exposure_for_a_zone_and_writes_nothing() {
+    let dir = std::env::temp_dir().join(format!("amb-cli-place-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    amb(&dir, &["testimage", "ramp", "ramp.dng"]);
+    let args = |zone: &'static str| {
+        [
+            "negative", "place", "ramp.dng", "--at", "0.5,0.9", "--zone", zone, "--size", "256",
+        ]
+    };
+    let mut json_args = args("VII").to_vec();
+    json_args.push("--json");
+    let p: serde_json::Value = serde_json::from_str(&amb(&dir, &json_args)).unwrap();
+    assert_eq!(p["setting"], "Exposure2012");
+    assert!((p["zone_after"].as_f64().unwrap() - 7.0).abs() < 0.2, "{p}");
+    assert_eq!(p["changes"]["Exposure2012"], p["to"]);
+    // Roman and number name the same zone; the text says from, to and zones.
+    let text = amb(&dir, &args("7"));
+    assert!(
+        text.contains("Exposure2012") && text.contains("-> VII"),
+        "{text}"
+    );
+    assert!(!dir.join("ramp.xmp").exists());
+    let out = Command::new(env!("CARGO_BIN_EXE_amb"))
+        .args(args("12"))
+        .current_dir(&dir)
+        .output()
+        .unwrap();
+    assert!(!out.status.success());
+    assert!(String::from_utf8_lossy(&out.stderr).contains("0 to 10"));
+    std::fs::remove_dir_all(&dir).unwrap();
+}

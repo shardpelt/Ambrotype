@@ -45,7 +45,8 @@ pub(crate) use meter::sub_scan;
 use paper::{PAPER_NEGATIVE_RANGE, PaperCurve};
 pub use paper::{PAPERS, Paper, PaperPrint, paper};
 pub use readout::{
-    PROBE_BLOCK, Probe, SCAN_CLIP, ScanStats, ZONE_GREY, ZONE_NAMES, probe, scan_stats, zone_of,
+    PROBE_BLOCK, Probe, SCAN_CLIP, ScanStats, ZONE_GREY, ZONE_NAMES, probe, scan_stats,
+    srgb8_linear_luma, zone_exact, zone_of,
 };
 
 use rayon::prelude::*;

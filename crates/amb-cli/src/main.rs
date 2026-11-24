@@ -132,6 +132,7 @@ fn main() -> ExitCode {
             | "--area"
             | "--along"
             | "--at"
+            | "--zone"
             | "--radius"
             | "--baseline"
             | "--sensor"
@@ -460,6 +461,9 @@ fn main() -> ExitCode {
         }
         ["negative", "probe", photo] => {
             negative_probe(Path::new(photo), &options, json).map(|t| println!("{t}"))
+        }
+        ["negative", "place", photo] => {
+            negative_place(Path::new(photo), &options, json).map(|t| println!("{t}"))
         }
         ["negative", "strip", photo] => {
             negative_aid(false, Path::new(photo), &options, json).map(|t| println!("{t}"))

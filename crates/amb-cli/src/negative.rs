@@ -342,3 +342,65 @@ pub(crate) fn negative_aid(
     }
     Ok(lines.join("\n"))
 }
+
+/// A zone as `5` or `V` (0 to X).
+fn parse_zone(text: &str) -> Result<u8, String> {
+    let names = amb_engine::negative::ZONE_NAMES;
+    let by_name = names.iter().position(|n| n.eq_ignore_ascii_case(text));
+    let by_number = text
+        .parse::<u8>()
+        .ok()
+        .filter(|n| usize::from(*n) < names.len());
+    by_number
+        .or(by_name.map(|i| i as u8))
+        .ok_or_else(|| format!("--zone wants 0 to 10 or 0 to X (Roman), not {text:?}"))
+}
+
+/// `amb negative place`: the exposure that prints the spot at `--at` in
+/// `--zone` (`amb_ops::darkroom::place_in_zone`), from the sidecar's edit.
+/// Nothing is written.
+pub(crate) fn negative_place(
+    photo: &Path,
+    options: &BTreeMap<&str, &str>,
+    json: bool,
+) -> Result<String, String> {
+    use amb_ops::darkroom::{PlaceOptions, place_in_zone, sidecar_settings};
+    let at = parse_at(options.get("--at").ok_or("place needs --at X,Y (0 to 1)")?)?;
+    let zone = parse_zone(
+        options
+            .get("--zone")
+            .ok_or("place needs --zone N (0 to X)")?,
+    )?;
+    let d = PlaceOptions::default();
+    let size = match options.get("--size") {
+        Some(v) => v.parse().map_err(|_| format!("--size {v:?}: a number"))?,
+        None => d.size,
+    };
+    let o = PlaceOptions {
+        at,
+        zone,
+        setting: options.get("--setting").map(|s| s.to_string()),
+        size,
+    };
+    let progress = crate::progress::line(json, |n, total| format!("{n}/{total} prints"));
+    let p = place_in_zone(photo, &sidecar_settings(photo)?, &o, &progress)?;
+    if json {
+        return serde_json::to_string_pretty(&p).map_err(|e| e.to_string());
+    }
+    let name = |z: f64| amb_engine::negative::ZONE_NAMES[z.round().clamp(0.0, 10.0) as usize];
+    Ok(format!(
+        "{} {:.2} -> {:.2}\nzone {} ({:.1}) -> {} ({:.1}){}",
+        p.setting,
+        p.from,
+        p.to,
+        name(p.zone_before),
+        p.zone_before,
+        name(p.zone_after),
+        p.zone_after,
+        if p.reached {
+            ""
+        } else {
+            "\nThe setting's range ends before this zone."
+        }
+    ))
+}

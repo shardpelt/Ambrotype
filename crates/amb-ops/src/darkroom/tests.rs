@@ -139,3 +139,91 @@ fn a_ring_needs_a_converted_negative() {
     .unwrap_err();
     assert!(err.contains("switch on Film Negative"), "{err}");
 }
+
+/// A photo that is a flat grey, `grey` in linear light.
+fn flat_photo(name: &str, grey: f32) -> std::path::PathBuf {
+    let dir = std::env::temp_dir().join(format!("amb-place-{}-{name}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("flat.dng");
+    let mut img = amb_testkit::dng::LinearImage::new(96, 64);
+    img.data.fill(grey);
+    amb_testkit::dng::write(&path, &img, &Default::default()).unwrap();
+    path
+}
+
+#[test]
+fn a_dark_patch_goes_up_to_zone_v_by_raising_exposure() {
+    // The pipeline's tone curve is not one stop per zone: 3 % grey prints at
+    // zone II and takes about 2 stops to reach V.
+    let photo = flat_photo("v", 0.03);
+    let o = PlaceOptions {
+        zone: 5,
+        size: 96,
+        ..Default::default()
+    };
+    let p = place_in_zone(&photo, &BTreeMap::new(), &o, &|_, _| {}).unwrap();
+    assert_eq!(p.setting, "Exposure2012");
+    assert!(p.reached, "{p:?}");
+    assert!((p.to - 2.0).abs() < 0.3, "{p:?}");
+    assert!(p.zone_before < 3.0, "{p:?}");
+    assert!((p.zone_after - 5.0).abs() < 0.1, "{p:?}");
+    assert_eq!(p.changes["Exposure2012"], p.to);
+    // A spot that is there already changes nothing.
+    let o = PlaceOptions {
+        zone: p.zone_before.round() as u8,
+        ..o
+    };
+    let same = place_in_zone(&photo, &BTreeMap::new(), &o, &|_, _| {}).unwrap();
+    assert!(
+        same.reached && (same.to - same.from).abs() < 0.5,
+        "{same:?}"
+    );
+}
+
+#[test]
+fn a_zone_out_of_the_range_says_so() {
+    // A dark patch to zone X needs more than the range's 5 stops.
+    let photo = flat_photo("far", 0.002);
+    let o = PlaceOptions {
+        zone: 10,
+        size: 96,
+        ..Default::default()
+    };
+    let p = place_in_zone(&photo, &BTreeMap::new(), &o, &|_, _| {}).unwrap();
+    assert!(!p.reached, "{p:?}");
+    assert_eq!(p.to, 5.0);
+}
+
+#[test]
+fn placing_darker_on_paper_goes_the_other_way() {
+    let photo = negative_photo("place-paper");
+    let mut s = on();
+    s.insert(FLAG_PAPER.into(), Value::Bool(true));
+    s.insert(FLAG_SPLIT.into(), Value::Bool(true));
+    let mid = |zone| PlaceOptions {
+        at: [0.5, 0.5],
+        zone,
+        size: 96,
+        ..Default::default()
+    };
+    let p = place_in_zone(&photo, &s, &mid(5), &|_, _| {}).unwrap();
+    let lighter = place_in_zone(
+        &photo,
+        &s,
+        &mid(p.zone_before.round() as u8 + 1),
+        &|_, _| {},
+    );
+    if let Ok(l) = lighter {
+        assert!(l.to <= l.from, "{l:?}");
+    }
+}
+
+#[test]
+fn a_bad_zone_is_refused() {
+    let o = PlaceOptions {
+        zone: 11,
+        ..Default::default()
+    };
+    let err = place_in_zone(Path::new("x.dng"), &BTreeMap::new(), &o, &|_, _| {}).unwrap_err();
+    assert!(err.contains("0 to 10"), "{err}");
+}

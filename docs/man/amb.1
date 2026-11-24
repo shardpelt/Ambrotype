@@ -92,6 +92,9 @@ Estimate film base, levels and midtone of scanned negatives (the median over all
 .B amb negative probe <PHOTO> \-\-at X,Y [\-\-preset FILE] [\-\-json]
 A negative's range and clipping at the scan, and the zone and density at a point (fractions of the photo as shown)
 .TP
+.B amb negative place <PHOTO> \-\-at X,Y \-\-zone N [\-\-setting NAME] [\-\-size PX] [\-\-json]
+The exposure that prints the spot at X,Y (fractions of the photo as shown) in zone N (0 to 10, or 0 to X); writes nothing
+.TP
 .B amb negative strip <PHOTO> \-\-out SHEET.png [\-\-steps N] [\-\-step STOPS] [\-\-setting NAME] [\-\-size PX] [\-\-json]
 A test strip: the photo in bands, each printed a step lighter or darker (exposure by default), one cell per band
 .TP

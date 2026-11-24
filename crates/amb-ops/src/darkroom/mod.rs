@@ -13,9 +13,11 @@ mod ring;
 mod strip;
 #[cfg(test)]
 mod tests;
+mod zone;
 
 pub use ring::{RingOptions, ring_around};
 pub use strip::{StripOptions, test_strip};
+pub use zone::{PlaceOptions, Placed, place_in_zone};
 
 use std::collections::BTreeMap;
 use std::path::Path;

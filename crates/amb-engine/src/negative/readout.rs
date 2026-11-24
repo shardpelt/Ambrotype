@@ -63,8 +63,25 @@ pub fn scan_stats(metered: Scan, a: &Analysis) -> ScanStats {
 
 /// The zone of a printed value: one stop per zone, V is 18 % grey.
 pub fn zone_of(linear: f64) -> u8 {
-    let stops = (linear.max(1e-9) / ZONE_GREY).log2();
-    (stops.round() as i32 + ZONE_MIDDLE).clamp(0, ZONE_MAX) as u8
+    (zone_exact(linear).round() as i32).clamp(0, ZONE_MAX) as u8
+}
+
+/// The zone of a printed value without rounding or clamping: a stop is one
+/// zone, so 18 % grey is exactly 5.
+pub fn zone_exact(linear: f64) -> f64 {
+    (linear.max(1e-9) / ZONE_GREY).log2() + f64::from(ZONE_MIDDLE)
+}
+
+/// The linear-light value of an 8-bit sRGB pixel as the zone overlay reads
+/// it: Rec. 709 luma of the encoded values, then the inverse sRGB curve.
+pub fn srgb8_linear_luma(rgb: [u8; 3]) -> f64 {
+    let v = (0.2126 * f64::from(rgb[0]) + 0.7152 * f64::from(rgb[1]) + 0.0722 * f64::from(rgb[2]))
+        / 255.0;
+    if v <= 0.04045 {
+        v / 12.92
+    } else {
+        ((v + 0.055) / 1.055).powf(2.4)
+    }
 }
 
 /// The density and zone at `at` (fractions of the scan, left-top). The

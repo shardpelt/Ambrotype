@@ -128,7 +128,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Exactly 1080 × 1350 for Instagram** → **Export** → Size preset, or Exact size (the crop's size presets cover Instagram, TikTok, YouTube, print and more). `amb render --exact 1080x1350`.
 - **Shot RAW by mistake, want JPEGs like the camera makes** → **Convert raws** (library, File menu, or right-click): as the camera would have saved them, Auto, like one photo you edited (pick which from the edited ones), or a saved style at an Amount. `amb convert CARD --to JPEGS` (`--look style:NAME --amount 80`).
 - **Paste the photo into a chat or document** → right-click → Copy image.
-- **A border, a Polaroid frame, a caption** → **Frame** (Shift+B).
+- **A border, a Polaroid frame, a caption** → **Frame** (Shift+B); a new line in its text makes a second caption line, and the bottom band grows to fit.
 - **A watermark or logo** → **Export** → Watermark.
 - **Show before and after online** → **Share Before and After** (File menu; one web page with a slider). `amb share PHOTO --out page.html`.
 - **A video of my edit for Reels or Shorts** → **Export Edit Replay** (File menu). `amb replay PHOTO --out edit.mp4`.

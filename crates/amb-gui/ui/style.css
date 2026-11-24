@@ -1086,7 +1086,7 @@ body.editing .column [data-item]:focus, body.editing .column [data-unit]:focus {
 .frame-panel .pair { display: flex; align-items: center; gap: 6px; }
 .frame-panel input[type=range] { flex: 1; }
 .frame-panel { overflow-y: auto; }
-.frame-label { position: absolute; z-index: 4; pointer-events: none; white-space: nowrap; line-height: 1.1; }
+.frame-label { position: absolute; z-index: 4; pointer-events: none; white-space: pre; line-height: 1.1; }
 .frame-label[hidden] { display: none; }
 /* Keyboard shortcuts card. */
 .shortcuts-dialog { width: 820px; max-width: 94vw; max-height: 88vh; overflow-y: auto; }

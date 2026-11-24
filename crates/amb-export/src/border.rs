@@ -25,8 +25,9 @@
 //!   exposure (`{ "text": "{camera} · {exposure}", "size": 30, "align":
 //!   "center", "color": "#333333" }`). `text` takes the tokens in
 //!   [`CAPTION_TOKENS`]; parts left empty (no lens known, say) are dropped
-//!   with their separator. `size` is the text's height as a percentage of
-//!   the bottom band; `color` defaults to dark on a light frame and light on
+//!   with their separator. A `text` with line breaks (`\n`) sets each line
+//!   in a band of its own: the bottom band grows to as many times its width.
+//!   `size` is the text's height as a percentage of one line's band; `color` defaults to dark on a light frame and light on
 //!   a dark one. `font` is one of [`crate::fonts::FONTS`] (`"handwritten"`,
 //!   `"marker"`, …; empty: Sans).
 
@@ -73,6 +74,13 @@ pub struct Caption {
     pub font: String,
 }
 
+impl Caption {
+    /// How many lines the text has (each gets a bottom band of its own).
+    pub fn lines(&self) -> usize {
+        self.text.split('\n').count().max(1)
+    }
+}
+
 pub const DEFAULT_CAPTION: &str = "{camera} · {exposure}";
 
 fn default_caption() -> String {
@@ -111,9 +119,21 @@ pub const CAPTION_TOKENS: &[(&str, &str)] = &[
     ("{copyright}", "the copyright"),
 ];
 
-/// A caption template filled in from the photo's metadata. Parts that come
-/// out empty are dropped with their " · " or " | " separator.
+/// A caption template filled in from the photo's metadata, line by line.
+/// Parts that come out empty are dropped with their " · " or " | " separator.
 pub fn caption_text(
+    template: &str,
+    meta: &amb_engine::raw::PhotoMetadata,
+    tags: &crate::exif::Tags,
+) -> String {
+    template
+        .split('\n')
+        .map(|line| caption_line(line, meta, tags))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn caption_line(
     template: &str,
     meta: &amb_engine::raw::PhotoMetadata,
     tags: &crate::exif::Tags,
@@ -362,6 +382,12 @@ impl Border {
         }
     }
 
+    /// The lines of the caption (one without a caption): the bottom band is
+    /// that many times as wide.
+    fn caption_lines(&self) -> usize {
+        self.caption.as_ref().map_or(1, Caption::lines)
+    }
+
     /// Left/right/top width and the bottom width, in pixels.
     fn sides(&self, short: usize) -> (usize, usize) {
         let side = self.px(self.width, short);
@@ -392,6 +418,7 @@ pub fn plan(b: &Border, resize: Resize, enlarge: bool, w: usize, h: usize) -> Pl
         let (cw, ch) = (cw.max(1) as usize, ch.max(1) as usize);
         let short = cw.min(ch);
         let (side, bottom) = b.sides(short);
+        let bottom = bottom * b.caption_lines();
         // The space inside the frame (at least a pixel).
         let iw = cw.saturating_sub(2 * side).max(1);
         let ih = ch.saturating_sub(side + bottom).max(1);
@@ -423,6 +450,7 @@ pub fn plan(b: &Border, resize: Resize, enlarge: bool, w: usize, h: usize) -> Pl
     let (pw, ph) = resize.target(w, h, enlarge);
     let short = pw.min(ph);
     let (side, bottom) = b.sides(short);
+    let bottom = bottom * b.caption_lines();
     Plan {
         canvas: (pw + 2 * side, ph + side + bottom),
         photo: (pw, ph),
@@ -476,7 +504,8 @@ pub fn compose(
 }
 
 /// Set `text` in the bottom band of a composed border (`p` its plan), in
-/// `colour` (output values). Too long a line is made smaller to fit.
+/// `colour` (output values), each line in its share of the band. Too long a
+/// line is made smaller to fit.
 pub fn draw_caption(
     img: &mut amb_engine::buffer::Image,
     p: &Plan,
@@ -486,6 +515,22 @@ pub fn draw_caption(
 ) {
     let top = p.at.1 + p.photo.1 + p.keyline;
     let band = p.canvas.1.saturating_sub(top);
+    let lines = caption.lines();
+    let slot = band / lines;
+    for (k, line) in text.split('\n').take(lines).enumerate() {
+        draw_caption_line(img, p, caption, line, colour, (top + k * slot, slot));
+    }
+}
+
+/// One line in the part of the band from `top`, `band` high.
+fn draw_caption_line(
+    img: &mut amb_engine::buffer::Image,
+    p: &Plan,
+    caption: &Caption,
+    text: &str,
+    colour: [f32; 3],
+    (top, band): (usize, usize),
+) {
     if band < 6 || text.trim().is_empty() {
         return;
     }
@@ -657,6 +702,42 @@ mod tests {
         assert!(((lo + hi) as f64 / 2.0 - (band as f64 + h / 2.0)).abs() < h * 0.15);
         b.caption.as_mut().unwrap().size = 200.0;
         assert!(b.validate().is_err());
+    }
+
+    #[test]
+    fn a_caption_of_two_lines_has_a_taller_band_and_draws_both() {
+        let meta = amb_engine::raw::PhotoMetadata::default();
+        let tags = crate::exif::Tags::default();
+        let mut b = Border::simple(4.0, "#fff");
+        b.bottom = Some(16.0);
+        b.caption = Some(Caption::new("one"));
+        let one = plan(&b, Resize::None, false, 400, 300);
+        b.caption = Some(Caption::new("one\ntwo"));
+        let two = plan(&b, Resize::None, false, 400, 300);
+        assert_eq!(b.caption.as_ref().unwrap().lines(), 2);
+        assert_eq!(one.canvas.0, two.canvas.0);
+        // One line's band, again for the second line.
+        assert_eq!(
+            two.canvas.1 - one.canvas.1,
+            one.canvas.1 - one.at.1 - one.photo.1
+        );
+        assert_eq!(caption_text("a · {lens}\n {year} b", &meta, &tags), "a\nb");
+        let photo = amb_engine::buffer::Image::from_fn(400, 300, |_, _| [0.5; 3]);
+        let mut out = compose(&photo, &two, [1.0; 3], [0.0; 3]);
+        draw_caption(
+            &mut out,
+            &two,
+            b.caption.as_ref().unwrap(),
+            "one\ntwo",
+            [0.0; 3],
+        );
+        let band = two.at.1 + two.photo.1;
+        let slot = (out.height - band) / 2;
+        let inked = |from: usize, to: usize| {
+            (from..to).any(|y| (0..out.width).any(|x| out.get(x, y) != [1.0; 3]))
+        };
+        assert!(inked(band, band + slot), "first line");
+        assert!(inked(band + slot, out.height), "second line");
     }
 
     #[test]

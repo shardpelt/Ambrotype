@@ -169,7 +169,10 @@ function drawFrame() {
   img.dataset.framed = "1";
   const short = Math.min(r.width, r.height);
   const side = (fr.width / 100) * short;
-  const bottom = (fr.bottom / 100) * short;
+  // A caption of several lines has a band for each.
+  const lines = fr.place === "frame" && frameTemplate() ? fr.text.trim().split("\n").length : 1;
+  const oneBand = (fr.bottom / 100) * short;
+  const bottom = oneBand * lines;
   const k = Math.min(r.width / (r.width + 2 * side), r.height / (r.height + side + bottom));
   Object.assign(img.style, {
     boxSizing: "border-box",
@@ -183,17 +186,20 @@ function drawFrame() {
   const v = $("viewer").getBoundingClientRect();
   const f = img.getBoundingClientRect();
   const photo = { x: f.left - v.left + side * k, y: f.top - v.top + side * k, w: r.width * k, h: r.height * k };
-  label.textContent = text;
-  Object.assign(label.style, { fontFamily: `amb-${fr.font}`, color: fr.textColor, width: "", left: "", top: "", textAlign: "" });
+  // On the photo it is a watermark: one line.
+  label.textContent = fr.place === "frame" ? text : text.replace(/\s*\n\s*/g, " ");
+  Object.assign(label.style, { fontFamily: `amb-${fr.font}`, color: fr.textColor, width: "", left: "", top: "", textAlign: "", lineHeight: "" });
   label.hidden = false;
   if (fr.place === "frame") {
     // Centred in the bottom band, as border.rs draw_caption sets it.
     const band = bottom * k;
-    let px = (band * fr.size) / 100 / 0.72;
+    const px = ((oneBand * k) * fr.size) / 100 / 0.72;
     label.style.fontSize = `${px}px`;
     const room = (photo.w + 2 * side * k) * 0.92;
     if (label.scrollWidth > room) label.style.fontSize = `${(px * room) / label.scrollWidth}px`;
-    Object.assign(label.style, { left: `${f.left - v.left}px`, width: `${f.width}px`, textAlign: "center", top: `${photo.y + photo.h + band / 2 - label.offsetHeight / 2}px` });
+    // Each line in a band's share of its own (line-height), as draw_caption does.
+    label.style.lineHeight = lines > 1 ? `${oneBand * k}px` : "";
+    Object.assign(label.style, { left: `${f.left - v.left}px`, width: `${f.width}px`, textAlign: "center", top: `${photo.y + photo.h + (lines > 1 ? 0 : band / 2 - label.offsetHeight / 2)}px` });
   } else {
     // On the photo: its width a share of the photo's, in a corner, as a watermark.
     label.style.fontSize = "100px";
@@ -229,7 +235,7 @@ function frameToExport() {
   writeBorder(frameBorder());
   const caption = frameTemplate();
   if (caption && fr.place !== "frame") {
-    f.wm_text.value = caption;
+    f.wm_text.value = caption.replace(/\s*\n\s*/g, " ");
     f.wm_image.value = "";
     f.wm_font.value = fr.font;
     f.wm_color.value = fr.textColor;

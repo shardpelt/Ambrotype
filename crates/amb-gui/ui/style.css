@@ -1144,6 +1144,8 @@ button.tool-icon.active { color: var(--accent); }
 .viewer.loupe-on img#preview { }
 .zone-overlay { position: absolute; pointer-events: none; z-index: 5; }
 .zone-badge { position: absolute; z-index: 6; pointer-events: none; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; background: var(--accent); color: var(--accent-ink); box-shadow: 0 1px 4px rgb(0 0 0 / 0.4); }
+.darkroom-readout { display: flex; flex-direction: column; gap: 2px; padding: 0 0 6px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.darkroom-clip.warn { color: var(--danger); font-weight: 600; }
 .basics-dialog { width: min(820px, 94vw); }
 .basics-body { display: grid; grid-template-columns: 220px 1fr; gap: 16px; height: min(520px, 70vh); }
 .basics-nav { overflow-y: auto; display: flex; flex-direction: column; align-items: stretch; gap: 1px; padding-right: 6px; border-right: 1px solid var(--line); }

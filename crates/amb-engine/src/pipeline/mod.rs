@@ -57,9 +57,11 @@ use crate::{
 };
 
 mod camera;
+mod readout;
 mod settings;
 
 pub use camera::*;
+pub use readout::{Readout, negative_readout};
 pub use settings::*;
 
 pub(crate) use crate::math::{srgb_decode, srgb_encode};

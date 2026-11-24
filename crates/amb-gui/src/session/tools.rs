@@ -210,6 +210,33 @@ impl Session {
         (b[2] - b[0] >= span && b[3] - b[1] >= span).then_some(b)
     }
 
+    /// A point of the cropped photo as shown (fractions), as it is kept: in
+    /// the stored orientation (the same turn as [`Self::meter_box_stored`]).
+    pub fn point_stored(&self, shown: [f64; 2]) -> Option<[f64; 2]> {
+        if !shown.iter().all(|v| v.is_finite()) {
+            return None;
+        }
+        let [u, v] = shown.map(|v| v.clamp(0.0, 1.0));
+        let (x, y) = amb_export::geometry::stored_fraction(self.full.metadata.orientation, u, v);
+        Some([x, y])
+    }
+
+    /// The darkroom readouts of the committed edit's film negative, read on
+    /// the preview-size copy of the photo (never the full raw): the range and
+    /// clipping at the scan, and with `at` (a point of the photo as shown)
+    /// the density and zone there. `None` with the conversion off.
+    pub fn negative_readout(&self, at: Option<[f64; 2]>) -> Option<pipeline::Readout> {
+        let (develop, _) = DevelopSettings::from_settings(self.state.settings());
+        let at = at.and_then(|p| self.point_stored(p));
+        match &self.preview_src {
+            Some((_, img)) => pipeline::negative_readout(img, &develop, at),
+            None => {
+                let small = downscale(&self.full, pipeline::GLOBALS_LONG_SIDE);
+                pipeline::negative_readout(&small, &develop, at)
+            }
+        }
+    }
+
     /// The white balance settings that make the spot at (`u`, `v`) of the
     /// photo as shown neutral: Temperature and Tint on a raw, their relative
     /// versions on a rendered image.

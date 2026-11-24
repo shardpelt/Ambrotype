@@ -100,6 +100,7 @@ async function renderLoop() {
       }
       if ((ui.split || sbs.layout) && !draft) await renderBefore(previewSize(false));
       scopeShow(meta);
+      darkroomRefresh(draft);
       ui.curve?.setHistogram(meta.histogram);
       const made = meta.gpu ? t("{w}×{h} preview in {ms} ms on the GPU", { w: meta.width, h: meta.height, ms: meta.millis }) : t("{w}×{h} preview in {ms} ms", { w: meta.width, h: meta.height, ms: meta.millis });
       status(meta.lens_profile ? t("{made}  ·  Lens: {lens}", { made, lens: meta.lens_profile }) : made, true);

@@ -83,6 +83,7 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         tools::pick_film_base,
         tools::meter_area,
         tools::meter_area_shown,
+        tools::negative_readout,
         settings::feedback_body,
         settings::open_feedback,
         models::ai_models,

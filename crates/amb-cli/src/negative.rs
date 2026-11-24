@@ -66,12 +66,22 @@ pub(crate) fn negative_analyze(
     };
     let k = amb_engine::negative::DEFAULT_STRENGTHS;
     let mut frames: Vec<Analysis> = Vec::new();
+    let mut readouts: Vec<serde_json::Value> = Vec::new();
     for raw in raws {
         let img = amb_engine::raw::load(Path::new(raw)).map_err(|e| format!("{raw}: {e}"))?;
         let a = negative::analyze_as(&img.rgb, img.width, img.height, kind, &k);
+        let whole = negative::Scan {
+            rgb: &img.rgb,
+            width: img.width,
+            height: img.height,
+        };
+        let stats = negative::scan_stats(whole, &a);
+        readouts.push(
+            serde_json::json!({ "photo": raw, "range": stats.range, "clipped": stats.clipped }),
+        );
         if !json {
             println!(
-                "{raw}: base {:.4} {:.4} {:.4} | shadow density {:.3} {:.3} {:.3} | highlight density {:.3} {:.3} {:.3} | midtone {:.3}",
+                "{raw}: base {:.4} {:.4} {:.4} | shadow density {:.3} {:.3} {:.3} | highlight density {:.3} {:.3} {:.3} | midtone {:.3} | range {:.2} {:.2} {:.2} D | clipped {:.1} %",
                 a.base[0],
                 a.base[1],
                 a.base[2],
@@ -81,7 +91,11 @@ pub(crate) fn negative_analyze(
                 a.density_high[0],
                 a.density_high[1],
                 a.density_high[2],
-                a.midtone
+                a.midtone,
+                stats.range[0],
+                stats.range[1],
+                stats.range[2],
+                stats.clipped * 100.0
             );
         }
         frames.push(a);
@@ -105,6 +119,8 @@ pub(crate) fn negative_analyze(
                 (k.clone(), value)
             })
             .collect();
+        let mut map = map;
+        map.insert("frames".into(), readouts.into());
         println!(
             "{}",
             serde_json::to_string_pretty(&map).expect("serialises")

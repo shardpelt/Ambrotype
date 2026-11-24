@@ -198,6 +198,33 @@ fn region_pick_white_and_clipping() {
 }
 
 #[test]
+fn a_point_and_the_negative_readout_follow_the_stored_orientation() {
+    let path = synthetic("colorchecker");
+    let mut s = Session::open(&path).unwrap();
+    assert!(
+        s.negative_readout(None).is_none(),
+        "no readout with the conversion off"
+    );
+    // Seen turned a quarter clockwise: the shown top-right corner is the stored top-left.
+    s.full.metadata.orientation = 6;
+    assert_eq!(s.point_stored([1.0, 0.0]), Some([0.0, 0.0]));
+    assert!(s.point_stored([f64::NAN, 0.0]).is_none());
+    s.execute(
+        &[Command::SetParam {
+            name: "amb:NegativeConvert".into(),
+            value: true.into(),
+        }],
+        None,
+    )
+    .unwrap();
+    let r = s
+        .negative_readout(Some([0.5, 0.5]))
+        .expect("the conversion is on");
+    assert!(r.probe.is_some_and(|p| p.zone <= 10));
+    assert!((0.0..=1.0).contains(&r.stats.clipped));
+}
+
+#[test]
 fn the_metering_box_is_kept_in_the_stored_orientation() {
     let path = synthetic("colorchecker");
     let mut s = Session::open(&path).unwrap();

@@ -128,6 +128,12 @@ amb negative stocks                                  # list the looks
 
   These rules and numbers are ours.
 
+## Darkroom aids
+
+Readouts that tell you what a scan holds, so you can fix the scan before the print (`negative/readout.rs`, `pipeline::negative_readout`; the editor's `negative_readout` reads the session's preview-size copy, never the full raw).
+
+- **Range and clipping** (2026-11-24): the Conversion section shows each layer's range, the levels' high minus low in density decades, and the share of the metered scan with any layer at 0.995 of the sensor's white (`SCAN_CLIP`). The share is counted on the scan block-averaged to about 250 000 samples, inside the metering box if one is drawn. Above 0.5 % it turns to the warning colour: rescan a stop darker, or lower the scanner's exposure. `amb negative analyze` prints both per frame.
+
 ## Next
 
 The Film lab track in [ROADMAP.md](../ROADMAP.md) has the order. In short:

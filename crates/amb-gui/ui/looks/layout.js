@@ -332,6 +332,8 @@ function buildPanel(item) {
       l.append(e.own ? el("span", { class: "section-name", translate: "no" }, e.text) : el("span", { class: "section-name" }, t(e.text)));
       l.append(...sectionActions(e.text, item.panel));
       body.append(l);
+      const readout = darkroomRow(e.text, item.panel);
+      if (readout) body.append(readout);
     } else if (e.type === "control") {
       const def = e.def ?? ui.defs.get(e.name);
       if (!def || ui.controls.has(def.name)) {

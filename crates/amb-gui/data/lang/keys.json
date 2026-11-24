@@ -1293,6 +1293,9 @@
  "Clipped": [
   "develop/zones.js"
  ],
+ "Clipped at scan {pct} %": [
+  "develop/darkroom.js"
+ ],
  "Clipping": [
   "index.html",
   "looks/editor.js"
@@ -5073,6 +5076,9 @@
  "Random": [
   "index.html"
  ],
+ "Range R {r} · G {g} · B {b} D": [
+  "develop/darkroom.js"
+ ],
  "Rate {stars}": [
   "core/keys.js"
  ],
@@ -5369,6 +5375,9 @@
  ],
  "Report a bug, an idea, or a photo that looks different from Lightroom": [
   "index.html"
+ ],
+ "Rescan a stop darker, or lower the scanner's exposure": [
+  "develop/darkroom.js"
  ],
  "Reset": [
   "core/keys.js",
@@ -6790,6 +6799,9 @@
  ],
  "The setup": [
   "dialogs/connect.js"
+ ],
+ "The share of the scan at the sensor's white": [
+  "develop/darkroom.js"
  ],
  "The shutter speed that exposes it well at this aperture and ISO": [
   "index.html"

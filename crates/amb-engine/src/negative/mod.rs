@@ -34,6 +34,7 @@ mod cast;
 mod frame;
 mod meter;
 mod paper;
+mod readout;
 
 pub use analysis::{analyze, analyze_as, estimate_base, stock};
 use analysis::{auto_density_grade, levels, log_exposure, samples_grid};
@@ -43,6 +44,9 @@ pub use meter::METER_MIN_SPAN;
 pub(crate) use meter::sub_scan;
 use paper::{PAPER_NEGATIVE_RANGE, PaperCurve};
 pub use paper::{PAPERS, Paper, PaperPrint, paper};
+pub use readout::{
+    PROBE_BLOCK, Probe, SCAN_CLIP, ScanStats, ZONE_GREY, ZONE_NAMES, probe, scan_stats, zone_of,
+};
 
 use rayon::prelude::*;
 

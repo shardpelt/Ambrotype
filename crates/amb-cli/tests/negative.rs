@@ -118,3 +118,21 @@ fn a_harder_paper_grade_prints_more_contrast() {
     assert!(spreads[1] > spreads[0] * 1.1, "{spreads:?}");
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+#[test]
+fn analyze_says_the_range_and_clipping_of_each_frame() {
+    let dir = std::env::temp_dir().join(format!("amb-cli-range-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    amb(&dir, &["testimage", "negative", "neg.dng"]);
+    let text = amb(&dir, &["negative", "analyze", "neg.dng"]);
+    assert!(
+        text.contains("range ") && text.contains("clipped "),
+        "{text}"
+    );
+    let json: serde_json::Value =
+        serde_json::from_str(&amb(&dir, &["negative", "analyze", "neg.dng", "--json"])).unwrap();
+    assert_eq!(json["frames"][0]["range"].as_array().unwrap().len(), 3);
+    assert!(json["frames"][0]["clipped"].as_f64().unwrap() >= 0.0);
+    std::fs::remove_dir_all(&dir).unwrap();
+}

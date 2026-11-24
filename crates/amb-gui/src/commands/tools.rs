@@ -169,6 +169,18 @@ pub(crate) fn meter_area(shown: [f64; 4], state: tauri::State<'_, AppState>) -> 
     })
 }
 
+/// The negative's darkroom readouts (range, clipping at the scan) and, with
+/// `at` (a point of the photo as shown, fractions), the density and zone
+/// there. `None` with the conversion off.
+#[tauri::command]
+pub(crate) fn negative_readout(
+    at: Option<[f64; 2]>,
+    state: tauri::State<'_, AppState>,
+) -> Res<Option<amb_engine::pipeline::Readout>> {
+    let guard = state.session.lock()?;
+    Ok(guard.as_ref().ok_or("no photo open")?.negative_readout(at))
+}
+
 #[derive(Serialize)]
 pub(crate) struct Guided {
     pub(crate) commands: Vec<Command>,

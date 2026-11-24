@@ -269,6 +269,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - Guided Upright: guides drawn on the photo, which the Transform sliders straighten ([design/transform.md](design/transform.md)).
   - film negatives ([design/film-negatives.md](design/film-negatives.md)): Pick base, the base measured on the whole scan, the levels inside the crop, Auto off (every frame printed alike on a fixed density range), Expired film and Cast removal along the greys, and the paper curve (grades, split grade, preflash).
   - film base picker (`pick_film_base`: Pick base in the Negative panel; a click on clear film between frames sets `FilmBase*`, Alt-click forgets it; the WB picker shares `Session::shown_patch`, which follows the crop)
+  - darkroom readouts (`negative_readout`: the range and the clipping at the scan, `pipeline::negative_readout` over `negative/readout.rs`, read on the session's preview-size copy; Conversion section of the Negative panel, `ui/develop/darkroom.js`)
   - metering box (`meter_area`, `meter_area_shown`: Meter area in the Negative panel, `ui/develop/meter.js`; a box dragged on the photo as shown is kept in the stored orientation like the crop, `amb_export::geometry::stored_box`)
   - crop Level (the angle from the photo's long lines, `guide_lines`), guide lines the rotation snaps to, and crop to the view when zoomed in (`ui/tools/croptool.js`)
   - copy the photo to the clipboard (right-click on the photo: `copy_image`, an edited render through the clipboard plugin; `copy_text` for text)

@@ -541,7 +541,8 @@ pub(crate) fn after_export(
 
 /// Edit the open photo in another app: write it, as edited, to a TIFF next
 /// to it (`IMG_0001-Edit.tif`, then `-Edit-2`, …) and open that there.
-/// The TIFF then shows in the folder like any photo.
+/// The TIFF then shows in the folder like any photo, stacked with the
+/// original when the setting is on.
 #[tauri::command]
 pub(crate) async fn edit_in(
     app: tauri::AppHandle,
@@ -573,6 +574,12 @@ pub(crate) async fn edit_in(
         let out = session::edit_copy_path(&session.path);
         let lens = lens.get().unwrap_or_else(|| empty_lens());
         session.export(&out, &s, lens)?;
+        if settings.stack {
+            // The original's info is the session's: a new stack is saved through it.
+            if let Some(info) = amb_library::info::stack_with(&session.info, &out)? {
+                session.set_info(&info)?;
+            }
+        }
         Ok(out)
     })
     .await??;

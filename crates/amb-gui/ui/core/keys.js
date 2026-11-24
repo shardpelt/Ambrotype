@@ -435,6 +435,7 @@ function settingsShowEditIn(e) {
   $("settings-edit-app").value = e.app ?? "";
   $("settings-edit-space").value = e.color_space;
   $("settings-edit-bits").value = String(e.bits);
+  $("settings-edit-stack").checked = e.stack !== false;
 }
 
 async function settingsSaveEditIn(app) {
@@ -444,6 +445,7 @@ async function settingsSaveEditIn(app) {
         app: app === undefined ? $("settings-edit-app").value || null : app,
         color_space: $("settings-edit-space").value,
         bits: Number($("settings-edit-bits").value),
+        stack: $("settings-edit-stack").checked,
       },
     }));
   } catch (e) {
@@ -520,6 +522,7 @@ async function settingsFlow() {
   $("settings-edit-default").addEventListener("click", editDefault);
   $("settings-edit-space").addEventListener("change", onEditFormat);
   $("settings-edit-bits").addEventListener("change", onEditFormat);
+  $("settings-edit-stack").addEventListener("change", onEditFormat);
   $("about-licence").addEventListener("click", onLicence);
   $("about-notice").addEventListener("click", onNotice);
   $("about-source").addEventListener("click", onSource);

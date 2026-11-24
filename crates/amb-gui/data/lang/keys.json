@@ -6431,6 +6431,9 @@
  "Stack the selection": [
   "core/keys.js"
  ],
+ "Stack with the original": [
+  "index.html"
+ ],
  "Stacked {bursts}, the best on top": [
   "library/bursts.js"
  ],

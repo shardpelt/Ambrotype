@@ -56,7 +56,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Edit the open photo from another app or an AI at the same time** → the editor shows the change at once, as one undo step.
 - **Colours on my screen look off** → on Linux the preview is shown in the monitor's own profile (**Settings** → General: Automatic, Off or a file); macOS and Windows do it themselves.
 - **Blown sky edge, flower or sunlit wall** → highlights where one channel still held detail get their colour and texture back by themselves; **Clipping Overlay** (J) shows what's left.
-- **Edit in Photoshop or another app** → **Edit in Another App** (Ctrl+Alt+E; choose the app in **Settings** → General).
+- **Edit in Photoshop or another app** → **Edit in Another App** (Ctrl+Alt+E; choose the app in **Settings** → General; the TIFF is stacked with its photo unless you turn off **Stack with the original**).
 
 ## Presets
 

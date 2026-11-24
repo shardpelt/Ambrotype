@@ -149,9 +149,59 @@ pub fn change_info(photo: &Path, change: &InfoChange) -> Result<PhotoInfo, Strin
     write_info(photo, &info)
 }
 
+/// Put `other` in the stack `original` is in (top of a new one when it is in
+/// none, with `other` under it). `original`'s info is the caller's, for a
+/// photo a session owns: it gets back the info to save when the stack is new.
+pub fn stack_with(original: &PhotoInfo, other: &Path) -> Result<Option<PhotoInfo>, String> {
+    let (id, joined) = match &original.stack {
+        Some(s) if !s.id.is_empty() => (s.id.clone(), None),
+        _ => {
+            let millis = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |d| d.as_millis());
+            let id = format!("s{millis:x}");
+            let top = sidecar::StackRef {
+                id: id.clone(),
+                top: true,
+            };
+            let info = PhotoInfo {
+                stack: Some(top),
+                ..original.clone()
+            };
+            (id, Some(info))
+        }
+    };
+    let mut info = read_info(other);
+    info.stack = Some(sidecar::StackRef { id, top: false });
+    write_info(other, &info)?;
+    Ok(joined)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_photo_is_stacked_with_another_and_joins_an_existing_stack() {
+        let dir = std::env::temp_dir().join(format!("amb-stack-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let (a, b, c) = (dir.join("a.dng"), dir.join("b.dng"), dir.join("c.dng"));
+        let ramp = amb_testkit::patterns::generate("ramp").unwrap();
+        for p in [&a, &b, &c] {
+            amb_testkit::dng::write(p, &ramp, &Default::default()).unwrap();
+        }
+        let new = stack_with(&read_info(&a), &b)
+            .unwrap()
+            .expect("a new stack");
+        let top = new.stack.clone().unwrap();
+        assert!(top.top && !top.id.is_empty());
+        let under = read_info(&b).stack.unwrap();
+        assert_eq!((under.id.as_str(), under.top), (top.id.as_str(), false));
+        // The original is in the stack now: the next photo joins it.
+        assert!(stack_with(&new, &c).unwrap().is_none());
+        assert_eq!(read_info(&c).stack.unwrap().id, top.id);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn a_change_is_written_and_read_back() {

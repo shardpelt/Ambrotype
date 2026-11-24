@@ -112,6 +112,13 @@ pub(crate) struct EditIn {
     pub(crate) color_space: String,
     #[serde(default = "sixteen")]
     pub(crate) bits: u32,
+    /// Put the TIFF in a stack with its photo.
+    #[serde(default = "yes")]
+    pub(crate) stack: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 fn prophoto() -> String {
@@ -128,6 +135,7 @@ impl Default for EditIn {
             app: None,
             color_space: prophoto(),
             bits: sixteen(),
+            stack: true,
         }
     }
 }
@@ -182,5 +190,12 @@ mod tests {
         let c: Config = serde_json::from_str(r#"{"preset_favourites":["a.xmp"]}"#).unwrap();
         assert_eq!(c.preset_favourites, ["a.xmp"]);
         assert!(c.preset_hidden.is_empty() && c.preset_hidden_groups.is_empty());
+    }
+
+    /// Edit in settings from before stacking load with it on.
+    #[test]
+    fn an_old_edit_in_stacks_with_the_original() {
+        let e: EditIn = serde_json::from_str(r#"{"bits":8}"#).unwrap();
+        assert!(e.stack && e.bits == 8);
     }
 }

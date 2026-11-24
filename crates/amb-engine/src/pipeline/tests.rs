@@ -667,6 +667,41 @@ fn region_matches_with_masks_and_spots() {
 }
 
 #[test]
+fn region_with_fade_restoration_matches() {
+    // Fade Restoration measures the whole crop; a region takes that
+    // measurement from Globals and never measures its own part.
+    let img = busy(640, 480);
+    let s = edit(
+        &[
+            ("amb:FadeRestore", "80"),
+            ("HasCrop", "True"),
+            ("CropLeft", "0.05"),
+            ("CropTop", "0.05"),
+            ("CropRight", "0.95"),
+            ("CropBottom", "0.95"),
+        ],
+        &[],
+    );
+    assert!(needs_globals(&s));
+    let full = render(&img, &s);
+    let globals = measure_globals(&img, &img, &s);
+    let part = render_region(&img, &s, WINDOW, &globals);
+    let mut max = 0.0f32;
+    for y in 0..WINDOW.height {
+        for x in 0..WINDOW.width {
+            let (a, b) = (part.get(x, y), full.get(WINDOW.x + x, WINDOW.y + y));
+            for c in 0..3 {
+                max = max.max((a[c] - b[c]).abs());
+            }
+        }
+    }
+    assert!(max < 1e-5, "{max}");
+    // Off, the render is the one without the setting, bit for bit.
+    let off = edit(&[("amb:FadeRestore", "0")], &[]);
+    assert_eq!(render(&img, &off).rgb, render(&img, &edit(&[], &[])).rgb);
+}
+
+#[test]
 fn region_with_measured_globals_is_close() {
     // Dehaze, a film negative, colour range masks and noise reduction
     // measure the whole photo; a region takes them from a small copy or

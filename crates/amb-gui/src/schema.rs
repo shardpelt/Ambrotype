@@ -477,7 +477,7 @@ fn negative_panel() -> Panel {
     Panel {
         id: "negative",
         label: "Film Negative",
-        groups: vec!["negative"],
+        groups: vec!["negative", "fade"],
         sections: vec![
             section(
                 "Conversion",
@@ -519,6 +519,7 @@ fn negative_panel() -> Panel {
                     ("amb:PaperPreflash", Some("Preflash")),
                 ],
             ),
+            section("Fade Restoration", &[("amb:FadeRestore", Some("Restore"))]),
         ],
     }
 }

@@ -165,6 +165,9 @@ impl DevelopSettings {
         s.profile_name = text(settings, "CameraProfile");
         s.crop = crop_settings(settings);
         s.negative = negative_settings(settings);
+        s.fade_restore = num(settings, "amb:FadeRestore")
+            .unwrap_or(0.0)
+            .clamp(0.0, 100.0);
         s.curve_rgb = spline_of(settings, "ToneCurvePV2012");
         s.curve_channels = [
             spline_of(settings, "ToneCurvePV2012Red"),

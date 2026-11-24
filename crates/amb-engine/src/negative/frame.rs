@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Finding the frame of a scan inside its rebate or holder.
 
-use super::analysis::downsample;
 use super::*;
+use crate::math::downsample;
 
 /// The frame of a scan: the photo without the film rebate around it (bare
 /// film base on a negative, black unexposed film on a slide) or the

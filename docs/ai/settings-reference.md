@@ -40,6 +40,7 @@ How to read the tables:
 | [Lens Blur (AI)](#lens-blur) | `lens_blur` | 1 | Depth-map based background blur with bokeh shapes. Not supported by Ambrotype. |
 | [HDR editing](#hdr) | `hdr` | 9 | HDR edit mode and the SDR rendition settings used when an HDR edit is saved without HDR output. Not supported by Ambrotype. |
 | [Film Negative (Ambrotype)](#negative) | `negative` | 41 | Turns a camera scan of a film negative into a positive: removes the orange film base, sets per-channel levels, and applies a film stock look. Our own feature (amb: namespace); Lightroom has no equivalent tags, so Lightroom ignores these. |
+| [Fade Restoration](#fade) | `fade` | 1 | Restores a faded print or slide (scanned or photographed): its blacks, contrast and the colours that faded unevenly. Our own feature (amb: namespace); Lightroom ignores it. |
 
 <a id="metadata"></a>
 
@@ -572,3 +573,13 @@ Turns a camera scan of a film negative into a positive: removes the orange film 
 | `amb:PaperSoftExposure` | Soft exposure | number | -3 to 3 | 0 | rendered (exact) | With split grade: the soft (grade 0) exposure in stops (EV), −3 to +3. More exposure prints darker, mostly in the highlights and midtones. |
 | `amb:PaperHardExposure` | Hard exposure | number | -3 to 3 | 0 | rendered (exact) | With split grade: the hard (grade 5) exposure in stops (EV), −3 to +3. More exposure prints darker, mostly in the shadows, with more contrast. |
 | `amb:PaperPreflash` | Preflash | number | 0 to 100 | 0 | rendered (exact) | With the paper curve: a uniform extra exposure, 0 to 100 % of the paper's threshold exposure (the exposure where it starts to darken). It brings detail into the print's lightest tones and leaves the shadows as they were. |
+
+<a id="fade"></a>
+
+## Fade Restoration (`fade`)
+
+Restores a faded print or slide (scanned or photographed): its blacks, contrast and the colours that faded unevenly. Our own feature (amb: namespace); Lightroom ignores it.
+
+| Tag | Control | Kind | Range | Default | Status | Description |
+|---|---|---|---|---|---|---|
+| `amb:FadeRestore` | Fade Restoration | number | 0 to 100 | 0 | rendered (exact) | Restores a faded print or slide: brings back the blacks, the contrast and the colours that faded unevenly. Measured on the photo inside its crop. |

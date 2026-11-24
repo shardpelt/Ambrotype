@@ -16,10 +16,10 @@ A short running list, kept up to date as work lands. Newest decisions first. Eve
 The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
 - **Darkroom aids, the rest** (`film-darkroom-aids`): step wedge, place a spot in a zone, test strip, ring-around, peek at the negative, Pick Better
-- **Fade Restoration** (`film-fade-restoration`)
 
 ## Recently done
 
+- 2026-11-24: **Fade Restoration** (`film-fade-restoration`): Film Negative → Fade Restoration gives a faded print or slide back its blacks, contrast and colours, measured inside the crop (`amb:FadeRestore`; `amb_engine::fade`, model in [design/film-negatives.md](design/film-negatives.md))
 - 2026-11-24: **Darkroom aids, first part** (`film-darkroom-aids`): the Film Negative panel reads the negative's range and the scan's clipping, and the zone and density under the pointer; `amb negative probe` and `amb negative analyze` say the same; View → Zone overlay (Shift+Z) paints any photo by zone (`negative/readout.rs`, `negative_readout`, `ui/develop/darkroom.js`, `tests/ui/darkroom.js`)
 - 2026-11-24: **Interaction pairs in the Lightroom sweep plan** (`6-interaction`): Highlights × Whites, Shadows × Blacks, Contrast × Exposure, Vibrance × Saturation, Texture × Clarity, each a 5 × 5 grid on two raws (`amb_testkit::default_plan`, `tools/lightroom-kit/make-kit.sh`)
 - 2026-11-24: **Nine more photography terms** in the "?" cards (`ui/basics.json`): focal length, crop factor, JPEG, bit depth, gamut, chromatic aberration, halation, density, zone system. Lessons link terms from the same list by themselves, so they get them too

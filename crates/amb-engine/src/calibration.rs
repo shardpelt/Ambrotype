@@ -11,6 +11,7 @@ use crate::color::ColorStrengths;
 use crate::dehaze::DehazeStrengths;
 use crate::detail::DetailStrengths;
 use crate::effects::EffectsStrengths;
+use crate::fade::FadeStrengths;
 use crate::lens::LensStrengths;
 use crate::local::LocalStrengths;
 use crate::mask::MaskStrengths;
@@ -31,6 +32,8 @@ pub struct Calibration {
     pub effects: EffectsStrengths,
     pub lens: LensStrengths,
     pub negative: NegativeStrengths,
+    /// Fade Restoration.
+    pub fade: FadeStrengths,
     pub masks: MaskStrengths,
     pub transform: TransformStrengths,
     pub upright: UprightStrengths,

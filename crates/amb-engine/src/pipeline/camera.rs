@@ -192,7 +192,8 @@ pub fn as_shot_temp_tint(img: &CameraImage) -> (f64, f64) {
 }
 
 /// Stage 0's result: camera RGB after Lens Corrections, Transform, crop and
-/// straighten (one resample), and a film negative turned positive.
+/// straighten (one resample), a film negative turned positive, and a faded
+/// print or slide restored.
 pub(crate) struct CameraStage {
     pub crop: Option<crate::crop::CropGeometry>,
     /// The output's size (the crop's, or the photo's).
@@ -203,14 +204,16 @@ pub(crate) struct CameraStage {
     pub width: usize,
     pub height: usize,
     pub lens_pass: Option<lens::CameraPass>,
-    pub(super) negative_rgb: Option<Vec<f32>>,
+    /// The camera RGB after a negative conversion or Fade Restoration.
+    pub(super) film_rgb: Option<Vec<f32>>,
     pub negative: Option<negative::Analysis>,
+    pub fade: Option<fade::Analysis>,
 }
 
 impl CameraStage {
     /// The camera RGB the next stages start from.
     pub fn rgb<'a>(&'a self, img: &'a CameraImage) -> &'a [f32] {
-        match (&self.negative_rgb, &self.lens_pass) {
+        match (&self.film_rgb, &self.lens_pass) {
             (Some(rgb), _) => rgb,
             (None, Some(p)) => &p.rgb,
             (None, None) => &img.rgb,
@@ -265,7 +268,7 @@ pub(crate) fn camera_stage(img: &CameraImage, s: &DevelopSettings, pass: &Pass) 
     // the film base from the whole scan (the rebate is outside the crop),
     // the levels inside the crop (or the metering box drawn in it).
     let mut negative = None;
-    let negative_rgb = s.negative.enabled.then(|| {
+    let mut negative_rgb = s.negative.enabled.then(|| {
         let a = match pass.given.and_then(|g| g.negative) {
             Some(a) => a,
             None => {
@@ -303,6 +306,20 @@ pub(crate) fn camera_stage(img: &CameraImage, s: &DevelopSettings, pass: &Pass) 
         negative::apply(&mut rgb, &conversion);
         rgb
     });
+    // 0c. A faded print or slide restored, measured inside the crop (after
+    // a negative conversion, if one ran). A region render takes the
+    // measurement from the whole photo's ([`Globals`]).
+    let mut fade = None;
+    let fade_rgb = (s.fade_restore > 0.0).then(|| {
+        let mut rgb = negative_rgb.take().unwrap_or_else(|| camera_rgb.clone());
+        let a = match pass.given.and_then(|g| g.fade) {
+            Some(a) => a,
+            None => fade::analyze(&rgb, width, height, &cal.fade),
+        };
+        fade = Some(a);
+        fade::apply(&mut rgb, &a, s.fade_restore, &cal.fade);
+        rgb
+    });
 
     CameraStage {
         crop,
@@ -312,8 +329,9 @@ pub(crate) fn camera_stage(img: &CameraImage, s: &DevelopSettings, pass: &Pass) 
         width,
         height,
         lens_pass,
-        negative_rgb,
+        film_rgb: fade_rgb.or(negative_rgb),
         negative,
+        fade,
     }
 }
 

@@ -92,9 +92,11 @@ For a faded print or slide, scanned or photographed (usually a JPEG or TIFF): `a
 
 1. Measured inside the crop, on a copy averaged to about 250,000 samples (`FADE_SAMPLES`), leaving out 3 % at each edge (`border`) for a print's border or a slide's mount.
 2. Per channel, in log10 of linear: the 0.2 % and 99.8 % percentiles are its black and white (`low_pct`, `high_pct`). A channel spanning under 0.05 decades is left alone, and then no saturation is given back.
-3. Each channel is stretched between them to t in 0..1; red's and blue's midtones (the median of t) are bent to green's by a gamma kept within 0.7-1.4 (`gamma_min`, `gamma_max`).
+3. Each channel is stretched between them to t in 0..1; red's and blue's midtones are bent to green's by a gamma kept within 0.8-1.25 (`gamma_min`, `gamma_max`). The midtone is the median of t over the least coloured quarter of the samples (`neutral_share`, colour = max − min of t): a fade casts everything alike, so these are still the scene's greys, and a pink blanket stays pink. The levels themselves assume the darkest and brightest parts are near neutral.
 4. t^gamma goes back to linear between 0.004 and 0.90 (`black`, `white`), straight in log, so a fade that squeezed the density range evenly comes back exactly.
 5. A quarter more saturation around each pixel's grey (`saturation`), then the result is mixed with the photo by the amount.
+
+On a raw it runs on camera RGB before white balance, so set the white balance after restoring; JPEG and TIFF scans, already balanced, are the main use.
 
 A region render takes the measurement from the whole photo's (`Globals`). On a synthetic print faded in log (blacks to 0.08, white to 0.6, red and blue unevenly, 40 % of the colour gone) the mean log error to the original falls from 0.60 to 0.024. Not yet tried on real faded prints. All constants are in the `fade` section of `amb calibration defaults`.
 

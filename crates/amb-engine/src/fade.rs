@@ -23,8 +23,13 @@ pub const FADE_BORDER: f64 = 0.03;
 pub const FADE_LOW_PCT: f64 = 0.002;
 pub const FADE_HIGH_PCT: f64 = 0.998;
 /// The most a channel's midtone gamma may bend to meet green's. Ours.
-pub const FADE_GAMMA_MIN: f64 = 0.7;
-pub const FADE_GAMMA_MAX: f64 = 1.4;
+pub const FADE_GAMMA_MIN: f64 = 0.8;
+pub const FADE_GAMMA_MAX: f64 = 1.25;
+/// Share of the samples, the least coloured after the levels (max − min of
+/// the three), whose midtones are balanced: a fade casts everything alike,
+/// so these are still the scene's greys, and a photo that really is one
+/// colour keeps it. Ours.
+pub const FADE_NEUTRAL_SHARE: f64 = 0.25;
 /// Linear values a channel's black and white levels are stretched to. Ours.
 pub const FADE_BLACK: f64 = 0.004;
 pub const FADE_WHITE: f64 = 0.90;
@@ -46,6 +51,8 @@ pub struct FadeStrengths {
     /// The clamp of a channel's midtone gamma.
     pub gamma_min: f64,
     pub gamma_max: f64,
+    /// Share of the samples, the least coloured, the midtones are read on.
+    pub neutral_share: f64,
     /// Linear black and white the levels are stretched to.
     pub black: f64,
     pub white: f64,
@@ -59,6 +66,7 @@ pub const DEFAULT_STRENGTHS: FadeStrengths = FadeStrengths {
     high_pct: FADE_HIGH_PCT,
     gamma_min: FADE_GAMMA_MIN,
     gamma_max: FADE_GAMMA_MAX,
+    neutral_share: FADE_NEUTRAL_SHARE,
     black: FADE_BLACK,
     white: FADE_WHITE,
     saturation: FADE_SATURATION,
@@ -114,18 +122,12 @@ pub fn analyze(rgb: &[f32], width: usize, height: usize, k: &FadeStrengths) -> A
     };
     let mut low = [0.0; 3];
     let mut high = [0.0; 3];
-    let mut median = [0.0; 3];
     for c in 0..3 {
         let mut v: Vec<f64> = samples.iter().map(|p| p[c]).collect();
         low[c] = percentile(&mut v, k.low_pct);
         high[c] = percentile(&mut v, k.high_pct);
-        let span = (high[c] - low[c]).max(FADE_MIN_SPAN);
-        let mut t: Vec<f64> = v
-            .iter()
-            .map(|x| ((x - low[c]) / span).clamp(0.0, 1.0))
-            .collect();
-        median[c] = percentile(&mut t, 0.5);
     }
+    let median = neutral_midtones(&samples, low, high, k.neutral_share);
     let gamma = std::array::from_fn(|c| {
         let (m, target) = (median[c], median[1]);
         let usable = |x: f64| x > 1e-3 && x < 1.0 - 1e-3;
@@ -135,6 +137,28 @@ pub fn analyze(rgb: &[f32], width: usize, height: usize, k: &FadeStrengths) -> A
         (target.ln() / m.ln()).clamp(k.gamma_min, k.gamma_max)
     });
     Analysis { low, high, gamma }
+}
+
+/// Per channel, the median level (t in 0..1) of the least coloured
+/// `share` of `samples` (log10 values).
+fn neutral_midtones(samples: &[[f64; 3]], low: [f64; 3], high: [f64; 3], share: f64) -> [f64; 3] {
+    let mut t: Vec<[f64; 3]> = samples
+        .iter()
+        .map(|p| {
+            std::array::from_fn(|c| {
+                let span = (high[c] - low[c]).max(FADE_MIN_SPAN);
+                ((p[c] - low[c]) / span).clamp(0.0, 1.0)
+            })
+        })
+        .collect();
+    let chroma = |p: &[f64; 3]| p[0].max(p[1]).max(p[2]) - p[0].min(p[1]).min(p[2]);
+    t.sort_by(|a, b| chroma(a).total_cmp(&chroma(b)));
+    let n =
+        ((t.len() as f64 * share.clamp(0.0, 1.0)).ceil() as usize).clamp(1.min(t.len()), t.len());
+    std::array::from_fn(|c| {
+        let mut v: Vec<f64> = t[..n].iter().map(|p| p[c]).collect();
+        percentile(&mut v, 0.5)
+    })
 }
 
 /// Restore `rgb` (interleaved linear RGB) by `amount` (0..100) with the
@@ -249,6 +273,46 @@ mod tests {
         assert!(
             after < before / 2.0,
             "faded {before:.3}, restored {after:.3}"
+        );
+    }
+
+    #[test]
+    fn a_coloured_photo_keeps_its_colour() {
+        // 70 % magenta cloth, 15 % grey card, 15 % a grey ramp for black
+        // and white.
+        let rgb: Vec<f32> = (0..W * H)
+            .flat_map(|i| {
+                let (x, y) = (i % W, i / W);
+                let t = x as f32 / (W - 1) as f32;
+                let v = 0.004 * (0.9f32 / 0.004).powf(t);
+                if y < H * 70 / 100 {
+                    // Folds from shadow to light, never as dark or as
+                    // bright as the ramp: the levels come from neutrals.
+                    let c = 0.03 * 20f32.powf(t);
+                    [c, c * 0.45, c * 0.8]
+                } else if y < H * 85 / 100 {
+                    [0.18, 0.18, 0.18]
+                } else {
+                    [v, v, v]
+                }
+            })
+            .collect();
+        let mut faded = rgb.clone();
+        fade(&mut faded);
+        let a = analyze(&faded, W, H, &DEFAULT_STRENGTHS);
+        apply(&mut faded, &a, 100.0, &DEFAULT_STRENGTHS);
+        let px = |x: usize, y: usize| {
+            let i = (y * W + x) * 3;
+            [faded[i], faded[i + 1], faded[i + 2]]
+        };
+        let card = px(W / 2, H * 78 / 100);
+        let mean = (card[0] + card[1] + card[2]) / 3.0;
+        let off = ((card[0] - card[1]).abs()).max((card[2] - card[1]).abs()) / mean;
+        assert!(off < 0.02, "grey card {card:?} ({off:.3}), {a:?}");
+        let cloth = px(W / 2, H / 3);
+        assert!(
+            cloth[0] > cloth[1] && cloth[2] > cloth[1],
+            "cloth {cloth:?}"
         );
     }
 

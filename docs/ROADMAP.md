@@ -47,7 +47,7 @@ Fastest first.
 
 ## 3. Big things
 
-Most important first. The first four are the Film lab, in the order WHATS-NEXT lists them.
+Most important first. `film-darkroom-aids` is the Film lab's next row, as WHATS-NEXT lists it.
 
 | Id | What | Size | Tier | Ready | Notes |
 |---|---|---|---|---|---|

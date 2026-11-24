@@ -640,17 +640,19 @@ pub(crate) fn insights(
                 .ok_or_else(|| format!("--by {k}: one of {}", insights::KEYS.join(", ")))?,
         );
     }
-    let (advice, challenges) = if options.contains_key("--by") {
-        (Vec::new(), Vec::new())
+    let notes = if options.contains_key("--by") {
+        insights::Notes::default()
     } else {
-        (insights::advice(&records), insights::challenges(&records))
+        insights::notes(&records)
     };
     if json {
         return print_json(&serde_json::json!({
             "photos": records.len(),
             "tallies": tallies,
-            "advice": advice,
-            "challenges": challenges,
+            "summary": notes.summary,
+            "advice": notes.advice,
+            "gear": notes.gear,
+            "challenges": notes.challenges,
         }));
     }
     println!("{} photos", records.len());
@@ -682,10 +684,17 @@ pub(crate) fn insights(
             println!("  ({} without)", t.unknown);
         }
     }
-    for (head, notes) in [("What it suggests", &advice), ("Try this", &challenges)] {
-        if !notes.is_empty() {
+    if let Some(s) = &notes.summary {
+        println!("\n{}\n  {}", s.title, s.text);
+    }
+    for (head, list) in [
+        ("What it suggests", &notes.advice),
+        ("Gear", &notes.gear),
+        ("Try this", &notes.challenges),
+    ] {
+        if !list.is_empty() {
             println!("\n{head}");
-            for n in notes.iter() {
+            for n in list.iter() {
                 println!("  {}: {}", n.title, n.text);
             }
         }

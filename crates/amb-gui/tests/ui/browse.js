@@ -41,6 +41,7 @@ await t.step("Insights counts the photos shown; a bar shows just those", async (
   const shots = Array.from({ length: 40 }, (_, i) => ({ lens: "35mm F1.4", aperture: i ? 4 : 1.4, focal: 35, iso: 200, shutter: 0.002, captured: "2026-05-04 12:00:00", rating: null, flag: null }));
   const notes = await t.invoke("insights_advice", { photos: shots });
   t.expect(notes.advice.some((n) => n.title.includes("rarely wide open")) && notes.challenges.length >= 2, JSON.stringify(notes).slice(0, 200));
+  t.expect(notes.summary?.text.includes("everyday life") && Array.isArray(notes.gear), "the summary and gear: " + JSON.stringify(notes.summary));
   // Split by: two groups side by side (two made-up years).
   const ps = lib.beforePick ?? lib.shown;
   if (ps.length >= 2) {

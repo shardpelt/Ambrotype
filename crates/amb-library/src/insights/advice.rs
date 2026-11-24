@@ -12,7 +12,7 @@ use std::collections::BTreeMap;
 /// One line of advice or a challenge.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Note {
-    /// "lens", "light", "habit", "keepers" or "challenge".
+    /// "summary", "lens", "light", "habit", "keepers", "gear" or "challenge".
     pub kind: &'static str,
     pub title: String,
     pub text: String,
@@ -40,6 +40,185 @@ fn f_number(v: f64) -> String {
 
 /// Enough photos for a number to mean something.
 const ENOUGH: usize = 20;
+
+/// Hours counted as night: from 20:00 and before 06:00.
+const NIGHT_FROM: u32 = 20;
+const NIGHT_UNTIL: u32 = 6;
+
+/// A share of night photos (percent) from which the summary says "often at night".
+const NIGHT_OFTEN: u32 = 25;
+
+/// Everything Insights says about a set of photos, in the order it is
+/// shown. The editor and `amb insights` both take it from [`notes`], so
+/// they can't differ.
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct Notes {
+    pub summary: Option<Note>,
+    pub advice: Vec<Note>,
+    pub gear: Vec<Note>,
+    pub challenges: Vec<Note>,
+}
+
+/// The summary, advice, gear and challenges for `records`.
+pub fn notes(records: &[Record]) -> Notes {
+    Notes {
+        summary: summary(records),
+        advice: advice(records),
+        gear: Vec::new(),
+        challenges: challenges(records),
+    }
+}
+
+/// The middle value (the upper one for an even count).
+fn median(mut v: Vec<f64>) -> Option<f64> {
+    v.sort_by(f64::total_cmp);
+    v.get(v.len() / 2).copied()
+}
+
+/// The hour of day (0 to 23) of each photo that has a capture time.
+fn hours(records: &[Record]) -> Vec<u32> {
+    records
+        .iter()
+        .filter_map(|r| r.shot.captured.as_deref()?.get(11..13)?.parse().ok())
+        .collect()
+}
+
+fn is_night(hour: u32) -> bool {
+    hour >= NIGHT_FROM || hour < NIGHT_UNTIL
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum FocalBand {
+    Wide,
+    Normal,
+    ShortTele,
+    Long,
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum ApertureBand {
+    Open,
+    Middle,
+    Stopped,
+}
+
+/// Focal bands: where each starts (mm) and the word the summary uses.
+const FOCAL_BANDS: &[(FocalBand, f64, &str)] = &[
+    (FocalBand::Wide, 0.0, "wide"),
+    (FocalBand::Normal, 28.0, "normal"),
+    (FocalBand::ShortTele, 60.0, "short tele"),
+    (FocalBand::Long, 135.0, "long"),
+];
+
+/// Aperture bands: where each starts (f-number) and its words. f/2.8 and
+/// wider is open, so the middle starts just past it (the next third-stop
+/// is f/3.2); f/8 and up is stopped down.
+const APERTURE_BANDS: &[(ApertureBand, f64, &str)] = &[
+    (ApertureBand::Open, 0.0, "wide open"),
+    (ApertureBand::Middle, 3.0, "at middle apertures"),
+    (ApertureBand::Stopped, 8.0, "stopped down"),
+];
+
+/// What a usual focal length and aperture say someone shoots.
+const STYLES: &[(FocalBand, ApertureBand, &str)] = &[
+    (
+        FocalBand::Wide,
+        ApertureBand::Open,
+        "close-in, in the middle of things",
+    ),
+    (
+        FocalBand::Wide,
+        ApertureBand::Middle,
+        "travel, streets and places",
+    ),
+    (
+        FocalBand::Wide,
+        ApertureBand::Stopped,
+        "landscapes and buildings",
+    ),
+    (FocalBand::Normal, ApertureBand::Open, "people and moments"),
+    (
+        FocalBand::Normal,
+        ApertureBand::Middle,
+        "the street, everyday life",
+    ),
+    (
+        FocalBand::Normal,
+        ApertureBand::Stopped,
+        "whole scenes, sharp front to back",
+    ),
+    (FocalBand::ShortTele, ApertureBand::Open, "portraits"),
+    (
+        FocalBand::ShortTele,
+        ApertureBand::Middle,
+        "portraits and details, from a step back",
+    ),
+    (
+        FocalBand::ShortTele,
+        ApertureBand::Stopped,
+        "far-off scenes, flattened and sharp",
+    ),
+    (
+        FocalBand::Long,
+        ApertureBand::Open,
+        "wildlife, sport or details from afar",
+    ),
+    (
+        FocalBand::Long,
+        ApertureBand::Middle,
+        "wildlife, sport or details from afar",
+    ),
+    (
+        FocalBand::Long,
+        ApertureBand::Stopped,
+        "wildlife, sport or details from afar",
+    ),
+];
+
+/// The band a value falls in: the last whose start is at or below it.
+fn band<T: Copy>(table: &[(T, f64, &'static str)], v: f64) -> Option<(T, &'static str)> {
+    table
+        .iter()
+        .rev()
+        .find(|(_, from, _)| v >= *from)
+        .map(|(b, _, word)| (*b, *word))
+}
+
+/// One paragraph on what the medians say, with the numbers. Needs
+/// [`ENOUGH`] photos that have both a focal length and an aperture.
+pub fn summary(records: &[Record]) -> Option<Note> {
+    let both: Vec<(f64, f64)> = records
+        .iter()
+        .filter_map(|r| Some((r.shot.focal?, r.shot.aperture?)))
+        .collect();
+    if both.len() < ENOUGH {
+        return None;
+    }
+    let focal = median(both.iter().map(|b| b.0).collect())?;
+    let aperture = median(both.iter().map(|b| b.1).collect())?;
+    let (fb, fword) = band(FOCAL_BANDS, focal)?;
+    let (ab, aword) = band(APERTURE_BANDS, aperture)?;
+    let phrase = STYLES
+        .iter()
+        .find(|(f, a, _)| *f == fb && *a == ab)
+        .map(|s| s.2)?;
+    let hours = hours(records);
+    let light = if hours.len() < ENOUGH {
+        ""
+    } else if pct(hours.iter().filter(|h| is_night(**h)).count(), hours.len()) >= NIGHT_OFTEN {
+        ", often at night"
+    } else {
+        ", in daylight"
+    };
+    Some(note(
+        "summary",
+        "What the numbers say you shoot",
+        format!(
+            "Mostly {fword} (median {focal:.0} mm), {aword} ({}){light}: the numbers say {phrase}.",
+            f_number(aperture)
+        ),
+    ))
+}
 
 /// Advice from the photos: lenses (wide open, zoom ends), light, habits
 /// and where the keepers come from. The most telling first, at most eight.
@@ -269,10 +448,6 @@ fn keeper_notes(records: &[Record]) -> Vec<Note> {
 /// of day, and one next to it. Three at most.
 pub fn challenges(records: &[Record]) -> Vec<Note> {
     let mut out = Vec::new();
-    let median = |mut v: Vec<f64>| {
-        v.sort_by(f64::total_cmp);
-        v.get(v.len() / 2).copied()
-    };
     let focal = median(records.iter().filter_map(|r| r.shot.focal).collect());
     let aperture = median(records.iter().filter_map(|r| r.shot.aperture).collect());
     if let Some(f) = focal.filter(|_| records.len() >= ENOUGH) {
@@ -305,12 +480,9 @@ pub fn challenges(records: &[Record]) -> Vec<Note> {
             )
         });
     }
-    let hours: Vec<u32> = records
-        .iter()
-        .filter_map(|r| r.shot.captured.as_deref()?.get(11..13)?.parse().ok())
-        .collect();
+    let hours = hours(records);
     if hours.len() >= ENOUGH {
-        let night = hours.iter().filter(|h| **h >= 20 || **h < 6).count();
+        let night = hours.iter().filter(|h| is_night(**h)).count();
         out.push(if pct(night, hours.len()) < 10 {
             note(
                 "challenge",
@@ -405,10 +577,44 @@ mod tests {
     }
 
     #[test]
+    fn wide_and_stopped_down_is_landscapes() {
+        let rs: Vec<Record> = (0..30)
+            .map(|_| shot("24mm", 8.0, 24.0, 100, 1.0 / 250.0, 12))
+            .collect();
+        let s = summary(&rs).expect("a summary");
+        assert_eq!(s.kind, "summary");
+        assert_eq!(
+            s.text,
+            "Mostly wide (median 24 mm), stopped down (f/8), in daylight: the numbers say landscapes and buildings."
+        );
+        assert_eq!(notes(&rs).summary, Some(s));
+        let night: Vec<Record> = (0..30)
+            .map(|_| shot("85mm", 1.8, 85.0, 3200, 1.0 / 125.0, 22))
+            .collect();
+        let s = summary(&night).expect("a summary");
+        assert!(
+            s.text.contains("short tele")
+                && s.text.contains("often at night")
+                && s.text.contains("portraits"),
+            "{}",
+            s.text
+        );
+    }
+
+    #[test]
+    fn every_band_pair_has_a_phrase() {
+        for (f, _, _) in FOCAL_BANDS {
+            for (a, _, _) in APERTURE_BANDS {
+                assert!(STYLES.iter().any(|s| s.0 == *f && s.1 == *a));
+            }
+        }
+    }
+
+    #[test]
     fn few_photos_say_nothing() {
         let rs: Vec<Record> = (0..5)
             .map(|_| shot("x", 1.4, 35.0, 6400, 0.5, 12))
             .collect();
-        assert!(advice(&rs).is_empty() && challenges(&rs).is_empty());
+        assert!(advice(&rs).is_empty() && challenges(&rs).is_empty() && summary(&rs).is_none());
     }
 }

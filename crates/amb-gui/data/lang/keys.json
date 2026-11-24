@@ -2697,6 +2697,9 @@
  "Gap, border and corners are % of the short edge, so they look the same at any size.": [
   "index.html"
  ],
+ "Gear to think about": [
+  "library/insights.js"
+ ],
  "General": [
   "index.html"
  ],
@@ -7256,6 +7259,9 @@
  ],
  "What the agent is for": [
   "index.html"
+ ],
+ "What the numbers say you shoot": [
+  "library/insights.js"
  ],
  "When the camera without GPS kept another clock than the phone (another time zone): how many hours it was behind": [
   "index.html"

@@ -10,9 +10,10 @@
 //   bar takes it off again).
 // - Split by camera, lens or year puts up to three side by side, each as a
 //   share of its own photos, so a small group compares fairly.
-// - Above the charts, what the numbers suggest (a fast lens kept stopped
-//   down, a zoom at its end, shake, dark scenes, where the keepers come
-//   from) and challenges to try; both from amb_library::insights.
+// - Above the charts, a summary of what the numbers say you shoot, what
+//   they suggest (a fast lens kept stopped down, a zoom at its end, shake,
+//   dark scenes, where the keepers come from), gear tied to a shortfall and
+//   challenges to try; all from amb_library::insights.
 // - The buckets come from amb_library::insights, so `amb insights` agrees.
 "use strict";
 
@@ -220,7 +221,7 @@ function insightSplitChart(key, series) {
   return card;
 }
 
-// What the numbers suggest, and challenges; asked of the app once per set
+// What the numbers say, suggest and challenge; asked of the app once per set
 // of photos (it reads them the way `amb insights` does).
 async function insightNotes(photos, box) {
   const key = `${photos.length}|${photos[0]?.path}|${photos.at(-1)?.path}|${photos.filter(insightKept).length}`;
@@ -231,7 +232,7 @@ async function insightNotes(photos, box) {
     try {
       insights.notes = await invoke("insights_advice", { photos: send });
     } catch (e) {
-      insights.notes = { advice: [], challenges: [], error: String(e) };
+      insights.notes = { summary: null, advice: [], gear: [], challenges: [], error: String(e) };
     }
     if (insights.notesOf !== key) return;
   }
@@ -248,7 +249,9 @@ async function insightNotes(photos, box) {
     }
     return sec;
   };
-  box.replaceChildren(...[part(tKey("What it suggests"), n.advice, "in-suggest"), part(tKey("Try this week"), n.challenges, "in-try")].filter(Boolean));
+  // The summary leads: a heading and its one paragraph.
+  const lead = n.summary && el("section", { class: "in-card in-advice in-summary" }, el("h4", {}, t("What the numbers say you shoot")), el("p", {}, n.summary.text));
+  box.replaceChildren(...[lead, part(tKey("What it suggests"), n.advice, "in-suggest"), part(tKey("Gear to think about"), n.gear, "in-gear"), part(tKey("Try this week"), n.challenges, "in-try")].filter(Boolean));
   if (!box.children.length) box.append(el("p", { class: "hint" }, n.error ?? t("Advice and challenges come with 20 or more photos that say how they were shot.")));
 }
 

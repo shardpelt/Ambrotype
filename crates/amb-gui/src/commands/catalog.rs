@@ -168,15 +168,11 @@ pub(crate) struct InsightPhoto {
     flag: Option<amb_protocol::sidecar::Flag>,
 }
 
-#[derive(Serialize)]
-pub(crate) struct InsightNotes {
-    advice: Vec<amb_library::insights::Note>,
-    challenges: Vec<amb_library::insights::Note>,
-}
-
 /// What the Insights view's numbers suggest, and challenges to try.
 #[tauri::command]
-pub(crate) async fn insights_advice(photos: Vec<InsightPhoto>) -> Res<InsightNotes> {
+pub(crate) async fn insights_advice(
+    photos: Vec<InsightPhoto>,
+) -> Res<amb_library::insights::Notes> {
     tauri::async_runtime::spawn_blocking(move || {
         let records: Vec<amb_library::catalog::Record> = photos
             .into_iter()
@@ -190,10 +186,7 @@ pub(crate) async fn insights_advice(photos: Vec<InsightPhoto>) -> Res<InsightNot
                 r
             })
             .collect();
-        InsightNotes {
-            advice: amb_library::insights::advice(&records),
-            challenges: amb_library::insights::challenges(&records),
-        }
+        amb_library::insights::notes(&records)
     })
     .await
     .map_err(Into::into)

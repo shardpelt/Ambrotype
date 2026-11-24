@@ -31,29 +31,57 @@ function sat(r, g, b) {
 
 const zones = { canvas: null, badge: null, shown: null };
 
-function showZone(key) {
-  const zone = ZONES[key];
+// The preview as small pixels (`edge` pixels on the long side) and where it
+// sits over the viewer; null while no photo is shown. Shared with the zone
+// overlay (darkroom.js).
+function previewSample(edge = 640) {
   const img = $("preview");
   const viewer = $("viewer");
-  if (!zone || !img || img.hidden || !img.naturalWidth || !viewer) return;
+  if (!img || img.hidden || !img.naturalWidth || !viewer) return null;
   const r = img.getBoundingClientRect();
   const v = viewer.getBoundingClientRect();
-  if (!r.width || !r.height) return;
-  // Small is enough to see where the zone is, and fast.
-  const scale = Math.min(1, 640 / Math.max(img.naturalWidth, img.naturalHeight));
+  if (!r.width || !r.height) return null;
+  const scale = Math.min(1, edge / Math.max(img.naturalWidth, img.naturalHeight));
   const w = Math.max(1, Math.round(img.naturalWidth * scale));
   const h = Math.max(1, Math.round(img.naturalHeight * scale));
-  const c = zones.canvas ??= el("canvas", { class: "zone-overlay" });
-  c.width = w;
-  c.height = h;
+  return { img, viewer, r, v, w, h };
+}
+
+// Draw the preview into `c` at the sample's size and give its pixels, or null
+// when the browser won't let them be read.
+function previewPixels(c, sample) {
+  c.width = sample.w;
+  c.height = sample.h;
   const ctx = c.getContext("2d", { willReadFrequently: true });
-  ctx.drawImage(img, 0, 0, w, h);
-  let data;
+  ctx.drawImage(sample.img, 0, 0, sample.w, sample.h);
   try {
-    data = ctx.getImageData(0, 0, w, h);
+    return { ctx, data: ctx.getImageData(0, 0, sample.w, sample.h) };
   } catch {
-    return;
+    return null;
   }
+}
+
+// Put `node` over the preview (its corner, offset by `inset`, or all of it)
+// inside the viewer.
+function placeOverPreview(node, sample, inset = null) {
+  const { r, v } = sample;
+  const box = inset
+    ? { left: `${r.left - v.left + inset}px`, top: `${r.top - v.top + inset}px` }
+    : { left: `${r.left - v.left}px`, top: `${r.top - v.top}px`, width: `${r.width}px`, height: `${r.height}px` };
+  Object.assign(node.style, box);
+  sample.viewer.append(node);
+}
+
+function showZone(key) {
+  const zone = ZONES[key];
+  // Small is enough to see where the zone is, and fast.
+  const sample = zone && previewSample();
+  if (!sample) return;
+  const { w, h } = sample;
+  const c = zones.canvas ??= el("canvas", { class: "zone-overlay" });
+  const pixels = previewPixels(c, sample);
+  if (!pixels) return;
+  const { ctx, data } = pixels;
   const px = data.data;
   let hits = 0;
   for (let i = 0; i < px.length; i += 4) {
@@ -72,13 +100,11 @@ function showZone(key) {
     }
   }
   ctx.putImageData(data, 0, 0);
-  Object.assign(c.style, { left: `${r.left - v.left}px`, top: `${r.top - v.top}px`, width: `${r.width}px`, height: `${r.height}px` });
-  viewer.append(c);
+  placeOverPreview(c, sample);
   const badge = zones.badge ??= el("div", { class: "zone-badge" });
   const share = Math.round((hits / (w * h)) * 100);
   badge.textContent = share < 1 && hits ? t("{zone}: under 1% of this photo", { zone: t(zone.label) }) : t("{zone}: {share}% of this photo", { zone: t(zone.label), share });
-  Object.assign(badge.style, { left: `${r.left - v.left + 10}px`, top: `${r.top - v.top + 10}px` });
-  viewer.append(badge);
+  placeOverPreview(badge, sample, 10);
   zones.shown = key;
 }
 

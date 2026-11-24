@@ -21,7 +21,7 @@ const MENU_BAR = [
     "keywords", "|", "rotate-left", "rotate-right", "flip-horizontal", "|", "save-preset", "styles", "style-new", "virtual-copy", "quick-collection", "|", "assistant", "plugins",
   ]],
   [tKey("Library"), ["library", "|", "lib-loupe", "lib-compare", "|", "slideshow", "|", "lib-stack", "lib-unstack", "|", "prev-photo", "next-photo"]],
-  [tKey("View"), ["before", "split", "side-by-side", "side-by-side-fill", "above-below", "touch", "zoom", "loupe", "proof", "clipping", "scope-toggle", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
+  [tKey("View"), ["before", "split", "side-by-side", "side-by-side-fill", "above-below", "touch", "zoom", "loupe", "proof", "clipping", "zone-overlay", "scope-toggle", "frame", "|", "filmstrip", "fold-left", "fold-right", "|", "#fullscreen"]],
   [tKey("Window"), ["#minimize", "#maximize", "|", [tKey("Task"), ["task-library", "task-develop", "task-film", "task-collage"]], "|", "looks", "edit-layout", "blank-layout", "|", "hub", "|", "#bring_all_to_front"], "window"],
   [tKey("Help"), ["search", "|", "connect-ai", "|", "features", "learn", "basics", "camsim", "sample", "watch", "shortcuts", "|", "feedback", "source"], "help"],
 ];
@@ -38,7 +38,7 @@ const MENU_TITLES = {
   "virtual-copy": tKey("Make a Virtual Copy"), "quick-collection": tKey("Add to the Last Collection"), assistant: tKey("Assistant…"),
   plugins: tKey("Plugins…"), library: tKey("Library Grid"), "lib-loupe": tKey("Loupe"), "lib-compare": tKey("Compare"),
   "lib-stack": tKey("Stack"), "lib-unstack": tKey("Unstack"), "prev-photo": tKey("Previous Photo"), "next-photo": tKey("Next Photo"),
-  zoom: tKey("Fit / 100%"), proof: tKey("Soft Proofing"), clipping: tKey("Clipping Overlay"), frame: tKey("Frame"), filmstrip: tKey("Filmstrip"),
+  zoom: tKey("Fit / 100%"), proof: tKey("Soft Proofing"), clipping: tKey("Clipping Overlay"), "zone-overlay": tKey("Zone Overlay"), frame: tKey("Frame"), filmstrip: tKey("Filmstrip"),
   "fold-left": tKey("Left Column"), "fold-right": tKey("Right Column"), looks: tKey("Appearance…"), "edit-layout": tKey("Edit Layout"), "blank-layout": tKey("New Layout from Scratch"),
   hub: tKey("Browse the Hub…"), settings: tKey("Settings…"), learn: tKey("Learn the Basics"), features: tKey("What Ambrotype Can Do…"), shortcuts: tKey("Keyboard Shortcuts"),
   feedback: tKey("Send Feedback…"), source: tKey("Ambrotype on GitHub"), search: tKey("Search Everything…"), "connect-ai": tKey("Connect an AI App…"),

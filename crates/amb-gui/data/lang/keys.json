@@ -4466,6 +4466,9 @@
  "One score per class (softmax)": [
   "index.html"
  ],
+ "One stop per zone, V is middle grey; blue is dark, red is bright. The legend outlines the zone under the pointer. Not saved.": [
+  "core/keys.js"
+ ],
  "One web page with the photo before and after its edit and a bar to drag; it works offline and on any web host.": [
   "core/keys.js"
  ],
@@ -7444,6 +7447,15 @@
   "index.html",
   "tools/croptool.js",
   "tools/mask-panel.js"
+ ],
+ "Zone Overlay": [
+  "core/menu.js"
+ ],
+ "Zone overlay: paint each part of the photo by its zone, 0 to X": [
+  "core/keys.js"
+ ],
+ "Zones 0 to X: one stop each, V is middle grey": [
+  "develop/darkroom.js"
  ],
  "Zoom in": [
   "core/keys.js",

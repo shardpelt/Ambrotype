@@ -146,6 +146,8 @@ pub struct DevelopSettings {
     /// Crop and straighten (after the lens corrections, in stored orientation).
     pub crop: Crop,
     pub negative: Negative,
+    /// Fade Restoration (`amb:FadeRestore`, 0..100; 0 is off).
+    pub fade_restore: f64,
     /// Masks and their local adjustments.
     pub masks: Masks,
     /// Spot removal (heal and clone).
@@ -187,6 +189,7 @@ impl Default for DevelopSettings {
             camera_profile: None,
             crop: Crop::default(),
             negative: Negative::default(),
+            fade_restore: 0.0,
             lut: None,
             effects: Vec::new(),
             masks: Masks::default(),

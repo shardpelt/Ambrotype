@@ -16,10 +16,10 @@ A short running list, kept up to date as work lands. Newest decisions first. Eve
 The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
 - **Darkroom aids** (`film-darkroom-aids`)
-- **Fade Restoration** (`film-fade-restoration`)
 
 ## Recently done
 
+- 2026-11-24: **Fade Restoration** (`film-fade-restoration`): Film Negative → Fade Restoration gives a faded print or slide back its blacks, contrast and colours, measured inside the crop (`amb:FadeRestore`; `amb_engine::fade`, model in [design/film-negatives.md](design/film-negatives.md))
 - 2026-11-23: **Dust, looked for harder where you point** (`film-dust-guided`): Alt-drag a box in the spot tool, or switch on Find in stroke (D) and brush a stroke; `amb dust --area` and `--along`; looser constants (`GUIDED_DUST`, to be benched on FILM-R) (`amb_engine::dust::find_in`, `find_along`; `ui/tools/spots-dust.js`, step in `tests/ui/retouch.js`)
 - 2026-11-23: **Map pins drag, and place names**: drag a one-photo pin to move its place (`ui/library/map-pins.js`); Map → Add place names (`amb place --names`) writes city, state and country from OpenStreetMap into the sidecar, and search finds them (`amb_library::places::add_names`). Step in `tests/ui/map-place.js`
 - 2026-11-23: **A vectorscope** beside the histogram (the panel's switch, or View): hue as angle, saturation as distance, a skin-tone line, a ring for the colour under the pointer (`amb_engine::scopes`, `ui/develop/scope.js`, `tests/ui/vectorscope.js`)

@@ -186,6 +186,7 @@ pub const RENDERED_TAGS: &[&str] = &[
     "amb:NegativeToe",
     "amb:NegativeShoulder",
     "amb:NegativeSaturation",
+    "amb:FadeRestore",
     "amb:PaperCurve",
     "amb:Paper",
     "amb:PaperGrade",

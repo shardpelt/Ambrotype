@@ -154,7 +154,7 @@ The crop panel isn't placed by layouts. It appears at the top of the column with
 | `transform` | `Upright`, `Transform` | |
 | `effects` | `Post-Crop Vignetting`, `Grain`, `Film finish`, `Glow`, `Plugin effects` | The effect plugins on the photo (`amb:Effects`), each with its own controls |
 | `calibration` | `Shadows`, `Red Primary`, `Green Primary`, `Blue Primary` | |
-| `negative` | `Conversion`, `Print`, `Paper` | |
+| `negative` | `Conversion`, `Print`, `Paper`, `Fade Restoration` | |
 
 - Including a whole panel brings its composite widget (the curve or the wheels).
 - Including one section brings only that section's sliders, so `color_grading/Shadow` gives three plain sliders.

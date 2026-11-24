@@ -86,6 +86,18 @@ With `amb:PaperCurve` on, step 4 prints on a modelled paper instead (`crates/amb
 
 What is ours: the logistic form, the grade table (from the ranges paper datasheets commonly print), the 1.0-decade negative range, split grade as a mean of two emulsions, and the three papers, which are generic and match no product. Curves fitted from public datasheets are still to do ([GAPS.md](../GAPS.md)).
 
+## Fade Restoration (ours)
+
+For a faded print or slide, scanned or photographed (usually a JPEG or TIFF): `amb:FadeRestore` (0-100, 0 off), in the Film tab's Film Negative panel. It runs on camera RGB right after a negative conversion (if one ran), in `crates/amb-engine/src/fade.rs`.
+
+1. Measured inside the crop, on a copy averaged to about 250,000 samples (`FADE_SAMPLES`), leaving out 3 % at each edge (`border`) for a print's border or a slide's mount.
+2. Per channel, in log10 of linear: the 0.2 % and 99.8 % percentiles are its black and white (`low_pct`, `high_pct`). A channel spanning under 0.05 decades is left alone, and then no saturation is given back.
+3. Each channel is stretched between them to t in 0..1; red's and blue's midtones (the median of t) are bent to green's by a gamma kept within 0.7-1.4 (`gamma_min`, `gamma_max`).
+4. t^gamma goes back to linear between 0.004 and 0.90 (`black`, `white`), straight in log, so a fade that squeezed the density range evenly comes back exactly.
+5. A quarter more saturation around each pixel's grey (`saturation`), then the result is mixed with the photo by the amount.
+
+A region render takes the measurement from the whole photo's (`Globals`). On a synthetic print faded in log (blacks to 0.08, white to 0.6, red and blue unevenly, 40 % of the colour gone) the mean log error to the original falls from 0.60 to 0.024. Not yet tried on real faded prints. All constants are in the `fade` section of `amb calibration defaults`.
+
 ## Tried on real scans (2026-10-28)
 
 Eight frames from the BlueNeg dataset ([research/16](../research/16-film-scan-apps-survey.md) has the source): four from a Fuji 400 roll, four from a Kodak Gold 100 roll whose blue layer has faded, scanned on a Plustek OpticFilm 8200i to 16-bit DNGs, with the lab prints of the time to compare.

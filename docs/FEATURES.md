@@ -74,6 +74,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Make a whole roll look consistent** → in the library, **Sync negative roll…**, or Fixed range in **Film Negative**. `amb negative analyze`.
 - **A film stock with its grain and glow** → **Film Negative** → Film stock: picking one also sets its grain, halation and bloom (change them after). `amb negative stocks`; `amb edit '{"cmd":"set_film_stock","id":"cinema-500t"}'`.
 - **Print the negative as on darkroom paper** → **Film Negative** → Paper: Paper curve, then a paper, a grade (0-5), or Split grade with Soft and Hard exposure, and Preflash for detail in the lightest tones. `amb do neg.dng "amb:NegativeConvert=True amb:PaperCurve=True amb:PaperGrade=3"`.
+- **Restore a faded print or slide** (scanned or photographed) → the **Film** task → **Film Negative** → Fade Restoration: brings back the blacks, the contrast and the colours that faded unevenly, measured inside the crop. `amb do print.jpg "amb:FadeRestore=80"`.
 - **Colour cast from a sky or lamp, faded expired film** → **Film Negative**: Cast removal, Expired film; Auto Density and Auto Grade.
 - **Dust and hairs on a scan** → **Spot Removal** → **Find dust**; Shift-drag along a straight scratch. `amb dust PHOTO --apply`.
 - **Faint dust where you point** → **Spot Removal**: Alt-drag a box, or switch on **Find in stroke** (D) and brush over it; it looks harder there than Find dust. `amb dust PHOTO --area X0,Y0,X1,Y1 --apply`, or `--along X,Y;X,Y --radius R`.

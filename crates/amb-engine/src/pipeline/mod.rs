@@ -6,6 +6,7 @@
 //!    (profile + manual), then crop and straighten, in one resampling pass
 //!    (the image is the crop's size from here on)            [sensor-linear]
 //!    → film negative conversion (optional, `amb:` settings) [sensor-linear]
+//!    → Fade Restoration ([`crate::fade`], optional)          [sensor-linear]
 //! 1. camera RGB → white balance + camera matrix → XYZ → Bradford to D50 →
 //!    linear ProPhoto → Exposure (2^EV) → Defringe           [scene-linear]
 //! 2. Dehaze → halation and bloom ([`crate::glow`]) → highlight roll-off
@@ -53,7 +54,8 @@ use crate::retouch::Spots;
 use crate::tone::{self, ParametricCurve, ToneControls};
 use crate::transform::{Transform, UprightMode};
 use crate::{
-    dehaze, detail, effects, lens, local, local_tone, mask, negative, primaries, retouch, upright,
+    dehaze, detail, effects, fade, lens, local, local_tone, mask, negative, primaries, retouch,
+    upright,
 };
 
 mod camera;
@@ -119,12 +121,13 @@ impl Drop for Stages {
 }
 
 /// What a render measures over the whole photo: a film negative's levels,
-/// the haze, and the colours colour range masks select. A region render
+/// a faded print's levels, the haze, and the colours colour range masks select. A region render
 /// can't measure these on its part of the photo, so it takes them from a
 /// small render of all of it ([`measure_globals`]).
 #[derive(Debug, Clone, Default)]
 pub struct Globals {
     negative: Option<negative::Analysis>,
+    fade: Option<fade::Analysis>,
     pub(crate) dehaze: Option<dehaze::Estimate>,
     pub(crate) mask_dehaze: Vec<dehaze::Estimate>,
     pub(crate) colour_targets: Vec<Vec<[f32; 3]>>,
@@ -152,10 +155,12 @@ pub fn render(img: &CameraImage, s: &DevelopSettings) -> ProPhotoImage {
 /// Long side of the small copy [`measure_globals`] renders.
 pub const GLOBALS_LONG_SIDE: usize = 1600;
 
-/// Whether a region render of `s` needs [`Globals`]: a film negative, Dehaze
+/// Whether a region render of `s` needs [`Globals`]: a film negative, Fade
+/// Restoration, Dehaze
 /// (global or in a mask) or a colour range mask.
 pub fn needs_globals(s: &DevelopSettings) -> bool {
     s.negative.enabled
+        || s.fade_restore > 0.0
         || s.dehaze != 0.0
         || s.masks.corrections.iter().any(|c| c.adjust.dehaze != 0.0)
         || s.masks.has_colour_range()
@@ -437,7 +442,8 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
     let mut globals = Globals::default();
 
     // 0. Lens Corrections on camera RGB, then Transform, crop and straighten
-    // (one resample), then a film negative turned positive.
+    // (one resample), then a film negative turned positive, then a faded
+    // print restored.
     let stage0 = camera_stage(img, s, &pass);
     stages.mark("upright+lens+crop");
     let CameraStage {
@@ -449,10 +455,14 @@ fn develop(img: &CameraImage, s: &DevelopSettings, pass: Pass) -> (Image, Global
         height,
         ref lens_pass,
         negative: negative_analysis,
+        fade: fade_analysis,
         ..
     } = stage0;
     if negative_analysis.is_some() {
         globals.negative = negative_analysis;
+    }
+    if fade_analysis.is_some() {
+        globals.fade = fade_analysis;
     }
     let camera_rgb = stage0.rgb(img);
     // 1. Camera RGB → scene-linear ProPhoto with white balance and Exposure.

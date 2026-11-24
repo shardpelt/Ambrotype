@@ -2690,6 +2690,15 @@
    "max": 100,
    "default": 0,
    "status": "exact"
+  },
+  {
+   "name": "amb:FadeRestore",
+   "group": "fade",
+   "kind": "number",
+   "min": 0,
+   "max": 100,
+   "default": 0,
+   "status": "exact"
   }
  ]
 }

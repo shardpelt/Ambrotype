@@ -41,6 +41,35 @@ fn f_number(v: f64) -> String {
 /// Enough photos for a number to mean something.
 const ENOUGH: usize = 20;
 
+/// Lenses looked at for advice and gear, most used first.
+const LENSES_SHOWN: usize = 4;
+
+/// A zoom: its longest focal length is at least this many times its shortest.
+const ZOOM_RATIO: f64 = 1.5;
+
+/// "At an end" of a zoom: within this fraction of the shortest or longest used.
+const AT_END: f64 = 0.05;
+
+/// Share (percent) of a zoom's photos at one end for the lens note, and
+/// the higher bar for suggesting other gear.
+const LENS_END_SHARE: u32 = 30;
+const GEAR_END_SHARE: u32 = 40;
+
+/// Dark: ISO from which a photo counts, and the share (percent) of all photos
+/// that makes it a habit.
+const DARK_ISO: u32 = 3200;
+const DARK_SHARE: u32 = 15;
+
+/// Dark photos slower than this (s) are slow; at this f-number or wider the
+/// lens is already open, and below [`FAST_SHARE`] percent of dark photos
+/// there a faster lens is the first thing to try.
+const SLOW_SHUTTER: f64 = 1.0 / 60.0;
+const FAST_APERTURE: f64 = 2.0;
+const FAST_SHARE: u32 = 30;
+
+/// Share (percent) of photos slower than 1 over the focal length that is worth saying.
+const SHAKE_SHARE: u32 = 10;
+
 /// Hours counted as night: from 20:00 and before 06:00.
 const NIGHT_FROM: u32 = 20;
 const NIGHT_UNTIL: u32 = 6;
@@ -85,7 +114,7 @@ pub fn notes(records: &[Record]) -> Notes {
     Notes {
         summary: summary(records),
         advice: advice(records),
-        gear: Vec::new(),
+        gear: gear(records),
         challenges: challenges(records),
     }
 }
@@ -105,7 +134,7 @@ fn hours(records: &[Record]) -> Vec<u32> {
 }
 
 fn is_night(hour: u32) -> bool {
-    hour >= NIGHT_FROM || hour < NIGHT_UNTIL
+    !(NIGHT_UNTIL..NIGHT_FROM).contains(&hour)
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -245,7 +274,18 @@ pub fn summary(records: &[Record]) -> Option<Note> {
 /// and where the keepers come from. The most telling first, at most eight.
 pub fn advice(records: &[Record]) -> Vec<Note> {
     let mut out = Vec::new();
-    // Per lens: how it's used.
+    for (lens, rs) in lens_groups(records).iter().take(LENSES_SHOWN) {
+        out.extend(lens_notes(lens, rs));
+    }
+    out.extend(light_notes(records));
+    out.extend(habit_notes(records));
+    out.extend(keeper_notes(records));
+    out.truncate(8);
+    out
+}
+
+/// The most-used lenses (with [`ENOUGH`] photos each), biggest first.
+fn lens_groups(records: &[Record]) -> Vec<(&str, Vec<&Record>)> {
     let mut lenses: BTreeMap<&str, Vec<&Record>> = BTreeMap::new();
     for r in records {
         if let Some(l) = r.shot.lens.as_deref() {
@@ -257,19 +297,41 @@ pub fn advice(records: &[Record]) -> Vec<Note> {
         .filter(|(_, v)| v.len() >= ENOUGH)
         .collect();
     by_size.sort_by_key(|(_, v)| std::cmp::Reverse(v.len()));
-    for (lens, rs) in by_size.iter().take(4) {
-        out.extend(lens_notes(lens, rs));
+    by_size
+}
+
+/// How a zoom is used at its two ends: the shares (percent) of its photos
+/// at the shortest and the longest focal length it was used at.
+struct ZoomEnds {
+    lo: f64,
+    hi: f64,
+    at_lo: u32,
+    at_hi: u32,
+}
+
+fn zoom_ends(rs: &[&Record]) -> Option<ZoomEnds> {
+    let focals: Vec<f64> = rs.iter().filter_map(|r| r.shot.focal).collect();
+    if focals.len() < ENOUGH {
+        return None;
     }
-    out.extend(light_notes(records));
-    out.extend(habit_notes(records));
-    out.extend(keeper_notes(records));
-    out.truncate(8);
-    out
+    let lo = focals.iter().copied().fold(f64::INFINITY, f64::min);
+    let hi = focals.iter().copied().fold(0.0, f64::max);
+    // A zoom: used over a range.
+    if lo <= 0.0 || hi / lo < ZOOM_RATIO {
+        return None;
+    }
+    let at_lo = focals.iter().filter(|f| **f <= lo * (1.0 + AT_END)).count();
+    let at_hi = focals.iter().filter(|f| **f >= hi * (1.0 - AT_END)).count();
+    Some(ZoomEnds {
+        lo,
+        hi,
+        at_lo: pct(at_lo, focals.len()),
+        at_hi: pct(at_hi, focals.len()),
+    })
 }
 
 fn lens_notes(lens: &str, rs: &[&Record]) -> Vec<Note> {
     let mut out = Vec::new();
-    let n = rs.len();
     let aps: Vec<f64> = rs.iter().filter_map(|r| r.shot.aperture).collect();
     if aps.len() >= ENOUGH {
         // Its widest is the widest it was used at: a guess, but the photos'.
@@ -300,60 +362,95 @@ fn lens_notes(lens: &str, rs: &[&Record]) -> Vec<Note> {
             ));
         }
     }
-    let focals: Vec<f64> = rs.iter().filter_map(|r| r.shot.focal).collect();
-    if focals.len() >= ENOUGH {
-        let lo = focals.iter().copied().fold(f64::INFINITY, f64::min);
-        let hi = focals.iter().copied().fold(0.0, f64::max);
-        // A zoom: used over a range.
-        if hi / lo >= 1.5 {
-            let at_lo = focals.iter().filter(|f| **f <= lo * 1.05).count();
-            let at_hi = focals.iter().filter(|f| **f >= hi * 0.95).count();
-            if pct(at_lo, n) >= 30 {
-                out.push(note(
-                    "lens",
-                    format!("{lens}: often at its widest"),
-                    format!(
-                        "{} % of its photos are at {lo:.0} mm, the widest it goes. You'd likely use something wider.",
-                        pct(at_lo, focals.len())
-                    ),
-                ));
-            }
-            if pct(at_hi, n) >= 30 {
-                out.push(note(
-                    "lens",
-                    format!("{lens}: often at its longest"),
-                    format!(
-                        "{} % of its photos are at {hi:.0} mm, the longest it goes. You'd likely use something longer.",
-                        pct(at_hi, focals.len())
-                    ),
-                ));
-            }
+    if let Some(z) = zoom_ends(rs) {
+        if z.at_lo >= LENS_END_SHARE {
+            out.push(note(
+                "lens",
+                format!("{lens}: often at its widest"),
+                format!(
+                    "{} % of its photos are at {:.0} mm, the widest it goes. You'd likely use something wider.",
+                    z.at_lo, z.lo
+                ),
+            ));
+        }
+        if z.at_hi >= LENS_END_SHARE {
+            out.push(note(
+                "lens",
+                format!("{lens}: often at its longest"),
+                format!(
+                    "{} % of its photos are at {:.0} mm, the longest it goes. You'd likely use something longer.",
+                    z.at_hi, z.hi
+                ),
+            ));
         }
     }
     out
 }
 
-fn light_notes(records: &[Record]) -> Vec<Note> {
-    let mut out = Vec::new();
+/// Photos with both an ISO and a shutter speed: what light notes read.
+fn light_known(records: &[Record]) -> Vec<&Record> {
     let known: Vec<&Record> = records
         .iter()
         .filter(|r| r.shot.iso.is_some() && r.shot.shutter.is_some())
         .collect();
     if known.len() < ENOUGH {
-        return out;
+        return Vec::new();
     }
-    let dark: Vec<&&Record> = known.iter().filter(|r| r.shot.iso >= Some(3200)).collect();
-    if pct(dark.len(), known.len()) >= 15 {
-        let slow = dark
-            .iter()
-            .filter(|r| r.shot.shutter.is_some_and(|s| s > 1.0 / 60.0))
-            .count();
-        let wide = dark
-            .iter()
-            .filter(|r| r.shot.aperture.is_some_and(|a| a <= 2.0))
-            .count();
-        let tip = if pct(wide, dark.len()) < 30 {
-            " A faster lens (f/2 or wider) would let the ISO come down."
+    known
+}
+
+/// How much is shot in the dark (percent): of all photos, and of those,
+/// the shares slower than [`SLOW_SHUTTER`] and at [`FAST_APERTURE`] or wider.
+struct Darkness {
+    share: u32,
+    slow: u32,
+    fast: u32,
+}
+
+fn darkness(known: &[&Record]) -> Option<Darkness> {
+    let dark: Vec<&&Record> = known
+        .iter()
+        .filter(|r| r.shot.iso >= Some(DARK_ISO))
+        .collect();
+    let share = pct(dark.len(), known.len());
+    if known.is_empty() || share < DARK_SHARE {
+        return None;
+    }
+    let slow = dark
+        .iter()
+        .filter(|r| r.shot.shutter.is_some_and(|s| s > SLOW_SHUTTER))
+        .count();
+    let fast = dark
+        .iter()
+        .filter(|r| r.shot.aperture.is_some_and(|a| a <= FAST_APERTURE))
+        .count();
+    Some(Darkness {
+        share,
+        slow: pct(slow, dark.len()),
+        fast: pct(fast, dark.len()),
+    })
+}
+
+/// The share (percent) slower than one over the focal length: the old rule
+/// for a steady hand. Only when it is [`SHAKE_SHARE`] or more.
+fn shake(known: &[&Record]) -> Option<u32> {
+    let risky = known
+        .iter()
+        .filter(|r| {
+            matches!((r.shot.shutter, r.shot.focal), (Some(s), Some(f)) if f > 0.0 && s > 1.0 / f)
+        })
+        .count();
+    Some(pct(risky, known.len())).filter(|p| *p >= SHAKE_SHARE)
+}
+
+fn light_notes(records: &[Record]) -> Vec<Note> {
+    let mut out = Vec::new();
+    let known = light_known(records);
+    if let Some(d) = darkness(&known) {
+        // A fast lens is the gear note's tip; here only the next step if
+        // the lens is already open.
+        let tip = if d.fast < FAST_SHARE {
+            ""
         } else {
             " You already open up; a camera that's cleaner at high ISO, or a tripod, is the next step."
         };
@@ -362,25 +459,67 @@ fn light_notes(records: &[Record]) -> Vec<Note> {
             "You shoot in the dark a lot",
             format!(
                 "{} % of your photos are at ISO 3200 or more, and {} % of those slower than 1/60 s.{tip}",
-                pct(dark.len(), known.len()),
-                pct(slow, dark.len())
+                d.share, d.slow
             ),
         ));
     }
-    // Slower than one over the focal length: the old rule for a steady hand.
-    let risky = known
-        .iter()
-        .filter(|r| {
-            matches!((r.shot.shutter, r.shot.focal), (Some(s), Some(f)) if f > 0.0 && s > 1.0 / f)
-        })
-        .count();
-    if pct(risky, known.len()) >= 10 {
+    if let Some(p) = shake(&known) {
         out.push(note(
             "light",
             "Watch for shake",
             format!(
-                "{} % of your photos are slower than 1 over the focal length (1/50 s at 50 mm), where a hand starts to shake. Check them at 100 %; stabilisation or a faster shutter helps.",
-                pct(risky, known.len())
+                "{p} % of your photos are slower than 1 over the focal length (1/50 s at 50 mm), where a hand starts to shake. Check them at 100 %; stabilisation or a faster shutter helps."
+            ),
+        ));
+    }
+    out
+}
+
+/// Gear suggestions, each tied to a number from the photos: a faster lens
+/// for dark scenes, a longer or wider zoom for one stuck at an end,
+/// stabilisation for slow shutters. No brands, no product names.
+pub fn gear(records: &[Record]) -> Vec<Note> {
+    let mut out = Vec::new();
+    let known = light_known(records);
+    if let Some(d) = darkness(&known).filter(|d| d.fast < FAST_SHARE) {
+        out.push(note(
+            "gear",
+            "A faster lens",
+            format!(
+                "{} % of your photos are at ISO 3200 or more, and only {} % of those at f/2 or wider. A faster lens would let the ISO come down.",
+                d.share, d.fast
+            ),
+        ));
+    }
+    for (lens, rs) in lens_groups(records).iter().take(LENSES_SHOWN) {
+        let Some(z) = zoom_ends(rs) else { continue };
+        if z.at_hi >= GEAR_END_SHARE {
+            out.push(note(
+                "gear",
+                "A longer lens",
+                format!(
+                    "{} % of your {lens} photos are at {:.0} mm, the longest it goes. Something longer would reach what you keep asking of it.",
+                    z.at_hi, z.hi
+                ),
+            ));
+        }
+        if z.at_lo >= GEAR_END_SHARE {
+            out.push(note(
+                "gear",
+                "A wider lens",
+                format!(
+                    "{} % of your {lens} photos are at {:.0} mm, the widest it goes. Something wider would fit what you keep asking of it.",
+                    z.at_lo, z.lo
+                ),
+            ));
+        }
+    }
+    if let Some(p) = shake(&known) {
+        out.push(note(
+            "gear",
+            "Stabilisation",
+            format!(
+                "{p} % of your photos are slower than 1 over the focal length. Stabilisation, in the lens or the body, would give you those shutter speeds back."
             ),
         ));
     }
@@ -690,6 +829,84 @@ mod tests {
         let ch = challenges(&rs);
         assert!(ch.iter().any(|n| n.title == "Next door: 24 mm"), "{ch:?}");
         assert!(ch.iter().any(|n| n.title == "Next door: f/2"), "{ch:?}");
+    }
+
+    #[test]
+    fn each_gear_rule_fires_on_its_own_set_and_not_on_a_balanced_one() {
+        let titles =
+            |rs: &[Record]| -> Vec<String> { gear(rs).into_iter().map(|n| n.title).collect() };
+        // Dark, mostly stopped down: a faster lens.
+        let dark: Vec<Record> = (0..30)
+            .map(|_| shot("50mm", 4.0, 50.0, 6400, 1.0 / 200.0, 22))
+            .collect();
+        let g = gear(&dark);
+        assert_eq!(g.len(), 1, "{g:?}");
+        assert_eq!(g[0].title, "A faster lens");
+        assert!(
+            g[0].text.contains("100 %") && g[0].text.contains("0 %"),
+            "{}",
+            g[0].text
+        );
+        // Already open: no gear, only the light note's other tip.
+        let open: Vec<Record> = (0..30)
+            .map(|_| shot("50mm", 1.8, 50.0, 6400, 1.0 / 200.0, 22))
+            .collect();
+        assert!(titles(&open).is_empty());
+        // A zoom at its long end, then at its short end.
+        let long: Vec<Record> = (0..30)
+            .map(|i| {
+                shot(
+                    "70-200",
+                    4.0,
+                    if i < 5 { 70.0 } else { 200.0 },
+                    100,
+                    1.0 / 1000.0,
+                    12,
+                )
+            })
+            .collect();
+        let g = gear(&long);
+        assert_eq!(g.len(), 1, "{g:?}");
+        assert!(
+            g[0].title == "A longer lens" && g[0].text.contains("200 mm"),
+            "{:?}",
+            g[0]
+        );
+        let short: Vec<Record> = (0..30)
+            .map(|i| {
+                shot(
+                    "24-70",
+                    4.0,
+                    if i < 5 { 70.0 } else { 24.0 },
+                    100,
+                    1.0 / 1000.0,
+                    12,
+                )
+            })
+            .collect();
+        assert_eq!(titles(&short), ["A wider lens"]);
+        // A zoom used all over: nothing.
+        let balanced: Vec<Record> = (0..30)
+            .map(|i| {
+                shot(
+                    "24-70",
+                    4.0,
+                    [24.0, 35.0, 50.0, 70.0][i % 4],
+                    100,
+                    1.0 / 1000.0,
+                    12,
+                )
+            })
+            .collect();
+        assert!(titles(&balanced).is_empty());
+        // Slow for the focal length: stabilisation.
+        let shaky: Vec<Record> = (0..30)
+            .map(|_| shot("50mm", 4.0, 50.0, 100, 1.0 / 20.0, 12))
+            .collect();
+        assert_eq!(titles(&shaky), ["Stabilisation"]);
+        assert!(advice(&shaky).iter().any(|n| n.title == "Watch for shake"));
+        // Few photos: nothing.
+        assert!(gear(&dark[..5]).is_empty());
     }
 
     #[test]

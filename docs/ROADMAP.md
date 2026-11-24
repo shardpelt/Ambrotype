@@ -41,9 +41,6 @@ Fastest first.
 | `library-speed-number` | **A published speed number for big libraries** (100k photos: open, filter, search) | S | medium | brief | Decide: how the synthetic library is made, what is timed, where it is written down. "Free browsers stall on big libraries" is a top switching complaint. Source: PhotoWorkout, 2026-11 |
 | `readme-screenshots` | **README screenshots again**, with the library (grid, Insights) and a Trippy edit | S | small | owner | Needs the owner's Fujifilm sample photos ([WHATS-NEXT.md](WHATS-NEXT.md)). Source: owner, 2026-11-11 |
 | `trippy-past-range` | **Basic's sliders past their ranges in Trippy** (our own extra settings; Lightroom's ranges stay in the sidecar) | S–M | medium | brief | Decide: which sliders, how far, how they are stored. Source: owner, 2026-11-04 |
-| `insights-style-summary` | **Insights: an overall style summary** ("what kind of photographer the numbers say you are") | M | medium | brief | Decide: what it says and from which medians. `crates/amb-library/src/insights/advice.rs`. Source: owner, 2026-11-11 |
-| `insights-gear` | **Insights: gear suggestions** tied to a stated shortfall (a faster lens for dark scenes, a wider zoom) | M | medium | brief | Decide: the rules and the wording. `crates/amb-library/src/insights/advice.rs`. Source: owner, 2026-11-11 |
-| `insights-adjacent-styles` | **Insights: styles next to yours to try**, not only the far side | M | medium | brief | Decide: one step either side of the usual focal length and aperture, or other rules. Source: owner, 2026-11-11 |
 
 ## 3. Big things
 

@@ -9,7 +9,7 @@
 //! them from here), so `amb insights` and the view always agree.
 
 mod advice;
-pub use advice::{Note, Notes, advice, challenges, notes, summary};
+pub use advice::{Note, Notes, advice, challenges, gear, notes, summary};
 
 use crate::catalog::Record;
 use amb_protocol::sidecar::Flag;

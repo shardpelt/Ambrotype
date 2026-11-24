@@ -49,6 +49,7 @@ async function openPath(path) {
     const wasRendered = !!ui.info?.rendered;
     ui.info = r.info;
     framePhotoChanged();
+    aidsPhotoChanged();
     refreshProfiles();
     refreshLuts();
     // Raw and JPEG have different white balance sliders.

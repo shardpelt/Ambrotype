@@ -2598,6 +2598,9 @@
  "For \"looks different\": which settings or preset, and how it differs.": [
   "index.html"
  ],
+ "For a converted negative. The preview shows the scan itself while it is on; nothing is saved and it is not an undo step.": [
+  "core/keys.js"
+ ],
  "For photos without a place, from the photos that have one: taken around the same time, or looking the same (photos Smart search has indexed). Untick any that look wrong.": [
   "index.html"
  ],
@@ -4822,6 +4825,15 @@
  "Pause (Space)": [
   "library/slideshow.js"
  ],
+ "Peek": [
+  "develop/print-aids.js"
+ ],
+ "Peek at Negative": [
+  "core/menu.js"
+ ],
+ "Peek at the negative: show the scan as it is, without the conversion": [
+  "core/keys.js"
+ ],
  "Peek on hover: a pointer resting on the photo shows the part under it at 100%, as the loupe (I) does": [
   "index.html"
  ],
@@ -4833,6 +4845,12 @@
  ],
  "Peek on hover: the part under a resting pointer at 100%": [
   "core/keys.js"
+ ],
+ "Peek works on a converted negative: switch on Film Negative first.": [
+  "develop/print-aids.js"
+ ],
+ "Peeking at the negative: Shift+N goes back": [
+  "develop/print-aids.js"
  ],
  "People": [
   "tools/masks.js"
@@ -4927,6 +4945,12 @@
   "index.html",
   "library/slideshow.js"
  ],
+ "Place a spot in a zone: the exposure that prints it there": [
+  "core/keys.js"
+ ],
+ "Place in zone {zone}": [
+  "develop/print-aids.js"
+ ],
  "Place photos from a GPS track recorded while shooting (the selected ones, or all shown)": [
   "library/browse.js"
  ],
@@ -4936,6 +4960,15 @@
  "Place the ticked photos": [
   "index.html"
  ],
+ "Place this spot in a zone": [
+  "develop/print-aids.js"
+ ],
+ "Place this spot in a zone…": [
+  "develop/print-aids.js"
+ ],
+ "Place this spot in zone…": [
+  "develop/print-aids.js"
+ ],
  "Placed {photos}": [
   "library/browse.js"
  ],
@@ -4944,6 +4977,9 @@
  ],
  "Placed {photos} by guess": [
   "library/guess-places.js"
+ ],
+ "Placing the spot…": [
+  "develop/print-aids.js"
  ],
  "Plain grid with names": [
   "index.html"
@@ -5192,6 +5228,7 @@
  ],
  "Ready": [
   "develop/photo.js",
+  "develop/print-aids.js",
   "develop/quickzoom.js",
   "develop/speed-edit.js",
   "develop/touch.js",
@@ -5462,6 +5499,12 @@
  ],
  "Right Column": [
   "core/menu.js"
+ ],
+ "Right-click the spot on the photo to place it in a zone": [
+  "core/keys.js"
+ ],
+ "Right-click the spot on the photo, then choose a zone, 0 to X. One undo step.": [
+  "core/keys.js"
  ],
  "Right-drag on the photo zooms to that box (Z or Space goes back); off, a right click exports": [
   "index.html"
@@ -6192,6 +6235,9 @@
  "Show the right column (Ctrl+])": [
   "looks/columns.js"
  ],
+ "Show the scan as it is, without the conversion (Shift+N). Not saved.": [
+  "develop/print-aids.js"
+ ],
  "Show the selected mask in red (O)": [
   "index.html"
  ],
@@ -6786,6 +6832,9 @@
  "The effect {plugin} isn't installed.": [
   "tools/trip.js"
  ],
+ "The exposure stops at the end of its range, short of zone {zone}.": [
+  "develop/print-aids.js"
+ ],
  "The file it gets: a TIFF next to the photo, IMG_0001-Edit.tif": [
   "index.html"
  ],
@@ -6890,6 +6939,9 @@
  ],
  "The sky, joined to the top": [
   "tools/toolblocks.js"
+ ],
+ "The spot is in zone {zone} already.": [
+  "develop/print-aids.js"
  ],
  "The system's default app for TIFF files": [
   "index.html"
@@ -7538,6 +7590,9 @@
  ],
  "Zone overlay: paint each part of the photo by its zone, 0 to X": [
   "core/keys.js"
+ ],
+ "Zone {zone}": [
+  "develop/print-aids.js"
  ],
  "Zones 0 to X: one stop each, V is middle grey": [
   "develop/darkroom.js"

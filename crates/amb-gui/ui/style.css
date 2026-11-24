@@ -1159,6 +1159,11 @@ button.tool-icon.active { color: var(--accent); }
 .darkroom-legend { position: absolute; z-index: 6; pointer-events: none; display: flex; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 4px rgb(0 0 0 / 0.4); font-size: 10px; font-weight: 600; }
 .darkroom-cell { background: var(--zone); color: #fff; text-shadow: 0 0 2px #000; min-width: 22px; padding: 2px 3px; text-align: center; outline-offset: -2px; }
 .darkroom-cell.on { outline: 2px solid #fff; }
+.zone-pop { position: fixed; z-index: 1001; padding: 6px; background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4); }
+.zone-pop-title { font-size: 11px; color: var(--muted); padding: 0 2px 4px; }
+.zone-pop-row { display: flex; border-radius: 4px; overflow: hidden; }
+.zone-swatch { background: var(--zone); color: #fff; text-shadow: 0 0 2px #000; border: 0; border-radius: 0; min-width: 28px; padding: 6px 3px; font-size: 11px; font-weight: 600; }
+.zone-swatch:hover, .zone-swatch:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 .basics-dialog { width: min(820px, 94vw); }
 .basics-body { display: grid; grid-template-columns: 220px 1fr; gap: 16px; height: min(520px, 70vh); }
 .basics-nav { overflow-y: auto; display: flex; flex-direction: column; align-items: stretch; gap: 1px; padding-right: 6px; border-right: 1px solid var(--line); }

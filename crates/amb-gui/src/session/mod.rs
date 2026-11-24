@@ -55,6 +55,9 @@ pub struct Session {
     /// Soft proofing: the space to show the photo as it exports to, and
     /// whether to mark the colours beyond it.
     proof: Option<(amb_color::space::OutputSpace, bool)>,
+    /// Showing the scan as it is, with Film Negative's conversion off. Not
+    /// part of the edit: nothing saved, no undo step, gone with the session.
+    peek_negative: bool,
     /// XMP text of the sidecar we loaded, so saving keeps its other metadata.
     base_xmp: Option<String>,
     /// Resolved lens profile, keyed by (profile filename hint, auto CA or profile on).
@@ -342,6 +345,7 @@ impl Session {
             sidecar,
             on_screen: false,
             proof: None,
+            peek_negative: false,
             base_xmp,
             lens_cache: None,
             upright_cache: None,
@@ -374,6 +378,13 @@ impl Session {
             // The 100% view keeps display pixels.
             self.forget_regions();
         }
+    }
+
+    /// Show the scan as it is (`true`), or as the edit converts it. Renders
+    /// follow through [`effective_settings`](Self::effective_settings); the
+    /// 100% view's tiles are keyed by those settings, so none go stale.
+    pub fn set_peek_negative(&mut self, on: bool) {
+        self.peek_negative = on;
     }
 
     /// A border caption template filled in for this photo, as the export

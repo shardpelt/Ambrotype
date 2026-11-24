@@ -467,3 +467,50 @@ fn saves_a_preset_without_the_crop() {
     assert!(save_preset(&dir, " ", "", &settings, true).is_err());
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn peeking_shows_the_scan_without_touching_the_edit() {
+    let path = synthetic("negative");
+    let lens = LensSources::default();
+    let mut s = Session::open(&path).unwrap();
+    s.execute(
+        &[Command::SetParam {
+            name: "amb:NegativeConvert".into(),
+            value: true.into(),
+        }],
+        None,
+    )
+    .unwrap();
+    let none = BTreeMap::new();
+    let converted = s.preview(256, &none, false, false, &lens).jpeg;
+    s.set_peek_negative(true);
+    let settings = s.effective_settings(&none, false);
+    assert_eq!(
+        settings.get("amb:NegativeConvert"),
+        Some(&Value::Bool(false))
+    );
+    // The edit itself still says converted; the preview is the scan.
+    assert_eq!(
+        s.state.settings().get("amb:NegativeConvert"),
+        Some(&Value::Bool(true))
+    );
+    let peeked = s.preview(256, &none, false, false, &lens).jpeg;
+    assert_ne!(converted, peeked);
+    s.set_peek_negative(false);
+    assert_eq!(s.preview(256, &none, false, false, &lens).jpeg, converted);
+    // With the conversion off there is nothing to peek behind.
+    s.execute(
+        &[Command::SetParam {
+            name: "amb:NegativeConvert".into(),
+            value: false.into(),
+        }],
+        None,
+    )
+    .unwrap();
+    s.set_peek_negative(true);
+    assert_eq!(
+        s.effective_settings(&none, false)
+            .get("amb:NegativeConvert"),
+        Some(&Value::Bool(false))
+    );
+}

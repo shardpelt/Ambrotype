@@ -3,6 +3,9 @@
 
 use super::*;
 
+/// The switch of Film Negative's conversion.
+const NEGATIVE_CONVERT: &str = "amb:NegativeConvert";
+
 impl Session {
     /// Develop settings for `settings`, with the lens profile resolved (cached).
     pub(super) fn develop(
@@ -183,6 +186,12 @@ impl Session {
         .any(|k| overrides.contains_key(*k))
         {
             settings.insert("WhiteBalance".into(), Value::Text("Custom".into()));
+        }
+        // Peeking: the one place every preview and region render takes its settings.
+        if self.peek_negative
+            && settings.get(NEGATIVE_CONVERT).and_then(Value::as_bool) == Some(true)
+        {
+            settings.insert(NEGATIVE_CONVERT.into(), Value::Bool(false));
         }
         settings
     }

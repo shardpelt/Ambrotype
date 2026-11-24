@@ -110,7 +110,12 @@ function darkroomAt(e) {
 // Whether a probe can mean something: the Film tab, the conversion on, the
 // whole photo in one piece (not zoomed, split, or while a tool picks).
 function darkroomProbing() {
-  return darkroomConverting() && currentTask() === "film" && !ui.zoom.on && !ui.picking && !ui.before && !ui.split && !sbs.layout;
+  return darkroomConverting() && currentTask() === "film" && darkroomWhole();
+}
+
+// The whole photo in one piece on screen: not zoomed, split, or picked on.
+function darkroomWhole() {
+  return !ui.zoom.on && !ui.picking && !ui.before && !ui.split && !sbs.layout;
 }
 
 function darkroomClearProbe() {

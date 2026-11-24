@@ -260,6 +260,7 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         catalog::import_run,
         export::edit_in_settings,
         preview::set_proof,
+        preview::set_peek_negative,
         export::after_export,
         export::set_edit_in,
         export::pick_edit_app,

@@ -175,3 +175,14 @@ pub(crate) fn set_proof(
     }
     Ok(())
 }
+
+/// Peek at the negative: the preview shows the scan as it is (the conversion
+/// off) while `on`. Nothing is saved and there is no undo step; the page asks
+/// for a fresh preview afterwards.
+#[tauri::command]
+pub(crate) fn set_peek_negative(on: bool, state: tauri::State<'_, AppState>) -> Res<()> {
+    let mut guard = state.session.lock()?;
+    let s = guard.as_mut().ok_or("open a photo first")?;
+    s.set_peek_negative(on);
+    Ok(())
+}

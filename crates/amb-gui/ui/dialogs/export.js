@@ -30,6 +30,7 @@ function photoMenu(e) {
   if (!ui.info) return;
   const path = ui.info.path;
   contextMenu(e, [
+    ...aidsPlaceItems(e),
     [t("Copy image"), () => copyImage(path)],
     [t("Copy file path"), () => copyPath([path])],
     [t("Show in folder"), () => invoke("reveal_file", { path }).catch(showError)],

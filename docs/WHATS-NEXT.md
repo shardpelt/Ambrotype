@@ -15,10 +15,11 @@ A short running list, kept up to date as work lands. Newest decisions first. Eve
 
 The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
-- **Darkroom aids, the rest** (`film-darkroom-aids`): step wedge, place a spot in a zone, peek at the negative, Pick Better
+- **Darkroom aids, the rest** (`film-darkroom-aids`): step wedge, Pick Better
 
 ## Recently done
 
+- 2026-11-24: **Place a spot in a zone, and peek at the negative** (`film-darkroom-aids`): right-click the photo → Place this spot in a zone… and pick 0 to X: the exposure moves so the spot prints there, one undo step; `amb negative place`. Shift+N (View → Peek at Negative, the Film Negative panel's Peek) shows the scan as it is, nothing saved (`amb_ops::darkroom::place_in_zone`, session `peek_negative`, `ui/develop/print-aids.js`, steps in `tests/ui/darkroom.js`)
 - 2026-11-24: **Test strip and ring-around** (`film-darkroom-aids`): Film Negative → Test strip… prints the photo in seven bands a third of a stop apart; Ring-around… (converted negatives) prints it nine ways, a step more of each colour, lighter and darker; click a print to use it, one undo step. `amb negative strip` and `ring` write the sheet (`amb_ops::darkroom`, `ui/develop/print-aids.js`, steps in `tests/ui/darkroom.js`)
 - 2026-11-24: **Five short wins**: a map pin of several photos drags too; Edit in stacks the TIFF with its photo (Settings: Stack with the original); frames snap to each other and the canvas when a collage is arranged freely (Alt: off); border captions of several lines; shortcut sets saved and loaded as a file (`amb_library::info::stack_with`, `collage-snap.js`, `Caption::lines`, `keys::to_file`)
 - 2026-11-24: **Sage and Sage Light themes** (Appearance): deep sage green where other dark themes are black, and a light sage one (hub `looks/themes/`, synced in)

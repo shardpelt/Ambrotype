@@ -262,6 +262,26 @@
       "sha256": "a7c1af09e65c28daf19fbc540b61f1aa46022a2788001f0e7e23450d06876919"
     },
     {
+      "id": "theme-sage",
+      "kind": "theme",
+      "name": "Sage",
+      "author": "Ambrotype",
+      "description": "Deep sage green instead of black: dark enough to judge a photo, softer on the eyes than grey, with a pale mint accent.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/sage.json",
+      "sha256": "b16dec025b520436adb54b6b6a1dddc72e39d80cb5a5bf0ae2e2ab2a0b244a81"
+    },
+    {
+      "id": "theme-sage-light",
+      "kind": "theme",
+      "name": "Sage Light",
+      "author": "Ambrotype",
+      "description": "A light sage ground, grey-green and cool, with deep teal as the one accent: calm for long sessions without going grey.",
+      "license": "CC0-1.0",
+      "path": "looks/themes/sage-light.json",
+      "sha256": "1477d675e4c84f7a4237b61bfa200379b66ee825caffc4d07d0490814867bd1e"
+    },
+    {
       "id": "preset-airy",
       "kind": "preset",
       "name": "Airy",

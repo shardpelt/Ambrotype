@@ -96,7 +96,7 @@ const BUILTIN_LAYOUTS: [(&str, &str); 15] = [
         include_str!("../../data/hub/looks/layouts/minimalism.json"),
     ),
 ];
-const BUILTIN_THEMES: [(&str, &str); 13] = [
+const BUILTIN_THEMES: [(&str, &str); 15] = [
     (
         "dark",
         include_str!("../../data/hub/looks/themes/dark.json"),
@@ -140,6 +140,14 @@ const BUILTIN_THEMES: [(&str, &str); 13] = [
     (
         "minimalism",
         include_str!("../../data/hub/looks/themes/minimalism.json"),
+    ),
+    (
+        "sage",
+        include_str!("../../data/hub/looks/themes/sage.json"),
+    ),
+    (
+        "sage-light",
+        include_str!("../../data/hub/looks/themes/sage-light.json"),
     ),
     (
         "glass-light",

@@ -25,6 +25,8 @@ theme-telemetry
 theme-stone
 theme-graphite
 theme-minimalism
+theme-sage
+theme-sage-light
 preset-airy
 preset-bw-classic
 preset-bw-high-contrast

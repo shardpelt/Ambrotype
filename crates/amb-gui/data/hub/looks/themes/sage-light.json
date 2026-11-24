@@ -1,0 +1,26 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Sage Light",
+  "description": "A light sage ground, grey-green and cool, with deep teal as the one accent: calm for long sessions without going grey.",
+  "author": "Ambrotype",
+  "scheme": "light",
+  "tokens": {
+    "bg": "#d9e1de",
+    "bg-deep": "#cfd9d5",
+    "viewer": "#c3cec9",
+    "panel": "#e9eeec",
+    "panel-2": "#f3f6f5",
+    "line": "#bccac5",
+    "hover": "#dde5e2",
+    "tab-active": "#ccd8d3",
+    "text": "#1c2624",
+    "muted": "#45544f",
+    "faint": "#6f7f79",
+    "accent": "#2f6b62",
+    "accent-ink": "#ffffff",
+    "danger": "#9b3b3b",
+    "thumb": "#2a3936",
+    "track": "#b0bfba",
+    "radius": 4
+  }
+}

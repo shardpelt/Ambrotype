@@ -1,0 +1,26 @@
+{
+  "format": "ambrotype-theme/1",
+  "name": "Sage",
+  "description": "Deep sage green instead of black: dark enough to judge a photo, softer on the eyes than grey, with a pale mint accent.",
+  "author": "Ambrotype",
+  "scheme": "dark",
+  "tokens": {
+    "bg": "#334c45",
+    "bg-deep": "#2b413b",
+    "viewer": "#22302c",
+    "panel": "#3e5951",
+    "panel-2": "#4a665e",
+    "line": "#58736b",
+    "hover": "#48635b",
+    "tab-active": "#56736b",
+    "text": "#eaf1ee",
+    "muted": "#bccbc5",
+    "faint": "#93a8a0",
+    "accent": "#a3d9c2",
+    "accent-ink": "#13221d",
+    "danger": "#f0a090",
+    "thumb": "#eaf1ee",
+    "track": "#2a3d37",
+    "radius": 4
+  }
+}

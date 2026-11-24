@@ -230,6 +230,12 @@
  "A second edit of this photo, as its own sidecar (Ctrl+')": [
   "index.html"
  ],
+ "A shortcuts file someone shared": [
+  "index.html"
+ ],
+ "A shortcuts file someone shared: its shortcuts replace yours for the same actions.": [
+  "core/keys.js"
+ ],
  "A square of this group's best four photos": [
   "collage/collage-tray.js"
  ],
@@ -3557,6 +3563,13 @@
  "Lit up on your photo. Click to read more in Photography basics": [
   "help/basics.js"
  ],
+ "Load shortcuts…": [
+  "core/keys.js",
+  "index.html"
+ ],
+ "Loaded {shortcuts}": [
+  "core/keys.js"
+ ],
  "Loading the hub…": [
   "dialogs/hub.js"
  ],
@@ -5588,6 +5601,10 @@
  "Save recipe": [
   "index.html"
  ],
+ "Save shortcuts…": [
+  "core/keys.js",
+  "index.html"
+ ],
  "Save size": [
   "index.html"
  ],
@@ -5698,6 +5715,9 @@
  ],
  "Saved your edits to {name}": [
   "develop/photo.js"
+ ],
+ "Saved your shortcuts to {name}": [
+  "core/keys.js"
  ],
  "Saved {name}": [
   "collage/collage-tray.js",
@@ -6256,6 +6276,9 @@
  ],
  "Skip files that exist": [
   "index.html"
+ ],
+ "Skipped {actions}": [
+  "core/keys.js"
  ],
  "Sky": [
   "tools/masks.js"
@@ -7474,6 +7497,12 @@
  "Your app": [
   "index.html"
  ],
+ "Your changed keyboard shortcuts, to a file you can share.": [
+  "core/keys.js"
+ ],
+ "Your changed shortcuts, to a file you can share": [
+  "index.html"
+ ],
  "Your layout: a file in your own folder (Open folder).": [
   "looks/looks-dialog.js"
  ],
@@ -8482,6 +8511,9 @@
   "develop/presets.js",
   "dialogs/hub.js"
  ],
+ "{n} shortcut|{n} shortcuts": [
+  "core/keys.js"
+ ],
  "{n} shown": [
   "library/library-grid.js"
  ],
@@ -8533,6 +8565,9 @@
  ],
  "{n} theme|{n} themes": [
   "dialogs/hub.js"
+ ],
+ "{n} unknown action|{n} unknown actions": [
+  "core/keys.js"
  ],
  "{n} values out of range, skipped": [
   "core/app.js"

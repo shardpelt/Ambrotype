@@ -15,7 +15,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Find a command or setting I can't see** → **Search Everything** (Ctrl+K, or the magnifier in the toolbar): type its name, or a setting and a number ("exposure 0.7").
 - **See everything the app can do** → Help → **What Ambrotype Can Do** (this list, with a filter).
 - **Tips, or no tips** → a tip's **Don't show tips** (or **Not now** three times in a row) turns them off; **Settings** (Ctrl+,) → General: Tips while waiting, Tips in menus and empty boxes (both on) turns them on again.
-- **See all shortcuts, or change them** → **Keyboard Shortcuts** (Shift+?) shows them; **Settings** (Ctrl+,) changes them.
+- **See all shortcuts, or change them** → **Keyboard Shortcuts** (Shift+?) shows them; **Settings** (Ctrl+,) changes them, and **Save shortcuts…** / **Load shortcuts…** there (or search "shortcuts") share a set as a file.
 
 ## Editing a photo
 

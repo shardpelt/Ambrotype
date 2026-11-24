@@ -134,6 +134,48 @@ pub(crate) fn set_keybindings(
     Ok(())
 }
 
+/// Save the changed shortcuts to a file chosen in a dialog, to share.
+#[tauri::command]
+pub(crate) async fn save_shortcuts(
+    bindings: keys::Bindings,
+    app: tauri::AppHandle,
+) -> Res<Option<String>> {
+    let text = keys::to_file(&bindings)?;
+    let Some(path) = app
+        .dialog()
+        .file()
+        .set_title("Save your keyboard shortcuts")
+        .set_file_name("shortcuts.json")
+        .add_filter("Shortcut sets", &["json"])
+        .blocking_save_file()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    std::fs::write(&path, text).map_err(|e| format!("{}: {e}", path.display()))?;
+    Ok(Some(path.display().to_string()))
+}
+
+/// Read a shared shortcuts file chosen in a dialog (the editor checks its
+/// actions and applies it).
+#[tauri::command]
+pub(crate) async fn load_shortcuts(app: tauri::AppHandle) -> Res<Option<keys::Bindings>> {
+    let Some(path) = app
+        .dialog()
+        .file()
+        .set_title("Load keyboard shortcuts")
+        .add_filter("Shortcut sets", &["json"])
+        .blocking_pick_file()
+        .and_then(|p| p.into_path().ok())
+    else {
+        return Ok(None);
+    };
+    let text = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
+    keys::from_file(&text)
+        .map(Some)
+        .map_err(|e| format!("{}: {e}", path.display()).into())
+}
+
 #[derive(Serialize)]
 pub(crate) struct SettingsInfo {
     pub(crate) version: &'static str,

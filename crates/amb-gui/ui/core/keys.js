@@ -169,6 +169,8 @@ const KEY_ACTIONS = [
   { id: "edit-layout", group: tKey("Window"), label: "Edit layout", hint: "Move panels, controls and toolbar buttons.", keys: ["Ctrl+Shift+L"], when: "any", button: "btn-edit-layout", run: () => startEditing() },
   { id: "blank-layout", group: tKey("Window"), label: "New layout from scratch", hint: "A blank canvas: empty columns and toolbar, filled from Add.", keys: [], when: "any", run: () => startEditing(true) },
   { id: "settings", group: tKey("Window"), label: "Settings and keyboard shortcuts", keys: ["Ctrl+,"], when: "any", button: "btn-settings", run: () => settingsFlow() },
+  { id: "shortcuts-save", group: tKey("Window"), label: "Save shortcuts…", hint: "Your changed keyboard shortcuts, to a file you can share.", keys: [], when: "any", run: () => keysSave().catch(showError) },
+  { id: "shortcuts-load", group: tKey("Window"), label: "Load shortcuts…", hint: "A shortcuts file someone shared: its shortcuts replace yours for the same actions.", keys: [], when: "any", run: () => keysLoad().catch(showError) },
   { id: "feedback", group: tKey("Window"), label: "Send feedback", hint: "A bug, an idea, or a photo that looks different from Lightroom.", keys: [], when: "any", button: "btn-feedback", run: () => feedbackFlow() },
 ];
 
@@ -274,6 +276,40 @@ async function saveKeybindings() {
   } catch (e) {
     showError(e);
   }
+}
+
+// ---------------------------------------------------------------- shortcut sets
+
+// Your changed shortcuts, to a file (a dialog asks where).
+async function keysSave() {
+  const path = await invoke("save_shortcuts", { bindings: ui.keybindings });
+  if (path) toast(t("Saved your shortcuts to {name}", { name: fileName(path) }));
+}
+
+// A shortcuts file's actions that exist here take their keys (a key another
+// action had goes from it, as in a hand change); the rest are skipped and counted.
+async function keysApplySet(set) {
+  const known = new Set(KEY_ACTIONS.map((a) => a.id));
+  const mine = Object.entries(set).filter(([id]) => known.has(id));
+  const taken = new Set(mine.map(([id]) => id));
+  for (const [id, keys] of mine) {
+    for (const b of KEY_ACTIONS) {
+      if (taken.has(b.id)) continue;
+      const left = keysFor(b).filter((k) => !keys.includes(k));
+      if (left.length !== keysFor(b).length) ui.keybindings[b.id] = left;
+    }
+    ui.keybindings[id] = keys;
+  }
+  await saveKeybindings();
+  const skipped = Object.keys(set).length - mine.length;
+  const loaded = t("Loaded {shortcuts}", { shortcuts: plural(mine.length, "shortcut") });
+  toast(skipped ? `${loaded}. ${t("Skipped {actions}", { actions: plural(skipped, "unknown action") })}.` : loaded);
+}
+
+// Choose a shortcuts file and apply it.
+async function keysLoad() {
+  const set = await invoke("load_shortcuts");
+  if (set) await keysApplySet(set);
 }
 
 // ---------------------------------------------------------------- the Settings dialog
@@ -418,7 +454,7 @@ function settingsShowTab(dlg, name) {
   $("settings-general").hidden = name !== "general";
   $("settings-about").hidden = name !== "about";
   $("settings-models").hidden = name !== "models";
-  $("keys-reset-all").hidden = name !== "keys";
+  for (const id of ["keys-reset-all", "keys-save", "keys-load"]) $(id).hidden = name !== "keys";
   if (name === "models") modelsTab().catch(showError);
 }
 
@@ -494,6 +530,8 @@ async function settingsFlow() {
     saveKeybindings();
     keysRender(ks);
   };
+  const saveSet = () => keysSave().catch(showError);
+  const loadSet = () => keysLoad().then(() => keysRender(ks)).catch(showError);
   const onFilter = () => keysRenderList(ks);
   const openFolder = () => invoke("open_settings_folder").catch(showError);
   const onHub = () => settingsSetHub($("settings-hub").value);
@@ -513,6 +551,8 @@ async function settingsFlow() {
   dlg.addEventListener("cancel", onCancel);
   tabs.forEach((t) => t.addEventListener("click", onTab));
   $("keys-reset-all").addEventListener("click", resetAll);
+  $("keys-save").addEventListener("click", saveSet);
+  $("keys-load").addEventListener("click", loadSet);
   $("keys-filter").addEventListener("input", onFilter);
   $("settings-folder").addEventListener("click", openFolder);
   $("settings-looks").addEventListener("click", openLooks);

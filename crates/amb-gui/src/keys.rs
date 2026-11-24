@@ -45,9 +45,36 @@ pub fn validate(bindings: &Bindings) -> Result<Bindings, String> {
     Ok(out)
 }
 
+/// The changed shortcuts as a file to share: the same map as in the
+/// settings file, one action per line.
+pub fn to_file(bindings: &Bindings) -> Result<String, String> {
+    let clean = validate(bindings)?;
+    serde_json::to_string_pretty(&clean)
+        .map(|t| t + "\n")
+        .map_err(|e| e.to_string())
+}
+
+/// A shared shortcuts file. Whether each action exists is for the editor,
+/// which knows them.
+pub fn from_file(text: &str) -> Result<Bindings, String> {
+    let bindings: Bindings = serde_json::from_str(text)
+        .map_err(|_| "this isn't a shortcuts file (action name -> keys)".to_string())?;
+    validate(&bindings)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_shortcuts_file_round_trips_and_a_stranger_is_refused() {
+        let mut b = Bindings::new();
+        b.insert("undo".into(), vec!["Ctrl+Alt+Q".into()]);
+        b.insert("redo".into(), vec![]);
+        assert_eq!(from_file(&to_file(&b).unwrap()).unwrap(), b);
+        assert!(from_file("[1, 2]").is_err());
+        assert!(from_file(r#"{"Bad Name": ["A"]}"#).is_err());
+    }
 
     #[test]
     fn validates_and_dedups() {

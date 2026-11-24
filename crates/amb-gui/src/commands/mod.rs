@@ -145,6 +145,8 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         appearance::open_looks_folder,
         settings::keybindings,
         settings::set_keybindings,
+        settings::save_shortcuts,
+        settings::load_shortcuts,
         settings::settings_info,
         settings::about_text,
         settings::open_source_page,

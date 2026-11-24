@@ -19,6 +19,7 @@ One home per fact. If something is written in two places, one of them goes out o
 | What to type, and when to start a new chat (for the owner) | [working-with-claude.md](working-with-claude.md) | how we work changes |
 | Where changes land: work branches, `staging`, `main` | [branches.md](branches.md) | the flow changes; the day we switch |
 | How one feature is designed, and why | `design/<feature>.md` | that feature's design changes |
+| AI-free mode: what it promises, the gates, the rules for any AI feature | [design/ai-free.md](design/ai-free.md) | an AI feature, hook or model path is added |
 | What is a tab, a mode, a view, a tool, a dialog | [design/tabs.md](design/tabs.md) | a tab is proposed |
 | Why the project exists and what was decided at the start | [SCOPE.md](SCOPE.md) | never: it is dated |
 | Legal and licence questions | [legal.md](legal.md) | a question is settled |

@@ -48,6 +48,7 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
    - The stage itself: called from `develop` in `crates/amb-engine/src/pipeline/mod.rs`, at its place in the pipeline order (the module header lists it).
    - A stage that looks at neighbouring pixels takes a `Tile`, so the 1:1 view (`render_region`) matches the full render.
 4. `crates/amb-engine/src/plan.rs`: the editor's GPU preview runs a `Step` list. Add a GPU step, or a `Cpu` step that runs your engine code, or the preview won't show the setting.
+5. A setting that needs a learned model: add `"ai": true` to its entry in `crates/amb-presets/data/tags.json`, so AI-free mode refuses it ([design/ai-free.md](design/ai-free.md)).
 5. `crates/amb-gui/src/schema.rs`: `panels` decides which panel and section show it. The control itself comes from the registry; don't hard-code ranges or labels in the UI.
 6. Regenerate the generated docs (tests check them):
    - `cargo run -p amb-cli -- settings reference > docs/ai/settings-reference.md`;
@@ -91,6 +92,21 @@ Each recipe lists the places a change touches, in order. A test (`crates/amb-cli
    - Also the `amb edit` line in `USAGE` in `crates/amb-cli/src/main.rs`.
 7. `docs/ai/README.md`: what it does, for AI clients.
 8. `crates/amb-protocol/tests/protocol.rs`: a test.
+9. A command that can add an AI part is checked by `refuse_ai` in `crates/amb-protocol/src/state/mod.rs`; if it adds one by a new route, call it there ([design/ai-free.md](design/ai-free.md)).
+
+## Add an AI model, task or feature
+
+AI-free mode promises no model touches a photo ([design/ai-free.md](design/ai-free.md)). Every step below keeps that true; the guards fail if one is missed.
+
+1. `crates/amb-ai/src/lib.rs`: a model task is a row in `TASKS`, and each model an entry in `crates/amb-ai/data/models.json`.
+2. `crates/amb-ai/src/model.rs`: every place that loads, downloads or runs the model calls `amb_presets::ai_free::check()?` first.
+   - `crates/amb-cli/tests/code_health.rs`: `every_model_path_passes_ai_free_mode` counts the load sites against the gates in each file.
+3. `crates/amb-engine/src/subject.rs`: a new hook the engine offers is a `pub fn set_…`; gate it at call time. `crates/amb-ai/src/hooks.rs` installs it.
+   - `crates/amb-presets/src/ai_free.rs`: add it to `GATED_HOOKS`; the same test compares the lists.
+4. `crates/amb-presets/data/tags.json`: a setting that needs the model gets `"ai": true`; a mask kind goes in `ai_mask_kinds` (or `ai_mask_subtypes`), a spot kind in `ai_spot_kinds`. The protocol then refuses it while the mode is on, and AI-free mode names it as left out.
+5. `crates/amb-gui/ui/index.html`: a button or box that ends in the model gets a `data-ai` attribute (built in a script: `"data-ai": aiFreeUses(kind)`, or `data-ai` on the element), so the editor turns it off.
+6. `crates/amb-ops/tests/ai_free.rs`: a case where the counting hooks see zero calls with the mode on and some with it off.
+7. `docs/design/ai-free.md`: the list of what counts as AI, if the feature is new.
 
 ## Add a kind of hub item
 

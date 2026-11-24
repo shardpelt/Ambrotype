@@ -14,7 +14,7 @@ A feature is written once, in a library crate. The editor and `amb` are thin: th
 | Folders, the catalogue, sidecars, search | `amb-library` | walking, reading and writing photos' info | rendering in bulk, the GPU |
 | An operation that renders photos | `amb-ops` | `Options` in, a `Report` out, a `progress` callback | printing, Tauri, argument parsing |
 | A change to a photo's edit | `amb-protocol` | a `Command`: one undo step | anything a front end decides |
-| An AI model | `amb-ai`, reached through a hook the engine offers | loading, tiling, running | pipeline maths |
+| An AI model | `amb-ai`, reached through a hook the engine offers; every load and run calls `amb_presets::ai_free::check()` first | loading, tiling, running | pipeline maths, a path round AI-free mode |
 | A `amb` command | `crates/amb-cli/src/<area>.rs` | flags to `Options`, the call, text or `--json` out | thresholds, algorithms, file formats |
 | An editor command | `crates/amb-gui/src/commands/<area>.rs` | arguments, the call, progress events, the report back | the same |
 | What the user sees | `crates/amb-gui/ui/<part>/<feature>.js` | one feature's state, drawing and wiring | ranges, labels and defaults of settings (they come from the registry) |
@@ -37,7 +37,8 @@ Most bugs in a new feature are a list someone forgot. These are all of them. Whe
 | Develop setting | `crates/amb-presets/data/tags.json` and what [recipes.md](recipes.md) lists | tests (schema, generated references) |
 | Built-in plugin | `BUILTIN` and `native.rs` in `amb-plugin`, the workspace members, the UI's `TRIP_PLUGINS` and `PLUGINS_ELSEWHERE` | test for native against wasm; the UI lists by review |
 | AI task and model | `TASKS` and `data/models.json` in `amb-ai` | test |
-| AI hook into the engine | `crates/amb-ai/src/hooks.rs`, called by both programs | one function, so they can't differ |
+| AI model path, AI setting, AI mask/spot kind | `ai_free::check()`, the `ai` flags in `tags.json`, `GATED_HOOKS` ([design/ai-free.md](design/ai-free.md)) | test (code_health `every_model_path_passes_ai_free_mode`, amb-ops `tests/ai_free.rs`) |
+| AI hook into the engine | `crates/amb-ai/src/hooks.rs`, called by both programs; each hook acts as absent in AI-free mode and is in `GATED_HOOKS` | one function, so they can't differ; test |
 | Guide for AI agents | `GUIDES` in `crates/amb-protocol/src/guides.rs` | test |
 | Docs | section 8 below | test for the map and links; the rows by review |
 

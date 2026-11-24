@@ -259,6 +259,14 @@ The subject, background and people masks, and Smart search, come from models tha
 - `amb models remove ID`. The MCP server has the same as the `models` tool.
 - `amb search "WORDS" PHOTO|DIR... [--json]` finds photos by what is in them; `amb search --like PHOTO DIR...` finds photos like one. The first search indexes the photos (about 0.7 s each) and keeps their vectors in the catalogue.
 
+### AI-free mode
+
+The user can turn on **AI-free mode**, so that no AI model touches their photos (they use it to keep an AI label off). While it is on, every command that would add an AI part is refused with "AI-free mode is on: no AI model runs on your photos. Turn it off in Settings, or with `amb ai-free off`.": Subject, Background and People masks, AI Remove spots, Enhance settings, and presets, snapshots or undo that bring them back. The same goes for `amb denoise`, `amb search` and the model tools. You may still edit with everything else, since you only move the settings a person would.
+
+- `amb ai-free` says whether the mode is on; check it before you plan a model-based step.
+- Never turn it off yourself. Only if the person asks, with `amb ai-free off`.
+- An edit that already holds AI parts shows and exports without them; a batch export names what was left out.
+
 ## Spot removal
 
 Spots are Lightroom's own `RetouchAreas`. Positions are fractions of the uncropped photo in stored orientation, like masks; `radius` is a fraction of the photo's width (0.01 is 1% of it).

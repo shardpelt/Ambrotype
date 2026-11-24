@@ -34,6 +34,7 @@ For the size of the code, run `python3 tools/code-metrics.py`. fmt, clippy and t
 - XMP (`crs:` Adobe tags plus our `amb:` tags), `.lrtemplate`, and XMP embedded in DNG and JPEG.
 - The tag registry (`data/tags.json`).
 - Preset Amount scaling.
+- AI-free mode (`ai_free.rs`): the process-wide switch, `check()`, `GATED_HOOKS`, and `left_out()` naming the AI parts an edit holds. The registry marks AI settings (`"ai": true`) and AI mask and spot kinds (`ai_mask_kinds`, `ai_mask_subtypes`, `ai_spot_kinds`) in `data/tags.json`. Design and rules: [design/ai-free.md](design/ai-free.md).
 - The mask model (`masks.rs`): Lightroom's correction tags, slider units, parts.
 - Spots (`retouch.rs`).
 - `linked.rs`: where a sidecar's text comes from when a Lightroom catalogue is opened in place (the newer of the file and the catalogue's copy).
@@ -46,12 +47,14 @@ For the size of the code, run `python3 tools/code-metrics.py`. fmt, clippy and t
   - Spot commands: `add/set/remove_spot`, `list_spots`.
   - Snapshots: `save/apply/rename/delete_snapshot`, `list_snapshots`.
   - Undo and redo. Grouped commands (a plugin's, a preset's) are one undo step.
+- While AI-free mode is on, `refuse_ai` refuses every command that would add an AI setting, mask part or spot (presets, snapshots, undo and redo too).
 - Queries, and the JSON Schema.
 - The sidecar merge keeps foreign metadata. The edit history and snapshots are stored in it (`amblib:History`, `amblib:Snapshots`).
 - The AI settings reference.
 
 ### `amb-ai`
 
+- Every model load, download and run calls `amb_presets::ai_free::check()` first, and the engine hooks act as absent while AI-free mode is on ([design/ai-free.md](design/ai-free.md)); `amb-library` saves the setting (`ai_free.rs`, a damaged file means on) and `amb-engine` names what an edit leaves out (`ai_free.rs`).
 - Faces and eyes (`faces.rs`): YuNet, its three grids decoded to boxes and eye points.
 - Smart search (`search.rs`):
   - CLIP and SigLIP 2 models, each of an image half, a text half and a tokenizer.
@@ -256,6 +259,7 @@ Speed today: a 24 MP raw with a typical edit renders in about 3.5 s on a 4-core 
   - UI tests: `ambrotype --ui-test SCRIPT.js` (`src/uitest.rs`) puts the script into the page, where `ui/core/uitest.js` runs it with its helpers and reports back; exports skip the save dialog. Scripts are in `tests/ui/`.
 - **One code path:** the UI only sends `amb-protocol` commands (`set_param`, `apply_preset`, `undo`, …), so it behaves exactly like the CLI and AI clients. Panels and sliders are generated from the settings registry, so they always match the engine.
 - **Preview:** rendered from an area-downscaled copy of the raw, at screen size, on the GPU when the edit is covered (`amb-gpu`), else on the CPU. Slider drags render with temporary overrides and don't touch history; release commits one undoable step. Requests are latest-wins, and a drag renders at 0.6× size.
+- **AI-free mode:** `ui/dialogs/ai-free.js` and the editor commands `ai_free_get`, `ai_free_set`, `ai_free_info` and `ai_free_left_out` (`src/commands/models.rs`). The switch is in Settings → AI models and the `ai-free-toggle` key action; a badge shows in the top bar; controls that end in a model carry `data-ai` and are turned off in one place (`aiFreeApply`), the mask and spot kinds coming from the registry; a note above the tool panels names what the open edit leaves out. Test: `tests/ui/ai-free.js`.
 - **Features:**
   - open (dialog, drag-and-drop, command line)
   - Basic, Tone Curve (parametric), Color Mixer (HSL tabs), Black & White, Color Grading, Detail, Lens Corrections, Transform, Effects, Calibration and Film Negative panels

@@ -20,6 +20,7 @@ The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
 ## Recently done
 
+- 2026-11-24: **Interaction pairs in the Lightroom sweep plan** (`6-interaction`): Highlights × Whites, Shadows × Blacks, Contrast × Exposure, Vibrance × Saturation, Texture × Clarity, each a 5 × 5 grid on two raws (`amb_testkit::default_plan`, `tools/lightroom-kit/make-kit.sh`)
 - 2026-11-24: **Nine more photography terms** in the "?" cards (`ui/basics.json`): focal length, crop factor, JPEG, bit depth, gamut, chromatic aberration, halation, density, zone system. Lessons link terms from the same list by themselves, so they get them too
 - 2026-11-24: **Insights says more**: a style summary from the medians, next-door focal length and aperture challenges, and gear suggestions tied to a shortfall (`amb_library::insights::notes`: `summary`, `gear`, `challenges`; `ui/library/insights.js`)
 - 2026-11-23: **Dust, looked for harder where you point** (`film-dust-guided`): Alt-drag a box in the spot tool, or switch on Find in stroke (D) and brush a stroke; `amb dust --area` and `--along`; looser constants (`GUIDED_DUST`, to be benched on FILM-R) (`amb_engine::dust::find_in`, `find_along`; `ui/tools/spots-dust.js`, step in `tests/ui/retouch.js`)

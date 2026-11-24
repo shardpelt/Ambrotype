@@ -20,7 +20,7 @@ The batches don't need it: two clicks each, or one command of our own Lightroom 
 
 1. Before: build `amb`, run the kit script, shoot the own-photos list, set up a drive.
 2. Day 1, on the free 7-day trial: install, write down versions, set preferences, make the export presets, add our plug-in, run **0-check** by hand and with the plug-in, and check the results.
-3. Then subscribe and run the batches: **1a, 1b, 2, 3, 4**, about a day of exports in all.
+3. Then subscribe and run the batches: **1a, 1b, 2, 3, 4, 6**, about a day of exports in all.
 4. By hand: interface facts, Auto, preset Amount, profiles, masks, red eye, Point Color, Upright, our `amb:` tags.
 5. Copy the exports to two drives, then cancel.
 
@@ -48,6 +48,7 @@ It downloads ten CC0 raws from raw.pixls.us (about 260 MB, checked against their
 | `2-real` | All ten raws, every global slider | 6,150 | links only |
 | `3-real-detail` | The Nikon still life and the Canon chart in snow: the detail sliders | 166 | links only |
 | `4-lens` | All ten raws: distortion, vignetting, lens profile amounts, defringe | 470 | links only |
+| `6-interaction` | The first two raws (the Sony foliage and the Pentax river): five pairs of coupled sliders, each a 5 × 5 grid | 252 | links only |
 
 **The ten raws** (`tools/lightroom-kit/raws.tsv`, all CC0):
 
@@ -130,8 +131,9 @@ For each folder, either:
 | `3-real-detail` | `amb full TIFF16` | 166 | about 25 GB | Full size, so sharpening and noise can be measured |
 | `4-lens` | `amb full JPEG` | 470 | about 7 GB | Before exporting, note which raws Lightroom found a lens profile for (Lens Corrections → Profile) |
 | `5-own` | `amb full TIFF16` | your shots | | At default settings, as a baseline |
+| `6-interaction` | `amb 1024 TIFF16` | 252 | about 1 GB | Quick: about a quarter of an hour. Per raw, 5 pairs × 25 grid points + a baseline. Each pair is one slider against the other at −100, −50, 0, 50, 100 (Exposure at −2, −1, 0, 1, 2): Highlights × Whites, Shadows × Blacks, Contrast × Exposure, Vibrance × Saturation, Texture × Clarity |
 
-Not in the kit yet (to add before the month): the slider pairs that work together (Highlights × Whites, Shadows × Blacks, Contrast × Exposure, Vibrance × Saturation, Texture × Clarity).
+The grid points of `6-interaction` are named for both settings (`2414__Highlights2012_m100__Whites2012_p50`), and `manifest.csv` has the second in its `extra` column. A coupled control can't be fitted from single-slider sweeps; these show the coupling.
 
 ## 4. By hand
 

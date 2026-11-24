@@ -95,7 +95,6 @@ What is missing or approximate in what exists, most important first. Each Notes 
 
 | Id | What | Size | Tier | Ready | Notes |
 |---|---|---|---|---|---|
-| `trial-interaction-sidecars` | **Add the interaction pairs to the trial's sweep plan** (Highlights × Whites, Shadows × Blacks, Contrast × Exposure, Vibrance × Saturation, Texture × Clarity) before the Lightroom month | M | medium | ready | [lightroom-trial-plan.md](lightroom-trial-plan.md); [GAPS §14](GAPS.md#14-testing-and-calibration) |
 | `gpu-preview-cpu-steps` | **GPU versions of the steps that still run on the CPU inside the GPU preview:** camera profile tables, defringe, spots, masks, LUTs, blank-edge fill | L | large | brief | [design/gpu.md](design/gpu.md); [GAPS §13](GAPS.md#13-performance-and-gpu). Decide the order by measured cost |
 | `gpu-stage-cache` | **Caching per stage** in the GPU preview, and region renders that take their globals from the whole photo, not a 1600 px copy | L | large | brief | [design/gpu.md](design/gpu.md); [GAPS §13](GAPS.md#13-performance-and-gpu) |
 | `lens-warp-gpu` | **Lens warp and defringe on the GPU** (about 1.5 s per 24 MP on the CPU) | M | large | brief | [GAPS §13](GAPS.md#13-performance-and-gpu); [design/lens-corrections.md](design/lens-corrections.md) |

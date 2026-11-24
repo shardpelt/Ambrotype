@@ -125,7 +125,7 @@ end
 
 -- The format the trial plan uses for a session folder (2-real, 4-lens, …).
 function Kit.defaultFormat(session)
-  if session:find("^2%-") then
+  if session:find("^2%-") or session:find("^6%-") then
     return "tiff-1024"
   elseif session:find("^4%-") then
     return "jpeg-full"

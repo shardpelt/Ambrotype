@@ -7,7 +7,7 @@
 #   tools/lightroom-kit/make-kit.sh <KIT-DIR> [SESSION...]
 #
 # Sessions: 0-check 1a-synthetic 1b-synthetic-detail 2-real 3-real-detail
-# 4-lens (all of them when none are named). Put KIT-DIR on a drive formatted
+# 4-lens 6-interaction (all of them when none are named). Put KIT-DIR on a drive formatted
 # APFS (Mac) or NTFS (Windows), not exFAT: the raws are then hard links and
 # take no extra space. `amb` is found on PATH, in $AMB, or in target/release.
 set -euo pipefail
@@ -17,7 +17,7 @@ repo="$(cd "$here/../.." && pwd)"
 kit="${1:?usage: make-kit.sh <KIT-DIR> [SESSION...]}"
 shift
 sessions=("$@")
-[ ${#sessions[@]} -eq 0 ] && sessions=(0-check 1a-synthetic 1b-synthetic-detail 2-real 3-real-detail 4-lens)
+[ ${#sessions[@]} -eq 0 ] && sessions=(0-check 1a-synthetic 1b-synthetic-detail 2-real 3-real-detail 4-lens 6-interaction)
 
 amb="${AMB:-}"
 [ -z "$amb" ] && command -v amb >/dev/null && amb="$(command -v amb)"
@@ -57,6 +57,7 @@ for s in "${sessions[@]}"; do
     2-real) "$amb" sweep generate --out "$out" --groups "$global" "${raws[@]}" ;;
     3-real-detail) "$amb" sweep generate --out "$out" --groups "$detail" "$kit/raws/3581.NEF" "$kit/raws/983.CR2" ;;
     4-lens) "$amb" sweep generate --out "$out" --groups lens "${raws[@]}" ;;
+    6-interaction) "$amb" sweep generate --out "$out" --groups interaction "$kit/raws/2414.ARW" "$kit/raws/2469.PEF" ;;
     *) echo "unknown session $s" >&2; exit 1 ;;
   esac
 done

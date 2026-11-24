@@ -43,6 +43,9 @@ pub struct Sweep {
     pub tag: String,
     pub values: Vec<f64>,
     pub extra: Vec<(String, Value)>,
+    /// The extra settings are part of what is measured (one side of an
+    /// interaction grid), so they are always in the file names.
+    pub joint: bool,
 }
 
 const SIGNED_STEPS: [f64; 10] = [
@@ -57,6 +60,7 @@ impl Sweep {
             tag: tag.into(),
             values: values.to_vec(),
             extra: vec![],
+            joint: false,
         }
     }
 
@@ -64,6 +68,44 @@ impl Sweep {
         self.extra.push((key.into(), value));
         self
     }
+}
+
+/// Pairs of settings that work together, measured on a grid because a
+/// single-slider sweep can't show the coupling (trial plan, part 3).
+const INTERACTION_PAIRS: &[(&str, &str)] = &[
+    ("Highlights2012", "Whites2012"),
+    ("Shadows2012", "Blacks2012"),
+    ("Contrast2012", "Exposure2012"),
+    ("Vibrance", "Saturation"),
+    ("Texture", "Clarity2012"),
+];
+
+/// A grid's five values per axis: the slider's range in halves, or, for
+/// Exposure (stops), a stop at a time.
+const GRID_SIGNED: [f64; 5] = [-100.0, -50.0, 0.0, 50.0, 100.0];
+const GRID_EXPOSURE: [f64; 5] = [-2.0, -1.0, 0.0, 1.0, 2.0];
+
+fn grid_values(tag: &str) -> &'static [f64; 5] {
+    if tag == "Exposure2012" {
+        &GRID_EXPOSURE
+    } else {
+        &GRID_SIGNED
+    }
+}
+
+/// The 5 x 5 grid of each interaction pair, as one sweep of the first
+/// setting for each value of the second.
+fn interaction_sweeps() -> Vec<Sweep> {
+    let mut out = Vec::new();
+    for (a, b) in INTERACTION_PAIRS {
+        for bv in grid_values(b) {
+            let mut sweep =
+                Sweep::new("interaction", *a, grid_values(a)).with(*b, Value::Number(*bv));
+            sweep.joint = true;
+            out.push(sweep);
+        }
+    }
+    out
 }
 
 fn signed(group: &'static str, tags: &[&str]) -> Vec<Sweep> {
@@ -213,6 +255,7 @@ pub fn default_plan() -> Vec<Sweep> {
     for tag in ["DefringePurpleAmount", "DefringeGreenAmount"] {
         plan.push(Sweep::new("lens", tag, &[2.0, 5.0, 10.0, 20.0]));
     }
+    plan.extend(interaction_sweeps());
     plan
 }
 
@@ -298,7 +341,7 @@ fn steps<'a>(stem: &str, plan: &'a [Sweep]) -> Vec<Step<'a>> {
             // A second sweep of the same setting (with other settings beside
             // it) gets those in its names, or its files would replace the
             // first sweep's.
-            if steps.iter().any(|s| s.0 == name) {
+            if sweep.joint || steps.iter().any(|s| s.0 == name) {
                 for (k, extra) in &sweep.extra {
                     match extra.as_f64() {
                         Some(n) => name.push_str(&format!("__{k}_{}", value_label(n))),
@@ -428,6 +471,22 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn each_interaction_pair_is_a_five_by_five_grid() {
+        let plan: Vec<Sweep> = default_plan()
+            .into_iter()
+            .filter(|s| s.group == "interaction")
+            .collect();
+        assert_eq!(plan.len(), INTERACTION_PAIRS.len() * 5);
+        let names: Vec<String> = steps("x", &plan).into_iter().map(|s| s.0).collect();
+        assert_eq!(names.len(), 1 + INTERACTION_PAIRS.len() * 25);
+        let unique: std::collections::BTreeSet<&String> = names.iter().collect();
+        assert_eq!(unique.len(), names.len());
+        assert!(names.contains(&"x__Highlights2012_m100__Whites2012_p50".to_string()));
+        assert!(names.contains(&"x__Contrast2012_p0__Exposure2012_m2".to_string()));
+        assert!(names.contains(&"x__Texture_p100__Clarity2012_p100".to_string()));
     }
 
     #[test]

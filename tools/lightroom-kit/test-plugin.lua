@@ -89,7 +89,8 @@ do
   check(#d == 1 and d[1][1] == "B", "differences beyond rounding")
 
   check(Kit.defaultFormat("2-real") == "tiff-1024" and Kit.defaultFormat("4-lens") == "jpeg-full"
-    and Kit.defaultFormat("0-check") == "tiff-full", "each session's export preset")
+    and Kit.defaultFormat("0-check") == "tiff-full" and Kit.defaultFormat("6-interaction") == "tiff-1024",
+    "each session's export preset")
   local e = Kit.exportSettings("tiff-1024", "/out", "a__x")
   check(e.LR_format == "TIFF" and e.LR_export_bitDepth == 16 and e.LR_size_maxWidth == 1024
     and e.LR_tokenCustomString == "a__x" and e.LR_export_destinationPathPrefix == "/out", "export settings")

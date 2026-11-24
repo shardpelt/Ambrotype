@@ -48,6 +48,27 @@ const NIGHT_UNTIL: u32 = 6;
 /// A share of night photos (percent) from which the summary says "often at night".
 const NIGHT_OFTEN: u32 = 25;
 
+/// The focal lengths (mm) a change of one step is felt at, for "next door".
+const FOCAL_STEPS: &[f64] = &[14.0, 24.0, 35.0, 50.0, 85.0, 135.0, 200.0, 300.0];
+
+/// Apertures a full stop apart, for "a stop either side".
+const APERTURE_STEPS: &[f64] = &[1.4, 2.0, 2.8, 4.0, 5.6, 8.0, 11.0];
+
+/// The steps one below and one above the one nearest `v` (on a log scale,
+/// as stops are); at an end of the ladder there is only one side.
+fn next_door(steps: &[f64], v: f64) -> (Option<f64>, Option<f64>) {
+    let near = steps
+        .iter()
+        .enumerate()
+        .min_by(|a, b| (a.1 / v).ln().abs().total_cmp(&(b.1 / v).ln().abs()))
+        .map(|(i, _)| i);
+    let Some(i) = near else { return (None, None) };
+    (
+        i.checked_sub(1).map(|j| steps[j]),
+        steps.get(i + 1).copied(),
+    )
+}
+
 /// Everything Insights says about a set of photos, in the order it is
 /// shown. The editor and `amb insights` both take it from [`notes`], so
 /// they can't differ.
@@ -445,7 +466,8 @@ fn keeper_notes(records: &[Record]) -> Vec<Note> {
 }
 
 /// Challenges: the far side of the usual focal length, aperture and time
-/// of day, and one next to it. Three at most.
+/// of day, and the steps next door to the usual focal length and
+/// aperture. Five at most.
 pub fn challenges(records: &[Record]) -> Vec<Note> {
     let mut out = Vec::new();
     let focal = median(records.iter().filter_map(|r| r.shot.focal).collect());
@@ -465,6 +487,26 @@ pub fn challenges(records: &[Record]) -> Vec<Note> {
             )
         });
     }
+    if let Some(f) = focal.filter(|_| records.len() >= ENOUGH) {
+        let (lo, hi) = next_door(FOCAL_STEPS, f);
+        let title = match (lo, hi) {
+            (Some(l), Some(h)) => format!("Next door: {l:.0} mm and {h:.0} mm"),
+            (Some(x), None) | (None, Some(x)) => format!("Next door: {x:.0} mm"),
+            (None, None) => String::new(),
+        };
+        let try_ = match (lo, hi) {
+            (Some(l), Some(h)) => format!("Try a day at {l:.0} mm, then one at {h:.0} mm"),
+            (Some(x), None) | (None, Some(x)) => format!("Try a day at {x:.0} mm"),
+            (None, None) => String::new(),
+        };
+        if !title.is_empty() {
+            out.push(note(
+                "challenge",
+                title,
+                format!("You're usually around {f:.0} mm. {try_}: a small change you'll see."),
+            ));
+        }
+    }
     if let Some(a) = aperture.filter(|_| records.len() >= ENOUGH) {
         out.push(if a >= 4.0 {
             note(
@@ -479,6 +521,30 @@ pub fn challenges(records: &[Record]) -> Vec<Note> {
                 format!("Your usual aperture is {}. Try a day at f/8 to f/11: front to back in focus, scenes instead of subjects.", f_number(a)),
             )
         });
+    }
+    if let Some(a) = aperture.filter(|_| records.len() >= ENOUGH) {
+        let (lo, hi) = next_door(APERTURE_STEPS, a);
+        let (title, try_) = match (lo, hi) {
+            (Some(l), Some(h)) => (
+                format!("Next door: {} and {}", f_number(l), f_number(h)),
+                format!("Try a day at {}, then one at {}", f_number(l), f_number(h)),
+            ),
+            (Some(x), None) | (None, Some(x)) => (
+                format!("Next door: {}", f_number(x)),
+                format!("Try a day at {}", f_number(x)),
+            ),
+            (None, None) => (String::new(), String::new()),
+        };
+        if !title.is_empty() {
+            out.push(note(
+                "challenge",
+                title,
+                format!(
+                    "Your usual aperture is {}. {try_}: a stop either side.",
+                    f_number(a)
+                ),
+            ));
+        }
     }
     let hours = hours(records);
     if hours.len() >= ENOUGH {
@@ -573,7 +639,16 @@ mod tests {
             "{titles:?}"
         );
         let ch: Vec<String> = challenges(&rs).into_iter().map(|n| n.title).collect();
-        assert_eq!(ch, ["A week wide", "Everything sharp", "Early light"]);
+        assert_eq!(
+            ch,
+            [
+                "A week wide",
+                "Next door: 35 mm and 85 mm",
+                "Everything sharp",
+                "Next door: f/2 and f/4",
+                "Early light"
+            ]
+        );
     }
 
     #[test]
@@ -599,6 +674,22 @@ mod tests {
             "{}",
             s.text
         );
+    }
+
+    #[test]
+    fn next_door_is_a_step_either_side_or_one_at_an_end() {
+        assert_eq!(next_door(FOCAL_STEPS, 50.0), (Some(35.0), Some(85.0)));
+        assert_eq!(next_door(FOCAL_STEPS, 14.0), (None, Some(24.0)));
+        assert_eq!(next_door(FOCAL_STEPS, 400.0), (Some(200.0), None));
+        // 40 mm is nearer 35 than 50 on a log scale.
+        assert_eq!(next_door(FOCAL_STEPS, 38.0), (Some(24.0), Some(50.0)));
+        assert_eq!(next_door(APERTURE_STEPS, 5.6), (Some(4.0), Some(8.0)));
+        let rs: Vec<Record> = (0..30)
+            .map(|_| shot("14mm", 1.4, 14.0, 100, 1.0 / 250.0, 12))
+            .collect();
+        let ch = challenges(&rs);
+        assert!(ch.iter().any(|n| n.title == "Next door: 24 mm"), "{ch:?}");
+        assert!(ch.iter().any(|n| n.title == "Next door: f/2"), "{ch:?}");
     }
 
     #[test]

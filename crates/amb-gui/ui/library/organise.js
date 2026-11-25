@@ -203,6 +203,7 @@ async function deleteFlow() {
 // The open photo was deleted: the editor goes back to its empty state.
 function photoGone() {
   ui.info = null;
+  aiFreeNote();
   $("preview").hidden = true;
   $("empty").hidden = false;
   $("photo-title").textContent = "";

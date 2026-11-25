@@ -125,6 +125,8 @@ pub(crate) struct Exported {
     pub(crate) quality: u8,
     /// The smaller copy: its path and size in bytes.
     pub(crate) small: Option<(String, u64)>,
+    /// What AI-free mode left out of the file, in words.
+    pub(crate) warnings: Vec<String>,
 }
 
 /// "Share before/after…": a page with the photo before and after its edit
@@ -292,8 +294,12 @@ pub(crate) async fn export(
         let mut guard = slot.lock()?;
         let session = guard.as_mut().ok_or("no photo open")?;
         let lens = lens.get().unwrap_or_else(|| empty_lens());
+        let label = amb_ops::ai_label::check(session.state.settings());
         let r = session.export(Path::new(&path), &s, lens)?;
         Ok(Exported {
+            warnings: amb_ops::ai_label::left_out_warning(&label.left_out)
+                .into_iter()
+                .collect(),
             path,
             width: r.width,
             height: r.height,

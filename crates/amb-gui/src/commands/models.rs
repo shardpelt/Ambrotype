@@ -116,18 +116,19 @@ pub(crate) fn ai_free_info() -> AiFreeInfo {
     }
 }
 
-/// The AI parts the open photo's edit holds, which AI-free mode leaves out
-/// of the picture and exports. Empty while the mode is off or no photo is open.
+/// Will `path` carry AI marks (`amb_ops::ai_label`)? The open photo's
+/// edit as it is now (saved or not), any other photo's sidecar. Its
+/// `left_out` is what AI-free mode leaves out of the picture and exports.
 #[tauri::command]
-pub(crate) fn ai_free_left_out(state: tauri::State<'_, AppState>) -> Vec<String> {
-    if !amb_presets::ai_free::on() {
-        return Vec::new();
-    }
+pub(crate) fn ai_label(
+    path: String,
+    state: tauri::State<'_, AppState>,
+) -> amb_ops::ai_label::AiLabel {
     let guard = state.session.lock().unwrap_or_else(|e| e.into_inner());
-    guard
-        .as_ref()
-        .map(|s| amb_engine::ai_free::left_out(s.state.settings()))
-        .unwrap_or_default()
+    match guard.as_ref().filter(|s| s.path == Path::new(&path)) {
+        Some(s) => amb_ops::ai_label::check(s.state.settings()),
+        None => amb_ops::ai_label::check_photo(Path::new(&path)),
+    }
 }
 
 #[tauri::command]

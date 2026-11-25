@@ -8,7 +8,21 @@ await t.step("the photo opens; the mode starts off", async () => {
   await t.until("the photo", () => ui.info, 60000);
   await t.until("the preview", () => t.visible("#preview") && $("preview").naturalWidth > 0, 60000);
   if (aiFree.on) await aiFreeSet(false);
-  t.expect(!aiFree.on && $("ai-free-badge").hidden, "off, no badge");
+  t.expect(!aiFree.on, "off");
+});
+
+await t.step("the one badge says No AI marks, then AI in edit when the edit holds an AI part", async () => {
+  const badge = $("ai-free-badge");
+  await t.until("the badge", () => !badge.hidden && badge.textContent === "No AI marks");
+  t.expect(badge.title.includes("Platforms may also run their own checks"), "its title carries the caveat");
+  const steps = t.historyLength();
+  await run([{ cmd: "set_param", name: "EnhanceDenoiseVersion", value: "1" }]);
+  await t.until("AI in edit", () => badge.textContent === "AI in edit");
+  t.expect(badge.dataset.state === "edit" && badge.title.includes("Enhance"), `the reason: ${badge.title}`);
+  aiFreeExportNote(true);
+  t.expect(!$("export-ai-label").hidden && $("export-ai-label").textContent.startsWith("AI in edit"), "the export dialog says so too");
+  await run([{ cmd: "undo" }]);
+  await t.until("undone", () => t.historyLength() === steps && badge.textContent === "No AI marks");
 });
 
 await t.step("turning it on shows the badge and turns an AI mask button off", async () => {
@@ -17,7 +31,7 @@ await t.step("turning it on shows the badge and turns an AI mask button off", as
   const subject = () => [...$("mask-new").querySelectorAll("button")].find((b) => b.textContent === "Subject");
   t.expect(subject() && !subject().disabled, "Subject is on first");
   await aiFreeSet(true);
-  t.expect(!$("ai-free-badge").hidden, "the badge shows");
+  t.expect(!$("ai-free-badge").hidden && $("ai-free-badge").textContent === "AI-free", "the badge says AI-free");
   t.expect($("ai-free-switch").checked, "the Settings switch is on");
   await t.until("Subject off", () => subject().disabled);
   t.expect(subject().title.startsWith("Off while AI-free mode is on"), "with its reason");
@@ -54,7 +68,7 @@ await t.step("an edit that already holds an AI part: the note names what is left
 
 await t.step("the key action turns it off again and the controls come back", async () => {
   await aiFreeToggle();
-  t.expect(!aiFree.on && $("ai-free-badge").hidden, "off, no badge");
+  t.expect(!aiFree.on && $("ai-free-badge").textContent === "No AI marks", "off, back to the verdict");
   t.key("M");
   await t.until("the mask panel", () => mk.on && !$("mask-panel").hidden);
   const subject = [...$("mask-new").querySelectorAll("button")].find((b) => b.textContent === "Subject");

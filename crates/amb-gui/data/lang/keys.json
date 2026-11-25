@@ -287,6 +287,9 @@
  "AI fills where it was": [
   "index.html"
  ],
+ "AI in edit": [
+  "dialogs/ai-free.js"
+ ],
  "AI mask of everyone": [
   "tools/toolblocks.js"
  ],
@@ -297,6 +300,7 @@
   "index.html"
  ],
  "AI-free": [
+  "dialogs/ai-free.js",
   "index.html"
  ],
  "AI-free Mode": [
@@ -312,7 +316,7 @@
   "dialogs/ai-free.js"
  ],
  "AI-free mode is on: no AI model touches your photos. Click to change it in Settings.": [
-  "index.html"
+  "dialogs/ai-free.js"
  ],
  "AI-free mode leaves out: {parts}.": [
   "dialogs/ai-free.js"
@@ -4205,6 +4209,9 @@
  "Next: {title} →": [
   "help/basics.js"
  ],
+ "No AI marks": [
+  "dialogs/ai-free.js"
+ ],
  "No AI model touches them: AI masks, Remove, Denoise, Select Object and search by meaning are off; for photos that must carry no AI label.": [
   "core/keys.js"
  ],
@@ -5018,6 +5025,9 @@
  ],
  "Plain grid with names": [
   "index.html"
+ ],
+ "Platforms may also run their own checks; this shows what is in the file.": [
+  "dialogs/ai-free.js"
  ],
  "Plugins": [
   "core/keys.js",
@@ -6864,6 +6874,12 @@
  "The edit as it is now, under a name, to come back to. Kept in the photo's .xmp.": [
   "develop/history.js"
  ],
+ "The edit holds AI parts that the export carries: {parts}.": [
+  "dialogs/ai-free.js"
+ ],
+ "The edit holds no AI parts.": [
+  "dialogs/ai-free.js"
+ ],
  "The edit is this snapshot": [
   "develop/history.js"
  ],
@@ -8465,6 +8481,9 @@
  "{n} group|{n} groups": [
   "collage/collage-tray.js",
   "library/duplicates.js"
+ ],
+ "{n} had AI parts left out (AI-free mode)": [
+  "library/library-actions.js"
  ],
  "{n} hidden": [
   "develop/preset-hide.js"

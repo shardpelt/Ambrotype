@@ -2,7 +2,7 @@
 
 Status: implemented 2026-11-24. One switch, **AI-free mode**. With it on, no learned model touches a photo, by any path. It is for people who must keep an "AI" label off their photos on social platforms and elsewhere, and who need a switch they can trust.
 
-Code: `crates/amb-presets/src/ai_free.rs` (the switch, `check()`, `left_out()`), `crates/amb-library/src/ai_free.rs` (the saved file), `crates/amb-engine/src/ai_free.rs` (what an edit leaves out), `crates/amb-gui/ui/dialogs/ai-free.js` (the editor), `crates/amb-cli/src/ai_free.rs` (`amb ai-free`). Guards: `every_model_path_passes_ai_free_mode` in `crates/amb-cli/tests/code_health.rs`, `crates/amb-ops/tests/ai_free.rs`, `crates/amb-cli/tests/ai_free.rs`.
+Code: `crates/amb-presets/src/ai_free.rs` (the switch, `check()`, `left_out()`), `crates/amb-ops/src/ai_label.rs` (the label check; `amb ai-label`), `crates/amb-library/src/ai_free.rs` (the saved file), `crates/amb-engine/src/ai_free.rs` (what an edit leaves out), `crates/amb-gui/ui/dialogs/ai-free.js` (the editor), `crates/amb-cli/src/ai_free.rs` (`amb ai-free`). Guards: `every_model_path_passes_ai_free_mode` in `crates/amb-cli/tests/code_health.rs`, `crates/amb-ops/tests/ai_free.rs`, `crates/amb-cli/tests/ai_free.rs`.
 
 ## The promise
 
@@ -43,9 +43,17 @@ Every way a model could run goes through `amb_presets::ai_free::check()` or the 
 - **`amb-ops`**: Select Object and its words, and AI Denoise, check first.
 - **The protocol**: every command that would add an AI setting, an AI mask part or an AI spot is refused with `ai_free::MESSAGE`. That includes presets, snapshots, undo, redo, duplicate and a plugin's grouped commands (`refuse_ai` in `crates/amb-protocol/src/state/mod.rs`). The registry says what is AI (`"ai": true` in `crates/amb-presets/data/tags.json`, and the lists `ai_mask_kinds`, `ai_mask_subtypes`, `ai_spot_kinds`).
 - **Render**: AI Remove spots and model mask parts render as nothing (an unsupported part does not fill the frame when inverted).
-- **Export**: a batch export reports what each photo left out as `warnings`.
+- **Export**: every export reports what the photo left out as `warnings`: batch (`amb_ops::export_batch`), the editor's single export, Convert raws and `amb render` (its own edit only, not a `--preset`).
 - **The editor**: the switch, a badge, AI controls turned off (marked `data-ai`, driven from the registry's lists), and a note naming what the open edit leaves out.
 - **`amb ai-free [on|off]`**: shows or sets the saved switch.
+
+## The label check
+
+`amb_ops::ai_label::check` answers "will this photo carry something a platform may label AI?" for the editor's badge and Export dialog (`ai_label`) and `amb ai-label`. It sees one thing: the **AI parts the edit holds** (`ai_parts`). With the mode off they go into the export, and the verdict is `ai_in_edit`. With it on they are left out: the verdict is `clear` and `left_out` names them.
+
+What it does not see is the source file's own markers (IPTC/XMP `DigitalSourceType` such as `trainedAlgorithmicMedia`, a C2PA manifest). An export writes **fresh metadata only**: EXIF built from the photo's camera data (`crates/amb-export/src/exif.rs`) and an XMP/IPTC packet of rating, label and keywords (`embed/mod.rs`). Nothing of the source's XMP, IPTC or C2PA is copied, in Convert raws too (the camera's own JPEG is decoded and re-encoded), so a source's markers never reach the file, and the check needs no scan of them.
+
+**The rule: we never strip or hide a provenance marker that is really there, and never write one.** AI-free mode leaves our own AI out; it does not launder anyone else's. If an export ever starts copying source metadata, the check must scan the copied markers (a table of the `DigitalSourceType` values and the C2PA box) and say so in its verdict. A platform may also decide from the pixels, so the badge says "this shows what is in the file", not what a platform will do.
 
 ## The saved file and the fail-safe
 
@@ -66,5 +74,4 @@ Every new feature must respect the promise. A guard test fails for the first two
 ## Limits
 
 - A plugin's wasm code cannot be inspected for its own AI: the mode cannot know what a third-party plugin does inside its sandbox ([../GAPS.md](../GAPS.md)).
-- Single-photo export and Convert raws leave the AI parts out but show no warning yet; the batch export does.
 - Outside the app, nothing is claimed: a photo that came out of another tool with an AI label keeps it.

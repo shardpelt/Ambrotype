@@ -49,7 +49,7 @@
       <button id="btn-feedback" title="Report a bug, an idea, or a photo that looks different from Lightroom">Feedback</button>
     </div>
     <button type="button" id="btn-toolbar-more" class="toolbar-more" title="More: the toolbar buttons that don't fit" aria-haspopup="menu" hidden>⋯</button>
-    <button type="button" id="ai-free-badge" class="ai-free-badge" title="AI-free mode is on: no AI model touches your photos. Click to change it in Settings." hidden>AI-free</button>
+    <button type="button" id="ai-free-badge" class="ai-free-badge" data-state="free" hidden>AI-free</button>
     <div class="photo-title" id="photo-title"></div>
   </header>
   <div id="toolbar-menu" class="toolbar-menu" role="menu" hidden></div>
@@ -1443,6 +1443,7 @@
           <span id="wm-image-name" class="hint"></span>
         </div>
       </div>
+      <p id="export-ai-label" class="hint ai-free-verdict" role="status" hidden></p>
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary" id="export-go">Export…</button>

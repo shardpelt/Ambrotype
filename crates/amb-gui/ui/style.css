@@ -135,6 +135,11 @@ input[type=search], input[type=number], select {
 .sep { width: 1px; height: 20px; background: var(--line); margin: 0 4px; }
 .ai-free-badge { flex: none; padding: 2px 8px; font-size: 12px; border: 1px solid var(--accent); border-radius: var(--radius); color: var(--accent); background: none; white-space: nowrap; }
 .ai-free-badge[hidden] { display: none; }
+.ai-free-badge[data-state="clear"] { border-color: var(--line); color: var(--muted); }
+.ai-free-badge[data-state="edit"] { border-color: var(--danger); color: var(--danger); }
+.ai-free-verdict { margin: 8px 0 0; }
+.ai-free-verdict[data-state="edit"] { color: var(--danger); }
+.ai-free-verdict[hidden] { display: none; }
 .ai-free-note { margin: 6px 10px; padding: 6px 8px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--radius); }
 .ai-free-note[hidden] { display: none; }
 .photo-title { margin-left: auto; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw; min-width: 0; }

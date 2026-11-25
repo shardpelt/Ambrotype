@@ -407,6 +407,7 @@ async function exportFlow(batch = null) {
   updateSmallCopy();
   updateQualityName();
   updateExportSize();
+  aiFreeExportNote(!batch);
   dlg.showModal();
   const choice = await new Promise((resolve) => dlg.addEventListener("close", () => resolve(dlg.returnValue), { once: true }));
   if (choice !== "ok") return;
@@ -443,9 +444,11 @@ async function exportFlow(batch = null) {
     const r = await invoke("export", { path, options });
     const v = { size: `${r.width}×${r.height}`, mb: (r.bytes / 1e6).toFixed(1), quality: r.quality, smallMb: r.small ? (r.small[1] / 1e6).toFixed(1) : "", name: r.small ? fileName(r.small[0]) : "" };
     const jpeg = options.format === "jpeg";
-    toast(jpeg
+    const done = jpeg
       ? r.small ? t("Exported {size}, {mb} MB, quality {quality}, and a {smallMb} MB copy ({name})", v) : t("Exported {size}, {mb} MB, quality {quality}", v)
-      : r.small ? t("Exported {size}, {mb} MB, and a {smallMb} MB copy ({name})", v) : t("Exported {size}, {mb} MB", v));
+      : r.small ? t("Exported {size}, {mb} MB, and a {smallMb} MB copy ({name})", v) : t("Exported {size}, {mb} MB", v);
+    // What AI-free mode left out of the file (words from Rust, shown as they are).
+    toast(r.warnings.length ? `${done}; ${r.warnings.join("; ")}` : done);
     status(t("Exported {path}", { path: r.path }));
     await afterExport([r.path], after);
   } catch (e) {

@@ -318,6 +318,7 @@ async function convertRawsFlow() {
     if (r.skipped) parts.push(t("{n} already there", { n: r.skipped }));
     if (r.left_out) parts.push(t("{n} left out (not the best of their burst)", { n: r.left_out }));
     if (r.errors.length) parts.push(t("{n} failed: {error}", { n: r.errors.length, error: r.errors[0] }));
+    if (r.warnings.length) parts.push(t("{n} had AI parts left out (AI-free mode)", { n: r.warnings.length }));
     toast(parts.join("; "), r.errors.length > 0);
   } catch (e) {
     showError(e);

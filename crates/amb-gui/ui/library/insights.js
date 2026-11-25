@@ -146,7 +146,7 @@ async function renderInsights(box) {
   }
   // Split by: the three biggest groups side by side.
   const split = el("label", { class: "in-split" }, t("Split by "));
-  const pick = document.createElement("select");
+  const pick = el("select");
   for (const [v, w] of [["", tKey("nothing")], ["camera", tKey("camera")], ["lens", tKey("lens")], ["year", tKey("year")]]) pick.append(new Option(t(w), v, false, v === (insights.split ?? "")));
   pick.addEventListener("change", () => {
     insights.split = pick.value || null;
@@ -270,8 +270,8 @@ async function insightNotes(photos, box) {
     const sec = el("section", { class: `in-card in-advice ${cls}` });
     sec.append(el("h4", {}, t(title)));
     for (const x of list) {
-      const p = document.createElement("p");
-      p.append(el("b", {}, x.title), document.createElement("br"), x.text);
+      const p = el("p");
+      p.append(el("b", {}, x.title), el("br"), x.text);
       sec.append(p);
     }
     return sec;

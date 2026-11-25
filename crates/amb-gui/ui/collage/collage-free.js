@@ -396,7 +396,7 @@ function startDrag(e, path, fromCell = -1) {
     lastEvent = ev;
     if (!ghost) {
       if (Math.hypot(ev.clientX - start.x, ev.clientY - start.y) < 5) return;
-      ghost = document.createElement("div");
+      ghost = el("div");
       ghost.className = "col-ghost";
       const small = collage.small.get(path);
       if (small) ghost.append(el("img", { src: small.url, alt: "" }));

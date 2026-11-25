@@ -55,17 +55,15 @@ function linkTerms(text, skip = "") {
   return out;
 }
 
-function showTermTip(el) {
-  const term = basics.data?.byId.get(el.dataset.term);
+function showTermTip(mark) {
+  const term = basics.data?.byId.get(mark.dataset.term);
   if (!term) return;
-  basics.tip ??= Object.assign(document.createElement("div"), { className: "help-tip term-tip", role: "tooltip" });
-  const lit = ZONE_OF[term.id] && !$("preview").hidden && !el.closest("dialog");
-  basics.tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: term.term }), ` ${term.short}`,
-    Object.assign(document.createElement("small"), {
-      textContent: lit ? t("Lit up on your photo. Click to read more in Photography basics") : t("Click to read more in Photography basics"),
-    }));
+  basics.tip ??= el("div", { class: "help-tip term-tip", role: "tooltip" });
+  const lit = ZONE_OF[term.id] && !$("preview").hidden && !mark.closest("dialog");
+  basics.tip.replaceChildren(el("b", {}, term.term), ` ${term.short}`,
+    el("small", {}, lit ? t("Lit up on your photo. Click to read more in Photography basics") : t("Click to read more in Photography basics")));
   document.body.append(basics.tip);
-  const r = el.getBoundingClientRect();
+  const r = mark.getBoundingClientRect();
   const w = basics.tip.offsetWidth, h = basics.tip.offsetHeight;
   const left = Math.min(Math.max(8, r.left), innerWidth - w - 8);
   const top = r.bottom + 6 + h > innerHeight ? r.top - h - 6 : r.bottom + 6;
@@ -119,7 +117,7 @@ async function basicsFlow(at = null) {
       const fig = chapter.figure && figure(chapter.figure);
       if (fig) page.append(fig);
       for (const text of chapter.body) {
-        const p = document.createElement("p");
+        const p = el("p");
         p.append(linkTerms(text));
         page.append(p);
       }
@@ -134,7 +132,7 @@ async function basicsFlow(at = null) {
       page.append(el("h3", {}, term.term));
       const short = el("p", { class: "basics-short" });
       short.append(linkTerms(term.short, term.term));
-      const body = document.createElement("p");
+      const body = el("p");
       body.append(linkTerms(term.body, term.term));
       page.append(short);
       const fig = figure(term.id);

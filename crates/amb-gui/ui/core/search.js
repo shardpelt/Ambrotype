@@ -131,10 +131,10 @@ function chooseSearch(i) {
 }
 
 // The features list, read once from the app (commands/features.rs).
-let featuresLoading = null;
+const featuresLoad = { pending: null };
 function loadFeatures() {
   if (ui.features?.length) return Promise.resolve(ui.features);
-  featuresLoading ??= invoke("features").then((list) => {
+  featuresLoad.pending ??= invoke("features").then((list) => {
     ui.features = list;
     if ($("search-dialog").open) {
       searchState.items = searchItems();
@@ -142,10 +142,10 @@ function loadFeatures() {
     }
     return list;
   }).catch(() => {
-    featuresLoading = null;
+    featuresLoad.pending = null;
     return [];
   });
-  return featuresLoading;
+  return featuresLoad.pending;
 }
 
 // Help → What Ambrotype Can Do: the whole list by section, with a filter.

@@ -107,7 +107,7 @@ function applySideCollapse() {
     const fold = $(`fold-${side}`);
     fold.hidden = !widths[side];
     const open = Boolean(shown[side]);
-    fold.innerHTML = sidebarIcon(side, open);
+    fold.replaceChildren(svgNode(sidebarIcon(side, open)));
     fold.title = side === "left"
       ? open ? t("Hide the left column (Ctrl+[)") : t("Show the left column (Ctrl+[)")
       : open ? t("Hide the right column (Ctrl+])") : t("Show the right column (Ctrl+])");

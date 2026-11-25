@@ -48,7 +48,7 @@
   const wheelCache = new Map();
   function wheelImage(d) {
     if (wheelCache.has(d)) return wheelCache.get(d);
-    const c = document.createElement("canvas");
+    const c = el("canvas");
     c.width = c.height = d;
     const g = c.getContext("2d");
     const img = g.createImageData(d, d);
@@ -89,15 +89,12 @@
   // A labelled range slider with a numeric readout; drag = input, release = commit,
   // double-click = reset to 0.
   function wheelSlider(wh, label, min, max, track) {
-    const row = document.createElement("label");
-    row.className = "amb-wheel-row";
-    const text = document.createElement("span");
-    text.textContent = t(label);
-    const input = document.createElement("input");
-    input.type = "range";
+    const row = el("label", { class: "amb-wheel-row" });
+    const text = el("span", {}, t(label));
+    const input = el("input", { type: "range" });
     input.min = min; input.max = max; input.step = 1;
     if (track) input.style.setProperty("--track", track);
-    const out = document.createElement("output");
+    const out = el("output");
     row.append(text, input, out);
     const key = { Hue: "Hue", Saturation: "Sat", Luminance: "Lum" }[label];
     const value = wh.value;
@@ -239,24 +236,17 @@
     const { value } = wh;
     const tag = (k) => wheelTag(wh, k);
 
-    const el = document.createElement("div");
-    el.className = "amb-wheel";
-    el.dataset.region = region.key;
-    const head = document.createElement("div");
-    head.className = "amb-wheel-head";
-    const name = document.createElement("span");
-    name.className = "amb-wheel-name";
-    name.textContent = t(region.label);
-    const readout = document.createElement("span");
-    readout.className = "amb-wheel-val";
+    const root = el("div", { class: "amb-wheel" });
+    root.dataset.region = region.key;
+    const head = el("div", { class: "amb-wheel-head" });
+    const name = el("span", { class: "amb-wheel-name" }, t(region.label));
+    const readout = el("span", { class: "amb-wheel-val" });
     head.append(name, readout);
 
-    const disc = document.createElement("div");
-    disc.className = "amb-wheel-disc";
-    const canvas = document.createElement("canvas");
-    canvas.title = t("Drag to set hue and saturation · Shift-drag: saturation only · double-click to reset");
+    const disc = el("div", { class: "amb-wheel-disc" });
+    const canvas = el("canvas", { title: t("Drag to set hue and saturation · Shift-drag: saturation only · double-click to reset") });
     disc.append(canvas);
-    Object.assign(wh, { el, name, readout, disc, canvas, g: canvas.getContext("2d") });
+    Object.assign(wh, { el: root, name, readout, disc, canvas, g: canvas.getContext("2d") });
 
     wh.rows = {
       Hue: wheelSlider(wh, tKey("Hue"), 0, 359, RAINBOW),
@@ -266,7 +256,7 @@
     const { rows } = wh;
     rows.Hue.row.classList.add("amb-detail");
     rows.Sat.row.classList.add("amb-detail");
-    el.append(head, disc, rows.Hue.row, rows.Sat.row, rows.Lum.row);
+    root.append(head, disc, rows.Hue.row, rows.Sat.row, rows.Lum.row);
 
     function local(e) {
       const r = canvas.getBoundingClientRect();
@@ -311,7 +301,7 @@
     wheelRender(wh);
 
     return {
-      el,
+      el: root,
       region: region.key,
       dragging: () => Boolean(wh.drag),
       set(values) {
@@ -332,20 +322,14 @@
     const onCommit = options.onCommit || (() => {});
     const emit = (kind, changes) => (kind === "input" ? onInput : onCommit)({ ...changes });
 
-    const root = document.createElement("div");
-    root.className = "amb-wheels";
-    const tabs = document.createElement("div");
-    tabs.className = "amb-tabs";
-    const body = document.createElement("div");
-    body.className = "amb-wheels-body";
+    const root = el("div", { class: "amb-wheels" });
+    const tabs = el("div", { class: "amb-tabs" });
+    const body = el("div", { class: "amb-wheels-body" });
     const wheels = REGIONS.map((r) => makeWheel(r, emit));
     for (const w of wheels) body.append(w.el);
     const tabButtons = new Map();
     for (const v of VIEWS) {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.textContent = t(v.label);
-      b.title = t(v.title);
+      const b = el("button", { type: "button", title: t(v.title) }, t(v.label));
       b.addEventListener("click", () => view(v.key));
       tabButtons.set(v.key, b);
       tabs.append(b);

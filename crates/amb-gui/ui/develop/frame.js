@@ -339,7 +339,7 @@ function showShortcuts() {
     box.append(el("h3", {}, t(group)));
     for (const [label, keys] of rows) {
       const row = el("div", { class: "shortcuts-row" });
-      const k = document.createElement("span");
+      const k = el("span");
       k.append(...keys.map((c) => el("kbd", {}, keyLabel(c))));
       row.append(el("span", {}, label), k);
       box.append(row);

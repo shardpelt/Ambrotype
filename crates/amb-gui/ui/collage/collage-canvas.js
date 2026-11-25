@@ -128,14 +128,12 @@ function renderStage() {
   stage.dataset.scale = scale;
   stage.replaceChildren();
   // Frames are clipped to the canvas (as exported); their handles are not.
-  const layer = document.createElement("div");
-  layer.className = "col-clip";
+  const layer = el("div", { class: "col-clip" });
   stage.append(layer);
   const rects = cellRects(tpl);
   const radius = ((tpl.radius / 100) * Math.min(tpl.width, tpl.height)) * scale;
   rects.forEach((r, i) => {
-    const cell = document.createElement("div");
-    cell.className = "col-cell";
+    const cell = el("div", { class: "col-cell" });
     cell.dataset.index = i;
     Object.assign(cell.style, {
       left: `${r.x * scale}px`, top: `${r.y * scale}px`,
@@ -146,9 +144,8 @@ function renderStage() {
     cell.classList.toggle("selected", i === collage.selected);
     const c = collage.cells[i];
     if (c?.path) {
-      const holder = document.createElement("div");
-      holder.className = "col-photo";
-      const img = document.createElement("img");
+      const holder = el("div", { class: "col-photo" });
+      const img = el("img");
       img.alt = "";
       img.draggable = false;
       holder.append(img);
@@ -183,8 +180,7 @@ function renderHandles() {
   if (!tpl.free || i < 0 || i >= tpl.cells.length) return;
   const scale = Number($("col-stage").dataset.scale);
   const r = cellRects(tpl)[i];
-  const box = document.createElement("div");
-  box.className = "col-handles";
+  const box = el("div", { class: "col-handles" });
   Object.assign(box.style, {
     left: `${r.x * scale}px`, top: `${r.y * scale}px`, width: `${r.w * scale}px`, height: `${r.h * scale}px`,
     transform: r.angle ? `rotate(${r.angle}deg)` : "",

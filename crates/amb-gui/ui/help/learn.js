@@ -20,12 +20,10 @@ async function learnFlow() {
   const dlg = $("learn-dialog");
   const list = $("learn-list");
   list.replaceChildren(...lessons.map((l) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "learn-item";
-    const title = document.createElement("strong");
+    const b = el("button", { type: "button", class: "learn-item" });
+    const title = el("strong");
     title.textContent = l.title;
-    const summary = document.createElement("span");
+    const summary = el("span");
     summary.textContent = l.needs_photo && !ui.info ? `${l.summary} ${t("(Open a photo first.)")}` : l.summary;
     b.append(title, summary);
     b.disabled = l.needs_photo && !ui.info;

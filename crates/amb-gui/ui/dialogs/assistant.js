@@ -115,9 +115,7 @@ async function saveAssistantSettings() {
 }
 
 function assistantMessage(role, text) {
-  const div = document.createElement("div");
-  div.className = `msg ${role}`;
-  div.textContent = text;
+  const div = el("div", { class: `msg ${role}` }, text);
   const log = $("assistant-log");
   log.append(div);
   log.scrollTop = log.scrollHeight;
@@ -166,7 +164,7 @@ async function askAssistant() {
         undo.disabled = true;
         undo.textContent = t("Undone");
       });
-      last.append(document.createElement("br"), undo);
+      last.append(el("br"), undo);
     }
     assistantStatus();
   } catch (e) {

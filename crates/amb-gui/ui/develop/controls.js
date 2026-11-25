@@ -69,9 +69,7 @@ const AmbControls = (() => {
     const h = hooks(def);
     const [lo, hi] = domain(def);
     const span = hi - lo || 1;
-    const cell = document.createElement("div");
-    cell.className = "knob";
-    cell.title = t("{text}\nPoint and drag round the dial (Shift: fine, drag up or down). Double-click to reset.", { text: t(def.description) });
+    const cell = el("div", { class: "knob", title: t("{text}\nPoint and drag round the dial (Shift: fine, drag up or down). Double-click to reset.", { text: t(def.description) }) });
     const NS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", "0 0 40 40");
@@ -82,11 +80,8 @@ const AmbControls = (() => {
       return p;
     };
     const track = path("knob-track"), fill = path("knob-fill"), tick = path("knob-tick");
-    const label = document.createElement("div");
-    label.className = "knob-label";
-    label.textContent = t(labelText);
-    const value = document.createElement("div");
-    value.className = "knob-value";
+    const label = el("div", { class: "knob-label" }, t(labelText));
+    const value = el("div", { class: "knob-value" });
     cell.append(svg, label, value);
 
     // A 270° dial from bottom-left round to bottom-right (SVG angles, y down).
@@ -159,17 +154,11 @@ const AmbControls = (() => {
     const h = hooks(def);
     const [lo, hi] = domain(def);
     const span = hi - lo || 1;
-    const el = document.createElement("div");
-    el.className = "bar";
-    el.title = t("{text}\nDrag across (Shift: fine). Double-click to reset.", { text: t(def.description) });
-    const fill = document.createElement("div");
-    fill.className = "bar-fill";
-    const label = document.createElement("span");
-    label.className = "bar-label";
-    label.textContent = t(labelText);
-    const value = document.createElement("span");
-    value.className = "bar-value";
-    el.append(fill, label, value);
+    const box = el("div", { class: "bar", title: t("{text}\nDrag across (Shift: fine). Double-click to reset.", { text: t(def.description) }) });
+    const fill = el("div", { class: "bar-fill" });
+    const label = el("span", { class: "bar-label" }, t(labelText));
+    const value = el("span", { class: "bar-value" });
+    box.append(fill, label, value);
     const z = (origin(def) - lo) / span;
     let pos = lo, val = 0;
     function draw() {
@@ -179,49 +168,45 @@ const AmbControls = (() => {
       value.textContent = format(def, val);
     }
     let startPos = lo;
-    drag(el, {
+    drag(box, {
       start(e) {
         // A plain click jumps to the spot; Shift-drag refines from the current value.
-        const r = el.getBoundingClientRect();
+        const r = box.getBoundingClientRect();
         if (!e.shiftKey) pos = clamp(lo + ((e.clientX - r.left) / r.width) * span, lo, hi);
         startPos = pos;
         val = valueAt(def, pos);
-        el.classList.add("dragging");
+        box.classList.add("dragging");
         draw();
         h.input(val);
       },
       move(dx, _dy, e) {
-        const w = el.getBoundingClientRect().width || 1;
+        const w = box.getBoundingClientRect().width || 1;
         pos = clamp(startPos + (dx / w) * span * (e.shiftKey ? 0.1 : 1), lo, hi);
         val = valueAt(def, pos);
         draw();
         h.input(val);
       },
       end() {
-        el.classList.remove("dragging");
+        box.classList.remove("dragging");
         h.commit(val);
       },
     });
-    resetOnDoubleClick(el, () => pos, span, h.reset);
-    holdWhileDragging(el, def.name);
-    keys(el, def, () => pos, (p) => { pos = p; val = valueAt(def, p); draw(); }, h);
+    resetOnDoubleClick(box, () => pos, span, h.reset);
+    holdWhileDragging(box, def.name);
+    keys(box, def, () => pos, (p) => { pos = p; val = valueAt(def, p); draw(); }, h);
     draw();
     const set = (v) => { val = Number(v); pos = clamp(toSlider(def, val), lo, hi); draw(); };
-    return { el, entry: { def, label, set } };
+    return { el: box, entry: { def, label, set } };
   }
 
   // A number box; drag the label left or right to scrub.
   function number(def, labelText) {
     const h = hooks(def);
     const [lo, hi] = domain(def);
-    const row = document.createElement("div");
-    row.className = "row number-row";
-    const label = document.createElement("label");
-    label.className = "scrub";
-    label.textContent = t(labelText);
+    const row = el("div", { class: "row number-row" });
+    const label = el("label", { class: "scrub" }, t(labelText));
     label.title = t("{text}\nType a value, or drag this label sideways. Double-click to reset.", { text: t(def.description) });
-    const box = document.createElement("input");
-    box.type = "text";
+    const box = el("input", { type: "text" });
     box.inputMode = "decimal";
     box.className = "value";
     box.spellcheck = false;
@@ -251,13 +236,9 @@ const AmbControls = (() => {
   }
 
   function toggle(def, labelText) {
-    const row = document.createElement("div");
-    row.className = "row check";
-    const label = document.createElement("label");
-    label.className = "toggle";
-    label.title = t(def.description);
-    const check = document.createElement("input");
-    check.type = "checkbox";
+    const row = el("div", { class: "row check" });
+    const label = el("label", { class: "toggle", title: t(def.description) });
+    const check = el("input", { type: "checkbox" });
     check.setAttribute("role", "switch");
     check.addEventListener("change", () => commit(def.name, check.checked));
     label.append(document.createTextNode(t(labelText)), check);
@@ -266,18 +247,12 @@ const AmbControls = (() => {
   }
 
   function segmented(def, labelText) {
-    const row = document.createElement("div");
-    row.className = "row segmented-row";
-    const label = document.createElement("label");
-    label.textContent = t(labelText);
-    label.title = t(def.description);
-    const group = document.createElement("div");
-    group.className = "segmented";
+    const row = el("div", { class: "row segmented-row" });
+    const label = el("label", { title: t(def.description) }, t(labelText));
+    const group = el("div", { class: "segmented" });
     group.setAttribute("role", "radiogroup");
     const buttons = def.options.map(([value, text]) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.textContent = t(text);
+      const b = el("button", { type: "button" }, t(text));
       b.setAttribute("role", "radio");
       b.addEventListener("click", () => commit(def.name, value));
       group.append(b);

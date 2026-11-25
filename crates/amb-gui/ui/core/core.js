@@ -128,10 +128,10 @@ async function askYes(message) {
 // a time in the order made: each answer carries the photos' whole info, so a
 // slower answer landing after a newer one would show older values (two keys
 // pressed quickly). Resolves to library_set_info's answer.
-let infoWrites = Promise.resolve();
+const infoQueue = { last: Promise.resolve() };
 function setInfo(paths, change) {
-  const write = infoWrites.then(() => invoke("library_set_info", { paths, change }));
-  infoWrites = write.catch(() => {});
+  const write = infoQueue.last.then(() => invoke("library_set_info", { paths, change }));
+  infoQueue.last = write.catch(() => {});
   return write;
 }
 
@@ -199,6 +199,10 @@ function el(tag, attrs = {}, ...children) {
   for (const c of children) if (c != null) e.append(c);
   return e;
 }
+
+// One of our own drawings (an SVG written in a script) as nodes. Never for
+// text from a file or a person: that goes in with `el` or `textContent`.
+const svgNode = (markup) => document.createRange().createContextualFragment(markup);
 
 const fileName = (p) => p.replace(/^.*[\\/]/, "");
 const dirOf = (p) => p.replace(/[\\/][^\\/]*$/, "");

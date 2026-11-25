@@ -172,7 +172,7 @@ function drawBorderPreview() {
   let frame = b.color;
   if (frame === "auto") {
     // The photo's average colour, from the preview.
-    const one = document.createElement("canvas");
+    const one = el("canvas");
     one.width = one.height = 1;
     const o = one.getContext("2d");
     o.drawImage(img, 0, 0, 1, 1);

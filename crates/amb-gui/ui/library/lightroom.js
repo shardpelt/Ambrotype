@@ -40,7 +40,7 @@ function lightroomRow(text, count, title, onclick) {
 }
 
 function lightroomItem(row) {
-  const li = document.createElement("li");
+  const li = el("li");
   li.append(row);
   return li;
 }
@@ -48,7 +48,7 @@ function lightroomItem(row) {
 function renderLightroom() {
   const list = $("tree-lr-list");
   list.replaceChildren(...lrin.list.map((c) => {
-    const li = document.createElement("li");
+    const li = el("li");
     const open = lrin.open.has(c.catalogue);
     const opened = c.missing
       ? t("Opened in place: {n} photos, {missing} not found. Read from the catalogue, never written.", { n: c.photos.toLocaleString(), missing: c.missing })
@@ -72,7 +72,7 @@ function renderLightroom() {
     row.append(close);
     li.append(row);
     if (open && !c.error) {
-      const ul = document.createElement("ul");
+      const ul = el("ul");
       for (const f of c.folders) {
         const r = lightroomRow(lightroomFolderName(f.path), f.photos, f.path, () => showTreeFolder(f.path));
         r.classList.toggle("current", !lib.collection && !lib.smart && !lib.lightroom && lib.dir === f.path);

@@ -298,8 +298,7 @@ function renderRange(force = false) {
 }
 
 function makeCell(p) {
-  const cell = document.createElement("div");
-  cell.className = "lib-cell";
+  const cell = el("div", { class: "lib-cell" });
   cell.dataset.path = p.path;
   cell.title = [p.name, p.captured, p.keywords.join(", "), p.offline && t("Offline: its drive isn't plugged in")].filter(Boolean).join("\n");
   cell.classList.toggle("offline", Boolean(p.offline));

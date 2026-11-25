@@ -293,7 +293,7 @@ function stripShowPreview(img) {
   const cell = path && strip.cells.get(path);
   if (!cell || !img.naturalWidth) return;
   const k = 256 / Math.max(img.naturalWidth, img.naturalHeight);
-  const c = document.createElement("canvas");
+  const c = el("canvas");
   c.width = Math.max(1, Math.round(img.naturalWidth * k));
   c.height = Math.max(1, Math.round(img.naturalHeight * k));
   c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);

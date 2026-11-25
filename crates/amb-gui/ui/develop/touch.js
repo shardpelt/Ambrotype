@@ -45,7 +45,7 @@ function touchPixel(e) {
   const img = $("preview");
   if (!img.naturalWidth) return null;
   if (touchState.pixelsOf !== img.src) {
-    const c = document.createElement("canvas");
+    const c = el("canvas");
     [c.width, c.height] = [img.naturalWidth, img.naturalHeight];
     const g = c.getContext("2d", { willReadFrequently: true });
     g.drawImage(img, 0, 0);

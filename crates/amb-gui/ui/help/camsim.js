@@ -185,12 +185,12 @@ function camDraw() {
   const g = c.getContext("2d");
   const scale = m.f / CAM.SENSOR * CAM.W; // pixels per metre at 1 m
   const horizon = CAM.H * 0.62;
-  const out = document.createElement("canvas");
+  const out = el("canvas");
   out.width = CAM.W;
   out.height = CAM.H;
   const og = out.getContext("2d");
   for (const layer of camScene(m.subject)) {
-    const lc = document.createElement("canvas");
+    const lc = el("canvas");
     lc.width = CAM.W;
     lc.height = CAM.H;
     const lg = lc.getContext("2d");

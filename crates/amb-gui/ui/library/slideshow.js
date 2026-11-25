@@ -61,30 +61,31 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
   slides.paused = false;
   slides.on = true;
   const viewer = Boolean(settings.viewer);
-  const el = Object.assign(document.createElement("div"), { className: `slideshow${viewer ? " viewer" : ""}`, tabIndex: -1 });
-  const pause = viewer
-    ? '<button type="button" data-do="left">⟲</button><button type="button" data-do="right">⟳</button>'
-    : '<button type="button" data-do="pause">❚❚</button>';
-  const info = viewer ? '<aside class="ss-info" hidden></aside>' : "";
-  el.innerHTML = `<img class="ss-img" alt=""><img class="ss-img" alt="">${info}<div class="ss-bar" hidden><button type="button" data-do="prev">‹</button>${pause}<button type="button" data-do="next">›</button><span class="ss-where"></span><button type="button" data-do="end">✕</button></div>`;
   const barTitles = { left: t("Rotate left (Ctrl+[)"), right: t("Rotate right (Ctrl+])"), pause: t("Pause (Space)"), prev: t("Previous (←)"), next: t("Next (→)"), end: t("End (Esc)") };
-  for (const [what, title] of Object.entries(barTitles)) el.querySelector(`[data-do="${what}"]`)?.setAttribute("title", title);
-  document.body.append(el);
-  slides.el = el;
+  const barButton = (what, text) => el("button", { type: "button", "data-do": what, title: barTitles[what] }, text);
+  const bar = el("div", { class: "ss-bar", hidden: true },
+    barButton("prev", "‹"),
+    ...(viewer ? [barButton("left", "⟲"), barButton("right", "⟳")] : [barButton("pause", "❚❚")]),
+    barButton("next", "›"), el("span", { class: "ss-where" }), barButton("end", "✕"));
+  const show = el("div", { class: `slideshow${viewer ? " viewer" : ""}`, tabindex: -1 },
+    el("img", { class: "ss-img", alt: "" }), el("img", { class: "ss-img", alt: "" }),
+    viewer ? el("aside", { class: "ss-info", hidden: true }) : null, bar);
+  document.body.append(show);
+  slides.el = show;
   // The viewer's thirds: left steps back, right on, the middle only shows
   // the bar.
   const side = (e) => {
     const x = e.clientX / innerWidth;
     return x < 0.3 ? -1 : x > 0.7 ? 1 : 0;
   };
-  el.addEventListener("contextmenu", (e) => {
+  show.addEventListener("contextmenu", (e) => {
     e.preventDefault();
     // A right-drag zoomed to a box (viewer-zoom.js); a right click opens the panel.
-    if (el.dataset.boxed) return delete el.dataset.boxed;
+    if (show.dataset.boxed) return delete show.dataset.boxed;
     if (viewer) toggleViewerInfo();
   });
-  if (viewer) wireViewerZoom(el);
-  el.addEventListener("click", (e) => {
+  if (viewer) wireViewerZoom(show);
+  show.addEventListener("click", (e) => {
     if (e.target.closest(".ss-info")) return;
     const b = e.target.closest("[data-do]");
     if (b) {
@@ -94,7 +95,7 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
     }
     if (!viewer) return endSlideshow();
     // The end of a drag round a zoomed photo isn't a click.
-    if (el.dataset.dragged) return delete el.dataset.dragged;
+    if (show.dataset.dragged) return delete show.dataset.dragged;
     const d = vz.z?.s > 1 ? 0 : side(e);
     if (d) stepSlide(d);
     else {
@@ -102,21 +103,21 @@ async function startSlideshow(photos, settings, { remember = true, done = null, 
       showSlideBar();
     }
   });
-  el.addEventListener("mousemove", (e) => {
+  show.addEventListener("mousemove", (e) => {
     showSlideBar();
     if (viewer) {
-      el.classList.toggle("at-left", side(e) < 0);
-      el.classList.toggle("at-right", side(e) > 0);
+      show.classList.toggle("at-left", side(e) < 0);
+      show.classList.toggle("at-right", side(e) > 0);
     }
   });
-  el.focus();
+  show.focus();
   if (settings.fullscreen) {
     slides.wasFullscreen = await invoke("window_fullscreen", { on: true }).catch(() => true);
   }
   if (viewer) {
     let open = false;
     open = store.text("amb.viewerInfo") === "1";
-    if (open) el.querySelector(".ss-info").hidden = false;
+    if (open) show.querySelector(".ss-info").hidden = false;
   }
   // Steps taken while the window went full screen count.
   await showSlide(slides.at, true);
@@ -293,26 +294,21 @@ async function renderViewerInfo() {
     [tKey("Title"), d.title],
     [tKey("Folder"), dirOf(d.path)],
   ].filter(([, v]) => v);
-  const el = (tag, attrs = {}, ...kids) => {
-    const n = Object.assign(document.createElement(tag), attrs);
-    n.append(...kids);
-    return n;
-  };
-  const stars = el("div", { className: "ss-stars" }, ...[1, 2, 3, 4, 5].map((k) => el("button", {
-    type: "button", textContent: "★", title: t("{stars} ({n})", { stars: plural(k, "star"), n: k }), className: k <= (d.rating ?? 0) ? "on" : "",
+  const stars = el("div", { class: "ss-stars" }, ...[1, 2, 3, 4, 5].map((k) => el("button", {
+    type: "button", title: t("{stars} ({n})", { stars: plural(k, "star"), n: k }), class: k <= (d.rating ?? 0) ? "on" : "",
     onclick: () => viewerChange({ rating: (d.rating ?? 0) === k ? 0 : k }),
-  })));
-  const labels = el("div", { className: "ss-labels" }, ...Object.keys(LABEL_COLOURS).map((l, i) => {
-    const b = el("button", { type: "button", title: i < 4 ? t("{label} ({key})", { label: t(l), key: 6 + i }) : t(l), className: d.label === l ? "on" : "", onclick: () => viewerChange({ label: d.label === l ? "" : l }) });
+  }, "★")));
+  const labels = el("div", { class: "ss-labels" }, ...Object.keys(LABEL_COLOURS).map((l, i) => {
+    const b = el("button", { type: "button", title: i < 4 ? t("{label} ({key})", { label: t(l), key: 6 + i }) : t(l), class: d.label === l ? "on" : "", onclick: () => viewerChange({ label: d.label === l ? "" : l }) });
     b.style.setProperty("--swatch", LABEL_COLOURS[l]);
     return b;
   }));
-  const flag = (f, text, key) => el("button", { type: "button", textContent: t(text), title: t("{flag} ({key})", { flag: t(text), key }), className: (d.flag ?? "") === f ? "on" : "", onclick: () => viewerChange({ flag: f }) });
-  const flags = el("div", { className: "ss-flags" }, flag("pick", tKey("Pick"), "P"), flag("reject", tKey("Reject"), "X"), flag("", tKey("Neither"), "U"));
-  const keywords = el("div", { className: "ss-keywords" }, ...(d.keywords ?? []).map((k) => el("span", { className: "ss-chip", translate: false }, k, el("button", {
-    type: "button", textContent: "×", title: t("Remove {name}", { name: k }), onclick: () => viewerChange({ remove_keywords: [k] }),
-  }))));
-  const add = el("input", { type: "text", placeholder: t("Add keywords (Enter; commas between)"), spellcheck: false });
+  const flag = (f, text, key) => el("button", { type: "button", title: t("{flag} ({key})", { flag: t(text), key }), class: (d.flag ?? "") === f ? "on" : "", onclick: () => viewerChange({ flag: f }) }, t(text));
+  const flags = el("div", { class: "ss-flags" }, flag("pick", tKey("Pick"), "P"), flag("reject", tKey("Reject"), "X"), flag("", tKey("Neither"), "U"));
+  const keywords = el("div", { class: "ss-keywords" }, ...(d.keywords ?? []).map((k) => el("span", { class: "ss-chip", translate: "no" }, k, el("button", {
+    type: "button", title: t("Remove {name}", { name: k }), onclick: () => viewerChange({ remove_keywords: [k] }),
+  }, "×"))));
+  const add = el("input", { type: "text", placeholder: t("Add keywords (Enter; commas between)"), spellcheck: "false" });
   add.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && add.value.trim()) {
       viewerChange({ add_keywords: add.value.split(",").map((k) => k.trim()).filter(Boolean) });
@@ -320,13 +316,13 @@ async function renderViewerInfo() {
     }
   });
   panel.replaceChildren(
-    el("dl", {}, ...rows.flatMap(([k, v]) => [el("dt", { textContent: t(k) }), el("dd", { textContent: v, title: v, translate: false })])),
-    el("h4", { textContent: t("Rating") }), stars,
-    el("h4", { textContent: t("Label") }), labels,
-    el("h4", { textContent: t("Flag") }), flags,
-    el("h4", { textContent: t("Keywords") }), keywords, add,
-    el("h4", { textContent: t("Place") }), viewerPlaceRow(d, el),
-    el("p", { className: "ss-info-hint", textContent: t("I or right-click hides this · 0–5 rate · P X U flag · 6–9 label · Ctrl+[ ] turn") }),
+    el("dl", {}, ...rows.flatMap(([k, v]) => [el("dt", {}, t(k)), el("dd", { title: v, translate: "no" }, v)])),
+    el("h4", {}, t("Rating")), stars,
+    el("h4", {}, t("Label")), labels,
+    el("h4", {}, t("Flag")), flags,
+    el("h4", {}, t("Keywords")), keywords, add,
+    el("h4", {}, t("Place")), viewerPlaceRow(d),
+    el("p", { class: "ss-info-hint" }, t("I or right-click hides this · 0–5 rate · P X U flag · 6–9 label · Ctrl+[ ] turn")),
   );
 }
 

@@ -47,8 +47,7 @@ function looksRenderSetups(lk) {
     return;
   }
   list.replaceChildren(...lk.setups.map((s) => {
-    const row = document.createElement("div");
-    row.className = "looks-setup";
+    const row = el("div", { class: "looks-setup" });
     const when = new Date(s.saved * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
     const name = el("span", {
       title: t("{layout} + {theme}, kept {when}", { layout: s.layout.data?.name ?? s.layout.id, theme: s.theme.data?.name ?? s.theme.id, when }),
@@ -104,20 +103,16 @@ function looksRender(lk) {
     // A task's own layout is in the task bar; it's listed only while chosen.
     const shown = ui.looks[`${kind}s`].filter((look) => !TASK_LAYOUTS.has(look.id) || sel[kind] === look.id);
     list.replaceChildren(...shown.map((look) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "look";
+      const b = el("button", { type: "button", class: "look" });
       b.setAttribute("role", "option");
       b.setAttribute("aria-selected", String(sel[kind] === look.id));
       b.classList.toggle("selected", sel[kind] === look.id);
       b.classList.toggle("viewed", view.kind === kind && view.id === look.id);
       b.classList.toggle("broken", !look.usable);
-      const name = document.createElement("span");
+      const name = el("span");
       name.textContent = look.name;
       name.setAttribute("translate", "no");
-      const marks = document.createElement("span");
-      marks.className = "marks";
-      marks.textContent = (look.problems?.length ? "⚠ " : "") + (look.builtin ? "🔒" : "");
+      const marks = el("span", { class: "marks" }, (look.problems?.length ? "⚠ " : "") + (look.builtin ? "🔒" : ""));
       b.title = look.builtin ? t("Built in: clone it to make changes") : (look.usable ? "" : t("Can't be used: see the problems below"));
       b.append(name, marks);
       b.addEventListener("click", () => looksChoose(lk, kind, look));
@@ -139,9 +134,7 @@ function looksRender(lk) {
   if (look && !look.builtin) about.push(view.kind === "layout" ? t("Your layout: a file in your own folder (Open folder).") : t("Your theme: a file in your own folder (Open folder)."));
   $("looks-about").textContent = about.join(" ");
   $("looks-problems").replaceChildren(...(look?.problems ?? []).map((p) => {
-    const li = document.createElement("li");
-    li.className = p.error ? "error" : "warning";
-    li.textContent = p.error ? t("Error: {message}", { message: p.message }) : t("Warning: {message}", { message: p.message });
+    const li = el("li", { class: p.error ? "error" : "warning" }, p.error ? t("Error: {message}", { message: p.message }) : t("Warning: {message}", { message: p.message }));
     return li;
   }));
   looksThemeEditor(lk, view.kind === "theme" && look && !look.builtin && look.usable ? look : null);
@@ -161,8 +154,7 @@ function looksThemeEditor(lk, look) {
     } catch (e) { showError(e); }
   };
   const rows = Object.keys(fallback).map((token) => {
-    const label = document.createElement("label");
-    label.className = "token";
+    const label = el("label", { class: "token" });
     const value = data.tokens[token] ?? fallback[token];
     let input;
     if (typeof fallback[token] === "number") {

@@ -65,3 +65,14 @@ for (const [id, merge] of [["hdr-dialog", libraryMergeHdr], ["pano-dialog", libr
     t.expect(/two or more/i.test($("toast")?.textContent ?? document.body.textContent), "it says to select two or more");
   });
 }
+
+// The paper swatches take their colour from the stylesheet, not inline styles.
+await t.step("each colour swatch shows its own colour", async () => {
+  const swatches = document.querySelectorAll('.swatches [data-color^="#"]');
+  t.expect(swatches.length >= 17, `${swatches.length} swatches`);
+  for (const b of swatches) {
+    const [r, g, bl] = getComputedStyle(b).backgroundColor.match(/\d+/g).map(Number);
+    const hex = `#${[r, g, bl].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+    t.expect(hex === b.dataset.color, `${b.dataset.color} shows ${hex}`);
+  }
+});

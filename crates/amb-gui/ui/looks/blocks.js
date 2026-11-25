@@ -77,12 +77,12 @@ function updateColumnStrip(col) {
   const shown = named.length > 5 ? named.slice(0, 4) : named;
   const chips = shown.map((el) => [el, blockName(el)]);
   if (named.length > shown.length) chips.push([named[shown.length], `+${named.length - shown.length}`]);
-  strip.replaceChildren(...chips.map(([el, text]) => {
-    const b = Object.assign(document.createElement("button"), { type: "button", className: "col-chip", textContent: text, title: t("Scroll down to {name}", { name: blockName(el) }) });
+  strip.replaceChildren(...chips.map(([block, text]) => {
+    const b = el("button", { type: "button", class: "col-chip", title: t("Scroll down to {name}", { name: blockName(block) }) }, text);
     b.addEventListener("click", () => {
-      if (el.classList.contains("folded")) foldBlock(el, false);
-      if (el.matches("details")) el.open = true;
-      const top = col.scrollTop + el.getBoundingClientRect().top - col.getBoundingClientRect().top - (tabs?.offsetHeight ?? 0);
+      if (block.classList.contains("folded")) foldBlock(block, false);
+      if (block.matches("details")) block.open = true;
+      const top = col.scrollTop + block.getBoundingClientRect().top - col.getBoundingClientRect().top - (tabs?.offsetHeight ?? 0);
       col.scrollTo({ top, behavior: "smooth" });
     });
     return b;

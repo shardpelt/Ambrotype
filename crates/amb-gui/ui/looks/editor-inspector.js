@@ -59,19 +59,14 @@ function renderPalette() {
   for (const [id, title, items] of groups) {
     const shownItems = id === "new" ? items : items.filter((x) => matches(x.label, x.hint));
     if (!shownItems.length) continue;
-    const h = document.createElement("h3");
-    h.textContent = title;
+    const h = el("h3", {}, title);
     list.append(h);
     for (const x of shownItems) {
-      const row = document.createElement("div");
-      row.className = "palette-item";
-      row.title = t("Drag into place, or click to add");
-      const name = document.createElement("span");
-      name.textContent = x.label;
+      const row = el("div", { class: "palette-item", title: t("Drag into place, or click to add") });
+      const name = el("span", {}, x.label);
       row.append(name);
       if (x.hint && id === "settings") {
-        const hint = document.createElement("span");
-        hint.className = "hint";
+        const hint = el("span", { class: "hint" });
         hint.textContent = x.hint;
         row.append(hint);
       }
@@ -133,13 +128,12 @@ function openInspector(what, x, y) {
   const d = ui.edit.draft;
   const parts = [];
   const heading = (text, sub = "") => {
-    const h = document.createElement("h3");
-    h.textContent = text;
+    const h = el("h3", {}, text);
     parts.push(h);
     if (sub) parts.push(el("p", { class: "hint" }, sub));
   };
   const field = (label, input) => {
-    const l = document.createElement("label");
+    const l = el("label");
     l.append(document.createTextNode(label), input);
     parts.push(l);
     return input;
@@ -151,7 +145,7 @@ function openInspector(what, x, y) {
     return input;
   };
   const select = (options, value, onChange) => {
-    const s = document.createElement("select");
+    const s = el("select");
     for (const [v, label] of options) s.append(el("option", { value: v, selected: v === value }, label));
     s.addEventListener("change", () => onChange(s.value));
     return s;

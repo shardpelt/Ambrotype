@@ -39,9 +39,7 @@ function renderTemplates() {
   const list = $("col-templates");
   list.replaceChildren();
   for (const entry of collage.templates) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "col-template";
+    const b = el("button", { type: "button", class: "col-template" });
     b.classList.toggle("on", entry.id === collage.base?.id);
     b.title = entry.builtin ? t("{name} (only the shape is used)", { name: entry.name }) : t("{name}: your layout ({w} × {h})", { name: entry.name, w: entry.width, h: entry.height });
     b.append(layoutIcon(entry), el("span", { translate: entry.builtin ? null : "no" }, entry.name));
@@ -154,7 +152,7 @@ function fillSizeSelect() {
     groups.get(p.group).push(p);
   }
   for (const [group, items] of groups) {
-    const og = document.createElement("optgroup");
+    const og = el("optgroup");
     og.label = group || tKey("Yours");
     for (const p of items) option(og, `size:${p.id}`, `${p.name} (${p.width} × ${p.height})`);
     sel.append(og);
@@ -283,7 +281,7 @@ function groupGrid(paths) {
 // and × to take it out of the tray.
 function trayCell(p) {
   const n = collage.trayGroupOf.get(p.path) ?? -1;
-  const item = document.createElement("div");
+  const item = el("div");
   item.className = n >= 0 ? `tray-item grouped g${n % 2}` : "tray-item";
   item.title = t("{name}\nDrag up into a cell, or click to fill the selected (or next empty) cell.", { name: p.name });
   const img = el("img", { alt: "", draggable: "false" });

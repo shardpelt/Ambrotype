@@ -687,6 +687,13 @@ dialog input[type=color] { width: 34px; height: 24px; padding: 0; border: 1px so
 .border-edit > label > .swatches { flex: 0 0 66%; }
 .swatches input[type=color] { width: 26px; margin-left: 2px; }
 .swatches button { width: 18px; height: 18px; flex: none; padding: 0; border-radius: 50%; border: 1px solid var(--line); }
+/* The paper colours, the same in every theme: each swatch's own colour. */
+.swatches [data-color="#ffffff"] { background: #ffffff; }
+.swatches [data-color="#f7f5f0"] { background: #f7f5f0; }
+.swatches [data-color="#c8c8c8"] { background: #c8c8c8; }
+.swatches [data-color="#808080"] { background: #808080; }
+.swatches [data-color="#333333"] { background: #333333; }
+.swatches [data-color="#000000"] { background: #000000; }
 .swatches button.on { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--accent); }
 .swatches button.auto { width: auto; border-radius: 9px; padding: 0 5px; font-size: 11px; background: linear-gradient(90deg, #c84, #48a); color: #fff; }
 

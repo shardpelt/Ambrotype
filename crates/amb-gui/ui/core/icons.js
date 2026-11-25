@@ -85,7 +85,7 @@ function applyToolbarIcons(style = "icons") {
     const svg = style !== "words" && TOOLBAR_ICONS.has(name) ? iconSvg(name) : null;
     // Auto edit and Select keep their word beside the picture: they're
     // the big buttons, for people who don't know them yet.
-    if (svg) b.innerHTML = name === "auto" || name === "select" ? `${svg}<span>${name === "select" ? t("Select") : label}</span>` : svg;
+    if (svg) b.replaceChildren(svgNode(svg), ...(name === "auto" || name === "select" ? [el("span", {}, name === "select" ? t("Select") : label)] : []));
     else b.textContent = label;
     b.classList.toggle("tool-icon", Boolean(svg));
   }

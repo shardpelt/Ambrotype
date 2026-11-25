@@ -155,8 +155,5 @@ const FIGURES = {
 function figure(id) {
   const draw = FIGURES[id];
   if (!draw) return null;
-  const wrap = document.createElement("figure");
-  wrap.className = "basics-figure";
-  wrap.innerHTML = `<svg viewBox="0 0 ${FIG_W} 116" role="img" aria-hidden="true">${draw()}</svg>`;
-  return wrap;
+  return el("figure", { class: "basics-figure" }, svgNode(`<svg viewBox="0 0 ${FIG_W} 116" role="img" aria-hidden="true">${draw()}</svg>`));
 }

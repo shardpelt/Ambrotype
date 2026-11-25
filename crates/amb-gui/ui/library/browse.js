@@ -146,7 +146,7 @@ function monthCalendar(year, month, days) {
   for (const d of WEEKDAYS) grid.append(el("span", { class: "tl-dow" }, t(d)));
   // Monday first.
   const lead = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7;
-  for (let i = 0; i < lead; i++) grid.append(document.createElement("span"));
+  for (let i = 0; i < lead; i++) grid.append(el("span"));
   const length = new Date(Date.UTC(year, month, 0)).getUTCDate();
   for (let day = 1; day <= length; day++) {
     const date = `${prefix}-${String(day).padStart(2, "0")}`;
@@ -346,21 +346,21 @@ function fitMap(placed, box) {
 }
 
 function zoomMap(step, at = null) {
-  const el = document.querySelector("#library-view .map");
-  if (!el) return;
-  mapZoomAt(browse.map, el, 2 ** step, ...(at ?? []));
+  const mapBox = document.querySelector("#library-view .map");
+  if (!mapBox) return;
+  mapZoomAt(browse.map, mapBox, 2 ** step, ...(at ?? []));
   drawMap();
 }
 
 function drawMap() {
-  const el = document.querySelector("#library-view .map");
-  if (!el) return;
+  const mapBox = document.querySelector("#library-view .map");
+  if (!mapBox) return;
   const m = browse.map;
-  const W = el.clientWidth, H = el.clientHeight;
+  const W = mapBox.clientWidth, H = mapBox.clientHeight;
   mapClamp(m, H);
   const world = TILE * 2 ** m.z;
   const left = m.x - W / 2, top = m.y - H / 2;
-  mapTiles(el.querySelector(".map-tiles"), m, W, H);
+  mapTiles(mapBox.querySelector(".map-tiles"), m, W, H);
   // Pins, grouped when closer than about a pin's width.
   const cell = 44;
   const groups = new Map();
@@ -392,10 +392,10 @@ function drawMap() {
     near.y += g.y;
     near.photos.push(...g.photos);
   }
-  const pins = el.querySelector(".map-pins");
+  const pins = mapBox.querySelector(".map-pins");
   pins.replaceChildren(...merged.map((g) => {
     const n = g.photos.length;
-    const pin = Object.assign(document.createElement("button"), { type: "button", className: "map-pin", textContent: n > 1 ? n : "" });
+    const pin = el("button", { type: "button", class: "map-pin" }, n > 1 ? n : "");
     pin.style.left = `${g.x / n}px`;
     pin.style.top = `${g.y / n}px`;
     pin.classList.toggle("selected", g.photos.some((p) => lib.selected.has(p.path)));
@@ -458,43 +458,43 @@ function graticule(left, top, W, H, z) {
   return svg;
 }
 
-let pinPeek = null;
+const pinPeek = { img: null };
 function showPinPeek(pin, p) {
-  pinPeek ??= el("img", { class: "map-peek", alt: "" });
-  pinPeek.removeAttribute("src");
+  pinPeek.img ??= el("img", { class: "map-peek", alt: "" });
+  pinPeek.img.removeAttribute("src");
   const r = pin.getBoundingClientRect();
-  Object.assign(pinPeek.style, { left: `${r.left + r.width / 2}px`, top: `${r.top}px` });
-  document.body.append(pinPeek);
-  bigImage(p, 256, p.edited).then((u) => { if (pinPeek.isConnected) pinPeek.src = u; }).catch(() => {});
+  Object.assign(pinPeek.img.style, { left: `${r.left + r.width / 2}px`, top: `${r.top}px` });
+  document.body.append(pinPeek.img);
+  bigImage(p, 256, p.edited).then((u) => { if (pinPeek.img.isConnected) pinPeek.img.src = u; }).catch(() => {});
 }
-const hidePinPeek = () => pinPeek?.remove();
+const hidePinPeek = () => pinPeek.img?.remove();
 
-function wireMap(el) {
-  mapAttach(el, browse.map, { redraw: drawMap });
+function wireMap(mapBox) {
+  mapAttach(mapBox, browse.map, { redraw: drawMap });
   // Dropped photos are placed where they land.
-  el.addEventListener("dragover", (e) => {
+  mapBox.addEventListener("dragover", (e) => {
     if (e.dataTransfer.types.includes("text/x-amb-photo")) e.preventDefault();
   });
-  el.addEventListener("drop", (e) => {
+  mapBox.addEventListener("drop", (e) => {
     const path = e.dataTransfer.getData("text/x-amb-photo");
     if (!path) return;
     e.preventDefault();
     const paths = lib.selected.has(path) ? [...lib.selected] : [path];
-    placePhotos(paths, mapPlaceAt(el, e.clientX, e.clientY));
+    placePhotos(paths, mapPlaceAt(mapBox, e.clientX, e.clientY));
   });
   // Right-click: put the selected photos here.
-  el.addEventListener("contextmenu", (e) => {
+  mapBox.addEventListener("contextmenu", (e) => {
     e.preventDefault();
     const sel = selectedPhotos();
     if (!sel.length) return status(t("Select photos first, then right-click where they were taken"));
-    placePhotos(sel.map((p) => p.path), mapPlaceAt(el, e.clientX, e.clientY));
+    placePhotos(sel.map((p) => p.path), mapPlaceAt(mapBox, e.clientX, e.clientY));
   });
 }
 
 // "latitude,longitude" of a point on the map.
-function mapPlaceAt(el, cx, cy) {
+function mapPlaceAt(mapBox, cx, cy) {
   const m = browse.map;
-  const r = el.getBoundingClientRect();
+  const r = mapBox.getBoundingClientRect();
   const [lat, lon] = unproject(m.x - r.width / 2 + (cx - r.left), m.y - r.height / 2 + (cy - r.top), m.z);
   return `${lat.toFixed(6)},${lon.toFixed(6)}`;
 }

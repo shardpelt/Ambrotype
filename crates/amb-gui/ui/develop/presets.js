@@ -98,7 +98,7 @@ async function applyPresetPartly(p) {
 
 // Hovering a preset shows the photo with it, as Lightroom's Navigator does;
 // nothing is applied until it's clicked.
-let hoverPreset = { timer: 0, shown: false, token: 0 };
+const hoverPreset = { timer: 0, shown: false, token: 0 };
 function presetHover(p) {
   hoverPreview(p && (() => presetCommands(p.path)));
 }
@@ -317,14 +317,11 @@ async function surpriseFlow() {
       seed += variants.length;
       if (!current()) return;
       grid.replaceChildren(...variants.map((v) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.title = t("Seed {seed}", { seed: v.seed });
-        const img = document.createElement("img");
+        const b = el("button", { type: "button", title: t("Seed {seed}", { seed: v.seed }) });
+        const img = el("img");
         img.src = v.image;
         img.alt = t("Look {seed}", { seed: v.seed });
-        const label = document.createElement("span");
-        label.textContent = t("seed {seed}", { seed: v.seed });
+        const label = el("span", {}, t("seed {seed}", { seed: v.seed }));
         b.append(img, label);
         b.addEventListener("click", async () => {
           dlg.close("cancel");
@@ -378,10 +375,9 @@ async function matchFlow() {
     try {
       proposal = await invoke("match_look", { references: refs, parts });
       table.replaceChildren(...proposal.lines.map((l) => {
-        const tr = document.createElement("tr");
+        const tr = el("tr");
         for (const cell of [t(l.label), l.before, "→", l.after]) {
-          const td = document.createElement("td");
-          td.textContent = cell;
+          const td = el("td", {}, cell);
           tr.append(td);
         }
         return tr;

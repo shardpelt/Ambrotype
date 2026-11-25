@@ -90,27 +90,24 @@ function applyLayout(layout) {
       if (item && typeof item === "object" && typeof item.tab === "string") {
         tab = item.tab;
         if (!bar) {
-          bar = Object.assign(document.createElement("div"), { className: "column-tabs", role: "tablist" });
+          bar = el("div", { class: "column-tabs", role: "tablist" });
           col.append(bar);
         }
-        const b = Object.assign(document.createElement("button"), { type: "button", className: "column-tab", textContent: tab, role: "tab" });
         // A tab is named by the layout's author.
-        b.setAttribute("translate", "no");
-        b.dataset.tab = tab;
-        b.addEventListener("click", () => showColumnTab(side, b.dataset.tab));
+        const b = el("button", { type: "button", class: "column-tab", role: "tab", translate: "no", "data-tab": tab, onclick: () => showColumnTab(side, b.dataset.tab) }, tab);
         bar.append(b);
         return;
       }
-      let el = null;
-      if (typeof item === "string") el = BLOCK_IDS[item] ? $(BLOCK_IDS[item]) : null;
-      else if (item && typeof item === "object") el = buildPanel(item);
-      if (!el) return;
+      let block = null;
+      if (typeof item === "string") block = BLOCK_IDS[item] ? $(BLOCK_IDS[item]) : null;
+      else if (item && typeof item === "object") block = buildPanel(item);
+      if (!block) return;
       // Where it is in the layout file, for editor mode (editor.js).
-      el.dataset.item = `${side}:${i}`;
+      block.dataset.item = `${side}:${i}`;
       // History shows whichever tab is chosen, docked at the column's foot.
-      if (tab && item !== "history") el.dataset.tab = tab;
-      else delete el.dataset.tab;
-      col.append(el);
+      if (tab && item !== "history") block.dataset.tab = tab;
+      else delete block.dataset.tab;
+      col.append(block);
     });
     if (bar) showColumnTab(side, columnTab(side) ?? bar.firstChild.dataset.tab);
     const w = Number(spec.width ?? DEFAULT_WIDTH[side]);
@@ -231,9 +228,8 @@ function makeControl(def, widget, labelText) {
 }
 
 function buildHsl(section, hide) {
-  const tabs = document.createElement("div");
-  tabs.className = "tabs";
-  const holder = document.createElement("div");
+  const tabs = el("div", { class: "tabs" });
+  const holder = el("div");
   const rows = {};
   for (const def of section.controls) {
     if (hide.includes(def.name)) continue;
@@ -244,8 +240,7 @@ function buildHsl(section, hide) {
   const kinds = ["Hue", "Saturation", "Luminance"].filter((k) => rows[k]);
   if (!kinds.includes(ui.hslTab)) ui.hslTab = kinds[0];
   for (const kind of kinds) {
-    const b = document.createElement("button");
-    b.textContent = kind === "Hue" ? t("Hue") : kind === "Saturation" ? t("Saturation") : t("Luminance");
+    const b = el("button", {}, kind === "Hue" ? t("Hue") : kind === "Saturation" ? t("Saturation") : t("Luminance"));
     b.addEventListener("click", () => {
       ui.hslTab = kind;
       for (const [k, rs] of Object.entries(rows)) rs.forEach((r) => (r.hidden = k !== kind));
@@ -304,23 +299,18 @@ function buildPanel(item) {
     });
   }
 
-  const details = document.createElement("details");
-  details.className = "panel";
+  const details = el("details", { class: "panel" });
   // Everything is open while editing, so all of it can be moved.
   details.open = Boolean(item.open) || Boolean(ui.edit);
-  const summary = document.createElement("summary");
-  const name = document.createElement("span");
+  const summary = el("summary");
+  const name = el("span");
   // A title the layout gives is its author's word; a built-in panel's name is ours.
   const shownTitle = item.title ?? t(title);
   name.textContent = shownTitle;
   if (item.title) name.setAttribute("translate", "no");
-  const reset = document.createElement("button");
-  reset.className = "small reset";
-  reset.textContent = t("Reset");
-  reset.title = t("Reset {name}", { name: shownTitle });
+  const reset = el("button", { class: "small reset", title: t("Reset {name}", { name: shownTitle }) }, t("Reset"));
   summary.append(name, reset);
-  const body = document.createElement("div");
-  body.className = "panel-body";
+  const body = el("div", { class: "panel-body" });
   const columns = Math.min(4, Math.max(1, Number(item.columns) || 1));
   if (columns > 1) {
     body.classList.add("grid");
@@ -330,8 +320,7 @@ function buildPanel(item) {
   const names = []; // what Reset clears in a custom panel
   const renderEntry = (e) => {
     if (e.type === "label") {
-      const l = document.createElement("div");
-      l.className = "section-label";
+      const l = el("div", { class: "section-label" });
       l.append(e.own ? el("span", { class: "section-name", translate: "no" }, e.text) : el("span", { class: "section-name" }, t(e.text)));
       l.append(...sectionActions(e.text, item.panel));
       body.append(l);
@@ -340,9 +329,7 @@ function buildPanel(item) {
     } else if (e.type === "control") {
       const def = e.def ?? ui.defs.get(e.name);
       if (!def || ui.controls.has(def.name)) {
-        const missing = document.createElement("div");
-        missing.className = "row placeholder";
-        missing.textContent = def ? t("{name} is shown elsewhere", { name: t(def.label) }) : t("Unknown setting: {name}", { name: e.name });
+        const missing = el("div", { class: "row placeholder" }, def ? t("{name} is shown elsewhere", { name: t(def.label) }) : t("Unknown setting: {name}", { name: e.name }));
         body.append(missing);
         return;
       }
@@ -352,8 +339,7 @@ function buildPanel(item) {
       names.push(...e.section.controls.map((c) => c.name).filter((n) => !e.hide.includes(n)));
       body.append(...buildHsl(e.section, e.hide));
     } else if (e.type === "curve" && !ui.curve) {
-      const host = document.createElement("div");
-      host.className = "composite";
+      const host = el("div", { class: "composite" });
       body.append(host);
       names.push(...AmbCurve.TAGS);
       ui.curve = AmbCurve.create(host, {
@@ -365,8 +351,7 @@ function buildPanel(item) {
         },
       });
     } else if (e.type === "wheels" && !ui.wheels) {
-      const host = document.createElement("div");
-      host.className = "composite";
+      const host = el("div", { class: "composite" });
       body.append(host);
       names.push(...AmbWheels.TAGS);
       ui.wheels = AmbWheels.create(host, {

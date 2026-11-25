@@ -113,10 +113,10 @@ function wirePlaceField() {
 }
 
 // The viewer's info panel: a Place box for the photo on screen.
-function viewerPlaceRow(d, el) {
+function viewerPlaceRow(d) {
   const at = d.gps ?? null;
   const cam = !at && d.camera_gps;
-  const input = el("input", { type: "text", spellcheck: false, value: at ? at.map((v) => v.toFixed(6)).join(", ") : "", placeholder: cam ? t("Camera: {coords}", { coords: cam.map((v) => v.toFixed(5)).join(", ") }) : t("52.3731, 4.8922 or a map link") });
+  const input = el("input", { type: "text", spellcheck: "false", value: at ? at.map((v) => v.toFixed(6)).join(", ") : "", placeholder: cam ? t("Camera: {coords}", { coords: cam.map((v) => v.toFixed(5)).join(", ") }) : t("52.3731, 4.8922 or a map link") });
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       const gps = input.value.trim() ? parsePlace(input.value) : "";
@@ -124,13 +124,13 @@ function viewerPlaceRow(d, el) {
       viewerChange({ gps });
     }
   });
-  const pick = el("button", { type: "button", className: "small", textContent: t("Pick…"), title: t("Choose it on a map, or find an address or place by name") });
+  const pick = el("button", { type: "button", class: "small", title: t("Choose it on a map, or find an address or place by name") }, t("Pick…"));
   pick.addEventListener("click", async () => {
     const gps = await pickPlace(at ?? cam ?? null, t("Where {name} was taken", { name: d.name ?? fileName(d.path) }));
     if (gps) viewerChange({ gps });
     slides.el?.focus();
   });
-  const row = el("div", { className: "ss-place" }, input, pick);
+  const row = el("div", { class: "ss-place" }, input, pick);
   const names = placeNamesText(d);
-  return names ? el("div", {}, row, el("p", { className: "ss-info-hint", translate: "no", title: names }, names)) : row;
+  return names ? el("div", {}, row, el("p", { class: "ss-info-hint", translate: "no", title: names }, names)) : row;
 }

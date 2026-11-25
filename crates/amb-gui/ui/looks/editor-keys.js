@@ -62,7 +62,7 @@ function beginDrag(e, what) {
   const move = (ev) => {
     if (!ghost && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 5) return;
     if (!ghost) {
-      ghost = document.createElement("div");
+      ghost = el("div");
       ghost.className = "edit-ghost";
       ghost.textContent = what.label || t("Item");
       document.body.append(ghost);

@@ -339,14 +339,10 @@ function keysRenderMap(ks) {
   const map = $("keyboard-map");
   map.replaceChildren();
   for (const row of KEYBOARD_ROWS) {
-    const r = document.createElement("div");
-    r.className = "kb-row";
+    const r = el("div", { class: "kb-row" });
     for (const key of row) {
       const users = KEY_ACTIONS.flatMap((a) => keysFor(a).filter((k) => keysBase(k) === key).map((k) => [k, a]));
-      const cap = document.createElement("button");
-      cap.type = "button";
-      cap.className = `kb-key kb-${key.length > 1 ? key.toLowerCase() : "char"}`;
-      cap.textContent = KEY_NAMES[key] ?? key;
+      const cap = el("button", { type: "button", class: `kb-key kb-${key.length > 1 ? key.toLowerCase() : "char"}` }, KEY_NAMES[key] ?? key);
       cap.classList.toggle("bare", users.some(([k]) => k === key));
       cap.classList.toggle("with-mod", users.some(([k]) => k !== key));
       cap.classList.toggle("focus", ks.focusKey === key);
@@ -374,20 +370,15 @@ function keysRenderList(ks) {
       group = a.group;
       list.append(el("h3", {}, t(group)));
     }
-    const row = document.createElement("div");
-    row.className = "key-row";
-    const name = document.createElement("span");
-    name.className = "key-action";
-    name.textContent = actionLabel(a);
+    const row = el("div", { class: "key-row" });
+    const name = el("span", { class: "key-action" }, actionLabel(a));
     if (a.when === "crop") name.title = t("Only while the crop tool is open");
     if (a.when === "masks") name.title = t("Only while the masks are open");
     if (a.when === "spots") name.title = t("Only while spot removal is open");
     if (a.when === "library") name.title = t("Only in the library");
-    const caps = document.createElement("span");
-    caps.className = "key-caps";
+    const caps = el("span", { class: "key-caps" });
     for (const k of keys) {
-      const kbd = document.createElement("kbd");
-      kbd.textContent = keyLabel(k);
+      const kbd = el("kbd", {}, keyLabel(k));
       const x = el("button", { type: "button", class: "kbd-remove", title: t("Remove {key}", { key: keyLabel(k) }) }, "×");
       x.addEventListener("click", () => {
         ui.keybindings[a.id] = keys.filter((y) => y !== k);

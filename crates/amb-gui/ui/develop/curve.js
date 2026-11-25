@@ -326,38 +326,26 @@
 
   // DOM: channel tabs, square canvas, readout line.
   function curveDom(onTab, onReset) {
-    const root = document.createElement("div");
-    root.className = "amb-curve";
-    const tabs = document.createElement("div");
-    tabs.className = "amb-tabs";
+    const root = el("div", { class: "amb-curve" });
+    const tabs = el("div", { class: "amb-tabs" });
     const tabButtons = new Map();
     for (const ch of CHANNELS) {
-      const b = document.createElement("button");
-      b.type = "button";
+      const b = el("button", { type: "button" });
       b.dataset.tag = ch.tag;
       b.title = t("{channel} channel ({tag})", { channel: t(ch.label), tag: ch.tag });
-      const dot = document.createElement("span");
-      dot.className = "amb-dot";
+      const dot = el("span", { class: "amb-dot" });
       dot.style.background = ch.colour;
       b.append(dot, document.createTextNode(t(ch.label)));
       b.addEventListener("click", () => onTab(ch.tag));
       tabButtons.set(ch.tag, b);
       tabs.append(b);
     }
-    const wrap = document.createElement("div");
-    wrap.className = "amb-curve-plot";
-    const canvas = document.createElement("canvas");
-    canvas.title = t("Click to add a point · drag to move · double-click or drag out of the graph to remove");
+    const wrap = el("div", { class: "amb-curve-plot" });
+    const canvas = el("canvas", { title: t("Click to add a point · drag to move · double-click or drag out of the graph to remove") });
     wrap.append(canvas);
-    const foot = document.createElement("div");
-    foot.className = "amb-curve-foot";
-    const readout = document.createElement("span");
-    readout.className = "amb-readout";
-    const resetBtn = document.createElement("button");
-    resetBtn.type = "button";
-    resetBtn.className = "amb-link";
-    resetBtn.textContent = t("Reset channel");
-    resetBtn.title = t("Reset the active channel to a straight line");
+    const foot = el("div", { class: "amb-curve-foot" });
+    const readout = el("span", { class: "amb-readout" });
+    const resetBtn = el("button", { type: "button", class: "amb-link", title: t("Reset the active channel to a straight line") }, t("Reset channel"));
     resetBtn.addEventListener("click", onReset);
     foot.append(readout, resetBtn);
     root.append(tabs, wrap, foot);

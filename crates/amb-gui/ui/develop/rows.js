@@ -119,14 +119,13 @@ function selectOnFocus(box) {
 }
 
 function makeRow(def) {
-  const row = document.createElement("div");
+  const row = el("div");
   row.dataset.name = def.name;
   const entry = { def };
   if (def.kind === "bool") {
     row.className = "row check";
-    const label = document.createElement("label");
-    const check = document.createElement("input");
-    check.type = "checkbox";
+    const label = el("label");
+    const check = el("input", { type: "checkbox" });
     check.addEventListener("change", () => commit(def.name, check.checked));
     label.append(check, document.createTextNode(t(def.label)));
     label.title = t(def.description);
@@ -134,12 +133,12 @@ function makeRow(def) {
     Object.assign(entry, { check, label });
   } else if (def.kind === "choice") {
     row.className = "row";
-    const label = document.createElement("label");
+    const label = el("label");
     label.textContent = t(def.label);
     label.title = t(def.description);
-    const select = document.createElement("select");
+    const select = el("select");
     for (const [value, text] of def.options) {
-      const o = document.createElement("option");
+      const o = el("option");
       o.value = JSON.stringify(value);
       o.textContent = t(text);
       select.append(o);
@@ -149,19 +148,17 @@ function makeRow(def) {
     Object.assign(entry, { select, label });
   } else {
     row.className = "row";
-    const label = document.createElement("label");
+    const label = el("label");
     label.textContent = t(def.label);
     const about = def.units ? t("{text} ({units})", { text: t(def.description), units: def.units }) : t(def.description);
     label.title = t("{text}\nDrag the slider (Shift: fine). Double-click to reset.", { text: about });
-    const input = document.createElement("input");
-    input.type = "range";
+    const input = el("input", { type: "range" });
     if (isLog(def)) { input.min = 0; input.max = 1000; input.step = 1; }
     else { input.min = def.min; input.max = def.max; input.step = def.step; }
     const track = trackFor(def);
     if (track) input.style.setProperty("--track", track);
     // A text box (not type=number) so values can show Lightroom's "+0.35" style.
-    const number = document.createElement("input");
-    number.type = "text";
+    const number = el("input", { type: "text" });
     number.inputMode = "decimal";
     number.className = "value";
     number.spellcheck = false;

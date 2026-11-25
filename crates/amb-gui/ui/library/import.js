@@ -105,7 +105,7 @@ async function runPlan() {
     $("import-summary").textContent = !plan.length ? t("No photos found there.")
       : plan.length > IMPORT_SHOWN ? t("{text} The first {n} are listed.", { text: base, n: IMPORT_SHOWN }) : base;
     $("import-list").replaceChildren(...plan.slice(0, IMPORT_SHOWN).map((p) => {
-      const li = document.createElement("li");
+      const li = el("li");
       li.classList.toggle("skip", Boolean(p.skip));
       const from = fileName(p.source) + (p.extra ? ` +${p.extra}` : "");
       const to = p.skip ? p.skip : p.dest.slice(f.dest.value.length).replace(/^[\\/]/, "");

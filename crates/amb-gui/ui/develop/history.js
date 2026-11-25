@@ -101,10 +101,9 @@ function renderSnapshots() {
   $("snapshot-add").disabled = !ui.state;
   if (ui.state && !ui.state.snapshots?.length) emptyTip(list, t("No snapshots yet"));
   for (const s of ui.state?.snapshots ?? []) {
-    const li = document.createElement("li");
+    const li = el("li");
     li.classList.toggle("current", s.current);
-    const name = document.createElement("span");
-    name.className = "snap-name";
+    const name = el("span", { class: "snap-name" });
     name.textContent = s.name;
     name.setAttribute("translate", "no");
     name.title = s.current ? t("The edit is this snapshot") : t("Apply this snapshot (undoable)");
@@ -112,11 +111,7 @@ function renderSnapshots() {
       if (!s.current) run([{ cmd: "apply_snapshot", name: s.name }], t("Snapshot: {name}", { name: s.name }));
     });
     const act = (text, title, fn) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "snap-act";
-      b.textContent = text;
-      b.title = title;
+      const b = el("button", { type: "button", class: "snap-act", title: title }, text);
       b.addEventListener("click", fn);
       return b;
     };
@@ -165,8 +160,7 @@ function renderHistory() {
   hist.start = 0;
   const changes = ui.state.history_changes ?? [];
   steps.forEach((text, i) => {
-    const li = document.createElement("li");
-    li.textContent = text;
+    const li = el("li", {}, text);
     li.classList.toggle("current", i === done.length);
     li.classList.toggle("undone", i > done.length);
     // Its values: one change on the line, every change in the tooltip.
@@ -174,9 +168,7 @@ function renderHistory() {
     const lines = (step?.shown ?? []).map((c) => `${historyName(c.name)}: ${historyChange(c)}`);
     if (step?.more) lines.push(t("and {n} more", { n: step.more }));
     if (step?.shown.length === 1 && !step.more) {
-      const v = document.createElement("span");
-      v.className = "history-values";
-      v.textContent = historyChange(step.shown[0]);
+      const v = el("span", { class: "history-values" }, historyChange(step.shown[0]));
       li.append(" ", v);
     }
     if (i !== done.length) {

@@ -16,29 +16,25 @@ const HUB_KINDS = {
 function themePreview(data) {
   const t = data?.tokens ?? {};
   const c = (name, fallback) => (typeof t[name] === "string" ? t[name] : fallback);
-  const box = document.createElement("div");
-  box.className = "hub-preview theme";
+  const box = el("div", { class: "hub-preview theme" });
   box.style.background = c("bg", "#1b1c1f");
   box.style.borderColor = c("line", "#34363c");
-  const side = document.createElement("div");
-  side.className = "hp-side";
+  const side = el("div", { class: "hp-side" });
   side.style.background = c("panel", "#232428");
   for (const [w, colour] of [[70, c("text", "#e6e6e8")], [50, c("muted", "#9a9ca3")], [60, c("faint", "#6c6f77")]]) {
-    const line = document.createElement("i");
+    const line = el("i");
     line.style.cssText = `width:${w}%;background:${colour}`;
     side.append(line);
   }
-  const slider = document.createElement("b");
+  const slider = el("b");
   slider.style.background = c("track", "#4a4d55");
-  const thumb = document.createElement("u");
+  const thumb = el("u");
   thumb.style.background = c("thumb", "#d8d9dc");
   slider.append(thumb);
   side.append(slider);
-  const view = document.createElement("div");
-  view.className = "hp-view";
+  const view = el("div", { class: "hp-view" });
   view.style.background = c("viewer", c("bg-deep", "#111214"));
-  const button = document.createElement("span");
-  button.className = "hp-button";
+  const button = el("span", { class: "hp-button" });
   button.style.cssText = `background:${c("accent", "#e8b05c")};color:${c("accent-ink", "#1b1c1f")}`;
   button.textContent = "Aa";
   view.append(button);
@@ -48,8 +44,7 @@ function themePreview(data) {
 
 // A sketch of a layout: its columns with their panels and blocks, and the photo between.
 function layoutPreview(data) {
-  const box = document.createElement("div");
-  box.className = "hub-preview layout";
+  const box = el("div", { class: "hub-preview layout" });
   const name = (item) => {
     if (typeof item === "string") return t(BLOCK_TITLES[item] ?? item);
     // A layout's own title is its author's word; a panel's name is ours.
@@ -60,12 +55,10 @@ function layoutPreview(data) {
     const items = Array.isArray(spec.items) ? spec.items : [];
     const width = Number(spec.width ?? DEFAULT_WIDTH[side]);
     if (!items.length || !(width > 0)) return null;
-    const col = document.createElement("div");
-    col.className = "hp-col";
+    const col = el("div", { class: "hp-col" });
     col.style.flex = `0 0 ${Math.round((width / (width + 600)) * 100)}%`;
     for (const item of items.slice(0, 9)) {
-      const bar = document.createElement("i");
-      bar.textContent = name(item);
+      const bar = el("i", {}, name(item));
       if (typeof item === "object" && item.columns > 1) bar.classList.add("grid");
       if (typeof item === "string") bar.classList.add("block");
       col.append(bar);
@@ -73,8 +66,7 @@ function layoutPreview(data) {
     if (items.length > 9) col.append(el("i", {}, t("+{n} more", { n: items.length - 9 })));
     return col;
   };
-  const view = document.createElement("div");
-  view.className = "hp-photo";
+  const view = el("div", { class: "hp-photo" });
   box.append(...[column("left"), view, column("right")].filter(Boolean));
   return box;
 }
@@ -85,8 +77,7 @@ const PLUGIN_PERMISSIONS = {
   "photo-stats": tKey("the photo's histogram"),
 };
 function pluginPreview(data) {
-  const box = document.createElement("div");
-  box.className = "hub-preview plugin";
+  const box = el("div", { class: "hub-preview plugin" });
   const perms = (data?.permissions ?? []).map((p) => t(PLUGIN_PERMISSIONS[p] ?? p));
   const sees = el("span", {}, perms.length ? t("Asks to see {what}", { what: perms.reduce((a, b) => t("{a} and {b}", { a, b })) }) : t("Sees only the edit's settings"));
   const params = (data?.params ?? []).map((p) => p.label ?? p.name).filter(Boolean);
@@ -99,8 +90,7 @@ function pluginPreview(data) {
 // A custom interface: code with the app's full reach, so say so, and what
 // it's made of.
 function interfacePreview(data) {
-  const box = document.createElement("div");
-  box.className = "hub-preview interface";
+  const box = el("div", { class: "hub-preview interface" });
   const files = data?.files ?? [];
   box.append(
     el("b", {}, t("A whole other interface: code with the app's full reach")),
@@ -112,8 +102,7 @@ function interfacePreview(data) {
 
 // What a develop preset changes (the backend read and checked it).
 function presetPreview(data) {
-  const box = document.createElement("div");
-  box.className = "hub-preview preset";
+  const box = el("div", { class: "hub-preview preset" });
   const count = el("b", {}, plural(data?.settings ?? 0, "setting"));
   const groups = el("span", { translate: "no" }, (data?.groups ?? []).join(", "));
   box.append(count, groups);
@@ -123,8 +112,7 @@ function presetPreview(data) {
 
 // A collage template's cells, drawn to scale inside its page.
 function collagePreview(data) {
-  const box = document.createElement("div");
-  box.className = "hub-preview collage";
+  const box = el("div", { class: "hub-preview collage" });
   const ratio = Number(data?.width) / Number(data?.height) || 1;
   // Fit 220 × 104 (the card), keeping the page's shape.
   const width = Math.min(220, 104 * ratio);
@@ -133,7 +121,7 @@ function collagePreview(data) {
   box.style.background = typeof data?.background === "string" ? data.background : "#ffffff";
   for (const c of (data?.cells ?? []).slice(0, 64)) {
     const [x, y, w, h, angle] = c.map(Number);
-    const cell = document.createElement("i");
+    const cell = el("i");
     cell.style.cssText = `left:calc(${x * 100}% + 2px);top:calc(${y * 100}% + 2px);` +
       `width:calc(${w * 100}% - 4px);height:calc(${h * 100}% - 4px)`;
     if (angle) cell.style.transform = `rotate(${angle}deg)`;
@@ -144,17 +132,16 @@ function collagePreview(data) {
 
 // A border around a grey photo, to scale (a 3:2 photo).
 function borderPreview(data) {
-  const box = document.createElement("div");
-  box.className = "hub-preview border";
+  const box = el("div", { class: "hub-preview border" });
   const pct = (v) => (data?.unit === "px" ? 0 : Math.max(0, Number(v) || 0));
   const side = pct(data?.width);
   const bottom = data?.bottom == null ? side : pct(data.bottom);
   // Percent of the short edge (64 px tall photo).
   const px = (v) => Math.round((v / 100) * 64);
-  const frame = document.createElement("div");
+  const frame = el("div");
   frame.style.cssText = `padding:${px(side)}px ${px(side)}px ${px(bottom)}px;border-radius:${px(Number(data?.radius) || 0)}px`;
   frame.style.background = /^#[0-9a-f]{3,8}$/i.test(data?.color ?? "") ? data.color : "#888";
-  const photo = document.createElement("i");
+  const photo = el("i");
   const key = data?.keyline;
   if (key?.width > 0) photo.style.outline = `${Math.max(1, px(key.width))}px solid ${key.color}`;
   frame.append(photo);
@@ -164,8 +151,7 @@ function borderPreview(data) {
 
 // A size profile's sizes.
 function sizesPreview(data) {
-  const box = document.createElement("div");
-  box.className = "hub-preview sizes";
+  const box = el("div", { class: "hub-preview sizes" });
   const sizes = data?.sizes ?? [];
   box.append(el("b", {}, plural(sizes.length, "size")));
   for (const s of sizes.slice(0, 4)) {
@@ -192,8 +178,7 @@ async function hubFlow(initial = "all") {
     const shown = list.entries.filter((e) => (kind === "all" || e.kind === kind) &&
       (!filter || `${e.name} ${e.author} ${e.description}`.toLowerCase().includes(filter)));
     for (const e of shown) {
-      const card = document.createElement("article");
-      card.className = "hub-card";
+      const card = el("article", { class: "hub-card" });
       if (e.data) {
         const preview = {
           theme: themePreview, layout: layoutPreview, plugin: pluginPreview, preset: presetPreview,
@@ -209,8 +194,7 @@ async function hubFlow(initial = "all") {
       if (e.error) {
         card.append(el("p", { class: "hub-error" }, t("Can't be installed: {error}", { error: e.error })));
       } else {
-        const actions = document.createElement("div");
-        actions.className = "hub-actions";
+        const actions = el("div", { class: "hub-actions" });
         const install = el("button", { type: "button" });
         if (e.installed && !e.update) {
           install.textContent = e.installed.startsWith("builtin:") ? t("Built in ✓") : t("Installed ✓");

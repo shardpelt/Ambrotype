@@ -162,9 +162,7 @@ function decorateEditing() {
     const items = d[side]?.items ?? [];
     if (!items.length) {
       c.hidden = false;
-      const hint = document.createElement("div");
-      hint.className = "drop-hint";
-      hint.textContent = t("Drop here");
+      const hint = el("div", { class: "drop-hint" }, t("Drop here"));
       c.replaceChildren(hint);
       widths[side] = 64;
       continue;
@@ -173,9 +171,7 @@ function decorateEditing() {
     const w = Number(d[side]?.width ?? DEFAULT_WIDTH[side]);
     widths[side] = w > 0 ? w : DEFAULT_WIDTH[side];
     c.hidden = false;
-    const grip = document.createElement("div");
-    grip.className = "col-resizer";
-    grip.title = t("Drag to resize this column");
+    const grip = el("div", { class: "col-resizer", title: t("Drag to resize this column") });
     grip.style[side] = `${widths[side] - 4}px`;
     grip.addEventListener("pointerdown", (ev) => resizeColumn(ev, side, grip));
     ws.append(grip);

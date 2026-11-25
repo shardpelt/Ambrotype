@@ -17,17 +17,12 @@ const AmbPicker = (() => {
   function enhance(select, opts = {}) {
     const openGroups = new Set(opts.open ?? []);
     const closedGroups = new Set(); // closed by hand, even if they hold the choice
-    const wrap = document.createElement("div");
-    wrap.className = "picker";
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "picker-button";
+    const wrap = el("div", { class: "picker" });
+    const button = el("button", { type: "button", class: "picker-button" });
     button.setAttribute("aria-haspopup", "listbox");
-    const label = document.createElement("span");
-    label.className = "picker-label";
+    const label = el("span", { class: "picker-label" });
     button.append(label);
-    const pop = document.createElement("div");
-    pop.className = "picker-pop";
+    const pop = el("div", { class: "picker-pop" });
     pop.setAttribute("role", "listbox");
     pop.hidden = true;
     select.after(wrap);
@@ -60,9 +55,7 @@ const AmbPicker = (() => {
     }
 
     function item(o) {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "picker-item";
+      const b = el("button", { type: "button", class: "picker-item" });
       b.setAttribute("role", "option");
       b.textContent = o.textContent;
       b.dataset.value = o.value;
@@ -84,9 +77,7 @@ const AmbPicker = (() => {
         const options = [...child.children];
         const holdsChoice = options.some((o) => o.value === select.value);
         const shown = (openGroups.has(name) || holdsChoice) && !closedGroups.has(name);
-        const head = document.createElement("button");
-        head.type = "button";
-        head.className = "picker-group";
+        const head = el("button", { type: "button", class: "picker-group" });
         head.setAttribute("aria-expanded", String(shown));
         head.append(
           el("span", { class: "caret" }, shown ? "▾" : "▸"),
@@ -98,8 +89,7 @@ const AmbPicker = (() => {
           else { openGroups.add(name); closedGroups.delete(name); }
           render();
         });
-        const body = document.createElement("div");
-        body.className = "picker-group-body";
+        const body = el("div", { class: "picker-group-body" });
         if (shown) body.append(...options.map(item));
         pop.append(head, body);
       }

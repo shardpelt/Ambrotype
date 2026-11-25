@@ -31,9 +31,7 @@ function renderPluginList() {
   const list = $("plugins-list");
   list.replaceChildren();
   for (const p of pluginUi.list) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "plugin-item";
+    const b = el("button", { type: "button", class: "plugin-item" });
     b.setAttribute("role", "option");
     b.classList.toggle("on", p.id === pluginUi.selected);
     b.classList.toggle("broken", Boolean(p.error));
@@ -67,8 +65,7 @@ function renderPluginParams(p) {
   const values = paramValues(p);
   const chosen = pluginUi.params.get(p.id);
   for (const def of p.manifest?.params ?? []) {
-    const row = document.createElement("label");
-    row.className = "plugin-param";
+    const row = el("label", { class: "plugin-param" });
     row.setAttribute("translate", "no");
     row.title = def.description || "";
     const label = el("span", {}, def.label);
@@ -90,7 +87,7 @@ function renderPluginParams(p) {
       pair.append(range, out);
       row.append(pair);
     } else if (def.type === "choice") {
-      const sel = document.createElement("select");
+      const sel = el("select");
       for (const o of def.options) sel.append(el("option", { value: o }, o));
       sel.value = values[def.name];
       sel.addEventListener("change", () => {

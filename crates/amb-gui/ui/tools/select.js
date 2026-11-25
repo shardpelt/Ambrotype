@@ -43,7 +43,7 @@ function drawSelect() {
   placeSelectBar();
   if (sl.dabs) {
     // The object, tinted: its dabs filled on a layer, then shown at once.
-    const layer = document.createElement("canvas");
+    const layer = el("canvas");
     layer.width = c.width;
     layer.height = c.height;
     const lg = layer.getContext("2d");

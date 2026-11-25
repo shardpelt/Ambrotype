@@ -40,7 +40,7 @@ async function guessPlacesFlow() {
       const url = p && cachedThumb(p);
       if (url) img.src = url;
       const text = el("span", { class: "guess-text" });
-      text.append(el("b", {}, p?.name ?? fileName(g.path)), document.createElement("br"),
+      text.append(el("b", {}, p?.name ?? fileName(g.path)), el("br"),
         document.createTextNode((g.by === "look" ? t("{coords} · by look: {why}", { coords: `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}`, why: g.why }) : t("{coords} · by time: {why}", { coords: `${g.lat.toFixed(5)}, ${g.lon.toFixed(5)}`, why: g.why }))));
       const change = el("button", { type: "button", class: "small", title: t("Put this one somewhere else: on a map, or by name") }, t("Change…"));
       change.addEventListener("click", async (e) => {

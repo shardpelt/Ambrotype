@@ -39,8 +39,7 @@ function wireBoxZoom() {
     }
     if (!boxZoomWanted()) return;
     e.preventDefault();
-    const el = Object.assign(document.createElement("div"), { className: "zoom-box" });
-    qz.box = { x: e.clientX, y: e.clientY, el, moved: false };
+    qz.box = { x: e.clientX, y: e.clientY, el: el("div", { class: "zoom-box" }), moved: false };
   });
   window.addEventListener("mousemove", (e) => {
     const p = qz.pan;
@@ -112,11 +111,10 @@ function toggleLoupe(on = !qz.loupe) {
     return true;
   }
   if (!ui.info) return false;
-  const el = Object.assign(document.createElement("div"), { className: "viewer-loupe", hidden: true });
-  el.append(document.createElement("img"), Object.assign(document.createElement("span"), { className: "loupe-mag" }));
-  $("viewer").append(el);
+  const loupe = el("div", { class: "viewer-loupe", hidden: true }, el("img"), el("span", { class: "loupe-mag" }));
+  $("viewer").append(loupe);
   $("viewer").classList.add("loupe-on");
-  qz.loupe = el;
+  qz.loupe = loupe;
   status(t("Loupe: point at the photo to see it at 100% · scroll to magnify · I or Esc closes"));
   return true;
 }

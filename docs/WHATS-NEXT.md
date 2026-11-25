@@ -10,15 +10,18 @@ A short running list, kept up to date as work lands. Newest decisions first. Eve
 3. **GPU speed:** export a 24 MP raw on the Mac with and without `AMB_GPU=off` (both are tiled or whole as the GPU's memory allows). And AI on the GPU: time Select object's first click and an AI Remove with and without `AMB_AI_GPU=off` (Settings → AI models says where they run).
 4. **Your sample raw** to replace the stand-in sample photo, after the release.
 5. **A Lightroom 16 preset with Glow** (2026-11-19): in the Lightroom trial, save a preset with Glow on (any style, Range and Warmth moved off their defaults), or one of Adobe's ten Glow presets, and send the `.xmp`. Its setting names let us read Lightroom 16's Glow (`glow-styles`).
+6. **The first language** (2026-11-25): which language comes first, and who checks the draft. Every text is ready to translate, but no language file exists yet (`first-language`).
 
 ## Up next
 
 The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
 - **Darkroom aids, the rest** (`film-darkroom-aids`): step wedge, Pick Better
+- **The first language file** (`first-language`): once the owner picks the language, a small model drafts `data/lang/<code>.json` (the photography terms with it), a person checks
 
 ## Recently done
 
+- 2026-11-25: **The UI's old idioms gone**: every `document.createElement(` and `Object.assign(document.createElement(` is `el`, `innerHTML` is gone (our own SVG drawings go through `svgNode` in `ui/core/core.js`), no top-level `let` (each a state object) and no inline `style="…"` (the paper swatches' colours are in `style.css`). Each count in `crates/amb-gui/src/checks.rs` is zero; a step in `tests/ui/dialogs.js` checks the swatches
 - 2026-11-24: **AI-free mode**: one switch (Settings → AI models, Window → AI-free mode, `amb ai-free on`) so that no AI model touches a photo by any path, for people who must keep an AI label off; the AI buttons grey, a note of what an edit leaves out, refused commands and a warning on every export (single, batch, Convert raws, `amb render`). One top-bar badge shows AI-free, or "No AI marks" / "AI in edit" for the open photo, and the Export dialog says the same (`amb ai-label`, `amb_ops::ai_label`). Every new AI feature must pass it: [design/ai-free.md](design/ai-free.md) (`amb_presets::ai_free`, `ui/dialogs/ai-free.js`, steps in `tests/ui/ai-free.js`, guards in `crates/amb-cli/tests/code_health.rs` and `crates/amb-ops/tests/ai_free.rs`)
 - 2026-11-23: **Library: Loupe gone, the grid zooms to one photo; Insights filters undo; Timeline and Insights zoom**: the grid's size goes up to one photo filling the pane, with bigger pictures loaded as it grows (E jumps there and back); the bar is Grid, Insights, Timeline, Map, Compare; an Insights or date filter comes off with its chip ("· Show all ×"), Back or Esc; Ctrl+wheel, a pinch or Ctrl +/−/0 zoom Timeline and Insights (`ui/library/browse-zoom.js`), and a click on a chart's title enlarges it. Steps in `tests/ui/library-zoom.js`, `browse.js`, `insights.js`.
 - 2026-11-24: **Place a spot in a zone, and peek at the negative** (`film-darkroom-aids`): right-click the photo → Place this spot in a zone… and pick 0 to X: the exposure moves so the spot prints there, one undo step; `amb negative place`. Shift+N (View → Peek at Negative, the Film Negative panel's Peek) shows the scan as it is, nothing saved (`amb_ops::darkroom::place_in_zone`, session `peek_negative`, `ui/develop/print-aids.js`, steps in `tests/ui/darkroom.js`)

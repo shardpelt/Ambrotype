@@ -40,7 +40,7 @@ function openCleanup() {
       ? t("Looks through the {n} shown photo. Photos you picked or rated are left out.", { n })
       : t("Looks through the {n} shown photos. Photos you picked or rated are left out.", { n });
   $("clean-tests").replaceChildren(...CLEAN_TESTS.map(([id, label]) => {
-    const l = document.createElement("label");
+    const l = el("label");
     const box = el("input", { type: "checkbox", checked: true, value: id });
     l.append(box, ` ${t(label)}`);
     return l;

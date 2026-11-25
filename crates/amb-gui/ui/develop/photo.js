@@ -168,14 +168,14 @@ async function cropToFrame() {
 }
 
 // Once, when no lens profiles are found at all: offer the download.
-let lensDbOffered = false;
+const lensDb = { offered: false };
 // No lens profiles at all (no lensfun installed, none downloaded): fetch
 // lensfun's database quietly (about 0.5 MB), as the small Subject model is,
 // rather than asking in a dialog before the first photo is even seen. Once
 // per computer; Lens Corrections → Lens database… updates it.
 async function offerLensDb() {
-  if (lensDbOffered) return;
-  lensDbOffered = true;
+  if (lensDb.offered) return;
+  lensDb.offered = true;
   if (store.text("lensDbOffered")) return;
   // The profiles load in the background at start.
   let st = null;
@@ -257,7 +257,7 @@ function toggleBefore() {
   } else if (ui.zoom.on || ui.crop.on) {
     ui.before = true;
   } else {
-    splitAt = 0.92;
+    splitView.at = 0.92;
     toggleSplit();
   }
   $("before-badge").hidden = !ui.before;

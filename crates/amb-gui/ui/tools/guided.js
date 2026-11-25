@@ -141,7 +141,7 @@ async function applyGuided() {
   try {
     const r = await invoke("guided_upright", { guides: gu.guides });
     // As with the other Upright modes, the crop goes (Alt keeps it).
-    const crop = altHeld ? [] : CROP_TAGS.filter((n) => n in ui.settings).map((name) => ({ cmd: "reset_param", name }));
+    const crop = keyMods.alt ? [] : CROP_TAGS.filter((n) => n in ui.settings).map((name) => ({ cmd: "reset_param", name }));
     exitGuided();
     await run([...r.commands, ...crop], "Guided Upright");
     if (r.worst_degrees > 0.5) {

@@ -167,13 +167,13 @@ fn word_count(text: &str, word: &str) -> usize {
 
 // The old idioms, as they stand. Lower a limit when you remove some, never
 // raise it: the helper in the message does the same job.
-const OBJECT_ASSIGN_LIMIT: usize = 15;
-const INNER_HTML_LIMIT: usize = 6;
-const INLINE_STYLE_LIMIT: usize = 17;
-const TOP_LEVEL_LET_LIMIT: usize = 7;
+const OBJECT_ASSIGN_LIMIT: usize = 0;
+const INNER_HTML_LIMIT: usize = 0;
+const INLINE_STYLE_LIMIT: usize = 0;
+const TOP_LEVEL_LET_LIMIT: usize = 0;
 const TOAST_STRING_LIMIT: usize = 0;
 const LOCAL_STORAGE_LIMIT: usize = 0;
-const CREATE_ELEMENT_LIMIT: usize = 206;
+const CREATE_ELEMENT_LIMIT: usize = 0;
 
 #[test]
 fn old_idioms_may_only_fall() {

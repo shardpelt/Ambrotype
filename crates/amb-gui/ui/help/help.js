@@ -84,7 +84,7 @@ function toggleHelpCard(mark, def) {
   card.setAttribute("aria-label", t(def.label));
   const add = (tag, text, className = "") => card.appendChild(el(tag, { class: className }, text));
   // Paragraphs with their photography terms linked (basics.js).
-  const para = (text) => card.appendChild(document.createElement("p")).append(linkTerms(text, def.label));
+  const para = (text) => card.appendChild(el("p")).append(linkTerms(text, def.label));
   add("h4", t(def.label));
   para(t(def.description));
   const c = def.coach;

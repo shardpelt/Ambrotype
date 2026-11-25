@@ -269,12 +269,11 @@ const SMART_FIELDS = {
 };
 
 function smartRuleRow(rule = { field: "rating", op: ">=", value: 3 }) {
-  const row = document.createElement("div");
-  row.className = "smart-rule";
-  const field = document.createElement("select");
+  const row = el("div", { class: "smart-rule" });
+  const field = el("select");
   for (const [k, f] of Object.entries(SMART_FIELDS)) field.append(new Option(t(f.label), k));
-  const op = document.createElement("select");
-  const holder = document.createElement("span");
+  const op = el("select");
+  const holder = el("span");
   holder.style.display = "contents";
   const remove = el("button", { type: "button", class: "small", title: t("Remove this rule") }, "×");
   remove.addEventListener("click", () => row.remove());
@@ -284,13 +283,13 @@ function smartRuleRow(rule = { field: "rating", op: ">=", value: 3 }) {
     op.replaceChildren(...f.ops.map(([v, text]) => new Option(t(text), v)));
     if (f.ops.some(([v]) => v === r.op)) op.value = r.op;
     if (f.values) {
-      value = document.createElement("select");
+      value = el("select");
       f.values.forEach(([v, text], i) => value.append(new Option(t(text), String(i))));
       const at = f.values.findIndex(([v]) => v === r.value);
       value.value = String(Math.max(0, at));
       value.read = () => f.values[Number(value.value)][0];
     } else {
-      value = document.createElement("input");
+      value = el("input");
       value.type = f.date ? "date" : f.number ? "number" : "text";
       if (f.number) {
         value.min = "0";
@@ -312,8 +311,7 @@ function smartRuleRow(rule = { field: "rating", op: ">=", value: 3 }) {
 }
 
 function smartFolderRow(path) {
-  const row = document.createElement("div");
-  row.className = "smart-folder";
+  const row = el("div", { class: "smart-folder" });
   row.dataset.path = path;
   const code = el("code", { title: path, translate: "no" }, path);
   const remove = el("button", { type: "button", class: "small", title: t("Don't look here") }, "×");

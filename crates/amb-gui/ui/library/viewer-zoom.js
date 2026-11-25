@@ -106,7 +106,7 @@ function makeZoom({ host, images, all = images, frame, sharper = () => {}, activ
       if (e.button === 0 && z.s > 1) {
         z.drag = { x: e.clientX, y: e.clientY, ox: z.x, oy: z.y, moved: false };
       } else if (e.button === 2 && box) {
-        z.box = { x: e.clientX, y: e.clientY, el: Object.assign(document.createElement("div"), { className: "zoom-box" }), moved: false };
+        z.box = { x: e.clientX, y: e.clientY, el: el("div", { class: "zoom-box" }), moved: false };
       }
     });
     host.addEventListener("pointermove", (e) => {

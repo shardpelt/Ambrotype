@@ -65,7 +65,7 @@ function renderFolderTree() {
 }
 
 function folderTreeItem(node) {
-  const li = document.createElement("li");
+  const li = el("li");
   const row = el("div", { class: "tree-row", title: node.path });
   row.classList.toggle("offline", node.offline);
   const shown = !lib.collection && !lib.smart && !lib.lightroom && (lib.dir === node.path || lib.more.includes(node.path));
@@ -97,7 +97,7 @@ function folderTreeItem(node) {
   if (!node.offline) wireFolderDrop(row, node, kids.length > 0 && !open);
   li.append(row);
   if (open && kids.length) {
-    const ul = document.createElement("ul");
+    const ul = el("ul");
     ul.append(...kids.map(folderTreeItem));
     li.append(ul);
   }

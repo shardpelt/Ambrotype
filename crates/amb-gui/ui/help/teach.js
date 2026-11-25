@@ -119,9 +119,9 @@ function shortKey(combo) {
 function showKeyBadges() {
   hideKeyBadges();
   const placed = [];
-  for (const [el, key] of shortcutTargets()) {
-    const r = el.getBoundingClientRect();
-    const b = Object.assign(document.createElement("span"), { className: "key-badge", textContent: shortKey(key) });
+  for (const [target, key] of shortcutTargets()) {
+    const r = target.getBoundingClientRect();
+    const b = el("span", { class: "key-badge" }, shortKey(key));
     b.style.left = `${Math.round(r.left + r.width / 2)}px`;
     let top = Math.round(r.bottom + 3);
     b.style.top = `${top}px`;
@@ -289,10 +289,8 @@ async function watchOwnFlow() {
 async function ghostReplay(next) {
   const w = { stopped: false, timer: null, wake: null };
   teach.watching = w;
-  const ghost = document.createElement("div");
-  ghost.className = "ghost-cursor";
-  ghost.innerHTML = '<svg viewBox="0 0 16 22" width="18" height="24"><path d="M1 1v17l4.5-4.2L8.6 21l3-1.3-3.1-7H14z"/></svg><span></span>';
-  const caption = ghost.querySelector("span");
+  const caption = el("span");
+  const ghost = el("div", { class: "ghost-cursor" }, svgNode('<svg viewBox="0 0 16 22" width="18" height="24"><path d="M1 1v17l4.5-4.2L8.6 21l3-1.3-3.1-7H14z"/></svg>'), caption);
   document.body.append(ghost);
   const stop = (e) => {
     if (!e.isTrusted || w.stopped) return;

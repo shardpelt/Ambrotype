@@ -17,7 +17,7 @@ function applyLibraryFolds() {
   for (const side of ["left", "right"]) {
     const open = !libFolded[side];
     const b = $(`lib-fold-${side}`);
-    b.innerHTML = sidebarIcon(side, open);
+    b.replaceChildren(svgNode(sidebarIcon(side, open)));
     b.title = side === "left"
       ? open ? t("Hide the folders (Ctrl+[)") : t("Show the folders (Ctrl+[)")
       : open ? t("Hide the panel (Ctrl+])") : t("Show the panel (Ctrl+])");

@@ -60,7 +60,7 @@ async function runLrcatPlan() {
     $("lrcat-summary").textContent = text;
     const label = { write: "→", keep: tKey("kept"), missing: tKey("not found") };
     $("lrcat-list").replaceChildren(...plan.photos.slice(0, LRCAT_SHOWN).map((p) => {
-      const li = document.createElement("li");
+      const li = el("li");
       li.classList.toggle("skip", p.action !== "write");
       li.title = `${p.photo}\n${p.sidecar}${p.problem ? `\n${p.problem}` : ""}`;
       li.append(

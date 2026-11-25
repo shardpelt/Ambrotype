@@ -176,8 +176,8 @@ const TRANSFORM_SLIDERS = ["PerspectiveVertical", "PerspectiveHorizontal", "Pers
   "PerspectiveAspect", "PerspectiveScale", "PerspectiveX", "PerspectiveY"];
 // Read from the click that opens the menu: the native menu takes the focus,
 // so the page may not see Alt being released.
-let altHeld = false;
-for (const type of ["keydown", "keyup", "pointerdown"]) window.addEventListener(type, (e) => { altHeld = e.altKey; }, true);
+const keyMods = { alt: false };
+for (const type of ["keydown", "keyup", "pointerdown"]) window.addEventListener(type, (e) => { keyMods.alt = e.altKey; }, true);
 
 function commit(name, value) {
   delete ui.overrides[name];
@@ -186,7 +186,7 @@ function commit(name, value) {
   if (name === "CameraProfile" && value === "") return run([{ cmd: "reset_param", name }]);
   if (name === "amb:LUT") return commitLut(value);
   if (name === "PerspectiveUpright" && value !== 0) {
-    const cleared = TRANSFORM_SLIDERS.concat(altHeld ? [] : CROP_TAGS).filter((n) => n in ui.settings);
+    const cleared = TRANSFORM_SLIDERS.concat(keyMods.alt ? [] : CROP_TAGS).filter((n) => n in ui.settings);
     if (cleared.length) {
       return run([{ cmd: "set_param", name, value }, ...cleared.map((n) => ({ cmd: "reset_param", name: n }))], "Upright");
     }

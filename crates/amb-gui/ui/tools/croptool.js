@@ -60,7 +60,7 @@ function fillSizeSelects() {
     groups.get(p.group).push(p);
   }
   const option = (parent, value, text) => {
-    const o = document.createElement("option");
+    const o = el("option");
     o.value = value;
     o.textContent = text;
     parent.append(o);
@@ -69,7 +69,7 @@ function fillSizeSelects() {
   const addSizes = (sel, skip = []) => {
     for (const [group, items] of groups) {
       if (skip.includes(group)) continue;
-      const og = document.createElement("optgroup");
+      const og = el("optgroup");
       og.label = !group ? t("Yours") : items[0].builtin ? t(group) : group;
       for (const p of items) {
         option(og, `size:${p.id}`, t("{name} ({width} × {height})", { name: p.builtin ? t(p.name) : p.name, width: p.width, height: p.height }));
@@ -81,7 +81,7 @@ function fillSizeSelects() {
   crop.replaceChildren();
   option(crop, "original", t("Original"));
   option(crop, "free", t("Free"));
-  const ratios = document.createElement("optgroup");
+  const ratios = el("optgroup");
   ratios.label = t("Common ratios");
   for (const r of ASPECTS) option(ratios, r, r.replace(":", " : "));
   crop.append(ratios);
@@ -351,28 +351,19 @@ async function sizesFlow() {
     for (const p of ui.sizes) {
       if (p.group !== group) {
         group = p.group;
-        const h = document.createElement("div");
-        h.className = "size-group";
-        h.textContent = p.builtin ? t(group) : t("{group} (yours)", { group });
+        const h = el("div", { class: "size-group" }, p.builtin ? t(group) : t("{group} (yours)", { group }));
         if (!p.builtin) h.setAttribute("translate", "no");
         root.append(h);
       }
-      const row = document.createElement("div");
-      row.className = "size-row";
-      const name = document.createElement("span");
+      const row = el("div", { class: "size-row" });
+      const name = el("span");
       name.textContent = p.builtin ? t(p.name) : p.name;
       if (!p.builtin) name.setAttribute("translate", "no");
-      const dims = document.createElement("span");
-      dims.className = "dims";
+      const dims = el("span", { class: "dims" });
       dims.textContent = `${p.width} × ${p.height}`;
-      const buttons = document.createElement("span");
-      buttons.className = "buttons";
+      const buttons = el("span", { class: "buttons" });
       const button = (text, title, action) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "small";
-        b.textContent = text;
-        b.title = title;
+        const b = el("button", { type: "button", class: "small", title: title }, text);
         b.addEventListener("click", action);
         buttons.append(b);
       };

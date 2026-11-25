@@ -88,8 +88,7 @@ function showPlace(place) {
 }
 
 function makeEffectsControl(def) {
-  const box = document.createElement("div");
-  box.className = "fx";
+  const box = el("div", { class: "fx" });
   let list = [];
   const preview = () => {
     ui.overrides["amb:Effects"] = JSON.stringify(list);
@@ -104,14 +103,13 @@ function makeEffectsControl(def) {
   };
   // One parameter's control, from the plugin's manifest.
   const param = (e, p, name) => {
-    const row = document.createElement("div");
-    row.className = "row";
+    const row = el("div", { class: "row" });
     const label = el("label", { title: p.description ?? "", translate: "no" }, p.label);
     const value = e.params?.[p.name] ?? p.default;
     let input;
     if (p.type === "number") {
       input = el("input", { type: "range", min: p.min, max: p.max, step: p.step ?? (p.max - p.min) / 100, value: value });
-      const out = Object.assign(document.createElement("output"), { value: Math.round(value * 100) / 100 });
+      const out = el("output", {}, String(Math.round(value * 100) / 100));
       input.addEventListener("input", () => {
         e.params = { ...e.params, [p.name]: Number(input.value) };
         out.value = input.value;
@@ -122,7 +120,7 @@ function makeEffectsControl(def) {
       return row;
     }
     if (p.type === "choice") {
-      input = document.createElement("select");
+      input = el("select");
       for (const o of p.options) input.append(new Option(o, o));
       input.value = value;
     } else {
@@ -140,10 +138,8 @@ function makeEffectsControl(def) {
       const plugin = fx.plugins.find((p) => p.id === e.plugin);
       const m = plugin?.manifest;
       const name = m?.name ?? e.plugin;
-      const card = document.createElement("div");
-      card.className = "fx-effect";
-      const head = document.createElement("div");
-      head.className = "fx-head";
+      const card = el("div", { class: "fx-effect" });
+      const head = el("div", { class: "fx-head" });
       const title = el("strong", { title: m?.description ?? "", translate: "no" }, name);
       // In Trippy, Amount goes past 100: the change pushed further than
       // the effect makes it.
@@ -161,9 +157,8 @@ function makeEffectsControl(def) {
         card.append(el("p", { class: "hint" }, t("This plugin isn't installed here, so the effect isn't shown. Install it to see it, or remove it.")));
       } else {
         // Where: everywhere, or only the highlights, a colour…
-        const where = document.createElement("div");
-        where.className = "row fx-where";
-        const pick = document.createElement("select");
+        const where = el("div", { class: "row fx-where" });
+        const pick = el("select");
         pick.append(new Option(t("Everywhere"), ""), ...FX_PLACES.map((x) => new Option(t(x), x.toLowerCase())));
         pick.value = e.where ?? "";
         pick.title = t("Only on part of the photo: hover to see where");
@@ -185,8 +180,7 @@ function makeEffectsControl(def) {
       }
       return card;
     });
-    const add = document.createElement("select");
-    add.className = "fx-add";
+    const add = el("select", { class: "fx-add" });
     add.append(new Option(fx.plugins.length ? t("Add an effect…") : t("No effect plugins installed"), ""));
     for (const p of fx.plugins) add.append(Object.assign(new Option(p.manifest.name, p.id), { translate: false }));
     add.disabled = !fx.plugins.length;

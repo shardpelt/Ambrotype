@@ -79,6 +79,9 @@ pub struct Converted {
     /// Photos not converted: not the best of their burst
     /// ([`best_of_bursts`]; set by the caller).
     pub left_out: usize,
+    /// Things worth knowing: with AI-free mode on, the AI parts of an edit
+    /// that were left out of a file.
+    pub warnings: Vec<String>,
 }
 
 /// Convert `photos` into `out_dir` with `look`, written with `export`
@@ -144,10 +147,21 @@ pub fn convert(
         }
     });
     // In the photos' order, whichever finished first.
-    for result in results.into_inner().expect("results").into_iter().flatten() {
+    for (photo, result) in photos
+        .iter()
+        .zip(results.into_inner().expect("results"))
+        .filter_map(|(p, r)| r.map(|r| (p, r)))
+    {
         match result {
             Outcome::Skipped => done.skipped += 1,
             Outcome::Written(out, camera_jpeg) => {
+                // The camera's own JPEG is developed with no edit.
+                if !camera_jpeg {
+                    let left = amb_engine::ai_free::left_out_of(photo);
+                    if let Some(w) = crate::ai_label::left_out_warning(&left) {
+                        done.warnings.push(format!("{}: {w}", photo.display()));
+                    }
+                }
                 done.camera_jpegs += camera_jpeg as usize;
                 done.written.push(out);
             }

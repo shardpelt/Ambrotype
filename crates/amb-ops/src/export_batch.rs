@@ -266,12 +266,8 @@ pub fn run(
                             Outcome::Skipped => r.skipped += 1,
                             Outcome::Written(bytes_in, bytes_out) => {
                                 let left = amb_engine::ai_free::left_out_of(&job.source);
-                                if !left.is_empty() {
-                                    r.warnings.push(format!(
-                                        "{}: left out for AI-free mode: {}",
-                                        job.source.display(),
-                                        left.join(", ")
-                                    ));
+                                if let Some(w) = crate::ai_label::left_out_warning(&left) {
+                                    r.warnings.push(format!("{}: {w}", job.source.display()));
                                 }
                                 r.done += 1;
                                 r.bytes_in += bytes_in;

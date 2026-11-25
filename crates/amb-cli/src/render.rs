@@ -73,6 +73,7 @@ pub(crate) fn render(
     let sidecar = amb_engine::sidecar_path(input);
     let known = sidecar.is_file() || amb_presets::linked::get(&sidecar).is_some();
     let own = (preset.is_none() && known).then(|| sidecar.display().to_string());
+    let own_edit = own.is_some();
     let preset = preset.or(own.as_deref());
     let (develop, not_rendered, notes) =
         develop_settings(&mut img, preset, amount, look, calibration, options)?;
@@ -120,6 +121,13 @@ pub(crate) fn render(
     }
     if let Ok(gpu) = on {
         println!("developed on the GPU ({gpu})");
+    }
+    // The photo's own edit; a `--preset` is the caller's own choice.
+    if own_edit {
+        let left = amb_engine::ai_free::left_out_of(input);
+        if let Some(w) = amb_ops::ai_label::left_out_warning(&left) {
+            println!("warning: {w}");
+        }
     }
     if !not_rendered.is_empty() {
         println!(

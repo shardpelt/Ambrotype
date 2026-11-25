@@ -95,6 +95,9 @@ pub(crate) fn convert(
     if let Some(Ok(gpu)) = amb_gpu::full::last() {
         out += &format!("\ndeveloped on the GPU ({gpu})");
     }
+    for w in &done.warnings {
+        out += &format!("\nwarning: {w}");
+    }
     for e in &done.errors {
         out += &format!("\nfailed: {e}");
     }

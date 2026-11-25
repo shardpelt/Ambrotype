@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 mod ai_free;
+mod ai_label;
 mod cleanup;
 mod contact;
 mod convert;
@@ -489,6 +490,7 @@ fn main() -> ExitCode {
         ["ai-free"] => ai_free::status(json),
         ["ai-free", "on"] => ai_free::set(true, json),
         ["ai-free", "off"] => ai_free::set(false, json),
+        ["ai-label", photos @ ..] if !photos.is_empty() => ai_label::run(photos, json),
         ["protocol", "schema"] => print_json(&amb_protocol::schema::protocol_schema()),
         ["protocol", "schema", "command"] => print_json(&amb_protocol::schema::command_schema()),
         ["protocol", "schema", "query"] => print_json(&amb_protocol::schema::query_schema()),

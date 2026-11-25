@@ -247,7 +247,6 @@ Counted from `crates/amb-presets/data/tags.json`. `amb render` reports the plann
 | Assistant safety: each request's edits are one Undo away, steps are capped (5) and tokens shown, the photo is sent only when ticked, and every edit is logged locally (`assistant-log.jsonl`, "Log of its edits"). Not built: a pending diff to Accept before applying, cost limits in money | Limit | Required by the design's own rules | [design/ai-control.md](design/ai-control.md):49-54 |
 | Learn-my-style from edit history, and batch "apply my look to this shoot" | Missing | "Later" | [design/ai-control.md](design/ai-control.md):68 |
 | AI-free mode (2026-11-24) can't look inside a plugin: a plugin's wasm code runs in its sandbox, and nothing tells us whether it carries a model of its own | Limit | Someone relying on the mode must trust the plugins they install | [design/ai-free.md](design/ai-free.md); `crates/amb-plugin/` |
-| AI-free mode: a batch export reports what each photo left out as warnings, but a single-photo export and Convert raws leave the AI parts out without saying so | Missing | The person doesn't see what an export left out | [design/ai-free.md](design/ai-free.md); `crates/amb-ops/src/export_batch.rs` |
 
 ## 13. Performance and GPU
 

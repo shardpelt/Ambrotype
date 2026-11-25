@@ -172,6 +172,9 @@ USAGE:
                                             any route (masks, Remove, Denoise, search, bursts, the
                                             editor, `amb`, the MCP server); edits that hold AI parts
                                             render and export without them. No argument shows it.
+    amb ai-label <PHOTO>... [--json]        Will it carry AI marks? Names the AI parts in each photo's
+                                            edit that an export would hold (or leave out, in AI-free mode).
+                                            Exports copy nothing from the source file's own metadata.
     amb import <SOURCE> <DEST> [--into \"{yyyy}/{yyyy}-{mm}-{dd}\"] [--rename \"{name}\"] [--start 1]
                [--keywords \"a, b\"] [--preset LOOK.xmp] [--backup DIR] [--no-subfolders] [--dry-run] [--json]
                                             Copy photos from a card or folder into DEST, sorted into

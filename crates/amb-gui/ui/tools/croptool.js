@@ -78,7 +78,7 @@ function fillSizeSelects() {
     }
   };
   const crop = $("crop-aspect");
-  crop.innerHTML = "";
+  crop.replaceChildren();
   option(crop, "original", t("Original"));
   option(crop, "free", t("Free"));
   const ratios = document.createElement("optgroup");
@@ -92,7 +92,7 @@ function fillSizeSelects() {
 
   const sel = $("export-form").size_preset;
   const keep = sel.value;
-  sel.innerHTML = "";
+  sel.replaceChildren();
   option(sel, "", t("None"));
   option(sel, "custom", t("Custom size"));
   addSizes(sel);
@@ -346,7 +346,7 @@ async function sizesFlow() {
   };
   const list = () => {
     const root = $("sizes-list");
-    root.innerHTML = "";
+    root.replaceChildren();
     let group = null;
     for (const p of ui.sizes) {
       if (p.group !== group) {

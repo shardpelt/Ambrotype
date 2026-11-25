@@ -97,7 +97,7 @@ function syncControls() {
 // The one matching the current settings is bold.
 function renderSnapshots() {
   const list = $("snapshot-list");
-  list.innerHTML = "";
+  list.replaceChildren();
   $("snapshot-add").disabled = !ui.state;
   if (ui.state && !ui.state.snapshots?.length) emptyTip(list, t("No snapshots yet"));
   for (const s of ui.state?.snapshots ?? []) {
@@ -156,7 +156,7 @@ async function addSnapshot() {
 // starts at "Earlier edits".
 function renderHistory() {
   const hist = $("history-list");
-  hist.innerHTML = "";
+  hist.replaceChildren();
   if (!ui.state) return;
   const done = ui.state.history ?? [];
   const undone = ui.state.redo_history ?? [];

@@ -125,8 +125,9 @@ pub(crate) struct Exported {
     pub(crate) quality: u8,
     /// The smaller copy: its path and size in bytes.
     pub(crate) small: Option<(String, u64)>,
-    /// What AI-free mode left out of the file, in words.
-    pub(crate) warnings: Vec<String>,
+    /// The AI parts AI-free mode left out of the file; the UI words the
+    /// sentence, so it is translated.
+    pub(crate) left_out: Vec<String>,
 }
 
 /// "Share before/after…": a page with the photo before and after its edit
@@ -297,9 +298,7 @@ pub(crate) async fn export(
         let label = amb_ops::ai_label::check(session.state.settings());
         let r = session.export(Path::new(&path), &s, lens)?;
         Ok(Exported {
-            warnings: amb_ops::ai_label::left_out_warning(&label.left_out)
-                .into_iter()
-                .collect(),
+            left_out: label.left_out,
             path,
             width: r.width,
             height: r.height,

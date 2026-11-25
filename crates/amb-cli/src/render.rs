@@ -122,12 +122,16 @@ pub(crate) fn render(
     if let Ok(gpu) = on {
         println!("developed on the GPU ({gpu})");
     }
-    // The photo's own edit; a `--preset` is the caller's own choice.
-    if own_edit {
-        let left = amb_engine::ai_free::left_out_of(input);
-        if let Some(w) = amb_ops::ai_label::left_out_warning(&left) {
-            println!("warning: {w}");
-        }
+    // What AI-free mode left out: of the photo's own edit, or of the preset.
+    let left = match preset {
+        _ if own_edit => amb_engine::ai_free::left_out_of(input),
+        Some(path) if amb_presets::ai_free::on() => load(Path::new(path))
+            .map(|p| amb_engine::ai_free::left_out(&p.settings))
+            .unwrap_or_default(),
+        _ => Vec::new(),
+    };
+    if let Some(w) = amb_ops::ai_label::left_out_warning(&left) {
+        println!("warning: {w}");
     }
     if !not_rendered.is_empty() {
         println!(

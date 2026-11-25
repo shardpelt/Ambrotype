@@ -217,7 +217,7 @@ pub(crate) async fn export_collage(
             bytes: r.bytes,
             quality: r.quality,
             small: r.small.map(|c| (c.path.display().to_string(), c.bytes)),
-            warnings: Vec::new(),
+            left_out: Vec::new(),
         })
     })
     .await?

@@ -447,8 +447,8 @@ async function exportFlow(batch = null) {
     const done = jpeg
       ? r.small ? t("Exported {size}, {mb} MB, quality {quality}, and a {smallMb} MB copy ({name})", v) : t("Exported {size}, {mb} MB, quality {quality}", v)
       : r.small ? t("Exported {size}, {mb} MB, and a {smallMb} MB copy ({name})", v) : t("Exported {size}, {mb} MB", v);
-    // What AI-free mode left out of the file (words from Rust, shown as they are).
-    toast(r.warnings.length ? `${done}; ${r.warnings.join("; ")}` : done);
+    // What AI-free mode left out of the file; the parts' names are shown as they are.
+    toast(r.left_out.length ? `${done}; ${t("left out for AI-free mode: {parts}", { parts: r.left_out.join(", ") })}` : done);
     status(t("Exported {path}", { path: r.path }));
     await afterExport([r.path], after);
   } catch (e) {

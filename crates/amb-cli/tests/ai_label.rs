@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! `amb ai-label` end to end: a plain photo is clear; one whose edit holds an
 //! AI part is "ai_in_edit"; with AI-free mode on the part is left out and the
-//! verdict is clear.
+//! verdict is clear, and `amb render --preset` says what it left out.
 
 use std::path::Path;
 use std::process::Command;
@@ -54,5 +54,14 @@ fn the_label_names_ai_parts_of_the_edit() {
     assert_eq!(l["verdict"], "clear");
     assert_eq!(l["left_out"].as_array().unwrap().len(), 1);
     assert!(amb(&dir, &config, &["ai-label", "p.dng"]).contains("left out for AI-free mode"));
+
+    // `amb render --preset`: the preset's AI part is left out, and said so.
+    amb(&dir, &config, &["testimage", "ramp", "q.dng"]);
+    let out = amb(
+        &dir,
+        &config,
+        &["render", "--preset", "p.xmp", "q.dng", "q.jpg"],
+    );
+    assert!(out.contains("left out for AI-free mode"), "{out}");
     let _ = std::fs::remove_dir_all(&dir);
 }

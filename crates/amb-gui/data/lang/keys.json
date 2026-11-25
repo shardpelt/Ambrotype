@@ -7913,6 +7913,9 @@
  "layout": [
   "dialogs/hub.js"
  ],
+ "left out for AI-free mode: {parts}": [
+  "dialogs/export.js"
+ ],
  "lens": [
   "library/insights.js"
  ],

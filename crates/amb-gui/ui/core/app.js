@@ -156,17 +156,22 @@ function notesForPeople(notes) {
 // One at a time, in call order: two requests in flight can be handled, or
 // answered, the other way round, and a Ctrl+Z right after a change then
 // undid the wrong step or showed a stale state.
+// With none waiting it is sent at once, so a request made right after it
+// still reaches Rust after it.
 function run(commands, group = null, opts = {}) {
   if (commands?.then) commands.catch(() => {}); // reported by runNow, when its turn comes
-  const done = ui.runChain.then(() => runNow(commands, group, opts));
-  ui.runChain = done.catch(() => {});
+  const go = () => runNow(commands, group, opts);
+  const done = ui.runWaiting ? ui.runChain.then(go) : go();
+  ui.runWaiting += 1;
+  ui.runChain = done.catch(() => {}).finally(() => { ui.runWaiting -= 1; });
   return done;
 }
 
 async function runNow(commands, group, { quiet = false }) {
   if (!ui.info) return;
   try {
-    const r = await invoke("execute", { commands: await commands, group });
+    const list = commands?.then ? await commands : commands;
+    const r = await invoke("execute", { commands: list, group });
     setState(r.state);
     const said = !quiet && notesForPeople(r.notes);
     if (said) toast(said);

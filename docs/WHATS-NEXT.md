@@ -19,6 +19,11 @@ The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 - **Darkroom aids, the rest** (`film-darkroom-aids`): step wedge, Pick Better
 - **The first language file** (`first-language`): once the owner picks the language, a small model drafts `data/lang/<code>.json` (the photography terms with it), a person checks
 
+Not ready yet (need a decision before a brief):
+
+- **Rust's words** (`language-table` step 3): how errors carry a code and their values; the settings' texts per language wait on the first language ([design/language.md](design/language.md))
+- **Undo right after a change** may miss a Ctrl+Z pressed straight after it (seen in the UI tests, which wait 150 ms; [GAPS.md](GAPS.md) §2): reproduce by hand first
+
 ## Recently done
 
 - 2026-11-26: **Import: move, pick, eject, resume** (`import-more`): Move deletes the card's originals once copied (and backed up); a tick per photo, All and None; Eject the card when done; Stop, then import again carries on and clears half-copied leftovers (`amb_library::import`: `ImportMode`, `only`, `eject`, `run`'s stop; `amb import --move --only --eject`; `ui/library/import.js`, `tests/ui/import.js`)

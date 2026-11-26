@@ -74,5 +74,5 @@ File names, preset names, setting names (`Exposure2012`), `amb`'s output, the do
 
 1. **The base** (medium tier): parts 1 to 3, 6 with English only, the table and its test, `zz` and its count. Nothing changes on screen. One line in [codestyle.md](../codestyle.md): words built in a script go through `t()`.
 2. **The sweep** (small or medium, one folder of `crates/amb-gui/ui/` per commit): wrap the scripts' words; the `zz` count falls to zero.
-3. **Rust's words:** the settings' texts per language; errors by code (after B11).
+3. **Rust's words:** the settings' texts per language; errors by code (after B11). Not ready (2026-11-26): decide how `CmdError` carries a code and its values, and whether `amb-library`'s and `amb-ops`' errors get codes or only the editor's; the settings' texts need a first language to test with (`first-language`).
 4. **The first translation,** and languages from the hub. The owner picks the language; a small model drafts, a person checks.

@@ -1281,6 +1281,7 @@
   "core/keys.js"
  ],
  "Click a print to use it. Esc closes.": [
+  "develop/print-aids.js",
   "index.html"
  ],
  "Click adds · double-click removes": [
@@ -2102,6 +2103,9 @@
  ],
  "Each photo's edit, rating, colour label, flag, keywords, stack, title and caption go into its XMP sidecar, where both Ambrotype and Lightroom read them. Virtual copies and collections come too. The catalogue is only read: close Lightroom first. Sidecars already there are kept. Or": [
   "index.html"
+ ],
+ "Each step is 0.15 denser than the last, printed as this negative prints. White and black mark the steps that merge. Esc closes.": [
+  "develop/print-aids.js"
  ],
  "Earlier edits": [
   "develop/history.js"
@@ -5131,6 +5135,9 @@
  "Previous photo in the folder": [
   "core/keys.js"
  ],
+ "Print a 21-step wedge as this negative prints: which steps merge into white or black": [
+  "develop/print-aids.js"
+ ],
  "Print it like this": [
   "develop/print-aids.js"
  ],
@@ -6367,6 +6374,9 @@
  "Showing the JPEG of {name} (JPEG if there is one is on)": [
   "develop/photo.js"
  ],
+ "Shows which steps merge into paper white or black and how the grade spreads the rest. For a converted negative.": [
+  "core/keys.js"
+ ],
  "Shuffle": [
   "index.html"
  ],
@@ -6651,6 +6661,15 @@
  ],
  "Std": [
   "index.html"
+ ],
+ "Step wedge": [
+  "develop/print-aids.js"
+ ],
+ "Step wedge: print a 21-step density wedge as this negative prints": [
+  "core/keys.js"
+ ],
+ "Step wedge…": [
+  "develop/print-aids.js"
  ],
  "Still opening the folder…": [
   "develop/photo.js"
@@ -7064,6 +7083,9 @@
   "tools/toolblocks.js"
  ],
  "The spot is in zone {zone} already.": [
+  "develop/print-aids.js"
+ ],
+ "The step wedge works on a converted negative: switch on Film Negative first.": [
   "develop/print-aids.js"
  ],
  "The system's default app for TIFF files": [

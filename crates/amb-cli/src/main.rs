@@ -476,6 +476,9 @@ fn main() -> ExitCode {
         ["negative", "ring", photo] => {
             negative_aid("ring", Path::new(photo), &options, json).map(|t| println!("{t}"))
         }
+        ["negative", "wedge", photo] => {
+            negative_aid("wedge", Path::new(photo), &options, json).map(|t| println!("{t}"))
+        }
         ["negative", "pick", photo] => {
             negative_aid("pick", Path::new(photo), &options, json).map(|t| println!("{t}"))
         }

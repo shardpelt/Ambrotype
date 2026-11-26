@@ -281,3 +281,47 @@ fn pick_rounds_follow_the_photo() {
         assert!(clamp(name, 0.0).is_ok(), "{name}");
     }
 }
+
+#[test]
+fn a_wedge_prints_denser_steps_lighter() {
+    let photo = negative_photo("wedge");
+    let o = WedgeOptions {
+        size: 420,
+        ..Default::default()
+    };
+    let aid = step_wedge(&photo, &on(), &o, &|_, _| {}).unwrap();
+    assert_eq!(aid.cells.len(), 21);
+    assert!(
+        aid.cells[6].label.starts_with("7 · 0.95"),
+        "{}",
+        aid.cells[6].label
+    );
+    assert!(aid.cells.iter().all(|c| c.changes.is_empty()));
+    // Denser film let less light through to the paper: lighter prints.
+    let lumas: Vec<f64> = (0..21).map(|i| luma(&aid, i)).collect();
+    assert!(lumas.windows(2).all(|w| w[1] >= w[0] - 1.0), "{lumas:?}");
+    assert!(lumas[20] > lumas[0] + 100.0, "{lumas:?}");
+    // The thinnest steps merge into black or the densest into white, or both.
+    let ends = aid
+        .cells
+        .iter()
+        .filter(|c| c.label.ends_with("white") || c.label.ends_with("black"))
+        .count();
+    assert!(
+        ends > 0,
+        "{:?}",
+        aid.cells.iter().map(|c| &c.label).collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn a_wedge_needs_a_converted_negative() {
+    let err = step_wedge(
+        Path::new("x.dng"),
+        &BTreeMap::new(),
+        &WedgeOptions::default(),
+        &|_, _| {},
+    )
+    .unwrap_err();
+    assert!(err.contains("switch on Film Negative"), "{err}");
+}

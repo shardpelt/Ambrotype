@@ -141,6 +141,9 @@ USAGE:
                                             A ring-around of a converted negative: nine prints, the middle
                                             as now, the rest more red, yellow, green, cyan, blue, magenta,
                                             lighter and darker
+    amb negative wedge <PHOTO> --out SHEET.png [--steps N] [--step D] [--size PX] [--json]
+                                            A step wedge printed as a converted negative prints: 21 steps,
+                                            0.15 density apart; says which merge into paper white or black
     amb negative pick <PHOTO> --out SHEET.png [--setting NAME] [--value N] [--step N] [--size PX] [--json]
                                             Pick Better's pair: the photo a step down (A) and a step up (B)
                                             in one setting (exposure by default), side by side

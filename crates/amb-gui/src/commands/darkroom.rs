@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! The darkroom aids that print the open photo several ways on one sheet:
-//! the test strip, the ring-around and Pick Better's pair, and placing a
-//! spot in a zone (`amb_ops::darkroom`).
+//! the test strip, the ring-around, the step wedge and Pick Better's pair,
+//! and placing a spot in a zone (`amb_ops::darkroom`).
 
 use crate::*;
 
@@ -12,7 +12,8 @@ pub(crate) struct AidSheet {
     pub(crate) aid: amb_ops::darkroom::Aid,
 }
 
-/// A test strip (`kind` "strip"), a ring-around ("ring") or Pick Better's
+/// A test strip (`kind` "strip"), a ring-around ("ring"), a step wedge
+/// ("wedge") or Pick Better's
 /// pair ("pick": `setting`, centred on `value`, `step` each way; `None`s
 /// are the defaults) of the open photo with its edit as it is now, plus
 /// `with` (the settings earlier rounds of Pick Better moved, not applied
@@ -37,12 +38,14 @@ pub(crate) async fn darkroom_aid(
     }
     tauri::async_runtime::spawn_blocking(move || {
         use amb_ops::darkroom::{
-            PickOptions, RingOptions, StripOptions, pick_pair, ring_around, test_strip,
+            PickOptions, RingOptions, StripOptions, WedgeOptions, pick_pair, ring_around,
+            step_wedge, test_strip,
         };
         let progress = crate::progress::throttled(&app, "darkroom-progress");
         let aid = match kind.as_str() {
             "strip" => test_strip(&photo, &settings, &StripOptions::default(), &progress)?,
             "ring" => ring_around(&photo, &settings, &RingOptions::default(), &progress)?,
+            "wedge" => step_wedge(&photo, &settings, &WedgeOptions::default(), &progress)?,
             "pick" => {
                 let o = PickOptions {
                     setting,
@@ -54,7 +57,7 @@ pub(crate) async fn darkroom_aid(
             }
             other => {
                 return Err(format!(
-                    "unknown darkroom aid {other:?} (strip, ring, pick)"
+                    "unknown darkroom aid {other:?} (strip, ring, wedge, pick)"
                 ));
             }
         };

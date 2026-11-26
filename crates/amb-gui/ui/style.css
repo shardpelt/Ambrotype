@@ -1172,6 +1172,8 @@ button.tool-icon.active { color: var(--accent); }
 .aids-cell { position: absolute; left: var(--x); top: var(--y); width: var(--w); height: var(--h); padding: 0; border: 2px solid transparent; border-radius: 0; background: transparent; cursor: pointer; display: flex; align-items: flex-end; justify-content: center; }
 .aids-cell span { background: color-mix(in srgb, var(--bg-deep) 75%, transparent); color: var(--text); font-size: 11px; padding: 1px 6px; margin-bottom: 4px; border-radius: 3px; }
 .aids-cell:hover, .aids-cell:focus-visible { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 15%, transparent); }
+.aids-read { pointer-events: none; }
+.aids-read span { writing-mode: vertical-rl; transform: rotate(180deg); padding: 6px 1px; }
 .darkroom-clip.warn { color: var(--danger); font-weight: 600; }
 .darkroom-legend { position: absolute; z-index: 6; pointer-events: none; display: flex; border-radius: 4px; overflow: hidden; box-shadow: 0 1px 4px rgb(0 0 0 / 0.4); font-size: 10px; font-weight: 600; }
 .darkroom-cell { background: var(--zone); color: #fff; text-shadow: 0 0 2px #000; min-width: 22px; padding: 2px 3px; text-align: center; outline-offset: -2px; }

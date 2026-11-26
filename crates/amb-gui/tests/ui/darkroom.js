@@ -72,6 +72,22 @@ await t.step("Ring-around: nine cells on a converted negative; Esc closes", asyn
   await run([{ cmd: "set_param", name: "amb:NegativeConvert", value: false }], "test");
 });
 
+await t.step("Step wedge: 21 steps read, not clicked; off without the conversion", async () => {
+  await t.until("the button off without the conversion", () => $("aids-wedge")?.disabled, 30000);
+  await run([{ cmd: "set_param", name: "amb:NegativeConvert", value: true }], "test");
+  await t.until("the button on", () => !$("aids-wedge").disabled);
+  const steps = t.historyLength();
+  KEY_ACTIONS.find((a) => a.id === "step-wedge").run();
+  await t.until("the wedge", () => t.visible("#aids-stage") && document.querySelectorAll("#aids-stage .aids-cell").length === 21, 120000);
+  const cells = [...document.querySelectorAll("#aids-stage .aids-cell")];
+  t.expect(cells[6].textContent.startsWith("7 · 0.95"), `step 7 is 0.95 (${cells[6].textContent})`);
+  t.expect(cells.every((c) => c.tagName === "DIV"), "no cell is a button");
+  t.expect($("aids-title").textContent === "Step wedge", "titled");
+  $("aids-dialog").close();
+  await run([{ cmd: "set_param", name: "amb:NegativeConvert", value: false }], "test");
+  t.expect(t.historyLength() === steps + 1, "the wedge changed nothing");
+});
+
 await t.step("Pick Better: A, then B, then Same, then Done sets the exposure as one undo step", async () => {
   const before = Number(currentValue("Exposure2012")) || 0;
   const steps = t.historyLength();

@@ -285,7 +285,7 @@ fn parse_at(text: &str) -> Result<[f64; 2], String> {
     Ok([x, y])
 }
 
-/// `amb negative strip`, `ring` and `pick` (`kind`): the photo printed
+/// `amb negative strip`, `ring`, `wedge` and `pick` (`kind`): the photo printed
 /// several ways on one PNG (`amb_ops::darkroom`), one cell per line in the
 /// text.
 pub(crate) fn negative_aid(
@@ -295,8 +295,8 @@ pub(crate) fn negative_aid(
     json: bool,
 ) -> Result<String, String> {
     use amb_ops::darkroom::{
-        PickOptions, RingOptions, StripOptions, pick_pair, ring_around, sidecar_settings,
-        test_strip,
+        PickOptions, RingOptions, StripOptions, WedgeOptions, pick_pair, ring_around,
+        sidecar_settings, step_wedge, test_strip,
     };
     let out = options
         .get("--out")
@@ -323,6 +323,15 @@ pub(crate) fn negative_aid(
                 ..d
             };
             ring_around(photo, &settings, &o, &progress)?
+        }
+        "wedge" => {
+            let d = WedgeOptions::default();
+            let o = WedgeOptions {
+                steps: number("--steps")?.map_or(d.steps, |v| v as usize),
+                step: number("--step")?.unwrap_or(d.step),
+                size: size.unwrap_or(d.size),
+            };
+            step_wedge(photo, &settings, &o, &progress)?
         }
         "pick" => {
             let d = PickOptions::default();

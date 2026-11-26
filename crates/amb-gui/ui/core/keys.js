@@ -38,7 +38,7 @@ const KEY_ACTIONS = [
   { id: "redo", group: tKey("Edit"), label: "Redo", keys: ["Ctrl+Shift+Z", "Ctrl+Y"], when: "any", button: "btn-redo", run: () => run([{ cmd: "redo" }]) },
   { id: "nav-back", group: tKey("Tasks"), label: "Back to the task before (Library, Develop, …)", keys: ["Alt+ArrowLeft"], when: "any", button: "btn-nav-back", run: () => navBack() },
   { id: "nav-forward", group: tKey("Tasks"), label: "Forward again, after Back", keys: ["Alt+ArrowRight"], when: "any", run: () => navGo(1) },
-  ...[["library", tKey("Library task")], ["develop", tKey("Develop task")], ["film", tKey("Film task")], ["collage", tKey("Collage task")], ["trippy", tKey("Trippy task")]].map(([task, label], i) => ({ id: `task-${task}`, group: tKey("Tasks"), label, keys: [`Ctrl+Alt+${i + 1}`], when: "any", run: () => switchTask(task) })),
+  ...[["library", tKey("Library task")], ["develop", tKey("Develop task")], ["film", tKey("Film task")], ["collage", tKey("Collage task")], ["trippy", tKey("Trippy task")], ["glitch-lab", tKey("Glitch task")]].map(([task, label], i) => ({ id: `task-${task}`, group: tKey("Tasks"), label, keys: [`Ctrl+Alt+${i + 1}`], when: "any", run: () => switchTask(task) })),
   // Installed task plugins after Trippy.
   ...[5, 6, 7, 8].map((n) => ({ id: `task-${n + 1}`, group: tKey("Tasks"), label: tKey("Task {n} (an installed task plugin)"), vars: { n: n + 1 }, keys: [`Ctrl+Alt+${n + 1}`], when: "any", run: () => TASKS[n] && switchTask(TASKS[n].id) })),
   { id: "trip-me", group: tKey("Effects"), label: "Trip me: a random mix of psychedelic colour, foil and light leaks", keys: [], when: "main", photo: true, run: () => tripMe() },

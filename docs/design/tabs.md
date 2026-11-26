@@ -42,6 +42,7 @@ Decided 2026-11-09: **Library · Develop · Film · Collage**, then task plugins
 | Film | Yes | Scanning negatives is its own way of working: pick the base, density, sync a roll. |
 | Collage | Yes | The collage maker itself: a canvas and tray of its own. It opens over the tab you were in and closes back to it. |
 | Trippy | Yes (plugin) | Playful looks; a task plugin, so it can be removed by uninstalling it. |
+| Glitch | Yes (plugin) | Glitch-art and print looks, more than fit in Trippy's 24 buttons; a task plugin like Trippy. |
 
 What went (2026-11-09):
 - **Color** was Develop with colour grading up front, the same job with the same controls rearranged. Now Develop's right column has a **Colour** tab (grading wheels and mixer open), and the Colour grading layout stays in Appearance.

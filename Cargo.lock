@@ -267,6 +267,7 @@ dependencies = [
  "amb-export",
  "amb-plugin-duotone",
  "amb-plugin-glitch",
+ "amb-plugin-halftone",
  "amb-plugin-heat-camera",
  "amb-plugin-holographic",
  "amb-plugin-hue-trip",
@@ -311,6 +312,14 @@ dependencies = [
 
 [[package]]
 name = "amb-plugin-glitch"
+version = "1.0.0"
+dependencies = [
+ "amb-plugin-sdk",
+ "serde_json",
+]
+
+[[package]]
+name = "amb-plugin-halftone"
 version = "1.0.0"
 dependencies = [
  "amb-plugin-sdk",

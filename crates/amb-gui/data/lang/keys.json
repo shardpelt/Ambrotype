@@ -2807,6 +2807,9 @@
  "Give the ticked keywords to every selected photo": [
   "index.html"
  ],
+ "Glitch task": [
+  "core/keys.js"
+ ],
  "Global": [
   "develop/wheels.js"
  ],

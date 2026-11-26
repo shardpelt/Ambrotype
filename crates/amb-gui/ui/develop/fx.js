@@ -141,9 +141,9 @@ function makeEffectsControl(def) {
       const card = el("div", { class: "fx-effect" });
       const head = el("div", { class: "fx-head" });
       const title = el("strong", { title: m?.description ?? "", translate: "no" }, name);
-      // In Trippy, Amount goes past 100: the change pushed further than
-      // the effect makes it.
-      const wild = currentTask() === "trippy";
+      // In Trippy and Glitch, Amount goes past 100: the change pushed
+      // further than the effect makes it.
+      const wild = ["trippy", "glitch-lab"].includes(currentTask());
       const amount = el("input", { type: "range", min: 0, max: wild ? 200 : 100, step: 1, value: e.amount ?? 100, title: wild ? t("Amount (past 100: pushed further)") : t("Amount") });
       amount.addEventListener("input", () => { e.amount = Number(amount.value); preview(); });
       amount.addEventListener("change", () => save(`${name}: amount`));

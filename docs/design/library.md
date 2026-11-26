@@ -131,7 +131,7 @@ Lightroom's Import "Copy", without a catalogue. The dialog (and `amb import SOUR
 - **Safe copies:** each file is copied to a hidden temporary name, checked for size, then renamed, and keeps its modified time.
 - After the import the library shows the first folder that got photos.
 
-Code: `crates/amb-library/src/import.rs` (plan and run), `amb import` in `crates/amb-cli`, `ui/library/import.js`.
+Code: `crates/amb-library/src/import/` (`plan.rs`, `run.rs`, `source.rs`, `template.rs`), `amb import` in `crates/amb-cli`, `ui/library/import.js`.
 
 ## Collections
 

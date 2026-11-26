@@ -107,7 +107,7 @@ The library:
 
 - The catalogue (`catalog.rs`): a SQLite index, in the config folder, of what was read from each photo's sidecar and raw header. It is checked against file sizes and modified times, so it can't go stale and can be deleted. `amb catalog`.
 - Which files in a folder are photos (`folder.rs`).
-- Import (`import.rs`):
+- Import (`import/`):
   - Copy from a card or folder into dated folders, renamed from templates, with companions and duplicate checks.
   - `amb import`, the editor's Import dialog.
 - Collections (`collections.rs`) as small JSON files.

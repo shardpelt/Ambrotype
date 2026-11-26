@@ -1,22 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Darkroom aids that print the photo several ways on one sheet: a test
 //! strip (one setting stepped across the photo, as a darkroom strip of paper
-//! is exposed in bands) and a ring-around (the photo nine times, each a step
-//! away in colour or lightness from the middle one). Each cell says what it
-//! changes, so the editor can apply the one the user picks.
+//! is exposed in bands), a ring-around (the photo nine times, each a step
+//! away in colour or lightness from the middle one), Pick Better's pair
+//! (a step down and a step up, side by side) and a step wedge (steps of
+//! density printed through the negative's conversion and paper). Each cell
+//! says what it changes, so the editor can apply the one the user picks.
 //!
 //! Renders go through the same path as Edit Replay: a copy of the raw at
 //! about the sheet's size, the edit's settings with no lens or camera
 //! profiles, the GPU when there is one.
 
+mod pick;
 mod ring;
 mod strip;
 #[cfg(test)]
 mod tests;
+mod wedge;
 mod zone;
 
+pub use pick::{PickOptions, pick_pair, pick_settings, pick_step};
 pub use ring::{RingOptions, ring_around};
 pub use strip::{StripOptions, test_strip};
+pub use wedge::{WedgeOptions, step_wedge};
 pub use zone::{PlaceOptions, Placed, place_in_zone};
 
 use std::collections::BTreeMap;

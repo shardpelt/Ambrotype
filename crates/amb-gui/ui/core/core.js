@@ -21,6 +21,8 @@ const ui = {
   settings: {},          // committed settings (from the Rust state)
   info: null,            // photo info
   overrides: {},         // values being dragged, not yet committed
+  runChain: Promise.resolve(), // the last `run`, so edits reach Rust and the page in key order
+  runWaiting: 0,         // `run`s not finished yet
   active: null,          // the setting whose slider is held (holdWhileDragging)
   before: false,
   // Before / after split with a draggable bar (split.js).

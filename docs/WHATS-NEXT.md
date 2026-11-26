@@ -16,17 +16,19 @@ A short running list, kept up to date as work lands. Newest decisions first. Eve
 
 The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
-- **Darkroom aids, the rest** (`film-darkroom-aids`): step wedge, Pick Better
 - **The first language file** (`first-language`): once the owner picks the language, a small model drafts `data/lang/<code>.json` (the photography terms with it), a person checks
 
 Not ready yet (need a decision before a brief):
 
 - **Rust's words** (`language-table` step 3): how errors carry a code and their values; the settings' texts per language wait on the first language ([design/language.md](design/language.md))
-- **Undo right after a change** may miss a Ctrl+Z pressed straight after it (seen in the UI tests, which wait 150 ms; [GAPS.md](GAPS.md) §2): reproduce by hand first
 
 ## Recently done
 
 - 2026-11-26: **Glitch** task (Ctrl+Alt+6) and two effects for it, `plugins/glitch` (Pixel sort, RGB split, Channel drift, Broken signal, JPEG crunch, Datamosh, VHS, Wave, Streaks, Tiles) and `plugins/halftone` (Game Boy dither, Newsprint, Rings, Lines, Rainbow stripes); Trippy gets Pixel sort, Datamosh, Game Boy and Rings, and Trip me mixes a glitch in now and then. `amb plugin run plugins/glitch PHOTO --params style=Blocks`, `amb plugin run plugins/halftone PHOTO --params style=Rings`.
+- 2026-11-26: **A speed number for big libraries** (`library-speed-number`): 100 000 photos index in 3.7 s (4 cores), re-open in 1.4 s, a rating filter takes 0.24 s, text search 0.37 s (`crates/amb-library/tests/speed.rs`, run by hand; table in `docs/design/library.md`)
+- 2026-11-26: **Undo right after a change is no longer lost**: Applying a crop worked out its commands in Rust, then ran them, so a Ctrl+Z pressed meanwhile ran first and the crop landed after it; `run` (`ui/core/app.js`) now queues edits in call order and takes the commands as a promise (`exitCrop`). The UI tests no longer wait before Ctrl+Z; `panels.js` presses it straight after each change
+- 2026-11-26: **Step wedge** (`film-darkroom-aids`, the last of the darkroom aids): Film Negative → Step wedge… prints a 21-step density wedge as the negative prints (its own film base, levels, midtone and paper), and marks the steps that merge into paper white or black (`amb_ops::darkroom::step_wedge`, `amb negative wedge`, a step in `tests/ui/darkroom.js`)
+- 2026-11-26: **Pick Better** (`film-darkroom-aids`): Film Negative → Pick Better… shows two prints, a setting a step down and up; click the better one, the step halves, then the next setting; Done applies them all as one undo step (`amb_ops::darkroom::pick_pair`, `amb negative pick`, `ui/develop/pick-better.js`, a step in `tests/ui/darkroom.js`)
 - 2026-11-26: **Import: move, pick, eject, resume** (`import-more`): Move deletes the card's originals once copied (and backed up); a tick per photo, All and None; Eject the card when done; Stop, then import again carries on and clears half-copied leftovers (`amb_library::import`: `ImportMode`, `only`, `eject`, `run`'s stop; `amb import --move --only --eject`; `ui/library/import.js`, `tests/ui/import.js`)
 - 2026-11-26: **More UI test scripts**: `tests/ui/masks.js` (linear, radial and brush masks, slider, rename, hide, invert, delete), `crop.js` (aspect lock, Swap, Angle, Esc, Reset) and `panels.js` (each Develop panel's first slider, reset, fold, Search)
 - 2026-11-25: **The UI's old idioms gone**: every `document.createElement(` and `Object.assign(document.createElement(` is `el`, `innerHTML` is gone (our own SVG drawings go through `svgNode` in `ui/core/core.js`), no top-level `let` (each a state object) and no inline `style="…"` (the paper swatches' colours are in `style.css`). Each count in `crates/amb-gui/src/checks.rs` is zero; a step in `tests/ui/dialogs.js` checks the swatches

@@ -213,13 +213,10 @@ async function exitCrop(commit) {
   ui.crop.tool.stop();
   status(t("Ready"));
   if (commit && cropChanged(rect)) {
-    try {
-      const commands = await invoke("crop_commands", { rect });
-      await run(commands, "crop");
-      return;
-    } catch (e) {
-      showError(e);
-    }
+    // Handed to `run` as a promise, so it holds its place in the queue: a
+    // Ctrl+Z pressed while Rust works the commands out undoes the step before.
+    await run(invoke("crop_commands", { rect }), "crop");
+    return;
   }
   requestPreview(false);
 }

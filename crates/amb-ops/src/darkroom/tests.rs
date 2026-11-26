@@ -227,3 +227,101 @@ fn a_bad_zone_is_refused() {
     let err = place_in_zone(Path::new("x.dng"), &BTreeMap::new(), &o, &|_, _| {}).unwrap_err();
     assert!(err.contains("0 to 10"), "{err}");
 }
+
+fn luma(aid: &Aid, i: usize) -> f64 {
+    (0..3).map(|ch| mean(&aid.image, &aid.cells[i], ch)).sum()
+}
+
+#[test]
+fn a_pick_pair_is_darker_then_lighter() {
+    let o = PickOptions {
+        size: 96,
+        ..Default::default()
+    };
+    // A plain photo: Exposure, 2/3 stop each way.
+    let photo = flat_photo("pick", 0.1);
+    let aid = pick_pair(&photo, &BTreeMap::new(), &o, &|_, _| {}).unwrap();
+    assert_eq!(aid.cells.len(), 2);
+    assert_eq!(aid.cells[0].label, "A -2/3");
+    assert_eq!(aid.cells[1].label, "B +2/3");
+    assert!((aid.cells[1].changes["Exposure2012"] - 2.0 / 3.0).abs() < 1e-9);
+    assert!(luma(&aid, 0) < luma(&aid, 1));
+    // A converted negative: its own exposure.
+    let photo = negative_photo("pick");
+    let aid = pick_pair(&photo, &on(), &o, &|_, _| {}).unwrap();
+    assert!(aid.cells[0].changes.contains_key("amb:NegativeExposure"));
+    assert!(luma(&aid, 0) < luma(&aid, 1));
+}
+
+#[test]
+fn a_pick_pair_stays_in_the_range() {
+    let photo = flat_photo("pick-range", 0.1);
+    let o = PickOptions {
+        setting: Some("Contrast2012".into()),
+        value: Some(95.0),
+        size: 64,
+        ..Default::default()
+    };
+    let aid = pick_pair(&photo, &BTreeMap::new(), &o, &|_, _| {}).unwrap();
+    assert_eq!(aid.cells[0].changes["Contrast2012"], 75.0);
+    assert_eq!(aid.cells[1].changes["Contrast2012"], 100.0);
+    assert_eq!(pick_step("Contrast2012"), 20.0);
+}
+
+#[test]
+fn pick_rounds_follow_the_photo() {
+    assert_eq!(pick_settings(&BTreeMap::new())[0], "Exposure2012");
+    let s = pick_settings(&on());
+    assert_eq!(s[0], "amb:NegativeExposure");
+    assert_eq!(s.len(), 5);
+    for name in pick_settings(&on())
+        .into_iter()
+        .chain(pick_settings(&BTreeMap::new()))
+    {
+        assert!(clamp(name, 0.0).is_ok(), "{name}");
+    }
+}
+
+#[test]
+fn a_wedge_prints_denser_steps_lighter() {
+    let photo = negative_photo("wedge");
+    let o = WedgeOptions {
+        size: 420,
+        ..Default::default()
+    };
+    let aid = step_wedge(&photo, &on(), &o, &|_, _| {}).unwrap();
+    assert_eq!(aid.cells.len(), 21);
+    assert!(
+        aid.cells[6].label.starts_with("7 · 0.95"),
+        "{}",
+        aid.cells[6].label
+    );
+    assert!(aid.cells.iter().all(|c| c.changes.is_empty()));
+    // Denser film let less light through to the paper: lighter prints.
+    let lumas: Vec<f64> = (0..21).map(|i| luma(&aid, i)).collect();
+    assert!(lumas.windows(2).all(|w| w[1] >= w[0] - 1.0), "{lumas:?}");
+    assert!(lumas[20] > lumas[0] + 100.0, "{lumas:?}");
+    // The thinnest steps merge into black or the densest into white, or both.
+    let ends = aid
+        .cells
+        .iter()
+        .filter(|c| c.label.ends_with("white") || c.label.ends_with("black"))
+        .count();
+    assert!(
+        ends > 0,
+        "{:?}",
+        aid.cells.iter().map(|c| &c.label).collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn a_wedge_needs_a_converted_negative() {
+    let err = step_wedge(
+        Path::new("x.dng"),
+        &BTreeMap::new(),
+        &WedgeOptions::default(),
+        &|_, _| {},
+    )
+    .unwrap_err();
+    assert!(err.contains("switch on Film Negative"), "{err}");
+}

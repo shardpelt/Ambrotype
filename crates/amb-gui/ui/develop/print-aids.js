@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Print aids: the test strip and the ring-around (amb_ops::darkroom). The
-// photo is printed several ways on one sheet, shown in a dialog with each
-// cell a button; clicking one applies its changes as one undo step.
-// Two buttons in the Film Negative panel (next to darkroom.js's readouts)
-// and two key actions start them. Also here: placing a spot in a zone (right-
+// Print aids: the test strip, the ring-around and the step wedge
+// (amb_ops::darkroom). The photo is printed several ways on one sheet, shown
+// in a dialog with each cell a button; clicking one applies its changes as
+// one undo step. The wedge's cells are read, not clicked.
+// Buttons in the Film Negative panel (next to darkroom.js's readouts) and
+// key actions start them, and Pick Better (pick-better.js). Also here: placing a spot in a zone (right-
 // click the photo; the exposure that prints it there, one undo step) and
 // peeking at the negative (the scan as it is, not saved).
 "use strict";
 
 const aids = {
-  kind: "",          // "strip" or "ring", the one on screen
-  strip: null, ring: null, // the panel's buttons (made with the panel)
+  kind: "",          // "strip", "ring" or "wedge", the one on screen
+  strip: null, ring: null, wedge: null, // the panel's buttons (made with the panel)
   seq: 0,            // the newest sheet asked for; older answers are dropped
   peek: false, peekBtn: null, // peeking at the negative, and the panel's button
   pop: null,         // the zone picker, while it is open
@@ -20,15 +21,19 @@ const aids = {
 function aidsButtons() {
   aids.strip = el("button", { type: "button", id: "aids-strip", title: t("Print the photo in bands, each a step lighter or darker") }, t("Test strip…"));
   aids.ring = el("button", { type: "button", id: "aids-ring" }, t("Ring-around…"));
+  aids.wedge = el("button", { type: "button", id: "aids-wedge" }, t("Step wedge…"));
+  aids.wedge.addEventListener("click", () => aidsOpen("wedge"));
+  const better = el("button", { type: "button", id: "aids-pick", title: t("Two prints side by side: click the better one, a setting at a time") }, t("Pick Better…"));
   aids.strip.addEventListener("click", () => aidsOpen("strip"));
+  better.addEventListener("click", () => pickOpen());
   aids.ring.addEventListener("click", () => aidsOpen("ring"));
   aids.peekBtn = el("button", { type: "button", id: "aids-peek", title: t("Show the scan as it is, without the conversion (Shift+N). Not saved.") }, t("Peek"));
   aids.peekBtn.addEventListener("click", () => aidsPeekToggle());
   aidsSync();
-  return el("div", { class: "aids-buttons" }, aids.strip, aids.ring, aids.peekBtn);
+  return el("div", { class: "aids-buttons" }, aids.strip, better, aids.ring, aids.wedge, aids.peekBtn);
 }
 
-// The ring-around needs the conversion on.
+// The ring-around and the step wedge need the conversion on.
 function aidsSync() {
   if (!aids.ring?.isConnected) return;
   // The conversion went off (undo, say) under a peek: back to normal.
@@ -39,6 +44,10 @@ function aidsSync() {
   aids.ring.title = off
     ? t("Ring-around works on a converted negative: switch on Film Negative first.")
     : t("Print the photo nine ways: a step more of each colour, lighter and darker");
+  aids.wedge.disabled = off;
+  aids.wedge.title = off
+    ? t("The step wedge works on a converted negative: switch on Film Negative first.")
+    : t("Print a 21-step wedge as this negative prints: which steps merge into white or black");
 }
 
 async function aidsOpen(kind) {
@@ -46,14 +55,20 @@ async function aidsOpen(kind) {
   if (kind === "ring" && !asBool(currentValue("amb:NegativeConvert"))) {
     return toast(t("Ring-around works on a converted negative: switch on Film Negative first."), true);
   }
+  if (kind === "wedge" && !asBool(currentValue("amb:NegativeConvert"))) {
+    return toast(t("The step wedge works on a converted negative: switch on Film Negative first."), true);
+  }
   aids.kind = kind;
   const seq = ++aids.seq;
-  $("aids-title").textContent = kind === "ring" ? t("Ring-around") : t("Test strip");
+  $("aids-title").textContent = aidsName(kind);
+  $("aids-hint").textContent = kind === "wedge"
+    ? t("Each step is 0.15 denser than the last, printed as this negative prints. White and black mark the steps that merge. Esc closes.")
+    : t("Click a print to use it. Esc closes.");
   $("aids-stage").hidden = true;
   $("aids-hint").hidden = true;
   $("aids-status").textContent = t("Printing…");
   if (!$("aids-dialog").open) $("aids-dialog").showModal();
-  const button = kind === "ring" ? aids.ring : aids.strip;
+  const button = { ring: aids.ring, wedge: aids.wedge }[kind] ?? aids.strip;
   const ok = await withBusy(button ?? $("aids-close"), $("aids-status"), async () => {
     const sheet = await invoke("darkroom_aid", { kind });
     if (seq !== aids.seq || !$("aids-dialog").open) return;
@@ -67,19 +82,26 @@ function aidsShow({ image, aid }) {
   const stage = $("aids-stage");
   const img = $("aids-img");
   img.src = image;
+  const read = aids.kind === "wedge";
   const boxes = aid.cells.map((c) => {
-    const box = el("button", { type: "button", class: "aids-cell", title: aidsTitle(c) }, el("span", {}, t(c.label)));
+    const box = read
+      ? el("div", { class: "aids-cell aids-read" }, el("span", {}, c.label))
+      : el("button", { type: "button", class: "aids-cell", title: aidsTitle(c) }, el("span", {}, t(c.label)));
     box.style.setProperty("--x", `${(c.x / aid.width) * 100}%`);
     box.style.setProperty("--y", `${(c.y / aid.height) * 100}%`);
     box.style.setProperty("--w", `${(c.w / aid.width) * 100}%`);
     box.style.setProperty("--h", `${(c.h / aid.height) * 100}%`);
-    box.addEventListener("click", () => aidsApply(c));
+    if (!read) box.addEventListener("click", () => aidsApply(c));
     return box;
   });
   stage.replaceChildren(img, ...boxes);
   stage.hidden = false;
   $("aids-hint").hidden = false;
   $("aids-status").textContent = "";
+}
+
+function aidsName(kind) {
+  return { ring: t("Ring-around"), wedge: t("Step wedge") }[kind] ?? t("Test strip");
 }
 
 function aidsTitle(c) {
@@ -92,7 +114,7 @@ async function aidsApply(cell) {
   $("aids-dialog").close();
   const commands = Object.entries(cell.changes).map(([name, value]) => ({ cmd: "set_param", name, value }));
   if (!commands.length) return;
-  await run(commands, `${aids.kind === "ring" ? t("Ring-around") : t("Test strip")} ${t(cell.label)}`);
+  await run(commands, `${aidsName(aids.kind)} ${t(cell.label)}`);
 }
 
 // ---------------------------------------------------------------- place a spot in a zone

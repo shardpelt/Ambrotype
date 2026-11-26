@@ -107,7 +107,6 @@ await t.step("Reset clears the crop and the angle, as one step", async () => {
 await t.step("the history is put back for the next script", async () => {
   while (t.historyLength() > steps0) {
     const len = t.historyLength();
-    await t.sleep(150); // a key right after the last change can be lost
     t.key("Ctrl+Z");
     await t.until("one more undo", () => t.historyLength() < len);
   }

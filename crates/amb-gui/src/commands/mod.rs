@@ -87,6 +87,7 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         tools::negative_readout,
         darkroom::darkroom_aid,
         darkroom::darkroom_place,
+        darkroom::darkroom_pick_rounds,
         settings::feedback_body,
         settings::open_feedback,
         models::ai_models,

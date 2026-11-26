@@ -218,6 +218,42 @@ fn strip_and_ring_write_a_sheet_and_name_each_cell() {
         text.contains("More red") && text.contains("amb:NegativeCyanRed="),
         "{text}"
     );
+    // Pick Better: a step down and a step up in the negative's exposure.
+    let pick: serde_json::Value = serde_json::from_str(&amb(
+        &dir,
+        &[
+            "negative", "pick", "neg.dng", "--out", "pick.png", "--size", "100", "--step", "0.5",
+            "--json",
+        ],
+    ))
+    .unwrap();
+    assert_eq!(pick["cells"].as_array().unwrap().len(), 2);
+    assert_eq!(pick["cells"][0]["changes"]["amb:NegativeExposure"], -0.5);
+    assert_eq!(pick["cells"][1]["changes"]["amb:NegativeExposure"], 0.5);
+    assert!(dir.join("pick.png").metadata().unwrap().len() > 100);
+    // The step wedge: 21 steps, read not clicked.
+    let wedge: serde_json::Value = serde_json::from_str(&amb(
+        &dir,
+        &[
+            "negative",
+            "wedge",
+            "neg.dng",
+            "--out",
+            "wedge.png",
+            "--size",
+            "420",
+            "--json",
+        ],
+    ))
+    .unwrap();
+    assert_eq!(wedge["cells"].as_array().unwrap().len(), 21);
+    assert!(
+        wedge["cells"][0]["label"]
+            .as_str()
+            .unwrap()
+            .starts_with("1 · 0.05")
+    );
+    assert!(dir.join("wedge.png").metadata().unwrap().len() > 100);
     // Without the conversion on there is nothing to go round.
     std::fs::remove_file(dir.join("neg.xmp")).unwrap();
     let out = Command::new(env!("CARGO_BIN_EXE_amb"))

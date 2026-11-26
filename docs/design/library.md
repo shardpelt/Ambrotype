@@ -213,6 +213,28 @@ The library's Folders panel → **Lightroom +** (or From Lightroom… → **Open
 - **Not shown in place:** virtual copies (they would be files of ours: From Lightroom… moves them) and smart collections (named only). Moved photos are counted as not found (From Lightroom… can remap them).
 - **Trying it without Lightroom:** `amb lrcat sample OUT.lrcat PHOTO…` writes a small catalogue in Lightroom's layout (rated 4, Red, picked, Exposure +1, a collection "Selects"); CI's UI test opens one in place (`tests/ui/browse.js`).
 
+## Speed
+
+How the catalogue does on a big library. `crates/amb-library/tests/speed.rs` makes 100 000 tiny JPEGs in 1 000-photo folders (30% with a rating, label and keyword in a sidecar), then times each step on a file-backed catalogue. Run it by hand (it is `#[ignore]`d); `AMB_SPEED_PHOTOS` changes the size:
+
+```sh
+cargo test -p amb-library --release --test speed -- --ignored --nocapture
+```
+
+2026-11-26, 100 000 photos, 4 cores, Linux x86_64:
+
+| Step | Seconds | Note |
+|---|---|---|
+| First index of the whole tree | 3.68 | 27 000 photos/s |
+| Open and re-index, nothing changed | 1.40 | nothing read |
+| Folder list | 0.01 | 100 folders |
+| Find, rating 3 or more | 0.24 | 10 000 found |
+| Find, text (keyword in a sidecar) | 0.37 | 30 000 found |
+| Find, keyword | 0.38 | 30 000 found |
+| All photos | 0.35 | 100 000 photos |
+
+Nothing is slow. The test photos are tiny and carry little metadata, so a first index of real raws is slower (each file's own metadata is read); the other steps work on the stored records and are about the same. Filters and search load every record, so they grow in step with the library.
+
 ## Code
 
 - `crates/amb-library/src/folder.rs`: which files in a folder are photos, in order; `catalog.rs`: the catalogue.

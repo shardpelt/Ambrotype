@@ -471,10 +471,16 @@ fn main() -> ExitCode {
             negative_place(Path::new(photo), &options, json).map(|t| println!("{t}"))
         }
         ["negative", "strip", photo] => {
-            negative_aid(false, Path::new(photo), &options, json).map(|t| println!("{t}"))
+            negative_aid("strip", Path::new(photo), &options, json).map(|t| println!("{t}"))
         }
         ["negative", "ring", photo] => {
-            negative_aid(true, Path::new(photo), &options, json).map(|t| println!("{t}"))
+            negative_aid("ring", Path::new(photo), &options, json).map(|t| println!("{t}"))
+        }
+        ["negative", "wedge", photo] => {
+            negative_aid("wedge", Path::new(photo), &options, json).map(|t| println!("{t}"))
+        }
+        ["negative", "pick", photo] => {
+            negative_aid("pick", Path::new(photo), &options, json).map(|t| println!("{t}"))
         }
         ["negative", "stocks"] => {
             negative_stocks(json);

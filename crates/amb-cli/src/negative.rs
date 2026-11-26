@@ -285,15 +285,19 @@ fn parse_at(text: &str) -> Result<[f64; 2], String> {
     Ok([x, y])
 }
 
-/// `amb negative strip` and `amb negative ring`: the photo printed several
-/// ways on one PNG (`amb_ops::darkroom`), one cell per line in the text.
+/// `amb negative strip`, `ring`, `wedge` and `pick` (`kind`): the photo printed
+/// several ways on one PNG (`amb_ops::darkroom`), one cell per line in the
+/// text.
 pub(crate) fn negative_aid(
-    ring: bool,
+    kind: &str,
     photo: &Path,
     options: &BTreeMap<&str, &str>,
     json: bool,
 ) -> Result<String, String> {
-    use amb_ops::darkroom::{RingOptions, StripOptions, ring_around, sidecar_settings, test_strip};
+    use amb_ops::darkroom::{
+        PickOptions, RingOptions, StripOptions, WedgeOptions, pick_pair, ring_around,
+        sidecar_settings, step_wedge, test_strip,
+    };
     let out = options
         .get("--out")
         .ok_or("this needs --out FILE.png (the sheet)")?;
@@ -309,23 +313,46 @@ pub(crate) fn negative_aid(
     let size = number("--size")?.map(|v| v as u32);
     let settings = sidecar_settings(photo)?;
     let progress = crate::progress::line(json, |n, total| format!("{n}/{total} prints"));
-    let aid = if ring {
-        let d = RingOptions::default();
-        let o = RingOptions {
-            step: number("--step")?.unwrap_or(d.step),
-            size: size.unwrap_or(d.size),
-            ..d
-        };
-        ring_around(photo, &settings, &o, &progress)?
-    } else {
-        let d = StripOptions::default();
-        let o = StripOptions {
-            steps: number("--steps")?.map_or(d.steps, |v| v as usize),
-            step: number("--step")?.unwrap_or(d.step),
-            setting: options.get("--setting").map(|s| s.to_string()),
-            size: size.unwrap_or(d.size),
-        };
-        test_strip(photo, &settings, &o, &progress)?
+    let setting = options.get("--setting").map(|s| s.to_string());
+    let aid = match kind {
+        "ring" => {
+            let d = RingOptions::default();
+            let o = RingOptions {
+                step: number("--step")?.unwrap_or(d.step),
+                size: size.unwrap_or(d.size),
+                ..d
+            };
+            ring_around(photo, &settings, &o, &progress)?
+        }
+        "wedge" => {
+            let d = WedgeOptions::default();
+            let o = WedgeOptions {
+                steps: number("--steps")?.map_or(d.steps, |v| v as usize),
+                step: number("--step")?.unwrap_or(d.step),
+                size: size.unwrap_or(d.size),
+            };
+            step_wedge(photo, &settings, &o, &progress)?
+        }
+        "pick" => {
+            let d = PickOptions::default();
+            let o = PickOptions {
+                setting,
+                value: number("--value")?,
+                step: number("--step")?,
+                size: size.unwrap_or(d.size),
+            };
+            pick_pair(photo, &settings, &o, &progress)?
+        }
+        _ => {
+            let d = StripOptions::default();
+            let o = StripOptions {
+                steps: number("--steps")?.map_or(d.steps, |v| v as usize),
+                step: number("--step")?.unwrap_or(d.step),
+                setting,
+                size: size.unwrap_or(d.size),
+            };
+            test_strip(photo, &settings, &o, &progress)?
+        }
     };
     std::fs::write(out, aid.png()?).map_err(|e| format!("{out}: {e}"))?;
     if json {

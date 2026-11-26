@@ -1105,7 +1105,7 @@
     </menu>
   </dialog>
 
-  <!-- Test strip and ring-around (develop/print-aids.js). -->
+  <!-- Test strip, ring-around and step wedge (develop/print-aids.js). -->
   <dialog id="aids-dialog" class="aids-dialog">
     <h2 id="aids-title">Test strip</h2>
     <p id="aids-status" class="hint"></p>
@@ -1113,6 +1113,20 @@
     <p id="aids-hint" class="hint" hidden>Click a print to use it. Esc closes.</p>
     <menu>
       <button type="button" id="aids-close">Close</button>
+    </menu>
+  </dialog>
+
+  <!-- Pick Better (develop/pick-better.js). -->
+  <dialog id="better-dialog" class="aids-dialog">
+    <h2>Pick Better</h2>
+    <p id="better-round" class="hint"></p>
+    <p id="better-status" class="hint"></p>
+    <div id="better-stage" class="aids-stage" hidden><img id="better-img" alt=""></div>
+    <p class="hint">Click the better print. Each pick halves the step; Same moves on to the next setting. Esc cancels.</p>
+    <menu>
+      <button type="button" id="better-same" title="Neither is better: keep this setting and go on">Same</button>
+      <button type="button" id="better-done">Done</button>
+      <button type="button" id="better-cancel">Cancel</button>
     </menu>
   </dialog>
 
@@ -2080,6 +2094,7 @@
   <script src="develop/meter.js"></script>
   <script src="develop/darkroom.js"></script>
   <script src="develop/print-aids.js"></script>
+  <script src="develop/pick-better.js"></script>
   <script src="core/app.js"></script>
 </body>
 </html>

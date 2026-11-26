@@ -2,8 +2,8 @@
 // Print aids: the test strip and the ring-around (amb_ops::darkroom). The
 // photo is printed several ways on one sheet, shown in a dialog with each
 // cell a button; clicking one applies its changes as one undo step.
-// Two buttons in the Film Negative panel (next to darkroom.js's readouts)
-// and two key actions start them. Also here: placing a spot in a zone (right-
+// Buttons in the Film Negative panel (next to darkroom.js's readouts) and
+// key actions start them, and Pick Better (pick-better.js). Also here: placing a spot in a zone (right-
 // click the photo; the exposure that prints it there, one undo step) and
 // peeking at the negative (the scan as it is, not saved).
 "use strict";
@@ -20,12 +20,14 @@ const aids = {
 function aidsButtons() {
   aids.strip = el("button", { type: "button", id: "aids-strip", title: t("Print the photo in bands, each a step lighter or darker") }, t("Test strip…"));
   aids.ring = el("button", { type: "button", id: "aids-ring" }, t("Ring-around…"));
+  const better = el("button", { type: "button", id: "aids-pick", title: t("Two prints side by side: click the better one, a setting at a time") }, t("Pick Better…"));
   aids.strip.addEventListener("click", () => aidsOpen("strip"));
+  better.addEventListener("click", () => pickOpen());
   aids.ring.addEventListener("click", () => aidsOpen("ring"));
   aids.peekBtn = el("button", { type: "button", id: "aids-peek", title: t("Show the scan as it is, without the conversion (Shift+N). Not saved.") }, t("Peek"));
   aids.peekBtn.addEventListener("click", () => aidsPeekToggle());
   aidsSync();
-  return el("div", { class: "aids-buttons" }, aids.strip, aids.ring, aids.peekBtn);
+  return el("div", { class: "aids-buttons" }, aids.strip, better, aids.ring, aids.peekBtn);
 }
 
 // The ring-around needs the conversion on.

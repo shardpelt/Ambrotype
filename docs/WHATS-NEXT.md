@@ -16,7 +16,7 @@ A short running list, kept up to date as work lands. Newest decisions first. Eve
 
 The order is [ROADMAP.md](ROADMAP.md)'s. The first open rows:
 
-- **Darkroom aids, the rest** (`film-darkroom-aids`): step wedge, Pick Better
+- **Darkroom aids, the rest** (`film-darkroom-aids`): step wedge
 - **The first language file** (`first-language`): once the owner picks the language, a small model drafts `data/lang/<code>.json` (the photography terms with it), a person checks
 
 Not ready yet (need a decision before a brief):
@@ -27,6 +27,7 @@ Not ready yet (need a decision before a brief):
 
 - 2026-11-26: **A speed number for big libraries** (`library-speed-number`): 100 000 photos index in 3.7 s (4 cores), re-open in 1.4 s, a rating filter takes 0.24 s, text search 0.37 s (`crates/amb-library/tests/speed.rs`, run by hand; table in `docs/design/library.md`)
 - 2026-11-26: **Undo right after a change is no longer lost**: Applying a crop worked out its commands in Rust, then ran them, so a Ctrl+Z pressed meanwhile ran first and the crop landed after it; `run` (`ui/core/app.js`) now queues edits in call order and takes the commands as a promise (`exitCrop`). The UI tests no longer wait before Ctrl+Z; `panels.js` presses it straight after each change
+- 2026-11-26: **Pick Better** (`film-darkroom-aids`): Film Negative → Pick Better… shows two prints, a setting a step down and up; click the better one, the step halves, then the next setting; Done applies them all as one undo step (`amb_ops::darkroom::pick_pair`, `amb negative pick`, `ui/develop/pick-better.js`, a step in `tests/ui/darkroom.js`)
 - 2026-11-26: **Import: move, pick, eject, resume** (`import-more`): Move deletes the card's originals once copied (and backed up); a tick per photo, All and None; Eject the card when done; Stop, then import again carries on and clears half-copied leftovers (`amb_library::import`: `ImportMode`, `only`, `eject`, `run`'s stop; `amb import --move --only --eject`; `ui/library/import.js`, `tests/ui/import.js`)
 - 2026-11-26: **More UI test scripts**: `tests/ui/masks.js` (linear, radial and brush masks, slider, rename, hide, invert, delete), `crop.js` (aspect lock, Swap, Angle, Esc, Reset) and `panels.js` (each Develop panel's first slider, reset, fold, Search)
 - 2026-11-25: **The UI's old idioms gone**: every `document.createElement(` and `Object.assign(document.createElement(` is `el`, `innerHTML` is gone (our own SVG drawings go through `svgNode` in `ui/core/core.js`), no top-level `let` (each a state object) and no inline `style="…"` (the paper swatches' colours are in `style.css`). Each count in `crates/amb-gui/src/checks.rs` is zero; a step in `tests/ui/dialogs.js` checks the swatches

@@ -346,6 +346,7 @@ async function init() {
   wireZones();
   wireDarkroom();
   wirePrintAids();
+  wirePickBetter();
   wireBoxZoom();
   wireLoupe();
   wireHoverPeek();

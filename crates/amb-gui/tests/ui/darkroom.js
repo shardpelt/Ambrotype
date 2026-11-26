@@ -72,6 +72,29 @@ await t.step("Ring-around: nine cells on a converted negative; Esc closes", asyn
   await run([{ cmd: "set_param", name: "amb:NegativeConvert", value: false }], "test");
 });
 
+await t.step("Pick Better: A, then B, then Same, then Done sets the exposure as one undo step", async () => {
+  const before = Number(currentValue("Exposure2012")) || 0;
+  const steps = t.historyLength();
+  const pair = () => document.querySelectorAll("#better-stage .aids-cell");
+  const shown = () => t.visible("#better-stage") && pair().length === 2 && !$("better-same").disabled;
+  KEY_ACTIONS.find((a) => a.id === "pick-better").run();
+  await t.until("the first pair", shown, 120000);
+  t.expect(/Round 1 of 5/.test($("better-round").textContent), `round 1 of 5 (${$("better-round").textContent})`);
+  t.expect(pair()[0].textContent === "A -2/3" && pair()[1].textContent === "B +2/3", "2/3 stop each way");
+  pair()[0].click();
+  await t.until("a finer pair", () => shown() && pair()[1].textContent === "B +1/3", 120000);
+  pair()[1].click();
+  await t.until("the third pair", () => shown() && pair()[1].textContent === "B +0.17", 120000);
+  $("better-same").click();
+  await t.until("round 2", () => shown() && /Round 2 of 5/.test($("better-round").textContent), 120000);
+  t.expect(t.historyLength() === steps, "nothing applied yet");
+  $("better-done").click();
+  await t.until("the dialog closed", () => !$("better-dialog").open);
+  await t.until("the exposure set, in one step", () => Math.abs(Number(currentValue("Exposure2012")) - (before - 1 / 3)) < 1e-6 && t.historyLength() === steps + 1, 30000);
+  t.key("Ctrl+Z");
+  await t.until("one undo puts it back", () => Math.abs((Number(currentValue("Exposure2012")) || 0) - before) < 1e-6);
+});
+
 await t.step("Place a spot in a zone: the exposure moves, one undo step, one undo puts it back", async () => {
   const at = [0.5, 0.5];
   const probe = await invoke("darkroom_place", { at, zone: 5 });

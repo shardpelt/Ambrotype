@@ -141,6 +141,9 @@ USAGE:
                                             A ring-around of a converted negative: nine prints, the middle
                                             as now, the rest more red, yellow, green, cyan, blue, magenta,
                                             lighter and darker
+    amb negative pick <PHOTO> --out SHEET.png [--setting NAME] [--value N] [--step N] [--size PX] [--json]
+                                            Pick Better's pair: the photo a step down (A) and a step up (B)
+                                            in one setting (exposure by default), side by side
     amb negative stocks [--json]            List the film stock looks, with the grain and glow each brings
     amb lens info <RAW> [--lens-db DIR] [--lcp-dir DIR]
                                             Show a raw's lens metadata and the profile it gets

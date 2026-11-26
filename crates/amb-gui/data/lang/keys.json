@@ -230,6 +230,9 @@
  "A second edit of this photo, as its own sidecar (Ctrl+')": [
   "index.html"
  ],
+ "A setting a step down and a step up; each pick halves the step, then the next setting. Done applies them all as one undo step.": [
+  "core/keys.js"
+ ],
  "A shortcuts file someone shared": [
   "index.html"
  ],
@@ -1294,6 +1297,9 @@
  ],
  "Click or brush over something": [
   "tools/toolblocks.js"
+ ],
+ "Click the better print. Each pick halves the step; Same moves on to the next setting. Esc cancels.": [
+  "index.html"
  ],
  "Click the clear film between frames (Esc to cancel)": [
   "develop/preview.js"
@@ -4143,6 +4149,9 @@
  "Neither": [
   "library/slideshow.js"
  ],
+ "Neither is better: keep this setting and go on": [
+  "index.html"
+ ],
  "New": [
   "index.html",
   "looks/editor-inspector.js"
@@ -4628,6 +4637,7 @@
  ],
  "Open a photo first.": [
   "core/tasks.js",
+  "develop/pick-better.js",
   "develop/presets.js",
   "develop/print-aids.js",
   "dialogs/assistant.js",
@@ -4981,6 +4991,16 @@
   "develop/info.js",
   "index.html"
  ],
+ "Pick Better": [
+  "develop/pick-better.js",
+  "index.html"
+ ],
+ "Pick Better: two prints side by side, click the better one": [
+  "core/keys.js"
+ ],
+ "Pick Better…": [
+  "develop/print-aids.js"
+ ],
  "Pick a brush part to erase from": [
   "tools/masks.js"
  ],
@@ -5124,6 +5144,7 @@
   "develop/print-aids.js"
  ],
  "Printing…": [
+  "develop/pick-better.js",
   "develop/print-aids.js"
  ],
  "ProPhoto RGB": [
@@ -5623,6 +5644,9 @@
  "Rotated right: {photos}": [
   "develop/info.js"
  ],
+ "Round {n} of {m}: {setting}": [
+  "develop/pick-better.js"
+ ],
  "Rounded corners": [
   "index.html"
  ],
@@ -5663,6 +5687,9 @@
  ],
  "S##Sunday": [
   "library/browse.js"
+ ],
+ "Same": [
+  "index.html"
  ],
  "Same as width": [
   "index.html"
@@ -7082,6 +7109,9 @@
  "This mask's sliders, to use on other masks.": [
   "tools/mask-panel.js"
  ],
+ "This one is better": [
+  "develop/pick-better.js"
+ ],
  "This photo already has the look.": [
   "develop/styles.js"
  ],
@@ -7264,6 +7294,9 @@
  ],
  "Turns the ellipse": [
   "tools/mask-panel.js"
+ ],
+ "Two prints side by side: click the better one, a setting at a time": [
+  "develop/print-aids.js"
  ],
  "Type what to look for, then press Smart (a dog on a beach, snowy mountains).": [
   "library/library-actions.js"

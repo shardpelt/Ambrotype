@@ -5,7 +5,7 @@
   "name": "Glitch",
   "version": "1.0.0",
   "author": "Ambrotype",
-  "description": "A task for breaking photos on purpose: pixel sorting, RGB split, a broken video signal, datamosh and JPEG blocks, VHS, ripples, streaks and tiles, and print looks (Game Boy dither, newsprint, ring and line screens, rainbow stripes), with the Effects panel open to tune them (each kept to the highlights, the shadows or a colour if you like, and pushed to 200 %). A task plugin: a tab with its own layout and buttons, and no code.",
+  "description": "A task for breaking photos on purpose: pixel sorting, RGB split, channel drift, a broken video signal, datamosh and JPEG blocks, VHS, ripples, streaks and tiles, and print looks (Game Boy dither, newsprint, ring and line screens, rainbow stripes), with the Effects panel open to tune them (each kept to the highlights, the shadows or a colour if you like, and pushed to 200 %). A task plugin: a tab with its own layout and buttons, and no code.",
   "kind": "task",
   "task": {
     "label": "Glitch",
@@ -32,6 +32,7 @@
     "tools": [
       { "label": "Pixel sort", "hint": "Bright runs sorted into streaks", "effect": "glitch", "recipe": "Pixel sort" },
       { "label": "RGB split", "hint": "Red and blue pulled apart", "effect": "glitch", "recipe": "RGB split" },
+      { "label": "Channel drift", "hint": "Red, green and blue each drift their own way, with smeared rows", "effect": "glitch", "recipe": "Channel drift" },
       { "label": "Broken signal", "hint": "Bands slid sideways, like a bad video signal", "effect": "glitch", "recipe": "Broken signal" },
       { "label": "JPEG crunch", "hint": "Big compression blocks", "effect": "glitch", "recipe": "JPEG crunch" },
       { "label": "Datamosh", "hint": "Blocks torn and smeared, violet and grainy", "effect": "glitch", "recipe": "Datamosh" },

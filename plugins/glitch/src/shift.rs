@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-//! Glitch styles that move pixels sideways: RGB split, Slice shift, Wave
-//! and Tiles.
+//! Glitch styles that move pixels sideways: RGB split, Channel drift,
+//! Slice shift, Wave and Tiles.
 
 use super::{Look, Src, luma, map_pixels};
 use amb_plugin_sdk::{Effect, Pixels};
@@ -35,6 +35,19 @@ const CROSS_ARM_MIN_PX: f32 = 3.0;
 const CROSS_THICK_PX: f32 = 1.5;
 /// Thickness of the grid lines, in pixels: from this, with the tile size.
 const GRID_LINE_PX: (f32, f32) = (1.0, 2.0);
+const SALT_DRAG_ROW: u32 = 0x66;
+/// Channel drift: the way each channel (red, green, blue) moves, in sizes;
+/// green also drifts down a little, so the ghosts aren't all in one line.
+const DRIFT: [(f32, f32); 3] = [(1.0, 0.0), (-0.4, 0.35), (-0.8, -0.3)];
+/// How much brightness pushes the drift further (bright) or back (dark).
+const DRIFT_LUMA_PUSH: f32 = 1.2;
+/// Rows whose noise is above this drag sideways; the rest stay sharp.
+const DRAG_CUT: f32 = 0.55;
+/// The longest drag, in sizes, and the samples along it.
+const DRAG_LEN: f32 = 3.0;
+const DRAG_TAPS: usize = 8;
+/// Colour pushed by this much more at full strength (1 = doubled).
+const DRIFT_SATURATION: f32 = 0.9;
 
 /// RGB split: red read from one side, blue from the other.
 pub(crate) fn rgb_split(e: &Effect, px: &mut Pixels, look: &Look) {
@@ -47,6 +60,31 @@ pub(crate) fn rgb_split(e: &Effect, px: &mut Pixels, look: &Look) {
             src.read_ch(xf, yf, 1),
             src.read_ch(xf - off, yf, 2),
         ]
+    });
+}
+
+/// Channel drift: each channel slides its own way, further where the photo
+/// is bright, some rows drag sideways in smears, and colour is pushed.
+pub(crate) fn channel_drift(e: &Effect, px: &mut Pixels, look: &Look) {
+    let src = Src::new(px, e);
+    let amount = look.scale * look.s;
+    map_pixels(px, e, |x, y| {
+        let (xf, yf) = (x as f32, y as f32);
+        let push = 1.0 + (luma(src.read(xf, yf)) - 0.5) * DRIFT_LUMA_PUSH;
+        let row = e.noise(SALT_DRAG_ROW, y);
+        let drag = ((row - DRAG_CUT) / (1.0 - DRAG_CUT)).max(0.0) * amount * DRAG_LEN;
+        let c: [f32; 3] = std::array::from_fn(|k| {
+            let (sx, sy) = (
+                xf + DRIFT[k].0 * amount * push,
+                yf + DRIFT[k].1 * amount * push,
+            );
+            let sum: f32 = (0..DRAG_TAPS)
+                .map(|i| src.read_ch(sx - drag * i as f32 / (DRAG_TAPS - 1) as f32, sy, k))
+                .sum();
+            sum / DRAG_TAPS as f32
+        });
+        let l = luma(c);
+        c.map(|v| l + (v - l) * (1.0 + DRIFT_SATURATION * look.s))
     });
 }
 
@@ -176,6 +214,20 @@ mod tests {
         let p = json!({ "style": "Tiles", "strength": 40, "size": 25, "marks": false });
         let (_, plain) = run(p, w, h);
         assert_ne!(&plain[i..i + 3], &[0.4, 1.0, 0.4]);
+    }
+
+    #[test]
+    fn channel_drift_moves_the_channels_apart() {
+        // Red and blue land in different places, so their difference
+        // changes where the photo had none.
+        let (w, h) = (48, 32);
+        let p = json!({ "style": "Channel drift", "strength": 100, "size": 10 });
+        let (before, out) = run(p, w, h);
+        assert!(out.iter().all(|v| v.is_finite() && (0.0..=1.0).contains(v)));
+        let apart = (0..w * h)
+            .map(|i| ((out[i * 3] - out[i * 3 + 2]) - (before[i * 3] - before[i * 3 + 2])).abs())
+            .fold(0.0f32, f32::max);
+        assert!(apart > 0.1, "red and blue apart: {apart}");
     }
 
     #[test]

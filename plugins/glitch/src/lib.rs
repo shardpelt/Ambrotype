@@ -146,6 +146,7 @@ pub fn glitch(e: &Effect, px: &mut Pixels) -> Result<(), String> {
     let style: fn(&Effect, &mut Pixels, &Look) = match e.choice("style") {
         "Pixel sort" => sort::pixel_sort,
         "RGB split" => shift::rgb_split,
+        "Channel drift" => shift::channel_drift,
         "Slice shift" => shift::slice_shift,
         "Blocks" => blocks::blocks,
         "VHS" => blocks::vhs,
@@ -169,9 +170,10 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    pub(crate) const STYLES: [&str; 8] = [
+    pub(crate) const STYLES: [&str; 9] = [
         "Pixel sort",
         "RGB split",
+        "Channel drift",
         "Slice shift",
         "Blocks",
         "VHS",

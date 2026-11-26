@@ -10,7 +10,7 @@
   "effect": "pixels",
   "whole": true,
   "params": [
-    { "name": "style", "label": "Style", "type": "choice", "options": ["Pixel sort", "RGB split", "Slice shift", "Blocks", "VHS", "Wave", "Streaks", "Tiles"], "default": "Pixel sort", "description": "Which kind of glitch." },
+    { "name": "style", "label": "Style", "type": "choice", "options": ["Pixel sort", "RGB split", "Channel drift", "Slice shift", "Blocks", "VHS", "Wave", "Streaks", "Tiles"], "default": "Pixel sort", "description": "Which kind of glitch." },
     { "name": "strength", "label": "Strength", "type": "number", "min": 0, "max": 100, "default": 60, "step": 1, "description": "How much of the photo is broken, or how far. 0 leaves it as it is." },
     { "name": "size", "label": "Size", "type": "number", "min": 0.5, "max": 25, "default": 5, "step": 0.5, "description": "How big the glitch is, as a share of the photo's short side." },
     { "name": "angle", "label": "Angle", "type": "number", "min": 0, "max": 180, "default": 90, "step": 1, "description": "Pixel sort and Streaks: the direction, in degrees. 0 is across, 90 is down." },
@@ -23,6 +23,7 @@
   "recipes": [
     { "name": "Pixel sort", "params": { "style": "Pixel sort", "angle": 90, "low": 25, "high": 85 } },
     { "name": "RGB split", "params": { "style": "RGB split", "strength": 50, "size": 1 } },
+    { "name": "Channel drift", "params": { "style": "Channel drift", "strength": 70, "size": 1.2 } },
     { "name": "Broken signal", "params": { "style": "Slice shift", "strength": 70, "size": 3 } },
     { "name": "JPEG crunch", "params": { "style": "Blocks", "strength": 60, "size": 2 } },
     { "name": "Datamosh", "params": { "style": "Blocks", "strength": 85, "size": 1.5, "tint": "Violet", "grain": 45 } },

@@ -1265,16 +1265,22 @@
         <label>First number <input name="first_number" type="number" min="0" max="999999" step="1" value="1"></label>
         <label>Keywords for all <input name="keywords" type="text" spellcheck="false" placeholder="e.g. wedding, Anna &amp; Tom"></label>
         <label title="A look for every photo that doesn't bring its own edit">Develop preset <select name="preset"><option value="">None</option></select></label>
+        <label title="Copy leaves the photos on the card. Move deletes each one (with its JPEG and sidecar) from the card once its copy is checked, and its backup copy is written.">When done
+          <select name="mode"><option value="copy">Copy: the card keeps its photos</option><option value="move">Move: delete them from the card</option></select>
+        </label>
         <label title="A second copy of the originals, as they are named on the card, in a dated folder">Backup copy to
           <span class="folder-row"><input name="backup" type="text" readonly placeholder="No second copy"><button type="button" class="small" data-pick="backup">Choose…</button><button type="button" class="small" data-clear="backup" title="No second copy">×</button></span>
         </label>
       </div>
       <label class="check"><input name="subfolders" type="checkbox" checked> Include subfolders (a card's DCIM folders)</label>
+      <label class="check" title="Unmounts the card when everything is in place, so it can be pulled out; only if the folder is on a card or removable drive"><input name="eject" type="checkbox"> Eject the card when done</label>
       <p id="import-tokens" class="hint"></p>
       <div id="import-summary" class="import-summary hint">Choose where the photos are and where they go.</div>
+      <div id="import-pick" class="folder-row" hidden><button type="button" class="small" id="import-all" title="Import every photo listed">All</button><button type="button" class="small" id="import-none" title="Import none: tick the ones you want">None</button></div>
       <ul id="import-list" class="import-list"></ul>
       <menu>
-        <button value="cancel" formnovalidate>Cancel</button>
+        <button type="button" id="import-stop" hidden title="Ends after the photo under way; import again to carry on">Stop</button>
+        <button value="cancel" id="import-cancel" formnovalidate>Cancel</button>
         <button value="ok" id="import-go" class="primary" disabled>Import</button>
       </menu>
     </form>

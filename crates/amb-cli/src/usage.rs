@@ -176,13 +176,18 @@ USAGE:
                                             edit that an export would hold (or leave out, in AI-free mode).
                                             Exports copy nothing from the source file's own metadata.
     amb import <SOURCE> <DEST> [--into \"{yyyy}/{yyyy}-{mm}-{dd}\"] [--rename \"{name}\"] [--start 1]
-               [--keywords \"a, b\"] [--preset LOOK.xmp] [--backup DIR] [--no-subfolders] [--dry-run] [--json]
+               [--keywords \"a, b\"] [--preset LOOK.xmp] [--backup DIR] [--no-subfolders]
+               [--move] [--only a.nef,b.nef] [--eject] [--dry-run] [--json]
                                             Copy photos from a card or folder into DEST, sorted into
                                             folders and renamed from templates ({name} {yyyy} {yy} {mm}
                                             {dd} {hh} {min} {ss} {seq} {camera}); a raw's JPEG and .xmp
                                             keep its new name; photos already there are skipped. --preset
                                             gives photos without an edit of their own a look; --backup
-                                            also copies the originals to DIR/Imported on YYYY-MM-DD
+                                            also copies the originals to DIR/Imported on YYYY-MM-DD.
+                                            --move deletes each original (and its JPEG and .xmp) once
+                                            its copy is checked; --only imports just the named photos;
+                                            --eject unmounts the card afterwards, if all went well.
+                                            Stopped (Ctrl+C)? Run it again: photos in place are skipped
     amb collage list                        The built-in collage layouts
     amb collage <LAYOUT> <PHOTO>... --out OUT.jpg [--size WxH] [--background #fff] [--gap 1.5]
                 [--margin 3] [export options]

@@ -315,3 +315,24 @@ fn move_takes_the_sidecar_along() {
     assert!(!lib.has("p/IMG_2.dng") && !lib.has("p/IMG_2.xmp"));
     assert_eq!(lib.json(&["info", "q/IMG_2.dng"])[0]["info"]["rating"], 3);
 }
+
+#[test]
+fn import_can_move_and_pick_photos() {
+    let lib = Lib::new("importmove");
+    let out = lib.amb(&[
+        "import",
+        "p",
+        "lib",
+        "--into",
+        "day",
+        "--move",
+        "--only",
+        "IMG_1.dng, img_3.dng",
+    ]);
+    assert!(out.contains("imported 2"), "{out}");
+    assert!(lib.has("lib/day/IMG_1.dng") && lib.has("lib/day/IMG_3.dng"));
+    assert!(!lib.has("lib/day/IMG_2.dng"));
+    // Moved ones are gone from the source; the one not picked stays.
+    assert!(!lib.has("p/IMG_1.dng") && !lib.has("p/IMG_3.dng"));
+    assert!(lib.has("p/IMG_2.dng"));
+}

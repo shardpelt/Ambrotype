@@ -362,7 +362,7 @@ pub(crate) fn import(
     dry_run: bool,
     json: bool,
 ) -> Result<(), String> {
-    use amb_library::import::{self, ImportOptions};
+    use amb_library::import::{self, ImportMode, ImportOptions};
     let d = ImportOptions::default();
     let opts = ImportOptions {
         folder: options.get("--into").map_or(d.folder, |s| s.to_string()),
@@ -380,7 +380,22 @@ pub(crate) fn import(
             .unwrap_or_default(),
         preset: options.get("--preset").map(PathBuf::from),
         backup: options.get("--backup").map(PathBuf::from),
+        mode: if options.contains_key("--move") {
+            ImportMode::Move
+        } else {
+            ImportMode::Copy
+        },
+        only: options
+            .get("--only")
+            .map(|k| {
+                k.split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect()
+            })
+            .unwrap_or_default(),
     };
+    let moving = opts.mode == ImportMode::Move;
     let plan = import::plan(source, dest, &opts)?;
     if json && dry_run {
         return print_json(&serde_json::to_value(&plan).map_err(|e| e.to_string())?);
@@ -397,7 +412,12 @@ pub(crate) fn import(
             };
             match &p.skip {
                 Some(why) => println!("skip  {}: {why}", src.display()),
-                None => println!("copy  {}{with} -> {}", src.display(), dst.display()),
+                None => println!(
+                    "{}  {}{with} -> {}",
+                    if moving { "move" } else { "copy" },
+                    src.display(),
+                    dst.display()
+                ),
             }
         }
         println!(
@@ -413,20 +433,34 @@ pub(crate) fn import(
     if dry_run {
         return Ok(());
     }
-    let report = import::run(&plan, &opts, &mut |_, _, _| {});
+    // Ctrl+C ends it; running again carries on, photos in place are skipped.
+    let never = std::sync::atomic::AtomicBool::new(false);
+    let report = import::run(&plan, &opts, &never, &mut |_, _, _| {});
     if json {
         print_json(&serde_json::to_value(&report).map_err(|e| e.to_string())?)?;
     } else {
         println!("imported {}, skipped {}", report.imported, report.skipped);
+        if report.cleared > 0 {
+            println!(
+                "cleared {} half-copied file(s) of an earlier import",
+                report.cleared
+            );
+        }
         for e in &report.errors {
             eprintln!("error: {e}");
         }
     }
-    if report.errors.is_empty() {
-        Ok(())
-    } else {
-        Err(format!("{} problem(s), see above", report.errors.len()))
+    if !report.errors.is_empty() {
+        return Err(format!("{} problem(s), see above", report.errors.len()));
     }
+    // Only when asked, and only once everything is in place.
+    if options.contains_key("--eject") {
+        import::eject(source)?;
+        if !json {
+            println!("ejected {}", source.display());
+        }
+    }
+    Ok(())
 }
 
 /// `amb merge hdr`: bracketed raws into one floating-point DNG.

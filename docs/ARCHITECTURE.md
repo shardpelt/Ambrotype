@@ -109,6 +109,7 @@ The library:
 - Which files in a folder are photos (`folder.rs`).
 - Import (`import/`):
   - Copy from a card or folder into dated folders, renamed from templates, with companions and duplicate checks.
+  - Move instead of copy, picking photos, Stop, and eject (`import/eject.rs`: the system's own tool).
   - `amb import`, the editor's Import dialog.
 - Collections (`collections.rs`) as small JSON files.
 - Moving from Lightroom Classic (`lrcat.rs`):

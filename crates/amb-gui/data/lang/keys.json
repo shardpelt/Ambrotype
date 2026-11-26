@@ -1248,6 +1248,9 @@
  "Clear the selection": [
   "develop/filmstrip.js"
  ],
+ "Cleared {n} half-copied from an earlier import": [
+  "library/import.js"
+ ],
  "Click a blemish to remove it, or drag over a longer one; Shift-drag along a straight scratch; Alt-drag a box to look harder for dust there. Drag a spot to move it, or its dashed source to pick where it copies from. [ and ] or the wheel change the size.": [
   "tools/spots.js"
  ],
@@ -1600,6 +1603,9 @@
  "Copy instructions": [
   "index.html"
  ],
+ "Copy leaves the photos on the card. Move deletes each one (with its JPEG and sidecar) from the card once its copy is checked, and its backup copy is written.": [
+  "index.html"
+ ],
  "Copy photos from a card or folder (Ctrl+Shift+I)": [
   "index.html"
  ],
@@ -1626,6 +1632,9 @@
  ],
  "Copy {n} file paths": [
   "library/library.js"
+ ],
+ "Copy: the card keeps its photos": [
+  "index.html"
  ],
  "Copying the photo…": [
   "dialogs/export.js"
@@ -2174,6 +2183,9 @@
  "Effect…": [
   "tools/mask-panel.js"
  ],
+ "Eject the card when done": [
+  "index.html"
+ ],
  "Empty": [
   "index.html"
  ],
@@ -2190,6 +2202,9 @@
   "library/slideshow.js"
  ],
  "End the lesson": [
+  "index.html"
+ ],
+ "Ends after the photo under way; import again to carry on": [
   "index.html"
  ],
  "English": [
@@ -3066,6 +3081,12 @@
  "Import Photos…": [
   "core/menu.js"
  ],
+ "Import every photo listed": [
+  "index.html"
+ ],
+ "Import none: tick the ones you want": [
+  "index.html"
+ ],
  "Import photos": [
   "index.html"
  ],
@@ -3076,6 +3097,9 @@
   "library/import.js"
  ],
  "Import photos into…": [
+  "library/import.js"
+ ],
+ "Import this photo": [
   "library/import.js"
  ],
  "Import {n}": [
@@ -4047,6 +4071,9 @@
  ],
  "Move, resize, turn and overlap the photos by hand, like layers": [
   "collage/collage-canvas.js"
+ ],
+ "Move: delete them from the card": [
+  "index.html"
  ],
  "Moved back {photos} ({files} files)": [
   "library/organise.js"
@@ -6625,8 +6652,14 @@
  "Stop marking (nothing is changed)": [
   "index.html"
  ],
+ "Stopped. Import again to carry on: photos already in place are skipped.": [
+  "library/import.js"
+ ],
  "Stopped. What was done is in History: click a step to go back to it": [
   "help/teach.js"
+ ],
+ "Stopping after the photo under way…": [
+  "library/import.js"
  ],
  "Stopping after the photos under way…": [
   "library/batch-export.js"
@@ -6855,6 +6888,9 @@
  ],
  "The brightness of the colour under the pointer (the B&W mix for a black-and-white photo)": [
   "index.html"
+ ],
+ "The card can be taken out": [
+  "library/import.js"
  ],
  "The chosen layout and theme, exactly as they are now.": [
   "looks/looks-dialog.js"
@@ -7289,6 +7325,9 @@
  "Unknown setting: {name}": [
   "looks/layout.js"
  ],
+ "Unmounts the card when everything is in place, so it can be pulled out; only if the folder is on a card or removable drive": [
+  "index.html"
+ ],
  "Unpack into separate settings": [
   "looks/editor-inspector.js"
  ],
@@ -7471,6 +7510,9 @@
  ],
  "What the numbers say you shoot": [
   "library/insights.js"
+ ],
+ "When done": [
+  "index.html"
  ],
  "When the camera without GPS kept another clock than the phone (another time zone): how many hours it was behind": [
   "index.html"

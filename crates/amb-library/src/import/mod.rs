@@ -15,6 +15,11 @@
 //! - A develop preset can be applied as photos come in (not to one that
 //!   brings its own edit in a sidecar), and a second copy of the originals,
 //!   as they were named, can go to a backup folder.
+//! - Move instead of copy deletes the card's files, but only once the copy
+//!   (and the backup) is in place. Only some photos can be picked.
+//! - An import that was stopped, or cut off, carries on when run again:
+//!   photos already in place are skipped and half-copied leftovers cleared.
+//! - `eject` hands a finished card to the system to unmount.
 
 use std::collections::{BTreeMap, HashSet};
 use std::io::Read;
@@ -22,6 +27,17 @@ use std::path::{Path, PathBuf};
 
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
+
+/// What happens to the photos on the card.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ImportMode {
+    /// Leave the originals where they are.
+    #[default]
+    Copy,
+    /// Delete each original (and its companions) once its copy is checked.
+    Move,
+}
 
 /// How to import.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,6 +61,11 @@ pub struct ImportOptions {
     /// A second copy of the originals, unrenamed, in
     /// `<backup>/Imported on YYYY-MM-DD/`.
     pub backup: Option<PathBuf>,
+    /// Copy (the default) or move.
+    pub mode: ImportMode,
+    /// Only these photos: each a source file name (`IMG_1.NEF`, any case)
+    /// or a full path. Empty for all.
+    pub only: Vec<String>,
 }
 
 impl Default for ImportOptions {
@@ -57,6 +78,8 @@ impl Default for ImportOptions {
             keywords: Vec::new(),
             preset: None,
             backup: None,
+            mode: ImportMode::Copy,
+            only: Vec::new(),
         }
     }
 }
@@ -94,8 +117,13 @@ pub struct Report {
     pub errors: Vec<String>,
     /// The folders photos went into, in order.
     pub folders: Vec<PathBuf>,
+    /// Stopped before the last photo; running the import again carries on.
+    pub stopped: bool,
+    /// Half-copied files of an earlier, cut-off import that were cleared.
+    pub cleared: usize,
 }
 
+mod eject;
 mod plan;
 mod run;
 mod source;
@@ -103,9 +131,11 @@ mod template;
 #[cfg(test)]
 mod tests;
 
+pub use eject::eject;
 pub use plan::plan;
 use plan::same_file;
 pub(crate) use run::copy_file;
+use run::is_leftover;
 pub use run::run;
 pub(crate) use source::split_name;
 use source::{Group, capture_time, group, scan};

@@ -129,6 +129,10 @@ Lightroom's Import "Copy", without a catalogue. The dialog (and `amb import SOUR
 - **Backup copy:** a second copy of the originals, under their names from the card, in `<folder>/Imported on YYYY-MM-DD/` (`--backup DIR`).
 - **Nothing is overwritten.** A photo whose exact bytes are already in its destination folder, under any name, is skipped as imported, so the same card can be imported again for its new photos. Another file with the same name makes the new one `name-2`.
 - **Safe copies:** each file is copied to a hidden temporary name, checked for size, then renamed, and keeps its modified time.
+- **Move instead of copy** (2026-11-26; `--move`, the dialog's *When done*): after a photo's copy is in place, and its backup copy is written, its original, JPEG and `.xmp` are deleted from the card. A photo skipped as already imported is never deleted; a backup that fails keeps the originals; a file that can't be deleted is a line in the report, not a stop.
+- **Pick photos** (`--only a.nef,b.nef`; a tick per new photo in the dialog's list, with All and None): only those are planned. A name matches in any case, or a full path.
+- **Eject the card** (`--eject`; *Eject the card when done*): after an import with no problem, `amb_library::import::eject` finds the mount the source is on and runs the system's own tool (`gio` or `udisksctl` on Linux, `diskutil` on macOS, the shell's Eject on Windows). A folder on the main disk says there is nothing to eject. It never runs unasked.
+- **Resumable:** photos already in place are skipped, so running a stopped or cut-off import again carries on. A run clears the hidden half-copied files (`.name.amb-import`) an earlier one left in the folders it writes to, and they never count as photos that are there. Stop in the dialog ends it after the photo under way; the dialog says to import again.
 - After the import the library shows the first folder that got photos.
 
 Code: `crates/amb-library/src/import/` (`plan.rs`, `run.rs`, `source.rs`, `template.rs`), `amb import` in `crates/amb-cli`, `ui/library/import.js`.

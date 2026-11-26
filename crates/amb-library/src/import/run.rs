@@ -1,7 +1,37 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //! Import's run: the safe copy, then keywords, preset and backup copies.
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use super::*;
+
+/// What a hidden temporary copy's name ends with: `.IMG_1.NEF.amb-import`.
+const TEMP_SUFFIX: &str = ".amb-import";
+
+/// Whether a file name is the temporary copy of an import that was cut off.
+pub(super) fn is_leftover(name: &str) -> bool {
+    name.starts_with('.') && name.ends_with(TEMP_SUFFIX)
+}
+
+/// Delete the temporary copies an earlier, stopped import left in the
+/// folders `plan` writes to. How many.
+fn clear_leftovers(plan: &[Planned]) -> usize {
+    let dirs: HashSet<&Path> = plan
+        .iter()
+        .flat_map(|p| p.files.iter().filter_map(|(_, to)| to.parent()))
+        .collect();
+    let mut cleared = 0;
+    for dir in dirs {
+        for e in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+            let leftover = is_leftover(&e.file_name().to_string_lossy())
+                && e.metadata().is_ok_and(|m| m.is_file());
+            if leftover && std::fs::remove_file(e.path()).is_ok() {
+                cleared += 1;
+            }
+        }
+    }
+    cleared
+}
 
 /// Copy `from` to `to` through a hidden temporary file, keeping the
 /// modified time.
@@ -14,7 +44,7 @@ pub(crate) fn copy_file(from: &Path, to: &Path) -> Result<(), String> {
         return Err(format!("{}: already exists", to.display()));
     }
     let name = to.file_name().unwrap_or_default().to_string_lossy();
-    let tmp = to.with_file_name(format!(".{name}.amb-import"));
+    let tmp = to.with_file_name(format!(".{name}{TEMP_SUFFIX}"));
     let copied = std::fs::copy(from, &tmp).map_err(err)?;
     let len = std::fs::metadata(from).map_err(err)?.len();
     if copied != len {
@@ -93,14 +123,38 @@ fn back_up(from: &Path, dir: &Path) -> Result<(), String> {
     unreachable!("some name is free")
 }
 
-/// Carry out a plan. One failed photo doesn't stop the rest.
+/// Delete a moved photo's originals, each only if its copy is in place (it
+/// was size-checked when copied; a sidecar may have grown since, with
+/// keywords or a preset). A file that can't be deleted is reported, not fatal.
+fn remove_originals(p: &Planned, name: &str, report: &mut Report) {
+    for (from, to) in &p.files {
+        if !to.is_file() {
+            report.errors.push(format!(
+                "{name}: {} left where it was, its copy isn't there",
+                from.display()
+            ));
+        } else if let Err(e) = std::fs::remove_file(from) {
+            report
+                .errors
+                .push(format!("{name}: could not delete {}: {e}", from.display()));
+        }
+    }
+}
+
+/// Carry out a plan. One failed photo doesn't stop the rest. With `stop`
+/// set it ends after the photo under way (`stopped` in the report): run
+/// the import again and the photos already in place are skipped.
 /// `progress(done, total, name)` is called before each photo.
 pub fn run(
     plan: &[Planned],
     options: &ImportOptions,
+    stop: &AtomicBool,
     progress: &mut dyn FnMut(usize, usize, &str),
 ) -> Report {
-    let mut report = Report::default();
+    let mut report = Report {
+        cleared: clear_leftovers(plan),
+        ..Report::default()
+    };
     let keywords: Vec<String> = options
         .keywords
         .iter()
@@ -115,6 +169,10 @@ pub fn run(
         return report;
     }
     for (i, p) in plan.iter().enumerate() {
+        if stop.load(Ordering::Relaxed) {
+            report.stopped = true;
+            break;
+        }
         let Some((main_src, main_dest)) = p.files.first() else {
             continue;
         };
@@ -156,17 +214,30 @@ pub fn run(
                             .push(format!("{name}: keywords not added: {e}"));
                     }
                 }
+                let mut backed_up = true;
                 if let Some(dir) = &backup {
                     for (from, _) in &p.files {
                         if let Err(e) = back_up(from, dir) {
+                            backed_up = false;
                             report.errors.push(format!("{name}: no backup copy: {e}"));
                         }
+                    }
+                }
+                if options.mode == ImportMode::Move {
+                    if backed_up {
+                        remove_originals(p, &name, &mut report);
+                    } else {
+                        report.errors.push(format!(
+                            "{name}: not moved, the originals stay where they are"
+                        ));
                     }
                 }
             }
             Err(e) => report.errors.push(format!("{name}: {e}")),
         }
     }
-    progress(plan.len(), plan.len(), "");
+    if !report.stopped {
+        progress(plan.len(), plan.len(), "");
+    }
     report
 }

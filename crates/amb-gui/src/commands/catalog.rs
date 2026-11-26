@@ -313,8 +313,12 @@ pub(crate) async fn import_plan(
     .await?
 }
 
+/// Set by Stop in the Import dialog; read between photos.
+static IMPORT_STOP: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 /// Import: plan again (the card may have changed) and copy, with
-/// "import-progress" events. The choices are remembered.
+/// "import-progress" events. The choices are remembered, except which photos
+/// were picked. `import_stop` ends it after the photo under way.
 #[tauri::command]
 pub(crate) async fn import_run(
     app: tauri::AppHandle,
@@ -327,14 +331,19 @@ pub(crate) async fn import_run(
     let _ = state.change_prefs(|p| {
         p.import = Some(ImportChoice {
             dest: dest.clone(),
-            options: options.clone(),
+            options: amb_library::import::ImportOptions {
+                only: Vec::new(),
+                ..options.clone()
+            },
         });
     });
+    IMPORT_STOP.store(false, std::sync::atomic::Ordering::Relaxed);
     tauri::async_runtime::spawn_blocking(move || {
         let plan = amb_library::import::plan(Path::new(&source), Path::new(&dest), &options)?;
         Ok(amb_library::import::run(
             &plan,
             &options,
+            &IMPORT_STOP,
             &mut |done, total, name| {
                 let _ = app.emit(
                     "import-progress",
@@ -346,6 +355,20 @@ pub(crate) async fn import_run(
                 );
             },
         ))
+    })
+    .await?
+}
+
+#[tauri::command]
+pub(crate) fn import_stop() {
+    IMPORT_STOP.store(true, std::sync::atomic::Ordering::Relaxed);
+}
+
+/// Eject the card `source` is on, after an import the person asked to eject.
+#[tauri::command]
+pub(crate) async fn import_eject(source: String) -> Res<()> {
+    tauri::async_runtime::spawn_blocking(move || {
+        amb_library::import::eject(Path::new(&source)).map_err(Into::into)
     })
     .await?
 }

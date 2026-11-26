@@ -128,7 +128,7 @@ fn main() -> ExitCode {
             | "--replace" | "--guess" | "--names" | "--stack" | "--reject" | "--shuffle"
             | "--window" | "--subfolders" | "--no-scenes" | "--no-odd" | "--own-midtone"
             | "--landscape" | "--no-edits" | "--best-of-bursts" | "--no-captions" | "--trash"
-            | "--recursive" | "--flat" | "--skip-existing" => {
+            | "--recursive" | "--flat" | "--skip-existing" | "--move" | "--eject" => {
                 options.insert(arg.as_str(), "true");
             }
             "--out"
@@ -199,6 +199,7 @@ fn main() -> ExitCode {
             | "--parts"
             | "--remap"
             | "--backup"
+            | "--only"
             | "--size"
             | "--steps"
             | "--step"

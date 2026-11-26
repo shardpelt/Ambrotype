@@ -262,6 +262,8 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         library::pick_folder,
         catalog::import_plan,
         catalog::import_run,
+        catalog::import_stop,
+        catalog::import_eject,
         export::edit_in_settings,
         preview::set_proof,
         preview::set_peek_negative,

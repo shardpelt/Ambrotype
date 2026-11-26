@@ -27,15 +27,28 @@ pub(super) fn same_file(a: &Path, b: &Path) -> bool {
     }
 }
 
-/// The files in `dir` by size (empty when it doesn't exist yet).
+/// The files in `dir` by size (empty when it doesn't exist yet). A
+/// half-copied leftover of a cut-off import isn't a photo that's there.
 pub(super) fn index_sizes(dir: &Path) -> BTreeMap<u64, Vec<PathBuf>> {
     let mut out: BTreeMap<u64, Vec<PathBuf>> = BTreeMap::new();
     for e in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+        if is_leftover(&e.file_name().to_string_lossy()) {
+            continue;
+        }
         if let Some(m) = e.metadata().ok().filter(|m| m.is_file()) {
             out.entry(m.len()).or_default().push(e.path());
         }
     }
     out
+}
+
+/// Whether `main` is among the photos picked (all, when none are named).
+fn picked(only: &[String], main: &Path) -> bool {
+    let name = main.file_name().unwrap_or_default().to_string_lossy();
+    only.is_empty()
+        || only
+            .iter()
+            .any(|o| o.eq_ignore_ascii_case(&name) || Path::new(o) == main)
 }
 
 /// What importing `source` into `dest` with `options` would do, in capture
@@ -48,7 +61,10 @@ pub fn plan(source: &Path, dest: &Path, options: &ImportOptions) -> Result<Vec<P
     }
     let mut files = Vec::new();
     scan(source, options.subfolders, &mut files)?;
-    let groups = group(files);
+    let groups: Vec<Group> = group(files)
+        .into_iter()
+        .filter(|g| picked(&options.only, &g.main))
+        .collect();
     // Capture times from the raw headers, in parallel.
     let mut timed: Vec<(Group, When, String)> = groups
         .into_par_iter()

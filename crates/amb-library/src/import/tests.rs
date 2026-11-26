@@ -3,6 +3,10 @@
 
 use super::*;
 use amb_protocol::sidecar;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// A stop that is never pressed.
+static NO_STOP: AtomicBool = AtomicBool::new(false);
 
 #[test]
 fn export_names_come_from_the_template() {
@@ -126,6 +130,7 @@ fn plans_groups_renames_and_skips_duplicates() {
             keywords: vec!["trip".into()],
             ..options.clone()
         },
+        &NO_STOP,
         &mut |_, _, _| {},
     );
     assert_eq!((report.imported, report.skipped), (2, 1), "{report:?}");
@@ -164,7 +169,7 @@ fn plans_groups_renames_and_skips_duplicates() {
         ..options.clone()
     };
     let first = super::plan(&root.join("card"), &lib, &numbered).unwrap();
-    run(&first, &numbered, &mut |_, _, _| {});
+    run(&first, &numbered, &NO_STOP, &mut |_, _, _| {});
     write(&card.join("IMG_0000.CR2"), b"raw zero");
     let mtime = std::fs::metadata(card.join("IMG_0001.CR2"))
         .unwrap()
@@ -208,7 +213,7 @@ fn presets_and_backup_copies() {
         ..ImportOptions::default()
     };
     let plan = plan(&card, &lib, &options).unwrap();
-    let report = run(&plan, &options, &mut |_, _, _| {});
+    let report = run(&plan, &options, &NO_STOP, &mut |_, _, _| {});
     assert!(report.errors.is_empty(), "{:?}", report.errors);
     assert_eq!(report.imported, 2);
     let read = |name: &str| std::fs::read_to_string(lib.join(name)).unwrap();
@@ -235,7 +240,7 @@ fn presets_and_backup_copies() {
     assert_eq!(std::fs::read(day.join("A.CR2")).unwrap(), b"raw a");
     assert!(day.join("B.xmp").exists());
     // Again: nothing is doubled in the backup.
-    run(&plan, &options, &mut |_, _, _| {});
+    run(&plan, &options, &NO_STOP, &mut |_, _, _| {});
     assert_eq!(std::fs::read_dir(&day).unwrap().count(), 3);
     let _ = std::fs::remove_dir_all(&root);
 }
@@ -282,6 +287,165 @@ fn sequence_names_follow_capture_order() {
     assert_eq!(
         names,
         ["b.nef 2023-11/trip_0009.nef", "a.nef 2023-11/trip_0010.nef"]
+    );
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+/// A card with A.CR2 (+ A.JPG, A.xmp) and B.CR2, and an empty library.
+fn small_card(name: &str) -> (PathBuf, PathBuf, PathBuf) {
+    let root = temp(name);
+    let card = root.join("card");
+    write(&card.join("A.CR2"), b"raw a");
+    write(&card.join("A.JPG"), b"jpeg a");
+    write(
+        &card.join("A.xmp"),
+        b"<x:xmpmeta xmlns:x=\"adobe:ns:meta/\"/>",
+    );
+    write(&card.join("B.CR2"), b"raw b!");
+    let lib = root.join("lib");
+    (root, card, lib)
+}
+
+fn flat(extra: impl FnOnce(&mut ImportOptions)) -> ImportOptions {
+    let mut o = ImportOptions {
+        folder: String::new(),
+        ..ImportOptions::default()
+    };
+    extra(&mut o);
+    o
+}
+
+fn moving_with_backup(root: &Path) -> ImportOptions {
+    flat(|o| {
+        o.mode = ImportMode::Move;
+        o.backup = Some(root.join("backup"));
+    })
+}
+
+#[test]
+fn move_deletes_the_originals_after_the_copy() {
+    let (root, card, lib) = small_card("move");
+    let options = flat(|o| o.mode = ImportMode::Move);
+    let plan = plan(&card, &lib, &options).unwrap();
+    let report = run(&plan, &options, &NO_STOP, &mut |_, _, _| {});
+    assert!(report.errors.is_empty(), "{:?}", report.errors);
+    assert_eq!(report.imported, 2);
+    for f in ["A.CR2", "A.JPG", "A.xmp", "B.CR2"] {
+        assert!(!card.join(f).exists(), "{f} should be gone from the card");
+        assert!(lib.join(f).is_file(), "{f} should be in the library");
+    }
+    assert_eq!(std::fs::read(lib.join("A.CR2")).unwrap(), b"raw a");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn copy_leaves_the_originals_and_a_skipped_duplicate_keeps_its_source() {
+    let (root, card, lib) = small_card("movekeep");
+    let copy = flat(|_| {});
+    let first = plan(&card, &lib, &copy).unwrap();
+    run(&first, &copy, &NO_STOP, &mut |_, _, _| {});
+    assert!(card.join("A.CR2").exists());
+    // Already there: moving skips both and deletes nothing.
+    let mv = flat(|o| o.mode = ImportMode::Move);
+    let again = plan(&card, &lib, &mv).unwrap();
+    assert!(again.iter().all(|p| p.skip.is_some()));
+    let report = run(&again, &mv, &NO_STOP, &mut |_, _, _| {});
+    assert_eq!((report.imported, report.skipped), (0, 2));
+    assert!(card.join("A.CR2").exists() && card.join("B.CR2").exists());
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn move_with_a_backup_deletes_only_after_the_backup_is_written() {
+    let (root, card, lib) = small_card("movebackup");
+    let options = moving_with_backup(&root);
+    let planned = plan(&card, &lib, &options).unwrap();
+    let report = run(&planned, &options, &NO_STOP, &mut |_, _, _| {});
+    assert!(report.errors.is_empty(), "{:?}", report.errors);
+    assert!(!card.join("A.CR2").exists());
+    let day = std::fs::read_dir(root.join("backup"))
+        .unwrap()
+        .flatten()
+        .next()
+        .unwrap()
+        .path();
+    assert_eq!(std::fs::read(day.join("A.CR2")).unwrap(), b"raw a");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn a_backup_that_fails_leaves_the_originals_where_they_are() {
+    let (root, card, lib) = small_card("movebackupfail");
+    // A file where the backup folder should be.
+    write(&root.join("backup"), b"in the way");
+    let options = moving_with_backup(&root);
+    let planned = plan(&card, &lib, &options).unwrap();
+    let report = run(&planned, &options, &NO_STOP, &mut |_, _, _| {});
+    assert!(!report.errors.is_empty());
+    assert!(card.join("A.CR2").exists() && card.join("B.CR2").exists());
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn only_the_picked_photos_are_planned() {
+    let (root, card, lib) = small_card("only");
+    let options = flat(|o| o.only = vec!["b.cr2".into()]);
+    let planned = plan(&card, &lib, &options).unwrap();
+    assert_eq!(planned.len(), 1);
+    assert!(planned[0].files[0].0.ends_with("B.CR2"));
+    let by_path = flat(|o| o.only = vec![card.join("A.CR2").display().to_string()]);
+    let planned = plan(&card, &lib, &by_path).unwrap();
+    assert_eq!(planned.len(), 1);
+    assert_eq!(planned[0].files.len(), 3, "A's companions come with it");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn leftovers_of_a_cut_off_import_are_cleared_and_not_taken_for_photos() {
+    let (root, card, lib) = small_card("leftover");
+    // A whole copy that never got renamed, and a half one.
+    write(&lib.join(".A.CR2.amb-import"), b"raw a");
+    write(&lib.join(".B.CR2.amb-import"), b"raw");
+    write(&lib.join(".hidden-of-the-user"), b"keep me");
+    let options = flat(|_| {});
+    let planned = plan(&card, &lib, &options).unwrap();
+    assert!(
+        planned.iter().all(|p| p.skip.is_none()),
+        "a leftover isn't an imported photo"
+    );
+    let report = run(&planned, &options, &NO_STOP, &mut |_, _, _| {});
+    assert_eq!((report.imported, report.cleared), (2, 2), "{report:?}");
+    assert!(!lib.join(".A.CR2.amb-import").exists());
+    assert!(lib.join(".hidden-of-the-user").exists());
+    assert_eq!(std::fs::read(lib.join("A.CR2")).unwrap(), b"raw a");
+    let _ = std::fs::remove_dir_all(&root);
+}
+
+#[test]
+fn a_stopped_import_imports_nothing_more_and_carries_on_when_run_again() {
+    let (root, card, lib) = small_card("stop");
+    let options = flat(|_| {});
+    let planned = plan(&card, &lib, &options).unwrap();
+    let stop = AtomicBool::new(true);
+    let report = run(&planned, &options, &stop, &mut |_, _, _| {});
+    assert!(report.stopped);
+    assert_eq!(report.imported, 0);
+    assert!(!lib.join("A.CR2").exists());
+    // Stop after the first photo.
+    let stop = AtomicBool::new(false);
+    let report = run(&planned, &options, &stop, &mut |done, _, _| {
+        if done == 0 {
+            stop.store(true, Ordering::Relaxed);
+        }
+    });
+    assert!(report.stopped);
+    assert_eq!(report.imported, 1);
+    // Again: the one in place is skipped, the other comes.
+    let planned = plan(&card, &lib, &options).unwrap();
+    let report = run(&planned, &options, &NO_STOP, &mut |_, _, _| {});
+    assert_eq!(
+        (report.imported, report.skipped, report.stopped),
+        (1, 1, false)
     );
     let _ = std::fs::remove_dir_all(&root);
 }

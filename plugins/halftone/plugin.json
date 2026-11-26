@@ -1,0 +1,32 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "halftone",
+  "home": "trip",
+  "name": "Halftone",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "The photo as print: two-ink dither dots (Game Boy, newsprint), concentric rings or straight lines whose thickness follows the shadows, or psychedelic rainbow bands with an emboss relief. It reads the whole photo at once.",
+  "kind": "effect",
+  "effect": "pixels",
+  "whole": true,
+  "params": [
+    { "name": "style", "label": "Style", "type": "choice", "options": ["Dither", "Rings", "Lines", "Rainbow"], "default": "Dither", "description": "Dither: random dots in two inks. Rings and Lines: a line screen, thick in shadows. Rainbow: false colour bands." },
+    { "name": "ink", "label": "Ink", "type": "choice", "options": ["Game Boy", "Black and white", "Blueprint", "Riso pink", "Photo colour"], "default": "Game Boy", "description": "The dark and light ink. Rainbow ignores it." },
+    { "name": "size", "label": "Size", "type": "number", "min": 0.1, "max": 5, "default": 0.3, "step": 0.05, "description": "Dot or line spacing, in percent of the photo's short side." },
+    { "name": "contrast", "label": "Contrast", "type": "number", "min": 0, "max": 200, "default": 100, "step": 1, "description": "Contrast of the brightness the effect reads." },
+    { "name": "fringe", "label": "Colour fringe", "type": "number", "min": 0, "max": 100, "default": 0, "step": 1, "description": "Rings and Lines: each colour's screen sits a little apart, so edges show red, green and blue." },
+    { "name": "angle", "label": "Angle", "type": "number", "min": 0, "max": 180, "default": 45, "step": 1, "description": "Lines: the direction of the lines, in degrees." },
+    { "name": "x", "label": "Centre across", "type": "number", "min": 0, "max": 100, "default": 50, "step": 1, "description": "Rings: where the rings are centred." },
+    { "name": "y", "label": "Centre down", "type": "number", "min": 0, "max": 100, "default": 50, "step": 1, "description": "Rings: where the rings are centred." },
+    { "name": "bands", "label": "Bands", "type": "number", "min": 1, "max": 12, "default": 4, "step": 0.5, "description": "Rainbow: how many times the colours cycle from black to white." },
+    { "name": "strength", "label": "Strength", "type": "number", "min": 0, "max": 100, "default": 100, "step": 1, "description": "How much of the effect is mixed over the original." }
+  ],
+  "recipes": [
+    { "name": "Game Boy", "params": { "style": "Dither", "ink": "Game Boy", "size": 0.15, "contrast": 120 } },
+    { "name": "Newsprint", "params": { "style": "Dither", "ink": "Black and white", "size": 0.2 } },
+    { "name": "Rings", "params": { "style": "Rings", "ink": "Black and white", "size": 1.1, "fringe": 35, "contrast": 130 } },
+    { "name": "Lines", "params": { "style": "Lines", "ink": "Black and white", "size": 0.8, "angle": 45, "fringe": 20 } },
+    { "name": "Rainbow stripes", "params": { "style": "Rainbow", "bands": 4, "contrast": 120 } }
+  ],
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/halftone"
+}

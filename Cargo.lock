@@ -309,6 +309,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "amb-plugin-halftone"
+version = "1.0.0"
+dependencies = [
+ "amb-plugin-sdk",
+ "serde_json",
+]
+
+[[package]]
 name = "amb-plugin-heat-camera"
 version = "1.0.0"
 dependencies = [

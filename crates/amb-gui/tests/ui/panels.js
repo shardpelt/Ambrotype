@@ -78,10 +78,23 @@ await t.step("Search finds a slider by its name and takes you to it", async () =
   await t.until("the slider selected", () => ui.selectedSlider === def.name);
 });
 
+await t.step("Ctrl+Z straight after a change is never lost, several times in a row", async () => {
+  const { def } = firstSlider(panelsWithSlider[0]);
+  const v = pickValue(def);
+  for (let i = 0; i < 12; i++) {
+    const before = t.setting(def.name);
+    const len = t.historyLength();
+    t.setSlider(def.name, v);
+    t.key("Ctrl+Z"); // no wait: the change may still be on its way to Rust
+    await ui.runChain; // the change and the undo, in that order
+    await t.sleep(300); // a late answer must not change it again
+    t.expect(t.historyLength() === len && t.setting(def.name) === before, `undo ${i}: ${t.setting(def.name)} not ${before}, history ${t.historyLength()} not ${len}`);
+  }
+});
+
 await t.step("the history is put back for the next script", async () => {
   while (t.historyLength() > steps0) {
     const len = t.historyLength();
-    await t.sleep(150); // a key right after the last change can be lost
     t.key("Ctrl+Z");
     await t.until("one more undo", () => t.historyLength() < len);
   }

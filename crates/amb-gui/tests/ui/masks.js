@@ -129,7 +129,6 @@ await t.step("the × deletes the mask as one step; Ctrl+Z brings it back", async
   // Leave nothing behind for the scripts that follow.
   while (t.historyLength() > steps0) {
     const len = t.historyLength();
-    await t.sleep(150); // a key right after the last change can be lost
     t.key("Ctrl+Z");
     await t.until("one more undo", () => t.historyLength() < len);
   }

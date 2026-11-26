@@ -152,11 +152,21 @@ function notesForPeople(notes) {
 }
 
 // Run protocol commands; several commands with a `group` label are one undo step.
-// `quiet`: no note on screen afterwards.
-async function run(commands, group = null, { quiet = false } = {}) {
+// `quiet`: no note on screen afterwards. `commands` may be a promise of them.
+// One at a time, in call order: two requests in flight can be handled, or
+// answered, the other way round, and a Ctrl+Z right after a change then
+// undid the wrong step or showed a stale state.
+function run(commands, group = null, opts = {}) {
+  if (commands?.then) commands.catch(() => {}); // reported by runNow, when its turn comes
+  const done = ui.runChain.then(() => runNow(commands, group, opts));
+  ui.runChain = done.catch(() => {});
+  return done;
+}
+
+async function runNow(commands, group, { quiet = false }) {
   if (!ui.info) return;
   try {
-    const r = await invoke("execute", { commands, group });
+    const r = await invoke("execute", { commands: await commands, group });
     setState(r.state);
     const said = !quiet && notesForPeople(r.notes);
     if (said) toast(said);

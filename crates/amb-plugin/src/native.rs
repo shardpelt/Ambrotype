@@ -31,6 +31,7 @@ pub(crate) fn of(plugin: &crate::Plugin) -> Option<Native> {
         "paint" => Native::Pixels(amb_plugin_paint::paint),
         "tilt-shift" => Native::Pixels(amb_plugin_tilt_shift::tilt),
         "kaleidoscope" => Native::Pixels(amb_plugin_kaleidoscope::kaleidoscope),
+        "glitch" => Native::Pixels(amb_plugin_glitch::glitch),
         "heat-camera" => Native::Color(amb_plugin_heat_camera::heat),
         _ => return None,
     })

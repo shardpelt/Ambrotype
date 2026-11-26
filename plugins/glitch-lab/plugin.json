@@ -1,0 +1,53 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "glitch-lab",
+  "home": "editor",
+  "name": "Glitch",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "A task for breaking photos on purpose: pixel sorting, RGB split, a broken video signal, datamosh and JPEG blocks, VHS, ripples, streaks and tiles, and print looks (Game Boy dither, newsprint, ring and line screens, rainbow stripes), with the Effects panel open to tune them (each kept to the highlights, the shadows or a colour if you like, and pushed to 200 %). A task plugin: a tab with its own layout and buttons, and no code.",
+  "kind": "task",
+  "task": {
+    "label": "Glitch",
+    "hint": "Broken on purpose: pixel sorting, datamosh, VHS, dither, ring screens",
+    "layout": {
+      "format": "ambrotype-layout/1",
+      "name": "Glitch",
+      "description": "The Glitch task's tools on the left, the Effects panel open on the right to tune them.",
+      "author": "Ambrotype",
+      "density": "normal",
+      "toolbar": ["open", "save", "export", "|", "undo", "redo", "|", "auto", "select", "search", "|", "before", "masks", "zoom", "|", "plugins", "hub", "|", "looks", "settings"],
+      "left": { "width": 260, "items": ["tools", "presets", "history"] },
+      "right": {
+        "width": 340,
+        "items": [
+          "histogram",
+          { "panel": "effects", "open": true },
+          { "panel": "color_grading" },
+          { "panel": "basic" },
+          { "panel": "tone_curve" }
+        ]
+      }
+    },
+    "tools": [
+      { "label": "Pixel sort", "hint": "Bright runs sorted into streaks", "effect": "glitch", "recipe": "Pixel sort" },
+      { "label": "RGB split", "hint": "Red and blue pulled apart", "effect": "glitch", "recipe": "RGB split" },
+      { "label": "Broken signal", "hint": "Bands slid sideways, like a bad video signal", "effect": "glitch", "recipe": "Broken signal" },
+      { "label": "JPEG crunch", "hint": "Big compression blocks", "effect": "glitch", "recipe": "JPEG crunch" },
+      { "label": "Datamosh", "hint": "Blocks torn and smeared, violet and grainy", "effect": "glitch", "recipe": "Datamosh" },
+      { "label": "VHS", "hint": "Wobbly lines, colour bleed, scanlines", "effect": "glitch", "recipe": "VHS" },
+      { "label": "Wave", "hint": "The photo rippled", "effect": "glitch", "recipe": "Wave" },
+      { "label": "Streaks", "hint": "Smeared along a slant", "effect": "glitch", "recipe": "Streaks" },
+      { "label": "Tiles", "hint": "Cut into tiles, each nudged a little", "effect": "glitch", "recipe": "Tiles" },
+      { "label": "Game Boy", "hint": "Two greens in tiny dots, like an old handheld's screen", "effect": "halftone", "recipe": "Game Boy" },
+      { "label": "Newsprint", "hint": "Black dots on white, like a cheap print", "effect": "halftone", "recipe": "Newsprint" },
+      { "label": "Rings", "hint": "Drawn in rings round the middle, with colour fringes", "effect": "halftone", "recipe": "Rings" },
+      { "label": "Lines", "hint": "Drawn in slanted lines, thick in the shadows", "effect": "halftone", "recipe": "Lines" },
+      { "label": "Rainbow stripes", "hint": "Rainbow bands by brightness, embossed and striped", "effect": "halftone", "recipe": "Rainbow stripes" },
+      { "label": "Grainy shadows", "hint": "VHS noise in the dark parts only", "effect": "glitch", "recipe": "VHS", "where": "shadows", "amount": 150 },
+      { "label": "Back to normal", "hint": "The glitches off again", "command": "trip-clear" },
+      { "label": "Save as preset", "hint": "This look, effects and all, as a preset to use again or share to the hub", "command": "trip-save" }
+    ]
+  },
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/glitch-lab"
+}

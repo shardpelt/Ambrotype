@@ -27,6 +27,7 @@ amb-plugin-hue-trip = { path = "../../plugins/hue-trip" }
 amb-plugin-paint = { path = "../../plugins/paint" }
 amb-plugin-tilt-shift = { path = "../../plugins/tilt-shift" }
 amb-plugin-kaleidoscope = { path = "../../plugins/kaleidoscope" }
+amb-plugin-glitch = { path = "../../plugins/glitch" }
 amb-plugin-heat-camera = { path = "../../plugins/heat-camera" }
 # Portable dispatch: the default tail-call dispatch can overflow the stack
 # when the compiler doesn't turn its calls into jumps (seen in tests).

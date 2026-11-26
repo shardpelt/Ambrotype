@@ -217,6 +217,7 @@ The input JSON has `api` (1), `params`, `settings`, `seed`, and with permission 
 - [`plugins/tilt-shift`](../../plugins/tilt-shift): an effect, a sharp band and blur above and below (`"effect": "pixels"`, `"margin": 96`).
 - [`plugins/kaleidoscope`](../../plugins/kaleidoscope): an effect, mirrored slices or a fractal (`"effect": "pixels"`, `"whole": true`; each output pixel mapped back to a place in the photo and read there).
 - [`plugins/heat-camera`](../../plugins/heat-camera): an effect, false colour by brightness as a thermal camera shows it (`"effect": "color"`).
+- [`plugins/glitch`](../../plugins/glitch): a whole-photo effect (`"effect": "pixels"`, `"whole": true`), a photo broken like a machine would: pixel sort, datamosh, VHS, streaks, tiles; random choices from `Effect::noise` keyed by full-photo coordinates.
 - [`plugins/trippy`](../../plugins/trippy): a task, the Trippy tab (its layout and buttons for the effects above; no module).
 
 All of them are built into the app. After changing one, rebuild its module with `amb plugin build plugins/<id>` and commit `plugin.wasm` with the source.

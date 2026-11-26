@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Trip me and Back to normal, the Trippy task's commands (the task itself
 // is a task plugin, plugins/trippy): a new random mix of psychedelic
-// colour, rainbow foil, heat-camera colour, light leaks and kaleidoscopes
-// each click, the trip taken off, or saved as a preset to share.
+// colour, rainbow foil, heat-camera colour, light leaks, kaleidoscopes and
+// glitches each click, the trip taken off, or saved as a preset to share.
 // They are ordinary effects (amb:Effects), so the Effects panel tunes them
 // and Undo takes each click back. Also task tools' effect buttons
 // (`setEffect`), for any task plugin.
@@ -61,7 +61,7 @@ function tripRoll(lo, hi, step = 1) {
 }
 
 // Trip me: psychedelic colour or foil (or both), or now and then heat-camera
-// colour; sometimes a light leak, sometimes a kaleidoscope.
+// colour; sometimes a light leak, a kaleidoscope or a glitch.
 function tripMix() {
   const out = [];
   const pick = Math.random();
@@ -79,6 +79,10 @@ function tripMix() {
   if (Math.random() < 0.2) {
     const fractal = Math.random() < 0.4;
     out.push({ plugin: "kaleidoscope", params: { style: fractal ? "Fractal" : "Mirrors", slices: tripRoll(3, 12), turn: tripRoll(0, 360), zoom: tripRoll(70, 160), x: 50, y: 50, depth: tripRoll(3, 7), twist: tripRoll(0, 60) } });
+  }
+  if (Math.random() < 0.15) {
+    const styles = ["Pixel sort", "RGB split", "Slice shift", "Blocks", "VHS", "Streaks"];
+    out.push({ plugin: "glitch", params: { style: styles[tripRoll(0, styles.length - 1)], strength: tripRoll(40, 80), size: tripRoll(1, 8, 0.5), angle: tripRoll(0, 180) } });
   }
   return out.map((e) => ({ ...e, amount: 100, seed: tripSeed() }));
 }

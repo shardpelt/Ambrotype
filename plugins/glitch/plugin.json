@@ -1,0 +1,35 @@
+{
+  "format": "ambrotype-plugin/1",
+  "id": "glitch",
+  "home": "trip",
+  "name": "Glitch",
+  "version": "1.0.0",
+  "author": "Ambrotype",
+  "description": "The photo broken the way machines break it: pixel sorting, split colour channels, slid bands, torn compression blocks (datamosh), a worn video tape, ripples, smeared streaks and nudged tiles. It reads the whole photo at once.",
+  "kind": "effect",
+  "effect": "pixels",
+  "whole": true,
+  "params": [
+    { "name": "style", "label": "Style", "type": "choice", "options": ["Pixel sort", "RGB split", "Slice shift", "Blocks", "VHS", "Wave", "Streaks", "Tiles"], "default": "Pixel sort", "description": "Which kind of glitch." },
+    { "name": "strength", "label": "Strength", "type": "number", "min": 0, "max": 100, "default": 60, "step": 1, "description": "How much of the photo is broken, or how far. 0 leaves it as it is." },
+    { "name": "size", "label": "Size", "type": "number", "min": 0.5, "max": 25, "default": 5, "step": 0.5, "description": "How big the glitch is, as a share of the photo's short side." },
+    { "name": "angle", "label": "Angle", "type": "number", "min": 0, "max": 180, "default": 90, "step": 1, "description": "Pixel sort and Streaks: the direction, in degrees. 0 is across, 90 is down." },
+    { "name": "low", "label": "Darkest sorted", "type": "number", "min": 0, "max": 100, "default": 25, "step": 1, "description": "Pixel sort: only pixels at least this bright, in percent, are sorted." },
+    { "name": "high", "label": "Brightest sorted", "type": "number", "min": 0, "max": 100, "default": 85, "step": 1, "description": "Pixel sort: only pixels at most this bright, in percent, are sorted." },
+    { "name": "tint", "label": "Tint", "type": "choice", "options": ["None", "Violet", "Cyan", "Green", "Red"], "default": "None", "description": "Colours the result toward one hue, keeping its brightness. Stronger with Strength." },
+    { "name": "grain", "label": "Grain", "type": "number", "min": 0, "max": 100, "default": 0, "step": 1, "description": "Fine grey noise over the result." },
+    { "name": "marks", "label": "Grid marks", "type": "bool", "default": true, "description": "Tiles: thin dark grid lines and a small green + in each tile's centre." }
+  ],
+  "recipes": [
+    { "name": "Pixel sort", "params": { "style": "Pixel sort", "angle": 90, "low": 25, "high": 85 } },
+    { "name": "RGB split", "params": { "style": "RGB split", "strength": 50, "size": 1 } },
+    { "name": "Broken signal", "params": { "style": "Slice shift", "strength": 70, "size": 3 } },
+    { "name": "JPEG crunch", "params": { "style": "Blocks", "strength": 60, "size": 2 } },
+    { "name": "Datamosh", "params": { "style": "Blocks", "strength": 85, "size": 1.5, "tint": "Violet", "grain": 45 } },
+    { "name": "VHS", "params": { "style": "VHS", "strength": 60, "size": 1, "grain": 25 } },
+    { "name": "Wave", "params": { "style": "Wave", "strength": 50, "size": 10 } },
+    { "name": "Streaks", "params": { "style": "Streaks", "strength": 80, "size": 15, "angle": 30 } },
+    { "name": "Tiles", "params": { "style": "Tiles", "strength": 40, "size": 12.5, "marks": true } }
+  ],
+  "source": "https://github.com/shardpelt/Ambrotype/tree/main/plugins/glitch"
+}

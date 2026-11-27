@@ -1,6 +1,6 @@
 # Competitors in 2026: what they do, what to take, and our niche
 
-Read 2026-10-30 from each project's README or website, not their code (rechecked 2026-11-04, 2026-11-11 and 2026-11-19). Numbers (stars, prices) are as of the first day.
+Read 2026-10-30 from each project's README or website, not their code (rechecked 2026-11-04, 2026-11-11, 2026-11-19 and 2026-11-27). Numbers (stars, prices) are as of the first day.
 
 ## The field
 
@@ -92,6 +92,35 @@ Ours against it: we have Halation, Bloom and one Glow size (`amb:Halation`, `amb
 - New: VSCO Studio Pro for Mac (film looks and film grain, a subscription), and on pixls.us Greycard and FerrumPix (open-source raw editors, not read yet).
 - Halation is now common: CalibRaw, Redlamp, negaflow, NegPy and RapidRAW have it, and Lightroom since 10 Nov. Redlamp ties it to film stocks, as our `film-stock-looks` plans.
 
+## Recheck 2026-11-27
+
+Read from READMEs, release pages and the projects' sites; Monocard came in from a Reddit post (r/ricohGR) pasted by hand, Silver Efex from reviews (DxO's pages not read).
+
+**Monocard** ([repo](https://github.com/sbusso/monocard), [site](https://sbusso.github.io/monocard/); GPL-3.0-or-later, its film and toner parts GPL-3.0-only; 0.5.3, 27 Nov; 4 stars)
+- A monochrome-only fork of Greycard, made for the Ricoh GR IV Monochrome. One channel from sensor to print; a colour photo is mixed to grey through a B&W filter. Not a single colour tool.
+- Zone view: the photo painted in zones 0 to X, and a 9-zone tone equalizer.
+- A darkroom: 18 B&W films with grain, halation and edge effect; development (D-76, HC-110, Rodinal, push and pull, temperature, agitation); six papers with split grade, lith and cyanotype; six toner baths (selenium, sepia, gold…).
+- The camera's own picture modes (Standard, Solid, Solarized…) as editable looks, fitted from DNG and JPEG pairs, with a recipe book.
+- Denoise made for a mono sensor (profiled, wavelet, learned models downloaded on first use); a burst merge of 2 to 16 handheld DNGs; JPEG deblock; raw histogram, clip map, bracket merge.
+- USB camera import; export to grey JPEG, 16-bit grey TIFF, JPEG XL, Ultra HDR; looks out as `.cube` and HaldCLUT LUTs or Lightroom profiles and presets. A CLI; `.mcd` sidecars.
+- macOS first (signed); Linux and Windows "less tested". Its README says parts are ported from darktable, spektrafilm and NegPy.
+
+**Greycard** ([repo](https://github.com/jessolmstead/greycard); GPL-3.0-or-later; v0.13.0, 27 Nov; ~209 stars)
+- The colour editor Monocard forks, by Jess Olmstead; Rust, Slint, GPU (Vulkan or Metal) with a CPU fallback; Linux, macOS, Windows (Windows on ARM experimental). Releases every week or two.
+- Local AI masks (subject, sky, people), its own AI denoise (X-Trans too), handheld HDR, panorama and focus-stack merges, "fit this camera's look", parade, waveform and vectorscope, Lightroom preset and catalogue import, lensfun and Adobe lens profiles, NAS-aware editing, `greycard export`.
+- Monocard's author sends work back (a grey-space export, a monochrome DNG fix).
+
+**Nik Silver Efex** (DxO Nik Collection; paid)
+- Still the B&W tool people name. Nik Collection 9 (April 2026) added AI masking, blend modes and a Halation filter (in Color Efex); Silver Efex 8 (2025) shows the colour original beside the B&W while you work. A plug-in for Lightroom, Photoshop and Affinity, not a raw editor.
+
+**Others since 2026-11-19**
+- RAWmakase 0.7.1 to 0.9.0 in a week: import from cards, Merge to HDR, Manage Presets and Profiles, Edit In (Photoshop, Affinity), Auto Sync, GPU exports, opt-in AI Denoise.
+- RapidRAW 1.7.1: HDR preview and export (gain-map JPEG, JPEG XL PQ), a Rec. 2020 pipeline, monitor colour management, panorama, HDR merge and focus stacking rewritten.
+- NegPy 0.71 (OpticFilm 8200i scanning, held-eye compare), CalibRaw 1.5.1 "Bloom", LightZone 5.1.1 (fixes). LightCraft, Rembrandt, Redlamp, negaflow: nothing new.
+- New, small: RAW Photo Editor, a raw developer inside Blender.
+
+Ours against Monocard: we have the zone overlay (Shift+Z), Place a spot in a zone, a paper curve with grades, split grade and preflash, the Black & White panel, grain and halation, burst merge and HDR. Missing: developer and agitation, B&W film stocks with their own curve and grain, lith, cyanotype and toners (roadmap `film-bw-processes`), looks exported as LUTs or Lightroom profiles, and a denoise tuned for mono sensors. A monochrome DNG opens as grey (`developed` in `amb-engine`'s `raw/mod.rs`), but no GR IV Monochrome file has been tried.
+
 ## Why people pay for Tenzen
 
 Tenzen is not better at developing raws than the free projects. People pay for other things:
@@ -109,7 +138,7 @@ What it means for us: we are free, so the lessons are 1, 3 and 4. Say "free, no 
 Many projects now aim at "Lightroom, but free". That is not a niche. CalibRaw (2026-11-02) is the closest in stack (Rust, wgpu, GPL) and ahead on the GPU, effects, local AI and Android; it doesn't read Lightroom's sidecars or catalogues, has no film lab, and no plugins, hub or layouts. What only we have:
 
 1. **Lightroom compatibility you can check.** Lightroom's own XMP and presets, read and written as they are, and catalogue import. Our Lightroom Classic plug-in measures Lightroom, so our sliders can match its numbers.
-2. **The film lab.** Negative conversion, roll baseline by scene, dust and scratch repair, film stocks, Fuji recipes. The others have at most a dust button. Negative Lab Pro costs about $99 and needs Lightroom.
+2. **The film lab.** Negative conversion, roll baseline by scene, dust and scratch repair, film stocks, Fuji recipes. The Lightroom-style editors have at most a dust button; Monocard (2026-11-27) has a B&W darkroom but no negatives, and NegPy negatives but no editor round them. Negative Lab Pro costs about $99 and needs Lightroom.
 3. **Made to be changed.** Layouts and themes as files, whole custom interfaces, sandboxed plugins, and a hub to share them, with screenshots in the README since 2026-10-30.
 4. **AI that edits through the same undoable commands as a person**, over MCP or the CLI, with the compact syntax and `amb stats` so it costs few tokens.
 
@@ -169,6 +198,13 @@ New: **RAWmakase** (MIT, Rust, Sep 2026) is the project closest to ours in shape
 25. **.cube LUTs** as a look (RAWmakase). We read none yet. S–M.
 26. **Large libraries stay fast:** the complaint about free browsers; our catalogue is built for this, worth a published number (100k photos). S.
 
+**From the 2026-11-27 recheck**
+
+27. **A B&W darkroom in the Film tab** (Monocard): developer, push and pull, agitation, B&W film stocks, then lith, cyanotype and toners on our paper curve (roadmap `film-bw-processes`). Fits the film lab. M.
+28. **Looks out as `.cube` LUTs and Lightroom profiles** (Monocard), so a look made here works elsewhere. S–M.
+29. **The colour original beside the B&W** while you edit (Silver Efex 8). S.
+30. **A monochrome camera opens and denoises right** (Ricoh GR IV Monochrome, Leica Monochrom): try a sample file, then a denoise for one channel. S–M.
+
 ## Merging projects
 
-Their stacks differ (Rust + egui, JS + WebGL, Swift + Metal, Rust + plain JS), so code can't be merged by a script. Features can be ported from their descriptions. Licences: Rembrandt's GPL-3 code could come in as is; LightCraft's MIT/Apache code could come in (one way only); Redlamp's MPL-2.0 files can be combined with GPL code but stay MPL. Any code taken needs the owner's yes first and a credit in `NOTICE`. Rembrandt shares our licence and our idea (XMP, local AI), so working together is worth a message. CalibRaw is GPL-3.0-or-later too, so its code could come in with a credit in `NOTICE` (owner's yes first); its WGSL shaders and GPU memory queries are the most reusable parts.
+Their stacks differ (Rust + egui, JS + WebGL, Swift + Metal, Rust + plain JS), so code can't be merged by a script. Features can be ported from their descriptions. Licences: Rembrandt's GPL-3 code could come in as is; LightCraft's MIT/Apache code could come in (one way only); Redlamp's MPL-2.0 files can be combined with GPL code but stay MPL. Any code taken needs the owner's yes first and a credit in `NOTICE`. Rembrandt shares our licence and our idea (XMP, local AI), so working together is worth a message. CalibRaw is GPL-3.0-or-later too, so its code could come in with a credit in `NOTICE` (owner's yes first); its WGSL shaders and GPU memory queries are the most reusable parts. Greycard and Monocard are GPL-3.0-or-later too (Monocard's film and toner parts GPL-3.0-only, which our -or-later code can live with but which would bind those files); same rule.

@@ -24,6 +24,7 @@ Not ready yet (need a decision before a brief):
 
 ## Recently done
 
+- 2026-11-27: **Competitor recheck**: Monocard (a monochrome-only darkroom fork of Greycard, for the Ricoh GR IV Monochrome), Greycard read at last, Nik Silver Efex, RAWmakase 0.9, RapidRAW 1.7.1 in [research/17](research/17-competitors-2026.md) "Recheck 2026-11-27" and the [watchlist](research/watchlist.md); ideas 27-30 there
 - 2026-11-26: **Glitch** task (Ctrl+Alt+6) and two effects for it, `plugins/glitch` (Pixel sort, RGB split, Channel drift, Broken signal, JPEG crunch, Datamosh, VHS, Wave, Streaks, Tiles) and `plugins/halftone` (Game Boy dither, Newsprint, Rings, Lines, Rainbow stripes); Trippy gets Pixel sort, Datamosh, Game Boy and Rings, and Trip me mixes a glitch in now and then. `amb plugin run plugins/glitch PHOTO --params style=Blocks`, `amb plugin run plugins/halftone PHOTO --params style=Rings`.
 - 2026-11-26: **A speed number for big libraries** (`library-speed-number`): 100 000 photos index in 3.7 s (4 cores), re-open in 1.4 s, a rating filter takes 0.24 s, text search 0.37 s (`crates/amb-library/tests/speed.rs`, run by hand; table in `docs/design/library.md`)
 - 2026-11-26: **Undo right after a change is no longer lost**: Applying a crop worked out its commands in Rust, then ran them, so a Ctrl+Z pressed meanwhile ran first and the crop landed after it; `run` (`ui/core/app.js`) now queues edits in call order and takes the commands as a promise (`exitCrop`). The UI tests no longer wait before Ctrl+Z; `panels.js` presses it straight after each change

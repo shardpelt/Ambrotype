@@ -63,12 +63,14 @@ pub(crate) async fn watermark_preview(
             let mut guard = slot.lock()?;
             let session = guard.as_mut().ok_or("no photo open")?;
             let lens = lens.get().unwrap_or_else(|| empty_lens());
-            session.export(&out, &s, lens)
+            // Read and remove the file under the lock, so two previews in
+            // flight can't take each other's file away.
+            let done = session.export(&out, &s, lens);
+            let bytes = std::fs::read(&out);
+            let _ = std::fs::remove_file(&out);
+            done.map(|_| bytes)
         };
-        let bytes = std::fs::read(&out);
-        let _ = std::fs::remove_file(&out);
-        result?;
-        Ok(Response::new(bytes.map_err(|e| e.to_string())?))
+        Ok(Response::new(result?.map_err(|e| e.to_string())?))
     })
     .await?
 }

@@ -1216,6 +1216,7 @@
   "library/import.js"
  ],
  "Choose…": [
+  "dialogs/watermark-maker.js",
   "index.html"
  ],
  "Choosing a folder…": [
@@ -1240,6 +1241,9 @@
   "index.html"
  ],
  "Clear": [
+  "index.html"
+ ],
+ "Clear logo": [
   "index.html"
  ],
  "Clear samples": [
@@ -1332,6 +1336,9 @@
  "Click to keep this one instead": [
   "library/bursts.js",
   "library/duplicates.js"
+ ],
+ "Click to place the watermark there": [
+  "index.html"
  ],
  "Click to read more in Photography basics": [
   "help/basics.js"
@@ -1826,6 +1833,9 @@
  "Delete the style {name}?": [
   "develop/styles.js"
  ],
+ "Delete the watermark {name}?": [
+  "dialogs/watermark-maker.js"
+ ],
  "Delete this effect of yours": [
   "tools/mask-panel.js"
  ],
@@ -1877,6 +1887,15 @@
   "index.html"
  ],
  "Describe what it should do. This writes instructions for your own AI assistant (for example Claude Code on this computer): paste them there, and press Reload here when it's done.": [
+  "index.html"
+ ],
+ "Design a text or logo watermark on a live preview and keep it by name; Export and amb render --watermark NAME use it.": [
+  "core/keys.js"
+ ],
+ "Design the watermark on a live preview, and keep it under a name": [
+  "index.html"
+ ],
+ "Design…": [
   "index.html"
  ],
  "Develop": [
@@ -2817,6 +2836,9 @@
  "Give the ticked keywords to every selected photo": [
   "index.html"
  ],
+ "Give the watermark a name.": [
+  "dialogs/watermark-maker.js"
+ ],
  "Glitch task": [
   "core/keys.js"
  ],
@@ -3188,6 +3210,9 @@
   "index.html"
  ],
  "Input size (px)": [
+  "index.html"
+ ],
+ "Inset (% of the short edge)": [
   "index.html"
  ],
  "Insights": [
@@ -3658,6 +3683,7 @@
  ],
  "Logo…": [
   "dialogs/export.js",
+  "dialogs/watermark-maker.js",
   "index.html"
  ],
  "Long edge (px)": [
@@ -4428,6 +4454,9 @@
  "None of these photos has a place. Place one first (drag it onto the map, or a GPX track).": [
   "library/place-names.js"
  ],
+ "None saved": [
+  "dialogs/watermark-maker.js"
+ ],
  "None saved yet": [
   "dialogs/export.js"
  ],
@@ -4652,6 +4681,9 @@
   "library/slideshow.js",
   "tools/toolblocks.js",
   "tools/trip.js"
+ ],
+ "Open a photo to see the preview": [
+  "dialogs/watermark-maker.js"
  ],
  "Open a photo to start": [
   "index.html"
@@ -5220,6 +5252,9 @@
  ],
  "Put this one somewhere else: on a map, or by name": [
   "library/guess-places.js"
+ ],
+ "Put this watermark in the Export dialog": [
+  "index.html"
  ],
  "Put tray photos into the empty cells, in order": [
   "index.html"
@@ -5803,6 +5838,7 @@
   "index.html"
  ],
  "Saved": [
+  "index.html",
   "library/library.js"
  ],
  "Saved (type a new one to replace it)": [
@@ -5858,6 +5894,12 @@
  ],
  "Saved the style {name}. Presets → Styles… applies it.": [
   "develop/styles.js"
+ ],
+ "Saved the watermark {name}": [
+  "dialogs/watermark-maker.js"
+ ],
+ "Saved the watermark {name}. Export → Saved picks it, and amb render --watermark uses it.": [
+  "dialogs/watermark-maker.js"
  ],
  "Saved titles, captions, creator, copyright and keywords to give photos at once": [
   "index.html"
@@ -7323,6 +7365,12 @@
  "Two prints side by side: click the better one, a setting at a time": [
   "develop/print-aids.js"
  ],
+ "Type some text or choose a logo first.": [
+  "dialogs/watermark-maker.js"
+ ],
+ "Type some text or choose a logo to see it on the photo": [
+  "dialogs/watermark-maker.js"
+ ],
  "Type what to look for, then press Smart (a dog on a beach, snowy mountains).": [
   "library/library-actions.js"
  ],
@@ -7432,6 +7480,9 @@
  "Use a frame on all {n} photos in the folder": [
   "develop/frame.js"
  ],
+ "Use in Export": [
+  "index.html"
+ ],
  "Use it here instead": [
   "core/keys.js"
  ],
@@ -7466,7 +7517,8 @@
   "dialogs/hub.js"
  ],
  "Using a logo": [
-  "dialogs/export.js"
+  "dialogs/export.js",
+  "dialogs/watermark-maker.js"
  ],
  "Values": [
   "index.html"
@@ -7531,6 +7583,18 @@
   "help/teach.js"
  ],
  "Watermark": [
+  "index.html"
+ ],
+ "Watermark Maker…": [
+  "core/menu.js"
+ ],
+ "Watermark maker": [
+  "index.html"
+ ],
+ "Watermark maker…": [
+  "core/keys.js"
+ ],
+ "Watermarks you kept by name (Watermark maker, or amb watermark save)": [
   "index.html"
  ],
  "Weaker frames of bursts": [
@@ -7896,6 +7960,9 @@
  "e.g. MIT": [
   "index.html"
  ],
+ "e.g. Signature": [
+  "index.html"
+ ],
  "e.g. Summer '26 (a new line makes a second line)": [
   "index.html"
  ],
@@ -7906,6 +7973,10 @@
   "index.html"
  ],
  "e.g. wedding, Anna & Tom": [
+  "index.html"
+ ],
+ "e.g. © Your Name": [
+  "dialogs/watermark-maker.js",
   "index.html"
  ],
  "each one: one stop more light, and its price": [

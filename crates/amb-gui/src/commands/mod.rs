@@ -28,6 +28,7 @@ pub(crate) mod select;
 pub(crate) mod settings;
 pub(crate) mod styles;
 pub(crate) mod tools;
+pub(crate) mod watermarks;
 
 /// Every command the web UI can call.
 pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + 'static {
@@ -204,6 +205,10 @@ pub(crate) fn handler() -> impl Fn(tauri::ipc::Invoke) -> bool + Send + Sync + '
         photo::trial_overrides,
         presets::luts_list,
         export::pick_watermark_image,
+        watermarks::watermarks,
+        watermarks::save_watermark,
+        watermarks::delete_watermark,
+        watermarks::watermark_preview,
         tools::negative_freeze,
         assistant::open_assistant_log,
         library::watch_folders,

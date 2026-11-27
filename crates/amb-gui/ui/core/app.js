@@ -388,6 +388,7 @@ async function init() {
   wireFeatures();
   wireTips();
   wireWatermark();
+  wireWatermarkMaker();
   $("btn-settings").addEventListener("click", () => settingsFlow().catch(showError));
   wireViewer();
   wireCrop();

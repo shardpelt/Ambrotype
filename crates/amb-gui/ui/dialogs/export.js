@@ -217,7 +217,7 @@ function readWatermark() {
     size: Number(f.wm_size.value) || 20,
     opacity: Number(f.wm_opacity.value),
     anchor: f.wm_anchor.value,
-    inset: 3,
+    inset: f.wm_inset.value === "" ? 3 : Number(f.wm_inset.value),
     shadow: f.wm_shadow.checked,
     rotate: Math.max(-180, Math.min(180, Number(f.wm_rotate.value) || 0)),
     tile: f.wm_tile.checked,
@@ -403,6 +403,7 @@ async function exportFlow(batch = null) {
   fillFontSelect($("export-form").wm_font, $("export-form").wm_font.value);
   if (!batch) frameToExport();
   await fillExportPresets($("export-form").export_preset.value || null);
+  await wmkFillExport();
   updateWatermarkForm();
   updateSmallCopy();
   updateQualityName();

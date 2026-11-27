@@ -1444,10 +1444,13 @@
       <div class="watermark-section">
         <label>Watermark
           <span class="pair"><input name="wm_text" type="text" spellcheck="false" placeholder="None (e.g. © Your Name)">
-            <button type="button" id="wm-logo" class="small" title="Use a PNG logo instead of text">Logo…</button></span>
+            <button type="button" id="wm-logo" class="small" title="Use a PNG logo instead of text">Logo…</button>
+            <button type="button" id="wm-design" class="small" title="Design the watermark on a live preview, and keep it under a name">Design…</button></span>
         </label>
+        <label>Saved <select id="wm-saved" title="Watermarks you kept by name (Watermark maker, or amb watermark save)"></select></label>
         <div class="wm-fields" hidden>
           <input name="wm_image" type="hidden">
+          <input name="wm_inset" type="hidden" value="3">
           <label>Where <select name="wm_anchor">
             <option value="top-left">Top left</option><option value="top">Top</option><option value="top-right">Top right</option>
             <option value="left">Left</option><option value="center">Centre</option><option value="right">Right</option>
@@ -1467,6 +1470,51 @@
       <menu>
         <button value="cancel" formnovalidate>Cancel</button>
         <button value="ok" class="primary" id="export-go">Export…</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <!-- Watermark maker: design a text or logo watermark on a live preview and keep it by name (dialogs/watermark-maker.js). -->
+  <dialog id="wmk-dialog">
+    <form method="dialog" id="wmk-form">
+      <h2>Watermark maker</h2>
+      <div class="wmk-body">
+        <div class="wmk-stage">
+          <img id="wmk-preview" alt="The photo with the watermark" title="Click to place the watermark there" hidden>
+          <p id="wmk-hint" class="hint" role="status"></p>
+        </div>
+        <div class="wmk-fields">
+          <label>Text <input id="wmk-text" type="text" spellcheck="false" placeholder="e.g. © Your Name"></label>
+          <div class="pair">
+            <button type="button" id="wmk-logo" class="small" title="Use a PNG logo instead of text">Logo…</button>
+            <button type="button" id="wmk-logo-clear" class="small" hidden>Clear logo</button>
+            <span id="wmk-logo-name" class="hint" translate="no"></span>
+          </div>
+          <label>Font <select id="wmk-font"></select></label>
+          <label>Size (% of width) <input id="wmk-size" type="number" value="20"></label>
+          <label class="wmk-colour">Colour <input id="wmk-color" type="color" value="#ffffff"></label>
+          <label>Opacity <input id="wmk-opacity" type="number" value="70"></label>
+          <span class="inline-check wmk-colour"><input id="wmk-shadow" type="checkbox" checked><span>Shadow</span></span>
+          <label>Place <select id="wmk-anchor">
+            <option value="top-left">Top left</option><option value="top">Top</option><option value="top-right">Top right</option>
+            <option value="left">Left</option><option value="center">Centre</option><option value="right">Right</option>
+            <option value="bottom-left">Bottom left</option><option value="bottom">Bottom</option><option value="bottom-right" selected>Bottom right</option>
+          </select></label>
+          <label>Inset (% of the short edge) <input id="wmk-inset" type="number" min="0" max="45" step="1" value="3"></label>
+          <label>Rotate (°) <input id="wmk-rotate" type="number" value="0"></label>
+          <span class="inline-check"><input id="wmk-tile" type="checkbox"><span>Repeat across the photo</span></span>
+        </div>
+      </div>
+      <div class="wmk-keep">
+        <label>Saved <select id="wmk-saved"></select></label>
+        <button type="button" id="wmk-delete" class="small">Delete…</button>
+        <label>Name <input id="wmk-name" type="text" spellcheck="false" placeholder="e.g. Signature"></label>
+        <button type="button" id="wmk-save" class="small">Save</button>
+      </div>
+      <p id="wmk-status" class="hint" role="status"></p>
+      <menu>
+        <button type="button" id="wmk-close">Close</button>
+        <button type="button" id="wmk-use" class="primary" hidden title="Put this watermark in the Export dialog">Use in Export</button>
       </menu>
     </form>
   </dialog>
@@ -2087,6 +2135,7 @@
   <script src="develop/preset-hide.js"></script>
   <script src="develop/preset-edit.js"></script>
   <script src="dialogs/export.js"></script>
+  <script src="dialogs/watermark-maker.js"></script>
   <script src="core/uitest.js"></script>
   <script src="develop/rows.js"></script>
   <script src="develop/history.js"></script>

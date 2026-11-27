@@ -21,7 +21,7 @@ For the size of the code, run `python3 tools/code-metrics.py`. fmt, clippy and t
 | `amb-ai` | Local AI models | `faces.rs`, `search.rs`, `net/`, `objects.rs`, `remove.rs`, `denoise.rs`, `archive.rs`, `data/models.json` |
 | `amb-gpu` | GPU preview and AI kernels | The pipeline's stages as wgpu compute shaders; `nn.rs` |
 | `amb-export` | Files out | `dng.rs`, `compare.rs`, `contact.rs`, `video.rs`, `embed.rs`, `border.rs`, `collage.rs`, `watermark.rs`, `fonts.rs` |
-| `amb-library` | Library operations on folders and sidecars | `catalog.rs`, `folder.rs`, `lrcat.rs`, `lightroom.rs`, `files.rs` |
+| `amb-library` | Library operations on folders and sidecars | `catalog.rs`, `folder.rs`, `lrcat.rs`, `lightroom.rs`, `files.rs`, `styles.rs`, `watermarks.rs` |
 | `amb-ops` | Operations that render photos | `convert.rs`, `replay.rs`, `merge.rs`, `object.rs`, `snap.rs`, `burst.rs`, `cleanup.rs`, `style.rs`, `dust.rs`, `negative.rs`, `darkroom/` (`strip.rs`, `ring.rs`, `pick.rs`, `wedge.rs`, `zone.rs`: the test strip, the ring-around, Pick Better's pair, the step wedge and placing a spot in a zone: a photo printed several ways on one sheet), `export_batch.rs` (a folder tree to smaller copies, same structure; `amb render --recursive` and the editor's Batch export) |
 | `amb-plugin` | The sandboxed plugin host | `manifest.rs`, `effect.rs`, `photo.rs`, `native.rs`, `fuji.rs` |
 | `amb-plugin-sdk` | What plugins are written with; MIT OR Apache-2.0 | `lib.rs` |
@@ -157,6 +157,7 @@ Operations on photos:
   - `amb negative analyze` and `amb negative sync`, the library's Sync negative roll….
 - Look matching on files (`look.rs`; `amb match`).
 - Styles: a saved look that fits itself to each photo. `amb_library::styles` keeps Match look's target (the references' `LookStats`, with a tone / colour focus) as a JSON file in the config folder's `styles/`; `amb_ops::style` solves each photo's own settings to reach it, blended at an Amount, one undo step per photo. `amb style`.
+- Watermarks: `amb_library::watermarks` keeps a named `amb_export::watermark::Watermark` as a JSON file (and its logo PNG beside it) in the config folder's `watermarks/`; the Watermark maker (`ui/dialogs/watermark-maker.js`, `commands/watermarks.rs`: its live preview is the export code path on the open photo) and `amb watermark` / `amb render --watermark NAME` read and write them.
 - HDR merge into a DNG next to the brackets, and panorama merge with lens corrections first (`merge.rs`, over `amb_engine::merge` and `amb_engine::pano`):
   - `amb merge hdr` / `amb merge pano`, the library's Merge to HDR… / Merge to Panorama….
   - [design/hdr-merge.md](design/hdr-merge.md), [design/panorama.md](design/panorama.md).

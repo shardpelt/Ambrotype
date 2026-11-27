@@ -28,6 +28,7 @@ const KEY_ACTIONS = [
   { id: "open-folder", group: tKey("File"), label: "Open a folder", hint: "Its photos in the library.", keys: ["Ctrl+Shift+O"], when: "any", run: () => openFolder() },
   { id: "save", group: tKey("File"), label: "Save the edit to the sidecar", keys: ["Ctrl+S"], when: "any", button: "btn-save", run: () => save() },
   { id: "export", group: tKey("File"), label: "Export", keys: ["Ctrl+E"], when: "any", button: "btn-export", run: () => exportFlow() },
+  { id: "watermark-maker", group: tKey("File"), label: "Watermark maker…", hint: "Design a text or logo watermark on a live preview and keep it by name; Export and amb render --watermark NAME use it.", keys: [], when: "any", run: () => wmkOpen().catch(showError) },
   { id: "replay", group: tKey("File"), label: "Export Edit Replay: a video of the edit, step by step", hint: "An MP4 (AV1) of the photo's History: before, each step easing in and named, after. For Reels, Shorts and before/after posts.", keys: [], when: "any", photo: true, run: () => replayFlow() },
   { id: "share-compare", group: tKey("File"), label: "Share before and after", hint: "One web page with the photo before and after its edit and a bar to drag; it works offline and on any web host.", keys: [], when: "any", photo: true, run: () => shareCompareFlow() },
   { id: "edit-in", group: tKey("File"), label: "Edit in another app", hint: "The photo, as edited, goes to your image editor as a TIFF next to it (set the app in Settings → General).", keys: ["Ctrl+Alt+E"], when: "any", photo: true, run: () => editInFlow() },

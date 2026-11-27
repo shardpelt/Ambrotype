@@ -11,7 +11,7 @@
 // Windows and Linux list there (macOS has it in the app's own menu).
 const MENU_BAR = [
   ["Ambrotype", ["#about", "|", "settings", "|", "#services", "|", "#hide", "#hide_others", "#show_all", "|", "#quit"], "mac"],
-  [tKey("File"), ["open", "open-folder", "import", "|", "save", "export", "convert-raws", "batch-export", "share-compare", "replay", "edit-in", "|", "collage", "|", "~settings", "|", "#close_window", "~#quit"]],
+  [tKey("File"), ["open", "open-folder", "import", "|", "save", "export", "convert-raws", "batch-export", "share-compare", "replay", "edit-in", "|", "collage", "watermark-maker", "|", "~settings", "|", "#close_window", "~#quit"]],
   [tKey("Edit"), ["undo", "undo-all", "redo", "|", "#cut", "#copy", "#paste", "lib-all", "lib-none", "|", "lib-copy", "lib-paste"]],
   [tKey("Photo"), [
     "crop", "masks", "spots", "wb", "|",
@@ -31,7 +31,7 @@ const MENU_MAC_ONLY = new Set(["#services", "#hide", "#hide_others", "#show_all"
 // Menu titles, where the action's own label (keys.js) is a sentence.
 const MENU_TITLES = {
   open: tKey("Open…"), "open-folder": tKey("Open Folder…"), slideshow: tKey("Slideshow…"), import: tKey("Import Photos…"), save: tKey("Save"), export: tKey("Export…"), "edit-in": tKey("Edit in Another App"), "share-compare": tKey("Share Before and After…"), touch: tKey("Touch: Drag on the Photo"),
-  collage: tKey("Collage Maker…"), "lib-all": tKey("Select All"), "lib-none": tKey("Select None"), "lib-copy": tKey("Copy Settings"),
+  collage: tKey("Collage Maker…"), "watermark-maker": tKey("Watermark Maker…"), "lib-all": tKey("Select All"), "lib-none": tKey("Select None"), "lib-copy": tKey("Copy Settings"),
   "lib-paste": tKey("Paste Settings"), "save-preset": tKey("New Preset from This Photo…"), "convert-raws": tKey("Convert Raws to JPEGs…"), styles: tKey("Styles…"), "style-new": tKey("New Style from Photos…"), "batch-export": tKey("Batch Export…"), replay: tKey("Export Edit Replay…"), crop: tKey("Crop and Straighten"), spots: tKey("Spot Removal"), wb: tKey("White Balance Picker"),
   "rate-0": tKey("No Rating"), "label-red": tKey("Red"), "label-yellow": tKey("Yellow"), "label-green": tKey("Green"), "label-blue": tKey("Blue"),
   "flag-pick": tKey("Pick"), "flag-reject": tKey("Reject"), "flag-none": tKey("No Flag"), keywords: tKey("Add Keywords"),

@@ -33,6 +33,7 @@ mod share;
 mod style;
 mod sweep;
 mod usage;
+mod watermark;
 
 use amb_presets::Preset;
 use amb_presets::registry::Registry;
@@ -315,6 +316,7 @@ fn main() -> ExitCode {
             library::insights(places, &options, json)
         }
         ["style", rest @ ..] => style::style(rest, &options, json),
+        ["watermark", rest @ ..] => watermark::watermark(rest, &options, json),
         ["cleanup", photos @ ..] if !photos.is_empty() => {
             cleanup::cleanup(photos, &options, dry_run, json)
         }

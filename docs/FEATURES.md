@@ -134,7 +134,7 @@ Ctrl is ⌘ on a Mac. "Right-click" means on the photo, or on a thumbnail in the
 - **Shot RAW by mistake, want JPEGs like the camera makes** → **Convert raws** (library, File menu, or right-click): as the camera would have saved them, Auto, like one photo you edited (pick which from the edited ones), or a saved style at an Amount. `amb convert CARD --to JPEGS` (`--look style:NAME --amount 80`).
 - **Paste the photo into a chat or document** → right-click → Copy image.
 - **A border, a Polaroid frame, a caption** → **Frame** (Shift+B); a new line in its text makes a second caption line, and the bottom band grows to fit.
-- **A watermark or logo** → **Export** → Watermark.
+- **A watermark or logo** → **Export** → Watermark. Keep one under a name: `amb watermark save NAME "© You"` (or a logo.png or mark.json), `amb watermark list`, `amb watermark show NAME`, `amb watermark delete NAME`; then `amb render PHOTO OUT.jpg --watermark NAME`.
 - **Show before and after online** → **Share Before and After** (File menu; one web page with a slider). `amb share PHOTO --out page.html`.
 - **A video of my edit for Reels or Shorts** → **Export Edit Replay** (File menu). `amb replay PHOTO --out edit.mp4`.
 - **Collage** → the **Collage** tab, or **Collage Maker** (C): layouts, drag photos in, export pages; **Arrange freely** frames snap to each other and the canvas (hold Alt to drag without snapping). `amb collage`.

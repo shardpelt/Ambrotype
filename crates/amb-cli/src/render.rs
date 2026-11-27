@@ -486,46 +486,7 @@ pub(crate) fn export_settings(
             .collect();
     }
     if let Some(w) = options.get("--watermark") {
-        use amb_export::watermark::{Anchor, Watermark};
-        let lower = w.to_lowercase();
-        let mut mark = if lower.ends_with(".json") {
-            let text = std::fs::read_to_string(w).map_err(|e| format!("{w}: {e}"))?;
-            serde_json::from_str::<Watermark>(&text).map_err(|e| format!("{w}: {e}"))?
-        } else if lower.ends_with(".png") {
-            Watermark {
-                image: Some(PathBuf::from(w)),
-                ..Watermark::text("")
-            }
-        } else {
-            Watermark::text(w)
-        };
-        if let Some(a) = options.get("--watermark-at") {
-            mark.anchor =
-                Anchor::from_name(a).ok_or_else(|| format!("unknown --watermark-at {a:?}"))?;
-        }
-        let number = |key: &str| -> Result<Option<f64>, String> {
-            options
-                .get(key)
-                .map(|v| {
-                    v.parse::<f64>()
-                        .map_err(|_| format!("{key} {v:?} is not a number"))
-                })
-                .transpose()
-        };
-        if let Some(v) = number("--watermark-size")? {
-            mark.size = v;
-        }
-        if let Some(v) = number("--watermark-opacity")? {
-            mark.opacity = v;
-        }
-        if let Some(v) = number("--watermark-rotate")? {
-            mark.rotate = v;
-        }
-        if options.contains_key("--watermark-tile") {
-            mark.tile = true;
-        }
-        mark.validate()?;
-        s.watermark = Some(mark);
+        s.watermark = Some(crate::watermark::mark_from(w, options)?);
     }
     if let Some(b) = options.get("--border") {
         s.border = Some(if b.ends_with(".json") {

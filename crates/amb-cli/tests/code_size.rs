@@ -110,7 +110,6 @@ const FUNCTION_BUDGET: usize = 150;
 const LONG_FUNCTIONS: &[(&str, &str, usize)] = &[
     ("crates/amb-ai/src/net/plan.rs", "matmul", 199),
     ("crates/amb-cli/src/lens.rs", "lens_match_output", 158),
-    ("crates/amb-cli/src/render.rs", "export_settings", 187),
     (
         "crates/amb-engine/src/lens/camera.rs",
         "apply_camera_window",

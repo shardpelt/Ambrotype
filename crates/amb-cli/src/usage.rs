@@ -259,6 +259,15 @@ USAGE:
                                             the whole look, tone only or colour only. STYLE is a saved
                                             style's name or a .json file; --amount in percent (default
                                             100); the styles live in the editor's config folder
+    amb watermark list [--json]
+    amb watermark show <NAME>
+    amb watermark save <NAME> <TEXT|LOGO.png|MARK.json> [--watermark-at …] [--watermark-size N] [--json]
+    amb watermark delete <NAME>
+                                            Watermarks kept by name, in the editor's config folder (the
+                                            editor's Watermark maker makes the same ones). save takes the
+                                            same text, logo or .json as render's --watermark, with its
+                                            --watermark-* flags applied; show prints the stored JSON;
+                                            `amb render … --watermark NAME` uses one
     amb cleanup <PHOTO|DIR>... [--skip dupes,bursts,blurry,eyes,exposure,rejected] [--alike 0-20]
                 [--burst SECONDS] [--trash|--reject] [--dry-run] [--json]
                                             The photos you may not want, each with why: copies and alike
@@ -370,8 +379,8 @@ EXPORT OPTIONS (amb render):
                                             times the width deep if not set): {camera} {lens}
                                             {exposure} {focal} {aperture} {shutter} {iso} {date}
                                             {year} {title} {creator} {copyright}
-    --watermark \"© Name\" | logo.png | watermark.json   Text or a logo (PNG, its transparency kept) on
-                                            the photo; --watermark-at bottom-right (top-left, top, top-right,
+    --watermark \"© Name\" | logo.png | watermark.json | NAME   Text, a logo (PNG, its transparency
+                                            kept) or a saved watermark (amb watermark) on the photo; --watermark-at bottom-right (top-left, top, top-right,
                                             left, center, right, bottom-left, bottom), --watermark-size 20
                                             (% of the width), --watermark-opacity 70, --watermark-rotate 30
                                             (degrees), --watermark-tile (repeat it across the photo)

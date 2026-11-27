@@ -203,6 +203,18 @@ How the photos were shot: how often each aperture, focal length, shutter speed, 
 .B amb style delete <NAME>
 Styles: a saved look, not saved moves. save measures the reference photos' look (as match does) and keeps it; apply solves each photo's own settings to reach it (+1 Exposure on one, +5 on another), one undoable step per photo. \-\-focus: the whole look, tone only or colour only. STYLE is a saved style's name or a .json file; \-\-amount in percent (default 100); the styles live in the editor's config folder
 .TP
+.B amb watermark list [\-\-json]
+
+.TP
+.B amb watermark show <NAME>
+
+.TP
+.B amb watermark save <NAME> <TEXT|LOGO.png|MARK.json> [\-\-watermark\-at …] [\-\-watermark\-size N] [\-\-json]
+
+.TP
+.B amb watermark delete <NAME>
+Watermarks kept by name, in the editor's config folder (the editor's Watermark maker makes the same ones). save takes the same text, logo or .json as render's \-\-watermark, with its \-\-watermark\-* flags applied; show prints the stored JSON; `amb render … \-\-watermark NAME` uses one
+.TP
 .B amb cleanup <PHOTO|DIR>... [\-\-skip dupes,bursts,blurry,eyes,exposure,rejected] [\-\-alike 0\-20] [\-\-burst SECONDS] [\-\-trash|\-\-reject] [\-\-dry\-run] [\-\-json]
 The photos you may not want, each with why: copies and alike pictures (all but the best), the weaker frames of bursts, blurry, eyes closed, nearly black or blown out, rejected; photos picked or rated are left out. \-\-trash moves them to the trash, \-\-reject rejects them
 .TP
@@ -324,8 +336,8 @@ A frame around the photo; a .json preset can add a deeper bottom, a keyline, rou
 .B \-\-border\-caption \(dq{camera} · {exposure}\(dq
 A line of text in the border's bottom (made three times the width deep if not set): {camera} {lens} {exposure} {focal} {aperture} {shutter} {iso} {date} {year} {title} {creator} {copyright}
 .TP
-.B \-\-watermark \(dq© Name\(dq | logo.png | watermark.json
-Text or a logo (PNG, its transparency kept) on the photo; \-\-watermark\-at bottom\-right (top\-left, top, top\-right, left, center, right, bottom\-left, bottom), \-\-watermark\-size 20 (% of the width), \-\-watermark\-opacity 70, \-\-watermark\-rotate 30 (degrees), \-\-watermark\-tile (repeat it across the photo)
+.B \-\-watermark \(dq© Name\(dq | logo.png | watermark.json | NAME
+Text, a logo (PNG, its transparency kept) or a saved watermark (amb watermark) on the photo; \-\-watermark\-at bottom\-right (top\-left, top, top\-right, left, center, right, bottom\-left, bottom), \-\-watermark\-size 20 (% of the width), \-\-watermark\-opacity 70, \-\-watermark\-rotate 30 (degrees), \-\-watermark\-tile (repeat it across the photo)
 .PP
 Supported inputs: .xmp presets and sidecars, .lrtemplate presets, and files with an embedded XMP packet (e.g. .dng presets for Lightroom mobile). AI and script guide: docs/ai/README.md.
 .SH ENVIRONMENT

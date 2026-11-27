@@ -23,6 +23,7 @@ pub mod roots;
 pub mod search;
 pub mod smart;
 pub mod styles;
+pub mod watermarks;
 
 use std::path::PathBuf;
 
